@@ -20,8 +20,8 @@
 
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
-import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.js";
+import type { CronEntry } from "../../shared/agent-sdk.js";
 import { evaluateStandaloneSession } from "../../../src/lib/evaluator.js";
 
 // ── Constants ─────────────────────────────────────────────────────────

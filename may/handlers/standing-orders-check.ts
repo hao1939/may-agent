@@ -5,8 +5,8 @@
  * Reports violations to May for follow-up.
  */
 import { execSync } from "node:child_process";
-import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
-import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.js";
+import type { CronEntry } from "../../shared/agent-sdk.js";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async () => {

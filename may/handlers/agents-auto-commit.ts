@@ -20,8 +20,8 @@
 import { execSync, type ExecSyncOptions } from "node:child_process";
 import { resolve, join } from "node:path";
 import { writeFileSync, readFileSync, unlinkSync, existsSync, mkdirSync, copyFileSync, renameSync } from "node:fs";
-import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
-import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.js";
+import type { CronEntry } from "../../shared/agent-sdk.js";
 
 /**
  * execSync wrapper that detaches stdin. Prevents SSH/git prompts from

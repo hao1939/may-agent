@@ -18,8 +18,8 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { join, dirname } from "node:path";
-import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
-import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.js";
+import type { CronEntry } from "../../shared/agent-sdk.js";
 
 const STATE_FILE = ".state/context-learning-processed.json";
 const LOOKBACK_MS = 4 * 60 * 60 * 1000; // 4 hours

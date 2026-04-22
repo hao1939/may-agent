@@ -10,8 +10,8 @@
 import { readdirSync, readFileSync, existsSync, statSync, appendFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { execSync } from "node:child_process";
-import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
-import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.js";
+import type { CronEntry } from "../../shared/agent-sdk.js";
 
 export interface SystemStatusResult {
   timestamp: string;

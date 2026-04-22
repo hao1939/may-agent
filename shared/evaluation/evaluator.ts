@@ -1,14 +1,21 @@
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { AssistantMessage } from "@mariozechner/pi-ai";
 
-import type { SubagentManager } from "../../../src/lib/manager.js";
-import {
-  readSessionMessages,
-  readArchivedSessionMessages,
-} from "../../../src/lib/persistence.js";
-import type { PersistedSession } from "../../../src/lib/persistence.js";
+import type { SubagentManager, PersistedSession, RuntimeCtx } from "../agent-sdk.js";
 import { appendErrorLogs } from "./error-log.js";
-import { upsertEvaluation, hasEvaluation, hasLLMEvaluation, getAllEvaluations } from "../../../src/lib/requests.js";
+
+/**
+ * Subset of RuntimeCtx needed by evaluation functions.
+ * Handlers pass their ctx; tests can provide a minimal mock.
+ */
+export interface EvalCtx {
+  readSessionMessages(sessionId: string): AgentMessage[];
+  readArchivedSessionMessages(sessionId: string): AgentMessage[];
+  upsertEvaluation(opts: Record<string, unknown>): void;
+  hasEvaluation(sessionId: string): boolean;
+  hasLLMEvaluation(sessionId: string): boolean;
+  getAllEvaluations(): Array<Record<string, unknown>>;
+}
 
 export type {
   UsageSummary,
@@ -291,7 +298,7 @@ function parseTaskEvaluation(text: string): {
 
 export interface EvaluateTaskOptions {
   manager: SubagentManager;
-  persistDir: string;
+  ctx: EvalCtx;
   /** The parent session ID (May's session). Used to find child sessions. */
   parentSessionId: string;
   /** Agents to skip (evaluator only — to prevent infinite evaluation loops). */

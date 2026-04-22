@@ -16,8 +16,8 @@
 import { existsSync, mkdirSync, appendFileSync, writeFileSync, readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { join, dirname } from "node:path";
-import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
-import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.js";
+import type { CronEntry } from "../../shared/agent-sdk.js";
 
 /** Cooldown period — don't re-intervene on the same session within this window. */
 const COOLDOWN_MS = 10 * 60 * 1000;

@@ -8,8 +8,8 @@
 
 import { resolve } from "node:path";
 import { existsSync } from "node:fs";
-import type { HandlerContext, HandlerModule, TriggerEvent } from "../../../src/lib/handler-context.js";
-import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.js";
+import type { CronEntry } from "../../shared/agent-sdk.js";
 import { learnFromSession, learnFromSessionLLM } from "../../shared/evaluation/context-learn.js";
 
 const contextLearnAgents = new Set(

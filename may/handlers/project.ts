@@ -9,8 +9,8 @@
  */
 import { writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import type { HandlerContext, HandlerModule, TriggerEvent } from "../../../src/lib/handler-context.js";
-import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.js";
+import type { CronEntry } from "../../shared/agent-sdk.js";
 import {
   type ProjectInfo, type HealthAction, type HealthState,
   scanAllProjects, diagnoseProject, newProjectHealthEntry,

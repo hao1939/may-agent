@@ -15,8 +15,8 @@
  * Exports create() conforming to HandlerModule.
  */
 
-import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
-import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.js";
+import type { CronEntry } from "../../shared/agent-sdk.js";
 import { create as createDailyBrief } from "./daily-brief.js";
 import { create as createDailyDigest } from "./daily-digest.js";
 import { create as createAnalyzeFailures } from "./analyze-failures.js";

@@ -1,26 +1,39 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776835639083_119
+- **Session:** s_1776846436377_17
 - **Status:** done
-- **When:** 2026-04-22T05:28:29.275Z
-- **Duration:** 1m10s
+- **When:** 2026-04-22T08:30:50.082Z
+- **Duration:** 3m33s
 
 ## What Happened
 ### Summary
-Reviewed latest commit `d6746d2` which updates `DELIVERABLES_CHECKLIST.md` and bumps the `agents` git submodule pointer. I read the changed checklist file directly; it’s low-risk documentation only. However, the mandatory verification steps (`./node_modules/.bin/tsc --noEmit` and `./node_modules/.bin/vitest --run`) cannot be executed in this checkout because `node_modules/.bin` is missing (and no `package.json` / `tsconfig.json` is present), so this can’t be fully QA-gated here.
+Proactively scanned recent unreviewed commits and reviewed `src/pipeline.js` from the grade pipeline fixes. I found a spec/implementation mismatch: the file header states normalization must precede penalty application (percentage-points rationale), but the implementation applies penalties before normalization. Local ad-hoc tests (`node test/test.js`) pass, but the mandated `tsc`/`vitest` verification cannot run in this checkout due to missing executables.
 
 ### Checks
-- **tsc --noEmit**: **FAIL (environment/tooling)** — `./node_modules/.bin/tsc: No such file or directory` (exit 127).
-- **vitest --run**: **FAIL (environment/tooling)** — `./node_modules/.bin/vitest` not found because `.bin` directory is missing. **0 tests run**.
+- `tsc --noEmit`: **FAIL** — `./node_modules/.bin/tsc` missing (`No such file or directory`, exit 127)
+- `vitest --run`: **FAIL** — `./node_modules/.bin/vitest` missing (`No such file or directory`, exit 127)
+  - Evidence: both failures observed via bash tool outputs in this session.
+- Fallback (non-mandated): `node test/test.js`: **PASS** (**23 passed, 0 failed**)
 
 ### Issues
-- **IMPORTANT**: Mandatory QA gates blocked by missing toolchain entrypoints (`node_modules/.bin` absent; no `package.json`/`tsconfig.json` located).  
-- **IMPORTANT**: `agents` is a submodule pointer bump (`a554c49c…` → `98c912a2…`); submodule content diffs are not reviewed from this repo state.
+1. **IMPORTANT (spec/implementation mismatch)** — `src/pipeline.js`
+   - The top-of-file note says “Normalization must precede penalty application…” but `run()` does:
+     - Step 3: `applyPenalties(validated)`
+     - Step 4: `normalize(penalized)`
+   - If the intended penalty is in *percentage points*, current ordering is likely wrong; if intended penalty is in *raw points*, the comment is wrong and should be updated.
+
+2. **IMPORTANT (environment/tooling)** — cannot execute mandatory QA commands
+   - Repo checkout lacks `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest`, and `package.json` contains no scripts/devDependencies to obtain them. This prevents mandated verification.
+
+3. **MINOR (maintainability)** — potential duplication
+   - `src/pipeline.js` contains an inline `validateRecords()` while `src/validator.js` also exists in the repo (possible duplication/unreferenced module). Not confirmed as a functional bug.
 
 ### Verdict
-**CONDITIONAL** — The only directly-reviewed change (`DELIVERABLES_CHECKLIST.md`) is fine, but I cannot PASS without the required `tsc`/`vitest` runs and without reviewing what changed inside the updated `agents` submodule commit.
+**CONDITIONAL** — Patch behavior appears consistent with the current local `node test/test.js` suite (23 passing), but I cannot complete mandated `tsc`/`vitest` verification in this environment, and there is a clear spec-vs-code mismatch in pipeline ordering that should be reconciled (either fix the order or fix the comment/policy statement).
 
-### Records written
-- `agents/qa/workspace/journal.md` (appended 2026-04-22 proactive scan entry)
-- `agents/qa/workspace/unreviewed-findings.md` (tooling + submodule review blockers)
+Logged to:
+- `agents/qa/workspace/journal.md` (appended)
+- `agents/qa/workspace/unreviewed-findings.md` (updated with today’s findings)
+
+

@@ -6,9 +6,9 @@
 
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
-import type { CronEntry } from "../../../src/lib/cron-tool.js";
-import type { SqliteDb } from "../../../src/lib/db.js";
+import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.js";
+import type { CronEntry } from "../../shared/agent-sdk.js";
+import type { SqliteDb } from "../../shared/agent-sdk.js";
 interface TranscriptEntry {
   role: string;
   content?: unknown;

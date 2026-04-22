@@ -5846,3 +5846,8 @@ CONDITIONAL — checklist edit itself is fine, but cannot verify build/tests and
 ### Verdict
 CONDITIONAL — cannot complete mandated tsc/vitest verification due to missing toolchain in this checkout; code read did not reveal a functional defect.
 
+
+## 2026-04-22 QA Heartbeat
+- Proactive scan: recent commits include grade pipeline fixes (cabe150, 628bf70, 51c018d).
+- Read src/pipeline.js; noticed mismatch between docstring (normalize then penalties) and actual order (penalties then normalize).
+- Verification: ./node_modules/.bin/tsc and vitest missing in environment (code 127). Ran node test/test.js: 23 passed.

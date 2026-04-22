@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776846459521_19
+- **Session:** s_1776846436355_16
 - **Status:** done
-- **When:** 2026-04-22T08:28:46.372Z
-- **Duration:** 1m6s
+- **When:** 2026-04-22T08:29:08.735Z
+- **Duration:** 1m52s
 
 ## What Happened
-Now I have enough evidence. Let me write the findings.
+Good analysis — 5 fragile assumptions identified with actionable recommendations. The key finding is the `?t=` cache-busting may silently fail in Bun, and the silent `catch {}` in findWorkflow hides real errors.

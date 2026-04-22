@@ -35,8 +35,8 @@
 import { Database } from "bun:sqlite";
 import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
 import { join } from "node:path";
-import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
-import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.js";
+import type { CronEntry } from "../../shared/agent-sdk.js";
 import { evaluateStandaloneSession } from "../../../src/lib/evaluator.js";
 
 // Keep in sync with evaluator-heartbeat.ts: meta agents must never be

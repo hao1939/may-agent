@@ -7,8 +7,8 @@
  * Replaces inline bus.subscribe() escalation logic that was in may.ts.
  */
 
-import type { HandlerContext, HandlerModule, TriggerEvent } from "../../../src/lib/handler-context.js";
-import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.js";
+import type { CronEntry } from "../../shared/agent-sdk.js";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async (event?: TriggerEvent) => {

@@ -26,16 +26,16 @@
 
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
-import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
-import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.js";
+import type { CronEntry } from "../../shared/agent-sdk.js";
 import type {
   WorkflowContext,
   WorkflowModule,
   WorkflowResult,
   WorkflowEvent,
-} from "../../../src/lib/workflow.js";
-import type { TaskResult } from "../../../src/lib/types.js";
-import type { WorkflowRun, WorkflowStep } from "../../../src/lib/persistence.js";
+} from "../../shared/agent-sdk.js";
+import type { TaskResult } from "../../shared/agent-sdk.js";
+import type { WorkflowRun, WorkflowStep } from "../../shared/agent-sdk.js";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 

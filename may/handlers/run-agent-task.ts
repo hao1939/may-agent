@@ -53,8 +53,8 @@ function saveMinimalWorkflowRun(projectRoot: string, run: MinimalWorkflowRun): v
     // Non-fatal — coverage tracking is best-effort
   }
 }
-import type { HandlerContext, HandlerModule } from "../../../src/lib/handler-context.js";
-import type { CronEntry, PreflightCheck } from "../../../src/lib/cron-tool.js";
+import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.js";
+import type { CronEntry, PreflightCheck } from "../../shared/agent-sdk.js";
 
 // ── Pre-flight state persistence ──────────────────────────────────────
 
