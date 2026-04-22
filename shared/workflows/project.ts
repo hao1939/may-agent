@@ -810,12 +810,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     // Re-read project file from disk — worker may have checked off milestones or updated sections
     projectContent = readFile(config.projectPath) ?? projectContent;
 
-    // Update project.md fields (not rewrite)
+    // Update iteration count (don't overwrite Current State - reviewer will update it after review)
     projectContent = updateField(projectContent, "Iteration", String(iteration));
-    const msAfterWorker = extractMilestones(projectContent);
-    projectContent = updateSection(projectContent, "Current State",
-      `Iteration ${iteration}. Milestones: ${msAfterWorker.done}/${msAfterWorker.total} done.` +
-      (msAfterWorker.pending.length > 0 ? ` Next: ${msAfterWorker.pending[0].slice(0, 80)}` : ""));
     writeFileSync(config.projectPath, projectContent, "utf-8");
 
 
@@ -891,6 +887,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
       projectContent = appendToSection(projectContent, "Iteration Summary",
         `- **Iter ${iteration}**: ${workerSummary.slice(0, 100)}\n`);
+
+      // Update Current State with reviewer's synthesis (not mechanical summary)
+      const ms = extractMilestones(projectContent);
+      const reviewerInsight = decision.detail.slice(0, 200).replace(/^CONTINUE[:\s]*/i, "").trim();
+      projectContent = updateSection(projectContent, "Current State",
+        `Iteration ${iteration}. Milestones: ${ms.done}/${ms.total} done.\n` +
+        (reviewerInsight ? `Reviewer: ${reviewerInsight}` : ""));
+
       writeFileSync(config.projectPath, projectContent, "utf-8");
     }
 
