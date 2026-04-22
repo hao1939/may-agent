@@ -179,4 +179,34 @@ The original H-166 claimed that expert knowledge has a **high completeness thres
 *Revised 2026-04-16 after EXP-173 results and contamination discovery*
 *Post-contamination reassessment 2026-04-17 — no re-revision warranted; EXP-177 design confirmed as correct next step*
 *H-166-original resolved as REFUTED 2026-04-18*
-*H-166-revised resolved as REFUTED 2026-04-19 — EXP-177 confirmatory test (80 runs): all hint arms 15-30%, far below ≥80% prediction. The 10/10 arm F result was a small-N fluke. See KE-286, KE-287.*
+*H-166-revised resolved as REFUTED 2026-04-19 — EXP-177 confirmatory test (80 runs): all hint arms 15-30%, far below ≥80% prediction. The 10/10 arm F result was a small-N fluke. Spawned H-181 (Relational Bug Blindness). See EXP-177/results.md.*
+
+---
+
+## Resolution Verdict — H-166-revised (low-threshold model) (2026-04-19)
+
+**Status: ✅ RESOLVED — FULLY REFUTED**
+
+EXP-177 (80 runs, 4 arms × 2 scenarios × 10 trials) decisively refutes the low-threshold model:
+
+**S1: cascading-fix-trap-v2 (clean environments, N=40)**
+- BASE: 0/10 (0%)
+- LEXICAL hint: 1/10 (10%)
+- PARAPHRASE hint: 0/10 (0%)
+- PLACEBO: 0/10 (0%)
+
+All hint arms are 0-10%, far below the ≥80% prediction for MOD-PARAPHRASE. The pre-registered bright-line decision rule maps to **REFUTED**.
+
+**S2: sql-injection-in-query-builder (N=40)**
+- BASE: 6/10 (60%)
+- LEXICAL hint: 1/10 (10%) — **negative transfer** (−50pp)
+- PARAPHRASE hint: 3/10 (30%)
+- PLACEBO: 2/10 (20%)
+
+Hints actively HURT on S2, causing fixation that reduces exploration.
+
+**What explains the arm F 10/10 result?** Small-N artifact (N=10, 95% CI includes true rate as low as 69%). At N=40 with clean environments, the hint effect is indistinguishable from zero.
+
+**The real finding from EXP-177** is not about thresholds at all — it's about bug types: 39/40 S1 trials fail on exactly ONE check (`pipeline-order-fixed`). The agent always finds the value bug (threshold `>` vs `>=`) but never finds the ordering bug (pipeline sequence). This spawned **H-181 (Relational Bug Blindness)**.
+
+**P(H-166-revised) = ≤0.15** — fully refuted.
