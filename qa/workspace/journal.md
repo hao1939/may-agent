@@ -5693,3 +5693,11 @@ Findings:
 - same missing under `/app/agents`.
 - Evidence: bash outputs in this session; `agents/node_modules` only contains `.vite`.
 
+## 2026-04-22 — Heartbeat QA scan
+- Read: `agents/src/lib/finish-guard.ts` (finish deliverable enforcement + verification evidence validation).
+- Tooling mismatch: repo does not have `./node_modules/.bin/tsc` / `./node_modules/.bin/vitest` as expected by QA guardrails. `bun x tsc --noEmit` also fails because there is no `tsconfig.json` in `/app/agents`.
+- Tests:
+  - `bun test --run test/*.test.ts` passes (10 passed).
+  - `bun x vitest --run` fails massively because it tries to run gym scenario fixtures that call `process.exit()` and contain non-vitest test files ("No test suite found"), plus one real assertion failure in `gym/scenarios/fm33-verify-broken/...`.
+- Recommendation: add a root `tsconfig.json` (or documented `tsc -p`) and a vitest config to exclude `gym/scenarios/**` from default runs, or adjust the mandated QA commands for this repo.
+
