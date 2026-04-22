@@ -32,11 +32,11 @@ Reduce project stall rate caused by evaluator rejection loops. The pwi-smart-con
 ## Milestones
 - [x] Audit evaluator scoring: collect scores across 10+ projects, identify rejection loop frequency → See evaluator-audit.md
 - [x] Identify root cause: is it threshold, rubric, or context? → Rubric (demands publication rigor for milestone completion) + no loop-breaking mechanism
-- [ ] Design intervention (pick from treatment options A-D) → Hybrid C+D: good-enough rubric + 2-attempt cap
+- [x] Design intervention (pick from treatment options A-D) → Hybrid C+D: good-enough rubric + 2-attempt cap → See intervention-design.md
 - [ ] Implement and test on 2+ projects
 
 ## Current State
-MS1+MS2 complete (2026-04-22). Audit found: rejection loops are real (coach had 15 low scores in 1hr), evaluator rubric demands excessive rigor for milestone-scoped work, and `parse_error` verdict is misnamed. Root cause is rubric + no circuit-breaker. Next: design the C+D hybrid intervention — good-enough rubric focused on deliverable existence + 2-attempt cap with auto-advance.
+MS1-MS3 complete (2026-04-22). Intervention designed: simplified 3-criterion rubric (deliverables exist, goal addressed, honest reporting) + 2-attempt auto-advance cap replacing the current 3-attempt block. See intervention-design.md. Next: implement changes in project.ts (MS4).
 
 ## Resources
 - Workflow code: agents/shared/workflows/project.ts

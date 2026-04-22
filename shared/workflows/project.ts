@@ -562,12 +562,14 @@ async function handleDoneDecision(
       ls.projectContent = updateField(ls.projectContent, "Health", `${score}/10 (${evalVerdict})`);
       writeFileSync(config.projectPath, ls.projectContent, "utf-8");
     }
-    if (ls.falseDoneCount >= 3) {
-      ls.projectContent = updateField(ls.projectContent, "Status", "blocked");
-      ls.projectContent = updateSection(ls.projectContent, "Current State",
-        `Blocked: Reviewer marked DONE ${ls.falseDoneCount} times but evaluator scored <7 each time. Goal may be unachievable or misscoped.`);
+    if (ls.falseDoneCount >= 2) {
+      // Auto-advance: don't block the project, advance with caveat
+      const caveatNote = `**Auto-advanced**: Evaluator rejected ${ls.falseDoneCount} times (last score=${score}/10). Advancing with caveat — work may need revisiting.\n\n`;
+      ls.projectContent = appendJournalEntry(config, ls.projectContent, caveatNote, isCommentIteration);
+      ls.projectContent = updateField(ls.projectContent, "Health", `${score}/10 (CAVEAT)`);
       writeFileSync(config.projectPath, ls.projectContent, "utf-8");
-      return { outcome: "escalate", message: `False-done loop: reviewer said DONE ${ls.falseDoneCount}x but evaluator rejected each time at iteration ${iteration}.` };
+      ls.falseDoneCount = 0;  // Reset for next milestone
+      return { outcome: "continue" };
     }
     return { outcome: "continue" };
   }
