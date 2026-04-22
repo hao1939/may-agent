@@ -1,43 +1,43 @@
-# Prove-the-Loop Status — 2026-05-04 heartbeat
+# Prove-the-Loop Status — 2026-06-23 heartbeat
 
 ## M1-M4: COMPLETE
 - Skill gap: relational bug blindness (v2: 0/115 = 0% over 14+ days)
 - Intervention: Data Flow Audit skill (3 arms: skill, inline, direct)
 - Measurement protocol ready: 10 trials × 3 arms
 
-## M5-M6: BLOCKED → PARTIAL UNBLOCK
+## M5: EXP-198 READY TO RUN
 
-### New: cascading-fix-trap-v3.5 created
-- **v2**: 0% baseline (too hard — `adjusted_pct` indirection completely hides the bug)
-- **v3**: 100% baseline (too easy — no indirection, 5 test failures point directly at penalties)
-- **v3.5**: calibrated middle ground — penalties produce `adjusted_pct`, homework reads stale `pct`
-  - Agent must trace data flow: penalties → homework (field mismatch)
-  - Fixing data flow reveals cascading `>` vs `>=` threshold bug in grades.js
-  - 5 test failures initially, 4 more after partial fix = requires two-stage debugging
-  - Target baseline: 20-40%
+### EXP-195 results (completed)
+- Baseline: 10% (1/10) — up from historical 0%
+- Generic skill: 0/6 (0%)
+- Direct hint: 40% (4/10) — **+30pp improvement**
+- Conclusion: agents can FIX relational bugs but can't DISCOVER them
 
-### Execution plan
-1. **Baseline**: Run v3.5 bare × 10 — expect 20-40% pass rate
-2. **Treatment**: Run v3.5 + Data Flow Audit skill × 10 — expect ≥50% 
-3. **Comparison**: If treatment - baseline ≥ 20pp, promote skill
+### EXP-198: Procedural Discovery Skill (DESIGNED → SCENARIOS READY)
+- **Arm A**: Baseline (cascading-fix-trap-v2) × 10
+- **Arm B**: Procedural discovery skill in task.md × 10 (scenario: cascading-fix-trap-v2-exp198-proc)
+- **Arm C**: Procedural skill + worked example × 10 (scenario: cascading-fix-trap-v2-exp198-example)
+- All 3 scenario variants exist and are ready for gym execution
+- **Blocked on**: gym runner infrastructure (src/gym/runner.ts missing from repo)
 
-### EXP-195 (v2 arms) still ready
-- 3 scenario variants exist: `cascading-fix-trap-v2-exp195-{skill,inline,direct}`
-- Still worth running alongside v3.5 for completeness
+### Decision criteria
+- H-198a confirmed if Arm B ≥ 25% AND > Arm A (p<0.20)
+- H-198a falsified if Arm B ≤ 15% at N=10
+- If confirmed → write KE, promote procedural discovery skill → prove-the-loop M5-M6 complete
 
-### What's needed
-- Gym batch execution on k3s for both v3.5 and v2-exp195 scenarios
-- Create v3.5 treatment scenario variants (v3.5-skill, v3.5-inline)
+## v3.5 scenario (secondary)
+- `cascading-fix-trap-v3.5` exists, 0 runs — designed as calibrated difficulty between v2 (0%) and v3 (100%)
+- Lower priority than EXP-198 since EXP-198 directly tests the skill intervention
 
 ## Data summary
 | Scenario | Runs | Pass Rate | Period |
 |----------|------|-----------|--------|
-| cascading-fix-trap-v2 | 115 | 0% | 14d+ |
-| cascading-fix-trap-v2-exp177-placebo | 10 | 0% | 14d |
+| cascading-fix-trap-v2 | 125+ | ~1-10% | 14d+ |
 | cascading-fix-trap-v2-exp177-lexical | 26 | 26.9% | 14d |
-| cascading-fix-trap-v2-exp177-paraphrase | 10 | 20% | 14d |
-| cascading-fix-trap-v3 | 5 | 100% | 12d ago |
-| cascading-fix-trap-v3.5 | 0 | — | NEW |
-| cascading-fix-trap-v2-exp195-skill | 0 | — | never |
-| cascading-fix-trap-v2-exp195-inline | 0 | — | never |
-| cascading-fix-trap-v2-exp195-direct | 0 | — | never |
+| cascading-fix-trap-v2-exp195-direct | 10 | 40% | EXP-195 |
+| cascading-fix-trap-v2-exp198-proc | 0 | — | READY |
+| cascading-fix-trap-v2-exp198-example | 0 | — | READY |
+| cascading-fix-trap-v3.5 | 0 | — | READY |
+
+## Next action
+Request gym runs for EXP-198 arms (need tech-lead to fix gym runner or find alternative execution path)

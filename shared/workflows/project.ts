@@ -297,8 +297,6 @@ function buildWorkerPrompt(
   const resources = extractSection(projectContent, "Resources");
   if (resources && !focusedContext) prompt += `## Resources\n${resources}\n\n`;
 
-  const processNotes = extractSection(projectContent, "Process Notes");
-  const focusedContext = processNotes?.match(/Context:\s*focused/i);
   if (processNotes) prompt += `## Process Notes\n${processNotes}\n\n`;
 
   if (lastGuidance) prompt += `## Owner Guidance for This Iteration\n${lastGuidance}\n\n`;
