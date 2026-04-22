@@ -8,7 +8,7 @@
 **Metric**: convention-compliance-rate (currently ~97%, target ≥ 99%)
 
 **Iteration**: 11
-**Health**: 3/10 (FAIL)
+**Health**: 4/10 (FAIL)
 ## Milestones
 - [x] M1: Gym scenarios for top 4 violations
 - [x] M2: Baseline measurement

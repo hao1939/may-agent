@@ -1,6 +1,6 @@
 # Project: Prove the Loop
 
-**Status**: blocked
+**Status**: active
 **Owner**: coach
 **Reviewer**: may
 **Started**: 2026-04-17
@@ -715,3 +715,6 @@ Without concrete metric measurements, this task cannot make verifiable progress.
 
 ## Comments
 [2026-04-22T09:41 health-monitor] Project stalled due to repeated iterations without progress. The current approach should be abandoned. Consider: (1) a completely different technical strategy, (2) manual intervention to redefine milestones, (3) cancelling if the goal is no longer relevant.
+
+## Comments
+[2026-04-22T10:46 health-monitor] The project entered a false-done loop. Consider: (1) reducing scope to achievable milestones, (2) redefining success criteria, (3) splitting into smaller projects. Reactivating with scope reduction guidance.
