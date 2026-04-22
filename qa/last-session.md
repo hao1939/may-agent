@@ -1,24 +1,28 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776870401249_567
+- **Session:** s_1776872202352_578
 - **Status:** done
-- **When:** 2026-04-22T15:07:27.654Z
-- **Duration:** 46s
+- **When:** 2026-04-22T15:39:30.226Z
+- **Duration:** 2m47s
 
 ## What Happened
 ### Summary
-This heartbeat I attempted to do the standard QA verification loop (review recent changes + run `tsc` and `vitest`). The workspace root (`/app`) is **not a git repo**, and the only git repo I can find is under `/app/agents`. Additionally, the **Node toolchain binaries required by the mandatory steps are missing** (`./node_modules/.bin/tsc` and `./node_modules/.bin/vitest`), so I cannot complete the required verification. I did independently read `src/pipeline.js` to sanity-check runtime orchestration and it looks internally consistent, but that does not substitute for the mandated automated checks.
+In this heartbeat I looked for unverified changes from the last ~6 hours and found that `/app` isn’t a git repo, but `/app/agents` is. There *were* recent changes (notably to `agents/shared/workflows/project.ts`). I also attempted the mandatory QA verification steps, but the environment/tooling setup prevents running them as specified, and a repo-wide `vitest --run` is currently unusable due to intentionally failing gym scenario fixtures being included.
 
 ### Checks
-- `tsc --noEmit`: **FAIL** — `./node_modules/.bin/tsc: No such file or directory` (bash)
-- `vitest --run`: **FAIL** — `./node_modules/.bin/vitest: No such file or directory` (bash)
+- `tsc --noEmit`: **FAIL**  
+  Evidence: running `./node_modules/.bin/tsc --noEmit` at `/app` failed with `No such file or directory` (no `/app/node_modules`). Running `npx tsc --noEmit` under `/app/agents` failed because TypeScript isn’t installed there.
+- `vitest --run`: **FAIL** (112 test files discovered; **100 failed / 12 passed**)  
+  Evidence: `npx vitest --run` under `/app/agents` fails broadly; many failures are from gym scenario test fixtures (e.g., `process.exit unexpectedly called`, `No test suite found`), i.e., not a reliable signal for real regressions.
 
 ### Issues
-- **CRITICAL** — Mandatory QA verification cannot be performed in this environment:
-  - `/app` is not a git repository (`git log` fails). Evidence: `fatal: not a git repository` when running `git log` at root.
-  - `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest` do not exist, so required checks cannot run.
-- **MINOR** — Potential duplication/consistency risk: `src/pipeline.js` defines `validateRecords()` locally instead of importing a shared validator (if one exists elsewhere). This is not proven-broken, but it’s a maintainability risk. Evidence: `src/pipeline.js` contents (function present in-file).
+- **CRITICAL:** QA verification commands cannot be executed as required because local toolchain binaries (`./node_modules/.bin/tsc`, `./node_modules/.bin/vitest`) are missing from `/app`.  
+  Evidence: `./node_modules/.bin/tsc --noEmit` returned “No such file or directory”.
+- **IMPORTANT:** Default vitest execution appears to include `gym/scenarios/**/environment/**` fixtures that intentionally fail, making repo-wide `vitest --run` non-actionable for regression detection.  
+  Evidence: vitest run shows large numbers of failures with patterns like “No test suite found” and “process.exit unexpectedly called”.
 
 ### Verdict
-**CONDITIONAL** — I cannot PASS because the mandatory `tsc` and `vitest` checks cannot be run (missing `node_modules/.bin/*`), and root is not a git repo so “what changed in last 6h” can’t be established from `/app`. If you provide a proper Node project checkout (with `package.json`, installed deps, and test runner available) or an alternate official verification command set for this environment, I can re-run the required steps and give a definitive PASS/FAIL.
+**CONDITIONAL** — I *did* read a changed file (`agents/shared/workflows/project.ts`, lines 1–200) and identified the recent commit affecting it, but I cannot complete the mandatory verification steps in this environment. This is not a code-level ship/no-ship decision; it’s a tooling/config problem that must be resolved (define canonical workspace + ensure dev deps + exclude gym fixtures from default test runs).
+
+Deliverable written: `agents/qa/workspace/unreviewed-findings.md` with the evidence and follow-ups.
