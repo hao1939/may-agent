@@ -1,72 +1,66 @@
-# Finding: Safest First Refactor for `execute()` in project.ts
+# Fragility Lens: `agents/shared/workflows/project.ts`
+
+**Fragility: 9/10** | **918 lines** | **Single file, types.ts and registry.ts do not exist**
 
 ## Summary
 
-The `execute()` function (`project.ts:681-918`, 237 lines) contains a clearly extractable **comment iteration block** (`project.ts:740-780`) that can be pulled into a standalone async function with zero behavioral change. This is the safest first extraction because it has a clean entry condition, uses only values already available at the call site, and ends with `continue` — making the control flow trivially preservable.
+`execute()` (~350 lines, starting at `project.ts:555`) is a monolithic loop managing 6 mutable variables with duplicated state-sync patterns. The `LoopState` struct was introduced to consolidate state but is used inconsistently — created ad-hoc, passed to helpers, then manually destructured back. A helper `trackMilestoneProgress()` exists but is **never called**. Legacy/directory branching (`isLegacy`) is scattered across the loop body instead of being encapsulated in `appendJournalEntry()`.
 
 ## Evidence
 
-### The Extractable Block: Comment Iteration Handler
+### 1. Dead code: `trackMilestoneProgress()` never called
+- **Defined**: `project.ts:474` — standalone function that updates `ls.continueWithoutProgress` and `ls.lastMilestoneDone`
+- **Never called**: The same logic is duplicated inline at `project.ts:710-717` (reviewer CONTINUE path) and inside `handleDoneDecision` at `project.ts:400-405` and `project.ts:421-426`
+- **Severity**: Medium. Someone wrote the extraction but forgot to wire it in.
 
-**Location**: `project.ts:740-780` (approximately 40 lines)
+### 2. Ad-hoc LoopState create/destructure pattern (duplicated twice)
+- **Comment iteration path** (`project.ts:627-631`): Creates `LoopState`, calls `processDecision`, manually copies 4 fields back to local variables.
+- **Main reviewer path** (`project.ts:700-704`): Identical create/call/destructure pattern.
+- **Risk**: Any new field added to `LoopState` must be manually synced in both places. Already fragile with 4 fields.
 
-The block is guarded by `if (pendingComments)` at `project.ts:740` and ends with `iteration++; continue;` at `project.ts:779-780`. It:
+### 3. `isLegacy` branching scattered instead of encapsulated
+- `appendJournalEntry()` exists at `project.ts:333` to handle legacy vs directory format.
+- But it's **not used** in the main loop body. Instead, raw `if (config.isLegacy)` branches appear at:
+  - `project.ts:638-642` (comment iteration journal append)
+  - `project.ts:670-676` (worker journal append)
+  - `project.ts:693-697` (reviewer error journal append)
+  - `project.ts:701-705` (reviewer decision journal append)
+- `appendJournalEntry` IS used inside `handleDoneDecision` (`project.ts:388`) and `handleBlockedDecision` (`project.ts:455`), creating an inconsistency.
 
-1. Builds a comment review prompt via `buildReviewPrompt()` (`project.ts:747`)
-2. Runs the owner agent (`project.ts:751`)
-3. Extracts the decision (`project.ts:752`)
-4. Writes a journal entry (`project.ts:756-764`)
-5. Clears comments and updates fields (`project.ts:767-768`)
-6. Delegates to `processDecision()` (`project.ts:771`)
-7. Sets status to active and continues (`project.ts:777-780`)
+### 4. `projectContent` god variable — 10+ write-read cycles
+- `projectContent` is read from disk, mutated in-memory via `updateField`/`updateSection`, written back via `writeFileSync`, then re-read from disk — all within the same iteration. Key write points:
+  - `project.ts:586` (mark active)
+  - `project.ts:647-648` (clear comments + update iteration)
+  - `project.ts:680-684` (update iteration + current state after worker)
+  - `project.ts:706` (milestone checkbox write)
+  - `project.ts:724-725` (auto-escalate blocked write)
+  - `project.ts:728-729` (iteration summary append)
+- **Risk**: Any missed `writeFileSync` before a `readFile` causes silent data loss. Any missed `readFile` after an external write causes stale state.
 
-**Inputs** (all available at call site): `ctx`, `config`, `projectContent`, `journalContent`, `iteration`, `continueWithoutProgress`, `falseDoneCount`, `lastMilestoneDone`
+### 5. Duplicated progress-tracking logic
+- Inside `handleDoneDecision` (FAIL branch): `project.ts:398-405`
+- Inside `handleDoneDecision` (milestone-override branch): `project.ts:419-426`
+- In main loop after reviewer CONTINUE: `project.ts:710-717`
+- All three implement the same `if (done > lastDone) { reset counter } else { increment }` pattern.
 
-**Outputs**: Updated `projectContent`, `falseDoneCount`, `lastMilestoneDone`, `continueWithoutProgress`, and optionally a `WorkflowResult` (early return).
+## Recommended Extraction Plan
 
-### Why This Is the Safest
+### Step 1: Wire `trackMilestoneProgress()` (lines 474-481)
+Replace the 3 inline duplicates with calls to the existing function. Zero behavioral change.
 
-1. **Already uses `LoopState` pattern**: The block already packs state into a `LoopState` object at `project.ts:768` and unpacks it at `project.ts:770-771`. A new function would simply receive and return `LoopState` — the marshaling pattern is already established.
+### Step 2: Replace all inline `isLegacy` journal appends with `appendJournalEntry()`
+Target the 4 locations in `execute()` (lines 638, 670, 693, 701). The function already exists and handles both formats.
 
-2. **Clean control flow boundary**: The block ends with `continue` (`project.ts:780`), so the extracted function returns either a `WorkflowResult` (to exit) or `null` (caller does `iteration++; continue`). This matches the existing `processDecision()` return convention (`project.ts:658`).
+### Step 3: Promote `LoopState` to the loop's primary state container
+Instead of 6 loose `let` variables (lines 570-575), create one `LoopState` at loop entry and pass it through. Eliminate the create/destructure pattern at lines 627-631 and 700-704.
 
-3. **No shared mutable state beyond LoopState**: The block doesn't touch `consecutiveFailures` (only the worker phase does, `project.ts:804`). It only mutates the same `LoopState` fields that `processDecision` already mutates.
+### Step 4: Extract `projectContent` mutations into a `ProjectFile` class
+Encapsulate `readFile` + `updateField` + `writeFileSync` into a class with `read()`, `update(field, value)`, `save()` methods. Eliminates the scattered write-read cycle risk.
 
-4. **Analogous extraction already exists**: `handleBlockedDecision()` (`project.ts:613-656`) and `processDecision()` (`project.ts:658-678`) were already extracted from similar inline logic. This is the same pattern.
+### Step 5 (optional): Extract worker phase and reviewer phase into named functions
+- `runWorkerPhase()`: lines 660-684
+- `runReviewerPhase()`: lines 687-730
+This brings `execute()` down from ~350 lines to ~100 lines.
 
-## Proposed Signature
-
-```typescript
-async function handleCommentIteration(
-  ctx: WorkflowContext,
-  config: PersistentTaskConfig,
-  ls: LoopState,
-  journalContent: string,
-  iteration: number,
-): Promise<WorkflowResult | null>
-```
-
-Returns `WorkflowResult` if the loop should exit, `null` if it should `continue`.
-
-## Severity
-
-- **Risk**: Low — pure mechanical extraction
-- **Impact**: Reduces `execute()` by ~40 lines (17%), improves readability, and makes the comment iteration path independently testable
-
-## Recommended Action
-
-Extract `project.ts:740-780` into `handleCommentIteration()`. Place it adjacent to `handleBlockedDecision()` (~line 613). The call site becomes:
-
-```typescript
-if (pendingComments) {
-  const result = await handleCommentIteration(ctx, config, ls, journalContent, iteration);
-  // unpack ls fields...
-  if (result) return result;
-  iteration++;
-  continue;
-}
-```
-
-## Follow-up (separate session)
-
-After the comment iteration extraction, the **reviewer phase** block (`project.ts:825-905`, ~80 lines) is the next candidate — it follows a similar pattern but is larger and has the progress-tracking tail that needs careful handling.
+## Follow-up
+These are refactors, not bug fixes. Dispatch as a separate session. Start with Steps 1-2 (zero-risk wiring of existing code), then proceed to Steps 3-5.
