@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776872873514_602
+- **Session:** s_1776873093086_610
 - **Status:** done
-- **When:** 2026-04-22T15:48:11.758Z
-- **Duration:** 18s
+- **When:** 2026-04-22T15:52:16.349Z
+- **Duration:** 43s
 
 ## What Happened
 ```json
@@ -17,28 +17,33 @@
       "quality": 0.25,
       "verdict": "needs_improvement",
       "issues": [
-        "Gave guidance that violates the session constraint: suggested using bash with `cat >>` or `tee` to append to files, despite the user instruction 'REVIEW ONLY — no file edits expected' (transcript: '(b) What's different: ... use bash with cat >> or tee to append to files').",
-        "Did not address the worker's stated confusion correctly: worker claimed they cannot edit project/journal; bob reinforced writing approaches rather than clarifying that the worker can still create the required artifacts in allowed locations or via permitted mechanisms. This increases risk of non-compliant execution.",
-        "Did not propose a fundamentally different strategy even though the prompt explicitly says 'Never give the same guidance twice' and iteration 2 already prescribed essentially the same first step (read .state/metrics.md, list .state/projects/, tail journal). Bob repeats that first step almost verbatim (transcript: (c) First step ... cat .state/metrics.md ... ls .state/projects ... tail .state/journal.md)."
+        "Provided generic guidance without grounding in repo reality; no tool use or cited evidence about where EXP-178 lives or how to run trials.",
+        "Instructed the worker to read `project.md`, but the prompt explicitly states the worker cannot edit project.md/journal.md directly; also it’s unclear that `project.md` is the right entry point (possible path-guessing).",
+        "Did not translate milestones into an actionable, verifiable run plan (commands, expected output files per run, naming conventions, how to validate 15 runs × 8 arms).",
+        "Worker reported 'Good - no diff, everything is committed' (no progress); bob did not address this discrepancy or propose a concrete next-step that would force progress (e.g., locate runner, enumerate configs)."
       ],
       "metrics": {
-        "insight_density": "low",
-        "strategy_novelty": "low (repeats prior plan)",
-        "constraint_adherence": "low (suggests write/append)",
-        "actionability": "medium (has a concrete bash command)"
+        "code_correctness": "n/a (no code changes)",
+        "evidence_cited": "none",
+        "actionability": "low",
+        "policy_compliance": "ok (no prohibited tool usage)"
       }
     }
   },
   "workflow": {
-    "name": "iteration-3-problem-solver-tracker",
+    "name": "EXP-178 iteration-1 problem-solver review",
     "issues": [
-      "Constraint mismatch: task says 'REVIEW ONLY' yet the requested outputs include creation of new project files and dispatched research requests; bob did not reconcile this tension and instead recommended file appends.",
-      "Repeat-loop risk: repeated 'read metrics/projects/journal' step without adding a new mechanism to ensure the outputs (research requests, new experiment project) actually happen under the stated restrictions."
+      "No verification loop: guidance lacks a check that the worker can demonstrate progress next turn (e.g., listing discovered scripts, printing help output, producing a config matrix).",
+      "Milestone mapping missing: guidance doesn’t decompose the 10 milestones into immediate measurable artifacts for iteration 2."
     ]
   },
   "overall": {
     "verdict": "needs_improvement",
     "result_delivered": false
-  }
+  },
+  "lessons": [
+    "[bob] Convert milestone lists into a concrete execution plan: exact discovery commands, config matrix, run invocation, and expected artifact paths—avoid path guessing like `project.md` unless you can justify it from evidence.",
+    "[bob] When worker output indicates no progress ('no diff'), respond with a forcing function: require a specific inventory artifact (e.g., list experiment runner scripts + sample dry-run) rather than broad 'read and understand' steps."
+  ]
 }
 ```
