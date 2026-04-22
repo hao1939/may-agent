@@ -19,7 +19,7 @@ Continuously improve the project workflow. This is a TRACKER — each experiment
 | Experiment | Project | Status | Result |
 |-----------|---------|--------|--------|
 | Rich Current State | (tested manually) | adopted ✅ | 1 focused iter vs 6 confused |
-| Smart context generation | pwi-smart-context (not created) | designed | — |
+| Smart context generation | pwi-smart-context | active | — |
 | Milestone auto-scope | — | idea | — |
 | Evaluator tuning | — | idea | — |
 
