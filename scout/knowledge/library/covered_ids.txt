@@ -7,3 +7,8 @@
 2604.16543 | DD#554 | 2026-04-21 | Conjunctive Prompt Attacks in MAS
 2604.18005 | DD#555 | 2026-04-21 | Diversity Collapse in MAS
 2604.16339 | DD#556 | 2026-04-21 | Semantic Consensus Framework
+2604.18005
+2604.17658
+2604.16723
+2604.16706
+2604.16646

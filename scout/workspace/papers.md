@@ -73,3 +73,24 @@
 - **2603.09157** — "TrustBench: Real-Time Trust Verification for Safe Agentic Actions" (Sharma et al. — AAAI 2026 Workshop TrustAgent). Dual-mode: benchmark + toolkit agents invoke before acting. 87% harm reduction, sub-200ms, domain plugins +35%. ★★★★. → DD#823.
 - **2603.03655** — "Mozi: Governed Autonomy for Drug Discovery LLM Agents" (Cao et al.). Dual-layer: control plane + workflow plane. HITL checkpoints at high-uncertainty decision boundaries. Multiplicative error compounding in long-horizon pipelines. ★★★. → DD#824.
 - **2604.18401** — "StepPO: Step-Aligned Policy Optimization for Agentic RL" (Wang et al.). Step (not token) as proper action unit in agent MDP. Step-level credit assignment. Position paper. ★★★. → DD#825.
+
+## 2026-04-23 Triage
+
+### ★★★★★
+| arXiv | Title | DD# | Key Finding |
+|-------|-------|-----|-------------|
+| 2604.18005 | Diversity Collapse in Multi-Agent LLM Systems | DD-834 | Interaction structure, not model capability, drives diversity collapse. Dense topologies accelerate convergence. Validates CR#347. |
+| 2604.17658 | ErrorProbe: Self-Improving Error Diagnosis in MAS | DD-835 | Three-stage verified error attribution with episodic memory. Only commits lessons on executable evidence. |
+
+### ★★★★½
+| 2604.16723 | Debate as Reward: Multi-Agent Reward for Scientific Ideation | DD-836 | Debate as RL reward signal. Binary outcomes resist reward hacking. Completes debate stack. |
+
+### ★★★★
+| 2604.16706 | AgentProp-Bench: Tool-Use Error Propagation | DD-837 | Substring eval = chance-level. Rejection ≠ recovery. Runtime interceptors model-specific. |
+| 2604.16646 | Agentic Frameworks for Reasoning: 22-Framework Empirical Study | — | 22 frameworks benchmarked. Orchestration quality > reasoning capability. Uncontrolled context growth kills frameworks. |
+
+### ★★★½
+| 2604.16543 | Conjunctive Attacks on Multi-Agent Systems | — | Multi-vector attacks exploiting agent interdependencies. |
+
+### Noted (★★★ or below, no DD)
+- Various cs.MA papers on traffic optimization, swarm robotics, game theory — outside focus areas
