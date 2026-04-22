@@ -422,13 +422,13 @@ function buildEvalPrompt(
  * Returns null if there are no unevaluated children.
  */
 export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvaluationResult | null> {
-  const { manager, persistDir, parentSessionId, skipAgents = new Set(["evaluator"]), isolatedTranscript = false } = opts;
+  const { manager, ctx, parentSessionId, skipAgents = new Set(["evaluator"]), isolatedTranscript = false } = opts;
 
   // Get registry to find child sessions
   const registry = manager.registryStore.getRegistry().sessions;
 
   // Find unevaluated children
-  const children = findUnevaluatedChildren(persistDir, registry, parentSessionId, skipAgents);
+  const children = findUnevaluatedChildren(ctx, registry, parentSessionId, skipAgents);
   if (children.length === 0) return null;
 
   // Build per-agent failure chains and transcripts
