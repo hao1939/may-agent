@@ -50,3 +50,5 @@ The fix: For each agent, add **concrete procedural checklists** to their context
 
 **(c) First step:** Read each agent's full context.md, then for each one, add a `## Mandatory Procedures` section with concrete anti-violation checklists. Start with the worst offenders: coach (77+36=113 violations), optimizer (180 violations), scout (46). For each agent, the checklist must be specific to THEIR top violations. After editing all files, create `.state/violation-reduction-plan.md` documenting baseline counts and changes made. **Do NOT create any files before reading the existing context.md files. Read first, then edit.**
 
+### Iteration 5 — 2026-04-22T09:57:52.250Z
+**Worker**: Now verify the deliverables:
