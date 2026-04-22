@@ -440,18 +440,15 @@ function buildEvalPrompt(
 
   prompt += `## Evaluate\n`;
   prompt += `Check these criteria:\n`;
-  prompt += `1. **Deliverables exist**: Were actual files/artifacts produced? Not just claims.\n`;
-  prompt += `2. **Goal met**: Does the work achieve what the goal describes?\n`;
-  prompt += `3. **Evidence**: Is there concrete evidence (tool output, file content, test results)?\n`;
-  prompt += `4. **Milestones honest**: Are checked milestones genuinely complete?\n`;
-  prompt += `5. **No shortcuts**: Did the worker do real work or just claim completion?\n`;
-  prompt += `6. **Building != verifying**: Building code is not the same as verifying it works. Score low if the project claims done but nobody observed the result working in practice.\n`;
-  prompt += `7. **If blocked**: Is the blocker real and specific? Did the worker try alternatives? Or did they give up too easily?\n`;
-  if (milestoneNote) prompt += `8. **Milestone status**: ${milestoneNote}\n`;
+  prompt += `1. **Deliverables exist**: Were actual files/artifacts created or updated? (Not just claims — the files must exist.)\n`;
+  prompt += `2. **Goal addressed**: Does the work make meaningful progress toward the stated goal?\n`;
+  prompt += `3. **Honest reporting**: Are milestone checkmarks and status claims accurate?\n`;
+  if (milestoneNote) prompt += `4. **Milestone status**: ${milestoneNote}\n`;
+  prompt += `\nIf blocked: Is the blocker real and specific? Did the worker try alternatives?\n`;
 
   const metrics = parseMetrics(projectContent);
   if (metrics.length > 0) {
-    prompt += `9. **Metrics**: This project declares target metrics. Check whether they improved:\n`;
+    prompt += `\n**Metrics**: This project declares target metrics. Check whether they improved:\n`;
     for (const m of metrics) prompt += `   - ${m.id}: target ${m.target}, baseline ${m.baseline}\n`;
     prompt += `   Score low if milestones are done but metrics have not moved toward targets.\n`;
   }
