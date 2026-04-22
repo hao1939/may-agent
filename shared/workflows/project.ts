@@ -744,7 +744,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       }
 
       // CONTINUE — set active (may have been blocked/done), increment iteration
-      const oldStatus = state.status;
       projectContent = updateField(projectContent, "Status", "active");
       writeFileSync(config.projectPath, projectContent, "utf-8");
       iteration++;
@@ -862,7 +861,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
       // CONTINUE — track progress and auto-escalate if stuck
       // Re-read from disk — worker or reviewer may have checked off milestones
-      const prevContent = projectContent;
       projectContent = readFile(config.projectPath) ?? projectContent;
       const currentMilestoneDone = extractMilestones(projectContent).done;
       if (currentMilestoneDone > lastMilestoneDone) {
@@ -877,7 +875,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         projectContent = updateField(projectContent, "Status", "blocked");
         projectContent = updateSection(projectContent, "Current State",
           `Blocked: ${continueWithoutProgress} consecutive iterations without milestone progress. Approach needs rethinking.`);
-        emitProjectEvent(ctx, config, "project.blocked", { iteration, health: score, reason: decision.detail.slice(0, 100) });
+        emitProjectEvent(ctx, config, "project.blocked", { iteration, health: 0, reason: decision.detail.slice(0, 100) });
         writeFileSync(config.projectPath, projectContent, "utf-8");
         return ctx.escalate(`Stuck: ${continueWithoutProgress} iterations without progress at iteration ${iteration}.`);
       }
