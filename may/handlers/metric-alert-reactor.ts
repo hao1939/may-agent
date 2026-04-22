@@ -16,7 +16,7 @@ import type { HandlerContext, HandlerModule, TriggerEvent } from "../../../src/l
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
 import { runAgentTask } from "./run-agent-task.js";
 
-const DEDUP_WINDOW_MS = 24 * 60 * 60 * 1000;
+const DEDUP_WINDOW_MS = 4 * 60 * 60 * 1000; // 4h — shorter window so repeated alerts get reacted to faster
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async (event?: TriggerEvent) => {
