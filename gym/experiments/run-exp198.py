@@ -14,7 +14,7 @@ TRIALS_PER_ARM = 10
 AGENT = "tech-lead"
 RUN_TAG = "EXP-198"
 BATCH_ID = f"exp198-{uuid.uuid4().hex[:8]}"
-DB_PATH = ".state/may.db"
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", ".state", "may.db")
 GYM_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "test", "gym", "run-gym.sh")
 PROJECT_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..")
 
