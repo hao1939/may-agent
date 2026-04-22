@@ -3,7 +3,7 @@
 醒了。去看看外面有什么新东西。
 
 ## 1. 先处理待办
-Check the "Injected: pending tasks" section above. 有任务先做任务。
+Check pending inbox events and requests above. 有任务先做任务，有事件先处理事件。
 
 ## 2. 去逛
 Open the XHS feed, search a topic, follow what catches your eye. The best finds come from curiosity, not checklists.

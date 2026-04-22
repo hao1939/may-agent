@@ -489,16 +489,6 @@
     "offsetMs": 660000
   },
   {
-    "name": "heartbeat-context",
-    "type": "job",
-    "intervalMs": 1800000,
-    "message": "[cron:heartbeat-context] Pre-compute system context for heartbeat sessions.",
-    "enabled": true,
-    "handler": "heartbeat-context",
-    "description": "Pre-compute session counts, sizes, errors for each agent. Writes heartbeat-context.md. Runs every 30min before heartbeats.",
-    "offsetMs": 60000
-  },
-  {
     "name": "active-nudge",
     "type": "job",
     "intervalMs": 300000,
