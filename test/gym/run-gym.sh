@@ -18,45 +18,41 @@ RUNNER_TS="$AGENTS_ROOT/src/gym/runner.ts"
 STRIP_TYPES="$SCRIPT_DIR/strip-types.cjs"
 RUNNER_MJS="$SCRIPT_DIR/.gym-runner-bundle.mjs"
 
-if [ ! -f "$RUNNER_TS" ]; then
-  echo "ERROR: Runner source not found at $RUNNER_TS" >&2
-  exit 1
-fi
-
 # ── Compile (with caching) ───────────────────────────────────────────
 ESBUILD="$PROJECT_ROOT/node_modules/.bin/esbuild"
 
 needs_compile() {
-  [ ! -f "$RUNNER_MJS" ] || [ "$RUNNER_TS" -nt "$RUNNER_MJS" ]
+  [ ! -f "$RUNNER_MJS" ] || ([ -f "$RUNNER_TS" ] && [ "$RUNNER_TS" -nt "$RUNNER_MJS" ])
 }
 
-if [ -x "$ESBUILD" ]; then
-  if needs_compile; then
-    "$ESBUILD" "$RUNNER_TS" \
-      --bundle \
-      --platform=node \
-      --format=esm \
-      --outfile="$RUNNER_MJS" \
-      --target=node18 \
-      --log-level=warning 2>&1
-  fi
-elif command -v esbuild >/dev/null 2>&1; then
-  if needs_compile; then
-    esbuild "$RUNNER_TS" \
-      --bundle \
-      --platform=node \
-      --format=esm \
-      --outfile="$RUNNER_MJS" \
-      --target=node18 \
-      --log-level=warning 2>&1
-  fi
-elif [ -f "$STRIP_TYPES" ] && needs_compile; then
-  node "$STRIP_TYPES" "$RUNNER_TS" "$RUNNER_MJS"
-else
+if [ -f "$RUNNER_MJS" ] && ! needs_compile; then
+  : # Use cached bundle
+elif [ ! -f "$RUNNER_TS" ]; then
   if [ ! -f "$RUNNER_MJS" ]; then
-    echo "ERROR: Neither esbuild nor strip-types.cjs found and no cached bundle exists." >&2
+    echo "ERROR: Runner source not found at $RUNNER_TS and no cached bundle exists." >&2
     exit 1
   fi
+elif [ -x "$ESBUILD" ]; then
+  "$ESBUILD" "$RUNNER_TS" \
+    --bundle \
+    --platform=node \
+    --format=esm \
+    --outfile="$RUNNER_MJS" \
+    --target=node18 \
+    --log-level=warning 2>&1
+elif command -v esbuild >/dev/null 2>&1; then
+  esbuild "$RUNNER_TS" \
+    --bundle \
+    --platform=node \
+    --format=esm \
+    --outfile="$RUNNER_MJS" \
+    --target=node18 \
+    --log-level=warning 2>&1
+elif [ -f "$STRIP_TYPES" ]; then
+  node "$STRIP_TYPES" "$RUNNER_TS" "$RUNNER_MJS"
+else
+  echo "ERROR: Cannot compile $RUNNER_TS — no esbuild or strip-types.cjs found." >&2
+  exit 1
 fi
 
 # ── Run the compiled JS ──────────────────────────────────────────────

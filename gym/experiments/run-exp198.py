@@ -15,14 +15,15 @@ AGENT = "tech-lead"
 RUN_TAG = "EXP-198"
 BATCH_ID = f"exp198-{uuid.uuid4().hex[:8]}"
 DB_PATH = ".state/may.db"
-GYM_SCRIPT = "agents/test/gym/run-gym.sh"
+GYM_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "test", "gym", "run-gym.sh")
+PROJECT_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..")
 
 def run_trial(scenario, agent, timeout=5):
     env = os.environ.copy()
     env["GYM_AGENT_BIN"] = "/usr/local/bin/may-agent"
     cmd = ["bash", GYM_SCRIPT, scenario, "--agent", agent, "--timeout", str(timeout)]
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout*60+60, env=env, cwd="agents")
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout*60+60, env=env, cwd=PROJECT_ROOT)
         stdout = result.stdout.strip()
         # Find last JSON object
         for i in range(len(stdout)-1, -1, -1):
