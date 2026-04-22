@@ -69,7 +69,7 @@ The first user message has 16 layers of context injection (up to 55K chars) that
 - [x] M2: Test removing layers 2-6, 8-9 — does task compliance improve?
   - [x] M2a: Add `contextLayers` toggles to `SubagentDefinition` (branch `review/context-injection-m2`)
   - [x] M2b: Tests pass — 6/6. Full context 498 chars vs minimal 83 chars = 83.3% reduction in test fixture. Real agents: 13-17K → ~2-5K estimated.
-- [ ] M3: Test moving essential context to system prompt (cacheable)
+- [x] M3: Test moving essential context to system prompt (cacheable) — Analysis complete: system prompt already cached, M3 benefit marginal vs M2. Recommendation: skip, proceed to M4.
   - Analysis: System prompt already has SOUL.md + common-sense.md + standing-orders.md + knowledge-essentials.md + skills. These ARE cached. The `contextFiles` (heartbeat.md) are in user msg per P147 KV-Cache Discipline. Moving context.md to system prompt would break cache across sessions (it changes via finish() context_updates). The real win is NOT moving things to system prompt — it's REMOVING layers from user message (M2). M3 benefit is marginal vs M2.
   - Recommendation: Skip M3, proceed to M4 (minimal injection design)
 - [x] M4: Design minimal injection: session ID + task, everything else on-demand
