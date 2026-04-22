@@ -23,10 +23,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
   return async (event?: TriggerEvent) => {
     if (!event?.data) return;
 
-    const { agentName, sessionId, persistDir } = event.data as {
+    const { agentName, sessionId } = event.data as {
       agentName: string;
       sessionId: string;
-      persistDir: string;
     };
 
     if (!agentName || !sessionId) return;
@@ -41,8 +40,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     try {
       const meta = ctx.readSessionMeta(sessionId);
-      const { readSessionMessages } = await import("../../../src/lib/persistence.js");
-      const messages = readSessionMessages(persistDir || ctx.persistDir, sessionId);
+      const messages = ctx.readSessionMessages(sessionId);
       if (messages.length === 0) return;
 
       const task = meta?.task ?? "";
