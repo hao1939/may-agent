@@ -1,10 +1,6 @@
 node_modules/
 dist/
-agents/*
-!agents/shared
-agents/shared/*
-!agents/shared/evaluation
-!agents/shared/project-scanner.ts
+agents/
 .state/
 .claude/
 .env
