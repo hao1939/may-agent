@@ -36,7 +36,6 @@ function makeGetDb(persistDir: string) {
         throw new Error(`Database not found at ${dbPath}`);
       }
       db = new Database(dbPath, { readonly: true });
-      db.exec("PRAGMA journal_mode=WAL");
     }
     return db;
   };
