@@ -6,8 +6,6 @@ import { getModel } from "@mariozechner/pi-ai";
 import type { ModelWithApiKey } from "../lib/types.js";
 import {
   SubagentManager,
-  learnFromSession,
-  learnFromSessionLLM,
 } from "../lib/index.js";
 import { EventBus } from "./event-bus.js";
 import { ChatSession } from "./chat-session.js";
@@ -21,11 +19,12 @@ import {
   getAgentSessionId,
   runAgentCleanup,
   getAgentCrons,
+  generateAutoHeartbeats,
   loadAgentHandlers,
   type AgentLoaderOptions,
 } from "./agent-loader.js";
 import { resolveProjectRoot } from "./bundle-mode.js";
-import { trackRequest } from "../lib/requests.js";
+import { trackRequest, getDb } from "../lib/requests.js";
 import { setLogHandler } from "../lib/log.js";
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
@@ -374,6 +373,19 @@ const loaderOpts: AgentLoaderOptions = {
 const loadResult = await loadAgents(loaderOpts);
 bus.emit({ type: "info", message: `Loaded ${loadResult.added.length} agent(s): ${loadResult.added.join(", ")}` });
 
+// Auto-generate heartbeat entries for agents with heartbeat workflows (convention-defaults Phase 3)
+const autoHeartbeats = generateAutoHeartbeats(AGENTS_ROOT);
+if (autoHeartbeats.length > 0) {
+  // Inject into May's cron (where all heartbeats live)
+  const mayCron = getAgentCrons().get("may");
+  if (mayCron) {
+    for (const entry of autoHeartbeats) {
+      mayCron.addSyntheticEntry(entry);
+    }
+    bus.emit({ type: "info", message: `[auto-heartbeat] Generated ${autoHeartbeats.length} heartbeat(s): ${autoHeartbeats.map(e => e.agent).join(", ")}` });
+  }
+}
+
 // ── Event routing ──────────────────────────────────────────────────────
 
 const interfaceAgent = (() => {
@@ -385,73 +397,9 @@ const interfaceAgent = (() => {
   return process.env.AGENT || "may";
 })();
 
-// ── Context Learning (event-driven) ────────────────────────────────────
-// Listen for "context-learn" events and extract durable facts from the session.
-// Enabled per-agent via CONTEXT_LEARN_AGENTS env var (comma-separated, default: none).
-// Set CONTEXT_LEARN_AGENTS=all to enable for all agents.
-// Uses LLM (evaluator agent) for extraction; falls back to mechanical if LLM unavailable.
-
-const contextLearnAgents = new Set(
-  (process.env.CONTEXT_LEARN_AGENTS ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean),
-);
-
-bus.subscribe((event) => {
-  if (event.type !== "context-learn") return;
-  const { agentName, sessionId, persistDir } = event;
-
-  // Filter: only learn for enabled agents
-  if (!contextLearnAgents.has("all") && !contextLearnAgents.has(agentName)) return;
-  // Never learn from meta-agents
-  if (["evaluator", "coach", "judge"].includes(agentName)) return;
-
-  setTimeout(async () => {
-    try {
-      const { readSessionMessages, readSessionMeta: readMeta } =
-        require("../lib/index.js") as typeof import("../lib/index.js");
-      const messages = readSessionMessages(persistDir, sessionId);
-      if (messages.length === 0) return;
-
-      const agentDir = resolve(AGENTS_ROOT, agentName);
-      if (!existsSync(agentDir)) return;
-
-      const meta = readMeta(persistDir, sessionId);
-      const task = meta?.task ?? "";
-
-      // Try LLM extraction (evaluator agent), fall back to mechanical
-      let result: { added: string[]; removed: string[] };
-      try {
-        result = await learnFromSessionLLM({
-          agentDir,
-          messages: messages as Parameters<typeof learnFromSessionLLM>[0]["messages"],
-          agentName,
-          task,
-          manager,
-        });
-      } catch {
-        result = learnFromSession({
-          agentDir,
-          messages: messages as Parameters<typeof learnFromSession>[0]["messages"],
-        });
-      }
-
-      if (result.added.length > 0 || result.removed.length > 0) {
-        const parts: string[] = [];
-        if (result.added.length > 0) parts.push(`+${result.added.length} added`);
-        if (result.removed.length > 0) parts.push(`-${result.removed.length} removed`);
-        bus.emit({
-          type: "info",
-          message: `[context-learn] ${agentName}: ${parts.join(", ")} from session ${sessionId}`,
-        });
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      bus.emit({ type: "info", message: `[context-learn] Error for ${agentName}/${sessionId}: ${msg}` });
-    }
-  }, 1000);
-});
+// ── Context Learning ──────────────────────────────────────────────────
+// Moved to agents/may/handlers/context-learn.ts (event-driven handler).
+// Subscribes to "context-learn" events via cron.json `on` field.
 
 // ── Graceful shutdown / restart ─────────────────────────────────────────
 
@@ -662,6 +610,17 @@ bus.subscribe((event) => {
         let triggered = 0;
         for (const cron of getAgentCrons().values()) {
           triggered += cron.dispatchEvent(eventType, (event as any).data);
+        }
+        // Mark dispatched events as done in the events table (convention-defaults: event inbox)
+        if (triggered > 0) {
+          try {
+            const db = getDb(PERSIST_DIR);
+            db.run(
+              `UPDATE events SET status = 'done', handled_by = 'handler-dispatch'
+               WHERE event_type = ? AND status = 'pending' AND timestamp > ?`,
+              [eventType, Date.now() - 5000],
+            );
+          } catch { /* best-effort */ }
         }
         bus.emit({ type: "log", level: "info", message: `[event] ${eventType} → triggered ${triggered} handler(s)` });
       }
