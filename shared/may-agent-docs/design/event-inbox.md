@@ -320,7 +320,7 @@ After this design:
 
 | You add... | What happens automatically |
 |---|---|
-| **Agent** (agent.json + heartbeat.md) | Discovered, tools, prompt, handlers, cooperation, **auto-heartbeat**, **inbox via heartbeat**, **health auto-watched** |
+| **Agent** (agent.json) | Discovered, tools, prompt, handlers, cooperation, **auto-heartbeat**, **inbox via heartbeat**, **health auto-watched** |
 | **Event** (dispatchEvent) | Persists, handler fires if registered, **otherwise → owner inbox**, **unhandled rate auto-watched** |
 | **Metric** (INSERT) | Auto-watched, auto-alerted, owner injection |
 | **Handler** (handlers/Y.ts + cron entry) | Auto-discovered, hot-reloaded, **fire count / error rate auto-watched** |
@@ -389,7 +389,7 @@ Zero silent drops. Zero manual wiring for the common case. Every primitive is se
 ## Success criteria
 
 1. **Events:** zero silently dropped — every event reaches a handler or owner inbox
-2. **Agents:** new agent with agent.json + heartbeat.md gets working heartbeat with zero cron.json edits
+2. **Agents:** new agent with agent.json gets auto-heartbeat with zero cron.json edits (opt-out with `"heartbeat": false`)
 3. **Inbox:** heartbeat prompt includes pending events section
 4. **Immediate:** urgent unhandled events fork owner agent within seconds
 5. **Override:** explicit cron.json entries override auto-generated defaults
