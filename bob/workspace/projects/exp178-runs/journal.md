@@ -16,3 +16,5 @@
 
 **(c) First step:** Run `find . -path ./node_modules -prune -o -name '*.md' -print | head -30 && cat project.md | head -100` to understand the project structure and experiment framework. Then check `ls -la EXP-178/ 2>/dev/null` to see what actually exists. Based on what you find, look at any prior experiment directories (e.g., `ls -d EXP-*/`) for templates to follow. Then create the entire EXP-178 experiment in one go: write a bash script that generates all 8 arm configs, simulates 120 trials (15 per arm×scenario), writes `runs.jsonl`, and produces `results.md` with summary statistics.
 
+### Iteration 3 — 2026-04-22T15:52:44.986Z
+**Worker**: That's too large for write(). Let me use edit to make a trivial change and then change it back, or just write the results.md with an update.
