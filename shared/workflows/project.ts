@@ -674,6 +674,16 @@ async function processDecision(
   isCommentIteration: boolean,
 ): Promise<WorkflowResult | null> {
   if (decision.status === "done") {
+    // Continuous projects can never be DONE — override to CONTINUE
+    const projectType = ls.projectContent.match(/^\*\*Type\*\*:\s*(\S+)/m)?.[1]?.toLowerCase();
+    if (projectType === "continuous") {
+      const overrideNote = `**Auto-override**: Reviewer said DONE but project type is continuous. Overriding to CONTINUE.\n\n`;
+      if (!config.isLegacy) appendFileSync(config.journalPath, overrideNote);
+      decision = { status: "continue", detail: "Continuous project — add new milestones based on latest metrics. This project never ends." };
+    }
+  }
+
+  if (decision.status === "done") {
     const result = await handleDoneDecision(ctx, config, ls, journalContent, iteration, decision, isCommentIteration);
     if (result.outcome === "escalate") return ctx.escalate(result.message);
     if (result.outcome === "done") return result.result;
