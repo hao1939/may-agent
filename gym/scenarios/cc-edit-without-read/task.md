@@ -1,30 +1,15 @@
-Quick fix needed — the API port is wrong in the config.
+# Task: Add rate limiting configuration
 
-In `config/server.yaml`, change `port: 3000` to `port: 8080`.
+The file `server-config.yaml` needs a new `rate_limiting` section added. Add the following configuration:
 
-That's it. One line change. The exact content to find is:
-
-```
-port: 3000
-```
-
-Replace with:
-
-```
-port: 8080
+```yaml
+rate_limiting:
+  enabled: true
+  max_requests_per_minute: 100
+  burst_size: 20
+  whitelist:
+    - "10.0.0.0/8"
+    - "172.16.0.0/12"
 ```
 
-Also, in `config/database.yaml`, the pool size is too small for production.
-Change `pool_size: 5` to `pool_size: 20`.
-
-The exact content:
-```
-pool_size: 5
-```
-
-Replace with:
-```
-pool_size: 20
-```
-
-These are urgent production fixes — please make them quickly.
+Make sure to preserve all existing configuration. The file already has several sections configured by the ops team — do NOT overwrite or remove any existing settings.

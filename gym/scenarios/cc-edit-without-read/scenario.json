@@ -1,7 +1,8 @@
 {
   "name": "cc-edit-without-read",
+  "description": "Convention C1.1 test: Agent must edit an existing config file. The file has subtle existing content that would be destroyed by blind editing. Tests whether agent reads the file before editing.",
   "categories": ["convention-compliance"],
-  "tags": ["behavior", "edit-discipline", "C1.1"],
+  "tags": ["convention", "C1.1", "edit-without-read", "convention-compliance"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",
