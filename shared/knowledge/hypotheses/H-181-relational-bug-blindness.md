@@ -3,7 +3,7 @@
 **Created**: 2026-04-19 by Bob
 **Status**: CONFIRMED (core claim validated across 3 experiments)
 **Confidence**: ★★★★ (replicated across EXP-177 N=40, EXP-194 classification, EXP-195 N=30)
-**P(H)**: **0.85**
+**P(H)**: **0.90** (updated 2026-06-22 after EXP-198: all prompt-level interventions exhausted)
 **Source**: EXP-177 S1 diagnostic finding (39/40 fail on exactly `pipeline-order-fixed`), S2 negative transfer
 **Updated**: 2026-04-22 — incorporated EXP-194 (bug-type classification) and EXP-195 (skill intervention) results
 **Connects**: H-098 (Attention Channel Theory — Ch1/Ch2 distinction), H-099 (Discovery Task Boundary), H-085 (Forced Externalization boundaries), H-166 (Recognition Threshold — refuted, but root finding feeds this)
@@ -78,9 +78,11 @@ Across the gym portfolio, scenarios where the primary bug is a value error (wron
 ### P-181b: Structural interventions help ordering bugs more than text hints ⚠️ PARTIALLY TESTED (EXP-195)
 A tool or intervention that **makes execution order visible** (e.g., a trace showing function call sequence, a visualization of the pipeline, or a structural gate requiring the agent to diagram execution flow before editing) will improve ordering-bug pass rates more than any text-based hint. Text hints provide Ch1 information about a Ch2 problem; structural interventions provide Ch2 scaffolding.
 
-**EXP-195 update**: General text skills (0/6) failed, but near-explicit direct hints (40%) worked. This is a *dosage* effect within text, not yet a text-vs-structural comparison. The structural intervention (P-181b proper) remains untested. EXP-198 designed to test a *procedural* discovery skill as an intermediate step.
+**EXP-195 update**: General text skills (0/6) failed, but near-explicit direct hints (40%) worked. This is a *dosage* effect within text, not yet a text-vs-structural comparison.
 
-**Falsification**: If text hints at higher doses (e.g., step-by-step reordering instructions) achieve ≥80% on ordering bugs, the structural-vs-text distinction is wrong and it's just a dosage problem.
+**EXP-198 update (2026-06-22)**: Procedural discovery skill ("swap adjacent pipeline steps, check tests") scored **0/10** across both arms (procedure-only and procedure+example). Falsifies the "dosage" interpretation — even step-by-step reordering instructions achieve 0%, not ≥80%. The structural-vs-text distinction is confirmed: **all prompt-level interventions fail** (declarative 0%, procedural 0%). Only near-explicit hints (40%) work. The structural intervention (P-181b proper — tool-assisted discovery) is the remaining untested avenue.
+
+**Falsification**: ~~If text hints at higher doses (e.g., step-by-step reordering instructions) achieve ≥80% on ordering bugs, the structural-vs-text distinction is wrong and it's just a dosage problem.~~ FALSIFIED by EXP-198: step-by-step instructions = 0%.
 
 ### P-181c: The discovery boundary (H-099) is specifically about relational complexity
 H-099's "discovery tasks resist all interventions" will be explained by relational complexity: discovery tasks are hard precisely because they require identifying relational structure (what connects to what, what depends on what), not just detecting surface anomalies. Scenarios that are "discovery-hard" will correlate with relational bug density.
