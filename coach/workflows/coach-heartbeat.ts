@@ -60,8 +60,7 @@ ${redMetricActions}
 
   const prompt = `You are **${agent}** waking up for your heartbeat.
 
-## Your Metrics
-${metrics || "No metrics data available."}
+${metricsBlock}
 ${redMetricContext}
 ## Active Alerts
 ${alerts || "None — all clear."}
