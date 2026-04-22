@@ -7,10 +7,14 @@
 **Health**: —
 
 ## Goal
-Understand how production agent CLIs (Claude Code, Gemini CLI, OpenAI Codex) work. Extract patterns we can adopt. Try them hands-on. Report what's worth adopting vs what doesn't apply.
+Use production agent CLIs (Claude Code, Gemini CLI, OpenAI Codex) as tools our agents can invoke. Research how they work, install them, and integrate them as callable tools from our agent system.
+
+Two outcomes:
+1. **Use them directly** — our agents call `claude-code` or `gemini-cli` via bash for complex coding tasks
+2. **Learn from them** — extract patterns worth adopting into our own system
 
 ## Why This Matters
-These are the best public agent systems. They solve real coding tasks at scale. We should learn from them — not copy blindly, but understand their design choices and test whether they improve our system.
+Our agents orchestrate work but struggle with complex code changes (can't access src/, limited context). These CLIs are purpose-built for coding. Let our agents drive them — agents decide WHAT to fix, CLI does the fixing.
 
 ## Metrics
 - bob.designs-implemented: target > 2 adopted patterns
@@ -41,10 +45,11 @@ These are the best public agent systems. They solve real coding tasks at scale. 
 - [ ] Document the UX and architecture differences
 
 ## Milestones
-- [ ] Research complete: comparison doc with architecture analysis of all 3 CLIs
-- [ ] Top 3 adoptable patterns identified with rationale
-- [ ] One pattern tested in our system with measured result
-- [ ] Hands-on experience documented
+- [ ] Research: how each CLI works, invocation patterns, input/output formats
+- [ ] Install: get at least one CLI working locally in the container
+- [ ] Integrate: our agent successfully calls a CLI via bash to solve a coding task
+- [ ] Evaluate: compare CLI-assisted vs agent-only for a real task (speed, quality)
+- [ ] Adopt: document best practices, add to agent skills
 
 ## Current State
 Not started.
@@ -52,4 +57,4 @@ Not started.
 ## Iteration Summary
 
 ## Comments
-- [2026-04-22 hao] Dispatch research: scout handles papers/GitHub/Reddit, amy-kimi handles Xiaohongshu/Chinese community. Bob synthesizes and designs experiments. Also try them hands-on — install and use them on real tasks to understand the UX.
+- [2026-04-22 hao] The PRIMARY goal is to USE these CLIs as tools, not just study them. Our agents can call them via bash. Agent decides what to fix, CLI does the coding. This solves the src/ access problem — the CLI runs in the repo with full access. Research HOW to invoke them (flags, input format, output parsing), then integrate.
