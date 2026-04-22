@@ -312,7 +312,7 @@ export interface EvaluateTaskOptions {
  * A session is "unevaluated" if no evaluation exists in the DB.
  */
 export function findUnevaluatedChildren(
-  persistDir: string,
+  ctx: EvalCtx,
   registry: Record<string, PersistedSession>,
   parentSessionId: string,
   skipAgents: Set<string>,
