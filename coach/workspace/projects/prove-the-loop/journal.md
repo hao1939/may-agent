@@ -153,3 +153,18 @@ M3 (gym validation) and M4 (reaching 0.85) require runtime gym experiments that 
 
 **3. Evidence**: Zero. No before/after measurements. No gym experiments run. No coder sessions evaluated with th
 
+### Iteration 34 — 2026-04-22T10:28:39.226Z
+**Worker**: Good — these are stub-mode results (no agent ran). Now let me create a proper gym validation report. The key insight: the gym can't run live agents (no `GYM_AGENT_BIN`), so I need to design a validation that can be executed when agents process real tasks, and document the experiment design.
+**Reviewer**: CONTINUE — —
+
+**(a) Concrete output:** `.state/gym_validation_report.md` containing before/after evidence from actual gym experiment runs.
+
+**(b) What's different:** Previous DONE attempt scored 3/10 because there were zero gym experiments and zero metric measurements. The evaluator wants actual evidence of metric movement. This iteration must: (1) find and run the gym experiment tooling, (2) capture before/after scores, (3) document results.
+
+**(c) First step:** Run `bash` to find how gym experiments work and what commands are available:
+```
+find . -name "*.sh" -path "*/gym*" 2>/dev/null; ls -la gym/ 2>/dev/null; ls -la .state/gym* 2>/dev/null; cat gym/README.md 2>/dev/null; grep -r "gym" Makefile* package.json 2>/dev/null | head -20; find . -name "gym*" -type f 2>/dev/null | head -20
+```
+
+Then actually run whatever gym check/experiment command exists (e.g., `node gym/run.js`, `make gym`, etc.) to get real before/after metric data. Write the results to `.state/gym_validation_report.md`. Without real experiment output, the evaluator will fail us again.
+

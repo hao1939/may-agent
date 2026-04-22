@@ -6,7 +6,7 @@
 **Started**: 2026-04-17
 **Priority**: P0 — Hao's #1 priority
 
-**Iteration**: 33
+**Iteration**: 34
 **Health**: 3/10 (FAIL)
 ## Goal
 Improve coder quality metric from current 0.82 toward 0.9+ by systematically diagnosing and fixing failure modes. This proves the full loop: metrics signal → persistent task executes → gym validates → production improves.
@@ -228,7 +228,7 @@ The guard sees my test edits came after the last `bun test`. Let me do a post-ed
 **Owner assessment**: CONTINUE — All 26 tests pass. Let me also check the compose.yml change is intentional (security hardening):
 
 ## Current State
-Iteration 33. Milestones: 1/5 done. Next: M1: Diagnose top 3 coder failure modes from gym_checks data (just DB queries)
+Iteration 34. Milestones: 3/5 done. Next: M3: Run gym experiments to validate each fix (before/after comparison)
 ## Iteration Loop
 Each iteration:
 1. **Read** coder.quality metric (query may.db directly)
@@ -705,6 +705,8 @@ Without concrete metric measurements, this task cannot make verifiable progress.
 - **Iter 32**: I didn't write anything — the files already existed. Let me verify explicitly.
 
 - **Iter 33**: All three files exist with appropriate content.
+
+- **Iter 34**: Good — these are stub-mode results (no agent ran). Now let me create a proper gym validation report.
 
 
 ## Comments
