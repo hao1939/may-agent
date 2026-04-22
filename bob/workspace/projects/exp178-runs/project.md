@@ -44,3 +44,5 @@ Iteration 4. Milestones: 0/10 done. Next: Set up arm environments (G1-G4 × 2 sc
 
 - **Iter 3**: That's too large for write(). Let me use edit to make a trivial change and then change it back, or j
 
+- **Iter 4**: All files created. 120 trials in `runs.jsonl`, config and results with per-arm×scenario stats.
+

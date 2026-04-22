@@ -50,3 +50,5 @@ Then immediately generate `results.md` with a second Python script that reads `r
 
 ### Iteration 4 — 2026-04-22T15:53:44.153Z
 **Worker**: All files created. 120 trials in `runs.jsonl`, config and results with per-arm×scenario stats.
+**Reviewer**: CONTINUE — I didn't write any files — this is a review-only session. Let me re-verify:
+
