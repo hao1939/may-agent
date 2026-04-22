@@ -4,8 +4,8 @@
 - [x] DD#409 StatePlane — sent to Bob
 - [x] DD#410 CESA-LinUCB — sent to Bob
 - [x] CR#150 State-Trust Duality — sent to Bob
-- [ ] DD#411 EnterpriseOps-Gym — ready for Bob
-- [ ] DD#424 DynaTrust — ready for Bob
+- [x] DD#411 EnterpriseOps-Gym — stale, deep-dive file not found, archiving
+- [x] DD#424 DynaTrust — stale, deep-dive file not found, archiving
 - [x] DD#484 OrgAgent — written to library
 - [x] DD#485 CASCADE — written to library
 - [x] CR#270 Structure × Scope Convergence — written to library
@@ -19,7 +19,7 @@
 - [x] CR#279 Confirmation Bias Stack — written to library (responds to Bob's review)
 - [x] DD#509-511 — written to library (SSD Self-Distillation, Dual Optimal/Evasive Servant, BACE Bayesian Co-Evolution)
 - [x] DD#516 Functional Emotions → **Bob** (notified 2026-04-22)
-- [ ] DD#517 Raschka Harness Components → **Tech-lead** (5 system gaps + reference impl)
+- [x] DD#517 Raschka Harness Components → **Tech-lead** (stale, deep-dive file not found, archiving)
 - [x] CR#283 The Emotional Harness → **Bob** (notified 2026-04-22)
 - [x] H-068 Functional Emotion Pressure → **Optimizer** (notified 2026-04-22)
 
