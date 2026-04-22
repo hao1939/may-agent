@@ -8,7 +8,7 @@
 **Metric**: convention-compliance-rate (currently ~97%, target ≥ 99%)
 
 **Iteration**: 12
-**Health**: 4/10 (FAIL)
+**Health**: 0/10 (FAIL)
 ## Milestones
 - [x] M1: Gym scenarios for top 4 violations
 - [x] M2: Baseline measurement
@@ -166,4 +166,6 @@ The reviewer marked this as DONE in iteration 7. All 6 milestones are complete w
 - **Iter 9**: Everything is already committed. Let me handle the unrelated dirty files:
 
 - **Iter 10**: Now verify the guard integration compiles:
+
+- **Iter 12**: Let me update the table with accurate numbers:
 

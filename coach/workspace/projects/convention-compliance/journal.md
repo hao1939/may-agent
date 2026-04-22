@@ -203,3 +203,5 @@ Previous approaches tried: creating docs, creating guards, exporting guards. All
 
 **Critical evidence the evaluator asked for**: The summary table in `violation-recount.md` is now **fully populated** with a complete before/after comparison showing 72% overall reduction from 190 to ~54 violations.
 
+**Evaluator**: FAIL (score=0/10) — Verified: `agent-sdk.ts` imports finish-guard from `../src/lib/finish-guard.js` but the file is at `agents/shared/guards/finish-guard.ts` — confirmed broken import path.
+
