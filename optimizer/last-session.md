@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776865057504_495
+- **Session:** s_1776865000853_489
 - **Status:** done
-- **When:** 2026-04-22T13:38:40.576Z
-- **Duration:** 1m3s
+- **When:** 2026-04-22T13:40:29.830Z
+- **Duration:** 3m48s
 
 ## What Happened
-Now let me write the investigation report.
+Findings are gitignored. That's fine — the finding is written and May has been notified.
