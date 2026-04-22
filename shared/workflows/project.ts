@@ -683,7 +683,12 @@ async function processDecision(
     const projectType = ls.projectContent.match(/^\*\*Type\*\*:\s*(\S+)/m)?.[1]?.toLowerCase();
     if (projectType === "continuous") {
       const overrideNote = `**Auto-override**: Reviewer said DONE but project type is continuous. Overriding to CONTINUE.\n\n`;
-      if (!config.isLegacy) appendFileSync(config.journalPath, overrideNote);
+      if (config.isLegacy) {
+        const pc = readFileSync(config.projectPath, "utf-8");
+        writeFileSync(config.projectPath, appendToSection(pc, "Progress Log", overrideNote));
+      } else {
+        appendFileSync(config.journalPath, overrideNote);
+      }
       decision = { status: "continue", detail: "Continuous project — add new milestones based on latest metrics. This project never ends." };
     }
   }
