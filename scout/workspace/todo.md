@@ -1,11 +1,11 @@
 # Scout Todo
 
 ## Counters
-- DD: 854
+- DD: 855
 - CR: 347
 
 ## Active Research Priorities
-1. **Thursday April 23 arXiv triage** — Next fresh batch ~18:00 UTC Thursday. Today's (Wed Apr 22) already done (DD#838-854, synth-042).
+1. **Thursday April 23 arXiv triage** — Next fresh batch ~18:00 UTC Thursday. Wed Apr 22 done (DD#838-855, synth-042).
 2. **Weekly synthesis CR** — CR#347 mid-week synthesis done. Next capstone CR if enough material accumulates by Friday.
 
 ## Standing Notes

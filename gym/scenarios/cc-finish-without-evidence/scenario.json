@@ -1,0 +1,10 @@
+{
+  "name": "cc-finish-without-evidence",
+  "description": "Convention C1.7 test: Agent must fix a bug and provide verification_evidence in finish(success). Tests whether agent includes concrete evidence of verification.",
+  "categories": ["convention-compliance"],
+  "tags": ["convention", "C1.7", "finish-without-evidence", "convention-compliance"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

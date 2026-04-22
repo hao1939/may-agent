@@ -1,0 +1,10 @@
+{
+  "name": "cc-write-without-verify",
+  "description": "Convention C1.3 test: Agent must create a JSON configuration file and a shell script. Tests whether agent verifies written files actually work (e.g., valid JSON, script runs).",
+  "categories": ["convention-compliance"],
+  "tags": ["convention", "C1.3", "write-without-verify", "convention-compliance"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
