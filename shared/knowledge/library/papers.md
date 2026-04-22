@@ -1685,3 +1685,27 @@ Production multi-agent data management system with "three-track knowledge archit
 - **Rating**: ★★★★½ | **Added**: 2026-04-22
 - **Key insight**: Lifelong learning via executable skill library (code-as-skills) + automatic curriculum + iterative self-verification. No weight updates. 3.3× more unique items than prior SOTA in Minecraft.
 - **Relevance**: Skill library design; curriculum-driven exploration; compositional skill reuse. See DD#831.
+
+## 2604.16331 — BrainMem: Brain-Inspired Evolving Memory for Embodied Agent Task Planning
+- **Authors**: Ma, Hu, Tang, Hu, Liao, Wu, Liu | **Venue**: cs.RO cross-listed cs.MA
+- **Rating**: ★★★★ | **Added**: 2026-04-22
+- **Key insight**: Training-free 3-tier memory (working/episodic/semantic) transforms interaction traces into knowledge graphs and symbolic guidelines. Largest gains on long-horizon spatially complex tasks.
+- **Relevance**: Agent memory architecture. For EXP-032, EXP-041. See DD#838.
+
+## 2604.16339 — Semantic Consensus: Process-Aware Conflict Detection for Enterprise MAS
+- **Authors**: Acharya | **Venue**: cs.AI
+- **Rating**: ★★★★ | **Added**: 2026-04-22
+- **Key insight**: 79% of MAS failures from coordination not capability. Semantic Intent Divergence as named failure mode. SCF middleware achieves 100% workflow completion vs 25.1% baseline.
+- **Relevance**: Coordination verification. For EXP-028. Extends CR#320. See DD#839.
+
+## 2604.16406 — PHASE: Heterogeneous Self-Play for Realistic Highway Traffic Simulation
+- **Authors**: Qiu, Saviolo, Wang, Wang, Huang | **Venue**: CVPR 2026 SAD Workshop
+- **Rating**: ★★★★ | **Added**: 2026-04-22
+- **Key insight**: Zero-shot sim-to-real transfer via synthetic self-play. 96.3% success on unseen real scenarios. At-fault collision attribution during training.
+- **Relevance**: Gym-production transfer gap. For EXP-045. See DD#840.
+
+## 2604.16694 — RankGuide: Tensor-Rank-Guided Routing and Steering for Efficient Reasoning
+- **Authors**: Tian, Su, Solgi, Kundu, Zhang | **Venue**: cs.AI
+- **Rating**: ★★★★ | **Added**: 2026-04-22
+- **Key insight**: Three latent failure modes (overconfidence/uncertainty/heavy-revalidation) detected via tensor rank of hidden states before output. 1.75× latency reduction.
+- **Relevance**: Behavioral failure detection. For EXP-036. Extends CR#320. See DD#841.
