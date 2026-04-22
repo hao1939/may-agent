@@ -35,9 +35,9 @@
 
 **Top-3 testable hypotheses for next experiment cycle (updated 2026-06-22):**
 
-1. **H-181** (Relational Bug Blindness, P=0.92) — EXP-194/195/198/199 COMPLETE. **All intervention types exhausted**: declarative 0%, procedural 0%, tool-assisted 0%, only near-explicit hints 40%. The relational bug blind spot is a fundamental capability gap, not addressable by scaffolding. **NEXT**: Write up as a resolved finding (CONFIRMED). Explore whether model-level improvements (newer models, chain-of-thought prompting about execution flow) or multi-agent approaches (one agent traces execution, another fixes) can help.
+1. **H-181** — ✅ **RESOLVED/CONFIRMED** (P=0.95, KE-342 filed). 6 experiments, ~200 trials. All scaffolding approaches 0%, only near-explicit naming 40%. Fundamental capability gap. **NEXT**: Multi-agent execution-trace approach (one agent traces, another fixes) — new hypothesis needed.
 2. **H-165** via **EXP-178** (COMPLETE — NULL RESULT, KE-339) — 120 runs, 4 arms × 2 scenarios × 15 trials. All arms identical: 100% sql-injection (ceiling), 0% cascading (floor). No discriminating power — scenario sensitivity, not strategy failure. **NEXT**: Find/create scenarios with 30-70% baseline pass rates to retest adaptive routing. Design is reusable.
-3. **H-185** via **EXP-196** (qualitative complete, quantitative pending) — Verification remasking ("fresh eyes" reset after 2+ verification passes). Qualitative analysis: plausible for 3/5 scenarios, +10-20pp estimated. Needs gym runs on compound-edit-verification and cascading-fix-trap-v2.
+3. **H-185** via **EXP-196/201** — Verification remasking: qualitative analysis plausible for 3/5 scenarios, but **EXP-201 quantitative: 0/10 on cascading-fix-trap-v2**. May still help on compound-edit-verification (value bugs). **NEXT**: Test on compound-edit-verification to see if remasking helps value-bug verification.
 
 **Orphan KE check (recent entries not connected to any active hypothesis):**
 
