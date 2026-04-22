@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776890203227_809
+- **Session:** s_1776892003190_821
 - **Status:** done
-- **When:** 2026-04-22T20:39:06.709Z
-- **Duration:** 2m23s
+- **When:** 2026-04-22T21:34:57.622Z
+- **Duration:** 28m14s
 
 ## What Happened
-The top-3 testable list is stale — H-181 is now resolved and EXP-201 already tested H-185's remasking on cascading (0/10). Let me update the tracker and then finish.
+Now write KE and commit:
