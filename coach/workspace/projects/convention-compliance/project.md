@@ -8,6 +8,14 @@
 **Metric**: convention-compliance-rate (currently ~97%, target ≥ 99%)
 
 **Iteration**: 5
+## Milestones
+- [x] M1: Gym scenarios for top 4 violations
+- [x] M2: Baseline measurement
+- [x] M3: Test top intervention per violation type (edit-guard + path-guard built & tested)
+- [ ] M4: Replicate winning interventions
+- [ ] M5: Production deployment
+- [ ] M6: Knowledge synthesis
+
 ## Goal
 
 Systematically reduce convention violations across all agents. 190 violations

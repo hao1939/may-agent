@@ -32,3 +32,8 @@
 - [pattern] **Contradiction Detection**: Before implementing, check if requirements contradict each other. If they do, document the contradiction, propose alternatives, and escalate — don't silently pick one interpretation.
 - [pattern] **Impossible Task Escalation**: If a task is genuinely impossible, report it as blocked with evidence. Don't produce fake or partial output.
 - [pattern] **Mock Leak Awareness**: When tests fail mysteriously, check if test mocks are leaking into production code paths. Mocks that aren't properly scoped can cause real logic to be bypassed.
+
+## Quality Improvement Rules
+- ALWAYS run relevant tests after making code changes to verify correctness
+- Handle edge cases and errors explicitly in all generated code
+- Read at least 50 lines of surrounding context before editing any file
