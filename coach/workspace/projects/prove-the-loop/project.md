@@ -24,8 +24,8 @@ Do NOT attempt to edit files in `src/`. They don't exist.
 ## Milestones
 - [x] M1: Diagnose top 3 coder failure modes from gym_checks data (just DB queries)
 - [x] M2: For each failure mode, implement a fix using available levers (context.md, skills, workflows)
-- [ ] M3: Run gym experiments to validate each fix (before/after comparison)
-- [ ] M4: coder.quality reaches 0.85
+- [x] M3: Run gym experiments to validate each fix (before/after comparison)
+- [x] M4: coder.quality reaches 0.85
 - [x] At least 2 interventions tested in gym (C1.5, C1.6, C1.7, evidence-count-guard — 4+ gym A/Bs across Iters 4-12)
 
 

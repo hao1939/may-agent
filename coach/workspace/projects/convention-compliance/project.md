@@ -165,3 +165,5 @@ The reviewer marked this as DONE in iteration 7. All 6 milestones are complete w
 
 - **Iter 9**: Everything is already committed. Let me handle the unrelated dirty files:
 
+- **Iter 10**: Now verify the guard integration compiles:
+

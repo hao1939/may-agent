@@ -6,7 +6,7 @@
 **Priority**: P0
 
 **Iteration**: 13
-**Health**: 5/10 (FAIL)
+**Health**: 6/10 (FAIL)
 ## Goal
 
 Close the gap: context-discovery breadcrumbs work 100% at raw API level but only ~10% in gym scenarios. Make breadcrumbs effective in production heartbeats.
