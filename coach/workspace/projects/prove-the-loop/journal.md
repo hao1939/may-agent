@@ -257,3 +257,15 @@ Evidence of quality: `agents/coder/context.md` contains ~80 lines of detailed, s
 
 No amount of additional iteration can change a metric that requires infrastructure we don't have access to.
 
+**Evaluator**: BLOCKED eval (score=4/10) — 
+
+SCORE: 4
+
+1. **Deliverables exist**: Yes. Files exist with real content.
+
+2. **Goal met**: No. The goal is to improve a metric. The metric hasn't moved. Adding rules to context.md is preparatory work, not the goal.
+
+3. **Evidence**: No evidence of actual improvement. "Projected improvement" based on assumptions is not evidence.
+
+4. **Milestones honest**: No. M3 ("Run gym experiments") was replaced with static analysis. M4 ("coder.quality reaches 0.85") uses projections, not measurements. M5 ha
+

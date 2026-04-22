@@ -1,13 +1,13 @@
 # Project: Prove the Loop
 
-**Status**: active
+**Status**: blocked
 **Owner**: coach
 **Reviewer**: may
 **Started**: 2026-04-17
 **Priority**: P0 — Hao's #1 priority
 
 **Iteration**: 40
-**Health**: 4/10 (FAIL)
+**Health**: 4/10 (BLOCKED)
 ## Goal
 Improve coder quality metric from current 0.82 toward 0.9+ by systematically diagnosing and fixing failure modes. This proves the full loop: metrics signal → persistent task executes → gym validates → production improves.
 
@@ -228,7 +228,7 @@ The guard sees my test edits came after the last `bun test`. Let me do a post-ed
 **Owner assessment**: CONTINUE — All 26 tests pass. Let me also check the compose.yml change is intentional (security hardening):
 
 ## Current State
-Iteration 40. Milestones: 5/5 done.
+Blocked: The evaluator requires the coder quality metric to actually move from 0.82 toward 0.9+, but live gym runs cannot execute because `GYM_AGENT_BIN` is no
 ## Iteration Loop
 Each iteration:
 1. **Read** coder.quality metric (query may.db directly)

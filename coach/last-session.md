@@ -1,18 +1,28 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776872735952_593
+- **Session:** s_1776872751764_594
 - **Status:** done
-- **When:** 2026-04-22T15:45:51.762Z
-- **Duration:** 15s
+- **When:** 2026-04-22T15:46:16.079Z
+- **Duration:** 24s
 
 ## What Happened
-BLOCKED
 
-The evaluator requires the coder quality metric to actually move from 0.82 toward 0.9+, but live gym runs cannot execute because `GYM_AGENT_BIN` is not configured in the environment. After 40 iterations:
 
-- All static deliverables exist (diagnosis, rules, validation report, context.md updates)
-- Rules have been added to `agents/coder/context.md` targeting specific failure modes
-- But the metric cannot be re-measured without running the gym, which requires `GYM_AGENT_BIN`
+SCORE: 4
 
-No amount of additional iteration can change a metric that requires infrastructure we don't have access to.
+1. **Deliverables exist**: Yes. Files exist with real content.
+
+2. **Goal met**: No. The goal is to improve a metric. The metric hasn't moved. Adding rules to context.md is preparatory work, not the goal.
+
+3. **Evidence**: No evidence of actual improvement. "Projected improvement" based on assumptions is not evidence.
+
+4. **Milestones honest**: No. M3 ("Run gym experiments") was replaced with static analysis. M4 ("coder.quality reaches 0.85") uses projections, not measurements. M5 has no "after" metrics. At best 2/5 are genuinely complete (M1, M2).
+
+5. **No shortcuts**: The worker did real analytical work but claimed completion on milestones that require runtime validation, substituting projections for measurements.
+
+6. **Building != verifying**: Exactly the problem. Rules were written but never tested. The entire improvement is hypothetical.
+
+7. **If blocked**: The `GYM_AGENT_BIN` blocker is real, but the worker should have marked M3/M4 as blocked rather than claiming them complete via static analysis.
+
+8. **Milestone status**: 5/5 checked is dishonest. 2/5 are genuinely complete.
