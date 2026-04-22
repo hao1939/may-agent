@@ -718,7 +718,7 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
     const usage = extractUsage(child.messages);
     const createdAt = extractTimestamp(child.sessionId);
 
-    upsertEvaluation(persistDir, {
+    ctx.upsertEvaluation({
       sessionId: child.sessionId,
       agent: child.agent,
       quality: agentScore?.quality ?? 0,
