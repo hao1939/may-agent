@@ -4,6 +4,47 @@
 
 # QA Journal — 2026-04-09
 
+---
+
+# QA Journal — 2026-04-22
+
+## Proactive scan
+
+### Recent commits (repo root: `/app`)
+- Evidence: `git log --oneline -10`
+  - `d6746d2` DD#860: multi-step attack detection in LLM agents (For EXP-099, KE-106)
+  - `095435b` bob: KE-337 error cascade attractors + H-185 information-asymmetric verification
+  - `cbf49ff` KE-337: error cascade attractors + H-185: information-asymmetric verification
+  - `0954d72` scout: DD#856 error cascade attractors + todo update
+  - `047ca35` DD#856: Error cascade attractors — deepening EXP-099 gravity well finding
+
+### Working tree state
+- Evidence: `git status --porcelain` shows `M agents` (git submodule pointer modified).
+
+### Diff reviewed (HEAD)
+- Evidence: `git show -1 --patch --stat`
+  - `DELIVERABLES_CHECKLIST.md`: updated checklist items (read directly).
+  - `agents` submodule pointer bumped from `a554c49c...` to `98c912a2...`.
+
+### File read (mandatory)
+- Evidence: `read(DELIVERABLES_CHECKLIST.md, 1..5)`
+  - System health check: 0 errors, all agents ≤16 avg ops
+  - Rotation log updated: `agents/optimizer/workspace/todo.md` (Mode A logged, next B)
+  - No dispatch needed
+
+### Mandatory checks
+#### tsc --noEmit
+- FAIL (environment/tooling): `./node_modules/.bin/tsc --noEmit` → `/bin/bash: ./node_modules/.bin/tsc: No such file or directory` (exit 127).
+- Additional evidence: `ls node_modules/.bin` fails; `node_modules` contains only `.vite/` cache folder.
+
+#### vitest --run
+- FAIL (environment/tooling): `./node_modules/.bin/vitest --run` cannot be executed because `node_modules/.bin` is missing.
+- Attempted fallback found only `node_modules/.vite/vitest/` directory with a `results.json` (cache), not an executable.
+
+### Assessment / Verdict
+- CONDITIONAL: Checklist edit is fine; cannot provide PASS because required `tsc`/`vitest` checks are blocked by repo/environment setup and the submodule bump is unreviewed here.
+
+
 ## 2026-04-10T01:25Z
 
 ## 2026-04-10T07:58Z
@@ -5730,4 +5771,25 @@ Findings:
   - Ran mandatory checks (blocked by environment): `./node_modules/.bin/tsc --noEmit` (exit 127), `./node_modules/.bin/vitest --run` (exit 127) because `node_modules/.bin` does not exist in this repo snapshot.
   - Finding (IMPORTANT): `validateFinishDeliverables()` resolves relative paths against hardcoded `DEFAULT_PROJECT_ROOT = "/app"`. This will mis-validate deliverables when the project root differs (e.g., running in `/app/agents` or other roots), and can yield false positives/negatives. Consider injecting repo root from the manager/tool runtime rather than hardcoding.
   - Finding (MINOR): `validateFinishDeliverables()` collects `existingPaths` as the *raw path* rather than the resolved path; this reduces debugging clarity when relative paths are used.
+
+---
+
+# QA Journal — 2026-04-22
+
+## Proactive scan (unreviewed commits)
+
+### Summary
+Reviewed latest commit `d6746d2` (repo root `/app`): updates `DELIVERABLES_CHECKLIST.md` and bumps the `agents` git submodule pointer (`a554c49c…` → `98c912a2…`). The direct change is documentation-only and low risk, but I cannot complete mandatory TypeScript/Vitest gates in this checkout because `node_modules/.bin` is missing.
+
+### Evidence / Checks
+- File read (mandatory): `DELIVERABLES_CHECKLIST.md` (lines 1–5) confirms checklist adjustments.
+- `./node_modules/.bin/tsc --noEmit`: **FAIL (environment/tooling)** — executable missing (exit 127).
+- `./node_modules/.bin/vitest --run`: **FAIL (environment/tooling)** — executable missing (exit 127).
+
+### Issues
+- IMPORTANT: Mandatory QA gates cannot run in this repo snapshot (missing `node_modules/.bin` toolchain). This prevents a PASS even when changes are low risk.
+- IMPORTANT: `agents` is a submodule pointer bump; submodule content changes are not reviewable from this repo alone without fetching/entering the submodule at `98c912a2…`.
+
+### Verdict
+CONDITIONAL — `DELIVERABLES_CHECKLIST.md` edit OK, but must run `tsc`/`vitest` and review the submodule commit in an environment where dependencies exist.
 

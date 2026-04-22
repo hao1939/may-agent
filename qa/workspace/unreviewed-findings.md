@@ -1,27 +1,11 @@
-# Unreviewed findings (heartbeat)
+# Unreviewed findings (QA proactive scan)
 
-## Scope
-This heartbeat reviewed the current working tree and recent commits in `/app/agents`.
+Date: 2026-04-22
 
-## What I observed (evidence-based)
-- `/app` is not a git repository; the git repo is `/app/agents`.
-  - Evidence: `git log` at `/app` fails; `git log` at `/app/agents` works.
-- Recent commit at repo tip: `da4d41f3c chore(auto): 5 agents, 5 files: doc updates, update`.
-  - Evidence: `git log --oneline -10` in `/app/agents`.
-- Working tree currently has many modified/deleted workspace artifacts plus an untracked daily digest.
-  - Evidence: `git status --porcelain` in `/app/agents`.
+## Environment / tooling blockers
+- `./node_modules/.bin/tsc --noEmit` fails: `./node_modules/.bin/tsc: No such file or directory` (repo root). Evidence: bash output showing exit code 127.
+- `./node_modules/.bin/vitest --run` cannot be executed because `node_modules/.bin` is missing; `node_modules` only contains `.vite/` cache directory.
+- No `package.json` / lockfile found at repo root or inside `agents/` directory; no `tsconfig.json` found inside `agents/`. This suggests dependencies and TS/Vitest scripts are not present in this checkout, so mandatory QA commands cannot be run here.
 
-## Findings
-### IMPORTANT — Mandatory TS/Vitest checks are currently blocked by missing toolchain entrypoints
-Per QA SOP, I attempted the mandatory commands:
-- `/app/tsc --noEmit` via `./node_modules/.bin/tsc` → **missing** (exit 127)
-- `/app/agents/tsc --noEmit` via `./node_modules/.bin/tsc` → **missing** (exit 127)
-
-Additionally, `/app/agents/node_modules` exists but appears incomplete (no `node_modules/.bin`). This looks like an environment/repo setup issue rather than a code defect, but it prevents independent verification.
-
-### MINOR — Repo noise from generated/ephemeral workspace files
-The repo has many modified workspace context files and some deleted deep-dive docs, plus an untracked daily digest. This makes it difficult to identify what changes are intended to be shipped.
-
-## Recommendation / next steps
-- Define the correct QA verification entrypoints for this repository (where `tsc` and `vitest` live, or whether a different verification suite applies).
-- Consider ignoring purely-ephemeral `*/workspace/heartbeat-context.md` files if they are not meant to be committed.
+## Code changes reviewed
+- Commit `d6746d2` modifies only `DELIVERABLES_CHECKLIST.md` plus bumps `agents` git submodule pointer. The checklist change itself is low risk; however, submodule changes are unreviewed here due to missing diff visibility in this repo checkout.
