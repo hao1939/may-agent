@@ -403,6 +403,8 @@ function runAgent(adapter: string, taskContent: string, workDir: string, agent: 
           const sessionData = fs.readFileSync(jsonlPath, "utf-8");
           // Append session JSONL to transcript for richer convention checking
           fs.appendFileSync(transcriptPath, "\n--- SESSION JSONL ---\n" + sessionData);
+          // Save as _gym_transcript.jsonl for gym-score-utils.cjs Score class
+          fs.writeFileSync(path.join(workDir, "_gym_transcript.jsonl"), sessionData);
           // Also save as transcript.jsonl in workDir for scenarios that look for it there
           fs.writeFileSync(path.join(workDir, "transcript.jsonl"), sessionData);
         }
