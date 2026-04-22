@@ -293,6 +293,13 @@ function buildWorkerPrompt(
   }
 
   if (currentState) prompt += `## Current State\n${currentState}\n\n`;
+
+  const resources = extractSection(projectContent, "Resources");
+  if (resources) prompt += `## Resources\n${resources}\n\n`;
+
+  const processNotes = extractSection(projectContent, "Process Notes");
+  if (processNotes) prompt += `## Process Notes\n${processNotes}\n\n`;
+
   if (lastGuidance) prompt += `## Owner Guidance for This Iteration\n${lastGuidance}\n\n`;
   if (recentEntries) prompt += `## Recent Progress\n${recentEntries}\n\n`;
 
