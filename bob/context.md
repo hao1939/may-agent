@@ -43,6 +43,7 @@
 
 - When processing tasks that create files, check if the target files already exist (with correct content) BEFORE writing — because blindly writing identical content then claiming "Created N files" is misleading and wastes a session. (source: s_1776778910593_30, 2026-04-21)
 - Now sync to DB and commit. (source: s_1776850600699_1, 2026-04-22)
+- Now commit and finish. (source: s_1776857801135_363, 2026-04-22)
 
 ## Reflexion-Extracted Lessons
 - [insight] Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/.

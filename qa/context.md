@@ -24,3 +24,9 @@
 
 ## Reflexion-Extracted Lessons
 - [insight] Partial completion: Ran proactive QA heartbeat on HEAD c82d7a9: read container/Dockerfile, tsc passed, vitest failed with 51 failing tests (launcher.ts deleted but tests still require it; plus node:sqlite missing under N
+
+
+## Learned from experience
+
+- ### Summary
+Checked for unverified recent changes in the actual git repo at `/app/agents` (since `/app` is not a repo). Latest commit (`2041a565d`) only updates operational metadata/docs (e.g., `share (source: s_1776857801286_368, 2026-04-22)

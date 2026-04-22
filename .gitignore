@@ -2,6 +2,7 @@
 .state/
 *.log
 *.bak
+*.pre-slim
 
 # Removed directories — these were consolidated elsewhere, don't re-add
 shared/protocols/

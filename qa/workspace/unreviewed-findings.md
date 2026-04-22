@@ -1,24 +1,26 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-22)
 
-## Scope checked
-- Repository root `/app` is **not** a git repo. The actual git repo is `/app/agents`.
-- Latest commit in `/app/agents`: `2041a565d` (chore(auto) doc/workspace/heartbeat json updates).
+## Context
+Attempted to perform standard QA verification (read changed file, run `tsc --noEmit`, run `vitest --run`) on the `agents/` repo.
 
 ## Findings
+### IMPORTANT — Cannot run mandatory verification commands due to missing build/test toolchain
+- The repository at `agents/` is a git repo, and latest commit is `3f1d1fc4c` modifying `bob/workspace/projects/project-workflow-improvement/project.md`.
+- **However** `./node_modules/.bin/tsc` does not exist and `node_modules/.bin` directory is missing.
+  - Evidence: `cd agents && ./node_modules/.bin/tsc --noEmit` → `/bin/bash: ... No such file or directory` (exit 127).
+  - Evidence: `cd agents && ls -la node_modules/.bin` → `No such file or directory`.
+- There is no `package.json` or `tsconfig.json` found within 2–4 directory levels under `agents/`.
+  - Evidence: `cd agents && find . -maxdepth 2 -name package.json -o -name tsconfig.json` → no output.
+- `agents/node_modules` only contains `.vite/`.
+  - Evidence: `cd agents && ls -la node_modules` shows only `.vite`.
 
-### IMPORTANT — Cannot perform mandatory verification (tsc/vitest) due to missing node_modules/tooling
-Evidence:
-- `cd agents && ./node_modules/.bin/tsc --noEmit` fails: `No such file or directory`.
-- `cd agents && ./node_modules/.bin/vitest --run` fails: `No such file or directory`.
-- `cd agents && ls node_modules/.bin` fails because `node_modules` directory does not exist.
+### MINOR — Change in latest commit is documentation-only
+- Read `agents/bob/workspace/projects/project-workflow-improvement/project.md` and confirmed it is a tracker document update (no code changes).
 
-Impact:
-- Mandatory QA steps (typecheck + tests) are **blocked by environment/tooling**. This is a pre-existing repo setup issue in this runtime.
+## Impact
+Cannot provide PASS/FAIL on compilation/tests because the required toolchain and config files are absent in this environment/repo snapshot.
 
-### MINOR — Latest change is non-code operational metadata
-Evidence:
-- `git show --name-only -1 2041a565d` lists only `last-session.md`, project journals, and `shared/federation/heartbeats/local.json`.
-- `agents/shared/federation/heartbeats/local.json` contains heartbeat instance metadata; no code paths affected.
-
-## Recommendation
-- Ensure the runtime populates `agents/node_modules` (or provides a supported test runner entrypoint) so QA can run `tsc` and `vitest` as required.
+## Next steps suggested
+1. Confirm intended working directory and where the actual JS/TS project lives (maybe `/app` root is not a repo, and `agents/` repo is missing package metadata).
+2. If this repo should be buildable, add/restore `package.json`, `tsconfig.json`, and install deps so `tsc`/`vitest` are runnable.
+3. If tests are executed elsewhere (e.g., via `may-agent-bin`), document the correct commands in `agents/README.md` and/or QA runbook.
