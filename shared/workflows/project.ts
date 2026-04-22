@@ -638,6 +638,44 @@ async function handleBlockedDecision(
   return ctx.escalate(msg);
 }
 
+/**
+ * Track milestone progress and update the stall counter.
+ */
+function trackMilestoneProgress(ls: LoopState): void {
+  const currentDone = extractMilestones(ls.projectContent).done;
+  if (currentDone > ls.lastMilestoneDone) {
+    ls.lastMilestoneDone = currentDone;
+    ls.continueWithoutProgress = 0;
+  } else {
+    ls.continueWithoutProgress++;
+  }
+}
+
+/**
+ * Process done/blocked decisions uniformly. Returns a WorkflowResult to exit
+ * the loop, or null if the loop should continue.
+ */
+async function processDecision(
+  ctx: WorkflowContext,
+  config: PersistentTaskConfig,
+  ls: LoopState,
+  journalContent: string,
+  iteration: number,
+  decision: { status: string; detail: string },
+  isCommentIteration: boolean,
+): Promise<WorkflowResult | null> {
+  if (decision.status === "done") {
+    const result = await handleDoneDecision(ctx, config, ls, journalContent, iteration, decision, isCommentIteration);
+    if (result.outcome === "escalate") return ctx.escalate(result.message);
+    if (result.outcome === "done") return result.result;
+    return null; // continue
+  }
+  if (decision.status === "blocked") {
+    return handleBlockedDecision(ctx, config, ls, journalContent, iteration, decision, isCommentIteration);
+  }
+  return null; // continue
+}
+
 // ── Main workflow ──────────────────────────────────────────────────────
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -726,21 +764,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       projectContent = updateField(projectContent, "Iteration", String(iteration));
       writeFileSync(config.projectPath, projectContent, "utf-8");
 
-      if (decision.status === "done") {
+      {
         const ls: LoopState = { projectContent, falseDoneCount, lastMilestoneDone, continueWithoutProgress };
-        const result = await handleDoneDecision(ctx, config, ls, journalContent, iteration, decision, true);
+        const exitResult = await processDecision(ctx, config, ls, journalContent, iteration, decision, true);
         projectContent = ls.projectContent; falseDoneCount = ls.falseDoneCount;
         lastMilestoneDone = ls.lastMilestoneDone; continueWithoutProgress = ls.continueWithoutProgress;
-        if (result.outcome === "escalate") return ctx.escalate(result.message);
-        if (result.outcome === "done") return result.result;
-        // outcome === "continue"
-        iteration++;
-        continue;
-      }
-      if (decision.status === "blocked") {
-        const ls: LoopState = { projectContent, falseDoneCount, lastMilestoneDone, continueWithoutProgress };
-        const blockedResult = await handleBlockedDecision(ctx, config, ls, journalContent, iteration, decision, true);
-        return blockedResult;
+        if (exitResult) return exitResult;
       }
 
       // CONTINUE — set active (may have been blocked/done), increment iteration
@@ -841,22 +870,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         writeFileSync(config.projectPath, projectContent, "utf-8");
       }
 
-      if (decision.status === "done") {
+      if (decision.status === "done" || decision.status === "blocked") {
         const ls: LoopState = { projectContent, falseDoneCount, lastMilestoneDone, continueWithoutProgress };
-        const result = await handleDoneDecision(ctx, config, ls, journalContent, iteration, decision, false);
+        const exitResult = await processDecision(ctx, config, ls, journalContent, iteration, decision, false);
         projectContent = ls.projectContent; falseDoneCount = ls.falseDoneCount;
         lastMilestoneDone = ls.lastMilestoneDone; continueWithoutProgress = ls.continueWithoutProgress;
-        if (result.outcome === "escalate") return ctx.escalate(result.message);
-        if (result.outcome === "done") return result.result;
-        // outcome === "continue"
-        iteration++;
-        continue;
-      }
-
-      if (decision.status === "blocked") {
-        const ls: LoopState = { projectContent, falseDoneCount, lastMilestoneDone, continueWithoutProgress };
-        const blockedResult = await handleBlockedDecision(ctx, config, ls, journalContent, iteration, decision, false);
-        return blockedResult;
+        if (exitResult) return exitResult;
+        // false done — continue to progress tracking
       }
 
       // CONTINUE — track progress and auto-escalate if stuck
