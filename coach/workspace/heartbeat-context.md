@@ -13,16 +13,17 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-22T05:40)
+# Your Context (auto-generated 2026-04-22T06:40)
 
-**System:** 1 sessions/6h, 0% error rate
-**You:** 1 sessions, 424KB total (424KB avg)
+**System:** 2 sessions/6h, 0% error rate
+**You:** 1 sessions, 128KB total (128KB avg)
 
 **Top spenders:**
-- coach: 1s, 424KB ← you
+- coach: 1s, 128KB ← you
+- amy: 1s, 92KB
 
 **📊 Your Metrics:**
-- Breadcrumb action rate: **0.5135** ratio → 0.8 ratio
+- Breadcrumb action rate: **0.5385** ratio → 0.8 ratio
 - Intervention hit rate: **47.3** ratio → 0.6 ratio
 - Skill effectiveness: **29.2** ratio → 0.6 ratio
 - Instruction compliance rate: **53** ratio → 0.8 ratio
