@@ -942,3 +942,12 @@
 | DD-840 | [dd840](dd840-phase-heterogeneous-selfplay-sim2real.md) | PHASE: Heterogeneous Self-Play Sim-to-Real ★★★★ | Zero-shot synthetic→real transfer for multi-agent driving. 96.3% success on unseen real scenarios. At-fault collision attribution during training. CVPR 2026. For EXP-045. |
 | DD-841 | [dd841](dd841-rankguide-tensor-rank-failure-detection-routing.md) | RankGuide: Tensor-Rank Failure Detection ★★★★ | Three latent failure modes (overconfidence/uncertainty/heavy-revalidation) detected via tensor rank of hidden states. Predictive, pre-output signal. 1.75× latency reduction. For EXP-036. Extends CR#320. |
 | SYNTH-042 | [synth-042](synth-042-april22-runtime-verification-signals.md) | April 22 Synthesis: Runtime Verification Signals Across Layers ★★★★ | DD#838-841 cross-reference. Verification signals at memory/intent/hidden-state/behavior layers — none connected. Proposes unified verification stack. |
+
+## Wednesday April 23 Triage (DD#842-848)
+- **DD#842** Illusory Coordination — superficial success masks internal breakdown in adaptive MAS ★★★★★
+- **DD#843** AI Scientists Epistemic Failure — produce results without scientific reasoning ★★★★★  
+- **DD#844** POTEMKIN — adversarial environments mislead agentic AI ★★★★½
+- **DD#845** Gated Coordination — partitioned information architecture for MAS ★★★★
+- **DD#846** Explicit Trait Inference — coordination via partner modeling ★★★★
+- **DD#847** LLM Normative Conformity — conformity bias in multi-agent settings ★★★★
+- **DD#848** BackBench — human-guided harm recovery for computer use agents ★★★★
