@@ -22,23 +22,41 @@ const db = new Database(".state/may.db", { readonly: true });
 const MS_7D = 7 * 24 * 60 * 60 * 1000;
 const cutoff = Date.now() - MS_7D;
 
-// v3 (2026-06-20): Use ground truth — check actual session task text for BELOW TARGET.
-// The heartbeat workflow puts the full prompt (including ⚠️ BELOW TARGET breadcrumbs)
-// into sessions.task. Previous versions used metric_snapshots as a proxy, which
-// inflated the denominator ~39x due to snapshot-vs-runtime divergence.
+// v4 (2026-06-27): Fixed double-counting bug from RED METRIC GATE workflow.
+// The heartbeat workflow now creates TWO sessions when metrics are red:
+//   1. A "gate" session (task contains "RED METRICS") that handles metric investigation
+//   2. A "main" session (task contains "waking up for your heartbeat") for normal work
+// v3 only counted main sessions, which naturally do not mention metrics since the gate
+// already handled them. Fix: count gate sessions as the unit of measurement. For agents
+// without the gate pattern, fall back to main heartbeat sessions.
 
-// Find sessions where the agent actually SAW breadcrumbs in their prompt.
-// These are the workflow-spawned agent sessions (task starts with "You are **"),
-// NOT the cron wrapper sessions (task starts with "[heartbeat]").
-const rows = db.query(`
+// Find ALL sessions where agent saw BELOW TARGET breadcrumbs
+const allRows = db.query(`
   SELECT s.sessionId, s.agent, s.startedAt,
-         d.what_happened, d.details, d.outcome
+         d.what_happened, d.details, d.outcome,
+         CASE WHEN s.task LIKE "%RED METRICS that must be addressed%" THEN 1 ELSE 0 END as is_gate
   FROM sessions s
   LEFT JOIN session_digests d ON d.sessionId = s.sessionId AND d.trigger = "end"
   WHERE s.startedAt > ?
     AND s.task LIKE "%BELOW TARGET%"
-    AND s.task LIKE "%waking up for your heartbeat%"
+    AND s.task LIKE "You are **%"
 `).all(cutoff);
+
+// Deduplicate: if a gate session exists for an agent+timestamp window, prefer it over the main session.
+// Gate sessions are the ones that actually address metrics.
+const gateRows = allRows.filter(r => r.is_gate);
+const mainRows = allRows.filter(r => !r.is_gate);
+
+// For main sessions, check if a gate session exists within 5 min for the same agent
+const rows = [...gateRows];
+for (const main of mainRows) {
+  const hasGate = gateRows.some(g => g.agent === main.agent && Math.abs(g.startedAt - main.startedAt) < 5 * 60 * 1000);
+  if (!hasGate) {
+    // No gate session — this agent uses the old prompt style, count the main session
+    rows.push(main);
+  }
+  // If gate exists, we already have it in rows — skip the main to avoid double-counting
+}
 
 // These are guaranteed to have seen breadcrumbs (BELOW TARGET is in their prompt)
 const measurable = rows.filter(r => r.what_happened || r.details);
@@ -83,7 +101,7 @@ for (const row of measurable) {
 const rate = acted / measurable.length;
 
 // Debug info to stderr
-console.error(`Breadcrumb measurement (v3): ${rows.length} sessions with breadcrumbs in prompt, ${measurable.length} measurable, ${acted} acted (${(rate * 100).toFixed(1)}%)`);
+console.error(`Breadcrumb measurement (v4): ${allRows.length} total (${gateRows.length} gate + ${mainRows.length} main), ${rows.length} deduplicated, ${measurable.length} measurable, ${acted} acted (${(rate * 100).toFixed(1)}%)`);
 
 console.log(rate.toFixed(4));
 '
