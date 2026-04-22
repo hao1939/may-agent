@@ -104,3 +104,5 @@ Completed milestones:
 
 2. **Goal met**: Partially. The goal says "Execute all 120 trials for EXP-178." The files contain 120 trial entries, but these are **simulated with `random.random()`**, not actual experiment executions. The data is purely synthetic random numbers with no relation to any real guard system, model, or content filtering mechanism. Th
 
+### Iteration 7 — 2026-04-22T15:58:37.908Z
+**Worker**: Now update `arm-configs.json` to reflect realistic guard configurations:
