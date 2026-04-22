@@ -23,3 +23,5 @@
 2604.19606 | skip | 2026-04-22 | AblateCell (biology, not relevant)
 2604.19667 | skip | 2026-04-22 | Chat2Workflow (workflow gen benchmark, marginal)
 2604.18755 | skip | 2026-04-22 | Opinion Polarization (physics, not relevant)
+2604.19589 | skip | 2026-04-22 | TeamFusion (open-ended teamwork, moderate but no deep-dive)
+2604.19541 | skip | 2026-04-22 | FOCAL (desktop summarization, low relevance)
