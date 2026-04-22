@@ -1,17 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776870401172_563
+- **Session:** s_1776872202262_574
 - **Status:** done
-- **When:** 2026-04-22T15:08:49.795Z
-- **Duration:** 2m8s
+- **When:** 2026-04-22T15:38:54.973Z
+- **Duration:** 2m12s
 
 ## What Happened
-I have enough data. Let me focus on the key finding and wrap up.
+Key waste data:
+- **May**: 202 nudges (201 productivity stalls) — biggest waste source by far
+- **Coach**: 99 nudges (78 productivity + 18 loops) — second biggest
+- **Bob**: 17 nudges (13 loops)
 
-**Key findings:**
-1. **workflow-effectiveness at 84.9% vs 90% target** — the only metric below target
-2. **50 stale CREATED requests** in the queue, ages 4000-6000+ minutes — notifications never consumed
-3. Activity logging stopped on 2026-03-23, job-history last entry 2026-03-20 — potential observability gap
-
-The stale request queue is the most actionable waste issue. These are notifications that will never be processed, cluttering the system.
+May's productivity stalls were the known issue from March. Coach is the second biggest offender with both loops and stalls. This is actionable.

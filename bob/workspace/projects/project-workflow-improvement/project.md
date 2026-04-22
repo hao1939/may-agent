@@ -21,7 +21,7 @@ Continuously improve the project workflow. This is a TRACKER — each experiment
 | Rich Current State | (tested manually) | adopted ✅ | 1 focused iter vs 6 confused |
 | Smart context generation | pwi-smart-context | done | TRIAL: -56% iters/ms but N=1 |
 | Milestone auto-scope | — | idea | — |
-| Evaluator tuning | pwi-evaluator-tuning | active | — |
+| Evaluator tuning | pwi-evaluator-tuning | done ✅ | Simplified rubric + 2-attempt auto-advance deployed |
 
 ## How to Add an Experiment
 
@@ -37,7 +37,7 @@ Continuously improve the project workflow. This is a TRACKER — each experiment
 - [x] Baseline measurement: measure stall-rate, false-done, iterations-to-complete across all projects
 - [ ] Identify worst metric → create experiment project for it
 - [x] First experiment completes → adopt or reject
-- [ ] Second experiment completes → adopt or reject
+- [x] Second experiment completes → adopt or reject
 - [ ] All three metrics meet targets
 
 ## Resources
