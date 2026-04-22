@@ -48,3 +48,4 @@
 2604.19488 | skip | 2026-04-22 | CoDA Cross-Domain (not relevant)
 2604.19398 | skip | 2026-04-22 | GRASPrune (pruning, not relevant)
 2604.19377 | skip | 2026-04-22 | 6G IoT (not relevant)
+2512.20111 | DD#860 | 2026-04-22 | ABBEL: Belief Bottlenecks for LLM Agents

@@ -42,8 +42,8 @@ If the workflow detects vague milestones and auto-scopes them into specific, ver
 4. Test on 2+ new projects, measure stall rate
 
 ## Milestones
-- [ ] Milestone specificity audit: score milestones across 5+ projects, correlate with stalls
-- [ ] Root cause confirmed: show that vague milestones predict stalls (or find different root cause)
+- [x] Milestone specificity audit: score milestones across 5+ projects, correlate with stalls → .state/milestone-specificity-audit.md
+- [x] Root cause confirmed: specificity ≥4.0 → 1.8 iters/ms vs 3.5 for <4.0; vague milestones correlate with high iteration counts (r≈-0.6)
 - [ ] Design intervention: pick approach, write implementation plan
 - [ ] Implement and test on 2+ projects
 

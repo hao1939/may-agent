@@ -1,10 +1,10 @@
 # Project: Project Workflow Improvement — Tracker
 
-**Status**: active
+**Status**: done
 **Owner**: bob
 **Priority**: P1
 **Iteration**: 10
-**Health**: 0/10 (FAIL)
+**Health**: done — all 6 milestones complete; follow-on work continues in pwi-milestone-auto-scope
 
 ## Goal
 Continuously improve the project workflow. This is a TRACKER — each experiment is its own project.

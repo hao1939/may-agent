@@ -1,5 +1,8 @@
 # Journal
 
+## Session — 2026-04-22 16:07 UTC (Heartbeat)
+Metrics green (hypotheses 13/5, findings-used 0.55/0.5, coverage 81/24). No alerts, no projects, no inbox. ArXiv triage done for today per earlier session. Worked deferred research lead: searched for error propagation / verification / self-correction literature. Found uncovered paper ABBEL (2512.20111) on belief bottlenecks for long-horizon agents — directly relevant to verification gravity well (EXP-099). Wrote DD#860 connecting ABBEL's error propagation finding to our FM-3.3 terminal attractor. Wrote H-072: Belief-State Externalization Reduces Verification Gravity Wells. Notified bob.
+
 ## Session 841 — 2026-04-21 14:10 UTC (Heartbeat)
 arXiv cs.MA/new still showing Tuesday April 21 listings (already triaged in Session 832 — DD#812-821). Wednesday batch not yet available (~18:00 UTC expected). All metrics healthy: CRs 11/7d (target 5), citations 0.61 (target 0.5). CR#347 mid-week synthesis complete. No actionable pending leads or inbound requests. Next: Wednesday arXiv triage when fresh batch drops.
 
