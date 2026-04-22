@@ -8,7 +8,14 @@
 
 ---
 
-## 📅 Change Log (2026-04-16 → 2026-04-18)
+## 📅 Change Log (2026-04-16 → 2026-04-19)
+
+**2026-04-19 (Bob)** — EXP-177 results integration. H-166-revised REFUTED; H-181 PROPOSED.
+
+- **H-166-revised (low-threshold, any-causal-pointer)**: **REFUTED**. P(H) **0.75 → ≤0.15**. EXP-177 (80 runs, 4 arms × 2 scenarios × 10 trials): all hint arms 15-30% pooled, far below ≥80% prediction. On clean S1 (cascading-fix-trap-v2), hints had zero effect (1/40 total hint passes vs 0/10 BASE). The 10/10 arm F result from post-contamination controls was a small-N artifact. **Moved to Archived/Resolved.**
+- **H-181 (Relational Bug Blindness)**: **NEW, P(H) = 0.70**. Proposed based on EXP-177 diagnostic finding: 39/40 S1 trials fail on exactly ONE check (`pipeline-order-fixed`). Agent always finds value bug (threshold `>` vs `>=`), never finds ordering bug (pipeline sequence). Hints about ordering don't help — agent can't operationalize relational information. Maps to H-098 Ch1/Ch2: value bugs are Ch1-detectable, ordering bugs require Ch2 reasoning. Connects H-098, H-099, H-085, H-166.
+- **EXP-177 negative transfer on S2**: LEXICAL hint HURTS sql-injection (60%→10%, −50pp). Hints cause fixation, reducing exploration. Input for H-181 P-181d (mismatched hint type causes negative transfer).
+- **Active hypotheses**: 37 → 37 (−1 H-166-revised resolved, +1 H-181 added). **Tested**: 29/37. **Resolution ratio**: 20 resolved. **High-confidence (P≥0.70)**: 28 (−1 H-166-revised, +1 H-181).
 
 **2026-04-18 (Bob)** — Evidence integration for KE-212/213/214 (three external-validation KEs landed after the 2026-04-17 orphan check).
 
@@ -28,9 +35,9 @@
 
 **Top-3 testable hypotheses for next experiment cycle (scenario availability: sql-injection-in-query-builder 33% baseline; cascading-fix-trap-v2 0% clean-env baseline; hidden-dep, misleading-test-fix):**
 
-1. **H-166-revised** via **EXP-177** (DESIGNED, pending execution) — MOD-PARAPHRASE vs MOD-LEXICAL vs PLACEBO vs large-N BASE. Discriminates low-threshold/any-causal-pointer from lexical-confound and env-cleanness alternatives. Closes a live revision.
+1. **H-181** (Relational Bug Blindness, P=0.70) — **EXP-18X** (TO DESIGN): Classify gym scenarios by bug type (value vs relational), compare base rates (P-181a). If confirmed, design structural intervention (execution-trace visualization) for relational-bug scenarios (P-181b). Emerged from EXP-177 diagnostic finding.
 2. **H-165** via **EXP-178** (DESIGNED, pending execution) — Difficulty-adaptive content-first guard pilot on sql-injection (33% medium) × cascading (0% hard). 4 arms × 2 scenarios × 15 runs = 120 runs, ~$9–12. Tests whether adaptive routing rule ("production on medium, passive on hard") is strictly dominant over uniform policies. Deployable guard, not just a mechanism test.
-3. **H-160** (Structural Enforcement Outperforms Behavioral Signaling, P=0.78) — experiment already designed (3-arm on exp144-hidden-dep-decoupled); unblocked as soon as EXP-177/178 free gym capacity. Predicted >60pp effect size on interruptive process steps.
+3. **H-160** (Structural Enforcement Outperforms Behavioral Signaling, P=0.94) — experiment already designed (3-arm on exp144-hidden-dep-decoupled); unblocked as soon as EXP-178 frees gym capacity. Predicted >60pp effect size on interruptive process steps.
 
 **Orphan KE check (recent entries not connected to any active hypothesis):**
 
