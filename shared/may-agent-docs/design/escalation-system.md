@@ -2,189 +2,156 @@
 
 **Status:** Proposal
 **Date:** 2026-04-22
-**References:** [core-principles.md](core-principles.md) (P2, P3), [closing-the-loop.md](closing-the-loop.md)
+**References:** [core-principles.md](core-principles.md) (P1, P2, P3)
 
 ## Problem
 
-Escalations are scattered, don't follow hierarchy, and never close. 155 entries in jsonl, 34 in requests, all unresolved. Nobody follows up.
+Blocked projects and stuck agents need outside help. Today: project goes BLOCKED, sits there. Nobody knows why, nobody acts. No context, no follow-up.
 
-## Rules
+## Principle
 
-1. **Tracked** — every escalation in one table, easily reviewed
-2. **Hierarchy** — agent → owner/caller → May → human. Each level tries to fix before escalating up
-3. **Closed loop** — must be resolved or dismissed with reason
-4. **Metrics** — open count, time to resolve, rate per agent
+Escalation is an event with rich context. Someone reading it should understand the problem and be able to act — no journal diving.
 
-## Revised Design: Convention + Metrics
+## Escalation Events
 
-The project system + metric system + heartbeat visibility IS the escalation system. No new handler, no new events, no promotion timer.
+### escalation.created
 
-### How it works today
+Emitted when the system exhausts its ability to fix and needs outside help.
 
-```
-Agent stuck → finish(blocked) → caller retries (sync)
-Caller gives up → project goes BLOCKED → visible in owner's heartbeat
-Owner doesn't act → May sees blocked projects in her heartbeat → nudges owner
-May can't fix → May messages human
-```
-
-All existing mechanisms. The convention (common-sense.md): "Chain: You → session owner → May → Hao."
-
-### What's missing: metrics to close the loop
-
-Without metrics we can't tell if blocked projects are getting attention. Add:
-
-| Metric | What | Source | Owner |
-|--------|------|--------|-------|
-| `system.blocked-projects` | Count of projects with status=blocked | Project file scan | may |
-| `system.blocked-duration-avg` | Average hours projects stay blocked | project.blocked → project.status-changed events | may |
-| `system.blocked-unattended` | Projects blocked >24h with no activity (mtime stale) | Project file scan + mtime | may |
-
-If `system.blocked-unattended` > 0, someone isn't doing their job. May investigates.
-
-### May's accountability role
-
-May's heartbeat already pre-loads ALL projects (including other agents'). Update May's heartbeat.md to explicitly say:
-
-```
-## Blocked Project Accountability
-Check all blocked projects across all agents (shown above in "Your Projects").
-For each blocked project older than 24h:
-- Nudge the owner: "Your project X has been blocked for Nh. What's the plan?"
-- If owner is unresponsive after 2 nudges: investigate yourself or escalate to Hao
+```typescript
+ctx.emit({ type: "emit", event: "escalation.created", data: {
+  id: `esc_${Date.now()}`,
+  projectId: "coach/prove-the-loop",
+  agent: "coach",
+  level: 1,                    // 1=owner, 2=may, 3=human
+  owner: "coach",
+  reason: "5 iterations without milestone progress",
+  whatWasTried: reviewerDetail, // reviewer's analysis of what failed
+  blockers: evaluatorDetail,    // evaluator's assessment
+  suggestedFix: "...",          // reviewer's suggestion if any
+  iteration: 25,
+  health: "3/10",
+}});
 ```
 
-### When to build more
+Sources:
+- Project workflow: reviewer says BLOCKED or stall detected
+- Agent finish(blocked): session can't continue
+- Metric breach unresolved >24h: nobody acted on auto-fork
 
-If `system.blocked-unattended` stays >0 for a week despite May's nudges, THEN build:
-- Time-based auto-promotion (1h → May, 2h → human)
-- Dedicated escalation handler
-- Escalation events
+### escalation.promoted
 
-Evidence first (P5). Prove the convention fails before adding infrastructure.
+When current level doesn't resolve within timeout.
 
-## Implementation
-
-| Change | LOC | File |
-|--------|-----|------|
-| Add 3 metrics to metrics table | ~10 | metrics-snapshot handler or manual INSERT |
-| Update May's heartbeat.md with accountability section | ~5 | agents/may/heartbeat.md |
-| May's heartbeat pre-loads ALL agents' blocked projects | ~10 | may-heartbeat.ts loadProjects to scan all agents |
-| Total | ~25 | |
-
-### Hierarchy
-
-```
-Agent hits a problem
-  → Level 1: notify owner/caller via request
-  → Owner gets it in heartbeat, tries to fix
-  → If unresolved after 2 heartbeat cycles (~1h):
-      → Level 2: escalate to May
-  → May gets it in heartbeat, tries to fix
-  → If unresolved after 2 heartbeat cycles (~1h):
-      → Level 3: escalate to human (Telegram)
+```typescript
+ctx.emit({ type: "emit", event: "escalation.promoted", data: {
+  id: "esc_xxx",              // same id as created
+  from: 1, to: 2,            // owner → may
+  age: "4h",
+  reason: "Owner did not resolve within timeout",
+}});
 ```
 
-Each level change updates `level` and `escalatedAt` in the table.
+### escalation.resolved
 
-### Who resolves
+When the problem is fixed.
 
-- **Owner**: can resolve by fixing the issue and marking resolved
-- **May**: can resolve, redirect to another agent, or escalate to human
-- **Human**: resolves or dismisses with reason
-- **System**: auto-resolves if the condition clears (e.g., project unblocks, metric recovers)
-
-### Sources of escalation
-
-| Source | When | Level starts at |
-|--------|------|----------------|
-| Project workflow blocked | Evaluator says BLOCKED | 1 (owner) |
-| Project workflow stalled | 5 iterations without progress | 1 (owner) |
-| Session finish(status: blocked) | Agent declares blocked | 1 (caller) |
-| Guard blocks repeatedly | Same guard blocks same agent 3x | 1 (owner) |
-| Metric breach unresolved >24h | Alert still open | 2 (May — owner already tried) |
-
-### How it flows in the project workflow
-
-```
-Project workflow: evaluator says BLOCKED
-  → Insert escalation (level=1, agent=owner)
-  → Emit project.blocked event (already done)
-  → Owner sees in next heartbeat: "You have 1 open escalation"
-  → Owner acts or ignores
-  → After 1h: escalation handler promotes to level=2 (May)
-  → May sees in heartbeat: "1 escalation needs your attention"
-  → May acts or escalates
-  → After 1h: promotes to level=3 (human, Telegram)
+```typescript
+ctx.emit({ type: "emit", event: "escalation.resolved", data: {
+  id: "esc_xxx",
+  resolvedBy: "coach",
+  resolution: "Switched to file-based approach instead of DB queries",
+  duration: "4h",
+}});
 ```
 
-### Escalation Handler
+### escalation.dismissed
 
-One handler that manages the escalation lifecycle:
+When decided it's not worth fixing.
+
+```typescript
+ctx.emit({ type: "emit", event: "escalation.dismissed", data: {
+  id: "esc_xxx",
+  dismissedBy: "may",
+  reason: "Project scope changed, blocker no longer relevant",
+}});
+```
+
+## How Context Gets Into the Event
+
+The project workflow already has the context:
+
+```
+Worker fails → reviewer analyzes why → reviewer says BLOCKED with reason
+  → Evaluator scores with assessment
+  → Workflow packages both into escalation.created
+```
+
+```typescript
+// In project workflow, when reviewer says BLOCKED:
+emitProjectEvent(ctx, config, "escalation.created", {
+  id: `esc_${Date.now()}`,
+  level: 1,
+  reason: decision.detail.slice(0, 300),        // reviewer's BLOCKED reason
+  whatWasTried: workerSummary.slice(0, 300),     // what the worker did
+  blockers: decision.detail,                      // full blocker text
+  suggestedFix: extractSuggestion(decision.detail), // if reviewer suggested anything
+  iteration,
+  health: `${score}/10`,
+});
+```
+
+## Escalation Handler
+
+One handler manages lifecycle:
 
 ```json
 {
   "name": "escalation",
   "handler": "escalation",
   "intervalMs": 1800000,
-  "on": ["escalation.created", "project.blocked", "session.escalated"],
-  "description": "Manage escalation lifecycle: route, promote, auto-resolve."
+  "on": ["escalation.created"],
+  "description": "Promote unresolved escalations, auto-resolve cleared conditions."
 }
 ```
 
-Every 30 min (and on escalation events):
-1. Query open escalations from events table
-2. For each: check current level and age
-3. Level 1 older than 1h → emit `escalation.promoted { level: 2 }` (routes to May)
-4. Level 2 older than 1h → emit `escalation.promoted { level: 3 }` (notify human)
-5. Check if conditions cleared (project unblocked, metric recovered) → emit `escalation.resolved`
+Every 30 min:
+1. Query open escalations: `escalation.created` without matching `resolved`/`dismissed`
+2. Level 1 older than 2h → emit `escalation.promoted { to: 2 }` (routes to May)
+3. Level 2 older than 2h → emit `escalation.promoted { to: 3 }` (Telegram to human)
+4. Check if condition cleared (project no longer blocked) → emit `escalation.resolved`
 
-### Heartbeat Integration
+## Visibility
 
-Heartbeat pre-loads open escalations for the agent:
+### Events tab
+All escalation events visible with full context. Filter by `escalation.*`.
 
+### Heartbeat injection
 ```
-## Your Escalations
-⚠️ [OPEN 2h] prove-the-loop blocked: "5 iterations without progress" — you own this, investigate or escalate
+## Open Escalations
+⚠️ [4h, level 2] coach/prove-the-loop: "5 iterations without progress"
+   Tried: DB queries failed 3x due to path issues
+   Suggested: Use file-based approach or fix DB path
 ```
 
-Agents see their escalations every heartbeat. Can't miss them.
-
-### Resolution
-
-Conditions that auto-resolve (escalation handler detects and emits `escalation.resolved`):
-- Project status changed from blocked → active
-- Metric recovered above threshold
-- Session retry succeeded
-
-Manual resolution:
-- Agent finishes work that addresses the blocker
-- May dismisses with reason
-- Human dismisses via Telegram or dashboard
+Agent sees the FULL context in their heartbeat. Can act immediately.
 
 ### Metrics
 
-All derived from events table queries — no separate tracking:
-
 | Metric | Query | Owner |
 |--------|-------|-------|
-| `system.open-escalations` | Count of `escalation.created` without matching resolved/dismissed | may |
-| `system.escalation-rate` | `escalation.created` events per day | may |
-| `system.escalation-resolve-time` | Avg time between created and resolved events | may |
-| `agent.escalations` | Open per agent from event data | each agent |
+| `system.open-escalations` | Count escalation.created without resolved/dismissed | may |
+| `system.escalation-resolve-time` | Avg duration between created and resolved | may |
+| `system.blocked-unattended` | Escalations at level 1 older than 2h (owner not acting) | may |
 
-## Migration
+## Implementation
 
-1. Create escalation handler (agents/may/handlers/escalation.ts) — ~60 LOC
-2. Update project workflow: emit `escalation.created` on BLOCKED (instead of just `project.blocked`)
-3. Update heartbeat workflows: query open escalations from events table, inject into prompt
-4. Register metrics
-5. Migrate existing escalations.jsonl → emit as events (one-time script)
-6. Remove escalations.jsonl writes from RuntimeCtx
+| Change | LOC | File |
+|--------|-----|------|
+| Emit escalation.created in project workflow | ~15 | project.ts |
+| Escalation handler (promote, auto-resolve) | ~50 | agents/may/handlers/escalation.ts |
+| Heartbeat: pre-load open escalations | ~15 | per-agent heartbeat workflows |
+| Metrics registration | ~10 | metrics table INSERT |
+| Total | ~90 | |
 
-## Total: ~80 LOC
-
-- Handler: ~60 LOC
-- Heartbeat integration: ~10 LOC
-- Project workflow emit: ~10 LOC
-- No new schema — uses events table
+No new schema. Events table handles everything.
