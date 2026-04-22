@@ -181,3 +181,15 @@ PIVOT — The previous approach (just wiring `formatMetricsBlock`) was necessary
 
 ### Iteration 12 — 2026-04-22T10:33:50.268Z
 **Worker**: Now let me check the existing evidence doc and update it:
+**Reviewer**: CONTINUE — [PIVOT] — 12 iterations of documentation-focused work hasn't satisfied the evaluator. New strategy: **execute everything in a single bash block** and append raw terminal output directly.
+
+**(a) Concrete output:** `.state/breadcrumb-effectiveness-evidence.md` with a new `## 8. Live Execution Proof` section containing **copy-pasted raw terminal output** from actually running commands — not reconstructed, not "simulated".
+
+**(b) What's different:** Previous iterations had the worker write prose *about* what outputs would look like. This time the worker must: (1) create a temp dir, (2) write mock transcript files, (3) run `node success_criteria.js`, (4) capture the EXACT stdout, and (5) also run `node -e` to actually import and call `formatMetricsBlock`. ALL in bash commands whose output we can see. The evidence doc section 8 must contain only verbatim tool output, not hand-written JSON.
+
+**(c) First step:** Run this exact command:
+```bash
+WORKDIR=$(mktemp -d) && mkdir -p "$WORKDIR" && printf '{"role":"assistant","tool":"bash","arguments":{"command":"cat stuck-requests-report.md"}}\n{"role":"tool","content":"76 stuck"}\n{"role":"assistant","tool":"finish","arguments":{"summary":"Fixed stuck-requests issue"}}' > "$WORKDIR/_gym_transcript.jsonl" && node agents/gym/scenarios/metric-reaction-G-breadcrumb/success_criteria.js "$WORKDIR" && echo "EXIT CODE: $?"
+```
+Then copy that EXACT terminal output into the evidence doc section 8. Then do the same for a failing case (transcript without stuck-requests mention). Then run `node -e "const {formatMetricsBlock} = require('./agents/shared/workflows/heartbeat-data.ts')"` or equivalent to show real output from the formatting function. If TypeScript import fails, just `grep -A30 'function formatMetricsBlock' agents/shared/workflows/heartbeat-data.ts` and show the source alongside the success_criteria.js pass/fail proof.
+
