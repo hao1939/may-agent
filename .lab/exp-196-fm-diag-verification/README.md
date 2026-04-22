@@ -40,3 +40,9 @@ Then score each run and record results in this file.
 If validated: confirms "diagnosis-first" training generalizes from external artifacts to internalized rules. High-leverage pattern for other failure modes.
 
 If rejected: reveals that context.md rules aren't enough for judgment errors — need stronger scaffolding (e.g., always-present skill files, or workflow-level gates).
+
+## Run Attempt: 2026-05-20 (Coach Heartbeat)
+
+Attempted to run EXP-196 via `run-gym.sh`. Result: `agent_status: "skipped"` — GYM_AGENT_BIN not set in this environment. The gym runner enters stub mode without the agent binary, scoring against unmodified environment files (0/8 checks pass trivially).
+
+**Action needed**: Run EXP-196 from an environment with GYM_AGENT_BIN configured, or adapt the experiment to use `ctx.runAgent()` in a workflow-based gym run.
