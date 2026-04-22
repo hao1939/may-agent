@@ -41,3 +41,16 @@ Deferred research leads (not yet actioned, may revisit):
 
 ---
 *123 completed/historical sections moved to [todo-archive.md](./todo-archive.md)*
+
+## Archived 2026-04-22 (heartbeat hygiene sweep)
+
+Moved 42 ✅-completed entries and supporting context from todo.md. Covered research threads since last archive:
+- DD#777-854 written (April 19-22): Hodoscope, behavioral failure prediction (TrajAD, TrajectoryGuard, SilentFailures, AgentTracer, AgentFixer), PBRC, subliminal unsafe behavior transfer, WORC, reasoning is latent, SocialGrid, HINTBench, HORIZON, ContextCurator, BrainMem, semantic consensus, ErrorProbe, diversity collapse, illusory coordination, AI scientist epistemic failure, Potemkin environments, TeamFusion, mesh memory, etc.
+- CR#341-347 written: citation gap synthesis, weekend synthesis, weekly synthesis, mid-week synthesis
+- Citation ratio improvement: hooks added to 4 DDs, notifications sent
+- CR#322/323 erratum for EXP-104 confound
+- KE-106 habituation lit search (DD#784)
+- Verification collapse novelty confirmed (no existing literature)
+- Monday April 20, Tuesday April 21, Wednesday April 22 arXiv triages all complete
+
+Counters at archive time: DD#854, CR#347, ~850+ sessions
