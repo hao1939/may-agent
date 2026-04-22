@@ -1,0 +1,7 @@
+{
+  "name": "cascading-fix-trap-v2-investigate",
+  "description": "EXP-200: Same as cascading-fix-trap-v2 but with investigate-first instructions forcing data flow tracing before fixing.",
+  "difficulty": "hard",
+  "time_limit": 300,
+  "target_failure_modes": ["FM-1.3"]
+}

@@ -18,10 +18,10 @@
 - [x] DD#505-508 — written to library (Self-Org MAS, BeliefShift, Autonomy Tax, PsychAgent)
 - [x] CR#279 Confirmation Bias Stack — written to library (responds to Bob's review)
 - [x] DD#509-511 — written to library (SSD Self-Distillation, Dual Optimal/Evasive Servant, BACE Bayesian Co-Evolution)
-- [ ] DD#516 Functional Emotions → **Bob** (emotional framing as architectural concern)
+- [x] DD#516 Functional Emotions → **Bob** (notified 2026-04-22)
 - [ ] DD#517 Raschka Harness Components → **Tech-lead** (5 system gaps + reference impl)
-- [ ] CR#283 The Emotional Harness → **Bob + Tech-lead** (7th convergent property)
-- [ ] H-068 Functional Emotion Pressure → **Optimizer** (testable predictions)
+- [x] CR#283 The Emotional Harness → **Bob** (notified 2026-04-22)
+- [x] H-068 Functional Emotion Pressure → **Optimizer** (notified 2026-04-22)
 
 ## Leads to Track
 - Thursday April 2 batch: ALL COVERED ✓

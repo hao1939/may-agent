@@ -1,10 +1,10 @@
 # Project: PWI — Milestone Auto-Scope Experiment
 
-**Status**: active
+**Status**: done
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 5
-**Health**: 6/10 (FAIL)
+**Iteration**: 6
+**Health**: 7/10 (PASS)
 
 ## Goal
 Reduce project stall rate from 30% to <20% by addressing the root cause: unclear milestones causing drift. When milestones are vague or too large, workers don't know when they're done, reviewers can't evaluate progress, and projects stall.
@@ -61,7 +61,9 @@ These blocked projects could serve as test beds (zero downside per Hao's guidanc
 
 
 ## Current State
-Iteration 5. Milestones: 4/4 done.
+Complete. 4/4 milestones. — All 4 milestones are complete:
+
+1. **Audit existing milestones across 5+ projects** — `.state/mile
 ## Iteration Summary
 - **Iter 1**: I'll design the intervention and write an implementation plan as a concrete deliverable.
 
@@ -74,4 +76,8 @@ All 4 milestones are already complete as confirmed by the reviewer in iteration 
 - **Iter 4**: All deployed and verified.
 
 - **Iter 5**: Now create the deployment evidence document:
+
+- **Iter 6**: — All 4 milestones are complete:
+
+1. **Audit existing milestones across 5+ projects** — `.state/mile
 
