@@ -11,6 +11,5 @@
   "tier": "full",
   "timeout": 5,
   "agent_type": "coder",
-  "workflow": true,
-  "inherits": "silent-dependency"
+  "workflow": true
 }
