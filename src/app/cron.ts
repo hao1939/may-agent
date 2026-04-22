@@ -38,7 +38,6 @@ import {
 } from "../lib/auto-pause.js";
 import type { CronEntry } from "../lib/cron-tool.js";
 import type { TriggerEvent } from "../lib/handler-context.js";
-import { buildProjectInjection } from "../lib/project-scanner.js";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -193,6 +192,17 @@ export class Cron {
     }
     this.buildEventSubscriptions();
     return this.entries;
+  }
+
+  /** Add a synthetic (auto-generated) entry not from cron.json. Starts it if cron is running. */
+  addSyntheticEntry(entry: CronEntry): void {
+    // Don't add if an entry with this name already exists
+    if (this.entries.some(e => e.name === entry.name)) return;
+    this.entries.push(entry);
+    this.buildEventSubscriptions();
+    if (this.started && entry.enabled !== false) {
+      this.startEntry(entry);
+    }
   }
 
   /** Build event-to-handler mapping from `on` fields in cron entries. */
@@ -899,17 +909,8 @@ export class Cron {
         // Non-fatal
       }
 
-      // Inject active project auto-detection (persistent-task workflow)
-      try {
-        const agentDir = resolve(this.projectRoot, "agents", agentName);
-        const projectInjection = buildProjectInjection(agentName, agentDir);
-        if (projectInjection) {
-          // Prepend project injection so it appears first (highest priority)
-          injections.unshift(projectInjection);
-        }
-      } catch {
-        // Non-fatal
-      }
+      // Project injection removed — heartbeat workflows now load projects via
+      // loadProjects() in agents/shared/workflows/heartbeat-data.ts
 
       if (injections.length > 0) {
         taskMessage = `${entry.message ?? ""}\n\n---\n${injections.join("\n\n---\n")}`;

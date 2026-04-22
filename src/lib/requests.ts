@@ -308,10 +308,18 @@ CREATE TABLE IF NOT EXISTS events (
   source          TEXT,
   owner           TEXT,
   data            TEXT,
-  timestamp       INTEGER NOT NULL
+  timestamp       INTEGER NOT NULL,
+  status          TEXT DEFAULT 'pending',
+  handled_by      TEXT,
+  result          TEXT,
+  reason          TEXT,
+  retry_count     INTEGER DEFAULT 0,
+  ttl_ms          INTEGER,
+  urgency         TEXT DEFAULT 'normal'
 );
 CREATE INDEX IF NOT EXISTS idx_events_owner ON events(owner, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_type  ON events(event_type, timestamp);
+CREATE INDEX IF NOT EXISTS idx_events_inbox ON events(status, timestamp);
 `;
 
 // ── Database Management ────────────────────────────────────────────────
@@ -419,6 +427,11 @@ export function getDb(persistDir: string): SqliteDb {
   } catch {
     /* already exists */
   }
+  // Event inbox columns (convention-defaults Phase 1)
+  for (const col of ["status TEXT DEFAULT 'pending'", "handled_by TEXT", "result TEXT", "reason TEXT", "retry_count INTEGER DEFAULT 0", "ttl_ms INTEGER", "urgency TEXT DEFAULT 'normal'"]) {
+    try { db.exec(`ALTER TABLE events ADD COLUMN ${col}`); } catch { /* already exists */ }
+  }
+  try { db.exec("CREATE INDEX IF NOT EXISTS idx_events_inbox ON events(status, timestamp)"); } catch { /* */ }
 
   dbCache.set(persistDir, db);
   return db;

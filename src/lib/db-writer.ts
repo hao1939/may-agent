@@ -75,14 +75,16 @@ export class DbWriter {
         case "emit":
           // Persist all domain events — complete audit trail
           try {
+            const data = event.data as Record<string, unknown> | undefined;
             this.db.run(
-              "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+              "INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)",
               [
                 event.event,
-                (event.data as Record<string, unknown>)?.source as string ?? null,
-                (event.data as Record<string, unknown>)?.owner as string ?? null,
+                data?.source as string ?? null,
+                data?.owner as string ?? null,
                 event.data ? JSON.stringify(event.data) : null,
                 Date.now(),
+                data?.urgency as string ?? "normal",
               ],
             );
           } catch {
