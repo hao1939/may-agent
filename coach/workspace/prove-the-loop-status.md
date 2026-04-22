@@ -1,4 +1,4 @@
-# Prove-the-Loop Status — 2026-06-23 heartbeat
+# Prove-the-Loop Status — 2026-06-23 heartbeat (updated)
 
 ## M1-M4: COMPLETE
 - Skill gap: relational bug blindness (v2: 0/115 = 0% over 14+ days)

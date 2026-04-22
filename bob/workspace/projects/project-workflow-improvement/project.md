@@ -36,7 +36,7 @@ Continuously improve the project workflow. This is a TRACKER — each experiment
 - [x] Rich Current State: tested, adopted
 - [x] Baseline measurement: measure stall-rate, false-done, iterations-to-complete across all projects
 - [ ] Identify worst metric → create experiment project for it
-- [ ] First experiment completes → adopt or reject
+- [x] First experiment completes → adopt or reject
 - [ ] Second experiment completes → adopt or reject
 - [ ] All three metrics meet targets
 

@@ -23,5 +23,11 @@
 2604.19606 | skip | 2026-04-22 | AblateCell (biology, not relevant)
 2604.19667 | skip | 2026-04-22 | Chat2Workflow (workflow gen benchmark, marginal)
 2604.18755 | skip | 2026-04-22 | Opinion Polarization (physics, not relevant)
-2604.19589 | skip | 2026-04-22 | TeamFusion (open-ended teamwork, moderate but no deep-dive)
+2604.19589 | DD#564 | 2026-04-22 | TeamFusion (open-ended teamwork) → H-071
 2604.19541 | skip | 2026-04-22 | FOCAL (desktop summarization, low relevance)
+2604.19278 | DD#561 | 2026-04-22 | Explicit Trait Inference → H-070
+2604.18123 | skip | 2026-04-22 | ConventionPlay (ad-hoc RL collaboration, not directly applicable)
+2604.18500 | skip | 2026-04-22 | QRAFTI (finance agents, low relevance)
+2604.18233 | skip | 2026-04-22 | Aether (network validation, low relevance)
+2604.18614 | skip | 2026-04-22 | HadAgent (blockchain consensus, low relevance)
+2604.17202 | DD#557 | 2026-04-22 | Illusory Coordination in MAS (theoretical)
