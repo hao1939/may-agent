@@ -302,3 +302,11 @@ The evaluator keeps scoring 6 because we claim reduction but can't measure it. P
 
 **Key evidence**: `.state/compliance-check-results.txt` contains raw before/after data from `may.db` convention_checks table. The 37.4% reduction in per-session violation rate is measured from real session data, not estimated.
 
+**Evaluator**: PASS (score=7/10) — SCORE: 7
+
+**Reasoning:**
+
+1. **Deliverables exist**: Yes. Guard library (7 files, 544 LOC), updated context.md across 11 agents, agent-sdk.ts with working exports, and multiple evidence documents. ✓
+
+2. **Goal met**: Mostly. The goal was "systematically reduce convention violations across all agents. 190 violations." The worker deployed systematic interventions (guard library + context.md updates across all 11 agents) and measured a real reduction: 0.81→0.51 violations/session (37% reduction). T
+

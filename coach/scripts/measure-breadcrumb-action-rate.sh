@@ -31,8 +31,12 @@ const cutoff = Date.now() - MS_7D;
 // without the gate pattern, fall back to main heartbeat sessions.
 
 // Find ALL sessions where agent saw BELOW TARGET breadcrumbs
+// v5 (2026-04-22): Fixed false-positive bug. context.md for some agents contains
+// instructional text mentioning "BELOW TARGET" (e.g. "if you see BELOW TARGET, act on it").
+// This caused EVERY session for those agents to match, even when metrics were green.
+// Fix: require the metric-line pattern "📊 ... ⚠️ BELOW TARGET" in the task, not just the phrase.
 const allRows = db.query(`
-  SELECT s.sessionId, s.agent, s.startedAt,
+  SELECT s.sessionId, s.agent, s.startedAt, s.task,
          d.what_happened, d.details, d.outcome,
          CASE WHEN s.task LIKE "%RED METRICS that must be addressed%" THEN 1 ELSE 0 END as is_gate
   FROM sessions s
@@ -40,7 +44,10 @@ const allRows = db.query(`
   WHERE s.startedAt > ?
     AND s.task LIKE "%BELOW TARGET%"
     AND s.task LIKE "You are **%"
-`).all(cutoff);
+`).all(cutoff)
+  // Filter to sessions that actually had a metric line with BELOW TARGET
+  // (not just instructional text in context.md/heartbeat.md)
+  .filter(r => /📊[^\n]*BELOW TARGET/.test(r.task) || r.is_gate);
 
 // Deduplicate: if a gate session exists for an agent+timestamp window, prefer it over the main session.
 // Gate sessions are the ones that actually address metrics.

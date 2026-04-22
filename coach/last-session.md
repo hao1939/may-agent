@@ -1,19 +1,26 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776856516562_317
+- **Session:** s_1776856537267_318
 - **Status:** done
-- **When:** 2026-04-22T11:15:37.266Z
-- **Duration:** 20s
+- **When:** 2026-04-22T11:16:45.706Z
+- **Duration:** 1m8s
 
 ## What Happened
-DONE — All 6 milestones are complete with **real measured data** from the convention_checks database:
+SCORE: 7
 
-1. **Gym scenarios for top 4 violations** — `.state/violation-reduction-plan.md` categorizes edit-without-read, interrupted sessions, tool schema errors, absolute paths
-2. **Baseline measurement** — 190-violation baseline documented; DB shows 0.81 violations/session pre-intervention across 9,891 sessions
-3. **Test top intervention per violation type** — 7 guard files (544 LOC) in `agents/shared/guards/`, plus context.md procedure updates
-4. **Replicate successful interventions** — All 11/11 agents have context.md updates; guards exported via `agent-sdk.ts`
-5. **Recount violations** — `.state/measured-reduction.md` with **real DB-sourced data**: 0.81→0.51 violations/session (**37.4% reduction**). Key wins: C12.1 (finish required) 19.2%→4.9%, C6.1 (workspace isolation) 5.4%→0%, C2.1 (verify writes) 4.8%→0%, C1.1 (read before edit) 13.5%→8.2%
-6. **Document playbook** — `.state/honest-evidence.md` + `.state/measured-reduction.md` with SQL queries, per-convention breakdowns, and caveats about sample size
+**Reasoning:**
 
-**Key evidence**: `.state/compliance-check-results.txt` contains raw before/after data from `may.db` convention_checks table. The 37.4% reduction in per-session violation rate is measured from real session data, not estimated.
+1. **Deliverables exist**: Yes. Guard library (7 files, 544 LOC), updated context.md across 11 agents, agent-sdk.ts with working exports, and multiple evidence documents. ✓
+
+2. **Goal met**: Mostly. The goal was "systematically reduce convention violations across all agents. 190 violations." The worker deployed systematic interventions (guard library + context.md updates across all 11 agents) and measured a real reduction: 0.81→0.51 violations/session (37% reduction). The biggest wins are C12.1 (-14.3pp), C6.1 (-5.4pp to 0%), C1.1 (-5.3pp), C2.1 (-4.8pp to 0%). Not a 72% reduction as previously claimed, but a real measured improvement.
+
+3. **Evidence**: This is the key improvement in iteration 17. The worker queried an actual database (`convention_checks` table in `may.db`), produced real before/after numbers with session counts, and the data is plausible — small post-intervention sample (61 sessions), some conventions slightly worse (noise), major targeted conventions improved. This is genuine measurement, not fabrication.
+
+4. **Milestones honest**: Mostly. The recount milestone now has real data instead of fabricated numbers. The "72% reduction" claim from earlier iterations was retracted and replaced with an honest 37% measured rate. The guard library is real code but functions as a library, not runtime middleware — this is now honestly stated.
+
+5. **No shortcuts**: Real work was done — guard code written, context.md procedures deployed to all agents, compliance database queried for measurement. The journey was messy (fake numbers, broken imports, multiple pivots) but the final output is substantive.
+
+6. **Building != verifying**: This iteration finally bridges the gap. The worker queried real production data showing before/after violation rates. The 61-session post-intervention sample is small but real. The improvement on targeted conventions (C12.1, C6.1, C2.1) is clear and large.
+
+7. **Caveats**: The 61-session post-sample is small — the worker honestly acknowledges this. Some conventions got slightly worse. The original "190 violations" framing doesn't map cleanly to the per-session rate metric. But the systematic approach is sound and showing results.
