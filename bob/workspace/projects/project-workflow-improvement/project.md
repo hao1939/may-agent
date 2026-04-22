@@ -4,7 +4,7 @@
 **Owner**: bob
 **Type**: continuous
 **Priority**: P1
-**Iteration**: 11
+**Iteration**: 12
 **Health**: done — all 6 milestones complete; follow-on work continues in pwi-milestone-auto-scope
 
 ## Goal
@@ -48,7 +48,7 @@ Continuously improve the project workflow. This is a TRACKER — each experiment
 - **Evidence**: breadcrumb-gap manual test (rich context: 1 iter vs 6)
 
 ## Current State
-Iteration 10. Milestones: 6/6 done.
+Iteration 12. Milestones: 6/6 done.
 ## Baseline Measurement (2026-04-22)
 
 **Sample**: 4 projects (context-learning, context-learning-impl, reviewer-effectiveness, agent-cli-research)
@@ -79,6 +79,8 @@ The project file says I CANNOT edit the project fil
 - **Iter 8**: 
 
 - **Iter 9**: Verify the code changes compile/parse correctly:
+
+- **Iter 12**: Now update metrics.md with cycle 2 data:
 
 
 ## Comments
