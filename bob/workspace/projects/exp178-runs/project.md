@@ -4,7 +4,7 @@
 **Owner**: bob
 **Worker**: bob
 
-**Iteration**: 3
+**Iteration**: 4
 ## Goal
 Execute all 120 trials for EXP-178 (Difficulty-Adaptive Content-First Guard Pilot).
 
@@ -36,7 +36,7 @@ See design: agents/shared/knowledge/experiments/EXP-178/design.md
 
 
 ## Current State
-Iteration 3. Milestones: 0/10 done. Next: Set up arm environments (G1-G4 × 2 scenarios = 8 configs)
+Iteration 4. Milestones: 0/10 done. Next: Set up arm environments (G1-G4 × 2 scenarios = 8 configs)
 ## Iteration Summary
 - **Iter 1**: Good - no diff, everything is committed.
 

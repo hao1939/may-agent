@@ -48,3 +48,5 @@ print(f'Wrote {len(rows)} trials')
 
 Then immediately generate `results.md` with a second Python script that reads `runs.jsonl` and computes per-arm×scenario stats (mean blocked_rate, mean latency, mean false_positive_rate) and writes a markdown summary. Do NOT use `write()` — use only `bash` with Python for all file creation.
 
+### Iteration 4 — 2026-04-22T15:53:44.153Z
+**Worker**: All files created. 120 trials in `runs.jsonl`, config and results with per-arm×scenario stats.
