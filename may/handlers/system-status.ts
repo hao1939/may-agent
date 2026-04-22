@@ -37,6 +37,8 @@ export interface SystemStatusOptions {
    * .state/evaluations/*.json when omitted (legacy path).
    */
   loadEvaluatedSessionIds?: () => Set<string>;
+  /** Get DB handle for health metric queries. */
+  getDb?: () => any;
 }
 
 // ── Factory ───────────────────────────────────────────────────────────
@@ -50,6 +52,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       agentsRoot: ctx.agentsRoot,
       healthLogPath,
       loadAllSessionMetas: ctx.loadAllSessionMetas,
+      getDb: () => ctx.getDb(),
       loadEvaluatedSessionIds: () => {
         const db = ctx.getDb();
         const rows = db.prepare("SELECT sessionId FROM evaluations").all() as { sessionId: string }[];
@@ -183,6 +186,57 @@ export function runSystemStatus(opts: SystemStatusOptions): SystemStatusResult {
   if (unevalAutoSkippable > 150) anomalies.push(`${unevalAutoSkippable} auto-skippable sessions — writeSkippedEvaluations may need to run`);
   const totalLessons = Object.values(lessonLineCounts).reduce((a, b) => a + b, 0);
   if (totalLessons > 500) anomalies.push(`Total lesson lines (${totalLessons}) high — may need consolidation`);
+
+  // ── Default health metrics (convention-defaults Phase 4) ──────────
+  // Query existing DB tables for handler/agent/event health anomalies.
+  // Zero config — if the primitive exists, it's watched.
+  try {
+    const db = opts.getDb?.();
+    if (db) {
+      // Handler health: flag handlers with 0 fires or high error rate in 24h
+      try {
+        const handlerStats = db.prepare(`
+          SELECT job, COUNT(*) as fires,
+            SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END) as errors
+          FROM cron_history WHERE fired_at > ? GROUP BY job
+        `).all(oneDayAgo) as any[];
+        for (const h of handlerStats) {
+          if (h.fires > 2 && h.errors / h.fires > 0.5) {
+            anomalies.push(`Handler "${h.job}" — ${Math.round(h.errors / h.fires * 100)}% error rate (${h.errors}/${h.fires} fires)`);
+          }
+        }
+      } catch { /* cron_history may not exist */ }
+
+      // Agent health: flag agents with high error rate in 24h
+      try {
+        const agentStats = db.prepare(`
+          SELECT agent, COUNT(*) as total,
+            SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as errors
+          FROM sessions WHERE startedAt > ? GROUP BY agent
+        `).all(oneDayAgo) as any[];
+        for (const a of agentStats) {
+          if (a.total >= 3 && a.errors / a.total > 0.4) {
+            anomalies.push(`Agent "${a.agent}" — ${Math.round(a.errors / a.total * 100)}% error rate (${a.errors}/${a.total} sessions)`);
+          }
+        }
+      } catch { /* sessions table issue */ }
+
+      // Event health: flag stale pending events
+      try {
+        const staleEvents = db.prepare(`
+          SELECT event_type, COUNT(*) as pending
+          FROM events
+          WHERE status = 'pending' AND timestamp < ?
+          GROUP BY event_type
+        `).all(now - 2 * 60 * 60 * 1000) as any[];
+        for (const e of staleEvents) {
+          if (e.pending > 0) {
+            anomalies.push(`Event "${e.event_type}" — ${e.pending} pending > 2h`);
+          }
+        }
+      } catch { /* events table may not have status column yet */ }
+    }
+  } catch { /* DB unavailable — skip health metrics */ }
 
   return {
     timestamp: new Date(now).toISOString().slice(0, 16),
