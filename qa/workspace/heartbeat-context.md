@@ -13,11 +13,13 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-22T06:10)
+# Your Context (auto-generated 2026-04-22T06:40)
 
-**System:** 0 sessions/6h, 0% error rate
+**System:** 2 sessions/6h, 0% error rate
 
 **Top spenders:**
+- coach: 1s, 128KB
+- amy: 1s, 92KB
 
 **📊 Your Metrics:**
-- Review coverage: **338** → 0
+- Review coverage: **339** → 0

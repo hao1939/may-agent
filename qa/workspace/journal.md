@@ -5825,3 +5825,19 @@ Reviewed recent commit `0fe136c` ("DD#855: Decision boundary interventions...").
 ### Verdict
 CONDITIONAL — checklist edit itself is fine, but cannot verify build/tests and cannot review submodule contents from this checkout.
 
+---
+
+## 2026-04-22 — QA heartbeat proactive scan
+
+### What I checked
+- Recent commits: `git log --oneline -10` (top: 0fe136c, d6746d2, 095435b, ...)
+- Read: `src/pipeline.js`
+- Attempted mandatory tool checks: `./node_modules/.bin/tsc --noEmit`, `./node_modules/.bin/vitest --run`
+
+### Findings
+- IMPORTANT (environment): `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest` are missing (`No such file or directory`). This repo checkout has `node_modules/` but no `.bin/` directory and no scripts in `package.json`; cannot run the mandated typecheck/test commands in this environment.
+- MINOR (code quality): `src/pipeline.js` defines `validateRecords()` inline while there is also `src/validator.js` in repo; potential duplication/unused module. Not a correctness bug by itself, but harms maintainability.
+
+### Verdict
+CONDITIONAL — cannot complete mandated tsc/vitest verification due to missing toolchain in this checkout; code read did not reveal a functional defect.
+
