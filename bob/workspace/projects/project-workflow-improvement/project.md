@@ -34,9 +34,11 @@ Continuously improve the project workflow. This is a TRACKER — each experiment
 
 ## Milestones
 - [x] Rich Current State: tested, adopted
-- [ ] Baseline measurement: stall-rate, false-done, iterations-to-complete across all projects
-- [ ] Smart context generation: design → test → measure
-- [ ] Next experiment based on findings
+- [ ] Baseline measurement: measure stall-rate, false-done, iterations-to-complete across all projects
+- [ ] Identify worst metric → create experiment project for it
+- [ ] First experiment completes → adopt or reject
+- [ ] Second experiment completes → adopt or reject
+- [ ] All three metrics meet targets
 
 ## Resources
 - **Workflow code**: agents/shared/workflows/project.ts
@@ -45,7 +47,7 @@ Continuously improve the project workflow. This is a TRACKER — each experiment
 - **Evidence**: breadcrumb-gap manual test (rich context: 1 iter vs 6)
 
 ## Current State
-Rich Current State adopted. Next: baseline measurement, then smart context experiment.
+Rich Current State adopted. Next: measure baseline across all projects, identify the worst metric, create an experiment project to fix it.
 
 ## Iteration Summary
 
