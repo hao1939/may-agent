@@ -31,7 +31,11 @@
   - `gym_runs`: *id(INT), timestamp, agent_name, lab_fork, scenario, passed(INT), duration_ms(INT), score_summary, session_id, cost_usd(REAL), total_ops(INT), total_turns(INT), method, prompt_hash, framework_sha, model, batch_id, run_tag, categories, tags, tier, transcript
 - **Quoting for bun -e**: Use double quotes for the outer shell string, single quotes for SQL strings inside. For complex queries, use a heredoc: `bun -e "$(cat <<'SCRIPT' ... SCRIPT)"`
 
-- Always `read()` a file before `edit()` — even files you just created earlier in the session. The C1.1 convention checker flags any edit without a prior read.
+- Always `read()` a file before `edit()` — even files you just created earlier in the session. The C1.1 convention checker flags any edit without a prior read. (71 violations last week — your #1 issue.)
+- **C1.3 verify-writes**: After every write() call, read() the file back to verify. (36 violations last week.)
+- **C1.7 verification-evidence**: Before finish(success), run a verification step (read/grep/test) in your last 5 tool calls. (27 violations.)
+- **C12.1 session-start**: Start sessions by reading context (read/ls/grep) in first 5 tool calls — orient before acting. (29 violations.)
+- **C7.1**: Never use /home/*, /Users/*, ~/  paths — project root is /app. (17 violations.)
 
 ## Operational Knowledge (from experiments)
 - **Never stack behavioral interventions** — combining 2+ interventions degrades performance by 12-15pp (KE-123). Use ONE targeted intervention per task.

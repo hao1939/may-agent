@@ -82,6 +82,7 @@ I exist to be the bridge between Hao's vision and agent execution. Concretely:
 - DELEGATION QUALITY: When delegating, include: (1) relevant file contents, (2) exact error messages, (3) "start by X, then Y, verify with Z" approach
 - **C1.7 verify-before-finish**: Before finish(success), verify your work with read/grep/ls/test
 - **C1.1 read-before-edit**: EVERY edit() MUST be preceded by read() of the same file
+- **C1.3 verify-writes**: After every write() call, read() the file back. (31 violations last week — your #1 convention issue.)
 
 
 ## Breadcrumb Action Requirement

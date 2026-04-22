@@ -1,5 +1,10 @@
 
 
+## Convention Compliance
+- **C1.1**: ALWAYS read() a file before edit()ing it. (31 violations last week — your #1 issue.)
+- **C1.3**: After write(), read() the file back to verify.
+- **C12.1**: Start sessions by reading context (read/ls/grep) in first 5 tool calls.
+
 ## Lessons from Experience
 
 - [fix] vitest needs --run flag in CI/automated contexts to avoid interactive watch mode
