@@ -51,16 +51,24 @@ Key changes:
 - Investigation: agents/coach/projects/breadcrumb-gap/m4-investigation.md
 - Root cause: habituation — may.alert-to-reaction-time stuck at 136.8 for 5+ checks, same text becomes invisible
 
-### M5: Add "breadcrumb acknowledgment" to finish() schema
-- Require agents to explicitly state what they did about each breadcrumb
-- Even "deferred — working on higher priority X" counts as acknowledgment
-- This closes the accountability loop
+### M5: Fix deployment — force runtime to pick up M3/M4 code ⏳
+- **BLOCKER FOUND 2026-04-22**: M3/M4 code is committed but 0 sessions have seen it
+- Root cause: stale binary/runtime not re-importing updated workflow TS files
+- Action: dispatch to tech-lead to rebuild binary or restart runtime process
+- Postmortem: agents/coach/projects/breadcrumb-gap/m3-postmortem.md
+- Must confirm ≥5 sessions see `ACTION REQUIRED` format before proceeding
 
-### M6: Measure post-intervention rate
-- Target: ≥0.65 within 48h of M3 deployment
+### M6: Measure ACTUAL M3/M4 impact
+- Target: ≥0.65 within 48h of M5 completion (actual deployment)
+- Per-agent focus: may must go from 23% → ≥50%
 - If not met: breadcrumb problem is deeper (agent architecture, not wording)
 
-### M7: Sustained 0.80
+### M7: Add "breadcrumb acknowledgment" to finish() schema (conditional)
+- Only if M6 rate < 0.65 after confirmed deployment
+- Require agents to explicitly state what they did about each breadcrumb
+- Even "deferred — working on higher priority X" counts as acknowledgment
+
+### M8: Sustained 0.80
 - 7-day rolling rate ≥ 0.80
 - Project complete
 
