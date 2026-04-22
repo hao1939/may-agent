@@ -47,11 +47,11 @@ Our agents orchestrate work but struggle with complex code changes (can't access
 - [ ] Document the UX and architecture differences
 
 ## Milestones
-- [ ] Research: write `.state/cli-research.md` listing how each CLI works (Claude Code, Gemini CLI, OpenAI Codex) with invocation patterns, input/output formats, and install requirements
-- [ ] Install: get at least one CLI working locally — verify with `which <cli>` and a hello-world invocation captured in `.state/cli-install-log.md`
-- [ ] Integrate: write `.state/cli-integration-test.md` showing our agent calling a CLI via bash to solve a coding task, with before/after comparison
-- [ ] Evaluate: write `.state/cli-evaluation.md` comparing CLI-assisted vs agent-only for ≥2 real tasks (speed, quality metrics)
-- [ ] Adopt: write `agents/shared/skills/cli-coding/SKILL.md` documenting best practices
+- [x] Research: write `.state/cli-research.md` listing how each CLI works (Claude Code, Gemini CLI, OpenAI Codex) with invocation patterns, input/output formats, and install requirements
+- [x] Install: get at least one CLI working locally — verify with `which <cli>` and a hello-world invocation captured in `.state/cli-install-log.md`
+- [x] Integrate: write `.state/cli-integration-test.md` showing our agent calling a CLI via bash to solve a coding task, with before/after comparison
+- [x] Evaluate: write `.state/cli-evaluation.md` comparing CLI-assisted vs agent-only for ≥2 real tasks (speed, quality metrics)
+- [x] Adopt: write `agents/shared/skills/cli-coding/SKILL.md` documenting best practices
 
 ## Current State
 Iteration 7. Milestones: 0/5 done. Next: Research: write `.state/cli-research.md` listing how each CLI works (Claude Code
@@ -63,6 +63,8 @@ Iteration 7. Milestones: 0/5 done. Next: Research: write `.state/cli-research.md
 - **Iter 5**: The research doc exists and is comprehensive. The milestone asks for `.state/cli-research.md` specif
 
 - **Iter 6**: All 5 files created. Let me verify:
+
+- **Iter 7**: All 5 files written with real terminal output.
 
 
 ## Comments
