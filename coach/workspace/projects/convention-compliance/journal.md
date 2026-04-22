@@ -52,3 +52,29 @@ The fix: For each agent, add **concrete procedural checklists** to their context
 
 ### Iteration 5 — 2026-04-22T09:57:52.250Z
 **Worker**: Now verify the deliverables:
+**Reviewer**: CONTINUE — Now I see the full picture. The work has been done across iterations (context.md files modified, guards built, plan created) but the project has **no `## Milestones` section** — it has milestones buried in Phase sections that the workflow can't track. The worker has been doing real work but the project structure prevents milestone check-off.
+
+CONTINUE —
+
+**(a) Concrete output:** The project.md needs a flat `## Milestones` section (as Hao's comment noted). The worker should also verify that the guards (`edit-guard.ts`, `path-guard.ts`) actually exist and tests pass. Then create a summary showing concrete violation reduction evidence. Final deliverable: updated project.md with milestones checked off, and `.state/violation-reduction-plan.md` updated with evidence of what was accomplished.
+
+**(b) What's different:** Previous iterations focused on editing context.md files and building guards. This iteration focuses on **project bookkeeping** — adding the Milestones section so the workflow can track progress, and verifying/documenting what's already been accomplished. The actual work is largely done; we need to record it properly.
+
+**(c) First step:** Run this single command to verify the guards exist and tests pass:
+```bash
+ls -la agents/src/lib/edit-guard.ts agents/src/lib/path-guard.ts agents/src/lib/guards.test.ts 2>&1 && cd agents && cat src/lib/guards.test.ts | head -5 && export PATH=".state/.bun/bin:$PATH" && bun test src/lib/guards.test.ts 2>&1 | tail -20
+```
+
+Then read the project.md and add a `## Milestones` section right after `## Goal` with these checked/unchecked items based on what's actually done:
+```
+## Milestones
+- [x] M1: Gym scenarios for top 4 violations
+- [x] M2: Baseline measurement  
+- [x] M3: Test top intervention per violation type (edit-guard + path-guard built & tested)
+- [ ] M4: Replicate winning interventions
+- [ ] M5: Production deployment
+- [ ] M6: Knowledge synthesis
+```
+
+Check off M1, M2, M3 because phase1-results.md and phase2-guards.md show that work is complete. Do NOT check off M4-M6 since deployment hasn't happened yet.
+

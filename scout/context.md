@@ -29,9 +29,13 @@
 
 
 ## Learned from experience
+
 - When a task specifies a future date, check today's actual date and refuse with 'blocked' status instead of claiming the work is already done — because mismatched dates mean the requested deliverables don't exist yet, and declaring 'success' with zero outputs is a critical false-positive (source: s_1776784273721_10, 2026-04-21)
 - When chaining bash commands with `&&`, use `grep ... || true` for grep calls that may return no matches — because grep exits code 1 on no matches, which aborts the entire chain and the error is easy to overlook (source: s_1776787866216_22, 2026-04-21)
 - When a GitHub repo returns 404, try alternative org names, repo spellings, paper/blog references, and broader web searches instead of concluding the project doesn't exist — because projects often live under unexpected orgs or names, and a single 404 is weak evidence for non-existence (source: s_1776800479298_84, 2026-04-21)
+- Now commit: (source: s_1776850600797_4, 2026-04-22)
+- Good output with 5 relevant papers and hypotheses. Metrics are all green, research dispatched and completed. (source: s_1776846436331_15, 2026-04-22)
+- Now I have enough to write the comprehensive document. (source: s_1776845869111_7, 2026-04-22)
 
 ## Reflexion-Extracted Lessons
 - [insight] EXP-084/085 together establish that few-shot worked examples produce the strongest behavior change among lightweight (non-workflow) skill delivery methods. Key distinction: declaring an outcome (0% effect) vs structuring a process (33-100% effect). The closer the worked example matches the task structure, the stronger the effect (87.5pp for structurally-matched escalation-judgment vs 33pp for abstract contradictory-requirements).

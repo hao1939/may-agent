@@ -67,3 +67,24 @@
 - **C12.1**: Start sessions by reading context (read/ls/grep) in first 5 tool calls — orient before acting.
 - **C7.1**: Never use absolute home directory paths — project root is /app.
 - **C6.1**: Stay under 80 tool calls per session — budget awareness.
+
+
+## Learned from experience
+
+- Now I understand the system. The violations are convention compliance issues tracked per-agent in their `context.md` files. Here's my guidance:
+
+**CONTINUE** —
+
+**(a) Concrete output:** Modified `agen (source: s_1776851671640_49, 2026-04-22)
+- PIVOT —
+
+**(a) Concrete output:** `.state/violation-reduction-plan.md` with baseline count and fixes applied, plus modified agent convention files with reduced violations.
+
+**(b) What's different:** P (source: s_1776851534149_40, 2026-04-22)
+- Now commit the changes: (source: s_1776851439172_36, 2026-04-22)
+- CONTINUE
+
+**(a) Concrete output:** A file `.state/violation-reduction-plan.md` containing: (1) the current violation count per agent, (2) categorized violation types, and (3) a prioritized fix plan. A (source: s_1776851058939_19, 2026-04-22)
+- All 15 tests pass. Now let me update the project progress log: (source: s_1776850903113_8, 2026-04-22)
+- Now let me write the reflection: (source: s_1776847403084_32, 2026-04-22)
+- Those are other agents' files, not mine. Let me try finish again. (source: s_1776845897650_9, 2026-04-22)
