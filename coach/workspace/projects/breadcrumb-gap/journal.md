@@ -167,3 +167,5 @@ PIVOT — The previous approach (just wiring `formatMetricsBlock`) was necessary
 
 **(c) First step:** `find . -path '*/gym/*breadcrumb*' -o -path '*/gym/*metric-reaction*' 2>/dev/null | head -20` then `grep -r 'breadcrumb' package.json scripts/ Makefile 2>/dev/null` to find how to actually run gym scenarios, then run one.
 
+### Iteration 11 — 2026-04-22T10:30:54.914Z
+**Worker**: Now add the fix to the changes table:
