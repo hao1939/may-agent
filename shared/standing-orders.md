@@ -12,24 +12,21 @@ You are judged by what you produce, not what you say you'll do. Every session mu
 - **Applies to**: all
 - **Reason**: Hao's direct order. We watch what you did, not listen to what you say.
 
-### [ORDER-003] Use workflows for ALL substantive work — workflow-first dispatch (2026-04-13, updated 2026-04-20)
-If you have the `workflow` tool, ALL substantive work (>3 ops expected) MUST go through a workflow. Run `workflow.list()` to see what's available — your agent-specific workflows take priority over shared ones.
+### [ORDER-003] Use workflows for structured work (2026-04-13, updated 2026-04-22)
+Workflows are for **structured multi-session work** — projects and heartbeats. These are handled automatically:
+- **Projects** → project workflow (launched by project handler)
+- **Heartbeats** → per-agent heartbeat workflow (launched by cron)
+- **Code changes** → `workflow.run("implement-and-review", ...)` or `workflow.run("verified-coder", ...)`
 
-**Dispatch rules:**
-- Code changes → `workflow.run("implement-and-review", ...)` or `workflow.run("verified-coder", ...)`
-- Design review, research, analysis → `workflow.run("freestyle-wrap", "agent: <name>\n<task>")`
-- Any multi-op delegation → `workflow.run("freestyle-wrap", "agent: <name>\n<task>")`
-- Skip workflows ONLY for pure reading (<3 ops) or quick inline triage
+**Dispatching work to other agents:** Use `agents.fork()` — it's fire-and-forget, doesn't block you. The session is tracked in the DB. Don't use `workflow.run("freestyle-wrap", ...)` for dispatch — it blocks your session until the work finishes.
 
-**For May specifically:** When dispatching work to other agents, prefer `workflow.run("freestyle-wrap", "agent: <name>\n<task>")` over bare `agents.fork()`. This ensures workflow tracking. Use bare `agents.fork()` only for immediate <1-op triage that Hao is waiting on.
+- **Applies to**: all agents
+- **Reason**: Fork is the correct dispatch mechanism. Workflows are for process structure, not dispatch tracking.
 
-- **Applies to**: all agents with workflow tool (bob, coach, optimizer, tech-lead, qa, may)
-- **Reason**: Real workflow coverage is ~19.9% despite target of 80%. Most sessions bypass workflows because agents use bare `agents.fork()`/`agents.call()` instead of workflow dispatch. The `freestyle-wrap` workflow adds zero overhead while ensuring tracking.
-
-### [ORDER-008] May dispatch rules — fork vs message (2026-04-15, updated 2026-04-20)
-When Hao asks May to dispatch work, May must start it immediately (not queue via message). Prefer `workflow.run("freestyle-wrap", "agent: <name>\n<task>")` which starts immediately AND gets workflow tracking. Fall back to `agents.fork()` only if workflow tool unavailable. Never use `agents.message()` for human-initiated work.
+### [ORDER-008] May dispatch rules (2026-04-15, updated 2026-04-22)
+When Hao asks May to dispatch work, May must start it immediately using `agents.fork()`. Never use `agents.message()` for human-initiated work — it queues and waits up to 30 minutes.
 - **Applies to**: may
-- **Reason**: `agents.message()` queues and waits up to 30 minutes. Human requests should not wait. `workflow.run("freestyle-wrap")` starts immediately like fork but with tracking.
+- **Reason**: Human requests should not wait.
 
 ### [ORDER-004] No turn budgets or op limits in heartbeats (2026-04-15)
 Do NOT add turn budgets, op budgets, hard caps, or "budget: N ops" language to heartbeats or session prompts. The cost-limit-guard (1000 calls) is an emergency brake for infinite loops — it is NOT a turn budget. For session cost control, use persistent tasks + owner review.

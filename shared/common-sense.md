@@ -32,7 +32,7 @@ Workflows enforce process so you can focus on the work. The core workflow is `pr
 
 **Metric projects:** Add a `## Metrics` section to declare target metrics. Format: `- metric.id: target > 0.7, baseline 0.29`. The evaluator checks metric movement on completion.
 
-**Workflow-first dispatch**: When delegating work to another agent, use `workflow.run("freestyle-wrap", "agent: <name>\n<task>")` instead of bare `agents.fork()`. This ensures the session is tracked in the workflow system with zero overhead. Only use bare fork for <3-op triage.
+**Dispatching work**: Use `agents.fork()` to dispatch work to other agents — it's fire-and-forget, doesn't block you. For code changes, use `workflow.run("implement-and-review", ...)`.
 
 Inside a workflow step, the workflow may override your available tools and process.
 
