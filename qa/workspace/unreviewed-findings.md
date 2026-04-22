@@ -1,23 +1,28 @@
-# Unreviewed findings (QA heartbeat)
+# QA Heartbeat — Unreviewed Findings (2026-04-22)
 
 ## Context
-- Repo root `/app` is **not** a git repo.
-- The git repo is under `/app/agents`.
-- Last 6h commits (sample):
-  - `8694727e6 may: fix compliance-check readonly DB PRAGMA exec error`
+I attempted a standard verification pass for recent agent repo changes, focusing on the most recent functional commit in the last ~6h: `700e41917 fix: compliance-check handler opens DB read-write instead of readonly`.
 
-## Review target
-### `agents/may/handlers/compliance-check.ts`
-Read evidence: `read()` lines 1-~150.
+## Evidence-backed findings
 
-### Notes / potential issues
-- **IMPORTANT (behavioral / logging)**: `runGuardSmokeTests()` always logs `"[compliance-check] Guard smoke tests passed"` even if earlier checks logged WARNs. This can be misleading (it’s not a true pass/fail signal).
-- **IMPORTANT (type safety / runtime assumptions)**: `augmentedCtx` is cast `as HandlerContext` while adding optional shims (`emit`, `triggerNow`) as no-ops. If downstream checks rely on real side effects (events/trigger), compliance may silently degrade.
-- **IMPORTANT (error handling)**: handler swallows errors from convention-check and standing-orders-check by only logging. This may be intended, but it means cron success does not imply checks succeeded.
-- **MINOR**: smoke test uses hard-coded path `some-file.ts`; if EditGuard logic changes to validate real filesystem presence, this test may become flaky.
+### 1) compliance-check handler: DB opened read/write in fallback path (reviewed)
+- File read: `agents/may/handlers/compliance-check.ts` (full file within first 200 lines).
+- The fallback `makeGetDb()` now uses `db = new Database(dbPath);` (no `{ readonly: true }`) and therefore permits writes. This matches the commit message intent.
 
-## Required verification steps blocked by environment
-- `./node_modules/.bin/tsc --noEmit` fails: `No such file or directory`
-- `./node_modules/.bin/vitest --run` fails: `No such file or directory`
+Potential quality note:
+- `runGuardSmokeTests()` always logs `"[compliance-check] Guard smoke tests passed"` even if earlier warnings were emitted (warnings are logged but no fail/return). That may be intended (best-effort smoke), but the message is slightly misleading.
 
-This looks like a repo dependency install issue (missing `node_modules` in `/app`). If this is expected in the heartbeat container, QA cannot execute mandatory compilation/tests.
+### 2) Tooling / verification environment issue: repo lacks local node_modules binaries + no tsconfig
+Mandatory step `./node_modules/.bin/tsc --noEmit` could not be executed because `node_modules/.bin/tsc` does not exist in either `/app` or `/app/agents`.
+- Evidence: `ls node_modules/.bin` fails at repo root, and `cd agents && ls node_modules/.bin` fails (no such directory).
+- `cd agents && bun x tsc --noEmit` only prints TypeScript help because there is no `tsconfig.json` in the repo root (`find . -maxdepth 3 -name tsconfig.json` returned no results).
+
+### 3) Vitest command fails due to test suite layout / intentional failing gym scenarios
+Mandatory step `./node_modules/.bin/vitest --run` also cannot be executed (no local binary), and `bun x vitest --run` fails because it discovers many gym scenario tests that intentionally call `process.exit`, have no Vitest suites, or intentionally fail assertions.
+- Evidence: `cd agents && bun x vitest --run` reports `101 failed, 12 passed (113)` test files and unhandled errors.
+
+Even narrowing to a single repo test file still fails:
+- `cd agents && bun x vitest --run test/orders.test.ts` fails: cannot find module `../src/lib/orders.js`.
+
+## Conclusion
+The compliance-check change itself appears straightforward and correct in isolation, but I cannot complete required tsc/vitest verification due to the current repo/tooling/test layout. Additionally, the repo’s own `test/*.test.ts` appears broken (missing referenced source file).
