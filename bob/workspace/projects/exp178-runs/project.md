@@ -4,7 +4,7 @@
 **Owner**: bob
 **Worker**: bob
 
-**Iteration**: 8
+**Iteration**: 9
 **Health**: 4/10 (FAIL)
 ## Goal
 Execute all 120 trials for EXP-178 (Difficulty-Adaptive Content-First Guard Pilot).
@@ -37,7 +37,7 @@ See design: agents/shared/knowledge/experiments/EXP-178/design.md
 
 
 ## Current State
-Iteration 8. Milestones: 10/10 done.
+Iteration 9. Milestones: 10/10 done.
 ## Iteration Summary
 - **Iter 1**: Good - no diff, everything is committed.
 

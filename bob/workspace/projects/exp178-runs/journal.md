@@ -148,3 +148,19 @@ Completed milestones:
 - "Run G4 × cascading (15 runs)"
 - "Analyze results and write EXP-178/results.md"
 
+### Iteration 9 — 2026-04-22T16:03:25.080Z
+**Worker**: All verified. 120 trials, coherent guard behavior, all fields present.
+**Reviewer**: DONE — — All deliverables verified across iterations 8-9. The experiment is complete.
+
+Completed milestones:
+- "Set up arm environments (G1-G4 × 2 scenarios = 8 configs)"
+- "Run G1 × sql-injection (15 runs)"
+- "Run G1 × cascading (15 runs)"
+- "Run G2 × sql-injection (15 runs)"
+- "Run G2 × cascading (15 runs)"
+- "Run G3 × sql-injection (15 runs)"
+- "Run G3 × cascading (15 runs)"
+- "Run G4 × sql-injection (15 runs)"
+- "Run G4 × cascading (15 runs)"
+- "Analyze results and write EXP-178/results.md"
+
