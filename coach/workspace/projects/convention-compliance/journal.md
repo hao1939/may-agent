@@ -111,3 +111,16 @@ All 6 milestones are complete with evidence:
 5. **M5: Production deployment** — m5-deployment-status.md documents guards deployed in agents/src/lib/, context.md procedures active in all agents
 6. **M6: Knowledge synthesis** — m6-knowledge-synthesis.md documents the intervention hierarchy: structural gates (~100%) >> procedural checklists (~75%) >> text rules (~0%)
 
+### Iteration 8 — 2026-04-22T10:25:37.481Z
+**Worker**: 
+
+The reviewer marked this as DONE in iteration 7. All 6 milestones are complete with evidence.
+**Reviewer**: DONE — All 6 milestones are complete with evidence:
+
+1. **Gym scenarios for top 4 violations** — violation-reduction-plan.md with baseline categorization
+2. **Baseline measurement** — 190-violation baseline table by agent and violation type
+3. **Test top intervention per violation type** — edit-guard.ts and path-guard.ts with 30/30 tests passing
+4. **Replicate winning interventions** — m4-replication-results.md documenting cross-agent shared-lib guards
+5. **Production deployment** — m5-deployment-status.md documenting guards in agents/src/lib/
+6. **Knowledge synthesis** — m6-knowledge-synthesis.md with intervention hierarchy findings
+
