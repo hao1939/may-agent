@@ -15,56 +15,62 @@ Escalations are scattered, don't follow hierarchy, and never close. 155 entries 
 3. **Closed loop** — must be resolved or dismissed with reason
 4. **Metrics** — open count, time to resolve, rate per agent
 
-## Design
+## Revised Design: Convention + Metrics
 
-### Escalation = finish(blocked)
+The project system + metric system + heartbeat visibility IS the escalation system. No new handler, no new events, no promotion timer.
 
-Agents already know `finish(status: "blocked", blockers: [...])`. That IS the escalation. No new tool needed.
-
-```
-Agent calls finish(status: "blocked")
-  → Session ends
-  → emit escalation.created { agent, reason, sessionId, projectId }
-  → If parent is waiting (sync): parent receives blocked result from callAgent
-     → Parent tries to fix (reviewer retries, different approach)
-     → This is normal workflow operation, not tracked as escalation
-  → If parent can't fix or no parent (async): event persists in events table
-     → Escalation handler picks up, routes through hierarchy
-```
-
-Sync and async unified through events. Parent handles inline. Handler handles the rest.
-
-### When escalation.created fires
-
-NOT on every `finish(blocked)`. Only when the **workflow exhausts its ability to fix**:
-
-- Project reviewer says BLOCKED (after retries failed)
-- Stall detection: 5 iterations without progress
-- Worker fails consecutively (after reviewer retried)
-
-Normal retries within the workflow are NOT escalations — they're the workflow working. The journal tracks every retry. Escalation is when the system gives up.
-
-### Escalation events
+### How it works today
 
 ```
-escalation.created   — system exhausted options, needs outside help
-escalation.promoted  — current level couldn't fix, moving up  
-escalation.resolved  — fixed
-escalation.dismissed — not worth fixing, with reason
+Agent stuck → finish(blocked) → caller retries (sync)
+Caller gives up → project goes BLOCKED → visible in owner's heartbeat
+Owner doesn't act → May sees blocked projects in her heartbeat → nudges owner
+May can't fix → May messages human
 ```
 
-All persisted to events table. No separate schema.
+All existing mechanisms. The convention (common-sense.md): "Chain: You → session owner → May → Hao."
 
-### Hierarchy as event routing
+### What's missing: metrics to close the loop
+
+Without metrics we can't tell if blocked projects are getting attention. Add:
+
+| Metric | What | Source | Owner |
+|--------|------|--------|-------|
+| `system.blocked-projects` | Count of projects with status=blocked | Project file scan | may |
+| `system.blocked-duration-avg` | Average hours projects stay blocked | project.blocked → project.status-changed events | may |
+| `system.blocked-unattended` | Projects blocked >24h with no activity (mtime stale) | Project file scan + mtime | may |
+
+If `system.blocked-unattended` > 0, someone isn't doing their job. May investigates.
+
+### May's accountability role
+
+May's heartbeat already pre-loads ALL projects (including other agents'). Update May's heartbeat.md to explicitly say:
 
 ```
-escalation.created { level: 1, owner: "coach" }
-  → Owner sees in heartbeat, tries to fix
-  → 1h no resolution → emit escalation.promoted { level: 2 }
-  → May sees in heartbeat, tries to fix
-  → 1h no resolution → emit escalation.promoted { level: 3 }
-  → Human gets Telegram notification
+## Blocked Project Accountability
+Check all blocked projects across all agents (shown above in "Your Projects").
+For each blocked project older than 24h:
+- Nudge the owner: "Your project X has been blocked for Nh. What's the plan?"
+- If owner is unresponsive after 2 nudges: investigate yourself or escalate to Hao
 ```
+
+### When to build more
+
+If `system.blocked-unattended` stays >0 for a week despite May's nudges, THEN build:
+- Time-based auto-promotion (1h → May, 2h → human)
+- Dedicated escalation handler
+- Escalation events
+
+Evidence first (P5). Prove the convention fails before adding infrastructure.
+
+## Implementation
+
+| Change | LOC | File |
+|--------|-----|------|
+| Add 3 metrics to metrics table | ~10 | metrics-snapshot handler or manual INSERT |
+| Update May's heartbeat.md with accountability section | ~5 | agents/may/heartbeat.md |
+| May's heartbeat pre-loads ALL agents' blocked projects | ~10 | may-heartbeat.ts loadProjects to scan all agents |
+| Total | ~25 | |
 
 ### Hierarchy
 

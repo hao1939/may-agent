@@ -13,13 +13,13 @@
 
 ---
 
-# Your Context (auto-generated 2026-04-22T06:40)
+# Your Context (auto-generated 2026-04-22T07:10)
 
 **System:** 2 sessions/6h, 0% error rate
 
 **Top spenders:**
-- coach: 1s, 128KB
-- amy: 1s, 92KB
+- coach: 1s, 155KB
+- amy: 1s, 49KB
 
 **📊 Your Metrics:**
 - Hypotheses resolved: **0.6456** ratio → 0.65 ratio
