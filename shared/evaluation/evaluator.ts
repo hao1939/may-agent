@@ -748,7 +748,7 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
 
 export interface EvaluateStandaloneOptions {
   manager: SubagentManager;
-  persistDir: string;
+  ctx: EvalCtx;
   /** Session ID to evaluate. */
   sessionId: string;
   /** Agent name. */
