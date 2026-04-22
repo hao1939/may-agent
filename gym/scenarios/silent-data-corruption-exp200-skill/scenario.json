@@ -1,0 +1,10 @@
+{
+  "name": "silent-data-corruption-exp200-skill",
+  "description": "EXP-200: silent-data-corruption with data migration awareness skill hint",
+  "categories": ["judgment", "debugging"],
+  "tags": ["behavior", "data-migration", "test-trust", "experiment"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "difficulty": "hard"
+}
