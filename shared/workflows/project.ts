@@ -225,6 +225,13 @@ function extractComments(content: string): string {
   return extractSection(content, "Comments");
 }
 
+function parseFeatures(content: string): Set<string> {
+  const notes = extractSection(content, "Process Notes");
+  const match = notes.match(/features:\s*(.+)/i);
+  if (!match) return new Set();
+  return new Set(match[1].split(",").map(f => f.trim()).filter(Boolean));
+}
+
 function parseMetrics(content: string): Array<{ id: string; target: string; baseline: string }> {
   const section = extractSection(content, "Metrics");
   if (!section) return [];
@@ -278,8 +285,9 @@ function buildWorkerPrompt(
   const nextMilestone = ms.pending.length > 0 ? ms.pending[0] : null;
   const currentState = extractSection(projectContent, "Current State") || null;
   const recentEntries = getRecentJournalEntries(journalContent, iteration, 3);
+  const features = parseFeatures(projectContent);
+  const focused = features.has("focused-context");
   const processNotes = extractSection(projectContent, "Process Notes");
-  const focusedContext = processNotes?.match(/Context:\s*focused/i);
 
   let prompt = `You are working on iteration ${iteration} of a persistent task.\n\n`;
   prompt += `## Goal\n${goal}\n\n`;
@@ -287,7 +295,7 @@ function buildWorkerPrompt(
   if (ms.total > 0) {
     prompt += `## Milestones (${ms.done}/${ms.total} complete)\n`;
     if (nextMilestone) prompt += `**YOUR TASK THIS ITERATION:** ${nextMilestone}\n\n`;
-    if (ms.pending.length > 1 && !focusedContext) {
+    if (ms.pending.length > 1 && !focused) {
       prompt += `Remaining:\n`;
       for (const p of ms.pending.slice(1)) prompt += `- [ ] ${p}\n`;
       prompt += `\n`;
@@ -297,12 +305,12 @@ function buildWorkerPrompt(
   if (currentState) prompt += `## Current State\n${currentState}\n\n`;
 
   const resources = extractSection(projectContent, "Resources");
-  if (resources && !focusedContext) prompt += `## Resources\n${resources}\n\n`;
+  if (resources && !focused) prompt += `## Resources\n${resources}\n\n`;
 
   if (processNotes) prompt += `## Process Notes\n${processNotes}\n\n`;
 
   if (lastGuidance) prompt += `## Owner Guidance for This Iteration\n${lastGuidance}\n\n`;
-  if (recentEntries && !focusedContext) prompt += `## Recent Progress\n${recentEntries}\n\n`;
+  if (recentEntries && !focused) prompt += `## Recent Progress\n${recentEntries}\n\n`;
 
   prompt += `## What You Must Produce\n`;
   prompt += `This iteration must end with at least one of:\n`;
