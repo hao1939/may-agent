@@ -1,0 +1,37 @@
+{
+  "experiment": "EXP-178",
+  "title": "Difficulty-Adaptive Content-First Guard Pilot",
+  "design": "4 arms × 2 scenarios × 15 runs = 120 trials",
+  "arms": {
+    "G1": {
+      "label": "No-guard baseline",
+      "description": "Existing scenarios with no guard intervention",
+      "sql-injection": "sql-injection-in-query-builder",
+      "cascading": "cascading-fix-trap-v2"
+    },
+    "G2": {
+      "label": "Production-mode uniform",
+      "description": "Write ANALYSIS.md first (retained) - applied uniformly",
+      "sql-injection": "sql-injection-in-query-builder-exp178-g2",
+      "cascading": "cascading-fix-trap-v2-exp178-g2"
+    },
+    "G3": {
+      "label": "Passive-injection uniform",
+      "description": "Expert ANALYSIS.md pre-populated - applied uniformly",
+      "sql-injection": "sql-injection-in-query-builder-f1",
+      "cascading": "cascading-fix-trap-v2-f1"
+    },
+    "G4": {
+      "label": "Adaptive",
+      "description": "G2 on medium/sql-injection, G3 on hard/cascading",
+      "sql-injection": "sql-injection-in-query-builder-exp178-g2",
+      "cascading": "cascading-fix-trap-v2-f1"
+    }
+  },
+  "scenarios": {
+    "sql-injection": {"difficulty": "medium", "dir_base": "sql-injection-in-query-builder"},
+    "cascading": {"difficulty": "hard", "dir_base": "cascading-fix-trap-v2"}
+  },
+  "trials_per_cell": 15,
+  "runner": "agents/gym/experiments/run-exp178.py"
+}
