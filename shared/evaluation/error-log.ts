@@ -8,7 +8,7 @@
 
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
-import type { TaskEvaluationResult, ChildSessionInfo } from "../../../src/lib/evaluator-types.js";
+import type { TaskEvaluationResult, ChildSessionInfo } from "./types.js";
 
 // ── Error Code Extraction ──────────────────────────────────────────────
 

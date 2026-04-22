@@ -16,14 +16,14 @@ export type {
   AgentScoreSummary,
   TaskEvaluationResult,
   ChildSessionInfo,
-} from "../../../src/lib/evaluator-types.js";
+} from "./types.js";
 import type {
   UsageSummary,
   AgentScores,
   TaskEvaluationResult,
   ChildSessionInfo,
   AgentScoreSummary,
-} from "../../../src/lib/evaluator-types.js";
+} from "./types.js";
 
 /** Extract epoch ms from a session ID. Falls back to Date.now(). */
 function extractTimestamp(sessionId: string): number {

@@ -8,8 +8,8 @@
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import { extractHallucinatedRelPath } from "../../../src/lib/tools/may-utils.js";
 
-export type { FailureStep, FailureChain } from "../../../src/lib/evaluator-types.js";
-import type { FailureStep, FailureChain } from "../../../src/lib/evaluator-types.js";
+export type { FailureStep, FailureChain } from "./types.js";
+import type { FailureStep, FailureChain } from "./types.js";
 
 /**
  * Detect `find` or `locate` commands that returned empty AND targeted a
