@@ -1,11 +1,11 @@
 # Project: Project Workflow Improvement — Tracker
 
-**Status**: active
+**Status**: blocked
 **Owner**: bob
 **Type**: continuous
 **Priority**: P1
 **Iteration**: 15
-**Health**: 5/10 (FAIL)
+**Health**: 6/10 (BLOCKED)
 
 ## Goal
 Continuously improve the project workflow. This is a TRACKER — each experiment is its own project.
@@ -48,7 +48,7 @@ Continuously improve the project workflow. This is a TRACKER — each experiment
 - **Evidence**: breadcrumb-gap manual test (rich context: 1 iter vs 6)
 
 ## Current State
-Iteration 15. Milestones: 6/6 done.
+Blocked: The worker has been unable to execute tools for 5+ consecutive iterations (it produces text fragments like "Now notify May..." but never actually call
 ## Baseline Measurement (2026-04-22)
 
 **Sample**: 4 projects (context-learning, context-learning-impl, reviewer-effectiveness, agent-cli-research)
