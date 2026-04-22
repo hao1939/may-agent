@@ -17,36 +17,54 @@ Escalations are scattered, don't follow hierarchy, and never close. 155 entries 
 
 ## Design
 
-### Escalation is an event
+### Escalation = finish(blocked)
 
-No separate table. Escalations are events — tracked, persisted, routable through the existing event system.
+Agents already know `finish(status: "blocked", blockers: [...])`. That IS the escalation. No new tool needed.
 
 ```
-Agent blocked → emit escalation.created { agent, owner, reason, projectId, level: 1 }
-Owner timeout → emit escalation.promoted { id, level: 2 }
-May timeout   → emit escalation.promoted { id, level: 3 } + Telegram notify
-Fixed         → emit escalation.resolved { id, resolvedBy, resolution }
-Dismissed     → emit escalation.dismissed { id, dismissedBy, reason }
+Agent calls finish(status: "blocked")
+  → Session ends
+  → emit escalation.created { agent, reason, sessionId, projectId }
+  → If parent is waiting (sync): parent receives blocked result from callAgent
+     → Parent tries to fix (reviewer retries, different approach)
+     → This is normal workflow operation, not tracked as escalation
+  → If parent can't fix or no parent (async): event persists in events table
+     → Escalation handler picks up, routes through hierarchy
 ```
 
-Query all escalations:
-```sql
-SELECT * FROM events WHERE event_type LIKE 'escalation.%' ORDER BY timestamp DESC
+Sync and async unified through events. Parent handles inline. Handler handles the rest.
+
+### When escalation.created fires
+
+NOT on every `finish(blocked)`. Only when the **workflow exhausts its ability to fix**:
+
+- Project reviewer says BLOCKED (after retries failed)
+- Stall detection: 5 iterations without progress
+- Worker fails consecutively (after reviewer retried)
+
+Normal retries within the workflow are NOT escalations — they're the workflow working. The journal tracks every retry. Escalation is when the system gives up.
+
+### Escalation events
+
+```
+escalation.created   — system exhausted options, needs outside help
+escalation.promoted  — current level couldn't fix, moving up  
+escalation.resolved  — fixed
+escalation.dismissed — not worth fixing, with reason
 ```
 
-Query open escalations (created but not resolved/dismissed):
-```sql
-SELECT e.* FROM events e
-WHERE e.event_type = 'escalation.created'
-AND NOT EXISTS (
-  SELECT 1 FROM events r 
-  WHERE r.event_type IN ('escalation.resolved', 'escalation.dismissed')
-  AND json_extract(r.data, '$.id') = json_extract(e.data, '$.id')
-)
-ORDER BY e.timestamp DESC
-```
+All persisted to events table. No separate schema.
 
-The events table IS the escalation log. No new schema.
+### Hierarchy as event routing
+
+```
+escalation.created { level: 1, owner: "coach" }
+  → Owner sees in heartbeat, tries to fix
+  → 1h no resolution → emit escalation.promoted { level: 2 }
+  → May sees in heartbeat, tries to fix
+  → 1h no resolution → emit escalation.promoted { level: 3 }
+  → Human gets Telegram notification
+```
 
 ### Hierarchy
 
