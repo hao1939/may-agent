@@ -1,4 +1,4 @@
-# Project: Project Workflow Improvement
+# Project: Project Workflow Improvement — Tracker
 
 **Status**: active
 **Owner**: bob
@@ -7,51 +7,46 @@
 **Health**: —
 
 ## Goal
-Continuously improve the project workflow by testing changes on live projects and measuring outcomes.
+Continuously improve the project workflow. This is a TRACKER — each experiment is its own project.
 
 ## Metrics
-- project.stall-rate: target < 20% (iterations without progress / total iterations)
-- project.false-done: target < 5% (evaluator rejects / total DONE claims)
+- project.stall-rate: target < 20%
+- project.false-done: target < 5%
 - project.iterations-to-complete: target < 10 avg
 
+## Experiments
+
+| Experiment | Project | Status | Result |
+|-----------|---------|--------|--------|
+| Rich Current State | (tested manually) | adopted ✅ | 1 focused iter vs 6 confused |
+| Smart context generation | pwi-smart-context (not created) | designed | — |
+| Milestone auto-scope | — | idea | — |
+| Evaluator tuning | — | idea | — |
+
+## How to Add an Experiment
+
+1. Create a project: `agents/bob/workspace/projects/pwi-<name>/`
+2. Project.md has: goal, design, test plan, target project, milestones
+3. Include the feature design doc in the project directory
+4. Run experiment: test on a live project, measure before/after
+5. Update this tracker with results
+6. If positive: merge into workflow code, mark adopted
+
 ## Milestones
-- [ ] Baseline: measure current stall-rate, false-done rate, iterations-to-complete
-- [ ] First experiment: test one feature on a live project, measure before/after
-- [ ] Second experiment: test a different feature, compare
-- [ ] Adopt: merge winning features into workflow code
-
-## Current State
-Not started. First experiment candidate: rich Current State (positive signal from breadcrumb-gap manual test).
-
-## Feature Designs
-
-Each feature has a design doc in this project's directory. The design must answer: what changes, how to enable, how to measure, how to revert.
-
-| Feature | Design | Status | Test project |
-|---------|--------|--------|-------------|
-| Rich Current State | [designs/rich-current-state.md](designs/rich-current-state.md) | Tested manually, positive signal | breadcrumb-gap |
-| Smart context generation | [designs/smart-context-generation.md](designs/smart-context-generation.md) | Designed, needs baseline | — |
-| Milestone auto-scope | [designs/milestone-auto-scope.md](designs/milestone-auto-scope.md) | Not designed | — |
-| Evaluator tuning | [designs/evaluator-tuning.md](designs/evaluator-tuning.md) | Not designed | — |
-
-## How to Run an Experiment
-
-1. Write the feature design in `designs/<feature>.md`
-2. Pick a live project with enough iterations ahead
-3. Add `## Process Notes` to that project with the feature instructions
-4. Run 3-5 iterations, measure stall-rate and milestone velocity
-5. Compare to baseline (same project before, or similar project without)
-6. Document results in `results/<feature>-results.md`
-7. If positive: merge into workflow code. If negative: document why and revert.
+- [x] Rich Current State: tested, adopted
+- [ ] Baseline measurement: stall-rate, false-done, iterations-to-complete across all projects
+- [ ] Smart context generation: design → test → measure
+- [ ] Next experiment based on findings
 
 ## Resources
 - **Workflow code**: agents/shared/workflows/project.ts
-- **Project handler**: agents/may/handlers/project.ts
-- **Design docs index**: agents/shared/may-agent-docs/design/project-system.md
-- **Evidence**: breadcrumb-gap manual test showed 1 focused iteration vs 6 confused (rich context vs mechanical)
-- **Metrics source**: .state/may.db → sessions table (stall detection), events table (project.blocked/completed)
+- **Rich context design**: designs/rich-current-state.md
+- **Smart context design**: designs/smart-context-generation.md
+- **Evidence**: breadcrumb-gap manual test (rich context: 1 iter vs 6)
 
-## Process Notes
+## Current State
+Rich Current State adopted. Next: baseline measurement, then smart context experiment.
+
+## Iteration Summary
 
 ## Comments
-- [2026-04-22 hao] Each feature needs a design doc in designs/. The design must explain: what changes, how to enable on one project, how to measure success, how to revert. Test on live projects, not in theory.
