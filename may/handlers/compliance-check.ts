@@ -13,11 +13,34 @@
  * Exports create() conforming to HandlerModule.
  */
 
+import { Database } from "bun:sqlite";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.js";
 import type { CronEntry } from "../../shared/agent-sdk.js";
 import { EditGuard, validateBashCommand, enforceNoHallucinatedPaths } from "../../shared/agent-sdk.js";
 import { create as createConventionCheck } from "./convention-check.js";
 import { create as createStandingOrdersCheck } from "./standing-orders-check.js";
+
+/**
+ * Create a getDb function that opens .state/may.db on demand.
+ * Uses its own connection (same pattern as session-sync) because
+ * ctx.getDb is not provided by the runtime for JS handlers.
+ */
+function makeGetDb(persistDir: string) {
+  let db: Database | null = null;
+  return () => {
+    if (!db) {
+      const dbPath = join(persistDir, "may.db");
+      if (!existsSync(dbPath)) {
+        throw new Error(`Database not found at ${dbPath}`);
+      }
+      db = new Database(dbPath, { readonly: true });
+      db.exec("PRAGMA journal_mode=WAL");
+    }
+    return db;
+  };
+}
 
 /**
  * Run guard self-tests to verify they're functional.
@@ -61,8 +84,17 @@ function runGuardSmokeTests(ctx: HandlerContext): void {
 }
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
-  const runConventionCheck = createConventionCheck(ctx, entry);
-  const runStandingOrdersCheck = createStandingOrdersCheck(ctx, entry);
+  // Augment ctx with getDb if not already provided by the runtime
+  const augmentedCtx = {
+    ...ctx,
+    getDb: ctx.getDb ?? makeGetDb(ctx.persistDir ?? ".state"),
+    notify: ctx.notify ?? ((msg: string) => ctx.log(`[compliance-check:notify] ${msg}`)),
+    emit: ctx.emit ?? ((_event: unknown) => { /* no-op when runtime doesn't provide emit */ }),
+    triggerNow: ctx.triggerNow ?? ((_name: string) => { /* no-op */ }),
+  } as HandlerContext;
+
+  const runConventionCheck = createConventionCheck(augmentedCtx, entry);
+  const runStandingOrdersCheck = createStandingOrdersCheck(augmentedCtx, entry);
 
   return async () => {
     ctx.log("[compliance-check] Starting combined compliance run");
