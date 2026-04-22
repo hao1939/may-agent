@@ -1,5 +1,5 @@
 /// <reference path="../../../src/lib/workflow-defs.d.ts" />
-import { loadMetrics, loadProjects, loadAlerts, loadHeartbeatMd, loadInbox } from "../../shared/workflows/heartbeat-data.js";
+import { loadMetrics, formatMetricsBlock, loadProjects, loadAlerts, loadHeartbeatMd, loadInbox } from "../../shared/workflows/heartbeat-data.js";
 
 export const name = "may-heartbeat";
 export const description = "May's heartbeat — triage, dispatch, system health.";
@@ -9,6 +9,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   // Pre-load all context in JS (no LLM ops wasted on queries)
   const metrics = loadMetrics(ctx, agent);
+  const metricsBlock = formatMetricsBlock(ctx, agent);
   const projects = loadProjects(ctx, agent);
   const alerts = loadAlerts(ctx, agent);
   const guidance = loadHeartbeatMd(ctx, agent);
@@ -61,8 +62,7 @@ ${redMetricActions}
 
   const prompt = `You are **${agent}** waking up for your heartbeat.
 
-## Your Metrics
-${metrics || "No metrics data available."}
+${metricsBlock}
 ${redMetricContext}
 ## Active Alerts
 ${alerts || "None — all clear."}

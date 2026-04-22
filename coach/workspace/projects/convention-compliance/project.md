@@ -7,7 +7,7 @@
 **Started**: 2026-04-22
 **Metric**: convention-compliance-rate (currently ~97%, target ≥ 99%)
 
-**Iteration**: 1
+**Iteration**: 2
 ## Goal
 
 Systematically reduce convention violations across all agents. 190 violations
@@ -135,9 +135,10 @@ Based on Phase 1 findings, design interventions. Start with what we know works:
 
 
 ## Current State
-Iteration 1. Milestones: 0/0 done.
-
+Iteration 2. Milestones: 0/0 done.
 ## Iteration Summary
 - **Iter 1**: All 15 tests pass. Now let me update the project progress log:
 
 - [2026-04-22 hao] Add a flat ## Milestones section with checkboxes — the project workflow can only track milestones under ## Milestones heading, not inside Phase sections.
+- **Iter 2**: Now verify the plan file:
+

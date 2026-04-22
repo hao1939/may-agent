@@ -8,3 +8,11 @@
 
 **(c) First step:** Run `bash` to find and read the convention/lint configuration that defines what counts as a violation, then run the violation checker to get the current baseline of 190 violations with details. Try: `find . -name "*.md" -path "*convention*" -o -name "*conventions*" | head -20` and `ls .state/` to understand the project structure.
 
+### Iteration 2 — 2026-04-22T09:50:27.661Z
+**Worker**: Now verify the plan file:
+**Reviewer**: CONTINUE — **(a) Concrete output:** `.state/violation-reduction-plan.md` with violation counts and categories, plus actual convention file fixes to reduce violations.
+
+**(b) What's different:** Previous iteration produced no visible output. This time, start by discovering how violations are counted — find the actual checker script/command — then run it to get the baseline.
+
+**(c) First step:** Run `ls .state/ && cat .state/project.md | head -80` to understand the project structure and find how violations are measured, then `grep -r "violation" .state/ --include="*.md" -l` to find relevant files.
+
