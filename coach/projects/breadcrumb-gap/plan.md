@@ -79,6 +79,12 @@ Key changes:
 - 7-day rolling rate ≥ 0.80
 - Project complete
 
+### M9: May-specific heartbeat intervention ⏳
+- **Problem**: 6/8 non-acting sessions are may. May sees G-pattern + breadcrumbs but ignores them during "read-only monitoring heartbeats."
+- **Intervention**: Added "Metric Accountability (MANDATORY)" section to `agents/may/heartbeat.md` before Anti-patterns. Requires may to either dispatch work for red metrics OR explain why not in session summary. Explicitly bans "read-only monitoring" when red metrics exist.
+- **Dispatched**: 2026-06-28 via fork to may (session s_1776826706484_67)
+- **Next**: Measure may-specific action rate over 7 days → expect may rate to rise from 27% toward 70%+
+
 ## Risks
 
 1. **Over-indexing on wording**: If agents ignore "ACTION REQUIRED" too, the problem is architectural (heartbeat sessions are too short / have too many competing priorities)

@@ -63,3 +63,23 @@ The G-pattern question-framing IS deployed to all agents (all heartbeat.ts files
 1. Investigate may's heartbeat.md — does it have strong step-1 instructions that override the G-pattern?
 2. Consider may-specific intervention: strengthen the alert-to-reaction guidance
 3. The breadcrumb-gap project goal (>50% action rate) requires fixing may's compliance specifically
+
+## 2026-06-28 — M9: May-specific heartbeat intervention
+
+### Problem
+M6 data shows may at 27% action rate (4/15) vs coach at 75% (9/12). 6/8 non-acting sessions are may. May sees the G-pattern question AND breadcrumbs but consistently ignores them during "read-only monitoring heartbeats." Wording interventions (M3 directive format, M4 escalation, M7 workflow gate) have plateaued the overall rate at ~0.48.
+
+### Intervention
+Dispatched edit to `agents/may/heartbeat.md` (fork session s_1776826706484_67):
+- Added "Metric Accountability (MANDATORY)" section before Anti-patterns
+- Requires may to dispatch work for red metrics OR explain why not
+- Explicitly bans "read-only monitoring" when red metrics exist
+- References may's own Priority #1 ("Red metrics → dispatch fix immediately") for self-consistency
+
+### Rationale
+Previous interventions changed the breadcrumb format (what may sees). This intervention changes may's instructions (how may processes what it sees). The key insight: may's heartbeat.md had no explicit instruction to ACT on red metrics — only to "dispatch fix immediately" in a priority list that competes with 4 other priorities. The new section is MANDATORY and positioned right before Anti-patterns so it's the last procedural instruction before the don'ts.
+
+### Next steps
+- Monitor may-specific action rate for 7 days
+- Target: may action rate ≥ 60% (up from 27%)
+- If still failing: escalate to structural change (modify may's heartbeat workflow to enforce gate)
