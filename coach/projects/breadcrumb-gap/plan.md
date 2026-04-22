@@ -55,16 +55,23 @@ Key changes:
 - Confirmed deployed 2026-06-20: own heartbeat shows "⛔ REPEATED ALERT" and "ACTION REQUIRED" format
 - Rate improved 0.44 → 0.50
 
-### M6: Measure ACTUAL M3/M4 impact ⏳
-- Current rate: 0.50 (12/24 acted). Below 0.65 target.
-- May still primary failure source. M3/M4 helped but insufficient alone.
-- **Intervention applied 2026-06-20**: Added "Breadcrumb Action Requirement" section to agents/may/context.md
-- Next check: measure after 5+ may sessions with new context.md directive
+### M6: Measure ACTUAL M3/M4 impact ✅ (insufficient)
+- Measured 2026-04-22: rate = **0.4815** (13/27 acted). Below 0.65 target.
+- **Per-agent breakdown (7d window):**
+  - may: 4/15 = **27%** ← primary failure source, virtually unchanged
+  - coach: 9/12 = **75%** ← healthy, acts on breadcrumbs
+- Context.md directive for may IS deployed but may still defaults to "read-only monitoring"
+- **Diagnosis**: Wording interventions (M3 directive format, M4 escalation, context.md directive) are insufficient for may. May's heartbeat loop is too ingrained — it reads metrics, reports "healthy", and exits without investigating red items. This is a **structural** problem, not a wording problem.
+- Trend: 0.19 → 0.31 → 0.44 → 0.50 → 0.48 (plateaued)
 
-### M7: Add "breadcrumb acknowledgment" to finish() schema (conditional)
-- Only if M6 rate < 0.65 after confirmed deployment
-- Require agents to explicitly state what they did about each breadcrumb
-- Even "deferred — working on higher priority X" counts as acknowledgment
+### M7: Structural enforcement — workflow-level breadcrumb gate ⏳
+- Wording approaches exhausted. Need **architectural** fix.
+- Options (pick one or combine):
+  1. **Heartbeat workflow gate**: After metrics load, if any metric is BELOW TARGET, inject a mandatory "investigate" step before the agent can proceed to other work. The workflow itself forces investigation.
+  2. **finish() breadcrumb acknowledgment**: Require agents to list each red metric and what they did. Workflow rejects finish() without acknowledgment.
+  3. **Separate "metric triage" session**: When breadcrumbs fire, spawn a dedicated short session for that agent focused ONLY on the red metric (not mixed with other heartbeat work).
+- Recommendation: Option 1 (workflow gate) — lowest friction, highest reliability
+- **Next action**: Implement workflow gate in may's heartbeat workflow
 
 ### M8: Sustained 0.80
 - 7-day rolling rate ≥ 0.80
