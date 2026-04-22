@@ -281,21 +281,21 @@ From community discussion on Byzantine problem:
 
 ---
 
-## 4. Community Meta-Patterns
+## 5. Community Meta-Patterns
 
-### 4.1 "Context Is the New Computing"
+### 5.1 "Context Is the New Computing"
 G-Memory, DeerFlow, memU, Anthropic harness all center on **managing context as the primary engineering challenge**. The model is increasingly commodity; the context pipeline is the moat.
 
-### 4.2 "Compression Is Not Optional, It's Architectural"
+### 5.2 "Compression Is Not Optional, It's Architectural"
 Three independent sources validate compression:
 - G-Memory: Graph Sparsifier
 - DeerFlow: "compress irrelevant info"
 - Rule of thumb: insights.md > 600 lines = compress first
 
-### 4.3 "Generator + Verifier Is the Meta-Pattern"
+### 5.3 "Generator + Verifier Is the Meta-Pattern"
 Anthropic recommends it. Coach/Evaluator implements it. G-Memory's Insight Graph enables it. This is converging as THE multi-agent pattern.
 
-### 4.4 "Multi-Agent Communication Has No Consensus"
+### 5.4 "Multi-Agent Communication Has No Consensus"
 Every source confirms this. Community is fragmented between:
 - Shared file systems (OpenClaw approach, DeerFlow)
 - Message passing (MCP, A2A protocol)
@@ -304,9 +304,20 @@ Every source confirms this. Community is fragmented between:
 
 **Pragmatic Take**: File-based coordination may be primitive but it's as proven as anything else.
 
+### 5.5 V2EX Community Insights
+
+**Cost-Aware Development**:
+> "大模型做规划路径 + 审查代码质量；便宜模型按规划路径执行"
+
+**Vibe Coding Reality**:
+> "写spec、复核spec、开始编码，以此循环往复"
+
+**Enterprise Adoption Truth**:
+> "AI应用最好的产品还是创意生成类的...通用点就是允许幻觉存在"
+
 ---
 
-## 5. Actionable Checklist
+## 6. Actionable Checklist
 
 ### Workflow Optimization
 - [ ] Make planning layer explicit (not implicit)
@@ -314,6 +325,8 @@ Every source confirms this. Community is fragmented between:
 - [ ] Design failure feedback loops
 - [ ] Structure experience for reuse, not just logging
 - [ ] Automate repetitive tasks through workflow integration
+- [ ] Use multi-model orchestration (plan with strong/cheap → execute → review with strong)
+- [ ] Always write spec before code, review spec separately
 
 ### LLM-as-Judge
 - [ ] Use multi-judge consensus, not single judge
@@ -321,6 +334,7 @@ Every source confirms this. Community is fragmented between:
 - [ ] Match evaluation dimensions to agent type
 - [ ] Categorize failures before fixing
 - [ ] Monitor for adversarial patterns
+- [ ] Consider cost-quality tradeoffs: Claude for review, GPT-5.4 for bulk
 
 ### Multi-Agent Coordination
 - [ ] Only use multi-agent for the 3 physical red lines
@@ -329,11 +343,20 @@ Every source confirms this. Community is fragmented between:
 - [ ] Use hybrid memory architecture
 - [ ] Schedule active maintenance (score-prune-merge)
 - [ ] Keep human in the loop for final arbitration
+- [ ] Accept that consensus among LLMs is fundamentally flawed
+
+### Enterprise Adoption
+- [ ] Start with creative/use cases that tolerate hallucination
+- [ ] Avoid Text2SQL, NL2SQL (low adoption despite hype)
+- [ ] Focus on workflow integration, not point tools
+- [ ] Progress: API → module → feature → product (not direct to product)
+- [ ] Use n8n-like workflow tools for business process automation
 
 ---
 
 ## Sources
 
+### Xiaohongshu
 | ID | Title | Author | Engagement |
 |----|-------|--------|------------|
 | 69bab74c | 做Agent真正该优化的不只是模型 | 少游 | 28收藏 |
@@ -347,10 +370,34 @@ Every source confirms this. Community is fragmented between:
 | 699aacbf | 5-Agent场景问题 | K老登 | 1792收藏 |
 | 69903894 | AutoRefine | Alibaba | Research |
 | 691b0b3b | 8种记忆策略 | — | 1121收藏 |
-| HB#1488 | Reasoning Judges | Meta/Yale | Paper |
-| HB#2040 | MEMO | arXiv | Paper |
+
+### V2EX (2026-04-22)
+| Thread | Title | Author | Views |
+|--------|-------|--------|-------|
+| t/1207671 | 开发面向普通用户的Agent软件 | SilenceLL | 1087 |
+| t/1207692 | 公司真正落地的AI应用 | IIIIZAYOI | 2516 |
+| t/1207645 | Claude Design Skill开源 | jiji262 | 692 |
+| t/1207380 | AI太烧钱了，大模型组合方案 | meetyuan | 8380 |
+| t/1207771 | Vibe会让模型先输出方案审核吗 | TKKONE | 228 |
+| t/1207711 | Codex风评超过Claude Code | dsd2077 | 7316 |
+| t/1207720 | 大家如何使用codex | oldManNewThought | 2943 |
+| t/1207748 | Token Plan对比 | KimigaiiWuyi | 2291 |
+
+### Research Papers
+| ID | Title | Source |
+|----|-------|--------|
+| HB#1488 | Reasoning Judges | Meta/Yale |
+| HB#2040 | MEMO | arXiv |
+
+### GitHub Projects
+| Project | Author | Description |
+|---------|--------|-------------|
+| TogoAgent | alexazhou | Multi-agent with GUI, task-driven |
+| OpenMantis | LiangNiang | Multi-platform Agent framework |
+| claude-design-skill | jiji262 | Portable design skill for Claude |
 
 ---
 
 *Document compiled for Bob/workspace/research/*
 *Focus: Actionable techniques, not theory*
+*Last Updated: 2026-04-22 with V2EX findings*
