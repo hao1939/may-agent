@@ -44,6 +44,33 @@
 - When processing tasks that create files, check if the target files already exist (with correct content) BEFORE writing — because blindly writing identical content then claiming "Created N files" is misleading and wastes a session. (source: s_1776778910593_30, 2026-04-21)
 - Now sync to DB and commit. (source: s_1776850600699_1, 2026-04-22)
 - Now commit and finish. (source: s_1776857801135_363, 2026-04-22)
+- SCORE: 6
+
+**1. Deliverables exist:** Yes. Two substantive files exist with real content — the results file has proper structure with tables, findings, and recommendation. The measurements file has gen (source: s_1776865751947_519, 2026-04-22)
+- DONE — The deliverables are now comprehensive and intellectually honest.
+
+The addendum file directly addresses the evaluator's circularity critique, downgrades the recommendation from "ADOPT" to "TRIA (source: s_1776865728605_518, 2026-04-22)
+- The evaluator's critique (score 6/10) is that the experiment is circular — the iterations being measured *are* the experiment itself. I need to address this honestly and create a proper addendum. (source: s_1776865658604_515, 2026-04-22)
+- SCORE: 6
+
+**1. Deliverables exist:** Yes. Two substantive files exist with real content — `pwi-smart-context-results.md` (detailed comparison with tables, findings, recommendation) and `pwi-smart-cont (source: s_1776865615669_513, 2026-04-22)
+- DONE — The results file is now comprehensive and rigorous. It addresses the evaluator's prior critique by including proper baseline comparison from 20 real projects, statistical metrics, honest caveat (source: s_1776865599523_512, 2026-04-22)
+- The evaluator's critique is that the experiment data is just counting workflow iterations as data points rather than doing rigorous measurement. The measurements file actually has great baseline data  (source: s_1776865526755_510, 2026-04-22)
+- SCORE: 5
+
+**Reasoning:**
+
+1. **Deliverables exist**: Yes — two files exist (`pwi-smart-context-results.md` and `pwi-smart-context-measurements.md`). The results file has a complete structure with iter (source: s_1776865497834_509, 2026-04-22)
+- DONE — The file is complete with all required content.
+
+**Completed milestones:**
+- **Run 5+ iterations, measure results** — The results file contains 5 iteration rows (iter 0–4) with quality metrics, (source: s_1776865485602_508, 2026-04-22)
+- PIVOT — The worker has been reading files but failing to write updates for 2 iterations. The incremental "add one more row" approach isn't working. New strategy: have the worker rewrite the entire res (source: s_1776865415640_506, 2026-04-22)
+- Now update the treatment stats and recommendation: (source: s_1776865354169_505, 2026-04-22)
+- CONTINUE — Good progress, the results file has solid structure. Need 3 more iteration data points to reach 5+.
+
+**(a) Concrete output:** Update `/app/.state/pwi-smart-context-results.md` — add iterati (source: s_1776865330599_503, 2026-04-22)
+- Now update the measurements file with iteration 2 data: (source: s_1776865231977_499, 2026-04-22)
 
 ## Reflexion-Extracted Lessons
 - [insight] Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/.

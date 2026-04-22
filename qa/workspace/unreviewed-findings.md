@@ -1,29 +1,21 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-22)
 
 ## Context
-This heartbeat attempted to follow the standard QA verification loop (review recent changes + run tsc + run vitest).
+This environment is **not a git repository** (no `.git` found), so I cannot determine what changed in the last 6 hours via `git log`/`git diff`.
 
-## Findings
+Additionally, expected Node toolchain binaries are missing:
+- `./node_modules/.bin/tsc --noEmit` → not found
+- `./node_modules/.bin/vitest --run` → not found
 
-### CRITICAL — Repository/tooling environment not in expected state
-- `/app` is **not a git repository**.
-  - Evidence: `git log ...` and `git status` both return `fatal: not a git repository (or any of the parent directories): .git`.
-- `node_modules` tooling is missing, so mandatory checks cannot be executed.
-  - Evidence:
-    - `./node_modules/.bin/tsc --noEmit` → `No such file or directory`
-    - `./node_modules/.bin/vitest --run` → `No such file or directory`
+These prevent the mandatory QA verification steps for TypeScript and tests.
 
-This blocks QA from determining what changed recently and from running the required TypeScript and test validations.
+## What I verified anyway
+- Read and sanity-checked key runtime files:
+  - `src/pipeline.js` (grading workflow orchestration)
+  - `src/penalties.js` (late penalty logic)
+- Basic runtime execution:
+  - `node -e "const {run}=require('./src/pipeline'); console.log(run());"` successfully produced a report object.
 
-### IMPORTANT — Potential risky filesystem ops in src/lib/growth.ts
-`src/lib/growth.ts` contains utilities that:
-- `cpSync(src, dest, { recursive: true })` without guarding against overwriting existing `dest`.
-- `promoteAgent()` copies fork → target without ensuring `dest` exists or handling collisions.
-- `forkAgent()` returns `readdirSync(dest)` which only returns top-level entries (not a full file list).
-
-Not necessarily incorrect, but these are high-impact operations (data overwrite) and should be reviewed with tests + clearer semantics.
-
-## What I could not verify
-- Recent changes / diffs (no git metadata)
-- Compilation (tsc missing)
-- Tests (vitest missing)
+## Potential issues spotted
+- **IMPORTANT:** Tooling gap: no `node_modules` in repo/environment, so static typecheck/tests can’t be executed. If this is intended, QA process needs an alternate verification path; if not intended, CI/dev setup is broken.
+- **MINOR:** In `src/penalties.js`, despite the file comment stating penalties are applied to the `PERCENTAGE score`, the calculation uses `rawPct` derived from `record.score/record.max_score` rather than `record.pct`. If `normalize()` mutates `score`/`max_score` or `pct` differently, this could drift. (Needs domain clarification.)
