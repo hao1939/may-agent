@@ -263,29 +263,22 @@ function loadHeartbeatMd(ctx: WorkflowContext, agent: string): string {
 | P9: Convention | Per-agent workflow at `agents/<name>/workflows/<name>-heartbeat.ts` |
 | P10: Simple | 1 workflow file, 1 session, pre-loaded context. No shared factory. |
 
-## Implementation Status (2026-04-21)
+## Implementation Status (2026-04-22)
 
-This is a design proposal. Some parts are implemented differently, some not yet.
+| Proposal | Current State |
+|----------|--------------|
+| Per-agent workflow files | ✅ 8 files, each independent. Import shared data loaders from `heartbeat-data.ts` |
+| 1 session per heartbeat | ✅ One `runAgent()` call (+ optional red metric gate) |
+| Pre-load metrics in JS | ✅ `loadMetrics()` in shared heartbeat-data.ts |
+| Pre-load projects in JS | ✅ `loadProjects()` in shared heartbeat-data.ts |
+| Pre-load inbox events | ✅ `loadInbox()` queries pending events (convention-defaults Phase 1-2) |
+| heartbeat.md = role guidance | ✅ Simplified: domain, priority, dispatch, anti-patterns. Zero bash/SQL. |
+| No op budget | ✅ Removed — agent uses judgment |
+| Shared factory removed | ✅ No buildAgentHeartbeat(). Per-agent workflows are independent. |
+| heartbeat-context handler | ✅ Removed (563 lines). Workflows load data directly. |
+| Auto-heartbeat | ✅ `generateAutoHeartbeats()` — agent.json + workflow exists → auto entry |
+| Red Metric Gate | ✅ Structural gate: separate runAgent call before main heartbeat |
 
-| Proposal | Current State | Gap? |
-|----------|--------------|------|
-| Per-agent workflow files | ✅ 8 files exist | But they all delegate to shared buildAgentHeartbeat() factory |
-| 1 session per heartbeat | ❌ Still 4 sessions (4 steps) | To be migrated — each per-agent file should run its own single session |
-| Pre-load metrics in JS | ✅ Partially — alerts + metrics loaded via loadActiveAlerts() + loadMetricsBlock() | G-pattern question framing added (good, keep it) |
-| Pre-load projects in JS | ❌ Not done | Agents don't see their projects — key accountability gap |
-| heartbeat.md = role guidance | ❌ Still step-by-step instructions with queries + op budgets | To be simplified after workflow handles data loading |
-| No op budget | ❌ Still present in config and heartbeat.md | Remove — agent uses judgment |
-| Remove shared factory | ❌ buildAgentHeartbeat() is the active implementation | Migrate to independent files when implementing 1-session change |
-
-### What works well (keep)
-- G-pattern question framing for metrics (forces agent engagement)
-- JS-side alert loading (saves 1 op per heartbeat)
-- heartbeat-context handler pre-computing metrics block
-- Per-agent workflow files exist (even if they delegate to factory)
-
-### What to change (in order)
-1. Fix run-workflow handler (RuntimeCtx) — prerequisite for everything
-2. Add project pre-loading to heartbeat — accountability gap
-3. Migrate to 1 session per heartbeat — reduce overhead
-4. Simplify heartbeat.md files — remove queries, op budgets
-5. Remove shared factory after all agents migrated
+### Remaining evolution
+- Per-agent workflow customization (agents can diverge from template as their role demands)
+- Phase 5 observability: web UI inbox view, health dashboard
