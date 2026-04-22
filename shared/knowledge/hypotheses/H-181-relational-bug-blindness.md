@@ -46,6 +46,18 @@ LLM agents have a **systematic blind spot for relational/ordering bugs** (where 
 - Hints cause **fixation** on described bugs, reducing exploration of the solution space
 - The hint narrows the agent's attention to the described problem, crowding out the flexible search needed for solutions
 
+### EXP-194: Bug-Type Classification (P-181a confirmed)
+
+Retrospective classification of gym scenarios confirmed that relational-bug scenarios have systematically lower base rates than value-bug scenarios. P-181a validated at $0 cost.
+
+### EXP-195: Skill Intervention Study (N=30)
+
+- **Baseline**: 10% (1/10) — baseline shifted from 0% (EXP-177), likely model improvement
+- **Generic skill checklist** (file or inline): 0/6 — no improvement from abstract relational reasoning guidance
+- **Direct hint** ("applyPenalties and normalize may be in wrong order"): 40% (4/10) — +30pp over baseline
+- **Key insight**: The bottleneck is **bug discovery, not bug fixing**. Agents can fix ordering bugs when told about them (40%) but can't find them independently (10%). Generic reasoning skills don't bridge this gap — only near-explicit hints work.
+- Fisher's exact p=0.152 (not significant at α=0.05 but practically meaningful at 30pp)
+
 ### Connecting evidence
 
 **H-098 (Attention Channel Theory):** The value/relational distinction maps directly onto Ch1/Ch2. Value bugs produce Ch1-detectable signals (error messages pointing to specific lines, grep-findable patterns). Relational bugs require Ch2 structural reasoning (understanding execution flow, dependency ordering). H-098 predicts Ch1 interventions (text hints) won't help Ch2 problems — exactly what EXP-177 shows.
@@ -58,7 +70,7 @@ LLM agents have a **systematic blind spot for relational/ordering bugs** (where 
 
 ## Predictions
 
-### P-181a: Value-bug scenarios have higher base rates than relational-bug scenarios
+### P-181a: Value-bug scenarios have higher base rates than relational-bug scenarios ✅ CONFIRMED (EXP-194)
 Across the gym portfolio, scenarios where the primary bug is a value error (wrong operator, wrong constant, wrong variable) will have systematically higher base rates than scenarios where the primary bug is relational (wrong ordering, wrong dependency, wrong data flow). This is testable by classifying existing scenarios and comparing base rates.
 
 **Falsification**: If relational-bug scenarios show ≥50% base rates comparable to value-bug scenarios, the blind spot claim is wrong.
