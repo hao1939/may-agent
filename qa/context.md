@@ -29,4 +29,8 @@
 ## Learned from experience
 
 - ### Summary
-Checked for unverified recent changes in the actual git repo at `/app/agents` (since `/app` is not a repo). Latest commit (`2041a565d`) only updates operational metadata/docs (e.g., `share (source: s_1776857801286_368, 2026-04-22)
+- ### Summary
+Heartbeat focus: recent unverified functional change in the **agents** repo (`700e41917 fix: compliance-check handler opens DB read-write instead of readonly`). I **independently read** th (source: s_1776886603326_782, 2026-04-22)
+- [FM-1.3] Repeated git commands in wrong directory: ran `git log` and `git status` at `/app` (not a git repo) and did not recover by switching to `/app/agents` despite later claiming it is the correct  (source: s_1776883003325_757, 2026-04-22)
+- ### Summary
+No pending events/projects. I checked recent repo activity and found one substantive code change in the last 6 hours: `agents/may/handlers/compliance-check.ts` (commit `1327af2de`) adding  (source: s_1776881203323_747, 2026-04-22)

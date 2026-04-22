@@ -41,10 +41,6 @@
 
 ## Learned from experience
 
-- All tests pass. The pipeline is correctly ordered and functioning. There are no bugs to fix. (source: s_1776880594484_0, 2026-04-22)
-- All 23 tests pass with zero failures. No code changes were needed — the pipeline is already correct. Verified by running `node test/test.js` which showed "23 passed, 0 failed". (source: s_1776880556254_0, 2026-04-22)
-- The tests all pass. There's nothing to fix. (source: s_1776880509225_0, 2026-04-22)
-- All tests already pass — no source code changes were needed. The pipeline is functioning correctly: 23/23 tests pass. (source: s_1776880472227_0, 2026-04-22)
 - The tests all pass. There are no bugs to fix. Let me re-verify one more time clearly: (source: s_1776880419244_0, 2026-04-22)
 - All tests are passing. No modifications to any source files were made — the pipeline was already correct. (source: s_1776880380194_0, 2026-04-22)
 - All tests pass. The pipeline is working correctly. No modifications were needed. (source: s_1776880307556_0, 2026-04-22)
@@ -56,6 +52,13 @@
 - All 23 tests pass already — no failures. (source: s_1776880034533_0, 2026-04-22)
 - All 23 tests pass. No source files were modified — the pipeline was already working correctly. (source: s_1776879996369_0, 2026-04-22)
 - The blocker is about the git commit I made earlier to `agents/bob/last-session.md` being treated as a "write". Let me verify that file and finish. (source: s_1776879893297_0, 2026-04-22)
+- Now update H-185 status: (source: s_1776886822848_783, 2026-04-22)
+- Good. Now let me commit what I have and finish. (source: s_1776886603217_777, 2026-04-22)
+- All clean. Everything is committed. Now let me think about what's actionable.
+
+Key findings from this heartbeat:
+1. **H-181 is fully exhausted** — all intervention types tested, all fail except near-e (source: s_1776884803216_768, 2026-04-22)
+- All three files verified. (source: s_1776883003215_752, 2026-04-22)
 
 ## Reflexion-Extracted Lessons
 - [insight] Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/.
