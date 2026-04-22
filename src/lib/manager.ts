@@ -747,6 +747,22 @@ export class SubagentManager {
     const blockerText = finishParams.blockers?.map((b) => `${b.reason}: ${b.context}`).join("; ") ?? "";
     const escalationTask = `[escalation] ${session.agentName} session ${session.sessionId} ended ${finishParams.status}: ${finishParams.summary}${blockerText ? ` | Blockers: ${blockerText}` : ""}`;
 
+    // Emit escalation event (persisted to events table)
+    this.emit({
+      type: "emit",
+      event: "escalation.created",
+      data: {
+        id: `esc_${Date.now()}`,
+        agent: session.agentName,
+        sessionId: session.sessionId,
+        projectId: session.projectId,
+        reason: finishParams.summary,
+        blockers: blockerText,
+        level: 1,
+        source: "session",
+      },
+    } as any);
+
     // Digest: escalation
     upsertDigest(this.registry.persistDir, {
       sessionId: session.sessionId,
