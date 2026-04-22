@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 3
+**Iteration**: 4
 **Health**: —
 
 ## Goal
@@ -52,7 +52,7 @@ Our agents orchestrate work but struggle with complex code changes (can't access
 - [ ] Adopt: document best practices, add to agent skills
 
 ## Current State
-Iteration 3. Milestones: 0/5 done. Next: Research: how each CLI works, invocation patterns, input/output formats
+Iteration 4. Milestones: 0/5 done. Next: Research: how each CLI works, invocation patterns, input/output formats
 ## Iteration Summary
 - **Iter 2**: Now I have all the info needed. Let me create the deliverables.
 
