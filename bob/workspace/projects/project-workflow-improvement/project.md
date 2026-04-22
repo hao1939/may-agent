@@ -30,7 +30,7 @@ Each feature has a design doc in this project's directory. The design must answe
 | Feature | Design | Status | Test project |
 |---------|--------|--------|-------------|
 | Rich Current State | [designs/rich-current-state.md](designs/rich-current-state.md) | Tested manually, positive signal | breadcrumb-gap |
-| Process Notes hook | [designs/process-notes.md](designs/process-notes.md) | Not designed | — |
+| Smart context generation | [designs/smart-context-generation.md](designs/smart-context-generation.md) | Designed, needs baseline | — |
 | Milestone auto-scope | [designs/milestone-auto-scope.md](designs/milestone-auto-scope.md) | Not designed | — |
 | Evaluator tuning | [designs/evaluator-tuning.md](designs/evaluator-tuning.md) | Not designed | — |
 
