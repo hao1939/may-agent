@@ -37,10 +37,11 @@ This project has run for 24+ iterations without conclusive proof that a coach in
 - Intervention: Data Flow Audit skill (teaches "trace actual values through pipeline steps")
 - Next: run baseline on v3, then treatment with skill
 
-**M4: Establish measurement protocol**
-- Define primary metric, sample size requirements, success/failure thresholds
-- Plan A/B comparison: before vs after, or treatment vs control
-- Output: pre-registered measurement plan
+**M4: Establish measurement protocol** ✅ COMPLETE (2026-04-22)
+- Protocol: `m4-measurement-protocol.md`
+- Control: v2 baseline 0/115 (0%). Treatment: 3 arms × 10 trials on v2 exp195 variants
+- Success: skill arm ≥30% pass. Reject: 0/10.
+- Awaiting gym batch execution on k3s
 
 ### Phase 3: Run Experiment
 
