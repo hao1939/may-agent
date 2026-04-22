@@ -5810,3 +5810,18 @@ CONDITIONAL — `DELIVERABLES_CHECKLIST.md` edit OK, but must run `tsc`/`vitest`
 ### Verdict
 CONDITIONAL — checklist change is trivial, but cannot independently verify `tsc`/`vitest` or review submodule contents in current environment.
 
+---
+## 2026-04-22 QA Heartbeat — Unreviewed commit scan
+Reviewed recent commit `0fe136c` ("DD#855: Decision boundary interventions...").
+
+### Checks
+- `tsc --noEmit`: FAIL — `./node_modules/.bin/tsc` not found (repo appears to have no JS deps installed; `node_modules` only contains `.vite`).
+- `vitest --run`: FAIL — `./node_modules/.bin/vitest` not found.
+
+### Findings
+- IMPORTANT (verification blocker): Cannot perform mandatory compile/test verification because `node_modules/.bin/{tsc,vitest}` are missing in this environment.
+- IMPORTANT (reviewability): Commit includes `agents` submodule pointer bump; actual code changes are outside this repo view unless submodule is updated and diff reviewed.
+
+### Verdict
+CONDITIONAL — checklist edit itself is fine, but cannot verify build/tests and cannot review submodule contents from this checkout.
+
