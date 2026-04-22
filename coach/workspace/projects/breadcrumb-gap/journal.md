@@ -179,3 +179,5 @@ PIVOT — The previous approach (just wiring `formatMetricsBlock`) was necessary
 
 **(c) First step:** `cat agents/shared/workflows/heartbeat-data.ts | grep -B5 -A50 'formatMetricsBlock'` to see the function, then `cat agents/gym/scenarios/metric-reaction-G-breadcrumb/success_criteria.js` to understand what Score class expects, then create a minimal mock workdir with a transcript.json and run the criteria scorer against it.
 
+### Iteration 12 — 2026-04-22T10:33:50.268Z
+**Worker**: Now let me check the existing evidence doc and update it:
