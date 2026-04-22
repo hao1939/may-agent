@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776859642399_438
+- **Session:** s_1776861400501_457
 - **Status:** done
-- **When:** 2026-04-22T12:17:22.225Z
-- **Duration:** 9m59s
+- **When:** 2026-04-22T12:40:46.699Z
+- **Duration:** 4m6s
 
 ## What Happened
-No git repo at /app root — the growth.ts file is just on disk. That's fine.
+Both are enabled but serve different purposes: context-learning runs on timer (2h), context-learn runs on events. They're not duplicates — different trigger mechanisms. Leave them.
+
+Let me commit:
