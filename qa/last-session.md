@@ -1,39 +1,29 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776846436377_17
+- **Session:** s_1776850600853_6
 - **Status:** done
-- **When:** 2026-04-22T08:30:50.082Z
-- **Duration:** 3m33s
+- **When:** 2026-04-22T09:38:19.880Z
+- **Duration:** 1m39s
 
 ## What Happened
 ### Summary
-Proactively scanned recent unreviewed commits and reviewed `src/pipeline.js` from the grade pipeline fixes. I found a spec/implementation mismatch: the file header states normalization must precede penalty application (percentage-points rationale), but the implementation applies penalties before normalization. Local ad-hoc tests (`node test/test.js`) pass, but the mandated `tsc`/`vitest` verification cannot run in this checkout due to missing executables.
+No active alerts/projects. I checked recent changes in the only available git repo (`/app/agents`) and found a **toolchain/environment gap** that prevents running the mandatory QA verification steps (`tsc --noEmit`, `vitest --run`). I also flagged a recent commit that **deleted multiple source + test files** related to “lessons wiring,” which is higher risk given tests can’t be executed.
 
 ### Checks
-- `tsc --noEmit`: **FAIL** — `./node_modules/.bin/tsc` missing (`No such file or directory`, exit 127)
-- `vitest --run`: **FAIL** — `./node_modules/.bin/vitest` missing (`No such file or directory`, exit 127)
-  - Evidence: both failures observed via bash tool outputs in this session.
-- Fallback (non-mandated): `node test/test.js`: **PASS** (**23 passed, 0 failed**)
+- `tsc --noEmit`: **FAIL (environment)** — `/app/agents/node_modules/.bin/tsc` missing (exit 127).  
+  Evidence: `cd agents && ./node_modules/.bin/tsc --noEmit` → “No such file or directory”
+- `vitest --run`: **FAIL (environment)** — `/app/agents/node_modules/.bin/vitest` missing (exit 127).  
+  Evidence: `cd agents && ./node_modules/.bin/vitest --run` → “No such file or directory”
 
 ### Issues
-1. **IMPORTANT (spec/implementation mismatch)** — `src/pipeline.js`
-   - The top-of-file note says “Normalization must precede penalty application…” but `run()` does:
-     - Step 3: `applyPenalties(validated)`
-     - Step 4: `normalize(penalized)`
-   - If the intended penalty is in *percentage points*, current ordering is likely wrong; if intended penalty is in *raw points*, the comment is wrong and should be updated.
+- **CRITICAL (environment):** `/app/agents/node_modules` appears incomplete (only `.vite/` exists), so QA cannot execute compilation/tests.  
+  Evidence: `cd agents && ls -la node_modules` shows only `.vite/`
+- **IMPORTANT (change risk):** Latest commit `b9fa673d9` deletes `src/lib/LESSONS-WIRING-SPEC.md`, `src/lib/lessons-hooks.ts`, `src/lib/manager-receipts.ts` and their tests. Without a runnable test suite, this is unverified and potentially regressive.  
+  Evidence: `git show --name-status -1 b9fa673d9` shows those files as `D`.
 
-2. **IMPORTANT (environment/tooling)** — cannot execute mandatory QA commands
-   - Repo checkout lacks `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest`, and `package.json` contains no scripts/devDependencies to obtain them. This prevents mandated verification.
-
-3. **MINOR (maintainability)** — potential duplication
-   - `src/pipeline.js` contains an inline `validateRecords()` while `src/validator.js` also exists in the repo (possible duplication/unreferenced module). Not confirmed as a functional bug.
+### Action taken (this heartbeat)
+- Logged findings to: `agents/qa/workspace/unreviewed-findings.md` (read-back verified).
 
 ### Verdict
-**CONDITIONAL** — Patch behavior appears consistent with the current local `node test/test.js` suite (23 passing), but I cannot complete mandated `tsc`/`vitest` verification in this environment, and there is a clear spec-vs-code mismatch in pipeline ordering that should be reconciled (either fix the order or fix the comment/policy statement).
-
-Logged to:
-- `agents/qa/workspace/journal.md` (appended)
-- `agents/qa/workspace/unreviewed-findings.md` (updated with today’s findings)
-
-
+**CONDITIONAL** — I cannot PASS/FAIL recent code changes because the environment prevents the mandatory `tsc` + `vitest` runs. Once dependencies/tooling are restored (or an alternate intended verification method is documented), re-run `tsc --noEmit` and `vitest --run` to validate the recent deletions and other changes.

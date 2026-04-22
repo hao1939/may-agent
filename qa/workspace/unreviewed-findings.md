@@ -1,31 +1,37 @@
 # Unreviewed findings (QA heartbeat)
 
-## Context
-Recent commit(s) include fixes to a “student grade pipeline” (e.g., `cabe150`). I reviewed key changed files for correctness and attempted to run mandatory checks.
+Date: 2026-04-22
 
-## Checks
-- `./node_modules/.bin/tsc --noEmit`: **FAIL (environment)** — `./node_modules/.bin/tsc: No such file or directory` (exit 127)
-- `./node_modules/.bin/vitest --run`: **FAIL (environment)** — `./node_modules/.bin/vitest: No such file or directory` (exit 127)
+## Environment / Toolchain gap (blocks mandatory QA verification)
 
-## Findings
-### CRITICAL — Pipeline step ordering contradicts its own documentation and penalty implementation
-- File: `src/pipeline.js`
-- Evidence:
-  - Header comment states: “Normalization must precede penalty application so that penalty deductions are expressed in percentage points (not raw points).”
-  - Implementation does the opposite:
-    - Step 3: `applyPenalties(validated);`
-    - Step 4: `normalize(penalized);`
-- Why this matters:
-  - `src/penalties.js` computes `rawPct = (score/max_score)*100` and deducts penalty in percentage points, then converts back to raw points. This logic *does not require* prior normalization because it computes percentage internally.
-  - As written, the comment is misleading at best. If the intended design is “normalize then penalty”, the current order is wrong; if the intended design is “penalty then normalize”, then the comment must be updated.
+In `/app/agents` (the only git repo available in this heartbeat), `node_modules` contains only `.vite/` and does **not** include `typescript` or `vitest` binaries.
 
-### IMPORTANT — Homework aggregation can produce NaN when all homework is dropped
-- File: `src/homework.js`
-- Evidence:
-  - `const kept = sorted.slice(policy.drop_lowest_hw);`
-  - `const avg = sum / kept.length;`
-- If `policy.drop_lowest_hw >= hwRecords.length`, `kept.length` becomes 0, yielding `avg = NaN` and `homework_avg` becomes `NaN`.
-- Should be guarded (e.g., if kept is empty, set average to 0 or to the mean of all scores, per policy).
+Evidence:
+- `cd agents && ./node_modules/.bin/tsc --noEmit` → `No such file or directory` (exit 127)
+- `cd agents && ./node_modules/.bin/vitest --run` → `No such file or directory` (exit 127)
+- `cd agents && ls -la node_modules` shows only `.vite/`
 
-## Notes
-Repo appears to be missing dependencies and scripts (e.g., `package.json` contains only name/version/private), so required tsc/vitest checks cannot be executed in this environment.
+Impact:
+- Cannot run required `tsc --noEmit` and `vitest --run` checks for recent code changes.
+
+Suggestion:
+- Re-run dependency install for `/app/agents` (ensure `node_modules` includes `typescript` + `vitest` and `.bin/` exists), or document the intended non-node toolchain if different.
+
+## Recent change flagged for review: deletion of lessons wiring modules
+
+Latest commit in last 6 hours: `b9fa673d9 chore(auto): 10 agents, 14 files...`.
+It **deletes** these files:
+- `src/lib/LESSONS-WIRING-SPEC.md`
+- `src/lib/lessons-hooks.ts`
+- `src/lib/manager-receipts.ts`
+- `test/lessons-hooks.test.ts`
+- `test/manager-receipts.test.ts`
+
+Evidence:
+- `git show --name-status -1 b9fa673d9` shows `D` for the above.
+
+Risk:
+- Removing tests + source without running test suite risks silent regression.
+- Need confirmation these modules were intentionally removed/replaced elsewhere.
+
+I was able to read one changed file that remains (`may/handlers/context-learn.ts`) and it looks type-sound on inspection (basic guards + try/catch + logging), but without toolchain I cannot compile/run tests.
