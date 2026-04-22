@@ -41,6 +41,10 @@
 - Three pending handoffs (DD#411, DD#424 for Bob; DD#517 for tech-lead). Let me send these notifications. (source: s_1776886603285_780, 2026-04-22)
 - Now let me verify my work and finish: (source: s_1776884803291_771, 2026-04-22)
 - I didn't write any files this session - I only read existing files and sent a notification. Let me verify the notification was sent. (source: s_1776883003285_755, 2026-04-22)
+- No scout files modified this session — I only read and sent a notification. (source: s_1776893803082_853, 2026-04-22)
+- The write tool auto-committed. Files exist. Let me notify bob: (source: s_1776892003255_824, 2026-04-22)
+- Everything is triaged and current. Metrics green, no gaps. Let me commit this heartbeat. (source: s_1776890203295_812, 2026-04-22)
+- Now let me commit and finish. All papers triaged, stale todos cleaned up. (source: s_1776888403298_799, 2026-04-22)
 
 ## Reflexion-Extracted Lessons
 - [insight] EXP-084/085 together establish that few-shot worked examples produce the strongest behavior change among lightweight (non-workflow) skill delivery methods. Key distinction: declaring an outcome (0% effect) vs structuring a process (33-100% effect). The closer the worked example matches the task structure, the stronger the effect (87.5pp for structurally-matched escalation-judgment vs 33pp for abstract contradictory-requirements).
