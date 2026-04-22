@@ -41,9 +41,6 @@
 
 ## Learned from experience
 
-- The tests all pass. There are no bugs to fix. Let me re-verify one more time clearly: (source: s_1776880419244_0, 2026-04-22)
-- All tests are passing. No modifications to any source files were made — the pipeline was already correct. (source: s_1776880380194_0, 2026-04-22)
-- All tests pass. The pipeline is working correctly. No modifications were needed. (source: s_1776880307556_0, 2026-04-22)
 - All tests already pass. No source files were modified. The task requires no changes. (source: s_1776880259140_0, 2026-04-22)
 - All 23 tests pass already — no failing tests to fix. (source: s_1776880206326_0, 2026-04-22)
 - All 23 tests pass. The test run output confirms: `=== Results: 23 passed, 0 failed ===`. No source files were modified — the pipeline code was already correct. (source: s_1776880164622_0, 2026-04-22)
@@ -55,10 +52,10 @@
 - Now update H-185 status: (source: s_1776886822848_783, 2026-04-22)
 - Good. Now let me commit what I have and finish. (source: s_1776886603217_777, 2026-04-22)
 - All clean. Everything is committed. Now let me think about what's actionable.
-
-Key findings from this heartbeat:
-1. **H-181 is fully exhausted** — all intervention types tested, all fail except near-e (source: s_1776884803216_768, 2026-04-22)
 - All three files verified. (source: s_1776883003215_752, 2026-04-22)
+- Now commit and finish. (source: s_1776893803013_850, 2026-04-22)
+- Now write KE and commit: (source: s_1776892003190_821, 2026-04-22)
+- The top-3 testable list is stale — H-181 is now resolved and EXP-201 already tested H-185's remasking on cascading (0/10). Let me update the tracker and then finish. (source: s_1776890203227_809, 2026-04-22)
 
 ## Reflexion-Extracted Lessons
 - [insight] Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/.
