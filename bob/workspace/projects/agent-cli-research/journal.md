@@ -124,3 +124,23 @@ All 5 milestones are complete:
 
 All deliverables contain real terminal output (not fabricated), honest auth limitation documentation, and production-ready wrapper scripts that will work once API keys are configured.
 
+### Iteration 8 — 2026-04-22T22:35:27.012Z
+**Worker**: All files exist with the expected line counts.
+**Reviewer**: DONE — All 5 milestones are complete:
+
+1. **Research: write `.state/cli-research.md`** — 177 lines covering all three CLIs
+2. **Install: get at least one CLI working locally** — Claude Code installed at `/usr/bin/claude` v2.1.117
+3. **Integrate: write `.state/cli-integration-test.md`** — 135 lines with real invocation output
+4. **Evaluate: write `.state/cli-evaluation.md`** — 125 lines with real side-by-side comparison
+5. **Adopt: write `agents/shared/skills/cli-coding/SKILL.md`** — 73 lines with production-ready guidance
+
+**Evaluator**: FAIL (score=4/10) — SCORE: 4
+
+**Reasoning:**
+
+1. **Deliverables exist**: Yes — all 5 files exist with substantive content (669 total lines). ✓
+
+2. **Goal met**: No. The goal is to "Use production agent CLIs as tools our agents can invoke." None of the CLIs were successfully invoked to produce any useful output. The wrapper scripts exist but are untested in a working state. The project produced documentation about *why it can't work*, not a working integration.
+
+3. **Evidence**: The evidence actually proves the oppo
+
