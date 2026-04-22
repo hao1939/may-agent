@@ -27,10 +27,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 ${metricsBlock}
 ## Instructions
 You CANNOT skip this step. For EACH metric marked "⚠️ BELOW TARGET" above, you must:
-1. Run the "→ Quick check" command/query to get current data
+1. Execute the "→ MANDATORY" command — your FIRST tool call must be this command
 2. Investigate WHY it is red (check recent sessions, code changes, etc.)
 3. Take ONE of these actions:
-   a. **Fix it now** — fork/dispatch work to address the root cause
+   a. **Fix it now** — fork/dispatch work to fix the root cause immediately
    b. **Escalate** — notify the responsible agent or may with specifics
    c. **Defer with reason** — explain concretely why you cannot act now (not just "will look later")
 
