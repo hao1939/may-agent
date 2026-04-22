@@ -1,7 +1,7 @@
 # Scout Todo
 
 ## Counters
-- DD: 858
+- DD: 859
 - CR: 347
 
 ## Active Research Priorities
