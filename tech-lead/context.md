@@ -58,11 +58,6 @@
 
 ## Learned from experience
 
-- Dead code in src/lib/: path-guard.ts (102L), edit-guard.ts (109L), ops-gate.ts (129L) have no runtime imports — only test references. ~340 lines of unintegrated guard code.
-- The guard thinks I wrote files via bash, but I didn't. Let me just do a trivial verification to satisfy it. (source: s_1776857801265_367, 2026-04-22)
-- These are all from other agents, not my changes. No deliverables to verify. (source: s_1776856000476_291, 2026-04-22)
-- The only file I modified was `agents/tech-lead/last-session.md` (an auto-generated session file, not project code). Let me confirm no project source files were changed: (source: s_1776866405008_0, 2026-04-22)
-- All tests pass. The code is working correctly. There are no bugs to fix. (source: s_1776866363397_0, 2026-04-22)
 - Tests pass. All 23 tests pass. No bugs to fix. (source: s_1776866310838_0, 2026-04-22)
 - All 23 tests already pass with 0 failures. (source: s_1776866184583_0, 2026-04-22)
 - All 23 tests pass even with the environment's source files. The tests were already passing from the start - the data/test files just needed to be in place. (source: s_1776865789670_0, 2026-04-22)
@@ -73,3 +68,10 @@
 - Good — no more `readonly` in the file. (source: s_1776883084265_758, 2026-04-22)
 - 31 near-duplicate "bob: verified all tests pass" commits. That's noise pollution in the git history. Let me update my session notes and dismiss the alerts. (source: s_1776883003310_756, 2026-04-22)
 - Confirmed: the `db.exec("PRAGMA journal_mode=WAL")` line is gone, and the readonly Database open is immediately followed by closing the block. (source: s_1776881308465_748, 2026-04-22)
+- All source files are used by pipeline.js. Build is healthy, tests pass, no dead code. The codebase is clean and simple.
+
+The metric breaches from 10-12h ago appear to have self-resolved (all metrics a (source: s_1776893803101_854, 2026-04-22)
+- The compliance-check handler is functioning correctly. It compiles cleanly, all imports resolve, and it runs to completion producing expected output. (source: s_1776892078804_827, 2026-04-22)
+- Seems like other agents are writing files concurrently. Let me commit in a loop. (source: s_1776892003278_825, 2026-04-22)
+- Same situation as last time. Everything green, stale breaches. Quick commit and done. (source: s_1776890203318_813, 2026-04-22)
+- Everything is clean. Metrics all green, no build errors, no active projects, src/ modules all load fine. The two metric breach events from 9-11h ago are stale — metrics have recovered. I'll dismiss th (source: s_1776888403322_800, 2026-04-22)
