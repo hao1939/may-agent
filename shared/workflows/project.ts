@@ -385,19 +385,23 @@ function buildReviewPrompt(
 
   prompt += `## Your Decision\n`;
   if (continueWithoutProgress >= 2) {
-    prompt += `\n⚠️ WARNING: ${continueWithoutProgress} consecutive iterations with no milestone progress. `;
-    prompt += `The current approach is not working. You MUST either:\n`;
-    prompt += `- PIVOT to a fundamentally different strategy\n`;
-    prompt += `- Say BLOCKED only if there's a specific external dependency that no amount of iteration can resolve\n`;
-    prompt += `Repeating the same guidance is not acceptable.\n\n`;
+    prompt += `\n⚠️ STALL DETECTED: ${continueWithoutProgress} consecutive iterations with no milestone progress.\n`;
+    prompt += `The current approach is NOT working. You MUST:\n`;
+    prompt += `1. List 3 alternative approaches ranked by feasibility\n`;
+    prompt += `2. Pick approach #1 and write the EXACT first command for the worker\n`;
+    prompt += `3. Say PIVOT (not CONTINUE) — continuing the same strategy is forbidden\n`;
+    prompt += `If all approaches require external resources unavailable to the worker, say BLOCKED.\n\n`;
   }
   prompt += `Choose ONE:\n\n`;
   prompt += `1. **DONE** — All milestones are genuinely complete.\n`;
-  prompt += `   Before saying DONE, verify:\n`;
-  prompt += `   (a) You mention each completed milestone by its exact name (for auto-check-off)\n`;
-  prompt += `   (b) The worker's output confirms deliverable files exist\n`;
-  prompt += `   (c) Quality is sufficient to score ≥7/10 (real artifacts, real evidence, no shortcuts)\n`;
-  prompt += `   If any check fails, say CONTINUE with fix instructions instead.\n\n`;
+  prompt += `   Before saying DONE, run this PRE-CHECK (all must be YES):\n`;
+  prompt += `   (a) Does a NEW file or file-change exist in workspace? (not just .state/journal)\n`;
+  prompt += `   (b) Can the deliverable be verified with a single command? (file exists, test passes)\n`;
+  prompt += `   (c) Does the deliverable match the milestone's stated acceptance criteria?\n`;
+  prompt += `   (d) Would an independent reviewer see this as "complete" without context?\n`;
+  prompt += `   (e) You mention each completed milestone by its exact name (for auto-check-off)\n`;
+  prompt += `   If ANY answer is NO → say CONTINUE with the specific gap identified.\n`;
+  prompt += `   Anti-pattern: "Milestone complete because we planned it" — planning ≠ doing.\n\n`;
   prompt += `2. **PIVOT** — The current approach has failed. Describe a fundamentally different strategy.\n`;
   prompt += `   Use when: same guidance failed 2+ times, worker is stuck in a loop, the approach has a design flaw.\n`;
   prompt += `   "This is hard" is NOT blocked — that's PIVOT.\n\n`;
