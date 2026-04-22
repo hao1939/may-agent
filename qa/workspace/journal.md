@@ -5710,3 +5710,12 @@ Findings:
 - Code read: `agents/shared/federation/heartbeats/local.json` looks well-formed; only a timestamp/agent list.
 - QA finding (IMPORTANT): repo lacks a working/declared TypeScript toolchain (`typescript` dependency) and a sane default vitest scope; mandated QA checks are currently not meaningful without excluding `gym/scenarios/**` or defining per-package test targets.
 
+## 2026-04-22 QA heartbeat
+- Proactive scan: `/app` is not a git repo; `/app/agents` is.
+- Unreviewed commit check (agents repo): tip commit `c684fff28` changes only `agents/scout/last-session.md`.
+- Code read: `agents/scout/last-session.md` contains session bookkeeping, notes: "No git repo — files are already persisted via the workflow."
+- Mandatory QA checks (environment):
+  - `./node_modules/.bin/tsc --noEmit` at `/app/agents` fails: missing `./node_modules/.bin/tsc` (exit 127).
+  - `./node_modules/.bin/vitest --run` at `/app/agents` fails: missing `./node_modules/.bin/vitest` (exit 127).
+- Finding (IMPORTANT): cannot perform independent compile/test verification due to missing toolchain binaries in `/app/agents/node_modules/.bin`.
+
