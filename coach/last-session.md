@@ -1,18 +1,23 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776853854914_154
+- **Session:** s_1776853969354_162
 - **Status:** done
-- **When:** 2026-04-22T10:32:29.334Z
-- **Duration:** 1m34s
+- **When:** 2026-04-22T10:33:07.125Z
+- **Duration:** 17s
 
 ## What Happened
-PIVOT — Previous iterations (10, 11) kept trying to "run a gym scenario" but the worker never actually does it, likely because it requires an LLM agent runtime that's expensive/unavailable in this context. Meanwhile the evidence doc is comprehensive but the evaluator wants execution proof. **New strategy**: Instead of running a full gym scenario, validate the code path end-to-end by executing just the JavaScript success criteria against a synthetic transcript, AND by executing the formatMetricsBlock function to prove its output matches what gym scenarios test for.
 
-**(a) Concrete output:** `.state/breadcrumb-effectiveness-evidence.md` updated with two new sections:
-1. **"## 6. Code Path Validation"** — Run `node -e` to import and execute `formatMetricsBlock` (or trace its output from the source), showing the actual string it produces contains `⚠️ BELOW TARGET` and `→ Quick check` breadcrumbs that the RED METRIC GATE checks for.
-2. **"## 7. Success Criteria Validation"** — Create a minimal mock transcript JSON, run `node agents/gym/scenarios/metric-reaction-G-breadcrumb/success_criteria.js <mock-dir>` against it, capture the pass/fail output as proof the scoring pipeline works.
 
-**(b) What's different:** Previous guidance said "run a gym scenario" which requires a full agent runtime. This approach validates JUST the scoring + formatting code with `node` directly — no agent runtime needed. It proves the mechanism works without needing to invoke an LLM.
+PIVOT —
 
-**(c) First step:** `cat agents/shared/workflows/heartbeat-data.ts | grep -B5 -A50 'formatMetricsBlock'` to see the function, then `cat agents/gym/scenarios/metric-reaction-G-breadcrumb/success_criteria.js` to understand what Score class expects, then create a minimal mock workdir with a transcript.json and run the criteria scorer against it.
+The evaluator failed us because guards are dead code and there's no evidence violations were actually reduced. The milestones are structurally complete but lack the one thing that matters: **proof of impact**. We need to wire the guards into the actual agent runtime AND run a before/after measurement.
+
+**(a) Concrete output:**
+1. `.state/integration-proof.md` — documenting exactly where guards are imported/called in runtime code, with grep evidence
+2. `.state/violation-recount.md` — a fresh violation count showing reduction from the 190 baseline, with methodology and per-agent numbers
+3. Actually integrate `edit-guard.ts` and `path-guard.ts` into the agent tool execution paths (e.g., the edit/write/bash tool handlers) so they're not dead code
+
+**(b) What's different:** Previous iterations focused on creating guard files and documentation. This time the ONLY priority is: (1) find where agents execute tool calls (edit/write/bash), (2) add guard imports there, (3) run a recount to prove violations decreased. No more docs until runtime integration is proven.
+
+**(c) First step:** Run `grep -r "import.*from" agents/src/lib/edit-guard agents/src/lib/path-guard` to see if guards are imported anywhere. Then run `grep -rn "function.*edit\|function.*write\|tool.*handler\|execute.*tool" agents/src/ --include="*.ts" -l` to find the tool execution entry points where guards should be integrated. Then wire the guards in and recount violations.
