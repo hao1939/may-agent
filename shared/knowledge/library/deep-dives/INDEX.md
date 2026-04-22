@@ -1,7 +1,7 @@
 # Deep Dives Index
 
-> 134 research deep dives, cross-reference syntheses, and reference documents.  
-> Last updated: 2026-04-22 | Maintained by Scout
+> 140 research deep dives, cross-reference syntheses, and reference documents.  
+> Last updated: 2026-04-23 | Maintained by Scout
 
 ## How to Use This Index
 - **DD#NNN** = Deep Dive on a single paper
@@ -22,6 +22,9 @@
 | [dd249](dd249-emergence-adaptive-coordination.md) | How Intelligence Emerges: Dynamic Adaptive Coordination | Theoretical foundation for emergence in MAS |
 | [dd470](dd470-etd-mappo-epistemic-time-dilation.md) | ETD-MAPPO: Epistemic Time-Dilation for Async MARL | Dual-gated epistemic mechanism for async multi-agent RL |
 | [dd476](dd476-agentnet-decentralized-evolutionary-coordination.md) | AgentNet — Decentralized Evolutionary Coordination | Evolutionary coordination for LLM-based MAS |
+| [dd849](DD-849-mesh-memory-protocol.md) | Mesh Memory Protocol ★★★★ | Semantic infrastructure for cross-agent memory sharing with field-level acceptance and lineage tracing |
+| [dd852](DD-852-teamfusion.md) | TeamFusion ★★★ | Open-ended multi-agent teamwork via proxy agents, structured discussion, and consensus synthesis |
+| [dd854](DD-854-hadagent-proof-of-inference.md) | HadAgent Proof-of-Inference ★★★ | Decentralized agent serving with trust-based behavioral monitoring and verification |
 
 ### Coordination Benchmarks & Empirical Studies
 | File | Title | Key Finding |
@@ -59,6 +62,7 @@
 | [dd501](dd501-cranimem-gated-bounded-agent-memory.md) | CraniMem — Gated Bounded Agent Memory ★★★★ | Neurocognitive write-gating + episodic buffer + KG consolidation; near-zero noise drop |
 | [dd502](dd502-store-routing-memory-augmented-agents.md) | Cost-Sensitive Store Routing ★★★★½ | Read-time routing across memory stores; oracle +5.4% acc with 62% fewer tokens vs uniform |
 | [dd503](dd503-governed-memory-multi-agent-workflows.md) | Governed Memory — Multi-Agent Memory Governance ★★★★ | Production 4-layer architecture: dual memory + governance routing + progressive delivery; in production at Personize.ai |
+| [dd853](DD-853-focal-activity-logging.md) | FOCAL ★★★★ | Multi-agent on-device activity logging; task-isolated memory prevents cross-contamination; 60% token reduction |
 | [dd504](dd504-rcr-router-role-aware-context-routing.md) | RCR-Router — Role-Aware Context Routing ★★★ | Formal role-aware routing for multi-agent LLMs; importance scoring + token budgets; 25-47% token reduction |
 | [dd508](dd508-psychagent-lifelong-skill-evolution.md) | PsychAgent — Lifelong Skill Evolution ★★★★ | 3-engine self-evolution (memory-planning + skill-evolution + reinforced-internalization); outperforms GPT-5.4; skill quality > memory volume |
 | [dd509](dd509-ssd-self-distillation-code-generation.md) | Simple Self-Distillation (SSD) ★★★½ | Models improve by sampling themselves + fine-tuning; precision-exploration conflict resolved by context-dependent distribution reshaping |
@@ -209,6 +213,7 @@
 | File | Title |
 |------|-------|
 | [xskill](xskill-2603.12056.md) | XSkill: Continual Learning from Experience in Multimodal Agents |
+| [dd851](DD-851-savoir-shapley-reward.md) | SAVOIR ★★★★ | Shapley-based credit assignment for multi-agent RL; 7B model matches GPT-4o on social intelligence |
 | [xskill-arch](xskill-dual-stream-architecture.md) | XSkill Dual-Stream Architecture Analysis |
 
 ### Evaluation & Benchmarks
@@ -221,6 +226,7 @@
 | [dd498](dd498-pare-proactive-agent-fsm-benchmark.md) | PARE — Proactive Agent FSM Benchmark ★★★★ |
 | [dd499](dd499-adaptive-budgeted-forgetting-agents.md) | Adaptive Budgeted Forgetting for Agents ★★★½ |
 | [dd511](dd511-bace-bayesian-code-test-coevolution.md) | BACE — Bayesian Co-Evolution ★★★★½ | Noisy Bayesian sensor model prevents self-validation drift; anchoring on ground truth; directly applicable to hypothesis management |
+| [dd850](DD-850-automationbench.md) | AutomationBench ★★★★ | Cross-application workflow orchestration benchmark; frontier models <10%; API discovery + policy adherence |
 | [dd512](dd512-self-driving-portfolio-50-agent-asset-management.md) | Self-Driving Portfolio — 50-Agent Institutional MAS ★★★★ | ~50 specialized agents with voting, critique, meta-agent code rewriting; IPS as constitutional governance document |
 | [dd513](dd513-wmas-world-centered-multi-agent-systems.md) | WMAS — World-Centered Multi-Agent Systems ★★★★ | Shared world model as primary substrate; formalizes our shared-library architecture pattern; world type classification |
 | [HB1575](HB1575-bicc-rcc-contrastive-grpo.md) | BiCC-RCC: Contrastive GRPO with Cross-Partition Learning |
