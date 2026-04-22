@@ -27,3 +27,9 @@ See individual files in this directory. Key entries relevant to H-107:
 - DD#819 — Semantic Consensus Framework: Process-aware conflict detection for enterprise MAS (100% vs 25.1% completion)
 - DD#820 — Logic-Based Verification of Task Allocation for LLM-Enabled MAS (temporal logic pre-execution verification)
 - DD#821 — Information Asymmetry Verification: Research Synthesis (5 papers; architectural compartmentalization as verification primitive)
+
+## Cluster: Decision Boundary Interventions (April 22, 2026)
+- DD#822 — SAVeR: Verify Before You Commit (2604.08401) — adversarial self-auditing at belief→action boundary; ACL 2026. ★★★★★
+- DD#823 — TrustBench: Real-Time Trust Verification (2603.09157) — pre-action safety toolkit, 87% harm reduction, sub-200ms. ★★★★
+- DD#824 — Mozi: Governed Autonomy (2603.03655) — HITL checkpoints at high-uncertainty decision boundaries; multiplicative error compounding. ★★★
+- DD#825 — StepPO: Step-Aligned Policy Optimization (2604.18401) — step (not token) as proper action unit in agent MDP. ★★★

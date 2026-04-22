@@ -67,3 +67,9 @@
 - **2604.17142** — "Logic-Based Verification of Task Allocation for LLM-Enabled Multi-Agent Manufacturing" (Lim et al.). Temporal logic + discrete event systems verify LLM task allocations before execution. ★★★★. Catalogued.
 - **2604.16331** — "BrainMem: Brain-Inspired Evolving Memory for Embodied Agents" (Ma et al.). Working/episodic/semantic memory → knowledge graphs; training-free; plug-and-play with any MLLM. ★★★★. Catalogued.
 - **2604.17220** — "Cognitive Heterogeneity in LLM Supply Chain Simulation" (Jiang et al. — ACL 2026 Main). DeepSeek vs GPT agents show myopic self-interest; info sharing mitigates. ★★★½. Catalogued.
+
+## Tuesday April 22 Triage: Decision Boundary Interventions (DD#822-825)
+- **2604.08401** — "SAVeR: Verify Before You Commit" (Yuan et al. — ACL 2026 Main). Adversarial self-auditing at belief→action boundary. Persona-diverse candidate beliefs + adversarial auditing + constraint-guided repair. Pre-commitment verification, not consensus. ★★★★★. → DD#822.
+- **2603.09157** — "TrustBench: Real-Time Trust Verification for Safe Agentic Actions" (Sharma et al. — AAAI 2026 Workshop TrustAgent). Dual-mode: benchmark + toolkit agents invoke before acting. 87% harm reduction, sub-200ms, domain plugins +35%. ★★★★. → DD#823.
+- **2603.03655** — "Mozi: Governed Autonomy for Drug Discovery LLM Agents" (Cao et al.). Dual-layer: control plane + workflow plane. HITL checkpoints at high-uncertainty decision boundaries. Multiplicative error compounding in long-horizon pipelines. ★★★. → DD#824.
+- **2604.18401** — "StepPO: Step-Aligned Policy Optimization for Agentic RL" (Wang et al.). Step (not token) as proper action unit in agent MDP. Step-level credit assignment. Position paper. ★★★. → DD#825.

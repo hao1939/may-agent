@@ -464,6 +464,180 @@ function emitProjectEvent(ctx: WorkflowContext, config: PersistentTaskConfig, ev
   const projectId = `${config.owner}/${name}`;
   ctx.dispatchEvent(event, { projectId, owner: config.owner, ...extra });
 }
+
+// ── Done/Blocked handler helpers ──────────────────────────────────────
+
+interface LoopState {
+  projectContent: string;
+  falseDoneCount: number;
+  lastMilestoneDone: number;
+  continueWithoutProgress: number;
+}
+
+type DoneHandlerResult =
+  | { outcome: "continue" }
+  | { outcome: "escalate"; message: string }
+  | { outcome: "done"; result: WorkflowResult };
+
+/**
+ * Append an entry to the journal, handling legacy vs directory format.
+ * In comment iterations, legacy projects skip the journal append (entries are
+ * already captured in the comment journal entry above).
+ */
+function appendJournalEntry(
+  config: PersistentTaskConfig,
+  projectContent: string,
+  entry: string,
+  isCommentIteration: boolean,
+): string {
+  if (isCommentIteration) {
+    if (!config.isLegacy) appendFileSync(config.journalPath, entry);
+  } else {
+    if (config.isLegacy) {
+      projectContent += entry;
+      writeFileSync(config.projectPath, projectContent, "utf-8");
+    } else {
+      appendFileSync(config.journalPath, entry);
+    }
+  }
+  return projectContent;
+}
+
+/**
+ * Handle a reviewer DONE decision: run evaluator gate, check milestones,
+ * handle false-done loop, and mark project complete if everything passes.
+ *
+ * Mutates `ls` (projectContent, falseDoneCount, lastMilestoneDone, continueWithoutProgress).
+ */
+async function handleDoneDecision(
+  ctx: WorkflowContext,
+  config: PersistentTaskConfig,
+  ls: LoopState,
+  journalContent: string,
+  iteration: number,
+  decision: { status: string; detail: string },
+  isCommentIteration: boolean,
+): Promise<DoneHandlerResult> {
+  // LLM evaluation gate
+  const stepLabel = isCommentIteration ? `evaluate-comment-${iteration}` : `evaluate-iteration-${iteration}`;
+  ctx.emit({ type: "step_start", step: stepLabel });
+
+  const finalMs = extractMilestones(ls.projectContent);
+  const milestoneNote = finalMs.total > 0 ? `Milestones: ${finalMs.done}/${finalMs.total} checked off.` : "";
+  const evalPrompt = buildEvalPrompt(config.goal, ls.projectContent, journalContent, iteration, milestoneNote);
+  const evalResult = await ctx.runAgent(config.owner, evalPrompt);
+  const evalText = evalResult.lastAssistantText ?? "";
+  const scoreMatch = evalText.match(/SCORE:\s*(\d+)/i);
+  const score = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
+  const evalVerdict = score >= 7 ? "PASS" : "FAIL";
+
+  const evalEntry = `**Evaluator**: ${evalVerdict} (score=${score}/10) — ${evalText.slice(0, 500)}\n\n`;
+  ls.projectContent = appendJournalEntry(config, ls.projectContent, evalEntry, isCommentIteration);
+
+  // Comment iterations set Health unconditionally after eval;
+  // main-loop iterations set Health only in the FAIL or success branches.
+  if (isCommentIteration) {
+    ls.projectContent = updateField(ls.projectContent, "Health", `${score}/10 (${evalVerdict})`);
+    writeFileSync(config.projectPath, ls.projectContent, "utf-8");
+  }
+
+  if (evalVerdict === "FAIL") {
+    ls.falseDoneCount++;
+    // Check actual milestone progress — don't blindly increment stall counter
+    const evalMsDone = extractMilestones(ls.projectContent).done;
+    if (evalMsDone > ls.lastMilestoneDone) {
+      ls.lastMilestoneDone = evalMsDone;
+      ls.continueWithoutProgress = 0;
+    } else {
+      ls.continueWithoutProgress++;
+    }
+    if (!isCommentIteration) {
+      ls.projectContent = updateField(ls.projectContent, "Health", `${score}/10 (${evalVerdict})`);
+      writeFileSync(config.projectPath, ls.projectContent, "utf-8");
+    }
+    if (ls.falseDoneCount >= 3) {
+      ls.projectContent = updateField(ls.projectContent, "Status", "blocked");
+      ls.projectContent = updateSection(ls.projectContent, "Current State",
+        `Blocked: Reviewer marked DONE ${ls.falseDoneCount} times but evaluator scored <7 each time. Goal may be unachievable or misscoped.`);
+      writeFileSync(config.projectPath, ls.projectContent, "utf-8");
+      return { outcome: "escalate", message: `False-done loop: reviewer said DONE ${ls.falseDoneCount}x but evaluator rejected each time at iteration ${iteration}.` };
+    }
+    return { outcome: "continue" };
+  }
+
+  // Hard gate: don't mark done if milestones remain unchecked
+  const finalMsForState = extractMilestones(ls.projectContent);
+  if (finalMsForState.total > 0 && finalMsForState.done < finalMsForState.total) {
+    ls.falseDoneCount++;
+    const overrideNote = `**Auto-check**: Evaluator PASSED (score=${score}) but only ${finalMsForState.done}/${finalMsForState.total} milestones checked. ` +
+      `Overriding to CONTINUE. (false-done #${ls.falseDoneCount})\n\n`;
+    ls.projectContent = appendJournalEntry(config, ls.projectContent, overrideNote, isCommentIteration);
+    // Check milestone progress before incrementing stall counter
+    if (finalMsForState.done > ls.lastMilestoneDone) {
+      ls.lastMilestoneDone = finalMsForState.done;
+      ls.continueWithoutProgress = 0;
+    } else {
+      ls.continueWithoutProgress++;
+    }
+    return { outcome: "continue" };
+  }
+
+  // Actually done — update project state
+  ls.projectContent = updateField(ls.projectContent, "Status", "done");
+  if (!isCommentIteration) {
+    ls.projectContent = updateField(ls.projectContent, "Health", `${score}/10 (${evalVerdict})`);
+  }
+  ls.projectContent = updateSection(ls.projectContent, "Current State",
+    `Complete. ${finalMsForState.done}/${finalMsForState.total} milestones. ${decision.detail.slice(0, 100)}`);
+  if (!isCommentIteration) {
+    ls.projectContent = appendToSection(ls.projectContent, "Iteration Summary",
+      `- **Iter ${iteration}**: ${decision.detail.slice(0, 100)}\n`);
+  }
+  writeFileSync(config.projectPath, ls.projectContent, "utf-8");
+  ctx.emit({ type: "metric", name: "project.false-done", value: ls.falseDoneCount });
+  emitProjectEvent(ctx, config, "project.completed", { iteration, health: score });
+  const doneMsg = isCommentIteration
+    ? `Complete after comment at iteration ${iteration}: ${decision.detail}`
+    : `Complete after ${iteration} iterations: ${decision.detail}`;
+  return { outcome: "done", result: ctx.done(doneMsg) };
+}
+
+/**
+ * Handle a reviewer BLOCKED decision: run evaluator, record score, mark blocked.
+ *
+ * Mutates `ls.projectContent`.
+ */
+async function handleBlockedDecision(
+  ctx: WorkflowContext,
+  config: PersistentTaskConfig,
+  ls: LoopState,
+  journalContent: string,
+  iteration: number,
+  decision: { status: string; detail: string },
+  isCommentIteration: boolean,
+): Promise<WorkflowResult> {
+  ctx.emit({ type: "step_start", step: `evaluate-blocked-${iteration}` });
+  const blockedMs = extractMilestones(ls.projectContent);
+  const blockedNote = blockedMs.total > 0 ? `Milestones: ${blockedMs.done}/${blockedMs.total} checked off.` : "";
+  const evalPrompt = buildEvalPrompt(config.goal, ls.projectContent, journalContent, iteration, blockedNote);
+  const evalResult = await ctx.runAgent(config.owner, evalPrompt);
+  const evalText = evalResult.lastAssistantText ?? "";
+  const scoreMatch = evalText.match(/SCORE:\s*(\d+)/i);
+  const score = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
+  const evalEntry = `**Evaluator**: BLOCKED eval (score=${score}/10) — ${evalText.slice(0, 500)}\n\n`;
+  ls.projectContent = appendJournalEntry(config, ls.projectContent, evalEntry, isCommentIteration);
+
+  ls.projectContent = updateField(ls.projectContent, "Status", "blocked");
+  ls.projectContent = updateField(ls.projectContent, "Health", `${score}/10 (BLOCKED)`);
+  ls.projectContent = updateSection(ls.projectContent, "Current State", `Blocked: ${decision.detail.slice(0, 150)}`);
+  writeFileSync(config.projectPath, ls.projectContent, "utf-8");
+  emitProjectEvent(ctx, config, "project.blocked", { iteration, health: score, reason: decision.detail.slice(0, 100) });
+  const msg = isCommentIteration
+    ? `Blocked by comment at iteration ${iteration}: ${decision.detail}`
+    : `Blocked at iteration ${iteration}: ${decision.detail}`;
+  return ctx.escalate(msg);
+}
+
 // ── Main workflow ──────────────────────────────────────────────────────
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -553,87 +727,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       writeFileSync(config.projectPath, projectContent, "utf-8");
 
       if (decision.status === "done") {
-        // LLM evaluation gate
-        ctx.emit({ type: "step_start", step: `evaluate-comment-${iteration}` });
-        const finalMs = extractMilestones(projectContent);
-        const milestoneNote = finalMs.total > 0 ? `Milestones: ${finalMs.done}/${finalMs.total} checked off.` : "";
-        const evalPrompt = buildEvalPrompt(config.goal, projectContent, journalContent, iteration, milestoneNote);
-        const evalResult = await ctx.runAgent(config.owner, evalPrompt);
-        const evalText = evalResult.lastAssistantText ?? "";
-        const scoreMatch = evalText.match(/SCORE:\s*(\d+)/i);
-        const score = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
-        const evalVerdict = score >= 7 ? "PASS" : "FAIL";
-
-        const evalEntry = `**Evaluator**: ${evalVerdict} (score=${score}/10) — ${evalText.slice(0, 500)}\n\n`;
-        if (!config.isLegacy) appendFileSync(config.journalPath, evalEntry);
-        projectContent = updateField(projectContent, "Health", `${score}/10 (${evalVerdict})`);
-        writeFileSync(config.projectPath, projectContent, "utf-8");
-
-        if (evalVerdict === "FAIL") {
-          falseDoneCount++;
-          // Check actual milestone progress — don't blindly increment stall counter
-          const evalMsDone = extractMilestones(projectContent).done;
-          if (evalMsDone > lastMilestoneDone) {
-            lastMilestoneDone = evalMsDone;
-            continueWithoutProgress = 0;
-          } else {
-            continueWithoutProgress++;
-          }
-          if (falseDoneCount >= 3) {
-            projectContent = updateField(projectContent, "Status", "blocked");
-            projectContent = updateSection(projectContent, "Current State",
-              `Blocked: Reviewer marked DONE ${falseDoneCount} times but evaluator scored <7 each time. Goal may be unachievable or misscoped.`);
-            writeFileSync(config.projectPath, projectContent, "utf-8");
-            return ctx.escalate(`False-done loop: reviewer said DONE ${falseDoneCount}x but evaluator rejected each time at iteration ${iteration}.`);
-          }
-          iteration++;
-          continue;
-        }
-
-        // Hard gate: don't mark done if milestones remain unchecked
-        const finalMsDone = extractMilestones(projectContent);
-        if (finalMsDone.total > 0 && finalMsDone.done < finalMsDone.total) {
-          falseDoneCount++;
-          const overrideNote = `**Auto-check**: Evaluator PASSED (score=${score}) but only ${finalMsDone.done}/${finalMsDone.total} milestones checked. ` +
-            `Overriding to CONTINUE. (false-done #${falseDoneCount})\n\n`;
-          if (!config.isLegacy) appendFileSync(config.journalPath, overrideNote);
-          // Check milestone progress before incrementing stall counter
-          if (finalMsDone.done > lastMilestoneDone) {
-            lastMilestoneDone = finalMsDone.done;
-            continueWithoutProgress = 0;
-          } else {
-            continueWithoutProgress++;
-          }
-          iteration++;
-          continue;
-        }
-
-        projectContent = updateField(projectContent, "Status", "done");
-        projectContent = updateSection(projectContent, "Current State",
-          `Complete. ${finalMsDone.done}/${finalMsDone.total} milestones. ${decision.detail.slice(0, 100)}`);
-        writeFileSync(config.projectPath, projectContent, "utf-8");
-        ctx.emit({ type: "metric", name: "project.false-done", value: falseDoneCount });
-        emitProjectEvent(ctx, config, "project.completed", { iteration, health: score });
-        return ctx.done(`Complete after comment at iteration ${iteration}: ${decision.detail}`);
+        const ls: LoopState = { projectContent, falseDoneCount, lastMilestoneDone, continueWithoutProgress };
+        const result = await handleDoneDecision(ctx, config, ls, journalContent, iteration, decision, true);
+        projectContent = ls.projectContent; falseDoneCount = ls.falseDoneCount;
+        lastMilestoneDone = ls.lastMilestoneDone; continueWithoutProgress = ls.continueWithoutProgress;
+        if (result.outcome === "escalate") return ctx.escalate(result.message);
+        if (result.outcome === "done") return result.result;
+        // outcome === "continue"
+        iteration++;
+        continue;
       }
       if (decision.status === "blocked") {
-        ctx.emit({ type: "step_start", step: `evaluate-blocked-${iteration}` });
-        const blockedMs = extractMilestones(projectContent);
-        const blockedNote = blockedMs.total > 0 ? `Milestones: ${blockedMs.done}/${blockedMs.total} checked off.` : "";
-        const evalPrompt = buildEvalPrompt(config.goal, projectContent, journalContent, iteration, blockedNote);
-        const evalResult = await ctx.runAgent(config.owner, evalPrompt);
-        const evalText = evalResult.lastAssistantText ?? "";
-        const scoreMatch = evalText.match(/SCORE:\s*(\d+)/i);
-        const score = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
-        const evalEntry = `**Evaluator**: BLOCKED eval (score=${score}/10) — ${evalText.slice(0, 500)}\n\n`;
-        if (!config.isLegacy) appendFileSync(config.journalPath, evalEntry);
-
-        projectContent = updateField(projectContent, "Status", "blocked");
-        projectContent = updateField(projectContent, "Health", `${score}/10 (BLOCKED)`);
-        projectContent = updateSection(projectContent, "Current State", `Blocked: ${decision.detail.slice(0, 150)}`);
-        writeFileSync(config.projectPath, projectContent, "utf-8");
-        emitProjectEvent(ctx, config, "project.blocked", { iteration, health: score, reason: decision.detail.slice(0, 100) });
-        return ctx.escalate(`Blocked by comment at iteration ${iteration}: ${decision.detail}`);
+        const ls: LoopState = { projectContent, falseDoneCount, lastMilestoneDone, continueWithoutProgress };
+        const blockedResult = await handleBlockedDecision(ctx, config, ls, journalContent, iteration, decision, true);
+        return blockedResult;
       }
 
       // CONTINUE — set active (may have been blocked/done), increment iteration
