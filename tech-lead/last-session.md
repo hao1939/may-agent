@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776860006157_451
+- **Session:** s_1776859642399_438
 - **Status:** done
-- **When:** 2026-04-22T12:14:12.978Z
-- **Duration:** 46s
+- **When:** 2026-04-22T12:17:22.225Z
+- **Duration:** 9m59s
 
 ## What Happened
-The gym runner source (`agents/src/gym/runner.ts`) doesn't exist, and there's no compiled bundle either. Let me check if there's an alternative way to run scenarios or if this is the blocker.
+No git repo at /app root — the growth.ts file is just on disk. That's fine.

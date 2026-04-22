@@ -285,7 +285,7 @@ function buildWorkerPrompt(
   if (ms.total > 0) {
     prompt += `## Milestones (${ms.done}/${ms.total} complete)\n`;
     if (nextMilestone) prompt += `**YOUR TASK THIS ITERATION:** ${nextMilestone}\n\n`;
-    if (ms.pending.length > 1) {
+    if (ms.pending.length > 1 && !focusedContext) {
       prompt += `Remaining:\n`;
       for (const p of ms.pending.slice(1)) prompt += `- [ ] ${p}\n`;
       prompt += `\n`;
@@ -295,13 +295,14 @@ function buildWorkerPrompt(
   if (currentState) prompt += `## Current State\n${currentState}\n\n`;
 
   const resources = extractSection(projectContent, "Resources");
-  if (resources) prompt += `## Resources\n${resources}\n\n`;
+  if (resources && !focusedContext) prompt += `## Resources\n${resources}\n\n`;
 
   const processNotes = extractSection(projectContent, "Process Notes");
+  const focusedContext = processNotes?.match(/Context:\s*focused/i);
   if (processNotes) prompt += `## Process Notes\n${processNotes}\n\n`;
 
   if (lastGuidance) prompt += `## Owner Guidance for This Iteration\n${lastGuidance}\n\n`;
-  if (recentEntries) prompt += `## Recent Progress\n${recentEntries}\n\n`;
+  if (recentEntries && !focusedContext) prompt += `## Recent Progress\n${recentEntries}\n\n`;
 
   prompt += `## What You Must Produce\n`;
   prompt += `This iteration must end with at least one of:\n`;
