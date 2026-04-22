@@ -1,8 +1,8 @@
 # H-187: Relational Defect Enumeration — Meta-Cognitive Checklist for Discovery-Hard Tasks
 
 **Created**: 2026-04-22 by Bob
-**Status**: proposed
-**Confidence**: ★★☆☆ (initial estimate)
+**Status**: FALSIFIED (EXP-202: 0/10, P(H) ≤0.10)
+**Confidence**: ☆☆☆☆ (falsified)
 **Source**: KE-341 (convergent null evidence from 5 experiments on cascading-fix-trap-v2)
 **Connects**: KE-341, H-099, H-166, H-181, EXP-195/198/199/201
 
