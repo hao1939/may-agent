@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P2
-**Iteration**: 6
+**Iteration**: 7
 **Health**: 3/10 (BLOCKED)
 **Blocker**: No API keys (ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY) configured in container. CLIs are installed (`/usr/bin/claude`, `/usr/bin/gemini`, `/usr/bin/codex`) but cannot authenticate. Need Hao to configure at least one key.
 **Resume condition**: Any of the three API keys is set in the environment.
@@ -54,7 +54,7 @@ Our agents orchestrate work but struggle with complex code changes (can't access
 - [ ] Adopt: write `agents/shared/skills/cli-coding/SKILL.md` documenting best practices
 
 ## Current State
-Iteration 6. Milestones: 0/5 done. Next: Research: write `.state/cli-research.md` listing how each CLI works (Claude Code
+Iteration 7. Milestones: 0/5 done. Next: Research: write `.state/cli-research.md` listing how each CLI works (Claude Code
 ## Iteration Summary
 - **Iter 2**: Now I have all the info needed. Let me create the deliverables.
 
