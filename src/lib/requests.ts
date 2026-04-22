@@ -308,18 +308,11 @@ CREATE TABLE IF NOT EXISTS events (
   source          TEXT,
   owner           TEXT,
   data            TEXT,
-  timestamp       INTEGER NOT NULL,
-  status          TEXT DEFAULT 'pending',
-  handled_by      TEXT,
-  result          TEXT,
-  reason          TEXT,
-  retry_count     INTEGER DEFAULT 0,
-  ttl_ms          INTEGER,
-  urgency         TEXT DEFAULT 'normal'
+  timestamp       INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_events_owner ON events(owner, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_type  ON events(event_type, timestamp);
-CREATE INDEX IF NOT EXISTS idx_events_inbox ON events(status, timestamp);
+-- idx_events_inbox created after ALTER TABLE migration (status column may not exist yet)
 `;
 
 // ── Database Management ────────────────────────────────────────────────
