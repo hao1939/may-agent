@@ -1,87 +1,73 @@
-# Skill: CLI Coding Agents
+# Skill: CLI-Assisted Coding
 
-**Purpose:** Invoke production coding CLIs (Claude Code, Gemini CLI, OpenAI Codex) as tools from our agent system.
-
-## Prerequisites
-
-Set at least one API key:
-```bash
-export ANTHROPIC_API_KEY="sk-ant-..."   # For Claude Code
-export GOOGLE_API_KEY="..."              # For Gemini CLI
-export OPENAI_API_KEY="sk-..."           # For OpenAI Codex
-```
+Use production agent CLIs (Claude Code, Gemini CLI, OpenAI Codex) as tools our agents can invoke via bash.
 
 ## Quick Start
 
 ```bash
-# Claude Code (best structured output)
-claude -p "Your coding task here" --output-format json --bare --dangerously-skip-permissions
+# Claude Code (needs ANTHROPIC_API_KEY)
+timeout 30 claude --bare -p "your prompt" --dangerously-skip-permissions 2>&1
 
-# Gemini CLI
-gemini -p "Your coding task here" -y
+# Gemini CLI (needs GEMINI_API_KEY)
+timeout 30 gemini -p "your prompt" -y 2>&1
 
-# OpenAI Codex
-codex exec "Your coding task here" --full-auto
+# OpenAI Codex (needs OPENAI_API_KEY)
+timeout 30 codex exec --skip-git-repo-check "your prompt" 2>&1
+```
+
+## Prerequisites
+
+1. CLIs installed (all three at `/usr/bin/{claude,gemini,codex}`)
+2. At least one API key set as environment variable
+
+## Wrapper Script
+
+```bash
+#!/bin/bash
+# cli-invoke.sh <cli> <prompt> [timeout]
+CLI="${1:?}" PROMPT="${2:?}" TIMEOUT="${3:-30}"
+case "$CLI" in
+  claude) timeout "$TIMEOUT" claude --bare -p "$PROMPT" --dangerously-skip-permissions 2>&1 ;;
+  gemini) timeout "$TIMEOUT" gemini -p "$PROMPT" -y 2>&1 ;;
+  codex)  timeout "$TIMEOUT" codex exec --skip-git-repo-check "$PROMPT" 2>&1 ;;
+esac
+EXIT=$?; [ $EXIT -eq 124 ] && echo "TIMEOUT" >&2; exit $EXIT
 ```
 
 ## Best Practices
 
-### 1. Always Use Timeouts
+1. **Always use timeout** — CLIs may hang on auth failures (Claude silently hangs)
+2. **Use non-interactive flags** — `-p` for Claude/Gemini, `exec` for Codex
+3. **Use bare/minimal mode** — `--bare` for Claude skips hooks and LSP for faster startup
+4. **Auto-approve in sandboxes** — `--dangerously-skip-permissions` (Claude), `-y` (Gemini)
+5. **Parse exit codes** — 0=success, 41=Gemini auth error, 124=timeout, 1=general error
+6. **Capture stderr** — Codex puts session metadata and errors on stderr
+
+## When to Use CLIs vs Agent-Only
+
+| Use Case | Recommendation |
+|----------|---------------|
+| Simple code generation | Agent-only (faster, no overhead) |
+| Multi-model comparison | CLI-assisted (fork 3 CLIs in parallel) |
+| Specialized tasks | CLI-assisted (use best model per task) |
+| Code review | CLI-assisted (multiple perspectives) |
+| Quick answers | Agent-only (zero latency) |
+
+## Error Handling
+
 ```bash
-timeout 120 claude -p "task" --output-format json 2>&1 || echo "TIMEOUT"
+output=$(timeout 30 claude --bare -p "$PROMPT" 2>&1)
+exit_code=$?
+case $exit_code in
+  0)   echo "Success: $output" ;;
+  124) echo "Timeout — check API key" ;;
+  41)  echo "Auth error (Gemini)" ;;
+  *)   echo "Error ($exit_code): $output" ;;
+esac
 ```
 
-### 2. Parse JSON Output (Claude)
-```bash
-result=$(claude -p "task" --output-format json --bare 2>&1)
-code=$(echo "$result" | jq -r '.result')
-cost=$(echo "$result" | jq -r '.cost_usd')
-```
+## Current Status
 
-### 3. Fallback Pattern
-```bash
-result=$(timeout 60 claude -p "$task" --output-format json --bare 2>&1) || true
-if ! echo "$result" | jq -e '.result' >/dev/null 2>&1; then
-  echo "CLI failed — handle task natively"
-fi
-```
-
-### 4. Budget Control (Claude)
-```bash
-claude -p "task" --max-budget-usd 0.10 --output-format json
-```
-
-### 5. Multi-Model Consensus
-```bash
-# Run in parallel, compare outputs
-claude -p "$task" --output-format json > /tmp/claude.json 2>&1 &
-gemini -p "$task" > /tmp/gemini.txt 2>&1 &
-codex exec "$task" > /tmp/codex.txt 2>&1 &
-wait
-```
-
-### 6. Restrict Tool Access
-```bash
-# Claude: only allow read and bash
-claude -p "task" --allowedTools "Read Bash(grep *)"
-
-# Gemini: plan mode (read-only)
-gemini -p "task" --approval-mode plan
-```
-
-## When to Use
-
-| Scenario | Recommended |
-|----------|------------|
-| Simple code generation | ❌ Use agent natively |
-| Multi-model review | ✅ Run 2-3 CLIs in parallel |
-| Specialized model for subtask | ✅ Pick best model per task |
-| Parallel independent work items | ✅ Fork CLI agents |
-| Interactive debugging | ❌ CLIs lack conversation context |
-
-## Reference
-
-- Research: `.state/cli-research.md`
-- Install log: `.state/cli-install-log.md`
-- Integration tests: `.state/cli-integration-test.md`
-- Evaluation: `.state/cli-evaluation.md`
+- ✅ All three CLIs installed and invocable
+- ❌ No API keys configured — set `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, or `OPENAI_API_KEY`
+- 📋 See `.state/cli-research.md` for detailed flag documentation
