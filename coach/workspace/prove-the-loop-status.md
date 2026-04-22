@@ -18,7 +18,8 @@
 - **Arm B**: Procedural discovery skill in task.md × 10 (scenario: cascading-fix-trap-v2-exp198-proc)
 - **Arm C**: Procedural skill + worked example × 10 (scenario: cascading-fix-trap-v2-exp198-example)
 - All 3 scenario variants exist and are ready for gym execution
-- **Blocked on**: gym runner infrastructure (src/gym/runner.ts missing from repo)
+- **Status**: Gym runs dispatched to tech-lead (session s_1776863360937_479, 2026-04-22)
+- Arm A baseline already has 115 runs (0% pass) — may reuse existing data
 
 ### Decision criteria
 - H-198a confirmed if Arm B ≥ 25% AND > Arm A (p<0.20)
