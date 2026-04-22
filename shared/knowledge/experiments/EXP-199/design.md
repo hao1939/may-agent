@@ -1,7 +1,7 @@
 # EXP-199: Tool-Assisted Relational Bug Discovery
 
 **Date**: 2026-06-22
-**Status**: DESIGNED
+**Status**: COMPLETED
 **Predecessor**: EXP-195 (hint +30pp), EXP-198 (procedural skill, pending)
 **Hypothesis**: H-181 (Relational Bug Blindness) — P-181b structural intervention
 
