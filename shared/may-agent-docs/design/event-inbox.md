@@ -147,40 +147,42 @@ interface RuntimeCtx {
 ### 2. Agents: auto-heartbeat by convention
 
 **Today:** adding an agent requires a hand-crafted ~15-line cron.json entry with unique offsetMs, a heartbeat workflow, and heartbeat.md.  
-**Default:** if `agents/X/heartbeat.md` exists, the system auto-generates a heartbeat.
+**Default:** every agent gets an auto-generated heartbeat cron entry. No file, no config.
 
 #### Convention
 
+An agent exists (`agent.json`) → it gets a heartbeat. That's it.
+
 ```
 agents/frank/
-  agent.json          ← agent exists
-  heartbeat.md        ← heartbeat exists → auto-heartbeat generated
+  agent.json          ← agent exists → auto-heartbeat generated
+  heartbeat.md        ← optional: custom priorities for heartbeat prompt
   handlers/           ← handlers auto-discovered (already works)
-  cron.json           ← optional, for agent-specific cron jobs
+  cron.json           ← optional: agent-specific cron jobs
 ```
-
-The presence of `heartbeat.md` is the convention. No cron.json entry needed.
 
 #### Auto-generation
 
-During `loadAgents()`, for each agent with `heartbeat.md`:
+During `loadAgents()`, for each registered agent, auto-generate a heartbeat cron entry unless one already exists:
 
 ```typescript
-// If agent has heartbeat.md but no explicit heartbeat entry in any cron.json:
-if (existsSync(join(agentDir, "heartbeat.md")) && !hasExplicitHeartbeat(agentName)) {
+for (const agent of registeredAgents) {
+  if (hasExplicitHeartbeat(agent.name)) continue; // explicit entry wins
+  if (agent.config.heartbeat === false) continue;  // opt-out
+
   const entry: CronEntry = {
-    name: `heartbeat-${agentName}`,
+    name: `heartbeat-${agent.name}`,
     type: "job",
     intervalMs: 1_800_000,  // 30min default
-    agent: agentName,
+    agent: agent.name,
     handler: "run-workflow",
     handlerConfig: {
-      workflow: `${agentName}-heartbeat`,
-      agent: agentName,
-      task: buildDefaultHeartbeatTask(agentName),
+      workflow: `${agent.name}-heartbeat`,
+      agent: agent.name,
+      task: buildDefaultHeartbeatTask(agent.name),
       timeoutMs: 1_800_000,
     },
-    offsetMs: stableOffset(agentName),  // hash-based, deterministic
+    offsetMs: stableOffset(agent.name),  // hash-based, deterministic
     on: ["heartbeat.trigger"],
     enabled: true,
   };
@@ -190,19 +192,10 @@ if (existsSync(join(agentDir, "heartbeat.md")) && !hasExplicitHeartbeat(agentNam
 
 `stableOffset(name)` uses a hash of the agent name to spread heartbeats evenly — no manual offset picking.
 
-#### Override
+#### Override and opt-out
 
-Explicit cron.json entries always win. If `agents/may/cron.json` has `heartbeat-bob`, the auto-generated one is skipped. This lets you customize interval, offset, or task for specific agents while keeping the convention default for the rest.
-
-#### Fallback heartbeat workflow
-
-If `agents/X/workflows/X-heartbeat/` doesn't exist, use a **generic heartbeat workflow** that:
-1. Reads `agents/X/heartbeat.md` for priorities
-2. Queries inbox for pending events
-3. Checks agent's metrics
-4. Executes based on LLM judgment
-
-This means a new agent needs only `agent.json` + `heartbeat.md` to be fully operational.
+- **Override:** explicit cron.json entry with `heartbeat-{name}` wins. Customize interval, task, etc.
+- **Opt-out:** `"heartbeat": false` in agent.json. For leaf agents that only respond to calls and don't need periodic wakeups.
 
 ### 3. System awareness: default metrics for every primitive
 
