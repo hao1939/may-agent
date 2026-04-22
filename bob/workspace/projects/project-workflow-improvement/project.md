@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 4
+**Iteration**: 5
 **Health**: 6/10
 
 ## Goal
@@ -47,7 +47,7 @@ Continuously improve the project workflow. This is a TRACKER — each experiment
 - **Evidence**: breadcrumb-gap manual test (rich context: 1 iter vs 6)
 
 ## Current State
-Iteration 4. Milestones: 4/6 done. Next: Identify worst metric → create experiment project for it
+Iteration 5. Milestones: 4/6 done. Next: Identify worst metric → create experiment project for it
 ## Baseline Measurement (2026-04-22)
 
 **Sample**: 4 projects (context-learning, context-learning-impl, reviewer-effectiveness, agent-cli-research)
@@ -70,6 +70,8 @@ Iteration 4. Milestones: 4/6 done. Next: Identify worst metric → create experi
 The project file says I CANNOT edit the project fil
 
 - **Iter 4**: Now dispatch research requests:
+
+- **Iter 5**: Now dispatch research requests:
 
 
 ## Comments

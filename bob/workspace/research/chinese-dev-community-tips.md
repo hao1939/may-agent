@@ -1,7 +1,7 @@
 # Chinese Developer Community Tips: AI Agent Practical Techniques
 
-*Compiled from 小红书 (Xiaohongshu), community discussions, and Chinese AI research*
-*Research Date: 2026-04-22*
+*Compiled from 小红书 (Xiaohongshu), V2EX, community discussions, and Chinese AI research*
+*Research Date: 2026-04-22 (Updated with V2EX findings)*
 
 ---
 
@@ -78,6 +78,45 @@ From Anthropic's Long-Running Agent pattern (无影寺, 242收藏):
 
 **Engineering Insight** (from comments):
 > "Agentic RAG is essentially an engineering system methodology — nothing conceptually new, but requires scenario customization, not a generic product."
+
+### 1.6 Multi-Model Orchestration Pattern (V2EX Community, 2026-04)
+
+**The Cost-Quality Tradeoff** (meetyuan thread, 8380 views):
+- Claude Opus-4-6: "半天烧了四十多美元" — too expensive for continuous use
+- Proposed solution: Use strong model for planning, cheaper model for execution
+
+**Tiers of Model Deployment**:
+| Tier | Model Type | Use Case | Example Models |
+|------|-----------|----------|----------------|
+| **Planning/Architecture** | Strong reasoning | System design, spec writing | Claude Opus, GPT-5 |
+| **Execution/Implementation** | Fast & cheap | Code generation following spec | DeepSeek, GLM-4, Kimi |
+| **Review/Quality Control** | Strong reasoning | Code review, final validation | Claude Sonnet, GPT-5.4 |
+
+**Workflow Pattern**:
+```
+Plan (Claude Opus) → Execute (DeepSeek/GLM) → Review (Claude Sonnet)
+```
+
+**Community Validation** (mansunyunxin):
+> "更好的分法是：大模型做规划路径 + 审查代码质量；便宜模型按规划路径执行。DeepSeek写代码和Claude差距没那么大，但价格是降维打击。"
+
+**Key Insight**: This is "Karpathy's Goal-Driven Execution with cost awareness" — give the goal AND the cost constraint.
+
+### 1.7 "Plan → Review → Code" Cycle (V2EX)
+
+**Vibe Coding Best Practice** (xyooyx):
+> "写spec、复核spec、开始编码，以此循环往复"
+
+**Practical Implementation**:
+1. Write detailed spec before any code
+2. Review spec separately (human or LLM review)
+3. Only then proceed to implementation
+4. Never skip the review step
+
+**Tool Integration Pattern** (gbin via sigcli.ai):
+- Connect work systems (Jira, GitHub, Outlook, Teams) to Codex/Claude
+- Let AI write tickets, PRs, messages autonomously
+- Human remains in approval loop
 
 ---
 
