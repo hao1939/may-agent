@@ -7,7 +7,7 @@ import subprocess, json, sys, time, os, uuid
 
 SCENARIO = "cascading-fix-trap-v2-exp202-enum"
 TRIALS = 10
-AGENT = "coder"
+AGENT = "amy"
 RUN_TAG = "EXP-202"
 BATCH_ID = f"exp202-{uuid.uuid4().hex[:8]}"
 PROJECT_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..")
