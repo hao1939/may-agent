@@ -5719,3 +5719,9 @@ Findings:
   - `./node_modules/.bin/vitest --run` at `/app/agents` fails: missing `./node_modules/.bin/vitest` (exit 127).
 - Finding (IMPORTANT): cannot perform independent compile/test verification due to missing toolchain binaries in `/app/agents/node_modules/.bin`.
 
+## 2026-04-22 Heartbeat — Proactive scan
+- Reviewed recent unreviewed commit `63d8ed4b7` which updated multiple agent heartbeats/workflows, including `agents/qa/workflows/qa-heartbeat.ts`.
+- Read `agents/qa/workflows/qa-heartbeat.ts` and confirmed new **red metric gate** behavior: if any metric line contains `⚠️ BELOW TARGET`, workflow runs an additional blocking `ctx.runAgent()` gate step, retries if agent misses any red metric IDs, then proceeds to normal heartbeat prompt.
+- Potential issue (IMPORTANT): `loadMetrics()` labels any breached metric as `⚠️ BELOW TARGET` even when `alert_direction` is `"above"` (i.e., a metric being too high). This is confusing/misleading wording for above-threshold alerts; consider changing label to something direction-agnostic like `⚠️ BREACHED`.
+- Environment verification still blocked here: `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest` are missing in this runtime, so independent compile/test verification cannot be performed.
+
