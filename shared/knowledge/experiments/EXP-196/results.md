@@ -119,3 +119,14 @@ For loop scenarios, it's the key mechanism — it prevents re-contamination. For
 ## Verdict
 
 **Conditional GO** for live experimentation on loop-type verification scenarios, with the modified prompt that excludes audit/verify-only tasks. The mechanism is sound for its target failure mode (contaminated re-verification) but must be scoped to avoid interfering with fabrication detection.
+
+## Academic Grounding (added 2026-06-22)
+
+DD-856 (Yao, "Remask, Don't Replace: Token-to-Mask Refinement in Masked Diffusion Language Models", 2604.18738) provides the formal mechanism underlying this experiment's intervention:
+
+- **Three failure modes of replace-style correction**: (1) no confident alternative when uncertainty is distributed, (2) replacement computed from contaminated context, (3) distribution mismatch between training perturbations and real inference errors. These map directly to our verification loop mechanics.
+- **79.9% of errors are "last-mile corruption"** — correct reasoning followed by garbled final output. This validates our F1 finding that remasking targets loop-type (reasoning-correct/output-wrong) failures, not fabrication-type failures.
+- **41.3% repair rate** on last-mile cases via context reset, with +5.92 on CMATH. Training-free, no new parameters — parallel to our prompt-only intervention design.
+- **The T2M mechanism is our verification gravity well in miniature**: contaminated context → compounding errors maps to contaminated verification frame → deepening loops. Reset-to-mask maps to our "clear verification context and re-read fresh" intervention.
+
+This grounding strengthens the theoretical basis for scenarios 2, 3, 4 (compound-edit, cascading-fix, partial-verification) and reinforces the F5 finding that fabrication scenarios require different treatment. Processed into KE-337.
