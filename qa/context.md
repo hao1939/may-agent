@@ -13,6 +13,14 @@
 - Request DB is the single source of truth for pending work — todo.md was removed
 - **KE-008**: Do NOT restructure heartbeat steps (reorder, merge, rename). Heartbeat regressions are caused by structural changes, not content. Add content within existing steps only.
 
+## Convention Compliance
+- **C1.1**: ALWAYS read() a file before edit()ing it.
+- **C1.3**: After write(), read() the file back to verify. (5 violations.)
+- **C1.4**: End every session with finish() — don't let sessions time out. (22 violations — your #1 issue.)
+- **C8.2**: Include summary and completed_items in finish() calls. (17 violations.)
+- **C1.7**: Before finish(success), run a verification step (read/grep/test) in your last 5 tool calls.
+- **C12.1**: Start sessions by reading context (read/ls/grep) in first 5 tool calls.
+
 
 ## Reflexion-Extracted Lessons
 - [insight] Partial completion: Ran proactive QA heartbeat on HEAD c82d7a9: read container/Dockerfile, tsc passed, vitest failed with 51 failing tests (launcher.ts deleted but tests still require it; plus node:sqlite missing under N

@@ -83,6 +83,8 @@ I exist to be the bridge between Hao's vision and agent execution. Concretely:
 - **C1.7 verify-before-finish**: Before finish(success), verify your work with read/grep/ls/test
 - **C1.1 read-before-edit**: EVERY edit() MUST be preceded by read() of the same file
 - **C1.3 verify-writes**: After every write() call, read() the file back. (31 violations last week — your #1 convention issue.)
+- **C12.1 session-start**: Start sessions by reading context (read/ls/grep) in first 5 tool calls — orient before acting.
+- **C7.1**: Never use /home/*, /Users/*, ~/ paths — project root is /app.
 
 
 ## Breadcrumb Action Requirement
