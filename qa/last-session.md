@@ -1,28 +1,26 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776899203312_914
+- **Session:** s_1776901003156_926
 - **Status:** done
-- **When:** 2026-04-22T23:07:21.621Z
-- **Duration:** 38s
+- **When:** 2026-04-22T23:37:16.288Z
+- **Duration:** 33s
 
 ## What Happened
 ### Summary
-No pending events/alerts/projects. I attempted the standard verification loop (recent changes → `tsc` → `vitest`) but this environment is **not a git repo** and has **no local node binaries**, so those mandatory checks can’t be executed. I did a minimal runtime spot-check of the grading pipeline and found a potential API mismatch: the “report” is an **object**, not a formatted string.
+This heartbeat environment can’t be independently verified as a normal TS/Vitest project: it is **not a Git repo** (so I can’t see what changed), and there is **no `package.json` / `node_modules`** (so the mandated `tsc` and `vitest` commands cannot run). I did a targeted read of `src/pipeline.js` and noted a couple input-validation risks, but I cannot provide a shipping-quality PASS without the required toolchain/tests.
 
 ### Checks
-- `tsc --noEmit`: **FAIL (environment)** — `./node_modules/.bin/tsc` missing (`No such file or directory`)
-- `vitest --run`: **FAIL (environment)** — `./node_modules/.bin/vitest` missing (`No such file or directory`)
+- `tsc --noEmit`: **FAIL (blocked)** — `./node_modules/.bin/tsc` not found (no `node_modules/.bin/`).
+- `vitest --run`: **FAIL (blocked)** — `./node_modules/.bin/vitest` not found (no `node_modules/.bin/`).
 
 ### Issues
-- **CRITICAL** — Cannot verify recent changes: `git log` fails with `fatal: not a git repository (or any of the parent directories): .git`, so I cannot identify or review “last 6h” changes.
-- **IMPORTANT** — Test/typing verification blocked: missing `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest`.
-- **MINOR** — Potential API expectation mismatch: `src/pipeline.js` “formats output report” but returns a structured object (confirmed by `src/formatter.js`). If a caller expects a printable report string, this will break at runtime.
-
-### Evidence (files read / commands run)
-- Read: `src/pipeline.js`, `src/formatter.js`
-- Runtime: `node - <<...>>` showed `run()` returns an object with `{ students, class_stats }`, not a string.
-- Wrote findings to: `workspace/unreviewed-findings.md` (and read back to confirm).
+- **CRITICAL** — Verification blocked: repository is **not a git working tree** (`git log` fails with “not a git repository”), and required dependencies are missing (no `package.json`, no `node_modules`), so I cannot execute the mandatory QA verification steps.
+- **IMPORTANT** — `src/pipeline.js` validation is likely insufficient for CSV input:
+  - `validateRecords()` checks `score < 0 || score > max_score` but does not ensure `score`/`max_score` are numeric (string coercion could hide bad data).
+  - No explicit guard for `max_score <= 0` (could cause division-by-zero downstream during normalization).
 
 ### Verdict
-**CONDITIONAL** — The spot-checked runtime path works, but the environment prevents mandatory verification (`tsc`/`vitest`) and commit/diff review (no git metadata). To reach PASS, we need either (a) a proper repo checkout with dependencies installed, or (b) updated QA expectations for this non-standard environment.
+**CONDITIONAL** — I cannot PASS because required verification (git diff review + `tsc` + `vitest`) is **not executable in this environment**. If you provide the repo metadata and installable dependencies (or clarify the intended test runner), I can rerun the mandatory checks and give a definitive PASS/FAIL.
+
+Additional note: I wrote the blockers and spot-check notes to `workspace/unreviewed-findings.md`.
