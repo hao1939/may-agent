@@ -6,7 +6,25 @@
  */
 
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import { extractHallucinatedRelPath } from "../../../src/lib/tools/may-utils.js";
+
+/** Patterns that match hallucinated project root paths. */
+const HALLUCINATED_PATH_PATTERNS: RegExp[] = [
+  /^(\/home\/[^/]+\/repos\/[^/]+)(\/.*)?$/,
+  /^(\/home\/[^/]+\/repo)(\/.*)?$/,
+  /^(\/home\/user)(\/.*)?$/,
+  /^(\/home\/[^/]+\/[^/]+)(\/.*)?$/,
+  /^(\/Users\/[^/]+\/[^/]+)(\/.*)?$/,
+  /^(\/app)(\/.*)?$/,
+];
+
+/** Extract the relative-path suffix from a hallucinated absolute path. */
+function extractHallucinatedRelPath(path: string): string | null {
+  for (const pattern of HALLUCINATED_PATH_PATTERNS) {
+    const match = path.match(pattern);
+    if (match) return match[2] ?? "/";
+  }
+  return null;
+}
 
 export type { FailureStep, FailureChain } from "./types.js";
 import type { FailureStep, FailureChain } from "./types.js";
