@@ -75,8 +75,10 @@ Across the gym portfolio, scenarios where the primary bug is a value error (wron
 
 **Falsification**: If relational-bug scenarios show ≥50% base rates comparable to value-bug scenarios, the blind spot claim is wrong.
 
-### P-181b: Structural interventions help ordering bugs more than text hints
+### P-181b: Structural interventions help ordering bugs more than text hints ⚠️ PARTIALLY TESTED (EXP-195)
 A tool or intervention that **makes execution order visible** (e.g., a trace showing function call sequence, a visualization of the pipeline, or a structural gate requiring the agent to diagram execution flow before editing) will improve ordering-bug pass rates more than any text-based hint. Text hints provide Ch1 information about a Ch2 problem; structural interventions provide Ch2 scaffolding.
+
+**EXP-195 update**: General text skills (0/6) failed, but near-explicit direct hints (40%) worked. This is a *dosage* effect within text, not yet a text-vs-structural comparison. The structural intervention (P-181b proper) remains untested. EXP-198 designed to test a *procedural* discovery skill as an intermediate step.
 
 **Falsification**: If text hints at higher doses (e.g., step-by-step reordering instructions) achieve ≥80% on ordering bugs, the structural-vs-text distinction is wrong and it's just a dosage problem.
 
