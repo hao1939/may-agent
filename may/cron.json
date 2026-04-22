@@ -411,16 +411,6 @@
     "_replaced_by": "daily-cleanup"
   },
   {
-    "name": "error-log-scanner",
-    "type": "job",
-    "intervalMs": 14400000,
-    "message": "[cron:error-log-scanner] DEPRECATED \u2014 replaced by error-scan workflow.",
-    "enabled": false,
-    "handler": "error-log-scanner",
-    "description": "DEPRECATED: Replaced by error-scan sensor-judge workflow. Kept for rollback.",
-    "offsetMs": 480000
-  },
-  {
     "name": "error-scan",
     "type": "job",
     "intervalMs": 14400000,
@@ -708,15 +698,19 @@
     "name": "session-recovery",
     "type": "job",
     "handler": "session-recovery",
-    "on": ["session.failed"],
+    "on": [
+      "session.failed"
+    ],
     "enabled": true,
-    "description": "Auto-resume failed sessions (Ambulance Protocol). Two-tier: digest classifier → classifyError fallback. Event-only handler (no timer)."
+    "description": "Auto-resume failed sessions (Ambulance Protocol). Two-tier: digest classifier \u2192 classifyError fallback. Event-only handler (no timer)."
   },
   {
     "name": "session-eval",
     "type": "job",
     "handler": "session-eval",
-    "on": ["session.completed"],
+    "on": [
+      "session.completed"
+    ],
     "enabled": true,
     "description": "Auto-evaluate completed task trees and emit context-learn events. Event-only handler (no timer)."
   },
@@ -724,7 +718,9 @@
     "name": "escalation",
     "type": "job",
     "handler": "escalation",
-    "on": ["session.escalated"],
+    "on": [
+      "session.escalated"
+    ],
     "enabled": true,
     "description": "Route blocked/failed session escalations to human via digest classifier. Event-only handler (no timer)."
   },
@@ -732,7 +728,9 @@
     "name": "context-learn",
     "type": "job",
     "handler": "context-learn",
-    "on": ["context-learn"],
+    "on": [
+      "context-learn"
+    ],
     "enabled": true,
     "description": "Extract durable facts from completed sessions into agent context.md files. Event-only handler."
   }
