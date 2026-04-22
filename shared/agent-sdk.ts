@@ -49,8 +49,8 @@ export {
   promoteAgent,
   discardAgent,
   listLabAgents,
-} from "../../src/lib/growth.js";
-export type { GrowthConfig } from "../../src/lib/growth.js";
+} from "./lib/growth.js";
+export type { GrowthConfig } from "./lib/growth.js";
 
 // ── Convention Guards (violation prevention) ──────────────────────────
 export { EditGuard } from "../src/lib/edit-guard.js";
