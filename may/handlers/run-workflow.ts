@@ -274,15 +274,16 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
 
       // Finalize run record
       run.endedAt = Date.now();
-      run.status = result.type === "done" ? "done" : "escalated";
-      run.result = result.type === "done"
-        ? { summary: result.summary }
-        : { reason: result.reason };
+      const resultType = result?.type ?? "done";
+      run.status = resultType === "done" ? "done" : "escalated";
+      run.result = resultType === "done"
+        ? { summary: result?.summary ?? "(workflow returned no summary)" }
+        : { reason: result?.reason ?? "(unknown)" };
       ctx.saveWorkflowRun(run);
 
       const duration = ((run.endedAt - run.startedAt) / 1000).toFixed(1);
       ctx.log(
-        `[run-workflow:${entry.name}] Workflow "${workflowName}" ${result.type} in ${duration}s ` +
+        `[run-workflow:${entry.name}] Workflow "${workflowName}" ${resultType} in ${duration}s ` +
         `(${run.steps.length} steps)`,
       );
     } catch (err) {

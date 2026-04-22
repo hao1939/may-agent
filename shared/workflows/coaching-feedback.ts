@@ -176,7 +176,7 @@ export const description: string =
   "Sensor-judge workflow: JS scans convention violations (zero LLM cost), " +
   "Coach LLM decides intervention strategy (cost only when patterns need coaching).";
 
-export async function execute(ctx: WorkflowContext): Promise<void> {
+export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Resolve persist dir from known location
   const persistDir = join(process.cwd(), ".state");
 
