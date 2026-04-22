@@ -41,4 +41,6 @@
 | cascading-fix-trap-v3.5 | 0 | — | READY |
 
 ## Next action
-Request gym runs for EXP-198 arms (need tech-lead to fix gym runner or find alternative execution path)
+**WAITING**: EXP-198 gym runs IN PROGRESS (session s_1776863360937_479, started 2026-06-22).
+Tech-lead running all 30 trials (3 arms × 10). First baseline trial completed (~3 min/trial, ~90 min total).
+When complete: analyze results, write KE, promote or reject skill → M5-M6 done.
