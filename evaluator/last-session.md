@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776856123618_298
+- **Session:** s_1776856138083_300
 - **Status:** done
-- **When:** 2026-04-22T11:08:58.083Z
-- **Duration:** 14s
+- **When:** 2026-04-22T11:09:23.528Z
+- **Duration:** 25s
 
 ## What Happened
 ```json
@@ -13,31 +13,37 @@
     "coach": {
       "role": "Philosopher/Architect",
       "capability_level": "L2",
-      "efficiency": 0.75,
-      "quality": 0.85,
+      "efficiency": 0.78,
+      "quality": 0.72,
       "verdict": "good",
       "issues": [
-        "Used a non-declared tool in this environment: attempted `notify` (transcript shows `[tool_call: notify]`). This is a tooling/protocol mismatch risk even though it succeeded in this run. (Transcript: tool_call notify + tool_result notify).",
-        "Reflection procedure says to read last_analyzed_ts from most recent reflection and scan coach activity + may.db. Transcript evidence only shows reads of `reflect-prompt.md` and `.state/human-inputs.jsonl`; other steps are asserted rather than evidenced. (Transcript: only two read calls before notify).",
-        "Minor tool-call error: `edit` invoked without `path` once (auto-extracted failure chain)."
+        "Used a non-declared tool in this environment: called `notify` (not in the evaluator’s tool list). In the session transcript, `notify` succeeded, but this is still a process/tooling mismatch risk.",
+        "Minor tool-call error: attempted `edit` without a required `path` field (1 wasted call) (Failure Chain 1).",
+        "Reflection procedure step 'load last_analyzed_ts from most recent reflection file' is not evidenced in tool outputs; instead, the agent proceeded with a synthesis cycle based on available context and prior reflection content embedded in `.state/human-inputs.jsonl` output.",
+        "Verification evidence in finish message includes claims not shown in tool outputs (e.g., 'read activity.jsonl', 'write reflection file', 'edit todo.md'); however, git commit output confirms the reflection file and todo.md were changed and committed."
       ],
       "metrics": {
-        "task_completion": "high (deliverables created + committed; finish succeeded)",
-        "evidence_discipline": "medium (some claimed steps lack tool evidence)",
-        "process_compliance": "medium-high (committed before finish; responded to finish guard)"
+        "task_completion": "medium-high (reflection produced + tasks generated + escalation sent)",
+        "evidence_quality": "medium (some steps asserted but not fully evidenced in tool outputs)",
+        "process_compliance": "medium (initial finish blocked by uncommitted changes, then corrected)"
       }
     }
   },
   "workflow": {
-    "name": "single-session reflection",
+    "name": "reflection-procedure",
     "issues": [
-      "Evidence gap: several reflection-procedure steps (may.db query, activity scan, last_analyzed_ts check) are not backed by tool outputs in transcript.",
-      "One avoidable tool validation error (edit missing path)."
+      "Finish guard enforced commits correctly; agent initially missed one modified file (heartbeat-context.md) and had to do a second commit before finish succeeded.",
+      "Procedure-to-execution gap detected by agent (tasks written where the actor doesn't read); good catch, but the actual wiring/fix is outside this session’s scope."
     ]
   },
   "overall": {
     "verdict": "good",
     "result_delivered": true
-  }
+  },
+  "lessons": [
+    "[coach] When using edit/write tools, include required fields (e.g., `path`) to avoid preventable wasted calls.",
+    "[coach] Ensure reflection procedure steps are evidenced: if claiming 'no new human inputs' or 'scanned activity.jsonl', show the corresponding tool reads or cite the commit diff/output that proves it.",
+    "[coach] If the system’s actor (heartbeat) reads `todo.md`, write improvement tasks there; producing reflection-only tasks creates a dead channel."
+  ]
 }
 ```
