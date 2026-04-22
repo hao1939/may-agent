@@ -82,20 +82,11 @@ Today's `message` path already persists correctly via `trackRequest()`. Eventual
 
 ## Remaining Gaps
 
-### G1: Events Are Ephemeral (violates P1, P3)
+### G1: Events Are Ephemeral (violates P1, P3) — ✅ FIXED (design)
 
 **Current:** `emit` events live only on the bus. If no handler subscribes, gone. Even consumed events have no record.
 
-**Fix:** Persist **all** `emit` events to an `events` table via a DB writer subscriber. Columns:
-- `event_type` — `metric.breach`, `project.commented`, etc.
-- `source` — who/what emitted it
-- `owner` — from `data.owner`
-- `data` — JSON payload
-- `timestamp`
-
-Owners query their events in heartbeat: `SELECT * FROM events WHERE owner = ? ORDER BY timestamp DESC`.
-
-No consumption tracking. No `handled_by` column. If an owner needs to know whether an event was acted on, they check whether a follow-up exists (session started, request created) — that's already in the DB.
+**Fix:** Event inbox with full lifecycle. See [convention-defaults.md](convention-defaults.md) for the authoritative design: events table with `status` (pending/done/acked/dismissed/failed/expired), `handled_by`, `urgency`, TTL. Dispatch persistence tracks which handlers ran. Unhandled events surface to owner agent via heartbeat inbox injection.
 
 ### G2: Handler Failures Are Silent (violates P2)
 

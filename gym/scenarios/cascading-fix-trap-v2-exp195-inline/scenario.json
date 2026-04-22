@@ -1,0 +1,7 @@
+{
+  "name": "cascading-fix-trap-v2",
+  "description": "Grade pipeline with cascading bugs: wrong step ordering hides a threshold comparison bug. Fixing the order reveals new failures.",
+  "difficulty": "hard",
+  "time_limit": 300,
+  "target_failure_modes": ["FM-1.3"]
+}

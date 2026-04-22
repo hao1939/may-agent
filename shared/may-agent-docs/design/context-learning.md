@@ -151,7 +151,7 @@ applyContextUpdates(contextPath, updates);
 
 | File | Purpose |
 |------|---------|
-| `src/lib/context-learn.ts` | Core extraction + context file management |
+| `agents/shared/evaluation/context-learn.ts` | Core extraction + context file management (moved from src/lib/) |
 | `src/app/event-bus.ts` | `context-learn` event type |
 | `src/app/may.ts` | Event listener, CONTEXT_LEARN_AGENTS filter |
 | `src/lib/manager.ts` | `buildSessionContext()` loads context.md; `applyContextUpdates()` writes it |
