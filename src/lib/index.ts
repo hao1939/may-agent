@@ -68,24 +68,6 @@ export { summarizeForHandoff, extractHandoff } from "./handoff.js";
 export type { HandoffOptions, HandoffData } from "./handoff.js";
 export { createCompactionTransform } from "./compaction.js";
 export type { CompactionOptions, CompactionInfo } from "./compaction.js";
-export {
-  evaluateTask,
-  findUnevaluatedChildren,
-  extractFailureChains,
-  extractUsage,
-  formatFailureChains,
-  getAgentScoreSummary,
-} from "./evaluator.js";
-export type {
-  EvaluateTaskOptions,
-  TaskEvaluationResult,
-  AgentScores,
-  ChildSessionInfo,
-  UsageSummary,
-  FailureChain,
-  FailureStep,
-  AgentScoreSummary,
-} from "./evaluator.js";
 export { isOverflowError } from "./overflow.js";
 export {
   RegistryStore,
@@ -156,24 +138,6 @@ export { buildRuntimeCtx } from "./runtime-ctx.js";
 export type { RuntimeCtxOptions } from "./runtime-ctx.js";
 export { retryWithBackoff } from "./retry-with-backoff.js";
 export type { RetryWithBackoffOptions } from "./retry-with-backoff.js";
-export {
-  learnFromSession,
-  learnFromSessionLLM,
-  learnFromText,
-  mergeContext,
-  extractFacts,
-  extractFactsMechanical,
-  applyContextUpdates,
-  readContext,
-} from "./context-learn.js";
-export type {
-  LearnFromSessionOptions,
-  LearnFromSessionLLMOptions,
-  ContextUpdate,
-  ContextUpdateResult,
-  LLMCaller,
-  TranscriptMessage,
-} from "./context-learn.js";
 export { loadAgents, reloadAgents, validateAgentConfig } from "../app/agent-loader.js";
 export type { AgentConfig, AgentLoaderOptions, LoadResult, ValidationError } from "../app/agent-loader.js";
 export { ApiGate } from "./api-gate.js";

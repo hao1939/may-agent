@@ -4,17 +4,14 @@
  * Each handler's create(ctx, entry) factory receives this context,
  * which provides everything the handler needs from the runtime.
  *
- * Runtime APIs (getDb, evaluateTask, etc.) are provided here so that
- * handlers don't need to import from src/lib/ directly. This allows
- * handlers to work in binary-only deployments where source files are
- * not present on disk.
+ * Runtime APIs are provided here so that handlers don't need to import
+ * from src/lib/ directly. Agents import types via agents/shared/agent-sdk.ts.
  */
 
 import type { SubagentManager } from "./index.js";
 import type { CronEntry } from "./cron-tool.js";
 import type { SqliteDb } from "./db.js";
 import type { PersistedSession } from "./persistence.js";
-import type { TaskEvaluationResult } from "./evaluator.js";
 import type { DigestRow, DigestInput, DigestAction } from "./session-digest.js";
 import type { ErrorClass } from "./classify-error.js";
 
@@ -30,13 +27,6 @@ export interface TrackRequestOpts {
   context?: string;
   expectations?: string;
   notify?: string[];
-}
-
-interface EvaluateTaskOpts {
-  manager: SubagentManager;
-  persistDir: string;
-  parentSessionId: string;
-  skipAgents?: Set<string>;
 }
 
 /**
@@ -79,6 +69,47 @@ export interface RuntimeCtx {
   escalate(agent: string, reason: string): void;
   /** Read session metadata by sessionId. */
   readSessionMeta(sessionId: string): PersistedSession | null;
+
+  // ── Event inbox (convention-defaults) ─────────────────────────────
+  /** Mark an inbox event status. */
+  updateEvent(eventId: number, status: "acked" | "done" | "dismissed" | "failed", opts?: {
+    handledBy?: string; result?: string; reason?: string;
+  }): void;
+  /** Query pending inbox events for an agent. */
+  getInbox(opts?: { agent?: string; limit?: number }): Array<{
+    id: number; event_type: string; data: string;
+    urgency: string; timestamp: number; retry_count: number;
+  }>;
+
+  // ── Session messages (for evaluation / context-learn) ────────────
+  /** Read messages from an active session. */
+  readSessionMessages(sessionId: string): unknown[];
+  /** Read messages from an archived session. */
+  readArchivedSessionMessages(sessionId: string): unknown[];
+
+  // ── Evaluation persistence ───────────────────────────────────────
+  /** Insert or replace an evaluation record. */
+  upsertEvaluation(opts: {
+    sessionId: string; agent: string; quality: number; efficiency: number;
+    productiveCalls?: number; wastedCalls?: number; verdict: string;
+    issues?: string[]; overall?: Record<string, unknown>; usage?: Record<string, unknown>;
+    failureChains?: unknown[]; evaluatedByHeuristic?: boolean; skippedByJs?: boolean;
+    createdAt: number;
+  }): void;
+  /** Check if a session has any evaluation (heuristic or LLM). */
+  hasEvaluation(sessionId: string): boolean;
+  /** Check if a session has an LLM evaluation. */
+  hasLLMEvaluation(sessionId: string): boolean;
+  /** Get all evaluation records. */
+  getAllEvaluations(): Array<Record<string, unknown>>;
+
+  // ── Research sync ────────────────────────────────────────────────
+  /** Sync markdown research artifacts into SQLite. */
+  syncResearchArtifacts(basePath?: string): {
+    knowledgeEntries: { synced: number; errors: string[] };
+    hypotheses: { synced: number; errors: string[] };
+    experiments: { synced: number; errors: string[] };
+  };
 }
 
 /**
@@ -112,9 +143,6 @@ export interface HandlerContext extends RuntimeCtx {
 
   /** Load all session metadata (active + archived). */
   loadAllSessionMetas: () => Record<string, PersistedSession>;
-
-  /** Evaluate a completed task tree. Returns null if nothing to evaluate. */
-  evaluateTask: (opts: EvaluateTaskOpts) => Promise<TaskEvaluationResult | null>;
 }
 
 /**

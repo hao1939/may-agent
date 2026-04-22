@@ -7,12 +7,13 @@
 
 import type { RuntimeCtx } from "./handler-context.js";
 import type { EventBus } from "../app/event-bus.js";
-import { getDb } from "./requests.js";
+import { getDb, upsertEvaluation as _upsertEvaluation, hasEvaluation as _hasEvaluation, hasLLMEvaluation as _hasLLMEvaluation, getAllEvaluations as _getAllEvaluations } from "./requests.js";
 import { log as globalLog } from "./log.js";
-import { saveWorkflowRun as _saveWorkflowRun, readSessionMeta as _readSessionMeta } from "./persistence.js";
+import { saveWorkflowRun as _saveWorkflowRun, readSessionMeta as _readSessionMeta, readSessionMessages as _readSessionMessages, readArchivedSessionMessages as _readArchivedSessionMessages } from "./persistence.js";
 import { summarizeForHandoff as _summarizeForHandoff } from "./handoff.js";
 import { classifyError as _classifyError } from "./classify-error.js";
 import { getLastDigest as _getLastDigest, upsertDigest as _upsertDigest, classifyDigest as _classifyDigest } from "./session-digest.js";
+import { syncAll as _syncAll } from "./research-db.js";
 import { appendFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -52,5 +53,43 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
       opts.bus.emit({ type: "notification", agent: opts.agentName, text: `⚠️ *Agent Blocked*\n${agent} — ${reason}` });
     },
     readSessionMeta: (sessionId) => _readSessionMeta(opts.persistDir, sessionId),
+
+    // ── Event inbox ─────────────────────────────────────────────────
+    updateEvent: (eventId, status, updateOpts) => {
+      const db = getDb(opts.persistDir);
+      db.run(
+        "UPDATE events SET status = ?, handled_by = ?, result = ?, reason = ? WHERE id = ?",
+        [status, updateOpts?.handledBy ?? null, updateOpts?.result ?? null, updateOpts?.reason ?? null, eventId],
+      );
+    },
+    getInbox: (inboxOpts) => {
+      const db = getDb(opts.persistDir);
+      const agent = inboxOpts?.agent ?? opts.agentName;
+      const limit = inboxOpts?.limit ?? 20;
+      return db.prepare(`
+        SELECT id, event_type, data, urgency, timestamp, retry_count
+        FROM events
+        WHERE status IN ('pending', 'failed')
+          AND owner = ?
+          AND (ttl_ms IS NULL OR timestamp + ttl_ms > ?)
+        ORDER BY
+          CASE WHEN urgency = 'immediate' THEN 0 ELSE 1 END,
+          retry_count DESC, timestamp ASC
+        LIMIT ?
+      `).all(agent, Date.now(), limit) as any[];
+    },
+
+    // ── Session messages ────────────────────────────────────────────
+    readSessionMessages: (sessionId) => _readSessionMessages(opts.persistDir, sessionId),
+    readArchivedSessionMessages: (sessionId) => _readArchivedSessionMessages(opts.persistDir, sessionId),
+
+    // ── Evaluation persistence ──────────────────────────────────────
+    upsertEvaluation: (evalOpts) => _upsertEvaluation(opts.persistDir, evalOpts as any),
+    hasEvaluation: (sessionId) => _hasEvaluation(opts.persistDir, sessionId),
+    hasLLMEvaluation: (sessionId) => _hasLLMEvaluation(opts.persistDir, sessionId),
+    getAllEvaluations: () => _getAllEvaluations(opts.persistDir) as any[],
+
+    // ── Research sync ───────────────────────────────────────────────
+    syncResearchArtifacts: (basePath) => _syncAll(getDb(opts.persistDir), basePath ?? `${opts.agentsRoot}/shared/knowledge`),
   };
 }
