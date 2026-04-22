@@ -92,5 +92,18 @@
 ### ★★★½
 | 2604.16543 | Conjunctive Attacks on Multi-Agent Systems | — | Multi-vector attacks exploiting agent interdependencies. |
 
+### ★★★★★ (continued — late cs.AI/cs.MA batch)
+| 2604.18951 | Superficial Success vs. Internal Breakdown: Illusory Coordination in Adaptive MAS | DD-842 | Adaptive MAS achieve correct answers via degenerate coordination. "Illusory coordination" — surface accuracy hides process failure. Topological overfitting across domains. |
+| 2604.18805 | AI Scientists Produce Results Without Reasoning Scientifically | DD-843 | 25k+ runs: agents ignore evidence 68% of time. Scaffold = 1.5% variance vs 41.4% for base model. Devastating for "better scaffolding" thesis. |
+
+### ★★★★½ (continued)
+| 2604.18874 | POTEMKIN: Adversarial Environmental Injection | DD-844 | Illusion (epistemic drift) vs Maze (policy collapse) are distinct, inversely correlated robustness dimensions. MCP-compatible harness. ACL 2026. |
+
+### ★★★★ (continued)
+| 2604.18975 | Gated Coordination: Partitioned Information Architecture | DD-845 | Private/public state separation + cost-sensitive escalation gate. Cascade circuit breaker pattern. Minecraft long-horizon tasks. |
+| 2604.19278 | Explicit Trait Inference for Multi-Agent Coordination | DD-846 | Warmth/competence inference from interaction history. 45-77% coordination failure reduction in economic games. Peer-based behavioral monitoring. |
+| 2604.19301 | LLMs Exhibit Normative Conformity in MAS | DD-847 | Normative (social) conformity distinct from informational. Manipulable conformity targets. Cascade amplification mechanism. |
+| 2604.18847 | Human-Guided Harm Recovery (BackBench) | DD-848 | Recovery formalization post-failure. Preference-aligned reward model for recovery plan ranking. 50-task benchmark. |
+
 ### Noted (★★★ or below, no DD)
 - Various cs.MA papers on traffic optimization, swarm robotics, game theory — outside focus areas
