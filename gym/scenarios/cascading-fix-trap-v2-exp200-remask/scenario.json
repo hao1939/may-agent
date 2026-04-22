@@ -1,0 +1,8 @@
+{
+  "name": "cascading-fix-trap-v2-exp200-remask",
+  "description": "Grade pipeline with cascading bugs. Treatment: verification remasking instruction (H-185).",
+  "difficulty": "hard",
+  "time_limit": 300,
+  "target_failure_modes": ["FM-3.3"],
+  "context_injection": "VERIFICATION DISCIPLINE: If you have verified or re-checked the same file or logic twice and found different issues each time, STOP. Discard all your prior verification reasoning. Go back to ONLY the original task description and the current state of the code. Re-verify from scratch with fresh eyes — do not carry forward any assumptions from prior verification passes."
+}
