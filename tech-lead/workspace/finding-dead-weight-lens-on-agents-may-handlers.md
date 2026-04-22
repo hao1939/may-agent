@@ -1,84 +1,45 @@
-# Dead-Weight Lens: convention-check.ts
+# Dead Weight Analysis: agents/may/handlers/convention-check.ts (849 lines)
 
-**File**: `agents/may/handlers/convention-check.ts` (1087 lines)  
-**Target**: Get under 800 lines (~290 lines to cut)
-
-## Summary
-
-The file has three categories of removable weight: (1) a retroactive-fix block that runs every invocation but should be a one-time migration, (2) an over-engineered C12.1 check with iterative bash-stripping logic, and (3) bloated configuration arrays that belong in a shared config file. Combined savings: ~300 lines.
-
----
+**Verdict: Mostly lean — no major dead code blocks, but several minor items.**
 
 ## Findings
 
-### 1. Retroactive fix runs every invocation (~25 lines) — SEVERITY: Medium
+### 1. Unused parameter `_persistDir` in `findUncheckedSessions` — Low
+- `convention-check.ts:254` — parameter `_persistDir: string` is declared but never used (underscore-prefixed). The function only uses `db`. The caller at `:177` passes `persistDir` unnecessarily.
+- **Action**: Remove parameter from function signature and call site.
+- **Savings**: ~2 lines, cleaner API.
 
-`convention-check.ts:185-210` — The `retroQueries` block corrects historical false positives for interrupted/orphan sessions. This queries + updates the DB on **every single run**, even though the data it fixes is old. Should be a one-time migration or at minimum gated by a "migration applied" flag.
+### 2. Unused parameter `_agent` in `checkC12_1_sessionStart` — Low
+- `convention-check.ts:636` — `_agent: string` is declared but unused.
+- **Action**: Remove parameter; update call at `:371` (inside `runAllChecks`).
+- **Savings**: Trivial.
 
-**Recommendation**: Extract to a one-time migration script. Save ~25 lines.
+### 3. `TranscriptEntry.name` field never read — Low
+- `convention-check.ts:17` — the `name?: string` field on `TranscriptEntry` interface is declared but never accessed in `loadToolCalls` or anywhere else.
+- **Action**: Remove the field.
 
-### 2. C12.1 sessionStart is over-engineered (~100 lines) — SEVERITY: High
+### 4. One-time retroactive fix (`applyRetroactiveFix`) is permanently dead after first run — Medium
+- `convention-check.ts:810-835` — This 25-line function runs once (gated by a flag file), then becomes dead code forever. It was a one-time migration. Every subsequent invocation just checks `existsSync` and returns.
+- **Action**: Verify the flag file exists in production (`.state/may/convention-checks/retro-fix-applied.flag`), then delete the function and its call at `:174`. Saves ~30 lines.
 
-`convention-check.ts:780-880` — The `checkC12_1_sessionStart` function has:
-- 3 separate pattern lists (`CONTEXT_FILE_PATTERNS`, `WORKSPACE_PATTERN`, `ORIENTATION_TOOLS`) defined inline (`convention-check.ts:795-823`)
-- An iterative bash command stripping loop (`convention-check.ts:853-863`) that handles `cd`, `export` prefixes with a `while(changed)` loop — over-engineered for what amounts to "did the first few calls read context?"
-- A `workflow()` special case (`convention-check.ts:845`)
+### 5. `pendingCalls` Map tracks tool results but `resultContent`/`isError` only used by 3 checks — Not dead, but noted
+- `convention-check.ts:299-340` — The result-matching logic is substantial (~40 lines) and feeds `isError`/`resultContent` which are used by C1.3 (`:423`), C1.5 (`:468`), and C2.1 (`:498`). This is **not dead** but is the heaviest section relative to its consumers.
 
-**Recommendation**: Simplify to: "any of first 5 calls is read/bash/agents/workflow → pass." The fine-grained pattern matching adds complexity without catching real violations. Save ~50 lines.
+### 6. No dead exports
+- `ConventionCheckResult` and `runConventionChecks` are exported and consumed by `compliance-check.ts:18`.
+- `create` is the handler entry point. All exports are live.
 
-### 3. C1_3_EXEMPT_PATTERNS is bloated (28 lines) — SEVERITY: Low
+### 7. No duplicate logic with `compliance-check.ts`
+- `compliance-check.ts` is a thin wrapper that calls `createConventionCheck` — no duplication.
 
-`convention-check.ts:68-95` — 15 regex patterns for exempting files from verify-writes. Several are overlapping or overly specific:
-- `/agents\/gym\/scenarios\//` and `/agents\/\.lab\//` (`convention-check.ts:80-82`) are already covered by `ALLOWED_WRITE_PREFIXES` at `convention-check.ts:52` which includes `agents/gym/` and `agents/.lab/`.
-- `/^\/tmp\//` (`convention-check.ts:88`) is also in `ALLOWED_WRITE_PREFIXES`.
-- `finding-.*\.md` (`convention-check.ts:94`) exempts the very deliverables agents produce.
+## Summary
 
-**Recommendation**: Deduplicate with `ALLOWED_WRITE_PREFIXES`. Remove redundant entries. Save ~10 lines.
+| Item | Severity | Lines Saveable |
+|------|----------|---------------|
+| Remove `_persistDir` param | Low | 2 |
+| Remove `_agent` param | Low | 2 |  
+| Remove `TranscriptEntry.name` | Low | 1 |
+| Remove `applyRetroactiveFix` (one-time migration) | Medium | ~30 |
+| **Total** | | **~35 lines** |
 
-### 4. Regression cooldown management in create() (~40 lines) — SEVERITY: Medium
-
-`convention-check.ts:120-160` — File-based cooldown tracking (read JSON, check timestamps, write JSON) is inline in the handler factory. This is a generic "deduped alert" pattern that belongs in a utility or the event bus itself.
-
-**Recommendation**: Extract cooldown logic to a helper (`deduplicatedEmit` or similar). Save ~30 lines.
-
-### 5. writeSummary regenerates full summary every run (~35 lines) — SEVERITY: Low
-
-`convention-check.ts:1020-1055` — Aggregates all convention_checks from the last 7 days and writes `summary.json` on every run, even if only 1 new session was checked. The summary is a full DB re-query.
-
-**Recommendation**: Only write summary if `sessionsChecked > 0` (it already short-circuits at line 107 for 0, but the writeSummary call at line 234 runs for any non-zero count). Consider writing less frequently (e.g., every 10th run). Save ~20 lines if inlined to a simpler format or made conditional.
-
-### 6. Belt-and-suspenders isWrappedOutput logic — SEVERITY: Low
-
-`convention-check.ts:330-345` — The `isWrappedOutput` check in `loadToolCalls` has a comment explicitly saying it's redundant ("Belt-and-suspenders with the isError=false fix above"). The outer `if (tc.isError)` guard in `checkC2_1_preciseArgs` (`convention-check.ts:570`) already prevents wrapped output from being flagged.
-
-**Recommendation**: Remove the redundant branch. Save ~10 lines.
-
-### 7. Inline constant arrays in C1.7 — SEVERITY: Low
-
-`convention-check.ts:910-925` — `VERIFICATION_PATTERNS` (14 regex patterns) is defined inside the function body. Same with delegation tool checks. Could share patterns with C12.1's orientation tools.
-
-**Recommendation**: Hoist and share with C12.1. Save ~10 lines.
-
----
-
-## Reduction Estimate
-
-| Finding | Lines saved |
-|---------|------------|
-| #1 Retroactive fix → migration | ~25 |
-| #2 Simplify C12.1 | ~50 |
-| #3 Deduplicate exempt patterns | ~10 |
-| #4 Extract cooldown logic | ~30 |
-| #5 Conditional summary writes | ~20 |
-| #6 Remove belt-and-suspenders | ~10 |
-| #7 Share verification patterns | ~10 |
-| **Total** | **~155** |
-
-With additional extraction of check functions to a separate `convention-checks/` directory (each check as its own module), the remaining ~140 lines can be reclaimed. The main file would become an orchestrator (~300 lines) importing individual check modules.
-
-## Recommended Approach
-
-1. **Quick wins first** (#1, #3, #6): ~45 lines, zero behavioral change
-2. **Extract cooldown** (#4): ~30 lines, clean separation
-3. **Simplify C12.1** (#2): ~50 lines, biggest single win
-4. **Split checks into modules**: Gets orchestrator under 400 lines
+The file is well-structured with no significant dead weight. The biggest cleanup opportunity is removing the one-time retroactive fix function.
