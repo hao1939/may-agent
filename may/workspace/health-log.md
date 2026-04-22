@@ -3106,3 +3106,15 @@ src/app/ui/web
 - Bob analysis: fresh (15h ago)
 - ⚠️ 573 actionable unevaluated sessions — evaluation may be falling behind
 
+## 2026-04-22T14:40 — Auto (JS cron handler)
+
+- Sessions (24h): 1167
+- Unevaluated: 9 total, 7 actionable, 2 auto-skippable
+- Running sessions: tech-lead (s_1776866894943_0), optimizer (s_1776868601856_549), may (s_1776611617990_13), bob (s_1776868601835_548)
+- tsc: SKIP (no tsconfig.json)
+- Lessons: 52 lines total (scout 31, optimizer 21)
+- Bob analysis: fresh (19h ago)
+- ⚠️ tech-lead session s_1776866894943_0 running 32min — may be stuck
+- ⚠️ Event "metric.breach" — 4 pending > 2h
+- ⚠️ Event "session.completed" — 4 pending > 2h
+
