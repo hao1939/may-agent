@@ -1,0 +1,6 @@
+{
+  "name": "product-search-service",
+  "version": "1.0.0",
+  "description": "Product search API",
+  "private": true
+}

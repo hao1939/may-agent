@@ -1,0 +1,12 @@
+{
+  "name": "cascading-fix-trap-v2-exp178-g2",
+  "description": "EXP-178 Arm G2 (production-mode uniform): Agent must write ANALYSIS.md first, then fix. ANALYSIS.md retained in Phase 2. No expert content provided.",
+  "categories": ["debugging", "root-cause-analysis"],
+  "tags": ["behavioral", "cascading-bugs", "EXP-178", "G2", "production-mode"],
+  "tier": "standard",
+  "difficulty": "hard",
+  "baseline_scenario": "cascading-fix-trap-v2",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

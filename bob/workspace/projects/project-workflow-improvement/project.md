@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 1
+**Iteration**: 2
 **Health**: 6/10
 
 ## Goal
@@ -68,5 +68,3 @@ Smart context experiment complete (TRIAL verdict). 3/6 milestones done. Next: de
 ## Iteration Summary
 
 ## Comments
-- [2026-04-22 hao] Don't just experiment from our own ideas. Ask scout to research how other agent systems handle project orchestration, context management, and reviewer/evaluator patterns. Ask amy-kimi to collect practical tips from Chinese developer communities. External ideas may be better than what we invent ourselves.
-- [2026-04-22 hao] When a project gets blocked, that's the BEST time to test a new feature. Zero downside — project is already stuck. If the feature unblocks it, we learned something valuable. If not, no worse than before. Always look for blocked projects as experiment candidates.

@@ -1,0 +1,16 @@
+{
+  "name": "sql-injection-in-query-builder-exp178-g2",
+  "description": "EXP-178 Arm G2 (production-mode uniform): Agent must write ANALYSIS.md first, then fix. ANALYSIS.md retained in Phase 2. No expert content provided.",
+  "agent": "coder",
+  "categories": ["bug-fixing", "judgment"],
+  "tags": ["recognition", "sql-injection", "security", "EXP-178", "G2", "production-mode"],
+  "tier": "standard",
+  "difficulty": "medium",
+  "baseline_scenario": "sql-injection-in-query-builder",
+  "environment": {
+    "files": ["src/product-search.js", "src/db.js", "test/product-search.test.js"],
+    "setup": "npm init -y 2>/dev/null"
+  },
+  "success_criteria": "success_criteria.js",
+  "time_limit_seconds": 120
+}
