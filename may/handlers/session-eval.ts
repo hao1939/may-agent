@@ -10,6 +10,7 @@
 
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../../src/lib/handler-context.js";
 import type { CronEntry } from "../../../src/lib/cron-tool.js";
+import { evaluateTask } from "../../shared/evaluation/evaluator.js";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async (event?: TriggerEvent) => {
@@ -24,7 +25,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     if (!sessionId || !agent || !parentSessionId) return;
 
     try {
-      const result = await ctx.evaluateTask({
+      const result = await evaluateTask({
         manager: ctx.manager,
         persistDir: ctx.persistDir,
         parentSessionId,

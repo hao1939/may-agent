@@ -727,5 +727,13 @@
     "on": ["session.escalated"],
     "enabled": true,
     "description": "Route blocked/failed session escalations to human via digest classifier. Event-only handler (no timer)."
+  },
+  {
+    "name": "context-learn",
+    "type": "job",
+    "handler": "context-learn",
+    "on": ["context-learn"],
+    "enabled": true,
+    "description": "Extract durable facts from completed sessions into agent context.md files. Event-only handler."
   }
 ]
