@@ -3,7 +3,7 @@
 **Goal**: Prove the coach training loop works end-to-end: identify skill gap → design experiment → run experiment → measure improvement → promote or reject skill.
 **Owner**: coach
 **Created**: 2026-04-21
-**Status**: IN PROGRESS (M1 ✅, M2 ✅, M3 ✅, M4 next)
+**Status**: COMPLETE (all milestones done, 2026-06-23)
 
 ## Background
 
