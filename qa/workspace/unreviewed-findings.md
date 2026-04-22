@@ -1,30 +1,18 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-22)
 
-## Scope
-Reviewed latest agents repo change affecting runtime handler: `agents/may/handlers/compliance-check.ts` (commit `700e41917`).
+## Context
+- `/app` is **not** a git repository; only `/app/agents` contains a git repo.
+- The mandatory QA verification commands (`/app/node_modules/.bin/tsc --noEmit`, `/app/node_modules/.bin/vitest --run`) **cannot be executed** because `/app/node_modules` does not exist in this environment.
 
-## Findings
-### IMPORTANT — Misleading log message in guard smoke tests
-**File:** `agents/may/handlers/compliance-check.ts`
+## Recent Changes (agents repo)
+- Latest commit: `c2ee289f8` — modifies `shared/knowledge/experiments/EXP-189/results.md`.
 
-In `runGuardSmokeTests()`, the function logs `"[compliance-check] Guard smoke tests passed"` unconditionally at the end, even if earlier checks already logged `WARN:` lines indicating failures.
+## File Review (spot check)
+- Reviewed `agents/shared/knowledge/experiments/EXP-189/results.md` (first 200 lines). Content appears to be documentation-only (experiment results write-up). No code changes observed in this commit.
 
-This can mislead operators into thinking the guards passed when they partially failed.
+## Verification Blockers
+- Cannot run TypeScript compiler or Vitest in `/app` due to missing `package.json` and missing `node_modules`.
+- No `tsconfig.json` found under `/app` within 3 directory levels.
 
-**Evidence:** read output shows unconditional final `ctx.log("[compliance-check] Guard smoke tests passed");` at end of function.
-
-### IMPORTANT — Compliance run swallows failures (may hide regression)
-**File:** `agents/may/handlers/compliance-check.ts`
-
-The returned async runner wraps guard smoke tests, convention-check, and standing-orders-check each in `try/catch` that logs an error but continues.
-
-This may be intended (non-blocking compliance), but it also means a broken compliance system can silently degrade (especially if logs are not monitored). Consider at least emitting an event / notifying for failures, or aggregating errors and returning non-zero (if cron runner supports it).
-
-**Evidence:** handler’s returned function catches and logs errors for each step without rethrow.
-
-## Environment / Verification blockers
-Mandatory repo-level checks could not be executed in this environment:
-- `./node_modules/.bin/tsc --noEmit` fails: `No such file or directory`.
-- `./node_modules/.bin/vitest --run` fails: `No such file or directory`.
-
-This looks like missing dependencies in the sandbox rather than a patch regression.
+## Recommendation
+- If this environment is intended to support code verification, provide a repo at `/app` with `package.json` + `node_modules` (or a documented install step), or update QA runbook to run checks in the correct repo (if tests live elsewhere).

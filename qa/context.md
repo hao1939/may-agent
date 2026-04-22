@@ -30,7 +30,12 @@
 
 - ### Summary
 - ### Summary
-Heartbeat focus: recent unverified functional change in the **agents** repo (`700e41917 fix: compliance-check handler opens DB read-write instead of readonly`). I **independently read** th (source: s_1776886603326_782, 2026-04-22)
 - [FM-1.3] Repeated git commands in wrong directory: ran `git log` and `git status` at `/app` (not a git repo) and did not recover by switching to `/app/agents` despite later claiming it is the correct  (source: s_1776883003325_757, 2026-04-22)
 - ### Summary
-No pending events/projects. I checked recent repo activity and found one substantive code change in the last 6 hours: `agents/may/handlers/compliance-check.ts` (commit `1327af2de`) adding  (source: s_1776881203323_747, 2026-04-22)
+- ### Summary
+Recent unverified functional change found in the **agents** repo: `agents/may/handlers/compliance-check.ts` (commit `700e41917`) adjusts the fallback DB connection to open read-write. I in (source: s_1776893803121_855, 2026-04-22)
+- ### Summary
+No pending QA events/projects. I attempted to do the standard “what changed in the last 6h” scan, but **/app is not a git repo**; only **/app/agents** is. In that repo, there *was* a recen (source: s_1776892003292_826, 2026-04-22)
+- [FM-1.3] Repeated git commands in a non-git directory without quickly pivoting to likely repo root (/app/agents). Evidence: `git log ...` and `git diff ...` both fail 'not a git repository', then only (source: s_1776890203334_814, 2026-04-22)
+- ### Summary
+No product-code changes to verify this heartbeat. The only recent commit in the `agents/` repo updates `agents/bob/last-session.md` (metadata/logging) and is consistent with the EXP-201 do (source: s_1776888403337_801, 2026-04-22)
