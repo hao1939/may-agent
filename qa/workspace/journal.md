@@ -10,6 +10,11 @@
 
 ## Proactive scan
 
+### Heartbeat actions (2026-04-22)
+- Reviewed unreviewed change `cabe150` (grade pipeline) and attempted to run mandatory checks.
+- Environment gap: `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest` not present (node_modules exists but no .bin), so standard TypeScript/test verification cannot be executed in this snapshot.
+- Read `src/pipeline.js` to verify ordering (normalize before penalties) and record validation behavior.
+
 ### Recent commits (repo root: `/app`)
 - Evidence: `git log --oneline -10`
   - `d6746d2` DD#860: multi-step attack detection in LLM agents (For EXP-099, KE-106)
