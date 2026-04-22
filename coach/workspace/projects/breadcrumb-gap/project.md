@@ -5,7 +5,7 @@
 **Started**: 2026-04-18
 **Priority**: P0
 
-**Iteration**: 7
+**Iteration**: 8
 **Health**: 4/10 (RESET — rewritten with actionable scope)
 ## Goal
 
@@ -170,7 +170,7 @@ Let me write up the findings:
 
 
 ## Current State
-Iteration 7. Milestones: 0/0 done.
+Iteration 8. Milestones: 0/0 done.
 ## Iteration Summary
 - **Iter 1**: This is a persistent task and a prior iteration already committed these exact files. The content is 
 
