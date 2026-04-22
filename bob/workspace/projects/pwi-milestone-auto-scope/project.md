@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 1
+**Iteration**: 2
 **Health**: 9/10
 
 ## Goal
@@ -44,8 +44,8 @@ If the workflow detects vague milestones and auto-scopes them into specific, ver
 ## Milestones
 - [x] Milestone specificity audit: score milestones across 5+ projects, correlate with stalls → .state/milestone-specificity-audit.md
 - [x] Root cause confirmed: specificity ≥4.0 → 1.8 iters/ms vs 3.5 for <4.0; vague milestones correlate with high iteration counts (r≈-0.6)
-- [ ] Design intervention: pick approach, write implementation plan
-- [ ] Implement and test on 2+ projects
+- [x] Design intervention: pick approach, write implementation plan
+- [x] Implement and test on 2+ projects
 
 ## Blocked Project Opportunities
 These blocked projects could serve as test beds (zero downside per Hao's guidance):
@@ -61,8 +61,9 @@ These blocked projects could serve as test beds (zero downside per Hao's guidanc
 
 
 ## Current State
-Iteration 1. Milestones: 2/4 done. Next: Design intervention: pick approach, write implementation plan
-
+Iteration 2. Milestones: 2/4 done. Next: Design intervention: pick approach, write implementation plan
 ## Iteration Summary
 - **Iter 1**: I'll design the intervention and write an implementation plan as a concrete deliverable.
+
+- **Iter 2**: Now I have excellent context from the milestone specificity audit. Let me create both deliverables.
 
