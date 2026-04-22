@@ -5680,3 +5680,16 @@ Findings:
 - Repo-structure finding (MINOR): `/app` is not a git repo; `/app/agents` is.
   - Evidence: `git log` at `/app` fails “not a git repository”, while `cd agents && git log --oneline -10` succeeds.
 
+---
+### 2026-04-22 — QA heartbeat (proactive)
+**Unreviewed change sampled:** `agents/may/handlers/run-workflow.ts` (commit `c1e9ce889`).
+- Observed: handler now uses a temp-file copy before dynamic import to bypass Bun import caching.
+- Quick risk note (IMPORTANT): temp cache directory (`join(tmpdir(), "may-workflow-cache")`) may grow if the unlink fails repeatedly; code does attempt unlink in finally, but failures are silently swallowed.
+  - Evidence: `loadWorkflow()` creates cacheDir and `copyFileSync()` then `import(tempPath)` and `unlinkSync(tempPath)` in `finally { try { unlinkSync(tempPath); } catch {} }`.
+
+**Verification blockers (IMPORTANT): toolchain entrypoints missing.**
+- `./node_modules/.bin/tsc --noEmit` at `/app`: missing (exit 127)
+- `./node_modules/.bin/vitest --run` at `/app`: missing (exit 127)
+- same missing under `/app/agents`.
+- Evidence: bash outputs in this session; `agents/node_modules` only contains `.vite`.
+
