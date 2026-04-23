@@ -1,0 +1,10 @@
+{
+  "name": "use-persistent-task-exp211",
+  "categories": ["workflow-adoption"],
+  "tags": ["behavior", "instruction-following", "EXP-211"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "bob",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}
