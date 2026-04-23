@@ -3,7 +3,7 @@
 Lab forks are temporary copies of agent directories used for experiments and growth cycles.
 
 ## Current State
-Cleaned on 2026-04-14. All stale forks removed (53 directories + 5 archived + 2 loose files).
+Cleaned on 2026-06-20. All 67 stale forks removed. EXP-164 results writeup preserved.
 
 ## Active Forks
 None currently. EXP-157 fork (`coder-exp157-action-gate`) will be created when execution begins.

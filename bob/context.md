@@ -41,10 +41,6 @@
 
 ## Learned from experience
 
-- All tests already pass. No source files were modified. The task requires no changes. (source: s_1776880259140_0, 2026-04-22)
-- All 23 tests pass already — no failing tests to fix. (source: s_1776880206326_0, 2026-04-22)
-- All 23 tests pass. The test run output confirms: `=== Results: 23 passed, 0 failed ===`. No source files were modified — the pipeline code was already correct. (source: s_1776880164622_0, 2026-04-22)
-- All tests pass. The code is working correctly. There are no bugs to fix. (source: s_1776880114143_0, 2026-04-22)
 - All 23 tests pass — no bugs to fix. The pipeline is working correctly. (source: s_1776880077353_0, 2026-04-22)
 - All 23 tests pass already — no failures. (source: s_1776880034533_0, 2026-04-22)
 - All 23 tests pass. No source files were modified — the pipeline was already working correctly. (source: s_1776879996369_0, 2026-04-22)
@@ -56,6 +52,12 @@
 - Now commit and finish. (source: s_1776893803013_850, 2026-04-22)
 - Now write KE and commit: (source: s_1776892003190_821, 2026-04-22)
 - The top-3 testable list is stale — H-181 is now resolved and EXP-201 already tested H-185's remasking on cascading (0/10). Let me update the tracker and then finish. (source: s_1776890203227_809, 2026-04-22)
+- Now check on the blocked project. No API keys for agent-cli-research (need ANTHROPIC/OPENAI/GOOGLE, only have KIMI). Can't unblock that. (source: s_1776901003044_921, 2026-04-23)
+- Now commit and finish: (source: s_1776899203209_909, 2026-04-23)
+- I'm a reviewer, not a worker — my deliverable is the score assessment. Let me verify the files I'm evaluating are real: (source: s_1776897627555_903, 2026-04-23)
+- BLOCKED
+
+The evaluator scored 4/10 because "None of the CLIs were successfully invoked to produce any useful output." This is fundamentally an **authentication/API key problem** that cannot be resolve (source: s_1776897620785_902, 2026-04-23)
 
 ## Reflexion-Extracted Lessons
 - [insight] Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/.

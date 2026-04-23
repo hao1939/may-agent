@@ -1,35 +1,20 @@
-# QA Heartbeat — Unreviewed Findings (2026-04-22)
+# Unreviewed findings (QA heartbeat)
 
-## Scope
-This heartbeat attempted to follow the mandatory QA verification steps (read a changed file; run `tsc --noEmit`; run `vitest --run`). The repository layout indicates **two separate git repos** under `/app`: 
-- `/app/agents` (git repo)
-- `/app` root **is not** a git repo
+## 2026-04-23
 
-## Findings
+### Environment / verification blockers
+- **Repo root `/app` is not a git repository** (git commands fail with `fatal: not a git repository`). Evidence: `git log --oneline --since='6 hours ago'` failed in `/app`.
+- The actual git repo is `/app/agents`.
 
-### 1) Environment mismatch: mandatory test commands unavailable (IMPORTANT)
-- `./node_modules/.bin/tsc --noEmit` fails: `No such file or directory` (no `node_modules/` at `/app`).
-- `./node_modules/.bin/vitest --run` fails: `No such file or directory` (no `node_modules/` at `/app`).
+### Recent change inspected
+- Latest relevant infra change: commit `518ef9734` (may: fix common-sense-verify and research-intake cron handlerConfig missing agent/task) touched `agents/may/cron.json`.
+- I read `agents/may/cron.json` and confirmed `handlerConfig` blocks for `common-sense-verify` and `research-intake` include **both** `agent` and `task`, plus `workflow: "verify-wrap"` and a `timeoutMs`.
 
-This blocks independent verification of recent changes via the mandated commands.
+### Typecheck / test execution status
+- Could not run mandatory checks **in this environment**:
+  - `./node_modules/.bin/tsc --noEmit` missing under `/app/agents` (`No such file or directory`).
+  - `./node_modules/.bin/vitest --run` missing under `/app/agents` (`No such file or directory`).
+- There is no `package.json` or `tsconfig.json` at `/app/agents` root; dependencies appear to exist only inside individual `agents/gym/scenarios/*` folders.
 
-**Evidence:**
-- `./node_modules/.bin/tsc --noEmit` → `/bin/bash: line 1: ./node_modules/.bin/tsc: No such file or directory`
-- `./node_modules/.bin/vitest --run` → `/bin/bash: line 1: ./node_modules/.bin/vitest: No such file or directory`
-- `ls node_modules/.bin` → `No such file or directory`
-
-### 2) Unable to enumerate root-level code changes (IMPORTANT)
-`/app` is not a git repository, so `git log`/`git diff` at root cannot be used to identify changes in `/app/src`.
-
-**Evidence:** `git log` at `/app` → `fatal: not a git repository`.
-
-### 3) Read verification sample (INFO)
-Read `/app/src/pipeline.js` to confirm at least one substantive source file is present and readable. No immediate defects observed from a quick scan; validation logic and pipeline ordering look coherent.
-
-## Recommendation / Next Actions
-1. Decide which repo is the unit under QA for this environment:
-   - If `/app/src` is the project, provide its git repo or a way to install deps (node_modules) so `tsc`/`vitest` can run.
-   - If `/app/agents` is the project, provide `node_modules` there or the correct commands (e.g., `pnpm -C agents test`) to run typecheck/tests.
-2. Once deps are available, rerun:
-   - `./node_modules/.bin/tsc --noEmit`
-   - `./node_modules/.bin/vitest --run`
+### Notable observation
+- `agents/coach/last-session.md` was the only file changed in the most recent commit (`af4ec1dfd`) and appears to be an auto-generated log entry (not code).

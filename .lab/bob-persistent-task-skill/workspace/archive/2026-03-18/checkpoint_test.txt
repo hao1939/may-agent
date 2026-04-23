@@ -1,3 +1,0 @@
-# Checkpoint Test
-This file confirms I can write to the filesystem before calling checkpoint.
-Timestamp: 2026-03-18T04:10:41.227Z
