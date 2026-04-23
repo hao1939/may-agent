@@ -1,9 +1,9 @@
-# KE-365: <Title — what we learned>
+# KE-365: Structural Gates Unnecessary for Additive Behaviors
 
 **Date**: 2026-04-23
-**Source**: <DD-xxx / EXP-xxx / session-id / paper>
-**Confidence**: <Low | Medium | Medium-High | High>
-**Connects**: <KE-xxx>, <H-xxx>
+**Source**: EXP-162a (N=20, 2 arms × 10)
+**Confidence**: High
+**Connects**: KE-091, H-162
 
 ## Core Finding
 

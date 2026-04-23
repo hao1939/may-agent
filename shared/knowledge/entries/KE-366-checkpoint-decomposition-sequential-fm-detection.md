@@ -1,9 +1,9 @@
-# KE-366: <Title — what we learned>
+# KE-366: Checkpoint Decomposition Improves Sequential FM Detection
 
 **Date**: 2026-04-23
-**Source**: <DD-xxx / EXP-xxx / session-id / paper>
-**Confidence**: <Low | Medium | Medium-High | High>
-**Connects**: <KE-xxx>, <H-xxx>
+**Source**: EXP-143 (N=100 sessions)
+**Confidence**: Medium-High
+**Connects**: H-096, DD-720
 
 ## Core Finding
 

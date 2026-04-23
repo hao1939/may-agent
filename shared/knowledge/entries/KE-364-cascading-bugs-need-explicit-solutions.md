@@ -1,9 +1,9 @@
-# KE-364: <Title — what we learned>
+# KE-364: Cascading Bugs Need Explicit Solutions
 
 **Date**: 2026-04-23
-**Source**: <DD-xxx / EXP-xxx / session-id / paper>
-**Confidence**: <Low | Medium | Medium-High | High>
-**Connects**: <KE-xxx>, <H-xxx>
+**Source**: EXP-171 (N=109 across 4 arms)
+**Confidence**: High
+**Connects**: KE-354, H-181
 
 ## Core Finding
 
