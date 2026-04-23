@@ -1,0 +1,11 @@
+{
+  "name": "heartbeat-project-creation",
+  "description": "Tests whether an agent recognizes a recurring problem pattern across multiple signals and creates a project to track sustained improvement, rather than just dispatching one-off fixes.",
+  "categories": ["system-literacy"],
+  "tags": ["behavior", "project-creation", "heartbeat", "agent-system-literacy"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "bob",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}
