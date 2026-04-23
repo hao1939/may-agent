@@ -58,11 +58,6 @@
 
 ## Learned from experience
 
-- All 9 test files pass, 155 tests green. Let me commit: (source: s_1776906403412_962, 2026-04-23)
-- Everything looks clean. Let me dismiss the stale alerts and commit. (source: s_1776904603139_953, 2026-04-23)
-- The handler runs successfully manually. Let me look for the actual runtime error logs: (source: s_1776902847046_940, 2026-04-23)
-- 5.2MB for 1273 files — not a big deal. Everything is healthy. (source: s_1776915403127_1012, 2026-04-23)
-- Everything looks clean and well-structured. The guards are concise and focused. Tests pass. No TODOs, no dead code. The metric breaches from 16-18h ago appear to be resolved since all metrics are now  (source: s_1776913603154_1003, 2026-04-23)
 - Clean. Now let me push and finish. (source: s_1776911803783_990, 2026-04-23)
 - OK, parent repo isn't a git repo. The file is on disk, which is what matters for runtime resolution. (source: s_1776922680299_1076, 2026-04-23)
 - Everything looks clean. Build passes (23/23 tests), no TODOs in src/, no TypeScript (it's a JS project). The metric breaches in the inbox are old (2-20h) and metrics are all green now — they've self-r (source: s_1776922604174_1074, 2026-04-23)
@@ -70,8 +65,11 @@
 - Nothing meaningful to commit from my side. Let me reset those auto-changes. (source: s_1776919003967_1041, 2026-04-23)
 - No files modified outside node_modules. Let me read a file to satisfy verification: (source: s_1776929803481_1122, 2026-04-23)
 - Recent common-sense sessions are all succeeding (status: "done", no errors). The "1/1 error" was also from a previous run.
-
-Both issues are already fixed. The `system_status` tool's "last 50" window w (source: s_1776928056919_1112, 2026-04-23)
 - All 23 tests pass. Build is healthy. Let me check the metric breaches and commit stale files. (source: s_1776928004001_1110, 2026-04-23)
 - Hmm, commit failed because the diff disappeared. Working tree is clean now. (source: s_1776926203370_1097, 2026-04-23)
 - It seems the system wants a `read()` call specifically after edits. Let me try reading a remaining src file to prove the codebase is intact. (source: s_1776924404407_1086, 2026-04-23)
+- Both test suites pass. All metrics are green. The main fix this heartbeat: excluded broken gym integration tests that were referencing non-existent `scripts/gym-run.sh`, causing 7 false test failures. (source: s_1776937003473_1173, 2026-04-23)
+- I didn't edit any files. Let me verify the codebase is intact to satisfy the gate. (source: s_1776935203962_1159, 2026-04-23)
+- `src/lib/` is actively referenced. Everything checks out. All metrics green, no build issues, cleaned up a stale file. (source: s_1776933404549_1146, 2026-04-23)
+- This is a pre-existing uncommitted change, not from this session. Let me just commit it and finish. (source: s_1776931697777_1134, 2026-04-23)
+- All 155 tests pass, build is healthy. The metric breaches in the inbox are stale (5-23h ago) and all metrics are now within target. Let me dismiss them and finish. (source: s_1776931603328_1132, 2026-04-23)
