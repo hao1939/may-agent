@@ -17,7 +17,7 @@ import {
   readInflight, writeInflight, readHealthState, writeHealthState,
   saveWorkflowRunFile, generateRunId, updateField, appendComment, simpleHash,
   MAX_LAUNCHES_PER_TICK,
-} from "../../src/lib/project-health.ts";
+} from "../../shared/lib/project-health.ts";
 
 let importCounter = 0;
 
