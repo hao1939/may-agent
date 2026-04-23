@@ -37,19 +37,19 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     // Gather system context
     let breachedMetrics = new Set<string>();
-    let runningAgents = new Set<string>();
+    let runningProjects = new Set<string>();
     try {
       const db = ctx.getDb();
       for (const a of db.prepare("SELECT metric_id FROM metric_alerts WHERE resolved_at IS NULL").all() as Array<{ metric_id: string }>)
         breachedMetrics.add(a.metric_id);
-      for (const r of db.prepare("SELECT DISTINCT agent FROM sessions WHERE status='running'").all() as Array<{ agent: string }>)
-        runningAgents.add(r.agent);
+      for (const r of db.prepare("SELECT DISTINCT projectId FROM sessions WHERE status='running' AND projectId IS NOT NULL").all() as Array<{ projectId: string }>)
+        runningProjects.add(r.projectId);
     } catch { /* skip */ }
 
     // Diagnose each project
     const actions: Array<{ project: ProjectInfo; action: HealthAction }> = [];
     for (const project of projects) {
-      actions.push({ project, action: diagnoseProject(project, healthState, breachedMetrics, runningAgents, inflight, now, projects) });
+      actions.push({ project, action: diagnoseProject(project, healthState, breachedMetrics, runningProjects, inflight, now, projects) });
     }
 
     // Log non-trivial actions

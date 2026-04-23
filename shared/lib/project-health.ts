@@ -167,7 +167,7 @@ export function diagnoseProject(
   project: ProjectInfo,
   healthState: HealthState,
   breachedMetrics: Set<string>,
-  runningAgents: Set<string>,
+  runningProjects: Set<string>,
   inflight: Set<string>,
   now: number,
   allProjects: ProjectInfo[],
@@ -213,11 +213,12 @@ export function diagnoseProject(
     return { ...skip, reason: `${status} — waiting for fix (${Math.round(stoppedHours * 60)}min)` };
   }
 
-  // Active — launch if no session running
+  // Active — launch if no session running for this project
   if (status === "active") {
-    // Already has an agent session running
-    if (runningAgents.has(project.owner)) {
-      return { ...skip, reason: "agent already running" };
+    // Check if there's already a live session for this specific project
+    const projectId = `${project.owner}/${project.relPath.split("/").pop()}`;
+    if (runningProjects.has(projectId)) {
+      return { ...skip, reason: "project has live session" };
     }
 
     // Cooldown — don't relaunch too fast
