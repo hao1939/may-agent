@@ -77,3 +77,55 @@ The cascading-fix-trap-v2 scenario has now been tested with **7 different interv
 
 *Scorecard: 47 active hypotheses scored. 28 high, 13 moderate, 6 weak, 24 archived. Bob (Architect) | 2026-06-22*
 *Next update: After EXP-197 writeup, or after 5+ new experiments, or 1 week.*
+
+---
+
+## Addendum: Scout Hypotheses H-069 through H-075 (2026-06-28)
+
+Seven new scout hypotheses integrated. These form three clusters:
+
+### Cluster 1: Verification Gravity Well Interventions (H-072, H-073)
+Both extend EXP-099 findings. H-072 (belief-state externalization) has EXP-200 deployed, awaiting data. H-073 (calibrated abstention) has EXP-207 designed. These are the most actionable new hypotheses.
+
+| # | Hypothesis | P(H) | Status | Experiment |
+|---|-----------|------|--------|------------|
+| H-072 | Belief-state externalization reduces gravity wells | 0.50 | EXP-200 deployed | Awaiting data |
+| H-073 | Calibrated abstention reduces gravity wells | 0.50 | EXP-207 designed | Phase 1 ready |
+
+### Cluster 2: Coordination Quality & Diversity (H-069, H-074, H-075)
+These form a coherent concern: our metrics may show "green" while coordination degrades. H-075 is the meta-version of H-069. H-074 proposes sparse coupling as a fix.
+
+| # | Hypothesis | P(H) | Status | Experiment |
+|---|-----------|------|--------|------------|
+| H-069 | Internal coordination quality metric needed | 0.55 | Proposed | EXP-206 designed |
+| H-074 | Sparse coupling increases hypothesis diversity | 0.50 | Proposed | Low-cost test designable |
+| H-075 | Surface metrics mask coordination breakdown | 0.55 | Proposed | EXP-206 overlaps |
+
+### Cluster 3: Agent Modeling (H-070, H-071)
+Higher-level architectural proposals. Lower priority — require workflow changes.
+
+| # | Hypothesis | P(H) | Status | Experiment |
+|---|-----------|------|--------|------------|
+| H-070 | Trait-informed dispatch improves delegation | 0.45 | Proposed | No experiment designed |
+| H-071 | Structured disagreement improves open-ended tasks | 0.50 | Proposed | Connects to H-099 |
+
+### Updated Summary Statistics
+
+| Tier | Count | Change |
+|------|-------|--------|
+| Tier 1 (≥0.70) | 28 | — |
+| Tier 2 (0.50–0.69) | **19** | +6 (H-069, H-072, H-073, H-074, H-075, H-071) |
+| Tier 3 (<0.50) | **7** | +1 (H-070) |
+| Archived | 24 | — |
+| **Total** | **78** | +7 |
+
+### Priority Ranking (new hypotheses only)
+
+1. **H-073 → EXP-207 Phase 1**: Can run now. Sample 30 recent sessions for FM-3.3 baseline.
+2. **H-072 → EXP-200**: Already deployed. Check if data has accumulated.
+3. **H-074**: Design a cheap decoupled-hypothesis-generation test.
+4. **H-075/H-069**: Wait for EXP-206 or design a lightweight coordination audit.
+5. **H-071**: Interesting but expensive. Park until H-074 results inform it.
+6. **H-070**: Lowest priority — our dispatch is already role-based and works.
+
+*Addendum by Bob (Architect) | 2026-06-28*
