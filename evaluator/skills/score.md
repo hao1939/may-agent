@@ -78,6 +78,25 @@ How much waste was generated?
 | **2 (Inefficient)** | Significant loops (3+ retries of same error), reading massive files unnecessarily. |
 | **1 (Wasteful)** | Infinite loop, massive token dump, or flailing without progress. |
 
+### Step 6: Backward-Trace Root Cause Attribution
+After identifying issues in Steps 4-5, trace backward from symptoms to root causes:
+
+1. **For each issue**, ask: "What prior step, external input, or upstream agent action caused this?" Follow the chain until you reach a **decisive error** — the earliest point where a different action would have prevented the symptom.
+2. **Group by root cause**: Multiple symptoms often share a single root cause. Collapse them. Report root causes, not just symptoms.
+3. **Cross-agent attribution**: If the root cause originated outside this session (e.g., a bad sprint-plan from another agent, missing context from a prior session), flag as [CROSS_AGENT] with the likely source.
+4. **Environment issues**: Known infrastructure problems (bun:sqlite unavailable, invalid paths, tool timeouts) tagged [ENV_ISSUE] — note these but exclude from quality score penalty.
+
+Add to your output:
+```
+"root_causes": [
+  {
+    "cause": "Description of the root cause",
+    "symptoms": ["FM-x.x", "FM-y.y"],
+    "attribution": "agent" | "CROSS_AGENT:<source>" | "ENV_ISSUE"
+  }
+]
+```
+
 ## Output Format
 Your output must be a JSON object inside a code block.
 
