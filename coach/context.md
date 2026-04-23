@@ -1,5 +1,15 @@
-- npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
-- bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
+## Environment
+- **Project root**: /app — no /home/*, /Users/*, /root/*, or ~/ paths
+- **No src/ directory** or package.json at /app root — the runtime is pre-compiled. Your levers: context.md, heartbeat.md, workflow configs, gym scenarios, skills
+- **bun**: .state/.bun/bin/bun (add to PATH: `export PATH=".state/.bun/bin:$PATH"`)
+- **npx**: not available — use ./node_modules/.bin/<tool> or bun x <tool>
+- **sqlite**: sqlite3 CLI not available — use `bun -e "import {Database} from 'bun:sqlite'; ..."`
+- **agents/ is a separate git repo** — use git add from agents/ dir
+- **Gym runner**: scripts/gym-run.sh <scenario> --agent <name>
+- **Gym batch**: scripts/gym-batch.sh (--variants, --trials N, --tier/--category)
+- **Gym scenarios**: agents/gym/scenarios/
+- **ERROR_LOG files**: agents/*/ERROR_LOG.jsonl (NOT .state/error-log.jsonl)
+
 - There is NO src/ directory or package.json in /app root. The runtime is pre-compiled. Your levers for improving agent behavior are: context.md files, heartbeat.md files, workflow configs, gym scenarios, and skills. Do NOT try to edit src/ files.
 - sqlite3 CLI is not available — query .state/may.db with bun: `bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db', {readonly:true}); ..."`
 - Gym runner: scripts/gym-run.sh <scenario> --agent <name>

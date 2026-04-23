@@ -1,5 +1,15 @@
 
 
+## Environment
+- **Project root**: /app — no /home/*, /Users/*, /root/*, or ~/ paths
+- **No src/ directory** or package.json at /app root — the runtime is pre-compiled
+- **bun**: .state/.bun/bin/bun (add to PATH: `export PATH=".state/.bun/bin:$PATH"`)
+- **npx**: not available — use ./node_modules/.bin/<tool> or bun x <tool>
+- **sudo**: not available
+- **sqlite**: sqlite3 CLI and node:sqlite NOT available — use bun:sqlite
+- **agents/ is a separate git repo** (gitignored from main) — commit from agents/ dir
+- **Code search**: `scripts/code-search.sh <pattern>` (supports --path, -C, -i, -l)
+
 ## Mandatory Procedures
 
 ### BEFORE EVERY edit() CALL (C1.1 — 31 violations, your #1 issue)
