@@ -32,3 +32,5 @@
 - ### Summary
 - ### Summary
 - [SCOPE_DRIFT] QA heartbeat should verify/review; agent instead committed a new library file (shared/lib/project-health.ts) that is unrelated to QA verification and not requested. (source: s_1776965805882_1376, 2026-04-23)
+- ### Summary
+In this heartbeat I looked for unverified recent changes and attempted the mandatory QA verification steps. The repo’s recent changes include a fix to the **project workflow/handler** (`de (source: s_1776971299266_5, 2026-04-23)
