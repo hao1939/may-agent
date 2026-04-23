@@ -41,9 +41,6 @@
 
 ## Learned from experience
 
-- Now let me update the H-EXP-010 status to reflect that I've re-escalated. (source: s_1776937003389_1169, 2026-04-23)
-- Now dismiss the metric breach event (23h old, metrics are green), and check agent-cli-research: (source: s_1776935203882_1155, 2026-04-23)
-- Now let me dismiss the stale metric breach and commit: (source: s_1776933404464_1142, 2026-04-23)
 - No git repo — that's fine. (source: s_1776944203149_1215, 2026-04-23)
 - Now update the hypothesis status: (source: s_1776942404721_1207, 2026-04-23)
 - Now let me re-escalate the H-EXP-010 patch since May hasn't applied it yet. (source: s_1776940603988_1193, 2026-04-23)
@@ -52,25 +49,17 @@
 - Now let me update H-EXP-010 status and finish up. (source: s_1776949605029_1262, 2026-04-23)
 - Good, merged. Let me finish up. (source: s_1776947804386_1249, 2026-04-23)
 - SCORE: 7
-
-**Reasoning:**
-
-1. **Deliverables exist**: Yes. `.state/expensive-session-analysis.md` exists with detailed, well-structured content including session ID, cost data, root cause analysis, and (source: s_1776947542017_1247, 2026-04-23)
 - DONE
-
-The deliverable `.state/expensive-session-analysis.md` exists and is thorough. All three milestones are complete:
-
-1. **Worker attempts to find the most expensive session in the last 7 days and  (source: s_1776947520387_1246, 2026-04-23)
 - Now I have enough data. Let me write the analysis. (source: s_1776947437478_1243, 2026-04-23)
 - CONTINUE
-
-This is the first iteration and the worker seems to have started but hasn't produced a deliverable yet. Let me check what exists so far.
-
-**(a) Concrete output:** Produce a file `.state/expe (source: s_1776947424429_1242, 2026-04-23)
 - Now I have all the data. Let me write the analysis. (source: s_1776947290366_1241, 2026-04-23)
+- Now update EXP-212 results with deployment status and update my todo. (source: s_1776958605059_1320, 2026-04-23)
+- I have 2 scout→bob chains. Let me also look at H-EXP-011 and H-EXP-012 which may have been internally generated (no scout upstream). For H-EXP-013 Phase 1 I need 3 multi-agent workflows. Let me do the (source: s_1776956805551_1308, 2026-04-23)
+- Now let me commit and wrap up. (source: s_1776955003875_1297, 2026-04-23)
 
 ## Reflexion-Extracted Lessons
 - [insight] Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/.
+- [pattern] **Failure Analysis Protocol (H-EXP-014)**: Before closing any failed experiment, answer: (1) Why did it fail? (2) What did we learn? (3) Does this suggest a new hypothesis? H-EXP-011's "failure" spawned our best intervention (H-EXP-012, 58-93% improvement).
 
 ## Convention Compliance Reminders
 - **FM-1.3 / Systematic File Discovery**: NEVER guess file paths — discover them first.

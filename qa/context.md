@@ -28,9 +28,6 @@
 
 ## Learned from experience
 
-- Spent many calls on avoidable environment/path discovery after the first 'not a git repo' error at /app; did not immediately pivot to /app/agents where the repo lives (git log/status both failed at /a (source: s_1776919003981_1042, 2026-04-23)
-- Started verification from the wrong directory: ran `git log`/`git status` at `/app` where there is no `.git`, causing immediate failures and wasted calls (git code 128 twice). Evidence: tool outputs s (source: s_1776917204208_1031, 2026-04-23)
-- ### Summary
 - ### Summary
 - Ran multiple git commands in a non-git working directory and did not quickly pivot to the correct repo root (wasted calls). Evidence: `git log`, `git status`, `git diff` all failed with `fatal: not a  (source: s_1776926203384_1098, 2026-04-23)
 - ### Summary
@@ -42,6 +39,10 @@
 - ### Summary
 - ### Summary
 - ### Summary
-This heartbeat environment doesn’t contain a Git repository or a Node toolchain install (no `package.json`, no `node_modules/.bin`), so I can’t identify “what changed in the last 6h” via ` (source: s_1776951403650_1278, 2026-04-23)
 - ### Summary
-This heartbeat environment doesn’t contain a git repository (no `.git` found anywhere up to `..`), so I can’t audit “last 6h changes” via `git log` or review diffs. I *did* independently i (source: s_1776949605141_1267, 2026-04-23)
+- ### Summary
+This heartbeat I tried to perform the standard QA verification loop, but the **/app repo is not a git repo and doesn’t contain the required TypeScript/Vitest toolchain**, so I could not ru (source: s_1776958605158_1325, 2026-04-23)
+- ### Summary
+Repo-level QA verification is currently **blocked by environment/setup**: `/app` is not a git repo (no `.git`), and the required JS toolchain binaries (`./node_modules/.bin/tsc`, `./node_m (source: s_1776955003979_1302, 2026-04-23)
+- ### Summary
+No pending events/projects. I attempted the mandatory verification loop for recent changes, but `/app` is not a git repo (so I cannot identify/review what changed in the last 6h), and the  (source: s_1776953204956_1290, 2026-04-23)
