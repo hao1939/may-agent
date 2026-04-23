@@ -43,10 +43,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // Dedup: check if owner already has a recent session for this metric
     try {
       const db = ctx.getDb();
+      // Use [metric-alert] prefix to avoid matching heartbeat sessions
+      // (which also contain metric IDs in their injected context text)
       const recentSession = db.prepare(
         `SELECT sessionId FROM sessions
          WHERE agent = ? AND task LIKE ? AND startedAt > ?`
-      ).get(owner, `%${metricId}%`, Date.now() - DEDUP_WINDOW_MS) as { sessionId: string } | null;
+      ).get(owner, `[metric-alert][${metricId}]%`, Date.now() - DEDUP_WINDOW_MS) as { sessionId: string } | null;
 
       if (recentSession) {
         ctx.log(`[metric-alert-reactor] Skipping ${metricId} — ${owner} already has recent session ${recentSession.sessionId}`);
