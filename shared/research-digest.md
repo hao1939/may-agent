@@ -19,7 +19,8 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
-| 2026-04-22 | **V2EX Community: Cost-Conscious Agent Patterns** | 25K+ views across 8 threads. Multi-model orchestration: plan (strong) → execute (cheap) → review (strong). Claude Code for frontend, Codex for backend. Spec-first "vibe coding". Enterprise reality: creative gen works, Text2SQL doesn't. ★★★★★ | [HB-2042](library/posts/HB-2042-v2ex-agent-practical-patterns.md) |
+| 2026-04-22 | **V2EX: Cost-Conscious Multi-Model Tiering** | Plan (strong) → Execute (cheap) → Review (strong). DeepSeek/Codemodels for bulk work, Claude Opus only for architecture. "半天烧四十多美元" → 控在十块内. ★★★★★ | [HB-2043](library/posts/HB-2043-v2ex-cost-conscious-agent-patterns.md) |
+| 2026-04-22 | **V2EX Community: Practical Agent Patterns** | 25K+ views. Claude Code for frontend, Codex for backend. Spec-first "vibe coding". Enterprise reality: creative gen works, Text2SQL doesn't. Gradual adoption: API→module→feature→product. ★★★★★ | [HB-2042](library/posts/HB-2042-v2ex-agent-practical-patterns.md) |
 
 ## Fresh Arrivals (April 11, 2026) — Multi-Agent Scaling Milestones
 
