@@ -608,7 +608,7 @@ async function handleWaitingDecision(
 }
 
 /**
- * Handle a reviewer BLOCKED decision: run evaluator, record score, mark blocked.
+ * Handle a reviewer BLOCKED decision: record stop reason and resume condition, mark blocked.
  *
  * Mutates `ls.projectContent`.
  */
@@ -616,27 +616,16 @@ async function handleBlockedDecision(
   ctx: WorkflowContext,
   config: PersistentTaskConfig,
   ls: LoopState,
-  journalContent: string,
   iteration: number,
-  decision: { status: string; detail: string },
+  decision: { status: string; detail: string; resumeCondition: string },
   isCommentIteration: boolean,
 ): Promise<WorkflowResult> {
-  ctx.emit({ type: "step_start", step: `evaluate-blocked-${iteration}` });
-  const blockedMs = extractMilestones(ls.projectContent);
-  const blockedNote = blockedMs.total > 0 ? `Milestones: ${blockedMs.done}/${blockedMs.total} checked off.` : "";
-  const evalPrompt = buildEvalPrompt(config.goal, ls.projectContent, journalContent, iteration, blockedNote);
-  const evalResult = await ctx.runAgent(config.owner, evalPrompt);
-  const evalText = evalResult.lastAssistantText ?? "";
-  const scoreMatch = evalText.match(/SCORE:\s*(\d+)/i);
-  const score = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
-  const evalEntry = `**Evaluator**: BLOCKED eval (score=${score}/10) — ${evalText.slice(0, 500)}\n\n`;
-  ls.projectContent = appendJournalEntry(config, ls.projectContent, evalEntry, isCommentIteration);
-
   ls.projectContent = updateField(ls.projectContent, "Status", "blocked");
-  ls.projectContent = updateField(ls.projectContent, "Health", `${score}/10 (BLOCKED)`);
+  ls.projectContent = updateField(ls.projectContent, "Stop Reason", decision.detail.slice(0, 200));
+  ls.projectContent = updateField(ls.projectContent, "Resume Condition", decision.resumeCondition || "Blocker resolved");
   ls.projectContent = updateSection(ls.projectContent, "Current State", `Blocked: ${decision.detail.slice(0, 150)}`);
   writeFileSync(config.projectPath, ls.projectContent, "utf-8");
-  emitProjectEvent(ctx, config, "project.blocked", { iteration, health: score, reason: decision.detail.slice(0, 100) });
+  emitProjectEvent(ctx, config, "project.blocked", { iteration, reason: decision.detail.slice(0, 100) });
   const msg = isCommentIteration
     ? `Blocked by comment at iteration ${iteration}: ${decision.detail}`
     : `Blocked at iteration ${iteration}: ${decision.detail}`;
