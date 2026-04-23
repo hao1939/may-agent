@@ -24,32 +24,20 @@ export function loadMetrics(ctx: WorkflowContext, agent: string): string {
     ).all(agent) as any[];
     if (!rows.length) return "";
     return rows.map((r: any) => {
-      const breached = r.threshold != null && r.current != null &&
+      const breaching = r.threshold != null && r.current != null &&
         (r.alert_direction === "above" ? r.current > r.threshold : r.current < r.threshold);
-      let line = `📊 ${r.id}: ${r.current ?? "?"} (target ${r.target ?? "?"}) ${breached ? "⚠️ BELOW TARGET" : "✅"}`;
-      if (breached) {
-        // Count consecutive breached snapshots for escalation
-        let consecutiveBreaches = 0;
-        try {
-          const snapshots = db.prepare(
-            "SELECT value FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 10"
-          ).all(r.id) as any[];
-          for (const s of snapshots) {
-            const sBreach = r.alert_direction === "above" ? s.value > r.threshold : s.value < r.threshold;
-            if (sBreach) consecutiveBreaches++;
-            else break;
-          }
-        } catch {}
+      const targetGap = r.target != null && r.current != null
+        ? Math.abs(r.current - r.target) / Math.abs(r.target)
+        : 0;
+      const belowTarget = !breaching && targetGap > 0.2;
 
-        if (consecutiveBreaches >= 3) {
-          line += `\n  ⛔ REPEATED ALERT (seen ${consecutiveBreaches}x): This metric has been failing for ${consecutiveBreaches} consecutive checks with NO action taken.`;
-          line += `\n  → You MUST act on this NOW. Continuing to ignore it is not acceptable.`;
-        }
-        if (r.source_command) line += `\n  → MANDATORY: Run this command NOW → bash("${r.source_command}")`;
-        else if (r.source_query) line += `\n  → MANDATORY: Run this query NOW → ${r.source_query.substring(0, 120)}`;
-        line += `\n  → You MUST call a tool (bash/read/agents) for this metric. Do NOT just acknowledge it — execute.`;
-      }
-      return line;
+      const icon = breaching ? "🔴" : belowTarget ? "📉" : "✅";
+      const suffix = breaching
+        ? "— BREACHING"
+        : belowTarget
+          ? `— ${Math.round(targetGap * 100)}% from target`
+          : "";
+      return `📊 ${icon} ${r.id}: ${r.current ?? "?"} (target ${r.target ?? "?"}) ${suffix}`;
     }).join("\n");
   } catch { return ""; }
 }
@@ -133,17 +121,5 @@ export function formatMetricsBlock(ctx: WorkflowContext, agent: string): string 
   const metrics = loadMetrics(ctx, agent);
   if (!metrics) return "📊 No metrics configured.\n";
 
-  const hasRed = metrics.includes("⚠️ BELOW TARGET");
-  if (!hasRed) {
-    return `📊 All metrics healthy — no action needed.\n${metrics}\n`;
-  }
-
-  return `**⚡ FIRST — evaluate your metrics before anything else:**
-
-${metrics}
-
-**STOP. Your FIRST tool call must be one of the "→ MANDATORY" commands above.** Do not plan, do not summarize — execute the command for the worst metric RIGHT NOW. After you see the result, decide what to do about it.
-
----
-`;
+  return `## Your Metrics\n${metrics}\n`;
 }

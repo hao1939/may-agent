@@ -16,7 +16,6 @@ import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/a
 import type { CronEntry } from "../../shared/agent-sdk.js";
 import { runAgentTask } from "./run-agent-task.js";
 
-const DEDUP_WINDOW_MS = 4 * 60 * 60 * 1000; // 4h — shorter window so repeated alerts get reacted to faster
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async (event?: TriggerEvent) => {
@@ -40,18 +39,16 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       return;
     }
 
-    // Dedup: check if owner already has a recent session for this metric
+    // Dedup: skip if there's an active (unfinished) reactor session for this metric
     try {
       const db = ctx.getDb();
-      // Use [metric-alert] prefix to avoid matching heartbeat sessions
-      // (which also contain metric IDs in their injected context text)
-      const recentSession = db.prepare(
+      const activeSession = db.prepare(
         `SELECT sessionId FROM sessions
-         WHERE agent = ? AND task LIKE ? AND startedAt > ?`
-      ).get(owner, `[metric-alert][${metricId}]%`, Date.now() - DEDUP_WINDOW_MS) as { sessionId: string } | null;
+         WHERE agent = ? AND task LIKE ? AND finishedAt IS NULL`
+      ).get(owner, `[metric-alert][${metricId}]%`) as { sessionId: string } | null;
 
-      if (recentSession) {
-        ctx.log(`[metric-alert-reactor] Skipping ${metricId} — ${owner} already has recent session ${recentSession.sessionId}`);
+      if (activeSession) {
+        ctx.log(`[metric-alert-reactor] Skipping ${metricId} — ${owner} has active session ${activeSession.sessionId}`);
         return;
       }
     } catch {
