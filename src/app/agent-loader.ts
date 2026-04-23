@@ -287,7 +287,7 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
               if (!sid) throw new Error(`No active ${config.name} session`);
               return sid;
             },
-            (msg) => bus.emit({ type: "log", level: "info", message: `[cron:${config.name}] ${msg}` }),
+            (msg) => bus.emit({ type: "info", message: `[cron:${config.name}] ${msg}` }),
             opts.projectRoot,
             (msg) => {
               bus.emit({ type: "notification", agent: config.name, text: msg });

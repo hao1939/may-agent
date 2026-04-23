@@ -4,14 +4,16 @@
  * One function: log(level, message). Usable from anywhere in the codebase
  * (lib, app, handlers). No dependency on EventBus.
  *
- * At startup, may.ts calls setLogHandler() to route logs through the EventBus.
- * Before that (and in standalone tools), logs go to console.
+ * Subscribers can be added via addLogSubscriber(). Console output is always
+ * on by default. Additional subscribers (web UI, socket UI, etc.) are added
+ * at startup. This is a separate channel from EventBus — no circular
+ * dependency possible.
  */
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
-export type LogHandler = (level: LogLevel, message: string) => void;
+export type LogSubscriber = (level: LogLevel, message: string) => void;
 
-const defaultHandler: LogHandler = (level, msg) => {
+const consoleSubscriber: LogSubscriber = (level, msg) => {
   if (level === "error") console.error(msg);
   else if (level === "warn") console.warn(msg);
   else if (level === "debug") {
@@ -19,19 +21,28 @@ const defaultHandler: LogHandler = (level, msg) => {
   } else console.log(msg);
 };
 
-let _handler: LogHandler = defaultHandler;
+let _subscribers: LogSubscriber[] = [consoleSubscriber];
 
-/** Set the global log handler. Called once at startup. */
-export function setLogHandler(handler: LogHandler): void {
-  _handler = handler;
+/** Add a log subscriber. Returns an unsubscribe function. */
+export function addLogSubscriber(fn: LogSubscriber): () => void {
+  _subscribers.push(fn);
+  return () => {
+    _subscribers = _subscribers.filter((s) => s !== fn);
+  };
 }
 
-/** Reset to default console handler (for testing). */
-export function resetLogHandler(): void {
-  _handler = defaultHandler;
+/** Reset to default console-only subscriber (for testing). */
+export function resetLogSubscribers(): void {
+  _subscribers = [consoleSubscriber];
 }
 
-/** Log a message. */
+/** Log a message to all subscribers. */
 export function log(level: LogLevel, message: string): void {
-  _handler(level, message);
+  for (const fn of _subscribers) {
+    try {
+      fn(level, message);
+    } catch {
+      /* subscriber errors never break logging */
+    }
+  }
 }

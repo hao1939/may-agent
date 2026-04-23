@@ -15,7 +15,7 @@
 /** Result from running a sub-agent. */
 interface TaskResult {
   sessionId: string;
-  status: "done" | "error";
+  status: "done" | "error" | "interrupted";
   lastAssistantText: string | null;
   messages: any[];
   duration: string;
@@ -23,6 +23,14 @@ interface TaskResult {
   error?: string;
   /** Number of assistant turns completed in this session. */
   turnsUsed?: number;
+  /** Structured data from the agent's finish() tool call, if one was made. */
+  finishResult?: {
+    status: "success" | "failure" | "blocked" | "partial";
+    summary: string;
+    deliverables?: { path: string; description: string }[];
+    blockers?: { reason: string; context: string }[];
+    next_steps?: string;
+  };
 }
 
 /** Workflow event types for observability. */

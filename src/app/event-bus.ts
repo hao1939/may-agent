@@ -2,10 +2,10 @@
  * EventBus — the single integration point for the may-agent system.
  *
  * Everything flows through here: commands (to core), observations (from core),
- * management (reload/restart), and system events (notifications, logs).
+ * management (reload/restart), and system events (notifications).
  *
- * Components subscribe to events they care about and emit events they produce.
- * No component calls another directly — they only know the bus.
+ * System logging (log.ts) is a separate, independent channel — never routed
+ * through the bus — to avoid circular dependencies.
  *
  * See: agents/shared/may-agent-docs/design/architecture-redesign.md
  */
@@ -62,7 +62,6 @@ export type SessionEvent =
 /** System events */
 export type SystemEvent =
   | { type: "notification"; agent: string; text: string }
-  | { type: "log"; level: "info" | "warn" | "error"; message: string }
   | { type: "message_created"; from: string; to: string; task: string; requestId: string }
   | { type: "cron_fired"; job: string; agent?: string; timestamp: number }
   | { type: "context-learn"; agentName: string; sessionId: string; persistDir: string }

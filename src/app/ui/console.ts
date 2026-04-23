@@ -1,29 +1,44 @@
 /**
  * Console UI — renders events to stdout.
  *
+ * Two independent channels:
+ *   1. EventBus  — domain events (sessions, tools, notifications, info)
+ *   2. log.ts    — system log messages (warn, error, info from lib code)
+ *
  * Chat mode: show primary session events bright, everything else hidden.
  * Daemon mode: show everything dimmed.
  */
 
 import { isSessionEvent, type EventBus } from "../event-bus.js";
+import { addLogSubscriber, type LogLevel } from "../../lib/log.js";
 
 const DIM = "\x1b[2m";
 const RESET = "\x1b[0m";
 
 export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => string | null, chatMode?: boolean): void {
+  // ── Log channel (from log.ts — lib/infra messages) ────────────────────
+  addLogSubscriber((level: LogLevel, message: string) => {
+    // In chat mode, only show errors
+    if (chatMode && level !== "error") return;
+    // In daemon mode, show errors dimmed
+    if (level === "error") {
+      console.log(`${DIM}[${level}] ${message}${RESET}`);
+    }
+    // info/warn from log() already go to console via the default subscriber
+  });
+
+  // ── Bus channel (domain events) ───────────────────────────────────────
   bus.subscribe((event) => {
     const primarySid = getPrimarySessionId?.() ?? null;
 
     // Chat mode: only show primary session + notifications
     if (chatMode) {
-      // Debug: uncomment to trace session matching
-      // Debug removed
       if (event.type === "notification") {
         console.log(`\n📋 ${event.agent}: ${event.text}`);
         return;
       }
       if (!primarySid) return; // no session yet, suppress all
-      if (!isSessionEvent(event)) return; // drop system events (log, info, eval)
+      if (!isSessionEvent(event)) return; // drop system events
       if (event.sessionId !== primarySid) return; // drop other sessions
 
       // Primary session — show everything
@@ -72,9 +87,6 @@ export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => strin
         break;
       case "info":
         console.log(`${DIM}${(event as { message: string }).message}${RESET}`);
-        break;
-      case "log":
-        if (event.level === "error") console.log(`${DIM}[${event.level}] ${event.message}${RESET}`);
         break;
     }
   });

@@ -175,7 +175,7 @@ export function createNotifyTool(opts: NotifyToolOptions): AgentTool {
           sent: params.agent,
           message: structuredMessage,
           heartbeatTriggered: triggered,
-          requestId: requestId?.slice(0, 8),
+          
         }),
       );
     },
