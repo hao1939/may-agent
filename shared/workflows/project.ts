@@ -657,7 +657,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   let consecutiveFailures = 0;
   let continueWithoutProgress = 0;
   let lastMilestoneDone = extractMilestones(projectContent).done;
-  let continueWithoutProgress = 0;
 
   // Mark active only if not already done/blocked/waiting with pending comments
   // (those need comment iteration to decide the new status)
