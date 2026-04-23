@@ -78,7 +78,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       params.push(from);
     }
     if (status) {
-      where += " AND status = ?";
+      where += " AND r.status = ?";
       params.push(status);
     }
     if (agent) {
@@ -87,7 +87,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
     const total = (
       _db()
-        .prepare(`SELECT COUNT(*) as cnt FROM requests WHERE ${where}`)
+        .prepare(`SELECT COUNT(*) as cnt FROM requests r WHERE ${where}`)
         .get(...params) as any
     ).cnt;
     const rows = _db()
@@ -752,13 +752,15 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     } catch { /* projectId column may not exist */ }
 
     // Fallback: scan workflow run files (both directories)
+    // Try both with and without "agents/" prefix since paths vary
+    const searchPaths = [path, path.replace(/^agents\//, "")];
     const sessions: any[] = [];
     for (const dir of [join(STATE_DIR, "workflow-runs"), join(STATE_DIR, "workflows")]) {
       try {
         for (const f of readdirSync(dir)) {
           try {
             const run = JSON.parse(readFileSync(join(dir, f), "utf-8"));
-            if (run.task?.includes(path) || run.task?.includes(path + ".md")) {
+            if (searchPaths.some(sp => run.task?.includes(sp))) {
               for (const step of run.steps ?? []) {
                 if (step.sessionId) sessions.push({ sessionId: step.sessionId, agent: step.agent, status: step.status, startedAt: step.startedAt, task: step.task?.slice(0, 80) });
               }
