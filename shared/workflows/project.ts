@@ -549,9 +549,19 @@ async function handleWaitingDecision(
     const scoreMatch = evalText.match(/SCORE:\s*(\d+)/i);
     const score = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
     if (score < 7) {
-      const evalEntry = `**Evaluator**: FAIL (score=${score}/10) — overriding WAITING to CONTINUE. ${evalText.slice(0, 300)}\n\n`;
-      ls.projectContent = appendJournalEntry(config, ls.projectContent, evalEntry, isCommentIteration);
-      return { outcome: "continue" };
+      // Count previous evaluator FAILs to enforce auto-advance cap
+      const prevFails = (journalContent.match(/\*\*Evaluator\*\*: FAIL/g) || []).length;
+      const maxEvalAttempts = 2;
+      if (prevFails + 1 >= maxEvalAttempts) {
+        // Auto-advance: evaluator rejected too many times, let human review decide
+        const evalEntry = `**Evaluator**: FAIL (score=${score}/10) — auto-advancing to WAITING after ${prevFails + 1} evaluator rejections (cap=${maxEvalAttempts}). ${evalText.slice(0, 300)}\n\n`;
+        ls.projectContent = appendJournalEntry(config, ls.projectContent, evalEntry, isCommentIteration);
+        // Fall through to normal WAITING handling instead of returning continue
+      } else {
+        const evalEntry = `**Evaluator**: FAIL (score=${score}/10) — overriding WAITING to CONTINUE. ${evalText.slice(0, 300)}\n\n`;
+        ls.projectContent = appendJournalEntry(config, ls.projectContent, evalEntry, isCommentIteration);
+        return { outcome: "continue" };
+      }
     }
     const evalEntry = `**Evaluator**: PASS (score=${score}/10) — ${evalText.slice(0, 300)}\n\n`;
     ls.projectContent = appendJournalEntry(config, ls.projectContent, evalEntry, isCommentIteration);
