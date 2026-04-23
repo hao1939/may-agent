@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776984013013_97
+- **Session:** s_1776985245948_100
 - **Status:** done
-- **When:** 2026-04-23T22:41:54.621Z
-- **Duration:** 1m41s
+- **When:** 2026-04-23T23:06:04.603Z
+- **Duration:** 5m18s
 
 ## What Happened
-Good evidence. Across sessions that use `finish()`, verification_evidence is consistently present. Let me now create the tracker files.
+Interesting — amy has the smallest context (2451B) but worst compliance (92.7%). may has the largest (10423B) but great compliance (97.9%). No bloat correlation yet. The issue is model-level defaults, not context overload.
 
-**Verdict: YES — "Evidence first" is being followed.** Sessions with finish calls include verification_evidence with specific tool output references.
+Let me wrap up with a concrete knowledge entry about what I've learned and designed:

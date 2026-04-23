@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776983899407_92
+- **Session:** s_1776985699520_105
 - **Status:** done
-- **When:** 2026-04-23T22:40:31.636Z
-- **Duration:** 2m12s
+- **When:** 2026-04-23T23:09:48.659Z
+- **Duration:** 1m29s
 
 ## What Happened
-The research files are outside the git repo. That's fine — the file is written and notifications sent.
+Good. The MALMAS finding has a concrete insight worth sharing — selective agent activation and memory type separation.

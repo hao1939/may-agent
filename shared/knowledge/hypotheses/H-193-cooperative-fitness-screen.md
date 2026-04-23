@@ -1,7 +1,7 @@
 # H-193: Cooperative Fitness Screen — Notification Rate Predicts System Impact
 
 **Created**: 2026-07-29 by Bob
-**Status**: proposed
+**Status**: ARCHIVED — duplicate of H-192 (merged 2026-07-29)
 **Confidence**: ★★★☆ (strong theoretical grounding)
 **Source**: DD#872 (arXiv:2604.20658 — Cooperative Profiles Predict Team Performance)
 **Connects**: H-EXP-013, DD#872, CR#275

@@ -1,42 +1,40 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776982099610_74
+- **Session:** s_1776985699689_106
 - **Status:** done
-- **When:** 2026-04-23T22:08:54.868Z
+- **When:** 2026-04-23T23:08:54.810Z
 - **Duration:** 35s
 
 ## What Happened
 ### Summary
-Reviewed the current codebase (no git history available here) and found multiple logic bugs causing the provided test suite to fail. Key issues: homework score sorting is incorrect (lexicographic sort), and midterm/final weights are swapped in `computeFinalGrade()`. As a result, final grades and the generated class report are wrong.
+No pending events/alerts, so I performed a heartbeat verification sweep. `/app` is **not** a git repo (only `/app/agents` is), and the mandatory TS/Vitest QA checks **cannot run** here because this project is plain Node/JS with no `tsc` or `vitest` binaries in `/app/node_modules/.bin`. I then executed the available JS test runner (`node test/test.js`) and observed **multiple failing grading/math tests**, indicating functional issues in the current `/app/src` implementation.
 
 ### Checks
-- **`tsc --noEmit`**: **FAIL (environment)** — `./node_modules/.bin/tsc` not found (`No such file or directory`).
-- **`vitest --run`**: **FAIL (environment)** — `./node_modules/.bin/vitest` not found (`No such file or directory`).
-- **Local runtime test (`node test/test.js`)**: **FAIL** — `8` failing assertions (see evidence below).
+- `./node_modules/.bin/tsc --noEmit`: **FAIL** — binary missing (`No such file or directory`). Evidence: bash output when running it in `/app`.
+- `./node_modules/.bin/vitest --run`: **FAIL** — binary missing (`No such file or directory`). Evidence: bash output when running it in `/app`.
+- Additional runtime check (project-native): `node test/test.js`: **FAIL** — `11 passed, 8 failed`. Evidence: test output shows mismatched expected vs actual grades/averages.
 
 ### Issues
-1. **CRITICAL — Incorrect numeric sort drops wrong homework**
-   - **File:** `src/grader.js`
-   - **Evidence:** `computeHomeworkAverage()` uses `sort()` with no comparator: `const sorted = [...hwScores].sort();`
-   - **Impact:** JS default sort is lexicographic, so `[95,100,90,85]` becomes `[100,85,90,95]`, causing the wrong “lowest” to be dropped.
-   - **Test failure evidence:** `drops lowest from [95,100,90,85]: expected 95, got 90` from `node test/test.js`.
+- **CRITICAL — Mandatory QA commands cannot be executed in this repo**
+  - In `/app`, there is no TypeScript/Vitest tooling (`package.json` only depends on `better-sqlite3`). Running `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest` fails because the binaries do not exist.
+  - This blocks the “non-negotiable” QA gate as written, unless the gate is scoped to `/app/agents` only.
 
-2. **CRITICAL — Midterm/final weights swapped**
-   - **File:** `src/grader.js`
-   - **Evidence:** In `computeFinalGrade()`:
-     ```js
-     + student.midterm * policy.weights.final
-     + student.final * policy.weights.midterm;
-     ```
-     This reverses the intended mapping (midterm should use `weights.midterm`, final should use `weights.final`).
-   - **Impact:** All final grade computations are wrong.
-   - **Test failure evidence:** Multiple, e.g. `Alice final grade: expected 85.25, got 84.55`.
+- **CRITICAL — Functional test failures in grading logic**
+  - `node test/test.js` reports failures such as:
+    - “drops lowest from [95,100,90,85]: expected 95, got 90”
+    - Final grade mismatches for multiple students (Alice/Bob/Charlie/Diana/Eve)
+    - Report mismatches (Alice grade, class average)
+  - These are concrete correctness failures, not style/test fragility.
 
-3. **IMPORTANT — CSV parser fragile for CRLF / empty lines**
-   - **File:** `src/parser.js`
-   - **Evidence:** Splits by `'\n'` and does `.trim()` globally; doesn’t handle `\r` explicitly and doesn’t skip empty trailing lines.
-   - **Impact:** Could mis-parse Windows CSVs or files with blank lines. (Not currently failing the given tests.)
+- **MINOR — Git verification scope mismatch**
+  - `/app` has source/tests, but no `.git`; `/app/agents` has git history. This makes “what changed in last 6h” impossible for `/app` code via git, and suggests the repo layout/expectations are inconsistent.
 
 ### Verdict
-**FAIL** — The current implementation does not meet the provided test contract. The failures are reproducible via `node test/test.js` (8 failing assertions), and the causes are clear in `src/grader.js` (numeric sort comparator missing; midterm/final weights reversed).
+**FAIL**
+
+Because:
+1) the mandated `tsc`/`vitest` checks cannot be performed in `/app` (tooling absent), and  
+2) the available project tests (`node test/test.js`) show **8 real failures** affecting grading outputs.
+
+If you clarify that QA gates should run under `/app/agents` only (and `/app` is just a runtime sandbox), I can re-scope and re-run verification accordingly.
