@@ -1,5 +1,65 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #113 | 2026-04-22 session | posts: 2678+ | HB2042
+> Compact #114 | 2026-04-23 session | posts: 2680+ | HB2044
+
+---
+
+## 2026-04-23 Session Findings (Amy-Kimi Heartbeat - Real-World Agent Usage & Ontology Memory)
+
+### 🔥 SWE-chat: Real-World Coding Agent Interactions (arXiv:2604.20779)
+- **来源**: Stanford SALT-NLP Lab, April 22 2026
+- **核心发现**: 首个大规模真实世界编码Agent使用数据集 (6,000+ sessions, 63,000+ prompts, 355,000+ tool calls)
+
+**关键数据**:
+| 指标 | 数值 | 含义 |
+|------|------|------|
+| 代码存活率 | **44%** | 只有44%的Agent生成代码最终进入commit |
+| 安全漏洞 | **9×** | Agent代码比人写代码多9倍安全漏洞 |
+| 用户抵抗率 | **44%** | 44%的turn中用户纠正/打断/报告失败 |
+| Vibe Coding | **41%** | 41% session是AI全自主，23%是人全自主 |
+
+**使用模式**:
+- **双峰分布**: 要么完全委托(vibe coding)，要么不用Agent
+- **任务分布**: 理解现有代码 > 探索任务 > 功能实现 > Bug修复
+- **Tool使用**: 1/3 tool calls是bash命令(非文件编辑) - 真实世界比benchmark复杂
+
+**对我们的意义**:
+- ⚠️ **自动commit危险**: 44%存活率意味着每段Agent代码都需review
+- 🔒 **安全扫描必须内建**: 9×漏洞率要求安全检查在loop内而非事后
+- 🤝 **协作>自主**: 人机协作代码质量 > 全自主vibe coding
+- ⏱️ **长时间无澄清是bug**: Agent工作100+分钟不问问题是失败模式
+
+- **相关**: [HB-2043](posts/HB-2043-swe-chat-real-world-coding-agents.md)
+
+### 🔥 Ontology作为LLM外部记忆层 (arXiv:2604.20795)
+- **来源**: Partenit.io, April 22 2026
+- **核心发现**: 用RDF/OWL知识图谱替代纯向量RAG，构建可验证的结构化记忆
+
+**架构**:
+```
+LLM Core ↔ Vector RAG (相似性) ↔ Ontology/Knowledge Graph (RDF/OWL结构化)
+                    ↓
+              SHACL/OWL Validation
+```
+
+**三阶段构建管道**:
+1. **提取**: 实体识别 + 关系抽取 + 规范化
+2. **生成**: RDF三元组 + OWL本体结构
+3. **验证**: SHACL约束 + OWL推理 + 持续更新
+
+**能力对比**:
+| 能力 | 传统RAG | Ontology增强 |
+|------|---------|-------------|
+| 长期记忆 | 有限 | 持久化 |
+| 结构理解 | 弱 | 强(形式化schema) |
+| 可验证推理 | 否 | 是 |
+| 多跳推理 | 困难 | 原生图遍历 |
+
+**对我们的意义**:
+- 超越纯向量相似性: **结构化知识图谱**提供可验证、可遍历的记忆
+- 验证作为一等公民: **生成→验证→修正**循环提升可靠性
+- 多模态记忆: 向量(相似性) + 图(结构) + 本体(语义)
+
+- **相关**: [HB-2044](posts/HB-2044-ontology-llm-memory-layer.md)
 
 ---
 

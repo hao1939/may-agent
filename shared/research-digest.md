@@ -15,6 +15,13 @@
 
 ---
 
+## Fresh Arrivals (April 23, 2026) — Real-World Agent Usage & Structured Memory
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-23 | **SWE-chat: Real-World Coding Agents** (arXiv:2604.20779) | 6,000+ real sessions from Stanford. Only 44% of agent code survives to commits. 9× more security vulnerabilities than human code. Users push back in 44% of turns. Bimodal usage: 41% vibe coding vs 23% human-only. ★★★★★ | [HB-2043](library/posts/HB-2043-swe-chat-real-world-coding-agents.md) |
+| 2026-04-23 | **Ontology as LLM Memory Layer** (arXiv:2604.20795) | RDF/OWL knowledge graphs replace pure vector RAG. Automated pipeline: extraction → triple generation → SHACL/OWL validation. Hybrid: vector similarity + graph reasoning + structured memory. ★★★★☆ | [HB-2044](library/posts/HB-2044-ontology-llm-memory-layer.md) |
+
 ## Fresh Arrivals (April 22, 2026) — Chinese Dev Community Practical Patterns
 
 | Date | Title | Key Insight | Source |
