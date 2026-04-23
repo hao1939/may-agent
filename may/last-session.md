@@ -1,17 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776962205715_1344
+- **Session:** s_1776964005694_1356
 - **Status:** done
-- **When:** 2026-04-23T16:40:02.836Z
-- **Duration:** 3m17s
+- **When:** 2026-04-23T17:09:23.337Z
+- **Duration:** 2m37s
 
 ## What Happened
-Key findings from data:
-1. **All agents healthy** — no stuck requests, 97% success rate, all heartbeats running
-2. **Optimizer had 429 rate limit error** — transient, self-resolved
-3. **Bob had a timeout** — single occurrence, not a pattern
-4. **Delegation quality at 0.71** (target 0.85) — weakest operational metric
-5. **Instruction compliance at 53** (target 0.8) — persistently low
-
-The delegation quality metric is the most actionable gap. Let me nudge optimizer to investigate.
+Most requests are 2-4 days old. The delegation quality metric (0.71) directly reflects this — work dispatched but never completed. This is a systemic issue. Let me fork a task to tech-lead to add auto-expiry infrastructure:

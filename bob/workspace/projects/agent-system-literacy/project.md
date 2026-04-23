@@ -54,7 +54,7 @@ Agents should know how to use the infrastructure effectively — create projects
 - Debugging skill (exists): agents/shared/skills/debugging-handlers-workflows.md
 
 ## Current State
-Not started.
+Phase 1 complete — all 5 skills written. Next: Phase 2 gym scenarios.
 
 ## Process Notes
 
