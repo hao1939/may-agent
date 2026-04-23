@@ -1,6 +1,6 @@
 # Project: Agent CLI Research — Claude Code, Gemini CLI, Codex
 
-**Status**: blocked
+**Status**: complete-enough
 **Owner**: bob
 **Priority**: P2
 **Iteration**: 10
