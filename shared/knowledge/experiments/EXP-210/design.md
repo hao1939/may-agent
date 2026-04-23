@@ -1,71 +1,51 @@
 # EXP-210: Schema-Organized Context vs. Flat List Context
 
-**Date**: 2026-06-28
-**Status**: DESIGNED
+**Date**: 2026-06-28 | **Updated**: 2026-07-28
+**Status**: READY-TO-RUN — lab fork created, awaiting gym execution
 **Hypothesis**: H-077 (Schema-Organized Context Activates Knowledge Better Than Flat Lists)
 **Predecessor**: H-EXP-012 (75% known-but-violated rate), EXP-164 (information provision works)
 
----
-
 ## Research Question
 
-Does restructuring an agent's context.md from a flat list of facts into schema-organized sections (with trigger conditions and cross-references) reduce knowledge-activation failures?
-
-## Background
-
-H-EXP-012 found that 6/8 mid-session errors violated facts already present in context.md — a 75% "known-but-violated" rate. The problem isn't missing knowledge; it's failing to activate knowledge at the right moment. H-077 proposes that schema organization with trigger conditions creates stronger situation→fact associations.
+Does restructuring an agent's context.md from a flat list of facts into trigger-based sections reduce knowledge-activation failures?
 
 ## Design
 
 ### Arms
 
-**Arm A (Control)**: Current flat-list context.md format.
-```
-- Always run tests before committing
-- Use edit() not sed for file changes  
-- Check .state/ for checkpoints before starting
-```
+**Arm A (Control)**: Current coder context.md — mixed format with categories like "Mandatory Procedures", "Convention Compliance", "Quality Improvement Rules" (139 lines).
 
-**Arm B (Treatment)**: Schema-organized context.md with trigger conditions and cross-refs.
-```
-## [Before Committing Code]
-Trigger: about to run `git commit` or call finish(success) after code changes
-- Run full test suite first (see also: [Tool Selection])
-- Verify no untracked files with `git status`
+**Arm B (Treatment)**: Schema-organized context.md at `agents/.lab/coder-schema-context/context.md` — same rules reorganized by **trigger moment** (73 lines):
+- `[BEFORE EDITING ANY FILE]` — C1.1 read-before-edit
+- `[AFTER EVERY write() CALL]` — C1.3 verify
+- `[SESSION START]` — C12.1 orientation
+- `[BEFORE CALLING finish()]` — FM-3.3 verification
+- `[AFTER FIXING A BUG]` — cascading/pipeline trace
+- etc.
 
-## [Tool Selection]  
-Trigger: about to modify a file
-- Use edit() for small changes (safer than sed — no accidental data loss)
-- Use write() only for new files or full rewrites
-- Cross-ref: [Before Committing Code] — run tests after edits
-```
+Key differences:
+1. **Trigger-based headers** instead of category-based (e.g., "Convention Compliance")
+2. **Shorter** (73 vs 139 lines) — removed redundant restatements
+3. **Situational cross-refs** removed; each section is self-contained for its trigger moment
 
-### Scenario
+### Test Scenarios
 
-Use an existing gym scenario where agents commonly violate known facts. Best candidate: a coding task requiring git operations + file edits (exercises both tool selection and git rules).
+Primary: `read-before-edit` — coder baseline is 54.8% (N=31). Directly tests C1.1 activation.
+
+Secondary: `efficient-file-reading` (25%, N=12), `coder-post-write-verify` (73.3%, N=45) — test C1.3 and related discipline.
 
 ### Protocol
 
-1. Select 2 gym scenarios where baseline agents commonly violate context.md facts
-2. Run each arm 5 times per scenario (N=10 per arm, 20 total)
-3. Score: count of knowledge-activation violations per session (primary), task success (secondary)
+1. Run 10 trials of `read-before-edit` with `--agent .lab/coder-schema-context`
+2. Compare to existing baseline (54.8%, N=31)
+3. If treatment >= 70% (p < 0.05 via Fisher's exact), proceed to secondary scenarios
+4. If treatment >= 70% on 2+ scenarios, promote schema format to coder context.md
 
-### Metrics
+### Rejection Criteria
+- Treatment < 60% on primary scenario → REJECT (no meaningful improvement)
+- Treatment < baseline → REJECT immediately
 
-- **Primary**: Knowledge-activation violations per session (lower is better)
-- **Secondary**: Task completion rate
-- **Tertiary**: Time-to-first-violation (later is better)
-
-## Predictions
-
-- H-077 predicts: violations drop >40% in Arm B vs Arm A
-- Compound errors (requiring 2+ facts) drop more than single-fact errors
-- Null: <15% difference → schema structure doesn't help
-
-## Cost
-
-~$10-15 (20 gym runs at ~$0.50-0.75 each)
-
-## Dependencies
-
-Requires gym infrastructure for controlled runs.
+### Pre-registration
+- Primary metric: pass rate on read-before-edit
+- Minimum sample: N=10 per arm
+- Decision threshold: ≥70% treatment pass rate on primary
