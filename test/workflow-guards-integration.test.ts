@@ -9,14 +9,14 @@
 import { describe, test, expect } from "vitest";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createWorkflowTool } from "./workflow-tool.js";
-import type { WorkflowToolResult } from "./workflow.js";
-import type { TaskResult } from "./types.js";
+import { createWorkflowTool } from "../src/lib/workflow-tool.js";
+import type { WorkflowToolResult } from "../src/lib/workflow.js";
+import type { TaskResult } from "../src/lib/types.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const TEST_GUARDS_DIR = join(__dirname, "__test-guards__");
+const TEST_GUARDS_DIR = join(__dirname, "../src/lib/__test-guards__");
 // Directory containing our test-two-step workflow
-const TEST_WORKFLOW_DIR = join(__dirname, "__test-guards__");
+const TEST_WORKFLOW_DIR = TEST_GUARDS_DIR;
 
 // ── Mock helpers ───────────────────────────────────────────────────────
 
