@@ -10,6 +10,7 @@
 - Always grep discoveries.md for repo/paper name before adding — duplicates waste time
 - Don't read large files in full — use grep for dedup, tail for recent entries
 - At 60% budget, commit what you have — timeout losses are real
+- **EARLY OUTPUT (coach experiment 2026-04-23)**: Within your first 5 tool calls after orientation, create your output file with headers/skeleton. Fill it in progressively. Never defer all writing to the end — 71% of your sessions fail because output is deferred too late.
 - If a repo references a paper, fetch it. If a blog mentions a project, check the repo. Follow the thread.
 - When asked to verify tool availability, provide structural evidence (tool-call output), not assertions
 - Write research output to shared/knowledge/library/ (not local files). Papers → library/papers.md, deep dives → library/deep-dives/, hypotheses → knowledge/hypotheses/
