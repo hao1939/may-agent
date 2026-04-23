@@ -15,33 +15,35 @@ const products = [
 ];
 
 /**
- * Execute a SQL-like query against the product database.
+ * Execute a parameterized query against the product database.
  * Supports basic WHERE clauses: LIKE, category =, id =.
  * 
- * @param {string} sql - SQL query string
+ * @param {string} sql - SQL query string with ? placeholders
+ * @param {Array} params - Parameter values to bind
  * @returns {Array|null} - matching rows, or null if no matches
  */
-function executeQuery(sql) {
+function executeQuery(sql, params = []) {
   let results = [...products];
+  let paramIndex = 0;
 
-  // Handle WHERE id = N
-  const idMatch = sql.match(/WHERE\s+id\s*=\s*(\d+)/i);
+  // Handle WHERE id = ?
+  const idMatch = sql.match(/WHERE\s+id\s*=\s*\?/i);
   if (idMatch) {
-    const id = parseInt(idMatch[1], 10);
+    const id = parseInt(params[paramIndex++], 10);
     results = results.filter(p => p.id === id);
   }
   
-  // Handle WHERE name LIKE '%...%'
-  const likeMatch = sql.match(/LIKE\s+'%(.+)%'/i);
+  // Handle WHERE name LIKE ?
+  const likeMatch = sql.match(/LIKE\s+\?/i);
   if (likeMatch) {
-    const pattern = likeMatch[1].toLowerCase();
+    const pattern = String(params[paramIndex++]).replace(/^%|%$/g, '').toLowerCase();
     results = results.filter(p => p.name.toLowerCase().includes(pattern));
   }
   
-  // Handle WHERE category = '...'
-  const categoryMatch = sql.match(/category\s*=\s*'([^']+)'/i);
+  // Handle WHERE category = ?
+  const categoryMatch = sql.match(/category\s*=\s*\?/i);
   if (categoryMatch) {
-    const cat = categoryMatch[1].toLowerCase();
+    const cat = String(params[paramIndex++]).toLowerCase();
     results = results.filter(p => p.category === cat);
   }
   
