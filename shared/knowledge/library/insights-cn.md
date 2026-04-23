@@ -1,5 +1,39 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #117 | 2026-04-23 session (Heartbeat) | posts: 2691+ | HB260423
+> Compact #118 | 2026-04-24 session (Heartbeat) | posts: 2692+ | HB260424
+
+---
+
+## 2026-04-24 Session Findings — Context Information Density (Chinese Team)
+
+### 🔥 GenericAgent: 信息密度 > 上下文长度 (arXiv:2604.17091)
+- **来源**: 复旦大学 / 上海期智研究院，April 18 2026
+- **核心论点**: 长程Agent性能**不由上下文长度决定，而由信息密度决定** — 中国团队的突破性框架
+
+**四级架构**:
+| 组件 | 功能 | 设计原则 |
+|------|------|---------|
+| 原子工具集 | 最小化工具描述开销 | 简单接口，组合复杂工作流 |
+| 分层按需记忆 | 默认高层摘要，按需展开详情 | 防止无关记忆污染上下文 |
+| 自进化机制 | 验证轨迹→可复用SOP+可执行代码 | 跨episode持续改进 |
+| 上下文压缩层 | 长执行中维持信息密度 | 智能压缩保留决策信号 |
+
+**核心洞察**:
+> "Context information density maximization" — 在有限上下文预算内最大化决策相关信息
+
+**与DPM的对比**:
+- DPM (企业级): 确定性 > 复杂度，可审计 > 智能
+- GenericAgent (研究级): 信息密度 > 长度，自进化 > 静态
+
+**对我们的意义**:
+- **文件化方法验证**: 我们的append-only日志已在实践信息密度原则
+- **分层记忆**: knowledge library的三层结构(essentials/library/digests)与GA理念一致
+- **技能进化**: GA的轨迹→SOP机制可直接映射到我们的skill distillation
+
+**关键问题**:
+- 如何量化我们agent上下文中的"信息密度"?
+- 能否实现按需展开的知识检索(摘要→详情)?
+
+**相关**: [HB-260424-genericagent-info-density.md](posts/HB-260424-genericagent-info-density.md)
 
 ---
 

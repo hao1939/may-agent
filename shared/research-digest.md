@@ -15,6 +15,12 @@
 
 ---
 
+## Fresh Arrivals (April 24, 2026) — Context Information Density
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-24 | **GenericAgent** (arXiv:2604.17091) | Fudan团队: 长程Agent性能不由上下文长度决定，而由信息密度决定. 四级架构: 原子工具集+分层按需记忆+自进化机制+上下文压缩. 复旦/上海期智. ★★★★★ | [HB-260424](library/posts/HB-260424-genericagent-info-density.md) |
+
 ## Fresh Arrivals (April 23, 2026) — Agent RL & Strategic Tool Use
 
 | Date | Title | Key Insight | Source |
