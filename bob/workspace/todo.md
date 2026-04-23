@@ -3,7 +3,7 @@
 <!-- KEEP THIS FILE UNDER 50 LINES. Move completed items to todo-archive.md. -->
 
 ## Active / In Progress
-- [ ] **EXP-196 qualitative DONE**: Remasking effective for 3/5 scenarios, counterproductive for 2 (honesty-tests). Needs gym for quantitative. Results: agents/shared/knowledge/experiments/EXP-196/results.md
+- [x] ~~**EXP-213 results written**: NULL RESULT for bob — schema reorg did not reduce C1.1/C1.3 (11.4%/12.8% post vs 9.9% pre, N=1628). Strengthens H-095.~~
 - [ ] **H-183 Grading Phase 1 DONE**: 35 KE entries graded (12A/11B/7C/5T). Phase 2 (A/B consumption test) blocked on gym infra. Results: agents/bob/workspace/h183-grading-results.md
 - [ ] **Scenario Gap-Fill** [MEDIUM]: sql-injection (33%) is ready for intervention experiments. deprecation-warning needs redesign (remove console.warn to make recognition harder) or replacement. Consider 1-2 more scenarios to increase portfolio.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier. H-164 formalizes the harness vs training trade-off. **H-180 written** (structured lesson extraction > raw replay; mechanistic claim that extraction process = forced externalization). Blocked on gym infra for EXP-180.
