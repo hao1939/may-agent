@@ -1,7 +1,7 @@
 # EXP-210: Schema-Organized Context vs. Flat List Context
 
 **Date**: 2026-06-28 | **Updated**: 2026-07-28
-**Status**: BLOCKED — gym in stub mode (no GYM_AGENT_BIN). Lab fork ready at agents/.lab/coder-schema-context/. Needs real agent binary to execute.
+**Status**: READY — GYM_AGENT_BIN available at /usr/local/bin/may-agent. Lab fork ready at agents/.lab/coder-schema-context/.
 **Hypothesis**: H-077 (Schema-Organized Context Activates Knowledge Better Than Flat Lists)
 **Predecessor**: H-EXP-012 (75% known-but-violated rate), EXP-164 (information provision works)
 
