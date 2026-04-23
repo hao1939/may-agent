@@ -547,93 +547,64 @@ function appendJournalEntry(
 }
 
 /**
- * Handle a reviewer DONE decision: run evaluator gate, check milestones,
- * handle false-done loop, and mark project complete if everything passes.
+ * Handle a reviewer WAITING decision (including auto-converted DONE):
+ * Record stop reason and resume condition, set status=waiting.
  *
- * Mutates `ls` (projectContent, falseDoneCount, lastMilestoneDone, continueWithoutProgress).
+ * If `evaluator-gate` feature is enabled, run evaluator first — if score <7,
+ * override to CONTINUE (agent needs to do more work).
  */
-async function handleDoneDecision(
+async function handleWaitingDecision(
   ctx: WorkflowContext,
   config: PersistentTaskConfig,
   ls: LoopState,
   journalContent: string,
   iteration: number,
-  decision: { status: string; detail: string },
+  decision: { status: string; detail: string; resumeCondition: string },
   isCommentIteration: boolean,
-): Promise<DoneHandlerResult> {
-  // LLM evaluation gate
-  const stepLabel = isCommentIteration ? `evaluate-comment-${iteration}` : `evaluate-iteration-${iteration}`;
-  ctx.emit({ type: "step_start", step: stepLabel });
+  features: Set<string>,
+): Promise<StopHandlerResult> {
+  // Optional evaluator gate (feature flag)
+  if (features.has("evaluator-gate")) {
+    const stepLabel = isCommentIteration ? `evaluate-comment-${iteration}` : `evaluate-iteration-${iteration}`;
+    ctx.emit({ type: "step_start", step: stepLabel });
 
-  const finalMs = extractMilestones(ls.projectContent);
-  const milestoneNote = finalMs.total > 0 ? `Milestones: ${finalMs.done}/${finalMs.total} checked off.` : "";
-  const evalPrompt = buildEvalPrompt(config.goal, ls.projectContent, journalContent, iteration, milestoneNote);
-  const evalResult = await ctx.runAgent(config.owner, evalPrompt);
-  const evalText = evalResult.lastAssistantText ?? "";
-  const scoreMatch = evalText.match(/SCORE:\s*(\d+)/i);
-  const score = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
-  const evalVerdict = score >= 7 ? "PASS" : "FAIL";
+    const ms = extractMilestones(ls.projectContent);
+    const milestoneNote = ms.total > 0 ? `Milestones: ${ms.done}/${ms.total} checked off.` : "";
+    const evalPrompt = buildEvalPrompt(config.goal, ls.projectContent, journalContent, iteration, milestoneNote);
+    const evalResult = await ctx.runAgent(config.owner, evalPrompt);
+    const evalText = evalResult.lastAssistantText ?? "";
+    const scoreMatch = evalText.match(/SCORE:\s*(\d+)/i);
+    const score = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
 
-  const evalEntry = `**Evaluator**: ${evalVerdict} (score=${score}/10) — ${evalText.slice(0, 500)}\n\n`;
-  ls.projectContent = appendJournalEntry(config, ls.projectContent, evalEntry, isCommentIteration);
-
-  // Comment iterations set Health unconditionally after eval;
-  // main-loop iterations set Health only in the FAIL or success branches.
-  if (isCommentIteration) {
-    ls.projectContent = updateField(ls.projectContent, "Health", `${score}/10 (${evalVerdict})`);
-    writeFileSync(config.projectPath, ls.projectContent, "utf-8");
-  }
-
-  if (evalVerdict === "FAIL") {
-    ls.falseDoneCount++;
-    // Check actual milestone progress — don't blindly increment stall counter
-    trackMilestoneProgress(ls);
-    if (!isCommentIteration) {
-      ls.projectContent = updateField(ls.projectContent, "Health", `${score}/10 (${evalVerdict})`);
-      writeFileSync(config.projectPath, ls.projectContent, "utf-8");
-    }
-    if (ls.falseDoneCount >= 2) {
-      // Auto-advance: don't block the project, advance with caveat
-      const caveatNote = `**Auto-advanced**: Evaluator rejected ${ls.falseDoneCount} times (last score=${score}/10). Advancing with caveat — work may need revisiting.\n\n`;
-      ls.projectContent = appendJournalEntry(config, ls.projectContent, caveatNote, isCommentIteration);
-      ls.projectContent = updateField(ls.projectContent, "Health", `${score}/10 (CAVEAT)`);
-      writeFileSync(config.projectPath, ls.projectContent, "utf-8");
-      ls.falseDoneCount = 0;  // Reset for next milestone
+    if (score < 7) {
+      const evalEntry = `**Evaluator**: FAIL (score=${score}/10) — overriding WAITING to CONTINUE. ${evalText.slice(0, 300)}\n\n`;
+      ls.projectContent = appendJournalEntry(config, ls.projectContent, evalEntry, isCommentIteration);
       return { outcome: "continue" };
     }
-    return { outcome: "continue" };
+
+    const evalEntry = `**Evaluator**: PASS (score=${score}/10) — ${evalText.slice(0, 300)}\n\n`;
+    ls.projectContent = appendJournalEntry(config, ls.projectContent, evalEntry, isCommentIteration);
   }
 
-  // Hard gate: don't mark done if milestones remain unchecked
-  const finalMsForState = extractMilestones(ls.projectContent);
-  if (finalMsForState.total > 0 && finalMsForState.done < finalMsForState.total) {
-    ls.falseDoneCount++;
-    const overrideNote = `**Auto-check**: Evaluator PASSED (score=${score}) but only ${finalMsForState.done}/${finalMsForState.total} milestones checked. ` +
-      `Overriding to CONTINUE. (false-done #${ls.falseDoneCount})\n\n`;
-    ls.projectContent = appendJournalEntry(config, ls.projectContent, overrideNote, isCommentIteration);
-    // Check milestone progress before incrementing stall counter
-    trackMilestoneProgress(ls);
-    return { outcome: "continue" };
+  // Record the auto-conversion in journal if DONE was converted
+  if (decision.detail.startsWith("[Auto-converted from DONE]")) {
+    const conversionNote = `**Auto-converted**: DONE → WAITING (awaiting human/May review). Agent cannot mark projects done.\n\n`;
+    ls.projectContent = appendJournalEntry(config, ls.projectContent, conversionNote, isCommentIteration);
   }
 
-  // Actually done — update project state
-  ls.projectContent = updateField(ls.projectContent, "Status", "done");
-  if (!isCommentIteration) {
-    ls.projectContent = updateField(ls.projectContent, "Health", `${score}/10 (${evalVerdict})`);
-  }
+  // Set waiting status with stop reason and resume condition
+  ls.projectContent = updateField(ls.projectContent, "Status", "waiting");
+  ls.projectContent = updateField(ls.projectContent, "Stop Reason", decision.detail.slice(0, 200));
+  ls.projectContent = updateField(ls.projectContent, "Resume Condition", decision.resumeCondition || "Human/May review needed");
   ls.projectContent = updateSection(ls.projectContent, "Current State",
-    `Complete. ${finalMsForState.done}/${finalMsForState.total} milestones. ${decision.detail.slice(0, 100)}`);
-  if (!isCommentIteration) {
-    ls.projectContent = appendToSection(ls.projectContent, "Iteration Summary",
-      `- **Iter ${iteration}**: ${decision.detail.slice(0, 100)}\n`);
-  }
+    `Waiting: ${decision.detail.slice(0, 150)}`);
   writeFileSync(config.projectPath, ls.projectContent, "utf-8");
-  ctx.emit({ type: "metric", name: "project.false-done", value: ls.falseDoneCount });
-  emitProjectEvent(ctx, config, "project.completed", { iteration, health: score });
-  const doneMsg = isCommentIteration
-    ? `Complete after comment at iteration ${iteration}: ${decision.detail}`
-    : `Complete after ${iteration} iterations: ${decision.detail}`;
-  return { outcome: "done", result: ctx.done(doneMsg) };
+
+  emitProjectEvent(ctx, config, "project.waiting", { iteration, reason: decision.detail.slice(0, 100) });
+  const msg = isCommentIteration
+    ? `Waiting after comment at iteration ${iteration}: ${decision.detail}`
+    : `Waiting at iteration ${iteration}: ${decision.detail}`;
+  return { outcome: "stopped", result: ctx.done(msg) };
 }
 
 /**
