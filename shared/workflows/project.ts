@@ -720,6 +720,17 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       projectContent = updateField(projectContent, "Iteration", String(iteration));
       writeFileSync(config.projectPath, projectContent, "utf-8");
 
+      // [done] comment from human/May — mark project done directly
+      if (isDoneComment) {
+        projectContent = updateField(projectContent, "Status", "done");
+        projectContent = updateField(projectContent, "Stop Reason", "");
+        projectContent = updateField(projectContent, "Resume Condition", "");
+        projectContent = updateSection(projectContent, "Current State", `Completed. Marked done by human/May.`);
+        writeFileSync(config.projectPath, projectContent, "utf-8");
+        emitProjectEvent(ctx, config, "project.completed", { iteration, trigger: "done-comment" });
+        return ctx.done(`Project marked done by human/May at iteration ${iteration}.`);
+      }
+
       {
         const ls: LoopState = { projectContent, continueWithoutProgress };
         const exitResult = await processDecision(ctx, config, ls, journalContent, iteration, decision, true, features);
@@ -727,8 +738,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         if (exitResult) return exitResult;
       }
 
-      // CONTINUE — set active (may have been blocked/done), increment iteration
+      // CONTINUE — set active (may have been blocked/waiting), clear stop fields
       projectContent = updateField(projectContent, "Status", "active");
+      projectContent = updateField(projectContent, "Stop Reason", "");
+      projectContent = updateField(projectContent, "Resume Condition", "");
       writeFileSync(config.projectPath, projectContent, "utf-8");
       iteration++;
       continue;
