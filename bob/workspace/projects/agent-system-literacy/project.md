@@ -22,7 +22,7 @@ Agents should know how to use the infrastructure effectively — create projects
 | **Project workflow** | How iterations work, what worker/reviewer do, how milestones track | When working inside a project |
 | **Reading metrics** | What ✅/📉/🔴 mean, how to investigate red metrics | Every heartbeat |
 | **Escalation** | When to finish(blocked), what context to include, the chain | When stuck after real attempts |
-| **Using tools** | fork vs message vs call, workflow.run for structured work | When dispatching or cooperating |
+| **Agent cooperation** | fork (dispatch), call (sync), Notify (FYI), agents.list/peek | When dispatching or cooperating |
 | **Adding comments** | How to unblock another agent's project with a comment | When you can help another agent |
 
 ## Milestones
