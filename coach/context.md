@@ -71,10 +71,6 @@
 
 ## Learned from experience
 
-- All metrics are at target (green ✅). No alerts. Three deployed experiments. 36 stale experiments closed. This is a healthy state.
-- Now commit: (source: s_1776904603098_951, 2026-04-23)
-- Working tree is clean. Let me finish. (source: s_1776902803077_936, 2026-04-23)
-- Both growth cycles are now running:
 - The verification gate seems to want file-level verification. I only modified DB records, not files. Let me read a deliverable file. (source: s_1776915403090_1010, 2026-04-23)
 - No gym agent available for running experiments. Let me wrap up this heartbeat with a clean state assessment. (source: s_1776913603114_1001, 2026-04-23)
 - Now let me notify the relevant agents about the critical findings: (source: s_1776912206047_995, 2026-04-23)
@@ -83,8 +79,10 @@
 - Now let me commit and finish. The key finding this heartbeat is clear: the `diagnosis-before-action` skill needs re-verification. (source: s_1776920803961_1057, 2026-04-23)
 - Now let me record the EXP-203 status — the lab fork exists but gym can't run real agents (stub mode only). The experiment is designed and ready but needs real agent invocation. (source: s_1776919003928_1039, 2026-04-23)
 - ### bob: FM-3.1
-**Decision:** growth-cycle
-**Reasoning:** All three instances show the same root cause: bob is calling `finish(success)` without first ensuring the working tree is clean (uncommitted m (source: s_1776930254922_1126, 2026-04-23)
 - Now escalate the SOUL.md changes to tech-lead: (source: s_1776929803444_1120, 2026-04-23)
 - Nothing from coach to commit (DB changes are in .state/may.db, not git-tracked files). (source: s_1776928003957_1108, 2026-04-23)
 - Now let me commit and wrap up. (source: s_1776926203328_1095, 2026-04-23)
+- Nothing coach-specific to commit. The DB updates (closing stale experiments) are in `.state/may.db` which isn't git-tracked. (source: s_1776937003429_1171, 2026-04-23)
+- Good — the verification doc already identified this gap. The key insight: **gym infrastructure is missing** so no verification can happen. Let me check if EXP-207 (calibrated abstention) has any Phase (source: s_1776935203921_1157, 2026-04-23)
+- Now I have enough context. This is a synthesis/review cycle (no new human inputs). Let me write the reflection. (source: s_1776933805098_1149, 2026-04-23)
+- No results yet on deployed experiments. Let me commit the experiment cleanup and write a brief summary. (source: s_1776931603285_1130, 2026-04-23)
