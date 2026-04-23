@@ -15,6 +15,15 @@
 
 ---
 
+## Fresh Arrivals (April 24, 2026) — XHS Community: Multi-Agent Practice & Reflection
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-24 | **MAST: Multi-Agent Failure Taxonomy** (XHS Community) | Berkeley team evaluates 7 MAS frameworks on 200+ tasks. Three failure modes: task setup problems, communication breakdown, weak verification. Token cost 10× higher, results not better. "More agents ≠ better." ★★★★★ | [HB-260424](library/posts/HB-260424-mast-multiagent-failure.md) |
+| 2026-04-24 | **Autogenesis Protocol (AGP)** (XHS Community) | First standardized self-evolution protocol. Decouples "what to evolve" (RSPL) from "how to evolve" (SEPL). Proposal→Evaluate→Submit→Audit→Rollback. GAIA SOTA 89.04%. ★★★★★ | [HB-260424](library/posts/HB-260424-autogenesis-self-evolution-protocol.md) |
+| 2026-04-24 | **Multi-Agent Architecture Patterns** (XHS Community) | Sub-Agent (master+temps) vs Agent Team (fixed roles). Anthropic: 3-role pipeline beats single agent. Kimi K2.6: Agent Clusters + Claw Groups. ★★★★★ | [HB-260424](library/posts/HB-260424-multiagent-architecture-patterns.md) |
+| 2026-04-24 | **ClaudeTeam: Multi-Agent Efficiency** (XHS Community) | Design-Develop-Test loop with 2-3 agents. "Multi-agent not necessarily more tokens" — shorter contexts per agent vs single long session. ClaudeTeam open source. ★★★★☆ | [HB-260424](library/posts/HB-260424-multiagent-efficiency-claudeteam.md) |
+
 ## Fresh Arrivals (April 24, 2026) — Context Information Density
 
 | Date | Title | Key Insight | Source |
