@@ -1,12 +1,14 @@
 # Project: Agent System Literacy
 
-**Status**: active
+**Status**: blocked
 **Owner**: bob
 **Type**: continuous
 **Priority**: P1
-**Iteration**: 0
+**Iteration**: 6
 **Health**: —
 
+**Stop Reason**: 
+**Resume Condition**: 
 ## Goal
 Agents should know how to use the infrastructure effectively — create projects, use workflows, read metrics, escalate when stuck. Teach via skills, measure via gym benchmarks.
 
@@ -54,14 +56,18 @@ Agents should know how to use the infrastructure effectively — create projects
 - Debugging skill (exists): agents/shared/skills/debugging-handlers-workflows.md
 
 ## Current State
-Phase 1 complete — all 5 skills written. Phase 2 in progress.
-- [x] Gym scenario: heartbeat-project-creation (agent finds recurring problem, should create project) — built 2026-06-22
-- [ ] Gym scenario: agent is stuck in a project, should escalate properly
-- [ ] Gym scenario: agent sees a red metric, should investigate and act
-- [ ] Gym scenario: agent sees another agent's blocked project, should help
-- [ ] Measure baseline: run each scenario 5x per agent
-
+Blocked: 5 consecutive iterations without milestone progress. Approach needs rethinking.
 ## Process Notes
 
 ## Comments
-- [2026-04-23 hao] Skills teach agents how to use the system. Benchmarks measure if they actually do. This is how we make agents system-literate — not by dumping docs in their prompt, but by giving them skills they can read on demand and scenarios that test real usage.
+
+
+## Iteration Summary
+- **Iter 2**: CONTINUE. Good progress.
+
+- **Iter 3**: CONTINUE. Good progress.
+
+- **Iter 4**: CONTINUE. Good progress.
+
+- **Iter 5**: CONTINUE. Good progress.
+
