@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776938803851_1183
+- **Session:** s_1776940603966_1192
 - **Status:** done
-- **When:** 2026-04-23T10:08:24.057Z
-- **Duration:** 1m40s
+- **When:** 2026-04-23T10:38:57.521Z
+- **Duration:** 2m13s
 
 ## What Happened
-Good, killed the 90h idle may session. Now let me nudge optimizer to investigate the delegation quality gap.
+OK, the gym run was interrupted but it's a recent dispatch. Not critical. Let me focus on one actionable improvement: the **delegation quality** gap (0.71 vs 0.85 target). This is the most impactful metric below target that we can influence.
