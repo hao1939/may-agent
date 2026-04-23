@@ -1,7 +1,7 @@
 # EXP-067: Next-Gen Gym — `injected_context` for Production Failure Modes
 
 **Date**: 2026-04-07
-**Status**: IN PROGRESS
+**Status**: CLOSED (stale — no progress since April 2026, superseded by EXP-077 fidelity ladder approach)
 **Objective**: Extend gym infrastructure to inject fake session context (stale checkpoints, misleading task history, active_recall warnings) into scenarios, enabling testing of FM-2.6 (instruction drift) and FM-3.1 (ghost deliverables).
 
 ## 1. Problem Statement

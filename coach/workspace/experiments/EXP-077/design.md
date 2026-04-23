@@ -1,7 +1,7 @@
 # EXP-077: Bridging the Gym-Production Gap — Scenario Fidelity Ladder
 
 **Date**: 2026-04-08
-**Status**: IN-PROGRESS (L1+L2 baselines done, L3 pending)
+**Status**: CLOSED (stale — L3 never completed, April 2026. Key insight captured: gym-production gap is real but structural fixes needed at infrastructure level, not scenario level)
 **Sprint**: 31
 **Tags**: knowledge-deployment, KE-053, gym-infrastructure, methodology
 **Gym budget**: 12 runs (4 per fidelity level × 3 levels)
