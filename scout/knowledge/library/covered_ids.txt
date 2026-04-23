@@ -55,3 +55,4 @@
 2604.19775 | DD#862 | 2026-04-23 | Conformal Temporal Interpretability LLM Agents
 2604.19784 | DD#784 | 2026-04-23 | Peer-Preservation (already covered)
 2604.19792 | skip | 2026-04-23 | OpenCLAW-P2P v6.0 (decentralized peer review, tangential)
+2604.19749 | DD#864 | 2026-04-23 | Tool-Overuse Illusion (epistemic boundary, HIGH relevance)
