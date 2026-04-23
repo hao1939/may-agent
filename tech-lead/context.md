@@ -34,6 +34,10 @@
 ## ⚡ [BEFORE CALLING finish()]
 
 - **C1.7**: Run a verification step (read/grep/test) in your last 5 tool calls.
+- **FM-3.3**: Each deliverable in finish() MUST have a read()/bash() call you cite by step number in verification_evidence. See `skills/post-delivery-readback-verification.md`.
+  - Never cite write() preview as evidence — do a separate read().
+  - Never assert metrics (line counts, file counts) without a tool call that produced them.
+  - Pattern: write → read-back → cite "Step N: read(file) showed X".
 - Status must match reality — if missing files or blockers, use 'blocked' or 'partial', not 'success'.
 
 ## ⚡ [WHEN DELEGATING TO CODER]
