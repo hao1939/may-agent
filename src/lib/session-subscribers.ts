@@ -75,11 +75,11 @@ export function createRequestTracker(persistDir: string): (event: AgentEvent) =>
       try {
         for (const item of finishParams.new_items) {
           try {
-            bus.emit({ type: "emit", event: "agent.notification", data: {
-              owner: event.agent,
-              source: event.agent,
-              task: String(item).slice(0, 500),
-            }} as any);
+            try {
+              const db = getDb(persistDir);
+              db.run("INSERT INTO events (event_type, source, owner, data, timestamp, status) VALUES (?,?,?,?,?,?)",
+                ["agent.notification", event.agent, event.agent, JSON.stringify({ task: String(item).slice(0, 500) }), Date.now(), "pending"]);
+            } catch { /* best-effort */ }
           } catch (err) {
             /* best-effort */
             log("warn", `[request-tracker] failed to track new item for ${event.agent}: ${err}`);
@@ -652,12 +652,11 @@ export function createFindingsTracker(projectRoot: string, persistDir: string): 
           );
           if (isDuplicate) continue;
 
-          bus.emit({ type: "emit", event: "agent.finding", data: {
-            owner: item.targetAgent,
-            source: ff.producer,
-            task: taskText,
-            finding: ff.path,
-          }} as any);
+          try {
+            const db = getDb(persistDir);
+            db.run("INSERT INTO events (event_type, source, owner, data, timestamp, status) VALUES (?,?,?,?,?,?)",
+              ["agent.finding", ff.producer, item.targetAgent, JSON.stringify({ task: taskText, finding: ff.path }), Date.now(), "pending"]);
+          } catch { /* best-effort */ }
 
           // Add to existing list for intra-session dedup
           existingAutoTasks.push({ task: taskText });

@@ -8,7 +8,7 @@
  */
 
 import type { AgentEvent } from "../app/event-bus.js";
-import { getDb, upsertSession, updateSessionDb, trackRequest } from "./requests.js";
+import { getDb, upsertSession, updateSessionDb } from "./requests.js";
 import type { SqliteDb } from "./db.js";
 
 export class DbWriter {
@@ -51,12 +51,11 @@ export class DbWriter {
           break;
 
         case "message_created":
-          trackRequest(this.persistDir, {
-            fromEntity: event.from,
-            toAgent: event.to,
-            task: event.task,
-            method: "notify",
-          });
+          // Persisted as event — no duplicate request needed
+          this.db.run(
+            "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?,?,?,?,?)",
+            ["agent.notification", event.from, event.to, JSON.stringify({ task: event.task, from: event.from }), Date.now()]
+          );
           break;
 
         case "cron_fired":

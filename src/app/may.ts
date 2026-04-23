@@ -25,7 +25,7 @@ import {
 } from "./agent-loader.js";
 import { resolveProjectRoot } from "./bundle-mode.js";
 import { trackRequest, getDb } from "../lib/requests.js";
-import { setLogHandler } from "../lib/log.js";
+import { log } from "../lib/log.js";
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
 if (process.argv.includes("--version") || process.argv.includes("-v")) {
@@ -234,13 +234,13 @@ bus.subscribe(createAutoResume(
   (sessionId, agent, _attempt) => {
     const ok = manager.resumeInterrupted(sessionId);
     if (ok) {
-      bus.emit({ type: "log", level: "info", message: `[resume] Resumed ${agent} session ${sessionId}` });
+      log("info", `[resume] Resumed ${agent} session ${sessionId}`);
     } else {
-      bus.emit({ type: "log", level: "warn", message: `[resume] Failed to resume ${sessionId}` });
+      log("warn", `[resume] Failed to resume ${sessionId}`);
     }
   },
   (agent, _sessionId, reason) => {
-    bus.emit({ type: "log", level: "warn", message: `[resume] ${agent} exhausted resume attempts — escalating` });
+    log("warn", `[resume] ${agent} exhausted resume attempts — escalating`);
     // Persist + notify (same as RuntimeCtx.escalate)
     try {
       const escalationPath = resolve(PERSIST_DIR, "escalations.jsonl");
@@ -252,10 +252,9 @@ bus.subscribe(createAutoResume(
   () => manager,
 ));
 
-setLogHandler((level, message) => {
-  if (level === "debug") return; // debug logs don't reach the event system
-  bus.emit({ type: "log", level: level as "info" | "warn" | "error", message });
-});
+let taskSessionId: string | undefined;
+let chatSession: ChatSession | undefined;
+
 if (CONSOLE_ENABLED) attachConsoleUI(bus, () => taskSessionId ?? chatSession?.getSessionId() ?? null, CHAT_MODE);
 
 // Web UI — runs in-process when --web is passed
@@ -294,17 +293,9 @@ const apiGate = new ApiGate(
   (event) => {
     // Emit gate events on the bus for observability
     if (event.action === "queued") {
-      bus.emit({
-        type: "log",
-        level: "info",
-        message: `[api-gate] ${event.agent} (${event.sessionId.slice(0, 12)}) queued for ${event.endpoint.slice(0, 30)}... (${event.active}/${event.active} active, ${event.queued} waiting)`,
-      });
+      log("info", `[api-gate] ${event.agent} (${event.sessionId.slice(0, 12)}) queued for ${event.endpoint.slice(0, 30)}... (${event.active}/${event.active} active, ${event.queued} waiting)`);
     } else if (event.action === "acquired" && event.waitMs) {
-      bus.emit({
-        type: "log",
-        level: "info",
-        message: `[api-gate] ${event.agent} acquired slot after ${event.waitMs}ms wait (${event.active} active, ${event.queued} waiting)`,
-      });
+      log("info", `[api-gate] ${event.agent} acquired slot after ${event.waitMs}ms wait (${event.active} active, ${event.queued} waiting)`);
     }
   },
 );
@@ -407,9 +398,6 @@ let shuttingDown = false;
 let activeRL: ReturnType<typeof createInterface> | null = null;
 /** Track whether Ctrl+C cancel has been issued (second Ctrl+C force-quits). */
 let cancelledOnce = false;
-let taskSessionId: string | undefined;
-/** Chat session instance (only set in --chat mode). */
-let chatSession: ChatSession | undefined;
 
 function gracefulShutdown() {
   if (shuttingDown) {
@@ -565,7 +553,7 @@ bus.subscribe((event) => {
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        bus.emit({ type: "log", level: "error", message: `[steer] ${msg}` });
+        log("error", `[steer] ${msg}`);
       }
       break;
     }
@@ -596,7 +584,7 @@ bus.subscribe((event) => {
             kind: (event.opts?.kind as "chat" | "job" | "call" | undefined) ?? "job",
             requestId: event.opts?.requestId ?? requestId,
           });
-          bus.emit({ type: "log", level: "info", message: `[fork] Started ${event.agent} session: ${sessionId}` });
+          log("info", `[fork] Started ${event.agent} session: ${sessionId}`);
         }
       }
       break;
@@ -622,31 +610,24 @@ bus.subscribe((event) => {
             );
           } catch { /* best-effort */ }
         }
-        bus.emit({ type: "log", level: "info", message: `[event] ${eventType} → triggered ${triggered} handler(s)` });
+        log("info", `[event] ${eventType} → triggered ${triggered} handler(s)`);
       }
       break;
     }
     case "message":
       if ("from" in event && "to" in event && "task" in event) {
         try {
-          const requestId = trackRequest(PERSIST_DIR, {
-            fromEntity: (event as any).from ?? "human",
-            toAgent: (event as any).to,
-            task: (event as any).task,
-            method: "notify",
-            source: (event as any).source ?? "socket",
-          });
           bus.emit({
             type: "message_created",
             from: (event as any).from ?? "human",
             to: (event as any).to,
             task: (event as any).task,
-            requestId,
+            requestId: "",
           });
-          bus.emit({ type: "log", level: "info", message: `[message] ${(event as any).from ?? "human"} → ${(event as any).to}: ${((event as any).task as string).slice(0, 80)}` });
+          log("info", `[message] ${(event as any).from ?? "human"} → ${(event as any).to}: ${((event as any).task as string).slice(0, 80)}`);
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
-          bus.emit({ type: "log", level: "error", message: `[message] Failed: ${msg}` });
+          log("error", `[message] Failed: ${msg}`);
         }
       }
       break;
@@ -654,9 +635,9 @@ bus.subscribe((event) => {
       if ("sessionId" in event && event.sessionId) {
         const ok = manager.resumeInterrupted(event.sessionId);
         if (ok) {
-          bus.emit({ type: "log", level: "info", message: `[resume] Resumed session ${event.sessionId}` });
+          log("info", `[resume] Resumed session ${event.sessionId}`);
         } else {
-          bus.emit({ type: "log", level: "warn", message: `[resume] Failed to resume session ${event.sessionId}` });
+          log("warn", `[resume] Failed to resume session ${event.sessionId}`);
         }
       }
       break;
