@@ -54,7 +54,12 @@ Agents should know how to use the infrastructure effectively — create projects
 - Debugging skill (exists): agents/shared/skills/debugging-handlers-workflows.md
 
 ## Current State
-Phase 1 complete — all 5 skills written. Next: Phase 2 gym scenarios.
+Phase 1 complete — all 5 skills written. Phase 2 in progress.
+- [x] Gym scenario: heartbeat-project-creation (agent finds recurring problem, should create project) — built 2026-06-22
+- [ ] Gym scenario: agent is stuck in a project, should escalate properly
+- [ ] Gym scenario: agent sees a red metric, should investigate and act
+- [ ] Gym scenario: agent sees another agent's blocked project, should help
+- [ ] Measure baseline: run each scenario 5x per agent
 
 ## Process Notes
 
