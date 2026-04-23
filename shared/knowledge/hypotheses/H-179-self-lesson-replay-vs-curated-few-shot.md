@@ -1,7 +1,7 @@
 # H-179: Self-Generated Lesson Replay vs Curated Few-Shot — Task-Type Moderates Which Wins
 
 **Created**: 2025-04-21 by orchestrator
-**Status**: proposed
+**Status**: ARCHIVED — stale >60 days, low prior P=0.45, no test planned (2026-07-29)
 **Confidence**: ★★★☆ (P(H) ≈ 0.65)
 **Source**: KE-330 (task-typed lesson replay), DD-831 (Reflexion), KE-334 (learn-in-production)
 **Connects**: H-091 (curated few-shot 100%), H-165 (self-production harms hard tasks), H-043 (push > pull), EXP-166

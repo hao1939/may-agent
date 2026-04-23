@@ -56,9 +56,9 @@
 |------|-------|-----------|
 | Tier 1 (≥0.70) | **28** | +3 from Apr-19 (H-181, H-176, + reclassifications) |
 | Tier 2 (0.50–0.69) | **13** | H-107, H-096, H-163, H-102, H-097, H-168, H-108, H-169, H-174, H-178, H-180, H-183, H-186 |
-| Tier 3 (<0.50) | **6** | H-170, H-171, H-172, H-173, H-177, H-179 |
-| Archived | **24** | +5 from Apr-19 (H-014, H-047, H-056, H-185, H-187) |
-| **Total** | **71** | Up from 55 (16 new hypotheses since Apr-19) |
+| Tier 3 (<0.50) | **3** | H-172, H-173, H-177 |
+| Archived | **28** | +9 from Apr-19 (H-014, H-047, H-056, H-170, H-171, H-185, H-187, H-193→H-192 dup, H-179 stale) |
+| **Total** | **72** | Up from 55 (17 new hypotheses since Apr-19) |
 
 **Falsification rate this period**: 2 hypotheses falsified (H-185 partial, H-187 full)
 **Mean P(H) active portfolio**: 0.68
