@@ -21,6 +21,12 @@
 |------|-------|-------------|--------|
 | 2026-04-24 | **GenericAgent** (arXiv:2604.17091) | Fudan团队: 长程Agent性能不由上下文长度决定，而由信息密度决定. 四级架构: 原子工具集+分层按需记忆+自进化机制+上下文压缩. 复旦/上海期智. ★★★★★ | [HB-260424](library/posts/HB-260424-genericagent-info-density.md) |
 
+## Fresh Arrivals (April 24, 2026) — Tool Use Efficiency
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-24 | **Tool-Overuse Illusion** (arXiv:2604.19749) | LLMs系统性地过度使用工具，即使拥有内部知识. 两大原因: 认知边界幻觉(知识感知错觉)+结果-only奖励偏差. DPO优化减少82.8%工具调用同时提升准确率. ★★★★★ | [HB-260424](library/posts/HB-260424-tool-overuse-illusion.md) |
+
 ## Fresh Arrivals (April 23, 2026) — Agent RL & Strategic Tool Use
 
 | Date | Title | Key Insight | Source |
