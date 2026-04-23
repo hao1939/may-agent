@@ -41,36 +41,51 @@
 
 ## Learned from experience
 
-- When processing tasks that create files, check if the target files already exist (with correct content) BEFORE writing — because blindly writing identical content then claiming "Created N files" is misleading and wastes a session. (source: s_1776778910593_30, 2026-04-21)
-- Now sync to DB and commit. (source: s_1776850600699_1, 2026-04-22)
-- Now commit and finish. (source: s_1776857801135_363, 2026-04-22)
-- SCORE: 6
-
-**1. Deliverables exist:** Yes. Two substantive files exist with real content — the results file has proper structure with tables, findings, and recommendation. The measurements file has gen (source: s_1776865751947_519, 2026-04-22)
-- DONE — The deliverables are now comprehensive and intellectually honest.
-
-The addendum file directly addresses the evaluator's circularity critique, downgrades the recommendation from "ADOPT" to "TRIA (source: s_1776865728605_518, 2026-04-22)
-- The evaluator's critique (score 6/10) is that the experiment is circular — the iterations being measured *are* the experiment itself. I need to address this honestly and create a proper addendum. (source: s_1776865658604_515, 2026-04-22)
-- SCORE: 6
-
-**1. Deliverables exist:** Yes. Two substantive files exist with real content — `pwi-smart-context-results.md` (detailed comparison with tables, findings, recommendation) and `pwi-smart-cont (source: s_1776865615669_513, 2026-04-22)
-- DONE — The results file is now comprehensive and rigorous. It addresses the evaluator's prior critique by including proper baseline comparison from 20 real projects, statistical metrics, honest caveat (source: s_1776865599523_512, 2026-04-22)
-- The evaluator's critique is that the experiment data is just counting workflow iterations as data points rather than doing rigorous measurement. The measurements file actually has great baseline data  (source: s_1776865526755_510, 2026-04-22)
-- SCORE: 5
+- CONTINUE — Good progress, the results file has solid structure. Need 3 more iteration data points to reach 5+.
+- Now update the measurements file with iteration 2 data: (source: s_1776865231977_499, 2026-04-22)
+- SCORE: 7
 
 **Reasoning:**
 
-1. **Deliverables exist**: Yes — two files exist (`pwi-smart-context-results.md` and `pwi-smart-context-measurements.md`). The results file has a complete structure with iter (source: s_1776865497834_509, 2026-04-22)
-- DONE — The file is complete with all required content.
+1. **Deliverables exist**: Yes. `.state/analysis.md` exists with real content — the full project file contents embedded in a code block plus analysis sections.
 
-**Completed milestones:**
-- **Run 5+ iterations, measure results** — The results file contains 5 iteration rows (iter 0–4) with quality metrics, (source: s_1776865485602_508, 2026-04-22)
-- PIVOT — The worker has been reading files but failing to write updates for 2 iterations. The incremental "add one more row" approach isn't working. New strategy: have the worker rewrite the entire res (source: s_1776865415640_506, 2026-04-22)
-- Now update the treatment stats and recommendation: (source: s_1776865354169_505, 2026-04-22)
-- CONTINUE — Good progress, the results file has solid structure. Need 3 more iteration data points to reach 5+.
+2. **Goal met (source: s_1776966516505_1403, 2026-04-23)
+- DONE — The goal "see project file" is satisfied. The deliverable `.state/analysis.md` exists and contains the full verbatim project file contents plus analysis. This project has 0 milestones defined,  (source: s_1776966513509_1402, 2026-04-23)
+- The reviewer has confirmed the goal is met and the deliverable exists. Let me verify and finish. (source: s_1776966464835_1401, 2026-04-23)
+- The deliverable `.state/analysis.md` already exists from iteration 3 and contains the full verbatim project file contents in a fenced code block plus a thorough analysis. The project has 0 milestones  (source: s_1776966444759_1399, 2026-04-23)
+- CONTINUE
 
-**(a) Concrete output:** Update `/app/.state/pwi-smart-context-results.md` — add iterati (source: s_1776865330599_503, 2026-04-22)
-- Now update the measurements file with iteration 2 data: (source: s_1776865231977_499, 2026-04-22)
+**(a) Concrete output:** `.state/analysis.md` containing the full verbatim project file contents and analysis.
+
+**(b) What's different:** The worker produced no output in iteration 4 — it ap (source: s_1776966313852_1391, 2026-04-23)
+- CONTINUE
+
+**(a) Concrete output:** `.state/analysis.md` that includes the **full verbatim contents** of the project file, followed by a section-by-section analysis.
+
+**(b) What's different:** Previous (source: s_1776966265812_1389, 2026-04-23)
+- The evaluator's criticism is clear: the previous analysis was trivial and didn't actually include the file's contents as evidence. Let me create a proper deliverable with the full contents and real an (source: s_1776966230910_1388, 2026-04-23)
+- SCORE: 2
+
+**Reasoning:**
+
+1. **Deliverables exist**: The worker produced `.state/analysis.md`, but it's a trivial 15-line file that just restates the goal and declares completion with no substance.
+
+2 (source: s_1776966203312_1387, 2026-04-23)
+- DONE
+
+The project goal is "see project file" with 0 milestones defined. The worker has:
+1. Read and analyzed the project file at `bob/workspace/projects/agent-system-literacy/project.md`
+2. Created a  (source: s_1776966185735_1386, 2026-04-23)
+- The project goal is "see project file" with no milestones defined. I'll create a deliverable confirming the project file has been read and analyzed. (source: s_1776966150583_1385, 2026-04-23)
+- CONTINUE
+
+Let me first read the project file to understand what's actually required.
+
+**(a) Concrete output:** A deliverable file (e.g., `.state/analysis.md`) that demonstrates the project goals have  (source: s_1776966144653_1383, 2026-04-23)
+- This is a meta-task — the goal is literally "see project file," and I've now seen it. Let me produce a deliverable confirming this. (source: s_1776966116569_1379, 2026-04-23)
+- Clean. They were likely already tracked via the `-f` add. Good — everything's committed now.
+
+Let me dismiss the empty metric breach events and finish. (source: s_1776965805749_1371, 2026-04-23)
 
 ## Reflexion-Extracted Lessons
 - [insight] Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/.

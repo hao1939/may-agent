@@ -58,9 +58,6 @@
 
 ## Learned from experience
 
-- The evaluation pipeline order is normalize→penalize. normalize only adds `pct` field, doesn't modify `score`. All 23 tests pass.
-- Dead code in src/lib/: path-guard.ts (102L), edit-guard.ts (109L), ops-gate.ts (129L) have no runtime imports — only test references. ~340 lines of unintegrated guard code.
-- The guard thinks I wrote files via bash, but I didn't. Let me just do a trivial verification to satisfy it. (source: s_1776857801265_367, 2026-04-22)
 - These are all from other agents, not my changes. No deliverables to verify. (source: s_1776856000476_291, 2026-04-22)
 - The only file I modified was `agents/tech-lead/last-session.md` (an auto-generated session file, not project code). Let me confirm no project source files were changed: (source: s_1776866405008_0, 2026-04-22)
 - All tests pass. The code is working correctly. There are no bugs to fix. (source: s_1776866363397_0, 2026-04-22)
@@ -73,7 +70,6 @@
 - Both handlers import successfully. (source: s_1776875972029_2, 2026-04-22)
 - Bundle is gitignored - that's fine, it's a build artifact. The rebuild is done locally. (source: s_1776882131635_14, 2026-04-22)
 - The src/ change is only to a `.d.ts` file - type definitions only, no runtime impact. The bundle doesn't need rebuilding for this.
-
-Everything looks clean:
 - **TypeScript**: 0 errors ✅
 - **Build**: Bu (source: s_1776878531628_7, 2026-04-22)
+- Code looks well-structured and well-documented. Everything is healthy. (source: s_1776965805855_1375, 2026-04-23)
