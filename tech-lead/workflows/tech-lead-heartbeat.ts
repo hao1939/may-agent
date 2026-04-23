@@ -8,6 +8,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const agent = "tech-lead";
 
   const metrics = loadMetrics(ctx, agent);
+  const metricsBlock = formatMetricsBlock(ctx, agent);
   const projects = loadProjects(ctx, agent);
   const alerts = loadAlerts(ctx, agent);
   const guidance = loadHeartbeatMd(ctx, agent);
@@ -34,7 +35,7 @@ ${guidance}
 
 ---
 
-${redMetricActions ? "Your red metrics have been addressed above. Now proceed with your normal heartbeat work." : "Review your metrics, check your projects, do your job. Act on what matters."} Commit and finish.`;
+Review your metrics, check your projects, do your job. Act on what matters. Commit and finish.`;
 
   ctx.emit({ type: "step_start", step: "heartbeat" });
   const result = await ctx.runAgent(agent, prompt);
