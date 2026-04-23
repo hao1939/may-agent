@@ -1,17 +1,27 @@
-# QA Heartbeat — Unreviewed Findings (2026-04-23)
+# Unreviewed findings (QA heartbeat)
 
-## Environment
-- `/app` is **not a git repository** (git commands fail). The git repo appears to be `/app/agents`.
-- `node_modules` are **not present** in `/app` (so `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest` cannot be executed).
+Date: 2026-04-23
 
-## Recent changes (agents repo)
-- HEAD commit `6b2ed6ff8` modifies: `coach/last-session.md`.
+## Scope checked
+- Repo root `/app` is not a git repo.
+- `agents/` is a git repo; last ~6h commits include doc/metadata updates.
 
-## Findings
-### IMPORTANT — last-session.md appears truncated/unfinished
-- File `agents/coach/last-session.md` currently ends abruptly after: "Now let me notify the relevant agents about the critical findings:" with no details.
-- This suggests the auto-generated session summary was written incompletely or the generating process stopped mid-write.
+## Recent changes (last commit)
+- Commit `cf3f1bad3`: updated:
+  - `agents/shared/federation/heartbeats/local.json`
+  - `agents/bob/last-session.md`
+  - `agents/evaluator/last-session.md`
 
-## Required follow-ups
-- Determine if there is an agent pipeline that depends on `last-session.md` content (if yes, incomplete content may break downstream parsing).
-- Restore test toolchain in this environment or document that QA verification steps cannot run in this scenario.
+I reviewed `agents/shared/federation/heartbeats/local.json` contents; change appears to be a timestamp refresh only.
+
+## Verification blockers
+Mandatory QA checks could not be executed because this environment does not have Node toolchain artifacts:
+- `./node_modules/.bin/tsc --noEmit` → `No such file or directory`
+- `./node_modules/.bin/vitest --run` → `No such file or directory`
+- No `package.json` at `/app` or `/app/agents`, and no `node_modules/.bin`.
+
+This is an environment/setup issue; I cannot provide a PASS/FAIL signal from typecheck/tests.
+
+## Recommendation
+- Ensure CI/runner includes installing dependencies and provides `package.json` + `node_modules` for the target repo.
+- Alternatively document how QA should run typecheck/tests for the `agents/` repo (if it is intentionally not a Node project, adjust required QA steps accordingly).
