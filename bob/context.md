@@ -41,9 +41,6 @@
 
 ## Learned from experience
 
-- Now let me also remove the narrower duplicate rule that's already in the file, and commit. (source: s_1776915873114_1019, 2026-04-23)
-- Now let me check metrics and the pending metric breach event:
-- Now commit and finish. (source: s_1776913603073_999, 2026-04-23)
 - Already committed. Good. (source: s_1776911803694_986, 2026-04-23)
 - Good — the INDEX now has all KE-336 through KE-356. The entries are referenced properly. Task complete. (source: s_1776910158898_982, 2026-04-23)
 - Now commit and finish. (source: s_1776922604086_1070, 2026-04-23)
@@ -56,6 +53,9 @@
 - Now I'll create the updated scorecard integrating the 7 new scout hypotheses and connecting them to existing experiments. (source: s_1776929803400_1118, 2026-04-23)
 - The files are scaffolds with the core finding filled in but template sections remaining. That's fine — the key content (core finding) is there and indexed. Let me fill in the critical metadata: (source: s_1776928003913_1106, 2026-04-23)
 - Now let me commit and finish. (source: s_1776926203285_1093, 2026-04-23)
+- Now let me update the H-EXP-010 status to reflect that I've re-escalated. (source: s_1776937003389_1169, 2026-04-23)
+- Now dismiss the metric breach event (23h old, metrics are green), and check agent-cli-research: (source: s_1776935203882_1155, 2026-04-23)
+- Now let me dismiss the stale metric breach and commit: (source: s_1776933404464_1142, 2026-04-23)
 
 ## Reflexion-Extracted Lessons
 - [insight] Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/.
