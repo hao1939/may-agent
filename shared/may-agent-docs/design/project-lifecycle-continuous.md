@@ -1,6 +1,6 @@
 # Design: Project Lifecycle — Continuous, Escalated, Immediate
 
-**Status:** Proposal
+**Status:** On Hold — needs more thought on who actually unblocks projects
 **Date:** 2026-04-23
 **References:** [project-system.md](project-system.md), [escalation-system.md](escalation-system.md)
 
