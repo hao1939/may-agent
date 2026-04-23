@@ -345,12 +345,16 @@ function buildReviewPrompt(
   projectContent: string,
   journalContent: string,
   continueWithoutProgress: number,
+  features?: Set<string>,
 ): string {
   const ms = extractMilestones(projectContent);
   const recentEntries = getRecentJournalEntries(journalContent, iteration, 2);
   const previousGuidance = getAllReviewerGuidance(journalContent, iteration);
+  const activeReviewer = features?.has("active-reviewer") ?? false;
 
-  let prompt = `[REVIEW ONLY — no file edits expected. Do NOT use edit(), write(), or bash commands that modify files. Only read and analyze.]\n\n`;
+  let prompt = activeReviewer
+    ? `You have FULL tool access — read files, run bash, fork agents. Investigate before deciding.\n\n`
+    : `[REVIEW ONLY — no file edits expected. Do NOT use edit(), write(), or bash commands that modify files. Only read and analyze.]\n\n`;
   prompt += `You are the PROBLEM-SOLVER for iteration ${iteration} of a persistent task.\n`;
   prompt += `Your job is to unblock the worker and push the project to completion.\n`;
   prompt += `You are NOT a passive evaluator — you are an active strategist.\n`;
@@ -759,6 +763,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
     // Read journal for context
     const journalContent = config.isLegacy ? projectContent : (readFile(config.journalPath) ?? "");
+    const features = parseFeatures(projectContent);
 
     // ── Comment iteration ─────────────────────────────────────────
     // Comments in project.md = unprocessed queue. Process then clear.
@@ -769,7 +774,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       const commentReviewPrompt = buildReviewPrompt(
         config.goal, iteration,
         `[COMMENT ITERATION] Comments to address:\n${pendingComments}`,
-        projectContent, journalContent, continueWithoutProgress
+        projectContent, journalContent, continueWithoutProgress, features
       );
 
       const reviewResult = await ctx.runAgent(config.owner, commentReviewPrompt);
@@ -860,7 +865,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ctx.emit({ type: "step_start", step: `review-iteration-${iteration}` });
 
       const reviewPrompt = buildReviewPrompt(
-        config.goal, iteration, workerSummary, projectContent, journalContent, continueWithoutProgress
+        config.goal, iteration, workerSummary, projectContent, journalContent, continueWithoutProgress, features
       );
 
       const reviewResult = await ctx.runAgent(config.owner, reviewPrompt);
