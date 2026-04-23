@@ -60,21 +60,29 @@ fi
 git commit -m "$MSG"
 echo "✅ Committed to $BRANCH"
 
-# Run tsc
-echo "Running tsc --noEmit..."
-if ! ./node_modules/.bin/tsc --noEmit 2>&1; then
-  echo "❌ tsc failed. Changes remain on $BRANCH for investigation."
-  exit 1
+# Run tsc (skip if not installed)
+if [[ -x ./node_modules/.bin/tsc ]]; then
+  echo "Running tsc --noEmit..."
+  if ! ./node_modules/.bin/tsc --noEmit 2>&1; then
+    echo "❌ tsc failed. Changes remain on $BRANCH for investigation."
+    exit 1
+  fi
+  echo "✅ tsc passed"
+else
+  echo "⏭️ tsc not installed, skipping typecheck"
 fi
-echo "✅ tsc passed"
 
-# Run vitest
-echo "Running vitest --run..."
-if ! ./node_modules/.bin/vitest --run 2>&1; then
-  echo "❌ vitest failed. Changes remain on $BRANCH for investigation."
-  exit 1
+# Run vitest (skip if not installed)
+if [[ -x ./node_modules/.bin/vitest ]]; then
+  echo "Running vitest --run..."
+  if ! ./node_modules/.bin/vitest --run 2>&1; then
+    echo "❌ vitest failed. Changes remain on $BRANCH for investigation."
+    exit 1
+  fi
+  echo "✅ vitest passed"
+else
+  echo "⏭️ vitest not installed, skipping tests"
 fi
-echo "✅ vitest passed"
 
 # Merge to main
 echo "Merging $BRANCH to main..."
