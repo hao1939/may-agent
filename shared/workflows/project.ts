@@ -160,7 +160,6 @@ function createProjectDir(config: PersistentTaskConfig): void {
 ${config.goal}
 
 ## Milestones
-<!-- Quality rules: each milestone should (1) name a deliverable file, (2) have a boolean done-check, (3) fit in ≤3 iterations. Vague milestones → 3x more iterations. -->
 
 ## Current State
 Not started.
@@ -345,16 +344,12 @@ function buildReviewPrompt(
   projectContent: string,
   journalContent: string,
   continueWithoutProgress: number,
-  features?: Set<string>,
 ): string {
   const ms = extractMilestones(projectContent);
   const recentEntries = getRecentJournalEntries(journalContent, iteration, 2);
   const previousGuidance = getAllReviewerGuidance(journalContent, iteration);
-  const activeReviewer = features?.has("active-reviewer") ?? false;
 
-  let prompt = activeReviewer
-    ? `You have FULL tool access — read files, run bash, fork agents. Investigate before deciding.\n\n`
-    : `[REVIEW ONLY — no file edits expected. Do NOT use edit(), write(), or bash commands that modify files. Only read and analyze.]\n\n`;
+  let prompt = `[REVIEW ONLY — no file edits expected. Do NOT use edit(), write(), or bash commands that modify files. Only read and analyze.]\n\n`;
   prompt += `You are the PROBLEM-SOLVER for iteration ${iteration} of a persistent task.\n`;
   prompt += `Your job is to unblock the worker and push the project to completion.\n`;
   prompt += `You are NOT a passive evaluator — you are an active strategist.\n`;
@@ -390,23 +385,19 @@ function buildReviewPrompt(
 
   prompt += `## Your Decision\n`;
   if (continueWithoutProgress >= 2) {
-    prompt += `\n⚠️ STALL DETECTED: ${continueWithoutProgress} consecutive iterations with no milestone progress.\n`;
-    prompt += `The current approach is NOT working. You MUST:\n`;
-    prompt += `1. List 3 alternative approaches ranked by feasibility\n`;
-    prompt += `2. Pick approach #1 and write the EXACT first command for the worker\n`;
-    prompt += `3. Say PIVOT (not CONTINUE) — continuing the same strategy is forbidden\n`;
-    prompt += `If all approaches require external resources unavailable to the worker, say BLOCKED.\n\n`;
+    prompt += `\n⚠️ WARNING: ${continueWithoutProgress} consecutive iterations with no milestone progress. `;
+    prompt += `The current approach is not working. You MUST either:\n`;
+    prompt += `- PIVOT to a fundamentally different strategy\n`;
+    prompt += `- Say BLOCKED only if there's a specific external dependency that no amount of iteration can resolve\n`;
+    prompt += `Repeating the same guidance is not acceptable.\n\n`;
   }
   prompt += `Choose ONE:\n\n`;
   prompt += `1. **DONE** — All milestones are genuinely complete.\n`;
-  prompt += `   Before saying DONE, run this PRE-CHECK (all must be YES):\n`;
-  prompt += `   (a) Does a NEW file or file-change exist in workspace? (not just .state/journal)\n`;
-  prompt += `   (b) Can the deliverable be verified with a single command? (file exists, test passes)\n`;
-  prompt += `   (c) Does the deliverable match the milestone's stated acceptance criteria?\n`;
-  prompt += `   (d) Would an independent reviewer see this as "complete" without context?\n`;
-  prompt += `   (e) You mention each completed milestone by its exact name (for auto-check-off)\n`;
-  prompt += `   If ANY answer is NO → say CONTINUE with the specific gap identified.\n`;
-  prompt += `   Anti-pattern: "Milestone complete because we planned it" — planning ≠ doing.\n\n`;
+  prompt += `   Before saying DONE, verify:\n`;
+  prompt += `   (a) You mention each completed milestone by its exact name (for auto-check-off)\n`;
+  prompt += `   (b) The worker's output confirms deliverable files exist\n`;
+  prompt += `   (c) Quality is sufficient to score ≥7/10 (real artifacts, real evidence, no shortcuts)\n`;
+  prompt += `   If any check fails, say CONTINUE with fix instructions instead.\n\n`;
   prompt += `2. **PIVOT** — The current approach has failed. Describe a fundamentally different strategy.\n`;
   prompt += `   Use when: same guidance failed 2+ times, worker is stuck in a loop, the approach has a design flaw.\n`;
   prompt += `   "This is hard" is NOT blocked — that's PIVOT.\n\n`;
@@ -417,12 +408,7 @@ function buildReviewPrompt(
   prompt += `**(a) Concrete output:** What specific file or artifact should the next iteration produce?\n`;
   prompt += `**(b) What's different:** How is this different from your previous guidance? (Say "First attempt" if iteration 1)\n`;
   prompt += `**(c) First step:** One specific action to start with (e.g., "Read file X", "Run command Y")\n\n`;
-  prompt += `When milestones are completed, mention them by exact name so they can be checked off.\n\n`;
-  prompt += `**Before deciding**, briefly state:\n`;
-  prompt += `- BELIEVE: What is true about the current project state (2-3 bullets)\n`;
-  prompt += `- UNCERTAIN: What you're unsure about (1-2 bullets)\n`;
-  prompt += `- FALSIFY: What evidence would change your current assessment\n`;
-  prompt += `Then give your verdict.\n\n`;
+  prompt += `When milestones are completed, mention them by exact name so they can be checked off.\n`;
   prompt += `Your response MUST start with: DONE, PIVOT, BLOCKED, or CONTINUE`;
 
   return prompt;
@@ -474,32 +460,13 @@ function buildEvalPrompt(
   return prompt;
 }
 
-function extractDecision(text: string): { status: "done" | "waiting" | "blocked" | "continue"; detail: string; resumeCondition: string } {
+function extractDecision(text: string): { status: "done" | "blocked" | "continue"; detail: string } {
   const trimmed = (text ?? "").trim();
-
-  // Parse "Resume when:" from the text for BLOCKED/WAITING
-  const resumeMatch = trimmed.match(/Resume when:\s*(.+)/i);
-  const resumeCondition = resumeMatch ? resumeMatch[1].trim() : "";
-
-  if (/^DONE\b/i.test(trimmed)) {
-    // DONE → auto-convert to WAITING (agents cannot mark projects done)
-    return {
-      status: "waiting",
-      detail: `[Auto-converted from DONE] ${trimmed.replace(/^DONE[:\s]*/i, "").trim()}`,
-      resumeCondition: "Human/May review confirms done, or provides additional work",
-    };
-  }
-  if (/^WAITING\b/i.test(trimmed)) {
-    return { status: "waiting", detail: trimmed.replace(/^WAITING[:\s]*/i, "").trim(), resumeCondition };
-  }
-  if (/^BLOCKED\b/i.test(trimmed)) {
-    return { status: "blocked", detail: trimmed.replace(/^BLOCKED[:\s]*/i, "").trim(), resumeCondition };
-  }
-  if (/^PIVOT\b/i.test(trimmed)) {
-    return { status: "continue", detail: `[PIVOT] ${trimmed.replace(/^PIVOT[:\s]*/i, "").trim()}`, resumeCondition: "" };
-  }
+  if (/^DONE\b/i.test(trimmed)) return { status: "done", detail: trimmed.replace(/^DONE[:\s]*/i, "").trim() };
+  if (/^BLOCKED\b/i.test(trimmed)) return { status: "blocked", detail: trimmed.replace(/^BLOCKED[:\s]*/i, "").trim() };
+  if (/^PIVOT\b/i.test(trimmed)) return { status: "continue", detail: `[PIVOT] ${trimmed.replace(/^PIVOT[:\s]*/i, "").trim()}` };
   const detail = trimmed.replace(/^CONTINUE[:\s]*/i, "").trim();
-  return { status: "continue", detail: detail || "Continue working toward the goal.", resumeCondition: "" };
+  return { status: "continue", detail: detail || "Continue working toward the goal." };
 }
 
 
@@ -511,16 +478,19 @@ function emitProjectEvent(ctx: WorkflowContext, config: PersistentTaskConfig, ev
   ctx.dispatchEvent(event, { projectId, owner: config.owner, ...extra });
 }
 
-// ── Stopped/Blocked handler helpers ──────────────────────────────────
+// ── Done/Blocked handler helpers ──────────────────────────────────────
 
 interface LoopState {
   projectContent: string;
+  falseDoneCount: number;
+  lastMilestoneDone: number;
   continueWithoutProgress: number;
 }
 
-type StopHandlerResult =
+type DoneHandlerResult =
   | { outcome: "continue" }
-  | { outcome: "stopped"; result: WorkflowResult };
+  | { outcome: "escalate"; message: string }
+  | { outcome: "done"; result: WorkflowResult };
 
 /**
  * Append an entry to the journal, handling legacy vs directory format.
@@ -547,68 +517,97 @@ function appendJournalEntry(
 }
 
 /**
- * Handle a reviewer WAITING decision (including auto-converted DONE):
- * Record stop reason and resume condition, set status=waiting.
+ * Handle a reviewer DONE decision: run evaluator gate, check milestones,
+ * handle false-done loop, and mark project complete if everything passes.
  *
- * If `evaluator-gate` feature is enabled, run evaluator first — if score <7,
- * override to CONTINUE (agent needs to do more work).
+ * Mutates `ls` (projectContent, falseDoneCount, lastMilestoneDone, continueWithoutProgress).
  */
-async function handleWaitingDecision(
+async function handleDoneDecision(
   ctx: WorkflowContext,
   config: PersistentTaskConfig,
   ls: LoopState,
   journalContent: string,
   iteration: number,
-  decision: { status: string; detail: string; resumeCondition: string },
+  decision: { status: string; detail: string },
   isCommentIteration: boolean,
-  features: Set<string>,
-): Promise<StopHandlerResult> {
-  // Optional evaluator gate (feature flag)
-  if (features.has("evaluator-gate")) {
-    const stepLabel = isCommentIteration ? `evaluate-comment-${iteration}` : `evaluate-iteration-${iteration}`;
-    ctx.emit({ type: "step_start", step: stepLabel });
+): Promise<DoneHandlerResult> {
+  // LLM evaluation gate
+  const stepLabel = isCommentIteration ? `evaluate-comment-${iteration}` : `evaluate-iteration-${iteration}`;
+  ctx.emit({ type: "step_start", step: stepLabel });
 
-    const ms = extractMilestones(ls.projectContent);
-    const milestoneNote = ms.total > 0 ? `Milestones: ${ms.done}/${ms.total} checked off.` : "";
-    const evalPrompt = buildEvalPrompt(config.goal, ls.projectContent, journalContent, iteration, milestoneNote);
-    const evalResult = await ctx.runAgent(config.owner, evalPrompt);
-    const evalText = evalResult.lastAssistantText ?? "";
-    const scoreMatch = evalText.match(/SCORE:\s*(\d+)/i);
-    const score = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
+  const finalMs = extractMilestones(ls.projectContent);
+  const milestoneNote = finalMs.total > 0 ? `Milestones: ${finalMs.done}/${finalMs.total} checked off.` : "";
+  const evalPrompt = buildEvalPrompt(config.goal, ls.projectContent, journalContent, iteration, milestoneNote);
+  const evalResult = await ctx.runAgent(config.owner, evalPrompt);
+  const evalText = evalResult.lastAssistantText ?? "";
+  const scoreMatch = evalText.match(/SCORE:\s*(\d+)/i);
+  const score = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
+  const evalVerdict = score >= 7 ? "PASS" : "FAIL";
 
-    if (score < 7) {
-      const evalEntry = `**Evaluator**: FAIL (score=${score}/10) — overriding WAITING to CONTINUE. ${evalText.slice(0, 300)}\n\n`;
-      ls.projectContent = appendJournalEntry(config, ls.projectContent, evalEntry, isCommentIteration);
+  const evalEntry = `**Evaluator**: ${evalVerdict} (score=${score}/10) — ${evalText.slice(0, 500)}\n\n`;
+  ls.projectContent = appendJournalEntry(config, ls.projectContent, evalEntry, isCommentIteration);
+
+  // Comment iterations set Health unconditionally after eval;
+  // main-loop iterations set Health only in the FAIL or success branches.
+  if (isCommentIteration) {
+    ls.projectContent = updateField(ls.projectContent, "Health", `${score}/10 (${evalVerdict})`);
+    writeFileSync(config.projectPath, ls.projectContent, "utf-8");
+  }
+
+  if (evalVerdict === "FAIL") {
+    ls.falseDoneCount++;
+    // Check actual milestone progress — don't blindly increment stall counter
+    trackMilestoneProgress(ls);
+    if (!isCommentIteration) {
+      ls.projectContent = updateField(ls.projectContent, "Health", `${score}/10 (${evalVerdict})`);
+      writeFileSync(config.projectPath, ls.projectContent, "utf-8");
+    }
+    if (ls.falseDoneCount >= 2) {
+      // Auto-advance: don't block the project, advance with caveat
+      const caveatNote = `**Auto-advanced**: Evaluator rejected ${ls.falseDoneCount} times (last score=${score}/10). Advancing with caveat — work may need revisiting.\n\n`;
+      ls.projectContent = appendJournalEntry(config, ls.projectContent, caveatNote, isCommentIteration);
+      ls.projectContent = updateField(ls.projectContent, "Health", `${score}/10 (CAVEAT)`);
+      writeFileSync(config.projectPath, ls.projectContent, "utf-8");
+      ls.falseDoneCount = 0;  // Reset for next milestone
       return { outcome: "continue" };
     }
-
-    const evalEntry = `**Evaluator**: PASS (score=${score}/10) — ${evalText.slice(0, 300)}\n\n`;
-    ls.projectContent = appendJournalEntry(config, ls.projectContent, evalEntry, isCommentIteration);
+    return { outcome: "continue" };
   }
 
-  // Record the auto-conversion in journal if DONE was converted
-  if (decision.detail.startsWith("[Auto-converted from DONE]")) {
-    const conversionNote = `**Auto-converted**: DONE → WAITING (awaiting human/May review). Agent cannot mark projects done.\n\n`;
-    ls.projectContent = appendJournalEntry(config, ls.projectContent, conversionNote, isCommentIteration);
+  // Hard gate: don't mark done if milestones remain unchecked
+  const finalMsForState = extractMilestones(ls.projectContent);
+  if (finalMsForState.total > 0 && finalMsForState.done < finalMsForState.total) {
+    ls.falseDoneCount++;
+    const overrideNote = `**Auto-check**: Evaluator PASSED (score=${score}) but only ${finalMsForState.done}/${finalMsForState.total} milestones checked. ` +
+      `Overriding to CONTINUE. (false-done #${ls.falseDoneCount})\n\n`;
+    ls.projectContent = appendJournalEntry(config, ls.projectContent, overrideNote, isCommentIteration);
+    // Check milestone progress before incrementing stall counter
+    trackMilestoneProgress(ls);
+    return { outcome: "continue" };
   }
 
-  // Set waiting status with stop reason and resume condition
-  ls.projectContent = updateField(ls.projectContent, "Status", "waiting");
-  ls.projectContent = updateField(ls.projectContent, "Stop Reason", decision.detail.slice(0, 200));
-  ls.projectContent = updateField(ls.projectContent, "Resume Condition", decision.resumeCondition || "Human/May review needed");
+  // Actually done — update project state
+  ls.projectContent = updateField(ls.projectContent, "Status", "done");
+  if (!isCommentIteration) {
+    ls.projectContent = updateField(ls.projectContent, "Health", `${score}/10 (${evalVerdict})`);
+  }
   ls.projectContent = updateSection(ls.projectContent, "Current State",
-    `Waiting: ${decision.detail.slice(0, 150)}`);
+    `Complete. ${finalMsForState.done}/${finalMsForState.total} milestones. ${decision.detail.slice(0, 100)}`);
+  if (!isCommentIteration) {
+    ls.projectContent = appendToSection(ls.projectContent, "Iteration Summary",
+      `- **Iter ${iteration}**: ${decision.detail.slice(0, 100)}\n`);
+  }
   writeFileSync(config.projectPath, ls.projectContent, "utf-8");
-
-  emitProjectEvent(ctx, config, "project.waiting", { iteration, reason: decision.detail.slice(0, 100) });
-  const msg = isCommentIteration
-    ? `Waiting after comment at iteration ${iteration}: ${decision.detail}`
-    : `Waiting at iteration ${iteration}: ${decision.detail}`;
-  return { outcome: "stopped", result: ctx.done(msg) };
+  ctx.emit({ type: "metric", name: "project.false-done", value: ls.falseDoneCount });
+  emitProjectEvent(ctx, config, "project.completed", { iteration, health: score });
+  const doneMsg = isCommentIteration
+    ? `Complete after comment at iteration ${iteration}: ${decision.detail}`
+    : `Complete after ${iteration} iterations: ${decision.detail}`;
+  return { outcome: "done", result: ctx.done(doneMsg) };
 }
 
 /**
- * Handle a reviewer BLOCKED decision: record stop reason and resume condition, mark blocked.
+ * Handle a reviewer BLOCKED decision: run evaluator, record score, mark blocked.
  *
  * Mutates `ls.projectContent`.
  */
@@ -616,20 +615,44 @@ async function handleBlockedDecision(
   ctx: WorkflowContext,
   config: PersistentTaskConfig,
   ls: LoopState,
+  journalContent: string,
   iteration: number,
-  decision: { status: string; detail: string; resumeCondition: string },
+  decision: { status: string; detail: string },
   isCommentIteration: boolean,
 ): Promise<WorkflowResult> {
+  ctx.emit({ type: "step_start", step: `evaluate-blocked-${iteration}` });
+  const blockedMs = extractMilestones(ls.projectContent);
+  const blockedNote = blockedMs.total > 0 ? `Milestones: ${blockedMs.done}/${blockedMs.total} checked off.` : "";
+  const evalPrompt = buildEvalPrompt(config.goal, ls.projectContent, journalContent, iteration, blockedNote);
+  const evalResult = await ctx.runAgent(config.owner, evalPrompt);
+  const evalText = evalResult.lastAssistantText ?? "";
+  const scoreMatch = evalText.match(/SCORE:\s*(\d+)/i);
+  const score = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
+  const evalEntry = `**Evaluator**: BLOCKED eval (score=${score}/10) — ${evalText.slice(0, 500)}\n\n`;
+  ls.projectContent = appendJournalEntry(config, ls.projectContent, evalEntry, isCommentIteration);
+
   ls.projectContent = updateField(ls.projectContent, "Status", "blocked");
-  ls.projectContent = updateField(ls.projectContent, "Stop Reason", decision.detail.slice(0, 200));
-  ls.projectContent = updateField(ls.projectContent, "Resume Condition", decision.resumeCondition || "Blocker resolved");
+  ls.projectContent = updateField(ls.projectContent, "Health", `${score}/10 (BLOCKED)`);
   ls.projectContent = updateSection(ls.projectContent, "Current State", `Blocked: ${decision.detail.slice(0, 150)}`);
   writeFileSync(config.projectPath, ls.projectContent, "utf-8");
-  emitProjectEvent(ctx, config, "project.blocked", { iteration, reason: decision.detail.slice(0, 100) });
+  emitProjectEvent(ctx, config, "project.blocked", { iteration, health: score, reason: decision.detail.slice(0, 100) });
   const msg = isCommentIteration
     ? `Blocked by comment at iteration ${iteration}: ${decision.detail}`
     : `Blocked at iteration ${iteration}: ${decision.detail}`;
   return ctx.escalate(msg);
+}
+
+/**
+ * Track milestone progress and update the stall counter.
+ */
+function trackMilestoneProgress(ls: LoopState): void {
+  const currentDone = extractMilestones(ls.projectContent).done;
+  if (currentDone > ls.lastMilestoneDone) {
+    ls.lastMilestoneDone = currentDone;
+    ls.continueWithoutProgress = 0;
+  } else {
+    ls.continueWithoutProgress++;
+  }
 }
 
 /**
@@ -645,21 +668,6 @@ async function processDecision(
   decision: { status: string; detail: string },
   isCommentIteration: boolean,
 ): Promise<WorkflowResult | null> {
-  if (decision.status === "done") {
-    // Continuous projects can never be DONE — override to CONTINUE
-    const projectType = ls.projectContent.match(/^\*\*Type\*\*:\s*(\S+)/m)?.[1]?.toLowerCase();
-    if (projectType === "continuous") {
-      const overrideNote = `**Auto-override**: Reviewer said DONE but project type is continuous. Overriding to CONTINUE.\n\n`;
-      if (config.isLegacy) {
-        const pc = readFileSync(config.projectPath, "utf-8");
-        writeFileSync(config.projectPath, appendToSection(pc, "Progress Log", overrideNote));
-      } else {
-        appendFileSync(config.journalPath, overrideNote);
-      }
-      decision = { status: "continue", detail: "Continuous project — add new milestones based on latest metrics. This project never ends." };
-    }
-  }
-
   if (decision.status === "done") {
     const result = await handleDoneDecision(ctx, config, ls, journalContent, iteration, decision, isCommentIteration);
     if (result.outcome === "escalate") return ctx.escalate(result.message);
@@ -726,7 +734,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
     // Read journal for context
     const journalContent = config.isLegacy ? projectContent : (readFile(config.journalPath) ?? "");
-    const features = parseFeatures(projectContent);
 
     // ── Comment iteration ─────────────────────────────────────────
     // Comments in project.md = unprocessed queue. Process then clear.
@@ -737,7 +744,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       const commentReviewPrompt = buildReviewPrompt(
         config.goal, iteration,
         `[COMMENT ITERATION] Comments to address:\n${pendingComments}`,
-        projectContent, journalContent, continueWithoutProgress, features
+        projectContent, journalContent, continueWithoutProgress
       );
 
       const reviewResult = await ctx.runAgent(config.owner, commentReviewPrompt);
@@ -828,7 +835,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ctx.emit({ type: "step_start", step: `review-iteration-${iteration}` });
 
       const reviewPrompt = buildReviewPrompt(
-        config.goal, iteration, workerSummary, projectContent, journalContent, continueWithoutProgress, features
+        config.goal, iteration, workerSummary, projectContent, journalContent, continueWithoutProgress
       );
 
       const reviewResult = await ctx.runAgent(config.owner, reviewPrompt);

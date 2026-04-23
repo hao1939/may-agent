@@ -5,6 +5,7 @@ import type { EvalCtx } from "../evaluator.js";
 // ── In-memory EvalCtx for testing ────────────────────────────────────
 
 interface StoredEval {
+  [key: string]: unknown;
   sessionId: string;
   agent: string;
   quality: number;

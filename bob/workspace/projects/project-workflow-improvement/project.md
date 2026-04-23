@@ -1,11 +1,10 @@
 # Project: Project Workflow Improvement — Tracker
 
-**Status**: done ✅ — all milestones complete, post-measurement validates targets met (2026-04-23)
+**Status**: active
 **Owner**: bob
-**Type**: continuous
 **Priority**: P1
-**Iteration**: 15
-**Health**: 6/10 (BLOCKED)
+**Iteration**: 1
+**Health**: 6/10
 
 ## Goal
 Continuously improve the project workflow. This is a TRACKER — each experiment is its own project.
@@ -22,7 +21,7 @@ Continuously improve the project workflow. This is a TRACKER — each experiment
 | Rich Current State | (tested manually) | adopted ✅ | 1 focused iter vs 6 confused |
 | Smart context generation | pwi-smart-context | done | TRIAL: -56% iters/ms but N=1 |
 | Milestone auto-scope | — | idea | — |
-| Evaluator tuning | pwi-evaluator-tuning | done ✅ | Simplified rubric + 2-attempt auto-advance deployed |
+| Evaluator tuning | pwi-evaluator-tuning | active | — |
 
 ## How to Add an Experiment
 
@@ -36,10 +35,10 @@ Continuously improve the project workflow. This is a TRACKER — each experiment
 ## Milestones
 - [x] Rich Current State: tested, adopted
 - [x] Baseline measurement: measure stall-rate, false-done, iterations-to-complete across all projects
-- [x] Identify worst metric → create experiment project for it
+- [ ] Identify worst metric → create experiment project for it
 - [x] First experiment completes → adopt or reject
-- [x] Second experiment completes → adopt or reject
-- [x] All three metrics meet targets
+- [ ] Second experiment completes → adopt or reject
+- [ ] All three metrics meet targets
 
 ## Resources
 - **Workflow code**: agents/shared/workflows/project.ts
@@ -48,7 +47,8 @@ Continuously improve the project workflow. This is a TRACKER — each experiment
 - **Evidence**: breadcrumb-gap manual test (rich context: 1 iter vs 6)
 
 ## Current State
-Blocked: The worker has been unable to execute tools for 5+ consecutive iterations (it produces text fragments like "Now notify May..." but never actually call
+Smart context experiment complete (TRIAL verdict). 3/6 milestones done. Next: design second experiment. Top candidate: evaluator tuning — pwi-smart-context got stuck in evaluator rejection loops (scored <7 three times). Also stall-rate (30% vs 20% target) still needs addressing — root cause is unclear milestones causing drift (milestone auto-scope experiment).
+
 ## Baseline Measurement (2026-04-22)
 
 **Sample**: 4 projects (context-learning, context-learning-impl, reviewer-effectiveness, agent-cli-research)
@@ -66,25 +66,7 @@ Blocked: The worker has been unable to execute tools for 5+ consecutive iteratio
 **Next action**: The "Smart context generation" experiment is already designed and targets iteration efficiency. Prioritize implementing it.
 
 ## Iteration Summary
-- **Iter 3**: Now update the tracker with the new experiment:
-
-The project file says I CANNOT edit the project fil
-
-- **Iter 4**: Now dispatch research requests:
-
-- **Iter 5**: Now dispatch research requests:
-
-- **Iter 7**: Now update metrics with projected improvements and send notifications:
-
-- **Iter 8**: 
-
-- **Iter 9**: Verify the code changes compile/parse correctly:
-
-- **Iter 12**: Now update metrics.md with cycle 2 data:
-
-- **Iter 13**: Now I have enough data. Let me create the cycle 2 status file:
-
-- **Iter 14**: Now I have a clear picture. Let me create the cycle 2 status file and implement a concrete intervent
-
 
 ## Comments
+- [2026-04-22 hao] Don't just experiment from our own ideas. Ask scout to research how other agent systems handle project orchestration, context management, and reviewer/evaluator patterns. Ask amy-kimi to collect practical tips from Chinese developer communities. External ideas may be better than what we invent ourselves.
+- [2026-04-22 hao] When a project gets blocked, that's the BEST time to test a new feature. Zero downside — project is already stuck. If the feature unblocks it, we learned something valuable. If not, no worse than before. Always look for blocked projects as experiment candidates.

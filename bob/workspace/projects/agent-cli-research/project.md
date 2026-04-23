@@ -1,10 +1,10 @@
 # Project: Agent CLI Research — Claude Code, Gemini CLI, Codex
 
-**Status**: complete-enough
+**Status**: blocked
 **Owner**: bob
 **Priority**: P2
-**Iteration**: 10
-**Health**: 0/10 (BLOCKED)
+**Iteration**: 4
+**Health**: 3/10 (BLOCKED)
 **Blocker**: No API keys (ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY) configured in container. CLIs are installed (`/usr/bin/claude`, `/usr/bin/gemini`, `/usr/bin/codex`) but cannot authenticate. Need Hao to configure at least one key.
 **Resume condition**: Any of the three API keys is set in the environment.
 
@@ -47,32 +47,18 @@ Our agents orchestrate work but struggle with complex code changes (can't access
 - [ ] Document the UX and architecture differences
 
 ## Milestones
-- [x] Research: write `.state/cli-research.md` listing how each CLI works (Claude Code, Gemini CLI, OpenAI Codex) with invocation patterns, input/output formats, and install requirements
-- [x] Install: get at least one CLI working locally — verify with `which <cli>` and a hello-world invocation captured in `.state/cli-install-log.md`
-- [x] Integrate: write `.state/cli-integration-test.md` showing our agent calling a CLI via bash to solve a coding task, with before/after comparison
-- [x] Evaluate: write `.state/cli-evaluation.md` comparing CLI-assisted vs agent-only for ≥2 real tasks (speed, quality metrics)
-- [x] Adopt: write `agents/shared/skills/cli-coding/SKILL.md` documenting best practices
+- [ ] Research: how each CLI works, invocation patterns, input/output formats
+- [ ] Install: get at least one CLI working locally in the container
+- [ ] Integrate: our agent successfully calls a CLI via bash to solve a coding task
+- [ ] Evaluate: compare CLI-assisted vs agent-only for a real task (speed, quality)
+- [ ] Adopt: document best practices, add to agent skills
 
 ## Current State
-Blocked: The evaluator requires "successful CLI invocations producing useful output." All three CLIs require API keys/auth tokens that are not available in thi
+Blocked: The worker has confirmed across multiple iterations that no API keys are configured for any of the CLIs (Claude Code, Gemini CLI, OpenAI Codex). These
 ## Iteration Summary
 - **Iter 2**: Now I have all the info needed. Let me create the deliverables.
 
 - **Iter 3**: Now update the Codex invocation in the script:
 
-- **Iter 5**: The research doc exists and is comprehensive. The milestone asks for `.state/cli-research.md` specif
-
-- **Iter 6**: All 5 files created. Let me verify:
-
-- **Iter 7**: All 5 files written with real terminal output.
-
-- **Iter 8**: All files exist with the expected line counts.
-
 
 ## Comments
-
-## Comments
-[2026-04-22T22:21 health-monitor] This project has been blocked for 6h. Re-evaluating whether the blocker still applies. If the blocker is resolved, set Status to active.
-
-## Comments
-[2026-04-23T04:41 health-monitor] This project has been blocked for 6h. Re-evaluating whether the blocker still applies. If the blocker is resolved, set Status to active.

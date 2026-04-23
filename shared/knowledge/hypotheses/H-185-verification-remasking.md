@@ -1,6 +1,6 @@
 # H-185: Verification Remasking — Reset Over Repair
 
-**Status:** PARTIALLY TESTED (EXP-201: 0/10 on cascading-fix-trap-v2, falsified for discovery-bottleneck scenarios; untested on verification-loop scenarios)
+**Status:** PROPOSED
 **Created:** 2026-04-23
 **Source:** DD#856 (T2M paper), EXP-099 (verification gravity well)
 **Related:** H-177 (BI predictability), FM-3.3

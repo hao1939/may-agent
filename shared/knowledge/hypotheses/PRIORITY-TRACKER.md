@@ -35,9 +35,9 @@
 
 **Top-3 testable hypotheses for next experiment cycle (updated 2026-06-22):**
 
-1. **H-181** — ✅ **RESOLVED/CONFIRMED** (P=0.95, KE-342 filed). 6 experiments, ~200 trials. All scaffolding approaches 0%, only near-explicit naming 40%. Fundamental capability gap. **NEXT**: Multi-agent execution-trace approach (one agent traces, another fixes) — new hypothesis needed.
-2. **H-168** — ✅ **CONFIRMED** (P=0.72, Tier 1). EXP-197: 48.8% mean info loss across 10 DD→KE pairs. Predictions 71% lost, cross-refs 82% lost. **NEXT**: Design structured handoff format (prediction registry + cross-ref checklist) and A/B test retention improvement.
-3. **EXP-200** (Belief Externalization, H-072) — Deployed in review prompt. 1 checkpoint hit so far. **NEXT**: Accumulate ≥10 review iterations, then score belief-statement quality vs review accuracy.
+1. **H-181** (Relational Bug Blindness, P=0.90) — EXP-194/195/198 COMPLETE. All prompt-level interventions exhausted: declarative skills 0%, procedural skills 0%, only direct hints 40%. **NEXT**: Design EXP-199 — tool-assisted relational bug discovery (provide pipeline-swap tool that automates the permutation procedure the agent can't execute from instructions). This is the structural intervention test (P-181b).
+2. **H-165** via **EXP-178** (DESIGNED, pending execution) — Difficulty-adaptive content-first guard pilot on sql-injection (33% medium) × cascading (0% hard). 4 arms × 2 scenarios × 15 runs = 120 runs, ~$9–12. Tests whether adaptive routing rule ("production on medium, passive on hard") is strictly dominant over uniform policies. Deployable guard, not just a mechanism test.
+3. **H-185** via **EXP-196** (qualitative complete, quantitative pending) — Verification remasking ("fresh eyes" reset after 2+ verification passes). Qualitative analysis: plausible for 3/5 scenarios, +10-20pp estimated. Needs gym runs on compound-edit-verification and cascading-fix-trap-v2.
 
 **Orphan KE check (recent entries not connected to any active hypothesis):**
 

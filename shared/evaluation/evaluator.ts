@@ -900,7 +900,7 @@ export function getAgentScoreSummary(ctx: EvalCtx): Record<string, AgentScoreSum
     }
   > = {};
 
-  for (const ev of evals) {
+  for (const ev of evals as Array<{ agent?: string; efficiency: number; quality: number; verdict: string }>) {
     if (!ev.agent || ev.agent === "") continue;
     if (!accum[ev.agent]) {
       accum[ev.agent] = { totalEfficiency: 0, totalQuality: 0, count: 0, verdicts: {}, orderedEfficiencies: [] };

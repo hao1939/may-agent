@@ -23,7 +23,7 @@
 - **Turn discipline**: At turn ~20, assess progress and decide: finish what's in progress or wrap up. At turn ~25, begin finishing (checkpoint + journal + finish). NEVER blow through turn 30 without calling finish(status='partial'). Fork deep synthesis work (WKWA docs, cross-refs >50 lines, redesign docs) as separate sessions instead of doing them inline.
 - **Lean heartbeat pattern**: (1) Read pending tasks, (2) Skim new library items (titles+connections, not full reads), (3) Do ONE high-value synthesis or hypothesis task, (4) Dispatch or finish. Do NOT write journal entries in heartbeats. Don't try to process every new item every heartbeat.
 - **C1.1 read-before-edit**: You MUST read() any file before edit()ing it. Your most-violated pattern: editing PRIORITY-TRACKER.md, hypotheses, and synthesis docs without reading first. See agents/bob/skills/read-before-edit.md.
-- Knowledge base paths are nested 3-4 levels deep — see FM-1.3 rule in Convention Compliance below
+- Knowledge base paths are nested 3-4 levels deep: always `ls` the parent directory before reading files in agents/shared/knowledge/ — don't guess paths from memory (top FM-1.3 error pattern: 34+ wasted calls in 7 days)
 - **KE-008**: Do NOT restructure heartbeat steps (reorder, merge, rename). Heartbeat regressions are caused by structural changes, not content. Add content within existing steps only.
 - **KE-133+147**: Few-shot examples are HARMFUL for discovery/exploration tasks — they cause template displacement (-67pp). When exploring novel territory, strip examples and work from first principles.
 - **KE-091**: Forced verification guards harm complex/creative tasks (alignment tax). For deep synthesis, hypothesis generation, or creative work, trust your judgment over rigid verify-then-finish checklists.
@@ -41,32 +41,41 @@
 
 ## Learned from experience
 
-- No git repo — that's fine. (source: s_1776944203149_1215, 2026-04-23)
-- Now update the hypothesis status: (source: s_1776942404721_1207, 2026-04-23)
-- Now let me re-escalate the H-EXP-010 patch since May hasn't applied it yet. (source: s_1776940603988_1193, 2026-04-23)
-- Now let me update the hypotheses DB and commit: (source: s_1776938803876_1184, 2026-04-23)
-- Now commit and finish. (source: s_1776951403548_1273, 2026-04-23)
-- Now let me update H-EXP-010 status and finish up. (source: s_1776949605029_1262, 2026-04-23)
-- Good, merged. Let me finish up. (source: s_1776947804386_1249, 2026-04-23)
-- SCORE: 7
-- DONE
-- Now I have enough data. Let me write the analysis. (source: s_1776947437478_1243, 2026-04-23)
-- CONTINUE
-- Now I have all the data. Let me write the analysis. (source: s_1776947290366_1241, 2026-04-23)
-- Now update EXP-212 results with deployment status and update my todo. (source: s_1776958605059_1320, 2026-04-23)
-- I have 2 scout→bob chains. Let me also look at H-EXP-011 and H-EXP-012 which may have been internally generated (no scout upstream). For H-EXP-013 Phase 1 I need 3 multi-agent workflows. Let me do the (source: s_1776956805551_1308, 2026-04-23)
-- Now let me commit and wrap up. (source: s_1776955003875_1297, 2026-04-23)
+- When processing tasks that create files, check if the target files already exist (with correct content) BEFORE writing — because blindly writing identical content then claiming "Created N files" is misleading and wastes a session. (source: s_1776778910593_30, 2026-04-21)
+- Now sync to DB and commit. (source: s_1776850600699_1, 2026-04-22)
+- Now commit and finish. (source: s_1776857801135_363, 2026-04-22)
+- SCORE: 6
+
+**1. Deliverables exist:** Yes. Two substantive files exist with real content — the results file has proper structure with tables, findings, and recommendation. The measurements file has gen (source: s_1776865751947_519, 2026-04-22)
+- DONE — The deliverables are now comprehensive and intellectually honest.
+
+The addendum file directly addresses the evaluator's circularity critique, downgrades the recommendation from "ADOPT" to "TRIA (source: s_1776865728605_518, 2026-04-22)
+- The evaluator's critique (score 6/10) is that the experiment is circular — the iterations being measured *are* the experiment itself. I need to address this honestly and create a proper addendum. (source: s_1776865658604_515, 2026-04-22)
+- SCORE: 6
+
+**1. Deliverables exist:** Yes. Two substantive files exist with real content — `pwi-smart-context-results.md` (detailed comparison with tables, findings, recommendation) and `pwi-smart-cont (source: s_1776865615669_513, 2026-04-22)
+- DONE — The results file is now comprehensive and rigorous. It addresses the evaluator's prior critique by including proper baseline comparison from 20 real projects, statistical metrics, honest caveat (source: s_1776865599523_512, 2026-04-22)
+- The evaluator's critique is that the experiment data is just counting workflow iterations as data points rather than doing rigorous measurement. The measurements file actually has great baseline data  (source: s_1776865526755_510, 2026-04-22)
+- SCORE: 5
+
+**Reasoning:**
+
+1. **Deliverables exist**: Yes — two files exist (`pwi-smart-context-results.md` and `pwi-smart-context-measurements.md`). The results file has a complete structure with iter (source: s_1776865497834_509, 2026-04-22)
+- DONE — The file is complete with all required content.
+
+**Completed milestones:**
+- **Run 5+ iterations, measure results** — The results file contains 5 iteration rows (iter 0–4) with quality metrics, (source: s_1776865485602_508, 2026-04-22)
+- PIVOT — The worker has been reading files but failing to write updates for 2 iterations. The incremental "add one more row" approach isn't working. New strategy: have the worker rewrite the entire res (source: s_1776865415640_506, 2026-04-22)
+- Now update the treatment stats and recommendation: (source: s_1776865354169_505, 2026-04-22)
+- CONTINUE — Good progress, the results file has solid structure. Need 3 more iteration data points to reach 5+.
+
+**(a) Concrete output:** Update `/app/.state/pwi-smart-context-results.md` — add iterati (source: s_1776865330599_503, 2026-04-22)
+- Now update the measurements file with iteration 2 data: (source: s_1776865231977_499, 2026-04-22)
 
 ## Reflexion-Extracted Lessons
 - [insight] Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/.
-- [pattern] **Failure Analysis Protocol (H-EXP-014)**: Before closing any failed experiment, answer: (1) Why did it fail? (2) What did we learn? (3) Does this suggest a new hypothesis? H-EXP-011's "failure" spawned our best intervention (H-EXP-012, 58-93% improvement).
 
 ## Convention Compliance Reminders
-- **FM-1.3 / Systematic File Discovery**: NEVER guess file paths — discover them first.
-  1. `ls` or `find` the parent directory before reading/editing any file in it.
-  2. Discover paths incrementally (ls top → ls subtree → read file), not in one leap.
-  3. Never chain multiple unverified filenames in one command (`cat a.md b.md c.md`).
-  4. If a path is from memory or a previous session, verify it exists before using it.
 - **C1.1**: Always read() a file before edit()ing it — no blind edits.
 - **C1.3**: After write(), read() the file back to verify contents.
 - **C1.7**: Before finish(success), run a verification step (read/grep/test) in your last 5 tool calls.

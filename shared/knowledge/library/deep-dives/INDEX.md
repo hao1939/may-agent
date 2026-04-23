@@ -957,7 +957,3 @@
 - **DD#846** Explicit Trait Inference — coordination via partner modeling ★★★★
 - **DD#847** LLM Normative Conformity — conformity bias in multi-agent settings ★★★★
 - **DD#848** BackBench — human-guided harm recovery for computer use agents ★★★★
-
-## Thursday April 24 Triage (DD#855-856)
-- **DD#855** Trust, Lies, Long Memories — emergent reputation dynamics in repeated LLM Avalon games ★★★★½
-- **DD#856** TeamFusion — structured disagreement surfacing for open-ended MAS teamwork ★★★★
