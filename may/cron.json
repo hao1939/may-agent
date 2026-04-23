@@ -286,8 +286,8 @@
     "intervalMs": 1800000,
     "agent": "amy-kimi",
     "message": "[heartbeat] Amy-Kimi heartbeat via per-agent workflow.",
-    "enabled": true,
-    "description": "Amy-Kimi heartbeat. Re-enabled 2026-04-23 after Kimi API balance restored.",
+    "enabled": false,
+    "description": "Amy-Kimi runs on k3s only. Disabled locally to avoid duplicate work.",
     "params": {
       "workflow": "amy-kimi-heartbeat",
       "systemPromptSuffix": "You are running inside the amy-kimi-heartbeat workflow.",
@@ -332,7 +332,7 @@
       "timeoutMs": 900000,
       "workflow": "verify-wrap",
       "agent": "coach",
-      "task": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently (check workspace/common-sense-status.md for status index). To check agent behavior: use `bash` with grep/jq to search session transcripts \u2014 do NOT read full session.jsonl files. Did the agent follow the rule? Quote evidence. If NO \u2014 add to Growth Cycle queue. If YES \u2014 update workspace/common-sense-tracker.md with your findings."
+      "task": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently. Check workspace/common-sense-status.md for status index. Use bash with grep to search session transcripts — do NOT read full session.jsonl files. Quote evidence. If NO — add to Growth Cycle queue. If YES — update workspace/common-sense-tracker.md."
     },
     "offsetMs": 300000
   },
@@ -387,9 +387,7 @@
     },
     "handlerConfig": {
       "timeoutMs": 600000,
-      "workflow": "verify-wrap",
-      "agent": "coach",
-      "task": "[cron:research-intake] Check for NEW files in agents/scout/workspace/ and agents/amy-kimi/knowledge/ since your last check. Only read files modified in the last 24h. Extract actionable coaching methods (not academic summaries). Max 5 files. Write to workspace/research-notes.md."
+      "workflow": "verify-wrap"
     },
     "offsetMs": 1800000
   },
@@ -611,8 +609,7 @@
     "on": [
       "project.completed",
       "project.blocked",
-      "metric.breach",
-      "escalation.created"
+      "metric.breach"
     ]
   },
   {
@@ -649,8 +646,7 @@
     "type": "job",
     "intervalMs": 1800000,
     "message": "[cron:compliance-check] Combined handler: convention-check, standing-orders-check",
-    "enabled": false,
-    "_disabled_reason": "Known harness module resolution bug causes every run to fail. Disabled to stop waste loop (1044+ ops burned). Re-enable when growth.js import is fixed.",
+    "enabled": true,
     "handler": "compliance-check",
     "description": "Combined handler running convention-check, standing-orders-check sequentially. JS handler, no LLM cost."
   },

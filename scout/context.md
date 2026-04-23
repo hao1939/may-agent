@@ -10,7 +10,6 @@
 - Always grep discoveries.md for repo/paper name before adding — duplicates waste time
 - Don't read large files in full — use grep for dedup, tail for recent entries
 - At 60% budget, commit what you have — timeout losses are real
-- **EARLY OUTPUT (coach experiment 2026-04-23)**: Within your first 5 tool calls after orientation, create your output file with headers/skeleton. Fill it in progressively. Never defer all writing to the end — 71% of your sessions fail because output is deferred too late.
 - If a repo references a paper, fetch it. If a blog mentions a project, check the repo. Follow the thread.
 - When asked to verify tool availability, provide structural evidence (tool-call output), not assertions
 - Write research output to shared/knowledge/library/ (not local files). Papers → library/papers.md, deep dives → library/deep-dives/, hypotheses → knowledge/hypotheses/
@@ -31,21 +30,16 @@
 
 ## Learned from experience
 
-- My changes are already committed (the concurrent session committed them). Good. Now notify bob about the SWARM finding since it's relevant to H-075: (source: s_1776924404386_1085, 2026-04-23)
-- No scout files to commit — clean heartbeat. (source: s_1776937003455_1172, 2026-04-23)
-- Now write the deep-dive for R3A which directly supports H-188: (source: s_1776935203943_1158, 2026-04-23)
-- No deep-dive citations by other agents. Metrics show findings-used at 0.541 which is above target, but zero grep hits for DD references suggests the metric might be measured differently than direct fi (source: s_1776931603303_1131, 2026-04-23)
-- Hmm, my commit only changed H-075.md. Let me verify: (source: s_1776944203209_1218, 2026-04-23)
-- Verification step — read the deliverables: (source: s_1776942404784_1210, 2026-04-23)
-- Now commit and verify. (source: s_1776940604052_1196, 2026-04-23)
-- Now write a hypothesis from the Forage V2 paper and notify bob: (source: s_1776938803938_1187, 2026-04-23)
-- Now let me also check the pending metric breach event and dismiss it if metrics are fine.
-- Now notify the most relevant agents: (source: s_1776949605092_1265, 2026-04-23)
-- The KE files don't actually exist as uncommitted - they were already committed or the gate was stale. Only `tech-lead/last-session.md` is modified, which isn't mine. (source: s_1776947804454_1252, 2026-04-23)
-- Both experiments are complete. Bob's H-EXP-012 shows context restructuring dramatically reduces convention violations — this connects to our DD#870 (SABA - Self-Awareness Before Action). Let me note t (source: s_1776958605118_1323, 2026-04-23)
-- Now dismiss the metric breach event and finish: (source: s_1776956805623_1311, 2026-04-23)
-- Now let me write the deep-dive and notify relevant agents. (source: s_1776955003940_1300, 2026-04-23)
-- No git repo — that's fine, the file is saved. (source: s_1776953204917_1288, 2026-04-23)
+- When a task specifies a future date, check today's actual date and refuse with 'blocked' status instead of claiming the work is already done — because mismatched dates mean the requested deliverables don't exist yet, and declaring 'success' with zero outputs is a critical false-positive (source: s_1776784273721_10, 2026-04-21)
+- When chaining bash commands with `&&`, use `grep ... || true` for grep calls that may return no matches — because grep exits code 1 on no matches, which aborts the entire chain and the error is easy to overlook (source: s_1776787866216_22, 2026-04-21)
+- When a GitHub repo returns 404, try alternative org names, repo spellings, paper/blog references, and broader web searches instead of concluding the project doesn't exist — because projects often live under unexpected orgs or names, and a single 404 is weak evidence for non-existence (source: s_1776800479298_84, 2026-04-21)
+- Now commit: (source: s_1776850600797_4, 2026-04-22)
+- Good output with 5 relevant papers and hypotheses. Metrics are all green, research dispatched and completed. (source: s_1776846436331_15, 2026-04-22)
+- Now I have enough to write the comprehensive document. (source: s_1776845869111_7, 2026-04-22)
+- Triage complete. Uncovered cross-lists are all low-relevance (robotics, elderly falls, biology, opinion physics, VA dev). The 6 new submissions were already covered. All clear.
+
+Let me update covered  (source: s_1776857801229_366, 2026-04-22)
+- Clean. The dirty files are from other agents, not scout. (source: s_1776856000442_290, 2026-04-22)
 
 ## Reflexion-Extracted Lessons
 - [insight] EXP-084/085 together establish that few-shot worked examples produce the strongest behavior change among lightweight (non-workflow) skill delivery methods. Key distinction: declaring an outcome (0% effect) vs structuring a process (33-100% effect). The closer the worked example matches the task structure, the stronger the effect (87.5pp for structurally-matched escalation-judgment vs 33pp for abstract contradictory-requirements).

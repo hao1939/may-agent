@@ -3,7 +3,7 @@
 **Goal**: Prove the coach training loop works end-to-end: identify skill gap → design experiment → run experiment → measure improvement → promote or reject skill.
 **Owner**: coach
 **Created**: 2026-04-21
-**Status**: CLOSED (all 9 milestones complete, case study written 2026-06-24)
+**Status**: CLOSED (all milestones done, M9 case study written 2026-06-24)
 
 ## Background
 
@@ -45,29 +45,34 @@ This project has run for 24+ iterations without conclusive proof that a coach in
 
 ### Phase 3: Run Experiment
 
-**M5: Deploy the intervention** ✅ COMPLETE (EXP-198)
-- Procedural discovery skill deployed in gym scenarios
-- 3 arms tested: baseline, procedural skill, procedural + worked example
+**M5: Deploy the intervention**
+- Ship the skill/rule/prompt change
+- Ensure it's active in production sessions
+- Output: deployment confirmation with timestamp
 
-**M6: Collect sufficient post-deployment data** ✅ COMPLETE (EXP-198)
-- N=30 across 3 arms (10 each). All skill arms: 0% pass rate.
-- Combined with EXP-195 data: 200+ total trials across project.
+**M6: Collect sufficient post-deployment data**
+- Wait for n≥30 post-deployment evals (matching the gap criteria)
+- Monitor for obvious regressions in other metrics
+- Output: raw data collected, ready for analysis
 
 ### Phase 4: Measure Improvement
 
-**M7: Analyze results** ✅ COMPLETE (2026-06-23)
-- Full analysis in `m7-analysis.md`
-- Text skills: 0% improvement. Direct hints: +40pp. Meta-finding: text skills have a boundary.
+**M7: Analyze results**
+- Compare pre/post failure rates for the targeted pattern
+- Calculate effect size and statistical significance
+- Output: analysis document with clear verdict
 
-**M8: Make promote/reject decision** ✅ COMPLETE (2026-06-23)
-- REJECT procedural discovery skill. Decision in `m8-decision.md`
-- Promoted KE-338. Extended KE-054.
+**M8: Make promote/reject decision**
+- If improvement ≥ threshold: PROMOTE the skill (make permanent)
+- If no improvement or regression: REJECT (revert the change)
+- Output: decision record with rationale
 
 ### Phase 5: Close the Loop
 
-**M9: Document the complete cycle** ✅ COMPLETE (2026-06-24)
-- Case study: `agents/coach/knowledge/prove-the-loop-case-study.md`
-- Meta-finding: loop methodology works, text skills have ceiling at recognition tasks
+**M9: Document the complete cycle**
+- Write up the full loop: gap → experiment → result → decision
+- Extract meta-lessons for the coaching methodology
+- Output: case study in `agents/coach/knowledge/`
 
 ## Current Status & Blockers
 

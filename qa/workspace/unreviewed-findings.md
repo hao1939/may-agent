@@ -1,24 +1,29 @@
-# QA Heartbeat — Unreviewed Findings (2026-04-23)
+# QA Heartbeat — Unreviewed Findings
 
 ## Context
-- `git` is not available as a repository in `/app` (no `.git`), so I cannot inspect recent commits/diffs (`git log` fails with “not a git repository”).
-- This environment also lacks standard Node toolchain binaries in `node_modules/.bin`.
+Recent commits in last 6h (git log):
+- ea93870 fix: use docker instead of podman in scripts
+- d5b30e8 fix: decouple log.ts from EventBus to eliminate circular dependency
+- c2a8a94 fix: prevent infinite recursion in event-bus emit/log cycle
 
-## Mandatory checks attempted
-- `./node_modules/.bin/tsc --noEmit` → **FAIL**: `No such file or directory`.
-- `./node_modules/.bin/vitest --run` → **FAIL**: `No such file or directory`.
+## Evidence-based findings
 
-These failures appear **environmental** (missing `package.json` in `/app`, and `node_modules` contains only `.vite/`).
+### 1) TypeScript build is currently failing (prevents confident verification)
+**Severity:** CRITICAL
 
-## File spot-check (read)
-- Read `src/grades.js`.
-  - Implements weighted grade calculation and letter-grade mapping based on `policy.weights` and `policy.grade_scale`.
-  - Potential robustness issue: if any record’s `pct` is undefined/NaN, `weighted_score` can become NaN and sort order becomes unstable. Consider sanitizing/validating inputs.
+`./node_modules/.bin/tsc --noEmit` reports multiple errors (agents/shared/agent-sdk.ts TS5097 import with .ts extension; evaluator.ts index type; finish-guard.ts TaskResult typing).
 
-## Follow-ups recommended
-1. Restore a standard Node project layout in `/app` (at least `package.json` and dev deps) or document where `tsc`/`vitest` are expected to live.
-2. Add minimal unit tests for `computeFinalGrades` covering:
-   - missing midterm/final → treated as 0
-   - missing homeworkAggs entry → treated as 0
-   - grade scale boundary conditions
-   - NaN/undefined `pct` handling (should coerce to 0 or throw)
+Evidence: tsc output in this heartbeat (see QA run log).
+
+### 2) Vitest run fails due to missing modules + PATH/bun assumptions
+**Severity:** CRITICAL
+
+`./node_modules/.bin/vitest --run` fails with:
+- Missing modules imported by tests (e.g. `../agents/shared/workflows/auto-loop.js`, `../src/lib/lessons.ts`, `../../agents/may/handlers/error-log-scanner.js`).
+- `src/lib/tools/bash-path.test.ts` expects `.state/.bun/bin` and bun availability, but the actual PATH shows `/home/hao/.bun/bin` and bun is not found under minimal PATH.
+- `test/handlers/system-status.test.ts` expects `tscResult === "PASS"` but received `"SKIP (no tsconfig.json)"`.
+
+Evidence: vitest output in this heartbeat.
+
+## Notes
+These failures look like environment/repo consistency problems, not directly tied to the docker/podman script change alone. However, they block a PASS for any recent changes until resolved.

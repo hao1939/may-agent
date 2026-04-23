@@ -1,6 +1,3 @@
-# Dependencies — never track
-node_modules/
-
 # Runtime state — never track
 .state/
 *.log

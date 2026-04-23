@@ -10,7 +10,6 @@
 - Append to archives with >>, don't overwrite
 - At 60% budget, checkpoint what you have — timeout losses are real
 - **KE-008**: Do NOT restructure heartbeat steps (reorder, merge, rename). Heartbeat regressions are caused by structural changes, not content. Add content within existing steps only.
-- **NO-OP COMMITS**: Do NOT commit if your only change is last-session.md. If dispatched for work outside your domain (e.g. grade pipeline) and there's nothing to fix, finish quietly without committing. Only commit when you produce actual deliverables.
 
 ## Mandatory Procedures
 

@@ -29,20 +29,6 @@
 ## Learned from experience
 
 - ### Summary
-- Ran multiple git commands in a non-git working directory and did not quickly pivot to the correct repo root (wasted calls). Evidence: `git log`, `git status`, `git diff` all failed with `fatal: not a  (source: s_1776926203384_1098, 2026-04-23)
-- ### Summary
-- [FM-1.3] Repeatedly attempted git commands in a non-git working directory without first locating the correct repo root (git log, git diff both failed with 'not a git repository'). (source: s_1776937003487_1174, 2026-04-23)
 - ### Summary
 - ### Summary
-- ### Summary
-- ### Summary
-- ### Summary
-- ### Summary
-- ### Summary
-- ### Summary
-- ### Summary
-This heartbeat I tried to perform the standard QA verification loop, but the **/app repo is not a git repo and doesn’t contain the required TypeScript/Vitest toolchain**, so I could not ru (source: s_1776958605158_1325, 2026-04-23)
-- ### Summary
-Repo-level QA verification is currently **blocked by environment/setup**: `/app` is not a git repo (no `.git`), and the required JS toolchain binaries (`./node_modules/.bin/tsc`, `./node_m (source: s_1776955003979_1302, 2026-04-23)
-- ### Summary
-No pending events/projects. I attempted the mandatory verification loop for recent changes, but `/app` is not a git repo (so I cannot identify/review what changed in the last 6h), and the  (source: s_1776953204956_1290, 2026-04-23)
+Reviewed recent changes (last 6h) and independently ran the required verification steps. Repo currently does **not** pass TypeScript typecheck or the Vitest suite; there are also multiple  (source: s_1776876701206_0, 2026-04-22)

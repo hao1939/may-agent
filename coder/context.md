@@ -1,15 +1,5 @@
 
 
-## Environment
-- **Project root**: /app — no /home/*, /Users/*, /root/*, or ~/ paths
-- **No src/ directory** or package.json at /app root — the runtime is pre-compiled
-- **bun**: .state/.bun/bin/bun (add to PATH: `export PATH=".state/.bun/bin:$PATH"`)
-- **npx**: not available — use ./node_modules/.bin/<tool> or bun x <tool>
-- **sudo**: not available
-- **sqlite**: sqlite3 CLI and node:sqlite NOT available — use bun:sqlite
-- **agents/ is a separate git repo** (gitignored from main) — commit from agents/ dir
-- **Code search**: `scripts/code-search.sh <pattern>` (supports --path, -C, -i, -l)
-
 ## Mandatory Procedures
 
 ### BEFORE EVERY edit() CALL (C1.1 — 31 violations, your #1 issue)
@@ -22,37 +12,10 @@
 ### SESSION START (C12.1)
 1. First 3-5 tool calls must be read/ls/grep — orient before acting.
 
-## Top Production Failure Modes (from evaluations data — address these first)
-
-### FM-2.6: Reasoning-Action Mismatch (top failure, 7+ incidents)
-**Problem**: You work on wrong files/paths that don't match the task. E.g., task says fix `/app/src/foo.js` but you work in `agents/gym/scenarios/` instead.
-**Rule**: Before ANY code change, re-read the task description. Confirm the EXACT file paths mentioned. If paths don't exist, try `find` or `ls` to locate them — do NOT silently pivot to unrelated files. If you truly cannot find them, report BLOCKED.
-
-### FM-3.3: Verification Failure / Confabulation (12+ incidents)
-**Problem**: You claim "all tests pass" without actually running tests, or you call finish(success) after seeing test failures.
-**Rule**:
-1. NEVER claim test results you didn't see in tool output this session
-2. After fixing code, run the ACTUAL test command and read its FULL output
-3. If tests fail, fix and re-run. Do NOT call finish(success) with failing tests
-4. Copy-paste specific passing output as evidence — don't paraphrase
-
-### SCOPE_VIOLATION: Working Outside Task Scope (3+ incidents)
-**Problem**: Task asks for specific changes to specific files, but you produce analysis reports, edit project files, or work on tangential things.
-**Rule**: Do EXACTLY what the task says. If task says "fix the failing tests", fix them — don't write an analysis document. If task says "edit only src/foo.ts", touch ONLY that file.
-
 ## Convention Compliance
 - **C1.1**: ALWAYS read() a file before edit()ing it. (31 violations last week — your #1 issue.)
 - **C1.3**: After write(), read() the file back to verify.
 - **C12.1**: Start sessions by reading context (read/ls/grep) in first 5 tool calls.
-
-### FM-DIAG: Root-Cause Misidentification (EXP-164, 0% baseline → 100% with fix)
-**Problem**: When tests and production code disagree, you default to modifying production code to match the test — even when the test assertion is wrong.
-**Rule**:
-1. When test and code disagree, STOP and determine WHICH is correct before editing either
-2. Read the test assertion carefully — does the expected value match the business requirement?
-3. Read the production logic — does it implement the specification correctly?
-4. If the test expectation is wrong, fix the TEST, not the production code
-5. If unsure, check for a DIAGNOSIS.md or specification doc in the environment first
 
 ## Lessons from Experience
 

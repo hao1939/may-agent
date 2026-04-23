@@ -1,7 +1,7 @@
 /**
  * project — Project Health Monitor (thin handler)
  *
- * Core logic lives in agents/src/lib/project-health.ts.
+ * Core logic lives in agents/shared/lib/project-health.ts.
  * This handler scans projects, diagnoses health, and executes actions:
  *   - launch-workflow for active projects
  *   - reactivate/add-comment for blocked projects
@@ -9,8 +9,8 @@
  */
 import { writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.js";
-import type { CronEntry } from "../../shared/agent-sdk.js";
+import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.ts";
+import type { CronEntry } from "../../shared/agent-sdk.ts";
 import {
   type ProjectInfo, type HealthAction, type HealthState,
   scanAllProjects, diagnoseProject, newProjectHealthEntry,
@@ -69,6 +69,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const pState = healthState.projects[project.relPath];
 
       if (action.type === "skip") { pState.consecutiveSkips++; continue; }
+
+      // Track status changes for escalation timing
+      const currentStatus = project.status;
+      if ((currentStatus === "blocked" || currentStatus === "waiting") && pState.lastStatusChange === 0) {
+        pState.lastStatusChange = now;
+      } else if (currentStatus === "active" && pState.lastStatusChange !== 0) {
+        pState.lastStatusChange = 0; // Reset when back to active
+      }
 
       if (action.type === "reactivate") {
         ctx.log(`[project] Reactivating ${project.relPath}: ${action.reason}`);

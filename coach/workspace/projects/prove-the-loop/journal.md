@@ -247,25 +247,3 @@ Evidence of quality: `agents/coder/context.md` contains ~80 lines of detailed, s
 
 **2. Goal met**: No. The goal is to "improve coder quality metric from 0.82 toward 0.9+." The metric has not moved at all. Rules were added to context.md, but there is zero evidence they changed any outco
 
-### Iteration 40 — 2026-04-22T15:45:35.950Z
-**Worker**: Now let me update the diagnosis and report files to reflect the actual data:
-**Reviewer**: BLOCKED — The evaluator requires the coder quality metric to actually move from 0.82 toward 0.9+, but live gym runs cannot execute because `GYM_AGENT_BIN` is not configured in the environment. After 40 iterations:
-
-- All static deliverables exist (diagnosis, rules, validation report, context.md updates)
-- Rules have been added to `agents/coder/context.md` targeting specific failure modes
-- But the metric cannot be re-measured without running the gym, which requires `GYM_AGENT_BIN`
-
-No amount of additional iteration can change a metric that requires infrastructure we don't have access to.
-
-**Evaluator**: BLOCKED eval (score=4/10) — 
-
-SCORE: 4
-
-1. **Deliverables exist**: Yes. Files exist with real content.
-
-2. **Goal met**: No. The goal is to improve a metric. The metric hasn't moved. Adding rules to context.md is preparatory work, not the goal.
-
-3. **Evidence**: No evidence of actual improvement. "Projected improvement" based on assumptions is not evidence.
-
-4. **Milestones honest**: No. M3 ("Run gym experiments") was replaced with static analysis. M4 ("coder.quality reaches 0.85") uses projections, not measurements. M5 ha
-

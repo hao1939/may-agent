@@ -3118,79 +3118,60 @@ src/app/ui/web
 - ⚠️ Event "metric.breach" — 4 pending > 2h
 - ⚠️ Event "session.completed" — 4 pending > 2h
 
-## 2026-04-22T18:40 — Auto (JS cron handler)
+## 2026-04-22T19:15 — Auto (JS cron handler)
 
-- Sessions (24h): 1269
-- Unevaluated: 5 total, 5 actionable, 0 auto-skippable
-- Running sessions: bob (s_1776883003215_752), tech-lead (s_1776883084265_758), may (s_1776611617990_13), coach (s_1776883003266_754)
-- tsc: SKIP (no tsconfig.json)
+- Sessions (24h): 134
+- Unevaluated: 11 total, 6 actionable, 5 auto-skippable
+- Running sessions: may (s_1776873777120_16), coach (s_1776885311620_26), evaluator (s_1776884151411_23), coach (s_1776885311623_81), tech-lead (s_1776883931638_21), bob (s_1776884051394_22), evaluator (s_1776885232340_24), scout (s_1776885281208_25), coach (s_1776883543890_20)
+- tsc: PASS
 - Lessons: 52 lines total (scout 31, optimizer 21)
-- Bob analysis: fresh (23h ago)
-- ⚠️ Event "escalation.created" — 1 pending > 2h
-- ⚠️ Event "metric.breach" — 4 pending > 2h
-- ⚠️ Event "session.completed" — 19 pending > 2h
-- ⚠️ Event "session.failed" — 2 pending > 2h
+- Bob analysis: fresh (2h ago)
+- ⚠️ Agent "bob" — 88% error rate (7/8 sessions)
+- ⚠️ Agent "coach" — 64% error rate (9/14 sessions)
+- ⚠️ Agent "evaluator" — 86% error rate (37/43 sessions)
+- ⚠️ Agent "may" — 48% error rate (12/25 sessions)
+- ⚠️ Agent "optimizer" — 73% error rate (8/11 sessions)
+- ⚠️ Agent "qa" — 89% error rate (8/9 sessions)
+- ⚠️ Agent "scout" — 70% error rate (7/10 sessions)
+- ⚠️ Agent "tech-lead" — 62% error rate (8/13 sessions)
+- ⚠️ Event "session.completed" — 12 pending > 2h
+- ⚠️ Event "session.failed" — 60 pending > 2h
 
-## 2026-04-22T22:40 — Auto (JS cron handler)
+## 2026-04-22T19:15 — Auto (JS cron handler)
 
-- Sessions (24h): 1281
-- Unevaluated: 10 total, 6 actionable, 4 auto-skippable
-- Running sessions: may (s_1776611617990_13), bob (s_1776897352665_889), tech-lead (s_1776897442917_901), coach (s_1776897403347_894)
-- tsc: SKIP (no tsconfig.json)
+- Sessions (24h): 134
+- Unevaluated: 11 total, 6 actionable, 5 auto-skippable
+- Running sessions: may (s_1776873777120_16), coach (s_1776885311620_26), evaluator (s_1776884151411_23), coach (s_1776885311623_81), tech-lead (s_1776883931638_21), bob (s_1776884051394_22), evaluator (s_1776885232340_24), scout (s_1776885281208_25), coach (s_1776883543890_20)
+- tsc: PASS
 - Lessons: 52 lines total (scout 31, optimizer 21)
-- Bob analysis: fresh (3h ago)
-- ⚠️ Event "escalation.created" — 1 pending > 2h
-- ⚠️ Event "metric.breach" — 4 pending > 2h
-- ⚠️ Event "session.completed" — 19 pending > 2h
-- ⚠️ Event "session.failed" — 2 pending > 2h
+- Bob analysis: fresh (2h ago)
+- ⚠️ Agent "bob" — 88% error rate (7/8 sessions)
+- ⚠️ Agent "coach" — 64% error rate (9/14 sessions)
+- ⚠️ Agent "evaluator" — 86% error rate (37/43 sessions)
+- ⚠️ Agent "may" — 46% error rate (12/26 sessions)
+- ⚠️ Agent "optimizer" — 73% error rate (8/11 sessions)
+- ⚠️ Agent "qa" — 89% error rate (8/9 sessions)
+- ⚠️ Agent "scout" — 70% error rate (7/10 sessions)
+- ⚠️ Agent "tech-lead" — 62% error rate (8/13 sessions)
+- ⚠️ Event "session.completed" — 12 pending > 2h
+- ⚠️ Event "session.failed" — 60 pending > 2h
 
-## 2026-04-23T02:40 — Auto (JS cron handler)
+## 2026-04-22T23:15 — Auto (JS cron handler)
 
-- Sessions (24h): 1287
-- Unevaluated: 8 total, 8 actionable, 0 auto-skippable
-- Running sessions: may (s_1776611617990_13)
-- tsc: SKIP (no tsconfig.json)
+- Sessions (24h): 239
+- Unevaluated: 1 total, 1 actionable, 0 auto-skippable
+- Running sessions: may (s_1776873777120_16), coach (s_1776899711642_181), may (cron_1776899681537_180)
+- tsc: PASS
 - Lessons: 52 lines total (scout 31, optimizer 21)
-- Bob analysis: fresh (7h ago)
-- ⚠️ Event "escalation.created" — 1 pending > 2h
-- ⚠️ Event "metric.breach" — 4 pending > 2h
-- ⚠️ Event "session.completed" — 19 pending > 2h
-- ⚠️ Event "session.failed" — 2 pending > 2h
-
-## 2026-04-23T06:40 — Auto (JS cron handler)
-
-- Sessions (24h): 1298
-- Unevaluated: 6 total, 6 actionable, 0 auto-skippable
-- Running sessions: may (s_1776611617990_13), coach (s_1776926203328_1095)
-- tsc: SKIP (no tsconfig.json)
-- Lessons: 52 lines total (scout 31, optimizer 21)
-- Bob analysis: fresh (11h ago)
-- ⚠️ Event "escalation.created" — 1 pending > 2h
-- ⚠️ Event "metric.breach" — 5 pending > 2h
-- ⚠️ Event "session.completed" — 19 pending > 2h
-- ⚠️ Event "session.failed" — 2 pending > 2h
-
-## 2026-04-23T10:40 — Auto (JS cron handler)
-
-- Sessions (24h): 1096
-- Unevaluated: 6 total, 6 actionable, 0 auto-skippable
-- Running sessions: optimizer (s_1776940728382_1199), may (s_1776611617990_13), coach (s_1776940604036_1195)
-- tsc: SKIP (no tsconfig.json)
-- Lessons: 52 lines total (scout 31, optimizer 21)
-- Bob analysis: fresh (15h ago)
-- ⚠️ Event "escalation.created" — 1 pending > 2h
-- ⚠️ Event "session.completed" — 19 pending > 2h
-
-## 2026-04-23T14:40 — Auto (JS cron handler)
-
-- Sessions (24h): 801
-- Unevaluated: 5 total, 5 actionable, 0 auto-skippable
-- Running sessions: coach (s_1776955003918_1299), may (s_1776611617990_13), bob (s_1776955003875_1297)
-- tsc: SKIP (no tsconfig.json)
-- Lessons: 52 lines total (scout 31, optimizer 21)
-- Bob analysis: fresh (19h ago)
-- ⚠️ Event "escalation.created" — 1 pending > 2h
-- ⚠️ Event "metric.breach" — 1 pending > 2h
-- ⚠️ Event "session.completed" — 19 pending > 2h
-- ⚠️ Event "session.failed" — 3 pending > 2h
+- Bob analysis: fresh (6h ago)
+- ⚠️ Agent "bob" — 100% error rate (15/15 sessions)
+- ⚠️ Agent "coach" — 91% error rate (20/22 sessions)
+- ⚠️ Agent "evaluator" — 92% error rate (70/76 sessions)
+- ⚠️ Agent "may" — 48% error rate (25/52 sessions)
+- ⚠️ Agent "optimizer" — 80% error rate (16/20 sessions)
+- ⚠️ Agent "qa" — 94% error rate (15/16 sessions)
+- ⚠️ Agent "scout" — 88% error rate (15/17 sessions)
+- ⚠️ Agent "tech-lead" — 80% error rate (16/20 sessions)
+- ⚠️ Event "session.completed" — 21 pending > 2h
+- ⚠️ Event "session.failed" — 160 pending > 2h
 

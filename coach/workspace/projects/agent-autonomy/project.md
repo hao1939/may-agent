@@ -23,8 +23,8 @@ Agents are passive. They wait for tasks instead of proactively finding and drivi
 - [x] Audit: review each agent's current heartbeat.md, SOUL.md, and actual heartbeat behavior (done, commit d50ff32fe)
 - [x] Design: define clear role, responsibilities, and owned metrics for each agent (done, commit d50ff32fe)
 - [x] Redesign heartbeat.md for each agent — slimmed heartbeats + reference.md per agent (done, commit d50ff32fe)
-- [ ] Verify: observe 2-3 heartbeat cycles per agent after changes — count sessions where agent acts on own-domain problem without being told. Write `.state/autonomy-verification.md` with ≥3 agents showing before/after proactivity examples
-- [ ] Measure: write `.state/heartbeat-productivity.md` with % of heartbeats producing meaningful action (file written, request created, project progress) per agent, target ≥40%
+- [ ] Verify: observe 2-3 heartbeat cycles per agent after changes — are they more proactive? Do they notice and act on problems in their domain?
+- [ ] Measure: heartbeat productivity (% of heartbeats that produce meaningful action vs no-ops)
 
 ## Agents to Review
 | Agent | Role | Key Question |

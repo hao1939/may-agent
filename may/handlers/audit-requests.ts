@@ -2,8 +2,6 @@
  * audit-requests — JS cron handler (Phase 4 of request-tracking).
  *
  * Runs every 2h to reconcile request lifecycle:
- * 0. **Bulk expiry** — expire ALL CREATED requests older than 48h,
- *    EXCEPT P0 requests from human/Hao (those are important directives)
  * 1. Auto-expires stale CREATED `send` requests older than 4h
  *    (they've been injected into multiple heartbeats by then — continuing
  *    to inject them wastes ~$58/day in tokens at 31 stuck requests)
@@ -14,10 +12,6 @@
  * 3. Resets IN_PROGRESS requests older than 4h with no active session → CREATED
  * 4. Archives COMPLETED/FAILED requests older than 7 days
  *
- * Also exports `shouldRateLimit()` for use by request-creation code:
- *   if an agent already has >50 pending CREATED requests, skip creating
- *   new P2 requests (and >100 skips P1 too).
- *
  * Exports create() conforming to HandlerModule.
  */
 
@@ -27,9 +21,6 @@ import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.js";
 import type { CronEntry } from "../../shared/agent-sdk.js";
 
 // ── Configuration ─────────────────────────────────────────────────────
-
-/** CREATED requests (any method) older than this get bulk-expired, except P0 from human. */
-const BULK_EXPIRY_MS = 48 * 60 * 60 * 1000; // 48 hours
 
 /** Send requests older than this in CREATED status get auto-expired. */
 const STALE_SEND_MS = 4 * 60 * 60 * 1000; // 4 hours
@@ -52,15 +43,6 @@ const KNOWN_AGENTS = new Set([
   "scout", "qa", "coder", "amy", "amy-kimi",
 ]);
 
-/** Rate-limit: skip P2 creation when agent has this many pending requests. */
-const RATE_LIMIT_P2_THRESHOLD = 50;
-
-/** Rate-limit: skip P1 creation when agent has this many pending requests. */
-const RATE_LIMIT_P1_THRESHOLD = 100;
-
-/** Entities whose P0 requests are never auto-expired. */
-const PROTECTED_ENTITIES = new Set(["human", "hao", "user"]);
-
 // ── Types ─────────────────────────────────────────────────────────────
 
 interface RequestRow {
@@ -68,8 +50,6 @@ interface RequestRow {
   status: string;
   method: string;
   toAgent: string;
-  fromEntity: string | null;
-  priority: string | null;
   sessionId: string | null;
   createdAt: number;
   completedAt: number | null;
@@ -91,48 +71,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const now = Date.now();
     let expiredSends = 0;
     let expiredNonAgent = 0;
-    let bulkExpired = 0;
-
-    // 0. Bulk-expire ALL CREATED requests older than 48h
-    //    Exception: P0 requests from human/Hao are never auto-expired.
-    //    This is the main mechanism to keep the pending queue under 100.
-    try {
-      const bulkStale = db.prepare(
-        `SELECT requestId, status, method, toAgent, fromEntity, priority, createdAt
-         FROM requests WHERE status = 'CREATED' AND createdAt < ?`
-      ).all(now - BULK_EXPIRY_MS) as RequestRow[];
-
-      for (const req of bulkStale) {
-        // Protect P0 requests from human/Hao
-        const entity = (req.fromEntity ?? "").toLowerCase();
-        const isProtected = (req.priority === "P0") &&
-          Array.from(PROTECTED_ENTITIES).some(e => entity.includes(e));
-        if (isProtected) continue;
-
-        try {
-          db.prepare(
-            `UPDATE requests SET status = ?, summary = ?, completedAt = ?, updatedAt = ? WHERE requestId = ?`
-          ).run(
-            "COMPLETED",
-            `Auto-expired after ${Math.round((now - req.createdAt) / 3600000)}h (bulk 48h expiry)`,
-            now,
-            now,
-            req.requestId,
-          );
-          bulkExpired++;
-        } catch {
-          ctx.log(`[audit-requests] Failed to bulk-expire request ${req.requestId}`);
-        }
-      }
-    } catch {
-      ctx.log("[audit-requests] Failed to query for bulk expiry.");
-    }
-
-    if (bulkExpired > 0) {
-      ctx.log(
-        `[audit-requests] Bulk-expired ${bulkExpired} CREATED request(s) older than ${BULK_EXPIRY_MS / 3600000}h.`
-      );
-    }
 
     // 1. Auto-expire stale CREATED `send` requests (> 4h)
     //    These have been injected into enough heartbeats. Keeping them
@@ -297,7 +235,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     }
     ctx.log(
       `[audit-requests] Audit complete. Active: ${activeCount}, ` +
-      `Bulk expired (48h): ${bulkExpired}, ` +
       `Expired sends: ${expiredSends}, Expired non-agent: ${expiredNonAgent}, ` +
       `Expired agent calls: ${expiredAgentCalls}, ` +
       `Reset: ${resetCount}, Archived: ${archived}.`
@@ -320,56 +257,4 @@ function getActiveSessionIds(persistDir: string): Set<string> {
   } catch {
     return new Set();
   }
-}
-
-// ── Rate-limiting (exported for use by request-creation code) ─────────
-
-/**
- * Check if request creation should be skipped for a given agent/priority.
- *
- * Call this before INSERT INTO requests to prevent queue bloat:
- * - Agent has >50 pending CREATED requests → skip P2
- * - Agent has >100 pending CREATED requests → skip P1
- * - P0 requests are never rate-limited
- *
- * @returns { limited: boolean, reason?: string, pendingCount: number }
- */
-export function shouldRateLimit(
-  db: { prepare(sql: string): { get(...args: any[]): any } },
-  toAgent: string,
-  priority: string | null | undefined,
-): { limited: boolean; reason?: string; pendingCount: number } {
-  const p = (priority ?? "P1").toUpperCase();
-
-  // P0 is never rate-limited
-  if (p === "P0") return { limited: false, pendingCount: 0 };
-
-  let pendingCount = 0;
-  try {
-    const row = db.prepare(
-      `SELECT COUNT(*) as count FROM requests WHERE status = 'CREATED' AND toAgent = ?`
-    ).get(toAgent) as { count: number } | null;
-    pendingCount = row?.count ?? 0;
-  } catch {
-    // DB error → don't block creation
-    return { limited: false, pendingCount: 0 };
-  }
-
-  if (p === "P2" && pendingCount >= RATE_LIMIT_P2_THRESHOLD) {
-    return {
-      limited: true,
-      reason: `Agent "${toAgent}" has ${pendingCount} pending requests (threshold: ${RATE_LIMIT_P2_THRESHOLD} for P2)`,
-      pendingCount,
-    };
-  }
-
-  if (p === "P1" && pendingCount >= RATE_LIMIT_P1_THRESHOLD) {
-    return {
-      limited: true,
-      reason: `Agent "${toAgent}" has ${pendingCount} pending requests (threshold: ${RATE_LIMIT_P1_THRESHOLD} for P1)`,
-      pendingCount,
-    };
-  }
-
-  return { limited: false, pendingCount };
 }

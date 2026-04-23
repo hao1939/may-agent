@@ -15,8 +15,8 @@ Make workflows the default way agents work. Increase workflow coverage from 18% 
 - [x] Identify top 3 freestyle patterns from session archaeology
 - [x] Build one new workflow for the top freestyle pattern (per-agent heartbeat workflows)
 - [x] Update agent heartbeats with workflow-routed framing for top patterns (cron.json updated)
-- [ ] Fix session-sync to backfill workflowRunId from workflow run files — verify with `SELECT COUNT(*) FROM sessions WHERE workflowRunId IS NOT NULL` showing ≥50% increase
-- [ ] Achieve 80% measured workflow coverage — write `.state/workflow-coverage-report.md` with per-agent coverage rates from sessions DB query
+- [ ] Fix session-sync to backfill workflowRunId from workflow run files (code done, awaiting deployment)
+- [ ] Achieve 80% measured workflow coverage
 
 ## Honest Assessment (2026-04-22)
 

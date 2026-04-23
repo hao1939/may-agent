@@ -1,16 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776965805773_1372
+- **Session:** s_1776886661208_29
 - **Status:** done
-- **When:** 2026-04-23T17:37:49.079Z
-- **Duration:** 1m3s
+- **When:** 2026-04-22T19:49:25.375Z
+- **Duration:** 11m44s
 
 ## What Happened
-Two major waste patterns are crystal clear from the request queue:
+The file isn't tracked by git (it's in the agents/ gitignored directory). The edit was applied in-place though, so it'll take effect on next cron tick.
 
-**Finding 1: Coach EXP-188 retry storm** — 12+ duplicate self-fork requests for "EXP-188: Run trials", all CREATED/unresolved. Ages range 5125m to 5636m. Coach keeps re-dispatching the same experiment without completing or canceling prior attempts.
-
-**Finding 2: Evaluator coverage alert flood** — 12+ unacted "Coverage regressed" alerts from metrics-snapshot, all CREATED. Coverage dropped 84→44 with zero response. Each heartbeat generates a new alert that's never resolved.
-
-Let me write these up and notify.
+Now let me summarize my findings:
