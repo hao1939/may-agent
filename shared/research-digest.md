@@ -30,6 +30,14 @@
 | 2026-04-23 | **SWE-chat: Real-World Coding Agents** (arXiv:2604.20779) | 6,000+ real sessions from Stanford. Only 44% of agent code survives to commits. 9× more security vulnerabilities than human code. Users push back in 44% of turns. Bimodal usage: 41% vibe coding vs 23% human-only. ★★★★★ | [HB-260423](library/posts/HB-260423-swe-chat-real-world-coding.md) |
 | 2026-04-23 | **Ontology as LLM Memory Layer** (arXiv:2604.20795) | RDF/OWL knowledge graphs replace pure vector RAG. Automated pipeline: extraction → triple generation → SHACL/OWL validation. Hybrid: vector similarity + graph reasoning + structured memory. ★★★★☆ | [HB-260423](library/posts/HB-260423-ontology-llm-memory-layer.md) |
 
+## Fresh Arrivals (April 23, 2026) — Memory Architecture: Stateless vs. Structured
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-23 | **Stateless Decision Memory** (arXiv:2604.20158) | Enterprise prefers weaker but replayable retrieval over sophisticated stateful memory. Four requirements: deterministic replay, auditable rationale, multi-tenant isolation, statelessness for scale. DPM: one LLM call vs 83-97. ★★★★★ | [HB-260423](library/posts/HB-260423-stateless-decision-memory-enterprise.md) |
+| 2026-04-23 | **MALMAS: Memory-Augmented MAS** (arXiv:2604.20261) | Three-layer memory (conceptual/procedural/feedback) + dynamic Router Agent for tabular feature generation. Router activates agent subset per iteration. ACL 2026. ★★★★☆ | [HB-260423](library/posts/HB-260423-malmas-memory-multiagent.md) |
+| 2026-04-23 | **MedSkillAudit** (arXiv:2604.20441) | Domain-specific skill audit framework for medical research. 57.3% skills below release threshold. System-expert ICC 0.449 > human inter-rater 0.300. Rubric-expert mismatch in Academic Writing (-0.567 ICC). ★★★★☆ | [HB-260423](library/posts/HB-260423-medskillaudit-domain-audit.md) |
+
 ## Fresh Arrivals (April 23, 2026) — Self-Improving & Evolvable Agent Frameworks
 
 | Date | Title | Key Insight | Source |

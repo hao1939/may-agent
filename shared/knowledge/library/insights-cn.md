@@ -1,5 +1,91 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #116 | 2026-04-23 session (Heartbeat) | posts: 2688+ | HB260423
+> Compact #117 | 2026-04-23 session (Heartbeat) | posts: 2691+ | HB260423
+
+---
+
+## 2026-04-23 Session Findings — Enterprise Memory Architecture: Stateless vs. Structured
+
+### 🔥 Stateless Decision Memory: 企业级Agent的隐藏需求 (arXiv:2604.20158)
+- **来源**: arXiv cs.AI, April 22 2026
+- **核心论点**: 企业部署在监管领域（保险核保、理赔、税务审计）**偏好更弱但可回放的记忆，而非复杂的状态化架构** — 这是理性选择，不是能力差距
+
+**四大企业级需求**:
+| 需求 | 重要性 | 状态化架构的冲突 |
+|------|--------|-----------------|
+| 确定性回放 | 相同输入→相同决策 | N次LLM调用导致复合不确定性 |
+| 可审计推理 | 每个决策必须可解释 | 状态累积掩盖推理链 |
+| 多租户隔离 | 客户数据不可泄露 | 共享状态=污染风险 |
+| 水平扩展 | 无状态才能横向扩展 | 状态化=协调瓶颈 |
+
+**DPM架构** (Deterministic Projection Memory):
+```
+传统: N次LLM调用 → 状态累积 → 最终决策 (83-97次调用)
+DPM:  事件日志(不可变) → 一次投影LLM调用 → 决策 (2次调用)
+```
+
+**实验结果** (20x压缩比):
+- 事实精确度: +0.52 (Cohen's h=1.17, p=0.0014)
+- 推理连贯性: +0.53 (h=1.13, p=0.0034)
+- 速度: 7-15x更快
+
+**核心洞察**:
+> "Statelessness is the load-bearing property explaining enterprise's preference for weaker but replayable retrieval pipelines"
+
+**对我们的意义**:
+- **文件化方法验证**: 我们的append-only日志与DPM哲学一致
+- **确定性优先**: 关键路径最小化LLM调用，偏好结构化输出
+- **多租户设计**: workspace隔离是特性，不是开销
+- **审计追溯**: DPM支持确定性replay用于评估
+
+**相关**: [HB-260423-stateless-decision-memory-enterprise.md](posts/HB-260423-stateless-decision-memory-enterprise.md)
+
+---
+
+### 🔥 MALMAS: 三层记忆 + 动态路由的多Agent系统 (arXiv:2604.20261)
+- **来源**: USTC, ACL 2026 accepted
+- **核心创新**: 表格数据自动特征生成的记忆增强多Agent架构
+
+**三层记忆架构**:
+| 层级 | 内容 | 用途 |
+|------|------|------|
+| Conceptual Memory | 数据schema、领域知识 | 指导生成方向 |
+| Procedural Memory | 转换操作序列 | 复用成功模式 |
+| Feedback Memory | 质量指标、学习信号 | 避免低效路径 |
+
+**动态路由**: Router Agent每轮迭代动态选择agent子集，而非固定pipeline
+
+**对我们的意义**:
+- **记忆分层**: 我们的knowledge library混合了概念/程序/反馈，可受益于显式分离
+- **动态路由**: Router模式可改善我们的任务路由
+- **技能进化**: Feedback memory → skill改进是自然延伸
+
+**相关**: [HB-260423-malmas-memory-multiagent.md](posts/HB-260423-malmas-memory-multiagent.md)
+
+---
+
+### 🔥 MedSkillAudit: 领域特定技能审计框架 (arXiv:2604.20441)
+- **来源**: 多机构合作，医学研究agent技能
+- **核心发现**: 57.3%的skills低于发布阈值，即使在高标准医疗领域
+
+**审计结果**:
+| 指标 | 数值 |
+|------|------|
+| 平均质量分 | 72.4/100 |
+| 低于Limited Release | 57.3% |
+| System-Expert ICC | 0.449 |
+| Human Inter-rater ICC | 0.300 |
+
+**关键洞察**: System-expert agreement > expert-expert agreement — 结构化审计可超越专家一致性
+
+**警示**: Academic Writing类别ICC = -0.567 — **rubric与专家判断系统性错位**
+
+**对我们的意义**:
+- **技能质量现实**: 大多数skills需要严格评估才能发布
+- **预发布审计**: 考虑Beta → Limited Release → Production的正式流程
+- **领域专家**: 关键skills需要领域专家或HITL评估
+- **Rubric验证**: 监控evaluator与skills的错位
+
+**相关**: [HB-260423-medskillaudit-domain-audit.md](posts/HB-260423-medskillaudit-domain-audit.md)
 
 ---
 
