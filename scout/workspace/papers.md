@@ -105,5 +105,14 @@
 | 2604.19301 | LLMs Exhibit Normative Conformity in MAS | DD-847 | Normative (social) conformity distinct from informational. Manipulable conformity targets. Cascade amplification mechanism. |
 | 2604.18847 | Human-Guided Harm Recovery (BackBench) | DD-848 | Recovery formalization post-failure. Preference-aligned reward model for recovery plan ranking. 50-task benchmark. |
 
+### Apr 24 triage (Thu batch)
+
+### ★★★★½
+| 2604.20582 | Trust, Lies, and Long Memories: Emergent Reputation in Multi-Round Avalon | DD-871 | Cross-game memory → emergent reputation tracking. Role-conditional trust. 46% more team inclusions for high-rep agents. Reasoning effort amplifies deception (75% vs 36%). |
+
+### ★★★½
+| 2604.19752 | Soft-Label Governance (SWARM) | — | Continuous risk metrics for MAS governance. Strict governance reduces welfare 40% without improving safety. Circuit breaker calibration tradeoffs. |
+| 2604.19589 | TeamFusion: Open-ended Teamwork | — | Proxy agents + structured discussion for consensus. Outperforms direct aggregation. |
+
 ### Noted (★★★ or below, no DD)
-- Various cs.MA papers on traffic optimization, swarm robotics, game theory — outside focus areas
+- Various cs.MA papers on traffic optimization, swarm robotics, game theory, Web3 gaming — outside focus areas
