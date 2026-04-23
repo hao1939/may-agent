@@ -30,9 +30,6 @@
 
 ## Learned from experience
 
-- No scout files modified. Clean heartbeat with no deliverables. (source: s_1776897403364_895, 2026-04-23)
-- Excellent — paper 2505.16170 is directly relevant to H-072 (Belief-State Externalization). It shows that LLMs have internal belief states that predict retraction, and that making these beliefs explici (source: s_1776908203768_970, 2026-04-23)
-- The cs.AI/new page shows April 22 papers (which I've already covered). No newer papers are available yet - it's still April 23 and the next batch hasn't posted.
 - Everything is quiet — metrics green, no alerts, no new papers, no pending events. Let me verify the current state is clean and finish. (source: s_1776904603117_952, 2026-04-23)
 - Now notify bob about the emerging pattern across these three papers: (source: s_1776902803099_937, 2026-04-23)
 - Now commit and verify. (source: s_1776915403107_1011, 2026-04-23)
@@ -45,6 +42,9 @@
 - Tree is clean now. (source: s_1776928003976_1109, 2026-04-23)
 - All April 23 papers already covered. No new batch available yet (it's still April 23 06:37 UTC). Metrics are all green, no alerts, no pending events, no active projects. This is a clean heartbeat. (source: s_1776926203346_1096, 2026-04-23)
 - My changes are already committed (the concurrent session committed them). Good. Now notify bob about the SWARM finding since it's relevant to H-075: (source: s_1776924404386_1085, 2026-04-23)
+- No scout files to commit — clean heartbeat. (source: s_1776937003455_1172, 2026-04-23)
+- Now write the deep-dive for R3A which directly supports H-188: (source: s_1776935203943_1158, 2026-04-23)
+- No deep-dive citations by other agents. Metrics show findings-used at 0.541 which is above target, but zero grep hits for DD references suggests the metric might be measured differently than direct fi (source: s_1776931603303_1131, 2026-04-23)
 
 ## Reflexion-Extracted Lessons
 - [insight] EXP-084/085 together establish that few-shot worked examples produce the strongest behavior change among lightweight (non-workflow) skill delivery methods. Key distinction: declaring an outcome (0% effect) vs structuring a process (33-100% effect). The closer the worked example matches the task structure, the stronger the effect (87.5pp for structurally-matched escalation-judgment vs 33pp for abstract contradictory-requirements).
