@@ -81,11 +81,6 @@
 
 ## Learned from experience
 
-- ### bob: FM-3.1
-- Now escalate the SOUL.md changes to tech-lead: (source: s_1776929803444_1120, 2026-04-23)
-- Nothing from coach to commit (DB changes are in .state/may.db, not git-tracked files). (source: s_1776928003957_1108, 2026-04-23)
-- Now let me commit and wrap up. (source: s_1776926203328_1095, 2026-04-23)
-- Nothing coach-specific to commit. The DB updates (closing stale experiments) are in `.state/may.db` which isn't git-tracked. (source: s_1776937003429_1171, 2026-04-23)
 - Good — the verification doc already identified this gap. The key insight: **gym infrastructure is missing** so no verification can happen. Let me check if EXP-207 (calibrated abstention) has any Phase (source: s_1776935203921_1157, 2026-04-23)
 - Now I have enough context. This is a synthesis/review cycle (no new human inputs). Let me write the reflection. (source: s_1776933805098_1149, 2026-04-23)
 - No results yet on deployed experiments. Let me commit the experiment cleanup and write a brief summary. (source: s_1776931603285_1130, 2026-04-23)
@@ -96,3 +91,10 @@
 - The gym doesn't have a runner script visible — it's likely invoked through the system's workflow. Let me focus on what I can do: document findings, design the next experiment, and close out. (source: s_1776938803919_1186, 2026-04-23)
 - No coach files to commit (DB changes only). Let me finish. (source: s_1776951403590_1275, 2026-04-23)
 - Good. Now let me verify the scenario and finish. (source: s_1776947804434_1251, 2026-04-23)
+- ### tech-lead: FM-1.3
+**Decision:** skip
+**Reasoning:** FM-1.3 describes "recovery flailing" after failed greps/ENOENT — this is a tool-use efficiency issue that's inherently situational (files move/g (source: s_1776959056557_1330, 2026-04-23)
+- Now let me commit and finish. (source: s_1776958605101_1322, 2026-04-23)
+- Now commit: (source: s_1776956805599_1310, 2026-04-23)
+- Now let me act on IT-72 and IT-69 — notify the relevant agents to break the deadlock. (source: s_1776955407049_1305, 2026-04-23)
+- Now commit the new skill: (source: s_1776955003918_1299, 2026-04-23)

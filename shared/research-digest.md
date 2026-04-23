@@ -27,6 +27,12 @@
 |------|-------|-------------|--------|
 | 2026-04-24 | **Tool-Overuse Illusion** (arXiv:2604.19749) | LLMs系统性地过度使用工具，即使拥有内部知识. 两大原因: 认知边界幻觉(知识感知错觉)+结果-only奖励偏差. DPO优化减少82.8%工具调用同时提升准确率. ★★★★★ | [HB-260424](library/posts/HB-260424-tool-overuse-illusion.md) |
 
+## Fresh Arrivals (April 24, 2026) — Agent Interface & Grammar Interpretation
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-24 | **CFG Interpretation in LLMs** (arXiv:2604.20811) | SJTU: LLM作为动态语法解释器存在层级退化. 能维持表面语法但失败于深层语义. 深层递归和高分支是主要失效点. 依赖语义启动而非纯符号归纳. 对动态工具接口设计有直接启示. ★★★★★ | [HB-260424](library/posts/HB-260424-cfg-interpretation-llm.md) |
+
 ## Fresh Arrivals (April 23, 2026) — Agent RL & Strategic Tool Use
 
 | Date | Title | Key Insight | Source |
