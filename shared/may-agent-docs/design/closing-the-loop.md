@@ -180,11 +180,9 @@ The reviewer in persistent-task is the weakest link. Tracked by reviewer-effecti
 
 Added `"Can't resolve? Escalate to May via agents.send()."` to 6 block messages in cross-edit-guard.ts (4), write.ts (1), completeness-guard.ts (1).
 
-#### G14: `trackRequest` Deprecation
+#### G14: `trackRequest` Deprecation — ✅ RESOLVED
 
-**Current:** `trackRequest` on HandlerContext is marked `@deprecated` but still in the interface, still used by cron.ts and several callers. It predates the event-based routing.
-
-**Fix:** Not urgent — it still works. Track for removal when all callers migrate to event-based request handling. Remove from HandlerContext interface once zero callers remain.
+**Resolved 2026-04-17.** Agent-facing notifications migrated from `trackRequest()` to events table. `trackRequest` remains for infra work tracking (fork/call/heartbeat session linkage) — this is correct, not deprecated. See [request-event-architecture.md](request-event-architecture.md).
 
 #### G15: `onEvent` Redundancy in workflow-tool.ts
 
