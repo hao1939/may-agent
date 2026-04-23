@@ -36,7 +36,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { learnFromSession } from "../../src/lib/context-learn.js";
+import { learnFromSession } from "../../agents/shared/evaluation/context-learn.js";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -1616,6 +1616,39 @@ function main() {
   }
 
   const adapter = adapterFactory();
+
+  // Check scenario exists before running
+  const scenarioDir = join(SCENARIOS_DIR, args.scenario);
+  const meta = loadScenarioMeta(scenarioDir);
+  if (!existsSync(scenarioDir) || (!meta?.sessions && !existsSync(join(scenarioDir, "scenario.json")))) {
+    const errorResult = {
+      scenario: args.scenario,
+      adapter: args.adapter,
+      agent: args.agent,
+      lab_fork: args.lab || null,
+      workflow: false,
+      passed: false,
+      checks: [],
+      judgments: [],
+      summary: `Scenario "${args.scenario}" not found or has no scenario.json`,
+      agent_status: "error",
+      duration_ms: 0,
+      session_id: "",
+      session_path: "",
+      work_dir: "",
+      gym_root: SCENARIOS_DIR,
+      prompt_hash: null,
+      prompt_text: null,
+      framework_sha: null,
+      model: null,
+      categories: [],
+      tags: [],
+      tier: null,
+    };
+    console.log(JSON.stringify(errorResult, null, 2));
+    process.exit(1);
+  }
+
   const result = runScenario(args.scenario, adapter, args.agent, args.lab, args.timeout, args.commonSense || undefined);
   console.log(JSON.stringify(result, null, 2));
 
