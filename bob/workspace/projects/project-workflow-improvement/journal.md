@@ -19,3 +19,23 @@
 
 **(c) First step:** Read `project.md` and `.state/` directory to understand current metrics, targets, and any existing experiment results. Then fork scout to research "how other AI agent systems handle project orchestration and context management" and fork amy-kimi for "practical tips from Chinese developer communities on AI agent workflow optimization." While waiting, analyze existing metrics data to identify the worst-performing metric and draft the experiment plan.
 
+### Iteration 3 — 2026-04-23T19:10:44.530Z
+**Worker**: Research agents are working. The deliverables are created. Let me finish.
+**Reviewer**: CONTINUE — Good — both files exist with substantive content. The metrics analysis correctly identifies stall-rate as the worst metric and experiment-002 has a concrete plan. These deliverables fulfill the requested output from iteration 2.
+
+Now I need to check: does "Identify worst metric → create experiment project for it" milestone get satisfied?
+
+CONTINUE — Deliverables exist and are substantive. Now convert the plan into an actual running experiment.
+
+**(a) Concrete output:** 
+1. `.state/experiments/experiment-002-status.md` — with status changed to ACTIVE, recording the specific blocked projects being used as test subjects
+2. Update `.state/metrics-analysis.md` with a "Next Steps" section documenting that stall-rate was identified as worst and experiment-002 targets it
+
+The milestone **"Identify worst metric → create experiment project for it"** is complete — metrics-analysis.md identifies stall-rate (30% vs 20% target) as worst, and experiment-002-plan.md targets it.
+
+**(b) What's different:** Previous iteration produced the analysis and plan. This iteration activates the experiment — find a currently blocked/stalled project, apply the auto-scope intervention to it, and record the before/after.
+
+**(c) First step:** Run `ls .state/experiments/` to see all experiment files, then check for any currently stalled projects by reading the project tracker state (look at `agents/bob/workspace/projects/` for projects with high iteration counts or blocked status) to pick a test subject for experiment-002.
+
+### Iteration 4 — 2026-04-23T19:11:01.864Z
+**Worker**: 

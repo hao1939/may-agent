@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Priority**: P1
-**Iteration**: 2
+**Iteration**: 4
 **Health**: 6/10
 
 **Stop Reason**: 
@@ -37,7 +37,7 @@ Continuously improve the project workflow. This is a TRACKER — each experiment
 ## Milestones
 - [x] Rich Current State: tested, adopted
 - [x] Baseline measurement: measure stall-rate, false-done, iterations-to-complete across all projects
-- [ ] Identify worst metric → create experiment project for it
+- [x] Identify worst metric → create experiment project for it
 - [x] First experiment completes → adopt or reject
 - [x] Second experiment completes → adopt or reject → pwi-evaluator-tuning ADOPTED (2026-07-29)
 - [ ] All three metrics meet targets
@@ -49,8 +49,8 @@ Continuously improve the project workflow. This is a TRACKER — each experiment
 - **Evidence**: breadcrumb-gap manual test (rich context: 1 iter vs 6)
 
 ## Current State
-Smart context experiment complete (TRIAL verdict). 3/6 milestones done. Next: design second experiment. Top candidate: evaluator tuning — pwi-smart-context got stuck in evaluator rejection loops (scored <7 three times). Also stall-rate (30% vs 20% target) still needs addressing — root cause is unclear milestones causing drift (milestone auto-scope experiment).
-
+Iteration 3. Milestones: 5/6 done.
+Reviewer: Good — both files exist with substantive content. The metrics analysis correctly identifies stall-rate as the worst metric and experiment-002 has a concrete plan. These deliverables fulfill the reques
 ## Baseline Measurement (2026-04-22)
 
 **Sample**: 4 projects (context-learning, context-learning-impl, reviewer-effectiveness, agent-cli-research)
@@ -68,5 +68,7 @@ Smart context experiment complete (TRIAL verdict). 3/6 milestones done. Next: de
 **Next action**: The "Smart context generation" experiment is already designed and targets iteration efficiency. Prioritize implementing it.
 
 ## Iteration Summary
+- **Iter 3**: Research agents are working. The deliverables are created. Let me finish.
+
 
 ## Comments
