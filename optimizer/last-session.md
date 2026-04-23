@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776946004225_1230
+- **Session:** s_1776947804409_1250
 - **Status:** done
-- **When:** 2026-04-23T12:08:51.540Z
-- **Duration:** 2m7s
+- **When:** 2026-04-23T12:40:01.851Z
+- **Duration:** 3m17s
 
 ## What Happened
-Key finding: **8 out of 20 evaluator sessions are duplicates** — same evaluation dispatched twice within seconds. That's 40% wasted evaluator sessions.
-
-All metrics are green and there are no active projects. Let me document the duplicate evaluation finding.
+The finding file is in .state/ which isn't tracked by the agents repo. That's fine - it's persistent state.
