@@ -81,11 +81,6 @@
 
 ## Learned from experience
 
-- The verification gate seems to want file-level verification. I only modified DB records, not files. Let me read a deliverable file. (source: s_1776915403090_1010, 2026-04-23)
-- No gym agent available for running experiments. Let me wrap up this heartbeat with a clean state assessment. (source: s_1776913603114_1001, 2026-04-23)
-- Now let me notify the relevant agents about the critical findings: (source: s_1776912206047_995, 2026-04-23)
-- Gym scripts don't exist in the filesystem. This is an async environment — gym runs happen externally. Let me update EXP-203 status and commit the fork so it's ready for execution. (source: s_1776911803739_988, 2026-04-23)
-- No gym scripts available. So I can't run EXP-203 directly. Let me focus on what I can do:
 - Now let me commit and finish. The key finding this heartbeat is clear: the `diagnosis-before-action` skill needs re-verification. (source: s_1776920803961_1057, 2026-04-23)
 - Now let me record the EXP-203 status — the lab fork exists but gym can't run real agents (stub mode only). The experiment is designed and ready but needs real agent invocation. (source: s_1776919003928_1039, 2026-04-23)
 - ### bob: FM-3.1
@@ -96,3 +91,14 @@
 - Good — the verification doc already identified this gap. The key insight: **gym infrastructure is missing** so no verification can happen. Let me check if EXP-207 (calibrated abstention) has any Phase (source: s_1776935203921_1157, 2026-04-23)
 - Now I have enough context. This is a synthesis/review cycle (no new human inputs). Let me write the reflection. (source: s_1776933805098_1149, 2026-04-23)
 - No results yet on deployed experiments. Let me commit the experiment cleanup and write a brief summary. (source: s_1776931603285_1130, 2026-04-23)
+- Now I have the full picture. Let me finalize my analysis:
+
+---
+
+### bob: FM-2.6 (Reasoning-Action Mismatch)
+**Decision:** skip
+**Reasoning:** Bob already has `verify-before-finish.md` and `evidence-ov (source: s_1776944654509_1225, 2026-04-23)
+- Not tracked anywhere. Let me escalate this properly and wrap up. This is the most impactful thing I can do this heartbeat. (source: s_1776944203189_1217, 2026-04-23)
+- Now let me commit and finish. (source: s_1776942404768_1209, 2026-04-23)
+- No changes to commit from my work (hypothesis is in .state/, audit is in gitignored workspace). That's fine — my deliverables are the analysis files. (source: s_1776940604036_1195, 2026-04-23)
+- The gym doesn't have a runner script visible — it's likely invoked through the system's workflow. Let me focus on what I can do: document findings, design the next experiment, and close out. (source: s_1776938803919_1186, 2026-04-23)

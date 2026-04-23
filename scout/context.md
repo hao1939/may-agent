@@ -30,10 +30,6 @@
 
 ## Learned from experience
 
-- Everything is quiet — metrics green, no alerts, no new papers, no pending events. Let me verify the current state is clean and finish. (source: s_1776904603117_952, 2026-04-23)
-- Now notify bob about the emerging pattern across these three papers: (source: s_1776902803099_937, 2026-04-23)
-- Now commit and verify. (source: s_1776915403107_1011, 2026-04-23)
-- Commit bb9afef4a is there. (source: s_1776913603131_1002, 2026-04-23)
 - Now commit and verify: (source: s_1776911803757_989, 2026-04-23)
 - The blocker seems to be detecting the `/tmp/new_ids.txt` file I wrote. Let me do a trivial verification. (source: s_1776922604151_1073, 2026-04-23)
 - The gate seems stuck thinking I wrote files. Let me try reading a file to satisfy the verification requirement: (source: s_1776920803977_1058, 2026-04-23)
@@ -45,6 +41,10 @@
 - No scout files to commit — clean heartbeat. (source: s_1776937003455_1172, 2026-04-23)
 - Now write the deep-dive for R3A which directly supports H-188: (source: s_1776935203943_1158, 2026-04-23)
 - No deep-dive citations by other agents. Metrics show findings-used at 0.541 which is above target, but zero grep hits for DD references suggests the metric might be measured differently than direct fi (source: s_1776931603303_1131, 2026-04-23)
+- Hmm, my commit only changed H-075.md. Let me verify: (source: s_1776944203209_1218, 2026-04-23)
+- Verification step — read the deliverables: (source: s_1776942404784_1210, 2026-04-23)
+- Now commit and verify. (source: s_1776940604052_1196, 2026-04-23)
+- Now write a hypothesis from the Forage V2 paper and notify bob: (source: s_1776938803938_1187, 2026-04-23)
 
 ## Reflexion-Extracted Lessons
 - [insight] EXP-084/085 together establish that few-shot worked examples produce the strongest behavior change among lightweight (non-workflow) skill delivery methods. Key distinction: declaring an outcome (0% effect) vs structuring a process (33-100% effect). The closer the worked example matches the task structure, the stronger the effect (87.5pp for structurally-matched escalation-judgment vs 33pp for abstract contradictory-requirements).

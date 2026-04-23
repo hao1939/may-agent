@@ -29,9 +29,6 @@
 ## Learned from experience
 
 - ### Summary
-- [FM-1.3] Repeated git commands in non-git directory (/app) before switching strategy; multiple wasted discovery calls. (source: s_1776902803137_939, 2026-04-23)
-- ### Summary
-- ### Summary
 - ### Summary
 - Spent many calls on avoidable environment/path discovery after the first 'not a git repo' error at /app; did not immediately pivot to /app/agents where the repo lives (git log/status both failed at /a (source: s_1776919003981_1042, 2026-04-23)
 - Started verification from the wrong directory: ran `git log`/`git status` at `/app` where there is no `.git`, causing immediate failures and wasted calls (git code 128 twice). Evidence: tool outputs s (source: s_1776917204208_1031, 2026-04-23)
@@ -41,8 +38,11 @@
 - ### Summary
 - [FM-1.3] Repeatedly attempted git commands in a non-git working directory without first locating the correct repo root (git log, git diff both failed with 'not a git repository'). (source: s_1776937003487_1174, 2026-04-23)
 - ### Summary
-Reviewed recent agent-repo changes and spot-checked the `qa-heartbeat` workflow file that was modified to remove the “RED METRIC GATE”. The change itself is small and appears logically cor (source: s_1776935203976_1160, 2026-04-23)
 - ### Summary
-No pending events/projects. I inspected the most recent `/app/agents` commit (a design doc) and attempted to perform mandatory QA verification; the environment is missing the `tsc`/`vitest (source: s_1776933404563_1147, 2026-04-23)
 - ### Summary
-I checked for unverified recent changes and reviewed the latest commit in the actual git repo at `/app/agents` (not `/app`). I read both changed files from commit `70d235f80` and attempted (source: s_1776931603348_1133, 2026-04-23)
+- ### Summary
+Found one recent, unverified change in the **/app/agents** repo: `agents/vitest.config.mjs` was added/updated to exclude `gym/**` and `test/gym/**` from Vitest runs. I attempted the mandat (source: s_1776942404821_1212, 2026-04-23)
+- ### Summary
+The repo root (`/app`) is **not a git repository**, so I can’t verify “what changed in the last 6h” from here. I instead did a small functional sanity check by reading and executing the gr (source: s_1776940604093_1198, 2026-04-23)
+- ### Summary
+No pending events/projects and no active alerts. I attempted the required verification steps, but this workspace is not a git repo and does not contain the expected Node toolchain entrypoi (source: s_1776938803976_1189, 2026-04-23)

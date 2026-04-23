@@ -41,10 +41,6 @@
 
 ## Learned from experience
 
-- Already committed. Good. (source: s_1776911803694_986, 2026-04-23)
-- Good — the INDEX now has all KE-336 through KE-356. The entries are referenced properly. Task complete. (source: s_1776910158898_982, 2026-04-23)
-- Now commit and finish. (source: s_1776922604086_1070, 2026-04-23)
-- Now commit: (source: s_1776920803916_1055, 2026-04-23)
 - I'm a reviewer — I didn't write files, I only evaluated. Let me verify the evaluation is sound: (source: s_1776920143052_1051, 2026-04-23)
 - BLOCKED
 - `claude -p` needs `ANTH (source: s_1776920133344_1050, 2026-04-23)
@@ -56,6 +52,10 @@
 - Now let me update the H-EXP-010 status to reflect that I've re-escalated. (source: s_1776937003389_1169, 2026-04-23)
 - Now dismiss the metric breach event (23h old, metrics are green), and check agent-cli-research: (source: s_1776935203882_1155, 2026-04-23)
 - Now let me dismiss the stale metric breach and commit: (source: s_1776933404464_1142, 2026-04-23)
+- No git repo — that's fine. (source: s_1776944203149_1215, 2026-04-23)
+- Now update the hypothesis status: (source: s_1776942404721_1207, 2026-04-23)
+- Now let me re-escalate the H-EXP-010 patch since May hasn't applied it yet. (source: s_1776940603988_1193, 2026-04-23)
+- Now let me update the hypotheses DB and commit: (source: s_1776938803876_1184, 2026-04-23)
 
 ## Reflexion-Extracted Lessons
 - [insight] Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/.
