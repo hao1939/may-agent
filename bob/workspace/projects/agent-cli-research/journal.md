@@ -170,3 +170,5 @@ This has been the same blocker since iteration 4. Nine iterations of file rewrit
 
 **Specific external dependency needed:** At least one of `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, or `OPENAI_API_KEY` must be set in the environment.
 
+**Evaluator**: BLOCKED eval (score=0/10) — I'm a reviewer — I didn't write files, I only evaluated. Let me verify the evaluation is sound:
+

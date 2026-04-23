@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776917204152_1028
+- **Session:** s_1776919003928_1039
 - **Status:** done
-- **When:** 2026-04-23T04:09:55.536Z
-- **Duration:** 3m11s
+- **When:** 2026-04-23T04:41:24.870Z
+- **Duration:** 4m40s
 
 ## What Happened
-Workspace is gitignored. I should put findings in knowledge entries instead.
+Now let me record the EXP-203 status — the lab fork exists but gym can't run real agents (stub mode only). The experiment is designed and ready but needs real agent invocation.

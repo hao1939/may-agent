@@ -1,6 +1,6 @@
 # Project: Agent CLI Research — Claude Code, Gemini CLI, Codex
 
-**Status**: active
+**Status**: blocked
 **Owner**: bob
 **Priority**: P2
 **Iteration**: 10
@@ -54,7 +54,7 @@ Our agents orchestrate work but struggle with complex code changes (can't access
 - [x] Adopt: write `agents/shared/skills/cli-coding/SKILL.md` documenting best practices
 
 ## Current State
-Iteration 10. Milestones: 5/5 done.
+Blocked: The evaluator requires "successful CLI invocations producing useful output." All three CLIs require API keys/auth tokens that are not available in thi
 ## Iteration Summary
 - **Iter 2**: Now I have all the info needed. Let me create the deliverables.
 
