@@ -1,28 +1,24 @@
 # Unreviewed findings (QA heartbeat)
 
-Date: 2026-04-23
+## Environment / repo status
+- Project root `/app` is **not** a git repository. Git history exists under `/app/agents` only. (evidence: `find .. -maxdepth 3 -name .git` shows `../app/agents/.git`)
 
-## Context
-Attempted to perform standard heartbeat verification (git scan + tsc/vitest) in `/app`. The git repository lives under `/app/agents` (there is no `.git` at `/app`).
+## Recent change spotted
+- Latest commit in `/app/agents`: `4120d9b5a coach: heartbeat - EXP-201 skill activation experiment designed`.
+  - Only file changed: `agents/coach/last-session.md` (evidence: `git show --name-only --oneline -1`).
 
-## Evidence
-- `git log` from `/app` failed: “not a git repository”.
-- `/app/agents` contains `.git` and recent commits.
-- `./node_modules/.bin/tsc --noEmit` (run from `/app/agents`) failed: `No such file or directory`.
-- `./node_modules/.bin/vitest --run` (run from `/app/agents`) failed: `No such file or directory`.
-- `package.json` lists `typescript` in `devDependencies`, but `npm ls typescript --depth=0` reports `(empty)`.
+## Verification blockers (CRITICAL for strict QA gate)
+- Cannot run mandatory `./node_modules/.bin/tsc --noEmit` at repo root because `node_modules` does not exist in `/app` (evidence: `/bin/bash: ./node_modules/.bin/tsc: No such file or directory`).
+- Attempting to run TypeScript in `/app/agents` also fails because `typescript` is **not installed** in that workspace despite being listed in `devDependencies`.
+  - `npm ls typescript` returns `(empty)`.
+  - `node_modules/typescript` not found.
+  - `npx tsc --noEmit` errors: "This is not the tsc command you are looking for".
+- Cannot run mandatory `./node_modules/.bin/vitest --run` in `/app/agents`: binary missing; `vitest` not installed. (evidence: `./node_modules/.bin/vitest: No such file or directory`)
 
-## Findings
-### IMPORTANT: Tooling install mismatch blocks mandatory QA checks
-The repo declares TypeScript, but `node_modules` does not contain it; `vitest` also appears absent. This prevents running the required QA commands as specified (and even alternative invocation via `node_modules/typescript/...` fails because the package is missing).
+## File content check
+- Read `agents/coach/last-session.md` (first 200 lines). It appears incomplete (ends at: "Now let me verify the commit:") — likely truncated content or unfinished generation.
 
-Likely causes:
-- `npm install` not run (or a partial/pruned install), or
-- dependencies intentionally minimized but QA process docs still require tsc/vitest.
-
-### MINOR: Recent commit only updates heartbeat metadata
-Latest commit `b083494c0` modifies `shared/federation/heartbeats/local.json` plus a few `last-session.md` docs; no code review needed.
-
-## Recommended next steps
-1. Ensure `npm ci` (or equivalent) is run in `/app/agents` so `typescript` and `vitest` binaries exist.
-2. If the project intentionally does not ship Vitest, update QA mandatory steps/docs to reflect the actual test runner.
+## Suggested follow-ups
+1. Ensure the correct working directory for QA checks (root vs `agents/`).
+2. If `/app/agents` is the intended TS project, install dev deps (`npm ci`) so `tsc` is available.
+3. Clarify whether vitest is expected in this repo; if so, add it to `devDependencies` and ensure tests exist.
