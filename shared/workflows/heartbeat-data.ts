@@ -82,28 +82,41 @@ export function loadHeartbeatMd(ctx: WorkflowContext, agent: string): string {
 }
 
 export function loadInbox(ctx: WorkflowContext, agent: string): string {
+  const lines: string[] = [];
   try {
     const db = ctx.getDb() as any;
-    const rows = db.prepare(`
-      SELECT id, event_type, data, urgency, timestamp, retry_count
+
+    // Events inbox
+    const events = db.prepare(`
+      SELECT event_type, data, urgency, timestamp
       FROM events
       WHERE status IN ('pending', 'failed')
         AND owner = ?
         AND (ttl_ms IS NULL OR timestamp + ttl_ms > ?)
-      ORDER BY CASE WHEN urgency = 'immediate' THEN 0 ELSE 1 END,
-        retry_count DESC, timestamp ASC
-      LIMIT 20
+      ORDER BY CASE WHEN urgency = 'immediate' THEN 0 ELSE 1 END, timestamp ASC
+      LIMIT 10
     `).all(agent, Date.now()) as any[];
-    if (!rows.length) return "";
-    return rows.map((r: any) => {
+    for (const r of events) {
       const age = Math.round((Date.now() - r.timestamp) / 60000);
       const ageStr = age < 60 ? `${age}m ago` : `${Math.round(age / 60)}h ago`;
-      const retry = r.retry_count > 0 ? ` (retry #${r.retry_count})` : "";
       const dataObj = r.data ? JSON.parse(r.data) : {};
       const summary = dataObj.summary || dataObj.error || dataObj.task || "";
-      return `- [${ageStr}] **${r.event_type}**${retry} — ${summary}`.slice(0, 120);
-    }).join("\n");
-  } catch { return ""; }
+      lines.push(`- [${ageStr}] **${r.event_type}** ${summary}`.slice(0, 120));
+    }
+
+    // Pending requests (notifications, tasks from other agents)
+    const requests = db.prepare(`
+      SELECT fromEntity, task, createdAt FROM requests
+      WHERE toAgent = ? AND status = 'CREATED'
+      ORDER BY createdAt DESC LIMIT 10
+    `).all(agent) as any[];
+    for (const r of requests) {
+      const age = Math.round((Date.now() - r.createdAt) / 60000);
+      const ageStr = age < 60 ? `${age}m ago` : age < 1440 ? `${Math.round(age / 60)}h ago` : `${Math.round(age / 1440)}d ago`;
+      lines.push(`- [${ageStr}] from **${r.fromEntity}**: ${r.task}`.slice(0, 120));
+    }
+  } catch { /* skip */ }
+  return lines.join("\n");
 }
 
 /**
