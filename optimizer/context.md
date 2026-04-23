@@ -78,6 +78,14 @@
 2. All paths start from /app or are relative.
 3. Before using a file path, confirm it exists with ls or find.
 
+### SYSTEMATIC FILE DISCOVERY (FM-1.3 — 22 flags in 7 days)
+**Never guess paths. Discover incrementally.**
+1. To find a file: `ls parent/` → `ls parent/subdir/` → `read parent/subdir/file.ts`. Each level confirmed before going deeper.
+2. If you "know" a path from memory (e.g. `src/tools/persistent-task.ts`), you're guessing. Run `ls src/tools/` first.
+3. For unfamiliar directories, start with `find <dir> -maxdepth 2 -type f` or `ls -R <dir>` to map the tree before accessing specific files.
+4. Before running a CLI tool, verify it exists: `which <tool>` or `ls <expected-path>`.
+5. **One miss = stop and ls.** If a read/cat/ls fails with "not found", do NOT try another guess. `ls` the parent directory to see what actually exists.
+
 ## Convention Compliance Reminders
 - **C1.1**: Always read() a file before edit()ing it — no blind edits.
 - **C1.3**: After write(), read() the file back to verify contents.
