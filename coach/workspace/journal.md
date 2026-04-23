@@ -1,5 +1,25 @@
 # Journal
 
+## 2026-06-22 — Heartbeat: Data Review & Experiment Readiness Check
+
+**Metrics**: All green. No alerts, no pending events, no active projects.
+
+**Data review** of gym_runs table (2700+ coder runs):
+- Biggest 0% failures: cascading-fix-trap-v2 (0/89), escalation-impossible-task (0/41), mock-leak-trap-base (5/48=10%), contradictory-requirements (0/39), stale-approach-fixation (1/38=3%)
+- **EXP-200** (recognition scaffold for cascading-fix-trap-v2) is designed and scenario exists but NOT YET RUN. This is the #1 priority experiment.
+- **mock-leak-trap-workflow** shows 60% (6/10) vs baseline 10% (5/48) — promising but already documented via KE-180 completion illusion diagnostic
+- **tech-lead**: 0/30 on cascading-fix-trap variants — separate problem, likely same recognition blindness
+
+**Observation obs-003 update**: Confirmed dose-response data was corrected. moderate-hint = 100%, nudge = untested post-fix.
+
+**Next actions (priority order)**:
+1. Run EXP-200 gym trials (15x cascading-fix-trap-v2-investigate with coder) — need gym runner access
+2. If EXP-200 shows signal (≥30%), design lightweight skill based on investigate-first workflow
+3. If EXP-200 fails, design EXP-199 (forced swap audit) as heavier intervention
+4. Write up mock-leak-trap workflow results as a confirmed positive (needs more sample size)
+
+**Blocker**: gym-run.sh / gym-batch.sh scripts not found on disk. May need to use `may-agent --task` with longer timeout or delegate differently.
+
 ## 2026-04-07 13:35 — EXP-065: Production-Gym Gap Analysis Complete
 
 Built and tested 3 new gym scenarios targeting FM-2.6 (instruction-following under noise):
