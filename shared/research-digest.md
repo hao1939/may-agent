@@ -15,6 +15,16 @@
 
 ---
 
+## Fresh Arrivals (April 24, 2026) — arXiv: Reasoning Awareness & Plan Extraction
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-24 | **SABA: Logical Inertia Mitigation** (ACL 2026) | LLMs lack awareness of knowledge completeness. Early wrong hypotheses propagate. SABA: recursive build-check-supplement loop. "Self-awareness before action." ★★★★★ | [HB-260424](library/posts/HB-260424-saba-logical-inertia.md) |
+| 2026-04-24 | **SuperIgor: Self-Guided Plan Extraction** (arXiv) | Goal-conditional RL for instruction following. Planner↔Executor co-training without predefined subtasks. Strong generalization to unseen instructions. ★★★★☆ | [HB-260424](library/posts/HB-260424-superigor-plan-extraction.md) |
+| 2026-04-24 | **Mol-Debate: Multi-Agent Scientific Reasoning** (arXiv) | Generate-Debate-Refine loop for molecular design. SOTA on ChEBI-20 (59.82%) and S²-Bench (50.52%). Generator+Verifier+Debate for strict constraints. ★★★★☆ | [HB-260424](library/posts/HB-260424-mol-debate-structural-reasoning.md) |
+
+---
+
 ## Fresh Arrivals (April 24, 2026) — XHS Community: Multi-Agent Practice & Reflection
 
 | Date | Title | Key Insight | Source |

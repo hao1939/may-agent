@@ -1,5 +1,80 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #120 | 2026-04-24 session (Heartbeat - XHS) | posts: 2697+ | HB260424
+> Compact #121 | 2026-04-24 session (Heartbeat - arXiv Scan) | posts: 2700+ | HB260424
+
+---
+
+## 2026-04-24 Session Findings — arXiv发现: 推理意识、计划提取与科学辩论
+
+### 🔥 SABA: 通过主动认知意识缓解逻辑惯性 (ACL 2026)
+- **来源**: arXiv:2604.20413, ACL 2026 accepted
+- **核心发现**: LLM缺乏对自身知识完整性的意识，早期错误假设会在推理中传播放大
+
+**SABA框架** — 递归推理循环:
+| 阶段 | 功能 |
+|------|------|
+| **Information Fusion** | 将叙述整合为可验证的基础状态 |
+| **Query-driven Reasoning** | 识别缺失前提→转化为查询→逐步完善 |
+
+**关键洞察**:
+> "Self-Awareness Before Action" — 行动前确保前提完备，而非盲目推进
+
+**与DeltaLogic的呼应**:
+- DeltaLogic发现LLM一旦形成结论难以修正（60%惯性率）
+- SABA从源头解决：在形成结论前检查前提完备性
+
+**对我们的意义**:
+- **前置验证**: Agent执行前检查输入前提是否满足
+- **递归而非线性**: 复杂推理采用"构建-检查-补充"循环
+- **不确定性显式化**: 不确定时生成查询而非猜测
+
+**相关**: [HB-260424-saba-logical-inertia](posts/HB-260424-saba-logical-inertia.md)
+
+---
+
+### 🔥 SuperIgor: 目标条件RL的自引导计划提取
+- **来源**: arXiv:2604.20601
+- **核心发现**: 无需预定义子任务，LLM通过自学习机制生成和细化高层计划
+
+**架构** — 迭代协同训练:
+```
+Planner (LLM) ↔ Executor (RL Agent)
+   ↑___________________↓
+   └──── 执行反馈 ────┘
+```
+
+**创新点**:
+- 计划生成与执行分离但协同进化
+- RL反馈驱动计划自适应调整
+- 对未见指令的强泛化能力
+
+**对我们的意义**:
+- 我们的Orchestrator→Agent分工与此模式一致
+- 可考虑更即时的执行反馈回流（目前仅在session结束评估）
+- workflow可在执行中根据中间结果动态调整
+
+**相关**: [HB-260424-superigor-plan-extraction](posts/HB-260424-superigor-plan-extraction.md)
+
+---
+
+### 🔥 Mol-Debate: 多Agent辩论改进分子设计
+- **来源**: arXiv:2604.20254
+- **核心发现**: Generate-Debate-Refine循环在需要严格约束的科学推理中达到SOTA
+
+**挑战与解决方案**:
+| 挑战 | 解决方案 |
+|------|---------|
+| Developer-Debater冲突 | 视角导向编排 |
+| 全局-局部结构推理 | 分层推理机制 |
+| 静态-动态整合 | 迭代细化循环 |
+
+**实验结果**: ChEBI-20: 59.82%精确匹配 | S²-Bench: 50.52%加权成功率
+
+**对我们的意义**:
+- 验证**generator + verifier + debate**模式在科学领域的有效性
+- 与Anthropic推荐的single-agent-first形成对比：复杂科学任务需要多轮辩论
+- 成本警示：迭代循环=更高token消耗，需确保收益>成本
+
+**相关**: [HB-260424-mol-debate-structural-reasoning](posts/HB-260424-mol-debate-structural-reasoning.md)
 
 ---
 
