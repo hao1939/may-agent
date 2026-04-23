@@ -286,8 +286,8 @@
     "intervalMs": 1800000,
     "agent": "amy-kimi",
     "message": "[heartbeat] Amy-Kimi heartbeat via per-agent workflow.",
-    "enabled": false,
-    "description": "Amy-Kimi runs on k3s only. Disabled locally to avoid duplicate work.",
+    "enabled": true,
+    "description": "Amy-Kimi heartbeat. Re-enabled 2026-04-23 after Kimi API balance restored.",
     "params": {
       "workflow": "amy-kimi-heartbeat",
       "systemPromptSuffix": "You are running inside the amy-kimi-heartbeat workflow.",
