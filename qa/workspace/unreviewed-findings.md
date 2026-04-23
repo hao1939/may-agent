@@ -1,20 +1,17 @@
-# Unreviewed findings (QA heartbeat)
+# QA Heartbeat — Unreviewed Findings (2026-04-23)
 
-## 2026-04-23
+## Environment
+- `/app` is **not a git repository** (git commands fail). The git repo appears to be `/app/agents`.
+- `node_modules` are **not present** in `/app` (so `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest` cannot be executed).
 
-### Environment / verification blockers
-- **Repo root `/app` is not a git repository** (git commands fail with `fatal: not a git repository`). Evidence: `git log --oneline --since='6 hours ago'` failed in `/app`.
-- The actual git repo is `/app/agents`.
+## Recent changes (agents repo)
+- HEAD commit `6b2ed6ff8` modifies: `coach/last-session.md`.
 
-### Recent change inspected
-- Latest relevant infra change: commit `518ef9734` (may: fix common-sense-verify and research-intake cron handlerConfig missing agent/task) touched `agents/may/cron.json`.
-- I read `agents/may/cron.json` and confirmed `handlerConfig` blocks for `common-sense-verify` and `research-intake` include **both** `agent` and `task`, plus `workflow: "verify-wrap"` and a `timeoutMs`.
+## Findings
+### IMPORTANT — last-session.md appears truncated/unfinished
+- File `agents/coach/last-session.md` currently ends abruptly after: "Now let me notify the relevant agents about the critical findings:" with no details.
+- This suggests the auto-generated session summary was written incompletely or the generating process stopped mid-write.
 
-### Typecheck / test execution status
-- Could not run mandatory checks **in this environment**:
-  - `./node_modules/.bin/tsc --noEmit` missing under `/app/agents` (`No such file or directory`).
-  - `./node_modules/.bin/vitest --run` missing under `/app/agents` (`No such file or directory`).
-- There is no `package.json` or `tsconfig.json` at `/app/agents` root; dependencies appear to exist only inside individual `agents/gym/scenarios/*` folders.
-
-### Notable observation
-- `agents/coach/last-session.md` was the only file changed in the most recent commit (`af4ec1dfd`) and appears to be an auto-generated log entry (not code).
+## Required follow-ups
+- Determine if there is an agent pipeline that depends on `last-session.md` content (if yes, incomplete content may break downstream parsing).
+- Restore test toolchain in this environment or document that QA verification steps cannot run in this scenario.
