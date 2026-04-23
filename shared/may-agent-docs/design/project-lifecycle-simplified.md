@@ -1,16 +1,16 @@
 # Design: Simplified Project Lifecycle — Agents Push or Stop, Never "Done"
 
-**Status:** Draft
-**Date:** 2026-04-22
+**Status:** Implemented
+**Date:** 2026-04-24
 **References:** [project-lifecycle-continuous.md](project-lifecycle-continuous.md), [project-system.md](project-system.md)
 
 ## Problem
 
-Agents tend to falsely claim projects are "done". The current workflow has ~150 lines fighting this: evaluator gate (LLM scores 1-10), milestone checks, false-done counter, auto-advance after 2 rejections. It's complex and still doesn't work well. The false-done rate was ~40% before the evaluator was added.
+Agents tend to falsely claim projects are "done". The previous workflow had ~150 lines fighting this: a separate evaluator LLM call (scores 1-10), milestone hard gates, a false-done counter, and auto-advance after 2 rejections. It was complex and still didn't work well — the false-done rate was ~40% before the evaluator was added.
 
-The separate evaluator LLM call catches real problems (missing deliverables, unchecked milestones, rubber-stamping), but it's architecturally wrong — it's a bolted-on gate fighting the agent instead of making the agent do better work.
+The separate evaluator catches real problems (missing deliverables, unchecked milestones) but it's architecturally wrong — a bolted-on gate fighting the agent instead of making the agent work better.
 
-Additionally, `agents/src/lib/project-health.ts` was deleted, so the project handler is currently **completely broken**. This needs restoring regardless of the design change.
+Additionally, `project-health.ts` was deleted, leaving the project handler completely broken.
 
 ## Core Insight
 
@@ -20,201 +20,126 @@ Agents shouldn't decide "done". Their job is: push forward, or stop with a reaso
 
 ### Agent stop model
 
-Agent (via reviewer) has exactly 3 options:
-- **CONTINUE** — made progress, keep going
-- **BLOCKED** — needs something external it can't get. Must specify `stop_reason` and `resume_condition`
-- **WAITING** — made progress but next step has a precondition. Must specify `stop_reason` and `resume_condition`
+The reviewer has 3 decision options (DONE is accepted but converted):
 
-If the agent says **DONE**, it's automatically converted to **WAITING** with:
-- `stop_reason: "Agent believes all milestones are complete"`
-- `resume_condition: "Human/May review confirms done, or provides additional work"`
+| Decision | Meaning | What happens |
+|---|---|---|
+| **CONTINUE** | Made progress, keep going | Next iteration |
+| **BLOCKED** | Needs something external | Status=blocked, stop_reason + resume_condition recorded |
+| **WAITING** | Precondition must be met | Status=waiting, stop_reason + resume_condition recorded |
+| **DONE** | Agent thinks it's finished | Auto-converted to WAITING with "awaiting human/May review" |
+| **PIVOT** | Current approach failed | Treated as CONTINUE with strategy change |
 
-A journal entry is added to make the conversion visible:
+When DONE is auto-converted, a journal entry makes it visible:
 ```
 **Auto-converted**: DONE → WAITING (awaiting human/May review). Agent cannot mark projects done.
 ```
 
-This avoids the infinite DONE→CONTINUE→DONE loop — the project cleanly pauses and waits for review.
+### Project fields for stopped state
 
-Examples:
-- `BLOCKED: CI pipeline broken. Resume when: CI passes on main`
-- `WAITING: PR #42 submitted for review. Resume when: PR merged or feedback received`
-- `WAITING: Deployed to staging. Resume when: 24h soak period passes`
-- `DONE` (auto-converted) → `WAITING: All milestones complete. Resume when: review confirms done or new work assigned`
-
-### Quality gate = optional feature, not hardcoded
-
-The evaluator's checks are valuable but we're not sure how well they work in the new model. Make them **features** — opt-in per project, testable, removable.
-
-### How features work
-
-Features are declared in project.md's `## Process Notes`:
-```markdown
-## Process Notes
-features: active-reviewer, verify-before-stop
+When a project enters blocked/waiting, two fields are written to project.md:
 ```
-
-The workflow parses them once per iteration via `parseFeatures(projectContent)` → `Set<string>`. Then at branching points, `features.has("X")` toggles behavior. No framework, no plugin system — just conditional checks at the right spots in the workflow.
-
-```typescript
-// In buildReviewPrompt() — adds verification instructions to prompt
-if (features.has("verify-before-stop")) {
-  prompt += "Before WAITING/BLOCKED: verify deliverables exist, check files aren't empty\n";
-}
-
-// In processDecision() — optionally runs separate evaluator LLM call
-if (decision.status === "waiting" && features.has("evaluator-gate")) {
-  const score = await runEvaluator(ctx, config, ...);  // existing logic preserved
-  if (score < 7) return null; // override to CONTINUE
-}
-
-// In handler's diagnoseProject() — escalation timing
-if (features.has("auto-escalate")) {
-  // 2h→May, 24h→human
-}
+**Stop Reason**: <why the agent stopped>
+**Resume Condition**: <what needs to happen before resuming>
 ```
-
-**Feature table:**
-
-| Feature | What it does | Default |
-|---|---|---|
-| `verify-before-stop` | Reviewer must check deliverables exist before BLOCKED/WAITING | off |
-| `evaluator-gate` | Separate LLM call scores work 1-10 before WAITING (current behavior, preserved as opt-in) | off |
-| `active-reviewer` | Reviewer gets tool access (read files, run bash) | off (existing) |
-| `auto-escalate` | Handler escalates blocked projects on timer (2h→May, 24h→human) | on |
-
-### This is how we evolve the project system
-
-Instead of hardcoding complex behaviors (evaluator gate, false-done counter, auto-advance), each behavior is a named feature:
-1. **Create** — implement the feature behind a flag in the workflow
-2. **Test** — enable on one project, run gym scenarios, measure impact
-3. **Ship** — enable by default (or keep opt-in for specific project types)
-4. **Remove** — if a feature doesn't help, delete it cleanly
-
-The project workflow becomes a simple core (CONTINUE/BLOCKED/WAITING loop) with pluggable features.
+These are cleared when the project returns to active.
 
 ### Handler = watch + trigger + escalate (never fix)
 
-Handler has no ability to fix anything. It can only:
-1. **Active + no live session** → launch workflow
-2. **Blocked/waiting + pending comment** → launch workflow (comment = someone fixed it or gave guidance)
-3. **Blocked/waiting + no comment** → escalate up the chain
+The handler (`agents/may/handlers/project.ts`) cannot fix anything. It can only:
 
-### Auto-escalate mechanism
+| Project state | Handler action |
+|---|---|
+| Active + no live session | Launch workflow |
+| Blocked/waiting + pending comment | Launch workflow (comment = unblock signal) |
+| Blocked/waiting + no comment, <2h | Skip (give fixer time) |
+| Blocked/waiting + no comment, >2h | Escalate to May |
+| Blocked/waiting + no comment, >24h | Escalate to human (Telegram) |
+| Done / cancelled / paused | Skip |
 
-When `auto-escalate` feature is enabled (default on), the handler tracks how long a project has been blocked/waiting without comments using `healthState.projects[relPath].lastStatusChange` timestamp.
-
-On each tick, for blocked/waiting projects with no pending comments:
-- **<2h** → skip (give fixer time)
-- **>2h** → emit `escalation.created` event + log. May's handler picks this up and reviews the project
-- **>24h** → call `ctx.notify(...)` which sends Telegram message to human
-
-The timer resets when:
-- A comment is added (project gets relaunched)
-- Status changes (project goes active again)
-
-This lives in `diagnoseProject()` — it's just another branch in the existing action-decision logic.
+Escalation timing uses `lastStatusChange` in the health state, reset when comments arrive or status changes.
 
 ### Resume loop (comment = universal unblock)
 
 ```
 Agent stops → BLOCKED/WAITING with reason + resume_condition
   → Handler detects (next tick) → escalates
-  → Fixer (May or human) adds comment to ## Comments section in project.md
-  → Handler next tick → sees blocked project with pending comment → launches workflow
-  → Workflow sees blocked + pending comments → comment iteration → agent reads fix → continues
+  → Fixer (May or human) adds comment to ## Comments in project.md
+  → Handler next tick → sees blocked/waiting + pending comment → launches workflow
+  → Workflow sees blocked/waiting + comments → comment iteration → agent reads fix → continues
+  → Stop Reason / Resume Condition cleared on resume
 ```
 
-The workflow already has comment iteration logic (project.ts lines 737, 769-797). Blocked projects with pending comments fall through to the main loop. **The loop is already closed** — we just need the handler to launch workflow for blocked/waiting projects that have new comments.
+The workflow already had comment iteration logic. Blocked/waiting projects with pending comments fall through to the main loop. The loop was already closed — we just needed the handler to launch workflows for stopped projects with new comments.
 
-### "Done" = `[done]` comment
+### "Done" via `[done]` comment
 
-Only human or May can mark a project done. The mechanism: add a `[done]` comment to `## Comments` in project.md.
+Only human or May can mark done. Mechanism: add a `[done]` comment:
 
 ```markdown
 ## Comments
 [done] Reviewed — all milestones complete, deliverables verified. Closing.
 ```
 
-The workflow processes this as a normal comment iteration. The reviewer sees the `[done]` directive, confirms completion, and sets status=done. This keeps **comment as the universal mechanism** — same path for unblocking, redirecting, and completing.
+The workflow detects `[done]` in the comment iteration, sets status=done, clears stop fields, emits `project.completed`, and exits. The reviewer also gets a directive to confirm completion, but the human's judgment takes priority.
 
-In the workflow:
-```typescript
-// In comment iteration, after extracting pending comments:
-if (pendingComments.match(/^\[done\]/m)) {
-  // Reviewer prompt gets: "A human/May has marked this project done. 
-  // Confirm completion and set status=done, or explain why it's not ready."
-}
+### Quality gates = optional features
+
+Behaviors are opt-in per project via `## Process Notes` in project.md:
+```markdown
+## Process Notes
+features: active-reviewer, verify-before-stop, evaluator-gate
 ```
 
-If the reviewer disagrees (unlikely since human said done), the comment stays in the journal and the project continues — but this is a safety valve, not expected behavior.
+Parsed by `parseFeatures()` → `Set<string>`, checked via `features.has("X")` at branching points in the workflow. No framework — just conditional checks.
 
-## Implementation
+| Feature | What it does | Where it acts | Default |
+|---|---|---|---|
+| `active-reviewer` | Reviewer gets tool access (read files, run bash) | `buildReviewPrompt()` | off |
+| `verify-before-stop` | Reviewer prompt includes "verify deliverables exist before stopping" | `buildReviewPrompt()` | off |
+| `evaluator-gate` | Separate LLM call scores work 1-10 before WAITING; <7 overrides to CONTINUE | `handleWaitingDecision()` | off |
+| `auto-escalate` | Handler escalates blocked/waiting projects on timer (2h/24h) | `diagnoseProject()` | on |
 
-### Phase 1: Rewrite project-health (fix broken handler)
+### How to evolve the project system
 
-The handler imports 12 functions from the deleted `project-health.ts`. Rewrite fresh (not restore from git) — the old code had the import path bug and was entangled with src/lib. Use the handler's actual usage (lines 32-148) as the spec for what each function needs to do.
+1. **Create** — implement behavior behind `features.has("X")` in the workflow
+2. **Test** — enable on one project, run gym scenarios, measure impact
+3. **Ship** — enable by default or keep opt-in
+4. **Remove** — if it doesn't help, delete the flag check
 
-**Create `agents/shared/lib/project-health.ts`** with:
-- `scanAllProjects(agentsRoot)` — scan `agents/*/projects/` dirs
-- `diagnoseProject(project, healthState, ...)` — decide action per project
-- `newProjectHealthEntry()`, `readInflight/writeInflight`, `readHealthState/writeHealthState`
-- `saveWorkflowRunFile`, `generateRunId`, `updateField`, `appendComment`, `simpleHash`
-- `MAX_LAUNCHES_PER_TICK`
+## What was changed
 
-**Update handler import**: `from "../../src/lib/project-health.ts"` → `from "../../shared/lib/project-health.ts"`
+### Created: `agents/shared/lib/project-health.ts`
 
-### Phase 2: Simplify workflow — DONE→WAITING, behaviors→features
+Fresh rewrite (not restored from git). Provides all functions the handler needs:
+- `scanAllProjects()` — scans `agents/*/workspace/projects/` directories
+- `diagnoseProject()` — core decision function: one branch per project state
+- `updateField()`, `appendComment()` — markdown helpers
+- `readHealthState/writeHealthState`, `readInflight/writeInflight` — persistence
+- `saveWorkflowRunFile()`, `generateRunId()`, `simpleHash()` — utilities
 
-**File**: `agents/shared/workflows/project.ts`
+### Modified: `agents/shared/workflows/project.ts`
 
-1. **DONE→WAITING conversion** in `extractDecision()`: DONE becomes WAITING with "review needed"
-2. **Add WAITING status**: new `handleWaitingDecision()` (~20 lines): set status=waiting, record stop_reason + resume_condition
-3. **Move evaluator gate behind `evaluator-gate` feature flag** — don't delete, just guard with `features.has("evaluator-gate")`
-4. **Move verification prompting behind `verify-before-stop` feature flag**
-5. **Remove hardcoded false-done counter / auto-advance** — these are workarounds for the DONE problem, which DONE→WAITING solves
-6. **Simplify `processDecision()`**: no "done" branch, no continuous-project override
-7. **Simplify `handleBlockedDecision()`**: record stop_reason + resume_condition (evaluator call only if feature enabled)
-8. **Update `buildReviewPrompt()`**:
-   - New decision options: CONTINUE / BLOCKED / WAITING (DONE accepted but converted)
-   - Feature-conditional verification instructions
-   - Remove references to false-done counter, auto-advance
-
-### Phase 3: Update handler for WAITING + comment-based resume
-
-In `diagnoseProject()`:
-- **blocked/waiting + has pending comments** → action: launch-workflow
-- **blocked/waiting + no comments + recent** → action: skip (give fixer time)
-- **blocked/waiting + no comments + >2h** → action: escalate (nudge May)
-- **blocked/waiting + no comments + >24h** → action: escalate (notify human)
-- No condition-checking logic needed — the fixer communicates via comments
-
-### Phase 4: Add project.md fields
-
-Projects gain two new fields:
-```
-**Stop Reason**: <why the agent stopped>
-**Resume Condition**: <what needs to happen before resuming>
-```
-
-Cleared when project goes back to active.
-
-## Files to modify
-
-| Action | File |
+| Removed | Added |
 |---|---|
-| **Create** | `agents/shared/lib/project-health.ts` (restore from git history) |
-| **Edit** | `agents/may/handlers/project.ts` — fix import path |
-| **Edit** | `agents/shared/workflows/project.ts` — remove DONE path, add WAITING |
-| **Delete** | ~150 lines of done-detection machinery |
-| **Add** | ~50 lines of WAITING handling |
+| `handleDoneDecision()` (~80 lines) | `handleWaitingDecision()` (~35 lines) |
+| `trackMilestoneProgress()` | Stop Reason / Resume Condition field management |
+| `falseDoneCount` / `lastMilestoneDone` in LoopState | `[done]` comment detection + handling |
+| `DoneHandlerResult` type | `StopHandlerResult` type |
+| Continuous-project DONE override | DONE→WAITING auto-conversion (handles all project types) |
+| Hardcoded evaluator calls in blocked handler | Evaluator behind `evaluator-gate` feature flag |
+| Old reviewer prompt (DONE/PIVOT/BLOCKED/CONTINUE) | New prompt (CONTINUE/PIVOT/WAITING/BLOCKED) |
 
-Net: **~100 lines removed**, simpler control flow.
+`buildEvalPrompt()` preserved — used when `evaluator-gate` feature is enabled.
+
+### Modified: `agents/may/handlers/project.ts`
+
+- Import path: `../../src/lib/project-health.ts` → `../../shared/lib/project-health.ts`
+- Added `lastStatusChange` tracking for escalation timing
 
 ## Verification
 
-1. `bun run build` — no import errors
-2. `grep -n "handleDoneDecision\|falseDoneCount\|buildEvalPrompt" agents/shared/workflows/project.ts` — no matches
-3. Create a test project, run workflow manually, verify BLOCKED/WAITING/CONTINUE work
-4. Verify handler picks up waiting projects correctly
-5. `npx vitest run` — no regressions in existing tests
+1. `npx tsc --noEmit` — zero errors in agents/ code
+2. `grep -n "handleDoneDecision\|falseDoneCount\|trackMilestoneProgress" agents/shared/workflows/project.ts` — no matches
+3. New code present: `handleWaitingDecision`, `isDoneComment`, `Stop Reason`, `Resume Condition`, `verify-before-stop`
+4. Handler correctly imports from `agents/shared/lib/project-health.ts`
