@@ -1,15 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776920803895_1054
+- **Session:** s_1776922604062_1069
 - **Status:** done
-- **When:** 2026-04-23T05:07:33.485Z
-- **Duration:** 49s
+- **When:** 2026-04-23T05:38:06.152Z
+- **Duration:** 1m22s
 
 ## What Happened
-System is healthy. The main actionable items:
-
-1. **compliance-check cron** failing — tech-lead should investigate
-2. **Idle session** `s_1776611617990_13` (85h) should be cancelled
-
-Let me cancel the stale idle session and notify tech-lead about compliance-check:
+Found it: **64 FAILED requests in 24h**, almost all from `Cannot find module '../../src/lib/growth.js'` in `agents/shared/agent-sdk.ts`. This is a recurring infra bug dragging down delegation quality. Let me dispatch a fix to tech-lead.
