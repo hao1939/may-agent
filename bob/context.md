@@ -41,11 +41,6 @@
 
 ## Learned from experience
 
-- The blocker is about the git commit I made earlier to `agents/bob/last-session.md` being treated as a "write". Let me verify that file and finish. (source: s_1776879893297_0, 2026-04-22)
-- Now update H-185 status: (source: s_1776886822848_783, 2026-04-22)
-- Good. Now let me commit what I have and finish. (source: s_1776886603217_777, 2026-04-22)
-- All clean. Everything is committed. Now let me think about what's actionable.
-- All three files verified. (source: s_1776883003215_752, 2026-04-22)
 - Now commit and finish. (source: s_1776893803013_850, 2026-04-22)
 - Now write KE and commit: (source: s_1776892003190_821, 2026-04-22)
 - The top-3 testable list is stale — H-181 is now resolved and EXP-201 already tested H-185's remasking on cascading (0/10). Let me update the tracker and then finish. (source: s_1776890203227_809, 2026-04-22)
@@ -56,6 +51,13 @@
 - The lab version doesn't exist anymore. And `verify-before-finish` is only deployed to May (targeting C1.7 regression). The broader FM-3.3 problem across ALL agents remains unaddressed. My EXP-011 targ (source: s_1776908203693_967, 2026-04-23)
 - Now commit: (source: s_1776906403321_958, 2026-04-23)
 - Now update the design.md status and results.md: (source: s_1776904603051_949, 2026-04-23)
+- Now let me also remove the narrower duplicate rule that's already in the file, and commit. (source: s_1776915873114_1019, 2026-04-23)
+- Now let me check metrics and the pending metric breach event:
+
+The metric breach from 17h ago — both metrics are now green (experiment-completion 0.97 > 0.9 target, hypotheses-resolved 0.64 ≈ 0.65 tar (source: s_1776915403047_1008, 2026-04-23)
+- Now commit and finish. (source: s_1776913603073_999, 2026-04-23)
+- Already committed. Good. (source: s_1776911803694_986, 2026-04-23)
+- Good — the INDEX now has all KE-336 through KE-356. The entries are referenced properly. Task complete. (source: s_1776910158898_982, 2026-04-23)
 
 ## Reflexion-Extracted Lessons
 - [insight] Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/.

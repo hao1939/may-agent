@@ -40,5 +40,6 @@
 - ### Summary
 - [FM-1.3] Repeated wrong-repo assumptions: ran git commands in /app (not a git repo) and only later discovered /app/agents is the repo. (source: s_1776908203805_972, 2026-04-23)
 - ### Summary
-Repo-level verification isn’t possible in the normal way because this `/app` environment is **not a git repository** (no `.git`), and there is **no `node_modules/.bin/tsc` or `vitest` inst (source: s_1776906403430_963, 2026-04-23)
 - [FM-1.3] Repeated git commands in non-git directory (/app) before switching strategy; multiple wasted discovery calls. (source: s_1776902803137_939, 2026-04-23)
+- ### Summary
+No actionable QA review work was discoverable in `/app` this heartbeat because the repo layout is missing the standard Node project scaffolding needed to run the mandatory verification ste (source: s_1776911803796_991, 2026-04-23)

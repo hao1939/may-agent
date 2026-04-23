@@ -58,9 +58,6 @@
 
 ## Learned from experience
 
-- All source files are used by pipeline.js. Build is healthy, tests pass, no dead code. The codebase is clean and simple.
-- The compliance-check handler is functioning correctly. It compiles cleanly, all imports resolve, and it runs to completion producing expected output. (source: s_1776892078804_827, 2026-04-22)
-- Seems like other agents are writing files concurrently. Let me commit in a loop. (source: s_1776892003278_825, 2026-04-22)
 - Same situation as last time. Everything green, stale breaches. Quick commit and done. (source: s_1776890203318_813, 2026-04-22)
 - Everything is clean. Metrics all green, no build errors, no active projects, src/ modules all load fine. The two metric breach events from 9-11h ago are stale — metrics have recovered. I'll dismiss th (source: s_1776888403322_800, 2026-04-22)
 - The handler works correctly now — I just tested it successfully. The 2/2 errors were from before the recent fixes (3 commits fixing missing ctx properties and DB access mode). The handler is already f (source: s_1776901104466_927, 2026-04-23)
@@ -73,3 +70,6 @@
 - All 9 test files pass, 155 tests green. Let me commit: (source: s_1776906403412_962, 2026-04-23)
 - Everything looks clean. Let me dismiss the stale alerts and commit. (source: s_1776904603139_953, 2026-04-23)
 - The handler runs successfully manually. Let me look for the actual runtime error logs: (source: s_1776902847046_940, 2026-04-23)
+- 5.2MB for 1273 files — not a big deal. Everything is healthy. (source: s_1776915403127_1012, 2026-04-23)
+- Everything looks clean and well-structured. The guards are concise and focused. Tests pass. No TODOs, no dead code. The metric breaches from 16-18h ago appear to be resolved since all metrics are now  (source: s_1776913603154_1003, 2026-04-23)
+- Clean. Now let me push and finish. (source: s_1776911803783_990, 2026-04-23)
