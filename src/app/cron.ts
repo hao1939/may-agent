@@ -419,13 +419,15 @@ export class Cron {
   private isRunning(entryName: string): boolean {
     try {
       const db = getDb(this.persistDir);
+      const maxAgeMs = 10 * 60_000; // 10 min — if older, consider dead
       const row = db
         .prepare(
           `SELECT 1 FROM requests
            WHERE artifact = ? AND status IN ('CREATED', 'IN_PROGRESS')
+             AND createdAt > ?
            LIMIT 1`,
         )
-        .get(entryName);
+        .get(entryName, Date.now() - maxAgeMs);
       return row !== null;
     } catch {
       return false;
@@ -1041,7 +1043,14 @@ export class Cron {
     updateRequest(this.persistDir, requestId, { status: "IN_PROGRESS" });
     const startMs = Date.now();
 
-    handler(triggerEvent)
+    const HANDLER_TIMEOUT_MS = 5 * 60_000; // 5 min max per handler
+
+    const handlerPromise = handler(triggerEvent);
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Handler "${entry.name}" timed out after ${HANDLER_TIMEOUT_MS / 1000}s`)), HANDLER_TIMEOUT_MS)
+    );
+
+    Promise.race([handlerPromise, timeoutPromise])
       .then(() => {
         updateRequest(this.persistDir, requestId, {
           status: "COMPLETED",
