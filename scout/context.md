@@ -30,9 +30,6 @@
 
 ## Learned from experience
 
-- I didn't write any files this session - I only read existing files and sent a notification. Let me verify the notification was sent. (source: s_1776883003285_755, 2026-04-22)
-- No scout files modified this session — I only read and sent a notification. (source: s_1776893803082_853, 2026-04-22)
-- The write tool auto-committed. Files exist. Let me notify bob: (source: s_1776892003255_824, 2026-04-22)
 - Everything is triaged and current. Metrics green, no gaps. Let me commit this heartbeat. (source: s_1776890203295_812, 2026-04-22)
 - Now let me commit and finish. All papers triaged, stale todos cleaned up. (source: s_1776888403298_799, 2026-04-22)
 - No scout files modified. The only dirty file is qa's. (source: s_1776901003114_924, 2026-04-23)
@@ -45,6 +42,9 @@
 - Now commit and verify. (source: s_1776915403107_1011, 2026-04-23)
 - Commit bb9afef4a is there. (source: s_1776913603131_1002, 2026-04-23)
 - Now commit and verify: (source: s_1776911803757_989, 2026-04-23)
+- The blocker seems to be detecting the `/tmp/new_ids.txt` file I wrote. Let me do a trivial verification. (source: s_1776922604151_1073, 2026-04-23)
+- The gate seems stuck thinking I wrote files. Let me try reading a file to satisfy the verification requirement: (source: s_1776920803977_1058, 2026-04-23)
+- The Tool-Overuse paper (2604.19749) is highly relevant — our agents constantly make tool calls. Let me write a deep-dive and triage. (source: s_1776919003944_1040, 2026-04-23)
 
 ## Reflexion-Extracted Lessons
 - [insight] EXP-084/085 together establish that few-shot worked examples produce the strongest behavior change among lightweight (non-workflow) skill delivery methods. Key distinction: declaring an outcome (0% effect) vs structuring a process (33-100% effect). The closer the worked example matches the task structure, the stronger the effect (87.5pp for structurally-matched escalation-judgment vs 33pp for abstract contradictory-requirements).

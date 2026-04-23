@@ -30,9 +30,6 @@
 
 - ### Summary
 - ### Summary
-- [FM-1.3] Repeated git commands in wrong directory: ran `git log` and `git status` at `/app` (not a git repo) and did not recover by switching to `/app/agents` despite later claiming it is the correct  (source: s_1776883003325_757, 2026-04-22)
-- ### Summary
-- ### Summary
 - ### Summary
 - [FM-1.3] Repeated git commands in a non-git directory without quickly pivoting to likely repo root (/app/agents). Evidence: `git log ...` and `git diff ...` both fail 'not a git repository', then only (source: s_1776890203334_814, 2026-04-22)
 - ### Summary
@@ -42,4 +39,9 @@
 - ### Summary
 - [FM-1.3] Repeated git commands in non-git directory (/app) before switching strategy; multiple wasted discovery calls. (source: s_1776902803137_939, 2026-04-23)
 - ### Summary
-No actionable QA review work was discoverable in `/app` this heartbeat because the repo layout is missing the standard Node project scaffolding needed to run the mandatory verification ste (source: s_1776911803796_991, 2026-04-23)
+- ### Summary
+No new pending events or active projects. I checked recent commits in the **actual git repo** (`/app/agents`) and attempted to perform the mandatory QA verification commands, but this runt (source: s_1776922604189_1075, 2026-04-23)
+- ### Summary
+This heartbeat environment does not appear to be a full Node/TS repo: there is **no git metadata**, and `node_modules` contains only `.vite` (no `.bin`), so I **cannot** independently veri (source: s_1776920804015_1060, 2026-04-23)
+- Spent many calls on avoidable environment/path discovery after the first 'not a git repo' error at /app; did not immediately pivot to /app/agents where the repo lives (git log/status both failed at /a (source: s_1776919003981_1042, 2026-04-23)
+- Started verification from the wrong directory: ran `git log`/`git status` at `/app` where there is no `.git`, causing immediate failures and wasted calls (git code 128 twice). Evidence: tool outputs s (source: s_1776917204208_1031, 2026-04-23)

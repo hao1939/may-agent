@@ -58,10 +58,6 @@
 
 ## Learned from experience
 
-- Same situation as last time. Everything green, stale breaches. Quick commit and done. (source: s_1776890203318_813, 2026-04-22)
-- Everything is clean. Metrics all green, no build errors, no active projects, src/ modules all load fine. The two metric breach events from 9-11h ago are stale — metrics have recovered. I'll dismiss th (source: s_1776888403322_800, 2026-04-22)
-- The handler works correctly now — I just tested it successfully. The 2/2 errors were from before the recent fixes (3 commits fixing missing ctx properties and DB access mode). The handler is already f (source: s_1776901104466_927, 2026-04-23)
-- I didn't modify any files — this was a read-only heartbeat check. Let me re-verify: (source: s_1776901003132_925, 2026-04-23)
 - I see it — line 331 of `activity.jsonl`: "Convention-check cron has 2/2 errors but no logs accessible. It's a non-critical cron — likely a tsc-related check that fails because of the environment. Not  (source: s_1776899296382_915, 2026-04-23)
 - Other agents keep modifying files. Let me just commit and finish quickly. (source: s_1776899203296_913, 2026-04-23)
 - The handler works fine. The 2/2 errors were already fixed by the 3 commits shown in git log. The heartbeat at 16:06 already confirmed it was transient. There's nothing left to fix. (source: s_1776897442917_901, 2026-04-23)
@@ -73,3 +69,7 @@
 - 5.2MB for 1273 files — not a big deal. Everything is healthy. (source: s_1776915403127_1012, 2026-04-23)
 - Everything looks clean and well-structured. The guards are concise and focused. Tests pass. No TODOs, no dead code. The metric breaches from 16-18h ago appear to be resolved since all metrics are now  (source: s_1776913603154_1003, 2026-04-23)
 - Clean. Now let me push and finish. (source: s_1776911803783_990, 2026-04-23)
+- OK, parent repo isn't a git repo. The file is on disk, which is what matters for runtime resolution. (source: s_1776922680299_1076, 2026-04-23)
+- Everything looks clean. Build passes (23/23 tests), no TODOs in src/, no TypeScript (it's a JS project). The metric breaches in the inbox are old (2-20h) and metrics are all green now — they've self-r (source: s_1776922604174_1074, 2026-04-23)
+- These are auto-staged last-session.md files from other agents, not my edits. Let me read my own last-session to verify it's sensible. (source: s_1776920803996_1059, 2026-04-23)
+- Nothing meaningful to commit from my side. Let me reset those auto-changes. (source: s_1776919003967_1041, 2026-04-23)
