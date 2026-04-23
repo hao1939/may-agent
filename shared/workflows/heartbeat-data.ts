@@ -26,7 +26,7 @@ export function loadMetrics(ctx: WorkflowContext, agent: string): string {
     return rows.map((r: any) => {
       const breaching = r.threshold != null && r.current != null &&
         (r.alert_direction === "above" ? r.current > r.threshold : r.current < r.threshold);
-      const targetGap = r.target != null && r.current != null
+      const targetGap = r.target != null && r.current != null && r.target !== 0
         ? Math.abs(r.current - r.target) / Math.abs(r.target)
         : 0;
       const belowTarget = !breaching && targetGap > 0.2;
