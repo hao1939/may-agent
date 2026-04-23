@@ -71,20 +71,6 @@
 
 ## Learned from experience
 
-- Those are other agents' files, not mine. Let me try finish again. (source: s_1776845897650_9, 2026-04-22)
-- Now let me commit and check if there's anything else actionable. (source: s_1776857801210_365, 2026-04-22)
-- The initial grep returned 0 because the heartbeat files aren't at `agents/$agent/workflows/heartbeat.ts` — they're at agent-specific names like `may-heartbeat.ts`. But the second check confirms the co (source: s_1776857036571_2, 2026-04-22)
-- DONE
-- SCORE: 4
-- BLOCKED
-- Good, measurement works. Now let me also update the debug log line to say v5: (source: s_1776856686042_0, 2026-04-22)
-- SCORE: 7
-- DONE — All 6 milestones are complete with **real measured data** from the convention_checks database:
-- Real measured data. Now let me write the measured reduction document. (source: s_1776856375263_310, 2026-04-22)
-- PIVOT —
-- All agent tests pass. The gym scenario failures are expected (they're the problems agents are supposed to fix). (source: s_1776856182629_303, 2026-04-22)
-- SCORE: 4
-- DONE — All milestones are genuinely complete with substantial deliverables.
-- The TRIAGE.md shows `cascading-fix-trap-v2` is already marked as "Confirmed hard" in the floor/hard section. Good — that's properly categorized.
-
-Let me also note `use-persistent-task` isn't in the tr (source: s_1776965805803_1373, 2026-04-23)
+- Heartbeat workflow files use agent-specific names like `may-heartbeat.ts`, not `heartbeat.ts`. (source: s_1776857036571_2, 2026-04-22)
+- Gym scenario failures are expected — they're the problems agents are supposed to fix, not test regressions. (source: s_1776856182629_303, 2026-04-22)
+- SkillFlow benchmark (arXiv:2604.17308): accumulated skills can cause regression — Qwen-Coder-Next dropped to 44.58% with skills. Quality filtering > accumulation. (2026-04-29)

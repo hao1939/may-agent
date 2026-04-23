@@ -41,51 +41,7 @@
 
 ## Learned from experience
 
-- CONTINUE — Good progress, the results file has solid structure. Need 3 more iteration data points to reach 5+.
-- Now update the measurements file with iteration 2 data: (source: s_1776865231977_499, 2026-04-22)
-- SCORE: 7
-
-**Reasoning:**
-
-1. **Deliverables exist**: Yes. `.state/analysis.md` exists with real content — the full project file contents embedded in a code block plus analysis sections.
-
-2. **Goal met (source: s_1776966516505_1403, 2026-04-23)
-- DONE — The goal "see project file" is satisfied. The deliverable `.state/analysis.md` exists and contains the full verbatim project file contents plus analysis. This project has 0 milestones defined,  (source: s_1776966513509_1402, 2026-04-23)
-- The reviewer has confirmed the goal is met and the deliverable exists. Let me verify and finish. (source: s_1776966464835_1401, 2026-04-23)
-- The deliverable `.state/analysis.md` already exists from iteration 3 and contains the full verbatim project file contents in a fenced code block plus a thorough analysis. The project has 0 milestones  (source: s_1776966444759_1399, 2026-04-23)
-- CONTINUE
-
-**(a) Concrete output:** `.state/analysis.md` containing the full verbatim project file contents and analysis.
-
-**(b) What's different:** The worker produced no output in iteration 4 — it ap (source: s_1776966313852_1391, 2026-04-23)
-- CONTINUE
-
-**(a) Concrete output:** `.state/analysis.md` that includes the **full verbatim contents** of the project file, followed by a section-by-section analysis.
-
-**(b) What's different:** Previous (source: s_1776966265812_1389, 2026-04-23)
-- The evaluator's criticism is clear: the previous analysis was trivial and didn't actually include the file's contents as evidence. Let me create a proper deliverable with the full contents and real an (source: s_1776966230910_1388, 2026-04-23)
-- SCORE: 2
-
-**Reasoning:**
-
-1. **Deliverables exist**: The worker produced `.state/analysis.md`, but it's a trivial 15-line file that just restates the goal and declares completion with no substance.
-
-2 (source: s_1776966203312_1387, 2026-04-23)
-- DONE
-
-The project goal is "see project file" with 0 milestones defined. The worker has:
-1. Read and analyzed the project file at `bob/workspace/projects/agent-system-literacy/project.md`
-2. Created a  (source: s_1776966185735_1386, 2026-04-23)
-- The project goal is "see project file" with no milestones defined. I'll create a deliverable confirming the project file has been read and analyzed. (source: s_1776966150583_1385, 2026-04-23)
-- CONTINUE
-
-Let me first read the project file to understand what's actually required.
-
-**(a) Concrete output:** A deliverable file (e.g., `.state/analysis.md`) that demonstrates the project goals have  (source: s_1776966144653_1383, 2026-04-23)
-- This is a meta-task — the goal is literally "see project file," and I've now seen it. Let me produce a deliverable confirming this. (source: s_1776966116569_1379, 2026-04-23)
-- Clean. They were likely already tracked via the `-f` add. Good — everything's committed now.
-
-Let me dismiss the empty metric breach events and finish. (source: s_1776965805749_1371, 2026-04-23)
+- Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/. (2026-04-23)
 
 ## Reflexion-Extracted Lessons
 - [insight] Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/.
