@@ -8,7 +8,7 @@
  *   - escalate persistent blockers
  */
 import { writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.ts";
 import type { CronEntry } from "../../shared/agent-sdk.ts";
 import {
@@ -114,7 +114,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         if (typeof wfMod.execute !== "function") throw new Error("No execute()");
       } catch (err) { ctx.log(`[project] ERROR loading workflow: ${err}`); return; }
 
-      const task = `project: ${project.relPath}\nagent: ${project.owner}\ngoal: see project file`;
+      const projectDir = dirname(project.projectFile);
+      const task = `project: ${projectDir}\nagent: ${project.owner}\ngoal: see project file`;
       const runId = generateRunId();
       ctx.log(`[project] Launching ${project.relPath}: ${action.reason}`);
 
