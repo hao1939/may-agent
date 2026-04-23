@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776942404699_1206
+- **Session:** s_1776942547197_1213
 - **Status:** done
-- **When:** 2026-04-23T11:08:38.977Z
-- **Duration:** 1m54s
+- **When:** 2026-04-23T11:11:56.645Z
+- **Duration:** 2m49s
 
 ## What Happened
-The delegation quality at 0.71 (target 0.85) and instruction compliance at 53 (target 0.8) are the two weakest metrics. Let me nudge the relevant owners.
+There's no `agent.json` for coder — it's not a registered may-agent agent. Coder is apparently a lab/fork concept, not a full agent. Let me check how the gym actually runs scenarios for "coder":
