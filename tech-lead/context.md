@@ -58,20 +58,18 @@
 
 ## Learned from experience
 
-- Tests pass. All 23 tests pass. No bugs to fix. (source: s_1776866310838_0, 2026-04-22)
-- All 23 tests already pass with 0 failures. (source: s_1776866184583_0, 2026-04-22)
-- All 23 tests pass even with the environment's source files. The tests were already passing from the start - the data/test files just needed to be in place. (source: s_1776865789670_0, 2026-04-22)
-- The root grades.js doesn't have the same file. The scenario environment is the authoritative location. All 23 tests pass there. (source: s_1776865660272_0, 2026-04-22)
-- The source files are identical — this is the right scenario. And all 23 tests pass. The environment was just missing the `data/` and `test/` directories which needed to be copied from the scenario. (source: s_1776865247429_0, 2026-04-22)
-- Nothing of mine to commit. (source: s_1776886603312_781, 2026-04-22)
 - The TODOs are all in skill documentation (examples), not real code. The codebase is clean. Metrics are all green, no alerts, tests pass. The metric breaches from 8-10h ago appear to have already resol (source: s_1776884803310_772, 2026-04-22)
 - Good — no more `readonly` in the file. (source: s_1776883084265_758, 2026-04-22)
 - 31 near-duplicate "bob: verified all tests pass" commits. That's noise pollution in the git history. Let me update my session notes and dismiss the alerts. (source: s_1776883003310_756, 2026-04-22)
 - Confirmed: the `db.exec("PRAGMA journal_mode=WAL")` line is gone, and the readonly Database open is immediately followed by closing the block. (source: s_1776881308465_748, 2026-04-22)
 - All source files are used by pipeline.js. Build is healthy, tests pass, no dead code. The codebase is clean and simple.
-
-The metric breaches from 10-12h ago appear to have self-resolved (all metrics a (source: s_1776893803101_854, 2026-04-22)
 - The compliance-check handler is functioning correctly. It compiles cleanly, all imports resolve, and it runs to completion producing expected output. (source: s_1776892078804_827, 2026-04-22)
 - Seems like other agents are writing files concurrently. Let me commit in a loop. (source: s_1776892003278_825, 2026-04-22)
 - Same situation as last time. Everything green, stale breaches. Quick commit and done. (source: s_1776890203318_813, 2026-04-22)
 - Everything is clean. Metrics all green, no build errors, no active projects, src/ modules all load fine. The two metric breach events from 9-11h ago are stale — metrics have recovered. I'll dismiss th (source: s_1776888403322_800, 2026-04-22)
+- The handler works correctly now — I just tested it successfully. The 2/2 errors were from before the recent fixes (3 commits fixing missing ctx properties and DB access mode). The handler is already f (source: s_1776901104466_927, 2026-04-23)
+- I didn't modify any files — this was a read-only heartbeat check. Let me re-verify: (source: s_1776901003132_925, 2026-04-23)
+- I see it — line 331 of `activity.jsonl`: "Convention-check cron has 2/2 errors but no logs accessible. It's a non-critical cron — likely a tsc-related check that fails because of the environment. Not  (source: s_1776899296382_915, 2026-04-23)
+- Other agents keep modifying files. Let me just commit and finish quickly. (source: s_1776899203296_913, 2026-04-23)
+- The handler works fine. The 2/2 errors were already fixed by the 3 commits shown in git log. The heartbeat at 16:06 already confirmed it was transient. There's nothing left to fix. (source: s_1776897442917_901, 2026-04-23)
+- All clear. Metrics green, no build issues, no dead code in src/, all modules used. The two metric breaches from 11-13h ago are stale (metrics recovered). Amy's no-op commits were already addressed wit (source: s_1776897403386_896, 2026-04-23)
