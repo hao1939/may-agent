@@ -1,6 +1,6 @@
 # DESIGN: Heartbeat ↔ Reactor Coordination for Metrics
 
-**Status:** DRAFT v2 — awaiting Hao review  
+**Status:** ✅ APPROVED by Hao 2026-04-23  
 **Date:** 2026-04-23  
 **Author:** May  
 **Related:** [metrics-system.md](metrics-system.md) | [metrics-evolution-roadmap.md](metrics-evolution-roadmap.md)
@@ -138,3 +138,11 @@ None.
 - (b) For the worst 📉 metric, add a one-liner: "Consider working on X" (slightly more directive)
 
 I lean (a) — keep it simple, trust agent judgment.
+
+---
+
+## Resolved: Open Questions
+
+**📉 display:** Option (a) — just show the number. The question-driven heartbeat already prompts investigation ("Which metric is furthest from target?"). No extra nudge needed.
+
+**Removing the hard gate:** The gate was the only enforcement before the reactor existed. Now the reactor forks dedicated sessions — that's the real enforcement. The heartbeat gate was double-enforcement. Safe to remove.
