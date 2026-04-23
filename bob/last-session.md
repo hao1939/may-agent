@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776908203693_967
+- **Session:** s_1776910002968_976
 - **Status:** done
-- **When:** 2026-04-23T01:39:15.862Z
-- **Duration:** 2m32s
+- **When:** 2026-04-23T02:10:28.122Z
+- **Duration:** 3m45s
 
 ## What Happened
-The lab version doesn't exist anymore. And `verify-before-finish` is only deployed to May (targeting C1.7 regression). The broader FM-3.3 problem across ALL agents remains unaddressed. My EXP-011 targets this gap.
+No project review iterations recently — that's why EXP-200 has no data. The experiment is fine, it just needs time. Nothing to fix.
 
-Let me update the hypothesis file and the experiment status:
+Let me update EXP-200 results with this observation and wrap up.
