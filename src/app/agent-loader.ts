@@ -217,6 +217,7 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
             agentName: config.name,
             agentsRoot: opts.agentsRoot,
             persistDir,
+            emit: (event) => bus.emit(event as any),
             getCallerSessionId: () => agentSessionIds.get(config.name),
             triggerHeartbeat: (agentName: string) => {
               for (const cron of agentCrons.values()) {

@@ -12,7 +12,7 @@ import { join, dirname } from "node:path";
 import type { AgentEvent } from "../app/event-bus.js";
 import { log } from "./log.js";
 import { createStartDigest, createEndDigest, upsertDigest, logShadowComparison } from "./session-digest.js";
-import { trackRequest, updateRequest, getDb } from "./requests.js";
+import { updateRequest, getDb } from "./requests.js";
 import type { SubagentManager } from "./manager.js";
 import { writeLastSession } from "./last-session.js";
 
@@ -75,13 +75,11 @@ export function createRequestTracker(persistDir: string): (event: AgentEvent) =>
       try {
         for (const item of finishParams.new_items) {
           try {
-            trackRequest(persistDir, {
-              fromEntity: event.agent,
-              toAgent: event.agent,
+            bus.emit({ type: "emit", event: "agent.notification", data: {
+              owner: event.agent,
+              source: event.agent,
               task: String(item).slice(0, 500),
-              method: "notify",
-              source: "finish",
-            });
+            }} as any);
           } catch (err) {
             /* best-effort */
             log("warn", `[request-tracker] failed to track new item for ${event.agent}: ${err}`);
@@ -654,15 +652,12 @@ export function createFindingsTracker(projectRoot: string, persistDir: string): 
           );
           if (isDuplicate) continue;
 
-          trackRequest(persistDir, {
-            fromEntity: ff.producer,
-            toAgent: item.targetAgent,
+          bus.emit({ type: "emit", event: "agent.finding", data: {
+            owner: item.targetAgent,
+            source: ff.producer,
             task: taskText,
-            method: "notify",
-            source: `findings-tracker:${event.sessionId}`,
-            context: `Auto-created from finding. See ${ff.path} for details.`,
-            source_finding: ff.path,
-          });
+            finding: ff.path,
+          }} as any);
 
           // Add to existing list for intra-session dedup
           existingAutoTasks.push({ task: taskText });
