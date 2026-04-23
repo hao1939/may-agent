@@ -4025,3 +4025,24 @@ Observations: All research threads closed. Strategic proposal (`proposal-graduat
 **12+ convention regression notifications**: All 30-67 days old. Not actionable without fresh data.
 
 **Next**: Design new experiment leveraging working gym. Could target production failure patterns or verify skill effectiveness on harder scenarios.
+
+## 2026-06-22 — Heartbeat (46)
+
+**Status**: prove-the-loop CLOSED (6/9 milestones). Two experiments ready for execution: EXP-199 (swap audit workflow) and EXP-200 (recognition scaffold). Neither has any gym runs.
+
+**Notifications triaged**:
+- P0 "unblocked work": Confirmed — EXP-199 & EXP-200 scenarios exist, have zero runs. Need gym execution.
+- P1 "EXP-188 23 interrupted sessions": Already written up (0%→100% with finish-guard). Production monitoring concern — not coach action.
+- P2 "Logical inertia" research: Potentially relevant to relational bug blindness. Filed.
+- P2 "Forage V2" research: Architecture validation. Filed.
+
+**Gym status**: Last run was 2026-04-23 (2 months ago). Gym runner works but requires live agent binary (`GYM_AGENT_BIN`). Cannot execute experiments from heartbeat session.
+
+**Metrics**: All green but stale — no new gym data since April. Metrics reflect historical performance.
+
+**Action**: Escalate EXP-199 execution — it's the most promising unrun experiment. The two-phase swap audit is our best shot at cracking 0% on cascading-fix-trap-v2 relational bugs.
+
+**Next**: Someone with gym agent binary access needs to run:
+```
+agents/test/gym/run-gym.sh cascading-fix-trap-v2-exp199-swap --agent coder  # ×10 trials
+```
