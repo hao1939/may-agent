@@ -1,37 +1,32 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-23)
 
 ## Context
-Heartbeat run had no pending events/projects. I attempted standard verification steps against latest changes in the `/app/agents` repo.
+No pending events/alerts. Heartbeat focused on verifying last 6h `agents/` changes + running required checks.
 
 ## Findings
+### 1) Test harness expects `/app/scripts/gym-run.sh`, but file is missing (breaks gym integration tests)
+- Evidence: `vitest` run of `agents/test/gym/gym.test.ts` fails because it shells out to `bash /app/scripts/gym-run.sh`.
+- The test constructs `RUN_GYM = join(PROJECT_ROOT, "scripts/gym-run.sh")` where `PROJECT_ROOT` resolves to `/app`.
+- Failure output (vitest): `bash: /app/scripts/gym-run.sh: No such file or directory`.
+- File evidence: `agents/test/gym/gym.test.ts` lines show `RUN_GYM` path construction.
 
-### 1) Environment / tooling: cannot run mandatory tsc/vitest commands (CRITICAL environment issue)
-**Evidence**
-- Running from `/app`: `./node_modules/.bin/tsc --noEmit` fails because `.bin` directory does not exist.
-- `node_modules` at repo root only contains `.vite` (no installed toolchain).
-- In `/app/agents`: `./node_modules/.bin/tsc --noEmit` also fails; `agents/node_modules` exists but contains only `.vite` and `.vite-temp` (no `.bin`).
+Impact: The repo’s core `agents/test/gym` integration test suite is currently red in this environment.
 
-This prevents independent verification via `tsc` and `vitest` per QA SOP.
+Suggested fix direction: Either (a) add/restore `/app/scripts/gym-run.sh`, or (b) update tests/config to point at the correct runner location if it moved.
 
-### 2) Latest change is a design doc only (no code to compile/test)
-**Commit inspected**: `ca473c3c2 design: project lifecycle - continuous execution, escalation routing, immediate resume`
-**File**: `agents/shared/may-agent-docs/design/project-lifecycle-continuous.md`
+### 2) `vitest --run` in repo root currently executes many non-project tests (gym scenarios + caches)
+- Evidence: `npx vitest --run` collected thousands of tests but also failed many files under:
+  - `agents/gym/scenarios/**/environment/test/**` (many are not Vitest suites; some call `process.exit`)
+  - `.state/.bun/install/cache/**` and `.state/.npm/_npx/**` (third-party package tests)
+- Using `--config agents/vitest.config.mjs` still did not exclude `agents/gym/**` because the config excludes `gym/**` and `test/gym/**`, but the directory is `agents/gym/**`.
 
-I read the doc (first ~200 lines). It is marked **Status: Proposal** and outlines changes to handler parallelism, escalation routing, and emitting `project.resumed`.
+Impact: Required CI-like command `vitest --run` is noisy and fails for reasons unrelated to product code.
 
-**QA note**: Since this is a proposal doc, there’s no code-level behavior to verify. However, it proposes concrete changes (files/LOC). If/when implemented, it should come with tests (especially around event subscription and preventing session flooding).
+Suggested fix direction: Expand vitest exclude globs to include `agents/gym/**` and `.state/**` (and potentially `**/environment/test/**` under gym scenarios), or add a dedicated workspace-level vitest config.
 
-### 3) Potential runtime issue: may-agent-bin appears broken in this environment (IMPORTANT environment issue)
-**Evidence**
-- `cd agents && ./may-agent-bin --help` outputs: `Agent "may" is not registered` and then attempts to start `may.ts` and fails immediately.
+### 3) Typecheck command `./node_modules/.bin/tsc --noEmit` cannot be run (tooling missing)
+- Evidence: `/app/node_modules/.bin/tsc` does not exist; `node_modules` contains only `.vite/`.
 
-This may be an environment configuration problem, but it blocks exercising workflows locally.
+Impact: Cannot perform the mandated typecheck step in this environment.
 
-## Suggested next steps
-1. Restore/install toolchain so the repo provides `tsc` and `vitest` executables (either via package manager install step or checked-in tool runner). Once available, rerun:
-   - `./node_modules/.bin/tsc --noEmit`
-   - `./node_modules/.bin/vitest --run`
-2. Investigate why `may-agent-bin` reports `Agent "may" is not registered` and why `may.ts` fails immediately.
-3. When the proposal is implemented, ensure:
-   - Parallel project execution has inflight protections + tests for avoiding duplicate launches.
-   - New event subscriptions (`escalation.created`, `project.resumed`) are covered by tests.
+Suggested fix direction: Ensure dependencies are installed (package manager step), or vendor the needed binaries, or update heartbeat instructions for this environment.
