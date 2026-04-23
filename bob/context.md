@@ -75,4 +75,18 @@
 - **Bash streak limit**: After 5 consecutive bash calls, pause and write what you know.
 
 ## Learned from experience
+
 - Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/.
+- All 20 tests pass. (source: s_1776980767453_0, 2026-04-23)
+- The task matches exactly. The environment already has passing tests. This appears to be the reference/solved environment. The scenario would normally inject bugs at runtime. Since all tests already pa (source: s_1776980599044_0, 2026-04-23)
+- All 9 tests pass. (source: s_1776980524316_0, 2026-04-23)
+- Good. Now let me handle the notification triage and finish:
+
+**Notifications triage:**
+1. **metric.breach ×5** — Metrics healthy now. Dismiss (self-resolved).
+2. **P2: Literature for H-EXP-014 (SABA,  (source: s_1776980299289_58, 2026-04-23)
+- Now let me handle the notification triage. The key ones:
+
+1. **P0: Stop EXP-188 finish-guard loop** — Already resolved in my todo (marked blocked, root cause identified). Dismiss.
+2. **P1: DD#777 TPGO (source: s_1776978498779_46, 2026-04-23)
+- Now commit and finish. (source: s_1776976699069_34, 2026-04-23)

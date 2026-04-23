@@ -81,3 +81,23 @@ The real rate is likely **closer to 0.40-0.50** than the reported 0.56.
 4. **Consider lowering threshold to match target** — If `may.alert-to-reaction-time` has threshold=150 but target=75, the gate won't fire when the value is 105 (between target and threshold). The breadcrumb system only marks `⚠️ BELOW TARGET` when threshold is breached, not when target is missed.
 
 **Bottom line**: M7 gate works when it fires, but it doesn't fire often enough. The primary failure mode has shifted from "agents ignoring breadcrumbs" to "breadcrumbs not appearing because threshold ≠ target". Fix the threshold gap and tighten measurement, then re-measure.
+
+---
+
+## Update 2026-04-24 (coach heartbeat)
+
+**Rate: 0.5429 (19/35 acted, v5 script)**
+
+Per-agent breakdown (7d window):
+- may: 8/19 = 42%
+- coach: 11/16 = 69%
+
+**Key finding**: May's metrics have been ALL GREEN since ~April 22. No new red-metric sessions are being generated for may. The 19 may sessions in the 7d window are all from April 22 (the last time metrics were red). As these age out, the measurement window will shrink.
+
+The 11 non-acting may sessions are all "read-only monitoring heartbeat" from April 22 (before/during M7+M9 deployment). The metric is stuck, not declining — it's a stale window problem, not a failing intervention.
+
+**Diagnosis**: The intervention can only be measured when metrics are red. With may's metrics now green, there's no way to generate new data points. The breadcrumb-action-rate will remain ~0.54 until either:
+1. May's metrics go red again (natural test of the gate), or
+2. The old April 22 sessions age out of the 7d window (rate would improve since only coach sessions remain, at 69%)
+
+**Decision**: This project is effectively **waiting for next red-metric event** to verify gate effectiveness. Mark breadcrumb-gap as paused with resume condition: "may has a heartbeat session with BELOW TARGET metrics."

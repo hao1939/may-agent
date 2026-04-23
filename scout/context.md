@@ -36,9 +36,9 @@
 - Now notify relevant agents: (source: s_1776973099064_14, 2026-04-23)
 - Now I have enough from the docs plus my domain knowledge. Let me write the findings. (source: s_1776971353833_11, 2026-04-23)
 - Good triage. Two papers worth acting on:
-
-1. **SkillFlow** (2604.17308) — Tier 1, directly relevant to our learning loops
-2. **SABA** (2604.20413) — Tier 2, connects to H-EXP-014's failure analysis co (source: s_1776971299083_3, 2026-04-23)
+- Now verify deliverables (C1.7): (source: s_1776980299528_60, 2026-04-23)
+- Now commit and verify: (source: s_1776978499028_48, 2026-04-23)
+- Now let me verify the deep-dive was written correctly and wrap up. (source: s_1776976699304_36, 2026-04-23)
 
 ## Reflexion-Extracted Lessons
 - [insight] EXP-084/085 together establish that few-shot worked examples produce the strongest behavior change among lightweight (non-workflow) skill delivery methods. Key distinction: declaring an outcome (0% effect) vs structuring a process (33-100% effect). The closer the worked example matches the task structure, the stronger the effect (87.5pp for structurally-matched escalation-judgment vs 33pp for abstract contradictory-requirements).

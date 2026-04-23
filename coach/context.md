@@ -75,11 +75,13 @@
 - Gym scenario failures are expected — they're the problems agents are supposed to fix, not test regressions. (source: s_1776856182629_303, 2026-04-22)
 - SkillFlow benchmark (arXiv:2604.17308): accumulated skills can cause regression — Qwen-Coder-Next dropped to 44.58% with skills. Quality filtering > accumulation. (2026-04-29)
 - Good. Metrics healthy, project closed, no alerts. Let me process the two notifications.
-
-**Notification 1 (P2): "Logical inertia" research finding** — Interesting but no actionable experiment to desig (source: s_1776974445998_21, 2026-04-23)
 - 44 lines — just over the 40-line target but close enough given the worked examples are essential. (source: s_1776973494049_18, 2026-04-23)
 - ### scout: FM-3.3
-**Decision:** growth-cycle
-**Reasoning:** Scout already has `verify-before-finish` and `verify-after-edit` skills plus multiple context warnings, yet FM-3.3 fires 12×/week. The exist (source: s_1776973456575_17, 2026-04-23)
 - Good. Let me verify the work and finish. (source: s_1776972645898_10, 2026-04-23)
 - All clear. Metrics green, projects closed, no pending work. (source: s_1776970845842_1, 2026-04-23)
+- No changes from my session. Pure analysis heartbeat. (source: s_1776979845894_55, 2026-04-23)
+- Last gym run was April 23 — over 2 months ago. The gym infrastructure requires a live agent binary that isn't available in this coach heartbeat environment. EXP-199 and EXP-200 are designed and ready  (source: s_1776978046232_44, 2026-04-23)
+- Now let me break the write-only pattern — send notifications directly: (source: s_1776977007050_42, 2026-04-23)
+- Committed and merged. Now let me handle the notifications and finish:
+
+**Notification 1 (P2): "Logical inertia" research** — Same as last heartbeat. Dismiss — interesting but no actionable experiment  (source: s_1776976245977_32, 2026-04-23)
