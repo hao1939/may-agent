@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776882131635_14
+- **Session:** s_1776967605870_1424
 - **Status:** done
-- **When:** 2026-04-22T18:24:53.437Z
-- **Duration:** 2m41s
+- **When:** 2026-04-23T18:09:34.711Z
+- **Duration:** 2m48s
 
 ## What Happened
-Bundle is gitignored - that's fine, it's a build artifact. The rebuild is done locally.
+Only 5 small files, not a big deal. The main issue was node_modules — 437K lines of dependency code in git. That's fixed now.
