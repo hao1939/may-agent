@@ -281,6 +281,20 @@ function parseTaskEvaluation(text: string): {
     if (lessons) defaultResult.lessons = lessons;
   }
 
+  // Derive overall scores from agent scores when the LLM omits them from
+  // the "overall" block (common failure mode — the LLM returns overall.verdict
+  // and overall.result_delivered but not overall.quality/efficiency).
+  const agentEntries = Object.values(defaultResult.agents);
+  if (defaultResult.overall.quality === 0 && defaultResult.overall.efficiency === 0 && agentEntries.length > 0) {
+    const hasAgentScores = agentEntries.some(a => a.quality > 0 || a.efficiency > 0);
+    if (hasAgentScores) {
+      const avgQuality = agentEntries.reduce((s, a) => s + a.quality, 0) / agentEntries.length;
+      const avgEfficiency = agentEntries.reduce((s, a) => s + a.efficiency, 0) / agentEntries.length;
+      defaultResult.overall.quality = Math.round(avgQuality * 100) / 100;
+      defaultResult.overall.efficiency = Math.round(avgEfficiency * 100) / 100;
+    }
+  }
+
   // Warn on silent zero-score returns (either no JSON match, JSON.parse failure,
   // or evaluator literally returned zeros). Surfaces the fragility noted in
   // agents/tech-lead/workspace/finding-fragility-find-the-highest-risk-silent.md
