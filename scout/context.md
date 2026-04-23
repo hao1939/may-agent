@@ -30,9 +30,6 @@
 
 ## Learned from experience
 
-- Now commit and verify: (source: s_1776911803757_989, 2026-04-23)
-- The blocker seems to be detecting the `/tmp/new_ids.txt` file I wrote. Let me do a trivial verification. (source: s_1776922604151_1073, 2026-04-23)
-- The gate seems stuck thinking I wrote files. Let me try reading a file to satisfy the verification requirement: (source: s_1776920803977_1058, 2026-04-23)
 - The Tool-Overuse paper (2604.19749) is highly relevant — our agents constantly make tool calls. Let me write a deep-dive and triage. (source: s_1776919003944_1040, 2026-04-23)
 - No scout files modified. Clean heartbeat. (source: s_1776929803462_1121, 2026-04-23)
 - Tree is clean now. (source: s_1776928003976_1109, 2026-04-23)
@@ -45,6 +42,11 @@
 - Verification step — read the deliverables: (source: s_1776942404784_1210, 2026-04-23)
 - Now commit and verify. (source: s_1776940604052_1196, 2026-04-23)
 - Now write a hypothesis from the Forage V2 paper and notify bob: (source: s_1776938803938_1187, 2026-04-23)
+- Now let me also check the pending metric breach event and dismiss it if metrics are fine.
+
+All metrics are green (hypotheses 13/5 ✅, findings-used 0.541/0.5 ✅, coverage 49/24 ✅). The metric.breach eve (source: s_1776951403612_1276, 2026-04-23)
+- Now notify the most relevant agents: (source: s_1776949605092_1265, 2026-04-23)
+- The KE files don't actually exist as uncommitted - they were already committed or the gate was stale. Only `tech-lead/last-session.md` is modified, which isn't mine. (source: s_1776947804454_1252, 2026-04-23)
 
 ## Reflexion-Extracted Lessons
 - [insight] EXP-084/085 together establish that few-shot worked examples produce the strongest behavior change among lightweight (non-workflow) skill delivery methods. Key distinction: declaring an outcome (0% effect) vs structuring a process (33-100% effect). The closer the worked example matches the task structure, the stronger the effect (87.5pp for structurally-matched escalation-judgment vs 33pp for abstract contradictory-requirements).
