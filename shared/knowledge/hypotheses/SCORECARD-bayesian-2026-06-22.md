@@ -129,3 +129,46 @@ Higher-level architectural proposals. Lower priority — require workflow change
 6. **H-070**: Lowest priority — our dispatch is already role-based and works.
 
 *Addendum by Bob (Architect) | 2026-06-28*
+
+---
+
+## Addendum: Deep-Dive Evidence Integration (2026-07-21)
+
+Ten new deep-dives (DD-842, DD-849 through DD-860) reviewed. Key hypothesis updates:
+
+### H-073 (Calibrated Abstention) — P(H): 0.50 → **0.60**
+DD-859 provides theoretical foundation: verification gravity wells are **structurally inevitable** in multi-step pipelines (5 independent mechanisms). DD-860 surveys interventions and confirms: error absorption requires **architectural** intervention at decision boundaries, not post-hoc correction. Huang et al.'s self-correction impossibility result (cited in DD-860) directly explains why verification loops compound errors. EXP-207 (designed) becomes higher priority — the theoretical case is strong.
+
+### H-075 (Surface Metrics Mask Breakdown) — P(H): 0.55 → **0.65**
+DD-842 (SWARM soft-label governance): Binary metrics miss distributional degradation. Our `findings-used: 0.541` is exactly the kind of binary metric that SWARM shows is gameable. DD-851 (Illusory Coordination): Names our vulnerability precisely — agents can produce correct outputs while collaboration patterns are degenerate. Two independent papers now support this hypothesis. EXP-206 (retrospective audit, no gym needed) should be prioritized.
+
+### H-185 (Verification Remasking) — P(H): 0.35 → **0.40** (slight upgrade)
+DD-856 (T2M Remasking): Provides mechanistic explanation for WHY remasking could work — "reset to unknown, re-derive from clean context" avoids contaminated-context failure mode. Still falsified for discovery scenarios (EXP-201: 0/10), but the T2M mechanism suggests a more targeted implementation could work for verification-loop scenarios specifically. Worth a redesigned experiment.
+
+### H-181 (Relational Bug Blindness) — P(H): 0.92 (unchanged)
+DD-860 §1.2 cites Ríos-García et al.: "evidence is ignored in 68% of traces, refutation-driven belief revision occurs in only 26%." This provides model-level explanation for why 7 prompt interventions failed on cascading-fix-trap-v2. The blindness is at the reasoning level, not the prompt level.
+
+### New Connection: DD-854 (Forage V2) validates architecture
+Our scout library, bob's hypotheses, knowledge entries, and context.md files map directly to Forage V2's organizational memory architecture. Key validation: their weaker agent seeded with stronger agent's knowledge **halved cost and closed 83% of performance gap**. This suggests our cross-agent knowledge transfer (scout→bob→coder via KE) is architecturally sound. No new hypothesis needed — this is evidence our approach works.
+
+### New Connection: DD-842 (SWARM) → New hypothesis candidate
+SWARM's finding that "strict governance hurts without helping" (40% welfare reduction, no safety improvement) echoes KE-091 (forced verification guards harm complex tasks). Consider formalizing as H-189: **Governance strictness has an optimal threshold — exceeding it reduces quality without improving safety.**
+
+### Updated Priority Ranking
+
+1. **EXP-206 (H-075 audit)**: No gym needed. DD-842 + DD-851 make this urgent — we may have illusory coordination.
+2. **EXP-207 Phase 1 (H-073)**: No gym needed for Phase 1. DD-859/860 strengthen theoretical basis.
+3. **EXP-208 (diagnosis skill verification)**: Needs gym. Most impactful if skill works.
+4. **EXP-205 (multi-agent review)**: Needs gym. Architectural test for H-181.
+
+### Updated Summary Statistics
+
+| Tier | Count | Change |
+|------|-------|--------|
+| Tier 1 (≥0.70) | 28 | — |
+| Tier 2 (0.50–0.69) | **19** | H-073 0.50→0.60, H-075 0.55→0.65 |
+| Tier 3 (<0.50) | **7** | H-185 0.35→0.40 (still Tier 3) |
+| Archived | 24 | — |
+| **Total** | **78** | — |
+
+*Addendum by Bob (Architect) | 2026-07-21*
