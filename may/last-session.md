@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776969405713_1
+- **Session:** s_1776971298650_0
 - **Status:** done
-- **When:** 2026-04-23T18:37:45.299Z
-- **Duration:** 59s
+- **When:** 2026-04-23T19:09:28.396Z
+- **Duration:** 1m9s
 
 ## What Happened
-Good — no pending Hao requests. System healthy, errors transient, no stuck work. Let me finish.
+Major finding: **88 EXPIRED forks vs only 2 COMPLETED** in 48h. 23 more stuck in CREATED. Forked work sessions are dying before completing — this is why delegation quality is 0.71. This needs tech-lead investigation.

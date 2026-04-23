@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776969727168_12
+- **Session:** s_1776971317497_10
 - **Status:** done
-- **When:** 2026-04-23T18:42:16.039Z
-- **Duration:** 8s
+- **When:** 2026-04-23T19:08:47.154Z
+- **Duration:** 9s
 
 ## What Happened
 ```json
@@ -13,34 +13,39 @@
     "bob": {
       "role": "Philosopher/Architect",
       "capability_level": "L3",
-      "efficiency": 0.25,
-      "quality": 0.3,
-      "verdict": "needs_improvement",
+      "efficiency": 0.82,
+      "quality": 0.9,
+      "verdict": "good",
       "issues": [
-        "[VERIFICATION_FAILURE] Claimed DB-backed verification in finish output, but transcript shows the only DB query attempt failed and was not recovered (bun sqlite command errored; no successful query output shown).",
-        "Misrepresented deliverable state: attempted to 'update and commit' EXP-212 but tool outputs show no diff and 'nothing to commit'; likely the substantive change happened earlier, not in this session.",
-        "Did not actually act on the stated plan ('update H-009')—only searched for H-077 and then abandoned that thread; no edits to hypotheses were evidenced.",
-        "Inbox handling not evidenced: claimed dismissing 3 metric.breach events, but no tool output shows event dismissal actions (only a narrative statement).",
-        "High tool waste and dead-end thrashing: multiple filesystem/path guesses and failed commands (notably .state/projects paths; kb-find.sh; commit-and-merge failure) with no clear resolution."
+        "Minor wasted tool call: attempted `cd /home/user` and hit PATH_HALLUCINATION before rerunning correctly under /app (1 wasted bash call).",
+        "Report write preview shows a truncated snippet marker ('### Unit Tes') but the write tool output confirms the final file has the intended sections; no action required."
       ],
       "metrics": {
-        "evidence_quality": "low",
-        "task_completion": "low",
-        "tool_efficiency": "low",
-        "follow_through_on_intent": "low"
+        "evidence_based_delivery": "high",
+        "verification": "high",
+        "scope_discipline": "high",
+        "execution_efficiency": "medium-high"
       }
     }
   },
   "workflow": {
-    "name": "bob heartbeat",
+    "name": "project-workflow-improvement / MS4 validation",
     "issues": [
-      "Session ended with a 'success' finish despite lack of session-local evidence for key claims (DB verification, inbox event handling, H-009 update).",
-      "Large fraction of actions were navigational/troubleshooting rather than producing validated artifacts."
+      "One environment path mistake corrected immediately; otherwise followed a direct implement→test→document path."
     ]
   },
   "overall": {
-    "verdict": "needs_improvement",
-    "result_delivered": false
+    "verdict": "good",
+    "result_delivered": true
   }
 }
 ```
+
+**Evidence (why these scores):**
+- **Validation executed and passed**: `bash` ran `cd /app && npx tsx .../ms4-validation-test.ts` with output `=== Results: 9 passed, 0 failed ===` (structural verification of the new cap behavior on 3 real projects + unit cases).
+- **Rubric change present in code**: `grep` output shows the three criteria lines (“Deliverables exist”, “Goal addressed”, “Honest reporting”) in `agents/shared/workflows/project.ts`.
+- **Concrete deliverables produced**: `write` created `ms4-validation-report.md`; `finish` lists both `ms4-validation-test.ts` and the report as deliverables.
+
+**Lessons / patterns to carry forward**
+- `[bob] Always run commands from /app; one /home path slip caused a guard failure and an extra retry.`
+- `[bob] Strong practice: pair workflow changes with a replay-style validation script against real historical cases (here: pwi-smart-context, reviewer-effectiveness, context-learning) to demonstrate impact and reduce evaluator dispute risk.`

@@ -1,39 +1,27 @@
-# QA Heartbeat — Unreviewed Findings (2026-04-23)
+# Unreviewed findings (QA heartbeat)
 
-## Scope
-Reviewed most recent change in the **agents** repo (commit `e44348dd7`) affecting the project health handler.
+## Context
+- Repo root for code is `/app/agents` (git repo).
+- Unable to run mandatory checks because dev dependencies are missing in this environment (no `typescript`, no `vitest`).
 
-## Findings
-### 1) Environment/test suite drift: 4 failing vitest suites due to missing modules (CRITICAL for test reliability)
-Running vitest in `/app/agents` currently fails because several test files import modules that do not exist in `agents/src/lib/*`.
+## Evidence
+- `./node_modules/.bin/tsc --noEmit` fails: `No such file or directory`.
+- `npx --no-install tsc --noEmit` fails with: "This is not the tsc command you are looking for" (TypeScript not installed).
+- `./node_modules/.bin/vitest --run` fails: `No such file or directory`.
+- `package.json` only lists `puppeteer-core` under dependencies.
 
-Evidence (vitest output):
-- `test/lessons.test.ts`: cannot find `../src/lib/lessons.ts`
-- `test/ops-gate.test.ts`: cannot find `../src/lib/ops-gate.js`
-- `test/orders.test.ts`: cannot find `../src/lib/orders.js`
-- `test/security.test.ts`: cannot find `../src/lib/tools/security.js`
+## Code spot-check (recent change)
+Commit `de24b0f41` modifies:
+- `agents/shared/workflows/project.ts`
+- `agents/may/handlers/project.ts`
 
-`agents/src/lib` currently contains only:
-- `edit-guard.ts`, `finish-guard.ts`, `path-guard.ts`, `project-health.ts`
+I read both files (first ~260 lines each). No immediate red flags in those sections, but the workflow file read was truncated; full verification requires reading the relevant changed regions and running typecheck/tests.
 
-Impact:
-- Breaks the repo’s ability to use vitest as a gate.
-- Makes it hard to verify new changes with the mandatory QA steps.
+## Risk
+Without `tsc` and `vitest`, QA cannot confirm the recent project workflow fixes compile or pass tests.
 
-Recommendation:
-- Either restore the missing modules, update test imports/paths to match current code layout, or remove/skip obsolete tests.
-
-### 2) Potential bug in `project-health.ts` persistence helpers (IMPORTANT)
-In `agents/shared/lib/project-health.ts`, the persistence helpers use `mkdirSync(join(file, ".."), { recursive: true })`. This is likely intended to create the parent directory of `file`, but `join(file, "..")` is an odd pattern and depends on path normalization.
-
-Safer would be `dirname(file)`.
-
-Evidence:
-- File: `agents/shared/lib/project-health.ts` (in `writeHealthState` and `writeInflight`)
-
-Impact:
-- Could fail to create the intended directory in edge cases; state writes are silently swallowed (`catch { /* best effort */ }`), which could hide errors.
-
-## Verified file reads
-- `agents/may/handlers/project.ts` (read lines 1–260)
-- `agents/shared/lib/project-health.ts` (read lines 1–380)
+## Recommendation
+- Add `typescript` and `vitest` (and any required config) as devDependencies in `/app/agents/package.json`, or provide a documented alternative verification command in this repo.
+- Once available, rerun:
+  - `./node_modules/.bin/tsc --noEmit`
+  - `./node_modules/.bin/vitest --run`
