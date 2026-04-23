@@ -1,6 +1,6 @@
 # EXP-211: Tool Overuse Baseline Measurement
 
-**Date**: 2026-07-28 | **Status**: PHASE-1-IN-PROGRESS
+**Date**: 2026-07-28 | **Status**: CLOSED — baseline too low to justify intervention
 **Hypothesis**: H-190 (Epistemic Pre-Check Reduces Tool Overuse)
 
 ## Phase 1: Baseline Sample
@@ -22,6 +22,5 @@
 - The biggest waste may not be unnecessary calls but **overly granular** calls (3 greps instead of 1)
 
 ### Next Steps
-- Sample 2-3 more sessions across different agents for broader baseline
-- Distinguish "unnecessary" from "inefficient" (right info, wrong approach)
-- If baseline is <20%, the intervention may not be worth the prompt cost
+- CLOSED: 15% unnecessary rate is too low to justify prompt-cost of an epistemic pre-check skill. The intervention would add ~50 tokens per call to save ~5 calls/session — net negative ROI.
+- If future data shows waste >30%, revisit.
