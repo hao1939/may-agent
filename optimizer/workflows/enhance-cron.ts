@@ -232,41 +232,55 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     if (fixResult.type === "escalate") return fixResult;
   }
 
-  // ── Step 6: Final Verification ───────────────────────────────────────
+  // ── Step 6: Final Verification (pure JS — no LLM session) ───────────
 
   ctx.emit({ type: "step_start", step: "final-verify" });
 
-  const verifyTask =
-    `## Cron Enhancement: Step 6 — Final Verification\n\n` +
-    `## Feature\n${feature}\n\n` +
-    `## Instructions\n` +
-    `Run a complete verification of the Cron enhancement:\n\n` +
-    `1. Run \`npx tsc --noEmit\` — ALL type errors must pass\n` +
-    `2. Run \`npx vitest run ${CRON_TEST}\` — ALL tests must pass\n` +
-    `3. Read the modified sections of these files and confirm consistency:\n` +
-    `   - ${CRON_TS}: new state + methods + lifecycle hooks\n` +
-    `   - ${HANDLER_CONTEXT}: new interface members\n` +
-    `   - ${AGENT_LOADER}: wiring\n` +
-    `4. Check for: unused imports, missing cleanup in stop(), ` +
-    `   missing reset in reload(), overlap protection gaps\n\n` +
-    `Report:\n` +
-    `- tsc result: PASS/FAIL\n` +
-    `- test result: PASS/FAIL (with counts)\n` +
-    `- consistency: any issues found\n` +
-    `- verdict: PASS or FAIL with details`;
+  const verifyText = await ctx.runFunction("final-verify", async () => {
+    const { execSync } = await import("node:child_process");
+    const results: string[] = [];
 
-  const verifyResult = await ctx.runAgent("qa", verifyTask);
-  if (verifyResult.status === "error") {
-    return ctx.escalate("final verification failed", { error: verifyResult.error });
-  }
+    // 1. Type check
+    let tscPass = false;
+    try {
+      const tscOut = execSync("npx tsc --noEmit 2>&1", { encoding: "utf-8", timeout: 60_000 });
+      tscPass = true;
+      results.push("tsc result: PASS");
+    } catch (err: any) {
+      const output = (err.stdout || "") + (err.stderr || "");
+      results.push(`tsc result: FAIL\n${output.slice(0, 1000)}`);
+    }
 
-  const verifyText = verifyResult.lastAssistantText ?? "";
-  const verifyUpper = verifyText.toUpperCase();
+    // 2. Test suite
+    let testPass = false;
+    try {
+      const testOut = execSync(`npx vitest run ${CRON_TEST} 2>&1`, { encoding: "utf-8", timeout: 120_000 });
+      testPass = !testOut.toUpperCase().includes("FAIL");
+      results.push(`test result: ${testPass ? "PASS" : "FAIL"}\n${testOut.slice(-500)}`);
+    } catch (err: any) {
+      const output = (err.stdout || "") + (err.stderr || "");
+      results.push(`test result: FAIL\n${output.slice(0, 1000)}`);
+    }
 
-  if (verifyUpper.includes("FAIL") && !verifyUpper.includes("PASS")) {
+    // 3. Basic consistency checks (file existence)
+    const { existsSync: exists } = await import("node:fs");
+    const missing = KEY_FILES.filter(f => !exists(f));
+    if (missing.length > 0) {
+      results.push(`consistency: MISSING FILES: ${missing.join(", ")}`);
+    } else {
+      results.push("consistency: all key files present");
+    }
+
+    const verdict = tscPass && testPass ? "PASS" : "FAIL";
+    results.push(`verdict: ${verdict}`);
+    return results.join("\n");
+  });
+
+  const verifyOutput = verifyText.lastAssistantText ?? "";
+  if (verifyOutput.toUpperCase().includes("VERDICT: FAIL")) {
     return ctx.escalate("Final verification failed", {
       plan,
-      verifyOutput: verifyText,
+      verifyOutput,
     });
   }
 
@@ -276,7 +290,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `## Cron Enhancement Complete\n\n` +
     `## Feature\n${feature}\n\n` +
     `## Plan\n${plan}\n\n` +
-    `## Final Verification\n${verifyText}\n\n` +
+    `## Final Verification\n${verifyOutput}\n\n` +
     `## ACTION REQUIRED\n` +
     `Run: git diff --stat\n` +
     `Then: git add <changed files> && git commit -m "feat(cron): <description>"\n` +
