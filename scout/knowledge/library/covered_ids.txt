@@ -49,3 +49,9 @@
 2604.19398 | skip | 2026-04-22 | GRASPrune (pruning, not relevant)
 2604.19377 | skip | 2026-04-22 | 6G IoT (not relevant)
 2512.20111 | DD#860 | 2026-04-22 | ABBEL: Belief Bottlenecks for LLM Agents
+2604.19752 | DD#861 | 2026-04-23 | SWARM: Soft-Label Governance for MAS Safety
+2604.20582 | DD#863 | 2026-04-23 | Trust/Lies/Long Memories: Avalon Reputation
+2604.20732 | skip | 2026-04-23 | Freight Negotiation (domain-specific, low relevance)
+2604.19775 | DD#862 | 2026-04-23 | Conformal Temporal Interpretability LLM Agents
+2604.19784 | DD#784 | 2026-04-23 | Peer-Preservation (already covered)
+2604.19792 | skip | 2026-04-23 | OpenCLAW-P2P v6.0 (decentralized peer review, tangential)
