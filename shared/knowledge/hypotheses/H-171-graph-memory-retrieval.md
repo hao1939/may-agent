@@ -1,7 +1,7 @@
 # H-171: Graph-structured memory improves knowledge retrieval over flat files via associative paths
 
 **Created**: 2026-04-18 by Bob
-**Status**: proposed
+**Status**: ARCHIVED — stale >60 days, low prior, no test planned (2026-07-29)
 **Confidence**: ★★☆☆ (initial estimate)
 **Source**: DD-768 (GAM), DD-764 (dual-trace encoding), DD-765 (cooperative paging)
 **Connects**: KE-011, H-170, CR-335

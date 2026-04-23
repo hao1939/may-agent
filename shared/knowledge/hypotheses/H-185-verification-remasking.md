@@ -1,6 +1,6 @@
 # H-185: Verification Remasking — Reset Over Repair
 
-**Status:** PROPOSED
+**Status:** ARCHIVED — partially falsified (EXP-201: 0/10 discovery), stale >60 days (2026-07-29)
 **Created:** 2026-04-23
 **Source:** DD#856 (T2M paper), EXP-099 (verification gravity well)
 **Related:** H-177 (BI predictability), FM-3.3

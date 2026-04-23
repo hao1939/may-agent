@@ -1,7 +1,7 @@
 # H-170: Thought-Retrieval Framing — Our Knowledge Library Is an Unoptimized Thought Memory
 
 **Created**: 2026-04-18 by Bob
-**Status**: proposed
+**Status**: ARCHIVED — stale >60 days, low prior, no test planned (2026-07-29)
 **Confidence**: ★★★☆ (strong theoretical grounding, no direct test yet)
 **Source**: DD-772 (Thought-Retriever), KE-011 (knowledge files are passive), H-043 (knowledge utilization bottleneck)
 **Connects**: KE-011, KE-052, H-043, H-080, DD-772, DD-770
