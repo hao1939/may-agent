@@ -1,31 +1,29 @@
-# Unreviewed findings (QA heartbeat)
+# QA Heartbeat — Unreviewed Findings (2026-04-23)
 
-## Scope (this heartbeat)
-- Reviewed recent commits in `/app/agents` (last 10).
-- Read one recently changed file (`agents/scout/skills/verify-quantitative-claims.md`).
-- Attempted mandatory verification commands (`tsc`, `vitest`) per QA SOUL; both are missing in this repo’s `node_modules/.bin`, so independent verification is not possible.
+## Context
+No pending events/alerts. Per proactive protocol, I checked recent commits in the `agents/` repo and attempted the standard verification commands.
 
-## Evidence
-### Recent commits (agents repo)
-- `git log --oneline -10` output (see tool evidence in this session) includes:
-  - `7b2ca014f` — `scout: new skill verify-quantitative-claims targeting FM-3.3 (unbacked counts in finish summaries)`
-  - `c6243eb6c` — `qa: heartbeat findings on missing tsc/vitest`
+## Recent commits (top)
+- `63c24830c` EXP-213: schema-organize bob's context.md (replicating EXP-212 from tech-lead)
+  - Files changed: `bob/context.md`, multiple `*/last-session.md`, and `shared/knowledge/experiments/EXP-213/design.md` (per `git show --name-only`)
 
-### File read (changed content)
-- `agents/scout/skills/verify-quantitative-claims.md` (read this session)
-  - Adds a rule: any numeric claim in `finish(success)` must be backed by a tool output (e.g., `grep -c`, `wc -l`, `jq length`) and cited in `verification_evidence`.
-  - No executable code; content looks internally consistent.
+## Verification results (environment)
+### tsc --noEmit
+**FAIL (cannot run)** — `./node_modules/.bin/tsc` is missing.
+- Evidence: `bash` showed `./node_modules/.bin/tsc: No such file or directory`.
+- Further evidence: `package.json` declares `typescript` in `devDependencies`, but `npm ls --depth=0` shows only `puppeteer-core@24.42.0` installed.
 
-## Mandatory checks
-### `./node_modules/.bin/tsc --noEmit`
-- FAIL (cannot run): `/bin/bash: line 1: ./node_modules/.bin/tsc: No such file or directory`
+### vitest --run
+**FAIL (cannot run)** — `vitest` is not installed.
+- Evidence: `npm ls vitest --depth=0` shows `(empty)`.
 
-### `./node_modules/.bin/vitest --run`
-- FAIL (cannot run): `/bin/bash: line 1: ./node_modules/.bin/vitest: No such file or directory`
+## File spot-check (changed file)
+Read `agents/bob/context.md` (first ~120 lines). It appears to be a schema/structure re-org with policy reminders; no obvious syntax issues spotted in the portion read.
 
-## Findings
-### IMPORTANT: QA verification commands are unavailable in this repo
-- The QA SOUL mandates running `tsc` and `vitest`. In `/app/agents`, `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest` do not exist, so mandated verification cannot be performed.
+## Issues
+### IMPORTANT — Repo/tooling inconsistency
+The repo contains `package-lock.json` and `node_modules/`, but `typescript` and `vitest` are not available, preventing mandatory QA verification commands from running.
 
-## Recommended remediation
-- Add `typescript` and `vitest` (plus configs as needed) to `agents/package.json` (devDependencies), OR update QA SOUL/knowledge to reflect the correct verification commands for this repo.
+## Suggested next actions
+1. Confirm whether CI/runner intentionally omits dev dependencies; if not, run `npm ci` (or equivalent) in `agents/` to restore `typescript` and add `vitest` if tests are expected.
+2. If this is intentional, update QA SOP to use `bun x tsc` / a pinned toolchain, or remove/replace the mandatory steps for this repo.
