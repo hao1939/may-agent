@@ -1,33 +1,28 @@
-# Unreviewed Findings (QA heartbeat)
+# Unreviewed findings (QA heartbeat)
+
+Date: 2026-04-23
 
 ## Context
-- Repo root (`/app`) is **not** a git repository. The `agents/` directory **is** a git repository.
-- Latest commit in `agents/` at time of review: `a2cdaad4e` (coach HB46: triage notifications, journal update, EXP-199/200 ready for execution).
+Attempted to perform standard heartbeat verification (git scan + tsc/vitest) in `/app`. The git repository lives under `/app/agents` (there is no `.git` at `/app`).
+
+## Evidence
+- `git log` from `/app` failed: “not a git repository”.
+- `/app/agents` contains `.git` and recent commits.
+- `./node_modules/.bin/tsc --noEmit` (run from `/app/agents`) failed: `No such file or directory`.
+- `./node_modules/.bin/vitest --run` (run from `/app/agents`) failed: `No such file or directory`.
+- `package.json` lists `typescript` in `devDependencies`, but `npm ls typescript --depth=0` reports `(empty)`.
 
 ## Findings
-### 1) Tooling/verification gap: mandatory `tsc`/`vitest` checks cannot run (environment)
-**Severity:** IMPORTANT (blocks standard QA verification; likely infra/config issue)
+### IMPORTANT: Tooling install mismatch blocks mandatory QA checks
+The repo declares TypeScript, but `node_modules` does not contain it; `vitest` also appears absent. This prevents running the required QA commands as specified (and even alternative invocation via `node_modules/typescript/...` fails because the package is missing).
 
-Evidence:
-- Running `./node_modules/.bin/tsc --noEmit` at `/app` fails: `No such file or directory`.
-- Running `./node_modules/.bin/vitest --run` at `/app` fails: `No such file or directory`.
-- In `agents/` repo, `./node_modules/.bin/tsc --noEmit` also fails: `No such file or directory`.
-- `agents/package.json` declares `typescript` in `devDependencies`, but `npm ls --depth=0` shows only `puppeteer-core@24.42.0` installed and `node_modules/.package-lock.json` contains no `typescript` entries.
+Likely causes:
+- `npm install` not run (or a partial/pruned install), or
+- dependencies intentionally minimized but QA process docs still require tsc/vitest.
 
-Impact:
-- QA cannot perform the mandated independent TypeScript/typecheck and unit test verification steps in this environment.
+### MINOR: Recent commit only updates heartbeat metadata
+Latest commit `b083494c0` modifies `shared/federation/heartbeats/local.json` plus a few `last-session.md` docs; no code review needed.
 
-Suggested follow-up:
-- Ensure the workspace has dependencies installed (e.g., `npm ci`) for the relevant repo and that `vitest` is included where expected.
-
-### 2) Recent change scope appears documentation-only
-**Severity:** MINOR
-
-Evidence:
-- `git show --name-only -1` for `a2cdaad4e` lists only markdown files:
-  - `bob/last-session.md`
-  - `coach/last-session.md`
-  - `coach/workspace/journal.md`
-  - `evaluator/last-session.md`
-
-I spot-checked `agents/coach/workspace/journal.md` (first 200 lines) and it contains logging/notes, not code.
+## Recommended next steps
+1. Ensure `npm ci` (or equivalent) is run in `/app/agents` so `typescript` and `vitest` binaries exist.
+2. If the project intentionally does not ship Vitest, update QA mandatory steps/docs to reflect the actual test runner.
