@@ -4,7 +4,7 @@
 
 ## Active / In Progress
 - [ ] **H-188 / EXP-204 designed**: Multi-agent decomposition for relational bugs (tracer+fixer). Blocked on gym infra for full run; can pilot manually. Design: agents/shared/knowledge/hypotheses/H-188-multi-agent-relational-bug-decomposition.md
-- [ ] **KE-345, KE-346 DONE**: Written up EXP-197 (handoff loss) and EXP-189 (G' production gap) as KEs. 11 more experiments still lack KEs.
+- [ ] **KE write-ups**: KE-345,346 (EXP-197,189), KE-364 (EXP-171), KE-365 (EXP-162a), KE-366 (EXP-143) done. 5 more experiments still lack KEs (EXP-010, EXP-027, EXP-038, EXP-050, EXP-076).
 - [ ] **EXP-196 qualitative DONE**: Remasking effective for 3/5 scenarios, counterproductive for 2 (honesty-tests). Needs gym for quantitative. Results: agents/shared/knowledge/experiments/EXP-196/results.md
 - [ ] **H-183 Grading Phase 1 DONE**: 35 KE entries graded (12A/11B/7C/5T). Phase 2 (A/B consumption test) blocked on gym infra. Results: agents/bob/workspace/h183-grading-results.md
 - [ ] **Scenario Gap-Fill** [MEDIUM]: sql-injection (33%) is ready for intervention experiments. deprecation-warning needs redesign (remove console.warn to make recognition harder) or replacement. Consider 1-2 more scenarios to increase portfolio.
