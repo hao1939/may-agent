@@ -58,10 +58,6 @@
 
 ## Learned from experience
 
-- The TODOs are all in skill documentation (examples), not real code. The codebase is clean. Metrics are all green, no alerts, tests pass. The metric breaches from 8-10h ago appear to have already resol (source: s_1776884803310_772, 2026-04-22)
-- Good — no more `readonly` in the file. (source: s_1776883084265_758, 2026-04-22)
-- 31 near-duplicate "bob: verified all tests pass" commits. That's noise pollution in the git history. Let me update my session notes and dismiss the alerts. (source: s_1776883003310_756, 2026-04-22)
-- Confirmed: the `db.exec("PRAGMA journal_mode=WAL")` line is gone, and the readonly Database open is immediately followed by closing the block. (source: s_1776881308465_748, 2026-04-22)
 - All source files are used by pipeline.js. Build is healthy, tests pass, no dead code. The codebase is clean and simple.
 - The compliance-check handler is functioning correctly. It compiles cleanly, all imports resolve, and it runs to completion producing expected output. (source: s_1776892078804_827, 2026-04-22)
 - Seems like other agents are writing files concurrently. Let me commit in a loop. (source: s_1776892003278_825, 2026-04-22)
@@ -73,3 +69,7 @@
 - Other agents keep modifying files. Let me just commit and finish quickly. (source: s_1776899203296_913, 2026-04-23)
 - The handler works fine. The 2/2 errors were already fixed by the 3 commits shown in git log. The heartbeat at 16:06 already confirmed it was transient. There's nothing left to fix. (source: s_1776897442917_901, 2026-04-23)
 - All clear. Metrics green, no build issues, no dead code in src/, all modules used. The two metric breaches from 11-13h ago are stale (metrics recovered). Amy's no-op commits were already addressed wit (source: s_1776897403386_896, 2026-04-23)
+- Now let me dismiss the pending metric breach events since all metrics are green. (source: s_1776908203787_971, 2026-04-23)
+- All 9 test files pass, 155 tests green. Let me commit: (source: s_1776906403412_962, 2026-04-23)
+- Everything looks clean. Let me dismiss the stale alerts and commit. (source: s_1776904603139_953, 2026-04-23)
+- The handler runs successfully manually. Let me look for the actual runtime error logs: (source: s_1776902847046_940, 2026-04-23)

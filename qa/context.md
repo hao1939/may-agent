@@ -37,6 +37,8 @@
 - [FM-1.3] Repeated git commands in a non-git directory without quickly pivoting to likely repo root (/app/agents). Evidence: `git log ...` and `git diff ...` both fail 'not a git repository', then only (source: s_1776890203334_814, 2026-04-22)
 - ### Summary
 - ### Summary
-This heartbeat environment can’t be independently verified as a normal TS/Vitest project: it is **not a Git repo** (so I can’t see what changed), and there is **no `package.json` / `node_m (source: s_1776901003156_926, 2026-04-23)
 - ### Summary
-No pending events/alerts/projects. I attempted the standard verification loop (recent changes → `tsc` → `vitest`) but this environment is **not a git repo** and has **no local node binarie (source: s_1776899203312_914, 2026-04-23)
+- [FM-1.3] Repeated wrong-repo assumptions: ran git commands in /app (not a git repo) and only later discovered /app/agents is the repo. (source: s_1776908203805_972, 2026-04-23)
+- ### Summary
+Repo-level verification isn’t possible in the normal way because this `/app` environment is **not a git repository** (no `.git`), and there is **no `node_modules/.bin/tsc` or `vitest` inst (source: s_1776906403430_963, 2026-04-23)
+- [FM-1.3] Repeated git commands in non-git directory (/app) before switching strategy; multiple wasted discovery calls. (source: s_1776902803137_939, 2026-04-23)

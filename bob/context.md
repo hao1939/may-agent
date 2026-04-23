@@ -41,9 +41,6 @@
 
 ## Learned from experience
 
-- All 23 tests pass — no bugs to fix. The pipeline is working correctly. (source: s_1776880077353_0, 2026-04-22)
-- All 23 tests pass already — no failures. (source: s_1776880034533_0, 2026-04-22)
-- All 23 tests pass. No source files were modified — the pipeline was already working correctly. (source: s_1776879996369_0, 2026-04-22)
 - The blocker is about the git commit I made earlier to `agents/bob/last-session.md` being treated as a "write". Let me verify that file and finish. (source: s_1776879893297_0, 2026-04-22)
 - Now update H-185 status: (source: s_1776886822848_783, 2026-04-22)
 - Good. Now let me commit what I have and finish. (source: s_1776886603217_777, 2026-04-22)
@@ -56,8 +53,9 @@
 - Now commit and finish: (source: s_1776899203209_909, 2026-04-23)
 - I'm a reviewer, not a worker — my deliverable is the score assessment. Let me verify the files I'm evaluating are real: (source: s_1776897627555_903, 2026-04-23)
 - BLOCKED
-
-The evaluator scored 4/10 because "None of the CLIs were successfully invoked to produce any useful output." This is fundamentally an **authentication/API key problem** that cannot be resolve (source: s_1776897620785_902, 2026-04-23)
+- The lab version doesn't exist anymore. And `verify-before-finish` is only deployed to May (targeting C1.7 regression). The broader FM-3.3 problem across ALL agents remains unaddressed. My EXP-011 targ (source: s_1776908203693_967, 2026-04-23)
+- Now commit: (source: s_1776906403321_958, 2026-04-23)
+- Now update the design.md status and results.md: (source: s_1776904603051_949, 2026-04-23)
 
 ## Reflexion-Extracted Lessons
 - [insight] Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/.

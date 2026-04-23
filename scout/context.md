@@ -30,10 +30,6 @@
 
 ## Learned from experience
 
-- Now commit: (source: s_1776850600797_4, 2026-04-22)
-- Good output with 5 relevant papers and hypotheses. Metrics are all green, research dispatched and completed. (source: s_1776846436331_15, 2026-04-22)
-- Now I have enough to write the comprehensive document. (source: s_1776845869111_7, 2026-04-22)
-- Triage complete. Uncovered cross-lists are all low-relevance (robotics, elderly falls, biology, opinion physics, VA dev). The 6 new submissions were already covered. All clear.
 - Clean. The dirty files are from other agents, not scout. (source: s_1776856000442_290, 2026-04-22)
 - Three pending handoffs (DD#411, DD#424 for Bob; DD#517 for tech-lead). Let me send these notifications. (source: s_1776886603285_780, 2026-04-22)
 - Now let me verify my work and finish: (source: s_1776884803291_771, 2026-04-22)
@@ -44,9 +40,13 @@
 - Now let me commit and finish. All papers triaged, stale todos cleaned up. (source: s_1776888403298_799, 2026-04-22)
 - No scout files modified. The only dirty file is qa's. (source: s_1776901003114_924, 2026-04-23)
 - Interesting - H-187 is already falsified. No action needed.
-
-All papers are triaged, all deep-dives written, metrics green, no pending handoffs, no new papers to process. Let me verify and finish. (source: s_1776899203270_912, 2026-04-23)
 - No scout files modified. Clean heartbeat with no deliverables. (source: s_1776897403364_895, 2026-04-23)
+- Excellent — paper 2505.16170 is directly relevant to H-072 (Belief-State Externalization). It shows that LLMs have internal belief states that predict retraction, and that making these beliefs explici (source: s_1776908203768_970, 2026-04-23)
+- The cs.AI/new page shows April 22 papers (which I've already covered). No newer papers are available yet - it's still April 23 and the next batch hasn't posted.
+
+Metrics are all green, no alerts, no p (source: s_1776906403392_961, 2026-04-23)
+- Everything is quiet — metrics green, no alerts, no new papers, no pending events. Let me verify the current state is clean and finish. (source: s_1776904603117_952, 2026-04-23)
+- Now notify bob about the emerging pattern across these three papers: (source: s_1776902803099_937, 2026-04-23)
 
 ## Reflexion-Extracted Lessons
 - [insight] EXP-084/085 together establish that few-shot worked examples produce the strongest behavior change among lightweight (non-workflow) skill delivery methods. Key distinction: declaring an outcome (0% effect) vs structuring a process (33-100% effect). The closer the worked example matches the task structure, the stronger the effect (87.5pp for structurally-matched escalation-judgment vs 33pp for abstract contradictory-requirements).
