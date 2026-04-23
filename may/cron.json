@@ -332,7 +332,7 @@
       "timeoutMs": 900000,
       "workflow": "verify-wrap",
       "agent": "coach",
-      "task": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently (check workspace/common-sense-status.md for status index). To check agent behavior: use `bash` with grep/jq to search session transcripts — do NOT read full session.jsonl files. Did the agent follow the rule? Quote evidence. If NO — add to Growth Cycle queue. If YES — update workspace/common-sense-tracker.md with your findings."
+      "task": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently (check workspace/common-sense-status.md for status index). To check agent behavior: use `bash` with grep/jq to search session transcripts \u2014 do NOT read full session.jsonl files. Did the agent follow the rule? Quote evidence. If NO \u2014 add to Growth Cycle queue. If YES \u2014 update workspace/common-sense-tracker.md with your findings."
     },
     "offsetMs": 300000
   },
@@ -611,7 +611,8 @@
     "on": [
       "project.completed",
       "project.blocked",
-      "metric.breach"
+      "metric.breach",
+      "escalation.created"
     ]
   },
   {
