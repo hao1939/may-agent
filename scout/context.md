@@ -30,10 +30,6 @@
 
 ## Learned from experience
 
-- Everything is triaged and current. Metrics green, no gaps. Let me commit this heartbeat. (source: s_1776890203295_812, 2026-04-22)
-- Now let me commit and finish. All papers triaged, stale todos cleaned up. (source: s_1776888403298_799, 2026-04-22)
-- No scout files modified. The only dirty file is qa's. (source: s_1776901003114_924, 2026-04-23)
-- Interesting - H-187 is already falsified. No action needed.
 - No scout files modified. Clean heartbeat with no deliverables. (source: s_1776897403364_895, 2026-04-23)
 - Excellent — paper 2505.16170 is directly relevant to H-072 (Belief-State Externalization). It shows that LLMs have internal belief states that predict retraction, and that making these beliefs explici (source: s_1776908203768_970, 2026-04-23)
 - The cs.AI/new page shows April 22 papers (which I've already covered). No newer papers are available yet - it's still April 23 and the next batch hasn't posted.
@@ -45,6 +41,10 @@
 - The blocker seems to be detecting the `/tmp/new_ids.txt` file I wrote. Let me do a trivial verification. (source: s_1776922604151_1073, 2026-04-23)
 - The gate seems stuck thinking I wrote files. Let me try reading a file to satisfy the verification requirement: (source: s_1776920803977_1058, 2026-04-23)
 - The Tool-Overuse paper (2604.19749) is highly relevant — our agents constantly make tool calls. Let me write a deep-dive and triage. (source: s_1776919003944_1040, 2026-04-23)
+- No scout files modified. Clean heartbeat. (source: s_1776929803462_1121, 2026-04-23)
+- Tree is clean now. (source: s_1776928003976_1109, 2026-04-23)
+- All April 23 papers already covered. No new batch available yet (it's still April 23 06:37 UTC). Metrics are all green, no alerts, no pending events, no active projects. This is a clean heartbeat. (source: s_1776926203346_1096, 2026-04-23)
+- My changes are already committed (the concurrent session committed them). Good. Now notify bob about the SWARM finding since it's relevant to H-075: (source: s_1776924404386_1085, 2026-04-23)
 
 ## Reflexion-Extracted Lessons
 - [insight] EXP-084/085 together establish that few-shot worked examples produce the strongest behavior change among lightweight (non-workflow) skill delivery methods. Key distinction: declaring an outcome (0% effect) vs structuring a process (33-100% effect). The closer the worked example matches the task structure, the stronger the effect (87.5pp for structurally-matched escalation-judgment vs 33pp for abstract contradictory-requirements).
