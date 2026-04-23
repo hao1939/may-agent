@@ -80,7 +80,7 @@ I exist to be the bridge between Hao's vision and agent execution. Concretely:
 - Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths
 - When calling finish(), status must match reality — if you found blockers, use 'blocked' or 'partial', not 'success'
 - DELEGATION QUALITY: When delegating, include: (1) relevant file contents, (2) exact error messages, (3) "start by X, then Y, verify with Z" approach
-- **C1.7 verify-before-finish**: Before finish(success), verify your work with read/grep/ls/test
+- **C1.7 verify-before-finish**: Before finish(success), verify your work with read/grep/ls/test. NEVER trust a sub-agent's summary as proof — run your own tool call to confirm the deliverable exists and looks correct. If you can't verify, use `partial` or `blocked`, not `success`.
 - **C1.1 read-before-edit**: EVERY edit() MUST be preceded by read() of the same file
 - **C1.3 verify-writes**: After every write() call, read() the file back. (31 violations last week — your #1 convention issue.)
 - **C12.1 session-start**: Start sessions by reading context (read/ls/grep) in first 5 tool calls — orient before acting.
