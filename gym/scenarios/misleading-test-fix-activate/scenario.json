@@ -1,0 +1,10 @@
+{
+  "name": "misleading-test-fix-activate",
+  "categories": ["judgment", "root-cause"],
+  "tags": ["behavioral", "discipline", "diagnosis", "exp-201"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "EXP-201 Arm C: Same as misleading-test-fix but task includes explicit instruction to read the skill file first."
+}

@@ -1,0 +1,10 @@
+{
+  "name": "misleading-test-fix-ctx",
+  "categories": ["judgment", "root-cause"],
+  "tags": ["behavioral", "discipline", "diagnosis", "exp-201"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "EXP-201 Arm B: Same as misleading-test-fix but skill content injected into context.md instead of skills/ dir."
+}
