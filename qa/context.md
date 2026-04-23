@@ -28,8 +28,6 @@
 
 ## Learned from experience
 
-- ### Summary
-- ### Summary
 - Spent many calls on avoidable environment/path discovery after the first 'not a git repo' error at /app; did not immediately pivot to /app/agents where the repo lives (git log/status both failed at /a (source: s_1776919003981_1042, 2026-04-23)
 - Started verification from the wrong directory: ran `git log`/`git status` at `/app` where there is no `.git`, causing immediate failures and wasted calls (git code 128 twice). Evidence: tool outputs s (source: s_1776917204208_1031, 2026-04-23)
 - ### Summary
@@ -41,8 +39,9 @@
 - ### Summary
 - ### Summary
 - ### Summary
-Found one recent, unverified change in the **/app/agents** repo: `agents/vitest.config.mjs` was added/updated to exclude `gym/**` and `test/gym/**` from Vitest runs. I attempted the mandat (source: s_1776942404821_1212, 2026-04-23)
 - ### Summary
-The repo root (`/app`) is **not a git repository**, so I can’t verify “what changed in the last 6h” from here. I instead did a small functional sanity check by reading and executing the gr (source: s_1776940604093_1198, 2026-04-23)
 - ### Summary
-No pending events/projects and no active alerts. I attempted the required verification steps, but this workspace is not a git repo and does not contain the expected Node toolchain entrypoi (source: s_1776938803976_1189, 2026-04-23)
+- ### Summary
+This heartbeat environment doesn’t contain a Git repository or a Node toolchain install (no `package.json`, no `node_modules/.bin`), so I can’t identify “what changed in the last 6h” via ` (source: s_1776951403650_1278, 2026-04-23)
+- ### Summary
+This heartbeat environment doesn’t contain a git repository (no `.git` found anywhere up to `..`), so I can’t audit “last 6h changes” via `git log` or review diffs. I *did* independently i (source: s_1776949605141_1267, 2026-04-23)
