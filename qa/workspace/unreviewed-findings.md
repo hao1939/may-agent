@@ -1,25 +1,37 @@
-# QA heartbeat — unreviewed findings (2026-04-23)
+# QA Heartbeat — Unreviewed Findings (2026-04-23)
 
 ## Context
-While attempting standard verification steps (tsc/vitest), I discovered the **agents/** repo appears to be a “vendored”/partial Node environment: it has `vitest.config.mjs` and `src/**/*.ts`, but **no `package.json`** and no `node_modules/.bin`.
+Heartbeat run had no pending events/projects. I attempted standard verification steps against latest changes in the `/app/agents` repo.
 
-This makes the mandatory QA checks:
-- `./node_modules/.bin/tsc --noEmit`
-- `./node_modules/.bin/vitest --run`
+## Findings
 
-**impossible to run in this container as-is**.
+### 1) Environment / tooling: cannot run mandatory tsc/vitest commands (CRITICAL environment issue)
+**Evidence**
+- Running from `/app`: `./node_modules/.bin/tsc --noEmit` fails because `.bin` directory does not exist.
+- `node_modules` at repo root only contains `.vite` (no installed toolchain).
+- In `/app/agents`: `./node_modules/.bin/tsc --noEmit` also fails; `agents/node_modules` exists but contains only `.vite` and `.vite-temp` (no `.bin`).
 
-## Evidence
-- `cd agents && ls -la` shows `vitest.config.mjs` but no `package.json`. (bash output SIG: 1776928049:783efdde)
-- `cd agents && ls -la node_modules` shows only `.vite` and `.vite-temp`, and `node_modules/.bin` is missing. (bash output SIG: 1776928051:edb5dad2)
-- `cd agents && ./node_modules/.bin/tsc --noEmit` fails: No such file or directory. (bash code 127)
-- `cd agents && ./node_modules/.bin/vitest --run` fails: No such file or directory. (bash code 127)
+This prevents independent verification via `tsc` and `vitest` per QA SOP.
 
-## Recent unverified change inspected
-- Commit `7a095dc4c` adds EXP-208 design/results docs.
-- I read `shared/knowledge/experiments/EXP-208/design.md` (appears consistent; no code changes).
+### 2) Latest change is a design doc only (no code to compile/test)
+**Commit inspected**: `ca473c3c2 design: project lifecycle - continuous execution, escalation routing, immediate resume`
+**File**: `agents/shared/may-agent-docs/design/project-lifecycle-continuous.md`
 
-## Recommendation
-If this environment is intended to support `tsc`/`vitest` checks, we need either:
-1) restore `package.json` + full install (including `typescript` and `vitest`) producing `node_modules/.bin`, or
-2) update QA/guard instructions to use whatever build/test mechanism actually exists here.
+I read the doc (first ~200 lines). It is marked **Status: Proposal** and outlines changes to handler parallelism, escalation routing, and emitting `project.resumed`.
+
+**QA note**: Since this is a proposal doc, there’s no code-level behavior to verify. However, it proposes concrete changes (files/LOC). If/when implemented, it should come with tests (especially around event subscription and preventing session flooding).
+
+### 3) Potential runtime issue: may-agent-bin appears broken in this environment (IMPORTANT environment issue)
+**Evidence**
+- `cd agents && ./may-agent-bin --help` outputs: `Agent "may" is not registered` and then attempts to start `may.ts` and fails immediately.
+
+This may be an environment configuration problem, but it blocks exercising workflows locally.
+
+## Suggested next steps
+1. Restore/install toolchain so the repo provides `tsc` and `vitest` executables (either via package manager install step or checked-in tool runner). Once available, rerun:
+   - `./node_modules/.bin/tsc --noEmit`
+   - `./node_modules/.bin/vitest --run`
+2. Investigate why `may-agent-bin` reports `Agent "may" is not registered` and why `may.ts` fails immediately.
+3. When the proposal is implemented, ensure:
+   - Parallel project execution has inflight protections + tests for avoiding duplicate launches.
+   - New event subscriptions (`escalation.created`, `project.resumed`) are covered by tests.
