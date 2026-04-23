@@ -45,7 +45,8 @@ Do NOT do any other heartbeat work — ONLY address red metrics.`;
     redMetricActions = ctx.summarize(gateResult, { maxLength: 800 });
 
     const redMetricIds = [...metrics.matchAll(/📊 ([^:]+):.*⚠️ BELOW TARGET/g)].map(m => m[1].trim());
-    const missedMetrics = redMetricIds.filter(id => !gateResult.includes(id));
+    const gateText = gateResult.lastAssistantText ?? "";
+    const missedMetrics = redMetricIds.filter(id => !gateText.includes(id));
     if (missedMetrics.length > 0) {
       const retryPrompt = `You missed addressing these red metrics: ${missedMetrics.join(", ")}\n\nYou MUST address each one now (investigate, fix, escalate, or defer with concrete reason).\n\nMetrics:\n${metrics}`;
       const retryResult = await ctx.runAgent(agent, retryPrompt);
