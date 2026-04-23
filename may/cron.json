@@ -648,7 +648,8 @@
     "type": "job",
     "intervalMs": 1800000,
     "message": "[cron:compliance-check] Combined handler: convention-check, standing-orders-check",
-    "enabled": true,
+    "enabled": false,
+    "_disabled_reason": "Known harness module resolution bug causes every run to fail. Disabled to stop waste loop (1044+ ops burned). Re-enable when growth.js import is fixed.",
     "handler": "compliance-check",
     "description": "Combined handler running convention-check, standing-orders-check sequentially. JS handler, no LLM cost."
   },
