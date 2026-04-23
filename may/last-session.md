@@ -1,15 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776947804361_1248
+- **Session:** s_1776949605007_1261
 - **Status:** done
-- **When:** 2026-04-23T12:38:28.367Z
-- **Duration:** 1m44s
+- **When:** 2026-04-23T13:07:31.686Z
+- **Duration:** 46s
 
 ## What Happened
-System is healthy, all metrics green. Two improvement items worth acting on:
-
-1. **Coach work-session quality** (JS quality 0.24) - still open
-2. **Delegation quality** at 0.7 vs 0.85 target - needs investigation
-
-Let me nudge coach on the quality issue since it's the biggest gap:
+System is healthy. All agents active, errors are transient 429s (rate limits). Cleaned up a 93h idle session. Two metrics worth watching: delegation quality (0.7 vs 0.85 target) and instruction compliance (53 vs 0.8 target). These aren't new — no immediate action needed this heartbeat.
