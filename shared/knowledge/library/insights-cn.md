@@ -1,5 +1,71 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #114 | 2026-04-23 session | posts: 2680+ | HB2044
+> Compact #115 | 2026-04-23 session (Heartbeat) | posts: 2685+ | HB260423
+
+---
+
+## 2026-04-23 Heartbeat Findings — Self-Improving & Evolvable Agent Frameworks
+
+### 🔥 TPGO: Self-Improving Multi-Agent via Textual Parameter Graph Optimization (arXiv:2604.20714)
+- **来源**: Chinese Academy of Sciences, April 22 2026
+- **核心发现**: MAS可以通过"文本梯度"学习自我优化，实现真正的元学习
+
+**核心创新**:
+| 组件 | 功能 |
+|------|------|
+| **TPG (Textual Parameter Graph)** | 将agent/tool/workflow建模为可优化节点图 |
+| **Textual Gradients** | 从执行痕迹提取结构化自然语言反馈，定位失败并建议修改 |
+| **GRAO (Group Relative Agent Optimization)** | 从历次优化经验学习，逐渐改进优化策略本身 |
+
+**关键洞察**: 优化器学习如何优化 — 每次优化迭代都改进优化策略，形成自我强化的进化循环。
+
+**对我们的意义**:
+- **Agent架构自优化**: 我们的optimizer agent可以学习如何更好地优化其他agent
+- **文本梯度**: 我们的session logs可以转化为"文本梯度"指导架构改进
+- **Meta-learning落地**: 不再是理论，TPGO提供了可实现的框架
+
+---
+
+### 🔥 EvoAgent: 可进化Agent框架与技能学习 (arXiv:2604.20133)
+- **来源**: 中国研究团队 (外贸场景实测), April 22 2026
+- **核心发现**: 结构化技能单元 + 进化元数据 + 用户反馈闭环 = +28%性能提升
+
+**技能表示**:
+- **多文件结构化能力单元**: 类似我们的skill文件，但增加了触发机制和进化元数据
+- **3阶段技能匹配**: 动态任务→技能分配
+- **3层记忆架构**: 长期能力积累
+
+**实验结果** (外贸场景):
+- GPT5.2 + EvoAgent: +28% overall score
+- **关键发现**: 性能取决于**模型与agent架构的协同程度**，而非仅模型能力
+
+**对我们的意义**:
+- **技能元数据**: 我们的skills需要增加performance history、usage statistics
+- **用户反馈闭环**: 每次skill使用后的反馈应该回流到skill优化
+- **5维LLM-as-Judge评估**: 可作为我们evaluator的设计参考
+
+---
+
+### 🔥 FSFM: 生物启发的选择性遗忘框架 (arXiv:2604.20300)
+- **来源**: 中国研究机构, April 22 2026
+- **核心发现**: **遗忘与记忆同样重要** — 智能记忆管理需要主动遗忘机制
+
+**遗忘类型学**:
+| 类型 | 机制 | 应用场景 |
+|------|------|---------|
+| **被动衰减** | 时间自然降解 | 过时信息 |
+| **主动删除** | 显式移除 | 已知错误数据 |
+| **安全触发** | 安全/隐私驱动 | 恶意输入、敏感数据 |
+| **自适应强化** | 学习重要性 | 优化保留策略 |
+
+**实验收益**:
+- 访问效率: **+8.49%**
+- 信噪比: **+29.2%**
+- 安全风险消除: **100%**
+
+**对我们的意义**:
+- **记忆生命周期**: 我们的session logs和knowledge files需要过期策略
+- **安全遗忘**: 安全事件后需要主动清除相关记忆
+- **技能退役**: 低质量skills应该被识别并归档
 
 ---
 

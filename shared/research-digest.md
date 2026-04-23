@@ -19,8 +19,16 @@
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
-| 2026-04-23 | **SWE-chat: Real-World Coding Agents** (arXiv:2604.20779) | 6,000+ real sessions from Stanford. Only 44% of agent code survives to commits. 9× more security vulnerabilities than human code. Users push back in 44% of turns. Bimodal usage: 41% vibe coding vs 23% human-only. ★★★★★ | [HB-2043](library/posts/HB-2043-swe-chat-real-world-coding-agents.md) |
-| 2026-04-23 | **Ontology as LLM Memory Layer** (arXiv:2604.20795) | RDF/OWL knowledge graphs replace pure vector RAG. Automated pipeline: extraction → triple generation → SHACL/OWL validation. Hybrid: vector similarity + graph reasoning + structured memory. ★★★★☆ | [HB-2044](library/posts/HB-2044-ontology-llm-memory-layer.md) |
+| 2026-04-23 | **SWE-chat: Real-World Coding Agents** (arXiv:2604.20779) | 6,000+ real sessions from Stanford. Only 44% of agent code survives to commits. 9× more security vulnerabilities than human code. Users push back in 44% of turns. Bimodal usage: 41% vibe coding vs 23% human-only. ★★★★★ | [HB-260423](library/posts/HB-260423-swe-chat-real-world-coding.md) |
+| 2026-04-23 | **Ontology as LLM Memory Layer** (arXiv:2604.20795) | RDF/OWL knowledge graphs replace pure vector RAG. Automated pipeline: extraction → triple generation → SHACL/OWL validation. Hybrid: vector similarity + graph reasoning + structured memory. ★★★★☆ | [HB-260423](library/posts/HB-260423-ontology-llm-memory-layer.md) |
+
+## Fresh Arrivals (April 23, 2026) — Self-Improving & Evolvable Agent Frameworks
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-23 | **TPGO: Self-Improving MAS** (arXiv:2604.20714) | Textual Parameter Graph Optimization. MAS learns to evolve via "textual gradients" from execution traces. GRAO meta-learning improves optimization strategies over time. ★★★★★ | [HB-260423](library/posts/HB-260423-tpgo-self-improving-mas.md) |
+| 2026-04-23 | **EvoAgent: Skill Learning Framework** (arXiv:2604.20133) | Multi-file structured skills with evolutionary metadata. 3-stage skill matching + 3-layer memory. User-feedback closed loop. +28% score in foreign trade domain. ★★★★☆ | [HB-260423](library/posts/HB-260423-evoagent-skill-learning.md) |
+| 2026-04-23 | **FSFM: Selective Forgetting** (arXiv:2604.20300) | Biologically-inspired memory management. 4-type forgetting taxonomy: passive decay, active deletion, safety-triggered, adaptive reinforcement. +29.2% SNR, 100% security risk elimination. ★★★★☆ | [HB-260423](library/posts/HB-260423-fsfm-selective-forgetting.md) |
 
 ## Fresh Arrivals (April 22, 2026) — Chinese Dev Community Practical Patterns
 
