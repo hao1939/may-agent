@@ -1,26 +1,29 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776949605141_1267
+- **Session:** s_1776951403650_1278
 - **Status:** done
-- **When:** 2026-04-23T13:07:17.956Z
-- **Duration:** 32s
+- **When:** 2026-04-23T13:37:36.853Z
+- **Duration:** 53s
 
 ## What Happened
 ### Summary
-This heartbeat environment doesn’t contain a git repository (no `.git` found anywhere up to `..`), so I can’t audit “last 6h changes” via `git log` or review diffs. I *did* independently inspect one real source file (`src/pipeline.js`) and attempted the mandatory TypeScript and Vitest checks, but this workspace doesn’t have the expected toolchain installed (`node_modules/.bin` is missing entirely), so compilation/tests can’t be executed here.
+This heartbeat environment doesn’t contain a Git repository or a Node toolchain install (no `package.json`, no `node_modules/.bin`), so I can’t identify “what changed in the last 6h” via `git log`, nor can I run the mandatory `tsc`/`vitest` checks. I *did* independently read and sanity-check one source file (`src/grades.js`); it looks internally consistent, but that’s not a substitute for compilation/tests.
 
 ### Checks
-- `tsc --noEmit`: **FAIL (environment/tooling missing)**  
-  Evidence: `./node_modules/.bin/tsc: No such file or directory`
-- `vitest --run`: **FAIL (environment/tooling missing)**  
-  Evidence: `./node_modules/.bin/vitest: No such file or directory`  
-- Tests present: **None found in `test/`** (directory is a symlink, but `find test -type f` returns no files)
+- `tsc --noEmit`: **FAIL (cannot run)** — `./node_modules/.bin/tsc` not found (no `node_modules/.bin`)  
+- `vitest --run`: **FAIL (cannot run)** — `./node_modules/.bin/vitest` not found (no `node_modules/.bin`)  
 
 ### Issues
-- **CRITICAL** — Cannot perform required verification steps due to missing toolchain (`node_modules/.bin` absent; `node_modules` only contains `.vite`). This blocks both TypeScript compilation and test execution in this environment.
-- **IMPORTANT** — Repository provenance is unclear: not a git repo, so there is no way to confirm what changed, when, or by whom; also prevents standard QA diff-based review.
-- **MINOR** — In `src/pipeline.js`, validation checks `score < 0 || score > max_score` but does not explicitly validate numeric types (e.g., strings could pass weirdly depending on upstream parsing). This is only a note; I didn’t see `reader.js` yet to confirm parsing behavior.
+- **CRITICAL — Cannot perform required verification (environment/tooling missing)**
+  - No Git metadata: `git log` fails with “not a git repository”.
+  - No project manifest: `package.json` is missing at repo root.
+  - No local binaries: `node_modules/.bin` does not exist; only `node_modules/.vite/` is present.
+  - Evidence: bash outputs show these failures (git/tsc/vitest/package.json).
+
+- **MINOR — Code-level note (from `src/grades.js`)**
+  - `computeFinalGrades()` only emits results for students who have at least one exam record (it builds the `students` map exclusively from `records` where assignment is `midterm`/`final`). If “students with only homework” should appear, this is a functional gap. If not required, ignore.
+  - Evidence: `src/grades.js` content read in full.
 
 ### Verdict
-**CONDITIONAL** — I cannot PASS because the mandatory `tsc` and `vitest` verification steps cannot run in this workspace (tooling missing) and there is no git history to review changes. If you provide a proper repo checkout (with `.git`) and dependencies installed (so `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest` exist), I can rerun the required checks and give a definitive PASS/FAIL.
+**CONDITIONAL** — I cannot PASS because the mandatory verification steps (git diff review + `tsc` + `vitest`) are impossible in the current environment due to missing repo/tooling. If you provide a proper working tree (with `.git` and `package.json` + dependencies), I can rerun the full QA protocol and give a definitive PASS/FAIL.
