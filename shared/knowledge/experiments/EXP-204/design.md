@@ -1,7 +1,7 @@
 # EXP-204: Closing the Breadcrumb Gap (Production 54% → 80%)
 
 **Date**: 2026-04-23
-**Status**: DESIGNED — PHASE 1 READY (no gym needed)
+**Status**: PHASE-1-COMPLETE (see results.md)
 **Predecessor**: EXP-189 (G' question-framing: gym 100%, production 54%)
 
 ---
