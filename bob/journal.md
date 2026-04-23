@@ -383,3 +383,26 @@ H-054 P(H) updated to 0.65 (from 0.50). Phase 2 (inter-rater reliability measure
 **Deliverables**: DD-734, DD-735, DD-736, DD-737, DD-738, CR-334, KE-124, INDEX.md (7 new rows)
 
 **Reflection**: The 5-layer observability stack crystallizes the evaluation architecture ceiling (H-096) — we've optimized the layers we have (operational logs, meta-evaluation) but hit diminishing returns without cognitive visibility. The FM-3.3 problem is a symptom: we detect it reliably (L1) and predict its recurrence (L4-L5) but cannot diagnose its root cause (L2-L3). Watson's prompt attribution is the most transformative capability we lack.
+
+## Session: 2026-04-24 (Heartbeat — C1.1 Guard Upgrade + EXP-210 Unblock)
+
+**Context**: C1.1 convention at 30% compliance (critical alert). Seven notifications triaged.
+
+### Actions
+
+1. **C1.1 Guard: warn → run_step** — Upgraded `agents/shared/guards/read-before-edit.ts` from emitting a `warn` demand (Ch1 text warning, ~0% effectiveness per H-098) to injecting a `run_step` demand that forces the agent to read and verify files it edited without reading. This is the same Ch1→Ch2 channel switch that produced 0%→100% in EXP-188 (finish guard), EXP-115 (optimizer completeness), and EXP-132 (path hallucination). Expected to significantly raise C1.1 compliance from 30%.
+
+2. **EXP-210 Unblocked** — GYM_AGENT_BIN now available at /usr/local/bin/may-agent. Updated status from BLOCKED to READY. This tests whether trigger-based context organization (schema-organized) beats flat-list context for C1.1 compliance. Ready to execute.
+
+### Notification Triage
+- **H-EXP-010 backward-trace patch** (3h, 1h): Already applied. Dismiss (duplicate notifications).
+- **H-EXP-014 literature grounding** (3h): Forage V2 validates mandatory failure analysis. Filed as supporting evidence. Dismiss.
+- **DD#872 cooperative profiles** (2h): Already captured as H-193 (archived as duplicate of H-192). Dismiss.
+- **H-EXP-010 literature grounding** (1h): ErrorProbe paper. External validation, no action needed. Dismiss.
+- **SkillFlow paper** (53m): External validation for H-EXP-014. Dismiss (informational).
+- **C1.1 at 30% critical** (0m): **ACTED** — upgraded guard from warn to run_step.
+
+### What's next
+- Monitor C1.1 compliance over next 5-10 workflow sessions to verify guard effectiveness
+- Execute EXP-210 (schema-organized context) now that gym is available
+- EXP-214 (C7.1 structural enforcement for amy) is also DESIGNED and ready
