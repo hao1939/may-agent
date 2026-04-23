@@ -751,24 +751,23 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (rows.length > 0) return json(rows);
     } catch { /* projectId column may not exist */ }
 
-    // Fallback: scan workflow run files
-    try {
-      const wfDir = join(STATE_DIR, "workflows");
-      const sessions: any[] = [];
-      for (const f of readdirSync(wfDir)) {
-        try {
-          const run = JSON.parse(readFileSync(join(wfDir, f), "utf-8"));
-          if (run.task?.includes(path) || run.task?.includes(path + ".md")) {
-            for (const step of run.steps ?? []) {
-              sessions.push({ sessionId: step.sessionId, agent: step.agent, status: step.status, startedAt: step.startedAt, task: step.task?.slice(0, 80) });
+    // Fallback: scan workflow run files (both directories)
+    const sessions: any[] = [];
+    for (const dir of [join(STATE_DIR, "workflow-runs"), join(STATE_DIR, "workflows")]) {
+      try {
+        for (const f of readdirSync(dir)) {
+          try {
+            const run = JSON.parse(readFileSync(join(dir, f), "utf-8"));
+            if (run.task?.includes(path) || run.task?.includes(path + ".md")) {
+              for (const step of run.steps ?? []) {
+                if (step.sessionId) sessions.push({ sessionId: step.sessionId, agent: step.agent, status: step.status, startedAt: step.startedAt, task: step.task?.slice(0, 80) });
+              }
             }
-          }
-        } catch { /* skip */ }
-      }
-      return json(sessions);
-    } catch {
-      return json([]);
+          } catch { /* skip corrupted files */ }
+        }
+      } catch { /* dir may not exist */ }
     }
+    return json(sessions);
   }
 
   function handleEvents(url: URL): Response {
