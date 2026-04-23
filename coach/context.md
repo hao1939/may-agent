@@ -81,8 +81,6 @@
 
 ## Learned from experience
 
-- Now let me commit and finish. The key finding this heartbeat is clear: the `diagnosis-before-action` skill needs re-verification. (source: s_1776920803961_1057, 2026-04-23)
-- Now let me record the EXP-203 status — the lab fork exists but gym can't run real agents (stub mode only). The experiment is designed and ready but needs real agent invocation. (source: s_1776919003928_1039, 2026-04-23)
 - ### bob: FM-3.1
 - Now escalate the SOUL.md changes to tech-lead: (source: s_1776929803444_1120, 2026-04-23)
 - Nothing from coach to commit (DB changes are in .state/may.db, not git-tracked files). (source: s_1776928003957_1108, 2026-04-23)
@@ -92,13 +90,9 @@
 - Now I have enough context. This is a synthesis/review cycle (no new human inputs). Let me write the reflection. (source: s_1776933805098_1149, 2026-04-23)
 - No results yet on deployed experiments. Let me commit the experiment cleanup and write a brief summary. (source: s_1776931603285_1130, 2026-04-23)
 - Now I have the full picture. Let me finalize my analysis:
-
----
-
-### bob: FM-2.6 (Reasoning-Action Mismatch)
-**Decision:** skip
-**Reasoning:** Bob already has `verify-before-finish.md` and `evidence-ov (source: s_1776944654509_1225, 2026-04-23)
 - Not tracked anywhere. Let me escalate this properly and wrap up. This is the most impactful thing I can do this heartbeat. (source: s_1776944203189_1217, 2026-04-23)
 - Now let me commit and finish. (source: s_1776942404768_1209, 2026-04-23)
 - No changes to commit from my work (hypothesis is in .state/, audit is in gitignored workspace). That's fine — my deliverables are the analysis files. (source: s_1776940604036_1195, 2026-04-23)
 - The gym doesn't have a runner script visible — it's likely invoked through the system's workflow. Let me focus on what I can do: document findings, design the next experiment, and close out. (source: s_1776938803919_1186, 2026-04-23)
+- No coach files to commit (DB changes only). Let me finish. (source: s_1776951403590_1275, 2026-04-23)
+- Good. Now let me verify the scenario and finish. (source: s_1776947804434_1251, 2026-04-23)
