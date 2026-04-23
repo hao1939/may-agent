@@ -633,19 +633,6 @@ async function handleBlockedDecision(
 }
 
 /**
- * Track milestone progress and update the stall counter.
- */
-function trackMilestoneProgress(ls: LoopState): void {
-  const currentDone = extractMilestones(ls.projectContent).done;
-  if (currentDone > ls.lastMilestoneDone) {
-    ls.lastMilestoneDone = currentDone;
-    ls.continueWithoutProgress = 0;
-  } else {
-    ls.continueWithoutProgress++;
-  }
-}
-
-/**
  * Process done/blocked decisions uniformly. Returns a WorkflowResult to exit
  * the loop, or null if the loop should continue.
  */

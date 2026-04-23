@@ -1,5 +1,40 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #121 | 2026-04-24 session (Heartbeat - arXiv Scan) | posts: 2700+ | HB260424
+> Compact #122 | 2026-04-25 session (Heartbeat - arXiv TPGO/SuperIgor) | posts: 2700+ | HB260425
+
+---
+
+## 2026-04-25 Session Findings — TPGO: 优化器学习如何优化 (Alibaba)
+
+### 🔥 TPGO: Textual Parameter Graph Optimization
+- **来源**: arXiv:2604.20714, Alibaba Future Living Lab
+- **核心发现**: 现有优化器是静态的，不会从优化过程中学习。TPGO让优化器"学习如何优化"。
+
+**三大创新**:
+
+| 组件 | 功能 | 类比 |
+|------|------|------|
+| **TPG (Textual Parameter Graph)** | 将MAS表示为图: agents/tools/workflows为节点 | 神经网络架构图 |
+| **Textual Gradients** | 从执行轨迹提取结构化自然语言反馈 | 数值梯度，但作用于语义 |
+| **GRAO (Group Relative Agent Optimization)** | 元学习策略，从历史成功/失败中学习 | 优化器的"大脑" |
+
+**核心洞察**:
+> "For MAS to achieve true autonomy, the optimization system itself must learn to evolve."
+
+**关键突破**:
+- 传统APO: 扁平prompt调优，每次从零开始
+- TPGO: 结构化图演化 + 元学习积累优化经验
+
+**对我们的意义**:
+1. **Skill优化**: 可用Textual Gradients思路分析Skill执行轨迹
+2. **Prompt工程**: GRAO模式可学习哪些Prompt修改对哪些错误有效
+3. **架构设计**: 考虑引入"元优化器"Agent，专门负责系统自我改进
+
+**实施思考**:
+- 记录每次优化尝试: 问题类型→修改策略→结果
+- 建立"优化策略库"供GRAO-style检索
+- 将Skill/Agent配置建模为可演化的图结构
+
+**相关**: [HB-260425-tpgo-self-improving-mas](posts/HB-260425-tpgo-self-improving-mas.md)
 
 ---
 
