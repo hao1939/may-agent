@@ -1,29 +1,35 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776967605892_1425
+- **Session:** s_1776969405905_7
 - **Status:** done
-- **When:** 2026-04-23T18:07:08.430Z
-- **Duration:** 22s
+- **When:** 2026-04-23T18:37:44.091Z
+- **Duration:** 58s
 
 ## What Happened
 ### Summary
-Reviewed the most recent unverified change in the last ~6h (`7d4bfd46f`: `agents/shared/workflows/heartbeat-data.ts`). The change adds inbox support (and some metric-breach escalation messaging) to the shared heartbeat data loader. The file reads cleanly and is plausibly correct, but I could not run the mandatory TypeScript and Vitest checks because the toolchain binaries are missing in `/app/node_modules/.bin` in this environment.
+No pending alerts/events/projects. I checked the latest change in the **agents** repo (commit `e44348dd7`) and independently verified the current tooling status. The project health handler changes look reasonable from a quick read, but **mandatory verification is currently blocked by repository environment drift**: `tsc` isn’t installed and `vitest` fails due to missing source modules referenced by tests.
 
 ### Checks
-- `tsc --noEmit`: **FAIL (environment/tooling)** — `./node_modules/.bin/tsc: No such file or directory` (exit 127)
-- `vitest --run`: **FAIL (environment/tooling)** — `./node_modules/.bin/vitest: No such file or directory` (exit 127)
+- **tsc --noEmit**: **FAIL (environment)** — `./node_modules/.bin/tsc` not present at repo root, and `npx tsc` fails because `typescript` is not installed in `/app/agents`.
+- **vitest --run**: **FAIL** — ran `npx -y vitest --run` in `/app/agents`: **4 failed suites**, **8 passed**, **145 tests passed** total, but run exits non-zero due to missing modules.
 
 ### Issues
-**IMPORTANT — Missing required toolchain in runtime environment blocks verification**
-- Evidence: running `/app/./node_modules/.bin/tsc` and `/app/./node_modules/.bin/vitest` both fail with “No such file or directory”.
-- Impact: cannot verify compilation/tests per QA protocol; cannot confidently gate changes.
+1) **CRITICAL — Test suite imports missing modules**
+   - Evidence (vitest output): cannot find
+     - `../src/lib/lessons.ts` (from `test/lessons.test.ts`)
+     - `../src/lib/ops-gate.js` (from `test/ops-gate.test.ts`)
+     - `../src/lib/orders.js` (from `test/orders.test.ts`)
+     - `../src/lib/tools/security.js` (from `test/security.test.ts`)
+   - Evidence (filesystem): `agents/src/lib` contains only `edit-guard.ts`, `finish-guard.ts`, `path-guard.ts`, `project-health.ts`.
 
-**MINOR — Type-safety/robustness in `loadInbox` JSON parse**
-- File: `agents/shared/workflows/heartbeat-data.ts` (function `loadInbox`)
-- `const dataObj = r.data ? JSON.parse(r.data) : {};` will throw if `r.data` is non-JSON; it is wrapped by outer `try/catch` so the whole inbox block disappears. That may be acceptable, but it can mask a single bad event row and hide all inbox items.
+2) **IMPORTANT — Suspicious parent-dir creation in persistence helpers**
+   - In `agents/shared/lib/project-health.ts`, `writeHealthState` / `writeInflight` use `mkdirSync(join(file, ".."), { recursive: true })` rather than `dirname(file)`. Might work via normalization, but it’s brittle and errors are swallowed.
 
 ### Verdict
-**CONDITIONAL**
+**CONDITIONAL** — The reviewed code read didn’t show an obvious logic break, but I cannot PASS anything that relies on mandatory verification while:
+- TypeScript compiler isn’t available (`tsc` check can’t run), and
+- Vitest currently fails due to missing modules/import drift.
 
-Code review of `agents/shared/workflows/heartbeat-data.ts` did not reveal an obvious logic bug, but I cannot PASS because the mandatory `tsc` and `vitest` verification steps are impossible in the current environment (missing binaries). To reach PASS, restore/install the toolchain so `./node_modules/.bin/tsc --noEmit` and `./node_modules/.bin/vitest --run` can execute, then rerun QA.
+### Heartbeat deliverable
+- Wrote findings to: `agents/qa/workspace/unreviewed-findings.md`
