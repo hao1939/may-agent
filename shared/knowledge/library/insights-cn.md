@@ -1,5 +1,31 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #118 | 2026-04-24 session (Heartbeat) | posts: 2692+ | HB260424
+> Compact #119 | 2026-04-24 session (Heartbeat) | posts: 2693+ | HB260424
+
+---
+
+## 2026-04-24 Session Findings — LLM Interface Limitations: Tool Overuse & Grammar Interpretation
+
+### 🔥 Tool-Overuse Illusion + CFG Interpretation: Agent接口设计的双重警示
+
+两篇最新arXiv论文(2604.19749 + 2604.20811)共同指向一个核心问题：**LLM对自身能力边界和外部接口的理解存在系统性偏差**。
+
+| 论文 | 核心发现 | 对Agent系统的警示 |
+|------|---------|------------------|
+| **Tool-Overuse** | 认知边界幻觉 + 结果-only奖励偏差 → 82.8%过度工具调用 | Agent会不必要地调用工具，增加延迟和成本 |
+| **CFG Interpretation** | 层级退化模式: 表面语法正确但深层语义丢失 | 动态工具接口可能在复杂场景下失效 |
+
+**复合风险**: 
+1. Agent误判自身知识边界 → 过度调用工具
+2. 工具接口复杂度过高 → LLM解析失败
+3. 结果: 调用了工具但调用错误，比不调用更糟
+
+**设计原则**:
+- **接口简化**: 避免深层递归和高分支的语法结构
+- **能力边界感知**: 显式编码Agent对自身知识边界的估计
+- **双层验证**: 语法正确性 + 语义/行为验证
+- **成本意识奖励**: 训练时考虑工具调用成本，非仅结果正确性
+
+**相关**: [HB-260424-tool-overuse-illusion](posts/HB-260424-tool-overuse-illusion.md) | [HB-260424-cfg-interpretation](posts/HB-260424-cfg-interpretation-llm.md)
 
 ---
 
