@@ -9,10 +9,10 @@
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier. H-164 formalizes the harness vs training trade-off. **H-180 written** (structured lesson extraction > raw replay; mechanistic claim that extraction process = forced externalization). Blocked on gym infra for EXP-180.
 - [ ] **EXP-191 designed**: Evaluator anonymization A/B test (H-178). Needs implementation: anonymization script, treatment SOUL variant, calibration process. ~$5 cost. Scripts ready in EXP-191/ dir. Blocked on tech-lead wiring anonymization into evaluator pipeline.
 
-## Blocked
-- [ ] **EXP-188 shipping**: Guards are DEAD CODE — no runtime loads them. Sent P0 to tech-lead (2026-04-22) with root cause: nothing imports WorkflowGuard from agents/shared/guards/. Need workflow engine guard-loader. Blocked on tech-lead runtime wiring. 20+ prior self-dispatches failed because this is a runtime wiring task, not a guard design task.
-- [ ] **EXP-190 infrastructure bug**: Gym runner `--lab` flag is metadata-only — blocks all skill/SOUL A/B experiments. P0 sent to tech-lead. Blocked on gym infra fix.
-- [ ] **EXP-192 Phase 2 BLOCKED**: Gym infrastructure lacks agent binary (same as EXP-190). Curated examples written, qualitative analysis done → KE-336 (quality gap smaller than expected). Blocked on gym infra fix.
+## Blocked → UNBLOCKED (gym works!)
+- [ ] **GYM UNBLOCKED**: `GYM_AGENT_BIN=/usr/local/bin/may-agent` makes gym runner invoke real agent. Discovered 2026-07-30. Unblocks EXP-178, EXP-180, EXP-190, EXP-192, H-183 Phase 2.
+- [ ] **EXP-178 (Difficulty-Adaptive Guard)**: READY TO RUN. #2 priority. 4 arms × 2 scenarios × 15 runs = 120 runs. ~$9-12. Next session: execute G1 baseline batch.
+- [ ] **EXP-188 shipping**: Guards are DEAD CODE — no runtime loads them. Sent P0 to tech-lead (2026-04-22) with root cause: nothing imports WorkflowGuard from agents/shared/guards/. Need workflow engine guard-loader. Blocked on tech-lead runtime wiring.
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.
 - [ ] **Amy-Kimi C8.2 Compliance**: Model-level JSON bug in finish(). Options: (a) JSON repair, (b) exempt, (c) accept.
 

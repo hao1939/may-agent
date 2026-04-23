@@ -48,7 +48,7 @@
 - `agents/bob/workspace/scripts/new-ke.sh <slug> ["finding"]` → next KE-<N>
 - `agents/bob/workspace/scripts/new-experiment.sh <slug> ["rq"]` → next EXP-<N>/ with design.md+results.md
 
-**Gym**: Verify runner path before starting. COUNT completed trials after batch. Use `--timeout 600` (single) / `--timeout 1800` (batch 10+). Gym scenarios cost $0.05-0.15 each — don't run full baseline casually.
+**Gym**: `export GYM_AGENT_BIN=/usr/local/bin/may-agent` before running gym. Verify runner path before starting. COUNT completed trials after batch. Use `--timeout 600` (single) / `--timeout 1800` (batch 10+). Gym scenarios cost $0.05-0.15 each — don't run full baseline casually.
 
 **When sending briefs to tech-lead**: use `workflow reviewed-delivery` — it runs evidence-gate first.
 
