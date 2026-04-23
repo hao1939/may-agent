@@ -20,7 +20,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { Type, type Static } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
-import { isDuplicate, trackRequest } from "../requests.js";
+import { isDuplicate } from "../requests.js";
 
 export interface NotifyToolOptions {
   /** Name of the calling agent */
@@ -29,6 +29,8 @@ export interface NotifyToolOptions {
   agentsRoot: string;
   /** Persistence directory for request tracking DB */
   persistDir: string;
+  /** Emit an event on the bus */
+  emit?: (event: { type: string; [key: string]: unknown }) => void;
   /** Optional: function to get the caller's current session ID */
   getCallerSessionId?: () => string | undefined;
   /** Optional: function to trigger a target agent's heartbeat */
@@ -155,22 +157,15 @@ export function createNotifyTool(opts: NotifyToolOptions): AgentTool {
         structuredMessage += `\nContext files: ${params.context_files.join(", ")}`;
       }
 
-      // Track in SQLite with method="notify"
-      let requestId: string | undefined;
+      // Emit notification event (persisted by DbWriter)
       try {
-        requestId = trackRequest(opts.persistDir, {
-          fromEntity: caller,
-          toAgent: params.agent,
+        opts.emit?.({ type: "emit", event: "agent.notification", data: {
+          owner: params.agent,
+          source: caller,
           task: structuredMessage,
-          method: "notify",
-          sessionId: opts.getCallerSessionId?.(),
           artifact: params.artifact,
-          context: params.context_files ? JSON.stringify(params.context_files) : undefined,
-        });
-      } catch (e) {
-        // Non-fatal: tracking is best-effort (DB may not be available)
-        if (process.env.DEBUG) console.warn(`[notify-tool] tracking failed: ${e}`);
-      }
+        }});
+      } catch { /* best-effort */ }
 
       // Trigger heartbeat so recipient picks it up next cycle
       const triggered = opts.triggerHeartbeat?.(params.agent) ?? false;
