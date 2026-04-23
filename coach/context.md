@@ -71,10 +71,6 @@
 
 ## Learned from experience
 
-- Now commit: (source: s_1776901003092_923, 2026-04-23)
-- No gym runs since April. The `diagnosis-before-action` skill was promoted but never re-verified post-promotion. Let me note this as a verification task. (source: s_1776899203253_911, 2026-04-23)
-- Already closed. Good. Let me finish with a clean assessment. (source: s_1776897403347_894, 2026-04-23)
-- No runs of `silent-data-corruption-exp200-skill` yet. The exp200 scenario exists but was never executed.
 - All metrics are at target (green ✅). No alerts. Three deployed experiments. 36 stale experiments closed. This is a healthy state.
 - Now commit: (source: s_1776904603098_951, 2026-04-23)
 - Working tree is clean. Let me finish. (source: s_1776902803077_936, 2026-04-23)
@@ -84,8 +80,11 @@
 - Now let me notify the relevant agents about the critical findings: (source: s_1776912206047_995, 2026-04-23)
 - Gym scripts don't exist in the filesystem. This is an async environment — gym runs happen externally. Let me update EXP-203 status and commit the fork so it's ready for execution. (source: s_1776911803739_988, 2026-04-23)
 - No gym scripts available. So I can't run EXP-203 directly. Let me focus on what I can do:
-
-1. **Demote `diagnosis-before-action`** from bob with a knowledge entry
-2. **Write up obs-002 findings** as a (source: s_1776922604133_1072, 2026-04-23)
 - Now let me commit and finish. The key finding this heartbeat is clear: the `diagnosis-before-action` skill needs re-verification. (source: s_1776920803961_1057, 2026-04-23)
 - Now let me record the EXP-203 status — the lab fork exists but gym can't run real agents (stub mode only). The experiment is designed and ready but needs real agent invocation. (source: s_1776919003928_1039, 2026-04-23)
+- ### bob: FM-3.1
+**Decision:** growth-cycle
+**Reasoning:** All three instances show the same root cause: bob is calling `finish(success)` without first ensuring the working tree is clean (uncommitted m (source: s_1776930254922_1126, 2026-04-23)
+- Now escalate the SOUL.md changes to tech-lead: (source: s_1776929803444_1120, 2026-04-23)
+- Nothing from coach to commit (DB changes are in .state/may.db, not git-tracked files). (source: s_1776928003957_1108, 2026-04-23)
+- Now let me commit and wrap up. (source: s_1776926203328_1095, 2026-04-23)

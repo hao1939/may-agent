@@ -41,10 +41,6 @@
 
 ## Learned from experience
 
-- BLOCKED
-- The lab version doesn't exist anymore. And `verify-before-finish` is only deployed to May (targeting C1.7 regression). The broader FM-3.3 problem across ALL agents remains unaddressed. My EXP-011 targ (source: s_1776908203693_967, 2026-04-23)
-- Now commit: (source: s_1776906403321_958, 2026-04-23)
-- Now update the design.md status and results.md: (source: s_1776904603051_949, 2026-04-23)
 - Now let me also remove the narrower duplicate rule that's already in the file, and commit. (source: s_1776915873114_1019, 2026-04-23)
 - Now let me check metrics and the pending metric breach event:
 - Now commit and finish. (source: s_1776913603073_999, 2026-04-23)
@@ -54,12 +50,12 @@
 - Now commit: (source: s_1776920803916_1055, 2026-04-23)
 - I'm a reviewer — I didn't write files, I only evaluated. Let me verify the evaluation is sound: (source: s_1776920143052_1051, 2026-04-23)
 - BLOCKED
-
-The evaluator requires "successful CLI invocations producing useful output." All three CLIs require API keys/auth tokens that are not available in this environment:
-
 - `claude -p` needs `ANTH (source: s_1776920133344_1050, 2026-04-23)
 - Now update the SKILL.md and evaluation: (source: s_1776919612340_1049, 2026-04-23)
 - Good, committed. (source: s_1776919003888_1037, 2026-04-23)
+- Now I'll create the updated scorecard integrating the 7 new scout hypotheses and connecting them to existing experiments. (source: s_1776929803400_1118, 2026-04-23)
+- The files are scaffolds with the core finding filled in but template sections remaining. That's fine — the key content (core finding) is there and indexed. Let me fill in the critical metadata: (source: s_1776928003913_1106, 2026-04-23)
+- Now let me commit and finish. (source: s_1776926203285_1093, 2026-04-23)
 
 ## Reflexion-Extracted Lessons
 - [insight] Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/.
