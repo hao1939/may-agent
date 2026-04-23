@@ -1,32 +1,33 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-23)
 
-## Context
-No pending events/alerts. Heartbeat focused on verifying last 6h `agents/` changes + running required checks.
+## Scope
+Heartbeat review of recent changes in the `agents/` repo (last ~6h) and a quick runtime/tooling sanity check.
 
 ## Findings
-### 1) Test harness expects `/app/scripts/gym-run.sh`, but file is missing (breaks gym integration tests)
-- Evidence: `vitest` run of `agents/test/gym/gym.test.ts` fails because it shells out to `bash /app/scripts/gym-run.sh`.
-- The test constructs `RUN_GYM = join(PROJECT_ROOT, "scripts/gym-run.sh")` where `PROJECT_ROOT` resolves to `/app`.
-- Failure output (vitest): `bash: /app/scripts/gym-run.sh: No such file or directory`.
-- File evidence: `agents/test/gym/gym.test.ts` lines show `RUN_GYM` path construction.
 
-Impact: The repo’s core `agents/test/gym` integration test suite is currently red in this environment.
+### 1) CRITICAL — Repo/tooling mismatch blocks mandatory QA checks (tsc/vitest)
+- Running `./node_modules/.bin/tsc --noEmit` from `/app` fails because `node_modules/.bin/` does not exist.
+  - Evidence: `./node_modules/.bin/tsc --noEmit` → `/bin/bash: ... No such file or directory`
+- Same for vitest.
+  - Evidence: `./node_modules/.bin/vitest --run` → `/bin/bash: ... No such file or directory`
+- In `/app/agents`, there is a git repo, but it also has no `node_modules/.bin` and no `package.json` / `tsconfig.json` at repo root.
+  - Evidence: `cd agents && find . -maxdepth 2 -name package.json -print` → no output; `find ... tsconfig.json` → no output.
 
-Suggested fix direction: Either (a) add/restore `/app/scripts/gym-run.sh`, or (b) update tests/config to point at the correct runner location if it moved.
+Impact: the QA role’s non-negotiable verification step (tsc+vitest) cannot be executed in this environment as currently laid out.
 
-### 2) `vitest --run` in repo root currently executes many non-project tests (gym scenarios + caches)
-- Evidence: `npx vitest --run` collected thousands of tests but also failed many files under:
-  - `agents/gym/scenarios/**/environment/test/**` (many are not Vitest suites; some call `process.exit`)
-  - `.state/.bun/install/cache/**` and `.state/.npm/_npx/**` (third-party package tests)
-- Using `--config agents/vitest.config.mjs` still did not exclude `agents/gym/**` because the config excludes `gym/**` and `test/gym/**`, but the directory is `agents/gym/**`.
+### 2) IMPORTANT — `may-agent-bin` invocation confusion (ELF executed via node)
+- `node may-agent-bin --help` throws `SyntaxError: Invalid or unexpected token` because `may-agent-bin` is an ELF binary.
+- Executing directly works but returns another error: `Agent "may" is not registered. Available:`
 
-Impact: Required CI-like command `vitest --run` is noisy and fails for reasons unrelated to product code.
+This indicates a likely operator footgun: docs/scripts should not suggest running the binary via `node`.
 
-Suggested fix direction: Expand vitest exclude globs to include `agents/gym/**` and `.state/**` (and potentially `**/environment/test/**` under gym scenarios), or add a dedicated workspace-level vitest config.
+### 3) Review target — new cron subscription for `project` handler
+Recent commit `6bb63fb80` modifies `agents/may/cron.json` to add `"escalation.created"` to the `project` job’s `on` list.
+- Evidence: `git -C agents show --name-only --oneline 6bb63fb80` and `read(agents/may/cron.json)`.
 
-### 3) Typecheck command `./node_modules/.bin/tsc --noEmit` cannot be run (tooling missing)
-- Evidence: `/app/node_modules/.bin/tsc` does not exist; `node_modules` contains only `.vite/`.
+Quick code read: `agents/may/handlers/project.ts` appears to already accept an optional `event?: TriggerEvent` and uses `event?.source` to emit metrics. No immediate logic bug found in the scanned file, but it has broad try/catch that silently skips DB errors; consider logging errors at least at debug level.
 
-Impact: Cannot perform the mandated typecheck step in this environment.
-
-Suggested fix direction: Ensure dependencies are installed (package manager step), or vendor the needed binaries, or update heartbeat instructions for this environment.
+## Recommended follow-ups
+1. Decide/standardize how QA should run `tsc`/`vitest` in this repo (maybe via `bun x vitest`, or provide `scripts/test` wrapper), or ensure `node_modules/.bin` exists by adding a package manager install step.
+2. If `may-agent-bin` is the intended runner, add a short README snippet: “Run `./may-agent-bin ...` (do not prefix with node)”.
+3. If `project` handler is intended to react to `escalation.created`, ensure the event type actually emitted in system matches that string (not verified this heartbeat).
