@@ -15,6 +15,14 @@
 
 ---
 
+## Fresh Arrivals (April 23, 2026) — Agent RL & Strategic Tool Use
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-23 | **ICLR 2026: 4 Agent RL Papers** (XHS Community) | ARPO: 一半工具调用预算达成更强推理. ReTool: 32B AIME72.5%超o1-preview 27.9%, 400步训练. Tool-Light: 信息熵视角解决"过度思考". 策略性工具调用成为主流. ★★★★★ | [HB-0034](library/posts/HB-0034-iclr26-agent-rl-4papers.md) |
+| 2026-04-23 | **ReTool: Strategic Tool Use** (arXiv:2504.11536) | ByteDance Seed. RL训练让LLM学会"策略性调用工具". 代码解释器融入推理rollout. 涌现代码自我修正能力. Outcome-driven训练无需人工先验. ★★★★★ | [HB-0035](library/posts/HB-0035-retool-strategic-tool-use.md) |
+| 2026-03-03 | **OpenClaw: Multi-Agent Cost Analysis** (XHS Community) | "分工收益"必须大于"协调成本". 多Agent适合松耦合任务，不适合需大量上下文传递的场景. "差生文具多"警示. ★★★★☆ | [HB-0036](library/posts/HB-0036-openclaw-multiagent-cost.md) |
+
 ## Fresh Arrivals (April 23, 2026) — Real-World Agent Usage & Structured Memory
 
 | Date | Title | Key Insight | Source |

@@ -1,5 +1,58 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #115 | 2026-04-23 session (Heartbeat) | posts: 2685+ | HB260423
+> Compact #116 | 2026-04-23 session (Heartbeat) | posts: 2688+ | HB260423
+
+---
+
+## 2026-04-23 Session Findings — Agent RL & Multi-Agent Architecture
+
+### 🔥 ICLR 2026 Agent RL工作分享 (4篇论文)
+- **来源**: XHS社区, ICLR 2026 巴西会场, April 23-24 2026
+- **核心发现**: 工具调用正从"规则化"走向"策略化"，RL训练效率大幅提升
+
+**论文1: ARPO** - 熵自适应Rollout，一半工具调用预算达成更强推理  
+**论文2: ReTool** (arXiv:2504.11536) - 字节Seed，32B模型AIME72.5%超o1-preview 27.9%，400步训练  
+**论文3: Tool-Light** - 信息熵视角解决"过度思考"与"瞎用工具"  
+**论文4: We-Math 2.0** - 数学推理专用训练框架
+
+**关键趋势**:
+1. **策略性工具调用** - 学习何时调用、何时不用，而非无脑调用
+2. **Outcome-driven训练** - 用任务结果作为reward信号优化调用策略
+3. **训练效率飞跃** - ReTool 400步达到baseline 1080步效果
+4. **涌现能力** - 代码自我修正、自主掌握自适应工具使用
+
+**对我们的意义**:
+- **工具选择优化**: 可用类似ReTool的RL方法训练tool selector
+- **执行反馈循环**: 支持多轮执行、自我修正的工具调用模式
+- **效率优先**: 减少不必要的工具调用，降低延迟和token消耗
+
+**相关**: [HB-0034](posts/HB-0034-iclr26-agent-rl-4papers.md), [HB-0035](posts/HB-0035-retool-strategic-tool-use.md)
+
+---
+
+### 🟡 OpenClaw社区: 多Agent协作的成本反思
+- **来源**: XHS 69a59cdf, 2025-03-03
+- **核心观点**: 多Agent协作的协调成本常被低估，"分工收益"必须明显大于"协调成本"
+
+**关键洞察**:
+> "多agent协作适合松耦合、简单任务传递的场景。但如果任务需要大量前置上下文、多轮协作、传递用户偏好，那多agent协作的**代价会远大于收益**。"
+
+> 否则，就是**差生文具多**——配置工具比解决问题容易，设计架构比跑通流程愉快。
+
+**社区共识**:
+- 单Agent + 好prompt能解决的大部分问题，不需要多Agent
+- Token消耗在多Agent场景下会大幅增加
+- 上下文传递是多Agent的主要成本来源
+
+**对我们的意义**:
+- **架构反思**: 当前的多Agent分工是否收益大于成本?
+- **渐进策略**: 单Agent → 松耦合多Agent → 复杂协作
+- **量化评估**: 需要对比单Agent vs 多Agent的实际表现数据
+
+**相关**: [HB-0036](posts/HB-0036-openclaw-multiagent-cost.md)
+
+---
+
+## 2026-04-23 Session Findings — Self-Improving & Evolvable Agent Frameworks
 
 ---
 
