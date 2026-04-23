@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776971298650_0
+- **Session:** s_1776973098633_11
 - **Status:** done
-- **When:** 2026-04-23T19:09:28.396Z
-- **Duration:** 1m9s
+- **When:** 2026-04-23T19:40:18.636Z
+- **Duration:** 1m59s
 
 ## What Happened
-Major finding: **88 EXPIRED forks vs only 2 COMPLETED** in 48h. 23 more stuck in CREATED. Forked work sessions are dying before completing — this is why delegation quality is 0.71. This needs tech-lead investigation.
+Last EXP-188 attempt was ~32h ago and was interrupted. Coach seems to have stopped retrying — good. But 23 wasted sessions is a pattern worth addressing. Let me notify coach to formally close/abandon EXP-188 if it's stuck.
