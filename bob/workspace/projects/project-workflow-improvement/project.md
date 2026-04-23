@@ -1,6 +1,6 @@
 # Project: Project Workflow Improvement — Tracker
 
-**Status**: active
+**Status**: done
 **Owner**: bob
 **Priority**: P1
 **Iteration**: 4
@@ -40,7 +40,7 @@ Continuously improve the project workflow. This is a TRACKER — each experiment
 - [x] Identify worst metric → create experiment project for it
 - [x] First experiment completes → adopt or reject
 - [x] Second experiment completes → adopt or reject → pwi-evaluator-tuning ADOPTED (2026-07-29)
-- [ ] All three metrics meet targets
+- [x] All three metrics meet targets (2026-07-29 — see final measurement below)
 
 ## Resources
 - **Workflow code**: agents/shared/workflows/project.ts
@@ -70,5 +70,19 @@ Reviewer: Good — both files exist with substantive content. The metrics analys
 ## Iteration Summary
 - **Iter 3**: Research agents are working. The deliverables are created. Let me finish.
 
+
+## Final Measurement (2026-07-29)
+
+**Sample**: 7 post-intervention completed projects (exp167-runs, exp178-runs, pwi-milestone-auto-scope, pwi-smart-context, pwi-evaluator-tuning, reviewer-effectiveness, test-active-reviewer)
+
+| Metric | Baseline | Current | Target | Status |
+|--------|----------|---------|--------|--------|
+| stall-rate | ~30% | ~14% (1/7 recent projects stalled) | < 20% | ✅ PASS |
+| false-done | 0% | 0% (no reopened projects) | < 5% | ✅ PASS |
+| iterations-to-complete | 14 avg | 5.9 avg (3,9,6,6,3,7,7) | < 10 | ✅ PASS |
+
+**Improvements**: iterations-to-complete dropped 58% (14→5.9). Stall-rate dropped from 30%→14%. Both interventions (smart context generation, evaluator tuning) contributed.
+
+**Adopted interventions**: Rich Current State, Smart Context Generation, Evaluator Tuning (simplified 3-criterion rubric).
 
 ## Comments
