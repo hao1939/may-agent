@@ -1,40 +1,36 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776985699689_106
+- **Session:** s_1776987186483_112
 - **Status:** done
-- **When:** 2026-04-23T23:08:54.810Z
-- **Duration:** 35s
+- **When:** 2026-04-23T23:33:29.277Z
+- **Duration:** 22s
 
 ## What Happened
 ### Summary
-No pending events/alerts, so I performed a heartbeat verification sweep. `/app` is **not** a git repo (only `/app/agents` is), and the mandatory TS/Vitest QA checks **cannot run** here because this project is plain Node/JS with no `tsc` or `vitest` binaries in `/app/node_modules/.bin`. I then executed the available JS test runner (`node test/test.js`) and observed **multiple failing grading/math tests**, indicating functional issues in the current `/app/src` implementation.
+Heartbeat review found the repo is **not a git repository**, and the standard QA toolchain commands (**tsc**/**vitest**) cannot run because those binaries are not installed (only `better-sqlite3` is present in `package.json`). Running the existing Node test harness (`node test/test.js`) shows **8 failing tests**, and inspection of `src/grader.js` reveals likely logic bugs (incorrect sorting and swapped midterm/final weights) consistent with the failures.
 
 ### Checks
-- `./node_modules/.bin/tsc --noEmit`: **FAIL** — binary missing (`No such file or directory`). Evidence: bash output when running it in `/app`.
-- `./node_modules/.bin/vitest --run`: **FAIL** — binary missing (`No such file or directory`). Evidence: bash output when running it in `/app`.
-- Additional runtime check (project-native): `node test/test.js`: **FAIL** — `11 passed, 8 failed`. Evidence: test output shows mismatched expected vs actual grades/averages.
+- `tsc --noEmit`: **FAIL** — `./node_modules/.bin/tsc: No such file or directory` (bash output)
+- `vitest --run`: **FAIL** — `./node_modules/.bin/vitest: No such file or directory` (bash output)
+- Additional check: `node test/test.js`: **FAIL** — **11 passed, 8 failed** (bash output)
 
 ### Issues
-- **CRITICAL — Mandatory QA commands cannot be executed in this repo**
-  - In `/app`, there is no TypeScript/Vitest tooling (`package.json` only depends on `better-sqlite3`). Running `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest` fails because the binaries do not exist.
-  - This blocks the “non-negotiable” QA gate as written, unless the gate is scoped to `/app/agents` only.
+1. **CRITICAL — Failing tests in core grading logic**
+   - Evidence: `node test/test.js` reports 8 failures, including homework average, final grade, and report expectations.
+   - Likely causes seen in `src/grader.js`:
+     - `computeHomeworkAverage`: `const sorted = [...hwScores].sort();` does lexicographic sort by default (e.g., could mis-order numbers).
+     - `computeFinalGrade`: weights appear swapped:
+       - `student.midterm * policy.weights.final`
+       - `student.final * policy.weights.midterm`
+       This aligns with broad grade mismatches in the test output.
 
-- **CRITICAL — Functional test failures in grading logic**
-  - `node test/test.js` reports failures such as:
-    - “drops lowest from [95,100,90,85]: expected 95, got 90”
-    - Final grade mismatches for multiple students (Alice/Bob/Charlie/Diana/Eve)
-    - Report mismatches (Alice grade, class average)
-  - These are concrete correctness failures, not style/test fragility.
-
-- **MINOR — Git verification scope mismatch**
-  - `/app` has source/tests, but no `.git`; `/app/agents` has git history. This makes “what changed in last 6h” impossible for `/app` code via git, and suggests the repo layout/expectations are inconsistent.
+2. **IMPORTANT — QA conventions C1.4 / C8.2 alert (60%)**
+   - I can’t map these to specific violations without the convention definitions/monitor output, and there’s no git history available to audit. Needs clarification/evidence from the alert source.
 
 ### Verdict
-**FAIL**
+**FAIL** — The runnable test suite (`node test/test.js`) is failing (8 failures), and the observed implementation in `src/grader.js` contains concrete defects consistent with those failures. Also, the required QA verification commands (`tsc`, `vitest`) cannot be executed in this environment due to missing tooling.
 
-Because:
-1) the mandated `tsc`/`vitest` checks cannot be performed in `/app` (tooling absent), and  
-2) the available project tests (`node test/test.js`) show **8 real failures** affecting grading outputs.
-
-If you clarify that QA gates should run under `/app/agents` only (and `/app` is just a runtime sandbox), I can re-scope and re-run verification accordingly.
+### Convention Alert Actions
+- **C1.4 at 60%**: **ESCALATE** — need the convention definition + what triggered it; cannot validate or remediate from current evidence.
+- **C8.2 at 60%**: **ESCALATE** — same reason (insufficient context/evidence from alert payload).

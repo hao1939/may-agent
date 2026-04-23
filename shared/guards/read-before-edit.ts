@@ -3,8 +3,8 @@
  * read-before-edit guard — C1.1 Edit-Without-Read detection.
  *
  * Scans step_done events for edit() tool calls where the target file
- * was not read() earlier in the same step. Emits a warn demand so the
- * agent (or next step) is alerted to the convention violation.
+ * was not read() earlier in the same step. Injects a corrective run_step
+ * that forces the agent to read and verify the edited files.
  *
  * This catches the #1 convention violation (C1.1) which accounts for
  * ~37% of all violations in the 190-violation baseline.
@@ -63,11 +63,27 @@ export const guard: WorkflowGuard = {
 
     // Deduplicate
     const unique = [...new Set(violations)];
+
+    // Upgraded from warn → run_step (2026-04-24, Bob).
+    // Per H-098/EXP-188: text warnings (Ch1) ≈ 0% compliance,
+    // structural enforcement (Ch2) ≈ 100%. Injecting a corrective
+    // step forces the agent to read the files it missed.
     return [
       {
-        type: "warn",
+        type: "run_step",
         reason: `C1.1 Edit-Without-Read: ${unique.length} file(s) edited without prior read() in this step: ${unique.join(", ")}. ` +
           `Convention requires reading a file before editing to prevent data loss from stale assumptions.`,
+        step: {
+          name: "c1.1-read-recovery",
+          agent: true,
+          task: `## C1.1 Recovery — Read Before Edit\n\n` +
+            `The previous step edited ${unique.length} file(s) without reading them first: ${unique.join(", ")}.\n\n` +
+            `**You MUST now:**\n` +
+            `1. read() each of these files to verify the edits are correct\n` +
+            `2. If any edit introduced errors (wrong content, lost data), fix them immediately\n` +
+            `3. Confirm each file looks correct before proceeding\n\n` +
+            `Files to verify: ${unique.map(f => `\n- \`${f}\``).join("")}`,
+        },
       },
     ];
   },
