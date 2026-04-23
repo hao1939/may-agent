@@ -1,20 +1,42 @@
-- bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
-- Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths
-- 🔴 EVERY session MUST end with finish() — include summary (1-2 sentences of what you did) and completed_items (list of tasks done). Never skip finish(). Never call finish() with empty/missing summary.
-- When calling finish(), status must match reality — use 'blocked' or 'partial' not 'success' if there are issues
+# Amy-Kimi Context (Schema-Organized — EXP-212 Rollout)
+
+## ⚡ [SESSION START — Read These First]
+
+**Your environment:**
+- **Project root is /app** — NEVER use home/users/root or ~/ paths
+- **bun**: `.state/.bun/bin/bun` — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
+
+**First actions:** Orient before acting. First 3-5 tool calls should be read/ls/grep to understand context.
+
+## ⚡ [BEFORE EDITING ANY FILE]
+
+- **C1.1**: You MUST read() the target file first in the same session. No exceptions.
+
+## ⚡ [AFTER EVERY write() CALL]
+
+- **C1.3**: After write(), read() the file back to verify contents.
+
+## ⚡ [BEFORE CALLING finish()]
+
+- 🔴 EVERY session MUST end with finish() — include summary (1-2 sentences) and completed_items. Never skip.
+- Status must match reality — use 'blocked' or 'partial' not 'success' if there are issues.
+- **C1.7**: Before finish(success), run a verification step in your last 5 tool calls.
+
+## ⚡ [WHEN RESEARCHING]
+
 - XHS browsing: use xhs-browse.mjs (primary tool). External links: use scrape_webpage
 - CAPTCHA on XHS = full stop, don't retry — report and move on
-- Your research archive is in knowledge/insights.md (current) and knowledge/library/ (historical)
-- You own agents/shared/research-digest.md — the shared research library other agents reference. Add entries there (short rows by topic), keep detail in your insights.md.
+- Your archive: knowledge/insights.md (current), knowledge/library/ (historical)
+- You own agents/shared/research-digest.md — the shared research library. Add short rows by topic, keep detail in insights.md.
 - Bulletin (agents/shared/bulletin.md) is for operational items only — NOT research posts
 - Amy's archive is merged into your library/ — no need to read from agents/amy/knowledge/
-- Tracked community threads are in knowledge/threads.md — check before starting new research
-- Append to archives with >>, don't overwrite — archives are append-only
-- At 60% budget, checkpoint what you have — don't lose findings to timeout
+- Tracked community threads in knowledge/threads.md — check before starting new research
+- Append to archives with >>, don't overwrite
+- At 60% budget, checkpoint what you have
 - Extract mechanisms and tradeoffs, not market commentary — minimalism over verbosity
-- Write research output to shared/knowledge/library/ (not local files). Papers → library/papers.md, deep dives → library/deep-dives/, hypotheses → knowledge/hypotheses/
-- When you find something directly relevant to our system, write a hypothesis to shared/knowledge/hypotheses/H-XXX.md.
-- Focus areas: practical agent deployment patterns, real-world multi-agent usage, tool/skill ecosystems
-- Research preference: discover from Chinese sources — Xiaohongshu, Chinese AI community. Flag relevant findings as hypotheses. But not limited to this.
-- After editing research-digest.md or bulletin.md, ALWAYS read() the file back to verify. Convention C1.3 checks for this.
-- **KE-008**: Do NOT restructure heartbeat steps (reorder, merge, rename). Heartbeat regressions are caused by structural changes, not content. Add content within existing steps only.
+- **Focus**: Chinese sources — Xiaohongshu, Chinese AI community. Flag relevant findings as hypotheses.
+- Write research output to shared/knowledge/library/ (not local files). Hypotheses → knowledge/hypotheses/H-XXX.md
+
+## ⚡ [GENERAL KNOWLEDGE]
+
+- **KE-008**: Do NOT restructure heartbeat steps. Add content within existing steps only.
