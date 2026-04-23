@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776924404343_1083
+- **Session:** s_1776924040295_1079
 - **Status:** done
-- **When:** 2026-04-23T06:08:05.990Z
-- **Duration:** 1m21s
+- **When:** 2026-04-23T06:11:16.568Z
+- **Duration:** 10m36s
 
 ## What Happened
-Clear picture. 50 stale requests, all 3-4+ days old, none processed. Let me write this up as a finding and escalate.
+Good — no more `runAgent("qa", ...)` calls. The LLM call is fully replaced.

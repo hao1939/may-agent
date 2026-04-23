@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776922604062_1069
+- **Session:** s_1776924404304_1081
 - **Status:** done
-- **When:** 2026-04-23T05:38:06.152Z
-- **Duration:** 1m22s
+- **When:** 2026-04-23T06:09:03.557Z
+- **Duration:** 2m19s
 
 ## What Happened
-Found it: **64 FAILED requests in 24h**, almost all from `Cannot find module '../../src/lib/growth.js'` in `agents/shared/agent-sdk.ts`. This is a recurring infra bug dragging down delegation quality. Let me dispatch a fix to tech-lead.
+Key finding: Bob has been stuck in a loop — repeatedly dispatching "Ship EXP-188 finish-guard" and "Resume context-learning project" sessions that keep getting interrupted (dozens of times over 3+ days). This is pure waste. Let me nudge bob and notify tech-lead about the compliance-check errors.
