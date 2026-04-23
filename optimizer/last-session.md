@@ -1,16 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776971298981_2
+- **Session:** s_1776973098963_13
 - **Status:** done
-- **When:** 2026-04-23T19:09:31.941Z
-- **Duration:** 1m12s
+- **When:** 2026-04-23T19:38:56.179Z
+- **Duration:** 37s
 
 ## What Happened
-Key observations:
-1. **36 parse_errors in 6h** — evaluations failing to parse. That's waste in the evaluation pipeline.
-2. **Evaluator has 0 efficiency/0 quality across 73 sessions** — likely self-evaluations returning null.
-3. **Pending requests down to 159** (from 533 before the auto-expiry work). Good progress.
-4. **Optimizer is lowest non-evaluator efficiency at 0.60** — I should be leaner myself.
+The data is clear. The request queue is still massively bloated with duplicates. My previous P0 finding (request `b9f3081f`) about 200+ CREATED requests is itself still CREATED — nobody acted on it. Key patterns:
 
-All metrics are healthy and well above targets. The parse_error issue is notable (36 in 6h) but that's an evaluator concern, not something I need to create a project for. The system is running efficiently.
+1. **May→tech-lead compliance-check**: 8+ duplicate requests for the same cron fix
+2. **Scout→bob notifications**: 15+ P2 notifications piling up unread
+3. **Bob loop**: Still has zombie self-fork requests from 1500+ min ago
+
+All my metrics are green and my previous findings cover these issues. No new action needed — the ball is in may/tech-lead's court.

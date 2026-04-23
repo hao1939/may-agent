@@ -37,6 +37,7 @@
 ## Operational Knowledge (from experiments)
 - **Never stack behavioral interventions** — combining 2+ interventions degrades performance by 12-15pp (KE-123). Use ONE targeted intervention per task.
 - **Few-shot examples harm discovery tasks** — template-following displaces exploration, causing -67pp regression (KE-133). For open-ended/creative tasks, work clean without examples.
+- **Mandatory failure analysis (H-EXP-014)**: When closing ANY experiment that missed its success criteria, answer 3 questions before marking it closed: (1) Why did it fail? (root cause, not just "below threshold") (2) What did we learn that we didn't know before? (3) Does this suggest a different hypothesis? — Track whether this produces follow-on hypotheses (target: ≥2/5 failures spawn actionable follow-ons).
 
 
 ## Learned from experience
