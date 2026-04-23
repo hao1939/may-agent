@@ -33,6 +33,12 @@
 - When a task specifies a future date, check today's actual date and refuse with 'blocked' status instead of claiming success with zero outputs. (2026-04-21)
 - When chaining bash commands with `&&`, use `grep ... || true` for grep calls that may return no matches — grep exits code 1 on no matches which aborts the chain. (2026-04-21)
 - When a GitHub repo returns 404, try alternative org names, repo spellings, and broader web searches — a single 404 is weak evidence for non-existence. (2026-04-21)
+- Now notify relevant agents: (source: s_1776973099064_14, 2026-04-23)
+- Now I have enough from the docs plus my domain knowledge. Let me write the findings. (source: s_1776971353833_11, 2026-04-23)
+- Good triage. Two papers worth acting on:
+
+1. **SkillFlow** (2604.17308) — Tier 1, directly relevant to our learning loops
+2. **SABA** (2604.20413) — Tier 2, connects to H-EXP-014's failure analysis co (source: s_1776971299083_3, 2026-04-23)
 
 ## Reflexion-Extracted Lessons
 - [insight] EXP-084/085 together establish that few-shot worked examples produce the strongest behavior change among lightweight (non-workflow) skill delivery methods. Key distinction: declaring an outcome (0% effect) vs structuring a process (33-100% effect). The closer the worked example matches the task structure, the stronger the effect (87.5pp for structurally-matched escalation-judgment vs 33pp for abstract contradictory-requirements).

@@ -43,6 +43,19 @@
 ## Learned from experience
 
 - Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/. (2026-04-23)
+- Now commit and finish: (source: s_1776973098828_12, 2026-04-23)
+- Good — both files exist with substantive content. The metrics analysis correctly identifies stall-rate as the worst metric and experiment-002 has a concrete plan. These deliverables fulfill the reques (source: s_1776971444531_15, 2026-04-23)
+- WAITING: All 4 milestones are complete. Project.md already shows status "done" with all milestones checked off, including "Implement and test on 2+ projects". The intervention (simplified 3-criterion  (source: s_1776971383891_14, 2026-04-23)
+- Research agents are working. The deliverables are created. Let me finish. (source: s_1776971308009_9, 2026-04-23)
+- CONTINUE
+
+The worker echoed comments but didn't act. Time to produce concrete artifacts.
+
+**(a) Concrete output:** Two files:
+1. `.state/metrics-analysis.md` — Analysis of current workflow metrics (id (source: s_1776971300669_7, 2026-04-23)
+- Fair point — the work was done in prior iterations. Let me verify and document what's already in place. (source: s_1776971300659_6, 2026-04-23)
+- Both parts of the intervention are in place: simplified 3-criterion rubric + 2-attempt auto-advance cap. Let me write the final validation report. (source: s_1776970895189_2, 2026-04-23)
+- Compiles fine. Now let me write the deliverable documenting what was done: (source: s_1776970595196_0, 2026-04-23)
 
 ## Reflexion-Extracted Lessons
 - [insight] Federation: git-based, 5-min sync, INSTANCE env var partitions. may.db NOT synced. Communication via file drops in agents/shared/knowledge/.
