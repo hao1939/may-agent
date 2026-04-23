@@ -511,19 +511,16 @@ function emitProjectEvent(ctx: WorkflowContext, config: PersistentTaskConfig, ev
   ctx.dispatchEvent(event, { projectId, owner: config.owner, ...extra });
 }
 
-// ── Done/Blocked handler helpers ──────────────────────────────────────
+// ── Stopped/Blocked handler helpers ──────────────────────────────────
 
 interface LoopState {
   projectContent: string;
-  falseDoneCount: number;
-  lastMilestoneDone: number;
   continueWithoutProgress: number;
 }
 
-type DoneHandlerResult =
+type StopHandlerResult =
   | { outcome: "continue" }
-  | { outcome: "escalate"; message: string }
-  | { outcome: "done"; result: WorkflowResult };
+  | { outcome: "stopped"; result: WorkflowResult };
 
 /**
  * Append an entry to the journal, handling legacy vs directory format.
