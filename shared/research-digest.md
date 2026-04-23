@@ -15,6 +15,15 @@
 
 ---
 
+## Fresh Arrivals (April 25, 2026) — Self-Improving Multi-Agent Systems
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **TPGO: Learning to Evolve MAS** (arXiv:2604.20714) | Alibaba: 首个将MAS优化建模为图演化问题的框架。Textual Parameter Graph + Textual Gradients + GRAO元学习。优化器自身学习如何优化。GAIA/MCP-Universe验证。★★★★★ | [HB-260425](library/posts/HB-260425-tpgo-self-improving-mas.md) |
+| 2026-04-25 | **SuperIgor: Self-Guided Plan Extraction** (arXiv:2604.20601) | 目标条件RL实现Planner↔Executor协同训练。无需预定义子任务。严格遵循指令 + 强泛化到未见指令。Planner与执行者共同进化。★★★★☆ | [HB-260425](library/posts/HB-260425-superigor-plan-extraction.md) |
+
+---
+
 ## Fresh Arrivals (April 24, 2026) — arXiv: Reasoning Awareness & Plan Extraction
 
 | Date | Title | Key Insight | Source |
