@@ -39,7 +39,7 @@ Continuously improve the project workflow. This is a TRACKER — each experiment
 - [x] Baseline measurement: measure stall-rate, false-done, iterations-to-complete across all projects
 - [ ] Identify worst metric → create experiment project for it
 - [x] First experiment completes → adopt or reject
-- [ ] Second experiment completes → adopt or reject
+- [x] Second experiment completes → adopt or reject → pwi-evaluator-tuning ADOPTED (2026-07-29)
 - [ ] All three metrics meet targets
 
 ## Resources
