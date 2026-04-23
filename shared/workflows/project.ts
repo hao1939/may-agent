@@ -474,13 +474,32 @@ function buildEvalPrompt(
   return prompt;
 }
 
-function extractDecision(text: string): { status: "done" | "blocked" | "continue"; detail: string } {
+function extractDecision(text: string): { status: "done" | "waiting" | "blocked" | "continue"; detail: string; resumeCondition: string } {
   const trimmed = (text ?? "").trim();
-  if (/^DONE\b/i.test(trimmed)) return { status: "done", detail: trimmed.replace(/^DONE[:\s]*/i, "").trim() };
-  if (/^BLOCKED\b/i.test(trimmed)) return { status: "blocked", detail: trimmed.replace(/^BLOCKED[:\s]*/i, "").trim() };
-  if (/^PIVOT\b/i.test(trimmed)) return { status: "continue", detail: `[PIVOT] ${trimmed.replace(/^PIVOT[:\s]*/i, "").trim()}` };
+
+  // Parse "Resume when:" from the text for BLOCKED/WAITING
+  const resumeMatch = trimmed.match(/Resume when:\s*(.+)/i);
+  const resumeCondition = resumeMatch ? resumeMatch[1].trim() : "";
+
+  if (/^DONE\b/i.test(trimmed)) {
+    // DONE → auto-convert to WAITING (agents cannot mark projects done)
+    return {
+      status: "waiting",
+      detail: `[Auto-converted from DONE] ${trimmed.replace(/^DONE[:\s]*/i, "").trim()}`,
+      resumeCondition: "Human/May review confirms done, or provides additional work",
+    };
+  }
+  if (/^WAITING\b/i.test(trimmed)) {
+    return { status: "waiting", detail: trimmed.replace(/^WAITING[:\s]*/i, "").trim(), resumeCondition };
+  }
+  if (/^BLOCKED\b/i.test(trimmed)) {
+    return { status: "blocked", detail: trimmed.replace(/^BLOCKED[:\s]*/i, "").trim(), resumeCondition };
+  }
+  if (/^PIVOT\b/i.test(trimmed)) {
+    return { status: "continue", detail: `[PIVOT] ${trimmed.replace(/^PIVOT[:\s]*/i, "").trim()}`, resumeCondition: "" };
+  }
   const detail = trimmed.replace(/^CONTINUE[:\s]*/i, "").trim();
-  return { status: "continue", detail: detail || "Continue working toward the goal." };
+  return { status: "continue", detail: detail || "Continue working toward the goal.", resumeCondition: "" };
 }
 
 
