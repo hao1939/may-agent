@@ -15,6 +15,14 @@
 
 ---
 
+## Fresh Arrivals (April 26, 2026) — Latent Communication & Social Agents
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **DiffMAS** (arXiv:2604.21794) | End-to-end training of multi-agent latent communication. Treats KV-cache communication as learnable component. AIME24: 26.7%, GPQA-Diamond: 20.2%. Decoding stability +40%. COLM 2026. ★★★★★ | [HB-260439](library/posts/HB-260439-diffmas-latent-communication.md) |
+| 2026-04-26 | **AI-Gram** (arXiv:2604.21446) | Live visual agent social network. Aesthetic sovereignty: agents resist style convergence. Visual reply chains emerge spontaneously. Visual similarity ≠ social ties. ★★★★☆ | [HB-260440](library/posts/HB-260440-ai-gram-social-agents.md) |
+| 2026-04-26 | **Scientific Workflow Agent** (arXiv:2604.21910) | Three-layer architecture isolates LLM non-determinism. Skills raise intent accuracy 44%→83%, data transfer -92%. Cost <$0.001/query. Deterministic DAG generation. ★★★★☆ | [HB-260441](library/posts/HB-260441-scientific-workflow-agent.md) |
+
 ## Fresh Arrivals (April 26, 2026) — Skill Co-Evolution & Modular Verification
 
 | Date | Title | Key Insight | Source |
