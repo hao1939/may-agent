@@ -75,6 +75,12 @@ checkpoint({ summary: "What I accomplished so far", data: { key: "value" } })
 ⚠️ **NOT a shell command** — `bash("checkpoint ...")` will fail (exit code 127).
 ⚠️ **NOT an agent** — `agents.call("checkpoint", ...)` will fail (not registered).
 
+## `finish()` — Deliverables Rule (STRICT)
+1. **Default: `deliverables: []`**. Put findings in summary text, not files.
+2. If you need a file: `write()` it FIRST, then list in finish().
+3. Never list a path you haven't written THIS session.
+4. If finish() fails, retry immediately with `deliverables: []`.
+
 ## Key Constraints
 - ❌ No `cron` tool.
 - ⚠️ **P53 Bash Guard**: Bash commands touching protected files (SOUL.md, LESSONS.md, DOMAIN.md, TOOLS.md, heartbeat.md, agent.json) via `>`, `cat`, `python`, `sed` with write intent trigger P53 violations. Use `read()` for reads, `edit()` or `write()` for writes.
