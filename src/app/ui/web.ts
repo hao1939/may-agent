@@ -11,7 +11,7 @@ declare const Bun: {
   serve(opts: {
     port: number;
     hostname?: string;
-    fetch(req: Request, server: any): Response | undefined;
+    fetch(req: Request, server: any): Response | Promise<Response> | undefined;
     websocket: { open(ws: any): void; message(ws: any, msg: any): void; close(ws: any): void };
   }): { port: number };
 };
@@ -772,6 +772,44 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return json(sessions);
   }
 
+  async function handleProjectComment(req: Request): Promise<Response> {
+    try {
+      const body = await req.json() as { path?: string; comment?: string };
+      const { path, comment } = body;
+      if (!path || !comment) return json({ error: "path and comment required" }, 400);
+      if (!path.match(/^agents\/[^/]+\/workspace\/projects\//)) return json({ error: "Access denied" }, 403);
+
+      const projectFile = join(PROJECT_ROOT, path, "project.md");
+      if (!existsSync(projectFile)) return json({ error: "Project not found" }, 404);
+
+      const { writeFileSync } = await import("node:fs");
+      let content = readFileSync(projectFile, "utf-8");
+      const date = new Date().toISOString().slice(0, 10);
+      const entry = `- [${date}] (web) ${comment}`;
+
+      // Append to ## Comments section
+      if (content.includes("## Comments")) {
+        content = content.replace(/(## Comments\s*\n)/, `$1${entry}\n`);
+      } else {
+        content += `\n## Comments\n${entry}\n`;
+      }
+
+      // Auto-resume if blocked/waiting/done
+      let resumed = false;
+      const statusMatch = content.match(/^\*\*Status\*\*:\s*(.+)$/m);
+      const currentStatus = statusMatch ? statusMatch[1].trim().toLowerCase() : "";
+      if (["blocked", "waiting", "done"].includes(currentStatus)) {
+        content = content.replace(/^\*\*Status\*\*:\s*.+$/m, "**Status**: active");
+        resumed = true;
+      }
+
+      writeFileSync(projectFile, content, "utf-8");
+      return json({ ok: true, resumed });
+    } catch (e: any) {
+      return json({ error: e.message }, 500);
+    }
+  }
+
   function handleEvents(url: URL): Response {
     const db = _db();
     const limit = parseInt(url.searchParams.get("limit") || "100", 10);
@@ -876,6 +914,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/projects/content") return handleProjectContent(url);
       if (url.pathname === "/api/projects/journal") return handleProjectJournal(url);
       if (url.pathname === "/api/projects/sessions") return handleProjectSessions(url);
+      if (url.pathname === "/api/projects/comment" && req.method === "POST") return handleProjectComment(req);
       if (url.pathname === "/api/events") return handleEvents(url);
       const metricHistoryMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/history$/);
       if (metricHistoryMatch) {
