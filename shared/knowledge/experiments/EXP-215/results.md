@@ -4,9 +4,13 @@
 **Deployed**: 2026-08-02
 **Intervention**: Added belief-externalization prompt to `buildReviewPrompt()` in `agents/shared/workflows/project.ts` (line 394)
 
-## Phase 1: Baseline (pre-deployment)
+## Phase 1: Baseline (measured 2026-06-25)
 
-Need to count FM-3.3 verification gravity-well occurrences in the last ~10 reviewer sessions from evaluator data. TODO.
+**FM-3.3 session incidence rate**: 2.9% of all non-skipped evaluations (739 / 25,385 total).
+**FM-3.3 as % of all flagged issues**: 6.4% (44 / 686 issues in last 200 sessions with issues).
+**Recent 50-session rate**: 4.0% (2/50).
+
+Note: EXP-099's "20.3%" was FM-3.3 as a proportion of *verification-related errors*, not all sessions. The absolute session-level rate is much lower (~3-4%). This means the effect size needed to detect a change is larger — we need many sessions or a dramatic drop.
 
 ## Phase 2: Deployed
 
@@ -29,7 +33,7 @@ After 10 project iterations post-deployment, count FM-3.3 occurrences and compar
 
 | Arm | N | FM-3.3 rate | Notes |
 |-----|---|-------------|-------|
-| A (baseline) | TBD | ~20% (EXP-099) | Historical |
+| A (baseline) | 25,385 | 2.9% session / 6.4% issue-share | Historical (all time) |
 | B (externalization) | 0/10 | TBD | Measuring |
 
 ## Conclusion
