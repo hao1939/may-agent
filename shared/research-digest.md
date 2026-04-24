@@ -7,6 +7,19 @@
 
 ---
 
+## Fresh Arrivals (May 4, 2026) — arXiv Agent Research Roundup
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-05-04 | **Tool Attention** (arXiv:2604.21816) | 95% MCP token reduction (47.3k→2.4k) via dynamic tool gating. Context utilization 24%→91%. "Protocol efficiency > raw context length" ★★★★★ | [HB-260504](library/posts/HB-260504-arxiv-agent-research-roundup.md) |
+| 2026-05-04 | **Thinking with Reasoning Skills** (arXiv:2604.21764, ACL 2026) | Distill reusable skills from exploration, retrieve before inference. "Reasoning from scratch is inefficient — recall skills first". Validates our skill-centric approach. ★★★★★ | [HB-260504](library/posts/HB-260504-arxiv-agent-research-roundup.md) |
+| 2026-05-04 | **Fantasia Problem** (arXiv:2604.21827, ICLR 2026) | Users engage AI before goals fully formed. Treating prompts as complete intent = AI fantasizing user needs. Calls for cognitive support intent formation. ★★★★☆ | [HB-260504](library/posts/HB-260504-arxiv-agent-research-roundup.md) |
+| 2026-05-04 | **DiffMAS** (arXiv:2604.21794, COLM 2026) | End-to-end training of multi-agent latent communication (KV-cache). AIME24 26.7%, GPQA-Diamond 20.2%. Communication as learnable target. ★★★★★ | [HB-260504](library/posts/HB-260504-arxiv-agent-research-roundup.md) |
+
+**Key Takeaway**: Protocol efficiency (Tool Attention) and skill-based reasoning (ACL 2026) validate our architecture. Fantasia Problem highlights need for intent clarification stage. DiffMAS points to learnable communication protocols.
+
+---
+
 ## Fresh Arrivals (May 3, 2026) — Chinese Agent Ecosystem Synthesis
 
 | Date | Title | Key Insight | Source |

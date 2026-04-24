@@ -31,7 +31,7 @@ SCENARIOS = {
 ARMS = ["G1", "G2", "G3", "G4"]
 SCENARIO_TYPES = ["sql-injection", "cascading"]
 TRIALS_PER_CELL = 15
-AGENT = "coder"
+AGENT = "tech-lead"  # "coder" agent was removed; tech-lead handles coding tasks
 RUN_TAG = "EXP-178"
 BATCH_ID = f"exp178-{uuid.uuid4().hex[:8]}"
 
