@@ -822,6 +822,55 @@ if (RUN_WORKFLOW) {
     summarize: (r: any) => r?.lastAssistantText?.slice(0, 500) ?? "",
     done: (s: string) => ({ type: "done" as const, summary: s }),
     escalate: (r: string, c?: unknown) => ({ type: "escalate" as const, reason: r, context: c }),
+    createSession: DRY_RUN
+      ? async (opts: { systemPrompt: string; tools: "full" | "readonly"; label?: string }) => {
+          console.log(`\n${'='.repeat(60)}\nDRY RUN createSession: ${opts.label || "session"} (tools: ${opts.tools})\n${'='.repeat(60)}\nSystem prompt: ${opts.systemPrompt.slice(0, 200)}...\n`);
+          let lastPrompt = "";
+          return {
+            async prompt(message: string) { console.log(`  [${opts.label || "session"}] prompt (${message.length} chars):\n${message.slice(0, 300)}...\n`); lastPrompt = message; },
+            lastText() { return `(dry run response to: ${lastPrompt.slice(0, 80)}...)`; },
+            close() {},
+          };
+        }
+      : async (opts: { systemPrompt: string; tools: "full" | "readonly"; label?: string }) => {
+          const { Agent } = await import("@mariozechner/pi-agent-core");
+          const { createCodingTools } = await import("../lib/tools/coding.js");
+          const { createReadTool } = await import("../lib/tools/read.js");
+
+          const tools = opts.tools === "readonly"
+            ? [createReadTool(PROJECT_ROOT)]
+            : createCodingTools(PROJECT_ROOT, { agentName: opts.label || "worker" });
+
+          const agentInstance = new Agent({
+            initialState: {
+              systemPrompt: opts.systemPrompt,
+              model: models.opus,
+              tools: tools as any[],
+            },
+            getApiKey: () => LITELLM_API_KEY,
+          });
+
+          agentInstance.subscribe(async (event: any) => {
+            if (event.type === "tool_execution_start") {
+              console.log(`  [${opts.label || "session"}] 🔧 ${event.toolName}(${JSON.stringify(event.args).slice(0, 80)}...)`);
+            }
+          });
+
+          return {
+            async prompt(message: string) { await agentInstance.prompt(message); },
+            lastText() {
+              const msgs = agentInstance.state.messages;
+              for (let i = msgs.length - 1; i >= 0; i--) {
+                const m = msgs[i] as any;
+                if (m.role === "assistant") {
+                  return (m.content || []).filter((c: any) => c.type === "text").map((c: any) => c.text).join("\n");
+                }
+              }
+              return "";
+            },
+            close() { /* agent GC'd naturally */ },
+          };
+        },
   };
 
   console.log(`Executing workflow: ${wfMod.name} (agent: ${agent}, dry-run: ${DRY_RUN})\n`);
