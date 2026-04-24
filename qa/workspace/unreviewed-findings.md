@@ -7,14 +7,20 @@ Reviewed latest change in `agents` repo:
 - Commit: `07ffd3d84` — `fix: project handler uses dynamic import for project-health.ts`
 - File read: `agents/may/handlers/project.ts`
 
+## Event triage
+- Inbox event: 5 identical "Quick Code Review" requests.
+  - Action: **dismiss as waste/duplicate**. Reason: duplicates; will do a single QA verification pass per heartbeat anyway.
+
 ## Findings
 
-### IMPORTANT — Verification blocked by missing dependencies
-Could not run mandatory checks because repository root (`/app`) does not contain `node_modules`:
-- `./node_modules/.bin/tsc --noEmit` → `No such file or directory`
-- `./node_modules/.bin/vitest --run` → `No such file or directory`
+### IMPORTANT — Verification partially blocked (vitest missing in agents repo)
+Mandatory checks (as configured) from within `/app/agents`:
+- `./node_modules/.bin/tsc --noEmit` → **PASS** (no output, exit 0)
+- `./node_modules/.bin/vitest --run` → **FAIL** (`No such file or directory`, exit 127)
 
-This is an environment/setup issue; cannot independently verify compilation/tests this heartbeat.
+Root cause appears to be that `vitest` is not installed in `agents/package.json` (it contains only `typescript` and `@types/node` as dev deps), even though `agents/vitest.config.mjs` and `agents/**.test.ts` exist.
+
+This is an environment/dependency issue; I cannot independently run the test suite this heartbeat.
 
 ### IMPORTANT — Handler swallows DB errors silently
 In `agents/may/handlers/project.ts`, DB queries are wrapped in `try { ... } catch { /* skip */ }`.
