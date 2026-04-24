@@ -1,28 +1,25 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-24)
 
-## Convention Alerts to triage
+## Context
+Attempted standard QA verification steps on the **agents** repo (since it's the only visible git repo under /app). Encountered missing toolchain binaries required by the QA mandatory steps.
 
-### C1.4 (finish() called every session)
-- **Status:** ACT
-- **Evidence:** `agents/qa/context.md` explicitly flags this as CRITICAL due to low compliance.
-- **Action:** In this heartbeat, I will call `finish()` and include `summary` + `completed_items` (C8.2).
-- **Follow-up idea:** Add/confirm an automation guard that fails the run when `finish()` is not called (coach commit `e60fd5697` suggests this is being worked on already).
+## Findings
+### 1) CRITICAL — QA mandatory checks cannot run due to missing binaries
+- `./node_modules/.bin/tsc --noEmit` fails: `No such file or directory`
+- `./node_modules/.bin/vitest --run` fails: `No such file or directory`
 
-### C8.2 (finish() includes summary + completed_items)
-- **Status:** ACT
-- **Evidence:** Same as above; context flags 17 violations.
-- **Action:** Ensure every `finish()` in my sessions includes both fields.
+Evidence:
+- `cd /app/agents && ./node_modules/.bin/tsc --noEmit` → exit 127
+- `cd /app/agents && ./node_modules/.bin/vitest --run` → exit 127
+- `ls node_modules/.bin` shows no `tsc` or `vitest`
+- `package.json` includes `typescript` in devDependencies, but it is not present in `node_modules` (find returned no hits)
 
-## Repo / verification health checks
+Impact: QA cannot independently verify changes per required process; any review verdict must be CONDITIONAL until environment is fixed.
 
-### Environment mismatch: tsc/vitest binaries missing in agents repo
-- **Severity:** IMPORTANT (environment/tooling)
-- **Evidence:** 
-  - `cd agents && ./node_modules/.bin/tsc --noEmit` → **No such file or directory** (exit 127)
-  - `cd agents && ./node_modules/.bin/vitest --run` → **No such file or directory** (exit 127)
-- **Impact:** I cannot run mandatory SOUL QA steps (tsc/vitest) for changes inside the `agents/` repo in this environment as currently provisioned.
-- **Likely cause:** `agents/node_modules` exists, but `.bin/` entries for `tsc` and `vitest` are not present (dependency set differs from expectation).
-- **Recommendation:** Either install dev deps providing `typescript` + `vitest`, or adjust QA instruction to allow `bun x tsc` / `bun x vitest` when `.bin` isn’t present.
+### 2) IMPORTANT — Convention alert needs concrete scope
+Received alert: `Convention Alert: C1.4 at 60%, C8.2 at 60%` but the heartbeat message truncates: "Both conventions relate to" (missing details).
 
-## Recent changes worth noting
-- `coach` recently committed `e60fd5697` which touches `qa/context.md` (the file I read in this heartbeat). I did not review other file diffs because the mandatory toolchain (tsc/vitest) is currently unavailable.
+Action: Needs clarification from the notifier/manager about what exact behaviors are violating these conventions so QA can act/triage.
+
+## Notes
+- `/app` itself is **not** a git repo, so project code changes cannot be reviewed via git history from this location.
