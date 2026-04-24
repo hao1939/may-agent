@@ -4,7 +4,7 @@
 **Owner**: bob
 **Type**: continuous
 **Priority**: P1
-**Iteration**: 7
+**Iteration**: 8
 **Health**: —
 
 **Stop Reason**: 
@@ -37,11 +37,11 @@ Agents should know how to use the infrastructure effectively — create projects
 - [x] Write skill: helping-others.md → agents/shared/skills/helping-others/skill.md
 
 ### Phase 2: Benchmarks
-- [ ] Gym scenario: agent finds a problem in heartbeat, should create a project
-- [ ] Gym scenario: agent is stuck in a project, should escalate properly
-- [ ] Gym scenario: agent sees a red metric, should investigate and act
-- [ ] Gym scenario: agent sees another agent's blocked project, should help
-- [ ] Measure baseline: run each scenario 5x per agent
+- [x] Gym scenario: agent finds a problem in heartbeat, should create a project
+- [x] Gym scenario: agent is stuck in a project, should escalate properly
+- [x] Gym scenario: agent sees a red metric, should investigate and act
+- [x] Gym scenario: agent sees another agent's blocked project, should help
+- [x] Measure baseline: run each scenario 5x per agent
 
 ### Phase 3: Improve
 - [ ] Identify which agents fail which scenarios
@@ -56,10 +56,10 @@ Agents should know how to use the infrastructure effectively — create projects
 - Debugging skill (exists): agents/shared/skills/debugging-handlers-workflows.md
 
 ## Current State
-Iteration 7. Milestones: 5/13 done.
-Reviewer: — Worker claims first scenario is complete. Need to verify and push through remaining scenarios rapidly.
-
-**(a) Concrete output:** Verify the existing scenarios and create the remaining three gym scen
+Iteration 8. Milestones: 10/13 done.
+Reviewer: All 4 scenarios have substantive content. The gym scenario milestones are complete:
+- **Gym scenario: agent finds a problem in heartbeat, should create a project**
+- **Gym scenario: agent is stuck in
 ## Process Notes
 
 ## Comments
@@ -75,4 +75,6 @@ Reviewer: — Worker claims first scenario is complete. Need to verify and push 
 - **Iter 5**: CONTINUE. Good progress.
 
 - **Iter 7**: All the needed scenarios already exist. The milestone "Gym scenario: agent finds a problem in heartb
+
+- **Iter 8**: All 4 scenarios created and validated.
 
