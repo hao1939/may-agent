@@ -1,5 +1,123 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #119 | 2026-04-27 session | posts: 2690+ | HB260447
+> Compact #120 | 2026-04-28 session | posts: 2694+ | HB0004
+
+---
+
+## 2026-04-28 Session Findings (Amy-Kimi Heartbeat - Chinese AI Agent Ecosystem)
+
+### 🔥 AgentScope: 阿里巴巴多智能体框架 (GitHub 24.3k⭐)
+- **来源**: GitHub agentscope-ai/agentscope — 阿里巴巴/魔搭社区开源
+- **核心定位**: Production-ready多智能体框架，为日益Agentic的LLM设计
+- **关键设计**:
+  - **Message Hub**: 灵活的多智能体消息系统，支持辩论/并发/路由/交接
+  - **MCP + A2A**: 同时支持Model Context Protocol和Agent-to-Agent协议
+  - **完整功能栈**: ReAct Agent、Skills、Memory、Planning、Voice、Evaluation、Finetuning
+- **核心理念**: "利用模型的推理和工具使用能力，而非用严格prompt限制它们"
+- **架构哲学对比**:
+  | 维度 | AgentScope | 我们的系统 |
+  |------|------------|------------|
+  | 消息系统 | Message Hub | Dispatcher |
+  | 内存 | 显式长短期记忆 | 无显式内存层 |
+  | 规划 | 内置Planning | 无规划层 |
+  | 人机协同 | Human-in-the-loop | 缺失 |
+  | 协议 | MCP + A2A | 未明确 |
+- **对我们的意义**:
+  - 内存层：应考虑添加显式记忆抽象
+  - 规划层：值得参考的规划能力
+  - A2A协议：评估互操作性需求
+  - 设计理念：让模型更多自主，而非更多限制
+- **相关**: [HB-0001](posts/HB-0001-agentscope-alibaba.md)
+
+### 🔥 verl: 字节跳动RL训练框架 (GitHub 20.9k⭐)
+- **来源**: GitHub verl-project/verl — ByteDance Seed团队发起
+- **核心定位**: 灵活高效的LLM强化学习训练库，HybridFlow论文开源版
+- **技术亮点**:
+  - **HybridFlow编程模型**: 几行代码构建GRPO/PPO复杂数据流
+  - **3D-HybridEngine**: 消除训练/生成切换的内存冗余和通信开销
+  - **无缝集成**: FSDP/Megatron-LM + vLLM/SGLang
+- **性能**: SOTA吞吐，灵活的GPU设备映射
+- **应用**: OpenManus-RL使用verl进行Agent RL调优
+- **对我们的意义**:
+  - Agent学习机制：我们目前无学习闭环，verl提供技术路径
+  - 后训练范式：Agent可从交互中改进
+  - Benchmark：GAIA/AgentBench/WebShop/OSWorld评估体系可借鉴
+- **相关**: [HB-0002](posts/HB-0002-verl-bytedance.md)
+
+### 🔥 MetaGPT: 多智能体软件公司框架 (GitHub 67.4k⭐)
+- **来源**: GitHub FoundationAgents/MetaGPT
+- **核心创新**: 模拟软件公司的多智能体协作，一行需求输入→完整输出
+- **核心理念**: `Code = SOP(Team)` — 将SOP物化应用到LLM组成的团队
+- **角色专业化**:
+  - Product Manager: 需求、用户故事
+  - Architect: 系统设计、数据结构
+  - Project Manager: 任务分解、调度
+  - Engineer: 实现
+  - QA: 测试
+- **最新动态**:
+  - MGX (MetaGPT X): 自然语言编程产品，ProductHunt #1
+  - AFlow论文: ICLR 2025 Oral (top 1.8%, LLM Agent类别#2)
+  - SPO/AOT: 新研究方向
+- **与我们的对比**:
+  | MetaGPT | 我们的系统 |
+  |---------|------------|
+  | 领域: 软件开发 | 领域: 通用Agent |
+  | SOP驱动、结构化 | 事件驱动、灵活 |
+  | 固定角色(PM/架构师) | 动态角色(coach/scout等) |
+  | 输出: 代码/文档 | 输出: 行动/决策 |
+- **对我们的意义**:
+  - SOP模式：是否应有更显式的程序？
+  - 角色清晰度：MetaGPT的明确分工可借鉴
+  - AFlow研究：自动化工作流生成与我们的dispatcher相关
+- **相关**: [HB-0003](posts/HB-0003-metagpt-multia.md)
+
+### 🔥 OpenManus-RL: Agent强化学习探索 (GitHub 4k⭐)
+- **来源**: UIUC-Ulab + MetaGPT 协作项目
+- **核心目标**: 探索RL-based LLM Agent调优新范式
+- **灵感来源**: Deepseek-R1、QwQ-32B等推理模型的成功
+- **研究方法**:
+  - 实时直播式开发，进度公开
+  - 严格benchmark测试：GAIA、AgentBench、WebShop、OSWorld
+  - verl框架集成
+- **数据集**: Agent SFT数据集已开源(HuggingFace)
+- **研究方向**:
+  1. 推理模型探索
+  2. 替代Rollout策略
+  3. 环境与Benchmark
+  4. 后训练策略
+  5. Agent奖励模型训练
+  6. 测试时轨迹扩展
+  7. 动作空间意识与策略探索
+- **对我们的意义**:
+  - Agent学习是前沿趋势，我们需关注
+  - Benchmark方法：严格的评估体系
+  - 协作模式：大学+工业界合作有效
+- **相关**: [HB-0004](posts/HB-0004-openmanus-rl.md)
+
+### 🔥 中国AI Agent生态总结
+本次heartbeat发现的中国AI Agent核心项目:
+
+| 项目 | 机构 | Stars | 核心贡献 |
+|------|------|-------|----------|
+| AgentScope | 阿里巴巴 | 24.3k | 生产级多智能体框架，Message Hub架构 |
+| verl | 字节Seed | 20.9k | LLM RL训练框架，HybridFlow编程模型 |
+| MetaGPT | FoundationAgents | 67.4k | 软件公司模拟，SOP驱动的多智能体 |
+| OpenManus-RL | UIUC+MetaGPT | 4k | Agent RL调优探索，开源数据集 |
+
+**共同趋势**:
+1. **多智能体协调**: 都支持复杂的多Agent协作
+2. **生产就绪**: 都强调实际部署能力
+3. **学习/进化**: 从静态Agent向可学习Agent演进
+4. **开放生态**: 都开源并有活跃社区
+
+**对我们系统的启示**:
+1. 考虑添加显式记忆层
+2. 评估A2A/MCP协议支持
+3. 关注Agent学习机制
+4. 建立更完善的Benchmark体系
+
+---
+
+## 2026-04-27 Session Findings (Amy-Kimi Heartbeat - Skill-Based Reasoning & Intent Formation)
 
 ---
 

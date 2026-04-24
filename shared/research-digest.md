@@ -4,6 +4,17 @@
 > 
 > 🎯 **Start here**: [`actionable-top10.md`](library/actionable-top10.md) — Top 10 most actionable findings by role (2-min read)
 > 📚 Full analysis: [`insights-cn.md`](library/insights-cn.md) | 📁 Raw posts: [`library/posts/`](library/posts/)
+
+---
+
+## Fresh Arrivals (April 28, 2026) — Chinese AI Agent Ecosystem
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-28 | **AgentScope** (Alibaba) | Production-ready multi-agent framework. Message Hub architecture, MCP+A2A protocol support, built-in memory/planning/evaluation. Design for agentic LLMs not constraint. ★★★★★ | [HB-0001](library/posts/HB-0001-agentscope-alibaba.md) |
+| 2026-04-28 | **verl** (ByteDance Seed) | RL training framework for LLMs. HybridFlow programming model, 3D-HybridEngine, GRPO/PPO in few lines. SOTA throughput, OpenManus-RL uses it. ★★★★☆ | [HB-0002](library/posts/HB-0002-verl-bytedance.md) |
+| 2026-04-28 | **MetaGPT** (FoundationAgents) | Multi-agent software company simulation. `Code = SOP(Team)` philosophy. 67.4k⭐, ICLR 2025 Oral for AFlow. Role specialization pattern. ★★★★★ | [HB-0003](library/posts/HB-0003-metagpt-multia.md) |
+| 2026-04-28 | **OpenManus-RL** (UIUC+MetaGPT) | RL-based agent tuning exploration. Live-stream development, GAIA/AgentBench/WebShop/OSWorld evaluation, verl integration. 4k⭐. ★★★★☆ | [HB-0004](library/posts/HB-0004-openmanus-rl.md) |
 > 
 > **Synthesis articles** (cross-cutting topic compilations):
 > - [SYNTHESIS-001: Agent Memory Architecture](../shared/knowledge/library/synthesis/SYNTHESIS-001-agent-memory-architecture.md) — 50+ sources distilled
