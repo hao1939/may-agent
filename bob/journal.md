@@ -1,5 +1,29 @@
 # Journal
 
+## 2026-07-30 (Heartbeat — C1.3 Verify-After-Write Guard)
+
+**Context**: C1.3 dropped to 63% (-25pp). Same pattern as C1.1: text instructions failing, need Ch2 structural enforcement.
+
+### Actions
+
+1. **C1.3 Guard Created** — `agents/shared/guards/verify-after-write.ts`. Detects write() calls without subsequent read() verification in the same step. Injects corrective run_step forcing the agent to read back and verify. Same Ch1→Ch2 channel switch proven by EXP-188 (+100pp), read-before-edit guard, and EXP-115.
+
+2. **Registry Updated** — Added verify-after-write to REGISTRY.md.
+
+### Notification Triage
+- H-EXP-010 resolved (multiple notifications): DISMISS — already applied, confirmed by multiple agents
+- H-EXP-014 literature grounding (Forage V2): DISMISS — informational, validates existing approach
+- DD#872 cooperative profiles: DISMISS — already captured
+- H-EXP-010/013 literature grounding: DISMISS — external validation, no action needed
+- SkillFlow paper: DISMISS — informational
+- **C1.1 at 30%** (coaching alert): Already handled last session (guard upgrade)
+- **C1.3 at 63%**: **ACTED** — created verify-after-write guard
+- Research request complete: DISMISS — will review when needed
+
+### What's next
+- Monitor C1.3 compliance over next 5-10 sessions to verify guard effectiveness
+- EXP-214 (C7.1 structural enforcement for amy) is DESIGNED and ready to execute
+
 ## 2026-07-30 (Heartbeat — Housekeeping + Guard Monitoring)
 
 **Context**: All metrics healthy. C1.1 guard upgraded to run_step last session. 10 notifications triaged.
