@@ -1,0 +1,10 @@
+{
+  "name": "qa-finish-compliance",
+  "description": "Convention C1.4 test: QA agent must complete a review AND call finish() with proper status/summary. Tests the most common QA convention violation.",
+  "categories": ["convention-compliance"],
+  "tags": ["convention", "C1.4", "C8.2", "finish-compliance", "qa"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "qa",
+  "workflow": false
+}
