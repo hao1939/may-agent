@@ -116,6 +116,13 @@ Your output must be a JSON object inside a code block.
   "critical_issues": [
     "FM-1.4 Memory Loss",
     "FM-3.3 Incorrect Verification"
+  ],
+  "root_causes": [
+    {
+      "cause": "Description of the root cause",
+      "symptoms": ["FM-x.x", "FM-y.y"],
+      "attribution": "agent | CROSS_AGENT:<source> | ENV_ISSUE"
+    }
   ]
 }
 ```
