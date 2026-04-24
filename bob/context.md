@@ -76,34 +76,20 @@
 
 ## Learned from experience
 
-- Now update journal: (source: s_1777045235337_59, 2026-04-24)
-- Let me update the journal with this session and commit: (source: s_1777043435643_18, 2026-04-24)
-- Good, I have everything I need. Let me now produce the comprehensive `.state/gym-analysis.md` deliverable. (source: s_1777042335890_286, 2026-04-24)
-- Already marked SUPERSEDED. Good.
-
-Let me checkpoint and finish. (source: s_1777041635078_271, 2026-04-24)
-- WAITING: All milestones complete, waiting for review. The worker has confirmed all deliverables exist and CLIs are installed. The "Install" and "Adopt" milestones are effectively done — `.state/cli-be (source: s_1777041559020_266, 2026-04-24)
-- Now I have all the data. Let me write both files: (source: s_1777041349167_259, 2026-04-24)
 - PIVOT — The worker has said "let me write the doc" for multiple iterations without producing verified output. Time for a fundamentally different approach.
-
-**(a) Concrete output:** `.state/cli-researc (source: s_1777041333796_257, 2026-04-24)
 - CONTINUE
-
-**(a) Concrete output:** `.state/cli-integration-research.md` fully rewritten with actual CLI help output and source code analysis for all three CLIs, plus proxy configuration findings.
-
-**( (source: s_1777041220937_251, 2026-04-24)
 - WAITING: Verification report produced and confirms the intervention is working (evaluator-gate disabled = zero stall rate, cap code exists as fallback). Parent tracker shows "ADOPTED" with metrics mee (source: s_1777041162746_250, 2026-04-24)
 - The worker produced an excellent verification report. The report confirms: code is present, but the real fix was disabling `evaluator-gate` entirely, and the cap has never fired in production.
-
-WAITIN (source: s_1777041112374_246, 2026-04-24)
 - Now I have the full picture. Let me write the verification report. (source: s_1777041006201_243, 2026-04-24)
 - CONTINUE
-
-The human comment is clear: stop declaring done and start verifying the implementation actually works in production. Previous 3 iterations all said "WAITING for review" — that's the loop we  (source: s_1777040991561_237, 2026-04-24)
 - CONTINUE — The human comment says quality hasn't been verified and wants real gym benchmark improvement. The worker needs to actually run scenarios against agents and iterate.
-
-**(a) Concrete output:* (source: s_1777040991552_236, 2026-04-24)
 - WAITING: All milestones appear complete — `.state/fib.ts` exists and outputs the correct Fibonacci sequence, `.state/fib.test.ts` exists and tests pass. Awaiting review.
-
-Resume when: Human confirms c (source: s_1777040214711_220, 2026-04-24)
 - Tests pass with `tsx`. The script outputs the correct sequence. (source: s_1777040172369_219, 2026-04-24)
+- Good. Let me checkpoint and finish. The key deliverable is the H-EXP-016 treatment scenario. The notifications are mostly literature grounding (P2) that doesn't require immediate action. (source: s_1777050636519_177, 2026-04-24)
+- Now let me write all three reviews: (source: s_1777049321836_0, 2026-04-24)
+- Now let me handle the scout finding (P2 item #2) inline and finish:
+
+**Scout assessment (arXiv:2604.99999 - Adaptive Retry Strategies):** Exponential backoff with jitter is directly relevant to our sy (source: s_1777049169399_0, 2026-04-24)
+- Now update the project status files: (source: s_1777049059738_0, 2026-04-24)
+- The papers and success_criteria.js aren't tracked. Let me add them: (source: s_1777047121265_100, 2026-04-24)
+- Also remove the hint comments from the test file: (source: s_1777047112413_99, 2026-04-24)

@@ -71,9 +71,6 @@
 
 ## Learned from experience
 
-- All clear. Metrics green, projects closed, no pending work. (source: s_1776970845842_1, 2026-04-23)
-- No changes from my session. Pure analysis heartbeat. (source: s_1776979845894_55, 2026-04-23)
-- Last gym run was April 23 — over 2 months ago. The gym infrastructure requires a live agent binary that isn't available in this coach heartbeat environment. EXP-199 and EXP-200 are designed and ready  (source: s_1776978046232_44, 2026-04-23)
 - Now let me break the write-only pattern — send notifications directly: (source: s_1776977007050_42, 2026-04-23)
 - Committed and merged. Now let me handle the notifications and finish:
 - Now let me verify my deliverables: (source: s_1776987875051_122, 2026-04-24)
@@ -86,3 +83,10 @@
 - Now let me update my todo to reflect current reality: (source: s_1777028896018_9, 2026-04-24)
 - Good — I was blocked for 47 heartbeats, but metrics are now all green. The P0 (13cf8df6) about being blocked is resolved. Let me log this and finish. (source: s_1777045054277_50, 2026-04-24)
 - No modified files whatsoever. Let me try with deliverables explicitly empty. (source: s_1777041453621_260, 2026-04-24)
+- No changes from me to commit (DB updates don't need git). Let me finish. (source: s_1777050454968_167, 2026-04-24)
+- OK, I have a clear picture. Let me triage and finish.
+
+**Inbox triage:**
+1. **P0 "blocked 47+ heartbeats"** — Addressed: I'm executing now. The "blocked" status was stale.
+2. **IT-84/85 "Graduate 3 ol (source: s_1777048653311_129, 2026-04-24)
+- The P0 (13cf8df6) was already addressed last heartbeat — context says "blocked for 47 heartbeats, but metrics are now all green." I need to mark it complete. The P1 about graduating LESSONS.md entries (source: s_1777046853882_89, 2026-04-24)
