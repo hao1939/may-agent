@@ -29,6 +29,8 @@ export interface ProjectInfo {
   owner: string;
   /** Parsed blocker reason (from Current State or Stop Reason) */
   blockerReason: string;
+  /** Parsed workflow field (default: "project") */
+  workflow: string;
 }
 
 export interface HealthAction {
@@ -136,6 +138,7 @@ export function scanAllProjects(agentsRoot: string): ProjectInfo[] {
         extractField(content, "Stop Reason") ||
         extractSection(content, "Current State") ||
         "";
+      const workflow = extractField(content, "Workflow").toLowerCase() || "project";
 
       projects.push({
         relPath: relative(agentsRoot, join(projectsDir, projDir)),
@@ -144,6 +147,7 @@ export function scanAllProjects(agentsRoot: string): ProjectInfo[] {
         status,
         owner,
         blockerReason,
+        workflow,
       });
     }
   }

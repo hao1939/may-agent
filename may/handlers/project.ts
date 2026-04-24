@@ -25,7 +25,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
   const agentsRoot = resolve(ctx.projectRoot, "agents");
   const stateFile = resolve(ctx.projectRoot, ".state/project-health-state.json");
   const inflightFile = resolve(ctx.projectRoot, ".state/project-inflight");
-  const workflowPath = join(agentsRoot, "shared", "workflows", "project.ts");
+  const workflowsDir = join(agentsRoot, "shared", "workflows");
 
   return async (event?: TriggerEvent) => {
     const now = Date.now();
@@ -108,24 +108,28 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       // launch-workflow
       if (launched >= MAX_LAUNCHES_PER_TICK) { ctx.log(`[project] Skip ${project.relPath} — cap reached`); continue; }
 
+      const workflowName = project.workflow || "project";
+      const workflowPath = join(workflowsDir, `${workflowName}.ts`);
+
       let wfMod: any;
       try {
         wfMod = await import(workflowPath + "?t=" + ++importCounter);
         if (typeof wfMod.execute !== "function") throw new Error("No execute()");
-      } catch (err) { ctx.log(`[project] ERROR loading workflow: ${err}`); return; }
+      } catch (err) { ctx.log(`[project] ERROR loading workflow "${workflowName}": ${err}`); continue; }
 
       const projectDir = dirname(project.projectFile);
       const task = `project: ${projectDir}\nagent: ${project.owner}\ngoal: see project file`;
       const runId = generateRunId();
-      ctx.log(`[project] Launching ${project.relPath}: ${action.reason}`);
+      ctx.log(`[project] Launching ${project.relPath} (workflow: ${workflowName}): ${action.reason}`);
 
-      const wfRun = { runId, workflow: "project", task, parentSessionId: null as string | null, agent: project.owner, startedAt: Date.now(), status: "running", steps: [] as Array<{ sessionId: string; agent: string; status: string }> };
+      const wfRun = { runId, workflow: workflowName, task, parentSessionId: null as string | null, agent: project.owner, startedAt: Date.now(), status: "running", steps: [] as Array<{ sessionId: string; agent: string; status: string }> };
       saveWorkflowRunFile(ctx.projectRoot, wfRun);
 
       const workflowCtx = {
         emit: (e: any) => ctx.emit(e), getDb: () => ctx.getDb(), log: (m: string) => ctx.log(m),
         notify: (m: string) => ctx.notify(m), persistDir: ctx.persistDir, projectRoot: ctx.projectRoot,
         agentsRoot: ctx.agentsRoot, task, agent: project.owner,
+        dispatchEvent: (eventType: string, data?: Record<string, unknown>) => { try { ctx.dispatchEvent?.(eventType, data); } catch { /* skip */ } },
         runFunction: async (label: string, fn: () => Promise<string>) => {
           const start = Date.now(); let output: string; let hadError = false; let errorMsg: string | undefined;
           try { output = await Promise.race([fn(), new Promise<never>((_, rej) => setTimeout(() => rej(new Error("timeout")), 30_000))]); if (output.length > 50_000) output = output.slice(0, 50_000) + "\n…(truncated)";
@@ -141,6 +145,51 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         summarize: (result: any) => { const t = result?.lastAssistantText ?? result?.summary ?? ""; return t.length > 1500 ? t.slice(0, 1500) + "…" : t; },
         done: (summary: string) => ({ type: "done" as const, summary }),
         escalate: (reason: string, context?: unknown) => ({ type: "escalate" as const, reason, context }),
+        createSession: async (opts: { systemPrompt: string; tools: "full" | "readonly"; label?: string }) => {
+          const { Agent } = await import("@mariozechner/pi-agent-core");
+          const { getModel } = await import("@mariozechner/pi-ai");
+          const { createCodingTools } = await import("../../../src/lib/tools/coding.ts");
+          const { createReadTool } = await import("../../../src/lib/tools/read.ts");
+
+          const MODEL_BASE_URL = process.env.MODEL_BASE_URL || "http://localhost:4000";
+          const LITELLM_API_KEY = process.env.LITELLM_API_KEY || process.env.ANTHROPIC_API_KEY || "not-needed";
+          const model = {
+            ...getModel("anthropic", "claude-sonnet-4-20250514"),
+            id: "claude-opus-4.6",
+            baseUrl: MODEL_BASE_URL,
+            contextWindow: 200000,
+          };
+
+          const tools = opts.tools === "readonly"
+            ? [createReadTool(ctx.projectRoot)]
+            : createCodingTools(ctx.projectRoot, { agentName: opts.label || "worker" });
+
+          const agentInstance = new Agent({
+            initialState: { systemPrompt: opts.systemPrompt, model, tools: tools as any[] },
+            getApiKey: () => LITELLM_API_KEY,
+          });
+
+          agentInstance.subscribe(async (event: any) => {
+            if (event.type === "tool_execution_start") {
+              ctx.log(`  [${opts.label || "session"}] 🔧 ${event.toolName}`);
+            }
+          });
+
+          return {
+            async prompt(message: string) { await agentInstance.prompt(message); },
+            lastText() {
+              const msgs = agentInstance.state.messages;
+              for (let i = msgs.length - 1; i >= 0; i--) {
+                const m = msgs[i] as any;
+                if (m.role === "assistant") {
+                  return (m.content || []).filter((c: any) => c.type === "text").map((c: any) => c.text).join("\n");
+                }
+              }
+              return "";
+            },
+            close() { /* agent GC'd naturally */ },
+          };
+        },
       };
 
       inflight.add(project.relPath);
