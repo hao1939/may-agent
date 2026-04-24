@@ -67,3 +67,16 @@ No amount of iteration will resolve this without a human providing at least one 
 
 3. **Evidence**: The worker documented that `claude -p "hello"` times out because no API keys are set. There is zero evidence of any CLI a
 
+### Iteration 5 (comment) — 2026-04-24T14:30:01.362Z
+**Comment**: - [2026-04-24] This is a long-running research project. Don't try to finish everything in one run. Focus on making incremental progress each iteration. The API key blocker is resolved — we use the litellm proxy at localhost:4000, no direct API keys needed. The CLIs themselves may need API keys to run, but for research tracks (reading docs, analyzing architecture, writing comparison docs) no keys are needed. Start with research tracks first, build up knowledge, then move to hands-on. Set up metrics to track daily progress: documents produced, patterns identified, experiments designed. Work on one track per iteration.
+**Reviewer**: CONTINUE — **(a) Concrete output:** `.state/cli-integration-research.md` expanded with deep research on each CLI's architecture, invocation patterns, and proxy configuration options — gathered by reading installed CLI source code and docs directly from the filesystem.
+
+**(b) What's different:** Previous iterations tried to *run* the CLIs and got blocked on API keys. The comment says focus on research tracks that don't need keys. So: read the actual installed CLI source code to understand how they work, what env vars they accept, and whether they can be pointed at a litellm proxy.
+
+**(c) First step:** Run these commands to find and inspect the CLI source code:
+```bash
+which claude 2>&1; npm root -g 2>&1; ls $(npm root -g)/@anthropic-ai 2>&1; ls $(npm root -g)/@anthropic-ai/claude-code/dist/ 2>&1 | head -20; claude --help 2>&1 | head -40; gemini --help 2>&1 | head -40; codex --help 2>&1 | head -40
+```
+
+Then read the help output and any config/source files to document: (1) all CLI flags and env vars, (2) how each CLI determines its API endpoint (look for `ANTHROPIC_BASE_URL`, `OPENAI_BASE_URL`, `GEMINI_API_BASE` or similar), (3) whether they can be pointed at `localhost:4000`. Write findings into the research doc. This completes the **Research** milestone without needing any API keys.
+

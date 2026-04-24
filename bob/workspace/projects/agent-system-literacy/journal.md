@@ -74,3 +74,16 @@ CONTINUE — The baseline analysis already identifies failures (help-blocked-age
 **Worker**: Good, the skill exists but doesn't explicitly teach the `notify`/`fork` pattern for the contacted_agent check. Let me create all three files now.
 **Reviewer**: WAITING — All 13/13 milestones complete, awaiting human review to mark project done.
 
+### Iteration 11 (comment) — 2026-04-24T14:29:58.796Z
+**Comment**: - [2026-04-24] Milestones are checked but the quality hasn't been verified. This is a long-running project — make incremental progress each iteration. Verify the skills actually teach agents correctly by checking gym scenario pass rates. If pass rates are low, iterate on the skills. Track which agents fail which scenarios and improve accordingly. Don't declare done until gym benchmarks show real improvement.
+**Reviewer**: CONTINUE — — The human comment says quality hasn't been verified and wants real gym benchmark improvement. The worker needs to actually run scenarios against agents and iterate.
+
+**(a) Concrete output:** 
+1. `.state/gym/quality-verification.md` — Run each scenario through the benchmark runner, capture actual pass/fail results, identify specific failures
+2. Update skill files based on real failures found
+3. `.state/gym/improvement-results.md` — Re-run after skill updates, show before/after
+
+**(b) What's different:** Previous iterations created infrastructure and declared done. Now we're doing the quality loop the human requested: run → analyze failures → fix skills → re-run → show improvement.
+
+**(c) First step:** Run `cat .state/gym/benchmark-runner.sh && ls .state/gym/scenarios/` to understand the runner, then execute it against all scenarios and capture real results.
+

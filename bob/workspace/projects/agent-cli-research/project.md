@@ -1,13 +1,13 @@
 # Project: Agent CLI Research — Claude Code, Gemini CLI, Codex
 
-**Status**: blocked
+**Status**: active
 **Owner**: bob
+**Workflow**: master-worker
 **Priority**: P2
-**Iteration**: 4
-**Health**: 3/10 (BLOCKED)
-**Blocker**: No API keys (ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY) configured in container. CLIs are installed (`/usr/bin/claude`, `/usr/bin/gemini`, `/usr/bin/codex`) but cannot authenticate. Need Hao to configure at least one key.
-**Resume condition**: Any of the three API keys is set in the environment.
+**Iteration**: 5
 
+**Stop Reason**: 
+**Resume Condition**: 
 ## Goal
 Use production agent CLIs (Claude Code, Gemini CLI, OpenAI Codex) as tools our agents can invoke. Research how they work, install them, and integrate them as callable tools from our agent system.
 

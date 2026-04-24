@@ -1,13 +1,13 @@
 # Project: PWI — Evaluator Tuning Experiment
 
-**Status**: waiting
+**Status**: active
 **Owner**: bob
+**Workflow**: master-worker
 **Priority**: P1
-**Iteration**: 3
-**Health**: 7/10
+**Iteration**: 4
 
-**Stop Reason**: All 4 milestones are complete. Project.md already shows status "done" with all milestones checked off, including "Implement and test on 2+ projects". The intervention (simplified 3-criterion rubric + 
-**Resume Condition**: Human/May reviews and marks project done.
+**Stop Reason**: 
+**Resume Condition**: 
 ## Goal
 Reduce project stall rate caused by evaluator rejection loops. The pwi-smart-context experiment showed evaluator scored <7 three times despite reviewer marking DONE — blocking the project for multiple iterations. Hypothesis: evaluator criteria are miscalibrated for "good enough" completion.
 
@@ -43,3 +43,5 @@ Waiting: All 4 milestones are complete. Project.md already shows status "done" w
 - Workflow code: agents/shared/workflows/project.ts
 - Parent tracker: agents/bob/workspace/projects/project-workflow-improvement/project.md
 - Evidence: pwi-smart-context evaluator rejection logs
+
+## Comments
