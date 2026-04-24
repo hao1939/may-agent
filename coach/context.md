@@ -71,8 +71,6 @@
 
 ## Learned from experience
 
-- ### scout: FM-3.3
-- Good. Let me verify the work and finish. (source: s_1776972645898_10, 2026-04-23)
 - All clear. Metrics green, projects closed, no pending work. (source: s_1776970845842_1, 2026-04-23)
 - No changes from my session. Pure analysis heartbeat. (source: s_1776979845894_55, 2026-04-23)
 - Last gym run was April 23 — over 2 months ago. The gym infrastructure requires a live agent binary that isn't available in this coach heartbeat environment. EXP-199 and EXP-200 are designed and ready  (source: s_1776978046232_44, 2026-04-23)
@@ -86,3 +84,5 @@
 - Good evidence. The session shows both violation and self-correction of "simple first". The agent explicitly says *"I think I'm overcomplicating this"* after many iterations trying to engineer clean nu (source: s_1777037973153_164, 2026-04-24)
 - Hmm, already clean. The check might be stale. (source: s_1777032454813_28, 2026-04-24)
 - Now let me update my todo to reflect current reality: (source: s_1777028896018_9, 2026-04-24)
+- Good — I was blocked for 47 heartbeats, but metrics are now all green. The P0 (13cf8df6) about being blocked is resolved. Let me log this and finish. (source: s_1777045054277_50, 2026-04-24)
+- No modified files whatsoever. Let me try with deliverables explicitly empty. (source: s_1777041453621_260, 2026-04-24)
