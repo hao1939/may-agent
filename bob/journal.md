@@ -1,5 +1,23 @@
 # Journal
 
+## 2026-08-01 (Heartbeat — H-EXP-015 Phase 1 Complete)
+
+**Context**: All metrics green. Gym-leverage 10/10 done last session.
+
+### Actions
+
+1. **H-EXP-015 Phase 1 complete (3/3 scenarios)** — Built remaining 2 cognitive load pressure scenarios via forked sessions:
+   - `agents/gym/scenarios/multi-bug-review/` — QA agent reviews 3 PRs (1 correct, 1 off-by-one, 1 test gap). 8 success criteria checks.
+   - `agents/gym/scenarios/research-and-report/` — Agent reads 3 papers, writes synthesis report, must call finish(). 8 success criteria checks.
+   - Combined with existing `heartbeat-pressure`, H-EXP-015 Phase 1 is done.
+
+2. **Notification triage** — All P2 notifications (DD#875 StructMem, DD#877 SWARM, EXP-216 SUPERSEDED) already addressed in previous sessions. DD#878 already integrated into gym feedback loop. H-EXP-015 literature grounding noted.
+
+### What's next
+- Execute H-EXP-015 Phase 2: run each scenario 5× with current configs, measure compliance rates
+- Compare to single-task equivalents (Phase 3)
+- EXP-178 (Difficulty-Adaptive Guard) also ready to run
+
 ## 2026-07-31 (Heartbeat — H-077 Closeout + DD#875 Integration)
 
 **Context**: All metrics green. Two scout notifications about DD#875 (StructMem, ACL 2026).
