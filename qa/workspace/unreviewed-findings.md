@@ -1,24 +1,48 @@
 # Unreviewed findings (QA heartbeat)
 
-## Environment / repo status
-- Project root `/app` is **not** a git repository. Git history exists under `/app/agents` only. (evidence: `find .. -maxdepth 3 -name .git` shows `../app/agents/.git`)
+## Scope of this heartbeat
+- No production alerts or QA projects were active.
+- Investigated **Convention Alert**: **C1.4** and **C8.2** both at 60%.
+- Performed a lightweight repo verification sweep.
 
-## Recent change spotted
-- Latest commit in `/app/agents`: `4120d9b5a coach: heartbeat - EXP-201 skill activation experiment designed`.
-  - Only file changed: `agents/coach/last-session.md` (evidence: `git show --name-only --oneline -1`).
+## Findings
 
-## Verification blockers (CRITICAL for strict QA gate)
-- Cannot run mandatory `./node_modules/.bin/tsc --noEmit` at repo root because `node_modules` does not exist in `/app` (evidence: `/bin/bash: ./node_modules/.bin/tsc: No such file or directory`).
-- Attempting to run TypeScript in `/app/agents` also fails because `typescript` is **not installed** in that workspace despite being listed in `devDependencies`.
-  - `npm ls typescript` returns `(empty)`.
-  - `node_modules/typescript` not found.
-  - `npx tsc --noEmit` errors: "This is not the tsc command you are looking for".
-- Cannot run mandatory `./node_modules/.bin/vitest --run` in `/app/agents`: binary missing; `vitest` not installed. (evidence: `./node_modules/.bin/vitest: No such file or directory`)
+### 1) Pre-existing toolchain mismatch blocks mandatory QA checks (CRITICAL)
+**What I expected (per QA SOUL + qa/context.md):**
+- `./node_modules/.bin/tsc --noEmit`
+- `./node_modules/.bin/vitest --run`
 
-## File content check
-- Read `agents/coach/last-session.md` (first 200 lines). It appears incomplete (ends at: "Now let me verify the commit:") — likely truncated content or unfinished generation.
+**What I observed:**
+- Project root `/app` is **not** a git repo; only `/app/agents` is.
+- `/app` has `node_modules/`, but does **not** have `./node_modules/.bin/tsc` or `./node_modules/.bin/vitest`.
 
-## Suggested follow-ups
-1. Ensure the correct working directory for QA checks (root vs `agents/`).
-2. If `/app/agents` is the intended TS project, install dev deps (`npm ci`) so `tsc` is available.
-3. Clarify whether vitest is expected in this repo; if so, add it to `devDependencies` and ensure tests exist.
+**Evidence:**
+- `./node_modules/.bin/tsc --noEmit` → `/bin/bash: ... No such file or directory` (exit 127)
+- `./node_modules/.bin/vitest --run` → `/bin/bash: ... No such file or directory` (exit 127)
+
+**Impact:**
+- QA cannot execute its mandatory verification steps in this environment, which directly contributes to convention compliance issues (sessions end without required evidence).
+
+**Recommendation:**
+- Clarify which repo is the authoritative TS/Vitest workspace for QA gating.
+- Ensure the chosen workspace includes `typescript` + `vitest` and installs them (e.g., add to devDependencies + `npm ci`/`bun install`).
+
+### 2) Recent commit touches multiple agent context/last-session files; no code/tests to verify (IMPORTANT)
+**Evidence:**
+- `cd agents && git show --name-only --oneline -1 3544a499f` lists only markdown updates:
+  - `bob/context.md`, `bob/last-session.md`, `coach/last-session.md`, `evaluator/last-session.md`, `optimizer/last-session.md`, `qa/context.md`, `scout/context.md`, `tech-lead/context.md`, `tech-lead/last-session.md`
+
+**Risk:**
+- Context docs can drift; but there’s no runnable code here to validate beyond consistency.
+
+### 3) Example of potentially incomplete last-session doc (MINOR)
+**Evidence:**
+- `agents/coach/last-session.md` ends with “Let me verify my deliverables and finish:” (no subsequent content).
+
+**Risk:**
+- Suggests generator may cut off or fail to append final verification lines; could indirectly affect C8.2 (missing completed_items) and C1.4 (missing finish discipline).
+
+## Convention Alert triage (act/delegate/dismiss/escalate)
+- **C1.4 (always call finish())**: **ACT** — I will comply in this heartbeat (finish() with required fields). Root cause likely also includes toolchain mismatch preventing last-step verification.
+- **C8.2 (include summary + completed_items)**: **ACT** — include both in finish(). Also recommend updating any agent templates/prompts that omit completed_items.
+
