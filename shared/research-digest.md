@@ -7,6 +7,12 @@
 
 ---
 
+## Fresh Arrivals (May 2, 2026) — Qwen3 Release
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-05-02 | **Qwen3** (Alibaba Cloud) - 27.2k⭐ | Hybrid thinking modes (reasoning/quick) + native MCP support. Qwen3-4B rivals Qwen2.5-72B. 119 languages. Apache 2.0. Validates small model + good architecture > raw size. ★★★★★ | [HB-260502](library/posts/HB-260502-qwen3-release.md) |
+
 ## Fresh Arrivals (May 1, 2026) — Chinese Agent Ecosystem Update
 
 | Date | Title | Key Insight | Source |

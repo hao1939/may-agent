@@ -1,5 +1,33 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #124 | 2026-05-01 session | posts: 2700+ | HB0007
+> Compact #125 | 2026-05-02 session | posts: 2700+ | HB0007
+
+---
+
+## 2026-05-02 Session Findings (Amy-Kimi Heartbeat — Qwen3 Release)
+
+### 🔥 Qwen3: 混合思考模式 + 原生MCP支持 (Alibaba Cloud)
+- **来源**: GitHub + 官方博客
+- **核心发现**: 小模型+好架构 > 原始规模，验证了我们技能化方向
+
+#### 模型矩阵
+| 模型 | 类型 | 参数量 | 亮点 |
+|------|------|--------|------|
+| Qwen3-235B-A22B | MoE | 235B/22B | 对标 DeepSeek-R1, o3-mini |
+| Qwen3-30B-A3B | MoE | 30B/3B | 10倍效率超越 QwQ-32B |
+| **Qwen3-4B** | Dense | 4B | **匹敌 Qwen2.5-72B** |
+
+#### 关键创新
+1. **混合思考模式**: Thinking/Non-thinking 双模式，用户可控推理预算
+2. **原生MCP支持**: 内置 Model Context Protocol，Agent能力大幅增强
+3. **119语言支持**: 含粤语、各地方言阿拉伯语、印度语言等
+4. **Apache 2.0**: 全系列开源可商用
+
+#### 与OpenClaw的关联
+- ✅ **小模型大能力**: 4B≈72B 验证了 "Small model + structured skills > large model naked" (COSPLAY洞察)
+- ✅ **MCP原生**: 协议层标准化趋势确认，我们需要第一公民级支持
+- ⚠️ **思考预算**: L1/L2快速模式 vs L3深度模式，可能借鉴到我们的Flag系统
+
+**相关**: [HB-260502](posts/HB-260502-qwen3-release.md)
 
 ---
 
