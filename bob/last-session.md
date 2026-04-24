@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777063236556_444
-- **Status:** done
-- **When:** 2026-04-24T21:28:01.914Z
-- **Duration:** 47m25s
+- **Session:** s_1777061436523_405
+- **Status:** interrupted
+- **When:** 2026-04-24T21:44:51.313Z
+- **Duration:** 94m14s
 
 ## What Happened
-Now let me record these results in the experiment file and update with analysis.
+G2 × sql-injection: 6/15 = 40%. Now G4:
