@@ -26,7 +26,7 @@ function searchProducts(query) {
   // Build the SQL query with the user's search term (escaped to prevent SQL injection)
   const sql = `SELECT * FROM products WHERE name LIKE '%${escapeSQL(query)}%'`;
   
-  const rows = executeQuery(sql);
+  const rows = executeQuery(sql) || [];
   if (!rows || rows.length === 0) return [];
   
   // Format results for the API response
@@ -48,7 +48,7 @@ function searchProducts(query) {
 function searchByCategory(category) {
   const sql = `SELECT * FROM products WHERE category = '${escapeSQL(category)}'`;
   
-  const rows = executeQuery(sql);
+  const rows = executeQuery(sql) || [];
   if (!rows || rows.length === 0) return [];
   
   const formatted = rows.map(row => ({
@@ -71,7 +71,7 @@ function getProductById(id) {
   const sql = `SELECT * FROM products WHERE id = ${Number(id)}`;
   
   // This one correctly handles null
-  const rows = executeQuery(sql);
+  const rows = executeQuery(sql) || [];
   if (!rows || rows.length === 0) return null;
   
   const row = rows[0];
