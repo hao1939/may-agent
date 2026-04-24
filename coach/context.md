@@ -71,8 +71,6 @@
 
 ## Learned from experience
 
-- I didn't write/edit any files — my deliverables are notifications. Let me do an explicit verification read: (source: s_1776987045945_110, 2026-04-24)
-- Interesting — amy has the smallest context (2451B) but worst compliance (92.7%). may has the largest (10423B) but great compliance (97.9%). No bloat correlation yet. The issue is model-level defaults, (source: s_1776985245948_100, 2026-04-24)
 - Good evidence. Across sessions that use `finish()`, verification_evidence is consistently present. Let me now create the tracker files.
 - Good evidence. The session shows both violation and self-correction of "simple first". The agent explicitly says *"I think I'm overcomplicating this"* after many iterations trying to engineer clean nu (source: s_1777037973153_164, 2026-04-24)
 - Hmm, already clean. The check might be stale. (source: s_1777032454813_28, 2026-04-24)
@@ -84,15 +82,7 @@
 - The P0 (13cf8df6) was already addressed last heartbeat — context says "blocked for 47 heartbeats, but metrics are now all green." I need to mark it complete. The P1 about graduating LESSONS.md entries (source: s_1777046853882_89, 2026-04-24)
 - Nothing to commit from me. Let me finish. (source: s_1777059454995_358, 2026-04-24)
 - OK, let me stop investigating and wrap up. My metrics are healthy, my one project is CLOSED, and I've:
-1. Triaged all 5 inbox items
-2. Delegated finish-guard wiring to tech-lead (the most impactful pe (source: s_1777057655017_320, 2026-04-24)
 - All metrics green, project closed, LESSONS.md already clean. Let me triage inbox and finish.
-
-**Inbox triage:**
-
-1. **P0 request 13cf8df6 still CREATED** — Stale alert. Already addressed in previous h (source: s_1777055855003_282, 2026-04-24)
 - OK, I have a clear picture. Let me triage inbox and finish.
-
-**Inbox triage:**
-1. **P0 "13cf8df6 still CREATED"** — Stale alert, already addressed last heartbeat (metrics all green now). **Dismiss.**
- (source: s_1777054055003_245, 2026-04-24)
+- Amy already has the instruction but still fails 67% of the time — classic text-instruction-doesn't-fix-structural-behavior pattern (consistent with EXP-188 finding). This is worth noting but designing (source: s_1777066655203_512, 2026-04-24)
+- Now let me escalate the P0 items to May: (source: s_1777066634825_511, 2026-04-24)
