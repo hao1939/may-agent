@@ -1,8 +1,8 @@
 # Project: Fibonacci Script
 
-**Status**: active
-**Stop Reason**: All milestones complete, awaiting review. Create `.state/fib.ts`, Script outputs correct Fibonacci sequence, Create `.state/fib.test.ts` — all verified and passing.
-**Iteration**: 2
+**Status**: waiting
+**Stop Reason**: — All milestones complete, awaiting review. The comment "test comment from API" appears to be a test/no-op comment requiring no action.
+**Iteration**: 3
 **Owner**: bob
 **Workflow**: master-worker
 
@@ -16,6 +16,5 @@ Create a script at `.state/fib.ts` that computes and prints the first 10 Fibonac
 - [x] Create `.state/fib.test.ts` with at least 2 test cases
 
 ## Current State
-Waiting: All milestones complete, awaiting review. Create `.state/fib.ts`, Script outputs correct Fibonacci sequence, Create `.state/fib.test.ts` — all verifie
+Waiting: — All milestones complete, awaiting review. The comment "test comment from API" appears to be a test/no-op comment requiring no action.
 ## Comments
-- [2026-04-24] (web) test comment from API
