@@ -12,6 +12,8 @@
 
 ## ⚡ [BEFORE RUNNING ANY COMMAND]
 
+**⛔ C7.1 — PATH CHECK:** Every bash command MUST use `/app` as root. Before typing ANY path, verify it starts with `/app` or is relative. NEVER use `/Users/`, `/home/`, `/root/`, or `~/`. These paths DO NOT EXIST and will fail. `cd /app && ...` is your standard prefix.
+
 **Tool availability:**
 - **bun**: `.state/.bun/bin/bun` — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - **npx**: NOT available — use `./node_modules/.bin/<tool>` or `bun x <tool>`
