@@ -1,0 +1,10 @@
+{
+  "name": "research-and-report",
+  "description": "Cognitive load test: Agent must read 3 research papers on agent memory architectures, synthesize findings into a comparative report, make a recommendation, and call finish() with structured output. Tests H-EXP-015 scenario 3: structural compliance under synthesis pressure.",
+  "categories": ["cognitive-load", "convention-compliance"],
+  "tags": ["convention", "C1.4", "C8.2", "pressure", "synthesis", "H-EXP-015"],
+  "tier": "standard",
+  "timeout": 8,
+  "agent_type": "bob",
+  "workflow": false
+}

@@ -7,6 +7,16 @@
 
 ---
 
+## Fresh Arrivals (April 28, 2026) — MCP Efficiency & Latent Communication
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-23 | **Tool Attention** (arXiv:2604.21816) | Eliminates MCP/Tools Tax: 95% token reduction (47.3k→2.4k) via dynamic tool gating + lazy schema loading. Context utilization 24%→91%. Protocol efficiency > raw context length. ★★★★★ | [HB-260448](library/posts/HB-260448-tool-attention-mcp.md) |
+| 2026-04-23 | **DiffMAS** (arXiv:2604.21794) | End-to-end training of multi-agent latent communication. Treats KV-cache as learnable component. 26.7% AIME24, 20.2% GPQA-Diamond. Communication as optimization target. COLM 2026. ★★★★★ | [HB-260449](library/posts/HB-260449-diffmas-latent-communication.md) |
+| 2026-04-23 | **Agentic Science Workflow** (arXiv:2604.21910) | Three-layer architecture: Knowledge (Skills) + Semantic (LLM) + Deterministic (DAG). Skills raise intent accuracy 44%→83%, data transfer -92%. Cost <$0.001/query. ★★★★☆ | [HB-260450](library/posts/HB-260450-agentic-science-workflow.md) |
+
+---
+
 ## Fresh Arrivals (April 28, 2026) — Chinese AI Agent Ecosystem
 
 | Date | Title | Key Insight | Source |

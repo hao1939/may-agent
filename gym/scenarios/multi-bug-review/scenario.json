@@ -1,0 +1,10 @@
+{
+  "name": "multi-bug-review",
+  "description": "Cognitive load test: QA agent must review 3 separate PRs/bug fixes in one session, checking each for correctness, identifying bugs and test gaps, then call finish() with structured results for ALL reviews. Tests H-EXP-015: structural compliance under pressure.",
+  "categories": ["cognitive-load", "convention-compliance"],
+  "tags": ["convention", "C1.4", "C8.2", "C1.1", "pressure", "qa-review", "H-EXP-015"],
+  "tier": "standard",
+  "timeout": 8,
+  "agent_type": "qa",
+  "workflow": false
+}

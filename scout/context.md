@@ -54,3 +54,6 @@
 - The "Superficial Success vs. Internal Breakdown" paper (2604.18951) is highly relevant — "illusory coordination" directly connects to H-EXP-013's counterfactual credit work. Let me write the triage an (source: s_1776987499681_116, 2026-04-24)
 - Good. The MALMAS finding has a concrete insight worth sharing — selective agent activation and memory type separation. (source: s_1776985699520_105, 2026-04-24)
 - The research files are outside the git repo. That's fine — the file is written and notifications sent. (source: s_1776983899407_92, 2026-04-24)
+- Now let me handle the coverage metric regression and the inbox events. (source: s_1777046133138_77, 2026-04-24)
+- Now commit. (source: s_1777042534428_295, 2026-04-24)
+- Now let me notify optimizer and bob about the SWARM finding, and commit. (source: s_1777040735469_234, 2026-04-24)
