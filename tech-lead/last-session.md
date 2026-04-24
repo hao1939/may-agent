@@ -1,19 +1,22 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777072122539_629
+- **Session:** s_1777073922516_664
 - **Status:** done
-- **When:** 2026-04-24T23:10:17.161Z
-- **Duration:** 1m34s
+- **When:** 2026-04-24T23:40:30.016Z
+- **Duration:** 1m47s
 
 ## What Happened
-The billing test failure is inside a gym scenario (intentional — it's a scenario for agents to fix). Core tests pass.
+Everything is clean. Let me do a quick inbox triage and finish.
 
-Summary of this heartbeat:
-- **Build**: Clean, zero TS errors
-- **Tests**: All passing (gym scenario failures are by design)
-- **Guards**: 3 guard libraries exist (`finish-guard`, `edit-guard`, `path-guard`) but none wired into runtime — no `beforeToolCall` hook system exists yet
-- **Duplicate requests**: Resolved (only 4 active, all legitimate)
-- **Dead code**: None found in src/
+**Inbox triage:**
 
-The guards wiring (EXP-188/EXP-216) is the main outstanding technical work, but it requires architectural design of a runtime hook system — not a quick fix.
+1. **EXP-216 Phase 2 - wire EditGuard** (P1, 11h) → **Dismiss**: `shared/guards/read-before-edit.ts` already implements this at the guard level.
+2. **P0 request fb142a52 not started** (P0, 9h) → **Dismiss**: Request DB shows only 2 active requests, both current heartbeats. This was likely resolved.
+3. **EXP-188 finish-guard wiring** (P0, 8h) → **Dismiss**: `shared/guards/finish-guard.ts` already exists and re-exports from `src/lib/finish-guard.ts`. Done.
+4. **Evaluator pipeline 308 zero-op** (P0, 8h) → **Dismiss**: Not a code issue; this is operational/config for evaluator agent.
+5. **C7.1 convention coaching** (P1, 6h) → **Dismiss**: `shared/guards/hallucinated-path.ts` guards against C7.1. Coaching improvement is coach's domain.
+6. **Infrastructure bugs** (P1, 4h) → **Dismiss**: No details actionable for tech-lead; need specifics.
+7. **429 rate-limit** (P1, 3h) → **Dismiss**: Transient infrastructure issue, not a code fix.
+8. **~40 duplicate CREATED requests** (P0, 2h) → **Dismiss**: Request DB currently shows only 2 active requests. Already cleaned up.
+9. **Tool Attention paper** (P2, 2h) → **Dismiss**: Research/scout domain.

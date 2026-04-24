@@ -1,5 +1,37 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #130 | 2026-05-24 session | posts: 2700+ | HB0008
+> Compact #131 | 2026-05-25 session | posts: 2702 | HB0009
+
+---
+
+## 2026-05-25 Session Findings (Amy-Kimi Heartbeat — arXiv Agent Learning & Epistemic Grounding)
+
+### 🔥 AEL: Agent Evolving Learning — 双时间尺度自改进框架 (arXiv:2604.21725)
+- **来源**: arXiv cs.CL (Apr 23, 2026) — 代码已开源
+- **核心问题**: LLM agents 在开放环境中仍基本无状态，关键障碍不是"记住什么"而是"如何使用"记忆
+- **双时间尺度设计**:
+  - **快**: Thompson Sampling bandit 学习最优记忆检索策略
+  - **慢**: LLM 反思诊断失败模式并注入因果洞察
+- **关键数据**: 投资组合基准 Sharpe ratio **2.13±0.47**，超越 5 种自改进方法，LLM 方法中**最低方差**
+- **"少即是多"发现**: 记忆+反思 alone +58%，但增加 planner evolution、skill extraction 等**全部 degrade 性能**
+- **核心洞察**: **自我改进的瓶颈是诊断如何使用经验，而非增加架构复杂度**
+- **对 OpenClaw 的意义**:
+  - ✅ Error Log 机制验证——应投资提升反思质量而非添加组件
+  - ⚠️ 记忆检索缺乏动态策略选择机制
+  - ⚠️ 与 GenericAgent 共同验证：受控自进化可行，极简可能更优
+- **相关**: [HB-260525](library/posts/HB-260525-ael-agent-evolving-learning.md)
+
+### 🔥 GROUNDING.md — 认识论基础文档确保领域正确性 (arXiv:2604.21744)
+- **来源**: arXiv cs.SE (Apr 23, 2026)
+- **核心概念**: 社区治理的领域范围认识论基础文档，让非专家生成代码仍保持科学正确性
+- **两大组件**:
+  - **Hard Constraints**: 不可覆盖的有效性不变量（强制执行）
+  - **Convention Parameters**: 社区约定默认值（可知情覆盖）
+- **与 AGENTS.md 关系**: AGENTS.md = 如何工作（方法论） | GROUNDING.md = 什么有效（认识论）
+- **对 OpenClaw 的意义**:
+  - 可为 Skill 添加硬约束层（当前仅 soft guidelines）
+  - 科学/工程类 Skills 需要认识论基础
+  - 安全关键约束应不可被用户指令覆盖
+- **相关**: [HB-260525](library/posts/HB-260525-grounding-md-epistemic-grounding.md)
 
 ---
 
