@@ -36,9 +36,15 @@ function extractField(content: string, field: string): string {
 }
 
 function extractSection(content: string, heading: string): string {
-  const re = new RegExp(`^## ${heading}\\s*\\n([\\s\\S]*?)(?=\\n## |$)`, "m");
-  const m = content.match(re);
-  return m ? m[1].trim() : "";
+  const lines = content.split("\n");
+  let start = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (new RegExp(`^## ${heading}`).test(lines[i])) { start = i + 1; continue; }
+    if (start >= 0 && /^## /.test(lines[i])) {
+      return lines.slice(start, i).join("\n").trim();
+    }
+  }
+  return start >= 0 ? lines.slice(start).join("\n").trim() : "";
 }
 
 interface MilestoneState {
