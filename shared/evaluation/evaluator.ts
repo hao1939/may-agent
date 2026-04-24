@@ -899,28 +899,9 @@ export async function evaluateStandaloneSession(
   let responseText = evalResult?.lastAssistantText ?? "";
 
   // Fallback: if waitFor returned empty lastAssistantText (race condition with
-  // autoClose:"immediate"), read the session messages directly to extract the response.
-  // This prevents a spurious retry that doubles evaluator session count (EXP-FIX-001).
-  if (!responseText && ctx.readSessionMessages) {
-    try {
-      const msgs = ctx.readSessionMessages(evalSessionId);
-      if (msgs && msgs.length > 0) {
-        const lastMsg = msgs[msgs.length - 1];
-        if (lastMsg.role === "assistant") {
-          const content = lastMsg.content;
-          if (typeof content === "string") {
-            responseText = content;
-          } else if (Array.isArray(content)) {
-            const textBlock = content.find(
-              (b: any) => b.type === "text" && typeof b.text === "string",
-            );
-            if (textBlock) responseText = (textBlock as any).text;
-          }
-        }
-      }
-    } catch {
-      // Fallback failed — proceed with empty responseText, retry will handle it
-    }
+  // autoClose:"immediate"), try all message sources (EXP-FIX-001 + EXP-FIX-002).
+  if (!responseText) {
+    responseText = extractAssistantText(ctx, evalSessionId);
   }
 
   let parsed = parseTaskEvaluation(responseText);
@@ -934,27 +915,9 @@ export async function evaluateStandaloneSession(
     const retryResult = await manager.waitFor(retrySessionId);
     let retryText = retryResult?.lastAssistantText ?? "";
 
-    // Same fallback for retry session (EXP-FIX-001)
-    if (!retryText && ctx.readSessionMessages) {
-      try {
-        const msgs = ctx.readSessionMessages(retrySessionId);
-        if (msgs && msgs.length > 0) {
-          const lastMsg = msgs[msgs.length - 1];
-          if (lastMsg.role === "assistant") {
-            const content = lastMsg.content;
-            if (typeof content === "string") {
-              retryText = content;
-            } else if (Array.isArray(content)) {
-              const textBlock = content.find(
-                (b: any) => b.type === "text" && typeof b.text === "string",
-              );
-              if (textBlock) retryText = (textBlock as any).text;
-            }
-          }
-        }
-      } catch {
-        // Fallback failed
-      }
+    // Same fallback for retry session (EXP-FIX-002)
+    if (!retryText) {
+      retryText = extractAssistantText(ctx, retrySessionId);
     }
 
     const retryParsed = parseTaskEvaluation(retryText);
