@@ -1,5 +1,27 @@
 # Journal
 
+## 2026-04-25 (Heartbeat — H-195 + DD#880 Integration)
+
+**Context**: All metrics green. 6 P2 notifications + 1 P1 (DD#880).
+
+### Actions
+
+1. **H-195 (Adaptive Compression Selection)** — New hypothesis from DD#880 "Experience Compression Spectrum" (P(H)=0.55). Key insight: our system stores knowledge almost entirely as declarative rules (~1,000× compression), but DD#880 shows this is suboptimal for novel tasks. EXP-195 already provides evidence: direct hints (low compression) achieved 40% where declarative skills achieved 0%. The "missing diagonal" — no system adapts compression level to task context — is exactly our H-043 known-but-violated gap. Test plan: 3-arm comparison (declarative vs procedural vs episodic) on a violation-prone scenario.
+
+2. **Notification triage**:
+   - DD#875 StructMem + H-077: Already processed by scout. Dismiss.
+   - EXP-216 SUPERSEDED: Already noted. Dismiss.
+   - DD#877 SWARM soft-label: Informational. Dismiss.
+   - DD#880 Experience Compression: **ACTED** — created H-195. 
+   - project.waiting ×5: All waiting on human review. No action possible.
+
+3. **Gym runner status**: Confirmed runner works but only in stub/scorer mode — doesn't invoke live agent. H-EXP-015 Phase 2 baselines still blocked on understanding the adapter mechanism.
+
+### What's next
+- Design EXP for H-195 (compression level A/B test)
+- Investigate gym adapter for live agent runs (needed for H-EXP-015 Phase 2, EXP-178)
+- Update PRIORITY-TRACKER and SCORECARD with H-195
+
 ## 2026-08-01 (Heartbeat — H-EXP-015 Phase 1 Complete)
 
 **Context**: All metrics green. Gym-leverage 10/10 done last session.

@@ -7,6 +7,17 @@
 
 ---
 
+## Fresh Arrivals (May 25, 2026) — arXiv: Agent Learning & Epistemic Grounding
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-05-25 | **AEL: Agent Evolving Learning** (arXiv:2604.21725) | Two-timescale self-improvement: fast bandit for memory retrieval + slow LLM reflection. "Less is more" — memory+reflection +58%, adding planner/skill extraction degrades. Bottleneck is diagnosing how to use experience. ★★★★★ | [HB-260525](library/posts/HB-260525-ael-agent-evolving-learning.md) |
+| 2026-05-25 | **GROUNDING.md** (arXiv:2604.21744) | Field-scoped epistemic grounding document. Hard Constraints (non-negotiable) + Convention Parameters (defaults). AGENTS.md=methodology, GROUNDING.md=epistemology. ★★★★☆ | [HB-260525](library/posts/HB-260525-grounding-md-epistemic-grounding.md) |
+
+**Key Takeaway**: AEL validates Error Log + reflection quality > architectural complexity. GROUNDING.md suggests Skill system needs hard constraint layer for safety-critical domains. Both reinforce: minimal effective mechanisms beat complex stacks.
+
+---
+
 ## Fresh Arrivals (May 24, 2026) — HF Blog: Agent Infrastructure & Chinese Models
 
 | Date | Title | Key Insight | Source |
