@@ -76,7 +76,6 @@
 
 ## Learned from experience
 
-- PIVOT — The worker has said "let me write the doc" for multiple iterations without producing verified output. Time for a fundamentally different approach.
 - CONTINUE
 - WAITING: Verification report produced and confirms the intervention is working (evaluator-gate disabled = zero stall rate, cap code exists as fallback). Parent tracker shows "ADOPTED" with metrics mee (source: s_1777041162746_250, 2026-04-24)
 - The worker produced an excellent verification report. The report confirms: code is present, but the real fix was disabling `evaluator-gate` entirely, and the cap has never fired in production.
@@ -88,8 +87,7 @@
 - Good. Let me checkpoint and finish. The key deliverable is the H-EXP-016 treatment scenario. The notifications are mostly literature grounding (P2) that doesn't require immediate action. (source: s_1777050636519_177, 2026-04-24)
 - Now let me write all three reviews: (source: s_1777049321836_0, 2026-04-24)
 - Now let me handle the scout finding (P2 item #2) inline and finish:
-
-**Scout assessment (arXiv:2604.99999 - Adaptive Retry Strategies):** Exponential backoff with jitter is directly relevant to our sy (source: s_1777049169399_0, 2026-04-24)
 - Now update the project status files: (source: s_1777049059738_0, 2026-04-24)
 - The papers and success_criteria.js aren't tracked. Let me add them: (source: s_1777047121265_100, 2026-04-24)
 - Also remove the hint comments from the test file: (source: s_1777047112413_99, 2026-04-24)
+- Now commit and finish. (source: s_1777054236531_253, 2026-04-24)

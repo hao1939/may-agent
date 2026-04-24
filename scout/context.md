@@ -59,5 +59,7 @@
 - Now let me notify optimizer and bob about the SWARM finding, and commit. (source: s_1777040735469_234, 2026-04-24)
 - Now let me commit and notify relevant agents. (source: s_1777053335818_233, 2026-04-24)
 - Coverage metric is at 35 vs target 24, so it's actually fine. The notification about regression from 62% to 35% is noted but the metric is still above target. No emergency action needed.
-
-Let me dismi (source: s_1777049734159_155, 2026-04-24)
+- Now notify bob about the StructMem finding since it connects to memory architecture: (source: s_1777060535794_384, 2026-04-24)
+- Now let me verify the deliverable and handle inbox events. (source: s_1777058735884_346, 2026-04-24)
+- This is from another agent's experiment run. I'll commit it to unblock. (source: s_1777056935832_308, 2026-04-24)
+- Triage complete. From today's cs.MA: **DiffMAS (2604.21794)** is high-relevance — latent communication optimization for MAS. The rest are domain-specific or low-relevance. DD#783-785 are already writt (source: s_1777055135835_270, 2026-04-24)

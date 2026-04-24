@@ -53,3 +53,13 @@ Even if you discover the environment isn't what you expected, even if tsc/vitest
 
 - /app root is NOT a TS/Vitest project — tsc/vitest only work in task-specific repos, not during heartbeats. This is expected. Don't treat it as a finding; just call finish() normally.
 - agents/ is the only git repo — /app itself is not a git repo. This is the normal setup.
+- ## Pending events (dedupe / act)
+You have **5 identical “Quick Code Review” notifications**.
+
+- **Event 1:** **Dismiss** — duplicate/waste. No payload (no commit/PR/files) to review.
+- **Event 2:** ** (source: s_1777059155034_352, 2026-04-24)
+- ### Summary
+Inbox contains **5 duplicate “Quick Code Review” waste alerts**; there’s no unique payload to act on, so these should be dismissed/deduped upstream. While attempting standard QA verificati (source: s_1777057354984_314, 2026-04-24)
+- ### Actions on Pending Events (inbox)
+All five “Waste detected: 5 identical *Quick Code Review* requests” notifications:
+- **Dismiss** — duplicates of the same alert; no additional actionable content  (source: s_1777055554981_276, 2026-04-24)
