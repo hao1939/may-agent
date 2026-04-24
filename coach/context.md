@@ -71,8 +71,6 @@
 
 ## Learned from experience
 
-- Heartbeat workflow files use agent-specific names like `may-heartbeat.ts`, not `heartbeat.ts`. (source: s_1776857036571_2, 2026-04-22)
-- Gym scenario failures are expected — they're the problems agents are supposed to fix, not test regressions. (source: s_1776856182629_303, 2026-04-22)
 - SkillFlow benchmark (arXiv:2604.17308): accumulated skills can cause regression — Qwen-Coder-Next dropped to 44.58% with skills. Quality filtering > accumulation. (2026-04-29)
 - Good. Metrics healthy, project closed, no alerts. Let me process the two notifications.
 - 44 lines — just over the 40-line target but close enough given the worked examples are essential. (source: s_1776973494049_18, 2026-04-23)
@@ -83,5 +81,12 @@
 - Last gym run was April 23 — over 2 months ago. The gym infrastructure requires a live agent binary that isn't available in this coach heartbeat environment. EXP-199 and EXP-200 are designed and ready  (source: s_1776978046232_44, 2026-04-23)
 - Now let me break the write-only pattern — send notifications directly: (source: s_1776977007050_42, 2026-04-23)
 - Committed and merged. Now let me handle the notifications and finish:
+- Now let me verify my deliverables: (source: s_1776987875051_122, 2026-04-24)
+- ### tech-lead: FM-3.3 (Verification Failure)
+**Decision:** growth-cycle
+**Reasoning:** 46 occurrences in 7 days is high-frequency and the pattern is consistent: the agent treats write previews or its  (source: s_1776987856466_121, 2026-04-24)
+- I didn't write/edit any files — my deliverables are notifications. Let me do an explicit verification read: (source: s_1776987045945_110, 2026-04-24)
+- Interesting — amy has the smallest context (2451B) but worst compliance (92.7%). may has the largest (10423B) but great compliance (97.9%). No bloat correlation yet. The issue is model-level defaults, (source: s_1776985245948_100, 2026-04-24)
+- Good evidence. Across sessions that use `finish()`, verification_evidence is consistently present. Let me now create the tracker files.
 
-**Notification 1 (P2): "Logical inertia" research** — Same as last heartbeat. Dismiss — interesting but no actionable experiment  (source: s_1776976245977_32, 2026-04-23)
+**Verdict: YES — "Evidence first" is being followed.** Sessions (source: s_1776984013013_97, 2026-04-24)
