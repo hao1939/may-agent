@@ -7,6 +7,16 @@
 
 ---
 
+## Fresh Arrivals (May 3, 2026) — Chinese Agent Ecosystem Synthesis
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-05-03 | **Chinese AI Agent Ecosystem Synthesis** | Cross-project analysis reveals industry convergence on "Harness" architecture. DeerFlow/AgentScope/Qwen3 all validate OpenClaw design. Three gaps identified: explicit memory layer, planning layer, MCP/A2A protocols. ★★★★★ | [HB-260503](library/posts/HB-260503-cn-agent-ecosystem-synthesis.md) |
+
+**Key Takeaway**: Harness-centric design is industry-converging (ByteDance DeerFlow 63.7k⭐, GitHub Trending #1). "Small model + skills > large model" validated by Qwen3-4B≈Qwen2.5-72B and COSPLAY 8B+skills beating frontier LLMs.
+
+---
+
 ## Fresh Arrivals (May 2, 2026) — Qwen3 Release
 
 | Date | Title | Key Insight | Source |
