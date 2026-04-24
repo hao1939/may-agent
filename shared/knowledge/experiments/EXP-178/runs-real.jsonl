@@ -1,0 +1,13 @@
+{
+  "arm": null,
+  "scenario_type": null,
+  "scenario": null,
+  "trial": null,
+  "passed": null,
+  "agent_status": null,
+  "duration": null,
+  "summary": null,
+  "checks": null,
+  "batch_id": null,
+  "timestamp": null
+}
