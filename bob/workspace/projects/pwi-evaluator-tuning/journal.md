@@ -31,3 +31,9 @@ WAITING: Verification report produced at `.state/verification-report.md` with co
 
 Resume when: Human/May reviews the verification report and decides next steps.
 
+### Iteration 6 — 2026-04-24T14:32:42.746Z
+**Worker**: The parent tracker already has a "Final Measurement" section dated 2026-07-29 showing all three metrics meeting targets, and the pwi-evaluator-tuning experiment is marked "ADOPTED". This project is done.
+**Reviewer**: WAITING — Verification report produced and confirms the intervention is working (evaluator-gate disabled = zero stall rate, cap code exists as fallback). Parent tracker shows "ADOPTED" with metrics meeting targets. All milestones complete. Awaiting human review to close project.
+
+Resume when: Human/May reviews and marks project done.
+
