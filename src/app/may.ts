@@ -24,7 +24,7 @@ import {
   type AgentLoaderOptions,
 } from "./agent-loader.js";
 import { resolveProjectRoot } from "./bundle-mode.js";
-import { trackRequest, getDb } from "../lib/requests.js";
+import { trackRequest, getDb, closeAllDbs } from "../lib/requests.js";
 import { log } from "../lib/log.js";
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
@@ -426,9 +426,12 @@ function gracefulShutdown() {
     }
   }
 
-  // Give 2s for sessions to cancel, then exit.
+  // Give 2s for sessions to cancel, then checkpoint DB and exit.
   // SIGKILL at 5s guarantees exit if process.exit hangs (Bun + open HTTP streams).
-  setTimeout(() => process.exit(0), 2000);
+  setTimeout(() => {
+    try { closeAllDbs(); } catch { /* best-effort */ }
+    process.exit(0);
+  }, 2000);
   setTimeout(() => process.kill(process.pid, "SIGKILL"), 5000).unref();
 }
 
