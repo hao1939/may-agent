@@ -7,6 +7,16 @@
 
 ---
 
+## Fresh Arrivals (April 30, 2026) — AI Safety Certification & Reasoning Control
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-30 | **Bounding the Black Box** (arXiv:2604.21854) | Two-stage AI risk certification: authority fixes δ/ε bounds → RoMA/gRoMA computes auditable failure rate upper bounds. Black-box compatible. Addresses EU AI Act verification gap. ★★★★☆ | [HB-260453](library/posts/HB-260453-ai-risk-certification-framework.md) |
+| 2026-04-30 | **CoFEE** (arXiv:2604.21584) | Cognitive behaviors as inductive biases for LLM reasoning: backward chaining + subgoal decomposition + verification + backtracking. +15.2% success, -53.3% cost vs vanilla prompts. ★★★★☆ | [HB-260454](library/posts/HB-260454-cofee-reasoning-control.md) |
+| 2026-04-30 | **HiCrew** (arXiv:2604.21444) | Question-aware dynamic multi-agent orchestration for video understanding. Planning layer adapts roles/paths to complexity. Hybrid tree preserves temporal structure. Chinese team. ★★★★☆ | [HB-260455](library/posts/HB-260455-hicrew-hierarchical-video-agent.md) |
+
+---
+
 ## Fresh Arrivals (April 29, 2026) — Decoupled Agent Architecture & Self-Programming
 
 | Date | Title | Key Insight | Source |
