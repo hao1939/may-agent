@@ -1,5 +1,43 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #126 | 2026-05-03 session | posts: 2700+ | HB0007
+> Compact #127 | 2026-05-04 session | posts: 2700+ | HB0007
+
+---
+
+## 2026-05-04 Session Findings (Amy-Kimi Heartbeat — arXiv Agent Research)
+
+### 🔥 arXiv 最新 Agent 研究四篇 (Apr 23, 2026 批次)
+- **来源**: arXiv cs.AI (XHS 工具暂时不可用，转向论文追踪)
+- **核心发现**: MCP 协议优化、技能化推理、多智能体隐式通信、意图对齐四大主题均与 OpenClaw 直接相关
+
+#### Paper 1: Tool Attention — 消除 MCP/Tools Tax (arXiv:2604.21816)
+- **核心创新**: Tool 级门控注意力 — Intent Schema Overlap + 状态感知门控 + 两阶段懒加载
+- **关键数据**: 每轮工具 Token 47.3k → 2.4k (-95.0%)；Context 利用率 24% → 91%
+- **核心论点**: "协议级效率，而非原始 context 长度，是可扩展 agentic 系统的绑定约束"
+- **对 OpenClaw 的意义**: 直接验证 XHS "MCP 吃掉 90% 上下文" 担忧；Skills 应区分热/冷加载
+
+#### Paper 2: Thinking with Reasoning Skills — 技能回忆替代从头推理 (arXiv:2604.21764, ACL 2026)
+- **核心创新**: 从试错探索蒸馏可复用推理技能，推理时先检索技能
+- **关键洞察**: "Reasoning from scratch 是低效的 —— 应该先回忆相关技能"
+- **对 OpenClaw 的意义**: 技能系统方向获顶级会议认可；需要设计 skill-query 匹配机制
+
+#### Paper 3: Fantasia Problem — AI 在对用户"幻想"需求 (arXiv:2604.21827, ICLR 2026)
+- **核心问题**: 用户意图往往未完全形成，AI 把 prompt 当完整意图表达实为"幻想"
+- **关键洞察**: "不应把用户当理性先知，AI 应帮助用户形成和细化意图"
+- **对 OpenClaw 的意义**: Multi-Agent 系统需要专门的意图澄清阶段
+
+#### Paper 4: DiffMAS — 多智能体隐式通信端到端训练 (arXiv:2604.21794, COLM 2026)
+- **核心创新**: 将 KV-cache 级潜在通信视为可学习组件
+- **关键数据**: AIME24 26.7%，GPQA-Diamond 20.2%，解码稳定性 +40%
+- **范式转变**: 通信协议应从任务中涌现，而非预设
+- **对 OpenClaw 的意义**: 硬路由能否替换为学习路由？
+
+#### 综合趋势
+1. **协议效率 > 原始能力**: Tool Attention + DiffMAS 共同验证
+2. **技能化是共识**: 从 COSPLAY 到 ACL Industry Track 连续确认
+3. **意图动态性被正视**: Fantasia Problem 标志着学术界态度转变
+4. **通信可学习化**: 从工程问题转化为学习问题
+
+**相关**: [HB-260504](posts/HB-260504-arxiv-agent-research-roundup.md)
 
 ---
 
