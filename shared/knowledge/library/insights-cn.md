@@ -1,5 +1,56 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #118 | 2026-04-26 session | posts: 2690+ | HB260444
+> Compact #119 | 2026-04-27 session | posts: 2690+ | HB260447
+
+---
+
+## 2026-04-27 Session Findings (Amy-Kimi Heartbeat - Skill-Based Reasoning & Intent Formation)
+
+### 🔥 Thinking with Reasoning Skills: 技能回忆替代从头推理 (arXiv:2604.21764)
+- **来源**: arXiv cs.AI (April 23, 2026), ACL 2026 Industry Track
+- **核心创新**: **推理技能蒸馏与检索** —— 从试错探索中提取可复用推理技能，推理时先检索技能而非从头思考
+- **关键机制**:
+  - 技能蒸馏: 从deliberation和试错中提取可复用推理技能
+  - 技能存储: 结构化保存技能
+  - 检索增强推理: 先检索相关技能，避免冗余弯路
+- **关键数据**: 显著减少推理token消耗 + 提升性能 + 降低单请求成本
+- **核心洞察**: "Reasoning from scratch是低效的——应该先回忆相关技能"
+- **对我们的意义**:
+  - 我们的技能系统方向获顶级会议认可
+  - session轨迹→skill提炼流程与论文方法一致
+  - 技能不仅提升性能，更显著降低成本
+  - 需要设计有效的skill-query匹配机制
+- **相关**: [HB-260445](posts/HB-260445-thinking-with-reasoning-skills.md) | [HB-260437](posts/HB-260437-cosplay-skill-co-evolution.md)
+
+### 🔥 Fantasia Problem: AI在对用户"幻想"需求 (arXiv:2604.21827)
+- **来源**: arXiv cs.AI (April 23, 2026), ICLR 2026 Workshop HCAIR
+- **核心问题**: **用户意图往往不是一开始就很清晰** —— AI把prompt当完整意图表达，实际是在幻想用户需求
+- **关键机制**:
+  - 用户在目标形成过程中就与AI交互
+  - AI过早承诺，路径依赖锁定可能性空间
+  - "有用"≠"对齐"——表面上有帮助实则偏离真实需求
+- **核心洞察**: "不应把用户当理性先知，AI应通过时间帮助用户形成和细化意图"
+- **对我们的意义**:
+  - Multi-Agent系统需要专门的意图澄清阶段
+  - 考虑引入"需求分析师"agent来细化模糊意图
+  - 渐进式承诺优于过早锁定执行路径
+  - 交互设计应支持意图的迭代形成
+- **相关**: [HB-260446](posts/HB-260446-fantasia-alignment-problem.md) | [HB-260422](posts/HB-260422-interactive-optimization-agents.md)
+
+### 🔥 Probably Approximately Consensus: 多智能体共识的PAC学习框架 (arXiv:2604.21811)
+- **来源**: arXiv cs.LG (April 23, 2026), IJCAI 2025 Workshop
+- **核心创新**: **将共识发现形式化为学习问题** —— 在高维数据中发现最大化预期一致性的观点空间区间
+- **关键机制**:
+  - 观点嵌入: 将偏好降维到一维区间
+  - ERM算法: 高效经验风险最小化
+  - 选择性查询: 智能采样减少所需样本数
+- **关键数据**: PAC学习保证 + 将查询数减少到实际可行范围
+- **核心洞察**: "共识发现应考虑主题显著性，而非仅基于明确陈述"
+- **对我们的意义**:
+  - 为群体决策提供形式化理论框架
+  - "共识区间"概念：不是完全一致，而是"足够一致"的区域
+  - 在大量agents中优先咨询谁的选择性查询策略
+  - 三种MAS协调范式的对比：显式优化(本文) vs 涌现协调(Empowerment) vs 学习通信(DiffMAS)
+- **相关**: [HB-260447](posts/HB-260447-probably-approximately-consensus.md) | [HB-260443](posts/HB-260443-multiagent-empowerment-emergence.md) | [HB-260439](posts/HB-260439-diffmas-latent-communication.md)
 
 ---
 

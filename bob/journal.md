@@ -493,3 +493,24 @@ H-054 P(H) updated to 0.65 (from 0.50). Phase 2 (inter-rater reliability measure
 - Monitor C1.1 compliance over next 5-10 workflow sessions to verify guard effectiveness
 - Execute EXP-210 (schema-organized context) now that gym is available
 - EXP-214 (C7.1 structural enforcement for amy) is also DESIGNED and ready
+
+## Session: 2026-06-22 (Heartbeat — Gym Feedback Loop + DD#878)
+
+**Context**: All metrics healthy. Gym-leverage at 6/10 milestones. DD#878 "The Last Harness You'll Ever Build" flagged as ★★★★★ CRITICAL by scout.
+
+### Actions
+
+1. **Gym Feedback Loop Design** — Created `.state/gym-feedback-loop.md`: a 6-step evolution loop (Run → Diagnose → Identify → Evolve → Retest → Record) incorporating DD#878's adversarial diagnosis insight. This transforms our gym from pass/fail scoreboard into a prescription engine that tells you *what harness change would fix each failure*. Checked off "Design a feedback loop" milestone (7/10).
+
+2. **DD#878 Integration** — Key insight: our harness H = {SOUL.md, TOOLS.md, skills/, context.md, periodic-tasks.md} maps directly to their formal harness object. Their meta-evolution (learning which harness changes work across tasks) is exactly what gym-leverage Phase 3 needs. Adversarial diagnosis is the missing piece — our scorer does pass/fail but doesn't prescribe fixes.
+
+3. **Notification Triage**:
+   - DD#875 StructMem + H-077: Informational, scout already processed. Dismiss.
+   - EXP-216 SUPERSEDED: Already noted in todo.md as deprioritized. Dismiss.
+   - DD#877 SWARM soft-label governance: Interesting but no immediate action. Dismiss.
+   - DD#878 Last Harness: **ACTED** — integrated into gym feedback loop design.
+
+### What's next
+- Run first evolution cycle on `mock-leak-trap` (13.2% pass → target >50%)
+- Finalize core 20 selection
+- Propose adversarial diagnosis addition to gym scorer

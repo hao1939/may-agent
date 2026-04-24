@@ -25,7 +25,7 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 - [x] Run the core 20 suite and establish baseline scores per agent
 
 ### Phase 3: Gym-Driven Evolution
-- [ ] Design a feedback loop: gym failure → skill gap identified → skill written → re-test
+- [x] Design a feedback loop: gym failure → skill gap identified → skill written → re-test
 - [ ] Run one cycle: pick worst-performing category, write/improve skill, measure improvement
 - [x] Document the gym-driven evolution process for other agents to follow
 
@@ -42,7 +42,7 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 - Master-worker script: scripts/master-worker-test.ts
 
 ## Current State
-Iteration 3. Milestones: 6/10 done.
+Iteration 3. Milestones: 7/10 done.
 Reviewer: The file is comprehensive and well-written. This covers multiple milestones. Let me verify which milestones are satisfied:
 
 1. ✅ "Run the gym runner against 3 diverse scenarios" — 27 smoke scenarios r
