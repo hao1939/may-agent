@@ -26,7 +26,7 @@
 **Owner**: Tech-Lead / May  
 **Source**: [H-041](../../hypotheses/H-041-decision-topology.md)
 
-### 2. **Knowledge Compilation Gap** — 85% of Hypotheses Untested
+### 4. **Knowledge Compilation Gap** — 85% of Hypotheses Untested
 **What**: System generates hypotheses 6× faster than resolving them. Zero falsifications since H-041. We ingest but never compile (merge, prune, resolve).  
 **Action**: Implement periodic "knowledge compilation" workflow — structural enforcement of hypothesis pruning.  
 **Owner**: Bob (Architect)  
@@ -42,7 +42,7 @@
 **Owner**: Tech-Lead  
 **Source**: [SYNTHESIS-001](../../library/synthesis/SYNTHESIS-001-agent-memory-architecture.md)
 
-### 4. **Harness > Model** — Engineering is the Moat
+### 6. **Harness > Model** — Engineering is the Moat
 **What**: Same model (Claude 4.5) with different harness: 42% → 78%. "Prompt engineering is being replaced by Harness engineering."  
 **Action**: Audit harness components (input/monitor/constraint/feedback/guardrails) before model upgrades.  
 **Owner**: All agent builders  
@@ -70,7 +70,7 @@
 **Owner**: Coach  
 **Source**: [H-019](../../hypotheses/H-019-skill-internalization-curriculum-rl.md)
 
-### 8. **Self-Evolving Three-Loop Architecture**
+### 10. **Self-Evolving Three-Loop Architecture**
 **What**: Task execution (we have) → Knowledge lifecycle with forgetting (partial) → Meta-evolution (missing). HyperAgents + Self-Driving Portfolio converge here.  
 **Action**: MetaClaw POC should test Loops 2+3 (forgetting + meta-evolution).  
 **Owner**: Tech-Lead / May  
@@ -78,30 +78,15 @@
 
 ---
 
-## 🎯 OPERATIONAL WISDOM
-
-### 9. **Single-Agent First** — Anthropic's "Red Lines"
-**What**: Only split to multi-agent when: (a) contexts have no overlap, (b) distinct capabilities needed, (c) strong isolation required. Generator+Verifier pattern works.  
-**Action**: Challenge every multi-agent design: "Can a single agent with better harness do this?"  
-**Owner**: All agents  
-**Source**: [Post](../../library/posts/HB-062-anthropic-single-agent-first.md)
-
-### 10. **Free Information Disrupts Crowds**
-**What**: Unconstrained information exchange harms group correctness — even for idealized Bayesian agents. Information flow constraints may be beneficial.  
-**Action**: Design multi-agent communication with explicit budgets and scope escalation (CASCADE pattern).  
-**Owner**: Multi-agent designers  
-**Source**: [Post](../../library/posts/HB-250410-free-information-disrupts-crowds.md)
-
----
-
 ## How to Use This Digest
 
 | If you're... | Focus on... |
 |--------------|-------------|
-| **Tech-Lead / May** | #1, #3, #5, #8 (architecture decisions) |
-| **Bob (Architect)** | #2, #6, #7 (knowledge & hypothesis systems) |
-| **Coach** | #7, #9 (skill evolution patterns) |
-| **Building agents** | #4, #9, #10 (harness & design patterns) |
+| **Tech-Lead / May** | #1, #3, #5, #8, #10 (architecture decisions) |
+| **Bob (Architect)** | #4, #8, #9 (knowledge & hypothesis systems) |
+| **Coach** | #9 (skill evolution patterns) |
+| **Building agents** | #1, #6 (harness & design patterns) |
+| **Security** | #2 (decoupled verification patterns) |
 | **New to the system** | Read this first, then follow links |
 
 ---
