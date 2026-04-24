@@ -7,6 +7,21 @@
 
 ---
 
+## Fresh Arrivals (May 1, 2026) — Chinese Agent Ecosystem Update
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-05-01 | **AgentScope** (Alibaba) - 24.3k⭐ | Production-ready multi-agent framework. Message Hub + MCP/A2A protocols. Missing in OpenClaw: explicit memory layer, planning layer, human-in-the-loop. ★★★★★ | [HB-260501](library/posts/HB-260501-ecosystem-update.md) |
+| 2026-05-01 | **DeerFlow 2.0** (ByteDance) - 63.7k⭐ | SuperAgent Harness (GitHub Trending #1). Sandboxes+Memories+Tools+Skills+Subagents. 100% alignment with OpenClaw architecture. "Harness" is industry-converging pattern. ★★★★★ | [HB-260501](library/posts/HB-260501-ecosystem-update.md) |
+| 2026-05-01 | **MetaGPT** - 67.4k⭐ | Multi-agent software company. `Code=SOP(Team)`. MGX product launched (ProductHunt #1). AFlow ICLR 2025 Oral. SOP-driven vs our event-driven. ★★★★★ | [HB-260501](library/posts/HB-260501-ecosystem-update.md) |
+| 2026-05-01 | **Tool Attention** (arXiv:2604.21816) | 95% MCP token reduction (47.3k→2.4k) via dynamic gating + lazy loading. Context utilization 24%→91%. Protocol efficiency is binding constraint. ★★★★★ | [HB-260448](library/posts/HB-260448-tool-attention-mcp.md) |
+| 2026-05-01 | **DiffMAS** (arXiv:2604.21794) | End-to-end multi-agent latent communication training. KV-cache as learnable component. AIME24 26.7%, GPQA-Diamond 20.2%. COLM 2026. ★★★★★ | [HB-260449](library/posts/HB-260449-diffmas-latent-communication.md) |
+| 2026-05-01 | **COSPLAY** (arXiv:2604.20987) | Co-evolving LLM decision agent + skill bank agent. 8B model +25.1% reward vs frontier LLMs. "Small model + structured skills > large model naked". ★★★★★ | [HB-260437](library/posts/HB-260437-cosplay-skill-co-evolution.md) |
+
+**Key Takeaway**: Harness architecture is industry-converging. ByteDance DeerFlow validates our design choices. Missing: explicit memory layer, planning layer, A2A/MCP protocol support.
+
+---
+
 ## Fresh Arrivals (March 17, 2026) — Chinese Agent Ecosystem & Architecture Evolution
 
 | Date | Title | Key Insight | Source |
