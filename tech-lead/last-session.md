@@ -1,16 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777062514828_0
+- **Session:** s_1777062552397_0
 - **Status:** done
-- **When:** 2026-04-24T20:29:12.122Z
-- **Duration:** 37s
+- **When:** 2026-04-24T20:30:05.498Z
+- **Duration:** 53s
 
 ## What Happened
-All tests already pass in this scenario. The db.js functions already return empty arrays (not null) for no matches. The code looks correct as-is.
+All 9 tests already pass. The db layer returns empty arrays (not null) for `findProductsByName` and `findProductsByCategory`, so the `.map()` calls work fine.
 
-However, the task description mentions crashes from null returns. Looking at the code, the db layer properly returns `[]` via `.filter()`, so the `searchProducts` and `searchByCategory` functions work fine. The `getProductById` already has a null check.
+Looking at the code, the db functions use `filter()` which always returns an array, and `find()` which returns `undefined` (coerced to `null` via `|| null`). The search functions handle these correctly.
 
-The note about "user-supplied search queries from our public API" hints at a **SQL injection** concern (given the scenario name), but since this is an in-memory array with `.filter()`, there's no injection risk here.
-
-All 9 tests pass. There are no bugs to fix in this version of the code.
+However, I notice the task description mentions SQL injection concerns (the scenario name). The `findProductsByName` uses string interpolation for search which is safe here (in-memory), but if this were a real SQL backend, the query building could be vulnerable. The current in-memory implementation is safe.
