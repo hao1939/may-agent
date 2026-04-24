@@ -1,5 +1,30 @@
 # Journal
 
+## 2026-07-30 (Heartbeat — Housekeeping + Guard Monitoring)
+
+**Context**: All metrics healthy. C1.1 guard upgraded to run_step last session. 10 notifications triaged.
+
+### Actions
+
+1. **DB cleanup**: Updated 4 experiments with stale "running"/"designed" status to "completed" (EXP-195, EXP-201, EXP-202, EXP-213). Results files existed but DB wasn't updated.
+
+2. **EXP-213 write-up confirmed**: Schema reorganization was a NULL result for Bob (C1.1 9.9%→11.4%, C1.3 9.9%→12.8%). Ceiling effect — worked for tech-lead (high violation rate) but not bob (already low). This is consistent with H-091 agent-specificity findings.
+
+3. **C1.1 guard monitoring**: Bob's last 50 C1.1 checks show 66% pass. The run_step guard was deployed last session — need 1-2 more heartbeats of data to assess impact. The guard should force corrective reads when violations are detected.
+
+### Notification triage
+- H-EXP-010 backward-trace (3h, 2h, 1h, 2m): **RESOLVED** — 4 notifications about already-applied patch. Dismiss all.
+- H-EXP-014 Forage V2 (3h): Literature grounding, informational. Dismiss.
+- DD#872 cooperative profiles (2h): Already captured as H-192/193. Dismiss.
+- SkillFlow paper (1h): External validation for H-EXP-014. Dismiss.
+- C1.1 at 30% critical (35m) + coaching at 69% (4m): **ACTED last session** — guard upgraded. Monitoring.
+- H-EXP-013 literature (28m): Counterfactual credit assignment paper. Filed. Dismiss.
+
+### What's next
+- Monitor C1.1 run_step guard effectiveness (need N≥20 post-deploy checks)
+- EXP-210 (coder schema context) is READY — execute when deep session available
+- EXP-214 (amy C7.1 structural guard) is DESIGNED — execute when ready
+
 ## 2026-04-09 ~13:30
 ### KE-096: Unified Verification Architecture — The Big Synthesis
 

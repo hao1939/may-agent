@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1776989031919_127
+- **Session:** s_1776989298822_131
 - **Status:** done
-- **When:** 2026-04-24T00:04:49.991Z
-- **Duration:** 58s
+- **When:** 2026-04-24T00:09:58.593Z
+- **Duration:** 1m39s
 
 ## What Happened
-All metrics green, request queue is manageable (17 active vs 200+ previously). The three notifications are QA convention regressions - that's coach's domain, not mine. Let me dismiss them appropriately.
+The notifications are about QA/coach domain issues (convention compliance). My metrics are all green. The 88/113 expired sessions issue is already being tracked (may → tech-lead request). Let me dismiss the notifications that aren't in my domain and acknowledge relevant ones.
