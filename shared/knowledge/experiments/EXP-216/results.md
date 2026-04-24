@@ -27,7 +27,22 @@ All three guards in `src/lib/` are dead code for the same reason:
 
 This requires a change to the may-agent runtime source (Hao's domain).
 
+## Tech-lead Review (2026-08-01)
+
+Confirmed the blocker independently:
+- `may-agent-bin` is a compiled ELF binary (~100MB). Cannot modify.
+- `ctx.manager.run()` / `ctx.manager.callAgent()` route through the binary — no way to inject `beforeToolCall` from userland for heartbeat/cron sessions.
+- The only place `new Agent()` is called in editable code is `agents/may/handlers/project.ts` (project workflow sub-sessions only — narrow coverage).
+- All three guards in `agents/src/lib/` remain dead code (only imported by `compliance-check.ts` self-test).
+
+### Viable alternative: tool-wrapper approach
+
+Instead of the `beforeToolCall` hook, we could wrap the `edit` tool definition itself to check a session-level read-set. The tool definitions are created by `createCodingTools()` — if that function is in editable code, we can intercept there. This avoids the runtime binary entirely.
+
+**Action**: Investigate `createCodingTools` source location. If editable, implement guard as a tool wrapper.
+
 ## Followups
 
-- Escalate to Hao: runtime needs guard composition wiring
-- Alternative: could the guards be wired via a workflow wrapper instead of `beforeToolCall`?
+- ~~Escalate to Hao: runtime needs guard composition wiring~~ (binary is compiled, not actionable)
+- **Investigate tool-wrapper approach**: wrap `edit` tool's execute function to enforce read-before-edit
+- Find where `createCodingTools` is defined — if it's in the npm package, this is also blocked
