@@ -1,7 +1,7 @@
 # EXP-195: Relational Bug Recognition Skill
 
 **Date**: 2026-04-22
-**Status**: RUNNING
+**Status**: CONCLUDED — PARTIALLY CONFIRMED (direct hints 40%, general skills 0%)
 **Predecessors**: EXP-194 (bug-type classification), EXP-177 (hints don't help cascading-fix-trap-v2)
 **Project**: prove-the-loop
 

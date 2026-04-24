@@ -1,41 +1,26 @@
-# EXP-188: Finish-Guard Enforcement for Persistent-Task Workflow
+# EXP-188: Recognition Intervention Dose-Response on sql-injection-in-query-builder
 
-**Status**: COMPLETE — PROMOTE
+**Status**: INCOMPLETE — Only 17/75 runs completed (needs 58 more)
 
-## Summary
+## Partial Data (as of 2026-06-24)
 
-Finish-guard enforcement achieves +100pp improvement (0% → 100%) in persistent-task adoption. Text injection alone never works; structural gate at finish() is required.
+| Arm | Description | Passed | Failed | N | Pass Rate |
+|-----|-------------|--------|--------|---|-----------|
+| A | Baseline (no hint) | 5 | 0 | 5 | 100% |
+| B | Relevant-specific | 0 | 3 | 3 | 0% |
+| C | Relevant-vague | 0 | 3 | 3 | 0% |
+| D | Irrelevant-specific | 0 | 3 | 3 | 0% |
+| E | Irrelevant-vague | 0 | 3 | 3 | 0% |
 
-## Data
+## Preliminary Observations
 
-| Arm | N | Pass rate | Notes |
-|-----|---|-----------|-------|
-| Baseline (text injection only) | 3 | 0% | Agents read project, work inline, skip workflow |
-| Treatment (finish-guard gate) | 3 | 100% | Guard blocks finish(success) unless workflow.run("persistent-task") called |
+⚠️ **Small N warning** — Only 3 runs per treatment arm. Results are unreliable.
 
-**Delta**: +100pp (0% → 100%)
+The pattern is striking if real: baseline 100% (5/5) but ALL hint arms 0% (0/12). This would suggest ANY hint — relevant or irrelevant — hurts performance, supporting H-188b (prompt-as-anchor) over H-188a (content-match).
 
-## Run IDs
-- Baseline: 3283, 3284, 3285
-- Treatment: 3280, 3281, 3282
-- Additional baseline: 3274, 3275, 3276 (0/3)
+However, N=3 per arm is far too small to draw conclusions. The baseline may have shifted upward since EXP-166/177 (which showed 60-67%).
 
-## Analysis
+## Next Steps
 
-Text injection fails because agents read the instruction, do the work inline, and call finish(success) without invoking the workflow. The finish-guard creates an unavoidable enforcement point — the agent literally cannot claim success without using the workflow.
-
-This matches EXP-184's identical +100pp result, confirming that structural enforcement is the only reliable mechanism for workflow adoption.
-
-## Conclusion
-
-**CONFIRMED**: Finish-guard gates are the mechanism for enforcing workflow usage. Text/skill/instruction approaches have 0% effect.
-
-## Deployment Status
-
-✅ **DEPLOYED** — Guard implemented as `agents/shared/guards/finish-guard.ts` (workflow guard pattern). Registered in REGISTRY.md. Library code in `agents/src/lib/finish-guard.ts` with 41 passing tests.
-
-## Followups
-
-- Tech-lead: Implement finish-guard.ts with Gate 3 (persistent-task enforcement)
-- Monitor production persistent-task adoption rate after deployment
-- Consider extending finish-guard pattern to other workflow enforcement needs
+- Run remaining trials: 10 more per arm A, 12 more per arms B-E
+- Then write full analysis

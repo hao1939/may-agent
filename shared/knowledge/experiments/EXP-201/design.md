@@ -1,7 +1,7 @@
 # EXP-201: Verification Remasking (H-185)
 
 **Date**: 2026-06-22
-**Status**: RUNNING
+**Status**: CONCLUDED — FALSIFIED for cascading-fix-trap-v2 (0/10, bottleneck is discovery not verification)
 **Predecessor**: EXP-199 (tool-assisted relational bug), EXP-195 (baseline)
 **Hypothesis**: H-185
 
