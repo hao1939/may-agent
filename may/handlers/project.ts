@@ -11,15 +11,14 @@ import { writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.ts";
 import type { CronEntry } from "../../shared/agent-sdk.ts";
-import {
-  type ProjectInfo, type HealthAction, type HealthState,
-  scanAllProjects, diagnoseProject, newProjectHealthEntry,
-  readInflight, writeInflight, readHealthState, writeHealthState,
-  saveWorkflowRunFile, generateRunId, updateField, appendComment, simpleHash,
-  MAX_LAUNCHES_PER_TICK,
-} from "../../shared/lib/project-health.ts";
+// Types only — values imported dynamically to avoid Bun's transitive cache
+import type { ProjectInfo, HealthAction, HealthState } from "../../shared/lib/project-health.ts";
 
 let importCounter = 0;
+
+async function loadProjectHealth() {
+  return await import(`../../shared/lib/project-health.ts?t=${Date.now()}`) as typeof import("../../shared/lib/project-health.ts");
+}
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   const agentsRoot = resolve(ctx.projectRoot, "agents");
@@ -28,11 +27,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
   const workflowsDir = join(agentsRoot, "shared", "workflows");
 
   return async (event?: TriggerEvent) => {
+    const ph = await loadProjectHealth();
     const now = Date.now();
-    const healthState = readHealthState(stateFile);
-    const inflight = readInflight(inflightFile);
+    const healthState = ph.readHealthState(stateFile);
+    const inflight = ph.readInflight(inflightFile);
 
-    const projects = scanAllProjects(agentsRoot);
+    const projects = ph.scanAllProjects(agentsRoot);
     if (projects.length === 0) return;
 
     // Gather system context
@@ -49,7 +49,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // Diagnose each project
     const actions: Array<{ project: ProjectInfo; action: HealthAction }> = [];
     for (const project of projects) {
-      actions.push({ project, action: diagnoseProject(project, healthState, breachedMetrics, runningProjects, inflight, now, projects) });
+      actions.push({ project, action: ph.diagnoseProject(project, healthState, breachedMetrics, runningProjects, inflight, now, projects) });
     }
 
     // Log non-trivial actions
@@ -63,8 +63,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     let launched = 0;
     for (const { project, action } of actions) {
       if (!healthState.projects[project.relPath]) {
-        healthState.projects[project.relPath] = newProjectHealthEntry();
-        healthState.projects[project.relPath].blockerHash = simpleHash(project.blockerReason);
+        healthState.projects[project.relPath] = ph.newProjectHealthEntry();
+        healthState.projects[project.relPath].blockerHash = ph.simpleHash(project.blockerReason);
       }
       const pState = healthState.projects[project.relPath];
 
@@ -80,7 +80,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
       if (action.type === "reactivate") {
         ctx.log(`[project] Reactivating ${project.relPath}: ${action.reason}`);
-        let content = appendComment(updateField(project.content, "Status", "active"), action.reason);
+        let content = ph.appendComment(ph.updateField(project.content, "Status", "active"), action.reason);
         writeFileSync(project.projectFile, content, "utf-8");
         pState.reactivationAttempts++;
         pState.blockerHash = "";
@@ -90,10 +90,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
       if (action.type === "add-comment") {
         ctx.log(`[project] Comment on ${project.relPath}: ${action.reason}`);
-        let content = updateField(appendComment(project.content, action.comment), "Status", "active");
+        let content = ph.updateField(ph.appendComment(project.content, action.comment), "Status", "active");
         writeFileSync(project.projectFile, content, "utf-8");
         pState.reactivationAttempts++;
-        pState.blockerHash = simpleHash(project.blockerReason);
+        pState.blockerHash = ph.simpleHash(project.blockerReason);
         pState.consecutiveSkips = 0;
         continue;
       }
@@ -106,7 +106,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       }
 
       // launch-workflow
-      if (launched >= MAX_LAUNCHES_PER_TICK) { ctx.log(`[project] Skip ${project.relPath} — cap reached`); continue; }
+      if (launched >= ph.MAX_LAUNCHES_PER_TICK) { ctx.log(`[project] Skip ${project.relPath} — cap reached`); continue; }
 
       const workflowName = project.workflow || "project";
       const workflowPath = join(workflowsDir, `${workflowName}.ts`);
@@ -119,11 +119,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
       const projectDir = dirname(project.projectFile);
       const task = `project: ${projectDir}\nagent: ${project.owner}\ngoal: see project file`;
-      const runId = generateRunId();
+      const runId = ph.generateRunId();
       ctx.log(`[project] Launching ${project.relPath} (workflow: ${workflowName}): ${action.reason}`);
 
       const wfRun = { runId, workflow: workflowName, task, parentSessionId: null as string | null, agent: project.owner, startedAt: Date.now(), status: "running", steps: [] as Array<{ sessionId: string; agent: string; status: string }> };
-      saveWorkflowRunFile(ctx.projectRoot, wfRun);
+      ph.saveWorkflowRunFile(ctx.projectRoot, wfRun);
 
       const workflowCtx = {
         emit: (e: any) => ctx.emit(e), getDb: () => ctx.getDb(), log: (m: string) => ctx.log(m),
@@ -138,7 +138,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         },
         runAgent: async (agentName: string, agentTask: string) => {
           const result = await ctx.manager.callAgent(agentName, agentTask, { source: "workflow", workflowRunId: runId, projectId: `${project.owner}/${project.relPath.split("/").pop()}` });
-          if (result.sessionId) { wfRun.steps.push({ sessionId: result.sessionId, agent: agentName, status: result.status ?? "done" }); saveWorkflowRunFile(ctx.projectRoot, wfRun); }
+          if (result.sessionId) { wfRun.steps.push({ sessionId: result.sessionId, agent: agentName, status: result.status ?? "done" }); ph.saveWorkflowRunFile(ctx.projectRoot, wfRun); }
           return result;
         },
         runWorkflow: async () => ({ type: "escalate" as const, reason: "Sub-workflows not supported" }),
@@ -193,12 +193,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       };
 
       inflight.add(project.relPath);
-      writeInflight(inflightFile, inflight);
+      ph.writeInflight(inflightFile, inflight);
 
       wfMod.execute(workflowCtx)
-        .then((r: any) => { ctx.log(`[project] ${project.relPath} → ${r.type}`); wfRun.status = "done"; wfRun.endedAt = Date.now(); saveWorkflowRunFile(ctx.projectRoot, wfRun); })
-        .catch((e: any) => { ctx.log(`[project] ${project.relPath} ERROR: ${e}`); wfRun.status = "error"; wfRun.endedAt = Date.now(); saveWorkflowRunFile(ctx.projectRoot, wfRun); })
-        .finally(() => { inflight.delete(project.relPath); writeInflight(inflightFile, inflight); });
+        .then((r: any) => { ctx.log(`[project] ${project.relPath} → ${r.type}`); wfRun.status = "done"; wfRun.endedAt = Date.now(); ph.saveWorkflowRunFile(ctx.projectRoot, wfRun); })
+        .catch((e: any) => { ctx.log(`[project] ${project.relPath} ERROR: ${e}`); wfRun.status = "error"; wfRun.endedAt = Date.now(); ph.saveWorkflowRunFile(ctx.projectRoot, wfRun); })
+        .finally(() => { inflight.delete(project.relPath); ph.writeInflight(inflightFile, inflight); });
 
       pState.lastLaunch = now;
       pState.consecutiveSkips = 0;
@@ -206,7 +206,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     }
 
     healthState.lastFullScan = now;
-    writeHealthState(stateFile, healthState);
+    ph.writeHealthState(stateFile, healthState);
 
     if (launched > 0) {
       const source = event?.source ?? "timer";
