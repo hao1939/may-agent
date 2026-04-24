@@ -52,6 +52,7 @@
 - [ ] ~~Update design doc INDEX.md to mark session-digest.md as fully implemented~~ ✅ Done
 
 ## Deferred (P3) — Runtime Changes (require Hao)
+- [ ] EXP-216 Phase 2: Wire EditGuard into beforeToolCall — BLOCKED on runtime binary (see EXP-216/results.md). Workflow-level read-before-edit guard already active.
 - [ ] Coach growth-cycle reliability — needs runtime changes to manager.ts
 - [ ] meta.json cost tracking — needs runtime changes (PersistedSession)
 - [ ] Gym Evolution Dual-Score Architecture — needs runtime changes (gym runner)
