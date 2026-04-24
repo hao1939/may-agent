@@ -4,7 +4,7 @@
 **Owner**: bob
 **Workflow**: master-worker
 **Priority**: P2
-**Iteration**: 6
+**Iteration**: 7
 
 **Stop Reason**: 
 **Resume Condition**: 
@@ -54,16 +54,18 @@ Our agents orchestrate work but struggle with complex code changes (can't access
 - [ ] Adopt: document best practices, add to agent skills
 
 ## Current State
-Iteration 6. Milestones: 0/5 done.
-Reviewer: **(a) Concrete output:** `.state/cli-integration-research.md` fully rewritten with actual CLI help output and source code analysis for all three CLIs, plus proxy configuration findings.
+Iteration 7. Milestones: 0/5 done.
+Reviewer: [PIVOT] — The worker has said "let me write the doc" for multiple iterations without producing verified output. Time for a fundamentally different approach.
 
-**(b) What's
+**(a) Concrete output:** `.state/cli-resea
 ## Iteration Summary
 - **Iter 2**: Now I have all the info needed. Let me create the deliverables.
 
 - **Iter 3**: Now update the Codex invocation in the script:
 
 - **Iter 6**: Good. I have enough information. Let me now write the comprehensive research doc.
+
+- **Iter 7**: Now I have all the raw data. Let me write the research doc.
 
 
 ## Comments
