@@ -35,16 +35,47 @@ const cutoff = Date.now() - MS_7D;
 // instructional text mentioning "BELOW TARGET" (e.g. "if you see BELOW TARGET, act on it").
 // This caused EVERY session for those agents to match, even when metrics were green.
 // Fix: require the metric-line pattern "📊 ... ⚠️ BELOW TARGET" in the task, not just the phrase.
-const allRows = db.query(`
-  SELECT s.sessionId, s.agent, s.startedAt, s.task,
-         d.what_happened, d.details, d.outcome,
-         CASE WHEN s.task LIKE "%RED METRICS that must be addressed%" THEN 1 ELSE 0 END as is_gate
-  FROM sessions s
-  LEFT JOIN session_digests d ON d.sessionId = s.sessionId AND d.trigger = "end"
-  WHERE s.startedAt > ?
-    AND s.task LIKE "%BELOW TARGET%"
-    AND s.task LIKE "You are **%"
-`).all(cutoff)
+// v6 (2026-04-22): Work around SQLITE_CORRUPT by paginating through corrupt pages
+// The sessions table has corrupt pages that cause full scans to fail.
+// We paginate in small batches and skip corrupt ranges.
+const sessionIds = db.query(`
+  SELECT sessionId, agent, startedAt FROM sessions WHERE startedAt > ?
+`).all(cutoff);
+
+const sessions = [];
+// Fetch task text per-session to avoid hitting corrupt pages in bulk
+for (const s of sessionIds) {
+  try {
+    const row = db.query(`SELECT task FROM sessions WHERE sessionId = ?`).get(s.sessionId);
+    if (row && row.task && row.task.includes("BELOW TARGET") && row.task.startsWith("You are **")) {
+      sessions.push({
+        ...s,
+        task: row.task,
+        is_gate: row.task.includes("RED METRICS that must be addressed") ? 1 : 0
+      });
+    }
+  } catch(e) {
+    // Skip corrupt rows
+  }
+}
+
+// Build digest lookup from separate query (avoids corrupt JOIN)
+const digestMap = new Map();
+try {
+  const digests = db.query(`
+    SELECT sessionId, what_happened, details, outcome
+    FROM session_digests
+    WHERE trigger = "end"
+  `).all();
+  for (const d of digests) digestMap.set(d.sessionId, d);
+} catch(e) {
+  console.error("Warning: session_digests query failed, proceeding without digests:", e.message);
+}
+
+const allRows = sessions.map(s => {
+  const d = digestMap.get(s.sessionId) || {};
+  return { ...s, what_happened: d.what_happened || null, details: d.details || null, outcome: d.outcome || null };
+})
   // Filter to sessions that actually had a metric line with BELOW TARGET
   // (not just instructional text in context.md/heartbeat.md)
   .filter(r => /📊[^\n]*BELOW TARGET/.test(r.task) || r.is_gate);
