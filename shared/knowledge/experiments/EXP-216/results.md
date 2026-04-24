@@ -1,7 +1,7 @@
 # EXP-216: Results
 
-**Status**: BLOCKED — runtime integration required
-**Updated**: 2026-04-24 (tech-lead heartbeat)
+**Status**: SUPERSEDED by workflow guards
+**Updated**: 2026-08-01 (tech-lead heartbeat)
 
 ## Phase 1: Complete
 
@@ -39,10 +39,20 @@ Confirmed the blocker independently:
 
 Instead of the `beforeToolCall` hook, we could wrap the `edit` tool definition itself to check a session-level read-set. The tool definitions are created by `createCodingTools()` — if that function is in editable code, we can intercept there. This avoids the runtime binary entirely.
 
-**Action**: Investigate `createCodingTools` source location. If editable, implement guard as a tool wrapper.
+**Action**: ~~Investigate tool-wrapper approach~~ — moot, see below.
+
+### Key finding: workflow guards already cover this
+
+`agents/shared/guards/read-before-edit.ts` already implements C1.1 enforcement at the workflow level:
+- Fires on `step_done` events, scans tool calls for edit-without-read
+- Injects a corrective `run_step` that forces the agent to read and verify files
+- Also: `verify-after-write.ts` covers C1.3
+
+These workflow guards are a Ch2 structural enforcement — the same category as `beforeToolCall`. They just operate at step boundary instead of per-tool-call. The `beforeToolCall` approach would be more immediate (blocks the edit before it runs), but the workflow guard approach (corrects after the step) is already deployed and working.
+
+**Recommendation**: Close EXP-216 Phase 2 as SUPERSEDED. Measure whether the workflow guards achieve the <5% C1.1 target. If they don't, the `beforeToolCall` approach remains the escalation path (requires runtime binary update).
 
 ## Followups
 
-- ~~Escalate to Hao: runtime needs guard composition wiring~~ (binary is compiled, not actionable)
-- **Investigate tool-wrapper approach**: wrap `edit` tool's execute function to enforce read-before-edit
-- Find where `createCodingTools` is defined — if it's in the npm package, this is also blocked
+- Measure C1.1/C1.3 rates under current workflow guards to see if <5% target is met
+- If not met: escalate to runtime owner for `beforeToolCall` support in agent.json config
