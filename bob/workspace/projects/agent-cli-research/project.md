@@ -4,7 +4,7 @@
 **Owner**: bob
 **Workflow**: master-worker
 **Priority**: P2
-**Iteration**: 5
+**Iteration**: 6
 
 **Stop Reason**: 
 **Resume Condition**: 
@@ -54,11 +54,16 @@ Our agents orchestrate work but struggle with complex code changes (can't access
 - [ ] Adopt: document best practices, add to agent skills
 
 ## Current State
-Blocked: The worker has confirmed across multiple iterations that no API keys are configured for any of the CLIs (Claude Code, Gemini CLI, OpenAI Codex). These
+Iteration 6. Milestones: 0/5 done.
+Reviewer: **(a) Concrete output:** `.state/cli-integration-research.md` fully rewritten with actual CLI help output and source code analysis for all three CLIs, plus proxy configuration findings.
+
+**(b) What's
 ## Iteration Summary
 - **Iter 2**: Now I have all the info needed. Let me create the deliverables.
 
 - **Iter 3**: Now update the Codex invocation in the script:
+
+- **Iter 6**: Good. I have enough information. Let me now write the comprehensive research doc.
 
 
 ## Comments
