@@ -79,5 +79,41 @@ test('getProductById returns null for missing product', () => {
   assert(product === null, 'Should return null for missing product');
 });
 
+// --- Input Validation ---
+
+test('searchProducts returns empty array for non-string input', () => {
+  assert.deepStrictEqual(searchProducts(undefined), []);
+  assert.deepStrictEqual(searchProducts(null), []);
+  assert.deepStrictEqual(searchProducts(''), []);
+  assert.deepStrictEqual(searchProducts(123), []);
+});
+
+test('searchByCategory returns empty array for non-string input', () => {
+  assert.deepStrictEqual(searchByCategory(undefined), []);
+  assert.deepStrictEqual(searchByCategory(null), []);
+  assert.deepStrictEqual(searchByCategory(''), []);
+});
+
+test('getProductById returns null for invalid id', () => {
+  assert(getProductById('abc') === null);
+  assert(getProductById(-1) === null);
+  assert(getProductById(0) === null);
+  assert(getProductById(NaN) === null);
+});
+
+// --- SQL Injection Regression ---
+
+test('searchProducts handles SQL injection attempt safely', () => {
+  const results = searchProducts("'; DROP TABLE products; --");
+  assert(Array.isArray(results), 'Should return array, not crash');
+  assert(results.length === 0, 'Injection payload should match nothing');
+});
+
+test('searchByCategory handles SQL injection attempt safely', () => {
+  const results = searchByCategory("electronics' OR '1'='1");
+  assert(Array.isArray(results), 'Should return array');
+  assert(results.length === 0, 'Injection should not bypass category filter');
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

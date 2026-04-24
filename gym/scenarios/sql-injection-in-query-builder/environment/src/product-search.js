@@ -12,6 +12,7 @@ const { findProductsByName, findProductsByCategory, findProductById } = require(
  * @returns {Array<{id: number, name: string, price: string}>}
  */
 function searchProducts(query) {
+  if (typeof query !== 'string' || query.trim().length === 0) return [];
   const rows = findProductsByName(query) || [];
 
   return rows.map(row => ({
@@ -28,6 +29,7 @@ function searchProducts(query) {
  * @returns {Array<{id: number, name: string, price: string}>}
  */
 function searchByCategory(category) {
+  if (typeof category !== 'string' || category.trim().length === 0) return [];
   const rows = findProductsByCategory(category) || [];
 
   return rows.map(row => ({
@@ -44,7 +46,9 @@ function searchByCategory(category) {
  * @returns {{id: number, name: string, price: string, category: string}|null}
  */
 function getProductById(id) {
-  const row = findProductById(id);
+  const numId = Number(id);
+  if (!Number.isInteger(numId) || numId <= 0) return null;
+  const row = findProductById(numId);
   if (!row) return null;
 
   return {
