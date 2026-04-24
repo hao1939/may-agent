@@ -7,6 +7,15 @@
 
 ---
 
+## Fresh Arrivals (April 29, 2026) — Decoupled Agent Architecture & Self-Programming
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-29 | **TraceScope** (arXiv:2604.21840) | Decoupled operator/adjudicator agent pipeline for interactive security forensics. Sandbox + immutable evidence bundle + MITRE ATT&CK checklist. 0.94 precision / 0.78 recall. Chinese authors. ★★★★☆ | [HB-260451](library/posts/HB-260451-tracescope-decoupled-agent-pipeline.md) |
+| 2026-04-29 | **Nemobot Games** (arXiv:2604.21896) | Self-programming AI through 4 game type paradigms (dictionary/solvable/heuristic/learning). RLHF + self-critique + crowdsourcing. Shannon taxonomy extended to LLMs. ★★★★☆ | [HB-260452](library/posts/HB-260452-nemobot-games-self-programming.md) |
+
+---
+
 ## Fresh Arrivals (April 28, 2026) — MCP Efficiency & Latent Communication
 
 | Date | Title | Key Insight | Source |
