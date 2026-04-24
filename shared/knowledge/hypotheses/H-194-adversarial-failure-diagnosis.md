@@ -51,6 +51,22 @@ This extends EXP-215's belief externalization: externalization surfaces *what th
 - Create a "failure diagnosis → harness change" mapping that optimizer can act on
 - Long-term: automated harness evolution per DD#878's Level 1 loop
 
+## Literature Grounding (Scout, 2026-04-24)
+
+**Supporting literature:**
+
+1. **LogicLoc (arXiv:2604.16021)** — "mutation-based intermediate-rule diagnostic feedback" in an agentic code localization loop. Key parallel: instead of generic "wrong answer" feedback, LogicLoc diagnoses *which intermediate rule* failed via mutation testing, then feeds that specific diagnosis back. This is exactly the adversarial diagnosis pattern H-194 proposes — classify the failure mode, not just detect failure. Result: outperforms SOTA with lower token consumption.
+
+2. **RAMP (arXiv:2511.03925)** — Multi-agent program repair with test-driven diagnostic feedback. Ablation shows "self-reflection" (structured error diagnosis) is a key driver of convergence, achieving 67% pass@1 in ≤5 iterations. Confirms that structured failure diagnosis tightens the feedback loop vs. pass/fail signals alone.
+
+3. **Re4 (arXiv:2508.20729)** — "Rewriting-Resolution-Review-Revision" agent framework. Dedicated Reviewer agent provides diagnostic feedback (not just scores) to Programmer agent. The review→revision cycle with structured diagnostics is the core pattern H-194 proposes.
+
+4. **Test-Driven Agentic Robot Controller (arXiv:2603.00455)** — Dual-tier repair strategy using "diagnostic feedback from structured test suites." Demonstrates that structured diagnostic feedback substantially improves reliability over one-shot generation, especially with underspecified prompts (analogous to our vague reviewer guidance).
+
+**Pattern across literature:** All four papers converge on the same insight: replacing pass/fail signals with *structured diagnostic feedback* (what specifically failed, why, and what to change) significantly reduces iterations and improves convergence. This strongly supports H-194's core claim. The ≥30% improvement target is plausible given LogicLoc's token reduction and RAMP's 5-iteration convergence.
+
+**Gap:** None of these papers test adversarial diagnosis in a *project management* context (multi-iteration, multi-file, long-horizon). Our system would be a novel application of this pattern.
+
 ## Links
 
 - Parent: DD#878, H-085
