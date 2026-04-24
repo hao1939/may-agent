@@ -403,6 +403,16 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       if (sampled.length > 0) {
         ctx.log(`[evaluation-sync] LLM-evaluating ${sampled.length} of ${heuristicSessions.length} heuristic sessions`);
 
+        // Prepare upsert using the handler's own DB connection (not ctx's WAL
+        // connection which never checkpoints to disk — the original bug).
+        const llmUpsert = db.prepare(`
+          INSERT OR REPLACE INTO evaluations
+            (sessionId, agent, quality, efficiency, productiveCalls, wastedCalls,
+             verdict, issues, overall, usage, failureChains,
+             evaluatedByHeuristic, skippedByJs, createdAt)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+
         let llmEvaluated = 0;
         for (const session of sampled) {
           try {
@@ -416,6 +426,29 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             });
 
             if (result) {
+              // Write LLM evaluation result using our own DB connection so it
+              // actually persists to disk (bypasses the WAL bug in ctx).
+              llmUpsert.run(
+                session.sessionId,
+                session.agent,
+                result.quality,
+                result.efficiency,
+                0, // productiveCalls — not returned by evaluateStandaloneSession
+                0, // wastedCalls
+                result.verdict,
+                JSON.stringify(result.issues),
+                JSON.stringify({
+                  quality: result.quality,
+                  efficiency: result.efficiency,
+                  verdict: result.verdict,
+                  result_delivered: result.verdict === "good" || result.verdict === "acceptable",
+                }),
+                "{}",  // usage — already written by heuristic pass
+                "[]",  // failureChains
+                0,     // evaluatedByHeuristic = false (this is LLM)
+                0,     // skippedByJs = false
+                Date.now(),
+              );
               llmEvaluated++;
               ctx.log(
                 `[evaluation-sync] LLM eval: ${session.agent}/${session.sessionId} → ` +

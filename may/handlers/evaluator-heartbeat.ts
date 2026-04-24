@@ -18,6 +18,7 @@
  * Exports create() conforming to HandlerModule.
  */
 
+import { Database } from "bun:sqlite";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.js";
@@ -282,31 +283,68 @@ async function sampleAndEvaluateTopLevel(
     selected.map((s) => `${s.agent}/${s.sessionId}`).join(", "),
   );
 
-  let evaluated = 0;
-  for (const session of selected) {
-    try {
-      const result = await evaluateStandaloneSession({
-        manager: ctx.manager,
-        ctx,
-        sessionId: session.sessionId,
-        agent: session.agent,
-        task: session.task,
-        status: session.status,
-      });
+  // Use our own DB connection for persistence (ctx.getDb() WAL connection
+  // never checkpoints to disk — same bug as evaluation-sync).
+  const dbPath = join(ctx.projectRoot, ".state", "may.db");
+  const ownDb = new Database(dbPath);
+  const llmUpsert = ownDb.prepare(`
+    INSERT OR REPLACE INTO evaluations
+      (sessionId, agent, quality, efficiency, productiveCalls, wastedCalls,
+       verdict, issues, overall, usage, failureChains,
+       evaluatedByHeuristic, skippedByJs, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
 
-      if (result) {
-        evaluated++;
+  let evaluated = 0;
+  try {
+    for (const session of selected) {
+      try {
+        const result = await evaluateStandaloneSession({
+          manager: ctx.manager,
+          ctx,
+          sessionId: session.sessionId,
+          agent: session.agent,
+          task: session.task,
+          status: session.status,
+        });
+
+        if (result) {
+          // Persist via our own connection (bypasses WAL bug).
+          llmUpsert.run(
+            session.sessionId,
+            session.agent,
+            result.quality,
+            result.efficiency,
+            0, 0,
+            result.verdict,
+            JSON.stringify(result.issues),
+            JSON.stringify({
+              quality: result.quality,
+              efficiency: result.efficiency,
+              verdict: result.verdict,
+              result_delivered: result.verdict === "good" || result.verdict === "acceptable",
+            }),
+            "{}",
+            "[]",
+            0, // evaluatedByHeuristic = false
+            0, // skippedByJs = false
+            Date.now(),
+          );
+          evaluated++;
+          ctx.log(
+            `[evaluator-heartbeat] LLM eval: ${session.agent}/${session.sessionId} → ` +
+            `Q:${result.quality.toFixed(2)} E:${result.efficiency.toFixed(2)} ${result.verdict}`,
+          );
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
         ctx.log(
-          `[evaluator-heartbeat] LLM eval: ${session.agent}/${session.sessionId} → ` +
-          `Q:${result.quality.toFixed(2)} E:${result.efficiency.toFixed(2)} ${result.verdict}`,
+          `[evaluator-heartbeat] LLM eval error for ${session.sessionId}: ${msg}`,
         );
       }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      ctx.log(
-        `[evaluator-heartbeat] LLM eval error for ${session.sessionId}: ${msg}`,
-      );
     }
+  } finally {
+    ownDb.close();
   }
 
   if (evaluated > 0) {
