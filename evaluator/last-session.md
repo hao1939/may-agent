@@ -1,9 +1,9 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777052085048_201
+- **Session:** s_1777053324313_232
 - **Status:** done
-- **When:** 2026-04-24T17:34:56.133Z
+- **When:** 2026-04-24T17:55:36.306Z
 - **Duration:** 11s
 
 ## What Happened
@@ -13,25 +13,27 @@
     "coach": {
       "role": "Philosopher/Architect",
       "capability_level": "L2",
-      "efficiency": 0.7,
-      "quality": 0.65,
+      "efficiency": 0.65,
+      "quality": 0.9,
       "verdict": "acceptable",
       "issues": [
-        "[FM-3.3] Initial verification failure: attempted to finish after editing `.state/breadcrumb-effectiveness-evidence.md` without post-edit verification; guard blocked and required follow-up verification (coach ran `grep` only afterward).",
-        "Deliverable integrity risk: attempted a full overwrite via `write` that was blocked as a truncated rewrite (would have shrunk file to 22% of prior size). Recovery was correct (append via bash), but it indicates weak situational awareness about existing file size/content.",
-        "Does not fully meet owner guidance: Section 8 was supposed to contain only verbatim tool output; the appended section includes explanatory prose (e.g., 'Transcript content: ...') before the code block per transcript."
+        "Avoidable investigation loop before running the required gym scenarios: spent multiple bash calls checking/repairing bundle/tool-preset state before simply attempting gym-run as instructed (failure chain 1).",
+        "Minor process friction with gitignored workspace artifact; initial commit attempt failed and required retry with -f (failure chain 2).",
+        "Evidence capture for two gym runs was low-fidelity in the transcript (grepping for \"passed\" produced truncated JSON snippets), though later documentation/runIds were recorded and a summary file was produced."
       ],
       "metrics": {
-        "task_completion": "partial (evidence appended, but guidance compliance questionable)",
-        "evidence_quality": "medium (terminal output captured, but verification of exact content is weak)",
-        "process_compliance": "medium (eventually complied via git commit + guard-driven verification)"
+        "task_completion": "high",
+        "evidence_quality": "medium-high",
+        "process_efficiency": "medium",
+        "risk_management": "medium-high"
       }
     }
   },
   "workflow": {
-    "name": "iteration-13 breadcrumb evidence pivot",
+    "name": "weekly promoted-skill regression check",
     "issues": [
-      "Guardrail interventions were necessary to reach minimal verification and correct tool usage (write-block, finish-block for uncommitted changes, finish-block for no post-edit verification)."
+      "Procedure said: run gym scenarios first, stop only if gym cannot launch at all. The agent inserted a preflight bundle/tool-preset investigation that created an error chain (grep on strings returned exit code 1) before executing the core steps.",
+      "Tooling friction: generated report file lived under an ignored path, requiring forced add; consider standardizing what artifacts belong in version control vs ignored workspace outputs."
     ]
   },
   "overall": {
@@ -39,8 +41,9 @@
     "result_delivered": true
   },
   "lessons": [
-    "[coach] When updating an existing large evidence file, avoid `write()` unless you have read the full file; use `edit()` or append with bash to prevent truncated rewrites (write was blocked at 22% size).",
-    "[coach] Post-edit verification must be meaningful: `grep -c` confirms presence of keywords but not that the 'verbatim terminal output' requirement is met; prefer `read()` around the appended section to validate exact content and formatting."
+    "[coach] Follow the stated procedure order: attempt `scripts/gym-run.sh <scenario> --agent coach --trials 1` first; only investigate tool presets/bundling if gym fails to launch. This prevents preflight loops (seen in failure chain 1).",
+    "[coach] If a required deliverable is under an ignored directory, decide early whether to (a) move it to a tracked location, or (b) plan to `git add -f` once, to avoid a failed commit attempt (failure chain 2).",
+    "[coach] When capturing gym evidence, prefer extracting runId + passed boolean in a single command that prints the final summary object (or keep full tail output) instead of grep-limited snippets, to strengthen auditability."
   ]
 }
 ```
