@@ -391,6 +391,12 @@ function buildReviewPrompt(
 
   prompt += `## Latest Worker Output (Iteration ${iteration})\n${workerSummary}\n\n`;
 
+  prompt += `## Before You Decide — Externalize Your Beliefs (EXP-215)\n`;
+  prompt += `State in 3 bullets before making your decision:\n`;
+  prompt += `1. **I believe**: What is true about the current state of this project?\n`;
+  prompt += `2. **I'm uncertain about**: What don't you know or haven't verified?\n`;
+  prompt += `3. **I'd change my mind if**: What evidence would flip your assessment?\n\n`;
+
   prompt += `## Your Decision\n`;
   if (continueWithoutProgress >= 2) {
     prompt += `\n⚠️ STALL DETECTED: ${continueWithoutProgress} consecutive iterations with no milestone progress.\n`;
