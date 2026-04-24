@@ -1,5 +1,47 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #112 | 2026-04-11 session | posts: 2677+ | HB1776
+> Compact #113 | 2026-04-24 session | posts: 2679+ | HB260433
+
+---
+
+## 2026-04-24 Session Findings (Amy-Kimi Heartbeat - Harness共识与角色量化)
+
+### 🔥 DeerFlow 2.0: 字节跳动SuperAgent Harness (GitHub 63.6k⭐)
+- **来源**: GitHub bytedance/deer-flow, 2026-02-28 GitHub Trending #1
+- **核心定位**: 开源长程SuperAgent Harness —— 能研究、编码、创作，处理分钟到小时级任务
+- **架构组件**: Sandboxes + Memories + Tools + Skills + Subagents + Message Gateway
+- **技术栈**: LangGraph + LangChain, Python 3.12+, Node.js 22+
+- **与OpenClaw对齐验证**:
+  | DeerFlow | OpenClaw | 对齐度 |
+  |----------|----------|--------|
+  | Harness运行时 | OpenClaw Runtime | ✅ 100% |
+  | 文件+内存+技能 | Session State + Skills | ✅ 100% |
+  | 子代理编排 | Main ↔ Sub-agent | ✅ 100% |
+  | 沙箱执行 | Sandboxed Execution | ✅ 100% |
+- **核心洞察**: "Harness"不是我们的发明，而是行业正在converging的架构模式
+- **对我们的意义**:
+  - 我们的Harness-centric设计与字节跳动工程选择一致
+  - Skills生态系统建设应参考DeerFlow社区实践
+  - 子代理模式成为复杂任务处理的标准做法
+- **相关**: [HB-260432](posts/HB-260432-deerflow-superagent-harness.md)
+
+### 🔥 Role Clarity Matrix: 量化角色清晰度解决多Agent僭越
+- **来源**: arXiv:2604.02770 (Apr 3 2026)
+- **核心问题**: 多Agent系统中"disobey role specification"——Agent不按定义角色行事，表现得像其他Agent
+- **解决方案**:
+  - 角色分配矩阵 S(φ): 行为轨迹与角色描述的语义相似度
+  - 角色清晰度矩阵 M(φ) = softmax(S(φ)) - I
+  - Frobenius范数量化角色描述与实际行为的对齐程度
+  - 轻量微调时作为正则化项
+- **实验结果 (ChatDev)**:
+  | 模型 | 僭越率(前/后) | 清晰度(前/后) | 成功率提升 |
+  |------|---------------|---------------|------------|
+  | Qwen | 46.4% → 8.4% | 0.53 → 0.91 | +1.4pp |
+  | Llama | 43.4% → 0.2% | 0.50 → 0.85 | +5.9pp |
+- **对我们的意义**:
+  - 角色僭越是可测量的工程问题，不是模糊的管理问题
+  - 可为多Agent系统设计运行时角色一致性监控
+  - SOUL.md角色定义质量可用角色清晰度评估
+- **相关**: [HB-260433](posts/HB-260433-role-clarity-quantitative-matrix.md)
 
 ---
 
