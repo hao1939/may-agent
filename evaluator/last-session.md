@@ -1,45 +1,47 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777049419399_148
+- **Session:** s_1777049718553_154
 - **Status:** done
-- **When:** 2026-04-24T16:50:26.286Z
-- **Duration:** 6s
+- **When:** 2026-04-24T16:55:27.481Z
+- **Duration:** 8s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "bob": {
+    "coach": {
       "role": "Philosopher/Architect",
-      "capability_level": "L2",
-      "efficiency": 0.55,
-      "quality": 0.85,
-      "verdict": "acceptable",
+      "capability_level": "L3",
+      "efficiency": 0.85,
+      "quality": 0.8,
+      "verdict": "good",
       "issues": [
-        "Initial PATH_HALLUCINATION: ran `cd /home/user` despite environment root being /app (tool error).",
-        "Did unnecessary repo hygiene work (commit) even though the user task was to fix tests in the pipeline and no fixes were required; this added extra steps without improving task outcome.",
-        "Hit finish-guard twice for insufficient post-write verification due to committing a file, requiring additional verification loops.",
-        "Ran `git diff HEAD~1` in /app (not a git repo), causing a wasted call; should have used `/app/agents` git repo or avoided diff entirely."
+        "Committed unrelated files (coder/last-session.md, evaluator/last-session.md, optimizer/last-session.md) alongside the intended skill change; increases side-effect risk and review noise.",
+        "Finish note recommends reading .state/sessions/history/*/session.jsonl for sampling violating sessions; that conflicts with evaluator-side efficiency guidance (though this was advice, not a tool action here)."
       ],
       "metrics": {
-        "task_completion": "high (confirmed tests pass)",
-        "evidence_quality": "high (ran tests, showed results)",
-        "process_discipline": "medium (guard friction + unnecessary commit)",
-        "waste": "moderate (multiple avoidable tool calls)"
+        "intervention_choice": "Appropriate: targeted 1 high-impact intervention (scout C1.7 at 49%) and skipped lower-signal items (bob 12%, amy n=2).",
+        "evidence_discipline": "Good: verified skill change via wc/grep and commit stat before finish.",
+        "scope_control": "Moderate: allowed unrelated auto-tracked files into the commit."
       }
     }
   },
   "workflow": {
-    "name": "single-session test-fix task",
+    "name": "coaching-feedback: convention violation analysis",
     "issues": [
-      "Task premise said tests failing, but evidence showed 23/23 passing; agent correctly relied on tests, but spent extra cycles satisfying finish-guard due to creating an unrelated change.",
-      "Guard friction indicates the agent created/committed changes and then had to re-verify; could have avoided by not modifying anything when no fixes were needed."
+      "No structured per-agent recommendation message output is shown in transcript; coach performed a direct skill update + skip rationale, which mostly satisfies intent but is less explicitly structured than requested.",
+      "Intervention limit respected (1 intervention)."
     ]
   },
   "overall": {
-    "verdict": "acceptable",
+    "verdict": "good",
     "result_delivered": true
   }
 }
 ```
+
+Evidence cited:
+- Skill update performed: `edit` applied to `agents/scout/skills/verify-before-finish.md` adding “Scout-specific: dispatcher-no-op heartbeats” section (diff shown in tool output).
+- Verification before finish: `bash wc -l ...` returned `83` lines and `grep -c "Scout-specific"` returned `1`.
+- Commit evidence: `git show --stat HEAD` shows the skill file changed (+25 insertions) and also shows 3 unrelated `*/last-session.md` files included.
