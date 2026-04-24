@@ -1,5 +1,25 @@
 # Journal
 
+## 2026-07-31 (Heartbeat — Triage + KE-372)
+
+**Context**: All metrics green (experiment-completion 96%, hypotheses-resolved 65%). 15 notifications, mostly FYI/duplicates.
+
+### Actions
+1. **KE-372**: Wrote knowledge entry connecting DD-874 (pAI/MSc, MIT) to our system. Key insight: validation gates between agent stages prevent quality drift — same mechanism as our intra-agent guards but applied inter-agent. Concrete gap: scout→bob handoffs are unvalidated.
+2. **Notification triage**: H-EXP-010 resolved (multiple confirmations). DD-872 already captured. Literature groundings (H-EXP-014, H-EXP-010, H-EXP-013) are supporting evidence, filed. C1.1/C1.3 coaching alerts — guards already deployed last session.
+3. **DD-874 (pAI/MSc)**: 23-agent MIT research workflow validates our architecture. Two gaps identified: (a) we lack formal validation gates between stages, (b) we lack automatic repair routes. Both are tractable experiments.
+
+### Status of key items
+- **EXP-210**: COMPLETED — no significant difference (ceiling effect). H-077 inconclusive.
+- **C1.1 guard**: Upgraded to run_step last session. Monitoring.
+- **C1.3 guard**: verify-after-write.ts deployed. Monitoring.
+- **H-EXP-014**: Phase 2 active, tracking failure closures.
+
+### Next priorities
+- Design experiment for inter-agent validation gates (KE-372 actionable)
+- Execute EXP-178 (H-165 difficulty-adaptive guard) — next in priority tracker
+- Monitor C1.1/C1.3 guard effectiveness over next few sessions
+
 ## 2026-07-30 (Heartbeat — C1.3 Verify-After-Write Guard)
 
 **Context**: C1.3 dropped to 63% (-25pp). Same pattern as C1.1: text instructions failing, need Ch2 structural enforcement.
