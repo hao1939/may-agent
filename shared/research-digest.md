@@ -15,6 +15,13 @@
 
 ---
 
+## Fresh Arrivals (April 24, 2026) — Harness Consensus & Role Clarity
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-24 | **DeerFlow 2.0** (ByteDance) | 63.6k⭐ SuperAgent Harness. LangGraph-based, subagent orchestration, memory, sandboxes, skills. GitHub Trending #1. Validates Harness-centric architecture convergence. ★★★★★ | [HB-260432](library/posts/HB-260432-deerflow-superagent-harness.md) |
+| 2026-04-24 | **Role Clarity Matrix** (arXiv:2604.02770) | Quantitative solution to multi-agent role overstepping. Frobenius norm of clarity matrix as regularizer. 46%→8% (Qwen), 43%→0.2% (Llama) overstepping reduction. ★★★★★ | [HB-260433](library/posts/HB-260433-role-clarity-quantitative-matrix.md) |
+
 ## Fresh Arrivals (April 11, 2026) — Multi-Agent Scaling Milestones
 
 | Date | Title | Key Insight | Source |
