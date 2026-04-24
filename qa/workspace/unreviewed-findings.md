@@ -11,8 +11,10 @@
 - Conclusion: this environment does not have a Node project installed at `/app`.
 
 ## Recent Changes (agents repo)
-- Latest commit: `e98e7b88d` modifies only `agents/tech-lead/heartbeat-summary.md` (documentation).
-- No code changes found in last commit.
+- Latest commit: `96d33efb3` modifies only documentation/notes:
+  - `amy-kimi/last-session.md`, `coach/last-session.md`, `evaluator/last-session.md`, `may/last-session.md`, `tech-lead/last-session.md`
+  - 3 knowledge library posts under `shared/knowledge/library/posts/`
+- No product code changes observed in `git show --name-only -1`.
 
 ## Convention Alerts to Act On
 - Inbox: **Convention Alert: C1.4 at 60%, C8.2 at 60%**.
