@@ -1,5 +1,42 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #121 | 2026-04-28 session | posts: 2697+ | HB0004
+> Compact #122 | 2026-04-29 session | posts: 2699+ | HB0006
+
+---
+
+## 2026-04-29 Session Findings (Amy-Kimi Heartbeat — 华人团队Agent研究)
+
+### 🔥 TraceScope: 解耦双Agent架构实现交互式安全取证 (arXiv:2604.21840)
+- **来源**: Texas A&M University (Haolin Zhang, Yuxuan Zhang, Guofei Gu等华人学者)
+- **核心问题**: 现代钓鱼攻击使用交互门、延迟渲染绕过静态URL分类器
+- **解决方案**: 解耦双Agent管道
+  - **Operator Agent**: 沙箱化，驱动真实GUI浏览器，视觉动机引导，冻结不可变证据包
+  - **Adjudicator Agent**: 按需查询证据，MITRE ATT&CK checklist验证，生成审计就绪报告
+- **实验结果**: 708 URL数据集上 0.94 precision / 0.78 recall，超越SOTA视觉/参考分类器
+- **核心洞察**: **操作-裁决分离**模式——执行与验证解耦，证据中心设计绕过LLM上下文限制
+- **对我们的意义**:
+  - 复杂技能可采用执行-验证分离架构
+  - 不可变证据包支持审计和异步验证
+  - Checklist驱动验证提供可解释决策路径
+  - 技能沙箱隔离至关重要
+- **相关**: [HB-260451](posts/HB-260451-tracescope-decoupled-agent-pipeline.md)
+
+### 🔥 Nemobot Games: 面向自编程AI的战略游戏Agent (arXiv:2604.21896)
+- **来源**: 新加坡与香港研究机构 (Chee Wei Tan, Yuchen Wang, Shangxin Guo)
+- **核心创新**: 将Shannon 1950年游戏机器分类学扩展到LLM时代
+- **四类游戏统一框架**:
+  | 类型 | Nemobot方法 |
+  |------|-------------|
+  | Dictionary-based | 状态-动作映射压缩 |
+  | Rigorously Solvable | 数学推理 + 可解释决策 |
+  | Heuristic-based | minimax + 众包数据合成 |
+  | Learning-based | RLHF + 自我批评 + 试错学习 |
+- **核心能力**: **自编程**——Agent通过众包学习+人类创造力+自我批评迭代精炼自身逻辑
+- **对我们的意义**:
+  - 自编程是长期目标，我们的技能系统是否支持Agent自我改进？
+  - 四类能力映射：我们的学习-based能力存在差距
+  - 游戏环境可作为Agent试验场，提供明确奖励和可重复条件
+  - 众包+Agent混合智能模式值得借鉴
+- **相关**: [HB-260452](posts/HB-260452-nemobot-games-self-programming.md)
 
 ---
 
