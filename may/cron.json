@@ -282,17 +282,22 @@
   },
   {
     "name": "heartbeat-amy-kimi",
-    "type": "heartbeat",
+    "type": "job",
     "intervalMs": 1800000,
     "agent": "amy-kimi",
     "message": "[heartbeat] Amy-Kimi heartbeat via per-agent workflow.",
     "enabled": true,
-    "params": {
+    "handler": "run-workflow",
+    "handlerConfig": {
       "workflow": "amy-kimi-heartbeat",
-      "systemPromptSuffix": "You are running inside the amy-kimi-heartbeat workflow.",
-      "task": "[heartbeat] You are Amy-Kimi. Read agents/amy-kimi/heartbeat.md and work through each section top to bottom. End with finish()."
+      "agent": "amy-kimi",
+      "task": "[heartbeat] You are Amy-Kimi. Your files are in agents/amy-kimi/. Read agents/amy-kimi/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you did and found.",
+      "timeoutMs": 1800000
     },
-    "workflow": "heartbeat"
+    "offsetMs": 600000,
+    "on": [
+      "heartbeat.trigger"
+    ]
   },
   {
     "name": "repo-gate-check",
