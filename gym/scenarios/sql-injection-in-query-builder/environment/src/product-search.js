@@ -15,7 +15,7 @@ const { executeQuery } = require('./db');
 function searchProducts(query) {
   if (typeof query !== 'string' || query.trim().length === 0) return [];
   const sql = `SELECT * FROM products WHERE name LIKE ?`;
-  const rows = executeQuery(sql, [`%${query}%`]);
+  const rows = executeQuery(sql, [`%${query}%`]) || [];
   
   return rows.map(row => ({
     id: row.id,
@@ -31,6 +31,7 @@ function searchProducts(query) {
  * @returns {Array<{id: number, name: string, price: string}>}
  */
 function searchByCategory(category) {
+  if (typeof category !== 'string' || category.trim().length === 0) return [];
   const sql = `SELECT * FROM products WHERE category = ?`;
   const rows = executeQuery(sql, [category]) || [];
   
