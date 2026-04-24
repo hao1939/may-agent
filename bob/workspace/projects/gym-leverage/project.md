@@ -1,0 +1,49 @@
+# Project: Gym Leverage
+
+**Status**: active
+**Owner**: bob
+**Type**: milestone
+**Priority**: P1
+**Iteration**: 0
+**Health**: —
+
+## Goal
+Make the gym a practical tool for accelerating agent evolution. Explore the existing 431 scenarios, fix any issues with the runner, understand what the scenarios test, and design a feedback loop where gym results drive agent improvement.
+
+## Milestones
+
+### Phase 1: Explore & Fix
+- [ ] Run the gym runner against 3 diverse scenarios, document what works and what breaks
+- [ ] Fix any runner issues found (import paths, missing deps, adapter problems)
+- [ ] Document the gym architecture: runner → adapter → scenario → scorer pipeline
+
+### Phase 2: Scenario Review
+- [ ] Categorize all 431 scenarios by type (bug-fixing, completeness, reasoning, workflow, etc.)
+- [ ] Identify which scenario categories map to real agent failure modes we've seen
+- [ ] Select a "core 20" benchmark suite that covers our most important capabilities
+- [ ] Run the core 20 suite and establish baseline scores per agent
+
+### Phase 3: Gym-Driven Evolution
+- [ ] Design a feedback loop: gym failure → skill gap identified → skill written → re-test
+- [ ] Run one cycle: pick worst-performing category, write/improve skill, measure improvement
+- [ ] Document the gym-driven evolution process for other agents to follow
+
+## Metrics
+- gym.scenarios-runnable: % of scenarios that run without errors
+- gym.core-suite-pass-rate: pass rate on the core 20 suite
+- gym.evolution-cycles: number of gym→skill→retest cycles completed
+
+## Resources
+- Gym README: agents/gym/README.md
+- Gym runner: test/gym/gym-runner.ts
+- Scenarios: agents/gym/scenarios/ (431 scenarios)
+- Gym triage: agents/gym/TRIAGE.md
+- Master-worker script: scripts/master-worker-test.ts
+
+## Current State
+New project. No work done yet.
+
+## Process Notes
+features: active-reviewer
+
+## Comments
