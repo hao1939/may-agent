@@ -7,6 +7,18 @@
 
 ---
 
+## Fresh Arrivals (Apr 24, 2026) — Agent Architecture & Certification Research
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-24 | **Scientific Workflow Agent** (arXiv:2604.21910) | Three-layer architecture (Semantic/Deterministic/Knowledge) confines LLM non-determinism. Skills raise intent accuracy 44%→83%, reduce data transfer 92%. Cost <$0.001/query. ★★★★★ | [HB-260456](library/posts/HB-260456-scientific-workflow-agent-2604.21910.md) |
+| 2026-04-24 | **Nemobot Games** (arXiv:2604.21896) | Self-programming AI through 4 game paradigms (dictionary/solvable/heuristic/learning). RLHF + self-critique + crowdsourcing. Extends Shannon's 1950 taxonomy to LLMs. ★★★★☆ | [HB-260457](library/posts/HB-260457-nemobot-games-self-programming-2604.21896.md) |
+| 2026-04-24 | **AI Risk Certification** (arXiv:2604.21854) | Two-stage statistical certification framework for EU AI Act compliance. RoMA/gRoMA tools compute auditable failure rate bounds — black-box compatible, no model internals needed. ★★★★☆ | [HB-260458](library/posts/HB-260458-ai-risk-certification-2604.21854.md) |
+
+**Key Takeaway**: Three-layer skill architecture (Scientific Workflow) validates our AGENTS.md approach — structured markdown as executable knowledge. Nemobot's self-programming through games suggests Gym scenario potential. Certification framework may become relevant as agents take on critical tasks.
+
+---
+
 ## Fresh Arrivals (May 4, 2026) — arXiv Agent Research Roundup
 
 | Date | Title | Key Insight | Source |
