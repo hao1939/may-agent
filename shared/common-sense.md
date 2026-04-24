@@ -82,3 +82,4 @@ Standard locations — follow these, don't invent alternatives:
 
 - **Root:** `/app`. Do NOT use `/Users/`, `/home/`, or `~`.
 - **Agent files** live in `/app/agents/` (its own git repo). Commit from within: `cd /app/agents && git add <your-files> && git commit -m "<agent>: <what>"`.
+- **Searching files:** Always exclude noise directories. Use `grep --exclude-dir=.state --exclude-dir=node_modules --exclude-dir=.git` or `find -path './.state' -prune -o -path './node_modules' -prune -o ...`. Without this, results are dominated by caches and logs.
