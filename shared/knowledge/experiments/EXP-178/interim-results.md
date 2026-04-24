@@ -1,7 +1,13 @@
 # EXP-178: Interim Results — Difficulty-Adaptive Content-First Guard Pilot
 
-**Date**: 2026-04-24 | **Status**: IN-PROGRESS (49/120 runs)
-**Updated**: 2026-04-24T19:15Z
+**Date**: 2026-04-24 | **Status**: ⚠️ INVALIDATED — ALL DATA CONTAMINATED
+**Updated**: 2026-06-25
+
+> **CRITICAL**: All 49 runs below are INVALID. Gym scenario environments were
+> contaminated by agents committing "fixes" to the deliberate bugs (Apr 23-24).
+> Runs scored against pre-fixed code — agent didn't need to do anything.
+> See: `agents/bob/workspace/FINDING-gym-scenario-contamination.md`
+> Environments restored 2026-06-25 (commit 269e1e349). Experiment must restart.
 
 ## Summary
 
