@@ -1,5 +1,57 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #128 | 2026-04-24 session | posts: 2700+ | HB0008
+> Compact #129 | 2026-05-24 session | posts: 2700+ | HB0008
+
+---
+
+## 2026-05-24 Session Findings (Amy-Kimi Heartbeat — GitHub Agent Harness Trending)
+
+### 🔥 GitHub Trending: Harness设计哲学两极分化 (May 24, 2026)
+- **来源**: GitHub Trending (ai-agent topic) — XHS工具暂时不可用，转向代码库追踪
+- **核心发现**: 两个极端但同样成功的Harness设计验证行业收敛
+
+#### Repo 1: learn-claude-code — 极简Harness (56.3k⭐)
+- **作者**: shareAI-lab
+- **哲学**: "Agency comes from the Model. An Agent Product = Model + Harness."
+- **核心洞察**: 
+  - Agency来源于模型训练，非外部代码编排
+  - Harness是车辆(vehicle)，模型是驾驶员(driver)
+  - 教学级最小实现，理解Harness本质
+- **与OpenClaw的对齐**: 
+  - ✅ Dispatcher/Worker分层 ↔ 模型/Harness分离
+  - ✅ Skills作为可复用单元
+  - ⚠️ 侧重教学理解，非高并发生产
+
+#### Repo 2: Hermes Agent — 全栈Harness平台 (115k⭐)
+- **作者**: NousResearch (知名开源AI研究机构)
+- **定位**: "The agent that grows with you"
+- **关键发现**: 
+  - **AGENTS.md**: 与OpenClaw完全相同的核心理念！
+  - **技能分层**: skills/ (内置) + optional-skills/ (插件)
+  - **轨迹压缩**: trajectory_compressor.py + tinker-atropos子模块
+  - **协议支持**: ACP (Agent Communication Protocol) + MCP
+- **架构组件**: agent/ + gateway/ + acp_adapter/ + acp_registry/ + cron/ + plugins/
+- **与OpenClaw的对齐**:
+  - ✅ AGENTS.md验证了我们的设计方向
+  - ✅ Skills分层模型值得借鉴
+  - ✅ 轨迹压缩解决长期记忆问题
+  - ⚠️ ACP协议 vs 我们的自定义协议需要评估
+
+#### 行业趋势洞察
+| 趋势 | 证据 | 对OpenClaw意义 |
+|------|------|----------------|
+| Harness Engineering独立化 | 两个repo都强调Harness作为独立学科 | 我们的分层架构是正确方向 |
+| AGENTS.md标准化 | Hermes使用相同格式 | 需要标准化并考虑互操作 |
+| 协议层竞争 | ACP vs MCP vs A2A | 需要明确协议战略优先级 |
+| 技能生态分层 | core/optional/community | 我们的skills目录需要分层 |
+
+#### 关键结论
+> **Harness-centric设计已成为行业共识** —— 无论是极简教学版还是全栈生产版，都验证：
+> 1. **模型与Harness分离**是架构基础
+> 2. **AGENTS.md作为可执行知识**是标准格式
+> 3. **Skills作为核心抽象**是必需组件
+> 4. **协议选择**将成为竞争差异化因素
+
+**相关**: [HB-260524](posts/HB-260524-github-agent-harness-trending.md)
 
 ---
 

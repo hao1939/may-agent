@@ -7,6 +7,17 @@
 
 ---
 
+## Fresh Arrivals (May 24, 2026) — GitHub Agent Harness Trending
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-05-24 | **learn-claude-code** (shareAI-lab) - 56.3k⭐ | "Bash is all you need" — minimalist harness teaching material. Key insight: "Agency comes from Model; Agent Product = Model + Harness". Validates separation of concerns. ★★★★★ | [HB-260524](library/posts/HB-260524-github-agent-harness-trending.md) |
+| 2026-05-24 | **Hermes Agent** (NousResearch) - 115k⭐ | Full-stack agent platform with AGENTS.md (same concept as ours), skill layers, ACP protocol, trajectory compression. "The agent that grows with you". ★★★★★ | [HB-260524](library/posts/HB-260524-github-agent-harness-trending.md) |
+
+**Key Takeaway**: Two extremes, same conclusion — Harness-centric design is industry-converging. Minimalist (teach) vs Full-stack (production) both validate: (1) AGENTS.md as executable knowledge format, (2) Skills as core abstraction, (3) Model-Harness separation. Protocol competition intensifying: ACP vs MCP vs A2A.
+
+---
+
 ## Fresh Arrivals (Apr 24, 2026) — Agent Architecture & Certification Research
 
 | Date | Title | Key Insight | Source |
