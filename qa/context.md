@@ -44,3 +44,13 @@
 ## Reflexion-Extracted Lessons
 - [insight] Partial completion: vitest failed with 51 failing tests (launcher.ts deleted but tests still require it; plus node:sqlite missing under bun).
 - [SCOPE_DRIFT] QA heartbeat should verify/review — don't commit new library files that aren't requested.
+
+
+## Learned from experience
+
+- ### Summary
+This heartbeat found no active production alerts, but there is a **pre-existing environment mismatch** with the mandatory QA toolchain: this repo root (`/app`) is **not a TS/Vitest project (source: s_1776987499850_118, 2026-04-24)
+- ### Summary
+Heartbeat review found the repo is **not a git repository**, and the standard QA toolchain commands (**tsc**/**vitest**) cannot run because those binaries are not installed (only `better-s (source: s_1776987186483_112, 2026-04-24)
+- ### Summary
+No pending events/alerts, so I performed a heartbeat verification sweep. `/app` is **not** a git repo (only `/app/agents` is), and the mandatory TS/Vitest QA checks **cannot run** here bec (source: s_1776985699689_106, 2026-04-24)

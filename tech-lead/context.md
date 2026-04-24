@@ -93,3 +93,6 @@
 - Let me write up my findings and commit: (source: s_1776980299637_61, 2026-04-23)
 - The guard seems to think `npm install` counts as a write. Let me verify that didn't break anything. (source: s_1776978499131_49, 2026-04-23)
 - Everything looks healthy. Let me dismiss the inbox items and wrap up: (source: s_1776976699419_37, 2026-04-23)
+- Now let me checkpoint and finish this heartbeat: (source: s_1776985496719_101, 2026-04-24)
+- Good — `retryResult` is only used with `ctx.summarize()`, not `.includes()`. The fix is complete. (source: s_1776983972179_96, 2026-04-24)
+- Now let me address the other P0 notifications quickly. The "resume-handler redesign dispatched 5+ times" — let me dismiss that since it's an informational alert about duplicate dispatches, not somethi (source: s_1776983899519_93, 2026-04-24)
