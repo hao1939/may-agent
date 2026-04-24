@@ -613,7 +613,10 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
     ].join("\n");
     const retrySessionId = manager.run("evaluator", retryPrompt);
     const retryResult = await manager.waitFor(retrySessionId);
-    const retryText = retryResult?.lastAssistantText ?? "";
+    let retryText = retryResult?.lastAssistantText ?? "";
+    if (!retryText) {
+      retryText = extractAssistantText(ctx, retrySessionId);
+    }
     const retryParsed = parseTaskEvaluation(retryText);
     if (Object.keys(retryParsed.agents).length > 0) {
       responseText = retryText;
