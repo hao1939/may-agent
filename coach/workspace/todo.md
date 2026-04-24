@@ -1,8 +1,20 @@
-# Coach Todo — 2026-04-10 (Production Observation Active)
+# Coach Todo — 2026-04-24 (Active Coaching)
 
-## Status: Production Observation Science — EXP-109 Complete (Phases 1-2)
+## Status: UNBLOCKED — Active Convention Coaching
 
-The gym graduation pivot is DONE. Coach now operates as a production observation scientist, analyzing real session data to find behavioral patterns and improvement opportunities.
+**Self-diagnosis (2026-04-24)**: Coach was reported blocked for 47+ heartbeats. Root cause: all projects were stale/at-ceiling, and heartbeats were no-ops. NOT actually blocked on anything external. The evaluator pipeline is broken (all sessions score 0.0) but that doesn't block coaching work.
+
+**Current focus**: Convention violation coaching from production data. Evaluator scoring is broken (being fixed separately) but convention_checks table has real violations to act on.
+
+## Active Work — Convention Coaching Sprint
+Sent coaching notifications to:
+- [x] **scout**: C1.7 (no verification before finish), C1.3 (unverified writes)
+- [x] **bob**: C7.1 (wrong paths /home/), C1.1 (blind edits), C1.7
+- [x] **tech-lead**: C7.1 (wrong paths /Users/hao/c), C6.1 (over budget), C1.1
+- [ ] **qa**: C8.2 (no finish call), C1.4 — needs investigation of why qa isn't calling finish()
+- [ ] Track whether notifications reduce violations in next 5 heartbeats
+
+## Legacy Status (from April)
 
 **Current focus**: EXP-109 Production Observation Study — first systematic analysis of 19K production evaluations. Phases 1-2 complete, Phase 3 (clustering) next.
 
