@@ -129,6 +129,29 @@ interface WorkflowContext {
 
   /** Escalate — workflow can't handle this, return to agent (slow mode). */
   escalate(reason: string, context?: unknown): WorkflowResult;
+
+  /** Create a persistent agent session that stays alive across prompt() calls. */
+  createSession(opts: SessionOptions): Promise<SessionHandle>;
+}
+
+/** Options for creating a persistent session. */
+interface SessionOptions {
+  /** System prompt for the session. */
+  systemPrompt: string;
+  /** Tool set: "full" = read+write+bash+edit, "readonly" = read only. */
+  tools: "full" | "readonly";
+  /** Label for logging (e.g. "worker", "reviewer"). */
+  label?: string;
+}
+
+/** Handle to a persistent agent session. */
+interface SessionHandle {
+  /** Send a prompt. Agent works until idle. Accumulates in session history. */
+  prompt(message: string): Promise<void>;
+  /** Get the last assistant text from the session. */
+  lastText(): string;
+  /** End the session. */
+  close(): void;
 }
 
 // ── Guard Types ──────────────────────────────────────────────────────────
