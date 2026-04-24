@@ -5,7 +5,7 @@
 **Type**: milestone
 **Workflow**: master-worker
 **Priority**: P1
-**Iteration**: 0
+**Iteration**: 1
 **Health**: —
 
 ## Goal
@@ -19,7 +19,7 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 - [ ] Document the gym architecture: runner → adapter → scenario → scorer pipeline
 
 ### Phase 2: Scenario Review
-- [ ] Categorize all 431 scenarios by type (bug-fixing, completeness, reasoning, workflow, etc.)
+- [x] Categorize all 431 scenarios by type (bug-fixing, completeness, reasoning, workflow, etc.)
 - [ ] Identify which scenario categories map to real agent failure modes we've seen
 - [ ] Select a "core 20" benchmark suite that covers our most important capabilities
 - [ ] Run the core 20 suite and establish baseline scores per agent
@@ -42,9 +42,16 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 - Master-worker script: scripts/master-worker-test.ts
 
 ## Current State
-New project. No work done yet.
+Iteration 1. Milestones: 1/10 done.
+Reviewer: The worker has made good progress — ran scenarios in stub mode, found 8 pass/19 fail. Now we need to capture this as documented deliverables and push through multiple milestones.
 
+**(a) Concrete outpu
 ## Process Notes
 features: active-reviewer
 
 ## Comments
+
+
+## Iteration Summary
+- **Iter 1**: Good data. 8 pass in stub mode (meaning environment already satisfies criteria or scorers are lenien
+
