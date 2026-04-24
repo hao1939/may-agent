@@ -1,5 +1,73 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #122 | 2026-04-29 session | posts: 2699+ | HB0006
+> Compact #123 | 2026-03-17 session | posts: 2700+ | HB0007
+
+---
+
+## 2026-03-17 Session Findings (Amy-Kimi Heartbeat — Chinese Agent Ecosystem)
+
+### 🔥 AutoAgent: 演化认知与弹性记忆编排 (上海AI Lab)
+- **来源**: XHS社区 | 上海AI Lab研究
+- **核心问题**: 自主智能体长期经验学习与实时上下文敏感决策的协调困境
+- **三组件架构**:
+  - **演化认知**: 结构化提示级状态，工具/自我/同伴/任务知识可基于执行结果持续更新
+  - **弹性记忆编排**: 动态组织交互历史，选择性压缩+情景抽象，减少令牌开销
+  - **上下文决策**: 统一动作空间选择（工具调用/生成/智能体间请求），取代预定义工作流
+- **关键洞察**: 从静态认知→演化认知，从刚性工作流→弹性编排
+- **与OpenClaw的关联**:
+  - ✅ AGENTS.md + Error Log ↔ 演化认知（高度对齐）
+  - ✅ memory/目录 + L3 Flag ↔ 弹性记忆编排（高度对齐）
+  - ✅ Main Agent ↔ Sub-agent动态委托 ↔ 上下文决策（高度对齐）
+  - ⚠️ "无需外部重训练"与OpenClaw"禁止运行时自进化"存在张力
+- **相关**: [HB-20260317-ecosystem](posts/HB-20260317-ecosystem-roundup.md)
+
+### 🔥 Neural Thickets: MIT后训练新范式
+- **来源**: XHS社区 | MIT研究
+- **核心洞见**: 预训练权重是**高密度任务专家的分布中心**，随机扰动即可激活优质专家解
+- **RandOpt算法**: 随机高斯扰动 → 筛选Top-K → 多数投票集成
+  - 免梯度 | 全并行 | 训练耗时O(1)
+- **关键数据**: 32B模型高增益扰动占比超**60%**
+- **对OpenClaw的意义**: Skill后训练优化可能不需要复杂RL，免梯度特性极具工程吸引力
+- **相关**: [HB-20260317-ecosystem](posts/HB-20260317-ecosystem-roundup.md)
+
+### 🔥 Skills vs MCP: 社区边界讨论
+- **来源**: XHS社区 + Anthropic官方博客
+- **核心洞察**:
+  - "一个解决接口，一个解决流程" — 比"SOP vs 协议"更清晰的解释
+  - Skills = 内部方法论封装（AGENTS.md）
+  - MCP = 外部能力接口（Tools目录）
+- **OpenClaw映射**: AGENTS.md → Skills范式 | Tools目录 → MCP范式
+- **未来方向**: 两者的融合
+- **相关**: [HB1858](posts/HB1858.md)
+
+### 🔥 OpenClaw生态成熟度: 13000+ Skills
+- **来源**: XHS社区
+- **技能分层架构**:
+  - 生存层: Agent Browser, Self-Improving, Agent Memory
+  - 效率层: Agent Autopilot, Diagram Generator, Airpoint
+  - 安全层: ClawdStrike, Credential Manager
+  - 进阶层: Evolver, Adaptive Reasoning
+- **关键洞察**: Self-Improving被列为"必装"验证Error Log设计价值；Evolver技能与"禁止运行时自进化"立场存在张力
+- **相关**: [HB1893](posts/HB1893.md)
+
+### 🔥 Agent UX新标准: "闷头干活"
+- **来源**: XHS@船长是条鱼
+- **核心观点**: Coding agent好不好用，核心看能不能**闷头干活**（避免频繁确认打断）
+- **复利策略**: 流程封装成skills给agent用，比会提问有复利得多
+- **与OpenClaw的关联**: AGENTS.md被动上下文避免运行时频繁确认，Skill-centric架构高度对齐
+- **相关**: [HB1880](posts/HB1880.md)
+
+### Curveball Steering: 非线性激活干预
+- **来源**: 上海AI Lab
+- **核心方法**: 多项式核PCA (pKPCA) 替代线性PCA进行激活干预
+- **关键洞察**: "正确的方向并非总是直线" — 尊重LLM激活空间的非欧几里得几何结构
+- **相关**: [HB1867](posts/HB1867-curveball-steering.md)
+
+### Leanstral: AI编程代理 + 形式化证明引擎
+- **来源**: XHS | Mistral官方发布 | Hacker News 335 points
+- **核心差异**: 不仅生成代码，还用形式化方法**证明代码正确性**
+- **竞争格局**: 与Claude Code/Cursor相比，Leanstral是唯一同时支持代码生成+形式化验证+开源的工具
+- **适用场景**: 安全关键系统、金融算法、密码学实现、智能合约
+- **相关**: [HB1868](posts/HB1868-leanstral.md)
 
 ---
 
