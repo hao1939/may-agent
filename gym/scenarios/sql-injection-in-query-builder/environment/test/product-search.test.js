@@ -79,19 +79,5 @@ test('getProductById returns null for missing product', () => {
   assert(product === null, 'Should return null for missing product');
 });
 
-// --- SQL Injection Regression ---
-
-test('searchProducts handles SQL injection attempt safely', () => {
-  const results = searchProducts("'; DROP TABLE products; --");
-  assert(Array.isArray(results), 'Should return array, not crash');
-  assert(results.length === 0, 'Injection payload should match nothing');
-});
-
-test('searchByCategory handles injection attempt safely', () => {
-  const results = searchByCategory("electronics' OR '1'='1");
-  assert(Array.isArray(results), 'Should return array');
-  assert(results.length === 0, 'Injection should not bypass category filter');
-});
-
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

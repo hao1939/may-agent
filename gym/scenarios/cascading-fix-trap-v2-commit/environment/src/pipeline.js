@@ -55,16 +55,16 @@ function run(dataFile) {
   const validated = validateRecords(records);
 
   // Step 3: Normalize to percentages
-  const penalized = applyPenalties(validated);
+  const normalized = normalize(validated);
 
   // Step 4: Apply late penalties
-  const normalized = normalize(penalized);
+  const penalized = applyPenalties(normalized);
 
   // Step 5: Aggregate homework (drop lowest, average)
-  const hwAggs = aggregateHomework(normalized);
+  const hwAggs = aggregateHomework(penalized);
 
   // Step 6: Compute final grades
-  const gradeResults = computeFinalGrades(normalized, hwAggs);
+  const gradeResults = computeFinalGrades(penalized, hwAggs);
 
   // Step 7: Compute class statistics
   const stats = computeStats(gradeResults);

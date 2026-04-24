@@ -35,7 +35,6 @@ function applyLatePenalty(record) {
     score: Math.round(adjustedScore * 100) / 100,
     penalty_applied: penalty,
     adjusted_pct: Math.round(adjustedPct * 100) / 100,
-    pct: Math.round(adjustedPct * 100) / 100,
   };
 }
 

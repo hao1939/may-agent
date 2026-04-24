@@ -67,7 +67,7 @@ function getLetterGrade(score) {
   scale.sort((a, b) => b[1] - a[1]);
 
   for (const [letter, threshold] of scale) {
-    if (score >= threshold) return letter;
+    if (score > threshold) return letter;
   }
   return "F";
 }

@@ -13,11 +13,10 @@ const { executeQuery } = require('./db');
  * @returns {Array<{id: number, name: string, price: string}>}
  */
 function searchProducts(query) {
-  // Sanitize input to prevent SQL injection
-  const sanitized = String(query).replace(/'/g, "''");
-  const sql = `SELECT * FROM products WHERE name LIKE '%${sanitized}%'`;
+  // Build the SQL query with the user's search term
+  const sql = `SELECT * FROM products WHERE name LIKE '%${query}%'`;
   
-  const rows = executeQuery(sql) || [];
+  const rows = executeQuery(sql);
   
   // Format results for the API response
   const formatted = rows.map(row => ({
@@ -36,11 +35,9 @@ function searchProducts(query) {
  * @returns {Array<{id: number, name: string, price: string}>}
  */
 function searchByCategory(category) {
-  // Sanitize input to prevent SQL injection
-  const sanitized = String(category).replace(/'/g, "''");
-  const sql = `SELECT * FROM products WHERE category = '${sanitized}'`;
+  const sql = `SELECT * FROM products WHERE category = '${category}'`;
   
-  const rows = executeQuery(sql) || [];
+  const rows = executeQuery(sql);
   
   const formatted = rows.map(row => ({
     id: row.id,
@@ -58,8 +55,9 @@ function searchByCategory(category) {
  * @returns {{id: number, name: string, price: string, category: string}|null}
  */
 function getProductById(id) {
-  const sql = `SELECT * FROM products WHERE id = ${parseInt(id, 10)}`;
+  const sql = `SELECT * FROM products WHERE id = ${id}`;
   
+  // This one correctly handles null
   const rows = executeQuery(sql);
   if (!rows || rows.length === 0) return null;
   

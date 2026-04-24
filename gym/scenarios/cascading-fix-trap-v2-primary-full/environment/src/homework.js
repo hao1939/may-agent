@@ -22,18 +22,19 @@ function aggregateHomework(records) {
 
   const result = {};
   for (const [sid, hwRecords] of Object.entries(students)) {
-    // Sort by percentage ascending so we can drop the lowest
-    const sorted = hwRecords.slice().sort((a, b) => a.pct - b.pct);
+    // Use adjusted_pct (post-penalty percentage) if available, else pct
+    const getPct = r => r.adjusted_pct !== undefined ? r.adjusted_pct : r.pct;
+    const sorted = hwRecords.slice().sort((a, b) => getPct(a) - getPct(b));
 
     // Drop the lowest N scores
     const kept = sorted.slice(policy.drop_lowest_hw);
 
     // Average the kept percentages
-    const sum = kept.reduce((acc, r) => acc + r.pct, 0);
+    const sum = kept.reduce((acc, r) => acc + getPct(r), 0);
     const avg = sum / kept.length;
 
     result[sid] = {
-      hw_scores: hwRecords.map(r => ({ assignment: r.assignment, pct: r.pct })),
+      hw_scores: hwRecords.map(r => ({ assignment: r.assignment, pct: getPct(r) })),
       dropped: sorted.slice(0, policy.drop_lowest_hw).map(r => r.assignment),
       kept_count: kept.length,
       homework_avg: Math.round(avg * 100) / 100,

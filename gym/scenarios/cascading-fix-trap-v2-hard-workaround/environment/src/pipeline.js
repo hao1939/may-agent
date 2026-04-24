@@ -6,21 +6,18 @@
  *   2. Validate records
  *   3. Normalize scores to percentages
  *   4. Apply late submission penalties
- *   5. Verify normalization integrity
- *   6. Aggregate homework (drop lowest, average)
- *   7. Compute weighted final grades
- *   8. Compute class statistics
- *   9. Format output report
+ *   5. Aggregate homework (drop lowest, average)
+ *   6. Compute weighted final grades
+ *   7. Compute class statistics
+ *   8. Format output report
  *
  * Note: Normalization must precede penalty application so that
  * penalty deductions are expressed in percentage points (not raw points).
- *
- * Integrity checks run between stages to catch data corruption early.
  */
 const path = require("path");
 const { loadGrades } = require("./reader");
 const { applyPenalties } = require("./penalties");
-const { normalize, verifyNormIntegrity } = require("./normalizer");
+const { normalize } = require("./normalizer");
 const { aggregateHomework } = require("./homework");
 const { computeFinalGrades } = require("./grades");
 const { computeStats } = require("./stats");
@@ -57,22 +54,22 @@ function run(dataFile) {
   // Step 2: Validate
   const validated = validateRecords(records);
 
-  // Step 3: Apply late penalties
-  const penalized = applyPenalties(validated);
+  // Step 3: Normalize to percentages
+  const normalized = normalize(validated);
 
-  // Step 4: Normalize to percentages
-  const normalized = normalize(penalized);
+  // Step 4: Apply late penalties
+  const penalized = applyPenalties(normalized);
 
   // Step 5: Aggregate homework (drop lowest, average)
-  const hwAggs = aggregateHomework(normalized);
+  const hwAggs = aggregateHomework(penalized);
 
   // Step 6: Compute final grades
-  const gradeResults = computeFinalGrades(normalized, hwAggs);
+  const gradeResults = computeFinalGrades(penalized, hwAggs);
 
-  // Step 8: Compute class statistics
+  // Step 7: Compute class statistics
   const stats = computeStats(gradeResults);
 
-  // Step 9: Format report
+  // Step 8: Format report
   return formatReport(gradeResults, stats);
 }
 
