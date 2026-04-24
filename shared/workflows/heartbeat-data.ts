@@ -119,6 +119,59 @@ export function loadInbox(ctx: WorkflowContext, agent: string): string {
 }
 
 /**
+ * Run MANDATORY commands for red metrics in JS (no LLM needed).
+ *
+ * Returns a structured report of command outputs that can be injected
+ * directly into the main heartbeat prompt, eliminating the need for
+ * a separate LLM "red metric gate" session.
+ */
+export function runRedMetricCommands(ctx: WorkflowContext, agent: string): string {
+  try {
+    const { execSync } = require("node:child_process");
+    const db = ctx.getDb() as any;
+    const rows = db.prepare(
+      "SELECT id, current, target, threshold, alert_direction, source_command, source_query FROM metrics WHERE owner = ? AND status = 'active'"
+    ).all(agent) as any[];
+
+    const redMetrics = rows.filter((r: any) => {
+      if (r.threshold == null || r.current == null) return false;
+      return r.alert_direction === "above" ? r.current > r.threshold : r.current < r.threshold;
+    });
+
+    if (redMetrics.length === 0) return "";
+
+    const results: string[] = [];
+    for (const r of redMetrics) {
+      const cmd = r.source_command || null;
+      if (!cmd) {
+        results.push(`### ${r.id}: ${r.current} (target ${r.target})\nNo diagnostic command configured.`);
+        continue;
+      }
+      let output: string;
+      try {
+        output = execSync(cmd, {
+          encoding: "utf-8",
+          timeout: 30_000,
+          stdio: ["pipe", "pipe", "pipe"],
+          cwd: process.cwd(),
+        }).trim();
+      } catch (err: any) {
+        const stdout = (err.stdout || "").trim();
+        const stderr = (err.stderr || "").trim();
+        output = [stdout, stderr].filter(Boolean).join("\n") || `(command failed with exit code ${err.status ?? "?"})`;
+      }
+      // Truncate long outputs
+      const truncated = output.length > 1000 ? output.slice(0, 1000) + "\n...(truncated)" : output;
+      results.push(`### ${r.id}: ${r.current} (target ${r.target})\nCommand: \`${cmd}\`\nOutput:\n\`\`\`\n${truncated}\n\`\`\``);
+    }
+
+    return `## 🔍 Red Metric Diagnostic Results (auto-collected)\n\n${results.join("\n\n")}`;
+  } catch {
+    return "";
+  }
+}
+
+/**
  * Format a G-pattern metrics block for direct prompt injection.
  *
  * Returns a self-contained string that forces metric engagement (the "G pattern"):
