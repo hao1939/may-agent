@@ -54,8 +54,8 @@
 
 | Tier | Count | Hypotheses |
 |------|-------|-----------|
-| Tier 1 (≥0.70) | **28** | +3 from Apr-19 (H-181, H-176, + reclassifications) |
-| Tier 2 (0.50–0.69) | **13** | H-107, H-096, H-163, H-102, H-097, H-168, H-108, H-169, H-174, H-178, H-180, H-183, H-186 |
+| Tier 1 (≥0.70) | **29** | +4 from Apr-19 (H-181, H-176, H-168, + reclassifications) |
+| Tier 2 (0.50–0.69) | **12** | H-107, H-096, H-163, H-102, H-097, H-108, H-169, H-174, H-178, H-180, H-183, H-186 |
 | Tier 3 (<0.50) | **3** | H-172, H-173, H-177 |
 | Archived | **28** | +9 from Apr-19 (H-014, H-047, H-056, H-170, H-171, H-185, H-187, H-193→H-192 dup, H-179 stale) |
 | **Total** | **72** | Up from 55 (17 new hypotheses since Apr-19) |
@@ -65,7 +65,7 @@
 
 ## Top 3 Priorities for Next Experiments
 
-1. **H-168 (Agent Handoff Info Loss)** — EXP-197 completed. Write up results and update P(H).
+1. **H-168 (Agent Handoff Info Loss)** — EXP-197 COMPLETE. P(H) upgraded to 0.72 (Tier 1). Mean retention ~72%, predictions 71% loss, cross-refs 82% loss. Recommendations in EXP-197/results.md.
 2. **H-183 (Evidence Grading)** — Phase 1 done. Phase 2 (A/B consumption test) when gym available.
 3. **H-163 (Task-Type Topology Sensitivity)** — Test F1/F2 on new scenario types.
 
