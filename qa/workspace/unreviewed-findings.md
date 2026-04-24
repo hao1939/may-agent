@@ -1,25 +1,32 @@
-# QA Heartbeat Findings — 2026-04-24
+# Unreviewed findings (QA heartbeat)
 
-## Scope
-- Heartbeat self-directed QA sweep.
-- Repo context: `/app` is not a git repo; `/app/agents` is a git repo.
+## Context
+- Repo root `/app` is not a git repo; actual git repo is `/app/agents`.
+- Recent commits reviewed (via `cd agents && git log --oneline -10`).
 
-## Verification Gaps / Environment Issues
-- Running mandatory root-level checks failed due to missing install artifacts:
-  - `./node_modules/.bin/tsc --noEmit` → **No such file or directory** (run at `/app`).
-  - `./node_modules/.bin/vitest --run` → **No such file or directory** (run at `/app`).
-- Conclusion: this environment does not have a Node project installed at `/app`.
+## Findings
+### 1) Convention Alert: C1.4 at 60%, C8.2 at 60% — needs clarification / action plan
+The pending event is truncated in the inbox message ("Both conventions relate t..."). I can't determine what specific behaviors are violating C1.4/C8.2 from the event payload as shown.
 
-## Recent Changes (agents repo)
-- Latest commit: `96d33efb3` modifies only documentation/notes:
-  - `amy-kimi/last-session.md`, `coach/last-session.md`, `evaluator/last-session.md`, `may/last-session.md`, `tech-lead/last-session.md`
-  - 3 knowledge library posts under `shared/knowledge/library/posts/`
-- No product code changes observed in `git show --name-only -1`.
+**Action:** Escalate for full event details (which files/agents are causing regressions) so QA can verify/fix enforcement.
 
-## Convention Alerts to Act On
-- Inbox: **Convention Alert: C1.4 at 60%, C8.2 at 60%**.
-- Preliminary hypothesis: likely related to (a) tool misuse / missing mandatory evidence steps (C1.4?), and (b) inconsistent process steps or formatting (C8.2?). Needs mapping to CONVENTIONS.md definitions before action.
+### 2) Test runner missing in agents repo (vitest)
+The mandatory QA command `./node_modules/.bin/vitest --run` fails in `/app/agents` because `vitest` is not installed.
 
-## Next Actions
-1. Read `agents/CONVENTIONS.md` to map C1.4 and C8.2 → concrete behaviors.
-2. Search recent sessions/commits for those patterns and propose remediation.
+**Evidence:**
+- `cd agents && ./node_modules/.bin/vitest --run` → `No such file or directory`.
+- `cd agents && ls -la node_modules/.bin | grep -E "vitest|vite"` → no output.
+- `cd agents && cat package.json` shows only `typescript` and `@types/node` in devDependencies.
+
+**Impact:** Current QA guardrail requiring vitest cannot be satisfied in this repo unless a separate test harness exists. Recommend either:
+- add vitest (and at least a smoke test), or
+- update QA requirements for this repo to run an existing test command instead (if any).
+
+### 3) Spot-check code quality: `src/lib/finish-guard.ts`
+Read file for FM-3.1/FM-3.3 enforcement.
+
+Notes:
+- Logic looks straightforward; uses `existsSync` and path join; skips validation for failure/blocked.
+- Potential edge case: status comparisons are strict string equality; if callers use non-canonical statuses (e.g., `"FAILED"`), enforcement may not trigger as intended. Consider using an enum / normalized status.
+
+No changes made.
