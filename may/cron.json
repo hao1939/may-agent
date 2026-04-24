@@ -286,8 +286,7 @@
     "intervalMs": 1800000,
     "agent": "amy-kimi",
     "message": "[heartbeat] Amy-Kimi heartbeat via per-agent workflow.",
-    "enabled": false,
-    "description": "Amy-Kimi runs on k3s only. Disabled locally to avoid duplicate work.",
+    "enabled": true,
     "params": {
       "workflow": "amy-kimi-heartbeat",
       "systemPromptSuffix": "You are running inside the amy-kimi-heartbeat workflow.",
@@ -332,7 +331,7 @@
       "timeoutMs": 900000,
       "workflow": "verify-wrap",
       "agent": "coach",
-      "task": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently. Check workspace/common-sense-status.md for status index. Use bash with grep to search session transcripts — do NOT read full session.jsonl files. Quote evidence. If NO — add to Growth Cycle queue. If YES — update workspace/common-sense-tracker.md."
+      "task": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently. Check workspace/common-sense-status.md for status index. Use bash with grep to search session transcripts \u2014 do NOT read full session.jsonl files. Quote evidence. If NO \u2014 add to Growth Cycle queue. If YES \u2014 update workspace/common-sense-tracker.md."
     },
     "offsetMs": 300000
   },
