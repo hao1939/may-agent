@@ -585,27 +585,10 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
   responseText = evalResult?.lastAssistantText ?? "";
 
   // Fallback: if waitFor returned empty lastAssistantText (race condition with
-  // autoClose:"immediate"), read the session messages directly (EXP-FIX-001).
-  if (!responseText && ctx.readSessionMessages) {
-    try {
-      const msgs = ctx.readSessionMessages(evalSessionId);
-      if (msgs && msgs.length > 0) {
-        const lastMsg = msgs[msgs.length - 1];
-        if (lastMsg.role === "assistant") {
-          const content = lastMsg.content;
-          if (typeof content === "string") {
-            responseText = content;
-          } else if (Array.isArray(content)) {
-            const textBlock = content.find(
-              (b: any) => b.type === "text" && typeof b.text === "string",
-            );
-            if (textBlock) responseText = (textBlock as any).text;
-          }
-        }
-      }
-    } catch {
-      // Fallback failed
-    }
+  // autoClose:"immediate"), try readSessionMessages, readArchivedSessionMessages,
+  // then direct file read (EXP-FIX-001 + EXP-FIX-002).
+  if (!responseText) {
+    responseText = extractAssistantText(ctx, evalSessionId);
   }
 
   parsed = parseTaskEvaluation(responseText);
