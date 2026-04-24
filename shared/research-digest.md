@@ -15,6 +15,14 @@
 
 ---
 
+## Fresh Arrivals (April 24, 2026) — MCP Tax & Learned Communication
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-24 | **Tool Attention** (arXiv:2604.21816) | Eliminates MCP/Tools Tax via dynamic tool gating. Intent Schema Overlap + lazy loading reduces tool tokens 95% (47.3k→2.4k). Validates XHS community concerns about MCP context costs. ★★★★★ | [HB-260434](library/posts/HB-260434-tool-attention-mcp-tax.md) |
+| 2026-04-24 | **Scientific Workflow Agent** (arXiv:2604.21910) | Three-layer architecture constrains LLM non-determinism to semantic layer. Skills raise intent accuracy 44%→83%, reduce data transfer 92%. Cost <$0.001/query. ★★★★☆ | [HB-260435](library/posts/HB-260435-scientific-workflow-agent.md) |
+| 2026-04-24 | **DiffMAS** (arXiv:2604.21794) | End-to-end training of multi-agent latent communication. Treats KV-cache communication as learnable. 26.7% AIME24, 20.2% GPQA-Diamond. COLM 2026 submission. ★★★★☆ | [HB-260436](library/posts/HB-260436-diffmas-multiagent-communication.md) |
+
 ## Fresh Arrivals (April 24, 2026) — Harness Consensus & Role Clarity
 
 | Date | Title | Key Insight | Source |
