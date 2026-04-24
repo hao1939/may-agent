@@ -71,9 +71,6 @@
 
 ## Learned from experience
 
-- SkillFlow benchmark (arXiv:2604.17308): accumulated skills can cause regression — Qwen-Coder-Next dropped to 44.58% with skills. Quality filtering > accumulation. (2026-04-29)
-- Good. Metrics healthy, project closed, no alerts. Let me process the two notifications.
-- 44 lines — just over the 40-line target but close enough given the worked examples are essential. (source: s_1776973494049_18, 2026-04-23)
 - ### scout: FM-3.3
 - Good. Let me verify the work and finish. (source: s_1776972645898_10, 2026-04-23)
 - All clear. Metrics green, projects closed, no pending work. (source: s_1776970845842_1, 2026-04-23)
@@ -83,10 +80,9 @@
 - Committed and merged. Now let me handle the notifications and finish:
 - Now let me verify my deliverables: (source: s_1776987875051_122, 2026-04-24)
 - ### tech-lead: FM-3.3 (Verification Failure)
-**Decision:** growth-cycle
-**Reasoning:** 46 occurrences in 7 days is high-frequency and the pattern is consistent: the agent treats write previews or its  (source: s_1776987856466_121, 2026-04-24)
 - I didn't write/edit any files — my deliverables are notifications. Let me do an explicit verification read: (source: s_1776987045945_110, 2026-04-24)
 - Interesting — amy has the smallest context (2451B) but worst compliance (92.7%). may has the largest (10423B) but great compliance (97.9%). No bloat correlation yet. The issue is model-level defaults, (source: s_1776985245948_100, 2026-04-24)
 - Good evidence. Across sessions that use `finish()`, verification_evidence is consistently present. Let me now create the tracker files.
-
-**Verdict: YES — "Evidence first" is being followed.** Sessions (source: s_1776984013013_97, 2026-04-24)
+- Good evidence. The session shows both violation and self-correction of "simple first". The agent explicitly says *"I think I'm overcomplicating this"* after many iterations trying to engineer clean nu (source: s_1777037973153_164, 2026-04-24)
+- Hmm, already clean. The check might be stale. (source: s_1777032454813_28, 2026-04-24)
+- Now let me update my todo to reflect current reality: (source: s_1777028896018_9, 2026-04-24)

@@ -4,12 +4,18 @@
  * master-worker — Two persistent sessions (reviewer + worker) running
  * a review-first → work → review → work loop.
  *
+ * Project.md fields:
+ *   **Workflow**: master-worker          (selects this workflow)
+ *   **Max Iterations**: 5               (optional, default 5)
+ *   **Status**: active/paused/cancelled/blocked/waiting/done
+ *   **Owner**: bob
+ *
  * Usage via CLI:
- *   bun run may --workflow master-worker --input "project: agents/bob/workspace/projects/my-project"
+ *   bun src/app/may.ts --run-workflow master-worker "project: agents/bob/workspace/projects/my-project"
  */
 
 import { readFileSync, existsSync, writeFileSync, appendFileSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { resolve, join, dirname } from "node:path";
 
 export const name: string = "master-worker";
 
@@ -19,7 +25,8 @@ export const description: string =
 
 // ── Config ──────────────────────────────────────────────────────────────
 
-const MAX_ITERATIONS = 5;
+const DEFAULT_MAX_ITERATIONS = 50; // safety cap — workflow runs until done/blocked/waiting
+const MAX_STALL_ITERATIONS = 2; // escalate after N iterations without milestone progress
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -34,6 +41,52 @@ function extractSection(content: string, heading: string): string {
   return m ? m[1].trim() : "";
 }
 
+interface MilestoneState {
+  total: number;
+  done: number;
+  pending: string[];
+  completed: string[];
+}
+
+function extractMilestones(content: string): MilestoneState {
+  const section = extractSection(content, "Milestones");
+  if (!section) return { total: 0, done: 0, pending: [], completed: [] };
+  const lines = section.split("\n").filter(l => /^\s*-\s*\[/.test(l));
+  const completed = lines.filter(l => /\[x\]/i.test(l)).map(l => l.replace(/^\s*-\s*\[x\]\s*/i, "").trim());
+  const pending = lines.filter(l => /\[ \]/.test(l)).map(l => l.replace(/^\s*-\s*\[ \]\s*/, "").trim());
+  return { total: lines.length, done: completed.length, pending, completed };
+}
+
+/** Check off milestones whose text appears in the reviewer's response */
+function checkOffMilestones(content: string, reviewerText: string): string {
+  const lines = content.split("\n");
+  let inMilestones = false;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^##\s*Milestones/i.test(lines[i])) { inMilestones = true; continue; }
+    if (inMilestones && /^##\s/.test(lines[i])) break;
+    if (!inMilestones) continue;
+    const m = lines[i].match(/^(\s*-\s*)\[ \]\s*(.+)/i);
+    if (m) {
+      const key = m[2].trim().slice(0, 30).toLowerCase();
+      if (reviewerText.toLowerCase().includes(key)) {
+        lines[i] = lines[i].replace("[ ]", "[x]");
+      }
+    }
+  }
+  return lines.join("\n");
+}
+
+function extractComments(content: string): string {
+  return extractSection(content, "Comments");
+}
+
+function clearComments(content: string): string {
+  // Replace the Comments section body with empty
+  return content.replace(/(## Comments\s*\n)[\s\S]*?(?=\n## |$)/, "$1");
+}
+
+// ── Decision extraction ─────────────────────────────────────────────────
+
 interface Decision {
   status: "continue" | "pivot" | "waiting" | "blocked" | "done" | "unknown";
   detail: string;
@@ -44,16 +97,28 @@ function extractDecision(text: string): Decision {
   const firstLine = trimmed.split("\n")[0] || "";
   const upper = firstLine.toUpperCase();
 
+  // Check first line starts with a decision keyword
   for (const s of ["CONTINUE", "PIVOT", "WAITING", "BLOCKED", "DONE"] as const) {
     if (upper.startsWith(s)) {
       return { status: s.toLowerCase() as Decision["status"], detail: trimmed.slice(0, 500) };
     }
   }
 
-  // Fallback: scan full text — prioritize actionable decisions over DONE
-  for (const keyword of ["CONTINUE", "PIVOT", "BLOCKED", "WAITING", "DONE"] as const) {
-    const re = new RegExp(`\\b${keyword}\\b`, "i");
-    if (re.test(trimmed)) {
+  // Check for "Decision: KEYWORD", "**KEYWORD**", or "**Proceed**" patterns
+  const decisionPattern = /(?:\*{0,2}Decision\*{0,2}[:\s]+\*{0,2}|^|\n)\*{0,2}(CONTINUE|PIVOT|BLOCKED|WAITING|DONE)\*{0,2}/im;
+  const patternMatch = trimmed.match(decisionPattern);
+  if (patternMatch) {
+    return { status: patternMatch[1].toLowerCase() as Decision["status"], detail: trimmed.slice(0, 500) };
+  }
+
+  // "Proceed" / "move forward" / "start working" → CONTINUE
+  if (/\b(proceed|move forward|start working|begin work|let'?s begin|let'?s start)\b/i.test(trimmed)) {
+    return { status: "continue", detail: trimmed.slice(0, 500) };
+  }
+
+  // Fallback: scan for uppercase keywords (skip DONE — too common as regular word)
+  for (const keyword of ["CONTINUE", "PIVOT", "BLOCKED", "WAITING"] as const) {
+    if (new RegExp(`\\b${keyword}\\b`).test(trimmed)) {
       return { status: keyword.toLowerCase() as Decision["status"], detail: trimmed.slice(0, 500) };
     }
   }
@@ -63,37 +128,45 @@ function extractDecision(text: string): Decision {
 
 // ── System prompts ──────────────────────────────────────────────────────
 
-function reviewerSystemPrompt(projectRoot: string): string {
+function reviewerSystemPrompt(projectDir: string): string {
   return `You are the reviewer and strategist for a persistent project.
 Your role: assess the current state, direct the worker, make decisions.
 You can READ files to verify claims but MUST NOT edit, write, or run destructive commands.
 
-Your working directory is: ${projectRoot}
+The project directory is: ${projectDir}
 
 When you receive worker output, evaluate it and decide what to do next.
 
-Respond with one of these decisions as the FIRST WORD of your response:
-- CONTINUE — progress is being made, guide the next iteration
-- PIVOT — current approach failed, describe a different strategy
-- WAITING — work reached a point needing external input (e.g., human review)
-- BLOCKED — specific external dependency that no worker iteration can resolve
+Respond with one of these decisions as the VERY FIRST WORD of your response (no headers, no preamble):
+CONTINUE — progress is being made, guide the next iteration
+PIVOT — current approach failed, describe a different strategy
+DONE — all milestones are complete, no more work needed
+WAITING — work reached a point needing external input (e.g., human review)
+BLOCKED — specific external dependency that no worker iteration can resolve
 
-If CONTINUE or PIVOT, include:
-(a) What specific output the next iteration should produce
-(b) What's different from previous guidance
-(c) One specific first step to start with`;
+Example response format:
+CONTINUE
+
+(a) Next iteration should produce...
+(b) What's different...
+(c) First step...
+
+When milestones are completed, explicitly list which ones are done using the exact text from project.md, e.g.:
+"Milestone completed: Create .state/fib.ts script"`;
 }
 
-function workerSystemPrompt(projectRoot: string): string {
+function workerSystemPrompt(projectDir: string): string {
   return `You are a worker on a persistent project. You receive guidance from a reviewer and produce concrete deliverables each iteration.
 
-Your working directory is: ${projectRoot}
+The project directory is: ${projectDir}
+You may work anywhere within this directory and its parent workspace.
 
 Rules:
 - Do NOT edit project.md or journal.md — those are managed by the system
 - Produce concrete deliverables (files, test results, code changes)
 - If you get stuck, explain what's blocking you clearly
-- Focus on the specific task given in the reviewer's guidance`;
+- Focus on the specific task given in the reviewer's guidance
+- When done with your task, summarize what you accomplished and what files you created/modified`;
 }
 
 // ── Main ────────────────────────────────────────────────────────────────
@@ -113,30 +186,43 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.escalate(`No project.md found at: ${projectFile}`);
   }
 
+  // Ensure journal exists
+  if (!existsSync(journalFile)) {
+    writeFileSync(journalFile, "# Journal\n", "utf-8");
+  }
+
   // ── Read project files ──
-  const projectContent = readFileSync(projectFile, "utf-8");
-  const journalContent = existsSync(journalFile) ? readFileSync(journalFile, "utf-8") : "";
+  let projectContent = readFileSync(projectFile, "utf-8");
+  const journalContent = readFileSync(journalFile, "utf-8");
 
   const goal = extractSection(projectContent, "Goal") || extractField(projectContent, "Goal") || "See project.md";
   const milestones = extractSection(projectContent, "Milestones") || "";
   const currentState = extractSection(projectContent, "Current State") || "";
+  const resources = extractSection(projectContent, "Resources") || "";
   const status = extractField(projectContent, "Status").toLowerCase();
+  const maxIterations = parseInt(extractField(projectContent, "Max Iterations")) || DEFAULT_MAX_ITERATIONS;
 
   if (status === "paused" || status === "cancelled") {
     return ctx.done(`Project status: ${status}. Skipping.`);
   }
 
-  ctx.log(`Master-worker workflow for: ${projectMatch[1]} (status: ${status})`);
+  // Check if already done with no pending comments
+  const initialMilestones = extractMilestones(projectContent);
+  if (status === "done" && initialMilestones.pending.length === 0 && !extractComments(projectContent)) {
+    return ctx.done("Project already done. No pending comments.");
+  }
+
+  ctx.log(`[master-worker] ${projectMatch[1]} | status: ${status} | milestones: ${initialMilestones.done}/${initialMilestones.total} | max-iter: ${maxIterations}`);
 
   // ── Create sessions ──
   const reviewer = await ctx.createSession({
-    systemPrompt: reviewerSystemPrompt(ctx.projectRoot),
+    systemPrompt: reviewerSystemPrompt(projectDir),
     tools: "readonly",
     label: "reviewer",
   });
 
   const worker = await ctx.createSession({
-    systemPrompt: workerSystemPrompt(ctx.projectRoot),
+    systemPrompt: workerSystemPrompt(projectDir),
     tools: "full",
     label: "worker",
   });
@@ -145,7 +231,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     // ── Phase 1: Planning — reviewer assesses current state ──
     ctx.log("[plan] Reviewer assessing project state...");
 
-    const planningPrompt = `Assess this project and decide what to do next.
+    let planningPrompt = `Assess this project and decide what to do next.
 
 ## Goal
 ${goal}
@@ -155,21 +241,35 @@ ${milestones}
 
 ## Current Status: ${status}
 ${currentState}
+`;
+    if (resources) planningPrompt += `\n## Resources\n${resources}\n`;
+    planningPrompt += `\n## Journal (previous work)\n${journalContent.slice(-3000)}\n`;
 
-## Journal (previous work)
-${journalContent.slice(0, 3000)}
+    // Handle pending comments
+    const comments = extractComments(projectContent);
+    if (comments) {
+      planningPrompt += `\n## Human Comments (address these)\n${comments}\n`;
+      // Clear comments after reading
+      projectContent = clearComments(projectContent);
+      writeFileSync(projectFile, projectContent, "utf-8");
+    }
 
-Based on your assessment, provide your decision (CONTINUE/PIVOT/WAITING/BLOCKED) and guidance for the worker.`;
+    planningPrompt += `\nBased on your assessment, provide your decision and guidance for the worker.`;
 
     await reviewer.prompt(planningPrompt);
 
     let decision = extractDecision(reviewer.lastText());
     ctx.log(`[plan] Decision: ${decision.status.toUpperCase()}`);
 
+    // Treat "unknown" as CONTINUE for the planning phase — reviewer gave guidance but didn't use the keyword
+    if (decision.status === "unknown") {
+      ctx.log("[plan] Decision unclear — treating as CONTINUE");
+      decision.status = "continue";
+    }
+
     if (decision.status !== "continue" && decision.status !== "pivot") {
-      // Update project status
       const stopReason = decision.detail.slice(0, 200);
-      updateProjectStatus(projectFile, projectContent, decision.status, stopReason);
+      updateProjectStatus(projectFile, decision.status, stopReason);
       return decision.status === "blocked"
         ? ctx.escalate(stopReason)
         : ctx.done(`${decision.status}: ${stopReason}`);
@@ -177,34 +277,67 @@ Based on your assessment, provide your decision (CONTINUE/PIVOT/WAITING/BLOCKED)
 
     // ── Phase 2+: Work-review loop ──
     let iteration = 0;
+    let stallCount = 0;
+    let prevDoneCount = initialMilestones.done;
 
-    while (iteration < MAX_ITERATIONS && (decision.status === "continue" || decision.status === "pivot")) {
+    while (iteration < maxIterations && (decision.status === "continue" || decision.status === "pivot")) {
       iteration++;
 
       // ── Work phase ──
-      ctx.log(`[work] Iteration ${iteration} starting...`);
+      ctx.log(`[work] Iteration ${iteration}/${maxIterations} starting...`);
       const guidance = reviewer.lastText();
 
+      // Build worker prompt with project context on first iteration
+      let workerPrompt: string;
       if (iteration === 1) {
-        await worker.prompt(`## Your Task\n${guidance}`);
+        workerPrompt = `## Project Goal\n${goal}\n\n`;
+        if (milestones) {
+          const ms = extractMilestones(readFileSync(projectFile, "utf-8"));
+          workerPrompt += `## Milestones (${ms.done}/${ms.total} complete)\n`;
+          if (ms.pending.length > 0) workerPrompt += `Pending: ${ms.pending.join(", ")}\n`;
+          workerPrompt += `\n`;
+        }
+        workerPrompt += `## Reviewer Guidance\n${guidance}`;
       } else {
-        await worker.prompt(`## Iteration ${iteration} Guidance\n${guidance}`);
+        workerPrompt = `## Iteration ${iteration} Guidance\n${guidance}`;
       }
 
+      await worker.prompt(workerPrompt);
       ctx.log(`[work] Iteration ${iteration} done`);
 
       // ── Journal ──
       const workerText = worker.lastText();
       const workerSummary = workerText.length > 1500 ? workerText.slice(0, 1500) + "..." : workerText;
-      appendFileSync(journalFile, `\n### Iteration ${iteration} — ${new Date().toISOString()}\n**Worker**: ${workerSummary.slice(0, 300)}\n`, "utf-8");
+      appendFileSync(journalFile, `\n### Iteration ${iteration} — ${new Date().toISOString()}\n**Worker**: ${workerSummary.slice(0, 500)}\n`, "utf-8");
 
       // ── Review phase ──
       ctx.log(`[review] Reviewer evaluating iteration ${iteration}...`);
 
+      // Build review prompt with current milestone state
+      const currentContent = readFileSync(projectFile, "utf-8");
+      const ms = extractMilestones(currentContent);
+      let reviewPrompt = `## Worker Output (Iteration ${iteration})\n${workerSummary}\n\n`;
+      if (ms.total > 0) {
+        reviewPrompt += `## Current Milestones (${ms.done}/${ms.total})\n`;
+        if (ms.completed.length > 0) reviewPrompt += `Done: ${ms.completed.join(", ")}\n`;
+        if (ms.pending.length > 0) reviewPrompt += `Pending: ${ms.pending.join(", ")}\n`;
+        reviewPrompt += `\n`;
+      }
+
+      // Check for new human comments mid-run
+      const newComments = extractComments(currentContent);
+      if (newComments) {
+        reviewPrompt += `## New Human Comments\n${newComments}\n\n`;
+        const cleared = clearComments(currentContent);
+        writeFileSync(projectFile, cleared, "utf-8");
+      }
+
+      reviewPrompt += `Evaluate and provide your next decision.`;
+
       let reviewAttempt = 0;
       while (reviewAttempt < 3) {
         try {
-          await reviewer.prompt(`## Worker Output (Iteration ${iteration})\n${workerSummary}\n\nEvaluate and provide your next decision.`);
+          await reviewer.prompt(reviewPrompt);
           break;
         } catch (e: any) {
           reviewAttempt++;
@@ -214,25 +347,70 @@ Based on your assessment, provide your decision (CONTINUE/PIVOT/WAITING/BLOCKED)
         }
       }
 
-      decision = extractDecision(reviewer.lastText());
+      const reviewerText = reviewer.lastText();
+      decision = extractDecision(reviewerText);
+      if (decision.status === "unknown") {
+        ctx.log("[review] Decision unclear — treating as CONTINUE");
+        decision.status = "continue";
+      }
       ctx.log(`[review] Decision: ${decision.status.toUpperCase()}`);
+
+      // ── Milestone tracking ──
+      let updatedContent = readFileSync(projectFile, "utf-8");
+      updatedContent = checkOffMilestones(updatedContent, reviewerText);
+      writeFileSync(projectFile, updatedContent, "utf-8");
+
+      const newMs = extractMilestones(updatedContent);
+      if (newMs.done > prevDoneCount) {
+        ctx.log(`[milestone] ${newMs.done}/${newMs.total} complete (+${newMs.done - prevDoneCount})`);
+        stallCount = 0;
+      } else if (decision.status === "continue") {
+        stallCount++;
+      }
+      prevDoneCount = newMs.done;
+
+      // ── Progress stall detection ──
+      if (stallCount >= MAX_STALL_ITERATIONS && decision.status === "continue") {
+        ctx.log(`[stall] ${stallCount} iterations without milestone progress — escalating`);
+        const reason = `Stalled: ${stallCount} iterations without milestone progress. ${newMs.done}/${newMs.total} milestones done.`;
+        updateProjectStatus(projectFile, "blocked", reason, iteration);
+        return ctx.escalate(reason);
+      }
 
       // Append reviewer decision to journal
       appendFileSync(journalFile, `**Reviewer**: ${decision.detail.slice(0, 300)}\n`, "utf-8");
+
+      // Update iteration count in project.md
+      updateProjectStatus(projectFile, "active", undefined, iteration);
     }
 
     // ── Wrap up ──
-    const stopReason = decision.status === "continue"
-      ? `Reached ${MAX_ITERATIONS} iteration cap`
-      : decision.detail.slice(0, 200);
+    const finalMs = extractMilestones(readFileSync(projectFile, "utf-8"));
+    let finalStatus: string;
+    let stopReason: string;
 
-    updateProjectStatus(projectFile, readFileSync(projectFile, "utf-8"), decision.status, stopReason, iteration);
-
-    if (decision.status === "blocked") {
-      return ctx.escalate(stopReason);
+    if (decision.status === "done" || (finalMs.total > 0 && finalMs.pending.length === 0)) {
+      finalStatus = "done";
+      stopReason = `All ${finalMs.total} milestones complete`;
+    } else if (decision.status === "blocked") {
+      finalStatus = "blocked";
+      stopReason = decision.detail.slice(0, 200);
+    } else if (decision.status === "waiting") {
+      finalStatus = "waiting";
+      stopReason = decision.detail.slice(0, 200);
+    } else if (iteration >= maxIterations) {
+      finalStatus = "blocked";
+      stopReason = `Safety cap: ${maxIterations} iterations reached without resolution. ${finalMs.done}/${finalMs.total} milestones done.`;
+    } else {
+      finalStatus = decision.status;
+      stopReason = decision.detail.slice(0, 200);
     }
 
-    return ctx.done(`Completed after ${iteration} iteration(s). Final: ${decision.status.toUpperCase()} — ${stopReason}`);
+    updateProjectStatus(projectFile, finalStatus, stopReason, iteration);
+    ctx.log(`[done] ${finalStatus} after ${iteration} iteration(s). ${finalMs.done}/${finalMs.total} milestones. ${stopReason}`);
+
+    if (finalStatus === "blocked") return ctx.escalate(stopReason);
+    return ctx.done(`${finalStatus} after ${iteration} iteration(s). ${stopReason}`);
 
   } finally {
     reviewer.close();
@@ -244,31 +422,40 @@ Based on your assessment, provide your decision (CONTINUE/PIVOT/WAITING/BLOCKED)
 
 function updateProjectStatus(
   projectFile: string,
-  content: string,
   status: string,
-  reason: string,
+  reason?: string,
   iteration?: number,
 ) {
-  let updated = content;
+  let content = readFileSync(projectFile, "utf-8");
 
   // Update Status field
-  updated = updated.replace(/^\*\*Status\*\*:\s*.+$/m, `**Status**: ${status}`);
+  content = content.replace(/^\*\*Status\*\*:\s*.+$/m, `**Status**: ${status}`);
 
   // Update/add Stop Reason
-  if (updated.includes("**Stop Reason**:")) {
-    updated = updated.replace(/^\*\*Stop Reason\*\*:\s*.+$/m, `**Stop Reason**: ${reason}`);
-  } else {
-    updated = updated.replace(/^\*\*Status\*\*:\s*.+$/m, `**Status**: ${status}\n**Stop Reason**: ${reason}`);
-  }
-
-  // Update iteration count
-  if (iteration !== undefined) {
-    if (updated.includes("**Iteration**:")) {
-      updated = updated.replace(/^\*\*Iteration\*\*:\s*.+$/m, `**Iteration**: ${iteration}`);
+  if (reason !== undefined) {
+    if (content.includes("**Stop Reason**:")) {
+      content = content.replace(/^\*\*Stop Reason\*\*:\s*.+$/m, `**Stop Reason**: ${reason}`);
     } else {
-      updated = updated.replace(/^\*\*Status\*\*:\s*.+$/m, (match) => `${match}\n**Iteration**: ${iteration}`);
+      content = content.replace(/^(\*\*Status\*\*:\s*.+)$/m, `$1\n**Stop Reason**: ${reason}`);
     }
   }
 
-  writeFileSync(projectFile, updated, "utf-8");
+  // Update/add iteration count
+  if (iteration !== undefined) {
+    if (content.includes("**Iteration**:")) {
+      content = content.replace(/^\*\*Iteration\*\*:\s*.+$/m, `**Iteration**: ${iteration}`);
+    } else {
+      content = content.replace(/^(\*\*Status\*\*:\s*.+)$/m, `$1\n**Iteration**: ${iteration}`);
+    }
+  }
+
+  // Update Current State section
+  if (reason !== undefined) {
+    const stateText = `${status}: ${reason}`;
+    if (content.includes("## Current State")) {
+      content = content.replace(/(## Current State\s*\n)[\s\S]*?(?=\n## |$)/, `$1${stateText}\n`);
+    }
+  }
+
+  writeFileSync(projectFile, content, "utf-8");
 }
