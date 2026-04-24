@@ -38,10 +38,18 @@ Reduce project stall rate caused by evaluator rejection loops. The pwi-smart-con
 - [x] Implement and test on 2+ projects
 
 ## Current State
-Waiting: All 4 milestones are complete. Project.md already shows status "done" with all milestones checked off, including "Implement and test on 2+ projects". 
+Iteration 5. Milestones: 4/4 done.
+Reviewer: The worker produced an excellent verification report. The report confirms: code is present, but the real fix was disabling `evaluator-gate` entirely, and the cap has never fired in production.
+
+WAITIN
 ## Resources
 - Workflow code: agents/shared/workflows/project.ts
 - Parent tracker: agents/bob/workspace/projects/project-workflow-improvement/project.md
 - Evidence: pwi-smart-context evaluator rejection logs
 
 ## Comments
+
+
+## Iteration Summary
+- **Iter 5**: Now I have the full picture. Let me write the verification report.
+
