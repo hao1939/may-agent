@@ -7,6 +7,15 @@
 
 ---
 
+## Fresh Arrivals (May 24, 2026) — HF Blog: Agent Infrastructure & Chinese Models
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-05-24 | **Vessel Browser** | Open source browser designed explicitly for agents. 2.5x faster than Anthropic tooling. Originally designed to accompany "harness like Hermes Agent or OpenClaw". Native MCP, local model support. ★★★★☆ | [HB-260524](library/posts/HB-260524-vessel-browser-agent.md) |
+| 2026-05-24 | **Save the Traces** | Conversation traces are the new "file" abstraction. Backup all agent interactions — cross-device recovery, skill extraction, vendor lock-in avoidance. Simple: `uvx hf sync`. ★★★★★ | [HB-260524](library/posts/HB-260524-save-the-traces.md) |
+| 2026-05-24 | **Hy3 Preview** (Tencent) | 295B total / 21B active MoE reasoning model. Others need 37-40B active params, Hunyuan does it with 21B. "Routing precision is the algorithmic moat". WorkBuddy Agent integration. ★★★★☆ | [HB-260524](library/posts/HB-260524-hy3-preview-tencent.md) |
+| 2026-05-24 | **GR00T N1.7** (NVIDIA) | First commercially licensed open humanoid VLA model. 3B params, 20k hours human egocentric video. First-ever dexterity scaling law. System 1/2 (DiT/VLM) architecture. ★★★★☆ | [HB-260524](library/posts/HB-260524-nvidia-gr00t-n17.md) |
+
 ## Fresh Arrivals (May 24, 2026) — Deep Dive: The Self-Evolution Debate
 
 | Date | Title | Key Insight | Source |

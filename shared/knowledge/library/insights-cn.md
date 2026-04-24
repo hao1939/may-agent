@@ -3,6 +3,99 @@
 
 ---
 
+## 2026-05-24 Session Findings (Amy-Kimi Heartbeat — HF Blog Special)
+
+### 🔥 Vessel Browser — 专为Agent设计的开源浏览器
+
+**来源**: Hugging Face Blog / Tyler Williams  
+**链接**: https://huggingface.co/blog/unmodeled-tyler/vessel-browser-for-agents
+
+**核心数据**:
+- **2.5x速度提升** vs Anthropic原生工具（Claude Code测试）
+- 原生MCP端点，Ollama/Llama.cpp本地模型支持
+- 双向页面高亮持久化，带摘要的书签管理
+
+**关键发现**: Vessel最初设计理念是 **"作为Hermes Agent或OpenClaw等Harness的配套浏览器"**！
+
+> "Initially when I first set out to build Vessel, the idea was a browser to accompany a harness like Hermes Agent or OpenClaw."
+
+早期版本甚至没有内置聊天窗口——预期用户通过既有的Agent（如OpenClaw）交互，Vessel只作为可视化和审批机制。
+
+**对我们意味着什么**:
+1. **外部验证**: OpenClaw在行业内有认知度
+2. **浏览器层机会**: L4层的人工介入可视化
+3. **专用工具 > 通用适配**: 2.5x性能差距证明架构选择的重要性
+
+---
+
+### 🔥 Save the Traces — Agent对话的新"文件"抽象
+
+**来源**: Hugging Face Blog / Pedro Cuenca  
+**链接**: https://huggingface.co/blog/pcuenq/save-the-traces
+
+**核心洞察**:
+> "Conversation traces are the new 'file' abstraction — more fundamental than any memory solution."
+
+两年前的一次性对话，现在是**散落和碎片化的知识库**。解决方案极简：
+```bash
+for f in .claude .codex .cursor .pi; do 
+  uvx hf sync ~/${f} hf://buckets/pcuenq/traces/$(hostname -s)/${f}
+done
+```
+
+**价值主张**:
+- 避免vendor lock-in
+- 跨设备项目恢复
+- 从重复任务提取Skill
+- 捐赠traces训练更好的开源模型
+
+**对我们意味着什么**:
+- OpenClaw缺乏系统的trace保存机制
+- Error Log应扩展为长期知识沉淀
+- 默认本地保存，支持用户导出
+
+---
+
+### 🔥 Hy3 Preview — 腾讯混元21B激活MoE推理模型
+
+**来源**: Hugging Face Blog / Tencent  
+**链接**: https://huggingface.co/blog/imnotkitty/hy3-preview
+
+**核心数据**:
+- 295B总参数 / 21B激活参数（业界最低激活比）
+- 融合快慢思考（fast + slow thinking）
+- 其他模型需要37-40B激活参数，Hy3只需21B
+
+**核心创新**:
+1. **差异化专家大小**: 不同难度token路由到不同容量专家
+2. **P-Penalty Loss**: 惩罚偏向大专家，鼓励激活小专家
+3. **Context Learning**: 长上下文记忆和理解
+
+**关键洞察**:
+> "The precision of routing determines the true value of these 21B activated parameters — this is a core algorithmic moat that cannot be overtaken simply by scaling up hardware or parameters."
+
+**路由精度是核心护城河**，无法仅靠硬件或参数规模超越。
+
+---
+
+### 🔥 NVIDIA GR00T N1.7 — 首个商业许可的开放人形VLA模型
+
+**来源**: Hugging Face Blog / NVIDIA  
+**链接**: https://huggingface.co/blog/nvidia/gr00t-n1-7
+
+**核心数据**:
+- 3B参数 (Cosmos-Reason2-2B + 32层DiT)
+- 20,854小时人类自我中心视频训练
+- 首个**灵巧性Scaling Law**: 1k→20k小时，任务完成率翻倍
+
+**Action Cascade双系统架构**:
+- System 2 (VLM): 慢思考、任务分解、多步推理
+- System 1 (DiT): 快执行、实时电机控制
+
+**与OpenClaw的关联**: L3(Planner) + L4(Controller) 分层与System 2/1分离思路一致。
+
+---
+
 ## 2026-05-24 Session Findings (Amy-Kimi Heartbeat — GenericAgent & Harness Trends)
 
 ### 🔥 GenericAgent: 复旦大学的自进化Agent框架 (6.8k⭐)
