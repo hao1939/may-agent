@@ -3239,3 +3239,19 @@ src/app/ui/web
 - ⚠️ Event "project.waiting" — 7 pending > 2h
 - ⚠️ Event "session.failed" — 1 pending > 2h
 
+## 2026-04-24T21:39 — Auto (JS cron handler)
+
+- Sessions (24h): 1214
+- Unevaluated: 1779 total, 1210 actionable, 569 auto-skippable
+- Running sessions: bob (s_1777061436523_405), coach (s_1777066634825_511), amy-kimi (s_1777066751264_515), tech-lead (s_1777066398610_0), may (s_1776611617990_13), tech-lead (s_1777065781674_0), tech-lead (s_1777065588669_0), tech-lead (s_1777066747016_0), tech-lead (s_1777065063071_0)
+- tsc: SKIP (no tsconfig.json)
+- Lessons: 52 lines total (scout 31, optimizer 21)
+- Bob analysis: fresh (12h ago)
+- ⚠️ bob session s_1777061436523_405 running 89min — may be stuck
+- ⚠️ 1210 actionable unevaluated sessions — evaluation may be falling behind
+- ⚠️ 569 auto-skippable sessions — writeSkippedEvaluations may need to run
+- ⚠️ Event "agent.notification" — 72 pending > 2h
+- ⚠️ Event "metric.breach" — 18 pending > 2h
+- ⚠️ Event "project.waiting" — 7 pending > 2h
+- ⚠️ Event "session.failed" — 1 pending > 2h
+
