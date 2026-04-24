@@ -36,6 +36,12 @@ import type {
 } from "../../shared/agent-sdk.js";
 import type { TaskResult } from "../../shared/agent-sdk.js";
 import type { WorkflowRun, WorkflowStep } from "../../shared/agent-sdk.js";
+import { loadGuards, runGuards } from "../../shared/guards/loader.js";
+import {
+  enforceFinishDeliverables,
+  enforceVerificationEvidence,
+} from "../../shared/agent-sdk.js";
+import type { FinishCallParams } from "../../shared/agent-sdk.js";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
