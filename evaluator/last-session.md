@@ -1,49 +1,49 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777044337644_37
+- **Session:** s_1777044883368_44
 - **Status:** done
-- **When:** 2026-04-24T15:25:49.318Z
-- **Duration:** 11s
+- **When:** 2026-04-24T15:34:53.154Z
+- **Duration:** 9s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "tech-lead": {
-      "role": "Builder",
-      "capability_level": "L3",
-      "efficiency": 0.72,
-      "quality": 0.55,
-      "verdict": "acceptable",
+    "coach": {
+      "role": "Philosopher/Architect",
+      "capability_level": "L2",
+      "efficiency": 0.55,
+      "quality": 0.25,
+      "verdict": "needs_improvement",
       "issues": [
-        "Did not perform the required build/test verification steps (no evidence of `cd agents && npx tsc --noEmit` or `cd agents && npx vitest run`), despite task constraints explicitly requiring both. [FM-3.3][VERIFICATION_FAILURE]",
-        "Did not deliver the requested commit on `shared/workflows/project.ts` with the specified message; instead concluded the work was already done in an older commit by a different author and did not create the requested refactor commit. This is a delivery mismatch vs task requirements.",
-        "Initial commit attempt failed because `shared/workflows/project.ts` had no local changes; agent then pivoted to historical investigation. This was reasonable, but it also means the agent did not actually execute the requested refactor in this session."
+        "Over-claimed milestone completion without verifying prerequisites: asserted M4/M5/M6 are 'largely ALREADY DONE' but provided no tool evidence that guards are actually wired into runtime (only existence checks were run).",
+        "Did not follow the task constraint 'REVIEW ONLY — no file edits expected': used multiple bash calls (read-only, but still unnecessary for a guidance-only role given transcript already contained key artifacts).",
+        "Guidance conflicts with provided milestone status: the system states 3/6 complete; coach instructed to complete M4-M6 and check them off, but the transcript evidence only supports existence of shared guard files and presence of 'Mandatory Procedures' in context.md, not production deployment or synthesis completion.",
+        "Insufficient evidence-based reasoning: recommended checking off M5 'Production deployment' based on 'guards in agents/src' (existence), which is not the same as being integrated/enforced in workflows/tests/CI."
       ],
       "metrics": {
-        "code_correctness": "unknown (no new code changes; existing code presence checked via grep only)",
-        "scope_control": "medium (no code changes, but did add an unrelated commit under tech-lead/ to satisfy finish guard)",
-        "verification": "low (no tests/build run)",
-        "delivery_integrity": "medium (evidence supports helpers exist; does not support completion of requested commit/tests)"
+        "evidence_use": "low",
+        "milestone_alignment": "low",
+        "constraint_adherence": "medium",
+        "actionability_of_next_steps": "medium"
       }
     }
   },
   "workflow": {
-    "name": "single-session refactor request",
+    "name": "persistent violation reduction (iteration 6)",
     "issues": [
-      "Task required a specific refactor commit message and passing build/tests; session ended without evidence of either for the target file."
+      "Milestone semantics are being treated as paperwork: 'deployment' and 'knowledge synthesis' are being equated to 'files exist' rather than measurable rollout + measured reduction.",
+      "Iteration instructions require 'Never give the same guidance twice'; current approach repeats the pattern of 'document + check boxes' rather than driving measurable violation reduction."
     ]
   },
   "overall": {
-    "verdict": "acceptable",
+    "verdict": "needs_improvement",
     "result_delivered": false
-  }
+  },
+  "lessons": [
+    "[coach] Do not mark/advise marking 'Production deployment' complete without verifying integration points (imports/usages in runtime paths, CI hooks, or enforcement points) via tool evidence; file existence is not deployment.",
+    "[coach] When a task is 'review only', prioritize transcript evidence and propose a verification plan for the worker rather than performing exploratory tool calls yourself unless strictly necessary."
+  ]
 }
 ```
-
-Evidence highlights (from transcript/tool outputs):
-- Helpers exist and are called: `grep -n "handleDoneDecision|handleBlockedDecision"` showed definitions at lines 512/610 and calls at 731/742/846/858.
-- Historical origin: `git log --all --oneline -1 -S "handleDoneDecision"` returned commit `adf96cdb8`.
-- No required checks run: no tool output for `npx tsc --noEmit` or `npx vitest run`.
-- No refactor commit created for `shared/workflows/project.ts`: `git commit` failed with “no changes added to commit”; later commit was only `tech-lead/last-session.md` (“confirmed…refactor already complete”).
