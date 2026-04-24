@@ -1,5 +1,43 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #123 | 2026-03-17 session | posts: 2700+ | HB0007
+> Compact #124 | 2026-05-01 session | posts: 2700+ | HB0007
+
+---
+
+## 2026-05-01 Session Findings (Amy-Kimi Heartbeat — Chinese Agent Ecosystem Update)
+
+### 🔥 中文 Agent 生态核心项目追踪更新
+- **来源**: GitHub + arXiv 深度追踪
+- **核心发现**: Harness 架构模式行业趋同，我们走在正确方向
+
+#### AgentScope (阿里巴巴) - 24.3k⭐
+- **定位**: 生产级多智能体框架
+- **关键设计**: Message Hub + MCP/A2A 双协议 + 完整功能栈
+- **与 OpenClaw 对比**: 显式内存层、规划层、Human-in-the-loop 是我们缺失的
+- **启示**: 让模型更多自主，而非更多限制
+
+#### DeerFlow 2.0 (字节跳动) - 63.7k⭐
+- **定位**: SuperAgent Harness (GitHub Trending #1)
+- **架构**: Sandboxes + Memories + Tools + Skills + Subagents + Message Gateway
+- **与 OpenClaw 对齐**: Harness 运行时、子代理编排、沙箱执行 100% 对齐
+- **洞察**: "Harness" 是行业 converging 的架构模式，非我们独有
+
+#### MetaGPT - 67.4k⭐
+- **核心**: `Code = SOP(Team)` - 软件公司模拟
+- **动态**: MGX 产品上线 (ProductHunt #1)、AFlow ICLR 2025 Oral
+- **对比**: SOP 驱动 vs 我们的事件驱动
+
+#### 论文洞察
+- **Tool Attention** (arXiv:2604.21816): MCP token 开销减少 95%，协议级效率是约束性因素
+- **DiffMAS** (arXiv:2604.21794): 隐式通信端到端优化，AIME24 26.7%
+- **COSPLAY** (arXiv:2604.20987): 决策 Agent 与技能库协同进化，8B 模型 +25.1% 奖励
+
+#### 共同趋势
+1. 多智能体协调成为标配
+2. 生产就绪性受重视
+3. 学习/进化能力演进
+4. 开放生态建设
+
+- **相关**: [HB-260501](posts/HB-260501-ecosystem-update.md)
 
 ---
 
