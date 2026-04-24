@@ -47,9 +47,6 @@ function executeQuery(sql, params = []) {
     results = results.filter(p => p.category === cat);
   }
   
-  // Return null when no results found (simulates DB driver behavior)
-  if (results.length === 0) return null;
-  
   return results;
 }
 

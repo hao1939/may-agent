@@ -13,8 +13,9 @@ const { executeQuery } = require('./db');
  * @returns {Array<{id: number, name: string, price: string}>}
  */
 function searchProducts(query) {
+  if (typeof query !== 'string' || query.trim().length === 0) return [];
   const sql = `SELECT * FROM products WHERE name LIKE ?`;
-  const rows = executeQuery(sql, [`%${query}%`]) || [];
+  const rows = executeQuery(sql, [`%${query}%`]);
   
   return rows.map(row => ({
     id: row.id,
