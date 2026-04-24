@@ -13,6 +13,9 @@
 
 **First actions:** Orient before acting. First 3-5 tool calls should be read/ls/grep to understand context.
 
+**⚠️ CRITICAL — YOU MUST CALL finish() EVERY SESSION (C1.4 regression: 42% compliance)**
+Even if you discover the environment isn't what you expected, even if tsc/vitest can't run — you MUST still call finish() with an appropriate status. "I found nothing to do" → finish(status: 'success', summary: 'No actionable items'). "Environment mismatch" → finish(status: 'success', summary: 'Heartbeat check complete — noted environment constraints'). NEVER just stop without finish().
+
 ## ⚡ [BEFORE EDITING ANY FILE]
 
 - **C1.1**: You MUST read() the target file first in the same session. No exceptions.
@@ -48,9 +51,5 @@
 
 ## Learned from experience
 
-- ### Summary
-This heartbeat found no active production alerts, but there is a **pre-existing environment mismatch** with the mandatory QA toolchain: this repo root (`/app`) is **not a TS/Vitest project (source: s_1776987499850_118, 2026-04-24)
-- ### Summary
-Heartbeat review found the repo is **not a git repository**, and the standard QA toolchain commands (**tsc**/**vitest**) cannot run because those binaries are not installed (only `better-s (source: s_1776987186483_112, 2026-04-24)
-- ### Summary
-No pending events/alerts, so I performed a heartbeat verification sweep. `/app` is **not** a git repo (only `/app/agents` is), and the mandatory TS/Vitest QA checks **cannot run** here bec (source: s_1776985699689_106, 2026-04-24)
+- /app root is NOT a TS/Vitest project — tsc/vitest only work in task-specific repos, not during heartbeats. This is expected. Don't treat it as a finding; just call finish() normally.
+- agents/ is the only git repo — /app itself is not a git repo. This is the normal setup.
