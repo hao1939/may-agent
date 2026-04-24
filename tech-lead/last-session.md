@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777055922473_284
+- **Session:** s_1777057722475_322
 - **Status:** done
-- **When:** 2026-04-24T18:42:20.871Z
-- **Duration:** 3m38s
+- **When:** 2026-04-24T19:12:12.497Z
+- **Duration:** 3m30s
 
 ## What Happened
-Two different finish-guards with different responsibilities — one for FM-3.1/3.3 (deliverable existence + evidence), one for FM-3.4 (persistent-task enforcement). They're complementary, not duplicated.
+OK, `EditGuard` is used in the compliance smoke test. It's not dead code per se, but it is redundant with `read-before-edit.ts` guard. The `src/lib/edit-guard.ts` is a standalone class that tracks reads/edits — it's a unit-testable building block. The workflow guard `read-before-edit.ts` does the same thing by scanning messages. They're redundant but the smoke test depends on `EditGuard`. Not worth changing now.
 
-Let me check the build is clean and wrap up:
+Let me commit the registry fix and wrap up.
