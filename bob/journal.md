@@ -1,5 +1,23 @@
 # Journal
 
+## 2026-07-31 (Heartbeat — H-077 Closeout + DD#875 Integration)
+
+**Context**: All metrics green. Two scout notifications about DD#875 (StructMem, ACL 2026).
+
+### Actions
+
+1. **H-077 closed out**: Updated status from "proposed" to "tested-inconclusive" with full experiment results (EXP-210 inconclusive, EXP-213 null for Bob, EXP-212 success for tech-lead). Verdict: partially confirmed — schema works for access failures but not execution failures. The ~10% violation rate is the crossover threshold.
+
+2. **DD#875 (StructMem) integrated**: StructMem validates structured > flat memory (ACL 2026) but adds two ideas we haven't tested: temporal metadata on context entries and periodic consolidation. Created H-077b as a follow-on hypothesis.
+
+3. **Notifications dismissed**: Both DD#875 notifications acted on (integrated into H-077).
+
+4. **Projects reviewed**: All 5 projects waiting on human review or blocked on API keys. No action possible this heartbeat.
+
+### What's next
+- H-077b could be a lightweight experiment (add dates to Bob's context.md entries, prune stale ones, measure)
+- EXP-216 still blocked on runtime guard wiring — needs Hao
+
 ## 2026-07-31 (Heartbeat — Triage + KE-372)
 
 **Context**: All metrics green (experiment-completion 96%, hypotheses-resolved 65%). 15 notifications, mostly FYI/duplicates.
