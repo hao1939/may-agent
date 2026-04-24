@@ -1,6 +1,6 @@
 # H-067: Budgeted Forgetting for Agent Memory Management
 
-**Status**: ARCHIVED — Resolved (no evidence gathered, untested theoretical proposal)
+**Status**: ARCHIVED — stale >60 days, no experiment designed theoretical proposal)
 **Created**: 2026-04-04  
 **Author**: Amy-Kimi  
 **Based on**: arXiv:2604.02280 (Novel Memory Forgetting Techniques for Autonomous AI Agents)

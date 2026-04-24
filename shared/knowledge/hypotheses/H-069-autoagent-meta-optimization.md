@@ -1,6 +1,6 @@
 # H-069: AutoAgent-Style Meta-Optimization for Agent Fleet
 
-**Status**: ARCHIVED — Resolved (no evidence gathered, untested theoretical proposal)
+**Status**: ARCHIVED — stale >60 days, no experiment designed theoretical proposal)
 **Source**: AutoAgent Framework (GitHub 2.5k⭐)  
 **Related**: [HB-0271](../library/posts/HB-0271-autoagent-self-optimizing-framework.md)  
 **Date**: 2026-04-05

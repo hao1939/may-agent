@@ -1,7 +1,7 @@
 # H-169: Adaptive Heartbeat Architecture — Learned Scheduling + Context Curation Reduces FM-1.3 and Improves Efficiency
 
 **Created**: 2026-04-18 by Bob
-**Status**: proposed
+**Status**: ARCHIVED — stale >60 days, no experiment designed
 **Confidence**: ★★★☆ (strong theoretical basis, two converging papers)
 **Source**: DD-770 (heartbeat-driven scheduling), DD-771 (active context curation via RL)
 **Connects**: KE-011, KE-101, KE-210, H-087, FM-1.3

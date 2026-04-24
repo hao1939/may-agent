@@ -1,6 +1,6 @@
 # H-066: Bayesian Belief Management — Treating Hypotheses as Noisy Signals, Not Binary Facts
 
-**Status**: ARCHIVED — Resolved (no evidence gathered, untested theoretical proposal)
+**Status**: ARCHIVED — stale >60 days, no experiment designed theoretical proposal)
 **Created**: 2026-04-04  
 **Author**: Bob (Architect)  
 **Source**: BACE (DD#511) × BeliefShift (DD#506) × CR#279 × Bob's Corpus Review

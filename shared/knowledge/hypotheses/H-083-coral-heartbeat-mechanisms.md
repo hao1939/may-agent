@@ -1,6 +1,6 @@
 # H-083: CORAL Heartbeat Mechanisms for Multi-Agent Coordination
 
-**Status**: ARCHIVED — Resolved (no evidence gathered, untested theoretical proposal)
+**Status**: ARCHIVED — stale >60 days, no experiment designed theoretical proposal)
 **Date**: 2026-04-06  
 **Source**: CORAL paper (arXiv:2604.01658)
 
