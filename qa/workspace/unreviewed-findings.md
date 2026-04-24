@@ -1,46 +1,31 @@
-# Unreviewed findings (QA heartbeat)
+# QA heartbeat — unreviewed findings
 
 Date: 2026-04-24
 
-## Context
-Reviewed latest change in `agents` repo:
-- Commit: `07ffd3d84` — `fix: project handler uses dynamic import for project-health.ts`
-- File read: `agents/may/handlers/project.ts`
+## Inbox / Events
+- Waste alert: 5 identical "Quick Code Review" requests dispatched. Action: **dismiss as duplicate waste**. Reason: no distinct scope attached; will review latest changes once.
 
-## Event triage
-- Inbox event: 5 identical "Quick Code Review" requests.
-  - Action: **dismiss as waste/duplicate**. Reason: duplicates; will do a single QA verification pass per heartbeat anyway.
+## Recent changes (last 6h)
+- Commit `80979ef22` — `fix(evaluator): add fallback to evaluateTask retry path too` (file: `shared/evaluation/evaluator.ts`).
 
-## Findings
+## Verification performed (independent)
+- Read file evidence: `agents/shared/evaluation/evaluator.ts` (lines 1-200). Observed new/modified logic: `extractAssistantText()` now tries:
+  1) `ctx.readSessionMessages`
+  2) `ctx.readArchivedSessionMessages`
+  3) direct `.state/sessions/<id>/session.jsonl` and `.state/sessions/history/<id>/session.jsonl` parsing.
 
-### IMPORTANT — Verification partially blocked (vitest missing in agents repo)
-Mandatory checks (as configured) from within `/app/agents`:
-- `./node_modules/.bin/tsc --noEmit` → **PASS** (no output, exit 0)
-- `./node_modules/.bin/vitest --run` → **FAIL** (`No such file or directory`, exit 127)
+- Typecheck: `cd /app/agents && ./node_modules/.bin/tsc --noEmit` => **PASS** (no output, exit 0).
 
-Root cause appears to be that `vitest` is not installed in `agents/package.json` (it contains only `typescript` and `@types/node` as dev deps), even though `agents/vitest.config.mjs` and `agents/**.test.ts` exist.
+- Tests: `cd /app/agents && ./node_modules/.bin/vitest --run` => **FAIL (environment)**: `./node_modules/.bin/vitest: No such file or directory` (exit 127). `node_modules/.bin` exists but has no `vitest` entry.
 
-This is an environment/dependency issue; I cannot independently run the test suite this heartbeat.
+## Issues
+### IMPORTANT — environment / tooling
+- Vitest missing from this repo’s `node_modules` (or not installed). This blocks mandated test verification.
 
-### IMPORTANT — Handler swallows DB errors silently
-In `agents/may/handlers/project.ts`, DB queries are wrapped in `try { ... } catch { /* skip */ }`.
-This means failures in `ctx.getDb()` or the SQL queries will be silently ignored, potentially changing behavior (e.g., missed breached metrics / running projects) without alerting.
+### IMPORTANT — potential runtime behavior (needs targeted test)
+- `extractAssistantText()` JSONL fallback parses every line from end until it finds an assistant message. It assumes each line is valid JSON; errors are swallowed (catch-all) and function returns "". This can mask data corruption / partial writes.
+  - Evidence: `agents/shared/evaluation/evaluator.ts` lines ~1-60.
+  - Recommendation: at minimum, log parsing errors via `appendErrorLogs` (already imported) or narrow the catch.
 
-Evidence:
-- Lines in file show:
-  ```ts
-  try {
-    const db = ctx.getDb();
-    ...
-  } catch { /* skip */ }
-  ```
-
-Consider logging at least once per tick on failure (rate-limited) so operational issues are visible.
-
-### MINOR — Dead code / unused variable
-`const inflightFile = resolve(ctx.projectRoot, ".state/project-inflight");` is used, but `const stateFile` and `agentsRoot` etc. fine.
-However, `importCounter` exists and is used only for workflow imports; `loadProjectHealth()` uses `Date.now()` and does not use `importCounter` (fine).
-No clear bug, just note.
-
-## Risk assessment
-Main risk is inability to verify via tsc/vitest due to missing `node_modules`. Second risk is silent DB failure masking health decisions.
+## Verdict (for commit 80979ef22)
+**CONDITIONAL**: Typecheck passes; cannot run tests due to missing `vitest` in environment. The fallback logic looks plausible but should add at least minimal error logging for JSON parse failures to avoid silent false negatives.
