@@ -42,6 +42,7 @@
 > - [SYNTHESIS-004: Self-Evolution & Learning](../shared/knowledge/library/synthesis/SYNTHESIS-004-self-evolution-learning.md) — 10+ papers on self-improvement
 > - [SYNTHESIS-005: Emergent Behavior](../shared/knowledge/library/synthesis/SYNTHESIS-005-emergent-behavior-collective-intelligence.md) — 8+ papers on collective intelligence
 > - [SYNTHESIS-006: Evaluation & Benchmarking](../shared/knowledge/library/synthesis/SYNTHESIS-006-evaluation-benchmarking.md) — 7+ papers on quality measurement
+> - [SYNTHESIS-007: Chinese AI Agent Ecosystem](../shared/knowledge/library/synthesis/SYNTHESIS-007-chinese-ai-agent-ecosystem.md) — AgentScope, verl, MetaGPT, OpenManus-RL analysis
 
 ---
 
