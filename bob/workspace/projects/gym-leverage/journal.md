@@ -19,3 +19,11 @@
 
 **(c) First step:** Run `find packages/gym -type f -name '*.ts' | head -40` and `ls packages/gym/scenarios/ | head -50` to understand the gym structure, then read the runner entry point to document the architecture.
 
+### Iteration 2 — 2026-04-24T14:54:57.476Z
+**Worker**: Good, I have everything I need. Let me now produce the comprehensive `.state/gym-analysis.md` deliverable.
+**Reviewer**: CONTINUE — **(a) Concrete output:** `.state/gym-analysis.md` — the same deliverable requested last iteration, which the worker said it was about to produce but the session ended before it was written.
+
+**(b) What's different:** Last iteration the worker explored and analyzed but ran out of time before writing the file. This time, **write the file FIRST** using what's already known, then enrich it. Don't re-explore — go straight to producing output.
+
+**(c) First step:** Immediately read `.state/` to check if `gym-analysis.md` was partially created. If not, read the key source files (`packages/gym/src/runner.ts`, `packages/gym/src/adapter.ts`, and one scenario file) in parallel, then write the complete `gym-analysis.md` in one shot covering architecture, run results, scenario categories, and core 20 selection.
+

@@ -5,7 +5,7 @@
 **Type**: milestone
 **Workflow**: master-worker
 **Priority**: P1
-**Iteration**: 1
+**Iteration**: 2
 **Health**: —
 
 ## Goal
@@ -42,10 +42,10 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 - Master-worker script: scripts/master-worker-test.ts
 
 ## Current State
-Iteration 1. Milestones: 1/10 done.
-Reviewer: The worker has made good progress — ran scenarios in stub mode, found 8 pass/19 fail. Now we need to capture this as documented deliverables and push through multiple milestones.
+Iteration 2. Milestones: 1/10 done.
+Reviewer: **(a) Concrete output:** `.state/gym-analysis.md` — the same deliverable requested last iteration, which the worker said it was about to produce but the session ended before it was written.
 
-**(a) Concrete outpu
+**(b) Wha
 ## Process Notes
 features: active-reviewer
 
@@ -54,4 +54,6 @@ features: active-reviewer
 
 ## Iteration Summary
 - **Iter 1**: Good data. 8 pass in stub mode (meaning environment already satisfies criteria or scorers are lenien
+
+- **Iter 2**: Good, I have everything I need. Let me now produce the comprehensive `.state/gym-analysis.md` delive
 
