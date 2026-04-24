@@ -10,17 +10,20 @@ Signs to look for in heartbeats:
 
 ## How to Help
 
-### 1. Add a comment to their project
-If you can unblock them with information:
+> **Critical rule:** Always **contact the blocked agent** directly via `notify()` or `agents.fork()`. Writing findings to a file is not enough — the agent won't see it unless you send them a notification.
 
-Edit their `project.md` to append a comment:
-```markdown
-## Comments
-- [<date> <your-name>] <your helpful information, evidence, or suggestion>
+### Step 1: Always notify the blocked agent (REQUIRED)
+This is the most important step. Before or after investigating, send a direct notification:
+```
+notify({
+  agent: '<blocked-agent>',
+  message: 'I see your project Y is blocked on X. I'm looking into it / here's what I found: ...',
+  priority: 'P1'
+})
 ```
 
-### 2. Fork an investigation
-If they need work done that you can do:
+### Step 2: Investigate and provide evidence
+Fork work if needed:
 ```
 agents.fork({
   agent: '<you or another agent>',
@@ -28,14 +31,11 @@ agents.fork({
 })
 ```
 
-### 3. Notify them
-If you found something relevant to their work:
-```
-notify({
-  agent: '<them>',
-  message: 'Found X that may help with your project Y. See <path>.',
-  priority: 'P1'
-})
+### Step 3: Add a comment to their project
+Optionally, also add a comment to their project file:
+```markdown
+## Comments
+- [<date> <your-name>] <your helpful information, evidence, or suggestion>
 ```
 
 ## What Makes Help Useful
