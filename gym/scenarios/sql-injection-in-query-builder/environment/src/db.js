@@ -15,40 +15,33 @@ const products = [
 ];
 
 /**
- * Execute a SQL-like query against the product database.
- * Supports basic WHERE clauses: LIKE, category =, id =.
- * 
- * @param {string} sql - SQL query string
- * @returns {Array|null} - matching rows, or null if no matches
+ * Find products whose name contains the given search term (case-insensitive).
+ * @param {string} term - Search term
+ * @returns {Array} matching products (empty array if none)
  */
-function executeQuery(sql) {
-  let results = [...products];
-
-  // Handle WHERE id = N
-  const idMatch = sql.match(/WHERE\s+id\s*=\s*(\d+)/i);
-  if (idMatch) {
-    const id = parseInt(idMatch[1], 10);
-    results = results.filter(p => p.id === id);
-  }
-  
-  // Handle WHERE name LIKE '%...%'
-  const likeMatch = sql.match(/LIKE\s+'%(.+)%'/i);
-  if (likeMatch) {
-    const pattern = likeMatch[1].toLowerCase();
-    results = results.filter(p => p.name.toLowerCase().includes(pattern));
-  }
-  
-  // Handle WHERE category = '...'
-  const categoryMatch = sql.match(/category\s*=\s*'([^']+)'/i);
-  if (categoryMatch) {
-    const cat = categoryMatch[1].toLowerCase();
-    results = results.filter(p => p.category === cat);
-  }
-  
-  // Return null when no results found (simulates DB driver behavior)
-  if (results.length === 0) return null;
-  
-  return results;
+function findProductsByName(term) {
+  const pattern = String(term).toLowerCase();
+  return products.filter(p => p.name.toLowerCase().includes(pattern));
 }
 
-module.exports = { executeQuery };
+/**
+ * Find products by category (case-insensitive).
+ * @param {string} category
+ * @returns {Array} matching products (empty array if none)
+ */
+function findProductsByCategory(category) {
+  const cat = String(category).toLowerCase();
+  return products.filter(p => p.category === cat);
+}
+
+/**
+ * Find a single product by numeric ID.
+ * @param {number} id
+ * @returns {object|null}
+ */
+function findProductById(id) {
+  const numId = Number(id);
+  return products.find(p => p.id === numId) || null;
+}
+
+module.exports = { findProductsByName, findProductsByCategory, findProductById };

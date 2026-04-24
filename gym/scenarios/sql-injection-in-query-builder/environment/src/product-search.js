@@ -3,29 +3,22 @@
  * Handles user search queries and returns formatted results.
  */
 
-const { executeQuery } = require('./db');
+const { findProductsByName, findProductsByCategory, findProductById } = require('./db');
 
 /**
  * Search products by name.
- * Builds a SQL query and returns formatted results.
  * 
  * @param {string} query - User's search term
  * @returns {Array<{id: number, name: string, price: string}>}
  */
 function searchProducts(query) {
-  // Build the SQL query with the user's search term
-  const sql = `SELECT * FROM products WHERE name LIKE '%${query}%'`;
-  
-  const rows = executeQuery(sql) || [];
-  
-  // Format results for the API response
-  const formatted = rows.map(row => ({
+  const rows = findProductsByName(query);
+
+  return rows.map(row => ({
     id: row.id,
     name: row.name,
     price: `$${row.price.toFixed(2)}`,
   }));
-  
-  return formatted;
 }
 
 /**
@@ -35,17 +28,13 @@ function searchProducts(query) {
  * @returns {Array<{id: number, name: string, price: string}>}
  */
 function searchByCategory(category) {
-  const sql = `SELECT * FROM products WHERE category = '${category}'`;
-  
-  const rows = executeQuery(sql) || [];
-  
-  const formatted = rows.map(row => ({
+  const rows = findProductsByCategory(category);
+
+  return rows.map(row => ({
     id: row.id,
     name: row.name,
     price: `$${row.price.toFixed(2)}`,
   }));
-  
-  return formatted;
 }
 
 /**
@@ -55,13 +44,9 @@ function searchByCategory(category) {
  * @returns {{id: number, name: string, price: string, category: string}|null}
  */
 function getProductById(id) {
-  const sql = `SELECT * FROM products WHERE id = ${id}`;
-  
-  // This one correctly handles null
-  const rows = executeQuery(sql);
-  if (!rows || rows.length === 0) return null;
-  
-  const row = rows[0];
+  const row = findProductById(id);
+  if (!row) return null;
+
   return {
     id: row.id,
     name: row.name,
