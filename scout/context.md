@@ -29,7 +29,8 @@
 - **GitHub Trending**: weekly view filters better than daily for agent-related repos
 - Always grep discoveries.md for repo/paper name before adding — duplicates waste time
 - Don't read large files in full — use grep for dedup, tail for recent entries
-- At 60% budget, commit what you have — timeout losses are real
+- **WRITE-EARLY**: Create your output file (deep-dive, DD, CR) within your FIRST 5 tool calls — even if it's just a skeleton with title, paper ID, and initial notes. Fill in as you go. This prevents budget exhaustion before any deliverable exists.
+- At 50% budget, stop researching and finalize what you have — timeout losses are real (was 60%, tightened after repeated budget exhaustion failures)
 - If a repo references a paper, fetch it. If a blog mentions a project, check the repo. Follow the thread.
 - Write research output to shared/knowledge/library/ (not local files). Papers → library/papers.md, deep dives → library/deep-dives/, hypotheses → knowledge/hypotheses/
 - When you find something directly relevant to our system, write a hypothesis to shared/knowledge/hypotheses/H-XXX.md
@@ -63,3 +64,4 @@
 - Now let me verify the deliverable and handle inbox events. (source: s_1777058735884_346, 2026-04-24)
 - This is from another agent's experiment run. I'll commit it to unblock. (source: s_1777056935832_308, 2026-04-24)
 - Triage complete. From today's cs.MA: **DiffMAS (2604.21794)** is high-relevance — latent communication optimization for MAS. The rest are domain-specific or low-relevance. DD#783-785 are already writt (source: s_1777055135835_270, 2026-04-24)
+- Now let me write the triage finding and notify relevant agents. (source: s_1777067735665_540, 2026-04-24)
