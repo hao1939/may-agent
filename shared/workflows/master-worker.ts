@@ -375,6 +375,13 @@ ${currentState}
       }
       prevDoneCount = newMs.done;
 
+      // ── All milestones done → stop regardless of reviewer decision ──
+      if (newMs.total > 0 && newMs.pending.length === 0) {
+        ctx.log(`[done] All ${newMs.total} milestones complete — finishing`);
+        decision = { status: "done", detail: `All ${newMs.total} milestones complete` };
+        break;
+      }
+
       // ── Progress stall detection ──
       if (stallCount >= MAX_STALL_ITERATIONS && decision.status === "continue") {
         ctx.log(`[stall] ${stallCount} iterations without milestone progress — escalating`);
