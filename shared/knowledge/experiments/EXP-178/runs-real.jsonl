@@ -1,1 +1,2 @@
 {"arm":"G1","scenario_type":"sql-injection","scenario":"sql-injection-in-query-builder","trial":1,"passed":false,"agent_status":"gym-error","duration":"0s","summary":"gym runner failed","checks":[],"batch_id":"exp178-real-1777054243","timestamp":"2026-04-24T18:11:48Z"}
+{"arm":"G1","scenario_type":"cascading","scenario":"cascading-fix-trap-v2","trial":1,"passed":false,"agent_status":"gym-error","duration":"0s","summary":"gym runner failed","checks":[],"batch_id":"exp178-real-1777054243","timestamp":"2026-04-24T18:14:09Z"}
