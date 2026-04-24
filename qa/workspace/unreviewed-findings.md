@@ -7,18 +7,17 @@ Date: 2026-04-24
   - Action: **Dismiss duplicates** as waste/duplicate dispatch.
   - Recommendation: upstream should dedupe notifications by (request_type, payload_hash, time_window) and/or mark as idempotent.
 
-## Repo verification
-- `/app` is **not** a git repository; the actual repo is `/app/agents`.
+## Repository status / verification constraints
+- `/app` is **not** a git repository; the actual repo is `/app/agents` (has `.git`).
+- QA mandatory check note: `./node_modules/.bin/vitest --run` **cannot be executed** in `/app/agents` because **vitest is not installed** (not present in `node_modules/.bin`, and not listed in `package.json`). This is an environment/config gap, not a code regression.
 
-## Recent changes sampled
-- Latest commit `3d5a65cfb` (tech-lead: fix null handling in product-search across sql-injection scenario variants) modified multiple `product-search.js` files under `gym/scenarios/sql-injection-*`.
+## Recent changes (last 10 commits) — sampled
+- `ccdd7d886` and `23a0b9fd2` are doc/log updates only (`*/last-session.md`, `runs.jsonl`). No product code to review.
+- Most recent commits that mention code fixes (`357549878`, `0b2c6f2cd`) also only touched `tech-lead/last-session.md` in this repo; the actual code changes likely occurred in another repo or in generated scenario outputs.
 
-I read:
-- `agents/gym/scenarios/sql-injection-in-query-builder-exp177-lexical/environment/src/product-search.js` (full file shown in read output). Changes ensure `executeQuery(sql) || []` is used so mapping over results doesn’t throw when DB returns null/undefined.
+## Required checks (run by QA, independent)
+- `tsc --noEmit` (from `/app/agents`): **PASS** (no output).
+- `vitest --run` (from `/app/agents`): **FAIL (environment)** — `./node_modules/.bin/vitest: No such file or directory`.
 
-## Required checks
-- `tsc --noEmit` at `/app/agents`: **PASS** (no output)
-- `vitest --run` at `/app/agents`: **FAIL (environment)** — vitest binary missing (`./node_modules/.bin/vitest: No such file or directory`).
-
-## Risk/notes
-- Environment issue: test runner not installed in `/app/agents` workspace. If tests are expected, CI or setup docs should ensure vitest is installed.
+## Quality note
+- Tech-lead session log claims "All 9 tests pass"; QA could not verify due to missing vitest.
