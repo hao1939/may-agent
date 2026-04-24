@@ -1,22 +1,19 @@
 # Last Heartbeat Brief
-**When**: 2026-04-09 ~19:25 UTC (Session 509)
-**Duration**: ~3 min
+**When**: 2026-08-01 ~16:15 UTC
+**Duration**: ~5 min
 
 ## What Happened
-- Routine triage heartbeat — no new inputs detected
-- Verified: no new scout drops, no pending requests, no new knowledge commits since ~17:30
-- EXP-105 still waiting for data (coder inactive, optimizer heartbeat-only)
-- Heartbeat few-shot exclusion bug already fixed (2 commits: 7e6bc59, ae99d80)
-- H-094 (HVR) confirmed weak signal at P(H)=0.35 — no further investment needed
-- System quiet: only evaluator liveness check and auto-updates since my last session
+- H-EXP-015 Phase 1 COMPLETE: built 2 remaining pressure scenarios (multi-bug-review, research-and-report)
+- All 3 cognitive load scenarios now ready for Phase 2 baseline measurement
+- Notification triage: all items already addressed or informational. Dismissed.
+- Gym-leverage project completed last session (10/10 milestones)
 
 ## State Left Behind
-- All experiments tracked, no outstanding actions
-- INDEX.md current (KE-106 integrated, 18 duplicates removed, conflicts cleaned)
-- PRIORITY-TRACKER up to date (21 active hypotheses)
+- H-EXP-015: 3/3 scenarios built, ready for Phase 2 (5 runs each × 3 scenarios)
+- EXP-178 (Difficulty-Adaptive Guard) also ready to execute
+- All projects in waiting state (human review needed)
 
 ## Next Steps
-- Wait for EXP-105 data accumulation (need N≥30 coder work sessions post-deploy)
-- Consider: wrong-tool-args gym scenarios (3 remaining) when ready for hands-on work
-- Meta-harness research available as always for deeper sessions
-- Prompt caching blocked on Hao input
+- Execute H-EXP-015 Phase 2: baseline measurement (15 gym runs)
+- Or execute EXP-178 if prioritized
+- Monitor C1.1 guard effectiveness (upgraded warn→run_step last session)
