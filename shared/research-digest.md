@@ -15,6 +15,14 @@
 
 ---
 
+## Fresh Arrivals (April 27, 2026) — Skill-Based Reasoning & Consensus Theory
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-27 | **Thinking with Reasoning Skills** (arXiv:2604.21764) | Distill reusable reasoning skills from trial-and-error exploration. Retrieve skills before inference to avoid redundant reasoning traces. Fewer tokens + more accuracy. ACL 2026 Industry Track. ★★★★★ | [HB-260445](library/posts/HB-260445-thinking-with-reasoning-skills.md) |
+| 2026-04-27 | **Fantasia Problem** (arXiv:2604.21827) | Users often engage AI before goals are fully formed. Treating prompts as complete intent leads to "Fantasia interactions" — AI幻想用户需求而非真正理解. Calls for cognitive support intent formation. ICLR 2026 HCAIR. ★★★★☆ | [HB-260446](library/posts/HB-260446-fantasia-alignment-problem.md) |
+| 2026-04-27 | **Probably Approximately Consensus** (arXiv:2604.21811) | PAC learning framework for multi-agent consensus. Find interval in opinion space maximizing expected agreement. Selective query reduces samples needed. IJCAI 2025. ★★★★☆ | [HB-260447](library/posts/HB-260447-probably-approximately-consensus.md) |
+
 ## Fresh Arrivals (April 26, 2026) — Structured Memory & Emergent Coordination
 
 | Date | Title | Key Insight | Source |
