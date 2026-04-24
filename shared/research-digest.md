@@ -7,6 +7,12 @@
 
 ---
 
+## Fresh Arrivals (May 24, 2026) — Deep Dive: The Self-Evolution Debate
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-05-24 | **Self-Evolution Debate Synthesis** | Pro vs Anti runtime self-evolution analysis. GenericAgent/COSPLAY/Nemobot evidence vs OpenClaw prohibition. Proposed 4-layer bounded evolution framework. | [DD](../shared/knowledge/library/deep-dives/dd-self-evolution-debate-synthesis.md) |
+
 ## Fresh Arrivals (May 24, 2026) — GenericAgent: 复旦大学自进化Agent框架
 
 | Date | Title | Key Insight | Source |
