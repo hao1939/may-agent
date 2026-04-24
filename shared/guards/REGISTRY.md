@@ -1,7 +1,17 @@
 # Guard Registry
 
-Guards are loaded from this directory by the workflow engine.
+Guards are loaded from this directory by the workflow engine via `loader.ts`.
 Each guard file must export a `guard` object matching the `WorkflowGuard` interface.
+
+## Loading
+
+Guards are dynamically loaded by `loader.ts` and wired into the workflow engine
+(`agents/may/handlers/run-workflow.ts`). The loader imports every `.ts` file in this
+directory (except `loader.ts` itself) and collects exports matching `{ guard: WorkflowGuard }`.
+
+```ts
+import { loadGuards, runGuards } from "../../shared/guards/loader.js";
+```
 
 ## Available Guards
 

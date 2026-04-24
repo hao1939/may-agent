@@ -47,6 +47,66 @@ import type { FinishCallParams } from "../../shared/agent-sdk.js";
 
 let importCounter = 0;
 
+/**
+ * Extract the finish() call parameters from a completed agent session's messages.
+ * Scans for the last finish tool call in the assistant's messages.
+ */
+function extractFinishParams(messages: any[]): FinishCallParams | null {
+  let lastFinish: FinishCallParams | null = null;
+
+  for (const msg of messages) {
+    if (msg.role !== "assistant" || !Array.isArray(msg.content)) continue;
+    for (const block of msg.content) {
+      if (
+        (block.type === "toolCall" || block.type === "tool_use") &&
+        block.name === "finish"
+      ) {
+        const args = block.arguments ?? block.input ?? {};
+        lastFinish = {
+          status: args.status ?? "success",
+          deliverables: args.deliverables ?? null,
+          verification_evidence: args.verification_evidence ?? args.verificationEvidence ?? null,
+        };
+      }
+    }
+  }
+
+  return lastFinish;
+}
+
+/**
+ * Validate finish() params from a completed agent session (FM-3.1 + FM-3.3).
+ * Logs warnings but does not throw — violations are recorded as warnings
+ * on the workflow step rather than blocking the entire workflow.
+ */
+function validateFinishResult(
+  taskResult: TaskResult,
+  rootDir: string,
+  log: (msg: string) => void,
+): void {
+  const finishParams = extractFinishParams(taskResult.messages ?? []);
+  if (!finishParams) return;
+
+  // FM-3.1: Ghost Deliverable check
+  try {
+    enforceFinishDeliverables(finishParams.deliverables, finishParams.status, rootDir);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    log(`[finish-guard] FM-3.1 VIOLATION: ${msg}`);
+  }
+
+  // FM-3.3: Verification Evidence check
+  try {
+    const warnings = enforceVerificationEvidence(finishParams);
+    for (const w of warnings) {
+      log(`[finish-guard] FM-3.3 WARNING: ${w}`);
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    log(`[finish-guard] FM-3.3 VIOLATION: ${msg}`);
+  }
+}
+
 function generateRunId(): string {
   return `wr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 }
@@ -158,10 +218,38 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     };
     ctx.saveWorkflowRun(run);
 
+    // Pre-load guards for this workflow run
+    const guards = await loadGuards((msg) => ctx.log(msg));
+    ctx.log(`[run-workflow:${entry.name}] Loaded ${guards.length} workflow guard(s)`);
+
     // Build the WorkflowContext
     const workflowCtx: WorkflowContext = {
       // RuntimeCtx from HandlerContext
-      emit: (event: any) => { ctx.emit(event); },
+      emit: (event: any) => {
+        ctx.emit(event);
+
+        // FM-3.4: Run workflow guards on step_done events
+        if (event?.type === "step_done") {
+          // Fire-and-forget guard execution (guards are sync, but wrapped for safety)
+          try {
+            // runGuards is async but guards are sync — we call it and handle inline
+            void runGuards(event as any, (msg) => ctx.log(msg)).then((demands) => {
+              for (const d of demands) {
+                if (d.type === "block") {
+                  ctx.log(`[run-workflow:${entry.name}] GUARD BLOCK: ${d.reason}`);
+                } else if (d.type === "warn") {
+                  ctx.log(`[run-workflow:${entry.name}] GUARD WARN: ${d.reason}`);
+                } else if (d.type === "run_step") {
+                  ctx.log(`[run-workflow:${entry.name}] GUARD INJECT STEP: ${d.reason}`);
+                }
+              }
+            });
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            ctx.log(`[run-workflow:${entry.name}] Guard execution error: ${msg}`);
+          }
+        }
+      },
       getDb: () => ctx.getDb(),
       log: (msg: string) => ctx.log(msg),
       notify: (msg: string) => ctx.notify(msg),
@@ -251,6 +339,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
         ctx.saveWorkflowRun(run);
 
         ctx.log(`[run-workflow:${entry.name}] Step ${agentName} → ${taskResult.status} (${sid})`);
+
+        // FM-3.1 + FM-3.3: Validate finish() deliverables and evidence
+        validateFinishResult(taskResult, ctx.projectRoot, (msg) => ctx.log(msg));
+
         return taskResult;
       },
 
