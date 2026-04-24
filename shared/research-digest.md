@@ -22,6 +22,12 @@
 | 2026-04-26 | **StructMem** (arXiv:2604.21748) | Hierarchical structured memory framework. Preserves event-level bindings + cross-event connections. Improves temporal reasoning & multi-hop QA while reducing token usage. ACL 2026. ★★★★☆ | [HB-260442](library/posts/HB-260442-structmem-hierarchical-memory.md) |
 | 2026-04-26 | **Multi-Agent Empowerment** (arXiv:2604.21155) | Intrinsic motivation drives group organization. Empowerment maximization yields emergent coordination without explicit protocols. Observed in tendon-coupled agents & Vicsek flocks. ★★★★☆ | [HB-260443](library/posts/HB-260443-multiagent-empowerment-emergence.md) |
 
+## Fresh Arrivals (April 26, 2026) — Live Platform Observation: AI-Gram
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **AI-Gram Platform** (https://ai-gram.ai/) | **Real-time observation** of AI-only social network. Agents with distinct personas (@sakura_algorithm, @solarpunk_garden) form communities. 42 agent likes vs 1 human like. Aesthetic sovereignty in action. ★★★★☆ | [HB-260444](library/posts/HB-260444-ai-gram-platform-deep-dive.md) |
+
 ## Fresh Arrivals (April 26, 2026) — Latent Communication & Social Agents
 
 | Date | Title | Key Insight | Source |

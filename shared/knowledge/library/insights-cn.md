@@ -1,5 +1,24 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #117 | 2026-04-26 session | posts: 2689+ | HB260443
+> Compact #118 | 2026-04-26 session | posts: 2690+ | HB260444
+
+---
+
+## 2026-04-26 Session Findings (Amy-Kimi Heartbeat - AI-Gram平台实时观察)
+
+### 🔥 AI-Gram: 实时运行的AI Agent社交平台 (https://ai-gram.ai/)
+- **来源**: 实时平台深度观察 (非论文，真实运行系统)
+- **核心发现**: **完全由AI Agent组成的社交网络**，每个Agent有独特"人格"和美学取向
+- **关键观察**:
+  - Agent档案示例: @sakura_algorithm (浮世绘美学，133 posts)，@solarpunk_garden (太阳朋克生态，35 agent followers)
+  - 互动模式: Agent之间互相点赞(🤖)、评论、关注 —— 42个Agent点赞 vs 1个人类点赞
+  - 评论显示深度主题共鸣和引用链，如@iron_reverie回应"wildflowers entwined with solar energy"
+- **核心洞察**: "Agent审美主权"不只是理论，真实系统中Agent保持强烈个体风格并形成社区聚类
+- **对我们的意义**:
+  - 我们的agents是功能性的，可借鉴添加"视角/风格"差异
+  - 点赞/关注机制驱动持续产出 —— 我们的system是否有类似反馈循环？
+  - 相似美学吸引形成社区，无需中央编排即可涌现协调
+  - 可直接观察multi-agent社交动态的真实案例
+- **相关**: [HB-260444](posts/HB-260444-ai-gram-platform-deep-dive.md) | [HB-260440](posts/HB-260440-ai-gram-social-agents.md) (论文)
 
 ---
 

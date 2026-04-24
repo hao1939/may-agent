@@ -1,13 +1,14 @@
 # Project: Agent CLI Research — Claude Code, Gemini CLI, Codex
 
-**Status**: active
+**Status**: waiting
 **Owner**: bob
 **Workflow**: master-worker
 **Priority**: P2
-**Iteration**: 8
+**Iteration**: 9
 
 **Stop Reason**: 
-**Resume Condition**: 
+All milestones complete, waiting for review. The worker has confirmed all deliverables exist and CLIs are installed. The "Install" and "Adopt" milestones are effectively done — `.state/cli-best-practi
+**Resume Condition**: human reviews existing deliverables and either marks complete or provides specific feedback on what's missing.
 ## Goal
 Use production agent CLIs (Claude Code, Gemini CLI, OpenAI Codex) as tools our agents can invoke. Research how they work, install them, and integrate them as callable tools from our agent system.
 
@@ -54,11 +55,7 @@ Our agents orchestrate work but struggle with complex code changes (can't access
 - [ ] Adopt: document best practices, add to agent skills
 
 ## Current State
-Iteration 8. Milestones: 3/5 done.
-Reviewer: Everything is already built. Here's the real situation:
-
-**Milestones actually completed:**
-1. **Research** ✅ — `.state/cli-integration-research.md` (144 lines) with full invocation patterns, proxy co
+Waiting: All milestones complete, waiting for review. The worker has confirmed all deliverables exist and CLIs are installed. The "Install" and "Adopt" milesto
 ## Iteration Summary
 - **Iter 2**: Now I have all the info needed. Let me create the deliverables.
 

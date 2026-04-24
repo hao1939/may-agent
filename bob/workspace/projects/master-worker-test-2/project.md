@@ -1,6 +1,6 @@
 # Project: Fibonacci Script
 
-**Status**: waiting
+**Status**: active
 **Stop Reason**: All milestones complete, awaiting review. Create `.state/fib.ts`, Script outputs correct Fibonacci sequence, Create `.state/fib.test.ts` — all verified and passing.
 **Iteration**: 2
 **Owner**: bob
@@ -17,3 +17,5 @@ Create a script at `.state/fib.ts` that computes and prints the first 10 Fibonac
 
 ## Current State
 Waiting: All milestones complete, awaiting review. Create `.state/fib.ts`, Script outputs correct Fibonacci sequence, Create `.state/fib.test.ts` — all verifie
+## Comments
+- [2026-04-24] (web) test comment from API
