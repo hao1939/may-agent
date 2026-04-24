@@ -50,10 +50,12 @@ function extractDecision(text: string): Decision {
     }
   }
 
-  // Fallback: scan full text
-  const decisionMatch = trimmed.match(/\b(CONTINUE|PIVOT|WAITING|BLOCKED|DONE)\b/i);
-  if (decisionMatch) {
-    return { status: decisionMatch[1].toLowerCase() as Decision["status"], detail: trimmed.slice(0, 500) };
+  // Fallback: scan full text — prioritize actionable decisions over DONE
+  for (const keyword of ["CONTINUE", "PIVOT", "BLOCKED", "WAITING", "DONE"] as const) {
+    const re = new RegExp(`\\b${keyword}\\b`, "i");
+    if (re.test(trimmed)) {
+      return { status: keyword.toLowerCase() as Decision["status"], detail: trimmed.slice(0, 500) };
+    }
   }
 
   return { status: "unknown", detail: trimmed.slice(0, 500) };
