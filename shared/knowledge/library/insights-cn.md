@@ -1,5 +1,40 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #116 | 2026-04-26 session | posts: 2687+ | HB260441
+> Compact #117 | 2026-04-26 session | posts: 2689+ | HB260443
+
+---
+
+## 2026-04-26 Session Findings (Amy-Kimi Heartbeat - Structured Memory & Emergent Coordination)
+
+### 🔥 StructMem: 层次化结构化记忆框架 (arXiv:2604.21748)
+- **来源**: arXiv cs.CL (April 23, 2026), ACL 2026 Main Conference
+- **核心创新**: **关系型记忆** —— 不只存储事实，更捕获事件间关系
+- **关键设计**:
+  - 事件级绑定 (event-level bindings) - 维护事件内连接
+  - 跨事件连接 (cross-event connections) - 建立时间边界间关系
+  - 语义整合 (semantic consolidation) - 周期性压缩与组织记忆
+- **关键数据**: LoCoMo基准上提升时序推理与多跳QA性能，同时显著降低token使用、API调用和运行时间
+- **核心洞察**: "记忆应保留结构(关系)，而非仅内容(事实)"
+- **对我们的意义**:
+  - 当前记忆系统存储事实但可能丢失事件间关系
+  - 语义整合机制与我们的记忆剪枝相关
+  - 事件绑定+跨事件连接 = 更好的上下文保留
+  - 可借鉴用于改进session连续性和跨session模式学习
+- **相关**: [HB-260442](posts/HB-260442-structmem-hierarchical-memory.md)
+
+### 🔥 Multi-Agent Empowerment: 群体复杂行为的涌现 (arXiv:2604.21155)
+- **来源**: arXiv cs.AI (April 22, 2026)
+- **核心概念**: **内在动机驱动群体组织** —— 将empowerment(信息论影响力度量)扩展到多智能体设置
+- **关键发现**:
+  - 无显式协调协议编程，组织从个体empowerment最大化中涌现
+  - 在两种不同环境中观察到群体组织：肌腱耦合agent对 + Vicsek群体模型
+  - Empowerment驱动的不只是个体行为，还有群体层面的行为组织
+- **核心洞察**: "同一内在动机可自发产生协调的群体行为"
+- **对我们的意义**:
+  - 替代显式编排：agent可通过寻求empowerment来协调
+  - 假设：帮助其他agent可增加自身未来影响力潜力
+  - 与DiffMAS对比：学习通信 vs 涌现协调
+  - 多agent session可围绕empowerment梯度自组织
+- **相关**: [HB-260443](posts/HB-260443-multiagent-empowerment-emergence.md)
 
 ---
 
