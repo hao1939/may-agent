@@ -6,26 +6,36 @@
 const { executeQuery } = require('./db');
 
 /**
+ * Format a product row for the API response.
+ * @param {Object} row - Raw product row from the database
+ * @param {boolean} includeCategory - Whether to include category field
+ * @returns {Object}
+ */
+function formatProduct(row, includeCategory = false) {
+  const result = {
+    id: row.id,
+    name: row.name,
+    price: `$${row.price.toFixed(2)}`,
+  };
+  if (includeCategory) {
+    result.category = row.category;
+  }
+  return result;
+}
+
+/**
  * Search products by name.
- * Builds a SQL query and returns formatted results.
  * 
  * @param {string} query - User's search term
  * @returns {Array<{id: number, name: string, price: string}>}
  */
 function searchProducts(query) {
-  // Build the SQL query with the user's search term
-  const sql = `SELECT * FROM products WHERE name LIKE '%${query}%'`;
-  
-  const rows = executeQuery(sql) || [];
-  
-  // Format results for the API response
-  const formatted = rows.map(row => ({
-    id: row.id,
-    name: row.name,
-    price: `$${row.price.toFixed(2)}`,
-  }));
-  
-  return formatted;
+  if (typeof query !== 'string' || query.trim().length === 0) return [];
+
+  const sql = 'SELECT * FROM products WHERE name LIKE ?';
+  const rows = executeQuery(sql, ['%' + query + '%']);
+
+  return rows.map(row => formatProduct(row));
 }
 
 /**
@@ -35,17 +45,12 @@ function searchProducts(query) {
  * @returns {Array<{id: number, name: string, price: string}>}
  */
 function searchByCategory(category) {
-  const sql = `SELECT * FROM products WHERE category = '${category}'`;
-  
-  const rows = executeQuery(sql) || [];
-  
-  const formatted = rows.map(row => ({
-    id: row.id,
-    name: row.name,
-    price: `$${row.price.toFixed(2)}`,
-  }));
-  
-  return formatted;
+  if (typeof category !== 'string' || category.trim().length === 0) return [];
+
+  const sql = 'SELECT * FROM products WHERE category = ?';
+  const rows = executeQuery(sql, [category]);
+
+  return rows.map(row => formatProduct(row));
 }
 
 /**
@@ -55,19 +60,14 @@ function searchByCategory(category) {
  * @returns {{id: number, name: string, price: string, category: string}|null}
  */
 function getProductById(id) {
-  const sql = `SELECT * FROM products WHERE id = ${id}`;
-  
-  // This one correctly handles null
-  const rows = executeQuery(sql) || [];
-  if (!rows || rows.length === 0) return null;
-  
-  const row = rows[0];
-  return {
-    id: row.id,
-    name: row.name,
-    price: `$${row.price.toFixed(2)}`,
-    category: row.category,
-  };
+  const numId = Number(id);
+  if (!Number.isInteger(numId) || numId <= 0) return null;
+
+  const sql = 'SELECT * FROM products WHERE id = ?';
+  const rows = executeQuery(sql, [numId]);
+  if (rows.length === 0) return null;
+
+  return formatProduct(rows[0], true);
 }
 
 module.exports = { searchProducts, searchByCategory, getProductById };
