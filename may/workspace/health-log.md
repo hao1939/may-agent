@@ -3224,3 +3224,18 @@ src/app/ui/web
 - ⚠️ 3966 actionable unevaluated sessions — evaluation may be falling behind
 - ⚠️ 1796 auto-skippable sessions — writeSkippedEvaluations may need to run
 
+## 2026-04-24T17:39 — Auto (JS cron handler)
+
+- Sessions (24h): 924
+- Unevaluated: 3716 total, 2527 actionable, 1189 auto-skippable
+- Running sessions: amy-kimi (s_1777052350980_209), may (s_1776611617990_13), coach (s_1777052255008_206), tech-lead (s_1777052322476_208), may (s_1777052272703_207)
+- tsc: SKIP (no tsconfig.json)
+- Lessons: 52 lines total (scout 31, optimizer 21)
+- Bob analysis: fresh (8h ago)
+- ⚠️ 2527 actionable unevaluated sessions — evaluation may be falling behind
+- ⚠️ 1189 auto-skippable sessions — writeSkippedEvaluations may need to run
+- ⚠️ Event "agent.notification" — 29 pending > 2h
+- ⚠️ Event "metric.breach" — 8 pending > 2h
+- ⚠️ Event "project.waiting" — 7 pending > 2h
+- ⚠️ Event "session.failed" — 1 pending > 2h
+
