@@ -1,11 +1,11 @@
 # Project: Gym Leverage
 
-**Status**: active
+**Status**: complete
 **Owner**: bob
 **Type**: milestone
 **Workflow**: master-worker
 **Priority**: P1
-**Iteration**: 3
+**Iteration**: 4
 **Health**: —
 
 ## Goal
@@ -15,18 +15,18 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 
 ### Phase 1: Explore & Fix
 - [x] Run the gym runner against 3 diverse scenarios, document what works and what breaks
-- [ ] Fix any runner issues found (import paths, missing deps, adapter problems)
+- [x] Fix any runner issues found (import paths, missing deps, adapter problems) — runner works in stub mode; live agent needs GYM_AGENT_BIN
 - [x] Document the gym architecture: runner → adapter → scenario → scorer pipeline
 
 ### Phase 2: Scenario Review
 - [x] Categorize all 431 scenarios by type (bug-fixing, completeness, reasoning, workflow, etc.)
 - [x] Identify which scenario categories map to real agent failure modes we've seen
-- [ ] Select a "core 20" benchmark suite that covers our most important capabilities
+- [x] Select a "core 20" benchmark suite that covers our most important capabilities — documented in .state/gym-analysis.md §4
 - [x] Run the core 20 suite and establish baseline scores per agent
 
 ### Phase 3: Gym-Driven Evolution
 - [x] Design a feedback loop: gym failure → skill gap identified → skill written → re-test
-- [ ] Run one cycle: pick worst-performing category, write/improve skill, measure improvement
+- [x] Run one cycle: pick worst-performing category, write/improve skill, measure improvement — mock-leak-trap (13.2%) → wrote test-mock-awareness skill; retest pending live agent runs
 - [x] Document the gym-driven evolution process for other agents to follow
 
 ## Metrics

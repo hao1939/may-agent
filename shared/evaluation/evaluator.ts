@@ -1,8 +1,59 @@
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { AssistantMessage } from "@mariozechner/pi-ai";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import type { SubagentManager, PersistedSession } from "../agent-sdk.js";
 import { appendErrorLogs } from "./error-log.js";
+
+/**
+ * Extract the last assistant text from a completed evaluator session.
+ * Tries: (1) readSessionMessages, (2) readArchivedSessionMessages,
+ * (3) direct session.jsonl file read from .state/sessions/ and history/.
+ */
+function extractAssistantText(ctx: EvalCtx, sessionId: string): string {
+  // Try active session messages
+  for (const reader of [ctx.readSessionMessages, ctx.readArchivedSessionMessages]) {
+    if (!reader) continue;
+    try {
+      const msgs = reader.call(ctx, sessionId);
+      const text = lastAssistantTextFromMessages(msgs);
+      if (text) return text;
+    } catch { /* continue */ }
+  }
+  // Direct file fallback — read session.jsonl from disk
+  for (const base of [".state/sessions", ".state/sessions/history"]) {
+    try {
+      const jsonlPath = join(base, sessionId, "session.jsonl");
+      if (!existsSync(jsonlPath)) continue;
+      const lines = readFileSync(jsonlPath, "utf8").trim().split("\n");
+      for (let i = lines.length - 1; i >= 0; i--) {
+        const msg = JSON.parse(lines[i]);
+        if (msg.role === "assistant") {
+          return lastAssistantTextFromMessages([msg]) || "";
+        }
+      }
+    } catch { /* continue */ }
+  }
+  return "";
+}
+
+function lastAssistantTextFromMessages(msgs: AgentMessage[] | undefined): string {
+  if (!msgs || msgs.length === 0) return "";
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const msg = msgs[i];
+    if (msg.role !== "assistant") continue;
+    const content = msg.content;
+    if (typeof content === "string") return content;
+    if (Array.isArray(content)) {
+      const textBlock = content.find(
+        (b: any) => b.type === "text" && typeof b.text === "string",
+      );
+      if (textBlock) return (textBlock as any).text;
+    }
+  }
+  return "";
+}
 
 /**
  * Subset of RuntimeCtx needed by evaluation functions.
