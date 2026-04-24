@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777054122477_247
+- **Session:** s_1777055922473_284
 - **Status:** done
-- **When:** 2026-04-24T18:11:40.246Z
-- **Duration:** 2m57s
+- **When:** 2026-04-24T18:42:20.871Z
+- **Duration:** 3m38s
 
 ## What Happened
-These are changes from other agents, not from me. I didn't modify any files this session. Let me just commit whatever is staged/dirty to unblock finish:
+Two different finish-guards with different responsibilities — one for FM-3.1/3.3 (deliverable existence + evidence), one for FM-3.4 (persistent-task enforcement). They're complementary, not duplicated.
+
+Let me check the build is clean and wrap up:

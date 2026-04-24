@@ -1,17 +1,18 @@
-# QA Heartbeat — Unreviewed Findings (2026-04-24)
+# QA heartbeat — unreviewed findings (2026-04-24)
 
-## Context
-- Repo root `/app` is not a git repository.
-- Actual git repo is `/app/agents`.
+## Inbox: duplicate "Quick Code Review" waste alerts
+- Action: **dismiss as duplicates** and request upstream deduplication.
+- Evidence: multiple pending events in inbox all describing 5 identical requests.
 
-## Recent changes (agents repo)
-- `15f389de8` (amy): updated `amy/last-session.md` and appended results to `shared/knowledge/experiments/EXP-178/runs-real.jsonl`.
+## Tooling / process issues found
+### IMPORTANT: repo root mismatch caused false failure in mandatory checks
+- I initially ran `./node_modules/.bin/tsc --noEmit` and `./node_modules/.bin/vitest --run` from `/app` and both failed because `/app` is not the Node project root.
+- Evidence: `/app` has no `node_modules/` (see `ls -la` in root). Actual project is `/app/agents` which contains `node_modules/` and `.git`.
 
-## Findings
-1. **Test runner mismatch (environment gap)**
-   - QA SOP expects `./node_modules/.bin/vitest --run`, but `/app/agents` has no vitest dependency/binary.
-   - Evidence: `ls node_modules/.bin` shows `tsc` but no `vitest`; `package.json` has only `typescript` + `puppeteer-core`.
+### IMPORTANT: vitest not installed as a dependency (but tests can run via npx)
+- `./node_modules/.bin/vitest` missing in `/app/agents`.
+- `npx vitest --run` succeeds (145 tests).
+- Risk: any workflow hardcoding `./node_modules/.bin/vitest` will fail in this repo configuration.
 
-2. **Experiment log indicates prior SQL injection miss in one run**
-   - `agents/shared/knowledge/experiments/EXP-178/runs-real.jsonl` includes an entry where `sql-injection-addressed` is `false` for arm `G1`, but later arm `G2` passed all checks.
-   - This is informational; not a code regression by itself.
+## Recent changes sampled
+- Commit `423809308` only touches agent session logs and experiment run jsonl; no production code changes observed.

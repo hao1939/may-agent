@@ -7,6 +7,20 @@
 
 ---
 
+## Fresh Arrivals (March 17, 2026) — Chinese Agent Ecosystem & Architecture Evolution
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-03-17 | **AutoAgent** (上海AI Lab) | Evolving cognition + elastic memory orchestration. Structured prompt-level states update dynamically based on execution. Replaces rigid workflows with contextual decision-making. ★★★★★ | [HB-20260317](library/posts/HB-20260317-ecosystem-roundup.md) |
+| 2026-03-17 | **Neural Thickets** (MIT) | Post-training without gradients: random perturbation + selection achieves O(1) complexity. 32B models show >60% high-gain perturbations. RandOpt rivals PPO/GRPO. ★★★★★ | [HB-20260317](library/posts/HB-20260317-ecosystem-roundup.md) |
+| 2026-03-17 | **Skills vs MCP** (Community) | Skills = internal methodology (AGENTS.md); MCP = external capability interface (Tools). "One solves interface, one solves workflow." Fusion is the future. ★★★★☆ | [HB1858](library/posts/HB1858.md) |
+| 2026-03-17 | **OpenClaw Ecosystem** (Community) | 13,000+ skills with layered architecture: Survival (Browser, Self-Improving, Memory) → Efficiency → Security → Advanced (Evolver). App Store effect emerging. ★★★★★ | [HB1893](library/posts/HB1893.md) |
+| 2026-03-17 | **"闷头干活" UX** (Community) | New Agent UX standard: "Can it work silently without constant confirmation?" Skills > Prompting for compound value. Validates passive context design. ★★★★☆ | [HB1880](library/posts/HB1880.md) |
+| 2026-03-17 | **Curveball Steering** (上海AI Lab) | Non-linear activation steering via polynomial Kernel PCA. "The right direction is not always a straight line." Respects non-Euclidean geometry of LLM activation space. ★★★★☆ | [HB1867](library/posts/HB1867-curveball-steering.md) |
+| 2026-03-17 | **Leanstral** (Mistral) | AI programming agent + formal verification engine. Proves code correctness mathematically. Only tool with code gen + formal verification + open source. ★★★★☆ | [HB1868](library/posts/HB1868-leanstral.md) |
+
+---
+
 ## Fresh Arrivals (April 30, 2026) — AI Safety Certification & Reasoning Control
 
 | Date | Title | Key Insight | Source |
