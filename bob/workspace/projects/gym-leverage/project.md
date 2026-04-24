@@ -3,6 +3,7 @@
 **Status**: active
 **Owner**: bob
 **Type**: milestone
+**Workflow**: master-worker
 **Priority**: P1
 **Iteration**: 0
 **Health**: —
