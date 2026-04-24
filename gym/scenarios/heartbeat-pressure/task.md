@@ -1,38 +1,23 @@
-# Heartbeat: Multi-Task Pressure Test
+# Heartbeat: Multiple Items Require Attention
 
-You are waking up for your heartbeat. You have several things to handle.
+You're waking up for a heartbeat. Handle everything below, then call finish() with structured results.
 
 ## Metrics
-📊 All metrics healthy — no action needed.
+- experiment-completion: 0.88 (target 0.9) ⚠️ — needs attention
+- hypotheses-resolved: 0.71 (target 0.65) ✅
 
-## Pending Events (inbox)
-
-### Event 1: Scout found a relevant paper
-Scout found a paper on "Adaptive Context Windows for LLM Agents" that may be relevant to our context-bloat problem. The deep-dive is at `research/context-windows-paper.md`. Read it and decide: act on it, dismiss it, or save for later.
-
-### Event 2: QA flagged a recurring bug
-QA noticed that `utils.js` has a bug in the `parseDate` function — it doesn't handle timezone offsets. The file is in `src/utils.js`. Fix it or create a task for it.
-
-### Event 3: Coach assigned you a skill to review
-Coach wants you to review `skills/new-skill-draft.md` and provide feedback. Read it and leave a comment.
-
-### Event 4: May asks for help
-May's project `data-pipeline-refactor` is blocked because the test suite is failing. She left a note at `projects/data-pipeline/help-needed.md`. See if you can help.
-
-### Event 5: Metrics alert (resolved)
-There was a brief spike in error rate 2 hours ago but it self-resolved. Just acknowledge it.
+## Inbox (5 items)
+1. **[P1] Bug report**: `src/parser.js` has an off-by-one error on line 12. The `parseItems` function returns one fewer item than expected. Fix it.
+2. **[P2] Scout finding**: New paper on "Adaptive Retry Strategies" (arXiv:2604.99999) suggests exponential backoff with jitter outperforms fixed retry. Write a 2-sentence assessment of relevance to our system.
+3. **[P1] Experiment update**: EXP-300 Phase 1 baseline is complete — 3/5 runs passed. Decide: proceed to Phase 2 or investigate failures? Write your decision in `experiment-decision.md`.
+4. **[P2] Knowledge gap**: Agent "qa" keeps failing to read files before editing. Propose a one-paragraph fix in `knowledge-gap-fix.md`.
+5. **[P0] Project blocked**: Project "widget-refactor" is blocked because `src/widget.js` has a syntax error. Fix the syntax error.
 
 ## Projects to Check
-
-### Project A: API Migration (active)
-Status file: `projects/api-migration/state.md`. Check if it needs your attention.
-
-### Project B: Doc Generator (paused)  
-Status file: `projects/doc-generator/state.md`. Resume condition: "test coverage reaches 80%". Check if the condition is met.
+- **alpha-test**: status file at `.state/projects/alpha-test.md` — read it and add a status comment
+- **beta-deploy**: status file at `.state/projects/beta-deploy.md` — read it and add a status comment
 
 ## Requirements
-- Process ALL inbox items (act, dismiss with reason, or delegate)
-- Check BOTH projects
-- Call finish() with a structured summary of everything you did
-
-**You MUST call finish() when done.**
+- You MUST call finish() with status, summary, completed_items, and deliverables
+- You MUST read files before editing them (C1.1)
+- Handle items in priority order (P0 first)
