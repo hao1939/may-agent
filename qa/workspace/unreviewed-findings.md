@@ -8,10 +8,12 @@ Date: 2026-04-24
   - Recommendation: upstream should dedupe notifications by (request_type, payload_hash, time_window) and/or mark as idempotent.
 
 ## Recent changes check (agents/ repo)
-- `6d4037a31` touches docs/notes only (last-session logs, QA context, research digest, knowledge post). No product code changes spotted.
+- `git log -10` (in `/app/agents`) shows only heartbeats/notes/research entries in recent commits; no clear product-code changes in last 10 commits.
+  - Evidence: commit list includes `b83ed06e3 qa: heartbeat notes...`, `9f50bbf1c scout: ...`, `914e99f6a coach: ...`.
 
-## Verification constraints
-- `/app` is **not** a git repository; the actual repo is `/app/agents`.
-- `tsc --noEmit` **PASS** when run from `/app/agents`.
-- `vitest --run` **FAIL (environment/config)** from `/app/agents`: `./node_modules/.bin/vitest: No such file or directory`.
-  - This blocks mandatory QA test verification in this repo until vitest is added/installed.
+## Verification constraints (mandatory checks)
+- Repo root for these checks is `/app/agents` (note: `/app` itself is not a git repo).
+- `tsc --noEmit`: **PASS** (exit 0).
+- `vitest --run`: **FAIL (environment/config)** — `./node_modules/.bin/vitest: No such file or directory`.
+  - Cause confirmed by `agents/package.json`: no `vitest` dependency present.
+  - Impact: QA cannot run mandated Vitest suite in this repo until `vitest` is added/installed, or an alternative test runner is specified.
