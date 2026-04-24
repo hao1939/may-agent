@@ -532,6 +532,31 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
   const evalSessionId = manager.run("evaluator", prompt);
   const evalResult = await manager.waitFor(evalSessionId);
   responseText = evalResult?.lastAssistantText ?? "";
+
+  // Fallback: if waitFor returned empty lastAssistantText (race condition with
+  // autoClose:"immediate"), read the session messages directly (EXP-FIX-001).
+  if (!responseText && ctx.readSessionMessages) {
+    try {
+      const msgs = ctx.readSessionMessages(evalSessionId);
+      if (msgs && msgs.length > 0) {
+        const lastMsg = msgs[msgs.length - 1];
+        if (lastMsg.role === "assistant") {
+          const content = lastMsg.content;
+          if (typeof content === "string") {
+            responseText = content;
+          } else if (Array.isArray(content)) {
+            const textBlock = content.find(
+              (b: any) => b.type === "text" && typeof b.text === "string",
+            );
+            if (textBlock) responseText = (textBlock as any).text;
+          }
+        }
+      }
+    } catch {
+      // Fallback failed
+    }
+  }
+
   parsed = parseTaskEvaluation(responseText);
 
   // Retry once if evaluator produced no agent scores (malformed or missing JSON)
@@ -838,6 +863,32 @@ export async function evaluateStandaloneSession(
   const evalSessionId = manager.run("evaluator", prompt, { source: "standalone-eval" });
   const evalResult = await manager.waitFor(evalSessionId);
   let responseText = evalResult?.lastAssistantText ?? "";
+
+  // Fallback: if waitFor returned empty lastAssistantText (race condition with
+  // autoClose:"immediate"), read the session messages directly to extract the response.
+  // This prevents a spurious retry that doubles evaluator session count (EXP-FIX-001).
+  if (!responseText && ctx.readSessionMessages) {
+    try {
+      const msgs = ctx.readSessionMessages(evalSessionId);
+      if (msgs && msgs.length > 0) {
+        const lastMsg = msgs[msgs.length - 1];
+        if (lastMsg.role === "assistant") {
+          const content = lastMsg.content;
+          if (typeof content === "string") {
+            responseText = content;
+          } else if (Array.isArray(content)) {
+            const textBlock = content.find(
+              (b: any) => b.type === "text" && typeof b.text === "string",
+            );
+            if (textBlock) responseText = (textBlock as any).text;
+          }
+        }
+      }
+    } catch {
+      // Fallback failed — proceed with empty responseText, retry will handle it
+    }
+  }
+
   let parsed = parseTaskEvaluation(responseText);
 
   // Retry once if the evaluator returned the default-zero signature
@@ -847,7 +898,31 @@ export async function evaluateStandaloneSession(
   if (parsed.overall.quality === 0 && parsed.overall.efficiency === 0) {
     const retrySessionId = manager.run("evaluator", prompt, { source: "standalone-eval" });
     const retryResult = await manager.waitFor(retrySessionId);
-    const retryText = retryResult?.lastAssistantText ?? "";
+    let retryText = retryResult?.lastAssistantText ?? "";
+
+    // Same fallback for retry session (EXP-FIX-001)
+    if (!retryText && ctx.readSessionMessages) {
+      try {
+        const msgs = ctx.readSessionMessages(retrySessionId);
+        if (msgs && msgs.length > 0) {
+          const lastMsg = msgs[msgs.length - 1];
+          if (lastMsg.role === "assistant") {
+            const content = lastMsg.content;
+            if (typeof content === "string") {
+              retryText = content;
+            } else if (Array.isArray(content)) {
+              const textBlock = content.find(
+                (b: any) => b.type === "text" && typeof b.text === "string",
+              );
+              if (textBlock) retryText = (textBlock as any).text;
+            }
+          }
+        }
+      } catch {
+        // Fallback failed
+      }
+    }
+
     const retryParsed = parseTaskEvaluation(retryText);
     if (retryParsed.overall.quality === 0 && retryParsed.overall.efficiency === 0) {
       // Retry also produced zeros — mark as parse_error so it's distinguishable
