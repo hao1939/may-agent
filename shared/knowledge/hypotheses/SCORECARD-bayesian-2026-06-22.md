@@ -139,8 +139,8 @@ Ten new deep-dives (DD-842, DD-849 through DD-860) reviewed. Key hypothesis upda
 ### H-073 (Calibrated Abstention) — P(H): 0.50 → **0.60**
 DD-859 provides theoretical foundation: verification gravity wells are **structurally inevitable** in multi-step pipelines (5 independent mechanisms). DD-860 surveys interventions and confirms: error absorption requires **architectural** intervention at decision boundaries, not post-hoc correction. Huang et al.'s self-correction impossibility result (cited in DD-860) directly explains why verification loops compound errors. EXP-207 (designed) becomes higher priority — the theoretical case is strong.
 
-### H-075 (Surface Metrics Mask Breakdown) — P(H): 0.55 → **0.65**
-DD-842 (SWARM soft-label governance): Binary metrics miss distributional degradation. Our `findings-used: 0.541` is exactly the kind of binary metric that SWARM shows is gameable. DD-851 (Illusory Coordination): Names our vulnerability precisely — agents can produce correct outputs while collaboration patterns are degenerate. Two independent papers now support this hypothesis. EXP-206 (retrospective audit, no gym needed) should be prioritized.
+### H-075 (Surface Metrics Mask Breakdown) — P(H): 0.55 → **0.65** → **0.85** (CONFIRMED)
+DD-842 (SWARM soft-label governance): Binary metrics miss distributional degradation. DD-851 (Illusory Coordination): Names our vulnerability. **EXP-206 COMPLETE** (2026-06-28): 56% of "used" findings had no measurable impact on decisions, exceeding 30% threshold. Only 25% strongly influenced decisions. DD-872 (cooperative profiles) adds further support — capability metrics don't capture cooperation quality. H-075 → Tier 1.
 
 ### H-185 (Verification Remasking) — P(H): 0.35 → **0.40** (slight upgrade)
 DD-856 (T2M Remasking): Provides mechanistic explanation for WHY remasking could work — "reset to unknown, re-derive from clean context" avoids contaminated-context failure mode. Still falsified for discovery scenarios (EXP-201: 0/10), but the T2M mechanism suggests a more targeted implementation could work for verification-loop scenarios specifically. Worth a redesigned experiment.
