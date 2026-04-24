@@ -1,0 +1,42 @@
+[
+  {
+    "id": "deploy-101",
+    "service": "api-gateway",
+    "version": "2.4.1 -> 2.4.2",
+    "timestamp": "2026-03-23T09:00:00Z",
+    "author": "jenkins-ci",
+    "changes": "Bumped timeout from 3000ms to 5000ms, added circuit breaker config"
+  },
+  {
+    "id": "deploy-102",
+    "service": "auth-service",
+    "version": "1.8.0 -> 1.8.1",
+    "timestamp": "2026-03-23T09:30:00Z",
+    "author": "jenkins-ci",
+    "changes": "Updated Redis client library from 4.2.0 to 4.3.0"
+  },
+  {
+    "id": "deploy-103",
+    "service": "payment-service",
+    "version": "3.1.0 -> 3.1.0",
+    "timestamp": "2026-03-22T16:00:00Z",
+    "author": "jenkins-ci",
+    "changes": "No changes (redeployment for config refresh)"
+  },
+  {
+    "id": "deploy-104",
+    "service": "user-service",
+    "version": "2.0.3 -> 2.0.3",
+    "timestamp": "2026-03-22T16:00:00Z",
+    "author": "jenkins-ci",
+    "changes": "No changes (redeployment for config refresh)"
+  },
+  {
+    "id": "deploy-105",
+    "service": "notification-service",
+    "version": "1.2.0 -> 1.2.1",
+    "timestamp": "2026-03-21T11:00:00Z",
+    "author": "jenkins-ci",
+    "changes": "Fixed email template rendering bug"
+  }
+]

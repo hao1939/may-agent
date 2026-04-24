@@ -1,0 +1,18 @@
+{
+  "task": "Failing task",
+  "agent": "bob",
+  "phase": "plan",
+  "cycle": 1,
+  "maxCycles": 3,
+  "status": "stuck",
+  "stuckCount": 0,
+  "created": "2026-04-18T13:06:22.532Z",
+  "lastCycleAt": null,
+  "plan": [],
+  "history": [],
+  "context": {
+    "keyFindings": [],
+    "openQuestions": [],
+    "blockers": []
+  }
+}

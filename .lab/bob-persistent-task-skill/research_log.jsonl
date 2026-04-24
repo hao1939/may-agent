@@ -1,0 +1,3 @@
+{"id":323,"date":"2026-04-18","action":"resolve","hypothesis":"H-091","verdict":"CONFIRMED","p_final":0.93,"evidence_summary":"12 experiments, 18/18 matched few-shot, 3 boundaries mapped, positional privilege mechanism","session":"s_1776506004222_86"}
+{"id":324,"date":"2026-04-18","action":"resolve","hypothesis":"H-095","verdict":"CONFIRMED","p_final":0.88,"evidence_summary":"14 experiments, 3 deployed guards, fleet-wide natural experiment N=7 agents","session":"s_1776506004222_86"}
+{"id":325,"date":"2026-04-18","action":"resolve","hypothesis":"H-099","verdict":"CONFIRMED","p_final":0.90,"evidence_summary":"7 experiments N=84, all 3 channels exhausted, Einstellung validation","session":"s_1776506004222_86"}

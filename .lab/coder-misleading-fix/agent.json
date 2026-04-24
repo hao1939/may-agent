@@ -1,0 +1,4 @@
+{
+  "name": "coder",
+  "extends": "_archetypes/coder"
+}
