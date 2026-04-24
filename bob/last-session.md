@@ -1,43 +1,34 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777041333796_257
+- **Session:** s_1777041461963_261
 - **Status:** done
-- **When:** 2026-04-24T14:35:49.165Z
-- **Duration:** 15s
+- **When:** 2026-04-24T14:38:32.021Z
+- **Duration:** 50s
 
 ## What Happened
-PIVOT — The worker has said "let me write the doc" for multiple iterations without producing verified output. Time for a fundamentally different approach.
+Everything is already built. Here's the real situation:
 
-**(a) Concrete output:** `.state/cli-research-raw.txt` containing raw command output, AND `.state/cli-integration-research.md` containing analysis. Two separate files — raw data first, analysis second.
+**Milestones actually completed:**
+1. **Research** ✅ — `.state/cli-integration-research.md` (144 lines) with full invocation patterns, proxy config, env vars
+2. **Install** ✅ — All 3 CLIs installed at `/usr/bin/{claude,gemini,codex}`, documented in `.state/cli-install-log.md`
+3. **Integrate** ✅ — `agents/tools/cli-invoke.sh` is a working wrapper returning structured JSON
+4. **Evaluate** ✅ — `.state/cli-evaluation.md` has side-by-side comparison
+5. **Adopt** — partially done (docs exist but best practices not formalized)
 
-**(b) What's different:** Instead of asking the worker to run commands then write a doc (which keeps failing at the writing step), I'm asking it to do ONE thing: run commands and redirect output directly to a file via bash. No "let me write" step. The bash command itself creates the deliverable.
+The worker loop of "let me write the doc" is a bug — the docs are already written.
 
-**(c) First step:** Run this SINGLE bash command that creates the raw data file directly (no writing step needed):
+PIVOT — The worker needs to stop rewriting existing files and instead verify/finalize what's already complete.
 
+**(a) Concrete output:** `.state/cli-best-practices.md` — the final Adopt milestone deliverable documenting best practices.
+
+**(b) What's different:** Instead of asking the worker to research or write research docs (which already exist!), I'm telling it the first 4 milestones are DONE and it only needs to create one small file for the final milestone. No research commands, no raw data gathering.
+
+**(c) First step:** The worker should run this single command to verify all existing deliverables:
 ```bash
-{
-echo "# CLI Research Raw Data - $(date)"
-echo ""
-echo "## Claude Code CLI"
-claude --help 2>&1 || echo "claude not found"
-echo ""
-echo "## Gemini CLI"  
-gemini --help 2>&1 || echo "gemini not found"
-echo ""
-echo "## OpenAI Codex CLI"
-codex --help 2>&1 || echo "codex not found"
-echo ""
-echo "## Installed Global NPM Packages"
-npm list -g --depth=0 2>&1
-echo ""
-echo "## Claude Source - Base URL patterns"
-grep -r "BASE_URL\|baseUrl\|api_url" $(npm root -g)/@anthropic-ai/ 2>/dev/null | head -30 || echo "not found"
-echo ""
-echo "## Gemini Source - Base URL patterns"
-grep -r "BASE_URL\|baseUrl\|api_url" $(npm root -g)/@google/ 2>/dev/null | head -30 || echo "not found"
-} > .state/cli-research-raw.txt 2>&1
-cat .state/cli-research-raw.txt | head -100
+echo "=== EXISTING FILES ===" && wc -l .state/cli-integration-research.md .state/cli-research-raw.txt .state/cli-invoke.sh .state/cli-install-log.md .state/cli-evaluation.md agents/tools/cli-invoke.sh && echo "=== CLIs INSTALLED ===" && claude --version 2>&1 && gemini --version 2>&1 && codex --version 2>&1
 ```
 
-Then verify the file exists with `wc -l .state/cli-research-raw.txt`. If it has content, THEN read it and write the analysis doc. The key insight: **create the raw data file via bash redirection, not via the write tool.** This eliminates the "let me write" failure mode.
+Then create `.state/cli-best-practices.md` with adoption guidelines (when to use each CLI, recommended flags, error handling patterns, cost management). That's the ONLY remaining work. 
+
+**Completed milestones to check off:** Research: how each CLI works, Integrate: our agent successfully, Install: get at least one CLI, Evaluate: compare CLI-assisted vs
