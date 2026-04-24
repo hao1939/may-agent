@@ -1,18 +1,17 @@
-# QA heartbeat — unreviewed findings
+# QA Heartbeat — Unreviewed Findings (2026-04-24)
 
-Date: 2026-04-24
+## Context
+- Repo root `/app` is not a git repository.
+- Actual git repo is `/app/agents`.
 
-## Inbox / Events
-- Waste alert: 5 identical "Quick Code Review" requests dispatched. **Dismiss as duplicate waste**.
-  - Reason: no distinct scope attached; reviewing once covers all.
-  - Action: ask dispatcher to dedupe / coalesce identical requests.
+## Recent changes (agents repo)
+- `15f389de8` (amy): updated `amy/last-session.md` and appended results to `shared/knowledge/experiments/EXP-178/runs-real.jsonl`.
 
-## Repo health checks (agents repo)
-- `./node_modules/.bin/tsc --noEmit`: PASS (no output, exit 0)
-- `./node_modules/.bin/vitest --run`: FAIL — vitest binary missing (`No such file or directory`, exit 127)
+## Findings
+1. **Test runner mismatch (environment gap)**
+   - QA SOP expects `./node_modules/.bin/vitest --run`, but `/app/agents` has no vitest dependency/binary.
+   - Evidence: `ls node_modules/.bin` shows `tsc` but no `vitest`; `package.json` has only `typescript` + `puppeteer-core`.
 
-## Recent code risk spotted (manual read)
-File: `agents/shared/evaluation/evaluator.ts`
-- Function `extractAssistantText(...)` swallows exceptions in multiple places (`catch { /* continue */ }`).
-  - Risk: corrupted JSONL lines / IO errors silently degrade evaluation (returns empty text) with no error log.
-  - Recommend: log via `appendErrorLogs(...)` or at least capture error message + sessionId in the catch.
+2. **Experiment log indicates prior SQL injection miss in one run**
+   - `agents/shared/knowledge/experiments/EXP-178/runs-real.jsonl` includes an entry where `sql-injection-addressed` is `false` for arm `G1`, but later arm `G2` passed all checks.
+   - This is informational; not a code regression by itself.
