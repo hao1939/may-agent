@@ -20,7 +20,7 @@ const products = [
  * 
  * @param {string} sql - SQL query string with ? placeholders
  * @param {Array} params - Parameter values to bind
- * @returns {Array|null} - matching rows, or null if no matches
+ * @returns {Array} - matching rows (empty array if no matches)
  */
 function executeQuery(sql, params = []) {
   let results = [...products];
