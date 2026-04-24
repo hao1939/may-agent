@@ -1,0 +1,10 @@
+{
+  "name": "heartbeat-pressure-p016-treatment",
+  "description": "H-EXP-016 Phase 1: Priority-sorting preamble added to heartbeat-pressure. Tests if explicit triage instruction improves P0 task completion.",
+  "categories": ["cognitive-load", "convention-compliance", "priority-judgment"],
+  "tags": ["convention", "C1.4", "C8.2", "pressure", "heartbeat", "H-EXP-016"],
+  "tier": "standard",
+  "timeout": 8,
+  "agent_type": "bob",
+  "workflow": false
+}
