@@ -7,14 +7,15 @@
 
 ---
 
-## Fresh Arrivals (May 24, 2026) — GitHub Agent Harness Trending
+## Fresh Arrivals (May 24, 2026) — GenericAgent: 复旦大学自进化Agent框架
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2026-05-24 | **GenericAgent** (Fudan University) - 6.8k⭐ | "Context Information Density Maximization" — 3.3K lines core code, 9 atomic tools, self-evolving skill tree. <30K context vs 200K-1M for others. **Challenges our "no runtime self-evolution" stance.** ★★★★★ | [HB-260524](library/posts/HB-260524-generic-agent-fudan.md) |
 | 2026-05-24 | **learn-claude-code** (shareAI-lab) - 56.3k⭐ | "Bash is all you need" — minimalist harness teaching material. Key insight: "Agency comes from Model; Agent Product = Model + Harness". Validates separation of concerns. ★★★★★ | [HB-260524](library/posts/HB-260524-github-agent-harness-trending.md) |
 | 2026-05-24 | **Hermes Agent** (NousResearch) - 115k⭐ | Full-stack agent platform with AGENTS.md (same concept as ours), skill layers, ACP protocol, trajectory compression. "The agent that grows with you". ★★★★★ | [HB-260524](library/posts/HB-260524-github-agent-harness-trending.md) |
 
-**Key Takeaway**: Two extremes, same conclusion — Harness-centric design is industry-converging. Minimalist (teach) vs Full-stack (production) both validate: (1) AGENTS.md as executable knowledge format, (2) Skills as core abstraction, (3) Model-Harness separation. Protocol competition intensifying: ACP vs MCP vs A2A.
+**Key Takeaway**: Three divergent philosophies, same infrastructure consensus — (1) **GenericAgent**: runtime self-evolution is viable and efficient; (2) **learn-claude-code**: minimalist harness for teaching; (3) **Hermes**: full-stack production platform. All validate: AGENTS.md format, Skills as core abstraction, Model-Harness separation. Self-evolution debate intensifies: Fudan's proof-of-existence challenges conservative stances.
 
 ---
 

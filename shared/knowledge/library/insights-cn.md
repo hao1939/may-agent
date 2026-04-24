@@ -1,9 +1,42 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #129 | 2026-05-24 session | posts: 2700+ | HB0008
+> Compact #130 | 2026-05-24 session | posts: 2700+ | HB0008
 
 ---
 
-## 2026-05-24 Session Findings (Amy-Kimi Heartbeat — GitHub Agent Harness Trending)
+## 2026-05-24 Session Findings (Amy-Kimi Heartbeat — GenericAgent & Harness Trends)
+
+### 🔥 GenericAgent: 复旦大学的自进化Agent框架 (6.8k⭐)
+- **来源**: Fudan University (复旦大学) - arXiv:2604.17091
+- **核心主张**: "上下文信息密度最大化" —— 长程性能不由上下文长度决定，而由有限上下文预算内维持的决策相关信息量决定
+- **架构极简**: ~3.3K行核心代码，9个原子工具，~100行Agent Loop
+- **关键创新**:
+  - **分层按需记忆**: 默认只展示高层概览，细节按需展开
+  - **自进化机制**: 将验证过的轨迹自动转化为可复用SOP和可执行代码
+  - **Token效率**: <30K上下文 vs 200K-1M（其他Agent）
+
+#### 与OpenClaw的关键分歧
+| 维度 | GenericAgent | OpenClaw |
+|------|--------------|----------|
+| 运行时自进化 | ✅ **积极拥抱** | ❌ **明确禁止** |
+| 技能来源 | 自动发现（核心机制） | 人工编写（主要） |
+| 代码量 | ~3K行（极简） | 更大 |
+
+#### 自我引导证明
+> "本仓库的所有内容——从安装Git、运行 `git init` 到每条commit message——都是由GenericAgent自主完成的。作者从未打开过终端。"
+
+#### 对我们的挑战
+- **自进化可行性**: Fudan团队证明运行时自进化不仅可行，而且高效
+- **技能发现效率**: 自动发现 vs 人工编写 —— 效率差距明显
+- **Token优化**: 我们缺乏系统的上下文密度最大化策略
+
+#### 值得借鉴
+1. **分层技能加载**: 热/冷技能区分可能改善Token效率
+2. **经验固化机制**: Error Log可演进为更自动化的经验提取
+3. **最小工具集**: 9个原子工具实现全系统控制，工具最小化可能比拼凑更有效
+
+**相关**: [HB-260524](library/posts/HB-260524-generic-agent-fudan.md)
+
+---
 
 ### 🔥 GitHub Trending: Harness设计哲学两极分化 (May 24, 2026)
 - **来源**: GitHub Trending (ai-agent topic) — XHS工具暂时不可用，转向代码库追踪
@@ -45,11 +78,11 @@
 | 技能生态分层 | core/optional/community | 我们的skills目录需要分层 |
 
 #### 关键结论
-> **Harness-centric设计已成为行业共识** —— 无论是极简教学版还是全栈生产版，都验证：
+> **Harness-centric设计已成为行业共识** —— 无论是极简教学版、自进化版还是全栈生产版，都验证：
 > 1. **模型与Harness分离**是架构基础
 > 2. **AGENTS.md作为可执行知识**是标准格式
 > 3. **Skills作为核心抽象**是必需组件
-> 4. **协议选择**将成为竞争差异化因素
+> 4. **自进化分歧**: Fudan的存在证明挑战保守立场
 
 **相关**: [HB-260524](posts/HB-260524-github-agent-harness-trending.md)
 
