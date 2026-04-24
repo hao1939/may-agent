@@ -3213,3 +3213,14 @@ src/app/ui/web
 - ⚠️ Event "agent.notification" — 59 pending > 2h
 - ⚠️ Event "metric.breach" — 1 pending > 2h
 
+## 2026-04-24T13:39 — Auto (JS cron handler)
+
+- Sessions (24h): 666
+- Unevaluated: 5762 total, 3966 actionable, 1796 auto-skippable
+- Running sessions: amy-kimi (s_1777037948785_163), may (s_1776611617990_13), may (s_1777037870168_162)
+- tsc: SKIP (no tsconfig.json)
+- Lessons: 52 lines total (scout 31, optimizer 21)
+- Bob analysis: fresh (4h ago)
+- ⚠️ 3966 actionable unevaluated sessions — evaluation may be falling behind
+- ⚠️ 1796 auto-skippable sessions — writeSkippedEvaluations may need to run
+
