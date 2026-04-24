@@ -71,10 +71,6 @@
 
 ## Learned from experience
 
-- Now let me break the write-only pattern — send notifications directly: (source: s_1776977007050_42, 2026-04-23)
-- Committed and merged. Now let me handle the notifications and finish:
-- Now let me verify my deliverables: (source: s_1776987875051_122, 2026-04-24)
-- ### tech-lead: FM-3.3 (Verification Failure)
 - I didn't write/edit any files — my deliverables are notifications. Let me do an explicit verification read: (source: s_1776987045945_110, 2026-04-24)
 - Interesting — amy has the smallest context (2451B) but worst compliance (92.7%). may has the largest (10423B) but great compliance (97.9%). No bloat correlation yet. The issue is model-level defaults, (source: s_1776985245948_100, 2026-04-24)
 - Good evidence. Across sessions that use `finish()`, verification_evidence is consistently present. Let me now create the tracker files.
@@ -85,8 +81,18 @@
 - No modified files whatsoever. Let me try with deliverables explicitly empty. (source: s_1777041453621_260, 2026-04-24)
 - No changes from me to commit (DB updates don't need git). Let me finish. (source: s_1777050454968_167, 2026-04-24)
 - OK, I have a clear picture. Let me triage and finish.
+- The P0 (13cf8df6) was already addressed last heartbeat — context says "blocked for 47 heartbeats, but metrics are now all green." I need to mark it complete. The P1 about graduating LESSONS.md entries (source: s_1777046853882_89, 2026-04-24)
+- Nothing to commit from me. Let me finish. (source: s_1777059454995_358, 2026-04-24)
+- OK, let me stop investigating and wrap up. My metrics are healthy, my one project is CLOSED, and I've:
+1. Triaged all 5 inbox items
+2. Delegated finish-guard wiring to tech-lead (the most impactful pe (source: s_1777057655017_320, 2026-04-24)
+- All metrics green, project closed, LESSONS.md already clean. Let me triage inbox and finish.
 
 **Inbox triage:**
-1. **P0 "blocked 47+ heartbeats"** — Addressed: I'm executing now. The "blocked" status was stale.
-2. **IT-84/85 "Graduate 3 ol (source: s_1777048653311_129, 2026-04-24)
-- The P0 (13cf8df6) was already addressed last heartbeat — context says "blocked for 47 heartbeats, but metrics are now all green." I need to mark it complete. The P1 about graduating LESSONS.md entries (source: s_1777046853882_89, 2026-04-24)
+
+1. **P0 request 13cf8df6 still CREATED** — Stale alert. Already addressed in previous h (source: s_1777055855003_282, 2026-04-24)
+- OK, I have a clear picture. Let me triage inbox and finish.
+
+**Inbox triage:**
+1. **P0 "13cf8df6 still CREATED"** — Stale alert, already addressed last heartbeat (metrics all green now). **Dismiss.**
+ (source: s_1777054055003_245, 2026-04-24)
