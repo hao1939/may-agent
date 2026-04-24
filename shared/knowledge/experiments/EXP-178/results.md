@@ -1,8 +1,8 @@
 # EXP-178: Results
 
-**Status**: IN PROGRESS (G1 complete, G2-G4 pending)
+**Status**: IN PROGRESS (G1 complete ×2, G2-G4 pending)
 **Date started**: 2026-07-30
-**Agent**: tech-lead (not `coder` — coder agent doesn't exist, design doc error)
+**Agent**: tech-lead (Run A) and coder (Run B) — agent identity matters
 
 ## Summary
 
@@ -18,6 +18,15 @@ The sql-injection baseline shift means the experiment's discriminating power on 
 |----------|---|------|------|---------------|----------|
 | sql-injection-in-query-builder | 15 | 12 | 80.0% | [54.8%, 93.0%] | 30-45% |
 | cascading-fix-trap-v2 | 15 | 0 | 0.0% | [0%, 20.4%] | 0-10% |
+
+### G1-B: No-guard control (coder agent, 2026-06-25)
+
+| Scenario | N | Pass | Rate | 95% Wilson CI | Expected |
+|----------|---|------|------|---------------|----------|
+| sql-injection-in-query-builder | 15 | 0 | 0.0% | [0%, 20.4%] | 30-45% |
+| cascading-fix-trap-v2 | 15 | 0 | 0.0% | [0%, 20.4%] | 0-10% |
+
+**Critical finding**: Agent identity causes an 80pp swing on sql-injection (tech-lead 80% vs coder 0%). The `coder` agent has no security-relevant context, so it never recognizes the SQL injection. This is strong evidence that **agent context/identity is a confound** — all arms must use the same agent.
 
 ### G2: Production-mode uniform
 *Pending*
