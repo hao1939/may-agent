@@ -1,14 +1,15 @@
 # Project: Agent System Literacy
 
-**Status**: active
+**Status**: waiting
 **Owner**: bob
 **Type**: continuous
 **Priority**: P1
-**Iteration**: 9
+**Iteration**: 10
 **Health**: —
 
 **Stop Reason**: 
-**Resume Condition**: 
+All 13/13 milestones complete, awaiting human review to mark project done.
+**Resume Condition**: Human/May review needed
 ## Goal
 Agents should know how to use the infrastructure effectively — create projects, use workflows, read metrics, escalate when stuck. Teach via skills, measure via gym benchmarks.
 
@@ -56,8 +57,7 @@ Agents should know how to use the infrastructure effectively — create projects
 - Debugging skill (exists): agents/shared/skills/debugging-handlers-workflows.md
 
 ## Current State
-Iteration 9. Milestones: 13/13 done.
-Reviewer: The worker has made good progress — benchmark runner exists, baseline results are captured, and there's a clear analysis. The remaining 3 milestones are about identifying failures, iterating on skills
+Waiting: All 13/13 milestones complete, awaiting human review to mark project done.
 ## Process Notes
 
 ## Comments

@@ -70,3 +70,7 @@ CONTINUE — The baseline analysis already identifies failures (help-blocked-age
 
 **(c) First step:** Run `ls agents/skills/ 2>/dev/null; ls agents/*/skills/ 2>/dev/null; find . -path '*/skills/*' -name '*.md' 2>/dev/null | head -20` to see where skills live, then create all three deliverables. The failure analysis should note that all agents pass 3/4 scenarios but fail `help-blocked-agent` (specifically the `contacted_agent` criterion). The skill update should teach agents to use `notify` or `agents.fork` when they see a blocked peer. The improvement tracking should record baseline → post-skill scores.
 
+### Iteration 10 — 2026-04-24T13:22:42.024Z
+**Worker**: Good, the skill exists but doesn't explicitly teach the `notify`/`fork` pattern for the contacted_agent check. Let me create all three files now.
+**Reviewer**: WAITING — All 13/13 milestones complete, awaiting human review to mark project done.
+

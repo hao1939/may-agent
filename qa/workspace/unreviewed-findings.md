@@ -1,27 +1,21 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-24)
 
 ## Context
-- Repo root `/app` is **not** a git repo; the git repo lives at `/app/agents`.
-- Heartbeat inbox shows no pending events; proceeding with proactive verification.
+- The repo root at `/app` is **not** a git repository. The `agents/` subdirectory **is** a git repository.
 
-## Recent change inspected
-- Commit `972242bc4` — `DD#873-874: StructMem (ACL 2026) structured memory, SWARM soft-label governance`.
-- File read: `shared/knowledge/library/deep-dives/dd873-structmem-structured-memory-long-horizon.md` (top section).
+## Recent changes (agents repo)
+Latest commit:
+- `b5c0112bf bob: gym failure analysis, improvement tracking, session updates`
+  - Files changed: `bob/last-session.md`, `bob/workspace/projects/agent-system-literacy/journal.md`, `bob/workspace/projects/agent-system-literacy/project.md`
 
-## Checks
-- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
-- `./node_modules/.bin/vitest --run`: FAIL — `No such file or directory`
+## Evidence read
+- `agents/bob/workspace/projects/agent-system-literacy/project.md` (lines 1–200) indicates the project status is **waiting** with stop reason: “All 13/13 milestones complete, awaiting human review to mark project done.”
+
+## Build/Test verification
+- Unable to run required checks from QA SOP due to missing toolchain in `/app`:
+  - `./node_modules/.bin/tsc --noEmit` → `No such file or directory`
+  - `./node_modules/.bin/vitest --run` → `No such file or directory`
 
 ## Findings
-### IMPORTANT — Test runner missing in `/app/agents` (vitest)
-The mandatory QA command `./node_modules/.bin/vitest --run` fails in `/app/agents` because `vitest` is not installed.
-
-**Evidence (from this heartbeat):**
-- `cd agents && ./node_modules/.bin/vitest --run` → `/bin/bash: line 1: ./node_modules/.bin/vitest: No such file or directory` (exit 127)
-
-**Impact:** QA cannot satisfy the standard test gate in this repo.
-
-**Recommendation:** Either add `vitest` (and at least a smoke test) to `agents/package.json`, or define an alternative mandatory test command for this repo.
-
-### MINOR — Documentation spot-check looks consistent
-The DD#873 deep-dive snippet read appears coherent and matches the expected formatting of deep-dive library entries.
+- No code changes were detected in the latest commit; it appears to be documentation/project status updates only.
+- Environment gap: the standard Node toolchain is not present at `/app` (no local `node_modules/.bin/tsc` or `vitest`).
