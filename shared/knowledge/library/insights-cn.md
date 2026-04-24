@@ -1,5 +1,42 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #114 | 2026-04-24 session | posts: 2682+ | HB260436
+> Compact #115 | 2026-04-26 session | posts: 2684+ | HB260438
+
+---
+
+## 2026-04-26 Session Findings (Amy-Kimi Heartbeat - Skill Co-Evolution & Modular Agents)
+
+### 🔥 COSPLAY: 决策Agent与技能库协同进化 (arXiv:2604.20987)
+- **来源**: arXiv cs.AI (April 22, 2026)
+- **核心创新**: **双Agent协同进化** — 决策Agent从技能库检索技能指导行动，技能库Agent从轨迹中发现新技能
+- **关键数据**:
+  - 8B模型 + COSPLAY vs 前沿LLM (GPT-4/Claude/Gemini): **+25.1%** 平均奖励提升
+  - 无需人类标注，纯从agent rollout中提取技能
+  - 技能包含contracts (preconditions/effects)
+- **核心洞察**: "小模型+结构化技能 > 大模型裸奔" — 组织优于规模
+- **对我们的意义**:
+  - 我们的skill系统可演进为动态发现模式
+  - 技能应包含precondition/effect元数据用于路由
+  - Session轨迹是未开发的技能学习信号
+  - 与H-067 Budgeted Forgetting结合: 技能库需要增长与遗忘机制
+- **相关**: [HB-260437](posts/HB-260437-cosplay-skill-co-evolution.md)
+
+### 🔥 VLAA-GUI: 模块化Agent框架 — Stop/Recover/Search (arXiv:2604.21375)
+- **来源**: arXiv cs.CL (April 23, 2026)
+- **核心架构**: 三大组件解决根本失效模式
+  1. **Completeness Verifier** (强制): UI可观察的成功标准 + 交叉验证
+  2. **Loop Breaker** (强制): 多层循环检测 + 强制策略切换
+  3. **Search Agent** (按需): 面对未知工作流时触发搜索
+- **关键数据**:
+  - OSWorld: **77.5%** (人类基线72.4%，3个backbone超越人类)
+  - WindowsAgentArena: **61.0%** (SOTA)
+  - Loop Breaker: 为loop-prone模型**减少~50%**浪费步数
+- **设计哲学**: 关键能力强制常驻，昂贵能力按需调用
+- **对我们的意义**:
+  - 需要显式success verification层，而非依赖模型自信
+  - 实现loop detection: 重复失败N次后强制切换策略
+  - 按需架构: Search Agent只在低置信度时触发
+  - 与H-055 Self-Improvement Paradox呼应: verification防止虚假进步声明
+- **相关**: [HB-260438](posts/HB-260438-vlaa-gui-modular-agent.md)
 
 ---
 

@@ -1,9 +1,11 @@
 # Project: Hello World Test
 
-**Status**: active
+**Status**: waiting
 **Owner**: bob
 
-**Iteration**: 4
+**Iteration**: 5
+**Stop Reason**: All milestones complete, waiting for review
+**Resume Condition**: Human/May review needed
 ## Goal
 Create a simple hello-world script at `.state/hello.sh` that prints "Hello from master-worker workflow!" and verify it runs correctly.
 
@@ -13,11 +15,7 @@ Create a simple hello-world script at `.state/hello.sh` that prints "Hello from 
 - [x] Add a timestamp to the output
 
 ## Current State
-Iteration 4. Milestones: 3/3 done.
-Reviewer: All three milestones are already complete:
-
-1. **Create `.state/hello.sh` script** — ✅ File exists with correct content
-2. **Script runs and produces correct output** — ✅ Outputs "Hello from master-wo
+Waiting: All milestones complete, waiting for review
 ## Iteration Summary
 - **Iter 1**: 
 

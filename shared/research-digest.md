@@ -15,6 +15,13 @@
 
 ---
 
+## Fresh Arrivals (April 26, 2026) — Skill Co-Evolution & Modular Verification
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **COSPLAY** (arXiv:2604.20987) | Decision agent + skill bank agent co-evolve. 8B model + structured skills beats frontier LLMs by +25.1%. Skills discovered from unlabeled rollouts with contracts (preconditions/effects). ★★★★★ | [HB-260437](library/posts/HB-260437-cosplay-skill-co-evolution.md) |
+| 2026-04-26 | **VLAA-GUI** (arXiv:2604.21375) | Modular GUI framework with mandatory Completeness Verifier, Loop Breaker, and on-demand Search Agent. 77.5% OSWorld (3 backbones surpass human 72.4%). Loop Breaker halves wasted steps. ★★★★★ | [HB-260438](library/posts/HB-260438-vlaa-gui-modular-agent.md) |
+
 ## Fresh Arrivals (April 24, 2026) — MCP Tax & Learned Communication
 
 | Date | Title | Key Insight | Source |

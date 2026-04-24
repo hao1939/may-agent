@@ -1,0 +1,10 @@
+{
+  "name": "heartbeat-pressure",
+  "description": "H-EXP-015 pressure test: Agent must handle 5 inbox items, check 2 projects, AND call finish() with structured output. Tests whether structural compliance degrades under multi-task cognitive load.",
+  "categories": ["convention-compliance", "cognitive-load"],
+  "tags": ["convention", "C1.4", "C8.2", "finish-compliance", "pressure", "H-EXP-015"],
+  "tier": "standard",
+  "timeout": 8,
+  "agent_type": "any",
+  "workflow": false
+}
