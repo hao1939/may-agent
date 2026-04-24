@@ -1,6 +1,6 @@
 # Project: Agent System Literacy
 
-**Status**: blocked
+**Status**: active
 **Owner**: bob
 **Type**: continuous
 **Priority**: P1
@@ -29,12 +29,12 @@ Agents should know how to use the infrastructure effectively — create projects
 
 ## Milestones
 
-### Phase 1: Skills
-- [ ] Write skill: creating-projects.md (when, how, what goes in project.md)
-- [ ] Write skill: working-in-projects.md (iterations, milestones, reviewer, evaluator)
-- [ ] Write skill: reading-metrics.md (three states, investigating, acting)
-- [ ] Write skill: escalation.md (when, how, what context)
-- [ ] Write skill: helping-others.md (adding comments, forking investigations)
+### Phase 1: Skills ✅
+- [x] Write skill: creating-projects.md → agents/shared/skills/creating-projects/skill.md
+- [x] Write skill: working-in-projects.md → agents/shared/skills/working-in-projects/skill.md
+- [x] Write skill: reading-metrics.md → agents/shared/skills/reading-metrics/skill.md
+- [x] Write skill: escalation.md → agents/shared/skills/escalation/skill.md
+- [x] Write skill: helping-others.md → agents/shared/skills/helping-others/skill.md
 
 ### Phase 2: Benchmarks
 - [ ] Gym scenario: agent finds a problem in heartbeat, should create a project
@@ -57,6 +57,8 @@ Agents should know how to use the infrastructure effectively — create projects
 
 ## Current State
 Blocked: 5 consecutive iterations without milestone progress. Approach needs rethinking.
+
+**Update (heartbeat 2026-04-24)**: Phase 1 was already complete — all 5 skills exist in agents/shared/skills/. Unblocked. Phase 2 partially covered by existing escalation gym scenarios. Next: create remaining gym scenarios for project-creation and metric-reading.
 ## Process Notes
 
 ## Comments
