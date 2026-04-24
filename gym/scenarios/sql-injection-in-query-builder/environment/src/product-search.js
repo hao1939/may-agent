@@ -12,7 +12,7 @@ const { findProductsByName, findProductsByCategory, findProductById } = require(
  * @returns {Array<{id: number, name: string, price: string}>}
  */
 function searchProducts(query) {
-  const rows = findProductsByName(query);
+  const rows = findProductsByName(query) || [];
 
   return rows.map(row => ({
     id: row.id,
@@ -28,7 +28,7 @@ function searchProducts(query) {
  * @returns {Array<{id: number, name: string, price: string}>}
  */
 function searchByCategory(category) {
-  const rows = findProductsByCategory(category);
+  const rows = findProductsByCategory(category) || [];
 
   return rows.map(row => ({
     id: row.id,
