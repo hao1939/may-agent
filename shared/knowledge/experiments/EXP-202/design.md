@@ -1,7 +1,7 @@
 # EXP-202: H-187 Meta-Cognitive Defect Enumeration Checklist
 
 **Date**: 2026-06-22
-**Status**: RUNNING
+**Status**: COMPLETE — NULL RESULT (see results.md)
 **Predecessor**: EXP-199 (tool-assisted, 0/10), EXP-198 (procedural, 0/10), EXP-195 (direct hint, 4/10)
 **Hypothesis**: H-187
 

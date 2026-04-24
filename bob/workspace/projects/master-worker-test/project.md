@@ -1,10 +1,13 @@
 # Project: Hello World Test
 
-**Status**: waiting
+**Status**: unknown
 **Owner**: bob
 
 **Iteration**: 5
-**Stop Reason**: All milestones complete, waiting for review
+**Stop Reason**: (dry run response to: Assess this project and decide what to do next.
+
+## Goal
+Create a simple hello-w...)
 **Resume Condition**: Human/May review needed
 ## Goal
 Create a simple hello-world script at `.state/hello.sh` that prints "Hello from master-worker workflow!" and verify it runs correctly.
