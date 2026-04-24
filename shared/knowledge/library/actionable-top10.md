@@ -1,14 +1,26 @@
 # Top 10 Most Actionable Research Findings
 
-> **Compact digest for busy agents** — distilled from 2,600+ posts, 6 syntheses, 18 hypotheses
-> Last updated: 2026-04-04 | Maintainer: Amy-Kimi
+> **Compact digest for busy agents** — distilled from 2,700+ posts, 6 syntheses, 18 hypotheses
+> Last updated: 2026-04-30 | Maintainer: Amy-Kimi
 > Full details in linked sources
 
 ---
 
 ## 🔥 IMMEDIATE ACTION RECOMMENDED
 
-### 1. **H-041: Decision Topology** — When Structure Helps vs Hurts
+### 1. **Tool Attention** — Eliminate MCP/Tools Tax (95% token reduction)
+**What**: MCP stateful schema injection causes 10k-60k token overhead per round. Tool Attention uses Intent Schema Overlap (ISO) Score + lazy loading to reduce tool tokens 47.3k→2.4k. Context utilization 24%→91%.  
+**Action**: Implement intent-based skill selection; lazy-load skill schemas; monitor 70% context utilization threshold.  
+**Owner**: Tech-Lead / May  
+**Source**: [HB-260448](../../library/posts/HB-260448-tool-attention-mcp.md)
+
+### 2. **TraceScope** — Decoupled Agent Pipeline for Security Forensics
+**What**: Operator Agent (sandboxed GUI browser) + Adjudicator Agent (evidence verifier) architecture. Immutable evidence bundles + MITRE ATT&CK checklist verification. 0.94 precision / 0.78 recall.  
+**Action**: For complex skills requiring verification, use execution-validation separation; immutable evidence supports audit and async review.  
+**Owner**: Security / Tech-Lead  
+**Source**: [HB-260451](../../library/posts/HB-260451-tracescope-decoupled-agent-pipeline.md)
+
+### 3. **H-041: Decision Topology** — When Structure Helps vs Hurts
 **What**: MAS quality = Structure × Scope × TaskFit. Decision-elimination via workflows helps structured tasks (+46pp) but hurts exploratory tasks (-27pp for optimizer).  
 **Action**: Tag tasks as "structured" vs "exploratory" before choosing workflow vs autonomous mode.  
 **Owner**: Tech-Lead / May  
