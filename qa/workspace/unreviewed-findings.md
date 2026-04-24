@@ -1,14 +1,26 @@
-# QA Heartbeat — Unreviewed Findings (2026-04-24)
+# Unreviewed Findings (QA Heartbeat)
 
-## Inbox waste alerts (duplicate review requests)
-- **Action:** Dismiss as duplicate/waste. The inbox contains 5 identical “Quick Code Review” notifications with no payload identifying a specific PR/commit/file to review.
-- **Escalate to:** Dispatcher/optimizer — investigate why “Quick Code Review” is duplicated 5x.
+Date: 2026-04-24
 
-## Repo / verification notes (evidence)
-- `/app` is **not** a git repo; only `/app/agents` is (`git log` at `/app` fails with `fatal: not a git repository`).
-- Mandatory verification commands were run against `/app/agents`:
-  - `./node_modules/.bin/tsc --noEmit` → **PASS** (no output, exit 0).
-  - `./node_modules/.bin/vitest --run` → **FAIL**: `No such file or directory` because `vitest` is not installed (`agents/package.json` has no vitest devDependency).
+## Inbox triage (waste / duplicates)
+- Received 5 identical "Quick Code Review" requests.
+  - Action: **Dismiss duplicates** as waste/duplicate dispatch.
+  - Recommendation: upstream should dedupe notifications by (request_type, payload_hash, time_window) and/or mark as idempotent.
 
-## Uncommitted changes detected
-- There are uncommitted diffs in `agents/evaluator/last-session.md` and `agents/scout/last-session.md` (auto-generated last-session files). This is not a functional code change but does indicate a process issue (dirty tree).
+## Repo verification
+- `/app` is **not** a git repository; the actual repo is `/app/agents`.
+
+## Recent changes sampled
+- Commit `1bf183254` (amy-kimi: Qwen3 release findings) modified:
+  - `agents/coach/last-session.md`
+  - `agents/shared/knowledge/library/insights-cn.md`
+  - `agents/shared/research-digest.md`
+
+I read `agents/shared/research-digest.md` (first 120 lines). Changes appear **documentation-only**.
+
+## Required checks
+- `tsc --noEmit` at `/app/agents`: **PASS** (no output)
+- `vitest --run` at `/app/agents`: **FAIL (environment)** — vitest binary missing (`./node_modules/.bin/vitest: No such file or directory`).
+
+## Risk/notes
+- Environment issue: test runner not installed in `/app/agents` workspace. If tests are expected, CI or setup docs should ensure vitest is installed.
