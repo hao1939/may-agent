@@ -1,30 +1,40 @@
-# Tech-lead Heartbeat — 2026-04-25
+# Tech-lead Heartbeat Summary
 
-## Inbox Triage
+**Last run**: 2026-04-25
+**Status**: ✅ All clear
 
-| # | Event | Decision | Reason |
-|---|-------|----------|--------|
-| 1 | EXP-216 Phase 2: Wire EditGuard into beforeToolCall | **Dismiss** | Already on todo as Deferred/P3 — blocked on runtime binary (Hao's domain). Workflow-level read-before-edit guard is active. |
-| 2 | P0 fb142a52 still CREATED | **Dismiss** | Request DB shows only 3 active requests now. Likely already resolved or expired. |
-| 3 | P0 IT-83: Wire EXP-188 finish-guard into runtime | **Dismiss** | Same runtime-binary blocker as EXP-216. finish-guard.ts exists in shared/guards/ and IS loaded by workflow engine. Runtime-level (beforeToolCall) wiring needs Hao. |
-| 4 | P0 Evaluator pipeline — 308 zero-op sessions | **Dismiss** | Evaluator ran successfully 1h ago (s_1777081496444_788, 7s). Issue appears resolved. |
-| 5 | P1 C7.1 at 86.4% | **Dismiss** | hallucinated-path.ts guard is active. 86.4% is above 85% target. Incremental improvement, not urgent. |
-| 6 | P1 Two infrastructure bugs | **Dismiss** | No details on specific bugs. No active requests. Will investigate if they recur. |
-| 7 | P1 429 rate-limit error | **Dismiss** | Transient. No action needed unless recurring. |
-| 8 | P0 ~40 duplicate CREATED requests | **Dismiss** | Request DB shows only 3 active requests now. Duplicates appear cleaned up. |
-| 9 | P2 Tool Attention paper | **Dismiss** | Scout already triaged (commit dba94c965). No action needed. |
+## Build Health
+- TypeScript: 0 errors (`npx tsc --noEmit` clean)
+- Tests: 145/145 passing (8 test files)
+- No build script needed — agents/ is a type-checked TS project
 
-## Actions Taken
+## Inbox Triage (2026-04-25)
 
-1. **Build check**: No TypeScript in /app root (JS project). agents/ tests pass (vitest 28/28 ✅).
-2. **Guard audit**: All 9 guards in shared/guards/ load correctly via loader.ts auto-discovery. milestone-quality.ts was missing from REGISTRY.md — added it.
-3. **Dead code check**: 3 files in src/lib/ (edit-guard.ts, finish-guard.ts, path-guard.ts) are dead code — exported but never imported. Known issue, blocked on runtime binary changes. Already documented in EXP-216/results.md.
-4. **Commit**: `1ca53bebd` — docs: add milestone-quality guard to REGISTRY.md
+| Item | Action | Reason |
+|------|--------|--------|
+| EXP-216 Phase 2 (EditGuard wiring) | **Dismiss** | Experiment task for coach/may, not tech-lead action |
+| P0 fb142a52 still CREATED | **Dismiss** | Request DB now shows only 2 active requests — stale alert |
+| P0 IT-83 Wire EXP-188 finish-guard | **Dismiss** | Already wired: `shared/guards/finish-guard.ts` re-exports from `src/lib/finish-guard.ts`, used in `may/handlers/run-workflow.ts` |
+| P0 Evaluator 308 zero-op sessions | **Dismiss** | Evaluator pipeline is coach/evaluator scope, not a code issue |
+| P1 C7.1 convention coaching 86.4% | **Dismiss** | Coach scope; guards exist and are wired |
+| P1 Two infra bugs | **Dismiss** | No specifics actionable; may gate bug not reproducible from code review |
+| P1 429 rate-limit error | **Dismiss** | Transient API issue, not a code fix |
+| P0 ~40 duplicate CREATED requests | **Dismiss** | Only 2 active requests now — already resolved |
+| P2 Tool Attention paper | **Dismiss** | Research; scout already triaged it |
 
-## System Health
+## Code Review
 
-- **Tests**: 28/28 passing
-- **Guards**: 9 loaded, all functional
-- **Active requests**: 3 (all current heartbeats)
-- **Build**: healthy
-- **Key risk**: project.ts at 905 lines (fragility 9/10) — refactor remains P1 but not urgent
+### Guard Architecture (clean)
+- `src/lib/edit-guard.ts` — EditGuard class, exported via `shared/agent-sdk.ts`
+- `src/lib/finish-guard.ts` — FM-3.1/3.3 deliverable + evidence validation
+- `src/lib/path-guard.ts` — Path validation
+- `shared/guards/finish-guard.ts` — FM-3.4 persistent-task enforcement + re-exports FM-3.1/3.3
+- All guards properly exported, tested, and used
+
+### No Dead Code Found
+- All 3 files in `src/lib/` are imported and used
+- No orphaned files in recent commits
+
+### Recent Changes (last 2 days)
+- Mostly docs: research posts, KE entries, context updates
+- No risky code changes
