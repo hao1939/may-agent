@@ -282,7 +282,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   });
 
   const worker = await ctx.createSession({
-    systemPrompt: workerSystemPrompt(projectDir),
+    systemPrompt: workerSystemPrompt(dirname(projectDir)),
     tools: "full",
     label: "worker",
   });
@@ -347,20 +347,8 @@ ${currentState}
       ctx.log(`[work] Iteration ${iteration}/${maxIterations} starting...`);
       const guidance = reviewer.lastText();
 
-      // Build worker prompt with project context on first iteration
-      let workerPrompt: string;
-      if (iteration === 1) {
-        workerPrompt = `## Project Goal\n${goal}\n\n`;
-        if (milestones) {
-          const ms = extractMilestones(readFileSync(projectFile, "utf-8"));
-          workerPrompt += `## Milestones (${ms.done}/${ms.total} complete)\n`;
-          if (ms.pending.length > 0) workerPrompt += `Pending: ${ms.pending.join(", ")}\n`;
-          workerPrompt += `\n`;
-        }
-        workerPrompt += `## Reviewer Guidance\n${guidance}`;
-      } else {
-        workerPrompt = `## Iteration ${iteration} Guidance\n${guidance}`;
-      }
+      // Worker gets ONLY the reviewer's guidance — no project.md, no milestones
+      const workerPrompt = `## Task (Iteration ${iteration})\n${guidance}`;
 
       // Capture milestone state BEFORE worker runs (worker may edit project.md)
       const preMilestoneState = captureMilestoneState(readFileSync(projectFile, "utf-8"));
