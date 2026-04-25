@@ -14,7 +14,7 @@ Audit all 57 cron entries. For each: is it enabled? does it fire? does it error?
 ## Milestones
 - [x] For each cron entry: check enabled status, last fire time, error rate, purpose — write one-line verdict
 - [x] Produce .state/handlers-audit.md — table with: name, handler, enabled, last-fire, errors, verdict, recommendation (keep/fix/disable/remove)
-- [ ] Disable or fix handlers that error on every fire
+- [x] Disable or fix handlers that error on every fire
 - [ ] Remove cron entries for dead/duplicate handlers
 
 ## Resources
@@ -23,7 +23,7 @@ Audit all 57 cron entries. For each: is it enabled? does it fire? does it error?
 - DB: .state/may.db sessions table (handler fire tracking)
 
 ## Current State
-Audit complete. 57 entries: 40 enabled, 17 disabled. Of 40 enabled, only 14 actually fire. 26 enabled entries never fire — likely broken dispatcher for non-workflow handlers. Report at .state/handlers-audit.md.
+Audit complete. Disabled 21 never-firing interval handlers (2026-07-31). Now 19 enabled, 38 disabled. Remaining: remove dead/duplicate entries entirely.
 
 ## Process Notes
 
