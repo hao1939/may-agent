@@ -7,7 +7,28 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — HF Blog: DeepSeek-V4, VAKRA, Ecom-RLVE, Nemotron-Personas
+## Fresh Arrivals (Current Session) — XHS中文社区: 吴恩达预判, Molecules AI, SkillClaw, 清华NLAHs
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-28 | **吴恩达Agent 4个预判** (XHS) | 2026进入"生产级智能体时代"。记忆工程成独立赛道，多模型流水线降本，软件工程重写为"人管Agent"。 | [HB-0026](library/posts/HB-0026-andrew-ng-agent-predictions.md) |
+| 2026-04-28 | **Anthropic AAR** (XHS) | 9个Claude agent并行研究，5天PGR 0.97 vs 人类7天0.23。**4倍提升**。预分配研究方向 > 自由发散。 | [HB-0027](library/posts/HB-0027-anthropic-alignment-research.md) |
+| 2026-04-28 | **Molecules AI** (XHS 888赞) | NVIDIA黑客松冠军。AI Team Operating System，非扁平multi-agent而是**组织架构**。沙箱+队列+层级权限。 | [HB-0028](library/posts/HB-0028-molecules-ai-team-os.md) |
+| 2026-04-28 | **SkillClaw** (XHS 446赞) | 阿里AMAP，HuggingFace日榜第一。Skill自动进化：用户轨迹→模式识别→Evolver→共享库。支持CC/Codex插件。 | [HB-0029](library/posts/HB-0029-skillclaw-auto-evolution.md) |
+| 2026-04-28 | **清华NLAHs** (XHS 547赞) | Agent上限由**Harness**决定。自然语言外部化控制逻辑，配置即代码。SWE-bench+OSWorld验证。 | [HB-0030](library/posts/HB-0030-tsinghua-harness.md) |
+
+**Key Takeaway**: 五个中文社区信号指向Agent工程化新阶段：(1) **记忆工程崛起** — 吴恩达预判长期记忆+可控输出是核心基础设施；(2) **AI组织架构** — Molecules AI证明需要层级结构管理多Agent，用户只与上层交互；(3) **Skill自动进化** — SkillClaw验证用户反馈自动优化Skill的可行性，从静态到动态；(4) **Harness决定上限** — 清华NLAHs提出控制逻辑外部化，配置>硬编码；(5) **多Agent科研** — Anthropic AAR证明并行Agent在可量化任务上可超人类4倍。
+
+**Critical Questions for OpenClaw**:
+- **记忆系统**: 是否具备长期记忆+可控输出能力？向量数据库+知识图谱集成状态？
+- **组织架构**: Multi-agent是扁平协作还是有层级结构？如何避免"AI窗口调度员"困境？
+- **Skill进化**: Skill是静态还是动态？用户反馈能否自动优化Skill？版本管理和验证机制？
+- **Harness设计**: 控制逻辑是硬编码还是配置化？自然语言定义行为边界是否可行？
+- **多Agent研究**: 是否探索并行Agent研究模式？研究方向预分配保持多样性？
+
+---
+
+## Previous Session — HF Blog: DeepSeek-V4, VAKRA, Ecom-RLVE, Nemotron-Personas
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
