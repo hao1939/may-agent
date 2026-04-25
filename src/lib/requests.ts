@@ -77,37 +77,6 @@ export interface RequestRecord {
 // ── Schema ─────────────────────────────────────────────────────────────
 
 const SCHEMA = `
-CREATE TABLE IF NOT EXISTS requests (
-  requestId       TEXT PRIMARY KEY,
-  parentRequestId TEXT,
-  fromEntity      TEXT NOT NULL,
-  toAgent         TEXT NOT NULL,
-  method          TEXT NOT NULL,
-  task            TEXT NOT NULL,
-  status          TEXT NOT NULL DEFAULT 'CREATED',
-  sessionId       TEXT,
-  source          TEXT,
-  createdAt       INTEGER NOT NULL,
-  updatedAt       INTEGER NOT NULL,
-  completedAt     INTEGER,
-  durationMs      INTEGER,
-  summary         TEXT,
-  error           TEXT,
-  errorClass      TEXT,
-  retryable       INTEGER,
-  artifact        TEXT,
-  context         TEXT,
-  expectations    TEXT,
-  notify          TEXT,
-  source_finding  TEXT
-);
-
-CREATE INDEX IF NOT EXISTS idx_status    ON requests(status);
-CREATE INDEX IF NOT EXISTS idx_to_agent  ON requests(toAgent);
-CREATE INDEX IF NOT EXISTS idx_parent    ON requests(parentRequestId);
-CREATE INDEX IF NOT EXISTS idx_created   ON requests(createdAt);
-CREATE INDEX IF NOT EXISTS idx_source_finding ON requests(source_finding);
-
 -- Sessions: queryable index of per-session meta.json files.
 -- Source of truth is meta.json on disk; this table is for SQL queries and joins.
 CREATE TABLE IF NOT EXISTS sessions (
@@ -348,12 +317,7 @@ export function getDb(persistDir: string): SqliteDb {
   db.exec(SCHEMA);
 
   // Migrations for existing databases (idempotent — ALTER ADD COLUMN fails silently if column exists)
-  try {
-    db.exec("ALTER TABLE requests ADD COLUMN source TEXT");
-  } catch {
-    /* already exists */
-  }
-  // gym_runs columns added after initial schema
+// gym_runs columns added after initial schema
   try {
     db.exec("ALTER TABLE gym_runs ADD COLUMN run_tag TEXT");
   } catch {
@@ -394,12 +358,7 @@ export function getDb(persistDir: string): SqliteDb {
   } catch {
     /* already exists */
   }
-  try {
-    db.exec("ALTER TABLE requests ADD COLUMN source_finding TEXT");
-  } catch {
-    /* already exists */
-  }
-  // Indexes on migrated columns (must come after ALTER TABLE)
+// Indexes on migrated columns (must come after ALTER TABLE)
   try {
     db.exec("CREATE INDEX IF NOT EXISTS idx_gym_runs_batch ON gym_runs(batch_id)");
   } catch {
@@ -455,80 +414,16 @@ export function closeAllDbs(): void {
 /**
  * Track a new request. Returns the generated requestId.
  */
-export function trackRequest(persistDir: string, opts: TrackRequestOpts): string {
-  const db = getDb(persistDir);
-  const requestId = randomUUID();
-  const now = Date.now();
-
-  db.run(
-    `INSERT INTO requests (
-      requestId, parentRequestId, fromEntity, toAgent, method, task,
-      status, sessionId, source, createdAt, updatedAt,
-      artifact, context, expectations, notify, source_finding
-    ) VALUES (?, ?, ?, ?, ?, ?, 'CREATED', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      requestId,
-      opts.parentRequestId ?? null,
-      opts.fromEntity,
-      opts.toAgent,
-      opts.method,
-      opts.task,
-      opts.sessionId ?? null,
-      opts.source ?? null,
-      now,
-      now,
-      opts.artifact ?? null,
-      opts.context ?? null,
-      opts.expectations ?? null,
-      opts.notify ? JSON.stringify(opts.notify) : null,
-      opts.source_finding ?? null,
-    ],
-  );
-
-  return requestId;
+export function trackRequest(_persistDir: string, _req: TrackRequestOpts): string {
+  // No-op: requests table removed. Return a dummy ID for callers that use it.
+  return randomUUID();
 }
 
 /**
  * Update an existing request's status and metadata.
  */
-export function updateRequest(persistDir: string, requestId: string, update: UpdateRequestOpts): void {
-  const db = getDb(persistDir);
-  const sets: string[] = ["updatedAt = ?"];
-  const values: unknown[] = [Date.now()];
-
-  if (update.status !== undefined) {
-    sets.push("status = ?");
-    values.push(update.status);
-  }
-  if (update.sessionId !== undefined) {
-    sets.push("sessionId = ?");
-    values.push(update.sessionId);
-  }
-  if (update.summary !== undefined) {
-    sets.push("summary = ?");
-    values.push(update.summary);
-  }
-  if (update.error !== undefined) {
-    sets.push("error = ?");
-    values.push(update.error);
-  }
-  if (update.errorClass !== undefined) {
-    sets.push("errorClass = ?");
-    values.push(update.errorClass);
-    sets.push("retryable = ?");
-    values.push(update.errorClass === "infra" ? 1 : 0);
-  }
-  if (update.durationMs !== undefined) {
-    sets.push("durationMs = ?");
-    values.push(update.durationMs);
-  }
-  if (update.completedAt !== undefined) {
-    sets.push("completedAt = ?");
-    values.push(update.completedAt);
-  }
-
-  values.push(requestId);
-  db.run(`UPDATE requests SET ${sets.join(", ")} WHERE requestId = ?`, values);
+export function updateRequest(_persistDir: string, _requestId: string, _fields: Record<string, unknown>): void {
+  // No-op: requests table removed.
 }
 
 /**
@@ -543,10 +438,7 @@ export function getRequest(persistDir: string, requestId: string): RequestRecord
  * Get all active (non-terminal) requests.
  */
 export function getActiveRequests(persistDir: string): RequestRecord[] {
-  const db = getDb(persistDir);
-  return db
-    .prepare("SELECT * FROM requests WHERE status IN ('CREATED', 'IN_PROGRESS') ORDER BY createdAt ASC")
-    .all() as unknown as RequestRecord[];
+  return []; // No-op: requests table removed
 }
 
 /**
@@ -554,15 +446,7 @@ export function getActiveRequests(persistDir: string): RequestRecord[] {
  * @param limit Max rows to return (default 100). Use -1 for unlimited (not recommended).
  */
 export function getRequestsByAgent(persistDir: string, agent: string, limit: number = 100): RequestRecord[] {
-  const db = getDb(persistDir);
-  if (limit === -1) {
-    return db
-      .prepare("SELECT * FROM requests WHERE toAgent = ? ORDER BY createdAt DESC")
-      .all(agent) as unknown as RequestRecord[];
-  }
-  return db
-    .prepare("SELECT * FROM requests WHERE toAgent = ? ORDER BY createdAt DESC LIMIT ?")
-    .all(agent, limit) as unknown as RequestRecord[];
+  return []; // No-op: requests table removed
 }
 
 /**
@@ -575,11 +459,7 @@ export function getRequestsByAgentAndStatus(
   statuses: string[],
   limit: number = 100,
 ): RequestRecord[] {
-  const db = getDb(persistDir);
-  const placeholders = statuses.map(() => "?").join(", ");
-  return db
-    .prepare(`SELECT * FROM requests WHERE toAgent = ? AND status IN (${placeholders}) ORDER BY createdAt DESC LIMIT ?`)
-    .all(agent, ...statuses, limit) as unknown as RequestRecord[];
+  return []; // No-op: requests table removed
 }
 
 /**
@@ -605,16 +485,7 @@ export function getRequestTree(persistDir: string, requestId: string): RequestRe
  * Find stale requests: CREATED or IN_PROGRESS older than maxAgeMs.
  */
 export function getStaleRequests(persistDir: string, maxAgeMs: number): RequestRecord[] {
-  const db = getDb(persistDir);
-  const cutoff = Date.now() - maxAgeMs;
-  return db
-    .prepare(
-      `SELECT * FROM requests
-       WHERE status IN ('CREATED', 'IN_PROGRESS')
-       AND createdAt < ?
-       ORDER BY createdAt ASC`,
-    )
-    .all(cutoff) as unknown as RequestRecord[];
+  return []; // No-op: requests table removed
 }
 
 /**
@@ -622,18 +493,8 @@ export function getStaleRequests(persistDir: string, maxAgeMs: number): RequestR
  * Used by send() to prevent duplicate handoffs/sends.
  * Returns the existing requestId if a duplicate is found, null otherwise.
  */
-export function isDuplicate(persistDir: string, fromEntity: string, toAgent: string, taskHash: string): string | null {
-  const db = getDb(persistDir);
-  // Check for active (non-terminal) duplicates only
-  const row = db
-    .prepare(
-      `SELECT requestId FROM requests
-       WHERE fromEntity = ? AND toAgent = ?
-       AND task = ? AND status IN ('CREATED', 'IN_PROGRESS')
-       LIMIT 1`,
-    )
-    .get(fromEntity, toAgent, taskHash) as { requestId: string } | null;
-  return row?.requestId ?? null;
+export function isDuplicate(_persistDir: string, _from: string, _to: string, _task: string): string | undefined {
+  return undefined; // No-op: requests table removed
 }
 
 /**
