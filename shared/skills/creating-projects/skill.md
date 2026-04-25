@@ -98,6 +98,11 @@ Creating a project is just the start. As the project progresses:
 
 The goal isn't just to finish the project — it's to leave the system better than you found it.
 
+**Every skill and workflow you create must be verifiable and testable.** If you can't write a gym scenario or a test that checks whether the skill works, it's not a real skill — it's wishful thinking. Before marking a skill "done":
+1. Write a gym scenario that tests the behavior the skill teaches
+2. Run it and confirm the agent follows the skill
+3. If the test fails, iterate on the skill until it passes
+
 ## Common Mistakes
 - **Too vague**: "Improve agent quality" → Instead: "Reduce FM-1.1 goal drift from 5 to ≤2 occurrences in 10 sessions"
 - **Too many milestones upfront**: >5 milestones at once means you're planning too far ahead. Plan iteratively.

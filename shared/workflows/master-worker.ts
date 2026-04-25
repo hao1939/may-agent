@@ -1,7 +1,7 @@
 /// <reference path="../../../src/lib/workflow-defs.d.ts" />
 
 /**
- * master-worker — Two persistent sessions (reviewer + worker) running
+ * master-worker — Two persistent sessions (orchestrator + worker) running
  * a review-first → work → review → work loop.
  *
  * Project.md fields:
@@ -20,7 +20,7 @@ import { resolve, join, dirname } from "node:path";
 export const name: string = "master-worker";
 
 export const description: string =
-  "Two-session workflow: reviewer directs strategy, worker executes. " +
+  "Two-session workflow: orchestrator directs strategy, worker executes. " +
   "Review-first pattern ensures focused work from iteration 1.";
 
 // ── Config ──────────────────────────────────────────────────────────────
@@ -63,9 +63,9 @@ function extractMilestones(content: string): MilestoneState {
   return { total: lines.length, done: completed.length, pending, completed };
 }
 
-/** Check off milestones whose text appears in the reviewer's response */
-function checkOffMilestones(content: string, reviewerText: string): string {
-  // Only check off milestones the reviewer explicitly marks as completed.
+/** Check off milestones whose text appears in the orchestrator's response */
+function checkOffMilestones(content: string, orchestratorText: string): string {
+  // Only check off milestones the orchestrator explicitly marks as completed.
   // Look for patterns like "Milestone completed: ..." or "✅ ..." followed by milestone text.
   const completedKeys: string[] = [];
   const completionPatterns = [
@@ -74,7 +74,7 @@ function checkOffMilestones(content: string, reviewerText: string): string {
     /\[x\]\s*(.+)$/gm,
   ];
   for (const pat of completionPatterns) {
-    for (const m of reviewerText.matchAll(pat)) {
+    for (const m of orchestratorText.matchAll(pat)) {
       completedKeys.push(m[1].trim().slice(0, 30).toLowerCase());
     }
   }
@@ -154,8 +154,8 @@ function extractDecision(text: string): Decision {
 
 // ── System prompts ──────────────────────────────────────────────────────
 
-function reviewerSystemPrompt(projectDir: string): string {
-  return `You are the reviewer and project maintainer.
+function orchestratorSystemPrompt(projectDir: string): string {
+  return `You are the orchestrator and project maintainer.
 Your role: assess state, direct the worker, verify deliverables, declare milestone completion.
 
 The project directory is: ${projectDir}
@@ -183,7 +183,7 @@ When milestones are completed, explicitly list which ones are done using the exa
 }
 
 function workerSystemPrompt(projectDir: string): string {
-  return `You are a worker on a persistent project. You receive guidance from a reviewer and produce concrete deliverables each iteration.
+  return `You are a worker on a persistent project. You receive guidance from a orchestrator and produce concrete deliverables each iteration.
 
 The project directory is: ${projectDir}
 You may work anywhere within this directory and its parent workspace.
@@ -192,7 +192,7 @@ Rules:
 - Do NOT edit project.md or journal.md — those are managed by the system
 - Produce concrete deliverables (files, test results, code changes)
 - If you get stuck, explain what's blocking you clearly
-- Focus on the specific task given in the reviewer's guidance
+- Focus on the specific task given in the orchestrator's guidance
 - When done with your task, summarize what you accomplished and what files you created/modified`;
 }
 
@@ -242,10 +242,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   ctx.log(`[master-worker] ${projectMatch[1]} | status: ${status} | milestones: ${initialMilestones.done}/${initialMilestones.total} | max-iter: ${maxIterations}`);
 
   // ── Create sessions ──
-  const reviewer = await ctx.createSession({
-    systemPrompt: reviewerSystemPrompt(projectDir),
+  const orchestrator = await ctx.createSession({
+    systemPrompt: orchestratorSystemPrompt(projectDir),
     tools: "readonly",
-    label: "reviewer",
+    label: "orchestrator",
   });
 
   const worker = await ctx.createSession({
@@ -255,8 +255,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   });
 
   try {
-    // ── Phase 1: Planning — reviewer assesses current state ──
-    ctx.log("[plan] Reviewer assessing project state...");
+    // ── Phase 1: Planning — orchestrator assesses current state ──
+    ctx.log("[plan] Orchestrator assessing project state...");
 
     let planningPrompt = `Assess this project and decide what to do next.
 
@@ -283,12 +283,12 @@ ${currentState}
 
     planningPrompt += `\nBased on your assessment, provide your decision and guidance for the worker.`;
 
-    await reviewer.prompt(planningPrompt);
+    await orchestrator.prompt(planningPrompt);
 
-    let decision = extractDecision(reviewer.lastText());
+    let decision = extractDecision(orchestrator.lastText());
     ctx.log(`[plan] Decision: ${decision.status.toUpperCase()}`);
 
-    // Treat "unknown" as CONTINUE for the planning phase — reviewer gave guidance but didn't use the keyword
+    // Treat "unknown" as CONTINUE for the planning phase — orchestrator gave guidance but didn't use the keyword
     if (decision.status === "unknown") {
       ctx.log("[plan] Decision unclear — treating as CONTINUE");
       decision.status = "continue";
@@ -312,9 +312,9 @@ ${currentState}
 
       // ── Work phase ──
       ctx.log(`[work] Iteration ${iteration}/${maxIterations} starting...`);
-      const guidance = reviewer.lastText();
+      const guidance = orchestrator.lastText();
 
-      // Worker gets ONLY the reviewer's guidance — no project.md, no milestones
+      // Worker gets ONLY the orchestrator's guidance — no project.md, no milestones
       const workerPrompt = `## Task (Iteration ${iteration})\n${guidance}`;
 
       await worker.prompt(workerPrompt);
@@ -326,7 +326,7 @@ ${currentState}
       appendFileSync(journalFile, `\n### Iteration ${iteration} — ${new Date().toISOString()}\n**Worker**: ${workerSummary.slice(0, 500)}\n`, "utf-8");
 
       // ── Review phase ──
-      ctx.log(`[review] Reviewer evaluating iteration ${iteration}...`);
+      ctx.log(`[review] Orchestrator evaluating iteration ${iteration}...`);
 
       // Build review prompt with current milestone state
       const currentContent = readFileSync(projectFile, "utf-8");
@@ -352,7 +352,7 @@ ${currentState}
       let reviewAttempt = 0;
       while (reviewAttempt < 3) {
         try {
-          await reviewer.prompt(reviewPrompt);
+          await orchestrator.prompt(reviewPrompt);
           break;
         } catch (e: any) {
           reviewAttempt++;
@@ -362,8 +362,8 @@ ${currentState}
         }
       }
 
-      const reviewerText = reviewer.lastText();
-      decision = extractDecision(reviewerText);
+      const orchestratorText = orchestrator.lastText();
+      decision = extractDecision(orchestratorText);
       if (decision.status === "unknown") {
         ctx.log("[review] Decision unclear — treating as CONTINUE");
         decision.status = "continue";
@@ -372,7 +372,7 @@ ${currentState}
 
       // ── Milestone tracking ──
       let updatedContent = readFileSync(projectFile, "utf-8");
-      updatedContent = checkOffMilestones(updatedContent, reviewerText);
+      updatedContent = checkOffMilestones(updatedContent, orchestratorText);
       writeFileSync(projectFile, updatedContent, "utf-8");
 
       const newMs = extractMilestones(updatedContent);
@@ -384,7 +384,7 @@ ${currentState}
       }
       prevDoneCount = newMs.done;
 
-      // ── All milestones done → stop regardless of reviewer decision ──
+      // ── All milestones done → stop regardless of orchestrator decision ──
       if (newMs.total > 0 && newMs.pending.length === 0) {
         ctx.log(`[done] All ${newMs.total} milestones complete — finishing`);
         decision = { status: "done", detail: `All ${newMs.total} milestones complete` };
@@ -399,8 +399,8 @@ ${currentState}
         return ctx.escalate(reason);
       }
 
-      // Append reviewer decision to journal
-      appendFileSync(journalFile, `**Reviewer**: ${decision.detail.slice(0, 300)}\n`, "utf-8");
+      // Append orchestrator decision to journal
+      appendFileSync(journalFile, `**Orchestrator**: ${decision.detail.slice(0, 300)}\n`, "utf-8");
 
       // Update iteration count in project.md
       updateProjectStatus(projectFile, "active", undefined, iteration);
@@ -435,7 +435,7 @@ ${currentState}
     return ctx.done(`${finalStatus} after ${iteration} iteration(s). ${stopReason}`);
 
   } finally {
-    reviewer.close();
+    orchestrator.close();
     worker.close();
   }
 }
