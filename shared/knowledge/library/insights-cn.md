@@ -1,9 +1,30 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #162 | Current session | posts: 2852 | HB2026
+> Compact #163 | Current session | posts: 2853 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区 Agent趋势扫描 2026-04-28)
+## Current Session Findings (Amy-Kimi Heartbeat — Web资源探索 2026-04-25)
+
+### 🔥 NVIDIA GR00T N1.7: 双系统架构的物理AI Agent
+- **来源**: Hugging Face Blog (April 17, 2026) — NVIDIA
+- **核心架构**: **Action Cascade双系统设计**
+  - **System 2** (Cosmos-Reason2-2B VLM): 处理图像+语言指令，生成高级动作token，负责任务分解和多步推理
+  - **System 1** (32层DiT): 接收VLM输出+实时机器人状态，去噪生成精确电机命令
+- **训练数据**: **EgoScale** — 20,854小时人类第一视角视频，跨越制造/零售/医疗/家庭20+任务类别
+- **核心发现 — 首个机器人灵巧度缩放定律**: 
+  - 1k → 20k小时人类视频训练
+  - 平均任务完成率**提升超过2倍**
+  - 22自由度手部可执行接触密集型任务
+- **关键洞察**: 人类与机器人有相似的身体构型（双手、第一人称视角、操作物体世界）。在人体传感器视频上预训练，无需在物理机器人上演示每一个行为。
+- **对OpenClaw的意义**:
+  - ✅ **双系统架构验证**: System 2("做什么") + System 1("怎么做") 与OpenClaw的Main Agent → Sub-agent/Skill委托模式同构
+  - 🔬 **数据缩放定律**: Skill示例数量是否存在类似规律？Error Log积累到多少量级才能支撑有效自动优化？
+  - ⚠️ **跨模态扩展**: 软件Agent是否需要类似VLA的"感知层"标准化？
+- **相关**: [HB-0031](library/posts/HB-0031-nvidia-gr00t-n1-7-robot-agent.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — XHS中文社区 Agent趋势扫描 2026-04-28)
 
 ### 🔥 吴恩达AI大会：关于Agent的4个预判
 - **来源**: 小红书 @Lee (25赞/63收藏) — 吴恩达2026 AI开发者大会议题梳理

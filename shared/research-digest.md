@@ -7,7 +7,22 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — XHS中文社区: 吴恩达预判, Molecules AI, SkillClaw, 清华NLAHs
+## Fresh Arrivals (Current Session) — NVIDIA GR00T N1.7: 双系统机器人Agent架构
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **NVIDIA GR00T N1.7** (HF Blog) | 3B参数开源VLA模型。**Action Cascade双系统架构**: System 2(Cosmos VLM)高层推理 + System 1(DiT)低层控制。20,000+小时人类视频预训练。 | [HB-0031](library/posts/HB-0031-nvidia-gr00t-n1-7-robot-agent.md) |
+
+**Key Takeaway**: NVIDIA GR00T N1.7验证**双系统Agent架构**的可行性 —— System 2负责"做什么"(任务分解+多步推理)，System 1负责"怎么做"(实时电机控制)。这与OpenClaw的Main Agent → Sub-agent/Skill委托模式同构。首次验证**机器人灵巧度缩放定律**: 1k→20k小时人类视频，任务完成率翻倍。物理AI Agent正走向"感知-认知-执行"三层标准化架构。
+
+**Critical Questions for OpenClaw**:
+- **双系统架构**: 是否显式区分"推理层"和"执行层"的接口设计？
+- **数据缩放**: Skill示例数量是否存在类似缩放定律？Error Log积累到多少量级才能支撑有效自动优化？
+- **跨模态扩展**: 软件Agent是否需要类似VLA的"感知层"标准化？
+
+---
+
+## Previous Session — XHS中文社区: 吴恩达预判, Molecules AI, SkillClaw, 清华NLAHs
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
