@@ -1,97 +1,106 @@
-# Nemotron-Personas-Korea: 合成人格 grounding 区域化 Agent
+# HB-260425: Nemotron-Personas-Korea — Synthetic Personas for Regionalized Agents
 
-**来源**: Hugging Face Blog / NVIDIA (Apr 21, 2026)  
-**链接**: https://huggingface.co/blog/nvidia/build-korean-agents-with-nemotron-personas
+**Source**: Hugging Face Blog / NVIDIA (Apr 21, 2026)  
+**Authors**: Will Jennings, Hyunwoo Kim, Jinho Lee, et al.  
+**URL**: https://huggingface.co/blog/nvidia/build-korean-agents-with-nemotron-personas  
+**Type**: Dataset Release / Regionalization Framework  
+**Rating**: ★★★★☆
 
----
+## Core Insight
 
-## 核心贡献
+> "Persona is operating context, not decoration. 人格决定Agent如何理解需求、选择表达、调用知识。"
 
-NVIDIA 发布了 **600 万基于韩国官方统计的完全合成人格**，解决 Agent "身份盲"问题：
+大多数Agent是"身份盲"的——它们执行指令时不了解服务对象是谁。用美国医疗工作流程预约韩国医院、或对60岁患者使用반말（非敬语）的Agent，不只是感觉不对，而是会失败。
 
-- **数据来源**: KOSIS (韩国官方统计厅) 人口统计
-- **姓名分布**: 韩国最高法院姓名大数据
-- **领域专家**: NAVER Cloud 各领域专家标注
-- **合规性**: 零 PII，遵循韩国 PIPA 和《合成数据生成指南》
+## Dataset: Nemotron-Personas-Korea
 
----
+| Attribute | Detail |
+|-----------|--------|
+| Total Personas | 700万 (100万记录 × 7 personas/记录) |
+| Persona Fields | 26个字段: 7个人格字段 + 6个属性字段 + 12个人口统计/地理上下文字段 + 1个唯一标识符 |
+| Geographic Coverage | 韩国全部17个省、25个区 |
+| Names | ~20.9万个唯一姓名 (118姓氏 + ~2.14万个名字) |
+| Occupations | 2,000+类别，反映科技、制造、公共部门等 |
+| Persona Types | 专业型、家庭型、运动型、艺术型、旅行型、美食型、简洁型 |
+| Life Stages | 学生、兵役、在职、失业、退休 |
+| Language | 自然韩语 |
+| License | CC BY 4.0 |
 
-## 技术方案
+## Data Sources (官方统计 grounding)
 
-### 人格生成流程
+- **KOSIS** (韩国统计信息服务): 2020-2026人口统计数据
+- **韩国最高法院**: 姓名分布数据
+- **国民健康保险公团**: 医疗相关统计
+- **韩国农村经济研究院**: 农村人口统计
+- **NAVER Cloud**: 领域专家种子数据
+
+## Generation Pipeline
+
+使用 **NeMo Data Designer** (NVIDIA开源合成数据复合AI系统):
+
+1. **Probabilistic Graphical Model** (Apache-2.0): 统计grounding
+2. **Gemma-4-31B**: 韩语叙事生成
+
+## Compliance
+
+- **零PII**: 所有persona完全合成，不含真实个人信息
+- **PIPA合规**: 遵循韩国《个人信息保护法》
+- **官方指南**: 遵循韩国PIPC发布的《合成数据生成指南》
+
+## Usage: From Persona to Deployed Agent
+
+```python
+# 1. 加载persona到system prompt
+persona = load_persona_from_nemotron_korea(
+    region="Seoul",
+    occupation="Software Engineer",
+    age_range="25-34"
+)
+
+# 2. 部署到任何Agent框架
+agent.deploy(
+    framework="any",  # 框架无关
+    persona=persona,
+    sandbox="NVIDIA OpenShell"
+)
 ```
-KOSIS 人口统计 → PGM 概率图模型 → 结构化人格数据 → Gemma-4-31B → 韩语叙事生成
-```
 
-**关键特性**:
-1. **统计 grounding**: 每个人格属性都与真实人口统计对齐
-2. **叙事生成**: LLM 将结构化数据转化为自然韩语人格描述
-3. **领域对齐**: 不同领域（医疗、金融、教育等）有特定专家标注
+## Framework-Agnostic Design
 
-### 框架无关设计
-- 人格层独立于底层 Agent 框架
-- 可应用于任何支持 system prompt 的模型
-- 通过 system prompt 注入人格上下文
+可与任何Agent框架配合使用:
+- **NemoClaw**: NVIDIA开源参考栈
+- **NVIDIA OpenShell**: 从RTX PC到DGX Spark的sandbox环境
 
----
+## Nemotron-Personas Collection
 
-## 为什么人格很重要
+| Country/Region | Partner |
+|----------------|---------|
+| USA | NVIDIA |
+| Japan | - |
+| India | - |
+| Singapore | AI Singapore |
+| Brazil | WideLabs |
+| France | Pleias |
+| **Korea** | **NAVER Cloud** |
 
-> "Persona is operating context, not decoration."
-> — 人格是运行上下文，不是装饰。
-
-**人格决定**:
-- **需求理解**: 如何解读用户 query 的意图
-- **表达方式**: 选择什么语言风格和详细程度
-- **知识调用**: 激活哪些领域知识和价值观
-- **决策偏好**: 在模糊场景下的默认倾向
-
-**示例差异**:
-| 用户 Query | 年轻都市白领人格 | 农村老年人人格 |
-|-----------|----------------|---------------|
-| "怎么存钱？" | 推荐股票、基金、加密货币 | 推荐邮局储蓄、定期存款 |
-| "哪里不舒服？" | 使用医学术语，建议专科检查 | 使用日常用语，建议休息观察 |
-
----
+多语言Agent可在同一pipeline中混合不同国家的persona。
 
 ## 对 OpenClaw 的意义
 
-### ✅ 可直接应用
-- **结构化人格数据 → system prompt 转换模式**: 可借鉴生成中文区域化人格
-- **框架无关设计**: 人格层独立于 AGENTS.md + Skills 架构
-- **合成数据 + 官方统计 = 可扩展方案**: 中文区域化可参考此模式
+- ✅ 展示结构化人格数据 → system prompt的转换模式
+- ✅ 框架无关设计：人格层独立于底层Agent
+- ⚠️ 当前缺乏explicit persona/identity系统
+- ⚠️ 中文区域化可参考：官方统计 + 合成数据 = 可扩展方案
 
-### ⚠️ 当前缺失
-- **显式 persona/identity 系统**: OpenClaw 缺乏结构化人格层
-- **区域化适配**: 中文多地区（北方/南方/港台）人格差异未考虑
-- **用户画像集成**: 未将用户特征与 Agent 人格动态匹配
+## Research Directions
 
-### 🌏 中文区域化启示
-| 维度 | 韩国方案 | 中文方案可能性 |
-|------|---------|---------------|
-| 官方统计 | KOSIS | 国家统计局 |
-| 姓名分布 | 最高法院 | 公安部姓名数据 |
-| 领域专家 | NAVER Cloud | 阿里/腾讯/字节专家 |
-| 方言支持 | 标准韩语 | 粤语、闽南语、四川话等 |
+1. **中文Persona数据集**: 参考韩国模式，基于中国统计局数据构建
+2. **动态Persona切换**: 根据对话上下文自动调整persona
+3. **Persona一致性评估**: 如何验证Agent行为符合persona设定
 
----
+## Related
+- [HB-260425-vakra-ibm-agent-benchmark.md](HB-260425-vakra-ibm-agent-benchmark.md) — 企业级Agent评估
+- [HB-260425-skillclaw-auto-evolve-skill.md](HB-260425-skillclaw-auto-evolve-skill.md) — Skill演化
 
-## 关键洞察
-
-1. **人格是基础设施，不是功能**: 区域化 Agent 需要人格层作为一等公民
-2. **合成数据质量取决于 grounding**: 统计对齐确保合成人格的真实分布
-3. **合规先行**: 零 PII 设计确保可商用和法律安全
-4. **框架解耦**: 人格层应与 Agent 架构解耦，便于复用
-
----
-
-## 参考资源
-
-- **NVIDIA Nemotron-Personas-Korea**: Hugging Face 数据集
-- **韩国 PIPA**: 个人信息保护法
-- **KOSIS**: https://kosis.kr/
-- **NAVER Cloud**: 领域专家合作方
-
----
-
-*标签: #persona #regionalization #korean #synthetic-data #grounding #agent-identity*
+## Tags
+#persona #regionalization #synthetic-data #korea #nvidia #nemotron #grounding
