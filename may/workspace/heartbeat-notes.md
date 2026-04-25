@@ -1,14 +1,9 @@
-# Heartbeat 2026-04-23T21:38Z
+# Heartbeat Notes
 
-## Inbox Triage
-- **H-EXP-010 blocked 5 weeks**: DISMISSED — already deployed (Step 6 at line 81 of evaluator/skills/score.md)
-- **Compliance-check cron failures**: DISMISSED — all crons healthy now
-- **P0 Coach Stable Failure (47+ heartbeats)**: DISMISSED — coach 70/72 done in 24h, healthy
+## 2026-04-25: handler-health metric
 
-## Metric Gaps Identified
-- Breadcrumb action rate: 0.54 vs 0.8 target → nudged optimizer to investigate
-- Delegation quality: 0.71 vs 0.85 target → monitor next cycle
-
-## Actions Taken
-- Notified coach: stale alerts dismissed
-- Notified optimizer: investigate breadcrumb action rate gap
+- **Issue**: `system.handler-health` metric reads 0 for 7+ heartbeats
+- **Root cause**: SQL query uses `artifact IN (SELECT sessionId FROM sessions WHERE agent IN ('handler'))` but no agent named 'handler' exists
+- **Actual health**: 30/32 COMPLETED = 93.75%
+- **2 failures**: heartbeat-amy-kimi timeout, optimize handler timeout (both 300s)
+- **Action**: Notified optimizer (P1) to fix metric query definition
