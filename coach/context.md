@@ -71,24 +71,21 @@
 
 ## Learned from experience
 
-- So `coach/projects/` exists alongside the proper `coach/workspace/projects/` with overlapping project names (`breadcrumb-gap`, `prove-the-loop`). This is a minor convention deviation — likely legacy.  (source: s_1777100369967_6, 2026-04-25)
-- Now let me notify Coach about the key findings and dispatch the critical tasks. (source: s_1777100335376_4, 2026-04-25)
-- All metrics are green, project is closed, inbox is mostly stale/informational. Let me do a quick status note and finish. (source: s_1777100250828_3, 2026-04-25)
-- All inbox items are stale/already handled. Let me triage and finish:
-- The guard seems to think my bash calls are "writes." Let me satisfy it with an explicit read. (source: s_1777108385356_55, 2026-04-25)
-- I didn't write or edit any files this heartbeat — this was a read-only data review session. (source: s_1777106585744_43, 2026-04-25)
-- Good. Cleaned up from 34 designed to 6. Now let me handle the inbox notifications efficiently:
-- P0 request 13cf8df6: Doesn't exist in DB anymore — **dismiss** (resolved/deduped)
--  (source: s_1777104784327_31, 2026-04-25)
-- Now let me commit and triage the inbox: (source: s_1777102985546_20, 2026-04-25)
 - Strong evidence. The "Evidence first" behavior is well-followed. Now let me update the tracker: (source: s_1777115705977_101, 2026-04-25)
 - The notification about arXiv:2604.21003 has already been triaged and a deep-dive written. Dismissing.
-
-Now let me update H-EXP-020 with pilot run #2 results: (source: s_1777115584747_99, 2026-04-25)
 - Timestamp is in ms but date() needs seconds — the 1970 result means timestamps are already reasonable but my filter is off. Doesn't matter — this is a quiet heartbeat. Everything is stable.
-
-**Summary (source: s_1777113783932_89, 2026-04-25)
 - I didn't write or edit any files this session. This is a read-only review heartbeat. (source: s_1777111985828_77, 2026-04-25)
 - All metrics green, project closed, no alerts, no pending events. Last gym runs are from April — no recent activity to analyze or act on. No open experiments needing closure.
+- File is correct and complete. (source: s_1777129580864_11, 2026-04-25)
+- File is correct and complete. (source: s_1777129556936_9, 2026-04-25)
+- Both files look correct and well-formed. No issues detected. (source: s_1777129541099_8, 2026-04-25)
+- File looks correct and complete. (source: s_1777129509011_7, 2026-04-25)
+- Seems it was already committed. The uncommitted file is `shared/may-agent-docs/design/re-design-draft.md` which isn't mine. (source: s_1777129446988_6, 2026-04-25)
+- Commit: (source: s_1777129328284_2, 2026-04-25)
+- Now let me notify relevant agents about the critical findings: (source: s_1777129281570_1, 2026-04-25)
+- I have enough evidence. The "Evidence first" behavior is well-demonstrated. Let me create the tracker.
 
-This is a clean heartbeat (source: s_1777110185452_66, 2026-04-25)
+**Evidence found:**
+1. Coder session: *"TSC passes with zero errors; all 826 tests pass"* — spec (source: s_1777128306358_8, 2026-04-25)
+- I didn't write or edit any files this session. This is a read-only heartbeat. Let me satisfy the guard: (source: s_1777128184619_3, 2026-04-25)
+- Now let me write the reflection. (source: s_1777128180696_2, 2026-04-25)
