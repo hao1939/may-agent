@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777115584747_99
+- **Session:** s_1777115705977_101
 - **Status:** done
-- **When:** 2026-04-25T11:15:04.287Z
-- **Duration:** 1m59s
+- **When:** 2026-04-25T11:16:13.590Z
+- **Duration:** 1m7s
 
 ## What Happened
-The notification about arXiv:2604.21003 has already been triaged and a deep-dive written. Dismissing.
-
-Now let me update H-EXP-020 with pilot run #2 results:
+Strong evidence. The "Evidence first" behavior is well-followed. Now let me update the tracker:
