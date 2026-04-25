@@ -8,9 +8,13 @@
 - **Follow-up suggestion:** Deduplicate dispatch logic / add idempotency key to request creation.
 
 ### Verify gym scenario EXP-220 (enoent-file-search)
-- **Action:** Act (verified scenario exists and appears correctly configured).
+- **Action:** Act (scenario exists; configuration bug found).
 - **Evidence:** `agents/gym/scenarios/enoent-file-search/` contains `scenario.json`, `task.md`, `success_criteria.js`, `environment/`.
-- **Notes:** The scenario intentionally references wrong paths in `task.md` (src/, test/) while `scenario.json` declares real files in `lib/`—consistent with the anti-fabrication goal.
+- **Finding (IMPORTANT):** `scenario.json` lists environment files as `lib/grade-pipeline.js` and `lib/test-grades.js`, but actual files live under `environment/lib/`.
+  - Evidence: `find agents/gym/scenarios/enoent-file-search -maxdepth 3 -type f` shows files at `environment/lib/*`.
+  - Likely impact: gym harness may fail to provision files if it expects the exact paths in `environment.files`.
+- **Behavior check:** Running the provided tests in the environment currently fails (expected — bugs present to be fixed): `node .../environment/lib/test-grades.js` → `3 passed, 2 failed`.
+- **Notes:** The task intentionally references wrong paths in `task.md` (src/, test/) while the real files are in `lib/` (within the environment), consistent with the anti-fabrication goal.
 
 ## Environment / Tooling issues observed
 
