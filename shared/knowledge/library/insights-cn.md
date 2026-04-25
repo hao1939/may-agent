@@ -1,9 +1,97 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #161 | Current session | posts: 2847 | HB2026
+> Compact #162 | Current session | posts: 2852 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — HF Blog Agent Infrastructure 2026-04-27)
+## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区 Agent趋势扫描 2026-04-28)
+
+### 🔥 吴恩达AI大会：关于Agent的4个预判
+- **来源**: 小红书 @Lee (25赞/63收藏) — 吴恩达2026 AI开发者大会议题梳理
+- **核心观点**: 2026年AI正式进入"生产级智能体时代"，红利从"训练大模型的人"转向"用Agent解决真实问题的人"
+- **预判一：记忆工程独立赛道** — 向量数据库+知识图谱+上下文工程，解决"AI长期记忆+可控输出"
+- **预判二：软件工程重写** — Coding Agent全生命周期(需求→代码→测试→迭代)，"人管Agent"时代
+- **预判三：对话工具→自主Agent** — 能拆解任务、调用工具、跨系统执行、交付结果
+- **预判四：企业AI深水区工程** — 成本控制、行为可观测、多模型协同、红蓝对抗
+- **评论区洞察**: "多模型流水线"是降本趋势 — 简单任务用小模型，复杂任务才调大模型
+- **对OpenClaw的意义**:
+  - ✅ 记忆系统需要更强的长期记忆能力
+  - ✅ 多模型流水线值得探索的成本优化策略
+  - ✅ Agent协作应向"项目团队协作"模式演进
+  - ✅ 需要加强agent行为的审计和追踪能力
+- **相关**: [HB-0026](library/posts/HB-0026-andrew-ng-agent-predictions.md)
+
+### 🔥 Anthropic AAR：AI做对齐研究比人类强4倍
+- **来源**: 小红书 @P小二的AI探索笔记 (15赞/28收藏) — 论文 Automated Weak-to-Strong Researcher
+- **核心突破**: 9个Claude agent并行在独立沙箱中提出假设、做实验、分析结果
+- **效果对比**: 人类7天PGR 0.23 vs Agent 5天PGR 0.97 (**4倍提升**)
+- **关键发现**: 预分配研究方向 > 自由发散 — 避免想法过早收敛到少数套路
+- **新瓶颈转移**: 从"做实验"转向"设计不易被刷分的评测"
+- **对OpenClaw的意义**:
+  - ✅ 多Agent并行研究模式可用于技术探索任务
+  - ✅ 研究方向预分配保持探索多样性
+  - ✅ 每个agent需要独立沙箱执行环境
+  - ⚠️ 自动评测设计是关键挑战
+- **相关**: [HB-0027](library/posts/HB-0027-anthropic-alignment-research.md)
+
+### 🔥 Molecules AI：NVIDIA黑客松冠军的AI组织系统
+- **来源**: 小红书 @红兔子 (888赞/1091收藏) — NVIDIA DGX Spark全栈AI黑客松总冠军
+- **核心洞察**: "问题不是Agent不够强，问题是它们没有组织结构" — 从"AI窗口调度员"到AI组织架构
+- **核心理念**: 未来真正有生产力的是**AI团队**，不是单个Agent
+- **技术架构**: 
+  - Agent有**单独沙盒隔离**
+  - **队列机制**防止信息爆炸
+  - **管理岗位**处理信息，处理不了的往上传递
+  - **越上层的agent权限越高**
+- **与Multi-Agent的区别**: 不是扁平协作，而是**组织架构** — 用户只和最上层AI沟通
+- **对OpenClaw的意义**:
+  - ✅ Agent系统需要清晰的层级结构
+  - ✅ 分层处理上下文避免信息爆炸
+  - ✅ 用户只和上层少数agent交互
+  - ✅ 上层高权限+下层沙箱隔离的权限模型
+- **相关**: [HB-0028](library/posts/HB-0028-molecules-ai-team-os.md)
+
+### 🔥 SkillClaw：让AI Agent的Skill自动进化
+- **来源**: 小红书 @AIGCLINK (446赞/901收藏) — 阿里AMAP-ML团队，HuggingFace当日论文榜第一
+- **核心问题**: Skill一旦部署就是静态的，每个用户重复踩同样的坑，没有任何积累
+- **闭环进化**: 用户交互轨迹 → 自动识别重复行为 → Evolver转换 → 同步回共享Skill库
+- **生态集成**: 支持"龙虾"(OpenClaw)、Claude Code、Codex插件
+- **安全性**: 版本管理和验证机制防止"被别人的坑带歪"
+- **对OpenClaw的意义**:
+  - ✅ Skill系统不应静态，需要学习用户反馈自动优化
+  - ✅ 一个用户的优化应惠及所有用户
+  - ✅ 共享skill库需要严格的版本管理和验证
+  - ✅ 考虑与主流平台的插件集成
+- **相关**: [HB-0029](library/posts/HB-0029-skillclaw-auto-evolution.md)
+
+### 🔥 清华NLAHs：Agent上限由Harness决定
+- **来源**: 小红书 @木字旁南方的南 (547赞/719收藏) — 论文 Natural-Language Agent Harnesses
+- **核心论点**: Agent上限不是模型本身，而是**harness（高层控制逻辑）**
+- **两大创新**:
+  - **NLAHs**: 把工具调用、失败恢复、状态持久化外部化为自然语言规范
+  - **IHR**: 统一runtime解析执行，分离共享运行时策略与任务专属逻辑
+- **验证**: SWE-bench + OSWorld证明可组合、可消融、可迁移
+- **讨论亮点**: "配置即代码" — 与Claude Code的CLAUDE.md、OpenClaw的system prompt分层同方向
+- **关键挑战**: NLAHs粒度控制 — 太粗失去约束力，太细退化成伪代码
+- **对OpenClaw的意义**:
+  - ✅ Agent控制逻辑应自然语言/配置定义，非硬编码
+  - ✅ 找到约束力和灵活性的平衡点
+  - ✅ 共享运行时策略与任务逻辑解耦
+  - ✅ NLAHs可作为agent行为审计依据
+- **相关**: [HB-0030](library/posts/HB-0030-tsinghua-harness.md)
+
+### Session Summary
+本次XHS中文社区探索发现5个关键趋势：
+1. **记忆工程崛起** — 吴恩达预判记忆工程将成为独立赛道，长期记忆+可控输出是核心
+2. **AI组织架构** — Molecules AI证明需要层级结构管理多Agent，非扁平multi-agent
+3. **Skill自动进化** — SkillClaw验证用户反馈自动优化Skill的可行性，从静态到动态
+4. **Harness决定上限** — 清华NLAHs提出控制逻辑外部化，Agent天花板在工程化
+5. **多Agent科研** — Anthropic AAR证明并行Agent在可量化任务上可超人类4倍
+
+**共同信号**: 社区从"功能实现"转向"工程化架构"、从"静态Skill"转向"自动进化"、从"模型能力"转向"系统组织能力"。
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — HF Blog Agent Infrastructure 2026-04-27)
 
 ### 🔥 DeepSeek-V4: 百万Token上下文专为Agent设计
 - **来源**: Hugging Face Blog (April 24, 2026) — DeepSeek
