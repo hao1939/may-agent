@@ -901,12 +901,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         return ctx.escalate(`Stuck: ${continueWithoutProgress} iterations without progress at iteration ${iteration}.`);
       }
 
+      // Update Current State and Iteration Summary with reviewer's synthesis
+      const ms = extractMilestones(projectContent);
+      const reviewerInsight = decision.detail.slice(0, 200).replace(/^CONTINUE[:\s]*/i, "").trim();
+
       projectContent = appendToSection(projectContent, "Iteration Summary",
         `- **Iter ${iteration}**: ${decision.status.toUpperCase()}. ${reviewerInsight.slice(0, 150)}\n`);
 
-      // Update Current State with reviewer's synthesis (not mechanical summary)
-      const ms = extractMilestones(projectContent);
-      const reviewerInsight = decision.detail.slice(0, 200).replace(/^CONTINUE[:\s]*/i, "").trim();
       projectContent = updateSection(projectContent, "Current State",
         `Iteration ${iteration}. Milestones: ${ms.done}/${ms.total} done.\n` +
         (reviewerInsight ? `Reviewer: ${reviewerInsight}` : ""));
