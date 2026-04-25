@@ -74,7 +74,7 @@ cut -d'|' -f2 "$TEMP_KEYWORDS" | sort | uniq -c | sort -rn | \
 
 while read -r count phrase; do
     # Check if already covered by a KE
-    ke_match=$(grep -il "$phrase" "$TEMP_KE_TITLES" 2>/dev/null | wc -l || echo 0)
+    ke_match=$(grep -c -i -F "$phrase" "$TEMP_KE_TITLES" 2>/dev/null) || ke_match=0
     if [ "$ke_match" -eq 0 ]; then
         status="⚠️ NO KE MATCH"
     else
