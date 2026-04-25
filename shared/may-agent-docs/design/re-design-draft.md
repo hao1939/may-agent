@@ -369,9 +369,35 @@ Each step moves work from expensive (LLM reasoning) to cheap (code execution). T
 
 ---
 
-## Agent Heartbeat — The decision loop
+## Agent Knowledge Tiers — What agents need to know
 
-Every agent has a periodic heartbeat (cron → workflow → session):
+Not all agents need to understand the infrastructure. Two tiers:
+
+### User Tier (all agents)
+
+**Knows nothing about infra.** The system is designed so it just works:
+
+- **Tools** — self-describing. The tool schema and description tell the agent what to provide. No tutorial needed.
+- **Metrics** — heartbeat injects `✅ on target / 📉 regressing / 🔴 breached`. Agent sees red, investigates. No "metric system" knowledge needed.
+- **Projects** — `project.md` is self-evident markdown. Agent reads it, does the work, updates status. Handler manages lifecycle invisibly.
+- **Heartbeats** — agent wakes up with context already injected (metrics, projects, alerts, inbox). It sees information and acts. Doesn't need to know how heartbeats work.
+- **Persistence, compaction, guards, error retry** — completely invisible. Agent never thinks about these.
+
+**If agents need a tutorial to use something, the infra isn't presenting it naturally enough.**
+
+### Builder Tier (agents that extend or coordinate the system)
+
+Knows the extension points and coordination patterns:
+
+- **How to extend the system** — when and how to write handlers, workflows, skills, tools, and knowledge. The evolution cycle: manual → skill → workflow → handler → tool.
+- **How to coordinate** — `fork` vs `call` vs `notify`, escalation chain, who does what, agent roster.
+- **How to create projects and metrics** — for agents that set direction, not just follow it.
+
+Builder knowledge is needed by agents like may, bob, tech-lead, optimizer, coach — agents that improve the system itself. Most agents only need User tier.
+
+---
+
+## Agent Heartbeat — The decision loop (cron → workflow → session):
 
 1. **Cron fires** every N minutes
 2. **Heartbeat workflow** (JS) collects context: metrics, projects, alerts, inbox, recent sessions
