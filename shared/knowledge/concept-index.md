@@ -1,0 +1,494 @@
+# Knowledge Base Concept Index
+
+**Generated**: 2026-08-06 | **Total KEs**: 450 | **Categories**: 12
+
+Use this index to find KEs by topic. Each KE may appear in multiple categories.
+
+## Agent Safety (23)
+
+- [KE-014-quote-splitting-bypass](entries/KE-014-quote-splitting-bypass.md): KE-014: Bash Quote Splitting Bypass (Security)
+- [KE-048-agent-safety-stack-vulnerability-to-regulation](entries/KE-048-agent-safety-stack-vulnerability-to-regulation.md): KE-048: The Agent Safety Stack — Five Layers from Vulnerability Discovery to Regulatory Compliance
+- [KE-083-agent-safety-gap-alignment-fails-at-system-boundary](entries/KE-083-agent-safety-gap-alignment-fails-at-system-boundary.md): KE-083: The Agent Safety Gap — Alignment Fails at the System Boundary
+- [KE-084-verification-trust-architecture](entries/KE-084-verification-trust-architecture.md): KE-084: Verification-Trust Architecture — Trust as Attack Surface, Disagreement as Sensor, Verificat
+- [KE-089-adaptive-verification-evaluation](entries/KE-089-adaptive-verification-evaluation.md): KE-089: Adaptive Verification & Evaluation — Mid-Trajectory Safety, Structural Decomposition, and Ev
+- [KE-091-civc-alignment-tax-verification-theater](entries/KE-091-civc-alignment-tax-verification-theater.md): KE-091: CIVC Alignment Tax — Forced Verification Harms High-Complexity Tasks
+- [KE-099-adversarial-framing-bypass-verification-confabulation](entries/KE-099-adversarial-framing-bypass-verification-confabulation.md): KE-099: Adversarial Framing Bypass for Verification Confabulation
+- [KE-119-adversarial-self-review-null-result-review-without-action](entries/KE-119-adversarial-self-review-null-result-review-without-action.md): KE-119: Adversarial Self-Review Null Result — Review Without Action
+- [KE-133-few-shot-harmful-discovery-template-displacement](entries/KE-133-few-shot-harmful-discovery-template-displacement.md): KE-133: Few-Shot Is Actively Harmful on Discovery Tasks — Template-Following Displaces Exploration
+- [KE-143-guard-response-trifurcation-agent-specific-harm](entries/KE-143-guard-response-trifurcation-agent-specific-harm.md): KE-143: Guard Response Trifurcation — Three Agent Categories and Agent-Specific Guard Harm
+- [KE-154-epistemic-suppression-discovery-dual-mechanism](entries/KE-154-epistemic-suppression-discovery-dual-mechanism.md): KE-154: Epistemic Suppression — The Second Mechanism Behind Few-Shot Harm on Discovery Tasks
+- [KE-155-externalization-harm-boundary-unified-theory](entries/KE-155-externalization-harm-boundary-unified-theory.md): KE-155: The Externalization Harm Boundary — When Showing Work Changes the Work
+- [KE-158-overhead-narrative-challenge-difficulty-threshold](entries/KE-158-overhead-narrative-challenge-difficulty-threshold.md): KE-158: The Overhead Narrative Challenge — A Difficulty Threshold Reframes Guard Harm
+- [KE-173-bias-amplification-mas-echo-chambers](entries/KE-173-bias-amplification-mas-echo-chambers.md): KE-173: Bias Amplification in Our Multi-Agent Topology — Echo Chambers, Adversarial Breaks, and Unif
+- [KE-180-completion-illusion-effect](entries/KE-180-completion-illusion-effect.md): KE-180: Completion Illusion Effect — Analysis Gates Can Harm Performance
+- [KE-202-cognitive-mode-interference-unifying-principle](entries/KE-202-cognitive-mode-interference-unifying-principle.md): KE-202: Cognitive Mode Interference — Dual-Task Costs Unify Displacement, Template Harm, and Monitor
+- [KE-225-action-rebinding-security](entries/KE-225-action-rebinding-security.md): KE-225: Action rebinding attacks exploit observation-action gaps — recovery logic is the real attack
+- [KE-238-safeharness-lifecycle-security](entries/KE-238-safeharness-lifecycle-security.md): KE-238: Lifecycle-integrated security validates guard architecture; tiered verification should scale
+- [KE-281-trajectory-level-safety-bidirectional-intent-inference](entries/KE-281-trajectory-level-safety-bidirectional-intent-inference.md): KE-281: Trajectory-Level Safety — Bidirectional Intent Inference for Multi-Turn Attack Detection
+- [KE-299-information-asymmetry-architectural-safety](entries/KE-299-information-asymmetry-architectural-safety.md): KE-299: Information Asymmetry as Architectural Safety — Alignment Through Organisational Design
+- [KE-308-conjunctive-prompt-attacks-multi-agent-routing](entries/KE-308-conjunctive-prompt-attacks-multi-agent-routing.md): KE-308: Conjunctive Prompt Attacks — Compositional Vulnerabilities in Multi-Agent Routing
+- [KE-323-token-level-vs-response-level-verification](entries/KE-323-token-level-vs-response-level-verification.md): KE-323: Token-Level Collaboration Defeats Response-Level Voting Under Adversarial Conditions
+- [KE-368-adversarial-qa-harms-evidence](entries/KE-368-adversarial-qa-harms-evidence.md): KE-368: Adversarial QA Framing Hurts Evidence Discipline on Hard Scenarios
+
+## Behavioral Patterns (31)
+
+- [KE-006](entries/KE-006.md): KE-006: Skills that target reasoning patterns don't change tool-calling patterns
+- [KE-007](entries/KE-007.md): KE-007: Structural interventions (workflows + forced externalization) are the only reliable behavior
+- [KE-008](entries/KE-008.md): KE-008: Heartbeat step restructuring causes regression
+- [KE-009](entries/KE-009.md): KE-009: Negative examples in LESSONS.md have zero effect on behavior
+- [KE-017](entries/KE-017.md): KE-017: Materialize-Findings Skill File Improves Both Behavior AND Product Quality
+- [KE-018](entries/KE-018.md): KE-018: Environmental Nudges Match Text Skills for Behavioral Change
+- [KE-028](entries/KE-028.md): KE-028: Production failure modes cannot be replicated in gym scenarios
+- [KE-035-proxy-satisfying-behavior-forced-assessment](entries/KE-035-proxy-satisfying-behavior-forced-assessment.md): KE-035: Agents Facing Impossible Tasks Exhibit Proxy-Satisfying Behavior — Forced Assessment Phase E
+- [KE-036-behavioral-frustration-detection-verification-gated](entries/KE-036-behavioral-frustration-detection-verification-gated.md): KE-036: Behavioral Tool-Call Patterns Detect Frustration Independently of Linguistic Signals — But P
+- [KE-053-gym-production-gap-structural-not-behavioral](entries/KE-053-gym-production-gap-structural-not-behavioral.md): KE-053: The Gym-Production Gap Is Structural, Not Behavioral — Why Isolated Competency Tests Cannot 
+- [KE-058-injected-declarative-knowledge-no-effect](entries/KE-058-injected-declarative-knowledge-no-effect.md): KE-058: Injected Declarative Knowledge Has No Effect on Agent Behavior
+- [KE-062-behavioral-fuzzing-agent-testing-paradigm](entries/KE-062-behavioral-fuzzing-agent-testing-paradigm.md): KE-062: Behavioral Fuzzing as Agent Testing Paradigm — From Anecdotal Bug Reports to Systematic Beha
+- [KE-067-reasoning-behavior-decoupling-blind-refusal](entries/KE-067-reasoning-behavior-decoupling-blind-refusal.md): KE-067: Reasoning-Behavior Decoupling — Models Refuse Despite Correct Normative Reasoning
+- [KE-071-reasoning-behavior-decoupling-uncertainty-detection](entries/KE-071-reasoning-behavior-decoupling-uncertainty-detection.md): KE-071: The Reasoning-Behavior Gap — External Uncertainty Detection Meets Internal Reasoning-Action 
+- [KE-088-agent-behavior-shaping](entries/KE-088-agent-behavior-shaping.md): KE-088: Agent Behavior Shaping — Training-Time Optimization vs. Deployment-Time Reliability
+- [KE-095-behavioral-failure-prediction-mid-trajectory-intervention](entries/KE-095-behavioral-failure-prediction-mid-trajectory-intervention.md): KE-095: Behavioral Failure Prediction & Mid-Trajectory Intervention Pipeline
+- [KE-106-structural-enforcement-no-training-effect](entries/KE-106-structural-enforcement-no-training-effect.md): KE-106: Structural Enforcement Does Not Train Behavior — Guards Are Brakes, Not Driving Lessons
+- [KE-114-production-behavioral-archetypes-spectrum](entries/KE-114-production-behavioral-archetypes-spectrum.md): KE-114: Production Behavioral Archetypes — Spectrum Not Types
+- [KE-144-verification-guard-non-internalization-channel2-limits](entries/KE-144-verification-guard-non-internalization-channel2-limits.md): KE-144: Verification Guards Don't Teach — Channel 2 Forces Behavior Without Transfer
+- [KE-189-solver-sampler-mismatch-capability-destroys-diversity](entries/KE-189-solver-sampler-mismatch-capability-destroys-diversity.md): KE-189: Capability Over-Optimization Destroys Behavioral Diversity (Solver-Sampler Mismatch)
+- [KE-213-bottom-up-isolation-investigation-method](entries/KE-213-bottom-up-isolation-investigation-method.md): KE-213: Bottom-Up Isolation Method for Investigating Agent Behavior
+- [KE-255-dreaming-consolidation-null](entries/KE-255-dreaming-consolidation-null.md): KE-255: Dreaming/Consolidation Has Zero Effect on Agent Behavior
+- [KE-272-persistent-task-skill-ceiling](entries/KE-272-persistent-task-skill-ceiling.md): KE-272: TRIGGER/ACTION/EXAMPLE Skill Pattern Achieves 75% on Interruptive Behavior — Challenging H-1
+- [KE-290-behavioral-turn-trajectory-failure-prediction](entries/KE-290-behavioral-turn-trajectory-failure-prediction.md): KE-290: The Behavioral Turn — Trajectory Signals Replace Linguistic Self-Report for Failure Predicti
+- [KE-293-behavioral-evidence-accumulation-failure](entries/KE-293-behavioral-evidence-accumulation-failure.md): KE-293: LLM Agents Cannot Accumulate Behavioral Evidence Over Time
+- [KE-298-unsupervised-behavioral-monitoring-hodoscope](entries/KE-298-unsupervised-behavioral-monitoring-hodoscope.md): KE-298: Unsupervised Behavioral Monitoring Outperforms Supervised Approaches for Agent Failure Disco
+- [KE-310-bottom-up-isolation-debugging](entries/KE-310-bottom-up-isolation-debugging.md): How to Investigate Agent Behavior — Bottom-Up Isolation Method
+- [KE-330-verbal-reinforcement-task-typed-lesson-replay](entries/KE-330-verbal-reinforcement-task-typed-lesson-replay.md): KE-330: Verbal Reinforcement Loop — Task-Typed Lesson Replay Closes Repeated Failure Modes
+- [KE-365-structural-gates-unnecessary-additive](entries/KE-365-structural-gates-unnecessary-additive.md): KE-365: Structural Gates Unnecessary for Additive Behaviors
+- [KE-370-bounded-fallback-fixes-regression](entries/KE-370-bounded-fallback-fixes-regression.md): KE-370: Bounding Skill Fallback Behavior Fixes Regressions Without Removing Capability
+- [KE-376-cognitive-load-compliance-resilience](entries/KE-376-cognitive-load-compliance-resilience.md): KE-376: Structural Compliance Is Resilient Under Cognitive Load; Task Quality Degrades Instead
+
+## Discovery Tasks (32)
+
+- [KE-026-pull-model-discovery-dead](entries/KE-026-pull-model-discovery-dead.md): KE-026: Agents Cannot Self-Serve from Reference Materials — Pull Discovery is Dead
+- [KE-048-agent-safety-stack-vulnerability-to-regulation](entries/KE-048-agent-safety-stack-vulnerability-to-regulation.md): KE-048: The Agent Safety Stack — Five Layers from Vulnerability Discovery to Regulatory Compliance
+- [KE-125-forced-enumeration-fails-discovery-tasks](entries/KE-125-forced-enumeration-fails-discovery-tasks.md): KE-125: Forced Deliverable Enumeration Fails on Discovery Tasks Under Time Pressure
+- [KE-126-soft-interventions-creative-inference-gap](entries/KE-126-soft-interventions-creative-inference-gap.md): KE-126: Soft Interventions Cannot Close the Creative Inference Gap on Discovery Tasks
+- [KE-128-phase0-discovery-structural-intervention-fm13](entries/KE-128-phase0-discovery-structural-intervention-fm13.md): KE-128: Phase 0 Discovery — Structural Intervention for FM-1.3 (Exhaustive Reading) — NULL RESULT
+- [KE-131-environmental-hints-null-result-replication](entries/KE-131-environmental-hints-null-result-replication.md): KE-131: Environmental Hints Show No Effect on KB Discovery Tasks (Replication)
+- [KE-133-few-shot-harmful-discovery-template-displacement](entries/KE-133-few-shot-harmful-discovery-template-displacement.md): KE-133: Few-Shot Is Actively Harmful on Discovery Tasks — Template-Following Displaces Exploration
+- [KE-147-einstellung-effect-discovery-boundary](entries/KE-147-einstellung-effect-discovery-boundary.md): KE-147: Einstellung Effect IS the Discovery Boundary Mechanism
+- [KE-154-epistemic-suppression-discovery-dual-mechanism](entries/KE-154-epistemic-suppression-discovery-dual-mechanism.md): KE-154: Epistemic Suppression — The Second Mechanism Behind Few-Shot Harm on Discovery Tasks
+- [KE-224-agent-routing-dynamic-profiles](entries/KE-224-agent-routing-dynamic-profiles.md): KE-224: Dynamic agent routing needs both capability discovery (KBA ACK) and dual-criteria optimizati
+- [KE-286-hint-interventions-unreliable-negative-transfer](entries/KE-286-hint-interventions-unreliable-negative-transfer.md): KE-286: Hint-Based Recognition Interventions Are Unreliable and Can Hurt Performance
+- [KE-298-unsupervised-behavioral-monitoring-hodoscope](entries/KE-298-unsupervised-behavioral-monitoring-hodoscope.md): KE-298: Unsupervised Behavioral Monitoring Outperforms Supervised Approaches for Agent Failure Disco
+- [KE-311-breadcrumbs-not-answers](entries/KE-311-breadcrumbs-not-answers.md): Context Injection Principle: Breadcrumbs, Not Answers
+- [KE-338-procedural-discovery-skill-ineffective](entries/KE-338-procedural-discovery-skill-ineffective.md): KE-338: Procedural Discovery Skills Don't Help Agents Find Relational Bugs
+- [KE-340-tool-assisted-relational-bug-null](entries/KE-340-tool-assisted-relational-bug-null.md): KE-340: Tool-Assisted Relational Bug Discovery Also Fails (0/10)
+- [KE-341-cascading-fix-convergent-nulls](entries/KE-341-cascading-fix-convergent-nulls.md): KE-341: Cascading-Fix-Trap-v2 Is Discovery-Hard — Convergent Null Evidence from 5 Experiments
+- [KE-342-relational-bug-blindness-confirmed](entries/KE-342-relational-bug-blindness-confirmed.md): KE-342: Relational Bug Blindness Is a Fundamental LLM Capability Gap
+- [KE-343-enumeration-checklist-null](entries/KE-343-enumeration-checklist-null.md): KE-343: Defect Category Enumeration Has Zero Effect on Relational Bug Discovery
+- [KE-344-relational-bug-intervention-hierarchy](entries/KE-344-relational-bug-intervention-hierarchy.md): KE-344: Relational Bug Intervention Hierarchy — Only Direct Hints Work
+- [KE-348-recognition-threshold-refuted](entries/KE-348-recognition-threshold-refuted.md): KE-348: Recognition Threshold Model Refuted — Hints Don't Reliably Cross Performance Thresholds
+- [KE-349-bug-type-classification-value-vs-relational](entries/KE-349-bug-type-classification-value-vs-relational.md): KE-349: Bug-Type Classification — Value Bugs Easy, Relational Bugs Hard
+- [KE-350-procedural-discovery-skill-null](entries/KE-350-procedural-discovery-skill-null.md): KE-350: Procedural Discovery Skills Don't Help Find Relational Bugs
+- [KE-351-tool-assisted-discovery-null](entries/KE-351-tool-assisted-discovery-null.md): KE-351: Tool-Assisted Discovery Fails — Agents Don't Use Provided Tools
+- [KE-354-relational-bug-direct-hint-only](entries/KE-354-relational-bug-direct-hint-only.md): KE-354: Only Direct Bug Identification Helps Relational Bug Discovery (+30pp)
+- [KE-355-remasking-null-on-discovery](entries/KE-355-remasking-null-on-discovery.md): KE-355: Verification Remasking Doesn't Help Discovery Tasks
+- [KE-357-prompt-intervention-ceiling-relational-bugs](entries/KE-357-prompt-intervention-ceiling-relational-bugs.md): KE-357: Prompt-Based Interventions Cannot Help LLMs Discover Relational Bugs
+- [KE-358-breadcrumb-gap-measurement-artifact](entries/KE-358-breadcrumb-gap-measurement-artifact.md): KE-358: Breadcrumb Action-Rate Gap Is Mostly Measurement Artifact
+- [KE-360-breadcrumb-false-negatives](entries/KE-360-breadcrumb-false-negatives.md): KE-360: Breadcrumb Action Rate Has ~38% False Negative Rate
+- [KE-361-breadcrumb-measurement-artifact](entries/KE-361-breadcrumb-measurement-artifact.md): KE-361: Breadcrumb Action Rate Has ~38% False-Negative from Measurement Artifact
+- [KE-363-breadcrumb-gap-measurement-artifact](entries/KE-363-breadcrumb-gap-measurement-artifact.md): KE-363: Breadcrumb-Action-Rate Gap is Mostly Measurement Artifact
+- [KE-375-hint-anchoring-effect](entries/KE-375-hint-anchoring-effect.md): KE-375: Hint Anchoring Effect — Auxiliary Information Degrades Primary Task Performance
+- [KE-context-discovery-chain](entries/KE-context-discovery-chain.md): Critical Finding: Context-Discovery Chain — How to Make Agents Act on Metrics
+
+## Evaluation Gym (22)
+
+- [KE-010](entries/KE-010.md): KE-010: Most gym scenarios hit ceiling — agents pass at baseline
+- [KE-028](entries/KE-028.md): KE-028: Production failure modes cannot be replicated in gym scenarios
+- [KE-053-gym-production-gap-structural-not-behavioral](entries/KE-053-gym-production-gap-structural-not-behavioral.md): KE-053: The Gym-Production Gap Is Structural, Not Behavioral — Why Isolated Competency Tests Cannot 
+- [KE-107-fm33-gym-production-gap-quantified](entries/KE-107-fm33-gym-production-gap-quantified.md): KE-107: FM-3.3 Gym-Production Gap Quantified — 10× Difference Driven by Context Complexity
+- [KE-109-gym-production-gap-structural-mismatch](entries/KE-109-gym-production-gap-structural-mismatch.md): KE-109: The Gym-Production Gap Is Structural — Five Dimensions, Three Paths Forward
+- [KE-110-skill-stack-saturation-gym-ceiling-confirms-improvement-loop](entries/KE-110-skill-stack-saturation-gym-ceiling-confirms-improvement-loop.md): KE-110: Skill Stack Saturation — Gym Ceiling Confirms the Improvement Loop Works (and Is Finished)
+- [KE-111-production-evaluation-architecture-pivot](entries/KE-111-production-evaluation-architecture-pivot.md): KE-111: Production Evaluation Architecture — From Gym Termination to Observational Science
+- [KE-167-gym-scenario-ceiling-floor-clustering](entries/KE-167-gym-scenario-ceiling-floor-clustering.md): KE-167: Gym Scenarios Cluster at Ceiling and Floor — Few Usable for Overhead Moderation
+- [KE-171-difficulty-calibration](entries/KE-171-difficulty-calibration.md): KE-171: Difficulty Calibration — Predicting Experimental Signal from Baseline Pass Rates
+- [KE-175-counter-intuitive-skill-floor-effect](entries/KE-175-counter-intuitive-skill-floor-effect.md): KE-175: Counter-Intuitive Skills Fail at Universal Floors — Skill Effectiveness Requires Baseline Va
+- [KE-178-hard-gate-boundary-condition](entries/KE-178-hard-gate-boundary-condition.md): KE-178: Hard Gate Boundary Condition — Low Baseline + Step-Skipping Required
+- [KE-179-hard-gate-generalization](entries/KE-179-hard-gate-generalization.md): KE-179: Hard Gate Generalization — Ch2 Works Across Scenario Types
+- [KE-184-ceiling-effects-tautological-evidence](entries/KE-184-ceiling-effects-tautological-evidence.md): KE-184: Ceiling Effects in Gym Scenarios Produce Tautological Evidence
+- [KE-224-agent-routing-dynamic-profiles](entries/KE-224-agent-routing-dynamic-profiles.md): KE-224: Dynamic agent routing needs both capability discovery (KBA ACK) and dual-criteria optimizati
+- [KE-275-sim2real-gap-systematic-gym-inflation](entries/KE-275-sim2real-gap-systematic-gym-inflation.md): KE-275: The Sim2Real Gap Is Systematic Gym Inflation — LLM User Simulators Create Easy Mode
+- [KE-287-small-n-gym-temporal-instability](entries/KE-287-small-n-gym-temporal-instability.md): KE-287: Small-N Gym Results (≤10 Trials) Are Temporally Unstable — Replication Failures Are Expected
+- [KE-327-gym-lab-overlay-broken](entries/KE-327-gym-lab-overlay-broken.md): KE-327: Gym Runner --lab Flag Is Metadata-Only (Blocks All Lab-Fork A/B Tests)
+- [KE-334-gym-production-gap-refined-structural-storage](entries/KE-334-gym-production-gap-refined-structural-storage.md): KE-334 — Gym-Production Gap Refined: "Learn in Production, Store Structurally" Dissolves the Dichoto
+- [KE-339-guard-routing-null-result-scenario-sensitivity](entries/KE-339-guard-routing-null-result-scenario-sensitivity.md): KE-339: Guard Routing Null Result — Scenario Sensitivity
+- [KE-346-gprime-question-framing-production-gap](entries/KE-346-gprime-question-framing-production-gap.md): KE-346: G' Question-Framing — 100% Gym → 54% Production (Sim2Real Gap)
+- [KE-367-workflow-enforcement-ceiling](entries/KE-367-workflow-enforcement-ceiling.md): KE-367: Workflow Enforcement Has No Advantage Over Text Skills at High Baselines
+- [KE-368-adversarial-qa-harms-evidence](entries/KE-368-adversarial-qa-harms-evidence.md): KE-368: Adversarial QA Framing Hurts Evidence Discipline on Hard Scenarios
+
+## Externalization (26)
+
+- [KE-007](entries/KE-007.md): KE-007: Structural interventions (workflows + forced externalization) are the only reliable behavior
+- [KE-017](entries/KE-017.md): KE-017: Materialize-Findings Skill File Improves Both Behavior AND Product Quality
+- [KE-019](entries/KE-019.md): KE-019: Sycophancy Requires Materialization Gates (L5)
+- [KE-031-forced-externalization-domain-independent](entries/KE-031-forced-externalization-domain-independent.md): KE-031: Forced Externalization Is Domain-Independent — +69pp Across Tunnel Vision, Sycophancy, and C
+- [KE-031-minimal-externalization-general-judgment-mechanism](entries/KE-031-minimal-externalization-general-judgment-mechanism.md): KE-031: Minimal Externalization Is a General Judgment Mechanism
+- [KE-032-forced-externalization-dual-pathway](entries/KE-032-forced-externalization-dual-pathway.md): KE-032: Forced Externalization Works Via Two Independent Pathways (Write OR Read)
+- [KE-033-forced-externalization-scale-invariant](entries/KE-033-forced-externalization-scale-invariant.md): KE-033: Forced Externalization Is Scale-Invariant — Same Mechanism Works at Task, Harness, and Syste
+- [KE-034-forced-externalization-analysis-activation](entries/KE-034-forced-externalization-analysis-activation.md): KE-034: Forced Externalization Works Via "Analysis Activation," Not Content Provision — Wrong Analys
+- [KE-037-scaffolding-spectrum-internalization-vs-externalization](entries/KE-037-scaffolding-spectrum-internalization-vs-externalization.md): KE-037: The Scaffolding Spectrum — Skill Internalization and Forced Externalization Are Complementar
+- [KE-038-constitutional-bounded-self-improvement](entries/KE-038-constitutional-bounded-self-improvement.md): KE-038: Constitutional Meta-Engineering Is Forced Externalization Applied Recursively — From Task Ju
+- [KE-042-dispatch-convergence-structural-coordination-infrastructure](entries/KE-042-dispatch-convergence-structural-coordination-infrastructure.md): KE-042: Multi-Agent Dispatch Convergence — Structural Coordination Infrastructure Is Forced External
+- [KE-043-forced-externalization-complete-picture](entries/KE-043-forced-externalization-complete-picture.md): KE-043: Forced Externalization — The Complete Empirical Picture (EXP-045 Through EXP-072)
+- [KE-054-externalization-boundary-judgment-vs-debugging](entries/KE-054-externalization-boundary-judgment-vs-debugging.md): KE-054: Externalization Has a Sharp Domain Boundary — Helps Judgment, Hurts Debugging
+- [KE-064-execution-crowding-analysis-trap](entries/KE-064-execution-crowding-analysis-trap.md): KE-064: Execution Crowding — Chained Externalization Steps Create an Analysis Trap
+- [KE-121-forced-externalization-prevents-misinterpretation](entries/KE-121-forced-externalization-prevents-misinterpretation.md): KE-121: Forced Externalization Prevents Misinterpretation, Not Just Omission
+- [KE-129-forced-externalization-only-reliable-channel-judgment](entries/KE-129-forced-externalization-only-reliable-channel-judgment.md): KE-129: Forced Externalization Is the Only Reliable Channel for Judgment Tasks
+- [KE-146](entries/KE-146.md): KE-146: Reasoning Externalization Gap
+- [KE-155-externalization-harm-boundary-unified-theory](entries/KE-155-externalization-harm-boundary-unified-theory.md): KE-155: The Externalization Harm Boundary — When Showing Work Changes the Work
+- [KE-156-voluntary-externalization-paradox](entries/KE-156-voluntary-externalization-paradox.md): KE-156: The Voluntary Externalization Paradox — Agents Don't Externalize Without Forcing
+- [KE-157-literature-validated-externalization-tax](entries/KE-157-literature-validated-externalization-tax.md): KE-157: Literature-Validated Externalization Tax
+- [KE-164-artifact-reduction-theorem-validates-externalization-framework](entries/KE-164-artifact-reduction-theorem-validates-externalization-framework.md): KE-164: Artifact Reduction Theorem Validates Externalization Framework — DD-755 × DD-750 × H-107 Syn
+- [KE-164-artifacts-as-memory-environmental-externalization](entries/KE-164-artifacts-as-memory-environmental-externalization.md): KE-164: Artifacts as Memory — Environmental Externalization in Agent Systems
+- [KE-166-format-toll-externalization-synthesis](entries/KE-166-format-toll-externalization-synthesis.md): KE-166: The Format Toll as Environmental Scaffolding — Synthesizing EXP-144 with the Externalization
+- [KE-172-artifacts-as-memory-externalization-formalism](entries/KE-172-artifacts-as-memory-externalization-formalism.md): KE-172: Artifacts as Memory — DD-755 Formalizes Why Externalization Works and Predicts When It Fails
+- [KE-185-independent-sufficiency-of-externalization-functions](entries/KE-185-independent-sufficiency-of-externalization-functions.md): KE-185: Independent Sufficiency of Externalization Functions
+- [KE-369-workflow-overhead-externalization](entries/KE-369-workflow-overhead-externalization.md): KE-369: Forced Approach Externalization Adds 1.76–3.78x Overhead
+
+## Guard Architecture (39)
+
+- [KE-004](entries/KE-004.md): KE-004: Guards are brittle — use context.md for environmental constraints
+- [KE-019](entries/KE-019.md): KE-019: Sycophancy Requires Materialization Gates (L5)
+- [KE-068-hvr-zero-hedge-gate-uncertainty-quantification](entries/KE-068-hvr-zero-hedge-gate-uncertainty-quantification.md): KE-068: Zero-Hedge Gate — 96% Precision Uncertainty Signal from Reasoning Traces
+- [KE-094-commit-guard-structural-enforcement](entries/KE-094-commit-guard-structural-enforcement.md): KE-094: Commit Guard — Structural Enforcement Eliminates Agent Laziness
+- [KE-106-structural-enforcement-no-training-effect](entries/KE-106-structural-enforcement-no-training-effect.md): KE-106: Structural Enforcement Does Not Train Behavior — Guards Are Brakes, Not Driving Lessons
+- [KE-113-commit-guard-recovery-not-prevention](entries/KE-113-commit-guard-recovery-not-prevention.md): KE-113: Commit Guard Production Impact — Recovery Not Prevention
+- [KE-134-ch2-gate-stacking-hump-curve](entries/KE-134-ch2-gate-stacking-hump-curve.md): KE-134: Channel 2 Gate Stacking Follows a Hump Curve, Not a Cliff
+- [KE-135-gate-task-synergy-effect](entries/KE-135-gate-task-synergy-effect.md): KE-135: Gate-Task Synergy Effect — Performance Depends on Gate Relevance, Not Count
+- [KE-136-structural-guards-production-transfer-verification-depth](entries/KE-136-structural-guards-production-transfer-verification-depth.md): KE-136: Structural Guards Transfer to Production — Verification-Depth Guard Delivers +15.8pp Fleet-W
+- [KE-137-guard-response-bifurcation-learners-vs-reliants](entries/KE-137-guard-response-bifurcation-learners-vs-reliants.md): KE-137: Guard Response Bifurcation — Learners vs. Reliants
+- [KE-143-guard-response-trifurcation-agent-specific-harm](entries/KE-143-guard-response-trifurcation-agent-specific-harm.md): KE-143: Guard Response Trifurcation — Three Agent Categories and Agent-Specific Guard Harm
+- [KE-144-verification-guard-non-internalization-channel2-limits](entries/KE-144-verification-guard-non-internalization-channel2-limits.md): KE-144: Verification Guards Don't Teach — Channel 2 Forces Behavior Without Transfer
+- [KE-145-30k-agent-scaling-insights](entries/KE-145-30k-agent-scaling-insights.md): KE-145: 30K-Agent Scaling — Over-Provision+Filter, Oracle Verification, and the Guard Dependency Con
+- [KE-148](entries/KE-148.md): KE-148: Format as Toll — Structured Gates as Task Decomposition Infrastructure
+- [KE-152-guard-positive-feedback-loop](entries/KE-152-guard-positive-feedback-loop.md): KE-152: Guards Create Positive Feedback Loops, Not Dependency
+- [KE-158-overhead-narrative-challenge-difficulty-threshold](entries/KE-158-overhead-narrative-challenge-difficulty-threshold.md): KE-158: The Overhead Narrative Challenge — A Difficulty Threshold Reframes Guard Harm
+- [KE-159-format-toll-structured-gates-as-task-decomposition-aids](entries/KE-159-format-toll-structured-gates-as-task-decomposition-aids.md): KE-159: Format Toll — Structured Gates as Task Decomposition Aids
+- [KE-160-guard-design-success-factors-verification-depth-graduation](entries/KE-160-guard-design-success-factors-verification-depth-graduation.md): KE-160: Guard Design Success Factors — Verification-Depth Graduation
+- [KE-161-guard-architecture-framework-permanent-linter-paradigm](entries/KE-161-guard-architecture-framework-permanent-linter-paradigm.md): KE-161: Guard Architecture Framework — The Permanent Linter Paradigm
+- [KE-162-bias-amplification-guard-chains-echo-chamber](entries/KE-162-bias-amplification-guard-chains-echo-chamber.md): KE-162: Bias Amplification in Guard Chains — Echo Chamber Dynamics Meet Agent Architecture
+- [KE-165-openkedge-governed-mutation-guard-architecture-bridge](entries/KE-165-openkedge-governed-mutation-guard-architecture-bridge.md): KE-165: OpenKedge Governed Mutation — Bridge to Guard Architecture
+- [KE-169-targeted-guard-removal-null-on-general-tasks](entries/KE-169-targeted-guard-removal-null-on-general-tasks.md): KE-169: Targeted Guard Removal Shows No Effect on General Tasks
+- [KE-177-ch2-overcomes-selective-compliance](entries/KE-177-ch2-overcomes-selective-compliance.md): KE-177: Ch2 Hard Gates Overcome Selective Compliance on Interruptive Process Steps
+- [KE-178-hard-gate-boundary-condition](entries/KE-178-hard-gate-boundary-condition.md): KE-178: Hard Gate Boundary Condition — Low Baseline + Step-Skipping Required
+- [KE-179-hard-gate-generalization](entries/KE-179-hard-gate-generalization.md): KE-179: Hard Gate Generalization — Ch2 Works Across Scenario Types
+- [KE-180-completion-illusion-effect](entries/KE-180-completion-illusion-effect.md): KE-180: Completion Illusion Effect — Analysis Gates Can Harm Performance
+- [KE-182-hard-gate-design-rules-synthesis](entries/KE-182-hard-gate-design-rules-synthesis.md): KE-182: Hard Gate Design Rules — Consolidated Synthesis
+- [KE-192-solver-sampler-mismatch-explains-content-first](entries/KE-192-solver-sampler-mismatch-explains-content-first.md): KE-192: Solver-Sampler Mismatch Explains Why Content-First Guards Outperform Process Guards
+- [KE-193](entries/KE-193.md): KE-193: Parallel Monitoring Validates Content-First — But Suggests Concurrent Guard Tier
+- [KE-211-inoculation-prompting-voluntary-guards](entries/KE-211-inoculation-prompting-voluntary-guards.md): KE-211: Inoculation Prompting — Voluntary Guard Adoption as Internalization Test
+- [KE-222-parallax-cognitive-executive](entries/KE-222-parallax-cognitive-executive.md): KE-222: External validation — architectural separation beats prompt guardrails 98.9% vs 0%
+- [KE-238-safeharness-lifecycle-security](entries/KE-238-safeharness-lifecycle-security.md): KE-238: Lifecycle-integrated security validates guard architecture; tiered verification should scale
+- [KE-283-tool-affordance-validates-content-first-guard-design](entries/KE-283-tool-affordance-validates-content-first-guard-design.md): KE-283: Tool Affordance Research Validates Content-First Guard Design — DD-784 Connects Masking to D
+- [KE-297-finish-guard-structural-enforcement](entries/KE-297-finish-guard-structural-enforcement.md): KE-297: Finish-Guard Gates Are the Only Reliable Workflow Enforcement Mechanism
+- [KE-339-guard-routing-null-result-scenario-sensitivity](entries/KE-339-guard-routing-null-result-scenario-sensitivity.md): KE-339: Guard Routing Null Result — Scenario Sensitivity
+- [KE-347-finish-guard-enforcement-persistent-task](entries/KE-347-finish-guard-enforcement-persistent-task.md): KE-347: Finish-Guard Enforcement Is the Only Mechanism for Persistent-Task Adoption
+- [KE-365-structural-gates-unnecessary-additive](entries/KE-365-structural-gates-unnecessary-additive.md): KE-365: Structural Gates Unnecessary for Additive Behaviors
+- [KE-367-workflow-enforcement-ceiling](entries/KE-367-workflow-enforcement-ceiling.md): KE-367: Workflow Enforcement Has No Advantage Over Text Skills at High Baselines
+- [KE-372-validation-gates-between-agent-stages](entries/KE-372-validation-gates-between-agent-stages.md): KE-372: Validation Gates Between Agent Stages Prevent Drift
+
+## Knowledge Management (11)
+
+- [KE-011](entries/KE-011.md): KE-011: Knowledge files are passive — agents skip them under ALL conditions tested
+- [KE-079-structure-aware-retrieval-dag-matching-hierarchical-decomposition](entries/KE-079-structure-aware-retrieval-dag-matching-hierarchical-decomposition.md): KE-079: Structure-Aware Retrieval — DAG Matching and Hierarchical Decomposition as Memory Architectu
+- [KE-140-agent-read-patterns-duplicate-reads](entries/KE-140-agent-read-patterns-duplicate-reads.md): KE-140: Agent Read Patterns — Duplicate Reads as Primary Waste
+- [KE-206-kv-cache-injection-and-passive-knowledge-problem](entries/KE-206-kv-cache-injection-and-passive-knowledge-problem.md): KE-206: KV Cache Injection as the Hardware Solution to Passive Knowledge (KE-011)
+- [KE-210-dd776-navigable-skill-directory-over-passive-retrieval](entries/KE-210-dd776-navigable-skill-directory-over-passive-retrieval.md): KE-210: DD-776 Corpus2Skill validates "navigable skill directory > passive retrieval" — a concrete f
+- [KE-213-dd765-cooperative-paging-validates-context-compression](entries/KE-213-dd765-cooperative-paging-validates-context-compression.md): KE-213: DD-765 Cooperative Paging — Bookmarks + Recall Beat Full Context (External Validation of Com
+- [KE-234-thought-retriever-memory](entries/KE-234-thought-retriever-memory.md): KE-234: Thought-retrieval validates DD/CR as agent long-term memory
+- [KE-248-thought-retrieval-memory](entries/KE-248-thought-retrieval-memory.md): KE-248: Thought Retrieval Validates Our DD/CR Library Architecture
+- [KE-284-index-titles-sufficient-for-citation](entries/KE-284-index-titles-sufficient-for-citation.md): KE-284: INDEX Titles Are Sufficient for 60% Knowledge Citation — Agents Use INDEX as Primary Source,
+- [KE-331-semantic-skill-retrieval-automatic-curriculum](entries/KE-331-semantic-skill-retrieval-automatic-curriculum.md): KE-331: Semantic Skill Retrieval and Automatic Curriculum — Skills Must Be Findable, Not Just Availa
+- [KE-382-duplicate-read-baseline](entries/KE-382-duplicate-read-baseline.md): KE-382: 17.7% of Agent File Reads Are Duplicates Within Same Session
+
+## Memory Architecture (19)
+
+- [KE-004](entries/KE-004.md): KE-004: Guards are brittle — use context.md for environmental constraints
+- [KE-025-instruction-overhead-paradox](entries/KE-025-instruction-overhead-paradox.md): KE-025: Instruction Overhead Paradox — More Context Files Hurt Performance
+- [KE-040-memory-architecture-convergence-lifelong-learning-active-substrate](entries/KE-040-memory-architecture-convergence-lifelong-learning-active-substrate.md): KE-040: Memory Architecture Convergence — Lifelong Learning, Active Substrates, and the Temporal Sca
+- [KE-079-structure-aware-retrieval-dag-matching-hierarchical-decomposition](entries/KE-079-structure-aware-retrieval-dag-matching-hierarchical-decomposition.md): KE-079: Structure-Aware Retrieval — DAG Matching and Hierarchical Decomposition as Memory Architectu
+- [KE-164-artifacts-as-memory-environmental-externalization](entries/KE-164-artifacts-as-memory-environmental-externalization.md): KE-164: Artifacts as Memory — Environmental Externalization in Agent Systems
+- [KE-172-artifacts-as-memory-externalization-formalism](entries/KE-172-artifacts-as-memory-externalization-formalism.md): KE-172: Artifacts as Memory — DD-755 Formalizes Why Externalization Works and Predicts When It Fails
+- [KE-188-gam-memory-knowledge-utilization](entries/KE-188-gam-memory-knowledge-utilization.md): KE-188: GAM's Hierarchical Memory Addresses P(access), Not Our Actual Bottleneck
+- [KE-213-dd765-cooperative-paging-validates-context-compression](entries/KE-213-dd765-cooperative-paging-validates-context-compression.md): KE-213: DD-765 Cooperative Paging — Bookmarks + Recall Beat Full Context (External Validation of Com
+- [KE-214-dd764-dual-trace-encoding-validates-scene-context-pairing](entries/KE-214-dd764-dual-trace-encoding-validates-scene-context-pairing.md): KE-214: DD-764 Dual-Trace Encoding — Scene + Fact Pairing Validates Encoding-Side Context Engineerin
+- [KE-219-cooperative-memory-paging](entries/KE-219-cooperative-memory-paging.md): KE-219: Cooperative paging (bookmarks + recall) outperforms full context — applies to shared knowled
+- [KE-227-graph-memory-vs-flat-kb](entries/KE-227-graph-memory-vs-flat-kb.md): KE-227: Hierarchical graph memory vs flat knowledge bases
+- [KE-234-thought-retriever-memory](entries/KE-234-thought-retriever-memory.md): KE-234: Thought-retrieval validates DD/CR as agent long-term memory
+- [KE-244-gam-hierarchical-graph-memory](entries/KE-244-gam-hierarchical-graph-memory.md): KE-244: GAM — Decouple Encoding from Consolidation for Agent Memory
+- [KE-289-procedural-memory-layer-gap](entries/KE-289-procedural-memory-layer-gap.md): KE-289 — The Missing Procedural Memory Layer
+- [KE-301-memory-architecture-convergence-active-context](entries/KE-301-memory-architecture-convergence-active-context.md): KE-301: Memory Architecture Convergence — Active Context Management Required
+- [KE-304-errorprobe-self-improving-mas-diagnosis](entries/KE-304-errorprobe-self-improving-mas-diagnosis.md): KE-304: ErrorProbe — Self-Improving Multi-Agent Error Diagnosis via Verified Episodic Memory
+- [KE-329-agent-directed-memory-management-letta-pattern](entries/KE-329-agent-directed-memory-management-letta-pattern.md): KE-329: Agent-Directed Memory Management — Letta's Self-Managed Memory Model
+- [KE-332-agent-managed-memory-lifecycle](entries/KE-332-agent-managed-memory-lifecycle.md): KE-332: Agent-Managed Memory Lifecycle — Agents Should Control Their Own Memory Operations
+- [KE-353-dreaming-consolidation-null](entries/KE-353-dreaming-consolidation-null.md): KE-353: Dreaming/Consolidation via Context.md Injection Has No Effect
+
+## Multi Agent Coordination (28)
+
+- [KE-003](entries/KE-003.md): KE-003: Rich delegation context reduces wasted ops by 47%
+- [KE-013](entries/KE-013.md): KE-013: Task Boundedness Is the Primary Driver of Delegated Session Quality
+- [KE-019](entries/KE-019.md): KE-019: Sycophancy Requires Materialization Gates (L5)
+- [KE-028-technical-sycophancy-ceiling](entries/KE-028-technical-sycophancy-ceiling.md): KE-028: Technical Sycophancy Is Ceiling — Judgment-Based Is Not
+- [KE-031-forced-externalization-domain-independent](entries/KE-031-forced-externalization-domain-independent.md): KE-031: Forced Externalization Is Domain-Independent — +69pp Across Tunnel Vision, Sycophancy, and C
+- [KE-042-dispatch-convergence-structural-coordination-infrastructure](entries/KE-042-dispatch-convergence-structural-coordination-infrastructure.md): KE-042: Multi-Agent Dispatch Convergence — Structural Coordination Infrastructure Is Forced External
+- [KE-045-multi-agent-social-pathology-emergence](entries/KE-045-multi-agent-social-pathology-emergence.md): KE-045: Multi-Agent Social Pathology — Power Laws, Sycophancy Cascades, and Collusion as Emergent St
+- [KE-070-logic-monopoly-separation-of-power-governance](entries/KE-070-logic-monopoly-separation-of-power-governance.md): KE-070: Logic Monopoly — Separation of Power for Multi-Agent Governance
+- [KE-076-structured-routing-constrained-dispatch-design](entries/KE-076-structured-routing-constrained-dispatch-design.md): KE-076: Structured Routing — Constrained Dispatch as Two-Stage Decision Architecture
+- [KE-080-cascade-architecture-behavioral-testing-convergence](entries/KE-080-cascade-architecture-behavioral-testing-convergence.md): KE-080: Cascade-Architecture Convergence — Why Agent Failure Patterns Are Testable and Architectural
+- [KE-086-multi-agent-architecture-scaling](entries/KE-086-multi-agent-architecture-scaling.md): KE-086: Multi-Agent Architecture Scaling — Integration Bottleneck, Coordination Laws, and the Scale-
+- [KE-108-step-level-credit-assignment-verification-cascade](entries/KE-108-step-level-credit-assignment-verification-cascade.md): KE-108: Step-Level Credit Assignment as Verification Cascade Defense
+- [KE-115-fm-heavy-workers-intervention-priority-map](entries/KE-115-fm-heavy-workers-intervention-priority-map.md): KE-115: FM-Heavy Workers Intervention Priority Map
+- [KE-120-cooperation-calibration-context-triad-multi-agent-structural-requirements](entries/KE-120-cooperation-calibration-context-triad-multi-agent-structural-requirements.md): KE-120: The Cooperation-Calibration-Context Triad — Three Structural Requirements for Reliable Multi
+- [KE-173-bias-amplification-mas-echo-chambers](entries/KE-173-bias-amplification-mas-echo-chambers.md): KE-173: Bias Amplification in Our Multi-Agent Topology — Echo Chambers, Adversarial Breaks, and Unif
+- [KE-194-contestation-over-override-multi-agent-fairness](entries/KE-194-contestation-over-override-multi-agent-fairness.md): KE-194: Contestation beats override for multi-agent decision quality
+- [KE-217-integration-bottleneck-diminishing-returns](entries/KE-217-integration-bottleneck-diminishing-returns.md): KE-217: Multi-Agent Scaling Hits Integration Bottleneck — Coordination Expansion Outpaces Consolidat
+- [KE-218-sycophancy-awareness-metadata-injection](entries/KE-218-sycophancy-awareness-metadata-injection.md): KE-218: Sycophancy Awareness Metadata Reduces Error Cascades Without Architectural Changes
+- [KE-282-identity-aware-delegation-protocol-design](entries/KE-282-identity-aware-delegation-protocol-design.md): KE-282: Identity-Aware Delegation — Model Properties as First-Class Protocol Primitives
+- [KE-291-pbrc-cascade-suppression-protocol](entries/KE-291-pbrc-cascade-suppression-protocol.md): KE-291: PBRC — Formal Protocol for Verification Cascade Suppression
+- [KE-304-errorprobe-self-improving-mas-diagnosis](entries/KE-304-errorprobe-self-improving-mas-diagnosis.md): KE-304: ErrorProbe — Self-Improving Multi-Agent Error Diagnosis via Verified Episodic Memory
+- [KE-305-diversity-collapse-structural-coupling-mas](entries/KE-305-diversity-collapse-structural-coupling-mas.md): KE-305: Diversity Collapse — Multi-Agent Interaction Structure Contracts Solution Space
+- [KE-308-conjunctive-prompt-attacks-multi-agent-routing](entries/KE-308-conjunctive-prompt-attacks-multi-agent-routing.md): KE-308: Conjunctive Prompt Attacks — Compositional Vulnerabilities in Multi-Agent Routing
+- [KE-320-debate-quality-preservation-typed-acts-variance-antisycophancy](entries/KE-320-debate-quality-preservation-typed-acts-variance-antisycophancy.md): KE-320: Debate Quality Preservation Requires Typed Acts, Variance Monitoring, and Anti-Sycophancy
+- [KE-321-markdown-native-observability-obsidian-dashboard](entries/KE-321-markdown-native-observability-obsidian-dashboard.md): KE-321: Markdown-Native Observability via Obsidian as Multi-Agent Dashboard
+- [KE-325-disagreement-architecture-five-layer-stack](entries/KE-325-disagreement-architecture-five-layer-stack.md): KE-325: Disagreement Architecture — Five-Layer Stack for Multi-Agent Systems
+- [KE-326-anti-sycophancy-multi-agent-debate](entries/KE-326-anti-sycophancy-multi-agent-debate.md): KE-326 — Anti-Sycophancy Mechanisms for Multi-Agent Debate
+- [KE-373-cooperative-profiling](entries/KE-373-cooperative-profiling.md): KE-373: Cooperative Profiles Predict Multi-Agent Team Performance
+
+## Observation Monitoring (26)
+
+- [KE-008](entries/KE-008.md): KE-008: Heartbeat step restructuring causes regression
+- [KE-024-dispatcher-heartbeat-pattern](entries/KE-024-dispatcher-heartbeat-pattern.md): KE-024: Separating heartbeat triage from execution eliminates overhead and errors
+- [KE-036-behavioral-frustration-detection-verification-gated](entries/KE-036-behavioral-frustration-detection-verification-gated.md): KE-036: Behavioral Tool-Call Patterns Detect Frustration Independently of Linguistic Signals — But P
+- [KE-068-hvr-zero-hedge-gate-uncertainty-quantification](entries/KE-068-hvr-zero-hedge-gate-uncertainty-quantification.md): KE-068: Zero-Hedge Gate — 96% Precision Uncertainty Signal from Reasoning Traces
+- [KE-073-emergent-decentralized-corrective-signaling](entries/KE-073-emergent-decentralized-corrective-signaling.md): KE-073: Emergent Decentralized Corrective Signaling — Agent Collectives Self-Regulate Without Human 
+- [KE-078-goodhart-detection-cross-model-entropy-monitoring](entries/KE-078-goodhart-detection-cross-model-entropy-monitoring.md): KE-078: Goodhart Detection — Cross-Model Entropy Monitoring for Judge Integrity
+- [KE-089-adaptive-verification-evaluation](entries/KE-089-adaptive-verification-evaluation.md): KE-089: Adaptive Verification & Evaluation — Mid-Trajectory Safety, Structural Decomposition, and Ev
+- [KE-095-behavioral-failure-prediction-mid-trajectory-intervention](entries/KE-095-behavioral-failure-prediction-mid-trajectory-intervention.md): KE-095: Behavioral Failure Prediction & Mid-Trajectory Intervention Pipeline
+- [KE-098-uncertainty-aware-verification-signals](entries/KE-098-uncertainty-aware-verification-signals.md): KE-098: Uncertainty-Aware Verification Signals — Information Asymmetry, Entropy Dynamics, and Compos
+- [KE-117-verification-self-awareness-stack-meta-verification-signal-calibration](entries/KE-117-verification-self-awareness-stack-meta-verification-signal-calibration.md): KE-117: Verification Self-Awareness Stack — Meta-Verification, Signal Calibration, and Cold-Start Re
+- [KE-171-difficulty-calibration](entries/KE-171-difficulty-calibration.md): KE-171: Difficulty Calibration — Predicting Experimental Signal from Baseline Pass Rates
+- [KE-181-process-compliance-vs-product-quality-metrics](entries/KE-181-process-compliance-vs-product-quality-metrics.md): KE-181: Process Compliance Metrics vs Product Quality Metrics — The EXP-155 Lesson
+- [KE-193](entries/KE-193.md): KE-193: Parallel Monitoring Validates Content-First — But Suggests Concurrent Guard Tier
+- [KE-200](entries/KE-200.md): KE-200: Probe-Based Monitoring Could Predict FM-3.3 Verification Collapse Before It Manifests
+- [KE-202-cognitive-mode-interference-unifying-principle](entries/KE-202-cognitive-mode-interference-unifying-principle.md): KE-202: Cognitive Mode Interference — Dual-Task Costs Unify Displacement, Template Harm, and Monitor
+- [KE-215-question-framing-triggers-metric-reaction](entries/KE-215-question-framing-triggers-metric-reaction.md): KE-215: Question-Framing Triggers Metric Reaction
+- [KE-223-glean-verification-calibration](entries/KE-223-glean-verification-calibration.md): KE-223: Guideline-grounded Bayesian calibration turns raw verification signals into calibrated confi
+- [KE-228-parallel-monitoring-context-recovery](entries/KE-228-parallel-monitoring-context-recovery.md): KE-228: Heartbeats as cognitive companions — parallel monitoring and negotiated context recovery alr
+- [KE-249-heartbeat-scheduling-validation](entries/KE-249-heartbeat-scheduling-validation.md): KE-249: Heartbeat Scheduling Independently Validated as Cognitive Architecture Primitive
+- [KE-259-heartbeat-thinking-scheduling](entries/KE-259-heartbeat-thinking-scheduling.md): KE-259: Heartbeat scheduling is a validated cognitive primitive; adaptive module selection could rep
+- [KE-277-read-edit-ratio-diagnostic-metric](entries/KE-277-read-edit-ratio-diagnostic-metric.md): KE-277: Read:Edit Ratio as Leading Diagnostic Metric for Experiments
+- [KE-281-trajectory-level-safety-bidirectional-intent-inference](entries/KE-281-trajectory-level-safety-bidirectional-intent-inference.md): KE-281: Trajectory-Level Safety — Bidirectional Intent Inference for Multi-Turn Attack Detection
+- [KE-290-behavioral-turn-trajectory-failure-prediction](entries/KE-290-behavioral-turn-trajectory-failure-prediction.md): KE-290: The Behavioral Turn — Trajectory Signals Replace Linguistic Self-Report for Failure Predicti
+- [KE-298-unsupervised-behavioral-monitoring-hodoscope](entries/KE-298-unsupervised-behavioral-monitoring-hodoscope.md): KE-298: Unsupervised Behavioral Monitoring Outperforms Supervised Approaches for Agent Failure Disco
+- [KE-320-debate-quality-preservation-typed-acts-variance-antisycophancy](entries/KE-320-debate-quality-preservation-typed-acts-variance-antisycophancy.md): KE-320: Debate Quality Preservation Requires Typed Acts, Variance Monitoring, and Anti-Sycophancy
+- [KE-context-discovery-chain](entries/KE-context-discovery-chain.md): Critical Finding: Context-Discovery Chain — How to Make Agents Act on Metrics
+
+## Skill Effectiveness (51)
+
+- [KE-002](entries/KE-002.md): KE-002: Text rules don't fix judgment failures
+- [KE-006](entries/KE-006.md): KE-006: Skills that target reasoning patterns don't change tool-calling patterns
+- [KE-007](entries/KE-007.md): KE-007: Structural interventions (workflows + forced externalization) are the only reliable behavior
+- [KE-010](entries/KE-010.md): KE-010: Most gym scenarios hit ceiling — agents pass at baseline
+- [KE-017](entries/KE-017.md): KE-017: Materialize-Findings Skill File Improves Both Behavior AND Product Quality
+- [KE-018](entries/KE-018.md): KE-018: Environmental Nudges Match Text Skills for Behavioral Change
+- [KE-021](entries/KE-021.md): KE-021: Skill Effectiveness Depends on Skill Type — Process > Knowledge > Judgment
+- [KE-023-read-before-edit-deployment-ineffective](entries/KE-023-read-before-edit-deployment-ineffective.md): KE-023: Read-Before-Edit Skill Deployment Shows No Production Improvement
+- [KE-027-ceiling-shift-aggregate-skills](entries/KE-027-ceiling-shift-aggregate-skills.md): KE-027: Deployed Skills Produce Compound Ceiling Shifts
+- [KE-028-technical-sycophancy-ceiling](entries/KE-028-technical-sycophancy-ceiling.md): KE-028: Technical Sycophancy Is Ceiling — Judgment-Based Is Not
+- [KE-030-skill-ablation-falsifies-ceiling-shift-causation](entries/KE-030-skill-ablation-falsifies-ceiling-shift-causation.md): KE-030: Skill Ablation Falsifies Causal Attribution of Ceiling Shifts
+- [KE-037-scaffolding-spectrum-internalization-vs-externalization](entries/KE-037-scaffolding-spectrum-internalization-vs-externalization.md): KE-037: The Scaffolding Spectrum — Skill Internalization and Forced Externalization Are Complementar
+- [KE-056-constraint-hierarchy-workaround-availability](entries/KE-056-constraint-hierarchy-workaround-availability.md): KE-056: The Constraint Hierarchy — Workaround Availability Dominates Instructional Interventions
+- [KE-060-unified-agent-intervention-taxonomy](entries/KE-060-unified-agent-intervention-taxonomy.md): KE-060: Unified Agent Intervention Taxonomy — The Three Mechanisms
+- [KE-061-fewshot-judgment-skill-effectiveness](entries/KE-061-fewshot-judgment-skill-effectiveness.md): KE-061: Few-Shot Worked Examples Achieve 0%→100% on Judgment Skills
+- [KE-065-fewshot-comprehensive-findings](entries/KE-065-fewshot-comprehensive-findings.md): KE-065: Few-Shot Skill Conversion — Comprehensive Findings
+- [KE-095-behavioral-failure-prediction-mid-trajectory-intervention](entries/KE-095-behavioral-failure-prediction-mid-trajectory-intervention.md): KE-095: Behavioral Failure Prediction & Mid-Trajectory Intervention Pipeline
+- [KE-102-skill-level-confabulation-fix](entries/KE-102-skill-level-confabulation-fix.md): KE-102: Skill-Level Confabulation Fix — Evidence-Over-Narrative Eliminates Verification Confabulatio
+- [KE-103-context-stripping-paradox](entries/KE-103-context-stripping-paradox.md): KE-103: Context-Stripping Paradox — Removing Context Can Hurt Skilled Agents
+- [KE-110-skill-stack-saturation-gym-ceiling-confirms-improvement-loop](entries/KE-110-skill-stack-saturation-gym-ceiling-confirms-improvement-loop.md): KE-110: Skill Stack Saturation — Gym Ceiling Confirms the Improvement Loop Works (and Is Finished)
+- [KE-115-fm-heavy-workers-intervention-priority-map](entries/KE-115-fm-heavy-workers-intervention-priority-map.md): KE-115: FM-Heavy Workers Intervention Priority Map
+- [KE-122-intervention-decay-internalization-lifecycle](entries/KE-122-intervention-decay-internalization-lifecycle.md): KE-122: Intervention Decay — Effective Interventions Become Redundant Through Internalization
+- [KE-123-over-intervention-iatrogenesis](entries/KE-123-over-intervention-iatrogenesis.md): KE-123: Over-Intervention Iatrogenesis — Combined Interventions Degrade Performance
+- [KE-126-soft-interventions-creative-inference-gap](entries/KE-126-soft-interventions-creative-inference-gap.md): KE-126: Soft Interventions Cannot Close the Creative Inference Gap on Discovery Tasks
+- [KE-128-phase0-discovery-structural-intervention-fm13](entries/KE-128-phase0-discovery-structural-intervention-fm13.md): KE-128: Phase 0 Discovery — Structural Intervention for FM-1.3 (Exhaustive Reading) — NULL RESULT
+- [KE-129-forced-externalization-only-reliable-channel-judgment](entries/KE-129-forced-externalization-only-reliable-channel-judgment.md): KE-129: Forced Externalization Is the Only Reliable Channel for Judgment Tasks
+- [KE-130-text-channel-content-delivery-fails-judgment](entries/KE-130-text-channel-content-delivery-fails-judgment.md): KE-130: Text-Channel Content Delivery Fails for Contradiction Detection
+- [KE-132-ch3-task-type-boundary-coding-momentum](entries/KE-132-ch3-task-type-boundary-coding-momentum.md): KE-132: Channel 3 Few-Shot Has a Task-Type Boundary — Coding Momentum Overwhelms Examples
+- [KE-134-ch2-gate-stacking-hump-curve](entries/KE-134-ch2-gate-stacking-hump-curve.md): KE-134: Channel 2 Gate Stacking Follows a Hump Curve, Not a Cliff
+- [KE-144-verification-guard-non-internalization-channel2-limits](entries/KE-144-verification-guard-non-internalization-channel2-limits.md): KE-144: Verification Guards Don't Teach — Channel 2 Forces Behavior Without Transfer
+- [KE-167-gym-scenario-ceiling-floor-clustering](entries/KE-167-gym-scenario-ceiling-floor-clustering.md): KE-167: Gym Scenarios Cluster at Ceiling and Floor — Few Usable for Overhead Moderation
+- [KE-170-skill-redundancy-ceiling-effect](entries/KE-170-skill-redundancy-ceiling-effect.md): KE-170: Skills Are Redundant When Base Model Capability Is at Ceiling
+- [KE-175-counter-intuitive-skill-floor-effect](entries/KE-175-counter-intuitive-skill-floor-effect.md): KE-175: Counter-Intuitive Skills Fail at Universal Floors — Skill Effectiveness Requires Baseline Va
+- [KE-176-selective-skill-compliance](entries/KE-176-selective-skill-compliance.md): KE-176: Selective Skill Compliance — Agents Cherry-Pick Skill Instructions by Deviation Cost
+- [KE-183-internalization-distance-predicts-skill-compliance](entries/KE-183-internalization-distance-predicts-skill-compliance.md): KE-183: Internalization Distance Predicts Text-Skill Compliance
+- [KE-184-ceiling-effects-tautological-evidence](entries/KE-184-ceiling-effects-tautological-evidence.md): KE-184: Ceiling Effects in Gym Scenarios Produce Tautological Evidence
+- [KE-210-dd776-navigable-skill-directory-over-passive-retrieval](entries/KE-210-dd776-navigable-skill-directory-over-passive-retrieval.md): KE-210: DD-776 Corpus2Skill validates "navigable skill directory > passive retrieval" — a concrete f
+- [KE-216-inter-agent-lossy-channel](entries/KE-216-inter-agent-lossy-channel.md): KE-216: Inter-agent communication is a lossy channel (Data Processing Inequality)
+- [KE-233-context-curator-active-curation](entries/KE-233-context-curator-active-curation.md): KE-233: Context curation is a separable, learnable skill — not a hand-coding problem
+- [KE-256-external-systems-meta](entries/KE-256-external-systems-meta.md): KE-256: External System Patterns — 3/4 Failed Testing; Only Structural Interventions Transfer
+- [KE-272-persistent-task-skill-ceiling](entries/KE-272-persistent-task-skill-ceiling.md): KE-272: TRIGGER/ACTION/EXAMPLE Skill Pattern Achieves 75% on Interruptive Behavior — Challenging H-1
+- [KE-285-skill-pattern-ceiling-75pct](entries/KE-285-skill-pattern-ceiling-75pct.md): KE-285: Structured Skill Files (TRIGGER/ACTION/EXAMPLE) Achieve ~75% Adoption — Below Guaranteed Com
+- [KE-286-hint-interventions-unreliable-negative-transfer](entries/KE-286-hint-interventions-unreliable-negative-transfer.md): KE-286: Hint-Based Recognition Interventions Are Unreliable and Can Hurt Performance
+- [KE-331-semantic-skill-retrieval-automatic-curriculum](entries/KE-331-semantic-skill-retrieval-automatic-curriculum.md): KE-331: Semantic Skill Retrieval and Automatic Curriculum — Skills Must Be Findable, Not Just Availa
+- [KE-338-procedural-discovery-skill-ineffective](entries/KE-338-procedural-discovery-skill-ineffective.md): KE-338: Procedural Discovery Skills Don't Help Agents Find Relational Bugs
+- [KE-344-relational-bug-intervention-hierarchy](entries/KE-344-relational-bug-intervention-hierarchy.md): KE-344: Relational Bug Intervention Hierarchy — Only Direct Hints Work
+- [KE-350-procedural-discovery-skill-null](entries/KE-350-procedural-discovery-skill-null.md): KE-350: Procedural Discovery Skills Don't Help Find Relational Bugs
+- [KE-357-prompt-intervention-ceiling-relational-bugs](entries/KE-357-prompt-intervention-ceiling-relational-bugs.md): KE-357: Prompt-Based Interventions Cannot Help LLMs Discover Relational Bugs
+- [KE-367-workflow-enforcement-ceiling](entries/KE-367-workflow-enforcement-ceiling.md): KE-367: Workflow Enforcement Has No Advantage Over Text Skills at High Baselines
+- [KE-370-bounded-fallback-fixes-regression](entries/KE-370-bounded-fallback-fixes-regression.md): KE-370: Bounding Skill Fallback Behavior Fixes Regressions Without Removing Capability
+- [KE-374-schema-ceiling-effect](entries/KE-374-schema-ceiling-effect.md): KE-374: Schema-Organized Context Has a Ceiling Effect — Works for High-Violation Agents Only
+
+## Verification Confabulation (41)
+
+- [KE-005](entries/KE-005.md): KE-005: QA rubber-stamps — 14% issue detection vs evaluator's 27%
+- [KE-036-behavioral-frustration-detection-verification-gated](entries/KE-036-behavioral-frustration-detection-verification-gated.md): KE-036: Behavioral Tool-Call Patterns Detect Frustration Independently of Linguistic Signals — But P
+- [KE-044-self-evolution-verification-separation-thesis](entries/KE-044-self-evolution-verification-separation-thesis.md): KE-044: The Verification Separation Thesis — Five Independent Systems Converge on External Evaluatio
+- [KE-074-universal-verification-design-process-outcome-separation](entries/KE-074-universal-verification-design-process-outcome-separation.md): KE-074: Universal Verification Design — Process/Outcome Separation, Rubric-First Evaluation, and the
+- [KE-084-verification-trust-architecture](entries/KE-084-verification-trust-architecture.md): KE-084: Verification-Trust Architecture — Trust as Attack Surface, Disagreement as Sensor, Verificat
+- [KE-089-adaptive-verification-evaluation](entries/KE-089-adaptive-verification-evaluation.md): KE-089: Adaptive Verification & Evaluation — Mid-Trajectory Safety, Structural Decomposition, and Ev
+- [KE-091-civc-alignment-tax-verification-theater](entries/KE-091-civc-alignment-tax-verification-theater.md): KE-091: CIVC Alignment Tax — Forced Verification Harms High-Complexity Tasks
+- [KE-093-verification-confabulation](entries/KE-093-verification-confabulation.md): KE-093: Verification Confabulation — Agents Fabricate Verification Results to Match Prior Beliefs
+- [KE-096-unified-verification-architecture](entries/KE-096-unified-verification-architecture.md): KE-096: Unified Verification Architecture — From Literature Stacks to Experimental Constraints
+- [KE-097-confirmation-bias-mechanism-verification-confabulation](entries/KE-097-confirmation-bias-mechanism-verification-confabulation.md): KE-097: Confirmation Bias as Root Mechanism of Verification Confabulation
+- [KE-098-uncertainty-aware-verification-signals](entries/KE-098-uncertainty-aware-verification-signals.md): KE-098: Uncertainty-Aware Verification Signals — Information Asymmetry, Entropy Dynamics, and Compos
+- [KE-099-adversarial-framing-bypass-verification-confabulation](entries/KE-099-adversarial-framing-bypass-verification-confabulation.md): KE-099: Adversarial Framing Bypass for Verification Confabulation
+- [KE-100-machine-verified-evidence-injection-confabulation](entries/KE-100-machine-verified-evidence-injection-confabulation.md): KE-100: Machine-Verified Evidence Injection for Verification Confabulation
+- [KE-102-skill-level-confabulation-fix](entries/KE-102-skill-level-confabulation-fix.md): KE-102: Skill-Level Confabulation Fix — Evidence-Over-Narrative Eliminates Verification Confabulatio
+- [KE-104-complete-verification-architecture-evidence-grounding](entries/KE-104-complete-verification-architecture-evidence-grounding.md): KE-104: Complete Verification Architecture — Evidence Grounding Stack
+- [KE-105-verification-orchestration-stack](entries/KE-105-verification-orchestration-stack.md): KE-105: Verification Orchestration Stack — Compile, Triage, Enforce, Verify
+- [KE-108-step-level-credit-assignment-verification-cascade](entries/KE-108-step-level-credit-assignment-verification-cascade.md): KE-108: Step-Level Credit Assignment as Verification Cascade Defense
+- [KE-117-verification-self-awareness-stack-meta-verification-signal-calibration](entries/KE-117-verification-self-awareness-stack-meta-verification-signal-calibration.md): KE-117: Verification Self-Awareness Stack — Meta-Verification, Signal Calibration, and Cold-Start Re
+- [KE-118-complete-verification-orchestration-stack-ke105-gaps-closed](entries/KE-118-complete-verification-orchestration-stack-ke105-gaps-closed.md): KE-118: Complete Verification Orchestration Stack — All Five KE-105 Gaps Closed
+- [KE-136-structural-guards-production-transfer-verification-depth](entries/KE-136-structural-guards-production-transfer-verification-depth.md): KE-136: Structural Guards Transfer to Production — Verification-Depth Guard Delivers +15.8pp Fleet-W
+- [KE-144-verification-guard-non-internalization-channel2-limits](entries/KE-144-verification-guard-non-internalization-channel2-limits.md): KE-144: Verification Guards Don't Teach — Channel 2 Forces Behavior Without Transfer
+- [KE-145-30k-agent-scaling-insights](entries/KE-145-30k-agent-scaling-insights.md): KE-145: 30K-Agent Scaling — Over-Provision+Filter, Oracle Verification, and the Guard Dependency Con
+- [KE-160-guard-design-success-factors-verification-depth-graduation](entries/KE-160-guard-design-success-factors-verification-depth-graduation.md): KE-160: Guard Design Success Factors — Verification-Depth Graduation
+- [KE-174-governed-mutation-dd756](entries/KE-174-governed-mutation-dd756.md): KE-174: Governed Mutation and the Alignment Tax — Can Structural Verification Avoid the Creativity P
+- [KE-187-policy-invisible-violations-architectural-enforcement](entries/KE-187-policy-invisible-violations-architectural-enforcement.md): KE-187: Policy-Invisible Violations Validate Architectural Enforcement and Reveal World-Model Verifi
+- [KE-200](entries/KE-200.md): KE-200: Probe-Based Monitoring Could Predict FM-3.3 Verification Collapse Before It Manifests
+- [KE-208-silent-uncoupling-is-fm33-mechanism](entries/KE-208-silent-uncoupling-is-fm33-mechanism.md): KE-208: Silent Uncoupling IS the Mechanism Behind FM-3.3 Verification Confabulation
+- [KE-214-verb-choice-determines-tool-choice](entries/KE-214-verb-choice-determines-tool-choice.md): KE-214: Verb Choice Determines Tool Choice (VERIFIED)
+- [KE-223-glean-verification-calibration](entries/KE-223-glean-verification-calibration.md): KE-223: Guideline-grounded Bayesian calibration turns raw verification signals into calibrated confi
+- [KE-226-verification-meta-conflict](entries/KE-226-verification-meta-conflict.md): KE-226: Verification regress is solvable — conflict-directed auditing + structured artifacts suffice
+- [KE-235-cosight-conflict-directed-verification](entries/KE-235-cosight-conflict-directed-verification.md): KE-235: Conflict-directed verification scales cost with disagreement, not chain length
+- [KE-237-explanatory-equilibrium-structured-verification](entries/KE-237-explanatory-equilibrium-structured-verification.md): KE-237: Structured artifacts + probabilistic auditing achieves coordination without exhaustive verif
+- [KE-238-safeharness-lifecycle-security](entries/KE-238-safeharness-lifecycle-security.md): KE-238: Lifecycle-integrated security validates guard architecture; tiered verification should scale
+- [KE-271-weak-strong-verification](entries/KE-271-weak-strong-verification.md): KE-271: Two-Threshold Verification — Provably Optimal Weak-Strong Escalation
+- [KE-278-tri-state-verification-protocol](entries/KE-278-tri-state-verification-protocol.md): KE-278: Tri-State Verification — PASS/FAIL/UNCERTAIN Protocol for Experiments
+- [KE-291-pbrc-cascade-suppression-protocol](entries/KE-291-pbrc-cascade-suppression-protocol.md): KE-291: PBRC — Formal Protocol for Verification Cascade Suppression
+- [KE-302-verifier-gaming-extensional-shortcuts](entries/KE-302-verifier-gaming-extensional-shortcuts.md): KE-302: Verifier Gaming — RLVR Models Exploit Extensional Verification via Shortcuts
+- [KE-304-errorprobe-self-improving-mas-diagnosis](entries/KE-304-errorprobe-self-improving-mas-diagnosis.md): KE-304: ErrorProbe — Self-Improving Multi-Agent Error Diagnosis via Verified Episodic Memory
+- [KE-337-remasking-over-replacement-verification-reset](entries/KE-337-remasking-over-replacement-verification-reset.md): KE-337: Remasking Over Replacement — Verification Reset Breaks Error Compounding
+- [KE-355-remasking-null-on-discovery](entries/KE-355-remasking-null-on-discovery.md): KE-355: Verification Remasking Doesn't Help Discovery Tasks
+- [KE-362-error-absorber-architecture-dd860](entries/KE-362-error-absorber-architecture-dd860.md): KE-362: Error Absorber Architecture — Circuit Breakers for Verification Gravity Wells
+
+## Uncategorized (101)
+
+- [KE-001](entries/KE-001.md): KE-001: Context learning works for environmental knowledge only
+- [KE-012](entries/KE-012.md): KE-012: Lab-fork null-patch test confirms infrastructure validity
+- [KE-015](entries/KE-015.md): KE-015: Decision Topology Predicts Workflow Effectiveness
+- [KE-016](entries/KE-016.md): KE-016: Workflow Effectiveness Depends on Decision Type
+- [KE-020](entries/KE-020.md): KE-020: Agent capability adoption requires explicit wiring, not just availability
+- [KE-022-early-exploration-errors](entries/KE-022-early-exploration-errors.md): KE-022: Agent Errors Concentrate in Early Exploration Phase
+- [KE-029-classify-then-act-eliminates-sycophancy](entries/KE-029-classify-then-act-eliminates-sycophancy.md): KE-029: Classify-Then-Act Eliminates Sycophantic Compliance
+- [KE-039-persistent-runtime-convergence-artificial-retainer-taxonomy](entries/KE-039-persistent-runtime-convergence-artificial-retainer-taxonomy.md): KE-039: Persistent Agent Runtimes Converge on Our Architecture — The Artificial Retainer Taxonomy an
+- [KE-041-structural-constraint-stigmergic-coordination](entries/KE-041-structural-constraint-stigmergic-coordination.md): KE-041: Structural Constraint and Stigmergic Coordination — Causal Action-Space Restriction and Indi
+- [KE-046-reasoning-depth-crisis-thinking-budget-collapse](entries/KE-046-reasoning-depth-crisis-thinking-budget-collapse.md): KE-046: The Reasoning Depth Crisis — How Thinking Budget Reduction Causes Invisible, Multiplicative 
+- [KE-047-agent-harness-architecture-convergence](entries/KE-047-agent-harness-architecture-convergence.md): KE-047: Agent Harness Architecture Convergence — Independent Implementations Converge on Ten Structu
+- [KE-049-agent-environment-interface-formalization-ceiling](entries/KE-049-agent-environment-interface-formalization-ceiling.md): KE-049: The Agent-Environment Interface — Structural Formalization Solves Mechanical Problems, Not R
+- [KE-050-robustness-architecture-nexus](entries/KE-050-robustness-architecture-nexus.md): KE-050: The Robustness-Architecture Nexus — Agent Robustness Is an Architectural Property, Not a Mod
+- [KE-051-self-governance-stack](entries/KE-051-self-governance-stack.md): KE-051: The Self-Governance Stack — Three-Layer Architecture for Autonomous Agent Systems
+- [KE-052-structural-access-thesis](entries/KE-052-structural-access-thesis.md): KE-052: Structural Access Constraints Dominate Content Quality — A Unified Knowledge Utilization The
+- [KE-055-binding-closes-analysis-action-gap](entries/KE-055-binding-closes-analysis-action-gap.md): KE-055: Implementation Commitment (Binding) — Partial Solution, Bounded by Workaround Availability
+- [KE-057-cross-reference-fixes-absent-field-detection](entries/KE-057-cross-reference-fixes-absent-field-detection.md): KE-057: Cross-Referencing Source Code Fixes Absent-Field Detection Failures
+- [KE-059-fewshot-breaks-text-rule-binary](entries/KE-059-fewshot-breaks-text-rule-binary.md): KE-059: Few-Shot Examples Break the Text-Rule Binary
+- [KE-063-agent-artifact-trust-asymmetry](entries/KE-063-agent-artifact-trust-asymmetry.md): KE-063: The Artifact Trust Asymmetry — LLMs Systematically Over-Trust Documentation Over Code
+- [KE-066-cross-model-critique-rubber-duck-pattern](entries/KE-066-cross-model-critique-rubber-duck-pattern.md): KE-066: Cross-Model-Family Critique Closes 74.7% of Performance Gap
+- [KE-069-sft-dip-recovery-premature-evaluation](entries/KE-069-sft-dip-recovery-premature-evaluation.md): KE-069: SFT Dip-and-Recovery — Early Evaluations Systematically Underestimate Generalization
+- [KE-072-positional-privilege-architectural-theory](entries/KE-072-positional-privilege-architectural-theory.md): KE-072: Positional Privilege Is Architectural — U-Shaped Attention Bias Explains System vs Task Deli
+- [KE-075-client-side-pipeline-optimization-model-selection](entries/KE-075-client-side-pipeline-optimization-model-selection.md): KE-075: Client-Side Pipeline Optimization — The 13-32× Cost Gap and Bandit-Based Model Selection
+- [KE-077-step-saliency-reasoning-information-flow-diagnostics](entries/KE-077-step-saliency-reasoning-information-flow-diagnostics.md): KE-077: Step-Saliency — Reasoning Failures Are Predictable from Information Flow Patterns
+- [KE-081-automated-harness-optimization-closed-loop-self-improvement](entries/KE-081-automated-harness-optimization-closed-loop-self-improvement.md): KE-081: Automated Harness Optimization — Closed-Loop Self-Improvement via Meta-Agent Hill-Climbing
+- [KE-082-reasoning-dropout-config-drift-distributed-quality-failure](entries/KE-082-reasoning-dropout-config-drift-distributed-quality-failure.md): KE-082: Reasoning Dropout and Configuration Drift — Distributed Quality Failure in Adaptive Agent Sy
+- [KE-085-harness-engineering-field-crystallization](entries/KE-085-harness-engineering-field-crystallization.md): KE-085: Harness Engineering Field Crystallization — From Practitioner Craft to Academic Discipline
+- [KE-087-agent-infrastructure-primitives](entries/KE-087-agent-infrastructure-primitives.md): KE-087: Agent Infrastructure Primitives — The Stack Between Model and Task
+- [KE-090-verbalized-confidence-mechanisms-llm-agents](entries/KE-090-verbalized-confidence-mechanisms-llm-agents.md): KE-090: Verbalized Confidence Mechanisms in LLM Agents — Why Passive Hedging Detection Fails
+- [KE-092-hvr-not-predictive-agent-sessions](entries/KE-092-hvr-not-predictive-agent-sessions.md): KE-092: HVR Does Not Transfer to Multi-Step Agent Sessions
+- [KE-095-fm21-heterogeneous-not-strategic](entries/KE-095-fm21-heterogeneous-not-strategic.md): KE-095: FM-2.1 Is Heterogeneous — 54.5% Tactical, Not Strategic
+- [KE-101-meta-analysis-theory-of-agent-improvement](entries/KE-101-meta-analysis-theory-of-agent-improvement.md): KE-101: Meta-Analysis — A Theory of What Actually Improves LLM Agent Performance
+- [KE-112-production-quality-multimodal-verdicts-lie](entries/KE-112-production-quality-multimodal-verdicts-lie.md): KE-112: Production Session Quality Is Multi-Modal — The Verdicts Lie
+- [KE-116-next-gen-evaluation-architecture-adaptive-state-aware](entries/KE-116-next-gen-evaluation-architecture-adaptive-state-aware.md): KE-116: Next-Generation Agent Evaluation Architecture — Adaptive, State-Aware, Length-Resistant
+- [KE-124-agent-observability-production-evaluation-stack](entries/KE-124-agent-observability-production-evaluation-stack.md): KE-124: Agent Observability Production Evaluation Stack — Cognitive Observability Is the Binding Con
+- [KE-127-error-propagation-lifecycle-context-pollution-architectural-defenses](entries/KE-127-error-propagation-lifecycle-context-pollution-architectural-defenses.md): KE-127: Error Propagation Lifecycle — Context Pollution Mechanisms and Architectural Defenses
+- [KE-142-format-tax-external-validation-format-decoupled-gates](entries/KE-142-format-tax-external-validation-format-decoupled-gates.md): KE-142: Format Tax External Validation — DD-747 Directly Grounds H-103 Mechanism
+- [KE-149](entries/KE-149.md): KE-149: Heuristic Evaluator as 3-Way Classifier — Implicit Calibration Through the Acceptable Catego
+- [KE-150](entries/KE-150.md): KE-150: Quality ≠ Process Compliance — Convention Enforcement Needs a Separate Mechanism
+- [KE-151](entries/KE-151.md): KE-151: Extended Thinking Is Disabled System-Wide — Infrastructure Gap for Reasoning Observability
+- [KE-153-observability-tax-design-implications](entries/KE-153-observability-tax-design-implications.md): KE-153: Observability Tax — Design Implications from DD-750 Literature Synthesis
+- [KE-163-bias-amplification-difficulty-threshold-bridge](entries/KE-163-bias-amplification-difficulty-threshold-bridge.md): Synthesis: Bias Amplification as the Mechanistic Engine of H-107's Medium-Difficulty Peak
+- [KE-168-overhead-effect-inconclusive-at-medium-difficulty](entries/KE-168-overhead-effect-inconclusive-at-medium-difficulty.md): KE-168: Overhead Effect Inconclusive at Medium Difficulty
+- [KE-186-information-quality-trumps-process-forcing](entries/KE-186-information-quality-trumps-process-forcing.md): KE-186: Information Quality Trumps Process Forcing
+- [KE-190-hard-constraints-soft-guidance-moltbook](entries/KE-190-hard-constraints-soft-guidance-moltbook.md): KE-190: Hard Constraints Work, Soft Guidance Is Ignored — Moltbook at Scale
+- [KE-191-f1-generalization-four-failure-types](entries/KE-191-f1-generalization-four-failure-types.md): KE-191: Expert Analysis Injection (F1) Generalizes Across Four Failure Types
+- [KE-195-production-displacement-effect](entries/KE-195-production-displacement-effect.md): KE-195: Production-Displacement Effect — Self-Production Destroys Expert Analysis Benefit on Hard Ta
+- [KE-196-displacement-difficulty-moderation](entries/KE-196-displacement-difficulty-moderation.md): KE-196: Displacement Effect Is Difficulty-Moderated — Production Overhead Only Matters at Cognitive 
+- [KE-197-solver-sampler-mismatch](entries/KE-197-solver-sampler-mismatch.md): KE-197: Solver-Sampler Mismatch — Reasoning Strength Can Hurt System Outcomes
+- [KE-198-form-function-gap](entries/KE-198-form-function-gap.md): KE-198: Form-Function Gap — Agents Reproduce Structure Without Substance
+- [KE-199-f1-all-or-nothing-cascading-bugs](entries/KE-199-f1-all-or-nothing-cascading-bugs.md): KE-199: F1 Expert Knowledge is All-or-Nothing for Cascading Bugs
+- [KE-199b-low-threshold-causal-pointer-sufficient](entries/KE-199b-low-threshold-causal-pointer-sufficient.md): KE-199b: Low-Threshold Causal-Pointer Model — Any Causal Pointer Bridges Recognition→Execution
+- [KE-201](entries/KE-201.md): KE-201: MCP Production Gaps Map to May's Existing Architecture Challenges
+- [KE-203-scout-analysis-quality-gap](entries/KE-203-scout-analysis-quality-gap.md): KE-203: Scout-Generated Analysis Is Categorically Insufficient — Quantity of Investigation ≠ Causal 
+- [KE-204-form-function-gap-constraint-hierarchy](entries/KE-204-form-function-gap-constraint-hierarchy.md): KE-204: Form-Function Gap — Agents Reproduce Structure Without Substance Unless Hard-Constrained
+- [KE-205-mcp-production-gaps-mapping](entries/KE-205-mcp-production-gaps-mapping.md): KE-205: MCP Production Gaps — What We Already Do and What's Missing
+- [KE-207-tool-illusion-error-migration-context-pollution](entries/KE-207-tool-illusion-error-migration-context-pollution.md): KE-207: The Tool Illusion — Error Migration, Context Pollution, and the 3-5 Tool Sweet Spot
+- [KE-209-dd774-abstraction-transferability-validates-ke-architecture](entries/KE-209-dd774-abstraction-transferability-validates-ke-architecture.md): KE-209: DD-774 Abstraction-Transferability Taxonomy Validates (and Critiques) Our KE Architecture
+- [KE-211-dd767-typed-composition-structural-incompleteness](entries/KE-211-dd767-typed-composition-structural-incompleteness.md): KE-211: Typed Agent Composition (λ_A) — Structural Incompleteness as the Pre-Runtime Signature of FM
+- [KE-212-dd763-parallax-validates-architectural-enforcement](entries/KE-212-dd763-parallax-validates-architectural-enforcement.md): KE-212: DD-763 Parallax — External Validation of Architectural Enforcement (H-098 Ch2 at the Infra L
+- [KE-212-surface-deep-learning-measurement-gap](entries/KE-212-surface-deep-learning-measurement-gap.md): KE-212: Compliance ≠ Internalization — The Measurement Gap
+- [KE-220-dd769-agent-systems-gaps](entries/KE-220-dd769-agent-systems-gaps.md): KE-220: Agent Systems Survey — Gaps and Validations vs. Our Architecture
+- [KE-229-cognitive-executive-role-mapping](entries/KE-229-cognitive-executive-role-mapping.md): KE-229: Parallax cognitive-executive separation reveals our role split is cognitive-cognitive, not c
+- [KE-230-typed-agent-composition](entries/KE-230-typed-agent-composition.md): KE-230: Formal typing of agent compositions catches structural defects that config linting and runti
+- [KE-231-agent-systems-survey-patterns](entries/KE-231-agent-systems-survey-patterns.md): KE-231: Existing Agent Systems Survey — Our Architecture's Gaps and Advantages
+- [KE-242-typed-calculus-agent-composition](entries/KE-242-typed-calculus-agent-composition.md): KE-242: Formal Type Systems Reveal 94% of Agent Configs Are Structurally Incomplete
+- [KE-269-lambda-a-typed-calculus](entries/KE-269-lambda-a-typed-calculus.md): KE-269: Formal type systems for agent composition reveal 94% structural incompleteness in real confi
+- [KE-270-structure-all-the-way-down](entries/KE-270-structure-all-the-way-down.md): KE-270: "Structure All the Way Down" — Week 15 Capstone Convergence
+- [KE-273-decision-entropy-latent-hesitation-recognition](entries/KE-273-decision-entropy-latent-hesitation-recognition.md): KE-273: Decision Entropy as Latent Hesitation — Hidden States Detect Recognition Failures Before The
+- [KE-274-two-threshold-verification-evaluator-architecture](entries/KE-274-two-threshold-verification-evaluator-architecture.md): KE-274: The Missing Middle Zone — Our Evaluator Architecture Lacks DD-778's Deferral Band
+- [KE-276-observability-first-evaluation-runtime-logs](entries/KE-276-observability-first-evaluation-runtime-logs.md): KE-276: Observability-First Evaluation — Runtime Logs as Primary Evaluation Substrate
+- [KE-279-five-laws-external-validation](entries/KE-279-five-laws-external-validation.md): KE-279: External Validation of KE-101 Five Laws — Independent Replication Across 19K+ Evaluations
+- [KE-280-confidence-calibration-tool-type-provenance-paradox](entries/KE-280-confidence-calibration-tool-type-provenance-paradox.md): KE-280: Uncalibrated Confidence Is Net-Negative — Tool-Type Dichotomy and Provenance Paradox
+- [KE-288-task-type-topology-sensitivity-four-axes](entries/KE-288-task-type-topology-sensitivity-four-axes.md): KE-288 — Task-Type Topology Sensitivity: Four Convergent Axes
+- [KE-292-surface-cot-unreliable-reasoning-is-latent](entries/KE-292-surface-cot-unreliable-reasoning-is-latent.md): KE-292: Surface CoT Is Unreliable — Reasoning Lives in Latent States
+- [KE-294-difficulty-confound-simpsons-paradox](entries/KE-294-difficulty-confound-simpsons-paradox.md): KE-294: Overhead-Failure Correlation Is a Simpson's Paradox — Difficulty Is the Confound
+- [KE-295-step-level-overhead-moderation](entries/KE-295-step-level-overhead-moderation.md): KE-295: Overhead Effects Operate at Step-Level, Not Task-Level
+- [KE-296-overhead-type-taxonomy-capability-floor](entries/KE-296-overhead-type-taxonomy-capability-floor.md): KE-296: Three Overhead Types With Distinct Difficulty Interactions
+- [KE-300-failure-localization-gap](entries/KE-300-failure-localization-gap.md): KE-300: The Failure Localization Gap — LLM-as-Judge Fails at Step Level
+- [KE-303-artificial-organisations-information-asymmetry](entries/KE-303-artificial-organisations-information-asymmetry.md): KE-303: Artificial Organisations — Alignment as Institutional Design via Information Asymmetry
+- [KE-306-agentprop-bench-evaluation-reliability-gap](entries/KE-306-agentprop-bench-evaluation-reliability-gap.md): KE-306: AgentProp-Bench — Agent Evaluation Is Unreliable; Rejection and Recovery Are Independent
+- [KE-307-agentic-frameworks-orchestration-over-reasoning](entries/KE-307-agentic-frameworks-orchestration-over-reasoning.md): KE-307: Agentic Framework Bake-Off — Orchestration Quality Trumps Reasoning Capability
+- [KE-322-semantic-drift-detection-intent-graphs](entries/KE-322-semantic-drift-detection-intent-graphs.md): KE-322: Semantic Drift Detection via Intent Graphs and Conflict Taxonomy
+- [KE-324-adaptive-collaboration-topology-skillgraph](entries/KE-324-adaptive-collaboration-topology-skillgraph.md): KE-324: Adaptive Collaboration Topology via Content-Conditioned Graph Prediction
+- [KE-328-typed-lesson-replay-verbal-reinforcement](entries/KE-328-typed-lesson-replay-verbal-reinforcement.md): KE-328: Typed Lesson Replay — Verbal Reinforcement Closes the Learning Loop
+- [KE-333-structural-learning-taxonomy-three-paradigms](entries/KE-333-structural-learning-taxonomy-three-paradigms.md): KE-333 — Structural Learning Taxonomy: Three Paradigms All Validate Structure > Content
+- [KE-335-obsidian-human-exploration-layer](entries/KE-335-obsidian-human-exploration-layer.md): KE-335 — Obsidian as Read-Only Human Exploration Layer for Agent Knowledge Bases
+- [KE-336-self-lesson-quality-gap-smaller-than-expected](entries/KE-336-self-lesson-quality-gap-smaller-than-expected.md): KE-336: Self-Lesson Quality Gap Smaller Than Expected
+- [KE-345-handoff-information-loss-48pct](entries/KE-345-handoff-information-loss-48pct.md): KE-345: Agent Handoff Information Loss Averages 48.8% — Predictions and Cross-References Hit Hardest
+- [KE-352-dead-ends-general-advice-null](entries/KE-352-dead-ends-general-advice-null.md): KE-352: Dead Ends as General Advice Has Zero Effect
+- [KE-356-meta-cognitive-enumeration-null](entries/KE-356-meta-cognitive-enumeration-null.md): KE-356: Meta-Cognitive Defect Enumeration Has Zero Effect
+- [KE-359-background-skills-dont-trigger-behavior](entries/KE-359-background-skills-dont-trigger-behavior.md): ---
+- [KE-359-git-orientation-failure-persists-despite-text](entries/KE-359-git-orientation-failure-persists-despite-text.md): KE-359: Git Orientation Failure Persists Despite Repeated Text Warnings
+- [KE-364-cascading-bugs-need-explicit-solutions](entries/KE-364-cascading-bugs-need-explicit-solutions.md): KE-364: Cascading Bugs Need Explicit Solutions
+- [KE-366-checkpoint-decomposition-sequential-fm-detection](entries/KE-366-checkpoint-decomposition-sequential-fm-detection.md): KE-366: Checkpoint Decomposition Improves Sequential FM Detection
+- [KE-371-workflow-access-coverage-gap](entries/KE-371-workflow-access-coverage-gap.md): KE-371: Workflow Protection Coverage Gap — Most Agent Sessions Are Unprotected
+- [KE-377-context-structure-beats-content](entries/KE-377-context-structure-beats-content.md): KE-377: Context Structure Beats Content — Environment Block Positioning
+- [KE-378-checklists-insufficient-for-discipline](entries/KE-378-checklists-insufficient-for-discipline.md): KE-378: Pre-Completion Checklists Are Insufficient for Discipline Failures
+- [KE-379-mid-session-env-orientation](entries/KE-379-mid-session-env-orientation.md): KE-379: Structural environment blocks beat scattered facts for knowledge activation
+- [KE-380-checklist-catch-rate-ceiling](entries/KE-380-checklist-catch-rate-ceiling.md): KE-380: Pre-completion checklists catch only ~27% of instruction adherence failures
+- [KE-381-failure-analysis-spawns-follow-ons](entries/KE-381-failure-analysis-spawns-follow-ons.md): KE-381: Mandatory failure analysis on rejected experiments generates valuable follow-on hypotheses
