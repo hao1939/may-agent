@@ -52,10 +52,6 @@
 
 ## Learned from experience
 
-- Now let me commit and notify relevant agents. (source: s_1777053335818_233, 2026-04-24)
-- Coverage metric is at 35 vs target 24, so it's actually fine. The notification about regression from 62% to 35% is noted but the metric is still above target. No emergency action needed.
-- Now notify bob about the StructMem finding since it connects to memory architecture: (source: s_1777060535794_384, 2026-04-24)
-- Now let me verify the deliverable and handle inbox events. (source: s_1777058735884_346, 2026-04-24)
 - This is from another agent's experiment run. I'll commit it to unblock. (source: s_1777056935832_308, 2026-04-24)
 - Triage complete. From today's cs.MA: **DiffMAS (2604.21794)** is high-relevance — latent communication optimization for MAS. The rest are domain-specific or low-relevance. DD#783-785 are already writt (source: s_1777055135835_270, 2026-04-24)
 - Now let me write the triage finding and notify relevant agents. (source: s_1777067735665_540, 2026-04-24)
@@ -67,3 +63,7 @@
 - Now let me handle the inbox events and commit. (source: s_1777080336251_779, 2026-04-25)
 - Now commit and verify. (source: s_1777078535910_764, 2026-04-25)
 - Everything is healthy. No new papers, all metrics green, inbox items are stale. (source: s_1777076735620_723, 2026-04-25)
+- Now let me commit and finish. (source: s_1777089335872_830, 2026-04-25)
+- This SWARM paper is relevant — soft-label governance vs binary evaluation connects to H-EXP-017 (adversarial failure diagnosis) and our evaluator. Let me write the triage and notify bob. (source: s_1777087535422_818, 2026-04-25)
+- I didn't write or modify any files this session. This is a read-only heartbeat. (source: s_1777085735944_809, 2026-04-25)
+- Everything is current. No new papers to triage, metrics all healthy, inbox items are stale metric breaches that self-resolved. (source: s_1777083936379_800, 2026-04-25)

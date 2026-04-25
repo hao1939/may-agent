@@ -51,7 +51,6 @@ Even if you discover the environment isn't what you expected, even if tsc/vitest
 
 ## Learned from experience
 
-- /app root is NOT a TS/Vitest project — tsc/vitest only work in task-specific repos, not during heartbeats. This is expected. Don't treat it as a finding; just call finish() normally.
 - agents/ is the only git repo — /app itself is not a git repo. This is the normal setup.
 - ## Pending events (dedupe / act)
 - **Event 1:** **Dismiss** — duplicate/waste. No payload (no commit/PR/files) to review.
@@ -64,6 +63,10 @@ Even if you discover the environment isn't what you expected, even if tsc/vitest
 - Wasted tool calls due to running git commands in /app (not a git repo) before switching to /app/agents (Failure Chains 1–2: `git log`, `git status` -> code 128). (source: s_1777069954915_578, 2026-04-25)
 - ### Summary
 - ### Summary
-Repo appears to be a small Node (CommonJS) project (not a git checkout here, so I can’t audit “recent changes”). I independently reviewed `src/product-search.js` and ran the available test (source: s_1777080754998_780, 2026-04-25)
 - ### Summary
-No active QA work items beyond inbox triage. The 5 “Quick Code Review” notifications are duplicates/waste (no unique payload to act on). I independently verified the most recent QA-owned c (source: s_1777078955632_770, 2026-04-25)
+- ### Summary
+No active quality regressions detected this heartbeat. I deduped the noisy duplicate “Quick Code Review” waste notifications (no attached code to review), and I independently verified the  (source: s_1777087955686_820, 2026-04-25)
+- ### Inbox / Events triage
+
+- **[P1] Waste detected: 5 identical “Quick Code Review” requests (x5 notifications)** → **DISMISS**  
+  **Reason:** Duplicate/no actionable payload beyond “dedupe”; no uniq (source: s_1777084355068_802, 2026-04-25)

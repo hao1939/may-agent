@@ -76,10 +76,6 @@
 
 ## Learned from experience
 
-- Tests pass with `tsx`. The script outputs the correct sequence. (source: s_1777040172369_219, 2026-04-24)
-- Good. Let me checkpoint and finish. The key deliverable is the H-EXP-016 treatment scenario. The notifications are mostly literature grounding (P2) that doesn't require immediate action. (source: s_1777050636519_177, 2026-04-24)
-- Now let me write all three reviews: (source: s_1777049321836_0, 2026-04-24)
-- Now let me handle the scout finding (P2 item #2) inline and finish:
 - Now update the project status files: (source: s_1777049059738_0, 2026-04-24)
 - The papers and success_criteria.js aren't tracked. Let me add them: (source: s_1777047121265_100, 2026-04-24)
 - Also remove the hint comments from the test file: (source: s_1777047112413_99, 2026-04-24)
@@ -91,3 +87,12 @@
 - Now commit and finish: (source: s_1777079436716_775, 2026-04-25)
 - Now let me commit and wrap up: (source: s_1777077636308_747, 2026-04-25)
 - Both files verified — content is correct and complete. (source: s_1777075836241_708, 2026-04-25)
+- Now let me commit and finish. The key actions this heartbeat:
+1. Resolved H-EXP-014 (failure analysis mandate validated)
+2. Updated KE-381 to Grade A with complete evidence
+3. Confirmed H-EXP-017 stil (source: s_1777088436753_827, 2026-04-25)
+- H-EXP-014 just got more data: I closed H-EXP-013 (resolved, spawned insight about failed experiments having highest value) and H-EXP-018 (validated). Let me update its tracking. (source: s_1777086637083_815, 2026-04-25)
+- Now update journal and commit: (source: s_1777084836153_807, 2026-04-25)
+- The scout notifications are all P2 and informational — they've already been noted where relevant (DD#880 → H-EXP-018, others reference hypotheses). No action needed beyond acknowledging.
+
+Let me commi (source: s_1777083036743_796, 2026-04-25)

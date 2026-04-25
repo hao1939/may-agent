@@ -1,119 +1,97 @@
-# Nemotron-Personas-Korea: 用合成人格 grounding 韩国 AI Agent
+# Nemotron-Personas-Korea: 合成人格 grounding 区域化 Agent
 
 **来源**: Hugging Face Blog / NVIDIA (Apr 21, 2026)  
-**链接**: https://huggingface.co/blog/nvidia/build-korean-agents-with-nemotron-personas  
-**类型**: Synthetic Data / Agent Persona / Regionalization  
-**HB ID**: HB-260425-nemotron-personas-korea
+**链接**: https://huggingface.co/blog/nvidia/build-korean-agents-with-nemotron-personas
 
-## 核心发现
+---
 
-大多数 AI Agent 的基模主要用英文网页数据训练，缺失韩语敬语结构、区域职业模式和文化语境。NVIDIA 发布 **Nemotron-Personas-Korea** 数据集，提供 600 万基于韩国官方统计的**完全合成人格**，解决 Agent 的"身份盲"问题。
+## 核心贡献
 
-### 数据集规格
+NVIDIA 发布了 **600 万基于韩国官方统计的完全合成人格**，解决 Agent "身份盲"问题：
 
-| 属性 | 详情 |
-|------|------|
-| 总人格数 | 700 万 (100万记录 × 7 人格/记录) |
-| 字段 | 26 个：7 人格字段 + 6 属性字段 + 12 人口地理字段 + 1 ID |
-| 地理覆盖 | 韩国 17 个省，25 个区 |
-| 姓名 | ~20.9 万唯一姓名（118 姓，~2.14 万名） |
-| 职业 | 2000+ 类别（科技、制造、公共部门等） |
-| 人格类型 | 职业、家庭、体育、艺术、旅行、美食、简洁版 |
-| 人生阶段 | 学生、兵役、在职、失业、退休 |
-| 语言 | 自然韩语 |
+- **数据来源**: KOSIS (韩国官方统计厅) 人口统计
+- **姓名分布**: 韩国最高法院姓名大数据
+- **领域专家**: NAVER Cloud 各领域专家标注
+- **合规性**: 零 PII，遵循韩国 PIPA 和《合成数据生成指南》
 
-### 数据来源（官方统计）
+---
 
-- **KOSIS** (韩国统计信息服务): 2020-2026 人口数据
-- **韩国最高法院**: 姓名分布
-- **国民健康保险公团**: 医疗领域 seed 数据
-- **韩国农村经济研究院**: 农业领域 seed 数据
-- **NAVER Cloud**: 贡献 seed 数据和领域专业知识
+## 技术方案
 
-### 生成方法
-
-使用 **NeMo Data Designer** (NVIDIA 开源 compound AI 系统):
-- **Probabilistic Graphical Model** (Apache-2.0): 统计 grounding
-- **Gemma-4-31B**: 韩语叙事生成
-
-### 核心洞察：为什么需要区域化人格？
-
-**问题示例**:
-- 用美国医疗预约流程为韩国用户预约医院
-- 对 60 岁患者使用 반말（非敬语/平语）而非 존댓말（敬语）
-
-**解决方案**: 将人格加载到 system prompt，Agent 继承该人格的区域、职业、沟通规范和领域专长。
-
-### 使用示例：韩国公共卫生 Agent
-
-```python
-# 筛选医疗相关职业
-# "보건"=公共健康, "간호"=护理, "의료"=医疗, "의사"=医生
-health_personas = dataset.filter(
-    lambda x: "보건" in x["occupation"] or 
-              "간호" in x["occupation"] or 
-              "의료" in x["occupation"]
-)
-
-# 构建 system prompt
-system_prompt = f"""당신은 한국의 공중보건 상담 AI 에이전트입니다.
-
-[신원] # Identity
-- 이름: {persona['name']} # 姓名
-- 지역: {persona['region']} # 区域
-- 직업: {persona['occupation']} # 职业
-- 전문분야: {persona['skills']} # 专长
-
-[행동 지침] # Behavior guidelines
-- 한국어 존댓말을 사용하여 응답하세요。 # 使用敬语
-- 지역 보건소 및 공공 의료 체계에 대한 안내를 제공하세요。
-- 한국 공중보건 정책과 절차를 기반으로 정확한 정보를 제공하세요。
-- 문화적 맥락을 고려하여 상담하세요。 # 考虑文化语境
-"""
+### 人格生成流程
+```
+KOSIS 人口统计 → PGM 概率图模型 → 结构化人格数据 → Gemma-4-31B → 韩语叙事生成
 ```
 
-### 框架无关性
+**关键特性**:
+1. **统计 grounding**: 每个人格属性都与真实人口统计对齐
+2. **叙事生成**: LLM 将结构化数据转化为自然韩语人格描述
+3. **领域对齐**: 不同领域（医疗、金融、教育等）有特定专家标注
 
-人格层可与任何 Agent 框架配合使用：
-- **NemoClaw**: NVIDIA 开源 always-on Agent 参考栈
-- **NVIDIA NIM**: 生产推理服务
-- **直接 API 调用**: 任何支持 system prompt 的框架
+### 框架无关设计
+- 人格层独立于底层 Agent 框架
+- 可应用于任何支持 system prompt 的模型
+- 通过 system prompt 注入人格上下文
 
-### Nemotron-Personas 全球系列
+---
 
-| 地区 | 合作伙伴 | 状态 |
-|------|----------|------|
-| USA | NVIDIA | 已发布 |
-| Japan | NVIDIA | 已发布 |
-| India | NVIDIA | 已发布 |
-| Singapore | AI Singapore | 已发布 |
-| Brazil | WideLabs | 已发布 |
-| France | Pleias | 已发布 |
-| **Korea** | NAVER Cloud | **最新发布** |
+## 为什么人格很重要
 
-可混合多地区人格构建多语言 Agent。
+> "Persona is operating context, not decoration."
+> — 人格是运行上下文，不是装饰。
 
-### 合规设计
+**人格决定**:
+- **需求理解**: 如何解读用户 query 的意图
+- **表达方式**: 选择什么语言风格和详细程度
+- **知识调用**: 激活哪些领域知识和价值观
+- **决策偏好**: 在模糊场景下的默认倾向
 
-- **零 PII**: 所有人格基于统计生成，不含真实个人信息
-- **PIPA 合规**: 遵循韩国《个人信息保护法》
-- **官方指南**: 遵循韩国个人信息保护委员会发布的《合成数据生成指南》
+**示例差异**:
+| 用户 Query | 年轻都市白领人格 | 农村老年人人格 |
+|-----------|----------------|---------------|
+| "怎么存钱？" | 推荐股票、基金、加密货币 | 推荐邮局储蓄、定期存款 |
+| "哪里不舒服？" | 使用医学术语，建议专科检查 | 使用日常用语，建议休息观察 |
+
+---
 
 ## 对 OpenClaw 的意义
 
-- ✅ **区域化 Agent 范例**: 展示如何用合成数据实现 Agent 的本地化/区域化
-- ✅ **人格即 System Prompt**: 结构化人格数据 → 自然语言 system prompt 的转换模式
-- ✅ **框架无关设计**: 人格层独立于底层 Agent 框架，可移植
-- ⚠️ **缺乏人格层**: 当前 OpenClaw 无 explicit persona/identity 系统
-- ⚠️ **多语言支持**: 中文区域化可参考此模式，用官方统计数据 grounding
+### ✅ 可直接应用
+- **结构化人格数据 → system prompt 转换模式**: 可借鉴生成中文区域化人格
+- **框架无关设计**: 人格层独立于 AGENTS.md + Skills 架构
+- **合成数据 + 官方统计 = 可扩展方案**: 中文区域化可参考此模式
+
+### ⚠️ 当前缺失
+- **显式 persona/identity 系统**: OpenClaw 缺乏结构化人格层
+- **区域化适配**: 中文多地区（北方/南方/港台）人格差异未考虑
+- **用户画像集成**: 未将用户特征与 Agent 人格动态匹配
+
+### 🌏 中文区域化启示
+| 维度 | 韩国方案 | 中文方案可能性 |
+|------|---------|---------------|
+| 官方统计 | KOSIS | 国家统计局 |
+| 姓名分布 | 最高法院 | 公安部姓名数据 |
+| 领域专家 | NAVER Cloud | 阿里/腾讯/字节专家 |
+| 方言支持 | 标准韩语 | 粤语、闽南语、四川话等 |
+
+---
 
 ## 关键洞察
 
-> "Most agents today are identity-blind. They follow instructions without any grounding in who they're serving."
-
-人格不是装饰，而是**操作上下文**（operating context）——它决定了 Agent 如何理解用户需求、选择表达方式、调用领域知识。
-
-合成数据 + 官方统计 grounding = 可扩展的区域化方案，避免真实数据隐私问题。
+1. **人格是基础设施，不是功能**: 区域化 Agent 需要人格层作为一等公民
+2. **合成数据质量取决于 grounding**: 统计对齐确保合成人格的真实分布
+3. **合规先行**: 零 PII 设计确保可商用和法律安全
+4. **框架解耦**: 人格层应与 Agent 架构解耦，便于复用
 
 ---
-*Scraped by amy-kimi on 2026-04-25*
+
+## 参考资源
+
+- **NVIDIA Nemotron-Personas-Korea**: Hugging Face 数据集
+- **韩国 PIPA**: 个人信息保护法
+- **KOSIS**: https://kosis.kr/
+- **NAVER Cloud**: 领域专家合作方
+
+---
+
+*标签: #persona #regionalization #korean #synthetic-data #grounding #agent-identity*
