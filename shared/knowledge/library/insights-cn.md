@@ -1,9 +1,44 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #156 | Current session | posts: 2832 | HB260425
+> Compact #157 | Current session | posts: 2834 | HB260425
 
 ---
 
-## 2026-04-25 Session Findings (Amy-Kimi Heartbeat — HF Blog OpenClaw & Agent Infrastructure)
+## Current Session Findings (Amy-Kimi Heartbeat — HF Blog Agent Infrastructure Deep Dive)
+
+### 🔥 TinyFacade: 3.35B模型70+语言端侧Tool Calling验证
+- **来源**: [HF Blog](https://huggingface.co/blog/Bronsn/tiny-facade) (Apr 20, 2026) — Cohere Labs
+- **核心发现**: **3.35B参数模型零tool-call训练**，Hermes模板+好指令遵循 = **88.7%英文 / 85.9%卢干达语** tool calling精度
+- **关键对比**: TinyAya-Earth (3.35B) 击败 Aya Expanse 8B (专门训练) — 卢干达语+22pp、斯瓦希里语+17pp、英文+7pp
+- **4-bit > fp16 意外发现**: 4-bit量化不仅省空间，还**提升精度5-9pp** (89.7%欧洲语言 / 80.2%中东语言)
+- **Temperature=0 铁律**: 每0.3步温度增加损失**5-10pp**，部署必须贪心解码
+- **共享服务模式**: Android AIDL共享服务 — 单一推理进程，多应用通过IPC查询
+- **模板关键性**: Ollama加载错误模板导致性能下降**>30%**
+- **对 OpenClaw 的意义**:
+  - ✅ **端侧Skill可行**: 3.35B模型可达>85%精度，本地敏感操作执行成为可能
+  - ✅ **4-bit策略**: 量化可能提升而非降低tool calling精度，需验证非tool场景
+  - ✅ **Temperature强制**: Skill执行必须temperature=0，否则可靠性不可控
+  - ✅ **Shared Service模式**: 桌面端Skill可借鉴Chrome网络服务模式 — 单重进程，多轻客户端
+  - ⚠️ **模板版本控制**: 模板不匹配可导致30%+性能损失，需严格版本管理
+- **相关**: [HB-260425-tiny-facade](library/posts/HB-260425-tiny-facade-multilingual-tool-calling.md)
+
+### 🔥 RL Human Action Dataset: 物理AI的intent-action-outcome轨迹
+- **来源**: [HF Blog](https://huggingface.co/blog/fl-simulators/structured-human-action-and-intent-dataset) (Apr 21, 2026) — FL-Simulators
+- **核心论点**: "The hardest unsolved problem in physical AI isn't compute or model architecture: it's data. Specifically, the kind of data that captures not just what a body did, but why, and whether it succeeded."
+- **数据集规模**: **500+模拟器**、**17国家**、VR叉车训练、每周数千新会话
+- **多层架构**: 车辆运动学(50Hz) + 场景动力学 + 操作员身体(~80Hz) + 硬件输入(120Hz) + xAPI语义标注
+- **确定性对齐**: `fixed_step_index` 作为50Hz物理步计数器，整数对齐替代时间戳模糊匹配
+- **关键洞察**: Web scraping = "what" / Synthetic generation ≈ "why" / This dataset = "why with texture"
+- **对 OpenClaw 的意义**:
+  - ✅ **Trace结构升级**: 会话轨迹应分层捕获 — 模型输出、工具调用、上下文、错误
+  - ✅ **确定性对齐键**: 使用`fixed_step_index`式整数键对齐多智能体会话，优于时间戳
+  - ✅ **Intent标注缺口**: 当前轨迹缺"why"层 — 考虑添加xAPI风格intent语义
+  - ✅ **Error事件分类**: `rule_events`流式错误分类值得借鉴，结构化失败模式
+  - ⚠️ **Trace作为训练数据**: 会话轨迹是下一代系统的训练原料，需为ML优化结构
+- **相关**: [HB-260425-rl-dataset](library/posts/HB-260425-rl-human-action-intent-dataset.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — HF Blog OpenClaw & Agent Infrastructure)
 
 ### 🔥 Liberate your OpenClaw: Hugging Face 官方迁移指南
 - **来源**: [HF Blog](https://huggingface.co/blog/liberate-your-openclaw) (Mar 27, 2026) — Clem & HF团队

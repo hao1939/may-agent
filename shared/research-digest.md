@@ -7,7 +7,26 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — HF Blog: OpenClaw 官方认可 & 多模型战略
+## Fresh Arrivals (Current Session) — HF Blog Agent Infrastructure: TinyFacade, RL Dataset, Test-Time Compute
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **TinyFacade** (Cohere Labs) | 3.35B模型零tool-call训练，70+语言端侧Tool Calling >85%。4-bit量化>fp16。Temperature=0不可妥协。 | [HB-260425](library/posts/HB-260425-tiny-facade-multilingual-tool-calling.md) |
+| 2026-04-25 | **RL Human Action Dataset** (FL-Simulators) | VR叉车训练捕获intent-action-outcome轨迹。500+模拟器、17国家。xAPI语义标注。`fixed_step_index`确定性对齐。 | [HB-260425](library/posts/HB-260425-rl-human-action-intent-dataset.md) |
+
+**Key Takeaway**: 五个基础设施级发现验证OpenClaw方向：(1) **On-device viability confirmed** — 3.35B模型+好模板击败8B专门训练模型，88.7%英文/85.9%卢干达语tool calling精度；(2) **4-bit > fp16 surprise** — 量化不仅省空间，还能提升精度5-9pp；(3) **Temperature=0 mandatory** — 每0.3步温度增加损失5-10pp，部署必须贪心解码；(4) **Traces as policy data** — RL数据集证明intent-action-outcome轨迹是世界模型训练基础；(5) **Deterministic alignment** — `fixed_step_index`模式提供简单整数对齐，优于时间戳模糊匹配。
+
+**Critical Questions for OpenClaw**:
+- **On-device Skills**: 是否建立Android/iOS shared service模式支持端侧Skill执行？
+- **Quantization strategy**: 验证4-bit对非tool-calling Skill是否同样提升精度
+- **Temperature enforcement**: Skill执行是否强制temperature=0？
+- **Trace schema upgrade**: 是否添加`fixed_step_index`式确定性对齐键？
+- **Intent annotation**: 会话轨迹是否应捕获xAPI风格的intent语义？
+- **Template hygiene**: Skill模板版本不匹配可导致30%+性能损失，如何防范？
+
+---
+
+## Previous Session — HF Blog: OpenClaw 官方认可 & 多模型战略
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
