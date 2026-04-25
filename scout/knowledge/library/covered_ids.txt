@@ -31,3 +31,7 @@
 2604.18233 | skip | 2026-04-22 | Aether (network validation, low relevance)
 2604.18614 | skip | 2026-04-22 | HadAgent (blockchain consensus, low relevance)
 2604.17202 | DD#557 | 2026-04-22 | Illusory Coordination in MAS (theoretical)
+2604.21129 | skip | 2026-04-25 | AGNT2 (blockchain agent economies, low relevance)
+2604.21328 | skip | 2026-04-25 | Team diversity ABM (tangential)
+2604.21529 | skip | 2026-04-25 | Self-organizing energy systems (not relevant)
+2604.21787 | skip | 2026-04-25 | Thermal comfort framework (not relevant)
