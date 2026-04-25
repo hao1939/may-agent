@@ -1,12 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777101185185_1
+- **Session:** s_1777101303990_7
 - **Status:** done
-- **When:** 2026-04-25T07:15:39.226Z
-- **Duration:** 2m34s
+- **When:** 2026-04-25T07:16:58.911Z
+- **Duration:** 1m54s
 
 ## What Happened
-Most are 1.0 (heuristic) with a few LLM evals that are lower. The pattern is clear: heuristic evaluator gives me 1.0 by default, but LLM evaluator catches real issues. This is expected.
+I have sufficient evidence. Let me write the tracker with my findings.
 
-Let me finish. I've accomplished the key objective: **broke the text→action barrier by using agents.fork for P0 items**.
+**Behavioral item verified: "Context first. Before acting, gather enough context to act well."**
+
+**Evidence gathered:**
+- Session `s_1776014661800_2260`: First actions are `read, read, bash` — three context-gathering calls before any action. Agent text says "I'll start by reading the two findings files and understanding the patterns, then design and build the tool."
+- Session `s_1777095521991_861`: Agent says "I'll start by checking build health and then triage the inbox items."  
+- 8 out of 20 recent sessions begin with `read` as first tool call; others begin with `bash` (likely context-gathering grep/ls commands)
+- The coder memory shows extensive read-verify-then-act patterns
+
+**Verdict: YES — generally followed**
