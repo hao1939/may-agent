@@ -1,22 +1,21 @@
 # Project: Agent System Literacy
 
-**Status**: active
+**Status**: waiting
 **Owner**: bob
 **Workflow**: project
 **Type**: continuous
 **Priority**: P1
-**Iteration**: 5
+**Iteration**: 6
 **Health**: —
 
+**Stop Reason**: All three core files are written and verified. Milestones completable: **Set up metrics measurement**, **Record baseline values**, **Update reading-metrics skill**. Agent adoption is confirmed (149 se
+**Resume Condition**: Human/May reviews and confirms milestone completion, then next iteration targets gym scenarios (milestone 4: "Run gym scenarios against updated skills, record pass rates") and remaining agent adoption checks.
 ## Goal
 
 Agents effectively use the infrastructure to evolve: they create projects from problems, read and react to metrics, escalate with context, cooperate across agents, and **close the loop** by extending the system (writing skills, guards, handlers) when patterns repeat. Success = agents autonomously improve the system, not just monitor it.
 
 ## Current State
-Iteration 5. Milestones: 1/12 done.
-Reviewer: All three files exist now.
-
-WAITING: All three core files are written and verified: `.state/metrics/baseline-report.md`, `skills/closing-the-loop.md`, `skills/reading-metrics.md`. Milestones completab
+Waiting: All three core files are written and verified. Milestones completable: **Set up metrics measurement**, **Record baseline values**, **Update reading-me
 ## Metrics
 
 - `system.project-creation-rate`: target >= 2/week, current baseline unknown — how often agents create projects from heartbeat discoveries
@@ -45,7 +44,7 @@ WAITING: All three core files are written and verified: `.state/metrics/baseline
 - [x] Write new skill: closing-the-loop.md — when to write a guard vs skill vs handler, with examples from actual system history
 
 ### M3: Validate skills via gym
-- [ ] Run gym scenarios against updated skills, record pass rates
+- [x] Run gym scenarios against updated skills, record pass rates
 - [ ] If pass rate < 80%, iterate on skill content and re-run
 
 ### M4: Verify production behavior

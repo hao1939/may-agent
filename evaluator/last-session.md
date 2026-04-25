@@ -1,46 +1,48 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777142868534_171
+- **Session:** s_1777144068202_183
 - **Status:** done
-- **When:** 2026-04-25T18:47:55.738Z
-- **Duration:** 7s
+- **When:** 2026-04-25T19:07:54.943Z
+- **Duration:** 6s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "amy-kimi": {
-      "role": "Researcher",
+    "coach": {
+      "role": "Philosopher/Architect",
       "capability_level": "L2",
-      "efficiency": 0.55,
-      "quality": 0.7,
-      "verdict": "acceptable",
+      "efficiency": 0.75,
+      "quality": 0.9,
+      "verdict": "good",
       "issues": [
-        "Incorrect path assumption: attempted `agents/shared/tools/xhs-browse.mjs` which did not exist; only later discovered correct location under `agents/amy-kimi/skills/xhs-browse.mjs` (Failure Chain 1).",
-        "Repeated XHS searches failed with selector timeouts and the agent did not pivot to alternative sources after 2 failures as instructed (Chains 2/4/5).",
-        "Misused `--help`: ran `node ... --help` and treated exit code 1 as failure without adjusting approach; indicates weak CLI hygiene (Chain 3).",
-        "Idle-playbook consult failed due to wrong path and the agent did not locate the correct file; instead they pivoted to synthesis but without demonstrating they consulted the playbook (Chain 6).",
-        "Initial finish was blocked by verification guard; needed a second pass to read files after last edit ([FM-3.3] near-miss, recovered)."
+        "Minor process friction: attempted finish() while blocked by unrelated uncommitted change (coach/last-session.md), requiring extra git steps."
       ],
       "metrics": {
-        "insight_density": "medium",
-        "source_variety": "low",
-        "verification": "medium (recovered after guard)",
-        "tool_resilience": "medium-low"
+        "task_completion": "high",
+        "evidence_quality": "high",
+        "process_hygiene": "medium"
       }
     }
   },
   "workflow": {
-    "name": "heartbeat",
+    "name": "C1.1 Recovery — Read Before Edit",
     "issues": [
-      "Primary exploration objective (XHS browsing/search) was not achieved due to tool/site failures; limited evidence of fallback to other external sources beyond brief mention.",
-      "However, the session still produced a measurable artifact (synthesis notes) and passed verification after guard intervention."
+      "Guardrail caused overhead due to unrelated repo state (uncommitted coach/last-session.md), but agent resolved it correctly."
     ]
   },
   "overall": {
-    "verdict": "acceptable",
+    "verdict": "good",
     "result_delivered": true
   }
 }
 ```
+
+Evidence-based notes:
+- Verified requirement satisfied: coach performed `read(.state/experiments/EXP-223-c71-hard-block.md)` and then asserted file correctness (tool output shows expected doc structure and content).
+- Deliverable integrity: finish() evidence explicitly cites the read step; no unverifiable claims like “tests passed.”
+- Efficiency impact: 1 failed `finish()` due to uncommitted `coach/last-session.md`, then 3 bash calls + commit to unblock, then successful `finish()`.
+
+Lessons / patterns:
+- `[coach] Before calling finish(), check for uncommitted changes to avoid an extra fail+recovery loop when repo metadata files auto-update.`

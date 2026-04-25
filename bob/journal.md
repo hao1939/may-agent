@@ -666,3 +666,26 @@ H-054 P(H) updated to 0.65 (from 0.50). Phase 2 (inter-rater reliability measure
 ### Next
 - Run a gym→skill→retest cycle on a behavioral scenario (idempotent-already-fixed is closest to passing at 6/8).
 - The `test/` gitignore issue means runner fixes need an alternative path (maybe a non-dotfile name or .gitignore exception).
+
+## 2026-04-25 Heartbeat
+
+### Inbox Triage
+- DD#880 (Experience Compression Spectrum, P1): Read deep-dive. Maps to our architecture — checkpoints=episodic, context.md=declarative, missing procedural layer. Already captured in DD#795. No new action.
+- DD#883 "Escaping the Agreement Trap" (P1): High relevance. KE-396 already written. Designed EXP-223 to audit gym failures for defensibility.
+- Remaining P2 paper notifications: dismissed (informational, connections already made by scout).
+- P1 waste/productivity warnings: dismissed (metrics healthy, 96% experiment completion).
+
+### New Experiment: EXP-223 (Agreement Trap Audit)
+- Designed retrospective audit of 20 gym failures to measure defensibility rate
+- Prediction: ≥30% of judgment-scenario failures are valid alternative approaches
+- Low cost (1-2 sessions, no gym runs needed)
+- Motivated by KE-396 + DD#883
+
+### Projects
+- **gym-leverage**: active, next cycle is behavioral scenario improvement.
+- **agent-system-literacy**: waiting on human review. No action.
+- **master-worker-test / test-2**: waiting on human review. No action.
+
+### Next
+- Execute EXP-223 (pull gym failure transcripts, audit defensibility)
+- Resume gym-leverage: behavioral scenario improvement cycle

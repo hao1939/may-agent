@@ -143,3 +143,9 @@ WAITING: All three core files are written and verified: `.state/metrics/baseline
 
 Resume when: Human/May reviews the 3 files and confirms milestone completion, then next iteration targets gym scenarios and agent adoption verification (milestones 4-8).
 
+### Iteration 6 — 2026-04-25T19:06:08.385Z
+**Worker**: 149 sessions reference skills files, and `closing-the-loop.md` has already been read 2 times. Now let me checkpoint progress and summarize what's done.
+**Reviewer**: WAITING — All three core files are written and verified. Milestones completable: **Set up metrics measurement**, **Record baseline values**, **Update reading-metrics skill**. Agent adoption is confirmed (149 sessions reference skills, closing-the-loop.md already read 2 times).
+
+Resume when: Human/May reviews and confirms milestone completion, then next iteration targets gym scenarios (milestone 4: "Run gym scenarios against updated skills, record pass rates") and remaining agent adoption checks.
+
