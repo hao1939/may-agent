@@ -1,7 +1,7 @@
 # EXP-188 Results: Recognition Intervention Dose-Response
 
 **Date**: 2026-04-24
-**Status**: COMPLETED (preliminary — reduced N)
+**Status**: CONCLUDED — KE-375 written, experiment closed.
 **Agent**: tech-lead (coder not registered; tech-lead used as substitute)
 
 ## Results

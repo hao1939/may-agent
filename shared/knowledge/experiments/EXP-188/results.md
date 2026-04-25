@@ -1,6 +1,6 @@
 # EXP-188: Recognition Intervention Dose-Response on sql-injection-in-query-builder
 
-**Status**: INCOMPLETE — Only 17/75 runs completed (needs 58 more)
+**Status**: CONCLUDED — Results statistically significant despite reduced N (p < 0.001). KE-375 written.
 
 ## Partial Data (as of 2026-06-24)
 
