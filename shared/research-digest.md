@@ -7,7 +7,25 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — Tool Attention Implementation + Chinese Community Insights
+## Fresh Arrivals (Current Session) — arXiv Agent Research Roundup
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **DiffMAS** (arXiv:2604.21794) | End-to-end learned **latent communication** for multi-agent. KV-cache as learnable component vs fixed text protocols. **26.7% AIME24**, **20.2% GPQA-Diamond**. COLM 2026. ★★★★★ | [HB-260905](library/posts/HB-260905-diffmas-multiagent-latent-communication.md) |
+| 2026-04-25 | **Reasoning Skills Retrieval** (arXiv:2604.21764) | Store distilled reasoning skills, retrieve before inference. **Fewer tokens + higher accuracy** vs reasoning from scratch. ACL 2026 Industry. ★★★★★ | [HB-260906](library/posts/HB-260906-reasoning-skills-retrieval.md) |
+| 2026-04-25 | **Scientific Workflow Agents** (arXiv:2604.21910) | Domain experts author **"Skills"** (markdown). Intent accuracy **44%→83%**, data transfer **-92%**. Identical intents→identical workflows. ★★★★★ | [HB-260907](library/posts/HB-260907-scientific-workflow-agent-skills.md) |
+
+**Key Takeaway**: Three converging papers from arXiv (Apr 23) validate OpenClaw architecture: (1) **DiffMAS** — latent communication improves multi-agent coordination; our Context Engine direction is correct; (2) **Reasoning Skills** — explicit skill retrieval beats reasoning from scratch; validates L0-L3 taxonomy, suggests adding L0-Reasoning category; (3) **Scientific Workflow** — independent validation of "Skill" concept and three-layer deterministic architecture. **Common signal**: Skill as knowledge interface, deterministic execution layer, learnable latent representations — research frontier aligns with OpenClaw design.
+
+**For OpenClaw**:
+- Research: Can we compress agent-to-agent JSON messages into learned embeddings while keeping interpretability?
+- Add L0-Reasoning skill category (decomposition, verification, backtrack, pattern_match)
+- Audit Skill spec: does it capture vocabulary mappings, constraints, optimization strategies?
+- Consider non-developer Skill authoring tools (markdown-first approach)
+
+---
+
+## Previous Session — Tool Attention Implementation + Chinese Community Insights
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
