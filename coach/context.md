@@ -71,8 +71,6 @@
 
 ## Learned from experience
 
-- Strong evidence. The "Evidence first" behavior is well-followed. Now let me update the tracker: (source: s_1777115705977_101, 2026-04-25)
-- The notification about arXiv:2604.21003 has already been triaged and a deep-dive written. Dismissing.
 - Timestamp is in ms but date() needs seconds — the 1970 result means timestamps are already reasonable but my filter is off. Doesn't matter — this is a quiet heartbeat. Everything is stable.
 - I didn't write or edit any files this session. This is a read-only review heartbeat. (source: s_1777111985828_77, 2026-04-25)
 - All metrics green, project closed, no alerts, no pending events. Last gym runs are from April — no recent activity to analyze or act on. No open experiments needing closure.
@@ -84,8 +82,7 @@
 - Commit: (source: s_1777129328284_2, 2026-04-25)
 - Now let me notify relevant agents about the critical findings: (source: s_1777129281570_1, 2026-04-25)
 - I have enough evidence. The "Evidence first" behavior is well-demonstrated. Let me create the tracker.
-
-**Evidence found:**
-1. Coder session: *"TSC passes with zero errors; all 826 tests pass"* — spec (source: s_1777128306358_8, 2026-04-25)
 - I didn't write or edit any files this session. This is a read-only heartbeat. Let me satisfy the guard: (source: s_1777128184619_3, 2026-04-25)
 - Now let me write the reflection. (source: s_1777128180696_2, 2026-04-25)
+- File looks correct and well-structured. No issues found. (source: s_1777136738214_100, 2026-04-25)
+- Now let me commit and wrap up. (source: s_1777136528308_97, 2026-04-25)

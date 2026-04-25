@@ -24,28 +24,28 @@ A session is a unit of work with:
 ```typescript
 interface PersistedSession {
   // ... existing fields ...
-  type: "agent" | "workflow";   // default "agent" for backward compat
-  workflow?: string;             // workflow name (only for type: "workflow")
-  childOrder?: string[];         // ordered list of child sessionIds (step sequence)
+  type?: "agent" | "workflow";  // default "agent" for backward compat
+  childOrder?: string[];         // ordered child sessionIds (workflow sessions only)
 }
 ```
 
-### Resume model: lazy, on-demand
+### Crash recovery: no eager resume, workflow replay
 
-**No eager resume.** On crash:
+**On startup:** mark all `running` → `interrupted`. Nothing else. ~20 lines replaces 250.
 
-1. Startup: mark ALL `running` sessions as `interrupted` (workflow parents and agent children alike)
-2. Nobody gets resumed eagerly
-3. Natural triggers re-launch work:
-   - **Heartbeats** → timer fires again naturally
-   - **Projects** → project handler sees project still active, launches new workflow
-   - **Standalone tasks** → re-triggered by whatever originally triggered them
-4. New workflow starts, gets reference to previous (interrupted) workflow session
-5. When new workflow calls `runAgent("coder", task)`:
-   - Check: did previous workflow session have a **completed** child at this step position?
-   - If yes → replay its `TaskResult` (skip the step)
-   - If no (child was interrupted or doesn't exist) → run live
-6. **Child sessions are only replayed when execution reaches them** — never eagerly
+**Re-launch:** natural triggers (project handler, timers) start a fresh workflow. The new workflow gets `previousSessionId` — the exact ID of the interrupted workflow session.
+
+**Replay by exact ID:** The interrupted workflow session's meta has `childOrder: ["s_456", "s_789"]` — the exact ordered list of child session IDs.
+
+When the new workflow calls `runAgent()` at step 0:
+1. Read `previousSessionId`'s `childOrder[0]` → `"s_456"`
+2. Read `s_456`'s status → `done` → skip, return `manager.result("s_456")`
+
+When it calls `runAgent()` at step 1:
+1. Read `childOrder[1]` → `"s_789"`
+2. Read `s_789`'s status → `interrupted` → run fresh session
+
+No vague queries. Exact session IDs. The parent's `childOrder` is updated each time a child is created.
 
 ### What this means for each session type
 
