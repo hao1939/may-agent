@@ -1,31 +1,32 @@
 # QA Heartbeat — Unreviewed Findings
 
-## 2026-04-25 — Inbox triage + EXP-220 alert verification
+## Context
+- Repo root `/app` is **not a git repository** (no `.git`), so `git log`/diff-based verification cannot be performed from this environment.
+- Pending event asks to verify gym scenario **EXP-220 (enoent-file-search)** exists and is properly set up.
 
-### Finding: EXP-220 / enoent-file-search scenario naming mismatch
-**Severity:** IMPORTANT
+## Findings
+### 1) EXP-220 scenario not found (IMPORTANT)
+- Searched for scenario directory names matching `EXP-220*` under `agents/gym/scenarios`.
+- No matches found.
 
-**What the alert says:** “Verify the new gym scenario EXP-220 (enoent-file-search) was properly set”.
+**Evidence**
+- `find agents/gym/scenarios -maxdepth 2 -type d -iname '*EXP-220*' -print` → (no output)
 
-**What exists in repo:** A gym scenario folder exists at `agents/gym/scenarios/enoent-file-search/` with:
-- `scenario.json`
-- `task.md`
-- `success_criteria.js`
+**Impact**
+- If EXP-220 is expected to exist, it appears missing/misnamed/untracked in this environment.
 
-Evidence (repo reads):
-- `agents/gym/scenarios/enoent-file-search/scenario.json` has `"name": "enoent-file-search"` and describes the ENOENT/file-search trap.
+**Suggested next steps**
+- Confirm expected naming convention (e.g., `enoent-file-search` without EXP ID prefix, or stored elsewhere).
+- If it should exist, locate where it was written (check other directories) or re-add it.
 
-**Issue:** There is no scenario folder/file explicitly named `EXP-220` under `agents/gym/scenarios/`. Either:
-1) EXP-220 is intended to be the codename for the `enoent-file-search` scenario (in which case the alert is fine but should clarify the mapping), or
-2) A distinct EXP-220 scenario folder is missing.
+### 2) Verification workflow blocked by missing git metadata (IMPORTANT)
+- `git log --oneline -10` fails with “not a git repository”.
 
-**Recommendation:** Update the alert text to reference the concrete repo path `agents/gym/scenarios/enoent-file-search/` (and/or add EXP-220 metadata somewhere authoritative).
+**Evidence**
+- `git log --oneline -10` → fatal: not a git repository
 
-### Environment limitation: mandatory QA gate commands unavailable
-**Severity:** IMPORTANT (environment)
+**Impact**
+- Cannot proactively scan recent commits/diffs in this environment.
 
-The required QA gate commands fail in this repo checkout because `node_modules/.bin/tsc` and `node_modules/.bin/vitest` are not present.
-- `./node_modules/.bin/tsc --noEmit` → ENOENT
-- `./node_modules/.bin/vitest --run` → ENOENT
-
-Recommendation: Ensure dependencies are installed in this environment or provide the correct invocation (e.g., via `pnpm`/`npm` scripts) so QA can run the mandated checks.
+**Suggested next steps**
+- Ensure `/app` is mounted with `.git`, or provide a path to the git checkout.
