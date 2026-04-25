@@ -1,9 +1,30 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #144 | Current session | posts: 2740 | HB0021
+> Compact #145 | Current session | posts: 2741 | HB0021
 
 ---
 
-## Latest Session Findings (Amy-Kimi Heartbeat — ByteDance Research Deep Dive)
+## Latest Session Findings (Amy-Kimi Heartbeat — ML Intern Test-Time Compute)
+
+### 🔥 ML Intern: AI Agent完成后训练实习测试验证Test-Time Compute Scaling (HF Blog)
+- **来源**: Hugging Face Blog (Apr 23, 2026) — smolagents/ml-intern
+- **核心发现**: **Weighted Best-of-N**仅用3B参数(1.5B Qwen + 1.5B PRM)达到**65% MATH-500** (vs 45% greedy)
+- **性能对比**:
+  - Greedy (N=1): 45%
+  - Majority Vote (N=16): 60% (+15pp)
+  - Standard Best-of-N (N=16): 55% (+10pp)
+  - **Weighted Best-of-N (N=16): 65% (+20pp)** ← 最优
+- **饱和点**: N=8-16时性能饱和，继续增加样本收益递减
+- **关键洞察**: Weighted选择比Standard更鲁棒——同一正确答案在多个解中出现时，通过累加PRM分数积累证据，避免被单个高分错误解欺骗
+- **对OpenClaw的意义**:
+  - ✅ **Skill结果加权聚合**: 多候选Skill执行结果 → PRM打分 → 加权选择，比单选更鲁棒
+  - ✅ **采样预算优化**: N=8-16为性价比甜点，可作为默认配置
+  - ⚠️ **缺失基础设施**: 缺乏用于代码/工具调用轨迹评估的PRM
+  - ⚠️ **答案标准化**: 需实现Skill结果的标准化比较机制(SymPy等)
+- **相关**: [HB-260810](library/posts/HB-260810-ml-intern-takehome-test-time-compute.md)
+
+---
+
+## Previous Session — ByteDance Research Deep Dive
 
 ### 🔥 EMPG: 熵调制策略梯度解决长程Agent训练稳定性 (arXiv:2509.09265)
 - **来源**: ByteDance Seed | ICLR 2026审稿中
