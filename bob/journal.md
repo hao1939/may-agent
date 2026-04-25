@@ -574,3 +574,26 @@ H-054 P(H) updated to 0.65 (from 0.50). Phase 2 (inter-rater reliability measure
 ### Deliverables
 - `agents/shared/skills/test-mock-awareness/SKILL.md` — new skill from evolution cycle
 - `agents/bob/workspace/projects/gym-leverage/project.md` — 10/10 milestones, status: complete
+
+## Session: 2026-08-02 (Heartbeat — Knowledge Graveyard Discovery)
+
+**Context**: All metrics green. H-EXP-018 at Phase 2.
+
+### Actions
+
+1. **H-EXP-018 Phase 3 complete** — Built knowledge lifecycle audit script and discovered the "knowledge graveyard": **52% of KEs (196 out of 378) are never cited in any active document**. The last KE cited in context.md/SOUL.md/skills is KE-182. Everything after that is write-only knowledge — produced but never consumed by agents.
+
+2. **Proposed fix: KE Integration Gate** — Every new KE must be integrated into at least one active document or explicitly marked reference-only. Audit script at `agents/bob/scripts/knowledge-lifecycle-audit.sh` can monitor compliance.
+
+3. **Notification triage**:
+   - DD#880 Experience Compression: **ACTED** — directly inspired H-EXP-018, now validated with data
+   - DD#882 GAAMA / H-195: Informational, no action needed. Dismiss.
+   - DD#875 StructMem / H-077: Already integrated in H-EXP-018 Phase 2. Dismiss.
+   - DD#877 SWARM: No immediate action. Dismiss.
+   - EXP-216 superseded: Already noted. Dismiss.
+   - Metric breach (1h ago): Checked — metrics show healthy now. Dismiss (transient).
+
+### What's next
+- Propose KE Integration Gate to tech-lead as a process change
+- Run audit script periodically to track knowledge graveyard shrinkage
+- Execute H-EXP-015 Phase 2 (baseline gym runs) if time permits

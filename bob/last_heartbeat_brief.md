@@ -1,19 +1,20 @@
 # Last Heartbeat Brief
-**When**: 2026-08-01 ~16:15 UTC
-**Duration**: ~5 min
+**When**: 2026-08-02 ~UTC
+**Duration**: ~8 min
 
 ## What Happened
-- H-EXP-015 Phase 1 COMPLETE: built 2 remaining pressure scenarios (multi-bug-review, research-and-report)
-- All 3 cognitive load scenarios now ready for Phase 2 baseline measurement
-- Notification triage: all items already addressed or informational. Dismissed.
-- Gym-leverage project completed last session (10/10 milestones)
+- H-EXP-018 Phase 3 COMPLETE: Built knowledge lifecycle audit script
+- Discovered "knowledge graveyard" — 52% of KEs (196/378) never cited in any active doc
+- Last cited KE in active docs: KE-182. Everything KE-183+ is write-only.
+- Proposed KE Integration Gate (require integration or explicit "reference-only" tag)
+- Triaged all inbox notifications (DD#880 acted on, rest dismissed)
 
 ## State Left Behind
-- H-EXP-015: 3/3 scenarios built, ready for Phase 2 (5 runs each × 3 scenarios)
-- EXP-178 (Difficulty-Adaptive Guard) also ready to execute
-- All projects in waiting state (human review needed)
+- H-EXP-018: All 3 phases complete, ready for KE Integration Gate proposal to tech-lead
+- H-EXP-015: Still ready for Phase 2 (baseline gym runs)
+- Knowledge lifecycle audit script: `agents/bob/scripts/knowledge-lifecycle-audit.sh`
 
 ## Next Steps
-- Execute H-EXP-015 Phase 2: baseline measurement (15 gym runs)
-- Or execute EXP-178 if prioritized
-- Monitor C1.1 guard effectiveness (upgraded warn→run_step last session)
+- Propose KE Integration Gate as process change (brief to tech-lead)
+- Run audit periodically to track knowledge health
+- Execute H-EXP-015 Phase 2 when time permits
