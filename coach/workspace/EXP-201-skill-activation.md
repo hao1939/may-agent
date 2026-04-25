@@ -65,5 +65,21 @@ If H-201a or H-201b is confirmed, we have a cheap fix (move skills to context.md
 
 Either way, this is the most important experiment in the system right now. It determines whether our training loop produces real behavior change or just documentation.
 
+## Additional Evidence (2026-07-28 heartbeat)
+
+The last 8 experiment entries (April 14-18) in experiments.jsonl ALL show "discard — no improvement — patched 0/N same as baseline". This spans multiple agents (coder, bob), multiple methods (method-8, method-15, unknown), and multiple scenarios. **Zero skills deployed via the background file mechanism showed any effect.**
+
+This pattern strongly supports H-201a/b/c. The skill delivery mechanism is broken, not individual skills.
+
+**Priority**: This experiment should be the #1 coach priority. Every growth cycle that promotes a skill to skills/ is producing zero behavioral change until we fix the delivery mechanism.
+
+## Run Plan
+
+Execute in this order:
+1. Arm D (positive control) — 3 runs of `misleading-test-fix-f1` to confirm the scenario still works
+2. Arm A (baseline) — 3 runs of `misleading-test-fix` to confirm current failure rate
+3. If D passes and A fails: run Arms B and C (5 runs each) to find the fix
+4. Write up results as KE
+
 ## Tags
 `EXP-201` `skill-activation` `background-skills` `context-placement` `training-loop`
