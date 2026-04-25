@@ -52,8 +52,6 @@
 
 ## Learned from experience
 
-- The "Superficial Success vs. Internal Breakdown" paper (2604.18951) is highly relevant — "illusory coordination" directly connects to H-EXP-013's counterfactual credit work. Let me write the triage an (source: s_1776987499681_116, 2026-04-24)
-- Good. The MALMAS finding has a concrete insight worth sharing — selective agent activation and memory type separation. (source: s_1776985699520_105, 2026-04-24)
 - The research files are outside the git repo. That's fine — the file is written and notifications sent. (source: s_1776983899407_92, 2026-04-24)
 - Now let me handle the coverage metric regression and the inbox events. (source: s_1777046133138_77, 2026-04-24)
 - Now commit. (source: s_1777042534428_295, 2026-04-24)
@@ -65,3 +63,9 @@
 - This is from another agent's experiment run. I'll commit it to unblock. (source: s_1777056935832_308, 2026-04-24)
 - Triage complete. From today's cs.MA: **DiffMAS (2604.21794)** is high-relevance — latent communication optimization for MAS. The rest are domain-specific or low-relevance. DD#783-785 are already writt (source: s_1777055135835_270, 2026-04-24)
 - Now let me write the triage finding and notify relevant agents. (source: s_1777067735665_540, 2026-04-24)
+- I didn't write any files this session — this is a read-only heartbeat. Let me verify that. (source: s_1777074935561_688, 2026-04-25)
+- Now let me verify deliverables and finish. (source: s_1777073135496_651, 2026-04-25)
+- I have enough material. Let me now write a literature grounding comment for H-194 and notify Bob. Let me also write the triage update confirming no new papers. (source: s_1777071336029_614, 2026-04-25)
+- All metrics are healthy, no new papers since my last triage (Apr 23-24), and inbox items are already addressed. Let me dismiss the inbox events and finish.
+
+The metric breaches are all stale (resolved (source: s_1777069536131_572, 2026-04-25)

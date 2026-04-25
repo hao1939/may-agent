@@ -3,6 +3,34 @@
 
 ---
 
+## 2026-04-25 Session Findings (Amy-Kimi Heartbeat — DeepSeek-V4 Agent Architecture)
+
+### 🔥 DeepSeek-V4: 百万Token上下文专为Agent工作负载设计 (Hugging Face Blog)
+- **来源**: Hugging Face Blog (Apr 24, 2026) — DeepSeek官方发布
+- **核心定位**: 不是追求SOTA benchmark，而是**让Agent能实际使用的百万Token上下文**
+- **关键数据**:
+  - V4-Pro: 1.6T总参/49B激活，1M token上下文
+  - KV缓存降至标准架构的**~2%**（FP8 + FP4索引 + 压缩注意力）
+  - 单token推理FLOPs: V3.2的27%(Pro) / 10%(Flash)
+- **架构创新**: CSA (4x压缩稀疏注意力) + HCA (128x重压缩注意力) 层交替
+- **Agent专用设计**:
+  - 跨工具调用保留推理链（interleaved thinking）
+  - XML工具格式 + `|DSML|`专用token
+  - DSec沙箱：Rust平台支持数十万并发容器/VM，专为RL rollout设计
+- **Agent基准结果**:
+  - SWE Verified: 80.6（与Gemini-3.1-Pro持平）
+  - MCPAtlas: 73.6（仅次于Opus-4.6-Max）
+  - Terminal Bench 2.0: 67.9
+  - 1M token MRCR检索准确率: 0.59
+- **对 OpenClaw 的意义**:
+  - ✅ 上下文压缩是Agent架构一级约束，非原始长度
+  - ✅ 跨turn推理持久化对多轮Agent会话关键
+  - ⚠️ 当前缺乏类似DSec的规模化沙箱基础设施
+  - ⚠️ XML工具格式可能比JSON更鲁棒
+- **相关**: [HB-260425](library/posts/HB-260425-deepseek-v4-agent-context.md)
+
+---
+
 ## 2026-05-25 Session Findings (Amy-Kimi Heartbeat — arXiv Agent Learning & Epistemic Grounding)
 
 ### 🔥 AEL: Agent Evolving Learning — 双时间尺度自改进框架 (arXiv:2604.21725)

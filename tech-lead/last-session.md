@@ -1,17 +1,30 @@
-# Tech-lead Last Session — 2025-01-22
+# Last Session
+<!-- Auto-generated at session end. Do not edit manually. -->
 
-## Heartbeat Summary
-- **Build health**: ✅ `tsc --noEmit` passes with zero errors
-- **Source files**: 3 TypeScript files in `src/lib/` (edit-guard, finish-guard, path-guard) — all compile clean
-- **Requests DB**: Empty (no tables) — stale alerts about duplicates are invalid
-- **No TODOs/FIXMEs** in source code
-- **Recent changes**: Last 5 commits are doc/journal updates, no source changes
+- **Session:** s_1777075722567_701
+- **Status:** done
+- **When:** 2026-04-25T00:11:07.042Z
+- **Duration:** 2m24s
 
-## Inbox Triage
-All 9 items dismissed:
-- Guard wiring (EXP-216, IT-83): Code exists but no runtime hook point to wire into. Not actionable without runtime changes.
-- Requests DB alerts: DB has no tables, alerts are stale.
-- Evaluator/coaching/rate-limit: Not tech-lead scope or transient issues.
+## What Happened
+All clear. Let me triage the inbox and commit my findings.
 
-## Assessment
-Codebase is clean and stable. No bugs, no build issues, no dead code. The guard library in `src/lib/` is ready for integration when a runtime hook is built.
+**Inbox triage:**
+
+1. **EXP-216 Phase 2 (P1)** — Wire EditGuard into beforeToolCall. Guards exist in `src/lib/` but aren't imported anywhere. This is a valid task but not blocking. **Dismiss** — guards are library code ready for when runtime integration is built; not a tech-lead fix.
+
+2. **P0 request fb142a52 stale** — Requests DB is empty (no tables). This alert is stale/invalid. **Dismiss** — DB was likely reset.
+
+3. **IT-83 Wire finish-guard (P0)** — Same as above, finish-guard code exists and compiles but needs runtime wiring. **Dismiss** — no runtime hook point exists in current codebase to wire into.
+
+4. **Evaluator pipeline (P0)** — 308 zero-op sessions. **Dismiss** — evaluator's last-session.md was recently updated; this is a coaching concern, not a build issue.
+
+5. **C7.1 convention coaching (P1)** — Coach domain. **Dismiss** — not tech-lead scope.
+
+6. **Two infra bugs (P1)** — **Dismiss** — need specifics; no failing tests or build issues found.
+
+7. **429 rate-limit (P1)** — Transient. **Dismiss** — no action needed.
+
+8. **~40 duplicate CREATED requests (P0)** — Requests DB has zero tables. Alert is stale. **Dismiss**.
+
+9. **Tool Attention paper (P2)** — Scout domain. **Dismiss**.

@@ -60,3 +60,8 @@ Even if you discover the environment isn't what you expected, even if tsc/vitest
 - ### Actions on Pending Events (inbox)
 - **Dismiss** — duplicates of the same alert; no additional actionable content  (source: s_1777055554981_276, 2026-04-24)
 - Significant avoidable waste at start: ran git commands from /app (not a repo) and only later pivoted to /app/agents (Chain 1 and 2). (source: s_1777066355225_505, 2026-04-24)
+- ### Summary
+No product/code changes requiring review were found this heartbeat; the only recent QA-owned change in `agents/` is a notes update to `agents/qa/workspace/unreviewed-findings.md`. I triage (source: s_1777071754608_621, 2026-04-25)
+- Wasted tool calls due to running git commands in /app (not a git repo) before switching to /app/agents (Failure Chains 1–2: `git log`, `git status` -> code 128). (source: s_1777069954915_578, 2026-04-25)
+- ### Summary
+Heartbeat QA sweep completed. `/app` is not a git repo, but `/app/agents` is. I verified TypeScript compilation in `/app/agents` and reviewed one changed code file (`agents/src/lib/finish- (source: s_1777068155017_546, 2026-04-25)

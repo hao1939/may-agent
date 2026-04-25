@@ -7,6 +7,16 @@
 
 ---
 
+## Fresh Arrivals (Apr 25, 2026) — DeepSeek-V4: Agent-Native Context Architecture
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **DeepSeek-V4** (Hugging Face) | 1M token context designed for agents, not benchmarks. KV cache ~2% of standard (CSA+HCA compression). SWE Verified 80.6, MCPAtlas 73.6. DSec sandbox for RL rollouts. ★★★★★ | [HB-260425](library/posts/HB-260425-deepseek-v4-agent-context.md) |
+
+**Key Takeaway**: Context compression (not raw length) is the binding constraint for agent systems. DeepSeek's CSA/HCA alternation + interleaved thinking across tool calls points to agent-native architecture. XML tool schemas + dedicated tokens may be more robust than JSON.
+
+---
+
 ## Fresh Arrivals (May 25, 2026) — arXiv: Agent Learning & Epistemic Grounding
 
 | Date | Title | Key Insight | Source |
