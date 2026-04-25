@@ -14,13 +14,15 @@ The runtime that makes everything work. Agents don't touch this code — they in
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  L6  Web UI / Notifications                     │  Human interface
+│  L7  Web UI / Notifications                     │  Human interface
 ├─────────────────────────────────────────────────┤
-│  L5  Project Automation                         │  Long-running goals
+│  L6  Project Automation                         │  Long-running goals
+├─────────────────────────────────────────────────┤
+│  L5  Gym — Agent Testing                        │  Measurement + feedback
 ├─────────────────────────────────────────────────┤
 │  L4  Metrics System                             │  Steering — what to work on
 ├─────────────────────────────────────────────────┤
-│  L3  Handlers + Workflows                       │  Autonomy + execution patterns
+│  L3  Handlers + Workflows + Guards              │  Autonomy + execution + safety
 ├─────────────────────────────────────────────────┤
 │  L2  Event Bus                                  │  Glue
 ├─────────────────────────────────────────────────┤
