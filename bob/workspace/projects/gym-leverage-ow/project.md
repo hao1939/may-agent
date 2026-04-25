@@ -39,9 +39,9 @@ Phase 1 partially complete, Phase 2 partially complete:
 - [x] `.state/gym-architecture.md` — documents runner → adapter → scenario → scorer pipeline
 - [x] `.state/gym-categories.md` — 424 scenarios categorized by type and tier
 - [x] `.state/gym-core20.md` — core 20 benchmark selected (20 smoke-tier scenarios)
-- **BLOCKER**: Cannot run scenarios without a configured agent adapter. Runner without agent just scores pre-baked (already-correct) environments. Need `GYM_AGENT_BIN` or human to configure `--agent` adapter.
-- Runner issues found: none (runner works, compiles, lists scenarios correctly)
+- **BLOCKER RESOLVED** (2026-04-26): Gym runner works with `--agent coder` or `--agent bob`. Recent runs (gym_runs 3583-3584) show successful agent-driven scenarios. Runner compiles, runs, and scores correctly.
 - Key finding: environments contain SOLVED code — the gym requires a live agent to copy env to temp, let agent modify it, then score.
+- **NEXT**: Run core 20 suite to get baseline scores (.state/gym-baseline.md) — Phase 2 milestone 3.
 
 ## Process Notes
 
