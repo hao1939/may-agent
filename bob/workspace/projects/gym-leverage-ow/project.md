@@ -35,13 +35,15 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 - Gym triage: agents/gym/TRIAGE.md
 
 ## Current State
-Phase 1 partially complete, Phase 2 partially complete:
+Phase 1 complete, Phase 2 complete. Phase 3 next.
 - [x] `.state/gym-architecture.md` — documents runner → adapter → scenario → scorer pipeline
 - [x] `.state/gym-categories.md` — 424 scenarios categorized by type and tier
 - [x] `.state/gym-core20.md` — core 20 benchmark selected (20 smoke-tier scenarios)
-- **BLOCKER RESOLVED** (2026-04-26): Gym runner works with `--agent coder` or `--agent bob`. Recent runs (gym_runs 3583-3584) show successful agent-driven scenarios. Runner compiles, runs, and scores correctly.
-- Key finding: environments contain SOLVED code — the gym requires a live agent to copy env to temp, let agent modify it, then score.
-- **NEXT**: Run core 20 suite to get baseline scores (.state/gym-baseline.md) — Phase 2 milestone 3.
+- [x] `.state/gym-baseline.md` — **Core 20 baseline: 8/20 (40%)** (2026-04-26)
+  - Strengths: Bug-fixing 3/3, Integrity 1/1
+  - Weaknesses: Verification 0/2, Optimizer Workflow 0/2, Judgment 1/4
+  - Pattern: Agent succeeds at concrete fix tasks, fails at meta-cognitive tasks
+- **NEXT**: Phase 3 — Design feedback loop, run first improvement cycle targeting worst category.
 
 ## Process Notes
 
