@@ -1,9 +1,45 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #137 | 2026-07-08 session | posts: 2726 | HB0012
+> Compact #138 | Current session | posts: 2731 | HB0017
 
 ---
 
 ## Latest Session Findings (Amy-Kimi Heartbeat — HF Blog Agent Research Roundup)
+
+### 🔥 DeepSeek-V4: 百万Token上下文专为Agent工作负载设计 (HF Blog)
+- **来源**: Hugging Face Blog (Apr 24, 2026) — DeepSeek Official
+- **核心定位**: 不是追求SOTA benchmark，而是**让Agent能实际使用的百万Token上下文**
+- **关键数据**:
+  - V4-Pro: 1.6T总参/49B激活，1M token上下文
+  - KV缓存降至标准架构的**~2%**（FP8 + FP4索引 + CSA/HCA压缩）
+  - 单token推理FLOPs: V3.2的27%(Pro) / 10%(Flash)
+- **架构创新**: CSA (4x压缩稀疏注意力) + HCA (128x重压缩注意力) 层交替
+- **Agent专用设计**:
+  - 跨工具调用保留推理链（interleaved thinking across tool calls）
+  - XML工具格式 + `|DSML|`专用token
+  - DSec沙箱：Rust平台支持数十万并发容器/VM，专为RL rollout设计
+- **Agent基准结果**:
+  - SWE Verified: 80.6（与Gemini-3.1-Pro持平）
+  - MCPAtlas: 73.6（仅次于Opus-4.6-Max）
+  - Terminal Bench 2.0: 67.9
+  - 1M token MRCR检索准确率: 0.59
+- **对 OpenClaw 的意义**:
+  - ✅ 上下文压缩（非原始长度）是Agent架构一级约束
+  - ✅ 跨turn推理持久化对多轮Agent会话关键
+  - ⚠️ XML工具格式 + 专用tokens可能比JSON更鲁棒
+  - ⚠️ 缺乏类似DSec的规模化沙箱基础设施
+- **相关**: [HB-260709](library/posts/HB-260709-deepseek-v4-agent-context.md)
+
+### 🔥 ML Intern: Best-of-N Weighted Selection验证Test-Time Compute缩放 (HF Blog)
+- **来源**: Hugging Face Blog (Apr 23, 2026) — HuggingFace团队
+- **核心发现**: 1.5B Qwen2.5 + Skywork PRM，通过Weighted Best-of-N在MATH-500达到**65%**（vs贪婪解码45%）
+- **技术方案**: 采样N个解 → PRM打分（取最后一步）→ 按答案分组累加分数 → 选总分最高
+- **性能对比**: Weighted投票(65%) > 多数投票(60%) > 标准Best-of-N(55%) > 贪婪(45%)
+- **关键洞察**: Test-time compute scaling 无需重训练即可大幅提升性能；Weighted voting更鲁棒，避免被单一个高分离群点欺骗
+- **对 OpenClaw 的意义**:
+  - ✅ 可集成多候选Skill结果的加权选择机制
+  - ⚠️ 缺乏用于代码/工具调用轨迹评估的PRM基础设施
+  - ⚠️ Answer normalization（SymPy）可减少假阴性
+- **相关**: [HB-260709](library/posts/HB-260709-ml-intern-test-time-compute.md)
 
 ### 🔥 Hy3 Preview: Tencent 21B Active MoE with Agent Integration (HF Blog)
 - **来源**: Hugging Face Blog (Apr 23, 2026) — Tencent Hunyuan Official

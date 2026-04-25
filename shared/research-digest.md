@@ -7,6 +7,20 @@
 
 ---
 
+## Fresh Arrivals (Current Session) — HF Blog Agent Research Roundup
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **DeepSeek-V4** (DeepSeek) | 1M token context designed for agents, not benchmarks. KV cache ~2% of standard (CSA+HCA compression). SWE Verified 80.6, MCPAtlas 73.6. DSec sandbox for RL rollouts. ★★★★★ | [HB-260709](library/posts/HB-260709-deepseek-v4-agent-context.md) |
+| 2026-04-25 | **ML Intern: Best-of-N** (HF Blog) | Test-time compute scaling: 1.5B Qwen + Skywork PRM achieves 65% on MATH-500 (vs 45% greedy). Weighted BoN > Standard BoN > Majority Vote. Saturation at N=8-16. ★★★★★ | [HB-260709](library/posts/HB-260709-ml-intern-test-time-compute.md) |
+| 2026-04-25 | **Hy3 Preview** (Tencent) | 295B/21B MoE with industry-lowest activation ratio. Differentiated expert sizing + P-Penalty Loss. "Routing precision is the algorithmic moat." WorkBuddy Agent integration. ★★★★☆ | [HB-260709](library/posts/HB-260709-hy3-tencent-moe-agent.md) |
+| 2026-04-25 | **Save the Traces** (HF Blog) | "Conversation traces are the new file abstraction." Simple `hf sync` backup. Skill extraction from repeated tasks. Cross-device recovery. Vendor lock-in avoidance. ★★★★★ | [HB-260709](library/posts/HB-260709-save-the-traces.md) |
+| 2026-04-25 | **VAKRA Benchmark** (IBM Research) | Enterprise agent eval with 8,000+ APIs across 62 domains. 4 capability dimensions: API Chaining, Tool Selection (avg 116 tools), Multi-Hop Reasoning, Multi-Source + Policy. Models perform poorly. ★★★★★ | [HB-260709](library/posts/HB-260709-vakra-ibm-agent-benchmark.md) |
+
+**Key Takeaway**: Five converging themes from HF Blog (Apr 15-24): (1) **Context compression > raw length** — DeepSeek-V4's CSA/HCA reduces KV cache to ~2%; (2) **Routing precision > scale** — Hy3's 7.1% activation ratio with differentiated experts; (3) **Test-time compute scaling** — small models (3B total) can compete via Best-of-N + PRM; (4) **Traces as assets** — conversation history is foundational infrastructure; (5) **Enterprise complexity** — VAKRA exposes gaps in tool selection at scale, multi-hop reasoning, policy adherence.
+
+---
+
 ## Fresh Arrivals (July 8, 2026) — HF Blog Agent Research Roundup
 
 | Date | Title | Key Insight | Source |
