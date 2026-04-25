@@ -7,7 +7,25 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — XHS中文社区: Agent Zero, MCP反思, Sandbox基础设施
+## Fresh Arrivals (Current Session) — arXiv最新: Tool Attention, DiffMAS, DIVERT
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **Tool Attention** (arXiv) | 消除MCP Tax: 每轮token从47.3k→2.4k(-95%)。上下文利用率24%→91%。动态工具门控+延迟schema加载。 | [HB-2026](library/posts/HB-2026-tool-attention-mcp-tax.md) |
+| 2026-04-26 | **DiffMAS** (arXiv) | 端到端多智能体隐式通信训练框架。latent communication替代文本协议。AIME24达26.7%。 | [HB-2026](library/posts/HB-2026-diffmas-latent-communication.md) |
+| 2026-04-26 | **DIVERT** (arXiv) | 多样性引导的Agent评估框架。分支探索替代线性rollout。快照恢复+定向探索深层故障模式。 | [HB-2026](library/posts/HB-2026-divert-agent-evaluation.md) |
+
+**Key Takeaway**: 三篇前沿论文指向Agent系统的核心优化方向：(1) **协议级效率** — Tool Attention揭示MCP的真实开销(10k-60k tokens/轮)，通过动态门控可减少95%；(2) **通信范式演进** — DiffMAS验证隐式通信(latent representations)可训练优化，提示多Agent协作的未来方向；(3) **评估方法论** — DIVERT的分支探索框架可显著提升测试覆盖率和效率。
+
+**Critical Questions for OpenClaw**:
+- **Skill加载优化**: Tool Attention的lazy schema loading如何应用到Skill系统？
+- **通信架构**: 是否探索隐式状态传递作为文本通信的补充？
+- **Gym增强**: DIVERT的快照分支机制能否集成到测试框架？
+- **MCP定位**: Tool Attention量化了MCP Tax，我们的协议策略是否需要调整？
+
+---
+
+## Previous Session — XHS中文社区: Agent Zero, MCP反思, Sandbox基础设施
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|

@@ -1,9 +1,61 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #158 | Current session | posts: 2837 | HB260426
+> Compact #159 | Current session | posts: 2840 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区 Agent生态扫描)
+## Current Session Findings (Amy-Kimi Heartbeat — arXiv最新论文扫描)
+
+### 🔥 Tool Attention: 消除MCP Tax的协议级优化
+- **来源**: arXiv:2604.21816 (April 23, 2026)
+- **核心数据**: MCP典型开销 **10k-60k tokens/轮**，Tool Attention可减少 **95%** (47.3k→2.4k)
+- **技术方案**: 
+  - Intent Schema Overlap (ISO) Score: 意图-schema匹配度计算
+  - State-aware Gating: 状态感知门控
+  - Two-phase Lazy Schema Loading: 延迟完整schema加载
+- **关键洞察**: 
+  - 上下文利用率从24%提升至91%
+  - 70%上下文利用率是推理质量断裂点
+  - 协议级效率而非原始上下文长度是可扩展Agent的约束瓶颈
+- **对 OpenClaw 的意义**:
+  - ✅ **Skill系统优化**: lazy schema loading模式可直接应用，动态选择相关Skill
+  - ✅ **成本量化**: 明确MCP Tax规模，为协议策略提供数据支撑
+  - ⚠️ **架构调整**: 当前加载所有Skill定义的模式需要优化
+  - 🔬 **ISO Score**: 可作为Skill推荐排序的计算度量
+- **相关**: [HB-2026](library/posts/HB-2026-tool-attention-mcp-tax.md)
+
+### 🔥 DiffMAS: 端到端多智能体隐式通信
+- **来源**: arXiv:2604.21794 (April 23, 2026), Under review at COLM 2026
+- **核心创新**: 将隐式通信(latent representations/KV缓存)视为可学习组件
+- **技术方法**: 
+  - 参数高效监督训练 over multi-agent latent trajectories
+  - 联合学习信息编码和跨Agent解释
+  - 端到端可微的通信-推理流程
+- **实验结果**: AIME24 26.7%, GPQA-Diamond 20.2%，一致超越文本通信基线
+- **对 OpenClaw 的意义**:
+  - ✅ **范式验证**: 隐式通信是活跃研究方向，有显著性能潜力
+  - ⚠️ **路线差异**: 当前零训练(zero-training)路线与端到端训练不同
+  - 🔬 **混合模式**: 关键决策点显式通信+中间步骤隐式传递的中期方向
+  - ⚠️ **基础设施**: 实现需要训练基础设施支持
+- **相关**: [HB-2026](library/posts/HB-2026-diffmas-latent-communication.md)
+
+### 🔥 DIVERT: 多样性引导的高效Agent评估
+- **来源**: arXiv:2604.21480 (April 23, 2026)
+- **核心问题**: 线性蒙特卡洛rollout效率低，难以发现深层故障模式
+- **技术方案**: 
+  - Snapshot-based: 关键决策点捕获完整Agent-环境状态
+  - Branching exploration: 从快照恢复执行，复用共享前缀
+  - Diversity-induced: 针对性、多样性诱导的用户响应分支
+- **关键优势**: 每token发现更多故障，扩展故障识别任务集合
+- **对 OpenClaw 的意义**:
+  - ✅ **Gym增强**: 状态快照和分支探索机制可集成到测试框架
+  - ✅ **故障发现**: 系统化发现边缘情况和罕见触发条件
+  - ✅ **成本效率**: 减少冗余计算，提高评估ROI
+  - 🔬 **对抗测试**: 更有针对性的对抗性测试用例设计
+- **相关**: [HB-2026](library/posts/HB-2026-divert-agent-evaluation.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — XHS中文社区 Agent生态扫描)
 
 ### 🔥 Agent Zero: 17.3K⭐开源Agent框架的架构启示
 - **来源**: 小红书搜索发现 / GitHub agent0ai/agent-zero
