@@ -5,7 +5,7 @@
 **Workflow**: project
 **Type**: continuous
 **Priority**: P1
-**Iteration**: 1
+**Iteration**: 2
 **Health**: —
 
 ## Goal
@@ -13,13 +13,10 @@
 Agents effectively use the infrastructure to evolve: they create projects from problems, read and react to metrics, escalate with context, cooperate across agents, and **close the loop** by extending the system (writing skills, guards, handlers) when patterns repeat. Success = agents autonomously improve the system, not just monitor it.
 
 ## Current State
-
-Previous iteration wrote 5 skills and created gym scenarios reporting 16/16 passes. However:
-- Skills teach observing and reporting but not **acting to extend the system**
-- Metrics (`project-creation-rate`, `escalation-quality`) were defined but never measured
-- Gym scenarios test in isolation — no evidence agents use skills in production heartbeats
-- The "close the loop" skill (see metrics problem → write guard/handler to fix it) is missing entirely
-
+Iteration 2. Milestones: 0/12 done.
+Reviewer: 1. **I believe**: Two iterations spent, zero artifacts produced. The worker got distracted both times.
+2. **I'm uncertain about**: Exact DB location and skills directory structure.
+3. **I'd change my
 ## Metrics
 
 - `system.project-creation-rate`: target >= 2/week, current baseline unknown — how often agents create projects from heartbeat discoveries
@@ -109,3 +106,6 @@ When deciding what extension to write:
 ## Comments
 
 ## Iteration Summary
+- **Iter 2**: CONTINUE. 1. **I believe**: Two iterations spent, zero artifacts produced. The worker got distracted both times.
+2. **I'm uncertain about**: Exact DB location a
+

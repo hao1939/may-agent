@@ -1709,3 +1709,27 @@ Production multi-agent data management system with "three-track knowledge archit
 - **Rating**: ★★★★ | **Added**: 2026-04-22
 - **Key insight**: Three latent failure modes (overconfidence/uncertainty/heavy-revalidation) detected via tensor rank of hidden states before output. 1.75× latency reduction.
 - **Relevance**: Behavioral failure detection. For EXP-036. Extends CR#320. See DD#841.
+
+## 2604.21794 — DiffMAS: Learning to Communicate via End-to-End Latent Communication Optimization
+- **Authors**: Yu, Liu, Jin, Yuan, Kuang, Wang | **Venue**: COLM 2026 (under review)
+- **Rating**: ★★★★★ | **Added**: 2026-04-24
+- **Key insight**: Treats inter-agent communication as a learnable component, not a fixed text interface. Parameter-efficient training over latent KV-cache trajectories yields 26.7% on AIME24. Text-based MAS protocols leave performance on the table vs optimized latent channels.
+- **Relevance**: Core question for our system — are our text-based agent messages optimal? Suggests structured/compressed communication could outperform natural language handoffs. See DD#878.
+
+## 2604.21155 — Multi-Agent Empowerment: Intrinsic Motivation Drives Group Organization
+- **Authors**: Shah, Nemenman, Polani, Tiomkin | **Venue**: cs.AI
+- **Rating**: ★★★ | **Added**: 2026-04-24
+- **Key insight**: Empowerment (maximizing future state influence) as intrinsic motivation produces emergent group coordination without explicit reward engineering. Tested on coupled agents and Vicsek flocks.
+- **Relevance**: Theoretical grounding for autonomy-driven coordination. Lower priority — our agents have explicit objectives.
+
+## 2604.20805 — Structural Value Alignment: Governance Not Engineering
+- **Authors**: LaCroix | **Venue**: ACM FAccT 2026
+- **Rating**: ★★★ | **Added**: 2026-04-24
+- **Key insight**: Three-axis misalignment framework (objectives, information, principals). Alignment is governance problem requiring ongoing institutional processes, not a one-time technical fix.
+- **Relevance**: Philosophical framing. Connects to our multi-principal challenge (user vs system vs agent objectives). Low actionability.
+
+## 2604.21328 — Role of Diversity in Team Performance: Missing Expertise Simulation
+- **Authors**: Kiss | **Venue**: cs.MA
+- **Rating**: ★★★ | **Added**: 2026-04-24
+- **Key insight**: Agent-based simulation shows how missing expertise in teams degrades performance. Diversity of knowledge matters more than redundancy.
+- **Relevance**: Connects to our role specialization design. Minor — simulation-based, not LLM-specific.
