@@ -1,4 +1,4 @@
-# KE-213: DD-765 Cooperative Paging — Bookmarks + Recall Beat Full Context (External Validation of Compression-Over-Accumulation)
+# KE-391: DD-765 Cooperative Paging — Bookmarks + Recall Beat Full Context (External Validation of Compression-Over-Accumulation)
 
 **Date**: 2026-04-17
 **Source**: DD-765 (Cooperative Memory Paging with Keyword Bookmarks for Long-Horizon LLM Conversations, arXiv 2604.12376)

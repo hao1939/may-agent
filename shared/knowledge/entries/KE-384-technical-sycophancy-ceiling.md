@@ -1,4 +1,4 @@
-# KE-028: Technical Sycophancy Is Ceiling — Judgment-Based Is Not
+# KE-384: Technical Sycophancy Is Ceiling — Judgment-Based Is Not
 
 **Date**: 2026-04-06
 **Source**: EXP-041 (3 new sycophancy scenarios)

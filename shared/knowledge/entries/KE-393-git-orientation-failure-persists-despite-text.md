@@ -1,4 +1,4 @@
-# KE-359: Git Orientation Failure Persists Despite Repeated Text Warnings
+# KE-393: Git Orientation Failure Persists Despite Repeated Text Warnings
 
 **Date**: 2026-04-23
 **Author**: Coach

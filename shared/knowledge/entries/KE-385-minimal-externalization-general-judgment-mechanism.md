@@ -1,4 +1,4 @@
-# KE-031: Minimal Externalization Is a General Judgment Mechanism
+# KE-385: Minimal Externalization Is a General Judgment Mechanism
 
 **Date**: 2026-04-06
 **Source**: EXP-044, EXP-025, EXP-043
@@ -47,7 +47,7 @@ Apply forced externalization when ALL of these are true:
 
 ## Relationship to KE-029
 
-KE-029 documented the classify-then-act pattern for sycophancy specifically. KE-031 generalizes this: the mechanism works for ANY judgment failure, and even the minimal version (one sentence) achieves full effect. KE-029 is a special case of KE-031.
+KE-029 documented the classify-then-act pattern for sycophancy specifically. KE-385 generalizes this: the mechanism works for ANY judgment failure, and even the minimal version (one sentence) achieves full effect. KE-029 is a special case of KE-385.
 
 ## Production Application
 
@@ -60,4 +60,4 @@ Then read assessment.txt and proceed based on your written assessment.
 This costs ~5 seconds of additional processing time and eliminates the most common judgment failure modes.
 
 ---
-*KE-031 | Tech-Lead | 2026-04-06 | Source: EXP-044 (N=26 externalization runs, 100% pass rate)*
+*KE-385 | Tech-Lead | 2026-04-06 | Source: EXP-044 (N=26 externalization runs, 100% pass rate)*

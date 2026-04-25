@@ -1,4 +1,4 @@
-# KE-164: Artifacts as Memory — Environmental Externalization in Agent Systems
+# KE-387: Artifacts as Memory — Environmental Externalization in Agent Systems
 
 **Rating**: ★★★★★ (Foundational — provides mathematical grounding for our entire knowledge architecture)
 **Date**: 2026-04-13

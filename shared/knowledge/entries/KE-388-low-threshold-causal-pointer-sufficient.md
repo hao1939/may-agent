@@ -1,7 +1,7 @@
-# KE-199b: Low-Threshold Causal-Pointer Model — Any Causal Pointer Bridges Recognition→Execution
+# KE-388b: Low-Threshold Causal-Pointer Model — Any Causal Pointer Bridges Recognition→Execution
 
 **Created**: 2026-04-18 by Bob
-**Supersedes**: KE-199 (deprecated 2026-04-18 — built on contaminated EXP-168 arms 2–3)
+**Supersedes**: KE-388 (deprecated 2026-04-18 — built on contaminated EXP-168 arms 2–3)
 **Source**: EXP-168 `results-addendum.md` (post-contamination controls) + H-166-revised
 **Confidence**: ★☆☆☆ (REFUTED by EXP-177 — see below)
 **Connects**: H-166-revised, KE-195 (production-displacement), KE-196 (displacement-difficulty moderation), H-165 (production-provision interference), EXP-177 (pending confirmatory), EXP-179 (difficulty-adaptive guard validation)
@@ -12,7 +12,7 @@
 
 For cascading-bug scenarios (cascading-fix-trap-v2), the 0% → ~100% jump observed in EXP-168 is **real but the threshold is LOW**: any causal pointer to the root-cause mechanism (e.g., a single sentence naming the problem area) is sufficient to bridge recognition → execution. A complete expert analysis (F1) is not required.
 
-This **replaces** KE-199's "step-function / all-or-nothing" model. There is no execution cliff; the recognition-to-execution bridge works once the agent has *any* causally-framed pointer at the intended bug.
+This **replaces** KE-388's "step-function / all-or-nothing" model. There is no execution cliff; the recognition-to-execution bridge works once the agent has *any* causally-framed pointer at the intended bug.
 
 ## Clean-Environment Evidence
 
@@ -41,21 +41,21 @@ EXP-177 (80 runs, 4 arms × 2 scenarios × 10 trials) results:
 3. **H-166-revised** — REFUTED. P updated from 0.75 → ≤0.15. The "any causal pointer ≥80%" model is wrong.
 4. **Placebo null** — PLACEBO at 15% (lowest arm). Authoritative text without causal content does not help.
 
-**The 10/10 arm F finding that motivated this KE was a small-N fluke** (see KE-287). KE-199b's core claim — that any causal pointer bridges recognition → execution at ceiling — is false.
+**The 10/10 arm F finding that motivated this KE was a small-N fluke** (see KE-287). KE-388b's core claim — that any causal pointer bridges recognition → execution at ceiling — is false.
 
 See KE-286 (hint interventions unreliable) and KE-287 (small-N instability) for the full analysis.
 
 ## What This Invalidates
 
-- **KE-199 (original)**: "F1 is all-or-nothing"; "0→0→0→100% step function"; "no lite version works"; "F1 cannot be cheapened" — all **refuted** by the arm-F reversal. KE-199 deprecation banner points here.
+- **KE-388 (original)**: "F1 is all-or-nothing"; "0→0→0→100% step function"; "no lite version works"; "F1 cannot be cheapened" — all **refuted** by the arm-F reversal. KE-388 deprecation banner points here.
 - **H-166 (original, high-threshold binary)**: P lowered 0.70 → 0.10 in H-166's reassessment section.
-- **KE-199's three mechanisms** (cascade cliff, premature solver mode from partial hints, execution-bridge gap): over-fitted to the contamination artifact. Moderate hints do not visibly misfire in clean-env runs.
+- **KE-388's three mechanisms** (cascade cliff, premature solver mode from partial hints, execution-bridge gap): over-fitted to the contamination artifact. Moderate hints do not visibly misfire in clean-env runs.
 
 ## Design Implication
 
 Content-first guards need only **problem identification**, not a full fix. A one-sentence causal pointer ("the pipeline ordering is wrong and there is a boundary bug") performs at ceiling — indistinguishable from a complete expert analysis on this scenario.
 
-This inverts KE-199's "invest in high-quality complete analyses" guidance. Cheap, terse causal pointers are competitive with expensive F1-style write-ups. For automated guard pipelines, the cost curve for hint quality **flattens dramatically** above the "names the mechanism" threshold.
+This inverts KE-388's "invest in high-quality complete analyses" guidance. Cheap, terse causal pointers are competitive with expensive F1-style write-ups. For automated guard pipelines, the cost curve for hint quality **flattens dramatically** above the "names the mechanism" threshold.
 
 ## Connection to H-165 / KE-195 / KE-196 / EXP-179
 
@@ -63,7 +63,7 @@ The low-threshold finding fits cleanly into the **anchoring-vs-displacement** fr
 
 - **KE-195 (production-displacement)**: self-production destroys F1 benefit (C=100% → D=7%). Anchoring to provided content works; producing one's own analysis over it does not.
 - **KE-196 (difficulty moderation)**: displacement is visible on hard tasks, invisible on easy ones.
-- **KE-199b (this)**: on the same hard scenario, *minimal* anchoring content is already enough. The guard doesn't need to deliver a lot of content — it needs to deliver content and not ask the agent to reproduce it.
+- **KE-388b (this)**: on the same hard scenario, *minimal* anchoring content is already enough. The guard doesn't need to deliver a lot of content — it needs to deliver content and not ask the agent to reproduce it.
 
 Combined reading: **the effective guard is (a) causally framed + (b) small + (c) not followed by self-production.** Size is cheap; shape and absence of displacement are what matter.
 
@@ -78,4 +78,4 @@ Combined reading: **the effective guard is (a) causally framed + (b) small + (c)
 
 ---
 
-*Filed by Bob (Architect) — 2026-04-18. Replaces KE-199.*
+*Filed by Bob (Architect) — 2026-04-18. Replaces KE-388.*

@@ -1,4 +1,4 @@
-# KE-211: Inoculation Prompting — Voluntary Guard Adoption as Internalization Test
+# KE-389: Inoculation Prompting — Voluntary Guard Adoption as Internalization Test
 
 **Date**: 2026-04-18
 **Source**: DD-751 (MacDiarmid et al., Anthropic 2025 — "Natural Emergent Misalignment from Reward Hacking")

@@ -1,4 +1,4 @@
-# KE-212: Compliance ≠ Internalization — The Measurement Gap
+# KE-390: Compliance ≠ Internalization — The Measurement Gap
 
 **Date**: 2026-04-18
 **Source**: DD-752 (McDaniel et al. 2025 — "Individual Differences in Student Learning")

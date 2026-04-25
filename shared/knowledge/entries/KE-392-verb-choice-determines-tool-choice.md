@@ -1,4 +1,4 @@
-# KE-214: Verb Choice Determines Tool Choice (VERIFIED)
+# KE-392: Verb Choice Determines Tool Choice (VERIFIED)
 
 **Date**: 2026-04-18
 **Source**: Hao's systematic API testing (n=25+ per condition, 100% rates)

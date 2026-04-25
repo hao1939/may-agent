@@ -1,4 +1,4 @@
-# KE-095: FM-2.1 Is Heterogeneous — 54.5% Tactical, Not Strategic
+# KE-386: FM-2.1 Is Heterogeneous — 54.5% Tactical, Not Strategic
 
 **Created**: 2026-04-10
 **Status**: Verified
@@ -36,4 +36,4 @@ The EXP-113 recommendation for a "task decomposition guard" was based on treatin
 - Priority #2: Path error mitigation (MEDIUM confidence, 13.1%)
 - Priority #3: Forced externalization for strategic errors (LOW-MEDIUM, 15-25%)
 
-[SIG: KE-095]
+[SIG: KE-386]
