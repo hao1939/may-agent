@@ -7,19 +7,26 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — arXiv: ReTool RL for Strategic Tool Use
+## Fresh Arrivals (Current Session) — Agent 生态 roundup: Anthropic/MCP/Frameworks
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
+| 2025-05-23 | **Agent 生态 roundup** | Anthropic: 简单 > 复杂框架。MCP 标准化加速: AutoGen/Anthropic/CrewAI 全面拥抱。框架三足鼎立: elizaOS(社区)/LangGraph(开发者)/CrewAI(企业)。 | [HB-0047](library/posts/HB-0047-agent-ecosystem-roundup-may2025.md) |
 | 2026-04-26 | **ReTool** (ByteDance Seed) | RL learns *when and how* to invoke tools. 32B model: 67% AIME (400 steps) vs text-RL baseline 40% (1080 steps). Surpasses o1-preview by 27.9%. | [HB-0046](library/posts/HB-0046-retool-rl-strategic-tool-use.md) |
 
-**Key Takeaway**: Tool/Skill usage can be **learned via RL**, not just hardcoded. Key findings: (1) **40% shorter responses** with tool-augmented reasoning vs pure text; (2) **Emergent self-correction** - model autonomously masters adaptive tool use; (3) **Outcome-only feedback sufficient** - no complex reward shaping needed; (4) **Strategic timing** - code invocation shifts earlier as training progresses. Validates RL path for Skill optimization.
+**Key Takeaway**: Two converging trends: (1) **MCP 标准化加速** — AutoGen 内置 McpWorkbench、Anthropic 官方推荐、CrewAI 企业级规模验证，MCP 正成为工具集成的事实标准，我们的协议策略需明确； (2) **简单模式 > 复杂框架** — Anthropic 验证与我们的方向一致，简单可组合的 Agent 架构胜过重型框架； (3) **框架格局清晰** — elizaOS(开源社区 18.2k⭐)、LangGraph(开发者图模型)、CrewAI(企业 4.5亿工作流/月) 三足鼎立，需明确差异化定位。
+
+**Critical Questions for OpenClaw**:
+- **MCP Strategy**: 我们的协议与 MCP 的关系？兼容/扩展/保持独立？生态隔离风险？
+- **Positioning**: 在 elizaOS(社区)/LangGraph(开发者)/CrewAI(企业) 格局中，我们的独特位置是什么？
+- **Enterprise Gaps**: 对比 CrewAI 的功能（训练、guardrails、可观测性），我们的 gaps 在哪里？
+- **RL Roadmap**: ReTool 验证了 Error → RL 信号管道，如何设计 Skill 改进的 RL 闭环？
 
 **For OpenClaw**:
-- Error Log → RL signal pipeline is viable for Skill improvement
-- Outcome-only reward design simplifies implementation vs complex credit assignment
-- Cold-start data generation approach applicable to new Skill bootstrapping
-- Interleaved execution pattern (text → Skill → result → text) may improve workflow efficiency
+- Error Log → RL signal pipeline is viable for Skill improvement (from ReTool)
+- Evaluate MCP compatibility strategy — client, server, or bridge mode?
+- Study enterprise features in CrewAI (training, guardrails, observability) for roadmap
+- Consider graph-based multi-agent coordination (LangGraph pattern)
 
 ---
 
