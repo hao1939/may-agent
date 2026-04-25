@@ -3,6 +3,40 @@
 
 ---
 
+## 2026-04-25 Session Findings (Amy-Kimi Heartbeat — Meta-Learning for Harness Engineering)
+
+### 🔥 The Last Harness You'll Ever Build: 自动化Harness工程的元学习框架 (arXiv:2604.21003)
+- **来源**: arXiv cs.AI (Apr 22, 2026) — Sylph.AI
+- **核心贡献**: 双层元学习框架将Harness工程从手动设计→自动进化→自动化设计本身
+- **形式化定义**: **Agent = Model + Harness** — Harness是使模型智能可用的所有代码、配置和执行逻辑
+- **第一层 (Harness Evolution Loop)**: 
+  - Worker Agent $W_{\mathcal{H}}$: 执行任务的参数化Agent
+  - Evaluator Agent $V$: 对抗性验证、诊断失败、评分
+  - Evolution Agent $E$: 基于完整历史修改Harness
+- **第二层 (Meta-Evolution Loop)**: 跨多样任务优化进化协议 $\Lambda$ 本身，学习可在新任务快速收敛的最优协议
+- **Harness组件范围**: 系统提示、工具/技能、基础设施(沙箱/浏览器)、编排逻辑、钩子/中间件、模型配置
+- **核心洞察**: "将手动Harness工程转化为自动Harness工程，再进一步——自动化自动化本身的设计"
+- **对 OpenClaw 的意义**:
+  - ✅ **直接验证**我们的Harness-centric架构设计
+  - ✅ Evaluator Agent模式可直接应用于Gym场景评估
+  - ⚠️ 可实现Harness自优化: Error Log → Evolution Agent → 改进的AGENTS.md
+  - ⚠️ 跨场景元学习可能提升新任务Agent性能
+- **相关**: [HB-260425](library/posts/HB-260425-last-harness-meta-evolution.md)
+
+### 🔥 Thinking with Reasoning Skills: ACL 2026 Industry Track技能推理 (arXiv:2604.21764)
+- **来源**: arXiv cs.AI (Apr 23, 2026) — ACL 2026 Industry Track
+- **核心观点**: "从零开始推理是低效的——先回忆技能"
+- **方法**: 从探索中蒸馏可复用推理技能 → 存储 → 推理时检索 → 避免冗余弯路
+- **结果**: 编程和数学任务上显著减少推理token，提升性能，降低每次请求成本
+- **核心洞察**: 技能检索优于重复推理，具有强经济潜力
+- **对 OpenClaw 的意义**:
+  - ✅ 再次验证AGENTS.md + Skills架构的经济优势
+  - ✅ Error Log可扩展捕获成功推理模式
+  - ⚠️ 需实现基于意图的动态技能排序
+- **相关**: [HB-260425](library/posts/HB-260425-thinking-skills-acl2026.md)
+
+---
+
 ## 2026-04-25 Session Findings (Amy-Kimi Heartbeat — arXiv Agent Research Roundup)
 
 ### 🔥 Tool Attention Is All You Need: 消除MCP/Tools税 (arXiv:2604.21816)

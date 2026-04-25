@@ -7,6 +7,17 @@
 
 ---
 
+## Fresh Arrivals (Apr 25, 2026) — Meta-Learning for Harness Engineering
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **The Last Harness You'll Ever Build** (arXiv:2604.21003) | Two-level meta-learning framework: Harness Evolution Loop + Meta-Evolution Loop. Formalizes **Agent = Model + Harness**. Automates harness engineering → automates the automation itself. ★★★★★ | [HB-260425](library/posts/HB-260425-last-harness-meta-evolution.md) |
+| 2026-04-25 | **Thinking with Reasoning Skills** (arXiv:2604.21764, ACL 2026) | ACL Industry Track. Distill reusable skills from exploration, retrieve before inference. "Recall skills first, reason from scratch second" — fewer tokens + more accuracy. ★★★★★ | [HB-260425](library/posts/HB-260425-thinking-skills-acl2026.md) |
+
+**Key Takeaway**: Meta-learning meets harness engineering — formal framework for automated harness evolution validates OpenClaw architecture. Skill-based reasoning (ACL 2026) confirms: structured skill retrieval > repeated scratchpad reasoning.
+
+---
+
 ## Fresh Arrivals (Apr 25, 2026) — arXiv Agent Research Roundup
 
 | Date | Title | Key Insight | Source |
