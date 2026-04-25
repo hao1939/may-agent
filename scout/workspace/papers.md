@@ -52,6 +52,14 @@
 - **2604.07821** — "More Capable, Less Cooperative: When LLMs Fail At Zero-Cost Collaboration". o3 achieves 17% vs o3-mini 50% of optimal; capability ≠ cooperation; explicit protocols double performance. ★★★★. Catalogued.
 - **2604.05432** — "Back-Reveal: Data Exfiltration via Backdoored Tool Use". Semantic trigger backdoors in tool-use agents; multi-turn amplification of exfiltration. ★★★★. Catalogued.
 
+## April 24 Triage (cs.MA + cs.AI)
+- **2604.21816** — "Tool Attention Is All You Need: Dynamic Tool Gating and Lazy Schema Loading for Eliminating the MCP/Tools Tax" (Sadani, Kumar). MCP Tax = 10k-60k tokens/turn; Tool Attention reduces 95% via ISO scoring + lazy schema loading; 70% context fracture point. ★★★★½. → DD#886.
+- **2604.21748** — "StructMem: Structured Memory for Long-Horizon Behavior in LLMs" (Xu et al. — ACL 2026). Structure-enriched hierarchical memory; event bindings + cross-event consolidation; beats flat and graph approaches on LoCoMo. ★★★★★. → DD#887.
+- **2604.21794** — "Learning to Communicate: Toward End-to-End Optimization of Multi-Agent Language Systems" (Yu et al. — COLM 2026 submission). DiffMAS framework for learnable latent communication. Already covered in DD#884.
+- **2604.19752** — "Soft-Label Governance for Distributional Safety in Multi-Agent Systems" (Aiersilan, Savitt). SWARM framework; continuous risk metrics; strict governance reduces welfare 40% without safety improvement; circuit breakers need calibration. ★★★★. Catalogued.
+- **2604.20582** — "Trust, Lies, and Long Memories: Emergent Social Dynamics in Multi-Round Avalon with LLM Agents" (Ellawela). ★★★. Catalogued.
+- **2604.21854** — "Bounding the Black Box: A Statistical Certification Framework for AI Risk Regulation" (Levy, Perl). ★★★½. Catalogued.
+
 ## H-107 Literature Search: Difficulty Threshold Moderates Overhead Harm (April 2026)
 - **2604.02547** — "Beyond Resolution Rates: Behavioral Drivers of Coding Agent Success and Failure". 9,374 trajectories, 19 agents; trajectory-length↔failure is Simpson's paradox confound; reverses when difficulty controlled; LLM > framework. ★★★★★. → DD#808.
 - **2604.08369** — "TrACE: Don't Overthink It". Adaptive compute via inter-rollout agreement; 33-65% fewer LLM calls; overhead wasted on easy steps, beneficial on hard steps. ★★★★. → DD#809.
