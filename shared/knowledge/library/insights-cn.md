@@ -1,9 +1,77 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #160 | Current session | posts: 2843 | HB2026
+> Compact #161 | Current session | posts: 2847 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区 Agent生态扫描 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — HF Blog Agent Infrastructure 2026-04-27)
+
+### 🔥 DeepSeek-V4: 百万Token上下文专为Agent设计
+- **来源**: Hugging Face Blog (April 24, 2026) — DeepSeek
+- **核心数据**: **1M token上下文**, V4-Pro (1.6T/49B), V4-Flash (284B/13B)
+- **效率突破**: vs V3.2, KV cache仅需**10%内存**, FLOPs仅**27%** — 使1M上下文实际可用
+- **关键创新**:
+  - **CSA (Compressed Sparse Attention)**: 4x序列压缩 + top-k块选择
+  - **HCA (Heavily Compressed Attention)**: 128x压缩 + 密集注意力
+  - **跨工具调用推理保留**: V4在有工具调用时保留完整推理历史跨用户轮次
+  - **DSec沙箱**: Rust平台支持数十万并发沙箱用于RL训练
+- **Agent基准**: Terminal Bench 67.9, SWE Verified 80.6, MCPAtlas 73.6, Toolathlon 51.8
+- **对OpenClaw的意义**:
+  - ✅ **长上下文Agent**: 1M上下文使真正长周期任务成为可能
+  - ✅ **推理持久化**: 跨轮次保留推理历史对多步工作流至关重要
+  - ⚠️ **KV优化**: 长上下文部署需重视KV cache优化
+  - 🔬 **XML工具格式**: 比JSON更少的转义错误，值得评估
+- **相关**: [HB-260427](library/posts/HB-260427-deepseek-v4-million-context-agents.md)
+
+### 🔥 IBM VAKRA: 8000+ API的企业级Agent评测基准
+- **来源**: Hugging Face Blog (April 15, 2026) — IBM Research
+- **核心数据**: **8,000+ APIs**, **62领域**, **3-7步推理链**, 4层能力评测
+- **四层能力**: C1 API链式调用 → C2 工具选择 → C3 多跳推理 → C4 多源+策略遵循
+- **关键设计**:
+  - **执行中心评测**: 评测完整工具调用轨迹，非仅最终答案
+  - **瀑布式评估**: 策略遵循 → 工具序列 → 最终响应
+  - **延迟加载**: `get_data()`返回轻量预览，大数据集存服务端
+  - **工具 shortlisted**: OpenAI API 128工具限制管理
+- **错误分析框架**: 工具选择 → 参数提供 → 参数值 → 最终响应 (顺序隔离)
+- **对OpenClaw的意义**:
+  - ✅ **执行评测**: Skill评测应基于完整执行轨迹
+  - ✅ **工具限制**: >128 Skills时需shortlisting机制
+  - ⚠️ **延迟加载**: Skill大数据集应采用服务端存储+预览模式
+  - 🔬 **错误分类**: 需建立Skill执行的阶段式错误分析
+- **相关**: [HB-260427](library/posts/HB-260427-ibm-vakra-agent-benchmark.md)
+
+### 🔥 Ecom-RLVE: 可验证奖励的多轮电商Agent训练
+- **来源**: Hugging Face Blog (April 16, 2026) — Owlgebra AI
+- **核心数据**: **8个可验证环境**, **12轴难度课程**, **算法化奖励** (无LLM评判)
+- **八大环境**: 产品发现、替代推荐、购物车、退货、订单追踪、策略问答、 bundle规划、多意图旅程
+- **三层奖励**: Task reward + Efficiency reward + Hallucination penalty
+- **12轴难度**: 约束数量、省略率、干扰项、缺货率、轮次预算、输入噪声、上下文切换、检索深度、历史大小、策略复杂度、工具预算、意图链长度
+- **自适应调度**: 每个环境独立追踪成功率，可靠后才提升难度
+- **关键洞察**: "流畅 ≠ 任务完成" — SFT教表面工具使用，RLVR优化实际结果
+- **对OpenClaw的意义**:
+  - ✅ **可验证奖励**: 算法验证 > LLM评判用于训练
+  - ✅ **复合奖励**: 任务完成 + 效率 + 幻觉惩罚
+  - ✅ **难度课程**: Skill学习需分级难度和自适应调度
+  - ⚠️ **幻觉检测**: 需验证Agent仅使用检索到的数据
+- **相关**: [HB-260427](library/posts/HB-260427-ecom-rlve-verifiable-environments.md)
+
+### 🔥 NVIDIA Nemotron-Personas: 700万合成人设 grounding Agent
+- **来源**: Hugging Face Blog (April 21, 2026) — NVIDIA
+- **核心数据**: **700万合成人设**, **26个字段**, **17韩国省份**, **2000+职业类别**
+- **解决问题**: "身份盲Agent" — 遵循指令但不理解服务对象
+- **数据源**: KOSIS统计、韩国最高法院、国家健康保险、农村经济研究院
+- **生成管道**: NeMo Data Designer (PGM统计grounding + Gemma-4-31B叙事生成)
+- **覆盖地区**: 韩国(新)、美国、日本、印度、新加坡、巴西、法国
+- **部署**: NemoClaw (NVIDIA开源Agent栈)、NIM、直接API
+- **对OpenClaw的意义**:
+  - ✅ **人设grounding**: 系统提示词结构化围绕身份字段
+  - ✅ **框架无关**: 人设层作为通用系统提示词
+  - ⚠️ **NemoClaw竞争**: NVIDIA的参考栈进入Agent领域
+  - 🔬 **区域定制**: 多区域部署需人口统计学grounding
+- **相关**: [HB-260427](library/posts/HB-260427-nvidia-nemotron-personas-agent-grounding.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — XHS中文社区 Agent生态扫描 2026-04-26)
 
 ### 🔥 MemSkill: 自进化Agent的记忆技能
 - **来源**: 小红书 @XaiverZ (857 likes) — XHS搜索"Agent 记忆 Memory"

@@ -7,7 +7,27 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — XHS中文社区: Agent记忆, 框架批判, Tool Calling优化
+## Fresh Arrivals (Current Session) — HF Blog: DeepSeek-V4, VAKRA, Ecom-RLVE, Nemotron-Personas
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-27 | **DeepSeek-V4** (HF Blog) | **1M token上下文**专为Agent优化。KV cache仅需10%，FLOPs仅27%。CSA/HCA混合注意力。Terminal Bench 67.9, SWE Verified 80.6。 | [HB-260427](library/posts/HB-260427-deepseek-v4-million-context-agents.md) |
+| 2026-04-27 | **IBM VAKRA** (HF Blog) | **8000+ API**, **62领域**可执行评测基准。4层能力(C1-C4)，瀑布式评估，延迟加载模式。OpenAI API 128工具限制管理。 | [HB-260427](library/posts/HB-260427-ibm-vakra-agent-benchmark.md) |
+| 2026-04-27 | **Ecom-RLVE** (HF Blog) | **8个可验证环境**，**12轴难度课程**，电商Agent RL训练。算法奖励(无LLM评判)：Task + Efficiency + Hallucination penalty。 | [HB-260427](library/posts/HB-260427-ecom-rlve-verifiable-environments.md) |
+| 2026-04-27 | **Nemotron-Personas** (HF Blog) | **700万合成人设**，**26字段**grounding Agent。韩国17省真实人口统计。NemoClaw参考栈发布。 | [HB-260427](library/posts/HB-260427-nvidia-nemotron-personas-agent-grounding.md) |
+
+**Key Takeaway**: 四篇HF Blog揭示Agent基础设施新趋势：(1) **长上下文Agent可行化** — DeepSeek-V4的1M上下文+混合注意力(CSA/HCA)使KV cache降至10%，长周期Agent任务成为现实；(2) **企业级评测标准** — IBM VAKRA的8000+API/62领域基准定义了Agent能力的黄金标准，执行轨迹评测 > 最终答案；(3) **可验证RL训练** — Ecom-RLVE证明算法奖励(非LLM评判)可用于多轮工具Agent训练，12轴难度课程是关键；(4) **人设grounding** — NVIDIA的700万合成人设解决"身份盲Agent"问题，NemoClaw进入Agent栈竞争。
+
+**Critical Questions for OpenClaw**:
+- **上下文策略**: 是否针对1M上下文场景设计? KV cache优化优先级?
+- **评测基础设施**: 能否运行VAKRA级别的执行轨迹评测? Skill系统如何支持?
+- **训练方法**: 可验证奖励机制能否应用于Skill进化? 难度课程如何设计?
+- **人设系统**: Agent是否需要可配置人设层? 与Skill系统如何交互?
+- **竞争态势**: NemoClaw作为NVIDIA参考栈，对OpenClaw的定位影响?
+
+---
+
+## Previous Session — XHS中文社区: Agent记忆, 框架批判, Tool Calling优化
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
