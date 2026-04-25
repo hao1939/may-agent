@@ -47,3 +47,6 @@ CONTINUE —
 
 **(c) First step:** Run `cat agents/gym/scenarios/wrong-fix-recovery/task.md && cat agents/gym/scenarios/wrong-fix-recovery/success_criteria.js` to understand the worst-performing scenario, then check if we can run a real agent via `GYM_AGENT_BIN=... agents/test/gym/run-gym.sh wrong-fix-recovery` or document the exact blocker. Build the feedback loop document around this concrete example.
 
+
+### Iteration 1 — 2026-04-25T15:42:16.058Z
+**Worker**: Now I have enough context. Let me write both files.
