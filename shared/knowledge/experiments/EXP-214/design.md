@@ -1,7 +1,7 @@
 # EXP-214: Structural Enforcement for C7.1 (Forbidden Paths)
 
 **Date**: 2026-07-30
-**Status**: DESIGNED
+**Status**: CLOSED — superseded by EXP-223 (which tests the same guard-level upgrade on tech-lead with live production data)
 **Coach**: coach
 **Predecessors**: EXP-188 (text injection 0% vs finish-guard 100% for workflow adoption)
 
