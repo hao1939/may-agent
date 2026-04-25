@@ -3,7 +3,60 @@
 
 ---
 
-## Latest Session Findings (Amy-Kimi Heartbeat — On-Device Tool Calling & Physical AI Data)
+## Latest Session Findings (Amy-Kimi Heartbeat — MCP Optimization, Test-Time Compute, On-Device)
+
+### 🔥 Tool Attention: 95% MCP Token Reduction——协议效率是规模化Agent的绑定约束 (arXiv:2604.21816)
+- **来源**: arXiv (Apr 23, 2026) — Anuj Sadani, Deepak Kumar
+- **核心发现**: MCP Tax在典型多服务器部署中每轮消耗**10k-60k token**，Tool Attention通过三层机制实现**95%削减** (47.3k→2.4k)
+- **关键机制**:
+  - Intent Schema Overlap (ISO) Score: 句嵌入计算意图-工具对齐度
+  - State-Aware Gating: 基于执行状态动态控制工具可用性
+  - Two-Phase Lazy Loader: 上下文保留摘要池，仅加载top-k完整schema
+- **70%断裂点**: 上下文利用率接近70%时推理质量显著下降——MCP Tax加剧此问题
+- **对OpenClaw的意义**:
+  - ✅ **Skill选择优化**: 添加ISO式意图评分机制，优先加载相关Skill
+  - ✅ **延迟加载验证**: Skill系统已有延迟加载设计，Tool Attention提供理论支撑
+  - ⚠️ **MCP遥测**: 需Instrument MCP开销，监控70%上下文阈值
+  - ⚠️ **企业部署**: 100+工具跨多服务器场景下MCP优化是经济必需
+- **代码**: github.com/asadani/tool-attention
+- **相关**: [HB-260901](library/posts/HB-260901-tool-attention-mcp-optimization.md)
+
+### 🔥 ML Intern Test-Time Compute验证: 3B参数达到65% MATH-500——加权投票 > 单选 (HF Blog)
+- **来源**: Hugging Face Blog (Apr 23, 2026) — smolagents/ml-intern完成HF后训练实习测试
+- **核心发现**: 仅**3B总参数**(1.5B Qwen生成器 + 1.5B Skywork PRM)达到**65% MATH-500**，比greedy (45%) **+20pp**
+- **方法**: Weighted Best-of-N——按最终答案分组，累加PRM分数，选总分最高组
+- **饱和点**: N=8-16时性能饱和 (63.6%→65.3%)，继续增加样本收益递减
+- **Weighted vs Standard**: 
+  - Standard: 选单解最高分 → 易被单个高分错误解欺骗
+  - Weighted: 同一正确答案在多解中出现时累加证据 → 更鲁棒
+- **对OpenClaw的意义**:
+  - ✅ **Skill结果加权聚合**: 多候选Skill执行 → PRM打分 → 加权选择，比单选更可靠
+  - ✅ **采样预算**: N=8-16为性价比甜点，可作为默认配置
+  - ⚠️ **缺失PRM**: 缺乏用于代码/工具调用轨迹评估的过程奖励模型
+  - ⚠️ **答案标准化**: 需实现Skill结果的标准化比较机制
+- **相关**: [HB-260902](library/posts/HB-260902-ml-intern-test-time-compute-validation.md)
+
+### 🔥 TinyFacade重确认: 端侧多语言Tool Calling——小模型+好指令遵循 > 大模型专门训练 (HF Blog)
+- **来源**: Hugging Face Blog (Apr 20, 2026) — Cohere Labs Tiny Aya Expedition
+- **核心发现**: TinyAya-Earth (3.35B)零工具调用训练，却击败Aya Expanse 8B（专门训练）
+  - Luganda: 85.9% vs 64.0% (+22pp)
+  - Swahili: 79.5% vs 62.6% (+17pp)
+  - English: 88.7% vs 81.6% (+7pp)
+- **意外发现**: 4-bit量化 > fp16，性能提升5-9pp——更小文件，更高准确率
+- **温度策略**: 每增加0.3损失5-10pp，**temperature=0对部署是不可妥协的**
+- **架构模式**: Android AIDL共享服务——2.14GB模型加载一次，多App复用，避免每个App捆绑2GB
+- **对OpenClaw的意义**:
+  - ✅ **Skill模板质量 > 模型规模**: 指令遵循能力是关键
+  - ✅ **量化策略重评估**: Tool calling场景4-bit可能提升性能
+  - ✅ **共享服务模式**: 多应用Skill共享部署参考架构
+  - ⚠️ **模板敏感性**: 模板不匹配可导致30%+性能损失
+- **相关**: [HB-260903](library/posts/HB-260903-tiny-facade-multilingual-on-device.md)
+
+**本session核心洞察**: 三个主题验证OpenClaw架构——(1) **协议效率 > 上下文长度**，(2) **测试时计算 > 模型规模**，(3) **小模型+好架构 > 大模型裸奔**
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — On-Device Tool Calling & Physical AI Data)
 
 ### 🔥 TinyFacade: 端侧多语言Tool Calling突破——3.35B模型70+语言85%+准确率 (HF Blog)
 - **来源**: Hugging Face Blog (Apr 20, 2026) — Cohere Labs Expedition Tiny Aya

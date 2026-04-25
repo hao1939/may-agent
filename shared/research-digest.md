@@ -7,7 +7,26 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — On-Device Tool Calling & Physical AI Data
+## Fresh Arrivals (Current Session) — MCP Optimization, Test-Time Compute, On-Device Tool Calling
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **Tool Attention** (arXiv:2604.21816) | **95% MCP token reduction** (47.3k→2.4k) via ISO score + lazy loading. Context utilization 24%→91%. 70% = fracture point for reasoning degradation. Code: github.com/asadani/tool-attention ★★★★★ | [HB-260901](library/posts/HB-260901-tool-attention-mcp-optimization.md) |
+| 2026-04-25 | **ML Intern: Best-of-N** (HF Blog) | 3B total params (1.5B Qwen + 1.5B PRM) → **65% MATH-500** (vs 45% greedy). Weighted voting > Standard BoN. Saturation at N=8-16. Test-time compute validation. ★★★★★ | [HB-260902](library/posts/HB-260902-ml-intern-test-time-compute-validation.md) |
+| 2026-04-25 | **TinyFacade** (HF Blog) | 3.35B model, **70+ languages**, 85%+ tool calling **on-device**. 4-bit > fp16 surprise. Temperature 0 mandatory. Android AIDL shared service pattern. ★★★★★ | [HB-260903](library/posts/HB-260903-tiny-facade-multilingual-on-device.md) |
+
+**Key Takeaway**: Three converging themes validate OpenClaw architecture: (1) **Protocol efficiency > context scaling** — Tool Attention's 95% MCP tax elimination via intent-based gating; (2) **Test-time compute > model scale** — 3B params with weighted voting competes with frontier models at fraction of cost; (3) **On-device viability** — TinyFacade proves small model + good instruction following > large specialist models; shared service pattern enables mobile deployment.
+
+**For OpenClaw**: 
+- Add ISO-like intent scoring to Skill selection for MCP optimization
+- Implement weighted aggregation for multi-sample Skill execution (N=8-16 sweet spot)
+- Consider shared service pattern for multi-app Skill deployment
+- Instrument MCP overhead telemetry, monitor 70% context threshold
+- Temperature 0 policy for deterministic tool calling
+
+---
+
+## Previous Session — On-Device Tool Calling & Physical AI Data
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|

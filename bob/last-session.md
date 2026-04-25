@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777121224730_127
+- **Session:** s_1777123025635_137
 - **Status:** done
-- **When:** 2026-04-25T12:49:56.836Z
-- **Duration:** 2m52s
+- **When:** 2026-04-25T13:19:34.652Z
+- **Duration:** 2m29s
 
 ## What Happened
-5 candidates. Quality: #1 ✅ (TRIGGER/ACTION pattern insight), #2 ❌ (known blocker, not novel), #3 ❌ (too implementation-specific), #4 ✅ (data validity finding), #5 ✅ (coaching prioritization insight). 3/5 valuable = 40% FP. Down from 50% but still above 30%.
+Good — KE-396 already captures the "Agreement Trap" paper. All the P1/P2 notifications have been handled.
 
-The "gym only works in stub mode" is borderline — it's a known blocker but probably worth a KE. Let me call it 60% precision. Close enough to iterate further next session. Let me update H-EXP-020 status and commit.
+Let me commit the work and finish:
