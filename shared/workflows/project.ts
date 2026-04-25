@@ -418,7 +418,8 @@ function buildReviewPrompt(
   prompt += `2. **What did we learn?** What worked, what didn't, what surprised us?\n`;
   prompt += `3. **Is the current milestone the right next step?** Or should we adjust based on what we learned?\n`;
   prompt += `4. **Are we closing the loop?** Did we just fix a symptom, or did we prevent recurrence (skill/guard/handler)?\n`;
-  prompt += `5. **What's blocking progress?** Be specific — not "it's hard" but "X dependency is missing" or "approach Y failed because Z".\n\n`;
+  prompt += `5. **Is it verified?** Every skill/workflow created must be testable. Is there a gym scenario or test that confirms it works? If not, writing the test IS the next milestone.\n`;
+  prompt += `6. **What's blocking progress?** Be specific — not "it's hard" but "X dependency is missing" or "approach Y failed because Z".\n\n`;
 
   if (continueWithoutProgress >= 2) {
     prompt += `\n⚠️ STALL DETECTED: ${continueWithoutProgress} consecutive iterations with no milestone progress.\n`;

@@ -5,7 +5,7 @@
 **Workflow**: project
 **Type**: continuous
 **Priority**: P1
-**Iteration**: 2
+**Iteration**: 3
 **Health**: —
 
 ## Goal
@@ -13,10 +13,11 @@
 Agents effectively use the infrastructure to evolve: they create projects from problems, read and react to metrics, escalate with context, cooperate across agents, and **close the loop** by extending the system (writing skills, guards, handlers) when patterns repeat. Success = agents autonomously improve the system, not just monitor it.
 
 ## Current State
-Iteration 2. Milestones: 0/12 done.
-Reviewer: 1. **I believe**: Two iterations spent, zero artifacts produced. The worker got distracted both times.
-2. **I'm uncertain about**: Exact DB location and skills directory structure.
-3. **I'd change my
+Iteration 3. Milestones: 0/12 done.
+Reviewer: —
+
+1. **I believe**: Three iterations, zero files written. Worker keeps exploring/querying but never writes artifacts.
+2. **I'm uncertain about**: Whether the worker will actually write files this tim
 ## Metrics
 
 - `system.project-creation-rate`: target >= 2/week, current baseline unknown — how often agents create projects from heartbeat discoveries
@@ -108,4 +109,9 @@ When deciding what extension to write:
 ## Iteration Summary
 - **Iter 2**: CONTINUE. 1. **I believe**: Two iterations spent, zero artifacts produced. The worker got distracted both times.
 2. **I'm uncertain about**: Exact DB location a
+
+- **Iter 3**: CONTINUE. —
+
+1. **I believe**: Three iterations, zero files written. Worker keeps exploring/querying but never writes artifacts.
+2. **I'm uncertain about**: Whe
 

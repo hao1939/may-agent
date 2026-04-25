@@ -1,0 +1,17 @@
+[
+  {
+    "product": "Widget A",
+    "totalQuantity": 30,
+    "totalRevenue": 899.6999999999999
+  },
+  {
+    "product": "Widget B",
+    "totalQuantity": 20,
+    "totalRevenue": 999.8000000000001
+  },
+  {
+    "product": "Widget C",
+    "totalQuantity": 3,
+    "totalRevenue": 299.96999999999997
+  }
+]

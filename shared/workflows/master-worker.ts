@@ -244,7 +244,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // ── Create sessions ──
   const orchestrator = await ctx.createSession({
     systemPrompt: orchestratorSystemPrompt(projectDir),
-    tools: "readonly",
+    tools: "full",
     label: "orchestrator",
   });
 

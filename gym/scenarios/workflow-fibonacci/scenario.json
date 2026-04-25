@@ -1,0 +1,9 @@
+{
+  "name": "workflow-fibonacci",
+  "categories": ["workflow", "project-management"],
+  "tags": ["workflow-test"],
+  "tier": "standard",
+  "timeout": 10,
+  "agent_type": "workflow",
+  "workflow": false
+}
