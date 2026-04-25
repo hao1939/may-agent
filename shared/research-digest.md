@@ -7,7 +7,25 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — arXiv最新: Tool Attention, DiffMAS, DIVERT
+## Fresh Arrivals (Current Session) — XHS中文社区: Agent记忆, 框架批判, Tool Calling优化
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **MemSkill** (XHS 857 likes) | 自进化Agent的记忆技能。将记忆管理从固定机制转变为可学习技能。社区对现有记忆框架不满。 | [HB-260426](library/posts/HB-260426-agent-memory-memskill.md) |
+| 2026-04-26 | **Agent框架批判** (XHS 357 likes) | "所有开源Agent框架都很垃圾"。社区出现明显"框架疲劳"。CrewAI占据多智能体心智。 | [HB-260426](library/posts/HB-260426-agent-frameworks-cn-comparison.md) |
+| 2026-04-26 | **Function Calling优化** (XHS 546 likes) | ToolMind数据集+Anthropic tool calling解析。社区高度关注工具调用延迟/准确率/成本优化。 | [HB-260426](library/posts/HB-260426-tool-calling-trend-cn.md) |
+
+**Key Takeaway**: 三个中文社区信号揭示Agent开发者痛点：(1) **记忆是核心差异化** — MemSkill的857赞+"用了3个记忆框架后放弃"显示记忆管理是未解决的痛点，自进化记忆策略是新方向；(2) **框架疲劳真实存在** — 357赞批判帖"所有开源框架都很垃圾"引发共鸣，开发者对"又一个框架"持怀疑态度，CrewAI/AutoGen/LangChain形成三巨头格局；(3) **Tool Calling细节决定成败** — 546赞优化方法论帖+ToolMind数据集，显示社区已不满足于"能用"，追求"好用"的性能优化。
+
+**Critical Questions for OpenClaw**:
+- **记忆策略**: 是否将记忆管理本身设计为可学习、可进化的Skill？
+- **框架定位**: 如何避免被归类为"又一个Agent框架"？与CrewAI的差异化是什么？
+- **Skill调用优化**: Function calling优化技术(延迟/准确率/成本)如何应用到Skill系统？
+- **社区叙事**: "框架疲劳"和"记忆痛点"如何转化为OpenClaw的传播优势？
+
+---
+
+## Previous Session — arXiv最新: Tool Attention, DiffMAS, DIVERT
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
@@ -16,12 +34,6 @@
 | 2026-04-26 | **DIVERT** (arXiv) | 多样性引导的Agent评估框架。分支探索替代线性rollout。快照恢复+定向探索深层故障模式。 | [HB-2026](library/posts/HB-2026-divert-agent-evaluation.md) |
 
 **Key Takeaway**: 三篇前沿论文指向Agent系统的核心优化方向：(1) **协议级效率** — Tool Attention揭示MCP的真实开销(10k-60k tokens/轮)，通过动态门控可减少95%；(2) **通信范式演进** — DiffMAS验证隐式通信(latent representations)可训练优化，提示多Agent协作的未来方向；(3) **评估方法论** — DIVERT的分支探索框架可显著提升测试覆盖率和效率。
-
-**Critical Questions for OpenClaw**:
-- **Skill加载优化**: Tool Attention的lazy schema loading如何应用到Skill系统？
-- **通信架构**: 是否探索隐式状态传递作为文本通信的补充？
-- **Gym增强**: DIVERT的快照分支机制能否集成到测试框架？
-- **MCP定位**: Tool Attention量化了MCP Tax，我们的协议策略是否需要调整？
 
 ---
 

@@ -1,9 +1,61 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #159 | Current session | posts: 2840 | HB2026
+> Compact #160 | Current session | posts: 2843 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — arXiv最新论文扫描)
+## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区 Agent生态扫描 2026-04-26)
+
+### 🔥 MemSkill: 自进化Agent的记忆技能
+- **来源**: 小红书 @XaiverZ (857 likes) — XHS搜索"Agent 记忆 Memory"
+- **核心概念**: 将记忆管理从固定机制转变为可学习的技能(Memory as Skill)
+- **关键洞察**:
+  - 自进化Agent能够自主学习、改进其记忆策略
+  - 社区对现有记忆框架(如简单向量检索)存在明显不满
+  - 同期相关高赞: "agent memory下一步该往哪走" (274 likes), "用了3个记忆框架后我放弃了" (65 likes)
+- **对 OpenClaw 的意义**:
+  - ✅ **记忆即Skill**: 记忆管理本身可以是一种可学习、可优化的Skill
+  - ⚠️ **自进化方向**: Agent应该能够自主学习和改进自己的记忆策略
+  - 🔬 **开源机会**: 社区渴望有竞争力的开源记忆基线
+  - ⚠️ **竞争差异化**: 记忆管理被视为Agent系统的核心差异化要素
+- **相关**: [HB-260426](library/posts/HB-260426-agent-memory-memskill.md)
+
+### 🔥 中文社区Agent框架批判与选型焦虑
+- **来源**: 小红书多篇高赞帖子 — "CrewAI AutoGen 对比", "AI Agent 框架"
+- **关键帖子**:
+  - "5大AI Agent框架对比" — 576 likes (@程序员八阿哥)
+  - "现在最流行的8类 AI Agent 框架！" — 743 likes (@老A的AI研究所)
+  - **"当我意识到所有开源Agent框架都很垃圾后"** — 357 likes (@川川冲冲冲) ⭐
+- **核心洞察**:
+  - 社区出现明显的"框架疲劳"(Framework Fatigue)
+  - 现有框架数量多但质量参差不齐，学习成本高
+  - 开发者对"又一个框架"持怀疑态度
+  - CrewAI在多智能体协作领域占据心智
+- **对 OpenClaw 的意义**:
+  - ✅ **差异化机会**: 社区对"更好的框架"有明确但未满足的需求
+  - ⚠️ **定位挑战**: 需避免被归类为"又一个Agent框架"
+  - 🔬 **痛点研究**: 357赞批判帖是理解现有框架缺陷的宝贵资源
+  - ⚠️ **竞争格局**: CrewAI、AutoGen、LangChain形成三巨头，突围需明确差异点
+- **相关**: [HB-260426](library/posts/HB-260426-agent-frameworks-cn-comparison.md)
+
+### 🔥 Function Calling优化: 社区高度关注的技术细节
+- **来源**: 小红书技术帖子集群 — XHS搜索"function calling 工具调用"
+- **关键内容**:
+  - "Functioncall怎么优化-1" — 546 likes (@W.llm) — 高赞技术方法论
+  - "Anthropic 进阶 Tool Calling 技术解析" — 178 likes
+  - "ToolMind:大规模推理增强工具调用数据集" — 82 likes
+- **技术热点**:
+  - Function call延迟优化、准确率提升、成本控制
+  - 专用数据集训练(ToolMind代表推理增强方向)
+  - Anthropic tool calling被视为最佳实践参考
+- **对 OpenClaw 的意义**:
+  - ✅ **Skill调用即Tool Calling**: OpenClaw的Skill系统本质就是工具调用
+  - ✅ **优化经验可复用**: Function call优化技术可直接应用于Skill调用
+  - 🔬 **技术债务**: 需评估当前Skill调用的延迟、准确率、成本优化空间
+- **相关**: [HB-260426](library/posts/HB-260426-tool-calling-trend-cn.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — arXiv最新论文扫描)
 
 ### 🔥 Tool Attention: 消除MCP Tax的协议级优化
 - **来源**: arXiv:2604.21816 (April 23, 2026)
