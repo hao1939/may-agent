@@ -146,48 +146,31 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         done: (summary: string) => ({ type: "done" as const, summary }),
         escalate: (reason: string, context?: unknown) => ({ type: "escalate" as const, reason, context }),
         createSession: async (opts: { systemPrompt: string; tools: "full" | "readonly"; label?: string }) => {
-          const { Agent } = await import("@mariozechner/pi-agent-core");
-          const { getModel } = await import("@mariozechner/pi-ai");
-          const { createCodingTools } = await import("../../../src/lib/tools/coding.ts");
-          const { createReadTool } = await import("../../../src/lib/tools/read.ts");
-
-          const MODEL_BASE_URL = process.env.MODEL_BASE_URL || "http://localhost:4000";
-          const LITELLM_API_KEY = process.env.LITELLM_API_KEY || process.env.ANTHROPIC_API_KEY || "not-needed";
-          const model = {
-            ...getModel("anthropic", "claude-sonnet-4-20250514"),
-            id: "claude-opus-4.6",
-            baseUrl: MODEL_BASE_URL,
-            contextWindow: 200000,
-          };
-
-          const tools = opts.tools === "readonly"
-            ? [createReadTool(ctx.projectRoot)]
-            : createCodingTools(ctx.projectRoot, { agentName: opts.label || "worker" });
-
-          const agentInstance = new Agent({
-            initialState: { systemPrompt: opts.systemPrompt, model, tools: tools as any[] },
-            getApiKey: () => LITELLM_API_KEY,
-          });
-
-          agentInstance.subscribe(async (event: any) => {
-            if (event.type === "tool_execution_start") {
-              ctx.log(`  [${opts.label || "session"}] 🔧 ${event.toolName}`);
-            }
-          });
+          const history: Array<{ role: string; text: string }> = [];
+          let lastResponse = "";
+          const label = opts.label || "session";
 
           return {
-            async prompt(message: string) { await agentInstance.prompt(message); },
-            lastText() {
-              const msgs = agentInstance.state.messages;
-              for (let i = msgs.length - 1; i >= 0; i--) {
-                const m = msgs[i] as any;
-                if (m.role === "assistant") {
-                  return (m.content || []).filter((c: any) => c.type === "text").map((c: any) => c.text).join("\n");
-                }
+            async prompt(message: string) {
+              let fullPrompt = opts.systemPrompt + "\n\n";
+              for (const h of history) { fullPrompt += `[${h.role}]: ${h.text}\n\n`; }
+              fullPrompt += message;
+              history.push({ role: "user", text: message });
+
+              const result = await ctx.manager.callAgent(project.owner, fullPrompt, {
+                source: `workflow:${label}`,
+                workflowRunId: runId,
+                projectId: `${project.owner}/${project.relPath.split("/").pop()}`,
+              });
+              lastResponse = result.lastAssistantText || "";
+              history.push({ role: "assistant", text: lastResponse.slice(0, 2000) });
+              if (result.sessionId) {
+                wfRun.steps.push({ sessionId: result.sessionId, agent: project.owner, status: result.status ?? "done" });
+                ph.saveWorkflowRunFile(ctx.projectRoot, wfRun);
               }
-              return "";
             },
-            close() { /* agent GC'd naturally */ },
+            lastText() { return lastResponse; },
+            close() {},
           };
         },
       };
