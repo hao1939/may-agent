@@ -7,7 +7,28 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — XHS 中文社区 Agent 洞察
+## Fresh Arrivals (Current Session) — XHS 中文社区 Skill进化与Agent生态
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **Skill自进化趋势** (XHS 768赞) | 手动编写技能不可持续，EvoSkill/HermesSkill推动自动生成+RL训练闭环。中文社区高度关注。 | [HB-0041](library/posts/HB-0041-skill-self-evolution-trend.md) |
+| 2026-04-26 | **LLM/Agent/MCP/Skill关系** (XHS 512赞) | 社区渴求架构清晰性。MCP是连接协议，Skill是能力单元。教学型内容受欢迎。 | [HB-0042](library/posts/HB-0042-llm-agent-mcp-skill-relationship.md) |
+| 2026-04-26 | **Hermes Agent爆红** (XHS 272赞) | 阿里Agent技术栈在中文社区快速崛起。"生态要炸了，进化速度把人卷到了"。 | [HB-0043](library/posts/HB-0043-hermes-agent-ecosystem.md) |
+| 2026-04-26 | **Codex Multi-Agent实战** (XHS 529赞) | 生产级多智能体指南涌现。Sub-agent模式、"无人值守持续运行"是核心诉求。 | [HB-0044](library/posts/HB-0044-openai-codex-multi-agent.md) |
+| 2026-04-26 | **Karpathy经验+Skill** (XHS 4192赞) | 最高赞技术内容：名人经验+可执行Skill。专家洞察+代码的组合极具传播力。 | [HB-0045](library/posts/HB-0045-karpathy-ai-knowledge-base-skill.md) |
+
+**Key Takeaway**: 中文社区正在发生**能力演进**——从"功能实现"转向"自动进化"、从"单智能体"转向"多智能体协作"。五个关键洞察：(1) **Skill自进化**是必然趋势，EvoSkill/HermesSkill引领方向；(2) **概念分层**需求强烈，MCP/Skill/Agent关系需要清晰架构图；(3) **Hermes崛起**，阿里技术栈在中文社区快速 converging；(4) **Multi-Agent生产化**，"无人值守持续运行"成为标配需求；(5) **内容策略验证**，4192赞表明专家经验+可执行Skill最具价值。
+
+**For OpenClaw**:
+- 评估Skill自进化路线图：Error Log → 模式识别 → Skill优化闭环
+- 制作清晰的Agent/Skill/Tool关系架构图，填补文档缺口
+- 跟踪Hermes技术栈：技能生成机制、RL闭环设计、路由精度策略
+- 强化Multi-Agent能力：无人值守运行、Sub-agent协调、多模型协作
+- 采用"方法+代码"内容策略：insights附带可运行skill示例
+
+---
+
+## Previous Session — XHS 中文社区 Agent 洞察
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|

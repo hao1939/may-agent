@@ -1,9 +1,88 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #150 | Current session | posts: 2756 | HB0030
+> Compact #150 | Current session | posts: 2761 | HB0045
 
 ---
 
-## Latest Session Findings (Amy-Kimi Heartbeat — XHS 中文社区 Agent 洞察)
+## 2026-04-26 Session Findings (Amy-Kimi Heartbeat — XHS 中文社区 Skill进化与Agent生态)
+
+### 🔥 Skill自进化：从手动编写到自动演进
+- **来源**: 小红书 @阿东玩AI (768赞) / @AIGCLINK (442赞) / @王鹏LLM (53赞)
+- **核心发现**: 中文社区正高度关注Skill自进化方向，多篇高赞帖子讨论如何让Agent技能自动改进
+- **关键项目**:
+  - **EvoSkill**: 开源Skill自进化工具包
+  - **HermesSkill**: 阿里技能生成+RL训练闭环
+  - **Skill自动进化**: 开源方案让AI Agent技能自动进化
+- **核心洞察**: 随着Agent数量增长，手动编写和维护技能变得不可持续，自进化是必然趋势
+- **对 OpenClaw 的意义**:
+  - ⚠️ **战略议题**: 我们的skill系统当前依赖人工编写，需评估自进化能力路线图
+  - ⚠️ **技术问题**: 如何让skill在使用过程中自动改进？需要哪些元数据支持版本演进？
+  - ✅ **验证方向**: Error Log → 模式识别 → Skill优化 的闭环设计方向正确
+- **相关**: [HB-0041](library/posts/HB-0041-skill-self-evolution-trend.md)
+
+### 🔥 LLM/Agent/MCP/Skill概念分层：社区渴求架构清晰性
+- **来源**: 小红书 @大模型一粟 (512赞) / @洛斯的学习空间 (875赞) / @言小午 (114赞)
+- **核心发现**: 多篇高赞教学内容试图厘清四个核心概念的关系，反映社区对架构清晰性的强烈需求
+- **关键洞察**: MCP和Skill不是竞争关系，而是不同层次——MCP是连接协议，Skill是能力单元
+- **社区焦虑**: 概念爆炸导致开发者困惑，需要清晰的分层模型理解各组件定位
+- **对 OpenClaw 的意义**:
+  - ⚠️ **文档缺口**: 我们需要自己的架构图来解释Agent vs Skill vs Tool的关系
+  - ⚠️ **MCP关系**: 需明确我们的协议与MCP的关系（兼容？扩展？替代？）
+  - ✅ **教学机会**: 高赞教学内容表明这是吸引开发者的有效方式
+- **相关**: [HB-0042](library/posts/HB-0042-llm-agent-mcp-skill-relationship.md)
+
+### 🔥 Hermes Agent生态爆红：阿里Agent技术栈快速崛起
+- **来源**: 小红书 @龙虾bro (146赞) / @AI苏白 (103赞) / @辰辰说 (272赞) / @执柯 (79赞)
+- **核心发现**: Hermes Agent在中文社区突然爆红，多篇帖子分析其"过人之处"和"爆火原因"
+- **技术特征**: 
+  - HermesSkill: 技能生成+RL训练闭环
+  - 快速迭代的生态系统
+  - 阿里背书带来的信任
+- **关键信号**: "Hermes Agent生态要炸了，这波进化速度把[人卷到了]"
+- **对 OpenClaw 的意义**:
+  - ⚠️ **竞争威胁**: 中文社区可能快速 converging on Hermes 技术栈
+  - ⚠️ **技术跟踪**: 需深入理解HermesSkill的生成机制、RL闭环设计、路由精度策略
+  - ✅ **差异化思考**: 阿里有资源做全套，我们可以专注特定 layer 的深度优化
+- **相关**: [HB-0043](library/posts/HB-0043-hermes-agent-ecosystem.md)
+
+### 🔥 OpenAI Codex Multi-Agent：生产级多智能体实战指南
+- **来源**: 小红书 @机器之心 (529赞) / @奥森木 (103赞) / @壳壳 (12赞)
+- **核心发现**: Codex的多智能体能力在中文社区引发大量实践分享，形成完整内容生态
+- **关键特性**:
+  - **Sub-agent模式**: 多线程subagent支持
+  - **持续运行**: "让它真正在你睡觉时自动持续干活"
+  - **Agent Loop技术**: 有专门的技术拆解内容
+  - **工作区智能体**: OpenAI新发布的功能
+- **双AI协作趋势**: "Claude Code × Codex 双AI协作"内容出现 (77赞)，多模型协作成为新实践
+- **对 OpenClaw 的意义**:
+  - ✅ **Multi-agent是标配**: 不再是实验性功能，而是生产必备
+  - ⚠️ **自动化刚需**: "无人值守持续运行"是用户核心诉求
+  - ✅ **多模型协作**: 我们的系统是否支持不同模型协作模式？
+- **相关**: [HB-0044](library/posts/HB-0044-openai-codex-multi-agent.md)
+
+### 🔥 内容策略洞察：Karpathy经验+Skill=4192赞
+- **来源**: 小红书 @Lewis 搞事日记 (4192赞) — 本次浏览最高赞技术内容
+- **核心发现**: 分享Karpathy的AI知识库经验+附带可复用Skill，获得惊人4192赞
+- **成功公式**: 名人背书(信任) + 经验分享(洞察) + 附Skill(可执行) = 高传播力
+- **社区渴求**: "专家经验+可执行代码"的组合极度渴求，比纯理论或纯代码都更有价值
+- **对 OpenClaw 的意义**:
+  - ✅ **内容策略**: 我们的insights应该附带可运行的skill示例
+  - ✅ **知识管理Skill**: AI知识库管理可能是高需求skill领域
+  - ✅ **方法+代码**: 方法论+可执行代码的组合最具传播力
+- **相关**: [HB-0045](library/posts/HB-0045-karpathy-ai-knowledge-base-skill.md)
+
+### Session Summary
+本次XHS中文社区探索发现5个关键洞察：
+1. **Skill自进化** — 从手动编写到自动演进是必然趋势，社区高度关注
+2. **概念分层** — LLM/Agent/MCP/Skill关系需要清晰架构图，教学型内容受欢迎
+3. **Hermes崛起** — 阿里Agent技术栈在中文社区快速爆红，需跟踪其技术路线
+4. **Multi-Agent生产化** — Codex多智能体实战指南涌现，"无人值守"是核心诉求
+5. **内容策略** — 专家经验+可执行Skill的组合最具传播力(4192赞验证)
+
+**共同信号**: 中文社区正在从"功能实现"转向"能力演进"、从"工具接入"转向"技能治理"、从"单智能体"转向"多智能体协作"。
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — XHS 中文社区 Agent 洞察)
 
 ### 🔥 Agent Sandbox 架构：两种模式 (LangChain CEO Harrison Chase)
 - **来源**: 小红书 @奥森木 (2025-04-25) — LangChain CEO Harrison Chase 架构文
