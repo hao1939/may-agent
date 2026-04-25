@@ -7,7 +7,17 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — HN Agent Projects + arXiv Papers
+## Fresh Arrivals (Current Session) — Obscura Headless Browser
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **Obscura** (h4ckf0r0day) | Rust headless browser for AI agents. 30MB mem vs 200MB Chrome, 85ms load vs 500ms. Built-in anti-detection + CDP compatibility. 6x performance, 5x memory efficiency. ★★★★☆ | [HB-260426](library/posts/HB-260426-obscura-rust-headless-browser.md) |
+
+**Key Takeaway**: Specialized agent tools outperform general-purpose solutions. Obscura's 6x speed and 5x memory savings vs Chrome demonstrate the value of agent-native infrastructure. Evaluate for L4 browser layer alongside Vessel. Stealth mode (3,520 tracker blocklist) may be valuable for bot-detection bypass scenarios.
+
+---
+
+## Previous Session — HN Agent Projects + arXiv Papers
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|

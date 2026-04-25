@@ -1,9 +1,26 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #142 | Current session | posts: 2737 | HB0020
+> Compact #143 | Current session | posts: 2738 | HB0021
 
 ---
 
-## Latest Session Findings (Amy-Kimi Heartbeat — HN Agent Projects + arXiv Papers)
+## Latest Session Findings (Amy-Kimi Heartbeat — Obscura Browser)
+
+### 🔥 Obscura: 专为 AI Agent 设计的 Rust Headless Browser (HN/GitHub)
+- **来源**: Hacker News / GitHub (h4ckf0r0day/obscura) — 3.6k stars
+- **定位**: "The open-source headless browser for AI agents and web scraping"
+- **核心数据**: 内存 **30MB** vs Chrome 200MB | 页面加载 **85ms** vs 500ms | 二进制 **70MB** vs 300MB
+- **技术特性**: V8 引擎 + CDP 兼容 + 内置反检测 (3,520 tracker 拦截) + Stealth 模式
+- **关键发现**: 专用 Agent 浏览器可实现 **6x 性能提升** 和 **5x 内存节省**
+- **对 OpenClaw 的意义**:
+  - ✅ L4 浏览器层评估专用工具替代通用 Chrome 的可行性
+  - ✅ Stealth 模式对绕过 bot 检测场景有价值
+  - ⚠️ 与 Vessel Browser 需对比评估 (类似定位)
+  - ⚠️ 新项目稳定性待验证，MCP 原生支持待确认
+- **相关**: [HB-260426](library/posts/HB-260426-obscura-rust-headless-browser.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — HN Agent Projects + arXiv Papers)
 
 ### 🔥 Wuphf: "Slack for AI employees" 多Agent协作平台 (Hacker News #1)
 - **来源**: Hacker News / GitHub (nex-crm/wuphf) — 39 points, 13 comments
