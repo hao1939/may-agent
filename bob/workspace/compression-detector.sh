@@ -92,15 +92,33 @@ echo "Insights that appear procedural/declarative and aren't covered by existing
 echo "" >> "$OUTPUT"
 
 candidate_count=0
+seen_sessions=""
 while IFS='|' read -r agent session type insight; do
+    # Filter 0: Only 1 candidate per session (prevent duplicates from same session)
+    if echo "$seen_sessions" | grep -qF "$session"; then
+        continue
+    fi
     # Check for declarative/procedural markers first
     is_promotable=false
     compression_level=""
     
-    if echo "$insight" | grep -qiP '(discovered|confound|key finding|finding:|shifted|provides \+|lift|80pp|0%|drift|redundan|waste|fake|synthetic|invalid|ALL synthetic|gap is|real gap|strong .* effect|shows|worst.perform|highest.impact|no effect|ceiling|floor)'; then
+    # Filter 1: Minimum insight length (short = usually noise)
+    insight_len=${#insight}
+    if [ "$insight_len" -lt 60 ]; then
+        continue
+    fi
+
+    # Filter 2: Reject common noise patterns (status updates, routine ops)
+    if echo "$insight" | grep -qiP '(committed to git|triaged inbox|triaged duplicate|awaiting data|re-escalated|phase \d complete$|no action needed|all clear|baseline complete|treatment trial|verified repo context|ran mandatory checks)'; then
+        continue
+    fi
+
+    # Filter 3: Declarative — tightened to require causal/quantitative language
+    if echo "$insight" | grep -qiP '(discovered .{10,}|confound|key finding|finding:.{15,}|ALL synthetic|gap is .{10,}|real gap|strong .* effect|worst.perform|highest.impact|no effect on|ceiling effect|floor effect|\d+% .*(failure|improvement|reduction|increase)|root cause:|invalidated .{10,})'; then
         is_promotable=true
         compression_level="DECLARATIVE"
-    elif echo "$insight" | grep -qiP '(must use|should be|needs to|pattern|reusable|gotcha|warning|blocked on|defaults to|doesn.t exist|fails due|already covered|maps to|not registered|previous data|invalidated|need infra)'; then
+    # Filter 4: Procedural — require actionable specificity
+    elif echo "$insight" | grep -qiP '(must use .{10,}|should be .{10,}|reusable .{10,}|gotcha:|warning:.{10,}|blocked on .{10,}|fails due to .{10,}|not registered|previous data invalidated|TRIGGER.*ACTION)'; then
         is_promotable=true
         compression_level="PROCEDURAL"
     fi
@@ -137,6 +155,7 @@ while IFS='|' read -r agent session type insight; do
             echo "- **Insight**: $insight" >> "$OUTPUT"
             echo "- **KE overlap**: $ke_hits existing KEs with similar terms" >> "$OUTPUT"
             echo "" >> "$OUTPUT"
+            seen_sessions="$seen_sessions $session"
         fi
     fi
 done < "$TEMP_INSIGHTS"

@@ -24,37 +24,37 @@ Insights that appear procedural/declarative and aren't covered by existing KEs:
 
 ### Candidate 1
 - **Agent**: coach | **Session**: s_1776551125350_659
-- **Type**: SUMMARY | **Level**: PROCEDURAL
+- **Type**: SUMMARY | **Level**: DECLARATIVE
 - **Insight**: Analyzed persistent-task failure. Root cause: context.md instruction is weak (not in system prompt). Skills are in prompt but get lost in noise. Created stronger skill with TRIGGER/ACTION/EXAMPLE pattern. Running 5 trials next.
 - **KE overlap**: 1 existing KEs with similar terms
 
 ### Candidate 2
-- **Agent**: optimizer | **Session**: s_1776622109230_2
-- **Type**: DECISION | **Level**: PROCEDURAL
-- **Insight**: Factory pattern via agent-heartbeat.ts for code reuse
-- **KE overlap**: 0 existing KEs with similar terms
-
-### Candidate 3
 - **Agent**: bob | **Session**: s_1776810519643_42
 - **Type**: SUMMARY | **Level**: DECLARATIVE
 - **Insight**: Created curated examples (Step 1 complete). Discovered gym runner only works in stub mode (no agent binary). Need to find a way to run actual agent trials or document blocker.
 - **KE overlap**: 1 existing KEs with similar terms
 
-### Candidate 4
+### Candidate 3
 - **Agent**: coach | **Session**: s_1776852401616_80
 - **Type**: DECISION | **Level**: PROCEDURAL
 - **Insight**: Removed adjusted_pct from penalties.js so homework must use pct (set by normalizer)
 - **KE overlap**: 0 existing KEs with similar terms
 
-### Candidate 5
+### Candidate 4
 - **Agent**: bob | **Session**: s_1777054236531_253
 - **Type**: SUMMARY | **Level**: DECLARATIVE
 - **Insight**: Discovered EXP-178 data is ALL synthetic (gym defaulted to --agent coder which doesn't exist). Built and validated exp178-runner.sh that produces real agent runs. 4 pilot runs collected. Need to run remaining 116 trials.
 - **KE overlap**: 0 existing KEs with similar terms
 
-### Candidate 6
-- **Agent**: bob | **Session**: s_1777054236531_253
+### Candidate 5
+- **Agent**: coach | **Session**: s_1777081174264_785
 - **Type**: DECISION | **Level**: DECLARATIVE
-- **Insight**: EXP-178 previous data invalidated - all 120 runs used --agent coder (not registered)
+- **Insight**: Targeted Amy's file fabrication as highest-impact coaching opportunity (12 low-quality sessions in 7d)
 - **KE overlap**: 0 existing KEs with similar terms
 
+
+## Summary
+
+- Total insights scanned: 95
+- Promotion candidates: 5
+- Recommended action: Review candidates above, create KEs for high-value ones
