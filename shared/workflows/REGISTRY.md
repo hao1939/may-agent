@@ -1,20 +1,29 @@
 # Workflow Registry
 
 **Owner**: Optimizer (accountable for quality, deduplication, effectiveness tracking)
-**Last audit**: 2026-04-11T11:24 (Tech Lead — Lens C cleanup of stale references to archived workflows)
+**Last audit**: 2026-04-21T12:00 (Tech Lead — full reconciliation against disk: 7 ghost entries removed, 8 missing workflows added, line counts corrected)
 
 ## Shared Workflows (active — available to all agents)
 
-| Name | File | Lines | Purpose | 48h Usage |
-|------|------|-------|---------|-----------|
-| `implement-and-verify` | `shared/workflows/implement-and-verify.ts` | 197 | Lightweight code workflow (H-070 P3): coder Plan → Write → Verify. No QA agent. **Workhorse — 85% of all workflow usage.** | ~79 sessions |
-| `implement-and-review` | `shared/workflows/implement-and-review.ts` | 150 | Code changes: coder implements → QA reviews → one retry → escalate. Phase 1 DIAGNOSE / Phase 2 VERDICT QA prompts. | 0 (but 143 all-time) |
-| `parallel-research` | *(archived)* | 184 | Fork N research threads → collect → synthesize. Removed: zero usage in production. | ~12 sessions (historical) |
-| `verify-wrap` | `shared/workflows/verify-wrap.ts` | 154 | Minimal 2-phase verification wrapper (EXP-138). Phase 1: execute task. Phase 2: separate session reads back all written files. For reliant agents (scout, optimizer, may). | 0 (new — pending production pilot) |
-| `persistent-task` | `shared/workflows/persistent-task.ts` | 570 | Multi-session iterative task: owner writes task spec → coder iterates Plan/Write/Verify until done or max iterations. State persisted to disk between sessions. Owner reviews each iteration. | ~5 sessions |
-| `heartbeat` | `shared/workflows/heartbeat.ts` | ~80 | Lightweight heartbeat wrapper: check-health → review-requests → dispatch-work → update-context. Each step optional/skippable. Wraps all agent heartbeats for consistent structure. | new |
+| Name | File | Lines | Purpose |
+|------|------|-------|---------|
+| `project` | `shared/workflows/project.ts` | 929 | Persistent iterative task loop: owner reviews → worker iterates → milestones tracked. Supports directory format (project.md + journal.md) and legacy single-file. Core project execution engine. |
+| `master-worker` | `shared/workflows/master-worker.ts` | 404 | Two persistent sessions (orchestrator + worker) in a review-first → work → review loop. Alternative project pattern. |
+| `worker-reviewer` | `shared/workflows/worker-reviewer.ts` | 296 | Worker drives with full tools, reviewer provides read-only strategic guidance. Pattern B project loop. |
+| `implement-and-verify` | `shared/workflows/implement-and-verify.ts` | 203 | Lightweight code workflow (H-070 P3): coder Plan → Write → Verify. No QA agent. **Workhorse — 85% of all workflow usage.** |
+| `verify-wrap` | `shared/workflows/verify-wrap.ts` | 233 | Minimal 2-phase verification wrapper (EXP-138). Phase 1: execute task. Phase 2: separate session reads back all written files. |
+| `freestyle-wrap` | `shared/workflows/freestyle-wrap.ts` | 66 | Ultra-thin workflow wrapper for ad-hoc sessions. Adds workflow tracking with zero overhead. |
+| `coaching-feedback` | `shared/workflows/coaching-feedback.ts` | 256 | Sensor-Judge workflow: JS queries convention_checks DB → Coach LLM analyzes violations and decides coaching strategy. |
+| `error-scan` | `shared/workflows/error-scan.ts` | 446 | Sensor-Judge workflow: JS scans ERROR_LOG.jsonl files → LLM analyzes error patterns and decides intervention. |
 
-**Note**: `fewshot-inject-helpers.ts` is in this directory but is NOT a workflow (no `execute()` function). It's a keyword-based utility for prepending few-shot examples, excluded by the `-helpers` filename filter.
+**Not workflows** (helper modules with no `execute()` function):
+- `fewshot-inject-helpers.ts` — keyword-based utility for prepending few-shot examples
+- `heartbeat-data.ts` — shared heartbeat data loaders (metrics, projects, alerts, inbox). Zero LLM cost.
+
+### Deleted since last audit
+- `implement-and-review.ts` — archived (6% completion rate, broken verdict parsing)
+- `persistent-task.ts` — was an alias for `project.ts`, removed
+- `heartbeat.ts` — replaced by per-agent heartbeat workflows + `heartbeat-data.ts`
 
 ## Archived Shared Workflows
 
@@ -24,31 +33,28 @@ Deleted workflows (3,480+ lines total): `code-review-loop`, `context-learn`, `ev
 
 ## Agent-Specific Workflows
 
-### Bob
-| Name | File | Lines | Purpose |
-|------|------|-------|---------|
-| `deliver-or-report` | `bob/workflows/deliver-or-report.ts` | 185 | Attempt delivery, report back if blocked |
+### Per-Agent Heartbeats
+Every agent has a heartbeat workflow (uses shared `heartbeat-data.ts` loaders):
+`amy-kimi-heartbeat.ts`, `bob-heartbeat.ts`, `coach-heartbeat.ts`, `may-heartbeat.ts`, `optimizer-heartbeat.ts`, `qa-heartbeat.ts`, `scout-heartbeat.ts`, `tech-lead-heartbeat.ts` (~59 lines each)
 
 ### Coach
 | Name | File | Lines | Purpose |
 |------|------|-------|---------|
-| `growth-cycle` | `coach/workflows/growth-cycle.ts` | 318 | Full training cycle: assess → train → measure |
-| `gym-helpers` | `coach/workflows/gym-helpers.ts` | 206 | Helper functions for gym scenarios (not a workflow) |
-| `training-sprint` | `coach/workflows/training-sprint.ts` | 286 | Focused training session on a specific skill |
+| `growth-cycle` | `coach/workflows/growth-cycle.ts` | 386 | Full training cycle: assess → train → measure |
+| `gym-helpers` | `coach/workflows/gym-helpers.ts` | 421 | Helper functions for gym scenarios (not a workflow) |
+| `training-sprint` | `coach/workflows/training-sprint.ts` | 301 | Focused training session on a specific skill |
 
 ### May
 | Name | File | Lines | Purpose |
 |------|------|-------|---------|
-| `design-then-build` | `may/workflows/design-then-build.ts` | 94 | Design phase then implementation |
 | `project-monitor` | `may/workflows/project-monitor.ts` | 97 | Actively monitor external projects — verify work, give feedback, escalate |
-| `research-pipeline` | `may/workflows/research-pipeline.ts` | 84 | Multi-step research workflow |
-| `test-and-fix` | `may/workflows/test-and-fix.ts` | 45 | Run tests, fix failures |
 
 ### Optimizer
 | Name | File | Lines | Purpose |
 |------|------|-------|---------|
 | `design-review` | `optimizer/workflows/design-review.ts` | 119 | Review a design doc before implementation |
 | `enhance-cron` | `optimizer/workflows/enhance-cron.ts` | 351 | Safely modify cron configuration |
+| `investigate-and-fix` | `optimizer/workflows/investigate-and-fix.ts` | 338 | Analysis that forces action — counters optimizer's 51% findings-without-follow-through anti-pattern |
 | `safe-edit` | `optimizer/workflows/safe-edit.ts` | 291 | Edit with rollback capability |
 
 ### QA
@@ -59,33 +65,18 @@ Deleted workflows (3,480+ lines total): `code-review-loop`, `context-learn`, `ev
 ### Tech-Lead
 | Name | File | Lines | Purpose |
 |------|------|-------|---------|
-| `verified-coder` | `tech-lead/workflows/verified-coder.ts` | 176 | Code with built-in verification |
+| `lens-analysis` | `tech-lead/workflows/lens-analysis.ts` | 285 | D-o-R phased Lens investigation: SCOPE (≤3 ops) → INVESTIGATE (≤10 ops) |
+| `verified-coder` | `tech-lead/workflows/verified-coder.ts` | 178 | Code with built-in verification |
 
-## Consolidation Status (completed 2026-04-04)
+### Deleted since last audit
+- `bob/workflows/deliver-or-report.ts`
+- `may/workflows/design-then-build.ts`
+- `may/workflows/research-pipeline.ts`
+- `may/workflows/test-and-fix.ts`
 
-All three duplicate sets have been consolidated:
+## Consolidation Status (completed 2026-04-04, all promoted files since archived)
 
-### ✅ P1: `verify-and-finish` — DONE
-- may and tech-lead versions were byte-identical
-- Promoted to `shared/workflows/verify-and-finish.ts`
-- Deleted `may/workflows/verify-and-finish.ts` and `tech-lead/workflows/verify-and-finish.ts`
-
-### ✅ P2: `verify-parallel` — DONE
-- may/optimizer were identical; tech-lead had evolved better QA prompts (Phase 1 DIAGNOSE / Phase 2 VERDICT, pre-existing failure detection)
-- Promoted tech-lead's version to `shared/workflows/verify-parallel.ts`
-- Deleted all 3 local copies
-
-### ✅ P3: `implement-and-review` — DONE
-- 3 versions with divergent improvements. Tech-lead's was the superset: includes Phase 1/2 pattern, pre-existing failure detection, Phase 4 verification, better critical rejection detection, plus the "frame as claims" note from may's version.
-- Promoted tech-lead's version to `shared/workflows/implement-and-review.ts`
-- Deleted all 3 local copies
-
-### Not duplicates (agent-specific, keep local):
-- All coach workflows (training-specific)
-- bob/deliver-or-report (bob-specific delivery pattern)
-- optimizer/safe-edit, enhance-cron, design-review (optimizer-specific safety patterns)
-- qa/vet-skill (QA-specific)
-- tech-lead/verified-coder (tech-lead-specific)
+Historical: Three duplicate sets were consolidated. All promoted shared copies have since been archived/deleted as the system evolved to use `project.ts`, `master-worker.ts`, and `worker-reviewer.ts` as the primary workflow patterns.
 
 ## Effectiveness Tracking
 
@@ -102,7 +93,7 @@ verified against actual workflow run files and the sessions database.
 |----------|----------|------|------|-----------|-------|-------|
 | growth-cycle | coach/workflows/ | 26 | 26 | 0 | **100%** | Coach's best workflow |
 | implement-and-review | shared/workflows/ | 16 | 1 | 14 | **6%** | ⛔ BROKEN — see analysis |
-| skill-lifecycle | shared/workflows/ | 12 | 12 | 0 | **100%** | Excellent |
+| skill-lifecycle | *(deleted)* | 12 | 12 | 0 | **100%** | Excellent (archived) |
 | training-sprint | coach/workflows/ | 4 | 4 | 0 | **100%** | Works well |
 | verified-coder | tech-lead/workflows/ | 1 | 1 | 0 | 100% | Only 1 run, insufficient data |
 
