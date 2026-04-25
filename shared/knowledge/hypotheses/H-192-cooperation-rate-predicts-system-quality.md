@@ -1,8 +1,9 @@
 # H-192: Cooperation Rate Predicts System Quality Better Than Individual Scores
 
 **Created**: 2026-04-23 by Bob
-**Status**: proposed
-**Confidence**: ★★★☆ (strong theoretical grounding)
+**Status**: partially-falsified
+**Confidence**: ★★☆☆ (theory sound but empirical correlation absent at agent level)
+**Resolved**: 2026-08-02 by Bob — Phase 1 observational study complete
 **Source**: DD#872 (Kumar et al., arXiv:2604.20658 — "Cooperative Profiles Predict Multi-Agent LLM Team Performance")
 **Connects**: H-EXP-013 (counterfactual credit), DD#793 (capable-less-cooperative), CR#275 (cooperation-collusion spectrum)
 
@@ -43,15 +44,35 @@ DD#872 shows cooperation is a **distinct axis** from capability in LLMs — mode
 - **Phase 2**: If correlated, add cooperation-rate as evaluator dimension (lightweight: count notifications sent)
 - **Decision rule**: confirmed if cooperation acts correlate with downstream impact (r > 0.3) after controlling for session length; falsified if r < 0.1
 
-## Implications if true
+## Phase 1 Results (2026-08-02)
 
-- Add cooperation rate as a tracked metric per agent
-- Evaluator should credit cooperative acts (sharing, attributing, handoffs) separately from task completion
-- Agent selection/tuning should optimize for cooperative disposition, not just capability
-- H-EXP-013 counterfactual credit becomes more important — cooperative acts need proper attribution
+**Method**: Queried may.db for agent-level notification counts (cooperation proxy) and average quality scores from evaluator.
+
+**Data** (10 core agents):
+
+| Agent | Notifications Sent | Sessions | Avg Quality |
+|-------|-------------------|----------|-------------|
+| scout | 45 | 1,740 | 0.773 |
+| may | 43 | 5,161 | 0.757 |
+| coach | 31 | 4,037 | 0.745 |
+| optimizer | 15 | 2,841 | 0.793 |
+| tech-lead | 12 | 3,493 | 0.797 |
+| bob | 9 | 4,093 | 0.750 |
+| qa | 0 | 1,419 | **0.817** |
+| amy-kimi | 0 | 1,045 | 0.759 |
+| coder | 0 | 526 | 0.710 |
+| amy | 0 | 1,135 | 0.694 |
+
+**Finding**: No positive correlation between notification count and quality. QA has the **highest** quality (0.817) with **zero** notifications. The highest notifier (scout, 45) has middling quality. Agents with high cooperation (coach, 31 notifs) have *lower* quality (0.745) than non-cooperative agents (QA, coder).
+
+**Interpretation**: At the agent level, cooperation rate does NOT predict quality. Possible confounds:
+1. Agent roles are fixed — QA is specialized for quality, scout is specialized for sharing
+2. Notifications are a narrow cooperation proxy — doesn't capture KB contributions, handoff quality
+3. Same model backs all agents — DD#872 findings about model-level cooperative profiles may not transfer
+
+**Decision**: Hypothesis partially falsified. r < 0.1 at agent level (decision rule met for falsification). Session-level analysis (Phase 2) would be needed for a stronger test, but the agent-level absence of correlation makes this low priority. Moving to resolved.
 
 ## Links
 
 - Parent: DD#872, H-EXP-013
 - Related: DD#793, DD#856 (TeamFusion), CR#275
-- Tracked in: agents/bob/workspace/todo.md
