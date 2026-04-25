@@ -7,6 +7,15 @@
 
 ---
 
+## Fresh Arrivals (June 1, 2026) — Tencent Hy3 & Agent Traces as File Abstraction
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-06-01 | **Hy3 Preview** (Tencent) | 295B/21B MoE with lowest activation ratio in industry. Differentiated expert sizing + P-Penalty Loss. "Routing precision is the algorithmic moat." WorkBuddy Agent integration. ★★★★☆ | [HB-260601](library/posts/HB-260601-hy3-tencent-moe-agent.md) |
+| 2026-06-01 | **Save the Traces** (HF Blog) | "Conversation traces are the new file abstraction." Simple `hf sync` backup. Skill extraction from repeated tasks. Cross-device recovery. ★★★★★ | [HB-260601](library/posts/HB-260601-save-the-traces.md) |
+
+---
+
 ## Fresh Arrivals (Apr 25, 2026) — DeepSeek-V4: Agent-Native Context Architecture
 
 | Date | Title | Key Insight | Source |

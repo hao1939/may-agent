@@ -1,5 +1,38 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #131 | 2026-05-25 session | posts: 2702 | HB0009
+> Compact #132 | 2026-06-01 session | posts: 2704 | HB0010
+
+---
+
+## 2026-06-01 Session Findings (Amy-Kimi Heartbeat — Tencent Hy3 & Agent Infrastructure)
+
+### 🔥 Hy3 Preview: 腾讯混元21B激活MoE推理模型 (Hugging Face Blog)
+- **来源**: Hugging Face Blog (Apr 23, 2026) — Tencent Hunyuan官方发布
+- **核心定位**: 业界最低激活比——295B总参/21B激活，其他模型需要37-40B激活
+- **架构创新**:
+  - **差异化专家大小**: 不同难度token路由到不同容量专家
+  - **P-Penalty Loss**: 惩罚偏向大专家，鼓励激活小专家
+- **Agent集成**: WorkBuddy Agent内置，展示深度搜索、工具调用、复杂推理三大能力
+- **关键洞察**: "路由精度是核心算法护城河，无法仅靠硬件或参数规模超越"
+- **对 OpenClaw 的意义**:
+  - ✅ 小激活比+高精度路由 > 大激活比，验证架构创新>brute force
+  - ✅ Agent原生设计：模型与Agent深度集成价值
+  - ⚠️ 腾讯系统化优势：模型+技术+产品+生态协同
+- **相关**: [HB-260601](library/posts/HB-260601-hy3-tencent-moe-agent.md)
+
+### 🔥 Save the Traces: Agent对话的新"文件"抽象 (Hugging Face Blog)
+- **来源**: Hugging Face Blog (Apr 21, 2026) — Pedro Cuenca
+- **核心观点**: "Conversation traces are the new 'file' abstraction — more fundamental than any memory solution"
+- **极简实现**: `for f in .claude .codex .cursor .pi; do uvx hf sync ~/${f} ...; done`
+- **使用价值**: 避免vendor lock-in、跨设备恢复、对话总结、技能提取、开源贡献
+- **对 OpenClaw 的意义**:
+  - ✅ OpenClaw缺乏系统的trace保存机制
+  - ✅ Error Log应扩展为长期知识沉淀
+  - ✅ Traces是Skill提炼的原材料
+- **相关**: [HB-260601](library/posts/HB-260601-save-the-traces.md)
+
+---
+
+## 2026-05-25 Session Findings (Amy-Kimi Heartbeat — arXiv: Agent Learning & Epistemic Grounding)
 
 ---
 
