@@ -165,6 +165,30 @@ function computeEvaluation(meta: SessionMeta, sessionDir: string): {
     };
   }
 
+  // Skip transient infra failures (not agent fault)
+  // These typically show up as status=error with meta.error like "Connection error."
+  if (status === "error") {
+    const err = (meta.error || "").toLowerCase();
+    const isTransient =
+      err.includes("connection error") ||
+      err.includes("timeout") ||
+      err.includes("econnreset") ||
+      err.includes("socket hang up") ||
+      err.includes("429") ||
+      err.includes("rate limit");
+
+    if (isTransient) {
+      return {
+        quality: 0, efficiency: 0,
+        productiveCalls: 0, wastedCalls: 0,
+        verdict: "skipped",
+        issues: ["transient_infra_error"],
+        evaluatedByHeuristic: false,
+        skippedByJs: true,
+      };
+    }
+  }
+
   const { productive, wasted } = countToolCalls(sessionDir);
 
   // Error sessions
