@@ -166,7 +166,8 @@ function computeEvaluation(meta: SessionMeta, sessionDir: string): {
   }
 
   // Skip transient infra failures (not agent fault)
-  // These typically show up as status=error with meta.error like "Connection error."
+  // These show up as status=error with meta.error containing model/proxy/connection issues.
+  // Covers: rate limits, empty responses, proxy stream corruption, connection drops.
   if (status === "error") {
     const err = (meta.error || "").toLowerCase();
     const isTransient =
@@ -175,7 +176,15 @@ function computeEvaluation(meta: SessionMeta, sessionDir: string): {
       err.includes("econnreset") ||
       err.includes("socket hang up") ||
       err.includes("429") ||
-      err.includes("rate limit");
+      err.includes("rate limit") ||
+      err.includes("empty response") ||
+      err.includes("stopreason") ||
+      err.includes("unexpected end of json") ||
+      err.includes("json parse error") ||
+      err.includes("unexpected_state") ||
+      err.includes("unexpected event order") ||
+      err.includes("insufficient balance") ||
+      err.includes("is suspended");
 
     if (isTransient) {
       return {
@@ -301,8 +310,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       // early branch) so they don't accumulate as unevaluated backlog. Previously
       // they were filtered here, causing the system-status anomaly to fire forever.
       const sessions = db.prepare(
-        "SELECT sessionId, agent, task, status, opCount FROM sessions WHERE status IN ('done', 'error', 'interrupted')"
-      ).all() as Array<{ sessionId: string; agent: string; task: string; status: string; opCount: number }>;
+        "SELECT sessionId, agent, task, status, opCount, error FROM sessions WHERE status IN ('done', 'error', 'interrupted')"
+      ).all() as Array<{ sessionId: string; agent: string; task: string; status: string; opCount: number; error?: string }>;
 
       const unevaluated = sessions.filter(s => !evaluatedIds.has(s.sessionId));
       if (unevaluated.length === 0) return;
@@ -332,6 +341,45 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             // Minimal evaluation from DB data only
             const isEvaluator = session.agent === "evaluator";
             const isError = session.status === "error";
+
+            // Check for transient infra errors even without meta.json
+            if (isError && session.error) {
+              const errLc = (session.error || "").toLowerCase();
+              const isTransientDb =
+                errLc.includes("connection error") ||
+                errLc.includes("timeout") ||
+                errLc.includes("econnreset") ||
+                errLc.includes("socket hang up") ||
+                errLc.includes("429") ||
+                errLc.includes("rate limit") ||
+                errLc.includes("empty response") ||
+                errLc.includes("stopreason") ||
+                errLc.includes("unexpected end of json") ||
+                errLc.includes("json parse error") ||
+                errLc.includes("unexpected_state") ||
+                errLc.includes("unexpected event order") ||
+                errLc.includes("insufficient balance") ||
+                errLc.includes("is suspended");
+              if (isTransientDb) {
+                upsert.run(
+                  session.sessionId,
+                  session.agent,
+                  0, 0,
+                  0, 0,
+                  "skipped",
+                  JSON.stringify(["transient_infra_error"]),
+                  JSON.stringify({ quality: 0, efficiency: 0, verdict: "skipped", result_delivered: false }),
+                  JSON.stringify({ inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0, cost: 0 }),
+                  "[]",
+                  0, // evaluatedByHeuristic
+                  1, // skippedByJs
+                  Date.now(),
+                );
+                synced++;
+                continue;
+              }
+            }
+
             if (isEvaluator) {
               // Evaluator sessions: write skip row so they don't become permanent backlog.
               upsert.run(
