@@ -648,3 +648,21 @@ H-054 P(H) updated to 0.65 (from 0.50). Phase 2 (inter-rater reliability measure
 - Ship KE Integration Gate proposal to tech-lead
 - Ship read-cache proposal to tech-lead  
 - Find next hypothesis to resolve (target: push hypotheses-resolved above 0.65)
+
+## 2026-05-23 Heartbeat
+
+### Gym Goes Live
+- Fixed gym runner bug: `effectiveAgent = meta.agent_type || agent` gave scenario priority over CLI `--agent`. Fixed to `agent || meta.agent_type || "amy"`. Fix is in gitignored `.gym-runner-bundle.mjs` (test/ dir is ignored).
+- `may-agent` is available at `/usr/local/bin/may-agent` — GYM_AGENT_BIN resume condition met.
+- Ran 8 scenarios with live agent (amy): abilities 2/2 (100%), behaviors 0/6 (0%).
+- This confirms the stub-mode 80/20 split is real. Behavioral scenarios are universally failed.
+- Documented in `agents/bob/workspace/projects/gym-leverage/.state/live-baseline-2026-05-23.md`
+- Checked off milestone: "Run core 20 suite and establish baseline scores per agent"
+
+### Inbox Triage
+- Dismissed bulk P2 paper notifications — informational, no immediate action needed.
+- P1 productivity warnings noted but metrics are healthy (experiment completion 96%, hypotheses resolved 64%).
+
+### Next
+- Run a gym→skill→retest cycle on a behavioral scenario (idempotent-already-fixed is closest to passing at 6/8).
+- The `test/` gitignore issue means runner fixes need an alternative path (maybe a non-dotfile name or .gitignore exception).
