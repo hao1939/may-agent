@@ -16,6 +16,10 @@
 
 import { readFileSync, existsSync, writeFileSync, appendFileSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
+import {
+  extractField, extractSection, extractMilestones, checkOffMilestones,
+  extractComments, clearComments, updateProjectStatus,
+} from "./project-helpers.js";
 
 export const name: string = "master-worker";
 
@@ -27,89 +31,6 @@ export const description: string =
 
 const DEFAULT_MAX_ITERATIONS = 50; // safety cap — workflow runs until done/blocked/waiting
 const MAX_STALL_ITERATIONS = 2; // escalate after N iterations without milestone progress
-
-// ── Helpers ─────────────────────────────────────────────────────────────
-
-function extractField(content: string, field: string): string {
-  const m = content.match(new RegExp(`^\\*\\*${field}\\*\\*:\\s*(.+)`, "m"));
-  return m ? m[1].trim() : "";
-}
-
-function extractSection(content: string, heading: string): string {
-  const lines = content.split("\n");
-  let start = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (new RegExp(`^## ${heading}`).test(lines[i])) { start = i + 1; continue; }
-    if (start >= 0 && /^## /.test(lines[i])) {
-      return lines.slice(start, i).join("\n").trim();
-    }
-  }
-  return start >= 0 ? lines.slice(start).join("\n").trim() : "";
-}
-
-interface MilestoneState {
-  total: number;
-  done: number;
-  pending: string[];
-  completed: string[];
-}
-
-function extractMilestones(content: string): MilestoneState {
-  const section = extractSection(content, "Milestones");
-  if (!section) return { total: 0, done: 0, pending: [], completed: [] };
-  const lines = section.split("\n").filter(l => /^\s*-\s*\[/.test(l));
-  const completed = lines.filter(l => /\[x\]/i.test(l)).map(l => l.replace(/^\s*-\s*\[x\]\s*/i, "").trim());
-  const pending = lines.filter(l => /\[ \]/.test(l)).map(l => l.replace(/^\s*-\s*\[ \]\s*/, "").trim());
-  return { total: lines.length, done: completed.length, pending, completed };
-}
-
-/** Check off milestones whose text appears in the orchestrator's response */
-function checkOffMilestones(content: string, orchestratorText: string): string {
-  // Only check off milestones the orchestrator explicitly marks as completed.
-  // Look for patterns like "Milestone completed: ..." or "✅ ..." followed by milestone text.
-  const completedKeys: string[] = [];
-  const completionPatterns = [
-    /(?:milestone completed|completed milestone|milestone done|done milestone)[:\s]+["']?(.+?)["']?$/gim,
-    /✅\s*["']?(.+?)["']?$/gm,
-    /\[x\]\s*(.+)$/gm,
-  ];
-  for (const pat of completionPatterns) {
-    for (const m of orchestratorText.matchAll(pat)) {
-      completedKeys.push(m[1].trim().slice(0, 30).toLowerCase());
-    }
-  }
-  if (completedKeys.length === 0) return content;
-
-  const lines = content.split("\n");
-  let inMilestones = false;
-  for (let i = 0; i < lines.length; i++) {
-    if (/^##\s*Milestones/i.test(lines[i])) { inMilestones = true; continue; }
-    if (inMilestones && /^##\s/.test(lines[i])) break;
-    if (!inMilestones) continue;
-    const m = lines[i].match(/^(\s*-\s*)\[ \]\s*(.+)/i);
-    if (m) {
-      const key = m[2].trim().slice(0, 30).toLowerCase();
-      if (completedKeys.some(ck => key.startsWith(ck) || ck.startsWith(key))) {
-        lines[i] = lines[i].replace("[ ]", "[x]");
-      }
-    }
-  }
-  return lines.join("\n");
-}
-
-
-
-
-
-
-function extractComments(content: string): string {
-  return extractSection(content, "Comments");
-}
-
-function clearComments(content: string): string {
-  // Replace the Comments section body with empty
-  return content.replace(/(## Comments\s*\n)[\s\S]*?(?=\n## |$)/, "$1");
-}
 
 // ── Decision extraction ─────────────────────────────────────────────────
 

@@ -88,7 +88,6 @@
 
 ## Learned from experience
 
-- Now let me update my heartbeat summary with inbox triage: (source: s_1777082923114_794, 2026-04-25)
 - The finish-guard is **fully wired**. Both paths are active:
 - That's from another session. The guard is likely tracking my bash commands and thinks I wrote files. Let me provide deliverables as empty since this was read-only: (source: s_1777100670501_12, 2026-04-25)
 - These are KE deletions from another agent's work (bob's dedup). Let me just commit them as cleanup: (source: s_1777093721971_854, 2026-04-25)
@@ -103,3 +102,4 @@
 - Codebase is healthy. Build passes, guards are wired, recent changes are doc/hypothesis updates. The P0 alerts about IT-83 are stale (already fixed in commit `11d1e98bc`). (source: s_1777129748745_15, 2026-04-25)
 - Clean build. Now let me commit: (source: s_1777128604569_16, 2026-04-25)
 - Everything looks normal — mostly session notes and the gym work. The bug fix was the main actionable item. Let me finish up. (source: s_1777136948778_104, 2026-04-25)
+- This is from another agent's work. I'll just commit it as-is. (source: s_1777144149236_185, 2026-04-25)

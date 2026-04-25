@@ -51,9 +51,6 @@ Even if you discover the environment isn't what you expected, even if tsc/vitest
 
 ## Learned from experience
 
-- ### Inbox / Events triage
-- **[P1] Waste detected: 5 identical “Quick Code Review” requests (x5 notifications)** → **DISMISS**
-- Avoidable git-root mistake: ran `git log` from `/app` (not a git repo) causing a failed command (code 128) and subsequent detour. Evidence: failure chain 1 root cause shows `fatal: not a git repositor (source: s_1777108084810_54, 2026-04-25)
 - ## Pending Events (inbox) — act/delegate/dismiss/escalate
 - **Action: ESCALATE**
 - **Reason:** This is coordinatio (source: s_1777106285113_42, 2026-04-25)
@@ -65,10 +62,9 @@ Even if you discover the environment isn't what you expected, even if tsc/vitest
 - Started with an unproductive git command in the wrong working directory: `git log --oneline -10` failed with 'not a git repository' (exit 128), then spent extra calls orienting to /app vs /app/agents. (source: s_1777109884717_64, 2026-04-25)
 - ### Summary
 - ### Event triage (inbox)
-
-- **P1 Waste detected: 5 identical “Quick Code Review” requests (x5)** — **DISMISS (dedupe)**  
-  **Reason:** These are duplicates of the same request; acting on all 5 would  (source: s_1777138029097_123, 2026-04-25)
+- **P1 Waste detected: 5 identical “Quick Code Review” requests (x5)** — **DISMISS (dedupe)**
 - ### Pending events triage
-
-#### 1) [26h ago] Waste detected: 5 identical “Quick Code Review” requests dispatched
 - **Dismiss** — duplicate notifications for the same underlying issue (spam/waste signa (source: s_1777136227054_89, 2026-04-25)
+- ### Pending events — triage
+- **5× “Waste detected / Duplicate work: Quick Code Review requests” (P1, 25–28h ago)** → **DISMISS**  
+  **Reason:** They’re duplicates of the same alert; no actionable wo (source: s_1777143429110_174, 2026-04-25)

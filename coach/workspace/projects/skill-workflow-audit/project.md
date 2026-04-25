@@ -13,9 +13,9 @@ Verify every skill and workflow in the system. For each one: does it parse? is i
 
 ## Milestones
 
-### Skills Audit
-- [ ] For each of the 56 skills: read it, check if it's referenced by any agent config/prompt, rate quality (good/mediocre/junk), write one-line verdict
-- [ ] Produce .state/skills-audit.md — table with: name, referenced-by, quality, verdict, recommendation (keep/fix/archive)
+### Skills Audit ✅
+- [x] For each of the 56 skills: read it, check if it's referenced by any agent config/prompt, rate quality (good/mediocre/junk), write one-line verdict
+- [x] Produce .state/skills-audit.md — table with: name, referenced-by, quality, verdict, recommendation (keep/fix/archive)
 
 ### Workflows Audit
 - [ ] For each of the 29 workflows: read it, check if it parses (import test), check if it's referenced in cron.json, note any obvious bugs
@@ -29,7 +29,7 @@ Verify every skill and workflow in the system. For each one: does it parse? is i
 - Agent configs: agents/*/agent.json
 
 ## Current State
-No audit done. 56 skills mostly unreferenced. 29 workflows of unknown quality.
+Skills audit complete (MS1). 77% of shared skills unreferenced. Report at .state/skills-audit.md. Workflows audit next.
 
 ## Process Notes
 
