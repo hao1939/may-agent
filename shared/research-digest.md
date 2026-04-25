@@ -7,6 +7,16 @@
 
 ---
 
+## Fresh Arrivals (July 18, 2026) — Tool Attention Deep Dive
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-07-18 | **Tool Attention Deep Dive** (arXiv:2604.21816) | Protocol efficiency is binding constraint — 95% MCP token reduction via ISO score + lazy loading. 47.3k→2.4k tokens, 24%→91% context utilization. Reference implementation available. ★★★★★ | [HB-260718](library/posts/HB-260718-tool-attention-deep-dive.md) |
+
+**Key Takeaway**: MCP Tax (10k-60k tokens/turn) is economically prohibitive at scale. Tool Attention's three-component design (Intent Schema Overlap + state-aware gating + two-phase lazy loader) enables multi-server enterprise deployments. OpenClaw skill system already uses lazy loading — adding intent-based ranking closes the gap.
+
+---
+
 ## Fresh Arrivals (Latest Session) — Test-Time Compute & Enterprise Agent Evaluation
 
 | Date | Title | Key Insight | Source |
