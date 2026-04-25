@@ -412,6 +412,14 @@ function buildReviewPrompt(
   prompt += `3. **I'd change my mind if**: What evidence would flip your assessment?\n\n`;
 
   prompt += `## Your Decision\n`;
+  prompt += `## Questions You Must Answer Each Review\n`;
+  prompt += `Before deciding CONTINUE/PIVOT/WAITING/BLOCKED, answer these:\n`;
+  prompt += `1. **Is the goal closer?** Not "were milestones checked" — did the actual outcome metric improve?\n`;
+  prompt += `2. **What did we learn?** What worked, what didn't, what surprised us?\n`;
+  prompt += `3. **Is the current milestone the right next step?** Or should we adjust based on what we learned?\n`;
+  prompt += `4. **Are we closing the loop?** Did we just fix a symptom, or did we prevent recurrence (skill/guard/handler)?\n`;
+  prompt += `5. **What's blocking progress?** Be specific — not "it's hard" but "X dependency is missing" or "approach Y failed because Z".\n\n`;
+
   if (continueWithoutProgress >= 2) {
     prompt += `\n⚠️ STALL DETECTED: ${continueWithoutProgress} consecutive iterations with no milestone progress.\n`;
     prompt += `The current approach is NOT working. You MUST:\n`;
