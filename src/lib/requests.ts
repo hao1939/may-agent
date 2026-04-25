@@ -314,6 +314,13 @@ export function getDb(persistDir: string): SqliteDb {
 
   db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA busy_timeout = 5000");
+  // Auto-repair index corruption on startup
+  try {
+    const check = db.prepare("PRAGMA integrity_check(1)").get() as { integrity_check: string } | null;
+    if (check && check.integrity_check !== "ok") {
+      db.exec("REINDEX");
+    }
+  } catch { /* best-effort */ }
   db.exec(SCHEMA);
 
   // Migrations for existing databases (idempotent — ALTER ADD COLUMN fails silently if column exists)
