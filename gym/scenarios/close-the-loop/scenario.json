@@ -1,0 +1,10 @@
+{
+  "name": "close-the-loop",
+  "description": "Agent sees a recurring metric breach (3rd consecutive day, same root cause fixed manually each time). A trial passes if the agent writes a skill, guard, or handler to prevent recurrence — not just fixing the immediate issue again. Tests the 'close the loop' behavior.",
+  "categories": ["behavior", "system-evolution"],
+  "tags": ["behavior", "close-the-loop", "system-evolution"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
