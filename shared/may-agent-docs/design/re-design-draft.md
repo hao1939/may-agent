@@ -72,37 +72,35 @@ Each layer depends only on layers below it.
 
 ## L3: Handlers + Workflows
 
-**What**: Two capabilities that together give the system autonomy.
+**What**: The autonomy layer. Handlers receive events, workflows implement the response.
 
-### Handlers — Reactive automation
+```
+Event (timer / bus / agent request)
+  → Handler (entry point — receives event, decides what to do)
+    → Workflow (implementation — the actual logic)
+```
 
-Plain JS functions that run in response to timer events or bus events. No LLM needed — fast, cheap, reliable.
+### Handlers — Event interface
 
-- **Timer-driven** — heartbeats, project scans, auto-commit, session sync
+Handlers are entry points that receive events and decide what to do. They are the *interface* between events and action.
+
+- **Timer-driven** — fire periodically (heartbeats, project scans, metric snapshots)
 - **Event-driven** — react to bus events (metric breach, session end, etc.)
+- **Agent-driven** — the `workflow` tool is itself a handler for "agent requested a workflow"
 - **Auto-pause** — pause agents that keep failing, probe for recovery
 
-**How coordination works**:
-1. Timer fires or event arrives → handler runs
-2. Handler starts a new agent session via `manager.run()`, or does work in pure JS
-3. Session completion emits `session_end` → more handlers can react
+### Workflows — Implementation
 
-### Workflows — Execution Patterns
+Workflows are the actual logic that runs. They can be:
 
-Reusable multi-step execution strategies. Two usage paths:
+- **Pure JS** — `metrics-snapshot` measures all metrics, no LLM. Fast and cheap.
+- **Session orchestration** — `master-worker` creates persistent reviewer + worker sessions. `verify-wrap` ensures work gets verified.
+- **Context collection** — `bob-heartbeat` gathers metrics, projects, alerts, and structures them into an agent prompt.
 
-1. **Agent-invoked** (via `workflow` tool): An agent *chooses* a workflow to structure its work. E.g., optimizer runs `verify-wrap` to ensure work gets verified, bob runs `deliver-or-report` to structure a research output.
+**Shared workflows** (`agents/shared/workflows/`) are available to all agents.  
+**Agent-specific workflows** (`agents/<name>/workflows/`) are custom to one agent.
 
-2. **System-invoked** (via project handler): The project automation layer launches workflows to drive project iterations. E.g., `master-worker` workflow creates persistent reviewer + worker sessions.
-
-**What workflows provide**:
-- **Shared execution patterns** — `verify-wrap`, `implement-and-verify`, `coaching-feedback`, etc.
-- **Agent-specific workflows** — each agent can have custom workflows
-- **Guards** — workflow-level safety checks that can inject steps or block execution
-- **Step tracking** — each workflow run records steps, enabling resume after crash
-- **Heartbeats** — every agent's heartbeat is itself a workflow that collects context and structures the periodic check-in
-
-Workflows are both infrastructure and a knowledge artifact (see Part 2).
+Workflows are both infrastructure and a knowledge artifact — agents create and improve them (see Agent Self-Evolution).
 
 ---
 
