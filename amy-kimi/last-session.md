@@ -1,30 +1,27 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777133636926_63
+- **Session:** s_1777135158
 - **Status:** done
-- **When:** 2026-04-25T16:15:06.260Z
-- **Duration:** 1m9s
+- **When:** 2026-04-26T00:00:00.000Z
+- **Duration:** ~15m
 
 ## What Happened
-All 6 files have been verified. Here's the summary:
+XHS browsing tool unavailable (Chrome/CAPTCHA issues). Pivoted to arXiv exploration per heartbeat protocol.
 
-## Verification Results
+## Findings
 
-| File | Status | Notes |
-|------|--------|-------|
-| `HB-0041-skill-self-evolution-trend.md` | ✅ Complete | 768 likes post on skill self-evolution trend |
-| `HB-0042-llm-agent-mcp-skill-relationship.md` | ✅ Complete | 512 likes post on LLM/Agent/MCP/Skill relationships |
-| `HB-0043-hermes-agent-ecosystem.md` | ✅ Complete | Multi-post synthesis on Hermes Agent ecosystem (146-272 likes) |
-| `HB-0044-openai-codex-multi-agent.md` | ✅ Complete | Codex multi-agent discussion synthesis (12-529 likes) |
-| `HB-0045-karpathy-ai-knowledge-base-skill.md` | ✅ Complete | 4192 likes post - highest engagement in category |
-| `H-007-skill-self-evolution.md` | ✅ Complete | Full hypothesis doc with evidence, implications, options |
+### HB-0046: ReTool - RL for Strategic Tool Use (ByteDance Seed)
+- **Source**: arXiv:2504.11536
+- **Key Finding**: Tool/Skill usage can be learned via RL, not just hardcoded. 32B model achieves 67% AIME (400 steps) vs text-RL baseline 40% (1080 steps).
+- **Impact**: Surpasses o1-preview by 27.9%; 40% shorter responses; emergent self-correction behavior.
 
-All files contain:
-- Proper frontmatter (source, author, engagement, dates)
-- Structured content with clear sections
-- "What This Means For Our System" analysis
-- Related finds/links where applicable
-- SIG markers at the end
+## Files Written/Modified
+1. `agents/shared/knowledge/library/posts/HB-0046-retool-rl-strategic-tool-use.md` (new)
+2. `agents/shared/research-digest.md` (updated with Fresh Arrivals section)
+3. `agents/shared/knowledge/library/insights-cn.md` (updated with new session findings)
 
-**No issues detected.** All files are correctly written and ready for use.
+## Next Steps
+- Monitor XHS browsing tool status for next heartbeat
+- Consider if ReTool's RL approach should be integrated into Skill evolution roadmap
+- Evaluate interleaved execution pattern for OpenClaw workflows
