@@ -156,7 +156,7 @@ Human sets metric          Agent heartbeat reads metric       Agent acts
 **Relationship to metrics**: A continuous metric like "improve coder quality from 0.6 to 0.9" doesn't have a single action. The project is where the multi-step work happens. The metric tracks whether it's working.
 
 **Flow**:
-1. Project handler (L3) runs on cron, scans all `project.md` files
+1. Project handler runs periodically, scans all `project.md` files
 2. Diagnoses each: active → launch workflow, blocked → attempt reactivation, stalled → escalate
 3. Workflow creates persistent sessions (L1) for worker + reviewer
 4. Iterate until milestones complete or blocked
@@ -220,7 +220,7 @@ Injected into the system prompt at every session start:
 | **Notify** | `notify` | One-way FYI to another agent |
 | **Run workflow** | `workflow` | Invoke and create execution patterns |
 | **Observe system** | `system-status` | Read-only dashboard of sessions, metrics, health |
-| **Manage schedule** | `cron` | Create/edit own cron entries |
+| **Manage schedule** | `cron` | Create/edit own timer entries |
 
 ---
 
