@@ -96,15 +96,62 @@ This replaces synchronous agent-to-agent calls with event-driven orchestration.
 
 ---
 
-## L4: Project Automation
+## L4: Metrics System
 
-**What**: Long-running, multi-iteration projects with milestone tracking.
+**What**: The steering mechanism. Metrics give the system direction with minimal human input.
+
+**Core principle**: *"When a measure becomes a target, it ceases to be a good measure."* (Goodhart's Law). Metrics are signals to investigate, not numbers to chase.
 
 **Provides**:
-- **Project files** — `project.md` defines goal, milestones, status, owner
+- **Unified goal tracking** — everything is a metric with an owner, current value, and target
+- **Three metric types** that drive different agent behaviors:
+  - **One-off** (task completion): binary done/not-done → agent executes and marks done
+  - **Continuous** (improve a number): diagnose → hypothesize → act → measure → iterate
+  - **Health** (maintain threshold): monitor → alert when breached → fix → resume
+- **Automatic measurement** — metrics can be auto-measured (SQL query), command-measured (shell), or manual
+- **Alerts** — threshold breaches create alerts, surfaced in heartbeats and web UI
+- **Time-series history** — every measurement recorded as a snapshot for trend analysis
+
+**How metrics drive the system**:
+
+```
+Human sets metric          Agent heartbeat reads metric       Agent acts
+  ┌──────────┐              ┌──────────────────┐              ┌────────────┐
+  │ owner    │              │ "quality.coder   │              │ Fork work  │
+  │ target   │──snapshot──► │  current: 0.6    │──judgment──► │ or         │
+  │ priority │   handler    │  target:  0.9    │              │ Escalate   │
+  │ threshold│              │  trend:  ↗ slow" │              │ or         │
+  └──────────┘              └──────────────────┘              │ Investigate│
+                                                              └────────────┘
+```
+
+1. **Human/May defines metrics** — owner, target, priority, measurement method
+2. **Snapshot handler** (L3) runs periodically, measures all auto/command metrics, writes snapshots
+3. **Heartbeat** injects metric status into agent's context — agent sees what's on-target, regressing, or breached
+4. **Agent decides what to do** — using metrics as one input alongside their own judgment
+5. **Projects (L5) are the execution mechanism** — continuous metrics often have an associated project that drives the work
+
+**Evolution levels** (current → future):
+- **Level 1** (now): Metrics as signals — agents read and apply judgment
+- **Level 2**: Metrics trigger work — breach auto-dispatches a fix
+- **Level 3**: Agents propose their own metrics
+- **Level 4**: Cross-metric correlations emerge, system learns leading indicators
+
+**Data model**: `metrics`, `metric_snapshots`, `metric_alerts`, `research_log` tables in SQLite (`may.db`)
+
+---
+
+## L5: Project Automation
+
+**What**: Long-running, multi-iteration projects with milestone tracking. The execution arm of continuous metrics.
+
+**Provides**:
+- **Project files** — `project.md` defines goal, milestones, status, owner, linked metric
 - **Health monitor** — handler scans projects, diagnoses health, decides action (launch/reactivate/escalate)
 - **Workflows** — pluggable iteration strategies (e.g., master-worker: persistent reviewer + worker sessions)
 - **Milestone tracking** — auto-detect completion, stall detection, escalation
+
+**Relationship to metrics**: A continuous metric like "improve coder quality from 0.6 to 0.9" doesn't have a single action. The project is where the multi-step work happens — diagnose, hypothesize, implement, measure. The metric tracks whether it's working.
 
 **Flow**:
 1. Project handler (L3) runs on cron, scans all `project.md` files
@@ -116,7 +163,7 @@ This replaces synchronous agent-to-agent calls with event-driven orchestration.
 
 ---
 
-## L5: Observability + Human Interface
+## L6: Observability + Human Interface
 
 **What**: See what's happening, interact with the system.
 
