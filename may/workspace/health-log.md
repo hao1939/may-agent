@@ -3356,3 +3356,18 @@ src/app/ui/web
 - ⚠️ Event "project.waiting" — 5 pending > 2h
 - ⚠️ Event "session.failed" — 2 pending > 2h
 
+## 2026-04-25T19:00 — Auto (JS cron handler)
+
+- Sessions (24h): 1082
+- Unevaluated: 4 total, 3 actionable, 1 auto-skippable
+- Running sessions: may (s_1777143624154_176), bob (s_1777143636951_7)
+- tsc: SKIP (no tsconfig.json)
+- Lessons: 52 lines total (scout 31, optimizer 21)
+- Bob analysis: fresh (4h ago)
+- ⚠️ Event "agent.notification" — 119 pending > 2h
+- ⚠️ Event "escalation.created" — 1 pending > 2h
+- ⚠️ Event "metric.breach" — 50 pending > 2h
+- ⚠️ Event "project.waiting" — 5 pending > 2h
+- ⚠️ Event "session.completed" — 2 pending > 2h
+- ⚠️ Event "session.failed" — 2 pending > 2h
+
