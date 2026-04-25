@@ -80,3 +80,12 @@ module.exports = function evaluate(workDir) {
 
   return { passed: allPassed, checks, summary };
 };
+
+// CLI entry point
+if (require.main === module) {
+  const workDir = process.argv[2];
+  if (!workDir) { console.error('Usage: node success_criteria.js <workDir>'); process.exit(1); }
+  const result = module.exports(workDir);
+  console.log(JSON.stringify(result, null, 2));
+  process.exit(result.passed ? 0 : 1);
+}

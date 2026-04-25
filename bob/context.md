@@ -76,10 +76,6 @@
 
 ## Learned from experience
 
-- Now I have the full picture. Let me write the verification report. (source: s_1777041006201_243, 2026-04-24)
-- CONTINUE
-- CONTINUE — The human comment says quality hasn't been verified and wants real gym benchmark improvement. The worker needs to actually run scenarios against agents and iterate.
-- WAITING: All milestones appear complete — `.state/fib.ts` exists and outputs the correct Fibonacci sequence, `.state/fib.test.ts` exists and tests pass. Awaiting review.
 - Tests pass with `tsx`. The script outputs the correct sequence. (source: s_1777040172369_219, 2026-04-24)
 - Good. Let me checkpoint and finish. The key deliverable is the H-EXP-016 treatment scenario. The notifications are mostly literature grounding (P2) that doesn't require immediate action. (source: s_1777050636519_177, 2026-04-24)
 - Now let me write all three reviews: (source: s_1777049321836_0, 2026-04-24)
@@ -91,3 +87,7 @@
 - Now let me write the inbox triage notes and commit. (source: s_1777072236244_634, 2026-04-25)
 - Now let me commit and wrap up. The main deliverables this session: G1-B baseline data collected, agent-identity confound discovered, results file updated, inbox triaged. (source: s_1777070436773_598, 2026-04-25)
 - The cross-agent fixes I identified in Phase 1 are **already present** in `agents/shared/common-sense.md`. The issue is agents aren't reading/following them. That's a different problem (context loading (source: s_1777068636883_558, 2026-04-25)
+- Now update journal and commit: (source: s_1777081236641_786, 2026-04-25)
+- Now commit and finish: (source: s_1777079436716_775, 2026-04-25)
+- Now let me commit and wrap up: (source: s_1777077636308_747, 2026-04-25)
+- Both files verified — content is correct and complete. (source: s_1777075836241_708, 2026-04-25)

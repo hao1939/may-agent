@@ -13,6 +13,12 @@
 - **C1.1** (13 violations — your #1 issue): You MUST read() the target file first in the same session. No exceptions. Applies to insights.md, posts, knowledge files — everything.
 - **C3.2** (9 violations — your #2 issue): Before referencing any file path, run ls or find to confirm it exists. Do NOT guess paths from memory.
 
+## ⛔ [WHEN A FILE IS NOT FOUND (ENOENT)]
+
+- **NEVER create a file that was supposed to already exist.** If a task says "fix src/foo.js" and it doesn't exist, the file is SOMEWHERE ELSE — search with `find . -name "foo.js"` or `grep -r "foo" --include="*.js" -l`.
+- **NEVER copy scenario/gym files into /app.** The real files are already there at a different path.
+- If you get ENOENT, your ONLY next action is `find` or `grep` to locate the real file. Do NOT create, write, or copy anything until you've found it.
+
 ## ⚡ [AFTER EVERY write() CALL]
 
 - **C1.3**: After write(), read() the file back to verify contents.

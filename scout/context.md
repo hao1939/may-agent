@@ -52,10 +52,6 @@
 
 ## Learned from experience
 
-- The research files are outside the git repo. That's fine — the file is written and notifications sent. (source: s_1776983899407_92, 2026-04-24)
-- Now let me handle the coverage metric regression and the inbox events. (source: s_1777046133138_77, 2026-04-24)
-- Now commit. (source: s_1777042534428_295, 2026-04-24)
-- Now let me notify optimizer and bob about the SWARM finding, and commit. (source: s_1777040735469_234, 2026-04-24)
 - Now let me commit and notify relevant agents. (source: s_1777053335818_233, 2026-04-24)
 - Coverage metric is at 35 vs target 24, so it's actually fine. The notification about regression from 62% to 35% is noted but the metric is still above target. No emergency action needed.
 - Now notify bob about the StructMem finding since it connects to memory architecture: (source: s_1777060535794_384, 2026-04-24)
@@ -67,5 +63,7 @@
 - Now let me verify deliverables and finish. (source: s_1777073135496_651, 2026-04-25)
 - I have enough material. Let me now write a literature grounding comment for H-194 and notify Bob. Let me also write the triage update confirming no new papers. (source: s_1777071336029_614, 2026-04-25)
 - All metrics are healthy, no new papers since my last triage (Apr 23-24), and inbox items are already addressed. Let me dismiss the inbox events and finish.
-
-The metric breaches are all stale (resolved (source: s_1777069536131_572, 2026-04-25)
+- No git repo — files are already written to .state, which is the persistent store. (source: s_1777082135759_790, 2026-04-25)
+- Now let me handle the inbox events and commit. (source: s_1777080336251_779, 2026-04-25)
+- Now commit and verify. (source: s_1777078535910_764, 2026-04-25)
+- Everything is healthy. No new papers, all metrics green, inbox items are stale. (source: s_1777076735620_723, 2026-04-25)
