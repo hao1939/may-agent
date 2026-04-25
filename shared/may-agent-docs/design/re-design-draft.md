@@ -70,23 +70,22 @@ Each layer depends only on layers below it.
 
 ---
 
-## L3: Scheduling + Handlers + Workflows
+## L3: Handlers + Workflows
 
-**What**: Three capabilities that together give the system autonomy.
+**What**: Two capabilities that together give the system autonomy.
 
-### Scheduling + Handlers
+### Handlers — Reactive automation
 
-Cron fires handlers on timers or bus events. Handlers are plain functions with a context.
+Plain JS functions that run in response to timer events or bus events. No LLM needed — fast, cheap, reliable.
 
-- **Periodic execution** — heartbeats, project scans, auto-commit, session sync
-- **Event-driven triggers** — handlers subscribe to bus events via `on:` field in cron config
+- **Timer-driven** — heartbeats, project scans, auto-commit, session sync
+- **Event-driven** — react to bus events (metric breach, session end, etc.)
 - **Auto-pause** — pause agents that keep failing, probe for recovery
 
 **How coordination works**:
-1. Agent emits event (or handler detects a condition)
-2. Cron dispatches to subscribed handlers
-3. Handler starts a new agent session via `manager.run()`
-4. Session completion emits `session_end` → more handlers can react
+1. Timer fires or event arrives → handler runs
+2. Handler starts a new agent session via `manager.run()`, or does work in pure JS
+3. Session completion emits `session_end` → more handlers can react
 
 ### Workflows — Execution Patterns
 
