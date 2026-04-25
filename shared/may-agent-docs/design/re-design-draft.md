@@ -72,14 +72,15 @@ Each layer depends only on layers below it.
 
 ---
 
-## L3: Handlers + Workflows
+## L3: Handlers + Workflows + Guards
 
-**What**: The autonomy layer. Handlers receive events, workflows implement the response.
+**What**: The autonomy layer. Handlers receive events, workflows implement the response, guards enforce safety.
 
 ```
 Event (timer / bus / agent request)
   → Handler (entry point — receives event, decides what to do)
     → Workflow (implementation — the actual logic)
+      → Guards (reactive checks — can warn, block, or inject steps)
 ```
 
 ### Handlers — Event interface
@@ -103,6 +104,27 @@ Workflows are the actual logic that runs. They can be:
 **Agent-specific workflows** (`agents/<name>/workflows/`) are custom to one agent.
 
 Workflows are both infrastructure and a knowledge artifact — agents create and improve them (see Agent Self-Evolution).
+
+### Guards — Reactive safety
+
+Guards are checks that run during workflow execution. They observe workflow events (`step_done`, `step_start`) and can:
+
+- **Warn** — log a concern but let the workflow continue
+- **Block** — stop the workflow (e.g., secret leak detected, cost limit exceeded)
+- **Inject a step** — add an extra agent session (e.g., "you wrote files without verifying — now read them back")
+
+**10 guards currently** (`agents/shared/guards/`):
+- `build-check` — warn if coding steps don't confirm build/test success
+- `no-secret-leak` — block if output contains API keys
+- `cost-limit` — block at 60 total turns (emergency brake)
+- `read-before-edit` — warn when editing files not read first
+- `verify-after-write` — inject read-back step after writes
+- `milestone-quality` — flag vague milestones
+- etc.
+
+Guards sit between skills (advisory) and workflows (enforced) in the enforcement spectrum. They are also an agent extension point — agents write new guards based on failure patterns.
+
+**Design rules** (from KE-182): max 3 related guards, gates must produce the solution (not just describe the problem), only gate low baselines (≤50%), prefer 2-phase investigate→fix.
 
 ---
 
@@ -143,7 +165,34 @@ Human sets metric          Agent heartbeat reads metric       Agent acts
 
 ---
 
-## L5: Project Automation
+## L5: Gym — Agent Testing
+
+**What**: Scenario-based testing that measures agent capability and provides fast feedback for skill/workflow improvement.
+
+**Provides**:
+- **435 scenarios** — realistic coding tasks with automated scoring. Each has: task description, environment files, success criteria (JS scorer), metadata (categories, tags, tier).
+- **Automated runner** — run scenarios against any agent, collect pass/fail + transcripts
+- **Adapters** — decoupled from agent runtime. Works with may-agent, Claude Code, or any CLI agent.
+- **Discrimination testing** — do scenarios distinguish good behavior from bad? (measures scenario quality itself)
+- **Results DB** — SQLite storage of all runs for trend analysis
+
+**How gym fits the system**:
+
+```
+Coach writes skill
+  → Gym measures: do agents follow it?
+    → Failures reveal patterns
+      → Coach rewrites skill
+        → Re-measure
+```
+
+Gym is the **fast feedback loop** (minutes) vs metrics (hours/days). When coach writes a skill or optimizer creates a workflow, gym scenarios test whether it actually improves agent behavior before deploying to production.
+
+**Relationship to metrics**: Gym pass rates feed into metrics like `gym.pass-rate` and `gym.scenario-discrimination`. The gym is the measurement instrument; metrics track the trend.
+
+---
+
+## L6: Project Automation
 
 **What**: Long-running, multi-iteration projects with milestone tracking. The execution arm of continuous metrics.
 
@@ -163,7 +212,7 @@ Human sets metric          Agent heartbeat reads metric       Agent acts
 
 ---
 
-## L6: Observability + Human Interface
+## L7: Observability + Human Interface
 
 **What**: See what's happening, interact with the system.
 
