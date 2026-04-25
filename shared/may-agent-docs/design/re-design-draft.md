@@ -12,9 +12,11 @@ This document describes the layered architecture — what each layer provides an
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  L5  Web UI / Notifications                     │  Human interface
+│  L6  Web UI / Notifications                     │  Human interface
 ├─────────────────────────────────────────────────┤
-│  L4  Project Automation                         │  Long-running goals
+│  L5  Project Automation                         │  Long-running goals
+├─────────────────────────────────────────────────┤
+│  L4  Metrics System                             │  Steering — what to work on
 ├─────────────────────────────────────────────────┤
 │  L3  Scheduling + Handlers                      │  Autonomy
 ├─────────────────────────────────────────────────┤
@@ -27,6 +29,8 @@ This document describes the layered architecture — what each layer provides an
 ```
 
 Each layer depends only on layers below it.
+
+**The key insight**: Without L4, agents have tools and autonomy but no direction. The metrics system is what makes the system self-steering — it tells agents *what matters*, *where we are*, and *what needs attention*, with minimal human input.
 
 ---
 
