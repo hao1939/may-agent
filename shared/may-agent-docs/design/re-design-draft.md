@@ -320,19 +320,19 @@ Examples:
 ### The Knowledge Spectrum
 
 ```
-Knowledge          Skills              Workflows
-(what we know)     (how to do it)      (enforced process)
-     │                  │                    │
- Findings,         Markdown docs,       Executable code,
- hypotheses,       read on-demand,      agent invokes,
- experiments       agent applies        code controls
-                   judgment             execution
-     │                  │                    │
-     ▼                  ▼                    ▼
- Durable output    Learned practices    Guaranteed quality
+Knowledge       Skills            Guards              Workflows
+(what we know)  (how to do it)    (reactive checks)   (enforced process)
+     │               │                 │                    │
+ Findings,      Markdown docs,    Code that warns/     Executable code,
+ hypotheses,    read on-demand,   blocks/injects       agent invokes,
+ experiments    agent applies     during workflows     code controls
+                judgment                               execution
+     │               │                 │                    │
+     ▼               ▼                 ▼                    ▼
+ Durable output Learned practices Safety net          Guaranteed quality
 ```
 
-All three are knowledge artifacts that evolve over time. Skills that agents keep failing to follow may get promoted to enforced workflows. Workflow patterns that prove universal may get simplified into skills. Knowledge entries inform which skills and workflows are needed.
+All four are knowledge artifacts that evolve over time. Skills that agents keep failing to follow may get promoted to guards or workflows. Knowledge entries inform which skills, guards, and workflows are needed.
 
 ---
 
@@ -518,19 +518,3 @@ Everything combines into a self-steering cycle:
 | **master** | claude-code, gemini-cli, codex | External AI tool orchestration |
 | **amy/amy-kimi** | coding/scrape | Research, alternative models |
 
----
-
-## Simplification Opportunities
-
-### Remove
-
-| What | Why |
-|---|---|
-| `WorkflowContext.runAgent/runFunction/runWorkflow/summarize` | Old per-iteration pattern, replaced by `createSession` |
-
-### Clarify
-
-| What | Question |
-|---|---|
-| `agents.call` vs `agents.fork` | Both are used heavily. Keep both, but document when to use which. |
-| Old `project.ts` workflow (905 lines) | Can be replaced by `master-worker.ts` (474 lines) — all active projects already use master-worker |
