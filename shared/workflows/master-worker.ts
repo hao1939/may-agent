@@ -65,6 +65,21 @@ function extractMilestones(content: string): MilestoneState {
 
 /** Check off milestones whose text appears in the reviewer's response */
 function checkOffMilestones(content: string, reviewerText: string): string {
+  // Only check off milestones the reviewer explicitly marks as completed.
+  // Look for patterns like "Milestone completed: ..." or "✅ ..." followed by milestone text.
+  const completedKeys: string[] = [];
+  const completionPatterns = [
+    /(?:milestone completed|completed milestone|milestone done|done milestone)[:\s]+["']?(.+?)["']?$/gim,
+    /✅\s*["']?(.+?)["']?$/gm,
+    /\[x\]\s*(.+)$/gm,
+  ];
+  for (const pat of completionPatterns) {
+    for (const m of reviewerText.matchAll(pat)) {
+      completedKeys.push(m[1].trim().slice(0, 30).toLowerCase());
+    }
+  }
+  if (completedKeys.length === 0) return content;
+
   const lines = content.split("\n");
   let inMilestones = false;
   for (let i = 0; i < lines.length; i++) {
@@ -74,7 +89,7 @@ function checkOffMilestones(content: string, reviewerText: string): string {
     const m = lines[i].match(/^(\s*-\s*)\[ \]\s*(.+)/i);
     if (m) {
       const key = m[2].trim().slice(0, 30).toLowerCase();
-      if (reviewerText.toLowerCase().includes(key)) {
+      if (completedKeys.some(ck => key.startsWith(ck) || ck.startsWith(key))) {
         lines[i] = lines[i].replace("[ ]", "[x]");
       }
     }
