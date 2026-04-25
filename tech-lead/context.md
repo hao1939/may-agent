@@ -88,9 +88,6 @@
 
 ## Learned from experience
 
-- All 9 tests pass. (source: s_1777066159106_0, 2026-04-24)
-- I ran tests after the last edit and they all passed. Let me verify the files: (source: s_1777066023865_0, 2026-04-24)
-- The billing test failure is inside a gym scenario (intentional — it's a scenario for agents to fix). Core tests pass.
 - **Build**: Clean, zero TS errors
 - **Tests**: All pa (source: s_1777072122539_629, 2026-04-25)
 - The workspace is in good shape. Product search tests all pass (10/10). The grade pipeline task references files that don't exist in this workspace (no `data/`, no `test/test.js`, no `src/policy.js`).  (source: s_1777070322250_591, 2026-04-25)
@@ -101,7 +98,10 @@
 - All 145 tests pass. Build clean, no TS errors. Let me update my summary and commit. (source: s_1777084722400_805, 2026-04-25)
 - Now let me update my heartbeat summary with inbox triage: (source: s_1777082923114_794, 2026-04-25)
 - The finish-guard is **fully wired**. Both paths are active:
-
-1. **`agents/shared/guards/finish-guard.ts`** — the `WorkflowGuard` (`handle()`) enforces FM-3.4 (persistent-task workflow usage) via the d (source: s_1777101286825_5, 2026-04-25)
 - That's from another session. The guard is likely tracking my bash commands and thinks I wrote files. Let me provide deliverables as empty since this was read-only: (source: s_1777100670501_12, 2026-04-25)
 - These are KE deletions from another agent's work (bob's dedup). Let me just commit them as cleanup: (source: s_1777093721971_854, 2026-04-25)
+- Everything looks healthy. Build is clean (zero TS errors), guards are properly registered and wired, no active requests pending, no TODOs in source. The inbox P0s about evaluator pipeline and duplicat (source: s_1777108805104_60, 2026-04-25)
+- Everything looks healthy. Build clean, no TS errors, no TODOs in core lib, agent-sdk imports are correctly structured, no active requests needing attention. The P0 notifications from 10-18h ago about  (source: s_1777105205898_35, 2026-04-25)
+- Guards are referenced from shared/agent-sdk.ts and other places — not orphans. The grep was failing due to path issues.
+
+Summary: Build is clean, no active request backlog, all P0s appear resolved. Th (source: s_1777103404982_24, 2026-04-25)

@@ -53,10 +53,6 @@
 
 ## Learned from experience
 
-- I didn't write any files this session — this is a read-only heartbeat. Let me verify that. (source: s_1777074935561_688, 2026-04-25)
-- Now let me verify deliverables and finish. (source: s_1777073135496_651, 2026-04-25)
-- I have enough material. Let me now write a literature grounding comment for H-194 and notify Bob. Let me also write the triage update confirming no new papers. (source: s_1777071336029_614, 2026-04-25)
-- All metrics are healthy, no new papers since my last triage (Apr 23-24), and inbox items are already addressed. Let me dismiss the inbox events and finish.
 - No git repo — files are already written to .state, which is the persistent store. (source: s_1777082135759_790, 2026-04-25)
 - Now let me handle the inbox events and commit. (source: s_1777080336251_779, 2026-04-25)
 - Now commit and verify. (source: s_1777078535910_764, 2026-04-25)
@@ -67,6 +63,8 @@
 - Everything is current. No new papers to triage, metrics all healthy, inbox items are stale metric breaches that self-resolved. (source: s_1777083936379_800, 2026-04-25)
 - I didn't write or modify any files this session. This is a read-only heartbeat. (source: s_1777102264652_17, 2026-04-25)
 - Used an odd example snippet: `[[ -f path ]] && read path` (the `read` builtin reads from stdin; `cat`/`sed`/`rg` would be clearer). (source: s_1777100567777_10, 2026-04-25)
-- Friday Apr 24 papers — already triaged. No new papers on weekends. 
-
-Now let me address the KB dedup finding by updating my workflow: (source: s_1777094735616_857, 2026-04-25)
+- Friday Apr 24 papers — already triaged. No new papers on weekends.
+- No active requests. The bash-command-hygiene notification was informational. All inbox items addressed. (source: s_1777109464956_63, 2026-04-25)
+- All Apr 24 papers are already triaged (StructMem is dd784, etc.). Metrics are green, no active requests, no unprocessed drops. This is a clean heartbeat. (source: s_1777107665060_53, 2026-04-25)
+- All looks well. Metrics green, papers triaged through latest listings, existing hypotheses already have literature grounding. This is a clean heartbeat. (source: s_1777105865503_41, 2026-04-25)
+- Good - EXP-221 Phase 2 already notes the duplication concern was "overstated — most 'duplicates' are distinct findings from same papers." The concept index is built. Metrics are all green and papers a (source: s_1777104064336_28, 2026-04-25)

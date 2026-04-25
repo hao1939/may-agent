@@ -76,10 +76,6 @@
 
 ## Learned from experience
 
-- Now let me write the inbox triage notes and commit. (source: s_1777072236244_634, 2026-04-25)
-- Now let me commit and wrap up. The main deliverables this session: G1-B baseline data collected, agent-identity confound discovered, results file updated, inbox triaged. (source: s_1777070436773_598, 2026-04-25)
-- The cross-agent fixes I identified in Phase 1 are **already present** in `agents/shared/common-sense.md`. The issue is agents aren't reading/following them. That's a different problem (context loading (source: s_1777068636883_558, 2026-04-25)
-- Now update journal and commit: (source: s_1777081236641_786, 2026-04-25)
 - Now commit and finish: (source: s_1777079436716_775, 2026-04-25)
 - Now let me commit and wrap up: (source: s_1777077636308_747, 2026-04-25)
 - Both files verified — content is correct and complete. (source: s_1777075836241_708, 2026-04-25)
@@ -91,3 +87,9 @@
 - Now update journal and commit: (source: s_1777101425026_8, 2026-04-25)
 - Good. Now let me dismiss inbox items and finish: (source: s_1777100490842_7, 2026-04-25)
 - Good, committed. Now let me quickly dismiss/acknowledge the inbox items and finish. (source: s_1777093710966_853, 2026-04-25)
+- Let me commit and finish up. (source: s_1777108625335_58, 2026-04-25)
+- Now let me quickly triage the inbox notifications and dismiss what's not actionable:
+
+The P1 notifications about waste/productivity (32.6 ops, 0-2 ops sessions) — these are worth noting but the fix is (source: s_1777106825806_46, 2026-04-25)
+- Now let me process inbox notifications quickly and commit: (source: s_1777105024605_34, 2026-04-25)
+- Now let me commit and wrap up. (source: s_1777103225567_23, 2026-04-25)
