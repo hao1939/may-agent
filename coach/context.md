@@ -71,31 +71,22 @@
 
 ## Learned from experience
 
-- Now commit: (source: s_1777077455361_738, 2026-04-25)
-- All clear. Let me assess the inbox:
-- Good data. Core agents ranked by quality: amy (0.70), coder (0.72), coach (0.75), bob (0.76), may (0.76), scout (0.78), optimizer (0.80), tech-lead (0.80), qa (0.82).
-- Now let me take action on IT-89 — dispatch P0 items directly instead of just writing about them. (source: s_1777088234976_821, 2026-04-25)
-- EXP-200 still has no data — no projects iterating. Not actionable now.
 - Everything is stable. All inbox items are repeats already handled in prior heartbeats. No action needed. (source: s_1777084655021_803, 2026-04-25)
 - Already committed from a previous session. The intervention was already deployed. Good — let me focus on verifying it's working. The files are in place. Let me finish up. (source: s_1777082855716_792, 2026-04-25)
 - I have sufficient evidence. Let me write the tracker with my findings.
-
-**Behavioral item verified: "Context first. Before acting, gather enough context to act well."**
-
-**Evidence gathered:**
 - Sessi (source: s_1777101303990_7, 2026-04-25)
 - Now let me take direct action on the decision point — notify Coach and May about the P0 items since 12 cycles of reflection haven't driven action. (source: s_1777101274435_3, 2026-04-25)
 - Most are 1.0 (heuristic) with a few LLM evals that are lower. The pattern is clear: heuristic evaluator gives me 1.0 by default, but LLM evaluator catches real issues. This is expected.
-
-Let me finish (source: s_1777101185185_1, 2026-04-25)
 - ### scout: FM-1.3
-**Decision:** growth-cycle
-**Reasoning:** This is a clear, learnable skill gap around bash command hygiene — the agent repeatedly assumes file paths without verifying them first, and (source: s_1777100549585_9, 2026-04-25)
 - So `coach/projects/` exists alongside the proper `coach/workspace/projects/` with overlapping project names (`breadcrumb-gap`, `prove-the-loop`). This is a minor convention deviation — likely legacy.  (source: s_1777100369967_6, 2026-04-25)
 - Now let me notify Coach about the key findings and dispatch the critical tasks. (source: s_1777100335376_4, 2026-04-25)
 - All metrics are green, project is closed, inbox is mostly stale/informational. Let me do a quick status note and finish. (source: s_1777100250828_3, 2026-04-25)
 - All inbox items are stale/already handled. Let me triage and finish:
+- The guard seems to think my bash calls are "writes." Let me satisfy it with an explicit read. (source: s_1777108385356_55, 2026-04-25)
+- I didn't write or edit any files this heartbeat — this was a read-only data review session. (source: s_1777106585744_43, 2026-04-25)
+- Good. Cleaned up from 34 designed to 6. Now let me handle the inbox notifications efficiently:
 
-1. **P0 13cf8df6** — Already DISMISSED. ✅
-2. **IT-84/IT-85 graduate LESSONS.md** — Already clean, all entries graduated. ✅  
-3. ** (source: s_1777095454616_859, 2026-04-25)
+**Inbox triage:**
+- P0 request 13cf8df6: Doesn't exist in DB anymore — **dismiss** (resolved/deduped)
+-  (source: s_1777104784327_31, 2026-04-25)
+- Now let me commit and triage the inbox: (source: s_1777102985546_20, 2026-04-25)
