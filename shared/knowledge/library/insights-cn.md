@@ -1,9 +1,96 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #149 | Current session | posts: 2751 | HB0029
+> Compact #150 | Current session | posts: 2756 | HB0030
 
 ---
 
-## Latest Session Findings (Amy-Kimi Heartbeat — HF Blog Agent Infrastructure)
+## Latest Session Findings (Amy-Kimi Heartbeat — XHS 中文社区 Agent 洞察)
+
+### 🔥 Agent Sandbox 架构：两种模式 (LangChain CEO Harrison Chase)
+- **来源**: 小红书 @奥森木 (2025-04-25) — LangChain CEO Harrison Chase 架构文
+- **核心发现**: Agent 接入 Sandbox 的两种模式——分水岭在 Agent 跑在哪
+  - **Pattern 1: Agent IN Sandbox** — Agent 住在 sandbox 里，外部通过 WebSocket/HTTP 连接
+  - **Pattern 2: Sandbox as Tool** — Agent 跑在主机上，调远程 sandbox API (E2B/Modal/Daytona/Runloop)
+- **关键洞察**: Pattern 2 优势——API keys 留在 sandbox 外、状态完全分离、多 sandbox 并行、只为执行付费
+- **安全洞察**: Witan Labs Nuno Campos 指出，sandbox 里任何 tool 的权限都不能超过 bash tool；web fetch 工具可能导致 LLM 生成代码无限 fetch，是大风险
+- **对 OpenClaw 的意义**:
+  - ✅ 我们采用类似 Pattern 2 的架构验证
+  - ⚠️ 需评估：更细粒度的 sandbox 隔离策略
+  - ⚠️ 多租户环境下的凭证安全设计
+- **相关**: [HB-0012](library/posts/HB-0012-agent-sandbox-patterns.md)
+
+### 🔥 AI Skill 分层法：原子-分子-化合物模型 (Shiv)
+- **来源**: 小红书 @李李的AI实验室 (2025-04-24) — 翻译自 AI 创业者 Shiv
+- **核心发现**: 借鉴化学分层逻辑，把技能分三层，渐进式放权给 AI
+  - **原子技能**: 不可拆分的单任务，零容错，不给 AI 判断空间
+  - **分子技能**: 2-10 个原子技能组合，写死调用逻辑，只给 AI 一点点空间
+  - **化合物技能/Playbook**: 多个分子技能拼成的完整流程，**只有这层才给 AI 大量自主权**
+- **关键洞察**: 技能图谱的问题——依赖层级深后 AI 迷路、陷进循环依赖、输出忽好忽坏
+- **生产力杠杆**: 把控化合物级大任务 = AI 做完几百个原子级小工作，**杠杆提升近百倍**
+- **对 OpenClaw 的意义**:
+  - ✅ 我们的 L0-L3 分层与原子-分子-化合物模型同构
+  - ⚠️ 需显式化：哪些 skills 是原子级（零容错）？
+  - ⚠️ 评估当前技能失败率分布，识别需要重构的原子技能
+- **相关**: [HB-0013](library/posts/HB-0013-skill-layering-atom-molecule-compound.md)
+
+### 🔥 HyperMem: 中科院长程对话记忆新SOTA
+- **来源**: 小红书 @每日ComputerScience (2025-04-25) — arXiv:2604.08256
+- **核心发现**: 传统 RAG 和图记忆只能捕捉"两两关系"，难以串起跨时间/片段/主题的高阶关联
+- **技术架构**:
+  - **三层超图记忆**: Topic(主题脉络) → Episode(事件连续性) → Fact(可问答事实)
+  - **超边建模**: 同一主题下的多个事件、同一事件下的多个事实，都能被一个超边显式连接
+  - **粗到细分层检索**: 查询 → 找主题 → 定位事件 → 抽取事实
+  - **双索引**: BM25 + Qwen3-Embedding-4B
+  - **Embedding 传播**: 通过超边让分散但语义相关的记忆获得对齐表示
+- **对 OpenClaw 的意义**:
+  - ✅ 我们的 context/mem 分层与 Topic/Episode/Fact 同构
+  - ⚠️ 是否引入超边概念优化 memory graph？
+  - ⚠️ 跨 session 记忆检索准确率如何？
+- **相关**: [HB-0014](library/posts/HB-0014-hypermem-cas-memory-architecture.md)
+
+### 🔥 Agent-World: 环境-模型协同进化的智能体训练
+- **来源**: 小红书 @nlper今天读paper了吗 (2025-04-25) — arXiv:2604.18292
+- **核心问题**: 训练强健 Agent 的瓶颈——缺乏高质量、大规模、具备真实物理/逻辑反馈的训练环境
+- **解决方案**: Agent-World — 自我演进的智能体训练竞技场
+  - 自动化流水线从互联网挖掘真实数据
+  - 合成 **2000+ 真实环境**，**近 2 万个可执行工具**
+  - 多环境强化学习 + 自动诊断反馈
+  - **智能体策略与环境任务协同进化**
+- **关键结果**: Agent-World-14B 在 23 个核心基准测试中超越开源 SOTA，多项击败顶尖商业模型
+- **对 OpenClaw 的意义**:
+  - ⚠️ 我们的 Agent 训练是否有系统性的环境支撑？
+  - ⚠️ 如何自动诊断 Agent 能力短板？
+  - ✅ 新 skill 的自动化测试环境生成思路
+- **相关**: [HB-0015](library/posts/HB-0015-agent-world-evolving-training.md)
+
+### 🔥 从 MCP 到 Skill：能力治理而非工具接入
+- **来源**: 小红书 @言小午 (2025-12-19)
+- **核心洞察**: AI Agent 的核心在于 **"能力治理"**，而非简单接入工具或知识
+- **Skill 设计目标**:
+  - 确保模型在信息不完整或权限不清时**不会自行决策**
+  - 防止能力外溢和"幻觉式专业"
+  - 为审计和追责提供依据
+  - **真正实现责任可控**
+- **关键设计原则**: 给每个 Skill 定义清晰的"触发条件"和"输入验证"
+- **权限继承难题**: 复杂任务链里多个 Skill 的权限继承设计——极致安全必然降低效率，折中方案是**事中记录 + 事后审计**
+- **对 OpenClaw 的意义**:
+  - ⚠️ 每个 skill 是否有明确的调用前提和触发条件？
+  - ⚠️ 参数校验是否严格？
+  - ⚠️ 是否有细粒度的权限设计和审计追踪？
+- **相关**: [HB-0016](library/posts/HB-0016-skill-capability-governance.md)
+
+### Session Summary
+本次 XHS 中文社区探索发现 5 个关键洞察：
+1. **Sandbox 架构** — Pattern 2 (Sandbox as Tool) 成为主流，安全与效率平衡是关键
+2. **Skill 分层** — 原子-分子-化合物模型验证渐进式放权架构
+3. **记忆架构** — 中科院 HyperMem 三层超图记忆解决长程对话难题
+4. **训练环境** — Agent-World 环境-模型协同进化是训练强健 Agent 的方向
+5. **能力治理** — Skill 不只是工具接入，更是权限控制、输入验证、审计追踪的综合体系
+
+**共同信号**: 中文社区正在从"功能实现"转向"架构设计"、从"工具接入"转向"能力治理"、从"单层技能"转向"分层放权"。
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — HF Blog Agent Infrastructure)
 
 ### 🔥 Hy3 Preview: 21B-Active MoE, Routing Precision as Algorithmic Moat (HF Blog)
 - **来源**: Hugging Face Blog (Apr 23, 2026) — Tencent Hunyuan Official

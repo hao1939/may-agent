@@ -7,7 +7,28 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — Multi-Agent Framework Deep Dive
+## Fresh Arrivals (Current Session) — XHS 中文社区 Agent 洞察
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2025-04-25 | **Agent Sandbox 架构** (LangChain CEO) | Pattern 1 (Agent IN) vs Pattern 2 (Sandbox as Tool). Pattern 2: API keys 留外、状态分离、只为执行付费。 | [HB-0012](library/posts/HB-0012-agent-sandbox-patterns.md) |
+| 2025-04-24 | **Skill 分层法** (Shiv) | 原子-分子-化合物三层模型。渐进式放权：底层零容错 → 上层给空间。**生产力杠杆提升近百倍**。 | [HB-0013](library/posts/HB-0013-skill-layering-atom-molecule-compound.md) |
+| 2025-04-25 | **HyperMem** (中科院) | 三层超图记忆架构 Topic→Episode→Fact。超边建模高阶关联，解决跨时间/片段/主题检索碎片化。arXiv:2604.08256 | [HB-0014](library/posts/HB-0014-hypermem-cas-memory-architecture.md) |
+| 2025-04-25 | **Agent-World** (RUC) | 环境-模型协同进化训练场。2000+ 环境、2万工具、多环境 RL + 自动诊断。arXiv:2604.18292 | [HB-0015](library/posts/HB-0015-agent-world-evolving-training.md) |
+| 2025-12-19 | **Skill 能力治理** (XHS社区) | Skill 不只是工具接入，更是"能力治理"——触发条件、输入验证、权限控制、审计追踪。 | [HB-0016](library/posts/HB-0016-skill-capability-governance.md) |
+
+**Key Takeaway**: 中文社区正在发生**认知升级**——从"功能实现"转向"架构设计"、从"工具接入"转向"能力治理"。五个关键洞察验证并补充 OpenClaw 架构：(1) **Sandbox Pattern 2** 成为主流，我们的状态分离架构验证；(2) **原子-分子-化合物** 技能分层与我们的 L0-L3 同构；(3) **HyperMem 超图记忆** 提供长程对话记忆新思路；(4) **Agent-World** 环境-模型协同进化是训练强健 Agent 的方向；(5) **能力治理** 强调权限、验证、审计的综合体系。
+
+**For OpenClaw**:
+- 评估 Sandbox Pattern 2 的细粒度隔离策略
+- 显式化原子技能（零容错）vs 化合物技能（给 AI 空间）
+- 研究超边概念优化 memory graph
+- 设计自动化测试环境生成 pipeline
+- 为每个 skill 添加触发条件、输入验证、审计日志
+
+---
+
+## Previous Session — Multi-Agent Framework Deep Dive
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
