@@ -3268,3 +3268,29 @@ src/app/ui/web
 - ⚠️ Event "project.waiting" — 5 pending > 2h
 - ⚠️ Event "session.failed" — 2 pending > 2h
 
+## 2026-04-25T05:39 — Auto (JS cron handler)
+
+- Sessions (24h): 1438
+- Unevaluated: 21 total, 21 actionable, 0 auto-skippable
+- Running sessions: may (s_1776611617990_13), amy-kimi (s_1777095550733_862), tech-lead (s_1777095521991_861)
+- tsc: SKIP (no tsconfig.json)
+- Lessons: 52 lines total (scout 31, optimizer 21)
+- Bob analysis: fresh (20h ago)
+- ⚠️ Event "agent.notification" — 90 pending > 2h
+- ⚠️ Event "metric.breach" — 23 pending > 2h
+- ⚠️ Event "project.waiting" — 5 pending > 2h
+- ⚠️ Event "session.failed" — 2 pending > 2h
+
+## 2026-04-25T06:54 — Auto (JS cron handler)
+
+- Sessions (24h): 1440
+- Unevaluated: 4 total, 4 actionable, 0 auto-skippable
+- Running sessions: may (s_1777100074462_0)
+- tsc: SKIP (no tsconfig.json)
+- Lessons: 52 lines total (scout 31, optimizer 21)
+- Bob analysis: fresh (21h ago)
+- ⚠️ Event "agent.notification" — 94 pending > 2h
+- ⚠️ Event "metric.breach" — 24 pending > 2h
+- ⚠️ Event "project.waiting" — 5 pending > 2h
+- ⚠️ Event "session.failed" — 2 pending > 2h
+

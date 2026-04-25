@@ -1,13 +1,14 @@
 # Lessons Graduation Report
 
-**Generated**: 2026-04-24T09:38 (automated scan)
-**Total LESSONS bytes**: 16616 (shared: 0)
+**Generated**: 2026-04-25T06:54 (automated scan)
+**Total LESSONS bytes**: 15720 (shared: 0)
 
-⚠️ **5 issue(s) found:**
+⚠️ **6 issue(s) found:**
 
 - master: 2302 bytes (budget: 2000)
 - optimizer: 2760 bytes (budget: 2000)
 - optimizer: 2 entry/entries older than 14 days
+- coach: graduated/obsolete entry still visible: "_(None — all graduated. See comment below for history.)_"
 - tech-lead: 3759 bytes (budget: 2000)
 - qa: graduated/obsolete entry still visible: "_(None — all lessons graduated to structural homes.)_"
 
@@ -20,13 +21,13 @@
 | master | 2302 | OVER | 0 | 0 | ⚠️ |
 | evaluator | 1742 | OK | 0 | 0 | ✅ |
 | amy | 1608 | OK | 0 | 0 | ✅ |
-| coach | 1551 | OK | 0 | 0 | ✅ |
 | amy-kimi | 1281 | OK | 0 | 0 | ✅ |
 | may | 1273 | OK | 0 | 0 | ✅ |
+| coach | 655 | OK | 0 | 0 | ⚠️ |
 | qa | 340 | OK | 0 | 0 | ⚠️ |
 
 ## Stale Entries (>14 days)
 
 ### optimizer
-- 2026-03-21 (34d old): - **FM-2.4: Error Chain Recovery (6x in 7d, 2026-03-21)**: W
-- 2026-03-20 (35d old): - **FM-2.6: No Claims Without Evidence (8x in 7d, 2026-03-20
+- 2026-03-21 (35d old): - **FM-2.4: Error Chain Recovery (6x in 7d, 2026-03-21)**: W
+- 2026-03-20 (36d old): - **FM-2.6: No Claims Without Evidence (8x in 7d, 2026-03-20
