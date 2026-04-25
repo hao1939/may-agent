@@ -159,14 +159,21 @@ function createProjectDir(config: PersistentTaskConfig): void {
 ## Goal
 ${config.goal}
 
-## Milestones
-
 ## Current State
 Not started.
 
-## Iteration Summary
+## Metrics
+
+## Milestones
+- [ ] Define success criteria and first milestone
+
+## Resources
+
+## Process Notes
 
 ## Comments
+
+## Iteration Summary
 `;
   writeFileSync(config.projectPath, projectContent, "utf-8");
   writeFileSync(config.journalPath, `# Journal\n\n`, "utf-8");
@@ -292,6 +299,8 @@ function buildWorkerPrompt(
   let prompt = `You are working on iteration ${iteration} of a persistent task.\n\n`;
   prompt += `## Goal\n${goal}\n\n`;
 
+  if (currentState) prompt += `## Current State\n${currentState}\n\n`;
+
   if (ms.total > 0) {
     prompt += `## Milestones (${ms.done}/${ms.total} complete)\n`;
     if (nextMilestone) prompt += `**YOUR TASK THIS ITERATION:** ${nextMilestone}\n\n`;
@@ -301,8 +310,6 @@ function buildWorkerPrompt(
       prompt += `\n`;
     }
   }
-
-  if (currentState) prompt += `## Current State\n${currentState}\n\n`;
 
   const resources = extractSection(projectContent, "Resources");
   if (resources && !focused) prompt += `## Resources\n${resources}\n\n`;
@@ -357,6 +364,13 @@ function buildReviewPrompt(
   prompt += `If something isn't working, propose an alternative approach.\n`;
   prompt += `Never give the same guidance twice. If previous guidance failed, try a different strategy.\n\n`;
   prompt += `## Goal\n${goal}\n\n`;
+
+  const metrics = parseMetrics(projectContent);
+  if (metrics.length > 0) {
+    prompt += `## Metrics\n`;
+    for (const m of metrics) prompt += `- ${m.id}: target ${m.target}, baseline ${m.baseline}\n`;
+    prompt += `Milestones being done does NOT mean the goal is met. Check whether metrics moved toward targets.\n\n`;
+  }
 
   if (ms.total > 0) {
     prompt += `## Milestone Progress: ${ms.done}/${ms.total} complete\n`;
@@ -880,7 +894,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       }
 
       projectContent = appendToSection(projectContent, "Iteration Summary",
-        `- **Iter ${iteration}**: ${workerSummary.slice(0, 100)}\n`);
+        `- **Iter ${iteration}**: ${decision.status.toUpperCase()}. ${reviewerInsight.slice(0, 150)}\n`);
 
       // Update Current State with reviewer's synthesis (not mechanical summary)
       const ms = extractMilestones(projectContent);
