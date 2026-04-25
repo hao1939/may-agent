@@ -52,25 +52,19 @@ Even if you discover the environment isn't what you expected, even if tsc/vitest
 ## Learned from experience
 
 - ### Summary
-- ### Actions on Pending Events (inbox)
-- **Dismiss** — duplicates of the same alert; no additional actionable content  (source: s_1777055554981_276, 2026-04-24)
-- Significant avoidable waste at start: ran git commands from /app (not a repo) and only later pivoted to /app/agents (Chain 1 and 2). (source: s_1777066355225_505, 2026-04-24)
-- ### Summary
-- Wasted tool calls due to running git commands in /app (not a git repo) before switching to /app/agents (Failure Chains 1–2: `git log`, `git status` -> code 128). (source: s_1777069954915_578, 2026-04-25)
-- ### Summary
-- ### Summary
 - ### Summary
 - ### Summary
 - ### Inbox / Events triage
 - **[P1] Waste detected: 5 identical “Quick Code Review” requests (x5 notifications)** → **DISMISS**
 - Avoidable git-root mistake: ran `git log` from `/app` (not a git repo) causing a failed command (code 128) and subsequent detour. Evidence: failure chain 1 root cause shows `fatal: not a git repositor (source: s_1777108084810_54, 2026-04-25)
 - ## Pending Events (inbox) — act/delegate/dismiss/escalate
-
-1) **[17h ago] Waste detected: 5 identical "Quick Code Review" requests dispatched**
 - **Action: ESCALATE**
 - **Reason:** This is coordinatio (source: s_1777106285113_42, 2026-04-25)
 - ## Pending Events (inbox) triage
-
-### 1) [17h ago] Waste detected: 5 identical “Quick Code Review” requests
 - **Action: ESCALATE**
 - **Reason:** This is dispatcher/inbox de-duplication waste. It’s not (source: s_1777104485818_30, 2026-04-25)
+- ### Summary
+No new code changes in scope to review beyond an existing QA workspace note (`agents/qa/workspace/unreviewed-findings.md`, last committed as `d9d2a809c`). Heartbeat action: triaged duplica (source: s_1777113485422_88, 2026-04-25)
+- ### Summary
+No actionable product regressions surfaced in this heartbeat. The only concrete issue is that the inbox alert to “verify gym scenario EXP-220 (enoent-file-search)” cannot be satisfied beca (source: s_1777111684683_76, 2026-04-25)
+- Started with an unproductive git command in the wrong working directory: `git log --oneline -10` failed with 'not a git repository' (exit 128), then spent extra calls orienting to /app vs /app/agents. (source: s_1777109884717_64, 2026-04-25)

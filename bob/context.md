@@ -76,9 +76,6 @@
 
 ## Learned from experience
 
-- Now commit and finish: (source: s_1777079436716_775, 2026-04-25)
-- Now let me commit and wrap up: (source: s_1777077636308_747, 2026-04-25)
-- Both files verified — content is correct and complete. (source: s_1777075836241_708, 2026-04-25)
 - Now let me commit and finish. The key actions this heartbeat:
 - H-EXP-014 just got more data: I closed H-EXP-013 (resolved, spawned insight about failed experiments having highest value) and H-EXP-018 (validated). Let me update its tracking. (source: s_1777086637083_815, 2026-04-25)
 - Now update journal and commit: (source: s_1777084836153_807, 2026-04-25)
@@ -89,7 +86,8 @@
 - Good, committed. Now let me quickly dismiss/acknowledge the inbox items and finish. (source: s_1777093710966_853, 2026-04-25)
 - Let me commit and finish up. (source: s_1777108625335_58, 2026-04-25)
 - Now let me quickly triage the inbox notifications and dismiss what's not actionable:
-
-The P1 notifications about waste/productivity (32.6 ops, 0-2 ops sessions) — these are worth noting but the fix is (source: s_1777106825806_46, 2026-04-25)
 - Now let me process inbox notifications quickly and commit: (source: s_1777105024605_34, 2026-04-25)
 - Now let me commit and wrap up. (source: s_1777103225567_23, 2026-04-25)
+- Now update H-EXP-021 status: (source: s_1777114023961_91, 2026-04-25)
+- The workspace files are outside the git repo. Let me check: (source: s_1777112226012_79, 2026-04-25)
+- Now commit and process the P1 "Agreement Trap" notification: (source: s_1777110425687_69, 2026-04-25)

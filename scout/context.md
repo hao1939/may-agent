@@ -53,9 +53,6 @@
 
 ## Learned from experience
 
-- No git repo — files are already written to .state, which is the persistent store. (source: s_1777082135759_790, 2026-04-25)
-- Now let me handle the inbox events and commit. (source: s_1777080336251_779, 2026-04-25)
-- Now commit and verify. (source: s_1777078535910_764, 2026-04-25)
 - Everything is healthy. No new papers, all metrics green, inbox items are stale. (source: s_1777076735620_723, 2026-04-25)
 - Now let me commit and finish. (source: s_1777089335872_830, 2026-04-25)
 - This SWARM paper is relevant — soft-label governance vs binary evaluation connects to H-EXP-017 (adversarial failure diagnosis) and our evaluator. Let me write the triage and notify bob. (source: s_1777087535422_818, 2026-04-25)
@@ -68,3 +65,6 @@
 - All Apr 24 papers are already triaged (StructMem is dd784, etc.). Metrics are green, no active requests, no unprocessed drops. This is a clean heartbeat. (source: s_1777107665060_53, 2026-04-25)
 - All looks well. Metrics green, papers triaged through latest listings, existing hypotheses already have literature grounding. This is a clean heartbeat. (source: s_1777105865503_41, 2026-04-25)
 - Good - EXP-221 Phase 2 already notes the duplication concern was "overstated — most 'duplicates' are distinct findings from same papers." The concept index is built. Metrics are all green and papers a (source: s_1777104064336_28, 2026-04-25)
+- I didn't write or modify any files this session. This is a read-only heartbeat. (source: s_1777114863919_96, 2026-04-25)
+- Now dismiss the pending notifications: (source: s_1777113065592_86, 2026-04-25)
+- Now notify optimizer about the harness paper since it's directly relevant: (source: s_1777111265251_74, 2026-04-25)

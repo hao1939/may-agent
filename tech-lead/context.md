@@ -88,9 +88,6 @@
 
 ## Learned from experience
 
-- **Build**: Clean, zero TS errors
-- **Tests**: All pa (source: s_1777072122539_629, 2026-04-25)
-- The workspace is in good shape. Product search tests all pass (10/10). The grade pipeline task references files that don't exist in this workspace (no `data/`, no `test/test.js`, no `src/policy.js`).  (source: s_1777070322250_591, 2026-04-25)
 - All tests pass. The two tasks assigned to me (428cdc81 product search, 9da5556a grade pipeline) — the product search is already working, and the grade pipeline files aren't present in this environment (source: s_1777068522448_553, 2026-04-25)
 - OK, I have a clear picture. Let me summarize and finish. (source: s_1777081123148_783, 2026-04-25)
 - Clean — those are just regex patterns for detecting TODOs, not actual TODOs. The codebase is healthy. (source: s_1777077522854_740, 2026-04-25)
@@ -103,5 +100,9 @@
 - Everything looks healthy. Build is clean (zero TS errors), guards are properly registered and wired, no active requests pending, no TODOs in source. The inbox P0s about evaluator pipeline and duplicat (source: s_1777108805104_60, 2026-04-25)
 - Everything looks healthy. Build clean, no TS errors, no TODOs in core lib, agent-sdk imports are correctly structured, no active requests needing attention. The P0 notifications from 10-18h ago about  (source: s_1777105205898_35, 2026-04-25)
 - Guards are referenced from shared/agent-sdk.ts and other places — not orphans. The grep was failing due to path issues.
+- All clear. Build passes, no active requests, and reviewing git history confirms all P0 inbox items are already resolved:
 
-Summary: Build is clean, no active request backlog, all P0s appear resolved. Th (source: s_1777103404982_24, 2026-04-25)
+- **EXP-216 Phase 2**: superseded (`ad3c13a7d`)
+- **EXP-188 finish-guard**: cl (source: s_1777114206213_92, 2026-04-25)
+- Everything is healthy. Build clean, zero active requests, inbox P0s are stale (resolved). Let me commit and finish. (source: s_1777112405581_81, 2026-04-25)
+- Clean. No real TODOs in source code. The system is healthy. (source: s_1777110605350_70, 2026-04-25)
