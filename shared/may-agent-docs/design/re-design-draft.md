@@ -20,7 +20,7 @@ The runtime that makes everything work. Agents don't touch this code — they in
 ├─────────────────────────────────────────────────┤
 │  L4  Metrics System                             │  Steering — what to work on
 ├─────────────────────────────────────────────────┤
-│  L3  Scheduling + Handlers + Workflows          │  Autonomy + execution patterns
+│  L3  Handlers + Workflows                       │  Autonomy + execution patterns
 ├─────────────────────────────────────────────────┤
 │  L2  Event Bus                                  │  Glue
 ├─────────────────────────────────────────────────┤
