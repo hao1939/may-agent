@@ -7,7 +7,26 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — arXiv Agent Research Roundup
+## Fresh Arrivals (Current Session) — Multi-Agent Framework Deep Dive
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2025-04-25 | **DeerFlow 2.0** (ByteDance) | 63.8k⭐ Super Agent harness. **Dynamic sub-agent generation** per task, Docker sandbox, skill plugin system. GitHub Trending #1. Validates file-system coordination. ★★★★★ | [HB-0040](library/posts/HB-0040-deerflow-bytedance-super-agent.md) |
+| 2025-04-25 | **Governed Memory** (Personize AI) | Production multi-agent memory layer. **+20.89% ALFWorld success**, lower tokens than MetaGPT. Schema-driven extraction, role-based filtering, lineage tracking. ★★★★★ | [HB-0041](library/posts/HB-0041-governed-memory-production.md) |
+| 2025-04-25 | **Building Effective Agents** (Anthropic) | Simple composable patterns > complex frameworks. **5 core patterns**: Prompt Chaining, Routing, Parallelization, Orchestrator-Workers, Evaluator-Optimizer. Workflows vs Agents distinction. ★★★★★ | [HB-0042](library/posts/HB-0042-anthropic-effective-agents.md) |
+
+**Key Takeaway**: Three converging frameworks validate and challenge OpenClaw: (1) **DeerFlow** — dynamic sub-agent generation vs our static team; "kitchen sink" framework validates file-system coordination but shows flexibility advantages; (2) **Governed Memory** — production multi-agent memory with +20.89% improvement; our insights/posts/threads分层与Graph Memory同构，但需加强schema提取和角色过滤; (3) **Anthropic patterns** — our Workflow-first, file-system, no-heavy-framework architecture aligns with industry best practices; gap is explicit Orchestrator-Workers planning layer.
+
+**For OpenClaw**:
+- Evaluate hybrid: static core team + dynamic sub-agents for complex tasks
+- Add schema-driven extraction to insights (lightweight structure)
+- Implement role-based knowledge filtering (don't broadcast everything)
+- Formalize Orchestrator-Workers pattern for task decomposition
+- Document: our "fourth path" (no framework dependency) is validated by Anthropic's "start simple" recommendation
+
+---
+
+## Previous Session — arXiv Agent Research Roundup
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
