@@ -65,7 +65,7 @@ export const guard: WorkflowGuard = {
     const unique = [...new Set(violations)];
     return [
       {
-        type: "warn",
+        type: "block",
         reason: `C7.1 Hallucinated Path: bash command(s) reference non-existent path(s): ${unique.join(", ")}. ` +
           `The project root is /app. Use relative paths or /app/... instead.`,
       },
