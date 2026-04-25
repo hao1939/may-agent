@@ -7,7 +7,23 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — XHS 中文社区 Skill进化与Agent生态
+## Fresh Arrivals (Current Session) — arXiv: ReTool RL for Strategic Tool Use
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **ReTool** (ByteDance Seed) | RL learns *when and how* to invoke tools. 32B model: 67% AIME (400 steps) vs text-RL baseline 40% (1080 steps). Surpasses o1-preview by 27.9%. | [HB-0046](library/posts/HB-0046-retool-rl-strategic-tool-use.md) |
+
+**Key Takeaway**: Tool/Skill usage can be **learned via RL**, not just hardcoded. Key findings: (1) **40% shorter responses** with tool-augmented reasoning vs pure text; (2) **Emergent self-correction** - model autonomously masters adaptive tool use; (3) **Outcome-only feedback sufficient** - no complex reward shaping needed; (4) **Strategic timing** - code invocation shifts earlier as training progresses. Validates RL path for Skill optimization.
+
+**For OpenClaw**:
+- Error Log → RL signal pipeline is viable for Skill improvement
+- Outcome-only reward design simplifies implementation vs complex credit assignment
+- Cold-start data generation approach applicable to new Skill bootstrapping
+- Interleaved execution pattern (text → Skill → result → text) may improve workflow efficiency
+
+---
+
+## Previous Session — XHS 中文社区 Skill进化与Agent生态
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
