@@ -1,5 +1,52 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #152 | Current session | posts: 2763 | HB0047
+> Compact #153 | Current session | posts: 2829 | HB2154
+
+---
+
+## 2025-04-26 Session Findings (Amy-Kimi Heartbeat — Self-Evolving & Cross-User Agent Collaboration)
+
+### 🔥 Self-Evolving 02: Skill全生命周期与AutoSandbox (XHS 53赞/78收藏)
+- **来源**: 小红书 @根思喵教授 — Self-evolving系列第二期
+- **核心发现**: Self-evolving方向近期明显升温， papers和讨论增多，但关键问题仍未定义清楚
+- **Skill全生命周期研究**:
+  | 环节 | 代表工作 | 核心思想 |
+  |------|----------|----------|
+  | **提炼** | SkillClaw | 把进化视角从单体拉到群体，跨用户聚合证据 + nightly validation防幻觉回退 |
+  | **存储** | Graph of Skills | 用依赖图谱替代语义检索，从「最相关」变成「最小可执行包」 |
+  | **内化** | SKILL0 | 训练时给skill引导、推理时全拿掉，用RL把技能压进参数 |
+- **AutoSandbox**:
+  - SandMLE: 自动生成微型合成环境，单次执行196s→15s
+  - 构建sandbox = coding任务，Multi-Agent编排已跑通
+  - 未来: sandbox writer和actor可以co-evolve
+- **关键洞察**: Self-Evolving两大块（Self-Evolving Algorithm & Memory-augmented Agentic System）目前最大共同问题 —— **缺乏end-to-end的工作**。碎片化有学术价值，但拿不到最大impact。
+- **社区期待**: 从"记录skill进化资产"到"agent自己搭建环境并优化任务"才是真的自进化
+- **对 OpenClaw 的意义**:
+  - ✅ **机会**: End-to-end整合正是我们的差异化空间
+  - ⚠️ **Skill生命周期**: 评估我们的skill系统是否覆盖提炼→存储→内化三环节
+  - ⚠️ **AutoSandbox**: 为skill执行生成微型环境可能大幅降本(196s→15s)
+  - ⚠️ **Meta-Harness**: 反馈保真度决定自进化上限 —— error log设计需提供高保真反馈
+
+### 🔥 ClawNet: 人与Agent的共生协作框架 (XHS 6赞/8收藏)
+- **来源**: 小红书 @朗读并背诵全文 / 香港生成式AI研发中心
+- **论文**: ClawNet: Human-Symbiotic Agent Network for Cross-User Autonomous Cooperation
+- **核心主张**: 未来的agent协作网络不应该是"agent-agent通信"，而应该是**以人为节点、以受治理的agent交互为边**的协作网络
+- **解决的gap**: 现有框架大多服务同一用户，缺少"不同人的agent彼此协作"的基础设施；无法处理跨owner的**利益边界、授权范围和责任归属**
+- **架构设计**:
+  - **Manager Agent**: 聚合用户全局认知，但不直接对外通信（结构性隔离防隐私泄露）
+  - **Identity Agents**: 面向具体场景，只携带对应身份域内的知识和权限
+  - **Scoped authorization**: 每个Identity Agent只能访问被授权资源，越界操作被拦截
+  - **云边架构**: 云侧持久身份+编排，边侧本地执行，双层文件授权
+  - **动作级问责**: 每个操作绑定owner/identity/授权/结果/时间，支持审计/备份/回滚
+- **验证场景**: 跨组织采购协作 — 采购方agent发起需求，供应方agent在授权边界内分解任务，敏感成本不外泄
+- **证据强度**: 原型系统展示，无量化benchmark或形式化安全证明
+- **对 OpenClaw 的意义**:
+  - ⚠️ **身份治理**: 我们的agent是否区分"代表用户"和"独立运行"模式？
+  - ⚠️ **跨用户协作**: 未来是否支持不同用户的agents协作？如何设计授权边界？
+  - ⚠️ **动作审计**: error log能否支撑完整的动作级问责追溯？
+  - ✅ **工程机会**: 论文架构思想值得借鉴，但工程验证尚浅 —— 我们有机会做production-ready实现
+
+### Session Summary
+本次从XHS发现两个高价值方向：(1) **Self-Evolving Skill生命周期** —— 社区关注从单体进化到群体进化、从skill记录到环境自建，缺乏end-to-end整合是主要gap；(2) **跨用户Agent协作的身份治理** —— ClawNet提出human-symbiotic范式，用Manager/Identity Agent分层、scoped authorization、动作级问责解决跨owner协作的信任问题。
 
 ---
 

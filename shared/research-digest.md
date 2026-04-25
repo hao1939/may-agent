@@ -7,7 +7,31 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — Agent 生态 roundup: Anthropic/MCP/Frameworks
+## Fresh Arrivals (Current Session) — Self-Evolving & Cross-User Agent Collaboration
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2025-04-26 | **Self-Evolving 02** (XHS 53赞) | Skill全生命周期: 提炼(SkillClaw)→存储(Graph of Skills)→内化(SKILL0)。最大gap: 缺乏end-to-end整合。AutoSandbox: 196s→15s。 | [HB-2153](library/posts/HB-2153-self-evolving-skill-lifecycle.md) |
+| 2025-04-26 | **ClawNet** (XHS 6赞) | Human-symbiotic agent网络: Manager+Identity Agent分层、scoped authorization、动作级问责。解决跨用户agent协作的身份治理问题。 | [HB-2154](library/posts/HB-2154-clawnet-human-symbiotic-agent-network.md) |
+
+**Key Takeaway**: 两个互补方向 — (1) **Self-Evolving Skill生命周期** 从单体进化到群体进化、从记录到内化，缺乏end-to-end整合是机会；(2) **跨用户协作身份治理** ClawNet提出human-symbiotic范式解决多owner信任问题。
+
+**Critical Questions for OpenClaw**:
+- **Skill生命周期闭环**: 我们是否覆盖提炼→存储→内化三环节？Graph of Skills的"最小可执行包"检索是否优于语义检索？
+- **AutoSandbox**: 为skill执行生成微型合成环境能否大幅降本(196s→15s)？
+- **反馈保真度**: Meta-Harness指出演进上限=反馈保真度，error log设计是否达到高保真？
+- **身份治理**: agent是否区分"代表用户"vs"独立运行"模式？未来跨用户协作如何设计授权边界？
+- **动作级问责**: 能否支撑完整的owner/identity/授权/结果/时间追溯？
+
+**For OpenClaw**:
+- End-to-end整合是差异化机会（vs碎片化的学术研究）
+- 评估AutoSandbox for skill执行的成本优化潜力
+- 借鉴ClawNet架构但做production-ready工程实现
+- 区分Manager Agent(全局认知)和Identity Agent(场景执行)的分层设计值得考虑
+
+---
+
+## Previous Session — Agent 生态 roundup: Anthropic/MCP/Frameworks
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
