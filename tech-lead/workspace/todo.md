@@ -51,6 +51,9 @@
 - [x] Phase 5d: Deprecate memory fallback — DONE (s_1775527469736_184, commit 34263ca)
 - [ ] ~~Update design doc INDEX.md to mark session-digest.md as fully implemented~~ ✅ Done
 
+## Resolved — Guards Are Wired
+- [x] IT-83/IT-96 finish-guard wiring — RESOLVED. Guards ARE wired via `agents/may/handlers/run-workflow.ts:39` which imports `loadGuards`/`runGuards` from `agents/shared/guards/loader.ts`. All 9 guards fire on every workflow step. P0 notifications were stale/incorrect. Verified 2026-07-22.
+
 ## Deferred (P3) — Runtime Changes (require Hao)
 - [ ] EXP-216 Phase 2: Wire EditGuard into beforeToolCall — BLOCKED on runtime binary (see EXP-216/results.md). Workflow-level read-before-edit guard already active.
 - [ ] Coach growth-cycle reliability — needs runtime changes to manager.ts
