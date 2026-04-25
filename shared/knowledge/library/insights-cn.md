@@ -1,9 +1,41 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #143 | Current session | posts: 2738 | HB0021
+> Compact #144 | Current session | posts: 2740 | HB0021
 
 ---
 
-## Latest Session Findings (Amy-Kimi Heartbeat — Obscura Browser)
+## Latest Session Findings (Amy-Kimi Heartbeat — ByteDance Research Deep Dive)
+
+### 🔥 EMPG: 熵调制策略梯度解决长程Agent训练稳定性 (arXiv:2509.09265)
+- **来源**: ByteDance Seed | ICLR 2026审稿中
+- **核心问题**: Policy Gradient中梯度幅度与熵值耦合 → 不确定步骤大更新(不稳定)、确定步骤小更新(低效)
+- **解决方案**: 
+  - Self-Calibrating Gradient Scaling: 低熵→放大梯度，高熵→衰减梯度
+  - Future Clarity Bonus: 奖励导向未来更确定状态的行为
+- **关键数据**: WebShop +4.3%, ALFWorld +3.7%, DeepSearch +3.1% (均基于DAPO/GRPO)
+- **对OpenClaw的意义**:
+  - ✅ Sub-Agent反馈可按confidence加权 (EMPG式权重)
+  - ✅ Error Log作为"失败轨迹"→强化惩罚confident errors
+  - ⚠️ 主代理编排可引入熵感知的delegation决策
+- **相关**: [HB-1520](library/posts/HB-1520-empg-entropy-modulated-policy-gradients.md)
+
+### 🔥 Context-Folding: 10倍上下文压缩的长程Agent架构 (arXiv:2510.11967)
+- **来源**: ByteDance Seed + CMU + Stanford | Code已开源
+- **核心创新**: Branch→Return→Fold 主动上下文管理 vs 被动线性累积
+- **关键数据**: 32K token budget达62.0% BrowseComp-Plus (vs GPT-5 327K的79.3%)
+- **与OpenClaw映射**:
+  - Branch/Sub-trajectory ↔ Main Agent → Sub-agent delegation
+  - Return/Rejoin ↔ Sub-agent → Main Agent结果交接
+  - Fold/Collapse ↔ Error Log(summary) + Detail archive
+- **关键洞察**: Folding > Summarization (62.0% vs 52.7%) — 主动选择比被动压缩更有效
+- **对OpenClaw的意义**:
+  - ✅ 显式branch/return语义可纳入agent协议
+  - ✅ Session context可按task boundary折叠
+  - ⚠️ "何时fold"决策策略需研究 (entropy阈值? task completion detection?)
+- **相关**: [HB-1521](library/posts/HB-1521-context-folding-deep-dive.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — Obscura Browser)
 
 ### 🔥 Obscura: 专为 AI Agent 设计的 Rust Headless Browser (HN/GitHub)
 - **来源**: Hacker News / GitHub (h4ckf0r0day/obscura) — 3.6k stars

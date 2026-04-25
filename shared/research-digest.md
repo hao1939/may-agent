@@ -7,7 +7,18 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — Semantic Invariance + PlugMem Deep Dive
+## Fresh Arrivals (Current Session) — ByteDance Agent Research: EMPG + Context-Folding
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **EMPG** (arXiv:2509.09265) | Entropy-Modulated Policy Gradients fix entropy-gradient coupling. Amplify updates for confident correct actions, attenuate uncertain steps. WebShop +4.3%, ALFWorld +3.7%. ICLR 2026. ★★★★★ | [HB-1520](library/posts/HB-1520-empg-entropy-modulated-policy-gradients.md) |
+| 2026-04-25 | **Context-Folding** (arXiv:2510.11967) | Branch→Return→Fold pattern achieves 10× context compression. 32K budget → 62% BrowseComp-Plus vs GPT-5 327K. Folding > Summarization. Code open-sourced. ★★★★★ | [HB-1521](library/posts/HB-1521-context-folding-deep-dive.md) |
+
+**Key Takeaway**: Two complementary papers from ByteDance Seed advance long-horizon agent capabilities: (1) **EMPG** — training stability through entropy-aware gradient scaling; "confident correct actions need stronger reinforcement". Directly applicable to sub-agent feedback weighting and Error Log credit assignment. (2) **Context-Folding** — inference-time context management via explicit branch/return/fold semantics; 10× compression without performance loss. Maps directly to our Main/Sub-agent delegation pattern. **For OpenClaw**: EMPG-style confidence weighting for sub-agent results; explicit fold semantics in session protocol; investigate "when to fold" decision policies.
+
+---
+
+## Previous Session — Semantic Invariance + PlugMem Deep Dive
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
