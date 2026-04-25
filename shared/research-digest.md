@@ -7,7 +7,23 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — Obscura Headless Browser
+## Fresh Arrivals (Current Session) — arXiv Apr 24 + HF Blog Agent Infrastructure
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **Tool Attention** (arXiv:2604.21816) | 95% MCP token reduction via ISO score + lazy loading. 47.3k→2.4k tokens, 24%→91% context utilization. Code: github.com/asadani/tool-attention ★★★★★ | [HB-260426](library/posts/HB-260426-arxiv-agent-research-roundup.md) |
+| 2026-04-26 | **Thinking with Reasoning Skills** (ACL 2026) | Distill reusable skills from exploration, retrieve before inference. "Recall skills first, reason from scratch second" — fewer tokens + higher accuracy. ★★★★★ | [HB-260426](library/posts/HB-260426-arxiv-agent-research-roundup.md) |
+| 2026-04-26 | **DiffMAS** (arXiv:2604.21794) | End-to-end learned multi-agent latent communication. KV-cache as learnable component. AIME24: 26.7%, GPQA-Diamond: 20.2%. COLM 2026. ★★★★★ | [HB-260426](library/posts/HB-260426-arxiv-agent-research-roundup.md) |
+| 2026-04-26 | **Scientific Workflow Agent** (arXiv:2604.21910) | 3-layer architecture isolates LLM non-determinism. Skills raise intent accuracy 44%→83%, data transfer -92%. Cost <$0.001/query. ★★★★★ | [HB-260426](library/posts/HB-260426-arxiv-agent-research-roundup.md) |
+| 2026-04-26 | **DeepSeek-V4** (HF Blog) | 1M context designed for agents. CSA+HCA compression → 2% KV cache vs GQA. Interleaved thinking across tool calls. SWE Verified 80.6. ★★★★★ | [HB-260426](library/posts/HB-260426-hf-agent-infrastructure-roundup.md) |
+| 2026-04-26 | **Save the Traces** (HF Blog) | "Conversation traces are the new file abstraction." Cross-device recovery, skill extraction, vendor lock-in avoidance. `uvx hf sync`. ★★★★★ | [HB-260426](library/posts/HB-260426-hf-agent-infrastructure-roundup.md) |
+| 2026-04-26 | **Hy3 Preview** (Tencent) | 295B/21B MoE with industry-lowest activation ratio. "Routing precision is the algorithmic moat." WorkBuddy Agent integration. ★★★★☆ | [HB-260426](library/posts/HB-260426-hf-agent-infrastructure-roundup.md) |
+
+**Key Takeaway**: Four converging themes: (1) **Protocol efficiency > context scaling** — Tool Attention's 95% MCP tax elimination validates our lazy loading approach; (2) **Skill retrieval > scratchpad reasoning** — ACL 2026 Industry Track confirms economic value of AGENTS.md pattern; (3) **Context compression > raw length** — DeepSeek-V4's CSA/HCA achieves 2% KV cache vs standard; (4) **Routing precision > scale** — Hy3's 21B active params compete with 37-40B through differentiated expert sizing. **For OpenClaw**: Add ISO-like intent scoring to Skill selection, instrument MCP overhead, evaluate DeepSeek-V4's XML tool schemas, consider trace→Skill extraction pipeline.
+
+---
+
+## Previous Session — Obscura Headless Browser
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
