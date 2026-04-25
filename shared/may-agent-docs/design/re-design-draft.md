@@ -201,7 +201,7 @@ Agents interact with the system **only through tools**. Tools are configured per
 | **Save progress** | `checkpoint` | L1 | Crash recovery mid-session |
 | **Coordinate** | `agents` | L2 | Fork (async), list, peek at other agents |
 | **Notify** | `notify` | L2 | One-way FYI to another agent |
-| **Observe system** | `system-status` | L3 | Read-only dashboard of sessions + health |
+| **Observe system** | `system-status` | L3 | Read-only dashboard of sessions, metrics, health |
 | **Manage schedule** | `cron` | L3 | Create/edit own cron entries |
 
 ### Agent Identity (Convention Files)
@@ -273,8 +273,9 @@ Agent A                    Event Bus                Handler              Agent B
 | Session management (L1) | ~7,200 | Core value — persistence, guards, compaction |
 | Event bus (L2) | ~150 | The coordination primitive |
 | Cron + handlers (L3) | ~1,900 | Autonomy — nothing runs without this |
-| Project automation (L4) | ~700 | Long-running goals |
-| Observability (L5) | ~2,950 | Humans need to see what's happening |
+| Metrics system (L4) | ~400 | Steering — tells agents what matters |
+| Project automation (L5) | ~700 | Long-running goals, execution arm of metrics |
+| Observability (L6) | ~2,950 | Humans need to see what's happening |
 
 ---
 
