@@ -498,7 +498,7 @@ function runScenario(scenarioName , agent , lab , adapter , timeoutMinutes , kee
     let transcriptPath;
 
     // Use scenario's agent_type if specified, otherwise fall back to CLI arg
-    const effectiveAgent = meta.agent_type || agent;
+    const effectiveAgent = agent || meta.agent_type || "amy";
 
     if (meta.workflow) {
       // Workflow: split task on --- delimiter, run phases sequentially
