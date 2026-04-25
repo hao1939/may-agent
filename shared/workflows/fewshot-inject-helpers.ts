@@ -40,7 +40,7 @@ interface ExamplePattern {
 }
 
 const EXAMPLE_PATTERNS: ExamplePattern[] = [
-  { match: /binary|\.bin|compiled|executable|hexdump/i, file: "binary-file-escalation" },
+  { match: /binary|\.bin(?![/\\])|compiled|executable|hexdump/i, file: "binary-file-escalation" },
   { match: /bug|error|failing|test.*fail|crash|500|exception/i, file: "reproduce-first-debugging" },
   { match: /upgrade|dependency|multiple.*(file|module)|impact|consumer|import.*shared/i, file: "escalation-judgment" },
   { match: /blocked|impossible|can'?t.*find|missing.*key|missing.*credential|no.*permission|binary.*file|all.*fail/i, file: "know-when-blocked" },
@@ -54,8 +54,11 @@ const EXAMPLE_PATTERNS: ExamplePattern[] = [
  * Returns file basenames (without .md extension), max 2.
  */
 export function selectExamples(taskContent: string): string[] {
+  // Strip verification command blocks before matching to avoid false positives
+  // (e.g., ./node_modules/.bin/tsc matching "binary" patterns)
+  const stripped = taskContent.replace(/## Verification[\s\S]*?```[\s\S]*?```/g, "");
   return EXAMPLE_PATTERNS
-    .filter((p) => p.match.test(taskContent))
+    .filter((p) => p.match.test(stripped))
     .map((p) => p.file)
     .slice(0, MAX_EXAMPLES);
 }
