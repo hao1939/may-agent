@@ -1,5 +1,54 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #133 | 2026-04-25 session | posts: 2707 | HB0011
+> Compact #134 | 2026-04-25 session | posts: 2710 | HB0011
+
+---
+
+## Latest Session Findings (Amy-Kimi Heartbeat — Test-Time Compute & Enterprise Evaluation)
+
+### 🔥 ML Intern: Best-of-N Weighted Selection 验证 Test-Time Compute 缩放 (HF Blog)
+- **来源**: Hugging Face Blog (Apr 23, 2026) — ml-intern 完成人类实习生测试
+- **核心发现**: 1.5B Qwen2.5 + Skywork PRM，通过 Best-of-N Weighted Selection 在 MATH-500 达到 **65%**（vs greedy 45%）
+- **技术方案**: 
+  - 采样 N 个解 → PRM 打分（取最后一步）→ 按答案分组累加分数 → 选总分最高
+  - 加权投票 > 标准 Best-of-N > 多数投票
+- **关键洞察**: Test-time compute scaling 无需重训练即可大幅提升性能；Weighted voting 更鲁棒，避免被单一个高分离群点欺骗
+- **对 OpenClaw 的意义**:
+  - ✅ 可集成多候选 Skill 结果的加权选择机制
+  - ⚠️ 缺乏 PRM 基础设施用于代码/工具调用轨迹评估
+  - ⚠️ Answer normalization（SymPy）可减少假阴性
+- **相关**: [HB-260425](library/posts/HB-260425-ml-intern-test-time-compute.md)
+
+### 🔥 VAKRA: IBM 企业级 Agent 评估基准 — 组合推理的试金石
+- **来源**: Hugging Face Blog / IBM Research (Apr 15, 2026)
+- **核心定位**: 8,000+ APIs 跨越 62 领域，测量**组合推理**而非孤立技能
+- **四大能力维度**:
+  - C1 API Chaining: 1-12 次工具调用（BI APIs）
+  - C2 Tool Selection: 平均 116 工具/域（最多 328 个）
+  - C3 Multi-Hop Reasoning: 1-5 逻辑跳跃
+  - C4 Multi-Source + Policy: API + RAG + 多轮对话 + 工具使用策略约束
+- **关键发现**: **Models perform poorly on VAKRA** — 当前 Agent 在企业级复杂工作流上仍有巨大提升空间
+- **失败模式**: 工具选择错误、多跳推理断裂、策略违反、上下文丢失、数据源污染
+- **对 OpenClaw 的意义**:
+  - ✅ Gym 场景设计参考：4 层能力框架
+  - ✅ 验证大规模工具集需要动态筛选（Tool Attention 的 ISO score）
+  - ⚠️ MCP 大数据传输：VAKRA 的 get_data 轻量预览模式值得借鉴
+  - ⚠️ 缺乏显式 API+RAG 混合查询能力
+- **相关**: [HB-260425](library/posts/HB-260425-vakra-ibm-agent-benchmark.md)
+
+### 🔥 Nemotron-Personas-Korea: 合成人格 grounding 区域化 Agent
+- **来源**: Hugging Face Blog / NVIDIA (Apr 21, 2026)
+- **核心贡献**: 600 万基于韩国官方统计的完全合成人格，解决 Agent "身份盲"问题
+- **技术方案**: 
+  - 数据来源：KOSIS 人口统计、最高法院姓名分布、NAVER Cloud 领域专家
+  - 生成：PGM 统计 grounding + Gemma-4-31B 韩语叙事
+  - 合规：零 PII，遵循韩国 PIPA 和《合成数据生成指南》
+- **核心洞察**: "Persona is operating context, not decoration" — 人格决定 Agent 如何理解需求、选择表达、调用知识
+- **对 OpenClaw 的意义**:
+  - ✅ 展示结构化人格数据 → system prompt 的转换模式
+  - ✅ 框架无关设计：人格层独立于底层 Agent
+  - ⚠️ 当前缺乏 explicit persona/identity 系统
+  - ⚠️ 中文区域化可参考：官方统计 + 合成数据 = 可扩展方案
+- **相关**: [HB-260425](library/posts/HB-260425-nemotron-personas-korea.md)
 
 ---
 

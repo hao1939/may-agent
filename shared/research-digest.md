@@ -7,6 +7,18 @@
 
 ---
 
+## Fresh Arrivals (Latest Session) — Test-Time Compute & Enterprise Agent Evaluation
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **ML Intern: Best-of-N Weighted Selection** (HF Blog) | Test-time compute scaling: 1.5B Qwen + PRM achieves 65% on MATH-500 (vs 45% greedy) via weighted voting. Weighted BoN > Standard BoN > Majority Vote. ★★★★★ | [HB-260425](library/posts/HB-260425-ml-intern-test-time-compute.md) |
+| 2026-04-25 | **VAKRA Benchmark** (IBM Research) | Enterprise agent evaluation with 8,000+ APIs across 62 domains. Compositional reasoning (3-7 steps), multi-hop, multi-source, policy adherence. Models perform poorly — failure modes analyzed. ★★★★★ | [HB-260425](library/posts/HB-260425-vakra-ibm-agent-benchmark.md) |
+| 2026-04-25 | **Nemotron-Personas-Korea** (NVIDIA) | 6M synthetic personas grounded in Korean official statistics. Framework-agnostic regionalization — "persona is operating context, not decoration". Zero PII, PIPA compliant. ★★★★☆ | [HB-260425](library/posts/HB-260425-nemotron-personas-korea.md) |
+
+**Key Takeaway**: Test-time compute scaling (Best-of-N + PRM) offers immediate performance gains without model retraining. VAKRA exposes enterprise agent gaps: tool selection at scale, multi-hop reasoning, policy adherence. Persona-based regionalization shows synthetic data + official statistics = scalable localization.
+
+---
+
 ## Fresh Arrivals (Apr 25, 2026) — Meta-Learning for Harness Engineering
 
 | Date | Title | Key Insight | Source |
