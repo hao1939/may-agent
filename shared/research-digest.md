@@ -7,7 +7,27 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — OpenClaw-Turbo: 生态信号
+## Fresh Arrivals (Current Session) — Agent Infrastructure Roundup: Test-Time Compute, Trace Assets, MoE Routing
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-08-01 | **ML Intern** (HF Blog) | Test-Time Compute验证: 3B参数(1.5B+1.5B PRM) → 65% MATH-500。Weighted Best-of-N > Standard BoN。饱和点N=8-16。 | [HB-260801](library/posts/HB-260801-agent-infrastructure-roundup.md) |
+| 2026-08-01 | **Save the Traces** (HF Blog) | "Conversation traces are the new file abstraction." Skill提取、跨设备恢复、vendor lock-in避免。 | [HB-260801](library/posts/HB-260801-agent-infrastructure-roundup.md) |
+| 2026-08-01 | **Hy3 Preview** (Tencent) | 295B/21B MoE，业界最低激活率(7.1%)。"Routing precision is the algorithmic moat." | [HB-260801](library/posts/HB-260801-agent-infrastructure-roundup.md) |
+| 2026-08-01 | **TinyFacade** (Cohere Labs) | 3.35B模型70+语言端侧Tool Calling。4-bit量化>fp16。Temperature=0不可妥协。 | [HB-260801](library/posts/HB-260801-agent-infrastructure-roundup.md) |
+
+**Key Takeaway**: 四个主题验证OpenClaw架构方向：(1) **Test-time compute > model scale** — 小模型+策略可超越大模型贪婪解码；(2) **Traces as assets** — 对话痕迹成为基础设施级文件抽象；(3) **Routing precision > scale** — Hy3证明21B激活参数可击败40B；(4) **On-device viability** — 小模型+好模板>大模型专门训练。
+
+**Critical Questions for OpenClaw**:
+- **Test-Time Compute**: 是否引入Weighted Best-of-N到Skill执行？N=8-16采样预算？
+- **Missing PRM**: 如何构建代码/工具调用轨迹的过程奖励模型？
+- **Trace Pipeline**: 对话→Skill的自动提取机制缺失
+- **路由精度度量**: 如何量化Skill选择准确性？
+- **量化策略**: Tool calling场景4-bit量化可能提升性能
+
+---
+
+## Previous Session — OpenClaw-Turbo: 生态信号
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|

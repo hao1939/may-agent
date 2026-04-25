@@ -1,5 +1,69 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #154 | Current session | posts: 2830 | HB2155
+> Compact #155 | Current session | posts: 2831 | HB260801
+
+---
+
+## 2026-08-01 Session Findings (Amy-Kimi Heartbeat — HF Blog Agent Infrastructure Roundup)
+
+### 🔥 ML Intern: Test-Time Compute Scaling验证 — 3B参数达65% MATH-500
+- **来源**: [Hugging Face Blog](https://huggingface.co/blog/cmpatino/ml-intern-takehome) (Apr 23, 2026)
+- **核心发现**: 仅**3B总参数** (1.5B Qwen + 1.5B Skywork PRM) 达到 **65% MATH-500** (vs 贪婪解码45%)
+- **方法**: Weighted Best-of-N — 按最终答案分组，累加PRM分数，选总分最高组
+- **性能对比**: Weighted (65%) > 多数投票(60%) > Standard Best-of-N(55%) > 贪婪(45%)
+- **饱和点**: N=8-16时性能饱和，继续增加收益递减
+- **关键洞察**: Weighted选择比Standard更鲁棒——同一正确答案在多解中出现时累加证据，避免被单个高分错误解欺骗
+- **对 OpenClaw 的意义**:
+  - ✅ **Skill结果加权聚合**: 多候选执行 → PRM打分 → 加权选择，比单选更可靠
+  - ✅ **采样预算**: N=8-16为性价比甜点，可作为默认配置
+  - ⚠️ **缺失PRM**: 缺乏用于代码/工具调用轨迹评估的过程奖励模型
+  - ⚠️ **答案标准化**: 需实现Skill结果的标准化比较机制(SymPy等)
+- **相关**: [HB-260801](library/posts/HB-260801-agent-infrastructure-roundup.md)
+
+### 🔥 Save the Traces: 对话痕迹作为新文件抽象
+- **来源**: [Hugging Face Blog](https://huggingface.co/blog/pcuenq/save-the-traces) (Apr 21, 2026)
+- **核心洞察**: "No matter how advanced your 'memory' solutions are, conversation traces are the new 'file' abstraction"
+- **备份方案**: `uvx hf sync` 到私有bucket，可设为crontab自动执行
+- **使用价值**: 避免vendor lock-in、跨设备恢复、对话总结、Skill提取、捐赠训练数据
+- **对 OpenClaw 的意义**:
+  - ✅ 验证追踪所有会话的设计方向
+  - ✅ Skill从重复任务提取 → 与Error Log学习一致
+  - ⚠️ 缺乏集中式trace备份机制
+- **相关**: [HB-260801](library/posts/HB-260801-agent-infrastructure-roundup.md)
+
+### 🔥 Hy3 Preview: 路由精度作为算法护城河
+- **来源**: [Hugging Face Blog](https://huggingface.co/blog/imnotkitty/hy3-preview) (Apr 23, 2026) — Tencent Hunyuan Official
+- **核心数据**: 295B总参数 / 21B激活参数 (~7.1%激活率), <3个月架构重构→发布
+- **关键创新**: 
+  - **差异化专家尺寸**: 不同难度token路由到不同容量专家
+  - **P-Penalty Loss**: 惩罚偏向大专家，鼓励激活小专家
+  - **Context Learning**: 深度搜索+工具调用+复杂推理
+- **关键洞察**: "别人用37B-40B激活参数做到的，我们用21B就能做到。**路由精度是核心算法护城河**"
+- **产品集成**: WorkBuddy Agent — 100页手册→10题HTML测验游戏，首次运行零bug
+- **对OpenClaw的意义**:
+  - ✅ **差异化路由验证**: 简单/复杂任务→不同Skill深度
+  - ✅ **架构创新>暴力**: 小激活比+高精度 > 大激活比
+  - ⚠️ **路由精度度量**: 如何量化Skill选择准确性？
+- **相关**: [HB-260801](library/posts/HB-260801-agent-infrastructure-roundup.md)
+
+### 🔥 TinyFacade: 端侧多语言Tool Calling突破
+- **来源**: [Hugging Face Blog](https://huggingface.co/blog/Bronsn/tiny-facade) (Apr 20, 2026) — Cohere Labs Expedition Tiny Aya
+- **核心发现**: **3.35B TinyAya-Earth**零工具调用训练，却击败Aya Expanse 8B（专门训练）
+  - Luganda: 85.9% vs 64.0% (+22pp)
+  - Swahili: 79.5% vs 62.6% (+17pp)  
+  - English: 88.7% vs 81.6% (+7pp)
+- **意外发现**: 4-bit量化 > fp16，性能提升5-9pp — 更小文件，更高准确率
+- **温度策略**: 每增加0.3损失5-10pp，**temperature=0对部署是不可妥协的**
+- **架构模式**: Android AIDL共享服务——2.14GB模型加载一次，多App复用
+- **对OpenClaw的意义**:
+  - ✅ **Skill模板质量 > 模型规模**: 指令遵循能力是关键
+  - ✅ **量化策略重评估**: Tool calling场景4-bit可能提升性能
+  - ✅ **共享服务模式**: 多应用Skill共享部署参考架构
+- **相关**: [HB-260801](library/posts/HB-260801-agent-infrastructure-roundup.md)
+
+### Session Summary
+XHS工具暂时不可用，转向HF Blog外部资源探索发现4个关键方向：(1) **Test-Time Compute验证** — 3B参数+加权投票可超越大模型贪婪解码；(2) **Trace资产化** — 对话痕迹成为新文件抽象；(3) **路由精度>规模** — Hy3的21B激活参数击败40B竞争对手；(4) **端侧Tool Calling** — 3.35B小模型+好模板>8B专门训练模型。
+
+**共同信号**: 协议效率、测试时计算、端侧部署、trace资产化 —— Agent基础设施正在快速成熟。
 
 ---
 
