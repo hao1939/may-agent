@@ -53,7 +53,6 @@ Even if you discover the environment isn't what you expected, even if tsc/vitest
 
 - ### Summary
 - ### Summary
-- ### Summary
 - ### Inbox / Events triage
 - **[P1] Waste detected: 5 identical “Quick Code Review” requests (x5 notifications)** → **DISMISS**
 - Avoidable git-root mistake: ran `git log` from `/app` (not a git repo) causing a failed command (code 128) and subsequent detour. Evidence: failure chain 1 root cause shows `fatal: not a git repositor (source: s_1777108084810_54, 2026-04-25)
@@ -64,7 +63,7 @@ Even if you discover the environment isn't what you expected, even if tsc/vitest
 - **Action: ESCALATE**
 - **Reason:** This is dispatcher/inbox de-duplication waste. It’s not (source: s_1777104485818_30, 2026-04-25)
 - ### Summary
-No new code changes in scope to review beyond an existing QA workspace note (`agents/qa/workspace/unreviewed-findings.md`, last committed as `d9d2a809c`). Heartbeat action: triaged duplica (source: s_1777113485422_88, 2026-04-25)
 - ### Summary
-No actionable product regressions surfaced in this heartbeat. The only concrete issue is that the inbox alert to “verify gym scenario EXP-220 (enoent-file-search)” cannot be satisfied beca (source: s_1777111684683_76, 2026-04-25)
 - Started with an unproductive git command in the wrong working directory: `git log --oneline -10` failed with 'not a git repository' (exit 128), then spent extra calls orienting to /app vs /app/agents. (source: s_1777109884717_64, 2026-04-25)
+- ### Summary
+Heartbeat review focused on recent unverified changes in the `/app/agents` repo (latest commit updates design/knowledge docs). I independently inspected a changed file and attempted the re (source: s_1777130826708_31, 2026-04-25)

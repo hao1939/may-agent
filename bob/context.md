@@ -78,12 +78,6 @@
 
 ## Learned from experience
 
-- Now let me commit and finish. The key actions this heartbeat:
-- H-EXP-014 just got more data: I closed H-EXP-013 (resolved, spawned insight about failed experiments having highest value) and H-EXP-018 (validated). Let me update its tracking. (source: s_1777086637083_815, 2026-04-25)
-- Now update journal and commit: (source: s_1777084836153_807, 2026-04-25)
-- The scout notifications are all P2 and informational — they've already been noted where relevant (DD#880 → H-EXP-018, others reference hypotheses). No action needed beyond acknowledging.
-- Now I have the full picture. Let me write the brief. (source: s_1777102205632_16, 2026-04-25)
-- Now update journal and commit: (source: s_1777101425026_8, 2026-04-25)
 - Good. Now let me dismiss inbox items and finish: (source: s_1777100490842_7, 2026-04-25)
 - Good, committed. Now let me quickly dismiss/acknowledge the inbox items and finish. (source: s_1777093710966_853, 2026-04-25)
 - Let me commit and finish up. (source: s_1777108625335_58, 2026-04-25)
@@ -93,3 +87,14 @@
 - Now update H-EXP-021 status: (source: s_1777114023961_91, 2026-04-25)
 - The workspace files are outside the git repo. Let me check: (source: s_1777112226012_79, 2026-04-25)
 - Now commit and process the P1 "Agreement Trap" notification: (source: s_1777110425687_69, 2026-04-25)
+- File is correct and complete — well-structured markdown with all sections, action items, and signature intact. No truncation or encoding issues. (source: s_1777130448154_27, 2026-04-25)
+- Workspace files are gitignored — no commit needed. (source: s_1777130348423_24, 2026-04-25)
+- All 6 files read and verified. Each contains well-structured hypothesis documentation with consistent formatting, proper status lines, evidence tables, predictions, and cross-references. No errors, co (source: s_1777129789699_17, 2026-04-25)
+- All changes verified. (source: s_1777129568812_10, 2026-04-25)
+- Now let me dismiss notifications and commit: (source: s_1777128425021_9, 2026-04-25)
+- DONE
+
+All 4 milestones are complete:
+
+- **Milestone completed: Audit evaluator scoring: collect scores across 10+ projects, identify rejection loop frequency**
+- **Milestone completed: Identify root c (source: s_1777127783003_6, 2026-04-25)

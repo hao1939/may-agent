@@ -55,6 +55,67 @@ function saveMinimalWorkflowRun(projectRoot: string, run: MinimalWorkflowRun): v
 }
 import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.js";
 import type { CronEntry, PreflightCheck } from "../../shared/agent-sdk.js";
+import {
+  enforceFinishDeliverables,
+  enforceVerificationEvidence,
+} from "../../shared/agent-sdk.js";
+import type { FinishCallParams } from "../../shared/agent-sdk.js";
+
+// ── Finish-guard validation (FM-3.1 + FM-3.3) ────────────────────────
+
+/**
+ * Extract finish() params from a completed session's messages.
+ */
+function extractFinishParams(messages: any[]): FinishCallParams | null {
+  let lastFinish: FinishCallParams | null = null;
+  for (const msg of messages) {
+    if (msg.role !== "assistant" || !Array.isArray(msg.content)) continue;
+    for (const block of msg.content) {
+      if (
+        (block.type === "toolCall" || block.type === "tool_use") &&
+        block.name === "finish"
+      ) {
+        const args = block.arguments ?? block.input ?? {};
+        lastFinish = {
+          status: args.status ?? "success",
+          deliverables: args.deliverables ?? null,
+          verification_evidence: args.verification_evidence ?? args.verificationEvidence ?? null,
+        };
+      }
+    }
+  }
+  return lastFinish;
+}
+
+/**
+ * Validate finish() deliverables and evidence from a completed session.
+ * Logs violations but does not throw — violations are warnings, not blockers.
+ */
+function validateFinishResult(
+  taskResult: { messages?: any[]; status?: string },
+  rootDir: string,
+  log: (msg: string) => void,
+): void {
+  const finishParams = extractFinishParams(taskResult.messages ?? []);
+  if (!finishParams) return;
+
+  try {
+    enforceFinishDeliverables(finishParams.deliverables, finishParams.status, rootDir);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    log(`[finish-guard] FM-3.1 VIOLATION: ${msg}`);
+  }
+
+  try {
+    const warnings = enforceVerificationEvidence(finishParams);
+    for (const w of warnings) {
+      log(`[finish-guard] FM-3.3 WARNING: ${w}`);
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    log(`[finish-guard] FM-3.3 VIOLATION: ${msg}`);
+  }
+}
 
 // ── Pre-flight state persistence ──────────────────────────────────────
 
@@ -293,6 +354,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     }
 
     ctx.log(`[run-agent-task:${entry.name}] ${agentName} completed: ${result.status}`);
+
+    // FM-3.1 + FM-3.3: Validate finish() deliverables and evidence
+    validateFinishResult(result, ctx.projectRoot, (msg) => ctx.log(msg));
   };
 };
 
@@ -346,9 +410,11 @@ export async function runAgentTask(
     throw new Error(`runAgentTask(${agent}) failed: ${errMsg}`);
   });
 
+  // FM-3.1 + FM-3.3: Validate finish() deliverables and evidence
+  validateFinishResult(result, ctx.projectRoot, (msg) => ctx.log(msg));
+
   return { sessionId, status: result.status };
 }
-
 // ── Exports for testing ───────────────────────────────────────────────
 
 export { runPreflightCheck, updatePreflightState, loadPreflightState, savePreflightState };
