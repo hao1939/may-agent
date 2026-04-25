@@ -11,7 +11,7 @@ Sent coaching notifications to:
 - [x] **scout**: C1.7 (no verification before finish), C1.3 (unverified writes)
 - [x] **bob**: C7.1 (wrong paths /home/), C1.1 (blind edits), C1.7
 - [x] **tech-lead**: C7.1 (wrong paths /Users/hao/c), C6.1 (over budget), C1.1
-- [ ] **qa**: C8.2 (no finish call), C1.4 — needs investigation of why qa isn't calling finish()
+- [x] **qa**: C8.2 (no finish call), C1.4 — sent coaching notification about 75% fail rate on finish() calls
 - [ ] Track whether notifications reduce violations in next 5 heartbeats
 
 ## Legacy Status (from April)
