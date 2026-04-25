@@ -1,6 +1,6 @@
 # Project: Skill & Workflow Audit
 
-**Status**: active
+**Status**: closed
 **Owner**: coach
 **Type**: milestone
 **Workflow**: master-worker
