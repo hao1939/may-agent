@@ -32,9 +32,19 @@ checkpoint({ summary: "What I accomplished so far", data: { key: "value" } })
 ⚠️ **NOT a shell command** — `bash("checkpoint ...")` will fail (exit code 127).
 ⚠️ **NOT an agent** — `agents.call("checkpoint", ...)` will fail (not registered).
 
+## `workflow`
+Run predefined workflows. Use `workflow.list()` to see available workflows.
+
+### `persistent-task` workflow
+For project work that spans multiple sessions. When you have an active project to resume:
+```
+workflow({ action: "run", name: "persistent-task", task: "Resume project: <project-file-path>" })
+```
+This workflow handles session continuity, checkpointing, and progress tracking automatically. **Use it whenever resuming or continuing project work** instead of working inline.
+
 ## `finish`
 Signal structured completion of a task. Call as the last action in a session.
 
 ## Key Constraints
-- ❌ No `handoff`, `workflow`, or `cron` tools.
+- ❌ No `handoff` or `cron` tools.
 - For artifact transfers: write the file first, then `agents.message(target, "task description. Artifact: path/to/file")`.
