@@ -97,6 +97,45 @@ function checkOffMilestones(content: string, reviewerText: string): string {
   return lines.join("\n");
 }
 
+/** Restore milestone checkbox state in project.md from a saved snapshot.
+ * This prevents workers from self-checking milestones by editing project.md. */
+function restoreMilestoneState(content: string, savedState: Map<string, boolean>): string {
+  const lines = content.split("\n");
+  let inMilestones = false;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^##\s*Milestones/i.test(lines[i])) { inMilestones = true; continue; }
+    if (inMilestones && /^##\s/.test(lines[i])) break;
+    if (!inMilestones) continue;
+    const m = lines[i].match(/^(\s*-\s*)\[([ x])\]\s*(.+)/i);
+    if (m) {
+      const key = m[3].trim().slice(0, 30).toLowerCase();
+      const wasDone = savedState.get(key);
+      if (wasDone !== undefined) {
+        lines[i] = lines[i].replace(/\[([ x])\]/i, wasDone ? "[x]" : "[ ]");
+      }
+    }
+  }
+  return lines.join("\n");
+}
+
+/** Capture current milestone checkbox state as a Map<key, isDone>. */
+function captureMilestoneState(content: string): Map<string, boolean> {
+  const state = new Map<string, boolean>();
+  const lines = content.split("\n");
+  let inMilestones = false;
+  for (const line of lines) {
+    if (/^##\s*Milestones/i.test(line)) { inMilestones = true; continue; }
+    if (inMilestones && /^##\s/.test(line)) break;
+    if (!inMilestones) continue;
+    const m = line.match(/^\s*-\s*\[([ x])\]\s*(.+)/i);
+    if (m) {
+      state.set(m[2].trim().slice(0, 30).toLowerCase(), m[1].toLowerCase() === "x");
+    }
+  }
+  return state;
+}
+
+
 function extractComments(content: string): string {
   return extractSection(content, "Comments");
 }
@@ -323,7 +362,18 @@ ${currentState}
         workerPrompt = `## Iteration ${iteration} Guidance\n${guidance}`;
       }
 
+      // Capture milestone state BEFORE worker runs (worker may edit project.md)
+      const preMilestoneState = captureMilestoneState(readFileSync(projectFile, "utf-8"));
+
       await worker.prompt(workerPrompt);
+
+      // Restore milestone state — worker is NOT allowed to check off milestones
+      const postWorkerContent = readFileSync(projectFile, "utf-8");
+      const restored = restoreMilestoneState(postWorkerContent, preMilestoneState);
+      if (restored !== postWorkerContent) {
+        writeFileSync(projectFile, restored, "utf-8");
+        ctx.log(`[guard] Restored milestone state — worker tried to check off milestones`);
+      }
       ctx.log(`[work] Iteration ${iteration} done`);
 
       // ── Journal ──

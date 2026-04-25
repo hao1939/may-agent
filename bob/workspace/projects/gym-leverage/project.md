@@ -1,15 +1,14 @@
 # Project: Gym Leverage
 
-**Status**: waiting
+**Status**: active
 
 **Owner**: bob
 **Type**: milestone
 **Workflow**: master-worker
 **Priority**: P1
-**Iteration**: 5
+**Iteration**: 0
 **Health**: —
 
-**Stop Reason**: All documentation and analysis milestones are complete (8/10). The remaining 2 milestones ("Run the core 20 suite and establish baseline scores per agent" and "measure improvement on convention-compli
 **Resume Condition**: `GYM_AGENT_BIN` is configured and available for live agent runs, OR the owner decides historical baselines from TRIAGE.md are sufficient to check off the remaining milestones.
 ## Goal
 Make the gym a practical tool for accelerating agent evolution. Explore the existing 431 scenarios, fix any issues with the runner, understand what the scenarios test, and design a feedback loop where gym results drive agent improvement.
@@ -17,20 +16,20 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 ## Milestones
 
 ### Phase 1: Explore & Fix
-- [x] Run the gym runner against 3 diverse scenarios, document what works and what breaks
-- [x] Fix any runner issues found (import paths, missing deps, adapter problems) — runner works in stub mode; live agent needs GYM_AGENT_BIN
-- [x] Document the gym architecture: runner → adapter → scenario → scorer pipeline
+- [ ] Run the gym runner against 3 diverse scenarios, document what works and what breaks
+- [ ] Fix any runner issues found (import paths, missing deps, adapter problems) — runner works in stub mode; live agent needs GYM_AGENT_BIN
+- [ ] Document the gym architecture: runner → adapter → scenario → scorer pipeline
 
 ### Phase 2: Scenario Review
-- [x] Categorize all 431 scenarios by type (bug-fixing, completeness, reasoning, workflow, etc.)
-- [x] Identify which scenario categories map to real agent failure modes we've seen
-- [x] Select a "core 20" benchmark suite that covers our most important capabilities — documented in .state/gym-analysis.md §4
-- [x] Run the core 20 suite and establish baseline scores per agent
+- [ ] Categorize all 431 scenarios by type (bug-fixing, completeness, reasoning, workflow, etc.)
+- [ ] Identify which scenario categories map to real agent failure modes we've seen
+- [ ] Select a "core 20" benchmark suite that covers our most important capabilities — documented in .state/gym-analysis.md §4
+- [ ] Run the core 20 suite and establish baseline scores per agent
 
 ### Phase 3: Gym-Driven Evolution
-- [x] Design a feedback loop: gym failure → skill gap identified → skill written → re-test
-- [x] Run one cycle: pick worst-performing category, write/improve skill, measure improvement — mock-leak-trap (13.2%) → wrote test-mock-awareness skill; retest pending live agent runs
-- [x] Document the gym-driven evolution process for other agents to follow
+- [ ] Design a feedback loop: gym failure → skill gap identified → skill written → re-test
+- [ ] Run one cycle: pick worst-performing category, write/improve skill, measure improvement — mock-leak-trap (13.2%) → wrote test-mock-awareness skill; retest pending live agent runs
+- [ ] Document the gym-driven evolution process for other agents to follow
 
 ## Metrics
 - gym.scenarios-runnable: % of scenarios that run without errors
