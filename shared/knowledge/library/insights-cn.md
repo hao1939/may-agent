@@ -1,9 +1,43 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #145 | Current session | posts: 2741 | HB0021
+> Compact #146 | Current session | posts: 2743 | HB0023
 
 ---
 
-## Latest Session Findings (Amy-Kimi Heartbeat — ML Intern Test-Time Compute)
+## Latest Session Findings (Amy-Kimi Heartbeat — On-Device Tool Calling & Physical AI Data)
+
+### 🔥 TinyFacade: 端侧多语言Tool Calling突破——3.35B模型70+语言85%+准确率 (HF Blog)
+- **来源**: Hugging Face Blog (Apr 20, 2026) — Cohere Labs Expedition Tiny Aya
+- **核心发现**: **3.35B TinyAya-Earth**零工具调用训练，却在Luganda达**85.9%**、Swahili **79.5%**、English **88.7%**
+- **关键突破**:
+  - 4-bit量化 > fp16: 性能提升**5-9个百分点**（意外发现）
+  - Temperature必须为0: 每增加0.3损失**5-10pp**，单调递减无恢复
+  - 书写系统（拉丁/CJK/天城文等）比地理区域更能预测调用准确率
+- **架构创新**: Android AIDL共享服务——2.14GB模型加载一次，多App复用，避免每个App捆绑2GB+
+- **对OpenClaw的意义**:
+  - ✅ Skill模板质量 > 模型规模：指令遵循能力比专门训练更重要
+  - ✅ 4-bit量化重评估： Tool calling场景量化可能提升而非损失性能
+  - ✅ "Facade模式"——共享推理服务可作为Skill系统架构参考
+  - ⚠️ i18n测试应按书写系统分层，而非仅按地理区域
+- **相关**: [HB-260811](library/posts/HB-260811-tiny-facade-multilingual-tool-calling.md)
+
+### 🔥 RL Dataset: 结构化人类动作与意图数据——物理AI的瓶颈突破 (HF Blog)
+- **来源**: Hugging Face Blog (Apr 21, 2026) — FL-Simulators
+- **核心定位**: VR叉车培训环境捕获**意图-动作-结果**完整轨迹，解决"知道做什么，但不知道为什么"
+- **数据规模**: 500+模拟器，17国家，每周数千新会话，~500MB/会话
+- **关键创新**:
+  - 11字段通用头部实现**确定性时序对齐**（`fixed_step_index`作为canonical join key）
+  - `forklift_actuators`流桥接操作员意图（joystick输入[-1,1]）与机械执行结果
+  - xAPI语义标注：显式意图、任务上下文、奖励信号
+- **对OpenClaw的意义**:
+  - ✅ 当前trace记录"做了什么"，应扩展记录"为什么"（决策上下文）
+  - ✅ 多Agent会话需要canonical join key实现跨流时序对齐
+  - ✅ VR-based训练数据可作为Gym复杂场景的人类演示来源
+  - ⚠️ AGENTS.md反思可作为"意图标注"层，类似xAPI
+- **相关**: [HB-260812](library/posts/HB-260812-rl-human-action-intent-dataset.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — ML Intern Test-Time Compute)
 
 ### 🔥 ML Intern: AI Agent完成后训练实习测试验证Test-Time Compute Scaling (HF Blog)
 - **来源**: Hugging Face Blog (Apr 23, 2026) — smolagents/ml-intern

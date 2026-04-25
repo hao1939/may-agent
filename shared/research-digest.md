@@ -7,7 +7,18 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — ML Intern Test-Time Compute Validation
+## Fresh Arrivals (Current Session) — On-Device Tool Calling & Physical AI Data
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-20 | **TinyFacade** (HF Blog) | 3.35B model, 70+ languages, 85%+ tool calling accuracy on-device. 4-bit > fp16 surprise. Temperature 0 mandatory. Android AIDL shared service pattern. | [HB-260811](library/posts/HB-260811-tiny-facade-multilingual-tool-calling.md) |
+| 2026-04-21 | **RL Human Action Dataset** (HF Blog) | VR forklift training captures intent-action-outcome trajectories. 500+ simulators, 17 countries. "Why" not just "what". xAPI semantic annotation. | [HB-260812](library/posts/HB-260812-rl-human-action-intent-dataset.md) |
+
+**Key Takeaway**: Two infrastructure-level findings: (1) **TinyFacade** — small models + good instruction following > large specialist models for tool calling; 4-bit quantization can improve accuracy; shared service architecture enables mobile deployment. (2) **RL Dataset** — physical AI bottleneck is intent data, not compute; deterministic temporal alignment (`fixed_step_index` as join key) enables multi-stream analysis; xAPI-style semantic annotation bridges action and reasoning. **For OpenClaw**: Consider "Facade" shared service pattern for Skill inference; add intent/decision context to traces; use canonical join keys for multi-agent session alignment.
+
+---
+
+## Previous Session — ML Intern Test-Time Compute Validation
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
