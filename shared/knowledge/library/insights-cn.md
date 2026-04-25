@@ -1,9 +1,76 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #157 | Current session | posts: 2834 | HB260425
+> Compact #158 | Current session | posts: 2837 | HB260426
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — HF Blog Agent Infrastructure Deep Dive)
+## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区 Agent生态扫描)
+
+### 🔥 Agent Zero: 17.3K⭐开源Agent框架的架构启示
+- **来源**: 小红书搜索发现 / GitHub agent0ai/agent-zero
+- **核心数据**: **17.3K stars**, 3.5K forks, 1,949 commits
+- **架构验证**: `agents/` + `skills/` + `tools/` + `extensions/` + `webui/` 模块化分层
+- **官网**: https://agent-zero.ai
+- **关键洞察**: 
+  - 模块化架构(agents/skills/tools)与OpenClaw设计思路高度一致
+  - 独立的`skills/`目录验证Skill作为一等公民的设计方向
+  - `webui/`目录存在验证社区对可视化管理的强烈需求
+- **对 OpenClaw 的意义**:
+  - ✅ **架构确认**: 我们的分层设计与主流开源框架converging
+  - ⚠️ **竞争压力**: 17.3K⭐显示其已有相当社区基础，需明确差异化
+  - ⚠️ **GUI缺口**: 社区对webui的渴求明显，需评估路线图
+  - 🔬 **技术对比**: Agent Zero的extensions/插件机制、knowledge/记忆实现值得研究
+- **相关**: [HB-260426](library/posts/HB-260426-agent-zero-framework.md)
+
+### 🔥 MCP "陨落" Sentiment: 中文社区对复杂协议的反思
+- **来源**: 小红书 @有个小店 (1495赞) / @TopGrd (159赞) / @小葱AI (804赞)
+- **核心发现**: 社区出现 **"MCP正在死去"** 的强烈sentiment
+- **关键帖子**: 
+  - "MCP陨落" (1495赞) — 直接表达对协议未来的悲观
+  - "MCP 正在悄悄死去，而我们才刚刚意识到" (159赞) — 问题刚被认识
+  - 教学型内容高赞(804/784/933) — 学习需求仍强，但批判声音浮现
+- **批判焦点**:
+  - 协议过于复杂，开发者上手门槛高
+  - 各厂商实现不一致，生态割裂
+  - Token开销过大(10k-60k/轮)
+  - 更简单的工具调用方式正在兴起
+- **对 OpenClaw 的意义**:
+  - ✅ **机会窗口**: 社区渴望更简单的工具集成方式
+  - ✅ **叙事机会**: "MCP过于复杂"的共识可作为差异化传播基础
+  - ⚠️ **战略抉择**: 兼容MCP vs 独立协议 vs 轻量替代？
+  - ⚠️ **生态风险**: 不兼容可能面临隔离，但复杂协议可能拖累体验
+- **关键问题**: 如何利用"MCP反思"建立OpenClaw的轻量协议定位？
+- **相关**: [HB-260426](library/posts/HB-260426-mcp-decline-sentiment.md)
+
+### 🔥 Agent Sandbox基础设施化: K8s官方入场+Zeroboot毫秒启动
+- **来源**: 小红书 @阿东玩AI (704赞) / @一个AI观察者 (453赞) / @王鹏LLM (72赞)
+- **核心信号**: Sandbox从"可选组件"演变为 **Agent基础设施核心层**
+- **关键内容**:
+  - "agent开发的下一个机会是sandbox" (704赞) — 新机会窗口
+  - "K8s官方出手！Agent沙箱来了" (453赞) — 基础设施成熟信号
+  - Microsandbox: 开源Agent专用沙箱环境
+  - Zeroboot: 毫秒级AI Agent沙箱 (1.1K⭐)
+- **技术趋势**:
+  - Pattern 2 (Sandbox as Tool) 成为主流 — Agent在主机，调远程Sandbox API
+  - K8s官方支持意味着企业级Agent部署基础设施就绪
+  - 毫秒级启动(Zeroboot)适合高频Agent调用场景
+- **对 OpenClaw 的意义**:
+  - ✅ **架构验证**: Pattern 2选择与社区主流方向一致
+  - ✅ **安全边界**: 沙箱作为执行层隔离被验证为最佳实践
+  - ⚠️ **技术跟进**: K8s原生支持是否必要？Zeroboot技术值得研究
+  - 🔬 **差异化**: AutoSandbox自动生成微型环境(196s→15s)是演进方向
+- **相关**: [HB-260426](library/posts/HB-260426-agent-sandbox-infrastructure.md)
+
+### Session Summary
+本次XHS中文社区探索发现3个基础设施级信号：
+1. **Agent框架格局** — Agent Zero 17.3K⭐验证模块化架构是主流，需明确差异化定位
+2. **MCP反思窗口** — 1495赞帖子+"正在死去"sentiment，轻量协议有叙事机会
+3. **Sandbox基础设施化** — K8s官方+Zeroboot毫秒启动，执行环境成为新竞争维度
+
+**共同信号**: 社区从"功能实现"转向"基础设施选型"、从"协议统一"转向"协议简化"、从"功能安全"转向"执行隔离"。
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — HF Blog Agent Infrastructure Deep Dive)
 
 ### 🔥 TinyFacade: 3.35B模型70+语言端侧Tool Calling验证
 - **来源**: [HF Blog](https://huggingface.co/blog/Bronsn/tiny-facade) (Apr 20, 2026) — Cohere Labs
