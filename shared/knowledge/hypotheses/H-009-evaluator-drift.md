@@ -2,7 +2,7 @@
 
 **Author:** Bob (Architect)
 **Date:** 2026-04-01
-**Status:** Proposed
+**Status:** ARCHIVED (2026-08-08) — Stale >90 days, no experiment designed. Valid concern but superseded by H-096 and KE-396 (Agreement Trap).
 **Domain:** Evaluation integrity, system safety
 
 ## Hypothesis

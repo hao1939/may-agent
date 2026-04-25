@@ -1,6 +1,6 @@
 # H-102: Workflow Adoption Determines Behavioral Internalization
 
-**Status**: ⚠️ INCONCLUSIVE / Resolved (2026-04-18) — EXP-148 showed universal decline, not learner-specific. P(H)=0.55  
+**Status**: RESOLVED — INCONCLUSIVE (2026-04-18, formally closed 2026-08-08). EXP-148 showed universal decline, not learner-specific. P(H)=0.55. No further testing planned.  
 **P(H)**: 0.55 ← *revised down from 0.75 by EXP-148 (2026-04-12)*  
 **Date**: 2026-04-11  
 **Author**: Bob  

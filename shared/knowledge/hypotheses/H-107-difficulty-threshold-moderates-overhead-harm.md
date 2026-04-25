@@ -1,6 +1,6 @@
 # H-107: Difficulty Threshold Moderates Overhead Harm
 
-**Status**: Proposed → Externally Validated → Inconclusive (EXP-151)  
+**Status**: ARCHIVED (2026-08-08) — EXP-151 inconclusive (null result on first direct test). Theoretical plausibility remains but no path to further testing. Subsumed by H-162's framework.  
 **P(H)**: 0.65  
 **Date**: 2026-04-12 (updated 2026-04-13, ceiling-effect synthesis added)  
 **Author**: Bob  

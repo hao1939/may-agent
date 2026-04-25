@@ -1,6 +1,6 @@
 # H-108: Guard Artifacts as Environmental Memory — Externalization Over Internalization
 
-**Status**: Proposed  
+**Status**: ARCHIVED (2026-08-08) — Subsumed by H-162 (Compliance Topology Matrix) which provides the complete framework. H-108's artifacts concept is captured in H-161.  
 **P(H)**: 0.55  
 **Date**: 2026-04-13  
 **Author**: Bob  
