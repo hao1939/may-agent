@@ -1,46 +1,58 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777133867016_65
+- **Session:** s_1777134765945_73
 - **Status:** done
-- **When:** 2026-04-25T16:17:55.259Z
-- **Duration:** 8s
+- **When:** 2026-04-25T16:32:55.423Z
+- **Duration:** 9s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "optimizer": {
+    "qa": {
       "role": "Builder",
       "capability_level": "L2",
-      "efficiency": 0.3,
-      "quality": 0.4,
-      "verdict": "needs_improvement",
+      "efficiency": 0.45,
+      "quality": 0.7,
+      "verdict": "acceptable",
       "issues": [
-        "Significant path guessing and environment mismatch: attempted `cd /var/lib/toybox` (nonexistent) then ran forbidden `/home/` path listing; guard flagged PATH_HALLUCINATION.",
-        "Relied on missing sqlite3 CLI multiple times despite explicit hint that sqlite3 is unavailable; did not promptly switch to the recommended `bun:sqlite` approach.",
-        "Bun sqlite attempts were malformed/truncated (unterminated strings / incomplete queries), producing unresolved failure chains and no completed DB audit query output.",
-        "Claimed 'requests table is empty' without strong supporting evidence: the shown bun queries were against `.state/main.db` and `.state/sessions.db` (both returned [] tables), not clearly `.state/requests.db` with a `SELECT COUNT(*) FROM requests` result. The only solid evidence is `agents.requests(active)=0`, which is narrower than 'requests table empty'.",
-        "Inbox 'dismissal' was asserted but not evidenced via a tool output showing event dispositions (may be a limitation of available tools, but still an unverified claim).",
-        "[FM-3.3] Verification gap: key conclusion (duplicate cleanup complete / DB empty) not verified with a successful, explicit SQL query against the correct DB/table."
+        "[FM-1.3] Initial workspace/root confusion led to a non-git-dir error path (git log in wrong directory) and extra discovery steps.",
+        "Ran a search command that relied on `rg` even though it is not installed; did pivot afterward, but the attempt was wasted.",
+        "Verification gap: did not actually execute EXP-220 success criteria (`node lib/test-grades.js`)—only verified scenario files/intent via reading findings doc.",
+        "Some claims rely on a workspace note (`unreviewed-findings.md`) rather than direct transcript evidence (e.g., scenario file existence via find output is asserted, but the actual find output isn’t shown in the transcript excerpt)."
       ],
       "metrics": {
-        "code_correctness": "n/a",
-        "deliverable_integrity": "medium_low",
-        "tool_use_efficiency": "low",
-        "verification": "low"
+        "code_correctness": "n/a (no code changes made)",
+        "verification_rigor": "medium (tsc run succeeded; vitest missing; scenario validated by inspection but not executed)",
+        "process_compliance": "mixed (handled inbox; wrote findings; but tooling assumptions and directory mistakes added waste)"
       }
     }
   },
   "workflow": {
-    "name": "optimizer-heartbeat",
+    "name": "qa-heartbeat",
     "issues": [
-      "Multiple avoidable failure chains before reaching a minimal conclusion; did not follow tool error hints efficiently."
+      "Environment/tooling mismatch: `vitest --run` is presented as a mandatory QA check, but the /app/agents package.json does not include vitest and node_modules/.bin lacks it (bash shows 'No such file or directory').",
+      "Docs/guidance appear to assume ripgrep (`rg`) availability; runtime does not include it (bash shows 'rg: command not found')."
     ]
   },
   "overall": {
-    "verdict": "needs_improvement",
+    "verdict": "acceptable",
     "result_delivered": true
-  }
+  },
+  "lessons": [
+    {
+      "category": "pattern",
+      "content": "[qa] Start repo checks from the known git root (`/app/agents`) before running `git log` to avoid code-128 dead ends."
+    },
+    {
+      "category": "fix",
+      "content": "[qa] When verifying a gym scenario, prefer executing the scenario’s success criteria (or the referenced command like `node lib/test-grades.js`) instead of only inspecting files/notes."
+    },
+    {
+      "category": "fix",
+      "content": "[qa] Don’t assume `rg` or `vitest` exists; detect via `command -v rg` / `ls node_modules/.bin` and fall back to `grep -R` or document missing deps."
+    }
+  ]
 }
 ```
