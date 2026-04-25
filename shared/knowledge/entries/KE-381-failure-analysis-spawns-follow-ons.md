@@ -1,8 +1,8 @@
 # KE-381: Mandatory failure analysis on rejected experiments generates valuable follow-on hypotheses
 
-**Evidence-Grade:** B — Retrospective + prospective tracking (H-EXP-014)
-**Status**: active (Phase 2 tracking: 1/5 closures produced follow-on)
-**Evidence**: H-EXP-014 Phase 1 found 3 past experiment failures that could have spawned useful follow-ons but didn't. The failure analysis of H-EXP-011 → spawned H-EXP-012 (validated, 58-93% improvement) proves the pattern.
+**Evidence-Grade:** A — Prospective tracking complete (H-EXP-014 RESOLVED)
+**Status**: active — validated. 4/4 experiment closures produced proper follow-on analysis (100%, far exceeding 40% target)
+**Evidence**: H-EXP-014 tracked 4 closures: EXP-215→H-EXP-015, H-EXP-013→counterfactual insight, H-EXP-018→knowledge graveyard finding, EXP-220→anti-fabrication deployed. All had meaningful follow-ons.
 **Discovered**: 2026-07-29
 **Promoted-from**: H-EXP-014 (episodic → declarative, per H-EXP-018 audit)
 
