@@ -1,5 +1,50 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #151 | Current session | posts: 2762 | HB0046
+> Compact #152 | Current session | posts: 2763 | HB0047
+
+---
+
+## 2025-05-23 Session Findings (Amy-Kimi Heartbeat — Agent 生态 roundup)
+
+### 🔥 Anthropic: 简单模式胜过复杂框架
+- **来源**: https://www.anthropic.com/engineering/building-effective-agents
+- **核心发现**: Anthropic 与数十个跨行业团队合作后发现，**最成功的 Agent 实现使用简单、可组合的模式，而非复杂框架**
+- **Workflows vs Agents**:
+  - Workflows: 预定义代码路径编排，适合任务明确、需可预测性的场景
+  - Agents: LLM 动态指导自己的过程和工具使用，适合需灵活性和模型驱动决策的场景
+- **关键建议**:
+  1. 从最简单方案开始，仅在需要时增加复杂度
+  2. 先直接用 LLM API，许多模式只需几行代码
+  3. 如用框架，确保理解底层代码（对底层机制的错误假设是常见错误来源）
+- **MCP 推荐**: Anthropic 明确推荐通过 **Model Context Protocol (MCP)** 集成第三方工具生态
+- **对 OpenClaw 的意义**:
+  - ✅ **验证方向**: 我们的简单可组合架构是正确的
+  - ⚠️ **MCP 战略**: MCP 正在成为工具集成的标准协议，需评估兼容性策略
+
+### 🔥 MCP 标准化加速 — AutoGen/Anthropic/CrewAI 全面拥抱
+- **关键信号**:
+  - **AutoGen**: 微软 AutoGen 现已内置 `McpWorkbench` 支持 MCP 服务器
+  - **Anthropic**: 官方指南明确推荐 MCP 作为工具集成方式
+  - **CrewAI**: 企业级多 Agent 平台，月 4.5亿+ 工作流，60% 财富 500 强使用
+- **市场规模**: CrewAI 数据显示企业级 Agent 市场已进入规模化阶段
+- **对 OpenClaw 的意义**:
+  - ⚠️ **战略议题**: 我们的协议与 MCP 的关系需明确（兼容/扩展/差异化）
+  - ⚠️ **生态整合**: MCP 正成为事实标准，不兼容可能面临生态隔离风险
+
+### 🔥 Agent 框架格局 — elizaOS/LangGraph/CrewAI 三足鼎立
+| 框架 | 定位 | 规模/特征 |
+|------|------|----------|
+| **elizaOS** | 开源社区 | 18.2k stars, ai16z 背景, crypto/AI 交叉 |
+| **LangGraph** | 开发者 | 图模型状态机, LangChain 生态 |
+| **CrewAI** | 企业 | 4.5亿工作流/月, 可视化编辑器, 企业级功能 |
+
+- **关键趋势**: 多 Agent 工作流正在标准化，图模型（节点=Agent，边=连接）成为主流抽象
+- **对 OpenClaw 的意义**:
+  - ⚠️ **竞争分析**: 需明确我们的差异化定位
+  - ⚠️ **功能缺口**: 对比 CrewAI，我们在训练、guardrails、可观测性方面有 gaps
+  - ✅ **架构参考**: LangGraph 的图模型与我们的设计思路一致
+
+### Session Summary
+XHS 工具 CAPTCHA 限制，转向外部资源 scrape。关键发现：(1) **Anthropic 验证简单模式 > 复杂框架**，与我们的方向一致；(2) **MCP 正成为事实标准**，AutoGen/Anthropic/CrewAI 全面拥抱，我们的协议策略需明确；(3) **Agent 框架三足鼎立** — elizaOS(社区)、LangGraph(开发者)、CrewAI(企业)，需明确差异化定位；(4) **CrewAI 规模数据** (4.5亿工作流/月) 证明企业级 Agent 市场已成熟。
 
 ---
 
