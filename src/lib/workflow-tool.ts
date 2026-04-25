@@ -16,6 +16,8 @@ import type {
   WorkflowGuard,
   WorkflowGuardEvent,
   Demand,
+  SessionOptions,
+  SessionHandle,
 } from "./workflow.js";
 import { WorkflowInterrupted, WorkflowBlocked } from "./workflow.js";
 import type { WorkflowRun, WorkflowStep } from "./persistence.js";
@@ -334,6 +336,75 @@ export interface WorkflowTool extends AgentTool {
   steer(message: string): boolean;
   readonly isRunning: boolean;
   readonly activeWorkflow: string | null;
+}
+
+// ── runWorkflowDirect — for system-level callers (handlers) ───────────
+
+export interface RunWorkflowDirectOpts {
+  workflowName: string;
+  task: string;
+  manager: SubagentManager;
+  runtimeCtx: RuntimeCtx;
+  agentName: string;
+  persistDir: string;
+  workflowDir?: string;
+  sharedWorkflowDir?: string;
+  guardsDir?: string;
+  sharedGuardsDir?: string;
+  parentSessionId?: string;
+  onEvent?: (event: WorkflowEvent) => void;
+}
+
+/**
+ * Run a workflow directly (no tool wrapper).
+ * Used by system-level callers like the project handler.
+ * Gets the same guards, step tracking, persistence, and createSession
+ * as agent-invoked workflows.
+ */
+export async function runWorkflowDirect(
+  opts: RunWorkflowDirectOpts,
+): Promise<{ result: WorkflowResult; runId: string; steps: CompletedStep[] }> {
+  // Create a workflow tool internally and run the workflow through it
+  const tool = createWorkflowTool({
+    manager: opts.manager,
+    workflowDir: opts.workflowDir ?? "",
+    sharedWorkflowDir: opts.sharedWorkflowDir,
+    guardsDir: opts.guardsDir,
+    sharedGuardsDir: opts.sharedGuardsDir,
+    persistDir: opts.persistDir,
+    agentName: opts.agentName,
+    parentSessionId: opts.parentSessionId,
+    onEvent: opts.onEvent,
+    runtimeCtx: opts.runtimeCtx,
+  });
+
+  // Use the tool's execute to run the workflow — parse the JSON result
+  const toolResult = await tool.execute("direct", {
+    action: "run",
+    name: opts.workflowName,
+    task: opts.task,
+  });
+
+  // Parse the result from the tool's text output
+  const text = typeof toolResult === "string"
+    ? toolResult
+    : (toolResult as any)?.content?.[0]?.text ?? JSON.stringify(toolResult);
+  const parsed = JSON.parse(text) as WorkflowToolResult;
+
+  if (parsed.type === "done") {
+    return { result: { type: "done", summary: parsed.summary }, runId: parsed.workflowRunId, steps: [] };
+  }
+  if (parsed.type === "escalated") {
+    return { result: { type: "escalate", reason: parsed.reason }, runId: parsed.workflowRunId, steps: [] };
+  }
+  if (parsed.type === "error") {
+    throw new Error(`Workflow "${opts.workflowName}" error: ${parsed.error}`);
+  }
+  if (parsed.type === "blocked") {
+    throw new WorkflowBlocked(parsed.reason, parsed.completedSteps ?? [], parsed.workflowRunId);
+  }
+  // interrupted or unknown
+  return { result: { type: "escalate", reason: `Workflow result: ${parsed.type}` }, runId: (parsed as any).workflowRunId ?? "unknown", steps: [] };
 }
 
 // ── createWorkflowTool ─────────────────────────────────────────────────
@@ -690,6 +761,78 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           }});
         } catch { /* best-effort */ }
         return { type: "escalate" as const, reason, context };
+      },
+
+      createSession: async (sessionOpts: SessionOptions): Promise<SessionHandle> => {
+        const history: Array<{ role: string; text: string }> = [];
+        let lastResponse = "";
+        const label = sessionOpts.label || "session";
+        const agentName = ctx.agent;
+
+        return {
+          async prompt(message: string) {
+            // Build accumulated prompt with history
+            let fullPrompt = sessionOpts.systemPrompt + "\n\n";
+            for (const h of history) {
+              fullPrompt += `[${h.role}]: ${h.text}\n\n`;
+            }
+            fullPrompt += message;
+            history.push({ role: "user", text: message });
+
+            const stepName = `session:${label}`;
+            onEvent?.({ type: "step_start", step: stepName });
+
+            const taskResult = await manager.callAgent(agentName, fullPrompt, {
+              parentSessionId,
+              workflowRunId: runId,
+              stepLabel: stepName,
+              source: `workflow:${label}`,
+            });
+
+            lastResponse = taskResult.lastAssistantText || "";
+            history.push({ role: "assistant", text: lastResponse.slice(0, 2000) });
+
+            // Track as a workflow step
+            const step: CompletedStep = { step: stepName, sessionId: taskResult.sessionId, result: taskResult };
+            localSteps.push(step);
+            completedSteps.push(step);
+            pruneCompletedSteps(completedSteps);
+
+            // Persist step
+            const wfStep: WorkflowStep = {
+              sessionId: taskResult.sessionId,
+              agent: agentName,
+              task: message.slice(0, 200),
+              status: taskResult.status,
+              startedAt: taskResult.messages[0]?.timestamp ?? Date.now(),
+              endedAt: Date.now(),
+              lastAssistantText: taskResult.lastAssistantText,
+            };
+            run.steps.push(wfStep);
+            if (persistDir) saveWorkflowRun(persistDir, run);
+
+            onEvent?.({ type: "step_done", step: stepName, sessionId: taskResult.sessionId, result: taskResult });
+
+            // Fire guards
+            if (guards.length > 0) {
+              const guardEvent: WorkflowGuardEvent = {
+                type: "step_done",
+                source: "agent",
+                step: stepName,
+                result: taskResult,
+                completedSteps,
+                task: message,
+              };
+              const demands = emitAndCollectDemands(guards, guardEvent);
+              if (demands.length > 0) {
+                await resolveDemands(demands, runId, completedSteps, steeringQueue, injectedStepCount, maxInjected,
+                  manager, parentSessionId, onEvent, run, persistDir ?? undefined, guardWarnings);
+              }
+            }
+          },
+          lastText() { return lastResponse; },
+          close() { /* no-op — each prompt() is an independent session */ },
+        };
       },
     };
 
