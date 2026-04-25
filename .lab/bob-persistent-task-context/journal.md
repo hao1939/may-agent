@@ -648,3 +648,34 @@ H-054 P(H) updated to 0.65 (from 0.50). Phase 2 (inter-rater reliability measure
 - Ship KE Integration Gate proposal to tech-lead
 - Ship read-cache proposal to tech-lead  
 - Find next hypothesis to resolve (target: push hypotheses-resolved above 0.65)
+
+## Session: 2026-08-02 (Heartbeat #4 — Two Hypotheses Resolved)
+
+**Context**: All metrics green. hypotheses-resolved at 0.6364 (target 0.65).
+
+### Actions
+
+1. **H-190 RESOLVED (partially-falsified)** — Phase 1 confirmed 17.7% duplicate reads system-wide (79% for amy-kimi). But the specific claim (prompt pre-check reduces tool overuse ≥30%) is falsified-by-framework: per KE-002/Ch1/Ch2, text-level prompts don't fix this class of problem. Structural fix (session-level read cache) recommended instead.
+
+2. **H-196 RESOLVED (falsified)** — EXP-223 data showed only 15% defensible failures, far below the 30-50% prediction. Our tasks have less ambiguity than the paper's evaluation contexts. Cost-benefit doesn't justify adding a defensibility-checking pass.
+
+3. **Inbox triage (all dismissed)**:
+   - StructMem / H-077 (P2, 33h): Already integrated. Dismiss.
+   - DD#875 StructMem / H-077 (P2, 33h): Same. Dismiss.
+   - EXP-216 superseded (P2, 32h): Already noted. Dismiss.
+   - DD#877 SWARM (P2, 32h): No action. Dismiss.
+   - DD#880 Experience Compression (P1, 23h): Already acted on. Dismiss.
+   - DD#882 GAAMA / H-195 (P2, 22h): Informational. Dismiss.
+   - COSPLAY / H-EXP-018 (P2, 21h): Already noted. Dismiss.
+   - Soft-label governance / H-EXP-017 (P2, 19h): Already noted. Dismiss.
+   - Structured context files paper (P2, 18h): Validates our approach. Dismiss.
+   - WASTE notification (P1, 18h): Acknowledged — efficient when running. Dismiss.
+   - PRODUCTIVITY CHECK (P1, 17h): Same. Dismiss.
+   - "Escaping the Agreement Trap" (P1, 13h): Relevant to H-196, now resolved. Dismiss.
+   - Meta-evolution paper (P2, 12h): Informational. Dismiss.
+   - DD#863 Cooperative Profiles (P2, 11h): H-192 already resolved. Dismiss.
+   - project.waiting events: All waiting on human review. No action.
+
+### What's next
+- Push hypotheses-resolved metric above 0.65 — look for more quick resolutions
+- Ship KE Integration Gate and read-cache proposals to tech-lead (still pending from last sessions)
