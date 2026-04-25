@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777144149236_185
+- **Session:** s_1777145540899_199
 - **Status:** done
-- **When:** 2026-04-25T19:10:47.242Z
-- **Duration:** 1m38s
+- **When:** 2026-04-25T19:36:38.909Z
+- **Duration:** 4m18s
 
 ## What Happened
-This is from another agent's work. I'll just commit it as-is.
+Also update the effectiveness tracking to note `skill-lifecycle` is deleted:
