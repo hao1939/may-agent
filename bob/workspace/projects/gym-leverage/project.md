@@ -43,7 +43,7 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 - Master-worker script: scripts/master-worker-test.ts
 
 ## Current State
-done: All 10 milestones complete
+Phase 1 & 2 analysis complete (architecture documented, scenarios categorized, core 20 selected). Phase 3 feedback loop designed but needs live agent runs to validate. Waiting on GYM_AGENT_BIN for real runs.
 
 ## Process Notes
 features: active-reviewer
