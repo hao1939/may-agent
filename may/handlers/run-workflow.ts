@@ -227,28 +227,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       // RuntimeCtx from HandlerContext
       emit: (event: any) => {
         ctx.emit(event);
-
-        // FM-3.4: Run workflow guards on step_done events
-        if (event?.type === "step_done") {
-          // Fire-and-forget guard execution (guards are sync, but wrapped for safety)
-          try {
-            // runGuards is async but guards are sync — we call it and handle inline
-            void runGuards(event as any, (msg) => ctx.log(msg)).then((demands) => {
-              for (const d of demands) {
-                if (d.type === "block") {
-                  ctx.log(`[run-workflow:${entry.name}] GUARD BLOCK: ${d.reason}`);
-                } else if (d.type === "warn") {
-                  ctx.log(`[run-workflow:${entry.name}] GUARD WARN: ${d.reason}`);
-                } else if (d.type === "run_step") {
-                  ctx.log(`[run-workflow:${entry.name}] GUARD INJECT STEP: ${d.reason}`);
-                }
-              }
-            });
-          } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            ctx.log(`[run-workflow:${entry.name}] Guard execution error: ${msg}`);
-          }
-        }
       },
       getDb: () => ctx.getDb(),
       log: (msg: string) => ctx.log(msg),
@@ -342,6 +320,50 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
 
         // FM-3.1 + FM-3.3: Validate finish() deliverables and evidence
         validateFinishResult(taskResult, ctx.projectRoot, (msg) => ctx.log(msg));
+
+        // Run workflow guards on step completion and enforce demands
+        const stepEvent: WorkflowGuardEvent = {
+          type: "step_done",
+          step: agentTask,
+          result: taskResult,
+          source: "agent",
+        } as any;
+        const demands = await runGuards(stepEvent, (msg) => ctx.log(msg));
+        for (const d of demands) {
+          if (d.type === "block") {
+            ctx.log(`[run-workflow:${entry.name}] GUARD BLOCK: ${d.reason}`);
+            // Override the task result to reflect the guard block
+            taskResult.status = "error";
+            taskResult.error = `Guard blocked: ${d.reason}`;
+            taskResult.lastAssistantText = d.reason;
+          } else if (d.type === "run_step" && (d as any).step) {
+            const injected = (d as any).step;
+            ctx.log(`[run-workflow:${entry.name}] GUARD INJECT STEP: ${d.reason}`);
+            // Run the injected recovery step
+            const recoveryAgent = injected.agent ? agentName : `fn:${injected.name}`;
+            if (injected.agent) {
+              const recoveryResult = await ctx.manager.callAgent(agentName, injected.task, {
+                workflowRunId: runId,
+                stepLabel: `guard:${injected.name}`,
+                source: "workflow",
+              });
+              const recoveryStep: WorkflowStep = {
+                sessionId: recoveryResult.sessionId,
+                agent: recoveryAgent,
+                task: injected.task,
+                status: recoveryResult.status as "done" | "error" | "interrupted",
+                startedAt: Date.now(),
+                endedAt: Date.now(),
+                lastAssistantText: recoveryResult.lastAssistantText,
+              };
+              run.steps.push(recoveryStep);
+              ctx.saveWorkflowRun(run);
+              ctx.log(`[run-workflow:${entry.name}] Guard recovery step → ${recoveryResult.status}`);
+            }
+          } else if (d.type === "warn") {
+            ctx.log(`[run-workflow:${entry.name}] GUARD WARN: ${d.reason}`);
+          }
+        }
 
         return taskResult;
       },
