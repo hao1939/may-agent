@@ -76,10 +76,6 @@
 
 ## Learned from experience
 
-- Now update the project status files: (source: s_1777049059738_0, 2026-04-24)
-- The papers and success_criteria.js aren't tracked. Let me add them: (source: s_1777047121265_100, 2026-04-24)
-- Also remove the hint comments from the test file: (source: s_1777047112413_99, 2026-04-24)
-- Now commit and finish. (source: s_1777054236531_253, 2026-04-24)
 - Now let me write the inbox triage notes and commit. (source: s_1777072236244_634, 2026-04-25)
 - Now let me commit and wrap up. The main deliverables this session: G1-B baseline data collected, agent-identity confound discovered, results file updated, inbox triaged. (source: s_1777070436773_598, 2026-04-25)
 - The cross-agent fixes I identified in Phase 1 are **already present** in `agents/shared/common-sense.md`. The issue is agents aren't reading/following them. That's a different problem (context loading (source: s_1777068636883_558, 2026-04-25)
@@ -88,11 +84,10 @@
 - Now let me commit and wrap up: (source: s_1777077636308_747, 2026-04-25)
 - Both files verified — content is correct and complete. (source: s_1777075836241_708, 2026-04-25)
 - Now let me commit and finish. The key actions this heartbeat:
-1. Resolved H-EXP-014 (failure analysis mandate validated)
-2. Updated KE-381 to Grade A with complete evidence
-3. Confirmed H-EXP-017 stil (source: s_1777088436753_827, 2026-04-25)
 - H-EXP-014 just got more data: I closed H-EXP-013 (resolved, spawned insight about failed experiments having highest value) and H-EXP-018 (validated). Let me update its tracking. (source: s_1777086637083_815, 2026-04-25)
 - Now update journal and commit: (source: s_1777084836153_807, 2026-04-25)
 - The scout notifications are all P2 and informational — they've already been noted where relevant (DD#880 → H-EXP-018, others reference hypotheses). No action needed beyond acknowledging.
-
-Let me commi (source: s_1777083036743_796, 2026-04-25)
+- Now I have the full picture. Let me write the brief. (source: s_1777102205632_16, 2026-04-25)
+- Now update journal and commit: (source: s_1777101425026_8, 2026-04-25)
+- Good. Now let me dismiss inbox items and finish: (source: s_1777100490842_7, 2026-04-25)
+- Good, committed. Now let me quickly dismiss/acknowledge the inbox items and finish. (source: s_1777093710966_853, 2026-04-25)

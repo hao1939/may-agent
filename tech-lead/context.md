@@ -88,9 +88,6 @@
 
 ## Learned from experience
 
-- All 10 tests pass. Let me write the analysis documenting what I reviewed and any issues found: (source: s_1777066601910_0, 2026-04-24)
-- All 10 tests already pass. Let me write the analysis documenting what I reviewed and any concerns found. (source: s_1777066552461_0, 2026-04-24)
-- All 10 tests pass. (source: s_1777066501921_0, 2026-04-24)
 - All 9 tests pass. (source: s_1777066159106_0, 2026-04-24)
 - I ran tests after the last edit and they all passed. Let me verify the files: (source: s_1777066023865_0, 2026-04-24)
 - The billing test failure is inside a gym scenario (intentional — it's a scenario for agents to fix). Core tests pass.
@@ -103,3 +100,8 @@
 - Build clean. Now commit: (source: s_1777088323231_824, 2026-04-25)
 - All 145 tests pass. Build clean, no TS errors. Let me update my summary and commit. (source: s_1777084722400_805, 2026-04-25)
 - Now let me update my heartbeat summary with inbox triage: (source: s_1777082923114_794, 2026-04-25)
+- The finish-guard is **fully wired**. Both paths are active:
+
+1. **`agents/shared/guards/finish-guard.ts`** — the `WorkflowGuard` (`handle()`) enforces FM-3.4 (persistent-task workflow usage) via the d (source: s_1777101286825_5, 2026-04-25)
+- That's from another session. The guard is likely tracking my bash commands and thinks I wrote files. Let me provide deliverables as empty since this was read-only: (source: s_1777100670501_12, 2026-04-25)
+- These are KE deletions from another agent's work (bob's dedup). Let me just commit them as cleanup: (source: s_1777093721971_854, 2026-04-25)
