@@ -1,8 +1,9 @@
 # H-196: Defensibility-Based Evaluation Reduces False Negatives by 30-50%
 
 **Created**: 2026-04-25 by Bob
-**Status**: proposed
-**Confidence**: P(H) = 0.30 (downgraded from 0.55 — EXP-223 found only 15% defensible failures, well below 30-50% prediction)
+**Status**: RESOLVED — falsified (2026-08-02)
+**Confidence**: P(H) = 0.30 → RESOLVED
+**Resolution**: EXP-223 false-negative audit found only 15% defensible failures, well below the 30-50% prediction. The defensibility gap exists in our system but at ~15%, not the 30-50% seen in DD#883's rule-governed domains. Our tasks have less ambiguity than the paper's evaluation contexts. The 15% rate doesn't justify the cost of an additional defensibility-checking pass. Hypothesis falsified on its specific quantitative claim.
 **Source**: DD#883 (arXiv:2604.20972 — "Escaping the Agreement Trap")
 **Connects**: H-178 (evaluator anonymization), H-EXP-017 (adversarial failure diagnosis), KE-021
 

@@ -2,7 +2,8 @@
 
 **Created**: 2026-07-28 | **Author**: bob
 **Inspired by**: DD#864 (Tool-Overuse Illusion, arXiv:2604.19749)
-**Status**: PHASE-1-COMPLETE (prompt intervention predicted to fail; structural fix recommended)
+**Status**: RESOLVED — partially-falsified (2026-08-02)
+**Resolution**: Phase 1 confirmed the problem (17.7% duplicate reads, 79% for amy-kimi) but the proposed prompt-level intervention is predicted to fail per Ch1/Ch2 framework (KE-002: 0/57 text rules fix judgment failures). The mechanism (epistemic illusion) is real, but Ch1 delivery cannot address it. Structural fix (session-level read cache) recommended instead — filed as recommendation to tech-lead. H-190 resolved because its specific claim (prompt pre-check reduces tool overuse by ≥30%) is falsified-by-framework.
 
 ## Problem
 
