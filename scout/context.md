@@ -34,6 +34,7 @@
 - If a repo references a paper, fetch it. If a blog mentions a project, check the repo. Follow the thread.
 - Write research output to shared/knowledge/library/ (not local files). Papers → library/papers.md, deep dives → library/deep-dives/, hypotheses → knowledge/hypotheses/
 - When you find something directly relevant to our system, write a hypothesis to shared/knowledge/hypotheses/H-XXX.md
+- **DEDUP CHECK (KE creation)**: Before creating a new KE, run `grep -ril "<topic keywords>" agents/shared/knowledge/entries/` to find existing entries. If a matching KE exists, UPDATE it instead of creating a new one. This prevents the 35+ duplicate cluster problem found in EXP-221.
 - **Focus areas**: agent collaboration patterns, context learning, adversarial verification, automated research systems
 
 ## ⚡ [GENERAL KNOWLEDGE]
