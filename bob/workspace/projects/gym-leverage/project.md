@@ -43,6 +43,10 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 
 ## Current State
 Iteration 3. Milestones: 7/10 done.
+**Remaining 3 milestones** all require live agent runs (GYM_AGENT_BIN must be set). Cannot advance further in stub mode.
+- Phase 2 MS4 (run core 20 + baseline scores): needs live agent
+- Phase 3 MS2 (run one evolution cycle retest): needs live agent  
+- Phase 3 MS3 (document evolution process): can write after one live cycle completes
 Reviewer: The file is comprehensive and well-written. This covers multiple milestones. Let me verify which milestones are satisfied:
 
 1. ✅ "Run the gym runner against 3 diverse scenarios" — 27 smoke scenarios r
