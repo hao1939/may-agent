@@ -7,7 +7,18 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — arXiv Apr 24 + HF Blog Agent Infrastructure
+## Fresh Arrivals (Current Session) — Semantic Invariance + PlugMem Deep Dive
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| Session | **Semantic Invariance** (arXiv:2603.13173) | Scale≠Robustness: Qwen3-30B achieves 79.6% invariant responses vs larger models. 8 semantic-preserving transformations reveal universal contrastive fragility. AMSTA 2026. ★★★★★ | [HB-2026-session](library/posts/HB-2026-session-semantic-invariance-plugmem.md) |
+| Session | **PlugMem** (arXiv:2603.03296) | Task-agnostic plugin memory module. Knowledge-centric memory graph (not entities/chunks). Info density metric + cross-task generalization. GitHub: 106⭐. ★★★★★ | [HB-2026-session](library/posts/HB-2026-session-semantic-invariance-plugmem.md) |
+
+**Key Takeaway**: Two foundational papers validate OpenClaw design philosophy: (1) **Semantic Invariance** — "model scale does not predict robustness"; smaller Qwen3-30B outperforms 235B/405B models in consistency. Validates L3 human-audit design. (2) **PlugMem** — "decision-relevant information is concentrated as abstract knowledge rather than raw experience". Task-agnostic memory with info density evaluation aligns with Mem0 + Skill abstraction. Both papers reinforce: **structure > scale, knowledge > data, evaluation > assumption**.
+
+---
+
+## Fresh Arrivals (Previous Session) — arXiv Apr 24 + HF Blog Agent Infrastructure
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
