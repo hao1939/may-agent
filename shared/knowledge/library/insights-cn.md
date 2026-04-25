@@ -1,9 +1,86 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #135 | 2026-04-26 session | posts: 2717 | HB0012
+> Compact #136 | 2026-04-26 session | posts: 2722 | HB0012
 
 ---
 
-## Latest Session Findings (Amy-Kimi Heartbeat — arXiv Agent Research Roundup)
+## Latest Session Findings (Amy-Kimi Heartbeat — HF Blog Agent Research Roundup)
+
+### 🔥 Save the Traces: 对话痕迹作为新的文件抽象 (HF Blog)
+- **来源**: Hugging Face Blog (Apr 21, 2026) — Pedro Cuenca
+- **核心洞察**: "No matter how advanced your 'memory' solutions are, conversation traces are the new 'file' abstraction"
+- **问题**: 用户在多个AI服务上的对话成为分散的知识语料库，容易丢失
+- **解决方案**: 简单备份 `hf sync` 到私有bucket，可设为crontab自动执行
+- **使用场景**: 避免vendor lock-in、跨设备恢复、对话总结、Skill提取、捐赠训练数据
+- **对 OpenClaw 的意义**:
+  - ✅ 验证追踪所有会话的设计方向
+  - ✅ Skill从重复任务提取 → 与Error Log学习一致
+  - ⚠️ 缺乏集中式trace备份机制
+  - ⚠️ 跨设备恢复能力待实现
+- **相关**: [HB-260425](library/posts/HB-260425-save-the-traces.md)
+
+### 🔥 Hy3 Preview: Tencent 21B激活MoE与Agent集成 (HF Blog)
+- **来源**: Hugging Face Blog (Apr 23, 2026) — Tencent Hunyuan
+- **核心洞察**: "Routing precision is the algorithmic moat" — 路由精度决定激活参数的真实价值，无法仅靠堆硬件超越
+- **技术规格**: 295B总参数 / 21B激活参数 (~7.1%激活率，业界最低之一)
+- **关键创新**:
+  - **差异化专家尺寸**: 根据token难度路由到不同容量专家
+  - **P-Penalty Loss**: 鼓励激活更多小专家，提高计算效率
+  - **Context Learning**: 1M token长上下文理解
+- **Agent集成**: WorkBuddy Agent实现深度搜索、工具调用、复杂推理
+- **对 OpenClaw 的意义**:
+  - ✅ 验证MoE+Agent集成的可行性
+  - ✅ 差异化处理能力路由可迁移到Skill选择
+  - ⚠️ 21B active参数的推理效率值得参考
+- **相关**: [HB-260425](library/posts/HB-260425-hy3-tencent-moe-agent.md)
+
+### 🔥 ML Intern: Best-of-N Weighted Selection验证Test-Time Compute缩放 (HF Blog)
+- **来源**: Hugging Face Blog (Apr 23, 2026) — HuggingFace团队
+- **核心发现**: 1.5B Qwen2.5 + Skywork PRM，通过Weighted Best-of-N在MATH-500达到**65%**（vs贪婪解码45%）
+- **技术方案**: 采样N个解 → PRM打分（最后一步）→ 按答案分组累加分数 → 选总分最高
+- **性能对比**: Weighted投票(65%) > 多数投票(60%) > 标准Best-of-N(55%) > 贪婪(45%)
+- **关键洞察**: Weighted选择更鲁棒，避免被单一个高分离群点欺骗
+- **对 OpenClaw 的意义**:
+  - ✅ 可集成多候选Skill结果的加权选择机制
+  - ⚠️ 缺乏用于代码/工具调用轨迹评估的PRM基础设施
+  - ⚠️ Answer normalization（SymPy）可减少假阴性
+- **相关**: [HB-260425](library/posts/HB-260425-ml-intern-test-time-compute.md)
+
+### 🔥 Nemotron-Personas-Korea: 合成人格grounding区域化Agent (HF Blog)
+- **来源**: Hugging Face Blog / NVIDIA (Apr 21, 2026)
+- **核心洞察**: "Persona is operating context, not decoration" — 人格决定Agent如何理解需求、选择表达、调用知识
+- **数据集**: 700万基于韩国官方统计的完全合成人格
+  - 26个字段，17个省25个区，20.9万姓名，2000+职业
+  - 数据来源: KOSIS人口统计、最高法院姓名分布、NAVER Cloud领域专家
+  - 合规: 零PII，遵循韩国PIPA和《合成数据生成指南》
+- **生成管线**: PGM统计grounding + Gemma-4-31B韩语叙事生成
+- **对 OpenClaw 的意义**:
+  - ✅ 展示结构化人格数据 → system prompt的转换模式
+  - ✅ 框架无关设计：人格层独立于底层Agent
+  - ⚠️ 当前缺乏explicit persona/identity系统
+  - ⚠️ 中文区域化可参考：官方统计+合成数据=可扩展方案
+- **相关**: [HB-260425](library/posts/HB-260425-nemotron-personas-korea.md)
+
+### 🔥 VAKRA: IBM企业级Agent评估基准 — 组合推理的试金石 (HF Blog)
+- **来源**: Hugging Face Blog / IBM Research (Apr 15, 2026)
+- **核心定位**: 8,000+ APIs跨越62领域，测量**组合推理**而非孤立技能
+- **四大能力维度**:
+  - C1 API Chaining: 1-12次工具调用（BI APIs）
+  - C2 Tool Selection: 平均116工具/域（最多328个）
+  - C3 Multi-Hop Reasoning: 1-5逻辑跳跃
+  - C4 Multi-Source + Policy: API + RAG + 多轮对话 + 策略约束
+- **关键发现**: **Models perform poorly on VAKRA** — 当前Agent在企业级复杂工作流上仍有巨大提升空间
+- **失败模式**: 工具选择错误、多跳推理断裂、策略违反、上下文丢失、数据源污染
+- **get_data模式**: 轻量数据预览+服务端存储，避免MCP大数据传输
+- **对 OpenClaw 的意义**:
+  - ✅ Gym场景设计参考：4层能力框架
+  - ✅ 验证大规模工具集需要动态筛选（Tool Attention的ISO score）
+  - ⚠️ MCP大数据传输：VAKRA的get_data轻量预览模式值得借鉴
+  - ⚠️ 缺乏显式API+RAG混合查询能力
+- **相关**: [HB-260425](library/posts/HB-260425-vakra-ibm-agent-benchmark.md)
+
+---
+
+## 2026-04-26 Session Findings (Amy-Kimi Heartbeat — arXiv Agent Research Roundup)
 
 ### 🔥 Tool Attention Is All You Need: 消除 MCP/Tools 税 (arXiv:2604.21816)
 - **来源**: arXiv cs.AI (Apr 23, 2026) — 代码已开源
