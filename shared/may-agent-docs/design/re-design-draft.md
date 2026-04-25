@@ -66,7 +66,7 @@ Each layer depends only on layers below it.
 
 **Provides**:
 - Decoupled communication — components interact through events, not direct calls
-- Event types: `session_start`, `session_end`, `fork`, `message`, `metric`, `notification`, etc.
+- Event types: `session_start`, `session_end`, `fork`, `message`, `metric`, `notification`, etc. (24 types)
 
 **Key insight**: This is the coordination primitive. Agent A finishing emits `session_end`. A handler sees it and starts Agent B. No agent-to-agent coupling needed.
 
@@ -97,7 +97,7 @@ Handlers are entry points that receive events and decide what to do. They are th
 Workflows are the actual logic that runs. They can be:
 
 - **Pure JS** — `metrics-snapshot` measures all metrics, no LLM. Fast and cheap.
-- **Session orchestration** — `master-worker` creates persistent reviewer + worker sessions. `verify-wrap` ensures work gets verified.
+- **Session orchestration** — `master-worker` creates persistent reviewer + worker sessions via `createSession`. `verify-wrap` ensures work gets verified.
 - **Context collection** — `bob-heartbeat` gathers metrics, projects, alerts, and structures them into an agent prompt.
 
 **Shared workflows** (`agents/shared/workflows/`) are available to all agents.  
@@ -170,7 +170,7 @@ Human sets metric          Agent heartbeat reads metric       Agent acts
 **What**: Scenario-based testing that measures agent capability and provides fast feedback for skill/workflow improvement.
 
 **Provides**:
-- **435 scenarios** — realistic coding tasks with automated scoring. Each has: task description, environment files, success criteria (JS scorer), metadata (categories, tags, tier).
+- **435+ scenarios** — realistic coding tasks with automated scoring. Each has: task description, environment files, success criteria (JS scorer), metadata (categories, tags, tier).
 - **Automated runner** — run scenarios against any agent, collect pass/fail + transcripts
 - **Adapters** — decoupled from agent runtime. Works with may-agent, Claude Code, or any CLI agent.
 - **Discrimination testing** — do scenarios distinguish good behavior from bad? (measures scenario quality itself)
@@ -291,7 +291,7 @@ The accumulated understanding the system has built (`agents/shared/knowledge/`):
 
 ### Skills — Advisory execution patterns
 
-Markdown documents that teach agents *how* to do something well (`agents/shared/skills/`, 55 skills).
+Markdown documents that teach agents *how* to do something well (`agents/shared/skills/`, 78 skills).
 
 Examples:
 - `creating-projects/skill.md` — how to set up a project.md
@@ -517,4 +517,71 @@ Everything combines into a self-steering cycle:
 | **scout** | *(minimal)* | Discovery, exploration |
 | **master** | claude-code, gemini-cli, codex | External AI tool orchestration |
 | **amy/amy-kimi** | coding/scrape | Research, alternative models |
+
+---
+
+## Workflow Engine — Unified Execution
+
+All workflows execute through one engine (`src/lib/workflow-tool.ts`), regardless of who triggers them.
+
+### Two callers, one engine
+
+| Caller | Entry point | How |
+|--------|-------------|-----|
+| **Agent** (tool) | `workflow.run("verify-wrap", task)` | `createWorkflowTool()` → agent tool |
+| **System** (handler) | Project handler launches project workflows | `runWorkflowDirect()` → same engine |
+
+Both paths get: guards, step tracking, WorkflowRun persistence, resume, `createSession`.
+
+### Two session patterns
+
+| Pattern | API | Use case |
+|---------|-----|----------|
+| **One-shot** | `ctx.runAgent(name, task)` | Fresh session per step. Stateless. Each call = new session. |
+| **Persistent** | `ctx.createSession(opts)` → `handle.prompt(msg)` | Accumulates conversation history. Each `prompt()` = new session with prior context prepended. |
+
+Both are tracked as workflow steps. Both fire guards on completion.
+
+**Why persistent sessions exist**: `master-worker` needs a reviewer that remembers prior iterations. Instead of feeding the full conversation each time manually, `createSession` accumulates history automatically. Under the hood, each `prompt()` still creates a new agent session (via `manager.callAgent`) — the "persistence" is simulated by prepending conversation history to each prompt.
+
+### WorkflowContext
+
+Every workflow's `execute(ctx)` receives:
+
+```
+ctx.task           — the original task string
+ctx.agent          — caller agent name
+ctx.runAgent()     — one-shot session (new session per call)
+ctx.createSession()— persistent session (accumulated history)
+ctx.runFunction()  — run JS, no LLM cost
+ctx.runWorkflow()  — nested workflow
+ctx.summarize()    — rich handoff summary from TaskResult
+ctx.done()         — mark workflow complete
+ctx.escalate()     — bail out, return to agent
+ctx.emit()         — event bus
+ctx.getDb()        — SQLite
+ctx.log()          — diagnostics
+ctx.notify()       — human notification
+```
+
+### Guard lifecycle
+
+```
+workflow_start        → guards notified (logging only)
+  runAgent/prompt()   → step_done event → guards can warn/block/inject
+  runFunction()       → step_done event → guards can warn/block/inject
+workflow_done         → guards notified (final checks)
+```
+
+Guards fire on every step, including each `prompt()` on persistent sessions. A guard can:
+- **warn** — message injected into next agent's task
+- **block** — workflow stops immediately
+- **inject step** — extra agent session runs (e.g., verify-after-write)
+
+### Step tracking
+
+Every `runAgent`, `prompt()`, and `runFunction` is recorded as a `WorkflowStep` in a `WorkflowRun` record (persisted to `.state/workflows/`). This enables:
+- **Resume** — replay completed steps from archived session data after crash
+- **Observability** — web UI shows workflow run with all steps
+- **Tracing** — `subagents.trace(workflowRunId)` shows the full session tree
 
