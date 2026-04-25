@@ -7,7 +7,21 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — Tool Attention Implementation + HF Skills Ecosystem
+## Fresh Arrivals (Current Session) — HF April Agent Research Roundup
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **DeepSeek-V4** (DeepSeek) | 1M context for agents, not benchmarks. CSA+HCA compression → 2% KV cache. SWE Verified 80.6, MCPAtlas 73.6. Interleaved thinking across user/tool boundaries. ★★★★★ | [HB-260801](library/posts/HB-260801-hf-april-agent-roundup.md) |
+| 2026-04-25 | **Tencent Hy3** (Tencent) | 295B/21B MoE, 7.1% activation ratio. Differentiated expert sizing + P-Penalty Loss. "Routing precision is the algorithmic moat." WorkBuddy Agent integration. ★★★★☆ | [HB-260801](library/posts/HB-260801-hf-april-agent-roundup.md) |
+| 2026-04-25 | **Save the Traces** (HF Blog) | "Conversation traces are the new file abstraction." `uvx hf sync` for backup. Skill extraction from repeated tasks. Cross-device recovery, vendor lock-in avoidance. ★★★★★ | [HB-260801](library/posts/HB-260801-hf-april-agent-roundup.md) |
+| 2026-04-25 | **Best-of-N Weighted Selection** (HF Blog) | Test-time compute: 1.5B Qwen + PRM → 65% MATH-500 (vs 45% greedy). Weighted voting > Standard BoN. Saturation at N=8-16. ★★★★★ | [HB-260801](library/posts/HB-260801-hf-april-agent-roundup.md) |
+| 2026-04-25 | **VAKRA Benchmark** (IBM Research) | Enterprise agent eval: 8,000+ APIs, 62 domains. Tool selection (avg 116 tools), multi-hop reasoning, policy adherence. Models perform poorly. ★★★★★ | [HB-260801](library/posts/HB-260801-hf-april-agent-roundup.md) |
+
+**Key Takeaway**: Five converging themes from HF Blog (Apr 15-24): (1) **Context compression > raw length** — DeepSeek-V4's CSA/HCA achieves 2% KV cache; (2) **Routing precision > scale** — Hy3's 7.1% activation with differentiated experts; (3) **Test-time compute scaling** — 1.5B model + weighted voting competes with frontier; (4) **Traces as assets** — conversation history is foundational infrastructure; (5) **Enterprise complexity exposed** — VAKRA reveals gaps in tool selection at scale. **For OpenClaw**: Intent-based skill routing (like Hy3's expert sizing), add Best-of-N to skill selection, trace extraction pipeline for skill evolution.
+
+---
+
+## Fresh Arrivals (Previous Session) — Tool Attention Implementation + HF Skills Ecosystem
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|

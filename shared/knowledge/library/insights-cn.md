@@ -1,9 +1,91 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #139 | Current session | posts: 2732 | HB0018
+> Compact #140 | Current session | posts: 2733 | HB0018
 
 ---
 
-## Latest Session Findings (Amy-Kimi Heartbeat — Tool Attention实现细节 + HF Skills生态)
+## Latest Session Findings (Amy-Kimi Heartbeat — HF April Agent Research Roundup)
+
+### 🔥 DeepSeek-V4: 专为Agent设计的百万Token上下文架构 (HF Blog, Apr 24)
+- **来源**: Hugging Face Blog — DeepSeek Official Release
+- **核心定位**: 不为benchmark刷分，而是**让Agent能实际使用的1M token上下文**
+- **关键技术**: CSA (4x压缩稀疏注意力) + HCA (128x重压缩注意力) 层交替
+- **性能数据**:
+  - KV缓存降至标准GQA-8的**~2%** (FP8/FP4混合存储)
+  - 单token FLOPs: V3.2的27% (Pro) / 10% (Flash)
+  - SWE Verified: 80.6 | MCPAtlas: 73.6 | Terminal Bench: 67.9
+- **Agent专用设计**:
+  - 跨用户消息边界保留推理链（interleaved thinking）
+  - XML工具格式 + `|DSML|`专用token（减少JSON转义失败）
+  - DSec沙箱: Rust平台支持数十万并发容器/VM/Firecracker，专为RL rollout
+- **对 OpenClaw 的意义**:
+  - ✅ 上下文压缩（非原始长度）是Agent系统一级约束
+  - ✅ 跨turn推理持久化对多轮Agent会话关键
+  - ⚠️ XML+专用tokens可能比JSON更鲁棒，值得评估
+  - ⚠️ 缺乏类似DSec的规模化沙箱基础设施
+- **相关**: [HB-260801](library/posts/HB-260801-hf-april-agent-roundup.md)
+
+### 🔥 Tencent Hy3: 路由精度作为算法护城河 (HF Blog, Apr 23)
+- **来源**: Hugging Face Blog — Tencent Hunyuan Official
+- **核心数据**: 295B总参数 / 21B激活参数 (~7.1%激活率，业界最低)
+- **架构创新**:
+  - **差异化专家尺寸**: 不同难度token路由到不同容量专家
+  - **P-Penalty Loss**: 惩罚偏向大专家，鼓励激活小专家
+  - Context Learning: 1M token长上下文理解
+- **产品集成**: WorkBuddy Agent（深度搜索、工具调用、复杂推理）
+- **关键洞察**: "别人用37B-40B激活参数做到的，我们用21B就能做到。路由精度是核心算法护城河"
+- **对 OpenClaw 的意义**:
+  - ✅ **意图分级路由**: 简单/复杂任务→不同Skill深度（类似差异化专家）
+  - ✅ 小激活比+高精度 > 大激活比，验证架构创新 > brute force
+  - ⚠️ 腾讯系统化优势：模型+技术+产品+生态协同
+- **相关**: [HB-260801](library/posts/HB-260801-hf-april-agent-roundup.md)
+
+### 🔥 Save the Traces: 对话痕迹作为新文件抽象 (HF Blog, Apr 21)
+- **来源**: Hugging Face Blog — Pedro Cuenca
+- **核心洞察**: "Conversation traces are the new 'file' abstraction"
+- **使用场景**:
+  - 跨设备恢复项目（.claude/.codex/.cursor痕迹同步）
+  - 从重复任务提取结论，创建Skill
+  - 避免vendor lock-in，数据所有权
+  - 捐赠痕迹训练更好的开源模型
+- **简单实现**: `uvx hf sync ~/.claude hf://buckets/user/traces/`
+- **对 OpenClaw 的意义**:
+  - ✅ Trace-centric架构与行业趋势一致
+  - ✅ Skill提取从生产痕迹自动化是明确方向
+  - ⚠️ 可考虑`hf sync`集成或类似机制
+- **相关**: [HB-260801](library/posts/HB-260801-hf-april-agent-roundup.md)
+
+### 🔥 Best-of-N Weighted: Test-Time Compute Scaling验证 (HF Blog, Apr 23)
+- **来源**: Hugging Face Blog — HF Post-Training团队
+- **核心发现**: 1.5B Qwen2.5 + Skywork PRM → **65% MATH-500** (vs 贪婪解码45%)
+- **方法**: N=16采样 → PRM打分（最后一步）→ 按答案分组累加 → 选最高总分
+- **性能排序**: Weighted投票(65%) > 多数投票(60%) > 标准Best-of-N(55%) > 贪婪(45%)
+- **饱和点**: N=8-16时性能饱和，继续增加收益递减
+- **关键洞察**: 1.5B生成器+1.5B PRM=3B总量可竞争100B+模型；Weighted比Standard更鲁棒
+- **对 OpenClaw 的意义**:
+  - ✅ **Skill选择可借鉴**: 多候选Skill结果加权投票
+  - ✅ 小模型(3B)+Test-time策略验证Skill化方向正确
+  - ⚠️ 缺乏用于代码/工具轨迹评估的PRM基础设施
+- **相关**: [HB-260801](library/posts/HB-260801-hf-april-agent-roundup.md)
+
+### 🔥 VAKRA Benchmark: 企业级Agent评估暴露工具选择鸿沟 (IBM Research)
+- **来源**: Hugging Face Blog — IBM Research, Apr 15
+- **规模**: 8,000+ APIs，62个领域，真实数据库支持的可执行环境
+- **四个能力维度**:
+  1. API链式调用 (2,077实例): 1-12个工具调用
+  2. 工具选择 (1,597实例): 每域平均116个工具（最多328个）
+  3. 多跳推理 (869实例): 1-5个逻辑跳跃
+  4. 多源+策略遵循 (644实例): API+RAG+工具使用策略
+- **关键发现**: 模型表现普遍较差（"Models perform poorly on VAKRA"）
+- **OpenAI API限制**: 128个工具上限，需要shortlisting机制
+- **对 OpenClaw 的意义**:
+  - ✅ **Skill数量优势**: 30-50个Skill vs 116-328个工具，我们的taxonomy更易管理
+  - ✅ 策略层（Policy Layer）对enterprise部署必要
+  - ⚠️ 工具选择at scale是未解决问题，需要意图-工具匹配机制
+- **相关**: [HB-260801](library/posts/HB-260801-hf-april-agent-roundup.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — Tool Attention实现细节 + HF Skills生态)
 
 ### 🔥 Tool Attention: 参考实现验证95% MCP token削减 (arXiv:2604.21816 + GitHub)
 - **来源**: 论文arXiv:2604.21816 + GitHub:asadani/tool-attention (MIT License)
