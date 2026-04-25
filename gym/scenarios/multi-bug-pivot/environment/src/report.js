@@ -6,10 +6,11 @@ const config = require("./config");
 
 function generateReport(orders) {
   // Support multi-currency formatting
+  let prefix = config.formatting.prefix;
   if (config.currency === "EUR") {
-    config.formatting.prefix = "€";
+    prefix = "€";
   } else if (config.currency === "GBP") {
-    config.formatting.prefix = "£";
+    prefix = "£";
   }
   
   const lines = orders.map((order, i) => {
@@ -17,7 +18,7 @@ function generateReport(orders) {
     const priceStr = order.total.toFixed(config.precision);
     const parts = priceStr.split(".");
     const whole = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, fmt.thousandsSep);
-    const formatted = fmt.prefix + whole + fmt.decimalSep + parts[1];
+    const formatted = prefix + whole + fmt.decimalSep + parts[1];
     return `${i + 1}. ${order.name}: ${formatted} (qty: ${order.quantity})`;
   });
   

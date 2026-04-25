@@ -5,14 +5,11 @@
 const config = require("./config");
 
 function calculatePrice(basePrice, quantity) {
-  // Use higher precision for intermediate calculations
-  config.precision = 4;
-  
   const subtotal = basePrice * quantity;
   const tax = subtotal * config.taxRate;
   const total = subtotal + tax;
   
-  return Number(total.toFixed(config.precision));
+  return Number(total.toFixed(2));
 }
 
 function formatPrice(amount) {

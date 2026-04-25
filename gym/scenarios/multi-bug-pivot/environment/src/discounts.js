@@ -16,9 +16,6 @@ function applyDiscount(subtotal, quantity, isLoyalCustomer) {
   }
   totalRate += rules.seasonal.rate;
   
-  // Cache the combined rate for performance
-  rules.combined = { rate: totalRate, lastComputed: Date.now() };
-  
   const discount = subtotal * totalRate;
   return {
     original: subtotal,
