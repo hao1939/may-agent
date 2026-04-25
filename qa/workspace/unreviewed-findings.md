@@ -1,21 +1,24 @@
-# Unreviewed Findings (QA heartbeat)
-
-Date: 2026-04-25
+# QA Heartbeat — Unreviewed Findings
 
 ## Inbox triage
-- Duplicate “Quick Code Review” notifications (5x): treated as **waste/duplicate**; no actionable code review target identified.
-- EXP-220 verification request: investigated below.
 
-## Verification work performed
-### EXP-220 ("Fix Bob TOOLS.md - document workflow tool")
-- Verified commit metadata: `525a95703` modifies `bob/TOOLS.md` and adds `coach/workspace/experiments/EXP-220/design.md`.
-- Read `agents/bob/TOOLS.md`: contradiction removed; `workflow` tool documented and “Key Constraints” no longer incorrectly bans workflow.
-- Read `agents/coach/workspace/experiments/EXP-220/design.md`: experiment doc present; status marked DEPLOYED.
+### P1: 5 duplicate "Quick Code Review" requests (waste)
+**Action:** Dismiss duplicates; escalate systemic spam.
+- **Reason:** Alerts indicate identical requests were dispatched 5x; no unique work items to review.
+- **Next:** Ask dispatcher to deduplicate at source and/or add guardrail.
 
-## Test/CI health notes
-- `./node_modules/.bin/tsc --noEmit` **PASS** in `/app/agents` repo.
-- `./node_modules/.bin/vitest --run` **FAIL (tool missing)**: `node_modules/.bin/vitest` does not exist in this repo; `package.json` has no vitest devDependency.
-  - This appears to be an **environment/tooling gap**, not introduced by EXP-220.
+### P1: Convention coaching — worst compliance rates
+**Action:** Act (self-fix).
+- **Plan:** In future QA reviews, follow mandatory steps: read changed file(s) with `read`, run `./node_modules/.bin/tsc --noEmit`, run `./node_modules/.bin/vitest --run`, cite evidence.
+- **Note:** This heartbeat had no explicit code-review request; I focused on the gym-scenario alert.
 
-## Open questions / follow-ups
-- If vitest is intended to be runnable at repo root, add `vitest` to devDependencies and install, or update QA instructions for this repo to run the correct test command.
+### P2: Verify new gym scenario EXP-220 (enoent-file-search)
+**Action:** Act.
+- **Evidence:** Scenario exists at `agents/gym/scenarios/enoent-file-search/` with `scenario.json`, `task.md`, `success_criteria.js`.
+- **Finding:** Directory name is **not** `EXP-220*` as alert suggests; it is named `enoent-file-search`.
+- **Potential issue:** New files/dir are owned by `root:root` (per `ls -la`), while most scenarios are `mayagent:mayagent` — could cause permission issues for non-root runs.
+- **Scenario design:** `task.md` intentionally references non-existent `src/grade-pipeline.js` and `test/test-grades.js`, while `scenario.json` states real files are under `lib/`. `success_criteria.js` enforces no fabrication (no `src/` or `test/`) and that `lib/grade-pipeline.js` is modified and `node lib/test-grades.js` passes.
+
+## Follow-ups
+- Confirm whether scenario directory should be renamed to match EXP-220 naming conventions (if required by harness).
+- Confirm whether root ownership is acceptable; if not, fix perms in repo creation process.
