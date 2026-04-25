@@ -71,10 +71,6 @@
 
 ## Learned from experience
 
-- Good evidence. Across sessions that use `finish()`, verification_evidence is consistently present. Let me now create the tracker files.
-- Good evidence. The session shows both violation and self-correction of "simple first". The agent explicitly says *"I think I'm overcomplicating this"* after many iterations trying to engineer clean nu (source: s_1777037973153_164, 2026-04-24)
-- Hmm, already clean. The check might be stale. (source: s_1777032454813_28, 2026-04-24)
-- Now let me update my todo to reflect current reality: (source: s_1777028896018_9, 2026-04-24)
 - Good — I was blocked for 47 heartbeats, but metrics are now all green. The P0 (13cf8df6) about being blocked is resolved. Let me log this and finish. (source: s_1777045054277_50, 2026-04-24)
 - No modified files whatsoever. Let me try with deliverables explicitly empty. (source: s_1777041453621_260, 2026-04-24)
 - No changes from me to commit (DB updates don't need git). Let me finish. (source: s_1777050454968_167, 2026-04-24)
@@ -86,3 +82,11 @@
 - OK, I have a clear picture. Let me triage inbox and finish.
 - Amy already has the instruction but still fails 67% of the time — classic text-instruction-doesn't-fix-structural-behavior pattern (consistent with EXP-188 finding). This is worth noting but designing (source: s_1777066655203_512, 2026-04-24)
 - Now let me escalate the P0 items to May: (source: s_1777066634825_511, 2026-04-24)
+- All metrics are healthy, project is closed, and I have no active experiments. Let me process the inbox and finish.
+
+**Inbox triage:**
+
+1. **P0 request 13cf8df6** — Can't find in requests DB; likely al (source: s_1777073855082_662, 2026-04-25)
+- All metrics green, project closed, no active experiments. Let me quickly triage inbox and finish. (source: s_1777072055122_627, 2026-04-25)
+- I didn't write or edit any files — this was a read-only triage heartbeat. (source: s_1777070254854_589, 2026-04-25)
+- Looks like auto-pruning of stale context entries. Fine. (source: s_1777068455022_551, 2026-04-25)
