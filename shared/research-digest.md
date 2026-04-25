@@ -7,7 +7,25 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — HF Blog Agent Infrastructure: TinyFacade, RL Dataset, Test-Time Compute
+## Fresh Arrivals (Current Session) — XHS中文社区: Agent Zero, MCP反思, Sandbox基础设施
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **Agent Zero** (GitHub 17.3K⭐) | 开源Agent框架。agents/skills/tools/extensions/webui模块化架构。官网: agent-zero.ai | [HB-260426](library/posts/HB-260426-agent-zero-framework.md) |
+| 2026-04-26 | **MCP "陨落" Sentiment** (XHS) | 中文社区出现"MCP正在死去"反思。1495赞帖子质疑协议复杂度。社区渴望更简单的工具集成方式。 | [HB-260426](library/posts/HB-260426-mcp-decline-sentiment.md) |
+| 2026-04-26 | **Agent Sandbox基础设施** (XHS) | Sandbox从"可选"到"必需"。Microsandbox/Zeroboot开源方案。K8s官方入场。704赞: "agent开发的下一个机会是sandbox" | [HB-260426](library/posts/HB-260426-agent-sandbox-infrastructure.md) |
+
+**Key Takeaway**: 三个基础设施级信号：(1) **Agent框架格局** — Agent Zero 17.3K⭐验证模块化架构(agents/skills/tools)是主流设计；(2) **MCP反思窗口** — 社区对Model Context Protocol的复杂度产生质疑，1495赞帖子+"正在悄悄死去"sentiment，为轻量替代方案提供叙事机会；(3) **Sandbox基础设施化** — K8s官方支持+Zeroboot毫秒级启动+Microsandbox开源，执行环境安全成为新竞争维度。
+
+**Critical Questions for OpenClaw**:
+- **竞争定位**: 与Agent Zero的差异化是什么？我们的核心优势在哪里？
+- **协议策略**: MCP兼容 vs 独立协议 vs 轻量替代？如何利用社区对MCP的反思？
+- **Sandbox战略**: K8s原生支持是否必要？Zeroboot毫秒级启动技术是否值得借鉴？
+- **生态叙事**: "MCP过于复杂"的社区共识如何转化为我们的差异化传播？
+
+---
+
+## Previous Session — HF Blog Agent Infrastructure: TinyFacade, RL Dataset, Test-Time Compute
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
