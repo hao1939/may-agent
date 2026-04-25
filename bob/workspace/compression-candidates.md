@@ -8,45 +8,18 @@ Extracted 95 insights from 50 sessions.
 ## Repeated Themes (cross-session)
 
 - **"scenario variants"** — 3 sessions — ⚠️ NO KE MATCH
-- **"committed to git"** — 3 sessions — ⚠️ NO KE MATCH
-- **"triaged inbox"** — 2 sessions — ⚠️ NO KE MATCH
-- **"treatment trial"** — 2 sessions — ⚠️ NO KE MATCH
-- **"re-escalated h-exp-"** — 2 sessions — ⚠️ NO KE MATCH
-- **"diagnosis complete"** — 2 sessions — ⚠️ NO KE MATCH
-- **"created new hypothesis h-exp-"** — 2 sessions — ⚠️ NO KE MATCH
-- **"created cascading-fix-trap-"** — 2 sessions — ⚠️ NO KE MATCH
-- **"baseline complete"** — 2 sessions — ⚠️ NO KE MATCH
-- **"awaiting data"** — 2 sessions — ⚠️ NO KE MATCH
 
 ## Promotion Candidates
 
 Insights that appear procedural/declarative and aren't covered by existing KEs:
 
 ### Candidate 1
-- **Agent**: coach | **Session**: s_1776551125350_659
-- **Type**: SUMMARY | **Level**: DECLARATIVE
-- **Insight**: Analyzed persistent-task failure. Root cause: context.md instruction is weak (not in system prompt). Skills are in prompt but get lost in noise. Created stronger skill with TRIGGER/ACTION/EXAMPLE pattern. Running 5 trials next.
-- **KE overlap**: 1 existing KEs with similar terms
+- **Agent**: bob | **Session**: s_1777054236531_253
+- **Type**: DECISION | **Level**: DECLARATIVE
+- **Insight**: EXP-178 previous data invalidated - all 120 runs used --agent coder (not registered)
+- **KE overlap**: 0 existing KEs with similar terms
 
 ### Candidate 2
-- **Agent**: bob | **Session**: s_1776810519643_42
-- **Type**: SUMMARY | **Level**: DECLARATIVE
-- **Insight**: Created curated examples (Step 1 complete). Discovered gym runner only works in stub mode (no agent binary). Need to find a way to run actual agent trials or document blocker.
-- **KE overlap**: 1 existing KEs with similar terms
-
-### Candidate 3
-- **Agent**: coach | **Session**: s_1776852401616_80
-- **Type**: DECISION | **Level**: PROCEDURAL
-- **Insight**: Removed adjusted_pct from penalties.js so homework must use pct (set by normalizer)
-- **KE overlap**: 0 existing KEs with similar terms
-
-### Candidate 4
-- **Agent**: bob | **Session**: s_1777054236531_253
-- **Type**: SUMMARY | **Level**: DECLARATIVE
-- **Insight**: Discovered EXP-178 data is ALL synthetic (gym defaulted to --agent coder which doesn't exist). Built and validated exp178-runner.sh that produces real agent runs. 4 pilot runs collected. Need to run remaining 116 trials.
-- **KE overlap**: 0 existing KEs with similar terms
-
-### Candidate 5
 - **Agent**: coach | **Session**: s_1777081174264_785
 - **Type**: DECISION | **Level**: DECLARATIVE
 - **Insight**: Targeted Amy's file fabrication as highest-impact coaching opportunity (12 low-quality sessions in 7d)
@@ -56,5 +29,5 @@ Insights that appear procedural/declarative and aren't covered by existing KEs:
 ## Summary
 
 - Total insights scanned: 95
-- Promotion candidates: 5
+- Promotion candidates: 2
 - Recommended action: Review candidates above, create KEs for high-value ones

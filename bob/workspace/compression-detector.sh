@@ -72,6 +72,10 @@ TEMP_PHRASE_COUNTS=$(mktemp)
 cut -d'|' -f2 "$TEMP_KEYWORDS" | sort | uniq -c | sort -rn | \
     awk '$1 >= 2 && length($0) > 20' | head -30 > "$TEMP_PHRASE_COUNTS"
 
+# Filter noise phrases from themes
+TEMP_PHRASE_FILTERED=$(mktemp)
+grep -viP '(committed to|triaged|treatment|baseline|awaiting|re-escalated|created new|created cascading|diagnosis complete)' "$TEMP_PHRASE_COUNTS" > "$TEMP_PHRASE_FILTERED" 2>/dev/null || true
+
 while read -r count phrase; do
     # Check if already covered by a KE
     ke_match=$(grep -c -i -F "$phrase" "$TEMP_KE_TITLES" 2>/dev/null) || ke_match=0
@@ -81,7 +85,7 @@ while read -r count phrase; do
         status="✅ Likely covered"
     fi
     echo "- **\"$phrase\"** — $count sessions — $status" >> "$OUTPUT"
-done < "$TEMP_PHRASE_COUNTS"
+done < "$TEMP_PHRASE_FILTERED"
 
 echo "" >> "$OUTPUT"
 
@@ -104,12 +108,12 @@ while IFS='|' read -r agent session type insight; do
     
     # Filter 1: Minimum insight length (short = usually noise)
     insight_len=${#insight}
-    if [ "$insight_len" -lt 60 ]; then
+    if [ "$insight_len" -lt 80 ]; then
         continue
     fi
 
     # Filter 2: Reject common noise patterns (status updates, routine ops)
-    if echo "$insight" | grep -qiP '(committed to git|triaged inbox|triaged duplicate|awaiting data|re-escalated|phase \d complete$|no action needed|all clear|baseline complete|treatment trial|verified repo context|ran mandatory checks)'; then
+    if echo "$insight" | grep -qiP '(committed to git|triaged inbox|triaged duplicate|awaiting data|re-escalated|phase \d complete$|no action needed|all clear|baseline complete|treatment trial|verified repo context|ran mandatory checks|created new hypothesis|created cascading|diagnosis complete|running \d+ trials|need to run remaining|step \d complete|removed .* from .*)'; then
         continue
     fi
 
@@ -168,7 +172,7 @@ echo "- Promotion candidates: $candidate_count" >> "$OUTPUT"
 echo "- Recommended action: Review candidates above, create KEs for high-value ones" >> "$OUTPUT"
 
 # Cleanup
-rm -f "$TEMP_INSIGHTS" "$TEMP_KE_TITLES" "$TEMP_KEYWORDS" "$TEMP_PHRASE_COUNTS"
+rm -f "$TEMP_INSIGHTS" "$TEMP_KE_TITLES" "$TEMP_KEYWORDS" "$TEMP_PHRASE_COUNTS" "$TEMP_PHRASE_FILTERED"
 
 echo "Done. Results at: $OUTPUT"
 echo "Found $candidate_count promotion candidates from $total insights."
