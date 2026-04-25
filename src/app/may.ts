@@ -469,13 +469,15 @@ process.on("SIGHUP", () => {
   bus.emit({ type: "info", message: "[signal] SIGHUP received (ignoring)" });
 });
 process.on("uncaughtException", (err) => {
-  bus.emit({ type: "info", message: `[fatal] Uncaught exception: ${err.message}\n${err.stack}` });
+  try { console.error(`[fatal] Uncaught exception: ${err.message}\n${err.stack}`); } catch {}
+  try { closeAllDbs(); } catch {}
   process.exit(1);
 });
 process.on("unhandledRejection", (reason) => {
-  bus.emit({ type: "info", message: `[fatal] Unhandled rejection: ${reason}` });
+  try { console.error(`[fatal] Unhandled rejection: ${reason}`); } catch {}
 });
 process.on("exit", (code) => {
+  try { closeAllDbs(); } catch {}
   try {
     writeIdentity({
       status: code === 0 ? "done" : "error",
