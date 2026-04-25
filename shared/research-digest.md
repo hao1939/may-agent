@@ -7,7 +7,28 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — Self-Evolving & Cross-User Agent Collaboration
+## Fresh Arrivals (Current Session) — OpenClaw-Turbo: 生态信号
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2025-04-26 | **OpenClaw-Turbo** (GitHub) | 第三方中文 Agent 管理仪表盘，基于 GMSSH 生态。OpenClaw 命名已成为社区卖点。Skills 中心 + 可视化配置 + 国内 IM 适配。 | [HB-2155](library/posts/HB-2155-openclaw-turbo-chinese-agent-dashboard.md) |
+
+**Key Takeaway**: **生态位形成信号** — OpenClaw-Turbo 项目验证了三件事：(1) "Claw" 命名在中文社区已有认知度，被第三方用作品牌卖点；(2) 中文市场对**可视化 Agent 管理工具**有明确需求；(3) 国内生态（GMSSH）正在构建平行于国际开源的基础设施。
+
+**Critical Questions for OpenClaw**:
+- **品牌治理**: 如何建立 OpenClaw 兼容性认证，避免质量参差不齐的第三方项目稀释品牌？
+- **GUI 路线图**: 社区对可视化管理的渴求明显，是否需要官方 Dashboard 或 CLI 增强？
+- **中文本地化**: 国内 IM 集成（微信/钉钉）和国密/信创合规是否应纳入路线图？
+- **生态合作**: 是否与 OpenClaw-Turbo 等项目建立官方合作关系？
+
+**For OpenClaw**:
+- 评估与第三方 GUI 工具的合作而非自建（类似 Docker Engine vs Docker Desktop 模式）
+- 建立 OpenClaw Compatible 认证机制，把控生态质量
+- 加强中文文档和社区建设，把握本土市场机会
+
+---
+
+## Previous Session — Self-Evolving & Cross-User Agent Collaboration
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
