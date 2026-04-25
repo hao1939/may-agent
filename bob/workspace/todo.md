@@ -10,7 +10,7 @@
 - [ ] **EXP-191 designed**: Evaluator anonymization A/B test (H-178). Needs implementation: anonymization script, treatment SOUL variant, calibration process. ~$5 cost. Scripts ready in EXP-191/ dir. Blocked on tech-lead wiring anonymization into evaluator pipeline.
 
 ## Blocked → UNBLOCKED (gym works!)
-- [ ] **GYM UNBLOCKED**: `GYM_AGENT_BIN=/usr/local/bin/may-agent` makes gym runner invoke real agent. Discovered 2026-07-30. Unblocks EXP-178, EXP-180, EXP-190, EXP-192, H-183 Phase 2.
+- [ ] **GYM UNBLOCKED**: `GYM_AGENT_BIN=/usr/local/bin/may-agent` works. Core 20 baseline: 10/20 (50%). Critical: must pass `--agent amy` since "coder" isn't a registered agent. Abilities 80%, Behaviors 20%. Next: evolution cycle on convention-compliance.
 - [ ] **EXP-178 (Difficulty-Adaptive Guard)**: READY TO RUN. #2 priority. 4 arms × 2 scenarios × 15 runs = 120 runs. ~$9-12. Next session: execute G1 baseline batch.
 - [ ] **EXP-188 shipping**: Guards are DEAD CODE — no runtime loads them. Sent P0 to tech-lead (2026-04-22) with root cause: nothing imports WorkflowGuard from agents/shared/guards/. Need workflow engine guard-loader. Blocked on tech-lead runtime wiring.
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.

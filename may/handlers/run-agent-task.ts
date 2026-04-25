@@ -89,7 +89,8 @@ function extractFinishParams(messages: any[]): FinishCallParams | null {
 
 /**
  * Validate finish() deliverables and evidence from a completed session.
- * Logs violations but does not throw — violations are warnings, not blockers.
+ * FM-3.1 violations (ghost deliverables) downgrade result status to "partial".
+ * FM-3.3 violations (missing evidence) are logged as warnings.
  */
 function validateFinishResult(
   taskResult: { messages?: any[]; status?: string },
@@ -104,6 +105,11 @@ function validateFinishResult(
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     log(`[finish-guard] FM-3.1 VIOLATION: ${msg}`);
+    // Downgrade status: ghost deliverables mean the task didn't truly succeed
+    if (taskResult.status === "success") {
+      (taskResult as any).status = "partial";
+      log(`[finish-guard] FM-3.1 ENFORCED: Downgraded status from "success" to "partial" due to missing deliverables.`);
+    }
   }
 
   try {
@@ -114,6 +120,7 @@ function validateFinishResult(
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     log(`[finish-guard] FM-3.3 VIOLATION: ${msg}`);
+    // Evidence violations are warnings — don't downgrade status
   }
 }
 

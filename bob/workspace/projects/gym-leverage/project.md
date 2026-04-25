@@ -43,7 +43,7 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 - Master-worker script: scripts/master-worker-test.ts
 
 ## Current State
-Phase 1 & 2 analysis complete (architecture documented, scenarios categorized, core 20 selected). Phase 3 feedback loop designed but needs live agent runs to validate. Waiting on GYM_AGENT_BIN for real runs.
+**Phase 3 in progress.** Core 20 baseline established 2026-07-31: 10/20 pass (50%). Abilities 80%, Behaviors 20%. Critical finding: `coder` agent_type not mapped — all prior results were stub-mode. See `core20-baseline-2026-07-31.md`. Next: run evolution cycle targeting convention-compliance failures.
 
 ## Process Notes
 features: active-reviewer

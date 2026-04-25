@@ -1,8 +1,8 @@
 {
-  "host": "db.internal.example.com",
+  "host": "prod-db-cluster.internal",
   "port": 5432,
-  "database": "app_production",
-  "username": "app_user",
+  "database": "webapp_prod",
+  "username": "prod-user",
   "maxConnections": 20,
   "ssl": true,
   "timeout": 10000
