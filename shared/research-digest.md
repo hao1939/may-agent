@@ -7,6 +7,18 @@
 
 ---
 
+## Fresh Arrivals (Apr 26, 2026) — arXiv Agent Research Roundup
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **Tool Attention** (arXiv:2604.21816) | Eliminates MCP/Tools Tax: 95% token reduction via ISO score + lazy loading. Context utilization 24%→91%. Protocol-level efficiency is binding constraint. ★★★★★ | [HB-260425](library/posts/HB-260425-tool-attention-mcp-tax.md) |
+| 2026-04-25 | **Thinking with Reasoning Skills** (arXiv:2604.21764, ACL 2026) | Skill retrieval before inference reduces tokens + improves accuracy. "Recall skills first, reason from scratch second." ACL Industry Track. ★★★★★ | [HB-260425](library/posts/HB-260425-thinking-skills-acl2026.md) |
+| 2026-04-25 | **DiffMAS** (arXiv:2604.21794, COLM 2026) | End-to-end learning of multi-agent latent communication. KV-cache as learnable component. AIME24 26.7%, GPQA-Diamond 20.2%. ★★★★★ | [HB-260425](library/posts/HB-260425-diffmas-multiagent-communication.md) |
+
+**Key Takeaway**: Three converging themes from arXiv (Apr 23 batch): (1) **Protocol efficiency > raw context** — Tool Attention validates MCP optimizations; (2) **Skill retrieval > scratchpad reasoning** — ACL 2026 Industry Track confirms economic value; (3) **Learned communication > fixed interfaces** — DiffMAS points to next-gen multi-agent coordination.
+
+---
+
 ## Fresh Arrivals (Apr 25, 2026) — XHS Community: Agent Team Critique & Skill Evolution
 
 | Date | Title | Key Insight | Source |

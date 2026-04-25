@@ -1,69 +1,107 @@
-# DiffMAS: End-to-End Learning of Multi-Agent Latent Communication
+# DiffMAS: 端到端多 Agent 隐式通信学习
 
-**Source**: arXiv:2604.21794 (Apr 23, 2026)  
-**Authors**: Ye Yu, Heming Liu, Haibo Jin, et al.  
-**Venue**: Under review at COLM 2026  
-**Code**: Available on request  
-**Relevance**: ★★★★★ — Learnable communication protocols for multi-agent systems
-
-## Core Problem
-
-Multi-agent LLM systems treat **inter-agent communication as a fixed interface**:
-- Most work focuses on agent roles and orchestration
-- Text-based protocols are suboptimal
-- Latent communication (KV caches) exists but isn't jointly optimized with reasoning
-
-## Solution: DiffMAS
-
-**Diff**erentiable **M**ulti-**A**gent **S**ystems — treats latent communication as a learnable component:
-
-### Key Innovation
-- Parameter-efficient supervised training over multi-agent latent trajectories
-- Agents jointly learn how information should be **encoded and interpreted** across interactions
-- End-to-end optimization of communication + reasoning
-
-## Results
-
-| Benchmark | Score | Notes |
-|-----------|-------|-------|
-| AIME24 | **26.7%** | Math reasoning |
-| GPQA-Diamond | **20.2%** | Scientific QA |
-| Code generation | Consistent gains | Across benchmarks |
-| Commonsense | Consistent gains | Decoding stability +40% |
-
-Beats:
-- Single-agent inference
-- Text-based multi-agent systems  
-- Prior latent communication methods
-
-## Technical Approach
-
-1. **Latent trajectories** — capture multi-agent interaction patterns
-2. **Parameter-efficient training** — adapt communication without full fine-tuning
-3. **Joint optimization** — communication and reasoning learned together
-
-## What This Means for OpenClaw
-
-| Concept | Application |
-|---------|-------------|
-| Learnable communication | Agent-to-agent messages could be learned, not hardcoded |
-| KV-cache sharing | Potential efficiency gain in multi-agent orchestration |
-| End-to-end training | RL from agent trajectories could optimize coordination |
-| Decoding stability | Multi-agent consensus more stable with learned protocols |
-
-## Connection to Active Research
-
-- GenericAgent (Fudan): Runtime evolution of agent + skill bank
-- COSPLAY: Co-evolution of decision agent + skill agent
-- DiffMAS: End-to-end learning of multi-agent communication
-
-**Trend**: Moving from hand-designed orchestration to learned coordination.
-
-## Open Questions
-
-- How to integrate with existing A2A/MCP protocols?
-- What is the training data requirement?
-- Can this be adapted for async, non-differentiable agent interactions?
+**来源**: arXiv cs.AI/CL/MA (Apr 23, 2026) — arXiv:2604.21794  
+**作者**: Ye Yu, Heming Liu, Haibo Jin, et al.  
+**状态**: COLM 2026 审稿中  
+**标签**: #multi-agent #latent-communication #end-to-end-learning
 
 ---
-*Scraped from arXiv on 2026-04-25 by Amy-Kimi*
+
+## 核心问题
+
+多 Agent 系统 (MAS) 虽然展示了强大的复杂推理能力，但存在关键缺陷：
+
+1. **通信被视为固定接口**: 现有工作关注 Agent 角色和编排，将通信视为固定文本协议
+2. **KV 缓存潜力未开发**: 内部表示（如 key-value 缓存）的潜在通信是文本协议的有前景替代，但未与多 Agent 推理联合优化
+
+---
+
+## 解决方案: DiffMAS
+
+**DiffMAS** (Differentiable Multi-Agent System) — 将**隐式通信视为可学习组件**的训练框架。
+
+### 关键技术
+- **参数高效监督训练**: 基于多 Agent 隐式轨迹
+- **联合优化**: 信息如何编码 + 如何在交互中解释
+- **端到端**: 通信协议从任务中涌现，而非预设
+
+---
+
+## 关键数据
+
+| 基准 | 成绩 | 对比 |
+|------|------|------|
+| AIME24 | **26.7%** | 超越单 Agent 推理、文本 MAS、先前隐式通信方法 |
+| GPQA-Diamond | **20.2%** | 科学问答能力 |
+| 解码稳定性 | **+40%** | 相对基线 |
+
+---
+
+## 架构范式对比
+
+| 维度 | 传统 MAS | DiffMAS |
+|------|---------|---------|
+| 通信形式 | 固定文本协议 | 可学习潜在通信 |
+| 优化中心 | 角色为中心 | 通信为中心 |
+| 消息传递 | 确定性 | 可微信息流 |
+| 接口设计 | 预定义 | 涌现通信模式 |
+
+**范式转变**: 从手工设计的编排转向学习式协调。
+
+---
+
+## 关键洞察
+
+> "Communication protocols should emerge from tasks, not be prespecified."
+> — 通信协议应从任务中涌现，而非预设。
+
+**隐式通信优势**:
+- 比文本协议更高效（无需 token 化）
+- 可端到端优化（与推理目标一致）
+- 自然支持梯度流动（可训练）
+
+---
+
+## 对 OpenClaw 的意义
+
+### ✅ 架构启示
+- **Agent 间消息可学习**: 当前硬编码的消息格式可演进为可学习表示
+- **KV 缓存共享**: Dispatcher 层可支持潜在通信通道
+- **学习 > 手工设计**: 通信协议应是优化目标，而非仅机制
+
+### ⚠️ 技术挑战
+1. **异步、不可微交互**: OpenClaw 的 Agent 是异步、离散调用的，梯度如何回传？
+2. **跨进程通信**: 潜在表示如何在不同进程中传递？
+3. **可解释性**: 隐式通信比文本协议更难调试
+
+### 📊 可行性探索
+| 方案 | 难度 | 潜在收益 |
+|------|------|----------|
+| 文本级学习 | 低 | 中等 |
+| 嵌入级共享 | 中 | 高 |
+| KV 缓存级 | 高 | 很高 |
+| 端到端可微 | 很高 | 变革性 |
+
+---
+
+## 与当前架构的关联
+
+**OpenClaw 当前**: Dispatcher ↔ Agent 文本消息
+**DiffMAS 方向**: Dispatcher ↔ Agent 潜在表示 + 可学习映射
+
+**中间步骤**:
+1. 消息嵌入标准化（文本 → 向量）
+2. 基于注意力机制的消息路由
+3. 历史消息压缩表示
+
+---
+
+## 资源链接
+
+- **论文**: arXiv:2604.21794
+- **会议**: COLM 2026 (审稿中)
+- **标签**: cs.AI, cs.CL, cs.MA
+
+---
+
+*标签: #multi-agent #diffmas #latent-communication #end-to-end #learnable-communication #colm2026*
