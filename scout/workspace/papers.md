@@ -114,5 +114,8 @@
 | 2604.19752 | Soft-Label Governance (SWARM) | — | Continuous risk metrics for MAS governance. Strict governance reduces welfare 40% without improving safety. Circuit breaker calibration tradeoffs. |
 | 2604.19589 | TeamFusion: Open-ended Teamwork | — | Proxy agents + structured discussion for consensus. Outperforms direct aggregation. |
 
+| 2604.20658 | Cooperative Profiles Predict Team Performance | DD-863 | Behavioral economics games predict multi-agent cooperation. Cooperative disposition ≠ general ability. 35 LLMs benchmarked. ★★★★★ |
+| 2604.15657 | Token Allocation in Agentic Verification | DD-864 | Six-category token profiling. Methodology-bound ceilings vs reasoning frontiers. Domain specialization = 4-13x fewer tokens. ★★★★ |
+
 ### Noted (★★★ or below, no DD)
 - Various cs.MA papers on traffic optimization, swarm robotics, game theory, Web3 gaming — outside focus areas
