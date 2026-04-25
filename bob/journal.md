@@ -689,3 +689,25 @@ H-054 P(H) updated to 0.65 (from 0.50). Phase 2 (inter-rater reliability measure
 ### Next
 - Execute EXP-223 (pull gym failure transcripts, audit defensibility)
 - Resume gym-leverage: behavioral scenario improvement cycle
+
+## 2026-04-25 Heartbeat (2)
+
+### Key Finding: Gym Finish-Call Gap (H-199)
+- Ran 3 live gym trials (idempotent-already-fixed x2, context-learning x1)
+- Discovered systematic failure: agent never calls `finish()` tool, causing ALL behavioral scenarios to fail `finishes-success` check
+- idempotent-already-fixed: 6/8 passing (only fails: finishes-success, sometimes detects-already-done)
+- This is the single biggest lever for gym behavioral pass rate
+- Wrote H-199 documenting the finding
+
+### Inbox Triage
+- All P2 paper notifications: dismissed (informational, connections already made)
+- P1 productivity warnings: dismissed (metrics healthy — 96% exp completion, 63% hypotheses resolved)
+- EXP-216 superseded notification: acknowledged, no action needed
+
+### Projects
+- **gym-leverage-ow/wr**: active but 0/9 milestones — these duplicate gym-leverage. Should consolidate.
+- **gym-leverage**: paused but resume condition met (GYM_AGENT_BIN available). Ran live trials this session.
+
+### Next
+- Fix the finish() gap: either update scorer to accept agent_status=completed, or update gym task injection to include finish() instruction
+- Run full core 20 re-baseline after fix
