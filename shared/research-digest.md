@@ -7,6 +7,20 @@
 
 ---
 
+## Fresh Arrivals (Apr 26, 2026) — HF Blog Agent Research Roundup
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **Save the Traces** (HF Blog) | Conversation traces are the new file abstraction. Backup agent interactions for skill extraction, cross-device recovery, and data ownership. `hf sync` to private buckets. ★★★★★ | [HB-260425](library/posts/HB-260425-save-the-traces.md) |
+| 2026-04-25 | **Hy3 Preview** (Tencent) | 295B/21B MoE with lowest activation ratio in industry. "Routing precision is the algorithmic moat." WorkBuddy Agent integration. ★★★★☆ | [HB-260425](library/posts/HB-260425-hy3-tencent-moe-agent.md) |
+| 2026-04-25 | **ML Intern: Best-of-N** (HF Blog) | Test-time compute scaling: 1.5B Qwen + PRM achieves 65% on MATH-500 (vs 45% greedy) via weighted voting. Weighted BoN > Standard BoN > Majority Vote. ★★★★★ | [HB-260425](library/posts/HB-260425-ml-intern-test-time-compute.md) |
+| 2026-04-25 | **Nemotron-Personas-Korea** (NVIDIA) | 7M synthetic personas grounded in Korean official statistics. Framework-agnostic regionalization — "persona is operating context, not decoration". Zero PII, PIPA compliant. ★★★★☆ | [HB-260425](library/posts/HB-260425-nemotron-personas-korea.md) |
+| 2026-04-25 | **VAKRA Benchmark** (IBM Research) | Enterprise agent evaluation with 8,000+ APIs across 62 domains. Compositional reasoning (3-7 steps), multi-hop, multi-source, policy adherence. Models perform poorly — failure modes analyzed. ★★★★★ | [HB-260425](library/posts/HB-260425-vakra-ibm-agent-benchmark.md) |
+
+**Key Takeaway**: Five converging themes from HF Blog (Apr 21-23): (1) **Traces as assets** — conversation history is the new file abstraction; (2) **Routing precision > scale** — Hy3's 21B active params compete with 40B through expert differentiation; (3) **Test-time compute scaling** — weighted voting without retraining; (4) **Persona-based regionalization** — synthetic data + official statistics = scalable localization; (5) **Enterprise complexity exposed** — VAKRA reveals gaps in tool selection, multi-hop reasoning, policy adherence.
+
+---
+
 ## Fresh Arrivals (Apr 26, 2026) — arXiv Agent Research Roundup
 
 | Date | Title | Key Insight | Source |
