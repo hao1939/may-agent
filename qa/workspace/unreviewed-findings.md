@@ -1,17 +1,31 @@
-# QA Heartbeat Findings (2026-04-25)
+# QA Heartbeat — Unreviewed Findings
 
-## Inbox triage
-- Duplicate “Quick Code Review” notifications (x5): **DISMISSED as waste/duplicate**. No distinct actionable payloads; same issue repeated.
-- Alert: “Verify the new gym scenario EXP-220 (enoent-file-search) was properly set”: **CONFIRMED PROBLEM** — EXP-220 scenario file is missing from repo.
+## 2026-04-25 — Inbox triage + EXP-220 alert verification
 
-## Evidence: EXP-220 missing
-- `find agents/gym/scenarios -maxdepth 1 -type f -iname '*220*'`: **no output** (no matching files)
-- `find agents/gym/scenarios -maxdepth 1 -type f`: only baseline result docs exist:
-  - `agents/gym/scenarios/RECOGNITION-BASELINE-RESULTS.md`
-  - `agents/gym/scenarios/RECOGNITION-GAPFILL-BASELINE-RESULTS.md`
+### Finding: EXP-220 / enoent-file-search scenario naming mismatch
+**Severity:** IMPORTANT
 
-## Notes
-- The only recent QA-related commit in `agents/` git history is `d64277b28 qa: heartbeat triage + verify EXP-220 scenario`, but the scenario content itself is not present under `agents/gym/scenarios/`.
+**What the alert says:** “Verify the new gym scenario EXP-220 (enoent-file-search) was properly set”.
 
-## Action recommended
-- Escalate to gym scenario owner/tech-lead: add/restore `EXP-220` scenario files to `agents/gym/scenarios/` (or clarify intended location and update the alert).
+**What exists in repo:** A gym scenario folder exists at `agents/gym/scenarios/enoent-file-search/` with:
+- `scenario.json`
+- `task.md`
+- `success_criteria.js`
+
+Evidence (repo reads):
+- `agents/gym/scenarios/enoent-file-search/scenario.json` has `"name": "enoent-file-search"` and describes the ENOENT/file-search trap.
+
+**Issue:** There is no scenario folder/file explicitly named `EXP-220` under `agents/gym/scenarios/`. Either:
+1) EXP-220 is intended to be the codename for the `enoent-file-search` scenario (in which case the alert is fine but should clarify the mapping), or
+2) A distinct EXP-220 scenario folder is missing.
+
+**Recommendation:** Update the alert text to reference the concrete repo path `agents/gym/scenarios/enoent-file-search/` (and/or add EXP-220 metadata somewhere authoritative).
+
+### Environment limitation: mandatory QA gate commands unavailable
+**Severity:** IMPORTANT (environment)
+
+The required QA gate commands fail in this repo checkout because `node_modules/.bin/tsc` and `node_modules/.bin/vitest` are not present.
+- `./node_modules/.bin/tsc --noEmit` → ENOENT
+- `./node_modules/.bin/vitest --run` → ENOENT
+
+Recommendation: Ensure dependencies are installed in this environment or provide the correct invocation (e.g., via `pnpm`/`npm` scripts) so QA can run the mandated checks.
