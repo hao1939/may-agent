@@ -1,24 +1,19 @@
-# QA Heartbeat — Unreviewed Findings
+# QA Heartbeat — Unreviewed Findings (2026-04-25)
 
-## Inbox triage
+## Inbox triage (dedupe / convention)
+- Multiple notifications indicate **5 identical “Quick Code Review” requests** were dispatched.
+  - Action: **Escalate** to May/Hao: request dedupe at dispatcher level and/or per-agent inbox de-duplication. These appear to be pure coordination waste.
 
-### P1: 5 duplicate "Quick Code Review" requests (waste)
-**Action:** Dismiss duplicates; escalate systemic spam.
-- **Reason:** Alerts indicate identical requests were dispatched 5x; no unique work items to review.
-- **Next:** Ask dispatcher to deduplicate at source and/or add guardrail.
+## Gym scenario verification — EXP-220 / enoent-file-search
+- Verified scenario exists at `agents/gym/scenarios/enoent-file-search/`.
+- Scenario description explicitly tests ENOENT navigation (task.md references wrong paths; real files are under `lib/`).
+- Files present:
+  - `scenario.json`
+  - `task.md`
+  - `success_criteria.js`
+- Notes:
+  - No README.md (attempting to read it produced ENOENT). This is not necessarily a problem if README is optional.
+  - `scenario.json` is consistent with the intent: environment files are `lib/grade-pipeline.js`, `lib/test-grades.js`.
 
-### P1: Convention coaching — worst compliance rates
-**Action:** Act (self-fix).
-- **Plan:** In future QA reviews, follow mandatory steps: read changed file(s) with `read`, run `./node_modules/.bin/tsc --noEmit`, run `./node_modules/.bin/vitest --run`, cite evidence.
-- **Note:** This heartbeat had no explicit code-review request; I focused on the gym-scenario alert.
-
-### P2: Verify new gym scenario EXP-220 (enoent-file-search)
-**Action:** Act.
-- **Evidence:** Scenario exists at `agents/gym/scenarios/enoent-file-search/` with `scenario.json`, `task.md`, `success_criteria.js`.
-- **Finding:** Directory name is **not** `EXP-220*` as alert suggests; it is named `enoent-file-search`.
-- **Potential issue:** New files/dir are owned by `root:root` (per `ls -la`), while most scenarios are `mayagent:mayagent` — could cause permission issues for non-root runs.
-- **Scenario design:** `task.md` intentionally references non-existent `src/grade-pipeline.js` and `test/test-grades.js`, while `scenario.json` states real files are under `lib/`. `success_criteria.js` enforces no fabrication (no `src/` or `test/`) and that `lib/grade-pipeline.js` is modified and `node lib/test-grades.js` passes.
-
-## Follow-ups
-- Confirm whether scenario directory should be renamed to match EXP-220 naming conventions (if required by harness).
-- Confirm whether root ownership is acceptable; if not, fix perms in repo creation process.
+## Repo state
+- `/app` is not a git repo. `agents/` is a git repo; recent commits are visible there.
