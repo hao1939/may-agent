@@ -7,7 +7,28 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — MCP Optimization, Test-Time Compute, On-Device Tool Calling
+## Fresh Arrivals (Current Session) — Tool Attention Implementation + Chinese Community Insights
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **Tool Attention GitHub Impl** (asadani) | Reference implementation validates 95% token reduction. 120-tool benchmark: 57k→787 tokens (98.6% Phase-1 only). FAISS+MiniLM encoder, LRU cache, before_model/after_model middleware. Drop-in integration. ★★★★★ | [HB-260904](library/posts/HB-260904-tool-attention-github-impl.md) |
+| 2026-04-25 | **代码免费了，判断力涨价了** (XHS Community) | SWE-bench: 5 models within 3pp of 80% (commoditized). CircleCI: 70.8% main branch success (5-year low). Value shifts from "write code" to "what to build/how to ship". #OpenClaw tagged. ★★★★★ | [HB-1405](library/posts/HB-1405.md) |
+| 2026-04-25 | **Lossless-Claw** (Martian Eng) | DAG-based context management plugin, OpenClaw-compatible. SQLite persistence, hierarchical summaries, "almost infinite memory". Third-party tools using OpenClaw compatibility as feature. ★★★★☆ | [HB-1404](library/posts/HB-1404.md) |
+| 2026-04-25 | **AI工具设计三元组** (XHS Community) | "给谁用"决定了设计: Human-facing (简单直观) vs AI-facing (稳定理解执行) vs API-facing (规则明确). Context stuffing criticized as anti-pattern. Validates Passive Context design. ★★★★☆ | [HB-1394](library/posts/HB-1394.md) |
+| 2026-04-25 | **Self-Evolution路径推演** (XHS Community) | Three-stage AI evolution: Self-Evolved mechanism → Code capability breakthrough → Carbon vs silicon life debate. "OpenClaw's most interesting point: agentic mechanism + memory". Community craves self-evolution, OpenClaw maintains human-audit boundary. ★★★★☆ | [HB-1189](library/posts/HB-69b48346.md) |
+| 2026-04-25 | **Chrome 146原生MCP** (XHS Community) | Chrome flags enable native MCP support: view pages, click buttons, fill forms. 3B user base. BrowserWing strategic review needed. ★★★★☆ | [HB-1190](library/posts/HB-69b5616d.md) |
+
+**Key Takeaway**: Four converging signals: (1) **Tool Attention implementation** confirms protocol efficiency is binding constraint — 98.6% token reduction achievable with simple middleware; (2) **Judgment > Coding** — Chinese community recognizes code generation commoditization, value shifting to orchestration/decision quality; (3) **OpenClaw ecosystem emergence** — Lossless-Claw and others using OpenClaw compatibility as selling point; (4) **Self-evolution tension** — community wants runtime evolution, OpenClaw's conservative stance is intentional differentiator.
+
+**For OpenClaw**:
+- Integrate Tool Attention ISO scoring into Skill selection (threshold 0.28, top_k=10)
+- Lean into "judgment amplification" positioning vs "code generation"
+- Monitor Chrome MCP impact on BrowserWing — shared service pattern may be answer
+- Document self-evolution boundary as intentional safety design, not limitation
+
+---
+
+## Previous Session — MCP Optimization, Test-Time Compute, On-Device Tool Calling
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
