@@ -7,7 +7,17 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — ByteDance Agent Research: EMPG + Context-Folding
+## Fresh Arrivals (Current Session) — ML Intern Test-Time Compute Validation
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-23 | **ML Intern Takes HF Internship Test** (HF Blog) | AI Agent completes post-training take-home test. Weighted Best-of-N: 1.5B Qwen + 1.5B PRM → **65% MATH-500** (vs 45% greedy). Saturation at N=8-16. Weighted voting > Standard BoN. ★★★★★ | [HB-260810](library/posts/HB-260810-ml-intern-takehome-test-time-compute.md) |
+
+**Key Takeaway**: ML Intern (smolagents/ml-intern) validates Test-Time Compute Scaling in practice. **Weighted Best-of-N** with just 3B total parameters (1.5B generator + 1.5B PRM) achieves 65% on MATH-500 — a +20pp improvement over greedy decoding. Performance plateaus at N=8-16 samples, establishing a cost-effective "sweet spot". **For OpenClaw**: (1) Weighted aggregation of multiple Skill execution results is more robust than single-selection; (2) N=8-16 sampling budget provides optimal cost-performance; (3) Missing infrastructure: PRM for code/tool-call trajectory evaluation.
+
+---
+
+## Previous Session — ByteDance Agent Research: EMPG + Context-Folding
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
