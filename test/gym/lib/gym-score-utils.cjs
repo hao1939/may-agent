@@ -64,7 +64,11 @@ class Score {
     if (this._transcriptLoaded) return this._transcript;
     this._transcriptLoaded = true;
 
-    const transcriptPath = path.join(this._workDir, "_gym_transcript.jsonl");
+    // Try both names: runner writes "transcript.jsonl", legacy used "_gym_transcript.jsonl"
+    let transcriptPath = path.join(this._workDir, "transcript.jsonl");
+    if (!fs.existsSync(transcriptPath)) {
+      transcriptPath = path.join(this._workDir, "_gym_transcript.jsonl");
+    }
     if (!fs.existsSync(transcriptPath)) {
       this._transcript = null;
       return null;
@@ -73,18 +77,33 @@ class Score {
     try {
       const raw = fs.readFileSync(transcriptPath, "utf-8");
       const lines = raw.split("\n").filter(l => l.trim());
-      this._transcript = lines.map((line, idx) => {
+      const entries = [];
+      let entryIdx = 0;
+      for (const line of lines) {
         try {
           const entry = JSON.parse(line);
-          // Ensure entryIndex exists for ordering
-          if (entry.entryIndex === undefined) {
-            entry.entryIndex = idx;
+          // Flatten pi-agent message format: {role, content: [{type:"toolCall", name, arguments}]}
+          if (Array.isArray(entry.content)) {
+            for (const block of entry.content) {
+              if (block.type === "toolCall" && block.name) {
+                entries.push({ tool: block.name, name: block.name, arguments: block.arguments || {}, id: block.id, entryIndex: entryIdx++, _role: entry.role });
+              } else if (block.type === "toolResult" && block.toolName) {
+                entries.push({ tool: block.toolName, name: block.toolName, toolResult: true, content: block.content, toolCallId: block.toolCallId, entryIndex: entryIdx++, _role: entry.role });
+              }
+            }
+            // Also keep the raw entry for text content access
+            entry.entryIndex = entryIdx++;
+            entries.push(entry);
+          } else {
+            // Flat format: {tool, arguments, ...}
+            if (entry.entryIndex === undefined) entry.entryIndex = entryIdx++;
+            entries.push(entry);
           }
-          return entry;
         } catch {
-          return { entryIndex: idx, raw: line };
+          entries.push({ entryIndex: entryIdx++, raw: line });
         }
-      });
+      }
+      this._transcript = entries;
       return this._transcript;
     } catch {
       this._transcript = null;
