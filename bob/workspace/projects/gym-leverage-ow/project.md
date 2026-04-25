@@ -35,7 +35,13 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 - Gym triage: agents/gym/TRIAGE.md
 
 ## Current State
-New project. No work done yet.
+Phase 1 partially complete, Phase 2 partially complete:
+- [x] `.state/gym-architecture.md` — documents runner → adapter → scenario → scorer pipeline
+- [x] `.state/gym-categories.md` — 424 scenarios categorized by type and tier
+- [x] `.state/gym-core20.md` — core 20 benchmark selected (20 smoke-tier scenarios)
+- **BLOCKER**: Cannot run scenarios without a configured agent adapter. Runner without agent just scores pre-baked (already-correct) environments. Need `GYM_AGENT_BIN` or human to configure `--agent` adapter.
+- Runner issues found: none (runner works, compiles, lists scenarios correctly)
+- Key finding: environments contain SOLVED code — the gym requires a live agent to copy env to temp, let agent modify it, then score.
 
 ## Process Notes
 
