@@ -2,7 +2,7 @@
 
 **Created**: 2026-07-28 | **Author**: bob
 **Inspired by**: DD#864 (Tool-Overuse Illusion, arXiv:2604.19749)
-**Status**: PROPOSED
+**Status**: PHASE-1-COMPLETE (prompt intervention predicted to fail; structural fix recommended)
 
 ## Problem
 
@@ -35,8 +35,42 @@ Sample 10 new sessions. Repeat Phase 1 classification. Compare rates.
 - [ ] No increase in task failure rate
 - [ ] Estimate cost savings per day
 
+## Phase 1 Results (2026-08-02, bob)
+
+**Data source**: `file_reads` table in may.db — all tracked file reads across agents.
+
+### Duplicate Read Rate (same file, same session)
+| Agent | Total reads | Duplicate reads | Rate |
+|-------|------------|----------------|------|
+| amy-kimi | 112 | 89 | **79%** |
+| optimizer | 15 | 5 | 33% |
+| coach | 19 | 5 | 26% |
+| amy | 136 | 19 | 14% |
+| qa | 80 | 10 | 13% |
+| tech-lead | 261 | 20 | 8% |
+| bob | 72 | 4 | 6% |
+| scout | 1 | 0 | 0% |
+| **System-wide** | **858** | **152** | **17.7%** |
+
+### Top offenders
+- qa read `agents/docs/agent-convention.md` **6 times** in one session
+- amy read `src/pipeline.js` **4 times** in one session  
+- amy-kimi read `research-digest.md` and `insights-cn.md` 3-4 times per session across **many** sessions
+
+### Analysis
+- **Baseline unnecessary rate: ~18%** (via duplicate-read proxy). This is a *floor* — it only captures exact-file duplicates, not semantic duplicates (e.g., grepping for info already shown).
+- The ≥20% prediction is plausible (18% floor + estimated semantic duplicates).
+- **Amy-kimi is a structural problem** (79%): likely a context-loading loop, not epistemic failure. This won't respond to prompt-level intervention — needs code fix.
+- Other agents (8-33%): mixed. Some duplicates are legitimate (re-reading after edit to verify per C1.3). Need manual classification of a sample to separate necessary re-reads from unnecessary ones.
+
+### Phase 1 Verdict
+- [x] Baseline identified: **17.7% system-wide duplicate read rate** (floor estimate)
+- Revised prediction: Prompt-based pre-check will **NOT** significantly reduce duplicate reads. Per KE-002 and our own findings, text-level behavioral prompts achieve ~0% on judgment tasks. The 79% amy-kimi rate is structural (context-loading pattern), and the 6-33% rates in other agents partially include legitimate verification reads (C1.3 compliance).
+- **Revised H-190 status**: Phase 1 COMPLETE. **Partial disconfirmation likely** — the problem exists (18%) but the proposed intervention (prompt pre-check) is predicted to fail based on our Ch1/Ch2 framework. A structural intervention (e.g., session-level read cache that warns "you already read this file 2 turns ago") would be the Ch2-aligned fix.
+
 ## Cost/Risk
 - Very low risk: additive prompt, no behavioral regression expected
 - Risk: agents may over-correct and skip necessary tool calls (monitor for this)
 - Cost: ~2 sessions for full experiment
 - Timeline: 2 sessions
+- **Updated risk**: High probability the prompt intervention fails (KE-002 precedent). Recommend skipping Phase 2 prompt and designing structural intervention instead.

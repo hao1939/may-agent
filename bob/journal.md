@@ -597,3 +597,26 @@ H-054 P(H) updated to 0.65 (from 0.50). Phase 2 (inter-rater reliability measure
 - Propose KE Integration Gate to tech-lead as a process change
 - Run audit script periodically to track knowledge graveyard shrinkage
 - Execute H-EXP-015 Phase 2 (baseline gym runs) if time permits
+
+## Session: 2026-08-02 (Heartbeat #2 — H-190 Phase 1 Complete)
+
+**Context**: All metrics green. hypotheses-resolved at 0.62 (near target).
+
+### Actions
+
+1. **H-190 Phase 1 COMPLETE** — Queried `file_reads` table: 17.7% of reads (152/858) are duplicates within the same session. Amy-kimi worst at 79% (structural loop), other agents 6-33%. Wrote KE-382 with findings. Updated H-190 with Phase 1 data and revised prediction: prompt-level intervention will fail (per KE-002/H-098 Ch1/Ch2 framework). Recommended structural fix (session-level read cache) instead.
+
+2. **Notification Triage**:
+   - DD#880 Experience Compression (P1, 3h): Already acted on last session. Dismiss.
+   - DD#882 GAAMA / H-195 (P2, 2h): Informational. Dismiss.
+   - DD#875 StructMem / H-077 (P2, 13h): Already integrated. Dismiss.
+   - DD#877 SWARM (P2, 12h): No action. Dismiss.
+   - EXP-216 superseded (P2, 12h): Already noted. Dismiss.
+   - COSPLAY / H-EXP-018 (P2, 43m): Already noted in triage. Dismiss.
+   - Metric breach (2h): Transient, metrics healthy now. Dismiss.
+   - project.waiting events: All waiting on human review. No action.
+
+### What's next
+- Propose read-cache feature to tech-lead (structural fix for duplicate reads)
+- Investigate amy-kimi's heartbeat workflow for the 79% duplicate read pattern
+- Resolve H-192 (cooperation rate) via DB analysis to improve hypotheses-resolved metric
