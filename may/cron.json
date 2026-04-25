@@ -6,80 +6,18 @@
     "intervalMs": 1800000,
     "message": "[heartbeat] May heartbeat via per-agent workflow.",
     "enabled": true,
-    "description": "May's heartbeat \u2014 follow-up, system health, initiative (30min). Per-agent heartbeat workflow. ",
+    "description": "May's heartbeat — follow-up, system health, initiative (30min). Per-agent heartbeat workflow. ",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "handler": "run-workflow",
     "handlerConfig": {
       "workflow": "may-heartbeat",
       "agent": "may",
-      "task": "[heartbeat] You are running inside the may-heartbeat workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act \u2014 dispatch approved work, fix issues, don't wait for permission.",
+      "task": "[heartbeat] You are running inside the may-heartbeat workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act — dispatch approved work, fix issues, don't wait for permission.",
       "timeoutMs": 1800000
     },
     "on": [
       "heartbeat.trigger"
     ]
-  },
-  {
-    "name": "watchdog",
-    "type": "job",
-    "intervalMs": 600000,
-    "message": "[cron:watchdog] Check for stale sessions.",
-    "enabled": false,
-    "handler": "watchdog",
-    "description": "Cancel sessions stuck running > 30min (JS handler, 10min interval)",
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
-    "name": "zombie-cleanup",
-    "type": "job",
-    "intervalMs": 3600000,
-    "message": "[cron:zombie-cleanup] Clean up orphaned zombie sessions.",
-    "enabled": false,
-    "handler": "zombie-cleanup",
-    "description": "Archive sessions stuck in running/terminal states not active in memory (JS handler, 60min, no LLM cost)",
-    "_replaced_by": "system-maintenance"
-  },
-  {
-    "name": "convention-check",
-    "type": "job",
-    "intervalMs": 1800000,
-    "message": "[cron:convention-check] Check evaluated sessions for convention compliance.",
-    "enabled": false,
-    "handler": "convention-check",
-    "description": "Mechanical convention compliance checker \u2014 runs on evaluated sessions, checks C1.1/C1.3/C1.4/C2.1/C3.2/C3.3/C6.1/C7.1/C8.2/C12.1, writes to convention_checks table. JS handler, 30min. Preflight removed 2026-03-21: was checking .state/evaluations/ dir which doesn't exist (evaluations moved to SQLite). Handler has internal empty-check.",
-    "offsetMs": 600000,
-    "_replaced_by": "compliance-check"
-  },
-  {
-    "name": "system-status",
-    "type": "job",
-    "intervalMs": 14400000,
-    "message": "[cron:system-status] Operational status check.",
-    "enabled": false,
-    "handler": "system-status",
-    "description": "Operational status check every 4h (JS handler)",
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
-    "name": "proof-of-life",
-    "type": "job",
-    "intervalMs": 7200000,
-    "message": "[cron:proof-of-life] Send periodic activity digest to Telegram.",
-    "enabled": false,
-    "handler": "proof-of-life",
-    "description": "2h periodic proof-of-life digest \u2014 sends compact system summary to Telegram. JS handler, no LLM cost.",
-    "offsetMs": 600000,
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
-    "name": "daily-brief",
-    "type": "job",
-    "intervalMs": 86400000,
-    "message": "[cron:daily-brief] Generate daily system brief.",
-    "enabled": false,
-    "handler": "daily-brief",
-    "description": "Daily system metrics summary (JS handler, 24h)",
-    "_replaced_by": "daily-reports"
   },
   {
     "name": "heartbeat-bob",
@@ -88,7 +26,7 @@
     "agent": "bob",
     "message": "[heartbeat] Bob heartbeat via per-agent workflow.",
     "enabled": true,
-    "description": "Bob's mission heartbeat \u2014 design, todo drain, philosophy audit (60min). Per-agent heartbeat workflow.",
+    "description": "Bob's mission heartbeat — design, todo drain, philosophy audit (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
     "handler": "run-workflow",
@@ -110,7 +48,7 @@
     "agent": "optimizer",
     "message": "[heartbeat] Optimizer heartbeat via per-agent workflow.",
     "enabled": true,
-    "description": "Optimizer's heartbeat \u2014 find highest-impact improvement (60min). Per-agent heartbeat workflow.",
+    "description": "Optimizer's heartbeat — find highest-impact improvement (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "handler": "run-workflow",
     "handlerConfig": {
@@ -131,7 +69,7 @@
     "agent": "coach",
     "message": "[heartbeat] Coach heartbeat via per-agent workflow.",
     "enabled": true,
-    "description": "Coach heartbeat \u2014 triage, coaching, long-term mission work (60min). Per-agent heartbeat workflow.",
+    "description": "Coach heartbeat — triage, coaching, long-term mission work (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
     "handler": "run-workflow",
@@ -147,22 +85,13 @@
     ]
   },
   {
-    "name": "heartbeat-evaluator",
-    "type": "job",
-    "intervalMs": 1800000,
-    "handler": "evaluator-heartbeat",
-    "enabled": false,
-    "description": "Evaluator calibration gate \u2014 JS checks DB for stale evals/criteria, only spawns LLM session when calibration needed. Replaces LLM heartbeat that was 100% skipped (~250 wasted ops/day).",
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
     "name": "heartbeat-scout",
     "type": "job",
     "intervalMs": 1800000,
     "agent": "scout",
     "message": "[heartbeat] Scout heartbeat via per-agent workflow.",
     "enabled": true,
-    "description": "Scout's heartbeat \u2014 research and discovery (30min). Per-agent heartbeat workflow.",
+    "description": "Scout's heartbeat — research and discovery (30min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
     "handler": "run-workflow",
@@ -176,18 +105,6 @@
     "on": [
       "heartbeat.trigger"
     ]
-  },
-  {
-    "name": "analyze-failures",
-    "type": "job",
-    "intervalMs": 86400000,
-    "message": "[cron:analyze-failures] Generate failure analysis report.",
-    "enabled": false,
-    "description": "Daily failure analysis \u2014 verdict distributions, per-agent breakdowns, cost analysis, trends. Pure JS handler (was LLM via run-agent-task, converted 2026-04-04: saves ~78 ops/week). Writes to agents/bob/workspace/analysis.md.",
-    "handler": "analyze-failures",
-    "lastModified": "2026-04-04T09:06:00.000Z",
-    "offsetMs": 300000,
-    "_replaced_by": "daily-reports"
   },
   {
     "name": "optimize",
@@ -209,25 +126,13 @@
     "offsetMs": 600000
   },
   {
-    "name": "coaching-report",
-    "type": "job",
-    "intervalMs": 86400000,
-    "message": "[cron:coaching-report] Generate daily coaching quality report.",
-    "enabled": false,
-    "handler": "coaching-report",
-    "description": "Daily coaching quality report \u2014 per-agent scores, trends (JS handler, 24h)",
-    "lastModified": "2026-03-10T10:16:35.641Z",
-    "offsetMs": 900000,
-    "_replaced_by": "daily-reports"
-  },
-  {
     "name": "heartbeat-tech-lead",
     "type": "job",
     "intervalMs": 1800000,
     "agent": "tech-lead",
     "message": "[heartbeat] Tech-lead heartbeat via per-agent workflow.",
     "enabled": true,
-    "description": "Tech-lead's heartbeat \u2014 build pending work, intake new designs, code health (60min). Per-agent heartbeat workflow.",
+    "description": "Tech-lead's heartbeat — build pending work, intake new designs, code health (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
     "handler": "run-workflow",
@@ -304,33 +209,13 @@
     ]
   },
   {
-    "name": "repo-gate-check",
-    "type": "job",
-    "handler": "repo-gate-check",
-    "intervalMs": 1800000,
-    "enabled": false,
-    "description": "QA commit preflight: deterministic git check + tsc + vitest. Sends request to QA only when new commits exist. Saves ~16 LLM sessions/day.",
-    "offsetMs": 840000,
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
-    "name": "tracker-compact",
-    "type": "job",
-    "handler": "tracker-compact",
-    "intervalMs": 14400000,
-    "enabled": false,
-    "description": "Generate compact status index from common-sense tracker (saves ~42KB/run for coach)",
-    "offsetMs": 120000,
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
     "name": "common-sense-verify",
     "type": "job",
     "handler": "run-workflow",
     "workflow": "verify-wrap",
     "agent": "coach",
     "intervalMs": 14400000,
-    "message": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently (check workspace/common-sense-status.md for status index \u2014 it shows which items are \u274c/\u26a0\ufe0f and need attention). To check agent behavior: use `bash` with grep/jq to search session transcripts \u2014 do NOT read full session.jsonl files (they are 30-300KB and will waste tokens). Example: `grep -l 'keyword' .state/sessions/history/*/session.jsonl` to find relevant sessions, then `grep 'keyword' <file> | head -20` to extract evidence. Only read small excerpts (<5KB). Did the agent follow the rule? Quote evidence. If NO \u2014 add to Growth Cycle queue. If YES \u2014 update workspace/common-sense-tracker.md with your findings.",
+    "message": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently (check workspace/common-sense-status.md for status index — it shows which items are ❌/⚠️ and need attention). To check agent behavior: use `bash` with grep/jq to search session transcripts — do NOT read full session.jsonl files (they are 30-300KB and will waste tokens). Example: `grep -l 'keyword' .state/sessions/history/*/session.jsonl` to find relevant sessions, then `grep 'keyword' <file> | head -20` to extract evidence. Only read small excerpts (<5KB). Did the agent follow the rule? Quote evidence. If NO — add to Growth Cycle queue. If YES — update workspace/common-sense-tracker.md with your findings.",
     "enabled": true,
     "description": "Verify one common-sense behavioral item against real behavior (4h). Routes through verify-wrap workflow.",
     "preflight": {
@@ -342,7 +227,7 @@
       "timeoutMs": 900000,
       "workflow": "verify-wrap",
       "agent": "coach",
-      "task": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently. Check workspace/common-sense-status.md for status index. Use bash with grep to search session transcripts \u2014 do NOT read full session.jsonl files. Quote evidence. If NO \u2014 add to Growth Cycle queue. If YES \u2014 update workspace/common-sense-tracker.md."
+      "task": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently. Check workspace/common-sense-status.md for status index. Use bash with grep to search session transcripts — do NOT read full session.jsonl files. Quote evidence. If NO — add to Growth Cycle queue. If YES — update workspace/common-sense-tracker.md."
     },
     "offsetMs": 300000
   },
@@ -365,23 +250,6 @@
     }
   },
   {
-    "name": "training-sprint",
-    "type": "job",
-    "handler": "run-workflow",
-    "intervalMs": 86400000,
-    "enabled": false,
-    "description": "Coach runs a batch of gym experiments every 24h \u2014 scan errors, fork agents, test methods, record results. Uses run-workflow handler (no LLM wrapper session).",
-    "handlerConfig": {
-      "workflow": "training-sprint",
-      "agent": "coach",
-      "task": "Automated sprint \u2014 scan ERROR_LOGs for top error patterns, check method-catalog.md for untested methods, plan 3-5 experiments, execute them.",
-      "timeoutMs": 3600000
-    },
-    "offsetMs": 1500000,
-    "workflow": "verify-wrap",
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
     "name": "research-intake",
     "type": "job",
     "handler": "run-workflow",
@@ -401,219 +269,6 @@
       "workflow": "verify-wrap"
     },
     "offsetMs": 1800000
-  },
-  {
-    "name": "agents-auto-commit",
-    "type": "job",
-    "handler": "agents-auto-commit",
-    "intervalMs": 7200000,
-    "message": "Safety-net auto-commit for orphaned uncommitted changes in agents/ repo.",
-    "enabled": false,
-    "description": "Safety-net: commit orphaned changes agents forgot to commit (2h). Agents should commit their own work per C13. Interval intentionally set to 2h so the commit-guard on finish() has teeth \u2014 a 10min interval lets agents bypass commit discipline.",
-    "_replaced_by": "periodic-maintenance"
-  },
-  {
-    "name": "lessons-graduation",
-    "type": "job",
-    "intervalMs": 86400000,
-    "message": "[cron:lessons-graduation] Scan LESSONS.md files for health.",
-    "enabled": false,
-    "handler": "lessons-graduation",
-    "description": "Daily LESSONS.md health scan \u2014 flag oversized files, stale entries, duplicates (JS handler, 24h)",
-    "offsetMs": 2100000,
-    "_replaced_by": "daily-cleanup"
-  },
-  {
-    "name": "error-scan",
-    "type": "job",
-    "intervalMs": 14400000,
-    "message": "[cron:error-scan] Sensor-judge workflow: scan error logs for recurring patterns.",
-    "enabled": false,
-    "handler": "run-workflow",
-    "description": "Sensor-judge migration of error-log-scanner. Step 1: JS scans ERROR_LOG.jsonl (zero LLM). Step 2: Coach LLM judges patterns (only when needed). 4h interval.",
-    "handlerConfig": {
-      "workflow": "error-scan",
-      "agent": "may",
-      "task": "Scan error logs for recurring patterns and address them."
-    },
-    "offsetMs": 480000,
-    "workflow": "verify-wrap",
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
-    "name": "audit-requests",
-    "type": "job",
-    "intervalMs": 7200000,
-    "message": "[cron:audit-requests] Audit and reconcile request lifecycle.",
-    "enabled": false,
-    "handler": "audit-requests",
-    "description": "Auto-expire stale CREATED send requests (>4h), clean up non-agent call artifacts, reset orphaned IN_PROGRESS, archive old completed. JS handler, 2h interval.",
-    "_replaced_by": "periodic-maintenance"
-  },
-  {
-    "name": "task-watchdog",
-    "type": "job",
-    "intervalMs": 3600000,
-    "message": "[cron:task-watchdog] Check for stale requests.",
-    "enabled": false,
-    "handler": "task-watchdog",
-    "description": "Nudge agents about stale requests, escalate to May/human if ignored (JS handler, 60min)",
-    "_replaced_by": "system-maintenance"
-  },
-  {
-    "name": "workspace-compaction",
-    "type": "job",
-    "intervalMs": 86400000,
-    "message": "[cron:workspace-compaction] Archive stale workspace files.",
-    "enabled": false,
-    "handler": "workspace-compaction",
-    "description": "Daily workspace compaction \u2014 move files not modified in 7+ days to archive/YYYY-MM/. Reduces workspace clutter and git bloat. JS handler, 24h.",
-    "offsetMs": 2400000,
-    "_replaced_by": "daily-cleanup"
-  },
-  {
-    "name": "memory-trimmer",
-    "type": "job",
-    "intervalMs": 86400000,
-    "message": "[cron:memory-trimmer] Trim memory files and remove orphans.",
-    "enabled": false,
-    "handler": "memory-trimmer",
-    "description": "Daily memory file trimmer \u2014 trims .state/memory/*.jsonl to last N entries per agent, removes orphaned backups >7d old. Prevents unbounded disk growth. JS handler, 24h.",
-    "offsetMs": 2700000,
-    "_replaced_by": "daily-cleanup"
-  },
-  {
-    "name": "tool-quality-scan",
-    "type": "job",
-    "intervalMs": 14400000,
-    "message": "[cron:tool-quality-scan] Scan evaluations for tool failure patterns.",
-    "enabled": false,
-    "handler": "tool-quality-scan",
-    "description": "Scan evaluations for tool failure patterns \u2014 classify, aggregate, compare vs baseline, report regressions. JS handler, 4h interval. Preflight removed 2026-03-21: was checking .state/evaluations/ dir which doesn't exist (evaluations moved to SQLite). Handler has internal empty-check.",
-    "offsetMs": 660000,
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
-    "name": "active-nudge",
-    "type": "job",
-    "intervalMs": 300000,
-    "message": "[cron:active-nudge] Detect loops/stalls/ghosts in running sessions and intervene.",
-    "enabled": false,
-    "handler": "active-nudge",
-    "description": "Active Nudge: monitor running sessions for behavioral issues (loops, ghost deliverables, productivity stalls) and intervene via cancel or workspace nudge. 5min interval.",
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
-    "name": "daily-digest",
-    "type": "job",
-    "intervalMs": 86400000,
-    "message": "[cron:daily-digest] Generate daily progress digest.",
-    "enabled": false,
-    "handler": "daily-digest",
-    "description": "Daily progress digest for human review (JS handler, 24h). Writes to agents/shared/daily-digests/.",
-    "offsetMs": 3000000,
-    "_replaced_by": "daily-reports"
-  },
-  {
-    "name": "coaching-feedback",
-    "type": "job",
-    "intervalMs": 43200000,
-    "message": "[cron:coaching-feedback] Analyze convention violations and send coaching briefs to coach.",
-    "enabled": false,
-    "handler": "coaching-feedback",
-    "description": "DEPRECATED \u2014 migrated to coaching-feedback-wf sensor-judge workflow. Kept for rollback.",
-    "handlerConfig": {
-      "lookbackMs": 86400000,
-      "topN": 3,
-      "minViolations": 3
-    },
-    "offsetMs": 7200000
-  },
-  {
-    "name": "coaching-feedback-wf",
-    "type": "job",
-    "intervalMs": 43200000,
-    "message": "[cron:coaching-feedback-wf] Sensor-judge coaching feedback workflow.",
-    "enabled": false,
-    "handler": "run-workflow",
-    "description": "Sensor-judge workflow: JS scans convention violations (zero LLM), coach LLM decides intervention strategy. Every 12h.",
-    "handlerConfig": {
-      "workflow": "coaching-feedback",
-      "agent": "coach",
-      "task": "Coaching feedback cycle \u2014 analyze convention violations and decide interventions."
-    },
-    "offsetMs": 7200000,
-    "workflow": "verify-wrap",
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
-    "name": "health-trend",
-    "type": "job",
-    "intervalMs": 604800000,
-    "message": "[cron:health-trend] Weekly health trend analysis \u2014 compare per-agent metrics week-over-week.",
-    "enabled": false,
-    "handler": "health-trend",
-    "description": "Weekly health trend monitoring: compares done rate, quality, convention pass rate this week vs last week. Alerts May if any agent drops 20+ pp.",
-    "handlerConfig": {
-      "alertThresholdPp": 20,
-      "minSessions": 5
-    },
-    "offsetMs": 10800000,
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
-    "name": "research-sync",
-    "type": "job",
-    "intervalMs": 1800000,
-    "message": "[cron:research-sync] Sync research artifacts into SQLite.",
-    "enabled": false,
-    "handler": "research-sync",
-    "description": "Sync research artifacts (knowledge entries, hypotheses, experiments) from markdown into SQLite every 30min. JS handler, no LLM cost.",
-    "offsetMs": 240000,
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
-    "name": "session-sync",
-    "type": "job",
-    "intervalMs": 300000,
-    "message": "[cron:session-sync] Sync session metadata from filesystem into may.db.",
-    "enabled": false,
-    "handler": "session-sync",
-    "description": "Sync session metadata from filesystem (.state/sessions/) into may.db sessions table. 5min interval. JS handler, no LLM cost.",
-    "offsetMs": 60000,
-    "_replaced_by": "fast-sync"
-  },
-  {
-    "name": "evaluation-sync",
-    "type": "job",
-    "intervalMs": 600000,
-    "message": "[cron:evaluation-sync] Sync heuristic evaluations into may.db.",
-    "enabled": false,
-    "handler": "evaluation-sync",
-    "description": "Standalone heuristic evaluator for may.db. Workaround for WAL persistence bug in ctx.writeHeuristicEvaluations(). 10min interval. JS handler, no LLM cost.",
-    "offsetMs": 120000,
-    "_replaced_by": "fast-sync"
-  },
-  {
-    "name": "metrics-snapshot",
-    "type": "job",
-    "intervalMs": 3600000,
-    "message": "[cron:metrics-snapshot] Measure all active metrics and record snapshots.",
-    "enabled": false,
-    "handler": "metrics-snapshot",
-    "description": "Unified Metric System snapshot handler. Auto-measures SQL and command-based metrics, records time-series snapshots, checks thresholds and regressions, fires/resolves alerts. JS handler, 1h interval, no LLM cost.",
-    "offsetMs": 180000,
-    "_replaced_by": "system-maintenance"
-  },
-  {
-    "name": "review-auto-merge",
-    "type": "job",
-    "handler": "review-auto-merge",
-    "intervalMs": 1800000,
-    "enabled": false,
-    "description": "Auto-merge review/* branches that pass tsc + vitest. Prevents branch accumulation.",
-    "offsetMs": 900000,
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
   },
   {
     "name": "project",
@@ -641,87 +296,6 @@
     ]
   },
   {
-    "name": "standing-orders-check",
-    "type": "job",
-    "intervalMs": 1800000,
-    "handler": "standing-orders-check",
-    "agent": "may",
-    "enabled": false,
-    "description": "Check recent sessions for standing order violations. Reports to May.",
-    "_replaced_by": "compliance-check"
-  },
-  {
-    "name": "fast-sync",
-    "type": "job",
-    "intervalMs": 300000,
-    "message": "[cron:fast-sync] Combined handler: session-sync, evaluation-sync",
-    "enabled": false,
-    "handler": "fast-sync",
-    "description": "Combined handler running session-sync, evaluation-sync sequentially. JS handler, no LLM cost.",
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
-    "name": "compliance-check",
-    "type": "job",
-    "intervalMs": 1800000,
-    "message": "[cron:compliance-check] Combined handler: convention-check, standing-orders-check",
-    "enabled": false,
-    "handler": "compliance-check",
-    "description": "Combined handler running convention-check, standing-orders-check sequentially. JS handler, no LLM cost.",
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
-    "name": "system-maintenance",
-    "type": "job",
-    "intervalMs": 3600000,
-    "message": "[cron:system-maintenance] Combined handler: zombie-cleanup, task-watchdog, metrics-snapshot",
-    "enabled": false,
-    "handler": "system-maintenance",
-    "description": "Combined handler running zombie-cleanup, task-watchdog, metrics-snapshot sequentially. JS handler, no LLM cost.",
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
-    "name": "daily-reports",
-    "type": "job",
-    "intervalMs": 86400000,
-    "message": "[cron:daily-reports] Combined handler: daily-brief, daily-digest, analyze-failures, coaching-report",
-    "enabled": false,
-    "handler": "daily-reports",
-    "description": "Combined handler running daily-brief, daily-digest, analyze-failures, coaching-report sequentially. JS handler, no LLM cost.",
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
-    "name": "daily-cleanup",
-    "type": "job",
-    "intervalMs": 86400000,
-    "message": "[cron:daily-cleanup] Combined handler: workspace-compaction, memory-trimmer, lessons-graduation",
-    "enabled": false,
-    "handler": "daily-cleanup",
-    "description": "Combined handler running workspace-compaction, memory-trimmer, lessons-graduation sequentially. JS handler, no LLM cost.",
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
-    "name": "periodic-maintenance",
-    "type": "job",
-    "intervalMs": 7200000,
-    "message": "[cron:periodic-maintenance] Combined handler: agents-auto-commit, audit-requests",
-    "enabled": false,
-    "handler": "periodic-maintenance",
-    "description": "Combined handler running agents-auto-commit, audit-requests sequentially. JS handler, no LLM cost.",
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
-    "name": "context-learning",
-    "type": "job",
-    "intervalMs": 7200000,
-    "message": "[cron:context-learning] Extract lessons from recent failed sessions and persist to agent context.md files.",
-    "enabled": false,
-    "handler": "context-learning",
-    "description": "Queries failed/low-quality sessions, dispatches bob to extract actionable lessons ('When X, do Y') and append to agent context.md. Replaces blocked M2/M3 of context-learning-impl project.",
-    "offsetMs": 1800000,
-    "_disabled_reason": "optimizer: never fires, dispatcher does not route non-workflow handlers (2026-07-31)"
-  },
-  {
     "name": "session-recovery",
     "type": "job",
     "handler": "session-recovery",
@@ -729,7 +303,7 @@
       "session.failed"
     ],
     "enabled": true,
-    "description": "Auto-resume failed sessions (Ambulance Protocol). Two-tier: digest classifier \u2192 classifyError fallback. Event-only handler (no timer)."
+    "description": "Auto-resume failed sessions (Ambulance Protocol). Two-tier: digest classifier → classifyError fallback. Event-only handler (no timer)."
   },
   {
     "name": "session-eval",
