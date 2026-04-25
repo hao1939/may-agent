@@ -256,6 +256,38 @@ Agent A                    Event Bus                Handler              Agent B
 
 ---
 
+## The Autonomous Loop
+
+The layers combine into a self-steering cycle that runs with minimal human input:
+
+```
+  Human sets direction (metrics + priorities)
+        │
+        ▼
+  ┌─ L4 Metrics ────────────────────────────────────┐
+  │  "quality.coder = 0.6, target = 0.9"            │
+  └──────────┬───────────────────────────────────────┘
+             │ snapshot handler measures
+             ▼
+  ┌─ L3 Heartbeat ──────────────────────────────────┐
+  │  Agent sees: metric regressing, project stalled  │
+  │  Agent decides: fork work, escalate, investigate │
+  └──────────┬───────────────────────────────────────┘
+             │ fork/event
+             ▼
+  ┌─ L5 Project ────────────────────────────────────┐
+  │  Worker implements fix, reviewer checks quality  │
+  │  Milestone completed → metric re-measured        │
+  └──────────┬───────────────────────────────────────┘
+             │ next snapshot
+             ▼
+        Loop back to metrics
+```
+
+**Human's role**: Set metrics, approve P0/P1, review escalations. The system does everything else.
+
+---
+
 ## Simplification Opportunities
 
 ### Remove
