@@ -1,6 +1,6 @@
 # Project: Gym Leverage
 
-**Status**: active
+**Status**: paused
 
 **Owner**: bob
 **Type**: milestone
