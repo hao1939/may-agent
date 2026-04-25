@@ -7,6 +7,18 @@
 
 ---
 
+## Fresh Arrivals (Apr 25, 2026) — XHS Community: Agent Team Critique & Skill Evolution
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **Agent Team 只适合用来装X** (XHS Community) | Critical take: Agent Teams only valuable in "sweet spot" (~30% single-agent success) or decomposable search spaces. Otherwise "emotional value only". SubAgent =临时工, Agent Team = 固定长工. ★★★★☆ | [HB-260425](library/posts/HB-260425-agent-team-zhaungx-critical.md) |
+| 2026-04-25 | **SkillClaw** (Alibaba AMAP-ML) | Skill auto-evolution from user trajectories. "Evolver" converts collective experience into Skill updates. HF Paper of the Day #1 (126 upvotes). OpenClaw/Lobster compatible. ★★★★★ | [HB-260425](library/posts/HB-260425-skillclaw-auto-evolve-skill.md) |
+| 2026-04-25 | **Natural-Language Agent Harnesses** (Tsinghua) | NLAH externalizes control logic into natural language specs; IHR executes. Validates Harness-centric design. Debate: Harness determines "floor" not "ceiling". ★★★★☆ | [HB-260425](library/posts/HB-260425-tsinghua-nlah-harness-paper.md) |
+
+**Key Takeaway**: Three converging themes from Chinese AI community: (1) **Agent Team skepticism** — boundaries clearer, harness needed for team-level coordination; (2) **Skill evolution** — from static deployment to continuous learning (SkillClaw); (3) **Harness academic legitimacy** — NLAH paper formalizes what OpenClaw already practices.
+
+---
+
 ## Fresh Arrivals (July 18, 2026) — Tool Attention Deep Dive
 
 | Date | Title | Key Insight | Source |
