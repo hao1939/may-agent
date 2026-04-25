@@ -65,39 +65,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   // ── API handlers ──────────────────────────────────────────────────
 
-  function handleRequests(url: URL): Response {
-    const from = url.searchParams.get("from") || undefined;
-    const status = url.searchParams.get("status") || undefined;
-    const agent = url.searchParams.get("agent") || undefined;
-    const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10), 200);
-    const offset = parseInt(url.searchParams.get("offset") || "0", 10);
-    let where = "1=1";
-    const params: unknown[] = [];
-    if (from) {
-      where += " AND fromEntity = ?";
-      params.push(from);
-    }
-    if (status) {
-      where += " AND r.status = ?";
-      params.push(status);
-    }
-    if (agent) {
-      where += " AND toAgent = ?";
-      params.push(agent);
-    }
-    const total = (
-      _db()
-        .prepare(`SELECT COUNT(*) as cnt FROM requests r WHERE ${where}`)
-        .get(...params) as any
-    ).cnt;
-    const rows = _db()
-      .prepare(
-        `SELECT r.*, s.outcome, s.agent as sessAgent FROM requests r
-       LEFT JOIN sessions s ON r.sessionId = s.sessionId
-       WHERE ${where} ORDER BY r.createdAt DESC LIMIT ? OFFSET ?`,
-      )
-      .all(...params, limit, offset);
-    return json({ requests: rows, total, limit, offset });
+  function handleRequests(_url: URL): Response {
+    return json({ rows: [], total: 0 }); // requests table removed
   }
 
   function handleSession(sessionId: string): Response {
@@ -348,16 +317,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         `SELECT agent, COUNT(*) as cnt, SUM(CASE WHEN status='done' THEN 1 ELSE 0 END) as done, SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) as errors, AVG(endedAt - startedAt) as avgMs FROM sessions WHERE startedAt > ? GROUP BY agent ORDER BY cnt DESC`,
       )
       .all(day);
-    const req24h = _db()
-      .prepare(
-        `SELECT fromEntity, COUNT(*) as cnt, SUM(CASE WHEN status='COMPLETED' THEN 1 ELSE 0 END) as completed FROM requests WHERE createdAt > ? GROUP BY fromEntity ORDER BY cnt DESC`,
-      )
-      .all(day);
+    const req24h: unknown[] = [];
     const totalSess7d = (_db().prepare("SELECT COUNT(*) as cnt FROM sessions WHERE startedAt > ?").get(week) as any)
       .cnt;
-    const humanReq7d = (
-      _db().prepare("SELECT COUNT(*) as cnt FROM requests WHERE fromEntity='human' AND createdAt > ?").get(week) as any
-    ).cnt;
+    const humanReq7d = 0;
     return json({
       last24h: { sessions: sess24h, requests: req24h },
       last7d: { totalSessions: totalSess7d, humanRequests: humanReq7d },
