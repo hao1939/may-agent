@@ -1,13 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777100549585_9
+- **Session:** s_1777101185185_1
 - **Status:** done
-- **When:** 2026-04-25T07:03:00.471Z
-- **Duration:** 30s
+- **When:** 2026-04-25T07:15:39.226Z
+- **Duration:** 2m34s
 
 ## What Happened
-### scout: FM-1.3
-**Decision:** growth-cycle
-**Reasoning:** This is a clear, learnable skill gap around bash command hygiene — the agent repeatedly assumes file paths without verifying them first, and uses grep/ls pipelines that exit with code 1 on no matches, triggering unnecessary error recovery. 7 occurrences in 7 days shows it's not transient.
-**Action:** Train a skill covering two specific behaviors: (1) always verify paths exist before using them (use `find` or `[[ -f ]]` proactively, not as recovery), and (2) use `grep ... || true` or `find` instead of `ls | grep` to avoid exit-code-1 failures on empty results.
+Most are 1.0 (heuristic) with a few LLM evals that are lower. The pattern is clear: heuristic evaluator gives me 1.0 by default, but LLM evaluator catches real issues. This is expected.
+
+Let me finish. I've accomplished the key objective: **broke the text→action barrier by using agents.fork for P0 items**.
