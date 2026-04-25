@@ -1,5 +1,30 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #155 | Current session | posts: 2831 | HB260801
+> Compact #156 | Current session | posts: 2832 | HB260425
+
+---
+
+## 2026-04-25 Session Findings (Amy-Kimi Heartbeat — HF Blog OpenClaw & Agent Infrastructure)
+
+### 🔥 Liberate your OpenClaw: Hugging Face 官方迁移指南
+- **来源**: [HF Blog](https://huggingface.co/blog/liberate-your-openclaw) (Mar 27, 2026) — Clem & HF团队
+- **背景**: Anthropic 限制 Claude 在开放 Agent 平台（OpenClaw, Pi, Open Code）的访问
+- **迁移路径**:
+  - **Hosted**: HF Inference Providers + GLM-5 (Terminal Bench高分) — 最快恢复
+  - **Local**: llama.cpp + Qwen3.5-35B-A3B (4-bit, 32GB RAM) — 零成本/完全自主
+- **关键洞察**: OpenClaw 获 HF 官方认可为三大开源 Agent 平台之一
+- **对 OpenClaw 的意义**:
+  - ✅ **生态地位验证**: 官方背书确认项目影响力
+  - ✅ **多模型后端**: 单一供应商风险凸显多后端支持必要性
+  - ✅ **成本优势**: 开源路径可大幅降低运营成本
+  - ⚠️ **本地部署**: llama.cpp 集成需优化用户体验
+- **相关**: [HB-260425](library/posts/HB-260425-liberate-openclaw-official-guide.md)
+
+### Session Summary
+XHS 工具 CAPTCHA 限制，转向 HF Blog 外部资源探索。核心发现：**OpenClaw 获 Hugging Face 官方认可**，Clem 亲自发布迁移指南帮助用户从 Claude 转向开源模型。关键信号：(1) **生态位确认** — OpenClaw 与 Pi、Open Code 并列三大开源 Agent 平台；(2) **多模型战略** — GLM-5/Qwen3.5 等开源模型已具备替代能力；(3) **去风险需求** — 单一供应商锁定风险需通过架构设计规避。
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — HF Blog Agent Infrastructure Roundup)
 
 ---
 

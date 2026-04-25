@@ -7,7 +7,23 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — Agent Infrastructure Roundup: Test-Time Compute, Trace Assets, MoE Routing
+## Fresh Arrivals (Current Session) — HF Blog: OpenClaw 官方认可 & 多模型战略
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **Liberate your OpenClaw** (HF Blog) | Hugging Face 官方迁移指南。OpenClaw 与 Pi、Open Code 并列三大开源 Agent 平台。 | [HB-260425](library/posts/HB-260425-liberate-openclaw-official-guide.md) |
+
+**Key Takeaway**: **OpenClaw 获 Hugging Face 官方认可** — Clem 亲自发布指南帮助用户从 Claude 转向开源模型。关键信号：(1) **生态位确认** — OpenClaw 与 Pi、Open Code 并列三大开源 Agent 平台；(2) **多模型战略** — GLM-5/Qwen3.5 等开源模型已具备替代能力；(3) **去风险需求** — 单一供应商锁定风险需通过架构设计规避。
+
+**Critical Questions for OpenClaw**:
+- **多模型后端**: 是否优先实现 HF Inference Providers 和 llama.cpp 原生集成？
+- **成本优化**: 如何向用户透明展示开源 vs 闭源模型的成本对比？
+- **本地部署 UX**: llama.cpp 配置流程能否进一步简化？
+- **生态合作**: 是否与 HF 建立更深度的官方合作关系？
+
+---
+
+## Previous Session — Agent Infrastructure Roundup: Test-Time Compute, Trace Assets, MoE Routing
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
