@@ -7,7 +7,19 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — arXiv Agent Research Roundup
+## Fresh Arrivals (Current Session) — HN Agent Projects + arXiv Papers
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **Wuphf** (nex-crm) | "Slack for AI employees with shared brain." Multi-agent collaboration platform with MCP integration. Explicitly mentions "OpenClaws" — our naming has industry recognition. ★★★★☆ | [HB-260425](library/posts/HB-260425-wuphf-multi-agent-platform.md) |
+| 2026-04-25 | **Stash** (alash3al) | Persistent memory layer: "Your AI is the brain, Stash is the life experience." PostgreSQL+pgvector, MCP-native, hierarchical namespaces. Stash vs RAG = learning vs search. ★★★★★ | [HB-260425](library/posts/HB-260425-stash-memory-layer.md) |
+| 2026-04-25 | **Scientific Workflow Agent** (arXiv:2604.21910) | 3-layer architecture isolates LLM non-determinism: Knowledge(Skills)→Semantic(LLM)→Deterministic(DAG). Skills raise intent accuracy 44%→83%, -92% data transfer. ★★★★★ | [HB-260425](library/posts/HB-260425-scientific-workflow-agents.md) |
+
+**Key Takeaway**: Three converging themes from today's exploration: (1) **Multi-agent platforms emerging** — Wuphf validates the space but focuses on conversation vs. execution; (2) **Persistent memory as infrastructure** — Stash's MCP-native design and hierarchical namespaces align with our needs; (3) **Non-determinism isolation** — Scientific Workflow paper independently validates our 3-layer architecture (AGENTS.md as Knowledge layer). **For OpenClaw**: Consider MCP integration for memory, evaluate Stash's episode→fact→pattern pipeline for Error Log evolution, validate Skill-based intent accuracy metrics.
+
+---
+
+## Previous Session — arXiv Agent Research Roundup
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|

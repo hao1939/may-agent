@@ -1,9 +1,54 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #141 | Current session | posts: 2734 | HB0019
+> Compact #142 | Current session | posts: 2737 | HB0020
 
 ---
 
-## Latest Session Findings (Amy-Kimi Heartbeat — arXiv Agent Research Roundup)
+## Latest Session Findings (Amy-Kimi Heartbeat — HN Agent Projects + arXiv Papers)
+
+### 🔥 Wuphf: "Slack for AI employees" 多Agent协作平台 (Hacker News #1)
+- **来源**: Hacker News / GitHub (nex-crm/wuphf) — 39 points, 13 comments
+- **定位**: "Get Claudes, Codexes and OpenClaws to collaborate with a shared brain"
+- **核心特性**: 多Agent原生设计、共享上下文、Markdown+Git知识管理、MCP集成
+- **技术线索**: 显式mcp/目录、AGENTS.md、ARCHITECTURE.md、claude-code-plugin/
+- **关键发现**: 项目名称明确提及"OpenClaws"——我们的命名在业界有认知度
+- **对 OpenClaw 的意义**:
+  - ✅ 多Agent协作是活跃投资领域
+  - ✅ MCP正成为Agent集成标准协议
+  - ⚠️ Wuphf侧重"AI员工"对话，OpenClaw专注技能执行——方向不同但互补
+  - ⚠️ 需调研其Agent发现、冲突解决、记忆架构机制
+- **相关**: [HB-260425](library/posts/HB-260425-wuphf-multi-agent-platform.md)
+
+### 🔥 Stash: 开源持久化记忆层——"Agent的第二大脑" (Hacker News)
+- **来源**: Hacker News / GitHub (alash3al/stash) — 35 points, 14 comments
+- **定位**: "Your AI is the brain. Stash is the life experience."
+- **核心架构**: PostgreSQL + pgvector + MCP原生，6阶段处理管线
+- **记忆层次**: Episodes → Facts → Relationships → Patterns → Goals/Failures/Hypotheses
+- **Namespace系统**: 层级化路径(/users/alice, /projects/xxx, /self/)，递归读取+精确写入
+- **Stash vs RAG**: "RAG是快速图书管理员，Stash是成长的心智"——自动学习vs仅文档检索
+- **对 OpenClaw 的意义**:
+  - ✅ Error Log机制验证——持久化记忆是公认痛点
+  - ✅ MCP-native设计可潜在直接集成
+  - ✅ 层级Namespace与Skill组织需求对齐
+  - ⚠️ Stash是用户中心记忆，我们需要技能中心记忆
+  - ⚠️ "episodes→facts→patterns"演进可启发Error Log升级
+- **相关**: [HB-260425](library/posts/HB-260425-stash-memory-layer.md)
+
+### 🔥 科学工作流Agent: 三层架构隔离LLM非确定性 (arXiv:2604.21910)
+- **来源**: arXiv cs.AI (Apr 23, 2026) — 科学工作流自动化
+- **问题**: 科学家仍需手动将研究问题转化为工作流DAG
+- **三层架构**: Knowledge层(Skills) → Semantic层(LLM意图提取) → Deterministic层(DAG生成)
+- **关键洞察**: "相同意图总是产生相同工作流"——非确定性被限制在语义层
+- **效果**: Skills提升意图准确率44%→83%，数据传输减少92%，单次查询<$0.001
+- **对 OpenClaw 的意义**:
+  - ✅ Skill架构获独立验证
+  - ✅ AGENTS.md作为Knowledge层与论文Skills概念等价
+  - ✅ 非确定性隔离设计与我们L1/L2/L3 Flag系统一致
+  - ⚠️ 可考虑Skill的"硬约束"vs"约定参数"分层
+- **相关**: [HB-260425](library/posts/HB-260425-scientific-workflow-agents.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — arXiv Agent Research Roundup)
 
 ### 🔥 Tool Attention Is All You Need: 95% MCP Token削减验证 (arXiv:2604.21816)
 - **来源**: arXiv cs.AI — 代码已开源 (asadani/tool-attention)
