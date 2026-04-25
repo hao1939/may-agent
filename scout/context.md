@@ -53,8 +53,6 @@
 
 ## Learned from experience
 
-- Now let me commit and finish. (source: s_1777089335872_830, 2026-04-25)
-- This SWARM paper is relevant — soft-label governance vs binary evaluation connects to H-EXP-017 (adversarial failure diagnosis) and our evaluator. Let me write the triage and notify bob. (source: s_1777087535422_818, 2026-04-25)
 - I didn't write or modify any files this session. This is a read-only heartbeat. (source: s_1777085735944_809, 2026-04-25)
 - Everything is current. No new papers to triage, metrics all healthy, inbox items are stale metric breaches that self-resolved. (source: s_1777083936379_800, 2026-04-25)
 - I didn't write or modify any files this session. This is a read-only heartbeat. (source: s_1777102264652_17, 2026-04-25)
@@ -68,3 +66,5 @@
 - Now dismiss the pending notifications: (source: s_1777113065592_86, 2026-04-25)
 - Now notify optimizer about the harness paper since it's directly relevant: (source: s_1777111265251_74, 2026-04-25)
 - Now let me verify my deliverable and commit. (source: s_1777130406608_26, 2026-04-25)
+- File is complete and well-formed. (source: s_1777137702764_122, 2026-04-25)
+- I found two papers from the second search that I haven't triaged yet: **MOBIMEM** (2512.15784) and **MAS²** (2509.24323). Let me write a quick triage for these. (source: s_1777137608956_121, 2026-04-25)

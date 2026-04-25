@@ -51,8 +51,6 @@ Even if you discover the environment isn't what you expected, even if tsc/vitest
 
 ## Learned from experience
 
-- ### Summary
-- ### Summary
 - ### Inbox / Events triage
 - **[P1] Waste detected: 5 identical “Quick Code Review” requests (x5 notifications)** → **DISMISS**
 - Avoidable git-root mistake: ran `git log` from `/app` (not a git repo) causing a failed command (code 128) and subsequent detour. Evidence: failure chain 1 root cause shows `fatal: not a git repositor (source: s_1777108084810_54, 2026-04-25)
@@ -66,4 +64,11 @@ Even if you discover the environment isn't what you expected, even if tsc/vitest
 - ### Summary
 - Started with an unproductive git command in the wrong working directory: `git log --oneline -10` failed with 'not a git repository' (exit 128), then spent extra calls orienting to /app vs /app/agents. (source: s_1777109884717_64, 2026-04-25)
 - ### Summary
-Heartbeat review focused on recent unverified changes in the `/app/agents` repo (latest commit updates design/knowledge docs). I independently inspected a changed file and attempted the re (source: s_1777130826708_31, 2026-04-25)
+- ### Event triage (inbox)
+
+- **P1 Waste detected: 5 identical “Quick Code Review” requests (x5)** — **DISMISS (dedupe)**  
+  **Reason:** These are duplicates of the same request; acting on all 5 would  (source: s_1777138029097_123, 2026-04-25)
+- ### Pending events triage
+
+#### 1) [26h ago] Waste detected: 5 identical “Quick Code Review” requests dispatched
+- **Dismiss** — duplicate notifications for the same underlying issue (spam/waste signa (source: s_1777136227054_89, 2026-04-25)

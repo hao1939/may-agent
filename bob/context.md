@@ -78,23 +78,26 @@
 
 ## Learned from experience
 
-- Good. Now let me dismiss inbox items and finish: (source: s_1777100490842_7, 2026-04-25)
-- Good, committed. Now let me quickly dismiss/acknowledge the inbox items and finish. (source: s_1777093710966_853, 2026-04-25)
-- Let me commit and finish up. (source: s_1777108625335_58, 2026-04-25)
-- Now let me quickly triage the inbox notifications and dismiss what's not actionable:
-- Now let me process inbox notifications quickly and commit: (source: s_1777105024605_34, 2026-04-25)
-- Now let me commit and wrap up. (source: s_1777103225567_23, 2026-04-25)
-- Now update H-EXP-021 status: (source: s_1777114023961_91, 2026-04-25)
-- The workspace files are outside the git repo. Let me check: (source: s_1777112226012_79, 2026-04-25)
-- Now commit and process the P1 "Agreement Trap" notification: (source: s_1777110425687_69, 2026-04-25)
-- File is correct and complete — well-structured markdown with all sections, action items, and signature intact. No truncation or encoding issues. (source: s_1777130448154_27, 2026-04-25)
-- Workspace files are gitignored — no commit needed. (source: s_1777130348423_24, 2026-04-25)
-- All 6 files read and verified. Each contains well-structured hypothesis documentation with consistent formatting, proper status lines, evidence tables, predictions, and cross-references. No errors, co (source: s_1777129789699_17, 2026-04-25)
-- All changes verified. (source: s_1777129568812_10, 2026-04-25)
-- Now let me dismiss notifications and commit: (source: s_1777128425021_9, 2026-04-25)
-- DONE
-
-All 4 milestones are complete:
-
 - **Milestone completed: Audit evaluator scoring: collect scores across 10+ projects, identify rejection loop frequency**
 - **Milestone completed: Identify root c (source: s_1777127783003_6, 2026-04-25)
+- WAITING: All documentation and analysis milestones are complete (8/10). The remaining 2 milestones ("Run the core 20 suite and establish baseline scores per agent" and "measure improvement on conventi (source: s_1777137302288_118, 2026-04-25)
+- All files exist and are substantial. Now I can write the audit. (source: s_1777137253493_117, 2026-04-25)
+- PIVOT —
+
+1. **I believe**: The core work is actually done (skill written in iter 1, scenarios validated in iter 3, docs exist in §8), but we keep failing to check off milestones because iterations are (source: s_1777137240027_116, 2026-04-25)
+- Now I have clear results. The runner works in stub mode (no actual agent, `agent_status: "skipped"`), scoring only checks environment state. Let me document this. (source: s_1777137130801_110, 2026-04-25)
+- CONTINUE —
+
+1. **I believe**: The worker created `scenario-validation.md` and confirmed gym scenarios exist. The evolution cycle documentation exists in gym-analysis.md §8. The skill was written in it (source: s_1777137120618_109, 2026-04-25)
+- All exist. The gym-analysis.md already has the evolution process documented in §8. Let me note that §8 IS the "Gym-Driven Evolution Process" — the owner wanted it as §5 but it's already there as §8. T (source: s_1777137066338_108, 2026-04-25)
+- CONTINUE — **Beliefs:**
+1. **I believe**: The worker hit a tool validation error on edit() and didn't complete the documentation update. The skill file was written in iteration 1, but iteration 2 fail (source: s_1777137055316_107, 2026-04-25)
+- Now I'll append §7 with the runner test results and the evolution process documentation. (source: s_1777136964182_106, 2026-04-25)
+- CONTINUE
+
+**Beliefs:**
+1. **I believe**: The worker completed a solid first evolution cycle — diagnosed convention-compliance failures, wrote a targeted skill, and documented everything. The cycle is  (source: s_1777136946891_103, 2026-04-25)
+- Now document the evolution cycle: (source: s_1777136820698_102, 2026-04-25)
+- Good — the workflow already updated the status to `waiting`. Let me commit and wrap up. (source: s_1777136768484_101, 2026-04-25)
+- File is correct and complete — well-structured markdown with all 20 scenario results, summary stats, failure analysis, and next steps. No truncation or errors. (source: s_1777136394166_96, 2026-04-25)
+- File looks correct and well-structured. No issues. (source: s_1777136379585_95, 2026-04-25)
