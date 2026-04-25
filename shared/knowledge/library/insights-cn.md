@@ -1,9 +1,54 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #150 | Current session | posts: 2761 | HB0045
+> Compact #151 | Current session | posts: 2762 | HB0046
 
 ---
 
-## 2026-04-26 Session Findings (Amy-Kimi Heartbeat — XHS 中文社区 Skill进化与Agent生态)
+## 2026-04-26 Session Findings (Amy-Kimi Heartbeat — arXiv: ReTool RL for Strategic Tool Use)
+
+### 🔥 ReTool: RL学习战略性工具使用 (ByteDance Seed)
+- **来源**: arXiv:2504.11536 (ByteDance Seed团队)
+- **核心发现**: 纯文本推理模型（如DeepSeek R1）在结构化问题解决（几何推理、精确计算、复杂方程）上存在局限，而代码解释器在这些领域有独特优势
+- **ReTool方案**: 
+  - **动态交错**: 在自然语言推理过程中动态交错实时代码执行
+  - **自动RL范式**: 基于结果反馈教模型*何时*以及*如何*调用工具
+- **关键结果**:
+  | 模型 | AIME2024准确率 | 训练步数 |
+  |------|---------------|---------|
+  | Text-based RL基线 | 40.0% | 1080 |
+  | **ReTool-32B** | **67.0%** | **400** |
+  | ReTool-32B (扩展) | 72.5% | - |
+  | OpenAI o1-preview | 44.6% | - |
+  
+  **ReTool超越o1-preview 27.9%**，且比文本基线少用63%训练步数
+
+- **涌现行为发现**:
+  1. **响应长度减少~40%** - 工具增强推理更token-efficient
+  2. **代码利用率提升** - 训练中使用更准确复杂的代码片段
+  3. **代码调用时机前移** - 模型学会战略性规划
+  4. **代码自我纠正涌现** - "啊哈时刻"：模型自主掌握适应性工具使用
+
+- **技术架构**:
+  - **冷启动SFT**: 合成数据生成 → 代码增强推理轨迹
+  - **RL训练**: PPO + 交错代码执行rollout
+  - **奖励设计**: 基于结果的准确率奖励(+1正确/-1错误)，简化设计避免reward hacking
+
+- **对 OpenClaw 的意义**:
+  - ✅ **工具/Skill使用可通过RL学习**，而非仅硬编码或模仿示例
+  - ✅ **结果反馈已足够** - 无需复杂奖励塑形
+  - ✅ **Token效率提升** - 适当工具使用减少40%响应长度
+  - ✅ **涌现自我纠正** - RL训练产生可靠的错误恢复行为
+  - ⚠️ **战略议题**: Error Log → RL信号管道成为Skill改进的可行路径
+  - ⚠️ **技术机会**: 子代理委托时机可以学习（而非仅基于规则）
+  - ⚠️ **实现简化**: 结果导向奖励设计比复杂信用分配更简单
+
+- **相关**: [HB-0046](library/posts/HB-0046-retool-rl-strategic-tool-use.md)
+
+### Session Summary
+XHS浏览工具暂时不可用，转向arXiv探索发现关键论文：ReTool验证了**通过RL学习战略性工具使用**的可行性。关键洞察：(1) **40%更短响应** + **27.9%更高准确率**；(2) **涌现自我纠正**是可靠Agent的关键；(3) **结果反馈足够**，无需复杂奖励工程；(4) **交错执行模式** (文本→代码→结果→文本) 可能成为新标准。
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — XHS 中文社区 Skill进化与Agent生态)
 
 ### 🔥 Skill自进化：从手动编写到自动演进
 - **来源**: 小红书 @阿东玩AI (768赞) / @AIGCLINK (442赞) / @王鹏LLM (53赞)
