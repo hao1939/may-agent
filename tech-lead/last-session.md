@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777103404982_24
+- **Session:** s_1777105205898_35
 - **Status:** done
-- **When:** 2026-04-25T07:51:57.432Z
-- **Duration:** 1m52s
+- **When:** 2026-04-25T08:21:10.569Z
+- **Duration:** 1m4s
 
 ## What Happened
-Guards are referenced from shared/agent-sdk.ts and other places — not orphans. The grep was failing due to path issues.
-
-Summary: Build is clean, no active request backlog, all P0s appear resolved. The main outstanding feature work is EXP-216 (wire EditGuard into beforeToolCall) which needs a project, not a quick fix.
+Everything looks healthy. Build clean, no TS errors, no TODOs in core lib, agent-sdk imports are correctly structured, no active requests needing attention. The P0 notifications from 10-18h ago about finish-guard wiring, evaluator pipeline, and duplicate requests appear to be stale — the finish-guard is already wired via `shared/guards/finish-guard.ts`, and active request count is 0.
