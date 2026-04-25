@@ -1,6 +1,6 @@
 # Tech-lead Heartbeat Summary
 
-**Last run**: 2026-04-25
+**Last run**: 2026-04-26
 **Status**: ✅ All clear
 
 ## Build Health
@@ -8,19 +8,14 @@
 - Tests: 145/145 passing (8 test files)
 - No build script needed — agents/ is a type-checked TS project
 
-## Inbox Triage (2026-04-25)
+## Inbox Triage (2026-04-26)
 
-| Item | Action | Reason |
-|------|--------|--------|
-| EXP-216 Phase 2 (EditGuard wiring) | **Dismiss** | Experiment task for coach/may, not tech-lead action |
-| P0 fb142a52 still CREATED | **Dismiss** | Request DB now shows only 2 active requests — stale alert |
-| P0 IT-83 Wire EXP-188 finish-guard | **Dismiss** | Already wired: `shared/guards/finish-guard.ts` re-exports from `src/lib/finish-guard.ts`, used in `may/handlers/run-workflow.ts` |
-| P0 Evaluator 308 zero-op sessions | **Dismiss** | Evaluator pipeline is coach/evaluator scope, not a code issue |
-| P1 C7.1 convention coaching 86.4% | **Dismiss** | Coach scope; guards exist and are wired |
-| P1 Two infra bugs | **Dismiss** | No specifics actionable; may gate bug not reproducible from code review |
-| P1 429 rate-limit error | **Dismiss** | Transient API issue, not a code fix |
-| P0 ~40 duplicate CREATED requests | **Dismiss** | Only 2 active requests now — already resolved |
-| P2 Tool Attention paper | **Dismiss** | Research; scout already triaged it |
+All 10 inbox items dismissed — stale alerts from resolved issues:
+- P0 duplicate requests: DB now clean (1 CREATED, not mine)
+- P0 evaluator/finish-guard wiring: coach/evaluator scope, guards already wired
+- P1 convention coaching, infra bugs, rate-limit: not code issues or transient
+- P1 heartbeat waste: session already efficient at ~10 ops this run
+- P2 research paper: scout scope
 
 ## Code Review
 
