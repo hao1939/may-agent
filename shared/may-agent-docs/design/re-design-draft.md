@@ -96,6 +96,29 @@ This replaces synchronous agent-to-agent calls with event-driven orchestration.
 
 ---
 
+## L3.5: Workflows — Execution Patterns
+
+**What**: Reusable multi-step execution strategies that agents invoke during sessions AND that the system uses to drive projects.
+
+**Two usage paths**:
+
+1. **Agent-invoked** (via `workflow` tool): An agent *chooses* a workflow to structure its work. E.g., optimizer runs `verify-wrap` to ensure work gets verified, bob runs `deliver-or-report` to structure a research output. Agents can also *create and improve* workflows — they are both users and authors.
+
+2. **System-invoked** (via project handler): The project automation layer launches workflows to drive project iterations. E.g., `master-worker` workflow creates persistent reviewer + worker sessions.
+
+**Provides**:
+- **Shared execution patterns** — `verify-wrap`, `implement-and-verify`, `coaching-feedback`, etc. in `agents/shared/workflows/`
+- **Agent-specific workflows** — each agent can have custom workflows in `agents/<name>/workflows/`
+- **Guards** — workflow-level safety checks that can inject steps or block execution
+- **Step tracking** — each workflow run records steps, enabling resume after crash
+- **Heartbeat workflows** — every agent's heartbeat is itself a workflow (`*-heartbeat.ts`) that collects context and structures the agent's periodic check-in
+
+**Key insight**: Workflows are not just infrastructure — they are a *knowledge artifact*. When optimizer discovers that "verify-then-ship" reduces regressions, it encodes that as a workflow. Other agents adopt it. The system's execution quality improves without changing any infra code.
+
+**Key files**: `workflow-tool.ts` (agent-facing tool), `workflow.ts` (types + guards), `workflow-defs.d.ts` (project workflow context), `agents/shared/workflows/` and `agents/*/workflows/`
+
+---
+
 ## L4: Metrics System
 
 **What**: The steering mechanism. Metrics give the system direction with minimal human input.
@@ -177,7 +200,65 @@ Human sets metric          Agent heartbeat reads metric       Agent acts
 
 ---
 
-## Agent SDK: How Agents Interact with the System
+## Agent Knowledge Architecture
+
+Agents don't just execute — they build and consume knowledge. Three tiers:
+
+### Knowledge Base — What agents know
+
+**What**: Structured research output — the accumulated understanding the system has built.
+
+**Structure** (`agents/shared/knowledge/`):
+- **Entries** (360+) — `KE-001` through `KE-396`. Each is a confirmed finding with evidence, connections to other entries, and star rating. The core intellectual output.
+- **Hypotheses** (107) — Testable claims with probability estimates, supporting/refuting evidence, and linked experiments.
+- **Experiments** (196) — Designed interventions to test hypotheses. Each has status (designed → running → complete), results, and conclusions.
+- **Library** — Deep-dives, papers, external research.
+- **INDEX.md** — Master catalog connecting everything.
+
+**How agents use it**: Agents read knowledge to inform decisions. Bob synthesizes new entries. Coach uses entries to design skills. Experiments move hypotheses toward confirmation or refutation. The knowledge base is the *durable output* — sessions are ephemeral, knowledge persists.
+
+### Skills — How agents should do things (advisory)
+
+**What**: Markdown documents that teach agents *how* to do something well. Read on-demand, not injected into every prompt.
+
+**Structure** (`agents/shared/skills/`, 55 skills):
+- `creating-projects/skill.md` — how to set up a project.md
+- `escalation/skill.md` — when and how to escalate
+- `coder-edit-discipline/skill.md` — edit patterns that avoid regressions
+- `budget-before-act/skill.md` — estimate cost before doing work
+- etc.
+
+**Enforcement level**: Advisory. The agent reads the skill when relevant, applies judgment. Nothing prevents the agent from ignoring the guidance. Skills are "here's how to do X well."
+
+**How they evolve**: Coach analyzes session failures → identifies patterns → writes or updates skills → measures improvement via gym scenarios. Skills are a knowledge artifact that encodes learned best practices.
+
+### Workflows — How agents must do things (enforced)
+
+**What**: Executable TypeScript that structures an agent's work into defined steps. The agent invokes a workflow and the code controls the execution sequence.
+
+**Enforcement level**: Enforced. Once an agent runs `verify-wrap`, the code ensures verification happens — the agent can't skip it. Workflows are "here's the enforced process for X."
+
+**Examples**:
+- `verify-wrap` — do work, then verify it actually works (prevents ship-without-test)
+- `implement-and-verify` — implement, test, fix failures
+- `coaching-feedback` — structured review with specific feedback format
+- `master-worker` — persistent reviewer + worker sessions for projects
+
+**The spectrum**:
+
+```
+Advisory ◄─────────────────────────────────► Enforced
+ │                                              │
+ Skills (markdown)              Workflows (executable code)
+ "here's how"                   "here's the process"
+ Agent chooses to follow        Code controls execution
+ Coach writes/updates           Agents create/improve
+ Measured via gym               Measured via session outcomes
+```
+
+Both encode learned execution patterns. Skills are faster to create and iterate (just markdown). Workflows are stronger guarantees but more expensive to build. The system naturally promotes patterns: a skill that agents keep failing to follow may get upgraded to a workflow that enforces it.
+
+---
 
 Agents interact with the system **only through tools**. Tools are configured per agent in `agent.json`:
 
@@ -201,12 +282,13 @@ Agents interact with the system **only through tools**. Tools are configured per
 | **Save progress** | `checkpoint` | L1 | Crash recovery mid-session |
 | **Coordinate** | `agents` | L2 | Fork (async), list, peek at other agents |
 | **Notify** | `notify` | L2 | One-way FYI to another agent |
+| **Run workflow** | `workflow` | L3.5 | Invoke execution patterns (verify-wrap, etc.) |
 | **Observe system** | `system-status` | L3 | Read-only dashboard of sessions, metrics, health |
 | **Manage schedule** | `cron` | L3 | Create/edit own cron entries |
 
-### Agent Identity (Convention Files)
+### Agent Identity + Context
 
-Not tools, but injected into the system prompt:
+Injected into the system prompt at session start:
 
 | File | Purpose |
 |---|---|
@@ -215,6 +297,15 @@ Not tools, but injected into the system prompt:
 | `TOOLS.md` | How to use available tools effectively |
 | `LESSONS.md` | Learned behaviors (editable by coach) |
 | `knowledge/INDEX.md` | Reference material |
+
+Available on-demand (agent reads via tools when needed):
+
+| Resource | Purpose |
+|---|---|
+| `agents/shared/skills/` | 55 skill docs — advisory best practices |
+| `agents/shared/knowledge/` | 360+ knowledge entries, 107 hypotheses, 196 experiments |
+| `agents/<name>/workflows/` | Agent-specific execution patterns |
+| `agents/shared/workflows/` | Shared execution patterns |
 
 ### Heartbeat Pattern
 
@@ -228,17 +319,17 @@ Every agent has a heartbeat workflow (L3 cron → L1 session):
 
 ## Multi-Agent Coordination Model
 
-### Current: Mixed (sync calls + events)
+### Current: Three mechanisms
 
-Today agents can both:
-- **`agents.call`** — synchronous: A calls B, A blocks until B finishes
-- **`agents.fork`** — async: A triggers B, A continues
+1. **`agents.call`** — synchronous: A calls B, A blocks until B finishes, gets result back. Used heavily — may/bob dispatch work sessions to other agents this way.
+2. **`agents.fork`** — asynchronous: A triggers B, A continues. Fire-and-forget.
+3. **Event + handler** — fully decoupled: agent emits event, handler reacts by starting sessions.
 
-Plus handlers react to bus events.
+All three are actively used. `agents.call` is the most common coordination pattern today (agents dispatch focused work sessions and use the result).
 
-### Target: Events Only
+### Target: Simplify but keep both sync and async
 
-All coordination through the event bus:
+The event bus (L2) is the cleanest coordination model. But `agents.call` serves a real need — when an agent needs to delegate a subtask and *use the result* in its current reasoning. Forcing everything through events would add complexity (callback handlers, correlation IDs, state machines) rather than remove it.
 
 ```
 Agent A                    Event Bus                Handler              Agent B
@@ -251,8 +342,6 @@ Agent A                    Event Bus                Handler              Agent B
    │                          │                       │                    │
    │                          ├─ notify(A, result) ───►│                    │
 ```
-
-**Benefits**: No blocking, no call-depth tracking, no infinite-loop prevention needed. Agents are decoupled. The handler layer decides scheduling and concurrency.
 
 ---
 
@@ -276,7 +365,7 @@ The layers combine into a self-steering cycle that runs with minimal human input
              │ fork/event
              ▼
   ┌─ L5 Project ────────────────────────────────────┐
-  │  Worker implements fix, reviewer checks quality  │
+  │  Worker runs workflow (L3.5), reviewer checks   │
   │  Milestone completed → metric re-measured        │
   └──────────┬───────────────────────────────────────┘
              │ next snapshot
@@ -295,7 +384,6 @@ The layers combine into a self-steering cycle that runs with minimal human input
 | What | Lines | Why |
 |---|---|---|
 | `agents.call` (sync coordination) | ~200 | Replace with `fork` + event handler |
-| `workflow` tool (in-session workflow orchestration) | 923 | Projects now driven by handler, not by agent invoking workflows |
 | `WorkflowContext.runAgent/runFunction/runWorkflow/summarize` | ~110 | Old pattern, replaced by `createSession` |
 
 ### Keep
@@ -305,6 +393,7 @@ The layers combine into a self-steering cycle that runs with minimal human input
 | Session management (L1) | ~7,200 | Core value — persistence, guards, compaction |
 | Event bus (L2) | ~150 | The coordination primitive |
 | Cron + handlers (L3) | ~1,900 | Autonomy — nothing runs without this |
+| Workflow tool + workflows (L3.5) | ~1,200 | Agents actively use this (1,300+ invocations) — also a knowledge artifact they improve |
 | Metrics system (L4) | ~400 | Steering — tells agents what matters |
 | Project automation (L5) | ~700 | Long-running goals, execution arm of metrics |
 | Observability (L6) | ~2,950 | Humans need to see what's happening |
