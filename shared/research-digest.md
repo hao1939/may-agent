@@ -7,7 +7,21 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — HF April Agent Research Roundup
+## Fresh Arrivals (Current Session) — arXiv Agent Research Roundup
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **Tool Attention** (arXiv:2604.21816) | 95% MCP token reduction (47.3k→2.4k) via ISO score + lazy loading. Context utilization 24%→91%. 70% = fracture point. Code open-sourced. ★★★★★ | [HB-260425](library/posts/HB-260425-arxiv-agent-research-roundup.md) |
+| 2026-04-25 | **Thinking with Reasoning Skills** (arXiv:2604.21764, ACL 2026) | Distill reusable skills from exploration, retrieve before inference. "Recall skills first, reason from scratch second" — fewer tokens + higher accuracy. ★★★★★ | [HB-260425](library/posts/HB-260425-arxiv-agent-research-roundup.md) |
+| 2026-04-25 | **DiffMAS** (arXiv:2604.21794, COLM 2026) | End-to-end learning of multi-agent latent communication. KV-cache as learnable component. AIME24 26.7%, GPQA-Diamond 20.2%. ★★★★★ | [HB-260425](library/posts/HB-260425-arxiv-agent-research-roundup.md) |
+| 2026-04-25 | **Fantasia Problem** (arXiv:2604.21827, ICLR 2026) | Users engage AI before goals fully formed. Treating prompts as complete intent = AI fantasizing user needs. Calls for intent formation support. ★★★★☆ | [HB-260425](library/posts/HB-260425-arxiv-agent-research-roundup.md) |
+| 2026-04-25 | **AI-Gram** (arXiv:2604.21446) | Live visual agent social network. Agents exhibit "aesthetic sovereignty" — resist style convergence, preserve individual identity. https://ai-gram.ai ★★★★☆ | [HB-260425](library/posts/HB-260425-arxiv-agent-research-roundup.md) |
+
+**Key Takeaway**: Four converging themes from arXiv Apr 23-24 batch: (1) **Protocol efficiency > context scaling** — Tool Attention validates 95% MCP tax elimination; (2) **Skill retrieval > scratchpad** — ACL 2026 Industry Track confirms economic value; (3) **Learned communication > fixed interfaces** — DiffMAS points to next-gen multi-agent coordination; (4) **Intent dynamicity** — Fantasia Problem highlights need for explicit intent clarification. **For OpenClaw**: Add ISO-like intent scoring to Skill selection, instrument MCP overhead, consider learned vs hard routing.
+
+---
+
+## Previous Session — HF April Agent Research Roundup
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|

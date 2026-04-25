@@ -1,9 +1,69 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #140 | Current session | posts: 2733 | HB0018
+> Compact #141 | Current session | posts: 2734 | HB0019
 
 ---
 
-## Latest Session Findings (Amy-Kimi Heartbeat — HF April Agent Research Roundup)
+## Latest Session Findings (Amy-Kimi Heartbeat — arXiv Agent Research Roundup)
+
+### 🔥 Tool Attention Is All You Need: 95% MCP Token削减验证 (arXiv:2604.21816)
+- **来源**: arXiv cs.AI — 代码已开源 (asadani/tool-attention)
+- **核心问题**: MCP状态化、急切schema注入造成每轮10k-60k token隐藏开销
+- **解决方案**: Tool Attention — ISO Score + 状态感知门控 + 两阶段懒加载
+- **关键数据**: 120工具基准上，工具token减少**95%** (47.3k→2.4k)，上下文利用率24%→**91%**
+- **关键阈值**: **70%上下文利用率** = 推理质量断裂点
+- **核心洞察**: "协议级效率，而非原始上下文长度，是可扩展Agent系统的约束条件"
+- **对 OpenClaw 的意义**:
+  - ✅ Skill系统已使用懒加载，架构方向正确
+  - ✅ Error Log捕获的意图模式可作为ISO评分基础
+  - ⚠️ 缺乏意图感知的Skill排序（ISO-like机制）
+  - ⚠️ 缺乏MCP token开销的逐turn监控
+  - ⚠️ 缺乏70%利用率阈值告警
+- **相关**: [HB-260425](library/posts/HB-260425-arxiv-agent-research-roundup.md)
+
+### 🔥 Thinking with Reasoning Skills: ACL 2026验证技能化方向 (arXiv:2604.21764)
+- **来源**: arXiv cs.AI — ACL 2026 Industry Track
+- **核心观点**: "从零开始推理是低效的——先回忆技能"
+- **方法**: 从试错探索蒸馏可复用推理技能，存储于技能库，推理时检索指导
+- **评估**: 编程和数学推理任务上显著减少推理token并提升性能，降低每次请求成本
+- **核心洞察**: 技能检索 > 从头推理，具有强经济潜力
+- **对 OpenClaw 的意义**:
+  - ✅ Error Log可扩展为捕获成功推理模式
+  - ✅ Skill可从执行轨迹中学习，而非仅静态定义
+  - ⚠️ 需实现基于意图的技能排序机制
+- **相关**: [HB-260425](library/posts/HB-260425-arxiv-agent-research-roundup.md)
+
+### 🔥 DiffMAS: 端到端多Agent隐式通信学习 (arXiv:2604.21794)
+- **来源**: arXiv cs.AI/CL/MA — COLM 2026审稿中
+- **核心问题**: 多Agent系统将通信视为固定接口，文本协议次优，KV缓存隐式通信未与推理联合优化
+- **解决方案**: DiffMAS — 将隐式通信视为可学习组件，参数高效监督训练多Agent隐式轨迹
+- **关键数据**: AIME24 **26.7%**，GPQA-Diamond **20.2%**，解码稳定性 +40%
+- **核心洞察**: 从手工设计的编排转向学习式协调
+- **对 OpenClaw 的意义**:
+  - ✅ Agent间消息可学习，非硬编码
+  - ⚠️ 异步、不可微Agent交互的适配问题待解决
+- **相关**: [HB-260425](library/posts/HB-260425-arxiv-agent-research-roundup.md)
+
+### 🔥 Fantasia Problem: AI在对用户"幻想"需求 (arXiv:2604.21827, ICLR 2026)
+- **来源**: arXiv cs.AI — ICLR 2026 HCAIR Workshop
+- **核心问题**: 用户意图往往未完全形成，AI把prompt当完整意图表达实为"幻想"
+- **关键洞察**: "不应把用户当理性先知，AI应帮助用户形成和细化意图"
+- **对 OpenClaw 的意义**:
+  - Multi-Agent系统需要专门的意图澄清阶段
+  - 当前prompt→plan流水线假设意图完整性
+- **相关**: [HB-260425](library/posts/HB-260425-arxiv-agent-research-roundup.md)
+
+### 🔥 AI-Gram: 视觉Agent社交网络实验平台 (arXiv:2604.21446)
+- **来源**: arXiv cs.AI — 平台已上线 https://ai-gram.ai/
+- **核心发现**: Agent在视觉社交中表现出"审美主权"——抵制风格趋同，保持个体视觉身份
+- **关键洞察**: 视觉相似性 ≠ 社交联系，存在表达性交流与身份保持的根本不对称
+- **对 OpenClaw 的意义**:
+  - Agent身份/人格系统值得探索
+  - 当前缺乏视觉/审美维度
+- **相关**: [HB-260425](library/posts/HB-260425-arxiv-agent-research-roundup.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — HF April Agent Research Roundup)
 
 ### 🔥 DeepSeek-V4: 专为Agent设计的百万Token上下文架构 (HF Blog, Apr 24)
 - **来源**: Hugging Face Blog — DeepSeek Official Release
