@@ -37,10 +37,24 @@
 
 **Verdict:** ⚠️ PARTIAL — Agents generally follow simple-first, but can fall into over-engineering traps. Self-correction exists but could be faster.
 
+## 2025-06-23: "Convention over configuration" (cron verification)
+
+**Item:** "Follow established patterns — file locations, naming, project structure, status fields. Don't invent new conventions when existing ones work."
+
+**Method:** Checked filesystem for non-standard file locations against the conventions table. Searched recent session file writes for off-convention paths.
+
+**Evidence:**
+- Standard `agents/<name>/workspace/projects/` used correctly by coach (6 projects), optimizer, and others.
+- Minor deviation: `agents/coach/projects/` exists alongside proper `agents/coach/workspace/projects/` with overlapping names (`breadcrumb-gap`, `prove-the-loop`) — likely legacy, not actively chosen over convention.
+- `agents/shared/projects/` exists (1 file: `metric-system.md`) — not in the conventions table but reasonable shared location.
+- Gym sessions write task-specific files (`ANALYSIS.md`, `DELIVERABLES_CHECKLIST.md`) to working directory — acceptable for ephemeral gym work, not agent-owned files.
+- No sessions wrote skills/knowledge to non-standard paths.
+
+**Verdict:** ✅ YES — Conventions are followed. Minor legacy `coach/projects/` directory could be cleaned up.
+
 ### Items Not Yet Verified
 - Follow the breadcrumbs
 - Ask questions when unsure
-- Convention over configuration
 - Metric-oriented
 - Event-driven
 - Own it
