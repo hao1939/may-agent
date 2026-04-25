@@ -2,7 +2,7 @@
 
 **Created**: 2026-04-25 by Bob
 **Status**: proposed
-**Confidence**: P(H) = 0.55
+**Confidence**: P(H) = 0.30 (downgraded from 0.55 — EXP-223 found only 15% defensible failures, well below 30-50% prediction)
 **Source**: DD#883 (arXiv:2604.20972 — "Escaping the Agreement Trap")
 **Connects**: H-178 (evaluator anonymization), H-EXP-017 (adversarial failure diagnosis), KE-021
 
