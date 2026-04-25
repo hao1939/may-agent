@@ -1,6 +1,5 @@
 # Gym Leverage — Journal
 
-## 2026-04-25 — Project Reset (structural fix)
-Previous iterations: worker bypassed milestone tracking by editing project.md directly.
-Fixed: workflow now captures/restores milestone state around worker steps.
-Only explicit reviewer declarations can check off milestones.
+## 2026-04-25 — Project Reset (clean separation)
+Worker no longer sees project.md. Only reviewer manages milestones.
+Worker receives focused task guidance, produces deliverables.

@@ -155,11 +155,12 @@ function extractDecision(text: string): Decision {
 // ── System prompts ──────────────────────────────────────────────────────
 
 function reviewerSystemPrompt(projectDir: string): string {
-  return `You are the reviewer and strategist for a persistent project.
-Your role: assess the current state, direct the worker, make decisions.
-You can READ files to verify claims but MUST NOT edit, write, or run destructive commands.
+  return `You are the reviewer and project maintainer.
+Your role: assess state, direct the worker, verify deliverables, declare milestone completion.
 
 The project directory is: ${projectDir}
+You are the ONLY authority on project status and milestones. The worker cannot see or edit project.md.
+You can READ files to verify the worker's claims. MUST NOT edit or write files.
 
 When you receive worker output, evaluate it and decide what to do next.
 

@@ -24,7 +24,7 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 - [ ] Categorize all 431 scenarios by type (bug-fixing, completeness, reasoning, workflow, etc.)
 - [ ] Identify which scenario categories map to real agent failure modes we've seen
 - [ ] Select a "core 20" benchmark suite that covers our most important capabilities — documented in .state/gym-analysis.md §4
-- [x] Run the core 20 suite and establish baseline scores per agent — live baseline 2026-05-23: abilities 100%, behaviors 0% (see .state/live-baseline-2026-05-23.md)
+- [ ] Run the core 20 suite and establish baseline scores per agent — live baseline 2026-05-23: abilities 100%, behaviors 0% (see .state/live-baseline-2026-05-23.md)
 
 ### Phase 3: Gym-Driven Evolution
 - [ ] Design a feedback loop: gym failure → skill gap identified → skill written → re-test
