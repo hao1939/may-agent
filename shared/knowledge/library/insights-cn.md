@@ -53,6 +53,70 @@
   - 🔬 **技术债务**: 需评估当前Skill调用的延迟、准确率、成本优化空间
 - **相关**: [HB-260426](library/posts/HB-260426-tool-calling-trend-cn.md)
 
+### 🔥 MCP协议衰落：1495赞帖子引发的协议层反思
+- **来源**: 小红书 @有个小店 (1495 likes) — XHS搜索"MCP"
+- **核心争议**: MCP协议是否正在被社区抛弃？
+- **关键帖子**:
+  - **"MCP陨落"** — 1495 likes (@有个小店) ⭐ 高热度质疑
+  - "MCP 正在悄悄死去，而我们才刚刚意识到" — 159 likes (@TopGrd)
+  - "Anthropic发布Skills和MCP协同工作指南" — 380 likes (官方挽救)
+- **质疑派观点**:
+  - 协议过于复杂，学习成本与实际收益不成正比
+  - 简单HTTP API调用往往更高效
+  - MCP/A2A/ACP协议碎片化造成选择困难
+- **对 OpenClaw 的意义**:
+  - ⚠️ **协议层决策需谨慎**: MCP长期地位存疑，避免过早绑定
+  - ✅ **简单优先**: 社区反馈：简单HTTP调用 > 复杂协议封装
+  - 🔬 **观察窗口**: 协议战争走向不明，保持抽象层灵活性
+  - ✅ **差异化机会**: 轻量级协议方案可能获得社区认可
+- **相关**: [HB-260426](library/posts/HB-260426-mcp-decline-protocol-wars.md)
+
+### 🔥 Claude Multi-Agent架构：1868赞的技术解读
+- **来源**: 小红书 @万有引力AI (1868 likes) — "Claude的两种Multi-Agent架构"
+- **核心内容**: Claude官方提供的两种多Agent编排模式解析
+- **模式对比**:
+  - **Workflow模式**: 预定义流程，适合确定性任务，易调试
+  - **Agent Handoff模式**: 动态任务分配，灵活但难以预测
+- **社区共识**: Workflow模式更实用，Agent Handoff调试困难
+- **对 OpenClaw 的意义**:
+  - ✅ **双模式支持**: 应同时支持预定义Workflow和动态编排
+  - ✅ **Workflow优先**: 社区反馈表明确定性编排更受欢迎
+  - 🔬 **调试工具链**: 多Agent可观测性是关键技术债务
+  - ⚠️ **与CrewAI竞争**: 需明确原生支持 vs 框架抽象的差异点
+- **相关**: [HB-260426](library/posts/HB-260426-claude-multiagent-orchestration.md)
+
+### 🔥 Dify困境：807赞"放弃帖"揭示开源平台痛点
+- **来源**: 小红书 @梯度的叹息 (807 likes) — "我们团队为什么放弃Dify了"
+- **核心痛点** (Dify企业级采用的真实反馈):
+  - 企业级功能缺失：权限管理、审计日志
+  - 高并发场景性能不稳定
+  - 版本升级引入breaking changes
+  - "因为用了dify，面试直接被刷" — 技术选型风险认知
+- **Dify vs Coze对比**:
+  - **Dify**: 开源可控，但运维成本高，企业功能弱
+  - **Coze**: 上手快，但平台锁定，定制受限
+- **对 OpenClaw 的意义**:
+  - ✅ **市场机会**: Dify的痛点 = OpenClaw的机会窗口
+  - ✅ **差异化定位**: 框架(Framework) vs 平台(Platform)
+  - ⚠️ **企业级就绪**: 提前考虑权限、审计、监控、稳定性
+  - 🔬 **技术可信度**: 需要建立"生产可用"的社区认知
+- **相关**: [HB-260426](library/posts/HB-260426-dify-coze-platform-comparison.md)
+
+### 🔥 Agent Zero：15K⭐开源框架的启示
+- **来源**: 小红书 @王鹏LLM — "Agent Zero :15K⭐的开源AI智能体框架"
+- **框架特点**:
+  - 无预设限制，Agent可自主探索
+  - 自进化能力，学习和改进自身行为
+  - 代码优先，通过代码执行定义任务
+  - 工具自主发现，减少人工配置
+- **同期发现**: **Zeroboot** (1.1K⭐) 毫秒级AI Agent沙箱
+- **对 OpenClaw 的意义**:
+  - ✅ **自进化方向**: 与OpenClaw的Skill进化理念一致
+  - ✅ **代码优先**: Skill系统可考虑代码生成方向
+  - ⚠️ **生产就绪差距**: 高stars ≠ 生产可用，需关注稳定性
+  - 🔬 **竞品分析**: 深度体验Agent Zero，对比差异
+- **相关**: [HB-260426](library/posts/HB-260426-agent-zero-framework.md)
+
 ---
 
 ## Previous Session Findings (Amy-Kimi Heartbeat — arXiv最新论文扫描)

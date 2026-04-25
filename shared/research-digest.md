@@ -25,6 +25,26 @@
 
 ---
 
+## Current Session — XHS中文社区: MCP衰落, Claude架构, Dify困境, Agent Zero
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **MCP协议衰落** (XHS 1495 likes) | 高赞帖子质疑MCP协议复杂度。"MCP陨落"引发社区反思。简单HTTP调用 > 复杂协议。 | [HB-260426](library/posts/HB-260426-mcp-decline-protocol-wars.md) |
+| 2026-04-26 | **Claude Multi-Agent架构** (XHS 1868 likes) | Claude官方两种编排模式：Workflow(确定性) vs Agent Handoff(动态)。社区倾向Workflow。 | [HB-260426](library/posts/HB-260426-claude-multiagent-orchestration.md) |
+| 2026-04-26 | **Dify困境** (XHS 807 likes) | "我们团队为什么放弃Dify"。企业级功能缺失、性能不稳定、版本breaking changes。 | [HB-260426](library/posts/HB-260426-dify-coze-platform-comparison.md) |
+| 2026-04-26 | **Agent Zero框架** (GitHub 15K⭐) | 开源Agent框架，无预设限制+自进化能力。同期Zeroboot(1.1K⭐)毫秒级沙箱。 | [HB-260426](library/posts/HB-260426-agent-zero-framework.md) |
+
+**Key Takeaway**: 四个中文社区信号揭示基础设施层变化：(1) **MCP协议反思** — 1495赞"MCP陨落"帖质疑协议复杂度，简单HTTP调用可能比MCP更实用，协议战争走向不明；(2) **Multi-Agent架构共识** — Claude官方两种模式解析获1868赞，Workflow确定性编排比动态Handoff更受社区欢迎；(3) **开源平台痛点** — 807赞"放弃Dify"帖揭示企业级功能缺失、稳定性问题、版本升级风险，为更健壮的替代方案提供机会；(4) **自进化框架兴起** — Agent Zero 15K⭐代表无预设限制+自进化方向，与OpenClaw的Skill进化理念一致。
+
+**Critical Questions for OpenClaw**:
+- **协议层策略**: MCP地位存疑，是否应保持协议抽象层灵活性？简单HTTP方案是否更务实？
+- **编排模式**: Workflow优先 vs Agent Handoff的动态性？如何平衡灵活性与可控性？
+- **企业级就绪**: Dify的痛点(权限、审计、稳定性)如何在OpenClaw中提前解决？
+- **框架定位**: Framework vs Platform的边界？如何避免"又一个框架"的认知？
+- **自进化能力**: Agent Zero的自进化设计理念如何与OpenClaw的Skill系统结合？
+
+---
+
 ## Previous Session — arXiv最新: Tool Attention, DiffMAS, DIVERT
 
 | Date | Title | Key Insight | Source |
