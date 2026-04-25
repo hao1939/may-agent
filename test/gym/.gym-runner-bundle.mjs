@@ -497,13 +497,16 @@ function runScenario(scenarioName , agent , lab , adapter , timeoutMinutes , kee
     let agentStatus;
     let transcriptPath;
 
+    // Use scenario's agent_type if specified, otherwise fall back to CLI arg
+    const effectiveAgent = meta.agent_type || agent;
+
     if (meta.workflow) {
       // Workflow: split task on --- delimiter, run phases sequentially
       const phases = taskContent.split(/\n---\n/).map((p ) => p.trim()).filter((p ) => p.length > 0);
       agentStatus = "completed";
       for (let pi = 0; pi < phases.length; pi++) {
         const phaseTask = phases[pi];
-        const phaseResult = runAgent(adapter, phaseTask, tmpDir, agent, timeoutMs);
+        const phaseResult = runAgent(adapter, phaseTask, tmpDir, effectiveAgent, timeoutMs);
         transcriptPath = phaseResult.transcriptPath || transcriptPath;
         if (phaseResult.status === "skipped") {
           agentStatus = "skipped";
@@ -515,7 +518,7 @@ function runScenario(scenarioName , agent , lab , adapter , timeoutMinutes , kee
         }
       }
     } else {
-      const agentResult = runAgent(adapter, taskContent, tmpDir, agent, timeoutMs);
+      const agentResult = runAgent(adapter, taskContent, tmpDir, effectiveAgent, timeoutMs);
       agentStatus = agentResult.status;
       transcriptPath = agentResult.transcriptPath;
     }
@@ -527,7 +530,7 @@ function runScenario(scenarioName , agent , lab , adapter , timeoutMinutes , kee
 
     return {
       scenario: scenarioName,
-      agent,
+      agent: effectiveAgent,
       lab_fork: lab || null,
       passed: criteria.passed,
       checks: criteria.checks || [],
@@ -542,7 +545,7 @@ function runScenario(scenarioName , agent , lab , adapter , timeoutMinutes , kee
     const errMsg = err instanceof Error ? err.message : "unknown";
     return {
       scenario: scenarioName,
-      agent,
+      agent: effectiveAgent,
       lab_fork: lab || null,
       passed: false,
       checks: [],
