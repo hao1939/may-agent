@@ -1,17 +1,21 @@
-# QA Heartbeat — Unreviewed Findings (2026-04-25)
+# Unreviewed Findings (QA heartbeat)
+
+Date: 2026-04-25
 
 ## Inbox triage
-- Multiple duplicate notifications about "Quick Code Review" waste: likely upstream dispatch duplication. No actionable code artifact attached in this heartbeat, so **dismissed as duplicate noise**.
-- Alert to verify new gym scenario EXP-220: investigated — scenario exists as `agents/gym/scenarios/enoent-file-search/`.
+- Duplicate “Quick Code Review” notifications (5x): treated as **waste/duplicate**; no actionable code review target identified.
+- EXP-220 verification request: investigated below.
 
-## EXP-220 verification
-- No directory named `EXP-220*` exists under `agents/gym/scenarios/`.
-- A scenario named **`enoent-file-search`** is present and appears to match the described EXP-220 intent.
-- Evidence: `agents/gym/scenarios/enoent-file-search/scenario.json` contains description referencing ENOENT + file search trap.
+## Verification work performed
+### EXP-220 ("Fix Bob TOOLS.md - document workflow tool")
+- Verified commit metadata: `525a95703` modifies `bob/TOOLS.md` and adds `coach/workspace/experiments/EXP-220/design.md`.
+- Read `agents/bob/TOOLS.md`: contradiction removed; `workflow` tool documented and “Key Constraints” no longer incorrectly bans workflow.
+- Read `agents/coach/workspace/experiments/EXP-220/design.md`: experiment doc present; status marked DEPLOYED.
 
-## Test/tooling environment issues
-- `./node_modules/.bin/tsc --noEmit` fails: `No such file or directory` (node_modules not present in this environment).
-- `./node_modules/.bin/vitest --run` fails: `No such file or directory`.
+## Test/CI health notes
+- `./node_modules/.bin/tsc --noEmit` **PASS** in `/app/agents` repo.
+- `./node_modules/.bin/vitest --run` **FAIL (tool missing)**: `node_modules/.bin/vitest` does not exist in this repo; `package.json` has no vitest devDependency.
+  - This appears to be an **environment/tooling gap**, not introduced by EXP-220.
 
-## Recent change sweep (agents repo)
-- Latest commit in `agents/` is `2742f338e`, modifies only `agents/bob/last-session.md` (auto-generated session metadata).
+## Open questions / follow-ups
+- If vitest is intended to be runnable at repo root, add `vitest` to devDependencies and install, or update QA instructions for this repo to run the correct test command.
