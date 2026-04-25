@@ -1,12 +1,13 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777100369967_6
+- **Session:** s_1777100549585_9
 - **Status:** done
-- **When:** 2026-04-25T07:01:25.044Z
-- **Duration:** 1m55s
+- **When:** 2026-04-25T07:03:00.471Z
+- **Duration:** 30s
 
 ## What Happened
-So `coach/projects/` exists alongside the proper `coach/workspace/projects/` with overlapping project names (`breadcrumb-gap`, `prove-the-loop`). This is a minor convention deviation — likely legacy. The standard location is being used as the primary.
-
-Now update the tracker:
+### scout: FM-1.3
+**Decision:** growth-cycle
+**Reasoning:** This is a clear, learnable skill gap around bash command hygiene — the agent repeatedly assumes file paths without verifying them first, and uses grep/ls pipelines that exit with code 1 on no matches, triggering unnecessary error recovery. 7 occurrences in 7 days shows it's not transient.
+**Action:** Train a skill covering two specific behaviors: (1) always verify paths exist before using them (use `find` or `[[ -f ]]` proactively, not as recovery), and (2) use `grep ... || true` or `find` instead of `ls | grep` to avoid exit-code-1 failures on empty results.
