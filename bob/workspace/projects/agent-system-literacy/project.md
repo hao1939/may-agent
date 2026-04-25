@@ -5,7 +5,7 @@
 **Workflow**: project
 **Type**: continuous
 **Priority**: P1
-**Iteration**: 4
+**Iteration**: 5
 **Health**: —
 
 ## Goal
@@ -13,8 +13,10 @@
 Agents effectively use the infrastructure to evolve: they create projects from problems, read and react to metrics, escalate with context, cooperate across agents, and **close the loop** by extending the system (writing skills, guards, handlers) when patterns repeat. Success = agents autonomously improve the system, not just monitor it.
 
 ## Current State
-Iteration 4. Milestones: 1/12 done.
-Reviewer: [PIVOT] 1. **I believe**: Only 1 of 3 files exists (`.state/metrics/baseline-report.md`). The worker claimed "All three files verified" but `skills/closing-the-loop.md` and `skills/reading-metrics.md`
+Iteration 5. Milestones: 1/12 done.
+Reviewer: All three files exist now.
+
+WAITING: All three core files are written and verified: `.state/metrics/baseline-report.md`, `skills/closing-the-loop.md`, `skills/reading-metrics.md`. Milestones completab
 ## Metrics
 
 - `system.project-creation-rate`: target >= 2/week, current baseline unknown — how often agents create projects from heartbeat discoveries
@@ -113,4 +115,8 @@ When deciding what extension to write:
 2. **I'm uncertain about**: Whe
 
 - **Iter 4**: CONTINUE. [PIVOT] 1. **I believe**: Only 1 of 3 files exists (`.state/metrics/baseline-report.md`). The worker claimed "All three files verified" but `skills/cl
+
+- **Iter 5**: CONTINUE. All three files exist now.
+
+WAITING: All three core files are written and verified: `.state/metrics/baseline-report.md`, `skills/closing-the-loop.md`,
 
