@@ -71,11 +71,6 @@
 
 ## Learned from experience
 
-- Nothing to commit from me. Let me finish. (source: s_1777059454995_358, 2026-04-24)
-- OK, let me stop investigating and wrap up. My metrics are healthy, my one project is CLOSED, and I've:
-- All metrics green, project closed, LESSONS.md already clean. Let me triage inbox and finish.
-- OK, I have a clear picture. Let me triage inbox and finish.
-- Amy already has the instruction but still fails 67% of the time — classic text-instruction-doesn't-fix-structural-behavior pattern (consistent with EXP-188 finding). This is worth noting but designing (source: s_1777066655203_512, 2026-04-24)
 - Now let me escalate the P0 items to May: (source: s_1777066634825_511, 2026-04-24)
 - All metrics are healthy, project is closed, and I have no active experiments. Let me process the inbox and finish.
 - All metrics green, project closed, no active experiments. Let me quickly triage inbox and finish. (source: s_1777072055122_627, 2026-04-25)
@@ -84,11 +79,14 @@
 - I have enough evidence now. The pattern is mixed but generally positive. Let me update the tracker. (source: s_1777081174264_785, 2026-04-25)
 - Now let me process inbox dismissals concisely and update the experiment in the DB: (source: s_1777081055686_781, 2026-04-25)
 - Triage complete. All metrics green, project closed, no active requests besides this heartbeat. Inbox items:
-
-1. **P0 request 13cf8df6** — Already addressed in prior heartbeats (context confirms). Dism (source: s_1777079255663_771, 2026-04-25)
 - Now commit: (source: s_1777077455361_738, 2026-04-25)
 - All clear. Let me assess the inbox:
+- Good data. Core agents ranked by quality: amy (0.70), coder (0.72), coach (0.75), bob (0.76), may (0.76), scout (0.78), optimizer (0.80), tech-lead (0.80), qa (0.82).
 
-1. **P0 request 13cf8df6** — Already DISMISSED in DB. ✅ Dismiss.
-2. **IT-84/85 graduate lessons** — LESSONS.md already empty (all graduated). ✅ Dismiss.
-3. **"Last (source: s_1777075655135_699, 2026-04-25)
+**Amy and coder are the weakest  (source: s_1777088255828_822, 2026-04-25)
+- Now let me take action on IT-89 — dispatch P0 items directly instead of just writing about them. (source: s_1777088234976_821, 2026-04-25)
+- EXP-200 still has no data — no projects iterating. Not actionable now.
+
+Let me wrap up. My metrics are all healthy, project is closed, and I've closed 2 stale experiments. (source: s_1777086454606_811, 2026-04-25)
+- Everything is stable. All inbox items are repeats already handled in prior heartbeats. No action needed. (source: s_1777084655021_803, 2026-04-25)
+- Already committed from a previous session. The intervention was already deployed. Good — let me focus on verifying it's working. The files are in place. Let me finish up. (source: s_1777082855716_792, 2026-04-25)
