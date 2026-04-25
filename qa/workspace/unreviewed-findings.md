@@ -1,22 +1,17 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-25)
 
-## Inbox triage (duplicate requests)
-Received 5 identical “Quick Code Review” notifications. These appear to be duplicates/waste; no unique actionable request payload was provided beyond duplication.
+## Inbox triage
+- Multiple duplicate notifications about "Quick Code Review" waste: likely upstream dispatch duplication. No actionable code artifact attached in this heartbeat, so **dismissed as duplicate noise**.
+- Alert to verify new gym scenario EXP-220: investigated — scenario exists as `agents/gym/scenarios/enoent-file-search/`.
 
-- Action: **Dismiss** duplicates as waste/no-op (no distinct task to execute).
-- Recommendation: Add/verify a de-duplication step in dispatcher (outside scope of this heartbeat).
+## EXP-220 verification
+- No directory named `EXP-220*` exists under `agents/gym/scenarios/`.
+- A scenario named **`enoent-file-search`** is present and appears to match the described EXP-220 intent.
+- Evidence: `agents/gym/scenarios/enoent-file-search/scenario.json` contains description referencing ENOENT + file search trap.
 
-## Repo verification status
-This workspace root (`/app`) is **not** a git repo and has **no local node_modules**; mandatory checks must be run in the actual repo.
+## Test/tooling environment issues
+- `./node_modules/.bin/tsc --noEmit` fails: `No such file or directory` (node_modules not present in this environment).
+- `./node_modules/.bin/vitest --run` fails: `No such file or directory`.
 
-### Agents repo (`/app/agents`)
-- `tsc --noEmit`: **PASS** (ran in `agents/`) — see heartbeat evidence.
-- `vitest --run`: **FAIL (environment)** — `./node_modules/.bin/vitest` not present because `vitest` is not installed in `agents/package.json`.
-
-## Recent change sampled
-Latest commit in agents repo:
-- `92d954cea` — modifies:
-  - `amy-kimi/last-session.md`
-  - `shared/knowledge/entries/KE-377-context-structure-beats-content.md`
-
-I read KE-377; it is documentation-only and appears consistent and non-breaking.
+## Recent change sweep (agents repo)
+- Latest commit in `agents/` is `2742f338e`, modifies only `agents/bob/last-session.md` (auto-generated session metadata).
