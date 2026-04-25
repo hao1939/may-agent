@@ -3330,3 +3330,16 @@ src/app/ui/web
 - Bob analysis: fresh (7h ago)
 - No anomalies detected
 
+## 2026-04-25T14:40 — Auto (JS cron handler)
+
+- Sessions (24h): 1260
+- Unevaluated: 68 total, 67 actionable, 1 auto-skippable
+- Running sessions: none
+- tsc: SKIP (no tsconfig.json)
+- Lessons: 52 lines total (scout 31, optimizer 21)
+- Bob analysis: fresh (0h ago)
+- ⚠️ Event "agent.notification" — 111 pending > 2h
+- ⚠️ Event "metric.breach" — 38 pending > 2h
+- ⚠️ Event "project.waiting" — 5 pending > 2h
+- ⚠️ Event "session.failed" — 2 pending > 2h
+

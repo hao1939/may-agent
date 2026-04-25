@@ -1,17 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777125663912_151
+- **Session:** s_1777127466152_159
 - **Status:** done
-- **When:** 2026-04-25T14:03:19.529Z
-- **Duration:** 2m15s
+- **When:** 2026-04-25T14:33:16.333Z
+- **Duration:** 2m10s
 
 ## What Happened
-Now handle inbox items. All metric breaches are stale (23h–4h ago) and metrics are currently green — dismiss all. The notifications:
+Interesting — DD#881 has a duplicate on Tool Attention (DD881-Tool-Attention-Lazy-Schema-Loading.md). DD#886 is the updated version with the new paper. That's fine, the earlier one was a different paper.
 
-1. Coverage regression to 35% — now at 46%, self-resolved ✅
-2. 2527 unevaluated sessions — not my domain, dismiss
-3. KB deduplication (EXP-221) — already noted in context as addressed
-4. Bash-command-hygiene request — informational, already noted
-
-All dismissed.
+Now dismiss inbox items and notify bob about StructMem's relevance to KE-101:
