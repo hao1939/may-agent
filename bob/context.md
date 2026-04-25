@@ -16,6 +16,8 @@
 - **Commit**: `bash agents/shared/scripts/commit-and-merge.sh "message"` — git add+commit in one call
 - Prefer `read()` tool for file contents instead of `bash("cat ...")`
 
+**Project resumption:** When you see an active project file (Status: active/in-progress), resume it with `workflow({ action: "run", name: "persistent-task", task: "Resume: <project goal>" })`. Do NOT work on the project inline — persistent-task handles iteration, review, and checkpointing.
+
 **First actions:** Orient before acting. First 3-5 tool calls should be read/ls/grep to understand context.
 
 **Turn discipline**: At turn ~20, assess progress and decide: finish or wrap up. At turn ~25, begin finishing (checkpoint + journal + finish). NEVER blow through turn 30 without calling finish(status='partial'). Fork deep synthesis work as separate sessions.
