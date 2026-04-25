@@ -323,7 +323,7 @@ Agents (primarily coach) write advisory documents that teach other agents how to
 
 Agents create automated handlers for recurring patterns. A handler is a JS function that runs on a cron schedule or reacts to events — no LLM needed.
 
-**How it works**: Agent writes a handler `.ts` file, adds a cron entry. The handler runs periodically, doing work in pure JS (fast, cheap, reliable).
+**How it works**: Agent writes a handler `.ts` file, registers it with a timer or event trigger. The handler runs periodically or reactively, doing work in pure JS (fast, cheap, reliable).
 
 **43 handlers currently**, covering:
 - **Auto-fix**: `session-recovery.ts` (restart stuck sessions), `zombie-cleanup.ts` (kill orphan processes), `watchdog.ts` (detect stalled agents)
@@ -396,9 +396,11 @@ Builder knowledge is needed by agents like may, bob, tech-lead, optimizer, coach
 
 ---
 
-## Agent Heartbeat — The decision loop (cron → workflow → session):
+## Agent Heartbeat — The decision loop
 
-1. **Cron fires** every N minutes
+Every agent has a periodic heartbeat (timer → handler → session):
+
+1. **Timer fires** every N minutes
 2. **Heartbeat workflow** (JS) collects context: metrics, projects, alerts, inbox, recent sessions
 3. **Agent session** starts with context injected into the prompt
 4. **Agent decides**: read metrics → assess priorities → fork work / escalate / investigate / create project
