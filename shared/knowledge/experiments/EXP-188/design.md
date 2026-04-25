@@ -1,7 +1,7 @@
 # EXP-188: Recognition Intervention Dose-Response on sql-injection-in-query-builder
 
 **Date**: 2026-04-19
-**Status**: DESIGNED
+**Status**: CONCLUDED — H-188b confirmed (hint anchoring). KE-375 written.
 **Predecessors**: EXP-177 (hints unreliable/harmful), EXP-166 (content-first 100%, F2 100%, baseline 67%)
 **Hypotheses**: H-166 (refuted by EXP-177), new H-175 (negative transfer from narrow hints)
 
