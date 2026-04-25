@@ -12,9 +12,7 @@ import { dirname, join, resolve } from "node:path";
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.ts";
 import type { CronEntry } from "../../shared/agent-sdk.ts";
 // Types only — values imported dynamically to avoid Bun's transitive cache
-import type { ProjectInfo, HealthAction, HealthState } from "../../shared/lib/project-health.ts";
-
-let importCounter = 0;
+import type { ProjectInfo, HealthAction } from "../../shared/lib/project-health.ts";
 
 async function loadProjectHealth() {
   return await import(`../../shared/lib/project-health.ts?t=${Date.now()}`) as typeof import("../../shared/lib/project-health.ts");
@@ -105,83 +103,40 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         continue;
       }
 
-      // launch-workflow
+      // launch-workflow — use unified workflow engine (guards, step tracking, persistence)
       if (launched >= ph.MAX_LAUNCHES_PER_TICK) { ctx.log(`[project] Skip ${project.relPath} — cap reached`); continue; }
 
       const workflowName = project.workflow || "project";
-      const workflowPath = join(workflowsDir, `${workflowName}.ts`);
-
-      let wfMod: any;
-      try {
-        wfMod = await import(workflowPath + "?t=" + ++importCounter);
-        if (typeof wfMod.execute !== "function") throw new Error("No execute()");
-      } catch (err) { ctx.log(`[project] ERROR loading workflow "${workflowName}": ${err}`); continue; }
-
       const projectDir = dirname(project.projectFile);
       const task = `project: ${projectDir}\nagent: ${project.owner}\ngoal: see project file`;
-      const runId = ph.generateRunId();
+
       ctx.log(`[project] Launching ${project.relPath} (workflow: ${workflowName}): ${action.reason}`);
-
-      const wfRun = { runId, workflow: workflowName, task, parentSessionId: null as string | null, agent: project.owner, startedAt: Date.now(), status: "running", steps: [] as Array<{ sessionId: string; agent: string; status: string }> };
-      ph.saveWorkflowRunFile(ctx.projectRoot, wfRun);
-
-      const workflowCtx = {
-        emit: (e: any) => ctx.emit(e), getDb: () => ctx.getDb(), log: (m: string) => ctx.log(m),
-        notify: (m: string) => ctx.notify(m), persistDir: ctx.persistDir, projectRoot: ctx.projectRoot,
-        agentsRoot: ctx.agentsRoot, task, agent: project.owner,
-        dispatchEvent: (eventType: string, data?: Record<string, unknown>) => { try { ctx.dispatchEvent?.(eventType, data); } catch { /* skip */ } },
-        runFunction: async (label: string, fn: () => Promise<string>) => {
-          const start = Date.now(); let output: string; let hadError = false; let errorMsg: string | undefined;
-          try { output = await Promise.race([fn(), new Promise<never>((_, rej) => setTimeout(() => rej(new Error("timeout")), 30_000))]); if (output.length > 50_000) output = output.slice(0, 50_000) + "\n…(truncated)";
-          } catch (err: any) { hadError = true; errorMsg = err?.message ?? String(err); output = `ERROR: ${errorMsg}`; }
-          return { sessionId: `fn_${label}_${Date.now()}`, status: hadError ? "error" : "done", lastAssistantText: output, messages: [], duration: `${((Date.now() - start) / 1000).toFixed(1)}s`, outputDir: "", turnsUsed: 0, ...(hadError && errorMsg ? { error: errorMsg } : {}) };
-        },
-        runAgent: async (agentName: string, agentTask: string) => {
-          const result = await ctx.manager.callAgent(agentName, agentTask, { source: "workflow", workflowRunId: runId, projectId: `${project.owner}/${project.relPath.split("/").pop()}` });
-          if (result.sessionId) { wfRun.steps.push({ sessionId: result.sessionId, agent: agentName, status: result.status ?? "done" }); ph.saveWorkflowRunFile(ctx.projectRoot, wfRun); }
-          return result;
-        },
-        runWorkflow: async () => ({ type: "escalate" as const, reason: "Sub-workflows not supported" }),
-        summarize: (result: any) => { const t = result?.lastAssistantText ?? result?.summary ?? ""; return t.length > 1500 ? t.slice(0, 1500) + "…" : t; },
-        done: (summary: string) => ({ type: "done" as const, summary }),
-        escalate: (reason: string, context?: unknown) => ({ type: "escalate" as const, reason, context }),
-        createSession: async (opts: { systemPrompt: string; tools: "full" | "readonly"; label?: string }) => {
-          const history: Array<{ role: string; text: string }> = [];
-          let lastResponse = "";
-          const label = opts.label || "session";
-
-          return {
-            async prompt(message: string) {
-              let fullPrompt = opts.systemPrompt + "\n\n";
-              for (const h of history) { fullPrompt += `[${h.role}]: ${h.text}\n\n`; }
-              fullPrompt += message;
-              history.push({ role: "user", text: message });
-
-              const result = await ctx.manager.callAgent(project.owner, fullPrompt, {
-                source: `workflow:${label}`,
-                workflowRunId: runId,
-                projectId: `${project.owner}/${project.relPath.split("/").pop()}`,
-              });
-              lastResponse = result.lastAssistantText || "";
-              history.push({ role: "assistant", text: lastResponse.slice(0, 2000) });
-              if (result.sessionId) {
-                wfRun.steps.push({ sessionId: result.sessionId, agent: project.owner, status: result.status ?? "done" });
-                ph.saveWorkflowRunFile(ctx.projectRoot, wfRun);
-              }
-            },
-            lastText() { return lastResponse; },
-            close() {},
-          };
-        },
-      };
 
       inflight.add(project.relPath);
       ph.writeInflight(inflightFile, inflight);
 
-      wfMod.execute(workflowCtx)
-        .then((r: any) => { ctx.log(`[project] ${project.relPath} → ${r.type}`); wfRun.status = "done"; wfRun.endedAt = Date.now(); ph.saveWorkflowRunFile(ctx.projectRoot, wfRun); })
-        .catch((e: any) => { ctx.log(`[project] ${project.relPath} ERROR: ${e}`); wfRun.status = "error"; wfRun.endedAt = Date.now(); ph.saveWorkflowRunFile(ctx.projectRoot, wfRun); })
-        .finally(() => { inflight.delete(project.relPath); ph.writeInflight(inflightFile, inflight); });
+      // Lazy import to avoid circular deps at module level
+      import("../../../src/lib/workflow-tool.ts").then(({ runWorkflowDirect }) => {
+        runWorkflowDirect({
+          workflowName,
+          task,
+          manager: ctx.manager,
+          runtimeCtx: ctx,
+          agentName: project.owner,
+          persistDir: resolve(ctx.projectRoot, ".state"),
+          sharedWorkflowDir: workflowsDir,
+          guardsDir: join(agentsRoot, project.owner, "guards"),
+          sharedGuardsDir: join(agentsRoot, "shared", "guards"),
+          onEvent: (e: any) => { try { ctx.emit(e); } catch { /* skip */ } },
+        })
+          .then((r) => { ctx.log(`[project] ${project.relPath} → ${r.result.type}`); })
+          .catch((e: any) => { ctx.log(`[project] ${project.relPath} ERROR: ${e}`); })
+          .finally(() => { inflight.delete(project.relPath); ph.writeInflight(inflightFile, inflight); });
+      }).catch((e: any) => {
+        ctx.log(`[project] ERROR importing workflow engine: ${e}`);
+        inflight.delete(project.relPath);
+        ph.writeInflight(inflightFile, inflight);
+      });
 
       pState.lastLaunch = now;
       pState.consecutiveSkips = 0;

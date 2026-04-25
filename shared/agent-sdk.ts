@@ -38,6 +38,8 @@ export type {
   WorkflowModule,
   WorkflowResult,
   WorkflowEvent,
+  SessionOptions,
+  SessionHandle,
 } from "../../src/lib/workflow.js";
 
 // ── Misc ──────────────────────────────────────────────────────────────
