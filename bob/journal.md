@@ -711,3 +711,25 @@ H-054 P(H) updated to 0.65 (from 0.50). Phase 2 (inter-rater reliability measure
 ### Next
 - Fix the finish() gap: either update scorer to accept agent_status=completed, or update gym task injection to include finish() instruction
 - Run full core 20 re-baseline after fix
+
+## 2026-04-26 Heartbeat
+
+### Core 20 Baseline Complete
+- Ran all 20 core benchmark scenarios with `--agent coder`
+- **Result: 8/20 (40%)**
+- Perfect on bug-fixing (3/3) and integrity (1/1)
+- Failed on verification (0/2), optimizer-workflow (0/2), judgment (1/4)
+- Key insight: agent handles concrete coding tasks well but fails at meta-cognitive tasks (reading context before acting, following output protocols, exercising restraint)
+- Results in: `agents/bob/workspace/projects/gym-leverage-ow/.state/gym-baseline.md`
+- Phase 2 of gym-leverage-ow complete. Phase 3 (feedback loop) next.
+
+### Inbox Triage
+- All paper notifications (StructMem, SWARM, GAAMA, COSPLAY, etc.): dismissed — informational, connections already noted by scout
+- P1 productivity warnings: dismissed — metrics healthy (96% exp completion)
+- EXP-216 superseded: acknowledged
+- DD#880 experience compression: noted, connects to H-195 (already proposed)
+
+### Next
+- Phase 3: Design gym-driven evolution feedback loop
+- Target worst categories first: verification and optimizer-workflow (0% pass rate)
+- Investigate whether failing scenarios are true capability gaps or scorer/adapter issues
