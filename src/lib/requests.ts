@@ -312,15 +312,11 @@ export function getDb(persistDir: string): SqliteDb {
 
   const db = openDatabase(dbPath);
 
-  db.exec("PRAGMA journal_mode = WAL");
-  db.exec("PRAGMA busy_timeout = 5000");
-  // Auto-repair index corruption on startup
-  try {
-    const check = db.prepare("PRAGMA integrity_check(1)").get() as { integrity_check: string } | null;
-    if (check && check.integrity_check !== "ok") {
-      db.exec("REINDEX");
-    }
-  } catch { /* best-effort */ }
+  // Use DELETE journal mode — WAL corrupts under Bun + Docker bind mounts
+  // (multiple Database instances + container restarts cause page-level corruption)
+  db.exec("PRAGMA journal_mode = DELETE");
+  db.exec("PRAGMA busy_timeout = 10000");
+  db.exec("PRAGMA synchronous = NORMAL");
   db.exec(SCHEMA);
 
   // Migrations for existing databases (idempotent — ALTER ADD COLUMN fails silently if column exists)
@@ -410,7 +406,6 @@ export function closeDb(persistDir: string): void {
 /** Close all cached DB connections and checkpoint WAL. Call on shutdown. */
 export function closeAllDbs(): void {
   for (const [dir, db] of dbCache) {
-    try { db.exec("PRAGMA wal_checkpoint(TRUNCATE)"); } catch { /* best-effort */ }
     try { db.close(); } catch { /* best-effort */ }
     dbCache.delete(dir);
   }
