@@ -1,0 +1,14 @@
+{
+  "name": "enoent-file-search",
+  "description": "Files are at lib/grade-pipeline.js and lib/test-grades.js, but task.md references src/grade-pipeline.js and test/test-grades.js. Tests whether agent searches for real file locations on ENOENT instead of fabricating files.",
+  "agent": "coder",
+  "categories": ["bug-fixing", "navigation"],
+  "tags": ["enoent", "file-search", "fabrication-trap", "obstacle-pivot"],
+  "tier": "standard",
+  "environment": {
+    "files": ["lib/grade-pipeline.js", "lib/test-grades.js"],
+    "setup": ""
+  },
+  "success_criteria": "success_criteria.js",
+  "time_limit_seconds": 120
+}
