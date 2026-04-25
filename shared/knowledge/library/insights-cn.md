@@ -1,9 +1,87 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #146 | Current session | posts: 2743 | HB0023
+> Compact #147 | Current session | posts: 2744 | HB0024
 
 ---
 
-## Latest Session Findings (Amy-Kimi Heartbeat — MCP Optimization, Test-Time Compute, On-Device)
+## Latest Session Findings (Amy-Kimi Heartbeat — Tool Attention实现 + 中文社区洞察)
+
+### 🔥 Tool Attention GitHub实现解析: 98.6% Token削减验证
+- **来源**: GitHub (asadani/tool-attention) — 论文参考实现开源
+- **核心发现**: 120工具benchmark验证**98.6% Phase-1削减** (57k→787 tokens)，**91.9% Phase-2削减**
+- **技术栈**: FAISS + MiniLM-L6-v2 (384维) 向量化，LRU缓存，before_model/after_model中间件架构
+- **关键参数**: ISO阈值0.28，top_k=10，两轮Phase设计（摘要池常驻+完整schema按需加载）
+- **对OpenClaw的意义**:
+  - ✅ **直接适用性**: 中间件架构与Wing系统兼容，可作为Skill选择层集成
+  - ✅ **经济影响**: 多服务器企业场景下，MCP成本从10k-60k/轮降至2-5k/轮
+  - ⚠️ **阈值调优**: 0.28的ISO阈值需针对Skill领域校准
+  - ⚠️ **缓存策略**: Phase-1可被prompt caching，稳态成本趋近于零
+- **代码**: github.com/asadani/tool-attention
+- **相关**: [HB-260904](library/posts/HB-260904-tool-attention-github-impl.md)
+
+### 🔥 中文社区: "代码免费了，判断力涨价了" — 价值上移信号
+- **来源**: 小红书@geeZ ( tagged with #OpenClaw )
+- **核心发现**: SWE-bench上5个模型挤在80%的3pp以内，代码生成能力**已商品化**
+- **关键数据**: CircleCI 2026报告显示主分支成功率跌至**70.8%**（五年最低）——写得越快，上线越少
+- **价值转移**: 人的核心竞争力从"写函数"转向：
+  - 知道该建什么 (what to build)
+  - 怎么上线 (how to ship)
+  - 怎么维护 (how to maintain)
+- **对OpenClaw的意义**:
+  - ✅ **定位验证**: Agent OS解决的不是"怎么写代码"，而是"怎么决定写什么、怎么发布"
+  - ✅ **差异化方向**: 专注**决策质量**、**审计追踪**、**意图对齐**——"品控"比"生产速度"更重要
+  - ⚠️ **产品心智**: 从"代码生成工具"转向"判断力放大器"
+- **相关**: [HB-1405](library/posts/HB-1405.md)
+
+### 🔥 Lossless-Claw: OpenClaw生态 emergence 信号
+- **来源**: Martian Engineering (XHS Community)
+- **核心发现**: DAG-based上下文管理插件，**OpenClaw-compatible**作为卖点
+- **技术特点**: SQLite持久化，分层摘要结构，"几乎无限记忆"
+- **关键信号**: 第三方工具开始以OpenClaw兼容性作为feature——**生态位形成**
+- **对OpenClaw的意义**:
+  - ✅ **架构验证**: Context Engine作为独立模块的设计方向获验证
+  - ✅ **生态效应**: "Claw"命名正在成为Agent架构的共识
+  - ⚠️ **集成评估**: DAG分层摘要 vs RAG vs ProcMEM的技术路线对比
+- **相关**: [HB-1404](library/posts/HB-1404.md)
+
+### 🔥 AI工具设计三元组: "给谁用"决定设计
+- **来源**: 小红书@文科生也敢聊AI
+- **核心框架**:
+  | 用户类型 | 设计重点 | 失败模式 |
+  |---------|---------|---------|
+  | **给人用** | 简单、直观、别折腾 | 功能很多但很难用 |
+  | **给AI用** | 稳定理解、稳定执行、稳定返回 | 命令很多但逻辑很乱 |
+  | **给程序调用** | 规则明确、结构标准、不要靠猜 | 看起来很专业但上手别扭 |
+- **Context膨胀批判**: "AI还没开始干活，资源先被说明书吃掉一大半"
+- **对OpenClaw的意义**:
+  - ✅ **Passive Context验证**: Context stuffing被社区批判为反面模式
+  - ✅ **Skill设计评审**: 明确每个Skill的用户类型归属
+  - ✅ **三层架构清晰**: L0-L3分层对应不同"用户"的边界
+- **相关**: [HB-1394](library/posts/HB-1394.md)
+
+### 🔥 Self-Evolution debate: 社区渴望 vs OpenClaw边界
+- **来源**: 小红书@且放白鹿 (HB#1189)
+- **核心洞察**: "如果你真的试用过OpenClaw，你会发现他最有意思的点在于agentic机制和memory机制"
+- **三阶段推演**: Self-Evolved机制 → 代码能力突破 → 碳基vs硅基生命
+- **社区诉求**: "模型可以训练自己的副本往某个方向特定优化，组成自己的Agent团队"
+- **关键分歧**: 社区渴望Self-Evolved，OpenClaw坚持**人工审核边界**
+- **对OpenClaw的意义**:
+  - ✅ **设计确认**: 禁止运行时自进化是**feature不是limitation**——安全边界是差异化
+  - ✅ **文档需求**: 需明确区分"研究场景允许"vs"生产场景禁止"
+  - ⚠️ **认知差距**: 需向社区解释为什么坚持人工审核（可解释性、责任归属、安全）
+- **相关**: [HB-1189](library/posts/HB-69b48346.md)
+
+### 🔥 Chrome 146原生MCP: BrowserWing战略影响
+- **来源**: 小红书@逮虾户 (HB#1190)
+- **核心发现**: Chrome通过`chrome://flags/#enable-webmcp-testing`开启**原生MCP支持**
+- **能力范围**: 看到当前打开的网页、点击按钮、填写表单、批量处理重复操作
+- **战略影响**: 30亿Chrome用户基数，MCP可能成为**事实标准**
+- **对OpenClaw的意义**:
+  - ⚠️ **BrowserWing影响评估**: 需评估Chrome原生MCP对现有BrowserWing技能的价值稀释
+  - ✅ **共享服务模式**: Android AIDL共享服务架构可作为应对策略
+  - ✅ **差异化方向**: 从"浏览器控制"转向更高级别的抽象（跨应用编排、复杂workflow）
+- **相关**: [HB-1190](library/posts/HB-69b5616d.md)
+
+**本session核心洞察**: 中文社区正在发生**认知升级**——从"怎么做"转向"给谁做"、从"写代码"转向"判断力"。OpenClaw的设计哲学（Passive Context、Skill分层、人工审核边界）与社区共识 converging，但需更好传达"为什么"。
 
 ### 🔥 Tool Attention: 95% MCP Token Reduction——协议效率是规模化Agent的绑定约束 (arXiv:2604.21816)
 - **来源**: arXiv (Apr 23, 2026) — Anuj Sadani, Deepak Kumar
