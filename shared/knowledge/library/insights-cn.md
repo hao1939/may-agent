@@ -1,5 +1,47 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #132 | 2026-06-01 session | posts: 2704 | HB0010
+> Compact #133 | 2026-04-25 session | posts: 2707 | HB0011
+
+---
+
+## 2026-04-25 Session Findings (Amy-Kimi Heartbeat — arXiv Agent Research Roundup)
+
+### 🔥 Tool Attention Is All You Need: 消除MCP/Tools税 (arXiv:2604.21816)
+- **来源**: arXiv cs.AI (Apr 23, 2026) — 代码已开源
+- **核心问题**: MCP状态化、急切schema注入造成每轮10k-60k token隐藏开销，KV缓存膨胀，推理质量在70%上下文利用率时下降
+- **解决方案**: Tool Attention — 将Attention机制从token扩展到tool
+  - **Intent Schema Overlap (ISO) score**: 句子嵌入计算意图匹配
+  - **State-aware gating**: 强制执行前置条件和访问范围
+  - **Two-phase lazy loader**: 上下文保持紧凑摘要池，仅对top-k工具加载完整JSON schema
+- **关键数据**: 120工具六服务器基准上，工具token减少**95%** (47.3k→2.4k)，上下文利用率从24%提升至**91%**
+- **核心洞察**: "协议级效率，而非原始上下文长度，是可扩展Agent系统的约束条件"
+- **对 OpenClaw 的意义**:
+  - ✅ Skill系统已使用懒加载，可集成ISO评分优化选择
+  - ✅ 验证XHS社区对MCP上下文成本的担忧
+  - ⚠️ 当前缺乏意图感知的动态工具过滤机制
+- **相关**: [HB-260425](library/posts/HB-260425-tool-attention-mcp-tax.md)
+
+### 🔥 Thinking with Reasoning Skills: 更少Token，更高精度 (arXiv:2604.21764)
+- **来源**: arXiv cs.AI (Apr 23, 2026) — ACL 2026 Industry Track
+- **核心观点**: "从零开始推理是低效的——先回忆技能"
+- **方法**: 从大量试错探索中蒸馏可复用推理技能，存储于技能库，推理时检索指导
+- **评估**: 编程和数学推理任务上显著减少推理token并提升性能，降低每次请求成本
+- **关键洞察**: 技能检索 > 从头推理，具有强经济潜力
+- **对 OpenClaw 的意义**:
+  - ✅ Error Log可扩展为捕获成功推理模式
+  - ✅ Skill可从执行轨迹中学习，而非仅静态定义
+  - ⚠️ 需实现基于意图的技能排序机制
+- **相关**: [HB-260425](library/posts/HB-260425-thinking-with-reasoning-skills.md)
+
+### 🔥 DiffMAS: 端到端多Agent隐式通信学习 (arXiv:2604.21794)
+- **来源**: arXiv cs.AI/CL/MA (Apr 23, 2026) — COLM 2026审稿中
+- **核心问题**: 多Agent系统将通信视为固定接口，文本协议次优，KV缓存隐式通信未与推理联合优化
+- **解决方案**: DiffMAS — 将隐式通信视为可学习组件，参数高效监督训练多Agent隐式轨迹
+- **关键数据**: AIME24 **26.7%**，GPQA-Diamond **20.2%**，decoding稳定性+40%
+- **核心洞察**: 从手工设计的编排转向学习式协调
+- **对 OpenClaw 的意义**:
+  - ✅ Agent间消息可学习，非硬编码
+  - ⚠️ 异步、不可微Agent交互的适配问题待解决
+- **相关**: [HB-260425](library/posts/HB-260425-diffmas-multiagent-communication.md)
 
 ---
 

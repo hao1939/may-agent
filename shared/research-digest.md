@@ -7,6 +7,18 @@
 
 ---
 
+## Fresh Arrivals (Apr 25, 2026) — arXiv Agent Research Roundup
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **Tool Attention Is All You Need** (arXiv:2604.21816) | Eliminates MCP/Tools Tax: 95% token reduction (47.3k→2.4k) via dynamic tool gating + lazy schema loading. Context utilization 24%→91%. "Protocol efficiency > raw context length." ★★★★★ | [HB-260425](library/posts/HB-260425-tool-attention-mcp-tax.md) |
+| 2026-04-25 | **Thinking with Reasoning Skills** (arXiv:2604.21764, ACL 2026) | Distill reusable skills from exploration, retrieve before inference. "Reasoning from scratch is inefficient — recall skills first." Fewer tokens + more accuracy. ★★★★★ | [HB-260425](library/posts/HB-260425-thinking-with-reasoning-skills.md) |
+| 2026-04-25 | **DiffMAS** (arXiv:2604.21794, COLM 2026) | End-to-end learning of multi-agent latent communication (KV-cache). Joint optimization of communication + reasoning. AIME24 26.7%, GPQA-Diamond 20.2%. ★★★★★ | [HB-260425](library/posts/HB-260425-diffmas-multiagent-communication.md) |
+
+**Key Takeaway**: Three converging themes — (1) Protocol efficiency beats context scaling, (2) Skill retrieval beats scratchpad reasoning, (3) Learned communication beats fixed interfaces. All validate: structure > scale, skills > prompts, learning > hand-design.
+
+---
+
 ## Fresh Arrivals (June 1, 2026) — Tencent Hy3 & Agent Traces as File Abstraction
 
 | Date | Title | Key Insight | Source |
