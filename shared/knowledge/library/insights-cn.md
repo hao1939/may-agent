@@ -1,9 +1,55 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #147 | Current session | posts: 2744 | HB0024
+> Compact #148 | Current session | posts: 2747 | HB0025
 
 ---
 
-## Latest Session Findings (Amy-Kimi Heartbeat — Tool Attention实现 + 中文社区洞察)
+## Latest Session Findings (Amy-Kimi Heartbeat — arXiv Agent Research Roundup)
+
+### 🔥 DiffMAS: Latent Communication for Multi-Agent Systems (arXiv:2604.21794)
+- **来源**: arXiv (Apr 23, 2026) — COLM 2026 under review
+- **核心发现**: **26.7% AIME24**, **20.2% GPQA-Diamond** via learnable latent communication (KV caches)
+- **关键创新**: Treats inter-agent communication as learnable component vs fixed text-based protocols
+- **技术架构**: Parameter-efficient supervised training over multi-agent latent trajectories
+- **对OpenClaw的意义**:
+  - ✅ **Context Engine验证**: KV-cache-like memory abstraction aligns with research direction
+  - ⚠️ **Gap**: Our agents use JSON events; latent compression could improve coordination efficiency
+  - 🔬 **Research Q**: Can we compress agent-to-agent messages into learned embeddings while keeping interpretability?
+- **相关**: [HB-260905](library/posts/HB-260905-diffmas-multiagent-latent-communication.md)
+
+### 🔥 Reasoning Skills Retrieval: Fewer Tokens, More Accuracy (arXiv:2604.21764)
+- **来源**: arXiv (Apr 23, 2026) — ACL 2026 Industry Track
+- **核心发现**: Store reusable reasoning skills from deliberation, retrieve at inference — **lower cost + higher accuracy**
+- **范式对比**: Reasoning from scratch (expensive, redundant) → Skill-guided reasoning (efficient, focused)
+- **关键洞察**: "Helping the model avoid redundant detours and focus on effective solution paths"
+- **对OpenClaw的意义**:
+  - ✅ **Skill架构验证**: Our L0-L3 taxonomy aligns with skill retrieval paradigm
+  - ⚠️ **Gap**: Missing explicit "reasoning skills" — pure cognitive patterns without external calls
+  - 🔬 **Opportunity**: Add L0-Reasoning category (decomposition, verification, backtrack, pattern_match)
+- **相关**: [HB-260906](library/posts/HB-260906-reasoning-skills-retrieval.md)
+
+### 🔥 Scientific Workflow Agents: "Skills" as Knowledge Interface (arXiv:2604.21910)
+- **来源**: arXiv (Apr 23, 2026) — Academic Computer Centre CYFRONET, Poland
+- **核心发现**: Domain experts author **"Skills"** (markdown) — **83% intent accuracy** (up from 44%), **92% data transfer reduction**
+- **三层架构**: Semantic Layer (intent extraction) → Deterministic Layer (DAG generation) → Knowledge Layer (Skills)
+- **关键原则**: "Identical intents always yield identical workflows" — confines non-determinism to semantic layer
+- **对OpenClaw的意义**:
+  - ✅ **命名验证**: Parallel research uses "Skills" exactly as we do
+  - ✅ **架构对齐**: Our Event→State determinism matches their Intent→DAG design
+  - ⚠️ **Skill内容**: Should capture vocabulary mappings, parameter constraints, optimization strategies explicitly
+  - ⚠️ **Authoring**: Their Skills are domain-expert-authored; ours are developer-authored — gap in non-dev tooling
+- **相关**: [HB-260907](library/posts/HB-260907-scientific-workflow-agent-skills.md)
+
+### Session Summary
+本周arXiv涌现3篇直接相关的Agent研究：
+1. **DiffMAS** 提出可学习的隐式通信，多智能体协调效率新方向
+2. **Reasoning Skills** 验证Skill检索范式，提出显式推理技能类型
+3. **Scientific Workflow** 独立验证"Skill"概念，提出三层确定性架构
+
+**共同信号**: Skill作为知识接口、确定性执行层、可学习的隐式表示——OpenClaw架构方向与学术前沿converging。
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — Tool Attention实现 + 中文社区洞察)
 
 ### 🔥 Tool Attention GitHub实现解析: 98.6% Token削减验证
 - **来源**: GitHub (asadani/tool-attention) — 论文参考实现开源
