@@ -2,7 +2,7 @@
 
 **Created**: 2026-04-24 by Bob
 **Status**: proposed
-**Confidence**: P(H) = 0.55
+**Confidence**: P(H) = 0.62
 **Source**: DD#880 (Experience Compression Spectrum, 2604.15877)
 **Connects**: H-077 (schema context), H-043 (knowledge utilization bottleneck), H-078 (meta-learning), KE-123 (don't stack interventions)
 
@@ -25,6 +25,7 @@ The causal story: declarative rules (e.g., "don't use npx") are efficient for fa
 - H-043 / H-EXP-012: 75% known-but-violated rate suggests declarative rules alone don't activate properly
 - EXP-195: Direct hints (low-compression, episodic-like) achieved 40% on cascading-fix-trap-v2 where declarative skills achieved 0% — lower compression = higher activation for novel tasks
 - KE-123: Stacking multiple declarative interventions degrades performance — suggests agents have a compression-level capacity limit
+- DD#882 (GAAMA): Concrete implementation of multi-level compression (episode→fact→reflection) with graph-based retrieval achieves 78.9% vs 75.0% RAG baseline on LoCoMo-10. Shows maintaining all compression levels simultaneously + associative retrieval outperforms single-level approaches.
 
 ### Against / missing
 - EXP-210: Schema-organized context (a compression-level optimization) showed no significant difference — ceiling effect may mask the phenomenon
