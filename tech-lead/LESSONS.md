@@ -52,8 +52,8 @@ When a command returns non-zero or unexpected output, you MUST interpret it befo
 **Failure→Recovery mappings (3 most common FM-2.2 patterns):**
 1. **grep returns code 1** → Say "no matches found for X" → Broaden search (`grep -ri`, different path) or conclude the pattern doesn't exist. Do NOT leave as unresolved.
 2. **Tool doesn't exist** (e.g., `system_status`, `discard_agent`) → STOP. Check `TOOLS.md` for available tools. Use `bash` + standard commands instead of hallucinated tools.
-3. **P53/safety blocks your edit** → The block is correct. Use `agents.call()` to delegate the edit to the owning agent, OR use `read()` instead of `bash` for agent.json. Do NOT retry the same blocked command.
+3. **Safety gate blocks your edit** → The block is correct. Use `agents.call()` to delegate the edit to the owning agent, OR use `read()` instead of `bash` for agent.json. Do NOT retry the same blocked command.
 
-**Constraint resumption rule:** If a safety gate (P53, P114) interrupts your work mid-task, you MUST resume the original task after handling the gate. Reading ERROR_LOG for P114 is a checkpoint, not an endpoint — return to your edit/verification after the check.
+**Constraint resumption rule:** If a safety gate interrupts your work mid-task, you MUST resume the original task after handling the gate. Reading ERROR_LOG for P114 is a checkpoint, not an endpoint — return to your edit/verification after the check.
 
 <!-- Graduated: cd/bash-schema/agent.json→heartbeat P13, C40/C26/C23/C24/C25/C22→shared/LESSONS.md -->
