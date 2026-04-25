@@ -25,6 +25,7 @@ import { loadGuards, runGuards } from "../../shared/guards/loader.js";
 | read-before-edit | read-before-edit.ts | C1.1: Warns when edit() is called on a file not read() in the same step (targets #1 violation type, 37% of baseline) |
 | hallucinated-path | hallucinated-path.ts | C7.1: Warns when bash commands reference /home/, /Users/, /root/ paths that don't exist in the container environment |
 | verify-after-write | verify-after-write.ts | C1.3: Injects read-back step when write() is called without subsequent read() verification (same Ch2 pattern as read-before-edit) |
+| milestone-quality | milestone-quality.ts | Validates milestone specificity on first iteration — flags vague milestones (no named deliverable, no boolean done-check, unbounded scope) |
 
 ## Writing Guards
 
