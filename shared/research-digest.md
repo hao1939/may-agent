@@ -7,7 +7,18 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — HF Blog Agent Research Roundup
+## Fresh Arrivals (Current Session) — Tool Attention Implementation + HF Skills Ecosystem
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-25 | **Tool Attention Implementation** (arXiv:2604.21816) | Reference implementation confirms 95% MCP token reduction (47.3k→2.4k). ISO score + state-aware gating + two-phase lazy loading. 70% context utilization = fracture point. ★★★★★ | [HB-260725](library/posts/HB-260725-tool-attention-impl-hf-skills.md) |
+| 2026-04-25 | **HF Skills Ecosystem** (GitHub) | 10.3k stars, 261 commits. Multi-platform: Claude/Cursor/Gemini/MCP. Skills as cross-platform distributable expertise becoming de facto standard. ★★★★☆ | [HB-260725](library/posts/HB-260725-tool-attention-impl-hf-skills.md) |
+
+**Key Takeaway**: Tool Attention's reference implementation validates protocol efficiency as binding constraint. HF Skills' ecosystem momentum (10k+ stars, multi-platform) confirms skills as mainstream abstraction. Convergence: **intent-based routing of structured expertise** is the core infrastructure challenge. For OpenClaw: add ISO-like intent scoring to Skill selection, instrument MCP tax telemetry, monitor 70% context threshold.
+
+---
+
+## Fresh Arrivals (Previous Session) — HF Blog Agent Research Roundup
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|

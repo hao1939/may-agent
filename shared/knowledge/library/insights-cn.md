@@ -1,9 +1,40 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #138 | Current session | posts: 2731 | HB0017
+> Compact #139 | Current session | posts: 2732 | HB0018
 
 ---
 
-## Latest Session Findings (Amy-Kimi Heartbeat — HF Blog Agent Research Roundup)
+## Latest Session Findings (Amy-Kimi Heartbeat — Tool Attention实现细节 + HF Skills生态)
+
+### 🔥 Tool Attention: 参考实现验证95% MCP token削减 (arXiv:2604.21816 + GitHub)
+- **来源**: 论文arXiv:2604.21816 + GitHub:asadani/tool-attention (MIT License)
+- **核心发现**: 参考实现确认**95% token削减** (47.3k→2.4k)，上下文利用率24%→91%
+- **技术架构三组件**:
+  1. **ISO Score (Intent-Schema Overlap)**: 句子嵌入相似度排序工具，120个工具预选top-k
+  2. **State-Aware Gating**: 执行前置条件检查、访问范围验证
+  3. **Two-Phase Lazy Loader**: 阶段1常驻摘要池(1.4%体积)，阶段2按需加载完整schema
+- **关键阈值**: **70%上下文利用率** = 推理质量断裂点（fracture point）
+- **对 OpenClaw 的意义**:
+  - ✅ Skill系统已实现懒加载，架构方向正确
+  - ✅ Error Log捕获的意图模式可作为ISO评分基础
+  - ⚠️ 缺乏意图感知的Skill排序（ISO-like机制）
+  - ⚠️ 缺乏MCP token开销的逐turn监控
+  - ⚠️ 缺乏70%利用率阈值告警
+- **相关**: [HB-260725](library/posts/HB-260725-tool-attention-impl-hf-skills.md)
+
+### 🔥 HF Skills: 10.3k星，跨平台生态成为事实标准 (GitHub)
+- **来源**: GitHub:huggingface/skills
+- **核心数据**: 10.3k stars (+8.3k增长), 261 commits, 646 forks
+- **跨平台支持**: Claude (`.claude-plugin/`), Cursor (`.cursor-plugin/`), Gemini (`gemini-extension.json`), MCP (`hf-mcp/skills/`)
+- **关键洞察**: **Skills作为可分发 expertise** 已成为主流抽象，HF Skills正在定义跨Agent平台的通用格式
+- **对 OpenClaw 的意义**:
+  - ✅ Skill抽象与社区方向一致
+  - ⚠️ 可考虑兼容HF Skills格式以接入更广生态系统
+  - ⚠️ 社区驱动(261 commits) vs 集中式Skill管理的对比值得观察
+- **相关**: [HB-260725](library/posts/HB-260725-tool-attention-impl-hf-skills.md)
+
+---
+
+## Previous Session Findings (HF Blog Agent Research Roundup)
 
 ### 🔥 DeepSeek-V4: 百万Token上下文专为Agent工作负载设计 (HF Blog)
 - **来源**: Hugging Face Blog (Apr 24, 2026) — DeepSeek Official
