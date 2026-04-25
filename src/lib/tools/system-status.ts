@@ -17,8 +17,6 @@ import { existsSync, readdirSync, readFileSync, statSync, openSync, readSync, cl
 import { join } from "node:path";
 import type { PersistedSession } from "../persistence.js";
 import { getDb } from "../requests.js";
-import { openDatabase } from "../db.js";
-import type { SqliteDb } from "../db.js";
 
 // ── Tail utility ────────────────────────────────────────────────────────
 
@@ -104,11 +102,8 @@ interface MetricRow {
 // ── Metrics fetcher ─────────────────────────────────────────────────────
 
 function getAgentMetrics(stateDir: string, agent: string): MetricRow[] {
-  const dbPath = join(stateDir, "may.db");
-  if (!existsSync(dbPath)) return [];
-  let db: SqliteDb | null = null;
   try {
-    db = openDatabase(dbPath);
+    const db = getDb(stateDir);
     // Check if metrics table exists
     const tableCheck = db
       .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='metrics'")
@@ -129,21 +124,12 @@ function getAgentMetrics(stateDir: string, agent: string): MetricRow[] {
     return rows;
   } catch {
     return [];
-  } finally {
-    try {
-      db?.close();
-    } catch {
-      // ignore close errors
-    }
   }
 }
 
 function getAllActiveMetrics(stateDir: string): MetricRow[] {
-  const dbPath = join(stateDir, "may.db");
-  if (!existsSync(dbPath)) return [];
-  let db: SqliteDb | null = null;
   try {
-    db = openDatabase(dbPath);
+    const db = getDb(stateDir);
     const tableCheck = db
       .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='metrics'")
       .get();
@@ -163,12 +149,6 @@ function getAllActiveMetrics(stateDir: string): MetricRow[] {
     return rows;
   } catch {
     return [];
-  } finally {
-    try {
-      db?.close();
-    } catch {
-      // ignore close errors
-    }
   }
 }
 
