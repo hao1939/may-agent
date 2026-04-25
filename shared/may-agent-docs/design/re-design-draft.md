@@ -178,7 +178,9 @@ Human sets metric          Agent heartbeat reads metric       Agent acts
 
 # Part 2: Agent Layer
 
-What agents are, what they know, what they produce, and how they improve.
+What agents are, what they know, what they produce, and how they evolve.
+
+The critical design principle: **agents extend their own capabilities**. They don't just execute tasks — they build tools, workflows, skills, knowledge, and handlers that make the system better over time. The infra provides the extension points; agents fill them in.
 
 ---
 
@@ -286,6 +288,87 @@ All three are knowledge artifacts that evolve over time. Skills that agents keep
 
 ---
 
+## Agent Self-Evolution — How agents extend the system
+
+Agents don't just use the infrastructure — they extend it. The infra provides **five extension points** that agents fill in by writing code and docs:
+
+### 1. Custom Tools (`agents/<name>/tools/*.ts`)
+
+Agents can create their own tools — TypeScript files that get auto-loaded at startup. A tool gives the agent a new capability it didn't have before.
+
+**How it works**: Agent writes a `.ts` file in its `tools/` directory, exports a factory function. The loader picks it up on restart.
+
+**Example**: An agent that frequently parses specific log formats could create a `parse-logs` tool instead of doing it with bash every time.
+
+### 2. Workflows (`agents/<name>/workflows/*.ts` + `agents/shared/workflows/*.ts`)
+
+Agents create and improve execution patterns. When an agent discovers that a certain sequence of steps produces better results, it encodes that as a workflow.
+
+**How it works**: Agent writes a workflow `.ts` file with an `execute()` function. Other agents can invoke it via the `workflow` tool. Shared workflows are available to all agents.
+
+**Examples in practice**:
+- Optimizer created `verify-wrap` after finding agents ship without testing → now used 1,300+ times
+- Tech-lead created `verified-coder` for code changes that need review
+- Coach created `training-sprint` for structured skill training sessions
+- QA created `vet-skill` for validating skill documents
+
+### 3. Skills (`agents/shared/skills/*.md`)
+
+Agents (primarily coach) write advisory documents that teach other agents how to do things well.
+
+**How it works**: Coach analyzes session failures → identifies patterns → writes skill → measures improvement via gym scenarios. Skills are read on-demand by agents when relevant.
+
+**Feedback loop**: Gym scenarios test whether agents follow skills → failures trigger skill rewrites → re-measure → iterate.
+
+### 4. Handlers (`agents/may/handlers/*.ts`)
+
+Agents create automated handlers for recurring patterns. A handler is a JS function that runs on a cron schedule or reacts to events — no LLM needed.
+
+**How it works**: Agent writes a handler `.ts` file, adds a cron entry. The handler runs periodically, doing work in pure JS (fast, cheap, reliable).
+
+**43 handlers currently**, covering:
+- **Auto-fix**: `session-recovery.ts` (restart stuck sessions), `zombie-cleanup.ts` (kill orphan processes), `watchdog.ts` (detect stalled agents)
+- **Measurement**: `metrics-snapshot.ts` (auto-measure all metrics), `evaluation-sync.ts` (sync session quality scores)
+- **Maintenance**: `agents-auto-commit.ts` (commit agent file changes), `workspace-compaction.ts` (clean old workspace files), `daily-cleanup.ts`
+- **Intelligence**: `context-learn.ts` (extract lessons from sessions), `metric-alert-reactor.ts` (auto-respond to metric breaches), `analyze-failures.ts`
+- **Orchestration**: `project.ts` (drive project iterations), `escalation.ts` (manage escalation chains)
+
+**Key insight**: Handlers are how agents make heartbeats more efficient. Instead of the LLM spending tokens to detect and fix a recurring issue, a handler does it in JS for zero cost. When an agent notices it's doing the same thing every heartbeat, the right move is to write a handler for it.
+
+### 5. Knowledge Base (`agents/shared/knowledge/`)
+
+Agents build durable knowledge — entries, hypotheses, experiments — that inform all future decisions.
+
+**How it works**: Bob synthesizes findings from sessions and research into knowledge entries. Hypotheses get tested via experiments. Confirmed results become entries that other agents reference.
+
+### The Evolution Cycle
+
+```
+  Agent encounters problem repeatedly
+        │
+        ▼
+  First: handle manually in sessions (expensive, LLM tokens)
+        │
+        ▼
+  Then: write a skill doc (advisory — teach other agents)
+        │
+        ▼
+  If agents still fail: write a workflow (enforced — code controls)
+        │
+        ▼
+  If it's recurring/mechanical: write a handler (automated — no LLM)
+        │
+        ▼
+  If it needs a new capability: write a custom tool
+        │
+        ▼
+  Result: system gets cheaper, faster, more reliable over time
+```
+
+Each step moves work from expensive (LLM reasoning) to cheap (code execution). The system's operational cost decreases as agents encode more patterns into handlers, workflows, and tools.
+
+---
+
 ## Agent Heartbeat — The decision loop
 
 Every agent has a periodic heartbeat (cron → workflow → session):
@@ -330,6 +413,8 @@ Everything combines into a self-steering cycle:
 ```
 
 **Human's role**: Set metrics, approve P0/P1, review escalations. The system does everything else — agents observe metrics, decide what to work on, execute via workflows, build knowledge, and the next measurement cycle picks up the results.
+
+**What makes it self-improving**: As the loop runs, agents don't just do work — they notice inefficiencies and encode solutions as handlers (auto-fix), workflows (enforce quality), skills (teach patterns), and tools (new capabilities). Each cycle through the loop, the system gets a little cheaper and more reliable.
 
 ---
 

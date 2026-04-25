@@ -1,9 +1,77 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #148 | Current session | posts: 2747 | HB0025
+> Compact #149 | Current session | posts: 2751 | HB0029
 
 ---
 
-## Latest Session Findings (Amy-Kimi Heartbeat — arXiv Agent Research Roundup)
+## Latest Session Findings (Amy-Kimi Heartbeat — HF Blog Agent Infrastructure)
+
+### 🔥 Hy3 Preview: 21B-Active MoE, Routing Precision as Algorithmic Moat (HF Blog)
+- **来源**: Hugging Face Blog (Apr 23, 2026) — Tencent Hunyuan Official
+- **核心数据**: 295B总参数 / 21B激活参数 (~7.1%激活率), <3个月架构重构→发布
+- **关键创新**: 
+  - **差异化专家尺寸**: 不同难度token路由到不同容量专家
+  - **P-Penalty Loss**: 惩罚偏向大专家，鼓励激活小专家
+  - **Context Learning**: 深度搜索+工具调用+复杂推理
+- **关键洞察**: "别人用37B-40B激活参数做到的，我们用21B就能做到。路由精度是核心算法护城河"
+- **产品集成**: WorkBuddy Agent — 100页手册→10题HTML测验游戏，首次运行零bug
+- **对OpenClaw的意义**:
+  - ✅ **差异化路由验证**: 简单/复杂任务→不同Skill深度
+  - ✅ **架构创新>暴力**: 小激活比+高精度 > 大激活比
+  - ⚠️ **路由精度度量**: 如何量化Skill选择准确性？
+- **相关**: [HB-260911](library/posts/HB-260911-hy3-tencent-moe-agent.md)
+
+### 🔥 ML Intern: Test-Time Compute Scaling验证 (HF Blog)
+- **来源**: Hugging Face Blog (Apr 23, 2026) — smolagents/ml-intern
+- **核心发现**: **3B总参数**(1.5B Qwen生成器 + 1.5B Skywork PRM)达到**65% MATH-500** (vs贪婪解码45%)
+- **方法**: Weighted Best-of-N — 按最终答案分组，累加PRM分数，选总分最高组
+- **性能排序**: Weighted投票(65%) > 多数投票(60%) > 标准Best-of-N(55%) > 贪婪(45%)
+- **饱和点**: N=8-16时性能饱和，继续增加收益递减
+- **关键洞察**: Weighted选择比Standard更鲁棒——同一正确答案在多解中出现时累加证据
+- **对OpenClaw的意义**:
+  - ✅ **Skill结果加权聚合**: 多候选执行 → PRM打分 → 加权选择
+  - ✅ **采样预算**: N=8-16为性价比甜点
+  - ⚠️ **缺失PRM**: 缺乏用于代码/工具调用轨迹评估的过程奖励模型
+- **相关**: [HB-260912](library/posts/HB-260912-ml-intern-test-time-compute.md)
+
+### 🔥 TinyFacade: 70+语言端侧Tool Calling (HF Blog)
+- **来源**: Hugging Face Blog (Apr 20, 2026) — Cohere Labs Expedition Tiny Aya
+- **核心发现**: **3.35B TinyAya-Earth**零工具调用训练，却击败Aya Expanse 8B（专门训练）
+  - Luganda: 85.9% vs 64.0% (+22pp)
+  - Swahili: 79.5% vs 62.6% (+17pp)  
+  - English: 88.7% vs 81.6% (+7pp)
+- **意外发现**: 4-bit量化 > fp16，性能提升5-9pp — 更小文件，更高准确率
+- **温度策略**: 每增加0.3损失5-10pp，**temperature=0对部署是不可妥协的**
+- **架构模式**: Android AIDL共享服务——2.14GB模型加载一次，多App复用
+- **对OpenClaw的意义**:
+  - ✅ **Skill模板质量 > 模型规模**: 指令遵循能力是关键
+  - ✅ **量化策略重评估**: Tool calling场景4-bit可能提升性能
+  - ✅ **共享服务模式**: 多应用Skill共享部署参考架构
+- **相关**: [HB-260913](library/posts/HB-260913-tiny-facade-on-device.md)
+
+### 🔥 Save the Traces: 对话痕迹作为新文件抽象 (HF Blog)
+- **来源**: Hugging Face Blog (Apr 21, 2026) — Pedro Cuenca
+- **核心洞察**: "No matter how advanced your 'memory' solutions are, conversation traces are the new 'file' abstraction"
+- **问题**: 用户在多个AI服务上的对话成为分散的知识语料库，容易丢失
+- **解决方案**: `uvx hf sync` 到私有bucket，可设为crontab自动执行
+- **使用价值**: 避免vendor lock-in、跨设备恢复、对话总结、Skill提取、捐赠训练数据
+- **对OpenClaw的意义**:
+  - ✅ 验证追踪所有会话的设计方向
+  - ✅ Skill从重复任务提取 → 与Error Log学习一致
+  - ⚠️ 缺乏集中式trace备份机制
+- **相关**: [HB-260914](library/posts/HB-260914-save-the-traces.md)
+
+### Session Summary
+本周HF Blog涌现4篇Agent基础设施研究：
+1. **Hy3** — 路由精度作为护城河，差异化专家尺寸
+2. **ML Intern** — Test-time compute验证，小模型+策略>大模型
+3. **TinyFacade** — 端侧多语言Tool Calling，4-bit量化惊喜
+4. **Save the Traces** — 对话痕迹成为新文件抽象
+
+**共同信号**: 协议效率、测试时计算、端侧部署、trace资产化——Agent基础设施正在快速成熟。
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — arXiv Agent Research Roundup)
 
 ### 🔥 DiffMAS: Latent Communication for Multi-Agent Systems (arXiv:2604.21794)
 - **来源**: arXiv (Apr 23, 2026) — COLM 2026 under review
