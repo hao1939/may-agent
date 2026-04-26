@@ -7,7 +7,27 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — NVIDIA GR00T N1.7: 双系统机器人Agent架构
+## Fresh Arrivals (Current Session) — XHS中文社区: 分层成本、可视化编排、Workflow vs Agent辩论
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **AI自动化情报系统** (XHS 123赞) | 投资人自建情报系统。**分层成本控制**: MiniMax粗筛→Claude精读。**反馈进化**: 人工打分驱动个性化优化。 | [HB-260426](library/posts/HB-260426-ai-intelligence-system-luisx.md) |
+| 2026-04-26 | **CC Workflow Studio** (XHS 229赞) | 开源VS Code扩展。**可视化Agent编排** + **MCP多智能体支持** (Claude/Copilot/Cursor/Codex)。 | [HB-260426](library/posts/HB-260426-cc-workflow-studio-agent-visual.md) |
+| 2026-04-26 | **Agent+Skills vs Workflow** (XHS 570赞) | 社区激辩: Workflow=流水线(固定高产) vs Agent+Skills=打样(灵活多样)。**混合方案最务实**。 | [HB-260426](library/posts/HB-260426-agent-skills-vs-workflow-debate.md) |
+| 2026-04-26 | **Karpathy方案批判** (XHS 135赞) | LLM Wiki**适合~100 sources小规模**，海量数据/频繁更新/复杂权限场景不适用。类似GraphRAG。 | [HB-260426](library/posts/HB-260426-karpathy-llm-wiki-critique.md) |
+
+**Key Takeaway**: 四个XHS信号揭示Agent实践新趋势：(1) **分层成本优化** — 情报系统案例验证"小模型粗筛+大模型精读"的成本控制策略；(2) **可视化编排需求** — CC Workflow Studio的364收藏(vs 229赞)显示社区对可视化Agent工具的渴求；(3) **Workflow vs Agent边界** — 570赞讨论揭示两者不是取代关系而是互补，Workflow适合To B确定性场景，Agent+Skills适合To C灵活场景；(4) **方案选型务实主义** — Karpathy方案被证实适合小规模(~100 sources)，大规模需RAG补充。
+
+**Critical Questions for OpenClaw**:
+- **模型路由**: 是否实现自动化的"小模型→大模型"分层路由策略？
+- **可视化缺口**: 社区对可视化编排工具的渴求明显，路线图是否考虑？
+- **混合编排**: 是否支持Workflow骨架+Agent节点的混合模式？
+- **知识库边界**: Skill文档/知识库的推荐规模上限是多少？超过后如何与RAG结合？
+- **反馈闭环**: Error Log如何驱动Skill个性化优化？人工打分机制如何设计？
+
+---
+
+## Previous Session — NVIDIA GR00T N1.7: 双系统机器人Agent架构
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
