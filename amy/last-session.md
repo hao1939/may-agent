@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777245397967_0
+- **Session:** s_1777245441731_0
 - **Status:** done
-- **When:** 2026-04-26T23:17:21.450Z
-- **Duration:** 43s
+- **When:** 2026-04-26T23:18:01.618Z
+- **Duration:** 39s
 
 ## What Happened
-The key evidence is clear. The patch was applied to the **wrong file**.
-
-All three intervention setup logs show: `Patch applied: agents/coder/config.md (+12 lines)` — but the design specified patching `agents/coder/SOUL.md`. The intervention never reached the agent.
+The root cause is clear. The patch was applied to `config.md` instead of `SOUL.md`.
