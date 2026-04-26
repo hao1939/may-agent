@@ -85,3 +85,19 @@ Both are symptoms of the same root cause: agent takes shortcuts instead of follo
 **Hypothesis**: A "task compliance" skill that emphasizes: (1) read ALL referenced directories, (2) create new files when asked (don't modify templates) could fix both scenarios.
 
 **Next**: Design and test this intervention in Cycle 4.
+
+## 2026-09-01: Cycle 4 — EXP-224 Task Compliance Skill
+
+**Designed** EXP-224 targeting the 2 most tractable failures:
+- approach-validation-trap (5/6, fails read-session-logs)
+- knowledge-entry-creation (7/8, fails template-unchanged)
+
+Both share root cause: agent takes shortcuts instead of following task instructions fully.
+
+**Created** `agents/shared/skills/task-compliance/skill.md` with 4-step protocol:
+1. Resource enumeration (list all referenced files before acting)
+2. Read-all-referenced (don't skip directories)
+3. Create vs Modify distinction (templates are read-only)
+4. Verify completeness (re-read task, check all steps done)
+
+**Next**: Run control + treatment gym runs for both scenarios.
