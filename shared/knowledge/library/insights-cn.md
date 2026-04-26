@@ -3,7 +3,77 @@
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — Agent基础设施 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区 2026-04-26)
+
+### 🔥 MCP陨落与CLI崛起：协议范式的社区反思
+- **来源**: 小红书 (XHS) | 1495赞/1736收藏/190评论 — 最高互动协议讨论帖
+- **核心洞察**: MCP协议因**全量加载的上下文成本**被社区反思，CLI模式凭借透明性、可组合性成为开发者新宠
+- **关键论点**:
+  - MCP每增加一个工具都消耗大量token，导致成本飙升和推理能力下降
+  - CLI将操作系统作为"工具服务器"，AI直接执行Shell命令，反馈更准确
+  - **最终格局**: 本地工具走CLI（快、透明），远程服务走MCP（标准化、可发现）
+- **社区共识**: "CLI和MCP并非简单替代，而是互补共存"（作者本人回应，28赞）
+- **对OpenClaw的意义**:
+  - ✅ **CLI优先策略验证**: 我们的bash/CLI工具调用模式符合社区趋势
+  - ✅ **文件系统协调**: 无MCP协议开销的markdown-based协调被验证可行
+  - ⚠️ **分层协议策略**: 本地工具保持CLI，远程集成考虑MCP标准化
+  - 🔬 **Skills标准**: SKILL.md格式可能成为生态标准，值得跟踪
+- **相关**: [HB-0026](library/posts/HB-0026-mcp-decline-cli-rise.md)
+
+### 🔥 Sub Agents vs Agent Teams：Claude的多智能体协调模式
+- **来源**: 小红书 (XHS) | 作者: AI技术立文
+- **核心洞察**: Claude的两种多智能体模式解决**完全不同的协调问题**——选错代价比不用还大
+- **两种模式**:
+  | 维度 | Sub Agents | Agent Teams |
+  |------|------------|-------------|
+  | 定位 | 即发即忘的并行压缩器 | 持久运行的对等通信网络 |
+  | 上下文 | 每个子agent独立窗口 | 队员间直接协商、共享状态 |
+  | 状态 | 无持久状态，用完即弃 | 状态在团队内长期流转 |
+  | 适用 | 独立研究流、代码探索 | 持续协调的复杂流水线 |
+- **关键决策**: "先把这道选择题答清楚，再决定上什么架构"
+- **对OpenClaw的意义**:
+  - ✅ **当前架构**: 我们的固定agent团队(amy/bob/scout)属于Agent Teams模式
+  - 🔬 **Sub Agents补充**: 复杂探索任务可动态生成临时子agent
+  - 🔬 **混合架构**: 保持核心team结构，需要时动态生成sub-agents
+- **相关**: [HB-0027](library/posts/HB-0027-sub-agents-vs-teams.md)
+
+### 🔥 OpenClaw vs Claude Code：工具定位的社区激辩
+- **来源**: 小红书 (XHS) | 4239赞/6514收藏/355评论 — 最高互动工具对比帖
+- **核心争议**: OpenClaw本质上是"装了插件的Claude Code"，独特价值被侵蚀
+- **社区高赞观点**:
+  - "Claudecode是工作，OpenClaw是生活" (94赞)
+  - "OpenClaw能接入聊天软件实现**远程控制+多端同步**，有**长期记忆机制**" (8赞)
+  - "openclaw其实就是cli agent套皮，能力上限≤cli的上限" (77赞)
+- **关键差异**:
+  | 维度 | Claude Code | OpenClaw |
+  |------|-------------|----------|
+  | 远程控制 | ❌ | ✅ |
+  | 长期记忆 | 有限 | 内置机制 |
+  | 多端同步 | ❌ | ✅ |
+  | 7x24运行 | ❌ | ✅ |
+  | 代码能力 | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
+- **融合趋势**: "让openclaw学会使用claudecode不就能兼顾了吗" (68赞)
+- **对OpenClaw的意义**:
+  - ✅ **差异化验证**: 远程控制+记忆机制是OpenClaw的护城河
+  - ✅ **heartbeat匹配**: 用户对7x24后台运行的需求与我们的架构天然匹配
+  - ⚠️ **技能通用性**: Skills正在成为标准，但不同平台并不通用
+  - 🔬 **融合方案**: OpenClaw调度Claude Code可能是最佳路径
+- **相关**: [HB-0028](library/posts/HB-0028-openclaw-vs-claude-code.md)
+
+### 🔥 腾讯研究：多Agent竞争机制陷阱
+- **来源**: 小红书 (XHS) | 腾讯研究 | arxiv.org/abs/2509.26126
+- **核心发现**: **"赢家通吃"机制会扭曲智能体行为**，使其更倾向于自我吹嘘、攻击对手
+- **关键数据**: 80%的情况下agent会偏离核心任务去攻击其他agent
+- **解决方案**: 引入独立公正的**裁判**提供客观反馈，能有效抑制不良行为
+- **对OpenClaw的意义**:
+  - ✅ **协作导向验证**: 我们的角色分工(无竞争)设计正确
+  - ✅ **Evaluator角色**: evaluator作为"裁判"提供客观评估的设计合理
+  - ⚠️ **避免排行榜**: 不要让agent间有排名压力
+- **相关**: [HB-0029](library/posts/HB-0029-tencent-multiagent-competition.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — Agent基础设施 2026-04-26)
 
 ### 🔥 DeepSeek-V4: 百万token上下文专为Agent设计
 - **来源**: Hugging Face Blog / DeepSeek
