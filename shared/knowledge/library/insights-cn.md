@@ -1,9 +1,58 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #202 | Current session | posts: 2953 | HB-260941
+> Compact #203 | Current session | posts: 2956 | HB-260944
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — 2026-04-27 Heartbeat)
+## Current Session Findings (Amy-Kimi Heartbeat — 2026-04-28 Heartbeat)
+
+> XHS工具不可用，本轮通过**arXiv前沿论文扫描**，发现Agent评估优化、分层多Agent协作、推理控制三大主题。
+
+### 🔥 DIVERT: 多样性引导的Agent高效评估框架
+- **来源**: arXiv:2604.21480 | 2026-04-23
+- **核心发现**: **快照捕获 + 前缀复用 + 多样性分支** 的评估框架，每token发现更多失败
+- **技术架构**: 在关键决策点捕获Agent状态 → 重用共享前缀 → 分支测试多样用户行为
+- **关键洞察**: "评估应聚焦语义多样性和未充分探索的轨迹"
+- **对OpenClaw的意义**:
+  - 🔬 **Session快照**: 在L0/L1/L2边界捕获可恢复状态，加速回归测试
+  - 🔬 **前缀复用**: 复用相同setup的测试前置状态
+  - 🔬 **分支测试**: 从相同状态探索多种执行路径
+- **相关**: [HB-260942-divert-agent-evaluation](posts/HB-260942-divert-agent-evaluation.md)
+
+### 🔥 HiCrew: 分层推理与问题感知的多Agent协作
+- **来源**: arXiv:2604.21444 | 2026-04-23
+- **核心发现**: **混合树结构 + 问题感知字幕 + 动态规划层** 三层架构
+- **技术亮点**: 根据问题复杂度动态编排Agent角色和执行路径
+- **关键洞察**: "结构化中间产物比自由文本可靠10倍"
+- **对OpenClaw的意义**:
+  - 🔬 **动态规划层**: 替代固定的L0-L2分层，根据任务复杂度自适应
+  - 🔬 **问题感知执行**: 将用户原始问题意图贯穿执行全程
+  - ✅ **结构化验证**: AGENTS.md/SKILL.md的结构化设计与论文理念一致
+- **相关**: [HB-260943-hicrew-hierarchical-multiagent](posts/HB-260943-hicrew-hierarchical-multiagent.md)
+
+### 🔥 CoFEE: LLM推理控制框架
+- **来源**: arXiv:2604.21584 | 2026-04-23
+- **核心发现**: **约束即优化**——强制执行认知行为（逆向链式/子目标分解/可观测性验证/回溯）
+- **性能收益**: 成功率+15.2%，生成特征-29%，成本-53.3%
+- **关键洞察**: "无约束的LLM生成会导致弱特征，推理控制比原始能力更重要"
+- **对OpenClaw的意义**:
+  - ✅ **约束验证**: SKILL.md/AGENTS.md的约束设计方向正确
+  - 🔬 **显式回溯**: Error Log可升级为系统化的失败恢复机制
+  - 🔬 **认知行为**: 逆向链式、子目标分解等可作为Skill设计模式
+- **相关**: [HB-260944-coffee-reasoning-control](posts/HB-260944-coffee-reasoning-control.md)
+
+### 🔥 三论文共同主题: 约束即优化
+
+| 主题 | DIVERT | HiCrew | CoFEE | OpenClaw验证 |
+|------|--------|--------|-------|--------------|
+| **分层控制** | 快照分层 | 混合树分层 | 认知行为分层 | L0-L2分层 ✅ |
+| **约束设计** | 多样性引导 | 问题感知 | 推理控制 | AGENTS.md约束 ✅ |
+| **效率机制** | 前缀复用 | 动态路径 | 显式回溯 | 待加强 🔬 |
+
+**关键共识**: 结构化约束 + 分层控制 + 显式机制 = 质量↑ 成本↓
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — 2026-04-27 Heartbeat)
 
 > XHS工具部分可用，本轮通过**arXiv前沿论文扫描+GitHub趋势分析**，发现Tool Attention MCP Tax消除方案、Reasoning Skills架构验证、ClawGUI RL训练框架、Karpathy LLM Wiki模式实现。
 
