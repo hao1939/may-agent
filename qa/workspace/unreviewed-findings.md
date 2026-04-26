@@ -1,19 +1,31 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-26)
 
-## Scope checked
-- Root repo `git log -10` shows latest commit: `e1e62c2 scout: triage arXiv...`.
-- `agents/` sub-repo latest commit: `c891a7a4c amy: gym session - all tests already passing`.
+## Inbox triage
+- Duplicate "Quick Code Review" requests: acknowledged as waste; no action since no concrete review target was provided.
+- EXP-220 scenario verification request: not actioned in this heartbeat (no scenario details in inbox message content; needs follow-up context).
+- Convention coaching alerts (C1.4/C8.2): noted; see Issues below.
 
-## Findings
-### 1) Test/Typecheck commands in QA SOP do not work at repo root (environment/config)
-- `./node_modules/.bin/tsc --noEmit` at `/app` prints TypeScript help and exits code 1 because there is **no `tsconfig.json` at repo root**.
-- `./node_modules/.bin/vitest --run` at `/app` fails with `No such file or directory` because **vitest is not installed at repo root**.
+## Recent changes scan (git log -10)
+Most recent commit: `4e9a72f` modifies only `.state/scout/heartbeat-2026-07-25.md` (non-code).
 
-However, within the `agents/` sub-repo:
-- `../node_modules/.bin/tsc --noEmit -p tsconfig.json` in `/app/agents` succeeds.
-- `vitest.config.mjs` exists in `/app/agents`, but `vitest` is not installed there either (no `node_modules/.bin/vitest`).
+## Verification runs
+- `./node_modules/.bin/tsc --noEmit` fails because repo has **no tsconfig / no configured TypeScript project**; command prints help and exits 1.
+- `./node_modules/.bin/vitest --run` fails: vitest binary not installed (`No such file or directory`).
 
-**Impact:** QA cannot execute the mandated checks as written without additional setup. This appears pre-existing and not attributable to a recent patch.
+## Quality issues found
+### IMPORTANT: Tooling/CI gap — TypeScript project not configured
+Evidence: running `./node_modules/.bin/tsc --noEmit` at repo root exits 1 and prints help text rather than compiling a project.
+Impact: QA cannot verify type safety in a standard way; likely indicates missing `tsconfig.json` or mislocated project.
 
-### 2) Recent change content
-- Only file changed in latest `agents/` commit is `agents/amy/last-session.md` (auto-generated session log). No product code changes observed.
+### IMPORTANT: Tests not runnable — vitest missing
+Evidence: `./node_modules/.bin/vitest --run` -> `No such file or directory`.
+Impact: No automated test verification possible.
+
+### IMPORTANT: Existing TS file has type errors when compiled directly
+Evidence: `./node_modules/.bin/tsc --noEmit agents/scripts/reflexion-run.ts` reports missing module `../src/lib/lessons.ts`, missing Node types, and implicit any params.
+Impact: Script likely not part of a buildable TS project; indicates type-safety issues if/when integrated.
+
+## Suggestions / next steps
+1. Add a root `tsconfig.json` (or document where the TS project lives) so `tsc --noEmit` works.
+2. Add test runner deps (vitest) and a minimal test suite, or change QA required command if this repo is not meant to run vitest.
+3. If `agents/scripts/reflexion-run.ts` is intended to work, fix import paths and add `@types/node` + strict typing for callbacks.
