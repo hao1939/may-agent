@@ -1,6 +1,6 @@
 # Project: Gym Leverage (Orchestrator-Worker)
 
-**Status**: active
+**Status**: waiting
 **Owner**: bob
 **Type**: milestone
 **Workflow**: master-worker
@@ -9,7 +9,10 @@
 **Health**: —
 
 **Stop Reason**: 
-**Resume Condition**: 
+All remaining milestones are complete. Awaiting review.
+
+1. **I believe**: All 3 remaining milestones are done — evolution process designed, one cycle run with measurable improvement (+17pp), results 
+**Resume Condition**: Human/May review needed
 ## Goal
 Make the gym a practical tool for accelerating agent evolution. Explore the existing 431 scenarios, fix any issues with the runner, understand what the scenarios test, and design a feedback loop where gym results drive agent improvement.
 
@@ -26,9 +29,9 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 - [x] Run core 20 suite and record baseline scores in .state/gym-baseline.md
 
 ### Phase 3: Gym-Driven Evolution
-- [ ] Design the feedback loop in .state/gym-evolution-process.md
-- [ ] Run one cycle: pick worst category, write/improve a skill, measure improvement
-- [ ] Document results of the cycle in .state/gym-cycle-1-results.md
+- [x] Design the feedback loop in .state/gym-evolution-process.md
+- [x] Run one cycle: pick worst category, write/improve a skill, measure improvement
+- [x] Document results of the cycle in .state/gym-cycle-1-results.md
 
 ## Resources
 - Gym README: agents/gym/README.md
@@ -37,14 +40,9 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 - Gym triage: agents/gym/TRIAGE.md
 
 ## Current State
-Iteration 5. Milestones: 5/9 done.
-Reviewer: Excellent. Both files are solid and complete.
+Waiting: All remaining milestones are complete. Awaiting review.
 
-CONTINUE —
-
-Milestones completed: **Select a "core 20" benchmark suite** and **Run core 20 suite and record baseline scores**.
-
-**(a) Concrete output:**
+1. **I believe**: All 3 remaining milestones are done — evolution process designed, one cycle
 ## Process Notes
 
 ## Comments
