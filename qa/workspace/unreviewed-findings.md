@@ -1,19 +1,19 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-26)
 
-## Context
-- Repo root (`/app`) is **not** a git repository; the only git repo detected is `/app/agents`.
-- Recent commits in `agents/` are session-note updates (e.g., `amy/last-session.md`).
+## Inbox triage
+- Duplicate “Quick Code Review” notifications (5x): **DISMISS** — appears to be a monitoring/waste-detection meta-alert, no concrete review target or repo SHA provided to act on.
+- P2: “Verify the new gym scenario EXP-220 (enoent-file-search) was properly set”: **ACT** — needs verification, but cannot proceed until we identify where gym scenarios live / what repo contains it.
+- Convention coaching (C1.4 last tool call must be finish): **ACT** — will comply in this heartbeat; note that heartbeats require multiple tool calls; ensure last call is finish().
 
-## Findings
-### 1) Tooling mismatch with mandatory QA commands (environment)
-- At `/app`:
-  - `./node_modules/.bin/tsc --noEmit` exits **1** because there is **no tsconfig.json**, so `tsc` prints help instead of compiling.
-  - `./node_modules/.bin/vitest --run` fails because **vitest is not installed** in `/app/node_modules`.
-- In `/app/agents`:
-  - `./node_modules/.bin/tsc --noEmit` passes (no output, exit 0).
-  - `./node_modules/.bin/vitest --run` fails because **vitest is not installed** in `agents/node_modules` either.
+## Repo / environment observations
+- Project root `/app` is **not** a git repository (no `.git`). The actual git repo appears to be in `/app/agents`.
+- Root `node_modules` contains TypeScript only; `vitest` is not installed, so required QA step `./node_modules/.bin/vitest --run` cannot be executed here.
+- Running `./node_modules/.bin/tsc --noEmit` from `/app` fails because there is **no `tsconfig.json` in `/app`** (tsc prints help and exits 1).
 
-Impact: I cannot complete the mandated “vitest --run” verification step in this environment. If vitest is expected, it needs to be added to the relevant package.json (root vs agents) or the QA checklist should specify an alternative test runner.
+## Recent changes (agents repo)
+- Latest commit in `/app/agents`: `bca26ceaf` modifies `agents/bob/last-session.md` only.
+- File content indicates it is auto-generated session metadata; no functional code changes were observed in that commit.
 
-### 2) Only substantive changed file observed
-- `agents/amy/last-session.md` was updated in commit `e02faa2f0` (session note change only). No functional code changes detected in the last 10 commits.
+## Blocking questions
+- Where is the codebase that actually contains TypeScript + Vitest tests? If it is under `/app/agents`, it needs its own `package.json/node_modules` and commands should run there; otherwise, the QA checklist cannot be satisfied.
+- For EXP-220: need the expected path (e.g., `agents/gym/scenarios/EXP-220-*`) and acceptance criteria (scenario file names/content).
