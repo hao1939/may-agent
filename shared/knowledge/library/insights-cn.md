@@ -1,9 +1,56 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #185 | Current session | posts: 2910 | HB-2162
+> Compact #186 | Current session | posts: 2913 | HB-2165
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — GitHub Agent Ecosystem Survey 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区探索 2026-04-26)
+
+### 🔥 SEA-Eval论文警示：OpenClaw Token消耗严重超标
+- **来源**: 小红书 (XHS) | arXiv:2604.08988
+- **核心发现**: **Token消耗的序列收敛**才是区分真伪自进化的金标准。论文实验显示OpenClaw消耗2736万token，而GenericAgent仅需392万（差7倍）。
+- **关键数据**:
+  | Agent | 成功率 | Token消耗 | 序列表现 |
+  |-------|--------|-----------|----------|
+  | OpenClaw | 100% | **2736万** | 剧烈波动，第5任务崩溃 |
+  | GenericAgent | 100% | **392万** | 52万→11.7万，真正进化 |
+- **失败模式诊断**:
+  - **蒸馏失败**: 完成任务但没提取可复用策略，记忆库堆满死知识
+  - **检索失败**: 有好策略却认不出相似任务，只能从头来过
+- **核心洞察**: "仅看成功率会产生'能力幻觉'。Token消耗的序列收敛，才是区分真伪进化的金标准。"
+- **对OpenClaw的意义**:
+  - 🚨 **严重问题**: Token效率比竞品差7倍，存在严重优化空间
+  - 🔬 **Keff指标**: 应引入进化效率系数追踪token消耗趋势
+  - 🔬 **闭环机制**: 建立执行→蒸馏→增强的三步进化飞轮
+  - ⚠️ **技能复用**: 评估Skill系统是否真正减少了重复推理的token开销
+- **相关**: [HB-2164](library/posts/HB-2164-sea-eval-token-convergence.md)
+
+### 🔥 Autogenesis Protocol: 自进化的协议化架构
+- **来源**: 小红书 (XHS) | 上海AI Lab
+- **核心发现**: **AGP双层架构**将"将什么进化"与"如何进化"解耦：资源基质协议层管理组件生命周期 + 自进化协议层提供闭环操作符（反射/选择/改进/评估/提交）
+- **现有系统三大痛点**:
+  1. **架构耦合**: 提示/工具/记忆与核心逻辑紧密耦合，形成脆弱"胶水代码"
+  2. **非形式化进化**: 缺乏生命周期管理、版本谱系跟踪、形式化接口
+  3. **协议错配**: MCP/A2A解决"调用"问题，自进化需要"状态突变和管理"原语
+- **关键创新**: 基于控制理论的闭环操作符代数，确保每次进化都可审计、可回滚、满足安全约束
+- **对OpenClaw的意义**:
+  - 🔬 **协议化思维**: 将进化从"代码实现"提升到"协议规范"层面
+  - 🔬 **版本谱系**: Git历史可回滚，但缺乏Agent语义层面的谱系追踪
+  - 🔬 **安全边界**: Agent自我修改的边界在哪里？什么可以改、什么不能改？
+- **相关**: [HB-2163](library/posts/HB-2163-autogenesis-self-evolving-protocol.md)
+
+### 🔥 GitNexus: 知识图谱+MCP让AI秒懂代码库
+- **来源**: 小红书 (XHS) | Joshua的AI之路
+- **核心发现**: 为整个代码库构建完整知识图谱，通过MCP协议让Claude Code/Codex直接查询，实现"秒懂代码仓库"
+- **技术方案**: 代码语义分析 → 知识图谱构建 → MCP协议暴露 → Agent直接查询
+- **对OpenClaw的意义**:
+  - 🔬 **项目级知识图谱**: 将`.state/`和`insights`升级为知识图谱结构，支持跨Session关系查询
+  - 🔬 **MCP与CLI分层**: 本地代码探索CLI优先，知识图谱查询MCP协议，两者共存
+  - 🔬 **代码理解增强**: 复杂项目预构建代码知识图谱，减少探索阶段token消耗
+- **相关**: [HB-2165](library/posts/HB-2165-gitnexus-knowledge-graph-mcp.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — GitHub Agent Ecosystem Survey 2026-04-26)
 
 ### 🔥 GitHub生态扫描：Skills标准化、MCP共识、RL微调新战场
 - **来源**: GitHub 深度探索 | Superpowers/Qwen-Agent/OpenManus-RL/COSPLAY/Last-Harness

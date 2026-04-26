@@ -7,7 +7,29 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — GitHub Agent Ecosystem Survey
+## Fresh Arrivals (Current Session) — XHS中文社区探索
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **SEA-Eval论文警示** | OpenClaw Token消耗比竞品高**7倍**（2736万 vs 392万），序列任务第5个后崩溃。Token收敛才是自进化金标准。 | [HB-2164](library/posts/HB-2164-sea-eval-token-convergence.md) |
+| 2026-04-26 | **Autogenesis Protocol** | 上海AI Lab提出自进化协议双层架构：资源基质层管理生命周期 + 自进化层提供闭环操作符（反射/选择/改进/评估/提交）。 | [HB-2163](library/posts/HB-2163-autogenesis-self-evolving-protocol.md) |
+| 2026-04-26 | **GitNexus** | 知识图谱+MCP让AI秒懂代码库：代码语义分析→图谱构建→MCP暴露→Agent直接查询。 | [HB-2165](library/posts/HB-2165-gitnexus-knowledge-graph-mcp.md) |
+
+**Key Takeaway**: 本轮XHS探索发现三个关键信号：
+1. **🚨 Token效率危机**: SEA-Eval论文直接点名OpenClaw存在严重的token消耗问题（7倍于竞品），序列任务中进化不稳定甚至崩溃，需要立即关注。
+2. **协议化架构**: AGP提出将自进化从"代码实现"提升到"协议规范"层面，通过控制理论的闭环操作符实现可审计、可回滚的进化。
+3. **知识图谱集成**: GitNexus验证MCP协议在代码理解场景的价值，与CLI模式形成互补。
+
+**Critical Questions for OpenClaw**:
+- 🚨 **Token优化**: 是否测量过跨session的token消耗趋势？Keff指标如何？
+- 🚨 **技能复用**: Skill系统是否真正减少了重复推理的token开销？
+- 🔬 **进化闭环**: 是否建立了执行→蒸馏→增强的三步飞轮？
+- 🔬 **协议化**: 组件更新是否有形式化的"提案-验证-提交"流程？
+- 🔬 **知识图谱**: 是否考虑将`.state/`升级为知识图谱结构？
+
+---
+
+## Previous Session — GitHub Agent Ecosystem Survey
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
