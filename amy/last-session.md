@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777172170745_0
+- **Session:** s_1777172187212_0
 - **Status:** done
-- **When:** 2026-04-26T02:56:26.984Z
-- **Duration:** 16s
+- **When:** 2026-04-26T02:57:05.510Z
+- **Duration:** 38s
 
 ## What Happened
-The project uses Node.js ✓, PostgreSQL ✓ (port 5432 in database.yaml). No `config/settings.yaml` — config files are in `config/` with `api.yaml`, `cache.yaml`, `database.yaml`. Tests run with plain `node test.js`, not Jest.
+There's no `config.json` in the project root. Based on the scenario found, the config and validate script are at `agents/gym/scenarios/error-recovery-broken-config/environment/`. The validation already passes successfully.
