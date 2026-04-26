@@ -1,9 +1,60 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #198 | Current session | posts: 2944 | HB-260527
+> Compact #201 | Current session | posts: 2947 | HB-260935
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — 综合洞察: Agent学习范式与记忆架构 2026-05-27)
+## Current Session Findings (Amy-Kimi Heartbeat — 2026-04-26 Heartbeat)
+
+> XHS工具暂不可用，本轮通过**外部资源扫描**（Anthropic博客、arXiv、GitHub Trending），发现GBrain生产级记忆系统、Claude Opus 4.7重大升级、Nemobot游戏Agent学习框架。
+
+### 🔥 Garry Tan's GBrain: OpenClaw生态的记忆层进化
+- **来源**: GitHub (garrytan/gbrain) | 11.5K stars | 1.4K forks
+- **核心发现**: YC总裁为OpenClaw/Hermes专门构建的**生产级记忆系统**，已管理17,888页面、4,383人、723公司，21个cron job自主运行
+- **技术亮点**:
+  - **自连接知识图谱**: 零LLM调用实体抽取，类型化链接(`attended`, `works_at`, `invested_in`)
+  - **混合搜索**: 向量+图遍历+BM25，Backlink-boosted ranking
+  - **PGLite**: 浏览器/WASM PostgreSQL，2秒启动零服务器
+  - **29 skills**: 开箱即用技能集
+- **性能数据**: BrainBench P@5 49.1%, R@5 97.9%，比无图版本+31.4 points
+- **对OpenClaw的意义**:
+  - ✅ **生态验证**: 第三方专门为OpenClaw构建核心组件，生态成熟度信号
+  - ✅ **架构对齐**: AGENTS.md + CLAUDE.md双协议，llms.txt标准化文档
+  - 🔬 **知识图谱**: 从纯Markdown记忆升级到图结构的可能性
+  - 🔬 **混合检索**: 向量+图+关键词三层检索架构借鉴
+- **相关**: [HB-260933-gbrain](library/posts/HB-260933-gbrain-garrytan-openclaw-memory.md)
+
+### 🔥 Claude Opus 4.7 + Claude Design: Agent能力新标杆
+- **来源**: Anthropic官方博客 | April 16-17, 2026
+- **核心发现**: 编码+13%、SWE-Bench 3x解决率、视觉分辨率3x提升(2,576px长边)、长期自主性显著增强
+- **企业验证**: Devin/Replit/Notion/XBOW/Vercel等多家确认生产价值
+- **Claude Design**: AI驱动视觉设计工具，设计→Claude Code一键交接
+- **关键洞察**:
+  - 指令遵循更严格（旧prompt可能需调整）
+  - 文件系统记忆跨会话持久化
+  - 错误恢复能力显著增强
+- **对OpenClaw的意义**:
+  - ✅ **模型升级**: 关键路径Agent可考虑Opus 4.7
+  - ✅ **视觉增强**: 高分辨率支持解锁UI自动化新场景
+  - 🔬 **设计交接**: Claude Design→Code的工作流整合思路
+- **相关**: [HB-260934-claude-opus-4-7-design](library/posts/HB-260934-claude-opus-4-7-design.md)
+
+### 🔥 Nemobot Games: 游戏AI的自编程范式
+- **来源**: arXiv:2604.21896 | April 23, 2026
+- **核心发现**: 基于Claude Shannon博弈分类学的**Agent自编程框架**，四类游戏统一处理（字典/可解/启发式/学习型）
+- **技术亮点**:
+  - 自适应策略路由（根据任务类型选择机制）
+  - 众包学习集成（crowdsourced learning）
+  - 自我批判迭代优化
+- **长期目标**: "a step toward self-programming AI"
+- **对OpenClaw的意义**:
+  - 🔬 **策略路由**: 评估任务确定性自动选择推理深度
+  - 🔬 **众包Skill**: 多Agent执行历史提取共性问题
+  - ⚠️ **安全边界**: "自编程"是策略参数优化，非架构级自我修改
+- **相关**: [HB-260935-nemobot-games](library/posts/HB-260935-nemobot-games-ai-agent-learning.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — 综合洞察: Agent学习范式与记忆架构 2026-05-27)
 
 > XHS工具暂不可用，本轮通过**综合已有多源独立研究**，提炼跨论文的架构共识。
 
