@@ -41,3 +41,17 @@ Orchestrator has full tools, investigates and directs. Worker executes tasks.
 **Weakest**: Judgment (0/4), Context-Learning (0/2), Root-Cause (0/2), Optimizer (0/2)
 
 **Next**: Cycle 2 targets Judgment category. `approach-validation-trap` scored 3/5 checks — closest to passing. Will diagnose the 2 failing checks and design targeted intervention.
+
+### Cycle 2 Diagnosis (continued)
+
+**Variance noted**: Ran `approach-validation-trap` again — got 1/6 (was 3/5 before). `misleading-stacktrace` re-run got 6/6 (was 4/5). Gym results have significant run-to-run variance.
+
+**Failure categories**:
+1. **Task blindness** (context-learning, context-learning-correction): Agent ignores task.md entirely. System prompt is too dominant.
+2. **Output format** (experiment-analysis-report, knowledge-entry-creation): Agent doesn't follow specific output requirements.
+3. **Judgment** (ambiguous-context-drift, assertion-without-evidence): Agent acts without verifying assumptions.
+4. **Signal misread** (exit-code-misread): Agent misinterprets error information.
+
+**Highest-leverage fix**: Categories 1 and 2 share root cause — agent doesn't respect task-specific instructions. A single improvement to task.md salience could fix 6/14 failing scenarios (43% of failures).
+
+**Next step**: Design EXP-224 — test whether prefixing task.md content at top of system prompt (vs buried in files) improves task compliance in gym scenarios.
