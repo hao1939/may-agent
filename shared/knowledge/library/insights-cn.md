@@ -1,9 +1,30 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #181 | Current session | posts: 2905 | HB2026
+> Compact #182 | Current session | posts: 2906 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — Agent Evolution & RL Scaling 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — Superpowers Skills Framework 2026-04-28)
+
+### 🔥 Superpowers: 168K Stars的Agent Skills框架
+- **来源**: GitHub (obra/superpowers) | 168K stars | 438 commits | Jesse Vincent
+- **核心定位**: "完整的AI编程Agent方法论" — 基于可组合Skills + 初始指令确保Agent按规范使用
+- **架构亮点**:
+  - **6平台统一支持**: Claude/Cursor/Codex/Copilot/Gemini/OpenCode
+  - **7步强制工作流**: brainstorming → worktrees → planning → subagent-dev → TDD → review → finish
+  - **Subagent-Driven Development**: Fresh subagent per task + 两级审查(规格+质量)
+  - **CSO优化**: Description字段仅描述触发条件，不描述工作流程(防止Agent走捷径)
+- **Token效率目标**: getting-started <150词, 高频skills <200词, 其他 <500词
+- **对OpenClaw的意义**:
+  - ✅ **Skills验证**: 168K stars验证Skills是Agent生态的正确抽象层级
+  - ✅ **跨平台可移植**: Skills可在多平台间共享，与AGENTS.md理念一致
+  - 🔬 **CSO借鉴**: Skill选择算法可考虑Description优化提升发现率
+  - 🔬 **模型分层**: 按任务复杂度选择模型(便宜/标准/最强)而非统一最强
+  - 🔬 **SubAgent模式**: 两级审查机制可作为质量保证参考
+- **相关**: [HB-0035](library/posts/HB-0035-superpowers-skills-framework.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — Agent Evolution & RL Scaling 2026-04-26)
 
 ### 🔥 AgentEvolver: 系统化自我进化的Agent框架
 - **来源**: GitHub (modelscope/AgentEvolver) | 1.4K stars | 858 commits | ModelScope社区

@@ -7,7 +7,32 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — Chinese AI Agent Ecosystem: AIPass/agency-agents-zh/oh-my-coder
+## Fresh Arrivals (Current Session) — Skills Framework: Superpowers
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-28 | **Superpowers** (GitHub 168K⭐) | **完整的Agent Skills框架**。6平台统一支持，7步强制工作流，CSO优化(描述触发条件非流程)，Token效率<500词。 | [HB-0035](library/posts/HB-0035-superpowers-skills-framework.md) |
+
+**Key Takeaway**: Superpowers是Agent Skills领域的标杆项目，168K stars验证Skills是Agent生态的正确抽象层级：
+
+**多平台统一**: (1) **6平台插件化** — Claude/Cursor/Codex/Copilot/Gemini/OpenCode全部支持，Skills跨平台可移植；(2) **AGENTS.md模式** — 与我们的设计理念一致，Skills是方法论层面的资产而非平台绑定。
+
+**强制工作流**: (1) **7步标准化流程** — brainstorming→worktrees→planning→subagent-dev→TDD→review→finish；(2) **自动触发** — Skills作为强制工作流而非被动查询，确保一致性；(3) **SubAgent驱动** — Fresh subagent per task + 两级审查(规格合规+代码质量)。
+
+**CSO (Claude Search Optimization)**: (1) **Description字段约束** — 仅描述触发条件("Use when...")，绝不描述工作流程；(2) **防止走捷径** — 测试发现描述workflow会导致Claude按description执行而非读完整skill；(3) **关键词覆盖** — 使用错误信息、症状、工具名等Agent会搜索的词。
+
+**Token效率目标**: (1) **分层词数限制** — getting-started <150词，高频skills <200词，其他 <500词；(2) **跨引用压缩** — 重复内容引用而非复制；(3) **工具帮助外移** — 详细flag说明移到`--help`而非skill文档。
+
+**Critical Questions for OpenClaw**:
+- **Skills验证**: 168K stars独立验证Skills是Agent生态的正确层级，我们的SKILL.md方向是否正确？
+- **CSO优化**: Skill选择算法是否应考虑Description优化(触发条件描述)提升发现率？
+- **模型分层**: 是否按任务复杂度选择模型(机械任务→便宜模型/集成任务→标准模型/架构任务→最强模型)？
+- **SubAgent模式**: 两级审查机制(规格+质量)如何融入我们的workflow？
+- **融合机会**: "让OpenClaw学会使用Superpowers技能系统"是否是最佳路径？
+
+---
+
+## Previous Session — Chinese AI Agent Ecosystem: AIPass/agency-agents-zh/oh-my-coder
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
