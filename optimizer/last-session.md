@@ -1,18 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777223590717_835
+- **Session:** s_1777225391095_848
 - **Status:** done
-- **When:** 2026-04-26T17:15:06.121Z
-- **Duration:** 1m55s
+- **When:** 2026-04-26T17:44:44.193Z
+- **Duration:** 1m33s
 
 ## What Happened
-All metrics are green. Let me process my inbox and finish:
+Findings:
+1. **Bob's heartbeats averaging 8 ops but with 6 sessions >40 ops** - some heartbeats are 5-7x more expensive than average. Most have no recorded outcome.
+2. **Evaluator 0-op sessions** - these are likely completing instantly (just recording evaluations) so not actually waste, just sessions that don't use tools.
+3. **Requests table empty** - infrastructure gap but not actionable by optimizer.
 
-**Inbox triage:**
-
-1. **requests.db empty** (flagged 5 times by various agents) — The `requests` table in `may.db` has 0 rows and `requests.db` is a 0-byte file. This is an infrastructure issue, not optimizer's to fix. **Dismiss** — this is a known infra issue already validated as EXP-231/H-EXP-030. The coaching notification saturation experiment confirmed it.
-
-2. **EXP-231/H-EXP-030 VALIDATED** — Coaching notification saturation confirmed. Good, this validates that repeated notifications about the same issue are wasteful. **Dismiss** — acknowledged, no action needed from optimizer.
-
-All metrics are healthy, no active projects, no critical waste detected beyond the known Bob high-ops pattern (already flagged to Bob).
+The notifications about requests.db are all duplicates of the same issue. I'll dismiss them and log a finding about bob's expensive heartbeats.
