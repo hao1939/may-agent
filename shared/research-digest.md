@@ -7,21 +7,21 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — arXiv + GitHub: 小模型Agent训练, 上下文数据库, 自主研究Agent
+## Fresh Arrivals (Current Session) — arXiv + HF Blog: 腾讯MoE, 科学工作流, Fantasia对齐
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
-| 2026-04-28 | **AgenticQwen** (Alibaba) | **双数据飞轮**训练小模型Agent。Reasoning Flywheel+Agentic Flywheel，工业级接近大模型性能。 | [HB-260428](library/posts/HB-260428-agentic-qwen-dual-flywheels.md) |
-| 2026-04-28 | **OpenViking** (ByteDance) | **上下文数据库**原生支持OpenClaw。文件系统范式+L0/L1/L2分层，23.1k⭐。 | [HB-260428](library/posts/HB-260428-openviking-context-db-openclaw.md) |
-| 2026-04-28 | **Karpathy autoresearch** | AI Agent**自主进行LLM研究**。overnight数百次实验，人类只通过`program.md`元编程。76.6k⭐ | [HB-260428](library/posts/HB-260428-karpathy-autoresearch.md) |
+| 2026-04-28 | **Hy3 Preview** (Tencent) | **21B激活参数**匹敌37-40B。"Routing precision is the algorithmic moat"。7.1%激活率业界最低。 | [HB-260428](library/posts/HB-260428-hy3-tencent-moe-routing.md) |
+| 2026-04-28 | **Scientific Workflow Agent** | 三层架构独立验证OpenClaw设计。Skill驱动intent准确率**44%→83%**，数据传输**-92%**。 | [HB-260428](library/posts/HB-260428-scientific-workflow-agent-skills.md) |
+| 2026-04-28 | **Fantasia Problem** (MIT) | AI对齐新视角: 用户目标在交互中形成。**主动支持意图形成** vs 假设prompt=完整意图。 | [HB-260428](library/posts/HB-260428-fantasia-alignment-problem.md) |
 
-**Key Takeaway**: 三个重量级发现揭示Agent技术新前沿：(1) **小模型Agent训练** — AgenticQwen的双飞轮机制验证小模型通过RL训练可在工业级场景接近大模型性能，成本与延迟优势显著；(2) **上下文数据库新品类** — OpenViking定义Context Database新品类，文件系统范式+L0/L1/L2分层成为共识，**原生支持OpenClaw**验证生态认知度；(3) **研究自动化** — Karpathy autoresearch将"人写代码"推进到"人写指令，Agent自主实验"，overnight数百次迭代的规模人类无法匹敌。
+**Key Takeaway**: 三个前沿发现覆盖模型、系统、交互三层：(1) **路由精度即护城河** — Hy3的21B激活参数验证routing precision > scale，Skill选择算法比Skill数量更重要；(2) **三层架构独立验证** — Scientific Workflow Agent论文与OpenClaw设计哲学高度一致，Semantic/Deterministic/Knowledge分层被独立发现，Skill效果量化+39pp；(3) **意图形成过程化** — Fantasia Problem揭示用户往往在目标未形成时就开始交互，AI应从"响应指令"转向"帮助形成指令"。
 
 **Critical Questions for OpenClaw**:
-- **模型策略**: 是否评估小模型+专门训练 vs 大模型通用能力的成本效益？
-- **上下文存储**: 是否将OpenViking作为推荐的上下文数据库后端？
-- **Skill进化**: autoresearch的自治实验循环如何应用于Skill自动优化？
-- **元编程**: program.md模式是否适用于Skill定义和改进指令？
+- **路由策略**: Skill选择是否投入ISO Score类算法？简单增加Skill数量≠提升效果
+- **Skill质量**: 是否建立Skill质量评估体系？低质量Skill可能拖低整体表现
+- **意图澄清**: L0是否应承担"需求分析师"角色？主动澄清 vs 直接执行的平衡？
+- **延迟生成**: 是否支持Skill引用式传输，减少Session数据传输？
 
 ---
 
