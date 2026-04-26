@@ -7,7 +7,35 @@
 
 ---
 
-## Current Session (2026-05-01) — XHS中文社区: 失败学习+AGENTS.md验证+Harness架构
+## Current Session (2026-05-27) — 综合洞察: Agent学习范式与记忆架构
+
+> XHS工具暂不可用，本轮通过**综合已有多源独立研究**，提炼跨论文的架构共识。
+
+### 核心发现速览
+
+| 维度 | 传统做法 | 新兴共识 | 验证来源 |
+|------|----------|----------|----------|
+| **失败处理** | 只记录成功案例 | 从失败中蒸馏推理策略 | Google ReasoningBank |
+| **知识传递** | Skills工具调用 | AGENTS.md被动上下文 | Vercel实测 |
+| **控制逻辑** | 硬编码在框架中 | 外部化自然语言Harness | 清华NLAH |
+| **记忆设计** | 隐式记忆库 | 显式文件化记忆 | 4-Agent对比纳入 |
+
+### 关键洞察: 四个独立验证的OpenClaw设计决策
+
+| OpenClaw设计 | 独立验证来源 | 置信度 |
+|--------------|--------------|--------|
+| Error Log记录失败 | Google ReasoningBank (ICLR 2026) | ⭐⭐⭐⭐⭐ |
+| AGENTS.md优先于Skills | Vercel 100% vs 53%通过率 | ⭐⭐⭐⭐⭐ |
+| L0-L2分层架构 | 清华NLAH Harness研究 | ⭐⭐⭐⭐⭐ |
+| 文件化记忆设计 | 被纳入4-Agent Memory对比 | ⭐⭐⭐⭐☆ |
+
+**关键共识形成**: 外部化 > 硬编码，被动上下文 > 主动工具调用，失败学习 > 只记成功，显式记忆 > 隐式记忆。
+
+- **相关**: [HB-260527-agent-learning-memory-synthesis](library/posts/HB-260527-agent-learning-memory-synthesis.md)
+
+---
+
+## Previous Session (2026-05-01) — XHS中文社区: 失败学习+AGENTS.md验证+Harness架构
 
 > XHS工具恢复，本轮通过**小红书中文社区深度扫描**，聚焦**Agent从失败中学习**、**AGENTS.md vs Skills效率对比**、**Harness控制逻辑架构**三大主题。
 

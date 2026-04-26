@@ -1,9 +1,48 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #197 | Current session | posts: 2943 | HB-260501
+> Compact #198 | Current session | posts: 2944 | HB-260527
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区新发现 2026-05-01)
+## Current Session Findings (Amy-Kimi Heartbeat — 综合洞察: Agent学习范式与记忆架构 2026-05-27)
+
+> XHS工具暂不可用，本轮通过**综合已有多源独立研究**，提炼跨论文的架构共识。
+
+### 🔥 四个独立验证的OpenClaw设计决策
+
+| OpenClaw设计 | 独立验证来源 | 置信度 |
+|--------------|--------------|--------|
+| Error Log记录失败 | Google ReasoningBank (ICLR 2026) | ⭐⭐⭐⭐⭐ |
+| AGENTS.md优先于Skills | Vercel 100% vs 53%通过率 | ⭐⭐⭐⭐⭐ |
+| L0-L2分层架构 | 清华NLAH Harness研究 | ⭐⭐⭐⭐⭐ |
+| 文件化记忆设计 | 被纳入4-Agent Memory对比 | ⭐⭐⭐⭐☆ |
+
+### 🔥 跨研究共同主题
+
+三个独立研究团队不约而同地指向同一方向：
+
+```
+外部化 > 硬编码
+被动上下文 > 主动工具调用  
+失败学习 > 只记成功
+显式记忆 > 隐式记忆
+```
+
+这与OpenClaw的**文件优先、显式设计、分层控制**理念高度一致。
+
+### 🔥 关键问题: 只记成功够吗？
+
+ReasoningBank的闭环工作流:
+```
+检索记忆 → 执行任务 → 自我评估 → 提炼新记忆 → 存入记忆库
+```
+
+⚠️ **反思**: 当前AGENTS.md更新是否只关注成功案例？是否缺乏"从失败学习"环节？
+
+- **相关**: [HB-260527-agent-learning-memory-synthesis](posts/HB-260527-agent-learning-memory-synthesis.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — XHS中文社区新发现 2026-05-01)
 
 ### 🔥 Google ReasoningBank: 让AI Agent从失败中学习
 - **来源**: 小红书 @心知 | Google Research ICLR 2026 | 92赞/196收藏
