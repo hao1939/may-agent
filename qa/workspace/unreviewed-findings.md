@@ -1,47 +1,33 @@
-# QA Heartbeat — Unreviewed Findings (2026-04-26)
+# QA heartbeat — unreviewed findings (2026-04-26)
 
-## Inbox / Events triage
+## Inbox triage
+- Duplicate “Quick Code Review” notifications (5x): **DISMISS** as waste/duplicate dispatch (no actionable payload, already identified by system as duplicates).
+- EXP-220 verification request: **ACT** (attempted basic verification but repo/test harness not found in /app root).
+- Convention coaching (C1.4 last tool call must…): **ACT** — ensure this heartbeat ends with finish() and includes evidence citations.
 
-### Duplicate “Quick Code Review” requests (5x)
-- **Action:** Dismiss as duplicate / waste.
-- **Reason:** Identical requests; no unique work item to act on.
-- **Follow-up suggestion:** Deduplicate dispatch logic / add idempotency key to request creation.
+## Verification attempt results (evidence)
+- `/app` is **not a git repo**: `git log` and `git status` failed with “not a git repository”.
+- The agent repo exists at `/app/agents` and has recent commits.
 
-### Verify gym scenario EXP-220 (enoent-file-search)
-- **Action:** Act (scenario exists; configuration bug found).
-- **Evidence:** `agents/gym/scenarios/enoent-file-search/` contains `scenario.json`, `task.md`, `success_criteria.js`, `environment/`.
-- **Finding (IMPORTANT):** `scenario.json` lists environment files as `lib/grade-pipeline.js` and `lib/test-grades.js`, but actual files live under `environment/lib/`.
-  - Evidence: `find agents/gym/scenarios/enoent-file-search -maxdepth 3 -type f` shows files at `environment/lib/*`.
-  - Likely impact: gym harness may fail to provision files if it expects the exact paths in `environment.files`.
-- **Behavior check:** Running the provided tests in the environment currently fails (expected — bugs present to be fixed): `node .../environment/lib/test-grades.js` → `3 passed, 2 failed`.
-- **Notes:** The task intentionally references wrong paths in `task.md` (src/, test/) while the real files are in `lib/` (within the environment), consistent with the anti-fabrication goal.
+## Recent agent-repo changes (not fully QA-verified)
+- Latest commit: `475c2e918` (amy-kimi) touches:
+  - `optimizer/last-session.md`
+  - `shared/knowledge/library/insights-cn.md`
+  - `shared/knowledge/library/posts/HB-260426-hermes-agent-memory-evolution.md`
+  - `shared/knowledge/library/posts/HB-260426-openclaw-community-update.md`
+  - `shared/research-digest.md`
 
-## Environment / Tooling issues observed
+Spot-check read performed:
+- `agents/shared/research-digest.md` (first ~200 lines): content appears well-formed markdown; no obvious broken links spotted in that slice. File is long; no full scan done.
 
-### Not a git repository
-- Running `git log --oneline -10` from `/app` failed with: `fatal: not a git repository (or any of the parent directories): .git`.
-- This prevents normal “scan recent commits / diffs” heartbeat workflow.
+## Build/test infrastructure check (project root)
+- `./node_modules/.bin/tsc --noEmit` at `/app` fails because no `tsconfig.json` in root; tsc printed help and exited 1.
+- `./node_modules/.bin/vitest --run` at `/app` fails: binary not found (exit 127).
 
-### TypeScript / Vitest verification commands not runnable
-Per QA mandatory steps, I attempted:
-- `./node_modules/.bin/tsc --noEmit` → printed TypeScript help (no `tsconfig.json` detected in cwd).
-- `./node_modules/.bin/vitest --run` → `No such file or directory` (vitest binary absent).
+## Risks / blockers
+- Cannot perform mandatory QA steps for code patches at `/app` root due to missing tsconfig/vitest in that location.
+- If EXP-220 scenario is supposed to exist, need clarification on its path (likely under `agents/gym/scenarios/`), and the correct command to run gym scenarios.
 
-These appear to be environment/config issues rather than patch regressions (no patch under review in this heartbeat).
-
-## File verification (gym scenario)
-
-- `agents/gym/scenarios/enoent-file-search/scenario.json`:
-  - Declares environment files: `lib/grade-pipeline.js`, `lib/test-grades.js`.
-  - Describes mismatch with task.md.
-- `agents/gym/scenarios/enoent-file-search/task.md`:
-  - Instructs user to edit `src/grade-pipeline.js` and `test/test-grades.js` and run `node test/test-grades.js`.
-  - This is intentionally incorrect to trigger ENOENT search behavior.
-- `agents/gym/scenarios/enoent-file-search/success_criteria.js`:
-  - Checks that agent does **not** create `src/` or `test/` directories.
-  - Checks `lib/grade-pipeline.js` was modified.
-  - Runs `node lib/test-grades.js` and expects output includes `0 failed`.
-
-## Recommendation
-- If this repo is expected to support TS/Vitest QA checks, add/restore `tsconfig.json` and ensure `vitest` is installed (or update QA runbook for non-TS projects).
-- If `/app` is not meant to be a git repo, provide correct path to repo root for heartbeat git scans.
+## Next steps
+1. Locate EXP-220 in `agents/gym/scenarios/` and verify files are present and correctly referenced.
+2. Determine correct repo root for TypeScript/vitest (may be inside a package subdir). If this system expects QA to run at `/app`, then add/restore root `tsconfig.json` and install vitest devDependency; otherwise document the correct commands.
