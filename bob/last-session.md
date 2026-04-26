@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777192706798_577
+- **Session:** s_1777194370425_590
 - **Status:** done
-- **When:** 2026-04-26T08:38:40.630Z
-- **Duration:** 13s
+- **When:** 2026-04-26T09:10:53.623Z
+- **Duration:** 4m43s
 
 ## What Happened
-Both files are correct and complete. No truncation, encoding errors, or missing content.
+Workspace files are gitignored. That's fine — the hypotheses are committed, the workspace files are local artifacts. The important deliverables (.state/hypotheses/) are committed.
