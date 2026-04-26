@@ -101,3 +101,23 @@ Both share root cause: agent takes shortcuts instead of following task instructi
 4. Verify completeness (re-read task, check all steps done)
 
 **Next**: Run control + treatment gym runs for both scenarios.
+
+## 2026-09-23: Cycle 4 — EXP-224 Results (NEGATIVE)
+
+Ran EXP-224 experiment: 3 control + 3 treatment runs per scenario.
+
+**Results**: Zero improvement on both scenarios. The task-compliance skill prepended to task.md had no effect on the target failing checks (`read-session-logs` and `template-unchanged`).
+
+| Scenario | Check | Control | Treatment | Delta |
+|----------|-------|---------|-----------|-------|
+| approach-validation-trap | read-session-logs | 0/3 | 0/3 | 0pp |
+| knowledge-entry-creation | template-unchanged | 0/3 | 0/3 | 0pp |
+
+**H-EXP-024: REJECTED** — Generic process skills via task prepend don't change agent behavior on these specific failure modes. The agent already has instructions to "be thorough" and "read the experiment workspace" but doesn't act on them. Adding more generic process text doesn't activate at the right moment.
+
+**Key insight**: These failures need structural interventions (forced exploration, tool-level changes) not prompt-level skills. This aligns with H-EXP-011's finding that generic checklist approaches have low catch rates.
+
+**Next cycle options**:
+1. Forced directory enumeration in gym adapter (structural)
+2. Scenario-specific behavioral hints (targeted)
+3. Tool-level auto-exploration (systemic)
