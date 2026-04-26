@@ -7,22 +7,24 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — arXiv Agent Research: MCP Tax消除, 隐式通信, 推理技能检索
+## Fresh Arrivals (Current Session) — XHS中文社区: 分层架构验证, 长周期Agent, 自我进化
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
-| 2026-04-26 | **Tool Attention** (arXiv) | MCP Tax消除:**95% token减少**(47.3k→2.4k)。ISO Score + Lazy Schema Loading。上下文利用率24%→91%。 | [HB-260426](library/posts/HB-260426-tool-attention-mcp-tax.md) |
-| 2026-04-26 | **DiffMAS** (arXiv) | 端到端多智能体隐式通信训练框架。latent communication替代文本协议。AIME24达26.7%。 | [HB-260426](library/posts/HB-260426-diffmas-latent-communication.md) |
-| 2026-04-26 | **Reasoning Skills** (ACL 2026) | 检索推理技能而非从零思考。**更少token+更高准确率**。Skill作为知识接口的工业验证。 | [HB-260426](library/posts/HB-260426-reasoning-skills-retrieval.md) |
+| 2026-04-26 | **Agent意图分类分层** (XHS 238赞) | 分层才是答案:L1领域→L2任务→L3动作。**逐层细化降低复杂度**。与OpenClaw L0-L3同构。 | [HB-260426](library/posts/HB-260426-cn-agent-intent-layering.md) |
+| 2026-04-26 | **GLM-5.1长任务** (XHS 1980赞) | 独立工作8小时:47工具调用+128文件。**分层记忆+目标树+自监督**。长周期Agent突破。 | [HB-260426](library/posts/HB-260426-glm5-long-task-8hours.md) |
+| 2026-04-26 | **Hermes Agent** (XHS 60赞) | 阿里Agent技术:感知→工作→语义记忆。**经验回放+技能蒸馏+RL优化**。Skill自动进化。 | [HB-260426](library/posts/HB-260426-hermes-agent-memory-evolution.md) |
+| 2026-04-26 | **ClawMark生产级** (XHS 79赞) | Agent进入"现实工作":**99.9%可靠性+可观测+可管控**。渐进式自动化。 | [HB-260426](library/posts/HB-260426-clawmark-agent-realwork.md) |
+| 2026-04-26 | **OpenClaw社区** (XHS 9赞) | 小红书官方更新2026.4.20。**中文生态信号**:活跃迭代+社区运营早期。 | [HB-260426](library/posts/HB-260426-openclaw-community-update.md) |
 
-**Key Takeaway**: 三篇arXiv前沿论文(4月23日)指向Agent基础设施核心优化方向：(1) **协议级效率** — Tool Attention揭示MCP真实开销(10k-60k tokens/轮)，通过动态门控可减少95%，协议效率而非上下文长度是约束瓶颈；(2) **通信范式演进** — DiffMAS验证隐式通信(latent representations)可训练优化，提示多Agent协作的未来方向；(3) **Skill检索>Scratch推理** — ACL 2026 Industry Track接受，验证Skill作为知识接口的经济价值和实用性。
+**Key Takeaway**: 五个XHS信号揭示Agent从"玩具"到"工具"的演进：(1) **分层架构验证** — 意图分类分层(238赞)与OpenClaw L0-L3高度一致，社区共识形成；(2) **长周期突破** — GLM-5.1的8小时独立工作(1980赞)验证Session持久化和分层记忆价值；(3) **自我进化** — Hermes的经验回放+技能蒸馏机制，Error Log闭环成为可能；(4) **生产就绪** — ClawMark强调可靠性/可观测/可管控是生产级核心；(5) **生态信号** — OpenClaw中文社区活跃但早期(9赞)，需关注生态碎片化风险。
 
 **Critical Questions for OpenClaw**:
-- **MCP开销**: 是否instrument当前Skill系统的token开销？10k-60k/轮的MCP Tax是否适用？
-- **Lazy Loading**: Skill选择是否应延迟加载完整schema，先加载摘要池？
-- **隐式通信**: Context Engine是否考虑latent representation传递，减少JSON序列化开销？
-- **推理技能**: 是否添加L0-Reasoning类别(分解、验证、回溯、模式匹配)？
-- **Skill蒸馏**: Error Log是否支持自动提炼推理模式为可检索技能？
+- **分层路由**: 是否显式实现L0-L3分层路由，每层独立置信度阈值？
+- **长周期支持**: 当前架构支持的最大任务周期？8小时运行的成本控制和资源调度？
+- **Skill进化**: 经验回放和技能蒸馏机制如何设计？版本管理和回滚策略？
+- **生产就绪**: 是否有明确的"生产就绪"检查清单？checkpoint/恢复机制？
+- **生态治理**: 官方版本和社区fork的关系如何平衡？中文社区支持策略？
 
 ---
 

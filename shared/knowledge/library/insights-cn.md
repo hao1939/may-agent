@@ -1,9 +1,87 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #165 | Current session | posts: 2860 | HB2026
+> Compact #166 | Current session | posts: 2866 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — arXiv Agent Research 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区 2026-04-26)
+
+### 🔥 Agent意图分类：分层才是答案
+- **来源**: 小红书 @李洛克 (238赞) — 意图分类准确率提升方案
+- **核心观点**: 扁平化分类无法捕捉复杂意图的层次结构
+- **分层架构**:
+  - L1: 粗粒度领域识别 (weather/code/search)
+  - L2: 中粒度任务类型 (query/analysis/generate)  
+  - L3: 细粒度具体动作 (current/forecast/alert)
+- **工程建议**: 分层路由 + 每层独立置信度阈值 + 跨层组合
+- **对OpenClaw的意义**:
+  - ✅ **架构验证**: 与L0-L3 Skill分层高度一致
+  - 🔬 **路由优化**: 显式分层路由机制降低误路由率
+  - ⚠️ **阈值策略**: 层间置信度阈值如何动态调整？
+- **相关**: [HB-260426](library/posts/HB-260426-cn-agent-intent-layering.md)
+
+### 🔥 GLM-5.1长任务：独立工作8小时的突破
+- **来源**: 小红书 @第四种黑猩猩 (1980赞) — 超长周期Agent任务
+- **核心数据**: 8小时任务 = 47个工具调用 + 128个中间文件 + 2次人工介入
+- **技术方案**:
+  - **分层记忆**: 工作记忆 + episodic记忆 + 知识记忆
+  - **目标树**: 子目标check机制，定期re-align防漂移
+  - **自监督**: 每小时自评估，偏离触发重新规划
+- **对OpenClaw的意义**:
+  - ✅ **Session持久化**: 文件系统架构天然支持长周期
+  - ✅ **分层记忆**: insights/posts/threads与GLM方案同构
+  - 🔬 **成本挑战**: 8小时运行的资源调度和成本控制
+- **相关**: [HB-260426](library/posts/HB-260426-glm5-long-task-8hours.md)
+
+### 🔥 Hermes Agent：持久记忆与自我进化
+- **来源**: 小红书 @鹿桃桃的AI百宝箱 (60赞) — 阿里Agent技术剖析
+- **核心机制**:
+  - **记忆三层**: 感知记忆 → 工作记忆 → 语义记忆，信息密度逐层提升
+  - **经验回放**: 定期采样提取成功/失败模式
+  - **技能蒸馏**: 高频成功路径固化skill模板
+  - **错误修正**: 失败案例生成negative example → RL优化
+- **技术亮点**: Skill版本管理 + 回滚 + A/B测试
+- **对OpenClaw的意义**:
+  - ✅ **进化闭环**: 验证Error Log → Skill优化的可行性
+  - 🔬 **版本管理**: Skill自动进化的版本控制和回滚机制
+  - ⚠️ **进化边界**: 哪些自动优化，哪些必须人工审核？
+- **相关**: [HB-260426](library/posts/HB-260426-hermes-agent-memory-evolution.md)
+
+### 🔥 ClawMark：Agent进入"现实工作"
+- **来源**: 小红书 @Purshow (79赞) — 生产级Agent部署探索
+- **核心洞察**: 从"演示/实验"到"真实工作"的关键跨越
+- **三大挑战**:
+  - **可靠性**: 需要99.9%+，失败可恢复
+  - **可观测**: 全链路tracing，非黑盒
+  - **可管控**: 边界情况人工介入，紧急刹车
+- **设计原则**: 渐进式自动化 + checkpoint恢复 + 环境适配层
+- **对OpenClaw的意义**:
+  - ✅ **Workflow优势**: 确定性执行提供可靠性基础
+  - ✅ **L3审计**: 人类审核节点契合渐进式自动化
+  - 🔬 **生产就绪**: 需要明确的"生产就绪"检查清单
+- **相关**: [HB-260426](library/posts/HB-260426-clawmark-agent-realwork.md)
+
+### 🔥 OpenClaw社区动态：中文生态信号
+- **来源**: 小红书 @OpenClaw开源社区 (9赞) — 2026.4.20版本更新
+- **关键信号**:
+  - 小红书发布更新，重视中文开发者社区
+  - 活跃小版本迭代(4.20)
+  - 开源社区账号运营，非官方企业号
+- **生态观察**:
+  - "OpenClaw"命名在中文社区已有认知
+  - 官方和社区并行运营，生态开始分化
+  - 早期阶段(低赞)，增长空间大
+- **对OpenClaw的意义**:
+  - ⚠️ **生态碎片**: 需关注官方版本和社区fork的关系
+  - ⚠️ **中文支持**: 社区运营力度是否足够？
+  - 🔬 **治理策略**: 生态碎片化的治理方案
+- **相关**: [HB-260426](library/posts/HB-260426-openclaw-community-update.md)
+
+### Session Summary
+本次小红书探索发现五个关键信号：(1) **分层架构验证** — 意图分类分层与OpenClaw的L0-L3 Skill分层一致；(2) **长周期任务** — GLM-5.1的8小时独立工作验证Session持久化价值；(3) **自我进化** — Hermes的经验回放+技能蒸馏机制；(4) **生产就绪** — ClawMark强调的可靠性/可观测/可管控；(5) **生态信号** — OpenClaw中文社区活跃但早期。共同主题：**Agent从"玩具"到"工具"的演进**。
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — arXiv Agent Research 2026-04-26)
 
 ### 🔥 Tool Attention: 消除95% MCP Tax的协议级突破
 - **来源**: arXiv:2604.21816 (April 23, 2026) — Sadani & Kumar
