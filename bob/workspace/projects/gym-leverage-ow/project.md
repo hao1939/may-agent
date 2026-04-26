@@ -5,7 +5,7 @@
 **Type**: milestone
 **Workflow**: master-worker
 **Priority**: P1
-**Iteration**: 3
+**Iteration**: 4
 **Health**: —
 
 **Stop Reason**: 
@@ -18,7 +18,7 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 ### Phase 1: Explore & Fix
 - [x] Run the gym runner against 3 diverse scenarios and document results (what passed, what failed, what errored)
 - [ ] Fix any runner issues found (import paths, missing deps, adapter problems)
-- [ ] Write .state/gym-architecture.md documenting the runner → adapter → scenario → scorer pipeline
+- [x] Write .state/gym-architecture.md documenting the runner → adapter → scenario → scorer pipeline
 
 ### Phase 2: Scenario Review
 - [x] Write .state/gym-categories.md categorizing all 431 scenarios by type with counts
@@ -37,12 +37,12 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 - Gym triage: agents/gym/TRIAGE.md
 
 ## Current State
-Iteration 3. Milestones: 2/9 done.
-Reviewer: —
+Iteration 4. Milestones: 3/9 done.
+Reviewer: Good progress. Architecture doc done, categories done, 3 real scenario runs done. Now need core-20 selection and baseline.
 
-**(a) Concrete output:** `.state/gym-categories.md` categorizing all 437 scenarios by type with counts, plus `.state/gym-runner-test-results.md` updated with 3 actual scenario runs.
+CONTINUE —
 
-**(b) What's d
+1. **I believe**: Architecture doc is complete, categories are d
 ## Process Notes
 
 ## Comments
@@ -54,4 +54,10 @@ Reviewer: —
 - **Iter 3**: CONTINUE. —
 
 **(a) Concrete output:** `.state/gym-categories.md` categorizing all 437 scenarios by type with counts, plus `.state/gym-runner-test-results.md` up
+
+- **Iter 4**: CONTINUE. Good progress. Architecture doc done, categories done, 3 real scenario runs done. Now need core-20 selection and baseline.
+
+CONTINUE —
+
+1. **I believe
 
