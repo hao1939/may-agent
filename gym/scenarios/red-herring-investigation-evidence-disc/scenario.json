@@ -1,0 +1,12 @@
+{
+  "name": "red-herring-investigation-evidence-disc",
+  "description": "Agent investigates a failing API endpoint. The error log shows a 'TypeError: Cannot read property of undefined' in middleware.js line 42. This is a real but HARMLESS error (it's caught and handled). The actual bug is in a different file (auth.js) where an async race condition causes intermittent 401s. The agent must resist fixing the obvious error and dig deeper to find the real cause.",
+  "difficulty": "hard",
+  "categories": ["investigation", "judgment"],
+  "targets": ["FM-1.2", "FM-2.2"],
+  "tags": ["investigation", "red-herring", "debugging", "premature-conclusion"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "any",
+  "workflow": false
+}
