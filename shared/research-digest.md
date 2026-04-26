@@ -7,7 +7,60 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — 并行Agent学习三大框架
+## Current Session (2026-04-26) — XHS工具暂不可用，综合已有发现
+
+> **Note**: XHS搜索功能临时不可用。本轮整合前期发现，聚焦**并行Agent学习**与**协作范式**主题。
+
+### 核心洞察速览
+
+| 主题 | 关键发现 | 对OpenClaw意义 |
+|------|----------|----------------|
+| **并行学习** | Combee/ParallelMuse/Parallel-Probe三框架验证：多Agent同时学习需解决上下文干扰 | Shuffle机制、Early Stopping、轨迹压缩值得借鉴 |
+| **协作范式** | 6种范式确立：Orchestrator-Worker/Pipeline/Handoff/P2P/MCP/A2A | 根据任务类型选择，非一刀切 |
+| **Token危机** | SEA-Eval揭示OpenClaw Token消耗比竞品高7倍，呈现伪进化特征 | 急需建立Token效率监控与进化飞轮验证 |
+| **Skill验证** | COSPLAY/Superpowers/Tool Attention三方验证Skill架构正确性 | Skill质量>模型规模，投资Skill系统ROI最高 |
+
+### 并行Agent学习技术栈对比
+
+| 框架 | 角度 | 核心机制 | 关键收益 | OpenClaw应用点 |
+|------|------|----------|----------|----------------|
+| **Combee** | 提示学习 | 并行扫描+Shuffle+动态Batch Size | **17×加速** | 多Agent学习时的上下文管理 |
+| **ParallelMuse** | 推理优化 | 功能分区+压缩推理聚合 | **62%↑, 99%压缩** | 轨迹压缩处理更长历史 |
+| **Parallel-Probe** | 资源调度 | 2D探测+Early Stopping+分支剪枝 | **25%↓token** | 提前终止冗余Agent执行 |
+
+### 6种Agent协作范式选型指南
+
+| 范式 | 代表 | 适用场景 | 关键特征 | OpenClaw映射 |
+|------|------|----------|----------|--------------|
+| **Orchestrator-Worker** | Anthropic Research | 任务可明确分解 | 中央调度+独立context | 当前多Agent架构 |
+| **Pipeline** | MetaGPT | 有明确流程的生产任务 | SOP模式+结构化中间产物 | Workflow执行模式 |
+| **Handoff** | OpenAI Agents SDK | 需要状态连续性 | tool call+完整历史传递 | Session上下文传递 |
+| **Peer-to-Peer** | Anthropic Teams | 分布式自治 | 共享任务列表+无单点 | 未来可能扩展方向 |
+| **MCP** | 工具层协议 | 垂直工具连接 | 正在成为事实标准 | 远程工具集成选项 |
+| **A2A** | Google Protocol | 水平Agent连接 | 与MCP互补 | Agent间通信协议 |
+
+### 🚨 关键警示：Token效率危机
+
+SEA-Eval论文首次系统性诊断OpenClaw根本差距：
+
+| 指标 | OpenClaw | GenericAgent | 差距 |
+|------|----------|--------------|------|
+| 成功率 | 100% | 100% | 持平 |
+| **总Token消耗** | **27,364K** | **3,918K** | **7×** |
+| 序列收敛性 | 剧烈波动→崩溃 | 520K→117K单调收敛 | **伪进化** |
+
+**诊断结论**:
+- **蒸馏失败**: Φ函数未能从轨迹提取可复用策略，记忆库堆满死知识
+- **检索失败**: Ψ函数无法识别新任务与历史记忆的结构相似性
+
+**行动建议**:
+1. 立即建立Token消耗监控（per-session, per-skill, per-agent）
+2. 引入Keff（进化效率系数）追踪跨session趋势
+3. 验证执行→蒸馏→增强的三步飞轮是否真正闭环
+
+---
+
+## Previous Session — 并行Agent学习三大框架
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
