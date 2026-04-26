@@ -14,6 +14,7 @@ Consult this index to find relevant skills for your current task. **Read only th
 | **Verify Before Finish** | `verify-before-finish.md` | Before calling finish() — check all deliverables exist |
 | **Read-Only Finish Protocol** | `read-only-finish-protocol.md` | When your task is read-only/analysis — don't fabricate deliverables |
 | **Gym Execution Checklist** | `gym-execution-checklist.md` | When running gym scenarios or experiments with gym infrastructure |
+| **Second-Look Verification** | `second-look-verification.md` | Before finish() on implementation tasks — 4-question checklist for activation gaps (EXP-229) |
 | **Persistent Task Workflow** | `persistent-task-workflow.md` | When working on multi-session tasks that need state across sessions |
 
 ## Task → Skill Mapping
