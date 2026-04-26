@@ -1,25 +1,19 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-26)
 
-## Inbox triage (waste / duplicates)
-Multiple notifications report **5 identical “Quick Code Review”** requests dispatched and duplicate work. No actionable code review request content is present in this heartbeat context.
+## Scope checked
+- Root repo `git log -10` shows latest commit: `e1e62c2 scout: triage arXiv...`.
+- `agents/` sub-repo latest commit: `c891a7a4c amy: gym session - all tests already passing`.
 
-**Action**: Dismiss as duplicate/waste (no unique work item to execute). Recommend upstream dedupe in dispatcher.
+## Findings
+### 1) Test/Typecheck commands in QA SOP do not work at repo root (environment/config)
+- `./node_modules/.bin/tsc --noEmit` at `/app` prints TypeScript help and exits code 1 because there is **no `tsconfig.json` at repo root**.
+- `./node_modules/.bin/vitest --run` at `/app` fails with `No such file or directory` because **vitest is not installed at repo root**.
 
-## Recent changes (last 10 commits)
-Top-level repo commit `2026b73` updates only the `agents` git submodule pointer (verified via `git show 2026b73`). The substantive changes are inside the `agents` sub-repo.
+However, within the `agents/` sub-repo:
+- `../node_modules/.bin/tsc --noEmit -p tsconfig.json` in `/app/agents` succeeds.
+- `vitest.config.mjs` exists in `/app/agents`, but `vitest` is not installed there either (no `node_modules/.bin/vitest`).
 
-### Reviewed file (mandatory)
-- `agents/shared/knowledge/experiments/EXP-230/design.md`
-  - Status: **DESIGNED**
-  - Note: **Date is 2026-10-13**, which is in the future relative to current date (2026-04-26). This may be intentional (template) but is likely a metadata mistake.
+**Impact:** QA cannot execute the mandated checks as written without additional setup. This appears pre-existing and not attributable to a recent patch.
 
-## Required checks
-### tsc --noEmit
-FAIL — running `./node_modules/.bin/tsc --noEmit` prints help output and exits code 1, consistent with **missing tsconfig.json** or not being a TypeScript project root.
-
-### vitest --run
-FAIL — `./node_modules/.bin/vitest` not found (exit code 127). Suggests Vitest is not installed in this environment or this is not a JS/TS test repo.
-
-## Issues
-- IMPORTANT: Tooling checks (tsc/vitest) cannot be executed as required due to repository/environment not containing expected TS/Vitest setup.
-- MINOR: `EXP-230/design.md` has a future date (`2026-10-13`). Verify whether dates should be “today” or experiment start date.
+### 2) Recent change content
+- Only file changed in latest `agents/` commit is `agents/amy/last-session.md` (auto-generated session log). No product code changes observed.

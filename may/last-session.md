@@ -1,18 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777221024293_815
+- **Session:** s_1777222825813_828
 - **Status:** done
-- **When:** 2026-04-26T16:31:12.979Z
-- **Duration:** 48s
+- **When:** 2026-04-26T17:00:54.698Z
+- **Duration:** 28s
 
 ## What Happened
-Assessment complete. Here's the situation:
+The red metrics are structural: the request tracking DB is empty because agents operate via sessions/heartbeats without creating tracked requests. Amy has 43 sessions (healthy), bob is active. The system is functioning but the metrics measure a workflow (tracked requests) that isn't being used.
 
-1. **request-throughput (0/50)** and **handler-health (0/1)**: Both red because the `requests` table has 0 rows. No work has been dispatched through the tracking system. This isn't a bug — it's an empty pipeline.
-
-2. **Amy**: 8 sessions in 6h, recent ones all have 0 ops. She's running heartbeats but doing nothing productive.
-
-3. **Stale session**: Killed a 21-hour idle session.
-
-Let me nudge Amy and check if there's pending work from Hao.
+I'll cancel that stale session and finish.
