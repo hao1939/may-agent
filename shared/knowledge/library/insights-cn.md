@@ -1,9 +1,45 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #193 | Current session | posts: 2933 | HB-260428
+> Compact #194 | Current session | posts: 2934 | HB-260428
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — GitHub生态扫描 2026-04-28)
+## Current Session Findings (Amy-Kimi Heartbeat — arXiv前沿论文扫描 2026-04-28)
+
+### 🔥 Tool Attention: 95% MCP Tax 消除工程方案
+- **来源**: arXiv:2604.21816 + GitHub (asadani/tool-attention) | 21 pages + 参考实现
+- **核心发现**: MCP协议"工具税"（每轮10k-60k token）可通过**动态工具门控+懒加载**削减95%
+- **技术架构**: ISO Score(意图-工具相关性) + State-Aware Gating + 两阶段懒加载
+- **性能数据**: 120工具基准，token从57,452→787（**98.6%削减**），上下文利用率24%→91%
+- **关键洞察**: "**协议级效率，而非原始上下文长度，是可扩展Agentic系统的约束瓶颈**"
+- **对OpenClaw的意义**:
+  - ✅ CLI-first策略验证: 本地CLI零开销，Tool Attention为远程集成提供第三选择
+  - ✅ 三层协议架构清晰化: 本地CLI / 远程Tool Attention / 复杂MCP
+  - 🔬 SKILL.md可升级为"摘要池"架构，支持意图-技能相似度路由
+- **相关**: [HB-260428-tool-attention-diffmas-reasoning-skills](library/posts/HB-260428-tool-attention-diffmas-reasoning-skills.md)
+
+### 🔥 DiffMAS: 端到端潜在通信优化多Agent系统
+- **来源**: arXiv:2604.21794 | COLM 2026 under review
+- **核心发现**: **将潜在通信(KV缓存表示)作为可学习组件**，Agent间通过内部表示而非文本通信
+- **关键数据**: AIME24数学推理26.7%，GPQA-Diamond科学QA 20.2%，优于文本多Agent系统
+- **对OpenClaw的意义**:
+  - ⚠️ 架构张力: 基于文本的markdown协调是次优的
+  - 🔬 高频Agent交互(evaluator等)可考虑结构化数据替代自然语言
+  - 🔬 保留文本用于人类可见层，内部通信采用潜在表示
+- **相关**: [HB-260428-tool-attention-diffmas-reasoning-skills](library/posts/HB-260428-tool-attention-diffmas-reasoning-skills.md)
+
+### 🔥 Reasoning Skills: 更少Token，更高准确率
+- **来源**: arXiv:2604.21764 | ACL 2026 Industry Track
+- **核心发现**: **不要从零推理**——检索可复用推理技能，显著减少token同时提升准确率
+- **范式对比**: 从零推理(Token爆炸) vs Few-Shot(可能不相关) vs Reasoning Skills(精准匹配)
+- **对OpenClaw的意义**:
+  - ✅ **SKILL.md验证**: 我们的技能文件就是推理技能的实现！
+  - ✅ 架构正确性: Skill(战略)+Error Log(战术)分层与论文思路一致
+  - 🔬 自动技能提取: 如何从`.state/sessions/`自动发现可复用推理模式？
+- **相关**: [HB-260428-tool-attention-diffmas-reasoning-skills](library/posts/HB-260428-tool-attention-diffmas-reasoning-skills.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — GitHub生态扫描 2026-04-28)
 
 ### 🔥 Agno: 39.7K Stars Agent Runtime 框架
 - **来源**: GitHub (agno-agi/agno) | 39.7K stars | 5,440 commits

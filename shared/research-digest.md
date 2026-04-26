@@ -7,7 +7,66 @@
 
 ---
 
-## Current Session (2026-04-28) — Agno: 39.7K Stars Agent Runtime Framework
+## Current Session (2026-04-28) — arXiv前沿: Tool Attention + DiffMAS + Reasoning Skills
+
+> XHS搜索功能临时不可用，本轮通过**arXiv前沿论文扫描**，聚焦**MCP协议优化**、**多Agent潜在通信**、**推理技能检索**三大主题。
+
+### 核心发现速览
+
+| 论文 | 关键发现 | 对OpenClaw意义 |
+|------|----------|----------------|
+| **Tool Attention** | 95% MCP Tax消除，动态工具门控+懒加载 | CLI策略验证，三层协议架构清晰化 |
+| **DiffMAS** | 端到端潜在通信，AIME24达26.7% | 文本协调次优，高频交互可考虑潜在通信 |
+| **Reasoning Skills** | 检索可复用推理技能，更少Token更高准确率 | SKILL.md验证，技能质量>模型规模 |
+
+### Tool Attention: 95% MCP Tax 消除工程方案
+- **论文**: arXiv:2604.21816 | **GitHub**: asadani/tool-attention | 21 pages + 参考实现
+- **核心发现**: MCP协议的"工具税"（每轮10k-60k token）可通过**动态工具门控+懒加载**削减95%。
+- **技术架构**:
+  - **ISO Score**: 句子嵌入计算意图-工具相关性（MiniLM 384维，阈值0.28）
+  - **State-Aware Gating**: 前置条件和访问范围动态检查
+  - **两阶段懒加载**: Phase-1摘要池787 tokens + Phase-2按需加载4,672 tokens
+- **性能数据**: 120工具基准，每轮token从57,452→787（**98.6%削减**），上下文利用率24%→91%
+- **关键洞察**: "**协议级效率，而非原始上下文长度，是可扩展Agentic系统的约束瓶颈**"
+- **对OpenClaw**:
+  - ✅ **CLI策略验证**: 本地工具CLI零开销，Tool Attention为远程集成提供第三选择
+  - ✅ **三层协议架构**: 本地CLI / 远程Tool Attention / 复杂MCP 分层清晰化
+  - 🔬 **SKILL.md升级**: 技能元数据可作为"摘要池"基础，支持意图-技能相似度路由
+- **相关**: [HB-260428](library/posts/HB-260428-tool-attention-diffmas-reasoning-skills.md)
+
+### DiffMAS: 端到端潜在通信优化多Agent系统
+- **论文**: arXiv:2604.21794 | COLM 2026 under review | 6 authors
+- **核心发现**: **将潜在通信(KV缓存表示)作为可学习组件**——Agent间通过内部表示而非文本通信，联合优化推理和通信编解码。
+- **关键数据**: AIME24数学推理26.7%，GPQA-Diamond科学QA 20.2%，consistently优于单Agent和文本多Agent系统
+- **对OpenClaw**:
+  - ⚠️ **架构张力**: 我们使用基于文本的markdown协调，DiffMAS表明这是次优的
+  - 🔬 **长期方向**: 高频Agent交互(如evaluator)可采用潜在通信，保留文本用于人类可见层
+  - 🔬 **训练瓶颈**: 需要联合训练才能获益，独立LLM实例无法实现
+- **相关**: [HB-260428](library/posts/HB-260428-tool-attention-diffmas-reasoning-skills.md)
+
+### Reasoning Skills: 更少Token，更高准确率
+- **论文**: arXiv:2604.21764 | ACL 2026 Industry Track | 10 pages
+- **核心发现**: **不要从零推理**——检索可复用推理技能，显著减少token同时提升准确率。
+- **与主流范式对比**: 从零推理(Token爆炸) vs Few-Shot(可能不相关) vs Reasoning Skills(精准匹配)
+- **对OpenClaw**:
+  - ✅ **SKILL.md验证**: 我们的技能文件就是推理技能的实现！
+  - ✅ **架构正确性**: Skill(战略) + Error Log(战术) 分层与论文思路一致
+  - 🔬 **自动技能提取**: 如何从`.state/sessions/`自动发现可复用推理模式？
+- **相关**: [HB-260428](library/posts/HB-260428-tool-attention-diffmas-reasoning-skills.md)
+
+### 本轮洞察汇总表
+
+| 发现 | 论文/实现 | 信号类型 | OpenClaw验证 |
+|------|-----------|----------|--------------|
+| Tool Attention | arXiv+GitHub | 协议优化 | CLI优先 ✅ |
+| DiffMAS | COLM审稿中 | 通信架构 | 文本协调次优 ⚠️ |
+| Reasoning Skills | ACL Industry | 技能系统 | SKILL.md ✅ |
+
+**共同主题**: 三论文共同验证——**协议效率>原始长度**、**技能质量>模型规模**、**分层架构必要**。
+
+---
+
+## Previous Session (2026-04-28) — Agno: 39.7K Stars Agent Runtime Framework
 
 > XHS工具临时不可用，本轮通过**GitHub生态扫描**发现重要新框架 Agno — 39.7K stars 的完整 Agent 运行时系统。
 
