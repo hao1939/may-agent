@@ -7,7 +7,44 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — Scientific Workflow 三层架构独立验证
+## Fresh Arrivals (Current Session) — 并行Agent学习三大框架
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **Combee: 并行提示学习** | 17倍加速，解决多agent并行学习的上下文超载问题。并行扫描+增强Shuffle+动态Batch Size | [HB-260928](library/posts/HB-260928-combee-parallel-prompt-learning.md) |
+| 2026-04-26 | **ParallelMuse: 阿里并行思考** | 62%性能提升，99%上下文压缩。功能分区式部分展开+压缩推理聚合双阶段 | [HB-260929](library/posts/HB-260929-parallelmuse-alibaba-agent-thinking.md) |
+| 2026-04-26 | **Parallel-Probe: 2D探测** | 训练无关的并行推理控制器，token成本降低25%+。Early Stopping+分支剪枝 | [HB-260930](library/posts/HB-260930-parallel-probe-2d-probing.md) |
+| 2026-04-26 | **Agent Team 6种协作范式** | Anthropic/OpenAI/Google技术方案汇总。架构选型指南：Orchestrator-Worker/Pipeline/Handoff/P2P/MCP/A2A | [HB-260931](library/posts/HB-260931-agent-team-6-paradigms.md) |
+
+**Key Takeaway**: 本轮聚焦**并行Agent学习**与**多智能体协作**两大主题。三大框架从不同角度解决同一问题：如何高效并行运行多个agent。Combee从提示学习角度、ParallelMuse从推理优化角度、Parallel-Probe从资源调度角度，共同构成并行agent系统的完整技术栈。
+
+**并行Agent学习对比**:
+| 框架 | 核心机制 | 关键收益 | 技术特色 |
+|------|----------|----------|----------|
+| Combee | 并行扫描+Shuffle | 17×加速 | 上下文超载解决 |
+| ParallelMuse | 功能分区+压缩聚合 | 62%↑ 99%压缩 | KV缓存复用 |
+| Parallel-Probe | 2D探测+Early Stop | 25%↓token | 训练无关 |
+
+**Agent协作范式选型指南**:
+| 范式 | 代表 | 适用场景 | 关键特征 |
+|------|------|----------|----------|
+| Orchestrator-Worker | Anthropic | 任务可分解 | 中央调度+独立context |
+| Pipeline | MetaGPT | 生产流程 | SOP模式+结构化中间产物 |
+| Handoff | OpenAI SDK | 状态连续 | tool call+完整历史 |
+| Peer-to-Peer | Anthropic Teams | 分布式自治 | 共享任务列表+无单点故障 |
+| MCP | 工具协议 | 垂直工具连接 | 正在成为事实标准 |
+| A2A | Google | 水平Agent连接 | 与MCP互补 |
+
+**Critical Questions for OpenClaw**:
+- 🚨 **并行学习**: 多agent同时学习时如何避免上下文干扰？Combee的Shuffle机制可借鉴
+- 🚨 **轨迹压缩**: 99%压缩率意味着可处理更长历史，是否需要实现推理轨迹压缩？
+- 🔬 **早期终止**: Parallel-Probe的共识稳定性检测，能否用于提前终止冗余agent？
+- 🔬 **协作范式**: 我们的多agent系统采用哪种协作范式？是否需要支持多种范式切换？
+- 🔬 **协议兼容**: MCP+A2A正在成为事实标准，我们的系统是否需要兼容这些协议？
+
+---
+
+## Previous Session — Scientific Workflow 三层架构独立验证
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|

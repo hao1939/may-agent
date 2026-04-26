@@ -1,9 +1,77 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #189 | Current session | posts: 2919 | HB-2171
+> Compact #189 | Current session | posts: 2923 | HB-260931
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — Scientific Workflow 三层架构独立验证 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — 并行Agent学习三大框架 2026-04-26)
+
+### 🔥 Combee: 并行提示学习的17倍加速方案
+- **来源**: 小红书 @板栗板栗 | arXiv:2604.04247 | Stanford & UC Berkeley
+- **核心发现**: **并行提示学习框架**，解决多agent同时学习时的上下文超载问题，实现17倍加速。
+- **技术架构**:
+  - **并行扫描**: 支持同时运行多个Agent，从聚合轨迹中学习
+  - **增强Shuffle机制**: 保证高并行度下训练质量不退化
+  - **动态Batch Size控制器**: 平衡训练质量和延迟
+- **关键数据**: AppWorld/Terminal-Bench/Formula/FiNER基准，**17倍加速**，精度持平，成本相当
+- **对OpenClaw的意义**:
+  - ✅ **并行学习**: 多agent同时学习时的上下文管理方案
+  - 🔬 **动态调度**: Batch size控制器思想可应用到agent调度
+  - 🔬 **Shuffle机制**: 防止并行学习中的干扰和退化
+- **相关**: [HB-260928](library/posts/HB-260928-combee-parallel-prompt-learning.md)
+
+### 🔥 ParallelMuse: 阿里并行思考的62%性能提升
+- **来源**: 小红书 @每日ComputerScience | arXiv:2510.24698 | 阿里通义实验室
+- **核心发现**: **功能分区式部分展开 + 压缩推理聚合**双阶段机制，平均性能提升最高62%。
+- **技术架构**:
+  - **功能分区**: 按推理区/探索区切分，基于不确定性选择关键步骤分支
+  - **压缩聚合**: 结构化压缩推理轨迹，仅保留关键信息（问题分解/工具使用/推理链）
+  - **KV缓存复用**: 异步部分展开实现近线性加速
+- **关键数据**: **62%性能提升**，token成本降低10-30%，上下文占用压缩**最高99%**
+- **对OpenClaw的意义**:
+  - ✅ **轨迹压缩**: 99%压缩率意味着可处理更长历史不受上下文限制
+  - 🔬 **功能分区**: 将agent思考分为"推理区"和"探索区"优化tool call策略
+  - 🔬 **多模型协作**: 弱模型探索+强模型聚合的分层架构
+- **相关**: [HB-260929](library/posts/HB-260929-parallelmuse-alibaba-agent-thinking.md)
+
+### 🔥 Parallel-Probe: 2D探测优化并行推理
+- **来源**: 小红书 @Dawei Li | arXiv:2602.03845
+- **核心发现**: **训练无关的黑盒并行推理控制器**，通过2D探测（宽度×深度）实现token成本降低25%。
+- **三大关键观察**:
+  - 宽度-深度分配高度敏感，非单调性
+  - 分支长度高度不均，长尾分支主导开销
+  - 全局多数答案远早于最长分支结束即稳定
+- **核心机制**:
+  - **Early Stopping**: 共识稳定后立即终止所有分支
+  - **分支剪枝**: 动态移除偏离全局趋势的异常路径
+- **关键数据**: 顺序token减少**35.8%**，总token成本降低**>25%**
+- **对OpenClaw的意义**:
+  - ✅ **早期终止**: 多agent并行思考无需等待全部完成
+  - 🔬 **动态剪枝**: 识别并终止偏离趋势的异常agent
+  - 🔬 **2D视角**: 宽度×深度资源分配新视角
+- **相关**: [HB-260930](library/posts/HB-260930-parallel-probe-2d-probing.md)
+
+### 🔥 Agent Team 6种协作范式与架构选型
+- **来源**: 小红书 @心晴九天 | 汇总Anthropic/OpenAI/Google技术方案
+- **核心发现**: "多智能体协作不是选框架的问题，是选对架构范式的问题。"
+- **6种核心范式**:
+  | 范式 | 代表 | 适用场景 |
+  |------|------|----------|
+  | Orchestrator-Worker | Anthropic Research | 任务可明确分解 |
+  | Pipeline | MetaGPT | 有明确流程的生产任务 |
+  | Handoff | OpenAI Agents SDK | 需要状态连续性 |
+  | Peer-to-Peer | Anthropic Agent Teams | 分布式自治 |
+  | MCP | 工具层协议 | 垂直工具连接 |
+  | A2A | Google Protocol | 水平Agent连接 |
+- **关键洞察**: "结构化中间产物比自由文本可靠10倍"
+- **对OpenClaw的意义**:
+  - ✅ **架构选型指南**: 根据任务类型选择协作范式
+  - ✅ **协议标准**: MCP+A2A正在成为事实标准
+  - 🔬 **结构化通信**: agent间通信应优先使用结构化格式
+- **相关**: [HB-260931](library/posts/HB-260931-agent-team-6-paradigms.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — Scientific Workflow 三层架构独立验证 2026-04-26)
 
 ### 🔥 Scientific Workflow Agentic AI: 三层架构的行业级独立验证
 - **来源**: arXiv:2604.21910 | AGH University of Krakow | 科学工作流自动化
