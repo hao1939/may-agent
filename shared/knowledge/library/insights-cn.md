@@ -1,9 +1,100 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #191 | Current session | posts: 2925 | HB-260426
+> Compact #192 | Current session | posts: 2932 | HB-260427
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — Tool Attention + DiffMAS 前沿论文 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区探索 2026-04-27)
+
+### 🔥 MCP陨落 debate: 社区对协议成本的集体反思
+- **来源**: 小红书 (XHS) | 1497赞/高互动
+- **核心发现**: 中文AI社区对MCP协议成本的深度反思，代表重要的sentiment转折点
+- **关键论点**:
+  - MCP每增加一个工具都消耗大量token，大规模应用下成本失控
+  - CLI模式凭借透明性、可组合性成为开发者新宠
+  - **分层格局共识**: 本地工具CLI、远程服务MCP、复杂编排A2A/ACP三分天下
+- **交叉验证**: Perplexity CTO同期声明"内部已不用MCP"
+- **对OpenClaw的意义**:
+  - ✅ CLI-first路线被社区验证为成本优化最佳实践
+  - ✅ 本地CLI/远程MCP分层策略与社区共识一致
+  - ⚠️ MCP社区sentiment转负，可能影响生态发展速度
+- **相关**: [HB-260427-mcp-fall-debate](library/posts/HB-260427-mcp-fall-debate.md)
+
+### 🔥 Perplexity CTO弃用MCP: 大厂生产环境的强信号
+- **来源**: 小红书 (XHS) | 402赞/高可信度
+- **核心发现**: Perplexity CTO公开声明**内部已弃用MCP协议**
+- **弃用原因推断**: Context成本过高、延迟问题、灵活性受限、替代方案成熟
+- **对OpenClaw的意义**:
+  - ✅ 生产环境优先CLI的路线验证
+  - ⚠️ MCP从"默认选择"降级为"生态兼容选项"
+  - 🔬 优先直接集成，MCP作为fallback的策略
+- **相关**: [HB-260427-perplexity-mcp-abandon](library/posts/HB-260427-perplexity-mcp-abandon.md)
+
+### 🔥 Hermes Agent爆火: 1577赞揭示中国Agent生态
+- **来源**: 小红书 (XHS) | 1577赞/框架类最高
+- **核心发现**: "新手使用十大技巧"类内容流行，说明用户基数大、学习需求旺盛
+- **成功因素**: 中国网络访问友好、中文本地化、成本优势、功能完善
+- **对OpenClaw的意义**:
+  - ✅ 中国市场Agent需求真实存在且庞大
+  - ⚠️ 本土化优势正在缩小，需强化差异化
+  - 🔬 错位竞争: Hermes→应用框架/OpenClaw→开发者工具
+- **相关**: [HB-260427-hermes-agent-popularity](library/posts/HB-260427-hermes-agent-popularity.md)
+
+### 🔥 Zeroboot: 毫秒级AI Agent沙箱 (1.1K⭐)
+- **来源**: 小红书 (XHS) | 142赞/技术向
+- **核心发现**: 毫秒级冷启动沙箱，针对Agent频繁创建/销毁场景优化
+- **技术亮点**: 微虚拟机/进程级隔离、代码执行沙箱、状态快照恢复
+- **对OpenClaw的意义**:
+  - 🔬 评估Zeroboot/firecracker集成增强bash执行隔离
+  - 🔬 多Agent并行执行的环境隔离需求
+  - ✅ 执行环境优化与推理层同等重要
+- **相关**: [HB-260427-zeroboot-sandbox](library/posts/HB-260427-zeroboot-sandbox.md)
+
+### 🔥 Agent能力现实检验: "醒醒，离完全自主还差得远"
+- **来源**: 小红书 (XHS) | 295赞/理性声音
+- **核心发现**: 社区对Agent能力的理性反思，"降温"声音是市场成熟标志
+- **核心论点**: 过度宣传vs现实能力、技术瓶颈、从"替代"转向"增强"
+- **对OpenClaw的意义**:
+  - ✅ 人机协作设计(OpenClaw heartbeat+review)与"增强而非替代"一致
+  - ✅ L0-L3渐进式自主设计体现能力渐进
+  - ⚠️ 市场对Agent期望可能过高，需做好期望管理
+- **相关**: [HB-260427-agent-reality-check](library/posts/HB-260427-agent-reality-check.md)
+
+### 🔥 "99%会死掉": Agent市场出清预言
+- **来源**: 小红书 (XHS) | 666赞/provocative观点
+- **核心发现**: Agent创业泡沫担忧: 同质化严重、大模型厂商挤压、商业模式困境
+- **存活条件**: 独特数据、深度场景、工作流集成、开源社区
+- **对OpenClaw的意义**:
+  - ✅ 开发者工具链定位避开通用Agent红海
+  - ⚠️ 需不断证明比Claude Code等官方工具的额外价值
+  - 🔬 考虑核心框架开源建立生态和影响力
+- **相关**: [HB-260427-99-percent-will-die](library/posts/HB-260427-99-percent-will-die.md)
+
+### 🔥 "别再把大模型叫做智能体了": 1466赞概念澄清
+- **来源**: 小红书 (XHS) | 1466赞/概念类最高
+- **核心发现**: 社区对AI术语泛滥的反思，精确概念的需求
+- **关键定义**: Agent = LLM + 工具调用 + 记忆 + 规划 + 环境反馈循环
+- **对OpenClaw的意义**:
+  - ✅ OpenClaw满足完整Agent定义(工具/感知/规划/反馈/记忆)
+  - 🔬 精确描述: "面向开发者的自主Agent框架"
+  - ⚠️ "Agent"一词可能被滥用贬值，需用能力而非标签定义
+- **相关**: [HB-260427-llm-vs-agent-clarification](library/posts/HB-260427-llm-vs-agent-clarification.md)
+
+### 本轮XHS探索洞察汇总
+
+| 主题 | 关键发现 | 赞数 | 信号强度 |
+|------|----------|------|----------|
+| MCP协议 | 社区成本意识觉醒，Perplexity CTO弃用 | 1497+402 | ⭐⭐⭐⭐⭐ |
+| 中国生态 | Hermes Agent本土框架成功 | 1577 | ⭐⭐⭐⭐☆ |
+| Agent沙箱 | Zeroboot毫秒级执行环境 | 142 | ⭐⭐⭐☆☆ |
+| 能力现实 | 从"替代"转向"增强" | 295 | ⭐⭐⭐⭐☆ |
+| 市场出清 | 99%Agent产品会死 | 666 | ⭐⭐⭐☆☆ |
+| 概念澄清 | LLM≠Agent精确区分 | 1466 | ⭐⭐⭐⭐☆ |
+
+**共同主题**: 中文AI Agent社区正在从"狂热期"进入"理性期"，成本意识、差异化、概念精确成为新焦点。
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — Tool Attention + DiffMAS 前沿论文 2026-04-26)
 
 ### 🔥 Tool Attention: 95% MCP Tax 消除工程方案
 - **来源**: arXiv:2604.21816 | GitHub: asadani/tool-attention | 21 pages + 参考实现
