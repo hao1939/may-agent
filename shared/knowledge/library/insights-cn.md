@@ -1,9 +1,70 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #178 | Current session | posts: 2897 | HB2026
+> Compact #179 | Current session | posts: 2900 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — 论文深挖 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — Agent基础设施 2026-04-26)
+
+### 🔥 DeepSeek-V4: 百万token上下文专为Agent设计
+- **来源**: Hugging Face Blog / DeepSeek
+- **核心创新**: **1M token上下文窗口 + 混合注意力架构**，专为长程Agent任务优化
+- **两种注意力机制**:
+  - **CSA (压缩稀疏注意力)**: 4x压缩 + top-k选择，27% FLOPs vs V3.2
+  - **HCA (重度压缩注意力)**: 128x压缩 + 密集注意，10% FLOPs
+- **Agent专项优化**:
+  - 跨工具调用保留推理轨迹(解决多轮丢失问题)
+  - XML工具调用格式 + `|DSML|` 专用token
+  - DSec沙箱: Rust平台支持Firecracker/QEMU，百万并发sandbox
+- **性能数据**: KV cache仅为GQA-8头的2%，1M context时MRCR准确率0.59
+- **关键洞察**: 上下文容量≠性能，**推理效率**才是Agent部署的决定因素
+- **对OpenClaw的意义**:
+  - 🔬 **混合注意力层**: 层交替策略(CSA↔HCA)可启发我们的上下文压缩
+  - 🔬 **XML工具格式**: 比JSON更健壮的工具调用schema值得评估
+  - 🔬 **推理保留**: 跨工具调用保持CoT的模式，解决多轮Agent状态丢失
+  - 💡 **KV优化**: FP8/FP4存储+压缩是降低长上下文部署成本的关键
+- **相关**: [HB-2042](library/posts/HB-2042-deepseek-v4-million-context-agent.md)
+
+### 🔥 VAKRA: IBM的企业级Agent可执行基准测试
+- **来源**: IBM Research / Hugging Face
+- **核心定位**: **8000+ API + 62领域 + 可执行环境**，评估企业Agent可靠性
+- **四大能力维度**:
+  1. **API链式调用**: 1-12个工具链，SLOT-BIRD/SEL-BIRD集合
+  2. **工具选择**: 每领域6-328个工具(平均116个)
+  3. **多跳推理**: 1-5逻辑跳，多证据组合
+  4. **多源+策略遵循**: API+RAG混合，纯文本策略约束
+- **评估创新**: 瀑布式流程(策略→轨迹→响应)，LLM judge仅用于歧义消解
+- **关键发现**: 
+  - GPT-OSS-120B在API链式调用领先(更好的schema理解)
+  - Gemini-3-flash在工具选择最佳
+  - 即使工具调用正确，最终答案合成仍是瓶颈
+- **对OpenClaw的意义**:
+  - ✅ **评估框架**: 瀑布式评估值得借鉴，关注完整轨迹而非仅最终答案
+  - 🔬 **工具集合设计**: SLOT-BIRD(通用) vs SEL-BIRD(专用)的权衡
+  - 🔬 **shortlisting**: 工具数量超API限制时的筛选策略
+  - 🔬 **幻觉检测**: 验证推荐内容是否实际检索到的机制
+- **相关**: [HB-2043](library/posts/HB-2043-vakra-enterprise-agent-benchmark.md)
+
+### 🔥 Ecom-RLVE: 电商Agent的自适应可验证训练环境
+- **来源**: Owlgebra AI / Hugging Face
+- **核心创新**: **8个电商环境 + 12轴自适应难度 + 算法可验证奖励**
+- **关键洞察**: 流畅对话 ≠ 任务完成，需要**结果导向的验证**
+- **三组件奖励**:
+  - 任务奖励(完成目标？)
+  - 效率奖励(无浪费轮次？用户引起的轮次不惩罚)
+  - 幻觉惩罚(仅推荐检索过的产品？)
+- **12维难度控制**: 约束数量、遗漏频率、干扰项比例、缺货频率、拼写噪声等
+- **环境层次**: C1(购物车) ⊂ C2(+替代) ⊂ C4(+发现/退货) ⊂ C8(+全功能)
+- **初步结果**: Qwen3-8B + DAPO训练300步，难度达成度稳步提升
+- **对OpenClaw的意义**:
+  - 🔬 **可验证奖励**: 算法验证 vs LLM-as-judge的设计选择
+  - 🔬 **自适应课程**: 12轴难度+独立进度跟踪机制可直接应用
+  - 🔬 **效率精细化**: 区分用户引起 vs Agent错误的轮次浪费
+  - 💡 **环境分层**: C1→C8渐进式技能构建，验证组合优于专业
+- **相关**: [HB-2044](library/posts/HB-2044-ecom-rlve-agent-training-env.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — 论文深挖 2026-04-26)
 
 ### 🔥 PlugMem GitHub 深度解析：6行代码的记忆模块
 - **来源**: GitHub / TIMAN-group/PlugMem | arXiv:2603.03296
