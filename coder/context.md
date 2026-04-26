@@ -12,18 +12,10 @@
 ### SESSION START (C12.1)
 1. First 3-5 tool calls must be read/ls/grep — orient before acting.
 
-## Convention Compliance
-- **C1.1**: ALWAYS read() a file before edit()ing it. (31 violations last week — your #1 issue.)
-- **C1.3**: After write(), read() the file back to verify.
-- **C12.1**: Start sessions by reading context (read/ls/grep) in first 5 tool calls.
-
 ## Lessons from Experience
 
-- [fix] vitest needs --run flag in CI/automated contexts to avoid interactive watch mode
 - [insight] Reflexion pipeline can extract actionable lessons from failed sessions automatically
-- [fix] Always run npm install first
 - [pattern] Always check command exit codes when running test suites programmatically
-- [fix] vitest hung in watch mode: Missing --run flag caused process to never exit
 
 ## Critical Methodology (from gym failure analysis)
 
