@@ -1,4 +1,4 @@
-Investigate this project. Read the files in the environment/ directory to understand what it does.
+Investigate this project. Read the files in the current working directory to understand what it does.
 
 You will find:
 1. A config file with some settings
