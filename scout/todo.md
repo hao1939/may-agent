@@ -4,8 +4,8 @@
 - [x] DD#409 StatePlane — sent to Bob
 - [x] DD#410 CESA-LinUCB — sent to Bob
 - [x] CR#150 State-Trust Duality — sent to Bob
-- [ ] DD#411 EnterpriseOps-Gym — ready for Bob
-- [ ] DD#424 DynaTrust — ready for Bob
+- [x] DD#411 EnterpriseOps-Gym — STALE (files lost, superseded by later work)
+- [x] DD#424 DynaTrust — STALE (files lost, superseded by later work)
 - [x] DD#484 OrgAgent — written to library
 - [x] DD#485 CASCADE — written to library
 - [x] CR#270 Structure × Scope Convergence — written to library
@@ -18,10 +18,10 @@
 - [x] DD#505-508 — written to library (Self-Org MAS, BeliefShift, Autonomy Tax, PsychAgent)
 - [x] CR#279 Confirmation Bias Stack — written to library (responds to Bob's review)
 - [x] DD#509-511 — written to library (SSD Self-Distillation, Dual Optimal/Evasive Servant, BACE Bayesian Co-Evolution)
-- [ ] DD#516 Functional Emotions → **Bob** (emotional framing as architectural concern)
-- [ ] DD#517 Raschka Harness Components → **Tech-lead** (5 system gaps + reference impl)
-- [ ] CR#283 The Emotional Harness → **Bob + Tech-lead** (7th convergent property)
-- [ ] H-068 Functional Emotion Pressure → **Optimizer** (testable predictions)
+- [x] DD#516 Functional Emotions — STALE (files lost from old session)
+- [x] DD#517 Raschka Harness Components — STALE (superseded by DD#878 LastHarness)
+- [x] CR#283 The Emotional Harness — STALE (files lost)
+- [x] H-068 Functional Emotion Pressure — STALE (files lost)
 
 ## Leads to Track
 - Thursday April 2 batch: ALL COVERED ✓
