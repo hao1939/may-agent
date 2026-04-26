@@ -7,7 +7,31 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — XHS中文社区: MCP协议反思/多智能体协调/工具定位之争
+## Fresh Arrivals (Current Session) — arXiv前沿: Tool Attention/DiffMAS/Reasoning Skills
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **Tool Attention** (arXiv 2604.21816) | **95% MCP Tax削减**。动态工具门控+懒加载，每轮token从47.3k→2.4k，上下文利用率24%→91%。| [HB-0030](library/posts/HB-0030-tool-attention-mcp-tax.md) |
+| 2026-04-26 | **DiffMAS** (arXiv 2604.21794) | **端到端潜在通信**。KV缓存代替文本通信，联合优化推理+通信编解码，AIME24达26.7%。| [HB-0031](library/posts/HB-0031-diffmas-multiagent-latent-comm.md) |
+| 2026-04-26 | **Reasoning Skills** (arXiv 2604.21764) | **不要从零推理**。检索可复用推理技能，显著减少token同时提升准确率。ACL 2026 Industry Track。| [HB-0032](library/posts/HB-0032-reasoning-skills-retrieval.md) |
+
+**Key Takeaway**: 三篇论文共同揭示Agent效率优化的三个前沿方向：
+
+**Tool Attention** (协议层): (1) **MCP Tax量化** — 每轮10k-60k token的隐藏成本终于被测量；(2) **动态门控** — ISO分数(意图-schema重叠)+状态感知门控决定加载哪些工具；(3) **两阶段懒加载** — 常驻紧凑摘要池+按需完整schema，95%成本削减；(4) **核心结论** — 协议效率比原始上下文长度更关键。
+
+**DiffMAS** (通信层): (1) **文本非最优** — 自然语言适合人机通信，Agent间应使用KV缓存表示；(2) **端到端学习** — 通信编码/解码应与推理联合训练，而非手工设计；(3) **性能增益** — 数学推理26.7%、科学QA 20.2%， consistently优于文本多Agent系统；(4) **架构张力** — 当前文本协调可能次优，但潜在通信需要联合训练。
+
+**Reasoning Skills** (认知层): (1) **技能蒸馏** — 从大量试错中提取成功模式；(2) **检索增强推理** — 先召回相关技能，再开始推理；(3) **效率提升** — 更少token、更高准确率；(4) **SKILL.md验证** — 我们的技能文件就是推理技能的实现！
+
+**Critical Questions for OpenClaw**:
+- **Tool Attention集成**: 远程工具是否采用Tool Attention中间件？如何实现与CLI-first的共存？
+- **潜在通信实验**: 高频Agent交互(如evaluator)能否使用结构化数据替代自然语言？
+- **技能检索升级**: SKILL.md如何从手动选择进化为自动检索？需要哪些元数据索引？
+- **协议分层**: 本地CLI → 远程Tool Attention → 复杂编排MCP的三层架构是否合理？
+
+---
+
+## Previous Session — XHS中文社区: MCP协议反思/多智能体协调/工具定位之争
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|

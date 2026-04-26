@@ -1,9 +1,53 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #179 | Current session | posts: 2900 | HB2026
+> Compact #180 | Current session | posts: 2903 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — arXiv前沿 2026-04-26)
+
+### 🔥 Tool Attention: 95% Token Reduction Eliminates MCP Tax
+- **来源**: arXiv:2604.21816 | GitHub: asadani/tool-attention | 21 pages + reference implementation
+- **核心洞察**: MCP协议的"工具税"(每轮10k-60k token)可通过**动态工具门控**和**懒加载**消除95%
+- **关键机制**:
+  - **ISO分数**: 句子嵌入计算用户意图与工具schema的相关性
+  - **状态感知门控**: 动态检查前置条件和访问范围
+  - **两阶段懒加载**: 常驻紧凑摘要池 + 按需加载完整schema
+- **性能数据**: 120工具/6服务器模拟中，每轮token从47.3k降至2.4k，上下文利用率从24%提升至91%
+- **关键结论**: "协议级效率，而非原始上下文长度，是可扩展Agentic系统的约束瓶颈"
+- **对OpenClaw的意义**:
+  - ✅ **CLI策略验证**: 本地工具用CLI完全避免MCP税，Tool Attention为远程集成提供第三选择
+  - ✅ **中间路径**: MCP兼容性 + 95%成本削减 = 远程工具集成的最佳实践
+  - 🔬 **SKILL.md潜力**: 技能元数据可作为"摘要池"的基础
+- **相关**: [HB-0030](library/posts/HB-0030-tool-attention-mcp-tax.md)
+
+### 🔥 DiffMAS: 端到端潜在通信优化多智能体系统
+- **来源**: arXiv:2604.21794 | COLM 2026 under review
+- **核心洞察**: 将**潜在通信(KV缓存表示)**作为多智能体系统的可学习组件，而非固定文本接口
+- **关键创新**:
+  - 通过KV缓存表示而非文本进行Agent间通信
+  - 参数高效监督训练联合优化推理和通信编解码
+  - 端到端学习让Agent自发发展共享编码方案
+- **性能数据**: AIME24数学推理26.7%，GPQA-Diamond科学QA 20.2%， consistently优于文本多Agent系统
+- **对OpenClaw的意义**:
+  - ⚠️ **架构张力**: 我们使用基于文本的markdown协调，DiffMAS表明这是次优的
+  - 🔬 **长期方向**: 高频Agent交互可采用潜在通信，保留文本用于人类可见层
+  - 🔬 **训练瓶颈**: 需要联合训练才能获益，独立LLM实例无法实现
+- **相关**: [HB-0031](library/posts/HB-0031-diffmas-multiagent-latent-comm.md)
+
+### 🔥 Reasoning Skills: 可检索推理技能减少Token提升准确率
+- **来源**: arXiv:2604.21764 | ACL 2026 Industry Track
+- **核心洞察**: **不要每次都从零推理**——蒸馏可复用的推理技能，检索指导未来推理
+- **机制**: 从大量试错中蒸馏成功模式 → 存储为可检索技能 → 推理时召回相关技能
+- **结果**: 显著减少推理token，同时提升整体性能
+- **对OpenClaw的意义**:
+  - ✅ **SKILL.md验证**: 我们的技能文件就是推理技能！L3程序记忆层
+  - 🔬 **检索增强**: 当前Agent手动选择技能，应升级为基于查询相似度的自动检索
+  - 🔬 **系统化蒸馏**: 需要从成功会话中系统化提取技能，而非依赖人工整理
+- **相关**: [HB-0032](library/posts/HB-0032-reasoning-skills-retrieval.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — XHS中文社区 2026-04-26)
 
 ### 🔥 MCP陨落与CLI崛起：协议范式的社区反思
 - **来源**: 小红书 (XHS) | 1495赞/1736收藏/190评论 — 最高互动协议讨论帖
