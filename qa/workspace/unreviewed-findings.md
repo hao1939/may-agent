@@ -1,13 +1,15 @@
-# Unreviewed findings (QA heartbeat) — 2026-04-26
+# Unreviewed QA Findings (heartbeat)
 
-## Environment/test runner issues
-- `./node_modules/.bin/tsc --noEmit` does not run a project build; it prints TypeScript CLI help and exits with code 1. This strongly suggests the repo root is missing a `tsconfig.json`, or the command is being run from a directory without one. Evidence: QA heartbeat tool output (tsc help text, exit code 1).
-- `./node_modules/.bin/vitest --run` is not present (`No such file or directory`, exit code 127). Evidence: QA heartbeat tool output.
+Date: 2026-04-26
 
-Impact: QA cannot currently perform the mandatory verification steps in this environment as specified (tsc + vitest). This is a pre-existing environment/config issue to resolve if TypeScript/vitest checks are intended at repo root.
+## Context
+- Recent commit inspected: `0901093` adds `.state/experiments/EXP-230-concept-lookup-deployment.md` (documentation only).
 
-## Recent change spot-check
-- Latest commit `0901093` adds `.state/experiments/EXP-230-concept-lookup-deployment.md` which claims a new tool `agents/shared/knowledge/ke-lookup.sh`.
-- Verified `agents/shared/knowledge/ke-lookup.sh` exists and runs for a sample query (`verification`), returning KE links as expected.
+## Mandatory checks status (blocked by repo setup)
+- `./node_modules/.bin/tsc --noEmit` fails because there is no `tsconfig.json` at repo root; running with `-p agents/tsconfig.json` fails with **TS18003** (no inputs) because `/app/agents/tsconfig.json` includes `src/**/*.ts`, but the repo does not appear to have `/app/agents/src`.
+- `./node_modules/.bin/vitest --run` fails because `vitest` is not installed in this repo (`./node_modules/.bin/vitest` missing; `package.json` only depends on `typescript`).
 
-Potential issue to verify: the script assumes `concept-index.md` exists at `agents/shared/knowledge/concept-index.md`; if absent or moved, the script will fail under `set -euo pipefail`. Consider adding an explicit check/error message.
+## Notes
+This heartbeat could not complete the mandated TypeScript and Vitest verification steps due to environment/project configuration. If this repository is intended to run TS+Vitest checks, we need:
+- a root `tsconfig.json` (or correct `-p` path) with valid `include` globs for actual source locations, and
+- `vitest` added to dependencies/devDependencies.
