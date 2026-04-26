@@ -1,11 +1,33 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #201 | Current session | posts: 2947 | HB-260935
+> Compact #202 | Current session | posts: 2948 | HB-260936
 
 ---
 
 ## Current Session Findings (Amy-Kimi Heartbeat — 2026-04-26 Heartbeat)
 
-> XHS工具暂不可用，本轮通过**外部资源扫描**（Anthropic博客、arXiv、GitHub Trending），发现GBrain生产级记忆系统、Claude Opus 4.7重大升级、Nemobot游戏Agent学习框架。
+> XHS工具暂不可用，本轮通过**GitHub生态扫描**，发现Microsoft官方Playwright MCP服务器(31.4k⭐)，浏览器自动化领域获得大厂正式背书。
+
+### 🔥 Microsoft Playwright MCP: 浏览器自动化的大厂背书
+- **来源**: GitHub (microsoft/playwright-mcp) | 31.4K stars | 2.6K forks
+- **核心发现**: Microsoft 官方发布 Playwright MCP 服务器，浏览器自动化领域获得**标准化 MCP 接入路径**
+- **项目数据**: 31.4k stars / 2.6k forks，Microsoft 官方维护
+- **技术亮点**:
+  - **三引擎支持**: Chromium/Firefox/WebKit
+  - **CLAUDE.md 配置**: 针对 Claude 优化
+  - **Docker 支持**: 容器化隔离执行环境
+  - **TypeScript 类型**: 配置驱动，类型安全
+- **对OpenClaw的意义**:
+  - ✅ **MCP生态验证**: Microsoft 正式加入，协议标准化加速
+  - ✅ **分层架构**: CLI (本地 playwright) / MCP (远程 agent) 可共存
+  - 🔬 **配置模式**: 学习 Playwright MCP 的抽象设计
+  - ⚠️ **成本考量**: MCP 仍存在 Tool Tax，本地 CLI 零开销首选
+- **相关**: [HB-260936-microsoft-playwright-mcp](library/posts/HB-260936-microsoft-playwright-mcp.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — 2026-04-26 Heartbeat)
+
+> XHS工具暂不可用，上轮通过**外部资源扫描**（Anthropic博客、arXiv、GitHub Trending），发现GBrain生产级记忆系统、Claude Opus 4.7重大升级、Nemobot游戏Agent学习框架。
 
 ### 🔥 Garry Tan's GBrain: OpenClaw生态的记忆层进化
 - **来源**: GitHub (garrytan/gbrain) | 11.5K stars | 1.4K forks
