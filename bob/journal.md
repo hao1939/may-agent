@@ -712,24 +712,35 @@ H-054 P(H) updated to 0.65 (from 0.50). Phase 2 (inter-rater reliability measure
 - Fix the finish() gap: either update scorer to accept agent_status=completed, or update gym task injection to include finish() instruction
 - Run full core 20 re-baseline after fix
 
-## 2026-04-26 Heartbeat
+## 2026-04-27 Heartbeat
 
-### Core 20 Baseline Complete
-- Ran all 20 core benchmark scenarios with `--agent coder`
-- **Result: 8/20 (40%)**
-- Perfect on bug-fixing (3/3) and integrity (1/1)
-- Failed on verification (0/2), optimizer-workflow (0/2), judgment (1/4)
-- Key insight: agent handles concrete coding tasks well but fails at meta-cognitive tasks (reading context before acting, following output protocols, exercising restraint)
-- Results in: `agents/bob/workspace/projects/gym-leverage-ow/.state/gym-baseline.md`
-- Phase 2 of gym-leverage-ow complete. Phase 3 (feedback loop) next.
+### Gym Runner Blocker Discovered
+- Attempted Core 20 re-baseline with live agent
+- **BLOCKER**: `may-agent --oneshot --agent amy --task-file <path>` ignores the task file — agent receives its standard heartbeat prompt instead
+- Transcript shows amy-kimi browsing XHS when it should be solving context-learning scenario
+- This means ALL previous "live agent" gym results may be unreliable
+- No "coder" agent exists in the system (available: master, amy-kimi, judge, optimizer, scout, bob, amy, coach, tech-lead, may, evaluator, qa)
+- Escalated to tech-lead as P1 blocker
+
+### EXP-223 Pivot: Scorer Audit Instead of Transcript Audit
+- Can't run EXP-223 (Agreement Trap Audit) without valid gym transcripts
+- Audited judgment scenario scorers instead: ambiguous-context-drift, approach-validation-trap, assertion-without-evidence
+- Finding: All three test genuine, verifiable capabilities (filesystem verification, evidence reading, integration test running)
+- These are NOT "agreement trap" false positives — they're real agent weaknesses
+- Revised prediction: EXP-223 would likely show <10% defensible failures (vs original prediction of ≥30%)
 
 ### Inbox Triage
-- All paper notifications (StructMem, SWARM, GAAMA, COSPLAY, etc.): dismissed — informational, connections already noted by scout
-- P1 productivity warnings: dismissed — metrics healthy (96% exp completion)
-- EXP-216 superseded: acknowledged
-- DD#880 experience compression: noted, connects to H-195 (already proposed)
+- All P2 paper notifications (StructMem, SWARM, GAAMA, COSPLAY, Scientific Workflow, meta-evolution, cooperative profiles): dismissed — informational, connections already noted
+- DD#880 (Experience Compression): noted, connects to existing work
+- DD#883 (Agreement Trap): acted on — audited scorers
+- P1 productivity/waste warnings: dismissed — metrics healthy (96% exp completion, 64% hypotheses resolved)
+
+### Projects
+- **gym-leverage-ow**: BLOCKED on runtime --task-file bug. Updated project.md with blocker details.
+- **agent-system-literacy**: waiting on human review. No action.
+- **master-worker-test / test-2**: waiting on human review. No action.
 
 ### Next
-- Phase 3: Design gym-driven evolution feedback loop
-- Target worst categories first: verification and optimizer-workflow (0% pass rate)
-- Investigate whether failing scenarios are true capability gaps or scorer/adapter issues
+- Await tech-lead response on gym runner --task-file fix
+- Once fixed: re-baseline Core 20, then Cycle 2 targeting Verification (0/2)
+- Alternative: design experiments that don't require gym runs
