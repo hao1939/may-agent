@@ -1,9 +1,33 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #188 | Current session | posts: 2918 | HB-2170
+> Compact #189 | Current session | posts: 2919 | HB-2171
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — Tool Attention & COSPLAY 深度验证 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — Scientific Workflow 三层架构独立验证 2026-04-26)
+
+### 🔥 Scientific Workflow Agentic AI: 三层架构的行业级独立验证
+- **来源**: arXiv:2604.21910 | AGH University of Krakow | 科学工作流自动化
+- **核心发现**: 来自AI科学工作流领域的**三层架构独立验证** — 语义层(非确定性)+确定性层+知识层(Skills)，与OpenClaw设计**高度同构**。
+- **三层映射**:
+  | 层级 | 论文设计 | OpenClaw映射 |
+  |------|----------|--------------|
+  | Semantic Layer | LLM提取结构化意图 | L0意图理解 |
+  | Deterministic Layer | 验证生成器产生DAG | L1/L2执行编排 |
+  | Knowledge Layer | Markdown Skills | SKILL.md |
+- **关键设计原则**: "将LLM非确定性限制在意图提取层，相同意图始终产生相同工作流"
+- **性能数据**: 150查询消融研究，Skills提升意图准确率44%→83%（**+39pp**），数据传输-92%
+- **Skills vs Few-Shot**: Skills是持久、版本控制、可审计的专家文档；Few-Shot是临时注入的prompt片段
+- **对OpenClaw的意义**:
+  - ✅ **架构独立验证**: 不同领域(AI科学工作流/软件工程Agent) converging on 三层架构
+  - ✅ **Skills作为知识层**: Markdown-based Skills被独立发现为最佳实践
+  - ✅ **专家可编辑性**: Skills由领域专家维护(非ML工程师)是规模化关键
+  - 🔬 **Skill质量量化**: 如何测量单个Skill对意图准确率的贡献？
+  - 🔬 **延迟加载**: 按需加载Skill可减少Session数据传输(论文-92%)
+- **相关**: [HB-2171](library/posts/HB-2171-scientific-workflow-agentic-ai.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — Tool Attention & COSPLAY 深度验证 2026-04-26)
 
 ### 🔥 Tool Attention: 95% MCP Tax 消除的工程方案
 - **来源**: arXiv:2604.21816 | GitHub: asadani/tool-attention | 21 pages + 参考实现
