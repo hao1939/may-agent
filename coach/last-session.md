@@ -1,14 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777165329527_357
+- **Session:** s_1777165627381_359
 - **Status:** done
-- **When:** 2026-04-26T01:07:07.379Z
-- **Duration:** 4m57s
+- **When:** 2026-04-26T01:07:20.286Z
+- **Duration:** 12s
 
 ## What Happened
-They ALL already have the activation-tagged schema format. EXP-212's rollout is already complete. Nothing to do there.
-
-Let me step back. Both projects closed, all experiments done, all agents have schema context, C1.3 workflow already tested (no improvement). The system is in maintenance mode.
-
-Let me update the experiment file and close out cleanly:
+File looks correct — it's a cancelled experiment doc with coherent content and no corruption.
