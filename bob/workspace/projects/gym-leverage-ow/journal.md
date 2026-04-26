@@ -146,3 +146,30 @@ BLOCKED: The gym runner's `--oneshot --task-file` flag doesn't inject task conte
 
 Resume when: The `may-agent --oneshot --task-file` flag correctly injects task content, OR an alternative reliable execution mode for gym scenarios is documented and available.
 
+### Iteration 2 — 2026-04-26T07:46:29.933Z
+**Worker**: **Status:** done (9m0s)
+
+**Files modified:**
+- agents/bob/workspace/exp225-run.sh
+- agents/bob/workspace/exp225-results.md
+
+**Files read (not modified):**
+- .state/experiments/EXP-225-workspace-enumeration.md
+- agents/test/gym/.gym-runner-bundle.mjs
+
+**Errors encountered:**
+- [bash] wc: src/gym/runner.ts: No such file or directory
+
+
+Command exited with code 1
+
+**Agent response:**
+Now update the experiment design file with status:
+**Reviewer**: CONTINUE — — The worker successfully completed the EXP-225 experiment (12 runs, null result, well-documented). Now pivot to the remaining gym infrastructure milestones.
+
+**(a) Concrete output:** `.state/gym-architecture.md` documenting the runner → adapter → scenario → scorer pipeline, based on reading the actual gym runner bundle code.
+
+**(b) What's different:** Previous iterations focused on EXP-225 and the `--oneshot` blocker. The experiment is now complete (null result, hypothesis rejected). Shifting to the gym documentation and baseline milestones. The `--oneshot` blocker appears resolved since the worker successfully ran 12 gym scenarios.
+
+**(c) First step:** Read `agents/test/gym/.gym-runner-bundle.mjs` to understand the full runner → adapter → scenario → scorer pipeline, then produce `.state/gym-architecture.md`. After that, enumerate all scenario directories with `ls agents/test/gym/scenarios/` to start categorizing the 431 scenarios for `.state/gym-categories.md`.
+
