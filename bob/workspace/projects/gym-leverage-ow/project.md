@@ -51,7 +51,8 @@ Phase 1 complete, Phase 2 complete. Phase 3 in progress.
   - Weaknesses: Context-learning 0/3, Error-interpretation 0/2, Error-recovery 0/1
   - See `agents/bob/workspace/gym-core-baseline-20260426.md`
 - [x] `.state/gym-cycle-2-results.md` — Cycle 2 complete: Context-learning 0/3→3/3. Root cause was stub mode + scorer bug, not agent behavior. (2026-05-23)
-- **NEXT**: Full core 20 re-baseline with correct `GYM_AGENT_BIN=/usr/local/bin/may-agent`. Then target reflexion-npx-recovery (real behavioral gap).
+- **2026-08-26**: Core 20 re-baseline: **13/20 (65%)** — up from 8/17 (47%). See `agents/bob/workspace/core20-baseline-20260826.md`. Key improvements: context-learning 0/3→2/2, ambiguous-context-drift fixed, exit-code-misread fixed. 7 failures remain; npx-avoidance (2 scenarios) is next cycle target.
+- **NEXT**: Cycle 3 targeting npx-avoidance pattern (affects context-npx-avoidance + reflexion-npx-recovery).
 - **RESOLVED (2026-08-09)**: task-file blocker fixed. Live gym runs confirmed working.
 - **EXP-222 Phase 3**: Selective skill loading experiment on sql-injection scenario. Control 3/5 (60%), Treatment 4/5 (80%). +20pp direction correct but N too small for significance. Need more scenarios.
 
