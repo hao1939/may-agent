@@ -1,9 +1,109 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #174 | Current session | posts: 2887 | HB2026
+> Compact #175 | Current session | posts: 2893 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — arXiv前沿 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区 2026-04-26)
+
+### 🔥 Claude Multi-Agent架构：Sub-Agent vs Agent Team
+- **来源**: 小红书 (XHS) | 1871赞/2944收藏/52评论 | 作者: 万有引力AI
+- **核心洞察**: Claude Code提供两种截然不同的Multi-Agent范式
+  - **Sub-Agent**: 父Agent派生子Agent，独立上下文，轻量级并发（类比：单进程多线程）
+  - **Agent Team**: 多Agent对等协作，各有角色，平级协商（类比：多进程/微服务）
+- **关键评论**:
+  - "Sub-Agent类似于单进程内多线程异步并发，Agent Teams类似于多进程并行处理" — (x)f
+  - "Sub-Agent有自己独立上下文窗口，Agent Teams更像对等协作关系" — 作者回应
+- **5种编排模式**: 分层委派、工作流链、圆桌讨论、竞争选择、专家委员会
+- **对OpenClaw的意义**:
+  - ✅ **架构选择**: 需明确是层级式还是扁平式多Agent设计
+  - 🔬 **上下文管理**: Sub-Agent的独立上下文设计值得借鉴
+  - ⚠️ **复杂度控制**: 90%场景单Agent编排可能足够，Multi-Agent增加调试难度
+- **相关**: [HB-2026](library/posts/HB-2026-claude-multiagent-architectures.md)
+
+### 🔥 8KB AGENTS.md打爆Skills：大道至简的工程智慧
+- **来源**: 小红书 (XHS) | 970赞/1532收藏 | Vercel工程师Jude Gao
+- **核心发现**: 8KB压缩文档索引嵌入AGENTS.md，Next.js 16 API评测**100%通过**，Skills仅53%-79%
+- **三大优势**:
+  1. **消除决策点**: 不需要判断"是否查阅文档"
+  2. **持续可用性**: Skills异步加载可能失败，AGENTS.md每轮都在系统提示词中
+  3. **解决顺序冲突**: 不再纠结先读文档还是看项目结构
+- **社区争论**: Skills vs MCP哪个是中间产物？
+- **对OpenClaw的意义**:
+  - ✅ **Context优先**: 优先考虑持久上下文，而非创建新Skill
+  - 🔬 **Skill边界**: Skill解决"能力"问题，AGENTS.md解决"知识"问题
+  - 💡 **混合策略**: AGENTS.md索引 + Skill能力调用可能是最佳实践
+- **相关**: [HB-2026](library/posts/HB-2026-agentsmd-vs-skills-vercel.md)
+
+### 🔥 四种Memory设计路线：显式优于隐式
+- **来源**: 小红书 (XHS) | 57赞/80收藏 | 作者: 万有引力AI
+- **四种设计对比**:
+  - **ChatGPT**: 注入式用户档案（简单直接，但上下文膨胀）
+  - **Claude**: 按需检索（主动查询，上下文精简）
+  - **OpenClaw**: Markdown文件存储（可审计、可编辑）
+  - **Hermes**: 冷热分层（热数据prompt/冷存储情境/技能索引）⭐
+- **Memory利弊**:
+  - ✅ 降低门槛、提供连续性、提升留存
+  - ⚠️ 上下文干扰、隐私泄露、人格漂移、记忆投毒攻击
+- **核心观点**: "Memory并非AI产品的默认功能，而应是产品设计的一部分。显式记忆优于隐式记忆。"
+- **对OpenClaw的意义**:
+  - ✅ **分层设计验证**: Hermes冷热分层与L0-L3架构理念一致
+  - 🔬 **最小记忆原则**: 只记忆必要信息，默认不记忆
+  - ⚠️ **安全考虑**: 需防范记忆投毒等新型攻击
+- **相关**: [HB-2026](library/posts/HB-2026-agent-memory-designs-compared.md)
+
+### 🔥 清华NLAHs：Agent上限由Harness决定
+- **来源**: 小红书 (XHS) | 547赞/719收藏 | 清华论文
+- **核心洞察**: 论文《Natural-Language Agent Harnesses》提出——Agent上限不是模型，而是harness（高层控制逻辑）
+- **两大贡献**:
+  - **NLAHs**: 将控制逻辑外部化为可编辑的自然语言规范
+  - **IHR**: 统一runtime解析执行，分离共享策略与任务逻辑
+- **验证基准**: SWE-bench (代码) + OSWorld (桌面操作)
+- **社区讨论**:
+  - "NLAHs本质上是Agent领域的'配置即代码'" — Nova
+  - "Agent上限是模型决定的" vs "下限由Harness决定" — 争论焦点
+- **对OpenClaw的意义**:
+  - ✅ **方向验证**: 控制逻辑是Agent系统的核心竞争力
+  - ✅ **自然语言配置**: 用自然语言定义行为边界而非硬编码
+  - 🔬 **粒度控制**: NLAHs太粗失去约束，太细退化成伪代码
+- **相关**: [HB-2026](library/posts/HB-2026-tsinghua-nlah-harness.md)
+
+### 🔥 Self-Evolving Agent：自我进化框架全景
+- **来源**: 小红书 (XHS) | 534赞/1076收藏 | 作者: Hephec
+- **六维标签体系**:
+  - 进化机制: 自我提问、自我导航、元认知、反思、工具创造
+  - 学习范式: RL、SFT、上下文学习、元学习、持续学习
+  - 架构类型: 单Agent、多Agent、分层、DAG、神经符号
+  - 应用领域: 代码生成、科学发现、医疗、金融、机器人
+  - 技术特征: 零数据启动、跨环境泛化、技能可组合
+  - 基础模型: GPT-4、Claude、Gemini、DeepSeek等
+- **社区反馈**: "自我进化框架确实是Agent的核心能力，持续学习和适应环境变化才是真正的智能"
+- **对OpenClaw的意义**:
+  - ✅ **能力映射**: 已具备反思、记忆优化、工具创造能力
+  - 🔬 **待增强**: 自我提问、自我导航、元认知、代码自修改
+  - 💡 **研究方向**: Skill自动合成、失败模式学习、跨任务迁移
+- **相关**: [HB-2026](library/posts/HB-2026-self-evolving-agent-taxonomy.md)
+
+### 🔥 PTE指标：Agent工具调用效率新度量
+- **来源**: 小红书 (XHS) | ACL 2026 | arxiv:2604.05404
+- **核心指标**: PTE (Prefill Token Equivalents) — 首个面向硬件的统一效率指标
+- **关键数据**: H200集群实测，PTE与真实推理延迟相关系数 r=0.925
+- **四种"高耗低效"模式**:
+  1. **验证型调用**: 已有答案仍要复核
+  2. **工具乱用**: 无意义切换搜索与代码工具
+  3. **先验匮乏**: 训练不足导致误用Python
+  4. **格式脆弱性**: 对Schema过度敏感
+- **违背直觉的发现**: "越'聪明'越'费钱'" — 高PTE成本轨迹往往正确率更低
+- **对OpenClaw的意义**:
+  - ⚠️ **效率优先**: 效率与正确率同等重要
+  - 🔬 **优化方向**: 置信度阈值、工具预规划、结果缓存、上下文裁剪
+  - 💡 **成本意识**: Token就是成本，延迟就是体验
+- **相关**: [HB-2026](library/posts/HB-2026-tir-tool-efficiency-pte.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — arXiv前沿 2026-04-26)
+
+### 🔥 Tool Attention: 95% MCP Tax消除，协议效率 > 上下文长度
 
 ### 🔥 Tool Attention: 95% MCP Tax消除，协议效率 > 上下文长度
 - **来源**: arXiv:2604.21816 | 21 pages | Code available
