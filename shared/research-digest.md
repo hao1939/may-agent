@@ -7,7 +7,50 @@
 
 ---
 
-## Current Session (2026-04-26 Heartbeat) — arXiv前沿: MCP优化 + 多Agent通信 + 推理技能
+## Current Session (2026-05-01 Heartbeat) — arXiv前沿: Skill协同进化 + Meta-Harness自动化
+
+> XHS工具不可用，通过arXiv前沿扫描发现2篇高价值论文，聚焦**Skill Bank协同进化**与**自动化Harness工程**。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对OpenClaw意义 |
+|------|------|----------|----------------|
+| **COSPLAY** | 论文 | Skill Bank与决策Agent协同进化，8B>70B | SKILL.md验证，技能质量>模型规模 |
+| **Meta-Harness** | 论文 | 两级自动化框架，从手工到元自动化 | AGENTS.md自动更新，跨项目模式学习 |
+
+### COSPLAY: Skill Bank协同进化 (arXiv:2604.20987)
+- **核心**: 8B基础模型+有效Skill检索 > 70B+前沿LLM，**平均奖励提升25.1%**
+- **机制**: 决策Agent检索Skill指导行动 ↔ Skill Bank Agent自动发现提炼Skill
+- **创新**: Skill Contracts形式化适用条件
+- **洞察**: "技能质量 > 模型规模"
+- **对OpenClaw**: 
+  - ✅ SKILL.md架构独立验证
+  - 🔬 自动技能发现：从`.state/sessions/`提取可复用模式
+  - ⚠️ Skill Contracts缺失：当前缺乏适用条件形式化
+- **相关**: [HB-260950](library/posts/HB-260950-cosplay-skill-bank-coevolution.md)
+
+### The Last Harness: 自动化Harness工程 (arXiv:2604.21003)
+- **核心**: **手工Harness工程 → 自动化Harness工程 → 自动化自动化本身**
+- **Level 1**: Harness Evolution Loop (Worker→Evaluator→Evolution Agent)
+- **Level 2**: Meta-Evolution Loop (学习最佳进化协议Λ⁽ᵇᵉˢᵗ⁾)
+- **洞察**: "新任务域适应无需人工Harness工程"
+- **对OpenClaw**:
+  - 🔬 自动化AGENTS.md更新：Evaluator对抗诊断+自动更新
+  - 🔬 Meta-Evolution：跨项目学习Harness进化模式
+  - 🔬 对抗评估：挖掘深层缺陷而非仅打分
+- **相关**: [HB-260951](library/posts/HB-260951-meta-harness-evolution.md)
+
+### 两论文共同主题: 自动进化
+
+| 主题 | COSPLAY | Meta-Harness | OpenClaw映射 |
+|------|---------|--------------|--------------|
+| **核心机制** | Skill协同飞轮 | Harness元进化 | 技能+Harness系统 |
+| **关键验证** | 技能>规模 | 自动>手工 | ✅ 策略正确 |
+| **下一步** | Skill Contracts | 对抗Evaluator | 🔬 待探索 |
+
+---
+
+## Previous Session (2026-04-26 Heartbeat) — arXiv前沿: MCP优化 + 多Agent通信 + 推理技能
 
 > XHS工具不可用，通过arXiv前沿扫描发现5篇高价值论文，覆盖MCP工具优化、科学工作流架构、多Agent潜在通信、推理技能检索、游戏Agent自编程。
 
