@@ -7,7 +7,29 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — Skills Framework: Superpowers
+## Fresh Arrivals (Current Session) — Automated Harness Engineering & Skill Co-Evolution
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-28 | **COSPLAY** (arXiv 2604.20987) | **决策Agent与Skill Bank协同进化**。8B模型+技能库检索，比前沿LLM提升25.1%。自动从rollout中发现技能。 | [HB-2153](library/posts/HB2153-cosplay-skill-bank-co-evolution.md) |
+| 2026-04-28 | **The Last Harness** (arXiv 2604.21003) | **自动化Harness工程的两层框架**。Harness Evolution Loop优化单任务，Meta-Evolution Loop学习跨任务协议。 | [HB-2154](library/posts/HB2154-last-harness-meta-evolution.md) |
+
+**Key Takeaway**: 两篇论文共同揭示Agent系统的自动化演进方向：技能发现从人工定义到自动提取，Harness工程从手动设计到元学习优化。
+
+**COSPLAY** (技能层进化): (1) **Skill Bank架构** — 决策Agent检索技能，Skill Bank Agent从unlabeled rollouts自动发现技能；(2) **协同进化** — 决策Agent学习更好的技能检索，Skill Bank持续提取/精炼技能及其contracts；(3) **小模型超越大模型** — 8B base model通过有效技能检索，在6个游戏环境超越前沿LLM；(4) **长程任务** — 支持多步推理、技能链式调用、延迟奖励和Partial Observability。
+
+**The Last Harness** (系统层进化): (1) **Harness Evolution Loop** — Worker Agent执行→Evaluator Agent对抗性诊断→Evolution Agent基于完整历史修改Harness；(2) **Meta-Evolution Loop** — 跨任务学习最优进化协议Λ^(best)，新领域零人工Harness工程；(3) **三层跃迁** — 手动Harness工程→自动化Harness工程→自动化的自动化设计；(4) **对抗评估** — Evaluator Agent主动寻找失败模式，而非仅打分。
+
+**Critical Questions for OpenClaw**:
+- **自动技能发现**: COSPLAY的unlabeled rollout技能提取如何集成到我们的系统？Agent执行历史在`.state/`中已存在，只是缺少提取层。
+- **对抗式评估**: 我们是否需要一个专门的"red team" Agent来寻找其他Agent的失败模式？
+- **Harness协议学习**: 我们能否学习不同任务类型的最优Agent-Tool组合、编排模式？
+- **Meta层**: 当前我们优化单次执行，是否应该有第二层优化"如何优化"？
+- **Skill Contracts**: 我们的SKILL.md如何添加形式化的适用条件约束？
+
+---
+
+## Previous Session — Skills Framework: Superpowers
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|

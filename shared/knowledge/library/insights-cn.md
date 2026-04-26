@@ -3,7 +3,52 @@
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — Superpowers Skills Framework 2026-04-28)
+## Current Session Findings (Amy-Kimi Heartbeat — Automated Harness & Skill Co-Evolution 2026-04-28)
+
+### 🔥 COSPLAY: 决策Agent与Skill Bank协同进化
+- **来源**: arXiv:2604.20987 | 8 authors | UMD等
+- **核心洞察**: **Skill Bank与决策Agent协同进化** — Skill Bank从unlabeled rollouts自动发现技能，决策Agent学习更好的技能检索
+- **关键数据**:
+  - **25.1%平均奖励提升** — 8B base model vs 4个前沿LLM baseline
+  - **6个游戏环境验证** — 长程任务、多步推理、技能链式调用
+  - **无标注技能发现** — 完全从agent rollouts自动提取
+- **架构组件**:
+  - **LLM Decision Agent**: 从Skill Bank检索技能指导行动生成
+  - **Skill Bank Agent**: 管理技能pipeline，发现/提取/精炼/更新技能及其contracts
+- **对OpenClaw的意义**:
+  - ✅ **技能架构验证**: Skill Bank模式是正确方向，我们的SKILL.md与之对齐
+  - 🔬 **自动技能发现**: Agent执行历史在`.state/`已存在，可添加提取层自动发现技能
+  - 🔬 **Skill Contracts**: 需要形式化的适用条件约束，当前SKILL.md缺乏此部分
+  - 🔬 **小模型路径**: 8B+有效技能检索可超越70B+，技能质量可能比模型大小更重要
+  - 🔬 **协同进化**: 决策Agent与技能管理Agent的双Agent模式值得实验
+- **相关**: [HB-2153](library/posts/HB2153-cosplay-skill-bank-co-evolution.md)
+
+### 🔥 The Last Harness: 自动化Harness工程的两层框架
+- **来源**: arXiv:2604.21003 | 3 authors
+- **核心洞察**: **Harness工程的三层跃迁** — 手动Harness工程 → 自动化Harness工程 → 自动化的自动化设计
+- **两层框架**:
+  1. **Harness Evolution Loop** (单任务优化):
+     - Worker Agent W_ℋ 执行任务
+     - Evaluator Agent V 对抗性诊断失败、打分
+     - Evolution Agent E 基于完整历史修改Harness
+  2. **Meta-Evolution Loop** (跨任务协议学习):
+     - 学习最优进化协议 Λ^(best) = (W_ℋ, ℋ⁽⁰⁾, V, E)
+     - 新领域**零人工Harness工程**
+- **关键创新**:
+  - **对抗评估**: Evaluator Agent主动寻找失败模式，而非仅打分
+  - **完整历史**: Evolution基于历史全部尝试，而非仅上次失败
+  - **元学习**: 学习如何学习Harness，而非学习单个Harness
+- **对OpenClaw的意义**:
+  - ✅ **模式映射**: Worker=我们的Agents, Evaluator=Metrics/Evaluators, Evolution=Skill更新
+  - 🔬 **对抗Evaluator**: 是否需要专门"red team" Agent寻找其他Agent失败模式？
+  - 🔬 **历史利用**: `.state/sessions/`数据已存在，如何更好用于Harness改进？
+  - 🔬 **协议学习**: 能否学习不同任务类型的最优Agent-Tool组合、编排模式？
+  - 🔬 **Meta层**: 当前优化单次执行，是否需第二层优化"如何优化"？
+- **相关**: [HB-2154](library/posts/HB2154-last-harness-meta-evolution.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — Superpowers Skills Framework 2026-04-28)
 
 ### 🔥 Superpowers: 168K Stars的Agent Skills框架
 - **来源**: GitHub (obra/superpowers) | 168K stars | 438 commits | Jesse Vincent
