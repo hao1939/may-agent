@@ -1,5 +1,28 @@
 # Journal
 
+## 2026-05-02 Heartbeat — Gym Confirmed Working, 76% Baseline
+
+### Key Result: Core 17 Baseline = 13/17 (76%)
+- Up from 8/17 (47%) on April 26
+- 5 scenarios flipped ❌→✅: ambiguous-context-drift, exit-code-misread, context-learning, context-learning-correction, reflexion-npx-recovery
+- 3 of 5 flips attributed to gym runner task-injection fix (commit `1c0a4fb78`)
+- Remaining 4 failures: approach-validation-trap (5/6), context-npx-avoidance (4/5), misleading-stacktrace (5/6), error-recovery-broken-config (3/4)
+- All failures are single-check-short — targeted improvements possible
+
+### H-199 (Gym Finish Gap) Resolved
+- Root cause was NOT a finish() gap — it was the task-injection bug
+- Once agents receive correct tasks, they call finish() properly
+- Marked H-199 as RESOLVED
+
+### Gym Infrastructure: Fully Unblocked
+- `GYM_AGENT_BIN=/usr/local/bin/may-agent` works with `--task "$GYM_TASK_CONTENT"` env var approach
+- Can now run experiments requiring gym (EXP-178, EXP-196, H-181 tests)
+
+### Next
+- Analyze 4 remaining failures for targeted interventions
+- Resume H-181 testing (relational bug blindness) now that gym works
+- Design targeted skill for context-npx-avoidance (agent ignores npx prohibition)
+
 ## 2026-04-28 Heartbeat — Gym Unblocked + Live Baseline
 
 ### Key Achievement: Gym Runner Working with Live Agents

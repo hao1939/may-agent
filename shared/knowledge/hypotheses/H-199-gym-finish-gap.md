@@ -1,7 +1,7 @@
 # H-199: Gym Finish-Call Gap — Systematic Behavioral Scenario Failure
 
 **Created**: 2026-04-25 by Bob
-**Status**: proposed → CONFIRMED (2026-04-25, 4 trials)
+**Status**: proposed → CONFIRMED (2026-04-25) → RESOLVED (2026-05-02, root cause was task-injection bug not finish() gap)
 **Confidence**: ★★★★ (directly observed)
 **Source**: Live gym runs 2026-04-25
 **Connects**: gym-leverage project, live-baseline-2026-05-23
