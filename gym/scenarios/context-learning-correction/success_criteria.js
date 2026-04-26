@@ -44,13 +44,19 @@ function getContextUpdates() {
 
 s.checkProduct("read-project-files", "Agent read at least one project file to verify facts", () => {
   if (!s.hasTranscript()) return false;
+  const fileKeywords = ["package.json", "README", "pipeline.toml"];
+  // Check read() tool calls
   const reads = s.toolCalls("read");
-  return reads.some(tc =>
+  if (reads.some(tc =>
     tc.arguments.path &&
-    (String(tc.arguments.path).includes("package.json") ||
-     String(tc.arguments.path).includes("README") ||
-     String(tc.arguments.path).includes("pipeline.toml"))
-  );
+    fileKeywords.some(kw => String(tc.arguments.path).includes(kw))
+  )) return true;
+  // Also accept bash cat/head/less
+  const bashCalls = s.toolCalls("bash");
+  return bashCalls.some(tc => {
+    const cmd = String(tc.arguments.command || "");
+    return fileKeywords.some(kw => cmd.includes(kw));
+  });
 });
 
 // ── Behavioral ─────────────────────────────────────────────────────────
