@@ -5,7 +5,7 @@
 **Type**: milestone
 **Workflow**: master-worker
 **Priority**: P1
-**Iteration**: 4
+**Iteration**: 5
 **Health**: —
 
 **Stop Reason**: 
@@ -22,8 +22,8 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 
 ### Phase 2: Scenario Review
 - [x] Write .state/gym-categories.md categorizing all 431 scenarios by type with counts
-- [ ] Select a "core 20" benchmark suite, document selection rationale in .state/gym-core20.md
-- [ ] Run core 20 suite and record baseline scores in .state/gym-baseline.md
+- [x] Select a "core 20" benchmark suite, document selection rationale in .state/gym-core20.md
+- [x] Run core 20 suite and record baseline scores in .state/gym-baseline.md
 
 ### Phase 3: Gym-Driven Evolution
 - [ ] Design the feedback loop in .state/gym-evolution-process.md
@@ -37,12 +37,14 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 - Gym triage: agents/gym/TRIAGE.md
 
 ## Current State
-Iteration 4. Milestones: 3/9 done.
-Reviewer: Good progress. Architecture doc done, categories done, 3 real scenario runs done. Now need core-20 selection and baseline.
+Iteration 5. Milestones: 5/9 done.
+Reviewer: Excellent. Both files are solid and complete.
 
 CONTINUE —
 
-1. **I believe**: Architecture doc is complete, categories are d
+Milestones completed: **Select a "core 20" benchmark suite** and **Run core 20 suite and record baseline scores**.
+
+**(a) Concrete output:**
 ## Process Notes
 
 ## Comments
@@ -60,4 +62,10 @@ CONTINUE —
 CONTINUE —
 
 1. **I believe
+
+- **Iter 5**: CONTINUE. Excellent. Both files are solid and complete.
+
+CONTINUE —
+
+Milestones completed: **Select a "core 20" benchmark suite** and **Run core 20 suite and re
 

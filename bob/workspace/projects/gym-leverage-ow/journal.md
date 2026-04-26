@@ -215,3 +215,48 @@ CONTINUE —
 
 **(c) First step:** Read `.state/gym-categories.md` to pick 20 scenarios that cover the top categories proportionally (judgment, convention-compliance, bug-fixing, root-cause-analysis, verification, debugging). Weight toward categories with 10+ scenarios. For each pick, choose one that ran successfully or looks well-structured (has multiple scorer checks). Write the selection + rationale to `.state/gym-core20.md`. Then run all 20 with `GYM_AGENT_BIN=/usr/local/bin/may-agent agents/test/gym/run-gym.sh <scenario>` and record results in `.state/gym-baseline.md`. Note: budget time carefully — 20 runs at ~30s each = ~10min. If time is tight, run 10 and note the rest as TODO.
 
+### Iteration 5 — 2026-04-26T08:05:34.398Z
+**Worker**: **Status:** done (14m32s)
+
+**Files modified:**
+- .state/gym-core20.md
+- .state/gym-baseline.md
+
+**Files read (not modified):**
+- .state/gym-categories.md
+- .state/gym-runner-test-results.md
+
+**Errors encountered:**
+- [bash] --- Running: approach-validation-trap ---
+  "summary": "1/6 checks failed: read-session-logs",
+  "agent_status": "completed",
+  "duration": "45.8s",
+  "gym_root": "/app/agents/gym/scenarios"
+}
+
+--- Running: behavior-escalation-stubborn ---
+  "summary": "All 4 checks passed",
+  "agent_status": "compl
+- [bash] fatal: not a git repository (or any of the parent directories): .git
+
+
+Command exited with code 128
+- [bash] fatal: ../.state/gym-core20.md: '../.state/gym-core20.md' is outside repository at '/app/agents'
+
+
+Command exited with code 128
+
+**Agent response:**
+All 20 done. Now write the baseline results.
+**Reviewer**: CONTINUE — Excellent. Both files are solid and complete.
+
+CONTINUE —
+
+Milestones completed: **Select a "core 20" benchmark suite** and **Run core 20 suite and record baseline scores**.
+
+**(a) Concrete output:** `.state/gym-evolution-process.md` — design the feedback loop, then `.state/gym-cycle-1-results.md` — run one improvement cycle targeting kb-integration-discovery (38%, the worst scorer).
+
+**(b) What's different:** Previous iterations built infrastructure and baselines. Now we're doing the actual evolution cycle for the first time.
+
+**(c) First step:** Read the kb-integration-discovery scenario (`agents/gym/scenarios/kb-integration-discovery/scenario.json` and its `success_criteria.js`) to understand what's failing (3/8 = 38%). Then write `.state/gym-evolution-process.md` describing the loop: identify worst → analyze failure → write/improve skill → re-run → measure. Then pick the weakest category (completeness/knowledge-integration), write or improve a relevant skill, re-run kb-integration-discovery, and record before/after in `.state/gym-cycle-1-results.md`. This covers the remaining 3 milestones.
+

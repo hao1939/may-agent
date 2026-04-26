@@ -1,22 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777189842320_554
+- **Session:** s_1777190734399_560
 - **Status:** done
-- **When:** 2026-04-26T07:51:02.049Z
-- **Duration:** 19s
+- **When:** 2026-04-26T08:05:49.976Z
+- **Duration:** 15s
 
 ## What Happened
-Good progress. Architecture doc done, categories done, 3 real scenario runs done. Now need core-20 selection and baseline.
+Excellent. Both files are solid and complete.
 
 CONTINUE —
 
-1. **I believe**: Architecture doc is complete, categories are documented, 3 test runs succeeded. The milestones "Write .state/gym-architecture.md" and "Write .state/gym-categories.md" and "Run the gym runner against 3 diverse scenarios" are done.
-2. **I'm uncertain about**: Whether the worker has been marking these milestones as complete in any tracking file.
-3. **I'd change my mind if**: The gym runner turns out to be unreliable at scale (the knowledge-entry-creation error at 175ms is concerning).
+Milestones completed: **Select a "core 20" benchmark suite** and **Run core 20 suite and record baseline scores**.
 
-**(a) Concrete output:** `.state/gym-core20.md` — select 20 benchmark scenarios with rationale, then `.state/gym-baseline.md` with actual run results for all 20.
+**(a) Concrete output:** `.state/gym-evolution-process.md` — design the feedback loop, then `.state/gym-cycle-1-results.md` — run one improvement cycle targeting kb-integration-discovery (38%, the worst scorer).
 
-**(b) What's different:** Previous iterations built infrastructure docs and test runs. Now we're selecting and running the core benchmark suite. This is the first time tackling these milestones.
+**(b) What's different:** Previous iterations built infrastructure and baselines. Now we're doing the actual evolution cycle for the first time.
 
-**(c) First step:** Read `.state/gym-categories.md` to pick 20 scenarios that cover the top categories proportionally (judgment, convention-compliance, bug-fixing, root-cause-analysis, verification, debugging). Weight toward categories with 10+ scenarios. For each pick, choose one that ran successfully or looks well-structured (has multiple scorer checks). Write the selection + rationale to `.state/gym-core20.md`. Then run all 20 with `GYM_AGENT_BIN=/usr/local/bin/may-agent agents/test/gym/run-gym.sh <scenario>` and record results in `.state/gym-baseline.md`. Note: budget time carefully — 20 runs at ~30s each = ~10min. If time is tight, run 10 and note the rest as TODO.
+**(c) First step:** Read the kb-integration-discovery scenario (`agents/gym/scenarios/kb-integration-discovery/scenario.json` and its `success_criteria.js`) to understand what's failing (3/8 = 38%). Then write `.state/gym-evolution-process.md` describing the loop: identify worst → analyze failure → write/improve skill → re-run → measure. Then pick the weakest category (completeness/knowledge-integration), write or improve a relevant skill, re-run kb-integration-discovery, and record before/after in `.state/gym-cycle-1-results.md`. This covers the remaining 3 milestones.
