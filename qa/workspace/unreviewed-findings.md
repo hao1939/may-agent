@@ -1,28 +1,22 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-26)
 
-## Inbox triage (duplicate review requests)
-Received multiple duplicate "Quick Code Review" notifications. No actionable payload/PR identifiers were attached in heartbeat context, so cannot review specific changes. Recommendation: dedupe at dispatcher and include a stable review target (commit SHA / PR URL / paths).
+## Scope
+- Checked last commit in /app: `41ce69d` (scout deep-dive doc)
+- Verified presence of gym scenario EXP-220 (enoent-file-search)
 
-## Recent unverified changes (root repo)
-`git log -10` shows recent commits:
-- e204e9d EXP-228 null result + H-EXP-029 role-context hypothesis
-- 0804a49 EXP-228: Status → RUNNING, gym runs delegated to bob
-- 5e96d3d bob: resolve all 17 hypotheses...
+## Findings
+### 1) EXP-220 scenario not found (IMPORTANT)
+- `find agents/gym/scenarios ... '*EXP-220*'` returned no results.
+- `rg "EXP-220" agents/gym/scenarios agents/gym` returned no results.
+- `find agents/gym/scenarios ... '*enoent*file*search*'` returned no results.
 
-Reviewed content evidence:
-- `.state/experiments/EXP-228-security-awareness-skill.md` — experiment summary marks NULL RESULT; note: Date field says **2026-10-01** which appears inconsistent with commit date (2026-04-26). Potential doc-quality issue.
-- `.state/hypotheses/h-exp-029-role-context-lever.md` — hypothesis design looks coherent; no code impact.
+This conflicts with the inbox notification requesting verification that EXP-220 exists. Either the scenario was never added, it lives outside the expected directory, or it was removed/renamed.
 
-## Gym scenario alert follow-up (P2): EXP-220 / enoent-file-search
-Verified scenario exists at `agents/gym/scenarios/enoent-file-search/`.
-- `scenario.json` correctly describes the mismatch (task references `src/` and `test/` but real files are in `lib/`).
-- `task.md` contains the deliberate wrong paths and explicit instruction not to modify the (nonexistent) `test/test-grades.js`.
-- `success_criteria.js` checks that `src/` and `test/` dirs were not created and that `lib/grade-pipeline.js` was modified, then runs `node lib/test-grades.js`.
+### 2) Repo toolchain mismatch with mandatory QA checks (IMPORTANT / ENV)
+- `./node_modules/.bin/tsc --noEmit` exits with code 1 and prints the help banner, consistent with no `tsconfig.json` in repo root.
+- `./node_modules/.bin/vitest --run` fails: `No such file or directory` (vitest not installed; package.json only contains typescript).
 
-Potential issue: `scenario.json` lists environment files `lib/grade-pipeline.js` and `lib/test-grades.js` but does not include them in the scenario directory (likely provided by gym harness). If harness does not materialize them, scenario will fail with ENOENT—worth confirming via an actual gym run.
+This is likely an environment/setup baseline issue rather than a patch-specific regression, but it blocks standard TypeScript/test verification.
 
-## Tooling / CI sanity
-- `./node_modules/.bin/tsc --noEmit` currently fails because there is no tsconfig in repo root (tsc prints help and exits code 1).
-- `./node_modules/.bin/vitest --run` fails: vitest binary missing at that path (No such file or directory).
-
-These look like environment/tooling assumptions not satisfied at repo root; QA cannot run mandated checks without project-specific instructions (e.g., run in a subpackage).
+## Changed File Reviewed
+- `.state/research/deep-dive-autogenesis-self-evolving-protocol.md` (doc-only change). Content looks internally consistent; no executable code impact identified.
