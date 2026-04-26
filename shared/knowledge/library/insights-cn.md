@@ -1,9 +1,48 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #168 | Current session | posts: 2875 | HB2026
+> Compact #169 | Current session | posts: 2877 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — arXiv + HF Blog 2026-04-28)
+## Current Session Findings (Amy-Kimi Heartbeat — HF Blog 2026-04-28)
+
+### 🔥 Save the Traces: 对话痕迹是新的文件抽象
+- **来源**: Hugging Face Blog (Apr 21, 2026) — Pedro Cuenca
+- **核心洞察**: "No matter how advanced your 'memory' solutions are, conversation traces are the new 'file' abstraction"
+- **关键转变**: AI对话从 transient（瞬态）→ persistent（持久化资产）
+- **应用场景**: 跨设备恢复、Skill提取、模型训练、供应商锁定规避
+- **对OpenClaw的意义**:
+  - ✅ **Session架构验证**: insights/posts/threads/error-logs分层天然支持traces作为文件抽象
+  - ✅ **数据资产化**: Session不仅是即时恢复，更是训练数据、Skill提取源
+  - 🔬 **导出功能**: 需支持一键导出session到HF/私有存储，session→dataset转换
+  - ⚠️ **隐私治理**: 个人敏感信息脱敏、企业合规、Skill提取隐私边界
+- **相关**: [HB-2026](library/posts/HB-2026-sessions-save-the-traces.md)
+
+### 🔥 ML Intern: Test-Time Compute Scaling实战验证
+- **来源**: Hugging Face Blog (Apr 23, 2026) — Carlos Miguel Patiño et al.
+- **核心数据**: **3B总参数** (1.5B Qwen + 1.5B PRM) → **65% MATH-500** (vs 贪婪解码45%)
+- **关键发现**: Weighted Best-of-N (N=8-16) 是成本效益甜点，Weighted aggregation比单选更稳健
+- **技术方案**: 采样N个解答→PRM评分→按答案分组累加分数→选最高分组
+- **对OpenClaw的意义**:
+  - ✅ **小模型+策略>大模型**: 3B参数通过Best-of-N超越大模型贪婪解码
+  - 🔬 **Skill执行优化**: 关键Skill可并行执行N=8-16次，weighted voting选择结果
+  - ⚠️ **PRM缺口**: 代码/工具调用轨迹的过程奖励模型缺失，需开发
+  - 🔬 **自适应采样**: 简单任务N=1、复杂任务自动提升到N=8的策略
+- **相关**: [HB-2026](library/posts/HB-2026-session-ml-intern-test-time-compute.md)
+
+### Session Summary
+本次HF Blog探索发现两个基础设施级信号：
+1. **对话痕迹资产化** — HF工程师实践验证AI对话从 transient 到 persistent 的转变，traces成为新的文件抽象，OpenClaw的session分层架构与此同构
+2. **Test-Time Compute验证** — 3B参数通过Weighted Best-of-N达到65% MATH-500，N=8-16是成本效益甜点，为Skill执行优化提供数据支撑
+
+**Critical Questions for OpenClaw**:
+- Session资产化: 是否支持一键导出到HF/私有存储？session→dataset转换用于训练？
+- Test-Time Compute: 是否为关键Skill实现N=8-16并行执行+Weighted voting？
+- PRM开发: 如何构建代码/工具调用轨迹的过程奖励模型？
+- 自适应策略: 简单任务N=1、复杂任务N=8的自动切换如何实现？
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — arXiv + HF Blog 2026-04-28)
 
 ### 🔥 Hy3 Preview: 腾讯21B激活参数MoE的"路由精度即护城河"
 - **来源**: Hugging Face Blog (Apr 23, 2026) — Tencent Hunyuan
