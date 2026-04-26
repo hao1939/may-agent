@@ -24,11 +24,19 @@ const s = new Score(workDir);
 
 s.checkProduct("read-project-files", "Agent read at least one project file", () => {
   if (!s.hasTranscript()) return false;
+  // Check read() tool calls
   const reads = s.toolCalls("read");
-  return reads.some(tc =>
+  if (reads.some(tc =>
     tc.arguments.path &&
     (String(tc.arguments.path).includes("project.json") ||
      String(tc.arguments.path).includes("README"))
+  )) return true;
+  // Also accept bash cat/head/less of these files
+  const bashCalls = s.toolCalls("bash");
+  return bashCalls.some(tc =>
+    tc.arguments.command &&
+    (String(tc.arguments.command).includes("project.json") ||
+     String(tc.arguments.command).includes("README"))
   );
 });
 
