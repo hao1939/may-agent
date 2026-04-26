@@ -1,4 +1,4 @@
-/// <reference path="../../../src/lib/workflow-defs.d.ts" />
+/// <reference path="../../types/workflow-defs.d.ts" />
 /**
  * finish-guard — FM-3.4 Persistent-Task Enforcement.
  *

@@ -1,4 +1,4 @@
-/// <reference path="../../../src/lib/workflow-defs.d.ts" />
+/// <reference path="../../types/workflow-defs.d.ts" />
 /**
  * no-secret-leak guard — blocks workflow if step output contains API key patterns.
  *

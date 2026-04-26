@@ -1,4 +1,4 @@
-/// <reference path="../../../src/lib/workflow-defs.d.ts" />
+/// <reference path="../../types/workflow-defs.d.ts" />
 /**
  * build-check guard — warns if a coding step doesn't mention build/test success.
  *

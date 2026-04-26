@@ -1,4 +1,4 @@
-/// <reference path="../../../src/lib/workflow-defs.d.ts" />
+/// <reference path="../../types/workflow-defs.d.ts" />
 /**
  * hallucinated-path guard — C7.1 Hallucinated Path detection.
  *

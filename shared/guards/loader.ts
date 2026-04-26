@@ -1,4 +1,4 @@
-/// <reference path="../../../src/lib/workflow-defs.d.ts" />
+/// <reference path="../../types/workflow-defs.d.ts" />
 /**
  * Guard Loader — dynamically imports all WorkflowGuard exports from this directory.
  *

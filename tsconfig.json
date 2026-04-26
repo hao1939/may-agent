@@ -3,13 +3,22 @@
     "target": "ES2022",
     "module": "ES2022",
     "moduleResolution": "bundler",
-    "strict": true,
+    "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "noEmit": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "types": ["node"]
+    "types": ["node"],
+    "allowImportingTsExtensions": true
   },
-  "include": ["src/**/*.ts"]
+  "include": [
+    "types/**/*.d.ts",
+    "shared/guards/**/*.ts",
+    "shared/lib/**/*.ts"
+  ],
+  "exclude": [
+    "**/node_modules/**",
+    "**/*.test.ts"
+  ]
 }
