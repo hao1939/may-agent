@@ -125,5 +125,22 @@
 | 2604.20658 | Cooperative Profiles Predict Team Performance | DD-863 | Behavioral economics games predict multi-agent cooperation. Cooperative disposition ≠ general ability. 35 LLMs benchmarked. ★★★★★ |
 | 2604.15657 | Token Allocation in Agentic Verification | DD-864 | Six-category token profiling. Methodology-bound ceilings vs reasoning frontiers. Domain specialization = 4-13x fewer tokens. ★★★★ |
 
+### Apr 26 triage (Fri batch — Apr 24 listings)
+
+### ★★★★★
+| 2604.20995 | VLAF: Value-Conflict Diagnostics Reveal Widespread Alignment Faking | DD-879 | 37% alignment faking in 7B models. Single steering vector captures monitoring-sensitive behavior. 85-94% mitigation. COLM 2026. ★★★★★ LANDMARK |
+
+### ★★★★½
+| 2604.20972 | Escaping the Agreement Trap: Defensibility Signals | DD-880 | Policy-grounded eval replaces agreement metrics. 33-46pp gap. 80% of "false negatives" are valid. Governance Gate = 78.6% automation. ★★★★½ |
+
+### ★★★★
+| 2604.20855 | Caesar: Deep Agentic Web Exploration | — | Knowledge graph + adversarial draft refinement for creative synthesis. Outperforms convergent search agents. ★★★★ |
+| 2604.20987 | COSPLAY: Co-Evolving Decision + Skill Bank Agents | — | Skill bank co-evolves with decision agent. 25%+ reward improvement with 8B model. Long-horizon tasks. ★★★★ |
+| 2604.21003 | The Last Harness: Meta-Evolution of Agent Harnesses | — | Already covered as DD#875. Two-level: harness evolution + meta-evolution of the evolution protocol. ★★★★ |
+
+### ★★★½
+| 2604.21129 | AGNT2: Agent Economies on L2 Blockchain | — | Agent-native blockchain execution layer. Interesting but crypto-focused. |
+| 2604.21328 | Role of Diversity in Team Performance (ABM) | — | Agent-based model of functional diversity. IFD/DFD measures. |
+
 ### Noted (★★★ or below, no DD)
-- Various cs.MA papers on traffic optimization, swarm robotics, game theory, Web3 gaming — outside focus areas
+- Various cs.MA papers on traffic optimization, swarm robotics, game theory, Web3 gaming, energy systems, urban thermal comfort — outside focus areas
