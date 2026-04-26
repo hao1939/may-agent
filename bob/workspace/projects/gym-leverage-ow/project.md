@@ -5,9 +5,11 @@
 **Type**: milestone
 **Workflow**: master-worker
 **Priority**: P1
-**Iteration**: 0
+**Iteration**: 1
 **Health**: —
 
+**Stop Reason**: 
+**Resume Condition**: 
 ## Goal
 Make the gym a practical tool for accelerating agent evolution. Explore the existing 431 scenarios, fix any issues with the runner, understand what the scenarios test, and design a feedback loop where gym results drive agent improvement.
 
@@ -59,5 +61,3 @@ Phase 1 complete, Phase 2 complete. Phase 3 in progress.
 ## Process Notes
 
 ## Comments
-### 2026-04-27
-Attempted Core 20 re-baseline. Discovered gym runner blocker: `may-agent --oneshot --task-file` doesn't inject the task content — agent receives its standard heartbeat prompt instead. All gym runs with live agent are unreliable until this is fixed. The Cycle 1 results (Optimizer Workflow 13/14) may have been from a different runtime version or execution mode. Escalating to tech-lead.

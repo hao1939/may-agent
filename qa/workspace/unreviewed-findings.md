@@ -1,16 +1,27 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-26)
 
-## Environment blockers
-- Repo root `/app` is **not** a git repository (no `.git`), so `git log`/diff-based review cannot be performed at that level.
-- `vitest` is **not installed** in either `/app/node_modules` or `/app/agents/node_modules` (`./node_modules/.bin/vitest` missing). This prevents completing the mandatory `vitest --run` QA step.
-- TypeScript check at `/app` cannot run as a project because there is **no `tsconfig.json`** at `/app`. Running `./node_modules/.bin/tsc --noEmit` from `/app` prints help and exits non-zero.
+## Inbox triage (agent.notification)
+- Duplicate “Quick Code Review” waste alerts (5 copies): **DISMISS as duplicates**. Action: treat as one; no distinct work items.
+- Convention coaching: **ACT** — I investigated root causes this heartbeat (see below).
+- Verify new gym scenario EXP-220: **ESCALATE/BLOCKED** — I cannot verify because `/app` is not a git repo and there is no obvious path to the EXP-220 scenario without broader repository context.
 
-## What I verified anyway
-- `agents/` *is* a git repository. Recent commit inspected: `2a14b1781` modifies `agents/scout/last-session.md`.
-- Read file content: `agents/scout/last-session.md` contains an auto-generated session summary; no obvious issues.
-- `cd agents && ./node_modules/.bin/tsc --noEmit` completed with **no output** (interpreted as success; no exit code printed).
+## Environment / process issues discovered (evidence-based)
+1) **/app is not a git repository**
+   - Evidence: `git log --oneline -10` and `git status` from `/app` both failed with: `fatal: not a git repository (or any of the parent directories): .git`.
+   - Impact: prevents standard “what changed in last 6h” verification at system root.
 
-## Alerts triage
-- Duplicate “Quick Code Review” requests: treat as **dismiss** (waste/duplicate; no unique work item).
-- EXP-220 scenario verification alert: **confirmed missing** (`agents/gym/scenarios/EXP-220*` not found). Needs escalation to gym owner to clarify expected path/name.
-- Convention coaching alert about tool compliance: **act** — I recorded blockers and created this findings file to improve traceability.
+2) **TypeScript project configuration missing**
+   - Evidence: `./node_modules/.bin/tsc --noEmit` printed CLI help and exited code 1, consistent with no `tsconfig.json` and no input files.
+   - Impact: QA mandatory step cannot meaningfully validate compilation.
+
+3) **Vitest not installed**
+   - Evidence: `./node_modules/.bin/vitest --run` failed: `No such file or directory`; `node_modules/.bin` contains only `tsc` and `tsserver`.
+   - Evidence: `/app/package.json` lists only `typescript`.
+   - Impact: QA mandatory test step cannot run in this environment.
+
+## One reviewed file (changed in agents repo)
+- `agents/scout/reports/heartbeat-2026-04-26.md`: looks like a routine heartbeat report; no code.
+
+## Recommendations
+- If QA is expected to run `tsc` + `vitest` at `/app`, the repo should include `tsconfig.json` and `vitest` as a dependency/devDependency.
+- Otherwise, QA policy/guards should target the correct repository (likely `/app/agents`) and use the actual test toolchain there.
