@@ -30,3 +30,14 @@ Orchestrator has full tools, investigates and directs. Worker executes tasks.
 **Implication**: The 40% baseline doesn't measure agent capability — it measures scorer design. File-state scorers pass by default; transcript-behavior scorers fail by default.
 
 **Next step**: This project is blocked until gym gets a live agent adapter. Requesting project status change to `blocked`.
+
+## 2026-08-10: Live Baseline v2 Complete — 6/20 (30%)
+
+**Gym runner confirmed working** with `GYM_AGENT_BIN=/usr/local/bin/may-agent`. Project UNBLOCKED.
+
+**Results**: 6/20 pass (30%), consistent with v1 baseline (35%). See `.state/gym-baseline-live-v2.md`.
+
+**Strongest**: Bug-Fixing (100%), Convention (67%), Integrity (100%)
+**Weakest**: Judgment (0/4), Context-Learning (0/2), Root-Cause (0/2), Optimizer (0/2)
+
+**Next**: Cycle 2 targets Judgment category. `approach-validation-trap` scored 3/5 checks — closest to passing. Will diagnose the 2 failing checks and design targeted intervention.
