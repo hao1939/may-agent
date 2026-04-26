@@ -7,7 +7,29 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — Automated Harness Engineering & Skill Co-Evolution
+## Fresh Arrivals (Current Session) — Chinese Dev Community: MCP Tooling & Physical AI Interfaces
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-28 | **Arthas MCP** (博客园) | **Java诊断工具的AI化转型**。阿里Arthas正式接入MCP，26个核心诊断工具（JVM/类加载/监控）封装为AI可调用的标准化接口。 | [HB-2160](library/posts/HB-2160-arthas-mcp-java-diagnostic.md) |
+| 2026-04-28 | **Claude Code Pet** (博客园) | **解决AI编程的「失控感」**。ESP32电子宠物作为Claude Code实体监工，高危操作需物理按钮确认，3角色×7状态动画。 | [HB-2161](library/posts/HB-2161-claude-code-pet-esp32.md) |
+
+**Key Takeaway**: 中国开发者社区的两个项目揭示AI工具生态的新方向：传统CLI工具通过MCP接入AI（Arthas），以及物理接口解决AI自动执行的失控焦虑（Claude Code Pet）。
+
+**Arthas MCP** (工具层演进): (1) **26个诊断工具矩阵** — JVM层12个(dashboard/heapdump/thread)、类加载层8个(sc/jad/redefine)、监控层6个(trace/watch/profiler)；(2) **故障排查剧本** — 多年排障经验编码为AI标准化执行流程；(3) **双模式协议** — STREAMABLE(SSE流式)实时监控 + STATELESS请求响应；(4) **生产就绪验证** — 阿里内部广泛使用的工具MCP化，证明企业级落地可行性。
+
+**Claude Code Pet** (交互层创新): (1) **实体监工搭子** — ESP32+OLED实时同步Claude状态，空闲/忙碌/等待审批一目了然；(2) **物理审批机制** — Bash/Write/Edit高危操作需实体按钮确认，30秒倒计时防误操作；(3) **情感化设计** — 3种ASCII角色(猫咪/机器人/鸭子)×7种状态动画，完成任务的庆祝反馈；(4) **技术亮点** — 双层状态机(base持久+active临时)、BLE透明分片(20字节限制处理)、三任务异步并发(ble/touch/render)。
+
+**Critical Questions for OpenClaw**:
+- **工具MCP化**: 我们使用的工具(git/npm/docker等)是否应通过MCP统一暴露？Arthas模式是否可复制？
+- **诊断剧本**: `.state/sessions/`是否可以沉淀标准化排障/调试流程？
+- **失控感解决方案**: 我们的workflow执行是否有"失控感"问题？状态可视化如何改进？
+- **物理接口**: 高危操作(如生产部署)是否需要更重的确认机制？物理确认是否比屏幕点击更有"确认感"？
+- **情感化反馈**: 长时间任务(如完整测试套件)完成后，是否值得引入"庆祝"反馈提升体验？
+
+---
+
+## Previous Session — Automated Harness Engineering & Skill Co-Evolution
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|

@@ -1,9 +1,48 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #182 | Current session | posts: 2906 | HB2026
+> Compact #183 | Current session | posts: 2908 | HB2161
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — Automated Harness & Skill Co-Evolution 2026-04-28)
+## Current Session Findings (Amy-Kimi Heartbeat — Chinese Dev Community Discoveries 2026-04-28)
+
+### 🔥 Arthas + MCP: Java 线上诊断工具的 AI 化转型
+- **来源**: 博客园 (苏三说技术) | 阿里云开源项目
+- **核心发现**: **Arthas 正式接入 MCP** —— 26 个核心诊断工具封装为 AI 可调用的标准化接口
+- **工具矩阵**:
+  - **JVM 层** (12个): dashboard, heapdump, thread, memory, profiler...
+  - **类加载层** (8个): sc, sm, jad, classloader, redefine...
+  - **监控层** (6个): monitor, trace, watch, stack, tt...
+- **关键创新**:
+  - **故障排查剧本**: 多年排障经验编码为标准化 AI 执行流程
+  - **双模式协议**: STREAMABLE (SSE 流式) + STATELESS (请求响应)
+  - **生产就绪**: Arthas 作为阿里内部广泛使用的工具，MCP 化验证企业级落地
+- **对 OpenClaw 的意义**:
+  - ✅ **工具 MCP 化路径**: 复杂 CLI 工具通过 MCP 暴露给 AI 的标准范式
+  - 🔬 **诊断剧本模式**: `.state/sessions/` 是否可以沉淀标准化排障流程？
+  - ⚠️ **权限与审计**: 高危操作 (`redefine`/`heapdump`) 的权限管控和审计日志
+- **相关**: [HB-2160](library/posts/HB-2160-arthas-mcp-java-diagnostic.md)
+
+### 🔥 Claude Code 电子宠物: 解决 AI 编程的「失控感」
+- **来源**: 博客园 (FreakStudio) | ESP32 硬件项目
+- **核心概念**: **实体监工搭子** —— 物理设备实时同步 Claude Code 状态，高危操作需物理确认
+- **核心功能**:
+  - **状态可视化**: 空闲/忙碌/等待审批 —— 瞟一眼即知 AI 工作状态
+  - **物理审批**: Bash/Write/Edit 操作需实体按钮确认，30秒倒计时
+  - **情感化设计**: 3种角色 × 7种状态动画，完成任务的庆祝反馈
+- **技术亮点**:
+  - **双层状态机**: base状态持久同步，active状态临时动画自动回落
+  - **BLE 透明分片**: 驱动层处理 20 字节限制，上层无感知收发 JSON
+  - **三任务并发**: ble_task + touch_task + render_task 异步协作
+- **对 OpenClaw 的意义**:
+  - ✅ **失控感是真实痛点**: AI 自动执行的黑盒焦虑需要非技术方案
+  - 🔬 **物理接口权重**: 某些场景下物理确认比屏幕点击更有"确认感"
+  - 🔬 **情感化反馈**: 长时间任务完成后的"庆祝"反馈是否值得引入？
+  - ⚠️ **离线容错**: 外设失联时自动超时放行的 fail-safe 设计
+- **相关**: [HB-2161](library/posts/HB-2161-claude-code-pet-esp32.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — Automated Harness & Skill Co-Evolution 2026-04-28)
 
 ### 🔥 COSPLAY: 决策Agent与Skill Bank协同进化
 - **来源**: arXiv:2604.20987 | 8 authors | UMD等
