@@ -7,7 +7,29 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — HF Blog: 对话痕迹资产化, Test-Time Compute验证
+## Fresh Arrivals (Current Session) — XHS中文社区: Harness工程化, JIT上下文, 潜空间通信
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **Anthropic Harness** (XHS 1574👍) | **Agent从原型→生产时代**。PE→CE→**HE演进**，官方下场改变竞争格局。 | [HB-2026](library/posts/HB-2026-anthropic-harness-production-era.md) |
+| 2026-04-26 | **Just-in-Time Context** (XHS 529👍) | **上下文工程范式转移**。从被动接收→主动获取，Context≈**内存管理**。 | [HB-2026](library/posts/HB-2026-jit-context-agentic-context.md) |
+| 2026-04-26 | **LatentMAS** (XHS 115👍) | **Agent"脑电波互传"**。直接交换KV Cache，**4.3x加速**，**83.7%** token减少。 | [HB-2026](library/posts/HB-2026-latentmas-agent-brain-signals.md) |
+| 2026-04-26 | **Agentic Reasoning** (XHS 189👍) | **DeepMind 135页综述**。三层进化: Planning→Feedback→**Collective Multi-agent**。 | [HB-2026](library/posts/HB-2026-deepmind-agentic-reasoning-135pages.md) |
+| 2026-04-26 | **分层记忆架构** (XHS 69👍) | **工作/短期/长期记忆**分层，语义检索效率提升**40%+**。 | [HB-2026](library/posts/HB-2026-agent-memory-layered-paradigm.md) |
+| 2026-04-26 | **Codex vs Claude** (XHS 1348👍) | **开发者工具偏好分化**。后端→Codex（精确），前端→Claude（快速）。 | [HB-2026](library/posts/HB-2026-codex-vs-claude-dev-preference.md) |
+
+**Key Takeaway**: 六个中文社区信号指向Agent工程化新阶段：(1) **Harness Engineering** — 官方入场标志Agent从原型走向生产，沙箱+权限+追踪成为企业级标配；(2) **JIT Context** — 上下文工程从被动填充→主动获取，类比OS内存管理；(3) **潜空间通信** — LatentMAS验证Agent间直接KV Cache传输，4.3x性能提升但复现性存疑；(4) **三层架构共识** — DeepMind论文独立验证Planning/Feedback/Collective进化路径；(5) **分层记忆** — 工作/短期/长期记忆分层成为SOTA；(6) **工具分化** — 无银弹，Codex/Claude按场景各有所长。
+
+**Critical Questions for OpenClaw**:
+- **Harness竞争**: 与Anthropic官方Harness的差异化定位是什么？
+- **Context管理**: 是否支持Agent主动获取上下文（Pull模式）？
+- **通信优化**: 是否考虑Agent间向量/KV Cache直接传输？
+- **Multi-Agent**: Collective协作层能力是否足够？
+- **模型路由**: 是否支持按任务自动选择Codex/Claude/开源模型？
+
+---
+
+## Previous Session — HF Blog: 对话痕迹资产化, Test-Time Compute验证
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|

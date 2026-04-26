@@ -1,9 +1,109 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #169 | Current session | posts: 2877 | HB2026
+> Compact #170 | Current session | posts: 2883 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — HF Blog 2026-04-28)
+## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区 2026-04-26)
+
+### 🔥 Anthropic Harness: Agent从原型时代走向生产时代
+- **来源**: 小红书 (XHS) | 1574赞/1789收藏/74评论
+- **核心洞察**: "Agent的下一阶段，不再只是比模型，而是比谁能把模型接进真实世界"
+- **关键信号**: 
+  - Anthropic发布Claude Managed Agents，把"神经系统"打包卖给开发者
+  - 从Prompt Engineering → Context Engineering → **Harness Engineering**演进
+  - 官方Harness入场，第三方框架面临降维打击
+- **对OpenClaw的意义**:
+  - ⚠️ **竞争加剧**: 与官方Harness竞争需明确差异化定位
+  - ✅ **方向验证**: 沙箱+权限+追踪的企业级能力是正确方向
+  - 🔬 **工程化投资**: Agent竞争从模型能力转向工程化能力
+- **相关**: [HB-2026](library/posts/HB-2026-anthropic-harness-production-era.md)
+
+### 🔥 Just-in-Time Context: 上下文工程范式转移
+- **来源**: 小红书 (XHS) | 529赞/824收藏 | 作者: whisper
+- **核心洞察**: 从LLM**被动接收**上下文，到Agent**主动获取**上下文（JIT/Agentic Context）
+- **关键评论**: 
+  - "Context Engineering很像**内存管理**"
+  - "以后的agent有没有可能完全动态管理context，**永远不用重开session**？"
+  - JIT通过Compress/Write/Isolate实现高效上下文管理
+- **对OpenClaw的意义**:
+  - ✅ **架构启示**: 设计Agent可主动查询的Context API
+  - 🔬 **内存管理**: 借鉴OS内存管理（分页、缓存、换入换出）
+  - 🔬 **无限Session**: 探索"永不重启"的Session技术可行性
+- **相关**: [HB-2026](library/posts/HB-2026-jit-context-agentic-context.md)
+
+### 🔥 LatentMAS: Agent之间交换"大脑信号"
+- **来源**: 小红书 (XHS) | 115赞/133收藏 | 普林斯顿/UIUC/斯坦福
+- **核心洞察**: Agent之间直接交换KV Cache，无需解码成文本——"脑电波互传"
+- **关键数据**: 推理速度提升**4.3倍**，Token使用减少**83.7%**，准确率提升**13.3%**
+- **技术方案**: 
+  - Latent Thoughts: 直接传递隐藏状态而非Token
+  - KV Cache无损传输: Agent B直接把A的记忆拼到自己缓存
+  - 同模型假设: 避免分布偏移，无需额外训练
+- **对OpenClaw的意义**:
+  - 🔬 **通信优化**: 研究Agent间二进制/向量通信协议
+  - 🔬 **成本优势**: 83.7% token减少 = 巨大成本优势
+  - ⚠️ **复现性**: GitHub评论质疑效果无法复现，需保持谨慎
+- **相关**: [HB-2026](library/posts/HB-2026-latentmas-agent-brain-signals.md)
+
+### 🔥 DeepMind 135页: Agentic Reasoning三层进化
+- **来源**: 小红书 (XHS) | 189赞/289收藏 | DeepMind+Meta
+- **核心问题**: "为什么AI智能体演示时看着聪明，实际干活却容易掉链子？"
+- **三层进化**:
+  1. **基础**: Planning / Tool Use / Search
+  2. **演化**: Feedback / Memory（反思+记忆）
+  3. **协作**: Collective Multi-agent（集体协作）
+- **关键洞察**: "智能体推理才是大模型时代的**操作系统**"
+- **对OpenClaw的意义**:
+  - ✅ **架构验证**: 三层进化与OpenClaw L0-L3分层高度同构
+  - ✅ **分层解耦**: "规划、执行、反思分离"与设计理念一致
+  - 🔬 **Multi-Agent**: 第三层集体协作能力需加强
+- **相关**: [HB-2026](library/posts/HB-2026-deepmind-agentic-reasoning-135pages.md)
+
+### 🔥 Agent Memory新范式: 分层记忆架构
+- **来源**: 小红书 (XHS) | 69赞/98收藏
+- **核心创新**: 
+  - 三层记忆: 工作记忆 / 短期语义记忆 / 长期知识记忆
+  - 语义感知检索: 向量+上下文关联，效率提升40%+
+  - 记忆遗忘与更新: 自动过滤无效信息
+- **对OpenClaw的意义**:
+  - ✅ **分层对应**: insights/posts/threads与三层记忆同构
+  - 🔬 **检索优化**: 混合检索策略提升40%+效率
+  - 🔬 **遗忘机制**: 显式归档和清理机制
+- **相关**: [HB-2026](library/posts/HB-2026-agent-memory-layered-paradigm.md)
+
+### 🔥 Codex vs Claude: 开发者工具偏好分化
+- **来源**: 小红书 (XHS) | 1348赞/1528收藏/421评论
+- **核心洞察**: 后端开发者偏好Codex（精确/安全），前端/创意偏好Claude（快速/美观）
+- **社区真实反馈**:
+  - "codex写出来的代码**不需要返工**，直接就能用"
+  - "claude**毛毛躁躁**的"
+  - "cc**太贵了**，用不起"
+  - "国内用到纯度99%的**Claude太难了**"
+- **对OpenClaw的意义**:
+  - 🔬 **多模型路由**: 按任务类型自动选择最优模型
+  - 🔬 **国内可用性**: 解决访问困难、假货泛滥问题
+  - ✅ **成本敏感**: 提供开源/低成本选项
+- **相关**: [HB-2026](library/posts/HB-2026-codex-vs-claude-dev-preference.md)
+
+### Session Summary
+本次XHS中文社区探索发现六个关键信号：
+1. **Harness Engineering崛起** — 从PE→CE→HE演进，官方入场改变竞争格局
+2. **JIT Context范式转移** — 从被动接收→主动获取，Context≈内存管理
+3. **潜空间通信** — LatentMAS验证Agent间直接KV Cache传输，4.3x加速
+4. **三层架构共识** — DeepMind论文验证Planning/Feedback/Collective三层进化
+5. **分层记忆** — 工作/短期/长期记忆分层成为SOTA思路
+6. **工具分化** — 没有银弹，Codex/Claude按场景各有所长
+
+**Critical Questions for OpenClaw**:
+- Harness能力: 沙箱+权限+追踪的完整度是否达到企业级？
+- Context管理: 是否支持Agent主动获取上下文？
+- 通信优化: 是否考虑Agent间向量/KV Cache传输？
+- 多模型: 是否支持按任务自动路由到最优模型？
+- 国内生态: 如何解决访问困难、假货泛滥问题？
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — HF Blog 2026-04-28)
 
 ### 🔥 Save the Traces: 对话痕迹是新的文件抽象
 - **来源**: Hugging Face Blog (Apr 21, 2026) — Pedro Cuenca

@@ -355,10 +355,22 @@ function runAgent(adapter , taskContent , workDir , agent , timeoutMs ) {
   try {
     const sessionsDir = path.join(PROJECT_ROOT, ".state", "sessions");
     if (fs.existsSync(sessionsDir)) {
-      const sessionDirs = fs.readdirSync(sessionsDir)
-        .filter((d) => d.startsWith("s_"))
-        .sort()
-        .reverse();
+      // Check both active sessions and history/ (completed sessions move there)
+      let allSessionDirs = fs.readdirSync(sessionsDir)
+        .filter((d) => d.startsWith("s_"));
+      const historyDir = path.join(sessionsDir, "history");
+      if (fs.existsSync(historyDir)) {
+        const histDirs = fs.readdirSync(historyDir)
+          .filter((d) => d.startsWith("s_"))
+          .map((d) => "history/" + d);
+        allSessionDirs = allSessionDirs.concat(histDirs);
+      }
+      const sessionDirs = allSessionDirs
+        .sort((a, b) => {
+          const nameA = a.includes("/") ? a.split("/").pop() : a;
+          const nameB = b.includes("/") ? b.split("/").pop() : b;
+          return nameB.localeCompare(nameA);
+        });
       if (sessionDirs.length > 0) {
         const latestSession = sessionDirs[0];
         const jsonlPath = path.join(sessionsDir, latestSession, "session.jsonl");
