@@ -1,9 +1,41 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #180 | Current session | posts: 2903 | HB2026
+> Compact #181 | Current session | posts: 2905 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — Chinese AI Agent Ecosystem 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — Agent Evolution & RL Scaling 2026-04-26)
+
+### 🔥 AgentEvolver: 系统化自我进化的Agent框架
+- **来源**: GitHub (modelscope/AgentEvolver) | 1.4K stars | 858 commits | ModelScope社区
+- **核心洞察**: **CuES (Cumulative Experience Strategy)** — 系统化累积经验而非随机学习
+- **关键组件**: 
+  - `agentevolver/` — 核心进化框架
+  - `cookbook/env_profiles/` — 预配置环境
+  - `games/` — 游戏化训练场景
+  - `research/CuES/` — 累积经验策略研究
+- **架构亮点**: 干净的agent逻辑与执行环境分离，env_service统一调度
+- **对OpenClaw的意义**:
+  - ✅ **经验累积**: CuES策略为Skill系统进化提供理论基础
+  - 🔬 **环境抽象**: env_service模式可能比MCP/tool调用更优雅
+  - 🔬 **游戏化训练**: games/目录的交互式训练场景思路
+  - ⚠️ **社区生态**: ModelScope (阿里) 支持，Apache 2.0开源
+- **相关**: [HB-0033](library/posts/HB-0033-agentevolver-self-evolving.md)
+
+### 🔥 JustRL: 1.5B模型的极简RL扩展
+- **来源**: GitHub (thunlp/JustRL) | 267 stars | ICLR 2026 Blogpost Track | 清华NLP
+- **核心理念**: "Simplicity at Scale" — 简单方法足以达到竞争力
+- **关键发现**: 移除复杂奖励塑造、多阶段训练、数据增强后，1.5B模型+基础RL仍具竞争力
+- **核心洞察**: **复杂≠更好**，简单=更低成本+更快迭代+更易复现
+- **对OpenClaw的意义**:
+  - ✅ **训练起点**: 若需RL训练agent，JustRL的简单配方是首选起点
+  - 🔬 **模型选择**: 1.5B+RL可能足以应对多数任务，无需盲目追求70B+
+  - 🔬 **效率优先**: 先验证简单方法，再考虑添加复杂度
+  - ⚠️ **小模型生态**: 关注小模型+RL vs 大模型zero-shot的性价比权衡
+- **相关**: [HB-0034](library/posts/HB-0034-justrl-simple-scaling.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — Chinese AI Agent Ecosystem 2026-04-26)
 
 ### 🔥 agency-agents-zh: 211个中国本土化AI专家角色模板库
 - **来源**: GitHub (jnMetaCode/agency-agents-zh) | 8.5K stars | 中文社区版agency-agents
