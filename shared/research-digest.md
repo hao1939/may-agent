@@ -7,7 +7,46 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — Agent Frameworks Landscape
+## Fresh Arrivals (Current Session) — GitHub Agent Ecosystem Survey
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **GitHub Ecosystem Survey** | **Skills成为跨平台标准**（168K⭐验证）、**MCP成为中外共识**（Qwen-Agent支持）、**RL微调开启新战场**（OpenManus-RL）。 | [HB-2162](library/posts/HB-2162-github-agent-ecosystem-survey.md) |
+
+**Key Takeaway**: 本轮GitHub生态扫描揭示Agent领域的三大趋势。Superpowers 168K stars验证Skills是Agent生态的正确抽象层级；阿里Qwen-Agent明确支持MCP，标志国内大厂全面跟进；OpenManus-RL探索RL微调Agent的新范式。两篇arXiv论文（COSPLAY + Last Harness）共同指向Agent系统的自动化演进方向。
+
+**Framework Landscape Update**:
+
+| Project | Stars | Owner | Key Insight |
+|---------|-------|-------|-------------|
+| **Superpowers** | **168K** | Jesse Vincent | **Skills跨平台标准** — 支持Claude/Codex/Cursor/Copilot/Gemini/OpenCode 6平台 |
+| Qwen-Agent | 16.2K | 阿里巴巴 | **MCP全面拥抱** — Function Calling+MCP+RAG+Chrome扩展 |
+| OpenManus-RL | 4K | UIUC+MetaGPT | **RL微调直播开发** — GAIA/OSWorld/AgentBench基准验证 |
+
+**Papers — Agent自动化演进**:
+
+| Paper | Key Contribution | Impact |
+|-------|------------------|--------|
+| **COSPLAY** (arXiv:2604.20987) | 决策Agent与Skill Bank**协同进化** | 8B模型+Skill Bank > 前沿LLM (+25.1%) |
+| **Last Harness** (arXiv:2604.21003) | **自动化Harness工程**两层框架 | 零人工Harness工程的新领域适配 |
+
+**Critical Patterns**:
+- **Skills标准化**: Superpowers的CSO优化（Description仅描述触发条件）值得借鉴
+- **MCP适配策略**: 本地CLI vs 远程MCP的分层架构需要明确
+- **自动技能发现**: COSPLAY的无标注技能提取可应用于`.state/sessions/`
+- **对抗评估**: Last Harness的Evaluator Agent主动寻找失败模式
+- **Meta优化层**: 从"优化单次执行"到"学习如何优化"
+
+**Critical Questions for OpenClaw**:
+- **Skills跨平台**: 是否考虑Skills的跨平台可移植性设计？
+- **MCP边界**: 本地CLI优先 vs 远程MCP的划分策略？
+- **RL微调链路**: 是否建立执行历史→训练数据→RL微调的完整链路？
+- **自动技能提取**: `.state/`数据如何自动生成技能？
+- **对抗Evaluator**: 是否需要专门寻找Agent失败模式的"red team"？
+
+---
+
+## Previous Session — Agent Frameworks Landscape
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|

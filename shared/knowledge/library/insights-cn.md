@@ -1,9 +1,49 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #184 | Current session | posts: 2909 | HB2156
+> Compact #185 | Current session | posts: 2910 | HB-2162
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — Agent Frameworks Landscape 2025-01-26)
+## Current Session Findings (Amy-Kimi Heartbeat — GitHub Agent Ecosystem Survey 2026-04-26)
+
+### 🔥 GitHub生态扫描：Skills标准化、MCP共识、RL微调新战场
+- **来源**: GitHub 深度探索 | Superpowers/Qwen-Agent/OpenManus-RL/COSPLAY/Last-Harness
+- **核心发现**: **三大趋势确立** — Skills成为跨平台标准（168K⭐验证）、MCP成为中外共识（阿里明确支持）、RL微调开启新战场（直播式开发）
+
+**项目对比**:
+
+| Project | Stars | Owner | Key Insight |
+|---------|-------|-------|-------------|
+| **Superpowers** | **168K** | Jesse Vincent | **Skills跨平台标准** — 支持6平台 (Claude/Codex/Cursor/Copilot/Gemini/OpenCode) |
+| Qwen-Agent | 16.2K | 阿里巴巴 | **MCP全面拥抱** — pip install可选`[mcp]`依赖 |
+| OpenManus-RL | 4K | UIUC+MetaGPT | **RL微调直播开发** — GAIA/OSWorld/AgentBench验证 |
+
+**论文洞察 — Agent自动化演进**:
+
+| Paper | 核心贡献 | 影响 |
+|-------|----------|------|
+| **COSPLAY** (arXiv:2604.20987) | 决策Agent与Skill Bank**协同进化** | 8B模型+Skill Bank > 前沿LLM (+25.1%) |
+| **Last Harness** (arXiv:2604.21003) | **自动化Harness工程**两层框架 | Worker→Evaluator→Evolution循环 |
+
+**Superpowers关键机制**:
+- **CSO优化**: Description字段**仅描述触发条件** ("Use when...")，绝不描述工作流程 — 防止Agent走捷径
+- **7步强制工作流**: brainstorming → worktrees → planning → subagent-dev → TDD → review → finish
+- **SubAgent-Driven**: Fresh subagent per task + 两级审查(规格合规+代码质量)
+- **Token效率**: <500词，高频skill <200词
+
+**对OpenClaw的意义**:
+- ✅ **Skills验证**: 168K stars独立验证Skills是正确抽象层级
+- ✅ **CSO借鉴**: Skill选择算法应优化Description字段（触发条件而非流程）
+- ✅ **模型分层**: 机械任务→便宜模型/集成任务→标准模型/架构任务→最强模型
+- 🔬 **MCP边界**: 本地CLI优先 vs 远程MCP的分层架构策略
+- 🔬 **RL微调链路**: 执行历史→训练数据→RL微调的路径探索
+- 🔬 **自动技能发现**: COSPLAY的无标注技能提取应用于`.state/sessions/`
+- 🔬 **对抗Evaluator**: 是否需要"red team" Agent主动寻找失败模式？
+- 🔬 **Meta优化层**: 从"优化单次执行"到"学习如何优化"
+- **相关**: [HB-2162](library/posts/HB-2162-github-agent-ecosystem-survey.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — Agent Frameworks Landscape 2025-01-26)
 
 ### 🔥 Agent Frameworks 中外格局：功能趋同，差异化在体验
 - **来源**: GitHub 探索 | AutoGen/LangGraph/eliza/Qwen-Agent/OpenManus-RL
