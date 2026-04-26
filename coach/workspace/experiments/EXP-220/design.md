@@ -1,6 +1,6 @@
 # EXP-220: Bob Persistent-Task Knowledge Gap Fix
 
-**Status**: DEPLOYED — post-measurement blocked (auth error on gym runner, 2026-04-26)
+**Status**: DEPLOYED — awaiting post-measurement (no gym runs since fix; need 20 trials on k3s)
 **Created**: 2026-04-25
 **Owner**: coach
 
