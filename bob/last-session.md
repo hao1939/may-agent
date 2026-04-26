@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777242842563_975
+- **Session:** s_1777244771939_992
 - **Status:** done
-- **When:** 2026-04-26T22:44:08.496Z
-- **Duration:** 10m5s
+- **When:** 2026-04-26T23:23:10.467Z
+- **Duration:** 16m58s
 
 ## What Happened
-Very interesting results. The baseline has shifted to 100% on `identifies-wrong-file` — the scenario is no longer discriminating. Let me write the results.
+Good progress this session. EXP-236 Phase 3 is complete with a clean null result. Let me checkpoint and finish.
