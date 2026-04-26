@@ -2,26 +2,39 @@
 
 ## Root Cause
 
-The database was migrated to a new cluster on **port 5433** on 2026-03-15 (documented in `.env`), but `src/db.js` had port **5432 hardcoded** from a hotfix on 2026-02-10 that was never reverted. This meant the application always connected to port 5432 regardless of the `.env` configuration, resulting in "Connection refused" errors.
+The database was migrated from port 5432 to port 5433 on 2026-03-15 (documented in both the README and the `.env` file). However, the hardcoded fallback in `src/config.js` still used port 5432:
 
-## Conflicting Files
+```js
+port: parseInt(process.env.DB_PORT) || 5432
+```
 
-| File | Port Value | Notes |
-|------|-----------|-------|
-| `.env` | 5433 | Updated by ops team on 2026-03-15 (correct) |
-| `src/config.js` | reads `DB_PORT` env var | Would have used 5433 correctly |
-| `src/db.js` | 5432 (hardcoded) | Old hotfix overrode config — **the bug** |
-| `README.md` | 5432 | Stale documentation |
-| `.env.example` | 5432 | Dev default, not directly relevant |
+When the environment variable failed to load (e.g., missing `dotenv` dependency, wrong working directory, or any other reason `process.env.DB_PORT` was undefined), the `|| 5432` fallback kicked in, causing the app to connect to the old port. The error logs confirm this: all "Connection refused" errors reference port 5432, not the correct 5433.
 
-## What Changed
+## Files with Conflicting Information
 
-1. **`src/db.js`**: Removed the hardcoded `port: 5432` and replaced it with `DB_CONFIG.port` so the port flows from `.env` → `config.js` → `db.js` as intended.
-2. **`README.md`**: Updated port references from 5432 to 5433 to match the current production configuration.
+| File | Port Referenced | Notes |
+|------|----------------|-------|
+| `.env` | 5433 | ✅ Correct (updated by ops team 2026-03-15) |
+| `.env.example` | 5432 | ❌ Stale — still references old dev port |
+| `README.md` | 5432 in setup instructions, 5433 in DB section | ⚠️ Contradictory within the same file |
+| `src/config.js` | 5432 (hardcoded fallback) | ❌ Bug — fallback points to old port |
+| `logs/app.log` | 5432 (in error messages) | Confirms the fallback was being used |
+
+## What Was Changed
+
+**`src/config.js`**: Changed the fallback port from `5432` to `5433` to match the migrated database:
+
+```js
+// Before:
+port: parseInt(process.env.DB_PORT) || 5432
+
+// After:
+port: parseInt(process.env.DB_PORT) || 5433
+```
 
 ## Prevention
 
-- **Never hardcode values that override configuration.** If a hotfix requires pinning a value, create a tracked issue (not just a TODO comment) to revert it.
-- **Use a single source of truth** for connection parameters (the `.env` file via `config.js`). No other file should override those values.
-- **Add a startup log** that prints the actual connection parameters being used, making mismatches immediately visible.
-- **Health check monitoring** should alert on sustained failures, prompting investigation of config drift.
+1. **Keep fallback values in sync with infrastructure changes.** When the DB was migrated, the `.env` was updated but the hardcoded fallback in code was not.
+2. **Fail loudly instead of falling back silently.** A better pattern would throw an error if `DB_PORT` is missing rather than silently using a default: `port: parseInt(process.env.DB_PORT) || (() => { throw new Error('DB_PORT not set') })()`
+3. **Update `.env.example` alongside `.env`** so new deployments don't start with stale defaults.
+4. **Use a config validation step at startup** that logs the resolved configuration, making port mismatches immediately visible.
