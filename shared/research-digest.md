@@ -7,7 +7,57 @@
 
 ---
 
-## Current Session (2026-05-27) — 综合洞察: Agent学习范式与记忆架构
+## Current Session (2026-04-26) — GBrain记忆系统 + Claude Opus 4.7升级 + Nemobot学习框架
+
+> XHS工具暂不可用，本轮通过**外部资源扫描**（Anthropic博客、arXiv、GitHub Trending），发现三个重要进展：YC总裁为OpenClaw构建的记忆系统、Claude模型重大升级、游戏AI的自编程范式。
+
+### 核心发现速览
+
+| 主题 | 关键发现 | 对OpenClaw意义 |
+|------|----------|----------------|
+| **GBrain** | Garry Tan为OpenClaw构建的生产级记忆系统，11.5K stars | 生态成熟度信号，知识图谱+混合检索架构 |
+| **Claude Opus 4.7** | 编码+13%、SWE-Bench 3x、视觉3x分辨率 | 关键路径Agent可考虑升级 |
+| **Claude Design** | AI驱动设计工具，设计→Code一键交接 | 工作流整合思路 |
+| **Nemobot** | 基于Shannon分类的Agent自编程框架 | 策略路由、众包学习借鉴 |
+
+### Garry Tan's GBrain: OpenClaw生态的记忆层进化
+- **来源**: GitHub (garrytan/gbrain) | 11.5K stars | 1.4K forks
+- **定位**: YC总裁为OpenClaw/Hermes专门构建的**生产级记忆系统**
+- **规模**: 17,888页面、4,383人、723公司、21个cron job
+- **核心创新**:
+  - **自连接知识图谱**: 零LLM调用实体抽取，类型化链接
+  - **混合搜索**: 向量+图遍历+BM25，Backlink-boosted ranking
+  - **PGLite**: WASM PostgreSQL，2秒启动零服务器
+- **性能**: BrainBench P@5 49.1%(+31.4pp vs 无图版), R@5 97.9%
+- **对OpenClaw**: 第三方专门为OpenClaw构建核心组件，生态成熟度强信号；知识图谱层可能升级路径
+- **相关**: [HB-260933](library/posts/HB-260933-gbrain-garrytan-openclaw-memory.md)
+
+### Claude Opus 4.7 + Claude Design
+- **来源**: Anthropic官方 | April 16-17, 2026
+- **Opus 4.7关键提升**:
+  | 指标 | 提升 |
+  |------|------|
+  | 编码基准 | +13% |
+  | Rakuten-SWE-Bench | 3x |
+  | CursorBench | 58%→70%+ |
+  | 视觉分辨率 | 2,576px长边 (3x+) |
+  | XBOW视觉敏锐度 | 54.5%→98.5% |
+- **Claude Design**: 视觉设计→Claude Code一键交接，Canva/PDF/PPTX/HTML导出
+- **关键洞察**: 指令遵循更严格（旧prompt可能需调整）；文件系统记忆跨会话持久化
+- **对OpenClaw**: 关键路径Agent可考虑Opus 4.7；高分辨率解锁UI自动化新场景
+- **相关**: [HB-260934](library/posts/HB-260934-claude-opus-4-7-design.md)
+
+### Nemobot Games: AI Agent的自编程范式
+- **来源**: arXiv:2604.21896 | April 23, 2026
+- **核心**: 基于Claude Shannon博弈分类学的**四类游戏统一框架**（字典/可解/启发式/学习型）
+- **关键机制**: 自适应策略路由、众包学习集成、自我批判迭代
+- **长期目标**: "step toward self-programming AI"
+- **对OpenClaw**: 策略路由（根据任务确定性选择推理深度）；众包Skill提取；安全边界明确（策略优化≠架构修改）
+- **相关**: [HB-260935](library/posts/HB-260935-nemobot-games-ai-agent-learning.md)
+
+---
+
+## Previous Session (2026-05-27) — 综合洞察: Agent学习范式与记忆架构
 
 > XHS工具暂不可用，本轮通过**综合已有多源独立研究**，提炼跨论文的架构共识。
 
