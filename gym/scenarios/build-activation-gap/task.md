@@ -1,35 +1,3 @@
----
-# IMPORTANT SKILL: Read this before starting
-
-# Skill: Deployment Lifecycle Verification
-
-**Deploying code is NOT the same as activating it.**
-
-## The Three Steps
-Every deployment has three distinct phases. Completing one does NOT mean the others happened.
-
-### 1. BUILD → Artifacts exist
-- Code compiled, binary built, files in place
-- **Verify**: the artifact exists at the expected path
-
-### 2. ACTIVATE → Running process uses new artifacts  
-- Daemon restarted, service reloaded, symlink followed
-- **Verify**: `ps`, `systemctl status`, or equivalent shows the NEW version running
-- Common trap: symlink updated but daemon still running old binary from memory
-
-### 3. VERIFY → End-to-end check confirms behavior changed
-- Hit the endpoint, run the command, check the output
-- **Verify**: the actual behavior matches what the new code should produce
-
-## Before claiming "deployed"
-- [ ] Did I restart/reload the service after updating files?
-- [ ] Did I check what the RUNNING process is actually executing?
-- [ ] Did I verify the new behavior end-to-end, not just that files are in place?
-
-If any answer is "no" → you haven't deployed, you've only staged.
-
----
-
 # Task: Build and Deploy the Application
 
 The `environment/` directory contains a simple Node.js application with a build/deploy system.

@@ -4,7 +4,7 @@
 
 ## Active / In Progress
 - [x] ~~**EXP-213 results written**: NULL RESULT for bob — schema reorg did not reduce C1.1/C1.3 (11.4%/12.8% post vs 9.9% pre, N=1628). Strengthens H-095.~~
-- [ ] **H-196 Phase 1** (defensibility audit): Audit 20 recent eval failures for defensibility. Zero-cost. From DD#883. If ≥30% are defensible → design Phase 2.
+- [x] ~~**H-196 Phase 1** (defensibility audit): RESOLVED/FALSIFIED via EXP-223 — only 15% defensible failures, below 30% threshold.~~
 - [ ] **DD#883/885/880 synthesis written**: `agents/bob/workspace/synthesis-dd883-dd885-dd880.md`
 - [ ] **H-183 Grading Phase 1 DONE**: 35 KE entries graded (12A/11B/7C/5T). Phase 2 (A/B consumption test) blocked on gym infra. Results: agents/bob/workspace/h183-grading-results.md
 - [ ] **Scenario Gap-Fill** [MEDIUM]: sql-injection (33%) is ready for intervention experiments. deprecation-warning needs redesign (remove console.warn to make recognition harder) or replacement. Consider 1-2 more scenarios to increase portfolio.
