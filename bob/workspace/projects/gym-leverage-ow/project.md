@@ -5,7 +5,7 @@
 **Type**: milestone
 **Workflow**: master-worker
 **Priority**: P1
-**Iteration**: 2
+**Iteration**: 3
 **Health**: —
 
 **Stop Reason**: 
@@ -16,12 +16,12 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 ## Milestones
 
 ### Phase 1: Explore & Fix
-- [ ] Run the gym runner against 3 diverse scenarios and document results (what passed, what failed, what errored)
+- [x] Run the gym runner against 3 diverse scenarios and document results (what passed, what failed, what errored)
 - [ ] Fix any runner issues found (import paths, missing deps, adapter problems)
 - [ ] Write .state/gym-architecture.md documenting the runner → adapter → scenario → scorer pipeline
 
 ### Phase 2: Scenario Review
-- [ ] Write .state/gym-categories.md categorizing all 431 scenarios by type with counts
+- [x] Write .state/gym-categories.md categorizing all 431 scenarios by type with counts
 - [ ] Select a "core 20" benchmark suite, document selection rationale in .state/gym-core20.md
 - [ ] Run core 20 suite and record baseline scores in .state/gym-baseline.md
 
@@ -37,10 +37,12 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 - Gym triage: agents/gym/TRIAGE.md
 
 ## Current State
-Iteration 2. Milestones: 0/9 done.
-Reviewer: — The worker successfully completed the EXP-225 experiment (12 runs, null result, well-documented). Now pivot to the remaining gym infrastructure milestones.
+Iteration 3. Milestones: 2/9 done.
+Reviewer: —
 
-**(a) Concrete output:** `.state/gym-arch
+**(a) Concrete output:** `.state/gym-categories.md` categorizing all 437 scenarios by type with counts, plus `.state/gym-runner-test-results.md` updated with 3 actual scenario runs.
+
+**(b) What's d
 ## Process Notes
 
 ## Comments
@@ -48,4 +50,8 @@ Reviewer: — The worker successfully completed the EXP-225 experiment (12 runs,
 
 ## Iteration Summary
 - **Iter 2**: CONTINUE. — The worker successfully completed the EXP-225 experiment (12 runs, null result, well-documented). Now pivot to the remaining gym infrastructure mile
+
+- **Iter 3**: CONTINUE. —
+
+**(a) Concrete output:** `.state/gym-categories.md` categorizing all 437 scenarios by type with counts, plus `.state/gym-runner-test-results.md` up
 

@@ -1,16 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777189589934_548
+- **Session:** s_1777189688102_551
 - **Status:** done
-- **When:** 2026-04-26T07:46:48.920Z
-- **Duration:** 18s
+- **When:** 2026-04-26T07:48:25.207Z
+- **Duration:** 17s
 
 ## What Happened
-CONTINUE — The worker successfully completed the EXP-225 experiment (12 runs, null result, well-documented). Now pivot to the remaining gym infrastructure milestones.
+CONTINUE —
 
-**(a) Concrete output:** `.state/gym-architecture.md` documenting the runner → adapter → scenario → scorer pipeline, based on reading the actual gym runner bundle code.
+**(a) Concrete output:** `.state/gym-categories.md` categorizing all 437 scenarios by type with counts, plus `.state/gym-runner-test-results.md` updated with 3 actual scenario runs.
 
-**(b) What's different:** Previous iterations focused on EXP-225 and the `--oneshot` blocker. The experiment is now complete (null result, hypothesis rejected). Shifting to the gym documentation and baseline milestones. The `--oneshot` blocker appears resolved since the worker successfully ran 12 gym scenarios.
+**(b) What's different:** Previous iterations focused on EXP-225 and architecture docs. Architecture doc is done (88 lines, solid). Now we need the categories file and actual runner test runs. The scenario directory is at `agents/gym/scenarios/` (437 dirs), not `agents/test/gym/scenarios/`.
 
-**(c) First step:** Read `agents/test/gym/.gym-runner-bundle.mjs` to understand the full runner → adapter → scenario → scorer pipeline, then produce `.state/gym-architecture.md`. After that, enumerate all scenario directories with `ls agents/test/gym/scenarios/` to start categorizing the 431 scenarios for `.state/gym-categories.md`.
+**(c) First step:** Run `find agents/gym/scenarios -name scenario.json -exec cat {} + | node -e "..."` to extract all category/tier/tag fields, then aggregate into `.state/gym-categories.md`. Then run 3 diverse scenarios with the gym runner to populate `.state/gym-runner-test-results.md` with real pass/fail data. This checks off milestones "Write .state/gym-categories.md" and "Run the gym runner against 3 diverse scenarios".

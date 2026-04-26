@@ -173,3 +173,23 @@ Now update the experiment design file with status:
 
 **(c) First step:** Read `agents/test/gym/.gym-runner-bundle.mjs` to understand the full runner → adapter → scenario → scorer pipeline, then produce `.state/gym-architecture.md`. After that, enumerate all scenario directories with `ls agents/test/gym/scenarios/` to start categorizing the 431 scenarios for `.state/gym-categories.md`.
 
+### Iteration 3 — 2026-04-26T07:48:08.102Z
+**Worker**: **Status:** done (1m19s)
+
+**Files modified:**
+- .state/gym-architecture.md
+- .state/gym-runner-test-results.md
+
+**Files read (not modified):**
+- agents/test/gym/.gym-runner-bundle.mjs
+
+**Agent response:**
+Now let me document the 3 scenario runs:
+**Reviewer**: CONTINUE — —
+
+**(a) Concrete output:** `.state/gym-categories.md` categorizing all 437 scenarios by type with counts, plus `.state/gym-runner-test-results.md` updated with 3 actual scenario runs.
+
+**(b) What's different:** Previous iterations focused on EXP-225 and architecture docs. Architecture doc is done (88 lines, solid). Now we need the categories file and actual runner test runs. The scenario directory is at `agents/gym/scenarios/` (437 dirs), not `agents/test/gym/scenarios/`.
+
+**(c) First step:** Run `find agents/gym/scenarios -name scenario.json -exec cat {} + | node -e "..."` to extract all category/tier/tag fields, then aggregate into `.state/gym-categories.md`. Then run 3 diverse scenarios with the gym runner to populate `.state/gym-runner-test-results.md` with real pass/fail data. This checks off milestones "Write .state/gym-categories.md" and "Run the gym runner against 3 diverse scenarios".
+
