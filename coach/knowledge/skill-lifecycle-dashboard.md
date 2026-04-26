@@ -1,6 +1,6 @@
 # Skill Lifecycle Dashboard
 
-**Last Updated**: 2026-04-03
+**Last Updated**: 2026-04-26
 **Owner**: Coach
 **Directive**: Hao (req:6532a872) — track full lifecycle: create → evaluate → adopt → regression monitor
 
