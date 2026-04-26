@@ -1,37 +1,28 @@
-# QA Heartbeat — Unreviewed Findings
+# QA Heartbeat — Unreviewed Findings (2026-04-26)
 
-Date: 2026-04-26
+## Inbox triage (duplicate review requests)
+Received multiple duplicate "Quick Code Review" notifications. No actionable payload/PR identifiers were attached in heartbeat context, so cannot review specific changes. Recommendation: dedupe at dispatcher and include a stable review target (commit SHA / PR URL / paths).
 
-## Pending events triage
-- Duplicate “Quick Code Review” requests (5x): **DISMISS** as waste/duplicate dispatch. No unique work item or patch referenced.
-- EXP-220 scenario verification request: **ESCALATE/DEFER** — cannot verify without a pointer to the scenario path/PR/commit touching it. (No relevant commits in last 10; see below.)
-- Convention coaching alerts (C1.4/C8.2): **ACT** — during this heartbeat I followed SOP: used `read()` for file evidence, and ran mandatory `tsc`/`vitest` commands.
+## Recent unverified changes (root repo)
+`git log -10` shows recent commits:
+- e204e9d EXP-228 null result + H-EXP-029 role-context hypothesis
+- 0804a49 EXP-228: Status → RUNNING, gym runs delegated to bob
+- 5e96d3d bob: resolve all 17 hypotheses...
 
-## Recent commits (repo root)
-- 5e96d3d `bob: resolve all 17 hypotheses, design environmental constraint toolkit`
-- 3f031dd `bob: H-EXP-023 resolved, meta-analysis of text intervention ceiling, H-EXP-027 environmental constraints hypothesis`
+Reviewed content evidence:
+- `.state/experiments/EXP-228-security-awareness-skill.md` — experiment summary marks NULL RESULT; note: Date field says **2026-10-01** which appears inconsistent with commit date (2026-04-26). Potential doc-quality issue.
+- `.state/hypotheses/h-exp-029-role-context-lever.md` — hypothesis design looks coherent; no code impact.
 
-Both commits appear to add notes/docs under `.state/hypotheses/` (no code changes observed via file list).
+## Gym scenario alert follow-up (P2): EXP-220 / enoent-file-search
+Verified scenario exists at `agents/gym/scenarios/enoent-file-search/`.
+- `scenario.json` correctly describes the mismatch (task references `src/` and `test/` but real files are in `lib/`).
+- `task.md` contains the deliberate wrong paths and explicit instruction not to modify the (nonexistent) `test/test-grades.js`.
+- `success_criteria.js` checks that `src/` and `test/` dirs were not created and that `lib/grade-pipeline.js` was modified, then runs `node lib/test-grades.js`.
 
-## Evidence read (example changed file)
-- `.state/hypotheses/h-exp-027-environmental-constraints.md`
-  - Status: RESOLVED ✅ (VALIDATED via meta-analysis)
-  - Content is documentation; no executable logic.
+Potential issue: `scenario.json` lists environment files `lib/grade-pipeline.js` and `lib/test-grades.js` but does not include them in the scenario directory (likely provided by gym harness). If harness does not materialize them, scenario will fail with ENOENT—worth confirming via an actual gym run.
 
-## Mandatory QA commands
-### 1) TypeScript check — `./node_modules/.bin/tsc --noEmit`
-**FAIL (environment/config)**
-- Observed output: TypeScript help text; exits code 1.
-- Interpretation: there is no `tsconfig.json` and no input files were provided, so `tsc` can’t typecheck a project.
+## Tooling / CI sanity
+- `./node_modules/.bin/tsc --noEmit` currently fails because there is no tsconfig in repo root (tsc prints help and exits code 1).
+- `./node_modules/.bin/vitest --run` fails: vitest binary missing at that path (No such file or directory).
 
-### 2) Test run — `./node_modules/.bin/vitest --run`
-**FAIL (environment/config)**
-- Observed output: `./node_modules/.bin/vitest: No such file or directory` (exit 127).
-
-## Environment/config findings
-- `package.json` contains only `typescript` under `dependencies`; no `vitest` (or other test runner) configured.
-
-## Recommendation
-If this repo is intended to support the QA SOP commands:
-- add a root `tsconfig.json` (or document the correct project path to run `tsc -p <path>`), and
-- add `vitest` (or document the intended test runner and invocation).
+These look like environment/tooling assumptions not satisfied at repo root; QA cannot run mandated checks without project-specific instructions (e.g., run in a subpackage).
