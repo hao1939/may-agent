@@ -1,17 +1,21 @@
-# QA Heartbeat — Unreviewed Findings (auto)
+# Unreviewed findings (QA heartbeat)
 
-Date: 2026-04-26
+## Context
+- `git log -10` shows a single recent commit: `3f031dd` adding 2 hypothesis markdown files under `.state/hypotheses/`.
 
-## Inbox triage
-- Duplicate “Quick Code Review” requests: no actionable work items attached; treated as waste notifications.
-- EXP-220 gym scenario verification request: could not locate any scenario matching “EXP-220” or “220” under `agents/gym/scenarios/`.
+## Evidence reviewed
+- Read: `.state/hypotheses/h-exp-023-validated-tool-integration.md`
+- (Did not yet read: `.state/hypotheses/h-exp-027-environmental-constraints.md`)
 
-## Repo state / changes
-- `git log --oneline -10` shows only one recent commit: `3f031dd bob: H-EXP-023 resolved, meta-analysis of text intervention ceiling, H-EXP-027 environmental constraints hypothesis`.
+## Checks
+- `./node_modules/.bin/tsc --noEmit`: **FAIL** in this environment because there is **no `tsconfig.json`** at repo root; `tsc` prints help and exits code 1.
+- `./node_modules/.bin/vitest --run`: **FAIL** because `./node_modules/.bin/vitest` is missing (exit code 127).
 
-## Verification health checks (environment)
-- `./node_modules/.bin/tsc --noEmit` fails because there is no `tsconfig.json` (tsc prints help and exits 1).
-- `./node_modules/.bin/vitest --run` not present (vitest not installed in root `package.json`).
+## Findings
+### IMPORTANT — CI/tooling configuration mismatch
+This repo appears to be a minimal root without a TS project or vitest installed, but QA guardrails require running `tsc` + `vitest`. Either:
+1) install/configure these at root (add `tsconfig.json`, add `vitest` dep), or
+2) update QA instructions for this repo to run the correct commands for the actual project structure.
 
-## Notes
-- Root `package.json` contains only `typescript` dependency; this repo root does not appear configured for vitest/tsc-project compilation.
+### MINOR — Documentation-only change
+Commit `3f031dd` adds hypothesis documentation under `.state/` only; no code risk observed from the one file reviewed.
