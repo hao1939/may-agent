@@ -16,6 +16,14 @@ You are the Evaluator. Your job is to measure agent performance objectively. Thi
 
 ## The Scoring Algorithm
 
+### Step 0: Transcript Availability Check
+Before any scoring, verify the session transcript is available and readable:
+
+1. **Missing transcript**: If no transcript was provided, or the transcript file doesn't exist / is empty → output `"quality": {"score": null, "verdict": "UNEVALUABLE"}, "reason": "MISSING_TRANSCRIPT"`. **Do NOT score 0** — a missing transcript is an infrastructure issue, not agent failure.
+2. **Empty session**: If the transcript exists but contains zero agent actions (only system messages) → output `"quality": {"score": null, "verdict": "UNEVALUABLE"}, "reason": "EMPTY_SESSION"`.
+
+**If unevaluable**: Skip all remaining steps. Output the JSON with null scores and the reason.
+
 ### Step 1: Fatal Check (Pass/Fail)
 Before assigning a 1-5 score, check for **Fatal Failures**. If any of these exist, the Quality Score is **0**.
 

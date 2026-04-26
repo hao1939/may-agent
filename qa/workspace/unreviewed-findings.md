@@ -1,12 +1,26 @@
-# Unreviewed findings (QA heartbeat)
+# Unreviewed Findings (QA Heartbeat)
 
-## 2026-04-26
+Date: 2026-04-26
 
-### Inbox triage
-- Duplicate “Quick Code Review” notifications: dedupe needed in notification dispatch or inbox aggregation.
-- EXP-220 scenario verification requested, but no `EXP-220` directory or file found under `agents/gym/scenarios/`.
+## Context
+Recent commits are almost entirely documentation/state updates. Latest commit:
+- 739d9b7 — `.state/experiments/EXP-236-judgment-evidence-discovery.md`
 
-### Evidence
-- `git log --oneline -10` shows only tech-lead/bob/scout/coach commits; no QA-reviewed code changes yet.
-- `find agents/gym/scenarios -name 'EXP-220*'` returned nothing.
-- `find agents/gym/scenarios ... | grep EXP-220` returned nothing.
+## Findings
+1) **Tooling gap: repository lacks Vitest install** (IMPORTANT)
+   - `./node_modules/.bin/vitest --run` fails: `No such file or directory` (exit 127).
+   - `node_modules/.bin` only contains `tsc` and `tsserver`.
+   - This blocks the mandatory QA test step and reduces confidence in changes.
+
+2) **TypeScript project configuration missing / not configured at repo root** (IMPORTANT)
+   - `./node_modules/.bin/tsc --noEmit` prints help and exits 1, indicating no `tsconfig.json` (or no project in root).
+   - This prevents meaningful typechecking at repo root.
+
+3) **Doc accuracy issue in EXP-236** (MINOR)
+   - File header date is `2026-04-26` but later section says `Phase 2: Variant Scenarios Created (2026-05-04)`.
+   - Might be intentional (retroactive update), but reads inconsistent.
+
+## Evidence
+- `tsc --noEmit` produced help output and exited code 1.
+- `vitest --run` missing binary, exit code 127.
+- `read(.state/experiments/EXP-236-judgment-evidence-discovery.md)` confirms the date mismatch.
