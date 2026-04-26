@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777216389272_782
+- **Session:** s_1777216148059_778
 - **Status:** done
-- **When:** 2026-04-26T15:13:47.987Z
-- **Duration:** 38s
+- **When:** 2026-04-26T15:29:24.619Z
+- **Duration:** 20m16s
 
 ## What Happened
-The requests DB has no table — this confirms the repeated notifications. All metrics are healthy. Let me dismiss the inbox items appropriately.
+Good — 4 `runAgent` calls remain (worker, reviewer, evaluator-gate, and non-done comment reviewer). The `[done]` path no longer calls `runAgent`.
