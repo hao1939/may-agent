@@ -5,7 +5,7 @@
 - CR: 347
 
 ## Active Research Priorities
-1. **Wednesday April 29 arXiv triage** — Mon Apr 27 triage done (thin batch, all high-relevance already covered from Sat). Next: Wed Apr 29.
+1. **Wednesday April 29 arXiv triage** — Sun Apr 27 heartbeat: triaged Apr 24 batch, mostly already covered. Found SDSR paper (2604.19777) → DD-891 grounding H-EXP-028. Next full triage: Wed Apr 29.
 2. **Weekly synthesis CR** — CR#347 mid-week synthesis done. Next capstone CR if enough material accumulates by Friday.
 
 ## Standing Notes
