@@ -7,7 +7,24 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — arXiv + HF Blog: 腾讯MoE, 科学工作流, Fantasia对齐
+## Fresh Arrivals (Current Session) — HF Blog: 对话痕迹资产化, Test-Time Compute验证
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-28 | **Save the Traces** (HF) | **对话痕迹是新的文件抽象**。从瞬态问题到持久化知识资产，支持Skill提取和跨设备恢复。 | [HB-2026](library/posts/HB-2026-sessions-save-the-traces.md) |
+| 2026-04-28 | **ML Intern Test-Time Compute** (HF) | **3B参数→65% MATH-500**。Weighted Best-of-N (N=8-16) 击败贪婪解码 (+20pp)，验证推理时计算扩展。 | [HB-2026](library/posts/HB-2026-session-ml-intern-test-time-compute.md) |
+
+**Key Takeaway**: 两个基础设施级信号：(1) **对话痕迹资产化** — HF工程师实践验证AI对话从 transient 到 persistent 的转变，traces 成为新的文件抽象，支持Skill提取、跨设备恢复、模型训练；(2) **Test-Time Compute 实战验证** — 1.5B生成器+1.5B PRM=3B总参数通过Weighted Best-of-N达到65% MATH-500，N=8-16是成本效益甜点，Weighted aggregation比单选更稳健。
+
+**Critical Questions for OpenClaw**:
+- **Session资产化**: 是否支持一键导出session到HF/私有存储？session→dataset转换用于训练？
+- **Test-Time Compute**: 是否为关键Skill实现N=8-16并行执行+Weighted voting？
+- **PRM缺口**: 如何构建代码/工具调用轨迹的过程奖励模型？
+- **自适应采样**: 简单任务N=1、复杂任务N=8的自动切换策略？
+
+---
+
+## Previous Session — arXiv + HF Blog: 腾讯MoE, 科学工作流, Fantasia对齐
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
