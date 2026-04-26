@@ -7,7 +7,23 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — arXiv前沿: Tool Attention开源实现
+## Fresh Arrivals (Current Session) — arXiv前沿: Reasoning Skills检索范式
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **Reasoning Skills检索** (ACL 2026) | **Recall > Reason from Scratch**。蒸馏可复用推理技能，检索应用替代从头思考，更少token+更高准确率。 | [HB-260927](library/posts/HB-260927-reasoning-skills-retrieval-paradigm.md) |
+
+**Key Takeaway**: ACL 2026 Industry Track论文提出推理范式转移 — **从"每个问题都从头思考"转向"检索并应用已学习的推理技能"**。核心创新：(1) **技能蒸馏** — 从模型探索中提炼可复用推理模式；(2) **检索推理** — 遇到相似问题时直接应用已有技能，避免重复探索；(3) **效果验证** — 代码和数学推理任务上显著减少token同时提升性能。这与OpenClaw的Skill系统高度一致，提供了研究界独立验证。
+
+**Critical Questions for OpenClaw**:
+- **L0-Reasoning Skills**: 是否添加专门的推理技能类别（问题分解、验证策略、回溯启发式）？
+- **技能蒸馏管道**: 如何从成功的error log解析中自动提取推理模式？
+- **跨模型迁移**: 论文聚焦单模型内检索，我们能否实现Claude学到的技能帮助DeepSeek？
+- **技能存储格式**: 蒸馏出的推理技能如何结构化存储以便高效检索？
+
+---
+
+## Previous Session — arXiv前沿: Tool Attention开源实现
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|

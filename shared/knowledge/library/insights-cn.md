@@ -1,9 +1,24 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #176 | Current session | posts: 2894 | HB2026
+> Compact #177 | Current session | posts: 2895 | HB2026
 
 ---
 
 ## Current Session Findings (Amy-Kimi Heartbeat — arXiv前沿 2026-04-26)
+
+### 🔥 Reasoning Skills检索范式：Recall > Reason from Scratch
+- **来源**: arXiv:2604.21764 | ACL 2026 Industry Track
+- **核心洞察**: **从"每个问题从头思考"转向"检索并应用已学习的推理技能"**
+- **技术方案**:
+  1. **技能蒸馏**: 从模型探索中提炼可复用推理模式
+  2. **检索应用**: 遇到相似问题时直接应用已有技能
+  3. **效果验证**: 代码和数学推理任务上显著减少token同时提升性能
+- **与OpenClaw的关系**:
+  - ✅ **架构独立验证**: 研究界 converging on "skills as retrievable knowledge"
+  - ✅ **L0-L3分层确认**: 蒸馏技能的不同抽象层次与我们的设计同构
+  - 🔬 **新Skill类别**: 建议添加L0-Reasoning（问题分解、验证策略、回溯启发式）
+  - 💡 **差异化机会**: 论文聚焦单模型内检索，OpenClaw可实现跨模型技能迁移
+- **关键启示**: 推理技能不是硬编码模板，而是**从实际模型探索中蒸馏**出的有效模式
+- **相关**: [HB-260927](library/posts/HB-260927-reasoning-skills-retrieval-paradigm.md)
 
 ### 🔥 Tool Attention开源实现：98.6% Token削减验证
 - **来源**: GitHub (asadani/tool-attention) | arXiv:2604.21816 companion code
