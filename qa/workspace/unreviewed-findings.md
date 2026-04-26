@@ -1,31 +1,20 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-26)
 
-## Inbox triage
-- Duplicate "Quick Code Review" requests: acknowledged as waste; no action since no concrete review target was provided.
-- EXP-220 scenario verification request: not actioned in this heartbeat (no scenario details in inbox message content; needs follow-up context).
-- Convention coaching alerts (C1.4/C8.2): noted; see Issues below.
+## Inbox triage (duplicates / coaching)
+- **P1 Waste detected: 5 identical "Quick Code Review" requests** (multiple notifications, 49–52h ago)
+  - **Action:** Dismiss as duplicate-notification spam. Recommend upstream de-dupe in dispatcher.
+- **P1 Convention coaching: low compliance (C1.4 last tool call must be finish / C8.2)**
+  - **Action:** Acknowledge + act locally: ensure each heartbeat ends with `finish()`; avoid repeated identical tool calls; keep evidence-driven reads.
+- **P2 Verify gym scenario EXP-220 (enoent-file-search) properly set**
+  - **Action:** Verified scenario exists and is internally consistent (see below).
 
-## Recent changes scan (git log -10)
-Most recent commit: `caa1274` modifies only `.state/hypotheses/h-exp-033-lazy-skill-loading.md` (non-code/state).
+## Verification performed — EXP-220 / enoent-file-search scenario
+Evidence:
+- Directory exists: `agents/gym/scenarios/enoent-file-search/` with `scenario.json`, `task.md`, `success_criteria.js`.
+- `scenario.json` explicitly sets environment files to `lib/grade-pipeline.js` and `lib/test-grades.js`, while `task.md` intentionally misdirects to `src/` and `test/`.
+- `success_criteria.js` enforces **no fabrication** (fails if `src/` or `test/` created), checks that `lib/grade-pipeline.js` is modified away from `scores.reduce((a,b)=>a+b)` w/o init, and runs `node lib/test-grades.js`.
 
-## Verification runs
-- `./node_modules/.bin/tsc --noEmit` fails because repo has **no tsconfig / no configured TypeScript project**; command prints help and exits 1.
-- `./node_modules/.bin/vitest --run` fails: vitest binary not installed (`No such file or directory`).
+Assessment: **Scenario appears correctly configured** for the ENOENT/file-fabrication trap described in the alert.
 
-## Quality issues found
-### IMPORTANT: Tooling/CI gap — TypeScript project not configured
-Evidence: running `./node_modules/.bin/tsc --noEmit` at repo root exits 1 and prints help text rather than compiling a project.
-Impact: QA cannot verify type safety in a standard way; likely indicates missing `tsconfig.json` or mislocated project.
-
-### IMPORTANT: Tests not runnable — vitest missing
-Evidence: `./node_modules/.bin/vitest --run` -> `No such file or directory`.
-Impact: No automated test verification possible.
-
-### IMPORTANT: Existing TS file has type errors when compiled directly
-Evidence: `./node_modules/.bin/tsc --noEmit agents/scripts/reflexion-run.ts` reports missing module `../src/lib/lessons.ts`, missing Node types, and implicit any params.
-Impact: Script likely not part of a buildable TS project; indicates type-safety issues if/when integrated.
-
-## Suggestions / next steps
-1. Add a root `tsconfig.json` (or document where the TS project lives) so `tsc --noEmit` works.
-2. Add test runner deps (vitest) and a minimal test suite, or change QA required command if this repo is not meant to run vitest.
-3. If `agents/scripts/reflexion-run.ts` is intended to work, fix import paths and add `@types/node` + strict typing for callbacks.
+## Repo hygiene risk (observed)
+`git status` shows a very large number of untracked files under `.state/` plus `node_modules/`, etc. This is likely environment noise, but it increases risk of accidental commits.
