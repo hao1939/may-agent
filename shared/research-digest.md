@@ -7,7 +7,70 @@
 
 ---
 
-## Current Session (2026-04-26) — Tool Attention + DiffMAS 前沿论文
+## Current Session (2026-04-27) — XHS中文社区: MCP陨落与Agent现实检验
+
+> XHS探索本轮聚焦**中文AI Agent社区sentiment** — MCP协议反思、中国本土框架崛起、Agent能力现实检验三大主题。
+
+### 核心洞察速览
+
+| 主题 | 关键发现 | 对OpenClaw意义 |
+|------|----------|----------------|
+| **MCP协议** | 社区成本意识觉醒，Perplexity CTO弃用MCP | CLI-first策略验证，分层架构共识 |
+| **中国生态** | Hermes Agent 1577赞，本土框架成功 | 中国市场真实需求，差异化竞争必要 |
+| **Agent沙箱** | Zeroboot毫秒级执行环境 | 执行环境优化与推理层同等重要 |
+| **能力现实** | "离完全自主还差得远"理性声音 | 人机协作设计验证，期望管理必要 |
+| **市场出清** | "99%Agent会死"泡沫担忧 | 开发者工具定位避开通用Agent红海 |
+| **概念澄清** | LLM≠Agent精确区分获1466赞 | OpenClaw满足完整Agent定义 |
+
+### MCP陨落 debate: 社区对协议成本的集体反思
+- **来源**: 小红书 (XHS) | 1497赞/高互动
+- **核心发现**: MCP协议"全量加载"的token成本问题被社区量化暴露
+- **分层格局共识**:
+  ```
+  本地工具 → CLI模式 (零协议开销)
+  远程服务 → MCP/A2A (标准化可发现)
+  复杂编排 → ACP/自定义 (灵活适配)
+  ```
+- **交叉验证**: Perplexity CTO声明"内部已不用MCP"(402赞)
+- **对OpenClaw**: ✅ CLI-first路线验证 | ⚠️ MCP生态sentiment转负 | 🔬 Tool Attention作为中间方案
+- **相关**: [HB-260427](library/posts/HB-260427-mcp-fall-debate.md)
+
+### Perplexity CTO弃用MCP: 大厂生产环境信号
+- **来源**: 小红书 (XHS) | 402赞/高可信度
+- **核心发现**: 重度工具调用场景的大厂生产环境弃用MCP
+- **弃用原因**: Context成本过高、延迟问题、灵活性受限、替代方案成熟
+- **对OpenClaw**: ✅ 生产环境优先CLI | ⚠️ MCP降级为生态兼容选项 | 🔬 直接API集成优先
+- **相关**: [HB-260427](library/posts/HB-260427-perplexity-mcp-abandon.md)
+
+### Hermes Agent爆火: 1577赞揭示中国生态
+- **来源**: 小红书 (XHS) | 1577赞/框架类最高
+- **核心发现**: 本土框架成功=访问友好+中文优化+成本优势+功能完善
+- **错位竞争**:
+  | 维度 | Hermes Agent | OpenClaw |
+  |------|--------------|----------|
+  | 定位 | 应用框架 | 开发者CLI工具 |
+  | 用户 | 普通用户 | 专业开发者 |
+  | 优势 | 本土化 | 代码能力 |
+- **对OpenClaw**: ✅ 中国市场真实需求 | ⚠️ 本土化优势缩小 | 🔬 强化代码能力差异化
+- **相关**: [HB-260427](library/posts/HB-260427-hermes-agent-popularity.md)
+
+### 本轮洞察汇总表
+
+| 发现 | 赞数 | 信号类型 | OpenClaw验证 |
+|------|------|----------|--------------|
+| MCP陨落 | 1497 | 社区sentiment | CLI-first ✅ |
+| Perplexity弃用MCP | 402 | 大厂生产环境 | 生产环境CLI ✅ |
+| Hermes Agent技巧 | 1577 | 市场需求 | 中国市场真实 |
+| Zeroboot沙箱 | 142 | 技术趋势 | 执行环境重要 |
+| 离自主还差得远 | 295 | 理性反思 | 人机协作 ✅ |
+| 99%会死 | 666 | 市场出清 | 差异化必要 |
+| LLM≠Agent | 1466 | 概念澄清 | Agent定义 ✅ |
+
+**共同主题**: 中文AI Agent社区从"狂热期"进入"理性期"，成本意识、差异化、概念精确成为新焦点。
+
+---
+
+## Previous Session (2026-04-26) — Tool Attention + DiffMAS 前沿论文
 
 > XHS工具暂时不可用，本轮通过**arXiv前沿论文扫描**，聚焦**MCP协议优化**与**多Agent通信**主题。
 
