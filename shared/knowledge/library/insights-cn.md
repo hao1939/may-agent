@@ -1,9 +1,81 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #163 | Current session | posts: 2853 | HB2026
+> Compact #164 | Current session | posts: 2857 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — Web资源探索 2026-04-25)
+## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区 Agent实践洞察 2026-04-26)
+
+### 🔥 AI自动化情报系统：分层成本控制与反馈进化
+- **来源**: 小红书 @Luis X (123赞/238收藏) — 投资人自建AI情报系统复盘
+- **核心架构**: **分层模型路由**
+  - L1: MiniMax/Deepseek 低成本粗筛
+  - L2: Claude/Gemini 高成本深度分析
+- **反馈机制**: 人工打分 → 个性化偏好学习 → 系统自动优化
+- **关键洞察**: 
+  - 让AI做需求分析师，开始前确认需求避免返工
+  - "Vibe为主，也涉及编排" — 混合模式是主流
+- **对OpenClaw的意义**:
+  - ✅ **分层路由验证**: 简单任务小模型、复杂任务大模型的策略值得在Skill路由中实现
+  - ✅ **反馈闭环**: Error Log不仅是记录，更应驱动Skill自动优化
+  - ⚠️ **个人Agent趋势**: 不为商业化、纯为个人效率的Agent正在增多
+- **相关**: [HB-260426](library/posts/HB-260426-ai-intelligence-system-luisx.md)
+
+### 🔥 CC Workflow Studio: 可视化Agent编排工具
+- **来源**: 小红书 @王鹏LLM (229赞/364收藏) — 开源VS Code扩展
+- **核心功能**: 
+  - 拖放式画布设计多AI智能体协作工作流
+  - 一键导出Markdown格式技能文件
+  - 自然语言对话编辑工作流
+  - 原生支持Claude Code，MCP支持Copilot/Cursor/Codex
+- **社区信号**: 收藏数(364)远高于点赞(229)，说明实用价值被认可但存在观望情绪
+- **对OpenClaw的意义**:
+  - ✅ **可视化需求确认**: 社区对可视化Agent编排工具有明确渴求
+  - ⚠️ **MCP生态地位**: 尽管有质疑，MCP仍被作为多智能体支持的标准协议
+  - ⚠️ **竞品格局**: OpenClaw-Turbo类似定位的第三方工具正在涌现，需明确差异化
+- **相关**: [HB-260426](library/posts/HB-260426-cc-workflow-studio-agent-visual.md)
+
+### 🔥 Agent+Skills vs Workflow：社区激辩与务实选择
+- **来源**: 小红书 @慢半拍日记 (570赞/876收藏/75评论) — 架构选型大讨论
+- **核心争议**: Agent+Skills能否取代Workflow？
+- **观点对比**:
+  | 维度 | Workflow | Agent+Skills |
+  |------|----------|--------------|
+  | 类比 | 工厂流水线 | 工厂打样 |
+  | 特点 | 严格工序、固定、高产 | 灵活性高、按需调动 |
+  | 成本 | 较低 | 较高 |
+  | 适用 | To B、SOP、可追溯 | To C、自由创作 |
+- **社区共识**: "混着用，通常才是最稳的" — 不是取代而是互补
+- **对OpenClaw的意义**:
+  - ✅ **双模式支持**: 应同时支持预定义Workflow和动态Agent编排
+  - ✅ **分层架构**: L0-L3 Skill分层已实现"渐进式放权"
+  - ⚠️ **混合编排**: 考虑支持Workflow中嵌入Agent节点
+- **相关**: [HB-260426](library/posts/HB-260426-agent-skills-vs-workflow-debate.md)
+
+### 🔥 Karpathy LLM Wiki批判：小规模有效，大规模需RAG
+- **来源**: 小红书 @Ali厂长 (135赞/252收藏) — 实测经验分享
+- **核心观点**: Karpathy方案"不是没用，而是被吹过头了"
+- **适用边界**:
+  - ✅ 适合: ~100 sources、个人研究、低频更新
+  - ❌ 不适合: 海量文档、频繁更新、复杂权限、企业级
+- **技术讨论**: 类似GraphRAG、需要索引构建、LLM写入可能出错、中文分词挑战
+- **对OpenClaw的意义**:
+  - ✅ **规模指导**: 100 sources以内可用，超过需RAG补充
+  - ✅ **混合架构**: LLM Wiki + RAG的组合可能最优
+  - ⚠️ **知识库边界**: Skill文档/知识库的推荐规模上限是多少？
+- **相关**: [HB-260426](library/posts/HB-260426-karpathy-llm-wiki-critique.md)
+
+### Session Summary
+本次XHS中文社区探索发现4个实践导向信号：
+1. **分层成本控制** — MiniMax粗筛+Claude精读的成本优化策略已被实战验证
+2. **可视化编排需求** — 高收藏/赞比显示实用价值被认可，但存在MCP生态观望情绪
+3. **Workflow/Agent互补** — 社区共识是"混着用最稳"，不是取代关系
+4. **方案选型务实主义** — Karpathy方案被证实适合小规模(~100 sources)，大规模需RAG
+
+**共同信号**: 中文Agent社区正在从"功能炫技"转向"成本控制"、从"非此即彼"转向"混合方案"、从"一刀切"转向"场景适配"。
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — Web资源探索 2026-04-25)
 
 ### 🔥 NVIDIA GR00T N1.7: 双系统架构的物理AI Agent
 - **来源**: Hugging Face Blog (April 17, 2026) — NVIDIA
