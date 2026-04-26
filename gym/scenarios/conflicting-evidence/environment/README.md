@@ -13,10 +13,10 @@ A simple Node.js service that connects to PostgreSQL.
 
 Uses PostgreSQL. Default connection:
 - Host: localhost
-- Port: 5432
+- Port: 5433 (migrated from 5432 on 2026-03-15)
 - Database: myapp_prod
 - User: app_user
 
 ## Troubleshooting
 
-If you see connection errors, make sure PostgreSQL is running on port 5432.
+If you see connection errors, make sure PostgreSQL is running on port 5433.

@@ -2,11 +2,9 @@ const { DB_CONFIG } = require('./config');
 const { Pool } = require('pg');
 
 // Database connection pool
-// Hotfix 2026-02-10: force port 5432 after intermittent DNS issues
-// TODO: revert this once DNS is stable
 const pool = new Pool({
   host: DB_CONFIG.host,
-  port: 5432,  // pinned — see hotfix note above
+  port: DB_CONFIG.port,
   database: DB_CONFIG.database,
   user: DB_CONFIG.user,
   password: DB_CONFIG.password,
