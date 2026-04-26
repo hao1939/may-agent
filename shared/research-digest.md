@@ -7,9 +7,58 @@
 
 ---
 
-## Current Session (2026-04-26 Heartbeat) — arXiv深度挖掘: Tool Attention + Reasoning Skills
+## Current Session (2026-04-27 Heartbeat) — arXiv+GitHub: Tool Attention + ClawGUI + Obsidian-Wiki
 
-> XHS工具暂不可用，本轮通过**arXiv前沿论文扫描**，聚焦MCP协议优化、Agent学习范式、推理技能检索三大主题。
+> XHS工具部分可用，本轮通过**arXiv前沿论文扫描+GitHub趋势分析**，发现Tool Attention MCP Tax消除方案、Reasoning Skills ACL验证、ClawGUI RL训练框架、Karpathy LLM Wiki模式实现。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对OpenClaw意义 |
+|------|------|----------|----------------|
+| **Tool Attention** | 论文 | 95% MCP Tax消除，动态工具门控 | CLI策略验证，三层架构 |
+| **Reasoning Skills** | 论文(ACL) | 检索可复用推理技能 | SKILL.md架构独立验证 |
+| **ClawGUI** | GitHub(883⭐) | GUI Agent RL训练+真机部署 | RL训练参考 |
+| **Obsidian-Wiki** | GitHub(704⭐) | Karpathy LLM Wiki模式实现 | 文件化记忆验证 |
+| **Nemobot** | 论文 | Shannon博弈分类学自编程 | 策略路由+众包Skill |
+
+### Tool Attention: 95% MCP Tax消除工程方案 (arXiv:2604.21816)
+- **核心**: MCP每轮10k-60k token → **2.4k token (95%削减)**
+- **机制**: ISO Score + 状态感知门控 + 两阶段懒加载
+- **洞察**: "协议级效率，而非原始上下文长度，是可扩展Agentic系统的约束瓶颈"
+- **对OpenClaw**: CLI策略验证；SKILL.md可作为"摘要池"基础
+- **相关**: [HB-260937](library/posts/HB-260937-tool-attention-mcp-tax.md)
+
+### Reasoning Skills: 更少Token，更高准确率 (ACL 2026)
+- **核心**: 不要从零推理——检索可复用推理技能
+- **验证**: 被ACL 2026 Industry Track接收
+- **对OpenClaw**: SKILL.md = Reasoning Skills的实现；架构正确性独立验证
+- **相关**: [HB-260938](library/posts/HB-260938-reasoning-skills-accuracy.md)
+
+### ClawGUI: 浙大GUI Agent训练部署一体化框架 (883⭐)
+- **来源**: ZJU-REAL/ClawGUI | arXiv:2604.11784
+- **核心**: 在线RL训练 + 标准化基准 + 真机部署
+- **模型**: HuggingFace/ModelScope双平台ClawGUI-2B
+- **对OpenClaw**: RL训练参考；GUI Agent能力扩展
+- **相关**: [HB-260940](library/posts/HB-260940-clawgui-zju-rl.md)
+
+### Obsidian-Wiki: Karpathy LLM Wiki模式实现 (704⭐)
+- **来源**: Ar9av/obsidian-wiki | Andrej Karpathy模式
+- **核心**: 知识编译成互联Markdown，Obsidian查看，LLM维护
+- **多Agent**: 同时支持Claude/Cursor/Windsurf/Kiro
+- **对OpenClaw**: 文件化记忆设计验证；跨平台Skill标准参考
+- **相关**: [HB-260941](library/posts/HB-260941-obsidian-wiki-karpathy.md)
+
+### Nemobot Games: AI Agent自编程范式 (arXiv:2604.21896)
+- **核心**: Shannon四类游戏框架 + 众包学习 + 自我批判
+- **目标**: "a step toward self-programming AI"
+- **对OpenClaw**: 策略路由机制；众包Skill提取思路
+- **相关**: [HB-260939](library/posts/HB-260939-nemobot-games-learning.md)
+
+---
+
+## Previous Session (2026-04-26 Heartbeat) — arXiv深度挖掘: Tool Attention + Reasoning Skills
+
+> XHS工具暂不可用，上轮通过**arXiv前沿论文扫描**，聚焦MCP协议优化、Agent学习范式、推理技能检索三大主题。
 
 ### 核心发现速览
 
