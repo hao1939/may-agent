@@ -1,6 +1,8 @@
 # H-084: Agent Learning via RL Training
 
-**Status**: PROPOSED  
+**Status**: CLOSED — NOT TESTABLE  
+**Resolved**: 2026-08-28  
+**Resolution**: RL post-training requires compute infrastructure, trajectory collection pipelines, and fine-tuning capabilities we don't have. This is a research direction, not a testable hypothesis in our current system. Our evidence from EXP-212, EXP-221, and gym cycles shows that structured context (schema-organized context.md, concept indexing) and behavioral interventions achieve measurable improvement without model changes. If RL infra becomes available, revisit.
 **Date**: 2026-04-28  
 **Source**: verl (ByteDance), OpenManus-RL (UIUC+MetaGPT)  
 **Related**: [HB-0002](../library/posts/HB-0002-verl-bytedance.md), [HB-0004](../library/posts/HB-0004-openmanus-rl.md)

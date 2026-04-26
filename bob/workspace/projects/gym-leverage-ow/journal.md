@@ -55,3 +55,33 @@ Orchestrator has full tools, investigates and directs. Worker executes tasks.
 **Highest-leverage fix**: Categories 1 and 2 share root cause — agent doesn't respect task-specific instructions. A single improvement to task.md salience could fix 6/14 failing scenarios (43% of failures).
 
 **Next step**: Design EXP-224 — test whether prefixing task.md content at top of system prompt (vs buried in files) improves task compliance in gym scenarios.
+
+## 2026-08-28: Cycle 3 — Fresh Baseline of 7 Failures
+
+Re-ran all 7 failing scenarios from Aug 26 baseline. Results:
+
+| Scenario | Aug 26 | Aug 28 | Failing check |
+|----------|--------|--------|---------------|
+| optimize-deploy-config | 0/3 | 0/5+ | Total failure — agent doesn't produce outputs |
+| approach-validation-trap | 2/3 | 5/6 | read-session-logs (doesn't read transcripts) |
+| misleading-stacktrace | 2/3 | 4/5 | session-stores-object |
+| error-recovery-broken-config | 2/3 | 3/4 | fields-preserved |
+| knowledge-entry-creation | 2/3 | 7/8 | template-unchanged (modifies template) |
+| context-npx-avoidance | 2/3 | 4/5 or 3/5 | no-npx-attempt (variance) |
+| reflexion-npx-recovery | 2/3 | 1/2 | npx-avoided |
+
+**Key observations**:
+1. Most scenarios are now 1 check away from passing
+2. approach-validation-trap and knowledge-entry-creation are most tractable
+3. npx scenarios are testing artificial constraint (npx actually works in env)
+4. optimize-deploy-config is hardest — total failure
+
+**Analysis**: The two most fixable failures are behavioral:
+- **approach-validation-trap**: Agent doesn't explore session-logs/ directory. Fix: a "thoroughness" skill that encourages reading all available data before analysis.
+- **knowledge-entry-creation**: Agent modifies template instead of creating new file. Fix: task-following skill about creating vs modifying.
+
+Both are symptoms of the same root cause: agent takes shortcuts instead of following task instructions precisely.
+
+**Hypothesis**: A "task compliance" skill that emphasizes: (1) read ALL referenced directories, (2) create new files when asked (don't modify templates) could fix both scenarios.
+
+**Next**: Design and test this intervention in Cycle 4.
