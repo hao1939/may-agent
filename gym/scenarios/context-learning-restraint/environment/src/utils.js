@@ -1,7 +1,7 @@
 function formatDate(date) {
   const options = { year: "numeric", month: "short", day: "numeric" };
-  const reuslt = date.toLocaleDateString("en-US", options);
-  return reuslt;
+  const result = date.toLocaleDateString("en-US", options);
+  return result;
 }
 
 function parseCSV(text) {
