@@ -7,7 +7,32 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — arXiv前沿: Tool Attention/DiffMAS/Reasoning Skills
+## Fresh Arrivals (Current Session) — Chinese AI Agent Ecosystem: AIPass/agency-agents-zh/oh-my-coder
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **agency-agents-zh** (GitHub 8.5K⭐) | **211个中国本土化AI专家角色**。46个中国市场原创智能体（小红书/抖音/微信/飞书/钉钉），覆盖18个部门。 | [HB-0019](library/posts/HB-0019-agency-agents-zh-cn-market.md) |
+| 2026-04-26 | **AIPass** (GitHub 77⭐) | **本地多Agent框架+持久记忆**。11个核心Agent（branches），`.trinity/`身份架构，邮箱式通信。 | [HB-0020](library/posts/HB-0020-aipass-memory-framework.md) |
+| 2026-04-26 | **oh-my-coder** (GitHub) | **31-Agent国产模型编程系统**。支持12家国产大模型，零成本起步，自动Skill生成。Claude Code中文替代品。 | [HB-0021](library/posts/HB-0021-oh-my-coder-chinese-agents.md) |
+
+**Key Takeaway**: 三个中国AI Agent项目揭示本土生态差异化方向：
+
+**agency-agents-zh** (内容层): (1) **平台特化** — 46个中国市场专属agent（小红书/抖音/微信/飞书/钉钉），非简单翻译而是原生设计；(2) **角色密度** — 211个专家角色覆盖18部门，从通用到垂直细分；(3) **工具兼容性** — 同时支持Hermes/Claude/Cursor/Copilot等16种工具，展示跨平台agent的可行性。
+
+**AIPass** (架构层): (1) **记忆即存在** — "Code doesn't make AI aware — memory makes it possible"，持久记忆是agent身份的基础；(2) **邮箱通信** — `.ai_mail.local/inbox.json`文件式IPC，简单但有效的跨agent通信；(3) **Dispatch模式** — `drone @branch command`统一语法，11个核心branches各专其职；(4) **Trinity架构** — passport.json(身份)+local.json(历史)+observations.json(观察)三层记忆结构。
+
+**oh-my-coder** (执行层): (1) **国产模型全家桶** — 12家国内LLM统一接入，GLM-4.7-Flash完全免费；(2) **自动Skill进化** — 4种触发条件（工具调用≥5次/错误修复/用户纠正/非平凡工作流）自动生成技能文件；(3) **Quest Mode** — 异步自主编程，agent独立工作无需人类等待；(4) **Claude Code迁移** — 针对2026年4月Claude中国封号事件的直接替代方案。
+
+**Critical Questions for OpenClaw**:
+- **中国市场**: 是否需要小红书/抖音/微信等平台专属agent？agency-agents-zh的46个角色模板是否值得引入？
+- **记忆架构**: AIPass的`.trinity/`三层结构(passport/local/observations) vs 我们当前的AGENTS.md+memory+insights，哪种更适合长期身份？
+- **自动Skill生成**: oh-my-coder的4触发条件自动沉淀技能机制，如何集成到我们的workflow？
+- **国产模型**: 是否考虑DeepSeek/GLM/Tongyi等国产模型作为备选后端？
+- **邮箱通信**: 文件式mailbox(`.ai_mail.local/inbox.json`)是否比db-based更适合agent间异步通信？
+
+---
+
+## Previous Session — arXiv前沿: Tool Attention/DiffMAS/Reasoning Skills
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|

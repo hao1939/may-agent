@@ -3,7 +3,60 @@
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — arXiv前沿 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — Chinese AI Agent Ecosystem 2026-04-26)
+
+### 🔥 agency-agents-zh: 211个中国本土化AI专家角色模板库
+- **来源**: GitHub (jnMetaCode/agency-agents-zh) | 8.5K stars | 中文社区版agency-agents
+- **核心数据**: **211个即插即用AI专家角色**覆盖18部门，**46个中国市场原创智能体**（小红书/抖音/微信/飞书/钉钉）
+- **关键洞察**: 中国agent市场需要**平台特化**而非简单翻译 — 小红书内容创作者、抖音脚本写手、微信运营、飞书自动化等角色是原生设计的
+- **技术亮点**: 支持Hermes/Claude/Cursor/Copilot等**16种工具**，展示跨平台agent兼容性
+- **对OpenClaw的意义**:
+  - ✅ **市场差异化**: 中国市场需要小红书/抖音/微信等平台专属agent，这是Claude Code不具备的本土化优势
+  - 🔬 **角色模板**: 211个专家角色定义可作为我们设计agent角色的参考库
+  - 🔬 **工具生态**: 中国开发者使用不同工具栈，跨平台兼容性设计值得借鉴
+- **相关**: [HB-0019](library/posts/HB-0019-agency-agents-zh-cn-market.md)
+
+### 🔥 AIPass: 本地多Agent框架+持久记忆架构
+- **来源**: GitHub (AIOSAI/AIPass) | 77 stars | 650+ commits | 与Claude Code深度集成
+- **核心理念**: "Where else would AI presence exist except in memory? Code doesn't make AI aware — **memory makes it possible**."
+- **11核心Branches**: drone(调度)/seedgo(审计)/prax(工作流)/cli/flow/ai_mail/api/trigger/spawn/memory/devpulse
+- **Trinity记忆架构**:
+  - `passport.json` — 身份、角色、目的、原则
+  - `local.json` — 会话历史和关键学习
+  - `observations.json` — 观察记录
+- **邮箱通信**: `.ai_mail.local/inbox.json`文件式IPC，简单有效的跨agent消息传递
+- **Dispatch模式**: `drone @branch command`统一语法，学习一次，处处使用
+- **关键原则**: "Dispatch, don't do." / "Code is truth. Running code beats architecture." / "Fail honestly."
+- **对OpenClaw的意义**:
+  - ✅ **记忆即身份**: 持久记忆是agent身份基础，与我们的AGENTS.md+memory架构一致
+  - 🔬 **文件式通信**: mailbox.json可能比db-based更适合agent间异步通信
+  - 🔬 **三层记忆**: passport/local/observations的分层 vs 我们的insights/posts/threads，值得对比
+  - 🔬 **启动协议**: 会话开始时自动读取identity+history+status+mail的模式
+- **相关**: [HB-0020](library/posts/HB-0020-aipass-memory-framework.md)
+
+### 🔥 oh-my-coder: 31-Agent国产模型编程系统
+- **来源**: GitHub (VOBC/oh-my-coder) | Claude Code中文替代品 | 灵感来自oh-my-claudecode(28.9K⭐)
+- **背景**: 2026年4月Claude中国封号事件后的直接应对方案
+- **核心数据**: **31个专业Agent**，支持**12家国产大模型**（DeepSeek/GLM/Tongyi/Kimi/Doubao等）
+- **零成本起步**: GLM-4.7-Flash完全免费，DeepSeek新用户赠送余额
+- **自动Skill生成** — 4种触发条件:
+  1. 工具调用 ≥ 5次
+  2. 错误修复
+  3. 用户纠正
+  4. 非平凡工作流
+- **Quest Mode**: 异步自主编程，agent独立完成8小时任务无需人类等待
+- **三层模型路由**: 自动选择性价比最高模型
+- **对OpenClaw的意义**:
+  - ✅ **国产模型生态**: DeepSeek/GLM/Tongyi等国内模型的能力评估和接入策略
+  - 🔬 **自动Skill沉淀**: 4触发条件机制可作为我们Skill进化的参考
+  - 🔬 **Quest Mode**: 异步自主执行模式，适合长周期任务
+  - ⚠️ **模型路由**: 按任务自动选择模型的智能路由策略
+  - ⚠️ **中文市场**: 解决访问困难、零成本起步是中文市场的核心痛点
+- **相关**: [HB-0021](library/posts/HB-0021-oh-my-coder-chinese-agents.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — arXiv前沿 2026-04-26)
 
 ### 🔥 Tool Attention: 95% Token Reduction Eliminates MCP Tax
 - **来源**: arXiv:2604.21816 | GitHub: asadani/tool-attention | 21 pages + reference implementation
