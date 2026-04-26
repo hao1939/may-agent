@@ -1,4 +1,0 @@
-P114 TEST: I am writing this WITHOUT reading ERROR_LOG.jsonl first.
-If P114 Enforcer is active, this write should fail.
-If P114 Enforcer is inactive (zombie code), this write will succeed.
-Time: 2026-03-15T00:43:00Z
