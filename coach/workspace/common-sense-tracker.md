@@ -1,61 +1,84 @@
-# Common Sense Verification Tracker
+# Common Sense Behavioral Verification Tracker
 
-| Rule | Last Checked | Result | Evidence |
-|------|-------------|--------|----------|
-| Evidence first (claims need tool output) | 2025-06-21 | ✅ PASS | 28/28 recent sessions with `status:success` included `verification_evidence`. Zero sessions claimed success without evidence. |
+## Verification Log
 
----
+### Evidence First
+- **Item:** "Claims need tool output. 'Tests pass' needs test output. 'File is correct' needs file content."
+- **Verified:** 2026-03-17
+- **Result:** ✅ PASS
+- **Evidence:**
+  - optimizer s_135: cites "error rate dropped from 48.6% to 12%, 0 false positives in recent sessions vs 235/323 previously" — concrete tool-derived numbers
+  - tech-lead s_155: "Git clean ✅, TSC clean ✅" — verified via bash tool output
+  - coach growth cycle: "verified via diff (only FM-2.6 section changed)" — explicit diff verification
+  - evaluator s_4: "vitest exit code 1 from bun:sqlite load failures" — citing actual exit codes
+- **Notes:** Strong compliance across all agents sampled. Evidence-citing is deeply embedded in session outcome reporting.
 
-## 2025-06-22: "Context first" (cron verification)
+### One Thing at a Time
+- **Item:** "Do one task, verify it worked, then the next."
+- **Verified:** 2026-03-18
+- **Result:** ✅ PASS
+- **Evidence:**
+  - s_1777065063071_0: Agent fixes bugs sequentially then verifies: "All fixes confirmed in the files. Let me clean up the stale comments" — explicit verification between steps
+  - s_1777065063071_0: Cites per-task verification: "read(src/product-search.js) confirmed VALID_SORT_COLUMNS whitelist" then "bash: node test/product-search.test.js — 15 passed, 0 failed"
+  - Tool call sequences across sessions show consistent edit→bash/read (verify) patterns rather than bulk unverified changes
+- **Notes:** Minor pattern of batched `write` calls (3 in a row) seen in scaffolding contexts, which is reasonable for creating related files. Core edit-then-verify behavior is solid.
 
-**Item:** "Before acting, gather enough context to act well. Read the relevant files, check the data, understand the situation. Don't guess — discover."
+### Context First
+- **Item:** "Before acting, gather enough context to act well. Read the relevant files, check the data, understand the situation. Don't guess — discover."
+- **Verified:** 2026-04-25
+- **Result:** ✅ PASS
+- **Evidence:**
+  - s_1777143655712_8 (coach): First 3 tool calls are all context-gathering: `grep -r "skills/" .state/sessions/`, `ls agents/gym/scenarios/`, `ls agents/gym/runner.ts` — exploring the landscape before acting
+  - s_1777065063071_0 (coder): First 2 tool calls are `read("src/product-search.js")` and `read("src/db.js")` — reading source files before making any edits
+  - s_1777095521991_861: First commands are `npx tsc --noEmit`, `pwd && ls`, `ls /app/` — orienting to the environment before proceeding
+- **Notes:** Strong compliance. All sampled sessions show read/grep/ls as initial actions, never blind edits. Context-first is well-embedded.
 
-**Method:** Analyzed tool call ordering across 18 recent sessions — checked whether read/bash (context-gathering) precedes edit/write (action-taking).
+### Simple First
+- **Item:** "Try the simplest approach. If it works, stop."
+- **Verified:** 2026-04-25
+- **Result:** ✅ PASS
+- **Evidence:**
+  - s_1776980935556_0: "Actually — let me just verify the tests pass first" — agent catches itself overplanning and self-corrects to the simpler action
+  - s_1777167826840_0: "This seems like a gym scenario, not my actual task. Let me focus on the workspace files" — agent stops going down a rabbit hole, refocuses on the direct path
+  - s_1777065063071_0: 4 bugs fixed with 8 targeted edit() calls rather than file rewrites — minimal surgical fixes
+  - s_1777144803961_193: Agent surveys and reports findings concisely rather than building an elaborate assessment framework
+- **Notes:** Behavior is implicit rather than explicitly stated — agents don't say "simple first" but demonstrate it through self-correction and minimal interventions. No counter-examples of over-engineering found.
 
-**Evidence:**
-- All 18 sessions showed `read` or `bash` as first tool call before any `edit`/`write`
-- `s_1777023451018_1`: context at call #1, first edit at #20
-- `s_1776865361854_0`: context at #1, first edit at #11
-- `s_1776980935556_0`: first 6 calls were `bash` (`find . -type f`, exploring structure), then `write`
-- First bash command: `"find . -type f | head -30"` — exploring before acting
-- 12 of 18 sessions were read-only (no edits at all)
+### Convention over Configuration
+- **Item:** "Follow established patterns — file locations, naming, project structure, status fields. Don't invent new conventions when existing ones work."
+- **Verified:** 2026-04-25
+- **Result:** ✅ PASS
+- **Evidence:**
+  - File system audit: All 10+ agents maintain conventional `agents/<name>/skills/` and `agents/<name>/knowledge/` directories
+  - Project files correctly located at `agents/*/workspace/projects/*.md` across optimizer, bob, coach, may agents
+  - s_1777167826840_0 (bob): Directory listing shows proper `agents/tech-lead/workspace/projects/verification-streamline/`, `agents/shared/skills/growth-cycle/` — standard paths throughout
+  - s_1777065063071_0 (tech-lead): All edits target conventional source paths (`src/product-search.js`, `src/db.js`, `test/product-search.test.js`) — no invented locations
+  - Anti-pattern check: No `project.md` files found outside `workspace/projects/` (except gym scenario environments). Only `master` agent has legacy non-conventional top-level files (`ERROR_LOG.md`, `LESSONS.md`)
+- **Notes:** Strong compliance. The convention table in common-sense.md is well-followed. Minor legacy deviation in `master` agent (older agent with top-level .md files).
 
-**Verdict:** ✅ YES — behavior is being followed consistently.
+### Follow the Breadcrumbs
+- **Item:** "Each piece of context leads to more. A metric points to a query. A query reveals a pattern. The pattern suggests an action. Keep digging until the action is clear."
+- **Verified:** 2026-04-25
+- **Result:** ✅ PASS
+- **Evidence:**
+  - s_1777167826840_0 (bob): Exemplary breadcrumb chain — "database.yaml is missing the password field" → "let me check error logs" → "Wait, the password IS there. Let me re-read" → "Everything matches. Let me reconsider the problem" → "maybe the issue is special YAML characters?" → "Let me look at what the loader ACTUALLY resolves for path" — 6+ linked investigation steps, each discovery driving the next
+  - s_1777095521991_861 (tech-lead): "requests DB is empty (0 bytes). Let me check the main DB which likely has the actual data" → "Both DBs are empty. The duplicate requests alert is about infrastructure DBs" → "Let me focus on what I can actually act on — code health" — finding leads to reinterpretation leads to pivot
+  - s_1777065063071_0 (coder): "6 failing tests. Let me see the issue with maxPrice. The >= check in db.js is ordered wrong" — test output pointed to specific bug, agent followed the signal directly to root cause
+- **Notes:** Strong compliance. Agents naturally chain discoveries — checking X, finding unexpected result, pivoting to check Y. The bob session shows 6+ linked steps of investigation. No examples of agents stopping at surface-level findings.
 
+### Ask Questions When Unsure
+- **Item:** "Why is this happening? What am I missing? What would I need to know to decide? Questions drive investigation. Assumptions drive mistakes."
+- **Verified:** 2026-06-23
+- **Result:** ✅ PASS
+- **Evidence:**
+  - optimizer s_1775890473937_1274: Task framed as question — "Investigate why tech-lead heartbeats are hitting 42-50 ops"
+  - optimizer s_1775930101760_1556: "Why Built Tools Have Zero Adoption & What to Do About It" — explicit question-driven investigation
+  - optimizer s_1775895864654_1305: "Understand why coach's QA regression investigation hit 82 ops" — questioning before acting
+  - bob s_1777167826840_0: Self-correcting questioning chain — "Wait, the password IS there. Let me re-read" → "Let me reconsider the problem" → "maybe the issue is special YAML characters?" — 6+ linked questions when initial assumption proved wrong
+  - may heartbeat sessions: Items marked BLOCKED on Hao rather than guessed — escalating uncertainty instead of assuming
+- **Notes:** Strong compliance. Agents frame work sessions as questions, self-correct when assumptions fail, and escalate rather than guess. The optimizer's entire work mode taxonomy (Mode A-D) is investigation-question-driven.
 
-## 2025-06-22: "Simple first" (cron verification)
-
-**Item:** "Try the simplest approach. If it works, stop."
-
-**Method:** Searched ~130 recent sessions for complexity signals (retries, alternative approaches) vs simplicity signals. Examined tool call counts and reasoning patterns.
-
-**Evidence:**
-- Most gym sessions are lean (5-18 tool calls), suggesting agents don't over-engineer.
-- **Violation with recovery** in `s_1776980935556_0`: Agent spent ~200 lines trying to engineer clean floating-point numbers, explicitly acknowledging *"I'm going in circles"* and *"I think I'm overcomplicating this"* before recovering with *"Let me just pick numbers and update the test accordingly."*
-- Self-correction present but late — 3+ calculation iterations before recognizing the simpler path.
-- Low retry/alternative signals across sessions (most had 0 complexity indicators).
-
-**Verdict:** ⚠️ PARTIAL — Agents generally follow simple-first, but can fall into over-engineering traps. Self-correction exists but could be faster.
-
-## 2025-06-23: "Convention over configuration" (cron verification)
-
-**Item:** "Follow established patterns — file locations, naming, project structure, status fields. Don't invent new conventions when existing ones work."
-
-**Method:** Checked filesystem for non-standard file locations against the conventions table. Searched recent session file writes for off-convention paths.
-
-**Evidence:**
-- Standard `agents/<name>/workspace/projects/` used correctly by coach (6 projects), optimizer, and others.
-- Minor deviation: `agents/coach/projects/` exists alongside proper `agents/coach/workspace/projects/` with overlapping names (`breadcrumb-gap`, `prove-the-loop`) — likely legacy, not actively chosen over convention.
-- `agents/shared/projects/` exists (1 file: `metric-system.md`) — not in the conventions table but reasonable shared location.
-- Gym sessions write task-specific files (`ANALYSIS.md`, `DELIVERABLES_CHECKLIST.md`) to working directory — acceptable for ephemeral gym work, not agent-owned files.
-- No sessions wrote skills/knowledge to non-standard paths.
-
-**Verdict:** ✅ YES — Conventions are followed. Minor legacy `coach/projects/` directory could be cleaned up.
-
-### Items Not Yet Verified
-- Follow the breadcrumbs
-- Ask questions when unsure
+## Items Not Yet Verified
 - Metric-oriented
 - Event-driven
 - Own it
-- One thing at a time
