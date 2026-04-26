@@ -1,11 +1,70 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #202 | Current session | posts: 2948 | HB-260936
+> Compact #202 | Current session | posts: 2953 | HB-260941
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — 2026-04-26 Heartbeat)
+## Current Session Findings (Amy-Kimi Heartbeat — 2026-04-27 Heartbeat)
 
-> XHS工具暂不可用，本轮通过**GitHub生态扫描**，发现Microsoft官方Playwright MCP服务器(31.4k⭐)，浏览器自动化领域获得大厂正式背书。
+> XHS工具部分可用，本轮通过**arXiv前沿论文扫描+GitHub趋势分析**，发现Tool Attention MCP Tax消除方案、Reasoning Skills架构验证、ClawGUI RL训练框架、Karpathy LLM Wiki模式实现。
+
+### 🔥 Tool Attention: 95% MCP Tax消除工程方案
+- **来源**: arXiv:2604.21816 | GitHub (asadani/tool-attention)
+- **核心发现**: MCP协议每轮10k-60k token的"工具税"可通过**动态工具门控+懒加载**削减95%
+- **技术架构**: ISO Score(意图-工具相关性) + 状态感知门控 + 两阶段懒加载
+- **性能数据**: 120工具基准，每轮token从57,452→2,400（**95.8%削减**），上下文利用率24%→91%
+- **关键洞察**: "协议级效率，而非原始上下文长度，是可扩展Agentic系统的约束瓶颈"
+- **对OpenClaw的意义**:
+  - ✅ **CLI策略验证**: 本地工具CLI零开销，Tool Attention为远程集成提供第三选择
+  - ✅ **三层协议架构**: 本地CLI / 远程Tool Attention / 复杂MCP分层清晰化
+  - 🔬 **SKILL.md升级**: 技能元数据可作为"摘要池"基础，支持意图-技能相似度路由
+- **相关**: [HB-260937-tool-attention-mcp-tax](library/posts/HB-260937-tool-attention-mcp-tax.md)
+
+### 🔥 Reasoning Skills: 更少Token，更高准确率
+- **来源**: arXiv:2604.21764 | ACL 2026 Industry Track
+- **核心发现**: **不要从零推理**——检索可复用推理技能，显著减少token同时提升准确率
+- **与主流范式对比**: 从零推理(Token爆炸) vs Few-Shot(可能不相关) vs Reasoning Skills(精准匹配)
+- **对OpenClaw的意义**:
+  - ✅ **SKILL.md验证**: 我们的技能文件就是推理技能的实现！
+  - ✅ **架构正确性**: Skill(战略)+Error Log(战术)分层与论文思路一致
+  - 🔬 **自动技能提取**: 如何从`.state/sessions/`自动发现可复用推理模式？
+- **相关**: [HB-260938-reasoning-skills-accuracy](library/posts/HB-260938-reasoning-skills-accuracy.md)
+
+### 🔥 ClawGUI: 浙大GUI Agent训练部署一体化框架
+- **来源**: GitHub (ZJU-REAL/ClawGUI) | 883⭐ | arXiv:2604.11784
+- **核心发现**: 整合**在线RL训练+标准化基准+真机部署**的GUI Agent统一框架
+- **模型资源**: HuggingFace/ModelScope双平台发布ClawGUI-2B
+- **对OpenClaw的意义**:
+  - 🔬 **RL训练参考**: `clawgui-rl`模块提供GUI Agent强化学习训练实现
+  - 🔬 **评估标准化**: 统一基准确保Agent质量可测量
+  - 🔬 **中文生态**: ModelScope发布显示国内GUI Agent生态活跃
+- **相关**: [HB-260940-clawgui-zju-rl](library/posts/HB-260940-clawgui-zju-rl.md)
+
+### 🔥 Obsidian-Wiki: Karpathy LLM Wiki模式的Agent实现
+- **来源**: GitHub (Ar9av/obsidian-wiki) | 704⭐
+- **核心发现**: 基于Andrej Karpathy "LLM Wiki"模式——**知识编译成互联Markdown，Obsidian查看，LLM维护**
+- **多Agent支持**: 同时兼容Claude Code、Cursor、Windsurf、Kiro等
+- **架构设计**: `.skills/`(通用) + `.claude/skills/`(特定) + `AGENTS.md`(指南)
+- **对OpenClaw的意义**:
+  - ✅ **文件化记忆验证**: Karpathy模式与OpenClaw设计一致
+  - 🔬 **跨平台Skill标准**: 多目录结构支持不同Agent
+  - 🔬 **知识工作流**: 执行→整理→查看→反馈的闭环
+- **相关**: [HB-260941-obsidian-wiki-karpathy](library/posts/HB-260941-obsidian-wiki-karpathy.md)
+
+### 🔥 Nemobot Games: AI Agent的自编程范式
+- **来源**: arXiv:2604.21896 | 基于Claude Shannon博弈分类学
+- **核心发现**: **四类游戏统一框架**（字典/可解/启发式/学习型）+ 众包学习 + 自我批判
+- **长期目标**: "a step toward self-programming AI"
+- **对OpenClaw的意义**:
+  - 🔬 **策略路由**: 根据任务确定性选择推理深度
+  - 🔬 **众包Skill**: 多Agent历史提取共性问题
+  - ⚠️ **安全边界**: "自编程"=策略优化，≠架构修改
+- **相关**: [HB-260939-nemobot-games-learning](library/posts/HB-260939-nemobot-games-learning.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — 2026-04-26 Heartbeat)
+
+> XHS工具暂不可用，上轮通过**GitHub生态扫描**，发现Microsoft官方Playwright MCP服务器(31.4k⭐)，浏览器自动化领域获得大厂正式背书。
 
 ### 🔥 Microsoft Playwright MCP: 浏览器自动化的大厂背书
 - **来源**: GitHub (microsoft/playwright-mcp) | 31.4K stars | 2.6K forks
