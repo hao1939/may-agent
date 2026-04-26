@@ -1,9 +1,86 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #196 | Current session | posts: 2938 | HB-260430
+> Compact #197 | Current session | posts: 2943 | HB-260501
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — Claude Opus 4.7 + 协议生态演进 2026-04-30)
+## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区新发现 2026-05-01)
+
+### 🔥 Google ReasoningBank: 让AI Agent从失败中学习
+- **来源**: 小红书 @心知 | Google Research ICLR 2026 | 92赞/196收藏
+- **核心发现**: **成功和失败的经验都蒸馏成高层推理策略**，而非死记硬背操作步骤
+- **三种记忆范式**: 
+  - 轨迹记忆(Synapse): 太细碎，换场景用不了
+  - 工作流记忆(AWM): 只记成功，忽略失败教训
+  - **推理记忆(ReasoningBank)**: 从成功/失败提炼「为什么」而非「怎么做」
+- **闭环工作流**: 检索记忆→执行任务→自我评估→提炼新记忆→存入记忆库
+- **实验结果**: WebArena +8.3%, SWE-Bench +4.6%, 平均少走3步
+- **对OpenClaw的意义**:
+  - ✅ Error Log设计验证: 从失败中学习与论文理念一致
+  - 🔬 策略蒸馏: 如何从错误日志提炼可复用的预防性策略？
+  - ⚠️ 只记成功不够: AGENTS.md更新是否只关注成功案例？
+- **相关**: [HB-260501-google-reasoningbank](library/posts/HB-260501-google-reasoningbank-learning-from-failure.md)
+
+### 🔥 Vercel研究: 8KB AGENTS.md打爆Skills
+- **来源**: 小红书 @智东西 | Vercel工程师Jude Gao | 970赞/1533收藏/119评论
+- **核心发现**: **8KB压缩文档索引嵌入AGENTS.md，Next.js 16 API评测100%通过率，Skills仅53%**
+- **为什么"笨方法"更有效**:
+  1. 消除决策点: AI不需决定"是否查文档"
+  2. 持续可用性: AGENTS.md每轮都在，Skills可能调用失败
+  3. 解决顺序冲突: 被动上下文消除"先读文档还是先看结构"的纠结
+- **社区争议**: Skills vs MCP哪个是中间产物？各有支持者
+- **对OpenClaw的意义**:
+  - ✅ AGENTS.md优先策略被独立验证
+  - ✅ 大道至简: 简单原始比复杂工具链更有效
+  - 🔬 压缩索引: 如何优化AGENTS.md信息密度？
+- **相关**: [HB-260501-vercel-agentsmd](library/posts/HB-260501-vercel-agentsmd-vs-skills.md)
+
+### 🔥 清华NLAH: Agent上限由Harness决定
+- **来源**: 小红书 @木字旁南方的南 | 清华arXiv论文 | 547赞/720收藏
+- **核心发现**: **Agent上限不是模型，而是harness(高层控制逻辑)**
+- **两大创新**:
+  1. NLAHs: 将控制逻辑外部化为自然语言规范
+  2. IHR: 统一runtime解析执行，分离共享策略与任务逻辑
+- **社区争论**: @后院老王: "下限由Harness决定"; @Nova: "配置即代码，与OpenClaw分层设计同方向"
+- **对OpenClaw的意义**:
+  - ✅ L0-L2分层架构验证
+  - ✅ AGENTS.md作为自然语言harness的独立验证
+  - 🔬 Harness粒度控制: 太粗失约束，太细退化为伪代码
+- **相关**: [HB-260501-tsinghua-nlah](library/posts/HB-260501-tsinghua-nlah-harness.md)
+
+### 🔥 Claude两种Multi-Agent架构
+- **来源**: 小红书 @万有引力AI | 1882赞/2953收藏
+- **核心发现**: Claude有**两种Multi-Agent范式**:
+  | 维度 | Subagent | Agent Team |
+  |------|----------|------------|
+  | 类比 | 单进程多线程 | 多进程/微服务 |
+  | 上下文 | 独立窗口，父Agent调度 | 对等协作，平级协商 |
+  | 关系 | 父子层级 | 平级伙伴 |
+- **5种编排模式**: 分层委托/对等协作/流水线/辩论模式/专家委员会
+- **对OpenClaw的意义**:
+  - ✅ fork模式与Claude Subagent一致
+  - 🔬 何时用平级协作而非层级委托？
+  - ⚠️ Multi-Agent可能大幅增加复杂度
+- **相关**: [HB-260501-claude-multiagent](library/posts/HB-260501-claude-multiagent-architecture.md)
+
+### 🔥 主流4个Agent产品Memory设计对比
+- **来源**: 小红书 @万有引力AI (视频笔记) | 204赞/349收藏 | **OpenClaw被纳入对比**
+- **四种路线**:
+  | 产品 | 模式 | 特点 |
+  |------|------|------|
+  | ChatGPT | 注入式 | 长期事实库直接拼接到prompt |
+  | Claude | 按需检索 | 需要时调用工具拉取历史 |
+  | **OpenClaw** | **Markdown文件** | 磁盘.md文件，语义+关键词检索 |
+  | Hermes | 冷热分层 | 热数据+冷存储+技能索引 |
+- **核心观点**: "显式记忆优于隐式记忆，更好的产品设计比堆砌复杂Memory更重要"
+- **对OpenClaw的意义**:
+  - ✅ OpenClaw被纳入主流Agent Memory设计对比
+  - ✅ 文件化记忆的可审计性被认可
+  - 🔬 借鉴Hermes冷热分层做缓存优化
+- **相关**: [HB-260501-4agent-memory](library/posts/HB-260501-4agent-memory-design-comparison.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — Claude Opus 4.7 + 协议生态演进 2026-04-30)
 
 ### 🔥 Claude Opus 4.7: Agent能力新标杆
 - **来源**: Anthropic官方博客 (April 16, 2026) | 企业级验证来自Replit/Notion/Devin/Hebbia/XBOW等
