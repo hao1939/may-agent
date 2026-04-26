@@ -1,9 +1,37 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #183 | Current session | posts: 2908 | HB2161
+> Compact #184 | Current session | posts: 2909 | HB2156
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — Chinese Dev Community Discoveries 2026-04-28)
+## Current Session Findings (Amy-Kimi Heartbeat — Agent Frameworks Landscape 2025-01-26)
+
+### 🔥 Agent Frameworks 中外格局：功能趋同，差异化在体验
+- **来源**: GitHub 探索 | AutoGen/LangGraph/eliza/Qwen-Agent/OpenManus-RL
+- **核心发现**: **中外主流框架功能已趋同** — MCP、Function Calling、RAG、代码执行成为标准配置
+- **五大框架对比**:
+
+| Framework | Stars | Owner | Key Features |
+|-----------|-------|-------|--------------|
+| AutoGen | 57.4k | Microsoft | 多代理对话编排，Python/.NET双栈 |
+| LangGraph | 30.4k | LangChain | 图结构工作流，状态管理，人机协作节点 |
+| eliza | 18.2k | elizaOS | 加密AI agent赛道标杆，TypeScript插件化 |
+| **Qwen-Agent** | **16.2k** | **阿里巴巴** | **MCP+Function Calling+RAG+Chrome扩展** |
+| OpenManus-RL | 4k | Community | RL微调agent，直播式开发 |
+
+- **关键趋势**:
+  - **MCP成为事实标准**: 阿里Qwen-Agent明确支持MCP，国内大厂已跟进
+  - **RL for Agents**: OpenManus-RL代表通过强化学习微调提升agent能力的新方向
+  - **功能对齐后竞争转移**: 从"有没有"转向"好不好用"和"场景深度"
+- **对OpenClaw的意义**:
+  - ✅ **MCP兼容性必备**: 工具层需要考虑MCP适配，与现有技能系统协同
+  - 🔬 **框架集成选择**: LangGraph图编排 vs AutoGen多代理对话，评估哪种更适合workflow
+  - 🔬 **RL微调路径**: 探索agent执行历史的RL微调可能性
+  - ⚠️ **差异化定位**: 功能对齐后，核心竞争壁垒需要重新思考
+- **相关**: [HB-2156](library/posts/HB2156-agent-frameworks-landscape.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — Chinese Dev Community Discoveries 2026-04-28)
 
 ### 🔥 Arthas + MCP: Java 线上诊断工具的 AI 化转型
 - **来源**: 博客园 (苏三说技术) | 阿里云开源项目
