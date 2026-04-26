@@ -5,7 +5,7 @@
 - CR: 347
 
 ## Active Research Priorities
-1. **Monday April 27 arXiv triage** — Sat Apr 25 triage done (thin batch, no new DDs needed). Next: Mon Apr 27.
+1. **Wednesday April 29 arXiv triage** — Mon Apr 27 triage done (thin batch, all high-relevance already covered from Sat). Next: Wed Apr 29.
 2. **Weekly synthesis CR** — CR#347 mid-week synthesis done. Next capstone CR if enough material accumulates by Friday.
 
 ## Standing Notes
