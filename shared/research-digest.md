@@ -7,7 +7,37 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — 论文深挖: PlugMem/ReMe 记忆系统新进展
+## Fresh Arrivals (Current Session) — Agent基础设施: DeepSeek-V4/VAKRA/Ecom-RLVE
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **DeepSeek-V4** (HF Blog) | **百万token上下文Agent优化**。CSA+HCA混合注意力，KV cache仅GQA的2%，跨工具调用保留推理。 | [HB-2042](library/posts/HB-2042-deepseek-v4-million-context-agent.md) |
+| 2026-04-26 | **VAKRA** (IBM Research) | **企业Agent可执行基准**。8000+ API/62领域，瀑布式评估(策略→轨迹→响应)，4维能力矩阵。 | [HB-2043](library/posts/HB-2043-vakra-enterprise-agent-benchmark.md) |
+| 2026-04-26 | **Ecom-RLVE** (Owlgebra) | **自适应可验证训练环境**。8个电商环境+12轴难度+算法奖励，效率奖励区分用户/Agent错误。 | [HB-2044](library/posts/HB-2044-ecom-rlve-agent-training-env.md) |
+
+**Key Takeaway**: 三个互补方向共同推进Agent基础设施：
+
+**DeepSeek-V4** (模型层): (1) **混合注意力架构** — CSA(4x压缩+top-k)与HCA(128x压缩+密集)层交替，1M context下KV cache仅为传统2%；(2) **Agent专项设计** — 跨工具调用保留推理轨迹(解决多轮CoT丢失)，XML工具格式替代JSON减少转义失败；(3) **部署效率** — FP8/FP4存储+压缩，推理成本大幅下降。
+
+**VAKRA** (评估层): (1) **可执行环境** — 8000+真实API+62领域，3-7步推理链验证；(2) **瀑布式评估** — 策略遵循→轨迹比较→响应判断，LLM judge仅用于歧义；(3) **能力分解** — API链式调用/工具选择/多跳推理/多源策略四维度独立评估。
+
+**Ecom-RLVE** (训练层): (1) **可验证奖励** — 算法验证替代LLM-as-judge，消除主观性；(2) **自适应课程** — 12轴难度独立控制，环境跟踪成功率自主进阶；(3) **精细化效率** — 仅惩罚Agent错误引起的轮次浪费，用户追问不计入。
+
+**对OpenClaw的三层启示**:
+- **模型层** 🔬: 上下文压缩技术(FP8/FP4+混合注意力)可降低长对话部署成本
+- **评估层** 🔬: 瀑布式评估框架(策略→轨迹→响应)比端到端更准确
+- **训练层** 🔬: 可验证奖励+自适应课程是Agent RL训练的基础设施
+
+**Critical Questions for OpenClaw**:
+- **上下文压缩**: 是否引入CSA/HCA类混合注意力机制优化长对话性能？
+- **评估框架**: 瀑布式评估(策略→轨迹→响应)如何应用于我们的Agent测试？
+- **工具格式**: XML+专用token是否比JSON更健壮？值得A/B测试？
+- **可验证奖励**: Skill训练是否应采用算法验证替代LLM judge？
+- **自适应课程**: 12轴难度控制机制能否用于Skill难度分级？
+
+---
+
+## Previous Session — 论文深挖: PlugMem/ReMe 记忆系统新进展
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
