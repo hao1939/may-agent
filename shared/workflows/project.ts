@@ -723,14 +723,34 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     if (pendingComments) {
       ctx.emit({ type: "step_start", step: `comment-iteration-${iteration}` });
 
-      // [done] comment = human/May marking project done
+      // [done] comment = human/May marking project done — handle in pure JS (no LLM needed)
       const isDoneComment = /^\[done\]/m.test(pendingComments);
-      let commentWorkerSummary = `[COMMENT ITERATION] Comments to address:\n${pendingComments}`;
+
       if (isDoneComment) {
-        commentWorkerSummary += `\n\n[DIRECTIVE] A human or May has marked this project [done]. ` +
-          `Confirm completion: verify deliverables exist, milestones are checked, and set status=done. ` +
-          `If you believe the project is NOT actually complete, explain why — but the human's judgment takes priority.`;
+        const now = new Date().toISOString();
+        const commentEntry = `### Iteration ${iteration} (comment) — ${now}\n` +
+          `**Comment**: ${pendingComments}\n` +
+          `**Reviewer**: DONE — Marked done by human/May (JS fast-path, no LLM review needed).\n\n`;
+
+        if (config.isLegacy) {
+          projectContent += commentEntry;
+        } else {
+          appendFileSync(config.journalPath, commentEntry);
+        }
+
+        projectContent = clearComments(projectContent);
+        projectContent = updateField(projectContent, "Iteration", String(iteration));
+        projectContent = updateField(projectContent, "Status", "done");
+        projectContent = updateField(projectContent, "Stop Reason", "");
+        projectContent = updateField(projectContent, "Resume Condition", "");
+        projectContent = updateSection(projectContent, "Current State", `Completed. Marked done by human/May.`);
+        writeFileSync(config.projectPath, projectContent, "utf-8");
+        emitProjectEvent(ctx, config, "project.completed", { iteration, trigger: "done-comment" });
+        return ctx.done(`Project marked done by human/May at iteration ${iteration}.`);
       }
+
+      // Non-done comments: run LLM reviewer to decide how to handle
+      const commentWorkerSummary = `[COMMENT ITERATION] Comments to address:\n${pendingComments}`;
 
       const commentReviewPrompt = buildReviewPrompt(
         config.goal, iteration,
@@ -758,17 +778,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       projectContent = clearComments(projectContent);
       projectContent = updateField(projectContent, "Iteration", String(iteration));
       writeFileSync(config.projectPath, projectContent, "utf-8");
-
-      // [done] comment from human/May — mark project done directly
-      if (isDoneComment) {
-        projectContent = updateField(projectContent, "Status", "done");
-        projectContent = updateField(projectContent, "Stop Reason", "");
-        projectContent = updateField(projectContent, "Resume Condition", "");
-        projectContent = updateSection(projectContent, "Current State", `Completed. Marked done by human/May.`);
-        writeFileSync(config.projectPath, projectContent, "utf-8");
-        emitProjectEvent(ctx, config, "project.completed", { iteration, trigger: "done-comment" });
-        return ctx.done(`Project marked done by human/May at iteration ${iteration}.`);
-      }
 
       {
         const ls: LoopState = { projectContent, continueWithoutProgress };
