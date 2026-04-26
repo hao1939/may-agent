@@ -35,7 +35,7 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 - Gym triage: agents/gym/TRIAGE.md
 
 ## Current State
-Phase 1 complete, Phase 2 complete. Phase 3 next.
+Phase 1 complete, Phase 2 complete. Phase 3 in progress.
 - [x] `.state/gym-architecture.md` — documents runner → adapter → scenario → scorer pipeline
 - [x] `.state/gym-categories.md` — 424 scenarios categorized by type and tier
 - [x] `.state/gym-core20.md` — core 20 benchmark selected (20 smoke-tier scenarios)
@@ -43,7 +43,9 @@ Phase 1 complete, Phase 2 complete. Phase 3 next.
   - Strengths: Bug-fixing 3/3, Integrity 1/1
   - Weaknesses: Verification 0/2, Optimizer Workflow 0/2, Judgment 1/4
   - Pattern: Agent succeeds at concrete fix tasks, fails at meta-cognitive tasks
-- **NEXT**: Phase 3 — Design feedback loop, run first improvement cycle targeting worst category.
+- [x] `.state/gym-evolution-process.md` — feedback loop designed (2026-06-28)
+- [x] `.state/gym-cycle-1-results.md` — Cycle 1 complete: scorer bug fix + live agent runs. Optimizer Workflow 2/14→13/14. (2026-06-28)
+- **NEXT**: Re-run full Core 20 with live agent for accurate baseline. Then Cycle 2 targeting Judgment (1/4) or Verification (0/2).
 
 ## Process Notes
 

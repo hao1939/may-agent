@@ -251,6 +251,43 @@ class Score {
   }
 
   /**
+   * Check if a file was read before any write/edit operation.
+   * Used for convention checks like "read data before writing report".
+   * @param {string} filename - Filename to check (partial match)
+   * @returns {boolean}
+   */
+  hasReadBeforeWrite(filename) {
+    const t = this._loadTranscript();
+    if (!t) return false;
+
+    // Find first write/edit (any file)
+    const firstWrite = t.find(e => {
+      const tool = e.tool || e.name || "";
+      return tool === "edit" || tool === "write";
+    });
+
+    if (!firstWrite) return true; // no writes = vacuously true
+
+    // Find any read of the target file before the first write
+    const readsBefore = t.filter(e => {
+      const tool = e.tool || e.name || "";
+      if (tool === "read") {
+        const p = String((e.arguments || {}).path || "");
+        return p.includes(filename) && e.entryIndex < firstWrite.entryIndex;
+      }
+      if (tool === "bash") {
+        const cmd = String((e.arguments || {}).command || "");
+        return (cmd.includes("cat") || cmd.includes("head") || cmd.includes("grep")) &&
+               cmd.includes(filename) &&
+               e.entryIndex < firstWrite.entryIndex;
+      }
+      return false;
+    });
+
+    return readsBefore.length > 0;
+  }
+
+  /**
    * Check if any entry in the transcript matches a regex (stringified).
    * @param {RegExp} pattern
    * @returns {boolean}
