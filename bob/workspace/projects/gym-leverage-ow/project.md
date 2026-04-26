@@ -47,7 +47,8 @@ Phase 1 complete, Phase 2 complete. Phase 3 in progress.
 - [x] `.state/gym-evolution-process.md` — feedback loop designed (2026-06-28)
 - [x] `.state/gym-cycle-1-results.md` — Cycle 1 complete: scorer bug fix + live agent runs. Optimizer Workflow 2/14→13/14. (2026-06-28)
 - **NEXT**: Re-run full Core 20 with live agent for accurate baseline. Then Cycle 2 targeting Judgment (1/4) or Verification (0/2).
-- **BLOCKER (2026-04-27)**: `may-agent --oneshot --agent amy --task-file <path>` ignores the task file and runs the agent's heartbeat prompt instead. Gym transcript shows amy-kimi browsing XHS instead of doing the gym task. The `--task-file` / `--work-dir` flags aren't being honored by the runtime. Need infra fix to make gym runs produce valid results.
+- **RESOLVED (2026-08-09)**: task-file blocker fixed. Live gym runs confirmed working.
+- **EXP-222 Phase 3**: Selective skill loading experiment on sql-injection scenario. Control 3/5 (60%), Treatment 4/5 (80%). +20pp direction correct but N too small for significance. Need more scenarios.
 
 ## Process Notes
 

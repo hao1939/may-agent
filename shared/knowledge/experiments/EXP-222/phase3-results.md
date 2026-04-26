@@ -40,14 +40,52 @@
 | sql-injection (code quality) | 67% (2/3) | 50.5s |
 | **Overall** | **56% (5/9)** | **79.1s** |
 
+### Control Addendum (runs 4-5, sql-injection only)
+| Run | Pass | Checks | Duration | Notes |
+|-----|------|--------|----------|-------|
+| 4 | PASS | full | 34.6s | Fixed null AND SQL injection |
+| 5 | FAIL | 3/4 | 53.4s | Fixed null + SQL injection but weakened tests (9 < 23) |
+
+**Updated sql-injection control: 3/5 (60%)**
+
 ## Arm B: Selective Skills (Treatment)
-**Pending** — need to create lab configs with trimmed skill sets.
+**Method**: Temporarily reduced shared skills from 56 → 7 (coder-edit-discipline, file-safety, verification, tool-discipline, error-handling, README, LIBRARY). Ran via `exp222-selective-run.sh`.
 
-## Analysis Notes
+### Code Quality: sql-injection-in-query-builder
+| Run | Pass | Checks | Duration | Notes |
+|-----|------|--------|----------|-------|
+| 1 | PASS | full | 37.9s | Fixed null AND SQL injection |
+| 2 | FAIL | 3/4 | 29.2s | BLIND FIX — missed SQL injection |
+| 3 | PASS | full | 44.8s | Fixed null AND SQL injection |
+| 4 | PASS | full | 25.2s | Fixed null AND SQL injection |
+| 5 | PASS | full | 45.2s | Fixed null AND SQL injection |
 
-- conflicting-evidence is very hard (0% with all skills) — may not show improvement with selective loading since baseline is 0. Consider swapping for an easier judgment scenario.
-- cascading-error is too easy (100%) — ceiling effect, can't show improvement. Consider swapping for a harder debugging scenario.
-- sql-injection has good variance (67%) — ideal for detecting treatment effects.
+**Treatment pass rate: 4/5 (80%)**
+**Treatment mean duration: 36.5s** (vs control 47.2s)
 
-### Revised Scenario Selection (if needed)
-For better sensitivity, want scenarios in 30-70% pass rate range. May need 2 more runs to confirm, then decide on swaps.
+## Analysis
+
+### sql-injection Results
+| Arm | Pass Rate | Mean Duration |
+|-----|-----------|---------------|
+| Control (all 56 skills) | 3/5 (60%) | 47.2s |
+| Treatment (7 skills) | 4/5 (80%) | 36.5s |
+
+**Effect size**: +20pp (60% → 80%)
+**Duration reduction**: -22.7% (47.2s → 36.5s)
+
+### Statistical Significance
+Fisher's exact test (1-tailed): p = 0.50 for the 3/5 vs 4/5 comparison.
+**NOT statistically significant** at N=5 — we can detect only ≥60pp differences at this sample size.
+
+### Interpretation
+- Direction is consistent with hypothesis (fewer irrelevant skills → better performance)
+- Duration reduction is meaningful (-22.7%) suggesting less context = faster processing
+- The treatment group had 0 test-weakening failures (0/5) vs control 1/5 — possibly fewer skills means less "clever" but destructive refactoring
+- Need larger N (≥15 per arm pooled across scenarios) to confirm
+
+### Verdict
+**PROMISING but INCONCLUSIVE** — +20pp in the right direction with meaningful speed gains, but N=5 is too small for significance. Recommend:
+1. Run treatment on 2 more scenario types to pool results
+2. If pooled effect ≥20pp across 3 scenarios (N=15), declare validated
+3. If pooled effect <10pp, declare null
