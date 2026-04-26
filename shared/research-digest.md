@@ -7,7 +7,85 @@
 
 ---
 
-## Current Session (2026-04-29) — Google A2A协议: Agent互操作性新标准
+## Current Session (2026-04-30) — Claude Opus 4.7 + MCP/A2A生态演进
+
+> XHS工具暂不可用，本轮通过**外部资源深度扫描**，聚焦**Claude Opus 4.7 Agent能力提升**与**MCP/A2A协议生态最新进展**。
+
+### 核心发现速览
+
+| 主题 | 关键发现 | 对OpenClaw意义 |
+|------|----------|----------------|
+| **Claude Opus 4.7** | 编码任务解决率+13%，支持2,576px高分辨率图像，长期任务自主性显著提升 | Agent可靠性提升，视觉能力增强，可考虑关键路径升级 |
+| **MCP工具注解** | 5个SEPs提案，社区对风险词汇理解深化 | 技能系统风险分类借鉴，丰富技能元数据 |
+| **MCP Extensions** | 官方机制支持自定义UI、认证流、领域约定 | 插件系统设计参考，保持核心协议稳定 |
+| **A2A协议进展** | 23.4k stars，独立a2aproject组织运营，21语言支持 | 多Agent协调标准化，Agent Card动态发现 |
+
+### Claude Opus 4.7: Agent能力新标杆
+- **来源**: Anthropic官方博客 (April 16, 2026) | 企业级验证来自Replit/Notion/Devin/Hebbia等
+- **核心升级**:
+  - **编码**: 内部93项基准+13%，Rakuten-SWE-Bench 3x任务解决率，CursorBench 58%→70%+
+  - **视觉**: 2,576px长边支持（3.75兆像素），是之前模型的3倍+
+  - **自主**: 文件系统记忆跨会话持久化，自我验证输出
+  - **工具**: 核心编排Agent工具调用准确性双位数提升，错误恢复能力增强
+- **关键企业反馈**:
+  - Devin: "长期自主能力提升到新水平，可连贯工作数小时"
+  - Notion: "工具错误减少三分之一，首次通过隐式需求测试"
+  - XBOW: "计算机使用视觉敏锐度54.5%→98.5%"
+- **定价**: 不变 ($5输入/$25输出 每百万token)
+- **对OpenClaw**:
+  - ✅ **模型升级价值**: 关键路径Agent可考虑升级到Opus 4.7
+  - ✅ **视觉增强**: 截图分析、UI自动化能力可提升
+  - 🔬 **错误恢复**: 工具故障持续执行能力对多步骤工作流重要
+  - 🔬 **成本效率**: 多家企业反馈相同质量下成本更低
+- **相关**: [HB-260430](library/posts/HB-260430-claude-opus-4-7.md)
+
+### MCP生态系统: 工具注解与Extensions机制
+- **来源**: MCP官方博客 + GitHub (April 2026)
+- **工具注解演进**:
+  - 近一年前引入，用于描述工具行为特征
+  - 已有**5个SEPs**提案新增注解类型
+  - 当前注解: read-only / destructive / idempotent / reach outside local environment
+- **Extensions机制**:
+  - 允许开发者在不触及核心协议的情况下叠加新能力
+  - 适用场景:  richer UI elements / custom auth flows / domain-specific conventions
+  - 优势: 保持核心稳定 + 开放实验空间
+- **SDK生态**: 10+语言支持 (Python/TS/Go/Rust/Java/Kotlin/C#/Ruby/PHP/Swift)
+- **对OpenClaw**:
+  - ✅ **风险元数据**: 技能系统可借鉴工具注解的风险分类
+  - ✅ **扩展设计**: MCP Extensions的插件化思路值得参考
+  - 🔬 **生态兼容**: 考虑与MCP参考服务器(filesystem/git/memory)的互操作
+- **相关**: [HB-260430](library/posts/HB-260430-mcp-ecosystem-update.md)
+
+### A2A协议: 开源生态加速
+- **来源**: a2aproject/A2A GitHub (April 2026)
+- **项目数据**: 23.4k stars | 2.4k forks | Apache 2.0 | 560 commits
+- **运营变化**: 已从Google转移到独立a2aproject组织运营
+- **多语言支持**: README提供21种语言版本（含简体中文）
+- **教育推广**: 提供DeepLearning.AI官方课程
+- **协议核心**:
+  - Agent Card: JSON格式能力发现
+  - Task管理: 完整生命周期，支持即时/长时任务
+  - UX协商: 文本/表单/媒体模态协商
+  - 封装性: 不暴露内部状态/记忆/工具
+- **对OpenClaw**:
+  - ✅ **动态发现**: Agent Card可替代静态AGENTS.md配置
+  - ✅ **长周期任务**: 显式Task状态管理解决Session超时
+  - 🔬 **标准化协调**: markdown-based协调 vs A2A结构化消息的选择
+- **相关**: [HB-260430](library/posts/HB-260430-a2a-protocol-status.md)
+
+### 协议生态全景: 分层架构确认
+
+| 协议 | 层级 | 定位 | 适用场景 | Stars/规模 |
+|------|------|------|----------|------------|
+| **CLI** | 本地 | 操作系统直接调用 | 本地开发工具，零协议开销 | 原生 |
+| **MCP** | 垂直 | Agent ↔ 工具/资源 | 远程API、数据库、文件系统 | 84.6k (servers) |
+| **A2A** | 水平 | Agent ↔ Agent | 跨Agent协作、多Agent编排 | 23.4k |
+
+**关键洞察**: 三层架构（CLI/MCP/A2A）已成为行业共识，OpenClaw的本地CLI优先策略持续获得验证。
+
+---
+
+## Previous Session (2026-04-29) — Google A2A协议: Agent互操作性新标准
 
 > XHS工具仍不可用，本轮通过**外部链接深挖**，聚焦**Google A2A协议** —— 刚发布的Agent间互操作开放标准，与MCP形成互补。
 

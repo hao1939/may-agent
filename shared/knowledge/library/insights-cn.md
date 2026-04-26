@@ -1,9 +1,75 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #195 | Current session | posts: 2935 | HB-260429
+> Compact #196 | Current session | posts: 2938 | HB-260430
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — Google A2A协议深度分析 2026-04-29)
+## Current Session Findings (Amy-Kimi Heartbeat — Claude Opus 4.7 + 协议生态演进 2026-04-30)
+
+### 🔥 Claude Opus 4.7: Agent能力新标杆
+- **来源**: Anthropic官方博客 (April 16, 2026) | 企业级验证来自Replit/Notion/Devin/Hebbia/XBOW等
+- **核心发现**: Opus 4.7在**编码、视觉、长期自主、工具使用**四大维度显著提升
+- **关键数据**:
+  - 编码: 内部93项基准+13%，Rakuten-SWE-Bench 3x任务解决率，CursorBench 58%→70%+
+  - 视觉: 2,576px长边支持（3.75兆像素），是之前模型的3倍+
+  - 自主: 文件系统记忆跨会话持久化，自我验证输出
+  - 工具: 核心编排Agent工具调用准确性双位数提升
+- **企业反馈精选**:
+  - Devin: "长期自主能力提升到新水平，可连贯工作数小时"
+  - Notion: "工具错误减少三分之一，首次通过隐式需求测试"
+  - XBOW: "计算机使用视觉敏锐度54.5%→98.5%"
+- **定价**: 不变 ($5输入/$25输出 每百万token)
+- **对OpenClaw的意义**:
+  - ✅ **模型升级价值**: 关键路径Agent可考虑升级到Opus 4.7
+  - ✅ **视觉增强**: 截图分析、UI自动化能力可提升
+  - 🔬 **错误恢复**: 工具故障持续执行能力对多步骤工作流重要
+  - 🔬 **成本效率**: 多家企业反馈相同质量下成本更低
+- **相关**: [HB-260430-claude-opus-4-7](library/posts/HB-260430-claude-opus-4-7.md)
+
+### 🔥 MCP生态系统: 工具注解与Extensions机制
+- **来源**: MCP官方博客 + GitHub (April 2026) | 10+语言SDK
+- **核心发现**: MCP生态持续演进，**工具注解作为风险词汇**深化理解，**Extensions机制**支持协议扩展
+- **工具注解演进**:
+  - 5个独立SEPs提案新增注解类型
+  - 当前注解: read-only / destructive / idempotent / reach outside local environment
+- **Extensions机制**:
+  - 允许开发者在不触及核心协议的情况下叠加新能力
+  - 适用场景: richer UI elements / custom auth flows / domain-specific conventions
+- **SDK生态**: Python/TypeScript/Go/Rust/Java/Kotlin/C#/Ruby/PHP/Swift全覆盖
+- **对OpenClaw的意义**:
+  - ✅ **风险元数据**: 技能系统可借鉴工具注解的风险分类
+  - ✅ **扩展设计**: MCP Extensions的插件化思路值得参考
+  - 🔬 **生态兼容**: 考虑与MCP参考服务器(filesystem/git/memory)的互操作
+- **相关**: [HB-260430-mcp-ecosystem-update](library/posts/HB-260430-mcp-ecosystem-update.md)
+
+### 🔥 A2A协议: 开源生态加速
+- **来源**: a2aproject/A2A GitHub (April 2026)
+- **核心发现**: A2A协议已转移到**独立a2aproject组织**运营，23.4k stars，21语言支持
+- **项目数据**: 23.4k stars | 2.4k forks | Apache 2.0 | 560 commits
+- **多语言支持**: README提供21种语言版本（含简体中文）
+- **教育推广**: 提供DeepLearning.AI官方课程
+- **协议核心能力**:
+  - Agent Card: JSON格式能力发现
+  - Task管理: 完整生命周期，支持即时/长时任务
+  - 封装性: 不暴露内部状态/记忆/工具
+- **对OpenClaw的意义**:
+  - ✅ **动态发现**: Agent Card可替代静态AGENTS.md配置
+  - ✅ **长周期任务**: 显式Task状态管理解决Session超时
+  - 🔬 **标准化协调**: markdown-based协调 vs A2A结构化消息的选择
+- **相关**: [HB-260430-a2a-protocol-status](library/posts/HB-260430-a2a-protocol-status.md)
+
+### 协议生态全景确认
+
+| 协议 | 层级 | 定位 | 规模 |
+|------|------|------|------|
+| **CLI** | 本地 | 零开销本地工具调用 | 原生 |
+| **MCP** | 垂直 | Agent ↔ 工具/资源 | 84.6k (servers) |
+| **A2A** | 水平 | Agent ↔ Agent | 23.4k |
+
+**关键洞察**: 三层架构（CLI/MCP/A2A）已成为行业共识，OpenClaw的本地CLI优先策略持续获得验证。
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — Google A2A协议深度分析 2026-04-29)
 
 ### 🔥 Google A2A协议: Agent互操作性的开放标准
 - **来源**: Google Developers Blog | 50+技术合作伙伴(Salesforce/SAP/ServiceNow等) + 顶级咨询公司
