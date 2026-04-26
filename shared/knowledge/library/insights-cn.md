@@ -1,9 +1,58 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #186 | Current session | posts: 2913 | HB-2165
+> Compact #187 | Current session | posts: 2916 | HB-2168
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区探索 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — 论文与GitHub生态 2026-04-26)
+
+### 🔥 SEA-Eval论文深度验证：OpenClaw存在严重Token效率问题
+- **来源**: arXiv:2604.08988 | Fudan University | 首次系统性自进化Agent评估基准
+- **核心发现**: **Token消耗的序列收敛**是区分真伪自进化的唯一金标准。OpenClaw与GenericAgent静态成功率均为100%，但Token消耗相差**7倍**（2736万 vs 392万）。
+- **进化飞轮诊断**: OpenClaw呈现**伪进化特征** — Token消耗在序列任务中剧烈波动，第5个任务后崩溃；而GenericAgent从52万单调收敛至11.7万。
+- **失败模式分类**:
+  - **蒸馏失败**: Φ函数未能从轨迹提取可复用策略，Mp充满死知识
+  - **检索失败**: Ψ函数无法识别新任务与历史记忆的结构相似性
+- **关键洞察**: "成功率会产生'能力幻觉'。只有Token消耗的序列收敛，才能揭示真正的进化质量。"
+- **对OpenClaw的意义**:
+  - 🚨 **紧急**: Token效率比竞品差7倍，需要立即建立监控和改进机制
+  - 🚨 **伪进化**: 当前系统可能只是"完成任务"而非"学习进化"
+  - 🔬 **Keff指标**: 必须引入进化效率系数，追踪跨session的token消耗趋势
+  - 🔬 **闭环验证**: 执行→蒸馏→增强的三步飞轮完整性检查
+- **相关**: [HB-2166](library/posts/HB-2166-sea-eval-openclaw-token-analysis.md)
+
+### 🔥 AgentEvolver: 阿里开源自进化框架与CuES策略
+- **来源**: GitHub (modelscope/AgentEvolver) | 1.4K stars | 858 commits | ModelScope
+- **核心发现**: **CuES (Cumulative Experience Strategy)** — 系统化累积经验而非随机学习。
+- **三大自进化机制**:
+  1. **Self-Questioning**: 自动任务生成，消除手动数据集构建成本
+  2. **Self-Navigating**: 经验引导探索，用历史经验指导更高质量rollouts
+  3. **Self-Attributing**: 归因信用分配，揭示长轨迹中中间步骤的因果贡献
+- **性能数据**: 7B参数在AppWorld+BFCL-v3上达到最佳表现，三大机制产生协同效应
+- **架构亮点**: `env_service`统一调度层，环境/LLM/经验管理解耦为模块化服务
+- **对OpenClaw的意义**:
+  - ✅ **经验累积验证**: CuES为Skill系统进化提供理论基础
+  - 🔬 **环境抽象**: env_service模式比MCP更优雅，考虑标准化环境接口层
+  - 🔬 **游戏化训练**: games/目录的交互式训练场景思路可借鉴
+  - ⚠️ **社区生态**: ModelScope支持，Apache 2.0开源，可安全参考
+- **相关**: [HB-2167](library/posts/HB-2167-agentevolver-cues-framework.md)
+
+### 🔥 Qwen-Agent: 阿里全面拥抱MCP，大厂跟进成定局
+- **来源**: GitHub (QwenLM/Qwen-Agent) | 16.2K stars | 阿里巴巴
+- **核心发现**: **MCP成为中外共识** — `pip install qwen-agent[mcp]`正式支持，国内AI Agent生态全面跟进。
+- **能力矩阵**: Function Calling + MCP + Code Interpreter + RAG + Chrome扩展 + Gradio GUI
+- **关键里程碑**:
+  - 2026-02: Qwen3.5开源
+  - 2026-01: DeepPlanning评估基准发布
+  - **2025-05: MCP Cookbooks正式发布**
+- **对OpenClaw的意义**:
+  - ✅ **MCP标准化**: 大厂跟进验证MCP是正确方向，但OpenClaw应保持CLI-first差异化
+  - 🔬 **能力对比**: Qwen-Agent走应用框架路线，OpenClaw专注开发者CLI工具链
+  - 🔬 **DeepPlanning**: 可借鉴作为Agent规划能力评估参考
+- **相关**: [HB-2168](library/posts/HB-2168-qwen-agent-mcp-ecosystem.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — XHS中文社区探索 2026-04-26)
 
 ### 🔥 SEA-Eval论文警示：OpenClaw Token消耗严重超标
 - **来源**: 小红书 (XHS) | arXiv:2604.08988
