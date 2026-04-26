@@ -24,11 +24,17 @@ H-EXP-029 showed that coder scored 0% on a judgment task where tech-lead scored 
 - 5/5 skill-based coder interventions failed (EXP-224/225/226/227/228) — the agent was wrong, not underinformed
 - EXP-231: coaching notifications hit saturation — more instructions don't help
 
+### Literature Support (added by scout 2026-04-26)
+- **REDEREF (arXiv:2603.13256, DD#415)**: Training-free Thompson Sampling router for multi-agent LLM systems. Belief-guided delegation + reflection-driven re-routing achieves 28% token reduction, 17% fewer agent calls, 19% faster time-to-success vs random routing at matched 96.5% success rate. Key: models agent *marginal contribution probability*, not solve probability — directly validates H-201's "agent-task fit" framing. Cooldown mechanism prevents exploitation loops (relevant to retry cost concern).
+- **BiRouter (arXiv:2512.00740, DD#775, AAAI 2026)**: Decentralized bi-criteria routing using ImpScore (strategic value) × GapScore (context continuity). Shows routing works even without central orchestrator. Reputation mechanism handles unreliable agents — relevant to our agent reliability variance.
+- **AEL (arXiv:2604.21725, DD#877)**: "Less is more" finding — memory + reflection alone gives 58% improvement, but adding routing/selection complexity *degrades* performance. **Caution for H-201**: simple retry-with-different-agent may outperform a sophisticated routing layer. Keep the mechanism minimal.
+
 ### Against / missing
 - No data on what % of all failures are agent-task mismatches (could be <10%)
-- Retry cost: re-running with a different agent doubles compute
+- Retry cost: re-running with a different agent doubles compute — but REDEREF shows belief-guided routing *reduces* total cost vs naive retry
 - May not generalize beyond the security scenario tested in H-EXP-029
 - Evaluator dormant since April — can't measure current failure rates by agent
+- AEL's "less is more" warns against over-engineering the routing layer
 
 ## Predictions
 
