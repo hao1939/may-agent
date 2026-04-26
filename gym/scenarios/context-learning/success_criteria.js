@@ -31,13 +31,15 @@ s.checkProduct("read-project-files", "Agent read at least one project file", () 
     (String(tc.arguments.path).includes("project.json") ||
      String(tc.arguments.path).includes("README"))
   )) return true;
-  // Also accept bash cat/head/less of these files
+  // Also accept bash cat/head/less of these files (including wildcards in workDir)
   const bashCalls = s.toolCalls("bash");
-  return bashCalls.some(tc =>
-    tc.arguments.command &&
-    (String(tc.arguments.command).includes("project.json") ||
-     String(tc.arguments.command).includes("README"))
-  );
+  return bashCalls.some(tc => {
+    const cmd = String(tc.arguments.command || "");
+    return cmd.includes("project.json") ||
+     cmd.includes("README") ||
+     // Accept wildcard reads that would capture project files (e.g. cat /tmp/gym-*/* )
+     (cmd.match(/cat\s/) && cmd.includes("gym-"));
+  });
 });
 
 // ── Behavioral ─────────────────────────────────────────────────────────

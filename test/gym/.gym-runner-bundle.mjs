@@ -271,6 +271,9 @@ function syncNewFilesFromRoot(beforeSnapshot , workDir ) {
 }
 
 function runAgent(adapter , taskContent , workDir , agent , timeoutMs ) {
+  // Prepend workDir notice so agent knows where scenario files are
+  const workDirNotice = `**IMPORTANT: This is a gym scenario. All project files are in ${workDir} — read files from there, not from /app or your usual workspace.**\n\n`;
+  taskContent = workDirNotice + taskContent;
   // Write task to work dir for reference
   fs.writeFileSync(path.join(workDir, "_gym_task.md"), taskContent);
 
@@ -366,6 +369,7 @@ function runAgent(adapter , taskContent , workDir , agent , timeoutMs ) {
         allSessionDirs = allSessionDirs.concat(histDirs);
       }
       const sessionDirs = allSessionDirs
+        .filter((d) => /^(history\/)?s_\d+/.test(d))
         .sort((a, b) => {
           const nameA = a.includes("/") ? a.split("/").pop() : a;
           const nameB = b.includes("/") ? b.split("/").pop() : b;
