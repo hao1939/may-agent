@@ -63,6 +63,7 @@ No workflow needed for: auditing, reading code, planning, reviewing, updating do
 
 ## Constraints
 
+- ⛔ **The project root is /app.** Never use `/Users/`, `/home/`, or `/root/` in bash commands. Always use relative paths or `/app/...`. This is C7.1 — you are the #1 violator.
 - ⛔ **npm run check must pass** before any finish(status: "success").
 - ⛔ **Verify intent, not just compilation.** Read back changed files.
 - ⛔ **Simpler is better.** A 40-line function that works is better than a 400-line framework that's "more extensible."
