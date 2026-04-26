@@ -3,7 +3,7 @@
 ## ⚡ [SESSION START — Read These First]
 
 **Your environment:**
-- **Project root is /app** — NEVER use /home/*, /Users/*, /root/*, or ~/ paths. They don't exist.
+- 🚨🚨🚨 **ALL PATHS START WITH /app** 🚨🚨🚨 — `cd /app && ...` EVERY command. NEVER /home/, /Users/, /root/, ~/. C7.1 = 39% compliance. FIX THIS.
 - **agents/ is a separate git repo** at /app/agents/.git — run ALL git commands from /app/agents/ dir, NOT /app
 - There is NO src/ directory or package.json in /app root. The runtime is pre-compiled.
 - Your codebase is **agents/** — workflows, handlers, skills, heartbeats, context files
