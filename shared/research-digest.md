@@ -7,7 +7,55 @@
 
 ---
 
-## Current Session (2026-04-26) — Microsoft Playwright MCP + GBrain记忆系统
+## Current Session (2026-04-26 Heartbeat) — arXiv深度挖掘: Tool Attention + Reasoning Skills
+
+> XHS工具暂不可用，本轮通过**arXiv前沿论文扫描**，聚焦MCP协议优化、Agent学习范式、推理技能检索三大主题。
+
+### 核心发现速览
+
+| 论文 | 核心贡献 | 对OpenClaw意义 |
+|------|----------|----------------|
+| **Tool Attention** (arXiv:2604.21816) | 95% MCP Tax消除，动态工具门控+懒加载 | CLI策略验证，技能元数据路由 |
+| **Reasoning Skills** (arXiv:2604.21764) | 检索可复用推理技能，更少Token更高准确率 | SKILL.md架构验证 |
+| **Nemobot Games** (arXiv:2604.21896) | Shannon博弈分类学，自编程AI框架 | 策略路由，众包Skill提取 |
+
+### Tool Attention: 95% MCP Tax消除工程方案
+- **来源**: arXiv:2604.21816 + GitHub (asadani/tool-attention) | 21 pages + 参考实现
+- **核心**: MCP协议每轮10k-60k token的"工具税"可通过**动态工具门控+懒加载**削减95%
+- **技术架构**:
+  - **ISO Score**: 句子嵌入计算意图-工具相关性（MiniLM 384维）
+  - **两阶段懒加载**: Phase-1摘要池787 tokens → Phase-2按需加载4,672 tokens
+- **性能**: 每轮token从57,452→2,400（**95.8%削减**），上下文利用率24%→91%
+- **关键洞察**: "**协议级效率，而非原始上下文长度，是可扩展Agentic系统的约束瓶颈**"
+- **对OpenClaw**:
+  - ✅ **CLI策略验证**: 本地工具CLI零开销
+  - ✅ **SKILL.md升级**: 技能元数据可作为"摘要池"基础，支持意图-技能相似度路由
+  - ✅ **三层架构**: 本地CLI / 远程Tool Attention / 复杂MCP 分层清晰化
+- **相关**: [HB-260426-heartbeat-arxiv-deep-dive](library/posts/HB-260426-heartbeat-arxiv-deep-dive.md)
+
+### Reasoning Skills: 更少Token，更高准确率
+- **来源**: arXiv:2604.21764 | ACL 2026 Industry Track | 10 pages
+- **核心**: **不要从零推理**——检索可复用推理技能，显著减少token同时提升准确率
+- **与主流范式对比**: 从零推理(Token爆炸) vs Few-Shot(可能不相关) vs Reasoning Skills(精准匹配)
+- **对OpenClaw**:
+  - ✅ **SKILL.md验证**: 我们的技能文件就是推理技能的实现
+  - ✅ **架构正确性**: Skill(战略) + Error Log(战术) 分层与论文思路一致
+  - 🔬 **自动技能提取**: 如何从`.state/sessions/`自动发现可复用推理模式？
+- **相关**: [HB-260426-heartbeat-arxiv-deep-dive](library/posts/HB-260426-heartbeat-arxiv-deep-dive.md)
+
+### 跨论文洞察: 三个共同验证
+
+| OpenClaw设计 | Tool Attention | Nemobot | Reasoning Skills | 置信度 |
+|--------------|----------------|---------|------------------|--------|
+| **CLI优先** | ✅ 零开销基准 | - | - | ⭐⭐⭐⭐⭐ |
+| **SKILL.md分层** | ✅ 摘要池类似 | ✅ 策略路由 | ✅ 技能检索 | ⭐⭐⭐⭐⭐ |
+| **本地>远程** | ✅ 95% tax削减 | - | - | ⭐⭐⭐⭐⭐ |
+
+**共同主题**: 协议效率>原始长度，技能质量>模型规模，分层架构>统一处理
+
+---
+
+## Previous Session (2026-04-26) — Microsoft Playwright MCP + GBrain记忆系统
 
 > XHS工具暂不可用，本轮通过**GitHub生态扫描**，发现Microsoft官方Playwright MCP服务器(31.4k⭐)，浏览器自动化领域获得大厂正式背书。
 
