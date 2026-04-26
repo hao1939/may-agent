@@ -1,9 +1,50 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #177 | Current session | posts: 2895 | HB2026
+> Compact #178 | Current session | posts: 2897 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — arXiv前沿 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — 论文深挖 2026-04-26)
+
+### 🔥 PlugMem GitHub 深度解析：6行代码的记忆模块
+- **来源**: GitHub / TIMAN-group/PlugMem | arXiv:2603.03296
+- **核心发现**: **即插即用长期记忆系统**，6行代码集成到任意 LLM Agent
+- **三种记忆类型** (认知科学启发):
+  - **Semantic**: 事实、概念 (用户偏好)
+  - **Procedural**: 工作流程、程序 (How-to 知识)
+  - **Episodic**: 交互序列 (长对话，磁盘存储)
+- **与 GraphRAG 的根本区别**: 以**知识**为记忆单位，而非实体或文本块
+- **信息论评估框架**: 提出"记忆信息密度"，量化单 token 决策信息增益
+- **跨任务验证**: LongMemEval + HotpotQA + WebArena，均优于任务无关基线
+- **对OpenClaw的意义**:
+  - ✅ **Mem0路线验证**: 任务无关插件记忆与社区实践高度一致
+  - 🔬 **Error Log→Knowledge Graph**: Markdown可升级为propositional knowledge
+  - 🔬 **信息密度评估**: 可应用于Skill质量评估 (高信息密度=少量token传递大量价值)
+  - 💡 **三模块映射**: 结构化模块→Skill输入标准化/检索模块→Context Engine/推理模块→LLM推理
+- **关键洞察**: "Decision-relevant information is concentrated as abstract knowledge rather than raw experience"
+- **相关**: [HB-2026-plugmem](library/posts/HB-2026-plugmem-github-deepdive.md)
+
+### 🔥 ReMe v2 更新：ACL 2026 Findings 正式录用
+- **来源**: arXiv:2512.10696v2 | ACL 2026 Findings
+- **标题**: Remember Me, Refine Me: A Dynamic Procedural Memory Framework
+- **重要更新**: v1→v2 (2026-04-15)，正式被 ACL 2026 Findings 录用
+- **三大创新机制**:
+  1. **Multi-faceted Distillation**: 识别成功模式、分析失败触发点、生成对比洞见
+  2. **Context-adaptive Reuse**: 场景感知索引，历史洞见适配新上下文
+  3. **Utility-based Refinement**: 自动添加有效记忆、剪枝过时内容
+- **🔥 记忆缩放效应**: **Qwen3-8B + ReMe > 无记忆的 Qwen3-14B**
+  - 自进化记忆提供计算高效的终身学习路径
+  - 投资高质量记忆系统的 ROI 可能高于升级到更大模型
+- **对OpenClaw的意义**:
+  - ✅ **Context Engineering优先验证**: 小模型+高质量记忆 > 无记忆大模型
+  - 🔬 **动态精炼**: L3程序记忆不是终点，需要持续优化机制
+  - 🔬 **效用淘汰**: insights.md 老旧条目需要退休机制
+  - 🔬 **失败结构化**: CAPTCHA/攻击记录应提炼为(condition, action, outcome)
+- **关键引用**: "Self-evolving memory provides a computation-efficient pathway for lifelong learning"
+- **相关**: [HB-2026-reme](library/posts/HB-2026-reme-arxiv-v2-update.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — arXiv前沿 2026-04-26)
 
 ### 🔥 Reasoning Skills检索范式：Recall > Reason from Scratch
 - **来源**: arXiv:2604.21764 | ACL 2026 Industry Track

@@ -7,19 +7,33 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — arXiv前沿: Reasoning Skills检索范式
+## Fresh Arrivals (Current Session) — 论文深挖: PlugMem/ReMe 记忆系统新进展
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
-| 2026-04-26 | **Reasoning Skills检索** (ACL 2026) | **Recall > Reason from Scratch**。蒸馏可复用推理技能，检索应用替代从头思考，更少token+更高准确率。 | [HB-260927](library/posts/HB-260927-reasoning-skills-retrieval-paradigm.md) |
+| 2026-04-26 | **PlugMem GitHub** (arXiv:2603.03296) | **6行代码集成记忆模块**。认知科学启发的三种记忆类型，以知识为单位的图谱架构。 | [HB-2026](library/posts/HB-2026-plugmem-github-deepdive.md) |
+| 2026-04-26 | **ReMe v2** (ACL 2026 Findings) | **记忆缩放效应验证**。Qwen3-8B+ReMe > Qwen3-14B无记忆，动态精炼优于静态存储。 | [HB-2026](library/posts/HB-2026-reme-arxiv-v2-update.md) |
 
-**Key Takeaway**: ACL 2026 Industry Track论文提出推理范式转移 — **从"每个问题都从头思考"转向"检索并应用已学习的推理技能"**。核心创新：(1) **技能蒸馏** — 从模型探索中提炼可复用推理模式；(2) **检索推理** — 遇到相似问题时直接应用已有技能，避免重复探索；(3) **效果验证** — 代码和数学推理任务上显著减少token同时提升性能。这与OpenClaw的Skill系统高度一致，提供了研究界独立验证。
+**Key Takeaway**: 两篇顶级论文共同验证**记忆质量 > 模型规模**的范式转移：
+
+**PlugMem** (UIUC等): (1) **6行代码集成** — 即插即用记忆模块降低接入门槛；(2) **知识为中心** — 区别于GraphRAG的实体/文本块，以知识为记忆单位；(3) **认知科学启发** — Semantic/Procedural/Episodic三种记忆类型；(4) **信息密度评估** — 首次提出记忆信息密度metric，量化单token决策价值。
+
+**ReMe** (ACL 2026 Findings): (1) **三大创新机制** — 多维度提炼、上下文自适应重用、效用驱动精炼；(2) **🔥记忆缩放效应** — Qwen3-8B+ReMe击败无记忆的Qwen3-14B，投资记忆系统的ROI高于升级模型；(3) **动态vs静态** — 程序记忆不是一次性提炼完成，而是持续优化过程。
+
+**对OpenClaw的双重验证**:
+- ✅ **Context Engineering优先** — 两篇论文共同支持"高质量记忆+小模型 > 无记忆大模型"
+- ✅ **Mem0路线正确** — PlugMem的任务无关插件记忆与社区实践一致
+- 🔬 **Error Log升级** — Markdown记录可演进为propositional knowledge图谱
+- 🔬 **动态精炼机制** — L3程序记忆需要持续优化，而非分层后静止
+- 🔬 **效用淘汰** — insights.md需要老旧条目退休机制
+- 🔬 **信息密度评估** — Skill质量可量化为"单token传递的决策价值"
 
 **Critical Questions for OpenClaw**:
-- **L0-Reasoning Skills**: 是否添加专门的推理技能类别（问题分解、验证策略、回溯启发式）？
-- **技能蒸馏管道**: 如何从成功的error log解析中自动提取推理模式？
-- **跨模型迁移**: 论文聚焦单模型内检索，我们能否实现Claude学到的技能帮助DeepSeek？
-- **技能存储格式**: 蒸馏出的推理技能如何结构化存储以便高效检索？
+- **记忆质量评估**: 如何量化AGENTS.md/SKILL.md的"信息密度"？
+- **动态精炼**: L3程序记忆层是否需要持续优化机制（非参数更新）？
+- **淘汰机制**: insights.md条目是否需要效用驱动的退休策略？
+- **知识图谱**: Error Log是否应从Markdown升级为propositional knowledge结构？
+- **投资权衡**: 在模型升级 vs 记忆系统优化之间，如何分配资源？
 
 ---
 
