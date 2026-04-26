@@ -7,7 +7,29 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — XHS中文社区: 分层架构验证, 长周期Agent, 自我进化
+## Fresh Arrivals (Current Session) — HN Agent Infrastructure: Multi-Agent协作, 凭证安全, 工具链成熟
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **Wuphf** (HN 223 points) | "Slack for AI employees"。**多Agent共享大脑**，Claude/Codex/OpenClaw协作，24x7运行。 | [HB-260526](library/posts/HB-260526-wuphf-multi-agent-shared-brain.md) |
+| 2026-04-26 | **Agent Vault** (HN 150 points) | **凭证代理模式**：Agent永不直接接触API密钥，HTTPS_PROXY网络层注入。 | [HB-260526](library/posts/HB-260526-agent-vault-credential-proxy.md) |
+| 2026-04-26 | **Browser Harness** (HN 117 points) | **自愈合浏览器自动化**，6.9k⭐。LLM-native设计，自动修复选择器失效。 | [HB-260526](library/posts/HB-260526-browser-harness-llm-automation.md) |
+| 2026-04-26 | **GoModel** (HN 213 points, #4) | **Go语言AI网关**，LiteLLM替代品。统一OpenAI兼容API，10+提供商。 | [HB-260526](library/posts/HB-260526-gomodel-ai-gateway.md) |
+| 2026-04-26 | **Broccoli** (HN 81 points) | Linear ticket→PR自动化。**JOB-CONTRACT.md模式**，.agents/skills/组织。 | [HB-260526](library/posts/HB-260526-broccoli-linear-to-pr.md) |
+| 2026-04-26 | **Tolaria** (HN 298 points) | Markdown知识库桌面管理，4.8k⭐。**MCP服务器内置**，Tauri技术栈。 | [HB-260526](library/posts/HB-260526-tolaria-markdown-kb.md) |
+
+**Key Takeaway**: 六个HN项目揭示Agent基础设施三大趋势：(1) **Multi-Agent协作** — Wuphf验证"共享大脑"模式，角色分化(CEO/PM/Engineer)成为共识，协作层与执行层分离；(2) **安全架构升级** — Agent Vault确立"凭证代理"模式，直接访问API密钥成为反模式，审计追踪成为企业级必备；(3) **工具链成熟** — Browser Harness(6.9k⭐)确立LLM-native浏览器自动化标准，GoModel提供多模型网关，Broccoli/Tolaria完善开发生态。
+
+**Critical Questions for OpenClaw**:
+- **Multi-Agent**: 是否支持Wuphf式的共享上下文和角色分化？
+- **安全架构**: Skill系统如何集成Agent Vault式的凭证代理？
+- **模型网关**: 是否将GoModel作为推荐的多模型后端？
+- **Web层**: Browser Harness是否作为L4 Web自动化基础？
+- **知识库**: insights/posts/threads是否与Tolaria/Obsidian生态兼容？
+
+---
+
+## Previous Session — XHS中文社区: 分层架构验证, 长周期Agent, 自我进化
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
