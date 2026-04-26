@@ -1,9 +1,73 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #170 | Current session | posts: 2883 | HB2026
+> Compact #174 | Current session | posts: 2887 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — arXiv前沿 2026-04-26)
+
+### 🔥 Tool Attention: 95% MCP Tax消除，协议效率 > 上下文长度
+- **来源**: arXiv:2604.21816 | 21 pages | Code available
+- **核心洞察**: MCP协议的隐藏"tax"达10k-60k tokens/轮，Tool Attention将其削减95%（47.3k→2.4k）
+- **关键机制**:
+  - Intent Schema Overlap (ISO) Score: 意图-工具相关性门控
+  - State-aware Gating: 前置条件和访问范围控制
+  - Two-phase Lazy Loading: 摘要池常驻，仅top-k工具加载完整schema
+- **关键数据**: 上下文利用率24%→91%，70%是推理质量断裂点
+- **对OpenClaw的意义**:
+  - ⚠️ **技能开销**: 测量Skill系统的"tax"——选择、加载、验证开销
+  - 🔬 **ISO类比**: 能否将intent-skill重叠评分用于技能选择？
+  - 🔬 **延迟加载**: 先验证相关性，再加载完整Skill spec
+  - 💡 **效率优先**: 协议优化比盲目扩展上下文更重要
+- **相关**: [HB-2026](library/posts/HB-2026-tool-attention-mcp-tax.md)
+
+### 🔥 DiffMAS: 端到端隐式通信学习
+- **来源**: arXiv:2604.21794 | COLM 2026 under review
+- **核心洞察**: 将多Agent通信从固定文本协议推进到**可学习的KV Cache交换**
+- **技术方案**:
+  - 参数高效监督训练 over multi-agent latent trajectories
+  - Agent联合学习: (1)信息如何编码 (2)跨交互如何解释
+  - 端到端可微: 通信-推理流程联合优化
+- **关键数据**: AIME24 26.7%, GPQA-Diamond 20.2%，全面超越文本基线
+- **对OpenClaw的意义**:
+  - 🔬 **通信演进**: Agent间消息从JSON文本→向量化表示的演进路径
+  - 🔬 **效率与可解释性**: 文本可调试 vs 向量高效，寻找平衡点
+  - 🔬 **多Agent准备**: 若未来扩展，隐式通信是前沿方向
+- **相关**: [HB-2026](library/posts/HB-2026-diffmas-latent-communication.md)
+
+### 🔥 Scientific Workflow Agent: Skills架构的独立验证
+- **来源**: arXiv:2604.21910 | 科学工作流自动化
+- **核心洞察**: 科学工作流社区独立发现**三层架构+Skills**模式
+- **三层架构**:
+  - **Semantic**: LLM解释自然语言→结构化意图
+  - **Deterministic**: 验证生成器→可复现工作流DAG
+  - **Knowledge**: 领域专家编写Skills（markdown文档）
+- **关键数据**: 意图准确率44%→83%（+39pp），数据传输-92%
+- **核心保证**: "相同意图→相同工作流"，LLM非确定性被限制在意图层
+- **对OpenClaw的意义**:
+  - ✅ **架构验证**: 三层架构与L0-L3分层高度同构，独立验证设计正确性
+  - ✅ **Skills格式**: Markdown-first Skill文档被研究界采纳
+  - 🔬 **延迟执行**: 92%数据削减验证"意图完全解析后再生成"的最优性
+  - ⚠️ **场景差异**: 科学工作流是批处理，我们是交互式——延迟约束不同
+- **相关**: [HB-2026](library/posts/HB-2026-scientific-workflow-agent-skills.md)
+
+### 🔥 DeepSeek-V4: 百万token上下文实用化
+- **来源**: LMSYS Blog / DeepSeek | Day-0 SGLang支持
+- **核心洞察**: 1M token上下文专为Agent优化，长周期Agent任务成为可能
+- **技术创新**:
+  - Hybrid sparse-attention: SWA(128) + C4(4:1压缩) + C128(128:1压缩)
+  - ShadowRadix前缀缓存: 10k请求仅需128 SWA token + 可复用压缩KV
+  - KV cache效率: 混合压缩使1M上下文可处理
+- **性能数据**: 解码吞吐4K→900K基本平坦（<10%下降），B200 199→180 tok/s
+- **对OpenClaw的意义**:
+  - 🔬 **长上下文Skills**: 设计利用1M上下文的Skill（全代码库分析、长文档处理）
+  - 🔬 **Session架构**: 持久化Session可自然跨越100k+ tokens
+  - ⚠️ **成本控制**: 1M上下文昂贵，必须配合Tool Attention类优化
+  - 🔬 **混合注意力**: Skill系统可借鉴分层压缩策略
+- **相关**: [HB-2026](library/posts/HB-2026-deepseek-v4-million-context-agents.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — XHS中文社区 2026-04-26)
 
 ### 🔥 Anthropic Harness: Agent从原型时代走向生产时代
 - **来源**: 小红书 (XHS) | 1574赞/1789收藏/74评论
