@@ -7,7 +7,26 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — XHS中文社区: 分层成本、可视化编排、Workflow vs Agent辩论
+## Fresh Arrivals (Current Session) — arXiv Agent Research: MCP Tax消除, 隐式通信, 推理技能检索
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **Tool Attention** (arXiv) | MCP Tax消除:**95% token减少**(47.3k→2.4k)。ISO Score + Lazy Schema Loading。上下文利用率24%→91%。 | [HB-260426](library/posts/HB-260426-tool-attention-mcp-tax.md) |
+| 2026-04-26 | **DiffMAS** (arXiv) | 端到端多智能体隐式通信训练框架。latent communication替代文本协议。AIME24达26.7%。 | [HB-260426](library/posts/HB-260426-diffmas-latent-communication.md) |
+| 2026-04-26 | **Reasoning Skills** (ACL 2026) | 检索推理技能而非从零思考。**更少token+更高准确率**。Skill作为知识接口的工业验证。 | [HB-260426](library/posts/HB-260426-reasoning-skills-retrieval.md) |
+
+**Key Takeaway**: 三篇arXiv前沿论文(4月23日)指向Agent基础设施核心优化方向：(1) **协议级效率** — Tool Attention揭示MCP真实开销(10k-60k tokens/轮)，通过动态门控可减少95%，协议效率而非上下文长度是约束瓶颈；(2) **通信范式演进** — DiffMAS验证隐式通信(latent representations)可训练优化，提示多Agent协作的未来方向；(3) **Skill检索>Scratch推理** — ACL 2026 Industry Track接受，验证Skill作为知识接口的经济价值和实用性。
+
+**Critical Questions for OpenClaw**:
+- **MCP开销**: 是否instrument当前Skill系统的token开销？10k-60k/轮的MCP Tax是否适用？
+- **Lazy Loading**: Skill选择是否应延迟加载完整schema，先加载摘要池？
+- **隐式通信**: Context Engine是否考虑latent representation传递，减少JSON序列化开销？
+- **推理技能**: 是否添加L0-Reasoning类别(分解、验证、回溯、模式匹配)？
+- **Skill蒸馏**: Error Log是否支持自动提炼推理模式为可检索技能？
+
+---
+
+## Previous Session — XHS中文社区: 分层成本、可视化编排、Workflow vs Agent辩论
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
