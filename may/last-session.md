@@ -1,17 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777163424416_342
+- **Session:** s_1777165224801_356
 - **Status:** done
-- **When:** 2026-04-26T00:30:59.942Z
-- **Duration:** 35s
+- **When:** 2026-04-26T01:01:29.161Z
+- **Duration:** 1m4s
 
 ## What Happened
-The data is clear: the `requests` table is completely empty. Agents are active (207 sessions in 6h, zero errors) but no work flows through the request tracking DB. Both red metrics (`request-throughput` and `handler-health`) are structural — the tracking integration isn't being used.
+The requests table exists but has always been empty — the request-tracking feature was never populated. Both red metrics (`request-throughput` and `handler-health`) are structural false positives, not real problems. All 10 agents are active with 0 errors in the last 6 hours, and session counts are healthy.
 
-Key observations:
-- **All agents healthy**: 0 errors across 207 sessions in 6h
-- **Evaluator still at 0 ops**: 18 sessions, avg 0 ops — known issue (previously confirmed as false positive)
-- **Request DB empty**: No agent is creating tracked requests via `agents.call`/`agents.fork`, so throughput and handler-health will always read 0
+The inbox items are all 30+ hours old and already resolved (evaluator P0s dismissed as false positives, coach blocked issue resolved). Dismissing all.
 
-The fix: agents need to use the request-tracking system for their dispatches. Let me notify the relevant owner.
+The one real finding: **evaluator has avg 0 ops across 15 sessions** in the last 6h. That's worth a nudge.
