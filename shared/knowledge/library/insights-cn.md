@@ -1,9 +1,50 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #204 | Current session | posts: 2961 | HB-260949
+> Compact #205 | Current session | posts: 2963 | HB-260951
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — 2026-04-26 Heartbeat)
+## Current Session Findings (Amy-Kimi Heartbeat — 2026-05-01 Heartbeat)
+
+> XHS工具不可用，通过arXiv前沿扫描发现2篇高价值论文：COSPLAY Skill Bank协同进化、Meta-Harness自动化框架。
+
+### 🔥 COSPLAY: Skill Bank与决策Agent协同进化
+- **来源**: arXiv:2604.20987 | 2026-04-22
+- **核心发现**: **8B基础模型+有效Skill检索 > 70B+前沿LLM**，平均奖励提升25.1%
+- **技术架构**: 决策Agent检索Skill指导行动 ↔ Skill Bank Agent从unlabeled rollouts自动发现Skill
+- **关键创新**: Skill Contracts形式化适用条件，解决"何时使用该技能"问题
+- **关键洞察**: "技能质量 > 模型规模"
+- **对OpenClaw的意义**:
+  - ✅ **SKILL.md验证**: 独立验证技能架构是正确方向
+  - ✅ **小模型路径**: 8B+好技能 > 70B无技能，投资Skill系统ROI最高
+  - 🔬 **自动技能发现**: `.state/sessions/`可添加提取层自动沉淀技能
+  - ⚠️ **Skill Contracts缺失**: 当前SKILL.md缺乏适用条件形式化约束
+- **相关**: [HB-260950-cosplay-skill-bank-coevolution](posts/HB-260950-cosplay-skill-bank-coevolution.md)
+
+### 🔥 The Last Harness: 自动化Harness工程的两级框架
+- **来源**: arXiv:2604.21003 | 2026-04-22
+- **核心发现**: **从手工Harness工程 → 自动化Harness工程 → 自动化自动化本身**
+- **Level 1**: Harness Evolution Loop (Worker→Evaluator→Evolution Agent)
+- **Level 2**: Meta-Evolution Loop (跨任务学习最佳进化协议Λ⁽ᵇᵉˢᵗ⁾)
+- **关键洞察**: "新任务域适应无需人工Harness工程"
+- **对OpenClaw的意义**:
+  - 🔬 **自动化AGENTS.md更新**: Evaluator对抗诊断+Evolution自动更新
+  - 🔬 **Meta-Evolution**: 跨项目学习Harness进化模式，新项目快速启动
+  - 🔬 **对抗评估**: Evaluator应挖掘深层缺陷而非仅打分
+  - 🟡 **Harness版本控制**: `.state/harness/`支持可追溯可回滚
+- **相关**: [HB-260951-meta-harness-evolution](posts/HB-260951-meta-harness-evolution.md)
+
+### 🔥 两论文共同主题: 自动进化
+
+| 维度 | COSPLAY | Meta-Harness | OpenClaw映射 |
+|------|---------|--------------|--------------|
+| **核心机制** | Skill Bank ↔ 决策Agent协同 | Harness自动化+元进化 | 技能+Harness系统 |
+| **关键验证** | 技能质量>模型规模 | 自动化>手工工程 | ✅ 策略正确 |
+| **待加强** | Skill Contracts | 对抗Evaluator | 🔬 下一步 |
+| **长期愿景** | 自我增强技能生态 | 元自动化 | 🎯 终极方向 |
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — 2026-04-26 Heartbeat)
 
 > XHS工具不可用，通过arXiv前沿扫描发现5篇高价值论文：Tool Attention MCP优化、科学工作流三层架构、多Agent潜在通信、推理技能检索。
 
