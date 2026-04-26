@@ -1,9 +1,62 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #189 | Current session | posts: 2923 | HB-260931
+> Compact #190 | Current session | posts: 2924 | HB-260932
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — 并行Agent学习三大框架 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — Agent记忆与知识双流架构 2026-04-26)
+
+### 🔥 PlugMem: 任务无关的插件式记忆模块
+- **来源**: arXiv:2603.03296 | UIUC | GitHub: TIMAN-group/PlugMem
+- **核心发现**: **知识为中心的记忆图**，区别于GraphRAG的实体/文本块为单位，以知识为单位组织记忆
+- **技术架构**:
+  - **三层记忆**: 语义(事实)+过程(策略)+情景(溯源)
+  - **知识图结构**: 命题-处方知识图，支持多跳检索
+  - **信息密度评估**: 量化单token决策信息增益
+- **关键数据**: 跨LongMemEval/HotpotQA/WebArena三个异质任务验证，**优于任务无关基线，超过部分任务特定设计**
+- **对OpenClaw的意义**:
+  - ✅ **Mem0路线验证**: 多Agent独立Collection+认知分层与PlugMem一致
+  - 🔬 **Error Log结构化**: 可从Markdown升级为知识图，支持语义检索
+  - 🔬 **信息密度指标**: 可用于Skill质量评估
+- **相关**: [HB-260932](library/posts/HB-260932-agent-memory-knowledge-dualstream.md)
+
+### 🔥 XSkill: Experience与Skill双知识流
+- **来源**: arXiv:2603.12056 | GitHub: XSkill-Agent/XSkill
+- **核心发现**: **双MLLM架构**分离知识管理(MLLM_kb)与执行推理(MLLM_exec)，Skill(战略)+Experience(战术)互补
+- **技术架构**:
+  - **双流知识**: Skill(任务级Markdown) + Experience(动作级JSON)
+  - **Cross-Rollout Critique**: 多轨迹对比分析提取因果模式
+  - **Non-Prescriptive注入**: 知识作为参考保留即兴空间
+- **关键数据**: **+5.46平均增益**，最高+11.13 points，Skills+Experiences > 任一单独
+- **对OpenClaw的意义**:
+  - ✅ **SKILL.md+Error Log设计验证**: 战略/战术分层与XSkill完全一致
+  - ✅ **Bob架构验证**: MLLM_kb/exec分离与Bob设计层/执行层对应
+  - 🔬 **Cross-Rollout分析**: Error Log可从单轨迹扩展到多轨迹对比
+- **相关**: [HB-260932](library/posts/HB-260932-agent-memory-knowledge-dualstream.md)
+
+### 🔥 Semantic Invariance: 规模≠可靠性
+- **来源**: arXiv:2603.13173 | AMSTA 2026 | Luxembourg IST
+- **核心发现**: **规模-鲁棒性倒置**——30B模型(Qwen3-30B-A3B, 79.6%不变响应率)可比405B模型更鲁棒
+- **技术方法**:
+  - **8种语义变换**: Paraphrase/Reorder/Expand/Contract/Context切换/Contrastive干扰
+  - **三层评估**: Solution-Level + Step-Level + Trace-Level
+  - **元形态测试**: 语义等价输入变换下的推理稳定性
+- **关键发现**: **所有模型家族**在Contrastive变换下均表现脆弱(下降-0.45)
+- **对OpenClaw的意义**:
+  - ✅ **L3人工审计验证**: "规模≠可靠性"直接支持禁止未经审计的Self-Evolution
+  - ✅ **read_by设计需求**: Contrastive普遍脆弱性验证人工最终确认的必要性
+  - 🔬 **鲁棒性回归测试**: 8种变换可作为Agent验收测试套件
+- **相关**: [HB-260932](library/posts/HB-260932-agent-memory-knowledge-dualstream.md)
+
+### 三论文共同验证的假设
+| 假设 | PlugMem | XSkill | Semantic Invariance | OpenClaw |
+|------|---------|--------|---------------------|----------|
+| **知识分层必要** | 语义/过程/情景三层 | Skill+Experience双流 | - | SKILL.md+Error Log ✅ |
+| **抽象知识>原始经验** | 知识图 vs 原始轨迹 | Experience需重写适配 | - | Error Log→AGENTS.md ✅ |
+| **规模≠可靠性** | - | - | 30B>405B | 禁止未经审计进化 ✅ |
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — 并行Agent学习三大框架 2026-04-26)
 
 ### 🔥 Combee: 并行提示学习的17倍加速方案
 - **来源**: 小红书 @板栗板栗 | arXiv:2604.04247 | Stanford & UC Berkeley

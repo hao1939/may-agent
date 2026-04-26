@@ -7,7 +7,57 @@
 
 ---
 
-## Current Session (2026-04-26) — XHS工具暂不可用，综合已有发现
+## Current Session (2026-04-26) — Agent记忆与知识双流架构
+
+> XHS搜索功能临时不可用。本轮通过**外部链接深挖**（arXiv论文+GitHub仓库），聚焦**Agent记忆架构**与**知识双流设计**主题。
+
+### 核心洞察速览
+
+| 主题 | 关键发现 | 对OpenClaw意义 |
+|------|----------|----------------|
+| **任务无关记忆** | PlugMem: 以知识为单位的记忆图，区别于GraphRAG的实体/文本块 | Mem0路线验证，Error Log可升级为知识图 |
+| **双知识流** | XSkill: Skill(战略)+Experience(战术)互补，双MLLM架构 | 验证SKILL.md+Error Log分层设计的正确性 |
+| **规模≠可靠性** | Semantic Invariance: 30B模型可比405B更鲁棒 | 直接支持L3禁止未经审计Self-Evolution的立场 |
+
+### 三论文共同验证的OpenClaw设计假设
+
+| 假设 | PlugMem | XSkill | Semantic Invariance | OpenClaw映射 |
+|------|---------|--------|---------------------|--------------|
+| **知识分层必要** | 语义/过程/情景三层 | Skill+Experience双流 | - | SKILL.md+Error Log ✅ |
+| **抽象知识>原始经验** | 知识图 vs 原始轨迹 | Experience需重写适配 | - | Error Log→AGENTS.md ✅ |
+| **规模≠可靠性** | - | - | 30B>405B | 禁止未经审计进化 ✅ |
+
+### PlugMem: 任务无关的插件式记忆
+- **论文**: arXiv:2603.03296 | **GitHub**: TIMAN-group/PlugMem (105⭐)
+- **核心创新**: 以**知识**为单位（vs GraphRAG的实体/文本块），三层记忆（语义/过程/情景）
+- **关键数据**: 跨3个异质benchmark验证，优于任务无关基线，超过部分任务特定设计
+- **对OpenClaw**: 
+  - ✅ Mem0路线验证（多Agent独立Collection+认知分层）
+  - 🔬 Error Log可从Markdown升级为知识图，支持语义检索
+  - 🔬 "记忆信息密度"指标可用于Skill质量评估
+
+### XSkill: Experience与Skill双知识流
+- **论文**: arXiv:2603.12056 | **GitHub**: XSkill-Agent/XSkill
+- **核心创新**: **双MLLM架构**（MLLM_kb知识管理 + MLLM_exec执行推理），Skill(任务级)+Experience(动作级)互补
+- **关键数据**: **+5.46平均增益**，最高+11.13 points，Skills+Experiences > 任一单独
+- **对OpenClaw**:
+  - ✅ SKILL.md+Error Log设计验证（战略/战术分层与XSkill完全一致）
+  - ✅ Bob架构验证（MLLM_kb/exec分离与设计层/执行层对应）
+  - 🔬 Cross-Rollout Critique：Error Log可从单轨迹扩展到多轨迹对比分析
+
+### Semantic Invariance: 规模≠可靠性
+- **论文**: arXiv:2603.13173 | **Venue**: AMSTA 2026
+- **核心发现**: **规模-鲁棒性倒置**——Qwen3-30B-A3B (79.6%不变响应率) > Hermes 405B
+- **关键方法**: 8种语义保持变换（Paraphrase/Reorder/Expand/Contract/Context/Contrastive）
+- **关键发现**: **所有模型家族**在Contrastive变换下均脆弱（下降-0.45）
+- **对OpenClaw**:
+  - ✅ "规模≠可靠性"直接支持L3禁止未经审计Self-Evolution
+  - ✅ Contrastive普遍脆弱性验证`read_by`人工最终确认的设计需求
+  - 🔬 8种变换可作为Agent鲁棒性回归测试套件
+
+---
+
+## Previous Session (2026-04-26) — XHS工具暂不可用，综合已有发现
 
 > **Note**: XHS搜索功能临时不可用。本轮整合前期发现，聚焦**并行Agent学习**与**协作范式**主题。
 
