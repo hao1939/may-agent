@@ -34,6 +34,10 @@ H-181 shows single agents can't discover relational bugs (ordering, data flow) e
 
 **Blocked on**: Gym infra (`--lab` flag, same as EXP-190/192). Can be tested manually with 3 trials per arm as pilot.
 
+## Literature Grounding (added 2026-04-26)
+
+**SGAgent** (arXiv:2602.23647, Zhang et al., Feb 2026): Multi-agent localize→suggest→fix framework for repo-level repair. Achieves 51.3% on SWE-Bench with 3 specialized sub-agents. The "suggester" agent is structurally analogous to H-188's tracer — it bridges the gap between bug localization and bug fixing by producing an intermediate structured analysis. SGAgent's key finding is that jumping directly from localization to fixing leaves a "fundamental reasoning gap" — exactly H-181's discovery-vs-fix bottleneck. This is strong external evidence supporting the decomposition approach: P(H) could be revised upward from 0.55 to ~0.65 based on this alone. Note: SGAgent operates on real-world SWE-Bench bugs (not specifically relational/ordering bugs), so it validates the general decomposition principle but doesn't directly test the relational-blindness-specific claim of H-188.
+
 ## Falsification
 
 If Arm B ≤ 1/10, H-188 is falsified — decomposition doesn't help, the blindness is at the code-comprehension level regardless of architecture.

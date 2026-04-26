@@ -1733,3 +1733,9 @@ Production multi-agent data management system with "three-track knowledge archit
 - **Rating**: ★★★ | **Added**: 2026-04-24
 - **Key insight**: Agent-based simulation shows how missing expertise in teams degrades performance. Diversity of knowledge matters more than redundancy.
 - **Relevance**: Connects to our role specialization design. Minor — simulation-based, not LLM-specific.
+
+## 2602.23647 — SGAgent: Suggestion-Guided Multi-Agent Framework for Repository-Level Software Repair
+- **Authors**: Zhang et al. | **Venue**: cs.SE
+- **Rating**: ★★★★★ | **Added**: 2026-04-26
+- **Key insight**: Localize→suggest→fix paradigm outperforms localize→fix. The "suggestion" intermediate agent bridges the reasoning gap between finding a bug and fixing it. Three specialized sub-agents (localizer, suggester, fixer) + knowledge graph. 51.3% on SWE-Bench with Claude-3.5.
+- **Relevance**: **Direct validation of H-188** (multi-agent decomposition breaks relational bug blindness). SGAgent's localizer→suggester→fixer is structurally identical to H-188's tracer→fixer. Key finding: the intermediate reasoning step (suggestion/trace) converts a hard holistic task into two easier sequential tasks. Supports P-188a prediction that decomposition will outperform single-agent. The "fundamental reasoning gap" SGAgent identifies between localization and fixing mirrors H-181's discovery-vs-fix bottleneck.
