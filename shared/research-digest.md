@@ -7,7 +7,55 @@
 
 ---
 
-## Current Session (2026-04-27) — XHS中文社区: MCP陨落与Agent现实检验
+## Current Session (2026-04-28) — Agno: 39.7K Stars Agent Runtime Framework
+
+> XHS工具临时不可用，本轮通过**GitHub生态扫描**发现重要新框架 Agno — 39.7K stars 的完整 Agent 运行时系统。
+
+### 核心发现速览
+
+| 主题 | 关键发现 | 对OpenClaw意义 |
+|------|----------|----------------|
+| **Agno框架** | 39.7K stars，三层架构 (Framework/Runtime/Control Plane) | 架构设计验证，差异化需强化 |
+| **AgentOS** | 专用的 Agent 监控管理 UI | OpenClaw缺乏控制平面，可借鉴 |
+| **Stateless Runtime** | 生产级无状态设计，水平扩展 | 当前session架构需考虑演进 |
+| **100+集成** | 50+模型/数据库/向量存储 | 生态积累是护城河 |
+
+### Agno: 39.7K Stars的Agent运行时框架
+- **来源**: GitHub (agno-agi/agno) | 39.7K stars | 5,440 commits
+- **核心定位**: 不仅是框架，而是完整的 **agentic software 基础设施**
+- **三层架构**:
+  ```
+  Control Plane (AgentOS UI)    → Test, monitor, manage
+  Runtime (FastAPI Backend)     → Stateless, horizontally scalable  
+  Framework (Build Layer)       → Agents, Teams, Workflows, 100+ integrations
+  ```
+- **关键差异化**:
+  - 生产级设计: Stateless runtime, per-user/session isolation, native tracing
+  - 数据主权: "You own the system, you own the data"
+  - 100+ 集成: 50+ models, 多种数据库, vector stores, MCP支持
+- **对OpenClaw**:
+  - ✅ 三层架构验证: Framework/Runtime/Control Plane 与 OpenClaw 分层思想一致
+  - ✅ Skills作为核心抽象被独立验证
+  - 🔬 **AgentOS借鉴**: 专用监控管理 UI 是 OpenClaw 当前空白
+  - 🔬 **Stateless Runtime**: 生产环境无状态设计值得考虑
+  - 🔬 **Runtime Approval**: 运行时审批机制可与 `read_by` 整合
+  - ⚠️ **竞争信号**: 39.7K stars + 100+ integrations 显示框架层竞争白热化
+- **相关**: [HB-260428](library/posts/HB-260428-agno-agent-runtime-framework.md)
+
+### 本轮洞察汇总
+
+| 发现 | Stars/规模 | 信号类型 | OpenClaw验证 |
+|------|------------|----------|--------------|
+| Agno框架 | 39.7K⭐ | 主流框架 | 架构分层 ✅ |
+| AgentOS | 生产级 | 控制平面 | 监控管理空白 ⚠️ |
+| Stateless Runtime | 架构模式 | 可扩展性 | 需考虑演进 🔬 |
+| 100+ integrations | 生态护城河 | 竞争壁垒 | 需积累策略 ⚠️ |
+
+**共同主题**: Agent 框架正在从"开发工具"演进到"生产基础设施"，控制平面和运行时可观测性成为新战场。
+
+---
+
+## Previous Session (2026-04-27) — XHS中文社区: MCP陨落与Agent现实检验
 
 > XHS探索本轮聚焦**中文AI Agent社区sentiment** — MCP协议反思、中国本土框架崛起、Agent能力现实检验三大主题。
 

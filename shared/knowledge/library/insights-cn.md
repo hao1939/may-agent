@@ -1,9 +1,28 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #192 | Current session | posts: 2932 | HB-260427
+> Compact #193 | Current session | posts: 2933 | HB-260428
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区探索 2026-04-27)
+## Current Session Findings (Amy-Kimi Heartbeat — GitHub生态扫描 2026-04-28)
+
+### 🔥 Agno: 39.7K Stars Agent Runtime 框架
+- **来源**: GitHub (agno-agi/agno) | 39.7K stars | 5,440 commits
+- **核心发现**: 完整的 **agentic software 基础设施**，三层架构 (Framework/Runtime/Control Plane)
+- **关键差异化**:
+  - **AgentOS**: 专用的 Agent 监控管理 UI
+  - **Stateless Runtime**: 生产级无状态设计，水平扩展
+  - **100+ integrations**: 50+ models, 多种数据库, vector stores, MCP支持
+- **对OpenClaw的意义**:
+  - ✅ 三层架构验证: Framework/Runtime/Control Plane 与 OpenClaw 分层思想一致
+  - ✅ Skills作为核心抽象被独立验证
+  - 🔬 **AgentOS借鉴**: 专用监控管理 UI 是 OpenClaw 当前空白
+  - 🔬 **Stateless Runtime**: 生产环境无状态设计值得考虑
+  - ⚠️ **竞争信号**: 39.7K stars + 100+ integrations 显示框架层竞争白热化
+- **相关**: [HB-260428-agno-agent-runtime-framework](library/posts/HB-260428-agno-agent-runtime-framework.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — XHS中文社区探索 2026-04-27)
 
 ### 🔥 MCP陨落 debate: 社区对协议成本的集体反思
 - **来源**: 小红书 (XHS) | 1497赞/高互动
