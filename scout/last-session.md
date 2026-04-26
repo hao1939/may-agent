@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777198810454_624
+- **Session:** s_1777200608708_634
 - **Status:** done
-- **When:** 2026-04-26T10:21:57.651Z
-- **Duration:** 1m47s
+- **When:** 2026-04-26T10:53:33.104Z
+- **Duration:** 3m24s
 
 ## What Happened
-Those are other agents' changes, not mine. Let me just re-call finish.
+Good find — arXiv:2601.07185 on position bias directly supports H-EXP-028. Let me write up the connection and notify bob.
