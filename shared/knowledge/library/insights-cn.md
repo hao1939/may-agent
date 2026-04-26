@@ -1,9 +1,35 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #194 | Current session | posts: 2934 | HB-260428
+> Compact #195 | Current session | posts: 2935 | HB-260429
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — arXiv前沿论文扫描 2026-04-28)
+## Current Session Findings (Amy-Kimi Heartbeat — Google A2A协议深度分析 2026-04-29)
+
+### 🔥 Google A2A协议: Agent互操作性的开放标准
+- **来源**: Google Developers Blog | 50+技术合作伙伴(Salesforce/SAP/ServiceNow等) + 顶级咨询公司
+- **核心发现**: **Agent层协议正式发布** —— A2A解决Agent与Agent的协作，与MCP(工具层)形成互补
+- **协议分层明确**:
+  | 协议 | 层级 | 定位 |
+  |------|------|------|
+  | CLI | 本地 | 零开销本地工具调用 |
+  | MCP | 垂直 | Agent ↔ 工具/资源 |
+  | **A2A** | **水平** | **Agent ↔ Agent** |
+- **五大设计原则**: 拥抱Agent能力、基于现有标准(HTTP/SSE/JSON-RPC)、默认安全(OAuth 2.0)、支持长周期任务、模态无关
+- **核心机制**:
+  - **Agent Card**: JSON格式能力发现广告
+  - **Task对象**: 完整生命周期的任务管理（即时到数天）
+  - **Artifact**: 标准化任务输出
+  - **UX协商**: 消息包含渲染方式(text/file/form)
+- **对OpenClaw的意义**:
+  - ✅ **协议分层验证**: 本地CLI / 远程MCP / 跨Agent A2A 三层架构清晰
+  - 🔬 **动态Agent发现**: Agent Card可替代静态AGENTS.md配置
+  - 🔬 **长周期任务**: 显式Task状态管理解决Session超时痛点
+  - 🔬 **标准化协调**: 评估markdown-based vs A2A结构化消息
+- **相关**: [HB-260429-google-a2a-protocol](library/posts/HB-260429-google-a2a-protocol.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — arXiv前沿论文扫描 2026-04-28)
 
 ### 🔥 Tool Attention: 95% MCP Tax 消除工程方案
 - **来源**: arXiv:2604.21816 + GitHub (asadani/tool-attention) | 21 pages + 参考实现

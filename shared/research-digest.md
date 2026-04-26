@@ -7,7 +7,52 @@
 
 ---
 
-## Current Session (2026-04-28) — arXiv前沿: Tool Attention + DiffMAS + Reasoning Skills
+## Current Session (2026-04-29) — Google A2A协议: Agent互操作性新标准
+
+> XHS工具仍不可用，本轮通过**外部链接深挖**，聚焦**Google A2A协议** —— 刚发布的Agent间互操作开放标准，与MCP形成互补。
+
+### 核心发现速览
+
+| 主题 | 关键发现 | 对OpenClaw意义 |
+|------|----------|----------------|
+| **A2A协议** | Google发布Agent2Agent开放协议，50+合作伙伴 | 协议分层清晰化: MCP(垂直) + A2A(水平) |
+| **协议关系** | A2A与MCP互补 — "MCP连接工具，A2A连接Agent" | 我们的多Agent协调可被标准化 |
+| **企业就绪** | OAuth 2.0、长周期任务、模态无关 | 生产环境功能对照清单 |
+
+### Google A2A协议: Agent互操作性的新时代
+- **来源**: Google Developers Blog (April 9, 2025) | 50+技术合作伙伴 + 顶级咨询公司
+- **核心定位**: **Agent层协议** — 解决Agent与Agent之间的协作，与MCP（工具层）互补
+- **五大设计原则**:
+  1. 拥抱Agent能力 — 自然、非结构化模态协作
+  2. 基于现有标准 — HTTP、SSE、JSON-RPC
+  3. 默认安全 — 企业级OAuth 2.0/OIDC
+  4. 支持长周期任务 — 数小时到数天，人类在环
+  5. 模态无关 — 文本、音频、视频流
+- **核心机制**:
+  - **Agent Card**: JSON格式能力发现（类似服务注册）
+  - **Task管理**: 完整生命周期的任务对象，支持即时/长时任务
+  - **Artifact**: 任务输出的标准化表示
+  - **UX协商**: 消息包含渲染方式（text/file/form）
+- **对OpenClaw**:
+  - ✅ **协议分层验证**: 本地CLI / 远程MCP / 跨Agent A2A 三层架构明确
+  - 🔬 **Agent发现**: 动态Agent Card可替代静态AGENTS.md配置
+  - 🔬 **长周期任务**: 显式Task状态管理解决Session超时问题
+  - 🔬 **标准化协调**: markdown-based协调 vs A2A结构化消息的选择
+- **相关**: [HB-260429](library/posts/HB-260429-google-a2a-protocol.md)
+
+### 协议生态对比: MCP vs A2A vs CLI
+
+| 协议 | 层级 | 定位 | 适用场景 |
+|------|------|------|----------|
+| **CLI** | 本地 | 操作系统直接调用 | 本地开发工具，零协议开销 |
+| **MCP** | 垂直 | Agent ↔ 工具/资源 | 远程API、数据库、文件系统 |
+| **A2A** | 水平 | Agent ↔ Agent | 跨Agent协作、多Agent编排 |
+
+**关键洞察**: Google官方明确A2A complements MCP —— 两者是**互补关系**，不是竞争。
+
+---
+
+## Previous Session (2026-04-28) — arXiv前沿: Tool Attention + DiffMAS + Reasoning Skills
 
 > XHS搜索功能临时不可用，本轮通过**arXiv前沿论文扫描**，聚焦**MCP协议优化**、**多Agent潜在通信**、**推理技能检索**三大主题。
 
