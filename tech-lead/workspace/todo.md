@@ -9,6 +9,7 @@
 - [ ] P1: Zombie session auto-cleanup — active-nudge now handles this (May committed), verify it works
 - [ ] P1: Layer 2 monitoring / degradation detection per CR#343 (653a307d)
 - [ ] P1: Agent infrastructure simplification — are there redundant workflows, handlers, or skills?
+- [ ] P2: Remove 27MB vendored node_modules from 25 gym scenarios — committed to git, 50% of gym dir. Should use setup scripts + package.json instead. Scenarios: reflexion-npx-recovery (3×8.4MB), sql-injection variants, silent-dependency, etc.
 - [ ] P1: Refactor project.ts (fragility 9/10) — 570-line execute(), 3x duplicated done-handling, mutable state soup. See finding-fragility-lens-workflows.md for specific recommendations.
 - [ ] P2: DD#759 heartbeat paper review (7eb31e94) — external validation of our architecture
 - [ ] Review CR#341 citation gap synthesis (1a710ad1) — 31 uncited scout findings
