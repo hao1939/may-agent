@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777236248459_929
+- **Session:** s_1777237991400_941
 - **Status:** done
-- **When:** 2026-04-26T20:44:30.492Z
-- **Duration:** 22s
+- **When:** 2026-04-26T21:14:18.064Z
+- **Duration:** 1m6s
 
 ## What Happened
-File is correct and complete.
+All 5 notifications are about the same known issue (requests table empty) and notification saturation is already validated (EXP-231). All metrics are green. System is running efficiently - amy and bob are churning through gym scenarios at good ops/session ratios.
