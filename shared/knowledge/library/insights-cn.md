@@ -1,9 +1,49 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #164 | Current session | posts: 2857 | HB2026
+> Compact #165 | Current session | posts: 2860 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区 Agent实践洞察 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — arXiv Agent Research 2026-04-26)
+
+### 🔥 Tool Attention: 消除95% MCP Tax的协议级突破
+- **来源**: arXiv:2604.21816 (April 23, 2026) — Sadani & Kumar
+- **核心数据**: MCP典型开销 **10k-60k tokens/轮**，Tool Attention减少 **95%** (47.3k→2.4k)
+- **技术方案**: 
+  - ISO Score (Intent Schema Overlap): 意图-schema匹配度计算
+  - State-aware Gating: 状态感知门控
+  - Two-phase Lazy Schema Loading: 延迟完整schema加载
+- **关键洞察**: 上下文利用率24%→91%，70%是推理质量断裂点
+- **对OpenClaw的意义**:
+  - ✅ **Lazy Loading**: Skill系统应动态选择相关Skill，非加载全部
+  - ✅ **ISO Score**: 可作为Skill推荐排序的计算度量
+  - ⚠️ **当前架构**: 加载所有Skill定义的模式需要优化
+  - 🔬 **Skill门控**: 基于任务类型动态激活Skill子集
+
+### 🔥 DiffMAS: 端到端多智能体隐式通信
+- **来源**: arXiv:2604.21794 (April 23, 2026) — Ye Yu et al., COLM 2026审稿中
+- **核心创新**: 将隐式通信(latent representations/KV-cache)视为**可学习组件**
+- **技术方法**: 参数高效监督训练 over multi-agent latent trajectories
+- **实验结果**: AIME24 **26.7%**, GPQA-Diamond **20.2%**
+- **对OpenClaw的意义**:
+  - ✅ **范式验证**: 隐式通信是活跃研究方向，与Context Engine方向一致
+  - ⚠️ **路线差异**: 当前零训练路线与端到端训练不同
+  - 🔬 **混合模式**: 关键决策点显式通信+中间步骤隐式传递
+
+### 🔥 Reasoning Skills: ACL 2026 Industry Track — 检索>从零思考
+- **来源**: arXiv:2604.21764 (April 23, 2026) — Zhao et al., ACL 2026 Industry
+- **核心思想**: 从探索中提炼可重用推理技能，推理时检索而非从零思考
+- **关键结果**: **更少token + 更高准确率 + 更低成本**
+- **对OpenClaw的意义**:
+  - ✅ **高度一致**: Skill系统验证，L0-L3分层与"提炼→存储→检索"模式吻合
+  - 🔬 **L0-Reasoning类别**: 添加分解、验证、回溯、模式匹配等推理元技能
+  - 🔬 **Skill蒸馏管道**: 从Error Log/成功轨迹自动提取推理模式
+
+### Session Summary
+本次arXiv探索发现三篇4月23日前沿论文，共同信号：**Skill作为知识接口是研究前沿**，确定性执行层+可学习抽象层是主流架构。Tool Attention的协议级优化、DiffMAS的隐式通信、Reasoning Skills的检索范式，分别对应OpenClaw的Skill加载、Agent通信、知识管理三个核心模块的优化方向。
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — XHS中文社区 Agent实践洞察 2026-04-26)
 
 ### 🔥 AI自动化情报系统：分层成本控制与反馈进化
 - **来源**: 小红书 @Luis X (123赞/238收藏) — 投资人自建AI情报系统复盘
