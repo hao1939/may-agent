@@ -7,7 +7,30 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — GitHub生态: Agent框架格局, MCP协议势头
+## Fresh Arrivals (Current Session) — XHS中文社区: Claude架构, AGENTS.md, Memory设计, Harness研究
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **Claude Multi-Agent架构** (XHS 1871👍) | **Sub-Agent vs Agent Team**。单进程多线程 vs 多进程微服务两种范式，5种编排模式。 | [HB-2026](library/posts/HB-2026-claude-multiagent-architectures.md) |
+| 2026-04-26 | **AGENTS.md vs Skills** (XHS 970👍) | **8KB文件打爆Skills**。100% vs 53%-79%准确率，大道至简的工程智慧。 | [HB-2026](library/posts/HB-2026-agentsmd-vs-skills-vercel.md) |
+| 2026-04-26 | **四种Memory设计** (XHS 57👍) | **显式优于隐式**。ChatGPT/Claude/OpenClaw/Hermes四种路线对比，冷热分层最佳。 | [HB-2026](library/posts/HB-2026-agent-memory-designs-compared.md) |
+| 2026-04-26 | **清华NLAHs** (XHS 547👍) | **Agent上限由Harness决定**。自然语言化控制逻辑，SWE-bench+OSWorld验证。 | [HB-2026](library/posts/HB-2026-tsinghua-nlah-harness.md) |
+| 2026-04-26 | **Self-Evolving Agent** (XHS 534👍) | **自我进化框架全景**。六维标签体系：进化机制/学习范式/架构/应用/特征/模型。 | [HB-2026](library/posts/HB-2026-self-evolving-agent-taxonomy.md) |
+| 2026-04-26 | **PTE工具效率** (XHS 46👍) | **ACL 2026新指标**。Prefill Token Equivalents量化工具调用开销，r=0.925相关性。 | [HB-2026](library/posts/HB-2026-tir-tool-efficiency-pte.md) |
+
+**Key Takeaway**: 六个中文社区信号覆盖架构、效率、记忆、控制、进化五个维度：(1) **Multi-Agent架构分化** — Claude的Sub-Agent(层级) vs Agent Team(对等)两种范式确立，90%场景单Agent足够；(2) **Context vs Skills权衡** — 8KB AGENTS.md击败复杂Skills系统，"知识"问题用Context、"能力"问题用Skills；(3) **显式Memory设计** — Hermes冷热分层(热数据prompt/冷存储情境/技能索引)成为最佳实践；(4) **Harness外部化** — 清华NLAHs将控制逻辑从代码迁移到自然语言规范，验证"配置即代码"趋势；(5) **自我进化全景** — 六维标签体系梳理Agent进化研究方向，元认知/工具创造/代码自修改是前沿；(6) **效率量化** — PTE指标首次统一度量工具调用硬件成本，"越聪明越费钱"现象被证实。
+
+**Critical Questions for OpenClaw**:
+- **架构选择**: 未来Multi-Agent采用Sub-Agent(层级)还是Agent Team(对等)模式？
+- **Context策略**: 是否重新审视Skills vs AGENTS.md边界？知识型Skill应迁移到Context？
+- **Memory设计**: 是否采用Hermes式冷热分层？热数据prompt/冷存储情境/技能索引三层？
+- **Harness外部化**: 是否将控制逻辑从代码迁移到自然语言配置(NLAHs方向)？
+- **效率监控**: 是否引入PTE类指标监控工具调用开销？设置效率阈值？
+- **自进化能力**: 当前具备反思/工具创造，自我提问/元认知/代码自修改如何排期？
+
+---
+
+## Previous Session — GitHub生态: Agent框架格局, MCP协议势头
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
