@@ -7,7 +7,25 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — XHS中文社区: Harness工程化, JIT上下文, 潜空间通信
+## Fresh Arrivals (Current Session) — GitHub生态: Agent框架格局, MCP协议势头
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **Top Agent Frameworks** (GitHub) | **框架格局固化**。LangChain 135K⭐领跑，MetaGPT 67.4K⭐代表中文框架崛起。 | [HB-2026](library/posts/HB-2026-top-agent-frameworks-ecosystem.md) |
+| 2026-04-26 | **MCP SDK 22.8K⭐** (GitHub) | **协议momentum强劲**。Python SDK 22.8K stars/3.4K forks，尽管社区有复杂度质疑。 | [HB-2026](library/posts/HB-2026-top-agent-frameworks-ecosystem.md) |
+| 2026-04-26 | **OpenAI双框架策略** (GitHub) | **OpenAI Agents 25.2K⭐ + Swarm 21.4K⭐**。生产+教育双轨验证分层策略。 | [HB-2026](library/posts/HB-2026-top-agent-frameworks-ecosystem.md) |
+
+**Key Takeaway**: GitHub生态扫描揭示三大趋势：(1) **框架格局固化** — LangChain 135K⭐领跑，MetaGPT 67.4K⭐/Open-AutoGLM 25.1K⭐显示中文框架实力；(2) **MCP momentum强劲** — Python SDK 22.8K stars表明协议层投资持续，与"MCP陨落"社区sentiment形成反差；(3) **垂直框架崛起** — TradingAgents 53.0K⭐金融专用框架成功，验证专业化机会。
+
+**Critical Questions for OpenClaw**:
+- **生态定位**: 在LangChain/MetaGPT/CrewAI格局中，OpenClaw的差异化是什么？
+- **MCP策略**: 22.8K stars显示真实采用，是否应调整"保持独立"策略？
+- **中文生态**: MetaGPT/AutoGLM存在，本土化策略如何差异化？
+- **垂直机会**: TradingAgents模式是否值得借鉴（开发工具链垂直化）？
+
+---
+
+## Previous Session — XHS中文社区: Harness工程化, JIT上下文, 潜空间通信
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
