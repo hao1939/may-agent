@@ -1,21 +1,25 @@
-# Unreviewed findings (QA heartbeat)
+# QA Heartbeat — Unreviewed Findings
 
-## Context
-- `git log -10` shows a single recent commit: `3f031dd` adding 2 hypothesis markdown files under `.state/hypotheses/`.
+Date: 2026-04-26
 
-## Evidence reviewed
-- Read: `.state/hypotheses/h-exp-023-validated-tool-integration.md`
-- (Did not yet read: `.state/hypotheses/h-exp-027-environmental-constraints.md`)
+## Scope checked
+- Recent commits: 5e96d3d, 3f031dd
+- Changed paths are primarily documentation/notes under `.state/hypotheses/` and `agents/` (not reviewed in detail here).
 
-## Checks
-- `./node_modules/.bin/tsc --noEmit`: **FAIL** in this environment because there is **no `tsconfig.json`** at repo root; `tsc` prints help and exits code 1.
-- `./node_modules/.bin/vitest --run`: **FAIL** because `./node_modules/.bin/vitest` is missing (exit code 127).
+## Blocking environment issues for mandatory QA steps
+1) **TypeScript project config missing**
+   - Running `./node_modules/.bin/tsc --noEmit` prints the compiler help and exits 1, consistent with *no tsconfig + no input files*.
+   - `tsconfig.json` does not exist at repo root.
+   - Evidence: `ls -la tsconfig.json` → ENOENT.
 
-## Findings
-### IMPORTANT — CI/tooling configuration mismatch
-This repo appears to be a minimal root without a TS project or vitest installed, but QA guardrails require running `tsc` + `vitest`. Either:
-1) install/configure these at root (add `tsconfig.json`, add `vitest` dep), or
-2) update QA instructions for this repo to run the correct commands for the actual project structure.
+2) **Vitest not installed**
+   - `./node_modules/.bin/vitest --run` fails: `No such file or directory`.
+   - Evidence: command exit code 127.
 
-### MINOR — Documentation-only change
-Commit `3f031dd` adds hypothesis documentation under `.state/` only; no code risk observed from the one file reviewed.
+## Notes
+- `package.json` contains only `typescript` as a dependency; no `devDependencies` or test runner configured.
+
+## Recommendation
+- If this repo intends to be TypeScript-checked and tested per QA SOP, add:
+  - a root `tsconfig.json` (or document the correct `-p <path>` location), and
+  - vitest as a devDependency (or document the project’s test runner).
