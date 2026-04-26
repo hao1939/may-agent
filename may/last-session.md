@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777199423840_626
+- **Session:** s_1777201224373_637
 - **Status:** done
-- **When:** 2026-04-26T10:30:51.719Z
-- **Duration:** 27s
+- **When:** 2026-04-26T11:01:33.651Z
+- **Duration:** 1m9s
 
 ## What Happened
-There's a stuck session from ~15 hours ago. Let me cancel it.
+I see - the gate is confused because bash commands count as "writes." Let me try with explicit deliverables set to empty and a read for verification.
