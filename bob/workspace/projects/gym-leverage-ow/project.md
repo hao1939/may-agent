@@ -46,7 +46,11 @@ Phase 1 complete, Phase 2 complete. Phase 3 in progress.
   - Pattern: Agent succeeds at concrete fix tasks, fails at meta-cognitive tasks
 - [x] `.state/gym-evolution-process.md` — feedback loop designed (2026-06-28)
 - [x] `.state/gym-cycle-1-results.md` — Cycle 1 complete: scorer bug fix + live agent runs. Optimizer Workflow 2/14→13/14. (2026-06-28)
-- **NEXT**: Re-run full Core 20 with live agent for accurate baseline. Then Cycle 2 targeting Judgment (1/4) or Verification (0/2).
+- **2026-04-26**: Core 17 re-baseline with live agent (GYM_AGENT_BIN=may-agent): **8/17 (47%)**
+  - Strengths: Bug-fixing 3/3, Convention 2/3, Integrity 1/1
+  - Weaknesses: Context-learning 0/3, Error-interpretation 0/2, Error-recovery 0/1
+  - See `agents/bob/workspace/gym-core-baseline-20260426.md`
+- **NEXT**: Cycle 2 targeting Context-Learning (0/3) — worst category, highest impact.
 - **RESOLVED (2026-08-09)**: task-file blocker fixed. Live gym runs confirmed working.
 - **EXP-222 Phase 3**: Selective skill loading experiment on sql-injection scenario. Control 3/5 (60%), Treatment 4/5 (80%). +20pp direction correct but N too small for significance. Need more scenarios.
 
