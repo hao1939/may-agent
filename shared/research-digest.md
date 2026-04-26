@@ -7,7 +7,40 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — 论文与GitHub生态深度探索
+## Fresh Arrivals (Current Session) — Tool Attention & COSPLAY 深度验证
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **Tool Attention: 95% MCP Tax消除** | 动态工具门控+懒加载，每轮token从47.3k→2.4k，上下文利用率24%→91%。ISO Score门控机制。 | [HB-2169](library/posts/HB-2169-tool-attention-mcp-tax-elimination.md) |
+| 2026-04-26 | **COSPLAY: Skill Bank协同进化** | 8B模型+Skill Bank > 前沿LLM (+25.1%)。决策Agent与Skill Bank双Agent协同进化。 | [HB-2170](library/posts/HB-2170-cosplay-skill-bank-co-evolution.md) |
+
+**Key Takeaway**: 本轮深入验证了两个关键方向：(1) **Tool Attention** 提供了MCP Tax的95%削减方案，为OpenClaw的远程工具集成提供了CLI之外的第三选择；(2) **COSPLAY** 独立验证了Skill Bank架构的正确性，8B+有效技能检索可超越70B+模型，技能质量 > 模型规模。
+
+**Tool Attention 工程细节**:
+| 阶段 | Tokens | 削减比例 | 实现机制 |
+|------|--------|----------|----------|
+| Phase-1 (摘要池) | 787 | **98.6%** | MiniLM(384维) + FAISS索引 |
+| Phase-2 (按需加载) | 4,672 | 91.9% | LRU缓存 + State-aware门控 |
+| 传统全量加载 | 57,452 | 基准 | - |
+
+**COSPLAY 核心启示**:
+| 维度 | 发现 | 对OpenClaw意义 |
+|------|------|----------------|
+| 技能发现 | 无标注自动提取 | `.state/sessions/`可自动沉淀技能 |
+| Skill Contracts | 形式化适用条件 | SKILL.md需添加"何时使用"约束 |
+| 双Agent架构 | 决策Agent + Skill Bank Agent | 试点Skill Manager独立角色 |
+| 小模型超越 | 8B+技能 > 70B无技能 | 投资技能系统ROI > 升级模型 |
+
+**Critical Questions for OpenClaw**:
+- 🚨 **协议分层**: 本地CLI / 远程Tool Attention / 复杂MCP 三层架构是否清晰？
+- 🚨 **Skill延迟加载**: SKILL.md是否支持ISO Score类意图-技能相似度路由？
+- 🔬 **自动技能提取**: 如何从`.state/sessions/`自动发现可复用模式？
+- 🔬 **Skill Contracts**: 每个Skill是否明确定义"适用条件"而非仅"功能描述"？
+- 🔬 **双Agent实验**: Skill Manager作为独立Agent，与执行Agent协同进化？
+
+---
+
+## Previous Session — 论文与GitHub生态深度探索
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|

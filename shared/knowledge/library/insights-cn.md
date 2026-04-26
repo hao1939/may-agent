@@ -1,9 +1,45 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #187 | Current session | posts: 2916 | HB-2168
+> Compact #188 | Current session | posts: 2918 | HB-2170
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — 论文与GitHub生态 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — Tool Attention & COSPLAY 深度验证 2026-04-26)
+
+### 🔥 Tool Attention: 95% MCP Tax 消除的工程方案
+- **来源**: arXiv:2604.21816 | GitHub: asadani/tool-attention | 21 pages + 参考实现
+- **核心发现**: MCP协议"工具税"（每轮10k-60k token）可通过**动态工具门控+懒加载**削减95%。
+- **技术架构**:
+  - **ISO Score**: 句子嵌入计算意图-工具相关性（MiniLM 384维，阈值0.28）
+  - **State-Aware Gating**: 前置条件和访问范围动态检查
+  - **两阶段懒加载**: Phase-1摘要池787 tokens + Phase-2按需加载4,672 tokens
+- **性能数据**: 120工具基准，每轮token从57,452→787（**98.6%削减**），上下文利用率24%→91%
+- **关键洞察**: "协议级效率，而非原始上下文长度，是可扩展Agentic系统的约束瓶颈"
+- **对OpenClaw的意义**:
+  - ✅ **CLI策略验证**: 本地工具CLI零开销，Tool Attention为远程集成提供第三选择
+  - ✅ **三层协议架构**: 本地CLI / 远程Tool Attention / 复杂MCP分层清晰化
+  - 🔬 **SKILL.md升级**: 技能元数据可作为"摘要池"基础，支持意图-技能相似度路由
+  - 🔬 **成本监控**: before_model/after_model中间件可注入效率监控
+- **相关**: [HB-2169](library/posts/HB-2169-tool-attention-mcp-tax-elimination.md)
+
+### 🔥 COSPLAY: 决策Agent与Skill Bank协同进化的25.1%提升
+- **来源**: arXiv:2604.20987 | 8 authors | UMD等 | 长程任务Agent学习
+- **核心发现**: **Skill Bank与决策Agent协同进化** — 8B base model通过有效Skill检索，在6个游戏环境超越4个前沿LLM baseline，**平均奖励提升25.1%**。
+- **架构创新**:
+  - **双Agent协同**: 决策Agent检索技能指导行动，Skill Bank Agent从unlabeled rollouts自动发现技能
+  - **Skill Contracts**: 形式化适用条件约束，解决"何时使用该技能"问题
+  - **协同飞轮**: 更好的技能→更好的决策→更多有效rollouts→更好的技能
+- **关键数据**: 8B vs 70B+，6个游戏环境，无标注技能自动提取，长程任务、多步推理、技能链式调用
+- **对OpenClaw的意义**:
+  - ✅ **Skill Bank验证**: 独立验证技能架构是正确方向，与SKILL.md理念对齐
+  - ✅ **小模型路径**: 8B+有效技能检索 > 70B+无技能，技能质量 > 模型规模
+  - 🔬 **自动技能发现**: `.state/sessions/`已存在执行历史，可添加提取层自动沉淀技能
+  - 🔬 **Skill Contracts缺失**: 当前SKILL.md缺乏"适用条件"形式化约束
+  - 🔬 **双Agent实验**: 试点Skill Manager作为独立Agent，与执行Agent协同进化
+- **相关**: [HB-2170](library/posts/HB-2170-cosplay-skill-bank-co-evolution.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — 论文与GitHub生态 2026-04-26)
 
 ### 🔥 SEA-Eval论文深度验证：OpenClaw存在严重Token效率问题
 - **来源**: arXiv:2604.08988 | Fudan University | 首次系统性自进化Agent评估基准
