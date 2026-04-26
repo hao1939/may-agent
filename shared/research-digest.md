@@ -7,7 +7,37 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — Chinese Dev Community: MCP Tooling & Physical AI Interfaces
+## Fresh Arrivals (Current Session) — Agent Frameworks Landscape
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2025-01-26 | **Agent Frameworks Landscape** | **中外主流框架功能已趋同**。MCP、Function Calling、RAG成为标准配置，差异化在于易用性和场景优化。 | [HB-2156](library/posts/HB2156-agent-frameworks-landscape.md) |
+
+**Key Takeaway**: 梳理AutoGen(57.4k⭐)/LangGraph(30.4k⭐)/eliza(18.2k⭐)/Qwen-Agent(16.2k⭐)/OpenManus-RL(4k⭐)五大框架，发现中外agent框架在核心能力上已无显著差异，竞争转向开发者体验和垂直场景深度。
+
+**Framework Comparison**:
+
+| Framework | Stars | Owner | Key Features |
+|-----------|-------|-------|--------------|
+| AutoGen | 57.4k | Microsoft | Multi-agent对话编排，Python/.NET双栈 |
+| LangGraph | 30.4k | LangChain | 图结构工作流，状态管理，人机协作节点 |
+| eliza | 18.2k | elizaOS | 加密AI agent赛道标杆，TypeScript插件化 |
+| **Qwen-Agent** | **16.2k** | **阿里巴巴** | **MCP+Function Calling+RAG+Chrome扩展** |
+| OpenManus-RL | 4k | Community | RL微调agent，直播式开发 |
+
+**Critical Pattern — MCP Goes Mainstream**: 阿里Qwen-Agent明确支持MCP协议，标志着MCP从海外社区趋势成为中外共识标准。国内大厂已跟进，MCP兼容性是必备能力。
+
+**RL for Agents新战场**: OpenManus-RL代表通过强化学习微调提升agent能力的新方向，与self-improvement趋势一致。
+
+**Critical Questions for OpenClaw**:
+- **MCP兼容性**: 我们的工具层是否需要MCP适配层？如何与现有技能系统协同？
+- **框架选择**: 如需集成外部框架，LangGraph的图编排 vs AutoGen的多代理对话，哪种更适合我们的workflow？
+- **RL微调**: 是否探索agent执行历史的RL微调路径（类似OpenManus-RL）？
+- **差异化定位**: 功能对齐后，我们的核心竞争壁垒是什么？
+
+---
+
+## Previous Session — Chinese Dev Community: MCP Tooling & Physical AI Interfaces
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
