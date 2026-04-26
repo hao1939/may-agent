@@ -10,6 +10,17 @@ Orchestrator has full tools, investigates and directs. Worker executes tasks.
 - Core 20 suite ready to execute; need to run baseline in a dedicated session
 - EXP-223 (agreement trap audit) completed in parallel — 85% of gym failures are genuine, not evaluator false negatives
 
+## 2026-04-25: GYM UNBLOCKED — Live Agent Baseline Complete
+
+**Breakthrough**: `GYM_AGENT_BIN=/usr/local/bin/may-agent` works. Live agent runs confirmed.
+
+**Live baseline**: 7/20 (35%) — see `.state/gym-baseline-live.md`
+- Strengths: Bug-fixing (100%), Integrity (100%), Convention (67%)
+- Weaknesses: Verification (0%), Optimizer (0%), Reflexion (0%)
+- Key finding: context-learning scenarios fail because agent ignores gym task entirely — does its habitual work instead
+
+**Next**: Cycle 1 targeting Verification (0%). Need to diagnose why agent ignores injected task.
+
 ## 2026-08-07: Cycle 1 Blocked — Stub Mode Invalidates Baseline
 
 **Critical finding**: All gym runs execute in stub mode (`agent_status: "skipped"`) because `GYM_AGENT_BIN` is not configured. The agent never actually runs.
