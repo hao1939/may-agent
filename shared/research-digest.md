@@ -7,7 +7,68 @@
 
 ---
 
-## Current Session (2026-04-28 Heartbeat) — arXiv前沿: Agent评估 + 分层多Agent + 推理控制
+## Current Session (2026-04-26 Heartbeat) — arXiv前沿: MCP优化 + 多Agent通信 + 推理技能
+
+> XHS工具不可用，通过arXiv前沿扫描发现5篇高价值论文，覆盖MCP工具优化、科学工作流架构、多Agent潜在通信、推理技能检索、游戏Agent自编程。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对OpenClaw意义 |
+|------|------|----------|----------------|
+| **Tool Attention** | 论文 | 95% MCP Tax消除，动态工具门控 | 紧急：工具schema优化 |
+| **Sci Workflow** | 论文 | 三层架构(语义/确定性/知识) | SKILL.md知识层验证 |
+| **DiffMAS** | 论文 | 潜在通信端到端优化 | L2 Agent通信未来方向 |
+| **Reasoning Skills** | 论文 | 检索技能替代从零推理 | SKILL.md扩展推理模式 |
+| **Nemobot** | 论文 | Shannon四类策略+自编程 | 策略分类框架 |
+
+### Tool Attention: MCP Tax消除 (arXiv:2604.21816)
+- **核心**: 每轮10k-60k token → **2.4k token (95%削减)**
+- **机制**: ISO Score + 状态感知门控 + 两阶段懒加载
+- **洞察**: "协议级效率是可扩展Agentic系统的约束瓶颈"
+- **对OpenClaw**: 紧急优化MCP工具schema注入；Intent-Based路由
+- **相关**: [HB-260945](library/posts/HB-260945-tool-attention-mcp-optimization.md)
+
+### Scientific Workflow: 三层Agentic架构 (arXiv:2604.21910)
+- **核心**: 语义层(LLM意图) → 确定性层(DAG) → 知识层(Skills)
+- **收益**: 意图准确率44%→83%，数据传输-92%
+- **洞察**: "LLM非确定性限制在意图提取层"
+- **对OpenClaw**: 验证SKILL.md知识层设计；明确L0-L2边界
+- **相关**: [HB-260946](library/posts/HB-260946-scientific-workflow-agentic-ai.md)
+
+### DiffMAS: 多Agent潜在通信 (arXiv:2604.21794)
+- **核心**: KV缓存潜在通信 + 端到端联合优化
+- **收益**: AIME24 26.7%, GPQA-Diamond 20.2%
+- **洞察**: "Agent通信应是可学习组件，非固定接口"
+- **对OpenClaw**: L2 Agent通信优化方向；编排vs学习的权衡
+- **相关**: [HB-260948](library/posts/HB-260948-diffmas-multiagent-communication.md)
+
+### Reasoning Skills: 推理技能检索 (arXiv:2604.21764)
+- **核心**: 离线蒸馏技能 → 在线检索指导推理
+- **收益**: 更少Token，更高精度
+- **洞察**: "教会模型记住和应用推理模式"
+- **对OpenClaw**: SKILL.md扩展推理模式；Error Log提取可复用技能
+- **相关**: [HB-260949](library/posts/HB-260949-reasoning-skills-retrieval.md)
+
+### Nemobot: 游戏Agent自编程 (arXiv:2604.21896)
+- **核心**: Shannon四类策略框架 + 众包学习 + 自我批判
+- **目标**: "a step toward self-programming AI"
+- **洞察**: "AI通过众包学习和人类创造力迭代优化自身逻辑"
+- **对OpenClaw**: 策略分类框架；Error Log升级为策略评估
+- **相关**: [HB-260947](library/posts/HB-260947-nemobot-gaming-agents.md)
+
+### 五论文共同主题
+
+| 主题 | Tool Attention | Sci Workflow | DiffMAS | Reasoning Skills | Nemobot |
+|------|---------------|--------------|---------|------------------|---------|
+| **效率** | 工具token -95% | 数据传输 -92% | 潜在通信 | Token减少 | 策略压缩 |
+| **分层** | 摘要→完整 | 语义→确定性→知识 | 通信层 | 技能→推理 | 四类分层 |
+| **复用** | ISO匹配 | Skills驱动 | 轨迹学习 | 技能检索 | 众包学习 |
+
+**关键共识**: 协议效率 + 分层控制 + 知识复用 = 质量↑ 成本↓
+
+---
+
+## Previous Session (2026-04-28 Heartbeat) — arXiv前沿: Agent评估 + 分层多Agent + 推理控制
 
 > XHS工具不可用，本轮通过**arXiv前沿论文扫描**，发现Agent评估优化、分层多Agent协作、推理控制三大主题。
 

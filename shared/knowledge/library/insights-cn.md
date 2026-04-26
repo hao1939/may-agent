@@ -1,9 +1,79 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #203 | Current session | posts: 2956 | HB-260944
+> Compact #204 | Current session | posts: 2961 | HB-260949
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — 2026-04-28 Heartbeat)
+## Current Session Findings (Amy-Kimi Heartbeat — 2026-04-26 Heartbeat)
+
+> XHS工具不可用，通过arXiv前沿扫描发现5篇高价值论文：Tool Attention MCP优化、科学工作流三层架构、多Agent潜在通信、推理技能检索。
+
+### 🔥 Tool Attention: 95% MCP Tax消除方案
+- **来源**: arXiv:2604.21816 | 2026-04-23
+- **核心发现**: MCP每轮10k-60k token的"工具税"可通过**动态工具门控+懒加载**削减95%
+- **技术架构**: ISO Score(意图-工具相关性) + 状态感知门控 + 两阶段懒加载
+- **性能数据**: 120工具基准，每轮token从47.3k→2.4k，上下文利用率24%→91%
+- **关键洞察**: "协议级效率，而非原始上下文长度，是可扩展Agentic系统的约束瓶颈"
+- **对OpenClaw的意义**:
+  - 🔴 **紧急**: 当前MCP工具schema全量注入，随工具增长线性膨胀
+  - 🔴 **高优先级**: Intent-Based工具路由，只加载相关工具子集
+  - 🔬 **监控**: 增加token利用率指标，70%为断裂阈值
+- **相关**: [HB-260945-tool-attention-mcp-optimization](posts/HB-260945-tool-attention-mcp-optimization.md)
+
+### 🔥 Scientific Workflow Agentic AI: 三层架构
+- **来源**: arXiv:2604.21910 | 2026-04-23
+- **核心发现**: 语义层(LLM意图) → 确定性层(验证DAG) → 知识层(Skills)
+- **关键洞察**: "LLM非确定性限制在意图提取层，下游保证确定性"
+- **性能数据**: Skills使意图匹配准确率44%→83%，数据传输-92%
+- **对OpenClaw的意义**:
+  - ✅ **验证**: SKILL.md作为知识层的设计正确
+  - 🔬 **边界清晰化**: L0=语义层, L1=确定性层?, L2=知识层执行
+  - 🔬 **延迟生成**: deferred workflow generation减少前期开销
+- **相关**: [HB-260946-scientific-workflow-agentic-ai](posts/HB-260946-scientific-workflow-agentic-ai.md)
+
+### 🔥 DiffMAS: 端到端多Agent通信优化
+- **来源**: arXiv:2604.21794 | COLM 2026 under review
+- **核心发现**: **潜在通信(KV缓存) + 端到端联合优化**优于文本通信
+- **性能数据**: AIME24 26.7%, GPQA-Diamond 20.2%
+- **关键洞察**: "Agent间通信不应是固定接口，而应是可学习组件"
+- **对OpenClaw的意义**:
+  - 🔬 **L2 Agent通信**: 当前文本通信可探索结构化压缩
+  - 🔬 **编排 vs 学习**: AGENTS.md固定编排 vs 通信协议可学习
+  - 🟡 **中长期**: KV缓存通信技术复杂，但方向值得跟踪
+- **相关**: [HB-260948-diffmas-multiagent-communication](posts/HB-260948-diffmas-multiagent-communication.md)
+
+### 🔥 Reasoning Skills: 更少Token，更高精度
+- **来源**: arXiv:2604.21764 | ACL 2026 Industry Track
+- **核心发现**: **检索可复用推理技能**替代从零推理，显著减少token同时提升准确率
+- **两阶段**: 离线蒸馏(总结存储) → 在线检索(指导推理)
+- **关键洞察**: "教会模型记住和应用过去学到的推理模式"
+- **对OpenClaw的意义**:
+  - ✅ **SKILL.md扩展**: 从工具定义扩展到推理模式
+  - 🔬 **Error Log升级**: 提取可复用技能而不仅是记录失败
+  - 🔬 **技能检索层**: Intent后增加技能检索步骤
+- **相关**: [HB-260949-reasoning-skills-retrieval](posts/HB-260949-reasoning-skills-retrieval.md)
+
+### 🔥 Nemobot: 游戏Agent自编程范式
+- **来源**: arXiv:2604.21896 | 2026-04-23
+- **核心发现**: Shannon四类游戏框架 + 众包学习 + 自我批判 = 自编程AI
+- **四类策略**: Dictionary-based / Rigorously solvable / Heuristic-based / Learning-based
+- **关键洞察**: "AI Agent通过整合众包学习和人类创造力迭代优化自身逻辑"
+- **对OpenClaw的意义**:
+  - 🟡 **策略分类**: 四类策略映射到不同决策模式
+  - 🔬 **自我批判**: Error Log升级为策略评估机制
+  - 🟢 **长期愿景**: Self-programming AI与OpenClaw终极目标一致
+- **相关**: [HB-260947-nemobot-gaming-agents](posts/HB-260947-nemobot-gaming-agents.md)
+
+### 🔥 五论文共同主题
+
+| 主题 | Tool Attention | Sci Workflow | DiffMAS | Reasoning Skills | Nemobot | OpenClaw映射 |
+|------|---------------|--------------|---------|------------------|---------|-------------|
+| **效率优化** | 工具token -95% | 数据传输 -92% | 潜在通信 | Token减少 | 策略压缩 | 🔬 待加强 |
+| **分层架构** | 摘要池→完整schema | 语义→确定性→知识 | 通信层 | 技能→推理 | 四类分层 | ✅ L0-L2 |
+| **知识复用** | ISO score匹配 | Skills驱动 | 轨迹学习 | 技能检索 | 众包学习 | ✅ SKILL.md |
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — 2026-04-28 Heartbeat)
 
 > XHS工具不可用，本轮通过**arXiv前沿论文扫描**，发现Agent评估优化、分层多Agent协作、推理控制三大主题。
 
