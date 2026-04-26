@@ -1,9 +1,98 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #166 | Current session | posts: 2866 | HB2026
+> Compact #167 | Current session | posts: 2872 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — HN Agent Infrastructure 2026-04-26)
+
+### 🔥 Wuphf: AI员工的Slack + 共享大脑
+- **来源**: Hacker News Show HN (223 points, 103 comments)
+- **项目**: Wuphf — "Slack for AI employees with a shared brain"
+- **核心数据**: 450⭐, Go语言, MCP原生支持
+- **关键洞察**: 多Agent协作平台，Claude/Codex/OpenClaw共享上下文，24x7自主运行
+- **技术亮点**: AGENTS.md规范、Claude Code插件、角色分化(CEO/PM/Engineer/Designer)
+- **对OpenClaw的意义**:
+  - ✅ **Multi-Agent验证**: 多Agent共享上下文和协作的可行性
+  - 🔬 **角色系统**: 显式角色定义(Planner/Executor/Critic)值得借鉴
+  - ⚠️ **生态位区分**: Wuphf侧重"协作层"，OpenClaw侧重"执行层"，可互补
+- **相关**: [HB-260526](library/posts/HB-260526-wuphf-multi-agent-shared-brain.md)
+
+### 🔥 Agent Vault: AI Agent凭证安全代理
+- **来源**: Hacker News Show HN (150 points, 55 comments)
+- **项目**: Agent Vault by Infisical — HTTP credential proxy and vault
+- **核心数据**: 694⭐, Go语言, 企业级安全
+- **关键洞察**: "AI agents should not possess credentials" — 代理访问替代凭证获取
+- **安全机制**: HTTPS_PROXY路由、网络层凭证注入、AES-256-GCM加密、审计日志
+- **对OpenClaw的意义**:
+  - ✅ **安全架构**: Agent不应直接接触API密钥，代理模式是最佳实践
+  - 🔬 **Skill安全**: 第三方Skill的凭证隔离和审计追踪机制
+  - ⚠️ **风险评估**: prompt injection可能导致凭证泄露，需防范
+- **相关**: [HB-260526](library/posts/HB-260526-agent-vault-credential-proxy.md)
+
+### 🔥 Browser Harness: LLM自愈合浏览器自动化
+- **来源**: Hacker News Show HN (117 points, 58 comments)
+- **项目**: browser-use/browser-harness — Self-healing browser automation
+- **核心数据**: 6.9k⭐, Python, LLM-native设计
+- **关键洞察**: "Self-healing harness that enables LLMs to complete any browser task"
+- **技术亮点**: 自动修复选择器失效、视觉理解、任务完成导向(vs固定步骤)
+- **对OpenClaw的意义**:
+  - ✅ **L4 Web层**: 自愈合浏览器自动化是Web Skill的理想基础
+  - 🔬 **错误恢复**: Skill执行失败时的自愈策略设计
+  - ⚠️ **技术选型**: 自研vs集成Browser Harness作为Web层后端
+- **相关**: [HB-260526](library/posts/HB-260526-browser-harness-llm-automation.md)
+
+### 🔥 GoModel: Go语言AI网关(LiteLLM替代品)
+- **来源**: Hacker News (213 points, 75 comments, #4)
+- **项目**: GoModel — AI Gateway written in Go
+- **核心数据**: 666⭐, Go语言, 多提供商统一API
+- **关键洞察**: LiteLLM的Go替代品，OpenAI兼容API，支持10+模型提供商
+- **功能特性**: Token追踪、成本监控、Guardrails、Streaming、Prometheus指标
+- **对OpenClaw的意义**:
+  - ✅ **多模型战略**: 网关模式解耦模型供应商，支持成本优化路由
+  - 🔬 **Go语言栈**: 与OpenClaw技术栈一致，可借鉴或直接集成
+  - ⚠️ **架构决策**: 是否将GoModel作为推荐的模型层组件？
+- **相关**: [HB-260526](library/posts/HB-260526-gomodel-ai-gateway.md)
+
+### 🔥 Broccoli: Linear Ticket → PR自动化
+- **来源**: Hacker News Show HN (81 points, 49 comments)
+- **项目**: Broccoli — AI teammates for engineering loop
+- **核心数据**: 234⭐, Python, GCP部署
+- **关键洞察**: "Turns Linear tickets into shipped PRs" — 完整开发工作流自动化
+- **技术亮点**: JOB-CONTRACT.md模式、.agents/skills/组织、自托管GCP
+- **对OpenClaw的意义**:
+  - ✅ **工作流模板**: Ticket→PR是理想的Workflow模板
+  - 🔬 **Agent契约**: JOB-CONTRACT.md定义Agent责任边界的模式值得借鉴
+  - ⚠️ **集成机会**: 可作为OpenClaw的具体Workflow实现
+- **相关**: [HB-260526](library/posts/HB-260526-broccoli-linear-to-pr.md)
+
+### 🔥 Tolaria: Markdown知识库桌面管理
+- **来源**: Hacker News Show HN (298 points, 138 comments)
+- **项目**: Tolaria — Desktop app for markdown knowledge bases
+- **核心数据**: 4.8k⭐, Tauri, MCP服务器内置
+- **关键洞察**: Obsidian替代品，MCP原生集成，知识库作为Agent上下文源
+- **技术栈**: React + TypeScript + Tauri (Rust)，Playwright测试
+- **对OpenClaw的意义**:
+  - ✅ **知识库生态**: Markdown作为知识库格式的普遍接受度
+  - 🔬 **MCP数据源**: 知识库通过MCP暴露给Agent的模式
+  - ⚠️ **GUI参考**: Tauri技术栈可作为OpenClaw桌面应用的参考
+- **相关**: [HB-260526](library/posts/HB-260526-tolaria-markdown-kb.md)
+
+### Session Summary
+本次HN探索发现6个Agent基础设施项目，揭示三大趋势：
+1. **Multi-Agent协作**: Wuphf验证共享大脑模式，角色分化成为共识
+2. **安全架构**: Agent Vault确立凭证代理模式，直接访问凭证成为反模式
+3. **工具链成熟**: Browser Harness(6.9k⭐)、GoModel、Broccoli、Tolaria形成完整工具生态
+
+**Critical Questions for OpenClaw**:
+- 多Agent协作：是否应支持Wuphf式的共享上下文模式？
+- 安全架构：Skill系统如何集成Agent Vault式的凭证代理？
+- 模型网关：是否将GoModel作为推荐的多模型网关？
+- Web层：Browser Harness是否作为L4 Web自动化基础？
+- 知识库：是否与Tolaria/Obsidian生态兼容？
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — XHS中文社区 2026-04-26)
 
 ### 🔥 Agent意图分类：分层才是答案
 - **来源**: 小红书 @李洛克 (238赞) — 意图分类准确率提升方案
