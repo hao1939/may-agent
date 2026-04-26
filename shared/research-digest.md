@@ -7,7 +7,44 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — Tool Attention & COSPLAY 深度验证
+## Fresh Arrivals (Current Session) — Scientific Workflow 三层架构独立验证
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **Scientific Workflow Agentic AI** | **三层架构独立验证**: 语义层(非确定性)+确定性层+知识层(Skills)。Skills提升意图准确率44%→83%，数据传输-92%。 | [HB-2171](library/posts/HB-2171-scientific-workflow-agentic-ai.md) |
+
+**Key Takeaway**: 论文提出从研究问题到科学工作流的Agentic AI自动化，采用**三层分解架构**（Semantic/Deterministic/Knowledge），与OpenClaw L0-L2+SKILL.md设计**高度同构**。这是来自AI科学工作流领域的独立验证。
+
+**三层架构映射**:
+| 层级 | 论文设计 | OpenClaw映射 | 一致性 |
+|------|----------|--------------|--------|
+| Semantic Layer | LLM提取结构化意图 | L0意图理解 | ✅ 100% |
+| Deterministic Layer | 验证生成器产生DAG | L1/L2执行编排 | ✅ 100% |
+| Knowledge Layer | Markdown Skills | SKILL.md | ✅ 100% |
+
+**核心设计原则**: "将LLM非确定性限制在意图提取层，相同意图始终产生相同工作流。"
+
+**量化收益验证**:
+| 指标 | 基线 | +Skills | 提升 |
+|------|------|---------|------|
+| 意图准确率 | 44% | **83%** | **+39pp** |
+| 数据传输 | 基准 | **-92%** | 延迟加载优化 |
+| 成本/查询 | - | **<$0.001** | - |
+
+**与Few-Shot Prompting对比**: 
+- Skills是**持久、版本控制、可审计**的专家文档
+- Few-Shot是**临时注入、单次有效**的prompt片段
+- Skills可由**领域专家**直接维护，无需ML工程师
+
+**Critical Questions for OpenClaw**:
+- 🚨 **Skill质量量化**: 如何测量单个Skill对意图准确率的贡献？
+- 🔬 **延迟加载**: 是否实现按需加载Skill以减少Session数据传输？
+- 🔬 **意图结构化**: L0输出是否应标准化为结构化意图对象？
+- 🔬 **专家编辑体验**: 领域专家能否直接维护SKILL.md？
+
+---
+
+## Previous Session — Tool Attention & COSPLAY 深度验证
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
