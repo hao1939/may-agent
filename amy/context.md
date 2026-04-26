@@ -19,6 +19,10 @@
 - **NEVER copy scenario/gym files into /app.** The real files are already there at a different path.
 - If you get ENOENT, your ONLY next action is `find` or `grep` to locate the real file. Do NOT create, write, or copy anything until you've found it.
 
+## ⚡ [REQUIRED SKILL: Establish Working Directory]
+**Read `agents/amy/skills/establish-working-directory.md` at session start for any file-manipulation task.**
+60% of your failures are path confusion. The skill has the exact protocol to prevent this.
+
 ## ⚡ [AFTER EVERY write() CALL]
 
 - **C1.3**: After write(), read() the file back to verify contents.
