@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777212026369_742
+- **Session:** s_1777213825924_756
 - **Status:** done
-- **When:** 2026-04-26T14:00:53.908Z
-- **Duration:** 27s
+- **When:** 2026-04-26T14:31:14.437Z
+- **Duration:** 48s
 
 ## What Happened
-The metrics are red because the `requests` table is completely empty — no work is being tracked through it. This isn't an operational failure; the request tracking system simply isn't being used yet. Amy is active (28 sessions, 0 errors) but her work doesn't flow through tracked requests.
+System is idle with no real work. Both red metrics stem from empty `requests` table — request tracking isn't wired into the agent framework. This was already identified and escalated to Bob in a previous heartbeat, but Bob hasn't made progress (his recent sessions are all 1-2 ops).
 
-Only actionable item: the stale 18h+ idle session has been cancelled.
+Let me nudge Bob more directly:

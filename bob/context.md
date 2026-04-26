@@ -76,28 +76,4 @@
 - **Write within 5**: Produce your first write/edit within 5 tool calls.
 - **Bash streak limit**: After 5 consecutive bash calls, pause and write what you know.
 
-## Learned from experience
 
-- Now document the evolution cycle: (source: s_1777136820698_102, 2026-04-25)
-- Good — the workflow already updated the status to `waiting`. Let me commit and wrap up. (source: s_1777136768484_101, 2026-04-25)
-- File is correct and complete — well-structured markdown with all 20 scenario results, summary stats, failure analysis, and next steps. No truncation or errors. (source: s_1777136394166_96, 2026-04-25)
-- File looks correct and well-structured. No issues. (source: s_1777136379585_95, 2026-04-25)
-- File is complete and correct. (source: s_1777144151229_187, 2026-04-25)
-- The journal file looks correct — it's a well-structured chronological journal with no obvious errors or data loss. The content is coherent and properly formatted. (source: s_1777144130339_184, 2026-04-25)
-- Now let me commit and update the journal. (source: s_1777143969101_182, 2026-04-25)
-- WAITING: All three core files are written and verified. Milestones completable: **Set up metrics measurement**, **Record baseline values**, **Update reading-metrics skill**. Agent adoption is confirme (source: s_1777143968386_3, 2026-04-25)
-- 149 sessions reference skills files, and `closing-the-loop.md` has already been read 2 times. Now let me checkpoint progress and summarize what's done. (source: s_1777143833113_2, 2026-04-25)
-- All three files exist now.
-
-WAITING: All three core files are written and verified: `.state/metrics/baseline-report.md`, `skills/closing-the-loop.md`, `skills/reading-metrics.md`. Milestones completab (source: s_1777143818747_1, 2026-04-25)
-- All three files confirmed to exist. (source: s_1777143775262_0, 2026-04-25)
-- All three files exist with correct content.
-
-CONTINUE —
-
-1. **I believe**: All 3 files are written correctly. Milestones "Set up metrics measurement", "Record baseline values", "Update reading-metrics (source: s_1777143636951_7, 2026-04-25)
-- All three files confirmed to exist. (source: s_1777143582455_6, 2026-04-25)
-- PIVOT
-
-1. **I believe**: Only 1 of 3 files exists (`.state/metrics/baseline-report.md`). The worker claimed "All three files verified" but `skills/closing-the-loop.md` and `skills/reading-metrics.md`  (source: s_1777143545027_5, 2026-04-25)
-- This is the comprehensive version (the one read() showed earlier — it does exist here). It already has step 5. All three files verified: (source: s_1777143178650_4, 2026-04-25)
