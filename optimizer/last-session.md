@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777167789259_375
+- **Session:** s_1777169588771_391
 - **Status:** done
-- **When:** 2026-04-26T01:44:07.002Z
-- **Duration:** 57s
+- **When:** 2026-04-26T02:14:11.713Z
+- **Duration:** 1m2s
 
 ## What Happened
-OK — the requests table in `may.db` exists but is empty, and `.state/requests.db` has no tables. The duplicate request waste that was flagged has already been cleaned up (table is empty now). The system is healthy.
-
-All metrics are green, no active projects, and the main waste issue (duplicate requests) appears resolved. The inbox is mostly stale notifications about issues that have been addressed. Let me dismiss them efficiently.
+System is healthy, metrics are all green, no active projects, requests DB is empty (cleaned up). The inbox is 15 notifications, mostly duplicate alerts about duplicate requests — a meta-waste problem. Let me file a concise finding about the notification spam itself.

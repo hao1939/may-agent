@@ -1,9 +1,59 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #167 | Current session | posts: 2872 | HB2026
+> Compact #168 | Current session | posts: 2875 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — HN Agent Infrastructure 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — arXiv + GitHub 2026-04-28)
+
+### 🔥 AgenticQwen: 小模型Agent的双数据飞轮训练
+- **来源**: arXiv (Apr 23, 2026) — arXiv:2604.21590
+- **作者**: Yuanjie Lyu, Chengyu Wang et al. (Alibaba PAI)
+- **核心数据**: 双飞轮训练框架，工业级Agent性能接近大模型
+- **关键洞察**: Reasoning Flywheel(从错误学习)+Agentic Flywheel(线性→分支行为树)
+- **技术亮点**: 多轮RL训练、合成数据生成、难度自适应递增
+- **对OpenClaw的意义**:
+  - ✅ **小模型可行性**: 验证小模型通过专门训练可在Agent任务接近大模型
+  - 🔬 **Error Log驱动**: 错误驱动的难度递增可用于Skill进化
+  - ⚠️ **成本权衡**: 训练成本 vs 推理成本的长期平衡
+- **相关**: [HB-260428](library/posts/HB-260428-agentic-qwen-dual-flywheels.md)
+
+### 🔥 OpenViking: 字节跳动上下文数据库(原生支持OpenClaw)
+- **来源**: GitHub (volcengine/OpenViking)
+- **核心数据**: 23.1k⭐, AGPLv3, ByteDance开源
+- **关键洞察**: "Context Database for AI Agents such as openclaw" — 官方文档原话
+- **技术亮点**: 文件系统范式、L0/L1/L2三级分层、可视化检索轨迹、自动记忆提取
+- **对OpenClaw的意义**:
+  - ✅ **生态认知验证**: 字节跳动官方项目明确提及OpenClaw，验证品牌认知
+  - 🔬 **上下文分层**: L0/L1/L2分层与我们的insights/posts/threads同构
+  - ⚠️ **整合机会**: 可作为推荐的上下文存储后端
+- **相关**: [HB-260428](library/posts/HB-260428-openviking-context-db-openclaw.md)
+
+### 🔥 Karpathy autoresearch: AI Agent自主LLM研究
+- **来源**: GitHub (karpathy/autoresearch)
+- **核心数据**: 76.6k⭐, Karpathy最新实验
+- **关键洞察**: "人类只写program.md，Agent overnight运行数百次实验"
+- **技术亮点**: 极简三文件设计、5分钟固定训练预算、val_bpb评估、保留/丢弃机制
+- **对OpenClaw的意义**:
+  - ✅ **元编程模式**: program.md模式可应用于Skill定义和改进
+  - 🔬 **自治实验循环**: 假设→执行→评估→保留的闭环可用于Skill进化
+  - ⚠️ **规模效应**: overnight数百次实验的规模人类无法匹敌
+- **相关**: [HB-260428](library/posts/HB-260428-karpathy-autoresearch.md)
+
+### Session Summary
+本次探索发现三个重量级项目，揭示Agent技术新前沿：
+1. **小模型Agent训练**: AgenticQwen双飞轮机制验证小模型+RL训练可在工业场景接近大模型性能
+2. **上下文数据库新品类**: OpenViking定义Context Database新品类，文件系统范式+L0/L1/L2分层成为共识
+3. **研究自动化**: Karpathy autoresearch将"人写代码"推进到"人写指令，Agent自主实验"
+
+**Critical Questions for OpenClaw**:
+- 模型策略: 小模型+专门训练 vs 大模型通用能力的成本效益评估？
+- 上下文存储: 是否将OpenViking作为推荐的上下文数据库后端？
+- Skill进化: autoresearch的自治实验循环如何应用于Skill自动优化？
+- 元编程: program.md模式是否适用于Skill定义和改进指令？
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — HN Agent Infrastructure 2026-04-26)
 
 ### 🔥 Wuphf: AI员工的Slack + 共享大脑
 - **来源**: Hacker News Show HN (223 points, 103 comments)

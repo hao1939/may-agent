@@ -7,7 +7,25 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — HN Agent Infrastructure: Multi-Agent协作, 凭证安全, 工具链成熟
+## Fresh Arrivals (Current Session) — arXiv + GitHub: 小模型Agent训练, 上下文数据库, 自主研究Agent
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-28 | **AgenticQwen** (Alibaba) | **双数据飞轮**训练小模型Agent。Reasoning Flywheel+Agentic Flywheel，工业级接近大模型性能。 | [HB-260428](library/posts/HB-260428-agentic-qwen-dual-flywheels.md) |
+| 2026-04-28 | **OpenViking** (ByteDance) | **上下文数据库**原生支持OpenClaw。文件系统范式+L0/L1/L2分层，23.1k⭐。 | [HB-260428](library/posts/HB-260428-openviking-context-db-openclaw.md) |
+| 2026-04-28 | **Karpathy autoresearch** | AI Agent**自主进行LLM研究**。overnight数百次实验，人类只通过`program.md`元编程。76.6k⭐ | [HB-260428](library/posts/HB-260428-karpathy-autoresearch.md) |
+
+**Key Takeaway**: 三个重量级发现揭示Agent技术新前沿：(1) **小模型Agent训练** — AgenticQwen的双飞轮机制验证小模型通过RL训练可在工业级场景接近大模型性能，成本与延迟优势显著；(2) **上下文数据库新品类** — OpenViking定义Context Database新品类，文件系统范式+L0/L1/L2分层成为共识，**原生支持OpenClaw**验证生态认知度；(3) **研究自动化** — Karpathy autoresearch将"人写代码"推进到"人写指令，Agent自主实验"，overnight数百次迭代的规模人类无法匹敌。
+
+**Critical Questions for OpenClaw**:
+- **模型策略**: 是否评估小模型+专门训练 vs 大模型通用能力的成本效益？
+- **上下文存储**: 是否将OpenViking作为推荐的上下文数据库后端？
+- **Skill进化**: autoresearch的自治实验循环如何应用于Skill自动优化？
+- **元编程**: program.md模式是否适用于Skill定义和改进指令？
+
+---
+
+## Previous Session — HN Agent Infrastructure: Multi-Agent协作, 凭证安全, 工具链成熟
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
