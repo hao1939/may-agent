@@ -314,18 +314,19 @@ function runAgent(adapter , taskContent , workDir , agent , timeoutMs ) {
   const beforeSnapshot = snapshotDir(PROJECT_ROOT);
 
   // Real agent binary found via GYM_AGENT_BIN — invoke it
-  // Read task content and pass via --task flag (binary may not support --task-file)
+  // Read task file content and pass via env var to avoid shell escaping issues
   const taskFile = path.join(workDir, "_gym_task.md");
+  const taskContent2 = fs.readFileSync(taskFile, "utf-8");
   let agentStdout = "";
   try {
     agentStdout = execSync(
-      `"${agentBin}" --oneshot --agent "${agent}" --task-file "${taskFile}" --work-dir "${workDir}"`,
+      `"${agentBin}" --oneshot --agent "${agent}" --task "$GYM_TASK_CONTENT" --work-dir "${workDir}"`,
       {
         cwd: workDir,
         timeout: timeoutMs,
         stdio: "pipe",
         encoding: "utf-8",
-        env: { ...process.env, GYM_WORK_DIR: workDir },
+        env: { ...process.env, GYM_WORK_DIR: workDir, GYM_TASK_CONTENT: taskContent2 },
       }
     ) || "";
   } catch (err) {
