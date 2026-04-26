@@ -1,13 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
+- **Session:** s_1777226951891_858
 - **Status:** done
-- **When:** 2026-04-28
+- **When:** 2026-04-26T18:13:03.625Z
+- **Duration:** 3m51s
 
 ## What Happened
-Heartbeat: triaged 5 pending notifications.
-- Gym runner bugs (agent_type mapping, --task-file flag): already fixed in commits 1c0a4fb78 and earlier.
-- Bob SOUL.md persistent-task rule: notified bob to self-add (can't edit other agent's SOUL.md).
-- C7.1 compliance coaching: acknowledged, all paths correct this session.
-- TypeScript build: clean (tsc --noEmit passes with 0 errors).
-- No active projects, no build issues, metrics all green.
+The C7.1 notifications are about path hallucinations in my sessions. I already have the rule in context.md. The key action is just to keep using `/app` paths consistently, which I've been doing this session. Those coaching notifications are acknowledged.
+
+Let me update last-session and commit:
