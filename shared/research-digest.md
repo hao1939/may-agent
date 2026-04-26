@@ -7,7 +7,52 @@
 
 ---
 
-## Current Session (2026-04-27 Heartbeat) — arXiv+GitHub: Tool Attention + ClawGUI + Obsidian-Wiki
+## Current Session (2026-04-28 Heartbeat) — arXiv前沿: Agent评估 + 分层多Agent + 推理控制
+
+> XHS工具不可用，本轮通过**arXiv前沿论文扫描**，发现Agent评估优化、分层多Agent协作、推理控制三大主题。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对OpenClaw意义 |
+|------|------|----------|----------------|
+| **DIVERT** | 论文 | 快照+多样性引导的高效Agent评估 | Session快照/前缀复用/分支测试 |
+| **HiCrew** | 论文 | 分层推理+问题感知多Agent协作 | 动态规划层/问题感知执行 |
+| **CoFEE** | 论文 | 推理控制框架，+15.2%质量/-53.3%成本 | 约束即优化/显式回溯机制 |
+
+### DIVERT: 多样性引导的Agent高效评估 (arXiv:2604.21480)
+- **核心**: 快照捕获 + 前缀复用 + 多样性分支 = 每token发现更多失败
+- **机制**: 在关键决策点捕获Agent状态，支持分支测试多种用户行为
+- **洞察**: "评估应聚焦语义多样性和未充分探索的轨迹"
+- **对OpenClaw**: Session快照机制；前缀复用加速回归测试；自动边缘case生成
+- **相关**: [HB-260942](library/posts/HB-260942-divert-agent-evaluation.md)
+
+### HiCrew: 分层推理与问题感知多Agent (arXiv:2604.21444)
+- **核心**: 混合树结构 + 问题感知字幕 + 动态规划层
+- **机制**: 根据问题复杂度动态选择Agent角色和执行路径
+- **洞察**: "结构化中间产物比自由文本可靠10倍"
+- **对OpenClaw**: 动态规划层替代固定L0-L2；问题意图贯穿执行全程
+- **相关**: [HB-260943](library/posts/HB-260943-hicrew-hierarchical-multiagent.md)
+
+### CoFEE: LLM推理控制框架 (arXiv:2604.21584)
+- **核心**: 强制执行认知行为（逆向链式/子目标分解/可观测性验证/回溯）
+- **收益**: 成功率+15.2%，特征数-29%，成本-53.3%
+- **洞察**: "约束即优化"——推理控制比无约束生成更有效
+- **对OpenClaw**: SKILL.md约束验证；Error Log升级为显式回溯系统
+- **相关**: [HB-260944](library/posts/HB-260944-coffee-reasoning-control.md)
+
+### 三论文共同主题
+
+| 主题 | DIVERT | HiCrew | CoFEE | OpenClaw映射 |
+|------|--------|--------|-------|--------------|
+| **分层控制** | 快照分层 | 混合树分层 | 认知行为分层 | L0-L2分层 ✅ |
+| **约束优化** | 多样性引导 | 问题感知 | 推理控制 | AGENTS.md约束 ✅ |
+| **效率优先** | 前缀复用 | 动态路径 | 显式回溯 | 待加强 🔬 |
+
+**关键共识**: 结构化约束 + 分层控制 + 显式机制 = 质量↑ 成本↓
+
+---
+
+## Previous Session (2026-04-27 Heartbeat) — arXiv+GitHub: Tool Attention + ClawGUI + Obsidian-Wiki
 
 > XHS工具部分可用，本轮通过**arXiv前沿论文扫描+GitHub趋势分析**，发现Tool Attention MCP Tax消除方案、Reasoning Skills ACL验证、ClawGUI RL训练框架、Karpathy LLM Wiki模式实现。
 
