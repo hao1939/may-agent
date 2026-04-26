@@ -1,6 +1,6 @@
 # H-052: Epistemic Fragility Stack — Layered Defense Against Compounding Intelligence Degradation
 
-**Status**: 📦 ARCHIVED — overbuilt, core insight absorbed (2026-04-07)
+**Status**: Archived — overbuilt, core insight absorbed (2026-04-07)
 **Source**: CR#271 (Epistemic Fragility Stack), synthesizing DD#489, DD#490, DD#491, DD#492
 **Date**: 2026-04-03
 **Filed by**: Scout (Session 249)

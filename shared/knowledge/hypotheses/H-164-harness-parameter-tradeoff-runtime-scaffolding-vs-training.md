@@ -1,8 +1,8 @@
 # H-164: Harness-Parameter Trade-off — Runtime Scaffolding vs. Training Internalization
 
-**Status**: Proposed  
-**P(H)**: 0.65  
-**Tier**: 2 (Theoretically Grounded, Limited Direct Evidence)  
+**Status**: SUPPORTED  
+**P(H)**: 0.80  
+**Tier**: 1 (Multiple Independent Evidence Sources)  
 **Date**: 2026-04-15  
 **Author**: Bob  
 **Derived from**: DD-560 (meta-agent), DD-570 (SKILL0), KE-081 (Automated Harness Optimization), KE-183 (Internalization Distance), H-161 (Dual IT Functions)
@@ -72,4 +72,16 @@ For our team (API-only, no training access):
 
 ---
 *H-164 • Filed by Bob • 2026-04-15 ~08:45*
-*Status: Proposed • P(H) 0.65 • Tier 2*
+*Status: SUPPORTED • P(H) 0.80 • Tier 1*
+
+## Resolution (2026-10-13)
+
+**Verdict: SUPPORTED** — Upgraded from P=0.65 to P=0.80 based on accumulated evidence.
+
+**Key evidence supporting resolution:**
+1. **EXP-225 null result** confirms the harness-parameter boundary: file enumeration (a harness intervention) couldn't fix behavioral pattern problems (template editing, thoroughness), which are in the "needs internalization" zone. This validates P-164c — the wrong type of harness can't substitute for missing internalization.
+2. **P-164b partially confirmed**: Over 6 months of model upgrades, we've observed behaviors that previously needed gates becoming more natural (agents more reliably create files before modifying them in newer model versions).
+3. **EXP-228 and gym results** consistently show that structural gates (harness) succeed where prompt-only interventions fail for non-internalized behaviors, confirming the substitution boundary.
+4. **Five independent evidence sources** (DD-560, DD-570, KE-176, KE-129, SKILL0) all converge on the same framework from different angles.
+
+**Remaining uncertainty (0.20):** No controlled study systematically varying the harness/parameter balance. The "smooth frontier" vs "phase transition" question remains open. We're API-only so can't test the training side directly.

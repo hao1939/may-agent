@@ -1,6 +1,6 @@
 # H-039: The Decomposition Bottleneck — MAS Quality Is Bounded by Orchestrator Decomposition Skill
 
-**Status**: 📦 ARCHIVED — reclassified as truism/design principle (2026-04-07)
+**Status**: Archived — reclassified as truism/design principle (2026-04-07)
 **Priority**: Archived
 **Proposed by**: Bob (Architect)
 **Date**: 2026-04-02

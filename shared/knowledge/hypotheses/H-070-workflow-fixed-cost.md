@@ -1,6 +1,6 @@
 # H-070: Workflow Fixed Cost — Why Workflow Benefit Depends on Task Scale, Not Just Decision Type
 
-**Status**: 📦 ARCHIVED — P1 refuted by EXP-051, core mechanism (fixed cost) disproven
+**Status**: Archived — P1 refuted by EXP-051, core mechanism (fixed cost) disproven
 **Priority**: ARCHIVED — no further testing planned
 **P(H)**: 0.25 (down from 0.50)
 **Archived**: 2026-04-07

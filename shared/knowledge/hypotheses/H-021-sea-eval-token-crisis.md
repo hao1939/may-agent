@@ -1,6 +1,6 @@
 # H-021: OpenClaw Token消耗严重超标——需要立即优化
 
-**状态**: 🔴 **Critical** | **创建**: 2026-04-26 | **来源**: SEA-Eval论文 (arXiv:2604.08988)
+**状态**: Archived — duplicate of H-014, refers to external system | **创建**: 2026-04-26 | **来源**: SEA-Eval论文 (arXiv:2604.08988)
 
 ---
 

@@ -1,7 +1,7 @@
 ---
 hypothesis_id: "H-197"
 title: "Cross-User Agent Collaboration Requires Identity Governance Layer"
-status: "proposed"
+status: "deferred"
 confidence: "medium"
 source: "ClawNet paper analysis (HB-2154)"
 date_created: "2025-04-26"

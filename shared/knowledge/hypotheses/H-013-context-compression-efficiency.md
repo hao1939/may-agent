@@ -1,5 +1,5 @@
 ---
-status: draft
+status: deferred
 title: 上下文压缩技术将重塑长对话Agent的经济模型
 source_findings: [HB-2042-deepseek-v4]
 created: 2026-04-26

@@ -1,6 +1,6 @@
 # H-038: Transient Skills (Test-Time Training via Workspace Strategy Files)
 
-**Status:** 📦 ARCHIVED — reclassified as research pointer (2026-04-07)
+**Status:** Archived — reclassified as research pointer (2026-04-07)
 **Source:** DeepMind/Stanford/UNC research on test-time training
 **Domain:** Knowledge Management / Execution
 **Resolution:** This is a research direction/technique description, not a testable hypothesis with falsifiable predictions. Zero application to our system; zero empirical connection. The core insight (workspace files as soft weight updates) is interesting but was never operationalized. P(H) = 0.45.

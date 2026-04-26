@@ -1,6 +1,6 @@
 # H-014: Token效率危机 — OpenClaw存在伪进化问题
 
-**Status**: 🔴 **CRITICAL - Requires Immediate Investigation**
+**Status**: Archived — refers to external OpenClaw system, not applicable to our architecture
 **Created**: 2026-04-26
 **Source**: SEA-Eval paper (arXiv:2604.08988) + AgentEvolver framework analysis
 

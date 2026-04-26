@@ -1,9 +1,55 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #190 | Current session | posts: 2924 | HB-260932
+> Compact #191 | Current session | posts: 2925 | HB-260426
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — Agent记忆与知识双流架构 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — Tool Attention + DiffMAS 前沿论文 2026-04-26)
+
+### 🔥 Tool Attention: 95% MCP Tax 消除工程方案
+- **来源**: arXiv:2604.21816 | GitHub: asadani/tool-attention | 21 pages + 参考实现
+- **核心发现**: MCP协议的"工具税"（每轮10k-60k token）可通过**动态工具门控+懒加载**削减95%。
+- **技术架构**:
+  - **ISO Score**: 句子嵌入计算意图-工具相关性（MiniLM 384维，阈值0.28）
+  - **State-Aware Gating**: 前置条件和访问范围动态检查
+  - **两阶段懒加载**: Phase-1摘要池787 tokens + Phase-2按需加载4,672 tokens
+- **性能数据**: 120工具基准，每轮token从57,452→787（**98.6%削减**），上下文利用率24%→91%
+- **关键洞察**: "**协议级效率，而非原始上下文长度，是可扩展Agentic系统的约束瓶颈**"
+- **对OpenClaw的意义**:
+  - ✅ **CLI策略验证**: 本地工具CLI零开销，Tool Attention为远程集成提供第三选择
+  - ✅ **三层协议架构**: 本地CLI / 远程Tool Attention / 复杂MCP分层清晰化
+  - 🔬 **SKILL.md升级**: 技能元数据可作为"摘要池"基础，支持意图-技能相似度路由
+- **相关**: [HB-260426](library/posts/HB-260426-tool-attention-diffmas.md)
+
+### 🔥 DiffMAS: 端到端潜在通信优化多Agent系统
+- **来源**: arXiv:2604.21794 | COLM 2026 under review | 6 authors
+- **核心发现**: **将潜在通信(KV缓存表示)作为可学习组件**——Agent间通过内部表示而非文本通信，联合优化推理和通信编解码。
+- **技术架构**:
+  - **Latent Communication**: 通过KV缓存表示而非文本进行Agent间通信
+  - **端到端训练**: 参数高效监督训练联合优化推理和通信
+  - **共享编码**: Agent自发发展共享编码方案
+- **关键数据**: AIME24数学推理26.7%，GPQA-Diamond科学QA 20.2%，consistently优于单Agent和文本多Agent系统
+- **对OpenClaw的意义**:
+  - ⚠️ **架构张力**: 我们使用基于文本的markdown协调，DiffMAS表明这是次优的
+  - 🔬 **长期方向**: 高频Agent交互可采用潜在通信，保留文本用于人类可见层
+  - 🔬 **训练瓶颈**: 需要联合训练才能获益，独立LLM实例无法实现
+- **相关**: [HB-260426](library/posts/HB-260426-tool-attention-diffmas.md)
+
+### 🔥 Scientific Workflow Agentic AI: 三层架构的行业级独立验证
+- **来源**: arXiv:2604.21910 | AGH University of Krakow | 科学工作流自动化
+- **核心发现**: 来自AI科学工作流领域的**三层架构独立验证** — 语义层(非确定性)+确定性层+知识层(Skills)，与OpenClaw设计**高度同构**。
+- **三层映射**:
+  | 层级 | 论文设计 | OpenClaw映射 |
+  |------|----------|--------------|
+  | Semantic Layer | LLM提取结构化意图 | L0意图理解 |
+  | Deterministic Layer | 验证生成器产生DAG | L1/L2执行编排 |
+  | Knowledge Layer | Markdown Skills | SKILL.md |
+- **关键设计原则**: "将LLM非确定性限制在意图提取层，相同意图始终产生相同工作流"
+- **性能数据**: 150查询消融研究，Skills提升意图准确率44%→83%（**+39pp**），数据传输-92%
+- **相关**: [HB-2171](library/posts/HB-2171-scientific-workflow-agentic-ai.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — Agent记忆与知识双流架构 2026-04-26)
 
 ### 🔥 PlugMem: 任务无关的插件式记忆模块
 - **来源**: arXiv:2603.03296 | UIUC | GitHub: TIMAN-group/PlugMem

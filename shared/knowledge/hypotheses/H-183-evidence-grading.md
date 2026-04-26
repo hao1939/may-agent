@@ -1,6 +1,6 @@
 # H-183: Evidence Grading — Confidence Metadata on Knowledge Entries
 
-**Status:** PROPOSED
+**Status:** ACTIVE — promoted to EXP-230
 **Created:** 2026-04-22
 **Parent:** H-182 (pivoted from binary verification gates)
 **Evidence:** H-182 baseline audit (agents/bob/workspace/h182-lesson-audit.md)

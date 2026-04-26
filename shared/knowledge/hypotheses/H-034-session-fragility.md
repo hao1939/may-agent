@@ -1,6 +1,6 @@
 # H-034: Session Fragility in Long-Horizon Tasks
 
-**Status**: 📦 ARCHIVED — reclassified as design principle (2026-04-07) | **Date**: 2026-04-02 | **Source**: ICLR 2026 (Tencent Hunyuan)
+**Status**: Archived — reclassified as design principle (2026-04-07) | **Date**: 2026-04-02 | **Source**: ICLR 2026 (Tencent Hunyuan)
 **Resolution**: This is a design principle ("design for session failure"), not a falsifiable hypothesis. The WildToolBench findings are real but describe known engineering practice (checkpointing, recovery, idempotency). Our system already implements checkpoints and finish() protocols. Reclassified as a design note. P(H) = 0.52 — true but unfalsifiable.
 
 ## Hypothesis

@@ -1,6 +1,7 @@
 # H-085: Prompt Overhead — Forced Externalization Can Increase Cost Without Improving Quality
 
-**Status**: New — emerged from EXP-050
+**Status**: SUPPORTED — resolved from EXP-050 evidence (2026-10-13)
+**Resolution**: Confirmed. Forced externalization adds 1.76-2.85x duration with zero quality improvement for well-scoped tasks. Evidence from 3 scenarios, multiple runs each.
 **Priority**: Medium — affects workflow design decisions
 **Proposed by**: Tech-Lead
 **Date**: 2026-04-07

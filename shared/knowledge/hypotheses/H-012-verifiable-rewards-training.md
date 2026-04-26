@@ -1,5 +1,5 @@
 ---
-status: draft
+status: deferred
 title: 可验证奖励将成为Agent RL训练的基础设施
 source_findings: [HB-2044-ecom-rlve, HB-2043-vakra]
 created: 2026-04-26
