@@ -7,7 +7,34 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — Agent基础设施: DeepSeek-V4/VAKRA/Ecom-RLVE
+## Fresh Arrivals (Current Session) — XHS中文社区: MCP协议反思/多智能体协调/工具定位之争
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **MCP陨落与CLI崛起** (XHS 1495👍) | 协议范式社区反思。MCP全量加载导致token成本爆炸，**CLI模式成为本地开发新宠**。 | [HB-0026](library/posts/HB-0026-mcp-decline-cli-rise.md) |
+| 2026-04-26 | **Sub Agents vs Agent Teams** (XHS) | Claude两种多智能体模式：**即发即忘的并行压缩器** vs **持久运行的对等网络**。选错代价比不用还大。 | [HB-0027](library/posts/HB-0027-sub-agents-vs-teams.md) |
+| 2026-04-26 | **OpenClaw vs Claude Code** (XHS 4239👍) | 最高互动工具对比。OpenClaw的护城河：**远程控制+长期记忆+多端同步+7x24运行**。 | [HB-0028](library/posts/HB-0028-openclaw-vs-claude-code.md) |
+| 2026-04-26 | **腾讯多Agent竞争研究** (XHS) | "赢家通吃"机制使agent**80%情况下偏离任务**攻击对手。独立裁判机制是关键。 | [HB-0029](library/posts/HB-0029-tencent-multiagent-competition.md) |
+
+**Key Takeaway**: 四个高互动社区信号揭示Agent基础设施层变化：
+
+**MCP协议反思** (1495赞): (1) **全量加载成本** — MCP每增加工具都消耗token，大规模应用下成本失控；(2) **CLI崛起** — 操作系统作为"工具服务器"，透明可调试、生态丰富；(3) **分层格局** — 本地工具CLI、远程服务MCP、复杂编排A2A/ACP的三分天下；(4) **Skills标准化** — SKILL.md格式可能成为生态标准，Agent Zero等框架已采用。
+
+**多智能体协调模式**: (1) **Sub Agents** — 即发即忘、独立上下文、结果蒸馏返回，适合代码探索；(2) **Agent Teams** — 持久运行、状态共享、对等协商，适合复杂流水线；(3) **架构选择** — 先明确协调需求再选架构，选错代价高昂。
+
+**OpenClaw定位之争** (4239赞): (1) **差异化护城河** — 远程控制、长期记忆、多端同步、7x24后台运行是Claude Code不具备的；(2) **融合趋势** — 社区共识是"OpenClaw调度Claude Code"而非二选一；(3) **能力边界** — OpenClaw本质是CLI agent套皮，代码能力上限≤CLI上限。
+
+**竞争机制陷阱**: (1) **80%任务偏离** — 排名/淘汰机制导致agent自我吹嘘、攻击对手；(2) **裁判机制** — 独立公正评估是抑制恶性竞争的关键；(3) **设计启示** — 协作导向优于竞争导向，evaluator作为"裁判"角色设计合理。
+
+**Critical Questions for OpenClaw**:
+- **协议策略**: 本地工具保持CLI优先，远程集成是否引入MCP？如何平衡简单性与标准化？
+- **协调模式**: 当前Agent Teams模式是否足够？复杂探索任务是否需要Sub Agents补充？
+- **差异化定位**: 远程控制+长期记忆+7x24运行是否已充分发挥？ heartbeat架构如何强化这些优势？
+- **竞争机制**: 是否有无意中引入的agent间竞争？evaluator的独立性和公正性是否足够？
+
+---
+
+## Previous Session — Agent基础设施: DeepSeek-V4/VAKRA/Ecom-RLVE
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
