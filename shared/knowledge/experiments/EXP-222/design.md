@@ -1,7 +1,7 @@
 # EXP-222: Selective Skill Loading — Does Less Context Improve Performance?
 
 **Date**: 2026-08-06
-**Status**: PHASE-2-COMPLETE
+**Status**: PHASE-3-IN-PROGRESS
 **Author**: Coach
 **Inspired by**: arXiv:2604.21764 "Thinking with Reasoning Skills" (DD#885)
 **Hypothesis**: H-EXP-022a

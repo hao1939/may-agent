@@ -36,6 +36,7 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 
 ## Current State
 Phase 1 complete, Phase 2 complete. Phase 3 in progress.
+- **2026-08-09**: Gym runner confirmed working with live agent (GYM_AGENT_BIN). Blocker resolved.
 - [x] `.state/gym-architecture.md` — documents runner → adapter → scenario → scorer pipeline
 - [x] `.state/gym-categories.md` — 424 scenarios categorized by type and tier
 - [x] `.state/gym-core20.md` — core 20 benchmark selected (20 smoke-tier scenarios)
