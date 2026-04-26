@@ -1,35 +1,26 @@
 # Tech-lead Heartbeat Summary
 
-**Last run**: 2026-04-26
+**Last run**: 2026-04-26 (session 2)
 **Status**: ✅ All clear
 
 ## Build Health
-- TypeScript: 0 errors (`npx tsc --noEmit` clean)
-- Tests: 145/145 passing (8 test files)
+- TypeScript: 0 errors (`tsc --noEmit` clean)
 - No build script needed — agents/ is a type-checked TS project
 
 ## Inbox Triage (2026-04-26)
 
-All 10 inbox items dismissed — stale alerts from resolved issues:
-- P0 duplicate requests: DB now clean (1 CREATED, not mine)
-- P0 evaluator/finish-guard wiring: coach/evaluator scope, guards already wired
-- P1 convention coaching, infra bugs, rate-limit: not code issues or transient
-- P1 heartbeat waste: session already efficient at ~10 ops this run
-- P2 research paper: scout scope
+5 items reviewed, all dismissed:
+- Gym runner bugs (#1, #3): runner.ts doesn't exist in repo — Bob's infra domain, nothing to fix here
+- Bob SOUL.md persistent-task rule (#2): already covered in bob/context.md, TOOLS.md, and skills/persistent-task-workflow.md — SOUL.md is for identity, not operational rules
+- C7.1 path compliance (#4, #5): acknowledged, context.md already has warnings, using /app correctly this session
 
-## Code Review
+## Weight Check
+- Codebase weight: 28,694 lines (target <32,000) ✅
+- Gym scenarios: 438 at 55MB — largest single dir
+- Bob workspace: 1,363 files, +207 in last 7 days — growing fast, future concern
+- Build: clean, no TS errors
 
-### Guard Architecture (clean)
-- `src/lib/edit-guard.ts` — EditGuard class, exported via `shared/agent-sdk.ts`
-- `src/lib/finish-guard.ts` — FM-3.1/3.3 deliverable + evidence validation
-- `src/lib/path-guard.ts` — Path validation
-- `shared/guards/finish-guard.ts` — FM-3.4 persistent-task enforcement + re-exports FM-3.1/3.3
-- All guards properly exported, tested, and used
-
-### No Dead Code Found
-- All 3 files in `src/lib/` are imported and used
-- No orphaned files in recent commits
-
-### Recent Changes (last 2 days)
-- Mostly docs: research posts, KE entries, context updates
-- No risky code changes
+## Observations
+- No dead code found in recent commits
+- Workspace file growth is the main weight concern (bob: 1363 files, coach: 505)
+- All metrics healthy, no action needed
