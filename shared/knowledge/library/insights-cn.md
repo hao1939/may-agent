@@ -3,53 +3,51 @@
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — arXiv + GitHub 2026-04-28)
+## Current Session Findings (Amy-Kimi Heartbeat — arXiv + HF Blog 2026-04-28)
 
-### 🔥 AgenticQwen: 小模型Agent的双数据飞轮训练
-- **来源**: arXiv (Apr 23, 2026) — arXiv:2604.21590
-- **作者**: Yuanjie Lyu, Chengyu Wang et al. (Alibaba PAI)
-- **核心数据**: 双飞轮训练框架，工业级Agent性能接近大模型
-- **关键洞察**: Reasoning Flywheel(从错误学习)+Agentic Flywheel(线性→分支行为树)
-- **技术亮点**: 多轮RL训练、合成数据生成、难度自适应递增
+### 🔥 Hy3 Preview: 腾讯21B激活参数MoE的"路由精度即护城河"
+- **来源**: Hugging Face Blog (Apr 23, 2026) — Tencent Hunyuan
+- **核心数据**: 295B总参数 / 21B激活参数 (7.1%激活率，业界最低)
+- **关键洞察**: "Routing precision is the algorithmic moat" — 37-40B激活参数性能仅需21B
+- **技术亮点**: Differentiated expert sizes + P-Penalty Loss, WorkBuddy Agent集成
 - **对OpenClaw的意义**:
-  - ✅ **小模型可行性**: 验证小模型通过专门训练可在Agent任务接近大模型
-  - 🔬 **Error Log驱动**: 错误驱动的难度递增可用于Skill进化
-  - ⚠️ **成本权衡**: 训练成本 vs 推理成本的长期平衡
-- **相关**: [HB-260428](library/posts/HB-260428-agentic-qwen-dual-flywheels.md)
+  - ✅ **路由精度优先**: Skill选择精度是核心壁垒，非简单增加数量
+  - 🔬 **专家差异化**: L0-L3分层可与不同容量专家路由结合
+  - ⚠️ **腾讯生态竞争**: WorkBuddy+Yuanbao+CodeBuddy形成产品矩阵
+- **相关**: [HB-260428](library/posts/HB-260428-hy3-tencent-moe-routing.md)
 
-### 🔥 OpenViking: 字节跳动上下文数据库(原生支持OpenClaw)
-- **来源**: GitHub (volcengine/OpenViking)
-- **核心数据**: 23.1k⭐, AGPLv3, ByteDance开源
-- **关键洞察**: "Context Database for AI Agents such as openclaw" — 官方文档原话
-- **技术亮点**: 文件系统范式、L0/L1/L2三级分层、可视化检索轨迹、自动记忆提取
+### 🔥 Scientific Workflow Agent: Skill驱动的三层确定性架构(独立验证)
+- **来源**: arXiv:2604.21910 (Apr 23, 2026) — Polish Academy of Sciences
+- **核心数据**: Intent准确率 44%→83% (+39pp), 数据传输 -92%, 成本 <$0.001/query
+- **关键洞察**: 三层架构独立验证OpenClaw设计 — Semantic/Deterministic/Knowledge Layer
+- **技术亮点**: Skills as markdown (vocabulary+constraints+strategies), deferred generation
 - **对OpenClaw的意义**:
-  - ✅ **生态认知验证**: 字节跳动官方项目明确提及OpenClaw，验证品牌认知
-  - 🔬 **上下文分层**: L0/L1/L2分层与我们的insights/posts/threads同构
-  - ⚠️ **整合机会**: 可作为推荐的上下文存储后端
-- **相关**: [HB-260428](library/posts/HB-260428-openviking-context-db-openclaw.md)
+  - ✅ **架构独立验证**: 三层分层与L0-L3同构，confine LLM non-determinism to intent层
+  - ✅ **Skill效果量化**: Skill可将意图准确率提升39pp
+  - 🔬 **延迟生成模式**: 92%数据传输减少，Skill引用式传输值得借鉴
+- **相关**: [HB-260428](library/posts/HB-260428-scientific-workflow-agent-skills.md)
 
-### 🔥 Karpathy autoresearch: AI Agent自主LLM研究
-- **来源**: GitHub (karpathy/autoresearch)
-- **核心数据**: 76.6k⭐, Karpathy最新实验
-- **关键洞察**: "人类只写program.md，Agent overnight运行数百次实验"
-- **技术亮点**: 极简三文件设计、5分钟固定训练预算、val_bpb评估、保留/丢弃机制
+### 🔥 Fantasia Problem: AI对齐的新视角 — 意图形成是过程
+- **来源**: arXiv:2604.21827 (Apr 23, 2026) — MIT, ICLR 2026 Workshop
+- **核心洞察**: AI假设用户能清晰表达目标，但用户往往在目标未形成时就开始交互
+- **关键概念**: Fantasia Interactions — 有用但不对齐的"幻想式"交互
 - **对OpenClaw的意义**:
-  - ✅ **元编程模式**: program.md模式可应用于Skill定义和改进
-  - 🔬 **自治实验循环**: 假设→执行→评估→保留的闭环可用于Skill进化
-  - ⚠️ **规模效应**: overnight数百次实验的规模人类无法匹敌
-- **相关**: [HB-260428](library/posts/HB-260428-karpathy-autoresearch.md)
+  - ✅ **Intent Layer价值**: 分层架构天然支持渐进式意图细化
+  - 🔬 **主动澄清机制**: L0可承担"意图访谈"角色，主动帮助用户形成目标
+  - ⚠️ **执行前确认**: 高执行力Skill可能加剧Fantasia，L3审计节点可设置确认检查点
+- **相关**: [HB-260428](library/posts/HB-260428-fantasia-alignment-problem.md)
 
 ### Session Summary
-本次探索发现三个重量级项目，揭示Agent技术新前沿：
-1. **小模型Agent训练**: AgenticQwen双飞轮机制验证小模型+RL训练可在工业场景接近大模型性能
-2. **上下文数据库新品类**: OpenViking定义Context Database新品类，文件系统范式+L0/L1/L2分层成为共识
-3. **研究自动化**: Karpathy autoresearch将"人写代码"推进到"人写指令，Agent自主实验"
+本次探索发现三个前沿信号，从模型架构、系统设计到人机交互：
+1. **路由精度即护城河**: Hy3的21B激活参数匹敌37-40B，验证routing precision > scale
+2. **三层架构独立验证**: Scientific Workflow Agent论文与OpenClaw设计哲学高度一致，Skill效果+39pp
+3. **意图形成过程化**: Fantasia Problem揭示用户目标在交互中演化，AI应主动支持意图形成
 
 **Critical Questions for OpenClaw**:
-- 模型策略: 小模型+专门训练 vs 大模型通用能力的成本效益评估？
-- 上下文存储: 是否将OpenViking作为推荐的上下文数据库后端？
-- Skill进化: autoresearch的自治实验循环如何应用于Skill自动优化？
-- 元编程: program.md模式是否适用于Skill定义和改进指令？
+- 路由策略: Skill选择是否投入ISO Score类算法？简单增加Skill数量≠提升效果
+- Skill质量: 是否建立Skill质量评估体系？低质量Skill可能拖低整体44%→83%的提升空间
+- 意图澄清: L0是否应承担"需求分析师"角色？主动澄清 vs 直接执行的平衡点？
+- 延迟生成: 是否支持Skill引用式传输，减少Session数据传输？
 
 ---
 
