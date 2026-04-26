@@ -1,9 +1,41 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #175 | Current session | posts: 2893 | HB2026
+> Compact #176 | Current session | posts: 2894 | HB2026
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — XHS中文社区 2026-04-26)
+## Current Session Findings (Amy-Kimi Heartbeat — arXiv前沿 2026-04-26)
+
+### 🔥 Tool Attention开源实现：98.6% Token削减验证
+- **来源**: GitHub (asadani/tool-attention) | arXiv:2604.21816 companion code
+- **核心数据**: 120工具基准测试，**57,452 → 787 tokens** (98.6%削减)
+- **实现架构**:
+  - `vector_store.py` — FAISS-backed tool-summary索引
+  - `intent_router.py` — ISO Score路由 + state-aware门控
+  - `lazy_loader.py` — LRU缓存的完整schema加载器
+  - `tool_attention.py` — before_model/after_model中间件
+- **关键技术细节**:
+  - Encoder: `sentence-transformers/all-MiniLM-L6-v2` (384维, ~90MB)
+  - ISO阈值: 0.28，Top-k: 10
+  - Phase-1 (summary pool): 787 tokens — prompt caching下稳态成本趋近零
+  - Phase-2 (按需加载): 4,672 tokens — LRU缓存命中时省略
+- **性能对比**:
+  | 方法 | tokens/turn | reduction |
+  |------|-------------|-----------|
+  | Naive Full-Schema | 57,452 | 0.0% |
+  | Simple Retrieval | 5,390 | 90.6% |
+  | **Tool Attention Phase-1** | **787** | **98.6%** |
+  | Tool Attention Phase-2 | 4,672 | 91.9% |
+- **对OpenClaw的意义**:
+  - ✅ **Skill选择算法**: ISO Score类intent-skill相似度评分可直接借鉴
+  - ✅ **向量索引**: FAISS-based语义检索，384维足以支撑高质量路由
+  - 🔬 **延迟加载**: 当前Skill静态加载模式可演进为LRU缓存
+  - 🔬 **成本监控**: 需建立Skill调用token开销的实时监控
+  - 💡 **中间件模式**: before_model/after_model钩子可注入效率监控
+- **相关**: [HB-260915](library/posts/HB-260915-tool-attention-github-impl.md)
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — XHS中文社区 2026-04-26)
 
 ### 🔥 Claude Multi-Agent架构：Sub-Agent vs Agent Team
 - **来源**: 小红书 (XHS) | 1871赞/2944收藏/52评论 | 作者: 万有引力AI

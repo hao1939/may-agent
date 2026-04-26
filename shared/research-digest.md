@@ -7,7 +7,23 @@
 
 ---
 
-## Fresh Arrivals (Current Session) — XHS中文社区: Claude架构, AGENTS.md, Memory设计, Harness研究
+## Fresh Arrivals (Current Session) — arXiv前沿: Tool Attention开源实现
+
+| Date | Title | Key Insight | Source |
+|------|-------|-------------|--------|
+| 2026-04-26 | **Tool Attention开源实现** (GitHub) | **98.6% token削减验证**。120工具基准：57k→787 tokens，FAISS+MiniLM工程细节披露。 | [HB-260915](library/posts/HB-260915-tool-attention-github-impl.md) |
+
+**Key Takeaway**: Tool Attention作者开源参考实现，揭示关键工程细节：(1) **Phase-1仅787 tokens** — 在prompt caching下稳态成本趋近于零；(2) **实现栈** — FAISS向量库+MiniLM(384维)encoder，阈值0.28，top-k=10；(3) **架构模式** — before_model/after_model中间件，可drop-in集成；(4) **与OpenClaw关联** — Skill选择算法、LRU延迟加载、state-aware门控均可借鉴。
+
+**Critical Questions for OpenClaw**:
+- **Skill选择**: 是否引入ISO Score类intent-skill相似度评分？
+- **向量索引**: FAISS-based Skill语义检索的集成成本？
+- **延迟加载**: 当前Skill静态加载模式是否支持LRU缓存？
+- **成本监控**: Skill调用token开销的实时监控机制？
+
+---
+
+## Previous Session — XHS中文社区: Claude架构, AGENTS.md, Memory设计, Harness研究
 
 | Date | Title | Key Insight | Source |
 |------|-------|-------------|--------|
