@@ -1,29 +1,26 @@
-# QA heartbeat — unreviewed findings (2026-04-26)
+# QA Heartbeat — Unreviewed Findings (2026-04-26)
 
-## Inbox triage (pending events)
-- [P1] 5x duplicate “Quick Code Review” notifications: **DISMISS** — duplicates with no actionable payload; system already flagged as waste.
-- [P2] Verify new gym scenario EXP-220 (enoent-file-search): **ACT** — verified scenario exists (but note: folder is named `enoent-file-search`, not EXP-220).
-- [P1] Convention coaching (C1.4 “last tool call must be finish”): **ACT** — this heartbeat will end with `finish()`.
-
-## Evidence / verification
-### Repo layout
-- `/app` is **not** a git repo: `git log` failed with “not a git repository”.
-- The agent repo exists at `/app/agents` and has recent commits (e.g., `fa936aa3d`).
-
-### EXP-220 / enoent-file-search scenario
-- Scenarios directory exists at: `agents/gym/scenarios` (discovered via `find . -type d -name scenarios`).
-- `enoent-file-search` scenario exists and includes a `task.md` describing the problem and files (`src/grade-pipeline.js`, `test/test-grades.js`) and how to run (`node test/test-grades.js`).
-
-### Mandatory QA checks (environment)
-- `tsc --noEmit` at `/app`: FAIL — prints compiler help (no tsconfig in root), exit code 1.
-- `vitest --run` at `/app`: FAIL — `./node_modules/.bin/vitest` not found, exit code 127.
-- `tsc --noEmit` at `/app/agents`: PASS (no output, exit 0).
-- `vitest --run` at `/app/agents`: FAIL — `./node_modules/.bin/vitest` not found, exit code 127.
+## Context
+Heartbeat run with no explicit pending review tasks. I performed basic repo hygiene checks and attempted the mandatory QA compile/test commands.
 
 ## Findings
-- **IMPORTANT (environment/config):** vitest is not installed in either `/app` or `/app/agents`, so standard test verification cannot run.
-- **IMPORTANT (naming/traceability):** could not locate any directory/file containing `EXP-220` under `agents/gym/scenarios`; request says EXP-220 but scenario appears under `enoent-file-search`. This may be expected (internal ID vs folder name) but needs mapping documented.
+### 1) Repo root is not a git repository (IMPORTANT)
+- Evidence: running `git log --oneline -10` from `/app` fails with `fatal: not a git repository`.
+- I was able to access git history in `/app/agents`.
 
-## Suggested follow-ups
-1. If QA is expected to run vitest, add/install vitest in the relevant repo/package (or document correct test command).
-2. Document EXP-220 ↔ scenario folder mapping (e.g., in a scenario index) so future verifications are unambiguous.
+**Impact:** QA cannot reliably scan “recent commits” for the main project from root; only the `agents/` subrepo has git metadata.
+
+### 2) TypeScript project configuration missing at repo root (IMPORTANT)
+- Evidence: `./node_modules/.bin/tsc --noEmit` prints TypeScript help and exits code 1, consistent with no `tsconfig.json` present in `/app`.
+
+**Impact:** Mandatory `tsc --noEmit` check cannot be executed meaningfully without a tsconfig or explicit `-p`.
+
+### 3) Vitest binary missing (IMPORTANT)
+- Evidence: `./node_modules/.bin/vitest --run` fails: `No such file or directory`.
+
+**Impact:** Mandatory `vitest --run` cannot be executed. Likely vitest is not installed or dependencies are incomplete.
+
+## Next suggested actions
+- Confirm whether `/app` is expected to be a git repo; if yes, restore `.git` or adjust QA heartbeat instructions to use the correct repo path.
+- If TypeScript/Vitest checks should be run for a specific package/workspace, provide the correct working directory and config paths (e.g., `cd <pkg> && tsc -p tsconfig.json`).
+- If vitest is required, add it to dependencies and ensure it is installed in the correct workspace.
