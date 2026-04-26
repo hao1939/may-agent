@@ -6,7 +6,7 @@
 - Convention coaching alerts (C1.4/C8.2): noted; see Issues below.
 
 ## Recent changes scan (git log -10)
-Most recent commit: `4e9a72f` modifies only `.state/scout/heartbeat-2026-07-25.md` (non-code).
+Most recent commit: `caa1274` modifies only `.state/hypotheses/h-exp-033-lazy-skill-loading.md` (non-code/state).
 
 ## Verification runs
 - `./node_modules/.bin/tsc --noEmit` fails because repo has **no tsconfig / no configured TypeScript project**; command prints help and exits 1.
