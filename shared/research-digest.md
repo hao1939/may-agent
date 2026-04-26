@@ -7,7 +7,139 @@
 
 ---
 
-## Current Session (2026-04-30) — Claude Opus 4.7 + MCP/A2A生态演进
+## Current Session (2026-05-01) — XHS中文社区: 失败学习+AGENTS.md验证+Harness架构
+
+> XHS工具恢复，本轮通过**小红书中文社区深度扫描**，聚焦**Agent从失败中学习**、**AGENTS.md vs Skills效率对比**、**Harness控制逻辑架构**三大主题。
+
+### 核心发现速览
+
+| 主题 | 关键发现 | 对OpenClaw意义 |
+|------|----------|----------------|
+| **ReasoningBank** | Google ICLR 2026: 从成功/失败同时提炼高层推理策略 | Error Log设计验证，闭环工作流 |
+| **AGENTS.md效率** | Vercel: 8KB AGENTS.md达100%通过率，Skills仅53% | AGENTS.md优先策略被独立验证 |
+| **Harness架构** | 清华: Agent上限由harness(控制逻辑)决定 | L0-L2分层架构验证 |
+| **Multi-Agent** | Claude Subagent vs Agent Team两种范式 | fork模式验证，平级协作探索 |
+| **Memory设计** | OpenClaw被纳入4大Agent Memory对比 | 文件化记忆设计被认可 |
+
+---
+
+### Google ReasoningBank: 让AI Agent「从失败中学习」
+- **来源**: 小红书 @心知 | Google Research ICLR 2026 | 92赞/196收藏
+- **论文**: ReasoningBank — 解决"AI做错一件事，下次还会犯同样错"的问题
+- **核心洞察**: 不是死记硬背操作步骤，而是把**成功和失败的经验都蒸馏成高层推理策略**
+- **三种记忆范式对比**:
+  | 范式 | 特点 | 局限 |
+  |------|------|------|
+  | 轨迹记忆(Synapse) | 记录每一步操作 | 太细碎，换场景用不了 |
+  | 工作流记忆(AWM) | 只总结成功经验 | 忽略失败教训 |
+  | **推理记忆(ReasoningBank)** | 从成功/失败提炼 | 学到「为什么」而非「怎么做」 |
+- **闭环工作流**: 检索记忆→执行任务→自我评估→提炼新记忆→存入记忆库
+- **MaTTS (记忆感知推理时扩展)**: 记忆与推理计算形成正向飞轮
+- **实验结果**: WebArena +8.3%, SWE-Bench +4.6%, 平均少走3步
+- **策略成熟度涌现**: 从简单清单规则进化为带预防性逻辑的复合策略
+- **对OpenClaw**:
+  - ✅ **Error Log设计验证**: 从失败中学习的机制与论文理念一致
+  - ✅ **战略/战术分层**: SKILL.md(战略)+Error Log(战术)与高层推理策略对应
+  - 🔬 **策略蒸馏**: 如何从错误日志提炼可复用的预防性策略？
+  - ⚠️ **只记成功不够**: AGENTS.md更新是否只关注成功案例？
+- **相关**: [HB-260501-google-reasoningbank](library/posts/HB-260501-google-reasoningbank-learning-from-failure.md)
+
+---
+
+### Vercel研究: 8KB AGENTS.md打爆Skills
+- **来源**: 小红书 @智东西 | Vercel软件工程师Jude Gao | 970赞/1533收藏/119评论
+- **核心发现**: **8KB压缩文档索引嵌入AGENTS.md，Next.js 16 API评测100%通过率，Skills仅53%(最高79%)**
+- **问题背景**: AI编程代理受限于训练数据截止日期，Next.js 16新API不在训练数据中
+- **为什么"笨方法"更有效**:
+  1. **消除决策点**: AI不需决定"我是否需要查阅文档"
+  2. **持续可用性**: AGENTS.md每轮都在，Skills可能调用失败
+  3. **解决顺序冲突**: 被动上下文消除"先读文档还是先看结构"的纠结
+- **社区争议**: Skills vs MCP哪个是中间产物？@浅浅: "MCP才是中间产物，Skill是进阶形态"(134赞)
+- **关键评论**:
+  - @One-M: "他把所有node.js文档做了无格式索引塞在agents.md里，管这个叫compressed"
+  - @HU: "agents.md里可以只写description然后外链到skill.md，实现上比skill还省个tool"
+  - @散修架构师: "skill解决能力问题，最新api是memory问题，两个不同维度"
+- **对OpenClaw**:
+  - ✅ **AGENTS.md优先策略被独立验证**: Vercel工程师得出相同结论
+  - ✅ **大道至简**: 简单原始比复杂工具链更有效
+  - 🔬 **压缩索引**: 如何优化AGENTS.md信息密度？
+  - 🔬 **渐进式披露**: 基础上下文inline+详细skill外链的混合策略
+- **相关**: [HB-260501-vercel-agentsmd](library/posts/HB-260501-vercel-agentsmd-vs-skills.md)
+
+---
+
+### 清华NLAH: Agent上限由Harness决定
+- **来源**: 小红书 @木字旁南方的南 | 清华大学arXiv论文 | 547赞/720收藏
+- **论文**: Natural-Language Agent Harnesses
+- **核心发现**: **Agent上限不是模型本身，而是harness(高层控制逻辑)**
+- **传统harness痛点**: 全埋在代码、框架私有逻辑里 → 难迁移、难复现、难优化
+- **两大核心创新**:
+  1. **NLAHs (自然语言Agent Harness)**: 把工具调用、失败恢复、状态持久化等控制逻辑，外部化成可编辑的自然语言规范
+  2. **IHR (智能Harness运行时)**: 统一runtime解析执行NLAHs，彻底分离共享运行时策略与任务专属逻辑
+- **实验验证**: SWE-bench + OSWorld两大基准，可组合、可消融、可迁移
+- **社区讨论**:
+  - @Shush: "Agent上限由Harness决定不太对吧，可以看看TerminalBench"
+  - @后院老王: "我觉得是下限由Harness某种程度上决定..."(5赞)
+  - @Nova: "NLAHs本质上是做Agent领域的'配置即代码'，跟Claude Code的CLAUDE.md、**OpenClaw的system prompt分层设计是同一个方向**"
+- **对OpenClaw**:
+  - ✅ **L0-L2分层架构验证**: L0意图理解/L1规划/L2执行与NLAHs理念一致
+  - ✅ **AGENTS.md作为自然语言harness**: 独立验证外部化控制逻辑方向正确
+  - 🔬 **Harness粒度控制**: Nova指出的挑战 — "太粗则失去约束力，太细则退化成伪代码"
+- **相关**: [HB-260501-tsinghua-nlah](library/posts/HB-260501-tsinghua-nlah-harness.md)
+
+---
+
+### Claude两种Multi-Agent架构深度解析
+- **来源**: 小红书 @万有引力AI | 1882赞/2953收藏/52评论
+- **核心发现**: Claude有**两种截然不同的Multi-Agent范式**:
+  | 维度 | Subagent | Agent Team |
+  |------|----------|------------|
+  | 类比 | 单进程内多线程 | 多进程/微服务 |
+  | 上下文 | 独立窗口，接收父Agent指令 | 对等协作，平级协商 |
+  | 调度 | 轻量级，父Agent调度 | 资源隔离，协议通信 |
+  | 关系 | 父子层级 | 平级伙伴关系 |
+- **5种Multi-Agent编排模式**: 分层委托/对等协作/流水线/辩论模式/专家委员会
+- **何时使用**:
+  - **Subagent**: 任务可明确分解、需要并行加速、子任务有明确交付物
+  - **Agent Team**: 需要多视角讨论、任务需要协商决策、各Agent专业权重平等
+- **社区讨论**:
+  - @(x)f: "Sub-Agent类似单进程多线程异步并发，Agent Teams类似多进程/微服务并行"
+  - @会敲代码的泡: "肝完Claude code核心代码，学到agenttree、toolserver、skillsystem、asynctool、sequentialtool、harness"
+- **对OpenClaw**:
+  - ✅ **fork模式验证**: OpenClaw的fork模式与Claude Subagent一致
+  - 🔬 **Agent Team实验**: 何时需要平级协作而非层级委托？
+  - ⚠️ **复杂度陷阱**: @小白: "用来写代码大幅增加任务复杂度"
+- **相关**: [HB-260501-claude-multiagent](library/posts/HB-260501-claude-multiagent-architecture.md)
+
+---
+
+### 主流4个Agent产品Memory设计对比
+- **来源**: 小红书 @万有引力AI (视频笔记) | 204赞/349收藏/10评论 | **OpenClaw被纳入主流对比**
+- **四种Memory设计路线**:
+  | 产品 | 模式 | 机制 | 特点 |
+  |------|------|------|------|
+  | ChatGPT | 注入式 | 长期事实库直接拼接到prompt | 简单直接 |
+  | Claude | 按需检索 | 需要时调用工具拉取历史 | 延迟加载 |
+  | **OpenClaw** | **Markdown文件** | 磁盘.md文件，语义+关键词检索 | 文件驱动 |
+  | Hermes | 冷热分层 | 热数据+冷存储+技能索引 | 渐进披露 |
+- **核心观点**: 
+  - "显式记忆优于隐式记忆，因为其更克制、有边界"
+  - "更好的产品设计比堆砌复杂的Memory系统更重要"
+- **社区讨论**:
+  - @Kerwin: "Hermes做法不错，稳定静态记忆放最前面以便缓存，动态部分用function call判断，即skill的渐进式披露"
+- **Memory利弊**:
+  - ✅ 降低使用门槛、提供连续性、提升留存
+  - ⚠️ 上下文干扰(Context rot)、隐私泄露、AI人格漂移(Personality drift)、记忆投毒攻击
+- **对OpenClaw**:
+  - ✅ **OpenClaw被纳入主流Agent Memory对比**: 文件化记忆设计被社区认可
+  - ✅ **可审计性**: Markdown文件的可版本控制、人类可读特性
+  - 🔬 **冷热分层**: 借鉴Hermes的prompt memory + 按需加载
+  - 🔬 **缓存优化**: 静态记忆前置以利用prompt caching
+- **相关**: [HB-260501-4agent-memory](library/posts/HB-260501-4agent-memory-design-comparison.md)
+
+---
+
+## Previous Session (2026-04-30) — Claude Opus 4.7 + MCP/A2A生态演进
 
 > XHS工具暂不可用，本轮通过**外部资源深度扫描**，聚焦**Claude Opus 4.7 Agent能力提升**与**MCP/A2A协议生态最新进展**。
 
