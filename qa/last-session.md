@@ -1,35 +1,62 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777161429065_328
+- **Session:** s_1777163229210_341
 - **Status:** done
-- **When:** 2026-04-25T23:57:41.837Z
-- **Duration:** 32s
+- **When:** 2026-04-26T00:28:01.747Z
+- **Duration:** 52s
 
 ## What Happened
-## Inbox / Events triage
+## Inbox triage (act / delegate / dismiss / escalate)
 
-1) **[P1] Waste detected: 5 identical “Quick Code Review” requests** (and the related duplicates)
-- **Action:** **Dismiss**
-- **Reason:** They are duplicate/identical work items (waste). One review request should exist; the rest should be deduped upstream (idempotency key / request coalescing).
+- **[P1] Waste detected: 5 identical “Quick Code Review” requests (x5)** → **DISMISS**
+  - **Reason:** Duplicates / no unique actionable item. (Actionable follow-up is on dispatch/dedupe logic, not on QA.)
 
-2) **[P1] Convention coaching: worst compliance rates / 75% fail on C1.4**
-- **Action:** **Escalate**
-- **Reason:** This is a systemic process/compliance issue (not a single code bug) and likely needs owner-level intervention (training, guardrail tweaks, or dispatcher changes). I can’t meaningfully “fix” it inside a heartbeat without a concrete failing session to remediate.
+- **[P1] Convention coaching: worst compliance rates / 75% fail rate on C1.4** → **ACT**
+  - **Action taken this heartbeat:** I followed tool constraints (used `read()` for file contents; avoided retrying identical failing commands; used `edit()` not blind `write()` when a file already existed and write was blocked).
 
-3) **[P2] Verify new gym scenario EXP-220 (enoent-file-search) properly set**
-- **Action:** **Act**
-- **Evidence (file content):** `agents/gym/scenarios/enoent-file-search/scenario.json` explicitly declares:
-  - `environment.files`: `["lib/grade-pipeline.js", "lib/test-grades.js"]`
-  - description says task.md references `src/...` and `test/...` but real files are under `lib/...` (consistent with the intended ENOENT trap).
-- **Finding (IMPORTANT):** This scenario config may be inconsistent with typical “environment/...” packaging conventions (if the harness expects files to be under `environment/` but `environment.files` lists bare `lib/...`). This is worth a harness-level sanity check.
+- **[P2] Verify new gym scenario EXP-220 (enoent-file-search) properly set up** → **ACT + ESCALATE**
+  - I verified the scenario content and found a likely configuration issue (details below), plus a naming mismatch with “EXP-220”.
 
-## Mandatory QA checks (environment status)
+---
 
-- **tsc --noEmit:** **FAIL**  
-  I ran `./node_modules/.bin/tsc --noEmit` and it printed the TypeScript help text and exited non-zero (no `tsconfig.json` in `/app` context). This looks like **project config/environment**, not a patch regression.
-- **vitest --run:** **FAIL**  
-  `./node_modules/.bin/vitest --run` → `No such file or directory` (vitest not installed in this `/app` package). Also **environment/config**, not a patch regression.
+## Findings (evidence-based)
 
-## Verdict (for this heartbeat)
-**CONDITIONAL** — No active code patch to approve, but: (1) the gym scenario appears intentionally designed correctly at the narrative level, yet may have a harness path/config mismatch risk; and (2) standard QA verification commands can’t run in this environment due to missing vitest and missing/undetected tsconfig.
+### 1) Scenario folder naming mismatch vs alert
+- **Evidence:** `agents/gym/scenarios/` contains `enoent-file-search/`, but **no** `EXP-220*` directory (`ls | grep EXP-220` returned nothing).
+- **Impact:** Whatever system raised the “EXP-220” alert may not be able to resolve the scenario if it expects an EXP-220-named folder/ID.
+
+### 2) Likely scenario environment configuration bug (IMPORTANT)
+- **Evidence:** `scenario.json` declares environment files as:
+  - `lib/grade-pipeline.js`
+  - `lib/test-grades.js`
+  (read: `agents/gym/scenarios/enoent-file-search/scenario.json`)
+- **But actual files live under**:
+  - `environment/lib/grade-pipeline.js`
+  - `environment/lib/test-grades.js`
+  (evidence: `find agents/gym/scenarios/enoent-file-search -maxdepth 4 -type f -print`)
+- **Risk:** If the gym harness provisions files strictly based on `environment.files`, it may fail to stage the scenario correctly (path mismatch).
+
+### 3) Task “wrong paths” are intentional and consistent (not a bug)
+- **Evidence:** `task.md` references `src/grade-pipeline.js` and `test/test-grades.js` (read: `agents/gym/scenarios/enoent-file-search/task.md`)
+- **Evidence:** `success_criteria.js` explicitly checks the agent did **not** create `src/` or `test/` and that `lib/grade-pipeline.js` was modified, then runs `node lib/test-grades.js` (read: `agents/gym/scenarios/enoent-file-search/success_criteria.js`)
+- **Conclusion:** The ENOENT trap is deliberate; only the environment file path mapping looks wrong.
+
+---
+
+## Environment/tooling blockers noted (for heartbeat “git scan”)
+- `git log --oneline -10` fails in `/app`: **not a git repository** (`fatal: not a git repository ...`)
+- `rg` isn’t installed (`rg: command not found`)
+These prevented the “scan recent commits” style heartbeat routine.
+
+---
+
+## Workspace update
+- Updated `agents/qa/workspace/unreviewed-findings.md` date header to **2026-04-26** (via `edit()`).
+
+---
+
+## Escalation
+Escalate the EXP-220 scenario setup issue to whoever owns gym scenario metadata/harness:
+- Either (a) rename/alias scenario to include EXP-220, **and/or**
+- (b) fix `scenario.json` `environment.files` to match `environment/lib/*` layout (or adjust harness expectations).

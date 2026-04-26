@@ -1,4 +1,4 @@
-# QA Heartbeat — Unreviewed Findings (2026-04-25)
+# QA Heartbeat — Unreviewed Findings (2026-04-26)
 
 ## Inbox / Events triage
 
