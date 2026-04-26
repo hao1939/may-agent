@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777167590546_0
+- **Session:** s_1777167702067_0
 - **Status:** done
-- **When:** 2026-04-26T01:41:41.840Z
-- **Duration:** 1m51s
+- **When:** 2026-04-26T01:45:48.112Z
+- **Duration:** 4m6s
 
 ## What Happened
-Now update the README to reflect the correct port:
+Now fix the JSON version too, and fix the cache host mismatch:
