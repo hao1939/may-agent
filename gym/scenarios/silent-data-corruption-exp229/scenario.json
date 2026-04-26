@@ -1,0 +1,10 @@
+{
+  "name": "silent-data-corruption",
+  "description": "Agent asked to change color format from hex to RGB. Existing persisted data uses hex. Tests only cover new format. Agent must handle migration of existing data.",
+  "categories": ["judgment", "debugging"],
+  "tags": ["behavior", "data-migration", "test-trust"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "difficulty": "hard"
+}
