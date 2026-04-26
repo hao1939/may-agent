@@ -121,3 +121,17 @@ Ran EXP-224 experiment: 3 control + 3 treatment runs per scenario.
 1. Forced directory enumeration in gym adapter (structural)
 2. Scenario-specific behavioral hints (targeted)
 3. Tool-level auto-exploration (systemic)
+
+## 2026-09-28: Cycle 5 — EXP-225 Designed (Workspace File Enumeration)
+
+Chose option #1 from Cycle 4 next steps: structural intervention via workspace file enumeration.
+
+**Design**: Modify gym runner's `runAgent()` to prepend recursive file listing to task content. This gives the agent *information* (what files exist) rather than *instructions* (be thorough). Key insight from EXP-224: telling agents to explore doesn't work (0%), but making files visible in the task should trigger natural reading behavior.
+
+**Targets**: Same 2 scenarios as Cycle 4:
+- approach-validation-trap (fails read-session-logs)
+- knowledge-entry-creation (fails template-unchanged)
+
+**Success criteria**: ≥33pp improvement on ≥1 scenario (0/3 → 1/3+)
+
+**Status**: Designed, awaiting implementation and execution. See `.state/experiments/EXP-225-workspace-enumeration.md`.
