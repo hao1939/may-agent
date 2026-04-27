@@ -56,12 +56,7 @@ export type { GrowthConfig } from "./lib/growth.js";
 
 // ── Convention Guards (violation prevention) ──────────────────────────
 // EditGuard removed — module no longer exists in compiled runtime (2026-04-28)
-
-export {
-  validateBashCommand,
-  enforceNoHallucinatedPaths,
-} from "../src/lib/path-guard.js";
-export type { PathValidationResult } from "../src/lib/path-guard.js";
+// path-guard removed — module no longer exists in compiled runtime (2026-04-28)
 
 export {
   validateFinishDeliverables,
