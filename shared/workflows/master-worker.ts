@@ -19,7 +19,7 @@ import { resolve, join, dirname } from "node:path";
 import {
   extractField, extractSection, extractMilestones, checkOffMilestones,
   extractComments, clearComments, updateProjectStatus,
-} from "./project-helpers.js";
+} from "./project-helpers.ts";
 
 export const name: string = "master-worker";
 
