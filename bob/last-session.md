@@ -1,26 +1,23 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777289982960_85
+- **Session:** s_1777290697287_0
 - **Status:** done
-- **When:** 2026-04-27T11:40:17.421Z
-- **Duration:** 34s
+- **When:** 2026-04-27T11:51:54.874Z
+- **Duration:** 17s
 
 ## What Happened
 CONTINUE
 
-Milestone completed: "If metrics improved, document what worked. If not, investigate why."
+**(a)** Final milestone: "Set up regression detection: metric breach → project reactivates". The worker should create a lightweight regression guard.
 
-7/8 milestones done. One remains.
+**(b)** This is the last milestone. Once verified, the project closes.
 
-**(a)** Write `outputs/regression-guard.md` documenting a regression detection mechanism, then create the actual guard. The simplest approach: a metric threshold check that, when skill-read-rate drops below baseline (currently 0%, so any future improvement), flags this project for reactivation.
+**(c)** First step: Create `/app/agents/shared/projects/agent-system-literacy/outputs/regression-guard.md` that documents:
+1. Which metrics to watch: `system.project-creation-rate`, `system.escalation-quality`, `gym.literacy-pass-rate`
+2. Breach thresholds (e.g., escalation-quality < 0.5, skill-read-rate = 0%)
+3. Reactivation trigger: bob's heartbeat should check these metrics periodically; if breached, reopen this project
 
-**(b)** This is the final milestone — after this we're done.
+Then create a simple metric check script or config at `/app/agents/shared/projects/agent-system-literacy/.state/metrics/regression-check.md` that bob's heartbeat can reference.
 
-**(c)** First step: Write `outputs/regression-guard.md` with:
-- What metric to watch: `system.skill-read-rate` (or equivalent — count of `skills/` file reads in session checkpoints)
-- Threshold: if skill-read-rate drops below 10% after any future improvement campaign
-- Action: reactivate this project
-- Also consider: add a simple metric emission (e.g., write a row to the metrics DB tracking current skill-read-rate) so future heartbeats can query it
-
-Keep it pragmatic — a documented plan counts. If you can also wire up an actual metric entry or heartbeat check, even better.
+This doesn't need to be automated code — a documented guard that a heartbeat agent can follow is sufficient given the known limitation that agents need explicit triggers.
