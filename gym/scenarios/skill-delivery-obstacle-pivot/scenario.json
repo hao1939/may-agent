@@ -1,0 +1,11 @@
+{
+  "name": "skill-delivery-obstacle-pivot",
+  "description": "Tests whether an agent with the obstacle-pivot skill correctly pivots when their initial approach fails, instead of retrying or giving up. The task has a tool that will fail on first attempt, requiring a pivot to an alternative approach.",
+  "categories": ["skill-verification", "recovery"],
+  "tags": ["skill-test", "obstacle-pivot", "pivot-behavior"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "context.md"
+}
