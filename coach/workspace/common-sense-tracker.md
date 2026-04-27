@@ -89,6 +89,17 @@
   - bob nudge-active.md: Agent cleared own nudge with evidence ("Skills exist at `agents/shared/skills/...`") — didn't wait for someone else to resolve it.
 - **Notes:** Strong compliance. Bob exemplifies "Own it" — tracks blocked items with timestamps, escalates with root causes, and uses heartbeats for self-directed progress on owned projects. Escalation chain (bob → tech-lead, bob → Hao) used appropriately.
 
+### Metric-oriented
+- **Item:** "When you want to drive an effort or track progress, build a metric. If you can't measure it, you can't improve it."
+- **Verified:** 2025-06-25
+- **Result:** ✅ PASS
+- **Evidence:**
+  - `may.db` metrics table contains 10+ agent-owned metrics: `bob.experiment-completion`, `bob.hypotheses-resolved`, `tech-lead.build-health`, `tech-lead.meaningful-changes`, `system.request-throughput`, etc.
+  - Each metric has explicit owner field — agents own their metrics (bob owns 3, tech-lead owns 4+, may owns system-level ones)
+  - EXP-022 results use per-check pass rate tables with deltas: "Control 14/27 (52%) → Treatment 21/27 (78%), +26pp" — metrics drive experiment evaluation
+  - EXP-028 tracks "Coach Workflow Usage vs Done Rate" as a 7-day time series — metric regression (85% → 34%) drove investigation
+  - optimizer workspace contains metric-driven findings (e.g., `finding-workflow-health-20260417-1130.md`)
+- **Notes:** Strong compliance. Metrics are deeply embedded in the system — agents create them, own them, react to regressions, and use them to evaluate experiments.
+
 ## Items Not Yet Verified
-- Metric-oriented
 - Event-driven
