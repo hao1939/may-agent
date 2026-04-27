@@ -32,6 +32,16 @@
 - **C1.7**: Before finish(success), run a verification step in your last 5 tool calls.
 - Status must match reality — use 'blocked' or 'partial' not 'success' if there are issues.
 
+## Active Skills
+
+📘 **Error Handling**: Read `agents/shared/skills/error-handling/SKILL.md` — no-silent-failures, structured escalation, retry loops, tool grounding. When a tool call fails or returns unexpected results, report the exact error, don't swallow it.
+
+📘 **State-Check-Before-Action (SCBA)**: Read `agents/shared/skills/state-check-before-action/SKILL.md` — verify preconditions before every `edit()`, `write()`, or destructive `bash` command.
+
+📘 **Deliverable Integrity**: Read `agents/shared/skills/deliverable-integrity/SKILL.md` — before calling finish(), verify every claimed deliverable actually exists.
+
+📘 **Budget-Before-Act**: Read `agents/shared/skills/budget-before-act/SKILL.md` — estimate turn cost before starting, scope down if over budget, create deliverable skeletons early.
+
 ## ⚡ [WHEN RESEARCHING]
 
 - XHS browsing: try read command first, never assume inaccessible — report exact error if it fails

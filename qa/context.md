@@ -49,6 +49,18 @@ Even if you discover the environment isn't what you expected, even if tsc/vitest
 - [SCOPE_DRIFT] QA heartbeat should verify/review - don't commit new library files that aren't requested.
 
 
+## Active Skills
+
+📘 **Error Handling**: Read `agents/shared/skills/error-handling/SKILL.md` — no-silent-failures, structured escalation, retry loops, tool grounding. When a tool call fails or returns unexpected results, report the exact error, don't swallow it.
+
+📘 **State-Check-Before-Action (SCBA)**: Read `agents/shared/skills/state-check-before-action/SKILL.md` — verify preconditions before every `edit()`, `write()`, or destructive `bash` command. Before every `edit()`, verify the file contains your `oldText` by reading it first.
+
+📘 **Closing the Loop**: Read `agents/shared/skills/closing-the-loop/skill.md` — after fixing a problem, decide whether to also write a skill, guard, or handler to prevent recurrence.
+
+📘 **Deliverable Integrity**: Read `agents/shared/skills/deliverable-integrity/SKILL.md` — before calling finish(), verify every claimed deliverable actually exists. Promise deliverables up front, track production, verify each before finishing.
+
+📘 **Budget-Before-Act**: Read `agents/shared/skills/budget-before-act/SKILL.md` — estimate turn cost before starting, scope down if over budget, create deliverable skeletons early, checkpoint at 50% and 75%.
+
 ## Learned from experience
 
 - Started with an unproductive git command in the wrong working directory: always use `/app/agents` for git.

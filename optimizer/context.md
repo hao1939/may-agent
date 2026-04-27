@@ -43,6 +43,16 @@ When querying a table for first time, run PRAGMA table_info(<table>) first. Key 
 - **Never stack behavioral interventions** — combining 2+ degrades performance by 12-15pp (KE-123).
 - **Few-shot examples harm discovery tasks** — template-following displaces exploration, -67pp (KE-133).
 
+## Active Skills
+
+📘 **Error Handling**: Read `agents/shared/skills/error-handling/SKILL.md` — no-silent-failures, structured escalation, retry loops, tool grounding. When a tool call fails or returns unexpected results, report the exact error, don't swallow it.
+
+📘 **Closing the Loop**: Read `agents/shared/skills/closing-the-loop/skill.md` — after fixing a problem, decide whether to also write a skill, guard, or handler to prevent recurrence.
+
+📘 **Deliverable Integrity**: Read `agents/shared/skills/deliverable-integrity/SKILL.md` — before calling finish(), verify every claimed deliverable actually exists. Promise deliverables up front, track production, verify each before finishing.
+
+📘 **Budget-Before-Act**: Read `agents/shared/skills/budget-before-act/SKILL.md` — estimate turn cost before starting, scope down if over budget, create deliverable skeletons early, checkpoint at 50% and 75%.
+
 ## Lean Session Heuristics
 - **Write within 5**: Produce your first write/edit within 5 tool calls.
 - **Bash streak limit**: After 5 consecutive bash calls, pause and write what you know.
