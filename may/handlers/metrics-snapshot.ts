@@ -13,6 +13,7 @@ import type { CronEntry } from "../../shared/agent-sdk.ts";
 
 const METRICS = [
   { id: "handler.success-rate", name: "Handler success rate", owner: "optimizer", target: 0.95, threshold: 0.80, unit: "ratio" },
+  { id: "handler.failure-count", name: "Handler failures (6h)", owner: "may", target: 0, threshold: 3, unit: "count" },
   { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents)", owner: "may", target: 8, threshold: 6, unit: "count" },
   { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", target: 120000, threshold: 240000, unit: "ms" },
   { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", target: 30, threshold: 15, unit: "count" },
@@ -30,9 +31,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     for (const m of METRICS) {
       try {
         db.run(
-          `INSERT OR IGNORE INTO metrics (id, name, owner, current, target, threshold, unit, type, status, speed, created_at)
-           VALUES (?, ?, ?, NULL, ?, ?, ?, 'health', 'active', 'fast', ?)`,
-          [m.id, m.name, m.owner, m.target, m.threshold, m.unit, now]
+          `INSERT OR IGNORE INTO metrics (id, name, owner, current, target, threshold, unit, type, status, speed, created_at, updated_at)
+           VALUES (?, ?, ?, NULL, ?, ?, ?, 'health', 'active', 'fast', ?, ?)`,
+          [m.id, m.name, m.owner, m.target, m.threshold, m.unit, now, now]
         );
       } catch { /* already exists */ }
     }
@@ -104,9 +105,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     for (const m of PROJECT_METRICS) {
       try {
         db.run(
-          `INSERT OR IGNORE INTO metrics (id, name, owner, current, target, threshold, unit, type, status, speed, created_at)
-           VALUES (?, ?, ?, NULL, ?, ?, ?, 'health', 'active', 'fast', ?)`,
-          [m.id, m.name, m.owner, m.target, m.threshold, m.unit, now]
+          `INSERT OR IGNORE INTO metrics (id, name, owner, current, target, threshold, unit, type, status, speed, created_at, updated_at)
+           VALUES (?, ?, ?, NULL, ?, ?, ?, 'health', 'active', 'fast', ?, ?)`,
+          [m.id, m.name, m.owner, m.target, m.threshold, m.unit, now, now]
         );
       } catch {}
     }
