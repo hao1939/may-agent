@@ -1,13 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777257624969_0
+- **Session:** s_1777257371907_1071
 - **Status:** done
-- **When:** 2026-04-27T02:40:42.099Z
-- **Duration:** 17s
+- **When:** 2026-04-27T02:40:50.645Z
+- **Duration:** 4m38s
 
 ## What Happened
-All three bugs fixed:
-1. **validator.js:8** — `=` → `===`
-2. **formatter.js:14** — `'0'` → `' '`
-3. **parser.js:15** — `/\d+/` → `/\d+/g`
+Good. Both changes are in place. Let me also check EXP-239 (the only DESIGNED experiment) to see if I should advance it:
+
+EXP-239 is about read-before-edit structural enforcement for gym, which needs GYM_AGENT_BIN. That's blocked. Let me wrap up.
