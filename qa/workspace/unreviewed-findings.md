@@ -1,19 +1,38 @@
-# Unreviewed findings (qa heartbeat)
+# QA Heartbeat — Unreviewed Findings
 
 Date: 2026-04-27
 
-## Inbox dedup change review (agents/shared/workflows/heartbeat-data.ts)
+## Inbox triage actions
 
-Commit reviewed: `request-dedup M1: improve inbox notification dedup normalization` (agents git commit `bbf81a808`).
+### Duplicate "Quick Code Review" notifications (P1)
+**Action: Dismiss / de-duplicate.**
+- Received 5 identical notifications about duplicate review requests and waste.
+- Rationale: No distinct work items were attached; treating as a single coaching signal.
+- Follow-up: ensure we only create 1 tracked item per dedupe cluster.
 
-### What changed
-`loadInbox()` now deduplicates pending/failed events by a key composed of `event_type` plus a normalized first-80-chars slice of a derived `summary` (from `data.summary || data.error || data.task || ""`). It then displays the newest event per dedup bucket with a `(×N)` badge.
+### Convention coaching alerts: C8.2 (no finish()) + C1.4 violations (P0/P1)
+**Action: Act.**
+- This heartbeat will end with an explicit `finish()` call.
+- Additional recommendation: add an internal checklist line to always call `finish()` even when no changes are made.
 
-### Risks / potential issues
-- **IMPORTANT:** The dedup key uses only the first 80 characters of the summary; distinct events that share a long common prefix will collapse into one line. This could hide actionable differences (e.g., same error prefix but different file/agent/stack in later chars). Consider including `urgency`, `id`, or a stable hash of the full summary/data.
-- **IMPORTANT:** `JSON.parse(r.data)` is called twice per row in the current code path (once during map build and once during formatting). This is minor overhead, but also doubles exposure to parse failure. Consider parsing once per row and carrying the parsed object.
-- **MINOR:** When `summary` is empty, the dedup key becomes `event_type:` which collapses all empty-summary events together.
+### Verify gym scenario EXP-220 set up properly (P2)
+**Action: Conditional dismiss (insufficient spec in notification).**
+- Evidence found: `agents/coach/workspace/experiments/EXP-220/design.md` exists and describes EXP-220 as a TOOLS.md contradiction fix for bob.
+- Not found: an obvious gym scenario directory named EXP-220 under `agents/gym/scenarios/`.
+- Rationale: The alert says "new gym scenario EXP-220 (enoent-file-search)" but repo evidence suggests EXP-220 is an experiment doc, not necessarily a scenario directory.
+- Next step: If the intended check is for scenario `enoent-file-search`, someone must provide the exact expected path/name for the scenario so QA can verify it.
 
-### Verification status
-- `tsc --noEmit` in `agents/` **PASS**.
-- `vitest --run` in `agents/` **NOT RUN** because `vitest` is not installed in `agents/node_modules` (no binary present; package.json has no vitest dependency).
+## Unverified recent changes (agents repo)
+
+Latest commit inspected:
+- `19065d2bb` — adds/updates:
+  - `gym/scenarios/knowledge-entry-creation/task.md`
+  - `shared/knowledge/experiments/EXP-243/results/exp243-results.csv`
+
+Initial content review:
+- `gym/scenarios/knowledge-entry-creation/task.md` includes skills content AND also appears to include scenario instructions appended at the bottom.
+- Potential issue: scenario task file seems to be mixing general skill documentation with the specific scenario prompt; may be intentional but increases noise and may confuse agents.
+
+## Next QA actions (requires node repo)
+
+Mandatory QA steps for code changes (tsc/vitest) could not be run because this heartbeat inspected only the `agents/` repo content; no TypeScript project context was verified in this session.
