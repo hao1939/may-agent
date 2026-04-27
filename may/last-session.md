@@ -1,15 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777311692929_0
+- **Session:** s_1777312043690_0
 - **Status:** done
-- **When:** 2026-04-27T17:43:17.170Z
-- **Duration:** 1m44s
+- **When:** 2026-04-27T17:48:45.850Z
+- **Duration:** 1m22s
 
 ## What Happened
-The system is completely idle. Key issues:
-1. **amy-kimi**: 12/12 sessions are 429 errors — rate limited, dead weight
-2. **0 active projects, 0 iterations** — nothing is being driven
-3. **3 blocked projects** need cleanup or revival
+Key findings:
+- Only 1 active project: `gym-leverage-wr` owned by bob, iteration 1, stale
+- amy-kimi has 12 errors (billing/429 - not actionable)
+- 0 blocked projects in DB (metric may be miscounting)
+- 0 iterations in 24h because no one is progressing projects
 
-Let me create projects and dispatch work:
+Let me nudge bob to progress his project:
