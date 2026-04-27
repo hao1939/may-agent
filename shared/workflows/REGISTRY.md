@@ -9,7 +9,6 @@
 |------|------|-------|---------|
 | `project` | `shared/workflows/project.ts` | 929 | Persistent iterative task loop: owner reviews → worker iterates → milestones tracked. Supports directory format (project.md + journal.md) and legacy single-file. Core project execution engine. |
 | `master-worker` | `shared/workflows/master-worker.ts` | 404 | Two persistent sessions (orchestrator + worker) in a review-first → work → review loop. Alternative project pattern. |
-| `worker-reviewer` | `shared/workflows/worker-reviewer.ts` | 296 | Worker drives with full tools, reviewer provides read-only strategic guidance. Pattern B project loop. |
 | `implement-and-verify` | `shared/workflows/implement-and-verify.ts` | 203 | Lightweight code workflow (H-070 P3): coder Plan → Write → Verify. No QA agent. **Workhorse — 85% of all workflow usage.** |
 | `verify-wrap` | `shared/workflows/verify-wrap.ts` | 233 | Minimal 2-phase verification wrapper (EXP-138). Phase 1: execute task. Phase 2: separate session reads back all written files. |
 | `freestyle-wrap` | `shared/workflows/freestyle-wrap.ts` | 66 | Ultra-thin workflow wrapper for ad-hoc sessions. Adds workflow tracking with zero overhead. |
@@ -76,7 +75,7 @@ Every agent has a heartbeat workflow (uses shared `heartbeat-data.ts` loaders):
 
 ## Consolidation Status (completed 2026-04-04, all promoted files since archived)
 
-Historical: Three duplicate sets were consolidated. All promoted shared copies have since been archived/deleted as the system evolved to use `project.ts`, `master-worker.ts`, and `worker-reviewer.ts` as the primary workflow patterns.
+Historical: Three duplicate sets were consolidated. All promoted shared copies have since been archived/deleted as the system evolved to use `project.ts` and `master-worker.ts` as the primary workflow patterns. (`worker-reviewer.ts` was later removed as dead code.)
 
 ## Effectiveness Tracking
 
