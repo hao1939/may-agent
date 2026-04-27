@@ -17,8 +17,8 @@
 **Intervention**: 1/3 pass (33%)
 **Delta**: 0pp — no improvement
 
-## Notes
+## Setup Notes
 
-- Setup details for each run (how the intervention was deployed, what files were modified, agent configuration) are recorded in `session-logs/`. Review these before drawing conclusions about why the intervention failed.
-- The B2 criterion (re-read file after edit) was the only differentiator — both arms failed in 2/3 runs.
-- Raw quantitative results above are verified. Root cause analysis requires examining session logs.
+Setup details for each run (how the intervention was deployed, which files were patched, deployment verification) are recorded in the session logs under `session-logs/`. Review the setup phase of runs 4-6 (intervention arm) before drawing conclusions about why the intervention had no effect.
+
+The raw scores above confirm the intervention didn't work, but understanding *why* requires examining *how* it was deployed.
