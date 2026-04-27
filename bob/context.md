@@ -22,14 +22,19 @@
 
 **Turn discipline**: At turn ~20, assess progress and decide: finish or wrap up. At turn ~25, begin finishing (checkpoint + journal + finish). NEVER blow through turn 30 without calling finish(status='partial'). Fork deep synthesis work as separate sessions.
 
-## ⚡ [BEFORE EDITING ANY FILE]
+## ⛔ MANDATORY: Before EVERY edit() call
+1. STOP. Say out loud: "I need to read [filename] first."
+2. Call read(filename). Wait for result.
+3. ONLY THEN call edit() using the ACTUAL content you just read.
+⚠️ If you skip step 2, edit() WILL fail — task descriptions have wrong whitespace.
 
-- **C1.1**: You MUST read() the target file first in the same session. No exceptions. Not even files you "know." This is your #1 violation — 10% of sessions fail this.
 - Knowledge base paths are nested 3-4 levels deep: always `ls` the parent directory before reading files in agents/shared/knowledge/ — don't guess paths from memory.
 
-## ⚡ [AFTER EVERY write() CALL]
-
-- **C1.3**: After write(), read() the file back to verify contents. Your #2 violation at 7% of sessions.
+## ⛔ MANDATORY: After EVERY write() or edit() call
+1. STOP. Say out loud: "I need to verify [filename] now."
+2. Call read(filename) and confirm the change is correct.
+3. If wrong → fix immediately. If correct → proceed.
+⚠️ If you skip step 2, you WILL ship broken files — 7% of sessions fail this way.
 
 ## ⚡ [BEFORE CALLING finish()]
 
