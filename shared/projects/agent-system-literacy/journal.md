@@ -83,3 +83,6 @@ No `investigation.md` or regression guard written yet. 2 milestones remain.
 
 **(a)** Write both deliverables this iteration:
 1. `outputs/investigation.md` — document that metrics did NOT improve, why (agents lack triggers to read skills/), and recommended fix (add skill refs to agent syste
+
+### Iteration 1 — 2026-04-27T11:41:07.220Z
+**Worker**: Now create the metrics directory and seed the first metric entry:
