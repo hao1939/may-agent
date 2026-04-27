@@ -175,8 +175,9 @@ Not started.
 `;
   writeFileSync(config.projectPath, projectContent, "utf-8");
   writeFileSync(config.journalPath, `# Journal\n\n`, "utf-8");
+  writeFileSync(join(config.projectDir, "discussion.md"), `# Discussion\n\n`, "utf-8");
   // Initialize meta.json
-  const meta = { created: now, lastActivity: now, sessions: [] as string[], comments: [] as any[], relatedExperiments: [] as string[], relatedKnowledge: [] as string[], relatedProjects: [] as string[], metricsHistory: [] as any[] };
+  const meta = { created: now, lastActivity: now, sessions: [] as string[], relatedExperiments: [] as string[], relatedKnowledge: [] as string[], relatedProjects: [] as string[], metricsHistory: [] as any[] };
   writeFileSync(join(config.projectDir, "meta.json"), JSON.stringify(meta, null, 2), "utf-8");
 }
 
@@ -233,23 +234,38 @@ function extractComments(content: string): string {
   return extractSection(content, "Comments");
 }
 
-/** Get unread comments from meta.json */
+/** Get unread comments from discussion.md (content after last ---read--- marker) */
 function getUnreadComments(projectDir: string): string {
   try {
-    const metaPath = join(projectDir, "meta.json");
-    if (!existsSync(metaPath)) return "";
-    const meta = JSON.parse(readFileSync(metaPath, "utf-8"));
-    const unread = (meta.comments || []).filter((c: any) => !c.read);
-    if (unread.length === 0) return "";
-    return unread.map((c: any) => `[${c.from}] ${c.text}`).join("\n");
+    const discPath = join(projectDir, "discussion.md");
+    if (!existsSync(discPath)) return "";
+    const content = readFileSync(discPath, "utf-8");
+    const lastMarker = content.lastIndexOf("---read @iter");
+    if (lastMarker === -1) {
+      // No marker yet — everything after "# Discussion\n" is unread
+      const headerEnd = content.indexOf("\n", content.indexOf("# Discussion"));
+      return headerEnd === -1 ? "" : content.slice(headerEnd + 1).trim();
+    }
+    // Content after the last marker line
+    const afterMarker = content.indexOf("\n", lastMarker);
+    return afterMarker === -1 ? "" : content.slice(afterMarker + 1).trim();
   } catch { return ""; }
 }
 
-/** Check both legacy Comments section and meta.json for pending comments */
+/** Mark discussion as read by appending a marker */
+function markDiscussionRead(projectDir: string, iteration: number): void {
+  try {
+    const discPath = join(projectDir, "discussion.md");
+    if (!existsSync(discPath)) return;
+    appendFileSync(discPath, `\n---read @iter${iteration}---\n`);
+  } catch { /* ignore */ }
+}
+
+/** Check both legacy Comments section and discussion.md for pending comments */
 function getPendingComments(projectContent: string, projectDir: string): string {
   const legacyComments = extractComments(projectContent);
-  const metaComments = getUnreadComments(projectDir);
-  const parts = [legacyComments, metaComments].filter(Boolean);
+  const discComments = getUnreadComments(projectDir);
+  const parts = [legacyComments, discComments].filter(Boolean);
   return parts.join("\n");
 }
 
@@ -320,18 +336,8 @@ function buildWorkerPrompt(
   const projectDir = dirname(projectPath);
   const outputsDir = join(projectDir, "outputs");
 
-  // Read unread comments from meta.json
-  let unreadComments = "";
-  try {
-    const metaPath = join(projectDir, "meta.json");
-    if (existsSync(metaPath)) {
-      const meta = JSON.parse(readFileSync(metaPath, "utf-8"));
-      const unread = (meta.comments || []).filter((c: any) => !c.read);
-      if (unread.length > 0) {
-        unreadComments = unread.map((c: any) => `- **${c.from}** (${c.at?.slice(0, 10) || "?"}): ${c.text}`).join("\n");
-      }
-    }
-  } catch { /* ignore */ }
+  // Read unread comments from discussion.md
+  const unreadComments = getUnreadComments(projectDir);
 
   let prompt = `You are working on iteration ${iteration} of a persistent task.\n\n`;
 
@@ -986,14 +992,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
       writeFileSync(config.projectPath, projectContent, "utf-8");
 
-      // Update meta.json: lastActivity, mark comments read
+      // Mark discussion as read after this iteration processed comments
+      markDiscussionRead(config.projectDir, iteration);
+
+      // Update meta.json: lastActivity
       try {
         const metaPath = join(config.projectDir, "meta.json");
         if (existsSync(metaPath)) {
           const meta = JSON.parse(readFileSync(metaPath, "utf-8"));
           meta.lastActivity = new Date().toISOString();
-          // Mark all comments as read after being shown to worker
-          for (const c of (meta.comments || [])) c.read = true;
           writeFileSync(metaPath, JSON.stringify(meta, null, 2), "utf-8");
         }
       } catch { /* ignore meta.json errors */ }

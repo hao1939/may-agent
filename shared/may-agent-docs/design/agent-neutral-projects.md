@@ -17,8 +17,9 @@ User wants: (1) shared location, (2) clean project.md focused on the project its
 ```
 agents/shared/projects/<name>/
   project.md      — source of truth (goal, status, milestones, resources, artifacts)
+  journal.md      — iteration log (worker output + reviewer decisions)
+  discussion.md   — comments from other agents/humans (append-only)
   meta.json       — machine-indexed supplement (sessions, timestamps, related items)
-  journal.md      — iteration log + comments from other agents
   outputs/        — all project deliverables, scripts, intermediate files
 ```
 
@@ -74,10 +75,6 @@ Files produced by this project (in outputs/ or elsewhere):
   "relatedProjects": ["other-project"],
   "metricsHistory": [
     { "date": "2026-04-25", "deploy-success-rate": 0.61 }
-  ],
-  "comments": [
-    { "from": "coach", "at": "2026-04-26T10:00:00Z", "text": "M3 is too broad, split it", "read": false },
-    { "from": "hao", "at": "2026-04-27T09:00:00Z", "text": "Deprioritize, focus on X first", "read": true }
   ]
 }
 ```
@@ -86,17 +83,32 @@ The workflow updates meta.json after each iteration (append session ID, update l
 
 ### Comments & Collaboration
 
-**Structured comments in meta.json** — best fit for agents:
+**discussion.md** — simple, append-only markdown file:
 
-- **Write**: Agents append to `meta.json.comments[]` with `{from, at, text, read: false}`
-- **Read**: At iteration start, workflow drains unread comments and shows them to the worker as "## Feedback from others"
-- **Mark read**: After showing to worker, workflow sets `read: true`
-- **Human input**: Same mechanism — append to comments array (via CLI or direct edit)
-- **Priority signal**: Handler can check "has unread comments?" to prioritize scheduling
+```markdown
+# Discussion
 
-No markdown parsing needed. No concurrent-write conflicts on project.md. Machine-queryable for discovery ("which projects have unread feedback?").
+### coach — 2026-04-27
+M3 is too broad, split it into smaller steps.
 
-journal.md stays purely as the iteration log (worker output + reviewer decisions). project.md stays focused on project state. Comments are their own channel in meta.json.
+### hao — 2026-04-27
+Deprioritize, focus on X first.
+
+---read @iter7---
+
+### coach — 2026-04-28
+Looks good now. Consider adding a gym scenario for this.
+```
+
+**How it works:**
+- **Write**: Agents/humans append a markdown section: `### <name> — <date>\n<text>\n`
+- **Read**: Workflow shows content after the last `---read @iterN---` marker to the worker
+- **Mark read**: After processing, workflow appends `---read @iterN---`
+- **No JSON parsing**: Just text append and string search
+
+Simple, git-friendly, human-readable, no concurrent-write conflicts.
+
+journal.md stays purely as the iteration log (worker output + reviewer decisions). project.md stays focused on project state.
 
 ### Worker outputs/ enforcement
 
@@ -159,4 +171,16 @@ The `## Context` section in project.md accumulates key discoveries across iterat
 - Narrative ("we spent 3 iterations on this")
 - Temporary state ("currently waiting for PR")
 - Iteration-specific details (that's what journal.md is for)
+
+## Implementation Status (2026-04-27)
+
+**Done:**
+- [x] `agents/shared/workflows/project.ts` — new template, outputs/, discussion.md, context updates, worker prompt restructured
+- [x] `agents/shared/workflows/heartbeat-data.ts` — scans shared + legacy locations
+- [x] `agents/shared/lib/project-health.ts` — scans shared + legacy locations
+- [x] `agents/shared/skills/creating-projects/skill.md` — updated paths and structure
+- [x] Migration — 52 projects moved to `agents/shared/projects/`
+- [x] Design doc (this file)
+
+**Backward compatible:** Legacy per-agent locations still scanned by heartbeat and health handler.
 
