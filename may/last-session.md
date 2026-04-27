@@ -1,10 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777313917149_2
+- **Session:** s_1777314884393_0
 - **Status:** done
-- **When:** 2026-04-27T18:20:19.022Z
-- **Duration:** 1m41s
+- **When:** 2026-04-27T18:35:49.208Z
+- **Duration:** 1m4s
 
 ## What Happened
-gym-leverage-wr is stale (updated 28h ago, 3/9 milestones). Bob owns it. Let me nudge him.
+Two issues found:
+1. **project.blocked-over-6h**: Likely stale metric — no blocked projects exist in DB. May be counting old data.
+2. **amy-kimi**: 100% error rate due to suspended Kimi API account (insufficient balance).
+
+Let me notify the right people:
