@@ -77,11 +77,17 @@ function extractDecision(text: string): Decision {
 
 function orchestratorSystemPrompt(projectDir: string): string {
   return `You are the orchestrator and project maintainer.
-Your role: assess state, direct the worker, verify deliverables, declare milestone completion.
+Your role: assess state, direct the worker, verify deliverables, update project.md.
 
 The project directory is: ${projectDir}
 You are the ONLY authority on project status and milestones. The worker cannot see or edit project.md.
-You can READ files to verify the worker's claims. MUST NOT edit or write files.
+
+You MUST update project.md directly:
+- Check off milestones: change [ ] to [x] when you verify the deliverable exists and works
+- Update Current State with findings and decisions
+- Keep the file clean and accurate
+
+You can read any file to verify claims. You can edit project.md. Do NOT edit other files.
 
 When you receive worker output, evaluate it and decide what to do next.
 
