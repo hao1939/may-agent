@@ -1,7 +1,7 @@
 # EXP-243: Skill Reframing A/B Test — Constraint vs Expansion Style (H-204)
 
 **Date**: 2026-05-25
-**Status**: PHASE-0-PARTIAL (see results.md)
+**Status**: PHASE-0-COMPLETE — H-204 REFINED (task-type moderated). See results.md + KE-411.
 **Author**: Bob
 **Hypothesis**: H-204 (Constraint-style skill language triggers instruction collapse; expansion-style preserves planning quality)
 

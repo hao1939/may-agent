@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777323321840_80
+- **Session:** s_1777325121842_93
 - **Status:** done
-- **When:** 2026-04-27T20:56:24.316Z
-- **Duration:** 1m2s
+- **When:** 2026-04-27T21:27:55.686Z
+- **Duration:** 2m33s
 
 ## What Happened
-Blocked count should now be 0. The two remaining are "active" which is correct. Now let me check on the key issues: amy-kimi has 6 errors in 6 sessions (100% error rate).
+Blocked count down from 3 to 1 (just system-efficiency which is only 2h old, owned by optimizer). The metric threshold is >2 so we should now be at 1, below threshold.
+
+For blocked-over-6h: the two 13h-old projects are now closed, and system-efficiency is only 2h old. That metric should also clear.
