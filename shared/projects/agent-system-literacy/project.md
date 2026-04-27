@@ -16,7 +16,7 @@ Agents effectively use the infrastructure: create projects from problems, read a
 - gym.literacy-pass-rate: unknown → target 0.80 (gym scenarios testing system usage)
 
 ## Current State
-Iteration 6. Phase 1 complete. Phase 2: skills deployed (reading-metrics, escalation, closing-the-loop) to amy, amy-kimi, coach, tech-lead. deployment-log.md written. Next: run gym scenarios.
+Iteration 8. Phase 1-2 complete. Phase 3 in progress. Post-deployment comparison shows NO improvement yet — 0% skill read rate among target agents (coach, tech-lead, amy, amy-kimi). Root cause: agents aren't prompted to read their skills/ directory. Gym pass rate: 0/3 (stub baseline). Key insight: deploying skill files is necessary but not sufficient — agents need environmental triggers (system prompts, heartbeat workflows) to actually read them. Next: document findings, set up regression detection, then close or pivot.
 
 ## Plan
 
