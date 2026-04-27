@@ -1,32 +1,25 @@
-# Regression Check Reference — Bob's Heartbeat
+# Regression Check Reference — For Heartbeat Use
 
-## Quick Check Procedure
+## Quick Check List
 
-During heartbeat, run these checks periodically (every ~3 heartbeats):
+```
+CHECK 1: Escalation Quality
+  Look at: /app/agents/shared/ for recent escalation files
+  Pass if: ≥50% have (problem + tried + ask)
+  Fail action: Reactivate project
 
-### 1. Escalation Quality
-```
-Action: agents requests --filter all --limit 5
-Check: Do recent escalations/requests include specific file paths, error messages, or attempted solutions?
-Breach: More than half are vague ("help", "broken", no context)
-```
+CHECK 2: Project Creation Rate  
+  Look at: /app/agents/shared/projects/ modification dates
+  Pass if: Any project activity in last 7 days
+  Fail action: Note; reactivate if 3 consecutive fails
 
-### 2. Project Activity
-```
-Action: ls /app/agents/shared/projects/
-Check: Any projects modified in last 7 days?
-Breach: No project updates despite active agent sessions
-```
-
-### 3. Doc Engagement
-```
-Action: Review if agents reference skills/docs in their work
-Check: Are agents using /app/agents/shared/skills/ content?
-Breach: Repeated questions on topics already documented
+CHECK 3: Literacy Pass Rate
+  Look at: Agent behavior in recent sessions
+  Pass if: Agents correctly use project files, delegation, tools
+  Fail action: Reactivate project
 ```
 
-## On Breach
-
-1. Reopen project: edit `/app/agents/shared/projects/agent-system-literacy/project.md` status → active
-2. Add milestone targeting the specific regression
-3. Assign appropriate worker
+## Last Checked
+- Date: (fill in during heartbeat)
+- Status: (PASS / BREACH)
+- Notes: (details)

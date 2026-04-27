@@ -192,3 +192,20 @@ Fully rewritten with correct metrics table, checked milestones, and current stat
 **The project has made real, verified progress.** The wiring in factory.ts is correct — both skills will be loaded and injected into every LLM agent's system prompt as XML. Build passes.
 
 **One concern:** The skill loading path uses
+
+### Iteration 4 — 2026-04-27T11:54:21.735Z
+**Worker**: Done. Summary:
+
+## Iteration 4 Results
+
+### 1. Runtime path verified ✅
+App starts via `node build/main/stdio.js` from `/app`. The relative path `agents/shared/skills` resolves to `/app/agents/shared/skills` correctly.
+
+### 2. E2e verification ✅
+Both skills load and format as XML. Output confirmed.
+
+### 3. New skills assessment
+No evidence of need — bob's journal has minimal entries, last-session.md is empty, may has no files.
+
+### 4. Project → maintenance
+All metrics green, all milestones checke
