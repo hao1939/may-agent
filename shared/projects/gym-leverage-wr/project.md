@@ -14,9 +14,9 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 ## Milestones
 
 ### Phase 1: Explore & Fix
-- [ ] Run the gym runner against 3 diverse scenarios and document results (what passed, what failed, what errored)
-- [ ] Fix any runner issues found (import paths, missing deps, adapter problems)
-- [ ] Write .state/gym-architecture.md documenting the runner → adapter → scenario → scorer pipeline
+- [x] Run the gym runner against 3 diverse scenarios and document results (what passed, what failed, what errored)
+- [x] Fix any runner issues found (import paths, missing deps, adapter problems) — NO FIXES NEEDED, runner works cleanly
+- [x] Write .state/gym-architecture.md documenting the runner → adapter → scenario → scorer pipeline
 
 ### Phase 2: Scenario Review
 - [ ] Write .state/gym-categories.md categorizing all 431 scenarios by type with counts
