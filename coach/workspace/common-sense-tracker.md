@@ -78,7 +78,17 @@
   - may heartbeat sessions: Items marked BLOCKED on Hao rather than guessed — escalating uncertainty instead of assuming
 - **Notes:** Strong compliance. Agents frame work sessions as questions, self-correct when assumptions fail, and escalate rather than guess. The optimizer's entire work mode taxonomy (Mode A-D) is investigation-question-driven.
 
+### Own It
+- **Item:** "Every metric, project, and event has an owner. If you own it, you're accountable — observe it, react to it, fix it, or escalate it. Don't wait for someone to tell you."
+- **Verified:** 2026-06-25
+- **Result:** ✅ PASS
+- **Evidence:**
+  - bob heartbeat (cron_1777281969287_7): Proactively checks todo, reviews projects, advances H-183 Phase 2 — all self-directed. No prompting needed.
+  - bob todo.md: Blocked items have escalation history — "Sent P0 to tech-lead (2026-04-22) with root cause" for EXP-188, "Blocked on Hao since 2026-03-24" for Prompt Caching. Ownership + escalation chain followed.
+  - bob heartbeat (cron_1777281588237_3): Reviews and grades KE entries proactively, synthesizes 20+ experiments into KE-402 decision tree — self-directed knowledge base ownership.
+  - bob nudge-active.md: Agent cleared own nudge with evidence ("Skills exist at `agents/shared/skills/...`") — didn't wait for someone else to resolve it.
+- **Notes:** Strong compliance. Bob exemplifies "Own it" — tracks blocked items with timestamps, escalates with root causes, and uses heartbeats for self-directed progress on owned projects. Escalation chain (bob → tech-lead, bob → Hao) used appropriately.
+
 ## Items Not Yet Verified
 - Metric-oriented
 - Event-driven
-- Own it
