@@ -120,7 +120,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const wfPath = join(workflowsDir, `${workflowName}.ts`);
       let wfMod: any;
       try {
-        wfMod = await import(wfPath + "?t=" + ++importCounter);
+        wfMod = await import(wfPath + "?t=" + Date.now());
         if (typeof wfMod.execute !== "function") throw new Error("No execute()");
       } catch (err) {
         ctx.log(`[project] ERROR loading workflow "${workflowName}": ${err}`);
