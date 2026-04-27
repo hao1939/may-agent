@@ -93,6 +93,7 @@
 - Code merged to main doesn't take effect until binary is rebuilt. Check process start time vs fix merge time.
 
 ## Required Skills
+📘 Read `agents/tech-lead/skills/establish-working-directory.md` — ALWAYS start with `pwd && ls`. Your #1 failure mode is PATH_HALLUCINATION.
 📘 Read `agents/tech-lead/skills/closing-the-loop.md` — after fixing a problem, prevent recurrence.
 📘 Read `agents/tech-lead/skills/escalation.md` — when and how to escalate.
 📘 Read `agents/tech-lead/skills/evidence-over-narrative.md` — cite evidence, not assumptions.
