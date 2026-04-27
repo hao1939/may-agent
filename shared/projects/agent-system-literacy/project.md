@@ -1,11 +1,11 @@
 # Project: Agent System Literacy
 
-**Status**: active
+**Status**: completed
 **Owner**: bob
 **Type**: continuous
 **Workflow**: master-worker
 **Priority**: P1
-**Iteration**: 8
+**Iteration**: 9
 
 ## Goal
 Agents effectively use the infrastructure: create projects from problems, read and react to metrics, escalate with context, cooperate across agents, and close the loop by extending the system when patterns repeat.
@@ -16,7 +16,7 @@ Agents effectively use the infrastructure: create projects from problems, read a
 - gym.literacy-pass-rate: unknown → target 0.80 (gym scenarios testing system usage)
 
 ## Current State
-Iteration 8. 7/8 milestones complete. Investigation documented in outputs/investigation.md — skill deployment alone doesn't work because agents lack triggers to read skills/. One milestone remains: regression detection guard. After that, project can close as "completed with known limitation" — the real fix (heartbeat/system-prompt triggers) is a separate project.
+Project COMPLETE (iteration 9, 8/8 milestones). All phases done. Key finding: skill deployment alone doesn't improve agent behavior — agents need explicit triggers (heartbeat refs, system-prompt mentions) to read skills/. Regression guard set up in outputs/regression-guard.md and .state/metrics/regression-check.md for bob's heartbeat to monitor. The deeper fix (adding triggers) is a separate project.
 
 ## Plan
 
@@ -32,7 +32,7 @@ Iteration 8. 7/8 milestones complete. Investigation documented in outputs/invest
 ### Phase 3: Verify & Protect
 - [x] Re-measure metrics after skill deployment, compare to baseline
 - [x] If metrics improved, document what worked. If not, investigate why.
-- [ ] Set up regression detection: metric breach → project reactivates
+- [x] Set up regression detection: metric breach → project reactivates
 
 ## References
 
@@ -47,3 +47,6 @@ Iteration 8. 7/8 milestones complete. Investigation documented in outputs/invest
 - outputs/deployment-log.md — Phase 2 skill deployment record
 - outputs/gym-results.md — Gym scenario results (0/3 pass, stub baseline)
 - outputs/post-deployment-comparison.md — Phase 3 before/after comparison (no improvement yet)
+- outputs/investigation.md — Why skill deployment didn't move metrics
+- outputs/regression-guard.md — Regression detection thresholds and reactivation triggers
+- .state/metrics/regression-check.md — Quick-check procedure for bob's heartbeat
