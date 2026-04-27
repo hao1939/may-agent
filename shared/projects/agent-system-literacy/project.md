@@ -16,7 +16,7 @@ Agents effectively use the infrastructure: create projects from problems, read a
 - gym.literacy-pass-rate: unknown → target 0.80 (gym scenarios testing system usage)
 
 ## Current State
-Iteration 1 measured baseline. Iteration 2 verified deliverables exist. Unblocked — continuing Phase 2.
+Iteration 3. Reading-metrics skill verified done. outputs/ dir is EMPTY — baseline.md was never written despite worker claims. Phase 1 must be redone first.
 
 ## Plan
 
