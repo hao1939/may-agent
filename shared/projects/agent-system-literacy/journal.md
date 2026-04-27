@@ -55,3 +55,6 @@ Milestones completed:
 - "Check if agents read skills during sessions (grep transcripts for skills/ reads), document in outputs/baseline.md"
 
 Phase 1 is done. Moving to Phase
+
+### Iteration 5 — 2026-04-27T11:26:57.802Z
+**Worker**: Gaps identified. Agents missing the 3 literacy skills: **amy, amy-kimi, coach, tech-lead** (evaluator is special-purpose, skip). Let me deploy:
