@@ -92,3 +92,11 @@
 3. Move to the next item — do NOT replan from scratch or spend many calls searching
 4. Complete all non-blocked items, write session summary noting what was blocked and why
 **Anti-pattern**: Spending 10+ calls looking for a missing file, or redeclaring your entire plan after discovering one blocker.
+
+### Rule 9: Evidence Before Conclusions (targets: approach-validation-trap)
+**Trigger**: You're analyzing failures, experiments, or investigating why something went wrong.
+**Action**:
+1. ⚡ List ALL available evidence files (logs, transcripts, data) BEFORE reading any
+2. Read ≥50% of primary sources (session logs, raw data) before summaries or design docs
+3. Cite specific evidence (file + line/content) for every claim in your analysis
+**Anti-pattern**: Reading only a summary file, inferring the root cause without checking primary evidence (session logs), and writing conclusions based on deduction rather than data.

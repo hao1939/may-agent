@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777262683769_1111
+- **Session:** s_1777264332143_1124
 - **Status:** done
-- **When:** 2026-04-27T04:05:06.119Z
-- **Duration:** 22s
+- **When:** 2026-04-27T04:36:16.758Z
+- **Duration:** 4m4s
 
 ## What Happened
-File is correct and complete.
+The DB changes don't show in git (it's in .state/). That's fine — the experiment status cleanup is in the DB.
+
+Let me finish up.
