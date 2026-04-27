@@ -8,10 +8,8 @@
 | Name | File | Lines | Purpose |
 |------|------|-------|---------|
 | `project` | `shared/workflows/project.ts` | 929 | Persistent iterative task loop: owner reviews → worker iterates → milestones tracked. Supports directory format (project.md + journal.md) and legacy single-file. Core project execution engine. |
-| `master-worker` | `shared/workflows/master-worker.ts` | 404 | Two persistent sessions (orchestrator + worker) in a review-first → work → review loop. Alternative project pattern. |
 | `implement-and-verify` | `shared/workflows/implement-and-verify.ts` | 203 | Lightweight code workflow (H-070 P3): coder Plan → Write → Verify. No QA agent. **Workhorse — 85% of all workflow usage.** |
 | `verify-wrap` | `shared/workflows/verify-wrap.ts` | 233 | Minimal 2-phase verification wrapper (EXP-138). Phase 1: execute task. Phase 2: separate session reads back all written files. |
-| `error-scan` | `shared/workflows/error-scan.ts` | 446 | Sensor-Judge workflow: JS scans ERROR_LOG.jsonl files → LLM analyzes error patterns and decides intervention. |
 
 **Not workflows** (helper modules with no `execute()` function):
 - `fewshot-inject-helpers.ts` — keyword-based utility for prepending few-shot examples
@@ -21,6 +19,8 @@
 - `implement-and-review.ts` — archived (6% completion rate, broken verdict parsing)
 - `persistent-task.ts` — was an alias for `project.ts`, removed
 - `heartbeat.ts` — replaced by per-agent heartbeat workflows + `heartbeat-data.ts`
+- `error-scan.ts` — dead code, zero consumers (446 lines)
+- `master-worker.ts` — dead code, zero consumers (355 lines)
 
 ## Archived Shared Workflows
 
@@ -73,7 +73,7 @@ Every agent has a heartbeat workflow (uses shared `heartbeat-data.ts` loaders):
 
 ## Consolidation Status (completed 2026-04-04, all promoted files since archived)
 
-Historical: Three duplicate sets were consolidated. All promoted shared copies have since been archived/deleted as the system evolved to use `project.ts` and `master-worker.ts` as the primary workflow patterns. (`worker-reviewer.ts` was later removed as dead code.)
+Historical: Three duplicate sets were consolidated. All promoted shared copies have since been archived/deleted as the system evolved to use `project.ts` as the primary workflow pattern. (`worker-reviewer.ts`, `master-worker.ts`, and `error-scan.ts` were later removed as dead code.)
 
 ## Effectiveness Tracking
 
