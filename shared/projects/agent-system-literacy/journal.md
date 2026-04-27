@@ -58,3 +58,10 @@ Phase 1 is done. Moving to Phase
 
 ### Iteration 5 — 2026-04-27T11:26:57.802Z
 **Worker**: Gaps identified. Agents missing the 3 literacy skills: **amy, amy-kimi, coach, tech-lead** (evaluator is special-purpose, skip). Let me deploy:
+**Orchestrator**: CONTINUE
+
+Milestone completed: "Deploy top 3 literacy skills to agents that need them (copy to per-agent skills/)"
+
+All 3 skills verified present in amy, amy-kimi, coach, and tech-lead.
+
+**(a)** Next iteration: Run 3 gym scenarios testing system literacy, record pass rates in `outputs/gym-results.md

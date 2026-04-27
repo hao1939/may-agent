@@ -1,22 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777289141152_65
+- **Session:** s_1777289217803_67
 - **Status:** done
-- **When:** 2026-04-27T11:26:17.712Z
-- **Duration:** 36s
+- **When:** 2026-04-27T11:27:19.621Z
+- **Duration:** 21s
 
 ## What Happened
 CONTINUE
 
-Milestones completed:
-- "Query DB for project-creation-rate and escalation-quality over last 7 days, write results to outputs/baseline.md"
-- "Check if agents read skills during sessions (grep transcripts for skills/ reads), document in outputs/baseline.md"
+Milestone completed: "Deploy top 3 literacy skills to agents that need them (copy to per-agent skills/)"
 
-Phase 1 is done. Moving to Phase 2: skill deployment.
+All 3 skills verified present in amy, amy-kimi, coach, and tech-lead.
 
-**(a)** Next iteration: Deploy top 3 literacy skills to agents that need them. Based on baseline data, escalation quality is sparse and skill reads are low. The top 3 skills to deploy are: `reading-metrics`, `escalation`, and `closing-the-loop`.
+**(a)** Next iteration: Run 3 gym scenarios testing system literacy, record pass rates in `outputs/gym-results.md`.
 
-**(b)** Target agents: The baseline shows most agents aren't reading skills. Check which agents have per-agent `skills/` directories and which lack these 3 skills. Deploy by copying/symlinking.
+**(b)** Check what scenarios exist under `/app/agents/gym/scenarios/` related to system literacy (e.g., metric-reaction, escalation, project-creation). Run 3 of them and record results.
 
-**(c)** First step: Run `ls /app/agents/*/skills/ 2>/dev/null` to see what each agent already has. Then copy the 3 skills to agents that lack them. Write a brief deployment log to `outputs/deployment-log.md` listing what was deployed where. End with `ls outputs/` to prove the file exists.
+**(c)** First step: `ls /app/agents/gym/scenarios/` to find relevant scenarios. Then run them and write results to `outputs/gym-results.md`. End with `cat outputs/gym-results.md` to prove it exists.
