@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777262772215_1112
+- **Session:** s_1777263526177_1118
 - **Status:** done
-- **When:** 2026-04-27T04:18:46.176Z
-- **Duration:** 12m33s
+- **When:** 2026-04-27T04:19:01.313Z
+- **Duration:** 15s
 
 ## What Happened
-Good — behavior-escalation-stubborn passes 3/3 now. The regression in the baseline was likely a flaky run or the missing `GYM_AGENT_BIN` env var.
-
-Let me update the gym baseline notes and commit:
+File looks correct and well-structured. No issues found.
