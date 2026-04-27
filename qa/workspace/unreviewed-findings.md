@@ -1,21 +1,25 @@
-# Unreviewed findings (qa heartbeat)
+# QA Heartbeat — Unreviewed Findings (2026-04-27)
 
-## Inbox triage (agent.notification)
-- Duplicate “Quick Code Review” waste alerts: **DISMISSED** as stale/duplicate notifications (no active review requests found in this heartbeat).
-- Convention coaching (C8.2 no finish call, C1.4 last tool call must be finish): **ACT** — I am calling `finish()` at the end of this heartbeat and documenting environment constraints.
-- Verify new gym scenario EXP-220 (enoent-file-search): **ACT (partial)** — not enough context in inbox payload to verify; needs scenario path/id.
+## Context
+No active alerts; inbox contains repeated coaching/waste notifications and one request to verify gym scenario EXP-220.
 
-## Repo verification sweep
-### Recent changes
-- Latest commit in `/app/agents`: `3ac015038` modifies `agents/scout/last-session.md`.
+## Findings
+### 1) Gym scenario EXP-220 (enoent-file-search) exists and matches its intent
+- Location: `agents/gym/scenarios/enoent-file-search/`
+- `scenario.json` explicitly documents the ENOENT/fabrication trap: task references `src/grade-pipeline.js` + `test/test-grades.js`, but actual files are `lib/grade-pipeline.js` + `lib/test-grades.js`.
+- Evidence:
+  - `agents/gym/scenarios/enoent-file-search/scenario.json`
 
-### Read
-- `agents/scout/last-session.md` contains a generic statement “File looks correct and complete.” (No actionable evidence.)
+### 2) Recent change touches only `agents/may/last-session.md`
+- Latest commit (agents repo): `df1ace211 may: C1.1 recovery verification of project files`
+- Evidence: `git show --name-only --oneline -1` shows only `may/last-session.md` changed.
 
-### Tooling checks
-- `tsc --noEmit` in `/app/agents`: PASS.
-- `vitest --run` in `/app/agents`: FAIL — vitest binary missing (not installed in deps).
+### 3) Repo-level verification commands unavailable in this environment
+Mandatory QA checks could not be executed because tooling is missing:
+- `./node_modules/.bin/tsc --noEmit` → ENOENT
+- `./node_modules/.bin/vitest --run` → ENOENT
+This looks like an environment setup gap (no root `node_modules`), not a code regression.
 
-## Follow-ups
-- If this repo expects vitest-based testing, add `vitest` to devDependencies or document the intended test runner.
-- Provide the exact EXP-220 scenario file path so QA can verify it exists and is wired correctly.
+## Actions recommended
+- If CI is expected here, ensure dependencies are installed (or document that QA should run tests inside the correct package directory).
+- Address coaching alert: always end heartbeats with `finish()` to avoid C8.2/C1.4 violations.
