@@ -29,7 +29,14 @@
 ## P2: Clean Stale LESSONS.md References  
 - Remove P53 bash guard references from coach/optimizer LESSONS.md (guard was removed months ago)
 
-## P2: Investigate Amy Quality Gap
-- Amy has lowest avg quality (0.865) across all agents
-- Common failures: task mismatch, path confusion, shallow recovery after ENOENT
-- Could design a skill/training intervention
+## P1: EXP-250 — Amy Path-Orientation Skill (IT-113 progression)
+- **Status**: DESIGNED (Jun 29). Lab fork created at `agents/.lab/amy-env-orientation/`
+- **Finding**: Amy's #1 failure is PATH_HALLUCINATION (8/10 low-quality sessions). Skill written.
+- **Next**: Need bob to run gym trials: `partial-verification-trap` + `read-before-edit` with lab_fork tag
+- **Blocked on**: gym-run.sh requires live agent invocation (can't execute in coach session)
+- **Design**: `agents/coach/workspace/EXP-250-design.md`
+
+## P2: Investigate Amy Quality Gap ✅ DIAGNOSED (Jun 29)
+- Amy has lowest avg quality (0.869 last 7d) across all agents
+- Root cause: PATH_HALLUCINATION — works in wrong dirs, copies files instead of cd'ing
+- Solution: EXP-250 above
