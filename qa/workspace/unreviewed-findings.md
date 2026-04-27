@@ -4,7 +4,7 @@ Date: 2026-04-27
 
 ## Inbox dedup change review (agents/shared/workflows/heartbeat-data.ts)
 
-Commit reviewed: `optimizer: inbox dedup in loadInbox()` (agents git commit `9c124a64f`).
+Commit reviewed: `request-dedup M1: improve inbox notification dedup normalization` (agents git commit `bbf81a808`).
 
 ### What changed
 `loadInbox()` now deduplicates pending/failed events by a key composed of `event_type` plus a normalized first-80-chars slice of a derived `summary` (from `data.summary || data.error || data.task || ""`). It then displays the newest event per dedup bucket with a `(×N)` badge.
