@@ -36,6 +36,9 @@ agents/shared/projects/<name>/
 ## Goal
 What does success look like?
 
+## Metrics
+How we measure progress. Targets define done, current values show where we are.
+
 ## Current State
 Where are we now, what do we know, what's next.
 Accumulates across iterations — reviewer updates with findings, facts, and decisions.

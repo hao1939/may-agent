@@ -10,6 +10,11 @@
 ## Goal
 Every skill and workflow in the system must be verified working, measured for impact, and protected against regression. Reading code is not verification — run it, measure it, prove it helps.
 
+## Metrics
+- skill.verified-rate: 0.23 → target 0.80 (% of skills with measured positive impact)
+- workflow.pass-rate: unknown → target 0.95 (% of workflows that execute without errors)
+- skill.delivery-rate: 0.23 → target 0.60 (% of skills referenced by at least one agent)
+
 ## Current State
 Inventory done but nothing actually tested. Key finding from inventory: 77% of skills are orphaned (no delivery mechanism), workflows all parse but none run-tested. The core problem is skill delivery — skills exist but nothing injects them into agent context.
 
