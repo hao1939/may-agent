@@ -65,3 +65,12 @@ Milestone completed: "Deploy top 3 literacy skills to agents that need them (cop
 All 3 skills verified present in amy, amy-kimi, coach, and tech-lead.
 
 **(a)** Next iteration: Run 3 gym scenarios testing system literacy, record pass rates in `outputs/gym-results.md
+**Orchestrator**: CONTINUE
+
+Milestones completed:
+- "Run 3 gym scenarios testing system literacy, record pass rates in outputs/gym-results.md"
+- "Re-measure metrics after skill deployment, compare to baseline"
+
+Score: 6/8 milestones done. Two remaining.
+
+**(a)** Next iteration must complete: "If metrics improved, doc
