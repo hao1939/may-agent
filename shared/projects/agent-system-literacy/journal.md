@@ -32,3 +32,6 @@ Restarting fresh with clear phases: measure baseline → fix/deploy skills → v
 1. **`outputs/baseline.md`** — exists (3.6KB), contains M1 project creation rate, M2 escalation quality (78% with context), M3 skill read rate (55% adoption)
 2. **`outputs/workflows-runtest.md`** — exists (4.7KB)
 3. **Reading-metrics skill** — both `/agents/shared/skills/reading-metrics/skill.md` and `/agents/gym/scenarios/metric-reaction/environment/skills/reading-metrics.md` already contain Step 5 "Close the loop" with the evolution la
+
+### Iteration 1 — 2026-04-27T11:21:56.374Z
+**Worker**: Fair enough — the file exists from a prior session but I didn't create it this session. Let me verify the data is still accurate by running fresh queries, then re-write the file.
