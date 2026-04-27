@@ -9,8 +9,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
-GYM_RUNNER="$PROJECT_ROOT/agents/test/gym/run-gym.sh"
-SCENARIOS_DIR="$PROJECT_ROOT/agents/gym/scenarios"
+GYM_RUNNER="$PROJECT_ROOT/test/gym/run-gym.sh"
+export GYM_AGENT_BIN="${GYM_AGENT_BIN:-/usr/local/bin/may-agent}"
+SCENARIOS_DIR="$PROJECT_ROOT/gym/scenarios"
 ARMS_DIR="$SCRIPT_DIR/arms"
 RESULTS_DIR="$SCRIPT_DIR/results"
 
@@ -41,7 +42,7 @@ run_trial() {
     local skill_text=""
     for skill in $skills_list; do
         if [ "$arm" = "control" ]; then
-            skill_text+="$(cat "$PROJECT_ROOT/agents/shared/skills/$skill/SKILL.md")"
+            skill_text+="$(cat "$PROJECT_ROOT/shared/skills/$skill/SKILL.md")"
         else
             skill_text+="$(cat "$ARMS_DIR/${skill}-expansion.md")"
         fi
