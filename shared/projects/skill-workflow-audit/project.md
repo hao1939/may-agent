@@ -1,36 +1,37 @@
-# Project: Skill & Workflow Audit
+# Project: Skill & Workflow Quality
 
-**Status**: closed
+**Status**: active
 **Owner**: coach
-**Type**: milestone
+**Type**: continuous
 **Workflow**: master-worker
 **Priority**: P0
 **Iteration**: 4
 
 ## Goal
-Verify every skill and workflow in the system. For each one: does it parse? is it referenced? is it useful? Produce a report so we can decide what to keep, fix, or remove.
+Every skill and workflow in the system must be verified working, measured for impact, and protected against regression. Reading code is not verification — run it, measure it, prove it helps.
 
 ## Current State
-Audit complete. Key findings:
+Phase 1 (inventory) complete. 53 shared skills audited by reading — 77% orphaned, 22 worth keeping. 29 workflows parse. But **nothing was actually tested**. We don't know if any skill improves agent behavior or if any workflow runs without errors on a real project. No metrics exist to detect regression.
 
-**Skills: 77% orphaned** (details: outputs/skills-audit.md). 53 shared skills audited — only 12 (23%) referenced by any agent. 22 worth keeping, 20 should be archived, 5 need fixes. The core problem is delivery: skills exist but nothing injects them into agent context. Per-agent `skills/` dir is the only path. Most-referenced: `verification` (all agents), `patterns` (8 agents). Top deploy candidates: `coder-edit-discipline` → coder, `delegation-verification` → tech-lead, `error-handling` → all.
-
-**Workflows: healthy** (details: outputs/workflows-audit.md). 29/29 parse, 0 orphaned. Workflow registration via cron.json works — stark contrast with skills.
-
-**Caveat:** audit was read-based, not run-based. Parsing ≠ working. Known runtime bugs exist in master-worker.
-
-Next actions: archive 20 orphan skills, deploy top 5 to agents, add SKILL.md to 5 dirs missing it, run-test workflows.
-
-## Context
-- Skill delivery mechanism: only per-agent `skills/` dir (auto-loaded). Shared skills need explicit copy/link.
-- Workflow registration: cron.json `handler: run-workflow` + `handlerConfig.workflow`. Works reliably.
-- 70 per-agent skills across 10 agents — mostly good, bob has most (10).
+Next: actually run skills/workflows and measure impact.
 
 ## Milestones
-- [x] Audit all 53 shared skills + 70 per-agent skills
-- [x] Produce detailed report — outputs/skills-audit.md
-- [x] Audit all 29 workflows (10 shared + 19 per-agent)
-- [x] Produce detailed report — outputs/workflows-audit.md
+
+### Phase 1: Inventory (DONE)
+- [x] Read-audit all 53 shared skills and 29 workflows
+- [x] Produce inventory reports (outputs/skills-audit.md, outputs/workflows-audit.md)
+
+### Phase 2: Run & Verify
+- [ ] Run each of the 10 shared workflows on a test project via --run-workflow --dry-run, document which execute vs crash
+- [ ] For top 5 skills (verification, patterns, evidence-over-narrative, coder-edit-discipline, error-handling): deploy to one agent, run 3 sessions before/after, measure if behavior changes
+- [ ] Write outputs/skills-impact.md with before/after measurements
+- [ ] Write outputs/workflows-runtest.md with pass/fail for each workflow
+
+### Phase 3: Regression Protection
+- [ ] Create metric: skill.verified-rate — % of deployed skills with measured positive impact
+- [ ] Create metric: workflow.pass-rate — % of workflows that execute without errors
+- [ ] Add a gym scenario that tests skill delivery (agent receives skill, does it change behavior?)
+- [ ] Set up periodic re-run (monthly) to catch regressions
 
 ## References
 
@@ -39,7 +40,8 @@ Next actions: archive 20 orphan skills, deploy top 5 to agents, add SKILL.md to 
 - agents/shared/workflows/*.ts — 10 shared workflows
 - agents/*/workflows/*.ts — 19 per-agent workflows
 - agents/may/cron.json — handler config
+- agents/gym/scenarios/ — gym test infrastructure
 
 **Artifacts:**
-- outputs/skills-audit.md — per-skill table with quality, verdict, recommendation
-- outputs/workflows-audit.md — per-workflow table with parse status, references, verdict
+- outputs/skills-audit.md — Phase 1 inventory (read-based, not verification)
+- outputs/workflows-audit.md — Phase 1 inventory (parse check only)
