@@ -49,3 +49,6 @@ The outputs directory doesn't exist yet — only `.state/skills-audit.md` and `.
 
 ### Iteration 2 — 2026-04-27T11:08:17.704Z
 **Worker**: Now I have enough fresh data. Let me write enhanced versions of both reports:
+
+### Iteration 1 — 2026-04-27T11:16:14.803Z
+**Worker**: Now let me check which are proper workflows (have name/description/execute) vs helper modules:
