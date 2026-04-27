@@ -112,6 +112,7 @@
 
 ## ✅ DONE
 
+- **LLM-to-JS enhance-cron Step 6** — Replaced QA LLM agent verification session in `enhance-cron.ts` Step 6 with pure JS `execSync` (tsc + vitest). QA agent was spawned just to run shell commands and report pass/fail — mechanical work. Saves 1 QA LLM session per enhance-cron run. (2026-07-16)
 - **LLM-to-JS Red Metric Gate** — Replaced LLM gate sessions in all 8 heartbeat workflows with JS `runRedMetricCommands()` in `heartbeat-data.ts`. Mandatory diagnostic commands now run via `execSync` and results are injected into the main heartbeat prompt. Eliminates 1-2 LLM sessions per heartbeat when metrics are red. (2026-07-16)
 - **LLM-to-JS Verification Phases** — Replaced LLM content verification in `verify-wrap` (Phase 2) and `deliver-or-report` (Phase 3b) with pure JS file checks. ~40 wasted zero-op LLM sessions/day eliminated. Finding: `workspace/finding-llm-to-js-verification-0413.md` (2026-04-13)
 - **Agent-Heartbeat Alert Query → JS** — Moved metric_alerts SQL query from LLM prompt (required bash tool call) to JS-side `loadActiveAlerts()` in `agent-heartbeat.ts`. Results injected directly into prompt. Saves ~1 op per agent heartbeat across all agents. (2026-07-12)
