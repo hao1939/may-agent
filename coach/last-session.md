@@ -1,30 +1,25 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777287463500_17
+- **Session:** s_1777287880925_27
 - **Status:** done
-- **When:** 2026-04-27T10:58:08.412Z
-- **Duration:** 24s
+- **When:** 2026-04-27T11:04:54.763Z
+- **Duration:** 13s
 
 ## What Happened
 CONTINUE
 
-The project has completed Phase 1 (inventory) but Phase 2 and Phase 3 are entirely untouched. No milestones are formally defined, so let me set the target based on the plan checkboxes.
+The outputs directory doesn't exist yet — only `.state/skills-audit.md` and `.state/workflows-audit.md` from Phase 1. All Phase 2 items are undone.
 
-**(a) Next iteration should produce:** Phase 2 deliverables — actually run workflows and test skill delivery.
+**(a) Next iteration should produce:** `outputs/workflows-runtest.md` — actually run the 10 shared workflows and record pass/fail.
 
-**(b) What's different from previous iterations:** Previous work was all read-based auditing. This iteration must *execute* things and *measure* results. No more reading code and calling it verified.
+**(b) What's different:** Stop reading/auditing. Execute things.
 
-**(c) First steps, in order:**
+**(c) First steps:**
 
-1. **Run-test the 10 shared workflows** — execute each via dry-run or on a test project. Record pass/fail/error for each. Write `outputs/workflows-runtest.md`.
+1. List the 10 shared workflows: `ls agents/shared/workflows/*.ts`
+2. For each, attempt to execute it (dry-run or parse+validate). Record stdout/stderr, exit code, pass/fail.
+3. Write results to `outputs/workflows-runtest.md` with a table: workflow name, exit code, pass/fail, error summary if failed.
+4. Then identify which skills are currently referenced in agent configs (`grep -r` for skill names in `agents/*/agent.md` or equivalent), and which of those have gym results. Write `outputs/skills-impact.md` with current deployment status and any available measurement data.
 
-2. **Identify the top 3-5 skills to verify** — from the audit, the candidates are: `state-check-before-action`, `verification`, `plan-once-amend`, `evidence-over-narrative`. Check which are currently deployed (referenced in agent configs) vs orphaned.
-
-3. **For deployed skills** — pull recent gym results or agent session logs showing behavior with/without the skill. Quantify impact.
-
-4. **For the best orphaned skill** (`state-check-before-action`) — propose the specific config change to deploy it to bob, and if possible run a gym scenario before/after.
-
-5. **Write `outputs/skills-impact.md`** with concrete before/after measurements for at least 3 skills.
-
-The key metric targets: `skill.verified-rate` from 0.23→0.80, `workflow.pass-rate` from unknown→0.95, `skill.delivery-rate` from 0.23→0.60. We need actual numbers.
+Focus on workflows-runtest first — it's the most concrete deliverable.
