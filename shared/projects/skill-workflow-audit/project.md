@@ -32,12 +32,14 @@ Next actions: archive 20 orphan skills, deploy top 5 to agents, add SKILL.md to 
 - [x] Audit all 29 workflows (10 shared + 19 per-agent)
 - [x] Produce detailed report — outputs/workflows-audit.md
 
-## Resources
-- Skills: agents/shared/skills/ (53 items)
-- Shared workflows: agents/shared/workflows/*.ts (10 files)
-- Per-agent workflows: agents/*/workflows/*.ts (19 files)
-- Cron config: agents/may/cron.json
+## References
 
-## Artifacts
+**Resources:**
+- agents/shared/skills/ — 53 shared skills
+- agents/shared/workflows/*.ts — 10 shared workflows
+- agents/*/workflows/*.ts — 19 per-agent workflows
+- agents/may/cron.json — handler config
+
+**Artifacts:**
 - outputs/skills-audit.md — per-skill table with quality, verdict, recommendation
 - outputs/workflows-audit.md — per-workflow table with parse status, references, verdict

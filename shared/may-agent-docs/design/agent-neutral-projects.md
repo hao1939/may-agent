@@ -37,27 +37,24 @@ agents/shared/projects/<name>/
 What does success look like?
 
 ## Current State
-Where are we now? Gap between here and goal.
-For closed projects: summary of findings, conclusions, and recommended next actions.
-
-## Context
-Key discoveries and facts accumulated across iterations:
-- DB schema: sessions(id, agent, task, outcome, startedAt, error)
-- Gym runner: scripts/gym-run.sh → test/gym/gym-runner.ts
-- Deploy env vars are in infra/config/<env>.yaml
+Where are we now, what do we know, what's next.
+Accumulates across iterations — reviewer updates with findings, facts, and decisions.
+For closed projects: summary of conclusions and recommended actions.
 
 ## Milestones
 - [x] First step
 - [ ] Next step
 
-## Resources
-Key files, commands, how to measure/verify.
+## References
+Inputs and outputs. Resources for cold-start context, artifacts produced by the project.
 
-## Artifacts
-Reference artifacts inline where mentioned (e.g. "see outputs/skills-audit.md" in Current State).
-Full list for discoverability:
-- outputs/baseline-report.md
-- outputs/deploy-guard.ts
+**Resources:**
+- agents/gym/README.md — gym documentation
+- agents/may/cron.json — handler config
+
+**Artifacts:**
+- outputs/skills-audit.md — per-skill audit results
+- outputs/deploy-guard.ts — deployment guard
 ```
 
 ### Comments & Collaboration
@@ -128,27 +125,21 @@ Write a one-time script that:
 3. Run `project-health.ts` scanner — verify it finds projects at new location
 4. Check the creating-projects skill matches the new structure
 
-## Context Maintenance
+## Current State Maintenance
 
-The `## Context` section in project.md accumulates key discoveries across iterations.
+The reviewer updates `## Current State` after each iteration with findings, facts, and decisions.
 
-**Who maintains it**: The **reviewer**, not the worker. The reviewer has the bird's-eye view and decides what's worth remembering.
+**Who maintains it**: The **reviewer/orchestrator**, not the worker.
 
-**How it works**:
-1. Worker does work, produces output
-2. Reviewer evaluates, identifies key facts/discoveries
-3. Reviewer includes `CONTEXT_UPDATE: <bullet points>` in their response
-4. Workflow parses and appends to `## Context` section
+**What goes in Current State**:
+- Where are we now, what's the gap to the goal
+- Key facts discovered (DB schema, file locations, dependencies)
+- What worked and what didn't
+- For closed projects: conclusions and recommended next actions
 
-**What goes in Context**:
-- Key facts: DB schema, API endpoints, file locations discovered
-- What worked/didn't: "approach X failed because Y"
-- Dependencies: "requires Z to be running first"
-
-**What doesn't go in Context**:
-- Narrative ("we spent 3 iterations on this")
-- Temporary state ("currently waiting for PR")
-- Iteration-specific details (that's what journal.md is for)
+**What stays in journal.md**:
+- Per-iteration details (worker output, reviewer decisions)
+- Temporary state and iteration-specific notes
 
 ## Implementation Status (2026-04-27)
 
