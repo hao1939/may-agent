@@ -39,7 +39,7 @@ type MetricRow = {
   current: number | null;
   target: number | null;
   threshold: number | null;
-  alert_direction: string | null;
+  alert_op: string | null;
 };
 
 // Ordered, auditable: one entry per health metric. `null` threshold means skip
@@ -104,7 +104,7 @@ const db = APPLY ? new Database(dbPath) : new Database(dbPath, { readonly: true 
 function fetchAll(): MetricRow[] {
   return db
     .query(
-      `SELECT id, name, type, current, target, threshold, alert_direction
+      `SELECT id, name, type, current, target, threshold, alert_op
        FROM metrics WHERE status='active' AND type='health' ORDER BY id`,
     )
     .all() as MetricRow[];
