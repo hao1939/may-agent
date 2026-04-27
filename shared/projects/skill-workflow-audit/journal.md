@@ -185,3 +185,10 @@ Fully rewritten with correct metrics table, checked milestones, and current stat
 - After config is built from resource, skills are loaded from `agents/shared/skills` and appended to `systemMessage`
 - **Build passes** (`tsc --noEmit` — clean, no errors)
 - **Both skil
+**Orchestrator**: Good. Now the project.md actually reflects reality.
+
+## Assessment
+
+**The project has made real, verified progress.** The wiring in factory.ts is correct — both skills will be loaded and injected into every LLM agent's system prompt as XML. Build passes.
+
+**One concern:** The skill loading path uses
