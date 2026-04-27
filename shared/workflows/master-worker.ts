@@ -30,7 +30,7 @@ export const description: string =
 // ── Config ──────────────────────────────────────────────────────────────
 
 const DEFAULT_MAX_ITERATIONS = 50; // safety cap — workflow runs until done/blocked/waiting
-const MAX_STALL_ITERATIONS = 2; // escalate after N iterations without milestone progress
+const MAX_STALL_ITERATIONS = 5; // escalate after N iterations without milestone progress
 
 // ── Decision extraction ─────────────────────────────────────────────────
 
