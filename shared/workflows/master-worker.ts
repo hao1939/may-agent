@@ -17,8 +17,7 @@
 import { readFileSync, existsSync, writeFileSync, appendFileSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import {
-  extractField, extractSection,
-  extractComments, clearComments, updateProjectStatus,
+  extractField, extractSection, extractComments, clearComments, updateProjectStatus,
 } from "./project-helpers.ts";
 
 export const name: string = "master-worker";
@@ -243,26 +242,11 @@ ${journalContent.slice(-3000)}
       // ── Review phase ──
       ctx.log(`[review] Orchestrator evaluating iteration ${iteration}...`);
 
-      // Build review prompt with current milestone state
-      const currentContent = readFileSync(projectFile, "utf-8");
-      const ms = extractMilestones(currentContent);
-      let reviewPrompt = `## Worker Output (Iteration ${iteration})\n${workerSummary}\n\n`;
-      if (ms.total > 0) {
-        reviewPrompt += `## Current Milestones (${ms.done}/${ms.total})\n`;
-        if (ms.completed.length > 0) reviewPrompt += `Done: ${ms.completed.join(", ")}\n`;
-        if (ms.pending.length > 0) reviewPrompt += `Pending: ${ms.pending.join(", ")}\n`;
-        reviewPrompt += `\n`;
-      }
+      const reviewPrompt = `## Worker Output (Iteration ${iteration})
+${workerSummary}
 
-      // Check for new human comments mid-run
-      const newComments = extractComments(currentContent);
-      if (newComments) {
-        reviewPrompt += `## New Human Comments\n${newComments}\n\n`;
-        const cleared = clearComments(currentContent);
-        writeFileSync(projectFile, cleared, "utf-8");
-      }
-
-      reviewPrompt += `Evaluate and provide your next decision.`;
+Read project.md for current state, metrics, and plan. Update it as needed.
+Then provide your decision and guidance for the next iteration.`;
 
       let reviewAttempt = 0;
       while (reviewAttempt < 3) {
@@ -293,7 +277,6 @@ ${journalContent.slice(-3000)}
     }
 
     // ── Wrap up ──
-    const finalMs = extractMilestones(readFileSync(projectFile, "utf-8"));
     let finalStatus: string;
     let stopReason: string;
 
