@@ -54,7 +54,8 @@ Key discoveries and facts accumulated across iterations:
 Key files, commands, how to measure/verify.
 
 ## Artifacts
-Files produced by this project (auto-cataloged from outputs/ after each iteration):
+Reference artifacts inline where mentioned (e.g. "see outputs/skills-audit.md" in Current State).
+Full list for discoverability:
 - outputs/baseline-report.md
 - outputs/deploy-guard.ts
 ```

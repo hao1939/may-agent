@@ -13,9 +13,9 @@ Verify every skill and workflow in the system. For each one: does it parse? is i
 ## Current State
 Audit complete. Key findings:
 
-**Skills: 77% orphaned.** 53 shared skills audited — only 12 (23%) referenced by any agent. 22 worth keeping, 20 should be archived, 5 need fixes. The core problem is delivery: skills exist but nothing injects them into agent context. Per-agent `skills/` dir is the only path. Most-referenced: `verification` (all agents), `patterns` (8 agents). Top deploy candidates: `coder-edit-discipline` → coder, `delegation-verification` → tech-lead, `error-handling` → all.
+**Skills: 77% orphaned** (details: outputs/skills-audit.md). 53 shared skills audited — only 12 (23%) referenced by any agent. 22 worth keeping, 20 should be archived, 5 need fixes. The core problem is delivery: skills exist but nothing injects them into agent context. Per-agent `skills/` dir is the only path. Most-referenced: `verification` (all agents), `patterns` (8 agents). Top deploy candidates: `coder-edit-discipline` → coder, `delegation-verification` → tech-lead, `error-handling` → all.
 
-**Workflows: healthy.** 29/29 parse, 0 orphaned. Workflow registration via cron.json works — stark contrast with skills.
+**Workflows: healthy** (details: outputs/workflows-audit.md). 29/29 parse, 0 orphaned. Workflow registration via cron.json works — stark contrast with skills.
 
 **Caveat:** audit was read-based, not run-based. Parsing ≠ working. Known runtime bugs exist in master-worker.
 
