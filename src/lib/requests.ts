@@ -293,6 +293,8 @@ CREATE TABLE IF NOT EXISTS projects (
   workflow        TEXT DEFAULT 'project',
   iteration       INTEGER DEFAULT 0,
   priority        TEXT,
+  milestones_done INTEGER DEFAULT 0,
+  milestones_total INTEGER DEFAULT 0,
   updated_at      INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
