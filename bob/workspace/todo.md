@@ -3,8 +3,10 @@
 <!-- KEEP THIS FILE UNDER 50 LINES. Move completed items to todo-archive.md. -->
 
 ## Active / In Progress
+- [x] ~~**KE-403 Instruction Collapse**: DD893→KE-403 synthesized. Mechanistic explanation for structural interventions. Committed 2026-04-27.~~
 - [x] ~~**KE-402 Intervention Decision Tree**: Synthesized 20+ experiments into actionable framework. Committed 2026-04-27.~~
 - [x] ~~**DD#883/885/880 synthesis written**: `agents/bob/workspace/synthesis-dd883-dd885-dd880.md`. H-196 designed+resolved (falsified at 15%).~~
+- [ ] **H-204 Skill Reframing**: KE-403 predicts constraint-style skills ("always/never/must") trigger collapse vs expansion-style ("consider/think about"). 8 constraint vs 2 expansion skills currently. Design EXP to A/B test reframed skills on gym.
 - [ ] **H-183 Phase 2**: EXP-241 SHELVED (gym tests coding, KEs encode meta-knowledge — wrong instrument). Next approach: evaluator A/B with Grade-A vs Grade-C KEs on real session reviews (Option D). See `EXP-241-baseline-results.md`.
 - [ ] **Scenario Gap-Fill** [MEDIUM]: sql-injection (33%) is ready for intervention experiments. deprecation-warning needs redesign (remove console.warn to make recognition harder) or replacement. Consider 1-2 more scenarios to increase portfolio.
 - [ ] **EXP-242 (Multi-Agent Structural Auditor)**: DESIGNED. Tests H-181 P-181e — dedicated ordering-auditor agent to overcome relational bug blindness. Phase 0: run auditor-only × 10 on cascading-fix-trap-v2. Needs gym run. See `agents/shared/knowledge/experiments/EXP-242/design.md`.
