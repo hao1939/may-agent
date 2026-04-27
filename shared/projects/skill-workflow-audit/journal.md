@@ -105,3 +105,6 @@ Good — `outputs/workflows-runtest.md` exists with 37 lines and real execution 
 **Milestone completed: "Add gym scenario that tests skill delivery"** (scenario created at `agents/gym/scenarios/skill-delivery-obstacle-pivot/`)
 
 That's 8/10 done. Rem
+
+### Iteration 8 — 2026-04-27T11:30:35.596Z
+**Worker**: Now update skills-impact.md with the gym execution data:
