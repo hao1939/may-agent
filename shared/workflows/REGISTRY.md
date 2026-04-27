@@ -11,8 +11,6 @@
 | `master-worker` | `shared/workflows/master-worker.ts` | 404 | Two persistent sessions (orchestrator + worker) in a review-first → work → review loop. Alternative project pattern. |
 | `implement-and-verify` | `shared/workflows/implement-and-verify.ts` | 203 | Lightweight code workflow (H-070 P3): coder Plan → Write → Verify. No QA agent. **Workhorse — 85% of all workflow usage.** |
 | `verify-wrap` | `shared/workflows/verify-wrap.ts` | 233 | Minimal 2-phase verification wrapper (EXP-138). Phase 1: execute task. Phase 2: separate session reads back all written files. |
-| `freestyle-wrap` | `shared/workflows/freestyle-wrap.ts` | 66 | Ultra-thin workflow wrapper for ad-hoc sessions. Adds workflow tracking with zero overhead. |
-| `coaching-feedback` | `shared/workflows/coaching-feedback.ts` | 256 | Sensor-Judge workflow: JS queries convention_checks DB → Coach LLM analyzes violations and decides coaching strategy. |
 | `error-scan` | `shared/workflows/error-scan.ts` | 446 | Sensor-Judge workflow: JS scans ERROR_LOG.jsonl files → LLM analyzes error patterns and decides intervention. |
 
 **Not workflows** (helper modules with no `execute()` function):
@@ -28,7 +26,7 @@
 
 12 workflows were previously archived and have now been **deleted from disk** (2026-04-11). All recoverable from git history only.
 
-Deleted workflows (3,480+ lines total): `code-review-loop`, `context-learn`, `evidence-gate`, `gated-exploration`, `predict-then-verify`, `reviewed-delivery`, `two-phase`, `verify-and-finish`, `verify-parallel`, `research-to-production`, `auto-loop`, `implement-and-adversarial-review`, `skill-lifecycle` (removed 2026-04-19, 0 recent usage).
+Deleted workflows (3,800+ lines total): `code-review-loop`, `context-learn`, `evidence-gate`, `gated-exploration`, `predict-then-verify`, `reviewed-delivery`, `two-phase`, `verify-and-finish`, `verify-parallel`, `research-to-production`, `auto-loop`, `implement-and-adversarial-review`, `skill-lifecycle` (removed 2026-04-19, 0 recent usage), `freestyle-wrap`, `coaching-feedback` (removed 2026-05-25, 0 usage in cron or any caller).
 
 ## Agent-Specific Workflows
 

@@ -1,6 +1,6 @@
 # Project: Gym Leverage (Worker-Reviewer)
 
-**Status**: active
+**Status**: completed
 **Owner**: bob
 **Type**: milestone
 **Workflow**: worker-reviewer
@@ -19,14 +19,14 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 - [x] Write .state/gym-architecture.md documenting the runner → adapter → scenario → scorer pipeline
 
 ### Phase 2: Scenario Review
-- [ ] Write .state/gym-categories.md categorizing all 431 scenarios by type with counts
-- [ ] Select a "core 20" benchmark suite, document selection rationale in .state/gym-core20.md
-- [ ] Run core 20 suite and record baseline scores in .state/gym-baseline.md
+- [x] Write .state/gym-categories.md categorizing all 431 scenarios by type with counts
+- [x] Select a "core 20" benchmark suite, document selection rationale in .state/gym-core20.md
+- [x] Run core 20 suite and record baseline scores in .state/gym-baseline.md
 
 ### Phase 3: Gym-Driven Evolution
-- [ ] Design the feedback loop in .state/gym-evolution-process.md
-- [ ] Run one cycle: pick worst category, write/improve a skill, measure improvement
-- [ ] Document results of the cycle in .state/gym-cycle-1-results.md
+- [x] Design the feedback loop in .state/gym-evolution-process.md
+- [x] Run one cycle: pick worst category, write/improve a skill, measure improvement
+- [x] Document results of the cycle in .state/gym-cycle-1-results.md
 
 ## Resources
 - Gym README: agents/gym/README.md
@@ -35,7 +35,7 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 - Gym triage: agents/gym/TRIAGE.md
 
 ## Current State
-Phase 1 complete. Runner works cleanly — all 3 test scenarios passed (phantom-fix, behavior-escalation-stubborn, cascading-error). Architecture documented in .state/gym-architecture.md. Ready for Phase 2: categorize scenarios and select core benchmark suite.
+All phases complete. All 9 milestones done. Deliverables: gym-architecture.md, gym-categories.md, gym-core20.md, gym-baseline.md, gym-evolution-process.md, gym-cycle-1-results.md.
 
 ## Process Notes
 
