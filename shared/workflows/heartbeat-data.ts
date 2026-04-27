@@ -132,13 +132,31 @@ export function loadInbox(ctx: WorkflowContext, agent: string): string {
       LIMIT 20
     `).all(agent, Date.now()) as any[];
     if (!rows.length) return "";
-    return rows.map((r: any) => {
+    // Dedup: collapse notifications with similar content (first 80 chars of summary)
+    const dedupMap = new Map<string, { count: number; newest: any; oldest: any }>();
+    for (const r of rows) {
+      const dataObj = r.data ? JSON.parse(r.data) : {};
+      const summary = dataObj.summary || dataObj.error || dataObj.task || "";
+      // Key on event_type + first 80 chars of summary (normalized)
+      const key = `${r.event_type}:${summary.slice(0, 80).replace(/\s+/g, ' ').trim().toLowerCase()}`;
+      const existing = dedupMap.get(key);
+      if (existing) {
+        existing.count++;
+        if (r.timestamp > existing.newest.timestamp) existing.newest = r;
+        if (r.timestamp < existing.oldest.timestamp) existing.oldest = r;
+      } else {
+        dedupMap.set(key, { count: 1, newest: r, oldest: r });
+      }
+    }
+    return Array.from(dedupMap.values()).map((entry) => {
+      const r = entry.newest;
       const age = Math.round((Date.now() - r.timestamp) / 60000);
       const ageStr = age < 60 ? `${age}m ago` : `${Math.round(age / 60)}h ago`;
       const retry = r.retry_count > 0 ? ` (retry #${r.retry_count})` : "";
       const dataObj = r.data ? JSON.parse(r.data) : {};
       const summary = dataObj.summary || dataObj.error || dataObj.task || "";
-      return `- [${ageStr}] **${r.event_type}**${retry} — ${summary}`.slice(0, 120);
+      const dupBadge = entry.count > 1 ? ` (×${entry.count})` : "";
+      return `- [${ageStr}] **${r.event_type}**${retry}${dupBadge} — ${summary}`.slice(0, 140);
     }).join("\n");
   } catch { return ""; }
 }
