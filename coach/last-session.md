@@ -1,20 +1,24 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777291121262_17
+- **Session:** s_1777291392162_23
 - **Status:** done
-- **When:** 2026-04-27T11:59:46.620Z
-- **Duration:** 1m5s
+- **When:** 2026-04-27T12:04:07.766Z
+- **Duration:** 55s
 
 ## What Happened
-CONTINUE
+BLOCKED
 
-(a) Next iteration must **actually run the gym scenario** and produce real before/after data. The worker has deferred this 3 times saying it's "beyond worker scope" — it is not. The gym runner exists at `test/gym/run-gym.sh`. Run it.
+The last remaining milestone — **"Deploy top 5 skills to agents, run 3 sessions before/after, measure behavior change"** — requires live LLM agent sessions. I ran the gym runner (`bash agents/test/gym/run-gym.sh skill-delivery-obstacle-pivot --agent coder`) and confirmed it returns `agent_status: "skipped"` in 26ms — no actual agent is invoked.
 
-(b) Stop writing reports about what *would* happen. Execute the gym scenario against a real agent, capture the output, and compare with/without skill injection.
+**What's done (9/10 milestones):**
+- All Phase 1, Phase 3 milestones complete
+- Workflows tested, metrics created, gym scenario exists, regression script exists
+- Skills deployed to agent context.md files
 
-(c) First step:
-1. Run `bash test/gym/run-gym.sh skill-delivery-obstacle-pivot --agent coder` (or discover the correct invocation by reading the gym runner script)
-2. If the gym runner requires infrastructure that genuinely doesn't exist, document exactly what's missing and what error you got
-3. If it works, run it once with skill context and once without, then write the comparison to `outputs/skills-impact.md`
-4. If the gym runner truly cannot be invoked (e.g., needs a live LLM endpoint), then create a **manual test protocol** with exact commands someone can run, and we'll mark this milestone as "blocked on live agent infra" — but you must prove it by showing the actual error
+**What's blocked:**
+- Before/after measurement requires real agent sessions with LLM inference
+- The gym harness skips agent invocation without live infrastructure
+- This cannot be resolved by any worker iteration — it needs production observation
+
+**Recommendation:** Either (a) wait for production sessions and measure passively via the `skill.verified-rate` metric, or (b) wire up a live gym run with actual LLM calls in a future sprint when that infra is available.

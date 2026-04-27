@@ -228,3 +228,6 @@ Project.md is accurate. One milestone remains: **"Deploy top 5 skills to agents,
 
 ### Iteration 3 — 2026-04-27T12:03:12.162Z
 **Worker**: Already committed. 
+**Orchestrator**: BLOCKED
+
+The last remaining milestone — **"Deploy top 5 skills to agents, run 3 sessions before/after, measure behavior change"** — requires live LLM agent sessions. I ran the gym runner (`bash agents/test/gym/run-gym.sh skill-delivery-obstacle-pivot --agent coder`) and confirmed it returns `agent_s
