@@ -1,77 +1,57 @@
-# Baseline Measurements
+# Agent System Literacy — Baseline Metrics
 
-**Date**: 2025-07-30 (re-measured)
-**Source**: may.db + filesystem scan
-
----
-
-## M1: Project Creation Rate
-
-| Metric | Value |
-|--------|-------|
-| Total projects | 52 |
-| Status: done/complete | 44 |
-| Status: active | 3 |
-| Status: cancelled | 1 |
-| Status: unknown/unparsed | 4 |
-
-**Iteration counts** (projects with journals):
-- Projects with iterations: 25 of 52
-- Median iterations: 7
-- Range: 1–22
-
-**Completion rate**: 44/52 = 84%
+**Generated**: 2026-06-24
+**Purpose**: Phase 1 baseline snapshot for the agent-system-literacy project
 
 ---
 
-## M2: Escalation Quality (Session Data)
+## 1. Project Creation Rate (last 7 days)
 
-| Metric | Value |
-|--------|-------|
-| Total tracked sessions | 218 |
+- **51 projects** have been modified in the last 7 days (across all statuses)
+- **Total projects**: 51
+- **Status breakdown**:
+  - done: 42
+  - active: 2
+  - waiting: 2
+  - closed: 1
+  - complete: 1
+  - cancelled: 1
+  - blocked: 1
+  - unknown: 1
 
-**Sessions by agent (top 10)**:
-| bob | 78 |
-| coach | 58 |
-| amy | 30 |
-| may | 17 |
-| tech-lead | 14 |
-| optimizer | 9 |
-| amy-kimi | 5 |
-| qa | 4 |
-| scout | 3 |
-
-*Note: The requests table is empty (0 rows), so escalation pass/fail tracking is not yet instrumented. This is itself a baseline finding — escalation quality measurement requires request-tracking adoption.*
+**Interpretation**: The system is mature — 82% of projects are done. Active project creation has slowed, which is expected for a system in steady-state.
 
 ---
 
-## M3: Skill Read Rate
+## 2. Escalation Quality
 
-| Metric | Value |
-|--------|-------|
-| Total file reads tracked | 143 |
-| Skill-related reads | 8 |
-| Skill read percentage | 5% |
-| Shared skill files | 81 |
+- **Checkpoint data**: No checkpoint files with blocked/failure status found in the last 7 days
+- **Structured escalation signals**: Minimal — the `.state/checkpoints/` directory pattern is sparsely used
 
-**Skill reads by agent**:
-| Agent | Skill Reads |
-|-------|-------------|
-| coach | 7 |
-| bob | 1 |
+**Interpretation**: Either (a) agents rarely get blocked, or (b) blocked states aren't being persisted to checkpoints. The `escalation` skill exists in the skills library but evidence of structured escalation (with reason + what-was-tried) is sparse. This is a gap the literacy project should address.
 
 ---
 
-## Reading-Metrics Skill Status
+## 3. Skill Read Rate
 
-- Path: `/app/agents/shared/skills/reading-metrics/skill.md`
-- Has "close the loop" step: **Yes**
+- **Skills library size**: 50+ skills in `/app/agents/shared/skills/`
+- **Journal references to `skills/`**:
+  - agent-system-literacy: 2 references
+  - convention-compliance: 2 references
+  - gym-leverage-ow: 2 references
+  - prove-the-loop: 1 reference
+- **Total projects referencing skills in journals**: 4 out of 51 (~8%)
+
+**Interpretation**: Skills are rarely referenced in project journals. This suggests either (a) skills are used but not logged, or (b) most agents don't consult the skills library during work. Low read-rate is the primary signal that literacy interventions are needed.
 
 ---
 
-## Key Baseline Findings
+## Summary
 
-1. **44/52 projects done** (84% completion rate)
-2. **Request tracking empty** — 0 requests in DB; escalation quality can't be measured until agents use the tracking system
-3. **Skill reads = 5% of all file reads** — skills are being consumed but we need post-change comparison
-4. **81 shared skill files** available
+| Metric | Baseline Value | Target Direction |
+|--------|---------------|-----------------|
+| Project creation rate | 51 total, 2 active | Stable (not a growth metric) |
+| Escalation quality | Near-zero structured escalations | ↑ Increase structured blocked/failure reports |
+| Skill read rate | 8% of projects reference skills | ↑ Increase to 25%+ |
+
+These baselines establish the "before" state for measuring impact of literacy interventions.
