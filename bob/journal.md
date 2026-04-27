@@ -889,6 +889,27 @@ H-054 P(H) updated to 0.65 (from 0.50). Phase 2 (inter-rater reliability measure
 - All notifications dismissed: P2 paper connections (already noted), P1 productivity warnings (metrics healthy), EXP-216 superseded (acknowledged)
 
 ### Next
-- Context-matcher integration proposal to May (still pending)
 - EXP-243 when gym available
 - New hypothesis candidates from paper queue when there's capacity
+
+## 2027-07-31 Heartbeat
+
+### Status: All Clear
+- Metrics healthy: 95.9% exp completion, 63.6% hypotheses resolved
+- All 28 hypotheses resolved, all experiments closed
+- Gym still blocked on GYM_AGENT_BIN
+
+### Action: Context-Matcher Integration Proposal
+- Wrote proposal for May: `agents/bob/workspace/proposal-context-matcher-integration.md`
+- Tool exists at `agents/tools/context-matcher/match.ts`, validated by EXP-235/237
+- Needs May's input on session init integration point
+
+### Inbox Triage
+- Dismissed all P2 paper notifications (papers already connected to resolved hypotheses)
+- P1 productivity warnings: metrics healthy, dismiss
+- DD#880, DD#882, DD#883: connected to already-resolved hypotheses (H-EXP-022, H-EXP-044)
+
+### Next
+- Await May response on context-matcher proposal
+- EXP-243 when gym available
+- Consider new research direction: extend context-matcher to non-coder agents
