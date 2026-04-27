@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777321521775_68
+- **Session:** s_1777323321840_80
 - **Status:** done
-- **When:** 2026-04-27T20:26:34.998Z
-- **Duration:** 1m13s
+- **When:** 2026-04-27T20:56:24.316Z
+- **Duration:** 1m2s
 
 ## What Happened
-amy-kimi has 7 errors out of 7 sessions — 100% error rate. Tech-lead owns that project. Let me nudge them.
+Blocked count should now be 0. The two remaining are "active" which is correct. Now let me check on the key issues: amy-kimi has 6 errors in 6 sessions (100% error rate).

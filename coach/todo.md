@@ -23,6 +23,12 @@
 - intervention-hit-rate, skill-effectiveness, instruction-compliance had ratio targets (0.6) but percentage values (47.3)
 - Fixed targets/thresholds to percentage scale to match source_query outputs
 
+## P0: Unblock Gym Runner for A/B Experiments (NEW Jun 29)
+- **Blocker**: Gym runner needs GYM_AGENT_BIN env var to spawn agent sessions. Without this, ALL experiments are blocked.
+- **Evidence**: `node test/gym/.gym-runner-bundle.mjs partial-verification-trap --agent coder` finishes in 66ms with agent_status "skipped" — no agent is spawned.
+- **Impact**: EXP-250 blocked, per-skill attribution blocked, verification experiment blocked.
+- **Action needed**: Escalate to tech-lead/may to configure GYM_AGENT_BIN or find alternative invocation path.
+
 ## P2: Clean Stale LESSONS.md References  
 - Remove P53 bash guard references from coach/optimizer LESSONS.md (guard was removed months ago)
 
