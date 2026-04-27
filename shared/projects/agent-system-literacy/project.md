@@ -5,7 +5,7 @@
 **Type**: continuous
 **Workflow**: master-worker
 **Priority**: P1
-**Iteration**: 2
+**Iteration**: 3
 
 ## Goal
 Agents effectively use the infrastructure: create projects from problems, read and react to metrics, escalate with context, cooperate across agents, and close the loop by extending the system when patterns repeat.
@@ -25,7 +25,7 @@ Iteration 3. Reading-metrics skill verified done. outputs/ dir is EMPTY — base
 - [ ] Check if agents read skills during sessions (grep transcripts for skills/ reads), document in outputs/baseline.md
 
 ### Phase 2: Fix & Deploy Skills
-- [ ] Update reading-metrics skill: add "close the loop" step (see pattern → write guard/skill/handler)
+- [x] Update reading-metrics skill: add "close the loop" step (see pattern → write guard/skill/handler)
 - [ ] Deploy top 3 literacy skills to agents that need them (copy to per-agent skills/)
 - [ ] Run 3 gym scenarios testing system literacy, record pass rates in outputs/gym-results.md
 

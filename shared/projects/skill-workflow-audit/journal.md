@@ -70,3 +70,8 @@ The `workflows-runtest.md` file is empty (0 lines). Three iterations without pro
 
 ### Iteration 3 — 2026-04-27T11:19:46.026Z
 **Worker**: Now let me write the report:
+**Orchestrator**: CONTINUE
+
+Four iterations, still no `workflows-runtest.md`. The worker keeps saying "let me write the report" but never actually writes it. I'll be extremely prescriptive.
+
+**(a) Next iteration must produce:** `/app/agents/shared/projects/skill-workflow-audit/outputs/workflows-runtest.md` — verified
