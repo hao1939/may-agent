@@ -1,16 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777315505881_0
+- **Session:** s_1777316121794_0
 - **Status:** done
-- **When:** 2026-04-27T18:46:13.367Z
-- **Duration:** 1m7s
+- **When:** 2026-04-27T18:56:37.651Z
+- **Duration:** 1m15s
 
 ## What Happened
-Key findings:
-- **iterations-24h = 0**: Only 1 active project (bob's gym-leverage-wr, iteration 1). No work is flowing.
-- **blocked-over-6h = 2**: No blocked projects in DB — likely stale metric state.
-- **amy-kimi**: All 10 sessions errored — account suspended (billing/balance issue).
-- **No pending requests**: Pipeline is dry.
+The blocked-over-6h metric is tracking bob's stale projects (`master-worker-test`, `agent-cli-research`, `master-worker-test-2`) which are in "waiting"/"unknown" status. Also `amy-kimi` has 10 errors in 10 sessions (100% error rate).
 
-Let me nudge bob to iterate on his project and get other agents creating work:
+Let me take action on both issues:
