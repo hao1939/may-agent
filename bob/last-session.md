@@ -1,20 +1,26 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777289533682_79
+- **Session:** s_1777289982960_85
 - **Status:** done
-- **When:** 2026-04-27T11:32:32.326Z
-- **Duration:** 18s
+- **When:** 2026-04-27T11:40:17.421Z
+- **Duration:** 34s
 
 ## What Happened
 CONTINUE
 
-No `investigation.md` or regression guard written yet. 2 milestones remain.
+Milestone completed: "If metrics improved, document what worked. If not, investigate why."
 
-**(a)** Write both deliverables this iteration:
-1. `outputs/investigation.md` — document that metrics did NOT improve, why (agents lack triggers to read skills/), and recommended fix (add skill refs to agent system prompts or heartbeat context)
-2. A regression guard — create `/app/agents/shared/guards/literacy-regression.md` that defines: metric thresholds (skill-read-rate < 10%, escalation-quality < 50%), check frequency, and action (reactivate this project)
+7/8 milestones done. One remains.
 
-**(b)** End by running `ls outputs/` and `ls /app/agents/shared/guards/` to prove both exist.
+**(a)** Write `outputs/regression-guard.md` documenting a regression detection mechanism, then create the actual guard. The simplest approach: a metric threshold check that, when skill-read-rate drops below baseline (currently 0%, so any future improvement), flags this project for reactivation.
 
-**(c)** First step: Write `outputs/investigation.md`. The data is already in `post-deployment-comparison.md` — summarize it.
+**(b)** This is the final milestone — after this we're done.
+
+**(c)** First step: Write `outputs/regression-guard.md` with:
+- What metric to watch: `system.skill-read-rate` (or equivalent — count of `skills/` file reads in session checkpoints)
+- Threshold: if skill-read-rate drops below 10% after any future improvement campaign
+- Action: reactivate this project
+- Also consider: add a simple metric emission (e.g., write a row to the metrics DB tracking current skill-read-rate) so future heartbeats can query it
+
+Keep it pragmatic — a documented plan counts. If you can also wire up an actual metric entry or heartbeat check, even better.

@@ -1,6 +1,12 @@
 # Project: Skill & Workflow Quality
 
-**Status**: complete
+**Status**: done
+**Stop Reason**: DONE
+
+All 10 milestones are verified complete with artifacts on disk:
+
+- **Phase 1**: `skills-audit.md`, `workflows-audit.md` 
+- **Phase 2**: `workflows-runtest.md`, `skills-impact.md`, `skill-deploym
 **Owner**: coach
 **Type**: continuous
 **Workflow**: master-worker
@@ -16,7 +22,12 @@ Every skill and workflow in the system must be verified working, measured for im
 - skill.delivery-rate: 0.23 → target 0.60 (% of skills referenced by at least one agent)
 
 ## Current State
-All 10 milestones complete. All artifacts verified in outputs/. Project marked complete on iteration 9.
+done: DONE
+
+All 10 milestones are verified complete with artifacts on disk:
+
+- **Phase 1**: `skills-audit.md`, `workflows-audit.md` 
+- **Phase 2**: `workflows-runtest.md`, `skills-impact.md`, `skill-deploym
 
 ## Plan
 
