@@ -1,27 +1,23 @@
-# Heartbeat Cycle — triage + dispatch
+You're waking up for a heartbeat. Review your metrics, check your projects, and act on what matters.
 
-You're waking up for a normal coordination heartbeat. Do the usual dispatch/triage cycle described below.
+## Your Metrics
+📊 system.session-success-rate: 0.52 (target 0.90) 🔴
+📊 system.agent-coverage: 1.00 (target 0.80) ✅
+📊 system.project-velocity: 0.75 (target 0.70) ✅
 
-## Injected: metrics (last 24h)
+## Active Alerts
+- [2m ago] **metric.breach** — system.session-success-rate dropped from 0.94 to 0.52 in the last hour
 
-```
-stuck-requests: 76, target: 0
-request-throughput: 12/h, target: >= 8/h
-session-error-rate: 3.1%, target: < 5%
-```
+## Context
+The session success rate dropped sharply. You need to:
+1. Read the metric data to understand what's happening
+2. Diagnose the root cause
+3. Act (fix it) or escalate with: metric name, current value, expected value, diagnosis, what you tried
 
-## Injected: dispatch board
+The metric database is at `.state/may.db`. The baseline report is at `.state/metrics/baseline-report.md`.
 
-Three items are on the board right now:
+## Available Skills
+- `skills/reading-metrics.md` — how to check metrics and act on them
 
-- `[TODO] review agents/coder/SOUL.md for duplicated bullets (low priority)`
-- `[TODO] summarize yesterday's gym-run batch 2026-04-17-b (low priority)`
-- `[TODO] pick a knowledge entry to file away in agents/shared/knowledge/ (low priority)`
-
-## Your steps this cycle
-
-1. Read the dispatch board items above.
-2. Pick ONE item and produce a short (3–5 line) write-up for it in `triage-note.md`.
-3. Call `finish()` with a summary of what you did this cycle.
-
-Keep it short — this is a single heartbeat, not a deep investigation. Typical heartbeat is ≤12 ops.
+## What happened (available in the DB)
+The `.state/may.db` database has a `sessions` table. Query it to find what's failing.
