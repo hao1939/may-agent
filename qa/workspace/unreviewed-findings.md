@@ -33,6 +33,8 @@ Initial content review:
 - `gym/scenarios/knowledge-entry-creation/task.md` includes skills content AND also appears to include scenario instructions appended at the bottom.
 - Potential issue: scenario task file seems to be mixing general skill documentation with the specific scenario prompt; may be intentional but increases noise and may confuse agents.
 
-## Next QA actions (requires node repo)
+## Repo status
+- `/app` is not a git repo (`git log` fails). `agents/` is a git repo; last 10 commits are mostly documentation/experiment changes.
 
-Mandatory QA steps for code changes (tsc/vitest) could not be run because this heartbeat inspected only the `agents/` repo content; no TypeScript project context was verified in this session.
+## Next QA actions (requires node repo)
+Mandatory QA steps for code changes (tsc/vitest) were not run this heartbeat because no application TypeScript project/review target was identified outside the `agents/` repo.
