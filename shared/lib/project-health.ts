@@ -194,17 +194,12 @@ export function diagnoseProject(
   healthState: HealthState,
   breachedMetrics: Set<string>,
   runningProjects: Set<string>,
-  inflight: Set<string>,
   now: number,
   allProjects: ProjectInfo[],
 ): HealthAction {
   const skip: HealthAction = { type: "skip", reason: "no action needed", comment: "" };
 
   // Already running — don't double-launch
-  if (inflight.has(project.relPath)) {
-    return { ...skip, reason: "already inflight" };
-  }
-
   const entry = healthState.projects[project.relPath];
   const status = project.status;
 

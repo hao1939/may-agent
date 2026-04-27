@@ -22,14 +22,12 @@ async function loadProjectHealth() {
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   const agentsRoot = resolve(ctx.projectRoot, "agents");
   const stateFile = resolve(ctx.projectRoot, ".state/project-health-state.json");
-  const inflightFile = resolve(ctx.projectRoot, ".state/project-inflight");
   const workflowsDir = join(agentsRoot, "shared", "workflows");
 
   return async (event?: TriggerEvent) => {
     const ph = await loadProjectHealth();
     const now = Date.now();
     const healthState = ph.readHealthState(stateFile);
-    const inflight = ph.readInflight(inflightFile);
 
     const projects = ph.scanAllProjects(agentsRoot);
     if (projects.length === 0) return;
@@ -48,7 +46,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // Diagnose each project
     const actions: Array<{ project: ProjectInfo; action: HealthAction }> = [];
     for (const project of projects) {
-      actions.push({ project, action: ph.diagnoseProject(project, healthState, breachedMetrics, runningProjects, inflight, now, projects) });
+      actions.push({ project, action: ph.diagnoseProject(project, healthState, breachedMetrics, runningProjects, now, projects) });
     }
 
     // Log non-trivial actions
@@ -113,8 +111,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
       ctx.log(`[project] Launching ${project.relPath} (workflow: ${workflowName}): ${action.reason}`);
 
-      inflight.add(project.relPath);
-      ph.writeInflight(inflightFile, inflight);
 
       // Load workflow file directly (no workflow-tool import — it's in the binary, not on disk)
       const wfPath = join(workflowsDir, `${workflowName}.ts`);
@@ -124,7 +120,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         if (typeof wfMod.execute !== "function") throw new Error("No execute()");
       } catch (err) {
         ctx.log(`[project] ERROR loading workflow "${workflowName}": ${err}`);
-        inflight.delete(project.relPath); ph.writeInflight(inflightFile, inflight);
+        
         continue;
       }
 
@@ -195,7 +191,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       wfMod.execute(workflowCtx)
         .then((r: any) => { ctx.log(`[project] ${project.relPath} → ${r.type}`); wfRun.status = "done"; wfRun.endedAt = Date.now(); try { ctx.saveWorkflowRun(wfRun); } catch {} })
         .catch((e: any) => { ctx.log(`[project] ${project.relPath} ERROR: ${e}`); wfRun.status = "error"; wfRun.endedAt = Date.now(); try { ctx.saveWorkflowRun(wfRun); } catch {} })
-        .finally(() => { inflight.delete(project.relPath); ph.writeInflight(inflightFile, inflight); });
+        .finally(() => {  });
 
       pState.lastLaunch = now;
       pState.consecutiveSkips = 0;
