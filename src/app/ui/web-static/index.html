@@ -277,6 +277,7 @@
   <div id="dashboard">
     <div id="digest-panel" style="margin-bottom:20px"></div>
     <div id="health-summary" class="health-summary"></div>
+    <div id="health-graphs" style="margin:16px 0;display:grid;grid-template-columns:1fr 1fr;gap:12px"></div>
     <div id="agent-grid" class="agent-grid"></div>
     <div id="agent-deep-dive" class="agent-deep-dive" style="display:none"></div>
     <div id="activity-timeline" class="timeline-section" style="display:none">
@@ -441,6 +442,75 @@ async function loadHealth() {
       </div>
     `;
   } catch (e) { console.error('Health error:', e); }
+}
+
+// ── Health Metrics Graphs ────────────────────────────────────────────
+
+const HEALTH_GRAPH_METRICS = [
+  { id: 'handler.success-rate', label: 'Handler Success Rate', threshold: 0.80, format: v => (v * 100).toFixed(0) + '%' },
+  { id: 'handler.heartbeat-coverage', label: 'Heartbeat Coverage', threshold: 6, format: v => v + ' agents' },
+];
+
+function svgSparkline(points, threshold, width, height) {
+  if (!points.length) return '<span style="color:var(--fg2);font-size:12px">No data yet</span>';
+  const values = points.map(p => p.value);
+  const min = Math.min(...values, threshold * 0.8);
+  const max = Math.max(...values, threshold * 1.2);
+  const range = max - min || 1;
+  const xStep = width / Math.max(points.length - 1, 1);
+
+  const pathPoints = values.map((v, i) => {
+    const x = i * xStep;
+    const y = height - ((v - min) / range) * (height - 8) - 4;
+    return `${x},${y}`;
+  });
+  const linePath = 'M' + pathPoints.join(' L');
+
+  // Threshold line
+  const threshY = height - ((threshold - min) / range) * (height - 8) - 4;
+
+  // Color: green if latest above threshold, red if below
+  const latest = values[values.length - 1];
+  const color = latest >= threshold ? 'var(--green)' : 'var(--red)';
+
+  return `<svg width="${width}" height="${height}" style="display:block">
+    <line x1="0" y1="${threshY}" x2="${width}" y2="${threshY}" stroke="var(--fg2)" stroke-dasharray="4,3" stroke-width="1" opacity="0.5"/>
+    <polyline points="${pathPoints.join(' ')}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${(values.length - 1) * xStep}" cy="${height - ((latest - min) / range) * (height - 8) - 4}" r="3" fill="${color}"/>
+  </svg>`;
+}
+
+async function loadHealthGraphs() {
+  const container = document.getElementById('health-graphs');
+  if (!container) return;
+
+  let html = '';
+  for (const metric of HEALTH_GRAPH_METRICS) {
+    try {
+      const res = await fetch(`/api/metrics/${encodeURIComponent(metric.id)}/history?days=1`);
+      const data = await res.json();
+      const snaps = data.snapshots || [];
+      const latest = snaps.length > 0 ? snaps[snaps.length - 1].value : null;
+      const latestStr = latest != null ? metric.format(latest) : '—';
+      const color = latest == null ? 'var(--fg2)' : latest >= metric.threshold ? 'var(--green)' : 'var(--red)';
+
+      html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:12px;color:var(--fg2)">${metric.label}</span>
+          <span style="font-size:14px;font-weight:600;color:${color}">${latestStr}</span>
+        </div>
+        ${svgSparkline(snaps, metric.threshold, 280, 60)}
+        <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:var(--fg2)">
+          <span>24h ago</span>
+          <span style="opacity:0.6">threshold: ${metric.format(metric.threshold)}</span>
+          <span>now</span>
+        </div>
+      </div>`;
+    } catch (e) {
+      html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--fg2);font-size:12px">${metric.label}: error loading</div>`;
+    }
+  }
+  container.innerHTML = html;
 }
 
 // ── Agent Status Grid ─────────────────────────────────────────────────
@@ -1767,6 +1837,7 @@ async function loadDigest(date) {
 
 loadDigest();
 loadHealth();
+loadHealthGraphs();
 loadAgentGrid();
 loadTimeline();
 loadStats();
