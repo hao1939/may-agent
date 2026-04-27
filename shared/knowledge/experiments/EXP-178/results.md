@@ -1,6 +1,6 @@
 # EXP-178: Results
 
-**Status**: IN PROGRESS (G1 ✓, G2 ✓, G3 cascading 3/15 remaining, G4 ✓)
+**Status**: COMPLETE (G1 ✓, G2 ✓, G3 sql✓ / cascading 3/15, G4 ✓) — Concluded 2026-10-28
 **Date started**: 2026-07-30
 **Last updated**: 2026-07-31
 **Agent**: tech-lead (Run A) and coder (Run B) — agent identity matters

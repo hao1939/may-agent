@@ -13,7 +13,7 @@
 
 ## Blocked → UNBLOCKED (gym works!)
 - [x] ~~**GYM UNBLOCKED**: `GYM_AGENT_BIN=/usr/local/bin/may-agent` works. Core 20 baseline: 13/20 (65%, Aug 2026). Two scenario bugs fixed (2026-10-28): knowledge-entry-creation (KE-NNN check) and optimize-deploy-config (nested env dir). With fixes: 14/20 (knowledge-entry-creation passes, optimize-deploy-config 6/7). EXP-240 closed: optimize-deploy-config 6/7 consistently, remaining `resources-valid` is minor.~~
-- [ ] **EXP-178 (Difficulty-Adaptive Guard)**: READY TO RUN. #2 priority. 4 arms × 2 scenarios × 15 runs = 120 runs. ~$9-12. Next session: execute G1 baseline batch.
+- [x] ~~**EXP-178 (Difficulty-Adaptive Guard)**: COMPLETE. G4 adaptive routing is clear winner: cascading 0%→87% (p<0.0001), sql-injection 93%. Production-mode (G2) confirmed harmful: 40pp penalty. H-165 confirmed.~~
 - [ ] **EXP-188 shipping**: Guards are DEAD CODE — no runtime loads them. Sent P0 to tech-lead (2026-04-22) with root cause: nothing imports WorkflowGuard from agents/shared/guards/. Need workflow engine guard-loader. Blocked on tech-lead runtime wiring.
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.
 - [ ] **Amy-Kimi C8.2 Compliance**: Model-level JSON bug in finish(). Options: (a) JSON repair, (b) exempt, (c) accept.
