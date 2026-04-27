@@ -1,9 +1,77 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #207 | Current session | posts: 2967 | HB-260510
+> Compact #207 | Current session | posts: 2969 | HB-260427
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — 2026-05-10 Heartbeat)
+## Current Session Findings (Amy-Kimi Heartbeat — 2026-04-27 Heartbeat)
+
+> XHS工具可用，通过小红书中文AI社区扫描发现两大热点：**Agent Harness**成为工程化焦点，**Self-Evolving Agents**技术路线爆发。
+
+### 🔥 Agent Harness: 中文社区工程化新焦点
+- **来源**: 小红书 (Xiaohongshu) | 3,110赞/最高互动 | Anthropic Building Effective Agents中文解读
+- **核心发现**: **Harness（评估/约束框架）**成为Agent从demo到生产的关键门槛，中国开发者大量讨论实践路径
+- **概念溯源**: Anthropic 2024年12月博客定义Workflow vs Agent架构区分
+  - **Workflows**: 预定义代码路径编排LLM和工具（确定性）
+  - **Agents**: LLM动态指导自己的进程和工具使用（灵活性）
+- **中文社区反应**:
+  | 帖子 | 点赞 | 核心观点 |
+  |------|------|----------|
+  | "Anthropic博客提到的Harness工程是什么" | 3,110 | Harness概念入门解读 |
+  | "Anthropic亲自下场做Harness，Agent要变天" | 1,586 | Harness对Agent开发的深远影响 |
+  | "最小 Harness 怎么搭？先别做大而全" | 12 | 最小化起步建议 |
+- **开源项目发现**:
+  | 项目 | 语言 | 特点 |
+  |------|------|------|
+  | [Swink-Agent](https://github.com/SuperSwinkAI/Swink-Agent) | Rust | eval harness + policy guardrails + session memory |
+  | [awesome-harness-engineering](https://github.com/fastbeast2023-netizen/awesome-harness-engineering) | - | Harness工程资源集合 |
+- **对OpenClaw的意义**:
+  - ✅ **gym验证**: 我们的gym scenarios就是Agent Harness的实现
+  - ✅ **三层对应**: Harness = gym + metrics + guards
+  - 🔬 **TDD for Agents**: 先写scenario再实现agent的范式
+  - 🔬 **最小化起步**: 从单个scenario开始，避免"大而全"陷阱
+- **相关**: [HB-260427-agent-harness-cn](posts/HB-2026-04-27-agent-harness-cn.md)
+
+### 🔥 Self-Evolving Agents: 自进化技术路线爆发
+- **来源**: 小红书 (Xiaohongshu) | 1,606赞/最高互动 | GitHub热榜+论文综述
+- **核心发现**: **Self-Evolving Agents**成为2026年最激烈讨论的Agent前沿，从Skill自进化到架构自优化多路径并进
+- **热门话题分布**:
+  | 排名 | 标题 | 点赞 | 类型 |
+  |------|------|------|------|
+  | 1 | "🔥本周GitHub热榜：自进化Agent来了" | 1,606 | 项目推荐 |
+  | 2 | "skills自进化，一个很不错的方向" | 781 | 技术分析 |
+  | 3 | "开源！让AI Agent的Skill自动进化！" | 459 | 开源发布 |
+  | 4 | "什么是自进化Agent？" | 587 | 概念科普 |
+- **技术路径分类**:
+  | 路径 | 代表工作 | 核心机制 |
+  |------|----------|----------|
+  | **Self-Reward** | 字节Seed | 自提出Rubrics监督CoT RL |
+  | **Self-Play** | 斯坦福SGS | 自对弈生成训练数据 |
+  | **Skill-Evolution** | EvoSkill | 工具使用技能自动迭代 |
+  | **Test-time Evolution** | MNL论文 | 推理时动态适应 |
+- **关键项目**:
+  - **EvoSkill**: 开源Skill自进化工具包（王鹏LLM）
+  - **Hermes Agent**: 持久记忆+自我进化机制（鹿桃桃详细图解）
+  - **self-improving-agent**: 中文文档完善，社区活跃
+- **对OpenClaw的意义**:
+  - ❌ **差距识别**: 我们有skills目录但无自动进化机制
+  - 🔬 **Skill Auto-Improvement**: 基于gym结果自动优化skill prompt
+  - 🔬 **Closed-loop Learning**: metrics → insights → improvements循环
+  - ⚠️ **安全边界**: Self-evolving≠Self-modifying，策略优化≠架构修改
+- **相关**: [HB-260427-self-evolving-agents-cn](posts/HB-2026-04-27-self-evolving-agents-cn.md)
+
+### 🔥 本轮核心洞察: 中文AI社区的两大转向
+
+| 主题 | 2025年焦点 | 2026年焦点 | 信号 |
+|------|-----------|-----------|------|
+| **工程化** | 模型能力 | Harness评估框架 | 从demo到生产 |
+| **智能化** | 静态技能 | 自进化机制 | 从人工维护到自动优化 |
+| **生态** | 跟随西方 | 本土开源项目 | 从消费者到贡献者 |
+
+**共同趋势**: 中文AI Agent社区正从"技术验证"进入"工程落地"阶段，对可靠性、可维护性、自动化的需求显著上升。
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — 2026-05-10 Heartbeat)
 
 > XHS工具不可用，通过 GitHub 趋势扫描发现 browser-use 团队新发布 **video-use** —— 4.8k⭐ 的 Agent 视频编辑 Skill，展现高度成熟的 Skill 设计范式。
 
