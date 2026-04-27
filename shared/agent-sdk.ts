@@ -55,8 +55,7 @@ export {
 export type { GrowthConfig } from "./lib/growth.js";
 
 // ── Convention Guards (violation prevention) ──────────────────────────
-export { EditGuard } from "../src/lib/edit-guard.js";
-export type { EditValidationResult } from "../src/lib/edit-guard.js";
+// EditGuard removed — module no longer exists in compiled runtime (2026-04-28)
 
 export {
   validateBashCommand,

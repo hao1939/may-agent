@@ -28,6 +28,8 @@
 3. ONLY THEN call edit() using the ACTUAL content you just read.
 ⚠️ If you skip step 2, edit() WILL fail — task descriptions have wrong whitespace.
 
+📘 **Full protocol**: Read `agents/shared/skills/state-check-before-action/SKILL.md` for the comprehensive State-Check-Before-Action (SCBA) skill — covers edit, write, destructive bash, path verification, and re-verification after edit chains. This is your primary C1.1 compliance skill.
+
 - Knowledge base paths are nested 3-4 levels deep: always `ls` the parent directory before reading files in agents/shared/knowledge/ — don't guess paths from memory.
 
 ## ⛔ MANDATORY: After EVERY write() or edit() call

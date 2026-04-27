@@ -14,5 +14,20 @@
 - Without evals, quality measurement is impossible
 - Notify evaluator to resume scoring
 
+## P1: Restore Gym Runner Infrastructure
+- gym_runs table is empty (lost in DB rebuild Apr 27)
+- No `scripts/gym-run.sh` found — gym runner may need reinstallation
+- Coach metrics (intervention-hit-rate, skill-effectiveness) depend on gym_runs data
+- Without gym runs, cannot measure skill effectiveness or run experiments
+
+## P1: Fix Coach Metric Scales ✅ DONE (Apr 27)
+- intervention-hit-rate, skill-effectiveness, instruction-compliance had ratio targets (0.6) but percentage values (47.3)
+- Fixed targets/thresholds to percentage scale to match source_query outputs
+
 ## P2: Clean Stale LESSONS.md References  
 - Remove P53 bash guard references from coach/optimizer LESSONS.md (guard was removed months ago)
+
+## P2: Investigate Amy Quality Gap
+- Amy has lowest avg quality (0.865) across all agents
+- Common failures: task mismatch, path confusion, shallow recovery after ENOENT
+- Could design a skill/training intervention
