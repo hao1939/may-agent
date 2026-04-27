@@ -16,7 +16,7 @@ Agents effectively use the infrastructure: create projects from problems, read a
 - gym.literacy-pass-rate: unknown → target 0.80 (gym scenarios testing system usage)
 
 ## Current State
-Iteration 5. Phase 1 complete — baseline.md written with real data (project creation rate, escalation quality, skill read rate). Phase 2 in progress: reading-metrics skill done, skill deployment pending. Worker claimed to deploy skills but no summary written yet.
+Iteration 6. Phase 1 complete. Phase 2: skills deployed (reading-metrics, escalation, closing-the-loop) to amy, amy-kimi, coach, tech-lead. deployment-log.md written. Next: run gym scenarios.
 
 ## Plan
 
@@ -26,7 +26,7 @@ Iteration 5. Phase 1 complete — baseline.md written with real data (project cr
 
 ### Phase 2: Fix & Deploy Skills
 - [x] Update reading-metrics skill: add "close the loop" step (see pattern → write guard/skill/handler)
-- [ ] Deploy top 3 literacy skills to agents that need them (copy to per-agent skills/)
+- [x] Deploy top 3 literacy skills to agents that need them (copy to per-agent skills/)
 - [ ] Run 3 gym scenarios testing system literacy, record pass rates in outputs/gym-results.md
 
 ### Phase 3: Verify & Protect
