@@ -78,6 +78,7 @@ export class Cron {
   private autoPauseActive = new Map<string, { pausedAt: number; probeCount: number }>();
   /** In-flight jobs: entry name → start timestamp. Replaces requests table overlap check. */
   private inflightJobs = new Map<string, number>();
+
   /** Last fire time per entry. */
   private lastFireTimes = new Map<string, number>();
 
@@ -690,6 +691,7 @@ export class Cron {
         const errMsg = err instanceof Error ? err.message : String(err);
         this.emitEvent?.({ type: "emit", event: "handler.failed", data: { handler: entry.name, agent, error: errMsg, durationMs: Date.now() - startMs } });
         this.onError?.(`Cron handler "${entry.name}" failed: ${errMsg}`);
+        this.notify?.(`\u26a0\ufe0f Handler "${entry.name}" failed: ${errMsg}`);
       });
   }
 

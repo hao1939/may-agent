@@ -520,9 +520,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   // ── Browse API: generic file/directory browser for knowledge base ──
   function handleMetrics(_url: URL): Response {
     const db = _db();
+    // Migrate column name (idempotent)
+    try { db.run("ALTER TABLE metrics RENAME COLUMN alert_direction TO alert_op"); } catch {}
     const metrics = db.prepare(`
       SELECT m.id, m.name, m.type, m.owner, m.current, m.target, m.threshold,
-             m.unit, m.priority, m.status, m.speed, m.description, m.alert_direction,
+             m.unit, m.priority, m.status, m.speed, m.description, m.alert_op,
              m.source, m.updated_at
       FROM metrics m WHERE m.status = 'active' ORDER BY m.owner, m.priority, m.name
     `).all() as any[];
@@ -545,8 +547,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     // Compute alerts: metrics past threshold
     const alerts = metrics.filter((m: any) => {
       if (m.threshold == null || m.current == null) return false;
-      if (m.alert_direction === 'above') return m.current > m.threshold;
-      return m.current < m.threshold; // default: 'below'
+      if (!m.id.startsWith('handler.') && !m.id.startsWith('project.')) return false;
+      if (m.alert_op === 'above' || m.alert_op === '>') return m.current > m.threshold;
+      return m.current < m.threshold; // default: '<'
     });
 
     return new Response(JSON.stringify({ metrics, latestSnapshots: snapshots, recentSnapshots, alerts }), {
@@ -640,10 +643,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
             try {
               const db = _db();
               return ids.map(({ id, target }) => {
-                const row = db.prepare("SELECT current, threshold, alert_direction FROM metrics WHERE id = ?").get(id) as any;
+                const row = db.prepare("SELECT current, threshold, alert_op FROM metrics WHERE id = ?").get(id) as any;
                 const current = row?.current ?? null;
                 const threshold = row?.threshold;
-                const above = row?.alert_direction === "above";
+                const above = row?.alert_op === "above" || row?.alert_op === ">";
                 const breached = threshold != null && current != null && (above ? current > threshold : current < threshold);
                 return { id, current, target, breached };
               });
