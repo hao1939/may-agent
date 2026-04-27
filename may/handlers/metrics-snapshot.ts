@@ -12,8 +12,9 @@ import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/a
 import type { CronEntry } from "../../shared/agent-sdk.ts";
 
 const METRICS = [
-  { id: "handler.success-rate", name: "Handler success rate", owner: "optimizer", target: 0.95, threshold: 0.80, unit: "ratio" },
-  { id: "handler.failure-count", name: "Handler failures (6h)", owner: "may", target: 0, threshold: 3, unit: "count" },
+  { id: "handler.completed-count", name: "Handler completions (6h)", owner: "may", target: 50, threshold: 10, unit: "count" },
+  { id: "handler.failed-count", name: "Handler failures (6h)", owner: "may", target: 0, threshold: 3, unit: "count" },
+  { id: "handler.success-rate", name: "Handler success rate (6h)", owner: "optimizer", target: 0.95, threshold: 0.80, unit: "ratio" },
   { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents)", owner: "may", target: 8, threshold: 6, unit: "count" },
   { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", target: 120000, threshold: 240000, unit: "ms" },
   { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", target: 30, threshold: 15, unit: "count" },
@@ -38,20 +39,31 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       } catch { /* already exists */ }
     }
 
-    // 1. handler.success-rate (6h)
+    // 1. handler counts (6h) — primitives
+    let completed = 0, failed = 0;
     try {
-      const completed = (db.prepare(
+      completed = (db.prepare(
         "SELECT COUNT(*) as c FROM events WHERE event_type = 'handler.completed' AND timestamp > ?"
       ).get(sixHoursAgo) as any)?.c || 0;
-      const failed = (db.prepare(
+      failed = (db.prepare(
         "SELECT COUNT(*) as c FROM events WHERE event_type = 'handler.failed' AND timestamp > ?"
       ).get(sixHoursAgo) as any)?.c || 0;
+
+      db.run("UPDATE metrics SET current = ?, updated_at = ? WHERE id = ?", [completed, now, "handler.completed-count"]);
+      db.run("INSERT INTO metric_snapshots (metric_id, value, measured_at, measured_by) VALUES (?, ?, ?, ?)",
+        ["handler.completed-count", completed, now, "metrics-snapshot"]);
+
+      db.run("UPDATE metrics SET current = ?, updated_at = ? WHERE id = ?", [failed, now, "handler.failed-count"]);
+      db.run("INSERT INTO metric_snapshots (metric_id, value, measured_at, measured_by) VALUES (?, ?, ?, ?)",
+        ["handler.failed-count", failed, now, "metrics-snapshot"]);
+
+      // Derived: success-rate
       const total = completed + failed;
       const rate = total > 0 ? completed / total : 1;
       db.run("UPDATE metrics SET current = ?, updated_at = ? WHERE id = ?", [parseFloat(rate.toFixed(4)), now, "handler.success-rate"]);
       db.run("INSERT INTO metric_snapshots (metric_id, value, sample_size, measured_at, measured_by) VALUES (?, ?, ?, ?, ?)",
         ["handler.success-rate", parseFloat(rate.toFixed(4)), total, now, "metrics-snapshot"]);
-    } catch (e) { ctx.log(`[metrics-snapshot] success-rate error: ${e}`); }
+    } catch (e) { ctx.log(`[metrics-snapshot] handler counts error: ${e}`); }
 
     // 2. handler.heartbeat-coverage (2h)
     try {
