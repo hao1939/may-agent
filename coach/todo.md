@@ -44,3 +44,9 @@
 - Amy has lowest avg quality (0.869 last 7d) across all agents
 - Root cause: PATH_HALLUCINATION — works in wrong dirs, copies files instead of cd'ing
 - Solution: EXP-250 above
+
+## P1: Quality Trend Analysis ✅ DONE (Jun 29)
+- **Output**: `agents/coach/workspace/quality-trend-analysis-20260629.md`
+- **Finding**: All agents improved +25pp avg over 4 weeks (0.68 → 0.93). Convention coaching + finish-guard + context.md embedding drove the improvement.
+- **Answers Hao's P0 question**: Skills/training DO work at the system level. Per-skill attribution still needs gym A/B tests.
+- **Next**: Need GYM_AGENT_BIN configured to run actual A/B experiments for per-skill attribution.
