@@ -35,7 +35,7 @@ Make the gym a practical tool for accelerating agent evolution. Explore the exis
 - Gym triage: agents/gym/TRIAGE.md
 
 ## Current State
-New project. No work done yet.
+Phase 1 complete. Runner works cleanly — all 3 test scenarios passed (phantom-fix, behavior-escalation-stubborn, cascading-error). Architecture documented in .state/gym-architecture.md. Ready for Phase 2: categorize scenarios and select core benchmark suite.
 
 ## Process Notes
 
