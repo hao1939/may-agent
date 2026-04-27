@@ -10,7 +10,7 @@
  * Legacy: single .md file still supported (detected by file extension).
  */
 
-import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, statSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 export const name: string = "project";
@@ -143,10 +143,23 @@ function appendToSection(content: string, heading: string, line: string): string
   return content.slice(0, insertAt) + line + "\n" + content.slice(insertAt);
 }
 
+/** Auto-catalog files in outputs/ and update ## Artifacts section */
+function catalogOutputs(projectDir: string, projectContent: string): string {
+  const outputsDir = join(projectDir, "outputs");
+  if (!existsSync(outputsDir)) return projectContent;
+  try {
+    const files = readdirSync(outputsDir).filter(f => {
+      try { return statSync(join(outputsDir, f)).isFile(); } catch { return false; }
+    });
+    if (files.length === 0) return projectContent;
+    const listing = files.map(f => `- outputs/${f}`).join("\n") + "\n";
+    return updateSection(projectContent, "Artifacts", listing);
+  } catch { return projectContent; }
+}
+
 function createProjectDir(config: PersistentTaskConfig): void {
   ensureDir(config.projectDir);
   ensureDir(join(config.projectDir, "outputs"));
-  const now = new Date().toISOString();
   const projectContent = `# Project: ${config.goal}
 
 **Status**: active
@@ -171,14 +184,10 @@ Not started.
 
 ## Artifacts
 
-## Iteration Summary
 `;
   writeFileSync(config.projectPath, projectContent, "utf-8");
   writeFileSync(config.journalPath, `# Journal\n\n`, "utf-8");
   writeFileSync(join(config.projectDir, "discussion.md"), `# Discussion\n\n`, "utf-8");
-  // Initialize meta.json
-  const meta = { created: now, lastActivity: now, sessions: [] as string[], relatedExperiments: [] as string[], relatedKnowledge: [] as string[], relatedProjects: [] as string[], metricsHistory: [] as any[] };
-  writeFileSync(join(config.projectDir, "meta.json"), JSON.stringify(meta, null, 2), "utf-8");
 }
 
 function parseProjectState(content: string): ProjectState {
@@ -893,6 +902,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
     // Update iteration count (don't overwrite Current State - reviewer will update it after review)
     projectContent = updateField(projectContent, "Iteration", String(iteration));
+
+    // Auto-catalog outputs/
+    if (!config.isLegacy) {
+      projectContent = catalogOutputs(config.projectDir, projectContent);
+    }
     writeFileSync(config.projectPath, projectContent, "utf-8");
 
 
@@ -979,12 +993,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         return ctx.escalate(`Stuck: ${continueWithoutProgress} iterations without progress at iteration ${iteration}.`);
       }
 
-      // Update Current State and Iteration Summary with reviewer's synthesis
+      // Update Current State with reviewer's synthesis
       const ms = extractMilestones(projectContent);
       const reviewerInsight = decision.detail.slice(0, 200).replace(/^CONTINUE[:\s]*/i, "").trim();
-
-      projectContent = appendToSection(projectContent, "Iteration Summary",
-        `- **Iter ${iteration}**: ${decision.status.toUpperCase()}. ${reviewerInsight.slice(0, 150)}\n`);
 
       projectContent = updateSection(projectContent, "Current State",
         `Iteration ${iteration}. Milestones: ${ms.done}/${ms.total} done.\n` +
@@ -994,16 +1005,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
       // Mark discussion as read after this iteration processed comments
       markDiscussionRead(config.projectDir, iteration);
-
-      // Update meta.json: lastActivity
-      try {
-        const metaPath = join(config.projectDir, "meta.json");
-        if (existsSync(metaPath)) {
-          const meta = JSON.parse(readFileSync(metaPath, "utf-8"));
-          meta.lastActivity = new Date().toISOString();
-          writeFileSync(metaPath, JSON.stringify(meta, null, 2), "utf-8");
-        }
-      } catch { /* ignore meta.json errors */ }
     }
 
     iteration++;

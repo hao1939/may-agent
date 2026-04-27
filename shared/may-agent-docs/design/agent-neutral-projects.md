@@ -19,7 +19,6 @@ agents/shared/projects/<name>/
   project.md      — source of truth (goal, status, milestones, resources, artifacts)
   journal.md      — iteration log (worker output + reviewer decisions)
   discussion.md   — comments from other agents/humans (append-only)
-  meta.json       — machine-indexed supplement (sessions, timestamps, related items)
   outputs/        — all project deliverables, scripts, intermediate files
 ```
 
@@ -54,32 +53,10 @@ Key discoveries and facts accumulated across iterations:
 Key files, commands, how to measure/verify.
 
 ## Artifacts
-Files produced by this project (in outputs/ or elsewhere):
+Files produced by this project (auto-cataloged from outputs/ after each iteration):
 - outputs/baseline-report.md
 - outputs/deploy-guard.ts
-
-## Iteration Summary
-- **Iter 1**: ...
-- **Iter 2**: ...
 ```
-
-### meta.json (machine-only, not source of truth)
-
-```json
-{
-  "created": "2026-04-25T00:00:00Z",
-  "lastActivity": "2026-04-27T00:00:00Z",
-  "sessions": ["s_123", "s_456"],
-  "relatedExperiments": ["EXP-222"],
-  "relatedKnowledge": ["KE-394"],
-  "relatedProjects": ["other-project"],
-  "metricsHistory": [
-    { "date": "2026-04-25", "deploy-success-rate": 0.61 }
-  ]
-}
-```
-
-The workflow updates meta.json after each iteration (append session ID, update lastActivity).
 
 ### Comments & Collaboration
 
@@ -123,7 +100,7 @@ The `outputs/` dir is created alongside project.md. The Artifacts section in pro
 
 | File | Changes |
 |------|---------|
-| `agents/shared/workflows/project.ts` | Change `projectDir` to `agents/shared/projects/<name>/`. Create `outputs/` dir. Update worker prompt to enforce outputs/ path. Write meta.json after each iteration. |
+| `agents/shared/workflows/project.ts` | Change `projectDir` to `agents/shared/projects/<name>/`. Create `outputs/` dir. Update worker prompt to enforce outputs/ path. Auto-catalog outputs/ in Artifacts section after each iteration. |
 | `agents/shared/workflows/heartbeat-data.ts` | `loadProjects()` scans `agents/shared/projects/` (filtered by owner field). Also shows projects where agent is mentioned in comments. |
 | `agents/shared/lib/project-health.ts` | `scanAllProjects()` scans `agents/shared/projects/` instead of walking each agent's workspace. Simpler. |
 | `agents/may/handlers/project.ts` | Path changes for new location. |
@@ -139,9 +116,8 @@ The `outputs/` dir is created alongside project.md. The Artifacts section in pro
 Write a one-time script that:
 1. Finds all `agents/*/workspace/projects/*/project.md`
 2. Moves each to `agents/shared/projects/<name>/`
-3. Creates `meta.json` with creation date from git
-4. Creates `outputs/` dir
-5. Handles name collisions (prefix with agent name if needed)
+3. Creates `outputs/` dir
+4. Handles name collisions (prefix with agent name if needed)
 
 ## Verification
 
@@ -175,11 +151,15 @@ The `## Context` section in project.md accumulates key discoveries across iterat
 ## Implementation Status (2026-04-27)
 
 **Done:**
-- [x] `agents/shared/workflows/project.ts` — new template, outputs/, discussion.md, context updates, worker prompt restructured
+- [x] `agents/shared/workflows/project.ts` — new template, outputs/, discussion.md, context updates, worker prompt restructured, auto-catalog outputs/
 - [x] `agents/shared/workflows/heartbeat-data.ts` — scans shared + legacy locations
 - [x] `agents/shared/lib/project-health.ts` — scans shared + legacy locations
 - [x] `agents/shared/skills/creating-projects/skill.md` — updated paths and structure
+- [x] `agents/shared/workflows/master-worker.ts` — updated usage comment for shared path
 - [x] Migration — 52 projects moved to `agents/shared/projects/`
+- [x] Removed meta.json (unused — nothing reads it)
+- [x] Removed `## Iteration Summary` from project.md (duplicates journal.md)
+- [x] Auto-catalog: outputs/ files listed in `## Artifacts` after each worker iteration
 - [x] Design doc (this file)
 
 **Backward compatible:** Legacy per-agent locations still scanned by heartbeat and health handler.

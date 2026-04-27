@@ -17,7 +17,6 @@ agents/shared/projects/<name>/
   project.md      — the project document (source of truth)
   journal.md      — iteration log (start empty)
   discussion.md   — comments from other agents/humans
-  meta.json       — machine metadata (sessions, timestamps)
   outputs/        — all deliverables, scripts, intermediate files
 ```
 
@@ -53,9 +52,7 @@ Where are we now? What's the gap between here and the goal?
 - Related knowledge: link relevant knowledge entries, skills, experiments
 
 ## Artifacts
-(Files produced by this project, living in outputs/)
-
-## Iteration Summary
+(Auto-cataloged from outputs/ after each iteration. No need to maintain manually.)
 ```
 
 ### 3. Key decisions

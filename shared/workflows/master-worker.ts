@@ -11,7 +11,7 @@
  *   **Owner**: bob
  *
  * Usage via CLI:
- *   bun src/app/may.ts --run-workflow master-worker "project: agents/bob/workspace/projects/my-project"
+ *   bun src/app/may.ts --run-workflow master-worker "project: agents/shared/projects/my-project"
  */
 
 import { readFileSync, existsSync, writeFileSync, appendFileSync } from "node:fs";
