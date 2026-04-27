@@ -17,7 +17,7 @@
 import { readFileSync, existsSync, writeFileSync, appendFileSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import {
-  extractField, extractSection, extractMilestones, checkOffMilestones,
+  extractField, extractSection, extractMilestones,
   extractComments, clearComments, updateProjectStatus,
 } from "./project-helpers.ts";
 
@@ -291,12 +291,8 @@ ${currentState}
       }
       ctx.log(`[review] Decision: ${decision.status.toUpperCase()}`);
 
-      // ── Milestone tracking ──
-      let updatedContent = readFileSync(projectFile, "utf-8");
-      updatedContent = checkOffMilestones(updatedContent, orchestratorText);
-      writeFileSync(projectFile, updatedContent, "utf-8");
-
-      const newMs = extractMilestones(updatedContent);
+      // ── Milestone tracking (orchestrator edits project.md directly) ──
+      const newMs = extractMilestones(readFileSync(projectFile, "utf-8"));
       if (newMs.done > prevDoneCount) {
         ctx.log(`[milestone] ${newMs.done}/${newMs.total} complete (+${newMs.done - prevDoneCount})`);
         stallCount = 0;

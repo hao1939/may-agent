@@ -23,8 +23,8 @@
   2. Pick top 3 deployed skills: verify-after-edit, evidence-over-narrative, consolidate-memory
   3. Create lab forks with each skill, run against matching scenarios, measure pass rates
   4. If pass rates populate correctly, metric should self-heal on next snapshot
-- **Finding**: gym-run.sh does DRY checks only (no LLM agent). Real gym runs happen via `growth-cycle` workflow (agents/coach/workflows/growth-cycle.ts) which calls `runGym()` from gym-helpers.ts and auto-records to gym_runs.
-- **Next step**: Run a growth-cycle workflow with a lab fork to populate gym_runs with real data
+- **Next step**: Growth cycle created `coder-verify-gate` fork but escalated before gym test. Need to re-run growth-cycle or run gym tests manually via workflow. The gym runner ONLY does dry evaluation checks — it does NOT launch agent sessions. Real data requires the full workflow pipeline.
+- **BLOCKER**: gym-run.sh is a check-only tool. Populating gym_runs requires growth-cycle workflow to complete successfully (it launches real agent sessions internally). The growth cycle escalated because it expected a `context-patch.md` file but the fork used a different structure.
 - **Done-when**: gym_runs has ≥15 rows AND skill-effectiveness metric recalculates above 40%
 
 ## P1: Fix Coach Metric Scales ✅ DONE (Apr 27)
