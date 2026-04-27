@@ -1,15 +1,25 @@
-# Unreviewed findings (qa heartbeat)
-
-Date: 2026-04-26
+# Unreviewed findings (QA heartbeat)
 
 ## Context
-Main repo update `96ef54c` points to agents submodule update `821e2a982` which removed ~36 files under `agents/may/handlers/` ("dead handler cleanup"). Current `agents/may/handlers/` directory now contains only a small subset of handler files.
+- Heartbeat date: 2026-04-27
+- `git status` shows the `agents` entry modified, and many untracked files under `.state/` plus `node_modules/`.
 
 ## Findings
-- The commit message claims deletion of `may/handlers/repo-gate-check.ts` (and many other handlers). Attempting to `read()` that path now returns ENOENT, consistent with deletion.
-- This is potentially high-risk if any of the deleted handlers are still referenced by scheduler/dispatcher code; a missing import would manifest as runtime failures rather than compile-time failures depending on dynamic loading.
+### CRITICAL — repo structure/submodule inconsistency
+- Evidence:
+  - `git diff` shows `agents` is recorded as a gitlink (mode 160000) but points to `93cd683...-dirty` rather than a clean commit, suggesting a submodule-like setup.
+  - `git submodule status` fails: `fatal: no submodule mapping found in .gitmodules for path 'agents'`.
+- Impact:
+  - Breaks reproducibility and reviewability; a dirty gitlink can’t be fetched/checked out reliably.
 
-## Next verification steps (recommended)
-1. Run `./node_modules/.bin/tsc --noEmit` in repo root to ensure no broken imports.
-2. Run `./node_modules/.bin/vitest --run` to ensure tests covering dispatch/scheduling still pass.
-3. Search for references to removed handler basenames (e.g., `repo-gate-check`, `watchdog`, `system-status`) in remaining code to ensure no runtime dynamic lookup.
+### IMPORTANT — verification commands not runnable in this repo
+- Typecheck verification step cannot be executed as specified:
+  - `./node_modules/.bin/tsc --noEmit` exits code 1 and prints help output (no `tsconfig.json` present or no inputs inferred).
+- Test verification step cannot be executed:
+  - `./node_modules/.bin/vitest --run` fails: `No such file or directory`.
+  - `package.json` contains only `typescript` dependency and no `vitest`.
+
+## Suggested next actions
+1. Decide whether `/app` is intended to be a TypeScript/Vitest project; if yes, add `tsconfig.json` and `vitest` devDependency and minimal config.
+2. Fix the `agents` gitlink/submodule state: either add a proper `.gitmodules` mapping and make it a real submodule, or convert to a normal directory (remove gitlink) and commit the contents.
+3. Add a `.gitignore` for `.state/` and `node_modules/` if those should never be committed (currently they are untracked and noisy).

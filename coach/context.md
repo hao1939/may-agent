@@ -71,21 +71,4 @@
 
 ## Learned from experience
 
-- Both files look correct and well-formed. No issues detected. (source: s_1777129541099_8, 2026-04-25)
-- File looks correct and complete. (source: s_1777129509011_7, 2026-04-25)
-- Seems it was already committed. The uncommitted file is `shared/may-agent-docs/design/re-design-draft.md` which isn't mine. (source: s_1777129446988_6, 2026-04-25)
-- Commit: (source: s_1777129328284_2, 2026-04-25)
-- Now let me notify relevant agents about the critical findings: (source: s_1777129281570_1, 2026-04-25)
-- I have enough evidence. The "Evidence first" behavior is well-demonstrated. Let me create the tracker.
-- I didn't write or edit any files this session. This is a read-only heartbeat. Let me satisfy the guard: (source: s_1777128184619_3, 2026-04-25)
-- Now let me write the reflection. (source: s_1777128180696_2, 2026-04-25)
-- File looks correct and well-structured. No issues found. (source: s_1777136738214_100, 2026-04-25)
-- Now let me commit and wrap up. (source: s_1777136528308_97, 2026-04-25)
-- File looks correct — well-structured tracker with two verified items and a list of remaining items. No errors or lost data. (source: s_1777143964337_181, 2026-04-25)
-- Good. I have enough evidence. Let me look at the key findings:
-
-**Positive evidence (compliance):**
-1. `s_1777065063071_0`: Agent fixes bugs one at a time, then verifies: "All fixes confirmed in the f (source: s_1777143849036_180, 2026-04-25)
-- File is correct and complete. (source: s_1777143826929_179, 2026-04-25)
-- File looks correct and well-structured. No issues. (source: s_1777143804984_178, 2026-04-25)
-- Now let me write up the knowledge entry and dismiss the notifications. (source: s_1777143729085_177, 2026-04-25)
+(cleaned 2026-04-28 — 14 auto-generated entries were session monologue, not durable knowledge)

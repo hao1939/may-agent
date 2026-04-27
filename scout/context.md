@@ -53,18 +53,6 @@
 
 ## Learned from experience
 
-- I didn't write or modify any files this session. This is a read-only heartbeat. (source: s_1777102264652_17, 2026-04-25)
-- Used an odd example snippet: `[[ -f path ]] && read path` (the `read` builtin reads from stdin; `cat`/`sed`/`rg` would be clearer). (source: s_1777100567777_10, 2026-04-25)
 - Friday Apr 24 papers — already triaged. No new papers on weekends.
-- No active requests. The bash-command-hygiene notification was informational. All inbox items addressed. (source: s_1777109464956_63, 2026-04-25)
-- All Apr 24 papers are already triaged (StructMem is dd784, etc.). Metrics are green, no active requests, no unprocessed drops. This is a clean heartbeat. (source: s_1777107665060_53, 2026-04-25)
-- All looks well. Metrics green, papers triaged through latest listings, existing hypotheses already have literature grounding. This is a clean heartbeat. (source: s_1777105865503_41, 2026-04-25)
-- Good - EXP-221 Phase 2 already notes the duplication concern was "overstated — most 'duplicates' are distinct findings from same papers." The concept index is built. Metrics are all green and papers a (source: s_1777104064336_28, 2026-04-25)
-- I didn't write or modify any files this session. This is a read-only heartbeat. (source: s_1777114863919_96, 2026-04-25)
-- Now dismiss the pending notifications: (source: s_1777113065592_86, 2026-04-25)
-- Now notify optimizer about the harness paper since it's directly relevant: (source: s_1777111265251_74, 2026-04-25)
-- Now let me verify my deliverable and commit. (source: s_1777130406608_26, 2026-04-25)
-- File is complete and well-formed. (source: s_1777137702764_122, 2026-04-25)
-- I found two papers from the second search that I haven't triaged yet: **MOBIMEM** (2512.15784) and **MAS²** (2509.24323). Let me write a quick triage for these. (source: s_1777137608956_121, 2026-04-25)
-- File is complete and well-structured. (source: s_1777144912293_195, 2026-04-25)
-- The .state directory is outside the git repo. That's fine — the triage file is written and the notification sent. (source: s_1777144809065_194, 2026-04-25)
+
+(cleaned 2026-04-28 — 14 auto-generated entries were session monologue, not durable knowledge)

@@ -88,18 +88,5 @@
 
 ## Learned from experience
 
-- The finish-guard is **fully wired**. Both paths are active:
-- That's from another session. The guard is likely tracking my bash commands and thinks I wrote files. Let me provide deliverables as empty since this was read-only: (source: s_1777100670501_12, 2026-04-25)
-- These are KE deletions from another agent's work (bob's dedup). Let me just commit them as cleanup: (source: s_1777093721971_854, 2026-04-25)
-- Everything looks healthy. Build is clean (zero TS errors), guards are properly registered and wired, no active requests pending, no TODOs in source. The inbox P0s about evaluator pipeline and duplicat (source: s_1777108805104_60, 2026-04-25)
-- Everything looks healthy. Build clean, no TS errors, no TODOs in core lib, agent-sdk imports are correctly structured, no active requests needing attention. The P0 notifications from 10-18h ago about  (source: s_1777105205898_35, 2026-04-25)
-- Guards are referenced from shared/agent-sdk.ts and other places — not orphans. The grep was failing due to path issues.
-- All clear. Build passes, no active requests, and reviewing git history confirms all P0 inbox items are already resolved:
-- **EXP-216 Phase 2**: superseded (`ad3c13a7d`)
-- **EXP-188 finish-guard**: cl (source: s_1777114206213_92, 2026-04-25)
-- Everything is healthy. Build clean, zero active requests, inbox P0s are stale (resolved). Let me commit and finish. (source: s_1777112405581_81, 2026-04-25)
-- Clean. No real TODOs in source code. The system is healthy. (source: s_1777110605350_70, 2026-04-25)
-- Codebase is healthy. Build passes, guards are wired, recent changes are doc/hypothesis updates. The P0 alerts about IT-83 are stale (already fixed in commit `11d1e98bc`). (source: s_1777129748745_15, 2026-04-25)
-- Clean build. Now let me commit: (source: s_1777128604569_16, 2026-04-25)
-- Everything looks normal — mostly session notes and the gym work. The bug fix was the main actionable item. Let me finish up. (source: s_1777136948778_104, 2026-04-25)
-- This is from another agent's work. I'll just commit it as-is. (source: s_1777144149236_185, 2026-04-25)
+- The finish-guard is **fully wired**. Both paths are active.
+- Guards are referenced from shared/agent-sdk.ts and other places — not orphans.
