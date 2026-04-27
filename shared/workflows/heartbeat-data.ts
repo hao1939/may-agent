@@ -11,6 +11,7 @@
 
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { checkCircuitBreaker, recordOutcome } from "./circuit-breaker.js";
 
 function getAgentsRoot(ctx: WorkflowContext): string {
   return ctx.agentsRoot || join(process.cwd(), "agents");
@@ -312,6 +313,15 @@ export async function genericHeartbeat(ctx: WorkflowContext, agent: string): Pro
   const guidance = loadHeartbeatMd(ctx, agent);
   const inbox = loadInbox(ctx, agent);
 
+  // ── CIRCUIT BREAKER: Skip if agent has too many consecutive errors ──
+  const agentsRoot = getAgentsRoot(ctx);
+  const circuitBlock = checkCircuitBreaker(agentsRoot, agent);
+  if (circuitBlock) {
+    ctx.emit({ type: "circuit_breaker_open", agent, reason: circuitBlock });
+    ctx.log(`[heartbeat:${agent}] Circuit breaker open: ${circuitBlock}`);
+    return ctx.done(`Circuit breaker OPEN for ${agent}: ${circuitBlock}`);
+  }
+
   // ── DEDUP: Skip heartbeat if nothing actionable ──────────────
   const skipReason = shouldSkipHeartbeat(ctx, agent, metrics, alerts, inbox, projects);
   if (skipReason) {
@@ -360,5 +370,7 @@ ${redMetricDiagnostics ? "Red metric diagnostics are above — address each one,
 
   ctx.emit({ type: "step_start", step: "heartbeat" });
   const result = await ctx.runAgent(agent, prompt);
+  recordOutcome(agentsRoot, agent, result.status === "error",
+    result.status === "error" ? "heartbeat session error" : undefined);
   return ctx.done(ctx.summarize(result, { maxLength: 500 }));
 }
