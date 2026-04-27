@@ -1,15 +1,15 @@
 {
   "_meta": {
     "description": "Compact index for task-aware knowledge injection. Each entry has keywords for matching and a one-liner for injection.",
-    "updated": "2026-04-10",
+    "updated": "2025-07-22",
     "usage": "src/lib/knowledge-router.ts reads this file at startup and matches task text against keywords.",
-    "expansion": "Expanded from 19 to 60 entries. Prioritized actionable entries that affect decision-making at task time."
+    "total_entries": 365
   },
   "entries": [
     {
       "id": "KE-001",
       "file": "entries/KE-001.md",
-      "oneliner": "Context learning works for environmental knowledge only — derivable facts have zero impact (EXP-001)",
+      "oneliner": "Context learning works for environmental knowledge only \u2014 derivable facts have zero impact (EXP-001)",
       "keywords": [
         "context.md",
         "context learning",
@@ -26,7 +26,7 @@
     {
       "id": "KE-002",
       "file": "entries/KE-002.md",
-      "oneliner": "Text rules have 0% success for judgment failures — 0/20 experiments. Use workflows instead (KE-007)",
+      "oneliner": "Text rules have 0% success for judgment failures \u2014 0/20 experiments. Use workflows instead (KE-007)",
       "keywords": [
         "text rule",
         "judgment",
@@ -62,7 +62,7 @@
     {
       "id": "KE-004",
       "file": "entries/KE-004.md",
-      "oneliner": "Guards are brittle (false positives when env changes) — use context.md for environmental constraints",
+      "oneliner": "Guards are brittle (false positives when env changes) \u2014 use context.md for environmental constraints",
       "keywords": [
         "guard",
         "regex",
@@ -79,7 +79,7 @@
     {
       "id": "KE-005",
       "file": "entries/KE-005.md",
-      "oneliner": "QA catches only 14% of issues vs evaluator's 27% — QA rubber-stamps",
+      "oneliner": "QA catches only 14% of issues vs evaluator's 27% \u2014 QA rubber-stamps",
       "keywords": [
         "QA",
         "review",
@@ -97,7 +97,7 @@
     {
       "id": "KE-006",
       "file": "entries/KE-006.md",
-      "oneliner": "Skills targeting reasoning patterns don't change tool-calling patterns — behavior at tool-call level is unaffected",
+      "oneliner": "Skills targeting reasoning patterns don't change tool-calling patterns \u2014 behavior at tool-call level is unaffected",
       "keywords": [
         "skill",
         "reasoning",
@@ -113,7 +113,7 @@
     {
       "id": "KE-007",
       "file": "entries/KE-007.md",
-      "oneliner": "Workflow enforcement is the ONLY reliable behavioral intervention — 5/56 experiments promoted, all structural",
+      "oneliner": "Workflow enforcement is the ONLY reliable behavioral intervention \u2014 5/56 experiments promoted, all structural",
       "keywords": [
         "workflow",
         "intervention",
@@ -130,7 +130,7 @@
     {
       "id": "KE-008",
       "file": "entries/KE-008.md",
-      "oneliner": "Heartbeat step restructuring causes regression — don't change heartbeat step order",
+      "oneliner": "Heartbeat step restructuring causes regression \u2014 don't change heartbeat step order",
       "keywords": [
         "heartbeat",
         "restructure",
@@ -161,7 +161,7 @@
     {
       "id": "KE-010",
       "file": "entries/KE-010.md",
-      "oneliner": "Most gym scenarios hit ceiling — agents pass at baseline. Check baseline before building interventions",
+      "oneliner": "Most gym scenarios hit ceiling \u2014 agents pass at baseline. Check baseline before building interventions",
       "keywords": [
         "gym",
         "scenario",
@@ -178,7 +178,7 @@
     {
       "id": "KE-011",
       "file": "entries/KE-011.md",
-      "oneliner": "Knowledge files are passive — agents skip them in oneshot mode. Critical info must be injected or in context.md",
+      "oneliner": "Knowledge files are passive \u2014 agents skip them in oneshot mode. Critical info must be injected or in context.md",
       "keywords": [
         "knowledge",
         "file",
@@ -195,7 +195,7 @@
     {
       "id": "KE-012",
       "file": "entries/KE-012.md",
-      "oneliner": "Lab-fork null-patch test confirms infrastructure validity — null patch shows no effect, real patches can be trusted",
+      "oneliner": "Lab-fork null-patch test confirms infrastructure validity \u2014 null patch shows no effect, real patches can be trusted",
       "keywords": [
         "lab",
         "fork",
@@ -212,7 +212,7 @@
     {
       "id": "KE-013",
       "file": "entries/KE-013.md",
-      "oneliner": "Task boundedness is the primary driver of delegated session quality — bounded tasks succeed, open-ended fail",
+      "oneliner": "Task boundedness is the primary driver of delegated session quality \u2014 bounded tasks succeed, open-ended fail",
       "keywords": [
         "delegation",
         "task",
@@ -232,7 +232,7 @@
     {
       "id": "KE-014",
       "file": "entries/KE-014-quote-splitting-bypass.md",
-      "oneliner": "Bash quote splitting can bypass security checks — sanitize tool input before shell execution",
+      "oneliner": "Bash quote splitting can bypass security checks \u2014 sanitize tool input before shell execution",
       "keywords": [
         "security",
         "bash",
@@ -249,7 +249,7 @@
     {
       "id": "KE-015",
       "file": "entries/KE-015.md",
-      "oneliner": "Decision topology R predicts workflow effectiveness — workflows help when R > 0.5, hurt when R < 0.3",
+      "oneliner": "Decision topology R predicts workflow effectiveness \u2014 workflows help when R > 0.5, hurt when R < 0.3",
       "keywords": [
         "workflow",
         "decision topology",
@@ -265,7 +265,7 @@
     {
       "id": "KE-016",
       "file": "entries/KE-016.md",
-      "oneliner": "Workflow effectiveness depends on decision type — eliminable decisions benefit, essential decisions don't",
+      "oneliner": "Workflow effectiveness depends on decision type \u2014 eliminable decisions benefit, essential decisions don't",
       "keywords": [
         "workflow",
         "decision type",
@@ -280,7 +280,7 @@
     {
       "id": "KE-017",
       "file": "entries/KE-017.md",
-      "oneliner": "Materialize-findings skill improves both behavior AND product quality — write findings before producing output",
+      "oneliner": "Materialize-findings skill improves both behavior AND product quality \u2014 write findings before producing output",
       "keywords": [
         "materialize",
         "findings",
@@ -296,7 +296,7 @@
     {
       "id": "KE-018",
       "file": "entries/KE-018.md",
-      "oneliner": "Environmental nudges match text skills for behavioral change — context.md is as effective as skill files",
+      "oneliner": "Environmental nudges match text skills for behavioral change \u2014 context.md is as effective as skill files",
       "keywords": [
         "environmental",
         "nudge",
@@ -313,7 +313,7 @@
     {
       "id": "KE-019",
       "file": "entries/KE-019.md",
-      "oneliner": "Sycophancy requires materialization gates (L5) — nudges and basic workflows insufficient",
+      "oneliner": "Sycophancy requires materialization gates (L5) \u2014 nudges and basic workflows insufficient",
       "keywords": [
         "sycophancy",
         "materialization",
@@ -335,7 +335,7 @@
     {
       "id": "KE-020",
       "file": "entries/KE-020.md",
-      "oneliner": "Agent capability adoption requires explicit wiring, not just availability — building a feature doesn't mean agents will use it",
+      "oneliner": "Agent capability adoption requires explicit wiring, not just availability \u2014 building a feature doesn't mean agents will use it",
       "keywords": [
         "capability",
         "adoption",
@@ -373,7 +373,7 @@
     {
       "id": "KE-022",
       "file": "entries/KE-022-early-exploration-errors.md",
-      "oneliner": "Agent errors concentrate in early exploration phase — front-load verification to catch early mistakes",
+      "oneliner": "Agent errors concentrate in early exploration phase \u2014 front-load verification to catch early mistakes",
       "keywords": [
         "error",
         "early",
@@ -388,9 +388,26 @@
       ]
     },
     {
+      "id": "KE-023",
+      "file": "entries/KE-023-read-before-edit-deployment-ineffective.md",
+      "oneliner": "KE-023: Read-Before-Edit Skill Deployment Shows No Production Improvement",
+      "keywords": [
+        "deployment",
+        "improvement",
+        "ke-023",
+        "production",
+        "read-before-edit",
+        "shows",
+        "skill"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
       "id": "KE-024",
       "file": "entries/KE-024-dispatcher-heartbeat-pattern.md",
-      "oneliner": "Separating heartbeat triage from execution eliminates overhead and errors — dispatch, don't do both",
+      "oneliner": "Separating heartbeat triage from execution eliminates overhead and errors \u2014 dispatch, don't do both",
       "keywords": [
         "heartbeat",
         "triage",
@@ -428,7 +445,7 @@
     {
       "id": "KE-026",
       "file": "entries/KE-026-pull-model-discovery-dead.md",
-      "oneliner": "Pull-model discovery is dead — agents cannot self-serve from reference materials. Push knowledge, don't make them find it",
+      "oneliner": "Pull-model discovery is dead \u2014 agents cannot self-serve from reference materials. Push knowledge, don't make them find it",
       "keywords": [
         "pull",
         "discovery",
@@ -444,9 +461,43 @@
       ]
     },
     {
+      "id": "KE-027",
+      "file": "entries/KE-027-ceiling-shift-aggregate-skills.md",
+      "oneliner": "KE-027: Deployed Skills Produce Compound Ceiling Shifts",
+      "keywords": [
+        "ceiling",
+        "compound",
+        "deployed",
+        "ke-027",
+        "produce",
+        "shifts",
+        "skills"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-028",
+      "file": "entries/KE-028.md",
+      "oneliner": "KE-028: Production failure modes cannot be replicated in gym scenarios",
+      "keywords": [
+        "cannot",
+        "failure",
+        "ke-028",
+        "modes",
+        "production",
+        "replicated",
+        "scenarios"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
       "id": "KE-029",
       "file": "entries/KE-029-classify-then-act-eliminates-sycophancy.md",
-      "oneliner": "Classify-then-act eliminates sycophantic compliance — force the agent to categorize the request before responding",
+      "oneliner": "Classify-then-act eliminates sycophantic compliance \u2014 force the agent to categorize the request before responding",
       "keywords": [
         "classify",
         "categorize",
@@ -465,9 +516,27 @@
       ]
     },
     {
+      "id": "KE-030",
+      "file": "entries/KE-030-skill-ablation-falsifies-ceiling-shift-causation.md",
+      "oneliner": "KE-030: Skill Ablation Falsifies Causal Attribution of Ceiling Shifts",
+      "keywords": [
+        "ablation",
+        "attribution",
+        "causal",
+        "ceiling",
+        "falsifies",
+        "ke-030",
+        "shifts",
+        "skill"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
       "id": "KE-031",
       "file": "entries/KE-031-forced-externalization-domain-independent.md",
-      "oneliner": "Forced externalization is domain-independent — +69pp across tunnel vision, sycophancy, and contradiction blindness",
+      "oneliner": "Forced externalization is domain-independent \u2014 +69pp across tunnel vision, sycophancy, and contradiction blindness",
       "keywords": [
         "forced externalization",
         "domain",
@@ -484,9 +553,425 @@
       ]
     },
     {
+      "id": "KE-032",
+      "file": "entries/KE-032-forced-externalization-dual-pathway.md",
+      "oneliner": "KE-032: Forced Externalization Works Via Two Independent Pathways (Write OR Read)",
+      "keywords": [
+        "externalization",
+        "forced",
+        "independent",
+        "ke-032",
+        "pathways",
+        "read",
+        "works",
+        "write"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-033",
+      "file": "entries/KE-033-forced-externalization-scale-invariant.md",
+      "oneliner": "KE-033: Forced Externalization Is Scale-Invariant \u2014 Same Mechanism Works at Task, Harness, and System Levels",
+      "keywords": [
+        "externalization",
+        "forced",
+        "harness",
+        "ke-033",
+        "levels",
+        "mechanism",
+        "same",
+        "scale-invariant",
+        "system",
+        "task",
+        "works"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-034",
+      "file": "entries/KE-034-forced-externalization-analysis-activation.md",
+      "oneliner": "KE-034: Forced Externalization Works Via \"Analysis Activation,\" Not Content Provision \u2014 Wrong Analysis Achieves Identical Results",
+      "keywords": [
+        "achieves",
+        "activation",
+        "analysis",
+        "content",
+        "externalization",
+        "forced",
+        "identical",
+        "ke-034",
+        "provision",
+        "results",
+        "works",
+        "wrong"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-035",
+      "file": "entries/KE-035-proxy-satisfying-behavior-forced-assessment.md",
+      "oneliner": "KE-035: Agents Facing Impossible Tasks Exhibit Proxy-Satisfying Behavior \u2014 Forced Assessment Phase Eliminates It Completely",
+      "keywords": [
+        "agents",
+        "assessment",
+        "behavior",
+        "completely",
+        "eliminates",
+        "exhibit",
+        "facing",
+        "forced",
+        "impossible",
+        "ke-035",
+        "phase",
+        "proxy-satisfying",
+        "tasks"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-036",
+      "file": "entries/KE-036-behavioral-frustration-detection-verification-gated.md",
+      "oneliner": "KE-036: Behavioral Tool-Call Patterns Detect Frustration Independently of Linguistic Signals \u2014 But Penalties Must Be Verification-Gated",
+      "keywords": [
+        "behavioral",
+        "detect",
+        "frustration",
+        "independently",
+        "ke-036",
+        "linguistic",
+        "must",
+        "patterns",
+        "penalties",
+        "signals",
+        "tool-call",
+        "verification-gated"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-037",
+      "file": "entries/KE-037-scaffolding-spectrum-internalization-vs-externalization.md",
+      "oneliner": "KE-037: The Scaffolding Spectrum \u2014 Skill Internalization and Forced Externalization Are Complementary Endpoints of a Single Mechanism",
+      "keywords": [
+        "complementary",
+        "endpoints",
+        "externalization",
+        "forced",
+        "internalization",
+        "ke-037",
+        "mechanism",
+        "scaffolding",
+        "single",
+        "skill",
+        "spectrum"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-038",
+      "file": "entries/KE-038-constitutional-bounded-self-improvement.md",
+      "oneliner": "KE-038: Constitutional Meta-Engineering Is Forced Externalization Applied Recursively \u2014 From Task Judgment to System Governance",
+      "keywords": [
+        "applied",
+        "constitutional",
+        "externalization",
+        "forced",
+        "governance",
+        "judgment",
+        "ke-038",
+        "meta-engineering",
+        "recursively",
+        "system",
+        "task"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-039",
+      "file": "entries/KE-039-persistent-runtime-convergence-artificial-retainer-taxonomy.md",
+      "oneliner": "KE-039: Persistent Agent Runtimes Converge on Our Architecture \u2014 The Artificial Retainer Taxonomy and Disagreement Sensing Validation",
+      "keywords": [
+        "agent",
+        "architecture",
+        "artificial",
+        "converge",
+        "disagreement",
+        "ke-039",
+        "persistent",
+        "retainer",
+        "runtimes",
+        "sensing",
+        "taxonomy",
+        "validation"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-040",
+      "file": "entries/KE-040-memory-architecture-convergence-lifelong-learning-active-substrate.md",
+      "oneliner": "KE-040: Memory Architecture Convergence \u2014 Lifelong Learning, Active Substrates, and the Temporal Scaling Thesis",
+      "keywords": [
+        "active",
+        "architecture",
+        "convergence",
+        "ke-040",
+        "learning",
+        "lifelong",
+        "memory",
+        "scaling",
+        "substrates",
+        "temporal",
+        "thesis"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-041",
+      "file": "entries/KE-041-structural-constraint-stigmergic-coordination.md",
+      "oneliner": "KE-041: Structural Constraint and Stigmergic Coordination \u2014 Causal Action-Space Restriction and Indirect Communication as Dual Design Primitives",
+      "keywords": [
+        "action-space",
+        "causal",
+        "communication",
+        "constraint",
+        "coordination",
+        "design",
+        "dual",
+        "indirect",
+        "ke-041",
+        "primitives",
+        "restriction",
+        "stigmergic",
+        "structural"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-042",
+      "file": "entries/KE-042-dispatch-convergence-structural-coordination-infrastructure.md",
+      "oneliner": "KE-042: Multi-Agent Dispatch Convergence \u2014 Structural Coordination Infrastructure Is Forced Externalization Applied to Inter-Agent Communication",
+      "keywords": [
+        "applied",
+        "communication",
+        "convergence",
+        "coordination",
+        "dispatch",
+        "externalization",
+        "forced",
+        "infrastructure",
+        "inter-agent",
+        "ke-042",
+        "multi-agent",
+        "structural"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-043",
+      "file": "entries/KE-043-forced-externalization-complete-picture.md",
+      "oneliner": "KE-043: Forced Externalization \u2014 The Complete Empirical Picture (EXP-045 Through EXP-072)",
+      "keywords": [
+        "complete",
+        "empirical",
+        "exp-045",
+        "exp-072",
+        "externalization",
+        "forced",
+        "ke-043",
+        "picture"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-044",
+      "file": "entries/KE-044-self-evolution-verification-separation-thesis.md",
+      "oneliner": "KE-044: The Verification Separation Thesis \u2014 Five Independent Systems Converge on External Evaluation as the Structural Prerequisite for Reliable S...",
+      "keywords": [
+        "converge",
+        "evaluation",
+        "external",
+        "five",
+        "independent",
+        "ke-044",
+        "prerequisite",
+        "reliable",
+        "separation",
+        "structural",
+        "systems",
+        "thesis",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-045",
+      "file": "entries/KE-045-multi-agent-social-pathology-emergence.md",
+      "oneliner": "KE-045: Multi-Agent Social Pathology \u2014 Power Laws, Sycophancy Cascades, and Collusion as Emergent Structural Diseases",
+      "keywords": [
+        "cascades",
+        "collusion",
+        "diseases",
+        "emergent",
+        "ke-045",
+        "laws",
+        "multi-agent",
+        "pathology",
+        "power",
+        "social",
+        "structural",
+        "sycophancy"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-046",
+      "file": "entries/KE-046-reasoning-depth-crisis-thinking-budget-collapse.md",
+      "oneliner": "KE-046: The Reasoning Depth Crisis \u2014 How Thinking Budget Reduction Causes Invisible, Multiplicative Quality Collapse",
+      "keywords": [
+        "budget",
+        "causes",
+        "collapse",
+        "crisis",
+        "depth",
+        "invisible",
+        "ke-046",
+        "multiplicative",
+        "quality",
+        "reasoning",
+        "reduction",
+        "thinking"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-047",
+      "file": "entries/KE-047-agent-harness-architecture-convergence.md",
+      "oneliner": "KE-047: Agent Harness Architecture Convergence \u2014 Independent Implementations Converge on Ten Structural Subsystems",
+      "keywords": [
+        "agent",
+        "architecture",
+        "converge",
+        "convergence",
+        "harness",
+        "implementations",
+        "independent",
+        "ke-047",
+        "structural",
+        "subsystems"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-048",
+      "file": "entries/KE-048-agent-safety-stack-vulnerability-to-regulation.md",
+      "oneliner": "KE-048: The Agent Safety Stack \u2014 Five Layers from Vulnerability Discovery to Regulatory Compliance",
+      "keywords": [
+        "agent",
+        "compliance",
+        "discovery",
+        "five",
+        "ke-048",
+        "layers",
+        "regulatory",
+        "safety",
+        "stack",
+        "vulnerability"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-049",
+      "file": "entries/KE-049-agent-environment-interface-formalization-ceiling.md",
+      "oneliner": "KE-049: The Agent-Environment Interface \u2014 Structural Formalization Solves Mechanical Problems, Not Reasoning Problems",
+      "keywords": [
+        "agent-environment",
+        "formalization",
+        "interface",
+        "ke-049",
+        "mechanical",
+        "problems",
+        "reasoning",
+        "solves",
+        "structural"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-050",
+      "file": "entries/KE-050-robustness-architecture-nexus.md",
+      "oneliner": "KE-050: The Robustness-Architecture Nexus \u2014 Agent Robustness Is an Architectural Property, Not a Model Property",
+      "keywords": [
+        "agent",
+        "architectural",
+        "ke-050",
+        "model",
+        "nexus",
+        "property",
+        "robustness",
+        "robustness-architecture"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-051",
+      "file": "entries/KE-051-self-governance-stack.md",
+      "oneliner": "KE-051: The Self-Governance Stack \u2014 Three-Layer Architecture for Autonomous Agent Systems",
+      "keywords": [
+        "agent",
+        "architecture",
+        "autonomous",
+        "ke-051",
+        "self-governance",
+        "stack",
+        "systems",
+        "three-layer"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
       "id": "KE-052",
       "file": "entries/KE-052-structural-access-thesis.md",
-      "oneliner": "Structural access constraints dominate content quality — it doesn't matter how good knowledge is if agents can't reach it at decision time",
+      "oneliner": "Structural access constraints dominate content quality \u2014 it doesn't matter how good knowledge is if agents can't reach it at decision time",
       "keywords": [
         "access",
         "knowledge",
@@ -503,7 +988,7 @@
     {
       "id": "KE-053",
       "file": "entries/KE-053-gym-production-gap-structural-not-behavioral.md",
-      "oneliner": "Gym-production gap is structural, not behavioral — gym success doesn't predict production performance",
+      "oneliner": "Gym-production gap is structural, not behavioral \u2014 gym success doesn't predict production performance",
       "keywords": [
         "gym",
         "production",
@@ -521,7 +1006,7 @@
     {
       "id": "KE-054",
       "file": "entries/KE-054-externalization-boundary-judgment-vs-debugging.md",
-      "oneliner": "Externalization has a sharp domain boundary — helps judgment tasks, HURTS debugging tasks. Don't apply universally",
+      "oneliner": "Externalization has a sharp domain boundary \u2014 helps judgment tasks, HURTS debugging tasks. Don't apply universally",
       "keywords": [
         "externalization",
         "debugging",
@@ -540,9 +1025,46 @@
       ]
     },
     {
+      "id": "KE-055",
+      "file": "entries/KE-055-binding-closes-analysis-action-gap.md",
+      "oneliner": "KE-055: Implementation Commitment (Binding) \u2014 Partial Solution, Bounded by Workaround Availability",
+      "keywords": [
+        "availability",
+        "binding",
+        "bounded",
+        "commitment",
+        "implementation",
+        "ke-055",
+        "partial",
+        "solution",
+        "workaround"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-056",
+      "file": "entries/KE-056-constraint-hierarchy-workaround-availability.md",
+      "oneliner": "KE-056: The Constraint Hierarchy \u2014 Workaround Availability Dominates Instructional Interventions",
+      "keywords": [
+        "availability",
+        "constraint",
+        "dominates",
+        "hierarchy",
+        "instructional",
+        "interventions",
+        "ke-056",
+        "workaround"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
       "id": "KE-057",
       "file": "entries/KE-057-cross-reference-fixes-absent-field-detection.md",
-      "oneliner": "Cross-referencing source code fixes absent-field detection failures — always read the actual code, not just docs",
+      "oneliner": "Cross-referencing source code fixes absent-field detection failures \u2014 always read the actual code, not just docs",
       "keywords": [
         "cross-reference",
         "source code",
@@ -560,9 +1082,26 @@
       ]
     },
     {
+      "id": "KE-058",
+      "file": "entries/KE-058-injected-declarative-knowledge-no-effect.md",
+      "oneliner": "KE-058: Injected Declarative Knowledge Has No Effect on Agent Behavior",
+      "keywords": [
+        "agent",
+        "behavior",
+        "declarative",
+        "effect",
+        "injected",
+        "ke-058",
+        "knowledge"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
       "id": "KE-059",
       "file": "entries/KE-059-fewshot-breaks-text-rule-binary.md",
-      "oneliner": "Few-shot examples break the text-rule binary — they work where text rules fail, by showing rather than telling",
+      "oneliner": "Few-shot examples break the text-rule binary \u2014 they work where text rules fail, by showing rather than telling",
       "keywords": [
         "few-shot",
         "example",
@@ -596,7 +1135,7 @@
     {
       "id": "KE-061",
       "file": "entries/KE-061-fewshot-judgment-skill-effectiveness.md",
-      "oneliner": "Few-shot worked examples achieve 0%→100% on judgment skills — the most powerful single-entry intervention found",
+      "oneliner": "Few-shot worked examples achieve 0%\u2192100% on judgment skills \u2014 the most powerful single-entry intervention found",
       "keywords": [
         "few-shot",
         "worked example",
@@ -609,6 +1148,27 @@
       "agents": [
         "coach",
         "tech-lead"
+      ]
+    },
+    {
+      "id": "KE-062",
+      "file": "entries/KE-062-behavioral-fuzzing-agent-testing-paradigm.md",
+      "oneliner": "KE-062: Behavioral Fuzzing as Agent Testing Paradigm \u2014 From Anecdotal Bug Reports to Systematic Behavioral Test Suites",
+      "keywords": [
+        "agent",
+        "anecdotal",
+        "behavioral",
+        "fuzzing",
+        "ke-062",
+        "paradigm",
+        "reports",
+        "suites",
+        "systematic",
+        "test",
+        "testing"
+      ],
+      "agents": [
+        "*"
       ]
     },
     {
@@ -634,7 +1194,7 @@
     {
       "id": "KE-064",
       "file": "entries/KE-064-execution-crowding-analysis-trap.md",
-      "oneliner": "Execution crowding: chained externalization steps create an analysis trap — too many gates kills execution velocity",
+      "oneliner": "Execution crowding: chained externalization steps create an analysis trap \u2014 too many gates kills execution velocity",
       "keywords": [
         "crowding",
         "externalization",
@@ -650,9 +1210,130 @@
       ]
     },
     {
+      "id": "KE-065",
+      "file": "entries/KE-065-fewshot-comprehensive-findings.md",
+      "oneliner": "KE-065: Few-Shot Skill Conversion \u2014 Comprehensive Findings",
+      "keywords": [
+        "comprehensive",
+        "conversion",
+        "few-shot",
+        "findings",
+        "ke-065",
+        "skill"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-066",
+      "file": "entries/KE-066-cross-model-critique-rubber-duck-pattern.md",
+      "oneliner": "KE-066: Cross-Model-Family Critique Closes 74.7% of Performance Gap",
+      "keywords": [
+        "closes",
+        "critique",
+        "cross-model-family",
+        "ke-066",
+        "performance"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-067",
+      "file": "entries/KE-067-reasoning-behavior-decoupling-blind-refusal.md",
+      "oneliner": "KE-067: Reasoning-Behavior Decoupling \u2014 Models Refuse Despite Correct Normative Reasoning",
+      "keywords": [
+        "correct",
+        "decoupling",
+        "despite",
+        "ke-067",
+        "models",
+        "normative",
+        "reasoning",
+        "reasoning-behavior",
+        "refuse"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-068",
+      "file": "entries/KE-068-hvr-zero-hedge-gate-uncertainty-quantification.md",
+      "oneliner": "KE-068: Zero-Hedge Gate \u2014 96% Precision Uncertainty Signal from Reasoning Traces",
+      "keywords": [
+        "gate",
+        "ke-068",
+        "precision",
+        "reasoning",
+        "signal",
+        "traces",
+        "uncertainty",
+        "zero-hedge"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-069",
+      "file": "entries/KE-069-sft-dip-recovery-premature-evaluation.md",
+      "oneliner": "KE-069: SFT Dip-and-Recovery \u2014 Early Evaluations Systematically Underestimate Generalization",
+      "keywords": [
+        "dip-and-recovery",
+        "early",
+        "evaluations",
+        "generalization",
+        "ke-069",
+        "systematically",
+        "underestimate"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-070",
+      "file": "entries/KE-070-logic-monopoly-separation-of-power-governance.md",
+      "oneliner": "KE-070: Logic Monopoly \u2014 Separation of Power for Multi-Agent Governance",
+      "keywords": [
+        "governance",
+        "ke-070",
+        "logic",
+        "monopoly",
+        "multi-agent",
+        "power",
+        "separation"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-071",
+      "file": "entries/KE-071-reasoning-behavior-decoupling-uncertainty-detection.md",
+      "oneliner": "KE-071: The Reasoning-Behavior Gap \u2014 External Uncertainty Detection Meets Internal Reasoning-Action Decoupling",
+      "keywords": [
+        "decoupling",
+        "detection",
+        "external",
+        "internal",
+        "ke-071",
+        "meets",
+        "reasoning-action",
+        "reasoning-behavior",
+        "uncertainty"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
       "id": "KE-072",
       "file": "entries/KE-072-positional-privilege-architectural-theory.md",
-      "oneliner": "Positional privilege is architectural — system prompt content is categorically different from task message. Skills go in task, identity in system",
+      "oneliner": "Positional privilege is architectural \u2014 system prompt content is categorically different from task message. Skills go in task, identity in system",
       "keywords": [
         "system prompt",
         "task message",
@@ -666,6 +1347,383 @@
         "tech-lead",
         "coach",
         "may"
+      ]
+    },
+    {
+      "id": "KE-073",
+      "file": "entries/KE-073-emergent-decentralized-corrective-signaling.md",
+      "oneliner": "KE-073: Emergent Decentralized Corrective Signaling \u2014 Agent Collectives Self-Regulate Without Human Moderation",
+      "keywords": [
+        "agent",
+        "collectives",
+        "corrective",
+        "decentralized",
+        "emergent",
+        "human",
+        "ke-073",
+        "moderation",
+        "self-regulate",
+        "signaling",
+        "without"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-074",
+      "file": "entries/KE-074-universal-verification-design-process-outcome-separation.md",
+      "oneliner": "KE-074: Universal Verification Design \u2014 Process/Outcome Separation, Rubric-First Evaluation, and the Auto-Research Complementarity Finding",
+      "keywords": [
+        "auto-research",
+        "complementarity",
+        "design",
+        "evaluation",
+        "finding",
+        "ke-074",
+        "outcome",
+        "process",
+        "rubric-first",
+        "separation",
+        "universal",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-075",
+      "file": "entries/KE-075-client-side-pipeline-optimization-model-selection.md",
+      "oneliner": "KE-075: Client-Side Pipeline Optimization \u2014 The 13-32\u00d7 Cost Gap and Bandit-Based Model Selection",
+      "keywords": [
+        "bandit-based",
+        "client-side",
+        "cost",
+        "ke-075",
+        "model",
+        "optimization",
+        "pipeline",
+        "selection"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-076",
+      "file": "entries/KE-076-structured-routing-constrained-dispatch-design.md",
+      "oneliner": "KE-076: Structured Routing \u2014 Constrained Dispatch as Two-Stage Decision Architecture",
+      "keywords": [
+        "architecture",
+        "constrained",
+        "decision",
+        "dispatch",
+        "ke-076",
+        "routing",
+        "structured",
+        "two-stage"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-077",
+      "file": "entries/KE-077-step-saliency-reasoning-information-flow-diagnostics.md",
+      "oneliner": "KE-077: Step-Saliency \u2014 Reasoning Failures Are Predictable from Information Flow Patterns",
+      "keywords": [
+        "failures",
+        "flow",
+        "information",
+        "ke-077",
+        "patterns",
+        "predictable",
+        "reasoning",
+        "step-saliency"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-078",
+      "file": "entries/KE-078-goodhart-detection-cross-model-entropy-monitoring.md",
+      "oneliner": "KE-078: Goodhart Detection \u2014 Cross-Model Entropy Monitoring for Judge Integrity",
+      "keywords": [
+        "cross-model",
+        "detection",
+        "entropy",
+        "goodhart",
+        "integrity",
+        "judge",
+        "ke-078",
+        "monitoring"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-079",
+      "file": "entries/KE-079-structure-aware-retrieval-dag-matching-hierarchical-decomposition.md",
+      "oneliner": "KE-079: Structure-Aware Retrieval \u2014 DAG Matching and Hierarchical Decomposition as Memory Architecture Primitives",
+      "keywords": [
+        "architecture",
+        "decomposition",
+        "hierarchical",
+        "ke-079",
+        "matching",
+        "memory",
+        "primitives",
+        "retrieval",
+        "structure-aware"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-080",
+      "file": "entries/KE-080-cascade-architecture-behavioral-testing-convergence.md",
+      "oneliner": "KE-080: Cascade-Architecture Convergence \u2014 Why Agent Failure Patterns Are Testable and Architecturally Determined",
+      "keywords": [
+        "agent",
+        "architecturally",
+        "cascade-architecture",
+        "convergence",
+        "determined",
+        "failure",
+        "ke-080",
+        "patterns",
+        "testable"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-081",
+      "file": "entries/KE-081-automated-harness-optimization-closed-loop-self-improvement.md",
+      "oneliner": "KE-081: Automated Harness Optimization \u2014 Closed-Loop Self-Improvement via Meta-Agent Hill-Climbing",
+      "keywords": [
+        "automated",
+        "closed-loop",
+        "harness",
+        "hill-climbing",
+        "ke-081",
+        "meta-agent",
+        "optimization",
+        "self-improvement"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-082",
+      "file": "entries/KE-082-reasoning-dropout-config-drift-distributed-quality-failure.md",
+      "oneliner": "KE-082: Reasoning Dropout and Configuration Drift \u2014 Distributed Quality Failure in Adaptive Agent Systems",
+      "keywords": [
+        "adaptive",
+        "agent",
+        "configuration",
+        "distributed",
+        "drift",
+        "dropout",
+        "failure",
+        "ke-082",
+        "quality",
+        "reasoning",
+        "systems"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-083",
+      "file": "entries/KE-083-agent-safety-gap-alignment-fails-at-system-boundary.md",
+      "oneliner": "KE-083: The Agent Safety Gap \u2014 Alignment Fails at the System Boundary",
+      "keywords": [
+        "agent",
+        "alignment",
+        "boundary",
+        "fails",
+        "ke-083",
+        "safety",
+        "system"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-084",
+      "file": "entries/KE-084-verification-trust-architecture.md",
+      "oneliner": "KE-084: Verification-Trust Architecture \u2014 Trust as Attack Surface, Disagreement as Sensor, Verification as Scaling Mechanism",
+      "keywords": [
+        "architecture",
+        "attack",
+        "disagreement",
+        "ke-084",
+        "mechanism",
+        "scaling",
+        "sensor",
+        "surface",
+        "trust",
+        "verification",
+        "verification-trust"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-085",
+      "file": "entries/KE-085-harness-engineering-field-crystallization.md",
+      "oneliner": "KE-085: Harness Engineering Field Crystallization \u2014 From Practitioner Craft to Academic Discipline",
+      "keywords": [
+        "academic",
+        "craft",
+        "crystallization",
+        "discipline",
+        "engineering",
+        "field",
+        "harness",
+        "ke-085",
+        "practitioner"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-086",
+      "file": "entries/KE-086-multi-agent-architecture-scaling.md",
+      "oneliner": "KE-086: Multi-Agent Architecture Scaling \u2014 Integration Bottleneck, Coordination Laws, and the Scale-or-Collapse Question",
+      "keywords": [
+        "architecture",
+        "bottleneck",
+        "coordination",
+        "integration",
+        "ke-086",
+        "laws",
+        "multi-agent",
+        "question",
+        "scale-or-collapse",
+        "scaling"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-087",
+      "file": "entries/KE-087-agent-infrastructure-primitives.md",
+      "oneliner": "KE-087: Agent Infrastructure Primitives \u2014 The Stack Between Model and Task",
+      "keywords": [
+        "agent",
+        "infrastructure",
+        "ke-087",
+        "model",
+        "primitives",
+        "stack",
+        "task"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-088",
+      "file": "entries/KE-088-agent-behavior-shaping.md",
+      "oneliner": "KE-088: Agent Behavior Shaping \u2014 Training-Time Optimization vs. Deployment-Time Reliability",
+      "keywords": [
+        "agent",
+        "behavior",
+        "deployment-time",
+        "ke-088",
+        "optimization",
+        "reliability",
+        "shaping",
+        "training-time"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-089",
+      "file": "entries/KE-089-adaptive-verification-evaluation.md",
+      "oneliner": "KE-089: Adaptive Verification & Evaluation \u2014 Mid-Trajectory Safety, Structural Decomposition, and Evolutionary Test Design",
+      "keywords": [
+        "adaptive",
+        "decomposition",
+        "design",
+        "evaluation",
+        "evolutionary",
+        "ke-089",
+        "mid-trajectory",
+        "safety",
+        "structural",
+        "test",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-090",
+      "file": "entries/KE-090-verbalized-confidence-mechanisms-llm-agents.md",
+      "oneliner": "KE-090: Verbalized Confidence Mechanisms in LLM Agents \u2014 Why Passive Hedging Detection Fails",
+      "keywords": [
+        "agents",
+        "confidence",
+        "detection",
+        "fails",
+        "hedging",
+        "ke-090",
+        "mechanisms",
+        "passive",
+        "verbalized"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-091",
+      "file": "entries/KE-091-civc-alignment-tax-verification-theater.md",
+      "oneliner": "KE-091: CIVC Alignment Tax \u2014 Forced Verification Harms High-Complexity Tasks",
+      "keywords": [
+        "alignment",
+        "civc",
+        "forced",
+        "harms",
+        "high-complexity",
+        "ke-091",
+        "tasks",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-092",
+      "file": "entries/KE-092-hvr-not-predictive-agent-sessions.md",
+      "oneliner": "KE-092: HVR Does Not Transfer to Multi-Step Agent Sessions",
+      "keywords": [
+        "agent",
+        "ke-092",
+        "multi-step",
+        "sessions",
+        "transfer"
+      ],
+      "agents": [
+        "*"
       ]
     },
     {
@@ -691,7 +1749,7 @@
     {
       "id": "KE-094",
       "file": "entries/KE-094-commit-guard-structural-enforcement.md",
-      "oneliner": "Commit guard structural enforcement eliminates agent laziness — beforeToolCall hooks are highest-ROI investment",
+      "oneliner": "Commit guard structural enforcement eliminates agent laziness \u2014 beforeToolCall hooks are highest-ROI investment",
       "keywords": [
         "commit",
         "guard",
@@ -707,9 +1765,44 @@
       ]
     },
     {
+      "id": "KE-095",
+      "file": "entries/KE-095-behavioral-failure-prediction-mid-trajectory-intervention.md",
+      "oneliner": "KE-095: Behavioral Failure Prediction & Mid-Trajectory Intervention Pipeline",
+      "keywords": [
+        "behavioral",
+        "failure",
+        "intervention",
+        "ke-095",
+        "mid-trajectory",
+        "pipeline",
+        "prediction"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-096",
+      "file": "entries/KE-096-unified-verification-architecture.md",
+      "oneliner": "KE-096: Unified Verification Architecture \u2014 From Literature Stacks to Experimental Constraints",
+      "keywords": [
+        "architecture",
+        "constraints",
+        "experimental",
+        "ke-096",
+        "literature",
+        "stacks",
+        "unified",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
       "id": "KE-097",
       "file": "entries/KE-097-confirmation-bias-mechanism-verification-confabulation.md",
-      "oneliner": "Confirmation bias is root mechanism of verification confabulation — agents confirm what they expect, not what exists",
+      "oneliner": "Confirmation bias is root mechanism of verification confabulation \u2014 agents confirm what they expect, not what exists",
       "keywords": [
         "confirmation bias",
         "confabulation",
@@ -722,9 +1815,61 @@
       ]
     },
     {
+      "id": "KE-098",
+      "file": "entries/KE-098-uncertainty-aware-verification-signals.md",
+      "oneliner": "KE-098: Uncertainty-Aware Verification Signals \u2014 Information Asymmetry, Entropy Dynamics, and Composite Abstention",
+      "keywords": [
+        "abstention",
+        "asymmetry",
+        "composite",
+        "dynamics",
+        "entropy",
+        "information",
+        "ke-098",
+        "signals",
+        "uncertainty-aware",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-099",
+      "file": "entries/KE-099-adversarial-framing-bypass-verification-confabulation.md",
+      "oneliner": "KE-099: Adversarial Framing Bypass for Verification Confabulation",
+      "keywords": [
+        "adversarial",
+        "bypass",
+        "confabulation",
+        "framing",
+        "ke-099",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-100",
+      "file": "entries/KE-100-machine-verified-evidence-injection-confabulation.md",
+      "oneliner": "KE-100: Machine-Verified Evidence Injection for Verification Confabulation",
+      "keywords": [
+        "confabulation",
+        "evidence",
+        "injection",
+        "ke-100",
+        "machine-verified",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
       "id": "KE-101",
       "file": "entries/KE-101-meta-analysis-theory-of-agent-improvement.md",
-      "oneliner": "Meta-analysis: what actually improves LLM agent performance — structural gates > few-shot > environmental nudges >> text rules (0%)",
+      "oneliner": "Meta-analysis: what actually improves LLM agent performance \u2014 structural gates > few-shot > environmental nudges >> text rules (0%)",
       "keywords": [
         "meta-analysis",
         "what works",
@@ -740,7 +1885,7 @@
     {
       "id": "KE-102",
       "file": "entries/KE-102-skill-level-confabulation-fix.md",
-      "oneliner": "Evidence-over-narrative skill eliminates verification confabulation — require citing specific tool output before conclusions",
+      "oneliner": "Evidence-over-narrative skill eliminates verification confabulation \u2014 require citing specific tool output before conclusions",
       "keywords": [
         "evidence",
         "narrative",
@@ -759,9 +1904,62 @@
       ]
     },
     {
+      "id": "KE-103",
+      "file": "entries/KE-103-context-stripping-paradox.md",
+      "oneliner": "KE-103: Context-Stripping Paradox \u2014 Removing Context Can Hurt Skilled Agents",
+      "keywords": [
+        "agents",
+        "context",
+        "context-stripping",
+        "hurt",
+        "ke-103",
+        "paradox",
+        "removing",
+        "skilled"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-104",
+      "file": "entries/KE-104-complete-verification-architecture-evidence-grounding.md",
+      "oneliner": "KE-104: Complete Verification Architecture \u2014 Evidence Grounding Stack",
+      "keywords": [
+        "architecture",
+        "complete",
+        "evidence",
+        "grounding",
+        "ke-104",
+        "stack",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-105",
+      "file": "entries/KE-105-verification-orchestration-stack.md",
+      "oneliner": "KE-105: Verification Orchestration Stack \u2014 Compile, Triage, Enforce, Verify",
+      "keywords": [
+        "compile",
+        "enforce",
+        "ke-105",
+        "orchestration",
+        "stack",
+        "triage",
+        "verification",
+        "verify"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
       "id": "KE-106",
       "file": "entries/KE-106-structural-enforcement-no-training-effect.md",
-      "oneliner": "Structural enforcement does NOT train behavior — guards are brakes, not driving lessons. Don't expect internalization from guards",
+      "oneliner": "Structural enforcement does NOT train behavior \u2014 guards are brakes, not driving lessons. Don't expect internalization from guards",
       "keywords": [
         "guard",
         "enforcement",
@@ -778,9 +1976,44 @@
       ]
     },
     {
+      "id": "KE-107",
+      "file": "entries/KE-107-fm33-gym-production-gap-quantified.md",
+      "oneliner": "KE-107: FM-3.3 Gym-Production Gap Quantified \u2014 10\u00d7 Difference Driven by Context Complexity",
+      "keywords": [
+        "complexity",
+        "context",
+        "difference",
+        "driven",
+        "fm-3",
+        "gym-production",
+        "ke-107",
+        "quantified"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-108",
+      "file": "entries/KE-108-step-level-credit-assignment-verification-cascade.md",
+      "oneliner": "KE-108: Step-Level Credit Assignment as Verification Cascade Defense",
+      "keywords": [
+        "assignment",
+        "cascade",
+        "credit",
+        "defense",
+        "ke-108",
+        "step-level",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
       "id": "KE-109",
       "file": "entries/KE-109-gym-production-gap-structural-mismatch.md",
-      "oneliner": "Gym-production gap is structural across 5 dimensions — don't optimize gym scores expecting production improvement",
+      "oneliner": "Gym-production gap is structural across 5 dimensions \u2014 don't optimize gym scores expecting production improvement",
       "keywords": [
         "gym",
         "production",
@@ -799,7 +2032,7 @@
     {
       "id": "KE-110",
       "file": "entries/KE-110-skill-stack-saturation-gym-ceiling-confirms-improvement-loop.md",
-      "oneliner": "Skill stack saturation reached — gym ceiling confirms the improvement loop works AND is finished. Shift to production evaluation",
+      "oneliner": "Skill stack saturation reached \u2014 gym ceiling confirms the improvement loop works AND is finished. Shift to production evaluation",
       "keywords": [
         "saturation",
         "ceiling",
@@ -815,9 +2048,26 @@
       ]
     },
     {
+      "id": "KE-111",
+      "file": "entries/KE-111-production-evaluation-architecture-pivot.md",
+      "oneliner": "KE-111: Production Evaluation Architecture \u2014 From Gym Termination to Observational Science",
+      "keywords": [
+        "architecture",
+        "evaluation",
+        "ke-111",
+        "observational",
+        "production",
+        "science",
+        "termination"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
       "id": "KE-112",
       "file": "entries/KE-112-production-quality-multimodal-verdicts-lie.md",
-      "oneliner": "Production session quality is multi-modal — single verdict scores lie. Evaluate behavioral patterns, not aggregate scores",
+      "oneliner": "Production session quality is multi-modal \u2014 single verdict scores lie. Evaluate behavioral patterns, not aggregate scores",
       "keywords": [
         "production",
         "quality",
@@ -836,7 +2086,7 @@
     {
       "id": "KE-113",
       "file": "entries/KE-113-commit-guard-recovery-not-prevention.md",
-      "oneliner": "Commit guard production impact: recovery not prevention — guards help agents recover from mistakes, they don't prevent the mistakes",
+      "oneliner": "Commit guard production impact: recovery not prevention \u2014 guards help agents recover from mistakes, they don't prevent the mistakes",
       "keywords": [
         "commit",
         "guard",
@@ -854,7 +2104,7 @@
     {
       "id": "KE-114",
       "file": "entries/KE-114-production-behavioral-archetypes-spectrum.md",
-      "oneliner": "Production behavioral archetypes form a spectrum, not types — agents blend behaviors based on task context",
+      "oneliner": "Production behavioral archetypes form a spectrum, not types \u2014 agents blend behaviors based on task context",
       "keywords": [
         "archetype",
         "spectrum",
@@ -870,9 +2120,80 @@
       ]
     },
     {
+      "id": "KE-115",
+      "file": "entries/KE-115-fm-heavy-workers-intervention-priority-map.md",
+      "oneliner": "KE-115: FM-Heavy Workers Intervention Priority Map",
+      "keywords": [
+        "fm-heavy",
+        "intervention",
+        "ke-115",
+        "priority",
+        "workers"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-116",
+      "file": "entries/KE-116-next-gen-evaluation-architecture-adaptive-state-aware.md",
+      "oneliner": "KE-116: Next-Generation Agent Evaluation Architecture \u2014 Adaptive, State-Aware, Length-Resistant",
+      "keywords": [
+        "adaptive",
+        "agent",
+        "architecture",
+        "evaluation",
+        "ke-116",
+        "length-resistant",
+        "next-generation",
+        "state-aware"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-117",
+      "file": "entries/KE-117-verification-self-awareness-stack-meta-verification-signal-calibration.md",
+      "oneliner": "KE-117: Verification Self-Awareness Stack \u2014 Meta-Verification, Signal Calibration, and Cold-Start Recovery",
+      "keywords": [
+        "calibration",
+        "cold-start",
+        "ke-117",
+        "meta-verification",
+        "recovery",
+        "self-awareness",
+        "signal",
+        "stack",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-118",
+      "file": "entries/KE-118-complete-verification-orchestration-stack-ke105-gaps-closed.md",
+      "oneliner": "KE-118: Complete Verification Orchestration Stack \u2014 All Five KE-105 Gaps Closed",
+      "keywords": [
+        "closed",
+        "complete",
+        "five",
+        "gaps",
+        "ke-105",
+        "ke-118",
+        "orchestration",
+        "stack",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
       "id": "KE-119",
       "file": "entries/KE-119-adversarial-self-review-null-result-review-without-action.md",
-      "oneliner": "Adversarial self-review is null result — agents review without changing action. Review gates must force re-work, not just reflection",
+      "oneliner": "Adversarial self-review is null result \u2014 agents review without changing action. Review gates must force re-work, not just reflection",
       "keywords": [
         "self-review",
         "adversarial",
@@ -887,9 +2208,44 @@
       ]
     },
     {
+      "id": "KE-120",
+      "file": "entries/KE-120-cooperation-calibration-context-triad-multi-agent-structural-requirements.md",
+      "oneliner": "KE-120: The Cooperation-Calibration-Context Triad \u2014 Three Structural Requirements for Reliable Multi-Agent Systems",
+      "keywords": [
+        "cooperation-calibration-context",
+        "ke-120",
+        "multi-agent",
+        "reliable",
+        "requirements",
+        "structural",
+        "systems",
+        "three",
+        "triad"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-121",
+      "file": "entries/KE-121-forced-externalization-prevents-misinterpretation.md",
+      "oneliner": "KE-121: Forced Externalization Prevents Misinterpretation, Not Just Omission",
+      "keywords": [
+        "externalization",
+        "forced",
+        "ke-121",
+        "misinterpretation",
+        "omission",
+        "prevents"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
       "id": "KE-122",
       "file": "entries/KE-122-intervention-decay-internalization-lifecycle.md",
-      "oneliner": "Intervention decay: effective interventions become redundant through internalization — periodically audit if guards are still needed",
+      "oneliner": "Intervention decay: effective interventions become redundant through internalization \u2014 periodically audit if guards are still needed",
       "keywords": [
         "decay",
         "redundant",
@@ -907,7 +2263,7 @@
     {
       "id": "KE-123",
       "file": "entries/KE-123-over-intervention-iatrogenesis.md",
-      "oneliner": "Over-intervention iatrogenesis: combined interventions DEGRADE performance. Less is more — max 2-3 active interventions per task",
+      "oneliner": "Over-intervention iatrogenesis: combined interventions DEGRADE performance. Less is more \u2014 max 2-3 active interventions per task",
       "keywords": [
         "over-intervention",
         "combined",
@@ -925,9 +2281,28 @@
       ]
     },
     {
+      "id": "KE-124",
+      "file": "entries/KE-124-agent-observability-production-evaluation-stack.md",
+      "oneliner": "KE-124: Agent Observability Production Evaluation Stack \u2014 Cognitive Observability Is the Binding Constraint",
+      "keywords": [
+        "agent",
+        "binding",
+        "cognitive",
+        "constraint",
+        "evaluation",
+        "ke-124",
+        "observability",
+        "production",
+        "stack"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
       "id": "KE-125",
       "file": "entries/KE-125-forced-enumeration-fails-discovery-tasks.md",
-      "oneliner": "Forced deliverable enumeration fails on discovery tasks under time pressure — don't gate discovery/exploration with rigid checklists",
+      "oneliner": "Forced deliverable enumeration fails on discovery tasks under time pressure \u2014 don't gate discovery/exploration with rigid checklists",
       "keywords": [
         "deliverable",
         "enumeration",
@@ -943,9 +2318,67 @@
       ]
     },
     {
+      "id": "KE-126",
+      "file": "entries/KE-126-soft-interventions-creative-inference-gap.md",
+      "oneliner": "KE-126: Soft Interventions Cannot Close the Creative Inference Gap on Discovery Tasks",
+      "keywords": [
+        "cannot",
+        "close",
+        "creative",
+        "discovery",
+        "inference",
+        "interventions",
+        "ke-126",
+        "soft",
+        "tasks"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-127",
+      "file": "entries/KE-127-error-propagation-lifecycle-context-pollution-architectural-defenses.md",
+      "oneliner": "KE-127: Error Propagation Lifecycle \u2014 Context Pollution Mechanisms and Architectural Defenses",
+      "keywords": [
+        "architectural",
+        "context",
+        "defenses",
+        "error",
+        "ke-127",
+        "lifecycle",
+        "mechanisms",
+        "pollution",
+        "propagation"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-128",
+      "file": "entries/KE-128-phase0-discovery-structural-intervention-fm13.md",
+      "oneliner": "KE-128: Phase 0 Discovery \u2014 Structural Intervention for FM-1.3 (Exhaustive Reading) \u2014 NULL RESULT",
+      "keywords": [
+        "discovery",
+        "exhaustive",
+        "fm-1",
+        "intervention",
+        "ke-128",
+        "null",
+        "phase",
+        "reading",
+        "result",
+        "structural"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
       "id": "KE-129",
       "file": "entries/KE-129-forced-externalization-only-reliable-channel-judgment.md",
-      "oneliner": "Forced externalization is the ONLY reliable channel for judgment tasks — Ch1 (text) and Ch3 (few-shot) fail on judgment",
+      "oneliner": "Forced externalization is the ONLY reliable channel for judgment tasks \u2014 Ch1 (text) and Ch3 (few-shot) fail on judgment",
       "keywords": [
         "externalization",
         "channel",
@@ -961,9 +2394,44 @@
       ]
     },
     {
+      "id": "KE-130",
+      "file": "entries/KE-130-text-channel-content-delivery-fails-judgment.md",
+      "oneliner": "KE-130: Text-Channel Content Delivery Fails for Contradiction Detection",
+      "keywords": [
+        "content",
+        "contradiction",
+        "delivery",
+        "detection",
+        "fails",
+        "ke-130",
+        "text-channel"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-131",
+      "file": "entries/KE-131-environmental-hints-null-result-replication.md",
+      "oneliner": "KE-131: Environmental Hints Show No Effect on KB Discovery Tasks (Replication)",
+      "keywords": [
+        "discovery",
+        "effect",
+        "environmental",
+        "hints",
+        "ke-131",
+        "replication",
+        "show",
+        "tasks"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
       "id": "KE-132",
       "file": "entries/KE-132-ch3-task-type-boundary-coding-momentum.md",
-      "oneliner": "Few-shot has a task-type boundary: coding momentum overwhelms examples — don't use few-shot for coding tasks",
+      "oneliner": "Few-shot has a task-type boundary: coding momentum overwhelms examples \u2014 don't use few-shot for coding tasks",
       "keywords": [
         "few-shot",
         "coding",
@@ -980,7 +2448,7 @@
     {
       "id": "KE-133",
       "file": "entries/KE-133-few-shot-harmful-discovery-template-displacement.md",
-      "oneliner": "Few-shot is ACTIVELY HARMFUL on discovery tasks — template-following displaces exploration. Never use examples for open-ended work",
+      "oneliner": "Few-shot is ACTIVELY HARMFUL on discovery tasks \u2014 template-following displaces exploration. Never use examples for open-ended work",
       "keywords": [
         "few-shot",
         "harmful",
@@ -997,7 +2465,7 @@
     {
       "id": "KE-134",
       "file": "entries/KE-134-ch2-gate-stacking-hump-curve.md",
-      "oneliner": "Gate stacking follows a hump curve, not a cliff — 2-3 gates optimal, 4+ starts declining, but no catastrophic collapse",
+      "oneliner": "Gate stacking follows a hump curve, not a cliff \u2014 2-3 gates optimal, 4+ starts declining, but no catastrophic collapse",
       "keywords": [
         "gate",
         "stacking",
@@ -1030,7 +2498,7 @@
     {
       "id": "KE-136",
       "file": "entries/KE-136-structural-guards-production-transfer-verification-depth.md",
-      "oneliner": "Structural guards transfer to production — verification-depth guard delivers +15.8pp fleet-wide. Guards are the proven production intervention",
+      "oneliner": "Structural guards transfer to production \u2014 verification-depth guard delivers +15.8pp fleet-wide. Guards are the proven production intervention",
       "keywords": [
         "guard",
         "production",
@@ -1065,7 +2533,7 @@
     {
       "id": "KE-140",
       "file": "entries/KE-140-agent-read-patterns-duplicate-reads.md",
-      "oneliner": "Agent duplicate reads are primary token waste — agents re-read files they already have in context. Cache-aware tooling could save 30%+ tokens",
+      "oneliner": "Agent duplicate reads are primary token waste \u2014 agents re-read files they already have in context. Cache-aware tooling could save 30%+ tokens",
       "keywords": [
         "duplicate",
         "read",
@@ -1082,6 +2550,4097 @@
         "tech-lead",
         "may",
         "optimizer"
+      ]
+    },
+    {
+      "id": "KE-142",
+      "file": "entries/KE-142-format-tax-external-validation-format-decoupled-gates.md",
+      "oneliner": "KE-142: Format Tax External Validation \u2014 DD-747 Directly Grounds H-103 Mechanism",
+      "keywords": [
+        "dd-747",
+        "directly",
+        "external",
+        "format",
+        "grounds",
+        "h-103",
+        "ke-142",
+        "mechanism",
+        "validation"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-143",
+      "file": "entries/KE-143-guard-response-trifurcation-agent-specific-harm.md",
+      "oneliner": "KE-143: Guard Response Trifurcation \u2014 Three Agent Categories and Agent-Specific Guard Harm",
+      "keywords": [
+        "agent",
+        "agent-specific",
+        "categories",
+        "guard",
+        "harm",
+        "ke-143",
+        "response",
+        "three",
+        "trifurcation"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-144",
+      "file": "entries/KE-144-verification-guard-non-internalization-channel2-limits.md",
+      "oneliner": "KE-144: Verification Guards Don't Teach \u2014 Channel 2 Forces Behavior Without Transfer",
+      "keywords": [
+        "behavior",
+        "channel",
+        "forces",
+        "guards",
+        "ke-144",
+        "teach",
+        "transfer",
+        "verification",
+        "without"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-145",
+      "file": "entries/KE-145-30k-agent-scaling-insights.md",
+      "oneliner": "KE-145: 30K-Agent Scaling \u2014 Over-Provision+Filter, Oracle Verification, and the Guard Dependency Contrast",
+      "keywords": [
+        "contrast",
+        "dependency",
+        "filter",
+        "guard",
+        "k-agent",
+        "ke-145",
+        "oracle",
+        "over-provision",
+        "scaling",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-146",
+      "file": "entries/KE-146.md",
+      "oneliner": "KE-146: Reasoning Externalization Gap",
+      "keywords": [
+        "externalization",
+        "ke-146",
+        "reasoning"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-147",
+      "file": "entries/KE-147-einstellung-effect-discovery-boundary.md",
+      "oneliner": "KE-147: Einstellung Effect IS the Discovery Boundary Mechanism",
+      "keywords": [
+        "boundary",
+        "discovery",
+        "effect",
+        "einstellung",
+        "ke-147",
+        "mechanism"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-148",
+      "file": "entries/KE-148.md",
+      "oneliner": "KE-148: Format as Toll \u2014 Structured Gates as Task Decomposition Infrastructure",
+      "keywords": [
+        "decomposition",
+        "format",
+        "gates",
+        "infrastructure",
+        "ke-148",
+        "structured",
+        "task",
+        "toll"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-149",
+      "file": "entries/KE-149.md",
+      "oneliner": "KE-149: Heuristic Evaluator as 3-Way Classifier \u2014 Implicit Calibration Through the Acceptable Category",
+      "keywords": [
+        "acceptable",
+        "calibration",
+        "category",
+        "classifier",
+        "evaluator",
+        "heuristic",
+        "implicit",
+        "ke-149"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-150",
+      "file": "entries/KE-150.md",
+      "oneliner": "KE-150: Quality \u2260 Process Compliance \u2014 Convention Enforcement Needs a Separate Mechanism",
+      "keywords": [
+        "compliance",
+        "convention",
+        "enforcement",
+        "ke-150",
+        "mechanism",
+        "needs",
+        "process",
+        "quality",
+        "separate"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-151",
+      "file": "entries/KE-151.md",
+      "oneliner": "KE-151: Extended Thinking Is Disabled System-Wide \u2014 Infrastructure Gap for Reasoning Observability",
+      "keywords": [
+        "disabled",
+        "extended",
+        "infrastructure",
+        "ke-151",
+        "observability",
+        "reasoning",
+        "system-wide",
+        "thinking"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-152",
+      "file": "entries/KE-152-guard-positive-feedback-loop.md",
+      "oneliner": "KE-152: Guards Create Positive Feedback Loops, Not Dependency",
+      "keywords": [
+        "create",
+        "dependency",
+        "feedback",
+        "guards",
+        "ke-152",
+        "loops",
+        "positive"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-153",
+      "file": "entries/KE-153-observability-tax-design-implications.md",
+      "oneliner": "KE-153: Observability Tax \u2014 Design Implications from DD-750 Literature Synthesis",
+      "keywords": [
+        "dd-750",
+        "design",
+        "implications",
+        "ke-153",
+        "literature",
+        "observability",
+        "synthesis"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-154",
+      "file": "entries/KE-154-epistemic-suppression-discovery-dual-mechanism.md",
+      "oneliner": "KE-154: Epistemic Suppression \u2014 The Second Mechanism Behind Few-Shot Harm on Discovery Tasks",
+      "keywords": [
+        "behind",
+        "discovery",
+        "epistemic",
+        "few-shot",
+        "harm",
+        "ke-154",
+        "mechanism",
+        "second",
+        "suppression",
+        "tasks"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-155",
+      "file": "entries/KE-155-externalization-harm-boundary-unified-theory.md",
+      "oneliner": "KE-155: The Externalization Harm Boundary \u2014 When Showing Work Changes the Work",
+      "keywords": [
+        "boundary",
+        "changes",
+        "externalization",
+        "harm",
+        "ke-155",
+        "showing",
+        "work"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-156",
+      "file": "entries/KE-156-voluntary-externalization-paradox.md",
+      "oneliner": "KE-156: The Voluntary Externalization Paradox \u2014 Agents Don't Externalize Without Forcing",
+      "keywords": [
+        "agents",
+        "externalization",
+        "externalize",
+        "forcing",
+        "ke-156",
+        "paradox",
+        "voluntary",
+        "without"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-157",
+      "file": "entries/KE-157-literature-validated-externalization-tax.md",
+      "oneliner": "KE-157: Literature-Validated Externalization Tax",
+      "keywords": [
+        "externalization",
+        "ke-157",
+        "literature-validated"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-158",
+      "file": "entries/KE-158-overhead-narrative-challenge-difficulty-threshold.md",
+      "oneliner": "KE-158: The Overhead Narrative Challenge \u2014 A Difficulty Threshold Reframes Guard Harm",
+      "keywords": [
+        "challenge",
+        "difficulty",
+        "guard",
+        "harm",
+        "ke-158",
+        "narrative",
+        "overhead",
+        "reframes",
+        "threshold"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-159",
+      "file": "entries/KE-159-format-toll-structured-gates-as-task-decomposition-aids.md",
+      "oneliner": "KE-159: Format Toll \u2014 Structured Gates as Task Decomposition Aids",
+      "keywords": [
+        "aids",
+        "decomposition",
+        "format",
+        "gates",
+        "ke-159",
+        "structured",
+        "task",
+        "toll"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-160",
+      "file": "entries/KE-160-guard-design-success-factors-verification-depth-graduation.md",
+      "oneliner": "KE-160: Guard Design Success Factors \u2014 Verification-Depth Graduation",
+      "keywords": [
+        "design",
+        "factors",
+        "graduation",
+        "guard",
+        "ke-160",
+        "success",
+        "verification-depth"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-161",
+      "file": "entries/KE-161-guard-architecture-framework-permanent-linter-paradigm.md",
+      "oneliner": "KE-161: Guard Architecture Framework \u2014 The Permanent Linter Paradigm",
+      "keywords": [
+        "architecture",
+        "framework",
+        "guard",
+        "ke-161",
+        "linter",
+        "paradigm",
+        "permanent"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-162",
+      "file": "entries/KE-162-bias-amplification-guard-chains-echo-chamber.md",
+      "oneliner": "KE-162: Bias Amplification in Guard Chains \u2014 Echo Chamber Dynamics Meet Agent Architecture",
+      "keywords": [
+        "agent",
+        "amplification",
+        "architecture",
+        "bias",
+        "chains",
+        "chamber",
+        "dynamics",
+        "echo",
+        "guard",
+        "ke-162",
+        "meet"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-163",
+      "file": "entries/KE-163-bias-amplification-difficulty-threshold-bridge.md",
+      "oneliner": "Synthesis: Bias Amplification as the Mechanistic Engine of H-107's Medium-Difficulty Peak",
+      "keywords": [
+        "amplification",
+        "bias",
+        "engine",
+        "h-107",
+        "mechanistic",
+        "medium-difficulty",
+        "peak",
+        "synthesis"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-164",
+      "file": "entries/KE-164-artifact-reduction-theorem-validates-externalization-framework.md",
+      "oneliner": "KE-164: Artifact Reduction Theorem Validates Externalization Framework \u2014 DD-755 \u00d7 DD-750 \u00d7 H-107 Synthesis",
+      "keywords": [
+        "artifact",
+        "dd-750",
+        "dd-755",
+        "externalization",
+        "framework",
+        "h-107",
+        "ke-164",
+        "reduction",
+        "synthesis",
+        "theorem",
+        "validates"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-165",
+      "file": "entries/KE-165-openkedge-governed-mutation-guard-architecture-bridge.md",
+      "oneliner": "KE-165: OpenKedge Governed Mutation \u2014 Bridge to Guard Architecture",
+      "keywords": [
+        "architecture",
+        "bridge",
+        "governed",
+        "guard",
+        "ke-165",
+        "mutation",
+        "openkedge"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-166",
+      "file": "entries/KE-166-format-toll-externalization-synthesis.md",
+      "oneliner": "KE-166: The Format Toll as Environmental Scaffolding \u2014 Synthesizing EXP-144 with the Externalization Formalism",
+      "keywords": [
+        "environmental",
+        "exp-144",
+        "externalization",
+        "formalism",
+        "format",
+        "ke-166",
+        "scaffolding",
+        "synthesizing",
+        "toll"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-167",
+      "file": "entries/KE-167-gym-scenario-ceiling-floor-clustering.md",
+      "oneliner": "KE-167: Gym Scenarios Cluster at Ceiling and Floor \u2014 Few Usable for Overhead Moderation",
+      "keywords": [
+        "ceiling",
+        "cluster",
+        "floor",
+        "ke-167",
+        "moderation",
+        "overhead",
+        "scenarios",
+        "usable"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-168",
+      "file": "entries/KE-168-overhead-effect-inconclusive-at-medium-difficulty.md",
+      "oneliner": "KE-168: Overhead Effect Inconclusive at Medium Difficulty",
+      "keywords": [
+        "difficulty",
+        "effect",
+        "inconclusive",
+        "ke-168",
+        "medium",
+        "overhead"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-169",
+      "file": "entries/KE-169-targeted-guard-removal-null-on-general-tasks.md",
+      "oneliner": "KE-169: Targeted Guard Removal Shows No Effect on General Tasks",
+      "keywords": [
+        "effect",
+        "general",
+        "guard",
+        "ke-169",
+        "removal",
+        "shows",
+        "targeted",
+        "tasks"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-170",
+      "file": "entries/KE-170-skill-redundancy-ceiling-effect.md",
+      "oneliner": "KE-170: Skills Are Redundant When Base Model Capability Is at Ceiling",
+      "keywords": [
+        "base",
+        "capability",
+        "ceiling",
+        "ke-170",
+        "model",
+        "redundant",
+        "skills"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-171",
+      "file": "entries/KE-171-difficulty-calibration.md",
+      "oneliner": "KE-171: Difficulty Calibration \u2014 Predicting Experimental Signal from Baseline Pass Rates",
+      "keywords": [
+        "baseline",
+        "calibration",
+        "difficulty",
+        "experimental",
+        "ke-171",
+        "pass",
+        "predicting",
+        "rates",
+        "signal"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-172",
+      "file": "entries/KE-172-artifacts-as-memory-externalization-formalism.md",
+      "oneliner": "KE-172: Artifacts as Memory \u2014 DD-755 Formalizes Why Externalization Works and Predicts When It Fails",
+      "keywords": [
+        "artifacts",
+        "dd-755",
+        "externalization",
+        "fails",
+        "formalizes",
+        "ke-172",
+        "memory",
+        "predicts",
+        "works"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-173",
+      "file": "entries/KE-173-bias-amplification-mas-echo-chambers.md",
+      "oneliner": "KE-173: Bias Amplification in Our Multi-Agent Topology \u2014 Echo Chambers, Adversarial Breaks, and Unification",
+      "keywords": [
+        "adversarial",
+        "amplification",
+        "bias",
+        "breaks",
+        "chambers",
+        "echo",
+        "ke-173",
+        "multi-agent",
+        "topology",
+        "unification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-174",
+      "file": "entries/KE-174-governed-mutation-dd756.md",
+      "oneliner": "KE-174: Governed Mutation and the Alignment Tax \u2014 Can Structural Verification Avoid the Creativity Penalty?",
+      "keywords": [
+        "alignment",
+        "avoid",
+        "creativity",
+        "governed",
+        "ke-174",
+        "mutation",
+        "penalty",
+        "structural",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-175",
+      "file": "entries/KE-175-counter-intuitive-skill-floor-effect.md",
+      "oneliner": "KE-175: Counter-Intuitive Skills Fail at Universal Floors \u2014 Skill Effectiveness Requires Baseline Variance",
+      "keywords": [
+        "baseline",
+        "counter-intuitive",
+        "effectiveness",
+        "fail",
+        "floors",
+        "ke-175",
+        "requires",
+        "skill",
+        "skills",
+        "universal",
+        "variance"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-176",
+      "file": "entries/KE-176-selective-skill-compliance.md",
+      "oneliner": "KE-176: Selective Skill Compliance \u2014 Agents Cherry-Pick Skill Instructions by Deviation Cost",
+      "keywords": [
+        "agents",
+        "cherry-pick",
+        "compliance",
+        "cost",
+        "deviation",
+        "instructions",
+        "ke-176",
+        "selective",
+        "skill"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-177",
+      "file": "entries/KE-177-ch2-overcomes-selective-compliance.md",
+      "oneliner": "KE-177: Ch2 Hard Gates Overcome Selective Compliance on Interruptive Process Steps",
+      "keywords": [
+        "compliance",
+        "gates",
+        "hard",
+        "interruptive",
+        "ke-177",
+        "overcome",
+        "process",
+        "selective",
+        "steps"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-178",
+      "file": "entries/KE-178-hard-gate-boundary-condition.md",
+      "oneliner": "KE-178: Hard Gate Boundary Condition \u2014 Low Baseline + Step-Skipping Required",
+      "keywords": [
+        "baseline",
+        "boundary",
+        "condition",
+        "gate",
+        "hard",
+        "ke-178",
+        "required",
+        "step-skipping"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-179",
+      "file": "entries/KE-179-hard-gate-generalization.md",
+      "oneliner": "KE-179: Hard Gate Generalization \u2014 Ch2 Works Across Scenario Types",
+      "keywords": [
+        "across",
+        "gate",
+        "generalization",
+        "hard",
+        "ke-179",
+        "scenario",
+        "types",
+        "works"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-180",
+      "file": "entries/KE-180-completion-illusion-effect.md",
+      "oneliner": "KE-180: Completion Illusion Effect \u2014 Analysis Gates Can Harm Performance",
+      "keywords": [
+        "analysis",
+        "completion",
+        "effect",
+        "gates",
+        "harm",
+        "illusion",
+        "ke-180",
+        "performance"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-181",
+      "file": "entries/KE-181-process-compliance-vs-product-quality-metrics.md",
+      "oneliner": "KE-181: Process Compliance Metrics vs Product Quality Metrics \u2014 The EXP-155 Lesson",
+      "keywords": [
+        "compliance",
+        "exp-155",
+        "ke-181",
+        "lesson",
+        "metrics",
+        "process",
+        "product",
+        "quality"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-182",
+      "file": "entries/KE-182-hard-gate-design-rules-synthesis.md",
+      "oneliner": "KE-182: Hard Gate Design Rules \u2014 Consolidated Synthesis",
+      "keywords": [
+        "consolidated",
+        "design",
+        "gate",
+        "hard",
+        "ke-182",
+        "rules",
+        "synthesis"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-183",
+      "file": "entries/KE-183-internalization-distance-predicts-skill-compliance.md",
+      "oneliner": "KE-183: Internalization Distance Predicts Text-Skill Compliance",
+      "keywords": [
+        "compliance",
+        "distance",
+        "internalization",
+        "ke-183",
+        "predicts",
+        "text-skill"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-184",
+      "file": "entries/KE-184-ceiling-effects-tautological-evidence.md",
+      "oneliner": "KE-184: Ceiling Effects in Gym Scenarios Produce Tautological Evidence",
+      "keywords": [
+        "ceiling",
+        "effects",
+        "evidence",
+        "ke-184",
+        "produce",
+        "scenarios",
+        "tautological"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-185",
+      "file": "entries/KE-185-independent-sufficiency-of-externalization-functions.md",
+      "oneliner": "KE-185: Independent Sufficiency of Externalization Functions",
+      "keywords": [
+        "externalization",
+        "functions",
+        "independent",
+        "ke-185",
+        "sufficiency"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-186",
+      "file": "entries/KE-186-information-quality-trumps-process-forcing.md",
+      "oneliner": "KE-186: Information Quality Trumps Process Forcing",
+      "keywords": [
+        "forcing",
+        "information",
+        "ke-186",
+        "process",
+        "quality",
+        "trumps"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-187",
+      "file": "entries/KE-187-policy-invisible-violations-architectural-enforcement.md",
+      "oneliner": "KE-187: Policy-Invisible Violations Validate Architectural Enforcement and Reveal World-Model Verification as a Ch2 Variant",
+      "keywords": [
+        "architectural",
+        "enforcement",
+        "ke-187",
+        "policy-invisible",
+        "reveal",
+        "validate",
+        "variant",
+        "verification",
+        "violations",
+        "world-model"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-188",
+      "file": "entries/KE-188-gam-memory-knowledge-utilization.md",
+      "oneliner": "KE-188: GAM's Hierarchical Memory Addresses P(access), Not Our Actual Bottleneck",
+      "keywords": [
+        "access",
+        "actual",
+        "addresses",
+        "bottleneck",
+        "hierarchical",
+        "ke-188",
+        "memory"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-189",
+      "file": "entries/KE-189-solver-sampler-mismatch-capability-destroys-diversity.md",
+      "oneliner": "KE-189: Capability Over-Optimization Destroys Behavioral Diversity (Solver-Sampler Mismatch)",
+      "keywords": [
+        "behavioral",
+        "capability",
+        "destroys",
+        "diversity",
+        "ke-189",
+        "mismatch",
+        "over-optimization",
+        "solver-sampler"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-190",
+      "file": "entries/KE-190-hard-constraints-soft-guidance-moltbook.md",
+      "oneliner": "KE-190: Hard Constraints Work, Soft Guidance Is Ignored \u2014 Moltbook at Scale",
+      "keywords": [
+        "constraints",
+        "guidance",
+        "hard",
+        "ignored",
+        "ke-190",
+        "moltbook",
+        "scale",
+        "soft",
+        "work"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-191",
+      "file": "entries/KE-191-f1-generalization-four-failure-types.md",
+      "oneliner": "KE-191: Expert Analysis Injection (F1) Generalizes Across Four Failure Types",
+      "keywords": [
+        "across",
+        "analysis",
+        "expert",
+        "failure",
+        "four",
+        "generalizes",
+        "injection",
+        "ke-191",
+        "types"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-192",
+      "file": "entries/KE-192-solver-sampler-mismatch-explains-content-first.md",
+      "oneliner": "KE-192: Solver-Sampler Mismatch Explains Why Content-First Guards Outperform Process Guards",
+      "keywords": [
+        "content-first",
+        "explains",
+        "guards",
+        "ke-192",
+        "mismatch",
+        "outperform",
+        "process",
+        "solver-sampler"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-193",
+      "file": "entries/KE-193.md",
+      "oneliner": "KE-193: Parallel Monitoring Validates Content-First \u2014 But Suggests Concurrent Guard Tier",
+      "keywords": [
+        "concurrent",
+        "content-first",
+        "guard",
+        "ke-193",
+        "monitoring",
+        "parallel",
+        "suggests",
+        "tier",
+        "validates"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-194",
+      "file": "entries/KE-194-contestation-over-override-multi-agent-fairness.md",
+      "oneliner": "KE-194: Contestation beats override for multi-agent decision quality",
+      "keywords": [
+        "beats",
+        "contestation",
+        "decision",
+        "ke-194",
+        "multi-agent",
+        "override",
+        "quality"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-195",
+      "file": "entries/KE-195-production-displacement-effect.md",
+      "oneliner": "KE-195: Production-Displacement Effect \u2014 Self-Production Destroys Expert Analysis Benefit on Hard Tasks",
+      "keywords": [
+        "analysis",
+        "benefit",
+        "destroys",
+        "effect",
+        "expert",
+        "hard",
+        "ke-195",
+        "production-displacement",
+        "self-production",
+        "tasks"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-196",
+      "file": "entries/KE-196-displacement-difficulty-moderation.md",
+      "oneliner": "KE-196: Displacement Effect Is Difficulty-Moderated \u2014 Production Overhead Only Matters at Cognitive Capacity Limits",
+      "keywords": [
+        "capacity",
+        "cognitive",
+        "difficulty-moderated",
+        "displacement",
+        "effect",
+        "ke-196",
+        "limits",
+        "matters",
+        "overhead",
+        "production"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-197",
+      "file": "entries/KE-197-solver-sampler-mismatch.md",
+      "oneliner": "KE-197: Solver-Sampler Mismatch \u2014 Reasoning Strength Can Hurt System Outcomes",
+      "keywords": [
+        "hurt",
+        "ke-197",
+        "mismatch",
+        "outcomes",
+        "reasoning",
+        "solver-sampler",
+        "strength",
+        "system"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-198",
+      "file": "entries/KE-198-form-function-gap.md",
+      "oneliner": "KE-198: Form-Function Gap \u2014 Agents Reproduce Structure Without Substance",
+      "keywords": [
+        "agents",
+        "form-function",
+        "ke-198",
+        "reproduce",
+        "structure",
+        "substance",
+        "without"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-199",
+      "file": "entries/KE-199-f1-all-or-nothing-cascading-bugs.md",
+      "oneliner": "KE-199: F1 Expert Knowledge is All-or-Nothing for Cascading Bugs",
+      "keywords": [
+        "all-or-nothing",
+        "bugs",
+        "cascading",
+        "expert",
+        "ke-199",
+        "knowledge"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-200",
+      "file": "entries/KE-200.md",
+      "oneliner": "KE-200: Probe-Based Monitoring Could Predict FM-3.3 Verification Collapse Before It Manifests",
+      "keywords": [
+        "collapse",
+        "fm-3",
+        "ke-200",
+        "manifests",
+        "monitoring",
+        "predict",
+        "probe-based",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-201",
+      "file": "entries/KE-201.md",
+      "oneliner": "KE-201: MCP Production Gaps Map to May's Existing Architecture Challenges",
+      "keywords": [
+        "architecture",
+        "challenges",
+        "existing",
+        "gaps",
+        "ke-201",
+        "production"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-202",
+      "file": "entries/KE-202-cognitive-mode-interference-unifying-principle.md",
+      "oneliner": "KE-202: Cognitive Mode Interference \u2014 Dual-Task Costs Unify Displacement, Template Harm, and Monitoring Degradation",
+      "keywords": [
+        "cognitive",
+        "costs",
+        "degradation",
+        "displacement",
+        "dual-task",
+        "harm",
+        "interference",
+        "ke-202",
+        "mode",
+        "monitoring",
+        "template",
+        "unify"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-203",
+      "file": "entries/KE-203-scout-analysis-quality-gap.md",
+      "oneliner": "KE-203: Scout-Generated Analysis Is Categorically Insufficient \u2014 Quantity of Investigation \u2260 Causal Specificity",
+      "keywords": [
+        "analysis",
+        "categorically",
+        "causal",
+        "insufficient",
+        "investigation",
+        "ke-203",
+        "quantity",
+        "scout-generated",
+        "specificity"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-204",
+      "file": "entries/KE-204-form-function-gap-constraint-hierarchy.md",
+      "oneliner": "KE-204: Form-Function Gap \u2014 Agents Reproduce Structure Without Substance Unless Hard-Constrained",
+      "keywords": [
+        "agents",
+        "form-function",
+        "hard-constrained",
+        "ke-204",
+        "reproduce",
+        "structure",
+        "substance",
+        "unless",
+        "without"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-205",
+      "file": "entries/KE-205-mcp-production-gaps-mapping.md",
+      "oneliner": "KE-205: MCP Production Gaps \u2014 What We Already Do and What's Missing",
+      "keywords": [
+        "already",
+        "gaps",
+        "ke-205",
+        "missing",
+        "production"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-206",
+      "file": "entries/KE-206-kv-cache-injection-and-passive-knowledge-problem.md",
+      "oneliner": "KE-206: KV Cache Injection as the Hardware Solution to Passive Knowledge (KE-011)",
+      "keywords": [
+        "cache",
+        "hardware",
+        "injection",
+        "ke-011",
+        "ke-206",
+        "knowledge",
+        "passive",
+        "solution"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-207",
+      "file": "entries/KE-207-tool-illusion-error-migration-context-pollution.md",
+      "oneliner": "KE-207: The Tool Illusion \u2014 Error Migration, Context Pollution, and the 3-5 Tool Sweet Spot",
+      "keywords": [
+        "context",
+        "error",
+        "illusion",
+        "ke-207",
+        "migration",
+        "pollution",
+        "spot",
+        "sweet",
+        "tool"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-208",
+      "file": "entries/KE-208-silent-uncoupling-is-fm33-mechanism.md",
+      "oneliner": "KE-208: Silent Uncoupling IS the Mechanism Behind FM-3.3 Verification Confabulation",
+      "keywords": [
+        "behind",
+        "confabulation",
+        "fm-3",
+        "ke-208",
+        "mechanism",
+        "silent",
+        "uncoupling",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-209",
+      "file": "entries/KE-209-dd774-abstraction-transferability-validates-ke-architecture.md",
+      "oneliner": "KE-209: DD-774 Abstraction-Transferability Taxonomy Validates (and Critiques) Our KE Architecture",
+      "keywords": [
+        "abstraction-transferability",
+        "architecture",
+        "critiques",
+        "dd-774",
+        "ke-209",
+        "taxonomy",
+        "validates"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-210",
+      "file": "entries/KE-210-dd776-navigable-skill-directory-over-passive-retrieval.md",
+      "oneliner": "KE-210: DD-776 Corpus2Skill validates \"navigable skill directory > passive retrieval\" \u2014 a concrete fix path for KE-011",
+      "keywords": [
+        "concrete",
+        "corpus2skill",
+        "dd-776",
+        "directory",
+        "ke-011",
+        "ke-210",
+        "navigable",
+        "passive",
+        "path",
+        "retrieval",
+        "skill",
+        "validates"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-211",
+      "file": "entries/KE-211-dd767-typed-composition-structural-incompleteness.md",
+      "oneliner": "KE-211: Typed Agent Composition (\u03bb_A) \u2014 Structural Incompleteness as the Pre-Runtime Signature of FM-3.3",
+      "keywords": [
+        "agent",
+        "composition",
+        "fm-3",
+        "incompleteness",
+        "ke-211",
+        "pre-runtime",
+        "signature",
+        "structural",
+        "typed"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-212",
+      "file": "entries/KE-212-dd763-parallax-validates-architectural-enforcement.md",
+      "oneliner": "KE-212: DD-763 Parallax \u2014 External Validation of Architectural Enforcement (H-098 Ch2 at the Infra Level)",
+      "keywords": [
+        "architectural",
+        "dd-763",
+        "enforcement",
+        "external",
+        "h-098",
+        "infra",
+        "ke-212",
+        "level",
+        "parallax",
+        "validation"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-213",
+      "file": "entries/KE-213-bottom-up-isolation-investigation-method.md",
+      "oneliner": "KE-213: Bottom-Up Isolation Method for Investigating Agent Behavior",
+      "keywords": [
+        "agent",
+        "behavior",
+        "bottom-up",
+        "investigating",
+        "isolation",
+        "ke-213",
+        "method"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-214",
+      "file": "entries/KE-214-dd764-dual-trace-encoding-validates-scene-context-pairing.md",
+      "oneliner": "KE-214: DD-764 Dual-Trace Encoding \u2014 Scene + Fact Pairing Validates Encoding-Side Context Engineering (Complement to KE-213)",
+      "keywords": [
+        "complement",
+        "context",
+        "dd-764",
+        "dual-trace",
+        "encoding",
+        "encoding-side",
+        "engineering",
+        "fact",
+        "ke-213",
+        "ke-214",
+        "pairing",
+        "scene",
+        "validates"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-215",
+      "file": "entries/KE-215-question-framing-triggers-metric-reaction.md",
+      "oneliner": "KE-215: Question-Framing Triggers Metric Reaction",
+      "keywords": [
+        "ke-215",
+        "metric",
+        "question-framing",
+        "reaction",
+        "triggers"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-216",
+      "file": "entries/KE-216-inter-agent-lossy-channel.md",
+      "oneliner": "KE-216: Inter-agent communication is a lossy channel (Data Processing Inequality)",
+      "keywords": [
+        "channel",
+        "communication",
+        "data",
+        "inequality",
+        "inter-agent",
+        "ke-216",
+        "lossy",
+        "processing"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-217",
+      "file": "entries/KE-217-integration-bottleneck-diminishing-returns.md",
+      "oneliner": "KE-217: Multi-Agent Scaling Hits Integration Bottleneck \u2014 Coordination Expansion Outpaces Consolidation",
+      "keywords": [
+        "bottleneck",
+        "consolidation",
+        "coordination",
+        "expansion",
+        "hits",
+        "integration",
+        "ke-217",
+        "multi-agent",
+        "outpaces",
+        "scaling"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-218",
+      "file": "entries/KE-218-sycophancy-awareness-metadata-injection.md",
+      "oneliner": "KE-218: Sycophancy Awareness Metadata Reduces Error Cascades Without Architectural Changes",
+      "keywords": [
+        "architectural",
+        "awareness",
+        "cascades",
+        "changes",
+        "error",
+        "ke-218",
+        "metadata",
+        "reduces",
+        "sycophancy",
+        "without"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-219",
+      "file": "entries/KE-219-cooperative-memory-paging.md",
+      "oneliner": "KE-219: Cooperative paging (bookmarks + recall) outperforms full context \u2014 applies to shared knowledge architecture",
+      "keywords": [
+        "applies",
+        "architecture",
+        "bookmarks",
+        "context",
+        "cooperative",
+        "full",
+        "ke-219",
+        "knowledge",
+        "outperforms",
+        "paging",
+        "recall",
+        "shared"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-220",
+      "file": "entries/KE-220-dd769-agent-systems-gaps.md",
+      "oneliner": "KE-220: Agent Systems Survey \u2014 Gaps and Validations vs. Our Architecture",
+      "keywords": [
+        "agent",
+        "architecture",
+        "gaps",
+        "ke-220",
+        "survey",
+        "systems",
+        "validations"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-222",
+      "file": "entries/KE-222-parallax-cognitive-executive.md",
+      "oneliner": "KE-222: External validation \u2014 architectural separation beats prompt guardrails 98.9% vs 0%",
+      "keywords": [
+        "architectural",
+        "beats",
+        "external",
+        "guardrails",
+        "ke-222",
+        "prompt",
+        "separation",
+        "validation"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-223",
+      "file": "entries/KE-223-glean-verification-calibration.md",
+      "oneliner": "KE-223: Guideline-grounded Bayesian calibration turns raw verification signals into calibrated confidence",
+      "keywords": [
+        "bayesian",
+        "calibrated",
+        "calibration",
+        "confidence",
+        "guideline-grounded",
+        "ke-223",
+        "signals",
+        "turns",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-224",
+      "file": "entries/KE-224-agent-routing-dynamic-profiles.md",
+      "oneliner": "KE-224: Dynamic agent routing needs both capability discovery (KBA ACK) and dual-criteria optimization (BiRouter ImpScore+GapScore)",
+      "keywords": [
+        "agent",
+        "birouter",
+        "both",
+        "capability",
+        "discovery",
+        "dual-criteria",
+        "dynamic",
+        "gapscore",
+        "impscore",
+        "ke-224",
+        "needs",
+        "optimization",
+        "routing"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-225",
+      "file": "entries/KE-225-action-rebinding-security.md",
+      "oneliner": "KE-225: Action rebinding attacks exploit observation-action gaps \u2014 recovery logic is the real attack surface",
+      "keywords": [
+        "action",
+        "attack",
+        "attacks",
+        "exploit",
+        "gaps",
+        "ke-225",
+        "logic",
+        "observation-action",
+        "real",
+        "rebinding",
+        "recovery",
+        "surface"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-226",
+      "file": "entries/KE-226-verification-meta-conflict.md",
+      "oneliner": "KE-226: Verification regress is solvable \u2014 conflict-directed auditing + structured artifacts suffice",
+      "keywords": [
+        "artifacts",
+        "auditing",
+        "conflict-directed",
+        "ke-226",
+        "regress",
+        "solvable",
+        "structured",
+        "suffice",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-227",
+      "file": "entries/KE-227-graph-memory-vs-flat-kb.md",
+      "oneliner": "KE-227: Hierarchical graph memory vs flat knowledge bases",
+      "keywords": [
+        "bases",
+        "flat",
+        "graph",
+        "hierarchical",
+        "ke-227",
+        "knowledge",
+        "memory"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-228",
+      "file": "entries/KE-228-parallel-monitoring-context-recovery.md",
+      "oneliner": "KE-228: Heartbeats as cognitive companions \u2014 parallel monitoring and negotiated context recovery already exist in our architecture",
+      "keywords": [
+        "already",
+        "architecture",
+        "cognitive",
+        "companions",
+        "context",
+        "exist",
+        "heartbeats",
+        "ke-228",
+        "monitoring",
+        "negotiated",
+        "parallel",
+        "recovery"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-229",
+      "file": "entries/KE-229-cognitive-executive-role-mapping.md",
+      "oneliner": "KE-229: Parallax cognitive-executive separation reveals our role split is cognitive-cognitive, not cognitive-executive",
+      "keywords": [
+        "cognitive-cognitive",
+        "cognitive-executive",
+        "ke-229",
+        "parallax",
+        "reveals",
+        "role",
+        "separation",
+        "split"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-229",
+      "file": "entries/KE-229-second-look-verification.md",
+      "oneliner": "KE-229: Second-Look Verification Skill \u2014 Activation-Gap Fix",
+      "keywords": [
+        "activation-gap",
+        "ke-229",
+        "second-look",
+        "skill",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-230",
+      "file": "entries/KE-230-typed-agent-composition.md",
+      "oneliner": "KE-230: Formal typing of agent compositions catches structural defects that config linting and runtime testing miss",
+      "keywords": [
+        "agent",
+        "catches",
+        "compositions",
+        "config",
+        "defects",
+        "formal",
+        "ke-230",
+        "linting",
+        "miss",
+        "runtime",
+        "structural",
+        "testing",
+        "typing"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-231",
+      "file": "entries/KE-231-agent-systems-survey-patterns.md",
+      "oneliner": "KE-231: Existing Agent Systems Survey \u2014 Our Architecture's Gaps and Advantages",
+      "keywords": [
+        "advantages",
+        "agent",
+        "architecture",
+        "existing",
+        "gaps",
+        "ke-231",
+        "survey",
+        "systems"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-233",
+      "file": "entries/KE-233-context-curator-active-curation.md",
+      "oneliner": "KE-233: Context curation is a separable, learnable skill \u2014 not a hand-coding problem",
+      "keywords": [
+        "context",
+        "curation",
+        "hand-coding",
+        "ke-233",
+        "learnable",
+        "problem",
+        "separable",
+        "skill"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-234",
+      "file": "entries/KE-234-thought-retriever-memory.md",
+      "oneliner": "KE-234: Thought-retrieval validates DD/CR as agent long-term memory",
+      "keywords": [
+        "agent",
+        "ke-234",
+        "long-term",
+        "memory",
+        "thought-retrieval",
+        "validates"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-235",
+      "file": "entries/KE-235-cosight-conflict-directed-verification.md",
+      "oneliner": "KE-235: Conflict-directed verification scales cost with disagreement, not chain length",
+      "keywords": [
+        "chain",
+        "conflict-directed",
+        "cost",
+        "disagreement",
+        "ke-235",
+        "length",
+        "scales",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-237",
+      "file": "entries/KE-237-explanatory-equilibrium-structured-verification.md",
+      "oneliner": "KE-237: Structured artifacts + probabilistic auditing achieves coordination without exhaustive verification",
+      "keywords": [
+        "achieves",
+        "artifacts",
+        "auditing",
+        "coordination",
+        "exhaustive",
+        "ke-237",
+        "probabilistic",
+        "structured",
+        "verification",
+        "without"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-238",
+      "file": "entries/KE-238-safeharness-lifecycle-security.md",
+      "oneliner": "KE-238: Lifecycle-integrated security validates guard architecture; tiered verification should scale with task complexity",
+      "keywords": [
+        "architecture",
+        "complexity",
+        "guard",
+        "ke-238",
+        "lifecycle-integrated",
+        "scale",
+        "security",
+        "task",
+        "tiered",
+        "validates",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-242",
+      "file": "entries/KE-242-typed-calculus-agent-composition.md",
+      "oneliner": "KE-242: Formal Type Systems Reveal 94% of Agent Configs Are Structurally Incomplete",
+      "keywords": [
+        "agent",
+        "configs",
+        "formal",
+        "incomplete",
+        "ke-242",
+        "reveal",
+        "structurally",
+        "systems",
+        "type"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-244",
+      "file": "entries/KE-244-gam-hierarchical-graph-memory.md",
+      "oneliner": "KE-244: GAM \u2014 Decouple Encoding from Consolidation for Agent Memory",
+      "keywords": [
+        "agent",
+        "consolidation",
+        "decouple",
+        "encoding",
+        "ke-244",
+        "memory"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-248",
+      "file": "entries/KE-248-thought-retrieval-memory.md",
+      "oneliner": "KE-248: Thought Retrieval Validates Our DD/CR Library Architecture",
+      "keywords": [
+        "architecture",
+        "ke-248",
+        "library",
+        "retrieval",
+        "thought",
+        "validates"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-249",
+      "file": "entries/KE-249-heartbeat-scheduling-validation.md",
+      "oneliner": "KE-249: Heartbeat Scheduling Independently Validated as Cognitive Architecture Primitive",
+      "keywords": [
+        "architecture",
+        "cognitive",
+        "heartbeat",
+        "independently",
+        "ke-249",
+        "primitive",
+        "scheduling",
+        "validated"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-255",
+      "file": "entries/KE-255-dreaming-consolidation-null.md",
+      "oneliner": "KE-255: Dreaming/Consolidation Has Zero Effect on Agent Behavior",
+      "keywords": [
+        "agent",
+        "behavior",
+        "consolidation",
+        "dreaming",
+        "effect",
+        "ke-255",
+        "zero"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-256",
+      "file": "entries/KE-256-external-systems-meta.md",
+      "oneliner": "KE-256: External System Patterns \u2014 3/4 Failed Testing; Only Structural Interventions Transfer",
+      "keywords": [
+        "external",
+        "failed",
+        "interventions",
+        "ke-256",
+        "patterns",
+        "structural",
+        "system",
+        "testing",
+        "transfer"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-259",
+      "file": "entries/KE-259-heartbeat-thinking-scheduling.md",
+      "oneliner": "KE-259: Heartbeat scheduling is a validated cognitive primitive; adaptive module selection could replace hand-coded templates",
+      "keywords": [
+        "adaptive",
+        "cognitive",
+        "hand-coded",
+        "heartbeat",
+        "ke-259",
+        "module",
+        "primitive",
+        "replace",
+        "scheduling",
+        "selection",
+        "templates",
+        "validated"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-269",
+      "file": "entries/KE-269-lambda-a-typed-calculus.md",
+      "oneliner": "KE-269: Formal type systems for agent composition reveal 94% structural incompleteness in real configs",
+      "keywords": [
+        "agent",
+        "composition",
+        "configs",
+        "formal",
+        "incompleteness",
+        "ke-269",
+        "real",
+        "reveal",
+        "structural",
+        "systems",
+        "type"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-270",
+      "file": "entries/KE-270-structure-all-the-way-down.md",
+      "oneliner": "KE-270: \"Structure All the Way Down\" \u2014 Week 15 Capstone Convergence",
+      "keywords": [
+        "capstone",
+        "convergence",
+        "down",
+        "ke-270",
+        "structure",
+        "week"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-271",
+      "file": "entries/KE-271-weak-strong-verification.md",
+      "oneliner": "KE-271: Two-Threshold Verification \u2014 Provably Optimal Weak-Strong Escalation",
+      "keywords": [
+        "escalation",
+        "ke-271",
+        "optimal",
+        "provably",
+        "two-threshold",
+        "verification",
+        "weak-strong"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-272",
+      "file": "entries/KE-272-persistent-task-skill-ceiling.md",
+      "oneliner": "KE-272: TRIGGER/ACTION/EXAMPLE Skill Pattern Achieves 75% on Interruptive Behavior \u2014 Challenging H-162 Cell C Ceiling",
+      "keywords": [
+        "achieves",
+        "action",
+        "behavior",
+        "ceiling",
+        "cell",
+        "challenging",
+        "example",
+        "h-162",
+        "interruptive",
+        "ke-272",
+        "pattern",
+        "skill",
+        "trigger"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-273",
+      "file": "entries/KE-273-decision-entropy-latent-hesitation-recognition.md",
+      "oneliner": "KE-273: Decision Entropy as Latent Hesitation \u2014 Hidden States Detect Recognition Failures Before They Manifest",
+      "keywords": [
+        "decision",
+        "detect",
+        "entropy",
+        "failures",
+        "hesitation",
+        "hidden",
+        "ke-273",
+        "latent",
+        "manifest",
+        "recognition",
+        "states"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-274",
+      "file": "entries/KE-274-two-threshold-verification-evaluator-architecture.md",
+      "oneliner": "KE-274: The Missing Middle Zone \u2014 Our Evaluator Architecture Lacks DD-778's Deferral Band",
+      "keywords": [
+        "architecture",
+        "band",
+        "dd-778",
+        "deferral",
+        "evaluator",
+        "ke-274",
+        "lacks",
+        "middle",
+        "missing",
+        "zone"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-275",
+      "file": "entries/KE-275-sim2real-gap-systematic-gym-inflation.md",
+      "oneliner": "KE-275: The Sim2Real Gap Is Systematic Gym Inflation \u2014 LLM User Simulators Create Easy Mode",
+      "keywords": [
+        "create",
+        "easy",
+        "inflation",
+        "ke-275",
+        "mode",
+        "sim2real",
+        "simulators",
+        "systematic",
+        "user"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-276",
+      "file": "entries/KE-276-observability-first-evaluation-runtime-logs.md",
+      "oneliner": "KE-276: Observability-First Evaluation \u2014 Runtime Logs as Primary Evaluation Substrate",
+      "keywords": [
+        "evaluation",
+        "ke-276",
+        "logs",
+        "observability-first",
+        "primary",
+        "runtime",
+        "substrate"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-277",
+      "file": "entries/KE-277-read-edit-ratio-diagnostic-metric.md",
+      "oneliner": "KE-277: Read:Edit Ratio as Leading Diagnostic Metric for Experiments",
+      "keywords": [
+        "diagnostic",
+        "edit",
+        "experiments",
+        "ke-277",
+        "leading",
+        "metric",
+        "ratio",
+        "read"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-278",
+      "file": "entries/KE-278-tri-state-verification-protocol.md",
+      "oneliner": "KE-278: Tri-State Verification \u2014 PASS/FAIL/UNCERTAIN Protocol for Experiments",
+      "keywords": [
+        "experiments",
+        "fail",
+        "ke-278",
+        "pass",
+        "protocol",
+        "tri-state",
+        "uncertain",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-279",
+      "file": "entries/KE-279-five-laws-external-validation.md",
+      "oneliner": "KE-279: External Validation of KE-101 Five Laws \u2014 Independent Replication Across 19K+ Evaluations",
+      "keywords": [
+        "across",
+        "evaluations",
+        "external",
+        "five",
+        "independent",
+        "ke-101",
+        "ke-279",
+        "laws",
+        "replication",
+        "validation"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-280",
+      "file": "entries/KE-280-confidence-calibration-tool-type-provenance-paradox.md",
+      "oneliner": "KE-280: Uncalibrated Confidence Is Net-Negative \u2014 Tool-Type Dichotomy and Provenance Paradox",
+      "keywords": [
+        "confidence",
+        "dichotomy",
+        "ke-280",
+        "net-negative",
+        "paradox",
+        "provenance",
+        "tool-type",
+        "uncalibrated"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-281",
+      "file": "entries/KE-281-trajectory-level-safety-bidirectional-intent-inference.md",
+      "oneliner": "KE-281: Trajectory-Level Safety \u2014 Bidirectional Intent Inference for Multi-Turn Attack Detection",
+      "keywords": [
+        "attack",
+        "bidirectional",
+        "detection",
+        "inference",
+        "intent",
+        "ke-281",
+        "multi-turn",
+        "safety",
+        "trajectory-level"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-282",
+      "file": "entries/KE-282-identity-aware-delegation-protocol-design.md",
+      "oneliner": "KE-282: Identity-Aware Delegation \u2014 Model Properties as First-Class Protocol Primitives",
+      "keywords": [
+        "delegation",
+        "first-class",
+        "identity-aware",
+        "ke-282",
+        "model",
+        "primitives",
+        "properties",
+        "protocol"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-283",
+      "file": "entries/KE-283-tool-affordance-validates-content-first-guard-design.md",
+      "oneliner": "KE-283: Tool Affordance Research Validates Content-First Guard Design \u2014 DD-784 Connects Masking to Displacement",
+      "keywords": [
+        "affordance",
+        "connects",
+        "content-first",
+        "dd-784",
+        "design",
+        "displacement",
+        "guard",
+        "ke-283",
+        "masking",
+        "research",
+        "tool",
+        "validates"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-284",
+      "file": "entries/KE-284-index-titles-sufficient-for-citation.md",
+      "oneliner": "KE-284: INDEX Titles Are Sufficient for 60% Knowledge Citation \u2014 Agents Use INDEX as Primary Source, Not Pointer",
+      "keywords": [
+        "agents",
+        "citation",
+        "index",
+        "ke-284",
+        "knowledge",
+        "pointer",
+        "primary",
+        "source",
+        "sufficient",
+        "titles"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-285",
+      "file": "entries/KE-285-skill-pattern-ceiling-75pct.md",
+      "oneliner": "KE-285: Structured Skill Files (TRIGGER/ACTION/EXAMPLE) Achieve ~75% Adoption \u2014 Below Guaranteed Compliance Ceiling",
+      "keywords": [
+        "achieve",
+        "action",
+        "adoption",
+        "below",
+        "ceiling",
+        "compliance",
+        "example",
+        "files",
+        "guaranteed",
+        "ke-285",
+        "skill",
+        "structured",
+        "trigger"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-286",
+      "file": "entries/KE-286-hint-interventions-unreliable-negative-transfer.md",
+      "oneliner": "KE-286: Hint-Based Recognition Interventions Are Unreliable and Can Hurt Performance",
+      "keywords": [
+        "hint-based",
+        "hurt",
+        "interventions",
+        "ke-286",
+        "performance",
+        "recognition",
+        "unreliable"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-287",
+      "file": "entries/KE-287-small-n-gym-temporal-instability.md",
+      "oneliner": "KE-287: Small-N Gym Results (\u226410 Trials) Are Temporally Unstable \u2014 Replication Failures Are Expected",
+      "keywords": [
+        "expected",
+        "failures",
+        "ke-287",
+        "replication",
+        "results",
+        "small-n",
+        "temporally",
+        "trials",
+        "unstable"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-288",
+      "file": "entries/KE-288-task-type-topology-sensitivity-four-axes.md",
+      "oneliner": "KE-288 \u2014 Task-Type Topology Sensitivity: Four Convergent Axes",
+      "keywords": [
+        "axes",
+        "convergent",
+        "four",
+        "ke-288",
+        "sensitivity",
+        "task-type",
+        "topology"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-289",
+      "file": "entries/KE-289-procedural-memory-layer-gap.md",
+      "oneliner": "KE-289 \u2014 The Missing Procedural Memory Layer",
+      "keywords": [
+        "ke-289",
+        "layer",
+        "memory",
+        "missing",
+        "procedural"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-290",
+      "file": "entries/KE-290-behavioral-turn-trajectory-failure-prediction.md",
+      "oneliner": "KE-290: The Behavioral Turn \u2014 Trajectory Signals Replace Linguistic Self-Report for Failure Prediction",
+      "keywords": [
+        "behavioral",
+        "failure",
+        "ke-290",
+        "linguistic",
+        "prediction",
+        "replace",
+        "self-report",
+        "signals",
+        "trajectory",
+        "turn"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-291",
+      "file": "entries/KE-291-pbrc-cascade-suppression-protocol.md",
+      "oneliner": "KE-291: PBRC \u2014 Formal Protocol for Verification Cascade Suppression",
+      "keywords": [
+        "cascade",
+        "formal",
+        "ke-291",
+        "pbrc",
+        "protocol",
+        "suppression",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-292",
+      "file": "entries/KE-292-surface-cot-unreliable-reasoning-is-latent.md",
+      "oneliner": "KE-292: Surface CoT Is Unreliable \u2014 Reasoning Lives in Latent States",
+      "keywords": [
+        "ke-292",
+        "latent",
+        "lives",
+        "reasoning",
+        "states",
+        "surface",
+        "unreliable"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-293",
+      "file": "entries/KE-293-behavioral-evidence-accumulation-failure.md",
+      "oneliner": "KE-293: LLM Agents Cannot Accumulate Behavioral Evidence Over Time",
+      "keywords": [
+        "accumulate",
+        "agents",
+        "behavioral",
+        "cannot",
+        "evidence",
+        "ke-293",
+        "time"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-294",
+      "file": "entries/KE-294-difficulty-confound-simpsons-paradox.md",
+      "oneliner": "KE-294: Overhead-Failure Correlation Is a Simpson's Paradox \u2014 Difficulty Is the Confound",
+      "keywords": [
+        "confound",
+        "correlation",
+        "difficulty",
+        "ke-294",
+        "overhead-failure",
+        "paradox",
+        "simpson"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-295",
+      "file": "entries/KE-295-step-level-overhead-moderation.md",
+      "oneliner": "KE-295: Overhead Effects Operate at Step-Level, Not Task-Level",
+      "keywords": [
+        "effects",
+        "ke-295",
+        "operate",
+        "overhead",
+        "step-level",
+        "task-level"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-296",
+      "file": "entries/KE-296-overhead-type-taxonomy-capability-floor.md",
+      "oneliner": "KE-296: Three Overhead Types With Distinct Difficulty Interactions",
+      "keywords": [
+        "difficulty",
+        "distinct",
+        "interactions",
+        "ke-296",
+        "overhead",
+        "three",
+        "types"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-297",
+      "file": "entries/KE-297-finish-guard-structural-enforcement.md",
+      "oneliner": "KE-297: Finish-Guard Gates Are the Only Reliable Workflow Enforcement Mechanism",
+      "keywords": [
+        "enforcement",
+        "finish-guard",
+        "gates",
+        "ke-297",
+        "mechanism",
+        "reliable",
+        "workflow"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-298",
+      "file": "entries/KE-298-unsupervised-behavioral-monitoring-hodoscope.md",
+      "oneliner": "KE-298: Unsupervised Behavioral Monitoring Outperforms Supervised Approaches for Agent Failure Discovery",
+      "keywords": [
+        "agent",
+        "approaches",
+        "behavioral",
+        "discovery",
+        "failure",
+        "ke-298",
+        "monitoring",
+        "outperforms",
+        "supervised",
+        "unsupervised"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-299",
+      "file": "entries/KE-299-information-asymmetry-architectural-safety.md",
+      "oneliner": "KE-299: Information Asymmetry as Architectural Safety \u2014 Alignment Through Organisational Design",
+      "keywords": [
+        "alignment",
+        "architectural",
+        "asymmetry",
+        "design",
+        "information",
+        "ke-299",
+        "organisational",
+        "safety"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-300",
+      "file": "entries/KE-300-failure-localization-gap.md",
+      "oneliner": "KE-300: The Failure Localization Gap \u2014 LLM-as-Judge Fails at Step Level",
+      "keywords": [
+        "fails",
+        "failure",
+        "ke-300",
+        "level",
+        "llm-as-judge",
+        "localization",
+        "step"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-301",
+      "file": "entries/KE-301-memory-architecture-convergence-active-context.md",
+      "oneliner": "KE-301: Memory Architecture Convergence \u2014 Active Context Management Required",
+      "keywords": [
+        "active",
+        "architecture",
+        "context",
+        "convergence",
+        "ke-301",
+        "management",
+        "memory",
+        "required"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-302",
+      "file": "entries/KE-302-verifier-gaming-extensional-shortcuts.md",
+      "oneliner": "KE-302: Verifier Gaming \u2014 RLVR Models Exploit Extensional Verification via Shortcuts",
+      "keywords": [
+        "exploit",
+        "extensional",
+        "gaming",
+        "ke-302",
+        "models",
+        "rlvr",
+        "shortcuts",
+        "verification",
+        "verifier"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-303",
+      "file": "entries/KE-303-artificial-organisations-information-asymmetry.md",
+      "oneliner": "KE-303: Artificial Organisations \u2014 Alignment as Institutional Design via Information Asymmetry",
+      "keywords": [
+        "alignment",
+        "artificial",
+        "asymmetry",
+        "design",
+        "information",
+        "institutional",
+        "ke-303",
+        "organisations"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-304",
+      "file": "entries/KE-304-errorprobe-self-improving-mas-diagnosis.md",
+      "oneliner": "KE-304: ErrorProbe \u2014 Self-Improving Multi-Agent Error Diagnosis via Verified Episodic Memory",
+      "keywords": [
+        "diagnosis",
+        "episodic",
+        "error",
+        "errorprobe",
+        "ke-304",
+        "memory",
+        "multi-agent",
+        "self-improving",
+        "verified"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-305",
+      "file": "entries/KE-305-diversity-collapse-structural-coupling-mas.md",
+      "oneliner": "KE-305: Diversity Collapse \u2014 Multi-Agent Interaction Structure Contracts Solution Space",
+      "keywords": [
+        "collapse",
+        "contracts",
+        "diversity",
+        "interaction",
+        "ke-305",
+        "multi-agent",
+        "solution",
+        "space",
+        "structure"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-306",
+      "file": "entries/KE-306-agentprop-bench-evaluation-reliability-gap.md",
+      "oneliner": "KE-306: AgentProp-Bench \u2014 Agent Evaluation Is Unreliable; Rejection and Recovery Are Independent",
+      "keywords": [
+        "agent",
+        "agentprop-bench",
+        "evaluation",
+        "independent",
+        "ke-306",
+        "recovery",
+        "rejection",
+        "unreliable"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-307",
+      "file": "entries/KE-307-agentic-frameworks-orchestration-over-reasoning.md",
+      "oneliner": "KE-307: Agentic Framework Bake-Off \u2014 Orchestration Quality Trumps Reasoning Capability",
+      "keywords": [
+        "agentic",
+        "bake-off",
+        "capability",
+        "framework",
+        "ke-307",
+        "orchestration",
+        "quality",
+        "reasoning",
+        "trumps"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-308",
+      "file": "entries/KE-308-conjunctive-prompt-attacks-multi-agent-routing.md",
+      "oneliner": "KE-308: Conjunctive Prompt Attacks \u2014 Compositional Vulnerabilities in Multi-Agent Routing",
+      "keywords": [
+        "attacks",
+        "compositional",
+        "conjunctive",
+        "ke-308",
+        "multi-agent",
+        "prompt",
+        "routing",
+        "vulnerabilities"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-310",
+      "file": "entries/KE-310-bottom-up-isolation-debugging.md",
+      "oneliner": "How to Investigate Agent Behavior \u2014 Bottom-Up Isolation Method",
+      "keywords": [
+        "agent",
+        "behavior",
+        "bottom-up",
+        "investigate",
+        "isolation",
+        "method"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-311",
+      "file": "entries/KE-311-breadcrumbs-not-answers.md",
+      "oneliner": "Context Injection Principle: Breadcrumbs, Not Answers",
+      "keywords": [
+        "answers",
+        "breadcrumbs",
+        "context",
+        "injection",
+        "principle"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-320",
+      "file": "entries/KE-320-debate-quality-preservation-typed-acts-variance-antisycophancy.md",
+      "oneliner": "KE-320: Debate Quality Preservation Requires Typed Acts, Variance Monitoring, and Anti-Sycophancy",
+      "keywords": [
+        "acts",
+        "anti-sycophancy",
+        "debate",
+        "ke-320",
+        "monitoring",
+        "preservation",
+        "quality",
+        "requires",
+        "typed",
+        "variance"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-321",
+      "file": "entries/KE-321-markdown-native-observability-obsidian-dashboard.md",
+      "oneliner": "KE-321: Markdown-Native Observability via Obsidian as Multi-Agent Dashboard",
+      "keywords": [
+        "dashboard",
+        "ke-321",
+        "markdown-native",
+        "multi-agent",
+        "observability",
+        "obsidian"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-322",
+      "file": "entries/KE-322-semantic-drift-detection-intent-graphs.md",
+      "oneliner": "KE-322: Semantic Drift Detection via Intent Graphs and Conflict Taxonomy",
+      "keywords": [
+        "conflict",
+        "detection",
+        "drift",
+        "graphs",
+        "intent",
+        "ke-322",
+        "semantic",
+        "taxonomy"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-323",
+      "file": "entries/KE-323-token-level-vs-response-level-verification.md",
+      "oneliner": "KE-323: Token-Level Collaboration Defeats Response-Level Voting Under Adversarial Conditions",
+      "keywords": [
+        "adversarial",
+        "collaboration",
+        "conditions",
+        "defeats",
+        "ke-323",
+        "response-level",
+        "token-level",
+        "under",
+        "voting"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-324",
+      "file": "entries/KE-324-adaptive-collaboration-topology-skillgraph.md",
+      "oneliner": "KE-324: Adaptive Collaboration Topology via Content-Conditioned Graph Prediction",
+      "keywords": [
+        "adaptive",
+        "collaboration",
+        "content-conditioned",
+        "graph",
+        "ke-324",
+        "prediction",
+        "topology"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-325",
+      "file": "entries/KE-325-disagreement-architecture-five-layer-stack.md",
+      "oneliner": "KE-325: Disagreement Architecture \u2014 Five-Layer Stack for Multi-Agent Systems",
+      "keywords": [
+        "architecture",
+        "disagreement",
+        "five-layer",
+        "ke-325",
+        "multi-agent",
+        "stack",
+        "systems"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-326",
+      "file": "entries/KE-326-anti-sycophancy-multi-agent-debate.md",
+      "oneliner": "KE-326 \u2014 Anti-Sycophancy Mechanisms for Multi-Agent Debate",
+      "keywords": [
+        "anti-sycophancy",
+        "debate",
+        "ke-326",
+        "mechanisms",
+        "multi-agent"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-327",
+      "file": "entries/KE-327-gym-lab-overlay-broken.md",
+      "oneliner": "KE-327: Gym Runner --lab Flag Is Metadata-Only (Blocks All Lab-Fork A/B Tests)",
+      "keywords": [
+        "blocks",
+        "flag",
+        "ke-327",
+        "lab-fork",
+        "metadata-only",
+        "runner",
+        "tests"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-328",
+      "file": "entries/KE-328-typed-lesson-replay-verbal-reinforcement.md",
+      "oneliner": "KE-328: Typed Lesson Replay \u2014 Verbal Reinforcement Closes the Learning Loop",
+      "keywords": [
+        "closes",
+        "ke-328",
+        "learning",
+        "lesson",
+        "loop",
+        "reinforcement",
+        "replay",
+        "typed",
+        "verbal"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-329",
+      "file": "entries/KE-329-agent-directed-memory-management-letta-pattern.md",
+      "oneliner": "KE-329: Agent-Directed Memory Management \u2014 Letta's Self-Managed Memory Model",
+      "keywords": [
+        "agent-directed",
+        "ke-329",
+        "letta",
+        "management",
+        "memory",
+        "model",
+        "self-managed"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-330",
+      "file": "entries/KE-330-verbal-reinforcement-task-typed-lesson-replay.md",
+      "oneliner": "KE-330: Verbal Reinforcement Loop \u2014 Task-Typed Lesson Replay Closes Repeated Failure Modes",
+      "keywords": [
+        "closes",
+        "failure",
+        "ke-330",
+        "lesson",
+        "loop",
+        "modes",
+        "reinforcement",
+        "repeated",
+        "replay",
+        "task-typed",
+        "verbal"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-331",
+      "file": "entries/KE-331-semantic-skill-retrieval-automatic-curriculum.md",
+      "oneliner": "KE-331: Semantic Skill Retrieval and Automatic Curriculum \u2014 Skills Must Be Findable, Not Just Available",
+      "keywords": [
+        "automatic",
+        "available",
+        "curriculum",
+        "findable",
+        "ke-331",
+        "must",
+        "retrieval",
+        "semantic",
+        "skill",
+        "skills"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-332",
+      "file": "entries/KE-332-agent-managed-memory-lifecycle.md",
+      "oneliner": "KE-332: Agent-Managed Memory Lifecycle \u2014 Agents Should Control Their Own Memory Operations",
+      "keywords": [
+        "agent-managed",
+        "agents",
+        "control",
+        "ke-332",
+        "lifecycle",
+        "memory",
+        "operations"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-333",
+      "file": "entries/KE-333-structural-learning-taxonomy-three-paradigms.md",
+      "oneliner": "KE-333 \u2014 Structural Learning Taxonomy: Three Paradigms All Validate Structure > Content",
+      "keywords": [
+        "content",
+        "ke-333",
+        "learning",
+        "paradigms",
+        "structural",
+        "structure",
+        "taxonomy",
+        "three",
+        "validate"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-334",
+      "file": "entries/KE-334-gym-production-gap-refined-structural-storage.md",
+      "oneliner": "KE-334 \u2014 Gym-Production Gap Refined: \"Learn in Production, Store Structurally\" Dissolves the Dichotomy",
+      "keywords": [
+        "dichotomy",
+        "dissolves",
+        "gym-production",
+        "ke-334",
+        "learn",
+        "production",
+        "refined",
+        "store",
+        "structurally"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-335",
+      "file": "entries/KE-335-obsidian-human-exploration-layer.md",
+      "oneliner": "KE-335 \u2014 Obsidian as Read-Only Human Exploration Layer for Agent Knowledge Bases",
+      "keywords": [
+        "agent",
+        "bases",
+        "exploration",
+        "human",
+        "ke-335",
+        "knowledge",
+        "layer",
+        "obsidian",
+        "read-only"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-336",
+      "file": "entries/KE-336-self-lesson-quality-gap-smaller-than-expected.md",
+      "oneliner": "KE-336: Self-Lesson Quality Gap Smaller Than Expected",
+      "keywords": [
+        "expected",
+        "ke-336",
+        "quality",
+        "self-lesson",
+        "smaller"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-337",
+      "file": "entries/KE-337-remasking-over-replacement-verification-reset.md",
+      "oneliner": "KE-337: Remasking Over Replacement \u2014 Verification Reset Breaks Error Compounding",
+      "keywords": [
+        "breaks",
+        "compounding",
+        "error",
+        "ke-337",
+        "remasking",
+        "replacement",
+        "reset",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-338",
+      "file": "entries/KE-338-procedural-discovery-skill-ineffective.md",
+      "oneliner": "KE-338: Procedural Discovery Skills Don't Help Agents Find Relational Bugs",
+      "keywords": [
+        "agents",
+        "bugs",
+        "discovery",
+        "find",
+        "help",
+        "ke-338",
+        "procedural",
+        "relational",
+        "skills"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-339",
+      "file": "entries/KE-339-guard-routing-null-result-scenario-sensitivity.md",
+      "oneliner": "KE-339: Guard Routing Null Result \u2014 Scenario Sensitivity",
+      "keywords": [
+        "guard",
+        "ke-339",
+        "null",
+        "result",
+        "routing",
+        "scenario",
+        "sensitivity"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-340",
+      "file": "entries/KE-340-tool-assisted-relational-bug-null.md",
+      "oneliner": "KE-340: Tool-Assisted Relational Bug Discovery Also Fails (0/10)",
+      "keywords": [
+        "discovery",
+        "fails",
+        "ke-340",
+        "relational",
+        "tool-assisted"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-341",
+      "file": "entries/KE-341-cascading-fix-convergent-nulls.md",
+      "oneliner": "KE-341: Cascading-Fix-Trap-v2 Is Discovery-Hard \u2014 Convergent Null Evidence from 5 Experiments",
+      "keywords": [
+        "cascading-fix-trap-v2",
+        "convergent",
+        "discovery-hard",
+        "evidence",
+        "experiments",
+        "ke-341",
+        "null"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-342",
+      "file": "entries/KE-342-relational-bug-blindness-confirmed.md",
+      "oneliner": "KE-342: Relational Bug Blindness Is a Fundamental LLM Capability Gap",
+      "keywords": [
+        "blindness",
+        "capability",
+        "fundamental",
+        "ke-342",
+        "relational"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-343",
+      "file": "entries/KE-343-enumeration-checklist-null.md",
+      "oneliner": "KE-343: Defect Category Enumeration Has Zero Effect on Relational Bug Discovery",
+      "keywords": [
+        "category",
+        "defect",
+        "discovery",
+        "effect",
+        "enumeration",
+        "ke-343",
+        "relational",
+        "zero"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-344",
+      "file": "entries/KE-344-relational-bug-intervention-hierarchy.md",
+      "oneliner": "KE-344: Relational Bug Intervention Hierarchy \u2014 Only Direct Hints Work",
+      "keywords": [
+        "direct",
+        "hierarchy",
+        "hints",
+        "intervention",
+        "ke-344",
+        "relational",
+        "work"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-345",
+      "file": "entries/KE-345-handoff-information-loss-48pct.md",
+      "oneliner": "KE-345: Agent Handoff Information Loss Averages 48.8% \u2014 Predictions and Cross-References Hit Hardest",
+      "keywords": [
+        "agent",
+        "averages",
+        "cross-references",
+        "handoff",
+        "hardest",
+        "information",
+        "ke-345",
+        "loss",
+        "predictions"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-346",
+      "file": "entries/KE-346-gprime-question-framing-production-gap.md",
+      "oneliner": "KE-346: G' Question-Framing \u2014 100% Gym \u2192 54% Production (Sim2Real Gap)",
+      "keywords": [
+        "ke-346",
+        "production",
+        "question-framing",
+        "sim2real"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-347",
+      "file": "entries/KE-347-finish-guard-enforcement-persistent-task.md",
+      "oneliner": "KE-347: Finish-Guard Enforcement Is the Only Mechanism for Persistent-Task Adoption",
+      "keywords": [
+        "adoption",
+        "enforcement",
+        "finish-guard",
+        "ke-347",
+        "mechanism",
+        "persistent-task"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-348",
+      "file": "entries/KE-348-recognition-threshold-refuted.md",
+      "oneliner": "KE-348: Recognition Threshold Model Refuted \u2014 Hints Don't Reliably Cross Performance Thresholds",
+      "keywords": [
+        "cross",
+        "hints",
+        "ke-348",
+        "model",
+        "performance",
+        "recognition",
+        "refuted",
+        "reliably",
+        "threshold",
+        "thresholds"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-349",
+      "file": "entries/KE-349-bug-type-classification-value-vs-relational.md",
+      "oneliner": "KE-349: Bug-Type Classification \u2014 Value Bugs Easy, Relational Bugs Hard",
+      "keywords": [
+        "bug-type",
+        "bugs",
+        "classification",
+        "easy",
+        "hard",
+        "ke-349",
+        "relational",
+        "value"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-350",
+      "file": "entries/KE-350-procedural-discovery-skill-null.md",
+      "oneliner": "KE-350: Procedural Discovery Skills Don't Help Find Relational Bugs",
+      "keywords": [
+        "bugs",
+        "discovery",
+        "find",
+        "help",
+        "ke-350",
+        "procedural",
+        "relational",
+        "skills"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-351",
+      "file": "entries/KE-351-tool-assisted-discovery-null.md",
+      "oneliner": "KE-351: Tool-Assisted Discovery Fails \u2014 Agents Don't Use Provided Tools",
+      "keywords": [
+        "agents",
+        "discovery",
+        "fails",
+        "ke-351",
+        "provided",
+        "tool-assisted",
+        "tools"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-352",
+      "file": "entries/KE-352-dead-ends-general-advice-null.md",
+      "oneliner": "KE-352: Dead Ends as General Advice Has Zero Effect",
+      "keywords": [
+        "advice",
+        "dead",
+        "effect",
+        "ends",
+        "general",
+        "ke-352",
+        "zero"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-353",
+      "file": "entries/KE-353-dreaming-consolidation-null.md",
+      "oneliner": "KE-353: Dreaming/Consolidation via Context.md Injection Has No Effect",
+      "keywords": [
+        "consolidation",
+        "context",
+        "dreaming",
+        "effect",
+        "injection",
+        "ke-353"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-354",
+      "file": "entries/KE-354-relational-bug-direct-hint-only.md",
+      "oneliner": "KE-354: Only Direct Bug Identification Helps Relational Bug Discovery (+30pp)",
+      "keywords": [
+        "direct",
+        "discovery",
+        "helps",
+        "identification",
+        "ke-354",
+        "relational"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-355",
+      "file": "entries/KE-355-remasking-null-on-discovery.md",
+      "oneliner": "KE-355: Verification Remasking Doesn't Help Discovery Tasks",
+      "keywords": [
+        "discovery",
+        "doesn",
+        "help",
+        "ke-355",
+        "remasking",
+        "tasks",
+        "verification"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-356",
+      "file": "entries/KE-356-meta-cognitive-enumeration-null.md",
+      "oneliner": "KE-356: Meta-Cognitive Defect Enumeration Has Zero Effect",
+      "keywords": [
+        "defect",
+        "effect",
+        "enumeration",
+        "ke-356",
+        "meta-cognitive",
+        "zero"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-357",
+      "file": "entries/KE-357-prompt-intervention-ceiling-relational-bugs.md",
+      "oneliner": "KE-357: Prompt-Based Interventions Cannot Help LLMs Discover Relational Bugs",
+      "keywords": [
+        "bugs",
+        "cannot",
+        "discover",
+        "help",
+        "interventions",
+        "ke-357",
+        "llms",
+        "prompt-based",
+        "relational"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-358",
+      "file": "entries/KE-358-breadcrumb-gap-measurement-artifact.md",
+      "oneliner": "KE-358: Breadcrumb Action-Rate Gap Is Mostly Measurement Artifact",
+      "keywords": [
+        "action-rate",
+        "artifact",
+        "breadcrumb",
+        "ke-358",
+        "measurement",
+        "mostly"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-359",
+      "file": "entries/KE-359-background-skills-dont-trigger-behavior.md",
+      "oneliner": "KE-359: Background Skills Don't Trigger Behavior Change",
+      "keywords": [
+        "background",
+        "behavior",
+        "change",
+        "ke-359",
+        "skills",
+        "trigger"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-360",
+      "file": "entries/KE-360-breadcrumb-false-negatives.md",
+      "oneliner": "KE-360: Breadcrumb Action Rate Has ~38% False Negative Rate",
+      "keywords": [
+        "action",
+        "breadcrumb",
+        "false",
+        "ke-360",
+        "negative",
+        "rate"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-361",
+      "file": "entries/KE-361-breadcrumb-measurement-artifact.md",
+      "oneliner": "KE-361: Breadcrumb Action Rate Has ~38% False-Negative from Measurement Artifact",
+      "keywords": [
+        "action",
+        "artifact",
+        "breadcrumb",
+        "false-negative",
+        "ke-361",
+        "measurement",
+        "rate"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-362",
+      "file": "entries/KE-362-error-absorber-architecture-dd860.md",
+      "oneliner": "KE-362: Error Absorber Architecture \u2014 Circuit Breakers for Verification Gravity Wells",
+      "keywords": [
+        "absorber",
+        "architecture",
+        "breakers",
+        "circuit",
+        "error",
+        "gravity",
+        "ke-362",
+        "verification",
+        "wells"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-363",
+      "file": "entries/KE-363-breadcrumb-gap-measurement-artifact.md",
+      "oneliner": "KE-363: Breadcrumb-Action-Rate Gap is Mostly Measurement Artifact",
+      "keywords": [
+        "artifact",
+        "breadcrumb-action-rate",
+        "ke-363",
+        "measurement",
+        "mostly"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-364",
+      "file": "entries/KE-364-cascading-bugs-need-explicit-solutions.md",
+      "oneliner": "KE-364: Cascading Bugs Need Explicit Solutions",
+      "keywords": [
+        "bugs",
+        "cascading",
+        "explicit",
+        "ke-364",
+        "need",
+        "solutions"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-365",
+      "file": "entries/KE-365-structural-gates-unnecessary-additive.md",
+      "oneliner": "KE-365: Structural Gates Unnecessary for Additive Behaviors",
+      "keywords": [
+        "additive",
+        "behaviors",
+        "gates",
+        "ke-365",
+        "structural",
+        "unnecessary"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-366",
+      "file": "entries/KE-366-checkpoint-decomposition-sequential-fm-detection.md",
+      "oneliner": "KE-366: Checkpoint Decomposition Improves Sequential FM Detection",
+      "keywords": [
+        "checkpoint",
+        "decomposition",
+        "detection",
+        "improves",
+        "ke-366",
+        "sequential"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-367",
+      "file": "entries/KE-367-workflow-enforcement-ceiling.md",
+      "oneliner": "KE-367: Workflow Enforcement Has No Advantage Over Text Skills at High Baselines",
+      "keywords": [
+        "advantage",
+        "baselines",
+        "enforcement",
+        "high",
+        "ke-367",
+        "skills",
+        "text",
+        "workflow"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-368",
+      "file": "entries/KE-368-adversarial-qa-harms-evidence.md",
+      "oneliner": "KE-368: Adversarial QA Framing Hurts Evidence Discipline on Hard Scenarios",
+      "keywords": [
+        "adversarial",
+        "discipline",
+        "evidence",
+        "framing",
+        "hard",
+        "hurts",
+        "ke-368",
+        "scenarios"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-369",
+      "file": "entries/KE-369-workflow-overhead-externalization.md",
+      "oneliner": "KE-369: Forced Approach Externalization Adds 1.76\u20133.78x Overhead",
+      "keywords": [
+        "adds",
+        "approach",
+        "externalization",
+        "forced",
+        "ke-369",
+        "overhead"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-370",
+      "file": "entries/KE-370-bounded-fallback-fixes-regression.md",
+      "oneliner": "KE-370: Bounding Skill Fallback Behavior Fixes Regressions Without Removing Capability",
+      "keywords": [
+        "behavior",
+        "bounding",
+        "capability",
+        "fallback",
+        "fixes",
+        "ke-370",
+        "regressions",
+        "removing",
+        "skill",
+        "without"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-371",
+      "file": "entries/KE-371-workflow-access-coverage-gap.md",
+      "oneliner": "KE-371: Workflow Protection Coverage Gap \u2014 Most Agent Sessions Are Unprotected",
+      "keywords": [
+        "agent",
+        "coverage",
+        "ke-371",
+        "protection",
+        "sessions",
+        "unprotected",
+        "workflow"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-372",
+      "file": "entries/KE-372-validation-gates-between-agent-stages.md",
+      "oneliner": "KE-372: Validation Gates Between Agent Stages Prevent Drift",
+      "keywords": [
+        "agent",
+        "drift",
+        "gates",
+        "ke-372",
+        "prevent",
+        "stages",
+        "validation"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-373",
+      "file": "entries/KE-373-cooperative-profiling.md",
+      "oneliner": "KE-373: Cooperative Profiles Predict Multi-Agent Team Performance",
+      "keywords": [
+        "cooperative",
+        "ke-373",
+        "multi-agent",
+        "performance",
+        "predict",
+        "profiles",
+        "team"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-374",
+      "file": "entries/KE-374-schema-ceiling-effect.md",
+      "oneliner": "KE-374: Schema-Organized Context Has a Ceiling Effect \u2014 Works for High-Violation Agents Only",
+      "keywords": [
+        "agents",
+        "ceiling",
+        "context",
+        "effect",
+        "high-violation",
+        "ke-374",
+        "schema-organized",
+        "works"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-375",
+      "file": "entries/KE-375-hint-anchoring-effect.md",
+      "oneliner": "KE-375: Hint Anchoring Effect \u2014 Auxiliary Information Degrades Primary Task Performance",
+      "keywords": [
+        "anchoring",
+        "auxiliary",
+        "degrades",
+        "effect",
+        "hint",
+        "information",
+        "ke-375",
+        "performance",
+        "primary",
+        "task"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-376",
+      "file": "entries/KE-376-cognitive-load-compliance-resilience.md",
+      "oneliner": "KE-376: Structural Compliance Is Resilient Under Cognitive Load; Task Quality Degrades Instead",
+      "keywords": [
+        "cognitive",
+        "compliance",
+        "degrades",
+        "instead",
+        "ke-376",
+        "load",
+        "quality",
+        "resilient",
+        "structural",
+        "task",
+        "under"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-377",
+      "file": "entries/KE-377-context-structure-beats-content.md",
+      "oneliner": "KE-377: Context Structure Beats Content \u2014 Environment Block Positioning",
+      "keywords": [
+        "beats",
+        "block",
+        "content",
+        "context",
+        "environment",
+        "ke-377",
+        "positioning",
+        "structure"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-378",
+      "file": "entries/KE-378-checklists-insufficient-for-discipline.md",
+      "oneliner": "KE-378: Pre-Completion Checklists Are Insufficient for Discipline Failures",
+      "keywords": [
+        "checklists",
+        "discipline",
+        "failures",
+        "insufficient",
+        "ke-378",
+        "pre-completion"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-379",
+      "file": "entries/KE-379-mid-session-env-orientation.md",
+      "oneliner": "KE-379: Structural environment blocks beat scattered facts for knowledge activation",
+      "keywords": [
+        "activation",
+        "beat",
+        "blocks",
+        "environment",
+        "facts",
+        "ke-379",
+        "knowledge",
+        "scattered",
+        "structural"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-380",
+      "file": "entries/KE-380-checklist-catch-rate-ceiling.md",
+      "oneliner": "KE-380: Pre-completion checklists catch only ~27% of instruction adherence failures",
+      "keywords": [
+        "adherence",
+        "catch",
+        "checklists",
+        "failures",
+        "instruction",
+        "ke-380",
+        "pre-completion"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-381",
+      "file": "entries/KE-381-failure-analysis-spawns-follow-ons.md",
+      "oneliner": "KE-381: Mandatory failure analysis on rejected experiments generates valuable follow-on hypotheses",
+      "keywords": [
+        "analysis",
+        "experiments",
+        "failure",
+        "follow-on",
+        "generates",
+        "hypotheses",
+        "ke-381",
+        "mandatory",
+        "rejected",
+        "valuable"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-382",
+      "file": "entries/KE-382-duplicate-read-baseline.md",
+      "oneliner": "KE-382: 17.7% of Agent File Reads Are Duplicates Within Same Session",
+      "keywords": [
+        "agent",
+        "duplicates",
+        "file",
+        "ke-382",
+        "reads",
+        "same",
+        "session",
+        "within"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-383",
+      "file": "entries/KE-383-concept-index-retrieval-validated.md",
+      "oneliner": "KE-383: Concept-Index Retrieval Surfaces Relevant Knowledge That Flat Context Misses",
+      "keywords": [
+        "concept-index",
+        "context",
+        "flat",
+        "ke-383",
+        "knowledge",
+        "misses",
+        "relevant",
+        "retrieval",
+        "surfaces"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-384",
+      "file": "entries/KE-384-technical-sycophancy-ceiling.md",
+      "oneliner": "KE-384: Technical Sycophancy Is Ceiling \u2014 Judgment-Based Is Not",
+      "keywords": [
+        "ceiling",
+        "judgment-based",
+        "ke-384",
+        "sycophancy",
+        "technical"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-385",
+      "file": "entries/KE-385-minimal-externalization-general-judgment-mechanism.md",
+      "oneliner": "KE-385: Minimal Externalization Is a General Judgment Mechanism",
+      "keywords": [
+        "externalization",
+        "general",
+        "judgment",
+        "ke-385",
+        "mechanism",
+        "minimal"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-386",
+      "file": "entries/KE-386-fm21-heterogeneous-not-strategic.md",
+      "oneliner": "KE-386: FM-2.1 Is Heterogeneous \u2014 54.5% Tactical, Not Strategic",
+      "keywords": [
+        "fm-2",
+        "heterogeneous",
+        "ke-386",
+        "strategic",
+        "tactical"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-387",
+      "file": "entries/KE-387-artifacts-as-memory-environmental-externalization.md",
+      "oneliner": "KE-387: Artifacts as Memory \u2014 Environmental Externalization in Agent Systems",
+      "keywords": [
+        "agent",
+        "artifacts",
+        "environmental",
+        "externalization",
+        "ke-387",
+        "memory",
+        "systems"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-388",
+      "file": "entries/KE-388-low-threshold-causal-pointer-sufficient.md",
+      "oneliner": "KE-388b: Low-Threshold Causal-Pointer Model \u2014 Any Causal Pointer Bridges Recognition\u2192Execution",
+      "keywords": [
+        "bridges",
+        "causal",
+        "causal-pointer",
+        "execution",
+        "ke-388b",
+        "low-threshold",
+        "model",
+        "pointer",
+        "recognition"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-389",
+      "file": "entries/KE-389-inoculation-prompting-voluntary-guards.md",
+      "oneliner": "KE-389: Inoculation Prompting \u2014 Voluntary Guard Adoption as Internalization Test",
+      "keywords": [
+        "adoption",
+        "guard",
+        "inoculation",
+        "internalization",
+        "ke-389",
+        "prompting",
+        "test",
+        "voluntary"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-390",
+      "file": "entries/KE-390-surface-deep-learning-measurement-gap.md",
+      "oneliner": "KE-390: Compliance \u2260 Internalization \u2014 The Measurement Gap",
+      "keywords": [
+        "compliance",
+        "internalization",
+        "ke-390",
+        "measurement"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-391",
+      "file": "entries/KE-391-dd765-cooperative-paging-validates-context-compression.md",
+      "oneliner": "KE-391: DD-765 Cooperative Paging \u2014 Bookmarks + Recall Beat Full Context (External Validation of Compression-Over-Accumulation)",
+      "keywords": [
+        "beat",
+        "bookmarks",
+        "compression-over-accumulation",
+        "context",
+        "cooperative",
+        "dd-765",
+        "external",
+        "full",
+        "ke-391",
+        "paging",
+        "recall",
+        "validation"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-392",
+      "file": "entries/KE-392-verb-choice-determines-tool-choice.md",
+      "oneliner": "KE-392: Verb Choice Determines Tool Choice (VERIFIED)",
+      "keywords": [
+        "choice",
+        "determines",
+        "ke-392",
+        "tool",
+        "verb",
+        "verified"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-393",
+      "file": "entries/KE-393-git-orientation-failure-persists-despite-text.md",
+      "oneliner": "KE-393: Git Orientation Failure Persists Despite Repeated Text Warnings",
+      "keywords": [
+        "despite",
+        "failure",
+        "ke-393",
+        "orientation",
+        "persists",
+        "repeated",
+        "text",
+        "warnings"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-394",
+      "file": "entries/KE-394-gym-agent-default-silent-corruption.md",
+      "oneliner": "KE-394: Gym Runner Defaults to Unregistered Agent \u2014 Silent Data Corruption",
+      "keywords": [
+        "agent",
+        "corruption",
+        "data",
+        "defaults",
+        "ke-394",
+        "runner",
+        "silent",
+        "unregistered"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-395",
+      "file": "entries/KE-395-agent-identity-confound-80pp.md",
+      "oneliner": "KE-395: Agent Identity Confound \u2014 80pp Performance Gap Between Agents on Same Task",
+      "keywords": [
+        "agent",
+        "agents",
+        "confound",
+        "identity",
+        "ke-395",
+        "performance",
+        "same",
+        "task"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-396",
+      "file": "entries/KE-396-agreement-trap-evaluator.md",
+      "oneliner": "KE-396: Our evaluator likely suffers from the Agreement Trap",
+      "keywords": [
+        "agreement",
+        "evaluator",
+        "ke-396",
+        "likely",
+        "suffers",
+        "trap"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-397",
+      "file": "entries/KE-397-gym-text-intervention-quartet-null.md",
+      "oneliner": "KE-397: The Text Intervention Quartet \u2014 Four Consecutive Null Results on Gym Scenarios",
+      "keywords": [
+        "consecutive",
+        "four",
+        "intervention",
+        "ke-397",
+        "null",
+        "quartet",
+        "results",
+        "scenarios",
+        "text"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-398",
+      "file": "entries/KE-398-skill-description-triggers-not-summaries.md",
+      "oneliner": "KE-398: Skill Descriptions Should Be Trigger Conditions, Not Workflow Summaries",
+      "keywords": [
+        "conditions",
+        "descriptions",
+        "ke-398",
+        "skill",
+        "summaries",
+        "trigger",
+        "workflow"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-399",
+      "file": "entries/KE-399-skill-files-wrong-lever.md",
+      "oneliner": "KE-399: Skill Files Are the Wrong Lever for Agent Behavioral Change",
+      "keywords": [
+        "agent",
+        "behavioral",
+        "change",
+        "files",
+        "ke-399",
+        "lever",
+        "skill",
+        "wrong"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-400",
+      "file": "entries/KE-400-coaching-saturation-confirmed.md",
+      "oneliner": "KE-400: Coaching Notification Saturation \u2014 Repeated Text Coaching Doesn't Improve Compliance",
+      "keywords": [
+        "coaching",
+        "compliance",
+        "doesn",
+        "improve",
+        "ke-400",
+        "notification",
+        "repeated",
+        "saturation",
+        "text"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-401",
+      "file": "entries/KE-401-judgment-failure-taxonomy-activation-vs-reasoning.md",
+      "oneliner": "KE-401: Judgment Failure Taxonomy \u2014 Activation Gaps vs Reasoning/Conceptual Gaps",
+      "keywords": [
+        "activation",
+        "conceptual",
+        "failure",
+        "gaps",
+        "judgment",
+        "ke-401",
+        "reasoning",
+        "taxonomy"
+      ],
+      "agents": [
+        "*"
+      ]
+    },
+    {
+      "id": "KE-402",
+      "file": "entries/KE-402-intervention-decision-tree.md",
+      "oneliner": "KE-402: Intervention Decision Tree \u2014 What Works and What Doesn't",
+      "keywords": [
+        "decision",
+        "doesn",
+        "intervention",
+        "ke-402",
+        "tree",
+        "works"
+      ],
+      "agents": [
+        "*"
       ]
     }
   ]
