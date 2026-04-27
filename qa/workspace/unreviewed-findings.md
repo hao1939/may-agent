@@ -1,25 +1,18 @@
 # Unreviewed findings (QA heartbeat)
 
-## Context
-- Heartbeat date: 2026-04-27
-- `git status` shows the `agents` entry modified, and many untracked files under `.state/` plus `node_modules/`.
+Date: 2026-04-27
 
-## Findings
-### CRITICAL — repo structure/submodule inconsistency
-- Evidence:
-  - `git diff` shows `agents` is recorded as a gitlink (mode 160000) but points to `93cd683...-dirty` rather than a clean commit, suggesting a submodule-like setup.
-  - `git submodule status` fails: `fatal: no submodule mapping found in .gitmodules for path 'agents'`.
-- Impact:
-  - Breaks reproducibility and reviewability; a dirty gitlink can’t be fetched/checked out reliably.
+## Environment gaps impacting mandatory QA checks
 
-### IMPORTANT — verification commands not runnable in this repo
-- Typecheck verification step cannot be executed as specified:
-  - `./node_modules/.bin/tsc --noEmit` exits code 1 and prints help output (no `tsconfig.json` present or no inputs inferred).
-- Test verification step cannot be executed:
-  - `./node_modules/.bin/vitest --run` fails: `No such file or directory`.
-  - `package.json` contains only `typescript` dependency and no `vitest`.
+- `./node_modules/.bin/tsc --noEmit` does **not** compile a project; it prints TypeScript CLI help and exits 1. This typically indicates **no `tsconfig.json` in repo root** (or command is being run in a directory without a TS project).
+  - Evidence: QA run printed `tsc: The TypeScript Compiler - Version 6.0.3` help text and exited code 1.
 
-## Suggested next actions
-1. Decide whether `/app` is intended to be a TypeScript/Vitest project; if yes, add `tsconfig.json` and `vitest` devDependency and minimal config.
-2. Fix the `agents` gitlink/submodule state: either add a proper `.gitmodules` mapping and make it a real submodule, or convert to a normal directory (remove gitlink) and commit the contents.
-3. Add a `.gitignore` for `.state/` and `node_modules/` if those should never be committed (currently they are untracked and noisy).
+- `./node_modules/.bin/vitest --run` fails because **Vitest is not installed**.
+  - Evidence: `/bin/bash: line 1: ./node_modules/.bin/vitest: No such file or directory` (exit 127)
+  - `package.json` contains only `typescript` dependency; no `vitest`.
+
+## Recent changes observed (not fully QA-verified)
+
+- Commit `a8a482a` modifies `.state/requests.db` (“initialize requests.db schema”). This is a binary DB file; functional verification requires exercising whichever code reads/writes it.
+
+- Commit `a8e4d72` adds `.state/findings/2026-04-27-agentsearchbench-execution-signals.md` and `.state/knowledge/triage-2026-04-27.md`. Content read and appears consistent with a research triage note.
