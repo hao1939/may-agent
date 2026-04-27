@@ -74,3 +74,12 @@ Milestones completed:
 Score: 6/8 milestones done. Two remaining.
 
 **(a)** Next iteration must complete: "If metrics improved, doc
+
+### Iteration 8 — 2026-04-27T11:32:13.682Z
+**Worker**: Now let me write both deliverables:
+**Orchestrator**: CONTINUE
+
+No `investigation.md` or regression guard written yet. 2 milestones remain.
+
+**(a)** Write both deliverables this iteration:
+1. `outputs/investigation.md` — document that metrics did NOT improve, why (agents lack triggers to read skills/), and recommended fix (add skill refs to agent syste

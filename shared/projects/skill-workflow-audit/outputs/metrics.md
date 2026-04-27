@@ -48,9 +48,10 @@ echo "workflow.pass-rate = $pass / $total = $(( pass * 100 / total ))%"
 | Metric | Current Value | Target | Status |
 |--------|--------------|--------|--------|
 | `workflow.pass-rate` | 100% (10/10) | 100% | ✅ Met |
-| `skill.verified-rate` | 0% (0/18) | >50% | ❌ Not started |
+| `skill.verified-rate` | 20% (1/5 top skills) | >50% | 🔶 In progress |
 
 ## Notes
 
 - `workflow.pass-rate` at 100% means all workflows are structurally sound (no import errors). This does not guarantee correctness under real execution.
-- `skill.verified-rate` at 0% is expected — no skills have gone through a deploy+measure cycle yet. This is the key gap for Phase 3.
+- `skill.verified-rate` updated to 20%: `obstacle-pivot` has measured positive impact via gym data (help-blocked-agent: 0% → 100% pass rate between gym runs). See `skills-impact.md` Appendix A for full before/after data.
+- Remaining 4 top skills (error-handling, state-check-before-action, coder-edit-discipline, delegation-verification) need deploy+measure cycles.
