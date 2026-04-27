@@ -5,7 +5,7 @@
 **Type**: continuous
 **Workflow**: master-worker
 **Priority**: P0
-**Iteration**: 1
+**Iteration**: 2
 
 ## Goal
 Every skill and workflow in the system must be verified working, measured for impact, and protected against regression. Reading code is not verification — run it, measure it, prove it helps.
@@ -16,9 +16,7 @@ Every skill and workflow in the system must be verified working, measured for im
 - skill.delivery-rate: 0.23 → target 0.60 (% of skills referenced by at least one agent)
 
 ## Current State
-Inventory done but nothing actually tested. Key finding from inventory: 77% of skills are orphaned (no delivery mechanism), workflows all parse but none run-tested. The core problem is skill delivery — skills exist but nothing injects them into agent context.
-
-Next: run workflows on test projects, deploy top skills and measure before/after behavior change.
+blocked: Stalled: 2 iterations without milestone progress. 2/10 milestones done.
 
 ## Plan
 
