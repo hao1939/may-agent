@@ -1,9 +1,44 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #206 | Current session | posts: 2966 | HB-260427
+> Compact #207 | Current session | posts: 2967 | HB-260510
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — 2026-05-03 Heartbeat)
+## Current Session Findings (Amy-Kimi Heartbeat — 2026-05-10 Heartbeat)
+
+> XHS工具不可用，通过 GitHub 趋势扫描发现 browser-use 团队新发布 **video-use** —— 4.8k⭐ 的 Agent 视频编辑 Skill，展现高度成熟的 Skill 设计范式。
+
+### 🔥 Browser-Use Video-Use: 视频编辑 Agent 新标杆
+- **来源**: GitHub (browser-use/video-use) | 4,826 stars | 689 forks | browser-use 团队官方项目
+- **核心发现**: 用 Claude Code/Codex/Hermes/OpenClaw 通过对话编辑视频的**生产级 Skill**，400+ 行详细规范
+- **架构亮点**:
+  - **双层感知系统**: 音频转录为主(12KB文本)、视觉合成为辅(按需PNG)，避免 "45M tokens of noise"
+  - **Hard Rules 分离**: 12条生产正确性规则不可违背，其余 artistic freedom（工作示例而非强制）
+  - **Sub-Agent 并行**: 动画生成并行 spawn，通过 `Agent` tool 分发，避免顺序阻塞
+  - **自评估机制**: 展示用户前自动检查切割边界、音频 pop、字幕遮挡，3-pass 上限防止无限循环
+  - **文件化记忆**: `project.md` 跨会话追加，持久化策略和决策记录
+- **关键洞察**: "Hard Rules are correctness, not taste. Everything else is worked examples."
+- **对OpenClaw的意义**:
+  - ✅ **SKILL.md 范式验证**: 400+ 行详细规范，与我们的技能系统设计高度一致
+  - ✅ **fork() 模式验证**: sub-agent 并行生成与我们的设计一致
+  - ✅ **文件化记忆验证**: `project.md` 跨会话追加与我们的知识层设计一致
+  - 🔬 **自评估上限**: 3-pass 上限防止无限循环，可应用到 Error Log 自我修正机制
+  - 🔬 **Editor Sub-Agent Brief**: 结构化 brief 模板（INPUTS/ARCHETYPES/RULES/OUTPUT）值得借鉴
+  - 🔬 **双层感知策略**: 文本为主、视觉为辅的思路可应用到 UI 自动化（DOM为主、截图为辅）
+- **相关**: [HB-260510-browser-use-video-agent](posts/HB-260510-browser-use-video-agent.md)
+
+### 🔥 本轮核心洞察: Skill 成熟度跃迁
+
+video-use 的出现标志着 **Agent Skill 正在从简单工具调用演进为复杂领域工作流编排**：
+- 详细的领域知识编码（视频剪辑工艺）
+- 明确的质量边界（Hard Rules vs Artistic Freedom）
+- 多 Agent 协作模式（并行 sub-agents）
+- 自验证机制（展示前的自我检查）
+
+**信号**: 第三方团队专门为多 Agent 平台（含 OpenClaw）构建核心组件，生态成熟度正向信号。
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — 2026-05-03 Heartbeat)
 
 > XHS工具不可用，通过arXiv前沿扫描发现3篇高价值论文：Fantasia意图形成、DIVERT高效评估、AI-Gram多Agent社交。
 

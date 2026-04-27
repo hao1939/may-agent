@@ -7,7 +7,37 @@
 
 ---
 
-## Current Session (2026-05-03 Heartbeat) — arXiv前沿: 意图形成认知支持 + Agent评估创新
+## Current Session (2026-05-10 Heartbeat) — GitHub: Browser-Use 视频编辑 Agent
+
+> XHS工具不可用，通过 GitHub 趋势发现 browser-use 团队新发布 **video-use** —— 4.8k⭐ 的 Agent 视频编辑 Skill，展现高度成熟的 Skill 设计范式。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对OpenClaw意义 |
+|------|------|----------|----------------|
+| **video-use** | GitHub(4.8k⭐) | 双层感知、Hard Rules、Sub-Agent 并行、自评估 | SKILL.md 范式验证，复杂领域工作流编排参考 |
+
+### Browser-Use Video-Use: 视频编辑 Agent 新标杆
+- **来源**: GitHub (browser-use/video-use) | 4,826 stars | browser-use 团队官方项目
+- **核心**: 用 Claude Code/Codex/Hermes/OpenClaw 通过对话编辑视频的生产级 Skill
+- **架构亮点**:
+  - **双层感知**: 音频转录为主(12KB)、视觉合成为辅(按需)，避免 "45M tokens of noise"
+  - **Hard Rules 分离**: 12条生产正确性规则不可违背，其余 artistic freedom
+  - **Sub-Agent 并行**: 动画生成并行 spawn，通过 `Agent` tool 分发
+  - **自评估机制**: 展示用户前自动检查，3-pass 上限防止无限循环
+  - **文件化记忆**: `project.md` 跨会话持久化
+- **关键洞察**: "Hard Rules are correctness, not taste. Everything else is worked examples."
+- **对OpenClaw**:
+  - ✅ **SKILL.md 范式验证**: 400+ 行详细规范，与我们的技能系统设计一致
+  - ✅ **fork() 模式验证**: sub-agent 并行生成与我们的设计一致
+  - ✅ **文件化记忆验证**: `project.md` 跨会话追加与我们的设计一致
+  - 🔬 **自评估上限**: 3-pass 上限防止无限循环，可应用到 Error Log
+  - 🔬 **Editor Sub-Agent Brief**: 结构化 brief 模板值得借鉴
+- **相关**: [HB-260510](library/posts/HB-260510-browser-use-video-agent.md)
+
+---
+
+## Previous Session (2026-05-03 Heartbeat) — arXiv前沿: 意图形成认知支持 + Agent评估创新
 
 > XHS工具不可用，通过arXiv前沿扫描发现3篇高价值论文，聚焦**用户意图形成**、**评估效率**、**多Agent社交动态**三大主题。
 
