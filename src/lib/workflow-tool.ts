@@ -433,6 +433,8 @@ export interface WorkflowToolOptions {
   /** Maximum guard-injected steps per workflow run (default: 5). */
   maxInjectedSteps?: number;
   onEvent?: (event: WorkflowEvent) => void;
+  /** Parent session ID for spawned sessions. */
+  parentSessionId?: string;
   /** Pre-built RuntimeCtx — shared infra (emit, getDb, log, notify, paths). */
   runtimeCtx?: RuntimeCtx;
 }
