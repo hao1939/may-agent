@@ -195,7 +195,7 @@
     "intervalMs": 1800000,
     "agent": "amy-kimi",
     "message": "[heartbeat] Amy-Kimi heartbeat via per-agent workflow.",
-    "enabled": true,
+    "enabled": false,
     "handler": "run-workflow",
     "handlerConfig": {
       "workflow": "amy-kimi-heartbeat",
