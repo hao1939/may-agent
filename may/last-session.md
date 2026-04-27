@@ -1,18 +1,17 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1777282882847_1
+- **Session:** cron_1777283114446_0
 - **Status:** done
-- **When:** 2026-04-27T09:43:12.379Z
-- **Duration:** 1m49s
+- **When:** 2026-04-27T09:45:59.630Z
+- **Duration:** 45s
 
 ## What Happened
-System is generally healthy. Key findings:
+Key findings from this heartbeat:
 
-1. **amy-kimi suspended** — billing issue (429 insufficient balance). Not actionable by us.
-2. **Bob/Coach intermittent ENOENT errors** on heartbeats — but bob's latest heartbeat completed fine, so these are transient.
-3. **95.9% session success rate** — above 90% target. Good.
-4. **No pending requests** — inbox clear.
-5. **All metrics green** except review-coverage at 329 (above threshold of 1, likely needs attention).
+1. **System health**: Generally good — 96% session success rate, quality at 0.98
+2. **Errors**: Bob (2 ENOENT errors) and coach (1 ENOENT) are hitting missing file issues in the last hour. These are recurring file-not-found patterns.
+3. **amy-kimi**: 1 error session, 0 ops — looks like it failed on startup. Worth monitoring.
+4. **All agents active**: Good coverage across the board in last 6h.
 
-The intermittent ENOENT on bob/coach heartbeats is worth a quick nudge to tech-lead.
+The bob/coach ENOENT errors are the most actionable issue. Let me nudge tech-lead to investigate.
