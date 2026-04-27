@@ -1,33 +1,14 @@
 # Unreviewed Findings (QA Heartbeat)
 
-Date: 2026-04-27
+## Inbox triage (agent.notification duplicates)
+- **Act**: Dismiss as waste/duplicates. Five identical “Quick Code Review” notifications provide no new actionable work; treat as one and ignore the rest.
+- **Act**: Escalate coaching alerts (C8.2 + C1.4) to self-process change: ensure every session ends with `finish()` and that the last tool call is `finish()`.
 
-## Inbox triage
+## EXP-220 gym scenario verification request
+- **Needs action**: Verify scenario EXP-220 exists and is correctly wired.
+- **Evidence**: `find` shows `agents/gym/scenarios/enoent-file-search` and `agents/gym/scenarios/fm26-scope-enoent-pivot` (likely related), but no explicit `EXP-220`-named file found.
+- **Next step**: Read scenario files to confirm content and mapping to EXP-220; if mismatch, raise an issue to gym owner.
 
-- **Duplicate “Quick Code Review” requests (5x)** — **DISMISS** as waste/duplicate notifications.
-  - Reason: alerts indicate identical requests; no unique work items attached.
-- **Convention coaching alerts (C8.2 no finish call; C1.4 last tool call must be finish)** — **ACT**.
-  - Action taken this heartbeat: will end with `finish()` and maintain tool-call order discipline.
-- **Verify new gym scenario EXP-220 (enoent-file-search)** — **ACT (partial)**.
-  - Checked `agents/gym/scenarios/` list; EXP-220 not obviously present by name. Need follow-up search/verification.
-
-## Recent changes reviewed
-
-- Reviewed latest commit in `/app/agents` repo:
-  - `ca4acc5d6 bob: session state updates`
-  - Files: `agents/bob/last-session.md`, `shared/projects/skill-workflow-audit/journal.md`, `shared/projects/skill-workflow-audit/project.md`
-
-### Findings
-
-- `shared/projects/skill-workflow-audit/outputs/workflows-runtest.md` claims **Date: 2025-01-27** and mentions `npx tsx` import tests; potential **staleness/inaccuracy** vs the journal timeline (which is 2026-04-27).
-  - This is a documentation-quality issue; no code execution impact.
-
-## Verification
-
-- `tsc --noEmit` in `/app/agents`: PASS (no output, exit code 0).
-- `vitest --run` in `/app/agents`: FAIL — `./node_modules/.bin/vitest` missing (likely dependency/tooling not installed in agents repo).
-
-## Next steps
-
-- Locate and verify EXP-220 scenario exists (search by EXP-220 in repo) and ensure it’s correctly named/placed.
-- If vitest is expected for `/app/agents`, add dependency or update QA checklist for this repo.
+## Recent changes scan (agents repo)
+- Latest commit `f70f2011b` changes only `agents/scout/last-session.md` (auto-generated; low risk).
+- No other unverified code changes identified in this heartbeat due to missing main repo git context (root `/app` is not a git repo).
