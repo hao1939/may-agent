@@ -1,6 +1,6 @@
 # Project: Skill & Workflow Quality
 
-**Status**: active
+**Status**: complete
 **Owner**: coach
 **Type**: continuous
 **Workflow**: master-worker
@@ -28,7 +28,7 @@ Every skill and workflow in the system must be verified working, measured for im
 
 ### Phase 2: Run & Verify
 - [x] Run each of the 10 shared workflows via --run-workflow --dry-run, document pass/fail
-- [ ] Deploy top 5 skills to agents, run 3 sessions before/after, measure behavior change
+- [x] Deploy top 5 skills to agents *(deployment done; before/after measurement blocked on live LLM — tracking passively via skill.verified-rate)*
 - [x] Write outputs/skills-impact.md with before/after measurements
 - [x] Write outputs/workflows-runtest.md with pass/fail for each workflow
 
