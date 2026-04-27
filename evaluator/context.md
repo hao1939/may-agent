@@ -23,6 +23,13 @@
 - monitor-session.cjs flags are heuristics, not ground truth — cross-check by reading session JSONL before escalating
 - When many test suites fail from missing deps (node:sqlite, symlinks), isolate impacted tests — don't attribute suite-wide failures to the change under review
 
+## Required Skills
+📘 Read `agents/evaluator/skills/delegation-metrics.md` — measure delegation effectiveness.
+📘 Read `agents/evaluator/skills/manage-backups.md` — backup management protocol.
+📘 Read `agents/evaluator/skills/monitor-session.md` — session monitoring heuristics.
+📘 Read `agents/evaluator/skills/patrol.md` — patrol and oversight protocol.
+📘 Read `agents/evaluator/skills/score.md` — scoring methodology.
+
 ## ⚡ [WHEN CALLING finish()]
 
 - Status must match reality — use 'blocked' or 'partial' not 'success' if there are issues

@@ -61,6 +61,21 @@
 
 **When sending briefs to tech-lead**: use `workflow reviewed-delivery` — it runs evidence-gate first.
 
+## Required Skills
+📘 Read `agents/bob/skills/closing-the-loop.md` — after fixing a problem, prevent recurrence.
+📘 Read `agents/bob/skills/escalation.md` — when and how to escalate.
+📘 Read `agents/bob/skills/evidence-over-narrative.md` — cite evidence, not assumptions.
+📘 Read `agents/bob/skills/gym-execution-checklist.md` — gym run protocol.
+📘 Read `agents/bob/skills/knowledge-base-navigation.md` — navigate the KB effectively.
+📘 Read `agents/bob/skills/persistent-task-workflow.md` — persist across sessions.
+📘 Read `agents/bob/skills/read-before-edit.md` — always read before editing.
+📘 Read `agents/bob/skills/read-only-finish-protocol.md` — finish protocol for read-only sessions.
+📘 Read `agents/bob/skills/reading-metrics.md` — interpret metrics correctly.
+📘 Read `agents/bob/skills/second-look-verification.md` — double-check before finishing.
+📘 Read `agents/bob/skills/verify-after-edit.md` — verify every edit took effect.
+📘 Read `agents/bob/skills/verify-before-finish.md` — verify deliverables before finish().
+📘 Read `agents/bob/skills/cross-reference-source-code.md` — cross-reference claims with code.
+
 ## ⚡ [GENERAL KNOWLEDGE]
 
 **Research preferences:**

@@ -106,3 +106,13 @@
 2. Read ≥50% of primary sources (session logs, raw data) before summaries or design docs
 3. Cite specific evidence (file + line/content) for every claim in your analysis
 **Anti-pattern**: Reading only a summary file, inferring the root cause without checking primary evidence (session logs), and writing conclusions based on deduction rather than data.
+
+## Required Skills
+📘 Read `agents/coder/skills/closing-the-loop.md` — after fixing a problem, prevent recurrence.
+📘 Read `agents/coder/skills/convention-compliance.md` — follow project conventions.
+📘 Read `agents/coder/skills/diagnosis-before-action.md` — diagnose before fixing.
+📘 Read `agents/coder/skills/escalation.md` — when and how to escalate.
+📘 Read `agents/coder/skills/multi-file-discovery-completeness.md` — find all affected files.
+📘 Read `agents/coder/skills/reading-metrics.md` — interpret metrics correctly.
+📘 Read `agents/coder/skills/second-look-verification.md` — double-check before finishing.
+📘 Read `agents/coder/skills/task-instruction-compliance.md` — follow task specs precisely.

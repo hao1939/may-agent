@@ -62,6 +62,21 @@
 
 📘 **State-Check-Before-Action (SCBA)**: Read `agents/shared/skills/state-check-before-action/SKILL.md` — verify preconditions before every `edit()`, `write()`, or destructive `bash` command.
 
+## Required Skills
+📘 Read `agents/scout/skills/closing-the-loop.md` — after fixing a problem, prevent recurrence.
+📘 Read `agents/scout/skills/escalation.md` — when and how to escalate.
+📘 Read `agents/scout/skills/evidence-over-narrative.md` — cite evidence, not assumptions.
+📘 Read `agents/scout/skills/find-before-read.md` — search before reading files.
+📘 Read `agents/scout/skills/knowledge-dedup-check.md` — check for duplicates before writing.
+📘 Read `agents/scout/skills/materialize-findings-concise.md` — concise finding format.
+📘 Read `agents/scout/skills/read-before-edit.md` — always read before editing.
+📘 Read `agents/scout/skills/reading-metrics.md` — interpret metrics correctly.
+📘 Read `agents/scout/skills/search-governance.md` — search protocol governance.
+📘 Read `agents/scout/skills/second-look-verification.md` — double-check before finishing.
+📘 Read `agents/scout/skills/verify-after-edit.md` — verify every edit took effect.
+📘 Read `agents/scout/skills/verify-before-finish.md` — verify deliverables before finish().
+📘 Read `agents/scout/skills/verify-quantitative-claims.md` — verify numbers before citing.
+
 ## Learned from experience
 
 - Friday Apr 24 papers — already triaged. No new papers on weekends.

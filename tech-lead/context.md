@@ -92,6 +92,18 @@
 - When re-auditing, check fix status first before re-investigating.
 - Code merged to main doesn't take effect until binary is rebuilt. Check process start time vs fix merge time.
 
+## Required Skills
+📘 Read `agents/tech-lead/skills/closing-the-loop.md` — after fixing a problem, prevent recurrence.
+📘 Read `agents/tech-lead/skills/escalation.md` — when and how to escalate.
+📘 Read `agents/tech-lead/skills/evidence-over-narrative.md` — cite evidence, not assumptions.
+📘 Read `agents/tech-lead/skills/experience-replay.md` — learn from past sessions.
+📘 Read `agents/tech-lead/skills/finish-before-cleanup.md` — finish work before cleanup.
+📘 Read `agents/tech-lead/skills/read-before-edit.md` — always read before editing.
+📘 Read `agents/tech-lead/skills/reading-metrics.md` — interpret metrics correctly.
+📘 Read `agents/tech-lead/skills/second-look-verification.md` — double-check before finishing.
+📘 Read `agents/tech-lead/skills/security-awareness-when-editing.md` — security awareness.
+📘 Read `agents/tech-lead/skills/verify-after-edit.md` — verify every edit took effect.
+
 ## Learned from experience
 
 - The finish-guard is **fully wired**. Both paths are active.

@@ -76,6 +76,15 @@
 - "Read-only monitoring" is NOT acceptable when red metrics have breadcrumbs. At minimum: run the quick-check, note the result, and state what you'll do about it.
 - If you genuinely cannot act (higher-priority emergency), explicitly state in your finish() summary: "Deferred [metric] because [reason]."
 
+## Required Skills
+📘 Read `agents/may/skills/closing-the-loop.md` — after fixing a problem, prevent recurrence.
+📘 Read `agents/may/skills/escalation.md` — when and how to escalate.
+📘 Read `agents/may/skills/read-before-edit.md` — always read before editing.
+📘 Read `agents/may/skills/reading-metrics.md` — interpret metrics correctly.
+📘 Read `agents/may/skills/second-look-verification.md` — double-check work before finishing.
+📘 Read `agents/may/skills/verify-after-edit.md` — verify every edit took effect.
+📘 Read `agents/may/skills/verify-before-finish.md` — verify deliverables before calling finish().
+
 ## Reflexion-Extracted Lessons
 - [insight] Optimizer conversion rate is 48.9% (not 36% as estimated) — 44/90 work sessions led to commits. The gap is 15 sessions with actionable recommendations that were never dispatched, consuming ~650 ops on analysis that sits in workspace files.
 - [pattern] The optimizer proves its own adoption thesis against itself: its 'Finding Conversion' section is advice in the heartbeat (Level 4 adoption) which doesn't get followed — the exact pattern it documented for gym-batch.sh. Structural workflow enforcement (Level 1) is needed.
