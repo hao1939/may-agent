@@ -1,14 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777314884393_0
-- **Status:** done
-- **When:** 2026-04-27T18:35:49.208Z
-- **Duration:** 1m4s
+- **Session:** s_1777315391251_0
+- **Status:** interrupted
+- **When:** 2026-04-27T18:44:20.838Z
+- **Duration:** 1m9s
 
 ## What Happened
-Two issues found:
-1. **project.blocked-over-6h**: Likely stale metric — no blocked projects exist in DB. May be counting old data.
-2. **amy-kimi**: 100% error rate due to suspended Kimi API account (insufficient balance).
+The "blocked" metrics likely come from the metric system reading something else. The key issue is clear: **project.iterations-24h is 0** because no projects are actively iterating. Bob's is stale, and there are no other active projects generating iterations. I've nudged Bob. 
 
-Let me notify the right people:
+Let me also check if there's actual work that should be happening:
