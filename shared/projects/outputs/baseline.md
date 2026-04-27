@@ -1,7 +1,7 @@
 # Baseline Measurements
 
-**Date**: 2026-07-30
-**Measured by**: worker session
+**Date**: 2025-07-30 (re-measured)
+**Source**: may.db + filesystem scan
 
 ---
 
@@ -10,87 +10,68 @@
 | Metric | Value |
 |--------|-------|
 | Total projects | 52 |
-| Active in last 7 days | 52 (all recently touched — likely batch operations) |
-| Status: done | 42 (81%) |
-| Status: active | 2 |
-| Status: waiting | 2 |
-| Status: blocked | 1 |
+| Status: done/complete | 44 |
+| Status: active | 3 |
 | Status: cancelled | 1 |
-| Status: closed | 1 |
-| Status: other | 3 |
+| Status: unknown/unparsed | 4 |
 
-**Iteration counts** (done projects):
-- Median: ~6 iterations
-- Range: 1–39 iterations
-- Projects completing in ≤5 iters: 15 (fast)
-- Projects taking >15 iters: 7 (slow — context-learning:23, workflow-first:22, breadcrumb-gap:19, convention-compliance:18, agent-autonomy:16, adaptive-heartbeats:17, prove-the-loop:39)
+**Iteration counts** (projects with journals):
+- Projects with iterations: 25 of 52
+- Median iterations: 7
+- Range: 1–22
 
-**Throughput**: 42 of 52 projects completed (81% completion rate). 2 currently active.
+**Completion rate**: 44/52 = 84%
 
 ---
 
-## M2: Escalation Quality
-
-Measured by scanning all `journal.md` files across 52 projects for blocked/failed mentions.
+## M2: Escalation Quality (Session Data)
 
 | Metric | Value |
 |--------|-------|
-| Total blocked/failed mentions | 191 |
-| With reason/context included | 149 (78%) |
-| Without adequate context | 42 (22%) |
+| Total tracked sessions | 218 |
 
-**Assessment**: 78% of escalations include a reason or context. The 22% gap represents cases where agents report "BLOCKED" or "FAIL" without explaining why — these create investigation overhead for reviewers.
+**Sessions by agent (top 10)**:
+| bob | 78 |
+| coach | 58 |
+| amy | 30 |
+| may | 17 |
+| tech-lead | 14 |
+| optimizer | 9 |
+| amy-kimi | 5 |
+| qa | 4 |
+| scout | 3 |
 
-**Notable patterns**:
-- Evaluator FAIL scores often include structured feedback (score + reasoning) — good quality
-- Worker BLOCKED escalations sometimes lack what was tried — lower quality
-- Reviewer CONTINUE decisions usually include actionable next steps
+*Note: The requests table is empty (0 rows), so escalation pass/fail tracking is not yet instrumented. This is itself a baseline finding — escalation quality measurement requires request-tracking adoption.*
 
 ---
 
 ## M3: Skill Read Rate
 
-Measured by checking `context.md` files for skill references across all agents.
+| Metric | Value |
+|--------|-------|
+| Total file reads tracked | 143 |
+| Skill-related reads | 8 |
+| Skill read percentage | 5% |
+| Shared skill files | 81 |
 
-| Agent | Skill refs in context.md | Has own skills/ dir |
-|-------|--------------------------|---------------------|
-| amy | 1 | ✅ |
-| amy-kimi | 0 | ✅ |
-| bob | 1 | ✅ |
-| coach | 1 | ✅ |
-| coder | 0 | ✅ |
-| evaluator | 0 | ✅ |
-| may | 0 | ✅ |
-| optimizer | 1 | ✅ |
-| qa | 0 | ✅ |
-| scout | 1 | ✅ |
-| tech-lead | 1 | ✅ |
-
-**Summary**: 6 of 11 agents (55%) reference skills in their context. 5 agents (45%) have skills directories but zero references in context — meaning those skills exist but may never be loaded.
-
-**Skill inventory**: 
-- Shared skills: ~10 files in `/agents/shared/skills/`
-- Agent-specific skills: varies (coder has 5, scout has 9, bob has 11)
-- `reading-metrics` skill exists in both shared and gym-scenario copies
-- The shared `reading-metrics/skill.md` already includes a "close the loop" step (step 5) with the evolution ladder: skill → guard → handler
+**Skill reads by agent**:
+| Agent | Skill Reads |
+|-------|-------------|
+| coach | 7 |
+| bob | 1 |
 
 ---
 
-## Phase 2 Status: Reading-Metrics Skill
+## Reading-Metrics Skill Status
 
-The `reading-metrics` skill at `/agents/shared/skills/reading-metrics/skill.md` **already contains** a "close the loop" step (Step 5) with:
-- Guard writing guidance
-- Handler automation guidance  
-- Skill creation guidance
-- The evolution ladder concept (skill → guard → handler)
-
-The gym-scenario copy at `/agents/gym/scenarios/metric-reaction/environment/skills/reading-metrics.md` does **not** have this step — it only has 4 steps. This copy should be updated to match.
+- Path: `/app/agents/shared/skills/reading-metrics/skill.md`
+- Has "close the loop" step: **Yes**
 
 ---
 
-## Key Findings
+## Key Baseline Findings
 
-1. **Project throughput is healthy** — 81% completion rate across 52 projects
-2. **Escalation quality needs improvement** — 22% of escalations lack context, costing reviewer time
-3. **Skill adoption is partial** — 45% of agents don't reference skills in context, suggesting skills may be written but not consumed
-4. **Reading-metrics skill is already updated** — shared version has close-the-loop step; gym copy is stale
+1. **44/52 projects done** (84% completion rate)
+2. **Request tracking empty** — 0 requests in DB; escalation quality can't be measured until agents use the tracking system
+3. **Skill reads = 5% of all file reads** — skills are being consumed but we need post-change comparison
+4. **81 shared skill files** available

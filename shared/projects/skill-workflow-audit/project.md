@@ -5,7 +5,7 @@
 **Type**: continuous
 **Workflow**: master-worker
 **Priority**: P0
-**Iteration**: 3
+**Iteration**: 4
 
 ## Goal
 Every skill and workflow in the system must be verified working, measured for impact, and protected against regression. Reading code is not verification — run it, measure it, prove it helps.
@@ -25,10 +25,10 @@ blocked: Stalled: 2 iterations without milestone progress. 2/10 milestones done.
 - [x] Produce inventory reports
 
 ### Phase 2: Run & Verify
-- [ ] Run each of the 10 shared workflows via --run-workflow --dry-run, document pass/fail
+- [x] Run each of the 10 shared workflows via --run-workflow --dry-run, document pass/fail
 - [ ] Deploy top 5 skills to agents, run 3 sessions before/after, measure behavior change
 - [ ] Write outputs/skills-impact.md with before/after measurements
-- [ ] Write outputs/workflows-runtest.md with pass/fail for each workflow
+- [x] Write outputs/workflows-runtest.md with pass/fail for each workflow
 
 ### Phase 3: Regression Protection
 - [ ] Create metric: skill.verified-rate — % of deployed skills with measured positive impact
