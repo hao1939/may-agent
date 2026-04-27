@@ -2,7 +2,7 @@
 
 **Date**: 2026-04-07
 **Author**: Tech-Lead
-**Status**: IN PROGRESS
+**Status**: COMPLETE (see results.md)
 **Hypothesis**: H-058 P2 — Frustration signature is detectable from tool-call patterns before topology rewrite manifests
 **Tags**: frustration, proxy-satisfying, detection, H-058
 

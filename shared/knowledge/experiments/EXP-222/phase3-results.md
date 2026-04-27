@@ -1,7 +1,16 @@
 # EXP-222 Phase 3: Gym Run Results
 
 **Date**: 2026-08-09
-**Status**: IN-PROGRESS
+**Status**: CLOSED (2026-12-27) — PROMISING-INCONCLUSIVE
+
+## Closing Summary
+
+**Verdict: PROMISING-INCONCLUSIVE** — Closed after 4+ months in Phase 3.
+
+- Selective skills (7 vs 56) on sql-injection: **+20pp pass rate** (60%→80%), **-23% duration** (47s→37s)
+- p=0.50 at N=5 — not significant
+- Other scenarios hit floor (0%) or ceiling (100%) — can't differentiate
+- **Recommendation**: Don't extend this experiment. Instead test selective loading on mid-difficulty scenarios (40-80% baseline), or adopt COSPLAY-style skill contracts (DD#879)
 
 ## Arm A: Control (All Skills, ~56 skills, ~70K tokens)
 
