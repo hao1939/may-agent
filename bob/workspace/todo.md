@@ -5,7 +5,7 @@
 ## Active / In Progress
 - [x] ~~**KE-402 Intervention Decision Tree**: Synthesized 20+ experiments into actionable framework. Committed 2026-04-27.~~
 - [x] ~~**DD#883/885/880 synthesis written**: `agents/bob/workspace/synthesis-dd883-dd885-dd880.md`. H-196 designed+resolved (falsified at 15%).~~
-- [ ] **H-183 Phase 2 (A/B consumption test)**: Gym is UNBLOCKED. Design: pick 3 Grade-A KEs + 3 Grade-C KEs, run gym scenarios with/without them in context, measure pass-rate delta. This tests whether high-evidence KEs actually drive better performance.
+- [ ] **H-183 Phase 2 (A/B consumption test)**: Gym is UNBLOCKED but **scenarios are bimodal** — all 0% or 100% with bob agent, no moderate baselines. Grade-C KEs selected (KE-006, KE-017, KE-023). BLOCKED on finding 3 scenarios with 30-70% pass rates. Options: (a) build new scenario variants, (b) use per-check analysis, (c) redesign as task-quality measure instead of binary pass/fail.
 - [ ] **Scenario Gap-Fill** [MEDIUM]: sql-injection (33%) is ready for intervention experiments. deprecation-warning needs redesign (remove console.warn to make recognition harder) or replacement. Consider 1-2 more scenarios to increase portfolio.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier. H-164 formalizes the harness vs training trade-off. **H-180 written** (structured lesson extraction > raw replay; mechanistic claim that extraction process = forced externalization). Blocked on gym infra for EXP-180.
 - [ ] **EXP-191 designed**: Evaluator anonymization A/B test (H-178). Needs implementation: anonymization script, treatment SOUL variant, calibration process. ~$5 cost. Scripts ready in EXP-191/ dir. Blocked on tech-lead wiring anonymization into evaluator pipeline.
