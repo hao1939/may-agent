@@ -1954,8 +1954,8 @@ function renderFileContent(el, text, path) {
 }
 
 // ── Metrics Tab ───────────────────────────────────────────────────────
-const PINNED_METRICS = ['handler.success-rate', 'handler.worst-failure-count', 'handler.heartbeat-coverage', 'handler.p95-duration', 'handler.fires-per-hour', 'project.active-count', 'project.blocked-over-6h', 'project.iterations-24h', 'project.blocked-rate-7d'];
-const HEALTH_METRICS = ['handler.success-rate', 'handler.heartbeat-coverage', 'handler.p95-duration', 'handler.fires-per-hour', 'project.active-count', 'project.stale-active-count', 'project.iterations-24h', 'project.blocked-rate-7d'];
+const PINNED_METRICS = ['handler.success-rate', 'handler.worst-failure-count', 'handler.heartbeat-coverage', 'handler.p95-duration', 'handler.fires-per-hour', 'project.active-count', 'project.blocked-over-6h', 'project.iterations-24h', 'project.blocked-events-7d'];
+const HEALTH_METRICS = ['handler.success-rate', 'handler.heartbeat-coverage', 'handler.p95-duration', 'handler.fires-per-hour', 'project.active-count', 'project.stale-active-count', 'project.iterations-24h', 'project.blocked-events-7d'];
 
 async function loadMetricsTab() {
   try {
@@ -2023,7 +2023,7 @@ async function loadMetricsTab() {
 }
 
 var HANDLER_METRICS = ['handler.completed-count', 'handler.failed-count', 'handler.success-rate', 'handler.heartbeat-coverage', 'handler.p95-duration', 'handler.fires-per-hour'];
-var PROJECT_METRICS = ['project.active-count', 'project.stale-active-count', 'project.iterations-24h', 'project.blocked-rate-7d'];
+var PROJECT_METRICS = ['project.active-count', 'project.stale-active-count', 'project.iterations-24h', 'project.blocked-events-7d'];
 
 function renderSparklineWithValues(points, threshold, width, height) {
   if (!points || points.length === 0) return '<div style="color:var(--fg2);font-size:12px;height:' + height + 'px;display:flex;align-items:center;justify-content:center">Collecting data...</div>';

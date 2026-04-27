@@ -520,8 +520,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   // ── Browse API: generic file/directory browser for knowledge base ──
   function handleMetrics(_url: URL): Response {
     const db = _db();
-    // Migrate column name (idempotent)
-    try { db.run("ALTER TABLE metrics RENAME COLUMN alert_direction TO alert_op"); } catch {}
     const metrics = db.prepare(`
       SELECT m.id, m.name, m.type, m.owner, m.current, m.target, m.threshold,
              m.unit, m.priority, m.status, m.speed, m.description, m.alert_op,
@@ -600,7 +598,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     ];
     for (const p of candidates) {
       if (existsSync(p))
-        return new Response(readFileSync(p, "utf-8"), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+        return new Response(readFileSync(p, "utf-8"), { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" } });
     }
     return new Response("index.html not found", { status: 404 });
   }
