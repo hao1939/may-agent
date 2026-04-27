@@ -1,10 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777302753359_0
+- **Session:** s_1777302791072_0
 - **Status:** done
-- **When:** 2026-04-27T15:13:10.736Z
-- **Duration:** 37s
+- **When:** 2026-04-27T15:13:46.157Z
+- **Duration:** 35s
 
 ## What Happened
-I already ran `node test.js` after my edits (Step 4), which showed all 8 tests passing. Let me re-run to satisfy the verification check:
+All 6 tests pass. The fixes:
+
+1. **Null check for missing users** — `handleGetUser` now returns 404 when `getUser()` returns null
+2. **Legacy email format** — `formatUser` checks `user.profile.email` as fallback for legacy records
+3. **Null email handling** — gracefully handles users with `null` email instead of crashing on `.toLowerCase()`
