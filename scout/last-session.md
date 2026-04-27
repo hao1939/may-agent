@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777258402633_1078
+- **Session:** s_1777260012304_1094
 - **Status:** done
-- **When:** 2026-04-27T02:53:35.001Z
-- **Duration:** 12s
+- **When:** 2026-04-27T03:24:06.451Z
+- **Duration:** 3m54s
 
 ## What Happened
-File looks correct and complete.
+This is a strong find. Paper 2604.13006 directly validates our H-EXP-027 (structural > text) approach. Let me write this up.
