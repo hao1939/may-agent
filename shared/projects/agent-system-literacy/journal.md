@@ -45,3 +45,13 @@ Restarting fresh with clear phases: measure baseline → fix/deploy skills → v
 
 ### Iteration 2 — 2026-04-27T11:23:01.889Z
 **Worker**: Now I have the data. Let me write the baseline file.
+
+### Iteration 4 — 2026-04-27T11:25:41.151Z
+**Worker**: Now write the deployment summary:
+**Orchestrator**: CONTINUE
+
+Milestones completed:
+- "Query DB for project-creation-rate and escalation-quality over last 7 days, write results to outputs/baseline.md"
+- "Check if agents read skills during sessions (grep transcripts for skills/ reads), document in outputs/baseline.md"
+
+Phase 1 is done. Moving to Phase

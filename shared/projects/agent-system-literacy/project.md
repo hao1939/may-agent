@@ -5,7 +5,7 @@
 **Type**: continuous
 **Workflow**: master-worker
 **Priority**: P1
-**Iteration**: 1
+**Iteration**: 4
 
 ## Goal
 Agents effectively use the infrastructure: create projects from problems, read and react to metrics, escalate with context, cooperate across agents, and close the loop by extending the system when patterns repeat.
@@ -16,13 +16,13 @@ Agents effectively use the infrastructure: create projects from problems, read a
 - gym.literacy-pass-rate: unknown → target 0.80 (gym scenarios testing system usage)
 
 ## Current State
-Iteration 3. Reading-metrics skill verified done. outputs/ dir is EMPTY — baseline.md was never written despite worker claims. Phase 1 must be redone first.
+Iteration 5. Phase 1 complete — baseline.md written with real data (project creation rate, escalation quality, skill read rate). Phase 2 in progress: reading-metrics skill done, skill deployment pending. Worker claimed to deploy skills but no summary written yet.
 
 ## Plan
 
 ### Phase 1: Measure Baseline
-- [ ] Query DB for project-creation-rate and escalation-quality over last 7 days, write results to outputs/baseline.md
-- [ ] Check if agents read skills during sessions (grep transcripts for skills/ reads), document in outputs/baseline.md
+- [x] Query DB for project-creation-rate and escalation-quality over last 7 days, write results to outputs/baseline.md
+- [x] Check if agents read skills during sessions (grep transcripts for skills/ reads), document in outputs/baseline.md
 
 ### Phase 2: Fix & Deploy Skills
 - [x] Update reading-metrics skill: add "close the loop" step (see pattern → write guard/skill/handler)
@@ -43,4 +43,4 @@ Iteration 3. Reading-metrics skill verified done. outputs/ dir is EMPTY — base
 - agents/gym/scenarios/ — gym test infrastructure
 
 **Artifacts:**
-- (none yet — previous iterations produced no usable deliverables)
+- outputs/baseline.md — Phase 1 baseline metrics (project creation, escalation quality, skill reads)
