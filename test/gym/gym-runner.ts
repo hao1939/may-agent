@@ -36,7 +36,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { learnFromSession } from "../../src/lib/context-learn.js";
+import { learnFromSession } from "../../agents/shared/evaluation/context-learn.js";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
