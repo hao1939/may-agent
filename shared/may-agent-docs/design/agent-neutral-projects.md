@@ -38,6 +38,7 @@ What does success look like?
 
 ## Current State
 Where are we now? Gap between here and goal.
+For closed projects: summary of findings, conclusions, and recommended next actions.
 
 ## Context
 Key discoveries and facts accumulated across iterations:
