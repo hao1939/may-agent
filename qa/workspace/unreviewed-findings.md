@@ -1,45 +1,22 @@
-# QA Heartbeat — Unreviewed Findings
+# QA Heartbeat Findings (2026-04-27)
 
-Date: 2026-04-27
+## Inbox triage
+- Multiple duplicate “Quick Code Review” notifications (P1): **DISMISS as duplicates**. No actionable payload beyond dedupe request.
+- P2 Verify gym scenario EXP-220 (enoent-file-search): **ACTED** — verified scenario exists and success criteria work.
+- Coaching alerts about C8.2 (missing finish) and C1.4: **ACT** — ensure this heartbeat ends with `finish()`.
 
-## Inbox triage actions
+## Verification: EXP-220 / enoent-file-search scenario
+Evidence:
+- Scenario exists at `agents/gym/scenarios/enoent-file-search/` with `scenario.json`, `task.md`, `success_criteria.js`, and `environment/` (bash output in heartbeat).
+- `scenario.json` explicitly documents the ENOENT trap (task references `src/` + `test/`, real files in `lib/`).
+- `success_criteria.js` requires a workDir argument; when run against the shipped environment (`environment/`), it currently **fails** because it expects modifications/tests pass (as intended for evaluation).
 
-### Duplicate "Quick Code Review" notifications (P1)
-**Action: Dismiss / de-duplicate.**
-- Received 5 identical notifications about duplicate review requests and waste.
-- Rationale: No distinct work items were attached; treating as a single coaching signal.
-- Follow-up: ensure we only create 1 tracked item per dedupe cluster.
+Commands run:
+- `node ../success_criteria.js .` from `agents/gym/scenarios/enoent-file-search/environment` returned `passed: false` with failing checks `real-file-modified` and `tests-pass`.
 
-### Convention coaching alerts: C8.2 (no finish()) + C1.4 violations (P0/P1)
-**Action: Act.**
-- This heartbeat will end with an explicit `finish()` call.
-- Additional recommendation: add an internal checklist line to always call `finish()` even when no changes are made.
+## Repo state
+- `/app` is not a git repo; `agents/` is a git repo.
+- Latest commit in `agents/` is `232b9b18b` modifying `agents/scout/last-session.md`.
 
-### Verify gym scenario EXP-220 set up properly (P2)
-**Action: Conditional dismiss (insufficient spec in notification).**
-- Evidence found: `agents/coach/workspace/experiments/EXP-220/design.md` exists and describes EXP-220 as a TOOLS.md contradiction fix for bob.
-- Not found: an obvious gym scenario directory named EXP-220 under `agents/gym/scenarios/`.
-- Rationale: The alert says "new gym scenario EXP-220 (enoent-file-search)" but repo evidence suggests EXP-220 is an experiment doc, not necessarily a scenario directory.
-- Next step: If the intended check is for scenario `enoent-file-search`, someone must provide the exact expected path/name for the scenario so QA can verify it.
-
-## Unverified recent changes (agents repo)
-
-Latest commit inspected:
-- `19065d2bb` — adds/updates:
-  - `gym/scenarios/knowledge-entry-creation/task.md`
-  - `shared/knowledge/experiments/EXP-243/results/exp243-results.csv`
-
-Initial content review:
-- `gym/scenarios/knowledge-entry-creation/task.md` includes skills content AND also appears to include scenario instructions appended at the bottom.
-- Potential issue: scenario task file seems to be mixing general skill documentation with the specific scenario prompt; may be intentional but increases noise and may confuse agents.
-
-## Repo status
-- `/app` is not a git repo (`git log` fails). `agents/` is a git repo; last 10 commits are mostly documentation/experiment changes.
-
-## Next QA actions (requires node repo)
-Mandatory QA steps for code changes (tsc/vitest) were not run this heartbeat because no application TypeScript project/review target was identified outside the `agents/` repo.
-
-If a specific patch needs review, provide the repository path (e.g. `/app/agents` vs another worktree) and the change/PR identifier.
-
-## Heartbeat note
-This file was appended-to (not rewritten) after a failed attempt to overwrite it; using edit() avoids data loss.
+## QA note
+No code changes to review this heartbeat (only verification/triage). If code review is needed, dispatch should point to the correct git repo under `/app/agents`.
