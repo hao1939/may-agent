@@ -1,11 +1,11 @@
 # Project: Gym Leverage (Worker-Reviewer)
 
-**Status**: blocked
+**Status**: active
 **Owner**: bob
 **Type**: milestone
 **Workflow**: worker-reviewer
 **Priority**: P1
-**Iteration**: 0
+**Iteration**: 1
 **Health**: —
 
 ## Goal

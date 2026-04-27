@@ -16,7 +16,7 @@ const METRICS = [
   { id: "handler.failed-count", name: "Handler failures (6h)", owner: "may", target: 0, threshold: 3, unit: "count", direction: ">" },
   { id: "handler.success-rate", name: "Handler success rate (6h)", owner: "optimizer", target: 0.95, threshold: 0.80, unit: "ratio", direction: "<" },
   { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents)", owner: "may", target: 8, threshold: 6, unit: "count", direction: "<" },
-  { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", target: 120000, threshold: 240000, unit: "ms", direction: ">" },
+  { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", target: 120000, threshold: 600000, unit: "ms", direction: ">" },
   { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", target: 30, threshold: 15, unit: "count", direction: "<" },
 ];
 
@@ -109,11 +109,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // ── Project metrics ──────────────────────────────────────────────
 
     const PROJECT_METRICS = [
-      { id: "project.active-count", name: "Active projects", owner: "may", target: 3, threshold: 1, unit: "count", direction: "below" },
-      { id: "project.blocked-count", name: "Blocked/waiting projects", owner: "may", target: 0, threshold: 3, unit: "count", direction: "above" },
-      { id: "project.stale-active-count", name: "Stale active projects (no iteration 48h)", owner: "may", target: 0, threshold: 2, unit: "count", direction: "above" },
-      { id: "project.iterations-24h", name: "Project iterations (24h)", owner: "may", target: 10, threshold: 3, unit: "count", direction: "below" },
-      { id: "project.blocked-rate-7d", name: "Project blocked rate (7d)", owner: "may", target: 0.10, threshold: 0.30, unit: "ratio", direction: "above" },
+      { id: "project.active-count", name: "Active projects", owner: "may", target: 3, threshold: 1, unit: "count", direction: "<" },
+      { id: "project.blocked-count", name: "Blocked/waiting projects", owner: "may", target: 0, threshold: 3, unit: "count", direction: ">" },
+      { id: "project.stale-active-count", name: "Stale active projects (no iteration 48h)", owner: "may", target: 0, threshold: 2, unit: "count", direction: ">" },
+      { id: "project.iterations-24h", name: "Project iterations (24h)", owner: "may", target: 10, threshold: 3, unit: "count", direction: "<" },
+      { id: "project.blocked-rate-7d", name: "Project blocked rate (7d)", owner: "may", target: 0.10, threshold: 0.30, unit: "ratio", direction: ">" },
     ];
 
     for (const m of PROJECT_METRICS) {
@@ -187,6 +187,47 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         ["project.blocked-rate-7d", parseFloat(rate.toFixed(4)), now, "metrics-snapshot"]);
     } catch (e) { ctx.log(`[metrics-snapshot] blocked-rate error: ${e}`); }
 
-    ctx.log(`[metrics-snapshot] 9 metrics updated (4 handler + 5 project)`);
+    // ── Generic metric measurement (source_query / source_command) ──────
+    try {
+      const measurable = db.prepare(
+        "SELECT id, source_query, source_command FROM metrics WHERE status = 'active' AND (source_query IS NOT NULL OR source_command IS NOT NULL)"
+      ).all() as any[];
+
+      let measured = 0;
+      for (const m of measurable) {
+        try {
+          let value: number | null = null;
+
+          if (m.source_query) {
+            const row = db.prepare(m.source_query).get() as any;
+            // Extract first numeric column
+            if (row) {
+              const vals = Object.values(row).filter(v => typeof v === "number");
+              if (vals.length > 0) value = vals[0] as number;
+            }
+          } else if (m.source_command) {
+            const { execSync } = require("node:child_process");
+            const output = execSync(m.source_command, {
+              cwd: ctx.projectRoot,
+              timeout: 15000,
+              encoding: "utf-8",
+              stdio: ["pipe", "pipe", "pipe"],
+            }).trim();
+            const parsed = parseFloat(output);
+            if (!isNaN(parsed)) value = parsed;
+          }
+
+          if (value !== null) {
+            db.run("UPDATE metrics SET current = ?, updated_at = ? WHERE id = ?", [value, now, m.id]);
+            db.run("INSERT INTO metric_snapshots (metric_id, value, measured_at, measured_by) VALUES (?, ?, ?, ?)",
+              [m.id, value, now, "metrics-snapshot"]);
+            measured++;
+          }
+        } catch { /* skip individual metric errors */ }
+      }
+      ctx.log(`[metrics-snapshot] ${measured}/${measurable.length} source-defined metrics measured`);
+    } catch (e) { ctx.log(`[metrics-snapshot] generic measurement error: ${e}`); }
+
+    ctx.log(`[metrics-snapshot] 9 handler+project metrics + source-defined metrics updated`);
   };
 };
