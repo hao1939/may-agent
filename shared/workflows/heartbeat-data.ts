@@ -132,13 +132,27 @@ export function loadInbox(ctx: WorkflowContext, agent: string): string {
       LIMIT 20
     `).all(agent, Date.now()) as any[];
     if (!rows.length) return "";
-    // Dedup: collapse notifications with similar content (first 80 chars of summary)
+    // Dedup: collapse notifications with similar content
     const dedupMap = new Map<string, { count: number; newest: any; oldest: any }>();
     for (const r of rows) {
       const dataObj = r.data ? JSON.parse(r.data) : {};
       const summary = dataObj.summary || dataObj.error || dataObj.task || "";
-      // Key on event_type + first 80 chars of summary (normalized)
-      const key = `${r.event_type}:${summary.slice(0, 80).replace(/\s+/g, ' ').trim().toLowerCase()}`;
+      // Normalize: strip redundant priority tags like [P1] [P1], collapse whitespace
+      const normalized = summary
+        .replace(/^(\[P[0-2]\]\s*)+/g, '')  // strip leading priority tags
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+      // Extract topic keywords for better fuzzy matching (strip agent names, timestamps)
+      const topicKey = normalized
+        .replace(/\b(optimizer|coach|tech-lead|bob|scout|may|amy-kimi)\b/g, '')
+        .replace(/\b\d+[hm]\b/g, '')        // strip time references like "43h" "12m"
+        .replace(/\b\d+\/\d+\b/g, '')       // strip fractions like "21/27"
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 100);
+      // Key on event_type + normalized topic (100 chars for better grouping)
+      const key = `${r.event_type}:${topicKey}`;
       const existing = dedupMap.get(key);
       if (existing) {
         existing.count++;
