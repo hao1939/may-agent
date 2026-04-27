@@ -274,6 +274,9 @@ Then provide your decision and guidance for the next iteration.`;
 
       // Update iteration count in project.md
       updateProjectStatus(projectFile, "active", undefined, iteration);
+
+      // Emit iteration event for metrics tracking
+      try { ctx.emit({ type: "emit", event: "project.iteration", data: { project: projectDir, iteration } }); } catch {}
     }
 
     // ── Wrap up ──

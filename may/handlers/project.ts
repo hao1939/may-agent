@@ -32,6 +32,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const projects = ph.scanAllProjects(agentsRoot);
     if (projects.length === 0) return;
 
+    // Sync projects to DB cache
+    try {
+      const db = ctx.getDb();
+      for (const p of projects) ph.upsertProject(db, p);
+    } catch { /* best-effort */ }
+
     // Gather system context
     let breachedMetrics = new Set<string>();
     let runningProjects = new Set<string>();

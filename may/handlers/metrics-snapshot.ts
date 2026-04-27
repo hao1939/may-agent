@@ -91,6 +91,86 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         ["handler.fires-per-hour", fires, now, "metrics-snapshot"]);
     } catch (e) { ctx.log(`[metrics-snapshot] fires-per-hour error: ${e}`); }
 
-    ctx.log(`[metrics-snapshot] 4 metrics updated`);
+    // ── Project metrics ──────────────────────────────────────────────
+
+    const PROJECT_METRICS = [
+      { id: "project.active-count", name: "Active projects", owner: "may", target: 3, threshold: 1, unit: "count" },
+      { id: "project.blocked-count", name: "Blocked/waiting projects", owner: "may", target: 0, threshold: 3, unit: "count" },
+      { id: "project.stale-active-count", name: "Stale active projects (no iteration 48h)", owner: "may", target: 0, threshold: 2, unit: "count" },
+      { id: "project.iterations-24h", name: "Project iterations (24h)", owner: "may", target: 10, threshold: 3, unit: "count" },
+      { id: "project.blocked-rate-7d", name: "Project blocked rate (7d)", owner: "may", target: 0.10, threshold: 0.30, unit: "ratio" },
+    ];
+
+    for (const m of PROJECT_METRICS) {
+      try {
+        db.run(
+          `INSERT OR IGNORE INTO metrics (id, name, owner, current, target, threshold, unit, type, status, speed, created_at)
+           VALUES (?, ?, ?, NULL, ?, ?, ?, 'health', 'active', 'fast', ?)`,
+          [m.id, m.name, m.owner, m.target, m.threshold, m.unit, now]
+        );
+      } catch {}
+    }
+
+    const fortyEightHoursAgo = now - 48 * 3600000;
+    const twentyFourHoursAgo = now - 24 * 3600000;
+    const sevenDaysAgo = now - 7 * 86400000;
+
+    // project.active-count
+    try {
+      const active = (db.prepare("SELECT COUNT(*) as c FROM projects WHERE status = 'active'").get() as any)?.c || 0;
+      db.run("UPDATE metrics SET current = ?, updated_at = ? WHERE id = ?", [active, now, "project.active-count"]);
+      db.run("INSERT INTO metric_snapshots (metric_id, value, measured_at, measured_by) VALUES (?, ?, ?, ?)",
+        ["project.active-count", active, now, "metrics-snapshot"]);
+    } catch (e) { ctx.log(`[metrics-snapshot] active-count error: ${e}`); }
+
+    // project.blocked-count
+    try {
+      const blocked = (db.prepare("SELECT COUNT(*) as c FROM projects WHERE status IN ('blocked', 'waiting')").get() as any)?.c || 0;
+      db.run("UPDATE metrics SET current = ?, updated_at = ? WHERE id = ?", [blocked, now, "project.blocked-count"]);
+      db.run("INSERT INTO metric_snapshots (metric_id, value, measured_at, measured_by) VALUES (?, ?, ?, ?)",
+        ["project.blocked-count", blocked, now, "metrics-snapshot"]);
+    } catch (e) { ctx.log(`[metrics-snapshot] blocked-count error: ${e}`); }
+
+    // project.stale-active-count
+    try {
+      const activeProjects = db.prepare("SELECT id FROM projects WHERE status = 'active'").all() as any[];
+      let stale = 0;
+      for (const p of activeProjects) {
+        const lastIter = db.prepare(
+          "SELECT MAX(timestamp) as t FROM events WHERE event_type = 'project.iteration' AND data LIKE ?"
+        ).get(`%${p.id}%`) as any;
+        if (!lastIter?.t || lastIter.t < fortyEightHoursAgo) stale++;
+      }
+      db.run("UPDATE metrics SET current = ?, updated_at = ? WHERE id = ?", [stale, now, "project.stale-active-count"]);
+      db.run("INSERT INTO metric_snapshots (metric_id, value, measured_at, measured_by) VALUES (?, ?, ?, ?)",
+        ["project.stale-active-count", stale, now, "metrics-snapshot"]);
+    } catch (e) { ctx.log(`[metrics-snapshot] stale-active error: ${e}`); }
+
+    // project.iterations-24h
+    try {
+      const iters = (db.prepare(
+        "SELECT COUNT(*) as c FROM events WHERE event_type = 'project.iteration' AND timestamp > ?"
+      ).get(twentyFourHoursAgo) as any)?.c || 0;
+      db.run("UPDATE metrics SET current = ?, updated_at = ? WHERE id = ?", [iters, now, "project.iterations-24h"]);
+      db.run("INSERT INTO metric_snapshots (metric_id, value, measured_at, measured_by) VALUES (?, ?, ?, ?)",
+        ["project.iterations-24h", iters, now, "metrics-snapshot"]);
+    } catch (e) { ctx.log(`[metrics-snapshot] iterations-24h error: ${e}`); }
+
+    // project.blocked-rate-7d
+    try {
+      const blocked7d = (db.prepare(
+        "SELECT COUNT(*) as c FROM events WHERE event_type = 'project.blocked' AND timestamp > ?"
+      ).get(sevenDaysAgo) as any)?.c || 0;
+      const productive7d = (db.prepare(
+        "SELECT COUNT(*) as c FROM events WHERE event_type IN ('project.iteration', 'project.completed') AND timestamp > ?"
+      ).get(sevenDaysAgo) as any)?.c || 0;
+      const total7d = blocked7d + productive7d;
+      const rate = total7d > 0 ? blocked7d / total7d : 0;
+      db.run("UPDATE metrics SET current = ?, updated_at = ? WHERE id = ?", [parseFloat(rate.toFixed(4)), now, "project.blocked-rate-7d"]);
+      db.run("INSERT INTO metric_snapshots (metric_id, value, measured_at, measured_by) VALUES (?, ?, ?, ?)",
+        ["project.blocked-rate-7d", parseFloat(rate.toFixed(4)), now, "metrics-snapshot"]);
+    } catch (e) { ctx.log(`[metrics-snapshot] blocked-rate error: ${e}`); }
+
+    ctx.log(`[metrics-snapshot] 9 metrics updated (4 handler + 5 project)`);
   };
 };

@@ -983,6 +983,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         continueWithoutProgress++;
       }
 
+      // Emit iteration event for metrics tracking
+      emitProjectEvent(ctx, config, "project.iteration", { iteration });
+
       // Auto-escalate after 5 iterations without milestone progress
       if (continueWithoutProgress >= 5) {
         projectContent = updateField(projectContent, "Status", "blocked");
