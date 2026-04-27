@@ -12,6 +12,7 @@
 
 import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, statSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { shouldBudgetCheckpoint, buildBudgetCheckpointEntry, estimateTurnsUsed, resetBudgetState } from "./budget-checkpoint.js";
 
 export const name: string = "project";
 
@@ -909,6 +910,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }
     writeFileSync(config.projectPath, projectContent, "utf-8");
 
+    // ── Budget checkpoint: auto-save before hitting turn limit ──
+    if (shouldBudgetCheckpoint(config.projectDir, iteration, config.reviewEvery)) {
+      const turnsEst = estimateTurnsUsed(iteration, iteration % config.reviewEvery === 0);
+      const cpEntry = buildBudgetCheckpointEntry(iteration, turnsEst);
+      if (config.isLegacy) {
+        projectContent = appendToSection(projectContent, "Progress Log", cpEntry);
+        writeFileSync(config.projectPath, projectContent, "utf-8");
+      } else {
+        appendFileSync(config.journalPath, cpEntry);
+      }
+      ctx.emit({ type: "budget_checkpoint", iteration, turnsEstimate: turnsEst });
+      ctx.log(`[project] Budget checkpoint at iteration ${iteration} (~${turnsEst} turns)`);
+      // Update status so if workflow is killed, the state reflects progress
+      projectContent = updateField(projectContent, "Status", "paused");
+      projectContent = updateSection(projectContent, "Current State",
+        `Paused: budget checkpoint at iteration ${iteration}. ~${turnsEst}/${60} turns used. Resume to continue.`);
+      writeFileSync(config.projectPath, projectContent, "utf-8");
+      return ctx.done(`Budget checkpoint at iteration ${iteration} — saved progress before turn limit.`);
+    }
 
     // ── Reviewer phase ───────────────────────────────────────────
     if (iteration % config.reviewEvery === 0) {
