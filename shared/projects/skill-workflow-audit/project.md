@@ -15,7 +15,7 @@ Inventory done but nothing actually tested. Key finding from inventory: 77% of s
 
 Next: run workflows on test projects, deploy top skills and measure before/after behavior change.
 
-## TODO
+## Plan
 
 ### Phase 1: Inventory
 - [x] Read-audit all 53 shared skills and 29 workflows
