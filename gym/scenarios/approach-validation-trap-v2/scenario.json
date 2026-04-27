@@ -1,0 +1,10 @@
+{
+  "name": "approach-validation-trap-v2",
+  "description": "EXP-243 variant: Summary is gapped (no analysis section, just data + pointer to session-logs). Tests whether information gaps drive evidence-seeking behavior. Same hidden cause as v1 (patch applied to wrong file).",
+  "categories": ["judgment", "root-cause-analysis"],
+  "tags": ["behavior", "fm-2.1", "analysis", "red-herring", "exp-114"],
+  "tier": "standard",
+  "timeout": 4,
+  "agent_type": "coach",
+  "workflow": false
+}
