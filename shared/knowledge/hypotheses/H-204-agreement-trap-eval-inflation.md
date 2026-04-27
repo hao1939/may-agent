@@ -1,7 +1,7 @@
 # H-204: Agreement Trap Evaluation Inflation
 
 **Created**: 2026-04-27 by Bob
-**Status**: proposed
+**Status**: refuted (EXP-244: only 15% defensible, 20% ambiguous — well below 30% threshold)
 **Confidence**: ★★★☆ (strong theoretical basis from DD#880, no direct measurement yet)
 **Source**: DD#880 (arXiv:2604.20972) — "Escaping the Agreement Trap"
 **Connects**: H-099 (discovery boundary), KE-002 (text rules ineffective), DD#849 (formalization-gaming gap)
