@@ -42,3 +42,6 @@ Restarting fresh with clear phases: measure baseline → fix/deploy skills → v
 **(b)** This is attempt #3 at getting this file written. No more "it already exists" claims — I've verified the directory is empty.
 
 **(c)** First step: Run these DB queries, then write results to `/app/agent
+
+### Iteration 2 — 2026-04-27T11:23:01.889Z
+**Worker**: Now I have the data. Let me write the baseline file.
