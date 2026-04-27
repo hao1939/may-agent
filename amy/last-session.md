@@ -1,14 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777302791072_0
+- **Session:** s_1777302826506_0
 - **Status:** done
-- **When:** 2026-04-27T15:13:46.157Z
-- **Duration:** 35s
+- **When:** 2026-04-27T15:15:32.904Z
+- **Duration:** 1m46s
 
 ## What Happened
-All 6 tests pass. The fixes:
-
-1. **Null check for missing users** — `handleGetUser` now returns 404 when `getUser()` returns null
-2. **Legacy email format** — `formatUser` checks `user.profile.email` as fallback for legacy records
-3. **Null email handling** — gracefully handles users with `null` email instead of crashing on `.toLowerCase()`
+Now create the new KE-071 entry:
