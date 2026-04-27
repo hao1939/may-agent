@@ -31,12 +31,11 @@ No code changes verified this heartbeat beyond confirming the gym scenario files
 - Change scope: docs-only (`.state/knowledge/*`, `.state/hypotheses/*`).
 - Read:
   - `.state/knowledge/counterfactual-evidence-check-protocol.md` — counterfactual removal + alternative explanation checklist; content is consistent and actionable.
-  - `.state/hypotheses/h-exp-043-checkpoint-context-compression.md` — hypothesis draft, design-phase.
 
-### Tooling verification notes
-- `./node_modules/.bin/tsc --noEmit` at repo root: **FAIL** (no root tsconfig; tsc prints help, exit code 1).
-- `./node_modules/.bin/tsc --noEmit -p agents/tsconfig.json`: **PASS**.
-- `./node_modules/.bin/vitest --run`: **FAIL** (`vitest` binary missing; exit code 127). Repo appears not to include vitest.
+### Tooling verification notes (this heartbeat)
+- `./node_modules/.bin/tsc --noEmit`: **FAIL** — no `tsconfig.json` at repo root; tsc printed help and exited code 1.
+- `./node_modules/.bin/tsc -p . --noEmit`: **FAIL** — TS5057 cannot find `tsconfig.json` in `.`.
+- `./node_modules/.bin/vitest --run`: **FAIL** — `./node_modules/.bin/vitest` not found (exit code 127). `package.json` only lists `typescript`.
 
 ### Recommendation
-Align the mandatory QA command list with actual repo tooling (either add vitest dependency + config, or update QA SOP for this repo to run the correct test command).
+Either add repo-level TS config + a test runner (vitest), or update QA SOP for this repo to run the appropriate equivalent commands.
