@@ -1,26 +1,15 @@
-# Unreviewed Findings (QA Heartbeat)
+# Unreviewed findings (qa heartbeat)
 
 Date: 2026-04-26
 
 ## Context
-Recent commits are almost entirely documentation/state updates. Latest commit:
-- 739d9b7 — `.state/experiments/EXP-236-judgment-evidence-discovery.md`
+Main repo update `96ef54c` points to agents submodule update `821e2a982` which removed ~36 files under `agents/may/handlers/` ("dead handler cleanup"). Current `agents/may/handlers/` directory now contains only a small subset of handler files.
 
 ## Findings
-1) **Tooling gap: repository lacks Vitest install** (IMPORTANT)
-   - `./node_modules/.bin/vitest --run` fails: `No such file or directory` (exit 127).
-   - `node_modules/.bin` only contains `tsc` and `tsserver`.
-   - This blocks the mandatory QA test step and reduces confidence in changes.
+- The commit message claims deletion of `may/handlers/repo-gate-check.ts` (and many other handlers). Attempting to `read()` that path now returns ENOENT, consistent with deletion.
+- This is potentially high-risk if any of the deleted handlers are still referenced by scheduler/dispatcher code; a missing import would manifest as runtime failures rather than compile-time failures depending on dynamic loading.
 
-2) **TypeScript project configuration missing / not configured at repo root** (IMPORTANT)
-   - `./node_modules/.bin/tsc --noEmit` prints help and exits 1, indicating no `tsconfig.json` (or no project in root).
-   - This prevents meaningful typechecking at repo root.
-
-3) **Doc accuracy issue in EXP-236** (MINOR)
-   - File header date is `2026-04-26` but later section says `Phase 2: Variant Scenarios Created (2026-05-04)`.
-   - Might be intentional (retroactive update), but reads inconsistent.
-
-## Evidence
-- `tsc --noEmit` produced help output and exited code 1.
-- `vitest --run` missing binary, exit code 127.
-- `read(.state/experiments/EXP-236-judgment-evidence-discovery.md)` confirms the date mismatch.
+## Next verification steps (recommended)
+1. Run `./node_modules/.bin/tsc --noEmit` in repo root to ensure no broken imports.
+2. Run `./node_modules/.bin/vitest --run` to ensure tests covering dispatch/scheduling still pass.
+3. Search for references to removed handler basenames (e.g., `repo-gate-check`, `watchdog`, `system-status`) in remaining code to ensure no runtime dynamic lookup.

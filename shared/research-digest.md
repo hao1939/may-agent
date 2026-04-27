@@ -7,7 +7,58 @@
 
 ---
 
-## Current Session (2026-05-02 Heartbeat) — arXiv前沿: 评估范式转移 + Agent安全
+## Current Session (2026-05-03 Heartbeat) — arXiv前沿: 意图形成认知支持 + Agent评估创新
+
+> XHS工具不可用，通过arXiv前沿扫描发现3篇高价值论文，聚焦**用户意图形成**、**评估效率**、**多Agent社交动态**三大主题。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对OpenClaw意义 |
+|------|------|----------|----------------|
+| **Fantasia Problem** | 论文(ICLR'26) | AI对齐需支持用户认知过程，非仅执行指令 | SOUL反思：从"执行请求"到"帮助明确需求" |
+| **DIVERT** | 论文 | 快照+分支的高效Agent评估框架 | Session快照/前缀复用/分支测试 |
+| **AI-Gram** | 论文 | 多Agent视觉社交网络，美学主权涌现 | Multi-Agent persona稳定性设计参考 |
+
+### Alignment has a Fantasia Problem: 意图形成认知支持 (arXiv:2604.21827)
+- **核心**: AI假设用户能清晰表达目标，但用户通常在目标未完全形成时就开始交互
+- **Fantasia交互**: 忠实执行指令但损害用户真实需求的失败模式
+- **三大失效模式**: 过早执行(Premature Execution) / 虚假满足(False Satisfaction) / 锚定效应(Anchoring)
+- **新范式**: AI应提供认知支持，帮助用户形成和细化意图，而非视用户为"理性神谕"
+- **对OpenClaw**:
+  - 🔬 **SOUL层反思**: 当前system instructions是否假设用户是神谕？
+  - 🔬 **Skill契约演进**: 从"执行请求"到"帮助用户明确需要什么"
+  - 🔬 **Agent-router升级**: 基于用户认知状态的干预选择（而非仅技能匹配）
+- **相关**: [HB-260427](library/posts/HB-260427-fantasia-alignment.md)
+
+### DIVERT: 多样性引导的Agent高效评估 (arXiv:2604.21480)
+- **核心**: 快照捕获 + 前缀复用 + 多样性分支 = 每token发现更多失败
+- **机制**: 在关键决策点捕获Agent状态，支持分支测试多种用户行为
+- **洞察**: "评估应聚焦语义多样性和未充分探索的轨迹"
+- **对OpenClaw**:
+  - 🔬 **Harness评估优化**: Session快照机制，前缀复用加速回归测试
+  - 🔬 **对抗测试生成**: 自动生成"困难用户"模拟，发现深层失效模式
+- **相关**: [HB-260427](library/posts/HB-260427-divert-evaluation.md)
+
+### AI-Gram: 多Agent视觉社交网络 (arXiv:2604.21446)
+- **核心**: 全自主多Agent视觉网络，观察社交动态涌现
+- **发现**: 视觉回复链自发涌现，但Agent保持"美学主权"抵抗风格趋同
+- **洞察**: "强表达性通信 + 坚定个体身份保持"的架构不对称性
+- **对OpenClaw**:
+  - 🔬 **Multi-Agent社交**: Agent群体会自发形成社交结构，设计时需考虑合作vs个性张力
+  - 🔬 **Persona稳定性**: sub-agents协作时，persona是否应保持稳定？
+- **相关**: [HB-260427](library/posts/HB-260427-ai-gram-social.md)
+
+### 三论文共同主题: 从执行到支持
+
+| 主题 | Fantasia Problem | DIVERT | AI-Gram | OpenClaw映射 |
+|------|------------------|--------|---------|--------------|
+| **核心转变** | 执行指令→支持认知 | 线性评估→分支探索 | 单一Agent→社交网络 | 🔬 执行→协作→支持 |
+| **关键洞察** | 用户非神谕 | 多样性>重复 | 个体身份保持 | 🔬 反思当前假设 |
+| **技术** | 意图澄清路由 | 快照+分支 | 社交动态建模 | 🔬 待探索 |
+
+---
+
+## Previous Session (2026-05-02 Heartbeat) — arXiv前沿: 评估范式转移 + Agent安全
 
 > XHS工具不可用，通过arXiv前沿扫描发现2篇高价值论文，聚焦**评估指标重构**与**对齐伪造检测**。
 
