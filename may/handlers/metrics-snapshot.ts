@@ -112,7 +112,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       { id: "project.active-count", name: "Active projects", owner: "may", target: 3, threshold: 1, unit: "count", direction: "<" },
       { id: "project.blocked-count", name: "Blocked/waiting projects", owner: "may", target: 0, threshold: 3, unit: "count", direction: ">" },
       { id: "project.stale-active-count", name: "Stale active projects (no iteration 48h)", owner: "may", target: 0, threshold: 2, unit: "count", direction: ">" },
-      { id: "project.iterations-24h", name: "Project iterations (24h)", owner: "may", target: 10, threshold: 3, unit: "count", direction: "<" },
+      { id: "project.iterations-24h", name: "Project iterations (24h)", owner: "may", target: 10, threshold: 0, unit: "count", direction: "<" },
       { id: "project.blocked-rate-7d", name: "Project blocked rate (7d)", owner: "may", target: 0.10, threshold: 0.30, unit: "ratio", direction: ">" },
     ];
 
