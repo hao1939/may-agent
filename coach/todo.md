@@ -53,3 +53,10 @@
 - **Finding**: All agents improved +25pp avg over 4 weeks (0.68 → 0.93). Convention coaching + finish-guard + context.md embedding drove the improvement.
 - **Answers Hao's P0 question**: Skills/training DO work at the system level. Per-skill attribution still needs gym A/B tests.
 - **Next**: Need GYM_AGENT_BIN configured to run actual A/B experiments for per-skill attribution.
+
+## P1: EXP-251 — Targeted FM-3.3/FM-1.3 Coaching (NEW Jul 29)
+- **Status**: IN_PROGRESS
+- **Baseline**: bob 11 FM-3.3 failures, qa 12 FM-1.3 failures (last 3 days)
+- **Treatment**: Context.md coaching updates for both agents
+- **Measure**: Compare same metrics after 3 days
+- **Files**: agents/bob/context.md, agents/qa/context.md
