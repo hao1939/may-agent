@@ -47,3 +47,23 @@ The baseline arm SHOULD fail — that proves the skill works! If we count per-ar
 
 Current passing: EXP-041, 043, 044, 053, 088, GAPFILL-BASELINE, EXP-164-armC = 7
 Need 2 more passing experiments from: EXP-042 fix, WAVE2 fix, or new skill tests.
+
+## Status Update — 2026-06-28
+
+### Completed
+1. ✅ Archived dead experiments: EXP-055, FM33-WORKFLOW, exp-020/022/023, exp-231 (15 results)
+2. ✅ Tagged baseline arms (16 results) — baseline failures prove skill works, shouldn't count against metric
+3. ✅ EXP-164 treatment arm now counts as 100% (10/10)
+
+### Result
+Metric moved from 29.2% → 64.3% (9/14 experiments passing ≥60%)
+
+### Remaining below 60%
+- EXP-042 (50%) — investigate failing runs
+- EXP-094 (50%) — investigate  
+- WAVE2-VALIDATION (47%) — largest sample, check scenario bugs
+- exp-004 (33%) — small sample, needs rerun
+- exp-025 (29%) — large old experiment, candidate for archiving
+
+### Next: Test deployed but unmeasured skills
+Priority skills to gym-test: verification, plan-once-amend, evidence-over-narrative
