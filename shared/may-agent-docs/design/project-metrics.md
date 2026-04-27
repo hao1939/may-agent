@@ -29,9 +29,9 @@ The project system should self-drive work. Metrics tell us if it's actually doin
 - **What**: Number of project iterations in the last 24h
 - **Source**: events table — `COUNT(*) WHERE event_type = 'project.iteration' AND timestamp > 24h ago`
 - **Target**: 10
-- **Threshold**: 3
+- **Threshold**: 3 (catches 'completely dead', not 'slow day')
 - **Owner**: may
-- **Why**: Measures system throughput. Are workflows actually running and making progress?
+- **Why**: Measures system throughput. Threshold is intentionally low — the system may pause overnight.
 
 ### `project.blocked-rate-7d`
 - **What**: % of project events that are blocks/escalations vs completions in last 7d
@@ -40,6 +40,14 @@ The project system should self-drive work. Metrics tell us if it's actually doin
 - **Threshold**: 0.30 (30% = something is systematically wrong)
 - **Owner**: may
 - **Why**: High block rate means the workflow is failing frequently. We saw this with the stall detector and false completions.
+
+### `project.stale-active-count`
+- **What**: Number of projects with status=active but no iteration event in 48h+
+- **Source**: cross-reference filesystem (active projects) with events table (last project.iteration per project)
+- **Target**: 0
+- **Threshold**: 2
+- **Owner**: may
+- **Why**: The #1 failure mode — projects marked active but nobody is working on them. More actionable than active-count because it points to specific broken projects.
 
 ## Metrics NOT included (and why)
 
