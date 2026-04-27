@@ -792,3 +792,23 @@ H-054 P(H) updated to 0.65 (from 0.50). Phase 2 (inter-rater reliability measure
 - Await tech-lead response on gym runner --task-file fix
 - Once fixed: re-baseline Core 20, then Cycle 2 targeting Verification (0/2)
 - Alternative: design experiments that don't require gym runs
+
+## 2026-11-15 Heartbeat
+
+### Context Matcher Tool Built
+- Implemented `agents/tools/context-matcher/match.js` — the tool designed in EXP-235 but never persisted
+- Keyword-based context selector: given agent + task, outputs only relevant context sections and skills
+- Tested on coder with 4 task types: bug fix (56% reduction), delete (75%), review (74%), security (64%)
+- Average ~67% token reduction, consistent with EXP-235's validated 71%
+- Ready for infra integration — May would call this during session initialization
+
+### Status Check
+- All 28 hypotheses: RESOLVED
+- All 21 experiments: CLOSED
+- Gym: still blocked on GYM_AGENT_BIN
+- Projects: all waiting on human review
+- Metrics: healthy (95.9% exp completion, 63.6% hypotheses resolved)
+
+### Next
+- Propose context-matcher integration to May (needs changes to session init)
+- New hypothesis ideas: (1) measure whether reduced context actually improves task accuracy, (2) extend matcher to other agents beyond coder
