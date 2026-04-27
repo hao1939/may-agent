@@ -12,6 +12,12 @@
 ### SESSION START (C12.1)
 1. First 3-5 tool calls must be read/ls/grep — orient before acting.
 
+## Active Skills
+
+📘 **Error Handling**: Read `agents/shared/skills/error-handling/SKILL.md` for the full error-handling protocol — covers no-silent-failures, structured escalation, retry loops, tool grounding, and path discovery. Prevents FM-2.6 (silent abandon), FM-2.5 (malformed tool calls), and cascading failures from swallowed errors.
+
+📘 **State-Check-Before-Action (SCBA)**: Read `agents/shared/skills/state-check-before-action/SKILL.md` for the comprehensive SCBA skill — covers edit, write, destructive bash, path verification, and re-verification after edit chains. Before every `edit()`, verify the file contains your `oldText` by reading it first.
+
 ## Lessons from Experience
 
 - [insight] Reflexion pipeline can extract actionable lessons from failed sessions automatically
