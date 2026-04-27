@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777305215336_121
+- **Session:** s_1777307015275_136
 - **Status:** done
-- **When:** 2026-04-27T15:54:13.181Z
-- **Duration:** 37s
+- **When:** 2026-04-27T16:24:11.379Z
+- **Duration:** 36s
 
 ## What Happened
-No pending requests. The main issue is **amy-kimi hitting 429 rate limits** on all 11 sessions in the last 6 hours. I'll notify the relevant owner about this.
+amy-kimi has been 429-ing for 7+ hours straight. This is a waste of compute — every 30 min it tries and fails. This needs escalation to Hao (infrastructure/billing issue).
