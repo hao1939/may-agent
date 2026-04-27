@@ -224,3 +224,67 @@ ${metrics}
 ---
 `;
 }
+
+/**
+ * Generic heartbeat workflow executor.
+ *
+ * All agent heartbeats are identical except for the agent name.
+ * This function contains the shared logic so each agent's heartbeat
+ * file can be a thin 5-line wrapper.
+ *
+ * Usage in agent heartbeat files:
+ *   import { genericHeartbeat } from "../../shared/workflows/heartbeat-data.js";
+ *   export const name = "bob-heartbeat";
+ *   export const description = "bob's heartbeat.";
+ *   export const execute = (ctx: WorkflowContext) => genericHeartbeat(ctx, "bob");
+ */
+export async function genericHeartbeat(ctx: WorkflowContext, agent: string): Promise<WorkflowResult> {
+  const metrics = loadMetrics(ctx, agent);
+  const metricsBlock = formatMetricsBlock(ctx, agent);
+  const projects = loadProjects(ctx, agent);
+  const alerts = loadAlerts(ctx, agent);
+  const guidance = loadHeartbeatMd(ctx, agent);
+  const inbox = loadInbox(ctx, agent);
+
+  // ── RED METRIC GATE (JS — no LLM cost) ──────────────────────
+  const hasRedMetrics = metrics.includes("⚠️ BELOW TARGET");
+  let redMetricDiagnostics = "";
+
+  if (hasRedMetrics) {
+    ctx.emit({ type: "red_metric_gate_start", step: "metrics" });
+    redMetricDiagnostics = runRedMetricCommands(ctx, agent);
+    ctx.emit({ type: "red_metric_gate_done", step: "metrics", summary: redMetricDiagnostics ? "JS diagnostics collected" : "no commands to run" });
+  }
+
+  // ── MAIN HEARTBEAT ─────────────────────────────────────────
+  const redMetricContext = redMetricDiagnostics ? `
+${redMetricDiagnostics}
+
+**Review the diagnostic results above.** For each red metric, decide: fix it, escalate it, or defer with a concrete reason.
+` : "";
+
+  const prompt = `You are **${agent}** waking up for your heartbeat.
+
+${metricsBlock}
+${redMetricContext}
+## Active Alerts
+${alerts || "None — all clear."}
+
+## Pending Events (inbox)
+${inbox || "No pending events."}
+For each: act, delegate, dismiss (with reason), or escalate.
+
+## Your Projects
+${projects || "No active projects."}
+
+## Your Role & Guidance
+${guidance}
+
+---
+
+${redMetricDiagnostics ? "Red metric diagnostics are above — address each one, then proceed with normal heartbeat work." : "Review your metrics, check your projects, do your job. Act on what matters."} Commit and finish.`;
+
+  ctx.emit({ type: "step_start", step: "heartbeat" });
+  const result = await ctx.runAgent(agent, prompt);
+  return ctx.done(ctx.summarize(result, { maxLength: 500 }));
+}
