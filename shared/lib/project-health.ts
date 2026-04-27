@@ -323,3 +323,39 @@ export function simpleHash(str: string): string {
   if (!str) return "";
   return createHash("md5").update(str).digest("hex").slice(0, 8);
 }
+
+// ── DB sync ──────────────────────────────────────────────────────────────
+
+/** Sync a scanned project to the projects table (DB cache of project.md). */
+export function upsertProject(db: any, project: ProjectInfo): void {
+  const name = extractField(project.content, "Project") ||
+    project.relPath.split("/").pop() || project.relPath;
+  const type = extractField(project.content, "Type").toLowerCase() || "milestone";
+  const workflow = project.workflow || "project";
+  const iteration = parseInt(extractField(project.content, "Iteration") || "0", 10);
+  const priority = extractField(project.content, "Priority") || "";
+  const id = project.relPath.split("/").pop() || project.relPath;
+
+  // Count milestones
+  const lines = project.content.split("\n").filter(l => /^\s*-\s*\[/.test(l));
+  const done = lines.filter(l => /\[x\]/i.test(l)).length;
+  const total = lines.length;
+
+  // Use file mtime for updated_at
+  let mtime = Date.now();
+  try { mtime = statSync(project.projectFile).mtimeMs; } catch {}
+
+  try {
+    db.run(
+      `INSERT INTO projects (id, path, name, owner, status, type, workflow, iteration, priority, milestones_done, milestones_total, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         path=excluded.path, name=excluded.name, owner=excluded.owner,
+         status=excluded.status, type=excluded.type, workflow=excluded.workflow,
+         iteration=excluded.iteration, priority=excluded.priority,
+         milestones_done=excluded.milestones_done, milestones_total=excluded.milestones_total,
+         updated_at=excluded.updated_at`,
+      [id, project.relPath, name, project.owner, project.status, type, workflow, iteration, priority, done, total, mtime]
+    );
+  } catch { /* best-effort */ }
+}
