@@ -96,3 +96,12 @@ Good — `outputs/workflows-runtest.md` exists with 37 lines and real execution 
 
 ### Iteration 6 — 2026-04-27T11:23:43.642Z
 **Worker**: 
+
+### Iteration 7 — 2026-04-27T11:27:33.840Z
+**Worker**: No uncommitted changes left (only untracked files).
+**Orchestrator**: CONTINUE
+
+**Milestone completed: "Write outputs/skills-impact.md with before/after measurements"** (94 lines, substantive analysis)
+**Milestone completed: "Add gym scenario that tests skill delivery"** (scenario created at `agents/gym/scenarios/skill-delivery-obstacle-pivot/`)
+
+That's 8/10 done. Rem
