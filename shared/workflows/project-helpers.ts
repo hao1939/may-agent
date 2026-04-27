@@ -42,10 +42,24 @@ export function extractMilestones(content: string): MilestoneState {
 export function checkOffMilestones(content: string, reviewerText: string): string {
   const completedKeys: string[] = [];
   const completionPatterns = [
-    /(?:milestone completed|completed milestone|milestone done)[:\s]+["']?(.+?)["']?$/gim,
+    /(?:milestone completed|completed milestone|milestone done|done)[:\s]+["']?(.+?)["']?$/gim,
     /✅\s*["']?(.+?)["']?$/gm,
     /\[x\]\s*(.+)$/gm,
+    /\*\*M\d+[:\s]+Done/gim,  // "**M1: Done" — extract milestone by matching against plan
   ];
+  // Also match "M1: Done", "M2: Complete" etc by number → milestone index
+  const indexPatterns = [...reviewerText.matchAll(/\bM(\d+)[:\s]*(?:done|complete|finished|verified)/gim)];
+  if (indexPatterns.length > 0) {
+    // Get milestone texts by index from content
+    const planLines = content.split("\n").filter(l => /^\s*-\s*\[/.test(l));
+    for (const m of indexPatterns) {
+      const idx = parseInt(m[1], 10) - 1;
+      if (idx >= 0 && idx < planLines.length) {
+        const text = planLines[idx].replace(/^\s*-\s*\[[ x]\]\s*/i, "").trim();
+        completedKeys.push(text.slice(0, 30).toLowerCase());
+      }
+    }
+  }
   for (const pat of completionPatterns) {
     for (const m of reviewerText.matchAll(pat)) {
       completedKeys.push(m[1].trim().slice(0, 30).toLowerCase());

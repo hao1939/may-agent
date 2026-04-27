@@ -1,7 +1,6 @@
 # Project: Agent System Literacy
 
-**Status**: blocked
-**Stop Reason**: Stalled: 2 iterations without milestone progress. 0/8 milestones done.
+**Status**: active
 **Owner**: bob
 **Type**: continuous
 **Workflow**: master-worker
@@ -17,7 +16,7 @@ Agents effectively use the infrastructure: create projects from problems, read a
 - gym.literacy-pass-rate: unknown → target 0.80 (gym scenarios testing system usage)
 
 ## Current State
-blocked: Stalled: 2 iterations without milestone progress. 0/8 milestones done.
+Iteration 1 measured baseline. Iteration 2 verified deliverables exist. Unblocked — continuing Phase 2.
 
 ## Plan
 
