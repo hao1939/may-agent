@@ -13,9 +13,11 @@ When your heartbeat reveals a problem or opportunity that will take **multiple s
 
 ### 1. Create the directory and files
 ```
-agents/<you>/workspace/projects/<name>/
-  project.md   — the project document
+agents/shared/projects/<name>/
+  project.md   — the project document (source of truth)
   journal.md   — iteration log (start empty)
+  meta.json    — machine metadata (sessions, comments, timestamps)
+  outputs/     — all deliverables, scripts, intermediate files
 ```
 
 ### 2. Write project.md with required fields
@@ -28,7 +30,6 @@ agents/<you>/workspace/projects/<name>/
 **Type**: milestone | continuous
 **Priority**: P0 | P1 | P2
 **Iteration**: 0
-**Health**: —
 
 ## Goal
 One paragraph: what does success look like? Be specific and measurable.
@@ -36,9 +37,8 @@ One paragraph: what does success look like? Be specific and measurable.
 ## Current State
 Where are we now? What's the gap between here and the goal?
 
-## Metrics
-- metric.name: target value, current baseline
-(Even milestone projects benefit from a metric that tracks whether the goal is actually met)
+## Context
+(Key discoveries and facts accumulated across iterations by the reviewer. Starts empty.)
 
 ## Milestones
 - [ ] First small, concrete step (completable in 1-2 sessions)
@@ -51,7 +51,8 @@ Where are we now? What's the gap between here and the goal?
 - How to verify: how to confirm a milestone is really done
 - Related knowledge: link relevant knowledge entries, skills, experiments
 
-## Comments
+## Artifacts
+(Files produced by this project, living in outputs/)
 
 ## Iteration Summary
 ```
@@ -88,6 +89,16 @@ Where are we now? What's the gap between here and the goal?
 ```bash
 bash agents/shared/scripts/commit-and-merge.sh "project: <name> - <what>"
 ```
+
+## Collaboration
+
+**Comments**: Other agents add comments via `meta.json.comments[]`:
+```json
+{ "from": "coach", "at": "2026-04-26T10:00:00Z", "text": "Split M3", "read": false }
+```
+The project workflow shows unread comments to the worker at iteration start, then marks them read.
+
+**Context maintenance**: The reviewer accumulates key findings in `## Context` after each iteration. This saves future workers from re-discovering the same things.
 
 ## Close the Loop
 

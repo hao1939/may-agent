@@ -145,6 +145,7 @@ function appendToSection(content: string, heading: string, line: string): string
 
 function createProjectDir(config: PersistentTaskConfig): void {
   ensureDir(config.projectDir);
+  ensureDir(join(config.projectDir, "outputs"));
   const now = new Date().toISOString();
   const projectContent = `# Project: ${config.goal}
 
@@ -152,9 +153,7 @@ function createProjectDir(config: PersistentTaskConfig): void {
 **Owner**: ${config.owner}
 **Worker**: ${config.worker}
 **Priority**: P1
-**Started**: ${now}
 **Iteration**: 0
-**Health**: —
 
 ## Goal
 ${config.goal}
@@ -162,21 +161,23 @@ ${config.goal}
 ## Current State
 Not started.
 
-## Metrics
+## Context
+(Key discoveries and facts will be accumulated here by the reviewer across iterations.)
 
 ## Milestones
 - [ ] Define success criteria and first milestone
 
 ## Resources
 
-## Process Notes
-
-## Comments
+## Artifacts
 
 ## Iteration Summary
 `;
   writeFileSync(config.projectPath, projectContent, "utf-8");
   writeFileSync(config.journalPath, `# Journal\n\n`, "utf-8");
+  // Initialize meta.json
+  const meta = { created: now, lastActivity: now, sessions: [] as string[], comments: [] as any[], relatedExperiments: [] as string[], relatedKnowledge: [] as string[], relatedProjects: [] as string[], metricsHistory: [] as any[] };
+  writeFileSync(join(config.projectDir, "meta.json"), JSON.stringify(meta, null, 2), "utf-8");
 }
 
 function parseProjectState(content: string): ProjectState {
@@ -230,6 +231,26 @@ function checkOffMilestones(content: string, reviewerText: string): string {
 
 function extractComments(content: string): string {
   return extractSection(content, "Comments");
+}
+
+/** Get unread comments from meta.json */
+function getUnreadComments(projectDir: string): string {
+  try {
+    const metaPath = join(projectDir, "meta.json");
+    if (!existsSync(metaPath)) return "";
+    const meta = JSON.parse(readFileSync(metaPath, "utf-8"));
+    const unread = (meta.comments || []).filter((c: any) => !c.read);
+    if (unread.length === 0) return "";
+    return unread.map((c: any) => `[${c.from}] ${c.text}`).join("\n");
+  } catch { return ""; }
+}
+
+/** Check both legacy Comments section and meta.json for pending comments */
+function getPendingComments(projectContent: string, projectDir: string): string {
+  const legacyComments = extractComments(projectContent);
+  const metaComments = getUnreadComments(projectDir);
+  const parts = [legacyComments, metaComments].filter(Boolean);
+  return parts.join("\n");
 }
 
 function parseFeatures(content: string): Set<string> {
@@ -291,40 +312,65 @@ function buildWorkerPrompt(
   const ms = extractMilestones(projectContent);
   const nextMilestone = ms.pending.length > 0 ? ms.pending[0] : null;
   const currentState = extractSection(projectContent, "Current State") || null;
+  const context = extractSection(projectContent, "Context") || null;
   const recentEntries = getRecentJournalEntries(journalContent, iteration, 3);
   const features = parseFeatures(projectContent);
   const focused = features.has("focused-context");
   const processNotes = extractSection(projectContent, "Process Notes");
+  const projectDir = dirname(projectPath);
+  const outputsDir = join(projectDir, "outputs");
+
+  // Read unread comments from meta.json
+  let unreadComments = "";
+  try {
+    const metaPath = join(projectDir, "meta.json");
+    if (existsSync(metaPath)) {
+      const meta = JSON.parse(readFileSync(metaPath, "utf-8"));
+      const unread = (meta.comments || []).filter((c: any) => !c.read);
+      if (unread.length > 0) {
+        unreadComments = unread.map((c: any) => `- **${c.from}** (${c.at?.slice(0, 10) || "?"}): ${c.text}`).join("\n");
+      }
+    }
+  } catch { /* ignore */ }
 
   let prompt = `You are working on iteration ${iteration} of a persistent task.\n\n`;
-  prompt += `## Goal\n${goal}\n\n`;
 
-  if (currentState) prompt += `## Current State\n${currentState}\n\n`;
+  // Instructions first (reviewer guidance)
+  if (lastGuidance) prompt += `## Your Instructions\n${lastGuidance}\n\n`;
 
-  if (ms.total > 0) {
-    prompt += `## Milestones (${ms.done}/${ms.total} complete)\n`;
-    if (nextMilestone) prompt += `**YOUR TASK THIS ITERATION:** ${nextMilestone}\n\n`;
-    if (ms.pending.length > 1 && !focused) {
-      prompt += `Remaining:\n`;
-      for (const p of ms.pending.slice(1)) prompt += `- [ ] ${p}\n`;
-      prompt += `\n`;
-    }
+  // Feedback from others
+  if (unreadComments) prompt += `## Feedback from Others\n${unreadComments}\n\n`;
+
+  // Current milestone
+  if (nextMilestone) {
+    prompt += `## Current Milestone\n${nextMilestone}\n`;
+    prompt += `(${ms.done}/${ms.total} milestones complete)\n\n`;
   }
 
+  // Context: why
+  prompt += `## Goal\n${goal}\n\n`;
+  if (currentState) prompt += `## Current State\n${currentState}\n\n`;
+  if (context) prompt += `## Context (accumulated knowledge)\n${context}\n\n`;
+
+  // Reference: how
   const resources = extractSection(projectContent, "Resources");
   if (resources && !focused) prompt += `## Resources\n${resources}\n\n`;
 
   if (processNotes) prompt += `## Process Notes\n${processNotes}\n\n`;
 
-  if (lastGuidance) prompt += `## Owner Guidance for This Iteration\n${lastGuidance}\n\n`;
+  if (ms.pending.length > 1 && !focused) {
+    prompt += `## Remaining Milestones\n`;
+    for (const p of ms.pending.slice(1)) prompt += `- [ ] ${p}\n`;
+    prompt += `\n`;
+  }
+
   if (recentEntries && !focused) prompt += `## Recent Progress\n${recentEntries}\n\n`;
 
-  prompt += `## What You Must Produce\n`;
-  prompt += `This iteration must end with at least one of:\n`;
-  prompt += `1. A milestone completed (create deliverable, verify it works)\n`;
-  prompt += `2. A concrete deliverable (file created or modified in workspace)\n`;
-  prompt += `3. A specific blocker reported (what exactly is blocking and why)\n\n`;
-  prompt += `You CANNOT edit the project file or journal — produce deliverables in your workspace.\n`;
+  // Constraints
+  prompt += `## Rules\n`;
+  prompt += `- Produce at least one concrete deliverable this iteration.\n`;
+  prompt += `- Put all output files in: ${outputsDir}/\n`;
+  prompt += `- You CANNOT edit the project file or journal.\n`;
 
   return prompt;
 }
@@ -383,8 +429,10 @@ function buildReviewPrompt(
 
   prompt += `## How This System Works (reference)\n`;
   prompt += `- **Milestone check-off**: When you mention a completed milestone by name, the system matches the first 30 characters (case-insensitive) against your response. Include the exact milestone name to check it off.\n`;
+  prompt += `- **Context maintenance**: You maintain the ## Context section of project.md. After each iteration, add key discoveries/facts that future iterations will need. Remove stale info. Keep it concise — facts only, not narrative.\n`;
+  prompt += `  Format your context updates as: CONTEXT_UPDATE: <bullet points to add or replace>\n`;
   prompt += `- **Agent cannot mark done**: Only human/May can mark a project done. If you say DONE, it's auto-converted to WAITING with "awaiting review".\n`;
-  prompt += `- **Worker capabilities**: The worker can read/write files, run bash commands, call sub-agents. It works in the \`.state/\` directory. It CANNOT edit project.md or journal.md directly.\n`;
+  prompt += `- **Worker capabilities**: The worker can read/write files, run bash commands, call sub-agents. Output goes to the project's outputs/ directory. It CANNOT edit project.md or journal.md directly.\n`;
   prompt += `- **Iteration budget**: Iterations are finite and expensive. Don't waste them repeating failed approaches.\n\n`;
 
   if (features?.has("verify-before-stop")) {
@@ -686,7 +734,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   // Done/blocked projects: check for pending comments before exiting.
   // Comments can redirect, rescope, or unblock a project.
-  const pendingCommentsBeforeStart = extractComments(projectContent);
+  const pendingCommentsBeforeStart = getPendingComments(projectContent, config.projectDir);
   if ((state.status === "done" || state.status === "blocked" || state.status === "waiting") && !pendingCommentsBeforeStart) {
     return ctx.done(`Task is ${state.status}. No pending comments.`);
   }
@@ -718,8 +766,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const features = parseFeatures(projectContent);
 
     // ── Comment iteration ─────────────────────────────────────────
-    // Comments in project.md = unprocessed queue. Process then clear.
-    const pendingComments = extractComments(projectContent);
+    // Comments from meta.json or legacy ## Comments section. Process then mark read/clear.
+    const pendingComments = getPendingComments(projectContent, config.projectDir);
     if (pendingComments) {
       ctx.emit({ type: "step_start", step: `comment-iteration-${iteration}` });
 
@@ -882,6 +930,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         writeFileSync(config.projectPath, projectContent, "utf-8");
       }
 
+      // Apply context updates from reviewer
+      const contextMatch = decision.detail.match(/CONTEXT_UPDATE:\s*([\s\S]*?)(?=\n\*\*|\n##|\n\(|$)/i);
+      if (contextMatch) {
+        const newContext = contextMatch[1].trim();
+        if (newContext) {
+          const existingContext = extractSection(projectContent, "Context");
+          const updatedContext = existingContext
+            ? existingContext + "\n" + newContext
+            : newContext;
+          projectContent = updateSection(projectContent, "Context", updatedContext + "\n");
+          writeFileSync(config.projectPath, projectContent, "utf-8");
+        }
+      }
+
       if (decision.status === "waiting" || decision.status === "blocked") {
         const ls: LoopState = { projectContent, continueWithoutProgress };
         const exitResult = await processDecision(ctx, config, ls, journalContent, iteration, decision, false, features);
@@ -923,6 +985,18 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         (reviewerInsight ? `Reviewer: ${reviewerInsight}` : ""));
 
       writeFileSync(config.projectPath, projectContent, "utf-8");
+
+      // Update meta.json: lastActivity, mark comments read
+      try {
+        const metaPath = join(config.projectDir, "meta.json");
+        if (existsSync(metaPath)) {
+          const meta = JSON.parse(readFileSync(metaPath, "utf-8"));
+          meta.lastActivity = new Date().toISOString();
+          // Mark all comments as read after being shown to worker
+          for (const c of (meta.comments || [])) c.read = true;
+          writeFileSync(metaPath, JSON.stringify(meta, null, 2), "utf-8");
+        }
+      } catch { /* ignore meta.json errors */ }
     }
 
     iteration++;

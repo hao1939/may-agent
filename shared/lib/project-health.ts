@@ -98,6 +98,28 @@ export function appendComment(content: string, comment: string): string {
 export function scanAllProjects(agentsRoot: string): ProjectInfo[] {
   const projects: ProjectInfo[] = [];
 
+  // Scan shared projects (new location)
+  const sharedProjDir = join(agentsRoot, "shared", "projects");
+  if (existsSync(sharedProjDir)) {
+    try {
+      const projectDirs = readdirSync(sharedProjDir).filter(d =>
+        statSync(join(sharedProjDir, d)).isDirectory()
+      );
+      for (const projDir of projectDirs) {
+        const projectFile = join(sharedProjDir, projDir, "project.md");
+        if (!existsSync(projectFile)) continue;
+        let content: string;
+        try { content = readFileSync(projectFile, "utf-8"); } catch { continue; }
+        const status = extractField(content, "Status").toLowerCase() || "active";
+        const owner = extractField(content, "Owner") || "unknown";
+        const blockerReason = extractField(content, "Stop Reason") || extractField(content, "Resume Condition") || "";
+        const workflow = extractField(content, "Workflow") || "project";
+        projects.push({ relPath: `shared/projects/${projDir}`, projectFile, content, status, owner, blockerReason, workflow });
+      }
+    } catch { /* ignore */ }
+  }
+
+  // Also scan legacy per-agent locations
   let agents: string[];
   try {
     agents = readdirSync(agentsRoot).filter(d => {
@@ -105,7 +127,7 @@ export function scanAllProjects(agentsRoot: string): ProjectInfo[] {
       return statSync(p).isDirectory() && d !== "shared" && d !== "test" && d !== "src";
     });
   } catch {
-    return [];
+    return projects;
   }
 
   for (const agent of agents) {
