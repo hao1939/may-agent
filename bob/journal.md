@@ -793,6 +793,40 @@ H-054 P(H) updated to 0.65 (from 0.50). Phase 2 (inter-rater reliability measure
 - Once fixed: re-baseline Core 20, then Cycle 2 targeting Verification (0/2)
 - Alternative: design experiments that don't require gym runs
 
+## 2026-11-15 Heartbeat (2)
+
+### EXP-244 Phase 1: Defensibility Audit of Production Evaluations
+- Designed EXP-244 to test H-080 (defensibility-based evaluation) using real evaluator data
+- Audited 20 low-scoring (0.01-0.4) production evaluator sessions
+- **Result**: 13/20 (65%) TRUE FAILURE, 4/20 (20%) AMBIGUOUS, 3/20 (15%) DEFENSIBLE
+- This **replicates** EXP-223's gym finding (also 15% defensible) — H-080 remains REFUTED
+- Three specific false-negative patterns worth fixing:
+  1. Bob penalized for writing skills to agents/coder/skills/ ("outside workspace") — this IS his job
+  2. Amy penalized for refusing destructive file deletion — this is safety-aligned behavior
+  3. Sessions failing due to broken task environments scored as agent failures
+
+### Inbox Triage
+- Paper notifications (StructMem, SWARM, GAAMA, COSPLAY, etc.): All P2, connections already noted. Dismissed.
+- DD#880 (Experience Compression): Noted. No immediate action.
+- DD#883 (Agreement Trap): ACTED ON — ran EXP-244 Phase 1 audit
+- P1 productivity/waste warnings: Dismissed — metrics healthy (95.9% exp completion, 63.6% hypotheses resolved)
+- EXP-216 superseded: Acknowledged.
+
+### Projects
+- **gym-leverage-wr**: BLOCKED on GYM_AGENT_BIN. No change.
+- **agent-cli-research**: waiting on human review. No action.
+- **master-worker-test / test-2**: waiting on human review. No action.
+- **agent-system-literacy**: active but 0/8 milestones. Low priority.
+
+### Context Matcher
+- Built last session: `agents/tools/context-matcher/match.ts`
+- Still needs integration proposal to May
+
+### Next
+- Fix the 3 evaluator false-negative patterns (propose rule clarifications)
+- EXP-243 Phase 0 when gym is available
+- Context-matcher integration proposal
+
 ## 2026-11-15 Heartbeat
 
 ### Context Matcher Tool Built
