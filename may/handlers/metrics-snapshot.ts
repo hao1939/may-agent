@@ -187,6 +187,22 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         ["project.blocked-rate-7d", parseFloat(rate.toFixed(4)), now, "metrics-snapshot"]);
     } catch (e) { ctx.log(`[metrics-snapshot] blocked-rate error: ${e}`); }
 
+    // project.max-blocked-hours
+    try {
+      const worst = db.prepare(
+        "SELECT MIN(updated_at) as oldest FROM projects WHERE status IN ('blocked', 'waiting')"
+      ).get() as any;
+      const hours = worst?.oldest ? Math.round((now - worst.oldest) / 3600000) : 0;
+      db.run(
+        `INSERT OR IGNORE INTO metrics (id, name, owner, current, target, threshold, unit, type, status, speed, alert_direction, created_at, updated_at)
+         VALUES ('project.max-blocked-hours', 'Longest blocked project (hours)', 'may', NULL, 0, 24, 'hours', 'health', 'active', 'fast', 'above', ?, ?)`,
+        [now, now]
+      );
+      db.run("UPDATE metrics SET current = ?, updated_at = ? WHERE id = ?", [hours, now, "project.max-blocked-hours"]);
+      db.run("INSERT INTO metric_snapshots (metric_id, value, measured_at, measured_by) VALUES (?, ?, ?, ?)",
+        ["project.max-blocked-hours", hours, now, "metrics-snapshot"]);
+    } catch (e) { ctx.log(`[metrics-snapshot] max-blocked-hours error: ${e}`); }
+
     // ── Generic metric measurement (source_query / source_command) ──────
     try {
       const measurable = db.prepare(
@@ -228,6 +244,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       ctx.log(`[metrics-snapshot] ${measured}/${measurable.length} source-defined metrics measured`);
     } catch (e) { ctx.log(`[metrics-snapshot] generic measurement error: ${e}`); }
 
-    ctx.log(`[metrics-snapshot] 9 handler+project metrics + source-defined metrics updated`);
+    ctx.log(`[metrics-snapshot] 10 handler+project metrics + source-defined metrics updated`);
   };
 };
