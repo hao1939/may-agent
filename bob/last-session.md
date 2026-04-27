@@ -1,15 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777288442171_33
+- **Session:** s_1777288782136_45
 - **Status:** done
-- **When:** 2026-04-27T11:19:45.952Z
-- **Duration:** 5m43s
+- **When:** 2026-04-27T11:20:17.916Z
+- **Duration:** 35s
 
 ## What Happened
-Most projects are done/closed. Let me wrap up — my main work this heartbeat:
+Milestone completed: Update reading-metrics skill: add "close the loop" step
 
-1. Resolved H-EXP-042 (deferred - gym blocked)
-2. Created H-EXP-044 (defensibility evaluation) then immediately resolved it (prior art from H-EXP-022 disproved it at 5% vs 30% threshold)
-3. Reviewed pending notifications — DD#880 papers processed
-4. H-EXP-043 is only open hypothesis, blocked on gym infra
+**(a) Next iteration must produce `outputs/baseline.md`** — the worker claimed it existed twice but it doesn't. This time, actually write the file.
+
+**(b) What's different:** I'm being explicit — the outputs/ directory is empty. Do not claim files exist without writing them.
+
+**(c) First step:** Run the DB queries from iteration 1's results (project-creation-rate, escalation-quality, skill-read-rate) and write them to `outputs/baseline.md`. Then verify the file exists with `ls -la`. That completes Phase 1.
