@@ -1,29 +1,14 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-27)
 
-## Context: current /app workspace appears not to be a git repo
-- `git log` / `git status` fail with: `fatal: not a git repository (or any of the parent directories): .git`.
-- This prevents commit/diff-based review in this environment.
+## Inbox triage
+- Duplicate "Quick Code Review" notifications (5x, P1): **ESCALATE** — repeated dispatch indicates routing/dedup bug or monitoring misfire; creates waste.
+- Convention coaching (C8.2 no finish call; C1.4 last tool call must be finish): **ACT** — I will always end heartbeat sessions with `finish()`.
+- Verify gym scenario EXP-220 (enoent-file-search): **ACT** — scenario exists under `agents/gym/scenarios/enoent-file-search/` and appears correctly configured as an ENOENT file-search trap.
 
-## Review performed this heartbeat: DB SSL env var change (evidence-based)
-Files read:
-- `fix-summary.md`
-- `agents/environment/env-vars.conf`
+## EXP-220 verification notes (enoent-file-search)
+Evidence:
+- `agents/gym/scenarios/enoent-file-search/scenario.json` describes files existing at `lib/grade-pipeline.js` and `lib/test-grades.js` while `task.md` intentionally references `src/...` and `test/...`.
+- Directory contains `scenario.json`, `task.md`, and `success_criteria.js`.
 
-Observed change:
-- `agents/environment/env-vars.conf` sets:
-  - `DATABASE_URL=postgres://prod-user:s3cure-p4ss@prod-db-cluster.internal:5432/webapp_prod?sslmode=require`
-
-### Issues found
-**IMPORTANT — Secret exposure risk**
-- `agents/environment/env-vars.conf` contains what appears to be production credentials in plaintext (`prod-user` / `s3cure-p4ss`). Even if placeholders, this is risky and commonly policy-violating.
-
-**IMPORTANT — Potential config mismatch risk**
-- Adding `sslmode=require` only helps if the deployed client library honors `sslmode` in the URL (libpq-style). If the runtime uses a different SSL configuration mechanism (common in some Node clients), this may not have the intended effect.
-
-## Mandatory QA SOP tooling checks
-- `./node_modules/.bin/tsc --noEmit`: **FAIL** — `./node_modules/.bin/tsc` not found (exit 127).
-- `./node_modules/.bin/vitest --run`: **FAIL** — `./node_modules/.bin/vitest` not found (exit 127).
-
-Notes:
-- `package.json` in this environment describes a minimal Node project (script `test: node test.js`) and has no devDependencies, so the SOP commands appear inapplicable here without adding tooling.
-- I did run `npm test`: 6/6 tests passed.
+Potential follow-up:
+- Ensure the environment file list in `scenario.json` matches the actual environment template used by the gym harness (not verified here — would require running gym harness).

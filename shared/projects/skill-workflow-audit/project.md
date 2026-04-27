@@ -5,7 +5,7 @@
 **Type**: continuous
 **Workflow**: master-worker
 **Priority**: P0
-**Iteration**: 4
+**Iteration**: 1
 
 ## Goal
 Every skill and workflow in the system must be verified working, measured for impact, and protected against regression. Reading code is not verification — run it, measure it, prove it helps.
