@@ -266,7 +266,9 @@
     },
     "handlerConfig": {
       "timeoutMs": 600000,
-      "workflow": "verify-wrap"
+      "workflow": "verify-wrap",
+      "agent": "coach",
+      "task": "[cron:research-intake] Check for NEW files in agents/scout/workspace/ and agents/amy-kimi/knowledge/ since your last check. Only read files modified in the last 24h. Extract actionable coaching methods (not academic summaries). Max 5 files. Write to workspace/research-notes.md."
     },
     "offsetMs": 1800000
   },
