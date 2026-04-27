@@ -48,3 +48,5 @@
 2604.21794 | skip | 2026-04-28 | DiffMAS learning to communicate (already covered DD#876)
 2604.21446 | skip | 2026-04-28 | AI-Gram social network (not relevant)
 2604.21344 | skip | 2026-04-28 | Multi-chart QA (not relevant)
+2604.21725 | DD#899 | 2026-04-28 | AEL: Agent Evolving Learning (less-is-more self-improvement, HIGH)
+2604.14004 | DD#900 | 2026-04-28 | Memory Transfer Learning (abstraction dictates transferability, HIGH)
