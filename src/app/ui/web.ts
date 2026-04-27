@@ -542,10 +542,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       FROM metric_snapshots ms ORDER BY ms.measured_at DESC LIMIT 50
     `).all() as any[];
 
-    // Compute alerts: metrics past threshold
+    // Compute alerts: any metric with threshold that's breaching
     const alerts = metrics.filter((m: any) => {
       if (m.threshold == null || m.current == null) return false;
-      if (!m.id.startsWith('handler.') && !m.id.startsWith('project.')) return false;
       if (m.alert_op === 'above' || m.alert_op === '>') return m.current > m.threshold;
       return m.current < m.threshold; // default: '<'
     });
