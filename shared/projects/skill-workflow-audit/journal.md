@@ -22,3 +22,17 @@ All 4 milestones complete. Key findings and next actions:
 4. **Next experiment**: Deliver `state-check-before-action` skill to bob, measure C1.1 violation reduction
 
 Project complete. Closing — follow-up skill delivery experiment tracked separately.
+
+## 2026-06-28 — Skill Effectiveness Red Metric Investigation
+
+coach.skill-effectiveness at 29.2% (target 60%). Analyzed all 159 gym results across 15 experiments.
+
+**Findings:**
+- 6/15 experiments pass ≥60% threshold
+- 4 experiments (EXP-025, 040, 055, FM33-WORKFLOW) are 0% — dead skills already rejected
+- EXP-164 is miscounted: treatment arm is 10/10 (100%), baseline is 0/8 (expected)
+- 3 widely-deployed skills (verification, plan-once-amend, evidence-over-narrative) have ZERO gym testing
+
+**Actions:**
+1. Created recovery plan: `outputs/skill-effectiveness-plan.md`
+2. Next: archive dead experiments, fix per-arm accounting, test top 3 deployed skills
