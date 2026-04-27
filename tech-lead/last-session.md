@@ -1,10 +1,24 @@
-# Last Session
-<!-- Auto-generated at session end. Do not edit manually. -->
+# Tech-Lead Heartbeat — 2026-11-06
 
-- **Session:** s_1777265091462_1130
-- **Status:** done
-- **When:** 2026-04-27T04:45:07.689Z
-- **Duration:** 16s
+## Status: All Green
+- **Build**: 0 TypeScript errors (agents/tsconfig.json)
+- **requests.db**: Schema intact (has `requests` table)
+- **Metrics**: All 4 green (build-health 1, meaningful-changes 7548, codebase-weight 28694, delegation-quality 0.98)
 
-## What Happened
-File contents look correct and complete — it's a valid last-session summary with session ID, status, timestamp, duration, and description. No truncation or encoding issues.
+## Inbox Triage (9 items)
+
+| # | Item | Action |
+|---|------|--------|
+| 1 | Gym runner `agent_type: "coder"` bug | Bob's domain — runner source doesn't exist yet (377 scenarios affected) |
+| 2 | Bob SOUL.md persistent-task rule | DISMISS — already present |
+| 3 | Gym runner `may-agent --oneshot` blocker | Bob's domain — related to #1 |
+| 4 | C7.1 compliance 39% | DISMISS — coach's domain |
+| 5 | C7.1 path violations coaching | DISMISS — coach's domain |
+| 6 | requests.db zero tables | DISMISS — fixed in commit a8a482a |
+| 7 | EXP-235 ready for integration | Future — review next heartbeat |
+| 8 | Context update quality cleaned | DISMISS — FYI, already handled |
+| 9 | 21 enabled crons never fired | Future — most are event-only (no interval), working as designed |
+
+## Notes
+- Cron audit: 5 event-only handlers (no intervalMs) are correctly never firing on timer — they only fire on events. The "21 never fired" alert likely overcounts.
+- Gym runner source (`agents/src/gym/runner.ts`) doesn't exist in the repo yet — this is pending implementation, not a fixable bug.
