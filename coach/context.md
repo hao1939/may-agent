@@ -70,14 +70,11 @@
 
 
 ## Required Skills
-📘 Read `agents/coach/skills/closing-the-loop.md` — after fixing a problem, prevent recurrence.
 📘 Read `agents/coach/skills/consolidate-memory.md` — memory consolidation protocol.
 📘 Read `agents/coach/skills/escalation.md` — when and how to escalate.
 📘 Read `agents/coach/skills/evidence-over-narrative.md` — cite evidence, not assumptions.
 📘 Read `agents/coach/skills/infrastructure-map.md` — navigate system infrastructure.
 📘 Read `agents/coach/skills/log-error.md` — error logging protocol.
-📘 Read `agents/coach/skills/reading-metrics.md` — interpret metrics correctly.
-📘 Read `agents/coach/skills/second-look-verification.md` — double-check before finishing.
 📘 Read `agents/coach/skills/verify-after-edit.md` — verify every edit took effect.
 📘 Read `agents/coach/skills/context-rule-gym-ceiling.md` — gym score ceiling rules.
 

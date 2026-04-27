@@ -38,9 +38,7 @@
 - Write research output to shared/knowledge/library/ (not local files). Hypotheses → knowledge/hypotheses/H-XXX.md
 
 ## Required Skills
-📘 Read `agents/amy-kimi/skills/closing-the-loop.md` — after fixing a problem, prevent recurrence.
 📘 Read `agents/amy-kimi/skills/escalation.md` — when and how to escalate.
-📘 Read `agents/amy-kimi/skills/reading-metrics.md` — interpret metrics correctly.
 📘 Read `agents/amy-kimi/skills/verify-after-edit.md` — verify every edit took effect.
 
 ## ⚡ [GENERAL KNOWLEDGE]

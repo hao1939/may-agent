@@ -60,8 +60,6 @@ When querying a table for first time, run PRAGMA table_info(<table>) first. Key 
 📘 Read `agents/optimizer/skills/evidence-over-narrative.md` — cite evidence, not assumptions.
 📘 Read `agents/optimizer/skills/prerequisite-gap-protocol.md` — check prerequisites first.
 📘 Read `agents/optimizer/skills/read-only-finish-protocol.md` — finish protocol for read-only sessions.
-📘 Read `agents/optimizer/skills/reading-metrics.md` — interpret metrics correctly.
-📘 Read `agents/optimizer/skills/second-look-verification.md` — double-check before finishing.
 📘 Read `agents/optimizer/skills/verify-after-edit.md` — verify every edit took effect.
 
 ## Lean Session Heuristics
