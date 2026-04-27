@@ -7,6 +7,7 @@
 - [x] ~~**DD#883/885/880 synthesis written**: `agents/bob/workspace/synthesis-dd883-dd885-dd880.md`. H-196 designed+resolved (falsified at 15%).~~
 - [ ] **H-183 Phase 2**: EXP-241 SHELVED (gym tests coding, KEs encode meta-knowledge — wrong instrument). Next approach: evaluator A/B with Grade-A vs Grade-C KEs on real session reviews (Option D). See `EXP-241-baseline-results.md`.
 - [ ] **Scenario Gap-Fill** [MEDIUM]: sql-injection (33%) is ready for intervention experiments. deprecation-warning needs redesign (remove console.warn to make recognition harder) or replacement. Consider 1-2 more scenarios to increase portfolio.
+- [ ] **EXP-242 (Multi-Agent Structural Auditor)**: DESIGNED. Tests H-181 P-181e — dedicated ordering-auditor agent to overcome relational bug blindness. Phase 0: run auditor-only × 10 on cascading-fix-trap-v2. Needs gym run. See `agents/shared/knowledge/experiments/EXP-242/design.md`.
 - [ ] **Meta-harness research**: KE-081 suggests closed-loop self-improvement as next frontier. H-164 formalizes the harness vs training trade-off. **H-180 written** (structured lesson extraction > raw replay; mechanistic claim that extraction process = forced externalization). Blocked on gym infra for EXP-180.
 - [ ] **EXP-191 designed**: Evaluator anonymization A/B test (H-178). Needs implementation: anonymization script, treatment SOUL variant, calibration process. ~$5 cost. Scripts ready in EXP-191/ dir. Blocked on tech-lead wiring anonymization into evaluator pipeline.
 
