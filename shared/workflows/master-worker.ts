@@ -17,7 +17,7 @@
 import { readFileSync, existsSync, writeFileSync, appendFileSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import {
-  extractField, extractSection, extractMilestones,
+  extractField, extractSection,
   extractComments, clearComments, updateProjectStatus,
 } from "./project-helpers.ts";
 
@@ -30,7 +30,6 @@ export const description: string =
 // ── Config ──────────────────────────────────────────────────────────────
 
 const DEFAULT_MAX_ITERATIONS = 50; // safety cap — workflow runs until done/blocked/waiting
-const MAX_STALL_ITERATIONS = 5; // escalate after N iterations without milestone progress
 
 // ── Decision extraction ─────────────────────────────────────────────────
 
@@ -161,12 +160,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   // Check if already done with no pending comments
-  const initialMilestones = extractMilestones(projectContent);
-  if (status === "done" && initialMilestones.pending.length === 0 && !extractComments(projectContent)) {
+  if (status === "done" && !extractComments(projectContent)) {
     return ctx.done("Project already done. No pending comments.");
   }
 
-  ctx.log(`[master-worker] ${projectMatch[1]} | status: ${status} | milestones: ${initialMilestones.done}/${initialMilestones.total} | max-iter: ${maxIterations}`);
+  ctx.log(`[master-worker] ${projectMatch[1]} | status: ${status} | max-iter: ${maxIterations}`);
 
   // ── Create sessions ──
   const orchestrator = await ctx.createSession({
@@ -231,8 +229,6 @@ ${currentState}
 
     // ── Phase 2+: Work-review loop ──
     let iteration = 0;
-    let stallCount = 0;
-    let prevDoneCount = initialMilestones.done;
 
     while (iteration < maxIterations && (decision.status === "continue" || decision.status === "pivot")) {
       iteration++;
@@ -297,31 +293,6 @@ ${currentState}
       }
       ctx.log(`[review] Decision: ${decision.status.toUpperCase()}`);
 
-      // ── Milestone tracking (orchestrator edits project.md directly) ──
-      const newMs = extractMilestones(readFileSync(projectFile, "utf-8"));
-      if (newMs.done > prevDoneCount) {
-        ctx.log(`[milestone] ${newMs.done}/${newMs.total} complete (+${newMs.done - prevDoneCount})`);
-        stallCount = 0;
-      } else if (decision.status === "continue") {
-        stallCount++;
-      }
-      prevDoneCount = newMs.done;
-
-      // ── All milestones done → stop regardless of orchestrator decision ──
-      if (newMs.total > 0 && newMs.pending.length === 0) {
-        ctx.log(`[done] All ${newMs.total} milestones complete — finishing`);
-        decision = { status: "done", detail: `All ${newMs.total} milestones complete` };
-        break;
-      }
-
-      // ── Progress stall detection ──
-      if (stallCount >= MAX_STALL_ITERATIONS && decision.status === "continue") {
-        ctx.log(`[stall] ${stallCount} iterations without milestone progress — escalating`);
-        const reason = `Stalled: ${stallCount} iterations without milestone progress. ${newMs.done}/${newMs.total} milestones done.`;
-        updateProjectStatus(projectFile, "blocked", reason, iteration);
-        return ctx.escalate(reason);
-      }
-
       // Append orchestrator decision to journal
       appendFileSync(journalFile, `**Orchestrator**: ${decision.detail.slice(0, 300)}\n`, "utf-8");
 
@@ -334,7 +305,7 @@ ${currentState}
     let finalStatus: string;
     let stopReason: string;
 
-    if (decision.status === "done" || (finalMs.total > 0 && finalMs.pending.length === 0)) {
+    if (decision.status === "done" || (projectType !== "continuous" && finalMs.total > 0 && finalMs.pending.length === 0)) {
       finalStatus = "done";
       stopReason = `All ${finalMs.total} milestones complete`;
     } else if (decision.status === "blocked") {

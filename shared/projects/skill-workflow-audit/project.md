@@ -1,7 +1,6 @@
 # Project: Skill & Workflow Quality
 
-**Status**: done
-**Stop Reason**: All 10 milestones complete
+**Status**: active
 **Owner**: coach
 **Type**: continuous
 **Workflow**: master-worker
