@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777269855396_0
+- **Session:** s_1777269939951_0
 - **Status:** done
-- **When:** 2026-04-27T06:04:52.390Z
-- **Duration:** 36s
+- **When:** 2026-04-27T06:06:21.453Z
+- **Duration:** 41s
 
 ## What Happened
-The root cause is obvious from the setup logs. Let me write the analysis.
+The key finding is obvious: the patch was applied to `config.md` instead of `SOUL.md`.
