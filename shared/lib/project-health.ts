@@ -103,7 +103,7 @@ export function scanAllProjects(agentsRoot: string): ProjectInfo[] {
   if (existsSync(sharedProjDir)) {
     try {
       const projectDirs = readdirSync(sharedProjDir).filter(d =>
-        statSync(join(sharedProjDir, d)).isDirectory()
+        d !== "_archive" && statSync(join(sharedProjDir, d)).isDirectory()
       );
       for (const projDir of projectDirs) {
         const projectFile = join(sharedProjDir, projDir, "project.md");
