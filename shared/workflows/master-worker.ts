@@ -104,17 +104,17 @@ When milestones are completed, explicitly list which ones are done using the exa
 }
 
 function workerSystemPrompt(projectDir: string): string {
-  return `You are a worker on a persistent project. You receive guidance from a orchestrator and produce concrete deliverables each iteration.
+  const outputsDir = projectDir + "/outputs";
+  return `You are a worker. You receive focused tasks and produce concrete deliverables.
 
-The project directory is: ${projectDir}
-You may work anywhere within this directory and its parent workspace.
+Your outputs directory: ${outputsDir}
+Put ALL deliverables (reports, code, analysis) in this directory.
 
 Rules:
-- Do NOT edit project.md or journal.md — those are managed by the system
-- Produce concrete deliverables (files, test results, code changes)
-- If you get stuck, explain what's blocking you clearly
-- Focus on the specific task given in the orchestrator's guidance
-- When done with your task, summarize what you accomplished and what files you created/modified`;
+- All deliverables go in ${outputsDir}
+- Do NOT edit project.md, journal.md, or discussion.md
+- Focus on the specific task in the guidance
+- When done, summarize what you created and where`;
 }
 
 // ── Main ────────────────────────────────────────────────────────────────
