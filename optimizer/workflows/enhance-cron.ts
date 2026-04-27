@@ -232,39 +232,44 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     if (fixResult.type === "escalate") return fixResult;
   }
 
-  // ── Step 6: Final Verification ───────────────────────────────────────
+  // ── Step 6: Final Verification (pure JS — no LLM cost) ──────────────
+  // Previously spawned a QA LLM agent just to run tsc + vitest and report
+  // pass/fail. Replaced with JS execSync on 2026-07-16 — saves one full
+  // QA LLM session per enhance-cron run.
 
   ctx.emit({ type: "step_start", step: "final-verify" });
 
-  const verifyTask =
-    `## Cron Enhancement: Step 6 — Final Verification\n\n` +
-    `## Feature\n${feature}\n\n` +
-    `## Instructions\n` +
-    `Run a complete verification of the Cron enhancement:\n\n` +
-    `1. Run \`npx tsc --noEmit\` — ALL type errors must pass\n` +
-    `2. Run \`npx vitest run ${CRON_TEST}\` — ALL tests must pass\n` +
-    `3. Read the modified sections of these files and confirm consistency:\n` +
-    `   - ${CRON_TS}: new state + methods + lifecycle hooks\n` +
-    `   - ${HANDLER_CONTEXT}: new interface members\n` +
-    `   - ${AGENT_LOADER}: wiring\n` +
-    `4. Check for: unused imports, missing cleanup in stop(), ` +
-    `   missing reset in reload(), overlap protection gaps\n\n` +
-    `Report:\n` +
-    `- tsc result: PASS/FAIL\n` +
-    `- test result: PASS/FAIL (with counts)\n` +
-    `- consistency: any issues found\n` +
-    `- verdict: PASS or FAIL with details`;
+  const { execSync } = require("node:child_process");
+  const verifyLines: string[] = [];
+  let verifyPassed = true;
 
-  const verifyResult = await ctx.runAgent("qa", verifyTask);
-  if (verifyResult.status === "error") {
-    return ctx.escalate("final verification failed", { error: verifyResult.error });
+  // Run tsc --noEmit
+  try {
+    execSync("npx tsc --noEmit 2>&1", { encoding: "utf-8", timeout: 60_000, stdio: ["pipe", "pipe", "pipe"] });
+    verifyLines.push("- tsc: ✅ PASS");
+  } catch (tscErr: any) {
+    verifyPassed = false;
+    const output = ((tscErr.stdout || "") + (tscErr.stderr || "")).trim();
+    const truncated = output.length > 1500 ? output.slice(0, 1500) + "\n...(truncated)" : output;
+    verifyLines.push(`- tsc: ❌ FAIL\n\`\`\`\n${truncated}\n\`\`\``);
   }
 
-  const verifyText = verifyResult.lastAssistantText ?? "";
-  const verifyUpper = verifyText.toUpperCase();
+  // Run vitest
+  try {
+    const vitestOut = execSync(`npx vitest run ${CRON_TEST} 2>&1`, { encoding: "utf-8", timeout: 120_000, stdio: ["pipe", "pipe", "pipe"] });
+    const testCount = vitestOut.match(/(\d+) passed/)?.[1] ?? "?";
+    verifyLines.push(`- vitest: ✅ PASS (${testCount} tests passed)`);
+  } catch (vitestErr: any) {
+    verifyPassed = false;
+    const output = ((vitestErr.stdout || "") + (vitestErr.stderr || "")).trim();
+    const truncated = output.length > 1500 ? output.slice(0, 1500) + "\n...(truncated)" : output;
+    verifyLines.push(`- vitest: ❌ FAIL\n\`\`\`\n${truncated}\n\`\`\``);
+  }
 
-  if (verifyUpper.includes("FAIL") && !verifyUpper.includes("PASS")) {
-    return ctx.escalate("Final verification failed", {
+  const verifyText = verifyLines.join("\n");
+
+  if (!verifyPassed) {
+    return ctx.escalate("Final verification failed (JS gate)", {
       plan,
       verifyOutput: verifyText,
     });
