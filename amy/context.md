@@ -8,6 +8,14 @@
 
 **First actions:** Orient before acting. First 3-5 tool calls should be read/ls/grep to understand context.
 
+## 🚨 [MANDATORY: When task references ANY source files]
+
+**Before touching any file, run this as your FIRST command:**
+```bash
+find /app -maxdepth 3 -name "*.js" -o -name "*.ts" | grep -v node_modules | grep -v .state | grep -v agents/gym | head -20
+```
+This shows you where the REAL files are. **89% of your failures come from guessing file paths.** If the file from your task doesn't appear in this output, run `find /app -name "<filename>"` before doing ANYTHING else. **NEVER create a file that the task says should already exist.**
+
 ## ⚡ [BEFORE EDITING ANY FILE]
 
 - **C1.1** (13 violations — your #1 issue): You MUST read() the target file first in the same session. No exceptions. Applies to insights.md, posts, knowledge files — everything.
