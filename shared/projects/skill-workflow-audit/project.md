@@ -1,6 +1,6 @@
 # Project: Skill & Workflow Quality
 
-**Status**: active
+**Status**: complete
 **Owner**: coach
 **Type**: continuous
 **Workflow**: master-worker
@@ -16,7 +16,7 @@ Every skill and workflow in the system must be verified working, measured for im
 - skill.delivery-rate: 0.23 → target 0.60 (% of skills referenced by at least one agent)
 
 ## Current State
-done: All 10 milestones complete
+All 10 milestones complete. All artifacts verified in outputs/. Project marked complete on iteration 9.
 
 ## Plan
 
