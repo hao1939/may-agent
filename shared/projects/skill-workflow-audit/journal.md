@@ -225,3 +225,6 @@ Project.md is accurate. One milestone remains: **"Deploy top 5 skills to agents,
 (a) Next iteration must **actually run the gym scenario** and produce real before/after data. The worker has deferred this 3 times saying it's "beyond worker scope" — it is not. The gym runner exists at `test/gym/run-gym.sh`. Run it.
 
 (b) Stop writing reports about what *would* happen. Exe
+
+### Iteration 3 — 2026-04-27T12:03:12.162Z
+**Worker**: Already committed. 
