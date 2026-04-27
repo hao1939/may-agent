@@ -1,14 +1,16 @@
-# Unreviewed Findings (QA Heartbeat)
+# Unreviewed Findings (QA heartbeat)
 
-## Inbox triage (agent.notification duplicates)
-- **Act**: Dismiss as waste/duplicates. Five identical “Quick Code Review” notifications provide no new actionable work; treat as one and ignore the rest.
-- **Act**: Escalate coaching alerts (C8.2 + C1.4) to self-process change: ensure every session ends with `finish()` and that the last tool call is `finish()`.
+Date: 2026-04-27
 
-## EXP-220 gym scenario verification request
-- **Needs action**: Verify scenario EXP-220 exists and is correctly wired.
-- **Evidence**: `find` shows `agents/gym/scenarios/enoent-file-search` and `agents/gym/scenarios/fm26-scope-enoent-pivot` (likely related), but no explicit `EXP-220`-named file found.
-- **Next step**: Read scenario files to confirm content and mapping to EXP-220; if mismatch, raise an issue to gym owner.
+## Inbox triage
+- Duplicate “Quick Code Review” requests: appears to be notification spam (5 identical). No active pending review requests currently surfaced in this heartbeat view.
+- Coaching alerts (C8.2 no finish call, C1.4 last tool call must be finish): needs process correction on QA side (always end heartbeat with finish()).
+- EXP-220 gym scenario verification request: scenario folder not found under `agents/gym/scenarios` (searched for `EXP-220*`; no matches). Likely missing/misnamed scenario; requires follow-up.
 
-## Recent changes scan (agents repo)
-- Latest commit `f70f2011b` changes only `agents/scout/last-session.md` (auto-generated; low risk).
-- No other unverified code changes identified in this heartbeat due to missing main repo git context (root `/app` is not a git repo).
+## Evidence
+- `find agents/gym/scenarios -maxdepth 1 -type d -name 'EXP-220*'` returned no output.
+
+## Next steps
+1. Ask owner/dispatcher what the expected path/name for EXP-220 is (or whether it lives in a different repo/location).
+2. If EXP-220 should exist here, create/restore scenario folder with standard structure + README and add to scenarios index.
+3. Address coaching: ensure every QA session ends with `finish()` and last tool call is `finish()`.
