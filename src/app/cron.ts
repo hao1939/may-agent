@@ -674,7 +674,7 @@ export class Cron {
 
     this.emitEvent?.({ type: "emit", event: "handler.started", data: { handler: entry.name, agent } });
 
-    const HANDLER_TIMEOUT_MS = 5 * 60_000; // 5 min max per handler
+    const HANDLER_TIMEOUT_MS = entry.handlerConfig?.timeoutMs ?? 5 * 60_000; // per-handler or 5min default
 
     const handlerPromise = handler(triggerEvent);
     const timeoutPromise = new Promise<never>((_, reject) =>
