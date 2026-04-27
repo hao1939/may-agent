@@ -1,25 +1,30 @@
-# Tech-Lead Last Session — 2026-04-27
+# Tech-Lead Last Session — 2026-11-02
 
-## Heartbeat (read-only audit)
+## Heartbeat
 
-**Build**: Clean — `tsc --noEmit` passes with no errors.
-**DB**: `.state/requests.db` has `requests` table with full schema (22 columns). `.state/may.db` has 20+ tables. Both healthy.
-**Sessions**: Active across all agents (may: 4473, coach: 2551, bob: 2477, tech-lead: 2246, optimizer: 1802).
+**Build**: Workspace tests pass (15/15). No TypeScript in workspace (plain JS).
+**Metrics**: All green — build-health 1, meaningful-changes 7548, codebase-weight 28694, delegation-quality 0.98.
+**requests.db**: Table exists, 0 rows (empty but functional).
 
-## Inbox Triage (9 items → all dismissed)
+## Actions Taken
+
+1. **Lab cleanup**: Archived 67 stale experiments from `agents/.lab/` to `agents/.lab/archive/`. Only 3 active experiments remain (deployment-lifecycle-skill, evidence-hierarchy-skill, exp239-rbe-structural). Note: `.lab/` is gitignored so this is local-only.
+
+## Inbox Triage (9 items)
 
 | Item | Decision | Reason |
 |------|----------|--------|
-| Gym runner bug (34h) | Dismiss | Bob's domain |
-| Bob SOUL.md rule (27h) | Dismiss | Already present |
-| Gym runner blocker (26h) | Dismiss | Bob's domain |
-| C7.1 at 39% (20h) | Dismiss | Context.md already has warnings |
-| C7.1 coaching (19h) | Dismiss | Same as above |
-| requests.db zero tables (4h) | Dismiss | Verified: table exists with schema |
-| EXP-235 ready (3h) | Acknowledge | Needs src/ infra changes by may |
-| Context quality (1h) | Dismiss | Already cleaned |
-| 21 never-fired crons (56m) | Dismiss | Event-driven handlers fire on events, not intervals — correct behavior |
+| Gym runner bug (35h) | Dismiss | Gym/Bob domain |
+| Bob SOUL.md rule (27h) | Dismiss | Bob's config |
+| Gym runner blocker (26h) | Dismiss | Gym/Bob domain |
+| C7.1 at 39% (20h) | Acknowledge | Need to improve path compliance |
+| C7.1 coaching (19h) | Acknowledge | Same |
+| requests.db zero tables (4h) | Dismiss | Table exists, schema correct |
+| EXP-235 ready (4h) | Acknowledge | Needs may/infra to integrate |
+| Context quality (2h) | Dismiss | Already cleaned |
+| 21 never-fired crons (1h) | Dismiss | Only 19 crons total, 5 event-driven (fire on events not intervals) |
 
 ## Next Heartbeat
-- Follow up on EXP-235 integration — needs may/infra to wire context-matcher into session init
-- Check for any new build issues
+- Follow up on EXP-235 integration
+- Investigate C7.1 path compliance improvement
+- Check if lab archive should be purged entirely (currently gitignored, 5MB local)
