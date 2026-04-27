@@ -30,11 +30,15 @@
 - Remove P53 bash guard references from coach/optimizer LESSONS.md (guard was removed months ago)
 
 ## P1: EXP-250 — Amy Path-Orientation Skill (IT-113 progression)
-- **Status**: DESIGNED (Jun 29). Lab fork created at `agents/.lab/amy-env-orientation/`
+- **Status**: BLOCKED (Jun 29). Lab fork created at `agents/.lab/amy-env-orientation/`
 - **Finding**: Amy's #1 failure is PATH_HALLUCINATION (8/10 low-quality sessions). Skill written.
-- **Next**: Need bob to run gym trials: `partial-verification-trap` + `read-before-edit` with lab_fork tag
-- **Blocked on**: gym-run.sh requires live agent invocation (can't execute in coach session)
+- **Blocked on**: gym-run.sh requires GYM_AGENT_BIN env var — can't invoke agents from coach session
+- **Need**: Someone with agent invocation capability to run: `agents/test/gym/run-gym.sh partial-verification-trap --agent amy --lab-fork EXP250-baseline` and `--lab-fork EXP250-treatment` (with skill)
 - **Design**: `agents/coach/workspace/EXP-250-design.md`
+
+## P0: Skill Quality Scorecard ✅ DONE (Jun 29)
+- **Output**: `agents/coach/workspace/skill-quality-scorecard.md`
+- **Finding**: 108 skills scored structurally (0-6 scale). Mean 4.4/6. 86% score 4+. Evidence-backing is weakest dimension (only 53% cite KE/EXP). 8 README placeholders are junk. Behavioral effectiveness still unknown — needs gym A/B data.
 
 ## P2: Investigate Amy Quality Gap ✅ DIAGNOSED (Jun 29)
 - Amy has lowest avg quality (0.869 last 7d) across all agents
