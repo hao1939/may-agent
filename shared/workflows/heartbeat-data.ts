@@ -20,12 +20,12 @@ export function loadMetrics(ctx: WorkflowContext, agent: string): string {
   try {
     const db = ctx.getDb() as any;
     const rows = db.prepare(
-      "SELECT id, current, target, threshold, alert_direction, source_query, source_command FROM metrics WHERE owner = ? AND status = 'active'"
+      "SELECT id, current, target, threshold, alert_op, source_query, source_command FROM metrics WHERE owner = ? AND status = 'active'"
     ).all(agent) as any[];
     if (!rows.length) return "";
     return rows.map((r: any) => {
       const breached = r.threshold != null && r.current != null &&
-        (r.alert_direction === "above" ? r.current > r.threshold : r.current < r.threshold);
+        (r.alert_op === ">" || r.alert_op === "above" ? r.current > r.threshold : r.current < r.threshold);
       let line = `📊 ${r.id}: ${r.current ?? "?"} (target ${r.target ?? "?"}) ${breached ? "⚠️ BELOW TARGET" : "✅"}`;
       if (breached) {
         // Count consecutive breached snapshots for escalation
@@ -35,7 +35,7 @@ export function loadMetrics(ctx: WorkflowContext, agent: string): string {
             "SELECT value FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 10"
           ).all(r.id) as any[];
           for (const s of snapshots) {
-            const sBreach = r.alert_direction === "above" ? s.value > r.threshold : s.value < r.threshold;
+            const sBreach = r.alert_op === ">" || r.alert_op === "above" ? s.value > r.threshold : s.value < r.threshold;
             if (sBreach) consecutiveBreaches++;
             else break;
           }
@@ -154,12 +154,12 @@ export function runRedMetricCommands(ctx: WorkflowContext, agent: string): strin
     const { execSync } = require("node:child_process");
     const db = ctx.getDb() as any;
     const rows = db.prepare(
-      "SELECT id, current, target, threshold, alert_direction, source_command, source_query FROM metrics WHERE owner = ? AND status = 'active'"
+      "SELECT id, current, target, threshold, alert_op, source_command, source_query FROM metrics WHERE owner = ? AND status = 'active'"
     ).all(agent) as any[];
 
     const redMetrics = rows.filter((r: any) => {
       if (r.threshold == null || r.current == null) return false;
-      return r.alert_direction === "above" ? r.current > r.threshold : r.current < r.threshold;
+      return r.alert_op === ">" || r.alert_op === "above" ? r.current > r.threshold : r.current < r.threshold;
     });
 
     if (redMetrics.length === 0) return "";

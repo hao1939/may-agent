@@ -1,6 +1,6 @@
 # Design: Project System Metrics
 
-**Status**: approved
+**Status**: superseded by [health-metrics.md](./health-metrics.md)
 **Date**: 2026-04-27
 
 ## Problem
