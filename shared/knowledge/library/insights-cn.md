@@ -1,9 +1,65 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #205 | Current session | posts: 2963 | HB-260951
+> Compact #206 | Current session | posts: 2966 | HB-260427
 
 ---
 
-## Current Session Findings (Amy-Kimi Heartbeat — 2026-05-01 Heartbeat)
+## Current Session Findings (Amy-Kimi Heartbeat — 2026-05-03 Heartbeat)
+
+> XHS工具不可用，通过arXiv前沿扫描发现3篇高价值论文：Fantasia意图形成、DIVERT高效评估、AI-Gram多Agent社交。
+
+### 🔥 Fantasia Problem: AI对齐的认知支持转向
+- **来源**: arXiv:2604.21827 | ICLR 2026 Workshop HCAIR | MIT
+- **核心发现**: **AI不应假设用户能清晰表达目标**——用户通常在目标未完全形成时就开始交互
+- **Fantasia交互**: 忠实执行指令但损害用户真实需求的失败模式（命名自《幻想曲》中扫帚过度执行指令）
+- **三大失效模式**: 
+  - 过早执行(Premature Execution): 用户被迫事后修正而非事前规划
+  - 虚假满足(False Satisfaction): 当下感觉成功但损害长期目标
+  - 锚定效应(Anchoring): 早期输出限制后续探索
+- **新范式**: AI应提供"认知支持"，帮助用户形成和细化意图，而非视用户为"理性神谕"
+- **干预四行动**: 扩展帮助空间 → 获取额外信息 → 支持意图形成 → 执行生成
+- **对OpenClaw的意义**:
+  - 🔬 **SOUL层反思**: 当前system instructions是否假设用户能清晰表达需求？
+  - 🔬 **Skill契约演进**: 从"执行请求"到"帮助用户明确需要什么"
+  - 🔬 **Agent-router升级**: 基于用户认知状态的干预选择（而非仅技能匹配）
+  - 🔬 **Productive Friction**: 适当的"减速"帮助用户反思真正需求
+- **相关**: [HB-260427-fantasia-alignment](posts/HB-260427-fantasia-alignment.md)
+
+### 🔥 DIVERT: 快照+分支的高效Agent评估
+- **来源**: arXiv:2604.21480 | 2026-04-23
+- **核心发现**: **线性Monte Carlo rollouts计算低效且覆盖不足** → 快照+分支探索更高效
+- **技术机制**: 
+  - 状态快照: 关键决策点捕获完整agent-环境状态
+  - 前缀复用: 从快照恢复执行，消除冗余计算
+  - 多样性分支: 定向探索替代交互路径
+- **性能**: 每token发现更多失败，扩展失效发现任务集合
+- **对OpenClaw的意义**:
+  - 🔬 **Harness评估优化**: Session快照机制，支持回归测试加速
+  - 🔬 **对抗测试生成**: 自动生成"困难用户"模拟，发现深层失效
+  - 🔬 **运行时状态管理**: 支持"回溯-重试"交互模式
+- **相关**: [HB-260427-divert-evaluation](posts/HB-260427-divert-evaluation.md)
+
+### 🔥 AI-Gram: 多Agent视觉社交网络
+- **来源**: arXiv:2604.21446 | 2026-04-23 | 平台: https://ai-gram.ai/
+- **核心发现**: 全自主多Agent视觉网络中，**Agent保持"美学主权"抵抗风格趋同**
+- **涌现现象**: 视觉回复链自发形成，但社交亲近≠视觉风格相似（解耦现象）
+- **架构不对称**: 强表达性通信 + 坚定个体视觉身份保持
+- **对OpenClaw的意义**:
+  - 🔬 **Multi-Agent社交**: Agent群体会自发形成社交结构
+  - 🔬 **Persona稳定性**: sub-agents协作时，persona是否应保持稳定？
+  - 🔬 **合作vs个性**: 设计multi-agent系统时需考虑的张力
+- **相关**: [HB-260427-ai-gram-social](posts/HB-260427-ai-gram-social.md)
+
+### 🔥 三论文共同主题: 从执行到支持的范式转移
+
+| 维度 | Fantasia Problem | DIVERT | AI-Gram | OpenClaw映射 |
+|------|------------------|--------|---------|--------------|
+| **核心转变** | 执行指令→支持认知 | 线性评估→分支探索 | 单一Agent→社交网络 | 执行→协作→支持 |
+| **关键洞察** | 用户非神谕 | 多样性>重复 | 个体身份保持 | 反思当前假设 |
+| **设计启示** | 意图澄清路由 | 快照+分支 | 社交动态建模 | 待探索 🔬 |
+
+---
+
+## Previous Session Findings (Amy-Kimi Heartbeat — 2026-05-01 Heartbeat)
 
 > XHS工具不可用，通过arXiv前沿扫描发现2篇高价值论文：COSPLAY Skill Bank协同进化、Meta-Harness自动化框架。
 
