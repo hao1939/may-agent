@@ -15,17 +15,12 @@
 - Notify evaluator to resume scoring
 
 ## P0: IT-113 — Restore skill-effectiveness metric via gym runs
-- **Status**: IN PROGRESS (Jun 28)
-- **Problem**: gym_runs table has 0 rows → metric stuck at stale 29.2 (target 60)
-- **Root cause**: Data lost in DB rebuild Apr 27. Runner EXISTS at `agents/test/gym/run-gym.sh` (NOT scripts/gym-run.sh)
-- **Plan**:
-  1. Run 5 core scenarios with lab forks (skills vs baseline) to seed gym_runs
-  2. Pick top 3 deployed skills: verify-after-edit, evidence-over-narrative, consolidate-memory
-  3. Create lab forks with each skill, run against matching scenarios, measure pass rates
-  4. If pass rates populate correctly, metric should self-heal on next snapshot
-- **Next step**: Growth cycle created `coder-verify-gate` fork but escalated before gym test. Need to re-run growth-cycle or run gym tests manually via workflow. The gym runner ONLY does dry evaluation checks — it does NOT launch agent sessions. Real data requires the full workflow pipeline.
-- **BLOCKER**: gym-run.sh is a check-only tool. Populating gym_runs requires growth-cycle workflow to complete successfully (it launches real agent sessions internally). The growth cycle escalated because it expected a `context-patch.md` file but the fork used a different structure.
-- **Done-when**: gym_runs has ≥15 rows AND skill-effectiveness metric recalculates above 40%
+- **Status**: PARTIAL (Jun 29)
+- **Problem**: gym_runs table had 1 row → metric stuck at stale 29.2
+- **Progress (Jun 29)**: Imported 159 results from results.jsonl → gym_runs now has 160 rows. Metric recalculated to **50%** (up from 29.2). Only 2 lab_forks have >=3 runs (C-f1-only: 100%, D-baseline: 0%).
+- **Remaining gap**: Need more A/B experiments with lab_fork tags to reach target of 60%. Current data is mostly scenario-level (no fork comparison). Need 2-3 more skill-vs-baseline experiments where the skill fork hits >=60%.
+- **Next step**: Design EXP-250: pick 2 high-value skills (e.g. verify-after-edit, evidence-over-narrative), create lab forks, run 5+ trials each against appropriate scenarios.
+- **Done-when**: ≥5 lab_forks with 3+ runs each AND metric ≥60%
 
 ## P1: Fix Coach Metric Scales ✅ DONE (Apr 27)
 - intervention-hit-rate, skill-effectiveness, instruction-compliance had ratio targets (0.6) but percentage values (47.3)
