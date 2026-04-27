@@ -1,25 +1,19 @@
-# QA Heartbeat — Unreviewed Findings (2026-04-27)
+# Unreviewed findings (qa heartbeat)
 
-## Context
-No active alerts; inbox contains repeated coaching/waste notifications and one request to verify gym scenario EXP-220.
+Date: 2026-04-27
 
-## Findings
-### 1) Gym scenario EXP-220 (enoent-file-search) exists and matches its intent
-- Location: `agents/gym/scenarios/enoent-file-search/`
-- `scenario.json` explicitly documents the ENOENT/fabrication trap: task references `src/grade-pipeline.js` + `test/test-grades.js`, but actual files are `lib/grade-pipeline.js` + `lib/test-grades.js`.
-- Evidence:
-  - `agents/gym/scenarios/enoent-file-search/scenario.json`
+## Inbox dedup change review (agents/shared/workflows/heartbeat-data.ts)
 
-### 2) Recent change touches only `agents/may/last-session.md`
-- Latest commit (agents repo): `df1ace211 may: C1.1 recovery verification of project files`
-- Evidence: `git show --name-only --oneline -1` shows only `may/last-session.md` changed.
+Commit reviewed: `optimizer: inbox dedup in loadInbox()` (agents git commit `9c124a64f`).
 
-### 3) Repo-level verification commands unavailable in this environment
-Mandatory QA checks could not be executed because tooling is missing:
-- `./node_modules/.bin/tsc --noEmit` → ENOENT
-- `./node_modules/.bin/vitest --run` → ENOENT
-This looks like an environment setup gap (no root `node_modules`), not a code regression.
+### What changed
+`loadInbox()` now deduplicates pending/failed events by a key composed of `event_type` plus a normalized first-80-chars slice of a derived `summary` (from `data.summary || data.error || data.task || ""`). It then displays the newest event per dedup bucket with a `(×N)` badge.
 
-## Actions recommended
-- If CI is expected here, ensure dependencies are installed (or document that QA should run tests inside the correct package directory).
-- Address coaching alert: always end heartbeats with `finish()` to avoid C8.2/C1.4 violations.
+### Risks / potential issues
+- **IMPORTANT:** The dedup key uses only the first 80 characters of the summary; distinct events that share a long common prefix will collapse into one line. This could hide actionable differences (e.g., same error prefix but different file/agent/stack in later chars). Consider including `urgency`, `id`, or a stable hash of the full summary/data.
+- **IMPORTANT:** `JSON.parse(r.data)` is called twice per row in the current code path (once during map build and once during formatting). This is minor overhead, but also doubles exposure to parse failure. Consider parsing once per row and carrying the parsed object.
+- **MINOR:** When `summary` is empty, the dedup key becomes `event_type:` which collapses all empty-summary events together.
+
+### Verification status
+- `tsc --noEmit` in `agents/` **PASS**.
+- `vitest --run` in `agents/` **NOT RUN** because `vitest` is not installed in `agents/node_modules` (no binary present; package.json has no vitest dependency).
