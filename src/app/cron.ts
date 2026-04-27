@@ -88,6 +88,7 @@ export class Cron {
     private onError?: (msg: string) => void,
     projectRoot?: string,
     private notify?: (msg: string) => void,
+    private emitEvent?: (event: any) => void,
   ) {
     this.projectRoot = projectRoot ?? resolve(dirname(configPath), "../..");
     this.persistDir = resolve(this.projectRoot, ".state");
@@ -665,8 +666,12 @@ export class Cron {
     }
 
     this.onJobFire?.(entry, "js");
-    this.inflightJobs.set(entry.name, Date.now());
-    this.lastFireTimes.set(entry.name, Date.now());
+    const startMs = Date.now();
+    this.inflightJobs.set(entry.name, startMs);
+    this.lastFireTimes.set(entry.name, startMs);
+    const agent = entry.agent || "may";
+
+    this.emitEvent?.({ type: "emit", event: "handler.started", data: { handler: entry.name, agent } });
 
     const HANDLER_TIMEOUT_MS = 5 * 60_000; // 5 min max per handler
 
@@ -678,10 +683,12 @@ export class Cron {
     Promise.race([handlerPromise, timeoutPromise])
       .then(() => {
         this.inflightJobs.delete(entry.name);
+        this.emitEvent?.({ type: "emit", event: "handler.completed", data: { handler: entry.name, agent, durationMs: Date.now() - startMs } });
       })
       .catch((err) => {
         this.inflightJobs.delete(entry.name);
         const errMsg = err instanceof Error ? err.message : String(err);
+        this.emitEvent?.({ type: "emit", event: "handler.failed", data: { handler: entry.name, agent, error: errMsg, durationMs: Date.now() - startMs } });
         this.onError?.(`Cron handler "${entry.name}" failed: ${errMsg}`);
         this.notify?.(`⚠️ Handler "${entry.name}" failed: ${errMsg}`);
       });

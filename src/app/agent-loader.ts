@@ -292,6 +292,7 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
             (msg) => {
               bus.emit({ type: "notification", agent: config.name, text: msg });
             },
+            (event) => bus.emit(event),
           );
           cron.load();
           agentCrons.set(config.name, cron);
