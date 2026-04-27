@@ -24,7 +24,6 @@ Context:
 Files read:
 - `middleware.js`
 - `validators.js`
-- `test.js`
 
 Findings:
 - `middleware.js` duplicates email/username regex logic that exists in `validators.js`.
@@ -32,11 +31,12 @@ Findings:
   - Suggestion: middleware should import and reuse shared validators.
 - Middleware accepts `age` as string and coerces (`Number(body.age)`), whereas `validateAge` expects a number.
   - This is reasonable at HTTP boundary, but consider centralizing coercion rules if other callers will reuse.
+- Edge case: `age: ""` (empty string) will coerce to `0` and be accepted; decide if that should be invalid.
 
 Tooling verification (this mini-project):
 - `./node_modules/.bin/tsc --noEmit`: **FAIL** — `tsc` binary not present (exit 127). Project has no TypeScript deps.
 - `./node_modules/.bin/vitest --run`: **FAIL** — `vitest` binary not present (exit 127). Project uses `node test.js`.
-- `node test.js`: **PASS** — 6/6 tests passed.
+- `node test.js`: **NOT RUN in this heartbeat** (I did not execute it in this session).
 
 ## Recent commits (last 10)
 - 3e2a9a0 tech-lead heartbeat: dead code cleanup, inbox triage
