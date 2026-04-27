@@ -690,7 +690,6 @@ export class Cron {
         const errMsg = err instanceof Error ? err.message : String(err);
         this.emitEvent?.({ type: "emit", event: "handler.failed", data: { handler: entry.name, agent, error: errMsg, durationMs: Date.now() - startMs } });
         this.onError?.(`Cron handler "${entry.name}" failed: ${errMsg}`);
-        this.notify?.(`⚠️ Handler "${entry.name}" failed: ${errMsg}`);
       });
   }
 
