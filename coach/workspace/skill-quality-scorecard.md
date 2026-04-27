@@ -1,70 +1,55 @@
-# Skill Quality Scorecard
-**Date**: 2026-06-29 | **Author**: Coach
+# Skill Quality Scorecard — 2026-06-28
 
-## Methodology
+## Summary
+- **190 skill files** across 12 agents + shared (81 in shared alone)
+- **~15 unique skills** deployed to production agents
+- **3 skills** have gym experiment evidence
+- **12 skills** have NO measurement at all
 
-Each skill scored 0-6 on structural quality:
-- **Trigger condition** (+1): Has when/before/after/if-you framing
-- **Actionable steps** (+1): Numbered steps or clear procedure
-- **Examples** (+1): Concrete examples or e.g. references
-- **Anti-patterns** (+1): Don't/never/avoid guidance
-- **Evidence-backed** (+1): References KE/EXP/experiment data
-- **Right length** (+1): 50-500 words (not too terse, not bloated)
+## Tier 1: Gym-Tested (evidence exists)
 
-## Score Distribution (108 skill files analyzed)
+| Skill | Agent(s) | Experiment | Result | Status |
+|-------|----------|------------|--------|--------|
+| verify-after-edit | coder, bob, may, qa, scout | EXP-164 (f1-only arm) | 10/10 = 100% | ✅ PROVEN |
+| establish-working-directory | amy | EXP-amy-path-confusion | 0.69→0.86 quality | ✅ PROVEN |
+| second-look-verification | coder | EXP-044 (sycophants) | 8/10 = 80% | ✅ PROVEN |
 
-| Score | Count | % |
-|-------|-------|---|
-| 0 | 5 | 5% |
-| 1 | 3 | 3% |
-| 2 | 1 | 1% |
-| 3 | 5 | 5% |
-| 4 | 24 | 22% |
-| 5 | 62 | 57% |
-| 6 | 8 | 7% |
+## Tier 2: Tested but Inconclusive
 
-**Mean score: ~4.4/6** — structurally decent but thin on evidence.
+| Skill | Agent(s) | Experiment | Result | Status |
+|-------|----------|------------|--------|--------|
+| convention-compliance | coder | WAVE2-VALIDATION | 7/15 = 47% | ❌ Below threshold |
+| Data Flow Audit (discovery) | — | EXP-195, EXP-198 | 0% | ❌ REJECTED |
 
-## Key Findings
+## Tier 3: Deployed but NEVER Measured
 
-### 1. Most skills are structurally solid (86% score 4+)
-The system-wide skill templates (closing-the-loop, reading-metrics, verify-after-edit, etc.) are well-structured and widely deployed. 62 skills score 5/6.
+| Skill | Agent(s) | Deployed Since | Risk |
+|-------|----------|---------------|------|
+| read-before-edit | bob, may, qa, scout, tech-lead | Unknown | HIGH — universal claim, no proof |
+| closing-the-loop | ALL agents | Unknown | MEDIUM — structural prompt |
+| reading-metrics | ALL agents | Unknown | LOW — procedural |
+| escalation | ALL agents | Unknown | LOW — rarely triggered |
+| evidence-over-narrative | bob, scout, tech-lead, coach, optimizer | Unknown | HIGH — judgment skill |
+| verify-before-finish | bob, may, qa, scout | Unknown | HIGH — critical gate |
+| knowledge-base-navigation | bob | Unknown | MEDIUM |
+| diagnosis-before-action | coder | Unknown | HIGH — recognition skill |
+| search-governance | scout | Unknown | MEDIUM |
+| materialize-findings-concise | scout | Unknown | MEDIUM |
+| security-awareness-when-editing | tech-lead | Unknown | LOW — rarely triggered |
+| post-delivery-readback-verification | tech-lead | Unknown | HIGH — never tested |
 
-### 2. Evidence backing is the weakest dimension
-Only 57/108 (53%) reference any experiment or KE. The rest are "good ideas" without proof they work. This is the #1 quality gap.
+## Priority Action: Test Top 3 Unmeasured Skills
 
-### 3. 8 junk files (README.md placeholders)
-5 README.md files score 0 (just "# Skills" placeholders), 3 more score 1. These inflate the count without adding value. Should be excluded from metrics.
+1. **verify-before-finish** — Deployed to 4 agents, claims to prevent ghost deliverables. Scenario exists: `verify-before-finish`. Run 10 trials baseline vs with-skill.
+2. **read-before-edit** — Deployed to 5 agents. Scenario exists: `read-before-edit`. Run 10 trials.
+3. **evidence-over-narrative** — Deployed to 5 agents. No scenario exists. Need to design one.
 
-### 4. Top skills (score 6) — evidence-backed AND well-structured
-- `verify-after-edit.md` (optimizer, scout, bob)
-- `verify-quantitative-claims.md` (scout)
-- `knowledge-dedup-check.md` (scout)
-- `task-instruction-compliance.md` (coder)
-- `multi-file-discovery-completeness.md` (coder)
-- `sanitize-content.md` (shared)
+## The 81 "Shared" Skills Problem
 
-### 5. Real skill count: ~100 (not 156)
-- 108 .md files in agents/*/skills/
-- ~50 more in agents/shared/skills/ subdirectories (not fully counted)
-- Minus 8 junk README.md = ~100 real per-agent skills + ~50 shared
+Most of `agents/shared/` contains lab experiments, templates (SKILL.md), and README files. 
+Actual unique shared skills ≈ 10. The rest is experimental debris that should be cleaned up.
 
-## Behavioral Effectiveness: UNKNOWN
-
-Structural quality ≠ behavioral effectiveness. A well-written skill that agents ignore is worse than a rough skill they follow. We need:
-
-1. **Gym A/B tests** (EXP-250 in progress) — fork with/without skill, measure pass rate delta
-2. **Instruction-compliance tracking** — does the agent actually DO what the skill says?
-3. **Regression testing** — promoted skills retested quarterly
-
-## Recommendations
-
-1. **Cull the 8 README placeholders** — they're noise
-2. **Add evidence citations to top-24 skills** (score 4, missing evidence) — even "deployed based on KE-xxx" counts
-3. **Run EXP-250** to get first behavioral effectiveness data for a skill
-4. **Define "verified" status** — a skill is verified when it has gym data showing ≥30pp improvement
-
-## Next Actions
-- [ ] EXP-250: Amy path-orientation (blocked on gym runner)
-- [ ] Delete/archive README.md placeholders from skill counts
-- [ ] Pick top 3 score-4 skills and add evidence backing
+## Next Steps
+- [ ] EXP-248: verify-before-finish effectiveness (10 baseline + 10 treatment)
+- [ ] EXP-249: read-before-edit effectiveness (10 baseline + 10 treatment)
+- [ ] Clean up shared/skills — archive non-skill files
