@@ -38,3 +38,5 @@ Initial content review:
 
 ## Next QA actions (requires node repo)
 Mandatory QA steps for code changes (tsc/vitest) were not run this heartbeat because no application TypeScript project/review target was identified outside the `agents/` repo.
+
+If a specific patch needs review, provide the repository path (e.g. `/app/agents` vs another worktree) and the change/PR identifier.
