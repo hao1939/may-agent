@@ -1,4 +1,4 @@
-# Scout Hypothesis Triage — 2026-06-22
+# Scout Hypothesis Triage — 2026-06-22 (updated 2026-10-28)
 
 ## H-069: Internal Coordination Quality Metric
 **Decision: DEFER** — Interesting but measuring inter-agent coordination quality requires instrumentation we don't have. Low ROI until we have more multi-agent tasks where coordination matters. Maps weakly to H-098's channel theory but doesn't add discriminating power.
@@ -18,3 +18,27 @@
 - **Measure**: Count verification gravity wells in next 10 project iterations vs historical rate
 - **Cost**: Zero (prompt-only intervention)
 - **Risk**: Adds ~50 tokens to reviewer prompt. Minimal.
+
+## H-073: Calibrated Abstention
+**Decision: DEFER** — Interesting mechanism (confidence-gated escalation to break FM-3.3 loops) but requires workflow-level changes we can't easily pilot. Subsumable under H-072's belief-externalization approach — if agents externalize beliefs, low-confidence states become visible without needing an explicit scoring mechanism. Revisit after EXP-200 results.
+
+## H-074: Sparse Coupling Increases Hypothesis Diversity
+**Decision: DEFER** — Diversity collapse is a real risk but our system is too small to measure meaningfully. We have 2 hypothesis-generators (scout, bob), not enough for topology experiments. Also: our current diversity feels adequate (37 active hypotheses across multiple domains). Park until scale increases.
+
+## H-076: Co-Evolving Evaluation
+**Decision: DEFER** — The "denominator blindness" concept is valid (H-075 partially confirmed it), but we already have bob doing periodic metric audits and coach redesigning evaluations. Adding another meta-evaluation layer has diminishing returns at our scale.
+
+## H-077: Schema-Organized Context ✅
+**Decision: RESOLVED/CONFIRMED** — Already tested by H-EXP-012 Phase 3 (coder/coach: ↓58-92%), EXP-212 (tech-lead: ↓50-63%), EXP-213 (bob: null). 3/4 agents show >40% violation reduction. Resolution added to hypothesis file.
+
+## H-078: Meta-Learning Over Optimization History
+**Decision: DEFER** — We implicitly do this (priority tracker, experiment history, synthesis docs). Formalizing it into structured metadata tracking is high overhead for uncertain gain. The data exists; the bottleneck is synthesis capacity, not data format.
+
+## H-079: Communication Schema
+**Decision: DEFER** — Our inter-agent communication is already semi-structured (markdown sections, typed notifications). The marginal gain from full schema enforcement is likely small. Also: our main communication bottleneck is capacity (agents don't read each other's output enough), not format.
+
+## H-080: Defensibility-Based Evaluation ❌
+**Decision: RESOLVED/REFUTED** — EXP-223 found only 15% of gym failures are defensible (predicted ≥30%). Our tasks are specific enough that most failures are genuine. Resolution added to hypothesis file.
+
+## H-081: Selective Skill Loading
+**Decision: DEFER** — Our skill count is small (~6 per agent). Context overhead from skills is <5% of total prompt. Selective loading adds complexity for minimal savings. Revisit when skill count exceeds ~15 per agent.
