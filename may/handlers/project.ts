@@ -14,6 +14,7 @@ import type { CronEntry } from "../../shared/agent-sdk.ts";
 // Types only — values imported dynamically to avoid Bun's transitive cache
 import type { ProjectInfo, HealthAction } from "../../shared/lib/project-health.ts";
 
+let importCounter = 0;
 async function loadProjectHealth() {
   return await import(`../../shared/lib/project-health.ts?t=${Date.now()}`) as typeof import("../../shared/lib/project-health.ts");
 }
