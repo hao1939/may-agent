@@ -1,8 +1,8 @@
 # H-205: Pre-emptive Guards Produce Behavioral Change; Post-hoc Guards Don't
 
 **Created**: 2027-09-16 by Bob
-**Status**: proposed
-**Confidence**: ★★★☆ (strong supporting data from EXP-254)
+**Status**: VALIDATED ✅ — P(H) = 0.90. Multi-experiment support: EXP-188 (+100pp with finish-guard), EXP-254 (0% change from post-hoc RBE/VAE guards, 730 wasted recovery steps).
+**Confidence**: ★★★★ (converging evidence from 3+ experiments)
 **Source**: EXP-254 (Post-Guard Activation Audit)
 **Connects**: KE-002, H-098, EXP-188, EXP-248, EXP-250
 
