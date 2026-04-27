@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777298014116_69
+- **Session:** s_1777299815958_82
 - **Status:** done
-- **When:** 2026-04-27T13:54:23.617Z
-- **Duration:** 49s
+- **When:** 2026-04-27T14:24:39.557Z
+- **Duration:** 1m3s
 
 ## What Happened
-No active requests in the queue — the duplicate request problem from 66h ago seems resolved. 
-
-Key finding: **amy-kimi is 100% erroring** with 429 rate limits. All 9 sessions in the last 6h (and all in the last 24h) are errors. This agent needs to be paused or its rate limiting addressed.
+No pending requests in the DB. The notification was sent via the notify tool (not tracked as a request). Everything checks out.
