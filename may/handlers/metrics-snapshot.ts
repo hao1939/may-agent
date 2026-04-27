@@ -1,23 +1,36 @@
 /**
- * metrics-snapshot — Measures handler health metrics every 5 minutes.
+ * metrics-snapshot — Measures system health metrics every 5 minutes.
  *
  * Queries the events table for handler.started/completed/failed events
- * and writes metric snapshots for:
- *   - handler.success-rate
- *   - handler.heartbeat-coverage
- *   - handler.p95-duration
- *   - handler.fires-per-hour
+ * and the projects table, writing metric snapshots for:
+ *
+ * Handler metrics:
+ *   - handler.completed-count (6h)
+ *   - handler.failed-count (6h)
+ *   - handler.success-rate (6h, derived)
+ *   - handler.heartbeat-coverage (2h)
+ *   - handler.p95-duration (6h)
+ *   - handler.fires-per-hour (1h)
+ *
+ * Project metrics:
+ *   - project.active-count
+ *   - project.blocked-count
+ *   - project.stale-active-count (48h)
+ *   - project.iterations-24h
+ *   - project.blocked-rate-7d (derived)
  */
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.ts";
 import type { CronEntry } from "../../shared/agent-sdk.ts";
 
+// alert_op: "<" means alert when current < threshold (too low)
+//           ">" means alert when current > threshold (too high)
 const METRICS = [
-  { id: "handler.completed-count", name: "Handler completions (6h)", owner: "may", target: 50, threshold: 10, unit: "count", direction: "<" },
-  { id: "handler.failed-count", name: "Handler failures (6h)", owner: "may", target: 0, threshold: 3, unit: "count", direction: ">" },
-  { id: "handler.success-rate", name: "Handler success rate (6h)", owner: "optimizer", target: 0.95, threshold: 0.80, unit: "ratio", direction: "<" },
-  { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents)", owner: "may", target: 8, threshold: 6, unit: "count", direction: "<" },
-  { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", target: 120000, threshold: 600000, unit: "ms", direction: ">" },
-  { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", target: 30, threshold: 15, unit: "count", direction: "<" },
+  { id: "handler.completed-count", name: "Handler completions (6h)", owner: "may", target: 50, threshold: 10, unit: "count", alert_op: "<" },
+  { id: "handler.failed-count", name: "Handler failures (6h)", owner: "may", target: 0, threshold: 3, unit: "count", alert_op: ">" },
+  { id: "handler.success-rate", name: "Handler success rate (6h)", owner: "optimizer", target: 0.95, threshold: 0.80, unit: "ratio", alert_op: "<" },
+  { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents)", owner: "may", target: 8, threshold: 6, unit: "count", alert_op: "<" },
+  { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", target: 120000, threshold: 600000, unit: "ms", alert_op: ">" },
+  { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", target: 30, threshold: 15, unit: "count", alert_op: "<" },
 ];
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
@@ -28,16 +41,18 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const twoHoursAgo = now - 2 * 3600000;
     const oneHourAgo = now - 3600000;
 
+    // Rename column on first run (alert_direction → alert_op)
+    try { db.run("ALTER TABLE metrics RENAME COLUMN alert_direction TO alert_op"); } catch {}
+
     // Ensure metrics exist
     for (const m of METRICS) {
       try {
         db.run(
-          `INSERT OR IGNORE INTO metrics (id, name, owner, current, target, threshold, unit, type, status, speed, alert_direction, created_at, updated_at)
+          `INSERT OR IGNORE INTO metrics (id, name, owner, current, target, threshold, unit, type, status, speed, alert_op, created_at, updated_at)
            VALUES (?, ?, ?, NULL, ?, ?, ?, 'health', 'active', 'fast', ?, ?, ?)`,
-          [m.id, m.name, m.owner, m.target, m.threshold, m.unit, m.direction, now, now]
+          [m.id, m.name, m.owner, m.target, m.threshold, m.unit, m.alert_op, now, now]
         );
-        // Also update alert_direction for existing rows (in case it was wrong)
-        db.run("UPDATE metrics SET alert_direction = ? WHERE id = ?", [m.direction, m.id]);
+        db.run("UPDATE metrics SET alert_op = ?, threshold = ? WHERE id = ?", [m.alert_op, m.threshold, m.id]);
       } catch { /* already exists */ }
     }
 
@@ -187,21 +202,21 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         ["project.blocked-rate-7d", parseFloat(rate.toFixed(4)), now, "metrics-snapshot"]);
     } catch (e) { ctx.log(`[metrics-snapshot] blocked-rate error: ${e}`); }
 
-    // project.max-blocked-hours
+    // project.blocked-over-6h
     try {
-      const worst = db.prepare(
-        "SELECT MIN(updated_at) as oldest FROM projects WHERE status IN ('blocked', 'waiting')"
-      ).get() as any;
-      const hours = worst?.oldest ? Math.round((now - worst.oldest) / 3600000) : 0;
+      const sixHoursMs = 6 * 3600000;
+      const count = (db.prepare(
+        "SELECT COUNT(*) as c FROM projects WHERE status IN ('blocked', 'waiting') AND updated_at < ?"
+      ).get(now - sixHoursMs) as any)?.c || 0;
       db.run(
         `INSERT OR IGNORE INTO metrics (id, name, owner, current, target, threshold, unit, type, status, speed, alert_direction, created_at, updated_at)
-         VALUES ('project.max-blocked-hours', 'Longest blocked project (hours)', 'may', NULL, 0, 24, 'hours', 'health', 'active', 'fast', 'above', ?, ?)`,
+         VALUES ('project.blocked-over-6h', 'Projects blocked/waiting >6h', 'may', NULL, 0, 1, 'count', 'health', 'active', 'fast', 'above', ?, ?)`,
         [now, now]
       );
-      db.run("UPDATE metrics SET current = ?, updated_at = ? WHERE id = ?", [hours, now, "project.max-blocked-hours"]);
+      db.run("UPDATE metrics SET current = ?, updated_at = ? WHERE id = ?", [count, now, "project.blocked-over-6h"]);
       db.run("INSERT INTO metric_snapshots (metric_id, value, measured_at, measured_by) VALUES (?, ?, ?, ?)",
-        ["project.max-blocked-hours", hours, now, "metrics-snapshot"]);
-    } catch (e) { ctx.log(`[metrics-snapshot] max-blocked-hours error: ${e}`); }
+        ["project.blocked-over-6h", count, now, "metrics-snapshot"]);
+    } catch (e) { ctx.log(`[metrics-snapshot] blocked-over-6h error: ${e}`); }
 
     // ── Generic metric measurement (source_query / source_command) ──────
     try {
