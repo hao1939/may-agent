@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777330890807_137
+- **Session:** s_1777332413917_147
 - **Status:** done
-- **When:** 2026-04-27T23:01:44.567Z
-- **Duration:** 13s
+- **When:** 2026-04-27T23:29:05.815Z
+- **Duration:** 2m11s
 
 ## What Happened
-File looks correct — well-structured markdown table with verified and unverified items, no data loss or formatting issues.
+Now update EXP-252 with post-pruning status and notify bob to implement:
