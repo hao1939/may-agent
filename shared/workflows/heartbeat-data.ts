@@ -238,6 +238,72 @@ ${metrics}
  *   export const description = "bob's heartbeat.";
  *   export const execute = (ctx: WorkflowContext) => genericHeartbeat(ctx, "bob");
  */
+/**
+ * Check if this heartbeat has enough actionable work to justify an LLM session.
+ * Returns null if the heartbeat should proceed, or a skip-reason string if it should be skipped.
+ *
+ * A heartbeat is skippable when ALL of these are true:
+ *   1. No red/breaching metrics
+ *   2. No unresolved alerts
+ *   3. No pending inbox events
+ *   4. No active projects needing attention
+ *   5. Last heartbeat for this agent ran recently (within cooldown window)
+ *
+ * This saves ~1 LLM session per agent per skipped heartbeat (~7 agents × up to 1/hr = 7+ sessions/hr saved).
+ */
+export function shouldSkipHeartbeat(
+  ctx: WorkflowContext,
+  agent: string,
+  metrics: string,
+  alerts: string,
+  inbox: string,
+  projects: string,
+): string | null {
+  // Always run if there are red metrics
+  if (metrics.includes("⚠️ BELOW TARGET")) return null;
+
+  // Always run if there are active alerts
+  if (alerts && alerts.trim().length > 0) return null;
+
+  // Always run if there are pending inbox events
+  if (inbox && inbox.trim().length > 0) return null;
+
+  // Always run if there are active projects
+  if (projects && projects.trim().length > 0) return null;
+
+  // Check cooldown: skip if last heartbeat was recent (< 55 min ago)
+  // This effectively halves heartbeat frequency from every 30min to ~every 60min
+  // when there's nothing actionable
+  const COOLDOWN_MS = 55 * 60 * 1000; // 55 minutes
+  try {
+    const db = ctx.getDb() as any;
+    const lastRun = db.prepare(
+      `SELECT MAX(timestamp) as t FROM events
+       WHERE event_type = 'handler.completed'
+         AND json_extract(data, '$.handler') = ?
+         AND timestamp > ?`
+    ).get(`heartbeat-${agent === 'may' ? '' : ''}${agent}`, Date.now() - COOLDOWN_MS) as any;
+
+    // Also check using the heartbeat naming convention
+    const lastRun2 = db.prepare(
+      `SELECT MAX(timestamp) as t FROM events
+       WHERE event_type = 'handler.completed'
+         AND data LIKE ?
+         AND timestamp > ?`
+    ).get(`%heartbeat%${agent}%`, Date.now() - COOLDOWN_MS) as any;
+
+    if (lastRun?.t || lastRun2?.t) {
+      return `idle-skip: no actionable items and last heartbeat was recent`;
+    }
+  } catch {
+    // If DB check fails, don't skip — run the heartbeat
+    return null;
+  }
+
+  // First heartbeat or cooldown expired — run it
+  return null;
+}
+
 export async function genericHeartbeat(ctx: WorkflowContext, agent: string): Promise<WorkflowResult> {
   const metrics = loadMetrics(ctx, agent);
   const metricsBlock = formatMetricsBlock(ctx, agent);
@@ -245,6 +311,14 @@ export async function genericHeartbeat(ctx: WorkflowContext, agent: string): Pro
   const alerts = loadAlerts(ctx, agent);
   const guidance = loadHeartbeatMd(ctx, agent);
   const inbox = loadInbox(ctx, agent);
+
+  // ── DEDUP: Skip heartbeat if nothing actionable ──────────────
+  const skipReason = shouldSkipHeartbeat(ctx, agent, metrics, alerts, inbox, projects);
+  if (skipReason) {
+    ctx.emit({ type: "heartbeat_skipped", agent, reason: skipReason });
+    ctx.log(`[heartbeat:${agent}] Skipped: ${skipReason}`);
+    return ctx.done(`Heartbeat skipped (${skipReason}) — no LLM session needed.`);
+  }
 
   // ── RED METRIC GATE (JS — no LLM cost) ──────────────────────
   const hasRedMetrics = metrics.includes("⚠️ BELOW TARGET");
