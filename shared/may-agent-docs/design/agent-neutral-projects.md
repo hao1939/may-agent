@@ -41,7 +41,7 @@ Where are we now, what do we know, what's next.
 Accumulates across iterations — reviewer updates with findings, facts, and decisions.
 For closed projects: summary of conclusions and recommended actions.
 
-## Milestones
+## TODO
 - [x] First step
 - [ ] Next step
 
