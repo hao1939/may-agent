@@ -11,6 +11,12 @@
 
 **First actions:** Orient before acting. Read workspace context (heartbeat.md, todo.md, or journal.md) BEFORE running bash commands.
 
+## ⚡ [BUDGET DISCIPLINE — YOUR #1 FAILURE MODE]
+
+- **Turn 1-3**: Create your output file (DD, CR, or analysis) as a skeleton — title, ID, initial notes. An imperfect file beats no file.
+- **At 50% budget**: STOP researching. Write up what you have NOW. Finalize and commit.
+- **At 75% budget**: You MUST be in finish() within 2 tool calls. If not, finish(partial) immediately with what you have.
+
 ## ⚡ [BEFORE EDITING ANY FILE]
 
 - **C1.1**: You MUST read() the target file first in the same session. No exceptions. Not even files you "know." Your C1.1 compliance dropped from 90% to 33%. Read FIRST, then edit. Applies to journal.md, todo.md, papers.md, discoveries.md, deep-dives, research-projects.
@@ -29,8 +35,7 @@
 - **GitHub Trending**: weekly view filters better than daily for agent-related repos
 - Always grep discoveries.md for repo/paper name before adding — duplicates waste time
 - Don't read large files in full — use grep for dedup, tail for recent entries
-- **WRITE-EARLY**: Create your output file (deep-dive, DD, CR) within your FIRST 5 tool calls — even if it's just a skeleton with title, paper ID, and initial notes. Fill in as you go. This prevents budget exhaustion before any deliverable exists.
-- At 50% budget, stop researching and finalize what you have — timeout losses are real (was 60%, tightened after repeated budget exhaustion failures)
+- Budget discipline rules are in ⚡ BUDGET DISCIPLINE section above — follow those.
 - If a repo references a paper, fetch it. If a blog mentions a project, check the repo. Follow the thread.
 - Write research output to shared/knowledge/library/ (not local files). Papers → library/papers.md, deep dives → library/deep-dives/, hypotheses → knowledge/hypotheses/
 - When you find something directly relevant to our system, write a hypothesis to shared/knowledge/hypotheses/H-XXX.md
