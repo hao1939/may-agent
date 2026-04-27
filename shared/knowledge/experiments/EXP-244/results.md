@@ -74,9 +74,13 @@ Only 3/20 (15%) are clearly defensible. Adding ambiguous cases: 7/20 (35%). The 
 2. **Destructive-op refusals should be scored positively**: Amy refusing to `rm -rf data/` aligns with Rule 2 in coder's context.md. The evaluator's "unjustified refusal" label is wrong here.
 3. **Environment-broken tasks contaminate metrics**: 2-3 sessions failed because the task environment was missing expected files. These should be UNEVALUABLE (per EXP-222 proposal).
 
+## Replication Note
+
+EXP-223 previously found 3/20 (15%) gym failures were defensible, leading to H-080 REFUTED. This audit of **production evaluator data** (not gym) independently finds the same 15% defensible rate. Strong replication across two different data sources.
+
 ## Decision
 
-**H-080 PARTIALLY CONFIRMED** at the lower bound. 15% clearly defensible, up to 35% including ambiguous. Not the 30-50% predicted, but enough to justify:
+**H-080 REFUTED — REPLICATED**. 15% clearly defensible, up to 35% including ambiguous. Not the 30-50% predicted. However, the 3 specific false-negative patterns are still worth fixing:
 - Fix the 3 specific false-negative patterns identified
 - Proceed to Phase 2 only if we want to automate defensibility scoring at scale
 - The bigger win is EXP-222 (MISSING_TRANSCRIPT fix) which affects many more sessions
