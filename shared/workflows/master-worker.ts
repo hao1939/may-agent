@@ -149,9 +149,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const journalContent = readFileSync(journalFile, "utf-8");
 
   const goal = extractSection(projectContent, "Goal") || extractField(projectContent, "Goal") || "See project.md";
-  const milestones = extractSection(projectContent, "Milestones") || "";
-  const currentState = extractSection(projectContent, "Current State") || "";
-  const resources = extractSection(projectContent, "Resources") || "";
   const status = extractField(projectContent, "Status").toLowerCase();
   const maxIterations = parseInt(extractField(projectContent, "Max Iterations")) || DEFAULT_MAX_ITERATIONS;
 
@@ -185,17 +182,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
     let planningPrompt = `Assess this project and decide what to do next.
 
-## Goal
-${goal}
+## project.md
+${projectContent}
 
-## Milestones
-${milestones}
-
-## Current Status: ${status}
-${currentState}
+## journal.md (last 3000 chars)
+${journalContent.slice(-3000)}
 `;
-    if (resources) planningPrompt += `\n## Resources\n${resources}\n`;
-    planningPrompt += `\n## Journal (previous work)\n${journalContent.slice(-3000)}\n`;
 
     // Handle pending comments
     const comments = extractComments(projectContent);
