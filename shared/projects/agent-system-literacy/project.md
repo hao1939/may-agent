@@ -1,11 +1,12 @@
 # Project: Agent System Literacy
 
-**Status**: active
+**Status**: blocked
+**Stop Reason**: Stalled: 2 iterations without milestone progress. 0/8 milestones done.
 **Owner**: bob
 **Type**: continuous
 **Workflow**: master-worker
 **Priority**: P1
-**Iteration**: 1
+**Iteration**: 2
 
 ## Goal
 Agents effectively use the infrastructure: create projects from problems, read and react to metrics, escalate with context, cooperate across agents, and close the loop by extending the system when patterns repeat.
@@ -16,7 +17,7 @@ Agents effectively use the infrastructure: create projects from problems, read a
 - gym.literacy-pass-rate: unknown → target 0.80 (gym scenarios testing system usage)
 
 ## Current State
-Previous 47 iterations were wasted — worker kept exploring without producing deliverables, then got stuck in comment-reprocessing loops. Skills exist (closing-the-loop.md, reading-metrics) but never validated. No baseline metrics measured. Restarting fresh with clear milestones.
+blocked: Stalled: 2 iterations without milestone progress. 0/8 milestones done.
 
 ## Plan
 
