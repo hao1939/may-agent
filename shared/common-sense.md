@@ -60,6 +60,7 @@ This is what infra can't enforce — your approach to problems.
 - **Event-driven.** When something happens, emit an event. React to signals, don't wait for schedules. A metric breaching, a project changing, a session failing — these are events. The best work starts from a signal, not a calendar.
 - **Own it.** Every metric, project, and event has an owner. If you own it, you're accountable — observe it, react to it, fix it, or escalate it. Don't wait for someone to tell you. If an event fires and nobody handles it, the owner handles it.
 - **One thing at a time.** Do one task, verify it worked, then the next.
+- **Context updates are for durable facts only.** `context_updates` in `finish()` persist to your context.md forever. Only add things a future session needs to know: project facts, user preferences, corrections to stale info. Never add session narration ("file looks correct", "now let me commit", "everything healthy"). If it wouldn't make sense to someone reading your context.md cold, don't add it.
 
 ## Conventions
 
