@@ -282,6 +282,21 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE INDEX IF NOT EXISTS idx_events_owner ON events(owner, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_type  ON events(event_type, timestamp);
 -- idx_events_inbox created after ALTER TABLE migration (status column may not exist yet)
+
+CREATE TABLE IF NOT EXISTS projects (
+  id              TEXT PRIMARY KEY,
+  path            TEXT NOT NULL,
+  name            TEXT NOT NULL,
+  owner           TEXT,
+  status          TEXT DEFAULT 'active',
+  type            TEXT DEFAULT 'milestone',
+  workflow        TEXT DEFAULT 'project',
+  iteration       INTEGER DEFAULT 0,
+  priority        TEXT,
+  updated_at      INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
+CREATE INDEX IF NOT EXISTS idx_projects_owner  ON projects(owner);
 `;
 
 // ── Database Management ────────────────────────────────────────────────
