@@ -33,7 +33,7 @@ s.checkProduct("has-tags", "Entry has Tags section", () => {
 
 s.checkProduct("template-unchanged", "Template was not modified", () => {
   const raw = s.readFile("knowledge/entries/KE-TEMPLATE.md");
-  return raw && raw.includes("KE-XXX");
+  return raw && raw.includes("KE-NNN");
 });
 
 s.checkConvention("C1", "read-sources-first", () => {
