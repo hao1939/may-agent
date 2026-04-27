@@ -1,20 +1,23 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777287555650_21
+- **Session:** s_1777287740804_23
 - **Status:** done
-- **When:** 2026-04-27T10:59:38.674Z
-- **Duration:** 23s
+- **When:** 2026-04-27T11:02:43.634Z
+- **Duration:** 22s
 
 ## What Happened
 CONTINUE
 
-(a) Next iteration should produce `outputs/baseline.md` with the baseline measurements. The journal claims M1 baseline was measured but no file was actually written — the deliverable doesn't exist.
+The `outputs/` directory exists but is empty. No deliverables have been produced despite 48 iterations. The project has 8 clear milestones in project.md across 3 phases.
 
-(b) The worker must write actual files this time, not just report numbers in chat. Every phase milestone requires a file in `outputs/`.
+(a) **This iteration must produce `outputs/baseline.md`** — completing Phase 1's two checklist items.
 
-(c) First step: Create `outputs/baseline.md` with:
-1. **Project creation rate** — query the DB for projects created/modified in last 7 days
-2. **Escalation quality** — query for blocked/failed sessions, check what % include reason + context
-3. **Skill read rate** — grep recent session transcripts for `skills/` reads to see if agents actually use skills
-4. Then move immediately to Phase 2 tasks — update the reading-metrics skill with a "close the loop" step
+(b) The worker must actually write files, not just report numbers in chat. The file is the deliverable.
+
+(c) First steps:
+1. Query the state DB for **project-creation-rate**: count projects created/modified in last 7 days
+2. Query for **escalation-quality**: find blocked/failed sessions, check what % include `reason` + `context` fields
+3. Grep recent session logs for `skills/` reads to measure **skill read rate**
+4. Write all results to `outputs/baseline.md` with a table format
+5. Then immediately start Phase 2: update `reading-metrics` skill with a "close the loop" step
