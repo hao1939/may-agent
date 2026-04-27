@@ -5,7 +5,7 @@
  * Usage:
  *   bun scripts/workflow-compare.ts agents/gym/scenarios/workflow-fibonacci
  *
- * Runs orchestrator-worker and worker-reviewer on copies of the scenario,
+ * Runs master-worker and worker-reviewer on copies of the scenario,
  * then scores both with success_criteria.js.
  */
 
@@ -22,7 +22,7 @@ if (!existsSync(join(scenarioDir, "success_criteria.js"))) {
   process.exit(1);
 }
 
-const workflows = ["orchestrator-worker", "worker-reviewer"];
+const workflows = ["master-worker", "worker-reviewer"];
 
 async function runWorkflow(workflowName: string): Promise<{ score: any; duration: number }> {
   const tmpDir = mkdtempSync(join(tmpdir(), `wf-${workflowName}-`));
