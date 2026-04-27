@@ -116,3 +116,6 @@ Good progress. `regression-check.sh` (80 lines) and gym scenario exist. Two mile
 - "Set up periodic re-run to catch regressions"
 
 **Milestone completed: "Set up periodic re-run to catch r
+
+### Iteration 9 — 2026-04-27T11:32:40.467Z
+**Worker**: Now update metrics.md with the new skill.verified-rate:

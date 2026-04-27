@@ -1,22 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777289419028_75
+- **Session:** s_1777289533682_79
 - **Status:** done
-- **When:** 2026-04-27T11:31:09.476Z
-- **Duration:** 50s
+- **When:** 2026-04-27T11:32:32.326Z
+- **Duration:** 18s
 
 ## What Happened
 CONTINUE
 
-Milestones completed:
-- "Run 3 gym scenarios testing system literacy, record pass rates in outputs/gym-results.md"
-- "Re-measure metrics after skill deployment, compare to baseline"
+No `investigation.md` or regression guard written yet. 2 milestones remain.
 
-Score: 6/8 milestones done. Two remaining.
+**(a)** Write both deliverables this iteration:
+1. `outputs/investigation.md` — document that metrics did NOT improve, why (agents lack triggers to read skills/), and recommended fix (add skill refs to agent system prompts or heartbeat context)
+2. A regression guard — create `/app/agents/shared/guards/literacy-regression.md` that defines: metric thresholds (skill-read-rate < 10%, escalation-quality < 50%), check frequency, and action (reactivate this project)
 
-**(a)** Next iteration must complete: "If metrics improved, document what worked. If not, investigate why." The comparison file already shows metrics did NOT improve. The investigation is half-done — the file identifies the root cause (agents aren't prompted to read `skills/`). Write a concise `outputs/investigation.md` documenting: (1) metrics didn't improve, (2) why (agents lack environmental triggers to read skills), (3) recommended fix (add skill references to agent system prompts or heartbeat workflows).
+**(b)** End by running `ls outputs/` and `ls /app/agents/shared/guards/` to prove both exist.
 
-**(b)** Then tackle the final milestone: "Set up regression detection: metric breach → project reactivates." This means adding a guard or check somewhere (e.g., a shared guard file, or a metric threshold in project.md) so that if skill-read-rate drops or stays at 0, this project gets flagged for reactivation.
-
-**(c)** First step: Write `outputs/investigation.md` with the findings from `post-deployment-comparison.md`. Then create a regression detection mechanism (a guard, metric check, or similar). End by listing what was created.
+**(c)** First step: Write `outputs/investigation.md`. The data is already in `post-deployment-comparison.md` — summarize it.
