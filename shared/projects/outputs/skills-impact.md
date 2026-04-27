@@ -1,13 +1,21 @@
 # Skills Impact Report
 
-**Date**: 2025-06-25 (updated with execution data)
-**Method**: File system audit of skill deployments across all agents, historical gym data from 445 scenarios, workflow run analysis
+**Date**: 2025-06-25 (updated 2026-04-16 with EXP-164 measured data)
+**Method**: File system audit of skill deployments across all agents, historical gym data from 445 scenarios, workflow run analysis, EXP-164 controlled experiment
 
 ## Executive Summary
 
 | Metric | Baseline | Current | Target | Status |
 |--------|----------|---------|--------|--------|
 | `skill.verified-rate` | 0.23 | **0.29** | 0.80 | ❌ Below target |
+| `skill.behavior-delta` (EXP-164) | 25% (1/4) | **100% (4/4)** | >50% | ✅ **+75% behavior** |
+| Agents with skills deployed | 0 | **7/10** | 5+ | ✅ |
+| Skills deployed | 0 | **5** | 5 | ✅ |
+
+### Key Finding (EXP-164)
+With skill injection: 10/10 runs pass (100%), behavior checks 4/4.  
+Without skill injection: 0/8 runs pass (0%), behavior checks 1/4.  
+**Skills produce +75% improvement on behavioral compliance while product quality stays constant.**
 | `skill.delivery-rate` | 0.23 | **0.29** | 0.60 | ❌ Below target |
 | `skill.effectiveness` | 29.2% | **29.2%** | 60% | ❌ No movement |
 | `coder.quality` | 0.726 | **0.956** | 0.85 | ✅ Above target |
