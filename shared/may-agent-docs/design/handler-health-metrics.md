@@ -60,7 +60,7 @@ Three events emitted by cron.ts `fireHandler()`:
 ### `handler.fires-per-hour`
 - **What**: Total handler fires (started) in the last hour
 - **Query**: `COUNT(*)` from `handler.started` in last 1h
-- **Target**: 20 — **Threshold**: 10
+- **Target**: 30 — **Threshold**: 15
 - **Owner**: may
 - **Why**: Measures system liveness. If fires drop, cron is stuck.
 
@@ -80,11 +80,26 @@ Three events emitted by cron.ts `fireHandler()`:
 - **Per-handler metrics** — too granular. handler.success-rate covers all. If one handler is the problem, the alert payload identifies it.
 - **system.agent-health-worst** — removed. Confusing name, moving target. Agent health is better tracked through existing session-success-rate metric + the heartbeat-coverage metric above.
 
+## Metric writes
+
+No existing helpers. Handler uses raw SQL:
+
+```sql
+-- Upsert metric (create if missing, update current)
+INSERT INTO metrics (id, name, owner, current, target, threshold, unit, type, status, speed)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', 'fast')
+ON CONFLICT(id) DO UPDATE SET current = excluded.current, updated_at = excluded.updated_at;
+
+-- Write snapshot
+INSERT INTO metric_snapshots (metric_id, value, measured_at, measured_by)
+VALUES (?, ?, ?, 'metrics-snapshot');
+```
+
 ## Implementation
 
 | Step | File | Change |
 |------|------|--------|
 | 1 | `src/app/cron.ts` | Emit handler.started/completed/failed in fireHandler via bus.emit |
-| 2 | `src/app/agent-loader.ts` | Pass bus.emit to Cron constructor |
+| 2 | `src/app/agent-loader.ts` | Pass `bus.emit` to Cron (bus already in scope at line 282) |
 | 3 | `agents/may/handlers/metrics-snapshot.ts` | NEW: 5min handler, queries events, writes metric snapshots |
 | 4 | `agents/may/cron.json` | Add metrics-snapshot (intervalMs: 300000) |
