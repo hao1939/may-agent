@@ -604,9 +604,72 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   function handleProjects(): Response {
     const projects: Array<Record<string, unknown>> = [];
+
+    // Helper to process a project directory entry
+    const processProject = (projectFile: string, relPath: string, name: string, fallbackOwner: string) => {
+      try {
+        const content = readFileSync(projectFile, "utf-8");
+        const field = (name: string) => {
+          const m = content.match(new RegExp(`^\\*\\*${name}\\*\\*:\\s*(.+)$`, "m"));
+          return m ? m[1].trim() : null;
+        };
+        const msX = (content.match(/^- \[x\]/gim) || []).length;
+        const msO = (content.match(/^- \[ \]/gm) || []).length;
+        projects.push({
+          name: name.replace(/\.md$/, ""),
+          path: relPath,
+          owner: field("Owner") || fallbackOwner,
+          status: field("Status") || "unknown",
+          priority: field("Priority"),
+          iteration: parseInt(field("Iteration") || "0", 10),
+          health: field("Health"),
+          milestonesDone: msX,
+          milestonesTotal: msX + msO,
+          metrics: (() => {
+            const mIdx = content.indexOf("## Metrics\n");
+            if (mIdx === -1) return [];
+            const after = content.slice(mIdx + "## Metrics\n".length);
+            const ns = after.indexOf("\n## ");
+            const section = (ns === -1 ? after : after.slice(0, ns)).trim();
+            const ids = section.split("\n").filter((l: string) => l.startsWith("- ")).map((l: string) => {
+              const m = l.match(/^- `?(\S+?)`?:/);
+              const t = l.match(/target\s*([<>]=?\s*)?(\d[\d.]*%?)/);
+              return m ? { id: m[1].replace(/`/g, ""), target: t ? (t[1] || "") + t[2] : null } : null;
+            }).filter(Boolean) as Array<{id: string; target: string | null}>;
+            if (ids.length === 0) return [];
+            try {
+              const db = _db();
+              return ids.map(({ id, target }) => {
+                const row = db.prepare("SELECT current, threshold, alert_direction FROM metrics WHERE id = ?").get(id) as any;
+                const current = row?.current ?? null;
+                const threshold = row?.threshold;
+                const above = row?.alert_direction === "above";
+                const breached = threshold != null && current != null && (above ? current > threshold : current < threshold);
+                return { id, current, target, breached };
+              });
+            } catch { return ids.map(({ id, target }) => ({ id, current: null, target, breached: false })); }
+          })(),
+          updatedAt: statSync(projectFile).mtimeMs,
+        });
+      } catch { /* skip */ }
+    };
+
     try {
+      // Scan shared projects (new location)
+      const sharedProjDir = join(AGENTS_ROOT, "shared", "projects");
+      if (existsSync(sharedProjDir)) {
+        for (const entry of readdirSync(sharedProjDir, { withFileTypes: true })) {
+          if (!entry.isDirectory()) continue;
+          const projectFile = join(sharedProjDir, entry.name, "project.md");
+          if (!existsSync(projectFile)) continue;
+          const relPath = `agents/shared/projects/${entry.name}`;
+          processProject(projectFile, relPath, entry.name, "unknown");
+        }
+      }
+
+      // Scan legacy per-agent locations
       for (const dir of readdirSync(AGENTS_ROOT, { withFileTypes: true })) {
-        if (!dir.isDirectory() || dir.name.startsWith(".")) continue;
+        if (!dir.isDirectory() || dir.name.startsWith(".") || dir.name === "shared") continue;
         const projDir = join(AGENTS_ROOT, dir.name, "workspace", "projects");
         if (!existsSync(projDir)) continue;
         for (const entry of readdirSync(projDir, { withFileTypes: true })) {
@@ -614,51 +677,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           const projectFile = join(projDir, entry.name, "project.md");
           if (!existsSync(projectFile)) continue;
           const relPath = `agents/${dir.name}/workspace/projects/${entry.name}`;
-          try {
-            const content = readFileSync(projectFile, "utf-8");
-            const field = (name: string) => {
-              const m = content.match(new RegExp(`^\\*\\*${name}\\*\\*:\\s*(.+)$`, "m"));
-              return m ? m[1].trim() : null;
-            };
-            const msX = (content.match(/^- \[x\]/gim) || []).length;
-            const msO = (content.match(/^- \[ \]/gm) || []).length;
-            projects.push({
-              name: entry.name.replace(/\.md$/, ""),
-              path: relPath,
-              owner: field("Owner") || dir.name,
-              status: field("Status") || "unknown",
-              priority: field("Priority"),
-              iteration: parseInt(field("Iteration") || "0", 10),
-              health: field("Health"),
-              milestonesDone: msX,
-              milestonesTotal: msX + msO,
-              metrics: (() => {
-                const mIdx = content.indexOf("## Metrics\n");
-                if (mIdx === -1) return [];
-                const after = content.slice(mIdx + 12);
-                const ns = after.indexOf("\n## ");
-                const section = (ns === -1 ? after : after.slice(0, ns)).trim();
-                const ids = section.split("\n").filter((l: string) => l.startsWith("- ")).map((l: string) => {
-                  const m = l.match(/^- (\S+):/);
-                  const t = l.match(/target\s*([<>]=?\s*[\d.]+%?)/);
-                  return m ? { id: m[1], target: t ? t[1].trim() : null } : null;
-                }).filter(Boolean) as Array<{id: string; target: string | null}>;
-                if (ids.length === 0) return [];
-                try {
-                  const db = _db();
-                  return ids.map(({ id, target }) => {
-                    const row = db.prepare("SELECT current, threshold, alert_direction FROM metrics WHERE id = ?").get(id) as any;
-                    const current = row?.current ?? null;
-                    const threshold = row?.threshold;
-                    const above = row?.alert_direction === "above";
-                    const breached = threshold != null && current != null && (above ? current > threshold : current < threshold);
-                    return { id, current, target, breached };
-                  });
-                } catch { return ids.map(({ id, target }) => ({ id, current: null, target, breached: false })); }
-              })(),
-              updatedAt: statSync(projectFile).mtimeMs,
-            });
-          } catch { /* skip */ }
+          processProject(projectFile, relPath, entry.name, dir.name);
         }
       }
     } catch { /* skip */ }
@@ -668,26 +687,31 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function handleProjectJournal(url: URL): Response {
     const path = url.searchParams.get("path");
     if (!path) return json({ error: "path required" }, 400);
-    // Derive journal path from project path
-    let journalPath: string;
-    if (path.endsWith(".md")) {
-      // Legacy single-file — no separate journal
-      return json({ content: "(Legacy project — journal is in the project file)" });
-    } else {
-      journalPath = join(PROJECT_ROOT, path, "journal.md");
-    }
+    if (path.endsWith(".md")) return json({ content: "(Legacy project — journal is in the project file)" });
+    const journalPath = join(PROJECT_ROOT, path, "journal.md");
     try {
-      const content = readFileSync(journalPath, "utf-8");
-      return json({ content });
+      return json({ content: readFileSync(journalPath, "utf-8") });
     } catch {
       return json({ content: "(No journal found)" });
+    }
+  }
+
+  function handleProjectDiscussion(url: URL): Response {
+    const path = url.searchParams.get("path");
+    if (!path) return json({ error: "path required" }, 400);
+    if (path.endsWith(".md")) return json({ content: "(Legacy project — no discussion file)" });
+    const discPath = join(PROJECT_ROOT, path, "discussion.md");
+    try {
+      return json({ content: readFileSync(discPath, "utf-8") });
+    } catch {
+      return json({ content: "(No discussion yet)" });
     }
   }
 
   function handleProjectContent(url: URL): Response {
     const path = url.searchParams.get("path");
     if (!path) return json({ error: "path required" }, 400);
-    if (!path.match(/^agents\/[^/]+\/workspace\/projects\//)) return json({ error: "Access denied" }, 403);
+    if (!path.match(/^agents\/(shared\/projects\/|[^/]+\/workspace\/projects\/)/)) return json({ error: "Access denied" }, 403);
     const filePath = path.endsWith(".md") ? join(PROJECT_ROOT, path) : join(PROJECT_ROOT, path, "project.md");
     try {
       const content = readFileSync(filePath, "utf-8");
@@ -700,10 +724,19 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function handleProjectSessions(url: URL): Response {
     const path = url.searchParams.get("path");
     if (!path) return json({ error: "path required" }, 400);
-    // Derive projectId from path: agents/<owner>/workspace/projects/<name> → <owner>/<name>
+    // Derive projectId from path:
+    //   agents/shared/projects/<name> → shared/<name>
+    //   agents/<owner>/workspace/projects/<name> → <owner>/<name>
     const parts = path.split("/");
-    const owner = parts[1] ?? "";
-    const name = parts[parts.length - 1]?.replace(/\.md$/, "") ?? "";
+    let owner: string;
+    let name: string;
+    if (parts[1] === "shared" && parts[2] === "projects") {
+      owner = "shared";
+      name = parts[3]?.replace(/\.md$/, "") ?? "";
+    } else {
+      owner = parts[1] ?? "";
+      name = parts[parts.length - 1]?.replace(/\.md$/, "") ?? "";
+    }
     const projectId = `${owner}/${name}`;
     // Try projectId query first
     try {
@@ -740,7 +773,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const body = await req.json() as { path?: string; comment?: string };
       const { path, comment } = body;
       if (!path || !comment) return json({ error: "path and comment required" }, 400);
-      if (!path.match(/^agents\/[^/]+\/workspace\/projects\//)) return json({ error: "Access denied" }, 403);
+      if (!path.match(/^agents\/(shared\/projects\/|[^/]+\/workspace\/projects\/)/)) return json({ error: "Access denied" }, 403);
 
       const projectFile = join(PROJECT_ROOT, path, "project.md");
       if (!existsSync(projectFile)) return json({ error: "Project not found" }, 404);
@@ -876,6 +909,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/projects") return handleProjects();
       if (url.pathname === "/api/projects/content") return handleProjectContent(url);
       if (url.pathname === "/api/projects/journal") return handleProjectJournal(url);
+      if (url.pathname === "/api/projects/discussion") return handleProjectDiscussion(url);
       if (url.pathname === "/api/projects/sessions") return handleProjectSessions(url);
       if (url.pathname === "/api/projects/comment" && req.method === "POST") return handleProjectComment(req);
       if (url.pathname === "/api/events") return handleEvents(url);
