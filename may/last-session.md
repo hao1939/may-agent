@@ -1,18 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777286403565_2
+- **Session:** s_1777288201879_32
 - **Status:** done
-- **When:** 2026-04-27T10:40:43.055Z
-- **Duration:** 39s
+- **When:** 2026-04-27T11:11:10.957Z
+- **Duration:** 1m9s
 
 ## What Happened
-Key findings from the snapshot:
+The `amy-kimi` agent has a **suspended account** — every session fails with 429. This is wasting resources. I'll notify the relevant parties.
 
-1. **amy-kimi**: 3/3 sessions errored (100% error rate) — 429 rate limit errors
-2. **coach**: ENOENT file missing error
-3. **bob**: 2 request aborted errors but 63 sessions overall (low rate)
-4. **No active requests** in the queue — work pipeline is empty
-5. **Inbox**: All notifications are 63-69h old, mostly resolved evaluator false-positive P0s
-
-The amy-kimi 100% error rate is worth a nudge, and the empty work pipeline is notable. Let me dismiss the stale inbox items and nudge on amy-kimi.
+All the inbox items are 64-70h old and already resolved (evaluator false positives, duplicate requests). I'll dismiss them in bulk.

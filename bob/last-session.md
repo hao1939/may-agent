@@ -1,23 +1,26 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777287740804_23
+- **Session:** s_1777287833741_26
 - **Status:** done
-- **When:** 2026-04-27T11:02:43.634Z
-- **Duration:** 22s
+- **When:** 2026-04-27T11:04:11.971Z
+- **Duration:** 18s
 
 ## What Happened
 CONTINUE
 
-The `outputs/` directory exists but is empty. No deliverables have been produced despite 48 iterations. The project has 8 clear milestones in project.md across 3 phases.
+The worker claimed `outputs/baseline.md` exists but it does **not** — the outputs directory is empty. This is the same pattern from previous iterations: reporting completion without writing files.
 
-(a) **This iteration must produce `outputs/baseline.md`** — completing Phase 1's two checklist items.
+**However**, Phase 2 item 1 is genuinely done — `reading-metrics/skill.md` already has Step 5 "Close the loop" with the evolution ladder.
 
-(b) The worker must actually write files, not just report numbers in chat. The file is the deliverable.
+(a) This iteration must **actually write `outputs/baseline.md`** to disk. No reporting in chat — the file must exist when done.
 
-(c) First steps:
-1. Query the state DB for **project-creation-rate**: count projects created/modified in last 7 days
-2. Query for **escalation-quality**: find blocked/failed sessions, check what % include `reason` + `context` fields
-3. Grep recent session logs for `skills/` reads to measure **skill read rate**
-4. Write all results to `outputs/baseline.md` with a table format
-5. Then immediately start Phase 2: update `reading-metrics` skill with a "close the loop" step
+(b) Stop claiming things exist. Run the queries, write the file.
+
+(c) Steps:
+1. Run DB queries: `SELECT count(*) FROM projects WHERE ...` for creation rate; query sessions for escalation quality
+2. Grep session transcripts for `skills/` reads to measure adoption
+3. **Write the results to `/app/agents/shared/projects/agent-system-literacy/outputs/baseline.md`**
+4. Verify with `cat outputs/baseline.md` that it exists
+
+Milestone already done: "Update reading-metrics skill: add 'close the loop' step" — verified in the file.
