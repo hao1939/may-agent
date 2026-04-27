@@ -1,6 +1,6 @@
 # Project: Agent System Literacy
 
-**Status**: active
+**Status**: completed
 **Owner**: bob
 **Type**: continuous
 **Workflow**: master-worker
