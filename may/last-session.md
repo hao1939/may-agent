@@ -1,17 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** cron_1777280402729_2
+- **Session:** cron_1777280476112_1
 - **Status:** done
-- **When:** 2026-04-27T09:00:56.021Z
-- **Duration:** 53s
+- **When:** 2026-04-27T09:02:30.807Z
+- **Duration:** 1m14s
 
 ## What Happened
-Key findings from investigation:
+Interesting — scout, optimizer, evaluator, qa, and amy-kimi have **zero records** in may.db despite system_status showing them completing sessions in the last hour. This is the "Handler health=0" metric alert — session tracking is broken for half the agents.
 
-1. **System healthy** — 0 errors in last 6h, all agents active
-2. **amy-kimi 429 rate limits** — transient, self-resolving
-3. **Handler health metric = 0** (target 1) — critical handlers not running, likely stale since last restart
-4. **Improvement queue** has 3 ready items not yet started
-
-The handler health metric is the most actionable alert. Let me notify tech-lead:
+Let me notify tech-lead about this since it's an infrastructure issue.

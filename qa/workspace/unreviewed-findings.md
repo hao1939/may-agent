@@ -17,6 +17,27 @@ Findings:
 
 2) Potential improvement (not required): `success_criteria.js` uses heuristic string checks to detect modification of `lib/grade-pipeline.js`. This may false-negative for alternate correct fixes that don’t match the expected patterns.
 
+## Ad-hoc code sweep (this heartbeat): `/app` Node validation mini-project
+Context:
+- `/app` is **not** a git repository here (no `.git`), so commit-based review isn’t possible.
+
+Files read:
+- `middleware.js`
+- `validators.js`
+- `test.js`
+
+Findings:
+- `middleware.js` duplicates email/username regex logic that exists in `validators.js`.
+  - Risk: drift/inconsistency if one changes.
+  - Suggestion: middleware should import and reuse shared validators.
+- Middleware accepts `age` as string and coerces (`Number(body.age)`), whereas `validateAge` expects a number.
+  - This is reasonable at HTTP boundary, but consider centralizing coercion rules if other callers will reuse.
+
+Tooling verification (this mini-project):
+- `./node_modules/.bin/tsc --noEmit`: **FAIL** — `tsc` binary not present (exit 127). Project has no TypeScript deps.
+- `./node_modules/.bin/vitest --run`: **FAIL** — `vitest` binary not present (exit 127). Project uses `node test.js`.
+- `node test.js`: **PASS** — 6/6 tests passed.
+
 ## Recent commits (last 10)
 - 3e2a9a0 tech-lead heartbeat: dead code cleanup, inbox triage
 - e649e69 EXP-243: evidence-gathering environmental intervention
