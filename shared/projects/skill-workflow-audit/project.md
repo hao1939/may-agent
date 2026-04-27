@@ -5,7 +5,7 @@
 **Type**: continuous
 **Workflow**: master-worker
 **Priority**: P0
-**Iteration**: 1
+**Iteration**: 2
 
 ## Goal
 Every skill and workflow in the system must be verified working, measured for impact, and protected against regression. Reading code is not verification — run it, measure it, prove it helps.
@@ -16,9 +16,9 @@ Every skill and workflow in the system must be verified working, measured for im
 - skill.delivery-rate: 0.23 → target 0.60 (12/53 skills referenced by agents)
 
 ## Current State
-**Iteration 3.** Workflow pass-rate met (10/10). Metrics defined. Gym scenario + regression script created.
-Remaining gap: "Deploy top 5 skills, run 3 sessions before/after" is NOT done — only obstacle-pivot has gym-based measurement, no real agent sessions with before/after comparison exist. This is the critical remaining work.
-Skills infrastructure note: `src/skills.ts` has a loader but it's not wired into agent startup. Frontmatter added to 2 skills (closing-the-loop, reading-metrics).
+**Iteration 3.** 9/10 milestones done. Workflow pass-rate met (10/10). Metrics defined. Gym scenario + regression script created. Skills referenced in bob and coder context.md files. 
+**Remaining gap:** "Deploy top 5 skills, run 3 sessions before/after, measure behavior change" — skills are deployed/referenced but NO actual before/after gym runs exist. All gym data is criteria-only mode. Next iteration must run `bash test/gym/run-gym.sh skill-delivery-obstacle-pivot --agent coder` (or equivalent) to get real measurement.
+**Infra note:** `src/skills.ts` has a loader but it's not wired into agent startup. Frontmatter added to 2 skills.
 
 ## Plan
 
