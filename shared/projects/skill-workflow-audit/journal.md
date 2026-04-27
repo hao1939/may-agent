@@ -108,3 +108,11 @@ That's 8/10 done. Rem
 
 ### Iteration 8 — 2026-04-27T11:30:35.596Z
 **Worker**: Now update skills-impact.md with the gym execution data:
+**Orchestrator**: CONTINUE
+
+Good progress. `regression-check.sh` (80 lines) and gym scenario exist. Two milestones remain:
+
+- "Deploy top 5 skills to agents, run 3 sessions before/after, measure behavior change"
+- "Set up periodic re-run to catch regressions"
+
+**Milestone completed: "Set up periodic re-run to catch r

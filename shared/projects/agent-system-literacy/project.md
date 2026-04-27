@@ -27,10 +27,10 @@ Iteration 8. Phase 1-2 complete. Phase 3 in progress. Post-deployment comparison
 ### Phase 2: Fix & Deploy Skills
 - [x] Update reading-metrics skill: add "close the loop" step (see pattern → write guard/skill/handler)
 - [x] Deploy top 3 literacy skills to agents that need them (copy to per-agent skills/)
-- [ ] Run 3 gym scenarios testing system literacy, record pass rates in outputs/gym-results.md
+- [x] Run 3 gym scenarios testing system literacy, record pass rates in outputs/gym-results.md
 
 ### Phase 3: Verify & Protect
-- [ ] Re-measure metrics after skill deployment, compare to baseline
+- [x] Re-measure metrics after skill deployment, compare to baseline
 - [ ] If metrics improved, document what worked. If not, investigate why.
 - [ ] Set up regression detection: metric breach → project reactivates
 
@@ -44,3 +44,6 @@ Iteration 8. Phase 1-2 complete. Phase 3 in progress. Post-deployment comparison
 
 **Artifacts:**
 - outputs/baseline.md — Phase 1 baseline metrics (project creation, escalation quality, skill reads)
+- outputs/deployment-log.md — Phase 2 skill deployment record
+- outputs/gym-results.md — Gym scenario results (0/3 pass, stub baseline)
+- outputs/post-deployment-comparison.md — Phase 3 before/after comparison (no improvement yet)
