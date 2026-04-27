@@ -1,26 +1,34 @@
-# Unreviewed findings (QA heartbeat)
+# QA Heartbeat — Unreviewed Findings (2026-04-27)
 
-## Context
-Scanned `git log --oneline -10` at repo root. Most recent commit is `ec77ec3` adding `.state/experiments/EXP-242-evidence-gathering-structural.md`.
+## Inbox triage
+- Duplicate “Quick Code Review” notifications (5x): **DISMISS** as spam/duplication; no actionable work item referenced.
+- EXP-220 verification request: **ACTED** (see below).
+- Convention coaching notifications: **ESCALATE** to coach/tech-lead as process debt; see note under “Meta”.
 
-## Findings
-### 1) Tooling gaps prevent mandatory QA checks (tsc/vitest)
-- `./node_modules/.bin/tsc --noEmit` does **not** compile a project; it prints help and exits with code 1 because there is **no `tsconfig.json`** at repo root (or no default project for `tsc` to run against).
-- `./node_modules/.bin/vitest --run` fails with `No such file or directory` because **vitest is not installed**.
-
+## EXP-220 (“enoent-file-search”) verification
+### Finding: scenario appears incomplete / inconsistent with its own `scenario.json`
 Evidence:
-- `package.json` contains only `typescript` under dependencies (no vitest).
-- Running `tsc --noEmit` printed the compiler help text and exited 1.
-- Running vitest returned exit code 127.
+- `agents/gym/scenarios/enoent-file-search/scenario.json` states environment includes files `lib/grade-pipeline.js` and `lib/test-grades.js`. (read evidence: SIG c252c65f)
+- Actual directory contains only:
+  - `scenario.json`
+  - `success_criteria.js`
+  - `task.md`
+  (find evidence: SIG 9e0e48db)
+- Running evaluator fails because `lib/test-grades.js` does not exist:
+  - `node success_criteria.js .` → `Cannot find module .../lib/test-grades.js` (bash evidence: SIG 1777271239:9e0e48db)
 
 Impact:
-- QA cannot independently verify TypeScript typecheck or test suite at the root repo as currently configured.
+- The scenario cannot be executed as intended; success criteria cannot be satisfied because required fixture files are missing.
 
 Recommendation:
-- Add a root `tsconfig.json` (or document the correct `tsc -p <path>` command) and install/configure vitest if tests are expected.
+- Add the missing fixture files under `agents/gym/scenarios/enoent-file-search/lib/` (at minimum `grade-pipeline.js` and `test-grades.js`) or update `scenario.json`/`success_criteria.js` to match actual file locations.
 
-### 2) Review of latest change (documentation/experiment design)
-Read `.state/experiments/EXP-242-evidence-gathering-structural.md`. This is design/analysis text only; no code changes.
+## Recent commit spot-check
+- `2d69498` modifies only `.state/experiments/EXP-242-evidence-gathering-structural.md` (git show evidence: SIG b9fcb662).
+  - This is documentation; no code review required.
 
-Notes:
-- The doc explicitly acknowledges a potential weakness (⚡ pattern may not transfer to analysis modality) and proposes an appropriate fallback (scenario redesign Option C). No correctness issues found in the document itself.
+## Meta / Process
+- Tooling checks for this repo appear not configured for project-wide TypeScript/Vitest from root:
+  - `./node_modules/.bin/tsc --noEmit` prints help and exits `1` (no `tsconfig.json` at root).
+  - `./node_modules/.bin/vitest --run` missing (`No such file or directory`).
+  These look like **environment/config** issues rather than a patch regression.
