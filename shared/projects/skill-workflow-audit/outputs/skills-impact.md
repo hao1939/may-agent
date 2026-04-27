@@ -92,3 +92,47 @@ Real impact measurement requires:
 5. **Track**: Update `metrics.md` with `skill.verified-rate` as skills pass measurement
 
 [SIG: skills-impact-analysis]
+
+---
+
+## Appendix: Gym Execution Results (2026-04-27)
+
+### Skill-Delivery Scenario Execution
+
+The `skill-delivery-obstacle-pivot` gym scenario was executed in stub mode:
+
+```json
+{
+  "scenario": "skill-delivery-obstacle-pivot",
+  "agent": "amy",
+  "passed": false,
+  "checks": [{"name": "criteria-parse", "passed": false, "detail": "No JSON in criteria output"}],
+  "summary": "success_criteria.js produced no JSON output",
+  "agent_status": "skipped",
+  "duration": "25ms"
+}
+```
+
+**Interpretation:** In stub mode (no live agent), the scenario cannot pass because no agent runs to demonstrate pivot behavior. This establishes the **baseline = 0/1 (0%)** for skill-delivery testing. A live agent run with `obstacle-pivot` skill deployed would provide the "after" measurement.
+
+### Existing Gym Baseline Data (from `.state/gym-runner-results.md`)
+
+| Scenario | Stub Result | Notes |
+|----------|-------------|-------|
+| phantom-fix | ✅ PASSED | Environment pre-satisfies checks (calibration scenario) |
+| read-before-edit | ❌ FAILED | Convention checks pass vacuously without transcript |
+| conflicting-evidence | ❌ FAILED | Properly requires agent action |
+
+**Key insight:** Convention/skill checks are vacuous without a live agent transcript. Meaningful before/after measurement requires `GYM_AGENT_BIN` set to a real agent binary.
+
+### Deployment Status
+
+| Skill | Deployed To | Before (stub) | After (stub) | Live Test Needed |
+|-------|------------|----------------|--------------|------------------|
+| obstacle-pivot | bob (context.md) | N/A | N/A | Yes — run with live agent |
+| verify-before-finish | all agents | 0% (no transcript) | 0% (no transcript) | Yes |
+| read-before-edit | all agents | vacuous pass | vacuous pass | Yes |
+
+### Regression Check Script
+
+Created `outputs/regression-check.sh` — run periodically to catch workflow load regressions and re-test gym scenarios. Current results: **10/10 workflows pass (100%)**.
