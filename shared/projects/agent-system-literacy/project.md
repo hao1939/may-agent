@@ -1,11 +1,11 @@
 # Project: Agent System Literacy
 
-**Status**: completed
+**Status**: active
 **Owner**: bob
 **Type**: continuous
 **Workflow**: master-worker
 **Priority**: P1
-**Iteration**: 9
+**Iteration**: 1
 
 ## Goal
 Agents effectively use the infrastructure: create projects from problems, read and react to metrics, escalate with context, cooperate across agents, and close the loop by extending the system when patterns repeat.
