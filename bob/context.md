@@ -41,6 +41,7 @@
 ## ⚡ [BEFORE CALLING finish()]
 
 - **C1.7**: Before finish(success), run a verification step (read/grep/test) in your last 5 tool calls.
+- **C1.7 DETAIL (11 FM-3.3 violations)**: finish() REQUIRES `verification_evidence` array with specific tool output references. Before calling finish(), ask: "What did I read/grep/test in my last 5 calls that proves my deliverables are correct?" If nothing — go verify NOW.
 - **C12.1**: Sessions must start with context reads (read/ls/grep) in first 5 tool calls.
 - When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'.
 - For multi-deliverable tasks: after reading context files, create DELIVERABLES_CHECKLIST.md listing all expected outputs before starting execution.

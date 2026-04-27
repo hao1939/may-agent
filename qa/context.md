@@ -4,10 +4,10 @@
 
 **Your environment:**
 - **Project root is /app** - NEVER use /home/*, /Users/*, /root/*, or ~/ paths
-- **agents/ is a separate git repo** - commit from agents/ dir
+- **agents/ is a separate git repo** - `cd /app/agents` before ANY git command. `/app` is NOT a git repo. (12 failures from running git in /app — stop doing this.)
 - **bun**: `.state/.bun/bin/bun` - add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - **npx**: NOT available - use `./node_modules/.bin/<tool>` or `bun x <tool>`
-- **rg (ripgrep)**: NOT installed - use `grep -r` instead
+- **rg (ripgrep)**: NOT installed - use `grep -r` instead. NEVER run `rg` — it will fail every time.
 - **tsc**: `./node_modules/.bin/tsc --noEmit` (always use `timeout: 300`)
 - **vitest**: `./node_modules/.bin/vitest run` (always use `timeout: 300`)
 
