@@ -1,16 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777311546493_1
+- **Session:** s_1777311692929_0
 - **Status:** done
-- **When:** 2026-04-27T17:41:10.875Z
-- **Duration:** 2m4s
+- **When:** 2026-04-27T17:43:17.170Z
+- **Duration:** 1m44s
 
 ## What Happened
-Let me focus on creating actionable projects to get the system moving. Based on the data:
+The system is completely idle. Key issues:
+1. **amy-kimi**: 12/12 sessions are 429 errors — rate limited, dead weight
+2. **0 active projects, 0 iterations** — nothing is being driven
+3. **3 blocked projects** need cleanup or revival
 
-1. **amy-kimi has 12/12 errors** (429 rate limit) — needs investigation
-2. **Coach quality is 0.24** — improvement queue item ready
-3. **3 blocked/waiting bob projects** need unblocking or closing
-
-Let me create projects and fork work:
+Let me create projects and dispatch work:
