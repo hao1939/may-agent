@@ -1,16 +1,7 @@
 # Project: Skill & Workflow Quality
 
-**Status**: blocked
-**Stop Reason**: BLOCKED
-
-The worker has failed to produce any deliverable for **7 consecutive iterations**. It repeatedly claims files exist or says "now I have context" without writing anything. This worker session 
-
-
-**Key finding**: The skill-usage audit was incorrect. Skills ARE injected into agent context via 📘 directives in context.md (amy=8, bob=13, scout=15, coach=8, optimizer=10). The injection mechanism exists and works. The real question is behavioral: do agents apply skills in practice?
-
-All 3 original metrics at target:
-- **skill.verified-rate: 0.90** (target 0.80) ✅
-- **skill.delivery-rate: 0.81** (target 0.60) ✅ (39/48 shared skills deployed to agents)
+**Status**: complete
+**Stop Reason**: All 4 metrics at target, all 18 plan items done. Closed by May.
 **Owner**: coach
 **Type**: continuous
 **Workflow**: master-worker
