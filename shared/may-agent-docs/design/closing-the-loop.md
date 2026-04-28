@@ -82,11 +82,11 @@ Today's `message` path already persists correctly via `trackRequest()`. Eventual
 
 ## Remaining Gaps
 
-### G1: Events Are Ephemeral (violates P1, P3) — ✅ FIXED (design)
+### G1: Events Are Ephemeral (violates P1, P3) — ✅ FIXED
 
-**Current:** `emit` events live only on the bus. If no handler subscribes, gone. Even consumed events have no record.
+**Previous:** `emit` events lived only on the bus. If no handler subscribed, gone.
 
-**Fix:** Event inbox with full lifecycle. See [convention-defaults.md](convention-defaults.md) for the authoritative design: events table with `status` (pending/done/acked/dismissed/failed/expired), `handled_by`, `urgency`, TTL. Dispatch persistence tracks which handlers ran. Unhandled events surface to owner agent via heartbeat inbox injection.
+**Fixed:** All events persisted to `events` table via db-writer.ts. Events are immutable facts — no status column, no UPDATE. Owner agents see recent events in their heartbeat via time-window inbox query (`WHERE owner = ? AND timestamp > now - 2h`). See [request-event-architecture.md](request-event-architecture.md).
 
 ### G2: Handler Failures Are Silent (violates P2)
 

@@ -34,8 +34,8 @@ fork creates a new root with an origin link:
 
 message creates nothing until picked up:
 
-  message("bob", "review this design")   ← stored in request DB
-                                          ← bob picks up on next heartbeat
+  message("bob", "review this design")   ← persisted as event (owner=bob)
+                                          ← bob sees it in inbox on next heartbeat
 ```
 
 ### Fork carries an origin reference

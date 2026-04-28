@@ -46,7 +46,7 @@ Common-sense.md has the conventions table — agents know WHERE things are. They
 | Skills | `agents/<you>/skills/` | When you need behavioral guidance for a specific situation |
 | Knowledge | `agents/<you>/knowledge/`, `agents/shared/knowledge/` | When you need findings or verified knowledge |
 | Knowledge essentials | `agents/shared/knowledge-essentials.md` | When starting research or brainstorming |
-| Project files | `agents/<you>/workspace/projects/` | When resuming multi-session work |
+| Project files | `agents/shared/projects/` | When resuming multi-session work |
 | Architecture/design docs | `agents/shared/may-agent-docs/` | When you need to understand how something is built |
 | Metrics | `.state/may.db` | When you need to check system health or progress |
 
@@ -61,7 +61,7 @@ Common-sense.md has the conventions table — agents know WHERE things are. They
 
 **In system prompt:** SOUL.md, common-sense.md, available tools, runtime environment.  
 **NOT in system prompt (on-demand):** standing-orders.md, knowledge-essentials.md, skills/*.md — agents read these when needed, guided by the conventions table.  
-**Note:** `src/lib/manager.ts` line 479 tells agents these are "already in context" — this is wrong and needs fixing in code.
+**Note:** Previously `src/lib/manager.ts` told agents these are "already in context" — fixed. On-demand files require explicit reads.
 
 ## Not Yet Implemented
 
