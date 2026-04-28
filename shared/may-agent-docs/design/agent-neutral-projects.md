@@ -1,8 +1,11 @@
-# Redesign: Agent-Neutral Project System
+# Design: Agent-Neutral Project System
+
+**Status**: ✅ Implemented
+**Date**: 2026-04-21 (proposed), 2026-04-27 (implemented)
 
 ## Context
 
-Projects currently live at `agents/<owner>/workspace/projects/<name>/`. Problems:
+Projects moved from `agents/<owner>/workspace/projects/<name>/` to a shared location:
 - Not agent-neutral — physically tied to one agent's workspace
 - Other agents can't easily discover or contribute
 - Project outputs scatter across `.state/`, agent workspaces, etc.
