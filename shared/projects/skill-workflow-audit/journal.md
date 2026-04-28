@@ -434,3 +434,6 @@ CONTINUE
 CONTINUE
 
 (a) The worker claimed "both deliverables already exist" but `outputs/skill-usefulness-measurement.md` does **not exist**. Only `outputs/skill-usefulness-design.md` exists. **You must create `outputs/skill-usefulness-meas
+
+### Iteration 4 — 2026-04-28T18:55:12.290Z
+**Worker**: The file exists and is comprehensive. Let me also check if metrics.md has the skill.usefulness-rate:
