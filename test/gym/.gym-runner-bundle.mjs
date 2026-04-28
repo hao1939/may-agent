@@ -206,10 +206,13 @@ function copyEnvironment(scenarioName , destDir ) {
     fs.mkdirSync(targetDir, { recursive: true });
   }
   try {
-    fs.cpSync(envDir, targetDir, { recursive: true });
-  } catch {
-    // Fallback to shell cp
+    // Always use shell cp to flatten contents correctly.
+    // fs.cpSync copies the directory itself INTO targetDir (creating targetDir/environment/),
+    // but we want the CONTENTS of envDir flattened into targetDir.
     execSync(`cp -r "${envDir}/." "${targetDir}/"`, { stdio: "pipe" });
+  } catch {
+    // Fallback to cpSync (may create nested environment/ dir)
+    fs.cpSync(envDir, targetDir, { recursive: true });
   }
 }
 
