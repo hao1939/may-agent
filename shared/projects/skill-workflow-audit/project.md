@@ -5,7 +5,7 @@
 **Type**: continuous
 **Workflow**: master-worker
 **Priority**: P0
-**Iteration**: 6
+**Iteration**: 7
 
 ## Goal
 Every skill and workflow verified working, measured for impact, protected against regression.
@@ -29,7 +29,7 @@ Next: expand verified-rate beyond top 5, set up automated regression checks.
 - [x] Measure before/after behavior change for each deployed skill
 - [x] Get skill.verified-rate above 0.50
 - [x] Get skill.delivery-rate above 0.40
-- [ ] Set up gym scenario testing skill effectiveness
+- [x] Set up gym scenario testing skill effectiveness
 - [ ] Expand verification beyond top 5 skills (10/48 next)
 - [ ] Automate skill regression checks in CI/gym
 
