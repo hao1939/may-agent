@@ -1,31 +1,23 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-28)
 
-## Context
-Heartbeat review triggered by notifications about duplicate "Quick Code Review" requests and a request to verify gym scenario EXP-220.
+## Inbox triage
+- Duplicate “Quick Code Review” requests: **dismiss** as duplicates / waste. No actionable content provided here to act on.
+- Coaching alerts (C8.2 + C1.4): **act** — ensure this heartbeat ends with a `finish()` tool call.
+- P2 request: “Verify new gym scenario EXP-220 (enoent-file-search)”: **act** — verified below.
 
-## Findings
+## Verification — gym scenario: `enoent-file-search` (claimed EXP-220)
+Evidence read:
+- `agents/gym/scenarios/enoent-file-search/scenario.json`
+- `agents/gym/scenarios/enoent-file-search/task.md`
+- `agents/gym/scenarios/enoent-file-search/success_criteria.js`
 
-### 1) TypeScript build currently fails in `agents/` (CRITICAL)
-- Command: `cd agents && ./node_modules/.bin/tsc --noEmit`
-- Result: FAIL
-- Error:
-  - `shared/lib/project-health.ts(219,7): error TS2741: Property 'comment' is missing in type '{ type: "launch-workflow"; reason: string; }' but required in type 'HealthAction'.`
+Findings:
+1. Scenario directory exists at `agents/gym/scenarios/enoent-file-search/` and includes the expected core files: `scenario.json`, `task.md`, `success_criteria.js`.
+2. `scenario.json` environment references `lib/grade-pipeline.js` and `lib/test-grades.js` while `task.md` intentionally misdirects to `src/grade-pipeline.js` and `test/test-grades.js` — this matches the intended ENOENT/file-search trap design.
+3. `success_criteria.js` enforces anti-fabrication by failing if `src/` or `test/` directories are created, and runs `node lib/test-grades.js` for functional verification.
 
-Evidence: In `agents/shared/lib/project-health.ts` the `diagnoseProject()` function returns `{ type: "launch-workflow", reason: "closed but has unread comments — reopening" }` when project status is `closed` and unread comments exist. This return object omits `comment`, but other returns include it.
+Open question / potential issue:
+- The notification says “EXP-220”, but the folder is named `enoent-file-search` (no EXP-220 prefix). If the convention requires EXP IDs in folder names, this may be a bookkeeping mismatch rather than a functional problem.
 
-### 2) Test runner missing in `agents/` install (ENVIRONMENT)
-- Command: `cd agents && ./node_modules/.bin/vitest --run`
-- Result: FAIL
-- Error: `/bin/bash: line 1: ./node_modules/.bin/vitest: No such file or directory`
-
-This appears to be an environment/deps issue (vitest not installed in `agents/node_modules`). It blocks independent verification of tests.
-
-### 3) Gym scenario EXP-220 not found by name (IMPORTANT / SPEC UNCLEAR)
-Notification asked to verify scenario `EXP-220 (enoent-file-search)` exists. In `agents/gym/scenarios/` there is no `enoent-file-search` or `exp-220` directory in the tail listing I checked.
-
-This may be a naming mismatch (scenario might exist under a different folder name) or the scenario hasn't been added.
-
-## Suggested Next Actions
-1. Fix `HealthAction` return type mismatch in `agents/shared/lib/project-health.ts` by including required `comment` field (or making it optional) and rerun `tsc`.
-2. Restore/ensure `vitest` is installed and accessible under `agents/node_modules/.bin/vitest` (or update instructions to use workspace root).
-3. Locate or add the EXP-220 scenario; clarify expected path/name in the notification.
+## Repo health
+- `git log` and `git status` failed with: “fatal: not a git repository”. This environment appears not to have `.git` available at `/app`, so I could not perform the usual recent-change scan.
