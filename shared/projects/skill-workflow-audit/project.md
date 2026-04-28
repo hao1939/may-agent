@@ -12,7 +12,7 @@ All 3 original metrics at target:
 **Type**: continuous
 **Workflow**: master-worker
 **Priority**: P0
-**Iteration**: 1
+**Iteration**: 3
 
 ## Goal
 Every skill and workflow verified working, measured for impact, protected against regression.
