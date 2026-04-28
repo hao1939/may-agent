@@ -179,12 +179,12 @@ function loadMetrics(ctx: WorkflowContext, agent: string): string {
   try {
     const db = ctx.getDb();
     const rows = db.prepare(
-      "SELECT id, current, target, threshold, alert_direction FROM metrics WHERE owner = ? AND status = 'active'"
+      "SELECT id, current, target, threshold, alert_op FROM metrics WHERE owner = ? AND status = 'active'"
     ).all(agent);
     if (!rows.length) return "";
     return (rows as any[]).map(r => {
       const breached = r.threshold != null && r.current != null &&
-        (r.alert_direction === "above" ? r.current > r.threshold : r.current < r.threshold);
+        (r.alert_op === "above" ? r.current > r.threshold : r.current < r.threshold);
       return `📊 ${r.id}: ${r.current ?? "?"} (target ${r.target ?? "?"}) ${breached ? "⚠️ BELOW TARGET" : "✅"}`;
     }).join("\n");
   } catch { return ""; }
