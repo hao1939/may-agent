@@ -11,8 +11,10 @@
 - Suggested fix: Add idempotency key / request fingerprinting and collapse duplicates before dispatch.
 
 ### P2: Verify gym scenario EXP-220 (enoent-file-search) set up properly
-**Action:** Dismiss (already verified previously)
-- Rationale: Prior QA notes indicate the scenario has already been verified; no new alert evidence provided.
+**Action:** Escalate / needs clarification
+- Evidence: `find agents/gym/scenarios -maxdepth 2 -type d -iname '*220*' -o -type f -iname '*220*'` returned **no matches** in this checkout.
+- Likely causes: scenario not present in repo, named differently than EXP-220, or alert refers to a different repo.
+- Ask: provide the expected directory name/path for EXP-220.
 
 ### P1/P0: Coaching alerts (C8.2 no finish call, C1.4 last tool call violations)
 **Action:** Act (self-process)
