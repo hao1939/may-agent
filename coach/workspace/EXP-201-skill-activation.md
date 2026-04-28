@@ -1,7 +1,7 @@
 # EXP-201: Skill Activation Mechanism — Do Background Skills Actually Work?
 
 **Date**: 2026-06-24
-**Status**: DESIGNED
+**Status**: CLOSED — answered by skill-quality-scorecard. Finding: text/background skills achieve ~0% behavior change (Tier 4). Structural enforcement (Tier 1-2) is the only effective mechanism.
 **Predecessors**: Finding (Apr 23), EXP-164, EXP-166, EXP-177
 
 ---

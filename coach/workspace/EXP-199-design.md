@@ -1,7 +1,7 @@
 # EXP-199: Workflow-Enforced Pipeline Swap Discovery
 
 **Date**: 2026-06-22
-**Status**: DESIGNED — ready for gym execution
+**Status**: CLOSED — superseded by EXP-256 (step-start primer proven at 84.2%). Workflow enforcement approach validated via different experiment.
 **Predecessor**: EXP-198 (procedural skill 0%), EXP-195 (direct hint 40%)
 **Hypothesis**: H-181 (Relational Bug Blindness)
 **Pattern**: EXP-015 (workflow enforcement 0%→100% on npx avoidance)
