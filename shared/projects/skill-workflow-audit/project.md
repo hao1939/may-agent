@@ -17,10 +17,15 @@ Every skill and workflow verified working, measured for impact, protected agains
 - workflow.pass-rate: 1.00 → target 0.95 ✅
 
 ## Current State (Updated 2026-04-28)
-All 9 milestones complete. Regression check script runs workflow load tests (9/9 pass) using `bun`.
-skill.verified-rate at 0.60 (below 0.80 target — blocked on evaluator restart and gym infra).
-skill.delivery-rate at 0.81 (above 0.60 target ✅). workflow.pass-rate at 1.00 (above 0.95 ✅).
-**Remaining gap**: skill.verified-rate needs evaluator + gym runs to improve. Evaluator dead 7+ days.
+All 9 milestones complete. `skill-verification.md` has full extended verification (top 5 + next 10).
+- skill.verified-rate: 0.60 (9/15 verified) — below 0.80 target ⚠️
+- skill.delivery-rate: 0.81 (39/48) ✅
+- workflow.pass-rate: 1.00 (10/10) ✅
+- `metrics.md` is stale (Jan 2025) — needs rewrite to match current data.
+
+**Remaining gap**: 6 unverified skills (5 no-evidence + 1 partial). Path to 0.80 = verify 3 more (12/15).
+Options: (1) convert partial (evidence-over-narrative) to verified with experiment, (2) prune unverified skills reducing denominator, (3) verify consolidate-memory/experience-replay with targeted observation.
+**Blocker**: evaluator dead 7+ days, gym runner needs GYM_AGENT_BIN.
 
 ## Plan
 - [x] Inventory all skills and workflows
