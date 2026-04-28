@@ -1,11 +1,10 @@
 # Coach Todo
 
-## P0: Verification Failures — #1 System-Wide Issue (Jul 3, NEW)
-- **Finding**: 279 verification-related failures in low-quality sessions (7d). Affects ALL agents.
-- **Rates**: qa 9.1%, amy 10.5%, tech-lead 6.6%, coach 5.0%, bob 4.9%
+## P0: Verification Failures — #1 System-Wide Issue (Jul 3, ESCALATED Apr 28)
+- **Finding**: 502 verification-related failures in 7d (updated Apr 28). bob 120, tech-lead 93, coach 86, optimizer 58, scout 45, qa 42, amy 40.
 - **Root cause**: verify-after-write skill at 9% compliance (text-only, no guard)
-- **Action**: Escalate to tech-lead/may for structural verify-after-write guard (same pattern as finish-guard)
-- **Blocked on**: Code-level enforcement — text coaching confirmed dead (KE-338)
+- **Action**: ✅ Escalated to tech-lead (P0 notification sent Apr 28) for structural verify-after-write guard
+- **Blocked on**: Tech-lead building the guard — text coaching confirmed dead (KE-338)
 
 ## P0: PATH_HALLUCINATION — Tech-Lead is #1 Offender (Jul 3, UPDATED)
 - **Data**: tech-lead 22 incidents (7d), amy 15, bob 7
