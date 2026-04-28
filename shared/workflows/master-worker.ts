@@ -17,7 +17,7 @@
 import { readFileSync, existsSync, writeFileSync, appendFileSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import {
-  extractField, extractSection, updateProjectStatus,
+  extractField, extractSection, extractMilestones, updateProjectStatus,
 } from "./project-helpers.ts";
 
 export const name: string = "master-worker";
@@ -324,6 +324,9 @@ Then provide your decision and guidance for the next iteration.`;
     }
 
     // ── Wrap up ──
+    const finalContent = readFileSync(projectFile, "utf-8");
+    const finalMs = extractMilestones(finalContent);
+    const projectType = extractField(finalContent, "Type").toLowerCase();
     let finalStatus: string;
     let stopReason: string;
 
@@ -354,46 +357,4 @@ Then provide your decision and guidance for the next iteration.`;
     orchestrator.close();
     worker.close();
   }
-}
-
-// ── Project file updates ────────────────────────────────────────────────
-
-function updateProjectStatus(
-  projectFile: string,
-  status: string,
-  reason?: string,
-  iteration?: number,
-) {
-  let content = readFileSync(projectFile, "utf-8");
-
-  // Update Status field
-  content = content.replace(/^\*\*Status\*\*:\s*.+$/m, `**Status**: ${status}`);
-
-  // Update/add Stop Reason
-  if (reason !== undefined) {
-    if (content.includes("**Stop Reason**:")) {
-      content = content.replace(/^\*\*Stop Reason\*\*:\s*.+$/m, `**Stop Reason**: ${reason}`);
-    } else {
-      content = content.replace(/^(\*\*Status\*\*:\s*.+)$/m, `$1\n**Stop Reason**: ${reason}`);
-    }
-  }
-
-  // Update/add iteration count
-  if (iteration !== undefined) {
-    if (content.includes("**Iteration**:")) {
-      content = content.replace(/^\*\*Iteration\*\*:\s*.+$/m, `**Iteration**: ${iteration}`);
-    } else {
-      content = content.replace(/^(\*\*Status\*\*:\s*.+)$/m, `$1\n**Iteration**: ${iteration}`);
-    }
-  }
-
-  // Update Current State section
-  if (reason !== undefined) {
-    const stateText = `${status}: ${reason}`;
-    if (content.includes("## Current State")) {
-      content = content.replace(/(## Current State\s*\n)[\s\S]*?(?=\n## |$)/, `$1${stateText}\n`);
-    }
-  }
-
-  writeFileSync(projectFile, content, "utf-8");
 }
