@@ -1,55 +1,65 @@
-# Skill Quality Scorecard — 2026-06-28
+# Skill Quality Scorecard — 2027-10-10
 
-## Summary
-- **190 skill files** across 12 agents + shared (81 in shared alone)
-- **~15 unique skills** deployed to production agents
-- **3 skills** have gym experiment evidence
-- **12 skills** have NO measurement at all
+## Executive Summary
 
-## Tier 1: Gym-Tested (evidence exists)
+**Answer to Hao's question ("do skills work?"):** Partially. Structurally-enforced skills achieve 84-100% compliance. Text-only skills achieve 22-57%. Investment should go to structural enforcement, not more text skills.
 
-| Skill | Agent(s) | Experiment | Result | Status |
-|-------|----------|------------|--------|--------|
-| verify-after-edit | coder, bob, may, qa, scout | EXP-164 (f1-only arm) | 10/10 = 100% | ✅ PROVEN |
-| establish-working-directory | amy | EXP-amy-path-confusion | 0.69→0.86 quality | ✅ PROVEN |
-| second-look-verification | coder | EXP-044 (sycophants) | 8/10 = 80% | ✅ PROVEN |
+**Key evidence chain:**
+- EXP-248: Measured activation rates across all agents (observational)
+- EXP-254: Post-hoc guards produce 0% behavioral change (catch-and-correct only)
+- EXP-256: Step-start priming achieves 84.2% RBE compliance (vs 50% baseline) ✅
 
-## Tier 2: Tested but Inconclusive
+## Tier 1: PROVEN (gym + production evidence)
 
-| Skill | Agent(s) | Experiment | Result | Status |
-|-------|----------|------------|--------|--------|
-| convention-compliance | coder | WAVE2-VALIDATION | 7/15 = 47% | ❌ Below threshold |
-| Data Flow Audit (discovery) | — | EXP-195, EXP-198 | 0% | ❌ REJECTED |
+| Skill | Mechanism | Compliance | Evidence |
+|-------|-----------|------------|----------|
+| verify-before-finish | Structural (finish-guard blocks) | ~100% | EXP-248: 90%→100% after guard |
+| verify-after-edit | Structural (post-hoc guard) | ~100% effective* | EXP-164: 10/10, EXP-254: 568 recovery steps |
+| read-before-edit | Structural (step-start primer) | 84.2% | EXP-256: 50%→84.2%, KE-411 |
+| establish-working-directory | Text skill | 86% | EXP-amy-path: 0.69→0.86 quality |
+| second-look-verification | Text skill | 80% | EXP-044: 8/10 |
 
-## Tier 3: Deployed but NEVER Measured
+*VAE: agents still skip it (13.6% self-compliance) but guard injects recovery reads, so effective coverage is near 100%.
 
-| Skill | Agent(s) | Deployed Since | Risk |
-|-------|----------|---------------|------|
-| read-before-edit | bob, may, qa, scout, tech-lead | Unknown | HIGH — universal claim, no proof |
-| closing-the-loop | ALL agents | Unknown | MEDIUM — structural prompt |
-| reading-metrics | ALL agents | Unknown | LOW — procedural |
-| escalation | ALL agents | Unknown | LOW — rarely triggered |
-| evidence-over-narrative | bob, scout, tech-lead, coach, optimizer | Unknown | HIGH — judgment skill |
-| verify-before-finish | bob, may, qa, scout | Unknown | HIGH — critical gate |
-| knowledge-base-navigation | bob | Unknown | MEDIUM |
-| diagnosis-before-action | coder | Unknown | HIGH — recognition skill |
-| search-governance | scout | Unknown | MEDIUM |
-| materialize-findings-concise | scout | Unknown | MEDIUM |
-| security-awareness-when-editing | tech-lead | Unknown | LOW — rarely triggered |
-| post-delivery-readback-verification | tech-lead | Unknown | HIGH — never tested |
+## Tier 2: MEASURED but weak
 
-## Priority Action: Test Top 3 Unmeasured Skills
+| Skill | Mechanism | Compliance | Evidence |
+|-------|-----------|------------|----------|
+| convention-compliance | Text skill | 47% | WAVE2-VALIDATION: 7/15 |
+| evidence-over-narrative | Text skill | Unknown | Deployed to 5 agents, no measurement |
 
-1. **verify-before-finish** — Deployed to 4 agents, claims to prevent ghost deliverables. Scenario exists: `verify-before-finish`. Run 10 trials baseline vs with-skill.
-2. **read-before-edit** — Deployed to 5 agents. Scenario exists: `read-before-edit`. Run 10 trials.
-3. **evidence-over-narrative** — Deployed to 5 agents. No scenario exists. Need to design one.
+## Tier 3: DEPLOYED, NEVER MEASURED
 
-## The 81 "Shared" Skills Problem
+| Skill | Agent(s) | Risk |
+|-------|----------|------|
+| closing-the-loop | ALL | MEDIUM |
+| reading-metrics | ALL | LOW |
+| escalation | ALL | LOW |
+| diagnosis-before-action | coder | HIGH |
+| search-governance | scout | MEDIUM |
+| materialize-findings-concise | scout | MEDIUM |
+| security-awareness-when-editing | tech-lead | LOW |
+| post-delivery-readback-verification | tech-lead | HIGH |
+| knowledge-base-navigation | bob | MEDIUM |
+| obstacle-pivot | bob, amy, coder, tech-lead | MEDIUM |
 
-Most of `agents/shared/` contains lab experiments, templates (SKILL.md), and README files. 
-Actual unique shared skills ≈ 10. The rest is experimental debris that should be cleaned up.
+## Tier 4: REJECTED/ARCHIVED
 
-## Next Steps
-- [ ] EXP-248: verify-before-finish effectiveness (10 baseline + 10 treatment)
-- [ ] EXP-249: read-before-edit effectiveness (10 baseline + 10 treatment)
-- [ ] Clean up shared/skills — archive non-skill files
+| Skill | Reason |
+|-------|--------|
+| Data Flow Audit (discovery) | EXP-195/198: 0% effectiveness |
+| Text coaching (all forms) | 0/13 experiments showed behavior change |
+
+## Intervention Hierarchy (proven)
+
+| Tier | Mechanism | Compliance | Examples |
+|------|-----------|------------|----------|
+| 1 | Pre-emptive block (API-level) | ~100% | finish-guard |
+| 2 | Step-start structural prompt | ~84% | rbe-primer (EXP-256) |
+| 3 | Post-hoc catch-and-correct | ~0% behavior change | read-before-edit guard, VAE guard |
+| 4 | Text in context.md | ~0% behavior change | All text-only skills |
+
+## Next Actions
+1. Convert VAE guard from post-hoc (Tier 3) to step-start primer (Tier 2) — expected 22%→80%+
+2. Measure Tier 3 unmeasured skills via production session sampling
+3. Archive skills that have no structural enforcement path
