@@ -676,8 +676,8 @@ WHERE h.created_at > (strftime('%s','now')*1000 - 2592000000) -- last 30 days
 ### May — System Oversight
 | ID | Type | Speed |
 |----|------|-------|
-| `system.request-throughput` | health | daily |
-| `system.stuck-requests` | health | fast |
+| `system.session-throughput` | health | daily |
+| `system.stuck-sessions` | health | fast |
 | `system.agent-utilization` | continuous | daily |
 
 ### Bob — Architect
