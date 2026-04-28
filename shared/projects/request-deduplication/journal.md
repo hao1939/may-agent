@@ -135,3 +135,26 @@ you go the wrong way, we remove request db because no longer need it, we have th
 
 Resume when: Hao/May confirms project can be closed.
 
+### Iteration 9 (comment) — 2026-04-28T18:26:01.416Z
+**Comment**: ### hao — 2026-04-28
+you go the wrong way, we remove request db because no longer need it, we have the events table log all messages
+**Reviewer**: CONTINUE — 1. **I believe**: Hao has said the same thing twice. We've responded with WAITING twice. The comment is being re-processed as if it's new, but it's the same comment from iteration 7/8. There's nothing new here.
+2. **I'm uncertain about**: Whether the system is stuck re-processing the same comment, or whether Hao is dissatisfied with our WAITING response.
+3. **I'd change my mind if**: Hao provided a new comment with different instructions.
+
+WAITING — The duplicate storm problem was solved architecturally by removing the request DB and replacing it with an events table. This project has no remaining implementation work. The same comment from Hao has been processed three times now (iterations 7, 8, 9) — there is no new input.
+
+Resume when: Human/May marks project as closed, or Hao provides new/different instructions.
+
+CONTEXT_UPDATE:
+- Hao confirmed request DB was removed and replaced with events table — this solved duplicate storms architecturally
+- No implementation work remains in this repo — the fix was at the platform level
+- Hao's comment from 2026-04-28 has been re-processed 3 times (iter 7/8/9) with no new information
+
+### Iteration 10 (comment) — 2026-04-28T18:26:05.284Z
+**Comment**: ### hao — 2026-04-28
+you go the wrong way, we remove request db because no longer need it, we have the events table log all messages
+**Reviewer**: WAITING — — This is the 4th time the same comment is being re-processed. The project is complete — duplicate storms were eliminated by removing the request DB. No implementation work remains.
+
+Resume when: Human/May marks project as closed.
+
