@@ -1152,3 +1152,24 @@ Agents are inference-optimized, not investigation-optimized. When a summary leak
 - Design "opaque summary" variant to truly test evidence gathering
 - Consider: L2 pattern library design from EXP-257 findings
 - Measure EXP-258 VAE primer compliance when data available
+
+## 2027-10-28 Heartbeat (session 3)
+
+### EXP-242 Phase 2 COMPLETE — Statistical Confirmation
+
+Ran 11 additional sequential auditor trials (total N=16) + 5 baseline controls:
+- **Treatment**: 7/16 (44%) pipeline-order fixed
+- **Baseline**: 0/10 (0%) pipeline-order fixed  
+- **Fisher's exact p = 0.015** — statistically significant
+
+Key pattern: bimodal results — agents either get 10/10 or 8/10 (never partial pipeline fix).
+
+Sequential auditor matches direct-hint performance (EXP-195, 40%) but generates the insight autonomously. This is the strongest validated intervention for relational reasoning tasks.
+
+### Inbox Triage
+- All 16 notifications 68-91h old — dismissed (paper connections to resolved hypotheses, stale productivity alerts, superseded experiment notes)
+
+### Next
+- Production integration design for sequential auditor
+- Generalization test: try auditor pattern on other 0%-baseline scenarios
+- EXP-244 write-up
