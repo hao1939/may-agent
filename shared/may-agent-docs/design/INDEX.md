@@ -52,8 +52,7 @@ Guards, review, escalation.
 
 | Document | What | Status |
 |----------|------|--------|
-| [infra-metrics.md](infra-metrics.md) | Infrastructure metrics: handler-health, stuck-requests, throughput | ✅ Active |
-| [metrics-evolution-roadmap.md](metrics-evolution-roadmap.md) | Hao's vision: where metrics system should go | Vision |
+| [health-metrics.md](health-metrics.md) | All 12 health metrics: definitions, thresholds, alert_op | ✅ Implemented |
 | [output-channels.md](output-channels.md) | Telegram & web console notification design | ✅ Implemented |
 | [webui-improvements.md](webui-improvements.md) | Web UI: projects tab (done), events view, dashboard cleanup | Partially implemented |
 
