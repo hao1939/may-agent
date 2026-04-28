@@ -653,7 +653,7 @@ WHERE h.created_at > (strftime('%s','now')*1000 - 2592000000) -- last 30 days
 
 1. **Add metrics section to `system_status` tool** — agents see their metrics when they call system_status
 2. **Update proof-of-life handler** — digest pulls from metric_snapshots
-3. **Add "my metrics" to heartbeat-context handler** — each agent's injected context includes their owned metrics
+3. **Add "my metrics" to heartbeat data loaders** — each agent's injected context includes their owned metrics
 
 ### Phase 3: Agent Behavior Changes (heartbeat edits)
 
