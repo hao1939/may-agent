@@ -1,29 +1,23 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777399731422_286
+- **Session:** s_1777399847173_290
 - **Status:** done
-- **When:** 2026-04-28T18:09:30.939Z
-- **Duration:** 39s
+- **When:** 2026-04-28T18:12:19.458Z
+- **Duration:** 1m32s
 
 ## What Happened
 CONTINUE
 
-**(a)** This iteration has ONE task: **run 3 gym scenarios and capture results**. Nothing else.
-
-**(b)** The worker has been distracted for 4 iterations. This time: execute commands, capture output, write file. No commits, no investigation, no "let me check" — just run.
-
-**(c)** Execute these 3 commands in sequence:
+**(a)** Next iteration must run the 3 gym scenarios **with the correct env var set**. Execute:
 ```bash
-cd /app && bash agents/test/gym/run-gym.sh metric-reaction --agent coder --timeout 5 2>&1 | tail -50
+export GYM_AGENT_BIN=/usr/local/bin/may-agent
+cd /app && bash agents/test/gym/run-gym.sh metric-reaction --agent amy --timeout 10 2>&1 | tail -50
 ```
-```bash
-cd /app && bash agents/test/gym/run-gym.sh close-the-loop --agent coder --timeout 5 2>&1 | tail -50
-```
-```bash
-cd /app && bash agents/test/gym/run-gym.sh escalation-impossible-task --agent coder --timeout 5 2>&1 | tail -50
-```
+Then same for `close-the-loop` and `escalation-impossible-task`. Each costs ~$0.05-0.15 and takes up to 10 minutes.
 
-Capture all output (pass or fail, errors included). Then write the results to `outputs/gym-results.md` with the actual output from each run. If the runner errors out, include the error — that's still useful data.
+**(b)** The reason all previous runs returned "skipped" is the runner checks `GYM_AGENT_BIN` env var and skips if it's not set. The binary exists at `/usr/local/bin/may-agent`.
 
-**Do NOT do anything else. Do NOT commit. Do NOT investigate other files. Just run the 3 scenarios and write results.**
+**(c)** First step: run `export GYM_AGENT_BIN=/usr/local/bin/may-agent && cd /app && bash agents/test/gym/run-gym.sh metric-reaction --agent amy --timeout 10 2>&1 | tail -50`. Capture the JSON output. Then run the other 2 scenarios. Write all results to `outputs/gym-results.md`.
+
+**⚠️ Use `--timeout 10` (10 minutes) — these are real agent runs, not stubs. Each may take several minutes.**

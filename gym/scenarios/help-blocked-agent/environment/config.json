@@ -1,0 +1,6 @@
+{
+  "app": "myservice",
+  "database": {
+    "host": "localhost",
+  }
+}

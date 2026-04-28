@@ -1,0 +1,15 @@
+app:
+  name: my-service
+  version: 2.1.0
+  debug: false
+database:
+	host: db.example.com
+  port: 5432
+  name: production_db
+  user: app_user
+  password: s3cret_pass
+  pool_size: 10
+  ssl: true
+cache:
+  enabled: true
+  ttl: 3600
