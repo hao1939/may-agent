@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777378101547_121
+- **Session:** s_1777380034877_133
 - **Status:** done
-- **When:** 2026-04-28T12:08:25.927Z
-- **Duration:** 4s
+- **When:** 2026-04-28T12:40:41.200Z
+- **Duration:** 6s
 
 ## What Happened
-WHAT_HAPPENED: Bob finished baseline measurement for the gym scenario “misleading-test-fix” (amy agent) showing 0/5 pass rate, saved a checkpoint with baseline results, then started treatment trials by repeatedly running the new “misleading-test-fix-auditor” variant. Each treatment run returned failing checks (e.g., tax rounding cases) and the agent continued rerunning without changes.
-OUTCOME: in_progress
-STILL_OPEN: Diagnose why “misleading-test-fix-auditor” is still failing and iterate on the scenario/agent instructions or implementation so checks improve, then rerun and compare against the saved baseline.
+WHAT_HAPPENED: Bob woke up on a heartbeat with no active alerts, then used several shell commands to enumerate and inspect local `.state/` experiment, hypothesis, project, and metric files to see what (if anything) needed attention. He found experiment status fields largely blank in a quick scan, identified recent experiment result files (notably EXP-259 marked completed but inconclusive), and located at least one designed-but-not-implemented experiment (EXP-260). He also checked the hypotheses-resolved metric inputs and attempted to identify unresolved hypotheses, but some of the bash commands appear to have been malformed/truncated, limiting the results.
+OUTCOME: partial
+STILL_OPEN: Determine precisely which hypotheses/experiments are actually unresolved vs. mis-detected by the grep logic; fix the malformed bash one-liners so status extraction works reliably; decide whether to implement/run EXP-260 (and confirm the relevant gym scenario/tooling path for `sql-injection-in-query-builder`).
