@@ -843,6 +843,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       projectContent = updateField(projectContent, "Iteration", String(iteration));
       writeFileSync(config.projectPath, projectContent, "utf-8");
 
+      // Mark discussion as read BEFORE processDecision can exit early
+      markDiscussionRead(config.projectDir, iteration);
+
       {
         const ls: LoopState = { projectContent, continueWithoutProgress };
         const exitResult = await processDecision(ctx, config, ls, journalContent, iteration, decision, true, features);
