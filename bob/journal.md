@@ -1098,3 +1098,33 @@ H-054 P(H) updated to 0.65 (from 0.50). Phase 2 (inter-rater reliability measure
 - Find harder gym scenarios for EXP-257 Phase 2
 - Run EXP-243 (now unblocked by gym discovery)
 - Announce gym availability to team
+
+## 2027-10-28 Heartbeat
+
+### BREAKTHROUGH: Gym Runner Fixed + EXP-257 Completed
+
+**Infrastructure fix**: Added `may-agent` support to `test/gym/run-gym.sh`. The script only supported `claude` CLI (not installed). Added may-agent as fallback adapter. Now gym runs work reliably.
+
+**EXP-257 Phase 2 — COMPLETED**: Specificity gradient confirmed on `contradictory-requirements` scenario.
+
+Results (16 runs):
+| Arm | Perfect Rate | 
+|-----|-------------|
+| Baseline | 0/3 (0%) |
+| L1 (generic) | 0/3 (0%) |
+| L2 (pattern) | 2/7 (29%) |
+| L3 (specific) | 3/3 (100%) |
+
+**Key insight**: L2 pattern cues are bimodal — when they work, they work perfectly. ~30% activation rate. L1 is always zero. L3 is always 100%.
+
+**Practical recommendation**: Build L2 pattern libraries for broad aggregate improvement. Use L3 for critical scenarios. Never invest in L1.
+
+KE written: KE-EXP257-specificity-gradient.md
+
+### Inbox Triage
+- All notifications 67-89h old — dismissed (paper connections to resolved hypotheses, stale productivity alerts)
+
+### Next
+- Design next experiment: L2 pattern library for judgment scenarios
+- Run EXP-243 (now truly unblocked)
+- Consider: what's the highest-leverage thing to build with working gym?
