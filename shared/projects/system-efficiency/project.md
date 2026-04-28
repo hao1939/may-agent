@@ -22,7 +22,11 @@ Maximize meaningful output of the agent system. Not about reducing cost — abou
 - [x] Measure current output: how many deliverables produced per day? how many iterations?
 - [x] Identify biggest blockers to output (stuck projects, slow handlers, idle agents)
 - [x] Fix top blocker (zombie cleanup: 51 projects archived, health state cleaned to 5 entries)
-- [ ] Re-plan: review output metrics, assess improvement, write next steps
+- [x] Re-plan: review output metrics, assess improvement, write next steps
+- [ ] Archive agent-owned zombie projects (70+ with 500+ skips)
+- [ ] Add output verification to master-worker workflow
+- [ ] Open 2 new projects and get them to 3+ iterations each
+- [ ] Achieve 10 project iterations in a 24h window
 
 ## References
 
@@ -32,3 +36,5 @@ Maximize meaningful output of the agent system. Not about reducing cost — abou
 
 **Artifacts:**
 - outputs/project-closure-summary.md — previous work summary
+- outputs/system-output-audit.md — system output audit
+- outputs/output-improvement-plan.md — improvement plan with next actions
