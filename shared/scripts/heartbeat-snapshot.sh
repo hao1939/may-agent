@@ -80,10 +80,10 @@ print('RECENT_ERRORS_24H',
 // 3. Pending requests for this agent (or all if no agent)
 const pendQ = AGENT
   ? db.query(\`SELECT requestId, fromEntity, task, createdAt
-              FROM requests WHERE status='pending' AND toAgent=?
+              FROM events -- requests table REMOVED WHERE status='pending' AND toAgent=?
               ORDER BY createdAt DESC LIMIT 20\`).all(AGENT)
   : db.query(\`SELECT requestId, fromEntity, toAgent, task, createdAt
-              FROM requests WHERE status='pending'
+              FROM events -- requests table REMOVED WHERE status='pending'
               ORDER BY createdAt DESC LIMIT 20\`).all();
 print('PENDING_REQUESTS' + (AGENT?'_FOR_'+AGENT:''), pendQ,
   AGENT ? ['requestId','fromEntity','createdAt','task']
