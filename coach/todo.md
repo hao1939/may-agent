@@ -1,5 +1,16 @@
 # Coach Todo
 
+## P1: Deploy Proven Skills — obstacle-pivot ✅ DONE (Jun 30)
+- **Deployed to**: coder, bob, tech-lead (context.md wiring)
+- **Evidence**: +100pp in gym (EXP-084), was proven but unwired to 0 agents
+- **Commit**: 3d1367c6a
+- **Next**: Measure multiple_tool_errors rate for these 3 agents in 7 days to verify production impact
+
+## P1: Measure obstacle-pivot Production Impact (NEW — due Jul 7)
+- **Baseline needed**: Count multiple_tool_errors + FM-2.2 for coder/bob/tech-lead from last 7 days
+- **Check after**: Jul 7 — compare same metrics
+- **Success**: ≥10pp reduction in tool-error-related failures
+
 ## P0: Quality Audit of Skills & Workflows ✅ DONE (Apr 27)
 **Output**: `agents/coach/workspace/quality-audit.md`
 **Finding**: 156 skills, 11 workflows. Quality measurement is broken (no gym runs, evals stale since Mar 24). Notified evaluator to resume.
