@@ -1,14 +1,32 @@
 # Coach Todo
 
+## P0: Verification Failures — #1 System-Wide Issue (Jul 3, NEW)
+- **Finding**: 279 verification-related failures in low-quality sessions (7d). Affects ALL agents.
+- **Rates**: qa 9.1%, amy 10.5%, tech-lead 6.6%, coach 5.0%, bob 4.9%
+- **Root cause**: verify-after-write skill at 9% compliance (text-only, no guard)
+- **Action**: Escalate to tech-lead/may for structural verify-after-write guard (same pattern as finish-guard)
+- **Blocked on**: Code-level enforcement — text coaching confirmed dead (KE-338)
+
+## P0: PATH_HALLUCINATION — Tech-Lead is #1 Offender (Jul 3, UPDATED)
+- **Data**: tech-lead 22 incidents (7d), amy 15, bob 7
+- **Text coaching exhausted**: EXP-251 confirmed no improvement from skill updates
+- **Action**: Escalate for bash wrapper / pre-command PATH check at code level
+- **Status**: Escalation sent (EXP-251 conclusion)
+
+## P1: EXP-250 — Amy Path-Orientation Skill (IN PROGRESS)
+- **Lab fork**: agents/.lab/amy-env-orientation/ (created, committed)
+- **Problem**: cc-hallucinated-paths baseline is 5/5 (too easy) — need harder scenario
+- **Next**: Find/create scenario where path confusion actually causes failures, or test on partial-verification-trap
+- **Design**: agents/coach/workspace/EXP-250-design.md
+
 ## P0: Skill Compliance Degrading — Need Structural Guards (Apr 28)
 - **Finding**: read-before-edit dropped 34% → 19% (-15pp). verify-after-write stuck at 7%. Text skills decay without guards.
 - **Action**: Design and ship structural guard for read-before-edit (highest-volume: 285 violations from amy alone)
 - **Evidence**: skill-quality-audit.md re-measurement section
 
-## P0: Evaluator Dead — Blocks ALL Measurement (Jul 1, STILL BLOCKED)
-- **Problem**: eval.db not found in expected location. All measurement blocked.
-- **Impact**: Can't measure obstacle-pivot impact, convention coaching impact, or any new experiments
-- **Blocked**: Everything below that requires eval data
+## P0: Evaluator Dead — ✅ RESOLVED (Jul 3)
+- **Resolution**: Evaluator is back — 7,233 evaluations in last 7d across all agents
+- **Unblocked**: All measurement capabilities restored
 
 ## P1: Deploy Proven Skills — obstacle-pivot ✅ DONE (Jun 30)
 - **Deployed to**: coder, bob, tech-lead (context.md wiring)
