@@ -79,3 +79,4 @@ All 18 plan items complete. All 4 metrics at or above target. ✅
 - outputs/vbf-remeasure.md — VBF re-measurement: 12/12 pass, 100% compliance
 - outputs/skill-usefulness-design.md — usefulness metric design and methodology
 - outputs/skill-behavioral-audit-v2.md — v2 behavioral audit: all dimensions 100%
+- outputs/skill-usefulness-measurement.md — usefulness measurement: raw 0.33, adjusted 1.00
