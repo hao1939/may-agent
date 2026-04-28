@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777360914299_47
+- **Session:** s_1777363107261_13
 - **Status:** done
-- **When:** 2026-04-28T07:27:05.611Z
-- **Duration:** 5m11s
+- **When:** 2026-04-28T08:00:05.634Z
+- **Duration:** 1m38s
 
 ## What Happened
-This guard seems broken — it's false-positiving on a read-only session. This is exactly the kind of issue mentioned in the inbox (guards creating false positives). Let me try a different status:
+OK. The EXP-235 tool exists but integration is an architect/master concern, not mine.
+
+Let me summarize and finish.

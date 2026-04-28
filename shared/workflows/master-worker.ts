@@ -17,7 +17,7 @@
 import { readFileSync, existsSync, writeFileSync, appendFileSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import {
-  extractField, extractSection, extractComments, clearComments, updateProjectStatus,
+  extractField, extractSection, updateProjectStatus,
 } from "./project-helpers.ts";
 
 export const name: string = "master-worker";
@@ -158,8 +158,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   // Check if already done with no pending comments
-  if (status === "done" && !extractComments(projectContent)) {
-    return ctx.done("Project already done. No pending comments.");
+  if (status === "closed") {
+    // Check discussion.md for unread comments
+    const discFile = join(projectDir, "discussion.md");
+    let hasUnread = false;
+    try {
+      if (existsSync(discFile)) {
+        const disc = readFileSync(discFile, "utf-8");
+        const lastMarker = disc.lastIndexOf("---read @");
+        const unread = lastMarker >= 0 ? disc.slice(disc.indexOf("\n", lastMarker) + 1).trim() : disc.replace(/^# Discussion\s*/, "").trim();
+        hasUnread = !!unread;
+      }
+    } catch {}
+    if (!hasUnread) return ctx.done("Project is closed. No unread comments.");
   }
 
   ctx.log(`[master-worker] ${projectMatch[1]} | status: ${status} | max-iter: ${maxIterations}`);
