@@ -223,12 +223,21 @@ export function diagnoseProject(
 
   // Waiting/blocked — check for unread discussion comments
   if (status === "waiting" || status === "blocked") {
-
-  // Blocked or waiting
-  if (status === "blocked" || status === "waiting") {
-    // Has pending comments → launch workflow to process them (comment = unblock signal)
-    if (hasPendingComments(project.content)) {
-      return { type: "launch-workflow", reason: `${status} with pending comments`, comment: "" };
+    // Check discussion.md for unread comments (after last ---read marker)
+    let hasUnread = false;
+    try {
+      const discFile = project.projectFile.replace("project.md", "discussion.md");
+      if (existsSync(discFile)) {
+        const disc = readFileSync(discFile, "utf-8");
+        const lastMarker = disc.lastIndexOf("---read @");
+        const unread = lastMarker >= 0 ? disc.slice(disc.indexOf("\n", lastMarker) + 1).trim() : disc.replace(/^# Discussion\s*/, "").trim();
+        hasUnread = !!unread;
+      }
+    } catch {}
+    // Also check legacy ## Comments in project.md
+    if (!hasUnread) hasUnread = hasPendingComments(project.content);
+    if (hasUnread) {
+      return { type: "launch-workflow", reason: `${status} with unread comments`, comment: "" };
     }
 
     // No comments — escalate based on time
