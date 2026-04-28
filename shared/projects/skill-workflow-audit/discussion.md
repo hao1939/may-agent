@@ -12,3 +12,5 @@ you should first try it and evaluate whether it works!
 
 ### hao — 2026-04-28
 you need to carefully design the metric to reflect the real usage by agents! deployed does mean used, used doesn't mean useful! there is long way to go, and we always has new skils/workflows and there would always be regressions
+
+---read @plan---
