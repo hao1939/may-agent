@@ -22,9 +22,14 @@ Notification asked to verify new gym scenario EXP-220 (enoent-file-search).
 
 **Potential issue:** Notification names it "EXP-220" but the scenario directory is `enoent-file-search` (no `EXP-220*` folder found). If your convention is to prefix experiment IDs in directory names, this may be a mismatch.
 
-## Environment Issue — Cannot run required TS/test commands
-Attempted mandatory QA commands:
-- `./node_modules/.bin/tsc --noEmit` → missing (`No such file or directory`)
-- `./node_modules/.bin/vitest --run` → missing (`No such file or directory`)
+## Environment / Repo Root Clarification
+This environment has multiple repos.
 
-This suggests dependencies are not installed in this environment or this repo context is not the JS/TS project root expected by the QA checklist.
+- `/app` is **not** a git repository (running `git log` from `/app` fails with "not a git repository").
+- `/app/agents` **is** a git repository (verified by running `git log` there).
+
+Because of that, I ran checks against `/app/agents` (the only git repo available):
+- `./node_modules/.bin/tsc --noEmit` **PASS** (exit 0)
+- `./node_modules/.bin/vitest --run` **FAIL** (`No such file or directory` — vitest not installed in this repo)
+
+If you want QA to run tsc/vitest as part of heartbeat verification, we need the correct repo root (the app repo) available as a git checkout in this environment.
