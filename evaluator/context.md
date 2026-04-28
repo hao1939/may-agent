@@ -29,6 +29,7 @@
 📘 Read `agents/evaluator/skills/monitor-session.md` — session monitoring heuristics.
 📘 Read `agents/evaluator/skills/patrol.md` — patrol and oversight protocol.
 📘 Read `agents/evaluator/skills/score.md` — scoring methodology.
+📘 Read `agents/evaluator/skills/verify-before-finish.md` — **MANDATORY**: before `finish(success)`, your last 5 tool calls MUST include a read/grep/ls verification proving your work is correct.
 
 ## ⚡ [WHEN CALLING finish()]
 

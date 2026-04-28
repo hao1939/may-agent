@@ -75,6 +75,7 @@
 📘 Read `agents/coach/skills/log-error.md` — error logging protocol.
 📘 Read `agents/coach/skills/verify-after-edit.md` — verify every edit took effect.
 📘 Read `agents/coach/skills/context-rule-gym-ceiling.md` — gym score ceiling rules.
+📘 Read `agents/coach/skills/verify-before-finish.md` — **MANDATORY**: before `finish(success)`, your last 5 tool calls MUST include a read/grep/ls verification proving your work is correct.
 
 ## Learned from experience
 

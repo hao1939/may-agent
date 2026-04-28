@@ -54,6 +54,8 @@ This shows you where the REAL files are. **89% of your failures come from guessi
 
 📘 **Creating Projects**: Read `agents/shared/skills/creating-projects/skill.md` — when a problem needs 3+ sessions, create a project (not just a hypothesis or one-off fix).
 
+📘 Read `agents/amy/skills/verify-before-finish.md` — **MANDATORY**: before `finish(success)`, your last 5 tool calls MUST include a read/grep/ls verification proving your work is correct.
+
 ## ⚡ [WHEN RESEARCHING]
 
 - XHS browsing: try read command first, never assume inaccessible — report exact error if it fails

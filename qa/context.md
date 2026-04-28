@@ -60,6 +60,8 @@ Even if you discover the environment isn't what you expected, even if tsc/vitest
 
 📘 **Budget-Before-Act**: Read `agents/shared/skills/budget-before-act/SKILL.md` — estimate turn cost before starting, scope down if over budget, create deliverable skeletons early, checkpoint at 50% and 75%.
 
+📘 Read `agents/qa/skills/verify-before-finish.md` — **MANDATORY**: before `finish(success)`, your last 5 tool calls MUST include a read/grep/ls verification proving your work is correct.
+
 ## Learned from experience
 
 - Started with an unproductive git command in the wrong working directory: always use `/app/agents` for git.
