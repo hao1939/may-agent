@@ -190,13 +190,19 @@ ${projectContent}
 ${journalContent.slice(-3000)}
 `;
 
-    // Handle pending comments
-    const comments = extractComments(projectContent);
-    if (comments) {
-      planningPrompt += `\n## Human Comments (address these)\n${comments}\n`;
-      // Clear comments after reading
-      projectContent = clearComments(projectContent);
-      writeFileSync(projectFile, projectContent, "utf-8");
+    // Handle pending comments from discussion.md
+    const discussionFile = join(projectDir, "discussion.md");
+    let unreadComments = "";
+    try {
+      if (existsSync(discussionFile)) {
+        const disc = readFileSync(discussionFile, "utf-8");
+        const lastMarker = disc.lastIndexOf("---read @");
+        const unread = lastMarker >= 0 ? disc.slice(disc.indexOf("\n", lastMarker) + 1).trim() : disc.replace(/^# Discussion\s*/, "").trim();
+        if (unread) unreadComments = unread;
+      }
+    } catch {}
+    if (unreadComments) {
+      planningPrompt += `\n## Unread Comments (address these)\n${unreadComments}\n`;
     }
 
     planningPrompt += `\nBased on your assessment, provide your decision and guidance for the worker.`;
