@@ -353,3 +353,6 @@ Milestone completed: "Add automated daily metrics snapshot to outputs/"
 10 of 12 milestones done. Two stretch milestones remain: sustain iterations for 3 days, and increase active-count to 5.
 
 **(a) Next iteration should**: Open 2 more projects to bring active-count from 3 to 5. The `outp
+
+### Iteration 15 — 2026-04-28T19:03:03.343Z
+**Worker**: Now copy a summary to the shared outputs:
