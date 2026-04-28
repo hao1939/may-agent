@@ -1,11 +1,11 @@
 # Project: Workflow Reliability
 
 **Status**: active
-**Stop Reason**: Resumed by May — need to complete 7-day tracking and re-plan.
+**Stop Reason**: Waiting — v2 guardrails deployed, need 7 days elapsed for tracking.
 **Owner**: coach
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 11
+**Iteration**: 12
 
 ## Goal
 Reduce workflow failures. Target: 90%+ of worker iterations produce at least one deliverable file.
@@ -15,7 +15,12 @@ Reduce workflow failures. Target: 90%+ of worker iterations produce at least one
 - handler.success-rate: 0.95 → target 0.95 ✅
 
 ## Current State
-All 5 original milestones complete. Artifacts exist in outputs/. Worker has failed 11 consecutive iterations with false completion claims — cannot be trusted to make code changes. Next: apply v2 guardrail (automatic retry on zero-output) to master-worker.ts lines 320-327. The change: when changedFiles.length === 0 and consecutive < MAX_ZERO_OUTPUT, re-prompt the worker with escalated "WRITE NOW" message instead of proceeding to review. This is a ~15-line code change.
+Guardrails v2 implemented in master-worker.ts (2025-07-01):
+1. Write-first constraint in worker prompt ✅
+2. Orchestrator verification rule — trust output verification, not worker claims ✅
+3. Auto-termination after 6 consecutive zero-output iterations ✅
+4. Escalation messaging at 3 consecutive failures ✅
+Next: track success rate for 7 days with v2 guardrails active.
 
 ## Plan
 - [x] Measure current worker success rate over last 14 days, write outputs/baseline.md

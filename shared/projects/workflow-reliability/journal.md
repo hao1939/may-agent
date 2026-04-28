@@ -135,3 +135,18 @@ The worker has failed 11 consecutive iterations with false completion claims. De
 (a) Next iteration: **edit `agents/shared/workflows/master-worker.ts`** to add automatic retry when worker produces 0 files. The specific change is at line 320. After `if (changedFiles.length === 0)` block, before falling through to the review phase, add retry logic:
 
 **EXACT EDIT to apply
+
+### Iteration 12 — 2026-04-28T20:46:58.403Z
+**⚠️ No output files produced this iteration**
+
+### Iteration 12 — 2026-04-28T20:46:58.403Z
+**Worker**: 
+
+### Coach Intervention — 2025-07-01
+**Applied guardrails v2 to master-worker.ts:**
+1. Added auto-termination after 6 consecutive zero-output iterations (breaks the infinite loop)
+2. Added orchestrator verification rule to system prompt (trust output verification, not worker claims)
+3. Write-first constraint and 3-iteration escalation were already present
+
+**Milestone 6 checked off.** Next: 7-day tracking period to measure impact.
+
