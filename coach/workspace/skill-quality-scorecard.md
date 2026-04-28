@@ -32,7 +32,7 @@
 
 | Skill | Agent(s) | Risk |
 |-------|----------|------|
-| closing-the-loop | ALL | MEDIUM |
+| closing-the-loop | ~~ALL~~ REMOVED 2026-07-01 | MEDIUM — EXP-253 showed no degradation on removal |
 | reading-metrics | ALL | LOW |
 | escalation | ALL | LOW |
 | diagnosis-before-action | coder | HIGH |

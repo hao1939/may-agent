@@ -55,7 +55,6 @@ Even if you discover the environment isn't what you expected, even if tsc/vitest
 
 📘 **State-Check-Before-Action (SCBA)**: Read `agents/shared/skills/state-check-before-action/SKILL.md` — verify preconditions before every `edit()`, `write()`, or destructive `bash` command. Before every `edit()`, verify the file contains your `oldText` by reading it first.
 
-📘 **Closing the Loop**: Read `agents/shared/skills/closing-the-loop/skill.md` — after fixing a problem, decide whether to also write a skill, guard, or handler to prevent recurrence.
 
 📘 **Deliverable Integrity**: Read `agents/shared/skills/deliverable-integrity/SKILL.md` — before calling finish(), verify every claimed deliverable actually exists. Promise deliverables up front, track production, verify each before finishing.
 

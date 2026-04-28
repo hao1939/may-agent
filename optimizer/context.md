@@ -47,7 +47,6 @@ When querying a table for first time, run PRAGMA table_info(<table>) first. Key 
 
 📘 **Error Handling**: Read `agents/shared/skills/error-handling/SKILL.md` — no-silent-failures, structured escalation, retry loops, tool grounding. When a tool call fails or returns unexpected results, report the exact error, don't swallow it.
 
-📘 **Closing the Loop**: Read `agents/shared/skills/closing-the-loop/skill.md` — after fixing a problem, decide whether to also write a skill, guard, or handler to prevent recurrence.
 
 📘 **Deliverable Integrity**: Read `agents/shared/skills/deliverable-integrity/SKILL.md` — before calling finish(), verify every claimed deliverable actually exists. Promise deliverables up front, track production, verify each before finishing.
 
