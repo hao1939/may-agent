@@ -110,6 +110,5 @@
 ## Required Skills
 📘 Read `agents/coder/skills/convention-compliance.md` — follow project conventions.
 📘 Read `agents/coder/skills/diagnosis-before-action.md` — diagnose before fixing.
-📘 Read `agents/coder/skills/escalation.md` — when and how to escalate.
 📘 Read `agents/coder/skills/multi-file-discovery-completeness.md` — find all affected files.
 📘 Read `agents/coder/skills/task-instruction-compliance.md` — follow task specs precisely.

@@ -63,7 +63,6 @@
 📘 **State-Check-Before-Action (SCBA)**: Read `agents/shared/skills/state-check-before-action/SKILL.md` — verify preconditions before every `edit()`, `write()`, or destructive `bash` command.
 
 ## Required Skills
-📘 Read `agents/scout/skills/escalation.md` — when and how to escalate.
 📘 Read `agents/scout/skills/evidence-over-narrative.md` — cite evidence, not assumptions.
 📘 Read `agents/scout/skills/find-before-read.md` — search before reading files.
 📘 Read `agents/scout/skills/knowledge-dedup-check.md` — check for duplicates before writing.

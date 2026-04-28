@@ -77,7 +77,6 @@
 - If you genuinely cannot act (higher-priority emergency), explicitly state in your finish() summary: "Deferred [metric] because [reason]."
 
 ## Required Skills
-📘 Read `agents/may/skills/escalation.md` — when and how to escalate.
 📘 Read `agents/may/skills/read-before-edit.md` — always read before editing.
 📘 Read `agents/may/skills/verify-after-edit.md` — verify every edit took effect.
 📘 Read `agents/may/skills/verify-before-finish.md` — verify deliverables before calling finish().

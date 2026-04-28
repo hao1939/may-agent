@@ -38,7 +38,6 @@
 - Write research output to shared/knowledge/library/ (not local files). Hypotheses → knowledge/hypotheses/H-XXX.md
 
 ## Required Skills
-📘 Read `agents/amy-kimi/skills/escalation.md` — when and how to escalate.
 📘 Read `agents/amy-kimi/skills/verify-after-edit.md` — verify every edit took effect.
 
 ## ⚡ [GENERAL KNOWLEDGE]

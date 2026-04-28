@@ -56,7 +56,6 @@ When querying a table for first time, run PRAGMA table_info(<table>) first. Key 
 ## Required Skills (agent-specific)
 📘 Read `agents/optimizer/skills/batch-processing.md` — batch operations for efficiency.
 📘 Read `agents/optimizer/skills/deliverable-checklist.md` — checklist before finishing.
-📘 Read `agents/optimizer/skills/escalation.md` — when and how to escalate.
 📘 Read `agents/optimizer/skills/evidence-over-narrative.md` — cite evidence, not assumptions.
 📘 Read `agents/optimizer/skills/prerequisite-gap-protocol.md` — check prerequisites first.
 📘 Read `agents/optimizer/skills/read-only-finish-protocol.md` — finish protocol for read-only sessions.

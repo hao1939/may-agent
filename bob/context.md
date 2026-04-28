@@ -63,7 +63,6 @@
 **When sending briefs to tech-lead**: use `workflow reviewed-delivery` — it runs evidence-gate first.
 
 ## Required Skills
-📘 Read `agents/bob/skills/escalation.md` — when and how to escalate.
 📘 Read `agents/bob/skills/evidence-over-narrative.md` — cite evidence, not assumptions.
 📘 Read `agents/bob/skills/gym-execution-checklist.md` — gym run protocol.
 📘 Read `agents/bob/skills/knowledge-base-navigation.md` — navigate the KB effectively.
