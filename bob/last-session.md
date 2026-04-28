@@ -1,25 +1,18 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777398951040_269
+- **Session:** s_1777399102591_272
 - **Status:** done
-- **When:** 2026-04-28T17:56:49.228Z
-- **Duration:** 58s
+- **When:** 2026-04-28T17:59:09.673Z
+- **Duration:** 47s
 
 ## What Happened
 CONTINUE
 
-Milestones completed:
-- "Measure baseline: query DB for project-creation-rate and escalation-quality, write outputs/baseline.md"
-- "Check if agents read skills during sessions, document in outputs/baseline.md"
+Milestone completed: "Deploy top 3 literacy skills to agents that need them"
 
-**(a)** Next iteration must **actually deploy** the 3 literacy skills to agent directories. The previous deployment was fake — `deployment-log.md` claims 12 files deployed but none exist. Copy skill files from:
-- `agents/shared/skills/reading-metrics/skill.md` → `agents/{amy,amy-kimi,coach,tech-lead}/skills/reading-metrics.md`
-- `agents/shared/skills/creating-projects/skill.md` → same pattern
-- `agents/shared/skills/closing-the-loop/skill.md` → same pattern
+**(a)** Next iteration must run 3 gym scenarios testing system literacy and write fresh results to `outputs/gym-results.md`. The scenarios exist: `heartbeat-project-creation`, `help-blocked-agent`, `cross-agent-cooperation`. Run each against at least 1 agent (amy preferred).
 
-Then **verify** by listing each agent's skills directory to confirm the files landed.
+**(b)** The old gym-results.md is stale (from 2026-04-24). We need a fresh run to confirm the deployed skills actually improve behavior.
 
-**(b)** Previous iterations kept claiming deployment without actually writing files. This time I will verify by checking the filesystem before marking the milestone done.
-
-**(c)** First step: check what the actual skill source files are (`ls` the skill directories), then copy them to the 4 target agent directories. Report back with `ls` output proving the files exist.
+**(c)** First step: check how the gym runner works (`ls agents/gym/` and read the runner script), then execute 3 literacy scenarios and capture results to `outputs/gym-results.md`.

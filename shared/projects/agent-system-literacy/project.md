@@ -4,7 +4,7 @@
 **Owner**: bob
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 0
+**Iteration**: 1
 
 ## Goal
 Agents effectively use the infrastructure: create projects from problems, read and react to metrics, escalate with context, cooperate across agents, and close the loop by extending the system when patterns repeat.
@@ -15,18 +15,13 @@ Agents effectively use the infrastructure: create projects from problems, read a
 - gym.literacy-pass-rate: baseline 0/3 (0%) → target 0.80
 
 ## Current State
-**Iteration 2 (2027-08-06)**: Re-measured all metrics with current data:
-- project-creation-rate: ~2-3/week (target 2/week) ✅
-- escalation-quality: 154/155 = 0.99 (target 0.80) ✅ (note: metric is easy — auto-populated reason field)  
-- gym.literacy-pass-rate: 16/16 = 1.00 (target 0.80) ✅ (latest gym run 2026-04-24, 4 scenarios × 4 agents)
-
-All targets exceeded. Recommend closing project. See outputs/baseline.md for details.
+**Iteration 3 (2027-08-06)**: Skills deployed and verified in all 4 agent dirs. Baseline metrics already at target per outputs/baseline.md. Next: run fresh gym scenarios to validate literacy skills actually work (old gym run is from 2026-04-24 — stale). Need 3 scenarios: heartbeat-project-creation, help-blocked-agent, cross-agent-cooperation.
 
 ## Plan
 - [x] Measure baseline: query DB for project-creation-rate and escalation-quality, write outputs/baseline.md
 - [x] Check if agents read skills during sessions, document in outputs/baseline.md
-- [ ] Deploy top 3 literacy skills to agents that need them (PREVIOUS DEPLOYMENT FAILED — files missing)
-- [ ] Run 3 gym scenarios testing system literacy, write outputs/gym-results.md (ran once, 0% pass)
+- [x] Deploy top 3 literacy skills to agents that need them — verified in amy, amy-kimi, coach, tech-lead
+- [ ] Run 3 gym scenarios testing system literacy, write outputs/gym-results.md
 - [ ] Re-measure metrics, compare to baseline
 - [ ] Re-plan: review metrics, assess what worked, write next steps
 
