@@ -299,6 +299,12 @@ ${journalContent.slice(-3000)}
       const guidance = orchestrator.lastText();
       const outputsDir = join(dirname(projectDir), "outputs");
 
+      // Track consecutive zero-output iterations for escalation
+      if (typeof (ctx as any)._consecutiveZeroOutput === 'undefined') {
+        (ctx as any)._consecutiveZeroOutput = 0;
+      }
+      const MAX_ZERO_OUTPUT = 3;
+
       // Snapshot outputs before worker runs
       const beforeSnap = snapshotOutputs(outputsDir);
 
@@ -312,9 +318,15 @@ ${journalContent.slice(-3000)}
       const afterSnap = snapshotOutputs(outputsDir);
       const changedFiles = diffSnapshots(beforeSnap, afterSnap);
       if (changedFiles.length === 0) {
-        ctx.log(`[work] ⚠️ WARNING: Iteration ${iteration} produced NO output files in ${outputsDir}`);
-        appendFileSync(journalFile, `\n### Iteration ${iteration} — ${new Date().toISOString()}\n**⚠️ No output files produced this iteration**\n`, "utf-8");
+        (ctx as any)._consecutiveZeroOutput++;
+        const consecutive = (ctx as any)._consecutiveZeroOutput;
+        ctx.log(`[work] ⚠️ WARNING: Iteration ${iteration} produced NO output files (${consecutive}/${MAX_ZERO_OUTPUT} consecutive)`);
+        appendFileSync(journalFile, `\n### Iteration ${iteration} — ${new Date().toISOString()}\n**⚠️ No output files produced (${consecutive} consecutive failures)**\n`, "utf-8");
+        if (consecutive >= MAX_ZERO_OUTPUT) {
+          ctx.log(`[work] 🚨 ESCALATION: ${MAX_ZERO_OUTPUT} consecutive zero-output iterations. Injecting write-first constraint into review.`);
+        }
       } else {
+        (ctx as any)._consecutiveZeroOutput = 0;
         ctx.log(`[work] ✅ Iteration ${iteration} produced ${changedFiles.length} file(s): ${changedFiles.map(f => f.split('/').pop()).join(', ')}`);
       }
 
@@ -341,6 +353,8 @@ ${journalContent.slice(-3000)}
 ${workerSummary}
 
 **Output verification**: ${changedFiles.length === 0 ? '⚠️ NO files were created or modified this iteration. Consider requiring write() as the first tool call in next guidance.' : `✅ ${changedFiles.length} file(s) modified: ${changedFiles.map(f => f.split('/').pop()).join(', ')}`}
+
+${(ctx as any)._consecutiveZeroOutput >= MAX_ZERO_OUTPUT ? `**🚨 ESCALATION**: Worker has produced 0 output files for ${(ctx as any)._consecutiveZeroOutput} consecutive iterations. This is likely a "false completion claim" failure mode. Options:\n1. Provide EXACT file content in your guidance so worker just needs to write()\n2. Write the file yourself using your tools\n3. PIVOT to a completely different approach` : ''}
 
 Read project.md for current state, metrics, and plan. Update it as needed.
 Then provide your decision and guidance for the next iteration.`;
