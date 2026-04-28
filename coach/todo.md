@@ -34,10 +34,17 @@
 - **Commit**: 3d1367c6a
 - **Next**: Measure multiple_tool_errors rate for these 3 agents in 7 days to verify production impact
 
-## P1: Measure obstacle-pivot Production Impact (NEW — due Jul 7)
-- **Baseline needed**: Count multiple_tool_errors + FM-2.2 for coder/bob/tech-lead from last 7 days
-- **Check after**: Jul 7 — compare same metrics
+## P1: Measure obstacle-pivot Production Impact (EARLY DATA — due Jul 7)
+- **Baseline**: bob before=8.4% FM-1.3 rate (344/4107), tech-lead=18.2% (638/3511)
+- **After (3d, small sample)**: bob 3.4% (1/29), tech-lead 0% (0/6) — promising but N too small
+- **Check after**: Jul 7 with 7 full days of data
 - **Success**: ≥10pp reduction in tool-error-related failures
+
+## P1: Investigate gym_runs Data Loss (NEW Jul 6)
+- gym_runs table was emptied between Jun 29 and Jul 6 — 159 rows → 0
+- Re-imported from results.jsonl, but need to find root cause
+- Suspect: DB migration, evaluator reset, or may session recreating tables
+- **Next**: Check DB schema migrations, evaluator init code, grep for DROP/DELETE on gym_runs
 
 ## P0: Quality Audit of Skills & Workflows ✅ DONE (Apr 27)
 **Output**: `agents/coach/workspace/quality-audit.md`
@@ -53,10 +60,10 @@
 - Without evals, quality measurement is impossible
 - Notify evaluator to resume scoring
 
-## P0: IT-113 — Restore skill-effectiveness metric via gym runs ✅ DONE (Jun 29)
-- **Problem**: gym_runs table had 1 row → metric stuck at stale 29.2
-- **Resolution**: Imported 159 results from results.jsonl, then backfilled lab_fork tags for 6 experiments (EXP-042/043, EXP-053, EXP-088, EXP-094) that had legitimate A/B data but no lab_fork set.
-- **Result**: 8 lab_forks with 3+ runs. Metric now **62.5%** (target 60). 5/8 forks show ≥60% pass rate (C-f1-only:100%, EXP043-strict:100%, EXP053-ext:100%, EXP088-workaround:83%, EXP094-fewshot:100%).
+## P0: IT-113 — Restore skill-effectiveness metric via gym runs ✅ RE-DONE (Jul 6)
+- **Problem**: gym_runs table keeps getting emptied (was 0 again on Jul 6 heartbeat). Re-imported 159 results + backfilled lab_forks.
+- **Result**: 8 forks with 3+ runs. 6/8 ≥60% pass rate (75% effectiveness). C-f1-only:100%, EXP043-strict:100%, EXP053-ext:100%, EXP053-ext-bob:100%, EXP088-workaround:83%, EXP094-fewshot:100%.
+- **RECURRING ISSUE**: Data loss in gym_runs table. Need to investigate why rows disappear between heartbeats.
 
 ## P1: Fix Coach Metric Scales ✅ DONE (Apr 27)
 - intervention-hit-rate, skill-effectiveness, instruction-compliance had ratio targets (0.6) but percentage values (47.3)

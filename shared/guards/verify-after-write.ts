@@ -39,6 +39,60 @@ function normPath(p: string): string {
   return (p || "").replace(/^\.\//, "").replace(/\/+/g, "/");
 }
 
+/**
+ * Find unverified write/edit paths in a single step's messages.
+ */
+function findUnverifiedPaths(messages: any[]): string[] {
+  const calls = extractToolCalls(messages);
+  const writtenPaths = new Map<string, number>(); // path → index of write/edit call
+
+  for (const call of calls) {
+    if ((call.name === "write" || call.name === "edit") && call.path) {
+      const np = normPath(call.path);
+      writtenPaths.set(np, call.index);
+    } else if (call.name === "read" && call.path) {
+      const np = normPath(call.path);
+      // Only counts as verification if read comes AFTER write
+      if (writtenPaths.has(np) && call.index > writtenPaths.get(np)!) {
+        writtenPaths.delete(np);
+      }
+    }
+  }
+
+  return [...writtenPaths.keys()];
+}
+
+/**
+ * Scan all completed steps + current step for unverified writes across
+ * the entire session. A read() in a later step counts as verification.
+ */
+function findSessionUnverifiedPaths(event: WorkflowGuardEvent): string[] {
+  // Collect all steps: completed + current
+  const allMessages: any[][] = [];
+  for (const step of event.completedSteps ?? []) {
+    if (step.result?.messages) {
+      allMessages.push(step.result.messages as any[]);
+    }
+  }
+  allMessages.push(event.result.messages as any[]);
+
+  // Build global write→read tracking across all steps in order
+  const unverified = new Set<string>();
+
+  for (const messages of allMessages) {
+    const calls = extractToolCalls(messages);
+    for (const call of calls) {
+      if ((call.name === "write" || call.name === "edit") && call.path) {
+        unverified.add(normPath(call.path));
+      } else if (call.name === "read" && call.path) {
+        unverified.delete(normPath(call.path));
+      }
+    }
+  }
+
+  return [...unverified];
+}
+
 export const guard: WorkflowGuard = {
   name: "verify-after-write",
   events: ["step_done"],
@@ -47,51 +101,51 @@ export const guard: WorkflowGuard = {
     if (event.type !== "step_done") return [];
     if (event.source === "function") return [];
 
-    const calls = extractToolCalls(event.result.messages);
+    const demands: Demand[] = [];
 
-    // Track write()/edit() calls and whether a subsequent read() verified them
-    const writtenPaths = new Map<string, number>(); // path → index of write/edit call
-    const violations: string[] = [];
-
-    for (const call of calls) {
-      if ((call.name === "write" || call.name === "edit") && call.path) {
-        const np = normPath(call.path);
-        writtenPaths.set(np, call.index);
-      } else if (call.name === "read" && call.path) {
-        const np = normPath(call.path);
-        // Only counts as verification if read comes AFTER write
-        if (writtenPaths.has(np) && call.index > writtenPaths.get(np)!) {
-          writtenPaths.delete(np);
-        }
+    // === Tier 1: Finish-block enforcement ===
+    // If this step is finishing with success, block if ANY writes across the
+    // entire session remain unverified. Same pattern as finish-guard (EXP-188).
+    const finishResult = event.result?.finishResult;
+    if (finishResult && finishResult.status === "success") {
+      const sessionUnverified = findSessionUnverifiedPaths(event);
+      if (sessionUnverified.length > 0) {
+        return [{
+          type: "block",
+          reason:
+            `C1.3 Verify-After-Write: Cannot finish(success) — ${sessionUnverified.length} file(s) ` +
+            `were written/edited but never read() back for verification: ` +
+            `${sessionUnverified.join(", ")}. ` +
+            `You MUST read() each modified file to verify correctness before finishing.`,
+        }];
       }
     }
 
-    // Any remaining entries in writtenPaths were not verified
-    for (const [path] of writtenPaths) {
-      violations.push(path);
-    }
-
-    if (violations.length === 0) return [];
+    // === Tier 3: Mid-workflow post-hoc recovery ===
+    // For non-finish steps, inject a recovery step for any unverified writes
+    // in the current step.
+    const violations = findUnverifiedPaths(event.result.messages as any[]);
+    if (violations.length === 0) return demands;
 
     const unique = [...new Set(violations)];
 
-    return [
-      {
-        type: "run_step",
-        reason: `C1.3 Write/Edit-Without-Verify: ${unique.length} file(s) modified without subsequent read() verification: ${unique.join(", ")}. ` +
-          `Convention requires reading back modified files to catch truncation, encoding errors, or content mistakes.`,
-        step: {
-          name: "c1.3-verify-recovery",
-          agent: true,
-          task: `## C1.3 Recovery — Verify After Edit/Write\n\n` +
-            `The previous step modified ${unique.length} file(s) without reading them back to verify:\n` +
-            `${unique.map(f => `- \`${f}\``).join("\n")}\n\n` +
-            `**You MUST now:**\n` +
-            `1. read() each file to verify the contents are correct and complete\n` +
-            `2. If any file has truncation, encoding errors, or wrong content, rewrite it\n` +
-            `3. Confirm each file looks correct before proceeding`,
-        },
+    demands.push({
+      type: "run_step",
+      reason: `C1.3 Write/Edit-Without-Verify: ${unique.length} file(s) modified without subsequent read() verification: ${unique.join(", ")}. ` +
+        `Convention requires reading back modified files to catch truncation, encoding errors, or content mistakes.`,
+      step: {
+        name: "c1.3-verify-recovery",
+        agent: true,
+        task: `## C1.3 Recovery — Verify After Edit/Write\n\n` +
+          `The previous step modified ${unique.length} file(s) without reading them back to verify:\n` +
+          `${unique.map(f => `- \`${f}\``).join("\n")}\n\n` +
+          `**You MUST now:**\n` +
+          `1. read() each file to verify the contents are correct and complete\n` +
+          `2. If any file has truncation, encoding errors, or wrong content, rewrite it\n` +
+          `3. Confirm each file looks correct before proceeding`,
       },
-    ];
+    });
+
+    return demands;
   },
 };
