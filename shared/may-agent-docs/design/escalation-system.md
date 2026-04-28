@@ -57,12 +57,12 @@ ctx.emit({ type: "escalation.promoted",
 When the problem is fixed.
 
 ```typescript
-ctx.emit({ type: "emit", event: "escalation.resolved", data: {
+ctx.emit({ type: "escalation.resolved",
   id: "esc_xxx",
   resolvedBy: "coach",
   resolution: "Switched to file-based approach instead of DB queries",
   duration: "4h",
-}});
+});
 ```
 
 ### escalation.dismissed
