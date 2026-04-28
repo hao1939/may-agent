@@ -10,8 +10,9 @@
       "consecutiveErrors": 0
     },
     "tech-lead": {
-      "consecutiveErrors": 2,
-      "lastError": "heartbeat session error"
+      "consecutiveErrors": 3,
+      "lastError": "heartbeat session error",
+      "trippedAt": "2026-04-28T12:01:56.287Z"
     },
     "optimizer": {
       "consecutiveErrors": 0
