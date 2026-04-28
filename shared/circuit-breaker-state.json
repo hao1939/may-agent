@@ -17,6 +17,9 @@
     },
     "scout": {
       "consecutiveErrors": 0
+    },
+    "qa": {
+      "consecutiveErrors": 0
     }
   }
 }
