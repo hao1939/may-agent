@@ -39,20 +39,18 @@
 - intervention-hit-rate, skill-effectiveness, instruction-compliance had ratio targets (0.6) but percentage values (47.3)
 - Fixed targets/thresholds to percentage scale to match source_query outputs
 
-## P0: Unblock Gym Runner for A/B Experiments (NEW Jun 29)
-- **Blocker**: Gym runner needs GYM_AGENT_BIN env var to spawn agent sessions. Without this, ALL experiments are blocked.
-- **Evidence**: `node test/gym/.gym-runner-bundle.mjs partial-verification-trap --agent coder` finishes in 66ms with agent_status "skipped" — no agent is spawned.
-- **Impact**: EXP-250 blocked, per-skill attribution blocked, verification experiment blocked.
-- **Action needed**: Escalate to tech-lead/may to configure GYM_AGENT_BIN or find alternative invocation path.
+## P0: Unblock Gym Runner for A/B Experiments ✅ DONE (Jul 2)
+- **Resolution**: `GYM_AGENT_BIN=/usr/local/bin/may-agent` works. Bob was already using this.
+- **Command**: `cd /app/agents && export GYM_AGENT_BIN=/usr/local/bin/may-agent && bash test/gym/run-gym.sh <scenario> --timeout 10`
+- **Validated**: EXP-261 ran 6 trials successfully.
 
 ## P2: Clean Stale LESSONS.md References  
 - Remove P53 bash guard references from coach/optimizer LESSONS.md (guard was removed months ago)
 
 ## P1: EXP-250 — Amy Path-Orientation Skill (IT-113 progression)
-- **Status**: BLOCKED (Jun 29). Lab fork created at `agents/.lab/amy-env-orientation/`
+- **Status**: UNBLOCKED (Jul 2). Gym runner works now. Lab fork needs recreation (was at `agents/.lab/amy-env-orientation/` but deleted).
 - **Finding**: Amy's #1 failure is PATH_HALLUCINATION (8/10 low-quality sessions). Skill written.
-- **Blocked on**: gym-run.sh requires GYM_AGENT_BIN env var — can't invoke agents from coach session
-- **Need**: Someone with agent invocation capability to run: `agents/test/gym/run-gym.sh partial-verification-trap --agent amy --lab-fork EXP250-baseline` and `--lab-fork EXP250-treatment` (with skill)
+- **Next**: Recreate lab fork and run baseline/treatment trials
 - **Design**: `agents/coach/workspace/EXP-250-design.md`
 
 ## P0: Skill Quality Scorecard ✅ DONE (Jun 29)
@@ -86,3 +84,9 @@
 - **Output**: `agents/coach/workspace/EXP-251-results.md`
 - **Finding**: Bob FM-3.3 rate dropped 20% → 4.2% (-15.8pp). QA FM-1.3 rate dropped 28.6% → 5.0% (-23.6pp). Both avg quality improved ~+0.3. Context.md one-line coaching works.
 - **Next**: Identify next coaching target when eval data resumes
+
+## P1: EXP-261 — Procedural Bug-Fix Skill ✅ DONE (Jul 2) — NEGATIVE RESULT
+- **Output**: `agents/coach/workspace/EXP-261-results.md`
+- **Scenario**: partial-verification-trap (baseline 11%, treatment 6%)
+- **Finding**: Task-level procedural prompting makes things WORSE. Confirms KE-123/133.
+- **Unblocked gym runner**: `GYM_AGENT_BIN=/usr/local/bin/may-agent` works!
