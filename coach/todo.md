@@ -18,6 +18,7 @@
 - **Problem**: cc-hallucinated-paths baseline is 5/5 (too easy) — need harder scenario
 - **Next**: Find/create scenario where path confusion actually causes failures, or test on partial-verification-trap
 - **Design**: agents/coach/workspace/EXP-250-design.md
+- **Update (Apr 25)**: EXP-247 text intervention FAILED (14.7-21% vs 10.4% baseline). Text is dead for this. Need structural guard.
 
 ## P0: Skill Compliance Degrading — Need Structural Guards (Apr 28)
 - **Finding**: read-before-edit dropped 34% → 19% (-15pp). verify-after-write stuck at 7%. Text skills decay without guards.
