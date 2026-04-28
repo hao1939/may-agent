@@ -1,21 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777402851057_413
+- **Session:** s_1777402991617_420
 - **Status:** done
-- **When:** 2026-04-28T19:01:35.907Z
-- **Duration:** 44s
+- **When:** 2026-04-28T19:03:34.206Z
+- **Duration:** 22s
 
 ## What Happened
 CONTINUE
 
-Milestones completed:
-- "Measure current worker success rate over last 14 days, write outputs/baseline.md"
-- "Document failure modes (no output, timeout, wrong task)"
-- "Implement guardrails (pre-flight checks, timeout escalation)"
+(a) Next iteration should fill in the tracking table in `outputs/sustained-rate-tracking.md` with **actual data**. The table is still all TBD. Scan all available evidence of worker iterations since Apr 28 (when guardrails were established): check `.state/checkpoints/` across all projects, check project journals, check file modification timestamps in output directories. Count iterations that produced ≥1 file vs those that didn't.
 
-(a) Next iteration should produce an updated `outputs/sustained-rate-tracking.md` with actual data filling in the 7-day tracking table. Measure recent worker iterations across all active projects — count how many produced ≥1 deliverable file. Look at checkpoint files in `.state/checkpoints/`, session logs, and any other evidence of worker output over the past 7 days.
+(b) Last iteration claimed to update the tracking doc but left all values as TBD. This time, write real numbers — even if only 1-2 days of data exist, fill those in and mark the rest as "pending."
 
-(b) The first 3 milestones are done. We're now in the measurement/validation phase. The tracking doc exists but has all TBD values — we need real data.
-
-(c) First step: audit recent worker sessions (last 7 days) by examining `.state/checkpoints/`, project journals, and deliverable files with timestamps. Count iterations, count files produced, compute daily success rates. Fill in the tracking table in `outputs/sustained-rate-tracking.md`.
+(c) First step: `find /app/agents -name "*.md" -newer /app/agents/shared/projects/workflow-reliability/outputs/workflow-guardrails-design.md -type f` to find all files created after guardrails were established. Cross-reference with workflow session counts to compute daily success rates. Then `edit()` the tracking table with real values.
