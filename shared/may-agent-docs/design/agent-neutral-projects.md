@@ -27,7 +27,7 @@ agents/shared/projects/<name>/
 ```markdown
 # Project: <Name>
 
-**Status**: active | waiting | done | paused
+**Status**: active | waiting | blocked | closed
 **Owner**: bob
 **Type**: milestone | continuous
 **Priority**: P0 | P1 | P2
@@ -41,8 +41,21 @@ How we measure progress. Targets define done, current values show where we are.
 
 ## Current State
 Where are we now, what do we know, what's next.
-Accumulates across iterations — reviewer updates with findings, facts, and decisions.
-For closed projects: summary of conclusions and recommended actions.
+Accumulates across iterations — orchestrator updates with findings, facts, and decisions.
+For closed projects: summary of conclusions and final metric values.
+
+## Project lifecycle
+
+Four states:
+- **active** — workflow is iterating, pushing metrics toward targets
+- **waiting** — paused by design (deprioritized, waiting for external condition)
+- **blocked** — paused because something is broken, needs fix
+- **closed** — human or May decided it's finished
+
+Rules:
+- Workflow NEVER sets closed — only human or May can close a project
+- Projects keep iterating while active. Metrics are the goal, not milestones.
+- Milestones are a work log (what to try), not a completion trigger.
 
 ## Plan
 - [x] First step
