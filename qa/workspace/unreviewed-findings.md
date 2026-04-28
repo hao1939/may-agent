@@ -6,6 +6,8 @@ Received 5 identical "Quick Code Review" requests (per notifications). Action: t
 ## Gym Scenario Verification — EXP-220 (P2)
 Notification asked to verify new gym scenario EXP-220 (enoent-file-search).
 
+Additional verification (2026-04-28): `find agents/gym/scenarios -maxdepth 2 -type d -iname '*220*'` returned **no matches**; the scenario exists under `enoent-file-search/`.
+
 ### What I verified (evidence)
 Scenario exists at `agents/gym/scenarios/enoent-file-search/`.
 - `scenario.json` describes intentional wrong paths in task.md to test ENOENT navigation (see file content).
