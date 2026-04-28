@@ -4,7 +4,7 @@
 **Owner**: coach
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 1
+**Iteration**: 2
 
 ## Goal
 Reduce workflow failures. Target: 90%+ of worker iterations produce at least one deliverable file.
@@ -14,7 +14,7 @@ Reduce workflow failures. Target: 90%+ of worker iterations produce at least one
 - handler.success-rate: 0.95 → target 0.95 ✅
 
 ## Current State
-Baseline measured: 33% success rate (5/15 iterations produced files). Failure modes documented — #1 is "read-only" sessions (50%). Guardrails designed (early-write enforcement, timeout escalation, output validation). Tracking plan created. Recent iterations (6-9) show 100% success. Now need to fill in 7-day tracking data and confirm sustained improvement.
+Baseline: 33% → Post-guardrails: 100% (iterations 6-9). Tracking table still unfilled with daily data. Need to populate it as days pass. Iteration 2 complete.
 
 ## Plan
 - [x] Measure current worker success rate over last 14 days, write outputs/baseline.md
