@@ -418,3 +418,6 @@ Milestone completed: "Design skill.usefulness-rate metric (usage ≠ usefulness)
 Milestone completed: "Re-verify all 3 behavioral dimensions with fresh session data (regression check)"
 
 Strong 
+
+### Iteration 2 — 2026-04-28T18:53:07.058Z
+**Worker**: Now update metrics.md with the new metric:
