@@ -111,3 +111,27 @@ The write-first constraint is already in the worker system prompt (lines 126-129
 The worker has failed 11 consecutive iterations with false completion claims. Delegating code changes to the worker is not viable. The orchestrator needs to apply the v2 guardrail code change directly to `master-worker.ts`.
 
 (a) Next iteration: the worker should read `agents/shared/workflows/
+
+### Iteration 11 — 2026-04-28T20:45:20.556Z
+**⚠️ No output files produced this iteration**
+
+### Iteration 11 — 2026-04-28T20:45:20.556Z
+**Worker**: Here are the exact lines from `master-worker.ts`:
+
+**Lines 310-332 (the post-worker verification area):**
+
+```typescript
+      // Worker gets ONLY the orchestrator's guidance — no project.md, no milestones
+      const workerPrompt = `## Task (Iteration ${iteration})\n${guidance}`;
+
+      await worker.prompt(workerPrompt);
+      ctx.log(`[work] Iteration ${iteration} done`);
+
+      // Verify worker produced output
+      const afterSnap = snapshotOutputs(outputsDir);
+      const changedFiles = dif
+**Orchestrator**: CONTINUE
+
+(a) Next iteration: **edit `agents/shared/workflows/master-worker.ts`** to add automatic retry when worker produces 0 files. The specific change is at line 320. After `if (changedFiles.length === 0)` block, before falling through to the review phase, add retry logic:
+
+**EXACT EDIT to apply
