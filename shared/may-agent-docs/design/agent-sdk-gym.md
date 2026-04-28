@@ -86,7 +86,7 @@ Workflows need two lifecycle methods not in the base SDK:
 interface WorkflowSDK extends AgentSDK {
   task: string;
   agent: string;
-  done(summary: string, opts?: { deliverables?: Deliverable[]; contextUpdates?: string[] }): WorkflowResult;
+  done(summary: string, opts?: { deliverables?: Deliverable[]; contextUpdates?: string[]; nextSteps?: string[] }): WorkflowResult;
   escalate(reason: string): WorkflowResult;
 }
 ```
@@ -103,7 +103,7 @@ They share the same vocabulary:
 |-------------|-----------|-----------|
 | "Ask bob to do this" | `agents.fork("bob", task)` | `sdk.runAgent("bob", task)` |
 | "Tell the system something happened" | — | `sdk.emit("metric.breach", { metric, value })` |
-| "Send a message to humans" | — | `sdk.notify(msg)` |
+| "Send a message to humans" | `finish({ notify })` / Telegram tool | `sdk.notify(msg)` |
 | "Look up data" | `bash("bun -e 'db.query...'")` | `sdk.getDb()` |
 | "I'm done" | `finish()` | `workflow.done()` |
 | "I'm stuck" | `finish({ status: "blocked" })` | `workflow.escalate()` |
