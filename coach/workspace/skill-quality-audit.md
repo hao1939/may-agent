@@ -1,77 +1,73 @@
-# Skill Quality Audit — 2026-07-30
+# Skill Quality Audit Protocol (IT-110)
 
-**Scope**: 20 skills sampled across all agents (2 per agent + 8 shared).  
-**Total skills in system**: ~143 (79 agent-specific, 64 shared non-archived).
+**Created**: 2026-07-29
+**Goal**: Measure whether deployed skills actually change agent behavior.
 
-## Summary
+## Problem Statement
 
-**Overall quality: GOOD.** 18/20 skills are well-structured, evidence-backed, and actionable. The system's skill library is surprisingly high quality — much better than the "zero quality measurement" concern suggested.
+We have ~130 skills deployed across 12 agents. Zero of them have ongoing quality measurement.
+The P0 question: "Do skills work, or are they just documents?"
 
-| Rating | Count | Skills |
-|--------|-------|--------|
-| ✅ Excellent (clear, evidence-backed, actionable) | 12 | evidence-over-narrative (bob+shared), diagnosis-before-action, score, work-session-scaffold, find-before-read, finish-before-cleanup, verification, obstacle-pivot, test-mock-awareness, file-safety, multi-file-discovery-completeness, generate-test-case |
-| ✅ Good (useful, minor issues) | 6 | establish-working-directory, deliverable-checklist, budget-before-act, cli-coding, closing-the-loop, persistent-task-workflow |
-| ⚠️ Thin (too short/vague) | 2 | verify-before-finish (may), sanitize-content* |
+## Top 5 Skills to Audit (by deployment breadth)
 
-## Detailed Assessments
+| Skill | Agents | Assertion to Measure |
+|-------|--------|---------------------|
+| verify-after-edit | 8 | After edit(), agent reads the same file within 2 turns |
+| evidence-over-narrative | 7 | finish() includes verification_evidence array with tool refs |
+| read-before-edit | 6 | Before edit(), agent has read() of same file earlier in session |
+| verify-before-finish | 4 | Agent runs verification command in last 5 tool calls before finish |
+| read-only-finish-protocol | 2 | When task is read-only, agent doesn't call edit/write |
 
-### Per-agent skills (10 sampled)
+## Measurement Method
 
-1. **amy/establish-working-directory** — GOOD. Addresses real failure mode. Anti-patterns from real sessions. Slightly long but actionable.
+For each skill, define a **mechanical compliance check** that can be computed from session transcripts:
 
-2. **bob/evidence-over-narrative** — EXCELLENT. Strong evidence section, clear protocol, owner + version metadata.
+### 1. verify-after-edit compliance
+```
+For each edit() call in session:
+  Look at next 2 tool calls
+  If any is read() of same file path → PASS
+  Else → FAIL
+Compliance = PASS / (PASS + FAIL)
+```
 
-3. **coach/work-session-scaffold** — EXCELLENT. Directly addresses coach's own failure modes with concrete phases. Self-referential and useful.
+### 2. read-before-edit compliance  
+```
+For each edit() call in session:
+  Look at all prior tool calls
+  If any is read() of same file path → PASS
+  Else → FAIL
+Compliance = PASS / (PASS + FAIL)
+```
 
-4. **coder/diagnosis-before-action** — EXCELLENT. Backed by EXP-164 (0% → 100% pass rate). Clear protocol. Model skill.
+### 3. evidence-over-narrative compliance
+```
+For each finish(status="success") call:
+  If verification_evidence array is non-empty → PASS
+  Else → FAIL
+```
 
-5. **evaluator/score** — EXCELLENT. Comprehensive scoring rubric. Well-structured with edge cases handled.
+## Baseline Measurement (2026-07-29)
 
-6. **may/verify-before-finish** — THIN. Just 3-line checklist. Functional but lacks the evidence/when-to-apply structure of better skills.
+### Sample: s_1777065063071_0 (gym session, 16 edits, 11 reads)
 
-7. **optimizer/deliverable-checklist** — GOOD. Addresses FM-2.2. Clear steps. Could benefit from a concrete example.
+Quick manual check of first 3 edits:
+- Edit 1 (product-search.js): No prior read of that file visible → read-before-edit FAIL
+- Edit 2 (product-search.js): Same file, prior edit counts as context → borderline
+- Pattern: Agent does cascade editing (AP-3 from coder-edit-discipline)
 
-8. **qa/generate-test-case** — EXCELLENT. DIVE Reverse-Task method is creative and well-explained.
+**Finding**: Even in gym scenarios where skills are injected into the prompt, compliance appears low for read-before-edit on cascade edits.
 
-9. **scout/find-before-read** — EXCELLENT. Targets #1 efficiency failure mode. Great anti-pattern examples.
+## Next Steps
 
-10. **tech-lead/finish-before-cleanup** — EXCELLENT. Strong evidence (10 C1.4 failures, 15.6% fail rate). Precise trigger conditions.
+1. **Build automated checker**: Script that parses session.jsonl and computes compliance rates per skill per agent. (EXP-252)
+2. **Establish baselines**: Run checker on last 50 sessions per agent.
+3. **Identify worst compliance**: Focus coaching on the skill×agent pair with lowest compliance.
+4. **Monthly re-measurement**: Run checker monthly to track trends.
 
-### Shared skills (10 sampled)
+## Relation to Other Work
 
-11. **verification/SKILL.md** — EXCELLENT. Core mandatory skill. Well-structured.
-
-12. **evidence-over-narrative/SKILL.md** — EXCELLENT. Same as bob's copy (good — consistent).
-
-13. **closing-the-loop/skill.md** — GOOD. Decision framework is clear. Evolution ladder is helpful.
-
-14. **obstacle-pivot/SKILL.md** — EXCELLENT. Structured fallback strategy. Practical.
-
-15. **budget-before-act/SKILL.md** — GOOD. Addresses FM-3.1 (#1 uncovered failure mode). Checkpoint triggers useful.
-
-16. **cli-coding/SKILL.md** — GOOD. Practical reference. Auth status table helpful.
-
-17. **test-mock-awareness/SKILL.md** — EXCELLENT. Addresses subtle failure (13.2% baseline pass rate). Specific protocol.
-
-18. **file-safety/SKILL.md** — EXCELLENT. Core safety protocols. Clear principles.
-
-19. **coder/multi-file-discovery-completeness** — EXCELLENT. Clear problem statement, evidence from gym scenario.
-
-20. **bob/persistent-task-workflow** — GOOD. Mandatory trigger clearly stated. Could be shorter.
-
-## Key Findings
-
-1. **Duplication is the main issue, not quality.** Multiple agents have their own copies of evidence-over-narrative, verify-after-edit, second-look-verification. The shared/ versions exist too. ~15 skills are duplicated across 3+ agents.
-
-2. **Most skills have evidence metadata.** 14/20 sampled skills cite experiments, session data, or failure counts. This is excellent traceability.
-
-3. **Thin skills are rare.** Only 2/20 were too brief. The rest had substantial protocols with anti-patterns and examples.
-
-4. **No harmful/incorrect skills found.** All 20 give accurate, useful advice. None would cause an agent to do the wrong thing.
-
-## Recommendations
-
-1. **Deduplicate**: Move agent-specific copies of shared skills (evidence-over-narrative, verify-after-edit, second-look-verification) to shared/ and remove duplicates. ~20 files could be eliminated.
-2. **Beef up thin skills**: may/verify-before-finish could absorb content from shared/verification.
-3. **Archive untested agent-specific skills**: coder/multi-file-discovery-completeness is `tested: false, promoted: null` — either test it in gym or archive it.
-4. **No urgent action needed**: The skill library is healthy. Quality measurement anxiety was unwarranted.
+- IT-110 (from reflection): This document IS the skill quality measurement design
+- IT-111 (gym ceiling): Separate issue — gym scenarios may be too easy
+- IT-112 (training method taxonomy): Covered by KE-338 (text skills have boundaries)
+- EXP-251 (context-coaching): Closed INCONCLUSIVE due to no measurement infrastructure
