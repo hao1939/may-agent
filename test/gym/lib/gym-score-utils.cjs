@@ -120,6 +120,33 @@ class Score {
   }
 
   /**
+   * Return the full transcript as a single string (all JSONL lines concatenated).
+   * Useful for regex searching across the entire session.
+   * @returns {string}
+   */
+  rawTranscript() {
+    const transcriptPath = path.join(this._workDir, "transcript.jsonl");
+    const legacyPath = path.join(this._workDir, "_gym_transcript.jsonl");
+    const p = fs.existsSync(transcriptPath) ? transcriptPath : (fs.existsSync(legacyPath) ? legacyPath : null);
+    if (!p) return "";
+    try { return fs.readFileSync(p, "utf-8"); } catch { return ""; }
+  }
+
+  /**
+   * Lazy-initialized transcript accessor with .toolCalls and .toolResults arrays.
+   * Used by success_criteria that access s.transcript.toolCalls / s.transcript.toolResults.
+   * @returns {{ toolCalls: Array<Object>, toolResults: Array<Object> }|null}
+   */
+  get transcript() {
+    const t = this._loadTranscript();
+    if (!t) return null;
+    return {
+      toolCalls: t.filter(e => (e.tool || e.name) && !e.toolResult),
+      toolResults: t.filter(e => e.toolResult),
+    };
+  }
+
+  /**
    * Get all tool calls matching a specific tool name.
    * Each returned entry has: { tool, arguments, entryIndex, ... }
    * @param {string} toolName - e.g. "read", "edit", "write", "bash", "finish"
