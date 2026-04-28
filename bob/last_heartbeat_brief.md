@@ -1,17 +1,17 @@
 # Last Heartbeat Brief
-**When**: 2027-11-18 ~session 4
-**Duration**: ~10 min
+**When**: 2027-11-18 ~session 5
+**Duration**: ~25 min
 
 ## What Happened
-- **EXP-242 Phase 2 write-up**: Documented the statistically significant result (44% vs 0%, p=0.015) in phase2-results.md. Updated design.md status.
-- **EXP-245 unblocked**: Verified gym runner works. Updated todo.md — no longer blocked on runner bugs.
-- **Inbox triaged**: All 16 notifications 70-93h old, dismissed as stale/informational.
-- **agent-system-literacy**: 8/8 milestones complete, waiting status. No action needed.
+- **EXP-245 executed**: Ran 5 baseline + 10 treatment trials. Result: 0% on behavioral checks for both arms. H-245-null supported — inline diagnostic auditor instruction does NOT generalize to judgment tasks.
+- **Key finding**: The failure mode on misleading-test-fix is likely arithmetic reasoning, not attention allocation. Agent can't distinguish code bugs from test bugs even with explicit classification instructions.
+- **Inbox triaged**: All notifications 73-96h old, dismissed as stale.
 
 ## State Left Behind
-- EXP-242 fully documented (phase0, phase1, phase2 results all in experiment folder)
-- EXP-245 ready to execute
+- EXP-245 fully documented in agents/bob/workspace/exp245-results/
+- Treatment scenario at agents/gym/scenarios/misleading-test-fix-exp245-treatment/
 
 ## Next Steps
-- Run EXP-245 baseline + treatment trials on misleading-test-fix
-- Design production integration for sequential auditor pattern
+- Design EXP-245b: truly separate auditor agent (not inline instruction)
+- Or: test if arithmetic verification tool helps with this scenario
+- Design production integration for EXP-242's sequential auditor pattern (the one that worked)

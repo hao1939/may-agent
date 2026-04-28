@@ -1,5 +1,3 @@
 
 ## Blocked
-- [ ] **EXP-245 Auditor Generalization** — ready to run (gym runner works). Needs may-agent available for actual trials.
-  - Design: `agents/shared/knowledge/experiments/EXP-245/design.md`
-  - Scenario: `agents/gym/scenarios/misleading-test-fix`
+- [ ] **EXP-245b Separate Auditor Agent** — Design a two-phase gym run where a separate auditor agent classifies failures first, then injects report into primary agent. Tests whether agent separation (not just instruction) is the key mechanism.

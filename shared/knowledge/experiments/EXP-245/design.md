@@ -1,7 +1,7 @@
 # EXP-245: Sequential Auditor Generalization — Judgment Tasks
 
 **Date**: 2026-04-28
-**Status**: DESIGNED
+**Status**: COMPLETED — H-245-null SUPPORTED (see exp245-results/EXP-245-results.md)
 **Predecessor**: EXP-242 (Sequential Auditor, p=0.015 on cascading-fix-trap-v2)
 **Hypothesis**: H-181 (Relational Bug Blindness) — generalization test
 
