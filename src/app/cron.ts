@@ -18,6 +18,7 @@
 import { readFileSync, existsSync, watchFile, unwatchFile, type StatWatcher } from "node:fs";
 import { createHash } from "node:crypto";
 import { resolve, dirname } from "node:path";
+import type { EventBus } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import { generateId } from "../lib/index.js";
 // Budget tiers now auto-resolved in manager.run() — import no longer needed here
@@ -241,6 +242,14 @@ export class Cron {
       if (this.triggerNow(entryName, { force: true, triggerEvent })) triggered++;
     }
     return triggered;
+  }
+
+  /** Subscribe to bus — auto-dispatch domain events (dot-separated types) to handlers. */
+  subscribeToBus(bus: EventBus): void {
+    bus.subscribe((event) => {
+      if (!event.type.includes('.')) return;
+      this.dispatchEvent(event.type, event as any);
+    });
   }
 
   start(): void {
@@ -672,7 +681,7 @@ export class Cron {
     this.lastFireTimes.set(entry.name, startMs);
     const agent = entry.agent || "may";
 
-    this.emitEvent?.({ type: "emit", event: "handler.started", data: { handler: entry.name, agent } });
+    this.emitEvent?.({ type: "handler.started", handler: entry.name, agent } as any);
 
     const HANDLER_TIMEOUT_MS = Number(entry.handlerConfig?.timeoutMs) || 5 * 60_000; // per-handler or 5min default
 
@@ -684,12 +693,12 @@ export class Cron {
     Promise.race([handlerPromise, timeoutPromise])
       .then(() => {
         this.inflightJobs.delete(entry.name);
-        this.emitEvent?.({ type: "emit", event: "handler.completed", data: { handler: entry.name, agent, durationMs: Date.now() - startMs } });
+        this.emitEvent?.({ type: "handler.completed", handler: entry.name, agent, durationMs: Date.now() - startMs } as any);
       })
       .catch((err) => {
         this.inflightJobs.delete(entry.name);
         const errMsg = err instanceof Error ? err.message : String(err);
-        this.emitEvent?.({ type: "emit", event: "handler.failed", data: { handler: entry.name, agent, error: errMsg, durationMs: Date.now() - startMs } });
+        this.emitEvent?.({ type: "handler.failed", handler: entry.name, agent, error: errMsg, durationMs: Date.now() - startMs } as any);
         this.onError?.(`Cron handler "${entry.name}" failed: ${errMsg}`);
         this.notify?.(`\u26a0\ufe0f Handler "${entry.name}" failed: ${errMsg}`);
       });

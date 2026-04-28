@@ -318,34 +318,34 @@ bus.subscribe((event) => {
   }
 });
 
-// ── Session lifecycle → agent events (thin translator) ────────────────
-// Classifies session_end bus events and emits agent-level events for handlers.
-// Actual decision logic lives in handlers: session-recovery, session-eval, escalation.
+// ── Session lifecycle → domain events (thin translator) ────────────────
+// Translates session_end bus events into domain events (dot-separated types).
+// DbWriter persists them, Cron dispatches them to handlers — both via bus subscription.
 bus.subscribe((event) => {
   if (event.type !== "session_end") return;
   const info = event as any;
 
   // Translate → session.failed (for recovery handler)
   if (info.error && info.status === "error") {
-    bus.emit({ type: "emit", event: "session.failed", data: {
+    bus.emit({ type: "session.failed",
       sessionId: info.sessionId, agent: info.agent, error: info.error, task: info.task,
-    }} as any);
+    } as any);
   }
 
   // Translate → session.escalated (for escalation handler)
   const fp = info.finishParams;
   if (fp && (fp.status === "blocked" || fp.status === "failure")) {
-    bus.emit({ type: "emit", event: "session.escalated", data: {
+    bus.emit({ type: "session.escalated",
       sessionId: info.sessionId, agent: info.agent, finishParams: fp,
-    }} as any);
+    } as any);
   }
 
   // Translate → session.completed (for eval handler)
   if (info.parentSessionId && info.agent !== "evaluator") {
-    bus.emit({ type: "emit", event: "session.completed", data: {
+    bus.emit({ type: "session.completed",
       sessionId: info.sessionId, agent: info.agent,
       parentSessionId: info.parentSessionId, outcome: info.outcome,
-    }} as any);
+    } as any);
   }
 });
 
@@ -375,6 +375,11 @@ if (autoHeartbeats.length > 0) {
     }
     bus.emit({ type: "info", message: `[auto-heartbeat] Generated ${autoHeartbeats.length} heartbeat(s): ${autoHeartbeats.map(e => e.agent).join(", ")}` });
   }
+}
+
+// Subscribe all crons to bus for event-driven handler dispatch
+for (const cron of getAgentCrons().values()) {
+  cron.subscribeToBus(bus);
 }
 
 // ── Event routing ──────────────────────────────────────────────────────
@@ -596,29 +601,6 @@ bus.subscribe((event) => {
     case "reload":
       handleReload();
       break;
-    case "emit": {
-      // Event-driven handler trigger: {"type":"emit","event":"project.commented","data":{...}}
-      const eventType = (event as any).event as string;
-      if (eventType) {
-        let triggered = 0;
-        for (const cron of getAgentCrons().values()) {
-          triggered += cron.dispatchEvent(eventType, (event as any).data);
-        }
-        // Mark dispatched events as done in the events table (convention-defaults: event inbox)
-        if (triggered > 0) {
-          try {
-            const db = getDb(PERSIST_DIR);
-            db.run(
-              `UPDATE events SET status = 'done', handled_by = 'handler-dispatch'
-               WHERE event_type = ? AND status = 'pending' AND timestamp > ?`,
-              [eventType, Date.now() - 5000],
-            );
-          } catch { /* best-effort */ }
-        }
-        log("info", `[event] ${eventType} → triggered ${triggered} handler(s)`);
-      }
-      break;
-    }
     case "message":
       if ("from" in event && "to" in event && "task" in event) {
         try {
@@ -745,7 +727,7 @@ if (EMIT_MODE) {
   // ── Emit mode: send event to running instance via socket ──────────
   const net = await import("node:net");
   const socketPath = SOCKET_PATH;
-  const payload = JSON.stringify({ type: "emit", event: EMIT_MODE.event, data: EMIT_MODE.data }) + "\n";
+  const payload = JSON.stringify({ type: EMIT_MODE.event, ...(EMIT_MODE.data || {}) }) + "\n";
   const client = net.createConnection(socketPath, () => {
     client.write(payload);
     client.end();

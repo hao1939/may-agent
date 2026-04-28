@@ -522,7 +522,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const db = _db();
     const metrics = db.prepare(`
       SELECT m.id, m.name, m.type, m.owner, m.current, m.target, m.threshold,
-             m.unit, m.priority, m.status, m.speed, m.description, m.alert_op,
+             m.unit, m.priority, m.status, m.speed, m.alert_op,
              m.source, m.updated_at
       FROM metrics m WHERE m.status = 'active' ORDER BY m.owner, m.priority, m.name
     `).all() as any[];

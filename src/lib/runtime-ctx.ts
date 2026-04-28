@@ -29,7 +29,7 @@ export interface RuntimeCtxOptions {
 export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
   return {
     emit: (event) => opts.bus.emit(event as any),
-    dispatchEvent: (eventType, data) => opts.bus.emit({ type: "emit", event: eventType, data } as any),
+    dispatchEvent: (eventType, data) => opts.bus.emit({ type: eventType, ...(data || {}) } as any),
     getDb: () => getDb(opts.persistDir),
     log: (msg) => globalLog("info", `[${opts.agentName}] ${msg}`),
     notify: (msg) => opts.bus.emit({ type: "notification", agent: opts.agentName, text: msg }),
