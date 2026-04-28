@@ -64,3 +64,5 @@ All 14 plan items complete. All 4 metrics at or above target. ✅
 - outputs/skill-verification.md — top 5 skill verification with evidence
 - outputs/metrics.md — metric definitions and current values
 - outputs/skill-behavioral-audit.md — behavioral usage audit across 10 sessions (97 lines)
+- outputs/verify-before-finish-strengthening.md — VBF skill deployment to all 11 agents (27 lines)
+- outputs/replan-assessment.md — metric snapshot and next opportunities (27 lines)
