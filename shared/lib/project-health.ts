@@ -203,15 +203,26 @@ export function diagnoseProject(
   const entry = healthState.projects[project.relPath];
   const status = project.status;
 
-  // Terminal states
-  if (status === "done" || status === "cancelled") {
-    return { ...skip, reason: `status is ${status}` };
+  // Only "closed" is terminal (set by human/May only)
+  if (status === "closed") {
+    return { ...skip, reason: "closed by human" };
   }
 
-  // Paused — don't touch
-  if (status === "paused") {
-    return { ...skip, reason: "paused" };
+  // Auto-fix invalid statuses: "done", "complete", "cancelled" → "waiting"
+  // Projects can't be closed by agents, only by human/May
+  if (["done", "complete", "completed", "cancelled"].includes(status)) {
+    try {
+      const { writeFileSync } = require("node:fs");
+      let content = readFileSync(project.projectFile, "utf-8");
+      content = content.replace(/^\*\*Status\*\*:.*/m, "**Status**: waiting");
+      writeFileSync(project.projectFile, content, "utf-8");
+      project.status = "waiting";
+    } catch {}
+    return { ...skip, reason: `auto-converted ${status} → waiting (only human can close)` };
   }
+
+  // Waiting/blocked — check for unread discussion comments
+  if (status === "waiting" || status === "blocked") {
 
   // Blocked or waiting
   if (status === "blocked" || status === "waiting") {
