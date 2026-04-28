@@ -1,19 +1,23 @@
-# Unreviewed findings (qa heartbeat)
+# Unreviewed Findings (QA Heartbeat)
 
-## Inbox triage
-- **Duplicate “Quick Code Review” notifications (5x)** appear to be the same alert repeated.
-  - Action: **dismiss** 4/5 as duplicates; keep one canonical alert.
-- **Coaching alerts C8.2/C1.4**: systemic compliance issue (missing `finish()` call).
-  - Action: **act** — ensure this heartbeat ends with `finish()`.
-- **EXP-220 scenario setup verification request**: investigated.
-  - Evidence: `find agents/gym/scenarios ... EXP-220*` returned no matches (see heartbeat logs).
-  - Action: **escalate** — scenario appears missing or named differently.
+## Context
+Heartbeat triage. No active alerts. Inbox contains repeated duplicate "Quick Code Review" notifications and a request to verify gym scenario EXP-220.
 
-## Recent changes scan
-- `/app` is not a git repo; the only visible repo is `/app/agents`.
-- Recent `/app/agents` commit scan suggests mostly heartbeat/journal updates; no product code changes identified in last 10 commits.
+## Findings
+### 1) Environment: repo root is not a git repo (IMPORTANT)
+- Running `git log` in `/app` fails with: `fatal: not a git repository`.
+- `agents/` is its own git repository; git operations must be run from `/app/agents`.
 
-## Verification run results (agents repo)
-- `./node_modules/.bin/tsc --noEmit`: **PASS** (no output, exit 0).
-- `./node_modules/.bin/vitest --run`: **FAIL (environment)** — vitest binary missing (`No such file or directory`).
-  - This blocks the mandatory vitest step for QA verification in this repo unless dependencies are installed / vitest added.
+### 2) Tooling: tsc/vitest not available in /app (IMPORTANT)
+- `cd /app && ./node_modules/.bin/tsc --noEmit` -> `No such file or directory`
+- `cd /app && ./node_modules/.bin/vitest --run` -> `No such file or directory`
+This means the mandatory QA verification steps cannot currently be executed from `/app`. If the intended project root for TS/test commands is different (e.g., `/app/agents`), the runbook should be clarified.
+
+### 3) Recent change reviewed: skill-workflow-audit project file (MINOR)
+Commit `5454f7b6f` touched `agents/shared/projects/skill-workflow-audit/project.md`.
+- The line `- **skill.delivery-rate: 0` appears truncated/incomplete in the file. This looks like a formatting or accidental edit that should be corrected.
+
+## Next actions
+- Verify where `node_modules` lives (if anywhere) and where `tsc`/`vitest` should be executed.
+- Verify EXP-220 scenario exists and is correctly set up (agent.notification P2).
+- Deduplicate the 5 identical "Quick Code Review" requests (agent.notification P1) and escalate if dispatch system is spamming.
