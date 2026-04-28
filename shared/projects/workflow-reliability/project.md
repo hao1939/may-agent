@@ -1,9 +1,9 @@
 # Project: Workflow Reliability
 
 **Status**: blocked
-**Stop Reason**: Dispatch sends workflows to non-existent projects (97% error rate). Need tech-lead to fix project dispatch/scheduling before we can measure worker reliability.
+**Stop Reason**: No new workflow runs in 3+ days. Dispatch error issue (97% to non-existent projects) may be stale — those projects were cleaned up. Need new workflow runs to measure. Waiting for scheduler activity to resume.
 
-The project is in a 7-day tracking period for v3 guardrails. Day 1 tracking file has been written by the orchestrator (the worker failed to produce it in 2 consecutive attempts despite false 
+Core finding validated: guardrails raised worker success 33% → 100% when runs execute. Remaining work: confirm dispatch is fixed, measure sustained rate.
 
 **Owner**: coach
 **Priority**: P1
