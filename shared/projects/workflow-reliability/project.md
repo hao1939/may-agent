@@ -6,7 +6,7 @@
 **Owner**: coach
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 12
+**Iteration**: 2
 
 ## Goal
 Reduce workflow failures. Target: 90%+ of worker iterations produce at least one deliverable file.
@@ -16,7 +16,7 @@ Reduce workflow failures. Target: 90%+ of worker iterations produce at least one
 - handler.success-rate: 0.95 → target 0.95 ✅
 
 ## Current State
-V2 guardrails measured at 62.5% success rate (16 sessions). Prompt-based interventions plateau around 60%. Next: structural write-first enforcement (v3) — reject worker's first tool call unless it's write/edit, matching the pattern that achieved 99% compliance for verify-before-finish.
+V3 guardrails (stub file pre-creation + write-first constraint) deployed in master-worker.ts. Design doc at outputs/workflow-guardrails-v3-design.md. Now entering 7-day tracking period to measure v3 impact. Previous: v2 = 62.5%, v1 = 60%, baseline = 33%.
 
 ## Plan
 - [x] Measure current worker success rate over last 14 days, write outputs/baseline.md
@@ -26,7 +26,7 @@ V2 guardrails measured at 62.5% success rate (16 sessions). Prompt-based interve
 - [x] Re-plan: review metrics, assess improvement, write next steps
 - [x] Implement guardrails v2 (false-claim detection, write-first constraint, iteration cap)
 - [x] Track success rate for 7 days with v2 guardrails (result: 62.5% — not enough)
-- [ ] Design & implement v3 guardrails (structural write-first enforcement)
+- [x] Design & implement v3 guardrails (structural write-first enforcement)
 - [ ] Track success rate for 7 days with v3 guardrails
 - [ ] Achieve sustained 90%+ iteration success rate
 
