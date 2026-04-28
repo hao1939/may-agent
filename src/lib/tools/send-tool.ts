@@ -159,12 +159,12 @@ export function createNotifyTool(opts: NotifyToolOptions): AgentTool {
 
       // Emit notification event (persisted by DbWriter)
       try {
-        opts.emit?.({ type: "emit", event: "agent.notification", data: {
+        opts.emit?.({ type: "agent.notification",
           owner: params.agent,
           source: caller,
           task: structuredMessage,
           artifact: params.artifact,
-        }});
+        } as any);
       } catch { /* best-effort */ }
 
       // Trigger heartbeat so recipient picks it up next cycle

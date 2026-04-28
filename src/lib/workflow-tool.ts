@@ -753,14 +753,14 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       done: (summary: string) => ({ type: "done" as const, summary }),
       escalate: (reason: string, context?: unknown) => {
         try {
-          opts.runtimeCtx?.emit({ type: "emit", event: "escalation.created", data: {
+          opts.runtimeCtx?.emit({ type: "escalation.created",
             id: `esc_${Date.now()}`,
             agent: opts.agentName ?? "unknown",
             reason,
             context,
             level: 1,
             source: "workflow",
-          }});
+          } as any);
         } catch { /* best-effort */ }
         return { type: "escalate" as const, reason, context };
       },

@@ -72,22 +72,36 @@ export class DbWriter {
           break;
 
         case "emit":
-          // Persist all domain events — complete audit trail
+          // Legacy compat: still handle old-style {type:"emit", event:X, data:{}} if any remain
           try {
-            const data = event.data as Record<string, unknown> | undefined;
+            const data = (event as any).data as Record<string, unknown> | undefined;
             this.db.run(
               "INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)",
               [
-                event.event,
+                (event as any).event,
                 data?.source as string ?? null,
                 data?.owner as string ?? null,
-                event.data ? JSON.stringify(event.data) : null,
+                data ? JSON.stringify(data) : null,
                 Date.now(),
                 data?.urgency as string ?? "normal",
               ],
             );
           } catch {
             /* table may not exist on first run */
+          }
+          break;
+
+        default:
+          // Persist domain events (dot-separated types) to events table
+          if (event.type.includes('.')) {
+            try {
+              const ev = event as any;
+              const { type, ...data } = ev;
+              this.db.run(
+                "INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)",
+                [type, data.source ?? null, data.owner ?? null, JSON.stringify(data), Date.now(), data.urgency ?? "normal"],
+              );
+            } catch { /* table may not exist */ }
           }
           break;
       }

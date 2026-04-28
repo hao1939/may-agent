@@ -94,11 +94,6 @@ export type SystemEvent =
       turns?: number;
       failureChains?: number;
       wastedCalls?: number;
-    }
-  | {
-      type: "emit";
-      event: string;
-      data?: Record<string, unknown>;
     };
 
 /** All event types — commands + observations + system */
@@ -109,7 +104,9 @@ export type AgentEvent =
   | SystemEvent
   // Deprecated — kept for backward compat during migration
   | { type: "info"; message: string; channel?: string }
-  | { type: "prompt"; message: string; channel?: string };
+  | { type: "prompt"; message: string; channel?: string }
+  // Domain events (dot-separated types like "session.completed", "handler.started")
+  | { type: string; [key: string]: unknown };
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
