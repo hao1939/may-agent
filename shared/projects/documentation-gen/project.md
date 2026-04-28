@@ -1,6 +1,6 @@
 # Documentation Generation
 
-Status: active
+Status: paused
 Owner: coach
 Started: 2025-01-27
 
