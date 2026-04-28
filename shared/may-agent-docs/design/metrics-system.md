@@ -1,6 +1,6 @@
 # DESIGN: Unified Metric System
 
-**Status:** ✅ APPROVED by Hao — Phase 1 implementation in progress  
+**Status:** ✅ Implemented (core)  
 **Date:** 2026-04-15 (approved 2026-04-15 ~14:50 UTC)  
 **Author:** May (synthesizing input from Bob, Tech-lead, Optimizer, Coach, Scout + Hao's feedback)  
 **Replaces:** `shared/protocols/metrics-framework.md` (deleted), earlier metrics-system.md drafts
@@ -474,7 +474,7 @@ This replaces reading `todo.md` or checking the dispatch board. The query IS the
 
 When an agent picks up a continuous metric, they create a persistent-task project:
 ```
-project: agents/<owner>/workspace/projects/metric-<id>.md
+project: agents/shared/projects/metric-<id>/project.md
 agent: <owner>
 goal: Push <metric-name> from <current> to <target>
 ```

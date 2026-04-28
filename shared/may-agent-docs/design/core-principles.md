@@ -10,7 +10,7 @@ When something happens — metric breaches, project changes, session fails, agen
 
 The EventBus is the central nervous system. Commands go in, observations come out. Components subscribe and react.
 
-**Elaborated in:** [architecture-redesign.md](architecture-redesign.md), [event-driven-handlers.md](event-driven-handlers.md)
+**Elaborated in:** [request-event-architecture.md](request-event-architecture.md), [convention-defaults.md](convention-defaults.md)
 
 ## 2. Everything has an owner — owner is the backstop, not the first responder
 
@@ -28,7 +28,7 @@ Owner means: if this falls on the floor, it's your problem. Owners don't do all 
 
 Agents exist as **accountability boundaries**. We don't have 7 agents because we need 7 workers — any LLM can do anything. We have 7 agents because we need 7 distinct owners who accumulate domain context, watch domain metrics, and are the definitive answer to "who's responsible for this?"
 
-**Elaborated in:** [ownership-driven-system.md](ownership-driven-system.md), [metrics-system.md](metrics-system.md), [infra-metrics.md](infra-metrics.md)
+**Elaborated in:** [health-metrics.md](health-metrics.md), [metrics-system.md](metrics-system.md)
 
 ## 3. Events must be consumed
 
@@ -36,7 +36,7 @@ No event fires into the void. Something must consume it — a handler, a subscri
 
 The escalation chain is: best-fit handler -> assigned agent -> owner -> May -> Hao.
 
-**Elaborated in:** [ownership-driven-system.md](ownership-driven-system.md), [guard-escalation.md](guard-escalation.md)
+**Elaborated in:** [may-gatekeeper.md](may-gatekeeper.md), [guard-escalation.md](guard-escalation.md)
 
 ## 4. Context is discovered, not dumped
 
@@ -115,7 +115,7 @@ Conventions are self-documenting, zero-maintenance, and enforce consistency. Con
 
 **Corollary:** Don't invent new conventions when existing ones work. File locations are fixed (see common-sense.md conventions table). Naming follows `<domain>.<action>` for events and metrics. Status fields use the same vocabulary everywhere: active/blocked/done/paused. Check if a convention already covers your need before creating anything.
 
-**Elaborated in:** common-sense.md Conventions section, [ownership-driven-system.md](ownership-driven-system.md)
+**Elaborated in:** common-sense.md Conventions section
 
 ## 10. Simple first, always
 
@@ -154,7 +154,7 @@ These principles sometimes pull in opposite directions. The tensions are managed
 
 | Tension | Resolution |
 |---------|-----------|
-| Event-driven (P1) vs current poll-based cron reality | Cron is the interim. event-driven-handlers.md is the design. Migrate as events prove useful. |
+| Event-driven (P1) vs current poll-based cron reality | Cron is the interim trigger. Events are persisted immutably. Handlers fire on cron ticks but emit events for lifecycle tracking. |
 | Owner accountability (P2) vs May reviews everything (P8) | May supervises system-scope. Domain owners handle domain events. May is the fallback owner for unowned things, not the primary handler for everything. |
 | Metrics drive work (P7) vs don't chase numbers (P7) | The Goodhart guardrail is built into the heartbeat: "Consider the metric. Apply judgment. Override if context says otherwise." |
 | Evidence first (P5) vs we need to ship (pragmatism) | Evidence-first applies to system changes and new mechanisms. Known patterns (add a handler, create a metric) can proceed directly. Don't A/B test adding a database index. |
