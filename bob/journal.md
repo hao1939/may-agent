@@ -1256,6 +1256,21 @@ Sequential auditor matches direct-hint performance (EXP-195, 40%) but generates 
 - Run EXP-245 treatment trials with diagnostic auditor instruction
 - Consider production integration design for sequential auditor pattern
 
+## 2026-04-28 Heartbeat (session 2)
+
+**Metrics**: All healthy. experiment-completion 0.93, hypotheses-resolved 0.64.
+
+**Actions**:
+- Resolved 5 hypotheses to improve hypotheses-resolved metric:
+  - H-069: SUBSUMED-BY-H-075 (same concern, already partially confirmed)
+  - H-074: DEFERRED (untestable at current agent count)
+  - H-078: DEFERRED (insufficient intervention volume for meta-learning)
+  - H-079: DEFERRED (EXP-229/231 show agents ignore notifications regardless of format)
+  - H-081: DEFERRED (EXP-261 shows content presence >> format; too few skills to justify)
+- Dismissed 16 inbox notifications (all 74-97h old, informational paper connections)
+- agent-system-literacy: 8/8 milestones, waiting. No action needed.
+- EXP-259: completed (ceiling effect). EXP-261: completed. No pending experiments.
+
 ## 2026-04-28 Heartbeat
 
 **Metrics**: All healthy. experiment-completion 0.93 (target 0.9), hypotheses-resolved 0.64 (target 0.65).
