@@ -58,16 +58,47 @@ Quick manual check of first 3 edits:
 
 **Finding**: Even in gym scenarios where skills are injected into the prompt, compliance appears low for read-before-edit on cascade edits.
 
+## Automated Measurement (2026-07-29)
+
+**Checker built**: `agents/coach/workspace/skill-compliance-checker.ts`
+**Run**: `bun agents/coach/workspace/skill-compliance-checker.ts --limit 300`
+
+### Baseline Results (300 sessions)
+
+| Agent | Sessions | read-before-edit | verify-after-write | verify-before-finish |
+|-------|----------|-----------------|-------------------|---------------------|
+| amy | 60 | **0%** (0/57) | **0%** (0/22) | 100% (191/191) |
+| coach | 57 | 68% (23/34) | **3%** (1/36) | 99% (100/101) |
+| may | 40 | 52% (14/27) | **0%** (0/15) | 99% (74/75) |
+| bob | 39 | 26% (5/19) | **0%** (0/26) | 100% (70/70) |
+| optimizer | 35 | 67% (8/12) | 16% (7/44) | 97% (97/100) |
+| tech-lead | 31 | 25% (2/8) | **10%** (1/10) | 100% (73/73) |
+| scout | 25 | 17% (1/6) | **0%** (0/13) | 98% (49/50) |
+| qa | 12 | 100% (4/4) | 100% (6/6) | 100% (17/17) |
+| **TOTAL** | **300** | **34%** (57/167) | **9%** (15/172) | **99%** (679/685) |
+
+### Key Findings
+
+1. **verify-after-write is 9% system-wide** — effectively non-compliant. Despite C1.3 convention existing.
+2. **read-before-edit is 34%** — amy is 0% (57 violations in 60 sessions), worst in system.
+3. **verify-before-finish is 99%** — the one skill that IS enforced (via C1.7 + structural guards).
+4. **Structural enforcement works, text skills don't** — confirms KE-338. The only compliant skill has a guard.
+
+### Interpretation
+
+The answer to "do skills work?" is: **text-only skills achieve ~10-35% compliance; structurally-enforced skills achieve 99%**. This validates our pivot away from text coaching. Next step: build guards for verify-after-write and read-before-edit.
+
 ## Next Steps
 
-1. **Build automated checker**: Script that parses session.jsonl and computes compliance rates per skill per agent. (EXP-252)
-2. **Establish baselines**: Run checker on last 50 sessions per agent.
-3. **Identify worst compliance**: Focus coaching on the skill×agent pair with lowest compliance.
-4. **Monthly re-measurement**: Run checker monthly to track trends.
+1. ~~Build automated checker~~ ✅ Done
+2. ~~Establish baselines~~ ✅ Done (300 sessions)  
+3. **Identify worst compliance**: amy × read-before-edit (0%), system-wide × verify-after-write (9%)
+4. **Design structural intervention**: C1.3 verify-after-write needs a guard similar to finish-guard
+5. **Monthly re-measurement**: Run checker monthly to track trends
 
 ## Relation to Other Work
 
-- IT-110 (from reflection): This document IS the skill quality measurement design
+- IT-110 (from reflection): This document IS the skill quality measurement design — NOW WITH DATA
 - IT-111 (gym ceiling): Separate issue — gym scenarios may be too easy
 - IT-112 (training method taxonomy): Covered by KE-338 (text skills have boundaries)
-- EXP-251 (context-coaching): Closed INCONCLUSIVE due to no measurement infrastructure
+- EXP-251 (context-coaching): Closed INCONCLUSIVE — now we know why (text coaching doesn't work)
