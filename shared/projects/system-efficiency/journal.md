@@ -204,3 +204,10 @@ instead of metrics for usage, should focus on the output! should chase the metri
 
 Resume when: A worker iteration actually executes (not a comment iteration).
 
+### Iteration 15 (comment) — 2026-04-28T18:20:54.877Z
+**Comment**: ### hao — 2026-04-28
+instead of metrics for usage, should focus on the output! should chase the metrics of how much meaningful work the system has done. make it do more and achieve more
+**Reviewer**: BLOCKED — — Nine consecutive iterations (7-15) have been comment-only with the same replaying hao comment. No worker has executed since iteration 6. This is an infrastructure issue, not a task issue.
+
+Resume when: A worker iteration actually executes (not a comment iteration), OR human intervention unsticks the comment loop.
+

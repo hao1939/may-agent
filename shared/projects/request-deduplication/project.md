@@ -1,10 +1,14 @@
 # Project: Request Deduplication
 
-**Status**: closed
+**Status**: waiting
 **Owner**: optimizer
 **Priority**: P0
-**Iteration**: 7
+**Iteration**: 8
 
+**Stop Reason**: — The duplicate storm problem was solved architecturally by removing the request DB. This project has no remaining work. Awaiting human review to close.
+
+Resume when: Hao/May confirms project can be c
+**Resume Condition**: Hao/May confirms project can be closed.
 ## Goal
 Eliminate duplicate request storms. Was 78% duplicate rate causing notification cascades.
 
@@ -13,8 +17,7 @@ Eliminate duplicate request storms. Was 78% duplicate rate causing notification 
 - notification-storms: 0 → target 0 ✅
 
 ## Current State
-Resolved. The requests table was removed entirely (replaced by events table). Read-side dedup in loadInbox collapses duplicates. Measured 5.4% rate, below 10% target. The ensure-requests-table.sh script is obsolete — do not run it.
-
+Waiting: — The duplicate storm problem was solved architecturally by removing the request DB. This project has no remaining work. Awaiting human review to clos
 ## Plan
 - [x] Implement read-side dedup in loadInbox
 - [x] Measure duplicate rate (5.4%, below 10% target)
@@ -26,3 +29,6 @@ Resolved. The requests table was removed entirely (replaced by events table). Re
 
 **Artifacts:**
 - outputs/dedup-measurement.md — measurement showing 5.4% rate
+
+
+## Comments

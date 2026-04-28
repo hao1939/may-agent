@@ -128,3 +128,10 @@ you go the wrong way, we remove request db because no longer need it, we have th
 
 Resume when: Hao confirms this project can be closed.
 
+### Iteration 8 (comment) — 2026-04-28T18:20:54.213Z
+**Comment**: ### hao — 2026-04-28
+you go the wrong way, we remove request db because no longer need it, we have the events table log all messages
+**Reviewer**: WAITING — — The duplicate storm problem was solved architecturally by removing the request DB. This project has no remaining work. Awaiting human review to close.
+
+Resume when: Hao/May confirms project can be closed.
+

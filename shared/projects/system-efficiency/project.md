@@ -3,15 +3,17 @@
 **Status**: blocked
 **Owner**: optimizer
 **Priority**: P1
-**Iteration**: 14
+**Iteration**: 15
 
 **Stop Reason**: 
 
 
 
-— Eight consecutive iterations (7-14) have been comment-only with the same replaying hao comment. No worker can execute. This project requires infrastructure intervention to unstick the comment loop.
+— Nine consecutive iterations (7-15) have been comment-only with the same replaying hao comment. No worker has executed since iteration 6. This is an infrastructure issue, not a task issue.
 
-**Resume Condition**: A worker iteration actually executes (not a comment iteration).
+Resume wh
+
+**Resume Condition**: A worker iteration actually executes (not a comment iteration), OR human intervention unsticks the comment loop.
 ## Goal
 Reduce wasted compute: May heartbeat cascade (32% of sessions), missing circuit breaker for provider failures, OpBudget causing lost work.
 
@@ -21,7 +23,7 @@ Reduce wasted compute: May heartbeat cascade (32% of sessions), missing circuit 
 - lost-work-rate: unknown → target 0 (sessions hitting OpBudget before saving)
 
 ## Current State
-Blocked: — Eight consecutive iterations (7-14) have been comment-only with the same replaying hao comment. No worker can execute. This project requires infrast
+Blocked: — Nine consecutive iterations (7-15) have been comment-only with the same replaying hao comment. No worker has executed since iteration 6. This is an 
 ## Plan
 - [x] May heartbeat dedup — skip idle LLM sessions when nothing actionable
 - [x] Provider circuit breaker — auto-disable agent after N consecutive provider errors

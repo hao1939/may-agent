@@ -348,3 +348,11 @@ Milestone completed: "Measure actual agent skill usage rate (do agents reference
 **Orchestrator**: CONTINUE
 
 (a) Next iteration should **sample 10 recent agent sessions and check for behavioral evidence of skill application**. Pick 5 agents (amy, bob, coder, coach, scout) and find 2 recent sessions each. For each session, check: did the agent do state-check-before-action before edits? Did it cite
+
+### Iteration 3 — 2026-04-28T18:20:41.383Z
+**Worker**: Now I have enough data. Let me write the report.
+**Orchestrator**: Good — project.md is already up to date from my previous iteration. The worker needs to do the behavioral sampling.
+
+CONTINUE
+
+(a) Next iteration should **sample 10 recent agent sessions and score them for behavioral skill application**. Concrete deliverable: `outputs/skill-behavioral-audit.md` with
