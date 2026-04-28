@@ -19,7 +19,7 @@ Agents effectively use the infrastructure: create projects from problems, read a
 - project-creation-rate: ~2-3/week (target 2/week) ✅ plausible
 - escalation-quality: 0.99 by auto-reason, but most are mechanical "exhausted retries" — real diagnostic quality unknown
 - gym.literacy-pass-rate: 0/3 (stub mode, no actual agent runs) ❌ — this is the blocker
-**BLOCKER**: Worker must run `agents/test/gym/run-gym.sh <scenario> --agent coder` for metric-reaction, close-the-loop, escalation-impossible-task. Runner exists, scenarios exist. Just execute them.
+**BLOCKER RESOLVED**: Gym requires `GYM_AGENT_BIN=/usr/local/bin/may-agent` env var. Without it, all scenarios return "skipped". Worker must set this env var before running scenarios.
 
 ## Plan
 - [x] Measure baseline: query DB for project-creation-rate and escalation-quality, write outputs/baseline.md
