@@ -33,7 +33,7 @@ const DEFAULT_MAX_ITERATIONS = 50; // safety cap — workflow runs until done/bl
 // ── Decision extraction ─────────────────────────────────────────────────
 
 interface Decision {
-  status: "continue" | "pivot" | "waiting" | "blocked" | "done" | "unknown";
+  status: "continue" | "pivot" | "waiting" | "blocked" | "unknown";
   detail: string;
 }
 
@@ -238,10 +238,12 @@ ${journalContent.slice(-3000)}
 
     if (decision.status !== "continue" && decision.status !== "pivot") {
       const stopReason = decision.detail.slice(0, 200);
-      updateProjectStatus(projectFile, decision.status, stopReason);
-      return decision.status === "blocked"
+      // Workflow can set waiting or blocked, never done/closed
+      const safeStatus = decision.status === "done" ? "waiting" : decision.status;
+      updateProjectStatus(projectFile, safeStatus, stopReason);
+      return safeStatus === "blocked"
         ? ctx.escalate(stopReason)
-        : ctx.done(`${decision.status}: ${stopReason}`);
+        : ctx.done(`${safeStatus}: ${stopReason}`);
     }
 
     // ── Phase 2+: Work-review loop ──
@@ -330,10 +332,7 @@ Then provide your decision and guidance for the next iteration.`;
     let finalStatus: string;
     let stopReason: string;
 
-    if (decision.status === "done" || (projectType !== "continuous" && finalMs.total > 0 && finalMs.pending.length === 0)) {
-      finalStatus = "done";
-      stopReason = `All ${finalMs.total} milestones complete`;
-    } else if (decision.status === "blocked") {
+    if (decision.status === "blocked") {
       finalStatus = "blocked";
       stopReason = decision.detail.slice(0, 200);
     } else if (decision.status === "waiting") {
@@ -347,6 +346,8 @@ Then provide your decision and guidance for the next iteration.`;
       stopReason = decision.detail.slice(0, 200);
     }
 
+    // Workflow can set waiting or blocked, never done/closed
+    if (finalStatus === "done" || finalStatus === "closed") finalStatus = "waiting";
     updateProjectStatus(projectFile, finalStatus, stopReason, iteration);
     ctx.log(`[done] ${finalStatus} after ${iteration} iteration(s). ${finalMs.done}/${finalMs.total} milestones. ${stopReason}`);
 

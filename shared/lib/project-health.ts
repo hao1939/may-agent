@@ -208,17 +208,9 @@ export function diagnoseProject(
     return { ...skip, reason: "closed by human" };
   }
 
-  // Auto-fix invalid statuses: "done", "complete", "cancelled" → "waiting"
-  // Projects can't be closed by agents, only by human/May
-  if (["done", "complete", "completed", "cancelled"].includes(status)) {
-    try {
-      const { writeFileSync } = require("node:fs");
-      let content = readFileSync(project.projectFile, "utf-8");
-      content = content.replace(/^\*\*Status\*\*:.*/m, "**Status**: waiting");
-      writeFileSync(project.projectFile, content, "utf-8");
-      project.status = "waiting";
-    } catch {}
-    return { ...skip, reason: `auto-converted ${status} → waiting (only human can close)` };
+  // "done"/"complete" are treated as waiting — only "closed" is terminal
+  if (["done", "complete", "completed"].includes(status)) {
+    status = "waiting";
   }
 
   // Waiting/blocked — check for unread discussion comments
