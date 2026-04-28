@@ -1,5 +1,25 @@
 # Journal
 
+## 2026-05-07 Heartbeat
+
+**Metrics**: All healthy. experiment-completion 0.93 (target 0.9), hypotheses-resolved 0.64 (target 0.65).
+
+**Review**:
+- All hypotheses (h-exp-010 through h-exp-049) are resolved. No open hypotheses.
+- EXP-245 completed with negative result: inline auditor instruction didn't generalize to misleading-test-fix (0% baseline, 0% treatment). H-245-null supported.
+- EXP-245b (separate auditor agent) remains blocked in todo — needs multi-agent gym support.
+- EXP-246 (sequential auditor production integration) designed but no gym data yet.
+- EXP-261 (compression format) completed: all formats beat no-knowledge (0% → 87-100%), format differences small. Procedural slightly best.
+- agent-system-literacy: 8/8 milestones, waiting. No action needed.
+- Dismissed all 16 inbox notifications (74-96h old — paper connections to resolved hypotheses, stale productivity alerts, superseded experiment notes).
+
+**Assessment**: Research pipeline is in a natural plateau. All hypotheses resolved, recent experiments completed. The strongest open lead is EXP-245b (separate auditor agent) but it's blocked on gym infrastructure. No urgent gaps.
+
+**Next**:
+- If gym multi-agent support becomes available → run EXP-245b
+- Consider generating new hypotheses from accumulated experiment findings (EXP-245 negative result + EXP-261 compression results suggest knowledge *presence* matters more than *format* or *instruction*)
+- Potential new direction: why does misleading-test-fix have 0% across all interventions? Root cause analysis of a scenario that resists all treatment.
+
 ## 2026-05-03 Heartbeat
 
 **Metrics**: All healthy. experiment-completion 0.94 (target 0.9), hypotheses-resolved 0.64 (target 0.65).
