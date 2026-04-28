@@ -1,10 +1,11 @@
 # Coach Todo
 
-## P0: Evaluator Dead — Blocks ALL Measurement (NEW Jul 1)
-- **Problem**: Last evaluation was Apr 16 — 2.5 months of zero evals
+## P0: Evaluator Dead — Blocks ALL Measurement (Jul 1, STILL BLOCKED Jul 29)
+- **Problem**: Last evaluation was Apr 25 — 2+ months of zero evals (evaluator sessions get skipped)
 - **Impact**: Can't measure obstacle-pivot impact, can't identify struggling agents, skill experiments unmeasurable
 - **Action**: Notified may (P0). Need evaluator agent restarted/fixed.
 - **Blocked**: Everything below that requires eval data
+- **Update Jul 29**: Confirmed from DB — most recent eval is Apr 25. Evaluator sessions show `skippedByJs=1`. Re-escalating.
 
 ## P1: Deploy Proven Skills — obstacle-pivot ✅ DONE (Jun 30)
 - **Deployed to**: coder, bob, tech-lead (context.md wiring)
