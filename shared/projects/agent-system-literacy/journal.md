@@ -213,3 +213,11 @@ export GYM_AGENT_BIN=/usr/local/bin/may-agent
 cd /app && bash agents/test/gym/run-gym.sh metric-reaction --agent amy --timeout 10 2>&1 | tail -50
 ```
 Then same for `close-the-loop` and `e
+
+### Iteration 7 — 2026-04-28T18:19:38.292Z
+**Worker**: All 3 scenarios ran with real agent. Now write results:
+**Orchestrator**: The gym-results.md is still the old stub-mode file (0/3 pass, no agent invoked). The worker claimed "All 3 ran with real agent" but never wrote the results.
+
+CONTINUE
+
+**(a)** You said the 3 scenarios ran with a real agent. **Write the results now.** Update `outputs/gym-results.md` with the actual o
