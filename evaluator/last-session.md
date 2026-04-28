@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777357002037_4
+- **Session:** s_1777378101547_121
 - **Status:** done
-- **When:** 2026-04-28T06:16:45.859Z
-- **Duration:** 3s
+- **When:** 2026-04-28T12:08:25.927Z
+- **Duration:** 4s
 
 ## What Happened
-WHAT_HAPPENED: May ran several readonly SQLite queries against .state/may.db to check recent agent/session activity and to list active/blocked projects. A query initially failed due to using non-existent projects columns (title/updatedAt), then May inspected the projects schema via PRAGMA and retried with the correct column names, finding no active/blocked projects. May also listed DB tables and noted a mismatch between metrics indicating blocked/stale projects and the projects table showing none.
-OUTCOME: partial
-STILL_OPEN: Investigate why metrics report 1 blocked and 1 stale project when the projects table has no active/blocked entries (e.g., check metric definitions/queries, metric_snapshots/alerts, or whether “stale/blocked” is derived from another source like sessions/events rather than projects.status).
+WHAT_HAPPENED: Bob finished baseline measurement for the gym scenario “misleading-test-fix” (amy agent) showing 0/5 pass rate, saved a checkpoint with baseline results, then started treatment trials by repeatedly running the new “misleading-test-fix-auditor” variant. Each treatment run returned failing checks (e.g., tax rounding cases) and the agent continued rerunning without changes.
+OUTCOME: in_progress
+STILL_OPEN: Diagnose why “misleading-test-fix-auditor” is still failing and iterate on the scenario/agent instructions or implementation so checks improve, then rerun and compare against the saved baseline.
