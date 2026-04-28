@@ -1,18 +1,21 @@
 # Last Heartbeat Brief
-**When**: 2026-11-17 ~UTC
-**Duration**: ~5 min
+**When**: 2027-11-18 ~05:00 UTC
+**Duration**: ~15 min
 
 ## What Happened
-- Re-ran knowledge lifecycle audit: 369/375 KEs (98.4%) uncited — confirming write-only graveyard
-- Wrote KE Integration Gate proposal (sent/2026-04-28-ke-integration-gate-proposal.md)
-- Triaged all inbox notifications (dismissed — all P2 informational or stale P1 productivity warnings)
-- master-worker-test: test projects, no action needed
+- **EXP-242 Phase 1 COMPLETE**: Ran 5 trials each of Arm A (baseline) and Arm B (sequential auditor→primary) on cascading-fix-trap-v2
+  - Arm A: 0/5 (0%) — confirmed baseline
+  - Arm B: 2/5 (40%) — exceeds 30% target. H-181 P-181e CONFIRMED.
+  - Auditor detection: 5/5 (100%) — consistent with Phase 0
+- Created runner script: `agents/bob/workspace/scripts/exp242-phase1-runner.sh`
+- Full results: `agents/bob/workspace/exp242-phase1-results/phase1-results.md`
+- Triaged inbox: all stale (67-88h old), dismissed as informational
 
 ## State Left Behind
-- KE Integration Gate proposal ready for tech-lead review
-- H-EXP-015: Still ready for Phase 2 (baseline gym runs)
+- EXP-242 Phase 1 results written up, committed
+- Sequential scenario exists at `agents/gym/scenarios/cascading-fix-trap-v2-exp242-sequential`
 
 ## Next Steps
-- Await tech-lead response on KE Integration Gate
-- Execute H-EXP-015 Phase 2 when time permits
-- Consider bulk-tagging uncited KEs as reference-only
+- Scale EXP-242 to N=15 for statistical confidence
+- Design production integration for auditor pattern
+- KE Integration Gate proposal still awaiting tech-lead review
