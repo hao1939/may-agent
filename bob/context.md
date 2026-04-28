@@ -72,6 +72,7 @@
 📘 Read `agents/bob/skills/verify-after-edit.md` — verify every edit took effect.
 📘 Read `agents/bob/skills/verify-before-finish.md` — verify deliverables before finish().
 📘 Read `agents/bob/skills/cross-reference-source-code.md` — cross-reference claims with code.
+📘 **Obstacle Pivot**: Read `agents/shared/skills/obstacle-pivot/SKILL.md` — when a tool call fails, pivot to an alternative instead of retrying. Proven +100pp in gym (EXP-084).
 
 ## ⚡ [GENERAL KNOWLEDGE]
 

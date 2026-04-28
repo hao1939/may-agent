@@ -112,3 +112,4 @@
 📘 Read `agents/coder/skills/diagnosis-before-action.md` — diagnose before fixing.
 📘 Read `agents/coder/skills/multi-file-discovery-completeness.md` — find all affected files.
 📘 Read `agents/coder/skills/task-instruction-compliance.md` — follow task specs precisely.
+📘 **Obstacle Pivot**: Read `agents/shared/skills/obstacle-pivot/SKILL.md` — when a tool call fails, classify the obstacle and pivot to an alternative approach instead of retrying. Proven +100pp in gym (EXP-084). Targets FM-2.2 (dead-end non-recovery).
