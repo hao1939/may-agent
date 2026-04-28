@@ -1,10 +1,10 @@
 /// <reference path="../../types/workflow-defs.d.ts" />
 /**
- * verify-after-write guard — C1.3 Write-Without-Verify detection.
+ * verify-after-edit guard — C1.3 Write/Edit-Without-Verify detection.
  *
- * Scans step_done events for write() tool calls where the target file
- * was not subsequently read() in the same step. Injects a corrective
- * run_step that forces the agent to verify the written files.
+ * Scans step_done events for write() AND edit() tool calls where the
+ * target file was not subsequently read() in the same step. Injects a
+ * corrective run_step that forces the agent to verify the modified files.
  *
  * This is the #2 convention violation (C1.3). Same Ch1→Ch2 channel
  * switch that produced 0%→100% for C1.1 (read-before-edit guard),
@@ -49,12 +49,12 @@ export const guard: WorkflowGuard = {
 
     const calls = extractToolCalls(event.result.messages);
 
-    // Track write() calls and whether a subsequent read() verified them
-    const writtenPaths = new Map<string, number>(); // path → index of write call
+    // Track write()/edit() calls and whether a subsequent read() verified them
+    const writtenPaths = new Map<string, number>(); // path → index of write/edit call
     const violations: string[] = [];
 
     for (const call of calls) {
-      if (call.name === "write" && call.path) {
+      if ((call.name === "write" || call.name === "edit") && call.path) {
         const np = normPath(call.path);
         writtenPaths.set(np, call.index);
       } else if (call.name === "read" && call.path) {
