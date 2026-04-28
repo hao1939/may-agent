@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777407236779_18
+- **Session:** s_1777409037030_45
 - **Status:** done
-- **When:** 2026-04-28T20:15:59.825Z
-- **Duration:** 2m3s
+- **When:** 2026-04-28T20:45:15.858Z
+- **Duration:** 1m18s
 
 ## What Happened
-I didn't write or edit any files — this was an investigation-only heartbeat. Let me re-finish.
+Transient 429/401 errors — rate limiting, not bugs. No action needed.
+
+All looks healthy. The key fix was cancelling 3 ghost projects causing the stale-active-count alert.
