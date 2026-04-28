@@ -1,0 +1,22 @@
+/// <reference path="../../../src/lib/workflow-defs.d.ts" />
+
+/**
+ * verify-wrap — Simple wrapper workflow that runs an agent task.
+ * 
+ * Used by cron jobs (reflect, optimize, common-sense-verify, research-intake)
+ * that just need to run a single agent session with their configured task.
+ */
+
+export const name = "verify-wrap";
+export const description = "Simple wrapper: runs the configured agent with the given task.";
+
+export const execute = async (ctx: WorkflowContext) => {
+  const result = await ctx.runAgent(ctx.agent, ctx.task);
+
+  if (result.status === "error") {
+    return ctx.escalate(`Agent ${ctx.agent} failed: ${result.error || result.lastAssistantText?.slice(0, 200)}`);
+  }
+
+  const summary = ctx.summarize(result, { maxLength: 300 });
+  return ctx.done(typeof summary === "string" ? summary : `${ctx.agent} completed task successfully.`);
+};
