@@ -86,7 +86,7 @@ Workflows need two lifecycle methods not in the base SDK:
 interface WorkflowSDK extends AgentSDK {
   task: string;
   agent: string;
-  done(summary: string): WorkflowResult;
+  done(summary: string, opts?: { deliverables?: Deliverable[]; contextUpdates?: string[] }): WorkflowResult;
   escalate(reason: string): WorkflowResult;
 }
 ```
@@ -161,6 +161,41 @@ Today it's inverted — tools and handlers call `manager.callAgent()` directly, 
 - **Capability surface**: 8 methods = 8 things the system can do. Everything else is internal.
 
 **Litmus test for new features**: if you can't express it naturally from both sides (agent tool AND SDK method), something's wrong with the abstraction.
+
+## What the SDK does NOT do
+
+Intentionally excluded:
+
+- **No state management** — use `getDb()` + queries
+- **No scheduling** — `cron.json` is the scheduling layer
+- **No file I/O** — use Node APIs directly
+- **No agent introspection** — `list/peek/cancel` are LLM tools only, not SDK. Handlers check running sessions via `getDb()` query.
+- **No inbox helper** — `getDb()` + SQL query. Common patterns go in shared/lib/.
+- **No typed event constants** — emit("handler.completed") is fine. Add constants file later if typos become a problem.
+
+## Patterns: SDK primitives + shared/lib utilities
+
+The SDK is 8 primitives. Common patterns are utilities built on top:
+
+```
+agents/shared/lib/
+  inbox.ts      — getInbox(db, agent) → unread events
+  metrics.ts    — getMetric(db, id) → current value
+  projects.ts   — getActiveProjects(db) → project list
+```
+
+These are NOT part of the SDK. They're convenience functions that use `getDb()`. Any handler can use them, but they're optional — you can always write raw SQL.
+
+## Agent-to-agent messaging
+
+Not a separate SDK method. It's a pattern on `emit()`:
+
+```typescript
+// Send a notification to bob
+sdk.emit("agent.notification", { owner: "bob", task: "Review the PR" });
+```
+
+This is how `agents.send("bob", msg)` works internally. One mechanism, documented as a pattern.
 
 ## Migration
 
