@@ -25,6 +25,9 @@ These define how the system works.
 | [health-metrics.md](health-metrics.md) | Health metrics: handler + project metrics, alert_op, pipeline | ✅ Implemented |
 | [heartbeat-system.md](heartbeat-system.md) | Heartbeat redesign: per-agent workflows, pre-loaded context, 1 session | ✅ Implemented |
 | [escalation-system.md](escalation-system.md) | Escalation and recovery system design | Partial |
+| [project-lifecycle-simplified.md](project-lifecycle-simplified.md) | Simplified lifecycle: agents push or stop, never "done" | ✅ Implemented |
+| [workflow-lifecycle-events.md](workflow-lifecycle-events.md) | Workflow lifecycle events: step_start, step_done, etc. | Reference |
+| [master-worker-workflow.md](master-worker-workflow.md) | Persistent worker/reviewer sessions with followUp() | Proposal |
 
 ## Agent Behavior
 

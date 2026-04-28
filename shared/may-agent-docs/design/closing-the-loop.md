@@ -182,7 +182,7 @@ Added `"Can't resolve? Escalate to May via agents.send()."` to 6 block messages 
 
 #### G14: `trackRequest` Deprecation — ✅ RESOLVED
 
-**Resolved 2026-04-17.** Agent-facing notifications migrated from `trackRequest()` to events table. `trackRequest` remains for infra work tracking (fork/call/heartbeat session linkage) — this is correct, not deprecated. See [request-event-architecture.md](request-event-architecture.md).
+**Resolved 2026-04-29.** The `requests` table has been fully removed. `trackRequest` and `updateRequest` are no-op stubs (return dummy UUID / do nothing). Work tracking uses the `sessions` table. The stubs remain to avoid breaking callers but do nothing. Use `ctx.emit()` for notifications.
 
 #### G15: `onEvent` Redundancy in workflow-tool.ts
 
