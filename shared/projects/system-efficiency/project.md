@@ -1,11 +1,7 @@
 # Project: System Efficiency
 
-**Status**: waiting
-**Stop Reason**: WAITING
-
-This project is complete. 12/12 milestones done, all 3 metrics at or above target, 43 iterations, 9 output files, 5 satellite projects spawned. Status updated to "done."
-
-There is no more wor
+**Status**: complete
+**Stop Reason**: All 3 metrics at target, 12/12 milestones done, 43 iterations. Closed by May.
 **Owner**: optimizer
 **Priority**: P1
 **Workflow**: master-worker

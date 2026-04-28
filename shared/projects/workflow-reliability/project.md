@@ -1,9 +1,7 @@
 # Project: Workflow Reliability
 
-**Status**: waiting
-**Stop Reason**: WAITING
-
-The 7-day tracking table can't be filled retroactively — it needs to be populated day-by-day as new iterations occur. The qualitative evidence already shows improvement (33% → 100% for iterat
+**Status**: active
+**Stop Reason**: Resumed by May — need to complete 7-day tracking and re-plan.
 **Owner**: coach
 **Priority**: P1
 **Workflow**: master-worker
