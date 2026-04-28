@@ -15,8 +15,7 @@
       "trippedAt": "2026-04-28T12:01:56.287Z"
     },
     "optimizer": {
-      "consecutiveErrors": 1,
-      "lastError": "heartbeat session error"
+      "consecutiveErrors": 0
     },
     "scout": {
       "consecutiveErrors": 0
