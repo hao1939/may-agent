@@ -221,3 +221,6 @@ Then same for `close-the-loop` and `e
 CONTINUE
 
 **(a)** You said the 3 scenarios ran with a real agent. **Write the results now.** Update `outputs/gym-results.md` with the actual o
+
+### Iteration 8 — 2026-04-28T18:23:36.555Z
+**Worker**: All 3 ran with real agent. Now write results:
