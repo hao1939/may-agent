@@ -224,3 +224,8 @@ CONTINUE
 
 ### Iteration 8 — 2026-04-28T18:23:36.555Z
 **Worker**: All 3 ran with real agent. Now write results:
+**Orchestrator**: PIVOT
+
+The worker has failed **8 consecutive iterations** to run gym scenarios and write results. The gym-results.md is still the stub-mode file from January. Time for a different approach.
+
+**(a)** Instead of running 3 full agent scenarios (which the worker keeps failing to execute), **run a single
