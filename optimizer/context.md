@@ -59,6 +59,7 @@ When querying a table for first time, run PRAGMA table_info(<table>) first. Key 
 📘 Read `agents/optimizer/skills/prerequisite-gap-protocol.md` — check prerequisites first.
 📘 Read `agents/optimizer/skills/read-only-finish-protocol.md` — finish protocol for read-only sessions.
 📘 Read `agents/optimizer/skills/verify-after-edit.md` — verify every edit took effect.
+📘 Read `agents/optimizer/skills/verify-before-finish.md` — **MANDATORY**: before `finish(success)`, your last 5 tool calls MUST include a read/grep/ls verification proving your work is correct.
 
 ## Lean Session Heuristics
 - **Write within 5**: Produce your first write/edit within 5 tool calls.
