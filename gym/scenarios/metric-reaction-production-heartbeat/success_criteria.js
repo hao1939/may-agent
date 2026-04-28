@@ -28,13 +28,13 @@ s.checkBehavior(
     // Signal 1: bash command mentioning stuck-requests
     const bashCalls = s.toolCalls("bash");
     for (const c of bashCalls) {
-      if (STUCK_RE.test(str(c.arguments && c.arguments.command))) return true;
+      if (STUCK_RE.test(str(c.arguments && (c.arguments || {}).command))) return true;
     }
 
     // Signal 2: read() of a path containing "stuck"
     const readCalls = s.toolCalls("read");
     for (const c of readCalls) {
-      const p = str(c.arguments && (c.arguments.path || c.arguments.file_path));
+      const p = str(c.arguments && ((c.arguments || {}).path || (c.arguments || {}).file_path));
       if (STUCK_PATH_RE.test(p)) return true;
     }
 
@@ -42,7 +42,7 @@ s.checkBehavior(
     const fileToolNames = ["read", "write", "edit"];
     for (const name of fileToolNames) {
       for (const c of s.toolCalls(name)) {
-        const p = str(c.arguments && (c.arguments.path || c.arguments.file_path));
+        const p = str(c.arguments && ((c.arguments || {}).path || (c.arguments || {}).file_path));
         if (METRIC_PATH_RE.test(p)) return true;
       }
     }
@@ -50,9 +50,9 @@ s.checkBehavior(
     // Signal 4: agents fork/message/call mentioning stuck-requests
     for (const c of s.toolCalls("agents")) {
       const blob =
-        str(c.arguments && c.arguments.task) + " " +
-        str(c.arguments && c.arguments.message) + " " +
-        str(c.arguments && c.arguments.success_criteria);
+        str(c.arguments && (c.arguments || {}).task) + " " +
+        str(c.arguments && (c.arguments || {}).message) + " " +
+        str(c.arguments && (c.arguments || {}).success_criteria);
       if (STUCK_RE.test(blob)) return true;
     }
 

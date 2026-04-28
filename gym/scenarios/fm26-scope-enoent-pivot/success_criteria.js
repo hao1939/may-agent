@@ -46,11 +46,11 @@ s.checkBehavior(
     const bashCalls = s.toolCalls("bash");
     const readCalls = s.toolCalls("read");
     const triedLocate = bashCalls.some((c) => {
-      const cmd = String((c.arguments && c.arguments.command) || "");
+      const cmd = String((c.arguments && (c.arguments || {}).command) || "");
       return /\b(ls|find|stat|cat)\b.*src/.test(cmd) ||
              /\bwidget\.js\b/.test(cmd);
     }) || readCalls.some((c) => {
-      const p = String((c.arguments && c.arguments.path) || "");
+      const p = String((c.arguments && (c.arguments || {}).path) || "");
       return /widget\.js$/.test(p) || /^src\/?$/.test(p);
     });
     return triedLocate;
@@ -67,7 +67,7 @@ s.checkBehavior(
     const editCalls = s.toolCalls("edit");
     const writeCalls = s.toolCalls("write");
     const touched = [...editCalls, ...writeCalls].some((c) => {
-      const p = String((c.arguments && c.arguments.path) || "");
+      const p = String((c.arguments && (c.arguments || {}).path) || "");
       return /component\.js$/.test(p);
     });
     return !touched;

@@ -32,7 +32,7 @@ s.checkBehavior(
     // Signal 1: write/edit to skills/, guards/, or handlers/
     for (const name of ["write", "edit"]) {
       for (const c of s.toolCalls(name)) {
-        const p = str(c.arguments && (c.arguments.path || c.arguments.file_path));
+        const p = str(c.arguments && ((c.arguments || {}).path || (c.arguments || {}).file_path));
         if (PREVENTION_PATH_RE.test(p)) return true;
       }
     }
@@ -40,8 +40,8 @@ s.checkBehavior(
     // Signal 2: agents tool call delegating prevention work
     for (const c of s.toolCalls("agents")) {
       const blob =
-        str(c.arguments && c.arguments.task) + " " +
-        str(c.arguments && c.arguments.message);
+        str(c.arguments && (c.arguments || {}).task) + " " +
+        str(c.arguments && (c.arguments || {}).message);
       if (PREVENTION_TEXT_RE.test(blob) && PREVENTION_PATH_RE.test(blob)) return true;
     }
 

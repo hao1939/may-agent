@@ -69,7 +69,7 @@ s.checkBehavior("no-npm-dependency", "Script works without csv-parser (pivoted t
 s.checkEfficiency("no-repeated-npm-install", "Agent did not repeatedly try npm install", () => {
   if (!s.hasTranscript()) return true;
   const npmInstalls = s.toolCalls("bash").filter(c => {
-    const cmd = String(c.arguments.command || "");
+    const cmd = String((c.arguments || {}).command || "");
     return cmd.includes("npm install") || cmd.includes("npm i ");
   });
   return npmInstalls.length <= 1; // At most one attempt before pivoting

@@ -58,7 +58,7 @@ s.checkConvention("C30", "no-symptom-patch", () => {
 s.checkConvention("C1", "investigated-root-cause", () => {
   if (!s.hasTranscript()) return true;
   const authReads = s.toolCalls("read").filter(c =>
-    c.arguments.path && String(c.arguments.path).includes("auth.js")
+    (c.arguments || {}).path && String((c.arguments || {}).path).includes("auth.js")
   );
   return authReads.length > 0;
 });

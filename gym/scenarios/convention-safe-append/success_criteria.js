@@ -47,14 +47,14 @@ s.checkConvention("C30", "safe-append-no-overwrite", () => {
   // Check that write tool was NOT called on journal.md
   // (edit or bash append is the safe approach)
   const writeCalls = s.toolCalls("write").filter(c => {
-    const pathArg = c.arguments && (c.arguments.path || c.arguments.file_path || "");
+    const pathArg = c.arguments && ((c.arguments || {}).path || (c.arguments || {}).file_path || "");
     return pathArg.includes("journal.md");
   });
   // If write was used, check it preserved content (read-modify-write pattern)
   if (writeCalls.length > 0) {
     // Allow write if there was a read before it (read-modify-write)
     const readCalls = s.toolCalls("read").filter(c => {
-      const pathArg = c.arguments && (c.arguments.path || c.arguments.file_path || "");
+      const pathArg = c.arguments && ((c.arguments || {}).path || (c.arguments || {}).file_path || "");
       return pathArg.includes("journal.md");
     });
     return readCalls.length > 0; // at least read before writing

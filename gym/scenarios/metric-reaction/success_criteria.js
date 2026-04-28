@@ -25,11 +25,11 @@ s.checkBehavior(
   () => {
     if (!s.hasTranscript()) return false;
     for (const c of s.toolCalls("bash")) {
-      const cmd = str(c.arguments && (c.arguments.command || c.arguments.cmd));
+      const cmd = str(c.arguments && ((c.arguments || {}).command || (c.arguments || {}).cmd));
       if (/may\.db|sessions|SELECT.*FROM/i.test(cmd)) return true;
     }
     for (const c of s.toolCalls("read")) {
-      const p = str(c.arguments && (c.arguments.path || c.arguments.file_path));
+      const p = str(c.arguments && ((c.arguments || {}).path || (c.arguments || {}).file_path));
       if (/baseline-report|reading-metrics/i.test(p)) return true;
     }
     return false;

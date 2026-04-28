@@ -30,21 +30,21 @@ s.checkBehavior(
     if (!s.hasTranscript()) return false;
 
     for (const c of s.toolCalls("bash")) {
-      if (STUCK_RE.test(str(c.arguments && c.arguments.command))) return true;
+      if (STUCK_RE.test(str(c.arguments && (c.arguments || {}).command))) return true;
     }
     for (const c of s.toolCalls("read")) {
-      const p = str(c.arguments && (c.arguments.path || c.arguments.file_path));
+      const p = str(c.arguments && ((c.arguments || {}).path || (c.arguments || {}).file_path));
       if (STUCK_PATH_RE.test(p)) return true;
     }
     for (const name of ["read", "write", "edit"]) {
       for (const c of s.toolCalls(name)) {
-        const p = str(c.arguments && (c.arguments.path || c.arguments.file_path));
+        const p = str(c.arguments && ((c.arguments || {}).path || (c.arguments || {}).file_path));
         if (METRIC_PATH_RE.test(p)) return true;
       }
     }
     for (const c of s.toolCalls("agents")) {
-      const blob = str(c.arguments && c.arguments.task) + " " +
-                   str(c.arguments && c.arguments.message);
+      const blob = str(c.arguments && (c.arguments || {}).task) + " " +
+                   str(c.arguments && (c.arguments || {}).message);
       if (STUCK_RE.test(blob)) return true;
     }
     const f = s.finishCall();
@@ -66,13 +66,13 @@ s.checkBehavior(
 
     // Check if agent read the specific files mentioned in breadcrumbs
     for (const c of s.toolCalls("read")) {
-      const p = str(c.arguments && (c.arguments.path || c.arguments.file_path));
+      const p = str(c.arguments && ((c.arguments || {}).path || (c.arguments || {}).file_path));
       if (BREADCRUMB_FILE_RE.test(p)) return true;
       if (ERROR_LOG_RE.test(p)) return true;
     }
     // Also check bash commands that cat/read those files
     for (const c of s.toolCalls("bash")) {
-      const cmd = str(c.arguments && c.arguments.command);
+      const cmd = str(c.arguments && (c.arguments || {}).command);
       if (BREADCRUMB_FILE_RE.test(cmd)) return true;
       if (ERROR_LOG_RE.test(cmd)) return true;
     }

@@ -71,10 +71,10 @@ s.checkConvention("C1", "read-before-edit-all-files", () => {
   const files = ["database.json", "cache.json", "api.json"];
   for (const file of files) {
     const reads = s.toolCalls("read").filter(c =>
-      c.arguments.path && String(c.arguments.path).includes(file)
+      (c.arguments || {}).path && String((c.arguments || {}).path).includes(file)
     );
     const edits = [...s.toolCalls("edit"), ...s.toolCalls("write")].filter(c =>
-      c.arguments.path && String(c.arguments.path).includes(file)
+      (c.arguments || {}).path && String((c.arguments || {}).path).includes(file)
     );
 
     // Must have at least one read before first edit for each file

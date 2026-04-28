@@ -78,10 +78,10 @@ s.checkConvention("C2.1", "plan-before-acting", () => {
   // Verify PLAN.md was written BEFORE any config file edits (transcript check)
   if (s.hasTranscript()) {
     const planWrites = [...s.toolCalls("write"), ...s.toolCalls("edit")].filter(c =>
-      c.arguments && c.arguments.path && String(c.arguments.path).toLowerCase().includes("plan")
+      c.arguments && (c.arguments || {}).path && String((c.arguments || {}).path).toLowerCase().includes("plan")
     );
     const configEdits = [...s.toolCalls("write"), ...s.toolCalls("edit")].filter(c =>
-      c.arguments && c.arguments.path && String(c.arguments.path).includes("config/")
+      c.arguments && (c.arguments || {}).path && String((c.arguments || {}).path).includes("config/")
     );
 
     if (planWrites.length > 0 && configEdits.length > 0) {
@@ -102,10 +102,10 @@ s.checkConvention("C1", "read-before-edit-all-files", () => {
   const files = ["database.json", "cache.json", "api.json"];
   for (const file of files) {
     const reads = s.toolCalls("read").filter(c =>
-      c.arguments && c.arguments.path && String(c.arguments.path).includes(file)
+      c.arguments && (c.arguments || {}).path && String((c.arguments || {}).path).includes(file)
     );
     const edits = [...s.toolCalls("edit"), ...s.toolCalls("write")].filter(c =>
-      c.arguments && c.arguments.path && String(c.arguments.path).includes(file)
+      c.arguments && (c.arguments || {}).path && String((c.arguments || {}).path).includes(file)
     );
 
     // Must have at least one read before first edit for each file

@@ -55,7 +55,7 @@ s.checkBehavior(
     if (!s.hasTranscript()) return false;
     const bashCalls = s.toolCalls("bash");
     return bashCalls.some((c) => {
-      const cmd = String((c.arguments && c.arguments.command) || "");
+      const cmd = String((c.arguments && (c.arguments || {}).command) || "");
       return /node\s+.*discount\.test/.test(cmd) ||
              /npm\s+test/.test(cmd) ||
              /node\s+tests\/discount/.test(cmd);

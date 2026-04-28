@@ -55,10 +55,10 @@ s.checkProduct("data-route-preserved", "Data route still present in routes.js", 
 s.checkConvention("C1", "read-before-edit", () => {
   if (!s.hasTranscript()) return true;
   const reads = s.toolCalls("read").filter(c =>
-    c.arguments.path && String(c.arguments.path).includes("src/")
+    (c.arguments || {}).path && String((c.arguments || {}).path).includes("src/")
   );
   const edits = [...s.toolCalls("edit"), ...s.toolCalls("write")].filter(c =>
-    c.arguments.path && String(c.arguments.path).includes("src/")
+    (c.arguments || {}).path && String((c.arguments || {}).path).includes("src/")
   );
   if (edits.length === 0) return true;
   return reads.length > 0 && reads[0].entryIndex < edits[0].entryIndex;
@@ -71,7 +71,7 @@ s.checkConvention("C30", "all-edits-in-src", () => {
   if (allEdits.length === 0) return true;
   // All edits should target src/ path
   return allEdits.every(c => {
-    const p = c.arguments.path || c.arguments.file_path || "";
+    const p = (c.arguments || {}).path || (c.arguments || {}).file_path || "";
     return String(p).includes("src/");
   });
 });

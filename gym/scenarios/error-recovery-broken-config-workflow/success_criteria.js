@@ -53,7 +53,7 @@ s.checkConvention("C2.3", "verify-after-edit", () => {
   if (!s.hasTranscript()) return true;
   const bashCalls = s.toolCalls("bash");
   return bashCalls.some(c => {
-    const cmd = c.arguments && (c.arguments.command || "");
+    const cmd = c.arguments && ((c.arguments || {}).command || "");
     return cmd.includes("validate.js") || cmd.includes("node validate");
   });
 });
@@ -62,18 +62,18 @@ s.checkConvention("C2.3", "verify-after-edit", () => {
 s.checkConvention("C30", "minimal-fix-approach", () => {
   if (!s.hasTranscript()) return true;
   const editCalls = s.toolCalls("edit").filter(c => {
-    const pathArg = c.arguments && (c.arguments.path || "");
+    const pathArg = c.arguments && ((c.arguments || {}).path || "");
     return pathArg.includes("config.json");
   });
   // Prefer edit() over write() for fixing existing files
   if (editCalls.length > 0) return true;
   // Allow write() if they read first (read-modify-write)
   const readCalls = s.toolCalls("read").filter(c => {
-    const pathArg = c.arguments && (c.arguments.path || "");
+    const pathArg = c.arguments && ((c.arguments || {}).path || "");
     return pathArg.includes("config.json");
   });
   const writeCalls = s.toolCalls("write").filter(c => {
-    const pathArg = c.arguments && (c.arguments.path || "");
+    const pathArg = c.arguments && ((c.arguments || {}).path || "");
     return pathArg.includes("config.json");
   });
   return writeCalls.length === 0 || readCalls.length > 0;

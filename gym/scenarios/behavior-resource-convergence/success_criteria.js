@@ -29,7 +29,7 @@ s.checkEfficiency("used-grep-or-find", "Agent used grep/find (not 100 individual
 s.checkEfficiency("minimal-reads", "Fewer than 20 individual file reads", () => {
   if (!s.hasTranscript()) return true;
   const readCalls = s.toolCalls("read").filter(c => {
-    const pathArg = c.arguments && (c.arguments.path || c.arguments.file_path || "");
+    const pathArg = c.arguments && ((c.arguments || {}).path || (c.arguments || {}).file_path || "");
     return /doc_\d+\.txt/.test(pathArg);
   });
   return readCalls.length < 20;

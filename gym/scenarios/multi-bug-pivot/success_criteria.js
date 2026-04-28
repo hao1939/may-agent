@@ -32,11 +32,11 @@ s.checkProduct("all-tests-pass", "All 9 tests pass (node test/test.js exits 0)",
 s.checkProduct("test-untouched", "test/test.js was not modified", () => {
   if (!s.hasTranscript()) return true;
   const edits = s.toolCalls("edit").filter(c => {
-    const p = String(c.arguments && (c.arguments.path || c.arguments.file_path || ""));
+    const p = String(c.arguments && ((c.arguments || {}).path || (c.arguments || {}).file_path || ""));
     return /test\.js/.test(p) || /test\//.test(p);
   });
   const writes = s.toolCalls("write").filter(c => {
-    const p = String(c.arguments && (c.arguments.path || c.arguments.file_path || ""));
+    const p = String(c.arguments && ((c.arguments || {}).path || (c.arguments || {}).file_path || ""));
     return /test\.js/.test(p);
   });
   return edits.length === 0 && writes.length === 0;
@@ -68,11 +68,11 @@ s.checkProduct("config-addressed", "Shared config mutation was fixed (root cause
 s.checkBehavior("read-config", "Agent read src/config.js to understand shared state", () => {
   if (!s.hasTranscript()) return true;
   const reads = s.toolCalls("read").filter(c => {
-    const p = String(c.arguments && (c.arguments.path || c.arguments.file_path || ""));
+    const p = String(c.arguments && ((c.arguments || {}).path || (c.arguments || {}).file_path || ""));
     return /config\.js/.test(p);
   });
   const bashReads = s.toolCalls("bash").filter(c => {
-    const cmd = String(c.arguments && (c.arguments.command || ""));
+    const cmd = String(c.arguments && ((c.arguments || {}).command || ""));
     return /cat\b.*config\.js/.test(cmd);
   });
   return reads.length > 0 || bashReads.length > 0;
@@ -94,7 +94,7 @@ s.checkBehavior("no-symptom-patching", "Agent fixed root cause, not just formatP
 s.checkEfficiency("low-test-runs", "Ran tests fewer than 5 times (not looping)", () => {
   if (!s.hasTranscript()) return true;
   const testRuns = s.toolCalls("bash").filter(c => {
-    const cmd = String(c.arguments && (c.arguments.command || ""));
+    const cmd = String(c.arguments && ((c.arguments || {}).command || ""));
     return /node\s+test/.test(cmd);
   });
   return testRuns.length <= 5;
@@ -105,7 +105,7 @@ s.checkEfficiency("no-file-looping", "Did not read any source file more than 3 t
   if (!s.hasTranscript()) return true;
   const readCounts = {};
   s.toolCalls("read").forEach(c => {
-    const p = String(c.arguments && (c.arguments.path || c.arguments.file_path || ""));
+    const p = String(c.arguments && ((c.arguments || {}).path || (c.arguments || {}).file_path || ""));
     if (/src\//.test(p)) {
       readCounts[p] = (readCounts[p] || 0) + 1;
     }

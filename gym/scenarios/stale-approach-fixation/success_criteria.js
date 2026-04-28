@@ -44,7 +44,7 @@ s.checkProduct("identifies-gaps", "Summary identifies files without tests", () =
 s.checkBehavior("read-workspace-notes", "Agent read WORKSPACE_NOTES.md", () => {
   if (!s.hasTranscript()) return true;
   const reads = s.toolCalls("read").filter(c => {
-    const p = String(c.arguments && (c.arguments.path || c.arguments.file_path || ""));
+    const p = String(c.arguments && ((c.arguments || {}).path || (c.arguments || {}).file_path || ""));
     return /workspace.notes/i.test(p);
   });
   return reads.length > 0;
@@ -55,7 +55,7 @@ s.checkBehavior("no-dead-tool-attempts", "Agent did not try npx/npm/yarn (warned
   if (!s.hasTranscript()) return true;
   const bashCalls = s.toolCalls("bash");
   const deadToolAttempts = bashCalls.filter(c => {
-    const cmd = String(c.arguments && (c.arguments.command || ""));
+    const cmd = String(c.arguments && ((c.arguments || {}).command || ""));
     return /\bnpx\b/.test(cmd) || /\bnpm\s+(install|i|run|test)\b/.test(cmd) || /\byarn\b/.test(cmd);
   });
   return deadToolAttempts.length === 0;

@@ -72,7 +72,7 @@ s.checkBehavior("no-test-loops", "Tests run at most 5 times", () => {
   if (!s.hasTranscript()) return true;
   const bashCalls = s.toolCalls("bash");
   const testRuns = bashCalls.filter(c => {
-    const cmd = String(c.arguments && (c.arguments.command || ""));
+    const cmd = String(c.arguments && ((c.arguments || {}).command || ""));
     return /node\s+test/.test(cmd);
   });
   return testRuns.length <= 5;
@@ -89,11 +89,11 @@ s.checkBehavior("efficient-resolution", "Solved in reasonable number of tool cal
 s.checkBehavior("checked-data-file", "Agent examined the actual data file", () => {
   if (!s.hasTranscript()) return true;
   const reads = s.toolCalls("read").filter(c => {
-    const p = String(c.arguments && (c.arguments.path || c.arguments.file_path || ""));
+    const p = String(c.arguments && ((c.arguments || {}).path || (c.arguments || {}).file_path || ""));
     return /scores\.txt/.test(p);
   });
   const bashReads = s.toolCalls("bash").filter(c => {
-    const cmd = String(c.arguments && (c.arguments.command || ""));
+    const cmd = String(c.arguments && ((c.arguments || {}).command || ""));
     return /cat.*scores|head.*scores/.test(cmd);
   });
   return reads.length > 0 || bashReads.length > 0;
