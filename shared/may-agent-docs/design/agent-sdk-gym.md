@@ -1,56 +1,39 @@
-# Design: Agent SDK & Gym Runner
+# Design: Agent SDK
 
 **Status**: draft
 **Date**: 2026-04-28
 
 ## Problem
 
-Three separate "SDKs" exist with overlapping capabilities:
-- **RuntimeCtx**: emit, getDb, log, notify, paths (shared infra)
-- **HandlerContext**: RuntimeCtx + manager, triggerNow (for handlers)
-- **WorkflowContext**: RuntimeCtx + runAgent, createSession, done/escalate (for workflows)
+Handlers, workflows, and gym runners all need to interact with the agent system. Currently three overlapping interfaces expose internal implementation details (manager, bus, etc). Agents shouldn't know or care about internals.
 
-The gym runner needs to run agents and score results but can't import from src/ (compiled into binary). It currently lives in test/ (inaccessible to container agents).
-
-## Insight: One SDK, Different Capabilities
-
-All three contexts do the same thing at different levels:
-
-| Capability | RuntimeCtx | HandlerCtx | WorkflowCtx | Gym needs it? |
-|-----------|-----------|-----------|-----------|-------------|
-| emit events | ✅ | ✅ | ✅ | ✅ |
-| read DB | ✅ | ✅ | ✅ | ✅ |
-| log | ✅ | ✅ | ✅ | ✅ |
-| run agent session | ❌ | ✅ (manager) | ✅ (runAgent) | ✅ |
-| create persistent session | ❌ | ❌ | ✅ (createSession) | maybe |
-| trigger cron | ❌ | ✅ | ❌ | ❌ |
-| done/escalate | ❌ | ❌ | ✅ | ❌ |
-
-The gym runner needs: **run agent + read DB + emit events**. That's RuntimeCtx + `runAgent()`.
-
-## Design: Unified SDK
+## The SDK Interface
 
 ```typescript
-// agents/shared/sdk.ts — the agent SDK
-
 interface AgentSDK {
-  // Infra (from RuntimeCtx)
-  emit(event: { type: string; [key: string]: unknown }): void;
-  getDb(): SqliteDb;
-  log(msg: string): void;
-  notify(msg: string): void;
-  
-  // Paths
-  persistDir: string;
-  projectRoot: string;
-  agentsRoot: string;
-  
-  // Agent execution
-  runAgent(agent: string, task: string, opts?: RunAgentOpts): Promise<TaskResult>;
+  // Run an agent on a task, get the result
+  runAgent(agent: string, task: string, opts?: RunOpts): Promise<TaskResult>;
+
+  // Create a multi-turn session
   createSession(opts: SessionOpts): Promise<SessionHandle>;
+
+  // Emit an event (persisted automatically)
+  emit(event: Record<string, unknown>): void;
+
+  // Access the database
+  getDb(): Database;
+
+  // Log a message
+  log(msg: string): void;
+
+  // Send a human-visible notification
+  notify(msg: string): void;
+
+  // System paths
+  paths: { persist: string; root: string; agents: string };
 }
 
-interface RunAgentOpts {
+interface RunOpts {
   source?: string;
   projectId?: string;
   timeout?: number;
@@ -67,55 +50,76 @@ interface SessionHandle {
   lastText(): string;
   close(): void;
 }
+
+interface TaskResult {
+  sessionId: string;
+  status: string;
+  lastAssistantText: string;
+}
 ```
 
-## Who provides the SDK?
+7 methods. That's the entire surface area.
 
-The binary provides the real implementation. It's injected into:
-- **Handlers** via HandlerContext (already has manager)
-- **Workflows** via WorkflowContext (already has runAgent/createSession)
-- **Gym runner** via a new entry point
+## Who uses what
 
+| Method | Handlers | Workflows | Gym runner |
+|--------|----------|-----------|------------|
+| runAgent | ✅ | ✅ | ✅ |
+| createSession | rare | ✅ | optional |
+| emit | ✅ | ✅ | ✅ |
+| getDb | ✅ | ✅ | ✅ |
+| log | ✅ | ✅ | ✅ |
+| notify | ✅ | rare | ❌ |
+| paths | ✅ | ✅ | ✅ |
+
+## Workflow-specific additions
+
+Workflows need two extra methods that don't belong in the base SDK:
+
+```typescript
+interface WorkflowSDK extends AgentSDK {
+  done(summary: string): WorkflowResult;
+  escalate(reason: string): WorkflowResult;
+}
 ```
-Binary (infra)
-  ├── builds AgentSDK from manager + bus + db
-  ├── injects into HandlerContext
-  ├── injects into WorkflowContext  
-  └── exposes via CLI: may-agent --sdk-server (for gym)
-```
 
-## Gym Runner Architecture
+These are workflow lifecycle methods, not general SDK.
+
+## Gym runner
+
+The gym runner lives in `agents/gym/`, imports only the SDK interface, and uses an adapter:
 
 ```
 agents/gym/
-  runner.ts          — imports AgentSDK, runs scenarios
-  scenarios/         — test cases
-  adapters/
-    live.ts          — uses real AgentSDK (calls binary via CLI or socket)
-    stub.ts          — returns canned responses (no LLM, fast)
-    record.ts        — records real responses for replay
+  runner.ts         — orchestrates scenarios using AgentSDK
+  sdk-adapter.ts    — connects to the running system (socket, CLI, or stub)
+  scenarios/        — test cases
 ```
 
-The runner doesn't import from src/. It uses the SDK interface. The adapter determines whether it talks to the real system or a mock.
+Three adapter modes:
+- **Live**: connects to the running system via socket
+- **Stub**: returns canned responses (fast, no LLM cost)
+- **Record/replay**: captures live responses for deterministic retesting
 
-## How gym runs inside the container
+## What the SDK replaces
 
-Option A: **CLI adapter** — runner calls `may-agent --run-task <agent> <task>` via exec
-Option B: **Socket adapter** — runner connects to the running may-agent socket
-Option C: **Direct import** — runner imports AgentSDK from a bundled module
+| Before (leaked internals) | After (SDK) |
+|---------------------------|-------------|
+| `ctx.manager.callAgent()` | `ctx.runAgent()` |
+| `ctx.manager.run() + waitFor()` | `ctx.runAgent()` |
+| `ctx.manager.getWorkflowDir()` | `ctx.paths.agents + "/shared/workflows"` |
+| `ctx.triggerNow(name)` | `ctx.emit({ type: "trigger", handler: name })` |
+| `ctx.saveWorkflowRun(run)` | internal (not exposed) |
+| `ctx.trackRequest(opts)` | removed (events table) |
+| `ctx.dispatchEvent(type, data)` | `ctx.emit({ event: type, ...data })` |
+| `ctx.summarizeForHandoff()` | utility function, not SDK |
 
-Option B is cleanest — the socket already exists for the web UI. Add a `run-agent` command to the socket protocol.
+## Migration
 
-## Unification path
+No big bang. The binary wraps its internals behind the SDK interface:
 
-1. Define `AgentSDK` interface in `agents/shared/sdk.ts`
-2. Binary implements it, exposes via socket
-3. Refactor WorkflowContext to use AgentSDK (runAgent/createSession come from SDK)
-4. Refactor HandlerContext to use AgentSDK (manager.callAgent → sdk.runAgent)
-5. Gym runner imports AgentSDK interface, uses socket adapter in container
-6. Move gym runner from test/ to agents/gym/
-
-## What NOT to change now
-- RuntimeCtx stays as-is (it's the infra layer inside the binary)
-- Existing workflows keep working (WorkflowContext wraps AgentSDK)
-- No breaking changes to handler API
+1. Define `AgentSDK` in `agents/shared/sdk.d.ts`
+2. Binary provides SDK to handlers and workflows (wrapping existing internals)
+3. New code uses `ctx.runAgent()`, old code keeps `ctx.manager` (deprecated)
+4. Gym runner uses SDK via adapter
+5. Gradually migrate, then remove deprecated APIs
