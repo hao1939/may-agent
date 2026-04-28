@@ -1,7 +1,7 @@
 # EXP-242: Multi-Agent Structural Auditor for Relational Bugs (H-181)
 
 **Date**: 2026-04-27
-**Status**: DESIGNED
+**Status**: PHASE-0-COMPLETE — auditor detects ordering bugs at 100% (4/4), far exceeding 40% threshold. Phase 1 warranted.
 **Author**: Bob
 **Hypothesis**: H-181 (Relational Bug Blindness, P=0.85)
 
