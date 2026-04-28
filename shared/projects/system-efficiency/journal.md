@@ -366,3 +366,10 @@ Milestone completed: "Increase active-count to 5 projects" — documentation-gen
 
 ### Iteration 16 — 2026-04-28T19:05:04.427Z
 **Worker**: 
+**Orchestrator**: CONTINUE
+
+documentation-gen produced its first deliverable (`docs-inventory.md`). Good.
+
+**(a) Next iteration should**: Drive test-coverage's first iteration. Read its project.md, find milestone 1, produce a deliverable in its outputs directory.
+
+**(b) What's different**: 4 of 5 projects have produc

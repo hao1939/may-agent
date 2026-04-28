@@ -5,3 +5,6 @@
 **Orchestrator**: CONTINUE
 
 (a) Next iteration should fill in the tracking table in `outputs/sustained-rate-tracking.md` with **actual data**. The table is still all TBD. Scan all available evidence of worker iterations since Apr 28 (when guardrails were established): check `.state/checkpoints/` across all projects, 
+
+### Iteration 2 — 2026-04-28T19:05:12.451Z
+**Worker**: Now I have the real data. Let me write the updated tracking doc.
