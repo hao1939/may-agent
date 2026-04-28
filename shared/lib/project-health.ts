@@ -203,8 +203,21 @@ export function diagnoseProject(
   const entry = healthState.projects[project.relPath];
   let status = project.status;
 
-  // Only "closed" is terminal (set by human/May only)
+  // "closed" is terminal — unless there are unread comments (human wants it reopened)
   if (status === "closed") {
+    let hasUnread = false;
+    try {
+      const discFile = project.projectFile.replace("project.md", "discussion.md");
+      if (existsSync(discFile)) {
+        const disc = readFileSync(discFile, "utf-8");
+        const lastMarker = disc.lastIndexOf("---read @");
+        const unread = lastMarker >= 0 ? disc.slice(disc.indexOf("\n", lastMarker) + 1).trim() : disc.replace(/^# Discussion\s*/, "").trim();
+        hasUnread = !!unread;
+      }
+    } catch {}
+    if (hasUnread) {
+      return { type: "launch-workflow", reason: "closed but has unread comments — reopening" };
+    }
     return { ...skip, reason: "closed by human" };
   }
 
