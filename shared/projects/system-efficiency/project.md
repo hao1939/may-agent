@@ -1,15 +1,16 @@
 # Project: System Efficiency
 
-**Status**: active
+**Status**: blocked
 **Owner**: optimizer
 **Priority**: P1
-**Iteration**: 10
+**Iteration**: 12
 
 **Stop Reason**: 
 
 
-Iterations 7-10 have all been comment iterations triggered by the same repeated hao comment. No worker has executed since iteration 6. The system appears stuck processing this comment repeatedly inste
-**Resume Condition**: A worker iteration actually executes (not a comment iteration), or the duplicate comment is cleared from the queue.
+
+Six consecutive iterations (7-12) have been comment-only — no worker has executed since iteration 6. Additionally, hao's directives have fundamentally changed the project scope three times, and the or
+**Resume Condition**: A worker iteration actually executes AND hao provides specific, actionable milestones for the new direction.
 ## Goal
 Reduce wasted compute: May heartbeat cascade (32% of sessions), missing circuit breaker for provider failures, OpBudget causing lost work.
 
@@ -19,7 +20,7 @@ Reduce wasted compute: May heartbeat cascade (32% of sessions), missing circuit 
 - lost-work-rate: unknown → target 0 (sessions hitting OpBudget before saving)
 
 ## Current State
-Blocked: Iterations 7-10 have all been comment iterations triggered by the same repeated hao comment. No worker has executed since iteration 6. The system appe
+Blocked: Six consecutive iterations (7-12) have been comment-only — no worker has executed since iteration 6. Additionally, hao's directives have fundamentally
 ## Plan
 - [x] May heartbeat dedup — skip idle LLM sessions when nothing actionable
 - [x] Provider circuit breaker — auto-disable agent after N consecutive provider errors

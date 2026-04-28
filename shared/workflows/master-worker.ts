@@ -212,7 +212,7 @@ ${journalContent.slice(-3000)}
     // Mark comments as read (append-only, never delete)
     if (unreadComments) {
       try {
-        appendFileSync(discussionFile, `\n---read @iter${iteration || 0}---\n`, "utf-8");
+        appendFileSync(discussionFile, `\n---read @plan---\n`, "utf-8");
       } catch {}
     }
 
