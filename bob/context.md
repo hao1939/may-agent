@@ -46,6 +46,13 @@
 - When calling finish(), status must match reality — if you found missing files or blockers, use 'blocked' or 'partial', not 'success'.
 - For multi-deliverable tasks: after reading context files, create DELIVERABLES_CHECKLIST.md listing all expected outputs before starting execution.
 
+## ⚡ [HEARTBEAT LITERACY CHECK]
+
+During heartbeats, verify agents read project files before acting. Specifically:
+- Check that active sessions started with context reads (read/ls/grep) in their first 5 tool calls
+- If an agent is working on a project, confirm they read `project.md` and `journal.md` before making changes
+- Flag sessions that jump straight to editing without reading context as literacy violations
+
 ## ⚡ [RESEARCH WORKFLOW]
 
 **File locations:**

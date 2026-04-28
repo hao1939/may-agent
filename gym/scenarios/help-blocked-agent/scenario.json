@@ -1,0 +1,9 @@
+{
+  "name": "help-blocked-agent",
+  "categories": ["collaboration", "debugging"],
+  "tags": ["literacy", "multi-agent"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

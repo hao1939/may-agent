@@ -1,0 +1,9 @@
+{
+  "name": "cross-agent-cooperation",
+  "categories": ["collaboration", "communication"],
+  "tags": ["literacy", "multi-agent"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
