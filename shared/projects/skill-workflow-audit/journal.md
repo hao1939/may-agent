@@ -340,3 +340,8 @@ All 9 milestones complete. The
 
 ### Iteration 1 — 2026-04-28T18:13:02.621Z
 **Worker**: The task description seems to be internal routing notes rather than an actual task for me. Let me check if there's project context that clarifies what I should do.
+**Orchestrator**: CONTINUE
+
+Milestone completed: "Measure actual agent skill usage rate (do agents reference/apply skills in their work?)" — result is 0/10, documented in `outputs/skill-usage.md`.
+
+**The big finding**: skill.usage-rate = 0%. Skills are deployed as files but agents never read them. There's no injectio
