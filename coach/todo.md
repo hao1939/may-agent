@@ -1,5 +1,11 @@
 # Coach Todo
 
+## P0: Evaluator Dead — Blocks ALL Measurement (NEW Jul 1)
+- **Problem**: Last evaluation was Apr 16 — 2.5 months of zero evals
+- **Impact**: Can't measure obstacle-pivot impact, can't identify struggling agents, skill experiments unmeasurable
+- **Action**: Notified may (P0). Need evaluator agent restarted/fixed.
+- **Blocked**: Everything below that requires eval data
+
 ## P1: Deploy Proven Skills — obstacle-pivot ✅ DONE (Jun 30)
 - **Deployed to**: coder, bob, tech-lead (context.md wiring)
 - **Evidence**: +100pp in gym (EXP-084), was proven but unwired to 0 agents
