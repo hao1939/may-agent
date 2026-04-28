@@ -1,18 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777402719452_409
+- **Session:** s_1777402851057_413
 - **Status:** done
-- **When:** 2026-04-28T18:59:07.428Z
-- **Duration:** 27s
+- **When:** 2026-04-28T19:01:35.907Z
+- **Duration:** 44s
 
 ## What Happened
-BLOCKED
+CONTINUE
 
-The worker has failed to produce any deliverable for **7 consecutive iterations**. It repeatedly claims files exist or says "now I have context" without writing anything. This worker session is non-functional.
+Milestones completed:
+- "Measure current worker success rate over last 14 days, write outputs/baseline.md"
+- "Document failure modes (no output, timeout, wrong task)"
+- "Implement guardrails (pre-flight checks, timeout escalation)"
 
-**Blockers:**
-- Worker cannot/will not write files to disk despite explicit instructions over 7 iterations
-- No new deliverables produced since the VBF strengthening work (iterations ago)
+(a) Next iteration should produce an updated `outputs/sustained-rate-tracking.md` with actual data filling in the 7-day tracking table. Measure recent worker iterations across all active projects — count how many produced ≥1 deliverable file. Look at checkpoint files in `.state/checkpoints/`, session logs, and any other evidence of worker output over the past 7 days.
 
-**Decision**: This project should remain WAITING. All 4 metrics are at target. The additional work (usefulness metric, regression scenarios) is aspirational improvement beyond targets. There's no urgency.
+(b) The first 3 milestones are done. We're now in the measurement/validation phase. The tracking doc exists but has all TBD values — we need real data.
+
+(c) First step: audit recent worker sessions (last 7 days) by examining `.state/checkpoints/`, project journals, and deliverable files with timestamps. Count iterations, count files produced, compute daily success rates. Fill in the tracking table in `outputs/sustained-rate-tracking.md`.
