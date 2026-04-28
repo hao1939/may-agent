@@ -120,7 +120,13 @@ Rules:
 - All deliverables go in ${outputsDir}
 - Do NOT edit project.md, journal.md, or discussion.md
 - Focus on the specific task in the guidance
-- When done, summarize what you created and where`;
+- When done, summarize what you created and where
+
+WRITE-FIRST CONSTRAINT:
+- When your task says to write or produce a file, your FIRST tool call MUST be write().
+- Do NOT use read() or bash() to "check if files exist" before writing. Just write.
+- Do NOT claim files "already exist" without verifying via read(). False completion claims are a critical failure mode.
+- If your task provides the content to write, write it immediately. Do not scan, explore, or verify first.`;
 }
 
 // ── Output verification ─────────────────────────────────────────────────
