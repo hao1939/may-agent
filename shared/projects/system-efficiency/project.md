@@ -1,10 +1,10 @@
 # Project: System Efficiency
 
-**Status**: done
+**Status**: active
 **Owner**: optimizer
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 40
+**Iteration**: 41
 
 ## Goal
 Maximize meaningful output of the agent system. Not about reducing cost — about doing more real work per hour.
