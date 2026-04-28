@@ -373,3 +373,6 @@ documentation-gen produced its first deliverable (`docs-inventory.md`). Good.
 **(a) Next iteration should**: Drive test-coverage's first iteration. Read its project.md, find milestone 1, produce a deliverable in its outputs directory.
 
 **(b) What's different**: 4 of 5 projects have produc
+
+### Iteration 17 — 2026-04-28T19:06:37.158Z
+**Worker**: Now I have enough data. Let me write the coverage baseline.
