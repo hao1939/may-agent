@@ -11,3 +11,6 @@
 **Orchestrator**: WAITING
 
 The 7-day tracking table can't be filled retroactively — it needs to be populated day-by-day as new iterations occur. The qualitative evidence already shows improvement (33% → 100% for iterations 6-9), but the milestone "Track success rate for 7 days after guardrails" requires elapsed time.
+
+### Iteration 1 — 2026-04-28T20:26:36.571Z
+**Worker**: Now update the master table:
