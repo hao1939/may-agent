@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777357682401_0
+- **Session:** s_1777357765667_0
 - **Status:** done
-- **When:** 2026-04-28T06:29:21.255Z
-- **Duration:** 1m18s
+- **When:** 2026-04-28T06:30:10.023Z
+- **Duration:** 44s
 
 ## What Happened
-I did run tests after the edit (showing 23 passed, 0 failed). Let me re-run to satisfy the check:
+The bug: `config.js` registers plugins during module load, but `app.js` calls `registry.init()` *after* requiring config. So `register()` silently drops all plugins because `initialized` is false.
+
+Fix: move `registry.init()` before the imports that trigger registration.
