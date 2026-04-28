@@ -1,12 +1,14 @@
 # Project: Workflow Reliability
 
-**Status**: active
-**Stop Reason**: Resumed — v2 tracking shows 62.5%, need structural enforcement (v3).
+**Status**: waiting
+**Stop Reason**: WAITING
+
+The project is in a 7-day tracking period for v3 guardrails. Day 1 tracking file has been written by the orchestrator (the worker failed to produce it in 2 consecutive attempts despite false 
 
 **Owner**: coach
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 3
+**Iteration**: 4
 
 ## Goal
 Reduce workflow failures. Target: 90%+ of worker iterations produce at least one deliverable file.
@@ -44,3 +46,4 @@ V3 guardrails (stub file pre-creation + write-first constraint) deployed in mast
 - outputs/replan.md — re-plan with guardrails v2 proposal
 - outputs/workflow-guardrails-v2-design.md — v2 guardrails design with specific code changes
 - outputs/workflow-guardrails-v3-design.md — v3 guardrails design (stub pre-creation)
+- outputs/v3-guardrails-day1-tracking.md — day 1 v3 tracking (orchestrator-written)
