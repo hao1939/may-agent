@@ -5,7 +5,7 @@
 **Owner**: coach
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 5
+**Iteration**: 6
 
 ## Goal
 Reduce workflow failures. Target: 90%+ of worker iterations produce at least one deliverable file.
@@ -33,4 +33,5 @@ Baseline: 33% → Post-guardrails: improving (day2-day6 tracking files exist). M
 **Artifacts:**
 - outputs/workflow-reliability-baseline.md — baseline measurement (33% success rate)
 - outputs/workflow-guardrails-design.md — guardrail design doc
-- outputs/sustained-rate-tracking.md — 7-day tracking plan (unfilled)
+- outputs/sustained-rate-tracking.md — 7-day tracking (filled, overall 60%)
+- outputs/day7-rate-tracking.md — day 7 tracking + false completion failure mode analysis
