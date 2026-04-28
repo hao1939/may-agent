@@ -778,28 +778,29 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const projectFile = join(PROJECT_ROOT, path, "project.md");
       if (!existsSync(projectFile)) return json({ error: "Project not found" }, 404);
 
-      const { writeFileSync } = await import("node:fs");
-      let content = readFileSync(projectFile, "utf-8");
+      const { writeFileSync, appendFileSync } = await import("node:fs");
       const date = new Date().toISOString().slice(0, 10);
-      const entry = `- [${date}] (web) ${comment}`;
 
-      // Append to ## Comments section
-      if (content.includes("## Comments")) {
-        content = content.replace(/(## Comments\s*\n)/, `$1${entry}\n`);
+      // Write to discussion.md (new protocol)
+      const discFile = join(PROJECT_ROOT, path, "discussion.md");
+      const entry = `\n### hao \u2014 ${date}\n${comment}\n`;
+      if (existsSync(discFile)) {
+        appendFileSync(discFile, entry, "utf-8");
       } else {
-        content += `\n## Comments\n${entry}\n`;
+        writeFileSync(discFile, `# Discussion\n${entry}`, "utf-8");
       }
 
-      // Auto-resume if blocked/waiting/done
+      // Auto-resume if blocked/waiting
       let resumed = false;
+      let content = readFileSync(projectFile, "utf-8");
       const statusMatch = content.match(/^\*\*Status\*\*:\s*(.+)$/m);
       const currentStatus = statusMatch ? statusMatch[1].trim().toLowerCase() : "";
-      if (["blocked", "waiting", "done"].includes(currentStatus)) {
+      if (["blocked", "waiting"].includes(currentStatus)) {
         content = content.replace(/^\*\*Status\*\*:\s*.+$/m, "**Status**: active");
+        writeFileSync(projectFile, content, "utf-8");
         resumed = true;
       }
 
-      writeFileSync(projectFile, content, "utf-8");
       return json({ ok: true, resumed });
     } catch (e: any) {
       return json({ error: e.message }, 500);
