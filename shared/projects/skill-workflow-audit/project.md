@@ -45,7 +45,7 @@ All 12 milestones complete. All 4 metrics at or above target. ✅
 - [x] Measure actual agent skill usage rate (result: corrected — injection exists via context.md)
 - [x] Sample 10 recent sessions across 5 agents, check behavioral evidence of skill application
 - [x] Compute skill.usage-rate from behavioral evidence (result: 0.89, target 0.50 ✅)
-- [ ] Strengthen Verify-Before-Finish skill (currently 67%, weakest of 3 core skills)
+- [x] Strengthen Verify-Before-Finish skill (deployed to all 10 agents with 📘 directives)
 - [ ] Re-plan: assess metrics, identify next improvement opportunities
 
 ## References
