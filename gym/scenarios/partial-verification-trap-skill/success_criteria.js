@@ -1,0 +1,1 @@
+../partial-verification-trap/success_criteria.js
