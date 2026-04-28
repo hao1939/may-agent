@@ -7,3 +7,5 @@ you go the wrong way, we remove request db because no longer need it, we have th
 
 ### system — 2026-04-28
 Acknowledged. The requests table was removed intentionally. Events table replaces it. Project metrics met (5.4% < 10%). Closing.
+
+---read @plan---
