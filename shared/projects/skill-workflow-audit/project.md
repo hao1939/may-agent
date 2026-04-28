@@ -5,7 +5,7 @@
 
 All 3 metrics are now at or above target:
 - **skill.verified-rate: 0.90** (target 0.80) ✅ — corrected denominator: 5 "unverified" skills don't exist as active files
-- **skill.delivery-rate: 0
+- **skill.delivery-rate: 0.81** (target 0.60) ✅ (39/48 shared skills deployed to agents)
 **Owner**: coach
 **Type**: continuous
 **Workflow**: master-worker
