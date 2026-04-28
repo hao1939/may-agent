@@ -1,5 +1,17 @@
 # Coach Todo
 
+## P0: EXP-265 — Compound Verification Skill (NEW Jul 9)
+- **Problem**: `partial-verification-trap` at 0/5 (0%). Agents fix the bug but break existing tests. Can't do "fix + preserve".
+- **Hypothesis**: A pre-task checklist skill ("list what must still pass BEFORE you change anything") could help
+- **Baseline**: 0% (5 runs, confirmed Jul 9)
+- **Next**: Design compound-verify skill, create lab fork, run 5 treatment trials
+- **Success**: ≥40% pass rate on partial-verification-trap
+
+## P0: Evaluation Pipeline Dead Since Apr 16
+- **Finding**: 0 evaluations since Apr 16 — 84 days blind. 32,716 historical evals exist but all stale.
+- **Impact**: Cannot measure any production behavior. All quality metrics are fiction.
+- **Action needed**: This requires infrastructure fix — not a coach problem. Escalate again.
+
 ## P0: Verification Failures — #1 System-Wide Issue (Jul 3, ESCALATED Apr 28)
 - **Finding**: 502 verification-related failures in 7d (updated Apr 28). bob 120, tech-lead 93, coach 86, optimizer 58, scout 45, qa 42, amy 40.
 - **Root cause**: verify-after-write skill at 9% compliance (text-only, no guard)
