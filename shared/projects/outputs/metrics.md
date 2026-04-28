@@ -4,6 +4,7 @@
 |--------|-------|--------|--------|
 | skill.delivery-rate | 0.81 | 0.40 | ✅ |
 | skill.verified-rate | 0.93 (13/14) | 0.80 | ✅ |
+| skill.usefulness-rate | 0.93 (14/15) | 0.80 | ✅ |
 
 Notes:
 - Top 5 skills: 5/5 verified
