@@ -28,7 +28,7 @@ The clearest example: `src/lib/evaluator.ts` (986 lines) calls `manager.run("eva
 | `persistence.ts` | Session storage — pure infra |
 | `manager.ts` | Session lifecycle — pure infra |
 | `handoff.ts` | Used by manager.ts and workflow-tool.ts for step-to-step result formatting — infra utility |
-| `requests.ts` | DB operations — pure infra |
+| `requests.ts` | DB schema & helpers (sessions, events, evaluations) — pure infra |
 
 ## Principle
 
