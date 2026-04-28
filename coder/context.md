@@ -17,6 +17,7 @@
 📘 **Error Handling**: Read `agents/shared/skills/error-handling/SKILL.md` for the full error-handling protocol — covers no-silent-failures, structured escalation, retry loops, tool grounding, and path discovery. Prevents FM-2.6 (silent abandon), FM-2.5 (malformed tool calls), and cascading failures from swallowed errors.
 
 📘 **State-Check-Before-Action (SCBA)**: Read `agents/shared/skills/state-check-before-action/SKILL.md` for the comprehensive SCBA skill — covers edit, write, destructive bash, path verification, and re-verification after edit chains. Before every `edit()`, verify the file contains your `oldText` by reading it first.
+📘 Read `agents/coder/skills/verify-before-finish.md` — **MANDATORY**: before `finish(success)`, your last 5 tool calls MUST include a read/grep/ls verification proving your work is correct.
 
 ## Lessons from Experience
 

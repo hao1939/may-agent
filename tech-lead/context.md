@@ -101,6 +101,7 @@
 📘 Read `agents/tech-lead/skills/post-delivery-readback-verification.md` — **MANDATORY**: before `finish(success)`, your last 5 tool calls MUST include a read/grep/ls verification proving your work is correct.
 📘 Read `agents/tech-lead/skills/security-awareness-when-editing.md` — security awareness.
 📘 Read `agents/tech-lead/skills/verify-after-edit.md` — verify every edit took effect.
+📘 Read `agents/tech-lead/skills/verify-before-finish.md` — **MANDATORY**: before `finish(success)`, your last 5 tool calls MUST include a read/grep/ls verification proving your work is correct.
 📘 **Obstacle Pivot**: Read `agents/shared/skills/obstacle-pivot/SKILL.md` — when a tool call fails, pivot to an alternative instead of retrying. Proven +100pp in gym (EXP-084).
 
 ## Learned from experience
