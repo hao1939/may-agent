@@ -5,29 +5,34 @@
 
 ## Problem
 
-Handlers, workflows, and gym runners all need to interact with the agent system. Currently three overlapping interfaces expose internal implementation details (manager, bus, etc). Agents shouldn't know or care about internals.
+Handlers, workflows, and gym runners all need to interact with the agent system. Currently three overlapping interfaces expose internal implementation details. Agents shouldn't know or care about internals.
 
 ## The SDK Interface
 
 ```typescript
 interface AgentSDK {
-  // Run an agent on a task, get the result
+  // Run an agent on a task, wait for result
   runAgent(agent: string, task: string, opts?: RunOpts): Promise<TaskResult>;
 
-  // Create a multi-turn session
-  createSession(opts: SessionOpts): Promise<SessionHandle>;
+  // Create a raw LLM session (multi-turn, custom system prompt)
+  // NOT "talk to another agent" — use runAgent() for that
+  createLLMSession(opts: SessionOpts): Promise<SessionHandle>;
 
-  // Emit an event (persisted automatically)
-  emit(event: Record<string, unknown>): void;
+  // Emit a typed event (persisted to events table)
+  emit(type: string, data?: Record<string, unknown>): void;
 
-  // Access the database
+  // Access the shared database
   getDb(): Database;
 
-  // Log a message
+  // Log a diagnostic message
   log(msg: string): void;
 
-  // Send a human-visible notification
+  // Send a human-visible notification (Telegram, web console)
+  // NOT agent-to-agent — use runAgent() or tools for that
   notify(msg: string): void;
+
+  // Trigger a cron handler to fire on next tick
+  triggerNow(handlerName: string): boolean;
 
   // System paths
   paths: { persist: string; root: string; agents: string };
@@ -58,48 +63,57 @@ interface TaskResult {
 }
 ```
 
-7 methods. That's the entire surface area.
+8 methods. That's the entire surface area.
 
 ## Who uses what
 
 | Method | Handlers | Workflows | Gym runner |
 |--------|----------|-----------|------------|
 | runAgent | ✅ | ✅ | ✅ |
-| createSession | rare | ✅ | optional |
+| createLLMSession | rare | ✅ | optional |
 | emit | ✅ | ✅ | ✅ |
 | getDb | ✅ | ✅ | ✅ |
 | log | ✅ | ✅ | ✅ |
 | notify | ✅ | rare | ❌ |
+| triggerNow | ✅ | ❌ | ❌ |
 | paths | ✅ | ✅ | ✅ |
 
 ## Workflow-specific additions
 
-Workflows need two extra methods that don't belong in the base SDK:
+Workflows need two lifecycle methods not in the base SDK:
 
 ```typescript
 interface WorkflowSDK extends AgentSDK {
+  task: string;
+  agent: string;
   done(summary: string): WorkflowResult;
   escalate(reason: string): WorkflowResult;
 }
 ```
 
-These are workflow lifecycle methods, not general SDK.
+## Alignment: SDK ↔ Agent Tools ↔ Agent Mental Model
 
-## Gym runner
+Two interfaces to the same system:
+- **Agent (LLM)** uses tools: `agents.fork()`, `agents.notify()`, `finish()`
+- **Handler/Workflow (code)** uses SDK: `runAgent()`, `emit()`, `done()`
 
-The gym runner lives in `agents/gym/`, imports only the SDK interface, and uses an adapter:
+They share the same vocabulary:
 
-```
-agents/gym/
-  runner.ts         — orchestrates scenarios using AgentSDK
-  sdk-adapter.ts    — connects to the running system (socket, CLI, or stub)
-  scenarios/        — test cases
-```
+| Agent thinks | Agent tool | SDK method |
+|-------------|-----------|-----------|
+| "Ask bob to do this" | `agents.fork("bob", task)` | `sdk.runAgent("bob", task)` |
+| "Tell the system something happened" | — | `sdk.emit("metric.breach", { metric, value })` |
+| "Send a message to humans" | — | `sdk.notify(msg)` |
+| "Look up data" | `bash("bun -e 'db.query...'")` | `sdk.getDb()` |
+| "I'm done" | `finish()` | `workflow.done()` |
+| "I'm stuck" | `finish({ status: "blocked" })` | `workflow.escalate()` |
+| "Run an LLM with custom prompt" | — | `sdk.createLLMSession()` |
+| "Trigger a handler now" | — | `sdk.triggerNow("metrics-snapshot")` |
 
-Three adapter modes:
-- **Live**: connects to the running system via socket
-- **Stub**: returns canned responses (fast, no LLM cost)
-- **Record/replay**: captures live responses for deterministic retesting
+Notes:
+- `notify()` is human-visible only (Telegram, web). Agent-to-agent communication uses `runAgent()` or agent tools.
+- `createLLMSession()` creates a raw LLM session with custom system prompt — NOT "talk to another agent". For multi-turn agent interaction, call `runAgent()` multiple times with accumulated context.
+- `getDb()` is the database primitive. Inbox, metrics, sessions are all queries on top — no special helpers in the SDK.
 
 ## What the SDK replaces
 
@@ -108,31 +122,25 @@ Three adapter modes:
 | `ctx.manager.callAgent()` | `ctx.runAgent()` |
 | `ctx.manager.run() + waitFor()` | `ctx.runAgent()` |
 | `ctx.manager.getWorkflowDir()` | `ctx.paths.agents + "/shared/workflows"` |
-| `ctx.triggerNow(name)` | `ctx.emit({ type: "trigger", handler: name })` |
-| `ctx.saveWorkflowRun(run)` | internal (not exposed) |
-| `ctx.trackRequest(opts)` | removed (events table) |
-| `ctx.dispatchEvent(type, data)` | `ctx.emit({ event: type, ...data })` |
+| `ctx.trackRequest()` | removed (events table) |
+| `ctx.saveWorkflowRun()` | internal (not exposed) |
+| `ctx.dispatchEvent(type, data)` | `ctx.emit(type, data)` |
 | `ctx.summarizeForHandoff()` | utility function, not SDK |
+| `ctx.emit({ type, ... })` | `ctx.emit(type, data)` |
 
-## Alignment: SDK ↔ Agent Tools ↔ Agent Mental Model
+## Gym runner
 
-Two interfaces to the same system:
-- **Agent (LLM)** uses tools: `agents.fork()`, `agents.notify()`, `finish()`
-- **Handler/Workflow (code)** uses SDK: `runAgent()`, `notify()`, `done()`
+```
+agents/gym/
+  runner.ts         — orchestrates scenarios using AgentSDK
+  sdk-adapter.ts    — connects to the running system
+  scenarios/        — test cases (already here)
+```
 
-They share the same vocabulary:
-
-| Agent thinks | Agent tool | SDK method |
-|-------------|-----------|-----------|
-| "Ask bob to do this" | `agents.fork("bob", task)` | `sdk.runAgent("bob", task)` |
-| "Tell bob something" | `agents.notify("bob", msg)` | `sdk.notify(msg)` |
-| "Something happened" | — | `sdk.emit(event)` |
-| "Look up data" | `bash("bun -e 'db.query...'")` | `sdk.getDb()` |
-| "I'm done" | `finish()` | `workflow.done()` |
-| "I'm stuck" | `finish({ status: "blocked" })` | `workflow.escalate()` |
-| "Talk to bob over multiple turns" | — | `sdk.createSession()` |
-
-The SDK doesn't introduce new concepts. It maps directly to what agents already understand. An agent reading handler code sees `ctx.runAgent("bob", task)` and knows exactly what it does — same as `agents.fork("bob", task)` from their tools.
+Adapter modes:
+- **Stub**: canned responses, no LLM cost, fast testing
+- **In-process**: direct function call (current gym approach, requires bundled binary)
+- **Live via socket**: connects to running may-agent socket (aspirational — socket exists but needs runAgent command added)
 
 ## Migration
 
