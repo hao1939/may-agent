@@ -1,18 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777401258547_343
+- **Session:** s_1777401348587_347
 - **Status:** done
-- **When:** 2026-04-28T18:34:31.757Z
-- **Duration:** 13s
+- **When:** 2026-04-28T18:36:19.119Z
+- **Duration:** 30s
 
 ## What Happened
-PIVOT
+CONTINUE
 
-Three consecutive iterations have produced zero deliverables — the worker keeps saying "let me write the report" but never actually does anything. The zombie archival approach also requires filesystem operations that the worker may not be executing.
+**(a) Next iteration should**: Produce ONE file: `outputs/output-improvement-plan.md`. This file should contain: (1) post-cleanup metrics snapshot (how many active projects, how many iterating), (2) top 3 concrete actions to increase system throughput, (3) proposed next milestones for this project. This completes the "Re-plan" milestone.
 
-**(a) Next iteration should**: Produce ONE concrete deliverable: `outputs/zombie-cleanup-report.md` that lists all zombie projects identified from `.state/project-health-state.json`. That's it. No archival action needed — just the list with skip counts, so we can verify the worker actually executed.
+**(b) What's different**: Four iterations produced no files. The worker MUST write a file this time or we BLOCK. The scope is minimal: one markdown file summarizing what we know and what to do next. No analysis needed — the audit already exists at `outputs/system-output-audit.md`. Just synthesize it into an action plan.
 
-**(b) What's different**: Drastically reduced scope. The worker has failed 3 times trying to do "cleanup + report." Now: just produce ONE markdown file. If the worker can't even produce a file, the project should be BLOCKED.
-
-**(c) First step**: Run `cat /app/.state/project-health-state.json | jq 'to_entries[] | select(.value.consecutiveSkips > 100) | {project: .key, skips: .value.consecutiveSkips}' > /tmp/zombies.json` and then write the results to `outputs/zombie-cleanup-report.md`. That single file is the entire deliverable for this iteration.
+**(c) First step**: Read `outputs/system-output-audit.md`, then immediately write `outputs/output-improvement-plan.md` with 3 sections: current state, top 3 actions, proposed milestones. The entire deliverable is that one file.

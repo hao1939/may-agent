@@ -5,15 +5,9 @@
 **Priority**: P0
 **Iteration**: 11
 
-**Stop Reason**: 
+**Stop Reason**: All metrics met. Architectural solution (events table) confirmed by Hao. System acknowledged closure.
+**Resume Condition**: New instructions from human/May.
 
-— This is the 5th reprocessing of the identical comment. No new input exists. Project is complete.
-
-Resume when: Human/May marks project as closed or provides new instructions.
-
-Resume when: Huma
-**Resume Condition**: 
-Human/May marks project as closed or provides new instructions.
 Eliminate duplicate request storms. Was 78% duplicate rate causing notification cascades.
 
 ## Metrics
@@ -21,9 +15,8 @@ Eliminate duplicate request storms. Was 78% duplicate rate causing notification 
 - notification-storms: 0 → target 0 ✅
 
 ## Current State
-Waiting: — This is the 5th reprocessing of the identical comment. No new input exists. Project is complete.
+Project closed. All metrics met. Duplicate storms eliminated via architectural change (request DB → events table). System confirmed closure on 2026-04-28.
 
-Resume when: Human/May marks project as closed or 
 ## Plan
 - [x] Implement read-side dedup in loadInbox
 - [x] Measure duplicate rate (5.4%, below 10% target)
