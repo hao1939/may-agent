@@ -1,7 +1,9 @@
 # Project: Skill & Workflow Quality
 
-**Status**: active
+**Status**: waiting
 **Stop Reason**: WAITING
+
+All 3 metrics are at or above target. All 9 milestones complete. No action needed until metrics regress or new goals are added.
 
 All 3 metrics are now at or above target:
 - **skill.verified-rate: 0.90** (target 0.80) ✅ — corrected denominator: 5 "unverified" skills don't exist as active files
