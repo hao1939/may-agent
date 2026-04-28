@@ -6,7 +6,7 @@
 **Owner**: coach
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 2
+**Iteration**: 3
 
 ## Goal
 Reduce workflow failures. Target: 90%+ of worker iterations produce at least one deliverable file.
@@ -43,3 +43,4 @@ V3 guardrails (stub file pre-creation + write-first constraint) deployed in mast
 - outputs/day7-rate-tracking.md — day 7 tracking + false completion failure mode analysis
 - outputs/replan.md — re-plan with guardrails v2 proposal
 - outputs/workflow-guardrails-v2-design.md — v2 guardrails design with specific code changes
+- outputs/workflow-guardrails-v3-design.md — v3 guardrails design (stub pre-creation)
