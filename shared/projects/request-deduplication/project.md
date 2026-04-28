@@ -19,7 +19,7 @@ Read-side dedup implemented in heartbeat-data.ts (loadInbox collapses duplicates
 - [x] Fix request tracking DB (created requests table in may.db)
 - [x] Implement read-side dedup in loadInbox
 - [x] Measure duplicate rate (5.4%, below 10% target)
-- [ ] Re-plan: review if write-side dedup is needed based on metrics
+- [x] Re-plan: write-side dedup unnecessary — 5.4% rate well below 10% target. Closed.
 
 ## References
 
