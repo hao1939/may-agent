@@ -315,18 +315,7 @@ export function getDb(persistDir: string): SqliteDb {
 
   mkdirSync(persistDir, { recursive: true });
 
-  // Auto-migrate: rename requests.db → may.db on first access
-  const oldPath = join(persistDir, "requests.db");
   const dbPath = join(persistDir, "may.db");
-  if (existsSync(oldPath) && !existsSync(dbPath)) {
-    renameSync(oldPath, dbPath);
-    // Also migrate WAL/SHM files if they exist
-    const oldWal = oldPath + "-wal";
-    const oldShm = oldPath + "-shm";
-    if (existsSync(oldWal)) renameSync(oldWal, dbPath + "-wal");
-    if (existsSync(oldShm)) renameSync(oldShm, dbPath + "-shm");
-  }
-
   const db = openDatabase(dbPath);
 
   db.exec("PRAGMA journal_mode = WAL");
