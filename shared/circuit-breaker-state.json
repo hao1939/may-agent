@@ -7,7 +7,7 @@
       "consecutiveErrors": 0
     },
     "bob": {
-      "consecutiveErrors": 1,
+      "consecutiveErrors": 2,
       "lastError": "heartbeat session error"
     },
     "tech-lead": {
