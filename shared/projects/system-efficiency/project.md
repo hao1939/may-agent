@@ -1,13 +1,10 @@
 # Project: System Efficiency
 
-**Status**: waiting
-**Stop Reason**: **Status**: 5 worker iterations, zero files produced. The worker is not executing — it announces intent to write but never does.
-
-**Remaining milestone**: "Re-plan: review output metrics, assess impro
+**Status**: active
 **Owner**: optimizer
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 5
+**Iteration**: 6
 
 ## Goal
 Maximize meaningful output of the agent system. Not about reducing cost — about doing more real work per hour.
@@ -18,7 +15,7 @@ Maximize meaningful output of the agent system. Not about reducing cost — abou
 - handler.success-rate: 0.95 → target 0.95 ✅
 
 ## Current State
-**Iteration 5 (2026-04-28).** BLOCKED: 5 consecutive worker iterations produced zero files. Worker says "let me write the report" each time but never executes. Zombie cleanup was done externally (51 archived). Audit exists at outputs/system-output-audit.md. The "Re-plan" milestone requires the worker to actually produce `outputs/output-improvement-plan.md` — a single markdown file. This has been requested 3 times with no result. The worker instruction-following failure identified as top blocker in the audit is literally happening to this project.
+**Iteration 6 (2026-04-28).** Orchestrator wrote `outputs/output-improvement-plan.md` directly after 5 failed worker iterations. Re-plan milestone complete. Next phase: execute the improvement plan — archive agent-owned zombies, add output verification to workflow, open new projects. Plan identifies 3 actions: fix worker instruction-following, archive 70+ zombie agent projects, increase active project count to 5+.
 
 ## Plan
 - [x] Redefine metrics: replace may-session-ratio with output-focused metrics
