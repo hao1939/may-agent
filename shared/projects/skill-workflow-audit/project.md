@@ -1,10 +1,6 @@
 # Project: Skill & Workflow Quality
 
-**Status**: waiting
-**Stop Reason**: Milestone completed: "Strengthen Verify-Before-Finish skill (currently 67%, weakest of 3 core skills)"
-Milestone completed: "Re-plan: assess metrics, identify next improvement opportunities"
-
-WAITING
+**Status**: active
 
 
 **Key finding**: The skill-usage audit was incorrect. Skills ARE injected into agent context via 📘 directives in context.md (amy=8, bob=13, scout=15, coach=8, optimizer=10). The injection mechanism exists and works. The real question is behavioral: do agents apply skills in practice?
@@ -28,14 +24,12 @@ Every skill and workflow verified working, measured for impact, protected agains
 - workflow.pass-rate: 1.00 → target 0.95 ✅
 - skill.usage-rate: 0.89 → target 0.50 ✅ (8/9 scoreable sessions show ≥2/3 skill behaviors; SCBA=100%, Evidence=100%, Verify=67%)
 
-## Current State (Updated Iteration 19)
-All 14 plan items complete. All 4 metrics at or above target. ✅
+## Current State (Updated Iteration 20)
+All 14 original plan items complete. All 4 metrics at or above target. ✅
 
-**Verify-Before-Finish strengthened**: Skill file + 📘 directive deployed to all 11 agents (was only 3). Expect compliance to rise from 67% baseline. Re-measure after ~1 week.
+**Hao's new feedback (Apr 28)**: "deployed doesn't mean used, used doesn't mean useful — there's a long way to go." Correct. Next phase: re-measure VBF compliance post-deployment, design usefulness metric, check for regressions.
 
-**Re-plan complete**: Next opportunities identified in `outputs/replan-assessment.md` — re-measure VBF compliance, raise delivery-rate target, develop new skills from failure patterns.
-
-**Hao's feedback addressed**: (1) re-plan added as last plan step ✅ (2) behavioral usage measured at 89% ✅
+**Phase 2 focus**: Ongoing measurement, usefulness validation, regression detection.
 
 ## Plan
 - [x] Inventory all skills and workflows
@@ -52,6 +46,10 @@ All 14 plan items complete. All 4 metrics at or above target. ✅
 - [x] Compute skill.usage-rate from behavioral evidence (result: 0.89, target 0.50 ✅)
 - [x] Strengthen Verify-Before-Finish skill (deployed to all 10 agents with 📘 directives)
 - [x] Re-plan: assess metrics, identify next improvement opportunities (see outputs/replan-assessment.md)
+- [ ] Re-measure VBF compliance post-deployment (target: rise from 67% baseline)
+- [ ] Design skill.usefulness-rate metric (usage ≠ usefulness)
+- [ ] Re-verify all 3 behavioral dimensions with fresh session data (regression check)
+- [ ] Raise skill.delivery-rate target if current rate holds
 
 ## References
 
