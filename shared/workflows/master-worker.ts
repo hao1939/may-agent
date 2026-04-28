@@ -313,8 +313,30 @@ ${journalContent.slice(-3000)}
       // Snapshot outputs before worker runs
       const beforeSnap = snapshotOutputs(outputsDir);
 
+      // V3 GUARDRAIL: Pre-create stub file for write-first tasks
+      let stubFilePath: string | null = null;
+      const writeFirstFileMatch = guidance.match(/(?:write|produce|create|generate)\s*\(?[`']([^`']+)[`']/i)
+        || guidance.match(/outputs\/([^\s`'*]+)/i);
+      if (writeFirstFileMatch) {
+        const targetFile = writeFirstFileMatch[1].startsWith('outputs/')
+          ? writeFirstFileMatch[1]
+          : writeFirstFileMatch[0].startsWith('outputs/')
+            ? writeFirstFileMatch[0].match(/outputs\/[^\s`'*)]+/)?.[0] || null
+            : null;
+        if (targetFile) {
+          stubFilePath = join(outputsDir, '..', targetFile);
+          const stubContent = `<!-- STUB: This file was pre-created by the workflow. Replace this content with your deliverable. -->\n`;
+          writeFileSync(stubFilePath, stubContent, 'utf-8');
+          ctx.log(`[work] 📝 V3: Pre-created stub file: ${targetFile}`);
+        }
+      }
+
       // Worker gets ONLY the orchestrator's guidance — no project.md, no milestones
-      const workerPrompt = `## Task (Iteration ${iteration})\n${guidance}`;
+      let workerPrompt = `## Task (Iteration ${iteration})\n${guidance}`;
+      if (stubFilePath) {
+        const relPath = stubFilePath.replace(/.*?(outputs\/)/, 'outputs/');
+        workerPrompt = `## Task (Iteration ${iteration})\nWRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Your FIRST tool call MUST be edit() to replace the stub content with your deliverable.\n- Do NOT use read() or bash() before edit(). The stub contains only a placeholder comment.\n\n${guidance}`;
+      }
 
       await worker.prompt(workerPrompt);
       ctx.log(`[work] Iteration ${iteration} done`);
@@ -322,6 +344,20 @@ ${journalContent.slice(-3000)}
       // Verify worker produced output
       const afterSnap = snapshotOutputs(outputsDir);
       let changedFiles = diffSnapshots(beforeSnap, afterSnap);
+
+      // V3 GUARDRAIL: Check if stub file was left unchanged (< 100 bytes = still a stub)
+      if (stubFilePath && changedFiles.length > 0) {
+        const stubIdx = changedFiles.indexOf(stubFilePath);
+        if (stubIdx !== -1) {
+          try {
+            const fileSize = statSync(stubFilePath).size;
+            if (fileSize < 100) {
+              ctx.log(`[work] ⚠️ V3: Stub file ${stubFilePath.split('/').pop()} still < 100 bytes (${fileSize}B) — treating as zero output`);
+              changedFiles.splice(stubIdx, 1);
+            }
+          } catch {}
+        }
+      }
       if (changedFiles.length === 0) {
         (ctx as any)._consecutiveZeroOutput++;
         const consecutive = (ctx as any)._consecutiveZeroOutput;
