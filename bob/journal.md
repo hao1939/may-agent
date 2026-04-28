@@ -1,5 +1,17 @@
 # Journal
 
+## 2026-05-12 Heartbeat
+
+**Metrics**: All healthy. experiment-completion 0.94, hypotheses-resolved 0.64.
+
+**Actions**:
+- Wrote up EXP-245 results (was PENDING → COMPLETED). H-245-null SUPPORTED: inline diagnostic auditor does not generalize from ordering bugs to judgment tasks. 0/10 treatment = 0/5 baseline on misleading-test-fix.
+- Wrote up EXP-246 results (was PENDING → INCONCLUSIVE/SHELVED). Skills removal test had mismatched scenario sets and N=1 noise. Shelved.
+- Committed both to KB.
+- Dismissed 16 inbox notifications (all 75-97h old, informational paper connections and stale alerts).
+- agent-system-literacy: 8/8 milestones, waiting. No action needed.
+- EXP-245b (separate auditor agent) remains on todo as next experiment.
+
 ## 2026-05-07 Heartbeat
 
 **Metrics**: All healthy. experiment-completion 0.93 (target 0.9), hypotheses-resolved 0.64 (target 0.65).
