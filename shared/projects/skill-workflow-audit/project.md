@@ -11,7 +11,7 @@
 Every skill and workflow verified working, measured for impact, protected against regression.
 **This project is NEVER done while metrics are below target.**
 
-## Metrics (the real goal — milestones are just steps)
+## Metrics
 - skill.verified-rate: 0.20 → target 0.80 (only 1/5 top skills measured)
 - skill.delivery-rate: 0.81 → target 0.60 ✅ (39/48 shared skills deployed to agents)
 - workflow.pass-rate: 1.00 → target 0.95 ✅
