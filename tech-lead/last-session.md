@@ -1,10 +1,11 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777350392126_268
 - **Status:** done
-- **When:** 2026-04-28T04:30:43.034Z
-- **Duration:** 4m10s
+- **When:** 2026-04-28
 
 ## What Happened
-Now verify it works:
+- Heartbeat: triaged inbox (dismissed non-code items), checked build health
+- Deleted dead `shared/workflows/verify-wrap.ts` (233 lines, zero imports/references)
+- Confirmed `budget-checkpoint.ts` and `circuit-breaker.ts` are actively used
+- C7.1 constraint already in SOUL.md — behavioral compliance improving
