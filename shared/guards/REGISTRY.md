@@ -26,6 +26,8 @@ import { loadGuards, runGuards } from "../../shared/guards/loader.js";
 | hallucinated-path | hallucinated-path.ts | C7.1: Warns when bash commands reference /home/, /Users/, /root/ paths that don't exist in the container environment |
 | verify-after-write | verify-after-write.ts | C1.3: Injects read-back step when write() is called without subsequent read() verification (same Ch2 pattern as read-before-edit) |
 | milestone-quality | milestone-quality.ts | Validates milestone specificity on first iteration — flags vague milestones (no named deliverable, no boolean done-check, unbounded scope) |
+| rbe-primer | rbe-primer.ts | C1.1: Step-start reminder to read() before edit() (EXP-256: 50%→84.2% compliance) |
+| vae-primer | vae-primer.ts | C1.3: Step-start reminder to read() after edit()/write() (EXP-258: replicating RBE primer success) |
 
 ## Writing Guards
 
