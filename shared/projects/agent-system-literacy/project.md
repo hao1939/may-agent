@@ -16,7 +16,7 @@ Agents effectively use the infrastructure: create projects from problems, read a
 - gym.literacy-pass-rate: unknown → target 0.80 (gym scenarios testing system usage)
 
 ## Current State
-active: Phase 4 — Make skills actionable. Phase 1-3 showed skills exist but agents don't use them. This phase adds explicit triggers (system prompt refs, heartbeat checks) so agents actually read and apply literacy skills.
+active: Phase 4 — 3/5 items done. Skill refs in context files ✓, bob heartbeat check ✓, 2 gym scenarios created ✓. Remaining: produce `outputs/literacy-measurement.md` (failed 5 prior attempts), then conclude/escalate.
 
 ## Plan
 
@@ -35,9 +35,9 @@ active: Phase 4 — Make skills actionable. Phase 1-3 showed skills exist but ag
 - [x] Set up regression detection: metric breach → project reactivates
 
 ### Phase 4: Make Skills Actionable
-- [ ] Add skill references to agent context files (agents/<name>/context.md) so skills load automatically
-- [ ] Add literacy check to bob's heartbeat: verify agents read project files before acting
-- [ ] Create 2 missing gym scenarios (help-blocked-agent, cross-agent-cooperation) with real test criteria
+- [x] Add skill references to agent context files (agents/<name>/context.md) so skills load automatically
+- [x] Add literacy check to bob's heartbeat: verify agents read project files before acting
+- [x] Create 2 missing gym scenarios (help-blocked-agent, cross-agent-cooperation) with real test criteria
 - [ ] Measure actual literacy behavior: grep last 24h sessions for project file reads, skill reads, proper escalations
 - [ ] If literacy improved, document. If not, escalate to may with specific recommendation
 
