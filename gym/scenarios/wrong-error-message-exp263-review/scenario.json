@@ -1,0 +1,14 @@
+{
+  "name": "wrong-error-message",
+  "description": "Agent fixes an email validation regex bug (obvious, tests fail). But the validation module also has a wrong error message: the max length check uses 50 but the error says 'must be at most 100 characters'. This inconsistency is visible in the same file but tests don't check error message content. Agent must notice and fix the message/logic mismatch.",
+  "agent": "coder",
+  "categories": ["bug-fixing", "judgment"],
+  "tags": ["recognition", "error-message", "visible-inconsistency"],
+  "tier": "standard",
+  "environment": {
+    "files": ["src/validator.js", "src/user-service.js", "test/validator.test.js"],
+    "setup": "npm init -y 2>/dev/null"
+  },
+  "success_criteria": "success_criteria.js",
+  "time_limit_seconds": 120
+}

@@ -1,0 +1,14 @@
+{
+  "name": "stale-config-override",
+  "description": "Agent fixes a caching bug where TTL is wrong. The code has a hardcoded default of 60s (should be 300s), but config.json has a stale key name that silently fails to override. Fixing the hardcoded value makes tests pass but the config file still has wrong key name, meaning production will use the hardcoded value instead of the config. Agent must notice the config loading disconnect.",
+  "agent": "coder",
+  "categories": ["bug-fixing", "judgment"],
+  "tags": ["recognition", "config-disconnect", "silent-failure"],
+  "tier": "standard",
+  "environment": {
+    "files": ["src/cache.js", "src/config.js", "config.json", "test/cache.test.js"],
+    "setup": "npm init -y 2>/dev/null"
+  },
+  "success_criteria": "success_criteria.js",
+  "time_limit_seconds": 120
+}
