@@ -1,9 +1,6 @@
 # Project: Agent System Literacy
 
-**Status**: waiting
-**Stop Reason**: WAITING
-
-All 8/8 milestones are complete. The project documented that skill deployment alone doesn't change agent behavior — agents need explicit triggers. A regression guard is in place for bob's hea
+**Status**: active
 **Owner**: bob
 **Type**: continuous
 **Workflow**: master-worker
@@ -19,9 +16,7 @@ Agents effectively use the infrastructure: create projects from problems, read a
 - gym.literacy-pass-rate: unknown → target 0.80 (gym scenarios testing system usage)
 
 ## Current State
-waiting: WAITING
-
-All 8/8 milestones are complete. The project documented that skill deployment alone doesn't change agent behavior — agents need explicit triggers. A regression guard is in place for bob's hea
+active: Phase 4 — Make skills actionable. Phase 1-3 showed skills exist but agents don't use them. This phase adds explicit triggers (system prompt refs, heartbeat checks) so agents actually read and apply literacy skills.
 
 ## Plan
 
@@ -38,6 +33,13 @@ All 8/8 milestones are complete. The project documented that skill deployment al
 - [x] Re-measure metrics after skill deployment, compare to baseline
 - [x] If metrics improved, document what worked. If not, investigate why.
 - [x] Set up regression detection: metric breach → project reactivates
+
+### Phase 4: Make Skills Actionable
+- [ ] Add skill references to agent context files (agents/<name>/context.md) so skills load automatically
+- [ ] Add literacy check to bob's heartbeat: verify agents read project files before acting
+- [ ] Create 2 missing gym scenarios (help-blocked-agent, cross-agent-cooperation) with real test criteria
+- [ ] Measure actual literacy behavior: grep last 24h sessions for project file reads, skill reads, proper escalations
+- [ ] If literacy improved, document. If not, escalate to may with specific recommendation
 
 ## References
 
