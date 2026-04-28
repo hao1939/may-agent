@@ -23,12 +23,12 @@ Every skill and workflow verified working, measured for impact, protected agains
 - workflow.pass-rate: 1.00 → target 0.95 ✅
 - skill.usage-rate: 0.89 → target 0.50 ✅ (8/9 scoreable sessions show ≥2/3 skill behaviors; SCBA=100%, Evidence=100%, Verify=67%)
 
-## Current State (Updated Iteration 15)
-All 12 milestones complete. All 4 metrics at or above target. ✅
+## Current State (Updated Iteration 19)
+All 14 plan items complete. All 4 metrics at or above target. ✅
 
-**Verify-Before-Finish gap identified**: Only 3/10 agents have the 📘 directive (bob, may, scout). Missing from: amy, coach, coder, tech-lead, optimizer, evaluator, qa. This explains the 67% behavioral rate — agents without the directive don't verify.
+**Verify-Before-Finish strengthened**: Skill file + 📘 directive deployed to all 11 agents (was only 3). Expect compliance to rise from 67% baseline. Re-measure after ~1 week.
 
-**Next action**: Deploy verify-before-finish 📘 directive to all 7 missing agents' context.md files, then re-measure.
+**Re-plan complete**: Next opportunities identified in `outputs/replan-assessment.md` — re-measure VBF compliance, raise delivery-rate target, develop new skills from failure patterns.
 
 **Hao's feedback addressed**: (1) re-plan added as last plan step ✅ (2) behavioral usage measured at 89% ✅
 

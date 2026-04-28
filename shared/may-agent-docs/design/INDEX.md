@@ -91,3 +91,12 @@ Superseded, completed, or historical docs in [archive/](archive/). These are kep
 | [unified-handler-events.md](archive/unified-handler-events.md) | [convention-defaults.md](convention-defaults.md) |
 | [project-handler-events.md](archive/project-handler-events.md) | [convention-defaults.md](convention-defaults.md) |
 | [idle-heartbeat-playbook.md](archive/idle-heartbeat-playbook.md) | [heartbeat-system.md](heartbeat-system.md) |
+| [handler-health-metrics.md](archive/handler-health-metrics.md) | [health-metrics.md](health-metrics.md) |
+| [project-metrics.md](archive/project-metrics.md) | [health-metrics.md](health-metrics.md) |
+| [infra-metrics.md](archive/infra-metrics.md) | [health-metrics.md](health-metrics.md) |
+| [metrics-evolution-roadmap.md](archive/metrics-evolution-roadmap.md) | Vision doc — not actionable |
+| [metrics-heartbeat-reactor-proposal.md](archive/metrics-heartbeat-reactor-proposal.md) | [heartbeat-system.md](heartbeat-system.md) |
+| [metric-types-sdk.md](archive/metric-types-sdk.md) | [health-metrics.md](health-metrics.md) |
+| [project-lifecycle-continuous.md](archive/project-lifecycle-continuous.md) | On hold |
+| [unified-session-design.md](archive/unified-session-design.md) | Draft — on hold |
+| [re-design-draft.md](archive/re-design-draft.md) | Needs rewrite — architecture overview outdated |
