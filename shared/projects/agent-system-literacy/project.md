@@ -1,11 +1,17 @@
 # Project: Agent System Literacy
 
-**Status**: active
+**Status**: waiting
+**Stop Reason**: WAITING
+
+All 13 milestones across Phases 1-4 are now verified complete:
+
+**Milestones completed this iteration:**
+- "Measure actual literacy behavior: grep last 24h sessions for project file reads, sk
 **Owner**: bob
 **Type**: continuous
 **Workflow**: master-worker
 **Priority**: P1
-**Iteration**: 1
+**Iteration**: 2
 
 ## Goal
 Agents effectively use the infrastructure: create projects from problems, read and react to metrics, escalate with context, cooperate across agents, and close the loop by extending the system when patterns repeat.
@@ -16,7 +22,7 @@ Agents effectively use the infrastructure: create projects from problems, read a
 - gym.literacy-pass-rate: unknown → target 0.80 (gym scenarios testing system usage)
 
 ## Current State
-active: Phase 4 — 3/5 items done. Skill refs in context files ✓, bob heartbeat check ✓, 2 gym scenarios created ✓. Remaining: produce `outputs/literacy-measurement.md` (failed 5 prior attempts), then conclude/escalate.
+active: Phase 4 complete. All milestones done. Measurement shows 34% context read rate, 23% project file read rate, 85% skill reference rate across sessions. Infrastructure is in place (context refs, heartbeat check, gym scenarios). Next: monitor metrics over time via bob heartbeats, run gym scenarios periodically.
 
 ## Plan
 
@@ -38,8 +44,8 @@ active: Phase 4 — 3/5 items done. Skill refs in context files ✓, bob heartbe
 - [x] Add skill references to agent context files (agents/<name>/context.md) so skills load automatically
 - [x] Add literacy check to bob's heartbeat: verify agents read project files before acting
 - [x] Create 2 missing gym scenarios (help-blocked-agent, cross-agent-cooperation) with real test criteria
-- [ ] Measure actual literacy behavior: grep last 24h sessions for project file reads, skill reads, proper escalations
-- [ ] If literacy improved, document. If not, escalate to may with specific recommendation
+- [x] Measure actual literacy behavior: grep last 24h sessions for project file reads, skill reads, proper escalations
+- [x] If literacy improved, document. If not, escalate to may with specific recommendation
 
 ## References
 
@@ -56,4 +62,5 @@ active: Phase 4 — 3/5 items done. Skill refs in context files ✓, bob heartbe
 - outputs/post-deployment-comparison.md — Phase 3 before/after comparison (no improvement yet)
 - outputs/investigation.md — Why skill deployment didn't move metrics
 - outputs/regression-guard.md — Regression detection thresholds and reactivation triggers
+- outputs/literacy-measurement.md — Phase 4 measurement report (34% context reads, 23% project reads, 85% skill refs)
 - .state/metrics/regression-check.md — Quick-check procedure for bob's heartbeat
