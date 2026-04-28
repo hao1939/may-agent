@@ -1,11 +1,9 @@
 # Coach Todo
 
-## P0: Evaluator Dead — Blocks ALL Measurement (Jul 1, STILL BLOCKED Jul 30)
-- **Problem**: Last real evaluation was ~58h ago (createdAt epoch). All recent evals are meta-agent auto-skips (skippedByJs=1 on 6175/32716 rows).
-- **Impact**: Can't measure obstacle-pivot impact, can't identify struggling agents, skill experiments unmeasurable
-- **Action**: Re-notified may (P0) on Jul 30. Need evaluator agent restarted/fixed.
+## P0: Evaluator Dead — Blocks ALL Measurement (Jul 1, STILL BLOCKED)
+- **Problem**: eval.db not found in expected location. All measurement blocked.
+- **Impact**: Can't measure obstacle-pivot impact, convention coaching impact, or any new experiments
 - **Blocked**: Everything below that requires eval data
-- **Update Jul 30**: Confirmed last real evals were tech-lead(0.35), bob(0.95, 0.50, 0.72), coach(0.90) — all ~58h ago. Still dead.
 
 ## P1: Deploy Proven Skills — obstacle-pivot ✅ DONE (Jun 30)
 - **Deployed to**: coder, bob, tech-lead (context.md wiring)
