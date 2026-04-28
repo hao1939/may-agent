@@ -1,2 +1,0 @@
-## Lesson from a Past Failure
-In a recent session, I was editing pricing.js to add tiered tax rates. I made 3 edits in sequence without verifying any of them. The second edit silently failed — my oldText didn't match because the first edit changed the surrounding context. I only discovered this after running tests and getting cryptic failures. It took 15 minutes to debug what would have taken 10 seconds to catch with a simple read() after each edit. Now my rule: ALWAYS read() immediately after edit(). Every single time. No exceptions.
