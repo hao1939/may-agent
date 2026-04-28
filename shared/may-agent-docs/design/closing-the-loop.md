@@ -16,9 +16,9 @@ Today the system has three separate routing mechanisms:
 
 | Mechanism | Path | Storage |
 |-----------|------|---------|
-| Events (`emit`) | Bus → handler subscribes → immediate | In-memory only — lost if no subscriber |
-| Messages (`message`) | Bus → requests DB → heartbeat pickup | Persisted |
-| Fork (`fork`) | Bus → manager.run() → immediate session | Persisted (session) |
+| Events (`emit`) | Bus → db-writer persists → handler subscribes | events table (immutable) |
+| Messages (`message`) | Bus → events table (owner field set) → heartbeat inbox | events table |
+| Fork (`fork`) | Bus → manager.run() → immediate session | sessions table |
 
 **The gap:** Events are ephemeral. If no handler subscribes, the event vanishes. Messages and forks are durable. This violates P3 (events must be consumed).
 
