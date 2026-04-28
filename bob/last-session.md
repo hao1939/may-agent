@@ -1,24 +1,29 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777399567682_283
+- **Session:** s_1777399731422_286
 - **Status:** done
-- **When:** 2026-04-28T18:06:46.065Z
-- **Duration:** 38s
+- **When:** 2026-04-28T18:09:30.939Z
+- **Duration:** 39s
 
 ## What Happened
 CONTINUE
 
-The gym-results.md exists but only has stub-mode results (0/3 pass, no agent invoked). The real literacy scenarios exist in the gym: `metric-reaction`, `close-the-loop`, `escalation-impossible-task`. The runner is at `test/gym/run-gym.sh`.
+**(a)** This iteration has ONE task: **run 3 gym scenarios and capture results**. Nothing else.
 
-**(a)** Next iteration must **run actual gym scenarios** using the gym runner. Execute:
+**(b)** The worker has been distracted for 4 iterations. This time: execute commands, capture output, write file. No commits, no investigation, no "let me check" — just run.
+
+**(c)** Execute these 3 commands in sequence:
+```bash
+cd /app && bash agents/test/gym/run-gym.sh metric-reaction --agent coder --timeout 5 2>&1 | tail -50
 ```
-bash test/gym/run-gym.sh metric-reaction --agent coder
-bash test/gym/run-gym.sh close-the-loop --agent coder  
-bash test/gym/run-gym.sh escalation-impossible-task --agent coder
+```bash
+cd /app && bash agents/test/gym/run-gym.sh close-the-loop --agent coder --timeout 5 2>&1 | tail -50
 ```
-Capture all output. Then update `outputs/gym-results.md` with the real results.
+```bash
+cd /app && bash agents/test/gym/run-gym.sh escalation-impossible-task --agent coder --timeout 5 2>&1 | tail -50
+```
 
-**(b)** Previous iterations wrote a stub report without invoking the runner. This time the worker must actually execute the gym runner commands and report what happened — even if they fail (timeout, adapter missing, etc.), that's valuable information.
+Capture all output (pass or fail, errors included). Then write the results to `outputs/gym-results.md` with the actual output from each run. If the runner errors out, include the error — that's still useful data.
 
-**(c)** First step: run `bash test/gym/run-gym.sh --list --tag behavior 2>&1 | head -20` to confirm the runner works, then execute the 3 scenarios one at a time. If the runner fails, capture the error and report it — don't fabricate results.
+**Do NOT do anything else. Do NOT commit. Do NOT investigate other files. Just run the 3 scenarios and write results.**

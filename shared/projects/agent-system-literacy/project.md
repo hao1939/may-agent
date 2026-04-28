@@ -4,7 +4,7 @@
 **Owner**: bob
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 3
+**Iteration**: 4
 
 ## Goal
 Agents effectively use the infrastructure: create projects from problems, read and react to metrics, escalate with context, cooperate across agents, and close the loop by extending the system when patterns repeat.
@@ -15,11 +15,11 @@ Agents effectively use the infrastructure: create projects from problems, read a
 - gym.literacy-pass-rate: baseline 0/3 (0%) → target 0.80
 
 ## Current State
-**Iteration 4 (2027-08-06)**: Skills deployed to 4 agents. Baselines measured but gym is unvalidated:
+**Iteration 5 (2025-01-27)**: Skills deployed to 4 agents. Baselines measured. Gym scenarios exist but worker has failed 4 iterations in a row to actually run them — keeps getting distracted by unrelated tasks.
 - project-creation-rate: ~2-3/week (target 2/week) ✅ plausible
 - escalation-quality: 0.99 by auto-reason, but most are mechanical "exhausted retries" — real diagnostic quality unknown
 - gym.literacy-pass-rate: 0/3 (stub mode, no actual agent runs) ❌ — this is the blocker
-Next: run actual gym scenarios with real agents to get true literacy pass rate.
+**BLOCKER**: Worker must run `agents/test/gym/run-gym.sh <scenario> --agent coder` for metric-reaction, close-the-loop, escalation-impossible-task. Runner exists, scenarios exist. Just execute them.
 
 ## Plan
 - [x] Measure baseline: query DB for project-creation-rate and escalation-quality, write outputs/baseline.md
