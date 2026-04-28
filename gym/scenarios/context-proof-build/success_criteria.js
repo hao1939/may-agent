@@ -65,7 +65,7 @@ s.checkBehavior("no-missing-types-error", "Phase 2 has zero 'types.js not found'
 s.checkBehavior("runs-codegen", "Phase 2 runs codegen.js", () => {
   if (!s.hasTranscript()) return false;
   return s.toolCalls("bash").some(tc => {
-    const cmd = String(tc.arguments.command || "");
+    const cmd = String((tc.arguments || {}).command || "");
     return cmd.includes("codegen");
   });
 });

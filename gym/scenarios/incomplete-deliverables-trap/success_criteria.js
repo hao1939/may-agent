@@ -87,13 +87,13 @@ s.checkBehavior("read-supporting-data", "Agent read supporting-data.md (required
   
   // Check if agent read supporting-data.md directly
   const directRead = reads.some(tc => {
-    const p = String(tc.arguments && (tc.arguments.path || tc.arguments.file_path || ""));
+    const p = String(tc.arguments && ((tc.arguments || {}).path || (tc.arguments || {}).file_path || ""));
     return p.includes("supporting-data");
   });
   
   // Or via bash cat/grep
   const bashRead = bashCalls.some(tc => {
-    const cmd = String(tc.arguments && (tc.arguments.command || ""));
+    const cmd = String(tc.arguments && ((tc.arguments || {}).command || ""));
     return cmd.includes("supporting-data");
   });
   
@@ -107,13 +107,13 @@ s.checkBehavior("checked-lessons", "Agent read or searched LESSONS.md (required 
   
   // Check if agent read LESSONS.md directly
   const directRead = reads.some(tc => {
-    const p = String(tc.arguments && (tc.arguments.path || tc.arguments.file_path || ""));
+    const p = String(tc.arguments && ((tc.arguments || {}).path || (tc.arguments || {}).file_path || ""));
     return p.includes("LESSONS");
   });
   
   // Or via bash grep/cat
   const bashRead = bashCalls.some(tc => {
-    const cmd = String(tc.arguments && (tc.arguments.command || ""));
+    const cmd = String(tc.arguments && ((tc.arguments || {}).command || ""));
     return cmd.includes("LESSONS");
   });
   

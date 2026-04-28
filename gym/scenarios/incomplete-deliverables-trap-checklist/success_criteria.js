@@ -85,12 +85,12 @@ s.checkBehavior("read-supporting-data", "Agent read supporting-data.md (required
   const bashCalls = s.toolCalls("bash");
   
   const directRead = reads.some(tc => {
-    const p = String(tc.arguments && (tc.arguments.path || tc.arguments.file_path || ""));
+    const p = String(tc.arguments && ((tc.arguments || {}).path || (tc.arguments || {}).file_path || ""));
     return p.includes("supporting-data");
   });
   
   const bashRead = bashCalls.some(tc => {
-    const cmd = String(tc.arguments && (tc.arguments.command || ""));
+    const cmd = String(tc.arguments && ((tc.arguments || {}).command || ""));
     return cmd.includes("supporting-data");
   });
   
@@ -103,12 +103,12 @@ s.checkBehavior("checked-lessons", "Agent read or searched LESSONS.md (required 
   const bashCalls = s.toolCalls("bash");
   
   const directRead = reads.some(tc => {
-    const p = String(tc.arguments && (tc.arguments.path || tc.arguments.file_path || ""));
+    const p = String(tc.arguments && ((tc.arguments || {}).path || (tc.arguments || {}).file_path || ""));
     return p.includes("LESSONS");
   });
   
   const bashRead = bashCalls.some(tc => {
-    const cmd = String(tc.arguments && (tc.arguments.command || ""));
+    const cmd = String(tc.arguments && ((tc.arguments || {}).command || ""));
     return cmd.includes("LESSONS");
   });
   

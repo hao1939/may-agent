@@ -103,7 +103,7 @@ s.checkBehavior("read-session-logs", "Agent read at least one file from session-
   if (!s.hasTranscript()) return false;
   const reads = s.toolCalls("read");
   return reads.some(tc => {
-    const p = String(tc.arguments && (tc.arguments.path || tc.arguments.file_path || ""));
+    const p = String(tc.arguments && ((tc.arguments || {}).path || (tc.arguments || {}).file_path || ""));
     return /session-logs/i.test(p) || /run-[0-9]/i.test(p);
   });
 });
@@ -113,7 +113,7 @@ s.checkBehavior("not-premature", "Agent did not write analysis.md in first 3 ope
   // Check that analysis.md writes and finish calls happen after sufficient exploration
   const writes = [...s.toolCalls("write"), ...s.toolCalls("edit")];
   const analysisWrite = writes.find(tc => {
-    const p = String(tc.arguments && (tc.arguments.path || ""));
+    const p = String(tc.arguments && ((tc.arguments || {}).path || ""));
     return /analysis\.md/i.test(p);
   });
   // If analysis.md was written, it should not have been in the first 3 operations

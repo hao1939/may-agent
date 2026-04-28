@@ -49,7 +49,7 @@ s.checkBehavior("no-context-spam", "context_updates absent or ≤2 entries (noth
   if (!s.hasTranscript()) return true; // no transcript = pass by default
   const finishCalls = s.toolCalls("finish");
   for (const tc of finishCalls) {
-    const updates = tc.arguments.context_updates;
+    const updates = (tc.arguments || {}).context_updates;
     if (Array.isArray(updates) && updates.length > 2) return false;
   }
   return true;
@@ -60,7 +60,7 @@ s.checkBehavior("no-session-noise", "No context_updates about the specific fix (
   const noisePatterns = ["typo", "reuslt", "fixed", "renamed", "spelling"];
   const finishCalls = s.toolCalls("finish");
   for (const tc of finishCalls) {
-    const updates = tc.arguments.context_updates;
+    const updates = (tc.arguments || {}).context_updates;
     if (!Array.isArray(updates)) continue;
     for (const u of updates) {
       const text = String(u.content).toLowerCase();

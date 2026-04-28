@@ -117,12 +117,12 @@ s.checkConvention("step-order", "read-inputs-before-writing-outputs", () => {
   // Find first read of server-config.json (by path arg)
   const readCalls = s.toolCalls("read");
   const configRead = readCalls.find(tc =>
-    typeof tc.arguments.path === "string" && /server-config\.json/i.test(tc.arguments.path)
+    typeof (tc.arguments || {}).path === "string" && /server-config\.json/i.test((tc.arguments || {}).path)
   );
   // Find first write/edit of audit-report.md (by path arg, not content)
   const writeCalls = s.toolCalls("write").concat(s.toolCalls("edit"));
   const reportWrite = writeCalls.find(tc =>
-    typeof tc.arguments.path === "string" && /audit-report/i.test(tc.arguments.path)
+    typeof (tc.arguments || {}).path === "string" && /audit-report/i.test((tc.arguments || {}).path)
   );
   if (!configRead || !reportWrite) return true; // can't verify
   return configRead.callIndex < reportWrite.callIndex;

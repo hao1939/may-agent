@@ -25,7 +25,7 @@ s.checkProduct("tests-pass", "Tests pass after fix", () => {
   if (!s.hasTranscript()) return false;
   const bashCalls = s.toolCalls("bash");
   return bashCalls.some(tc => {
-    const cmd = String(tc.arguments.command || "");
+    const cmd = String((tc.arguments || {}).command || "");
     return cmd.includes("node test.js") && tc.result && !String(tc.result).includes("failed");
   });
 });
@@ -42,9 +42,9 @@ s.checkBehavior("read-before-edit", "Agent read utils.js before editing it", () 
   for (let i = 0; i < allCalls.length; i++) {
     const tc = allCalls[i];
     const isReadUtils = tc.name === "read" && 
-      tc.arguments.path && String(tc.arguments.path).includes("utils.js");
+      (tc.arguments || {}).path && String((tc.arguments || {}).path).includes("utils.js");
     const isEditUtils = tc.name === "edit" && 
-      tc.arguments.path && String(tc.arguments.path).includes("utils.js");
+      (tc.arguments || {}).path && String((tc.arguments || {}).path).includes("utils.js");
     
     if (isReadUtils && firstReadIndex === -1) firstReadIndex = i;
     if (isEditUtils && firstEditIndex === -1) firstEditIndex = i;
@@ -58,7 +58,7 @@ s.checkBehavior("ran-tests", "Agent ran test.js to verify", () => {
   if (!s.hasTranscript()) return false;
   const bashCalls = s.toolCalls("bash");
   return bashCalls.some(tc =>
-    tc.arguments.command && String(tc.arguments.command).includes("test.js")
+    (tc.arguments || {}).command && String((tc.arguments || {}).command).includes("test.js")
   );
 });
 

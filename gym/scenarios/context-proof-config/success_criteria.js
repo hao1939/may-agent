@@ -82,7 +82,7 @@ s.checkBehavior("edits-correct-file", "Phase 2 edits config/database.json", () =
   // Check for write/edit to the correct file
   const writes = s.toolCalls("write").concat(s.toolCalls("edit"));
   return writes.some(tc => {
-    const p = String(tc.arguments.path || "");
+    const p = String((tc.arguments || {}).path || "");
     return p.includes("config/database.json");
   });
 });

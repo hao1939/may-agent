@@ -76,7 +76,7 @@ s.checkBehavior("no-runtime-errors", "Phase 2 has zero failed node/npm/wrong-run
 
   // Check every bash call in phase 2 transcript
   for (const tc of s.toolCalls("bash")) {
-    const cmd = String(tc.arguments.command || "").toLowerCase();
+    const cmd = String((tc.arguments || {}).command || "").toLowerCase();
 
     // Failed node attempt
     if (cmd.includes("node ") && cmd.includes("test")) {
@@ -101,7 +101,7 @@ s.checkBehavior("no-runtime-errors", "Phase 2 has zero failed node/npm/wrong-run
 s.checkBehavior("uses-bun", "Phase 2 runs tests with bun", () => {
   if (!s.hasTranscript()) return false;
   return s.toolCalls("bash").some(tc => {
-    const cmd = String(tc.arguments.command || "");
+    const cmd = String((tc.arguments || {}).command || "");
     return cmd.includes("bun test");
   });
 });

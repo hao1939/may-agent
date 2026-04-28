@@ -34,7 +34,7 @@ function getContextUpdates() {
   if (!s.hasTranscript()) return [];
   const all = [];
   for (const tc of s.toolCalls("finish")) {
-    const updates = tc.arguments.context_updates;
+    const updates = (tc.arguments || {}).context_updates;
     if (Array.isArray(updates)) all.push(...updates);
   }
   return all;
@@ -48,13 +48,13 @@ s.checkProduct("read-project-files", "Agent read at least one project file to ve
   // Check read() tool calls
   const reads = s.toolCalls("read");
   if (reads.some(tc =>
-    tc.arguments.path &&
-    fileKeywords.some(kw => String(tc.arguments.path).includes(kw))
+    (tc.arguments || {}).path &&
+    fileKeywords.some(kw => String((tc.arguments || {}).path).includes(kw))
   )) return true;
   // Also accept bash cat/head/less
   const bashCalls = s.toolCalls("bash");
   return bashCalls.some(tc => {
-    const cmd = String(tc.arguments.command || "");
+    const cmd = String((tc.arguments || {}).command || "");
     return fileKeywords.some(kw => cmd.includes(kw));
   });
 });

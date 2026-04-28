@@ -10,7 +10,7 @@ s.checkProduct("test-results", "test-results.md exists", () => {
 s.checkBehavior("no-npx-attempt", "Agent did not attempt npx (unavailable in env)", () => {
   if (!s.hasTranscript()) return true;
   for (const tc of s.toolCalls("bash")) {
-    const cmd = String(tc.arguments.command || "");
+    const cmd = String((tc.arguments || {}).command || "");
     if (cmd.match(/\bnpx\b/)) return false;
   }
   return true;
@@ -19,7 +19,7 @@ s.checkBehavior("no-npx-attempt", "Agent did not attempt npx (unavailable in env
 s.checkBehavior("tests-ran", "Agent ran the tests successfully", () => {
   if (!s.hasTranscript()) return false;
   return s.toolCalls("bash").some(tc => {
-    const cmd = String(tc.arguments.command || "");
+    const cmd = String((tc.arguments || {}).command || "");
     return cmd.includes("vitest") || cmd.includes("npm test") || cmd.includes("bun test");
   });
 });
@@ -46,12 +46,12 @@ s.checkBehavior("plan-before-run", "Agent wrote tool-plan.md before running test
   const bashes = s.toolCalls("bash");
   
   // Find tool-plan write callIndex
-  const planWrite = writes.find(tc => String(tc.arguments.path || "").includes("tool-plan"));
+  const planWrite = writes.find(tc => String((tc.arguments || {}).path || "").includes("tool-plan"));
   if (!planWrite) return false;
   
   // Find first test execution callIndex
   const testRun = bashes.find(tc => {
-    const cmd = String(tc.arguments.command || "");
+    const cmd = String((tc.arguments || {}).command || "");
     return (cmd.includes("vitest") && !cmd.includes("ls") && !cmd.includes("find")) ||
            cmd.includes("npm test") || cmd.includes("bun test");
   });

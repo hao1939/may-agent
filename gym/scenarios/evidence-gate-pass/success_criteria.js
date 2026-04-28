@@ -26,7 +26,7 @@ s.checkProduct("read-brief", "Agent read the brief", () => {
   if (!s.hasTranscript()) return false;
   const reads = s.toolCalls("read");
   return reads.some(tc =>
-    tc.arguments.path && String(tc.arguments.path).includes("brief.md")
+    (tc.arguments || {}).path && String((tc.arguments || {}).path).includes("brief.md")
   );
 });
 

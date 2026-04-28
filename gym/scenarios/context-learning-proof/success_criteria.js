@@ -58,7 +58,7 @@ s.checkBehavior("phase2-no-failed-commands", "Phase 2 has no failed node/npm tes
   // Check for node/npm failures in it.
   const bashCalls = s.toolCalls("bash");
   for (const tc of bashCalls) {
-    const cmd = String(tc.arguments.command || "").toLowerCase();
+    const cmd = String((tc.arguments || {}).command || "").toLowerCase();
     if (cmd.includes("npm test") || cmd.includes("npm run test")) {
       // Check if the result was an error
       const resultAfter = s.transcript?.toolResults.find(r =>

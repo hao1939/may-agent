@@ -27,14 +27,14 @@ s.checkProduct("read-project-files", "Agent read at least one project file", () 
   // Check read() tool calls
   const reads = s.toolCalls("read");
   if (reads.some(tc =>
-    tc.arguments.path &&
-    (String(tc.arguments.path).includes("project.json") ||
-     String(tc.arguments.path).includes("README"))
+    (tc.arguments || {}).path &&
+    (String((tc.arguments || {}).path).includes("project.json") ||
+     String((tc.arguments || {}).path).includes("README"))
   )) return true;
   // Also accept bash cat/head/less of these files (including wildcards in workDir)
   const bashCalls = s.toolCalls("bash");
   return bashCalls.some(tc => {
-    const cmd = String(tc.arguments.command || "");
+    const cmd = String((tc.arguments || {}).command || "");
     return cmd.includes("project.json") ||
      cmd.includes("README") ||
      // Accept wildcard reads that would capture project files (e.g. cat /tmp/gym-*/* )
@@ -49,7 +49,7 @@ s.checkBehavior("has-context-updates", "finish() includes context_updates with â
   const finishCalls = s.toolCalls("finish");
   let addCount = 0;
   for (const tc of finishCalls) {
-    const updates = tc.arguments.context_updates;
+    const updates = (tc.arguments || {}).context_updates;
     if (Array.isArray(updates)) {
       addCount += updates.filter(u => u.action === "add").length;
     }
@@ -62,7 +62,7 @@ s.checkBehavior("facts-are-relevant", "At least one fact mentions project-specif
   const keywords = ["bun", "sqlite", "config", "pipeline", "toml", "csv", "migrate", "dry-run", "timestamp", "epoch"];
   const finishCalls = s.toolCalls("finish");
   for (const tc of finishCalls) {
-    const updates = tc.arguments.context_updates;
+    const updates = (tc.arguments || {}).context_updates;
     if (Array.isArray(updates)) {
       for (const u of updates) {
         if (u.action === "add" && keywords.some(kw => String(u.content).toLowerCase().includes(kw))) {

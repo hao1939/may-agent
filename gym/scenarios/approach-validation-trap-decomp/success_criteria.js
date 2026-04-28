@@ -102,7 +102,7 @@ s.checkBehavior("read-session-logs", "Agent read at least one file from session-
   if (!s.hasTranscript()) return false;
   const reads = s.toolCalls("read");
   return reads.some(tc => {
-    const p = String(tc.arguments && (tc.arguments.path || tc.arguments.file_path || ""));
+    const p = String(tc.arguments && ((tc.arguments || {}).path || (tc.arguments || {}).file_path || ""));
     return /session-logs/i.test(p) || /run-[0-9]/i.test(p);
   });
 });
@@ -111,7 +111,7 @@ s.checkBehavior("not-premature", "Agent did not write analysis.md in first 3 ope
   if (!s.hasTranscript()) return false;
   const writes = [...s.toolCalls("write"), ...s.toolCalls("edit")];
   const analysisWrite = writes.find(tc => {
-    const p = String(tc.arguments && (tc.arguments.path || ""));
+    const p = String(tc.arguments && ((tc.arguments || {}).path || ""));
     return /analysis\.md/i.test(p);
   });
   if (analysisWrite && analysisWrite.callIndex < 3) return false;
@@ -128,7 +128,7 @@ s.checkBehavior("approach-before-analysis", "APPROACH.md was written BEFORE anal
   let analysisIndex = -1;
 
   for (const tc of writes) {
-    const p = String(tc.arguments && (tc.arguments.path || "")).toLowerCase();
+    const p = String(tc.arguments && ((tc.arguments || {}).path || "")).toLowerCase();
     if (p.includes("approach.md") && approachIndex === -1) {
       approachIndex = tc.callIndex;
     }
