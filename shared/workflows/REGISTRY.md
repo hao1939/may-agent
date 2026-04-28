@@ -49,20 +49,11 @@ Every agent has a heartbeat workflow (uses shared `heartbeat-data.ts` loaders):
 ### Optimizer
 | Name | File | Lines | Purpose |
 |------|------|-------|---------|
-| `design-review` | `optimizer/workflows/design-review.ts` | 119 | Review a design doc before implementation |
-| `enhance-cron` | `optimizer/workflows/enhance-cron.ts` | 351 | Safely modify cron configuration |
 | `investigate-and-fix` | `optimizer/workflows/investigate-and-fix.ts` | 338 | Analysis that forces action — counters optimizer's 51% findings-without-follow-through anti-pattern |
-| `safe-edit` | `optimizer/workflows/safe-edit.ts` | 291 | Edit with rollback capability |
-
-### QA
-| Name | File | Lines | Purpose |
-|------|------|-------|---------|
-| `vet-skill` | `qa/workflows/vet-skill.ts` | 266 | Evaluate a skill proposal end-to-end |
 
 ### Tech-Lead
 | Name | File | Lines | Purpose |
 |------|------|-------|---------|
-| `lens-analysis` | `tech-lead/workflows/lens-analysis.ts` | 285 | D-o-R phased Lens investigation: SCOPE (≤3 ops) → INVESTIGATE (≤10 ops) |
 | `verified-coder` | `tech-lead/workflows/verified-coder.ts` | 178 | Code with built-in verification |
 
 ### Deleted since last audit
@@ -70,6 +61,11 @@ Every agent has a heartbeat workflow (uses shared `heartbeat-data.ts` loaders):
 - `may/workflows/design-then-build.ts`
 - `may/workflows/research-pipeline.ts`
 - `may/workflows/test-and-fix.ts`
+- `optimizer/workflows/design-review.ts` — dead code, 0 runs, 0 references (removed 2026-12-04)
+- `optimizer/workflows/enhance-cron.ts` — dead code, 0 runs, 0 references (removed 2026-12-04)
+- `optimizer/workflows/safe-edit.ts` — dead code, 0 runs, 0 references (removed 2026-12-04)
+- `qa/workflows/vet-skill.ts` — dead code, 0 runs, 0 references (removed 2026-12-04)
+- `tech-lead/workflows/lens-analysis.ts` — dead code, 0 runs, 0 references (removed 2026-12-04)
 
 ## Consolidation Status (completed 2026-04-04, all promoted files since archived)
 
