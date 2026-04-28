@@ -46,7 +46,7 @@ Both use the same project.md format, same workflow, same handler. The difference
 ## Project File
 
 ```
-agents/<owner>/workspace/projects/<name>/
+agents/shared/projects/<name>/
   project.md   — the project document (goal, milestones, state, health)
   journal.md   — iteration log (append-only)
 ```
