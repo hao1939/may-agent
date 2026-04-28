@@ -19,7 +19,7 @@ Escalation is an event with rich context. Someone reading it should understand t
 Emitted when the system exhausts its ability to fix and needs outside help.
 
 ```typescript
-ctx.emit({ type: "emit", event: "escalation.created", data: {
+ctx.emit({ type: "escalation.created",
   id: `esc_${Date.now()}`,
   projectId: "coach/prove-the-loop",
   agent: "coach",
@@ -31,7 +31,7 @@ ctx.emit({ type: "emit", event: "escalation.created", data: {
   suggestedFix: "...",          // reviewer's suggestion if any
   iteration: 25,
   health: "3/10",
-}});
+});
 ```
 
 Sources:
@@ -44,12 +44,12 @@ Sources:
 When current level doesn't resolve within timeout.
 
 ```typescript
-ctx.emit({ type: "emit", event: "escalation.promoted", data: {
+ctx.emit({ type: "escalation.promoted",
   id: "esc_xxx",              // same id as created
   from: 1, to: 2,            // owner → may
   age: "4h",
   reason: "Owner did not resolve within timeout",
-}});
+});
 ```
 
 ### escalation.resolved
