@@ -114,6 +114,26 @@ Three adapter modes:
 | `ctx.dispatchEvent(type, data)` | `ctx.emit({ event: type, ...data })` |
 | `ctx.summarizeForHandoff()` | utility function, not SDK |
 
+## Alignment: SDK ↔ Agent Tools ↔ Agent Mental Model
+
+Two interfaces to the same system:
+- **Agent (LLM)** uses tools: `agents.fork()`, `agents.notify()`, `finish()`
+- **Handler/Workflow (code)** uses SDK: `runAgent()`, `notify()`, `done()`
+
+They share the same vocabulary:
+
+| Agent thinks | Agent tool | SDK method |
+|-------------|-----------|-----------|
+| "Ask bob to do this" | `agents.fork("bob", task)` | `sdk.runAgent("bob", task)` |
+| "Tell bob something" | `agents.notify("bob", msg)` | `sdk.notify(msg)` |
+| "Something happened" | — | `sdk.emit(event)` |
+| "Look up data" | `bash("bun -e 'db.query...'")` | `sdk.getDb()` |
+| "I'm done" | `finish()` | `workflow.done()` |
+| "I'm stuck" | `finish({ status: "blocked" })` | `workflow.escalate()` |
+| "Talk to bob over multiple turns" | — | `sdk.createSession()` |
+
+The SDK doesn't introduce new concepts. It maps directly to what agents already understand. An agent reading handler code sees `ctx.runAgent("bob", task)` and knows exactly what it does — same as `agents.fork("bob", task)` from their tools.
+
 ## Migration
 
 No big bang. The binary wraps its internals behind the SDK interface:
