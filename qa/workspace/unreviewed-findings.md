@@ -1,23 +1,30 @@
 # Unreviewed Findings (QA Heartbeat)
 
-## Context
+## Summary
 Heartbeat triage. No active alerts. Inbox contains repeated duplicate "Quick Code Review" notifications and a request to verify gym scenario EXP-220.
 
 ## Findings
-### 1) Environment: repo root is not a git repo (IMPORTANT)
-- Running `git log` in `/app` fails with: `fatal: not a git repository`.
-- `agents/` is its own git repository; git operations must be run from `/app/agents`.
+### 1) Duplicate inbox notifications (IMPORTANT)
+I received 5 near-identical P1 notifications about duplicate "Quick Code Review" requests. This is likely a dispatcher/inbox deduplication issue and is wasting attention.
 
-### 2) Tooling: tsc/vitest not available in /app (IMPORTANT)
-- `cd /app && ./node_modules/.bin/tsc --noEmit` -> `No such file or directory`
-- `cd /app && ./node_modules/.bin/vitest --run` -> `No such file or directory`
-This means the mandatory QA verification steps cannot currently be executed from `/app`. If the intended project root for TS/test commands is different (e.g., `/app/agents`), the runbook should be clarified.
+**Action**: escalate to the system owner/May to deduplicate at the source.
 
-### 3) Recent change reviewed: skill-workflow-audit project file (MINOR)
-Commit `5454f7b6f` touched `agents/shared/projects/skill-workflow-audit/project.md`.
-- The line `- **skill.delivery-rate: 0` appears truncated/incomplete in the file. This looks like a formatting or accidental edit that should be corrected.
+### 2) Gym scenario EXP-220 verification (PASS)
+The requested scenario exists under `agents/gym/scenarios/enoent-file-search/` and appears correctly configured.
 
-## Next actions
-- Verify where `node_modules` lives (if anywhere) and where `tsc`/`vitest` should be executed.
-- Verify EXP-220 scenario exists and is correctly set up (agent.notification P2).
-- Deduplicate the 5 identical "Quick Code Review" requests (agent.notification P1) and escalate if dispatch system is spamming.
+Evidence:
+- Directory contains `scenario.json`, `task.md`, `success_criteria.js`, and `environment/`.
+- `scenario.json` references environment files `lib/grade-pipeline.js` and `lib/test-grades.js` and the success criteria script.
+
+### 3) Recent commit introduces malformed markdown in a tracked project file (IMPORTANT)
+`agents/shared/projects/skill-workflow-audit/project.md` has a broken bullet:
+- `- **skill.delivery-rate: 0` is truncated and missing the rest of the value/formatting.
+
+This is likely an accidental edit and should be fixed because it corrupts the project header/status block.
+
+## Verification steps (mandatory)
+- `./node_modules/.bin/tsc --noEmit` (run from `/app/agents`): PASS (no output, exit code 0)
+- `./node_modules/.bin/vitest --run`: FAIL — vitest not installed (`./node_modules/.bin/vitest: No such file or directory`).
+
+## Notes
+- `/app` is not a git repository; `agents/` is. Run git operations from `/app/agents`.
