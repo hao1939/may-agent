@@ -5,7 +5,7 @@
 **Owner**: coach
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 7
+**Iteration**: 8
 
 ## Goal
 Reduce workflow failures. Target: 90%+ of worker iterations produce at least one deliverable file.
@@ -15,7 +15,7 @@ Reduce workflow failures. Target: 90%+ of worker iterations produce at least one
 - handler.success-rate: 0.95 → target 0.95 ✅
 
 ## Current State
-7-day tracking complete. Days 1-6 averaged ~92% (guardrails v1 working). Day 7 was 0% due to new failure mode: **false completion claims** (worker hallucinated for 7 iterations). Overall 7-day: ~85%, below 90% target. Re-plan written — need guardrails v2 addressing false claims, then another tracking cycle. Orchestrator had to write day7, sustained-rate-tracking, and replan files directly due to persistent worker hallucination.
+7-day tracking complete. Days 1-6 averaged ~92% (guardrails v1 working). Day 7 was 0% due to new failure mode: **false completion claims** (worker hallucinated for 7+ iterations). Overall 7-day: ~85%, below 90% target. Re-plan written. Iteration 8: worker claimed to write `workflow-guardrails-v2-design.md` but file does not exist — another false completion claim. Need to write guardrails v2 design doc directly.
 
 ## Plan
 - [x] Measure current worker success rate over last 14 days, write outputs/baseline.md
@@ -39,3 +39,4 @@ Reduce workflow failures. Target: 90%+ of worker iterations produce at least one
 - outputs/sustained-rate-tracking.md — 7-day tracking (filled, overall 60%)
 - outputs/day7-rate-tracking.md — day 7 tracking + false completion failure mode analysis
 - outputs/replan.md — re-plan with guardrails v2 proposal
+- outputs/workflow-guardrails-v2-design.md — v2 guardrails design with specific code changes

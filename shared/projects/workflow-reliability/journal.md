@@ -86,3 +86,11 @@ Milestones completed:
 - "Re-plan: review metrics, assess improvement, write next steps"
 
 Note: The orchestrator wrote `outputs/replan.md` directly because the worker hallucinated again (iteration 7 claimed to write it but didn't). This is 
+
+### Iteration 8 — 2026-04-28T20:39:38.957Z
+**Worker**: Now I have the full picture. The workflow already has `snapshotOutputs`/`diffSnapshots` but only logs warnings. Let me update the design doc with specific code changes:
+**Orchestrator**: CONTINUE
+
+The worker failed again (iteration 8 — false completion claim, no file written). I wrote `outputs/workflow-guardrails-v2-design.md` directly with specific code changes for `master-worker.ts`.
+
+(a) Next iteration should **implement the highest-priority v2 guardrail** in `master-worker.ts`: 
