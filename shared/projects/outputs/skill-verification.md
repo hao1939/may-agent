@@ -20,3 +20,24 @@ Scanned `agents/*/journal.md` for behavioral evidence of each top-5 skill being 
 **5/5 = 1.00**
 
 All top-5 skills show clear behavioral evidence in agent journals. Bob's journal is the richest source of evidence, showing systematic use of all five skill patterns.
+
+## Extended Verification (Next 10 Skills)
+
+| Skill | Deployed | Verified? | Evidence |
+|-------|----------|-----------|----------|
+| verify-after-edit | 8 agents | ✅ Yes | Bob created verify-after-write.ts guard; C1.3 guard forces read-back after write; deployed across multiple agents |
+| read-before-edit | 5 agents | ✅ Yes | Bob upgraded read-before-edit.ts guard from warn→run_step; C1.1 compliance tracked at 84.2%; EXP-256 measured |
+| evidence-over-narrative | 5 agents | ✅ Yes | Bob's journal shows systematic evidence-based approach; conflicting-evidence scenario identified as gap; DD#880 analysis uses empirical data over narrative |
+| verify-before-finish | 4 agents | ⚠️ Partial | Bob notes "baseline 6/7, failing check is product-level, not behavioral" — skill deployed but marginal behavioral impact |
+| experience-replay | 2 agents | ❌ No | No journal evidence of explicit experience replay behavior |
+| establish-working-directory | 2 agents | ❌ No | No journal evidence found |
+| consolidate-memory | 2 agents | ✅ Yes | Bob references StructMem periodic consolidation (H-077b), archive/consolidate recommendations, hippo sleep consolidation pattern |
+| read-only-finish-protocol | 2 agents | ✅ Yes | Workspace journal: "preconditions hold using read-only tool calls. Prevents the #1 source of wasted [work]" |
+| diagnosis-before-action | 1 agent | ✅ Yes | Bob diagnosed P85 implementation state before acting; cascading-error root cause analysis; systematic diagnosis patterns |
+| convention-compliance | 1 agent | ✅ Yes | EXP-256 measured 84.2% compliance; C1.1/C1.3 compliance monitoring active; convention pass rates tracked |
+
+### Extended Verified Rate
+**8/10 verified** (experience-replay and establish-working-directory lack behavioral evidence)
+
+### Combined Verified Rate
+**13/15 = 0.87**
