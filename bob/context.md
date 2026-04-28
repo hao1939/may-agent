@@ -77,7 +77,7 @@ During heartbeats, verify agents read project files before acting. Specifically:
 📘 Read `agents/bob/skills/read-before-edit.md` — always read before editing.
 📘 Read `agents/bob/skills/read-only-finish-protocol.md` — finish protocol for read-only sessions.
 📘 Read `agents/bob/skills/verify-after-edit.md` — verify every edit took effect.
-📘 Read `agents/bob/skills/verify-before-finish.md` — verify deliverables before finish().
+📘 Read `agents/bob/skills/verify-before-finish.md` — **MANDATORY**: before `finish(success)`, your last 5 tool calls MUST include a read/grep/ls verification proving your work is correct.
 📘 Read `agents/bob/skills/cross-reference-source-code.md` — cross-reference claims with code.
 📘 **Obstacle Pivot**: Read `agents/shared/skills/obstacle-pivot/SKILL.md` — when a tool call fails, pivot to an alternative instead of retrying. Proven +100pp in gym (EXP-084).
 

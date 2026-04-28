@@ -1,26 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777400671372_317
+- **Session:** s_1777401051006_333
 - **Status:** done
-- **When:** 2026-04-28T18:24:53.636Z
-- **Duration:** 22s
+- **When:** 2026-04-28T18:31:03.813Z
+- **Duration:** 12s
 
 ## What Happened
-Worker failed again — no `skill-behavioral-audit.md` was produced. 4 iterations asking for the same deliverable.
+All 4 metrics are at target, all 12 milestones checked off. Two unchecked plan items remain: strengthening Verify-Before-Finish and re-planning.
 
 CONTINUE
 
-The worker has failed to produce `outputs/skill-behavioral-audit.md` for 2 iterations now. Let me be extremely specific.
+(a) Next iteration should **strengthen the Verify-Before-Finish skill** (currently 67%, weakest). Concrete steps:
+1. Read the current Verify-Before-Finish skill content in `agents/shared/skills/` (find the relevant file)
+2. Check which agents' `context.md` files have the 📘 directive for this skill — strengthen the wording to be more explicit/imperative
+3. Write a brief summary of changes to `outputs/verify-before-finish-strengthening.md`
 
-(a) **Produce exactly one file: `outputs/skill-behavioral-audit.md`**. Nothing else matters this iteration.
+(b) This is the last actionable improvement identified — after this we re-assess metrics and plan next opportunities.
 
-(b) Here is exactly what to do:
-1. Run `find /app/agents -name "*.md" -path "*/.state/*" -newer /app/agents/shared/projects/skill-workflow-audit/outputs/skill-verification.md | head -20` to find recent agent work artifacts
-2. Run `git -C /app log --oneline --since="2 days ago" --all | head -30` to find recent agent commits  
-3. For whatever evidence you find, score 5-10 sessions on: (a) did agent check state before acting? (b) did agent cite evidence? (c) did agent verify before finishing?
-4. Write the results to `/app/agents/shared/projects/skill-workflow-audit/outputs/skill-behavioral-audit.md`
-
-(c) **First command to run**: `find /app/agents -name "*.md" -path "*/.state/*" -newer /app/agents/shared/projects/skill-workflow-audit/outputs/skill-verification.md | head -20`
-
-**Do NOT say "now I have enough data" or "let me write the report" without actually writing the file. The deliverable is the file on disk.**
+(c) First step: `find /app/agents/shared/skills -name '*verify*' -o -name '*finish*'` to locate the skill file, then check agent context.md files for the injection directive.

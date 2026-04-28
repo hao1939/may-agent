@@ -74,7 +74,7 @@
 📘 Read `agents/scout/skills/read-before-edit.md` — always read before editing.
 📘 Read `agents/scout/skills/search-governance.md` — search protocol governance.
 📘 Read `agents/scout/skills/verify-after-edit.md` — verify every edit took effect.
-📘 Read `agents/scout/skills/verify-before-finish.md` — verify deliverables before finish().
+📘 Read `agents/scout/skills/verify-before-finish.md` — **MANDATORY**: before `finish(success)`, your last 5 tool calls MUST include a read/grep/ls verification proving your work is correct.
 📘 Read `agents/scout/skills/verify-quantitative-claims.md` — verify numbers before citing.
 
 ## Learned from experience

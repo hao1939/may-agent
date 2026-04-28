@@ -98,7 +98,7 @@
 📘 Read `agents/tech-lead/skills/experience-replay.md` — learn from past sessions.
 📘 Read `agents/tech-lead/skills/finish-before-cleanup.md` — finish work before cleanup.
 📘 Read `agents/tech-lead/skills/read-before-edit.md` — always read before editing.
-📘 Read `agents/tech-lead/skills/post-delivery-readback-verification.md` — verify deliverables before finish.
+📘 Read `agents/tech-lead/skills/post-delivery-readback-verification.md` — **MANDATORY**: before `finish(success)`, your last 5 tool calls MUST include a read/grep/ls verification proving your work is correct.
 📘 Read `agents/tech-lead/skills/security-awareness-when-editing.md` — security awareness.
 📘 Read `agents/tech-lead/skills/verify-after-edit.md` — verify every edit took effect.
 📘 **Obstacle Pivot**: Read `agents/shared/skills/obstacle-pivot/SKILL.md` — when a tool call fails, pivot to an alternative instead of retrying. Proven +100pp in gym (EXP-084).

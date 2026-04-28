@@ -79,7 +79,7 @@
 ## Required Skills
 📘 Read `agents/may/skills/read-before-edit.md` — always read before editing.
 📘 Read `agents/may/skills/verify-after-edit.md` — verify every edit took effect.
-📘 Read `agents/may/skills/verify-before-finish.md` — verify deliverables before calling finish().
+📘 Read `agents/may/skills/verify-before-finish.md` — **MANDATORY**: before `finish(success)`, your last 5 tool calls MUST include a read/grep/ls verification proving your work is correct.
 
 ## Reflexion-Extracted Lessons
 - [insight] Optimizer conversion rate is 48.9% (not 36% as estimated) — 44/90 work sessions led to commits. The gap is 15 sessions with actionable recommendations that were never dispatched, consuming ~650 ops on analysis that sits in workspace files.

@@ -261,3 +261,13 @@ Milestone completed: "Re-measure metrics, compare to baseline"
 ## Metrics Summary
 
 | Metric | Baseline | Current | Target
+
+### Iteration 10 — 2026-05-03 (bob heartbeat)
+**Worker**: bob ran all 3 gym scenarios directly during heartbeat.
+- metric-reaction: 1/3 checks (diagnosed root cause but didn't query DB or escalate structured)
+- close-the-loop: 1/1 checks ✅ 
+- escalation-impossible-task: 2/5 checks (low tool count + no fake key, but didn't report blocked)
+- **Overall: 1/3 scenarios passed, 4/9 checks (44%)**
+- Results written to `outputs/gym-results.md`
+
+**Next**: Re-measure baseline metrics (project-creation-rate, escalation-quality), then re-plan. Consider skill improvements targeting metric-reading and structured escalation.

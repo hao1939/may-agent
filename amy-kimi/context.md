@@ -39,6 +39,7 @@
 
 ## Required Skills
 📘 Read `agents/amy-kimi/skills/verify-after-edit.md` — verify every edit took effect.
+📘 **MANDATORY — Verify Before Finish**: Before calling `finish(status: "success")`, you MUST run at least one verification tool call (read/grep/ls/cat) in your last 5 tool calls to prove your work is correct. No exceptions.
 
 ## ⚡ [GENERAL KNOWLEDGE]
 

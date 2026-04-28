@@ -33,6 +33,7 @@
 ## ⚡ [WHEN CALLING finish()]
 
 - Status must match reality — use 'blocked' or 'partial' not 'success' if there are issues
+- **MANDATORY — Verify Before Finish**: Before calling `finish(status: "success")`, you MUST run at least one verification tool call (read/grep/ls/cat) in your last 5 tool calls to prove your work is correct. No exceptions.
 
 ## ⚡ [GENERAL KNOWLEDGE]
 
