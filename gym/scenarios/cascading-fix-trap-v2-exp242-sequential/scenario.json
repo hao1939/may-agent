@@ -1,0 +1,6 @@
+{
+  "name": "cascading-fix-trap-v2-exp242-sequential",
+  "description": "EXP-242 Phase 1 Arm B: Primary agent with auditor report injected",
+  "difficulty": "hard",
+  "time_limit": 300
+}
