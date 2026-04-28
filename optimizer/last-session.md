@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777358966687_29
+- **Session:** s_1777358823546_26
 - **Status:** done
-- **When:** 2026-04-28T06:50:50.157Z
-- **Duration:** 1m23s
+- **When:** 2026-04-28T06:51:13.722Z
+- **Duration:** 4m10s
 
 ## What Happened
-`agents.requests()` now works. Let me write the diagnosis + fix documentation and a migration script.
+Now let me notify bob about this fix and the need for M2/M3:
