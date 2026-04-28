@@ -48,7 +48,7 @@ The system has 8+ disconnected tracking mechanisms:
 
 | System | What it tracks | Where it lives |
 |--------|---------------|----------------|
-| Request DB | Ad-hoc tasks (27K+) | `may.db` → `requests` table |
+| Sessions DB | Work tracking (sessions, events) | `may.db` → `sessions` + `events` tables |
 | Dispatch board | May's active priorities | `may/workspace/dispatch-board.md` |
 | Improvement queue | Idle-time work | Various `todo.md` files |
 | Cron job health | Process monitoring | `watchdog` handler |
@@ -225,7 +225,7 @@ CREATE INDEX IF NOT EXISTS idx_research_log_agent ON research_log(agent, type, c
 
 | Current System | Becomes | Example |
 |---------------|---------|---------|
-| Request DB task ("fix X") | One-off metric | `id: fix-verify-wrap, type: one-off, owner: tech-lead, target: 1` |
+| Session task ("fix X") | One-off metric | `id: fix-verify-wrap, type: one-off, owner: tech-lead, target: 1` |
 | Dispatch board priority | Active metric with status | Board becomes a **view** of `SELECT * FROM metrics WHERE status = 'active' ORDER BY priority` |
 | Improvement queue item | One-off or continuous metric | `id: cost-limit-guard, type: one-off, owner: tech-lead, target: 1` |
 | Cron job health | Health metric (auto-measured) | `id: health.watchdog-uptime, type: health, owner: may, threshold: 99, source: auto` |
@@ -237,7 +237,7 @@ CREATE INDEX IF NOT EXISTS idx_research_log_agent ON research_log(agent, type, c
 
 ### What we DON'T migrate
 
-The request DB (27K+ rows) stays as-is. We don't backfill old tasks as metrics. The metric system tracks **goals going forward**. Old requests are historical data.
+The sessions DB tracks work history. We don't backfill old data as metrics. The metric system tracks **goals going forward**. Old sessions are historical data.
 
 The dispatch board becomes a **view** generated from the metrics table, not a manually edited file. May's heartbeat reads metrics instead of editing markdown.
 
