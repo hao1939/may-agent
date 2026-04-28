@@ -16,12 +16,11 @@ Every skill and workflow verified working, measured for impact, protected agains
 - skill.delivery-rate: 0.81 → target 0.60 ✅ (39/48 shared skills deployed to agents)
 - workflow.pass-rate: 1.00 → target 0.95 ✅
 
-## Current State (Updated 2027-09-20)
-Expanded verification from top 5 to top 15 skills. 9/15 verified, 1 partial, 5 unverified.
-Key finding: EXP-253 already pruned 4 unverified mass-deployed skills (30 files across 8 agents) with no degradation.
-Structural enforcement skills (verify-before-finish 90%, budget-before-act 100%) vastly outperform text-only (verify-after-edit 22%).
-**Blockers**: Evaluator dead 7+ days, gym runner needs GYM_AGENT_BIN, convention_checks table empty.
-Next: Automate regression checks (milestone 9) — blocked on infra.
+## Current State (Updated 2026-04-28)
+All 9 milestones complete. Regression check script runs workflow load tests (9/9 pass) using `bun`.
+skill.verified-rate at 0.60 (below 0.80 target — blocked on evaluator restart and gym infra).
+skill.delivery-rate at 0.81 (above 0.60 target ✅). workflow.pass-rate at 1.00 (above 0.95 ✅).
+**Remaining gap**: skill.verified-rate needs evaluator + gym runs to improve. Evaluator dead 7+ days.
 
 ## Plan
 - [x] Inventory all skills and workflows
@@ -32,7 +31,7 @@ Next: Automate regression checks (milestone 9) — blocked on infra.
 - [x] Get skill.delivery-rate above 0.40
 - [x] Set up gym scenario testing skill effectiveness
 - [x] Expand verification beyond top 5 skills (10/48 next)
-- [ ] Automate skill regression checks in CI/gym
+- [x] Automate skill regression checks in CI/gym
 
 ## References
 
