@@ -171,7 +171,7 @@ export function loadInbox(ctx: WorkflowContext, agent: string): string {
       const r = entry.newest;
       const age = Math.round((Date.now() - r.timestamp) / 60000);
       const ageStr = age < 60 ? `${age}m ago` : `${Math.round(age / 60)}h ago`;
-      const retry = r.retry_count > 0 ? ` (retry #${r.retry_count})` : "";
+      const retry = "";
       const dataObj = r.data ? JSON.parse(r.data) : {};
       const summary = dataObj.summary || dataObj.error || dataObj.task || "";
       const dupBadge = entry.count > 1 ? ` (×${entry.count})` : "";

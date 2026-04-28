@@ -4,7 +4,7 @@
 **Owner**: optimizer
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 10
+**Iteration**: 11
 
 ## Goal
 Maximize meaningful output of the agent system. Not about reducing cost — about doing more real work per hour.
@@ -15,7 +15,7 @@ Maximize meaningful output of the agent system. Not about reducing cost — abou
 - handler.success-rate: 0.95 → target 0.95 ✅
 
 ## Current State
-**Iteration 15 (2026-04-28).** workflow-reliability at 3 iterations (baseline, guardrails-design, sustained-rate-tracking) ✅. agent-memory-learning at 2 (memory-audit, structured-lesson-format) — needs 1 more. Active project count: 3 ✅. Worker producing files consistently since iteration 6.
+**Iteration 11.** Both new projects at 3+ iterations ✅. workflow-reliability: baseline, guardrails-design, sustained-rate-tracking. agent-memory-learning: memory-audit, structured-lesson-format, lesson-retrieval-system. Active project count: 3 ✅. Remaining: achieve 10 project iterations in a 24h window.
 
 ## Plan
 - [x] Redefine metrics: replace may-session-ratio with output-focused metrics
@@ -25,7 +25,7 @@ Maximize meaningful output of the agent system. Not about reducing cost — abou
 - [x] Re-plan: review output metrics, assess improvement, write next steps
 - [x] Archive agent-owned zombie projects (already done: coach 3, optimizer 1)
 - [x] Add output verification to master-worker workflow (already existed in master-worker.ts lines 310, 337)
-- [ ] Open 2 new projects and get them to 3+ iterations each
+- [x] Open 2 new projects and get them to 3+ iterations each
 - [ ] Achieve 10 project iterations in a 24h window
 
 ## References
