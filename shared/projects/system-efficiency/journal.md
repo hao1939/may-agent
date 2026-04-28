@@ -222,3 +222,8 @@ Milestones completed:
 - "Identify biggest blockers to output (stuck projects, slow handlers, idle agents)"
 
 **(a) Next iterat
+**Orchestrator**: CONTINUE
+
+**(a) Next iteration should**: Actually produce the zombie cleanup. Concrete deliverable: a file `outputs/zombie-cleanup-report.md` listing every project archived, plus the actual archival action (moving dirs to `_archive/`).
+
+**(b) What's different**: Iteration 2 produced nothing. The wor
