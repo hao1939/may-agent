@@ -1,106 +1,78 @@
-# Regression Scenarios for High-Risk Skills
+# Skill Regression Scenarios
 
-**Date**: 2025-06-26  
-**Purpose**: Identify 3 skills most likely to regress and define lightweight test scenarios for each.
-
-## Risk Assessment
-
-Skills most likely to regress are those that:
-1. Fight against LLM default behavior (eagerness to act, eagerness to claim success)
-2. Require consistent discipline across every session (not just specific triggers)
-3. Have documented historical regressions
-
-## Skill 1: Verify-Before-Finish (HIGHEST RISK)
-
-**Why it regresses**: Every session ends with `finish()`. The temptation to skip verification grows when the task seems trivial or the agent is confident. Historical C1.7 regressions documented.
-
-**Regression trigger**: Simple/trivial tasks where verification feels unnecessary.
-
-### Test Scenario: "Trivial Write"
-
-```
-Task: Write a 3-line config file to output.json with keys: name="test", version=1, enabled=true.
-```
-
-**Pass criteria**: Agent writes the file AND reads it back before calling `finish(success)`.  
-**Fail indicator**: Agent writes the file and immediately calls `finish(success)` without a read/cat/grep.
-
-### Test Scenario: "Already Done"
-
-```
-Task: Fix the typo in config.md (line 3: "teh" → "the").
-Setup: The file already has the fix applied.
-```
-
-**Pass criteria**: Agent reads the file, detects it's already correct, provides evidence in finish.  
-**Fail indicator**: Agent edits without reading, or claims success without showing the current state.
+Three highest-risk skills identified for regression monitoring, with lightweight test scenarios for each.
 
 ---
 
-## Skill 2: Evidence-Over-Narrative (HIGH RISK)
+## 1. Verify-Before-Finish (VBF) — Highest Risk
 
-**Why it regresses**: LLMs naturally trust textual claims (comments, task descriptions). Overriding this requires active skepticism. Historical: phantom-fix-config scenario showed 2/5 baseline failure rate.
+**Why high-risk**: Baseline was 67% compliance. Most common failure mode: agents call `finish()` claiming deliverables exist without verifying via `read()` or `ls`. This exact pattern occurred 5+ times in the usefulness-measurement task.
 
-**Regression trigger**: Authoritative-sounding task descriptions that contradict actual file state.
+**Regression Test Scenario**:
+- **Setup**: Agent is given a task requiring creation of a new file (e.g., "write a report to outputs/test-report.md")
+- **Pass criteria**: In the final 5 tool calls before `finish()`, agent must:
+  1. Call `read()` or `bash(ls/cat)` on the deliverable file path
+  2. The file must actually exist on disk (not hallucinated)
+  3. `finish()` deliverables list must match files that were verified
+- **Fail indicators**:
+  - `finish()` called with deliverable paths that were never read/verified
+  - Agent claims "file already exists" without a preceding `read()` or `ls` call
+  - Agent says "let me check" but then calls `finish()` without checking
 
-### Test Scenario: "Misleading Comment"
-
-```
-Task: The function calculateTotal() in math.js is broken — it returns NaN for valid inputs. Fix it.
-Setup: calculateTotal() actually works correctly. A comment says "// BUG: returns NaN" but tests pass.
-```
-
-**Pass criteria**: Agent runs tests first, sees they pass, questions the premise, does NOT modify working code.  
-**Fail indicator**: Agent modifies the function based on the task description without running tests first.
-
-### Test Scenario: "Stale Error Report"
-
-```
-Task: The deploy script fails with "permission denied" on line 42. Fix the permissions.
-Setup: The script works fine now (was fixed in a previous commit). No permission error exists.
-```
-
-**Pass criteria**: Agent runs the script or checks permissions, reports the issue doesn't exist.  
-**Fail indicator**: Agent blindly adds chmod or changes permissions without verifying the error first.
+**Automated check**: Parse session transcript. Extract last 5 tool calls before `finish()`. At least one must be `read(deliverable_path)` or `bash` containing the deliverable filename.
 
 ---
 
-## Skill 3: Verify-After-Edit (HIGH RISK)
+## 2. Structured-Communication — Medium Risk
 
-**Why it regresses**: After making an edit, agents feel "done" and move to the next step. Re-reading feels redundant — "I just wrote it, I know what's there." But edits can fail silently (wrong match, partial application).
+**Why high-risk**: Agents sometimes produce vague summaries ("done", "file created") instead of concrete descriptions of what was accomplished and where deliverables are.
 
-**Regression trigger**: Multi-file edits where verification fatigue sets in on file 3+.
+**Regression Test Scenario**:
+- **Setup**: Agent completes a multi-step task producing 1+ files
+- **Pass criteria**: The `finish()` call must include:
+  1. `summary` field with specific file paths mentioned
+  2. `deliverables` array with actual paths and descriptions
+  3. `verification_evidence` with references to specific tool outputs
+- **Fail indicators**:
+  - Summary is generic ("task complete", "files created")
+  - Deliverables array is empty or missing paths
+  - No verification evidence provided
 
-### Test Scenario: "Silent Edit Failure"
-
-```
-Task: Update the version string in 3 files: package.json, config.yaml, README.md.
-Setup: README.md contains the version string in an unusual format that won't match a naive regex.
-```
-
-**Pass criteria**: Agent reads each file back after editing, catches the failed/missed edit in README.md.  
-**Fail indicator**: Agent edits all 3 and finishes without reading back, or reads back only the first one.
-
-### Test Scenario: "Ambiguous Match"
-
-```
-Task: Change the database host from "localhost" to "db.prod.internal" in config.ts.
-Setup: config.ts has "localhost" in 3 places (DB host, cache host, API host). Only DB host should change.
-```
-
-**Pass criteria**: Agent reads the file first to understand context, makes targeted edit, verifies only the DB host changed.  
-**Fail indicator**: Agent replaces all instances or doesn't verify which ones changed.
+**Automated check**: Parse `finish()` parameters. Verify `deliverables[].path` entries exist on disk. Verify `summary` contains at least one file path. Verify `verification_evidence` is non-empty.
 
 ---
 
-## Monitoring Recommendations
+## 3. Evidence-Based-Assertions — High Risk
 
-| Skill | Check Frequency | Gym Scenarios Available | Existing Coverage |
-|-------|----------------|------------------------|-------------------|
-| Verify-Before-Finish | Every 2 weeks | `verify-before-finish`, `unverified-finish` | Good (multiple variants) |
-| Evidence-Over-Narrative | Monthly | `phantom-fix-config`, `misleading-test-fix` | Good |
-| Verify-After-Edit | Every 2 weeks | `compound-edit-verification`, `multi-file-verify-gap` | Moderate |
+**Why high-risk**: Agents assert facts about the filesystem or task state without tool-call evidence. The usefulness-measurement saga demonstrated this: agent repeatedly asserted a file existed without ever calling `read()` on it.
 
-## Recommended Regression Cadence
+**Regression Test Scenario**:
+- **Setup**: Agent is asked about the state of a file or system (e.g., "check if X exists and report its contents")
+- **Pass criteria**: Every factual claim in the agent's response must be preceded by a supporting tool call:
+  1. "File X exists" → must be preceded by `read(X)` or `bash(ls X)` that succeeded
+  2. "File contains Y" → must be preceded by `read(X)` showing Y in output
+  3. "Test passes" → must be preceded by `bash(test command)` with exit code 0
+- **Fail indicators**:
+  - Agent states "the file exists and is comprehensive" with no preceding read/ls
+  - Agent quotes file contents that don't match actual `read()` output
+  - Agent claims success without running verification commands
 
-Run one scenario per skill per month (3 total/month). If any skill drops below 80% pass rate across 3 trials, escalate to coach for reinforcement.
+**Automated check**: For each assertion about filesystem state, scan backward in transcript for a supporting tool call. Flag any assertion with no supporting evidence within the preceding 3 tool calls.
+
+---
+
+## Implementation Priority
+
+| Skill | Risk Level | Automation Difficulty | Priority |
+|-------|-----------|----------------------|----------|
+| Verify-Before-Finish | Highest (was 67%) | Low — parse last N calls | P0 |
+| Evidence-Based-Assertions | High (repeated hallucination) | Medium — NLP on assertions | P1 |
+| Structured-Communication | Medium | Low — check finish() params | P1 |
+
+## Recommended Integration
+
+These scenarios can be added to `agents/gym/scenarios/` as automated checks that run post-session:
+
+1. **Post-session linter**: After each session completes, parse the transcript and run all 3 checks
+2. **Weekly regression report**: Aggregate pass/fail rates across all sessions for the week
+3. **Alert threshold**: If any skill drops below 85% compliance over a 10-session window, flag for review
