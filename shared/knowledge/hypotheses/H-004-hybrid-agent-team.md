@@ -1,6 +1,6 @@
 # H-004: Hybrid Agent Team — Static Core + Dynamic Sub-Agents
 
-**Status**: `proposed`  
+**Status**: `closed` — SUPERSEDED. Our system already implements the core pattern: static agents (bob, scout, coder, etc.) with dynamic sub-sessions via fork/call. The workflow system is the orchestrator layer. Closing after 12+ months with no test designed.  
 **Created**: 2025-04-25  
 **Author**: Amy-Kimi  
 **Related**: [HB-0040 DeerFlow](../library/posts/HB-0040-deerflow-bytedance-super-agent.md), [HB-0042 Anthropic Patterns](../library/posts/HB-0042-anthropic-effective-agents.md)
