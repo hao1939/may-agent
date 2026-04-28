@@ -356,3 +356,13 @@ Milestone completed: "Measure actual agent skill usage rate (do agents reference
 CONTINUE
 
 (a) Next iteration should **sample 10 recent agent sessions and score them for behavioral skill application**. Concrete deliverable: `outputs/skill-behavioral-audit.md` with
+
+### Iteration 4 — 2026-04-28T18:24:31.372Z
+**Worker**: Now I have all the data. Let me write the comprehensive audit.
+**Orchestrator**: Worker failed again — no `skill-behavioral-audit.md` was produced. 4 iterations asking for the same deliverable.
+
+CONTINUE
+
+The worker has failed to produce `outputs/skill-behavioral-audit.md` for 2 iterations now. Let me be extremely specific.
+
+(a) **Produce exactly one file: `outputs/skill-behavio
