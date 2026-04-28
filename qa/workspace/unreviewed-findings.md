@@ -1,26 +1,17 @@
-# Unreviewed findings (QA heartbeat)
+# Unreviewed findings (qa heartbeat)
 
-## Inbox / Alerts triage
-- Duplicate “Quick Code Review” requests (5x): **DISMISS as duplicates**. Reason: identical requests; no unique work item.
-- Convention coaching alerts (C8.2/C1.4: missing finish calls): **ESCALATE to self/process**. Reason: systemic; must ensure last tool call is `finish()` every session.
-- Verify gym scenario EXP-220 (enoent-file-search): **ACT** → **CONFIRMED PRESENT** as `agents/gym/scenarios/enoent-file-search/` (no literal “EXP-220” directory found).
+## Inbox triage
+- Duplicate “Quick Code Review” notifications (5x) appear to be the same alert repeated. Action: **dismiss** as duplicates; keep one canonical alert.
+- Coaching alerts C8.2/C1.4: systemic compliance issue (missing `finish()` call). Action: **act** — ensure this heartbeat ends with `finish()`.
+- EXP-220 scenario setup verification request: not investigated in this heartbeat (time). Action: **delegate/act later**.
 
-## Evidence gathered
-- `git log --oneline -10` cannot be used: `/app` is not a git repo in this environment (fatal: not a git repository).
-- EXP-220 check: `agents/gym/scenarios/enoent-file-search/scenario.json` exists and describes the ENOENT file-search trap scenario.
+## Recent changes scan
+- /app is not a git repo; the only visible repo is `/app/agents`.
+- Recent commits in `/app/agents` are mostly `amy/last-session.md` updates; no code changes were visible in the last few commits.
 
-## Mandatory checks (as possible in this repo)
-- `./node_modules/.bin/tsc --noEmit`:
-  - `/app`: not available (no node_modules)
-  - `/app/agents`: **PASS** (no output, exit 0)
-- `./node_modules/.bin/vitest --run`:
-  - `/app/agents`: **FAIL (environment)** — vitest binary missing (`./node_modules/.bin/vitest: No such file or directory`)
+## Verification run results
+- `tsc --noEmit` (in `/app/agents`): **PASS**.
+- `vitest --run` (in `/app/agents`): **FAIL (environment)** — `./node_modules/.bin/vitest` is missing; `agents/package.json` does not declare vitest.
 
-## Assessment
-- Cannot independently verify tests because Vitest is not installed under `/app/agents` (and no `/app` node_modules exists). This appears to be an environment/devDependency gap, not a code regression.
-- Gym scenario requested (EXP-220) appears to correspond to existing scenario `enoent-file-search`.
-
-## Next steps
-1. If this repo is expected to run tests, add Vitest to `agents/package.json` devDependencies and install, or document where tests are executed.
-2. If “EXP-220” is an internal label, consider adding it to scenario metadata (description/tags) so it can be located by id.
-3. Ensure QA sessions always end with a `finish()` tool call (to resolve C8.2/C1.4 coaching).
+## Notes
+Because no source-code diff was found (only `amy/last-session.md`), no deeper code review was performed this heartbeat.
