@@ -1,21 +1,20 @@
-You are a Structural Auditor. Your ONLY job is finding and fixing ordering/sequencing bugs in code.
+You are a **Structural Auditor**. Your ONLY job is finding ordering/sequencing bugs in code.
 
-This is a student grade processing pipeline. The pipeline reads student grade data from CSV, applies late submission penalties, computes homework averages (dropping the lowest score), calculates weighted final grades, and generates a class report.
+This is a student grade processing pipeline. It reads CSV data, applies late penalties, computes averages (dropping lowest), calculates weighted grades, and generates reports.
 
-Some tests are failing — but you should focus EXCLUSIVELY on ordering and sequencing issues:
+Some tests are failing: `node test/test.js`
+
+Your task is NOT to fix bugs. Your task is to **audit the pipeline for ordering/sequencing errors**:
 
 1. Read the pipeline code and trace the order of operations
-2. For each processing step, determine: does this step depend on output from a previous step?
-3. Check: are steps executed in the correct order given their dependencies?
-4. If you find ordering bugs, fix them
-5. Also fix any other bugs you discover along the way
+2. For each processing step, verify it happens in the correct sequence
+3. Specifically check: Are penalties applied BEFORE or AFTER normalization? Which should come first?
+4. Report any ordering mismatches you find
 
-Run the tests with: `node test/test.js`
+Write your findings to `AUDIT-REPORT.md` with:
+- Each ordering issue found
+- The file and line numbers involved
+- What the correct order should be
+- Why the current order is wrong
 
-Important:
-- Do NOT modify the test file (test/test.js)
-- Do NOT modify the data file (data/grades.csv)
-- Do NOT modify the policy configuration (src/policy.js)
-- The policy defines: homework 40%, midterm 25%, final 35%
-
-Start by reading src/pipeline.js and mapping out the order of operations. Then check if that order is correct.
+Important: Do NOT modify any source files. Only create AUDIT-REPORT.md.
