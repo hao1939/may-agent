@@ -14,7 +14,7 @@
  *   bun src/app/may.ts --run-workflow master-worker "project: agents/shared/projects/my-project"
  */
 
-import { readFileSync, existsSync, writeFileSync, appendFileSync } from "node:fs";
+import { readFileSync, existsSync, writeFileSync, appendFileSync, readdirSync, statSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import {
   extractField, extractSection, extractMilestones, updateProjectStatus,
@@ -121,6 +121,42 @@ Rules:
 - Do NOT edit project.md, journal.md, or discussion.md
 - Focus on the specific task in the guidance
 - When done, summarize what you created and where`;
+}
+
+// ── Output verification ─────────────────────────────────────────────────
+
+/** Snapshot file mtimes in a directory (recursive, 2 levels deep) */
+function snapshotOutputs(dir: string): Map<string, number> {
+  const snap = new Map<string, number>();
+  if (!existsSync(dir)) return snap;
+  try {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isFile()) {
+        snap.set(full, statSync(full).mtimeMs);
+      } else if (entry.isDirectory()) {
+        for (const sub of readdirSync(full, { withFileTypes: true })) {
+          if (sub.isFile()) {
+            const subFull = join(full, sub.name);
+            snap.set(subFull, statSync(subFull).mtimeMs);
+          }
+        }
+      }
+    }
+  } catch {}
+  return snap;
+}
+
+/** Compare before/after snapshots, return list of new or modified files */
+function diffSnapshots(before: Map<string, number>, after: Map<string, number>): string[] {
+  const changed: string[] = [];
+  for (const [path, mtime] of after) {
+    const prev = before.get(path);
+    if (prev === undefined || mtime > prev) {
+      changed.push(path);
+    }
+  }
+  return changed;
 }
 
 // ── Main ────────────────────────────────────────────────────────────────
@@ -255,12 +291,26 @@ ${journalContent.slice(-3000)}
       // ── Work phase ──
       ctx.log(`[work] Iteration ${iteration}/${maxIterations} starting...`);
       const guidance = orchestrator.lastText();
+      const outputsDir = join(dirname(projectDir), "outputs");
+
+      // Snapshot outputs before worker runs
+      const beforeSnap = snapshotOutputs(outputsDir);
 
       // Worker gets ONLY the orchestrator's guidance — no project.md, no milestones
       const workerPrompt = `## Task (Iteration ${iteration})\n${guidance}`;
 
       await worker.prompt(workerPrompt);
       ctx.log(`[work] Iteration ${iteration} done`);
+
+      // Verify worker produced output
+      const afterSnap = snapshotOutputs(outputsDir);
+      const changedFiles = diffSnapshots(beforeSnap, afterSnap);
+      if (changedFiles.length === 0) {
+        ctx.log(`[work] ⚠️ WARNING: Iteration ${iteration} produced NO output files in ${outputsDir}`);
+        appendFileSync(journalFile, `\n### Iteration ${iteration} — ${new Date().toISOString()}\n**⚠️ No output files produced this iteration**\n`, "utf-8");
+      } else {
+        ctx.log(`[work] ✅ Iteration ${iteration} produced ${changedFiles.length} file(s): ${changedFiles.map(f => f.split('/').pop()).join(', ')}`);
+      }
 
       // ── Journal ──
       const workerText = worker.lastText();
@@ -283,6 +333,8 @@ ${journalContent.slice(-3000)}
 
       let reviewPrompt = `## Worker Output (Iteration ${iteration})
 ${workerSummary}
+
+**Output verification**: ${changedFiles.length === 0 ? '⚠️ NO files were created or modified this iteration. Consider requiring write() as the first tool call in next guidance.' : `✅ ${changedFiles.length} file(s) modified: ${changedFiles.map(f => f.split('/').pop()).join(', ')}`}
 
 Read project.md for current state, metrics, and plan. Update it as needed.
 Then provide your decision and guidance for the next iteration.`;
