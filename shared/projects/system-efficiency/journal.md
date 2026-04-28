@@ -273,3 +273,11 @@ Milestone completed: "Add output verification to master-worker workflow" (alread
 I wrote `outputs/new-project-proposals.md` myself since the worker has failed to produce files 8 out of 9 iterations. Three projects proposed: Agent Memory & Learning, Workflow Reliability, Project Pipeline.
 
 **(a) Next iteration should**: Actually open 2 of these proposed projects. Create
+
+### Iteration 5 — 2026-04-28T18:50:05.473Z
+**Worker**: 
+**Orchestrator**: CONTINUE
+
+Milestone completed: "Open 2 new projects and get them to 3+ iterations each" — projects created (workflow-reliability, agent-memory-learning). Still need 3+ iterations on each.
+
+**(a) Next iteration should**: Kick off the first iteration of `workflow-reliability` — read its project.md, id

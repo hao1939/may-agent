@@ -4,7 +4,7 @@
 **Owner**: optimizer
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 4
+**Iteration**: 5
 
 ## Goal
 Maximize meaningful output of the agent system. Not about reducing cost — about doing more real work per hour.
@@ -15,7 +15,7 @@ Maximize meaningful output of the agent system. Not about reducing cost — abou
 - handler.success-rate: 0.95 → target 0.95 ✅
 
 ## Current State
-**Iteration 8 (2026-04-28).** Worker iterations 2-3 again produced zero files. Worker claimed to modify master-worker.ts but didn't. Output verification already exists in master-worker.ts (lines 310, 337) — marking that milestone done. Remaining work: open new projects and drive iteration count up. The persistent worker non-execution problem is this project's #1 blocker.
+**Iteration 10 (2026-04-28).** Two new projects created: workflow-reliability and agent-memory-learning. Active project count now 3+. Remaining: get those projects to 3+ iterations each, and achieve 10 project iterations in a 24h window. Worker non-execution remains the #1 systemic issue (9/10 worker iterations produced zero files — orchestrator wrote deliverables directly).
 
 ## Plan
 - [x] Redefine metrics: replace may-session-ratio with output-focused metrics

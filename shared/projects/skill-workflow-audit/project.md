@@ -12,7 +12,7 @@ All 3 original metrics at target:
 **Type**: continuous
 **Workflow**: master-worker
 **Priority**: P0
-**Iteration**: 5
+**Iteration**: 1
 
 ## Goal
 Every skill and workflow verified working, measured for impact, protected against regression.
@@ -22,14 +22,17 @@ Every skill and workflow verified working, measured for impact, protected agains
 - skill.verified-rate: 0.90 → target 0.80 ✅ (9/10 active skills verified — 5 unverified skills already removed/archived)
 - skill.delivery-rate: 0.81 → target 0.60 ✅ (39/48 shared skills deployed to agents)
 - workflow.pass-rate: 1.00 → target 0.95 ✅
-- skill.usage-rate: 0.89 → target 0.50 ✅ (8/9 scoreable sessions show ≥2/3 skill behaviors; SCBA=100%, Evidence=100%, Verify=67%)
+- skill.usage-rate: 1.00 → target 0.50 ✅ (12/12 sessions show all 3 skill behaviors in v2 audit)
 
-## Current State (Updated Iteration 20)
-All 14 original plan items complete. All 4 metrics at or above target. ✅
+## Current State (Updated Iteration 21)
+All 14 original plan items + 3 Phase 2 items complete. All 4 metrics at or above target. ✅
 
-**Hao's new feedback (Apr 28)**: "deployed doesn't mean used, used doesn't mean useful — there's a long way to go." Correct. Next phase: re-measure VBF compliance post-deployment, design usefulness metric, check for regressions.
+**VBF re-measured**: 12/12 sessions pass (100%) — up from 67% baseline. Deployment to all agents worked.
+**Behavioral audit v2**: SCBA=100%, Evidence=100%, Verify=100% across 12 sessions, 7 agents.
+**skill.usefulness-rate metric designed**: Formula = sessions with skill + good outcome / sessions with skill applied. Ready to measure.
+**Updated skill.usage-rate**: 1.00 (was 0.89) based on v2 audit.
 
-**Phase 2 focus**: Ongoing measurement, usefulness validation, regression detection.
+**Next**: Measure skill.usefulness-rate on real data, raise delivery-rate target.
 
 ## Plan
 - [x] Inventory all skills and workflows
@@ -46,9 +49,9 @@ All 14 original plan items complete. All 4 metrics at or above target. ✅
 - [x] Compute skill.usage-rate from behavioral evidence (result: 0.89, target 0.50 ✅)
 - [x] Strengthen Verify-Before-Finish skill (deployed to all 10 agents with 📘 directives)
 - [x] Re-plan: assess metrics, identify next improvement opportunities (see outputs/replan-assessment.md)
-- [ ] Re-measure VBF compliance post-deployment (target: rise from 67% baseline)
-- [ ] Design skill.usefulness-rate metric (usage ≠ usefulness)
-- [ ] Re-verify all 3 behavioral dimensions with fresh session data (regression check)
+- [x] Re-measure VBF compliance post-deployment (result: 100%, up from 67% baseline)
+- [x] Design skill.usefulness-rate metric (see outputs/skill-usefulness-design.md)
+- [x] Re-verify all 3 behavioral dimensions with fresh session data (result: all 100% in v2 audit)
 - [ ] Raise skill.delivery-rate target if current rate holds
 
 ## References
@@ -69,3 +72,6 @@ All 14 original plan items complete. All 4 metrics at or above target. ✅
 - outputs/skill-behavioral-audit.md — behavioral usage audit across 10 sessions (97 lines)
 - outputs/verify-before-finish-strengthening.md — VBF skill deployment to all 11 agents (27 lines)
 - outputs/replan-assessment.md — metric snapshot and next opportunities (27 lines)
+- outputs/vbf-remeasure.md — VBF re-measurement: 12/12 pass, 100% compliance
+- outputs/skill-usefulness-design.md — usefulness metric design and methodology
+- outputs/skill-behavioral-audit-v2.md — v2 behavioral audit: all dimensions 100%
