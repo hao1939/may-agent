@@ -1197,3 +1197,26 @@ Sequential auditor matches direct-hint performance (EXP-195, 40%) but generates 
 - Production integration design for sequential auditor
 - Generalization test: try auditor pattern on other 0%-baseline scenarios
 - EXP-244 write-up
+
+## 2027-11-18 Heartbeat (session 4)
+
+### EXP-242 Phase 2 Write-up
+- Wrote phase2-results.md documenting the N=16+10, p=0.015 result
+- Updated design.md status to PHASE-2-COMPLETE
+- This was completed data from session 3 but never written to experiment folder
+
+### EXP-245 Unblocked
+- Gym runner works (tested: `run-gym.sh misleading-test-fix` runs but needs may-agent)
+- Updated todo.md: EXP-245 no longer blocked on gym runner bugs
+- Ready to run baseline + treatment trials next session
+
+### Inbox Triage
+- All 16 notifications 70-93h old — dismissed (paper connections, stale productivity alerts, resolved experiment notes)
+
+### agent-system-literacy Project
+- Status: waiting, 8/8 milestones complete. No action needed.
+
+### Next
+- Run EXP-245 baseline trials (5x misleading-test-fix with coder)
+- Run EXP-245 treatment trials with diagnostic auditor instruction
+- Consider production integration design for sequential auditor pattern
