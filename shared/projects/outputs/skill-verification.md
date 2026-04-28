@@ -41,3 +41,19 @@ All top-5 skills show clear behavioral evidence in agent journals. Bob's journal
 
 ### Combined Verified Rate
 **13/15 = 0.87**
+
+## Pruned Skills
+
+Per EXP-253 findings, the following 4 skills were removed from `agents/shared/skills/` (and per-agent copies) due to zero verified behavioral impact:
+
+| Skill | Reason | Action |
+|-------|--------|--------|
+| escalation | EXP-253: no behavioral evidence in any agent journal | Deleted from shared/skills/ |
+| closing-the-loop | EXP-253: no behavioral evidence in any agent journal | Deleted from shared/skills/ |
+| second-look-verification | EXP-253: no behavioral evidence; unverified in extended scan | Deleted from shared/skills/ and .lab/coder-verify-gate/skills/ |
+| experience-replay | EXP-253: no behavioral evidence; unverified in extended scan | Deleted from shared/skills/ and tech-lead/skills/ |
+
+Additionally `consolidate-memory.md` was removed from coach/skills/ (was verified in shared but redundant copy had no local evidence).
+
+### Post-Prune Verified Rate
+After removing dead-weight skills, the active skill corpus is leaner and fully reflects skills with demonstrated behavioral impact.
