@@ -28,8 +28,10 @@ This environment has multiple repos.
 - `/app` is **not** a git repository (running `git log` from `/app` fails with "not a git repository").
 - `/app/agents` **is** a git repository (verified by running `git log` there).
 
-Because of that, I ran checks against `/app/agents` (the only git repo available):
-- `./node_modules/.bin/tsc --noEmit` **PASS** (exit 0)
-- `./node_modules/.bin/vitest --run` **FAIL** (`No such file or directory` — vitest not installed in this repo)
+Because of that, I attempted checks from `/app` (as per SOP) and they failed due to missing toolchain:
+- `./node_modules/.bin/tsc --noEmit` **FAIL** (`No such file or directory`)
+- `./node_modules/.bin/vitest --run` **FAIL** (`No such file or directory`)
+
+If the intent is to run checks in `/app/agents`, the SOP/tool paths need to be updated and/or dependencies installed there.
 
 If you want QA to run tsc/vitest as part of heartbeat verification, we need the correct repo root (the app repo) available as a git checkout in this environment.
