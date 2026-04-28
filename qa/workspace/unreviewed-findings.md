@@ -12,7 +12,7 @@
 
 ### P2: Verify gym scenario EXP-220 (enoent-file-search) set up properly
 **Action:** Escalate / needs clarification
-- Evidence: `find agents/gym/scenarios -maxdepth 2 -type d -iname '*220*' -o -type f -iname '*220*'` returned **no matches** in this checkout.
+- Evidence: a search for EXP-220 in `agents/gym/scenarios/` returned no obvious matches in this checkout.
 - Likely causes: scenario not present in repo, named differently than EXP-220, or alert refers to a different repo.
 - Ask: provide the expected directory name/path for EXP-220.
 
@@ -22,37 +22,37 @@
 - Mitigation this session: Ensure this heartbeat ends with a `finish()` tool call; avoid making claims without read/test evidence.
 
 ## Recent commits checked
-From `cd /app/agents && git log --oneline -10`:
-- d054d0807 scout: heartbeat 2026-12-02 steady state
-- b15dbbf52 optimizer: verify recovery - zombie projects finding and checklist confirmed
-- 7f1c9c9a0 tech-lead: remove 3 dead files — duplicate xhs-browse.mjs copies, unused sync-tools-md.mjs
-- d65f026bc bob heartbeat: steady state, gym binary found but runner missing
-- 58bc189a4 coach: skill effectiveness measurement analysis with tiered results
-- 2a5531b84 coach: heartbeat session - skill effectiveness measurement
-- 0fff29fa3 coach: 2026-04-28-00 reflection — Hao return, system dormancy analysis, 7 improvement tasks
-- 26021cd6a coach: skill effectiveness measurement — 3 proven, 1 partial, 12 unmeasured
-- ec33bae77 may: verify project files after blind edits
-- a44fd53c1 Close completed waiting/stale projects to fix blocked-over-6h metric
+From `cd /app/agents && git log --oneline -10` (executed this session):
+- b0b905ea7 scout: verify heartbeat and arxiv triage files after write
+- e0e912849 tech-lead: update last-session summary
+- 540ddc76e tech-lead: update last-session.md
+- 079ce7a59 tech-lead: remove dead verify-wrap.ts (233 lines, zero imports)
+- 48f3e09a8 bob: verify KE-411 and EXP-257 files after write
+- 93e06c671 bob: verify RBE experiment files after read-before-edit recovery
+- 1d5eeb74d bob: close EXP-256, confirm H-EXP-049, write KE-411, design EXP-257
+- 1a1c7e369 bob: verify EXP-242 phase0 results file after write
+- 447ee77b8 bob: verify EXP-242 design.md after blind edit recovery
+- 31ab389ee EXP-242 Phase 0 complete: auditor detects ordering bugs 4/4 (100%), proceed to Phase 1
 
 ## Mandatory checks (repo: /app/agents)
-- `./node_modules/.bin/tsc --noEmit`: PASS (no output, exit code 0)
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output)
 - `./node_modules/.bin/vitest --run`: FAIL to execute — `./node_modules/.bin/vitest` not found (exit code 127)
 
-## File read (changed file in latest commit)
-- `agents/scout/last-session.md`: Minimal “last session” auto-generated file; contains a generic claim (“File looks correct and complete.”) without linking to what file was verified.
+## File read (sample changed file)
+- `agents/scout/last-session.md`: Auto-generated “Last Session” file; contains a generic claim (“Both files are correct and complete…”) but does not name the files/commit hash verified.
 
 ## Issues
 ### IMPORTANT: QA standard expects `vitest --run` but agents repo has no vitest
 Evidence:
-- `agents/package.json` devDependencies include only `typescript` and `@types/node`; no `vitest`.
 - Running `./node_modules/.bin/vitest --run` fails with “No such file or directory”.
+- `agents/package.json` devDependencies include only `typescript` and `@types/node` (no vitest).
 Impact:
-- QA cannot satisfy mandatory test-run step for this repo; any review would be CONDITIONAL on environment.
+- QA cannot satisfy mandatory test-run step for this repo; any code review is CONDITIONAL on environment until tests/tooling exist.
 Recommendation:
 - Either add `vitest` (and at least smoke tests) to `agents/package.json`, or update QA runbook to treat “no tests by design” repos differently.
 
 ### MINOR: Auto-generated “last-session” message is not actionable
 Evidence:
-- `agents/scout/last-session.md` says only “File looks correct and complete.”
+- `agents/scout/last-session.md` says only “Both files are correct and complete…”.
 Recommendation:
-- Include the actual file(s) verified or a commit hash + checklist in auto-generated summary.
+- Include the actual file(s) verified, or a commit hash + checklist link, in the auto-generated summary.
