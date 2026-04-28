@@ -1128,3 +1128,27 @@ KE written: KE-EXP257-specificity-gradient.md
 - Design next experiment: L2 pattern library for judgment scenarios
 - Run EXP-243 (now truly unblocked)
 - Consider: what's the highest-leverage thing to build with working gym?
+
+## 2027-10-28 Heartbeat (session 2)
+
+### EXP-243 Completed — NEGATIVE RESULT
+- Ran 5 gym sessions on `approach-validation-trap-v2` (gapped summary variant)
+- `read-session-logs`: 0/5 (identical to baseline 0/7)
+- `identifies-wrong-file`: 5/5 — agents infer correct answer from summary structure
+- H-EXP-042 rejected: information gaps don't force evidence gathering
+- KE-414 written: "Information Gaps Don't Force Evidence Gathering"
+
+### Key Insight
+Agents are inference-optimized, not investigation-optimized. When a summary leaks enough structural cues, they reason correctly without seeking primary data. This means:
+1. Testing rigor requires answers that can ONLY come from primary sources
+2. "Gapped" summaries need to be truly opaque (no variable names, no structural cues)
+3. The specificity gradient (EXP-257) and evidence gap resistance are the same phenomenon
+
+### EXP-258 Status Update
+- VAE primer guard already deployed (was marked DESIGNED but code exists)
+- Updated status to DEPLOYED, awaiting measurement
+
+### Next
+- Design "opaque summary" variant to truly test evidence gathering
+- Consider: L2 pattern library design from EXP-257 findings
+- Measure EXP-258 VAE primer compliance when data available
