@@ -11,6 +11,9 @@
     },
     "tech-lead": {
       "consecutiveErrors": 0
+    },
+    "optimizer": {
+      "consecutiveErrors": 0
     }
   }
 }
