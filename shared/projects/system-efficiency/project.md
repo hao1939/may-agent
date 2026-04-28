@@ -4,7 +4,7 @@
 **Owner**: optimizer
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 0
+**Iteration**: 1
 
 ## Goal
 Maximize meaningful output of the agent system. Not about reducing cost — about doing more real work per hour.
@@ -15,7 +15,7 @@ Maximize meaningful output of the agent system. Not about reducing cost — abou
 - handler.success-rate: 0.95 → target 0.95 ✅
 
 ## Current State
-Hao's feedback: stop focusing on reducing usage, focus on output. Redefine metrics around meaningful work done — projects completed, iterations run, deliverables produced. Previous work (heartbeat dedup, circuit breaker, budget checkpoint) is done but metrics were usage-focused.
+**Iteration 1 starting.** Comment loop broken. 6 shared projects exist (agent-system-literacy, handler-reliability, request-deduplication, skill-workflow-audit, system-efficiency, plus metric-system.md). Most projects show high consecutiveSkips in health state — many are stuck. First task: measure current system output and identify stuck projects blocking throughput.
 
 ## Plan
 - [ ] Redefine metrics: replace may-session-ratio with output-focused metrics
