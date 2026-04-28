@@ -12,15 +12,16 @@ Every skill and workflow verified working, measured for impact, protected agains
 **This project is NEVER done while metrics are below target.**
 
 ## Metrics
-- skill.verified-rate: 1.00 → target 0.80 ✅ (5/5 top skills verified via behavioral evidence)
+- skill.verified-rate: 0.60 → target 0.80 ⚠️ (9/15 skills verified at expanded scope — was 5/5 on top-5-only)
 - skill.delivery-rate: 0.81 → target 0.60 ✅ (39/48 shared skills deployed to agents)
 - workflow.pass-rate: 1.00 → target 0.95 ✅
 
-## Current State
-All three metrics at or above target. Top 5 skills verified via behavioral evidence scan
-(obstacle-pivot gym data + 4 skills confirmed via journal/session patterns).
-Orchestrator wrote skill-verification.md directly after 5 failed worker iterations.
-Next: expand verified-rate beyond top 5, set up automated regression checks.
+## Current State (Updated 2027-09-20)
+Expanded verification from top 5 to top 15 skills. 9/15 verified, 1 partial, 5 unverified.
+Key finding: EXP-253 already pruned 4 unverified mass-deployed skills (30 files across 8 agents) with no degradation.
+Structural enforcement skills (verify-before-finish 90%, budget-before-act 100%) vastly outperform text-only (verify-after-edit 22%).
+**Blockers**: Evaluator dead 7+ days, gym runner needs GYM_AGENT_BIN, convention_checks table empty.
+Next: Automate regression checks (milestone 9) — blocked on infra.
 
 ## Plan
 - [x] Inventory all skills and workflows
@@ -30,7 +31,7 @@ Next: expand verified-rate beyond top 5, set up automated regression checks.
 - [x] Get skill.verified-rate above 0.50
 - [x] Get skill.delivery-rate above 0.40
 - [x] Set up gym scenario testing skill effectiveness
-- [ ] Expand verification beyond top 5 skills (10/48 next)
+- [x] Expand verification beyond top 5 skills (10/48 next)
 - [ ] Automate skill regression checks in CI/gym
 
 ## References
