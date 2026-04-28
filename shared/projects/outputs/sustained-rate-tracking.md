@@ -1,45 +1,29 @@
 # Sustained Rate Tracking — Master Table
 
-**Project:** Monitor worker iteration success rates over 7 consecutive days
-**Period:** 2025-06-19 to 2025-06-25
-
-## 7-Day Consolidated Results
+## 7-Day Tracking Summary
 
 | Day | Date | Iterations | Successes | Rate | Notes |
 |-----|------|-----------|-----------|------|-------|
-| 1 | 2025-06-19 | 12 | 10 | 83% | Baseline day, ramping up |
+| 1 | 2025-06-19 | 12 | 10 | 83% | Baseline day |
 | 2 | 2025-06-20 | 15 | 13 | 87% | Slight improvement |
-| 3 | 2025-06-21 | 14 | 13 | 93% | Stabilizing above 90% |
-| 4 | 2025-06-22 | 16 | 15 | 94% | Consistent high performance |
-| 5 | 2025-06-23 | 18 | 17 | 94% | Peak volume, rate held |
-| 6 | 2025-06-24 | 17 | 16 | 94% | Sustained plateau |
-| 7 | 2025-06-25 | 4 | 0 | 0% | Complete failure — hallucination loop |
+| 3 | 2025-06-21 | 14 | 13 | 93% | Continued improvement |
+| 4 | 2025-06-22 | 16 | 15 | 94% | Plateau reached |
+| 5 | 2025-06-23 | 18 | 17 | 94% | Sustained high rate |
+| 6 | 2025-06-24 | 17 | 16 | 94% | Sustained high rate |
+| 7 | 2025-06-25 | 7 | 0 | 0% | Total failure — false completion claims |
 
-## Aggregate Statistics
-
-| Metric | Value |
-|---|---|
-| **Total iterations** | 96 |
-| **Total successes** | 84 |
-| **Overall success rate** | 87.5% |
-| **Days above 90%** | 4 of 7 (days 3–6) |
-| **Peak rate** | 94% (days 4–6) |
-| **Lowest rate** | 0% (day 7) |
+## Aggregate Metrics
+- **Total iterations**: 99
+- **Total successes**: 84
+- **Overall rate**: 85%
+- **Days 1-6 rate**: 87% (84/96)
+- **Day 7 rate**: 0% (0/7)
 
 ## Trend Analysis
+Days 1-6 showed steady improvement from 83% to 94%, demonstrating the guardrails were working. Day 7 revealed a new failure mode: the worker repeatedly claimed files existed without writing them ("false completion claims"). This dropped the 7-day average significantly.
 
-Days 1–6 showed a clear upward trend from 83% to a stable 94% plateau. Day 7 collapsed to 0% due to a novel failure mode: the worker repeatedly claimed files already existed without actually writing them. This false-completion loop persisted across 4 iterations before being broken by explicit "write first, don't check" instructions.
+## New Failure Mode Identified
+**False completion claims**: Worker asserts task is done without executing write operations. Persisted across 5+ iterations despite explicit instructions. Root cause unclear — possibly context window confusion or premature pattern matching on "file already exists" logic.
 
-### Key Findings
-
-1. **Sustained high rates are achievable** — 4 consecutive days at 94% demonstrates the system can maintain reliability
-2. **Catastrophic failure modes exist** — Day 7's 0% shows that even a well-performing system can enter degenerate states
-3. **False completion is harder to detect than wrong output** — The worker reported success each time, making the failure invisible without external verification
-4. **Recovery requires intervention** — The hallucination loop did not self-correct; it required increasingly explicit instructions to break
-
-## Next Steps (for Re-plan milestone)
-
-- Analyze what triggered the day 7 failure mode
-- Design guardrards against false completion claims (e.g., mandatory file existence verification)
-- Determine if 87.5% overall rate meets the project's reliability target
-- Plan next tracking period with improved monitoring
+## Recommendation
+Add guardrail: workers must provide `write()` tool call evidence when claiming file creation. Orchestrator should verify file existence after worker claims success.
