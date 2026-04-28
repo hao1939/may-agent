@@ -15,7 +15,7 @@ Maximize meaningful output of the agent system. Not about reducing cost — abou
 - handler.success-rate: 0.95 → target 0.95 ✅
 
 ## Current State
-**Iteration 15.** 11 of 12 milestones complete. Active-count milestone hit: 5 projects now active (system-efficiency, workflow-reliability, agent-memory-learning, documentation-gen, test-coverage). Only remaining milestone: "Sustain 10+ iterations/day for 3 consecutive days" — this requires time to pass. All metrics at or above target. Next: drive iterations on the 2 new projects to keep momentum.
+**Iteration 17.** 11 of 12 milestones complete. All 5 projects have produced deliverables: documentation-gen (docs-inventory.md), test-coverage (coverage-baseline.md), workflow-reliability (3 iterations), agent-memory-learning (3 iterations). 17+ iterations in this session window — iterations-24h metric well above target. Only remaining: "Sustain 10+ iterations/day for 3 consecutive days" — day 1 of 3 complete.
 
 ## Plan
 - [x] Redefine metrics: replace may-session-ratio with output-focused metrics
