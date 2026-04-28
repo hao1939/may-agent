@@ -206,7 +206,8 @@
     "offsetMs": 600000,
     "on": [
       "heartbeat.trigger"
-    ]
+    ],
+    "description": "Disabled: Kimi API 429 rate limit. Re-enable after topping up."
   },
   {
     "name": "common-sense-verify",

@@ -23,16 +23,16 @@
 
 ## Recent commits checked
 From `cd /app/agents && git log --oneline -10` (executed this session):
-- ada71dbf3 bob: verify EXP-242 phase1 files after write
-- c7a8e6150 bob: update last-session.md
-- 0d6e83760 bob heartbeat: EXP-242 Phase 1 results, brief updated
-- 4a7a068c5 EXP-242 Phase 1: sequential auditor→primary achieves 40% (0% baseline)
-- 39f4ba745 amy: fix grade threshold >= comparison bug
-- e77f4ebf8 amy: audit session for cascading-fix-trap grade pipeline
-- 946ac41bf scout: update last-session.md
-- abbf8c2cd optimizer: system-efficiency iter6 status check — all milestones complete, awaiting review
-- 008f788ff amy: audit session for cascading fix trap gym scenario
-- 99f59f0a9 optimizer: C1.3 verify-after-write recovery complete
+- 5b92c30f7 amy: fix grade threshold comparison bug (>= instead of >)
+- fe7e7bc1d amy: fix grade threshold comparison bug in gym exercise
+- 9c8097831 amy: fix grade threshold comparison >= instead of >
+- 3667f42a8 amy: fix grade threshold and penalty propagation bugs
+- 71fb0c3f8 amy: fix cascading grade pipeline bugs - order and threshold
+- 3848f3653 amy: fix grade pipeline bugs - adjusted_pct for exams, >= for thresholds
+- ed4a24dd2 scout: heartbeat 2026-12-08 session update
+- a8c48c677 bob: common-sense infra review brief 20260731
+- dda32c260 amy: ghost dependency debug gym session
+- 30a424391 amy: fix grade boundary comparison in getLetterGrade
 
 ## Mandatory checks (repo: /app/agents)
 - `./node_modules/.bin/tsc --noEmit`: PASS (no output)

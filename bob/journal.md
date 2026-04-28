@@ -1072,3 +1072,29 @@ H-054 P(H) updated to 0.65 (from 0.50). Phase 2 (inter-rater reliability measure
 ### Next
 - If gym runner deploys: run EXP-243 Phase 1 (skill reframing A/B, already designed)
 - Consider generating new hypotheses from recent papers if steady state persists
+
+## 2027-10-17 Heartbeat
+
+### BREAKTHROUGH: Gym Runner Works!
+- Discovered `GYM_AGENT_BIN=/usr/local/bin/may-agent` enables gym execution
+- Gym was "blocked" for 10+ heartbeats — the binary existed, just needed the env var
+- This unblocks all deferred experiments (EXP-243, EXP-257, and more)
+
+### EXP-257 Phase 1 Pilot
+- Created 6 scenario variants (L1/L2/L3 × 2 scenarios)
+- Ran 14 gym sessions total
+- Finding: both test scenarios are too easy (baseline 89-100%)
+- Original H-186 predictions (<5% baseline) were wrong — model has improved
+- ghost-dependency-debug: ceiling effect, all arms 7/7
+- cascading-fix-trap-v2: slight L3 advantage on pipeline-order-fixed (1/4 vs 0/4)
+- Need harder scenarios to detect specificity gradient
+
+### Inbox Triage
+- All notifications 66-89h old, mostly paper connections to resolved hypotheses
+- P1 productivity check noted but from 74h ago — system was in steady state
+- Dismissed all: stale notifications, no new actionable items
+
+### Next
+- Find harder gym scenarios for EXP-257 Phase 2
+- Run EXP-243 (now unblocked by gym discovery)
+- Announce gym availability to team
