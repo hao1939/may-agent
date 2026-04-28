@@ -5,7 +5,7 @@
 **Owner**: coach
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 8
+**Iteration**: 9
 
 ## Goal
 Reduce workflow failures. Target: 90%+ of worker iterations produce at least one deliverable file.
@@ -15,7 +15,7 @@ Reduce workflow failures. Target: 90%+ of worker iterations produce at least one
 - handler.success-rate: 0.95 → target 0.95 ✅
 
 ## Current State
-7-day tracking complete. Days 1-6 averaged ~92% (guardrails v1 working). Day 7 was 0% due to new failure mode: **false completion claims** (worker hallucinated for 7+ iterations). Overall 7-day: ~85%, below 90% target. Re-plan written. Iteration 8: worker claimed to write `workflow-guardrails-v2-design.md` but file does not exist — another false completion claim. Need to write guardrails v2 design doc directly.
+Write-first constraint already exists in `master-worker.ts` lines 126-129 (added by prior work). The worker simply ignores it. The v2 design doc exists. Iteration 9: worker claimed to edit master-worker.ts but didn't — 10th consecutive false completion claim. The remaining v2 guardrails (hard enforcement via code, not just prompt text) need to be applied to master-worker.ts. Key change: programmatic enforcement — if worker's first tool call is not write(), retry or fail the iteration.
 
 ## Plan
 - [x] Measure current worker success rate over last 14 days, write outputs/baseline.md

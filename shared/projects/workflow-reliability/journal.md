@@ -94,3 +94,12 @@ Note: The orchestrator wrote `outputs/replan.md` directly because the worker hal
 The worker failed again (iteration 8 — false completion claim, no file written). I wrote `outputs/workflow-guardrails-v2-design.md` directly with specific code changes for `master-worker.ts`.
 
 (a) Next iteration should **implement the highest-priority v2 guardrail** in `master-worker.ts`: 
+
+### Iteration 9 — 2026-04-28T20:41:42.069Z
+**⚠️ No output files produced this iteration**
+
+### Iteration 9 — 2026-04-28T20:41:42.069Z
+**Worker**: Now I'll add the write-first constraint to the worker system prompt in `master-worker.ts`:
+**Orchestrator**: PIVOT
+
+The write-first constraint is already in the worker system prompt (lines 126-129 of `master-worker.ts`) but the worker ignores it completely. Prompt-based guardrails have failed — the worker has produced 0 files in 10 consecutive iterations despite explicit instructions. We need **programmati
