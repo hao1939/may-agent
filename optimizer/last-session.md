@@ -1,20 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777402895120_415
+- **Session:** s_1777402983343_419
 - **Status:** done
-- **When:** 2026-04-28T19:02:09.746Z
-- **Duration:** 34s
+- **When:** 2026-04-28T19:03:39.318Z
+- **Duration:** 35s
 
 ## What Happened
 CONTINUE
 
-Milestone completed: "Add automated daily metrics snapshot to outputs/"
+Milestone completed: "Increase active-count to 5 projects" — documentation-gen and test-coverage created and active.
 
-10 of 12 milestones done. Two stretch milestones remain: sustain iterations for 3 days, and increase active-count to 5.
+11 of 12 milestones done. The only remaining milestone ("Sustain 10+ iterations/day for 3 consecutive days") requires time to pass.
 
-**(a) Next iteration should**: Open 2 more projects to bring active-count from 3 to 5. The `outputs/new-project-proposals.md` already has proposals. Create project.md files for 2 of them.
+**(a) Next iteration should**: Drive documentation-gen's first iteration. Read its project.md, find milestone 1, and produce a deliverable in its outputs directory. This both advances that project AND counts toward our sustained iterations goal.
 
-**(b) What's different**: Same pattern as iterations 5-7 where we successfully created workflow-reliability and agent-memory-learning. Pick 2 high-value projects from the proposals file.
+**(b) What's different**: We're now spreading work across 5 projects to sustain throughput. Each iteration here counts toward the 3-day sustainability milestone.
 
-**(c) First step**: `read("/app/agents/shared/projects/system-efficiency/outputs/new-project-proposals.md")` to see the proposals, then `write()` two new project.md files — e.g., `/app/agents/shared/projects/test-coverage/project.md` and `/app/agents/shared/projects/documentation-gen/project.md` (or whatever the proposals recommend). Each needs: Status active, Owner, Goal, Metrics, Plan with 3 milestones.
+**(c) First step**: `read("/app/agents/shared/projects/documentation-gen/project.md")` to see its plan, then immediately `write()` the first milestone deliverable into `/app/agents/shared/projects/documentation-gen/outputs/`.
