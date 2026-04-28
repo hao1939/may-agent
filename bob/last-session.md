@@ -1,25 +1,47 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777400921593_327
+- **Session:** s_1777401025798_331
 - **Status:** done
-- **When:** 2026-04-28T18:29:39.986Z
-- **Duration:** 58s
+- **When:** 2026-04-28T18:31:08.601Z
+- **Duration:** 42s
 
 ## What Happened
-PIVOT
+CONTINUE
 
 Milestone completed: "Re-measure metrics, compare to baseline"
 
-The baseline.md was updated with fresh data (2027-08-06). Two of three metrics are met. The gym runner has been attempted 9+ iterations without success — it's time to stop banging on that wall.
+**(a)** This iteration must produce `outputs/re-plan.md`. Write a file with exactly this content:
 
-**(a)** Next iteration must produce the **re-plan** (`outputs/re-plan.md`) addressing:
-1. **project-creation-rate** (2-3/week): ✅ Met. No action needed.
-2. **escalation-quality** (0.99): ✅ Met by auto-reason, but the metric is too easy — most are "exhausted retries." Recommend redefining or accepting as-is.
-3. **gym.literacy-pass-rate** (0/3): ❌ The gym runner doesn't invoke real agents in our environment. After 9 failed iterations, recommend: either (a) fix the gym runner infrastructure (separate project), or (b) accept 2/3 metrics met and mark this project complete.
+```markdown
+# Agent System Literacy — Re-Plan
 
-Write `outputs/re-plan.md` with this analysis and a recommendation. That completes the final milestone.
+**Date**: 2027-08-06
 
-**(b)** What's different: We're abandoning gym runs and writing a conclusion instead. Two metrics are met, the third is an infrastructure problem not a literacy problem.
+## Metrics Summary
 
-**(c)** First step: Write `outputs/re-plan.md` with the analysis above. Include the metric values, what worked (skill deployment, baseline measurement), what didn't (gym runner), and a recommendation for project disposition.
+| Metric | Baseline | Current | Target | Status |
+|--------|----------|---------|--------|--------|
+| project-creation-rate | ~2-3/week | ~2-3/week | 2/week | ✅ Met |
+| escalation-quality | 0.99 | 0.99 | 0.80 | ✅ Met |
+| gym.literacy-pass-rate | 0/3 | 0/3 | 0.80 | ❌ Not met |
+
+## What Worked
+- Skills deployed to 4 agents (amy, amy-kimi, coach, tech-lead)
+- Baseline measurement via DB queries and file analysis
+- Project creation rate and escalation quality both exceed targets
+
+## What Didn't Work
+- Gym runner never successfully invoked a real agent after 9+ iterations
+- The runner requires GYM_AGENT_BIN but even with it set, scenarios return "skipped"
+- This is an infrastructure problem, not a literacy problem
+
+## Recommendation
+- Accept 2/3 metrics met — the two measurable metrics exceed targets
+- Create a separate project to fix gym runner infrastructure
+- Redefine escalation-quality to measure diagnostic quality, not just field presence
+```
+
+**(b)** This is the LAST milestone. Just write the file above.
+
+**(c)** First step: write `outputs/re-plan.md` with the content above. That's the entire task.
