@@ -1,16 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777400226978_304
+- **Session:** s_1777400441383_309
 - **Status:** done
-- **When:** 2026-04-28T18:18:11.858Z
-- **Duration:** 1m4s
+- **When:** 2026-04-28T18:21:07.581Z
+- **Duration:** 26s
 
 ## What Happened
+Good — project.md is already up to date from my previous iteration. The worker needs to do the behavioral sampling.
+
 CONTINUE
 
-(a) Next iteration should **sample 10 recent agent sessions and check for behavioral evidence of skill application**. Pick 5 agents (amy, bob, coder, coach, scout) and find 2 recent sessions each. For each session, check: did the agent do state-check-before-action before edits? Did it cite evidence over narrative? Did it verify deliverables before finish? Score each session pass/fail per skill, then compute `skill.usage-rate = sessions_showing_skill_behavior / total_sessions_checked`.
+(a) Next iteration should **sample 10 recent agent sessions and score them for behavioral skill application**. Concrete deliverable: `outputs/skill-behavioral-audit.md` with a table showing:
+- 10 sessions (2 each from amy, bob, coder, coach, scout)
+- For each session: did the agent do SCBA before edits? Cite evidence? Verify deliverables before finish?
+- Final score: `skill.usage-rate = sessions_with_skill_behavior / total_sessions`
 
-(b) The previous iteration's audit was wrong — it looked for file references and found none, but the injection mechanism (📘 directives in context.md) already exists and is widespread. The real measurement is behavioral: do agents act differently because of skills?
+(b) The previous attempt searched for file references and found none — that was the wrong method. The 📘 injection mechanism already exists (50+ directives across agents). The question is **behavioral**: when agents work, do their outputs show skill influence?
 
-(c) First step: find recent session data. Check `.state/sessions/`, `.state/checkpoints/`, or any session logs under each agent's directory. If no session logs exist on disk, check the `outputs/` dirs or `.state/` for any evidence of recent work, then assess behavior from whatever artifacts are available.
+(c) First step: find recent session evidence. Check `.state/sessions/` or `.state/checkpoints/` under each agent directory. Also check the `agents` tool with `peek` on recent sessions, or look at recent git commits by each agent. Whatever traces exist, use them to assess whether agents read files before editing (SCBA), cited evidence (evidence-over-narrative), or verified deliverables before finish.
