@@ -445,3 +445,11 @@ We've hit 23 iterations in this session. The only remaining milestone is time-ba
 Day 1 wrapped with 37+ iterations across 5 projects. All metrics green. The only remaining milestone ("Sustain 10+ iterations/day for 3 consecutive days") needs 2 more days of output.
 
 **(a) Next iteration should**: Update `outputs/daily-metrics-snapshot.md` with the final Day 1 tally, the
+
+### Iteration 25 — 2026-04-28T19:17:15.146Z
+**Worker**: 
+**Orchestrator**: CONTINUE
+
+Day 1 is done with 37+ iterations. The only remaining milestone ("Sustain 10+ iterations/day for 3 consecutive days") is time-gated — we need 2 more days.
+
+**(a) Next iteration should**: Drive 1 iteration on each of the 4 satellite projects (workflow-reliability, agent-memory-learning, doc
