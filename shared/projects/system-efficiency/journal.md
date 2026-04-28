@@ -419,3 +419,13 @@ agent-memory-learning produced its 4th deliverable. All 5 projects are active an
 **(a) Next iteration should**: Drive documentation-gen's 3rd iteration. Read its project.md, find the next milestone, produce a deliverable.
 
 **(b) What's different**: Continuing the cycle. docume
+
+### Iteration 22 — 2026-04-28T19:13:22.338Z
+**Worker**: Milestone 3 — auto-generation pipeline. Let me write it.
+**Orchestrator**: CONTINUE
+
+documentation-gen produced its 3rd deliverable. All 5 projects now have 2+ iterations each.
+
+**(a) Next iteration should**: Drive test-coverage's 3rd iteration. It's the project with the fewest deliverables (2). Read its project.md, find the next milestone, produce a deliverable.
+
+**(b) Wh
