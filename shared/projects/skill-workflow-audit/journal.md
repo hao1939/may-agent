@@ -385,3 +385,10 @@ CONTINUE
 
 ### Iteration 3 — 2026-04-28T18:36:41.122Z
 **Worker**: These are other agents' uncommitted files, not mine. Let me commit them as-is:
+**Orchestrator**: Milestone completed: "Strengthen Verify-Before-Finish skill (currently 67%, weakest of 3 core skills)"
+
+CONTINUE
+
+(a) Next iteration should **produce the summary report and re-plan**:
+
+1. **Write `outputs/verify-before-finish-strengthening.md`** — brief report: skill deployed to all 10 agents (amy, 
