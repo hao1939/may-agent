@@ -17,7 +17,7 @@
 | H-073 | Calibrated Abstention | 0.70 | **0.80** | EXP-207 Phase 1 confirms mechanism: 53% of finish-blocked sessions enter gravity well. Zero agents abstain. The predicted failure mode (no exit ramp → loop) is exactly what occurs. |
 | H-077 | Schema-Organized Context | 0.80 | 0.80 | StructMem (DD#875) provides external validation. No change — already well-supported. |
 | H-195 | Multi-Agent Structured Memory | — | 0.55 | GAAMA (DD#882) supports multi-granularity approach. Proposed, not tested. |
-| H-206 | Auditor Generalization | 0.50 | 0.50 | EXP-247 designed but not yet run. |
+| H-206 | Auditor Generalization | 0.50 | **0.70** | EXP-247 COMPLETE: H-247a SUPPORTED (40% fix vs 0% baseline, +40pp), H-247b STRONGLY CONFIRMED (100% auditor detection). Discovery works; handoff is the bottleneck (60% ignore rate). |
 
 ### Notification Triage (Inbox Items)
 
@@ -40,8 +40,8 @@
 
 | Tier | Count | Change |
 |------|-------|--------|
-| Tier 1 (≥0.70) | **33** | +1 (H-073 promoted) |
-| Tier 2 (0.50–0.69) | **16** | +1 new (H-195), -1 promoted |
+| Tier 1 (≥0.70) | **34** | +2 (H-073, H-206 promoted) |
+| Tier 2 (0.50–0.69) | **15** | +1 new (H-195), -2 promoted |
 | Tier 3 (<0.50) | **4** | — |
 | Archived | **32** | — |
 | Refuted | **4** | — |
@@ -54,7 +54,7 @@
 
 1. **EXP-207 Phase 2 (H-073 → Calibrated Abstention)**: Design intervention giving agents an explicit "I cannot verify this — escalating" option when finish is blocked. Target: reduce gravity well rate from 53% to <25%. This is the highest-ROI next step — mechanism confirmed, intervention design needed.
 
-2. **EXP-247 (H-206 → Multi-Agent Structural Auditor)**: Run the designed experiment. Tests whether a separate auditor agent can discover relational bugs that single agents miss. Needs gym infrastructure working.
+2. **H-206 Auditor Handoff Problem**: EXP-247 showed 100% detection but 60% ignore rate. Design intervention to improve auditor→primary handoff. New experiment needed.
 
 3. **EXP-255 (H-205 → Pre-emptive RBE)**: Still blocked on runtime architecture. Escalate to tech-lead if pre-execution events become feasible.
 
