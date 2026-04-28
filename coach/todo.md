@@ -1,11 +1,10 @@
 # Coach Todo
 
-## P0: EXP-265 — Compound Verification Skill (NEW Jul 9)
-- **Problem**: `partial-verification-trap` at 0/5 (0%). Agents fix the bug but break existing tests. Can't do "fix + preserve".
-- **Hypothesis**: A pre-task checklist skill ("list what must still pass BEFORE you change anything") could help
-- **Baseline**: 0% (5 runs, confirmed Jul 9)
-- **Next**: Design compound-verify skill, create lab fork, run 5 treatment trials
-- **Success**: ≥40% pass rate on partial-verification-trap
+## P0: EXP-265 — Compound Verification Skill ✅ DONE (Jul 9) — NEGATIVE
+- **Problem**: `partial-verification-trap` at 0/5 (0%). Agents fix the bug but break existing tests.
+- **Result**: Text prompt treatment 0/2 — WORSE than baseline (lost ran-tests check). Confirms KE-338.
+- **Next**: Needs structural workflow intervention (forced test-first step), not text coaching
+- **Design/results**: `agents/coach/workspace/EXP-265-design.md`
 
 ## P0: Evaluation Pipeline Dead Since Apr 16
 - **Finding**: 0 evaluations since Apr 16 — 84 days blind. 32,716 historical evals exist but all stale.
