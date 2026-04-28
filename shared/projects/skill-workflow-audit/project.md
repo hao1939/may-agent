@@ -1,6 +1,6 @@
 # Project: Skill & Workflow Quality
 
-**Status**: waiting
+**Status**: active
 **Stop Reason**: WAITING
 
 All 3 metrics are at or above target. All 9 milestones complete. No action needed until metrics regress or new goals are added.
