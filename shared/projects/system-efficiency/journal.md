@@ -227,3 +227,11 @@ Milestones completed:
 **(a) Next iteration should**: Actually produce the zombie cleanup. Concrete deliverable: a file `outputs/zombie-cleanup-report.md` listing every project archived, plus the actual archival action (moving dirs to `_archive/`).
 
 **(b) What's different**: Iteration 2 produced nothing. The wor
+
+### Iteration 3 — 2026-04-28T18:34:18.547Z
+**Worker**: Now I have all the data. Let me write the report:
+**Orchestrator**: PIVOT
+
+Three consecutive iterations have produced zero deliverables — the worker keeps saying "let me write the report" but never actually does anything. The zombie archival approach also requires filesystem operations that the worker may not be executing.
+
+**(a) Next iteration should**: Produce ONE

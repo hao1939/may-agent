@@ -1,6 +1,12 @@
 # Project: Agent System Literacy
 
-**Status**: active
+**Status**: waiting
+**Stop Reason**: WAITING
+
+Milestones completed:
+- "Re-plan: review metrics, assess what worked, write next steps"
+
+All actionable milestones are now complete (5/6 done, 1 abandoned due to broken gym infra). I wrote `o
 **Owner**: bob
 **Priority**: P1
 **Workflow**: master-worker
