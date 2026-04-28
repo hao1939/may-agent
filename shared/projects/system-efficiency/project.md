@@ -1,13 +1,15 @@
 # Project: System Efficiency
 
-**Status**: active
+**Status**: blocked
 **Owner**: optimizer
 **Priority**: P1
-**Iteration**: 8
+**Iteration**: 10
 
 **Stop Reason**: 
 
-**Resume Condition**: 
+
+Iterations 7-10 have all been comment iterations triggered by the same repeated hao comment. No worker has executed since iteration 6. The system appears stuck processing this comment repeatedly inste
+**Resume Condition**: A worker iteration actually executes (not a comment iteration), or the duplicate comment is cleared from the queue.
 ## Goal
 Reduce wasted compute: May heartbeat cascade (32% of sessions), missing circuit breaker for provider failures, OpBudget causing lost work.
 
@@ -17,8 +19,7 @@ Reduce wasted compute: May heartbeat cascade (32% of sessions), missing circuit 
 - lost-work-rate: unknown → target 0 (sessions hitting OpBudget before saving)
 
 ## Current State
-Three fixes implemented: M1 heartbeat dedup (idle LLM sessions skipped), M2 circuit breaker workflow, M3 budget-aware checkpointing. Waiting for human review to close.
-
+Blocked: Iterations 7-10 have all been comment iterations triggered by the same repeated hao comment. No worker has executed since iteration 6. The system appe
 ## Plan
 - [x] May heartbeat dedup — skip idle LLM sessions when nothing actionable
 - [x] Provider circuit breaker — auto-disable agent after N consecutive provider errors
