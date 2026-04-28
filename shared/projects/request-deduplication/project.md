@@ -1,10 +1,13 @@
 # Project: Request Deduplication
 
-**Status**: closed
+**Status**: waiting
 **Owner**: optimizer
 **Priority**: P0
-**Iteration**: 4
+**Iteration**: 6
 
+**Stop Reason**: 
+— The architecture change Hao described (removing request DB, replacing with events table) appears to have happened outside this repository. There's no events table, request tracking, or dispatch/noti
+**Resume Condition**: Hao confirms whether (a) this project can be closed since the architectural change solved it, or (b) points to specific code/files where dedup work is still needed in the new events-table system.
 ## Goal
 Eliminate duplicate request storms. Was 78% duplicate rate causing notification cascades.
 
@@ -13,8 +16,7 @@ Eliminate duplicate request storms. Was 78% duplicate rate causing notification 
 - notification-storms: 0 → target 0 ✅
 
 ## Current State
-Read-side dedup implemented in heartbeat-data.ts (loadInbox collapses duplicates). Measurement shows 5.4% duplicate rate, below 10% target. Write-side dedup guards deemed unnecessary. Waiting for human to close.
-
+Waiting: — The architecture change Hao described (removing request DB, replacing with events table) appears to have happened outside this repository. There's n
 ## Plan
 - [x] Fix request tracking DB (created requests table in may.db)
 - [x] Implement read-side dedup in loadInbox
@@ -30,3 +32,6 @@ Read-side dedup implemented in heartbeat-data.ts (loadInbox collapses duplicates
 - outputs/dedup-measurement.md — measurement showing 5.4% rate
 - outputs/ensure-requests-table.sh
 - outputs/m1-fix-request-db.md
+
+
+## Comments
