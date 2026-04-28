@@ -26,120 +26,71 @@ Two gaps: **events need a fallback** and **agents need auto-heartbeat**.
 ### 1. Events: inbox as the default fallback
 
 **Today:** event with no handler → silently dropped.  
-**Default:** event with no handler → persists as `pending` → owner agent sees it on next heartbeat → LLM decides.
+**Default:** event with no handler → persists with `owner` field → owner agent sees it on next heartbeat (time-window based) → LLM decides.
 
-The `events` table already records every domain event via db-writer.ts. It's a write-only audit log. Close the loop by adding status tracking and surfacing unhandled events.
+The `events` table records every domain event via db-writer.ts as **immutable facts**. Events are never mutated — no status column, no UPDATE statements. Inbox is a time-window query: agents see events from the last 2 hours with their `owner` field set. Events naturally expire via TTL or time window.
 
-#### Event lifecycle
+See [request-event-architecture.md](request-event-architecture.md) for the full event-native design.
+
+#### Event model (immutable, append-only)
 
 ```
-          emit
-           |
-     +-----v------+
-     |   pending   |
-     +-----+------+
-           |
-     +-----+------+------+
-     |                    |
-  has handler         no handler
-     |                    |
-     v                    | (next heartbeat)
-  +------+                v
-  | done |          +----------+
-  +------+          |  acked   | -- agent LLM saw it, working on it
-     ^              +----+-----+
-     |                   |
-     +--------+----------+----------+
-              |          |          |
-              v          v          v
-          +------+  +----------+  +--------+
-          | done |  | dismissed|  | failed |
-          +------+  +----------+  +---+----+
-                                      | retry_count > N
-                                      v
-                                 escalate to owner
+emit → persists to events table (immutable fact)
+  ├── has handler → handler fires, emits handler.completed/failed event
+  └── has owner  → appears in owner's inbox (time-window query)
 ```
 
-Statuses:
-- **pending** — just emitted, waiting for handler or heartbeat pickup
-- **done** — handled successfully (by handler or agent LLM)
-- **acked** — agent saw it, actively working (prevents duplicate pickup)
-- **dismissed** — agent decided no action needed (with reason)
-- **failed** — handler threw or agent couldn't resolve (resurfaces next heartbeat)
-- **expired** — TTL exceeded (triggers owner notification if urgent)
+No status lifecycle. No UPDATE statements. State derived from paired events:
+- Handler health: count `handler.completed` vs `handler.failed` in time window
+- Inbox: `SELECT FROM events WHERE owner = ? AND timestamp > now - 2h`
 
-#### Schema changes
-
-Add columns to existing `events` table:
+#### Schema (events table)
 
 ```sql
-ALTER TABLE events ADD COLUMN status      TEXT DEFAULT 'pending';
-ALTER TABLE events ADD COLUMN handled_by  TEXT;
-ALTER TABLE events ADD COLUMN result      TEXT;
-ALTER TABLE events ADD COLUMN reason      TEXT;
-ALTER TABLE events ADD COLUMN retry_count INTEGER DEFAULT 0;
-ALTER TABLE events ADD COLUMN ttl_ms      INTEGER;
-ALTER TABLE events ADD COLUMN urgency     TEXT DEFAULT 'normal';
-
-CREATE INDEX IF NOT EXISTS idx_events_inbox ON events(status, timestamp);
+CREATE TABLE events (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  event_type TEXT NOT NULL,
+  source     TEXT,
+  owner      TEXT,
+  data       TEXT,
+  timestamp  INTEGER NOT NULL,
+  ttl_ms     INTEGER,
+  urgency    TEXT DEFAULT 'normal'
+);
 ```
 
 #### Dispatch rules
 
-1. **Handler registered → fire immediately, mark done.** Today's behavior, unchanged.
+1. **Handler registered → fire immediately.** Handler emits `handler.completed`/`handler.failed` event.
 2. **No handler, urgency `immediate` → fork owner agent now.** Can't wait for heartbeat.
-3. **No handler, urgency `normal` → stays pending.** Heartbeat picks it up.
-
-Urgency is set by emitter, only affects the no-handler path:
-
-```typescript
-// Critical — wake up the owner agent now
-ctx.dispatchEvent("session.failed", { agent: "bob", error: "OOM", urgency: "immediate" });
-
-// Batch-friendly — heartbeat will handle it
-ctx.dispatchEvent("context-learn", { sessionId: "...", agent: "bob" });
-```
+3. **No handler, has owner → appears in inbox.** Heartbeat picks it up via time-window query.
 
 #### Heartbeat inbox injection
 
-Query pending events, inject into heartbeat prompt:
+Query recent events for the agent, inject into heartbeat prompt:
 
 ```sql
-SELECT id, event_type, data, urgency, timestamp, retry_count
+SELECT id, event_type, data, urgency, timestamp
 FROM events
-WHERE status IN ('pending', 'failed')
-  AND (ttl_ms IS NULL OR timestamp + ttl_ms > :now)
+WHERE owner = ?
+  AND timestamp > ?  -- now - 2h
+  AND (ttl_ms IS NULL OR timestamp + ttl_ms > ?)
 ORDER BY
   CASE WHEN urgency = 'immediate' THEN 0 ELSE 1 END,
-  retry_count DESC, timestamp ASC
+  timestamp DESC
 LIMIT 20
 ```
 
-Heartbeat sees:
+Agents act or they don't — no status bookkeeping needed. Events expire naturally.
 
-```
-## Pending Events (inbox)
-
-3 unprocessed events. For each: act, delegate, dismiss (with reason), or escalate.
-
-1. [5m ago] session.failed — bob OOM (retry #2)
-2. [12m ago] metric.breach — coach eval_quality below threshold
-3. [1h ago] context-learn — 4 sessions with unextracted lessons
-```
-
-#### RuntimeCtx additions
+#### RuntimeCtx
 
 ```typescript
 interface RuntimeCtx {
-  /** Mark an inbox event status. */
-  updateEvent(eventId: number, status: "acked" | "done" | "dismissed" | "failed", opts?: {
-    handledBy?: string; result?: string; reason?: string;
-  }): void;
-
-  /** Query pending inbox events. */
-  getInbox(opts?: { limit?: number }): Array<{
-    id: number; event_type: string; data: Record<string, unknown>;
-    urgency: string; timestamp: number; retry_count: number;
+  /** Query recent inbox events (time-window based, no mutable status). */
+  getInbox(opts?: { agent?: string; limit?: number }): Array<{
+    id: number; event_type: string; data: string;
+    urgency: string; timestamp: number;
   }>;
 }
 ```
@@ -245,8 +196,8 @@ Both layers → anomalies → heartbeat prompt → agent LLM acts
 
 | Check | Anomaly condition | Source |
 |---|---|---|
-| Unhandled rate | > 50% of events of this type stay pending > 1h | `events` status |
-| Stale pending | Any event pending > 2h | `events` timestamp |
+| Unhandled rate | > 50% of events of this type have no handler.completed pair within 1h | `events` paired query |
+| Stale events | Events older than TTL still in window | `events` timestamp + ttl_ms |
 
 **Cron entries:**
 
@@ -277,16 +228,16 @@ for (const entry of cronEntries) {
   }
 }
 
-// Event health — flag event types with high unhandled rate
+// Event health — flag event types with no paired completion
 const eventStats = db.queryAll(`
-  SELECT event_type, COUNT(*) as total,
-    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending
-  FROM events WHERE timestamp > ? GROUP BY event_type
+  SELECT event_type, COUNT(*) as total
+  FROM events WHERE timestamp > ? AND event_type NOT LIKE 'handler.%'
+  GROUP BY event_type
 `, [since24h]);
 
 for (const es of eventStats) {
-  if (es.pending > 5) {
-    anomalies.push(`Event "${es.event_type}" — ${es.pending} pending`);
+  if (es.total > 10) {
+    anomalies.push(`Event "${es.event_type}" — ${es.total} in 24h (review if expected)`);
   }
 }
 ```
@@ -332,12 +283,10 @@ Zero silent drops. Zero manual wiring for the common case. Every primitive is se
 
 | Component | Change |
 |---|---|
-| `events` table | Add status, handled_by, result, reason, retry_count, ttl_ms, urgency |
-| db-writer.ts | Write urgency from event data |
-| cron.ts `dispatchEvent()` | Mark events done/failed after handler fires |
-| may.ts `"emit"` handler | Fork owner agent for immediate unhandled events |
-| Heartbeat prompt builder | Query pending events, inject inbox section |
-| runtime-ctx.ts | Add `updateEvent()`, `getInbox()` |
+| `events` table | Added ttl_ms, urgency columns (immutable — no status columns) |
+| db-writer.ts | Writes urgency from event data |
+| Heartbeat prompt builder | Time-window query for recent events, inject inbox section |
+| runtime-ctx.ts | Added `getInbox()` (time-window based) |
 | agent-loader.ts `loadAgents()` | Auto-generate heartbeat entries for agents with heartbeat.md |
 | cron.ts | Support synthetic (auto-generated) entries alongside file-based ones |
 | system-status handler | Add health checks for handlers, agents, events, cron entries |
@@ -356,10 +305,10 @@ Zero silent drops. Zero manual wiring for the common case. Every primitive is se
 
 ### Phase 1: Event inbox (close the loop) ✅
 
-1. Added status/handled_by/result/reason/retry_count/ttl_ms/urgency columns to `events` table + migration
+1. Added `ttl_ms`/`urgency` columns to events table (immutable — no status columns)
 2. Updated db-writer.ts to write urgency from event data
-3. May.ts marks events done after handler dispatch
-4. Added `getInbox()` / `updateEvent()` to RuntimeCtx
+3. Handler lifecycle tracked via paired events (handler.started/completed/failed)
+4. Added `getInbox()` to RuntimeCtx (time-window query, no mutable status)
 
 ### Phase 2: Heartbeat inbox injection ✅
 
@@ -377,7 +326,7 @@ Zero silent drops. Zero manual wiring for the common case. Every primitive is se
 
 ### Phase 4: Default health metrics ✅
 
-1. Expanded system-status handler: handler error rate (cron_history), agent error rate (sessions), stale pending events (events)
+1. Expanded system-status handler: handler error rate (events table), agent error rate (sessions), stale events
 2. All anomalies flow into existing health log → heartbeat prompt pipeline
 3. Zero config — queries existing DB tables
 
@@ -396,4 +345,4 @@ Zero silent drops. Zero manual wiring for the common case. Every primitive is se
 5. **Override:** explicit cron.json entries override auto-generated defaults
 6. **Self-awareness:** system-status flags handlers with 0 fires, agents with high error rates, events with stale pending
 7. **Extension:** agents add domain metrics via INSERT — auto-watched, no code changes
-8. **Steady state:** `SELECT count(*) FROM events WHERE status = 'pending' AND timestamp < now() - 3600000` returns 0
+8. **Steady state:** events older than 2h naturally expire from inbox view — no cleanup needed
