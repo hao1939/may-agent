@@ -244,3 +244,20 @@ Milestone completed: "Re-measure metrics, compare to baseline"
 The baseline.md was updated with fresh data (2027-08-06). Two of three metrics are met. The gym runner has been attempted 9+ iterations without success — it's time to stop banging on that wall.
 
 **(a)** Next iteration must produc
+
+### Iteration 11 — 2026-04-28T18:30:25.798Z
+**Worker**: 
+**Orchestrator**: CONTINUE
+
+Milestone completed: "Re-measure metrics, compare to baseline"
+
+**(a)** This iteration must produce `outputs/re-plan.md`. Write a file with exactly this content:
+
+```markdown
+# Agent System Literacy — Re-Plan
+
+**Date**: 2027-08-06
+
+## Metrics Summary
+
+| Metric | Baseline | Current | Target

@@ -3,15 +3,17 @@
 **Status**: waiting
 **Owner**: optimizer
 **Priority**: P0
-**Iteration**: 10
+**Iteration**: 11
 
 **Stop Reason**: 
 
-— This is the 4th time the same comment is being re-processed. The project is complete — duplicate storms were eliminated by removing the request DB. No implementation work remains.
+— This is the 5th reprocessing of the identical comment. No new input exists. Project is complete.
+
+Resume when: Human/May marks project as closed or provides new instructions.
 
 Resume when: Huma
 **Resume Condition**: 
-Human/May marks project as closed.
+Human/May marks project as closed or provides new instructions.
 Eliminate duplicate request storms. Was 78% duplicate rate causing notification cascades.
 
 ## Metrics
@@ -19,7 +21,9 @@ Eliminate duplicate request storms. Was 78% duplicate rate causing notification 
 - notification-storms: 0 → target 0 ✅
 
 ## Current State
-Waiting: — This is the 4th time the same comment is being re-processed. The project is complete — duplicate storms were eliminated by removing the request DB. 
+Waiting: — This is the 5th reprocessing of the identical comment. No new input exists. Project is complete.
+
+Resume when: Human/May marks project as closed or 
 ## Plan
 - [x] Implement read-side dedup in loadInbox
 - [x] Measure duplicate rate (5.4%, below 10% target)
