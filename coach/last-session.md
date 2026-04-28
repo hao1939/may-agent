@@ -1,18 +1,22 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777418037872_90
+- **Session:** s_1777419838065_94
 - **Status:** done
-- **When:** 2026-04-28T23:15:43.713Z
-- **Duration:** 1m45s
+- **When:** 2026-04-28T23:44:54.903Z
+- **Duration:** 56s
 
 ## What Happened
-The system is quiet. Let me make a decision about what to do:
+No recent evaluations or sessions to analyze. The system is quiet.
 
-1. **Dismiss both notifications** — not coach's domain
-2. **Check workflow-reliability project** — can't find the project file, need to create/locate it
-3. **Most productive action**: Check if any skill regression has occurred since the last audit
+**Summary of decisions:**
 
-Given the low activity and no urgent items, let me focus on the breadcrumb-action-rate being at 0.2857 (28.6%). This means my breadcrumbs/questions are not leading to actions. Let me investigate why and whether to adjust my approach.
+1. **Notification: stale-active-count** — Dismiss. My workflow-reliability project is correctly marked blocked (waiting on tech-lead for dispatch fix). Not stale, just waiting.
 
-Actually, let me be pragmatic. Metrics are green, no alerts, notifications are not my domain. Let me dismiss the notifications and close out cleanly.
+2. **Notification: 401 AuthenticationError** — Dismiss. Infrastructure/config issue, not coach's domain.
+
+3. **Project workflow-reliability** — Still blocked. The blocker (dispatch to non-existent projects) requires tech-lead action. No change needed.
+
+4. **All experiments** — Closed/done. No open experiments to act on.
+
+5. **Breadcrumb-action-rate at 27%** — Noted for second consecutive heartbeat. Low but metric shows green. Will monitor.
