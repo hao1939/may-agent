@@ -43,12 +43,33 @@ echo "workflow.pass-rate = $pass / $total = $(( pass * 100 / total ))%"
 
 ---
 
+### 3. `skill.usage-rate`
+
+**Definition:** Percentage of top deployed shared skills that show evidence of being referenced or applied in actual agent work (sessions, state, context).
+
+**Formula:** `(skills with evidence of usage / skills checked) × 100`
+
+**Current Value:** **0%** (0/10)
+
+**Data Source:** `outputs/skill-usage.md` — Searched agent `.state/`, `sessions/`, and `context.md` for references to the top 10 most-deployed skills. No evidence found.
+
+**How to Re-measure:**
+```bash
+# For each skill name, search agent dirs (excluding skills/ itself) for references
+for skill in evidence-over-narrative verification state-check-before-action plan-once-amend obstacle-pivot know-when-blocked reading-metrics creating-projects closing-the-loop prerequisite-gap-protocol; do
+  rg -l "$skill" /app/agents/{amy,bob,coder,coach,evaluator,optimizer,qa,scout,tech-lead,may}/.state/ 2>/dev/null
+done
+```
+
+---
+
 ## Summary Table
 
 | Metric | Current Value | Target | Status |
 |--------|--------------|--------|--------|
 | `workflow.pass-rate` | 100% (10/10) | 100% | ✅ Met |
 | `skill.verified-rate` | 20% (1/5 top skills) | >50% | 🔶 In progress |
+| `skill.usage-rate` | 0% (0/10) | >50% | 🔴 No evidence of usage |
 
 ## Notes
 
