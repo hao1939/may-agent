@@ -78,13 +78,13 @@ export const guard: WorkflowGuard = {
     return [
       {
         type: "run_step",
-        reason: `C1.3 Write-Without-Verify: ${unique.length} file(s) written without subsequent read() verification: ${unique.join(", ")}. ` +
-          `Convention requires reading back written files to catch truncation, encoding errors, or content mistakes.`,
+        reason: `C1.3 Write/Edit-Without-Verify: ${unique.length} file(s) modified without subsequent read() verification: ${unique.join(", ")}. ` +
+          `Convention requires reading back modified files to catch truncation, encoding errors, or content mistakes.`,
         step: {
           name: "c1.3-verify-recovery",
           agent: true,
-          task: `## C1.3 Recovery — Verify After Write\n\n` +
-            `The previous step wrote ${unique.length} file(s) without reading them back to verify:\n` +
+          task: `## C1.3 Recovery — Verify After Edit/Write\n\n` +
+            `The previous step modified ${unique.length} file(s) without reading them back to verify:\n` +
             `${unique.map(f => `- \`${f}\``).join("\n")}\n\n` +
             `**You MUST now:**\n` +
             `1. read() each file to verify the contents are correct and complete\n` +
