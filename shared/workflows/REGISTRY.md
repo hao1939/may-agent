@@ -42,9 +42,7 @@ Every agent has a heartbeat workflow (uses shared `heartbeat-data.ts` loaders):
 | `training-sprint` | `coach/workflows/training-sprint.ts` | 301 | Focused training session on a specific skill |
 
 ### May
-| Name | File | Lines | Purpose |
-|------|------|-------|---------|
-| `project-monitor` | `may/workflows/project-monitor.ts` | 97 | Actively monitor external projects — verify work, give feedback, escalate |
+No active workflows. (`project-monitor.ts` removed 2026-07-16 — 236 lines, 0 consumers, 0 cron/handler references.)
 
 ### Optimizer
 | Name | File | Lines | Purpose |
