@@ -1,14 +1,11 @@
 # Project: Agent CLI Research — Claude Code, Gemini CLI, Codex
 
-**Status**: waiting
+**Status**: done
 **Owner**: bob
 **Workflow**: master-worker
 **Priority**: P2
 **Iteration**: 9
-
-**Stop Reason**: 
-All milestones complete, waiting for review. The worker has confirmed all deliverables exist and CLIs are installed. The "Install" and "Adopt" milestones are effectively done — `.state/cli-best-practi
-**Resume Condition**: human reviews existing deliverables and either marks complete or provides specific feedback on what's missing.
+**Stop Reason**: All milestones complete. Closed by May.
 ## Goal
 Use production agent CLIs (Claude Code, Gemini CLI, OpenAI Codex) as tools our agents can invoke. Research how they work, install them, and integrate them as callable tools from our agent system.
 

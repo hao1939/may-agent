@@ -1,7 +1,7 @@
 # Project: Fibonacci Script
 
-**Status**: waiting
-**Stop Reason**: — All milestones complete, awaiting review. The comment "test comment from API" appears to be a test/no-op comment requiring no action.
+**Status**: done
+**Stop Reason**: — All milestones complete. Closed by May — review not needed for test project. The comment "test comment from API" appears to be a test/no-op comment requiring no action.
 **Iteration**: 3
 **Owner**: bob
 **Workflow**: master-worker
