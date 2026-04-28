@@ -1,6 +1,11 @@
 # Project: Skill & Workflow Quality
 
-**Status**: active
+**Status**: waiting
+**Stop Reason**: Milestone completed: "Strengthen Verify-Before-Finish skill (currently 67%, weakest of 3 core skills)"
+Milestone completed: "Re-plan: assess metrics, identify next improvement opportunities"
+
+WAITING
+
 
 **Key finding**: The skill-usage audit was incorrect. Skills ARE injected into agent context via 📘 directives in context.md (amy=8, bob=13, scout=15, coach=8, optimizer=10). The injection mechanism exists and works. The real question is behavioral: do agents apply skills in practice?
 
@@ -11,7 +16,7 @@ All 3 original metrics at target:
 **Type**: continuous
 **Workflow**: master-worker
 **Priority**: P0
-**Iteration**: 4
+**Iteration**: 5
 
 ## Goal
 Every skill and workflow verified working, measured for impact, protected against regression.
