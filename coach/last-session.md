@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777363011739_11
+- **Session:** s_1777363160180_0
 - **Status:** done
-- **When:** 2026-04-28T07:57:19.528Z
-- **Duration:** 27s
+- **When:** 2026-04-28T08:00:02.319Z
+- **Duration:** 42s
 
 ## What Happened
-All three files are correct and complete. No truncation, encoding errors, or missing content.
+The setup logs clearly show the issue: patch was applied to `config.md` instead of `SOUL.md`.

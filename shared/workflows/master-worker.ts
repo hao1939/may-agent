@@ -209,6 +209,13 @@ ${journalContent.slice(-3000)}
 
     await orchestrator.prompt(planningPrompt);
 
+    // Mark comments as read (append-only, never delete)
+    if (unreadComments) {
+      try {
+        appendFileSync(discussionFile, `\n---read @iter${iteration || 0}---\n`, "utf-8");
+      } catch {}
+    }
+
     let decision = extractDecision(orchestrator.lastText());
     ctx.log(`[plan] Decision: ${decision.status.toUpperCase()}`);
 
