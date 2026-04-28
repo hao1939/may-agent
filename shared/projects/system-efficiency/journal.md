@@ -376,3 +376,8 @@ documentation-gen produced its first deliverable (`docs-inventory.md`). Good.
 
 ### Iteration 17 — 2026-04-28T19:06:37.158Z
 **Worker**: Now I have enough data. Let me write the coverage baseline.
+**Orchestrator**: CONTINUE
+
+All 5 projects now have deliverables. test-coverage produced its first output. Day 1 of the 3-day sustainability milestone is underway.
+
+**(a) Next iteration should**: Drive documentation-gen's second iteration. Read its project.md, find milestone 2, and produce a deliverable. This keeps i
