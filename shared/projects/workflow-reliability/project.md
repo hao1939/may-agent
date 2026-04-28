@@ -1,32 +1,33 @@
-# Workflow Reliability
+# Project: Workflow Reliability
 
-## Status
-Active
-
-## Owner
-orchestrator
+**Status**: active
+**Owner**: coach
+**Priority**: P1
+**Workflow**: master-worker
+**Iteration**: 0
 
 ## Goal
-Reduce workflow failures and increase end-to-end completion rate for master-worker iterations. Target: 90%+ of worker iterations produce at least one deliverable file.
+Reduce workflow failures. Target: 90%+ of worker iterations produce at least one deliverable file.
 
 ## Metrics
-- Worker iteration success rate (file produced per iteration)
-- Workflow crash/timeout rate
-- Mean time from task assignment to deliverable
+- workflow.iteration-success-rate: unknown → target 0.90 (% of iterations producing a file)
+- handler.success-rate: 0.95 → target 0.95 ✅
+
+## Current State
+New project. No baseline measured yet.
 
 ## Plan
+- [ ] Measure current worker success rate over last 14 days, write outputs/baseline.md
+- [ ] Document failure modes (no output, timeout, wrong task)
+- [ ] Implement guardrails (pre-flight checks, timeout escalation)
+- [ ] Track success rate for 7 days after guardrails
+- [ ] Re-plan: review metrics, assess improvement, write next steps
 
-### Milestone 1: Baseline Measurement
-- Measure current worker success rate over last 14 days
-- Document failure modes (no output, timeout, wrong task, repeated reads)
-- Produce `outputs/workflow-reliability-baseline.md`
+## References
 
-### Milestone 2: Add Guardrails
-- Implement pre-flight checks: reject iterations that don't write within first 3 tool calls
-- Add timeout escalation: if worker stalls, auto-cancel and reassign
-- Test guardrails over 20 iterations
+**Resources:**
+- agents/shared/workflows/master-worker.ts — the workflow being measured
+- handler.success-rate metric — existing handler health metric
 
-### Milestone 3: Sustained 90% Rate
-- Track success rate for 7 consecutive days
-- Tune thresholds based on data
-- Close project when 90% target sustained for 1 week
+**Artifacts:**
+- (none yet)
