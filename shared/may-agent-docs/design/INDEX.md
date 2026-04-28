@@ -19,10 +19,12 @@ These define how the system works.
 | [metrics-system.md](metrics-system.md) | Unified metric system: per-agent metrics, snapshots, alerts, dashboard | ✅ Implemented |
 | [runtime-ctx.md](runtime-ctx.md) | Shared infra interface for handlers, workflows, and agent tools | ✅ Implemented |
 | [convention-defaults.md](convention-defaults.md) | Convention over config: event inbox, auto-heartbeat, default health metrics | ✅ Implemented (Phase 1-4) |
-| [request-event-architecture.md](request-event-architecture.md) | Two-table architecture: events (agent inbox) vs requests (work ledger) | ✅ Implemented |
+| [request-event-architecture.md](request-event-architecture.md) | Event architecture: events table as agent inbox + audit trail | ✅ Implemented |
 | [agent-level-code-boundary.md](agent-level-code-boundary.md) | Move evaluator, context-learn, project-scanner from src/lib to agents/ | ✅ Implemented |
-| [heartbeat-system.md](heartbeat-system.md) | Heartbeat redesign: per-agent workflows, pre-loaded context, 1 session | Draft (partially implemented) |
-| [escalation-system.md](escalation-system.md) | Escalation and recovery system design | Active |
+| [agent-neutral-projects.md](agent-neutral-projects.md) | Shared project location at agents/shared/projects/ | ✅ Implemented |
+| [health-metrics.md](health-metrics.md) | Health metrics: handler + project metrics, alert_op, pipeline | ✅ Implemented |
+| [heartbeat-system.md](heartbeat-system.md) | Heartbeat redesign: per-agent workflows, pre-loaded context, 1 session | ✅ Implemented |
+| [escalation-system.md](escalation-system.md) | Escalation and recovery system design | Partial |
 
 ## Agent Behavior
 
