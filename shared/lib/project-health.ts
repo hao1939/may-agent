@@ -201,7 +201,7 @@ export function diagnoseProject(
 
   // Already running — don't double-launch
   const entry = healthState.projects[project.relPath];
-  const status = project.status;
+  let status = project.status;
 
   // Only "closed" is terminal (set by human/May only)
   if (status === "closed") {
