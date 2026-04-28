@@ -4,7 +4,7 @@
 **Owner**: optimizer
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 4
+**Iteration**: 5
 
 ## Goal
 Maximize meaningful output of the agent system. Not about reducing cost — about doing more real work per hour.
@@ -15,7 +15,7 @@ Maximize meaningful output of the agent system. Not about reducing cost — abou
 - handler.success-rate: 0.95 → target 0.95 ✅
 
 ## Current State
-**Iteration 4 (2026-04-28).** Zombie cleanup done (51 archived). Audit exists at outputs/system-output-audit.md. Top remaining blocker: worker instruction-following failure — multiple projects iterate without producing deliverables. This project itself had 4 worker iterations that produced no new files. Next action: write concrete recommendations to improve worker output rate, then close the re-plan milestone.
+**Iteration 5 (2026-04-28).** BLOCKED: 5 consecutive worker iterations produced zero files. Worker says "let me write the report" each time but never executes. Zombie cleanup was done externally (51 archived). Audit exists at outputs/system-output-audit.md. The "Re-plan" milestone requires the worker to actually produce `outputs/output-improvement-plan.md` — a single markdown file. This has been requested 3 times with no result. The worker instruction-following failure identified as top blocker in the audit is literally happening to this project.
 
 ## Plan
 - [x] Redefine metrics: replace may-session-ratio with output-focused metrics
