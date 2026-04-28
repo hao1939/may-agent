@@ -64,11 +64,12 @@
 - **Finding**: 3 skills PROVEN effective (Amy +37%, Coder +37%, verify-after-edit 100% gym). 1 partially effective (tech-lead path skill). 12 NEVER measured.
 - **Next**: EXP-251 to fix tech-lead PATH_HALLUCINATION; broaden second-look-verification to more agents
 
-## P1: EXP-251 — Tech-Lead PATH_HALLUCINATION Investigation (NEW Jun 29)
-- Tech-lead has establish-working-directory skill deployed but PATH_HALLUCINATION spiked to 26 incidents in recent period
-- Most recent eval: 0.35 with PATH_HALLUCINATION to `/home/zeus`
-- **Hypothesis**: Skill text doesn't cover `/home/zeus` pattern specifically, or agent isn't reading skill
-- **Action**: Check tech-lead's skill content, add `/home/zeus` prohibition, measure
+## P1: EXP-251 — Tech-Lead PATH_HALLUCINATION Investigation (UPDATED Jul 28)
+- Tech-lead C7.1 is **#1 convention failure system-wide** (14 fails, 39% pass rate)
+- Real violations: `/Users/jash/`, `/Users/amadad/`, `/Users/bloom/` — NOT `/home/zeus`
+- Updated skill with actual hallucinated paths + STOP-CHECK section (Jul 28)
+- **Key insight**: Text coaching may be at ceiling for this issue (per KE-338). If no improvement after this update, need workflow enforcement.
+- **Measure after**: Check C7.1 pass rate in 7 days
 
 ## P1: Quality Trend Analysis ✅ DONE (Jun 29)
 - **Output**: `agents/coach/workspace/quality-trend-analysis-20260629.md`

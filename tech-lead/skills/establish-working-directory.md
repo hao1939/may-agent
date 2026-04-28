@@ -11,12 +11,17 @@
 4. **Confirm the directory** with `ls` before doing any work
 5. **Never use absolute paths from your training** (/Users/*, /home/zeus, ~/*, etc.) — always use relative paths from project root
 
-## Anti-patterns (from your real failures)
+## Anti-patterns (from your real failures — Apr 2026 data)
 
+- ❌ `cd /Users/jash/Developer/admyral && npx tsc` — HALLUCINATED PATH (session s_..213_92)
+- ❌ `cd /Users/amadad/code/aicodebase && ...` — HALLUCINATED PATH (session s_..405_81)
+- ❌ `cd /Users/bloom/src/activecontext && ...` — HALLUCINATED PATH (session s_..604_16)
 - ❌ Running commands in /home/zeus instead of /app (session s_..224, quality 0.35)
-- ❌ Using /Users/bamio/ local path (session s_..132, quality 0.25)  
 - ❌ Assuming a directory exists without checking first
-- ✅ `pwd` → confirm /app → `ls` → find target → work in correct location
+- ✅ `cd /app && pwd && ls` → confirm /app → find target → work in correct location
+
+## STOP-CHECK (before every bash command)
+**Does my command contain `/Users/` or `/home/`?** If yes → DELETE IT. Replace with `/app`. There are NO user home directories in this environment. Every path you remember from training data is WRONG.
 
 ## Key rule
 **Always start with `pwd`. If you're not in the project root, `cd` there first. If you can't find the target file within 3 tool calls, state that clearly in your finish() rather than guessing paths.**
