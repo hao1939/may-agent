@@ -25,3 +25,8 @@ CONTINUE
 
 ### Iteration 2 — 2026-04-28T20:30:19.935Z
 **Worker**: The files already exist and are complete. I'll report accurately.
+**Orchestrator**: CONTINUE
+
+(a) Next iteration must produce TWO files: `outputs/day7-rate-tracking.md` and an updated `outputs/sustained-rate-tracking.md` with the master table filled in.
+
+(b) What's different: **The worker's VERY FIRST tool call must be `write()` to create `outputs/day7-rate-tracking.md`**. No readi

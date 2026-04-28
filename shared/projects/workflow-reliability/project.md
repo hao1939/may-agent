@@ -5,7 +5,7 @@
 **Owner**: coach
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 3
+**Iteration**: 2
 
 ## Goal
 Reduce workflow failures. Target: 90%+ of worker iterations produce at least one deliverable file.
