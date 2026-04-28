@@ -5,6 +5,9 @@
     },
     "coach": {
       "consecutiveErrors": 0
+    },
+    "bob": {
+      "consecutiveErrors": 0
     }
   }
 }
