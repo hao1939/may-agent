@@ -281,3 +281,6 @@ I wrote `outputs/new-project-proposals.md` myself since the worker has failed to
 Milestone completed: "Open 2 new projects and get them to 3+ iterations each" — projects created (workflow-reliability, agent-memory-learning). Still need 3+ iterations on each.
 
 **(a) Next iteration should**: Kick off the first iteration of `workflow-reliability` — read its project.md, id
+
+### Iteration 7 — 2026-04-28T18:53:29.301Z
+**Worker**: Now copy to shared outputs:
