@@ -1,12 +1,12 @@
-# Design: Request & Event Architecture
+# Design: Event Architecture
 
-**Status:** ✅ Implemented  
-**Date:** 2026-04-17  
+**Status:** ✅ Implemented (events table only — requests table removed 2026-04-28)  
+**Date:** 2026-04-17 (original), 2026-04-28 (updated)  
 **References:** [convention-defaults.md](convention-defaults.md), [core-principles.md](core-principles.md) (P1, P3)
 
-## Two Tables, Two Purposes
+## Events Table = Agent Inbox + Audit Trail
 
-The system has two persistence tables with distinct roles:
+All domain events persist to one table. The heartbeat `loadInbox()` function queries pending items for each agent.
 
 | Table | Purpose | Who sees it | Lifecycle |
 |-------|---------|-------------|-----------|
