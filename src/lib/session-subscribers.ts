@@ -12,7 +12,7 @@ import { join, dirname } from "node:path";
 import type { AgentEvent } from "../app/event-bus.js";
 import { log } from "./log.js";
 import { createStartDigest, createEndDigest, upsertDigest, logShadowComparison } from "./session-digest.js";
-import { updateRequest, getDb } from "./requests.js";
+import { getDb } from "./requests.js";
 import type { SubagentManager } from "./manager.js";
 import { writeLastSession } from "./last-session.js";
 
@@ -91,44 +91,8 @@ export function createRequestTracker(persistDir: string): (event: AgentEvent) =>
       }
     }
 
-    // Mark completed items — fuzzy-match against pending requests
-    if (Array.isArray(finishParams.completed_items) && finishParams.completed_items.length > 0) {
-      try {
-        const db = getDb(persistDir);
-        const pending = db
-          .prepare(
-            `SELECT requestId, task FROM requests
-             WHERE toAgent = ? AND status IN ('CREATED', 'IN_PROGRESS') AND method IN ('message', 'notify', 'send', 'fork', 'run')`,
-          )
-          .all(event.agent) as { requestId: string; task: string }[];
-
-        for (const item of finishParams.completed_items) {
-          const needle = String(item).trim().toLowerCase();
-          let bestId: string | null = null;
-          let bestScore = 0;
-          for (const req of pending) {
-            const reqText = req.task.toLowerCase();
-            // Simple overlap scoring
-            const words = needle.split(/\s+/);
-            const score = words.filter((w) => reqText.includes(w)).length / Math.max(words.length, 1);
-            if (score > bestScore && score > 0.3) {
-              bestScore = score;
-              bestId = req.requestId;
-            }
-          }
-          if (bestId) {
-            updateRequest(persistDir, bestId, {
-              status: "COMPLETED",
-              completedAt: Date.now(),
-              summary: `Completed by ${event.agent} in session ${event.sessionId}`,
-            });
-          }
-        }
-      } catch (err) {
-        /* best-effort */
-        log("warn", `[request-tracker] failed to process completed_items for ${event.agent}: ${err}`);
-      }
-    }
+    // completed_items: no longer tracked (requests table removed).
+    // Agents act on inbox events directly — no ack needed.
   };
 }
 
@@ -629,17 +593,17 @@ export function createFindingsTracker(projectRoot: string, persistDir: string): 
         // Check for existing requests from same source
         const existingFromSource = db
           .prepare(
-            `SELECT requestId FROM requests WHERE source_finding = ? AND status NOT IN ('COMPLETED', 'FAILED')`,
+            `SELECT id FROM events WHERE event_type = 'agent.finding' AND json_extract(data, '$.finding') = ? AND timestamp > ?`,
           )
-          .all(ff.path) as { requestId: string }[];
+          .all(ff.path, Date.now() - 7 * 24 * 60 * 60 * 1000) as { id: number }[];
         if (existingFromSource.length > 0) continue;
 
-        // Get existing open auto-requests for fuzzy dedup
+        // Get recent auto-findings for fuzzy dedup
         const existingAutoTasks = db
           .prepare(
-            `SELECT task FROM requests WHERE task LIKE '[Auto]%' AND status NOT IN ('COMPLETED', 'FAILED')`,
+            `SELECT json_extract(data, '$.task') as task FROM events WHERE event_type = 'agent.finding' AND timestamp > ?`,
           )
-          .all() as { task: string }[];
+          .all(Date.now() - 7 * 24 * 60 * 60 * 1000) as { task: string }[];
 
         for (const item of items) {
           if (created >= MAX_FINDINGS_PER_SESSION) break;
@@ -654,8 +618,8 @@ export function createFindingsTracker(projectRoot: string, persistDir: string): 
 
           try {
             const db = getDb(persistDir);
-            db.run("INSERT INTO events (event_type, source, owner, data, timestamp, status) VALUES (?,?,?,?,?,?)",
-              ["agent.finding", ff.producer, item.targetAgent, JSON.stringify({ task: taskText, finding: ff.path }), Date.now(), "pending"]);
+            db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?,?,?,?,?)",
+              ["agent.finding", ff.producer, item.targetAgent, JSON.stringify({ task: taskText, finding: ff.path }), Date.now()]);
           } catch { /* best-effort */ }
 
           // Add to existing list for intra-session dedup

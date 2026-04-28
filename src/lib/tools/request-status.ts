@@ -13,7 +13,7 @@
 
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { getEvaluationsSince, getDb, getActiveRequests, getStaleRequests } from "../requests.js";
+import { getEvaluationsSince, getDb } from "../requests.js";
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
@@ -136,7 +136,7 @@ function loadHumanInputCounts(persistDir: string, days: number): number[] {
   return buckets;
 }
 
-/** Load process last-fire times from requests DB. */
+/** Load process last-fire times from events table (handler.started events). */
 function loadProcessHealth(persistDir: string): ProcessInfo[] {
   const db = getDb(persistDir);
   const results: ProcessInfo[] = [];
@@ -145,23 +145,24 @@ function loadProcessHealth(persistDir: string): ProcessInfo[] {
     try {
       const row = db
         .prepare(
-          `SELECT MAX(createdAt) as lastFire, status
-           FROM requests WHERE artifact = ?
-           ORDER BY createdAt DESC LIMIT 1`,
+          `SELECT MAX(timestamp) as lastFire FROM events
+           WHERE event_type = 'handler.started'
+             AND json_extract(data, '$.handler') = ?`,
         )
-        .get(proc.name) as { lastFire: number | null; status: string | null } | null;
+        .get(proc.name) as { lastFire: number | null } | null;
 
-      // Get the actual status of the most recent run
+      // Check if last run succeeded or failed
       let lastStatus: string | null = null;
       if (row?.lastFire) {
         const statusRow = db
           .prepare(
-            `SELECT status FROM requests
-             WHERE artifact = ? AND createdAt = ?
-             LIMIT 1`,
+            `SELECT event_type FROM events
+             WHERE event_type IN ('handler.completed', 'handler.failed')
+               AND json_extract(data, '$.handler') = ?
+             ORDER BY timestamp DESC LIMIT 1`,
           )
-          .get(proc.name, row.lastFire) as { status: string } | null;
-        lastStatus = statusRow?.status ?? null;
+          .get(proc.name) as { event_type: string } | null;
+        lastStatus = statusRow?.event_type === 'handler.completed' ? 'COMPLETED' : statusRow?.event_type === 'handler.failed' ? 'FAILED' : null;
       }
 
       results.push({
@@ -379,14 +380,14 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
     const cutoff = now - DAY;
     agentStatsRows = db
       .prepare(
-        `SELECT toAgent,
+        `SELECT agent as toAgent,
                 COUNT(*) as total,
-                SUM(CASE WHEN status = 'COMPLETED' THEN 1 ELSE 0 END) as completed,
-                SUM(CASE WHEN status = 'FAILED' THEN 1 ELSE 0 END) as failed,
-                AVG(CASE WHEN durationMs IS NOT NULL THEN durationMs END) as avgDuration
-         FROM requests
-         WHERE createdAt > ?
-         GROUP BY toAgent
+                SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed,
+                SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as failed,
+                AVG(CASE WHEN endedAt IS NOT NULL AND startedAt IS NOT NULL THEN endedAt - startedAt END) as avgDuration
+         FROM sessions
+         WHERE startedAt > ?
+         GROUP BY agent
          ORDER BY total DESC`,
       )
       .all(cutoff) as unknown as typeof agentStatsRows;
@@ -586,16 +587,16 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
       }
     }
 
-    // Coach experiments (from requests)
+    // Coach experiments (from sessions)
     try {
       const db = getDb(persistDir);
       const coachExperimentsRow = db
         .prepare(
           `SELECT COUNT(*) as total
-           FROM requests
-           WHERE toAgent = 'coach'
+           FROM sessions
+           WHERE agent = 'coach'
              AND task LIKE '%growth-cycle%'
-             AND createdAt > ?`,
+             AND startedAt > ?`,
         )
         .get(now - WEEK) as { total: number } | null;
       if (coachExperimentsRow && coachExperimentsRow.total > 0) {

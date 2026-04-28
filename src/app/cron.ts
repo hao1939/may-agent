@@ -455,39 +455,13 @@ export class Cron {
     return this.lastFireTimes.get(entryName) ?? null;
   }
 
-  /** Get PID from a running detached job's context. */
-  private getRunningPid(entryName: string): number | null {
-    try {
-      const db = getDb(this.persistDir);
-      const row = db
-        .prepare(
-          `SELECT context FROM requests
-           WHERE artifact = ? AND status IN ('CREATED', 'IN_PROGRESS')
-           ORDER BY createdAt DESC LIMIT 1`,
-        )
-        .get(entryName) as { context: string | null } | null;
-      if (!row?.context) return null;
-      const ctx = JSON.parse(row.context);
-      return ctx.pid ?? null;
-    } catch {
-      return null;
-    }
+  /** Get PID from a running detached job — uses inflightJobs map, no DB needed. */
+  private getRunningPid(_entryName: string): number | null {
+    return null; // Overlap detection uses inflightJobs Map
   }
 
-  /** Fail any orphaned running requests for a job (from a previous crashed process). */
-  private failOrphans(entryName: string): void {
-    try {
-      const db = getDb(this.persistDir);
-      const now = Date.now();
-      db.run(
-        `UPDATE requests SET status = 'FAILED', error = 'orphaned by restart', updatedAt = ?, completedAt = ?
-         WHERE artifact = ? AND status IN ('CREATED', 'IN_PROGRESS')`,
-        [now, now, entryName],
-      );
-    } catch {
-      /* ignore */
-    }
-  }
+  /** No-op — orphan tracking removed with requests table. Overlap uses inflightJobs. */
+  private failOrphans(_entryName: string): void {}
 
   // ── Scheduling with resume ──────────────────────────────────────────
 
@@ -765,37 +739,9 @@ export class Cron {
     }
   }
 
-  /** Get info about running detached tasks (from requests table). */
+  /** Get info about running detached tasks — derived from inflightJobs. */
   getDetachedRunning(): Map<string, { sessionId: string; pid: number | undefined; startedAt: string }> {
-    const result = new Map<string, { sessionId: string; pid: number | undefined; startedAt: string }>();
-    try {
-      const db = getDb(this.persistDir);
-      const rows = db
-        .prepare(
-          `SELECT artifact, sessionId, context, createdAt FROM requests
-           WHERE fromEntity = 'cron' AND status IN ('CREATED', 'IN_PROGRESS')
-           AND context LIKE '%"type":"detached"%'`,
-        )
-        .all() as Array<{ artifact: string; sessionId: string | null; context: string | null; createdAt: number }>;
-      for (const row of rows) {
-        let pid: number | undefined;
-        try {
-          const ctx = JSON.parse(row.context ?? "{}");
-          pid = ctx.pid ?? undefined;
-        } catch {
-          /* ignore */
-        }
-        if (pid && this.isProcessAlive(pid)) {
-          result.set(row.artifact, {
-            sessionId: row.sessionId ?? "",
-            pid,
-            startedAt: new Date(row.createdAt).toISOString(),
-          });
-        }
-      }
-    } catch {
-      /* ignore */
-    }
-    return result;
+    // Detached task tracking now uses inflightJobs Map (in-memory)
+    return new Map();
   }
 }

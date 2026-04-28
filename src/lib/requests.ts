@@ -1,28 +1,23 @@
 /**
- * requests.ts — Unified Request Tracking (SQLite)
+ * requests.ts — Database schema & helpers (SQLite)
  *
- * Replaces 4 JSONL tracking files (orders.jsonl, delegations.jsonl,
- * session-outcomes.jsonl, recovery.jsonl) with one SQLite database.
- *
- * Design: docs/design/request-tracking.md
- * Plan: agents/tech-lead/workspace/plan-request-tracking.md
+ * Manages the may.db schema (sessions, events, evaluations, gym, etc.)
+ * The original `requests` table has been removed — work tracking uses
+ * the sessions table and events table (event-native architecture).
  */
 
 import { openDatabase } from "./db.js";
 import type { SqliteDb } from "./db.js";
 import { join } from "node:path";
-import { mkdirSync, existsSync, renameSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 
 // ── Types ──────────────────────────────────────────────────────────────
-
-type RequestStatus = "CREATED" | "IN_PROGRESS" | "COMPLETED" | "FAILED" | "BLOCKED";
 
 type RequestMethod = "chat" | "call" | "message" | "notify" | "fork" | "workflow";
 
 // ErrorClass and classifyError are now in classify-error.ts (pure, no bun:sqlite deps)
 export type { ErrorClass } from "./classify-error.js";
-import type { ErrorClass } from "./classify-error.js";
 
 export interface TrackRequestOpts {
   fromEntity: string;
@@ -37,41 +32,6 @@ export interface TrackRequestOpts {
   expectations?: string;
   notify?: string[];
   source_finding?: string;
-}
-
-interface UpdateRequestOpts {
-  status?: RequestStatus;
-  sessionId?: string;
-  summary?: string;
-  error?: string;
-  errorClass?: ErrorClass;
-  durationMs?: number;
-  completedAt?: number;
-}
-
-export interface RequestRecord {
-  requestId: string;
-  parentRequestId: string | null;
-  fromEntity: string;
-  toAgent: string;
-  method: RequestMethod;
-  task: string;
-  status: RequestStatus;
-  sessionId: string | null;
-  source: string | null;
-  createdAt: number;
-  updatedAt: number;
-  completedAt: number | null;
-  durationMs: number | null;
-  summary: string | null;
-  error: string | null;
-  errorClass: ErrorClass | null;
-  retryable: number | null;
-  artifact: string | null;
-  context: string | null;
-  expectations: string | null;
-  notify: string | null;
-  source_finding: string | null;
 }
 
 // ── Schema ─────────────────────────────────────────────────────────────
@@ -281,7 +241,6 @@ CREATE TABLE IF NOT EXISTS events (
 );
 CREATE INDEX IF NOT EXISTS idx_events_owner ON events(owner, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_type  ON events(event_type, timestamp);
--- idx_events_inbox created after ALTER TABLE migration (status column may not exist yet)
 
 CREATE TABLE IF NOT EXISTS projects (
   id              TEXT PRIMARY KEY,
@@ -385,11 +344,10 @@ export function getDb(persistDir: string): SqliteDb {
   } catch {
     /* already exists */
   }
-  // Event inbox columns (convention-defaults Phase 1)
-  for (const col of ["status TEXT DEFAULT 'pending'", "handled_by TEXT", "result TEXT", "reason TEXT", "retry_count INTEGER DEFAULT 0", "ttl_ms INTEGER", "urgency TEXT DEFAULT 'normal'"]) {
+  // Event columns for TTL and urgency (event-native: no mutable status columns)
+  for (const col of ["ttl_ms INTEGER", "urgency TEXT DEFAULT 'normal'"]) {
     try { db.exec(`ALTER TABLE events ADD COLUMN ${col}`); } catch { /* already exists */ }
   }
-  try { db.exec("CREATE INDEX IF NOT EXISTS idx_events_inbox ON events(status, timestamp)"); } catch { /* */ }
 
   dbCache.set(persistDir, db);
   return db;
@@ -433,91 +391,11 @@ export function updateRequest(_persistDir: string, _requestId: string, _fields: 
 }
 
 /**
- * Get a single request by ID.
- */
-export function getRequest(persistDir: string, requestId: string): RequestRecord | null {
-  const db = getDb(persistDir);
-  return (db.prepare("SELECT * FROM requests WHERE requestId = ?").get(requestId) as RequestRecord | null) ?? null;
-}
-
-/**
- * Get all active (non-terminal) requests.
- */
-export function getActiveRequests(persistDir: string): RequestRecord[] {
-  return []; // No-op: requests table removed
-}
-
-/**
- * Get requests targeting a specific agent.
- * @param limit Max rows to return (default 100). Use -1 for unlimited (not recommended).
- */
-export function getRequestsByAgent(persistDir: string, agent: string, limit: number = 100): RequestRecord[] {
-  return []; // No-op: requests table removed
-}
-
-/**
- * Get requests targeting a specific agent filtered by status.
- * More efficient than getRequestsByAgent + JS filter.
- */
-export function getRequestsByAgentAndStatus(
-  persistDir: string,
-  agent: string,
-  statuses: string[],
-  limit: number = 100,
-): RequestRecord[] {
-  return []; // No-op: requests table removed
-}
-
-/**
- * Get request tree using recursive CTE.
- * Returns the root request and all its descendants.
- */
-export function getRequestTree(persistDir: string, requestId: string): RequestRecord[] {
-  const db = getDb(persistDir);
-  return db
-    .prepare(
-      `WITH RECURSIVE tree AS (
-        SELECT * FROM requests WHERE requestId = ?
-        UNION ALL
-        SELECT r.* FROM requests r
-        JOIN tree t ON r.parentRequestId = t.requestId
-      )
-      SELECT * FROM tree ORDER BY createdAt ASC`,
-    )
-    .all(requestId) as unknown as RequestRecord[];
-}
-
-/**
- * Find stale requests: CREATED or IN_PROGRESS older than maxAgeMs.
- */
-export function getStaleRequests(persistDir: string, maxAgeMs: number): RequestRecord[] {
-  return []; // No-op: requests table removed
-}
-
-/**
  * Check if a duplicate request exists (same from, to, task hash).
- * Used by send() to prevent duplicate handoffs/sends.
- * Returns the existing requestId if a duplicate is found, null otherwise.
+ * No-op stub — kept for callers that use it as a guard.
  */
 export function isDuplicate(_persistDir: string, _from: string, _to: string, _task: string): string | undefined {
-  return undefined; // No-op: requests table removed
-}
-
-/**
- * Archive old completed/failed requests.
- * Returns the number of rows deleted.
- */
-export function archiveOld(persistDir: string, maxAgeDays: number): number {
-  const db = getDb(persistDir);
-  const cutoff = Date.now() - maxAgeDays * 24 * 60 * 60 * 1000;
-  const result = db.run(
-    `DELETE FROM requests
-     WHERE status IN ('COMPLETED', 'FAILED', 'BLOCKED')
-     AND completedAt IS NOT NULL
-     AND completedAt < ?`,
-    [cutoff],
-  );
-  return result.changes;
+  return undefined;
 }
 
 // ── Error Classification ───────────────────────────────────────────────
