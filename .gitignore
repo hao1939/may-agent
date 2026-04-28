@@ -18,3 +18,4 @@ test/gym/.gym-runner-bundle.mjs
 may.db
 *.db.stale
 DELIVERABLES_CHECKLIST.md
+src/lib/__tests__/.test-event-native/

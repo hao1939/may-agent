@@ -133,8 +133,8 @@ export interface HandlerContext extends RuntimeCtx {
   /** Trigger a cron entry immediately (reactive trigger). Returns true if fired/latched. */
   triggerNow: (entryName: string) => boolean;
 
-  /** Track a request in the requests table. Returns the request ID.
-   * @deprecated Use ctx.emit({ type: "message_created", ... }) instead. */
+  /** No-op stub (requests table removed). Returns a dummy UUID for session.requestId linkage.
+   * @deprecated Use ctx.emit() for notifications instead. */
   trackRequest: (opts: TrackRequestOpts) => string;
 
   /** Load all session metadata (active + archived). */

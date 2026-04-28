@@ -5,10 +5,10 @@
  * agent performance, process health, and progress trends.
  *
  * Data sources (all existing, no new infra):
- * - may.db requests table → agent completion rates, process last-fire times
+ * - may.db sessions table → agent completion rates, work stats
+ * - may.db events table → handler health (paired started/completed/failed events)
  * - .state/evaluations/ → per-agent quality/efficiency scores
  * - .state/human-inputs.jsonl → human correction trends
- * - .state/convention-checks/summary.json → convention compliance (when deployed)
  */
 
 import { readFileSync, existsSync } from "node:fs";
