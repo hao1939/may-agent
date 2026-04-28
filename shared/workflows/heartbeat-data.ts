@@ -121,16 +121,17 @@ export function loadHeartbeatMd(ctx: WorkflowContext, agent: string): string {
 export function loadInbox(ctx: WorkflowContext, agent: string): string {
   try {
     const db = ctx.getDb() as any;
+    const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
     const rows = db.prepare(`
-      SELECT id, event_type, data, urgency, timestamp, retry_count
+      SELECT id, event_type, data, urgency, timestamp
       FROM events
-      WHERE status IN ('pending', 'failed')
-        AND owner = ?
+      WHERE owner = ?
+        AND timestamp > ?
         AND (ttl_ms IS NULL OR timestamp + ttl_ms > ?)
       ORDER BY CASE WHEN urgency = 'immediate' THEN 0 ELSE 1 END,
-        retry_count DESC, timestamp ASC
+        timestamp DESC
       LIMIT 20
-    `).all(agent, Date.now()) as any[];
+    `).all(agent, twoHoursAgo, Date.now()) as any[];
     if (!rows.length) return "";
     // Dedup: collapse notifications with similar content
     const dedupMap = new Map<string, { count: number; newest: any; oldest: any }>();
