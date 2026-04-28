@@ -142,6 +142,26 @@ Adapter modes:
 - **In-process**: direct function call (current gym approach, requires bundled binary)
 - **Live via socket**: connects to running may-agent socket (aspirational — socket exists but needs runAgent command added)
 
+## The SDK is the canonical layer
+
+The SDK defines the system's capability surface. Agent tools are thin wrappers over it.
+
+```
+SDK (canonical)
+  ├── Agent tools wrap it    (agents.fork → sdk.runAgent)
+  ├── Handlers call it       (ctx.runAgent → sdk.runAgent)
+  ├── Workflows call it      (ctx.runAgent → sdk.runAgent)
+  └── Gym runner calls it    (adapter.runAgent → sdk.runAgent)
+```
+
+Today it's inverted — tools and handlers call `manager.callAgent()` directly, bypassing any shared layer. Flipping it so everything goes through the SDK means:
+
+- **Testing**: mock the SDK, test tool/handler logic in isolation
+- **Consistency**: behavior identical whether called by LLM tool or handler code
+- **Capability surface**: 8 methods = 8 things the system can do. Everything else is internal.
+
+**Litmus test for new features**: if you can't express it naturally from both sides (agent tool AND SDK method), something's wrong with the abstraction.
+
 ## Migration
 
 No big bang. The binary wraps its internals behind the SDK interface:
