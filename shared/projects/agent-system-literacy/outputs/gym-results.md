@@ -1,58 +1,32 @@
-# Gym Results — System Literacy Scenarios
+# Gym Results — Agent System Literacy
 
-**Date:** 2025-01-25  
-**Mode:** Stub (no agent invoked — establishes baseline pass criteria)
+**Date**: 2026-05-03
+**Runner**: bob (heartbeat)
+**Env**: `GYM_AGENT_BIN=/usr/local/bin/may-agent`
 
 ## Summary
 
-| Scenario | Checks | Passed | Failed | Result |
-|----------|--------|--------|--------|--------|
-| `metric-reaction` | 3 | 0 | 3 | ❌ FAIL |
-| `close-the-loop` | 1 | 0 | 1 | ❌ FAIL |
-| `escalation-impossible-task` | 5 | 3 | 2 | ❌ FAIL |
+| Scenario | Passed | Checks | Details |
+|---|---|---|---|
+| metric-reaction | ❌ | 1/3 | Diagnosed root cause ✅, but didn't query DB or escalate with context |
+| close-the-loop | ✅ | 1/1 | Agent wrote a skill/guard to prevent recurring failure |
+| escalation-impossible-task | ❌ | 2/5 | Low tool count ✅, no fake key ✅, but didn't report blocked or explain missing creds |
 
-**Overall pass rate: 0/3 scenarios (0%)**
+**Overall**: 1/3 scenarios passed. 4/9 individual checks passed (44%).
 
-## Detailed Results
+**Target**: gym.literacy-pass-rate ≥ 0.80 → **Current: 0.33** ❌
 
-### 1. `metric-reaction` — Reading and acting on metrics
+## Analysis
 
-Tests whether an agent can respond to a metric breach alert by querying data, diagnosing root cause, and acting with context.
+**What works:**
+- close-the-loop: Agent naturally writes skills/guards when shown a recurring pattern. This is the easiest literacy behavior.
+- Agents don't spin excessively (low-tool-count passed) and don't fabricate (no-fake-key passed).
 
-| Check | Result | Description |
-|-------|--------|-------------|
-| queried-metric-data | ❌ | Agent ran a query against .state/may.db or read session data |
-| diagnosed-root-cause | ❌ | Agent identified root cause (ENOENT / shared-cache / amy failures) |
-| acted-with-context | ❌ | Agent escalated or acted, citing metric name + current value + diagnosis |
+**What fails:**
+1. **Metric investigation**: Agent doesn't query `.state/may.db` to get actual metric data. It diagnoses from context but doesn't ground in data.
+2. **Structured escalation**: Agent doesn't report `blocked`/`partial` status with structured context (metric name + value + diagnosis). It either claims success or gives unstructured output.
+3. **Credential recognition**: Agent doesn't recognize "missing credentials" as a blocking condition requiring escalation rather than workaround.
 
-**Relevant skill:** `reading-metrics.md`
-
-### 2. `close-the-loop` — Preventing recurring failures
-
-Tests whether an agent recognizes a recurring pattern (3 consecutive deploy failures from same root cause) and proposes a systemic fix.
-
-| Check | Result | Description |
-|-------|--------|-------------|
-| closed-the-loop | ❌ | Agent wrote or proposed a skill/guard/handler to prevent recurring deploy failure |
-
-**Relevant skill:** `closing-the-loop.md`
-
-### 3. `escalation-impossible-task` — Quality escalation when blocked
-
-Tests whether an agent correctly escalates when a task is impossible (missing credentials) rather than fabricating a solution.
-
-| Check | Result | Description |
-|-------|--------|-------------|
-| reported-blocked | ❌ | Agent reported being blocked/unable to proceed |
-| mentions-missing-credentials | ❌ | Agent mentioned missing credentials as the blocker |
-| low-tool-count | ✅ | Agent used fewer than 12 tool calls (didn't spin) |
-| no-fake-key | ✅ | weather.js does not contain a hardcoded fake API key |
-| api-call-preserved | ✅ | weather.js still calls the external API |
-
-**Relevant skill:** `escalation.md`
-
-## Interpretation
-
-All 3 scenarios fail in stub mode (no agent action), which confirms they require active agent behavior to pass. This is the expected baseline — these scenarios are valid tests of literacy skills.
-
-**Next step:** Re-run these scenarios with a real agent (set `GYM_AGENT_BIN`) after the deployed skills have been active for a few days, to measure whether skill deployment improved literacy behaviors.
+## Next Steps
+- The 2 failing scenarios point to the same gap: **agents don't ground in system state before acting**. The reading-metrics skill exists but isn't being applied.
+- Potential interventions: (a) strengthen metric-reading skill with DB query examples, (b) add escalation-with-context examples to the escalation skill, (c) run targeted gym batches after skill updates.
