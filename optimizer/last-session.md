@@ -1,16 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777403283337_430
+- **Session:** s_1777403371967_433
 - **Status:** done
-- **When:** 2026-04-28T19:08:22.901Z
-- **Duration:** 19s
+- **When:** 2026-04-28T19:09:54.326Z
+- **Duration:** 22s
 
 ## What Happened
 CONTINUE
 
-**(a) Next iteration should**: Drive test-coverage's second iteration. Read its project.md, find milestone 2, and produce a deliverable in its outputs directory.
+test-coverage produced `critical-path-tests.md` — its second deliverable. Good.
 
-**(b) What's different**: Continuing the cycle across all 5 projects. documentation-gen got its second iteration last round, now test-coverage catches up.
+The last milestone ("Sustain 10+ iterations/day for 3 consecutive days") requires time to pass. We've hit 19 iterations today. To sustain this, we should continue advancing the 5 projects.
 
-**(c) First step**: `read("/app/agents/shared/projects/test-coverage/project.md")` to find milestone 2, then immediately `write()` the deliverable into `/app/agents/shared/projects/test-coverage/outputs/`.
+**(a) Next iteration should**: Drive workflow-reliability's 4th iteration. Read its project.md, find the next milestone, produce a deliverable.
+
+**(b) What's different**: We're cycling back to workflow-reliability which already has 3 iterations. Pushing it forward keeps throughput up toward the 3-day sustainability goal.
+
+**(c) First step**: `read("/app/agents/shared/projects/workflow-reliability/project.md")` to find the next incomplete milestone, then immediately `write()` the deliverable into `/app/agents/shared/projects/workflow-reliability/outputs/`.
