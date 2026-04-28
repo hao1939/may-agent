@@ -3,8 +3,11 @@
 **Status**: active
 **Owner**: optimizer
 **Priority**: P1
-**Iteration**: 6
+**Iteration**: 8
 
+**Stop Reason**: 
+
+**Resume Condition**: 
 ## Goal
 Reduce wasted compute: May heartbeat cascade (32% of sessions), missing circuit breaker for provider failures, OpBudget causing lost work.
 
@@ -30,3 +33,6 @@ Three fixes implemented: M1 heartbeat dedup (idle LLM sessions skipped), M2 circ
 
 **Artifacts:**
 - outputs/project-closure-summary.md
+
+
+## Comments
