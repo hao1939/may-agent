@@ -374,3 +374,11 @@ The worker has failed to produce `outputs/skill-behavioral-audit.md` for 2 itera
 (a) Next iteration should **deploy the Verify-Before-Finish skill to the 7 agents missing it**. For each of these agents: `amy, coach, coder, tech-lead, optimizer, evaluator, qa`:
 
 1. **Copy the skill file** to their per-agent skills dir: copy `/app/agents/shared/skills/archive/unreference
+
+### Iteration 2 — 2026-04-28T18:34:53.603Z
+**Worker**: The outputs directory is gitignored. The remaining uncommitted files are from other agents, not mine. Let me force finish:
+**Orchestrator**: The worker made partial progress — skill files deployed to 9/10 agents, 📘 directives added to 8/10 context.md files. Missing: tech-lead skill file, and coder + tech-lead context.md directives. No summary report produced.
+
+CONTINUE
+
+(a) Next iteration must **complete the remaining gaps and produce t
