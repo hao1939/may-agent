@@ -15,7 +15,7 @@ Maximize meaningful output of the agent system. Not about reducing cost — abou
 - handler.success-rate: 0.95 → target 0.95 ✅
 
 ## Current State
-**Iteration 10 (2026-04-28).** Two new projects created: workflow-reliability and agent-memory-learning. Active project count now 3+. Remaining: get those projects to 3+ iterations each, and achieve 10 project iterations in a 24h window. Worker non-execution remains the #1 systemic issue (9/10 worker iterations produced zero files — orchestrator wrote deliverables directly).
+**Iteration 12 (2026-04-28).** Both new projects now have first deliverables: workflow-reliability has `workflow-reliability-baseline.md`, agent-memory-learning has `memory-audit.md`. Each project at 1 iteration — need 2 more each for the 3+ milestone. Active project count: 3 ✅. Worker execution improving (iterations 6-7 produced files). Total project iterations this session: ~7, approaching 10 target.
 
 ## Plan
 - [x] Redefine metrics: replace may-session-ratio with output-focused metrics
