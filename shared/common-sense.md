@@ -84,3 +84,13 @@ Standard locations — follow these, don't invent alternatives:
 - **Root:** `/app`. Do NOT use `/Users/`, `/home/`, or `~`.
 - **Agent files** live in `/app/agents/` (its own git repo). Commit from within: `cd /app/agents && git add <your-files> && git commit -m "<agent>: <what>"`.
 - **Searching files:** Always exclude noise directories. Use `grep --exclude-dir=.state --exclude-dir=node_modules --exclude-dir=.git` or `find -path './.state' -prune -o -path './node_modules' -prune -o ...`. Without this, results are dominated by caches and logs.
+
+## Safety — Destructive Operations FORBIDDEN
+
+**NEVER** perform these actions without explicit human approval:
+- Rename, delete, move, or rebuild `.state/may.db` or any production database
+- Run `rm`, `mv`, or `cp` on `.state/*.db` files
+- Run `sqlite3` commands that DROP, DELETE, or ALTER production tables
+- Run `docker compose down/up --force-recreate` or restart the container
+
+**If a metric is red because of a DB issue:** investigate and report findings, then **escalate to human**. Do NOT attempt to "fix" it by rebuilding or replacing the database. Data loss is worse than a red metric.

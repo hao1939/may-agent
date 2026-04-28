@@ -43,12 +43,12 @@ export function loadMetrics(ctx: WorkflowContext, agent: string): string {
         } catch {}
 
         if (consecutiveBreaches >= 3) {
-          line += `\n  ⛔ REPEATED ALERT (seen ${consecutiveBreaches}x): This metric has been failing for ${consecutiveBreaches} consecutive checks with NO action taken.`;
-          line += `\n  → You MUST act on this NOW. Continuing to ignore it is not acceptable.`;
+          line += `\n  ⛔ REPEATED ALERT (seen ${consecutiveBreaches}x): Failing for ${consecutiveBreaches} consecutive checks.`;
+          line += `\n  → Investigate the root cause. If it requires destructive action (DB rebuild, data deletion), ESCALATE to human — do NOT fix autonomously.`;
         }
-        if (r.source_command) line += `\n  → MANDATORY: Run this command NOW → bash("${r.source_command}")`;
-        else if (r.source_query) line += `\n  → MANDATORY: Run this query NOW → ${r.source_query.substring(0, 120)}`;
-        line += `\n  → You MUST call a tool (bash/read/agents) for this metric. Do NOT just acknowledge it — execute.`;
+        if (r.source_command) line += `\n  → Diagnostic command: bash("${r.source_command}")`;
+        else if (r.source_query) line += `\n  → Diagnostic query: ${r.source_query.substring(0, 120)}`;
+        line += `\n  → Investigate this metric. Do NOT take destructive actions (rename/delete/rebuild DB, rm data). Escalate if unsure.`;
       }
       return line;
     }).join("\n");
@@ -256,7 +256,7 @@ export function formatMetricsBlock(ctx: WorkflowContext, agent: string): string 
 
 ${metrics}
 
-**STOP. Your FIRST tool call must be one of the "→ MANDATORY" commands above.** Do not plan, do not summarize — execute the command for the worst metric RIGHT NOW. After you see the result, decide what to do about it.
+**Review the diagnostic commands above and investigate.** Do NOT take destructive actions (rebuild DB, delete files, rename production data). If the fix requires destructive changes, escalate to human.
 
 ---
 `;
