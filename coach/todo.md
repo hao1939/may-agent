@@ -48,6 +48,17 @@
 - Root cause: PATH_HALLUCINATION — works in wrong dirs, copies files instead of cd'ing
 - Solution: EXP-250 above
 
+## P0: Skill Effectiveness Measured ✅ DONE (Jun 29)
+- **Output**: `agents/coach/workspace/skill-effectiveness-measured-2026-06-29.md`
+- **Finding**: 3 skills PROVEN effective (Amy +37%, Coder +37%, verify-after-edit 100% gym). 1 partially effective (tech-lead path skill). 12 NEVER measured.
+- **Next**: EXP-251 to fix tech-lead PATH_HALLUCINATION; broaden second-look-verification to more agents
+
+## P1: EXP-251 — Tech-Lead PATH_HALLUCINATION Investigation (NEW Jun 29)
+- Tech-lead has establish-working-directory skill deployed but PATH_HALLUCINATION spiked to 26 incidents in recent period
+- Most recent eval: 0.35 with PATH_HALLUCINATION to `/home/zeus`
+- **Hypothesis**: Skill text doesn't cover `/home/zeus` pattern specifically, or agent isn't reading skill
+- **Action**: Check tech-lead's skill content, add `/home/zeus` prohibition, measure
+
 ## P1: Quality Trend Analysis ✅ DONE (Jun 29)
 - **Output**: `agents/coach/workspace/quality-trend-analysis-20260629.md`
 - **Finding**: All agents improved +25pp avg over 4 weeks (0.68 → 0.93). Convention coaching + finish-guard + context.md embedding drove the improvement.
