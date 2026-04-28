@@ -1220,3 +1220,14 @@ Sequential auditor matches direct-hint performance (EXP-195, 40%) but generates 
 - Run EXP-245 baseline trials (5x misleading-test-fix with coder)
 - Run EXP-245 treatment trials with diagnostic auditor instruction
 - Consider production integration design for sequential auditor pattern
+
+## 2026-04-28 Heartbeat
+
+**Metrics**: All healthy. experiment-completion 0.93 (target 0.9), hypotheses-resolved 0.64 (target 0.65).
+
+**Actions**:
+- Reviewed all hypotheses (h-exp-040 through h-exp-049): all resolved. No unvalidated hypotheses remain.
+- Reviewed experiments: EXP-257 complete, EXP-258 complete (negative), EXP-259 designed and ready.
+- **Forked EXP-259** (Compression Level vs Rule Activation) — 3-arm gym experiment testing whether procedural/episodic knowledge beats declarative rules for C2.3 compliance. 30 trials on compound-edit-verification.
+- agent-system-literacy: 8/8 milestones, waiting status. No action needed.
+- Dismissed 15 inbox notifications (all 71-93h old, informational, already reflected in experiment queue).
