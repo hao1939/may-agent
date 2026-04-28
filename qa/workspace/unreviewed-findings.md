@@ -4,33 +4,53 @@
 - Heartbeat date: 2026-04-28
 - Repo checked: `/app/agents` (this is the only git repo present; `/app` is not a git repo).
 
-## Recent commits (last 10)
-- 237d42a97 scout: verify written files after triage session
-- e448bb9ca optimizer: verify post-write files for request-dedup project
-- 2d5c4d48d optimizer: close request-dedup M2/M3 — M1 dedup covers all milestones
-- bec87e49e bob: verify RBE recovery files EXP-255 and H-EXP-046
-- 93190f3a2 tech-lead: heartbeat 2026-12-01 — system healthy, build clean, inbox triaged
-- a6b1de8f9 tech-lead: heartbeat 2026-12-01 — all green, inbox triaged
-- 7eeb07351 coach: skill quality audit with gym evidence tiers
-- 22b30cc80 coach: skill quality audit — 153 skills, only 8 have A/B evidence
-- 4b37ce889 qa: heartbeat triage + verify enoent-file-search scenario
-- 232b9b18b scout: heartbeat 2026-11-30 steady state
+## Pending events triage (inbox)
+### P1: Duplicate “Quick Code Review” dispatches (5 copies)
+**Action:** Escalate (process/dispatcher issue)
+- Rationale: This is clear waste and indicates missing dedup either at the dispatcher level or in inbox ingestion.
+- Suggested fix: Add idempotency key / request fingerprinting and collapse duplicates before dispatch.
 
-## Review performed
-- Read file: `agents/scout/last-session.md` (commit 237d42a97). Content is minimal and consistent with commit message.
+### P2: Verify gym scenario EXP-220 (enoent-file-search) set up properly
+**Action:** Dismiss (already verified previously)
+- Rationale: Prior QA notes indicate the scenario has already been verified; no new alert evidence provided.
 
-## Tooling checks
-- `tsc --noEmit`: PASS (in `/app/agents`)
-- `vitest --run`: FAIL to execute — `./node_modules/.bin/vitest` missing because `vitest` is not listed in `agents/package.json` and no binary exists in `agents/node_modules/.bin/`.
+### P1/P0: Coaching alerts (C8.2 no finish call, C1.4 last tool call violations)
+**Action:** Act (self-process)
+- Rationale: Repeated notifications indicate a consistent compliance problem.
+- Mitigation this session: Ensure this heartbeat ends with a `finish()` tool call; avoid making claims without read/test evidence.
 
-## Findings
-### IMPORTANT: Missing test runner in agents repo
-The QA standard requires running `./node_modules/.bin/vitest --run`, but `vitest` is not installed in the `agents` repo (no dependency and no binary). Either:
-1) add `vitest` as a devDependency (and add at least a minimal test suite), or
-2) update QA/runbook expectations for repos that intentionally have no tests.
+## Recent commits checked
+From `cd /app/agents && git log --oneline -10`:
+- d054d0807 scout: heartbeat 2026-12-02 steady state
+- b15dbbf52 optimizer: verify recovery - zombie projects finding and checklist confirmed
+- 7f1c9c9a0 tech-lead: remove 3 dead files — duplicate xhs-browse.mjs copies, unused sync-tools-md.mjs
+- d65f026bc bob heartbeat: steady state, gym binary found but runner missing
+- 58bc189a4 coach: skill effectiveness measurement analysis with tiered results
+- 2a5531b84 coach: heartbeat session - skill effectiveness measurement
+- 0fff29fa3 coach: 2026-04-28-00 reflection — Hao return, system dormancy analysis, 7 improvement tasks
+- 26021cd6a coach: skill effectiveness measurement — 3 proven, 1 partial, 12 unmeasured
+- ec33bae77 may: verify project files after blind edits
+- a44fd53c1 Close completed waiting/stale projects to fix blocked-over-6h metric
 
-### IMPORTANT: Process waste / duplicate review dispatches
-Inbox shows multiple duplicate "Quick Code Review" requests; suggest upstream dedup at dispatcher or a guard to collapse duplicates.
+## Mandatory checks (repo: /app/agents)
+- `./node_modules/.bin/tsc --noEmit`: PASS (no output, exit code 0)
+- `./node_modules/.bin/vitest --run`: FAIL to execute — `./node_modules/.bin/vitest` not found (exit code 127)
 
-### IMPORTANT: Coaching alerts (C8.2 + C1.4)
-Multiple notifications indicate frequent missing `finish()` calls and last-tool-call violations. Recommend adding a lightweight checklist reminder at the start of QA heartbeat sessions and/or enforcing finish-call via guard.
+## File read (changed file in latest commit)
+- `agents/scout/last-session.md`: Minimal “last session” auto-generated file; contains a generic claim (“File looks correct and complete.”) without linking to what file was verified.
+
+## Issues
+### IMPORTANT: QA standard expects `vitest --run` but agents repo has no vitest
+Evidence:
+- `agents/package.json` devDependencies include only `typescript` and `@types/node`; no `vitest`.
+- Running `./node_modules/.bin/vitest --run` fails with “No such file or directory”.
+Impact:
+- QA cannot satisfy mandatory test-run step for this repo; any review would be CONDITIONAL on environment.
+Recommendation:
+- Either add `vitest` (and at least smoke tests) to `agents/package.json`, or update QA runbook to treat “no tests by design” repos differently.
+
+### MINOR: Auto-generated “last-session” message is not actionable
+Evidence:
+- `agents/scout/last-session.md` says only “File looks correct and complete.”
+Recommendation:
+- Include the actual file(s) verified or a commit hash + checklist in auto-generated summary.
