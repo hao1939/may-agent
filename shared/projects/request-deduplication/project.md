@@ -1,6 +1,6 @@
 # Project: Request Deduplication
 
-**Status**: waiting
+**Status**: done
 **Owner**: optimizer
 **Priority**: P0
 **Iteration**: 4
