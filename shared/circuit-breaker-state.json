@@ -5,7 +5,8 @@
       "lastError": "heartbeat session error"
     },
     "coach": {
-      "consecutiveErrors": 0
+      "consecutiveErrors": 1,
+      "lastError": "heartbeat session error"
     },
     "bob": {
       "consecutiveErrors": 2,
