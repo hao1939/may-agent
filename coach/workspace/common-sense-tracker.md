@@ -101,5 +101,16 @@
   - optimizer workspace contains metric-driven findings (e.g., `finding-workflow-health-20260417-1130.md`)
 - **Notes:** Strong compliance. Metrics are deeply embedded in the system — agents create them, own them, react to regressions, and use them to evaluate experiments.
 
+### Event-driven
+- **Item:** "When something happens, emit an event. React to signals, don't wait for schedules."
+- **Verified:** 2025-05-26
+- **Result:** ✅ PASS
+- **Evidence:**
+  - System emits `metric.breach` events that agents react to — found 10+ breach events in recent session timelines triggering agent notifications and investigations (e.g., "[P0 RESOLUTION] The evaluator pipeline is NOT broken" — agent investigated a metric breach signal)
+  - Project architecture designed around events: `project.iteration` events emitted after each worker+review cycle, with stale-active-count metric tracking projects with no iteration event in 48h
+  - Agents react to notifications as signals: "[P1] WASTE ALERT: Amy has 11 CREATED tasks" triggered by system observation, not schedule
+  - `alerts` table schema includes `last_triggered` — infrastructure built for event-driven responses
+- **Notes:** Strong compliance. The system is deeply event-driven at infrastructure level (metric.breach, agent.notification, project.iteration). Agents treat these as signals to investigate rather than blindly acting. Some events may over-fire (308+ zero-op evaluator breaches were false positive), but agents correctly identified and dismissed the noise.
+
 ## Items Not Yet Verified
-- Event-driven
+- (none remaining)
