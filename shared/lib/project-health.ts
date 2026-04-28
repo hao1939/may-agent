@@ -113,7 +113,7 @@ export function scanAllProjects(agentsRoot: string): ProjectInfo[] {
         const status = extractField(content, "Status").toLowerCase() || "active";
         const owner = extractField(content, "Owner") || "unknown";
         const blockerReason = extractField(content, "Stop Reason") || extractField(content, "Resume Condition") || "";
-        const workflow = extractField(content, "Workflow") || "project";
+        const workflow = extractField(content, "Workflow") || "master-worker";
         projects.push({ relPath: `shared/projects/${projDir}`, projectFile, content, status, owner, blockerReason, workflow });
       }
     } catch { /* ignore */ }
@@ -160,7 +160,7 @@ export function scanAllProjects(agentsRoot: string): ProjectInfo[] {
         extractField(content, "Stop Reason") ||
         extractSection(content, "Current State") ||
         "";
-      const workflow = extractField(content, "Workflow").toLowerCase() || "project";
+      const workflow = extractField(content, "Workflow").toLowerCase() || "master-worker";
 
       projects.push({
         relPath: relative(agentsRoot, join(projectsDir, projDir)),
