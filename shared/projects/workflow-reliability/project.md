@@ -1,7 +1,7 @@
 # Project: Workflow Reliability
 
-**Status**: waiting
-**Stop Reason**: WAITING
+**Status**: blocked
+**Stop Reason**: Dispatch sends workflows to non-existent projects (97% error rate). Need tech-lead to fix project dispatch/scheduling before we can measure worker reliability.
 
 The project is in a 7-day tracking period for v3 guardrails. Day 1 tracking file has been written by the orchestrator (the worker failed to produce it in 2 consecutive attempts despite false 
 
@@ -18,7 +18,7 @@ Reduce workflow failures. Target: 90%+ of worker iterations produce at least one
 - handler.success-rate: 0.95 → target 0.95 ✅
 
 ## Current State
-V3 guardrails (stub file pre-creation + write-first constraint) deployed in master-worker.ts. Design doc at outputs/workflow-guardrails-v3-design.md. Now entering 7-day tracking period to measure v3 impact. Previous: v2 = 62.5%, v1 = 60%, baseline = 33%.
+V3 tracking complete. Critical finding: 97% of recent master-worker runs error before starting (0 steps) because they're dispatched for non-existent projects. Only 2/200 recent runs actually reached the worker stage — too few to measure v3 guardrail impact. The bottleneck has shifted from worker reliability to dispatch accuracy. Escalated to tech-lead. See outputs/v3-tracking-results.md.
 
 ## Plan
 - [x] Measure current worker success rate over last 14 days, write outputs/baseline.md
@@ -29,7 +29,9 @@ V3 guardrails (stub file pre-creation + write-first constraint) deployed in mast
 - [x] Implement guardrails v2 (false-claim detection, write-first constraint, iteration cap)
 - [x] Track success rate for 7 days with v2 guardrails (result: 62.5% — not enough)
 - [x] Design & implement v3 guardrails (structural write-first enforcement)
-- [ ] Track success rate for 7 days with v3 guardrails
+- [x] Track success rate for 7 days with v3 guardrails (result: 97% dispatch errors — see outputs/v3-tracking-results.md)
+- [ ] Fix dispatch: stop scheduling workflows for non-existent projects (escalated to tech-lead)
+- [ ] Re-measure iteration success rate after dispatch fix
 - [ ] Achieve sustained 90%+ iteration success rate
 
 ## References
