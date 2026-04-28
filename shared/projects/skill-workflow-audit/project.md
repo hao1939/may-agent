@@ -1,6 +1,6 @@
 # Project: Skill & Workflow Quality
 
-**Status**: waiting
+**Status**: active
 **Stop Reason**: WAITING
 
 All 3 metrics are now at or above target:
