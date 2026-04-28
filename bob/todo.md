@@ -1,3 +1,6 @@
 
-## Blocked
-- [ ] **EXP-245b Separate Auditor Agent** — Design a two-phase gym run where a separate auditor agent classifies failures first, then injects report into primary agent. Tests whether agent separation (not just instruction) is the key mechanism.
+## Next
+- [ ] **EXP-247 Multi-Agent Structural Auditor** — Execute the designed experiment: auditor agent for relational bug discovery on cascading-fix-trap-v2. Need to create auditor prompt + chained gym runner. Design complete in `agents/shared/knowledge/experiments/EXP-247/design.md`.
+
+## Done
+- [x] **EXP-245b Separate Auditor Agent** — Superseded by EXP-247 (properly designed with arms, metrics, decision rules).
