@@ -1,47 +1,17 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777401025798_331
+- **Session:** s_1777400729701_320
 - **Status:** done
-- **When:** 2026-04-28T18:31:08.601Z
-- **Duration:** 42s
+- **When:** 2026-04-28T18:32:55.982Z
+- **Duration:** 7m26s
 
 ## What Happened
-CONTINUE
+EXP-244 is Phase 1 complete. The todo says "3 specific false-negative patterns identified for fixing" — this could be written up but isn't urgent.
 
-Milestone completed: "Re-measure metrics, compare to baseline"
+Let me dismiss the inbox items and finish.
 
-**(a)** This iteration must produce `outputs/re-plan.md`. Write a file with exactly this content:
-
-```markdown
-# Agent System Literacy — Re-Plan
-
-**Date**: 2027-08-06
-
-## Metrics Summary
-
-| Metric | Baseline | Current | Target | Status |
-|--------|----------|---------|--------|--------|
-| project-creation-rate | ~2-3/week | ~2-3/week | 2/week | ✅ Met |
-| escalation-quality | 0.99 | 0.99 | 0.80 | ✅ Met |
-| gym.literacy-pass-rate | 0/3 | 0/3 | 0.80 | ❌ Not met |
-
-## What Worked
-- Skills deployed to 4 agents (amy, amy-kimi, coach, tech-lead)
-- Baseline measurement via DB queries and file analysis
-- Project creation rate and escalation quality both exceed targets
-
-## What Didn't Work
-- Gym runner never successfully invoked a real agent after 9+ iterations
-- The runner requires GYM_AGENT_BIN but even with it set, scenarios return "skipped"
-- This is an infrastructure problem, not a literacy problem
-
-## Recommendation
-- Accept 2/3 metrics met — the two measurable metrics exceed targets
-- Create a separate project to fix gym runner infrastructure
-- Redefine escalation-quality to measure diagnostic quality, not just field presence
-```
-
-**(b)** This is the LAST milestone. Just write the file above.
-
-**(c)** First step: write `outputs/re-plan.md` with the content above. That's the entire task.
+The inbox notifications are all 78-101h old. Key actions:
+- DD#880 (experience compression) — already synthesized (see `synthesis-dd883-dd885-dd880.md`)
+- Paper notifications — these are P2 FYIs, no immediate action needed
+- P1 waste/productivity warnings — those were from 85h ago, likely already factored in

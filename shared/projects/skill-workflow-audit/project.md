@@ -23,12 +23,12 @@ Every skill and workflow verified working, measured for impact, protected agains
 - workflow.pass-rate: 1.00 → target 0.95 ✅
 - skill.usage-rate: 0.89 → target 0.50 ✅ (8/9 scoreable sessions show ≥2/3 skill behaviors; SCBA=100%, Evidence=100%, Verify=67%)
 
-## Current State (Updated Iteration 14)
+## Current State (Updated Iteration 15)
 All 12 milestones complete. All 4 metrics at or above target. ✅
 
-**Behavioral audit complete**: `outputs/skill-behavioral-audit.md` (97 lines) sampled 10 sessions across 5 agents. SCBA=100%, Evidence-Over-Narrative=100%, Verify-Before-Finish=67%. Overall behavioral usage=89%. The 📘 context.md injection mechanism is validated as effective.
+**Verify-Before-Finish gap identified**: Only 3/10 agents have the 📘 directive (bob, may, scout). Missing from: amy, coach, coder, tech-lead, optimizer, evaluator, qa. This explains the 67% behavioral rate — agents without the directive don't verify.
 
-**Key insight**: Standalone skill files are never read. The inline 📘 directives in context.md ARE the delivery mechanism. Verify-Before-Finish is the weakest skill (67%) — candidate for strengthening.
+**Next action**: Deploy verify-before-finish 📘 directive to all 7 missing agents' context.md files, then re-measure.
 
 **Hao's feedback addressed**: (1) re-plan added as last plan step ✅ (2) behavioral usage measured at 89% ✅
 
