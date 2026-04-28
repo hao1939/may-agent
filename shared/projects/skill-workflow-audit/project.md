@@ -46,7 +46,7 @@ All 12 milestones complete. All 4 metrics at or above target. ✅
 - [x] Sample 10 recent sessions across 5 agents, check behavioral evidence of skill application
 - [x] Compute skill.usage-rate from behavioral evidence (result: 0.89, target 0.50 ✅)
 - [x] Strengthen Verify-Before-Finish skill (deployed to all 10 agents with 📘 directives)
-- [ ] Re-plan: assess metrics, identify next improvement opportunities
+- [x] Re-plan: assess metrics, identify next improvement opportunities (see outputs/replan-assessment.md)
 
 ## References
 
