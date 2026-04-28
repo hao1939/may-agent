@@ -345,3 +345,6 @@ All 9 milestones complete. The
 Milestone completed: "Measure actual agent skill usage rate (do agents reference/apply skills in their work?)" — result is 0/10, documented in `outputs/skill-usage.md`.
 
 **The big finding**: skill.usage-rate = 0%. Skills are deployed as files but agents never read them. There's no injectio
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should **sample 10 recent agent sessions and check for behavioral evidence of skill application**. Pick 5 agents (amy, bob, coder, coach, scout) and find 2 recent sessions each. For each session, check: did the agent do state-check-before-action before edits? Did it cite

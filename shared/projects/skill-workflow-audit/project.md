@@ -2,16 +2,16 @@
 
 **Status**: active
 
-**Key problem**: skill.usage-rate is 0%. Skills are deployed as files but agents never read or reference them. The injection mechanism is missing.
+**Key finding**: The skill-usage audit was incorrect. Skills ARE injected into agent context via 📘 directives in context.md (amy=8, bob=13, scout=15, coach=8, optimizer=10). The injection mechanism exists and works. The real question is behavioral: do agents apply skills in practice?
 
-All 3 original metrics at target, but new usage metric is critical:
-- **skill.verified-rate: 0.90** (target 0.80) ✅ — corrected denominator: 5 "unverified" skills don't exist as active files
+All 3 original metrics at target:
+- **skill.verified-rate: 0.90** (target 0.80) ✅
 - **skill.delivery-rate: 0.81** (target 0.60) ✅ (39/48 shared skills deployed to agents)
 **Owner**: coach
 **Type**: continuous
 **Workflow**: master-worker
 **Priority**: P0
-**Iteration**: 1
+**Iteration**: 2
 
 ## Goal
 Every skill and workflow verified working, measured for impact, protected against regression.
@@ -21,14 +21,14 @@ Every skill and workflow verified working, measured for impact, protected agains
 - skill.verified-rate: 0.90 → target 0.80 ✅ (9/10 active skills verified — 5 unverified skills already removed/archived)
 - skill.delivery-rate: 0.81 → target 0.60 ✅ (39/48 shared skills deployed to agents)
 - workflow.pass-rate: 1.00 → target 0.95 ✅
-- skill.usage-rate: 0.00 → target 0.50 ❌ (0/10 deployed skills show evidence of agent use — see outputs/skill-usage.md)
+- skill.usage-rate: TBD → target 0.50 ❌ (injection mechanism exists via context.md 📘 directives; need behavioral measurement)
 
-## Current State (Updated Iteration 12)
-Original 9 milestones complete. 3 original metrics at target. **But skill.usage-rate = 0%** — Hao's feedback revealed the core problem: skills are deployed as `.md` files but no mechanism loads them into agent context at runtime. They are inert.
+## Current State (Updated Iteration 13)
+Original 9 milestones complete. 3 original metrics at target.
 
-**Root cause**: There is no skill injection pipeline. No `CLAUDE.md`, `agent.json`, or archetype references `skills/` directory. Skills sit on disk unread.
+**Correction**: The skill-usage audit (outputs/skill-usage.md) was wrong. It claimed 0% usage and "no injection mechanism." In fact, agents DO have skill injection via 📘 directives in context.md — amy has 8 skill refs, bob 13, scout 15, etc. The mechanism works.
 
-**Next priority**: Make skills consumable — either by adding them to agent context files, or by creating a loader that injects relevant skills into session prompts.
+**Hao's real question**: Do agents actually *apply* skills in their behavior? This requires sampling recent session outputs and checking for behavioral evidence (e.g., does amy do SCBA before edits? does bob cite evidence-over-narrative?). This is the correct next step.
 
 ## Plan
 - [x] Inventory all skills and workflows
@@ -40,10 +40,9 @@ Original 9 milestones complete. 3 original metrics at target. **But skill.usage-
 - [x] Set up gym scenario testing skill effectiveness
 - [x] Expand verification beyond top 5 skills (10/48 next)
 - [x] Automate skill regression checks in CI/gym
-- [x] Measure actual agent skill usage rate (result: 0% — no agent references skills)
-- [ ] Identify how to inject skills into agent context (the consumption mechanism)
-- [ ] Inject top 3 skills into agent context.md or CLAUDE.md for 3 agents
-- [ ] Re-measure skill.usage-rate after injection (target: 0.50)
+- [x] Measure actual agent skill usage rate (result: corrected — injection exists via context.md)
+- [ ] Sample 10 recent sessions across 5 agents, check behavioral evidence of skill application
+- [ ] Compute skill.usage-rate from behavioral evidence (target: 0.50)
 - [ ] Re-plan: assess metrics, identify next improvement opportunities
 
 ## References
