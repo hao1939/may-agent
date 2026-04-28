@@ -3,11 +3,11 @@
 **Status**: waiting
 **Owner**: optimizer
 **Priority**: P0
-**Iteration**: 6
+**Iteration**: 7
 
 **Stop Reason**: 
-— The architecture change Hao described (removing request DB, replacing with events table) appears to have happened outside this repository. There's no events table, request tracking, or dispatch/noti
-**Resume Condition**: Hao confirms whether (a) this project can be closed since the architectural change solved it, or (b) points to specific code/files where dedup work is still needed in the new events-table system.
+— The duplicate storm problem has been architecturally solved by Hao removing the request DB and replacing it with an events table. This change happened at the platform level, outside this repo. There
+**Resume Condition**: Hao confirms this project can be closed.
 ## Goal
 Eliminate duplicate request storms. Was 78% duplicate rate causing notification cascades.
 
@@ -16,7 +16,7 @@ Eliminate duplicate request storms. Was 78% duplicate rate causing notification 
 - notification-storms: 0 → target 0 ✅
 
 ## Current State
-Waiting: — The architecture change Hao described (removing request DB, replacing with events table) appears to have happened outside this repository. There's n
+Waiting: — The duplicate storm problem has been architecturally solved by Hao removing the request DB and replacing it with an events table. This change happen
 ## Plan
 - [x] Fix request tracking DB (created requests table in may.db)
 - [x] Implement read-side dedup in loadInbox

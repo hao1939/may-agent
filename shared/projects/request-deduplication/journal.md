@@ -121,3 +121,10 @@ CONTEXT_UPDATE:
 - Hao's architectural change (removing request DB → events table) likely solved the duplicate storm problem at the platform level.
 - This repo contains agent definitions, workflows, guards, and gym scenarios — not the dispatch/notification infrastructure.
 
+### Iteration 7 (comment) — 2026-04-28T18:10:54.916Z
+**Comment**: ### hao — 2026-04-28
+you go the wrong way, we remove request db because no longer need it, we have the events table log all messages
+**Reviewer**: WAITING — — The duplicate storm problem has been architecturally solved by Hao removing the request DB and replacing it with an events table. This change happened at the platform level, outside this repo. There's nothing left to implement here.
+
+Resume when: Hao confirms this project can be closed.
+

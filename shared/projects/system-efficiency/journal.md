@@ -197,3 +197,10 @@ instead of metrics for usage, should focus on the output! should chase the metri
 
 Resume when: A worker iteration executes or hao provides new actionable milestones.
 
+### Iteration 14 (comment) — 2026-04-28T18:10:54.700Z
+**Comment**: ### hao — 2026-04-28
+instead of metrics for usage, should focus on the output! should chase the metrics of how much meaningful work the system has done. make it do more and achieve more
+**Reviewer**: BLOCKED — — Eight consecutive iterations (7-14) have been comment-only with the same replaying hao comment. No worker can execute. This project requires infrastructure intervention to unstick the comment loop.
+
+Resume when: A worker iteration actually executes (not a comment iteration).
+
