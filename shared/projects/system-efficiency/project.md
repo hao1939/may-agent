@@ -15,12 +15,16 @@ Maximize meaningful output of the agent system. Not about reducing cost — abou
 - handler.success-rate: 0.95 → target 0.95 ✅
 
 ## Current State
-**Iteration 1 starting.** Comment loop broken. 6 shared projects exist (agent-system-literacy, handler-reliability, request-deduplication, skill-workflow-audit, system-efficiency, plus metric-system.md). Most projects show high consecutiveSkips in health state — many are stuck. First task: measure current system output and identify stuck projects blocking throughput.
+**Iteration 1 complete.** Audit produced (`outputs/system-output-audit.md`). Key findings:
+- Only ~3 projects making real progress, ~70 zombie projects with 500+ skips
+- Top blocker: workers iterate without producing deliverables (agent-system-literacy: 9 iters, no output)
+- ~5 worker iterations with actual deliverables in last 7 days
+- Recommendation: archive zombies, add worker output verification, create new high-value projects
 
 ## Plan
-- [ ] Redefine metrics: replace may-session-ratio with output-focused metrics
-- [ ] Measure current output: how many deliverables produced per day? how many iterations?
-- [ ] Identify biggest blockers to output (stuck projects, slow handlers, idle agents)
+- [x] Redefine metrics: replace may-session-ratio with output-focused metrics
+- [x] Measure current output: how many deliverables produced per day? how many iterations?
+- [x] Identify biggest blockers to output (stuck projects, slow handlers, idle agents)
 - [ ] Fix top blocker
 - [ ] Re-plan: review output metrics, assess improvement, write next steps
 

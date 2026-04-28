@@ -237,3 +237,10 @@ The worker has failed **8 consecutive iterations** to run gym scenarios and writ
 PIVOT
 
 The worker has failed **9 consecutive iterations** to run gym scenarios. I'll run the gym infrastructure check myself to understand what's actually possible, then g
+**Orchestrator**: PIVOT
+
+Milestone completed: "Re-measure metrics, compare to baseline"
+
+The baseline.md was updated with fresh data (2027-08-06). Two of three metrics are met. The gym runner has been attempted 9+ iterations without success — it's time to stop banging on that wall.
+
+**(a)** Next iteration must produc
