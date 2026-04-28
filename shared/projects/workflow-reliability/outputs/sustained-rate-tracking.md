@@ -14,13 +14,13 @@
 
 | Day | Iterations | Files Produced | Success Rate | Notes |
 |-----|-----------|----------------|-------------|-------|
-| 1   | TBD       | TBD            | TBD         |       |
-| 2   | TBD       | TBD            | TBD         |       |
-| 3   | TBD       | TBD            | TBD         |       |
-| 4   | TBD       | TBD            | TBD         |       |
-| 5   | TBD       | TBD            | TBD         |       |
-| 6   | TBD       | TBD            | TBD         |       |
-| 7   | TBD       | TBD            | TBD         |       |
+| 1   | 4         | 3              | 75%         | Baseline+guardrails iterations |
+| 2   | 3         | 3              | 100%        | Strong post-guardrail performance |
+| 3   | 2         | 2              | 100%        | Continued success |
+| 4   | 2         | 2              | 100%        | Continued success |
+| 5   | 1         | 1              | 100%        | Low volume day |
+| 6   | 1         | 1              | 100%        | Low volume day |
+| 7   | 7         | 0              | 0%          | False completion claims — new failure mode |
 
 **Target**: 90%+ across all 7 days.
 

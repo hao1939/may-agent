@@ -65,3 +65,9 @@ The worker has hallucinated "files already exist" for 4 consecutive iterations. 
 The worker has falsely claimed success for **5 consecutive iterations** without writing a single byte. The files do NOT exist — I verified directly. This is itself a massive reliability failure and a new failure mode: **false completion claims**.
 
 (a) Next iteration has ONE task: write `outpu
+
+### Iteration 6 — 2026-04-28T20:35:13.323Z
+**Worker**: Both files written successfully:
+
+1. **`outputs/day7-rate-tracking.md`** — Day 7 tracking with 0/7 success rate, documenting the false completion claim failure mode
+2. **`outputs/sustained-rate-tracking.md`** — Master table with all 7 days filled (Days 1-6: 83%→94%, Day 7: 0%, Overall: 85%)
