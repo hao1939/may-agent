@@ -11,8 +11,7 @@ import { Type, StringEnum } from "@mariozechner/pi-ai";
 import type { ActiveSession, RegisteredAgent } from "./manager-utils.js";
 import type { SessionInfo, TaskResult } from "./types.js";
 import type { PersistedSession } from "./persistence.js";
-import { trackRequest, updateRequest, classifyError, isDuplicate, getDb, getActiveRequests, getRequestsByAgent, getRequestsByAgentAndStatus, getStaleRequests } from "./requests.js";
-import type { RequestRecord } from "./requests.js";
+import { trackRequest, updateRequest, classifyError, isDuplicate, getDb } from "./requests.js";
 
 // ── Manager interface ──────────────────────────────────────────────────
 // Instead of importing the full SubagentManager class (circular dependency),
@@ -509,63 +508,50 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               const persistDir = manager.registry.persistDir;
               const filter = params.filter ?? "active";
               const limit = params.limit ?? 50;
+              const db = getDb(persistDir);
 
-              let requests: RequestRecord[];
+              // Query sessions table (replaces removed requests table)
+              let whereClause = "";
+              const queryParams: any[] = [];
+
               switch (filter) {
                 case "active":
-                  requests = params.agent
-                    ? getRequestsByAgentAndStatus(persistDir, params.agent, ["CREATED", "IN_PROGRESS"], limit)
-                    : getActiveRequests(persistDir);
-                  if (!params.agent) requests = requests.slice(0, limit);
+                  whereClause = "WHERE status = 'running'";
+                  if (params.agent) { whereClause += " AND agent = ?"; queryParams.push(params.agent); }
                   break;
                 case "stale":
-                  requests = getStaleRequests(persistDir, 2 * 60 * 60 * 1000); // 2h
-                  if (params.agent) requests = requests.filter((r) => r.toAgent === params.agent);
-                  requests = requests.slice(0, limit);
+                  whereClause = "WHERE status = 'running' AND startedAt < ?";
+                  queryParams.push(Date.now() - 2 * 60 * 60 * 1000);
+                  if (params.agent) { whereClause += " AND agent = ?"; queryParams.push(params.agent); }
                   break;
-                case "failed": {
-                  // getActiveRequests only returns active — need direct query for failed
-                  const db = getDb(persistDir);
-                  const query = params.agent
-                    ? `SELECT * FROM requests WHERE status = 'FAILED' AND toAgent = ? ORDER BY createdAt DESC LIMIT ${limit}`
-                    : `SELECT * FROM requests WHERE status = 'FAILED' ORDER BY createdAt DESC LIMIT ${limit}`;
-                  requests = params.agent
-                    ? (db.prepare(query).all(params.agent) as unknown as RequestRecord[])
-                    : (db.prepare(query).all() as unknown as RequestRecord[]);
+                case "failed":
+                  whereClause = "WHERE status = 'error'";
+                  if (params.agent) { whereClause += " AND agent = ?"; queryParams.push(params.agent); }
                   break;
-                }
                 case "all":
-                  requests = params.agent
-                    ? getRequestsByAgent(persistDir, params.agent)
-                    : getActiveRequests(persistDir);
-                  if (!params.agent) {
-                    // For "all" without agent filter, get everything (limited)
-                    const db = getDb(persistDir);
-                    requests = db
-                      .prepare(`SELECT * FROM requests ORDER BY createdAt DESC LIMIT ${limit}`)
-                      .all() as unknown as RequestRecord[];
-                  } else {
-                    requests = requests.slice(0, limit);
-                  }
+                default:
+                  if (params.agent) { whereClause = "WHERE agent = ?"; queryParams.push(params.agent); }
                   break;
               }
 
-              // Format for readability
-              const formatted = requests.map((r) => ({
-                id: r.requestId.slice(0, 8),
-                from: r.fromEntity,
-                to: r.toAgent,
-                task: r.task.slice(0, 120),
-                status: r.status,
-                method: r.method,
-                age: `${Math.round((Date.now() - r.createdAt) / 60000)}m`,
-                error: r.error?.slice(0, 80),
+              const sessions = db
+                .prepare(`SELECT sessionId, agent, task, status, kind, startedAt, endedAt, error FROM sessions ${whereClause} ORDER BY startedAt DESC LIMIT ${limit}`)
+                .all(...queryParams) as any[];
+
+              const formatted = sessions.map((s: any) => ({
+                id: s.sessionId.slice(0, 16),
+                agent: s.agent,
+                task: (s.task || "").slice(0, 120),
+                status: s.status,
+                kind: s.kind,
+                age: `${Math.round((Date.now() - s.startedAt) / 60000)}m`,
+                error: s.error?.slice(0, 80),
               }));
 
-              return textResult(JSON.stringify({ filter, count: formatted.length, requests: formatted }, null, 2));
+              return textResult(JSON.stringify({ filter, count: formatted.length, sessions: formatted }, null, 2));
             } catch (err) {
               const msg = err instanceof Error ? err.message : String(err);
-              return textResult(JSON.stringify({ error: `requests query failed: ${msg}` }));
+              return textResult(JSON.stringify({ error: `status query failed: ${msg}` }));
             }
           }
 

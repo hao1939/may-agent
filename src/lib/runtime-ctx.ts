@@ -54,29 +54,23 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
     },
     readSessionMeta: (sessionId) => _readSessionMeta(opts.persistDir, sessionId),
 
-    // ── Event inbox ─────────────────────────────────────────────────
-    updateEvent: (eventId, status, updateOpts) => {
-      const db = getDb(opts.persistDir);
-      db.run(
-        "UPDATE events SET status = ?, handled_by = ?, result = ?, reason = ? WHERE id = ?",
-        [status, updateOpts?.handledBy ?? null, updateOpts?.result ?? null, updateOpts?.reason ?? null, eventId],
-      );
-    },
+    // ── Event inbox (time-window based, immutable events) ────────────
     getInbox: (inboxOpts) => {
       const db = getDb(opts.persistDir);
       const agent = inboxOpts?.agent ?? opts.agentName;
       const limit = inboxOpts?.limit ?? 20;
+      const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
       return db.prepare(`
-        SELECT id, event_type, data, urgency, timestamp, retry_count
+        SELECT id, event_type, data, urgency, timestamp
         FROM events
-        WHERE status IN ('pending', 'failed')
-          AND owner = ?
+        WHERE owner = ?
+          AND timestamp > ?
           AND (ttl_ms IS NULL OR timestamp + ttl_ms > ?)
         ORDER BY
           CASE WHEN urgency = 'immediate' THEN 0 ELSE 1 END,
-          retry_count DESC, timestamp ASC
+          timestamp DESC
         LIMIT ?
-      `).all(agent, Date.now(), limit) as any[];
+      `).all(agent, twoHoursAgo, Date.now(), limit) as any[];
     },
 
     // ── Session messages ────────────────────────────────────────────

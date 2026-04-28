@@ -181,23 +181,20 @@ function getRecentJobs(stateDir: string, count: number): JobHistoryEntry[] {
     const db = getDb(stateDir);
     const rows = db
       .prepare(
-        `SELECT artifact as jobName,
-                COALESCE(json_extract(context, '$.type'), 'job') as type,
-                CASE status
-                  WHEN 'COMPLETED' THEN 'success'
-                  WHEN 'FAILED' THEN 'failure'
+        `SELECT json_extract(data, '$.handler') as jobName,
+                'handler' as type,
+                CASE event_type
+                  WHEN 'handler.completed' THEN 'success'
+                  WHEN 'handler.failed' THEN 'failure'
                   ELSE 'unknown'
                 END as status,
-                COALESCE(summary, '') as summary,
-                datetime(createdAt / 1000, 'unixepoch') as startedAt,
-                CASE WHEN completedAt IS NOT NULL
-                  THEN datetime(completedAt / 1000, 'unixepoch')
-                  ELSE NULL
-                END as endedAt,
-                COALESCE(durationMs, 0) as durationMs
-         FROM requests
-         WHERE fromEntity = 'cron' AND artifact IS NOT NULL
-         ORDER BY createdAt DESC LIMIT ?`,
+                '' as summary,
+                datetime(timestamp / 1000, 'unixepoch') as startedAt,
+                datetime(timestamp / 1000, 'unixepoch') as endedAt,
+                COALESCE(json_extract(data, '$.durationMs'), 0) as durationMs
+         FROM events
+         WHERE event_type IN ('handler.completed', 'handler.failed')
+         ORDER BY timestamp DESC LIMIT ?`,
       )
       .all(count) as unknown as JobHistoryEntry[];
     return rows;
@@ -302,13 +299,14 @@ function readFocusTasks(agentsRoot: string): string {
 function readTodoSummary(stateDir: string): string {
   try {
     const db = getDb(stateDir);
+    const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
     const row = db
       .prepare(
-        `SELECT COUNT(*) as count FROM requests
-         WHERE toAgent = 'may' AND status IN ('CREATED', 'IN_PROGRESS') AND method IN ('message', 'notify')`,
+        `SELECT COUNT(*) as count FROM events
+         WHERE owner = 'may' AND timestamp > ?`,
       )
-      .get() as { count: number } | null;
-    return `${row?.count ?? 0} pending task(s)`;
+      .get(twoHoursAgo) as { count: number } | null;
+    return `${row?.count ?? 0} recent event(s)`;
   } catch {
     return "(DB unavailable)";
   }

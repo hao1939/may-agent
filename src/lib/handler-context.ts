@@ -71,14 +71,10 @@ export interface RuntimeCtx {
   readSessionMeta(sessionId: string): PersistedSession | null;
 
   // ── Event inbox (convention-defaults) ─────────────────────────────
-  /** Mark an inbox event status. */
-  updateEvent(eventId: number, status: "acked" | "done" | "dismissed" | "failed", opts?: {
-    handledBy?: string; result?: string; reason?: string;
-  }): void;
-  /** Query pending inbox events for an agent. */
+  /** Query recent inbox events for an agent (time-window based, no mutable status). */
   getInbox(opts?: { agent?: string; limit?: number }): Array<{
     id: number; event_type: string; data: string;
-    urgency: string; timestamp: number; retry_count: number;
+    urgency: string; timestamp: number;
   }>;
 
   // ── Session messages (for evaluation / context-learn) ────────────
