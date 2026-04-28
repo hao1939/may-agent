@@ -17,8 +17,7 @@
       "consecutiveErrors": 0
     },
     "scout": {
-      "consecutiveErrors": 1,
-      "lastError": "heartbeat session error"
+      "consecutiveErrors": 0
     },
     "qa": {
       "consecutiveErrors": 0
