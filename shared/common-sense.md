@@ -94,3 +94,8 @@ Standard locations — follow these, don't invent alternatives:
 - Run `docker compose down/up --force-recreate` or restart the container
 
 **If a metric is red because of a DB issue:** investigate and report findings, then **escalate to human**. Do NOT attempt to "fix" it by rebuilding or replacing the database. Data loss is worse than a red metric.
+
+## Never game metrics
+Do NOT archive, close, or hide projects/work to make metrics look better.
+If a metric is red, fix the underlying problem. Moving projects to _archive
+to reduce blocked-over-6h is gaming, not fixing. If you can not fix it, escalate.
