@@ -106,7 +106,12 @@ CONTINUE
 (c) First step...
 
 When milestones are completed, explicitly list which ones are done using the exact text from project.md, e.g.:
-"Milestone completed: Create .state/fib.ts script"`;
+"Milestone completed: Create .state/fib.ts script"
+
+VERIFICATION RULE: After each worker iteration, the ⚠️/✅ output verification line is GROUND TRUTH.
+If it says "⚠️ NO files were created" but the worker claims success, the worker is lying.
+Do NOT check off milestones based on worker claims alone — verify with read() or bash(ls).
+If 3+ consecutive iterations produce no files, WRITE THE FILE YOURSELF or provide exact content in guidance.`;
 }
 
 function workerSystemPrompt(projectDir: string): string {
@@ -316,14 +321,37 @@ ${journalContent.slice(-3000)}
 
       // Verify worker produced output
       const afterSnap = snapshotOutputs(outputsDir);
-      const changedFiles = diffSnapshots(beforeSnap, afterSnap);
+      let changedFiles = diffSnapshots(beforeSnap, afterSnap);
       if (changedFiles.length === 0) {
         (ctx as any)._consecutiveZeroOutput++;
         const consecutive = (ctx as any)._consecutiveZeroOutput;
         ctx.log(`[work] ⚠️ WARNING: Iteration ${iteration} produced NO output files (${consecutive}/${MAX_ZERO_OUTPUT} consecutive)`);
         appendFileSync(journalFile, `\n### Iteration ${iteration} — ${new Date().toISOString()}\n**⚠️ No output files produced (${consecutive} consecutive failures)**\n`, "utf-8");
+        // V2 GUARDRAIL: Auto-retry once with escalated prompt before proceeding to review
+        if (consecutive <= MAX_ZERO_OUTPUT && !(ctx as any)[`_retried_${iteration}`]) {
+          (ctx as any)[`_retried_${iteration}`] = true;
+          ctx.log(`[work] 🔄 RETRY: Re-prompting worker with escalated write-first constraint`);
+          const retryPrompt = `🚨 YOUR PREVIOUS ATTEMPT PRODUCED 0 FILES. This is iteration ${iteration} retry.\n\nYour FIRST tool call MUST be write(). Do NOT use read() or bash() first. Do NOT claim files already exist.\n\nOriginal task:\n${guidance}`;
+          await worker.prompt(retryPrompt);
+          const retrySnap = snapshotOutputs(outputsDir);
+          const retryChanged = diffSnapshots(afterSnap, retrySnap);
+          if (retryChanged.length > 0) {
+            (ctx as any)._consecutiveZeroOutput = 0;
+            ctx.log(`[work] ✅ Retry succeeded: ${retryChanged.length} file(s): ${retryChanged.map(f => f.split('/').pop()).join(', ')}`);
+            changedFiles.push(...retryChanged);
+          } else {
+            ctx.log(`[work] ❌ Retry also produced 0 files`);
+          }
+        }
         if (consecutive >= MAX_ZERO_OUTPUT) {
           ctx.log(`[work] 🚨 ESCALATION: ${MAX_ZERO_OUTPUT} consecutive zero-output iterations. Injecting write-first constraint into review.`);
+        }
+        // Auto-terminate after 2x MAX_ZERO_OUTPUT consecutive failures
+        if (consecutive >= MAX_ZERO_OUTPUT * 2) {
+          ctx.log(`[work] 🛑 AUTO-TERMINATE: ${consecutive} consecutive zero-output iterations. Worker cannot produce files. Stopping workflow.`);
+          appendFileSync(journalFile, `\n**🛑 AUTO-TERMINATED**: ${consecutive} consecutive zero-output iterations. Worker is non-functional.\n`, "utf-8");
+          decision = { status: "blocked", detail: `Auto-terminated: ${consecutive} consecutive zero-output iterations. Worker cannot produce deliverables.` };
+          break;
         }
       } else {
         (ctx as any)._consecutiveZeroOutput = 0;
