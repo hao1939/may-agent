@@ -31,3 +31,11 @@ Adapts DD-763 (Parallax) patterns — Assume-Compromise Evaluation + Reversible 
 **Honest limits flagged**: IFC doesn't translate; full validator agent is cost-prohibitive and itself subject to KE-195 displacement; reversibility must stay invisible to cognition (journal + selective revert, not two-phase commit).
 
 Brief is DRAFT — not a commitment. Not dispatched to tech-lead; EXP-220 would need design review and evidence-gate before any code.
+
+### Session (2026-06-27 heartbeat)
+
+**EXP-247 designed** — Multi-Agent Structural Auditor for relational bug detection (H-181). This is the #1 priority from the tracker. Designed 3-arm experiment: baseline, two-phase (auditor→primary), auditor-only accuracy measurement. Target: ≥30pp improvement on cascading-fix-trap-v2 ordering bug.
+
+**Inbox triage**: 16 notifications reviewed. All P2 paper connections (DD#875/877/880/882/883) are convergent evidence for already-resolved hypotheses — no action needed. P1 waste/productivity alerts are stale (88-82h ago). Agent-system-literacy project: 8/8 milestones complete, waiting status confirmed, no action needed.
+
+**Next**: Execute EXP-247 — need to build auditor agent prompt and chained gym runner mechanism.
