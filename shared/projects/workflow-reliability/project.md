@@ -16,12 +16,7 @@ Reduce workflow failures. Target: 90%+ of worker iterations produce at least one
 - handler.success-rate: 0.95 → target 0.95 ✅
 
 ## Current State
-Guardrails v2 implemented in master-worker.ts (2025-07-01):
-1. Write-first constraint in worker prompt ✅
-2. Orchestrator verification rule — trust output verification, not worker claims ✅
-3. Auto-termination after 6 consecutive zero-output iterations ✅
-4. Escalation messaging at 3 consecutive failures ✅
-Next: track success rate for 7 days with v2 guardrails active.
+V2 guardrails measured at 62.5% success rate (16 sessions). Prompt-based interventions plateau around 60%. Next: structural write-first enforcement (v3) — reject worker's first tool call unless it's write/edit, matching the pattern that achieved 99% compliance for verify-before-finish.
 
 ## Plan
 - [x] Measure current worker success rate over last 14 days, write outputs/baseline.md
