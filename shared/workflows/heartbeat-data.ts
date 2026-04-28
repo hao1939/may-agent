@@ -144,13 +144,17 @@ export function loadInbox(ctx: WorkflowContext, agent: string): string {
         .trim()
         .toLowerCase();
       // Extract topic keywords for better fuzzy matching (strip agent names, timestamps)
-      const topicKey = normalized
-        .replace(/\b(optimizer|coach|tech-lead|bob|scout|may|amy-kimi)\b/g, '')
-        .replace(/\b\d+[hm]\b/g, '')        // strip time references like "43h" "12m"
-        .replace(/\b\d+\/\d+\b/g, '')       // strip fractions like "21/27"
-        .replace(/\s+/g, ' ')
-        .trim()
-        .slice(0, 100);
+      // First, try to extract a project name — most notifications are about a specific project
+      const projectMatch = normalized.match(/project\s*["`']?([a-z0-9][-a-z0-9]*)["`']?/);
+      const topicKey = projectMatch
+        ? `project:${projectMatch[1]}`  // group all notifications about the same project
+        : normalized
+          .replace(/\b(optimizer|coach|tech-lead|bob|scout|may|amy-kimi)\b/g, '')
+          .replace(/\b\d+[hm]\b/g, '')        // strip time references like "43h" "12m"
+          .replace(/\b\d+\/\d+\b/g, '')       // strip fractions like "21/27"
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 100);
       // Key on event_type + normalized topic (100 chars for better grouping)
       const key = `${r.event_type}:${topicKey}`;
       const existing = dedupMap.get(key);
