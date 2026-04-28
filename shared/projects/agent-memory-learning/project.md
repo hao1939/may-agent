@@ -1,7 +1,7 @@
 # Agent Memory & Learning
 
 ## Status
-Active
+paused
 
 ## Owner
 orchestrator

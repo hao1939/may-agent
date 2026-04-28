@@ -1,10 +1,8 @@
 # Project: Workflow Reliability
 
-**Status**: waiting
-**Stop Reason**: WAITING
+**Status**: active
+**Stop Reason**: Resumed — v2 tracking shows 62.5%, need structural enforcement (v3).
 
-**Summary**: All implementation milestones are complete. V2 guardrails (auto-retry with escalated prompt) are deployed in `master-worker.ts`. The remaining milestones require elapsed time:
-- 
 **Owner**: coach
 **Priority**: P1
 **Workflow**: master-worker
@@ -32,7 +30,9 @@ Next: track success rate for 7 days with v2 guardrails active.
 - [x] Track success rate for 7 days after guardrails
 - [x] Re-plan: review metrics, assess improvement, write next steps
 - [x] Implement guardrails v2 (false-claim detection, write-first constraint, iteration cap)
-- [ ] Track success rate for 7 days with v2 guardrails
+- [x] Track success rate for 7 days with v2 guardrails (result: 62.5% — not enough)
+- [ ] Design & implement v3 guardrails (structural write-first enforcement)
+- [ ] Track success rate for 7 days with v3 guardrails
 - [ ] Achieve sustained 90%+ iteration success rate
 
 ## References
