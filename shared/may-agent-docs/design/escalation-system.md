@@ -70,11 +70,11 @@ ctx.emit({ type: "escalation.resolved",
 When decided it's not worth fixing.
 
 ```typescript
-ctx.emit({ type: "emit", event: "escalation.dismissed", data: {
+ctx.emit({ type: "escalation.dismissed",
   id: "esc_xxx",
   dismissedBy: "may",
   reason: "Project scope changed, blocker no longer relevant",
-}});
+});
 ```
 
 ## How Context Gets Into the Event
