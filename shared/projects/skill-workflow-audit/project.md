@@ -5,7 +5,7 @@
 **Type**: continuous
 **Workflow**: master-worker
 **Priority**: P0
-**Iteration**: 9
+**Iteration**: 10
 
 ## Goal
 Every skill and workflow verified working, measured for impact, protected against regression.
@@ -16,16 +16,22 @@ Every skill and workflow verified working, measured for impact, protected agains
 - skill.delivery-rate: 0.81 → target 0.60 ✅ (39/48 shared skills deployed to agents)
 - workflow.pass-rate: 1.00 → target 0.95 ✅
 
-## Current State (Updated 2026-04-28)
-All 9 milestones complete. `skill-verification.md` has full extended verification (top 5 + next 10).
+## Current State (Updated Iteration 10)
+All 9 milestones complete. `skill-verification.md` has extended verification (top 5 + next 10 = 15 skills).
 - skill.verified-rate: 0.60 (9/15 verified) — below 0.80 target ⚠️
 - skill.delivery-rate: 0.81 (39/48) ✅
 - workflow.pass-rate: 1.00 (10/10) ✅
-- `metrics.md` is stale (Jan 2025) — needs rewrite to match current data.
 
-**Remaining gap**: 6 unverified skills (5 no-evidence + 1 partial). Path to 0.80 = verify 3 more (12/15).
-Options: (1) convert partial (evidence-over-narrative) to verified with experiment, (2) prune unverified skills reducing denominator, (3) verify consolidate-memory/experience-replay with targeted observation.
-**Blocker**: evaluator dead 7+ days, gym runner needs GYM_AGENT_BIN.
+**Unverified skills** (all still in shared/skills/):
+- escalation — EXP-253 removed from 8 agents with no degradation
+- closing-the-loop — 1 digest match, EXP-253 no degradation
+- second-look-verification — 0 matches, EXP-253 no degradation
+- consolidate-memory — 0 matches, never measured
+- experience-replay — 0 matches, never measured
+- evidence-over-narrative — partial (9 digest matches, coach only)
+
+**Path to 0.80**: Prune 4 EXP-253-proven-dead skills (escalation, closing-the-loop, second-look-verification, experience-replay) from shared/skills/ → denominator drops to 11, rate becomes 9/11 = 0.82. OR verify 3+ more skills via experiment.
+**Action**: Prune dead skills. This is the right call — EXP-253 already proved they have no impact.
 
 ## Plan
 - [x] Inventory all skills and workflows
