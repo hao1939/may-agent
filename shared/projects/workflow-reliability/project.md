@@ -1,7 +1,10 @@
 # Project: Workflow Reliability
 
-**Status**: active
-**Stop Reason**: Waiting — v2 guardrails deployed, need 7 days elapsed for tracking.
+**Status**: waiting
+**Stop Reason**: WAITING
+
+**Summary**: All implementation milestones are complete. V2 guardrails (auto-retry with escalated prompt) are deployed in `master-worker.ts`. The remaining milestones require elapsed time:
+- 
 **Owner**: coach
 **Priority**: P1
 **Workflow**: master-worker
