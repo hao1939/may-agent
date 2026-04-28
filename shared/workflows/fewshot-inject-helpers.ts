@@ -42,7 +42,7 @@ interface ExamplePattern {
 const EXAMPLE_PATTERNS: ExamplePattern[] = [
   { match: /binary|\.bin(?![/\\])|compiled|executable|hexdump/i, file: "binary-file-escalation" },
   { match: /bug|error|failing|test.*fail|crash|500|exception/i, file: "reproduce-first-debugging" },
-  { match: /upgrade|dependency|multiple.*(file|module)|impact|consumer|import.*shared/i, file: "escalation-judgment" },
+  { match: /upgrade|dependency|multiple.*(file|module)|impact|import.*shared/i, file: "escalation-judgment" },
   { match: /blocked|impossible|can'?t.*find|missing.*key|missing.*credential|no.*permission|binary.*file|all.*fail/i, file: "know-when-blocked" },
   { match: /fix.*bug|broken|failing|doesn'?t.*work|incorrect.*output|wrong.*result|comment.*says/i, file: "evidence-over-narrative" },
 ];
