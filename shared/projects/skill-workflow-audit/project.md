@@ -1,9 +1,8 @@
 # Project: Skill & Workflow Quality
 
 **Status**: active
-**Stop Reason**: WAITING
 
-All 3 metrics are at or above target. All 9 milestones complete. No action needed until metrics regress or new goals are added.
+Addressing Hao's feedback: measure actual agent skill usage, add re-plan step.
 
 All 3 metrics are now at or above target:
 - **skill.verified-rate: 0.90** (target 0.80) ✅ — corrected denominator: 5 "unverified" skills don't exist as active files
@@ -22,6 +21,7 @@ Every skill and workflow verified working, measured for impact, protected agains
 - skill.verified-rate: 0.90 → target 0.80 ✅ (9/10 active skills verified — 5 unverified skills already removed/archived)
 - skill.delivery-rate: 0.81 → target 0.60 ✅ (39/48 shared skills deployed to agents)
 - workflow.pass-rate: 1.00 → target 0.95 ✅
+- skill.usage-rate: ? → target 0.50 (fraction of deployed skills actually referenced/applied by agents in recent sessions)
 
 ## Current State (Updated Iteration 11)
 All 9 milestones complete. All 3 metrics at or above target. ✅
@@ -40,6 +40,8 @@ All 9 milestones complete. All 3 metrics at or above target. ✅
 - [x] Set up gym scenario testing skill effectiveness
 - [x] Expand verification beyond top 5 skills (10/48 next)
 - [x] Automate skill regression checks in CI/gym
+- [ ] Measure actual agent skill usage rate (do agents reference/apply skills in their work?)
+- [ ] Re-plan: assess metrics, identify next improvement opportunities
 
 ## References
 
