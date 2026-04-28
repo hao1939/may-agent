@@ -206,3 +206,15 @@ No big bang. The binary wraps its internals behind the SDK interface:
 3. New code uses `ctx.runAgent()`, old code keeps `ctx.manager` (deprecated)
 4. Gym runner uses SDK via adapter
 5. Gradually migrate, then remove deprecated APIs
+
+## Vision: SDK as system specification
+
+The SDK interface IS the system specification. 8 methods define what the system can do. Everything else — the Bun runtime, SQLite, the event bus, the manager — is implementation detail.
+
+This enables:
+- **Formal contract**: anything reachable through the SDK is a supported capability. Anything else is subject to change without notice.
+- **Tool generation**: agent tool schemas can be auto-generated from SDK types. One source of truth for both code and LLM interfaces.
+- **Runtime portability**: a second runtime (distributed, cloud-based, different language) implements the same 8 methods. Handlers, workflows, and gym scenarios port with zero changes.
+- **Testing**: mock the SDK, test everything else in isolation. No integration test needed to verify handler logic.
+
+Today it's a monolithic Bun process with SQLite. Tomorrow it could be anything — as long as it implements AgentSDK.
