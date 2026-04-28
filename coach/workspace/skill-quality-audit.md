@@ -88,13 +88,40 @@ Quick manual check of first 3 edits:
 
 The answer to "do skills work?" is: **text-only skills achieve ~10-35% compliance; structurally-enforced skills achieve 99%**. This validates our pivot away from text coaching. Next step: build guards for verify-after-write and read-before-edit.
 
+## Re-measurement (2026-04-28)
+
+**Run**: Same checker, 300 sessions (more recent window)
+
+| Agent | Sessions | read-before-edit | verify-after-write | verify-before-finish |
+|-------|----------|-----------------|-------------------|---------------------|
+| amy | 134 | 10% (28/285) | 0% (0/43) | 100% (370/370) |
+| coach | 53 | 51% (22/43) | 3% (1/37) | 99% (95/96) |
+| bob | 28 | 44% (8/18) | 0% (0/24) | 100% (45/45) |
+| optimizer | 25 | 38% (3/8) | 8% (2/26) | 100% (68/68) |
+| scout | 22 | N/A | 0% (0/14) | 100% (46/46) |
+| may | 13 | N/A | 100% (1/1) | 98% (42/43) |
+| qa | 13 | 100% (5/5) | 78% (7/9) | 100% (14/14) |
+| tech-lead | 12 | 50% (1/2) | N/A | 100% (30/30) |
+| **TOTAL** | **300** | **19% (67/361)** | **7% (11/154)** | **100% (710/712)** |
+
+### Trend: Jul 29 → Apr 28
+
+| Metric | Jul 29 | Apr 28 | Trend |
+|--------|--------|--------|-------|
+| read-before-edit | 34% | **19%** | 📉 -15pp — actively degrading |
+| verify-after-write | 9% | **7%** | 📉 Flat/worse |
+| verify-before-finish | 99% | **100%** | ✅ Stable |
+
+**Conclusion**: Text skills continue to decay without structural enforcement. Only verify-before-finish (which has a guard) holds. This is now a 2-measurement proof that text-only skills don't sustain behavior.
+
 ## Next Steps
 
 1. ~~Build automated checker~~ ✅ Done
-2. ~~Establish baselines~~ ✅ Done (300 sessions)  
-3. **Identify worst compliance**: amy × read-before-edit (0%), system-wide × verify-after-write (9%)
-4. **Design structural intervention**: C1.3 verify-after-write needs a guard similar to finish-guard
-5. **Monthly re-measurement**: Run checker monthly to track trends
+2. ~~Establish baselines~~ ✅ Done (300 sessions)
+3. ~~Re-measure~~ ✅ Done (Apr 28) — confirms decay
+4. **PRIORITY: Build structural guard for read-before-edit** — amy is 10% (285 violations). This is the highest-volume fixable problem.
+5. **Design guard for verify-after-write** — 7% system-wide, needs enforcement
+6. **Monthly re-measurement**: Next check ~May 28
 
 ## Relation to Other Work
 

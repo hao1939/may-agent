@@ -1,5 +1,10 @@
 # Coach Todo
 
+## P0: Skill Compliance Degrading — Need Structural Guards (Apr 28)
+- **Finding**: read-before-edit dropped 34% → 19% (-15pp). verify-after-write stuck at 7%. Text skills decay without guards.
+- **Action**: Design and ship structural guard for read-before-edit (highest-volume: 285 violations from amy alone)
+- **Evidence**: skill-quality-audit.md re-measurement section
+
 ## P0: Evaluator Dead — Blocks ALL Measurement (Jul 1, STILL BLOCKED)
 - **Problem**: eval.db not found in expected location. All measurement blocked.
 - **Impact**: Can't measure obstacle-pivot impact, convention coaching impact, or any new experiments
