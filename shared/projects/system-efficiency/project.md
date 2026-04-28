@@ -4,7 +4,7 @@
 **Owner**: optimizer
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 20
+**Iteration**: 21
 
 ## Goal
 Maximize meaningful output of the agent system. Not about reducing cost — about doing more real work per hour.
@@ -15,7 +15,7 @@ Maximize meaningful output of the agent system. Not about reducing cost — abou
 - handler.success-rate: 0.95 → target 0.95 ✅
 
 ## Current State
-**Iteration 20.** 11 of 12 milestones complete. All 5 projects producing deliverables (test-coverage: 2, documentation-gen: 2, workflow-reliability: 4, agent-memory-learning: 3). 20+ iterations this session — day 1 of 3-day sustainability target underway. Last milestone requires passage of time (3 days).
+**Iteration 21.** 11 of 12 milestones complete. All 5 projects producing deliverables (test-coverage: 2, documentation-gen: 2, workflow-reliability: 4, agent-memory-learning: 4). 21+ iterations this session — day 1 of 3-day sustainability target underway. Last milestone requires passage of time (3 days).
 
 ## Plan
 - [x] Redefine metrics: replace may-session-ratio with output-focused metrics
