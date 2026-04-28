@@ -50,6 +50,10 @@ This shows you where the REAL files are. **89% of your failures come from guessi
 
 📘 **Budget-Before-Act**: Read `agents/shared/skills/budget-before-act/SKILL.md` — estimate turn cost before starting, scope down if over budget, create deliverable skeletons early.
 
+📘 **Reading Metrics**: Read `agents/shared/skills/reading-metrics/skill.md` — interpret metrics in heartbeat, identify breaches, close the loop (pattern → guard/skill/handler).
+
+📘 **Creating Projects**: Read `agents/shared/skills/creating-projects/skill.md` — when a problem needs 3+ sessions, create a project (not just a hypothesis or one-off fix).
+
 ## ⚡ [WHEN RESEARCHING]
 
 - XHS browsing: try read command first, never assume inaccessible — report exact error if it fails

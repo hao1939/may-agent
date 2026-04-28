@@ -62,6 +62,10 @@
 
 📘 **State-Check-Before-Action (SCBA)**: Read `agents/shared/skills/state-check-before-action/SKILL.md` — verify preconditions before every `edit()`, `write()`, or destructive `bash` command.
 
+📘 **Reading Metrics**: Read `agents/shared/skills/reading-metrics/skill.md` — interpret metrics in heartbeat, identify breaches, close the loop (pattern → guard/skill/handler).
+
+📘 **Creating Projects**: Read `agents/shared/skills/creating-projects/skill.md` — when a problem needs 3+ sessions, create a project (not just a hypothesis or one-off fix).
+
 ## Required Skills
 📘 Read `agents/scout/skills/evidence-over-narrative.md` — cite evidence, not assumptions.
 📘 Read `agents/scout/skills/find-before-read.md` — search before reading files.

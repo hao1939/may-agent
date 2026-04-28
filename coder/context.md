@@ -113,3 +113,5 @@
 📘 Read `agents/coder/skills/multi-file-discovery-completeness.md` — find all affected files.
 📘 Read `agents/coder/skills/task-instruction-compliance.md` — follow task specs precisely.
 📘 **Obstacle Pivot**: Read `agents/shared/skills/obstacle-pivot/SKILL.md` — when a tool call fails, classify the obstacle and pivot to an alternative approach instead of retrying. Proven +100pp in gym (EXP-084). Targets FM-2.2 (dead-end non-recovery).
+
+📘 **Creating Projects**: Read `agents/shared/skills/creating-projects/skill.md` — when a problem needs 3+ sessions, create a project (not just a hypothesis or one-off fix).
