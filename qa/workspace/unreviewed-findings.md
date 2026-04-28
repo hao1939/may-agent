@@ -22,24 +22,16 @@
 - Mitigation this session: Ensure this heartbeat ends with a `finish()` tool call; avoid making claims without read/test evidence.
 
 ## Recent commits checked
-From `cd /app/agents && git log --oneline -10` (executed this session):
-- 5b92c30f7 amy: fix grade threshold comparison bug (>= instead of >)
-- fe7e7bc1d amy: fix grade threshold comparison bug in gym exercise
-- 9c8097831 amy: fix grade threshold comparison >= instead of >
-- 3667f42a8 amy: fix grade threshold and penalty propagation bugs
-- 71fb0c3f8 amy: fix cascading grade pipeline bugs - order and threshold
-- 3848f3653 amy: fix grade pipeline bugs - adjusted_pct for exams, >= for thresholds
-- ed4a24dd2 scout: heartbeat 2026-12-08 session update
-- a8c48c677 bob: common-sense infra review brief 20260731
-- dda32c260 amy: ghost dependency debug gym session
-- 30a424391 amy: fix grade boundary comparison in getLetterGrade
+From `cd /app/agents && git log --oneline -10`:
+- `c24ab1e8e` EXP-257 completed: specificity gradient confirmed (L3>L2>L1=baseline)
 
 ## Mandatory checks (repo: /app/agents)
 - `./node_modules/.bin/tsc --noEmit`: PASS (no output)
 - `./node_modules/.bin/vitest --run`: FAIL to execute — `./node_modules/.bin/vitest` not found (exit code 127)
 
-## File read (sample changed file)
-- `agents/bob/last-session.md`: Generic verification statement (“All three files read back correctly …”) but does not name which files.
+## File read (changed files in latest commit)
+- `agents/bob/journal.md`: read first 200 lines; appears to be a journal log (no code).
+- `agents/may/last-session.md`: read; appears to be an auto-generated session summary (no code).
 
 ## Issues
 ### IMPORTANT: QA standard expects `vitest --run` but agents repo has no vitest
