@@ -257,11 +257,25 @@ ${journalContent.slice(-3000)}
       // ── Review phase ──
       ctx.log(`[review] Orchestrator evaluating iteration ${iteration}...`);
 
-      const reviewPrompt = `## Worker Output (Iteration ${iteration})
+      // Check for new comments since last read
+      let newComments = "";
+      try {
+        if (existsSync(discussionFile)) {
+          const disc = readFileSync(discussionFile, "utf-8");
+          const lastMarker = disc.lastIndexOf("---read @");
+          const unread = lastMarker >= 0 ? disc.slice(disc.indexOf("\n", lastMarker) + 1).trim() : "";
+          if (unread) newComments = unread;
+        }
+      } catch {}
+
+      let reviewPrompt = `## Worker Output (Iteration ${iteration})
 ${workerSummary}
 
 Read project.md for current state, metrics, and plan. Update it as needed.
 Then provide your decision and guidance for the next iteration.`;
+      if (newComments) {
+        reviewPrompt += `\n\n## New Comments (address these)\n${newComments}`;
+      }
 
       let reviewAttempt = 0;
       while (reviewAttempt < 3) {
@@ -277,6 +291,10 @@ Then provide your decision and guidance for the next iteration.`;
       }
 
       const orchestratorText = orchestrator.lastText();
+      // Mark new comments as read
+      if (newComments) {
+        try { appendFileSync(discussionFile, `\n---read @iter${iteration}---\n`, "utf-8"); } catch {}
+      }
       decision = extractDecision(orchestratorText);
       if (decision.status === "unknown") {
         ctx.log("[review] Decision unclear — treating as CONTINUE");
