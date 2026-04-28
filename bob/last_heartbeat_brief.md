@@ -1,20 +1,18 @@
 # Last Heartbeat Brief
-**When**: 2026-08-02 ~UTC
-**Duration**: ~8 min
+**When**: 2026-11-17 ~UTC
+**Duration**: ~5 min
 
 ## What Happened
-- H-EXP-018 Phase 3 COMPLETE: Built knowledge lifecycle audit script
-- Discovered "knowledge graveyard" — 52% of KEs (196/378) never cited in any active doc
-- Last cited KE in active docs: KE-182. Everything KE-183+ is write-only.
-- Proposed KE Integration Gate (require integration or explicit "reference-only" tag)
-- Triaged all inbox notifications (DD#880 acted on, rest dismissed)
+- Re-ran knowledge lifecycle audit: 369/375 KEs (98.4%) uncited — confirming write-only graveyard
+- Wrote KE Integration Gate proposal (sent/2026-04-28-ke-integration-gate-proposal.md)
+- Triaged all inbox notifications (dismissed — all P2 informational or stale P1 productivity warnings)
+- master-worker-test: test projects, no action needed
 
 ## State Left Behind
-- H-EXP-018: All 3 phases complete, ready for KE Integration Gate proposal to tech-lead
+- KE Integration Gate proposal ready for tech-lead review
 - H-EXP-015: Still ready for Phase 2 (baseline gym runs)
-- Knowledge lifecycle audit script: `agents/bob/scripts/knowledge-lifecycle-audit.sh`
 
 ## Next Steps
-- Propose KE Integration Gate as process change (brief to tech-lead)
-- Run audit periodically to track knowledge health
+- Await tech-lead response on KE Integration Gate
 - Execute H-EXP-015 Phase 2 when time permits
+- Consider bulk-tagging uncited KEs as reference-only
