@@ -1,14 +1,19 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777376823844_109
+- **Session:** s_1777385866822_168
 - **Status:** done
-- **When:** 2026-04-28T11:47:14.469Z
-- **Duration:** 10s
+- **When:** 2026-04-28T14:18:03.454Z
+- **Duration:** 16s
 
 ## What Happened
-Readback verification:
+Read-back verification of `agents/qa/workspace/unreviewed-findings.md`:
 
-- `workspace/unreviewed-findings.md`: **Read OK** (not truncated; content is complete and legible).
+- File opens cleanly (no encoding issues visible) and content is complete (not truncated in the read output).
+- Contents match a coherent “qa heartbeat” note with sections:
+  - Inbox triage (duplicate notifications, coaching alerts, missing EXP-220 scenario)
+  - Recent changes scan (notes `/app` not a git repo; `/app/agents` is)
+  - Verification run results (tsc pass; vitest missing binary)
+  - Includes a trailing signature block.
 
-Note: the file’s “Verification results” section claims `tsc --noEmit` PASS, but in this session running `./node_modules/.bin/tsc --noEmit` fails with `No such file or directory` (exit 127). So the document’s contents are internally inconsistent with current verification. If you want, I can rewrite the file to reflect the actual tool outputs from this session.
+No rewrite needed; the file looks correct and complete.
