@@ -1,6 +1,6 @@
 # Project: Skill & Workflow Quality
 
-**Status**: active
+**Status**: active — WAITING (all metrics at target; Phase 2 improvements deferred after 7 failed worker iterations)
 
 
 **Key finding**: The skill-usage audit was incorrect. Skills ARE injected into agent context via 📘 directives in context.md (amy=8, bob=13, scout=15, coach=8, optimizer=10). The injection mechanism exists and works. The real question is behavioral: do agents apply skills in practice?
