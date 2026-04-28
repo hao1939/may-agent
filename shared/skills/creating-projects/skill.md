@@ -45,7 +45,8 @@ Updated each iteration with findings, facts, decisions.
 - [ ] First concrete step
 - [ ] Second step
 - [ ] Third step
-(Start with 3-5 items. Add more as you learn. These are a work log, not a completion trigger.)
+- [ ] Re-plan: review metrics, assess progress, write next steps
+(Always keep "Re-plan" as the last item. When you reach it, check metrics, then replace it with new steps + another Re-plan at the end. The plan never runs out.)
 
 ## References
 
