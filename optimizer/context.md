@@ -70,3 +70,4 @@ When querying a table for first time, run PRAGMA table_info(<table>) first. Key 
 - [insight] grep-then-read is the #1 bash pattern: 166 grep commands in 18 sessions (26.5% of all ops). Chains average 5.3 consecutive calls.
 - [insight] Skills adoption hierarchy: code enforcement > SOUL.md inline > per-agent skills/ > shared skills/ passive. 0/29 agents discover passive resources (KE-011).
 - [insight] read-before-edit deployed to 5 agents but C1.1 still worst convention at 88.6%. Deployment != adoption — need code enforcement.
+📘 **Creating Projects**: Before creating a project, read `agents/shared/skills/creating-projects/skill.md` — follow the exact template.

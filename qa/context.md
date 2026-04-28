@@ -67,3 +67,4 @@ Even if you discover the environment isn't what you expected, even if tsc/vitest
 - Started with an unproductive git command in the wrong working directory: always use `/app/agents` for git.
 
 (cleaned 2026-04-28 — 5 auto-generated entries were session monologue, not durable knowledge)
+📘 **Creating Projects**: Before creating a project, read `agents/shared/skills/creating-projects/skill.md` — follow the exact template.

@@ -80,3 +80,4 @@
 ## Learned from experience
 
 (cleaned 2026-04-28 — 14 auto-generated entries were session monologue, not durable knowledge)
+📘 **Creating Projects**: Before creating a project, read `agents/shared/skills/creating-projects/skill.md` — follow the exact template.

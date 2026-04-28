@@ -104,3 +104,4 @@ During heartbeats, verify agents read project files before acting. Specifically:
 - **Bash streak limit**: After 5 consecutive bash calls, pause and write what you know.
 
 
+📘 **Creating Projects**: Before creating a project, read `agents/shared/skills/creating-projects/skill.md` — follow the exact template.

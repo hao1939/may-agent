@@ -89,3 +89,4 @@
 
 
 
+📘 **Creating Projects**: Before creating a project, read `agents/shared/skills/creating-projects/skill.md` — follow the exact template.

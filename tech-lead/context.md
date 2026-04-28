@@ -108,3 +108,4 @@
 
 - The finish-guard is **fully wired**. Both paths are active.
 - Guards are referenced from shared/agent-sdk.ts and other places — not orphans.
+📘 **Creating Projects**: Before creating a project, read `agents/shared/skills/creating-projects/skill.md` — follow the exact template.
