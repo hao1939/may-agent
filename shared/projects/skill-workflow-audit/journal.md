@@ -369,3 +369,8 @@ The worker has failed to produce `outputs/skill-behavioral-audit.md` for 2 itera
 
 ### Iteration 5 — 2026-04-28T18:26:24.029Z
 **Worker**: Now let me also put it in my outputs directory as specified:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should **deploy the Verify-Before-Finish skill to the 7 agents missing it**. For each of these agents: `amy, coach, coder, tech-lead, optimizer, evaluator, qa`:
+
+1. **Copy the skill file** to their per-agent skills dir: copy `/app/agents/shared/skills/archive/unreference
