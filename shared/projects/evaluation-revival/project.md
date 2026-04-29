@@ -16,6 +16,8 @@ Restore the evaluation pipeline so agent performance is measured continuously. W
 ## Current State
 **Updated iter 10**: All infrastructure complete and deployed. Coverage fix (7d lookback) live — waiting for metric to validate. Optimizer hasn't run since receiving coaching (last ran April 12). All plan items complete except final validation. Moving to re-plan.
 
+**Updated 2026-07-02**: eval-poller set to 100/run with 7d window. Only 18 evaluations in .state/evaluations/ — system session volume appears low (activity.jsonl last entry March 2026). Coverage target of 50% may be unrealistic given current system activity levels. Project is infrastructure-complete; validation depends on system traffic resuming.
+
 ## Plan
 - [x] Verify evaluator can run successfully — 31 evals in DB, pipeline live
 - [x] Diagnose why evaluator stopped being triggered — eval-poller exists but has tight caps
