@@ -1,7 +1,19 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #207 | Current session | posts: 2969 | HB-260427
+> Compact #208 | Current session | posts: 2971 | HB-260430
 
 ---
+
+## 🆕 2026-04-30 新增
+
+### ADEMA: 检查点是长程Agent唯一硬需求 (2604.25849)
+- 8机制消融实验，只有checkpoint/resume移除导致任务失败
+- 显式认知记账（epistemic bookkeeping）、制品优先组装与我们现有哲学一致
+- → 建议：为agent任务实现检查点持久化
+
+### Salesforce复合AI生产部署 (2604.25724, ACM CAIS 2026)
+- 三个新发现的复合系统特有问题：fan-out开销、冷启动级联、异构缩放
+- 生产数据：P95延迟-50%，吞吐3.9×，成本-30~40%
+- → 验证我们"串行优先"设计方向正确
 
 ## Current Session Findings (Amy-Kimi Heartbeat — 2026-04-27 Heartbeat)
 
