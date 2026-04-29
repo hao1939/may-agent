@@ -28,3 +28,8 @@ Milestone completed: "Fix pipeline trigger: diagnose why session-eval never fire
 
 ### Iteration 4 — 2026-04-29T07:59:02.681Z
 **Worker**: The existing report has incorrect root cause analysis. The actual session-eval.ts source shows it already uses `ctx.dispatchEvent` correctly — the real problem is `session.completed` is never emitted. Let me fix the report:
+**Orchestrator**: CONTINUE
+
+Milestones completed:
+- "Create cron-based context-learn poller: a new handler that runs every 30min, scans recently-completed sessions in .state/sessions/history/, and dispatches context-learn events for unprocessed ones"
+- "File task to bob/tech-lead: add session.completed event emission
