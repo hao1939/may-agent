@@ -20,6 +20,13 @@ import {
   extractField, extractSection, updateProjectStatus,
 } from "./project-helpers.ts";
 import { validateDispatch } from "./dispatch-validator.ts";
+import {
+  saveIncrementalCheckpoint,
+  detectIncompleteCheckpoint,
+  markCheckpointComplete,
+  cleanupCheckpoints,
+  type CheckpointData,
+} from "./incremental-checkpoint.ts";
 
 export const name: string = "master-worker";
 
@@ -309,6 +316,9 @@ ${journalContent.slice(-3000)}
     // ── Phase 2+: Work-review loop ──
     let iteration = 0;
 
+    // Clean up old checkpoints at workflow start
+    cleanupCheckpoints(projectDir, 5);
+
     while (iteration < maxIterations && (decision.status === "continue" || decision.status === "pivot")) {
       iteration++;
 
@@ -316,6 +326,17 @@ ${journalContent.slice(-3000)}
       ctx.log(`[work] Iteration ${iteration}/${maxIterations} starting...`);
       const guidance = orchestrator.lastText();
       const outputsDir = join(dirname(projectDir), "outputs");
+
+      // Generate a session-scoped checkpoint ID for this iteration
+      const checkpointSessionId = `iter-${iteration}-${Date.now()}`;
+
+      // Detect incomplete checkpoint from a previous crashed iteration
+      const incompleteCheckpoint = detectIncompleteCheckpoint(projectDir);
+      if (incompleteCheckpoint) {
+        ctx.log(`[work] 🔄 Found incomplete checkpoint from session ${incompleteCheckpoint.sessionId} (iteration ${incompleteCheckpoint.iteration}, step ${incompleteCheckpoint.step}). Resuming context.`);
+        // Mark the old one complete so we don't re-detect it
+        markCheckpointComplete(projectDir, incompleteCheckpoint.sessionId);
+      }
 
       // Track consecutive zero-output iterations for escalation
       if (typeof (ctx as any)._consecutiveZeroOutput === 'undefined') {
@@ -353,6 +374,18 @@ ${journalContent.slice(-3000)}
 
       await worker.prompt(workerPrompt);
       ctx.log(`[work] Iteration ${iteration} done`);
+
+      // Save incremental checkpoint after worker completes
+      saveIncrementalCheckpoint(projectDir, {
+        sessionId: checkpointSessionId,
+        iteration,
+        step: 1,
+        timestamp: Date.now(),
+        task: guidance.slice(0, 500),
+        toolsCalled: ["worker.prompt"],
+        partialResults: { workerResponseLength: worker.lastText().length },
+        completed: false,
+      });
 
       // Verify worker produced output
       const afterSnap = snapshotOutputs(outputsDir);
@@ -471,6 +504,9 @@ Then provide your decision and guidance for the next iteration.`;
 
       // Update iteration count in project.md
       updateProjectStatus(projectFile, "active", undefined, iteration);
+
+      // Mark this iteration's checkpoint as complete
+      markCheckpointComplete(projectDir, checkpointSessionId);
 
       // Emit iteration event for metrics tracking
       try { ctx.emit({ type: "emit", event: "project.iteration", data: { project: projectDir, iteration } }); } catch {}
