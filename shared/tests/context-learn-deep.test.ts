@@ -36,7 +36,7 @@ describe("extractCommandCorrections - node to bun/deno", () => {
       bashResult("Success", 3, false),
     ];
     const facts = extractFactsMechanical(msgs);
-    expect(facts.some(f => f.includes("bun") && f.includes("node"))).toBe(true);
+    expect(facts.some(f => f.content.includes("bun") && f.content.includes("node"))).toBe(true);
   });
 
   it("detects node->deno correction", () => {
@@ -47,7 +47,7 @@ describe("extractCommandCorrections - node to bun/deno", () => {
       bashResult("ok", 3, false),
     ];
     const facts = extractFactsMechanical(msgs);
-    expect(facts.some(f => f.includes("deno") && f.includes("node"))).toBe(true);
+    expect(facts.some(f => f.content.includes("deno") && f.content.includes("node"))).toBe(true);
   });
 });
 
@@ -60,7 +60,7 @@ describe("extractCommandCorrections - npm test to other runner", () => {
       bashResult("Tests passed", 3, false),
     ];
     const facts = extractFactsMechanical(msgs);
-    expect(facts.some(f => f.includes("vitest") || f.includes("Test runner"))).toBe(true);
+    expect(facts.some(f => f.content.includes("vitest") || f.content.includes("Test runner"))).toBe(true);
   });
 
   it("detects npm test->bun test correction", () => {
@@ -71,7 +71,7 @@ describe("extractCommandCorrections - npm test to other runner", () => {
       bashResult("ok", 3, false),
     ];
     const facts = extractFactsMechanical(msgs);
-    expect(facts.some(f => f.includes("bun test") || f.includes("Test runner"))).toBe(true);
+    expect(facts.some(f => f.content.includes("bun test") || f.content.includes("Test runner"))).toBe(true);
   });
 
   it("detects npm test->jest correction", () => {
@@ -82,7 +82,7 @@ describe("extractCommandCorrections - npm test to other runner", () => {
       bashResult("ok", 3, false),
     ];
     const facts = extractFactsMechanical(msgs);
-    expect(facts.some(f => f.includes("jest") || f.includes("Test runner"))).toBe(true);
+    expect(facts.some(f => f.content.includes("jest") || f.content.includes("Test runner"))).toBe(true);
   });
 });
 
@@ -95,7 +95,7 @@ describe("extractCommandCorrections - command not found", () => {
       bashResult("added 50 packages", 3, false),
     ];
     const facts = extractFactsMechanical(msgs);
-    expect(facts.some(f => f.includes("npm") && f.includes("yarn"))).toBe(true);
+    expect(facts.some(f => f.content.includes("npm") && f.content.includes("yarn"))).toBe(true);
   });
 
   it("detects 'not found' variant", () => {
@@ -106,7 +106,7 @@ describe("extractCommandCorrections - command not found", () => {
       bashResult("Build complete", 3, false),
     ];
     const facts = extractFactsMechanical(msgs);
-    expect(facts.some(f => f.includes("npm") && f.includes("pnpm"))).toBe(true);
+    expect(facts.some(f => f.content.includes("npm") && f.content.includes("pnpm"))).toBe(true);
   });
 });
 
@@ -119,7 +119,7 @@ describe("extractCommandCorrections - generic command correction", () => {
       bashResult("abc123 commit msg", 3, false),
     ];
     const facts = extractFactsMechanical(msgs);
-    expect(facts.some(f => f.includes("Correct command") || f.includes("git"))).toBe(true);
+    expect(facts.some(f => f.content.includes("Correct command") || f.content.includes("git"))).toBe(true);
   });
 });
 
@@ -130,7 +130,7 @@ describe("extractRuntimeFacts", () => {
       readResult('{"tasks": {}}', 1, false),
     ];
     const facts = extractFactsMechanical(msgs);
-    expect(facts.some(f => f.includes("Deno"))).toBe(true);
+    expect(facts.some(f => f.content.includes("Deno"))).toBe(true);
   });
 
   it("detects Deno runtime from deno.jsonc", () => {
@@ -139,7 +139,7 @@ describe("extractRuntimeFacts", () => {
       readResult('{}', 1, false),
     ];
     const facts = extractFactsMechanical(msgs);
-    expect(facts.some(f => f.includes("Deno"))).toBe(true);
+    expect(facts.some(f => f.content.includes("Deno"))).toBe(true);
   });
 
   it("detects Bun runtime from bunfig.toml", () => {
@@ -148,7 +148,7 @@ describe("extractRuntimeFacts", () => {
       readResult('[install]\npeer = false', 1, false),
     ];
     const facts = extractFactsMechanical(msgs);
-    expect(facts.some(f => f.includes("Bun") && f.includes("bunfig"))).toBe(true);
+    expect(facts.some(f => f.content.includes("Bun") && f.content.includes("bunfig"))).toBe(true);
   });
 
   it("detects Bun runtime from package.json with runtime field", () => {
@@ -157,7 +157,7 @@ describe("extractRuntimeFacts", () => {
       readResult('{"name":"test","runtime":"bun","dependencies":{}}', 1, false),
     ];
     const facts = extractFactsMechanical(msgs);
-    expect(facts.some(f => f.includes("Bun") && f.includes("package.json"))).toBe(true);
+    expect(facts.some(f => f.content.includes("Bun") && f.content.includes("package.json"))).toBe(true);
   });
 
   it("does not detect Bun from package.json without runtime field", () => {
@@ -166,7 +166,7 @@ describe("extractRuntimeFacts", () => {
       readResult('{"name":"test","dependencies":{"bun":"1.0"}}', 1, false),
     ];
     const facts = extractFactsMechanical(msgs);
-    expect(facts.every(f => !f.includes("Bun runtime (package.json"))).toBe(true);
+    expect(facts.every(f => !f.content.includes("Bun runtime (package.json"))).toBe(true);
   });
 
   it("ignores read errors", () => {
@@ -175,7 +175,7 @@ describe("extractRuntimeFacts", () => {
       readResult("File not found", 1, true),
     ];
     const facts = extractFactsMechanical(msgs);
-    expect(facts.every(f => !f.includes("Deno"))).toBe(true);
+    expect(facts.every(f => !f.content.includes("Deno"))).toBe(true);
   });
 });
 
@@ -188,7 +188,7 @@ describe("extractPathDiscoveries", () => {
       readResult("export const config = {}", 3, false),
     ];
     const facts = extractFactsMechanical(msgs);
-    expect(facts.some(f => f.includes("config.ts") && f.includes("/project/lib/config.ts"))).toBe(true);
+    expect(facts.some(f => f.content.includes("config.ts") && f.content.includes("/project/lib/config.ts"))).toBe(true);
   });
 
   it("ignores when different filenames", () => {
@@ -199,7 +199,7 @@ describe("extractPathDiscoveries", () => {
       readResult("ok", 3, false),
     ];
     const facts = extractFactsMechanical(msgs);
-    expect(facts.every(f => !f.includes("is at"))).toBe(true);
+    expect(facts.every(f => !f.content.includes("is at"))).toBe(true);
   });
 
   it("ignores when same path succeeds", () => {
@@ -211,7 +211,7 @@ describe("extractPathDiscoveries", () => {
     ];
     const facts = extractFactsMechanical(msgs);
     // Same path, so no "is at" fact
-    expect(facts.every(f => !f.includes("is at"))).toBe(true);
+    expect(facts.every(f => !f.content.includes("is at"))).toBe(true);
   });
 });
 
@@ -258,7 +258,7 @@ describe("toolResult content handling", () => {
       bashResult("done", 3, false),
     ];
     const facts = extractFactsMechanical(msgs);
-    expect(facts.some(f => f.includes("bun") && f.includes("npm"))).toBe(true);
+    expect(facts.some(f => f.content.includes("bun") && f.content.includes("npm"))).toBe(true);
   });
 
   it("handles non-string non-array content", () => {
@@ -289,6 +289,6 @@ describe("toolCall type variants", () => {
       bashResult("done", 3, false),
     ];
     const facts = extractFactsMechanical(msgs);
-    expect(facts.some(f => f.includes("bun") && f.includes("npm"))).toBe(true);
+    expect(facts.some(f => f.content.includes("bun") && f.content.includes("npm"))).toBe(true);
   });
 });
