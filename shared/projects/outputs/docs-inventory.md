@@ -1,14 +1,43 @@
 # Documentation Inventory
 
-Generated: 2025-01-27
+Generated: 2025-01-28
 
 ## Summary
-- **Total agents found**: 14 (amy, amy-kimi, bob, coach, coder, evaluator, may, optimizer, qa, scout, tech-lead, architect, master, judge)
-- **Agents with context.md**: 11 (amy, amy-kimi, bob, coach, coder, evaluator, may, optimizer, qa, scout, tech-lead)
-- **Agents with README**: 1 (coach)
-- **Agents with NO docs**: 3 (architect, master, judge)
+- **Total agents with agent.json**: 13 (amy, amy-kimi, bob, coach, coder, evaluator, judge, master, may, optimizer, qa, scout, tech-lead)
+- **Agents with context.md**: 13/13 = **100%**
+- **Additional agent dir (no agent.json)**: architect (has context.md only)
 
-## Existing Documentation
+## Agent Documentation Matrix
+
+| Agent | agent.json | context.md | SOUL.md | DOMAIN.md | LESSONS.md | TOOLS.md | README.md | Other docs |
+|-------|-----------|------------|---------|-----------|------------|----------|-----------|------------|
+| amy | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | heartbeat, last-session, periodic-tasks, reference |
+| amy-kimi | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | heartbeat, last-session |
+| architect | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | — |
+| bob | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | heartbeat, journal, last-session, reference, todo, log, ERROR_LOG |
+| coach | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | heartbeat, last-session, reference, todo, ERROR_LOG |
+| coder | — | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | last-session |
+| evaluator | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | heartbeat, last-session, periodic-tasks, INDEX, ERROR_LOG |
+| judge | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | last-session |
+| master | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | heartbeat, last-session, ERROR_LOG |
+| may | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | heartbeat, last-session, conversation-state, ERROR_LOG |
+| optimizer | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | heartbeat, last-session, config, reference, periodic-tasks, ERROR_LOG |
+| qa | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | heartbeat, last-session |
+| scout | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | heartbeat, journal, last-session, reference, todo, signals, INBOX |
+| tech-lead | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | heartbeat, last-session, reference, ERROR_LOG |
+
+## Coverage Metrics
+
+| Metric | Count | Percentage |
+|--------|-------|------------|
+| context.md coverage | 14/14 | **100%** |
+| SOUL.md coverage | 12/14 | 86% |
+| DOMAIN.md coverage | 10/14 | 71% |
+| LESSONS.md coverage | 9/14 | 64% |
+| TOOLS.md coverage | 10/14 | 71% |
+| README.md coverage | 1/14 | 7% |
+
+## Non-Agent Documentation
 
 ### Top-Level
 | File | Location |
@@ -16,66 +45,24 @@ Generated: 2025-01-27
 | README.md | `/app/agents/README.md` |
 | CONVENTIONS.md | `/app/agents/CONVENTIONS.md` |
 
-### Agent-Level READMEs
-| Location | Status |
-|----------|--------|
-| `/app/agents/README.md` | ✅ exists |
-| `/app/agents/coach/README.md` | ✅ exists |
-| `/app/agents/shared/README.md` | ✅ exists |
-| `/app/agents/environment/README.md` | ✅ exists |
-| `/app/agents/knowledge-base/README.md` | ✅ exists |
-| `/app/agents/gym/README.md` | ✅ exists |
-| `/app/agents/.lab/README.md` | ✅ exists |
+### Shared
+| File | Location |
+|------|----------|
+| README.md | `/app/agents/shared/README.md` |
+| bulletin.md | `/app/agents/shared/bulletin.md` |
+| common-sense.md | `/app/agents/shared/common-sense.md` |
+| db-schema.md | `/app/agents/shared/db-schema.md` |
+| federation.md | `/app/agents/shared/federation.md` |
+| knowledge-essentials.md | `/app/agents/shared/knowledge-essentials.md` |
+| standing-orders.md | `/app/agents/shared/standing-orders.md` |
 
-### Agent context.md Files
-| Agent | Has context.md | Has README |
-|-------|---------------|------------|
-| amy | ✅ | ❌ |
-| amy-kimi | ✅ | ❌ |
-| bob | ✅ | ❌ |
-| coach | ✅ | ✅ |
-| coder | ✅ | ❌ |
-| evaluator | ✅ | ❌ |
-| may | ✅ | ❌ |
-| optimizer | ✅ | ❌ |
-| qa | ✅ | ❌ |
-| scout | ✅ | ❌ |
-| tech-lead | ✅ | ❌ |
-| architect | ❌ | ❌ |
-| master | ❌ | ❌ |
-| judge | ❌ | ❌ |
+### Support Directories with READMEs
+- `/app/agents/environment/README.md`
+- `/app/agents/gym/README.md`
+- `/app/agents/knowledge-base/README.md`
 
-### Workflows (shared)
-| File | Documented |
-|------|-----------|
-| master-worker.ts | inline only |
-| project.ts | inline only |
-| implement-and-verify.ts | inline only |
-| circuit-breaker.ts | inline only |
-| budget-checkpoint.ts | inline only |
-| heartbeat-data.ts | inline only |
-| verify-wrap.ts | inline only |
-| fewshot-inject-helpers.ts | inline only |
-| project-helpers.ts | inline only |
-
-## Gaps Identified
-
-### Critical (no docs at all)
-1. **architect** — no context.md, no README
-2. **master** — no context.md, no README
-3. **judge** — no context.md, no README
-
-### Major (missing README)
-4. 10 agents have context.md but no README explaining purpose, config, usage
-5. **All 9 workflows** lack standalone documentation — only inline comments
-
-### Minor
-6. No centralized "how agents communicate" doc
-7. No workflow usage guide (when to use which workflow)
-8. No configuration reference doc
-
-## Coverage Metrics
-- Agent doc coverage: 11/14 = **79%** (context.md only)
-- Agent full coverage: 1/14 = **7%** (context.md + README)
-- Workflow doc coverage: 0/9 = **0%** (no standalone docs)
-- Overall system doc coverage: **~30%**
+## Remaining Gaps
+1. **README.md**: Only coach has one (1/14). Low priority — context.md serves the primary role.
+2. **architect**: Minimal agent dir (context.md only, no agent.json). May be an archetype, not a runtime agent.
+3. **coder**: Has context.md but no SOUL/DOMAIN/TOOLS — minimal config.
+4. **Workflow docs**: 9 workflow files in shared/ have inline comments only; no standalone docs.
