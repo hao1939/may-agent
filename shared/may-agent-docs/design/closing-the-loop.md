@@ -68,9 +68,9 @@ bus.subscribe((event) => {
 
 ~15 LOC for the subscriber + schema.
 
-### Messages become events (future)
+### Messages are events
 
-Today's `message` path already persists correctly via `trackRequest()`. Eventually messages could enter as events too, enabling immediate handling by subscribers. Not in scope — just noting the natural direction.
+Messages persist as events (`agent.notification` with owner field). Agents see them in their inbox via time-window query. No separate persistence path needed.
 
 ## Previously Identified Gaps — Now Fixed
 
