@@ -97,7 +97,8 @@ describe('task-validator extended', () => {
     });
 
     it('returns medium for moderate tasks', () => {
-      const task = 'Read `src/a.ts`, `src/b.ts`, `src/c.ts`, `src/d.ts` then update them all. Also check `src/e.ts`.';
+      // estimateFileOperations counts action verbs, not file count
+      const task = 'Read the file, then update it, check the output, modify the config, and also verify the result after that finally';
       expect(['medium', 'high']).toContain(estimateComplexity(task));
     });
 
@@ -107,7 +108,7 @@ describe('task-validator extended', () => {
     });
 
     it('considers step counts', () => {
-      const task = '1. do A 2. do B 3. do C 4. do D';
+      const task = '1. read and write files 2. edit the config 3. update module 4. change output then also verify finally next';
       const c = estimateComplexity(task);
       expect(['medium', 'high']).toContain(c);
     });
@@ -119,7 +120,8 @@ describe('task-validator extended', () => {
     });
 
     it('returns valid when dir exists', () => {
-      expect(checkOutputDirectory('create `/real/exists.ts`', '/tmp').valid).toBe(true);
+      // Our mock returns true for paths containing 'exists'
+      expect(checkOutputDirectory('create `/exists/file.ts`', '/tmp').valid).toBe(true);
     });
   });
 
@@ -144,7 +146,8 @@ describe('task-validator extended', () => {
     });
 
     it('rejects task with too many file ops', () => {
-      const task = 'Edit `a.ts`, `b.ts`, `c.ts`, `d.ts`, `e.ts`, `f.ts`, `g.ts`, `h.ts`';
+      // estimateFileOperations counts action verbs: write, create, read, check, edit, modify, update, change, fix
+      const task = 'Write the file, create another, read config, check output, edit module, modify helper, update tests, change build, fix lint, verify result, inspect logs, generate report, produce output, add feature';
       const result = validateTask(task, { maxFileOps: 3 });
       expect(result.valid).toBe(false);
       expect(result.reason).toContain('file operations');
@@ -165,8 +168,9 @@ describe('task-validator extended', () => {
     });
 
     it('warns about high complexity', () => {
-      const task = Array(50).fill('Edit `file.ts` then also next finally 1. 2. 3. 4.').join(' ');
-      const result = validateTask(task);
+      // Need enough action verbs (>5 fileOps), word count >200, multi-step indicators, and step counts
+      const task = Array(30).fill('Write and create and edit and modify and update the file then also next finally 1. 2. 3. 4.').join(' ');
+      const result = validateTask(task, { maxFileOps: 999 });
       expect(result.warnings?.some(w => w.includes('complexity'))).toBe(true);
     });
 

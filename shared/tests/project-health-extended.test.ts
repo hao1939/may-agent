@@ -166,10 +166,10 @@ describe('project-health extended', () => {
 
   describe('utility functions', () => {
     it('updateField replaces field value', () => {
-      const content = 'Status: active\nPriority: high\n';
+      const content = '# Project\n**Status**: active\n**Priority**: high\n';
       const result = updateField(content, 'Status', 'done');
-      expect(result).toContain('Status: done');
-      expect(result).toContain('Priority: high');
+      expect(result).toContain('**Status**: done');
+      expect(result).toContain('**Priority**: high');
     });
 
     it('appendComment adds to content', () => {

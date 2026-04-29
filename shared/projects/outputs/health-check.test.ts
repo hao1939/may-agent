@@ -1,230 +1,253 @@
-import { describe, it, expect } from "vitest";
-import {
-  parseMetrics,
-  isAtTarget,
-  extractLastActivity,
-  isStalled,
-  analyzeProject,
-  checkHealth,
-} from "../workflows/health-check.js";
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import { runHealthCheck, WORKFLOW_MODULES } from '../workflows/health-check';
 
-describe("isAtTarget", () => {
-  it("matches exact strings", () => {
-    expect(isAtTarget("done", "done")).toBe(true);
-  });
-  it("returns false for mismatched strings", () => {
-    expect(isAtTarget("pending", "done")).toBe(false);
-  });
-  it("handles fraction format — at target", () => {
-    expect(isAtTarget("3/5", "3/5")).toBe(true);
-  });
-  it("handles fraction format — above target", () => {
-    expect(isAtTarget("4/5", "3/5")).toBe(true);
-  });
-  it("handles fraction format — below target", () => {
-    expect(isAtTarget("2/5", "3/5")).toBe(false);
-  });
-  it("handles percentage — at target", () => {
-    expect(isAtTarget("80%", "80%")).toBe(true);
-  });
-  it("handles percentage — above target", () => {
-    expect(isAtTarget("90%", "80%")).toBe(true);
-  });
-  it("handles percentage — below target", () => {
-    expect(isAtTarget("70%", "80%")).toBe(false);
-  });
-  it("handles ≥ target format", () => {
-    expect(isAtTarget("15", "≥10")).toBe(true);
-    expect(isAtTarget("5", "≥10")).toBe(false);
-  });
-  it("handles >= target format", () => {
-    expect(isAtTarget("20", ">=15")).toBe(true);
-  });
-  it("handles plain numeric comparison", () => {
-    expect(isAtTarget("100", "50")).toBe(true);
-    expect(isAtTarget("30", "50")).toBe(false);
-  });
-  it("returns false for empty values", () => {
-    expect(isAtTarget("", "done")).toBe(false);
-    expect(isAtTarget("done", "")).toBe(false);
-  });
-});
+describe('health-check', () => {
+  let tmpDir: string;
+  let workflowDir: string;
+  let outputsDir: string;
+  let projectsDir: string;
 
-describe("parseMetrics", () => {
-  it("parses a standard metrics table", () => {
-    const content = `
-| Metric | Current | Target |
-| --- | --- | --- |
-| test-coverage | 85% | 80% |
-| satellite-progress | 2/2 | 2/2 |
-`;
-    const metrics = parseMetrics(content);
-    expect(metrics).toHaveLength(2);
-    expect(metrics[0].name).toBe("test-coverage");
-    expect(metrics[0].current).toBe("85%");
-    expect(metrics[0].target).toBe("80%");
-    expect(metrics[0].atTarget).toBe(true);
-    expect(metrics[1].name).toBe("satellite-progress");
-    expect(metrics[1].atTarget).toBe(true);
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'health-check-'));
+    workflowDir = path.join(tmpDir, 'workflows');
+    outputsDir = path.join(tmpDir, 'outputs');
+    projectsDir = path.join(tmpDir, 'projects');
+    fs.mkdirSync(workflowDir, { recursive: true });
+    fs.mkdirSync(outputsDir, { recursive: true });
+    fs.mkdirSync(projectsDir, { recursive: true });
   });
 
-  it("returns empty array for content with no table", () => {
-    expect(parseMetrics("# Project\nJust some text")).toEqual([]);
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("skips header and separator rows", () => {
-    const content = `| Metric | Current | Target |\n| --- | --- | --- |\n| speed | 10 | 5 |`;
-    const metrics = parseMetrics(content);
-    expect(metrics).toHaveLength(1);
-    expect(metrics[0].name).toBe("speed");
+  function createWorkflowModules(modules: string[]) {
+    for (const mod of modules) {
+      fs.writeFileSync(path.join(workflowDir, `${mod}.ts`), `// ${mod}`);
+    }
+  }
+
+  function createTestFiles(count: number) {
+    const testsDir = path.join(tmpDir, 'tests');
+    fs.mkdirSync(testsDir, { recursive: true });
+    for (let i = 0; i < count; i++) {
+      fs.writeFileSync(path.join(testsDir, `test-${i}.test.ts`), '// test');
+    }
+  }
+
+  function createOutputFiles(count: number) {
+    for (let i = 0; i < count; i++) {
+      fs.writeFileSync(path.join(outputsDir, `output-${i}.md`), '# output');
+    }
+  }
+
+  function createSatelliteProject(name: string, hasStatus: boolean) {
+    const dir = path.join(projectsDir, name);
+    fs.mkdirSync(dir, { recursive: true });
+    const content = hasStatus ? '## Status\nactive' : '# Project\nno status here';
+    fs.writeFileSync(path.join(dir, 'project.md'), content);
+  }
+
+  it('returns passed=true when all checks pass', async () => {
+    createWorkflowModules(WORKFLOW_MODULES);
+    createTestFiles(65);
+    createOutputFiles(25);
+    createSatelliteProject('proj1', true);
+
+    const result = await runHealthCheck({
+      workflowDir,
+      outputsDir,
+      projectsDir,
+      minTestFiles: 60,
+      minOutputFiles: 20,
+    });
+
+    expect(result.passed).toBe(true);
+    expect(result.checks).toHaveLength(4);
+    expect(result.checks.every(c => c.passed)).toBe(true);
   });
 
-  it("handles metrics not at target", () => {
-    const content = `| Metric | Current | Target |\n| --- | --- | --- |\n| coverage | 40% | 80% |`;
-    const metrics = parseMetrics(content);
-    expect(metrics[0].atTarget).toBe(false);
-  });
-});
+  it('returns passed=false when workflow modules are missing', async () => {
+    createWorkflowModules(['incremental-checkpoint', 'provider-retry']);
+    createTestFiles(65);
+    createOutputFiles(25);
+    createSatelliteProject('proj1', true);
 
-describe("extractLastActivity", () => {
-  it("finds ISO timestamp", () => {
-    const journal = `## Iteration 5\n2025-01-15T10:30:00Z\nDid some work`;
-    expect(extractLastActivity(journal)).toBe("2025-01-15T10:30:00Z");
-  });
-
-  it("finds the latest of multiple timestamps", () => {
-    const journal = `2025-01-10T08:00:00Z\n2025-01-15T10:30:00Z\n2025-01-12T05:00:00Z`;
-    expect(extractLastActivity(journal)).toBe("2025-01-15T10:30:00Z");
+    const result = await runHealthCheck({ workflowDir, outputsDir, projectsDir });
+    expect(result.passed).toBe(false);
+    const moduleCheck = result.checks.find(c => c.name === 'workflow-modules-importable');
+    expect(moduleCheck?.passed).toBe(false);
+    expect(moduleCheck?.details).toContain('Missing');
   });
 
-  it("returns null for empty content", () => {
-    expect(extractLastActivity("")).toBeNull();
-    expect(extractLastActivity("   ")).toBeNull();
+  it('returns passed=false when test file count is below minimum', async () => {
+    createWorkflowModules(WORKFLOW_MODULES);
+    createTestFiles(10);
+    createOutputFiles(25);
+    createSatelliteProject('proj1', true);
+
+    const result = await runHealthCheck({ workflowDir, outputsDir, projectsDir });
+    expect(result.passed).toBe(false);
+    const testCheck = result.checks.find(c => c.name === 'test-file-count');
+    expect(testCheck?.passed).toBe(false);
+    expect(testCheck?.details).toContain('10 test files');
   });
 
-  it("returns null for content with no dates", () => {
-    expect(extractLastActivity("just some text without dates")).toBeNull();
+  it('returns passed=false when output file count is below minimum', async () => {
+    createWorkflowModules(WORKFLOW_MODULES);
+    createTestFiles(65);
+    createOutputFiles(5);
+    createSatelliteProject('proj1', true);
+
+    const result = await runHealthCheck({ workflowDir, outputsDir, projectsDir });
+    expect(result.passed).toBe(false);
+    const outputCheck = result.checks.find(c => c.name === 'output-file-count');
+    expect(outputCheck?.passed).toBe(false);
   });
 
-  it("finds date-only format", () => {
-    const journal = `## Entry\n2025-06-20\nSomething happened`;
-    expect(extractLastActivity(journal)).toBe("2025-06-20");
-  });
-});
+  it('returns passed=false when satellite projects lack status', async () => {
+    createWorkflowModules(WORKFLOW_MODULES);
+    createTestFiles(65);
+    createOutputFiles(25);
+    createSatelliteProject('proj1', false);
 
-describe("isStalled", () => {
-  const now = new Date("2025-01-20T12:00:00Z");
-
-  it("returns true when no activity", () => {
-    expect(isStalled(null, now)).toBe(true);
-  });
-
-  it("returns true when activity is older than threshold", () => {
-    expect(isStalled("2025-01-18T12:00:00Z", now)).toBe(true); // 48h ago
+    const result = await runHealthCheck({ workflowDir, outputsDir, projectsDir });
+    expect(result.passed).toBe(false);
+    const satCheck = result.checks.find(c => c.name === 'satellite-projects-status');
+    expect(satCheck?.passed).toBe(false);
   });
 
-  it("returns false when activity is within threshold", () => {
-    expect(isStalled("2025-01-20T06:00:00Z", now)).toBe(false); // 6h ago
+  it('handles missing workflow directory gracefully', async () => {
+    const result = await runHealthCheck({
+      workflowDir: '/nonexistent/path',
+      outputsDir,
+      projectsDir,
+    });
+    expect(result.passed).toBe(false);
   });
 
-  it("returns true for invalid date string", () => {
-    expect(isStalled("not-a-date", now)).toBe(true);
+  it('handles missing outputs directory gracefully', async () => {
+    createWorkflowModules(WORKFLOW_MODULES);
+    createTestFiles(65);
+    createSatelliteProject('proj1', true);
+
+    const result = await runHealthCheck({
+      workflowDir,
+      outputsDir: '/nonexistent/outputs',
+      projectsDir,
+    });
+    expect(result.passed).toBe(false);
   });
 
-  it("respects custom threshold", () => {
-    const oneHour = 60 * 60 * 1000;
-    expect(isStalled("2025-01-20T10:00:00Z", now, oneHour)).toBe(true); // 2h ago, 1h threshold
-    expect(isStalled("2025-01-20T11:30:00Z", now, oneHour)).toBe(false); // 30min ago
-  });
-});
+  it('handles missing projects directory gracefully', async () => {
+    createWorkflowModules(WORKFLOW_MODULES);
+    createTestFiles(65);
+    createOutputFiles(25);
 
-describe("analyzeProject", () => {
-  const now = new Date("2025-01-20T12:00:00Z");
-
-  it("returns 'missing' for null project content", () => {
-    const result = analyzeProject("test-proj", null, null, now);
-    expect(result.status).toBe("missing");
-    expect(result.issues).toContain("project.md not found");
+    const result = await runHealthCheck({
+      workflowDir,
+      outputsDir,
+      projectsDir: '/nonexistent/projects',
+    });
+    // No projects = 0/0, which fails the projectCount > 0 check
+    expect(result.passed).toBe(false);
   });
 
-  it("returns 'malformed' for empty project content", () => {
-    const result = analyzeProject("test-proj", "", null, now);
-    expect(result.status).toBe("malformed");
-    expect(result.issues).toContain("project.md is empty");
+  it('includes timestamp in result', async () => {
+    const result = await runHealthCheck({ workflowDir, outputsDir, projectsDir });
+    expect(result.timestamp).toBeDefined();
+    expect(new Date(result.timestamp).getTime()).toBeGreaterThan(0);
   });
 
-  it("returns 'malformed' for content with no metrics", () => {
-    const result = analyzeProject("test-proj", "# Project\nNo metrics here", "2025-01-20T11:00:00Z\n", now);
-    expect(result.status).toBe("malformed");
+  it('counts only .test. files in test directory', async () => {
+    const testsDir = path.join(tmpDir, 'tests');
+    fs.mkdirSync(testsDir, { recursive: true });
+    fs.writeFileSync(path.join(testsDir, 'helper.ts'), '// not a test');
+    fs.writeFileSync(path.join(testsDir, 'utils.ts'), '// not a test');
+    fs.writeFileSync(path.join(testsDir, 'foo.test.ts'), '// test');
+
+    createWorkflowModules(WORKFLOW_MODULES);
+    createOutputFiles(25);
+    createSatelliteProject('proj1', true);
+
+    const result = await runHealthCheck({ workflowDir, outputsDir, projectsDir, minTestFiles: 1 });
+    const testCheck = result.checks.find(c => c.name === 'test-file-count');
+    expect(testCheck?.details).toContain('1 test files');
+    expect(testCheck?.passed).toBe(true);
   });
 
-  it("returns 'healthy' when all metrics at target and recent activity", () => {
-    const project = `| Metric | Current | Target |\n| --- | --- | --- |\n| score | 90% | 80% |`;
-    const journal = `2025-01-20T11:00:00Z did stuff`;
-    const result = analyzeProject("good-proj", project, journal, now);
-    expect(result.status).toBe("healthy");
-    expect(result.metrics).toHaveLength(1);
-    expect(result.issues).toHaveLength(0);
+  it('ignores hidden files in outputs', async () => {
+    fs.writeFileSync(path.join(outputsDir, '.hidden'), 'hidden');
+    fs.writeFileSync(path.join(outputsDir, 'visible.md'), 'visible');
+
+    createWorkflowModules(WORKFLOW_MODULES);
+    createTestFiles(65);
+    createSatelliteProject('proj1', true);
+
+    const result = await runHealthCheck({ workflowDir, outputsDir, projectsDir, minOutputFiles: 1 });
+    const outputCheck = result.checks.find(c => c.name === 'output-file-count');
+    expect(outputCheck?.details).toContain('1 output files');
   });
 
-  it("returns 'stalled' when metrics not at target and no recent activity", () => {
-    const project = `| Metric | Current | Target |\n| --- | --- | --- |\n| score | 30% | 80% |`;
-    const journal = `2025-01-15T11:00:00Z old stuff`;
-    const result = analyzeProject("stalled-proj", project, journal, now);
-    expect(result.status).toBe("stalled");
-    expect(result.issues.length).toBeGreaterThan(0);
+  it('detects status via different formats', async () => {
+    createWorkflowModules(WORKFLOW_MODULES);
+    createTestFiles(65);
+    createOutputFiles(25);
+
+    const dir1 = path.join(projectsDir, 'p1');
+    fs.mkdirSync(dir1);
+    fs.writeFileSync(path.join(dir1, 'project.md'), 'status: active');
+
+    const dir2 = path.join(projectsDir, 'p2');
+    fs.mkdirSync(dir2);
+    fs.writeFileSync(path.join(dir2, 'project.md'), 'Status: complete');
+
+    const result = await runHealthCheck({ workflowDir, outputsDir, projectsDir });
+    const satCheck = result.checks.find(c => c.name === 'satellite-projects-status');
+    expect(satCheck?.passed).toBe(true);
+    expect(satCheck?.details).toContain('2/2');
   });
 
-  it("returns 'healthy' when metrics not at target but recently active", () => {
-    const project = `| Metric | Current | Target |\n| --- | --- | --- |\n| score | 30% | 80% |`;
-    const journal = `2025-01-20T11:00:00Z working on it`;
-    const result = analyzeProject("active-proj", project, journal, now);
-    expect(result.status).toBe("healthy");
-  });
-});
+  it('custom minimum thresholds work', async () => {
+    createWorkflowModules(WORKFLOW_MODULES);
+    createTestFiles(5);
+    createOutputFiles(3);
+    createSatelliteProject('proj1', true);
 
-describe("checkHealth", () => {
-  const now = new Date("2025-01-20T12:00:00Z");
-
-  it("returns a complete health report", () => {
-    const projects = [
-      { name: "proj-a", projectContent: `| Metric | Current | Target |\n| --- | --- | --- |\n| x | 10 | 5 |`, journalContent: `2025-01-20T11:00:00Z` },
-      { name: "proj-b", projectContent: null, journalContent: null },
-    ];
-    const report = checkHealth(projects, now);
-    expect(report.projects).toHaveLength(2);
-    expect(report.summary.total).toBe(2);
-    expect(report.summary.healthy).toBe(1);
-    expect(report.summary.missing).toBe(1);
-    expect(report.timestamp).toBe(now.toISOString());
+    const result = await runHealthCheck({
+      workflowDir, outputsDir, projectsDir,
+      minTestFiles: 3,
+      minOutputFiles: 2,
+    });
+    const testCheck = result.checks.find(c => c.name === 'test-file-count');
+    const outputCheck = result.checks.find(c => c.name === 'output-file-count');
+    expect(testCheck?.passed).toBe(true);
+    expect(outputCheck?.passed).toBe(true);
   });
 
-  it("handles empty project list", () => {
-    const report = checkHealth([], now);
-    expect(report.projects).toHaveLength(0);
-    expect(report.summary.total).toBe(0);
+  it('reports all 10 workflow modules in WORKFLOW_MODULES constant', () => {
+    expect(WORKFLOW_MODULES).toHaveLength(10);
+    expect(WORKFLOW_MODULES).toContain('incremental-checkpoint');
+    expect(WORKFLOW_MODULES).toContain('iteration-budget');
   });
 
-  it("correctly tallies all status types", () => {
-    const projects = [
-      { name: "healthy", projectContent: `| Metric | Current | Target |\n| --- | --- | --- |\n| x | 10 | 5 |`, journalContent: `2025-01-20T11:00:00Z` },
-      { name: "missing", projectContent: null, journalContent: null },
-      { name: "empty", projectContent: "", journalContent: null },
-      { name: "stalled", projectContent: `| Metric | Current | Target |\n| --- | --- | --- |\n| x | 1 | 5 |`, journalContent: `2025-01-10T11:00:00Z` },
-    ];
-    const report = checkHealth(projects, now);
-    expect(report.summary.healthy).toBe(1);
-    expect(report.summary.missing).toBe(1);
-    expect(report.summary.malformed).toBe(1);
-    expect(report.summary.stalled).toBe(1);
+  it('each check has name, passed, and details', async () => {
+    const result = await runHealthCheck({ workflowDir, outputsDir, projectsDir });
+    for (const check of result.checks) {
+      expect(check).toHaveProperty('name');
+      expect(check).toHaveProperty('passed');
+      expect(check).toHaveProperty('details');
+      expect(typeof check.name).toBe('string');
+      expect(typeof check.passed).toBe('boolean');
+      expect(typeof check.details).toBe('string');
+    }
   });
 
-  it("passes custom stall threshold through", () => {
-    const projects = [
-      { name: "recent", projectContent: `| Metric | Current | Target |\n| --- | --- | --- |\n| x | 1 | 5 |`, journalContent: `2025-01-20T11:50:00Z` },
-    ];
-    // 5 minute threshold — 10 min ago should be stalled
-    const report = checkHealth(projects, now, 5 * 60 * 1000);
-    expect(report.projects[0].status).toBe("stalled");
+  it('returns exactly 4 checks', async () => {
+    const result = await runHealthCheck({ workflowDir, outputsDir, projectsDir });
+    expect(result.checks).toHaveLength(4);
   });
 });
