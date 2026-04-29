@@ -272,6 +272,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   // ── Outbound: accumulate assistant text, send on turn end ────────
 
   let pendingText = "";
+  let sentAnyText = false; // track if we ever responded to the user
   const pendingChatId: string | null = allowedChatIds[0] || null;
 
   // Track the chat session tree — only forward events from the active
@@ -332,10 +333,15 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       }
     }
 
-    // When the root chat session ends with an error, notify user
-    if (event.type === "session_end" && "sessionId" in event && event.sessionId === chatSid && event.error && pendingChatId) {
-      const errMsg = event.error.length > 200 ? event.error.slice(0, 200) + "…" : event.error;
-      sendToUser(`❌ Session ended (${event.agent}): ${errMsg}`, { eventType: "error", agent: event.agent, sessionId: event.sessionId, summary: errMsg });
+    // When the root chat session ends, check if we ever responded
+    if (event.type === "session_end" && "sessionId" in event && event.sessionId === chatSid && pendingChatId) {
+      if (event.error) {
+        const errMsg = String(event.error).length > 200 ? String(event.error).slice(0, 200) + "…" : String(event.error);
+        sendToUser(`❌ Couldn't process your message: ${errMsg}`, { eventType: "error", agent: event.agent, sessionId: event.sessionId, summary: errMsg });
+      } else if (!sentAnyText) {
+        sendToUser(`❌ Couldn't generate a response. Try again or rephrase.`, { eventType: "error", agent: event.agent, sessionId: event.sessionId });
+      }
+      sentAnyText = false; // reset for next session
     }
 
     // Notifications — only forward those from the interface agent (May).
@@ -354,6 +360,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     if (!text || !pendingChatId) return;
 
+    sentAnyText = true;
     sendToUser(text);
   }
 
