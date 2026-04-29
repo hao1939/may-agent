@@ -133,9 +133,7 @@ CREATE TABLE IF NOT EXISTS evaluations (
 
 CREATE INDEX IF NOT EXISTS idx_cc_agent ON convention_checks(agent, convention, checked_at);
 CREATE INDEX IF NOT EXISTS idx_cc_conv  ON convention_checks(convention, checked_at);
-CREATE INDEX IF NOT EXISTS idx_eval_agent_ts  ON evaluations(agent, createdAt);
 CREATE INDEX IF NOT EXISTS idx_eval_verdict   ON evaluations(verdict);
-CREATE INDEX IF NOT EXISTS idx_eval_created   ON evaluations(createdAt);
 
 -- Session Digests — structured lifecycle understanding per session
 CREATE TABLE IF NOT EXISTS session_digests (
@@ -360,6 +358,8 @@ export function getDb(persistDir: string): SqliteDb {
 
   // Evaluations table migrations
   try { db.exec("ALTER TABLE evaluations ADD COLUMN createdAt INTEGER NOT NULL DEFAULT 0"); } catch { /* exists */ }
+  try { db.exec("CREATE INDEX IF NOT EXISTS idx_eval_agent_ts ON evaluations(agent, createdAt)"); } catch { /* exists */ }
+  try { db.exec("CREATE INDEX IF NOT EXISTS idx_eval_created ON evaluations(createdAt)"); } catch { /* exists */ }
   try { db.exec("ALTER TABLE evaluations ADD COLUMN evaluatedByHeuristic INTEGER NOT NULL DEFAULT 0"); } catch { /* exists */ }
   try { db.exec("ALTER TABLE evaluations ADD COLUMN skippedByJs INTEGER NOT NULL DEFAULT 0"); } catch { /* exists */ }
   // Event columns for TTL and urgency (event-native: no mutable status columns)
