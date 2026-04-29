@@ -2,7 +2,7 @@
  * Tests for workflows/heartbeat-data.ts — imports actual module for coverage.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
 import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
@@ -416,15 +416,22 @@ describe("genericHeartbeat", () => {
   });
 
   it("skips when circuit breaker is open", async () => {
-    // Create circuit breaker state that triggers open
-    const cbDir = join(TEST_DIR, "shared", "circuit-breaker");
-    mkdirSync(cbDir, { recursive: true });
-    // Write a CB state file with enough consecutive failures
-    writeFileSync(join(cbDir, "bob.json"), JSON.stringify({
-      consecutiveErrors: 10,
-      lastError: Date.now(),
-      lastErrorMessage: "test error",
+    // Create circuit breaker state file at the correct path
+    const sharedDir = join(TEST_DIR, "shared");
+    mkdirSync(sharedDir, { recursive: true });
+    writeFileSync(join(sharedDir, "circuit-breaker-state.json"), JSON.stringify({
+      agents: {
+        bob: {
+          consecutiveErrors: 10,
+          lastError: Date.now(),
+          lastErrorMessage: "test error",
+          trippedAt: Date.now(),
+        },
+      },
     }), "utf-8");
+    // Also create the SIGNAL file (CB checks for it)
+    mkdirSync(join(TEST_DIR, "bob"), { recursive: true });
+    writeFileSync(join(TEST_DIR, "bob", "SIGNAL-circuit-breaker.md"), "tripped", "utf-8");
 
     const ctx = makeCtx({ agentsRoot: TEST_DIR });
     const result = await genericHeartbeat(ctx, "bob");
