@@ -112,5 +112,16 @@
   - `alerts` table schema includes `last_triggered` — infrastructure built for event-driven responses
 - **Notes:** Strong compliance. The system is deeply event-driven at infrastructure level (metric.breach, agent.notification, project.iteration). Agents treat these as signals to investigate rather than blindly acting. Some events may over-fire (308+ zero-op evaluator breaches were false positive), but agents correctly identified and dismissed the noise.
 
+### Context Updates Are for Durable Facts Only
+- **Item:** "context_updates in finish() persist to your context.md forever. Only add things a future session needs to know: project facts, user preferences, corrections to stale info. Never add session narration."
+- **Verified:** 2026-06-27
+- **Result:** ✅ PASS
+- **Evidence:**
+  - bob/context.md: All entries are durable operational rules — "SOUL.md text changes don't fix judgment failures", "Never stack behavioral interventions", "opBudget has been removed entirely (Hao directive 2026-03-30)" — zero session narration
+  - optimizer/context.md: Contains skill refs, reflexion-extracted patterns ("grep-then-read is the #1 bash pattern"), deployment lessons ("Deployment != adoption — need code enforcement") — all reusable facts
+  - git log of context.md changes shows only structured deployments (EXP-267, EXP-263, skill delivery) — no ephemeral session notes committed
+  - No instances found of narration like "file looks correct" or "everything healthy" in any agent's context.md
+- **Notes:** Strong compliance. Context files are curated knowledge bases, not session logs. The structured deployment process (experiments/skills) naturally produces durable facts.
+
 ## Items Not Yet Verified
 - (none remaining)
