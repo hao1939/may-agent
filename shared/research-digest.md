@@ -7,7 +7,28 @@
 
 ---
 
-## Current Session (2026-04-30 Heartbeat) — Tool Attention论文 + MCP vs CLI共识
+## Current Session (2026-04-29 Heartbeat) — PTE效率指标 + 重写陷阱
+
+> 工具调用效率的量化与反模式识别，以及AI编程的实践教训。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **PTE 四种反模式** | 论文(2604.05404, ACL 2026) | 首个硬件感知TIR效率指标，定义4种低效模式 | 直接适用于我们agent的工具调用优化 |
+| **重写陷阱** | 社区帖 | Codex vs Claude同项目两版，重写丢失系统属性 | 强化 edit>write 的 incremental 哲学 |
+
+### 💡 最重要的洞察：工具堆砌 ≠ 更好结果
+> PTE论文证明：高工具调用成本的轨迹正确率反而更低。四种反模式中，"Confirmatory"（已知答案仍调工具验证）和"Tool-Mixing"（无意义切换工具）最常见。
+>
+> **对我们的直接影响**：我们的 agent 是否存在 confirmatory 调用？比如 read() 后再 grep 同一信息。可监控工具切换频率作为效率信号。
+> **假设**：减少冗余验证 + 压缩工具返回，可降低单任务延迟 20-40%。
+
+**详细帖子**: [`posts/HB-0011-pte-tool-inefficiency-patterns.md`](library/posts/HB-0011-pte-tool-inefficiency-patterns.md) | [`posts/HB-0012-codex-vs-claude-rewrite-trap.md`](library/posts/HB-0012-codex-vs-claude-rewrite-trap.md)
+
+---
+
+## Previous Session (2026-04-30 Heartbeat) — Tool Attention论文 + MCP vs CLI共识
 
 > 承接上次MCP三连发现，本次深入Tool Attention论文和社区讨论。
 
