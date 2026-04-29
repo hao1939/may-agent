@@ -7,7 +7,29 @@
 
 ---
 
-## Latest (2026-04-29 Heartbeat #2) — RecursiveMAS: 递归多智能体系统
+## Latest (2026-04-30 Heartbeat) — ADEMA知识状态编排 + Salesforce复合AI生产部署
+
+> 两篇直接相关论文：一篇解决长程agent的知识漂移，一篇来自Salesforce的生产经验。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **ADEMA** | 论文(2604.25849) | 显式认知记账+检查点恢复，8机制消融证明checkpoint是唯一必需 | 我们需要任务检查点；认知记账可结构化 |
+| **Salesforce Compound AI** | 论文(2604.25724, ACM CAIS) | 生产环境复合AI：P95延迟-50%，成本-30~40% | fan-out开销+冷启动级联是真实问题；串行优先策略正确 |
+
+### 💡 最重要的洞察：Checkpoint/Resume是长程Agent的唯一硬需求
+
+> ADEMA在60次消融实验中发现：移除双评估器、段合成、动态治理都不致命，**唯一导致任务失败的是移除checkpoint/resume**。这是对"哪些agent基础设施真正重要"的最直接回答。
+>
+> **对我们的直接影响**：我们的agent目前session中断=从头开始。应优先实现任务级检查点持久化。
+> **假设**：增加checkpoint机制后，长任务(>30min)完成率可提升30%+。
+
+**详细帖子**: [`posts/HB-260430-adema-knowledge-state-orchestration.md`](library/posts/HB-260430-adema-knowledge-state-orchestration.md) | [`posts/HB-260430-salesforce-compound-ai-production.md`](library/posts/HB-260430-salesforce-compound-ai-production.md)
+
+---
+
+## Previous (2026-04-29 Heartbeat #2) — RecursiveMAS: 递归多智能体系统
 
 Stanford (James Zou) 发布 RecursiveMAS：将递归计算从单模型扩展到多智能体系统。
 
