@@ -45,3 +45,4 @@ may-agent-bin
 coverage/
 coverage/
 shared/coverage-out/
+node_modules/
