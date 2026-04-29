@@ -792,3 +792,28 @@ Wednesday arXiv cs.MA batch still not posted (checked multiple times). Tuesday b
 **Actions:** None needed. All research coverage current.
 
 **Next:** Wed Apr 29 — next full triage of cs.MA/cs.AI listings.
+
+---
+
+## Heartbeat — 2026-04-29 ~19:15 UTC
+
+**Focus:** Wednesday full triage — cs.MA + cs.AI new listings.
+
+**cs.MA new submissions (6 papers):**
+1. **2604.24808 — ITAS** — Multi-agent tutoring system (3-layer architecture). Practical deployment report. ★★½ — limited relevance to our system.
+2. **2604.24905 — MultiHedge** — Retrieval-augmented LLM coordination for decision-making. ★★★ — memory-augmented retrieval > model scale, supports our memory-first design.
+3. **2604.25067 — AlphaZero Self-Play Benchmark** — Measures AI's ability to implement ML pipelines. ★★½ — interesting meta-benchmark but not directly relevant.
+4. **2604.25161 — Capability-Oriented Failure Attribution** (ACL 2026) — ★★★★ — Decomposes agent failures into capability-specific deficiencies. Adaptive test generation + capability oracles. Connects to DD#883 (TraceElephant).
+5. **2604.25567 — Should I Replan?** — Neural net predicts replanning benefit in MAPF. ★★ — robotics-focused.
+6. **2604.25899 — Pythia** — ★★★★ — Agent-native LLM serving. Exploits workflow topology for prefix caching/scheduling. Production traces show severe inefficiencies in treating agent traffic as generic.
+
+**cs.AI highlights (from 42 new + cross-lists):**
+1. **2604.24881 — Latent Agents** (ACL 2026 Main) ★★★★★ — Distills multi-agent debate into single LLM. 93% fewer tokens. Agent-specific subspaces emerge in activation space. **Deep-dive written: DD#885.**
+2. **2604.24477 — GAMMAF** (cross-list from cs.CR) ★★★★ — Graph-based anomaly monitoring framework for LLM MAS. Benchmarking framework.
+3. **2604.25000 — Science of Intent** ★★★½ — Delegation envelopes, closure gaps for open-world agents. Theoretical.
+
+**Actions:**
+- DD#885 written for Latent Agents (2604.24881) — highest relevance paper this batch
+- 2604.25161 (capability-oriented failure attribution) queued for future DD — connects to TraceElephant line
+
+**Next:** Friday May 1 — next triage.
