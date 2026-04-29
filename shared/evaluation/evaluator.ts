@@ -983,6 +983,65 @@ export async function evaluateStandaloneSession(
   }
   if (messages.length === 0) return null;
 
+  // ── Fast-path: trivial error (LLM-to-JS optimization) ──────────────
+  // Standalone session that errored with very few messages — no meaningful
+  // work was done, skip the LLM evaluator call.
+  const STANDALONE_TRIVIAL_THRESHOLD = 4;
+  if (
+    (status === "error" || status === "failed") &&
+    messages.length <= STANDALONE_TRIVIAL_THRESHOLD
+  ) {
+    const usage = extractUsage(messages);
+    const chains = extractFailureChains(messages);
+    const createdAt = extractTimestamp(sessionId);
+    ctx.upsertEvaluation({
+      sessionId,
+      agent,
+      quality: 0,
+      efficiency: 0,
+      productiveCalls: 0,
+      wastedCalls: usage.turns,
+      verdict: "needs_improvement",
+      issues: [`session_error: standalone session errored with only ${messages.length} messages — trivial failure`],
+      overall: { quality: 0, efficiency: 0, verdict: "needs_improvement", result_delivered: false },
+      usage: usage as unknown as Record<string, unknown>,
+      failureChains: chains,
+      evaluatedByHeuristic: true,
+      skippedByJs: true,
+      createdAt,
+    });
+    return { quality: 0, efficiency: 0, verdict: "needs_improvement", issues: [`session_error: trivial failure (${messages.length} messages)`] };
+  }
+
+  // ── Fast-path: shallow session (LLM-to-JS optimization) ─────────────
+  // Standalone session that completed but did almost nothing (≤3 messages).
+  const STANDALONE_SHALLOW_THRESHOLD = 3;
+  if (
+    (status === "done" || status === "interrupted") &&
+    messages.length <= STANDALONE_SHALLOW_THRESHOLD
+  ) {
+    const usage = extractUsage(messages);
+    const chains = extractFailureChains(messages);
+    const createdAt = extractTimestamp(sessionId);
+    ctx.upsertEvaluation({
+      sessionId,
+      agent,
+      quality: 0.2,
+      efficiency: 0.2,
+      productiveCalls: 0,
+      wastedCalls: usage.turns,
+      verdict: "needs_improvement",
+      issues: [`shallow_session: standalone session completed with only ${messages.length} messages — no meaningful work`],
+      overall: { quality: 0.2, efficiency: 0.2, verdict: "needs_improvement", result_delivered: false },
+      usage: usage as unknown as Record<string, unknown>,
+      failureChains: chains,
+      evaluatedByHeuristic: true,
+      skippedByJs: true,
+      createdAt,
+    });
+    return { quality: 0.2, efficiency: 0.2, verdict: "needs_improvement", issues: [`shallow_session: standalone (${messages.length} messages)`] };
+  }
+
   // Build transcript (capped at 10KB like evaluateTask)
   let transcript = formatTranscript(messages);
   const MAX_TRANSCRIPT_CHARS = 10_000;
