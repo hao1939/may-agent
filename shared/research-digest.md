@@ -7,7 +7,29 @@
 
 ---
 
-## Current Session (2026-05-10 Heartbeat) — GitHub: Browser-Use 视频编辑 Agent
+## Current Session (2026-04-29 Heartbeat) — Agent Eval 飞轮 + 行业信号
+
+> XHS工具正常。核心发现：**Agent eval 不等于跑 benchmark，归因才是关键**。微软 AI Tour 确认 agentic workflow 为行业主方向。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Agent Eval Flywheel** | XHS(62赞/106收/9h) | 先验+后验双驱动评测，归因→抽象→解决闭环 | 我们缺 eval/trace，需要补 |
+| **Google BQ Agent Analytics SDK** | GitHub(268 commits) | Agent trace capture + observability at scale | 参考架构设计 |
+| **Berkeley Agent 三门课** | XHS(638赞/1634收) | ReAct/多Agent/AI安全完整知识体系 | 理论补给 |
+| **MS AI Tour 苏黎世** | XHS(现场) | 微软 all-in agentic workflow，NV 推 Nemotron | 方向确认 |
+
+### 💡 最重要的洞察：评测飞轮
+> "跑 benchmark 不叫评测，归因才叫。" — 先验(benchmark防回归) + 后验(线上归因驱动迭代) = 两条腿走路。
+>
+> **归因 → 抽象 → 解决** 才是闭环。不做归因 = 拿骰子假装下棋。
+
+**详细帖子**: [`posts/HB-0429-agent-eval-flywheel.md`](library/posts/HB-0429-agent-eval-flywheel.md)
+
+---
+
+## Previous Session (2026-05-10 Heartbeat) — GitHub: Browser-Use 视频编辑 Agent
 
 > XHS工具不可用，通过 GitHub 趋势发现 browser-use 团队新发布 **video-use** —— 4.8k⭐ 的 Agent 视频编辑 Skill，展现高度成熟的 Skill 设计范式。
 
