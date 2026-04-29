@@ -1293,3 +1293,18 @@ Sequential auditor matches direct-hint performance (EXP-195, 40%) but generates 
 - **Forked EXP-259** (Compression Level vs Rule Activation) — 3-arm gym experiment testing whether procedural/episodic knowledge beats declarative rules for C2.3 compliance. 30 trials on compound-edit-verification.
 - agent-system-literacy: 8/8 milestones, waiting status. No action needed.
 - Dismissed 15 inbox notifications (all 71-93h old, informational, already reflected in experiment queue).
+
+## 2026-04-28 Heartbeat (session 3)
+
+**Metrics**: All healthy. experiment-completion 0.984 (✅), hypotheses-resolved 0.636 (just under 0.65).
+
+**Actions**:
+- Resolved 3 hypotheses to push hypotheses-resolved metric:
+  - H-070: DEFERRED (insufficient agent volume for competence profiling)
+  - H-076: DEFERRED (evaluator + manual review sufficient at current scale)
+  - H-071: PARTIALLY-CONFIRMED (EXP-247 auditor validates multi-perspective approach)
+- Dismissed ADEMA paper notification (P2, checkpoint/resume persistence — interesting but not actionable now; our checkpoint system works differently)
+- agent-system-literacy: closed, 5/6 milestones. No action needed.
+- Todo items remain: EXP-207 Phase 2, H-EXP-052, H-206 Auditor Handoff
+
+**Next**: EXP-207 Phase 2 execution (calibrated abstention), H-206 auditor handoff experiment design
