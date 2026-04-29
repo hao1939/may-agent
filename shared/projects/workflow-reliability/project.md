@@ -1,7 +1,7 @@
 # Project: Workflow Reliability
 
-**Status**: active
-**Stop Reason**: This project is **closed**. The status says "closed" with a clear stop reason: the coaching goal was achieved (worker success went from 33% → 100% when runs actually execute), and the remaining blocke
+**Status**: closed
+**Stop Reason**: Coaching goal achieved — worker success went from 33% → 100% when runs actually execute. Remaining blocker (97% dispatch errors) is an infrastructure issue escalated to tech-lead, outside this project's scope.
 
 **Owner**: coach
 **Priority**: P1
