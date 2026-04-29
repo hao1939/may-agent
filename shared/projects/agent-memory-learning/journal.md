@@ -36,3 +36,8 @@ Milestones completed:
 
 ### Iteration 5 — 2026-04-29T08:01:47.506Z
 **Worker**: Now I have the full picture. Let me write the report:
+**Orchestrator**: PIVOT
+
+The worker has spent 5 iterations producing reports/closure docs but NOT actually wiring the poller into cron.json. The poller handler file exists but is dead code. Time to take a different approach.
+
+(a) Next iteration should **wire the poller into cron.json AND manually test it**. Two concr
