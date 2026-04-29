@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777427036769_117
+- **Session:** s_1777428837406_124
 - **Status:** done
-- **When:** 2026-04-29T01:44:39.541Z
-- **Duration:** 42s
+- **When:** 2026-04-29T02:15:16.039Z
+- **Duration:** 1m18s
 
 ## What Happened
-The 3 stale active projects are orphan DB records with owner "unknown", no project directories, and 0 iterations. These are phantom entries — likely from an earlier project creation that was never completed. Fixing requires deleting rows from the DB, which is a destructive action.
+Stale metric resolved. The 3 "stale active" projects were orphaned DB records with no owner, no iterations, and no backing files — cancelled them.
 
-**Escalating to human:**
+System is otherwise healthy: no errors in the last hour, all agents active, no blocked projects.
