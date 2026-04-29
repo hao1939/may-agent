@@ -1,14 +1,13 @@
 # Project Completion Notice
 
-**Status:** COMPLETED
+**Status:** COMPLETED — No further work required.
 
-All 4 metrics exceed targets. All 18 plan items done. No remaining work.
-
-| Metric | Actual | Target | Status |
+## Final Metrics (all exceed targets)
+| Metric | Value | Target | Status |
 |---|---|---|---|
 | skill.verified-rate | 0.90 | 0.80 | ✅ |
 | skill.delivery-rate | 0.81 | 0.60 | ✅ |
 | workflow.pass-rate | 1.00 | 0.95 | ✅ |
 | skill.usage-rate | 1.00 | 0.50 | ✅ |
 
-No further iterations needed.
+All 18 plan items complete. All 16 artifacts on disk.
