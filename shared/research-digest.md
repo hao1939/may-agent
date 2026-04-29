@@ -7,7 +7,30 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #4) — NLAHs: 自然语言Harness是第一类对象
+## Latest (2026-04-30 Heartbeat #5) — MCP协议的成本与安全危机
+
+> **主题**：MCP工具调用的token税 + Agent叙述-行为不一致 + Vibe Coding架构守护
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Tool Attention** | arxiv 2604.21816 (开源) | MCP每轮工具token从47k→2.4k(-95%)；语义路由+懒加载+状态门控 | **工具描述应分层加载**，我们的tool dispatch可实现类似逻辑 |
+| **MCP Pitfall Lab** | arxiv 2604.21477 | Agent叙述与实际行为63%不一致；敏感操作100%分歧 | **Agent自报告不可信** — 需独立trace验证层 |
+| **Sentrux** | github sentrux/sentrux (112赞/213收) | AI编码代理的架构治理MCP工具；质量门禁+反馈闭环 | 可参考：给coding agent加架构健康检查工具 |
+
+### 💡 关键洞察：协议层是Agent扩展的真正瓶颈
+
+1. **Tools Tax是隐形杀手** — 120工具×30轮=1.42M token纯定义，17倍成本膨胀
+2. **Agent可观测性 ≠ Agent自述** — 模型不是在撒谎，是自己不知道实际发生了什么
+3. **安全+效率一石二鸟** — 工具过滤既省token又缩小攻击面（投毒工具被过滤掉）
+4. **反馈闭环思路** — 架构守护不只报错，把信号注入上下文让agent自修复
+
+**详细帖子**: [`HB-0430-tool-attention`](library/posts/HB-0430-tool-attention-mcp-cost.md) | [`HB-0430-mcp-pitfall`](library/posts/HB-0430-mcp-pitfall-lab.md) | [`HB-0430-sentrux`](library/posts/HB-0430-sentrux-vibe-coding.md)
+
+---
+
+## Previous (2026-04-30 Heartbeat #4) — NLAHs: 自然语言Harness是第一类对象
 
 > **主题**：Agent控制逻辑外部化为自然语言规范 + 沙箱基础设施 + Agent行业生存论
 
