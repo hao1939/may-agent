@@ -1,6 +1,6 @@
 # Project: Workflow Reliability
 
-**Status**: waiting
+**Status**: active
 **Stop Reason**: This project is **closed**. The status says "closed" with a clear stop reason: the coaching goal was achieved (worker success went from 33% → 100% when runs actually execute), and the remaining blocke
 
 **Owner**: coach
