@@ -96,17 +96,23 @@ export type SystemEvent =
       wastedCalls?: number;
     };
 
-/** All event types — commands + observations + system */
+/** All typed event types — commands + observations + system */
 export type AgentEvent =
   | AgentCommand
   | ManagementCommand
   | SessionEvent
   | SystemEvent
-  // Deprecated — kept for backward compat during migration
   | { type: "info"; message: string; channel?: string }
-  | { type: "prompt"; message: string; channel?: string }
-  // Domain events (dot-separated types like "session.completed", "handler.started")
-  | { type: string; [key: string]: unknown };
+  | { type: "prompt"; message: string; channel?: string };
+
+/** Domain events (handler.started, project.iteration, etc.)
+ * These are NOT part of AgentEvent. They go through the bus via `as any`
+ * and are persisted to the events table by DbWriter.
+ * Cron dispatches them to handlers via dispatchEvent(). */
+export interface DomainEvent {
+  type: string;
+  [key: string]: unknown;
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────
 

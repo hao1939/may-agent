@@ -208,7 +208,7 @@ function triageItems(
   const now = Date.now();
 
   // 1. Stale human requests (>30min)
-  const active = getActiveRequests(persistDir);
+  const active: any[] = []; // requests table removed
   for (const r of active) {
     if (r.fromEntity === "human" && now - r.createdAt > 30 * 60_000) {
       items.push({
@@ -609,7 +609,7 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
 
   // ── Active requests ────────────────────────────────────────────────
 
-  const active = getActiveRequests(persistDir);
+  const active: any[] = []; // requests table removed
   lines.push("");
   lines.push("─".repeat(62));
   lines.push(` ACTIVE REQUESTS (${active.length})`);
@@ -628,7 +628,7 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
 
   // ── Stale requests ─────────────────────────────────────────────────
 
-  const stale = getStaleRequests(persistDir, 2 * HOUR);
+  const stale: any[] = []; // requests table removed
   if (stale.length > 0) {
     lines.push("");
     lines.push(`⚠️  Stale Requests (>2h): ${stale.length}`);
