@@ -41,7 +41,31 @@ Only when human input is needed. The system should handle everything else.
 | **Project BLOCKED >6h** | blocked-over-6h metric > 0 | Nobody could unblock it |
 | **Metric breach >1h** | Threshold breached, still breaching after 1h | System couldn't self-correct |
 | **Agent escalation to human** | escalate("human", reason) | Agent explicitly asked for you |
-| **Daily digest** | Once per day (configurable) | What happened, what needs attention |
+| **Daily digest** | Once per day (morning) | What happened yesterday, what needs attention today |
+| **Progress update** | Every 4h during active hours | What projects accomplished since last update |
+
+The progress update is NOT an alert — it's a heartbeat for YOU. Shows what the system produced, which projects moved, what changed. You stay informed without asking.
+
+Progress update format:
+```
+📊 Progress Update (last 4h)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🏗️ Projects:
+  skill-workflow-audit: 2 iterations, deployed 3 skills to agents
+  system-efficiency: 1 iteration, redefined output metrics
+  
+📦 Output: 45 real files produced
+  - outputs/skills-impact.md (new)
+  - agents/shared/skills/reading-metrics/skill.md (updated)
+  
+📊 Metrics:
+  handler.success-rate: 96% (stable)
+  project.active-count: 3 → 5 (improved)
+  
+🤖 Agents: bob 12 sessions, coach 8, scout 4
+```
+
+You can reply to the progress update too — "focus coach on skill delivery not experiments" goes straight to May with context.
 
 NOT notified for:
 - Handler timeouts (system handles via metrics)
