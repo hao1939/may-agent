@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777446836348_179
+- **Session:** s_1777448637934_249
 - **Status:** done
-- **When:** 2026-04-29T07:14:46.389Z
-- **Duration:** 50s
+- **When:** 2026-04-29T07:45:33.490Z
+- **Duration:** 1m35s
 
 ## What Happened
-Now for the inbox events — the C1.3 recovery session notification (P1): this is coach's domain.
+The 3 stale projects (documentation-gen, agent-memory-learning, test-coverage) have **zero** `project.iteration` events ever recorded. Coach already acknowledged the escalation per the inbox. I need to nudge the owners to either iterate or close them.
