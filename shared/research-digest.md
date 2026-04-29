@@ -7,7 +7,29 @@
 
 ---
 
-## Latest (2026-05-28 Heartbeat) — Programming with Data: 数据工程即软件工程
+## Latest (2025-05-01 Heartbeat) — 1-Shot RL & The Leaderboard Illusion
+
+> 一个样本就能RL出推理能力；Chatbot Arena的系统性偏差被揭露。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **1-Shot RLVR** | 论文(2504.20571, HF #1) | 仅1个训练样本+GRPO即可大幅提升推理，关键是选对样本(variance score) | Error log=variance scoring；targeted单点改进可能优于大量regression test |
+| **Leaderboard Illusion** | 论文(2504.20879, HF #2) | Chatbot Arena存在选择性披露、数据不对称、overfitting到Arena分布 | 评估需blind+uniform分布；警惕Goodhart's Law在我们metrics中的体现 |
+
+### 💡 最重要的洞察：一个精选样本 > 100个随机样本
+
+> 1-Shot RLVR证明极端的sample efficiency是可能的——关键不在数据量，而在数据的信息密度（variance score最高的样本）。
+>
+> **对我们的直接影响**：与其追求全面的test coverage，不如找到系统中"最不稳定的那一个场景"做targeted改进。Error log中反复出现的问题就是我们的π₁。
+> **与Leaderboard Illusion的交叉**：评估本身可能被gaming——我们需要确保改进是对真实能力的提升，而非对特定测试的overfitting。
+
+**详细帖子**: [`posts/HB-260501a-one-example-rl-reasoning.md`](library/posts/HB-260501a-one-example-rl-reasoning.md) | [`posts/HB-260501b-leaderboard-illusion.md`](library/posts/HB-260501b-leaderboard-illusion.md)
+
+---
+
+## Previous (2026-05-28 Heartbeat) — Programming with Data: 数据工程即软件工程
 
 > 训练数据的缺陷可结构化追溯和修复，映射到软件开发生命周期。
 
