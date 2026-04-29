@@ -8,4 +8,4 @@ _Staging area for behavioral fixes. Each entry should graduate into structure (h
 
 _(None — all graduated. See comment below for history.)_
 
-<!-- Graduated: P53 Guard→TOOLS.md, Skill Writing→DOMAIN.md, Use The Lab→SOUL.md, Evidence First→SOUL.md, Small Steps→SOUL.md, Verify Tools→SOUL.md, read/bash→shared/LESSONS.md, Growth Cycle→heartbeat.md, P155 Learning Filter→philosophy.md, Write Deliverables Before finish()→TOOLS.md -->
+<!-- Graduated: Skill Writing→DOMAIN.md, Use The Lab→SOUL.md, Evidence First→SOUL.md, Small Steps→SOUL.md, Verify Tools→SOUL.md, read/bash→shared/LESSONS.md, Growth Cycle→heartbeat.md, P155 Learning Filter→philosophy.md, Write Deliverables Before finish()→TOOLS.md -->
