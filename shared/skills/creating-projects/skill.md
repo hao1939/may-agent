@@ -33,7 +33,7 @@ agents/shared/projects/<name>/
 What does success look like? One paragraph, specific.
 
 ## Metrics
-Encode goals into metrics. These drive the project, not milestones.
+Encode goals into metrics. These drive the project, not plan items.
 - metric.name: current → target (what it measures)
 - another.metric: current → target
 

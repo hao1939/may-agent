@@ -19,7 +19,7 @@ User wants: (1) shared location, (2) clean project.md focused on the project its
 
 ```
 agents/shared/projects/<name>/
-  project.md      — source of truth (goal, status, milestones, resources, artifacts)
+  project.md      — source of truth (goal, status, plan, metrics, references)
   journal.md      — iteration log (worker output + reviewer decisions)
   discussion.md   — comments from other agents/humans (append-only)
   outputs/        — all project deliverables, scripts, intermediate files
@@ -32,7 +32,7 @@ agents/shared/projects/<name>/
 
 **Status**: active | waiting | blocked | closed
 **Owner**: bob
-**Type**: milestone | continuous
+**Type**: (removed — projects run until closed)
 **Priority**: P0 | P1 | P2
 **Iteration**: 3
 
@@ -57,7 +57,7 @@ Four states:
 
 Rules:
 - Workflow NEVER sets closed — only human or May can close a project
-- Projects keep iterating while active. Metrics are the goal, not milestones.
+- Projects keep iterating while active. Metrics are the goal, not plan items.
 - Milestones are a work log (what to try), not a completion trigger.
 
 ## Plan
