@@ -1,30 +1,19 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-29)
 
 ## Context
-Reviewed recent change `8e04cab0d` (agents repo): added `shared/workflows/health-check.ts` and related shared tests/config.
+- Repo root `/app` is not a git repository; actual git repo is `/app/agents`.
+- Latest commit reviewed: `006e1d47f` (adds `shared/tests/project-health-coverage.test.ts`).
+
+## Verification results
+- `./node_modules/.bin/tsc --noEmit` (from `/app/agents`): PASS.
+- `./node_modules/.bin/vitest --run` (from `/app/agents`): PASS (512 tests; 28 files).
 
 ## Findings
+### No issues found
+- Read-through of `shared/tests/project-health-coverage.test.ts` looks consistent with existing `project-health` APIs and adds useful branch-coverage tests for traversal/diagnosis + utility helpers.
 
-### CRITICAL — Test suite failure in agents repo
-- Running Vitest in `/app/agents` fails:
-  - `test/health-check.test.ts`: 36/36 tests fail
-  - `test/workflow-runner.test.ts`: 1 test fails
-- Failure mode: imports expected symbols from `../shared/workflows/health-check.js` but `shared/workflows/health-check.ts` only exports `runHealthCheck` and `WORKFLOW_MODULES`. Missing exports (or incorrect import path) cause runtime `TypeError: <fn> is not a function` for:
-  - `isAtTarget`, `parseMetrics`, `extractLastActivity`, `isStalled`, `analyzeProject`, `checkHealth`.
+### MINOR — Repo hygiene
+- `node_modules/.vite/vitest/results.json` shows as modified (likely a test artifact).
+- `shared/workflows/workflow-preset.ts` is untracked.
 
-**Evidence:** `./node_modules/.bin/vitest --run` output shows 37 failed tests, all `TypeError: ... is not a function`.
-
-### IMPORTANT — Silent error handling in health-check workflow
-In `agents/shared/workflows/health-check.ts`, several helpers swallow errors:
-- `checkTestFileCount`: `catch {}`
-- `checkOutputFileCount`: `catch {}`
-- `checkSatelliteProjects`: `catch {}`
-
-This makes failures indistinguishable from legitimate “0 files” results; consider at least capturing error text in `details`.
-
-**Evidence:** `agents/shared/workflows/health-check.ts` contains empty catch blocks.
-
-## Suggested next steps (for implementer)
-1. Align `shared/workflows/health-check.ts` exports with what the tests and `workflow-runner` expect (either implement/export the missing functions or update tests/imports to match the intended API).
-2. Re-run `./node_modules/.bin/vitest --run` until green.
-3. Consider replacing empty `catch {}` blocks with error details in check results.
+Recommend confirming whether these should be gitignored or committed intentionally.
