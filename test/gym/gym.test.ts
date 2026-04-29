@@ -129,7 +129,7 @@ describe("gym runner single scenario", () => {
   });
 
   it("success_criteria.js is invoked against work dir", () => {
-    const { stdout } = gymAllowFail("phantom-fix --agent coder --timeout 2");
+    const { stdout } = gymAllowFail("phantom-fix --agent amy --timeout 2");
     const result = JSON.parse(stdout);
     // phantom-fix criteria checks for specific things — should have multiple checks
     expect(result.checks.length).toBeGreaterThan(0);
