@@ -67,7 +67,7 @@ describe('estimateFileOperations', () => {
 
 describe('isDuplicateTask', () => {
   it('detects duplicate tasks', () => {
-    const task = 'Write a test for the output validator module';
+    const task = 'Write tests for the output validator module now';
     const recent = ['Write tests for the output validator module'];
     expect(isDuplicateTask(task, recent)).toBe(true);
   });
