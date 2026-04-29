@@ -615,3 +615,8 @@ All 12/12 milestones complete. All 3/3 metrics at target ✅. Project marked as 
 This project is complete. 12/12 milestones done, all 3 metrics at or above target, 43 iterations, 9 output files, 5 satellite projects spawned. Status updated to "done."
 
 There is no more work to drive. The project remains open for human/May to close, but all goals have been achieved. The F
+**Orchestrator**: CONTINUE
+
+Milestone completed: "Drive test-coverage: install vitest, write first test for workflows/project.ts critical path"
+
+**(a) Next iteration should**: Write tests for `workflows/master-worker.ts` — the orchestration core. This is the highest-value target: it coordinates all worker iterations 
