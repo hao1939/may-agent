@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777480533220_314
+- **Session:** s_1777482333705_337
 - **Status:** done
-- **When:** 2026-04-29T16:36:25.768Z
-- **Duration:** 52s
+- **When:** 2026-04-29T17:06:44.792Z
+- **Duration:** 1m11s
 
 ## What Happened
-Only 2 blocked in the DB. The metric says 3 — possibly counting from a different source or there's a stale cache. Either way, the root cause is coach's completed projects stuck in "blocked" status. I've notified coach.
+Now for the stale session and the no-op heartbeat notification. The stale session `s_1777144803961_` is 182min old - that's a chat session from Hao, not actionable.
 
-Regarding the inbox notification about no-op heartbeats (45% waste) — this is a known issue being tracked. I'm keeping this heartbeat productive by investigating the blocked metric.
+Regarding the no-op heartbeat alert (45% waste), I'll note this but the fix is behavioral - I should keep heartbeats focused and brief, which I'm doing now.

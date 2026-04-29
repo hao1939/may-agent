@@ -1,20 +1,21 @@
-# QA Heartbeat — Unreviewed Findings (2026-04-29)
+# Unreviewed findings (QA heartbeat)
 
-## Context
-Attempted repo-wide `git log` from `/app` failed because `/app` is not a git repo. The relevant git repo is `/app/agents`.
+## Scope
+This heartbeat attempted to find unverified changes in the last ~10 commits in the **/app/agents** git repo and run standard verification.
 
-## Verification Performed
-- `tsc --noEmit` run in `/app/agents`: PASS (no output, exit 0)
-- `vitest --run` run in `/app/agents`: PASS (512 tests)
-
-## Changes Spot-checked
-- Read: `agents/shared/may-agent-docs/design/telegram-notifications.md` (lines 1–120)
-  - This is a design doc describing context-enriched Telegram replies.
-  - No code/runtime impact detected from the doc itself.
+## What I verified
+- Read: `agents/shared/workflows/index.ts` (barrel exports for workflow toolkit)
+- Typecheck: `cd agents && ./node_modules/.bin/tsc --noEmit`
+- Tests: `cd agents && ./node_modules/.bin/vitest --run`
 
 ## Findings
-### IMPORTANT — QA process/ergonomics
-- Project root `/app` is not a git repo; git operations must be run in `/app/agents` (agent repo) or `/app/.state` (state repo). Consider documenting this in QA playbook/heartbeat guidance to avoid wasted cycles.
+### 1) Repository layout / verification pitfall: project root is not a git repo (MINOR)
+- Running git commands from `/app` fails because `/app` itself is not a git repository. The actual repo is `/app/agents`.
+- This is not a product bug, but it can confuse verification scripts/checklists if they assume `/app` is the repo root.
 
-## Verdict
-No blocking issues found in the codebase during this heartbeat; typecheck and full test suite passed.
+### 2) Environment note: Vite CJS deprecation warning (MINOR)
+- `vitest --run` emits: “The CJS build of Vite's Node API is deprecated …”
+- Tests still pass; treat as a tech-debt warning.
+
+## Result
+- In `/app/agents`, TypeScript build and full Vitest suite passed (512 tests).

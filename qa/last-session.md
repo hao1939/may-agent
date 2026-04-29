@@ -1,26 +1,29 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777480341821_313
+- **Session:** s_1777482143982_331
 - **Status:** done
-- **When:** 2026-04-29T16:32:52.863Z
-- **Duration:** 31s
+- **When:** 2026-04-29T17:03:02.715Z
+- **Duration:** 38s
 
 ## What Happened
 ### Summary
-No active alerts/events/projects. I performed a verification sweep in the actual git repo (`/app/agents`), spot-checked one recent changed file (a design doc), and ran the required typecheck + full test suite. Everything is currently green; the only actionable finding is that QA heartbeat guidance implicitly assumes `/app` is a git repo, which caused wasted cycles until locating `/app/agents/.git`.
+No inbox items, no active projects, and no configured metrics. I looked for unverified recent changes in the `/app/agents` repo (since `/app` is not a git repo), spot-read a recently-touched workflow barrel file, then ran typecheck + full test suite. Everything in `/app/agents` typechecks and tests pass; only minor process/environment notes found.
 
 ### Checks
-- `tsc --noEmit`: **PASS** (ran in `/app/agents`, produced no output, exit 0)  
-  Evidence: bash output showed “(no output)” with success signature.
-- `vitest --run`: **PASS** (**512 tests**, 28 files)  
-  Evidence: vitest output shows “Tests 512 passed (512)”.
+- `tsc --noEmit`: **PASS** (ran in `/app/agents`, no output, exit 0)
+- `vitest --run`: **PASS** (**512 tests**, 28 files)
 
 ### Issues
-- **IMPORTANT** — Repo ergonomics/process: `/app` is **not** a git repository; git operations must be run inside `/app/agents` (or `/app/.state`). This can trip up heartbeat “check git log” steps unless documented.
+- **MINOR**: `/app` is not a git repository; verification must run in `/app/agents` (can cause wasted cycles / mistaken “git is broken” conclusions).
+- **MINOR**: `vitest` prints Vite CJS deprecation warning (tech-debt; not breaking).
+
+### Evidence (what I read/ran)
+- Read: `agents/shared/workflows/index.ts` (barrel exports) via `read()`.
+- Tests: `cd agents && ./node_modules/.bin/vitest --run` → **512 passed**.
+- Notes recorded to: `agents/qa/workspace/unreviewed-findings.md` (and read back for integrity).
 
 ### Verdict
-**PASS** — Typecheck and full test suite pass; no code-level issues found from the sampled change. Logged the process finding for follow-up.
+**PASS** — No functional/test regressions detected in the `/app/agents` repo; only minor process/environment warnings.
 
-Additional deliverable:
-- `agents/qa/workspace/unreviewed-findings.md` — heartbeat verification notes + finding (repo root not git).
+(Heartbeat log file created: `agents/qa/workspace/unreviewed-findings.md`.)
