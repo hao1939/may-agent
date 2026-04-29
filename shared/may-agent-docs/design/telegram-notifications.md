@@ -65,17 +65,14 @@ This covers ALL notifications:
 When you reply, the bot builds an enriched message:
 
 ```
-[Context from notification #{msgId}]
-Source: project "system-efficiency" (WAITING since 2h)
-State: metrics at target (may-session-ratio 0.12), all plan items checked
-Background: orchestrator completed 3 fixes (heartbeat dedup, circuit breaker, budget checkpoint), waiting for human direction
+[User replying to notification from may about "project system-efficiency"]
+State: WAITING, metrics at target (may-session-ratio 0.12), all plan items checked
+Background: orchestrator completed 3 fixes, waiting for human direction
 
-[Your reply]
-focus on output metrics not cost reduction
-
-[Instructions to agent]
-The user is responding to the above context. Act on their reply in the context of the source.
+User says: focus on output metrics not cost reduction
 ```
+
+No action instructions. The agent reads the context and decides what to do.
 
 The agent sees everything in one message. No back-and-forth to establish context.
 
@@ -108,7 +105,6 @@ Background: orchestrator completed all plan items.
 
 User says: focus on output metrics not cost reduction
 
-Act on this: add user's feedback as comment to the project discussion,
 then trigger the project to resume with this new direction.
 ```
 
@@ -123,13 +119,11 @@ You reply: "increase timeout to 10min for heartbeats"
 
 Agent receives:
 ```
-User replied to metric alert for handler.p95-duration.
+[User replying to notification from may about "metric handler.p95-duration"]
 State: 274s, threshold 240s, breaching 2h.
 Background: handlers run LLM sessions that take 3-5min.
 
 User says: increase timeout to 10min for heartbeats
-
-Act on this: update handlerConfig.timeoutMs for heartbeat entries in cron.json.
 ```
 
 ### Progress update → reply
@@ -143,13 +137,11 @@ You reply: "coach is spending too many sessions, investigate"
 
 Agent receives:
 ```
-User replied to progress update.
+[User replying to progress update]
 State: coach 8 sessions in last 4h, skill-workflow-audit active.
 Background: routine progress, no alerts.
 
 User says: coach is spending too many sessions, investigate
-
-Act on this: investigate coach's session count and efficiency.
 ```
 
 ### Agent finding → reply
@@ -164,12 +156,10 @@ You reply: "share with bob, see if it connects to his hypothesis"
 
 Agent receives:
 ```
-User replied to notification from scout about "paper on agent memory architectures".
+[User replying to notification from scout about "paper on agent memory architectures"]
 Background: found on arXiv, relevant to context-learning project. DD#801 written.
 
 User says: share with bob, see if it connects to his hypothesis
-
-Act on this: notify bob about this paper and its connection to his work.
 ```
 
 ### Agent alert → reply
@@ -183,12 +173,10 @@ You reply: "cancel it and move on to the next experiment"
 
 Agent receives:
 ```
-User replied to notification from coach about "bob stuck in retry loop".
+[User replying to notification from coach about "bob stuck in retry loop"]
 State: 15 retries of same task over 3 days.
 
 User says: cancel it and move on to the next experiment
-
-Act on this: cancel bob's stuck session, update the experiment status.
 ```
 
 ### Unprompted message (no reply context)
