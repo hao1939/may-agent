@@ -59,9 +59,9 @@ describe('complexity-estimator', () => {
       expect(result.score).toBe(4);
     });
 
-    it('rates multi-file implementation as complex', () => {
+    it('rates multi-file implementation as very complex', () => {
       const result = estimateComplexity('Implement a module at validator.ts, wire into master-worker.ts, update config.ts and types.ts');
-      expect(result.score).toBe(4);
+      expect(result.score).toBe(5);
     });
 
     it('rates tasks with 15+ tests as complex', () => {
