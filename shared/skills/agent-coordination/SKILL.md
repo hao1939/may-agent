@@ -74,3 +74,19 @@ Check on a running session or cancel it.
 2. **Use `send` for independent work.** The agent picks it up on their next heartbeat. Don't wait for it.
 3. **No empty context.** Imagine the agent just woke up. Tell them *everything* (files, goal, constraints).
 4. **One task per call/send.** Don't bundle unrelated work into a single request.
+
+---
+
+## Delegation Verification (merged)
+
+After delegating work to another agent:
+1. Define explicit success criteria before delegating
+2. Verify deliverables exist and match criteria when the agent reports done
+3. Check for false completion claims (file exists? content correct?)
+
+## Closing the Loop (merged)
+
+After any multi-agent interaction:
+1. Confirm the receiving agent acknowledged the task
+2. Track completion status
+3. Report back to the requester with evidence of completion

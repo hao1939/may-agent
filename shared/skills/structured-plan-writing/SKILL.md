@@ -234,3 +234,13 @@ plan executed fully beats a perfect plan executed halfway. Use the
   Target: 10-15%. Red flag: >25%.
 - **Checkpoint adherence**: Did the agent actually verify at checkpoint
   markers? Count verifications performed vs. planned.
+
+---
+
+## Plan-Once-Amend Constraint (merged)
+
+Key principle: Write the plan ONCE at the start, then only AMEND it — never rewrite from scratch.
+- Initial plan captures intent and scope
+- Amendments are additive (new sections, updated estimates)
+- Never delete plan content; strike-through or mark as superseded
+- This prevents scope drift and preserves decision history
