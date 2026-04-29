@@ -964,7 +964,7 @@ if (CRON_ENABLED) {
   // Chat sessions are handled separately: in CHAT_MODE they're resumed, otherwise interrupted.
   const { interrupted: orphansCleaned } = manager.resumeStaleSessions({ abort: true, kinds: ["call"] });
   if (!CHAT_MODE) {
-    // Daemon mode: also clean up orphaned chat sessions
+    // Daemon mode without telegram: clean up orphaned chat sessions
     const { interrupted: chatCleaned } = manager.resumeStaleSessions({ abort: true, kinds: ["chat"] });
     orphansCleaned.push(...chatCleaned);
   } else {

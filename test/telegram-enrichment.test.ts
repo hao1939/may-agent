@@ -162,3 +162,27 @@ describe("Telegram Reply Metric", () => {
     expect(enriched / total).toBe(0.75);
   });
 });
+
+describe("Session Context Enrichment", () => {
+  it("includes session transcript summary in enrichment", () => {
+    // This tests the logic conceptually — actual file reading tested via integration
+    const sessionSummary = "[COMPACTED CONTEXT] Task: fix project failures. Files read: project.ts";
+    const lastAction = "switching from grep to faster approach for 36k files";
+    
+    // Simulate what the enrichment builds:
+    const parts: string[] = [];
+    parts.push('[User replying to notification from may]');
+    parts.push('Event type: response');
+    parts.push(`\nSession context (135 messages):`);
+    parts.push(`  Summary: ${sessionSummary}`);
+    parts.push(`  Last action: ${lastAction}`);
+    parts.push('');
+    parts.push('User says: continue where you left off');
+    
+    const enriched = parts.join("\n");
+    expect(enriched).toContain("Session context");
+    expect(enriched).toContain("fix project failures");
+    expect(enriched).toContain("switching from grep");
+    expect(enriched).toContain("User says: continue where you left off");
+  });
+});

@@ -202,6 +202,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     if (replyToMsgId) {
       try {
         const { getDb } = await import("../../lib/requests.js");
+        const { existsSync, readFileSync } = await import("node:fs");
+        const { join } = await import("node:path");
         const db = getDb(opts.persistDir ?? ".state");
         const ctx = db.prepare("SELECT * FROM notification_messages WHERE telegram_msg_id = ?").get(replyToMsgId) as any;
         if (ctx) {
@@ -215,15 +217,56 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             } catch {}
           }
           if (ctx.event_type) parts.push(`Event type: ${ctx.event_type}`);
+
+          // Session context: if we have a sessionId, read the transcript summary
+          if (ctx.session_id) {
+            try {
+              const persistDir = opts.persistDir ?? ".state";
+              const paths = [
+                join(persistDir, "sessions", ctx.session_id, "session-compact.jsonl"),
+                join(persistDir, "sessions", "history", ctx.session_id, "session-compact.jsonl"),
+              ];
+              for (const p of paths) {
+                if (existsSync(p)) {
+                  const lines = readFileSync(p, "utf-8").split("\n").filter(Boolean);
+                  if (lines.length > 0) {
+                    // Extract first message (has compaction summary) and last assistant text
+                    const first = JSON.parse(lines[0]);
+                    const summary = first.content?.[0]?.text?.slice(0, 500) || "";
+                    let lastAssistant = "";
+                    for (let i = lines.length - 1; i >= 0; i--) {
+                      try {
+                        const msg = JSON.parse(lines[i]);
+                        if (msg.role === "assistant" && msg.content) {
+                          for (const c of msg.content) {
+                            if (c.type === "text" && c.text?.trim()) {
+                              lastAssistant = c.text.slice(0, 200);
+                              break;
+                            }
+                          }
+                          if (lastAssistant) break;
+                        }
+                      } catch {}
+                    }
+                    parts.push(`\nSession context (${lines.length} messages):`);
+                    if (summary) parts.push(`  Summary: ${summary.slice(0, 300)}`);
+                    if (lastAssistant) parts.push(`  Last action: ${lastAssistant}`);
+                  }
+                  break;
+                }
+              }
+            } catch {}
+          }
+
           parts.push("");
           parts.push(`User says: ${text}`);
           enrichedText = parts.join("\n");
-          bus.emit({ type: "info", message: `[telegram] Enriched reply (ctx: ${ctx.event_type}/${ctx.agent})` });
+          bus.emit({ type: "info", message: `[telegram] Enriched reply (ctx: ${ctx.event_type}/${ctx.agent}${ctx.session_id ? "/session" : ""})` });
 
           // Track reply for metric
           try {
             db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-              ["telegram.reply", "telegram", ctx.agent || "unknown", JSON.stringify({ enriched: true, originalMsgId: replyToMsgId }), Date.now()]);
+              ["telegram.reply", "telegram", ctx.agent || "unknown", JSON.stringify({ enriched: true, hasSessionCtx: !!ctx.session_id, originalMsgId: replyToMsgId }), Date.now()]);
           } catch {}
         }
       } catch {}
