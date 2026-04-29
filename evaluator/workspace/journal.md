@@ -1,7 +1,11 @@
-# Evaluator Journal
+# Evaluator heartbeat journal
 
-## 2026-04-08 15:43Z — Heartbeat notes
-- Session eval pipeline (#5): `.state/may.db` evaluations `max(createdAt)=1775661298715` (fresh). Legacy `.state/evaluations/` task_tree artifacts remain stale (newest mtime observed: 2026-03-24), consistent with known legacy-output drift.
-- Monitor-session (L2 kinetic): `node agents/evaluator/skills/monitor-session.cjs --running` flagged 1 unhealthy session:
-  - `s_1775661323064_65` (coach) `PROTOCOL_VIOLATION` — P114 Experience Replay missing for a complex skill conversion task. Recommended action: warn.
-- Calibration inputs: `workspace/consistency-flags.jsonl`, `human-reviews.jsonl`, `re-evaluations.jsonl` appear empty (no entries in first 200 lines).
+Date: 2026-04-29
+
+## Session evaluation pipeline liveness
+- DB (canonical): evaluations.maxCreatedAt = 2026-04-29T16:48:21Z (fresh)
+- Legacy artifacts: `.state/evaluations/` newest mtime ~2026-03-24 (stale)
+
+Conclusion: evaluation pipeline appears healthy in DB; `.state/evaluations/` is likely an old output path or a step that no longer runs.
+
+Action: recommend treating `.state/evaluations/` staleness as non-blocking legacy drift; update docs/criteria to point evaluators to DB as source of truth.
