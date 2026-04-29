@@ -21,7 +21,7 @@ Iteration 1 complete. Vitest installed and working. Coverage baseline written (o
 - [x] Install vitest, create vitest.config.ts, create test/ dir, write a smoke test that passes
 - [x] Analyze codebase and write outputs/coverage-baseline.md listing functions and testability
 - [x] Write unit tests for circuit-breaker.ts (pure logic, most testable)
-- [ ] Write unit tests for project-helpers.ts and budget-checkpoint.ts
+- [x] Write unit tests for project-helpers.ts and budget-checkpoint.ts
 - [ ] Write unit tests for guards (finish-guard.ts, hallucinated-path.ts, read-before-edit.ts — pure logic guards)
 - [ ] Write unit tests for fewshot-inject-helpers.ts and verify-wrap.ts
 - [ ] Fix failing gym test (agent="coder" vs "amy" mismatch)

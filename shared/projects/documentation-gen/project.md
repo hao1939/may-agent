@@ -1,10 +1,10 @@
 # Project: Documentation Generation
 
-**Status**: complete
+**Status**: active
 **Owner**: coach
 **Priority**: P2
 **Workflow**: master-worker
-**Iteration**: 9
+**Iteration**: 10
 
 ## Goal
 System is self-documenting. Architecture, workflows, agent roles all have up-to-date docs.

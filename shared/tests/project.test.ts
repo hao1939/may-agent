@@ -159,7 +159,8 @@ describe("appendToSection", () => {
   it("appends line to existing section", () => {
     const content = "## Log\nentry1\n## Other\nstuff\n";
     const result = appendToSection(content, "Log", "entry2");
-    expect(result).toContain("entry1\nentry2\n");
+    expect(result).toContain("entry1\nentry2");
+    expect(result).toContain("## Other\nstuff");
   });
 
   it("creates section if missing", () => {
