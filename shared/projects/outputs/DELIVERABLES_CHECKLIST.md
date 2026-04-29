@@ -1,10 +1,7 @@
-# Deliverables Checklist — Iteration 16
+# Deliverables Checklist — Iteration 17
 
-## Task: Create `task-template.ts` utility with tests
+## Required Deliverables
 
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | `createTaskTemplate()` function with TypeScript interface | DONE | `agents/shared/lib/task-template.ts` |
-| 2 | 7 tests (minimal, testPath, context, all fields, errors, trimming) | DONE | `agents/shared/tests/lib/task-template.test.ts` |
-| 3 | All tests passing | DONE | 7 passed, 0 failed |
-| 4 | Output copies | DONE | `agents/shared/projects/outputs/task-template.ts`, `task-template.test.ts` |
+- [x] DONE — `agents/shared/lib/iteration-monitor.ts`: Utility with `recordIteration` and `getMetrics` functions, stores data in JSON log file
+- [x] DONE — `agents/shared/tests/iteration-monitor.test.ts`: 5 tests covering empty log, recording, rate computation, lastN parameter, and targetPath
+- [x] DONE — Updated `agents/shared/lib/index.ts` barrel export to include iteration-monitor
