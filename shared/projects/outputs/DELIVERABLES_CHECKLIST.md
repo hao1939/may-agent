@@ -1,7 +1,11 @@
-# Deliverables Checklist
+# Deliverables Checklist — Iteration 26
 
-- [x] DONE: `agents/shared/lib/regression-detector.ts` — Utility with `detectRegressions()` function (threshold-based metric comparison)
-- [x] DONE: `agents/shared/tests/lib/regression-detector.test.ts` — 7 tests (stable, single/multiple regressions, custom threshold, missing keys, zero baseline, improvements)
-- [x] DONE: `agents/shared/lib/index.ts` — Updated barrel export to include regression-detector
-- [x] DONE: `agents/shared/projects/outputs/regression-detector.ts` — Output copy
-- [x] DONE: `agents/shared/projects/outputs/regression-detector.test.ts` — Output copy
+## Required Deliverables
+
+- [x] DONE — `agents/shared/scripts/project-health.sh`: Combined CLI that runs test-guard, health-check, config-validator, and iteration-metrics in one formatted report. Exits 0 on healthy, 1 on unhealthy.
+- [x] DONE — `agents/shared/projects/outputs/project-health.sh`: Copy in outputs directory.
+
+## Verification
+
+- Script runs successfully, outputs formatted health report
+- Shows 🟢 SYSTEM HEALTHY with all tests passing, 9/11 projects at target, 80% deliverable rate
