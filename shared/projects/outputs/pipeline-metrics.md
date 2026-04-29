@@ -1,103 +1,102 @@
 # Pipeline Metrics: Context-Learn Analysis
 
-**Date:** 2026-04-29  
-**Purpose:** Measure whether the context-learn pipeline is organically firing, and identify gaps
+**Date:** 2026-04-29 (updated with DB evidence)  
+**Purpose:** Measure context-learn pipeline activity and fix the identified break
 
 ## Executive Summary
 
-The context-learn pipeline infrastructure is **fully built and wired** but has produced **zero organic lessons**. All 20 lessons in `lessons.jsonl` are seeded from context.md files. The pipeline's event chain exists but lacks evidence of ever firing in production.
+The pipeline is **almost working** — evaluation fires heavily (32,716 evaluations, 188 `session.completed` events) but **zero `context-learn` events** reach the handler. **Root cause found and fixed:** `session-eval.ts` used `ctx.emit()` (infrastructure bus) instead of `ctx.dispatchEvent()` (handler dispatch) to emit context-learn events. Fix applied.
 
-## Pipeline Architecture (How It Should Work)
+## Evidence from may.db
+
+### Event Volume (from `events` table)
+
+| Event Type | Count | Status |
+|-----------|-------|--------|
+| handler.started | 1,578 | — |
+| handler.completed | 1,561 | — |
+| metric.breach | 259 | — |
+| **session.completed** | **188** | 113 pending, 75 dismissed |
+| session.failed | 68 | — |
+| **context-learn** | **0** | ← THE GAP |
+
+### Evaluations: Healthy
+- **32,716 total evaluations** in `evaluations` table
+- 22,919 heuristic-evaluated, 3,622 LLM-evaluated
+- Evaluations are happening via some path (likely residual inline logic or periodic scan)
+
+### Session.completed Handling Issue
+- 113 events still `pending` (never handled by session-eval handler)
+- 75 events `dismissed` (56 bulk-dismissed as "stale events with undefined values")
+- This suggests the session-eval handler may not be consistently triggered either
+
+## Root Cause: `ctx.emit()` vs `ctx.dispatchEvent()`
+
+**The architecture has two emit methods:**
+- `ctx.emit()` — Infrastructure event (UI, DB logging, workflow steps). Goes on bus but **does NOT trigger cron.json handlers**.
+- `ctx.dispatchEvent()` — Agent-level event. **Triggers handlers** subscribed via cron.json `on` field.
+
+**In `session-eval.ts` (before fix):**
+```typescript
+// WRONG: emit goes to bus, not to handler dispatch
+ctx.emit({ type: "context-learn", agentName: meta.agent, sessionId: evalSessionId, persistDir: ctx.persistDir });
+```
+
+**After fix:**
+```typescript
+// CORRECT: dispatchEvent triggers context-learn handler via cron.json "on" field
+ctx.dispatchEvent("context-learn", { agentName: meta.agent, sessionId: evalSessionId, persistDir: ctx.persistDir });
+```
+
+This is the same pattern used in `agents/shared/workflows/project.ts`:
+```typescript
+ctx.dispatchEvent(event, { projectId, owner: config.owner, ...extra });
+```
+
+## Fix Applied
+
+**File:** `agents/may/handlers/session-eval.ts` (line 39-45)  
+**Change:** `ctx.emit({ type: "context-learn", ... })` → `ctx.dispatchEvent("context-learn", { ... })`
+
+## Pipeline Chain (Post-Fix)
 
 ```
-Session completes
-  → session-eval.ts fires (cron event: "session-eval")
-    → evaluateTask() runs
-      → emits "context-learn" event per evaluated session
-        → context-learn.ts handler fires
-          → learnFromSessionLLM() or learnFromSession() extracts facts
-            → applyContextUpdates() writes to agent's context.md
+Session completes → session_end bus event
+  → thin translator in may.ts classifies → dispatchEvent("session.completed")
+    → session-eval.ts handler fires (cron.json on: ["session.completed"])
+      → evaluateTask() runs (32K+ evals prove this works)
+        → ctx.dispatchEvent("context-learn", ...) ← FIXED
+          → context-learn.ts handler fires (cron.json on: ["context-learn"])
+            → learnFromSessionLLM() / learnFromSession() extracts facts
+              → writes to agent's context.md
 ```
 
-**Key files:**
-- `/app/agents/may/handlers/session-eval.ts` — Emits `context-learn` events after evaluation
-- `/app/agents/may/handlers/context-learn.ts` — Subscribes to those events, extracts facts
-- `/app/agents/shared/evaluation/context-learn.ts` — Core extraction logic (LLM + mechanical)
-- `/app/agents/may/cron.json` — Both handlers registered and enabled
+## Remaining Concerns
 
-**Env config:** `CONTEXT_LEARN_AGENTS=coder,may,bob,coach,optimizer,tech-lead` (6 agents enabled)
+### 1. Pending session.completed events (113)
+These events were persisted but never handled. The session-eval handler may have a separate issue with event pickup. Worth monitoring after the fix.
 
-## Evidence of Pipeline Activity
+### 2. No lessons.jsonl integration in context-learn.ts
+The context-learn handler writes to `context.md` files, not `lessons.jsonl`. The lessons.jsonl format was added later and isn't wired into the organic pipeline. A future enhancement should also append to lessons.jsonl.
 
-### Session Volume
-- **391 session directories** in `/app/.state/sessions/`
-- **History directory** with 35,818 entries — significant session volume exists
-
-### Context-Learn Events Fired: **0 confirmed**
-- No `.state/may.db` exists (no evaluation database found)
-- No log files found containing "context-learn" entries
-- `grep -r "context-learn" /app/.state/sessions/` — found only references in test output and session transcripts discussing the feature, not actual pipeline execution logs
-- No evaluation database found at expected locations (`agents/shared/evaluation/evaluations.db`, `.state/may.db`)
-
-### Organic Lessons Extracted: **0**
-- `lessons.jsonl`: 20 entries, all with `"source_task":"bootstrapped from context.md"`
-- No entries with organic source tasks (e.g., actual session IDs or task descriptions)
-
-## Root Cause Analysis
-
-### Why the pipeline isn't firing:
-
-1. **No evaluation database exists** — The `session-eval.ts` handler calls `evaluateTask()` but there's no evidence an evaluation DB was ever created. Without successful evaluations, no `context-learn` events are emitted.
-
-2. **Event chain dependency** — `context-learn` events are only emitted by `session-eval.ts` after successful evaluation. If evaluation never runs (or fails silently), the downstream context-learn handler never triggers.
-
-3. **No persistent logging** — The handlers use `ctx.log()` but there are no log files on disk. This makes it impossible to determine if the handlers are being invoked at all, or silently failing.
-
-4. **Session-eval trigger unclear** — `session-eval.ts` is an event-only handler (`"on"` field in cron.json). It requires an upstream event to trigger it. If nothing emits the triggering event, the entire chain is dead.
-
-## Context.md Files (Knowledge Source Inventory)
-
-Rich context already exists across agents but isn't being captured into lessons organically:
-
-| Agent | Lines in context.md |
-|-------|-------------------|
-| coder | 125 |
-| bob | 113 |
-| tech-lead | 111 |
-| may | 92 |
-| scout | 84 |
-| coach | 83 |
-| optimizer | 73 |
-| amy | 72 |
-| amy-kimi | 46 |
-| evaluator | 41 |
-| master | 21 |
-| architect | 21 |
-| judge | 22 |
-
-**Total:** ~900+ lines of durable knowledge across 13 agents
-
-## Lessons.jsonl Status
-
-- **20 seeded lessons** (bootstrapped 2026-04-29)
-- **Agents represented:** coder (7), tech-lead (4), may (3), bob (3), system (3)
-- **Categories:** pattern (12), fix (5), insight (3)
-- **Organic lessons:** 0
+### 3. Seeded vs Organic lessons
+- **20 seeded lessons** in lessons.jsonl (all from context.md bootstrap)
+- **0 organic lessons** — expected to start appearing after the fix deploys
 
 ## Recommendations
 
-### P0: Fix the event chain
-1. **Verify session-eval trigger** — Check what event triggers `session-eval.ts` and whether it's being emitted. Look for the `"on"` field in its cron entry.
-2. **Add pipeline health logging** — Write a simple marker file (e.g., `.state/context-learn-last-fire.txt`) each time the handler runs, so we can detect activity without full log infrastructure.
+### P0 (Done): Fix dispatchEvent ✅
+Applied in this session.
 
-### P1: Add direct extraction path
-3. **Bypass the event chain** — Add a cron-based fallback that periodically scans recent completed sessions and extracts lessons directly, rather than depending on the event chain.
-4. **Run mechanical extraction on backlog** — The mechanical extractor (`extractFactsMechanical`) requires no LLM. Run it against the 391 existing sessions to bootstrap more lessons.
+### P1: Monitor after fix
+After next heartbeat cycle, check:
+```sql
+SELECT count(*) FROM events WHERE event_type='context-learn';
+```
+Should start showing non-zero counts.
 
-### P2: Increase lesson volume
-5. **Extract remaining context.md content** — The initial seeding captured ~20 lessons from 900+ lines. Run deeper extraction on the remaining context.md files.
-6. **Add finish() hook** — When agents call `finish()` with `context_updates` or `lessons`, pipe those directly to `lessons.jsonl` without depending on the eval chain.
+### P1: Wire lessons.jsonl into context-learn handler
+The context-learn handler currently only updates context.md. It should also append structured lessons to lessons.jsonl for cross-agent retrieval.
 
-## Conclusion
-
-The infrastructure is complete but the activation chain is broken. The most likely failure point is the session-eval trigger — either the upstream event isn't being emitted, or evaluations are failing silently. The 20 seeded lessons prove the storage and retrieval works; the gap is purely in organic capture.
+### P2: Investigate pending session.completed events
+113 events sitting as "pending" suggests the event→handler dispatch may have additional issues beyond the emit/dispatchEvent confusion.
