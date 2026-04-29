@@ -93,12 +93,12 @@ describe("gym runner --list", () => {
 
 describe("gym runner single scenario", () => {
   it("produces valid GymResult JSON for phantom-fix (stub mode)", () => {
-    const { stdout } = gymAllowFail("phantom-fix --agent coder --timeout 2");
+    const { stdout } = gymAllowFail("phantom-fix --agent amy --timeout 2");
     const result = JSON.parse(stdout);
 
     // Verify GymResult structure
     expect(result).toHaveProperty("scenario", "phantom-fix");
-    expect(result).toHaveProperty("agent", "coder");
+    expect(result).toHaveProperty("agent", "amy");
     expect(result).toHaveProperty("lab_fork");
     expect(typeof result.passed).toBe("boolean");
     expect(Array.isArray(result.checks)).toBe(true);
