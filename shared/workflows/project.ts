@@ -110,6 +110,12 @@ export function flushProjectCache(): void {
   _cache.flush();
 }
 
+/** Write-through helper: writes to disk and updates cache. */
+function cachedWrite(path: string, content: string): void {
+  writeFileSync(path, content, "utf-8");
+  _cache.invalidate(path);
+}
+
 function ensureDir(dir: string): void {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }
@@ -197,8 +203,8 @@ Not started.
 ## Artifacts
 
 `;
-  writeFileSync(config.projectPath, projectContent, "utf-8");
-  writeFileSync(config.journalPath, `# Journal\n\n`, "utf-8");
+  cachedWrite(config.projectPath, projectContent);
+  cachedWrite(config.journalPath, `# Journal\n\n`);
   writeFileSync(join(config.projectDir, "discussion.md"), `# Discussion\n\n`, "utf-8");
 }
 
@@ -619,7 +625,7 @@ function appendJournalEntry(
   } else {
     if (config.isLegacy) {
       projectContent += entry;
-      writeFileSync(config.projectPath, projectContent, "utf-8");
+      cachedWrite(config.projectPath, projectContent);
     } else {
       appendFileSync(config.journalPath, entry);
     }
@@ -681,7 +687,7 @@ async function handleWaitingDecision(
   ls.projectContent = updateField(ls.projectContent, "Stop Reason", decision.detail.slice(0, 200));
   ls.projectContent = updateField(ls.projectContent, "Resume Condition", decision.resumeCondition || "Human/May review needed");
   ls.projectContent = updateSection(ls.projectContent, "Current State", `Waiting: ${decision.detail.slice(0, 150)}`);
-  writeFileSync(config.projectPath, ls.projectContent, "utf-8");
+  cachedWrite(config.projectPath, ls.projectContent);
   emitProjectEvent(ctx, config, "project.waiting", { iteration, reason: decision.detail.slice(0, 100) });
   const msg = isCommentIteration
     ? `Waiting after comment at iteration ${iteration}: ${decision.detail}`
@@ -704,7 +710,7 @@ async function handleBlockedDecision(
   ls.projectContent = updateField(ls.projectContent, "Stop Reason", decision.detail.slice(0, 200));
   ls.projectContent = updateField(ls.projectContent, "Resume Condition", decision.resumeCondition || "Blocker resolved");
   ls.projectContent = updateSection(ls.projectContent, "Current State", `Blocked: ${decision.detail.slice(0, 150)}`);
-  writeFileSync(config.projectPath, ls.projectContent, "utf-8");
+  cachedWrite(config.projectPath, ls.projectContent);
   emitProjectEvent(ctx, config, "project.blocked", { iteration, reason: decision.detail.slice(0, 100) });
   const msg = isCommentIteration
     ? `Blocked by comment at iteration ${iteration}: ${decision.detail}`
@@ -749,7 +755,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Ensure journal exists
   if (!existsSync(config.journalPath) && !config.isLegacy) {
     ensureDir(dirname(config.journalPath));
-    writeFileSync(config.journalPath, `# Journal\n\n`, "utf-8");
+    cachedWrite(config.journalPath, `# Journal\n\n`);
   }
 
   let projectContent = readFile(config.projectPath) ?? "";
@@ -777,7 +783,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // (those need comment iteration to decide the new status)
   if (state.status !== "done" && state.status !== "blocked" && state.status !== "waiting") {
     projectContent = updateField(projectContent, "Status", "active");
-    writeFileSync(config.projectPath, projectContent, "utf-8");
+    cachedWrite(config.projectPath, projectContent);
   }
 
   while (iteration <= config.maxIterations) {
@@ -819,7 +825,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         projectContent = updateField(projectContent, "Stop Reason", "");
         projectContent = updateField(projectContent, "Resume Condition", "");
         projectContent = updateSection(projectContent, "Current State", `Completed. Marked done by human/May.`);
-        writeFileSync(config.projectPath, projectContent, "utf-8");
+        cachedWrite(config.projectPath, projectContent);
         emitProjectEvent(ctx, config, "project.completed", { iteration, trigger: "done-comment" });
         return ctx.done(`Project marked done by human/May at iteration ${iteration}.`);
       }
@@ -852,7 +858,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       // Clear comments — they're now in the journal
       projectContent = clearComments(projectContent);
       projectContent = updateField(projectContent, "Iteration", String(iteration));
-      writeFileSync(config.projectPath, projectContent, "utf-8");
+      cachedWrite(config.projectPath, projectContent);
 
       // Mark discussion as read BEFORE processDecision can exit early
       markDiscussionRead(config.projectDir, iteration);
@@ -868,7 +874,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       projectContent = updateField(projectContent, "Status", "active");
       projectContent = updateField(projectContent, "Stop Reason", "");
       projectContent = updateField(projectContent, "Resume Condition", "");
-      writeFileSync(config.projectPath, projectContent, "utf-8");
+      cachedWrite(config.projectPath, projectContent);
       iteration++;
       continue;
     }
@@ -889,7 +895,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         projectContent = updateField(projectContent, "Status", `blocked`);
         projectContent = updateSection(projectContent, "Current State",
           `Blocked: Worker failed ${consecutiveFailures} consecutive times.`);
-        writeFileSync(config.projectPath, projectContent, "utf-8");
+        cachedWrite(config.projectPath, projectContent);
         return ctx.escalate(`Worker failed ${consecutiveFailures}x at iteration ${iteration}.`);
       }
       continue;
@@ -907,7 +913,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       // Legacy: append to the single file
       projectContent = appendToSection(projectContent, "Progress Log",
         `\n### Iteration ${iteration} — ${now}\n**Worker**: ${workerSummary}\n`);
-      writeFileSync(config.projectPath, projectContent, "utf-8");
+      cachedWrite(config.projectPath, projectContent);
     } else {
       appendFileSync(config.journalPath, journalEntry);
     }
@@ -922,7 +928,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     if (!config.isLegacy) {
       projectContent = catalogOutputs(config.projectDir, projectContent);
     }
-    writeFileSync(config.projectPath, projectContent, "utf-8");
+    cachedWrite(config.projectPath, projectContent);
 
     // ── Budget checkpoint: auto-save before hitting turn limit ──
     if (shouldBudgetCheckpoint(config.projectDir, iteration, config.reviewEvery)) {
@@ -930,7 +936,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       const cpEntry = buildBudgetCheckpointEntry(iteration, turnsEst);
       if (config.isLegacy) {
         projectContent = appendToSection(projectContent, "Progress Log", cpEntry);
-        writeFileSync(config.projectPath, projectContent, "utf-8");
+        cachedWrite(config.projectPath, projectContent);
       } else {
         appendFileSync(config.journalPath, cpEntry);
       }
@@ -940,7 +946,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       projectContent = updateField(projectContent, "Status", "paused");
       projectContent = updateSection(projectContent, "Current State",
         `Paused: budget checkpoint at iteration ${iteration}. ~${turnsEst}/${60} turns used. Resume to continue.`);
-      writeFileSync(config.projectPath, projectContent, "utf-8");
+      cachedWrite(config.projectPath, projectContent);
       return ctx.done(`Budget checkpoint at iteration ${iteration} — saved progress before turn limit.`);
     }
 
@@ -958,7 +964,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         const reviewEntry = `**Reviewer**: CONTINUE — review errored, auto-continuing\n\n`;
         if (config.isLegacy) {
           projectContent += reviewEntry;
-          writeFileSync(config.projectPath, projectContent, "utf-8");
+          cachedWrite(config.projectPath, projectContent);
         } else {
           appendFileSync(config.journalPath, reviewEntry);
         }
@@ -971,7 +977,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
       if (config.isLegacy) {
         projectContent += reviewEntry;
-        writeFileSync(config.projectPath, projectContent, "utf-8");
+        cachedWrite(config.projectPath, projectContent);
       } else {
         appendFileSync(config.journalPath, reviewEntry);
       }
@@ -981,7 +987,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       projectContent = checkOffMilestones(projectContent, decision.detail);
       const afterMs = extractMilestones(projectContent).done;
       if (afterMs > beforeMs) {
-        writeFileSync(config.projectPath, projectContent, "utf-8");
+        cachedWrite(config.projectPath, projectContent);
       }
 
       // Apply context updates from reviewer
@@ -994,7 +1000,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             ? existingContext + "\n" + newContext
             : newContext;
           projectContent = updateSection(projectContent, "Context", updatedContext + "\n");
-          writeFileSync(config.projectPath, projectContent, "utf-8");
+          cachedWrite(config.projectPath, projectContent);
         }
       }
 
@@ -1026,7 +1032,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         projectContent = updateSection(projectContent, "Current State",
           `Blocked: ${continueWithoutProgress} consecutive iterations without milestone progress. Approach needs rethinking.`);
         emitProjectEvent(ctx, config, "project.blocked", { iteration, health: 0, reason: decision.detail.slice(0, 100) });
-        writeFileSync(config.projectPath, projectContent, "utf-8");
+        cachedWrite(config.projectPath, projectContent);
         return ctx.escalate(`Stuck: ${continueWithoutProgress} iterations without progress at iteration ${iteration}.`);
       }
 
@@ -1038,7 +1044,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         `Iteration ${iteration}. Milestones: ${ms.done}/${ms.total} done.\n` +
         (reviewerInsight ? `Reviewer: ${reviewerInsight}` : ""));
 
-      writeFileSync(config.projectPath, projectContent, "utf-8");
+      cachedWrite(config.projectPath, projectContent);
 
       // Mark discussion as read after this iteration processed comments
       markDiscussionRead(config.projectDir, iteration);
@@ -1051,7 +1057,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   projectContent = updateField(projectContent, "Status", "paused");
   projectContent = updateSection(projectContent, "Current State",
     `Paused: reached ${config.maxIterations} iteration cap.`);
-  writeFileSync(config.projectPath, projectContent, "utf-8");
+  cachedWrite(config.projectPath, projectContent);
 
   return ctx.done(`Paused after ${config.maxIterations} iterations (cap). Resume by re-running.`);
 }
