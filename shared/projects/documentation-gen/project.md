@@ -1,30 +1,30 @@
-# Documentation Generation
+# Project: Documentation Generation
 
-Status: paused
-Owner: coach
-Started: 2025-01-27
+**Status**: active
+**Owner**: coach
+**Priority**: P2
+**Workflow**: master-worker
+**Iteration**: 0
 
 ## Goal
-Generate and maintain up-to-date documentation for the agent system — architecture, workflows, agent roles, configuration. Reduce onboarding friction and make the system self-documenting.
+System is self-documenting. Architecture, workflows, agent roles all have up-to-date docs.
 
 ## Metrics
-- docs.pages-generated: 0 → 10+
-- docs.staleness-days: track max age of any doc
-- docs.coverage: percent of agents/workflows with docs
+- docs.coverage: unknown → target 0.80 (% of agents/workflows with docs)
+- docs.staleness-max-days: unknown → target 14 (no doc older than 2 weeks)
+
+## Current State
+New project. Scattered docs exist (README files, context.md, design docs) but no systematic coverage or freshness tracking.
 
 ## Plan
+- [ ] Audit existing docs, identify gaps, write outputs/docs-inventory.md
+- [ ] Write architecture overview covering agent types, workflows, communication
+- [ ] Document each agent's role and configuration
+- [ ] Re-plan: review coverage metric, assess gaps, write next steps
 
-### Milestone 1: Documentation Inventory
-- [ ] Audit existing docs (README files, inline comments, context.md files)
-- [ ] Identify gaps — which agents, workflows, and configs lack documentation
-- [ ] Produce `outputs/docs-inventory.md` with findings
+## References
 
-### Milestone 2: Core Architecture Docs
-- [ ] Write architecture overview (agent types, communication, workflow execution)
-- [ ] Document each agent's role, capabilities, and configuration
-- [ ] Produce `outputs/architecture-guide.md`
-
-### Milestone 3: Auto-Generation Pipeline
-- [ ] Create script to extract docs from code comments and config files
-- [ ] Set up periodic doc refresh (daily or per-deploy)
-- [ ] Produce `outputs/doc-gen-script.md` with implementation
+**Resources:**
+- agents/shared/may-agent-docs/design/ — design docs
+- agents/*/agent.json — agent configs
+- agents/shared/workflows/ — workflow code

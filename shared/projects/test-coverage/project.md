@@ -1,30 +1,30 @@
-# Test Coverage
+# Project: Test Coverage
 
-Status: paused
-Owner: optimizer
-Started: 2025-01-27
+**Status**: active
+**Owner**: optimizer
+**Priority**: P2
+**Workflow**: master-worker
+**Iteration**: 0
 
 ## Goal
-Increase test coverage across the agent system codebase. Identify untested critical paths, write missing tests, and establish coverage thresholds that prevent regressions.
+Critical paths have test coverage. Regressions caught before deployment.
 
 ## Metrics
-- test.coverage-percent: current → 80%+ (target)
-- test.critical-paths-covered: 0 → 100%
-- test.regressions-caught: track count per week
+- test.coverage-percent: unknown → target 0.80
+- test.critical-paths-covered: unknown → target 1.00
+
+## Current State
+New project. Some tests exist but coverage unknown. No coverage gates in build process.
 
 ## Plan
-
-### Milestone 1: Coverage Audit
-- [ ] Run coverage tool across all packages
-- [ ] Identify critical untested paths (workflow execution, request tracking, agent dispatch)
-- [ ] Produce `outputs/coverage-baseline.md` with current state
-
-### Milestone 2: Critical Path Tests
+- [ ] Run coverage tool, identify untested critical paths, write outputs/coverage-baseline.md
 - [ ] Write tests for top 5 untested critical paths
-- [ ] Ensure workflow execution has end-to-end test coverage
-- [ ] Produce test files and updated coverage report
+- [ ] Add coverage threshold to build process
+- [ ] Re-plan: review coverage metric, write next steps
 
-### Milestone 3: Coverage Gates
-- [ ] Add coverage threshold check to CI/build process
-- [ ] Document coverage standards for new code
-- [ ] Produce `outputs/coverage-standards.md`
+## References
+
+**Resources:**
+- src/ — main codebase
+- test/ — existing tests
+- agents/shared/workflows/ — workflow code (critical path)
