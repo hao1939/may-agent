@@ -1,28 +1,24 @@
-# Context-Learn Pipeline Project — Final Status
+# Context-Learn Pipeline — Final Status
 
 **Status: COMPLETED** (as of iteration 10)
 
+## Achievements
+1. **Pipeline end-to-end functional**: context-learn-poller fires every 30min, processes sessions, updates agent context.md files
+2. **79 lessons seeded** in lessons.jsonl across 10+ agents
+3. **Organic capture confirmed working** (2 sessions processed, context.md updated)
+4. **Lesson format defined**, retrieval system built, quality audited
+
 ## Deliverables Produced
-| File | Description |
-|------|-------------|
-| `outputs/memory-audit.md` | Audit of memory files across agents |
-| `outputs/pipeline-metrics.md` | Analysis of pipeline firing rate, root cause diagnosis |
-| `outputs/poller-verification.md` | Verification that poller works end-to-end |
-| `outputs/lesson-quality-audit.md` | Quality assessment of context.md additions |
-| `outputs/learning-dashboard.md` | System activity snapshot |
+- `outputs/pipeline-metrics.md` — pipeline firing analysis
+- `outputs/poller-verification.md` — poller test results
+- `outputs/lesson-quality-audit.md` — quality assessment
+- `outputs/learning-dashboard.md` — system activity snapshot
+- `agents/may/handlers/context-learn-poller.ts` — poller handler
+- `agents/may/cron.json` — updated with poller entry
+- `agents/shared/lessons.jsonl` — 79 lessons seeded
 
-## Infrastructure Changes
-| Change | Location |
-|--------|----------|
-| Context-learn poller handler | `agents/may/handlers/context-learn-poller.ts` |
-| Cron entry (30min interval) | `agents/may/cron.json` |
-| 79 seeded lessons | `agents/shared/lessons.jsonl` |
+## Open Handoffs
+- tech-lead notified (P1): add `session.completed` event emission to replace poller
+- `repeat-mistake-rate` metric needs ~2 weeks of organic data
 
-## Results
-- Pipeline fires every 30min: poller → session-eval → context-learn → context.md updates
-- 79 lessons seeded from 10+ agent context.md files
-- 2 sessions organically processed, confirming end-to-end flow
-
-## Open Handoff
-- **tech-lead (P1)**: Add `session.completed` event emission in core runtime to replace poller with direct triggering
-- **repeat-mistake-rate**: Requires ~2 weeks organic data; not actionable now
+No further work needed.
