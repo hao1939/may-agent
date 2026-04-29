@@ -513,3 +513,4 @@ Project status is now `completed` in project.md. All 4 metrics exceed targets, a
 
 ### Iteration 8 — 2026-04-29T07:50:36.238Z
 **Worker**: 
+**Orchestrator**: Both are `completed` — one in the header, one in Current State section. That's fine.
