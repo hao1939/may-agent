@@ -30,8 +30,6 @@ export {
   validateContentType
 } from './output-validator';
 
-/** Fast-fail pre-validation — rejects doomed tasks before work begins */
-export {
 /** Analyzes task complexity and recommends timeouts */
 export {
   estimateComplexity,
