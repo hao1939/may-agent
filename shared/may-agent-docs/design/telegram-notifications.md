@@ -86,15 +86,6 @@ Notification sent:
 Metrics at target. Orchestrator needs direction.
 ```
 
-Context stored:
-```json
-{
-  "source": { "type": "project", "id": "system-efficiency" },
-  "state": { "status": "waiting", "metrics": { "may-session-ratio": 0.12 } },
-  "background": "3 fixes implemented, metrics met, orchestrator out of ideas"
-}
-```
-
 You reply: "focus on output metrics not cost reduction"
 
 Agent receives:
@@ -105,7 +96,6 @@ Background: orchestrator completed all plan items.
 
 User says: focus on output metrics not cost reduction
 
-then trigger the project to resume with this new direction.
 ```
 
 ### Metric alert → reply
