@@ -21,3 +21,6 @@ Milestones completed:
 (a) Next iteration should produce: Test files for `fewshot-inject-helpers.ts` and `verify-wrap.ts`, plus fix the gym test.
 
 (b) What's different: We're 5/
+
+### Iteration 3 — 2026-04-29T08:01:21.679Z
+**Worker**: All 76 tests pass, 0 failures.
