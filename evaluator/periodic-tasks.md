@@ -101,4 +101,4 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 - Check for existence of any `*llm*` table names (e.g., `llm_evaluations`) and/or a dedicated LLM-eval job/cron.
 - If missing: treat as "LLM eval disabled or not implemented" and open a tracked item to either (a) add it back, or (b) remove/rename docs that imply it exists.
 
-**Last check**: 2026-04-29 — `.state/may.db` has **no** tables matching `*llm*` (query: `sqlite_master WHERE name LIKE '%llm%'` returned empty). Latest evaluator pipeline DB write still healthy: `MAX(evaluations.createdAt)=1777481301215` (2026-04-29T16:48:21Z).
+**Last check**: 2026-04-29 — `.state/may.db` has **no** tables matching `*llm*` (query: `sqlite_master WHERE name LIKE '%llm%'` returned empty). Latest evaluator pipeline DB write still healthy: `MAX(evaluations.createdAt)=1777498157440` (2026-04-29T21:29:17Z).
