@@ -32,3 +32,6 @@ Milestones completed:
 - "Re-plan: measure coverage, assess what's left"
 
 (a) Next iteration should produce: Tests for `shared/lib/` modules and a coverage thresh
+
+### Iteration 4 — 2026-04-29T08:06:27.432Z
+**Worker**: All 105 tests pass, coverage threshold met. Now write the summary:
