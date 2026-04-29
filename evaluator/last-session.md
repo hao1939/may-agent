@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777391205288_201
+- **Session:** s_1777449047909_315
 - **Status:** done
-- **When:** 2026-04-28T15:46:50.128Z
-- **Duration:** 4s
+- **When:** 2026-04-29T07:50:56.974Z
+- **Duration:** 9s
 
 ## What Happened
-WHAT_HAPPENED: The qa agent attempted to inspect recent git history and gym scenarios, initially failing because it ran git commands from /app (not a git repo) before switching to /app/agents where git log worked. It then tried to run TypeScript and Vitest from /app but both executables were missing, and it encountered ENOENT/EISDIR errors when trying to read a non-existent qa projects path and when attempting to read a directory as a file.
-OUTCOME: failure
-STILL_OPEN: Determine the correct repo/root and dependency location to run tsc/vitest (or install deps), locate the correct qa workspace/projects path (create if needed), and clarify what “waste detected: 5 identical” refers to and how qa should act on it.
+WHAT_HAPPENED: The agent attempted to set up Vitest and add unit tests for `shared/workflows/circuit-breaker.ts`, initially failing because `NODE_ENV=production` prevented devDependencies (and thus `vitest/config`) from being installed/resolved. After reinstalling Vitest with `NODE_ENV=development`, it successfully ran Vitest: the new `test/circuit-breaker.test.ts` suite passed (7 tests), though an unrelated pre-existing failure remained in `test/gym/gym.test.ts`. The agent wrote a baseline report to `/app/agents/shared/projects/outputs/coverage-baseline.md` but was blocked from finishing because `DELIVERABLES_CHECKLIST.md` was missing.
+OUTCOME: partial
+STILL_OPEN: Create `DELIVERABLES_CHECKLIST.md` for the session and re-attempt `finish`; optionally address or clearly document the unrelated failing `test/gym/gym.test.ts` (and ensure deliverables are placed under `/app/agents/shared/projects/outputs` per the task rules).
