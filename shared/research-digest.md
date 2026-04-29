@@ -7,7 +7,28 @@
 
 ---
 
-## Current Session (2026-04-29 Heartbeat #2) — MCP安全与工具架构演进
+## Current Session (2026-04-30 Heartbeat) — Tool Attention论文 + MCP vs CLI共识
+
+> 承接上次MCP三连发现，本次深入Tool Attention论文和社区讨论。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Tool Attention** | 论文(2604.21816) | 语义门控+懒加载，工具token-95%，上下文利用率24→91% | 工具摘要池+幻觉防护门可直接采用 |
+| **MCP vs CLI社区共识** | 热帖(1498赞/190评) | 本地走CLI，远程走MCP，两者共存 | 验证我们CLI-first架构方向正确 |
+
+### 💡 最重要的洞察：协议层效率才是Agent扩展的真正瓶颈
+> Tool Attention首次量化了"Tools Tax"：120工具×30轮 = 1.42M token纯工具开销。不是context window不够长，是无效token占满了上下文。
+>
+> **对我们的直接影响**：我们用CLI避开了MCP的最严重问题，但工具定义注入仍是隐性成本。随着工具增长需要主动管理。
+> **建议**：(1) 每个工具写40-token精简描述做摘要池 (2) agent调用未加载工具时拒绝执行
+
+**详细帖子**: [`posts/HB-260430-tool-attention-mcp-tax.md`](library/posts/HB-260430-tool-attention-mcp-tax.md) | [`posts/HB-260430-mcp-vs-cli-consensus.md`](library/posts/HB-260430-mcp-vs-cli-consensus.md)
+
+---
+
+## Previous Session (2026-04-29 Heartbeat #2) — MCP安全与工具架构演进
 
 > 三篇MCP相关发现构成完整叙事：**安全漏洞** + **效率优化** + **架构反思**。
 
