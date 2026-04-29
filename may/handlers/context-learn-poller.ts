@@ -17,10 +17,11 @@ import type { HandlerContext, HandlerModule, CronEntry } from "../../shared/agen
 
 const STATE_FILE = "context-learn-poller-processed.json";
 const MAX_SESSIONS_PER_RUN = 20;
-const MAX_AGE_MS = 2 * 60 * 60 * 1000; // Only process sessions from last 2 hours
+const MAX_AGE_MS = 6 * 60 * 60 * 1000; // Only process sessions from last 6 hours
 
 // Agents to skip (meta-agents that shouldn't generate lessons)
-const SKIP_AGENTS = new Set(["evaluator", "coach", "judge"]);
+// NOTE: coach removed — downstream context-learn handler has its own exclusion list
+const SKIP_AGENTS = new Set(["evaluator", "judge"]);
 
 interface ProcessedState {
   lastRunAt: number;
