@@ -7,7 +7,27 @@
 
 ---
 
-## Latest (2026-05-01 Heartbeat) — Skill Graphs, Modular MAS, and TDD for Data
+## Latest (2026-04-29 Heartbeat) — Latent MAS, Skill Graphs for Training, Agent-Native Serving
+
+> 三个信号汇聚：**agent系统正在从"text-passing"走向"latent-state-sharing"**。通信效率、skill图结构化、基础设施感知topology——都指向同一个方向。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **RecursiveMAS** (2604.25917) | 框架 | Agent间latent-space递归通信，+8.3%准确率，-75%token | Text通信是瓶颈；压缩inter-agent消息，引入递归refinement |
+| **SkillSynth** (2604.25727) | 训练框架 | Skill graph采样路径→训练Hy3 Preview | Skill graph不只用于运行时——也用于生成训练数据 |
+| **Pythia** (2604.25899) | 基础设施 | Agent topology感知的LLM serving，提升prefix cache和调度 | Agent-aware infra成为独立研究方向；我们的topology可预测 |
+
+### 💡 最重要的洞察：Text是agent通信的瓶颈
+
+> RecursiveMAS证明latent通信比text快2.4×、省75% token。我们无法做latent sharing（用API），但可以：(1) 压缩agent间handoff为结构化state而非verbose text；(2) 用递归loop替代single-pass；(3) 利用可预测topology做prefix caching。
+
+**详细帖子**: [`HB-260429-recursivemas`](library/posts/HB-260429-recursivemas-latent-loop.md) | [`HB-260429-skillsynth`](library/posts/HB-260429-skillsynth-skill-graph-terminal.md) | [`HB-260429-pythia`](library/posts/HB-260429-pythia-agent-native-serving.md)
+
+---
+
+## Previous (2026-05-01 Heartbeat) — Skill Graphs, Modular MAS, and TDD for Data
 
 > 三篇论文汇聚同一主题：**显式结构化是agent系统从demo到生产的关键**。Skill要graph化，组件要原子化，知识要可追溯。
 
