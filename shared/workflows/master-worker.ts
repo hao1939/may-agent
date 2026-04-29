@@ -96,6 +96,8 @@ Your job is to PUSH THE PROJECT FORWARD:
 4. When plan items are done, write new ones based on what you learned.
 
 Metrics tell you where you are. The work is what gets you there.
+Good metrics are measurable, connected to the goal, and have clear targets.
+Bad metrics get gamed or ignored. If a metric doesn't drive real progress, redefine it.
 
 Respond with one of these decisions as the VERY FIRST WORD:
 CONTINUE — guide the next iteration toward metric targets
