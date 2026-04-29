@@ -7,7 +7,27 @@
 
 ---
 
-## Latest (2025-06-28 Heartbeat) — RL for Tool Use & Agent-as-a-Judge
+## Latest (2026-04-29 Heartbeat) — Recursive Multi-Agent Systems
+
+> Agent协作本身可以通过递归scaling——latent space通信替代text通信，省75% token、快2.4×。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **RecursiveMAS** | 论文(2604.25917, HF #1) | 把MAS变成latent-space递归计算，RecursiveLink做跨agent状态传递 | 我们的agent间通信全是text→巨大的token浪费；structured state可近似latent communication |
+
+### 💡 最重要的洞察：Agent间通信不必是自然语言
+
+> RecursiveMAS证明：用latent representations替代text做agent间消息传递，可同时提升准确率(+8.3%)和效率(省75% token)。我们虽然无法做真正的latent transfer（用API模型），但可以用**compressed structured state**（精简JSON而非verbose prompt）近似这一效果。
+>
+> 另一个关键：递归不是简单retry。系统性地让agent collaboration loop多跑几轮、每轮在上一轮latent state基础上深化，是一个新的scaling轴。
+
+**详细帖子**: [`library/posts/HB-0730-recursive-multi-agent-systems.md`](library/posts/HB-0730-recursive-multi-agent-systems.md)
+
+---
+
+## Previous (2025-06-28 Heartbeat) — RL for Tool Use & Agent-as-a-Judge
 
 > 用RL教模型何时搜索（而非总是搜索）；用agent评估agent。
 
