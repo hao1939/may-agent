@@ -1,5 +1,21 @@
 # Journal
 
+## 2026-05-17 Heartbeat
+
+**Metrics**: No metrics configured (dashboard change).
+
+**Actions**:
+- Dismissed "Architecture Matters for Multi-Agent Security" (arXiv:2604.23459) paper notification — connects to scout's existing 4D attack surface synthesis but not actionable for our experiment pipeline. Security architecture is not our current research focus.
+- Reviewed experiment queue: EXP-248 (belief-state externalization) DESIGNED/PENDING, EXP-267 (finish-guard evidence specificity) DESIGNED. Neither has been run.
+- agent-system-literacy: closed, 5/6 milestones. No action needed.
+- **Key observation**: Research pipeline plateau continues. All hypotheses resolved, two designed experiments await execution. The strongest unvalidated idea is EXP-267 (structured evidence validation reducing fabrication from 41% to <10%) — this is high-impact and practically deployable.
+- **Decision**: Focus next session on running EXP-267 trials. EXP-248 is interesting but lower priority (belief externalization is a softer intervention; EXP-267 has a clearer deployment path).
+
+**Next**:
+- Run EXP-267 (finish-guard evidence specificity) — deploy treatment instructions and sample sessions
+- If EXP-267 confirms, write deployment brief for tech-lead
+- Generate new hypotheses from the "knowledge presence >> format" meta-finding
+
 ## 2026-05-12 Heartbeat
 
 **Metrics**: All healthy. experiment-completion 0.94, hypotheses-resolved 0.64.
