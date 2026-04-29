@@ -7,7 +7,27 @@
 
 ---
 
-## Latest (2026-04-29 Heartbeat #3) — Epistemic State, Modular MAS, Pre-Action Governance, Compound AI Infra
+## Latest (2026-04-30 Heartbeat) — Multi-Agent Orchestration: Sub Agents vs Teams vs Workflow Agents
+
+> 行业对多智能体编排形成共识：**不是"用不用多Agent"，而是"用哪种协调模式"**。Google ADK正式化三种workflow原语，Claude体系区分Sub Agent/Agent Team，反God Agent成为统一立场。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Google ADK 5种编排模式** | 官方文档+社区解读 | Sequential/Parallel/Loop + LLM delegation + hierarchy | 我们的boss→agent是LLM delegation；缺显式workflow agents |
+| **Sub Agents vs Agent Teams** | 社区分析(Claude体系) | 即发即忘并行 vs 持久对等通信，解决不同协调问题 | 我们的heartbeat=Sub Agent模式；缺Agent Team模式 |
+| **God Agent反模式** | 行业共识 | 单体agent不可扩展，结构>智能 | 验证我们多agent分工方向正确 |
+
+### 💡 最重要的洞察：协调模式决定架构，不是反过来
+
+> "真正决定系统稳定性的，不是模型本身有多聪明，而是你给它套了多严谨的结构。" 选错协调模式的代价比不用多Agent还大。我们的系统本质是 LLM-driven delegation + Sub Agent 模式（独立上下文，结果蒸馏回共享知识库）。缺失的是：(1) 显式SequentialAgent用于流水线；(2) ParallelAgent用于并行调研；(3) Agent间直接对等通信。
+
+**详细帖子**: [`HB-0006-multi-agent-orchestration-patterns`](library/posts/HB-0006-multi-agent-orchestration-patterns.md)
+
+---
+
+## Previous (2026-04-29 Heartbeat #3) — Epistemic State, Modular MAS, Pre-Action Governance, Compound AI Infra
 
 > 四篇论文汇聚：**agent系统正在从"能做事"走向"知道自己在做什么"**。显式认知状态、内嵌治理、模块化演化、生产级基础设施——都指向同一个成熟化方向。
 
