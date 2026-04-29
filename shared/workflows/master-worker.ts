@@ -27,6 +27,7 @@ import {
   cleanupCheckpoints,
   type CheckpointData,
 } from "./incremental-checkpoint.ts";
+import { validateOutput, type ValidationResult } from "./output-validator.ts";
 
 export const name: string = "master-worker";
 
@@ -436,6 +437,31 @@ ${journalContent.slice(-3000)}
           break;
         }
       } else {
+        // Validate outputs before accepting them
+        const validFiles: string[] = [];
+        const rejectedFiles: string[] = [];
+        for (const filePath of changedFiles) {
+          try {
+            const content = readFileSync(filePath, 'utf-8');
+            const filename = filePath.split('/').pop() || '';
+            const result = validateOutput(filename, content, { outputDir: outputsDir, checkDuplicates: true });
+            if (result.valid) {
+              validFiles.push(filePath);
+              if (result.warnings.length > 0) {
+                ctx.log(`[validate] ⚠️ ${filename}: ${result.warnings.join(', ')}`);
+              }
+            } else {
+              rejectedFiles.push(filePath);
+              ctx.log(`[validate] ❌ Rejected ${filename}: ${result.errors.join(', ')}`);
+            }
+          } catch {
+            validFiles.push(filePath); // Can't read = skip validation
+          }
+        }
+        if (rejectedFiles.length > 0) {
+          ctx.log(`[validate] Rejected ${rejectedFiles.length} file(s), accepted ${validFiles.length}`);
+        }
+        changedFiles = validFiles;
         (ctx as any)._consecutiveZeroOutput = 0;
         ctx.log(`[work] ✅ Iteration ${iteration} produced ${changedFiles.length} file(s): ${changedFiles.map(f => f.split('/').pop()).join(', ')}`);
       }
