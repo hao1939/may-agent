@@ -4,7 +4,7 @@
 **Owner**: optimizer
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 44
+**Iteration**: 45
 
 ## Goal
 Maximize meaningful output of the agent system. Not about reducing cost — about doing more real work per hour. "Meaningful output" = code changes, documentation, bug fixes, features that move satellite projects toward their goals.
@@ -27,7 +27,7 @@ Real work to do: get test-coverage and agent-memory-learning to their metric tar
 
 ## Plan
 - [ ] Measure current deliverables-per-iteration (audit last 10 iterations for real file output)
-- [ ] Drive test-coverage: install vitest, write first test for workflows/project.ts critical path
+- [x] Drive test-coverage: install vitest, write first test for workflows/project.ts critical path (20 tests, 255 lines, all passing)
 - [ ] Drive agent-memory-learning: build lesson capture pipeline, get to 50 lessons
 - [ ] Measure worker-first-attempt-success rate from journal entries
 - [ ] Re-plan based on metrics
