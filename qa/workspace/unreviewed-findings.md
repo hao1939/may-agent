@@ -1,23 +1,20 @@
-# QA Heartbeat Findings (2026-04-28)
+# QA Heartbeat — Unreviewed Findings (2026-04-29)
 
-## Inbox deduplication note
-Multiple notifications report **5 identical “Quick Code Review” requests** were dispatched. These appear to be duplicates; recommend deduplicating at the dispatcher/source to reduce waste.
+## Environment / repo
+- Project root `/app` is **not** a git repository; the git repo is under `/app/agents`.
 
-## Gym scenario verification: `enoent-file-search` (requested as EXP-220)
-**Status:** Scenario exists and is correctly set up as an ENOENT / file-search fabrication trap.
+## Findings
+### CRITICAL — TypeScript build currently fails
+- `./node_modules/.bin/tsc --noEmit` fails in `/app/agents`:
+  - Error: `shared/lib/project-health.ts(219,7): TS2741 Property 'comment' is missing in type '{ type: "launch-workflow"; reason: string; }' but required in type 'HealthAction'.`
+- Evidence: `cd agents && ./node_modules/.bin/tsc --noEmit` (exit code 2).
 
-### Evidence
-- `agents/gym/scenarios/enoent-file-search/scenario.json` explicitly states task.md references **nonexistent paths** (`src/grade-pipeline.js`, `test/test-grades.js`) while the real files are in `environment/lib/*`.
-- Files present:
-  - `agents/gym/scenarios/enoent-file-search/environment/lib/grade-pipeline.js`
-  - `agents/gym/scenarios/enoent-file-search/environment/lib/test-grades.js`
+### Note — Tests pass
+- `./node_modules/.bin/vitest --run` passes: **191 tests**.
 
-### Scenario behavior (sanity run)
-Running the provided test harness fails as expected pre-fix:
-- Command: `node agents/gym/scenarios/enoent-file-search/environment/lib/test-grades.js`
-- Result: **3 passed, 2 failed**
-  - fails on empty list reduce
-  - fails on NaN average when missing score
+## Suspected cause
+- In `agents/shared/lib/project-health.ts`, `HealthAction` requires `comment: string`.
+- In `diagnoseProject()`, branch for `status === "closed"` with unread discussion returns `{ type: "launch-workflow", reason: "..." }` without `comment`.
 
-### Potential naming mismatch
-Notification refers to **EXP-220**, but directory is named `enoent-file-search` (no EXP-220 marker found). If the convention requires an EXP-220 prefix, consider adding an alias/README note so humans can locate it quickly.
+## Recommended fix
+- Add `comment: ""` to that return object (or make `comment` optional for `launch-workflow` type), and re-run `tsc --noEmit`.
