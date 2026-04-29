@@ -1,18 +1,28 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777449205615_336
+- **Session:** s_1777449236520_341
 - **Status:** done
-- **When:** 2026-04-29T07:54:28.297Z
-- **Duration:** 1m2s
+- **When:** 2026-04-29T07:54:37.748Z
+- **Duration:** 41s
 
 ## What Happened
-PIVOT
+CONTINUE
 
-Hao is right — we were gaming metrics by cycling iterations, not doing real work. The project is NOT done; "maximize meaningful output" is an ongoing goal. I've redesigned the metrics to measure actual output quality and reset the focus.
+Milestones completed:
+- "Install vitest, create vitest.config.ts, create test/ dir, write a smoke test that passes"
+- "Analyze codebase and write outputs/coverage-baseline.md listing functions and testability"
+- "Write unit tests for circuit-breaker.ts (pure logic, most testable)"
 
-**(a) Next iteration should**: Install vitest in the shared project and write the first real test for `workflows/project.ts` (the largest, most critical file at 1046 lines). This directly advances test-coverage toward its goal AND demonstrates meaningful output from this project.
+(a) Next iteration should produce: Unit tests for `project-helpers.ts` and `budget-checkpoint.ts`, plus at least 2 guard tests.
 
-**(b) What's different**: No more counting iterations as progress. The worker must produce actual working code — a test file that runs and passes. Success = `npx vitest run` exits 0 with at least one test covering project creation/archival logic.
+(b) What's different: We have a working test framework and baseline. Now we grind through the untested files. Focus on files with pure functions that don't require mocking the LLM API.
 
-**(c) First step**: `cd /app/agents/shared && npm install -D vitest` then create `tests/project.test.ts` testing the core project CRUD functions from `workflows/project.ts`.
+(c) First step:
+1. Read `shared/workflows/project-helpers.ts` and `shared/workflows/budget-checkpoint.ts` — identify all exported functions
+2. Write `/app/agents/test/project-helpers.test.ts` testing each pure function
+3. Write `/app/agents/test/budget-checkpoint.test.ts` testing each pure function
+4. Read `shared/guards/hallucinated-path.ts` and `shared/guards/read-before-edit.ts` — these should be pure logic guards that check tool call patterns
+5. Write `/app/agents/test/guards.test.ts` testing those guards
+6. Run `npx vitest run` and confirm all new tests pass
+7. Do NOT create markdown docs — only test files that pass
