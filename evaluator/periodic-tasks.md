@@ -98,7 +98,7 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 ## 9. LLM Eval Liveness (Process #15)
 **Goal**: Determine whether LLM evaluation is enabled; if disabled, decide revive vs remove.
 - Canonical source: `.state/may.db` (do not rely on legacy artifact directories).
-- Check for existence of a `llm_evaluations` (or similarly named) table.
+- Check for existence of any `*llm*` table names (e.g., `llm_evaluations`) and/or a dedicated LLM-eval job/cron.
 - If missing: treat as "LLM eval disabled or not implemented" and open a tracked item to either (a) add it back, or (b) remove/rename docs that imply it exists.
 
-**Last check**: 2026-04-14 04:21Z — `.state/may.db` table inventory includes `evaluations` and **no** `llm_evaluations` / `session_evaluations` tables (LLM eval appears disabled/unimplemented or renamed). Also verified eval pipeline liveness: `evaluations MAX(createdAt)=1776139562299` (2026-04-14T04:06:02Z).
+**Last check**: 2026-04-29 — `.state/may.db` has **no** tables matching `*llm*` (query: `sqlite_master WHERE name LIKE '%llm%'` returned empty). Latest evaluator pipeline DB write still healthy: `MAX(evaluations.createdAt)=1777481301215` (2026-04-29T16:48:21Z).
