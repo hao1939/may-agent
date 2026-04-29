@@ -1,23 +1,20 @@
 # Evaluator Heartbeat — 2026-04-29
 
-## Process #5 (Session Eval) liveness
-- DB canonical check: `.state/may.db` `MAX(evaluations.createdAt))=1777489217707` → `2026-04-29 19:00:17.707Z` (pipeline writing recently).
-- Counts: `sessions=634`, `evaluations=102` (coverage not assessed this heartbeat; just liveness).
-- Legacy artifacts: `.state/evaluations/` has new `s_*.json` mtimes on 2026-04-29, but task_tree/older eval artifacts still mostly 2026-03-24 → likely partial drift between DB and legacy directory outputs.
+## Checks performed
 
-## Process #15 (LLM Eval)
-- Not re-queried this heartbeat; periodic-tasks.md already notes no `*llm*` tables in `.state/may.db` as of 2026-04-29.
+### Session-eval pipeline liveness (Process #5)
+- DB canonical: `.state/may.db` `evaluations.max(createdAt)` = `1777496417874` → `2026-04-29 21:00:17Z`.
+- Counts: `sessions`=1037, `evaluations`=502.
+- Heuristic vs non-heuristic: heuristic_evals=32, nonheuristic_evals=472; newest nonheuristic `2026-04-29 21:29:17Z`.
 
-## Monitoring (L2)
-- `node agents/evaluator/skills/monitor-session.cjs --running` → 2 running sessions checked, 2 healthy.
+Interpretation: evaluation pipeline is active; any `.state/evaluations/` staleness is likely legacy artifact drift, not core pipeline failure.
 
-## Patrol (L3)
-- `node agents/evaluator/skills/patrol.cjs` → `CRITICAL` with `Missing compliance-snapshot.json`.
-- Treat as degraded integrity patrol baseline missing (known chronic), not an active hash mismatch.
+### Legacy artifacts directory
+- `ls -la .state/evaluations | tail -20` shows many Mar 24 artifacts but also several `s_*.json` files dated Apr 29.
 
-## Calibration inputs
-- `agents/evaluator/workspace/{consistency-flags,human-reviews,re-evaluations}.jsonl` are placeholders due to missing prior archive symlink targets → calibration loop currently has no real human/consistency data to learn from.
+### LLM Eval (Process #15)
+- No dedicated LLM tables observed (schema tables: `evaluations`, `session_digests`, etc.).
+- `evaluatedByHeuristic` column suggests the system tracks whether evaluation came from heuristic vs (presumably) LLM.
 
 ## Follow-ups suggested
-1. Restore/replace the missing archived calibration artifacts pipeline (or remove placeholder mechanism) so evaluator can ingest real disagreement signals.
-2. Obtain/generate `agents/shared/compliance-snapshot.json` baseline (owner previously noted as Bob) so patrol can provide non-degraded integrity results.
+- If consumers still rely on `.state/evaluations/task_tree_*.json`, consider migrating them to read from DB `evaluations.failureChains` / `issues` (or update the producing job to emit fresh task_tree artifacts).
