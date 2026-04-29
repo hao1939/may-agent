@@ -58,7 +58,7 @@ Four states:
 Rules:
 - Workflow NEVER sets closed — only human or May can close a project
 - Projects keep iterating while active. Metrics are the goal, not plan items.
-- Milestones are a work log (what to try), not a completion trigger.
+- Plan items are a work log (what to try), not a completion trigger.
 
 ## Plan
 - [x] First step
