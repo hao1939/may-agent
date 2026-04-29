@@ -46,3 +46,11 @@ CONTINUE
 
 ### Iteration 5 — 2026-04-29T08:10:20.365Z
 **Worker**: **168 tests pass, 77.56% line coverage, threshold met (60%).** 
+**Orchestrator**: CONTINUE
+
+Milestones completed:
+- "Raise coverage threshold from 15% to 60% in vitest.config.ts"
+- "Write integration-style tests for poller.ts (mock API calls, test message routing logic)"
+- "Run `npx vitest run --coverage` and record actual line coverage percentage"
+
+(a) Next iteration should prod
