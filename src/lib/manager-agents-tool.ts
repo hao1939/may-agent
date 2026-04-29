@@ -11,7 +11,7 @@ import { Type, StringEnum } from "@mariozechner/pi-ai";
 import type { ActiveSession, RegisteredAgent } from "./manager-utils.js";
 import type { SessionInfo, TaskResult } from "./types.js";
 import type { PersistedSession } from "./persistence.js";
-import { trackRequest, updateRequest, classifyError, isDuplicate, getDb } from "./requests.js";
+import { getDb } from "./requests.js";
 
 // ── Manager interface ──────────────────────────────────────────────────
 // Instead of importing the full SubagentManager class (circular dependency),
@@ -251,47 +251,11 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               return textResult(JSON.stringify({ error: `Cannot call "${params.agent}" directly. ${callDeny.hint}` }));
             }
             const parentSid = getCallerSessionId?.();
-            const callerName = getCallerAgentName?.() ?? "unknown";
-
-            // Track the request in SQLite
-            const startTime = Date.now();
-            let requestId: string | undefined;
-            try {
-              requestId = trackRequest(manager.registry.persistDir, {
-                fromEntity: callerName,
-                toAgent: params.agent,
-                task: params.task,
-                method: "call",
-                sessionId: parentSid,
-                context: params.context_files ? JSON.stringify(params.context_files) : undefined,
-                expectations: params.success_criteria ? JSON.stringify(params.success_criteria) : undefined,
-              });
-            } catch {
-              // Non-fatal: tracking failure shouldn't block the call
-            }
 
             // Sync call: blocks until done
             const result = await manager.callAgent(params.agent, params.task, {
               parentSessionId: parentSid,
             });
-
-            // Update request with outcome
-            if (requestId) {
-              try {
-                const durationMs = Date.now() - startTime;
-                const hasError = result.status === "error" || result.status === "interrupted";
-                updateRequest(manager.registry.persistDir, requestId, {
-                  status: hasError ? "FAILED" : "COMPLETED",
-                  sessionId: result.sessionId,
-                  error: hasError ? result.error : undefined,
-                  errorClass: hasError ? classifyError(result.error) : undefined,
-                  durationMs,
-                  completedAt: Date.now(),
-                });
-              } catch {
-                // Non-fatal
-              }
-            }
 
             // Return result without full messages array (too large for tool output)
             const { messages: _msgs, ...resultWithoutMessages } = result;
@@ -329,30 +293,12 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               return textResult(JSON.stringify({ error: `Cannot fork "${params.agent}" directly. ${callDeny.hint}` }));
             }
             const parentSidRun = getCallerSessionId?.();
-            const callerNameRun = getCallerAgentName?.() ?? "unknown";
-
-            // Track the request in SQLite
-            let runRequestId: string | undefined;
-            try {
-              runRequestId = trackRequest(manager.registry.persistDir, {
-                fromEntity: callerNameRun,
-                toAgent: params.agent,
-                task: forkTask,
-                method: "fork",
-                sessionId: parentSidRun,
-                context: params.context_files ? JSON.stringify(params.context_files) : undefined,
-                expectations: params.success_criteria ? JSON.stringify(params.success_criteria) : undefined,
-              });
-            } catch {
-              // Non-fatal: tracking failure shouldn't block the run
-            }
 
             // Fire-and-forget: start agent immediately, don't wait
             // Fork creates a new root with originSessionId linking back to the caller
             const sessionId = manager.runAgent(params.agent, forkTask, {
               originSessionId: parentSidRun,
               source: "agents.fork",
-              requestId: runRequestId,
             });
 
             return textResult(
@@ -360,7 +306,6 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                 status: "started",
                 sessionId,
                 agent: params.agent,
-                requestId: runRequestId?.slice(0, 8),
                 hint: `Use peek({ sessionId: "${sessionId}" }) to monitor progress.`,
               }),
             );

@@ -15,20 +15,6 @@ import type { PersistedSession } from "./persistence.js";
 import type { DigestRow, DigestInput, DigestAction } from "./session-digest.js";
 import type { ErrorClass } from "./classify-error.js";
 
-export interface TrackRequestOpts {
-  fromEntity: string;
-  toAgent: string;
-  task: string;
-  method: "chat" | "call" | "message" | "notify" | "workflow";
-  sessionId?: string;
-  parentRequestId?: string;
-  source?: string;
-  artifact?: string;
-  context?: string;
-  expectations?: string;
-  notify?: string[];
-}
-
 /**
  * RuntimeCtx — the shared infrastructure surface available to handlers, workflows, and agent tools.
  *
@@ -45,10 +31,6 @@ export interface RuntimeCtx {
   log(msg: string): void;
   /** Send a human-visible notification (Telegram, web). */
   notify(msg: string): void;
-  /** Save a workflow run record to .state/workflows/. */
-  saveWorkflowRun(run: Record<string, unknown>): void;
-  /** Summarize a task result for handoff. */
-  summarizeForHandoff(result: Record<string, unknown>, opts?: Record<string, unknown>): string;
   /** Persistent state directory. */
   persistDir: string;
   /** Project root directory. */
@@ -132,10 +114,6 @@ export interface HandlerContext extends RuntimeCtx {
 
   /** Trigger a cron entry immediately (reactive trigger). Returns true if fired/latched. */
   triggerNow: (entryName: string) => boolean;
-
-  /** No-op stub (requests table removed). Returns a dummy UUID for session.requestId linkage.
-   * @deprecated Use ctx.emit() for notifications instead. */
-  trackRequest: (opts: TrackRequestOpts) => string;
 
   /** Load all session metadata (active + archived). */
   loadAllSessionMetas: () => Record<string, PersistedSession>;

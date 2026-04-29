@@ -10,29 +10,11 @@ import { openDatabase } from "./db.js";
 import type { SqliteDb } from "./db.js";
 import { join } from "node:path";
 import { mkdirSync } from "node:fs";
-import { randomUUID } from "node:crypto";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
-type RequestMethod = "chat" | "call" | "message" | "notify" | "fork" | "workflow";
-
 // ErrorClass and classifyError are now in classify-error.ts (pure, no bun:sqlite deps)
 export type { ErrorClass } from "./classify-error.js";
-
-export interface TrackRequestOpts {
-  fromEntity: string;
-  toAgent: string;
-  task: string;
-  method: RequestMethod;
-  sessionId?: string;
-  parentRequestId?: string;
-  source?: string;
-  artifact?: string;
-  context?: string;
-  expectations?: string;
-  notify?: string[];
-  source_finding?: string;
-}
 
 // ── Schema ─────────────────────────────────────────────────────────────
 
@@ -374,29 +356,6 @@ export function closeAllDbs(): void {
 }
 
 // ── Core Operations ────────────────────────────────────────────────────
-
-/**
- * Track a new request. Returns the generated requestId.
- */
-export function trackRequest(_persistDir: string, _req: TrackRequestOpts): string {
-  // No-op: requests table removed. Return a dummy ID for callers that use it.
-  return randomUUID();
-}
-
-/**
- * Update an existing request's status and metadata.
- */
-export function updateRequest(_persistDir: string, _requestId: string, _fields: Record<string, unknown>): void {
-  // No-op: requests table removed.
-}
-
-/**
- * Check if a duplicate request exists (same from, to, task hash).
- * No-op stub — kept for callers that use it as a guard.
- */
-export function isDuplicate(_persistDir: string, _from: string, _to: string, _task: string): string | undefined {
-  return undefined;
-}
 
 // ── Error Classification ───────────────────────────────────────────────
 

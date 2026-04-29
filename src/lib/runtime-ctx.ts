@@ -9,8 +9,7 @@ import type { RuntimeCtx } from "./handler-context.js";
 import type { EventBus } from "../app/event-bus.js";
 import { getDb, upsertEvaluation as _upsertEvaluation, hasEvaluation as _hasEvaluation, hasLLMEvaluation as _hasLLMEvaluation, getAllEvaluations as _getAllEvaluations } from "./requests.js";
 import { log as globalLog } from "./log.js";
-import { saveWorkflowRun as _saveWorkflowRun, readSessionMeta as _readSessionMeta, readSessionMessages as _readSessionMessages, readArchivedSessionMessages as _readArchivedSessionMessages } from "./persistence.js";
-import { summarizeForHandoff as _summarizeForHandoff } from "./handoff.js";
+import { readSessionMeta as _readSessionMeta, readSessionMessages as _readSessionMessages, readArchivedSessionMessages as _readArchivedSessionMessages } from "./persistence.js";
 import { classifyError as _classifyError } from "./classify-error.js";
 import { getLastDigest as _getLastDigest, upsertDigest as _upsertDigest, classifyDigest as _classifyDigest } from "./session-digest.js";
 import { syncAll as _syncAll } from "./research-db.js";
@@ -33,8 +32,6 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
     getDb: () => getDb(opts.persistDir),
     log: (msg) => globalLog("info", `[${opts.agentName}] ${msg}`),
     notify: (msg) => opts.bus.emit({ type: "notification", agent: opts.agentName, text: msg }),
-    saveWorkflowRun: (run) => _saveWorkflowRun(opts.persistDir, run as any),
-    summarizeForHandoff: (result, handoffOpts?) => _summarizeForHandoff(result as any, handoffOpts as any),
     persistDir: opts.persistDir,
     projectRoot: opts.projectRoot,
     agentsRoot: opts.agentsRoot,

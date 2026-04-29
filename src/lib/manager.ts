@@ -55,7 +55,7 @@ import type {
 } from "./types.js";
 import { createCompactionTransform } from "./compaction.js";
 import type { CompactionOptions } from "./compaction.js";
-import { getDb, updateSessionDb, trackRequest } from "./requests.js";
+import { getDb, updateSessionDb } from "./requests.js";
 import {
   RegistryStore,
   sessionDir,
@@ -773,17 +773,7 @@ export class SubagentManager {
 
     const parentName = session.parentAgentName;
     if (parentName) {
-      try {
-        trackRequest(this.registry.persistDir, {
-          fromEntity: session.agentName,
-          toAgent: parentName,
-          task: escalationTask,
-          method: "notify",
-          sessionId: session.sessionId,
-        });
-      } catch {
-        /* best-effort */
-      }
+      // Escalation event already emitted above — no additional tracking needed
     }
 
   }
