@@ -1,22 +1,22 @@
-# Context-Learn Pipeline — Project Summary
+# Context-Learn Pipeline: Project Summary
 
 **Status:** COMPLETED (Iteration 10+)
 
 ## Achievements
-1. **Pipeline end-to-end functional** — context-learn-poller runs every 30min, processes sessions, updates agent context.md files
+1. **Pipeline end-to-end functional**: context-learn-poller fires every 30min, processes sessions, updates agent context.md files
 2. **79 lessons seeded** in lessons.jsonl across 10+ agents
-3. **Organic capture confirmed** — 2 sessions processed, context.md updated automatically
+3. **Organic capture confirmed working** (2 sessions processed, context.md updated)
 4. **Lesson format defined**, retrieval system built, quality audited
 
-## Key Deliverables
-- `/app/agents/may/handlers/context-learn-poller.ts` — poller handler
-- `/app/agents/may/cron.json` — cron entry for poller (30min interval)
-- `/app/agents/shared/lessons.jsonl` — 79 extracted lessons
-- `outputs/pipeline-metrics.md` — pipeline analysis
-- `outputs/poller-verification.md` — verification results
+## Deliverables Produced
+- `outputs/pipeline-metrics.md` — pipeline firing analysis
+- `outputs/poller-verification.md` — poller test results
 - `outputs/lesson-quality-audit.md` — quality assessment
 - `outputs/learning-dashboard.md` — system activity snapshot
+- `agents/may/handlers/context-learn-poller.ts` — poller handler
+- `agents/may/cron.json` — updated with poller entry
+- `agents/shared/lessons.jsonl` — 79 lessons seeded
 
 ## Open Handoffs
-- **tech-lead (P1):** Add `session.completed` event emission in core runtime to replace poller with direct event triggering
-- **repeat-mistake-rate:** Requires ~2 weeks organic data to measure; not actionable now
+- tech-lead notified (P1): add `session.completed` event emission in core runtime
+- `repeat-mistake-rate` metric requires ~2 weeks of organic operation
