@@ -1,12 +1,12 @@
 # Project: Skill & Workflow Quality
 
-**Status**: completed
+**Status**: active
 **Stop Reason**: All 4 metrics at target, all 18 plan items done. Closed by May.
 **Owner**: coach
 **Type**: continuous
 **Workflow**: master-worker
 **Priority**: P0
-**Iteration**: 2
+**Iteration**: 3
 
 ## Goal
 Every skill and workflow verified working, measured for impact, protected against regression.
