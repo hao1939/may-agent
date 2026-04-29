@@ -6,7 +6,7 @@
 **Type**: continuous
 **Workflow**: master-worker
 **Priority**: P0
-**Iteration**: 5
+**Iteration**: 6
 
 ## Goal
 Every skill and workflow verified working, measured for impact, protected against regression.

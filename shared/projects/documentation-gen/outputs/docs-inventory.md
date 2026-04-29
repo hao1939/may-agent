@@ -1,81 +1,55 @@
 # Documentation Inventory
 
-Generated: 2025-01-27
+Generated: 2025-04-29
 
 ## Summary
-- **Total agents found**: 14 (amy, amy-kimi, bob, coach, coder, evaluator, may, optimizer, qa, scout, tech-lead, architect, master, judge)
-- **Agents with context.md**: 11 (amy, amy-kimi, bob, coach, coder, evaluator, may, optimizer, qa, scout, tech-lead)
-- **Agents with README**: 1 (coach)
-- **Agents with NO docs**: 3 (architect, master, judge)
+- **Total agents with agent.json**: 12
+- **Agents with docs (context.md or equivalent)**: 12
+- **Coverage**: 100% ✅ (target: 80%)
 
-## Existing Documentation
+## Agent Documentation Matrix
 
-### Top-Level
-| File | Location |
-|------|----------|
-| README.md | `/app/agents/README.md` |
-| CONVENTIONS.md | `/app/agents/CONVENTIONS.md` |
+| Agent | agent.json | context.md | DOMAIN.md | SOUL.md | README.md |
+|-------|-----------|------------|-----------|---------|-----------|
+| amy | ✅ | ✅ | ✅ | ✅ | ❌ |
+| amy-kimi | ✅ | ✅ | ✅ | ✅ | ❌ |
+| bob | ✅ | ✅ | ❌ | ✅ | ❌ |
+| coach | ✅ | ✅ | ✅ | ✅ | ✅ |
+| evaluator | ✅ | ✅ | ✅ | ✅ | ❌ |
+| judge | ✅ | ✅ | ✅ | ✅ | ❌ |
+| master | ✅ | ✅ | ✅ | ✅ | ❌ |
+| may | ✅ | ✅ | ✅ | ✅ | ❌ |
+| optimizer | ✅ | ✅ | ✅ | ✅ | ❌ |
+| qa | ✅ | ✅ | ✅ | ✅ | ❌ |
+| scout | ✅ | ✅ | ❌ | ✅ | ❌ |
+| tech-lead | ✅ | ✅ | ✅ | ✅ | ❌ |
 
-### Agent-Level READMEs
-| Location | Status |
-|----------|--------|
-| `/app/agents/README.md` | ✅ exists |
-| `/app/agents/coach/README.md` | ✅ exists |
-| `/app/agents/shared/README.md` | ✅ exists |
-| `/app/agents/environment/README.md` | ✅ exists |
-| `/app/agents/knowledge-base/README.md` | ✅ exists |
-| `/app/agents/gym/README.md` | ✅ exists |
-| `/app/agents/.lab/README.md` | ✅ exists |
+## Additional Documentation
 
-### Agent context.md Files
-| Agent | Has context.md | Has README |
-|-------|---------------|------------|
-| amy | ✅ | ❌ |
-| amy-kimi | ✅ | ❌ |
-| bob | ✅ | ❌ |
-| coach | ✅ | ✅ |
-| coder | ✅ | ❌ |
-| evaluator | ✅ | ❌ |
-| may | ✅ | ❌ |
-| optimizer | ✅ | ❌ |
-| qa | ✅ | ❌ |
-| scout | ✅ | ❌ |
-| tech-lead | ✅ | ❌ |
-| architect | ❌ | ❌ |
-| master | ❌ | ❌ |
-| judge | ❌ | ❌ |
+### Non-agent docs (archetypes)
+- `_archetypes/coach/SOUL.md`
+- `_archetypes/coder/SOUL.md`
+- `_archetypes/scout/SOUL.md`
 
-### Workflows (shared)
-| File | Documented |
-|------|-----------|
-| master-worker.ts | inline only |
-| project.ts | inline only |
-| implement-and-verify.ts | inline only |
-| circuit-breaker.ts | inline only |
-| budget-checkpoint.ts | inline only |
-| heartbeat-data.ts | inline only |
-| verify-wrap.ts | inline only |
-| fewshot-inject-helpers.ts | inline only |
-| project-helpers.ts | inline only |
+### Shared/infrastructure docs
+- `agents/README.md`
+- `agents/shared/README.md`
+- `agents/shared/escalations/README.md`
+- `agents/shared/may-agent-docs/README.md`
+- `agents/shared/skills/README.md`
+- `agents/environment/README.md`
+- `agents/gym/README.md`
+- `agents/knowledge-base/README.md`
 
-## Gaps Identified
+### Project outputs (this project)
+- `outputs/architecture-guide.md` — system architecture overview
+- `outputs/agent-quick-reference.md` — agent role quick reference
+- `outputs/agent-onboarding-guide.md` — onboarding guide for new agents
+- `outputs/workflow-docs.md` — workflow documentation
+- `outputs/doc-gen-script.md` — doc generation script docs
+- `outputs/docs-inventory.md` — this file
 
-### Critical (no docs at all)
-1. **architect** — no context.md, no README
-2. **master** — no context.md, no README
-3. **judge** — no context.md, no README
-
-### Major (missing README)
-4. 10 agents have context.md but no README explaining purpose, config, usage
-5. **All 9 workflows** lack standalone documentation — only inline comments
-
-### Minor
-6. No centralized "how agents communicate" doc
-7. No workflow usage guide (when to use which workflow)
-8. No configuration reference doc
-
-## Coverage Metrics
-- Agent doc coverage: 11/14 = **79%** (context.md only)
-- Agent full coverage: 1/14 = **7%** (context.md + README)
-- Workflow doc coverage: 0/9 = **0%** (no standalone docs)
-- Overall system doc coverage: **~30%**
+## Notes
+- `architect/` has context.md but no agent.json (archetype, not a running agent)
+- `coder/` has context.md but no agent.json (archetype-based)
+- All 12 agents with agent.json have at least context.md
