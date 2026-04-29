@@ -18,8 +18,8 @@ import type { HandlerContext, HandlerModule, CronEntry } from "../../shared/agen
 import { evaluateStandaloneSession } from "../../shared/evaluation/evaluator.js";
 
 const STATE_FILE = "eval-poller-processed.json";
-const MAX_SESSIONS_PER_RUN = 8; // Cap LLM evaluations per run to control costs
-const MAX_AGE_MS = 6 * 60 * 60 * 1000; // Only process sessions from last 6 hours
+const MAX_SESSIONS_PER_RUN = 20; // Increased from 8 to improve coverage throughput
+const MAX_AGE_MS = 48 * 60 * 60 * 1000; // Increased from 6h to 48h to catch more sessions
 
 // Meta-agents that shouldn't be evaluated
 const SKIP_AGENTS = new Set(["evaluator", "judge"]);
