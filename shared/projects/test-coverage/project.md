@@ -16,7 +16,7 @@ Critical paths have test coverage. Regressions caught before deployment.
 - test.threshold: 60% configured → target 60% ✅
 
 ## Current State
-Iteration 5 complete. 168 tests passing across 16 test files. 77.56% line coverage — 2.44% short of 80% target. Threshold raised to 60% and enforced. Lowest coverage: verify-wrap.ts (30%), project-health.ts (44.89%), project-helpers.ts (65.71%), auto-test.ts (0%). These are the files to target to hit 80%.
+Iteration 6 complete. **PROJECT DONE.** 191 tests passing across 17 test files. 83.79% line coverage exceeds 80% target. All metrics met. Coverage threshold enforced at 60% in vitest.config.ts. auto-test.ts now at 100%, verify-wrap.ts at 100%, project-health.ts at 51.83% (remaining uncovered lines are complex branches). Guards at 96.48%, workflows at 84.58%.
 
 ## Plan
 - [x] Install vitest, create vitest.config.ts, create test/ dir, write a smoke test that passes
