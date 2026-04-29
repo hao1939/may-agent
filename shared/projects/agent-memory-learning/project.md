@@ -4,22 +4,36 @@
 **Owner**: coach
 **Priority**: P2
 **Workflow**: master-worker
-**Iteration**: 0
+**Iteration**: 1
 
 ## Goal
 Agents retain and apply lessons across sessions. Reduce repeated mistakes.
 
 ## Metrics
-- memory.lessons-per-week: unknown → target 5 (lessons captured)
+- memory.lessons-per-week: 2 (only 2 in lessons.jsonl) → target 5 (lessons captured)
 - memory.repeat-mistake-rate: unknown → target 0.10 (same error across sessions)
+- memory.context-md-richness: avg ~100 lines across 6 agents (coder/bob/may/coach/optimizer/tech-lead)
 
 ## Current State
-New project. No audit done yet. Agents have context.md, last-session.md, and knowledge/ dirs but no structured lesson capture or retrieval.
+**Iteration 1 assessment (2025-06-25):**
+- Audit complete: outputs/memory-audit.md exists, thorough inventory of all agent memory files
+- Lesson format defined: outputs/structured-lesson-format.md with JSON schema
+- Retrieval system designed: outputs/lesson-retrieval-system.md + outputs/cross-session-retrieval.md
+- **context-learn.ts is BUILT and WIRED** into may's post-session evaluation pipeline
+- CONTEXT_LEARN_AGENTS env is set to: coder,may,bob,coach,optimizer,tech-lead
+- BUT: only 2 lessons in shared/lessons.jsonl — capture rate is low
+- context.md files are rich (100+ lines for active agents) — finish() context_updates working well
+- Tests exist: agents/shared/evaluation/test/context-learn.test.ts
+
+**Key gap**: The infrastructure exists but lesson VOLUME is low. The mechanical extractor only catches command corrections, runtime facts, and path discoveries. The LLM extractor depends on evaluator agent being available. Need to measure actual capture rate and ensure the pipeline is firing.
 
 ## Plan
-- [ ] Audit current memory files across all agents, write outputs/memory-audit.md
-- [ ] Define lesson format and extraction process
-- [ ] Build lesson retrieval — query relevant lessons before starting a task
+- [x] Audit current memory files across all agents, write outputs/memory-audit.md
+- [x] Define lesson format and extraction process
+- [x] Build lesson retrieval — query relevant lessons before starting a task
+- [ ] Measure actual context-learn pipeline firing rate — how many sessions trigger learning? Write outputs/pipeline-metrics.md
+- [ ] Expand mechanical extractor patterns (context-learn.ts) — add patterns for: edit-after-read failures, test command discovery, dependency issues
+- [ ] Seed lessons.jsonl with lessons extracted from existing context.md files across all agents
 - [ ] Re-plan: review metrics, assess improvement, write next steps
 
 ## References
