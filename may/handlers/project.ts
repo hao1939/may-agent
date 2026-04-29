@@ -200,7 +200,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         summarize: (r: any) => { const t = r?.lastAssistantText ?? r?.summary ?? ""; return t.length > 1500 ? t.slice(0, 1500) + "\u2026" : t; },
         done: (s: string) => ({ type: "done" as const, summary: s }),
         escalate: (r: string, c?: unknown) => ({ type: "escalate" as const, reason: r, context: c }),
-        dispatchEvent: (event: string, data?: Record<string, unknown>) => { try { ctx.emit({ type: "emit", event, data: { ...data } }); } catch {} },
+        dispatchEvent: (event: string, data?: Record<string, unknown>) => { try { ctx.emit({ type: event, ...(data || {}) } as any); } catch {} },
       };
 
       wfMod.execute(workflowCtx)
@@ -212,7 +212,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       pState.consecutiveSkips = 0;
       launched++;
       const projectId = `${project.owner}/${project.relPath.split("/").pop()}`;
-      try { ctx.emit({ type: "emit", event: "project.iteration", data: { projectId } }); } catch { /* skip */ }
+      try { ctx.emit({ type: "project.iteration", projectId } as any); } catch {}
     }
 
     healthState.lastFullScan = now;

@@ -389,6 +389,16 @@
     "offsetMs": 600000
   },
   {
+    "name": "coaching-consumer",
+    "type": "job",
+    "intervalMs": 21600000,
+    "handler": "coaching-consumer",
+    "agent": "may",
+    "enabled": true,
+    "description": "Scan recent evaluations every 6h and flag sessions needing coaching intervention. Writes recommendations to .state/coaching-queue/.",
+    "offsetMs": 1200000
+  },
+  {
     "name": "heartbeat-amy",
     "type": "job",
     "intervalMs": 1800000,

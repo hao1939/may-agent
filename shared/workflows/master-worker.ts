@@ -587,7 +587,7 @@ Then provide your decision and guidance for the next iteration.`;
       markCheckpointComplete(projectDir, checkpointSessionId);
 
       // Emit iteration event for metrics tracking
-      try { ctx.emit({ type: "emit", event: "project.iteration", data: { project: projectDir, iteration } }); } catch {}
+      try { ctx.emit({ type: "project.iteration", project: projectDir, iteration } as any); } catch {}
     }
 
     // ── Wrap up ──

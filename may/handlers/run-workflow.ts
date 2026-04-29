@@ -124,7 +124,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       summarize: (r: any) => r?.lastAssistantText?.slice(0, 1500) || "",
       done: (s: string) => ({ type: "done" as const, summary: s }),
       escalate: (r: string, c?: unknown) => ({ type: "escalate" as const, reason: r, context: c }),
-      dispatchEvent: (event: string, data?: any) => { try { ctx.emit({ type: "emit", event, data }); } catch {} },
+      dispatchEvent: (event: string, data?: any) => { try { ctx.emit({ type: event, ...data } as any); } catch {} },
     };
 
     try {
