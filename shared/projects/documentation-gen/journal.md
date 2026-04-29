@@ -11,3 +11,6 @@ Milestone completed: "Add context.md or docs for the 3 undocumented agents (arch
 
 ### Iteration 2 — 2026-04-29T07:46:28.981Z
 **Worker**: Both files work. 
+
+### Iteration 3 — 2026-04-29T07:49:02.797Z
+**Worker**: These files keep reappearing — likely another agent is modifying them concurrently. Let me just commit them.
