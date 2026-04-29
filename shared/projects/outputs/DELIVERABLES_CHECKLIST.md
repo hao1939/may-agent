@@ -1,9 +1,10 @@
-# Deliverables Checklist — Iteration 14
+# Deliverables Checklist — Iteration 16
+
+## Task: Create `task-template.ts` utility with tests
 
 | # | Deliverable | Status | Path |
-|---|-------------|--------|------|
-| 1 | Pre-push check script | DONE | `agents/shared/scripts/pre-push-check.sh` |
-| 2 | Script is executable | DONE | chmod +x applied |
-| 3 | Script blocks on test failure | DONE | Exits 1 with "BLOCKED" message |
-| 4 | Script passes on success | DONE | Verified: exits 0 with "All clear" |
-| 5 | Copy in outputs | DONE | `agents/shared/projects/outputs/pre-push-check.sh` |
+|---|------------|--------|------|
+| 1 | `createTaskTemplate()` function with TypeScript interface | DONE | `agents/shared/lib/task-template.ts` |
+| 2 | 7 tests (minimal, testPath, context, all fields, errors, trimming) | DONE | `agents/shared/tests/lib/task-template.test.ts` |
+| 3 | All tests passing | DONE | 7 passed, 0 failed |
+| 4 | Output copies | DONE | `agents/shared/projects/outputs/task-template.ts`, `task-template.test.ts` |

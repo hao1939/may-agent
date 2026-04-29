@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createTaskTemplate } from '../task-template';
+import { createTaskTemplate } from '../../lib/task-template';
 
 describe('createTaskTemplate', () => {
   it('produces GOAL and TARGET lines for minimal input', () => {
