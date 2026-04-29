@@ -1,6 +1,6 @@
 # Project: Skill & Workflow Quality
 
-**Status**: active
+**Status**: completed
 **Stop Reason**: All 4 metrics at target, all 18 plan items done. Closed by May.
 **Owner**: coach
 **Type**: continuous
@@ -27,7 +27,7 @@ All 18 plan items complete. All 4 metrics at or above target. ✅
 **Updated skill.usage-rate**: 1.00 (was 0.89) based on v2 audit.
 **Key finding**: Skills are working well. The bottleneck is infrastructure reliability, not skill quality.
 
-**Status**: active
+**Status**: completed
 
 ## Plan
 - [x] Inventory all skills and workflows
