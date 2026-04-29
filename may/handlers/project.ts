@@ -213,15 +213,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       launched++;
       const projectId = `${project.owner}/${project.relPath.split("/").pop()}`;
       try { ctx.emit({ type: "emit", event: "project.iteration", data: { projectId } }); } catch { /* skip */ }
-      // Persist project.iteration event directly to DB (infra only persists handler.* events)
-      try {
-        const db = ctx.getDb();
-        db.prepare("INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)").run(
-          "project.iteration",
-          JSON.stringify({ projectId, owner: project.owner, iteration: project.iteration }),
-          Date.now()
-        );
-      } catch { /* best-effort */ }
     }
 
     healthState.lastFullScan = now;
