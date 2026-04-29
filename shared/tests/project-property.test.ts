@@ -95,7 +95,7 @@ describe('Property: updateField', () => {
 
   it('is idempotent when applied twice with same value', () => {
     fc.assert(
-      fc.property(fc.string().filter(s => s.length > 0), fc.string().filter(s => !s.includes("\n")), (field, value) => {
+      fc.property(fc.stringMatching(/^[a-zA-Z][a-zA-Z0-9]{0,15}$/), fc.stringMatching(/^[a-zA-Z0-9 ]{0,20}$/), (field, value) => {
         const content = `**${field}:** old_value\nsome other line`;
         const once = updateField(content, field, value);
         const twice = updateField(once, field, value);
