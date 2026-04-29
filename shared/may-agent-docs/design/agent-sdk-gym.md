@@ -31,6 +31,9 @@ interface AgentSDK {
   // NOT agent-to-agent — use runAgent() or tools for that
   notify(msg: string): void;
 
+  // Escalate — can't handle this, pass to owner/human
+  escalate(reason: string): void;
+
   // System paths
   paths: { persist: string; root: string; agents: string };
 }
@@ -60,7 +63,7 @@ interface TaskResult {
 }
 ```
 
-7 methods. That's the entire surface area.
+8 methods. That's the entire surface area.
 
 ## Who uses what
 
@@ -83,7 +86,6 @@ interface WorkflowSDK extends AgentSDK {
   task: string;
   agent: string;
   done(summary: string, opts?: { deliverables?: Deliverable[]; contextUpdates?: string[]; nextSteps?: string[] }): WorkflowResult;
-  escalate(reason: string): WorkflowResult;
 }
 ```
 
@@ -102,7 +104,7 @@ They share the same vocabulary:
 | "Send a message to humans" | `finish({ notify })` / Telegram tool | `sdk.notify(msg)` |
 | "Look up data" | `bash("bun -e 'db.query...'")` | `sdk.getDb()` |
 | "I'm done" | `finish()` | `workflow.done()` |
-| "I'm stuck" | `finish({ status: "blocked" })` | `workflow.escalate()` |
+| "I'm stuck" | `finish({ status: "blocked" })` | `sdk.escalate(reason)` |
 | "Run an LLM with custom prompt" | — | `sdk.createLLMSession()` |
 | "Trigger a handler now" | — | `sdk.emit("trigger.metrics-snapshot")` (convention: `trigger.<handler-name>`) |
 
@@ -154,7 +156,7 @@ Today it's inverted — tools and handlers call `manager.callAgent()` directly, 
 
 - **Testing**: mock the SDK, test tool/handler logic in isolation
 - **Consistency**: behavior identical whether called by LLM tool or handler code
-- **Capability surface**: 7 methods = 7 things the system can do. Everything else is internal.
+- **Capability surface**: 8 methods = 7 things the system can do. Everything else is internal.
 
 **Litmus test for new features**: if you can't express it naturally from both sides (agent tool AND SDK method), something's wrong with the abstraction.
 
@@ -172,7 +174,7 @@ Intentionally excluded:
 
 ## Patterns: SDK primitives + shared/lib utilities
 
-The SDK is 7 primitives. Common patterns are utilities built on top:
+The SDK is 8 primitives. Common patterns are utilities built on top:
 
 ```
 agents/shared/lib/
