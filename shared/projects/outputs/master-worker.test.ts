@@ -174,3 +174,108 @@ describe("diffSnapshots", () => {
     expect(changed).not.toContain("/out/same.txt");
   });
 });
+
+// ── Edge case tests ──
+
+describe("extractDecision edge cases", () => {
+  it("handles empty string", () => {
+    expect(extractDecision("").status).toBe("unknown");
+  });
+
+  it("handles only whitespace", () => {
+    expect(extractDecision("   \n  \n  ").status).toBe("unknown");
+  });
+
+  it("handles DONE as first word", () => {
+    const d = extractDecision("DONE - all work complete");
+    expect(d.status).not.toBe("unknown");
+  });
+
+  it("handles decision buried in markdown bold", () => {
+    const d = extractDecision("**Decision**: **PIVOT**\nNeed to change approach");
+    expect(d.status).toBe("pivot");
+  });
+
+  it("handles decision with mixed case in body", () => {
+    const d = extractDecision("The team decided to BLOCKED on this");
+    expect(d.status).toBe("blocked");
+  });
+
+  it("truncates detail to 500 chars", () => {
+    const longText = "CONTINUE " + "x".repeat(1000);
+    const d = extractDecision(longText);
+    expect(d.detail.length).toBeLessThanOrEqual(500);
+  });
+
+  it("handles 'let's begin' as continue signal", () => {
+    const d = extractDecision("Alright, let's begin the implementation");
+    expect(d.status).toBe("continue");
+  });
+
+  it("handles 'proceed' as continue signal", () => {
+    const d = extractDecision("We should proceed with the plan");
+    expect(d.status).toBe("continue");
+  });
+
+  it("handles 'move forward' as continue signal", () => {
+    const d = extractDecision("Time to move forward on this");
+    expect(d.status).toBe("continue");
+  });
+
+  it("handles WAITING keyword in body text", () => {
+    const d = extractDecision("We are WAITING for approval");
+    expect(d.status).toBe("waiting");
+  });
+});
+
+describe("snapshotOutputs edge cases", () => {
+  it("handles empty array", () => {
+    const snap = snapshotOutputs([]);
+    expect(snap.size).toBe(0);
+  });
+
+  it("handles duplicate paths (last wins)", () => {
+    const snap = snapshotOutputs([
+      { path: "/a.txt", mtime: 100 },
+      { path: "/a.txt", mtime: 200 },
+    ]);
+    expect(snap.get("/a.txt")).toBe(200);
+  });
+
+  it("handles large number of entries", () => {
+    const entries = Array.from({ length: 1000 }, (_, i) => ({
+      path: `/file-${i}.txt`,
+      mtime: i,
+    }));
+    const snap = snapshotOutputs(entries);
+    expect(snap.size).toBe(1000);
+    expect(snap.get("/file-999.txt")).toBe(999);
+  });
+});
+
+describe("diffSnapshots edge cases", () => {
+  it("handles both empty", () => {
+    const before = snapshotOutputs([]);
+    const after = snapshotOutputs([]);
+    expect(diffSnapshots(before, after)).toEqual([]);
+  });
+
+  it("handles mtime of 0", () => {
+    const before = snapshotOutputs([]);
+    const after = snapshotOutputs([{ path: "/a.txt", mtime: 0 }]);
+    expect(diffSnapshots(before, after)).toEqual(["/a.txt"]);
+  });
+
+  it("handles same mtime (not changed)", () => {
+    const before = snapshotOutputs([{ path: "/a.txt", mtime: 100 }]);
+    const after = snapshotOutputs([{ path: "/a.txt", mtime: 100 }]);
+    expect(diffSnapshots(before, after)).toEqual([]);
+  });
+
+  it("handles earlier mtime in after (clock skew)", () => {
+    const before = snapshotOutputs([{ path: "/a.txt", mtime: 200 }]);
+    const after = snapshotOutputs([{ path: "/a.txt", mtime: 100 }]);
+    // mtime decreased, not detected as change
+    expect(diffSnapshots(before, after)).toEqual([]);
+  });
+});
