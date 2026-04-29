@@ -1,12 +1,12 @@
 # Project: Workflow Reliability
 
-**Status**: closed
-**Stop Reason**: Coaching goal achieved — guardrails raised worker success 33% → 100% when runs execute. Remaining dispatch errors (97% of runs fail before starting) are infrastructure issues, not training/skill gaps. Dispatch fix is tech-lead's domain. Closed 2025-07-18.
+**Status**: waiting
+**Stop Reason**: This project is **closed**. The status says "closed" with a clear stop reason: the coaching goal was achieved (worker success went from 33% → 100% when runs actually execute), and the remaining blocke
 
 **Owner**: coach
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 4
+**Iteration**: 1
 
 ## Goal
 Reduce workflow failures. Target: 90%+ of worker iterations produce at least one deliverable file.
