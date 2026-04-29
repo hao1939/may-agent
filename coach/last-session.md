@@ -1,21 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777421637124_102
+- **Session:** s_1777423437352_106
 - **Status:** done
-- **When:** 2026-04-29T00:16:59.905Z
-- **Duration:** 3m2s
+- **When:** 2026-04-29T00:45:47.155Z
+- **Duration:** 1m49s
 
 ## What Happened
-Good data. Now I have the full picture. Let me commit my analysis and finish.
+Evaluations are stale (from months ago). The todo says evaluator is back with 7,233 evals in last 7d, but those might be in a different location. Let me check what's actually actionable from my todo.
 
-**Summary of findings:**
-- System is in low-activity mode (only heartbeat agents running)
-- `workflow-reliability` remains blocked — no worker sessions to measure
-- No open experiments
-- Top failure patterns across agents: PATH_HALLUCINATION, path-guessing loops (FM-1.3), task instruction non-compliance
-- Amy (avg q:0.70) and coder (avg q:0.72) are the weakest production agents
+Key items from todo:
+- EXP-265 (compound verification): DONE, negative result
+- EXP-250 (Amy path-orientation): IN PROGRESS but text interventions confirmed dead
+- Skill compliance degrading: needs structural guards (tech-lead dependency)
+- Verification failures: escalated, blocked on tech-lead
 
-The most common failure pattern is **path-guessing loops** — agents waste 10+ ops searching for files in wrong directories. This is already partially addressed by context.md entries but clearly not enough for worker sessions (which get different context than heartbeats).
+Everything significant is blocked on structural/infrastructure changes that tech-lead needs to build. My text coaching approach has been empirically shown dead (KE-338, EXP-247, EXP-251, EXP-265).
 
-There's nothing I can unblock on workflow-reliability right now, and no experiments to close. The system is too quiet to run new experiments (no worker sessions happening). I'll note the skill gap finding for next time.
+The most useful thing I can do: close out EXP-250 formally since text interventions are proven dead, and update the project status with fresh dispatch data.
