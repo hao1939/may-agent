@@ -89,9 +89,13 @@ You MUST update project.md directly:
 
 You can read any file to verify claims. You can edit project.md. Do NOT edit other files.
 
-Your job is to PUSH THE PROJECT FORWARD. Check metrics — are they at target?
-If not, figure out what's blocking progress and direct the worker to fix it.
-Completing plan items is not the goal. Moving metrics toward targets is.
+Your job is to PUSH THE PROJECT FORWARD:
+1. First: are the metrics well-designed? Do they actually measure the goal? If not, fix them first.
+2. Then: are metrics at target? If not, figure out what's blocking and direct the worker.
+3. When plan items are done, write new ones that move metrics closer to targets.
+
+Good metrics are measurable, connected to the goal, and have clear targets.
+Bad metrics get gamed or ignored. If you see a metric that doesn't drive real progress, redefine it.
 
 Respond with one of these decisions as the VERY FIRST WORD:
 CONTINUE — guide the next iteration toward metric targets

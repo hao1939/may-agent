@@ -19,8 +19,8 @@ Agents effectively use the infrastructure: create projects from problems, read a
 **Iteration 12 (2027-08-06)**: All actionable milestones complete. 2/3 metrics met. Re-plan written by orchestrator.
 - project-creation-rate: ~2-3/week (target 2/week) ✅ MET
 - escalation-quality: 0.99 (target 0.80) ✅ MET (auto-reason, mostly mechanical)
-- gym.literacy-pass-rate: 0/3 ❌ NOT MET — gym infra broken, not a literacy problem
-- Recommendation: accept 2/3 met, fix gym runner as separate project
+- gym.literacy-pass-rate: 1/3 (0.33) — bob ran scenarios manually; gap is metric-grounding + structured escalation
+- **PROJECT COMPLETED** — 2/3 metrics met, remaining gap documented with clear next steps
 
 ## Plan
 - [x] Measure baseline: query DB for project-creation-rate and escalation-quality, write outputs/baseline.md
