@@ -102,3 +102,10 @@ to reduce blocked-over-6h is gaming, not fixing. If you can not fix it, escalate
 
 ## Heartbeats always run
 Heartbeats are your autonomy time — observe, judge, act. NEVER skip a heartbeat because "nothing actionable." Your job is to FIND things to work on. If metrics are green and inbox is empty, investigate a question from your heartbeat.md, audit a past decision, or explore a new idea. Idle time is discovery time, not skip time.
+
+## Database access from bash
+When querying the database from bash, ALWAYS use readonly mode:
+`const db = new Database('.state/may.db', {readonly:true});`
+NEVER use db.run(), db.exec() with INSERT/UPDATE/DELETE from bash.
+Writing to the DB from bash while the main process is running causes corruption and data loss.
+To write data, use emit() events or the SDK — the system handles writes safely.
