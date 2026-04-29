@@ -1,32 +1,26 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777476741191_241
+- **Session:** s_1777480341821_313
 - **Status:** done
-- **When:** 2026-04-29T15:33:27.397Z
-- **Duration:** 1m6s
+- **When:** 2026-04-29T16:32:52.863Z
+- **Duration:** 31s
 
 ## What Happened
 ### Summary
-Found a concrete regression in the `agents` repo: the newly added `shared/workflows/health-check.ts` does **not** export the functions that the repo’s new `test/health-check.test.ts` (and `workflow-runner`) import/expect. As a result, `vitest --run` fails with 37 runtime `TypeError: ... is not a function` failures. `tsc --noEmit` at `/app/agents` is clean, so this is specifically an export/API mismatch caught only at runtime.
+No active alerts/events/projects. I performed a verification sweep in the actual git repo (`/app/agents`), spot-checked one recent changed file (a design doc), and ran the required typecheck + full test suite. Everything is currently green; the only actionable finding is that QA heartbeat guidance implicitly assumes `/app` is a git repo, which caused wasted cycles until locating `/app/agents/.git`.
 
 ### Checks
-- `tsc --noEmit`: **PASS** (ran in `/app/agents`, no output; exit 0)
-- `vitest --run`: **FAIL** (27 files, 502 tests; **37 failed**, 465 passed)
+- `tsc --noEmit`: **PASS** (ran in `/app/agents`, produced no output, exit 0)  
+  Evidence: bash output showed “(no output)” with success signature.
+- `vitest --run`: **PASS** (**512 tests**, 28 files)  
+  Evidence: vitest output shows “Tests 512 passed (512)”.
 
 ### Issues
-1) **CRITICAL — Vitest failing due to missing exports (runtime API mismatch)**
-   - `test/health-check.test.ts` imports `parseMetrics, isAtTarget, extractLastActivity, isStalled, analyzeProject, checkHealth` from `../shared/workflows/health-check.js`, but `agents/shared/workflows/health-check.ts` only exports `runHealthCheck` and `WORKFLOW_MODULES`.
-   - Evidence:
-     - `vitest --run` shows 36/36 failures in `test/health-check.test.ts` and 1 failure in `test/workflow-runner.test.ts`, all `TypeError: <fn> is not a function`.
-     - `agents/shared/workflows/health-check.ts` content confirms missing exports (read output shows only `export async function runHealthCheck...` and `export { WORKFLOW_MODULES }`).
-
-2) **IMPORTANT — Silent error handling obscures failures**
-   - `agents/shared/workflows/health-check.ts` uses `catch {}` in multiple checks, which hides underlying filesystem/stat/read errors and makes failures look like “0 files”.
-   - Evidence: empty catch blocks visible in `checkTestFileCount`, `checkOutputFileCount`, `checkSatelliteProjects`.
+- **IMPORTANT** — Repo ergonomics/process: `/app` is **not** a git repository; git operations must be run inside `/app/agents` (or `/app/.state`). This can trip up heartbeat “check git log” steps unless documented.
 
 ### Verdict
-**FAIL** — because `./node_modules/.bin/vitest --run` currently fails in `/app/agents` due to a real code/test mismatch introduced around the health-check workflow module exports.
+**PASS** — Typecheck and full test suite pass; no code-level issues found from the sampled change. Logged the process finding for follow-up.
 
-### Deliverable (written)
-- `agents/qa/workspace/unreviewed-findings.md` — recorded the above findings and evidence for follow-up.
+Additional deliverable:
+- `agents/qa/workspace/unreviewed-findings.md` — heartbeat verification notes + finding (repo root not git).
