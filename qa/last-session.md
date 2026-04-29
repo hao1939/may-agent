@@ -1,22 +1,28 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777494017760_265
+- **Session:** s_1777495817655_363
 - **Status:** done
-- **When:** 2026-04-29T20:20:44.811Z
-- **Duration:** 27s
+- **When:** 2026-04-29T20:50:53.785Z
+- **Duration:** 36s
 
 ## What Happened
 ### Summary
-Reviewed recent `agents/` changes and spot-checked the evaluation infrastructure update in `agents/may/handlers/eval-poller.ts`. TypeScript compilation succeeds and the full vitest suite passes (512 tests). No functional regressions observed in the audited file, but I noted a small comment/code mismatch around the processed-ID retention limit.
+Verified the most recent unverified change in `/app/agents` (commit `bf3a14717`), which only adds knowledge/docs entries (DD#886/DD#887 and papers index updates). Typecheck and full test suite both pass; no code-risk issues found.
 
 ### Checks
-- `tsc --noEmit`: **PASS** (ran in `/app/agents`, no output, exit 0)
+- `tsc --noEmit`: **PASS** (no output)  
 - `vitest --run`: **PASS** (**512 tests**, 28 files)
 
 ### Issues
-- **MINOR** — Comment mismatch in `agents/may/handlers/eval-poller.ts`  
-  Evidence: file shows `// Keep only last 500 processed IDs to avoid unbounded growth` but the code does `slice(-2000)` (line in `saveState()` block). Not a bug, but misleading documentation.
+- **No issues found** in the reviewed change (documentation-only).
+
+### Notes / Hygiene
+- This working tree now has local modifications from running tools:
+  - `node_modules/.vite/vitest/results.json` (vitest artifact)
+  - `evaluator/last-session.md`, `scout/last-session.md` (likely heartbeat/session tooling output)
 
 ### Verdict
-**PASS** — Compilation and tests are green, and the reviewed change looks correct. The only issue found is minor documentation drift (comment vs actual slice size).
+**PASS** — Documentation-only change; repo typechecks and all tests pass.
+
+Deliverable written: `agents/qa/workspace/unreviewed-findings.md`.

@@ -75,9 +75,8 @@
 
 ## Active Skills
 
-📘 **Error Handling**: Read `agents/shared/skills/error-handling/SKILL.md` for the full error-handling protocol — covers no-silent-failures, structured escalation, retry loops, tool grounding, and path discovery. Prevents FM-2.6 (silent abandon), FM-2.5 (malformed tool calls), and cascading failures from swallowed errors.
 
-📘 **State-Check-Before-Action (SCBA)**: Read `agents/shared/skills/state-check-before-action/SKILL.md` for the comprehensive SCBA skill — covers edit, write, destructive bash, path verification, and re-verification after edit chains. Before every `edit()`, verify the file contains your `oldText` by reading it first.
+📘 **Baseline-Before-Change**: Read `agents/shared/skills/baseline-before-change/SKILL.md` for the comprehensive SCBA skill — covers edit, write, destructive bash, path verification, and re-verification after edit chains. Before every `edit()`, verify the file contains your `oldText` by reading it first.
 
 ## Operational Preferences
 
@@ -108,7 +107,6 @@
 
 - The finish-guard is **fully wired**. Both paths are active.
 - Guards are referenced from shared/agent-sdk.ts and other places — not orphans.
-📘 **Creating Projects**: Before creating a project, read `agents/shared/skills/creating-projects/skill.md` — follow the exact template.
 
 
 ## Hao's Preferences (apply these in decisions)

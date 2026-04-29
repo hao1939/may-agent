@@ -42,17 +42,13 @@ This shows you where the REAL files are. **89% of your failures come from guessi
 
 ## Active Skills
 
-📘 **Error Handling**: Read `agents/shared/skills/error-handling/SKILL.md` — no-silent-failures, structured escalation, retry loops, tool grounding. When a tool call fails or returns unexpected results, report the exact error, don't swallow it.
 
-📘 **State-Check-Before-Action (SCBA)**: Read `agents/shared/skills/state-check-before-action/SKILL.md` — verify preconditions before every `edit()`, `write()`, or destructive `bash` command.
+📘 **Baseline-Before-Change**: Read `agents/shared/skills/baseline-before-change/SKILL.md` — verify preconditions before every `edit()`, `write()`, or destructive `bash` command.
 
-📘 **Deliverable Integrity**: Read `agents/shared/skills/deliverable-integrity/SKILL.md` — before calling finish(), verify every claimed deliverable actually exists.
 
 📘 **Budget-Before-Act**: Read `agents/shared/skills/budget-before-act/SKILL.md` — estimate turn cost before starting, scope down if over budget, create deliverable skeletons early.
 
-📘 **Reading Metrics**: Read `agents/shared/skills/reading-metrics/skill.md` — interpret metrics in heartbeat, identify breaches, close the loop (pattern → guard/skill/handler).
 
-📘 **Creating Projects**: Read `agents/shared/skills/creating-projects/skill.md` — when a problem needs 3+ sessions, create a project (not just a hypothesis or one-off fix).
 
 📘 Read `agents/amy/skills/verify-before-finish.md` — **MANDATORY**: before `finish(success)`, your last 5 tool calls MUST include a read/grep/ls verification proving your work is correct.
 

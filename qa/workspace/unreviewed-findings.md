@@ -1,21 +1,16 @@
 # Unreviewed findings (QA heartbeat)
 
-## Scope
-This heartbeat attempted to find unverified changes in the last ~10 commits in the **/app/agents** git repo and run standard verification.
+## Scope checked
+- Repo: `/app/agents`
+- Latest commit reviewed: `bf3a14717` (scout: triage Apr 28-29 papers, DD#886, DD#887)
 
-## What I verified
-- Read: `agents/shared/workflows/index.ts` (barrel exports for workflow toolkit)
-- Typecheck: `cd agents && ./node_modules/.bin/tsc --noEmit`
-- Tests: `cd agents && ./node_modules/.bin/vitest --run`
+## Verification
+- `tsc --noEmit`: PASS (no output)
+- `vitest --run`: PASS (28 files, 512 tests)
 
 ## Findings
-### 1) Repository layout / verification pitfall: project root is not a git repo (MINOR)
-- Running git commands from `/app` fails because `/app` itself is not a git repository. The actual repo is `/app/agents`.
-- This is not a product bug, but it can confuse verification scripts/checklists if they assume `/app` is the repo root.
+No code-risk findings. Latest change is documentation/knowledge additions only.
 
-### 2) Environment note: Vite CJS deprecation warning (MINOR)
-- `vitest --run` emits: “The CJS build of Vite's Node API is deprecated …”
-- Tests still pass; treat as a tech-debt warning.
-
-## Result
-- In `/app/agents`, TypeScript build and full Vitest suite passed (512 tests).
+## Notes
+- Running vitest modified `node_modules/.vite/vitest/results.json` (expected local artifact).
+- `evaluator/last-session.md` and `scout/last-session.md` are also modified in this working tree (likely by heartbeat tooling); not part of reviewed commit.

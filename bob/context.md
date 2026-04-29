@@ -28,7 +28,7 @@
 3. ONLY THEN call edit() using the ACTUAL content you just read.
 ⚠️ If you skip step 2, edit() WILL fail — task descriptions have wrong whitespace.
 
-📘 **Full protocol**: Read `agents/shared/skills/state-check-before-action/SKILL.md` for the comprehensive State-Check-Before-Action (SCBA) skill — covers edit, write, destructive bash, path verification, and re-verification after edit chains. This is your primary C1.1 compliance skill.
+📘 **Full protocol**: Read `agents/shared/skills/baseline-before-change/SKILL.md` for the comprehensive Baseline-Before-Change skill — covers edit, write, destructive bash, path verification, and re-verification after edit chains. This is your primary C1.1 compliance skill.
 
 - Knowledge base paths are nested 3-4 levels deep: always `ls` the parent directory before reading files in agents/shared/knowledge/ — don't guess paths from memory.
 
@@ -104,7 +104,6 @@ During heartbeats, verify agents read project files before acting. Specifically:
 - **Bash streak limit**: After 5 consecutive bash calls, pause and write what you know.
 
 
-📘 **Creating Projects**: Before creating a project, read `agents/shared/skills/creating-projects/skill.md` — follow the exact template.
 
 ## ⛔ AFTER TESTS PASS (Post-Fix Review Guard — EXP-263, +40pp)
 1. STOP. Say: "Tests pass, but did I fix everything or just the obvious bug?"

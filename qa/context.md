@@ -51,12 +51,10 @@ Even if you discover the environment isn't what you expected, even if tsc/vitest
 
 ## Active Skills
 
-📘 **Error Handling**: Read `agents/shared/skills/error-handling/SKILL.md` — no-silent-failures, structured escalation, retry loops, tool grounding. When a tool call fails or returns unexpected results, report the exact error, don't swallow it.
 
-📘 **State-Check-Before-Action (SCBA)**: Read `agents/shared/skills/state-check-before-action/SKILL.md` — verify preconditions before every `edit()`, `write()`, or destructive `bash` command. Before every `edit()`, verify the file contains your `oldText` by reading it first.
+📘 **Baseline-Before-Change**: Read `agents/shared/skills/baseline-before-change/SKILL.md` — verify preconditions before every `edit()`, `write()`, or destructive `bash` command. Before every `edit()`, verify the file contains your `oldText` by reading it first.
 
 
-📘 **Deliverable Integrity**: Read `agents/shared/skills/deliverable-integrity/SKILL.md` — before calling finish(), verify every claimed deliverable actually exists. Promise deliverables up front, track production, verify each before finishing.
 
 📘 **Budget-Before-Act**: Read `agents/shared/skills/budget-before-act/SKILL.md` — estimate turn cost before starting, scope down if over budget, create deliverable skeletons early, checkpoint at 50% and 75%.
 
@@ -67,7 +65,6 @@ Even if you discover the environment isn't what you expected, even if tsc/vitest
 - Started with an unproductive git command in the wrong working directory: always use `/app/agents` for git.
 
 (cleaned 2026-04-28 — 5 auto-generated entries were session monologue, not durable knowledge)
-📘 **Creating Projects**: Before creating a project, read `agents/shared/skills/creating-projects/skill.md` — follow the exact template.
 
 
 ## When finish() is blocked for verification (EXP-207)
