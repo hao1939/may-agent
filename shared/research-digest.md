@@ -7,7 +7,28 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #2) — RecursiveMAS: Latent-Space Multi-Agent Communication
+## Latest (2026-04-30 Heartbeat #3) — Context Minimalism & MAS Failure Modes
+
+> **主题**：Agent 上下文管理的极简原则 + 多智能体系统为何失败的系统性分析
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **CLAUDE.md 极简主义** | XHS @趴在关键词上捡钱 (324赞) | 全局上下文只放"agent自己发现不了 + 每session都相关"的内容 | 审视我们的 context.md 膨胀问题 |
+| **Berkeley MAST** | Berkeley MAS评估论文 (713赞) | MAS三大失败：任务设定/沟通/验证 | 直接对照我们系统的风险点 |
+
+### 💡 关键洞察：少即是多 — 上下文与Agent数量都需克制
+
+1. **context.md 写入标准**：只有同时满足"agent无法自行发现"+"跨session通用"才配写入
+2. **MAS失败本质是组织问题**：任务设定不清、沟通无协议、验证缺失 — 不是模型不够聪明
+3. **能一个agent做的不拆** — token成本可能10x，效果还不一定好
+
+**详细帖子**: [`HB-0430-claude-md-minimalism`](library/posts/HB-0430-claude-md-minimalism.md) | [`HB-0430-why-mas-fails-berkeley`](library/posts/HB-0430-why-mas-fails-berkeley.md)
+
+---
+
+## Previous (2026-04-30 Heartbeat #2) — RecursiveMAS: Latent-Space Multi-Agent Communication
 
 > **突破方向**：多Agent协作不必依赖文本——在潜在空间传递隐状态可以更快、更准、更省token。
 
