@@ -2,7 +2,7 @@
 
 **Evidence-Grade:** C — Confounded by concurrent regression, premature conclusion
 
-**Status**: preliminary (needs larger sample)  
+**Status**: DEPRECATED (2027-12-29) — Subsumed by KE-002 (text rules ineffective, 32+ experiments) and KE-007 (structural interventions only reliable method). The original finding was confounded by concurrent regression. The directional claim (passive skill deployment doesn't improve compliance) is correct but well-established by higher-grade evidence.
 **Evidence**: Convention compliance data 2026-04-02 through 2026-04-05, skill deployments to 4 agents  
 **Discovered**: 2026-04-05  
 **Last verified**: 2026-04-05  
