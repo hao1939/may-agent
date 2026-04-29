@@ -1,3 +1,3 @@
 # Project Complete
 
-All metrics exceed targets. No further work needed.
+This project has been marked **done**. All metrics exceed targets. No further work is needed.
