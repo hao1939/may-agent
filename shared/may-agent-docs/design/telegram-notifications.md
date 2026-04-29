@@ -27,27 +27,37 @@ Agent receives full picture, acts on it
 
 ## Context Structure
 
-Every notification stores a context blob when sent:
+Every outbound Telegram message stores a context blob:
 
 ```typescript
 interface NotificationContext {
-  // What triggered the notification
-  source: {
-    type: "project" | "metric" | "agent" | "digest";
-    id: string;           // project name, metric id, agent name
-  };
+  // Who sent it
+  agent: string;              // "may", "scout", "coach", etc.
   
-  // Snapshot of state when notification was sent
+  // What it's about (flexible — works for any notification)
+  subject: string;            // human-readable: "project system-efficiency", "metric handler.p95-duration", "XHS finding about agent memory"
+  
+  // Snapshot: relevant state at the time
   state: Record<string, unknown>;
-  // e.g., { status: "waiting", metrics: {...}, lastIteration: "..." }
+  // Could be: { projectStatus, metrics, lastIteration }
+  // Or: { metricValue, threshold, duration }
+  // Or: { finding, source, relevance }
+  // Or: just {} for simple messages
   
-  // What the system already tried or knows
+  // What happened / why you're being told
   background: string;
-  // e.g., "orchestrator completed all plan items, said WAITING"
   
   // Timestamp
   sentAt: number;
 }
+```
+
+This covers ALL notifications:
+- Project waiting → `{ agent: "may", subject: "project system-efficiency", state: { status: "waiting", metrics: {...} }, background: "orchestrator needs direction" }`
+- Metric breach → `{ agent: "may", subject: "metric handler.p95-duration", state: { value: 274, threshold: 240 }, background: "breaching for 2h" }`  
+- Agent finding → `{ agent: "scout", subject: "paper on agent memory architectures", state: {}, background: "found on arXiv, relevant to our context-learning project" }`
+- Agent alert → `{ agent: "coach", subject: "bob stuck in retry loop", state: { sessionCount: 15, task: "Ship EXP-188" }, background: "same task retried 15x over 3 days" }`
+- Simple message → `{ agent: "amy", subject: "XHS content update", state: {}, background: "found 3 posts about multi-agent systems" }`
 ```
 
 ## Enrichment
@@ -140,6 +150,45 @@ Background: routine progress, no alerts.
 User says: coach is spending too many sessions, investigate
 
 Act on this: investigate coach's session count and efficiency.
+```
+
+### Agent finding → reply
+
+Notification sent (by scout):
+```
+🔬 Found paper on agent memory architectures (arXiv:2604.xxxxx)
+Relevant to our context-learning approach. See DD#801.
+```
+
+You reply: "share with bob, see if it connects to his hypothesis"
+
+Agent receives:
+```
+User replied to notification from scout about "paper on agent memory architectures".
+Background: found on arXiv, relevant to context-learning project. DD#801 written.
+
+User says: share with bob, see if it connects to his hypothesis
+
+Act on this: notify bob about this paper and its connection to his work.
+```
+
+### Agent alert → reply
+
+Notification sent (by coach):
+```
+⚠️ bob stuck in retry loop — "Ship EXP-188" retried 15x over 3 days
+```
+
+You reply: "cancel it and move on to the next experiment"
+
+Agent receives:
+```
+User replied to notification from coach about "bob stuck in retry loop".
+State: 15 retries of same task over 3 days.
+
+User says: cancel it and move on to the next experiment
+
+Act on this: cancel bob's stuck session, update the experiment status.
 ```
 
 ### Unprompted message (no reply context)
