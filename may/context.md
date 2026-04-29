@@ -91,3 +91,11 @@
 
 
 📘 **Creating Projects**: Before creating a project, read `agents/shared/skills/creating-projects/skill.md` — follow the exact template.
+
+## Hao's Preferences (living model)
+- Full doc: `agents/shared/projects/hao-alignment/preferences.md`
+- **Stability first**: Fix existing before starting new. Maintenance mode when directed.
+- **Guards stay strong**: Never weaken constraints to warn-only. Escalate, don't bypass.
+- **Quality > quantity**: Verify before acting. Unified plans over patches.
+- **Observability**: Show status proactively. Don't wait to be asked.
+- **Anti-patterns**: Idle agents, forwarding without thinking, zombie projects, exploring when things are broken.

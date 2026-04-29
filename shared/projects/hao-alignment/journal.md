@@ -14,3 +14,9 @@
 **Output**: `phase1-findings.md` — full analysis with tables, quotes, and recommendations
 
 **Next**: Phase 2 — Build preferences.md as a living document, create decision scorecard
+
+## Iteration 4 — 2026-04-29T19:00
+
+**Phase 3 progress**: Integrated preference summary into `agents/may/context.md`. Key preferences (stability-first, guards-stay-strong, quality>quantity, observability, anti-patterns) now available to May every session without reading the full doc.
+
+**Next**: Add same block to coach/bob/tech-lead/optimizer context files. Then measure: are we making fewer decisions Hao corrects?
