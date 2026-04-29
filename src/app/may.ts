@@ -715,7 +715,7 @@ if (EMIT_MODE) {
   // ── Emit mode: send event to running instance via socket ──────────
   const net = await import("node:net");
   const socketPath = SOCKET_PATH;
-  const payload = JSON.stringify({ type: EMIT_MODE.event, ...(EMIT_MODE.data || {}) }) + "\n";
+  const payload = JSON.stringify({ type: "emit", event: EMIT_MODE.event, ...(EMIT_MODE.data || {}) }) + "\n";
   const client = net.createConnection(socketPath, () => {
     client.write(payload);
     client.end();
