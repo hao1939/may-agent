@@ -112,6 +112,7 @@
 
 ## ✅ DONE
 
+- **LLM-to-JS Shallow Session Eval Fast-Path** — When ALL child sessions completed (done/interrupted) with ≤3 messages, `evaluateTask()` now returns a heuristic "needs_improvement" evaluation in pure JS, skipping the LLM evaluator call. These shallow sessions did no meaningful work and don't need LLM judgment. Saves 1 evaluator LLM session per shallow session tree (~47/day). (2026-07-17)
 - **LLM-to-JS Trivial Error Eval Fast-Path** — When ALL child sessions in a task tree are error/failed with ≤4 messages, `evaluateTask()` now returns a heuristic "needs_improvement" evaluation in pure JS, skipping the LLM evaluator call. These trivially-broken sessions (crashed before doing work) don't need LLM judgment. Saves 1 evaluator LLM session per trivial error tree. (2026-07-17)
 - **LLM-to-JS Evaluator Gate Fast-Path** — When all milestones are checked off in a project, the evaluator-gate in `project.ts` now auto-passes (score=8/10) in pure JS instead of spawning an LLM session. Saves 1 LLM session per project completion when milestones are fully checked. (2026-07-16)
 - **LLM-to-JS enhance-cron Step 6** — Replaced QA LLM agent verification session in `enhance-cron.ts` Step 6 with pure JS `execSync` (tsc + vitest). QA agent was spawned just to run shell commands and report pass/fail — mechanical work. Saves 1 QA LLM session per enhance-cron run. (2026-07-16)
