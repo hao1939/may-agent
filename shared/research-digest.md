@@ -7,7 +7,28 @@
 
 ---
 
-## Latest (2026-04-29 Heartbeat #2) — MAS Security: Architecture, Context Fragmentation, Graph Monitoring
+## Latest (2026-04-29 Heartbeat #3) — Epistemic State, Modular MAS, Pre-Action Governance, Compound AI Infra
+
+> 四篇论文汇聚：**agent系统正在从"能做事"走向"知道自己在做什么"**。显式认知状态、内嵌治理、模块化演化、生产级基础设施——都指向同一个成熟化方向。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **ADEMA** (2604.25849) | 架构 | 显式认知状态编排，checkpoint/resume是唯一critical机制 | session notes需升级为结构化epistemic state |
+| **OxyGent** (2604.25602, JD, ACL'26) | 框架 | Oxy统一抽象+OxyBank数据回流+动态执行图 | 验证skill-as-atom方向；trace回流为改进数据 |
+| **PAGRL** (2604.25684) | 治理 | 四层规则集pre-action check，95%合规零错误升级 | 可在agent loop加轻量governance gate |
+| **Salesforce Compound AI** (2604.25724, ACM CAIS'26) | 生产 | Cold-start cascade + fan-out overhead首次系统分析 | Agent-native infra成独立学术赛道 |
+
+### 💡 最重要的洞察：Checkpoint/Resume是长任务唯一不可缺机制
+
+> ADEMA的消融实验清晰表明：在所有花哨机制中，只有去掉checkpoint/resume会导致系统产生无效结果。这与我们的经验一致——中断恢复能力 > 更聪明的推理。我们的session notes是原始版checkpoint，但缺乏结构化的epistemic state tracking。
+
+**详细帖子**: [`HB-260429-adema`](library/posts/HB-260429-adema-knowledge-state-orchestration.md) | [`HB-260429-oxygent`](library/posts/HB-260429-oxygent-modular-mas-jd.md) | [`HB-260429-pagrl`](library/posts/HB-260429-pagrl-neurocognitive-governance.md) | [`HB-260429-salesforce`](library/posts/HB-260429-salesforce-compound-ai-production.md)
+
+---
+
+## Previous (2026-04-29 Heartbeat #2) — MAS Security: Architecture, Context Fragmentation, Graph Monitoring
 
 > 三篇论文汇聚：**多智能体安全正在从"加固单agent"转向"治理agent间关系"**。架构决定安全面，上下文孤岛制造隐性违规，图结构化是监控基础。
 
