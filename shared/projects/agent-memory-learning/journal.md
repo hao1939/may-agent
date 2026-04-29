@@ -20,3 +20,8 @@ Milestone completed: "Measure context-learn pipeline firing rate — outputs/pip
 
 ### Iteration 3 — 2026-04-29T07:52:50.891Z
 **Worker**: The SIG line changed. Let me just write the full file:
+**Orchestrator**: CONTINUE
+
+Milestone completed: "Fix pipeline trigger: diagnose why session-eval never fires, fix the event chain so context-learn actually runs after sessions" → replaced with: "Diagnose root cause of pipeline not firing (session.completed never emitted — no emitter in codebase)"
+
+(a) Next iteration
