@@ -25,17 +25,18 @@ Agents retain and apply lessons across sessions. Reduce repeated mistakes.
 - context.md files are rich (100+ lines for active agents) — finish() context_updates working well
 - Tests exist: agents/shared/evaluation/test/context-learn.test.ts
 
-**Key gap**: The infrastructure exists but lesson VOLUME is low. The mechanical extractor only catches command corrections, runtime facts, and path discoveries. The LLM extractor depends on evaluator agent being available. Need to measure actual capture rate and ensure the pipeline is firing.
+**Key finding (iteration 2):** Pipeline is fully built but has **NEVER FIRED organically**. Root cause: session-eval.ts requires an upstream event to trigger, and no evaluation DB exists. The entire event chain (session-eval → context-learn → lesson extraction) is dead. All 20 lessons are seeded, zero organic. See outputs/pipeline-metrics.md for full analysis.
 
 ## Plan
 - [x] Audit current memory files across all agents, write outputs/memory-audit.md
 - [x] Define lesson format and extraction process
 - [x] Build lesson retrieval — query relevant lessons before starting a task
-- [x] Seed lessons.jsonl with lessons extracted from existing context.md files across all agents (20 lessons seeded)
-- [ ] Measure context-learn pipeline firing rate — check may's eval DB for context-learn events, write outputs/pipeline-metrics.md
-- [ ] Expand mechanical extractor patterns in context-learn.ts — add patterns for: edit-after-read failures, test command discovery, dependency issues
+- [x] Seed lessons.jsonl with lessons extracted from existing context.md files (20 lessons seeded)
+- [x] Measure context-learn pipeline firing rate — outputs/pipeline-metrics.md (finding: 0 organic fires)
+- [ ] Fix pipeline trigger: diagnose why session-eval never fires, fix the event chain so context-learn actually runs after sessions
+- [ ] Verify pipeline fires: run a test session and confirm a lesson appears in lessons.jsonl with an organic source_task
 - [ ] Add lesson retrieval hook — agents query lessons.jsonl at session start for task-relevant lessons
-- [ ] Re-plan: review metrics, assess improvement, write next steps
+- [ ] Re-plan: review metrics after pipeline is firing
 
 ## References
 
