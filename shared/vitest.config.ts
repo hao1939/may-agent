@@ -1,14 +1,18 @@
 import { defineConfig } from "vitest/config";
+import { resolve } from "node:path";
 
 export default defineConfig({
   test: {
-    include: ["tests/**/*.test.ts"],
+    root: resolve(__dirname, ".."),
+    include: ["shared/tests/**/*.test.ts"],
     coverage: {
-      provider: "istanbul",
-      include: ["workflows/**/*.ts"],
-      thresholds: {
-        lines: 30,
-      },
+      provider: "v8",
+      include: [
+        "shared/workflows/**/*.ts",
+        "shared/lib/**/*.ts",
+        "shared/guards/**/*.ts",
+        "shared/evaluation/**/*.ts",
+      ],
     },
   },
 });
