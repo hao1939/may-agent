@@ -1,12 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777471532835_0
+- **Session:** s_1777473332316_52
 - **Status:** done
-- **When:** 2026-04-29T14:06:30.623Z
-- **Duration:** 57s
+- **When:** 2026-04-29T14:37:22.344Z
+- **Duration:** 1m50s
 
 ## What Happened
-The DB query returns empty — likely the recent sessions haven't ended yet or the time window doesn't match. The system_status already showed 99 sessions completed with 92% success. Everything is running well.
+Good. I've fixed the root cause of the `project.blocked-count` metric — 3 projects (skill-workflow-audit, documentation-gen, agent-memory-learning) had stale DB status ('blocked'/'waiting') despite being complete (milestones_done == milestones_total, markdown files show "complete"). Updated them to 'complete' in the DB.
 
-**Summary**: System healthy, all agents active, 92% success rate. No errors, no blocked work, no pending Hao requests unaddressed. The only soft concern is the p95 handler duration metric but it's not critical.
+The P0 coach notification is stale — coach has 4 sessions in the last 7 days and 21 sessions in the last 6 hours. It's actively running. Dismissing.
+
+System is otherwise healthy: 96% success rate, all cron jobs green, all heartbeats firing.
