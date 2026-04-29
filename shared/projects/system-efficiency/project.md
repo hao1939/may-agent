@@ -15,21 +15,16 @@ Maximize meaningful output of the agent system. Not about reducing cost — abou
 - worker-first-attempt-success: unknown → target 0.7 (worker produces correct deliverable without retry)
 
 ## Current State
-**Iteration 44.** PIVOT from milestone-chasing. Previous 43 iterations gamed iteration counts (cycling through satellites to hit "10/day" target). Hao feedback: chase the goal, not milestones. Metrics redesigned to measure actual output quality. 
+**Iteration 45.** PIVOT from milestone-chasing working. Iteration 44 produced real output: 20 passing vitest tests for workflows/project.ts (tests/project.test.ts, 255 lines). Tests cover updateField, extractSection, updateSection, updateChecklist, parseMetrics pure functions. deliverables-per-iteration: 1/1 = 1.0 for post-pivot iterations.
 
-Active satellite projects needing real progress:
-- agent-memory-learning: iter 2, metrics far from target (20/50 lessons, unknown repeat-mistake-rate)
-- test-coverage: iter 1, no tests exist yet, metrics unknown
-- documentation-gen: iter 4, metrics at target — effectively done
-- workflow-reliability: closed by coach
-
-Real work to do: get test-coverage and agent-memory-learning to their metric targets.
+Next priority: expand test coverage to other critical workflows (master-worker.ts, heartbeat.ts), then drive agent-memory-learning toward its 50-lesson target.
 
 ## Plan
 - [ ] Measure current deliverables-per-iteration (audit last 10 iterations for real file output)
 - [x] Drive test-coverage: install vitest, write first test for workflows/project.ts critical path (20 tests, 255 lines, all passing)
 - [ ] Drive agent-memory-learning: build lesson capture pipeline, get to 50 lessons
 - [ ] Measure worker-first-attempt-success rate from journal entries
+- [ ] Drive test-coverage: write tests for master-worker.ts workflow (the orchestration core)
 - [ ] Re-plan based on metrics
 
 ## References
