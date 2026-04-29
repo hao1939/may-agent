@@ -27,16 +27,19 @@ Agents retain and apply lessons across sessions. Reduce repeated mistakes.
 
 **Key finding (iteration 2):** Pipeline is fully built but has **NEVER FIRED organically**. Root cause: session-eval.ts requires an upstream event to trigger, and no evaluation DB exists. The entire event chain (session-eval → context-learn → lesson extraction) is dead. All 20 lessons are seeded, zero organic. See outputs/pipeline-metrics.md for full analysis.
 
+**Key finding (iteration 3):** Root cause confirmed — `session.completed` event is NEVER emitted anywhere in the codebase. Only `session-eval.ts` and `session-recovery.ts` *listen* for it but nothing *dispatches* it. The session lifecycle manager is likely in a compiled binary/external package we can't edit. The `ctx.dispatchEvent()` API exists (used in project.ts and session-eval.ts itself) but nobody calls it with `session.completed`. **Two paths forward:** (a) request core runtime fix from bob/tech-lead to emit session.completed, or (b) create a cron-based poller that scans recent session dirs and triggers context-learn directly.
+
 ## Plan
 - [x] Audit current memory files across all agents, write outputs/memory-audit.md
 - [x] Define lesson format and extraction process
 - [x] Build lesson retrieval — query relevant lessons before starting a task
 - [x] Seed lessons.jsonl with lessons extracted from existing context.md files (20 lessons seeded)
 - [x] Measure context-learn pipeline firing rate — outputs/pipeline-metrics.md (finding: 0 organic fires)
-- [ ] Fix pipeline trigger: diagnose why session-eval never fires, fix the event chain so context-learn actually runs after sessions
-- [ ] Verify pipeline fires: run a test session and confirm a lesson appears in lessons.jsonl with an organic source_task
-- [ ] Add lesson retrieval hook — agents query lessons.jsonl at session start for task-relevant lessons
-- [ ] Re-plan: review metrics after pipeline is firing
+- [x] Diagnose root cause of pipeline not firing (session.completed never emitted — no emitter in codebase)
+- [ ] Create cron-based context-learn poller: a new handler that runs every 30min, scans recently-completed sessions in .state/sessions/history/, and dispatches context-learn events for unprocessed ones
+- [ ] File task to bob/tech-lead: add session.completed event emission in core runtime when sessions end
+- [ ] Verify organic lesson capture: confirm at least 1 lesson appears in lessons.jsonl from the poller
+- [ ] Re-plan: review metrics after organic capture is working
 
 ## References
 
