@@ -59,3 +59,6 @@ Milestones completed:
 - "Re-plan: review metrics after organic capture is working"
 
 (
+
+### Iteration 8 — 2026-04-29T08:29:07.838Z
+**Worker**: Now write the learning dashboard:
