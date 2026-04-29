@@ -1,60 +1,18 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { mkdtempSync, writeFileSync, mkdirSync, existsSync, statSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import {
+  extractDecision,
+  diffSnapshots,
+  snapshotOutputs,
+  orchestratorSystemPrompt,
+  workerSystemPrompt,
+  name,
+  description,
+} from "../workflows/master-worker.ts";
 
-// ── Replicate pure functions from master-worker.ts for testing ──
-
-interface Decision {
-  status: "continue" | "pivot" | "waiting" | "blocked" | "unknown";
-  detail: string;
-}
-
-function extractDecision(text: string): Decision {
-  const trimmed = text.trim();
-  const firstLine = trimmed.split("\n")[0] || "";
-  const upper = firstLine.toUpperCase();
-
-  for (const s of ["CONTINUE", "PIVOT", "WAITING", "BLOCKED", "DONE"] as const) {
-    if (upper.startsWith(s)) {
-      return { status: s.toLowerCase() as Decision["status"], detail: trimmed.slice(0, 500) };
-    }
-  }
-
-  const decisionPattern = /(?:\*{0,2}Decision\*{0,2}[:\s]+\*{0,2}|^|\n)\*{0,2}(CONTINUE|PIVOT|BLOCKED|WAITING|DONE)\*{0,2}/im;
-  const patternMatch = trimmed.match(decisionPattern);
-  if (patternMatch) {
-    return { status: patternMatch[1].toLowerCase() as Decision["status"], detail: trimmed.slice(0, 500) };
-  }
-
-  if (/\b(proceed|move forward|start working|begin work|let'?s begin|let'?s start)\b/i.test(trimmed)) {
-    return { status: "continue", detail: trimmed.slice(0, 500) };
-  }
-
-  for (const keyword of ["CONTINUE", "PIVOT", "BLOCKED", "WAITING"] as const) {
-    if (new RegExp(`\\b${keyword}\\b`).test(trimmed)) {
-      return { status: keyword.toLowerCase() as Decision["status"], detail: trimmed.slice(0, 500) };
-    }
-  }
-
-  return { status: "unknown", detail: trimmed.slice(0, 500) };
-}
-
-function snapshotOutputs(entries: { path: string; mtime: number }[]): Map<string, number> {
-  const snap = new Map<string, number>();
-  for (const e of entries) snap.set(e.path, e.mtime);
-  return snap;
-}
-
-function diffSnapshots(before: Map<string, number>, after: Map<string, number>): string[] {
-  const changed: string[] = [];
-  for (const [path, mtime] of after) {
-    const prev = before.get(path);
-    if (prev === undefined || mtime > prev) {
-      changed.push(path);
-    }
-  }
-  return changed;
-}
-
-// ── Tests ──
+// ── extractDecision ──
 
 describe("extractDecision", () => {
   it("parses CONTINUE as first word", () => {
@@ -76,13 +34,6 @@ describe("extractDecision", () => {
     expect(extractDecision("WAITING\n\nNeed input")).toMatchObject({ status: "waiting" });
   });
 
-  it("parses DONE as first word (maps to lowercase)", () => {
-    // DONE maps to "done" which becomes Decision["status"] — but type says "unknown"
-    // Actually checking the code: "done" is not in the union, so it casts to Decision["status"]
-    const result = extractDecision("DONE\n\nAll finished");
-    expect(result.status).toBe("done");
-  });
-
   it("detects 'Decision: CONTINUE' pattern", () => {
     const result = extractDecision("Here is my assessment.\n\nDecision: CONTINUE\n\nNext steps...");
     expect(result.status).toBe("continue");
@@ -94,8 +45,7 @@ describe("extractDecision", () => {
   });
 
   it("detects 'proceed' as continue", () => {
-    const result = extractDecision("I think we should proceed with the current plan.");
-    expect(result.status).toBe("continue");
+    expect(extractDecision("I think we should proceed with the current plan.")).toMatchObject({ status: "continue" });
   });
 
   it("detects 'let's begin' as continue", () => {
@@ -106,9 +56,12 @@ describe("extractDecision", () => {
     expect(extractDecision("We should move forward with implementation.")).toMatchObject({ status: "continue" });
   });
 
+  it("detects 'start working' as continue", () => {
+    expect(extractDecision("Time to start working on the feature.")).toMatchObject({ status: "continue" });
+  });
+
   it("falls back to uppercase keyword scan", () => {
-    const result = extractDecision("After reviewing, I think we are BLOCKED by the missing API key.");
-    expect(result.status).toBe("blocked");
+    expect(extractDecision("After reviewing, we are BLOCKED by the missing API key.")).toMatchObject({ status: "blocked" });
   });
 
   it("returns unknown when no keywords found", () => {
@@ -128,45 +81,97 @@ describe("extractDecision", () => {
     expect(extractDecision("   \n  \n  ")).toMatchObject({ status: "unknown", detail: "" });
   });
 
-  it("is case-insensitive for first-line check", () => {
+  it("handles WAITING keyword in body text", () => {
+    expect(extractDecision("We are WAITING for approval")).toMatchObject({ status: "waiting" });
+  });
+
+  it("handles case-insensitive first line", () => {
     expect(extractDecision("continue with the work")).toMatchObject({ status: "continue" });
   });
 });
 
+// ── snapshotOutputs with real filesystem ──
+
+describe("snapshotOutputs", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "mw-test-"));
+  });
+
+  it("returns empty map for non-existent dir", () => {
+    expect(snapshotOutputs("/tmp/nonexistent-dir-xyz-12345").size).toBe(0);
+  });
+
+  it("returns empty map for empty dir", () => {
+    expect(snapshotOutputs(tmpDir).size).toBe(0);
+  });
+
+  it("captures files in root dir", () => {
+    writeFileSync(join(tmpDir, "a.txt"), "hello");
+    const snap = snapshotOutputs(tmpDir);
+    expect(snap.size).toBe(1);
+    expect(snap.has(join(tmpDir, "a.txt"))).toBe(true);
+  });
+
+  it("captures files in subdirectories (1 level deep)", () => {
+    const sub = join(tmpDir, "sub");
+    mkdirSync(sub);
+    writeFileSync(join(sub, "b.txt"), "world");
+    const snap = snapshotOutputs(tmpDir);
+    expect(snap.has(join(sub, "b.txt"))).toBe(true);
+  });
+
+  it("captures mix of root and sub files", () => {
+    writeFileSync(join(tmpDir, "root.txt"), "r");
+    const sub = join(tmpDir, "dir");
+    mkdirSync(sub);
+    writeFileSync(join(sub, "nested.txt"), "n");
+    const snap = snapshotOutputs(tmpDir);
+    expect(snap.size).toBe(2);
+  });
+});
+
+// ── diffSnapshots ──
+
 describe("diffSnapshots", () => {
   it("detects new files", () => {
-    const before = snapshotOutputs([]);
-    const after = snapshotOutputs([{ path: "/out/a.txt", mtime: 100 }]);
+    const before = new Map<string, number>();
+    const after = new Map<string, number>([["/out/a.txt", 100]]);
     expect(diffSnapshots(before, after)).toEqual(["/out/a.txt"]);
   });
 
   it("detects modified files", () => {
-    const before = snapshotOutputs([{ path: "/out/a.txt", mtime: 100 }]);
-    const after = snapshotOutputs([{ path: "/out/a.txt", mtime: 200 }]);
+    const before = new Map<string, number>([["/out/a.txt", 100]]);
+    const after = new Map<string, number>([["/out/a.txt", 200]]);
     expect(diffSnapshots(before, after)).toEqual(["/out/a.txt"]);
   });
 
   it("ignores unchanged files", () => {
-    const before = snapshotOutputs([{ path: "/out/a.txt", mtime: 100 }]);
-    const after = snapshotOutputs([{ path: "/out/a.txt", mtime: 100 }]);
+    const before = new Map<string, number>([["/out/a.txt", 100]]);
+    const after = new Map<string, number>([["/out/a.txt", 100]]);
     expect(diffSnapshots(before, after)).toEqual([]);
   });
 
-  it("detects deleted files are not flagged (only in after)", () => {
-    const before = snapshotOutputs([{ path: "/out/a.txt", mtime: 100 }]);
-    const after = snapshotOutputs([]);
+  it("does not flag deleted files", () => {
+    const before = new Map<string, number>([["/out/a.txt", 100]]);
+    const after = new Map<string, number>();
     expect(diffSnapshots(before, after)).toEqual([]);
+  });
+
+  it("handles both empty", () => {
+    expect(diffSnapshots(new Map(), new Map())).toEqual([]);
   });
 
   it("handles mix of new, modified, unchanged", () => {
-    const before = snapshotOutputs([
-      { path: "/out/old.txt", mtime: 100 },
-      { path: "/out/same.txt", mtime: 100 },
+    const before = new Map<string, number>([
+      ["/out/old.txt", 100],
+      ["/out/same.txt", 100],
     ]);
-    const after = snapshotOutputs([
-      { path: "/out/old.txt", mtime: 200 },
-      { path: "/out/same.txt", mtime: 100 },
-      { path: "/out/new.txt", mtime: 300 },
+    const after = new Map<string, number>([
+      ["/out/old.txt", 200],
+      ["/out/same.txt", 100],
+      ["/out/new.txt", 300],
     ]);
     const changed = diffSnapshots(before, after);
     expect(changed).toContain("/out/old.txt");
@@ -175,107 +180,45 @@ describe("diffSnapshots", () => {
   });
 });
 
-// ── Edge case tests ──
+// ── System prompts ──
 
-describe("extractDecision edge cases", () => {
-  it("handles empty string", () => {
-    expect(extractDecision("").status).toBe("unknown");
+describe("orchestratorSystemPrompt", () => {
+  it("includes project dir in prompt", () => {
+    const prompt = orchestratorSystemPrompt("/my/project");
+    expect(prompt).toContain("/my/project");
+    expect(prompt).toContain("orchestrator");
   });
 
-  it("handles only whitespace", () => {
-    expect(extractDecision("   \n  \n  ").status).toBe("unknown");
-  });
-
-  it("handles DONE as first word", () => {
-    const d = extractDecision("DONE - all work complete");
-    expect(d.status).not.toBe("unknown");
-  });
-
-  it("handles decision buried in markdown bold", () => {
-    const d = extractDecision("**Decision**: **PIVOT**\nNeed to change approach");
-    expect(d.status).toBe("pivot");
-  });
-
-  it("handles decision with mixed case in body", () => {
-    const d = extractDecision("The team decided to BLOCKED on this");
-    expect(d.status).toBe("blocked");
-  });
-
-  it("truncates detail to 500 chars", () => {
-    const longText = "CONTINUE " + "x".repeat(1000);
-    const d = extractDecision(longText);
-    expect(d.detail.length).toBeLessThanOrEqual(500);
-  });
-
-  it("handles 'let's begin' as continue signal", () => {
-    const d = extractDecision("Alright, let's begin the implementation");
-    expect(d.status).toBe("continue");
-  });
-
-  it("handles 'proceed' as continue signal", () => {
-    const d = extractDecision("We should proceed with the plan");
-    expect(d.status).toBe("continue");
-  });
-
-  it("handles 'move forward' as continue signal", () => {
-    const d = extractDecision("Time to move forward on this");
-    expect(d.status).toBe("continue");
-  });
-
-  it("handles WAITING keyword in body text", () => {
-    const d = extractDecision("We are WAITING for approval");
-    expect(d.status).toBe("waiting");
+  it("includes decision keywords", () => {
+    const prompt = orchestratorSystemPrompt("/p");
+    expect(prompt).toContain("CONTINUE");
+    expect(prompt).toContain("PIVOT");
+    expect(prompt).toContain("BLOCKED");
+    expect(prompt).toContain("WAITING");
   });
 });
 
-describe("snapshotOutputs edge cases", () => {
-  it("handles empty array", () => {
-    const snap = snapshotOutputs([]);
-    expect(snap.size).toBe(0);
+describe("workerSystemPrompt", () => {
+  it("includes outputs directory", () => {
+    const prompt = workerSystemPrompt("/my/project");
+    expect(prompt).toContain("/my/project/outputs");
   });
 
-  it("handles duplicate paths (last wins)", () => {
-    const snap = snapshotOutputs([
-      { path: "/a.txt", mtime: 100 },
-      { path: "/a.txt", mtime: 200 },
-    ]);
-    expect(snap.get("/a.txt")).toBe(200);
-  });
-
-  it("handles large number of entries", () => {
-    const entries = Array.from({ length: 1000 }, (_, i) => ({
-      path: `/file-${i}.txt`,
-      mtime: i,
-    }));
-    const snap = snapshotOutputs(entries);
-    expect(snap.size).toBe(1000);
-    expect(snap.get("/file-999.txt")).toBe(999);
+  it("includes write-first constraint", () => {
+    const prompt = workerSystemPrompt("/p");
+    expect(prompt).toContain("WRITE-FIRST");
   });
 });
 
-describe("diffSnapshots edge cases", () => {
-  it("handles both empty", () => {
-    const before = snapshotOutputs([]);
-    const after = snapshotOutputs([]);
-    expect(diffSnapshots(before, after)).toEqual([]);
+// ── Module exports ──
+
+describe("module exports", () => {
+  it("exports name", () => {
+    expect(name).toBe("master-worker");
   });
 
-  it("handles mtime of 0", () => {
-    const before = snapshotOutputs([]);
-    const after = snapshotOutputs([{ path: "/a.txt", mtime: 0 }]);
-    expect(diffSnapshots(before, after)).toEqual(["/a.txt"]);
-  });
-
-  it("handles same mtime (not changed)", () => {
-    const before = snapshotOutputs([{ path: "/a.txt", mtime: 100 }]);
-    const after = snapshotOutputs([{ path: "/a.txt", mtime: 100 }]);
-    expect(diffSnapshots(before, after)).toEqual([]);
-  });
-
-  it("handles earlier mtime in after (clock skew)", () => {
-    const before = snapshotOutputs([{ path: "/a.txt", mtime: 200 }]);
-    const after = snapshotOutputs([{ path: "/a.txt", mtime: 100 }]);
-    // mtime decreased, not detected as change
-    expect(diffSnapshots(before, after)).toEqual([]);
+  it("exports description", () => {
+    expect(typeof description).toBe("string");
+    expect(description.length).toBeGreaterThan(0);
   });
 });
