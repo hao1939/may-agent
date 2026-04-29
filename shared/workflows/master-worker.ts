@@ -17,7 +17,7 @@
 import { readFileSync, existsSync, writeFileSync, appendFileSync, readdirSync, statSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import {
-  extractField, extractSection, extractMilestones, updateProjectStatus,
+  extractField, extractSection, updateProjectStatus,
 } from "./project-helpers.ts";
 
 export const name: string = "master-worker";
@@ -78,7 +78,7 @@ function orchestratorSystemPrompt(projectDir: string): string {
 Your role: assess state, direct the worker, verify deliverables, update project.md.
 
 The project directory is: ${projectDir}
-You are the ONLY authority on project status and milestones. The worker cannot see or edit project.md.
+You are the ONLY authority on project status. The worker cannot see or edit project.md.
 
 You MUST update project.md directly:
 - Check off plan items when you verify the deliverable exists and works
@@ -112,12 +112,8 @@ CONTINUE
 (b) What's different...
 (c) First step...
 
-When milestones are completed, explicitly list which ones are done using the exact text from project.md, e.g.:
-"Milestone completed: Create .state/fib.ts script"
-
-VERIFICATION RULE: After each worker iteration, the ⚠️/✅ output verification line is GROUND TRUTH.
-If it says "⚠️ NO files were created" but the worker claims success, the worker is lying.
-Do NOT check off milestones based on worker claims alone — verify with read() or bash(ls).
+VERIFICATION RULE: After each worker iteration, verify deliverables exist with read() or bash(ls).
+If the worker claims success but files don't exist, the worker is wrong.
 If 3+ consecutive iterations produce no files, WRITE THE FILE YOURSELF or provide exact content in guidance.`;
 }
 
@@ -338,7 +334,7 @@ ${journalContent.slice(-3000)}
         }
       }
 
-      // Worker gets ONLY the orchestrator's guidance — no project.md, no milestones
+      // Worker gets ONLY the orchestrator's guidance — no project.md access
       let workerPrompt = `## Task (Iteration ${iteration})\n${guidance}`;
       if (stubFilePath) {
         const relPath = stubFilePath.replace(/.*?(outputs\/)/, 'outputs/');
@@ -470,7 +466,6 @@ Then provide your decision and guidance for the next iteration.`;
 
     // ── Wrap up ──
     const finalContent = readFileSync(projectFile, "utf-8");
-    const finalMs = extractMilestones(finalContent);
     const projectType = extractField(finalContent, "Type").toLowerCase();
     let finalStatus: string;
     let stopReason: string;
@@ -483,7 +478,7 @@ Then provide your decision and guidance for the next iteration.`;
       stopReason = decision.detail.slice(0, 200);
     } else if (iteration >= maxIterations) {
       finalStatus = "blocked";
-      stopReason = `Safety cap: ${maxIterations} iterations reached without resolution. ${finalMs.done}/${finalMs.total} milestones done.`;
+      stopReason = `Safety cap: ${maxIterations} iterations reached.`;
     } else {
       finalStatus = decision.status;
       stopReason = decision.detail.slice(0, 200);
@@ -492,7 +487,7 @@ Then provide your decision and guidance for the next iteration.`;
     // Workflow can set waiting or blocked, never done/closed
     if (finalStatus === "done" || finalStatus === "closed") finalStatus = "waiting";
     updateProjectStatus(projectFile, finalStatus, stopReason, iteration);
-    ctx.log(`[done] ${finalStatus} after ${iteration} iteration(s). ${finalMs.done}/${finalMs.total} milestones. ${stopReason}`);
+    ctx.log(`[done] ${finalStatus} after ${iteration} iteration(s). ${stopReason}`);
 
     if (finalStatus === "blocked") return ctx.escalate(stopReason);
     return ctx.done(`${finalStatus} after ${iteration} iteration(s). ${stopReason}`);
