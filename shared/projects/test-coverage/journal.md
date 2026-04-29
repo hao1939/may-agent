@@ -24,3 +24,11 @@ Milestones completed:
 
 ### Iteration 3 — 2026-04-29T08:01:21.679Z
 **Worker**: All 76 tests pass, 0 failures.
+**Orchestrator**: CONTINUE
+
+Milestones completed:
+- "Write unit tests for fewshot-inject-helpers.ts and verify-wrap.ts"
+- "Fix failing gym test (agent="coder" vs "amy" mismatch)"
+- "Re-plan: measure coverage, assess what's left"
+
+(a) Next iteration should produce: Tests for `shared/lib/` modules and a coverage thresh
