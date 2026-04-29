@@ -74,6 +74,7 @@ interface TaskResult {
 | getDb | ✅ | ✅ | ✅ |
 | log | ✅ | ✅ | ✅ |
 | notify | ✅ | rare | ❌ |
+| escalate | ✅ | ✅ | ❌ |
 | paths | ✅ | ✅ | ✅ |
 
 ## Workflow-specific additions
@@ -84,7 +85,10 @@ Workflows need two lifecycle methods not in the base SDK:
 interface WorkflowSDK extends AgentSDK {
   task: string;
   agent: string;
+  // done() terminates the workflow successfully
   done(summary: string, opts?: { deliverables?: Deliverable[]; contextUpdates?: string[]; nextSteps?: string[] }): WorkflowResult;
+  // Note: escalate() is inherited from AgentSDK.
+  // In workflow context, escalate(target, reason) also terminates the workflow.
 }
 ```
 
@@ -109,7 +113,7 @@ They share the same vocabulary:
 | "Trigger a handler now" | — | `sdk.emit("trigger.metrics-snapshot")` (convention: `trigger.<handler-name>`) |
 
 Notes:
-- `notify()` is human-visible only (Telegram, web). Agent-to-agent communication uses `runAgent()` or agent tools.
+- `notify(target, msg)` sends to any target. `notify("human", msg)` goes to Telegram/web. `notify("bob", msg)` goes to bob's inbox.
 - `createLLMSession()` creates a raw LLM session with custom system prompt — NOT "talk to another agent". For multi-turn agent interaction, call `runAgent()` multiple times with accumulated context.
 - `getDb()` is the database primitive. Inbox, metrics, sessions are all queries on top — no special helpers in the SDK.
 
@@ -202,7 +206,7 @@ The SDK interface IS the system specification. 7 methods define what the system 
 This enables:
 - **Formal contract**: anything reachable through the SDK is a supported capability. Anything else is subject to change without notice.
 - **Tool generation**: agent tool schemas can be auto-generated from SDK types. One source of truth for both code and LLM interfaces.
-- **Runtime portability**: a second runtime (distributed, cloud-based, different language) implements the same 7 methods. Handlers, workflows, and gym scenarios port with zero changes.
+- **Runtime portability**: a second runtime (distributed, cloud-based, different language) implements the same 8 methods. Handlers, workflows, and gym scenarios port with zero changes.
 - **Testing**: mock the SDK, test everything else in isolation. No integration test needed to verify handler logic.
 
 Today it's a monolithic Bun process with SQLite. Tomorrow it could be anything — as long as it implements AgentSDK.
