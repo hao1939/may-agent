@@ -20,7 +20,7 @@ describe("Workflow Integration (end-to-end, no mocks)", () => {
     // 1. Build config
     const config = mergeWorkflowConfig({
       projectRoot: "/app/agents/shared",
-      task: "projects/test-reliability — run integration check",
+      task: "project: projects/test-reliability — run integration check",
       maxIterations: 3,
       healthCheckEnabled: true,
       healthCheckThreshold: 0.3,
@@ -36,11 +36,15 @@ describe("Workflow Integration (end-to-end, no mocks)", () => {
     const validation = validateDispatch(config.task, config.projectRoot);
     expect(validation).toBeDefined();
 
-    // 4. Run health check on real filesystem
-    const healthReport = await checkHealth(config.projectRoot, config.satelliteDirs!);
+    // 4. Run health check with structured input
+    const healthReport = checkHealth([
+      { name: "test-project", projectContent: "status: active\nmetric: 80% coverage", journalContent: null },
+      { name: "healthy-project", projectContent: "status: complete\nmetric: done", journalContent: "## Entry\nAll good" },
+    ]);
     expect(healthReport).toBeDefined();
     expect(healthReport.summary).toBeDefined();
     expect(typeof healthReport.summary.total).toBe("number");
+    expect(healthReport.summary.total).toBe(2);
 
     // 5. Decide whether to proceed
     const decision = shouldProceedAfterHealthCheck(healthReport, config.healthCheckThreshold);
@@ -80,9 +84,9 @@ describe("Workflow Integration (end-to-end, no mocks)", () => {
     expect(cache.getStats().hits).toBe(1);
   });
 
-  it("extractProjectPath parses task strings correctly", () => {
+  it("extractProjectPath parses task strings with project: prefix", () => {
     const path = extractProjectPath(
-      mergeWorkflowConfig({ task: "projects/foo — do something" })
+      mergeWorkflowConfig({ task: "project: projects/foo — do something" })
     );
     expect(path).toBe("projects/foo");
   });
