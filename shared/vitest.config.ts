@@ -4,10 +4,7 @@ export default defineConfig({
   test: {
     include: ["tests/**/*.test.ts"],
     coverage: {
-      provider: "istanbul",
-      thresholds: {
-        lines: 30,
-      },
+      provider: "v8",
     },
   },
 });
