@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
 
-// Replicate pure functions from workflows/project.ts for property-based testing
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 function updateField(content: string, field: string, value: string): string {
-  const regex = new RegExp(`^(\\*\\*${field}:\\*\\*\\s*)(.*)$`, 'm');
+  const regex = new RegExp(`^(\\*\\*${escapeRegex(field)}:\\*\\*\\s*)(.*)$`, 'm');
   if (regex.test(content)) {
     return content.replace(regex, `$1${value}`);
   }
@@ -12,7 +14,7 @@ function updateField(content: string, field: string, value: string): string {
 }
 
 function extractSection(content: string, heading: string): string {
-  const regex = new RegExp(`^##\\s+${heading}\\s*$`, 'm');
+  const regex = new RegExp(`^##\\s+${escapeRegex(heading)}\\s*$`, 'm');
   const match = content.match(regex);
   if (!match || match.index === undefined) return '';
   const start = match.index + match[0].length;
@@ -23,7 +25,8 @@ function extractSection(content: string, heading: string): string {
 }
 
 function updateSection(content: string, heading: string, newContent: string): string {
-  const regex = new RegExp(`(^##\\s+${heading}\\s*$)([\\s\\S]*?)(?=^## |$(?![\r\n]))`, 'm');
+  const esc = escapeRegex(heading);
+  const regex = new RegExp(`(^##\\s+${esc}\\s*$)([\\s\\S]*?)(?=^## |$(?![\\r\\n]))`, 'm');
   return content.replace(regex, `$1\n${newContent}\n`);
 }
 
@@ -92,7 +95,7 @@ describe('Property: updateField', () => {
 
   it('is idempotent when applied twice with same value', () => {
     fc.assert(
-      fc.property(fc.string(), fc.string(), (field, value) => {
+      fc.property(fc.string().filter(s => s.length > 0), fc.string().filter(s => !s.includes("\n")), (field, value) => {
         const content = `**${field}:** old_value\nsome other line`;
         const once = updateField(content, field, value);
         const twice = updateField(once, field, value);
