@@ -1,21 +1,22 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777488617714_19
+- **Session:** s_1777494017760_265
 - **Status:** done
-- **When:** 2026-04-29T18:50:43.512Z
-- **Duration:** 25s
+- **When:** 2026-04-29T20:20:44.811Z
+- **Duration:** 27s
 
 ## What Happened
 ### Summary
-Recent unverified change appears to be in `agents/shared/evaluation/evaluator.ts`, adding logic around a “read-only dispatcher JS fast-path” and/or transcript extraction/formatting. I independently verified the repo builds and the full test suite passes; nothing obvious in the reviewed sections looks broken or unsafe.
+Reviewed recent `agents/` changes and spot-checked the evaluation infrastructure update in `agents/may/handlers/eval-poller.ts`. TypeScript compilation succeeds and the full vitest suite passes (512 tests). No functional regressions observed in the audited file, but I noted a small comment/code mismatch around the processed-ID retention limit.
 
 ### Checks
-- `tsc --noEmit`: **PASS** (ran in `/app/agents`, no output, exit success)  
-- `vitest --run`: **PASS** (**512 tests** across **28** files)
+- `tsc --noEmit`: **PASS** (ran in `/app/agents`, no output, exit 0)
+- `vitest --run`: **PASS** (**512 tests**, 28 files)
 
 ### Issues
-- **No issues found** in the portions of `agents/shared/evaluation/evaluator.ts` I reviewed (file read at offsets 1–220 and 221–340).
+- **MINOR** — Comment mismatch in `agents/may/handlers/eval-poller.ts`  
+  Evidence: file shows `// Keep only last 500 processed IDs to avoid unbounded growth` but the code does `slice(-2000)` (line in `saveState()` block). Not a bug, but misleading documentation.
 
 ### Verdict
-**PASS** — Typecheck and tests pass (512/512), and the reviewed changes in `agents/shared/evaluation/evaluator.ts` look reasonable with no clear correctness or safety problems based on direct inspection.
+**PASS** — Compilation and tests are green, and the reviewed change looks correct. The only issue found is minor documentation drift (comment vs actual slice size).
