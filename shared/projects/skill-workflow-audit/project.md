@@ -1,12 +1,12 @@
 # Project: Skill & Workflow Quality
 
-**Status**: active
-**Stop Reason**: All 4 metrics at target, all 18 plan items done. Closed by May.
+**Status**: blocked
+**Stop Reason**: Safety cap: 50 iterations reached without resolution. 18/18 milestones done.
 **Owner**: coach
 **Type**: continuous
 **Workflow**: master-worker
 **Priority**: P0
-**Iteration**: 49
+**Iteration**: 50
 
 ## Goal
 Every skill and workflow verified working, measured for impact, protected against regression.
