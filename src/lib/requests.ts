@@ -270,6 +270,17 @@ CREATE TABLE IF NOT EXISTS metric_alerts (
   created_at      INTEGER
 );
 
+
+CREATE TABLE IF NOT EXISTS notification_messages (
+  telegram_msg_id  INTEGER PRIMARY KEY,
+  event_type       TEXT,
+  agent            TEXT,
+  session_id       TEXT,
+  project_id       TEXT,
+  data             TEXT,
+  sent_at          INTEGER
+);
+
 CREATE TABLE IF NOT EXISTS projects (
   id              TEXT PRIMARY KEY,
   path            TEXT NOT NULL,

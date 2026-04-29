@@ -29,6 +29,7 @@ try {
 }
 
 export interface TelegramBotOptions {
+  persistDir?: string;
   bus: EventBus;
   manager: SubagentManager;
   getSessionId: () => string;
@@ -85,16 +86,18 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     return data.result;
   }
 
-  async function sendMessage(chatId: string, text: string, parseMode?: string): Promise<void> {
+  async function sendMessage(chatId: string, text: string, parseMode?: string, context?: { eventType?: string; agent?: string; sessionId?: string; projectId?: string; data?: string }): Promise<number | undefined> {
     // Split long messages
     const chunks = splitMessage(text, TELEGRAM_MAX_LENGTH);
+    let lastMsgId: number | undefined;
     for (const chunk of chunks) {
       try {
-        await apiCall("sendMessage", {
+        const result = await apiCall("sendMessage", {
           chat_id: chatId,
           text: chunk,
           ...(parseMode ? { parse_mode: parseMode } : {}),
         });
+        lastMsgId = result?.message_id;
       } catch (err) {
         // If markdown parsing fails, retry without parse_mode
         if (parseMode) {
@@ -110,6 +113,18 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         }
       }
     }
+    // Store notification context for reply enrichment
+    if (lastMsgId && context) {
+      try {
+        const { getDb } = await import("../../lib/requests.js");
+        const db = getDb(opts.persistDir ?? ".state");
+        db.run(
+          "INSERT OR REPLACE INTO notification_messages (telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          [lastMsgId, context.eventType || null, context.agent || null, context.sessionId || null, context.projectId || null, context.data || null, Date.now()]
+        );
+      } catch { /* best-effort */ }
+    }
+    return lastMsgId;
   }
 
   function splitMessage(text: string, maxLen: number): string[] {
@@ -163,6 +178,39 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const chatIdStr = String(chatId);
     bus.emit({ type: "info", message: `[telegram] ← ${text.slice(0, 80)}` });
 
+    // Context-enriched reply: if user replied to a notification, enrich their text
+    let enrichedText = text;
+    const replyToMsgId = msg.reply_to_message?.message_id;
+    if (replyToMsgId) {
+      try {
+        const { getDb } = await import("../../lib/requests.js");
+        const db = getDb(opts.persistDir ?? ".state");
+        const ctx = db.prepare("SELECT * FROM notification_messages WHERE telegram_msg_id = ?").get(replyToMsgId) as any;
+        if (ctx) {
+          const parts: string[] = [];
+          parts.push(`[User replying to notification${ctx.agent ? ` from ${ctx.agent}` : ""}${ctx.project_id ? ` about project "${ctx.project_id}"` : ""}]`);
+          if (ctx.data) {
+            try {
+              const data = JSON.parse(ctx.data);
+              if (data.summary) parts.push(`Context: ${data.summary}`);
+              if (data.text) parts.push(`Original notification: ${data.text}`);
+            } catch {}
+          }
+          if (ctx.event_type) parts.push(`Event type: ${ctx.event_type}`);
+          parts.push("");
+          parts.push(`User says: ${text}`);
+          enrichedText = parts.join("\n");
+          bus.emit({ type: "info", message: `[telegram] Enriched reply (ctx: ${ctx.event_type}/${ctx.agent})` });
+
+          // Track reply for metric
+          try {
+            db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+              ["telegram.reply", "telegram", ctx.agent || "unknown", JSON.stringify({ enriched: true, originalMsgId: replyToMsgId }), Date.now()]);
+          } catch {}
+        }
+      } catch {}
+    }
+
     // Map /commands to unified input commands, pass everything else as regular input
     let inputMessage = text;
     if (text.startsWith("/")) {
@@ -198,8 +246,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       }
     }
 
-    // All input goes through the unified handler
-    bus.emit({ type: "input", message: inputMessage, source: "telegram" } as any);
+    // All input goes through the unified handler (enriched if reply)
+    const finalMessage = replyToMsgId ? enrichedText : inputMessage;
+    bus.emit({ type: "input", message: finalMessage, source: "telegram" } as any);
   }
 
   // ── Outbound: accumulate assistant text, send on turn end ────────
@@ -211,7 +260,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   // chat session and its children (delegated sub-sessions).
   const watchedSessions = new Set<string>();
 
-  const unsubBus = bus.subscribe((event) => {
+  const unsubBus = bus.subscribe((event: any) => {
     const chatSid = getSessionId();
 
     // Keep the watched set in sync with the current chat session
@@ -244,7 +293,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       // If no text was accumulated but errors occurred, notify user
       // (e.g., context overflow — LLM returned empty content, user gets silence)
       if (!hadText && event.errorCount && event.errorCount > 0 && pendingChatId) {
-        sendMessage(pendingChatId, `⚠️ Session error (${event.agent}): response failed with ${event.errorCount} error(s). The session may need to be restarted.`).catch(() => {});
+        sendMessage(pendingChatId, `⚠️ Session error (${String(event.agent)}): response failed with ${(event as any).errorCount} error(s). The session may need to be restarted.`).catch(() => {});
       }
     }
 
@@ -254,12 +303,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     if (event.type === "session_end" && "sessionId" in event && event.sessionId !== chatSid) {
       if (pendingChatId) {
         const fp = event.finishParams as Record<string, unknown> | undefined;
-        const summary = (fp?.summary as string) ?? event.outcome?.slice(0, 200) ?? "completed";
+        const summary = (fp?.summary as string) ?? (typeof event.outcome === "string" ? event.outcome.slice(0, 200) : "completed");
         const fpStatus = (fp?.status as string) ?? event.status;
         if (fpStatus === "failure" || fpStatus === "blocked") {
-          sendMessage(pendingChatId, `❌ ${event.agent} BLOCKED: ${summary}`).catch(() => {});
+          sendMessage(pendingChatId, `❌ ${String(event.agent)} BLOCKED: ${summary}`, undefined, { eventType: "blocked", agent: String(event.agent), sessionId: (event as any).sessionId, data: JSON.stringify({ summary }) }).catch(() => {});
         } else {
-          sendMessage(pendingChatId, `✅ ${event.agent}: ${summary}`).catch(() => {});
+          sendMessage(pendingChatId, `✅ ${String(event.agent)}: ${summary}`, undefined, { eventType: "session_end", agent: String(event.agent), sessionId: (event as any).sessionId }).catch(() => {});
         }
       }
     }
@@ -275,7 +324,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     // should NOT be pushed to the human's Telegram.
     if (event.type === "notification" && event.agent === opts.interfaceAgent) {
       if (pendingChatId) {
-        sendMessage(pendingChatId, `📋 ${event.text}`).catch(() => {});
+        sendMessage(pendingChatId, `📋 ${String(event.text ?? "").slice(0, 4000)}`, undefined, {
+          eventType: "notification",
+          agent: String(event.agent ?? ""),
+          sessionId: "sessionId" in event ? String(event.sessionId) : undefined,
+          data: JSON.stringify({ text: String(event.text ?? "").slice(0, 500) }),
+        }).catch(() => {});
       }
     }
   });
