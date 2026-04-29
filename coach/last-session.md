@@ -1,20 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777447803084_191
+- **Session:** s_1777448305672_217
 - **Status:** done
-- **When:** 2026-04-29T07:30:49.413Z
-- **Duration:** 46s
+- **When:** 2026-04-29T07:39:05.292Z
+- **Duration:** 39s
 
 ## What Happened
-This project is **closed**. The status says "closed" with a clear stop reason: the coaching goal was achieved (worker success went from 33% → 100% when runs actually execute), and the remaining blocker (97% dispatch errors) is an infrastructure issue escalated to tech-lead — not something this project's worker can fix.
+CONTINUE
 
-The worker's last output ("PROJECT-CLOSURE.md, task-acknowledgment.md") is just acknowledging the closure, which is fine.
+(a) Next iteration should produce documentation for the 3 undocumented agents (architect, master, judge). Even brief context.md files with role, purpose, and key config will push coverage from 79% to 100%, exceeding the 80% target.
 
-WAITING
+(b) We're shifting from inventory/architecture work to closing coverage gaps. These are the last 3 agents without any docs.
 
-This project is **closed** and correctly so. The remaining plan items all depend on the tech-lead fixing the dispatch problem (stopping workflows from being scheduled for non-existent projects). There is nothing for the worker to do.
-
-**What's needed**: Tech-lead to fix dispatch accuracy (stop scheduling master-worker runs for non-existent projects). Once that's done, this project can reopen to re-measure iteration success rate.
-
-No worker iteration needed.
+(c) First step: Read `agents/master/agent.json`, `agents/judge/agent.json`, and `agents/_archetypes/scout/agent.json` (or find where architect lives) to understand each agent's config. Then write a context.md or README for each of the 3 undocumented agents. Each doc should include: role/purpose, when it's invoked, key configuration, and how it interacts with other agents.
