@@ -9,6 +9,27 @@
 5. **VERIFIED** — 3+ live sessions show compliance
 6. **MODEL-LEVEL** — Fix failed; reclassified as model-level attractor
 
+## Convention C-LIFECYCLE: Continuous Improvement (Never Terminal)
+
+**Source:** Hao directive 2026-07-01 (ts:1777483591652)
+
+Every experiment, project, or improvement task follows an infinite loop:
+
+```
+Build → Measure → Review → Refine → Repeat (never Stop)
+```
+
+Concrete rules:
+- **No metric?** → Build one before declaring progress.
+- **Metric target met?** → Review whether the metric properly reflects our goals.
+- **Metric validated?** → Add more metrics for different aspects, or try a new approach to push further.
+- **Everything looks good?** → Keep watching metrics and fix regressions in time.
+- **Blocked?** → Don't stop. Find what's blocking, build around it, or escalate.
+
+**Anti-pattern:** Marking a project "DONE" or "STALLED" and moving on. Projects evolve, they don't terminate.
+
+**Applies to:** All experiments (EXP-*), focus tasks, improvement tasks (IT-*), and system features.
+
 ## Deployment Rules
 
 - **3x threshold**: A same-type Partial Failure pattern must recur 3+ times before
