@@ -111,15 +111,15 @@ describe("extractCommandCorrections - command not found", () => {
 });
 
 describe("extractCommandCorrections - generic command correction", () => {
-  it("detects same-binary flag correction", () => {
+  it("detects same-binary different-args correction", () => {
     const msgs: TranscriptMessage[] = [
-      bashCall("cd /app && git log --oneline -5", 0),
+      bashCall("git log --oneline -5", 0),
       bashResult("fatal: not a git repository", 1, true),
-      bashCall("cd /app/agents && git log --oneline -5", 2),
+      bashCall("git log --all --oneline -5", 2),
       bashResult("abc123 commit msg", 3, false),
     ];
     const facts = extractFactsMechanical(msgs);
-    expect(facts.some(f => f.content.includes("Correct command") || f.content.includes("git"))).toBe(true);
+    expect(facts.some(f => f.content.includes("Correct command"))).toBe(true);
   });
 });
 
