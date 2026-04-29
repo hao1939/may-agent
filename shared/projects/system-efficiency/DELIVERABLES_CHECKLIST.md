@@ -1,5 +1,5 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST
 
-- [x] DONE — Provider retry module with exponential backoff: `/app/agents/shared/workflows/provider-retry.ts`
-- [x] DONE — Test file with 24 passing tests: `/app/agents/shared/tests/provider-retry.test.ts`
-- [x] DONE — Copies in outputs: `/app/agents/shared/projects/outputs/provider-retry.ts`, `/app/agents/shared/projects/outputs/provider-retry.test.ts`
+- [x] DONE — `agents/shared/workflows/metrics-aggregator.ts` — Cross-project metrics aggregator module with aggregateMetrics(), getProjectByName(), getActiveProjects(), getCompletedProjects()
+- [x] DONE — `agents/shared/tests/metrics-aggregator.test.ts` — 23 passing tests covering discovery, parsing, filtering, error handling
+- [x] DONE — Copies placed in `agents/shared/projects/outputs/`
