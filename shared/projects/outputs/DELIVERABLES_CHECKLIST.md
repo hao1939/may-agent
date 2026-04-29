@@ -1,11 +1,6 @@
-# Deliverables Checklist — Iteration 26
+# DELIVERABLES_CHECKLIST
 
-## Required Deliverables
-
-- [x] DONE — `agents/shared/scripts/project-health.sh`: Combined CLI that runs test-guard, health-check, config-validator, and iteration-metrics in one formatted report. Exits 0 on healthy, 1 on unhealthy.
-- [x] DONE — `agents/shared/projects/outputs/project-health.sh`: Copy in outputs directory.
-
-## Verification
-
-- Script runs successfully, outputs formatted health report
-- Shows 🟢 SYSTEM HEALTHY with all tests passing, 9/11 projects at target, 80% deliverable rate
+- [x] DONE — `.state/baseline.json` with current metrics → `agents/shared/.state/baseline.json`
+- [x] DONE — `check-regression.sh` script that compares current vs baseline → `agents/shared/scripts/check-regression.sh`
+- [x] DONE — Verified "No regressions detected" output with correct metrics
+- [x] DONE — Copies in outputs → `agents/shared/projects/outputs/check-regression.sh`, `agents/shared/projects/outputs/baseline.json`
