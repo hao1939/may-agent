@@ -379,6 +379,16 @@
     "offsetMs": 900000
   },
   {
+    "name": "eval-poller",
+    "type": "job",
+    "intervalMs": 1800000,
+    "handler": "eval-poller",
+    "agent": "may",
+    "enabled": true,
+    "description": "Poll recent completed sessions and evaluate them using evaluateStandaloneSession(). Resurrects the evaluation pipeline that broke because session.completed events are never emitted and parentSessionId is never set.",
+    "offsetMs": 600000
+  },
+  {
     "name": "heartbeat-amy",
     "type": "job",
     "intervalMs": 1800000,
