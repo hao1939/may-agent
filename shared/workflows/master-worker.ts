@@ -31,6 +31,7 @@ import { validateOutput, type ValidationResult } from "./output-validator.ts";
 import { withRetry, isRetryableError } from "./provider-retry.ts";
 import { estimateComplexity } from "./complexity-estimator.ts";
 import { IterationTimer } from "./iteration-timer.ts";
+import { aggregateMetrics, type AggregatedMetrics } from "./metrics-aggregator.ts";
 
 // Global iteration timer for observability
 const iterationTimer = new IterationTimer();
@@ -264,6 +265,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   try {
     // ── Phase 1: Planning — orchestrator assesses current state ──
     ctx.log("[plan] Orchestrator assessing project state...");
+
+    // Aggregate cross-project metrics for orchestrator awareness
+    const projectsBaseDir = dirname(projectDir);
+    let satelliteMetrics: AggregatedMetrics | null = null;
+    try {
+      satelliteMetrics = aggregateMetrics(projectsBaseDir);
+      ctx.log(`[plan] 📊 Cross-project: ${satelliteMetrics.totalProjects} projects (${satelliteMetrics.activeProjects} active, ${satelliteMetrics.completedProjects} completed)`);
+    } catch (e: any) {
+      ctx.log(`[plan] ⚠️ Could not aggregate metrics: ${e.message?.slice(0, 80)}`);
+    }
 
     let planningPrompt = `Assess this project and decide what to do next.
 
