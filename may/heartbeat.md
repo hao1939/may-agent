@@ -31,7 +31,7 @@ Pick 2-3 that are most relevant right now. Don't answer them from memory — inv
 Run this once for data to investigate your questions:
 ```bash
 export PATH=".state/.bun/bin:$PATH" && bun -e "
-import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});
+Use query_db tool to query the database.
 const r=db.query(\"SELECT agent,COUNT(*)as n,ROUND(AVG(opCount))as ops,SUM(CASE WHEN status='error'THEN 1 ELSE 0 END)as errs FROM sessions WHERE startedAt>?GROUP BY agent\").all(Date.now()-6*3600000);
 console.table(r);
 const errs=db.query(\"SELECT agent,status,error FROM sessions WHERE status IN('error','interrupted') AND startedAt>? ORDER BY startedAt DESC LIMIT 5\").all(Date.now()-3600000);

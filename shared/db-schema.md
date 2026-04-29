@@ -1,8 +1,8 @@
 > **NOTE**: The requests table has been REMOVED. Use the events table instead. Do NOT recreate it.
 
-# may.db Schema Reference
+# Database Schema Reference
 
-Database: `.state/may.db` (SQLite, read-only access recommended)
+Database accessible via `query_db` tool. Do not open the file directly.
 
 ## Key Tables
 

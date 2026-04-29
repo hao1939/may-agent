@@ -1,7 +1,7 @@
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
 - bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - There is NO src/ directory or package.json in /app root. The runtime is pre-compiled. Your levers for improving agent behavior are: context.md files, heartbeat.md files, workflow configs, gym scenarios, and skills. Do NOT try to edit src/ files.
-- sqlite3 CLI is not available — query .state/may.db with bun: `bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db', {readonly:true}); ..."`
+- Use `query_db` tool for database queries
 - Gym runner: `cd /app/agents && export GYM_AGENT_BIN=/usr/local/bin/may-agent && bash test/gym/run-gym.sh <scenario> --timeout 10` (NOT scripts/gym-run.sh which doesn't exist)
 - Gym batch runner: scripts/gym-batch.sh — run multiple scenarios at once with --variants, --trials N, --tier/--category filtering, and comparison summary. Use instead of manual gym-run.sh loops.
 - Gym scenarios are in agents/gym/scenarios/
@@ -33,7 +33,7 @@
 - [insight] EXP-016 baseline data is unreliable for current agent — 3/4 scenarios showed dramatically different pass rates in gym_runs system. Always use gym_runs table as authoritative source, not historical experiment reports.
 - [insight] Gym scenario pass rates are extremely bimodal — scenarios cluster at 0% or 100% with very few in the 30-70% 'Medium' range. Finding Medium-difficulty scenarios is the hardest part of difficulty-bucketed experiment design.
 - [fix] behavior-escalation-stubborn showed regime change from 0% (15 runs through Apr 1) to 100% (7 runs since Apr 11). Agent learned this behavior. Combined rate of 31.8% is misleading — do not use combined rates when there's a clear regime change.
-- [pattern] To query gym run data: bun -e with Database from bun:sqlite, reading .state/may.db. The gym_runs table has scenario, passed, timestamp, agent_name, run_tag, score_summary columns.
+- [pattern] To query gym data: use query_db({ sql: "SELECT * FROM gym_runs ..." })
 - [pattern] IT completion rate went from 0% to 100% after embedding ITs directly into todo.md — placing action items where the agent naturally looks during heartbeat is the key to the reflection→action pipeline
 - [insight] Federation design assigns Coach to k3s — all experiment artifacts must be committed to git, cross-instance dispatch is async (10 min delay), gym runs happen on k3s
 

@@ -20,7 +20,7 @@ Every tool you build is a permanent improvement — it reduces LLM calls, improv
 
 1. **Explore** — dig into recent sessions. What patterns keep recurring? Where do agents burn ops? What's tedious?
 2. **Hypothesize** — "If agents had tool X, they wouldn't need to do Y manually." "If skill Z were documented, agents would stop failing at W."
-3. **Measure baseline** — query may.db for session data. Get hard numbers on the current state.
+3. **Measure baseline** — use query_db tool for session data. Get hard numbers on the current state.
 4. **Build** — implement the tool, skill, or workflow improvement. One change at a time.
 5. **Measure impact** — compare after vs before. Did it actually help?
 6. **Record** — write results to agents/shared/knowledge/experiments/ and agents/shared/knowledge/entries/.
@@ -74,7 +74,7 @@ Other agents may spot inefficiencies or suggest tools — welcome it. But you're
 
 Query the DB, not the filesystem:
 ```
-bun -e "import { Database } from 'bun:sqlite'; const db = new Database('.state/may.db', { readonly: true }); ..."
+query_db({ sql: "SELECT ..." })
 ```
 
 Focus on: ops per session, error rates, workflow escalation rates, delegation waste (KE-003 baseline: 47% reduction with context).

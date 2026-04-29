@@ -18,7 +18,7 @@
 - **bun**: `.state/.bun/bin/bun` — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - **npx**: NOT available — use `./node_modules/.bin/<tool>` or `bun x <tool>`
 - **sudo**: NOT available
-- **sqlite3 CLI**: NOT available — use `bun:sqlite` (see Database Access below)
+- Use `query_db` tool for database queries (never open DB directly from bash)
 - **Code search**: `scripts/code-search.sh <pattern>` (supports --path, -C, -i, -l)
 - **Gym runner**: `scripts/gym-run.sh <scenario> --agent coder`
 
@@ -68,9 +68,9 @@
 
 ## Database Access
 
-- **DB path**: `.state/may.db` (SQLite)
-- **Access**: `bun:sqlite` only — `node:sqlite` and `sqlite3` CLI NOT available
-- **Example**: `bun -e "import{Database}from'bun:sqlite'; const db=new Database('.state/may.db',{readonly:true}); console.log(db.query('SELECT name FROM sqlite_master WHERE type=\"table\"').all());"`
+- **DB access**: use query_db tool (never open directly)
+
+- **Example**: query_db({ sql: "SELECT name FROM sqlite_master WHERE type=\"table\"" })
 - **Key tables**: sessions, evaluations, requests
 
 ## Active Skills

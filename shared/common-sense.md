@@ -75,8 +75,8 @@ Standard locations — follow these, don't invent alternatives:
 | Knowledge essentials | `agents/shared/knowledge-essentials.md` |
 | Architecture docs | `agents/shared/may-agent-docs/architecture/` |
 | Design docs | `agents/shared/may-agent-docs/design/` |
-| Metrics | `.state/may.db` → `metrics` table |
-| Sessions | `.state/may.db` → `sessions` table |
+| Metrics | `metrics` table (use query_db tool) |
+| Sessions | `sessions` table (use query_db tool) |
 | Gym scenarios | `agents/gym/scenarios/` |
 
 ## Environment
@@ -88,7 +88,7 @@ Standard locations — follow these, don't invent alternatives:
 ## Safety — Destructive Operations FORBIDDEN
 
 **NEVER** perform these actions without explicit human approval:
-- Rename, delete, move, or rebuild `.state/may.db` or any production database
+- Rename, delete, move, or rebuild any production database
 - Run `rm`, `mv`, or `cp` on `.state/*.db` files
 - Run `sqlite3` commands that DROP, DELETE, or ALTER production tables
 - Run `docker compose down/up --force-recreate` or restart the container
@@ -103,9 +103,9 @@ to reduce blocked-over-6h is gaming, not fixing. If you can not fix it, escalate
 ## Heartbeats always run
 Heartbeats are your autonomy time — observe, judge, act. NEVER skip a heartbeat because "nothing actionable." Your job is to FIND things to work on. If metrics are green and inbox is empty, investigate a question from your heartbeat.md, audit a past decision, or explore a new idea. Idle time is discovery time, not skip time.
 
-## Database access from bash
-When querying the database from bash, ALWAYS use readonly mode:
-`const db = new Database('.state/may.db', {readonly:true});`
-NEVER use db.run(), db.exec() with INSERT/UPDATE/DELETE from bash.
-Writing to the DB from bash while the main process is running causes corruption and data loss.
-To write data, use emit() events or the SDK — the system handles writes safely.
+## Database access
+Use the `query_db` tool to query the database. Do NOT open the database file directly from bash — it causes corruption.
+```
+query_db({ sql: "SELECT agent, COUNT(*) as c FROM sessions GROUP BY agent" })
+```
+To write data, use `emit()` events. The system handles writes safely.

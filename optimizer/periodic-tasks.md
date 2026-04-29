@@ -81,7 +81,7 @@ Track when each task was last done. Pick the most overdue one during heartbeat s
   4. Update registry with any new workflows or changes
   5. **Measure workflow-coverage & workflow-effectiveness**: `bash agents/optimizer/workspace/tools/measure-workflow-coverage.sh`
   6. **Detect repeat patterns**: grep recent sessions for 3+ tool-call sequences that repeat across sessions
-  7. Record snapshots to may.db metrics
+  7. Record snapshots to metrics (via emit events)
   If dedup needed → do the consolidation (promote best to shared, delete local copies).
   If regression found → investigate and fix.
   Latest (2026-04-19): Baseline measured. Coverage: 30.8% (target 80%). Effectiveness: 96.4% (target >90%, ✅ met). Removed auto-loop.ts and skill-lifecycle.ts (0 usage). Updated REGISTRY.md. Biggest gaps: may (2.8%), qa (1.7%), evaluator (0%). Notified May re: heartbeat workflow wiring. See project-workflow-first.md for full plan.

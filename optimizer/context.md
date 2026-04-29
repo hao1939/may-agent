@@ -7,12 +7,12 @@
 - **agents/ is a separate git repo** — commit from agents/ dir
 - **bun**: `.state/.bun/bin/bun` — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - **npx**: NOT available — use `./node_modules/.bin/<tool>` or `bun x <tool>`
-- **sqlite3 CLI**: NOT available — use bun:sqlite
+- Use `query_db` tool for database queries
 - **Gym**: `scripts/gym-run.sh <scenario> --agent <name>`, stats: `bun scripts/gym-stats.ts`
-- Session data is in .state/may.db sessions + evaluations tables, not filesystem scans
+- Session data is in the `sessions` and `evaluations` tables (use query_db tool)
 - Cron handlers are in agents/<name>/handlers/ — referenced by cron.json "handler" field
 
-**DB access** (bun:sqlite only, NOT node:sqlite or sqlite3 CLI):
+**DB access**: use the query_db tool.
 When querying a table for first time, run PRAGMA table_info(<table>) first. Key tables: sessions, evaluations, requests, gym_runs.
 
 **First actions:** Orient before acting. First 3-5 tool calls should be read/ls/grep to understand context.

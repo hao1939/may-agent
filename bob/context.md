@@ -11,7 +11,7 @@
 **Tools:**
 - **bun**: `.state/.bun/bin/bun` — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - **npx**: NOT available — use `./node_modules/.bin/<tool>` or `bun x <tool>`
-- **sqlite3 CLI**: NOT available — query .state/may.db with bun: `bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db', {readonly:true}); ..."`
+- Use `query_db` tool for database queries (never open DB directly from bash)
 - **KB search**: `bash agents/shared/scripts/kb-find.sh DD-770` — resolve KB IDs to file paths
 - **Commit**: `bash agents/shared/scripts/commit-and-merge.sh "message"` — git add+commit in one call
 - Prefer `read()` tool for file contents instead of `bash("cat ...")`

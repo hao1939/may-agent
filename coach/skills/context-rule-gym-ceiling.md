@@ -1,6 +1,6 @@
 # Skill: Context-Rule Gym Ceiling (when gym cannot falsify a per-agent rule)
 
-**TL;DR.** If the behavior you're trying to add via a per-agent `context.md` rule (C1.x) is already encoded at the framework level in `agents/shared/common-sense.md`, the gym will show 100%/100% ceiling regardless of production effect. Gym is not a discriminating test for that class of intervention. Either (a) shadow `common-sense.md` in your lab fork (requires infra change to gym-runner), (b) design a scenario whose **shape** produces the failure without restating the norm in the task text, or (c) accept that this intervention is a **production-only measurement** and monitor via `.state/may.db` instead of gym A/B.
+**TL;DR.** If the behavior you're trying to add via a per-agent `context.md` rule (C1.x) is already encoded at the framework level in `agents/shared/common-sense.md`, the gym will show 100%/100% ceiling regardless of production effect. Gym is not a discriminating test for that class of intervention. Either (a) shadow `common-sense.md` in your lab fork (requires infra change to gym-runner), (b) design a scenario whose **shape** produces the failure without restating the norm in the task text, or (c) accept that this intervention is a **production-only measurement** and monitor via query_db tool instead of gym A/B.
 
 ## When this applies
 
@@ -38,7 +38,7 @@ This is structural, not a bug in any specific scenario.
 ## What to do instead
 
 1. **Prefer structural over textual.** Per KE-007, workflow enforcement is the only reliable behavioral intervention (5/56 experiments promoted, all structural). Guards, workflow steps, heartbeat structure, tool presence/absence — not `context.md` lines — are what change behavior durably in gym.
-2. **If you must ship a context rule, measure it in production.** Deploy, wait ≥24h, query `.state/may.db` for the target failure-mode tag (e.g. C1.6 → `T2-no-post-write-verification` blockers; C1.5 → scope_violation sessions). Treat gym = 100%/100% as "not informative", not as "shipped successfully".
+2. **If you must ship a context rule, measure it in production.** Deploy, wait ≥24h, use query_db tool for the target failure-mode tag (e.g. C1.6 → `T2-no-post-write-verification` blockers; C1.5 → scope_violation sessions). Treat gym = 100%/100% as "not informative", not as "shipped successfully".
 3. **Or fork `common-sense.md` too.** The gym-runner currently hardcodes the path (`test/gym/gym-runner.ts`, ~line 1343). Adding a `--common-sense <path>` flag is a one-time infra investment that unblocks clean A/B of any per-agent rule that duplicates a framework line. Filed as Iter 7 candidate in `prove-the-loop.md`.
 4. **Name it honestly in the experiment log.** Do NOT write "deployed successfully" on a 100%/100% gym result. Write "no gym signal — ceiling, production-only measurement" so future coaches (and active-recall) don't re-run the same untestable A/B.
 

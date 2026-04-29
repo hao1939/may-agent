@@ -47,7 +47,7 @@
 │   ├── run-gym.sh                # ALSO works (legacy path, same script)
 │   └── stats.db                  # Legacy stats DB (may be empty)
 └── .state/
-    ├── may.db                    # Primary database (sessions, gym_runs, etc.)
+    ├── (database — access via query_db tool only)
     └── .bun/bin/bun              # Bun binary
 ```
 
@@ -136,21 +136,21 @@ scripts/lab-run.sh EXP-XXX --dry-run  # preview
 
 | What | Where | How to Query |
 |------|-------|-------------|
-| Gym results DB | `.state/may.db` table `gym_runs` | `bun -e "import{Database}from'bun:sqlite'; ..."` |
+| Gym results DB | `database (query_db tool)` table `gym_runs` | `bun -e "import{Database}from'bun:sqlite'; ..."` |
 | gym_runs columns | `agent_name`, `scenario`, `passed`, `duration_ms`, `total_ops`, `cost_usd`, `session_id`, `lab_fork`, `batch_id` | See column list below |
 | Gym state dirs | Ephemeral — cleaned up after each run | Use `--keep` to preserve work dir (NOT transcripts) |
 | Transcripts | Stored in `gym_runs.transcript` column (if `--with-history`) | Query from DB, not filesystem |
-| Legacy stats.db | `test/gym/stats.db` — may be empty | Prefer `.state/may.db` |
+| Legacy stats.db | `test/gym/stats.db` — may be empty | Prefer `database (query_db tool)` |
 
 ### Querying Gym Results
 
 ```bash
 export PATH=".state/.bun/bin:$PATH"
 # Recent runs
-bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.table(db.query('SELECT agent_name,scenario,passed,total_ops FROM gym_runs ORDER BY rowid DESC LIMIT 10').all())"
+bun -e "import{Database}from'bun:sqlite';const db=new Database('database (query_db tool)',{readonly:true});console.table(db.query('SELECT agent_name,scenario,passed,total_ops FROM gym_runs ORDER BY rowid DESC LIMIT 10').all())"
 
 # Pass rate for a scenario
-bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.table(db.query(\"SELECT agent_name,COUNT(*)as n,SUM(passed)as wins,ROUND(100.0*SUM(passed)/COUNT(*),1)as pct FROM gym_runs WHERE scenario=? GROUP BY agent_name\").all('convention-verify-edit'))"
+bun -e "import{Database}from'bun:sqlite';const db=new Database('database (query_db tool)',{readonly:true});console.table(db.query(\"SELECT agent_name,COUNT(*)as n,SUM(passed)as wins,ROUND(100.0*SUM(passed)/COUNT(*),1)as pct FROM gym_runs WHERE scenario=? GROUP BY agent_name\").all('convention-verify-edit'))"
 
 # Aggregate stats
 bun scripts/gym-stats.ts
@@ -158,10 +158,10 @@ bun scripts/gym-stats.ts
 
 ### Common Mistakes to Avoid
 
-- ❌ `sqlite3 .state/may.db` — sqlite3 CLI is NOT available. Use `bun -e` with `bun:sqlite`.
+- ❌ `sqlite3 database (query_db tool)` — sqlite3 CLI is NOT available. Use `bun -e` with `bun:sqlite`.
 - ❌ `test/gym/run-gym.sh` as the only path — works, but `scripts/gym-run.sh` is canonical.
 - ❌ Running gym scenarios inline in a heartbeat — always fork to a work session.
-- ❌ Looking for gym results on the filesystem — they're in `.state/may.db` table `gym_runs`.
+- ❌ Looking for gym results on the filesystem — they're in `database (query_db tool)` table `gym_runs`.
 - ❌ Trying to register agents for gym — no registration needed, just pass `--agent <name>`.
 
 ---
@@ -173,16 +173,16 @@ bun scripts/gym-stats.ts
 export PATH=".state/.bun/bin:$PATH"
 
 # Sessions query
-bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.table(db.query('SELECT agent,status,opCount,durationMs FROM sessions ORDER BY startedAt DESC LIMIT 10').all())"
+bun -e "import{Database}from'bun:sqlite';const db=new Database('database (query_db tool)',{readonly:true});console.table(db.query('SELECT agent,status,opCount,durationMs FROM sessions ORDER BY startedAt DESC LIMIT 10').all())"
 
 # Convention checks
-bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.table(db.query('SELECT convention,passed,total FROM convention_checks ORDER BY rowid DESC LIMIT 10').all())"
+bun -e "import{Database}from'bun:sqlite';const db=new Database('database (query_db tool)',{readonly:true});console.table(db.query('SELECT convention,passed,total FROM convention_checks ORDER BY rowid DESC LIMIT 10').all())"
 
 # Available tables
-bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{readonly:true});console.log(db.query(\"SELECT name FROM sqlite_master WHERE type='table'\").all().map(t=>t.name))"
+bun -e "import{Database}from'bun:sqlite';const db=new Database('database (query_db tool)',{readonly:true});console.log(db.query(\"SELECT name FROM sqlite_master WHERE type='table'\").all().map(t=>t.name))"
 ```
 
-**Tables in may.db**: `sessions`, `evaluations`, `convention_checks`, `convention_maturity`, `gym_runs`, `gym_checks`, `gym_prompts`, `session_digests`, `knowledge_entries`, `hypotheses`, `experiments`, `requests`.
+**Database tables**: `sessions`, `evaluations`, `convention_checks`, `convention_maturity`, `gym_runs`, `gym_checks`, `gym_prompts`, `session_digests`, `knowledge_entries`, `hypotheses`, `experiments`, `requests`.
 
 ---
 
@@ -190,6 +190,6 @@ bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db',{
 
 - **bun** is at `.state/.bun/bin/bun` — always `export PATH=".state/.bun/bin:$PATH"` first
 - **npx** is NOT available — use `./node_modules/.bin/<tool>` or `bun x <tool>`
-- **sqlite3** CLI is NOT available — use bun:sqlite
+- **Use query_db tool for database queries
 - **agents/** is a separate git repo — commit from `agents/` directory
 - **Project root** is `/app` — no `/home/`, `/Users/`, `/root/`, or `~/` paths exist

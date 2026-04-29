@@ -56,11 +56,11 @@
 - bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
 - sudo is not available — install packages with bun install --no-save
-- sqlite3 CLI is not available — query .state/may.db with better-sqlite3 via node
+- Use `query_db` tool for database queries
 - Build check: Project is a bundled binary at `/app/bundle/may-agent`. No package.json or tsc at root. `npm run check` is obsolete.
 - agents/ is a separate git repo (gitignored from main) — commit agent changes from agents/ dir, not project root
-- .state/ contains may.db, sessions, instance data — never commit it
-- Evaluations are in .state/may.db evaluations table, not filesystem
+- .state/ contains sessions and instance data — never commit it
+- Evaluations are in the evaluations table (use query_db)
 - Project root is /app — do not use /home/*, /Users/*, /root/*, or ~/ paths
 - When calling finish(), status must match reality — if you found blockers, use 'blocked' or 'partial', not 'success'
 - DELEGATION QUALITY: When delegating, include: (1) relevant file contents, (2) exact error messages, (3) "start by X, then Y, verify with Z" approach

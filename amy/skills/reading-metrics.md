@@ -19,8 +19,8 @@ Read the metric name carefully. If unsure, check `agents/shared/may-agent-docs/d
 ### 2. Check recent history
 ```bash
 bun -e "
-import {Database} from 'bun:sqlite';
-const db = new Database('.state/may.db', {readonly:true});
+// Use query_db tool instead:
+// query_db({ sql: "SELECT ..." })
 const rows = db.query(\"SELECT value, measured_at FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 10\").all('<metric.name>');
 console.table(rows);
 "

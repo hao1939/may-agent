@@ -48,8 +48,8 @@ Check if a notification was acted on:
 ```bash
 # Look for recent sessions by the target agent
 bun -e "
-import {Database} from 'bun:sqlite';
-const db = new Database('.state/may.db', {readonly:true});
+// Use query_db tool instead:
+// query_db({ sql: "SELECT ..." })
 const rows = db.query(\"SELECT session_id, created_at, summary FROM sessions WHERE agent = ? ORDER BY created_at DESC LIMIT 5\").all('<agent-name>');
 console.table(rows);
 "
