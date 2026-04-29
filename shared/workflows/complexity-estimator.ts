@@ -32,30 +32,35 @@ export function estimateComplexity(task: string): ComplexityEstimate {
   const lower = task.toLowerCase();
 
   // File count signals
-  const fileRefs = (lower.match(/\.(ts|js|md|json|sh)/g) || []).length;
+  const fileRefs = (lower.match(/\.[a-z]{2,4}\b/g) || []).length;
   if (fileRefs >= 5) score += 2;
+  else if (fileRefs >= 3) score += 1.5;
   else if (fileRefs >= 2) score += 1;
 
   // Implementation signals (heavier than docs)
-  if (/\b(implement|create module|build|architect)\b/.test(lower)) score += 1;
-  if (/\b(integrate|wire|connect|hook into)\b/.test(lower)) score += 1;
+  if (/\b(implement|create module|build|architect)\b/.test(lower)) score += 1.5;
+  if (/\b(integrate|wire|connect|hook into)\b/.test(lower)) score += 1.5;
 
   // Test target signals
   const testMatch = lower.match(/(\d+)\+?\s*test/);
   if (testMatch) {
     const count = parseInt(testMatch[1]);
-    if (count >= 15) score += 1;
+    if (count >= 20) score += 1.5;
+    else if (count >= 15) score += 1;
     else if (count >= 5) score += 0.5;
   }
 
   // Multi-module signals
-  if (/\b(multiple files|several modules|cross-system|end-to-end)\b/.test(lower)) score += 1;
+  if (/\b(multiple files|several modules|cross-system|end-to-end)\b/.test(lower)) score += 1.5;
+
+  // "with tests" or "write tests" adds moderate complexity
+  if (/\b(with tests|write tests|integration tests)\b/.test(lower)) score += 0.5;
 
   // Documentation is simpler
-  if (/\b(document|report|summary|audit|plan)\b/.test(lower) && !/implement/.test(lower)) score -= 1;
+  if (/\b(document|report|summary|audit|plan)\b/.test(lower) && !/implement|integrate/.test(lower)) score -= 1;
 
-  // Simple operations
-  if (/\b(read|list|check|verify|count)\b/.test(lower) && !/implement|create/.test(lower)) score -= 1;
+  // Simple read/check operations
+  if (/\b(read|list|check|verify|count)\b/.test(lower) && !/implement|create|integrate/.test(lower)) score -= 1;
 
   // Clamp to valid range
   const clamped = Math.max(1, Math.min(5, Math.round(score))) as ComplexityScore;
