@@ -1,6 +1,6 @@
 # Project: System Efficiency
 
-**Status**: waiting
+**Status**: active
 **Stop Reason**: WAITING
 
 This project is complete. All 12/12 milestones done, all 3 metrics at target. Nothing remains to do. Awaiting human/May to formally close.
