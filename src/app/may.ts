@@ -24,7 +24,7 @@ import {
   type AgentLoaderOptions,
 } from "./agent-loader.js";
 import { resolveProjectRoot } from "./bundle-mode.js";
-import { trackRequest, getDb, closeAllDbs } from "../lib/requests.js";
+import { getDb, closeAllDbs } from "../lib/requests.js";
 import { log } from "../lib/log.js";
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
@@ -578,21 +578,9 @@ bus.subscribe((event) => {
         if (chatSession) {
           chatSession.handleInput(`@${event.agent} ${event.task}`, "socket");
         } else {
-          let requestId: string | undefined;
-          try {
-            requestId = trackRequest(PERSIST_DIR, {
-              fromEntity: event.opts?.source ?? "agent",
-              toAgent: event.agent,
-              task: event.task,
-              method: "call",
-              source: event.opts?.source ?? "bus",
-            });
-          } catch {
-            /* non-fatal */
-          }
           const sessionId = manager.run(event.agent, event.task, {
             kind: (event.opts?.kind as "chat" | "job" | "call" | undefined) ?? "job",
-            requestId: event.opts?.requestId ?? requestId,
+            requestId: event.opts?.requestId,
           });
           log("info", `[fork] Started ${event.agent} session: ${sessionId}`);
         }
@@ -883,19 +871,6 @@ if (ONESHOT_MODE) {
 
   taskSessionId = manager.run(interfaceAgent, oneshotTask, {
     kind: "job",
-    requestId: (() => {
-      try {
-        return trackRequest(PERSIST_DIR, {
-          fromEntity: "human",
-          toAgent: interfaceAgent,
-          task: oneshotTask,
-          method: "call",
-          source: "cli-oneshot",
-        });
-      } catch {
-        return undefined;
-      }
-    })(),
   });
 
   // Set up timeout
@@ -930,24 +905,9 @@ if (ONESHOT_MODE) {
   process.exit(status === "success" ? 0 : 1);
 } else if (INITIAL_TASK && !CHAT_MODE) {
   // ── Task mode: single session, run to completion ─────────────────
-  let taskRequestId: string | undefined;
   // Only track as human request if not a detached sub-agent (those have ENV_PARENT_SESSION_ID)
-  if (!ENV_PARENT_SESSION_ID) {
-    try {
-      taskRequestId = trackRequest(PERSIST_DIR, {
-        fromEntity: "human",
-        toAgent: interfaceAgent,
-        task: INITIAL_TASK,
-        method: "call",
-        source: "cli-task",
-      });
-    } catch {
-      /* non-fatal */
-    }
-  }
   taskSessionId = manager.run(interfaceAgent, INITIAL_TASK, {
     kind: "job",
-    requestId: taskRequestId,
     ...(ENV_SESSION_ID ? { sessionId: ENV_SESSION_ID } : {}),
     ...(ENV_PARENT_SESSION_ID ? { parentSessionId: ENV_PARENT_SESSION_ID } : {}),
     ...(ENV_PARENT_AGENT ? { parentAgentName: ENV_PARENT_AGENT } : {}),
@@ -1063,14 +1023,7 @@ if (CRON_ENABLED) {
     // Write failures to request DB so they show in --status process health
     for (const err of handlerResult.errors) {
       const handlerName = err.match(/"(\w[\w-]*)\.(js|ts)"/)?.[1] ?? err.match(/"([^"]+)"/)?.[1] ?? "unknown";
-      trackRequest(PERSIST_DIR, {
-        fromEntity: "cron",
-        toAgent: "may",
-        task: `[handler-load-failure] ${err}`,
-        method: "call",
-        artifact: handlerName,
-        context: JSON.stringify({ type: "handler" }),
-      });
+      log("warn", `[handlers] Failed to load handler "${handlerName}": ${err}`);
     }
   }
 

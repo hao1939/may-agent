@@ -20,7 +20,6 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { Type, type Static } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
-import { isDuplicate } from "../requests.js";
 
 export interface NotifyToolOptions {
   /** Name of the calling agent */
@@ -84,8 +83,7 @@ function textResult(text: string): AgentToolResult<undefined> {
 
 /**
  * Create the `notify` tool. This is the universal one-way notification
- * tool — all agents get it, and cron handlers can call the underlying
- * trackRequest({ method: "notify" }) directly.
+ * tool — all agents get it. Emits an agent.notification event.
  *
  * NOTE: Use agents.fork to dispatch work. Use notify to send FYI only.
  */
@@ -125,28 +123,6 @@ export function createNotifyTool(opts: NotifyToolOptions): AgentTool {
       }
 
       const caller = opts.agentName;
-
-      // Dedup check
-      if (!params.force) {
-        try {
-          const existingReqId = isDuplicate(opts.persistDir, caller, params.agent, params.message.slice(0, 500));
-          if (existingReqId) {
-            return textResult(
-              JSON.stringify({
-                status: "skipped",
-                reason: `Duplicate request already active (req: ${existingReqId.slice(0, 8)})`,
-                sent: params.agent,
-                message: params.message,
-                deduplicated: true,
-                heartbeatTriggered: false,
-              }),
-            );
-          }
-        } catch (e) {
-          // Non-fatal: dedup is best-effort (DB may not be available)
-          if (process.env.DEBUG) console.warn(`[notify-tool] dedup check failed: ${e}`);
-        }
-      }
 
       // Build structured message
       let structuredMessage = params.message;

@@ -14,7 +14,7 @@
  * Replaces: R39 from CR-289-weekend-synthesis
  */
 
-import { getDb, trackRequest } from "./requests.js";
+import { getDb } from "./requests.js";
 
 // ── Configuration ─────────────────────────────────────────────────────
 
@@ -258,31 +258,7 @@ export function createPauseEscalation(
   config: AutoPauseConfig,
   lastErrors: string[],
 ): string {
-  const lastErrorSummary = lastErrors[0] ?? "unknown error";
-  const probeScheduleDesc = formatDuration(config.initialProbeDelayMs);
-  const ttlDesc = formatDuration(config.pauseTTLMs);
-
-  return trackRequest(persistDir, {
-    fromEntity: "cron",
-    toAgent: config.escalationAgent,
-    method: "notify",
-    task: `Agent "${agentName}" auto-paused after ${config.threshold} consecutive errors. ` +
-      `Last error: ${lastErrorSummary}. ` +
-      `Probe scheduled in ${probeScheduleDesc}. TTL: ${ttlDesc}.`,
-    artifact: `auto-pause:${agentName}`,
-    context: JSON.stringify({
-      type: "auto-pause-escalation",
-      agent: agentName,
-      pausedAt: new Date().toISOString(),
-      lastErrors,
-      probeSchedule: {
-        initial: config.initialProbeDelayMs,
-        backoff: config.probeBackoffMultiplier,
-        max: config.maxProbeIntervalMs,
-      },
-      ttl: config.pauseTTLMs,
-    }),
-  });
+  return "";
 }
 
 /**
@@ -295,22 +271,7 @@ export function createRecoveryNotification(
   probeCount: number,
   pauseDurationMs: number,
 ): string {
-  const durationDesc = formatDuration(pauseDurationMs);
-
-  return trackRequest(persistDir, {
-    fromEntity: "cron",
-    toAgent: config.escalationAgent,
-    method: "notify",
-    task: `Agent "${agentName}" recovered from auto-pause after ${probeCount} probe(s) ` +
-      `(${durationDesc} total pause time).`,
-    artifact: `auto-pause-recovery:${agentName}`,
-    context: JSON.stringify({
-      type: "auto-pause-recovery",
-      agent: agentName,
-      probeCount,
-      pauseDurationMs,
-    }),
-  });
+  return "";
 }
 
 /**

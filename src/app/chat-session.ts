@@ -16,7 +16,7 @@ import { join } from "node:path";
 import type { SubagentManager } from "../lib/manager.js";
 import { isOverflowError } from "../lib/overflow.js";
 
-import { trackRequest } from "../lib/requests.js";
+
 
 import type { EventBus } from "./event-bus.js";
 
@@ -161,25 +161,9 @@ export class ChatSession {
     if (targetAgent) {
       this.logHumanInput(trimmed, source, targetAgent);
 
-      // Track @agent delegation as a request (even if session already exists)
-      let requestId: string | undefined;
-      if (this.persistDir) {
-        try {
-          requestId = trackRequest(this.persistDir, {
-            fromEntity: "human",
-            toAgent: targetAgent,
-            task: agentMessage,
-            method: "chat",
-            source: source ?? "console",
-          });
-        } catch {
-          /* non-fatal — don't break chat over tracking */
-        }
-      }
-
       // Route through May so she can orchestrate via `agents fork`.
       // Fork keeps May responsive; she can peek/monitor and report back.
-      const delegationMsg = `[Human asked @${targetAgent}]: ${agentMessage}\n\nFork ${targetAgent} to handle this. Use \`agents fork\` so you stay responsive, then peek at the result and report back to me.${requestId ? ` (req:${requestId})` : ""}`;
+      const delegationMsg = `[Human asked @${targetAgent}]: ${agentMessage}\n\nFork ${targetAgent} to handle this. Use \`agents fork\` so you stay responsive, then peek at the result and report back to me.`;
       this.sendRetryDepth = 0;
       this.sendMessage(delegationMsg, source);
       return;
@@ -197,47 +181,15 @@ export class ChatSession {
    */
   private sendMessage(message: string, source?: string): void {
     if (!this.sessionId) {
-      // Track request in SQLite
-      let requestId: string | undefined;
-      if (this.persistDir) {
-        try {
-          requestId = trackRequest(this.persistDir, {
-            fromEntity: "human",
-            toAgent: this.agentName,
-            task: message,
-            method: "chat",
-            source: source ?? "console",
-          });
-        } catch {
-          /* non-fatal — don't break chat over tracking */
-        }
-      }
-
       // First message: create the persistent session
       this.sessionId = this.manager.run(this.agentName, message, {
         kind: "chat",
         autoClose: "never",
         compaction: true,
         source: source ?? "chat",
-        requestId,
       });
       this.trackCompletion(this.sessionId);
       return;
-    }
-
-    // Track subsequent messages as requests too
-    if (this.persistDir) {
-      try {
-        trackRequest(this.persistDir, {
-          fromEntity: "human",
-          toAgent: this.agentName,
-          task: message,
-          method: "chat",
-          source: source ?? "console",
-        });
-      } catch {
-        /* non-fatal — don't break chat over tracking */
-      }
     }
 
     // Subsequent messages: wake the idle session or steer the running one
@@ -385,26 +337,9 @@ export class ChatSession {
   private startDirectSession(agentName: string, task: string, source?: string): void {
     this.bus.emit({ type: "info", message: `[direct] Running ${agentName}...` });
 
-    // Track request in SQLite
-    let requestId: string | undefined;
-    if (this.persistDir) {
-      try {
-        requestId = trackRequest(this.persistDir, {
-          fromEntity: "human",
-          toAgent: agentName,
-          task,
-          method: "chat",
-          source: source ?? "console",
-        });
-      } catch {
-        /* non-fatal — don't break chat over tracking */
-      }
-    }
-
     const sessionId = this.manager.run(agentName, task, {
       kind: "job",
       source: source ?? "chat",
-      requestId,
     });
     this.manager
       .waitFor(sessionId)

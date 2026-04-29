@@ -18,7 +18,7 @@
 import { resolve } from "node:path";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { sendSocketCommand } from "../lib/socket-client.js";
-import { trackRequest } from "../lib/requests.js";
+
 
 export interface SendOptions {
   agent: string;
@@ -57,24 +57,6 @@ function findSocket(persistDir: string): string | null {
     // Can't read instances dir
   }
   return null;
-}
-
-/**
- * Track the send in the request DB (soft-coupled — failure is non-fatal).
- */
-function trackInDb(persistDir: string, agent: string, message: string, source?: string): string | undefined {
-  try {
-    return trackRequest(persistDir, {
-      fromEntity: "human",
-      toAgent: agent,
-      task: message.slice(0, 500),
-      method: "notify",
-      source: source ?? "cli",
-    });
-  } catch {
-    // DB unavailable — non-fatal
-    return undefined;
-  }
 }
 
 export async function cliSend(opts: SendOptions): Promise<void> {
@@ -120,13 +102,10 @@ export async function cliSend(opts: SendOptions): Promise<void> {
     }
   }
 
-  // No socket or socket failed — track directly in DB as fallback
-  const requestId = trackInDb(persistDir, agent, message, source);
-
+  // No socket or socket failed — message will appear in next heartbeat
   if (!socketPath) {
-    console.log(`No live socket found. Task tracked in DB, will appear in ${agent}'s next heartbeat.`);
+    console.log(`No live socket found. Task will appear in ${agent}'s next heartbeat.`);
   }
-  if (requestId) console.log(`Request: ${requestId}`);
 }
 
 /**

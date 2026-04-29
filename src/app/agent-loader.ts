@@ -744,7 +744,6 @@ export async function reloadAgents(
 
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../lib/handler-context.js";
 import type { CronEntry } from "../lib/cron-tool.js";
-import { trackRequest } from "../lib/requests.js";
 import { loadAllSessionMetas } from "../lib/persistence.js";
 import { buildRuntimeCtx } from "../lib/runtime-ctx.js";
 import { buildAgentSDK } from "../lib/sdk-impl.js";
@@ -782,7 +781,6 @@ export async function loadAgentHandlers(
       agentName,
       getSessionId: () => opts.getSessionId(agentName),
       triggerNow: (entryName: string) => cron.triggerNow(entryName),
-      trackRequest: (reqOpts) => trackRequest(persistDir, reqOpts),
       loadAllSessionMetas: () => loadAllSessionMetas(persistDir),
       sdk: buildAgentSDK({
         bus,
