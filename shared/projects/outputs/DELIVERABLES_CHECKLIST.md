@@ -5,6 +5,10 @@
 - [x] DONE — `agents/shared/scripts/system-dashboard.sh`: System health dashboard script. Reports test file/test counts, satellite project statuses, knowledge base metrics, and deliverable counts. Executable, verified working.
 - [x] DONE — `agents/shared/projects/outputs/system-dashboard.sh`: Copy in outputs directory.
 
+## Iteration 10: Project Status Scan
+
+- [x] DONE — `agents/shared/projects/outputs/project-status-scan.md`: Full scan of all 11 satellite projects, status assessment, and recommendations. All projects at target.
+
 ## Previous Iterations
 
 - [x] DONE — `agents/shared/scripts/test-guard.sh`: Regression guard script (Iteration 2)
