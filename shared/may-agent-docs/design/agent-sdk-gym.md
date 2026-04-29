@@ -31,9 +31,6 @@ interface AgentSDK {
   // NOT agent-to-agent — use runAgent() or tools for that
   notify(msg: string): void;
 
-  // Trigger a cron handler to fire on next tick
-  triggerNow(handlerName: string): boolean;
-
   // System paths
   paths: { persist: string; root: string; agents: string };
 }
@@ -63,7 +60,7 @@ interface TaskResult {
 }
 ```
 
-8 methods. That's the entire surface area.
+7 methods. That's the entire surface area.
 
 ## Who uses what
 
@@ -75,7 +72,6 @@ interface TaskResult {
 | getDb | ✅ | ✅ | ✅ |
 | log | ✅ | ✅ | ✅ |
 | notify | ✅ | rare | ❌ |
-| triggerNow | ✅ | ❌ | ❌ |
 | paths | ✅ | ✅ | ✅ |
 
 ## Workflow-specific additions
@@ -108,7 +104,7 @@ They share the same vocabulary:
 | "I'm done" | `finish()` | `workflow.done()` |
 | "I'm stuck" | `finish({ status: "blocked" })` | `workflow.escalate()` |
 | "Run an LLM with custom prompt" | — | `sdk.createLLMSession()` |
-| "Trigger a handler now" | — | `sdk.triggerNow("metrics-snapshot")` |
+| "Trigger a handler now" | — | `sdk.emit("metrics.refresh")` (handler subscribes) |
 
 Notes:
 - `notify()` is human-visible only (Telegram, web). Agent-to-agent communication uses `runAgent()` or agent tools.
@@ -158,7 +154,7 @@ Today it's inverted — tools and handlers call `manager.callAgent()` directly, 
 
 - **Testing**: mock the SDK, test tool/handler logic in isolation
 - **Consistency**: behavior identical whether called by LLM tool or handler code
-- **Capability surface**: 8 methods = 8 things the system can do. Everything else is internal.
+- **Capability surface**: 7 methods = 7 things the system can do. Everything else is internal.
 
 **Litmus test for new features**: if you can't express it naturally from both sides (agent tool AND SDK method), something's wrong with the abstraction.
 
@@ -169,13 +165,14 @@ Intentionally excluded:
 - **No state management** — use `getDb()` + queries
 - **No scheduling** — `cron.json` is the scheduling layer
 - **No file I/O** — use Node APIs directly
+- **No direct handler triggering** — emit an event, let the handler subscribe. No `triggerNow()`.
 - **No agent introspection** — `list/peek/cancel` are LLM tools only, not SDK. Handlers check running sessions via `getDb()` query.
 - **No inbox helper** — `getDb()` + SQL query. Common patterns go in shared/lib/.
 - **No typed event constants** — emit("handler.completed") is fine. Add constants file later if typos become a problem.
 
 ## Patterns: SDK primitives + shared/lib utilities
 
-The SDK is 8 primitives. Common patterns are utilities built on top:
+The SDK is 7 primitives. Common patterns are utilities built on top:
 
 ```
 agents/shared/lib/
@@ -209,12 +206,12 @@ No big bang. The binary wraps its internals behind the SDK interface:
 
 ## Vision: SDK as system specification
 
-The SDK interface IS the system specification. 8 methods define what the system can do. Everything else — the Bun runtime, SQLite, the event bus, the manager — is implementation detail.
+The SDK interface IS the system specification. 7 methods define what the system can do. Everything else — the Bun runtime, SQLite, the event bus, the manager — is implementation detail.
 
 This enables:
 - **Formal contract**: anything reachable through the SDK is a supported capability. Anything else is subject to change without notice.
 - **Tool generation**: agent tool schemas can be auto-generated from SDK types. One source of truth for both code and LLM interfaces.
-- **Runtime portability**: a second runtime (distributed, cloud-based, different language) implements the same 8 methods. Handlers, workflows, and gym scenarios port with zero changes.
+- **Runtime portability**: a second runtime (distributed, cloud-based, different language) implements the same 7 methods. Handlers, workflows, and gym scenarios port with zero changes.
 - **Testing**: mock the SDK, test everything else in isolation. No integration test needed to verify handler logic.
 
 Today it's a monolithic Bun process with SQLite. Tomorrow it could be anything — as long as it implements AgentSDK.
