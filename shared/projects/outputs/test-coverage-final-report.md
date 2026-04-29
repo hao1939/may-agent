@@ -1,34 +1,36 @@
 # Test Coverage Project — Final Report
 
+## Status: ✅ COMPLETE
+
 ## Results
-- **191 tests passing** (0 failures)
-- **83.79% line coverage** (target: 80%)
-- **60% coverage threshold** enforced in vitest.config.ts
-- **11/11 critical paths** covered
+| Metric | Target | Actual |
+|--------|--------|--------|
+| Line coverage | 80% | 83.79% |
+| Critical paths covered | 11/11 | 11/11 |
+| Tests passing | — | 191/191 |
+| Coverage threshold (CI gate) | 60% | Enforced in vitest.config.ts |
 
 ## Test Files Created
-| File | Module Tested |
-|------|--------------|
-| `test/circuit-breaker.test.ts` | `shared/workflows/circuit-breaker.ts` |
-| `test/project-helpers.test.ts` | `shared/workflows/project-helpers.ts` |
-| `test/budget-checkpoint.test.ts` | `shared/workflows/budget-checkpoint.ts` |
-| `test/guards.test.ts` | `shared/guards/hallucinated-path.ts`, `read-before-edit.ts`, `finish-guard.ts`, `verify-after-write.ts` |
-| `test/fewshot-inject-helpers.test.ts` | `shared/workflows/fewshot-inject-helpers.ts` |
-| `test/verify-wrap.test.ts` | `shared/workflows/verify-wrap.ts` |
-| `test/growth.test.ts` | `shared/lib/growth.ts` |
-| `test/project-health.test.ts` | `shared/lib/project-health.ts` |
-| `test/poller.test.ts` | `shared/workflows/poller.ts` |
-| `test/auto-test.test.ts` | `shared/guards/auto-test.ts` |
+- `test/circuit-breaker.test.ts`
+- `test/project-helpers.test.ts`
+- `test/budget-checkpoint.test.ts`
+- `test/guards.test.ts`
+- `test/fewshot-inject-helpers.test.ts`
+- `test/verify-wrap.test.ts`
+- `test/growth.test.ts`
+- `test/project-health.test.ts`
+- `test/poller.test.ts`
+- `test/auto-test.test.ts`
 
-## Config Changes
-- Installed `vitest` and `@vitest/coverage-v8`
-- Created `/app/agents/vitest.config.ts` with v8 coverage provider, 60% line threshold
-- Fixed pre-existing gym test (agent name mismatch)
+## Infrastructure
+- `vitest.config.ts` — configured with v8 coverage provider, 60% line threshold
+- `@vitest/coverage-v8` installed
 
 ## Iterations
 1. Framework setup + smoke test + circuit-breaker tests
 2. project-helpers, budget-checkpoint, guards tests (59 tests)
-3. fewshot-inject-helpers, verify-wrap tests + gym fix (76 tests)
-4. growth, project-health tests + coverage config (105 tests)
-5. poller integration tests, threshold raised to 60% (168 tests)
-6. Coverage gap tests for project-health, verify-wrap, auto-test (191 tests, 83.79%)
+3. fewshot-inject-helpers, verify-wrap, gym fix (76 tests)
+4. lib/growth, lib/project-health, coverage config (105 tests)
+5. poller.ts integration tests, threshold raised to 60% (168 tests)
+6. Coverage push: project-health, verify-wrap, auto-test expansions (191 tests, 83.79%)
+7. Confirmed complete
