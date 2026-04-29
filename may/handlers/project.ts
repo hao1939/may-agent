@@ -211,6 +211,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       pState.lastLaunch = now;
       pState.consecutiveSkips = 0;
       launched++;
+      const projectId = `${project.owner}/${project.relPath.split("/").pop()}`;
+      try { ctx.emit({ type: "emit", event: "project.iteration", data: { projectId } }); } catch { /* skip */ }
     }
 
     healthState.lastFullScan = now;
