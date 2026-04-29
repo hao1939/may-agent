@@ -252,3 +252,25 @@ No changes. The agent receives a text message with context prepended. It reads t
 - **Notification format**: each notifier formats its own message. This design only adds the context blob for reply enrichment.
 - **Slash commands**: not needed. Natural language replies with context are better.
 - **Buttons/keyboards**: not needed. Text replies are universal.
+
+
+## Validation
+
+### Test Results
+
+Tested with claude-opus-4.6, same message with and without context enrichment:
+
+| Reply | Without context | With context |
+|-------|----------------|--------------|
+| "focus on output not cost" | Wrong scope — applied globally to system | Correct — targets system-efficiency project specifically |
+| "cancel it and move on" | "Could you clarify what to cancel?" | "Cancelling Ship EXP-188 for bob, unblocking him" |
+
+Context enrichment converts ambiguous replies into precise actions.
+
+### Regression Metric
+
+`telegram.reply-actionable-rate`
+- **What**: % of replies that didn't need clarification (no follow-up within 5min)
+- **Target**: 0.90
+- **Threshold**: 0.70
+- **Measured by**: track reply → check if user sends again within 5min to same thread
