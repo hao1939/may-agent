@@ -1,11 +1,11 @@
 # Project: Agent System Literacy
 
-**Status**: completed
+**Status**: active
 **Completed**: 2027-08-06 — 2/3 metrics met (project-creation-rate ✅, escalation-quality ✅). Gym pass-rate at 0.33 (1/3 scenarios), gap is metric-grounding + structured escalation, not skill deployment. Follow-up: improve reading-metrics skill with DB query examples, fix gym infra separately.
 **Owner**: bob
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 19
+**Iteration**: 20
 
 ## Goal
 Agents effectively use the infrastructure: create projects from problems, read and react to metrics, escalate with context, cooperate across agents, and close the loop by extending the system when patterns repeat.

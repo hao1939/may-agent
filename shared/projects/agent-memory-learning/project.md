@@ -10,9 +10,9 @@
 Agents retain and apply lessons across sessions. Reduce repeated mistakes.
 
 ## Metrics
-- memory.lessons-per-week: 2 (only 2 in lessons.jsonl) → target 5 (lessons captured)
+- memory.lessons-total: 20 (seeded from context.md files) → target 50+ (growing knowledge base)
+- memory.lessons-per-week: unknown (pipeline not yet measured) → target 5 (organic captures)
 - memory.repeat-mistake-rate: unknown → target 0.10 (same error across sessions)
-- memory.context-md-richness: avg ~100 lines across 6 agents (coder/bob/may/coach/optimizer/tech-lead)
 
 ## Current State
 **Iteration 1 assessment (2025-06-25):**
@@ -31,9 +31,10 @@ Agents retain and apply lessons across sessions. Reduce repeated mistakes.
 - [x] Audit current memory files across all agents, write outputs/memory-audit.md
 - [x] Define lesson format and extraction process
 - [x] Build lesson retrieval — query relevant lessons before starting a task
-- [ ] Measure actual context-learn pipeline firing rate — how many sessions trigger learning? Write outputs/pipeline-metrics.md
-- [ ] Expand mechanical extractor patterns (context-learn.ts) — add patterns for: edit-after-read failures, test command discovery, dependency issues
-- [ ] Seed lessons.jsonl with lessons extracted from existing context.md files across all agents
+- [x] Seed lessons.jsonl with lessons extracted from existing context.md files across all agents (20 lessons seeded)
+- [ ] Measure context-learn pipeline firing rate — check may's eval DB for context-learn events, write outputs/pipeline-metrics.md
+- [ ] Expand mechanical extractor patterns in context-learn.ts — add patterns for: edit-after-read failures, test command discovery, dependency issues
+- [ ] Add lesson retrieval hook — agents query lessons.jsonl at session start for task-relevant lessons
 - [ ] Re-plan: review metrics, assess improvement, write next steps
 
 ## References
