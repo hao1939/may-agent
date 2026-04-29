@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateProject, ProjectConfig } from '../project-template.js';
+import { generateProject, ProjectConfig } from '../../lib/project-template.js';
 
 describe('generateProject', () => {
   const basicConfig: ProjectConfig = {
