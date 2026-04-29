@@ -1,12 +1,13 @@
-# Deliverables Checklist — Iteration 7
+# DELIVERABLES_CHECKLIST
 
-## Task: Hao-Alignment Phase 3 Completion
+## Task: Integrate hao-alignment tools into codebase with tests
 
 | # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Correction rate measurement tool | DONE | `projects/outputs/hao-alignment-correction-rate.ts` |
-| 2 | Preference-check gate for dispatch | DONE | `projects/outputs/preference-check-gate.ts` |
-
-### Details
-1. **correction-rate.ts** — Scans Hao sessions, counts decision/rejection signals, computes correction_rate metric. CLI tool with --days flag. Verified running.
-2. **preference-check-gate.ts** — Exports `preferenceGate()` function scoring actions against 6 rules (stability-first, guards-stay-strong, observability, delegation-rules, no-zombie-work, may-must-fork). Verified with 5 test cases.
+|---|-------------|--------|------|
+| 1 | correction-rate.ts in lib | DONE | agents/shared/lib/hao-alignment/correction-rate.ts |
+| 2 | preference-check-gate.ts in lib | DONE | agents/shared/lib/hao-alignment/preference-check-gate.ts |
+| 3 | index.ts barrel export | DONE | agents/shared/lib/hao-alignment/index.ts |
+| 4 | Tests for correction-rate (≥3) | DONE | agents/test/hao-alignment/correction-rate.test.ts (7 tests) |
+| 5 | Tests for preference-gate (≥3) | DONE | agents/test/hao-alignment/preference-check-gate.test.ts (9 tests) |
+| 6 | All tests pass | DONE | 70 files, 1354 tests, 0 failures |
+| 7 | Copies in outputs/ | DONE | agents/shared/projects/outputs/hao-alignment-correction-rate.ts, hao-alignment-preference-check-gate.ts |
