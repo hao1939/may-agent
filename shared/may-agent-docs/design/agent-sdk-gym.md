@@ -104,7 +104,7 @@ They share the same vocabulary:
 | "I'm done" | `finish()` | `workflow.done()` |
 | "I'm stuck" | `finish({ status: "blocked" })` | `workflow.escalate()` |
 | "Run an LLM with custom prompt" | — | `sdk.createLLMSession()` |
-| "Trigger a handler now" | — | `sdk.emit("metrics.refresh")` (handler subscribes) |
+| "Trigger a handler now" | — | `sdk.emit("trigger.metrics-snapshot")` (convention: `trigger.<handler-name>`) |
 
 Notes:
 - `notify()` is human-visible only (Telegram, web). Agent-to-agent communication uses `runAgent()` or agent tools.
@@ -165,7 +165,7 @@ Intentionally excluded:
 - **No state management** — use `getDb()` + queries
 - **No scheduling** — `cron.json` is the scheduling layer
 - **No file I/O** — use Node APIs directly
-- **No direct handler triggering** — emit an event, let the handler subscribe. No `triggerNow()`.
+- **No direct handler triggering** — `emit("trigger.<handler-name>")`. Convention: cron auto-subscribes every handler to its `trigger.<name>` event.
 - **No agent introspection** — `list/peek/cancel` are LLM tools only, not SDK. Handlers check running sessions via `getDb()` query.
 - **No inbox helper** — `getDb()` + SQL query. Common patterns go in shared/lib/.
 - **No typed event constants** — emit("handler.completed") is fine. Add constants file later if typos become a problem.
