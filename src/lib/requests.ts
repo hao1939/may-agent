@@ -240,6 +240,24 @@ CREATE TABLE IF NOT EXISTS projects (
 );
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
 CREATE INDEX IF NOT EXISTS idx_projects_owner  ON projects(owner);
+
+-- Workflow runs: lightweight tracking of workflow executions (replaces .state/workflows/*.json)
+CREATE TABLE IF NOT EXISTS workflow_runs (
+  runId               TEXT PRIMARY KEY,
+  workflow            TEXT NOT NULL,
+  task                TEXT NOT NULL,
+  parentSessionId     TEXT,
+  parentWorkflowRunId TEXT,
+  depth               INTEGER DEFAULT 1,
+  status              TEXT DEFAULT 'running',
+  startedAt           INTEGER NOT NULL,
+  endedAt             INTEGER,
+  result_summary      TEXT,
+  result_reason       TEXT,
+  resumedFromRunId    TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_wfr_status ON workflow_runs(status);
+CREATE INDEX IF NOT EXISTS idx_wfr_parent ON workflow_runs(parentSessionId);
 `;
 
 // ── Database Management ────────────────────────────────────────────────
@@ -326,10 +344,25 @@ export function getDb(persistDir: string): SqliteDb {
   } catch {
     /* already exists */
   }
+
+  // Events table migrations (columns added after initial schema)
+  const eventCols = ["status", "handled_by", "result", "reason", "retry_count", "ttl_ms", "urgency"];
+  for (const col of eventCols) {
+    try {
+      const defaultVal = col === "status" ? " DEFAULT 'pending'" : col === "retry_count" ? " DEFAULT 0" : col === "urgency" ? " DEFAULT 'normal'" : "";
+      const colType = col === "retry_count" ? "INTEGER" : col === "ttl_ms" ? "INTEGER" : "TEXT";
+      db.exec(`ALTER TABLE events ADD COLUMN ${col} ${colType}${defaultVal}`);
+    } catch { /* already exists */ }
+  }
+  try {
+    db.exec("CREATE INDEX IF NOT EXISTS idx_events_inbox ON events(owner, status, timestamp)");
+  } catch { /* already exists */ }
   // Event columns for TTL and urgency (event-native: no mutable status columns)
   for (const col of ["ttl_ms INTEGER", "urgency TEXT DEFAULT 'normal'"]) {
     try { db.exec(`ALTER TABLE events ADD COLUMN ${col}`); } catch { /* already exists */ }
   }
+  // Session stepLabel column (unified session model — workflow steps tracked via sessions table)
+  try { db.exec("ALTER TABLE sessions ADD COLUMN stepLabel TEXT"); } catch { /* already exists */ }
 
   dbCache.set(persistDir, db);
   return db;
@@ -563,6 +596,7 @@ interface SessionDbEntry {
   requestId?: string;
   workflowRunId?: string;
   projectId?: string;
+  stepLabel?: string;
   startedAt: number;
   endedAt?: number;
   error?: string;
@@ -575,8 +609,8 @@ export function upsertSession(persistDir: string, entry: SessionDbEntry): void {
   const db = getDb(persistDir);
   db.run(
     `INSERT OR REPLACE INTO sessions
-      (sessionId, agent, task, status, kind, source, parentSessionId, requestId, workflowRunId, projectId, startedAt, endedAt, error, outcome, opCount)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (sessionId, agent, task, status, kind, source, parentSessionId, requestId, workflowRunId, projectId, stepLabel, startedAt, endedAt, error, outcome, opCount)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       entry.sessionId,
       entry.agent,
@@ -588,6 +622,7 @@ export function upsertSession(persistDir: string, entry: SessionDbEntry): void {
       entry.requestId ?? null,
       entry.workflowRunId ?? null,
       entry.projectId ?? null,
+      entry.stepLabel ?? null,
       entry.startedAt,
       entry.endedAt ?? null,
       entry.error ?? null,
@@ -624,4 +659,71 @@ export function updateSessionDb(
   ]);
 }
 
+// ── Workflow Runs (DB-backed, replaces .state/workflows/*.json) ────────
 
+export interface WorkflowRunRecord {
+  runId: string;
+  workflow: string;
+  task: string;
+  parentSessionId: string | null;
+  parentWorkflowRunId: string | null;
+  depth: number;
+  status: string;
+  startedAt: number;
+  endedAt: number | null;
+  result_summary: string | null;
+  result_reason: string | null;
+  resumedFromRunId: string | null;
+}
+
+/** Insert a new workflow run. */
+export function insertWorkflowRun(persistDir: string, run: WorkflowRunRecord): void {
+  const db = getDb(persistDir);
+  db.run(
+    `INSERT OR REPLACE INTO workflow_runs
+      (runId, workflow, task, parentSessionId, parentWorkflowRunId, depth, status, startedAt, endedAt, result_summary, result_reason, resumedFromRunId)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      run.runId, run.workflow, run.task, run.parentSessionId, run.parentWorkflowRunId,
+      run.depth, run.status, run.startedAt, run.endedAt,
+      run.result_summary, run.result_reason, run.resumedFromRunId,
+    ],
+  );
+}
+
+/** Update a workflow run's status and result. */
+export function updateWorkflowRun(
+  persistDir: string,
+  runId: string,
+  fields: { status: string; endedAt?: number; result_summary?: string; result_reason?: string },
+): void {
+  const db = getDb(persistDir);
+  db.run(
+    `UPDATE workflow_runs SET status = ?, endedAt = COALESCE(?, endedAt), result_summary = COALESCE(?, result_summary), result_reason = COALESCE(?, result_reason) WHERE runId = ?`,
+    [fields.status, fields.endedAt ?? null, fields.result_summary ?? null, fields.result_reason ?? null, runId],
+  );
+}
+
+/** Read a workflow run by ID. */
+export function getWorkflowRun(persistDir: string, runId: string): WorkflowRunRecord | null {
+  const db = getDb(persistDir);
+  return db.prepare("SELECT * FROM workflow_runs WHERE runId = ?").get(runId) as WorkflowRunRecord | null;
+}
+
+/** List all workflow run IDs, ordered by startedAt. */
+export function listWorkflowRunIds(persistDir: string): string[] {
+  const db = getDb(persistDir);
+  return (db.prepare("SELECT runId FROM workflow_runs ORDER BY startedAt").all() as Array<{ runId: string }>).map(r => r.runId);
+}
+
+/** Get step sessions for a workflow run, ordered by startedAt. */
+export function getWorkflowStepSessions(persistDir: string, workflowRunId: string): Array<{
+  sessionId: string; agent: string; task: string; status: string;
+  stepLabel: string | null; startedAt: number; endedAt: number | null; outcome: string | null;
+}> {
+  const db = getDb(persistDir);
+  return db.prepare(
+    `SELECT sessionId, agent, task, status, stepLabel, startedAt, endedAt, outcome
+     FROM sessions WHERE workflowRunId = ? ORDER BY startedAt`
+  ).all(workflowRunId) as any[];
+}
