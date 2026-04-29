@@ -1,7 +1,9 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST
 
-- [x] DONE — `agents/shared/lib/session-analyzer.ts` — analyzeIterations() utility with IterationRecord interface, AnalysisResult interface, slow outlier detection, failure pattern grouping, retry tracking, and actionable suggestions
-- [x] DONE — `agents/shared/tests/lib/session-analyzer.test.ts` — 9 tests: empty input, null input, uniform durations, slow outliers, failure patterns, retry patterns, low success suggestions, excellent performance, top-5 limit
-- [x] DONE — `agents/shared/lib/index.ts` — added `export * from './session-analyzer.js'`
-- [x] DONE — `agents/shared/projects/outputs/session-analyzer.ts` — copy in outputs
-- [x] DONE — `agents/shared/projects/outputs/session-analyzer.test.ts` — copy in outputs
+## Task: Create end-to-end smoke test
+
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | Smoke test importing project-template, iteration-monitor, session-analyzer | DONE | agents/shared/tests/smoke.test.ts |
+| 2 | Test passes in vitest suite | DONE | 4 tests passed |
+| 3 | Copy in outputs | DONE | agents/shared/projects/outputs/smoke.test.ts |
