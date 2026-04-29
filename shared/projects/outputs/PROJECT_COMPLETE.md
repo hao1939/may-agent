@@ -2,6 +2,4 @@
 
 This project has been complete since iteration 31 of the original work. No further work is needed.
 
-All metrics are at or above target. All deliverables have been verified.
-
-**Status: COMPLETE** — No more worker iterations should be dispatched.
+All deliverables have been verified and all metrics are at or above target.
