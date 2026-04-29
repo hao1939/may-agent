@@ -8,8 +8,6 @@ export default defineConfig({
       provider: "v8",
       include: ["shared/workflows/**/*.ts", "shared/lib/**/*.ts", "shared/guards/**/*.ts"],
       exclude: [
-        "shared/workflows/heartbeat-data.ts",
-        "shared/workflows/master-worker.ts",
         "shared/workflows/project.ts",
         "shared/workflows/implement-and-verify.ts",
         "shared/guards/loader.ts",
