@@ -36,6 +36,7 @@ export function estimateComplexity(task: string): ComplexityEstimate {
   if (fileRefs >= 5) score += 2;
   else if (fileRefs >= 3) score += 1.5;
   else if (fileRefs >= 2) score += 1;
+  else if (fileRefs === 1) score += 0.5;
 
   // Implementation signals (heavier than docs)
   if (/\b(implement|create module|build|architect)\b/.test(lower)) score += 1;
@@ -56,11 +57,12 @@ export function estimateComplexity(task: string): ComplexityEstimate {
   // "with tests" or "write tests" adds moderate complexity
   if (/\b(with tests|write tests|integration tests)\b/.test(lower)) score += 0.5;
 
-  // Documentation is simpler (but still at least score 2)
-  if (/\b(document|report|summary|audit|plan)\b/.test(lower) && !/implement|integrate/.test(lower)) score -= 1;
+  // Simplicity discounts (only apply the strongest one, don't stack)
+  const isDoc = /\b(document|report|summary|audit|plan)\b/.test(lower) && !/implement|integrate/.test(lower);
+  const isReadOnly = /\b(read|list|check|verify|count)\b/.test(lower) && !/implement|create|integrate|write/.test(lower);
 
-  // Simple read/check/list operations (score 1)
-  if (/\b(read|list|check|verify|count)\b/.test(lower) && !/implement|create|integrate/.test(lower)) score -= 1;
+  if (isReadOnly) score -= 1;
+  else if (isDoc) score -= 0.5;
 
   // Clamp to valid range
   const clamped = Math.max(1, Math.min(5, Math.round(score))) as ComplexityScore;
