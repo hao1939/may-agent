@@ -18,7 +18,7 @@ import type { HandlerContext, HandlerModule, CronEntry } from "../../shared/agen
 import { evaluateStandaloneSession } from "../../shared/evaluation/evaluator.js";
 
 const STATE_FILE = "eval-poller-processed.json";
-const MAX_SESSIONS_PER_RUN = 100; // Increased from 50 to improve coverage throughput
+const MAX_SESSIONS_PER_RUN = 15; // Reduced from 100 — was causing 300s handler timeout (4 consecutive failures)
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days to match coverage metric window
 
 // Meta-agents that shouldn't be evaluated
