@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777449515421_380
+- **Session:** s_1777449379015_360
 - **Status:** done
-- **When:** 2026-04-29T07:58:46.320Z
-- **Duration:** 10s
+- **When:** 2026-04-29T07:59:02.680Z
+- **Duration:** 2m43s
 
 ## What Happened
-CONTINUE
-
-Project is **completed**. Status now set to `completed` in project.md. All 4 metrics exceed targets, all 18 plan items done. **STOP DISPATCHING WORKER ITERATIONS.** Fifteen consecutive iterations have produced nothing but redundant closure/status documents. There is zero remaining work on this project.
+The existing report has incorrect root cause analysis. The actual session-eval.ts source shows it already uses `ctx.dispatchEvent` correctly — the real problem is `session.completed` is never emitted. Let me fix the report:

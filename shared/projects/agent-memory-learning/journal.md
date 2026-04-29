@@ -25,3 +25,6 @@ Milestone completed: "Measure context-learn pipeline firing rate — outputs/pip
 Milestone completed: "Fix pipeline trigger: diagnose why session-eval never fires, fix the event chain so context-learn actually runs after sessions" → replaced with: "Diagnose root cause of pipeline not firing (session.completed never emitted — no emitter in codebase)"
 
 (a) Next iteration
+
+### Iteration 4 — 2026-04-29T07:59:02.681Z
+**Worker**: The existing report has incorrect root cause analysis. The actual session-eval.ts source shows it already uses `ctx.dispatchEvent` correctly — the real problem is `session.completed` is never emitted. Let me fix the report:
