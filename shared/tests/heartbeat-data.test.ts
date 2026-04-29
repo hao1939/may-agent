@@ -1,0 +1,476 @@
+/**
+ * Tests for workflows/heartbeat-data.ts — imports actual module for coverage.
+ */
+
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
+import { join } from "node:path";
+
+import {
+  loadMetrics,
+  loadProjects,
+  loadAlerts,
+  loadHeartbeatMd,
+  loadInbox,
+  formatMetricsBlock,
+  runRedMetricCommands,
+  shouldSkipHeartbeat,
+  genericHeartbeat,
+} from "../workflows/heartbeat-data.js";
+
+const TEST_DIR = join(process.cwd(), "__test_hb_tmp__");
+
+function cleanup() {
+  try { rmSync(TEST_DIR, { recursive: true, force: true }); } catch {}
+}
+
+function makeDb(overrides: Record<string, any> = {}) {
+  const defaultPrepare = (_sql: string) => ({
+    all: (..._args: any[]) => [],
+    get: (..._args: any[]) => null,
+  });
+  return {
+    prepare: overrides.prepare || defaultPrepare,
+  };
+}
+
+function makeCtx(overrides: Record<string, any> = {}): any {
+  return {
+    agentsRoot: overrides.agentsRoot || TEST_DIR,
+    getDb: () => overrides.db || makeDb(overrides),
+    emit: vi.fn(),
+    log: vi.fn(),
+    done: vi.fn((msg: string) => ({ type: "done", message: msg })),
+    summarize: vi.fn((_r: any, _opts?: any) => "summary"),
+    runAgent: vi.fn(async () => ({ status: "success", lastAssistantText: "ok" })),
+    dispatchEvent: vi.fn(),
+    ...overrides,
+  };
+}
+
+describe("loadMetrics", () => {
+  it("returns empty string when no metrics", () => {
+    const ctx = makeCtx();
+    expect(loadMetrics(ctx, "bob")).toBe("");
+  });
+
+  it("returns formatted metrics for healthy metrics", () => {
+    const db = makeDb({
+      prepare: (sql: string) => ({
+        all: () => sql.includes("metrics") && !sql.includes("snapshots")
+          ? [{ id: "test.coverage", current: 85, target: 80, threshold: 60, alert_op: "<", source_query: null, source_command: null }]
+          : [],
+        get: () => null,
+      }),
+    });
+    const ctx = makeCtx({ db });
+    const result = loadMetrics(ctx, "bob");
+    expect(result).toContain("test.coverage");
+    expect(result).toContain("✅");
+  });
+
+  it("marks breaching metrics with warning", () => {
+    const db = makeDb({
+      prepare: (sql: string) => ({
+        all: (..._args: any[]) => {
+          if (sql.includes("metric_snapshots")) return [];
+          if (sql.includes("metrics")) return [{ id: "test.cov", current: 50, target: 80, threshold: 60, alert_op: "<", source_query: "SELECT 1", source_command: null }];
+          return [];
+        },
+        get: () => null,
+      }),
+    });
+    const ctx = makeCtx({ db });
+    const result = loadMetrics(ctx, "bob");
+    expect(result).toContain("⚠️ BELOW TARGET");
+    expect(result).toContain("Investigate");
+  });
+
+  it("shows consecutive breach escalation", () => {
+    const db = makeDb({
+      prepare: (sql: string) => ({
+        all: (..._args: any[]) => {
+          if (sql.includes("metric_snapshots")) return [{ value: 50 }, { value: 45 }, { value: 40 }];
+          if (sql.includes("metrics")) return [{ id: "test.cov", current: 50, target: 80, threshold: 60, alert_op: "<", source_query: null, source_command: "echo diag" }];
+          return [];
+        },
+        get: () => null,
+      }),
+    });
+    const ctx = makeCtx({ db });
+    const result = loadMetrics(ctx, "bob");
+    expect(result).toContain("REPEATED ALERT");
+    expect(result).toContain("3x");
+  });
+
+  it("handles db errors gracefully", () => {
+    const ctx = makeCtx({ db: { prepare: () => { throw new Error("db error"); } } });
+    expect(loadMetrics(ctx, "bob")).toBe("");
+  });
+});
+
+describe("loadProjects", () => {
+  beforeEach(() => { cleanup(); });
+
+  it("returns empty for no projects", () => {
+    const ctx = makeCtx();
+    expect(loadProjects(ctx, "bob")).toBe("");
+  });
+
+  it("loads shared projects owned by agent", () => {
+    const projDir = join(TEST_DIR, "shared", "projects", "myproj");
+    mkdirSync(projDir, { recursive: true });
+    writeFileSync(join(projDir, "project.md"), `# Test
+**Owner**: bob
+**Status**: active
+**Health**: 🟢
+
+## Milestones
+- [x] Done one
+- [ ] Not done
+`, "utf-8");
+
+    const ctx = makeCtx();
+    const result = loadProjects(ctx, "bob");
+    expect(result).toContain("myproj");
+    expect(result).toContain("active");
+    expect(result).toContain("1/2");
+  });
+
+  it("skips done/complete projects", () => {
+    const projDir = join(TEST_DIR, "shared", "projects", "doneproj");
+    mkdirSync(projDir, { recursive: true });
+    writeFileSync(join(projDir, "project.md"), `# Test
+**Owner**: bob
+**Status**: done
+`, "utf-8");
+
+    const ctx = makeCtx();
+    expect(loadProjects(ctx, "bob")).toBe("");
+  });
+
+  it("skips projects owned by other agents", () => {
+    const projDir = join(TEST_DIR, "shared", "projects", "otherproj");
+    mkdirSync(projDir, { recursive: true });
+    writeFileSync(join(projDir, "project.md"), `# Test
+**Owner**: alice
+**Status**: active
+`, "utf-8");
+
+    const ctx = makeCtx();
+    expect(loadProjects(ctx, "bob")).toBe("");
+  });
+
+  it("loads legacy per-agent projects", () => {
+    const projDir = join(TEST_DIR, "bob", "workspace", "projects", "legproj");
+    mkdirSync(projDir, { recursive: true });
+    writeFileSync(join(projDir, "project.md"), `# Test
+**Status**: active
+**Health**: 🟡
+
+## Milestones
+- [ ] Something
+`, "utf-8");
+
+    const ctx = makeCtx();
+    const result = loadProjects(ctx, "bob");
+    expect(result).toContain("legproj");
+  });
+});
+
+describe("loadAlerts", () => {
+  it("returns empty when no alerts", () => {
+    const ctx = makeCtx();
+    expect(loadAlerts(ctx, "bob")).toBe("");
+  });
+
+  it("returns formatted alerts", () => {
+    const db = makeDb({
+      prepare: () => ({
+        all: () => [{ metric_id: "bob.coverage", severity: "warning", message: "Coverage dropped" }],
+        get: () => null,
+      }),
+    });
+    const ctx = makeCtx({ db });
+    const result = loadAlerts(ctx, "bob");
+    expect(result).toContain("⚠️");
+    expect(result).toContain("Coverage dropped");
+  });
+
+  it("handles db errors", () => {
+    const ctx = makeCtx({ db: { prepare: () => { throw new Error("fail"); } } });
+    expect(loadAlerts(ctx, "bob")).toBe("");
+  });
+});
+
+describe("loadHeartbeatMd", () => {
+  beforeEach(() => { cleanup(); });
+
+  it("returns content of heartbeat.md", () => {
+    mkdirSync(join(TEST_DIR, "bob"), { recursive: true });
+    writeFileSync(join(TEST_DIR, "bob", "heartbeat.md"), "# Bob's heartbeat\nDo stuff", "utf-8");
+    const ctx = makeCtx();
+    const result = loadHeartbeatMd(ctx, "bob");
+    expect(result).toContain("Bob's heartbeat");
+  });
+
+  it("returns fallback when file missing", () => {
+    const ctx = makeCtx();
+    expect(loadHeartbeatMd(ctx, "nobody")).toContain("No heartbeat.md");
+  });
+});
+
+describe("loadInbox", () => {
+  it("returns empty when no events", () => {
+    const ctx = makeCtx();
+    expect(loadInbox(ctx, "bob")).toBe("");
+  });
+
+  it("returns formatted events with dedup", () => {
+    const now = Date.now();
+    const db = makeDb({
+      prepare: () => ({
+        all: () => [
+          { id: 1, event_type: "notification", data: JSON.stringify({ summary: "Test event 1" }), urgency: "normal", timestamp: now - 60000 },
+          { id: 2, event_type: "notification", data: JSON.stringify({ summary: "Test event 1" }), urgency: "normal", timestamp: now - 120000 },
+          { id: 3, event_type: "alert", data: JSON.stringify({ summary: "Different event" }), urgency: "immediate", timestamp: now - 30000 },
+        ],
+        get: () => null,
+      }),
+    });
+    const ctx = makeCtx({ db });
+    const result = loadInbox(ctx, "bob");
+    expect(result).toContain("notification");
+    expect(result).toContain("×2");  // deduped
+    expect(result).toContain("alert");
+  });
+
+  it("handles db errors", () => {
+    const ctx = makeCtx({ db: { prepare: () => { throw new Error("fail"); } } });
+    expect(loadInbox(ctx, "bob")).toBe("");
+  });
+});
+
+describe("formatMetricsBlock", () => {
+  it("returns no metrics message when empty", () => {
+    const ctx = makeCtx();
+    const result = formatMetricsBlock(ctx, "bob");
+    expect(result).toContain("No metrics configured");
+  });
+
+  it("returns all healthy message", () => {
+    const db = makeDb({
+      prepare: (sql: string) => ({
+        all: () => sql.includes("metrics") && !sql.includes("snapshots")
+          ? [{ id: "test.cov", current: 90, target: 80, threshold: 60, alert_op: "<", source_query: null, source_command: null }]
+          : [],
+        get: () => null,
+      }),
+    });
+    const ctx = makeCtx({ db });
+    const result = formatMetricsBlock(ctx, "bob");
+    expect(result).toContain("All metrics healthy");
+  });
+
+  it("returns red metric block with investigation prompt", () => {
+    const db = makeDb({
+      prepare: (sql: string) => ({
+        all: (..._args: any[]) => {
+          if (sql.includes("metric_snapshots")) return [];
+          if (sql.includes("metrics")) return [{ id: "test.cov", current: 50, target: 80, threshold: 60, alert_op: "<", source_query: null, source_command: null }];
+          return [];
+        },
+        get: () => null,
+      }),
+    });
+    const ctx = makeCtx({ db });
+    const result = formatMetricsBlock(ctx, "bob");
+    expect(result).toContain("FIRST");
+    expect(result).toContain("evaluate your metrics");
+  });
+});
+
+describe("runRedMetricCommands", () => {
+  it("returns empty when no red metrics", () => {
+    const ctx = makeCtx();
+    expect(runRedMetricCommands(ctx, "bob")).toBe("");
+  });
+
+  it("returns empty when all metrics healthy", () => {
+    const db = makeDb({
+      prepare: () => ({
+        all: () => [{ id: "m1", current: 90, target: 80, threshold: 60, alert_op: "<", source_command: null, source_query: null }],
+        get: () => null,
+      }),
+    });
+    const ctx = makeCtx({ db });
+    expect(runRedMetricCommands(ctx, "bob")).toBe("");
+  });
+
+  it("runs diagnostic command for red metric", () => {
+    const db = makeDb({
+      prepare: () => ({
+        all: () => [{ id: "m1", current: 50, target: 80, threshold: 60, alert_op: "<", source_command: "echo hello", source_query: null }],
+        get: () => null,
+      }),
+    });
+    const ctx = makeCtx({ db });
+    const result = runRedMetricCommands(ctx, "bob");
+    expect(result).toContain("Red Metric Diagnostic");
+    expect(result).toContain("hello");
+  });
+
+  it("handles command failure gracefully", () => {
+    const db = makeDb({
+      prepare: () => ({
+        all: () => [{ id: "m1", current: 50, target: 80, threshold: 60, alert_op: "<", source_command: "false", source_query: null }],
+        get: () => null,
+      }),
+    });
+    const ctx = makeCtx({ db });
+    const result = runRedMetricCommands(ctx, "bob");
+    expect(result).toContain("m1");
+  });
+
+  it("reports no diagnostic command when none configured", () => {
+    const db = makeDb({
+      prepare: () => ({
+        all: () => [{ id: "m1", current: 50, target: 80, threshold: 60, alert_op: "<", source_command: null, source_query: null }],
+        get: () => null,
+      }),
+    });
+    const ctx = makeCtx({ db });
+    const result = runRedMetricCommands(ctx, "bob");
+    expect(result).toContain("No diagnostic command");
+  });
+});
+
+describe("shouldSkipHeartbeat", () => {
+  it("never skips when red metrics present", () => {
+    const ctx = makeCtx();
+    expect(shouldSkipHeartbeat(ctx, "bob", "⚠️ BELOW TARGET", "", "", "")).toBeNull();
+  });
+
+  it("never skips when alerts present", () => {
+    const ctx = makeCtx();
+    expect(shouldSkipHeartbeat(ctx, "bob", "", "alert!", "", "")).toBeNull();
+  });
+
+  it("never skips when inbox has events", () => {
+    const ctx = makeCtx();
+    expect(shouldSkipHeartbeat(ctx, "bob", "", "", "event!", "")).toBeNull();
+  });
+
+  it("never skips when projects active", () => {
+    const ctx = makeCtx();
+    expect(shouldSkipHeartbeat(ctx, "bob", "", "", "", "project!")).toBeNull();
+  });
+
+  it("skips when everything quiet and recent heartbeat exists", () => {
+    const now = Date.now();
+    const db = makeDb({
+      prepare: () => ({
+        all: () => [],
+        get: () => ({ t: now - 10 * 60 * 1000 }), // 10 min ago
+      }),
+    });
+    const ctx = makeCtx({ db });
+    const result = shouldSkipHeartbeat(ctx, "bob", "", "", "", "");
+    expect(result).toContain("idle-skip");
+  });
+
+  it("does not skip when no recent heartbeat", () => {
+    const db = makeDb({
+      prepare: () => ({
+        all: () => [],
+        get: () => null, // no recent heartbeat
+      }),
+    });
+    const ctx = makeCtx({ db });
+    expect(shouldSkipHeartbeat(ctx, "bob", "", "", "", "")).toBeNull();
+  });
+
+  it("handles db errors (does not skip)", () => {
+    const ctx = makeCtx({ db: { prepare: () => { throw new Error("fail"); } } });
+    expect(shouldSkipHeartbeat(ctx, "bob", "", "", "", "")).toBeNull();
+  });
+});
+
+describe("genericHeartbeat", () => {
+  beforeEach(() => { cleanup(); });
+
+  it("runs a full heartbeat cycle", async () => {
+    // Set up circuit breaker dir
+    mkdirSync(join(TEST_DIR, "shared", "circuit-breaker"), { recursive: true });
+    mkdirSync(join(TEST_DIR, "bob"), { recursive: true });
+    writeFileSync(join(TEST_DIR, "bob", "heartbeat.md"), "# Bob heartbeat", "utf-8");
+
+    const ctx = makeCtx({
+      agentsRoot: TEST_DIR,
+    });
+    ctx.runAgent.mockResolvedValueOnce({ status: "success", lastAssistantText: "Did heartbeat stuff" });
+
+    const result = await genericHeartbeat(ctx, "bob");
+    expect(ctx.runAgent).toHaveBeenCalledTimes(1);
+    expect(ctx.done).toHaveBeenCalled();
+  });
+
+  it("skips when circuit breaker is open", async () => {
+    // Create circuit breaker state that triggers open
+    const cbDir = join(TEST_DIR, "shared", "circuit-breaker");
+    mkdirSync(cbDir, { recursive: true });
+    // Write a CB state file with enough consecutive failures
+    writeFileSync(join(cbDir, "bob.json"), JSON.stringify({
+      consecutiveErrors: 10,
+      lastError: Date.now(),
+      lastErrorMessage: "test error",
+    }), "utf-8");
+
+    const ctx = makeCtx({ agentsRoot: TEST_DIR });
+    const result = await genericHeartbeat(ctx, "bob");
+    expect(ctx.done).toHaveBeenCalledWith(expect.stringContaining("Circuit breaker"));
+    expect(ctx.runAgent).not.toHaveBeenCalled();
+  });
+
+  it("collects red metric diagnostics before main heartbeat", async () => {
+    const db = makeDb({
+      prepare: (sql: string) => ({
+        all: (..._args: any[]) => {
+          if (sql.includes("metric_snapshots")) return [];
+          if (sql.includes("metric_alerts")) return [];
+          if (sql.includes("events")) return [];
+          if (sql.includes("metrics")) return [{ id: "bob.cov", current: 50, target: 80, threshold: 60, alert_op: "<", source_command: "echo diag_output", source_query: null }];
+          return [];
+        },
+        get: () => null,
+      }),
+    });
+
+    mkdirSync(join(TEST_DIR, "shared", "circuit-breaker"), { recursive: true });
+    mkdirSync(join(TEST_DIR, "bob"), { recursive: true });
+    writeFileSync(join(TEST_DIR, "bob", "heartbeat.md"), "# Bob", "utf-8");
+
+    const ctx = makeCtx({ agentsRoot: TEST_DIR, db });
+    ctx.runAgent.mockResolvedValueOnce({ status: "success", lastAssistantText: "Fixed metric" });
+
+    await genericHeartbeat(ctx, "bob");
+    
+    // The prompt should include diagnostic results
+    const promptArg = ctx.runAgent.mock.calls[0][1];
+    expect(promptArg).toContain("diag_output");
+  });
+
+  it("records error outcome when agent errors", async () => {
+    mkdirSync(join(TEST_DIR, "shared", "circuit-breaker"), { recursive: true });
+    mkdirSync(join(TEST_DIR, "bob"), { recursive: true });
+    writeFileSync(join(TEST_DIR, "bob", "heartbeat.md"), "# Bob", "utf-8");
+
+    const ctx = makeCtx({ agentsRoot: TEST_DIR });
+    ctx.runAgent.mockResolvedValueOnce({ status: "error", lastAssistantText: "" });
+
+    await genericHeartbeat(ctx, "bob");
+    expect(ctx.done).toHaveBeenCalled();
+  });
+});
+
+afterAll(() => { cleanup(); });
