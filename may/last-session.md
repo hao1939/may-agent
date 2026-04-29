@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777466741365_23
+- **Session:** s_1777468541898_36
 - **Status:** done
-- **When:** 2026-04-29T12:47:19.517Z
-- **Duration:** 1m38s
+- **When:** 2026-04-29T13:18:40.050Z
+- **Duration:** 2m58s
 
 ## What Happened
-The evaluator is running but not producing new evaluations in the last 6h. The 9 sessions may be heartbeats/no-ops. This validates the coach's concern. Let me nudge the evaluator.
+The DB became corrupted during this session (the initial snapshot query worked but now it doesn't). This is P0 — it affects all agents' ability to track sessions.
