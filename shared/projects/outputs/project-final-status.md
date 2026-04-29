@@ -8,6 +8,10 @@
 3. **Organic capture confirmed working** (2 sessions processed, context.md updated)
 4. **Lesson format defined**, retrieval system built, quality audited
 
+## Open Handoffs
+- tech-lead notified (P1) to add `session.completed` event emission — would replace poller with direct event triggering
+- `repeat-mistake-rate` metric requires ~2 weeks of organic operation to measure
+
 ## Deliverables Produced
 - `outputs/pipeline-metrics.md` — pipeline firing analysis
 - `outputs/poller-verification.md` — poller test results
@@ -15,10 +19,4 @@
 - `outputs/learning-dashboard.md` — system activity snapshot
 - `agents/may/handlers/context-learn-poller.ts` — poller handler
 - `agents/may/cron.json` — updated with poller entry
-- `agents/shared/lessons.jsonl` — 79 lessons seeded
-
-## Open Handoffs
-- tech-lead notified (P1): add `session.completed` event emission to replace poller
-- `repeat-mistake-rate` metric needs ~2 weeks of organic data
-
-No further work needed.
+- `agents/shared/lessons.jsonl` — 79 seeded lessons
