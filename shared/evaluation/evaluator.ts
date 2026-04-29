@@ -1042,6 +1042,49 @@ export async function evaluateStandaloneSession(
     return { quality: 0.2, efficiency: 0.2, verdict: "needs_improvement", issues: [`shallow_session: standalone (${messages.length} messages)`] };
   }
 
+  // ── Fast-path: read-only dispatcher sessions (LLM-to-JS optimization) ──
+  // Sessions where ALL tool calls are non-mutating (read, agents, checkpoint,
+  // finish) — the agent gathered info and dispatched/delegated but produced
+  // no artifacts itself. These reliably score acceptable and don't need LLM eval.
+  const READ_ONLY_TOOLS = new Set(["read", "agents", "checkpoint", "finish", "workflow"]);
+  const allToolCalls: string[] = [];
+  for (const msg of messages) {
+    if ((msg as any).role === "assistant" && Array.isArray((msg as any).content)) {
+      for (const block of (msg as any).content) {
+        if (block?.type === "toolCall") {
+          allToolCalls.push(block.name);
+        }
+      }
+    }
+  }
+  const isReadOnlyDispatcher =
+    status === "done" &&
+    allToolCalls.length > 0 &&
+    allToolCalls.every((name) => READ_ONLY_TOOLS.has(name));
+
+  if (isReadOnlyDispatcher) {
+    const usage = extractUsage(messages);
+    const chains = extractFailureChains(messages);
+    const createdAt = extractTimestamp(sessionId);
+    ctx.upsertEvaluation({
+      sessionId,
+      agent,
+      quality: 0.6,
+      efficiency: 0.7,
+      productiveCalls: usage.turns,
+      wastedCalls: 0,
+      verdict: "acceptable",
+      issues: [`read_only_dispatcher: session used only read/dispatch tools — heuristic evaluation`],
+      overall: { quality: 0.6, efficiency: 0.7, verdict: "acceptable", result_delivered: true },
+      usage: usage as unknown as Record<string, unknown>,
+      failureChains: chains,
+      evaluatedByHeuristic: true,
+      skippedByJs: true,
+      createdAt,
+    });
+    return { quality: 0.6, efficiency: 0.7, verdict: "acceptable", issues: [`read_only_dispatcher: heuristic eval (${allToolCalls.length} tool calls, all non-mutating)`] };
+  }
+
   // Build transcript (capped at 10KB like evaluateTask)
   let transcript = formatTranscript(messages);
   const MAX_TRANSCRIPT_CHARS = 10_000;
