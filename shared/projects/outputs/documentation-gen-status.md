@@ -10,4 +10,4 @@
 1. `docs-inventory.md` — Full documentation matrix for all 12 agents
 2. `check-freshness.sh` — Runnable script reporting doc file ages
 
-Both metrics exceed targets. No further work needed.
+Both metrics exceed targets. No further work needed. Project closed.
