@@ -1739,3 +1739,33 @@ Production multi-agent data management system with "three-track knowledge archit
 - **Rating**: ★★★★★ | **Added**: 2026-04-26
 - **Key insight**: Localize→suggest→fix paradigm outperforms localize→fix. The "suggestion" intermediate agent bridges the reasoning gap between finding a bug and fixing it. Three specialized sub-agents (localizer, suggester, fixer) + knowledge graph. 51.3% on SWE-Bench with Claude-3.5.
 - **Relevance**: **Direct validation of H-188** (multi-agent decomposition breaks relational bug blindness). SGAgent's localizer→suggester→fixer is structurally identical to H-188's tracer→fixer. Key finding: the intermediate reasoning step (suggestion/trace) converts a hard holistic task into two easier sequential tasks. Supports P-188a prediction that decomposition will outperform single-agent. The "fundamental reasoning gap" SGAgent identifies between localization and fixing mirrors H-181's discovery-vs-fix bottleneck.
+
+## 2604.22820 — Complete Cyclic Subtask Graphs: Flexibility, Cost, and Bottlenecks
+- **Authors**: Gharzeddine & Saab Jr | **Venue**: cs.MA
+- **Rating**: ★★★★★ | **Added**: 2026-04-30
+- **Key insight**: Maximally flexible multi-agent workflows (fully-connected cyclic subtask graphs) don't always help. Three regimes: recovery-dominant (flexibility helps), prerequisite-chain (linear wins), bottleneck-dominant (flexibility irrelevant). Cyclic architectures are substantially more expensive in tokens.
+- **Relevance**: **Direct validation of our structured workflow design.** Empirically shows that for sequential tasks (like coding), simpler forward execution beats flexible revisitation. See DD#886.
+
+## 2604.24477 — GAMMAF: Graph-Based Anomaly Monitoring for LLM Multi-Agent Systems
+- **Authors**: Mateo-Torrejón & Sánchez-Macián | **Venue**: cs.CR/cs.MA
+- **Rating**: ★★★★ | **Added**: 2026-04-30
+- **Key insight**: Benchmarking framework for graph-based anomaly detection in MAS. Isolating adversarial agents reduces operational costs by enabling early consensus.
+- **Relevance**: Cost-reduction from quality gating connects to Bob's EXP-269 taint token approach. See DD#887.
+
+## 2604.25161 — Capability-Oriented Failure Attribution for VLN Agents
+- **Authors**: Chen et al. | **Venue**: ACL 2026
+- **Rating**: ★★★ | **Added**: 2026-04-30
+- **Key insight**: Adaptive test generation + capability oracles to pinpoint which capability (perception/memory/planning/decision) caused failure. ACL 2026.
+- **Relevance**: Lower — VLN-specific. Concept of capability oracles is interesting for our evaluator but our agents lack the structured capability decomposition this requires.
+
+## 2604.24905 — MultiHedge: Adaptive Coordination via Retrieval-Augmented Control
+- **Authors**: Bańka & Chudziak | **Venue**: ICCS 2026
+- **Rating**: ★★★ | **Added**: 2026-04-30
+- **Key insight**: Memory-augmented retrieval confers greater robustness than increasing model scale alone in modular decision systems.
+- **Relevance**: Supports memory/context design over model upgrades. Low actionability — finance domain, but principle aligns with our context-loading strategy.
+
+## 2604.23557 — DLM: Unified Decision Language Models for Offline Multi-Agent Sequential Decision Making
+- **Authors**: Zhang et al. | **Venue**: cs.MA
+- **Rating**: ★★ | **Added**: 2026-04-30
+- **Key insight**: Dialogue-style sequence prediction for MARL with group relative policy optimization. Zero-shot generalization to unseen scenarios.
+- **Relevance**: Low — RL-focused, not applicable to our prompt-based agent system.
