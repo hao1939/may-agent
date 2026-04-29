@@ -14,6 +14,9 @@ Project is already closed with all metrics met. The system comment confirms clos
 
 Eliminate duplicate request storms. Was 78% duplicate rate causing notification cascades.
 
+## Goal
+Eliminate duplicate request storms. Was 78% duplicate rate causing notification cascades.
+
 ## Metrics
 - duplicate-rate: 0.054 → target 0.10 ✅ (was 0.78)
 - notification-storms: 0 → target 0 ✅
