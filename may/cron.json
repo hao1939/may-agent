@@ -377,5 +377,24 @@
     "enabled": true,
     "description": "Poll recent completed sessions and dispatch context-learn events directly. Workaround for missing session.completed event emission.",
     "offsetMs": 900000
+  },
+  {
+    "name": "heartbeat-amy",
+    "type": "job",
+    "intervalMs": 1800000,
+    "agent": "amy",
+    "message": "[heartbeat] Amy heartbeat via per-agent workflow.",
+    "enabled": true,
+    "handler": "run-workflow",
+    "handlerConfig": {
+      "workflow": "amy-heartbeat",
+      "agent": "amy",
+      "task": "[heartbeat] You are Amy. Your files are in agents/amy/. Read agents/amy/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you researched and found.",
+      "timeoutMs": 1800000
+    },
+    "offsetMs": 480000,
+    "on": [
+      "heartbeat.trigger"
+    ]
   }
 ]
