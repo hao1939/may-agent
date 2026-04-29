@@ -68,22 +68,21 @@ describe("Workflow Integration (end-to-end, no mocks)", () => {
     expect(typeof result.success).toBe("boolean");
   });
 
-  it("exercises ProjectCache with put/read cycle", () => {
+  it("exercises ProjectCache with read cycle", () => {
     const cache = new ProjectCache(50, 0);
     
-    // Write then read
-    cache.write("test.txt", "hello world");
-    const content = cache.read("test.txt");
-    expect(content).toBe("hello world");
+    // Read a real file
+    const content = cache.read("/app/agents/shared/package.json");
+    expect(content).toContain("vitest");
 
     const stats = cache.getStats();
-    expect(stats.hits).toBe(1);
-    expect(stats.writes).toBe(1);
+    expect(stats.totalMisses).toBe(1);
+    expect(stats.totalHits).toBe(0);
 
-    // Second read should also hit
-    const content2 = cache.read("test.txt");
-    expect(content2).toBe("hello world");
-    expect(cache.getStats().hits).toBe(2);
+    // Second read should hit cache
+    const content2 = cache.read("/app/agents/shared/package.json");
+    expect(content2).toBe(content);
+    expect(cache.getStats().totalHits).toBe(1);
   });
 
   it("extractProjectPath parses task strings with project: prefix", () => {
