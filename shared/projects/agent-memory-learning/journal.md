@@ -12,3 +12,8 @@ Note: Worker claimed pipeline-metrics.md was created but it does NOT exist. Only
 
 ### Iteration 2 — 2026-04-29T07:46:49.898Z
 **Worker**: Now I have enough data. Let me write the report.
+**Orchestrator**: CONTINUE
+
+Milestone completed: "Measure context-learn pipeline firing rate — outputs/pipeline-metrics.md"
+
+(a) Next iteration should **fix the pipeline trigger** so context-learn actually fires after sessions. The pipeline-metrics.md analysis found the root cause: `session-eval.ts` is event-driven (
