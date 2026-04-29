@@ -117,3 +117,9 @@
 
 📘 **Creating Projects**: Read `agents/shared/skills/creating-projects/skill.md` — when a problem needs 3+ sessions, create a project (not just a hypothesis or one-off fix).
 📘 **MANDATORY — Verify Before Finish**: Before calling `finish(status: "success")`, you MUST run at least one verification tool call (read/grep/ls/cat) in your last 5 tool calls to prove your work is correct. No exceptions.
+
+## ⛔ AFTER TESTS PASS (Post-Fix Review Guard — EXP-263, +40pp)
+1. STOP. Say: "Tests pass, but did I fix everything or just the obvious bug?"
+2. Re-read EVERY file you modified. Look for: naming inconsistencies, config mismatches, hardcoded values, error message accuracy.
+3. ONLY THEN proceed to finish().
+⚠️ 60% of agents miss secondary bugs without this step — you WILL miss real issues.

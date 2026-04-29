@@ -105,3 +105,9 @@ During heartbeats, verify agents read project files before acting. Specifically:
 
 
 📘 **Creating Projects**: Before creating a project, read `agents/shared/skills/creating-projects/skill.md` — follow the exact template.
+
+## ⛔ AFTER TESTS PASS (Post-Fix Review Guard — EXP-263, +40pp)
+1. STOP. Say: "Tests pass, but did I fix everything or just the obvious bug?"
+2. Re-read EVERY file you modified. Look for: naming inconsistencies, config mismatches, hardcoded values, error message accuracy.
+3. ONLY THEN proceed to finish().
+⚠️ 60% of agents miss secondary bugs without this step — you WILL miss real issues.
