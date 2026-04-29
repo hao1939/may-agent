@@ -1,4 +1,4 @@
-# Project Closure - Final Status
+# Project Closure — Final Status
 
 **Status: COMPLETED** ✅
 
@@ -11,4 +11,4 @@ All 4 metrics exceed targets. All 18 plan items done.
 | workflow.pass-rate | 1.00 | 0.95 | ✅ |
 | skill.usage-rate | 1.00 | 0.50 | ✅ |
 
-No further work required.
+**No further work required.**
