@@ -44,3 +44,8 @@ The worker has spent 5 iterations producing reports/closure docs but NOT actuall
 
 ### Iteration 6 — 2026-04-29T08:05:08.564Z
 **Worker**: The file is tracked and the change is already committed (likely auto-committed). Let me just finish:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should **manually invoke the poller to prove it works**, then verify lessons.jsonl grows. The infrastructure is fully wired — handler exists, cron entry exists — but the poller has never fired yet. We need to confirm it actually produces organic lessons.
+
+(b) What's diff
