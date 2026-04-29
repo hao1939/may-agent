@@ -2,7 +2,7 @@
  * RuntimeCtx — concrete implementation of the shared infrastructure surface.
  *
  * Build once in the binary, pass to handlers, workflows, and agent tools.
- * See: agents/shared/may-agent-docs/design/runtime-ctx.md
+ * See: agents/shared/may-agent-docs/runtime.md
  */
 
 import type { RuntimeCtx } from "./handler-context.js";

@@ -4,7 +4,7 @@
  * This is the ONLY component that writes to the DB.
  * Core emits events, DbWriter persists them.
  *
- * See: agents/shared/may-agent-docs/design/architecture-redesign.md
+ * See: agents/shared/may-agent-docs/events.md
  */
 
 import type { AgentEvent } from "../app/event-bus.js";
@@ -36,6 +36,7 @@ export class DbWriter {
             workflowRunId: event.workflowRunId,
             projectId: (event as any).projectId,
             requestId: event.requestId,
+            stepLabel: (event as any).stepLabel,
             startedAt: Date.now(),
           });
           break;

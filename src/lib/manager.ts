@@ -55,7 +55,7 @@ import type {
 } from "./types.js";
 import { createCompactionTransform } from "./compaction.js";
 import type { CompactionOptions } from "./compaction.js";
-import { getDb, updateSessionDb } from "./requests.js";
+import { getDb, updateSessionDb, getWorkflowRun, listWorkflowRunIds, updateWorkflowRun, getWorkflowStepSessions } from "./requests.js";
 import {
   RegistryStore,
   sessionDir,
@@ -66,9 +66,6 @@ import {
   listActiveSessionIds,
   readSessionMeta,
   writeSessionMeta,
-  readWorkflowRun,
-  listWorkflowRuns,
-  saveWorkflowRun,
   readCompactedMessages,
   saveCompactedMessages,
   readArchivedSessionMessages,
@@ -910,6 +907,7 @@ export class SubagentManager {
         source: opts?.source,
         kind: session.kind,
         requestId: opts?.requestId,
+        stepLabel: opts?.stepLabel,
       });
 
       // Activity tracking handled by ActivityWriter subscriber (reacts to session_start event)
@@ -961,14 +959,15 @@ export class SubagentManager {
    *  Called during startup (resumeStaleSessions). */
   private cleanupStaleWorkflowRuns(): void {
     const persistDir = this.registry.persistDir;
-    const runIds = listWorkflowRuns(persistDir);
+    const runIds = listWorkflowRunIds(persistDir);
     for (const runId of runIds) {
-      const run = readWorkflowRun(persistDir, runId);
+      const run = getWorkflowRun(persistDir, runId);
       if (run && run.status === "running") {
-        run.status = "interrupted";
-        run.endedAt = Date.now();
-        run.result = { reason: "Process restarted" };
-        saveWorkflowRun(persistDir, run);
+        updateWorkflowRun(persistDir, runId, {
+          status: "interrupted",
+          endedAt: Date.now(),
+          result_reason: "Process restarted",
+        });
       }
     }
   }
@@ -2145,13 +2144,11 @@ export class SubagentManager {
 
   /** Get completed workflow steps (for agents.context scope: "workflow"). */
   getWorkflowSteps(workflowRunId: string): Array<{ step: string; sessionId: string; summary: string }> {
-    
-    const run = readWorkflowRun(this.registry.persistDir, workflowRunId);
-    if (!run) return [];
-    return run.steps.map((s) => ({
+    const steps = getWorkflowStepSessions(this.registry.persistDir, workflowRunId);
+    return steps.map((s) => ({
       step: s.agent,
       sessionId: s.sessionId,
-      summary: `${s.status}: ${(s.lastAssistantText ?? "").slice(0, 300)}`,
+      summary: `${s.status}: ${(s.outcome ?? "").slice(0, 300)}`,
     }));
   }
 

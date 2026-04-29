@@ -7,7 +7,7 @@
  * System logging (log.ts) is a separate, independent channel — never routed
  * through the bus — to avoid circular dependencies.
  *
- * See: agents/shared/may-agent-docs/design/architecture-redesign.md
+ * See: agents/shared/may-agent-docs/events.md
  */
 
 import { log } from "../lib/log.js";

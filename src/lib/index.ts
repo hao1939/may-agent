@@ -85,11 +85,6 @@ export {
   readSessionMetaAsync,
   listActiveSessionIdsAsync,
   listArchivedSessionIdsAsync,
-  saveWorkflowRun,
-  readWorkflowRun,
-  listWorkflowRuns,
-  workflowRunDir,
-  workflowRunPath,
   listActiveSessionIds,
   listArchivedSessionIds,
 } from "./persistence.js";
@@ -127,8 +122,6 @@ export type {
   PersistedAgentConfig,
   PersistedSession,
   SessionKind,
-  WorkflowRun,
-  WorkflowStep,
 } from "./persistence.js";
 
 export type { RuntimeCtx, HandlerContext, HandlerModule } from "./handler-context.js";

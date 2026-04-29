@@ -9,8 +9,8 @@ import { readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { formatDuration } from "./manager-utils.js";
 import type { RegisteredAgent, ActiveSession } from "./manager-utils.js";
-import { loadAllSessionMetasAsync, listWorkflowRuns, readWorkflowRun } from "./persistence.js";
-import { getDb } from "./requests.js";
+import { loadAllSessionMetasAsync } from "./persistence.js";
+import { getDb, listWorkflowRunIds, getWorkflowRun } from "./requests.js";
 import type {
   ManagerHealthReport,
   HealthActiveSession,
@@ -138,12 +138,12 @@ export async function computeAuditHealth(ctx: HealthContext, _opts?: AuditHealth
   const totalPersistedSessions = allSessionEntries.length;
 
   // 5. Workflow runs
-  const runIds = listWorkflowRuns(persistDir);
+  const runIds = listWorkflowRunIds(persistDir);
   let wfRunning = 0;
   let wfCompleted = 0;
   let wfInterrupted = 0;
   for (const runId of runIds) {
-    const run = readWorkflowRun(persistDir, runId);
+    const run = getWorkflowRun(persistDir, runId);
     if (!run) continue;
     if (run.status === "running") wfRunning++;
     else if (run.status === "done") wfCompleted++;

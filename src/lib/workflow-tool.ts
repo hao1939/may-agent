@@ -20,8 +20,38 @@ import type {
   SessionHandle,
 } from "./workflow.js";
 import { WorkflowInterrupted, WorkflowBlocked } from "./workflow.js";
-import type { WorkflowRun, WorkflowStep } from "./persistence.js";
-import { saveWorkflowRun, readWorkflowRun } from "./persistence.js";
+// ── In-memory workflow types (used during execution) ────────────────────
+
+/** In-memory record of a workflow execution. */
+export interface WorkflowRun {
+  runId: string;
+  workflow: string;
+  task: string;
+  parentSessionId: string;
+  parentWorkflowRunId?: string;
+  depth: number;
+  startedAt: number;
+  endedAt?: number;
+  status: "running" | "done" | "escalated" | "interrupted" | "error";
+  steps: WorkflowStep[];
+  resumedFromRunId?: string;
+  result?: {
+    summary?: string;
+    reason?: string;
+  };
+}
+
+/** A single step in a workflow execution. */
+export interface WorkflowStep {
+  sessionId: string;
+  agent: string;
+  task: string;
+  status: "done" | "error" | "interrupted";
+  startedAt: number;
+  endedAt: number;
+  lastAssistantText: string | null;
+}
+import { insertWorkflowRun, updateWorkflowRun, getWorkflowRun, getWorkflowStepSessions } from "./requests.js";
 import { summarizeForHandoff } from "./handoff.js";
 import { log } from "./log.js";
 import type { RuntimeCtx } from "./handler-context.js";
@@ -321,7 +351,7 @@ async function resolveDemands(
           lastAssistantText: taskResult.lastAssistantText,
         };
         run.steps.push(wfStep);
-        if (persistDir) saveWorkflowRun(persistDir, run);
+        // Step data persisted via sessions table (db-writer)
 
         onEvent?.({ type: "step_done", step: label, sessionId: taskResult.sessionId, result: taskResult });
         break;
@@ -474,7 +504,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     // Once we detect a mismatch (workflow code changed), stop replaying
     let replayExhausted = false;
 
-    // Create the workflow run record
+    // Create the workflow run record (DB-backed)
     const run: WorkflowRun = {
       runId,
       workflow: workflow.name,
@@ -487,7 +517,22 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       steps: [],
       resumedFromRunId: previousRun?.runId,
     };
-    if (persistDir) saveWorkflowRun(persistDir, run);
+    if (persistDir) {
+      insertWorkflowRun(persistDir, {
+        runId,
+        workflow: workflow.name,
+        task,
+        parentSessionId: parentSessionId ?? "unknown",
+        parentWorkflowRunId: parentWorkflowRunId ?? null,
+        depth,
+        status: "running",
+        startedAt: run.startedAt,
+        endedAt: null,
+        result_summary: null,
+        result_reason: null,
+        resumedFromRunId: previousRun?.runId ?? null,
+      });
+    }
 
     // ── Load guards ────────────────────────────────────────────────────
     const guards = await loadGuards(opts.guardsDir, opts.sharedGuardsDir);
@@ -564,7 +609,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
                 lastAssistantText: taskResult.lastAssistantText,
               };
               run.steps.push(wfStep);
-              if (persistDir) saveWorkflowRun(persistDir, run);
+              // Step data persisted via sessions table (db-writer)
 
               onEvent?.({ type: "step_done", step: agentName, sessionId: prevStep.sessionId, result: taskResult });
               return taskResult;
@@ -618,7 +663,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           lastAssistantText: taskResult.lastAssistantText,
         };
         run.steps.push(wfStep);
-        if (persistDir) saveWorkflowRun(persistDir, run);
+        // Step data persisted via sessions table (db-writer)
 
         onEvent?.({ type: "step_done", step: agentName, sessionId: sid, result: taskResult });
 
@@ -811,7 +856,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
               lastAssistantText: taskResult.lastAssistantText,
             };
             run.steps.push(wfStep);
-            if (persistDir) saveWorkflowRun(persistDir, run);
+            // Step data persisted via sessions table (db-writer)
 
             onEvent?.({ type: "step_done", step: stepName, sessionId: taskResult.sessionId, result: taskResult });
 
@@ -858,7 +903,10 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       run.endedAt = Date.now();
       run.status = result.type === "done" ? "done" : "escalated";
       run.result = result.type === "done" ? { summary: result.summary } : { reason: result.reason };
-      if (persistDir) saveWorkflowRun(persistDir, run);
+      if (persistDir) updateWorkflowRun(persistDir, runId, {
+        status: run.status, endedAt: run.endedAt,
+        result_summary: run.result.summary, result_reason: run.result.reason,
+      });
 
       return { result, runId, steps: localSteps };
     } catch (err) {
@@ -872,7 +920,10 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         run.status = "error";
         run.result = { reason: err instanceof Error ? err.message : String(err) };
       }
-      if (persistDir) saveWorkflowRun(persistDir, run);
+      if (persistDir) updateWorkflowRun(persistDir, runId, {
+        status: run.status, endedAt: run.endedAt,
+        result_reason: run.result?.reason,
+      });
       throw err;
     }
   }
@@ -1031,12 +1082,36 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             return textResult(JSON.stringify({ type: "error", error: "workflow resume requires persistDir" }));
           }
 
-          const prevRun = readWorkflowRun(persistDir, params.workflowRunId);
-          if (!prevRun) {
+          const prevRunRecord = getWorkflowRun(persistDir, params.workflowRunId);
+          if (!prevRunRecord) {
             return textResult(
               JSON.stringify({ type: "error", error: `Workflow run "${params.workflowRunId}" not found` }),
             );
           }
+
+          // Reconstruct WorkflowRun with steps from sessions table
+          const stepSessions = getWorkflowStepSessions(persistDir, params.workflowRunId);
+          const prevRun: WorkflowRun = {
+            runId: prevRunRecord.runId,
+            workflow: prevRunRecord.workflow,
+            task: prevRunRecord.task,
+            parentSessionId: prevRunRecord.parentSessionId ?? "unknown",
+            parentWorkflowRunId: prevRunRecord.parentWorkflowRunId ?? undefined,
+            depth: prevRunRecord.depth,
+            startedAt: prevRunRecord.startedAt,
+            endedAt: prevRunRecord.endedAt ?? undefined,
+            status: prevRunRecord.status as WorkflowRun["status"],
+            resumedFromRunId: prevRunRecord.resumedFromRunId ?? undefined,
+            steps: stepSessions.map(s => ({
+              sessionId: s.sessionId,
+              agent: s.agent,
+              task: s.task,
+              status: (s.status === "done" || s.status === "error" || s.status === "interrupted") ? s.status : "done",
+              startedAt: s.startedAt,
+              endedAt: s.endedAt ?? Date.now(),
+              lastAssistantText: s.outcome ?? null,
+            })),
+          };
 
           const { workflow: resumeWf, error: resumeFindError } = await findWorkflow(
             workflowDir,

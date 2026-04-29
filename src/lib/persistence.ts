@@ -421,88 +421,9 @@ export class RegistryStore implements SessionStore {
 
 // ── Workflow Run persistence ───────────────────────────────────────────
 
-/** A single step in a workflow execution. */
-export interface WorkflowStep {
-  sessionId: string;
-  agent: string;
-  task: string;
-  status: "done" | "error" | "interrupted";
-  startedAt: number;
-  endedAt: number;
-  lastAssistantText: string | null;
-}
-
-/** Persisted record of a workflow execution — the session graph node for workflows. */
-export interface WorkflowRun {
-  runId: string;
-  workflow: string;
-  task: string;
-  /** The caller session that triggered workflow.run() (e.g. May's session). */
-  parentSessionId: string;
-  /** If this is a sub-workflow, which workflow run spawned it. */
-  parentWorkflowRunId?: string;
-  /** Nesting depth: 1 = top-level workflow, 2 = sub-workflow, etc. */
-  depth: number;
-  startedAt: number;
-  endedAt?: number;
-  status: "running" | "done" | "escalated" | "interrupted" | "error";
-  steps: WorkflowStep[];
-  /** If this run was resumed from a previous crashed run, its runId. */
-  resumedFromRunId?: string;
-  result?: {
-    summary?: string;
-    reason?: string;
-  };
-}
-
-/** Directory where workflow runs are persisted. */
-export function workflowRunDir(persistDir: string): string {
-  return join(persistDir, "workflows");
-}
-
-/** Path to a specific workflow run file. */
-export function workflowRunPath(persistDir: string, runId: string): string {
-  return join(workflowRunDir(persistDir), `${runId}.json`);
-}
-
-/** Save a workflow run to disk (atomic write). */
-export function saveWorkflowRun(persistDir: string, run: WorkflowRun): void {
-  const dir = workflowRunDir(persistDir);
-  mkdirSync(dir, { recursive: true });
-  const filePath = workflowRunPath(persistDir, run.runId);
-  const tmpPath = filePath + ".tmp";
-  writeFileSync(tmpPath, JSON.stringify(run, null, 2), "utf-8");
-  renameSync(tmpPath, filePath);
-}
-
-/** Read a workflow run from disk. Returns null if not found. */
-export function readWorkflowRun(persistDir: string, runId: string): WorkflowRun | null {
-  const filePath = workflowRunPath(persistDir, runId);
-  if (!existsSync(filePath)) return null;
-  try {
-    return JSON.parse(readFileSync(filePath, "utf-8")) as WorkflowRun;
-  } catch {
-    return null;
-  }
-}
-
 /** Read messages from the archived (history) session JSONL. Returns [] if not found. */
 export function readArchivedSessionMessages(persistDir: string, sessionId: string): AgentMessage[] {
   return readJsonlFile<AgentMessage>(join(historyDir(persistDir), sessionId, "session.jsonl"));
-}
-
-/** List all workflow run IDs, sorted by filename (which includes timestamp). */
-export function listWorkflowRuns(persistDir: string): string[] {
-  const dir = workflowRunDir(persistDir);
-  if (!existsSync(dir)) return [];
-  try {
-    return readdirSync(dir)
-      .filter((f) => f.endsWith(".json"))
-      .map((f) => f.replace(/\.json$/, ""))
-      .sort();
-  } catch {
-    return [];
-  }
 }
 
 // ── Rolling Compaction: compacted state snapshot ─────────────────────────

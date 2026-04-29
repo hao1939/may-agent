@@ -3,7 +3,8 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../src/lib/manager.js";
-import { writeSessionMeta, saveWorkflowRun } from "../src/lib/persistence.js";
+import { writeSessionMeta } from "../src/lib/persistence.js";
+import { insertWorkflowRun } from "../src/lib/requests.js";
 import type { Model } from "@mariozechner/pi-ai";
 
 function fakeModel(): Model<any> {
@@ -196,26 +197,33 @@ describe("auditHealth()", () => {
   });
 
   it("counts workflow runs correctly", async () => {
-    saveWorkflowRun(persistDir, {
+    insertWorkflowRun(persistDir, {
       runId: "wf_1",
       workflow: "code-review",
       task: "review PR",
       parentSessionId: "s_1",
+      parentWorkflowRunId: null,
       depth: 1,
       startedAt: Date.now() - 3600_000,
       endedAt: Date.now(),
       status: "done",
-      steps: [],
+      result_summary: null,
+      result_reason: null,
+      resumedFromRunId: null,
     });
-    saveWorkflowRun(persistDir, {
+    insertWorkflowRun(persistDir, {
       runId: "wf_2",
       workflow: "code-review",
       task: "review PR 2",
       parentSessionId: "s_2",
+      parentWorkflowRunId: null,
       depth: 1,
       startedAt: Date.now() - 1800_000,
+      endedAt: null,
       status: "running",
-      steps: [],
+      result_summary: null,
+      result_reason: null,
+      resumedFromRunId: null,
     });
 
     const report = await manager.auditHealth();
