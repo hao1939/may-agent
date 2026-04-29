@@ -496,6 +496,66 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
   const children = findUnevaluatedChildren(ctx, registry, parentSessionId, skipAgents);
   if (children.length === 0) return null;
 
+  // ── Fast-path: trivial error sessions (LLM-to-JS optimization) ──────
+  // When ALL children are error/failed sessions with very short transcripts
+  // (≤4 messages), they trivially failed without doing meaningful work.
+  // Skip the LLM call and return a heuristic "needs_improvement" evaluation.
+  const TRIVIAL_MESSAGE_THRESHOLD = 4;
+  const allTrivialErrors = children.every(
+    (c) => (c.status === "error" || c.status === "failed") && c.messages.length <= TRIVIAL_MESSAGE_THRESHOLD,
+  );
+  if (allTrivialErrors) {
+    const perAgentChainsFast: Record<string, FailureChain[]> = {};
+    const result: TaskEvaluationResult = {
+      overall: {
+        efficiency: 0,
+        quality: 0,
+        verdict: "needs_improvement",
+        result_delivered: false,
+      },
+      agents: {},
+      usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0, cost: 0, turns: 0 },
+      lessons: null,
+      failureChains: perAgentChainsFast,
+      sessionIds: children.map((c) => c.sessionId),
+      raw: "[heuristic: trivial error sessions — skipped LLM evaluation]",
+    };
+    for (const child of children) {
+      const chains = extractFailureChains(child.messages);
+      perAgentChainsFast[child.agent] = (perAgentChainsFast[child.agent] ?? []).concat(chains);
+      const usage = extractUsage(child.messages);
+      const createdAt = extractTimestamp(child.sessionId);
+      result.agents[child.sessionId] = {
+        agent: child.agent,
+        sessionId: child.sessionId,
+        efficiency: 0,
+        quality: 0,
+        productive_calls: 0,
+        wasted_calls: usage.turns,
+        verdict: "needs_improvement",
+        issues: [`Session errored with only ${child.messages.length} messages — trivial failure`],
+      };
+      ctx.upsertEvaluation({
+        sessionId: child.sessionId,
+        agent: child.agent,
+        quality: 0,
+        efficiency: 0,
+        productiveCalls: 0,
+        wastedCalls: usage.turns,
+        verdict: "needs_improvement",
+        issues: [`Session errored with only ${child.messages.length} messages — trivial failure`],
+        overall: result.overall,
+        usage: usage as unknown as Record<string, unknown>,
+        failureChains: chains,
+        evaluatedByHeuristic: true,
+        skippedByJs: true,
+        createdAt,
+      });
+    }
+    appendErrorLogs(result, children);
+    return result;
+  }
+
   // Build per-agent failure chains and transcripts
   const perAgentChains: Record<string, FailureChain[]> = {};
   let perAgentTranscripts: string[] = [];

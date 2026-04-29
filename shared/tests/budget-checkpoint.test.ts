@@ -3,53 +3,14 @@
  * Budget-aware auto-checkpoint logic for workflow turn limits.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-
-// Replicate the pure logic from budget-checkpoint.ts to test without side effects
-const BLOCK_TURNS = 60;
-const CHECKPOINT_RATIO = 0.80;
-const CHECKPOINT_THRESHOLD = Math.floor(BLOCK_TURNS * CHECKPOINT_RATIO); // 48
-
-function estimateTurnsUsed(iteration: number, hasReview: boolean): number {
-  const reviewTurns = hasReview ? 1 : 0;
-  return 1 + iteration * (1 + reviewTurns);
-}
-
-interface BudgetState {
-  checkpointed: boolean;
-  totalTurnsEstimate: number;
-}
-
-function shouldBudgetCheckpoint(
-  states: Map<string, BudgetState>,
-  projectId: string,
-  iteration: number,
-  reviewEvery: number,
-): boolean {
-  let state = states.get(projectId);
-  if (!state) {
-    state = { checkpointed: false, totalTurnsEstimate: 0 };
-    states.set(projectId, state);
-  }
-  if (state.checkpointed) return false;
-  const hasReview = (iteration % reviewEvery === 0);
-  const turns = estimateTurnsUsed(iteration, hasReview);
-  state.totalTurnsEstimate = turns;
-  if (turns >= CHECKPOINT_THRESHOLD) {
-    state.checkpointed = true;
-    return true;
-  }
-  return false;
-}
-
-function buildBudgetCheckpointEntry(iteration: number, turnsEstimate: number): string {
-  const now = new Date().toISOString();
-  return (
-    `### Budget Checkpoint — ${now}\n` +
-    `**System**: Auto-checkpoint at iteration ${iteration} (~${turnsEstimate} turns used, ` +
-    `threshold: ${CHECKPOINT_THRESHOLD}/${BLOCK_TURNS}). ` +
-    `Saving progress to prevent work loss if workflow hits turn limit.\n\n`
-  );
-}
+import {
+  estimateTurnsUsed,
+  shouldBudgetCheckpoint,
+  buildBudgetCheckpointEntry,
+  resetBudgetState,
+  CHECKPOINT_THRESHOLD,
+  BLOCK_TURNS,
+} from '../workflows/budget-checkpoint.ts';
 
 // ─── Tests ───
 
@@ -98,60 +59,45 @@ describe('estimateTurnsUsed', () => {
 });
 
 describe('shouldBudgetCheckpoint', () => {
-  let states: Map<string, BudgetState>;
-
   beforeEach(() => {
-    states = new Map();
+    resetBudgetState('p1');
+    resetBudgetState('p2');
+    resetBudgetState('new-proj');
   });
 
   it('returns false for early iterations', () => {
-    expect(shouldBudgetCheckpoint(states, 'p1', 1, 3)).toBe(false);
+    expect(shouldBudgetCheckpoint('p1', 1, 3)).toBe(false);
   });
 
   it('returns false at iteration 10 (11 turns, well under 48)', () => {
-    expect(shouldBudgetCheckpoint(states, 'p1', 10, 3)).toBe(false);
+    expect(shouldBudgetCheckpoint('p1', 10, 3)).toBe(false);
   });
 
   it('returns true when turns reach threshold (iteration 47, no review)', () => {
-    // 1 + 47*1 = 48 >= 48
-    expect(shouldBudgetCheckpoint(states, 'p1', 47, 999)).toBe(true);
+    expect(shouldBudgetCheckpoint('p1', 47, 999)).toBe(true);
   });
 
   it('returns true when turns exceed threshold with review', () => {
-    // iteration 24, reviewEvery=24 → hasReview=true → 1 + 24*2 = 49
-    expect(shouldBudgetCheckpoint(states, 'p1', 24, 24)).toBe(true);
+    expect(shouldBudgetCheckpoint('p1', 24, 24)).toBe(true);
   });
 
   it('only checkpoints once per project', () => {
-    shouldBudgetCheckpoint(states, 'p1', 47, 999); // triggers
-    expect(shouldBudgetCheckpoint(states, 'p1', 48, 999)).toBe(false);
-    expect(shouldBudgetCheckpoint(states, 'p1', 59, 999)).toBe(false);
+    shouldBudgetCheckpoint('p1', 47, 999);
+    expect(shouldBudgetCheckpoint('p1', 48, 999)).toBe(false);
+    expect(shouldBudgetCheckpoint('p1', 59, 999)).toBe(false);
   });
 
   it('different projects have independent state', () => {
-    shouldBudgetCheckpoint(states, 'p1', 47, 999); // triggers for p1
-    expect(shouldBudgetCheckpoint(states, 'p2', 47, 999)).toBe(true); // p2 independent
-  });
-
-  it('creates state on first call', () => {
-    expect(states.has('new-proj')).toBe(false);
-    shouldBudgetCheckpoint(states, 'new-proj', 1, 3);
-    expect(states.has('new-proj')).toBe(true);
-  });
-
-  it('updates totalTurnsEstimate in state', () => {
-    shouldBudgetCheckpoint(states, 'p1', 5, 999);
-    expect(states.get('p1')!.totalTurnsEstimate).toBe(6); // 1 + 5*1
+    shouldBudgetCheckpoint('p1', 47, 999);
+    expect(shouldBudgetCheckpoint('p2', 47, 999)).toBe(true);
   });
 
   it('reviewEvery affects turn count — review iteration triggers sooner', () => {
-    // iteration 24, reviewEvery=3 → 24%3=0 → hasReview=true → 1+24*2=49
-    expect(shouldBudgetCheckpoint(states, 'p1', 24, 3)).toBe(true);
+    expect(shouldBudgetCheckpoint('p1', 24, 3)).toBe(true);
   });
 
   it('non-review iteration at same number stays under threshold', () => {
-    // iteration 24, reviewEvery=5 → 24%5=4 → hasReview=false → 1+24*1=25
-    expect(shouldBudgetCheckpoint(states, 'p1', 24, 5)).toBe(false);
+    expect(shouldBudgetCheckpoint('p1', 24, 5)).toBe(false);
   });
 });
 
