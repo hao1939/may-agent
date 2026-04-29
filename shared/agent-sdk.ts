@@ -41,9 +41,10 @@ export type { SubagentManager } from "../../src/lib/manager.js";
 // ── Persistence ───────────────────────────────────────────────────────
 export type {
   PersistedSession,
-  WorkflowRun,
-  WorkflowStep,
 } from "../../src/lib/persistence.js";
+
+// ── Workflow types (in-memory, used by workflow-tool) ──────────────────
+export type { WorkflowRun, WorkflowStep } from "../../src/lib/workflow-tool.js";
 
 // ── Workflow ──────────────────────────────────────────────────────────
 export type {

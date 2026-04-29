@@ -20,6 +20,7 @@ import {
   extractField, extractSection, updateProjectStatus,
 } from "./project-helpers.ts";
 import { validateDispatch } from "./dispatch-validator.ts";
+import { retryWithCircuitBreaker } from "./retry-wrapper.ts";
 
 export const name: string = "master-worker";
 
@@ -275,7 +276,7 @@ ${journalContent.slice(-3000)}
 
     planningPrompt += `\nBased on your assessment, provide your decision and guidance for the worker.`;
 
-    await orchestrator.prompt(planningPrompt);
+    await retryWithCircuitBreaker(() => orchestrator.prompt(planningPrompt), { maxRetries: 2, label: 'orchestrator-plan' });
 
     // Mark comments as read (append-only, never delete)
     if (unreadComments) {
@@ -348,7 +349,7 @@ ${journalContent.slice(-3000)}
         workerPrompt = `## Task (Iteration ${iteration})\nWRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Your FIRST tool call MUST be edit() to replace the stub content with your deliverable.\n- Do NOT use read() or bash() before edit(). The stub contains only a placeholder comment.\n\n${guidance}`;
       }
 
-      await worker.prompt(workerPrompt);
+      await retryWithCircuitBreaker(() => worker.prompt(workerPrompt), { maxRetries: 2, label: 'worker-iteration' });
       ctx.log(`[work] Iteration ${iteration} done`);
 
       // Verify worker produced output
@@ -378,7 +379,7 @@ ${journalContent.slice(-3000)}
           (ctx as any)[`_retried_${iteration}`] = true;
           ctx.log(`[work] 🔄 RETRY: Re-prompting worker with escalated write-first constraint`);
           const retryPrompt = `🚨 YOUR PREVIOUS ATTEMPT PRODUCED 0 FILES. This is iteration ${iteration} retry.\n\nYour FIRST tool call MUST be write(). Do NOT use read() or bash() first. Do NOT claim files already exist.\n\nOriginal task:\n${guidance}`;
-          await worker.prompt(retryPrompt);
+          await retryWithCircuitBreaker(() => worker.prompt(retryPrompt), { maxRetries: 2, label: 'worker-retry' });
           const retrySnap = snapshotOutputs(outputsDir);
           const retryChanged = diffSnapshots(afterSnap, retrySnap);
           if (retryChanged.length > 0) {
@@ -439,7 +440,7 @@ Then provide your decision and guidance for the next iteration.`;
       let reviewAttempt = 0;
       while (reviewAttempt < 3) {
         try {
-          await orchestrator.prompt(reviewPrompt);
+          await retryWithCircuitBreaker(() => orchestrator.prompt(reviewPrompt), { maxRetries: 2, label: 'orchestrator-review' });
           break;
         } catch (e: any) {
           reviewAttempt++;
