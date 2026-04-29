@@ -1,8 +1,8 @@
 # Project Completion Notice
 
-**Status: COMPLETED** ✅
+**Status: COMPLETED**
 
-All 4 metrics exceed targets. All 18 plan items done. No remaining work.
+All 4 metrics exceed targets. All 18 plan items done. No further work required.
 
 | Metric | Actual | Target | Status |
 |--------|--------|--------|--------|
@@ -11,4 +11,4 @@ All 4 metrics exceed targets. All 18 plan items done. No remaining work.
 | workflow.pass-rate | 1.00 | 0.95 | ✅ |
 | skill.usage-rate | 1.00 | 0.50 | ✅ |
 
-No further iterations required.
+**No further worker iterations should be dispatched.**
