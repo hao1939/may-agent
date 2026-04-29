@@ -1,6 +1,6 @@
 # Project Completion Notice
 
-**Status:** COMPLETED — No further work required.
+**Status: COMPLETED** — No further work required.
 
 ## Final Metrics (all exceed targets)
 | Metric | Value | Target | Status |

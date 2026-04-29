@@ -103,6 +103,52 @@ describe("readHealthState", () => {
   });
 });
 
+// ── readInflight / writeInflight ─────────────────────────────────────
+
+import { readInflight, writeInflight, writeHealthState } from "../shared/lib/project-health.js";
+import { mkdirSync, writeFileSync, readFileSync, rmSync } from "fs";
+import { join } from "path";
+
+describe("readInflight", () => {
+  it("returns empty set for nonexistent file", () => {
+    const s = readInflight("/nonexistent/inflight.txt");
+    expect(s.size).toBe(0);
+  });
+
+  it("reads lines from file", () => {
+    const tmp = "/tmp/test-inflight-" + Date.now() + ".txt";
+    writeFileSync(tmp, "proj-a\nproj-b\n");
+    const s = readInflight(tmp);
+    expect(s.has("proj-a")).toBe(true);
+    expect(s.has("proj-b")).toBe(true);
+    expect(s.size).toBe(2);
+    rmSync(tmp);
+  });
+});
+
+describe("writeInflight", () => {
+  it("writes set to file", () => {
+    const tmp = "/tmp/test-inflight-w-" + Date.now() + ".txt";
+    writeInflight(tmp, new Set(["a", "b"]));
+    const content = readFileSync(tmp, "utf-8");
+    expect(content).toContain("a");
+    expect(content).toContain("b");
+    rmSync(tmp);
+  });
+});
+
+describe("writeHealthState", () => {
+  it("writes state as JSON", () => {
+    const dir = "/tmp/test-health-" + Date.now();
+    const file = join(dir, "state.json");
+    writeHealthState(file, { lastFullScan: 123, projects: {} });
+    const raw = readFileSync(file, "utf-8");
+    const parsed = JSON.parse(raw);
+    expect(parsed.lastFullScan).toBe(123);
+    rmSync(dir, { recursive: true });
+  });
+});
+
 // ── MAX_LAUNCHES_PER_TICK ────────────────────────────────────────────
 
 describe("MAX_LAUNCHES_PER_TICK", () => {
