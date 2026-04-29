@@ -20,9 +20,13 @@ Maximize meaningful output of the agent system. Not about reducing cost — abou
 ## Plan
 - [ ] Measure current deliverables-per-iteration (audit last 10 iterations for real file output)
 - [x] Drive test-coverage: install vitest, write first test for workflows/project.ts critical path (20 tests, 255 lines, all passing)
-- [ ] Drive agent-memory-learning: build lesson capture pipeline, get to 50 lessons
-- [ ] Measure worker-first-attempt-success rate from journal entries
+- [x] Drive agent-memory-learning: build lesson capture pipeline, get to 50 lessons (59 lessons extracted)
+- [x] Measure worker-first-attempt-success rate from journal entries (5/5 = 1.0 post-pivot)
 - [x] Drive test-coverage: write tests for master-worker.ts workflow (21 tests, all passing)
+- [x] Drive documentation-gen: produce workflow API reference (workflow-api-reference.md)
+- [ ] Verify documentation-gen satellite counts as "at target" — check its project.md goals
+- [ ] Drive workflow-reliability satellite toward its goal
+- [ ] Add tests for fewshot-inject-helpers.ts and verify-wrap.ts (expand test coverage to 60+ tests)
 - [ ] Re-plan based on metrics
 
 ## References
