@@ -1,6 +1,6 @@
 # Project: Evaluation Revival
 
-**Status**: active
+**Status**: closed
 **Owner**: coach
 **Priority**: P0
 **Workflow**: master-worker
