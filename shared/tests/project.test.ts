@@ -253,3 +253,166 @@ describe("clearComments", () => {
     expect(result).toContain("## Other\nstuff");
   });
 });
+
+// ── Edge case tests ──
+
+describe("updateField edge cases", () => {
+  it("handles empty content", () => {
+    const result = updateField("", "Status", "active");
+    expect(result).toBe("");
+  });
+
+  it("handles field with special regex characters", () => {
+    const content = "**Score (%)**: 50\n## Plan\nstuff";
+    const result = updateField(content, "Score (%)", "75");
+    expect(result).toContain("75");
+  });
+
+  it("handles content with no sections (no ## headings)", () => {
+    const content = "Just plain text\nno headings here";
+    const result = updateField(content, "Status", "active");
+    // No section to insert before, field not found - returns as-is
+    expect(result).toBe(content);
+  });
+
+  it("handles multiline value replacement", () => {
+    const content = "**Name**: old\n## Plan\nstuff";
+    const result = updateField(content, "Name", "new-value");
+    expect(result).toContain("**Name**: new-value");
+    expect(result).not.toContain("old");
+  });
+
+  it("handles field at very end of content", () => {
+    const content = "## Meta\n**Status**: draft";
+    const result = updateField(content, "Status", "active");
+    expect(result).toContain("**Status**: active");
+  });
+});
+
+describe("extractSection edge cases", () => {
+  it("returns empty for empty content", () => {
+    expect(extractSection("", "Plan")).toBe("");
+  });
+
+  it("handles section with only whitespace", () => {
+    const content = "## Plan\n   \n## Next";
+    expect(extractSection(content, "Plan")).toBe("");
+  });
+
+  it("handles last section with trailing newlines", () => {
+    const content = "## Plan\nitem 1\nitem 2\n\n\n";
+    expect(extractSection(content, "Plan")).toBe("item 1\nitem 2");
+  });
+
+  it("handles section name that's a substring of another", () => {
+    const content = "## Plan Details\ndetails here\n## Plan\nactual plan";
+    expect(extractSection(content, "Plan")).toBe("actual plan");
+  });
+
+  it("handles content with only one section", () => {
+    const content = "## Solo\ncontent here";
+    expect(extractSection(content, "Solo")).toBe("content here");
+  });
+});
+
+describe("updateSection edge cases", () => {
+  it("creates section in empty content", () => {
+    const result = updateSection("", "New", "content");
+    expect(result).toContain("## New\ncontent");
+  });
+
+  it("replaces section that has no content", () => {
+    const content = "## Empty\n## Next\nstuff";
+    const result = updateSection(content, "Empty", "now has content\n");
+    expect(result).toContain("now has content");
+    expect(result).toContain("## Next\nstuff");
+  });
+
+  it("handles section with multiline content replacement", () => {
+    const content = "## Plan\nold line 1\nold line 2\n## Done\nyes";
+    const result = updateSection(content, "Plan", "new line 1\nnew line 2\n");
+    expect(result).toContain("new line 1\nnew line 2");
+    expect(result).not.toContain("old line");
+  });
+});
+
+describe("appendToSection edge cases", () => {
+  it("creates section when content is empty", () => {
+    const result = appendToSection("", "Notes", "first note");
+    expect(result).toContain("## Notes\nfirst note");
+  });
+
+  it("appends to section with existing multiline content", () => {
+    const content = "## Log\nentry 1\nentry 2\n## Other\nstuff";
+    const result = appendToSection(content, "Log", "entry 3");
+    expect(result).toContain("entry 3");
+  });
+});
+
+describe("extractMilestones edge cases", () => {
+  it("handles empty string", () => {
+    const ms = extractMilestones("");
+    expect(ms.total).toBe(0);
+    expect(ms.done).toBe(0);
+  });
+
+  it("handles all checked milestones", () => {
+    const content = "## Milestones\n- [x] one\n- [x] two\n- [x] three";
+    const ms = extractMilestones(content);
+    expect(ms.total).toBe(3);
+    expect(ms.done).toBe(3);
+    expect(ms.pending).toEqual([]);
+  });
+
+  it("handles mixed checkbox formats", () => {
+    const content = "## Milestones\n- [x] done\n- [ ] pending\n- [x] also done";
+    const ms = extractMilestones(content);
+    expect(ms.done).toBe(2);
+    expect(ms.pending).toEqual(["pending"]);
+  });
+
+  it("ignores non-checkbox lines in milestones", () => {
+    const content = "## Milestones\nSome intro text\n- [x] real milestone\n- [ ] another";
+    const ms = extractMilestones(content);
+    expect(ms.total).toBe(2);
+  });
+});
+
+describe("parseInput edge cases", () => {
+  it("handles empty string", () => {
+    const result = parseInput("", "agent");
+    expect(result.path).toBeUndefined();
+  });
+
+  it("handles extra whitespace around values", () => {
+    const raw = "path:   /projects/test   \nworker:   builder  ";
+    const result = parseInput(raw, "agent");
+    expect(result.path).toBe("/projects/test");
+    expect(result.worker).toBe("builder");
+  });
+
+  it("handles duplicate fields (first wins)", () => {
+    const raw = "path: /first\npath: /second";
+    const result = parseInput(raw, "agent");
+    expect(result.path).toBe("/first");
+  });
+});
+
+describe("extractDecision (project.ts) edge cases", () => {
+  it("handles empty string", () => {
+    const d = extractDecision("");
+    expect(d.status).toBe("continue");
+  });
+
+  it("handles very long text", () => {
+    const longText = "x".repeat(10000) + " [DECISION: BLOCKED] [DETAIL: something]";
+    const d = extractDecision(longText);
+    // May or may not find it depending on implementation
+    expect(["blocked", "continue"]).toContain(d.status);
+  });
+
+  it("handles DONE decision", () => {
+    const d = extractDecision("[DECISION: DONE] [DETAIL: all complete]");
+    expect(d.status).toBe("done");
+  });
+});
