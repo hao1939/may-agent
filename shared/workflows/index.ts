@@ -32,10 +32,6 @@ export {
 
 /** Fast-fail pre-validation — rejects doomed tasks before work begins */
 export {
-  validateTask,
-  type TaskValidationResult
-} from './task-validator';
-
 /** Analyzes task complexity and recommends timeouts */
 export {
   estimateComplexity,
@@ -49,24 +45,6 @@ export {
   getStats,
   resetTimer
 } from './iteration-timer';
-
-/** Programmatic metrics collection from filesystem */
-export {
-  collectMetrics,
-  type MetricsResult
-} from './metrics-dashboard';
-
-/** Complexity-aware file writes — skips heavy validation for simple tasks */
-export {
-  fastWrite,
-  type FastWriteResult
-} from './fast-path';
-
-/** Cross-project satellite health aggregation */
-export {
-  aggregateMetrics,
-  type AggregatedMetrics
-} from './metrics-aggregator';
 
 /** Per-iteration token/time budget enforcement */
 export {
