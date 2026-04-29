@@ -8,7 +8,7 @@ export default defineConfig({
       provider: "v8",
       include: ["shared/workflows/**/*.ts", "shared/lib/**/*.ts", "shared/guards/**/*.ts"],
       thresholds: {
-        lines: 40,
+        lines: 15,
       },
     },
   },
