@@ -165,7 +165,7 @@ function snapshotOutputs(dir: string): Map<string, number> {
 }
 
 /** Compare before/after snapshots, return list of new or modified files */
-function diffSnapshots(before: Map<string, number>, after: Map<string, number>): string[] {
+export function diffSnapshots(before: Map<string, number>, after: Map<string, number>): string[] {
   const changed: string[] = [];
   for (const [path, mtime] of after) {
     const prev = before.get(path);
