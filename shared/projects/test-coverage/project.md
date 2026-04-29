@@ -4,18 +4,19 @@
 **Owner**: optimizer
 **Priority**: P2
 **Workflow**: master-worker
-**Iteration**: 3
+**Iteration**: 4
 
 ## Goal
 Critical paths have test coverage. Regressions caught before deployment.
 
 ## Metrics
-- test.coverage-percent: ~25% (7 test files covering key modules) → target 0.80
-- test.critical-paths-covered: 7/9 critical modules tested → target 1.00
-- test.pass-rate: 76/76 passing → target 1.00 ✅
+- test.coverage-percent: ~35% (9 test files, 105 tests) → target 0.80
+- test.critical-paths-covered: 9/11 critical modules tested → target 1.00
+- test.pass-rate: 105/105 passing → target 1.00 ✅
+- test.threshold: 15% configured → target 60%
 
 ## Current State
-Iteration 3 complete. 76 tests passing across 7 test files, 0 failures. All pure-logic modules have tests. Remaining untested critical paths: workflow orchestration files (master.ts, worker.ts, poller.ts) which require heavier mocking. Re-plan now.
+Iteration 4 complete. 105 tests passing across 9 test files. growth.ts and project-health.ts now tested. Coverage threshold exists in vitest.config.ts but set at only 15% — needs to be raised to 60%. Remaining untested: poller.ts, master.ts, worker.ts (orchestration requiring mocks).
 
 ## Plan
 - [x] Install vitest, create vitest.config.ts, create test/ dir, write a smoke test that passes
@@ -25,11 +26,12 @@ Iteration 3 complete. 76 tests passing across 7 test files, 0 failures. All pure
 - [x] Write unit tests for guards (finish-guard.ts, hallucinated-path.ts, read-before-edit.ts — pure logic guards)
 - [x] Write unit tests for fewshot-inject-helpers.ts and verify-wrap.ts
 - [x] Fix failing gym test (agent="coder" vs "amy" mismatch)
-- [x] Re-plan: measure coverage, assess what's left
-- [ ] Write tests for shared/lib/ modules (growth.ts, project-health.ts)
+- [x] Write tests for shared/lib/ modules (growth.ts, project-health.ts)
+- [x] Add coverage threshold to vitest.config.ts
+- [ ] Raise coverage threshold from 15% to 60% in vitest.config.ts
 - [ ] Write integration-style tests for poller.ts (mock API calls, test message routing logic)
-- [ ] Add coverage threshold to vitest.config.ts (fail build if coverage drops below 60%)
-- [ ] Re-plan: review coverage metric, decide if orchestration files need tests
+- [ ] Run `npx vitest run --coverage` and record actual line coverage percentage
+- [ ] Re-plan: review actual coverage numbers, decide if orchestration files need tests
 
 ## References
 
