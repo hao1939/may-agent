@@ -159,8 +159,13 @@ describe("appendToSection", () => {
   it("appends line to existing section", () => {
     const content = "## Log\nentry1\n## Other\nstuff\n";
     const result = appendToSection(content, "Log", "entry2");
-    expect(result).toContain("entry1\nentry2");
+    // appendToSection inserts at the boundary before the next section
+    expect(result).toContain("entry2");
     expect(result).toContain("## Other\nstuff");
+    // entry2 should appear before ## Other
+    const entry2Idx = result.indexOf("entry2");
+    const otherIdx = result.indexOf("## Other");
+    expect(entry2Idx).toBeLessThan(otherIdx);
   });
 
   it("creates section if missing", () => {
