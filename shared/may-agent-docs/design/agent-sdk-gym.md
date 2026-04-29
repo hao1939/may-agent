@@ -121,14 +121,11 @@ Notes:
 
 | Before (leaked internals) | After (SDK) |
 |---------------------------|-------------|
-| `ctx.manager.callAgent()` | `ctx.runAgent()` |
-| `ctx.manager.run() + waitFor()` | `ctx.runAgent()` |
-| `ctx.manager.getWorkflowDir()` | `ctx.paths.agents + "/shared/workflows"` |
-| `ctx.trackRequest()` | removed (events table) |
-| `ctx.saveWorkflowRun()` | internal (not exposed) |
-| `ctx.dispatchEvent(type, data)` | `ctx.emit(type, data)` |
-| `ctx.summarizeForHandoff()` | utility function, not SDK |
-| `ctx.emit({ type, ... })` | `ctx.emit(type, data)` |
+| `ctx.manager.callAgent()` | `sdk.runAgent()` |
+| `ctx.manager.run() + waitFor()` | `sdk.runAgent()` (don't await for fork) |
+| `ctx.manager.getWorkflowDir()` | `sdk.paths.agents + "/shared/workflows"` |
+| `ctx.dispatchEvent(type, data)` | `sdk.emit(type, data)` |
+| `ctx.emit({ type, ... })` | `sdk.emit(type, data)` |
 
 ## Gym runner
 

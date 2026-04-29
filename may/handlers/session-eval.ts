@@ -36,11 +36,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         const verdict = result.overall.verdict;
         ctx.log(`[eval] Auto-evaluated ${result.sessionIds.length} session(s) (${agentNames}): ${verdict}`);
 
-        // Emit context-learn events for each evaluated session
+        // Dispatch context-learn events for each evaluated session
+        // Must use dispatchEvent (not emit) so cron.json "on" handlers fire
         for (const evalSessionId of result.sessionIds) {
           const meta = ctx.readSessionMeta(evalSessionId);
           if (meta?.agent) {
-            ctx.emit({ type: "context-learn", agentName: meta.agent, sessionId: evalSessionId, persistDir: ctx.persistDir });
+            ctx.dispatchEvent("context-learn", { agentName: meta.agent, sessionId: evalSessionId, persistDir: ctx.persistDir });
           }
         }
       }
