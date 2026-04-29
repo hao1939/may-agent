@@ -1335,3 +1335,14 @@ Sequential auditor matches direct-hint performance (EXP-195, 40%) but generates 
 - Todo items remain: EXP-207 Phase 2, H-EXP-052, H-206 Auditor Handoff
 
 **Next**: EXP-207 Phase 2 execution (calibrated abstention), H-206 auditor handoff experiment design
+
+## 2026-04-30 Heartbeat (session 5)
+
+**Actions**:
+- Advanced **EXP-269** (Taint Token Auditor Gate) from DESIGNED → PHASE 1. Created schema, README, and baseline-log in `.state/taint-tokens/`. Now instrumenting auditor notification action rates.
+- Reviewed DD#904 (arXiv:2604.22879) notification: CFV paper formalizes exactly the STT mechanism EXP-269 adapts. External validation of our approach. No design changes needed.
+- Dismissed DD#907 (arXiv:2604.23459, Architecture Matters for MAS Security): confirms multi-agent systems have larger attack surface but no actionable intervention for our experiment pipeline. Already noted in prior session.
+- EXP-268 (Self-Debate): interim results directionally positive (+37.5pp) but underpowered. Retained skill, awaiting more hypothesis volume.
+- agent-system-literacy: closed, 5/6 milestones. No action.
+
+**Next**: Populate EXP-269 baseline log as auditor notifications flow. After N=10, build Phase 2 gate mechanism.
