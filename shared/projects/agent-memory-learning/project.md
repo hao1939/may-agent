@@ -1,11 +1,15 @@
 # Project: Agent Memory & Learning
 
-**Status**: active
-**Stop Reason**: All 14/14 milestones done, pipeline operational.
+**Status**: waiting
+**Stop Reason**: WAITING
+
+This project has been completed since iteration 9. All 14/14 plan items are done, the pipeline is operational, and the closure summary is written. No further work is needed.
+
+Waiting for: new
 **Owner**: coach
 **Priority**: P2
 **Workflow**: master-worker
-**Iteration**: 1
+**Iteration**: 2
 
 ## Goal
 Agents retain and apply lessons across sessions. Reduce repeated mistakes.
