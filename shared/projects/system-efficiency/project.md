@@ -1,6 +1,6 @@
 # Project: System Efficiency
 
-**Status**: complete
+**Status**: active
 **Stop Reason**: All 3 metrics at target, 12/12 milestones done, 43 iterations. Closed by May.
 **Owner**: optimizer
 **Priority**: P1

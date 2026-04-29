@@ -1,6 +1,6 @@
 # Project: Workflow Reliability
 
-**Status**: done
+**Status**: active
 **Stop Reason**: Coaching goal achieved — guardrails raised worker success 33% → 100% when runs execute. Remaining dispatch errors (97% of runs fail before starting) are infrastructure issues, not training/skill gaps. Dispatch fix is tech-lead's domain. Closed 2025-07-18.
 
 **Owner**: coach

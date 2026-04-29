@@ -1,6 +1,6 @@
 # Project: Agent System Literacy
 
-**Status**: complete
+**Status**: active
 **Stop Reason**: 2/3 metrics met (project-creation-rate ✅, escalation-quality ✅). Gym metric abandoned — infra broken, not a literacy gap. Closing as successful.
 
 Milestones completed:
