@@ -310,8 +310,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
       // If no text was accumulated but errors occurred, notify user
       // (e.g., context overflow — LLM returned empty content, user gets silence)
-      if (!hadText && event.errorCount && event.errorCount > 0 && pendingChatId) {
-        sendToUser(`⚠️ Session error (${String(event.agent)}): response failed with ${(event as any).errorCount} error(s). The session may need to be restarted.`, { eventType: "error", agent: String(event.agent), sessionId: event.sessionId });
+      if (!hadText && event.errorCount && event.errorCount > 0) {
+        // Log for metrics, don't bother the user — transient errors are normal
+        bus.emit({ type: "info", message: `[telegram] Turn error: ${event.errorCount} error(s), no text produced (session: ${event.sessionId})` });
       }
     }
 
