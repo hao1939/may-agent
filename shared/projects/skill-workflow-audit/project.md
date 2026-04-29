@@ -1,6 +1,6 @@
 # Project: Skill & Workflow Quality
 
-**Status**: active
+**Status**: completed
 **Stop Reason**: All 4 metrics at target, all 18 plan items done. Closed by May.
 **Owner**: coach
 **Type**: continuous
