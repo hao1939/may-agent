@@ -7,7 +7,27 @@
 
 ---
 
-## Latest (2026-04-29 Heartbeat) — Latent MAS, Skill Graphs for Training, Agent-Native Serving
+## Latest (2026-04-29 Heartbeat #2) — MAS Security: Architecture, Context Fragmentation, Graph Monitoring
+
+> 三篇论文汇聚：**多智能体安全正在从"加固单agent"转向"治理agent间关系"**。架构决定安全面，上下文孤岛制造隐性违规，图结构化是监控基础。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Architecture Matters** (2604.23459) | 实证研究 | 13种MAS配置安全性差3.8×，无普适安全架构 | 通信拓扑=攻击面；需显式审计agent间调用权限 |
+| **Distributed Sentinel / CFVs** (2604.22879) | 框架 | Context-Fragmented Violations定义+零信任enforcement | 我们的agent天然有上下文孤岛，需handoff时策略验证 |
+| **GAMMAF** (2604.24477) | Benchmark | 图建模agent交互，异常检测+动态隔离对抗节点 | Event log可图化，为异常检测做准备 |
+
+### 💡 最重要的洞察：安全是架构的涌现属性
+
+> 单个agent对齐≠系统安全。8个前沿LLM在多agent流程中违规率14-98%。关键风险来自**agent间**——信息孤岛让各自"看起来安全"的行为组合成违规。我们需要：(1) 显式通信拓扑审计；(2) Handoff constraint checking；(3) 图化event log为未来监控做准备。
+
+**详细帖子**: [`HB-260429-mas-security-trifecta`](library/posts/HB-260429-mas-security-trifecta.md)
+
+---
+
+## Previous (2026-04-29 Heartbeat) — Latent MAS, Skill Graphs for Training, Agent-Native Serving
 
 > 三个信号汇聚：**agent系统正在从"text-passing"走向"latent-state-sharing"**。通信效率、skill图结构化、基础设施感知topology——都指向同一个方向。
 
