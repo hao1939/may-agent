@@ -821,6 +821,80 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
       // [done] comment = human/May marking project done — handle in pure JS (no LLM needed)
       const isDoneComment = /^\[done\]/m.test(pendingComments);
+      const isResumeComment = /^\[resume\]/m.test(pendingComments);
+      const isPauseComment = /^\[pause\]/m.test(pendingComments);
+      const isCancelComment = /^\[cancel\]/m.test(pendingComments);
+
+      // JS fast-paths for mechanical directive comments (no LLM session needed)
+      if (isPauseComment) {
+        const now = new Date().toISOString();
+        const commentEntry = `### Iteration ${iteration} (comment) — ${now}\n` +
+          `**Comment**: ${pendingComments}\n` +
+          `**Reviewer**: PAUSED — Marked paused by human/May (JS fast-path, no LLM review needed).\n\n`;
+
+        if (config.isLegacy) {
+          projectContent += commentEntry;
+        } else {
+          cachedAppend(config.journalPath, commentEntry);
+        }
+
+        projectContent = clearComments(projectContent);
+        projectContent = updateField(projectContent, "Iteration", String(iteration));
+        projectContent = updateField(projectContent, "Status", "paused");
+        projectContent = updateSection(projectContent, "Current State", `Paused by human/May at iteration ${iteration}.`);
+        cachedWrite(config.projectPath, projectContent);
+        markDiscussionRead(config.projectDir, iteration);
+        emitProjectEvent(ctx, config, "project.paused", { iteration, trigger: "pause-comment" });
+        return ctx.done(`Project paused by human/May at iteration ${iteration}.`);
+      }
+
+      if (isCancelComment) {
+        const now = new Date().toISOString();
+        const commentEntry = `### Iteration ${iteration} (comment) — ${now}\n` +
+          `**Comment**: ${pendingComments}\n` +
+          `**Reviewer**: CANCELLED — Marked cancelled by human/May (JS fast-path, no LLM review needed).\n\n`;
+
+        if (config.isLegacy) {
+          projectContent += commentEntry;
+        } else {
+          cachedAppend(config.journalPath, commentEntry);
+        }
+
+        projectContent = clearComments(projectContent);
+        projectContent = updateField(projectContent, "Iteration", String(iteration));
+        projectContent = updateField(projectContent, "Status", "cancelled");
+        projectContent = updateSection(projectContent, "Current State", `Cancelled by human/May at iteration ${iteration}.`);
+        cachedWrite(config.projectPath, projectContent);
+        markDiscussionRead(config.projectDir, iteration);
+        emitProjectEvent(ctx, config, "project.cancelled", { iteration, trigger: "cancel-comment" });
+        return ctx.done(`Project cancelled by human/May at iteration ${iteration}.`);
+      }
+
+      if (isResumeComment) {
+        const now = new Date().toISOString();
+        const commentEntry = `### Iteration ${iteration} (comment) — ${now}\n` +
+          `**Comment**: ${pendingComments}\n` +
+          `**Reviewer**: RESUMED — Marked active by human/May (JS fast-path, no LLM review needed).\n\n`;
+
+        if (config.isLegacy) {
+          projectContent += commentEntry;
+        } else {
+          cachedAppend(config.journalPath, commentEntry);
+        }
+
+        projectContent = clearComments(projectContent);
+        projectContent = updateField(projectContent, "Iteration", String(iteration));
+        projectContent = updateField(projectContent, "Status", "active");
+        projectContent = updateField(projectContent, "Stop Reason", "");
+        projectContent = updateField(projectContent, "Resume Condition", "");
+        projectContent = updateSection(projectContent, "Current State", `Resumed by human/May at iteration ${iteration}. Continuing work.`);
+        cachedWrite(config.projectPath, projectContent);
+        markDiscussionRead(config.projectDir, iteration);
+        emitProjectEvent(ctx, config, "project.resumed", { iteration, trigger: "resume-comment" });
+        // Don't return — fall through to continue the work loop
+        iteration++;
+        continue;
+      }
 
       if (isDoneComment) {
         const now = new Date().toISOString();
