@@ -2,31 +2,47 @@ import { describe, it, expect } from "vitest";
 import { validateDispatch, isDispatchable } from "../workflows/dispatch-validator.ts";
 
 describe("dispatch-validator uncovered branches", () => {
-  it("isDispatchable returns true for valid task", () => {
-    expect(isDispatchable("write a test file", "/tmp")).toBe(true);
-  });
-
   it("isDispatchable returns false for empty task", () => {
     expect(isDispatchable("", "/tmp")).toBe(false);
     expect(isDispatchable(undefined, "/tmp")).toBe(false);
   });
 
+  it("isDispatchable returns true for valid project task", () => {
+    const { mkdirSync, writeFileSync, rmSync } = require("fs");
+    const dir = "/tmp/dispatch-val-test-valid-" + Date.now();
+    const projDir = `${dir}/myproj`;
+    mkdirSync(projDir, { recursive: true });
+    writeFileSync(`${projDir}/project.md`, "**Iteration**: 1\n## Status\nactive");
+    try {
+      expect(isDispatchable(`project: myproj`, dir)).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
   it("handles project.md read failure gracefully", () => {
-    // Point to a directory that doesn't have project.md to trigger the catch
-    const result = validateDispatch("do something", "/nonexistent-dir-xyz-12345");
-    // Should still return a result (may have errors about project.md)
-    expect(result).toBeDefined();
-    expect(typeof result.valid).toBe("boolean");
+    const { mkdirSync, rmSync } = require("fs");
+    const dir = "/tmp/dispatch-val-test-nomd-" + Date.now();
+    const projDir = `${dir}/myproj`;
+    mkdirSync(projDir, { recursive: true });
+    // No project.md file — triggers catch block
+    try {
+      const result = validateDispatch("project: myproj", dir);
+      expect(result).toBeDefined();
+      expect(result.errors.some((e: string) => e.includes("project.md"))).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
   });
 
   it("warns about high iteration count", () => {
-    // This tests the iteration >= 50 branch
     const { mkdirSync, writeFileSync, rmSync } = require("fs");
-    const dir = "/tmp/dispatch-val-test-" + Date.now();
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(`${dir}/project.md`, "**Iteration**: 55\n## Status\nactive");
+    const dir = "/tmp/dispatch-val-test-iter-" + Date.now();
+    const projDir = `${dir}/myproj`;
+    mkdirSync(projDir, { recursive: true });
+    writeFileSync(`${projDir}/project.md`, "**Iteration**: 55\n## Status\nactive");
     try {
-      const result = validateDispatch("do something", dir);
+      const result = validateDispatch("project: myproj", dir);
       expect(result.warnings.some((w: string) => w.includes("iteration") || w.includes("50"))).toBe(true);
     } finally {
       rmSync(dir, { recursive: true });

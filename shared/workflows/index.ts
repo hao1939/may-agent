@@ -1,72 +1,81 @@
 /**
  * Workflow Toolkit — Barrel Export
  * 
- * Unified entry point for all workflow modules built across Phases 2-6.
- * Import from this file to access the complete toolkit:
- * 
- *   import { validateTask, estimateComplexity, createBudget } from './workflows/index';
+ * Import all workflow modules from one place:
+ * ```ts
+ * import { validateTask, estimateComplexity, createBudget, ... } from './workflows/index';
+ * ```
  */
 
-/** Phase 2: Crash recovery — saves/restores state mid-iteration */
+/** Mid-iteration crash recovery via incremental state persistence */
 export {
   saveIncrementalCheckpoint,
   detectIncompleteCheckpoint,
   markCheckpointComplete,
+  clearCheckpoints
 } from './incremental-checkpoint';
 
-/** Phase 2: Provider error handling — exponential backoff retry for transient failures */
+/** Exponential backoff retry for provider/LLM errors */
 export {
   withRetry,
   isRetryableError,
-  RetryConfig,
+  type RetryOptions
 } from './provider-retry';
 
-/** Phase 2: Output quality gate — validates file content before writing to disk */
+/** Validates tool outputs before persisting to disk */
 export {
   validateOutput,
   isEmptyContent,
   isDuplicateContent,
-  validateContentType,
+  validateContentType
 } from './output-validator';
 
-/** Phase 3: Fast-fail pre-validation — rejects doomed tasks before work begins */
+/** Fast-fail pre-validation — rejects doomed tasks before work begins */
 export {
   validateTask,
+  type TaskValidationResult
 } from './task-validator';
 
-/** Phase 3: Task complexity scoring — estimates effort and sets adaptive timeouts */
+/** Analyzes task complexity and recommends timeouts */
 export {
   estimateComplexity,
+  type ComplexityResult
 } from './complexity-estimator';
 
-/** Phase 4: Iteration timing — tracks duration and computes p95/avg/median stats */
+/** Tracks iteration timing with avg/median/p95 stats */
 export {
   startIteration,
   endIteration,
   getStats,
+  resetTimer
 } from './iteration-timer';
 
-/** Phase 4: Programmatic metrics collection — scans filesystem for test/output counts */
+/** Programmatic metrics collection from filesystem */
 export {
   collectMetrics,
+  type MetricsResult
 } from './metrics-dashboard';
 
-/** Phase 4: Adaptive validation — skips expensive checks for simple writes */
+/** Complexity-aware file writes — skips heavy validation for simple tasks */
 export {
   fastWrite,
+  type FastWriteResult
 } from './fast-path';
 
-/** Phase 5: Cross-project awareness — aggregates satellite project health */
+/** Cross-project satellite health aggregation */
 export {
   aggregateMetrics,
+  type AggregatedMetrics
 } from './metrics-aggregator';
 
-/** Phase 5: Resource management — enforces per-iteration token/time budgets */
+/** Per-iteration token/time budget enforcement */
 export {
   createBudget,
+  type Budget
 } from './iteration-budget';
 
-/** Phase 6: Unified health verification — checks all system components */
+/** Unified system health check */
 export {
   runHealthCheck,
+  type HealthCheckResult
 } from './health-check';
