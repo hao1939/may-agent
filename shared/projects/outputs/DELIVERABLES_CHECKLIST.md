@@ -1,7 +1,10 @@
-# Deliverables Checklist — Iteration 17
+# Deliverables Checklist — Iteration 18
 
-## Required Deliverables
+## Task: Wire iteration-monitor into master-worker.ts
 
-- [x] DONE — `agents/shared/lib/iteration-monitor.ts`: Utility with `recordIteration` and `getMetrics` functions, stores data in JSON log file
-- [x] DONE — `agents/shared/tests/iteration-monitor.test.ts`: 5 tests covering empty log, recording, rate computation, lastN parameter, and targetPath
-- [x] DONE — Updated `agents/shared/lib/index.ts` barrel export to include iteration-monitor
+| # | Deliverable | Status | Path/Details |
+|---|------------|--------|--------------|
+| 1 | Import `recordIteration` in master-worker.ts | DONE | `agents/shared/workflows/master-worker.ts` line 34 |
+| 2 | Call `recordIteration()` after each iteration completes | DONE | `agents/shared/workflows/master-worker.ts` lines 521-530 |
+| 3 | All tests still pass | DONE | 73 files, 1377 passed, 1 skipped |
+| 4 | Copy in outputs | DONE | `agents/shared/projects/outputs/master-worker-with-monitor.ts` |
