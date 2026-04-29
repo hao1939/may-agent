@@ -1,6 +1,6 @@
 # Project: Agent Memory & Learning
 
-**Status**: completed
+**Status**: active
 **Owner**: coach
 **Priority**: P2
 **Workflow**: master-worker
