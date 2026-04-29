@@ -1,13 +1,13 @@
-# DELIVERABLES_CHECKLIST
+# DELIVERABLES_CHECKLIST.md
 
-## Task: Integrate hao-alignment tools into codebase with tests
+## Iteration 9: System Dashboard
 
-| # | Deliverable | Status | Path |
-|---|-------------|--------|------|
-| 1 | correction-rate.ts in lib | DONE | agents/shared/lib/hao-alignment/correction-rate.ts |
-| 2 | preference-check-gate.ts in lib | DONE | agents/shared/lib/hao-alignment/preference-check-gate.ts |
-| 3 | index.ts barrel export | DONE | agents/shared/lib/hao-alignment/index.ts |
-| 4 | Tests for correction-rate (≥3) | DONE | agents/test/hao-alignment/correction-rate.test.ts (7 tests) |
-| 5 | Tests for preference-gate (≥3) | DONE | agents/test/hao-alignment/preference-check-gate.test.ts (9 tests) |
-| 6 | All tests pass | DONE | 70 files, 1354 tests, 0 failures |
-| 7 | Copies in outputs/ | DONE | agents/shared/projects/outputs/hao-alignment-correction-rate.ts, hao-alignment-preference-check-gate.ts |
+- [x] DONE — `agents/shared/scripts/system-dashboard.sh`: System health dashboard script. Reports test file/test counts, satellite project statuses, knowledge base metrics, and deliverable counts. Executable, verified working.
+- [x] DONE — `agents/shared/projects/outputs/system-dashboard.sh`: Copy in outputs directory.
+
+## Previous Iterations
+
+- [x] DONE — `agents/shared/scripts/test-guard.sh`: Regression guard script (Iteration 2)
+- [x] DONE — `agents/shared/scripts/health-check.sh`: Health check script (Iteration 4)
+- [x] DONE — `agents/shared/workflows/__tests__/integration.test.ts`: Integration test (Iteration 6)
+- [x] DONE — `agents/shared/lib/hao-alignment/`: HAO alignment tools with tests (Iteration 8)
