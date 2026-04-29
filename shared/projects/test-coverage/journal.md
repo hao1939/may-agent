@@ -108,3 +108,4 @@ CONTINUE — write the final report.
 Write `/app/agents/shared/projects/outputs/test-coverage-final-report.md` summarizing the completed project. Include coverage stats, test inventory, and what was built.
 
 [assistant]:
+**Orchestrator**: The project is fully complete with all metrics met and the final report written. Let me set status to complete.
