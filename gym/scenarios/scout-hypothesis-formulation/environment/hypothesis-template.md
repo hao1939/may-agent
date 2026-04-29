@@ -23,4 +23,6 @@ Use this format for all hypotheses:
 
 **Risk:** [What could go wrong? What's the downside?]
 
+**Falsification conditions:** [What specific observations would DISPROVE this hypothesis? List 2-3 concrete outcomes that would force you to reject the claim. A hypothesis without falsification conditions is not testable.]
+
 ---
