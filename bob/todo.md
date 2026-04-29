@@ -1,7 +1,7 @@
 
 ## Next
 - [x] **EXP-207 Phase 2 — DEPLOYED 2027-12-28** — Abstention instruction added to coder, scout, evaluator, qa. Control: all others. Measure ~2 weeks (target N≥30 finish-blocked per group). Check ~2028-01-11.
-- [ ] **H-EXP-052: Finish-guard evidence specificity** — Hypothesis: requiring finish() verification_evidence to cite specific sessionId-matching tool outputs (not free-text claims) will reduce fabrication rate from current ~41% to <10%. Design experiment.
+- [x] **H-EXP-052: Finish-guard evidence specificity** — DESIGNED as EXP-267. See `agents/shared/knowledge/experiments/EXP-267/design.md`.
 - [ ] **H-206 Auditor Handoff** — EXP-247 showed 60% ignore rate. Design experiment to improve auditor→primary handoff mechanism.
 
 ## Done

@@ -1294,7 +1294,18 @@ Sequential auditor matches direct-hint performance (EXP-195, 40%) but generates 
 - agent-system-literacy: 8/8 milestones, waiting status. No action needed.
 - Dismissed 15 inbox notifications (all 71-93h old, informational, already reflected in experiment queue).
 
-## 2026-04-28 Heartbeat (session 3)
+## 2026-04-29 Heartbeat (session 4)
+
+**Metrics**: All healthy. experiment-completion 0.984 (✅), hypotheses-resolved 0.636 (✅).
+
+**Actions**:
+- Designed **EXP-267** (Finish-Guard Evidence Specificity) from H-EXP-052. Two-arm experiment: control (current free-text evidence) vs treatment (structured "Step N: tool showed result" format with validation). 30 sessions/arm, measure fabrication rate.
+- Dismissed ADEMA paper notification (already handled last session, H-EXP-053 created)
+- agent-system-literacy: closed, 5/6 milestones. No action needed.
+
+**Next**: Deploy EXP-267 treatment instructions to coder/scout/evaluator. Design H-206 auditor handoff experiment.
+
+
 
 **Metrics**: All healthy. experiment-completion 0.984 (✅), hypotheses-resolved 0.636 (just under 0.65).
 
