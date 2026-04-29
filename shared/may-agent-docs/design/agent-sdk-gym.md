@@ -27,12 +27,11 @@ interface AgentSDK {
   // Log a diagnostic message
   log(msg: string): void;
 
-  // Send a human-visible notification (Telegram, web console)
-  // NOT agent-to-agent — use runAgent() or tools for that
-  notify(msg: string): void;
+  // Send a notification to a target (agent name or "human")
+  notify(target: string, msg: string): void;
 
-  // Escalate — can't handle this, pass to owner/human
-  escalate(reason: string): void;
+  // Escalate to a target — I'm stuck, need help (enters escalation chain)
+  escalate(target: string, reason: string): void;
 
   // System paths
   paths: { persist: string; root: string; agents: string };
@@ -101,10 +100,11 @@ They share the same vocabulary:
 |-------------|-----------|-----------|
 | "Ask bob to do this" | `agents.fork("bob", task)` | `sdk.runAgent("bob", task)` |
 | "Tell the system something happened" | — | `sdk.emit("metric.breach", { metric, value })` |
-| "Send a message to humans" | `finish({ notify })` / Telegram tool | `sdk.notify(msg)` |
+| "Send a message to humans" | `finish({ notify })` / Telegram tool | `sdk.notify("human", msg)` |
 | "Look up data" | `bash("bun -e 'db.query...'")` | `sdk.getDb()` |
 | "I'm done" | `finish()` | `workflow.done()` |
-| "I'm stuck" | `finish({ status: "blocked" })` | `sdk.escalate(reason)` |
+| "Tell bob something" | `agents.notify("bob", msg)` | `sdk.notify("bob", msg)` |
+| "I'm stuck" | `finish({ status: "blocked" })` | `sdk.escalate("may", reason)` |
 | "Run an LLM with custom prompt" | — | `sdk.createLLMSession()` |
 | "Trigger a handler now" | — | `sdk.emit("trigger.metrics-snapshot")` (convention: `trigger.<handler-name>`) |
 
@@ -184,17 +184,6 @@ agents/shared/lib/
 ```
 
 These are NOT part of the SDK. They're convenience functions that use `getDb()`. Any handler can use them, but they're optional — you can always write raw SQL.
-
-## Agent-to-agent messaging
-
-Not a separate SDK method. It's a pattern on `emit()`:
-
-```typescript
-// Send a notification to bob
-sdk.emit("agent.notification", { owner: "bob", task: "Review the PR" });
-```
-
-This is how `agents.send("bob", msg)` works internally. One mechanism, documented as a pattern.
 
 ## Migration
 
