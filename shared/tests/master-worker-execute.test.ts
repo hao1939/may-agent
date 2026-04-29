@@ -464,7 +464,7 @@ describe("execute", () => {
   it("handles new comments during review phase", async () => {
     setupProjectFs({ maxIter: "1" });
     const mockedFs = vi.mocked(fs);
-    let readCount = 0;
+    let discReadCount = 0;
     mockedFs.existsSync.mockImplementation((p: any) => {
       const path = String(p);
       if (path.includes("discussion.md")) return true;
@@ -475,10 +475,11 @@ describe("execute", () => {
     mockedFs.readFileSync.mockImplementation((p: any) => {
       const path = String(p);
       if (path.includes("discussion.md")) {
-        readCount++;
-        // First read (planning): no unread. Second+ (review): new comment
-        if (readCount <= 2) return "# Discussion\n---read @plan---\n";
-        return "# Discussion\n---read @plan---\nNew review comment\n";
+        discReadCount++;
+        // Planning reads: no new comments (already marked read)
+        if (discReadCount <= 1) return "# Discussion\n---read @plan---\n";
+        // Review reads: new comment appeared
+        return "# Discussion\n---read @plan---\n---read @plan---\nNew review comment\n";
       }
       if (path.includes("project.md")) return `# Project\n**Status**: active\n**Max Iterations**: 1\n**Owner**: test\n\n## Goal\nTest`;
       if (path.includes("journal.md")) return "# Journal\n";
@@ -490,7 +491,7 @@ describe("execute", () => {
       return createMockSession(["Done"]);
     });
     await execute(ctx as any);
-    // Should mark review comments as read
+    // Should mark review comments as read with iter marker
     const appendCalls = vi.mocked(fs.appendFileSync).mock.calls;
     const readMarkers = appendCalls.filter(c => String(c[1]).includes("---read @iter"));
     expect(readMarkers.length).toBeGreaterThanOrEqual(1);
