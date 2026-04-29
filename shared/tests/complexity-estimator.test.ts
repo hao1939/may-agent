@@ -4,7 +4,7 @@ import { estimateComplexity, ComplexityScore } from '../workflows/complexity-est
 describe('complexity-estimator', () => {
   describe('score 1 — trivial tasks', () => {
     it('rates reading a single file as trivial', () => {
-      const result = estimateComplexity('Read outputs/report.md and summarize');
+      const result = estimateComplexity('Read the report and summarize');
       expect(result.score).toBe(1);
     });
 
