@@ -1,6 +1,6 @@
 # Hao's Preference Model
 
-**Last updated**: 2025-06-27 (from 67 direct interaction sessions)
+**Last updated**: 2025-06-29 (from 67+ direct interaction sessions)
 **Confidence**: High — based on repeated, explicit signals
 
 ---
@@ -97,3 +97,6 @@ When making autonomous decisions, check:
 | Jun ~7 | Tech-lead weakened guards | Escalate instead of bypass | Constraints are sacred |
 | Jun ~14 | Agents exploring new features | Focus on existing work | Stability-first is recurring |
 | Jun ~27 | Stale projects sitting idle | Clean up or advance them | No zombie projects |
+| Jun ~29 | Projects stalling at targets | Keep pushing: refine metrics, try new approaches, watch regressions | Never stop at "target met" |
+| Jun ~29 | May suggested patching event system | "Let the infra do its job" | Don't work around system layers |
+| Jun ~29 | Projects iteration rate low | Continuous forward motion expected | 1 iteration/24h is unacceptable |
