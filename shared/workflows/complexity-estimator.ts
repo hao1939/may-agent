@@ -28,7 +28,7 @@ const DESCRIPTION_MAP: Record<ComplexityScore, string> = {
 };
 
 export function estimateComplexity(task: string): ComplexityEstimate {
-  let score = 1;
+  let score = 2; // baseline: simple task
   const lower = task.toLowerCase();
 
   // File count signals
@@ -38,8 +38,8 @@ export function estimateComplexity(task: string): ComplexityEstimate {
   else if (fileRefs >= 2) score += 1;
 
   // Implementation signals (heavier than docs)
-  if (/\b(implement|create module|build|architect)\b/.test(lower)) score += 1.5;
-  if (/\b(integrate|wire|connect|hook into)\b/.test(lower)) score += 1.5;
+  if (/\b(implement|create module|build|architect)\b/.test(lower)) score += 1;
+  if (/\b(integrate|wire|connect|hook into)\b/.test(lower)) score += 1;
 
   // Test target signals
   const testMatch = lower.match(/(\d+)\+?\s*test/);
@@ -51,15 +51,15 @@ export function estimateComplexity(task: string): ComplexityEstimate {
   }
 
   // Multi-module signals
-  if (/\b(multiple files|several modules|cross-system|end-to-end)\b/.test(lower)) score += 1.5;
+  if (/\b(multiple files|several modules|cross-system|end-to-end)\b/.test(lower)) score += 1;
 
   // "with tests" or "write tests" adds moderate complexity
   if (/\b(with tests|write tests|integration tests)\b/.test(lower)) score += 0.5;
 
-  // Documentation is simpler
+  // Documentation is simpler (but still at least score 2)
   if (/\b(document|report|summary|audit|plan)\b/.test(lower) && !/implement|integrate/.test(lower)) score -= 1;
 
-  // Simple read/check operations
+  // Simple read/check/list operations (score 1)
   if (/\b(read|list|check|verify|count)\b/.test(lower) && !/implement|create|integrate/.test(lower)) score -= 1;
 
   // Clamp to valid range
