@@ -747,6 +747,7 @@ import type { CronEntry } from "../lib/cron-tool.js";
 import { trackRequest } from "../lib/requests.js";
 import { loadAllSessionMetas } from "../lib/persistence.js";
 import { buildRuntimeCtx } from "../lib/runtime-ctx.js";
+import { buildAgentSDK } from "../lib/sdk-impl.js";
 
 /**
  * Auto-discover and register JS handlers for cron entries.
@@ -783,6 +784,15 @@ export async function loadAgentHandlers(
       triggerNow: (entryName: string) => cron.triggerNow(entryName),
       trackRequest: (reqOpts) => trackRequest(persistDir, reqOpts),
       loadAllSessionMetas: () => loadAllSessionMetas(persistDir),
+      sdk: buildAgentSDK({
+        bus,
+        persistDir,
+        projectRoot,
+        agentsRoot,
+        agentName,
+        callAgent: (agent, task, callOpts) => manager.callAgent(agent, task, callOpts),
+        triggerNow: (name) => cron.triggerNow(name),
+      }),
     };
 
     // Group entries by handler file (multiple entries can share one handler file)
