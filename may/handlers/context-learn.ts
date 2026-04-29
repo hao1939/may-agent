@@ -32,8 +32,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     // Filter: only learn for enabled agents
     if (!contextLearnAgents.has("all") && !contextLearnAgents.has(agentName)) return;
-    // Never learn from meta-agents
-    if (["evaluator", "coach", "judge"].includes(agentName)) return;
+    // Never learn from meta-agents (evaluator/judge are non-productive)
+    if (["evaluator", "judge"].includes(agentName)) return;
 
     const agentDir = resolve(ctx.agentsRoot, agentName);
     if (!existsSync(agentDir)) return;
