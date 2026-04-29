@@ -12,6 +12,7 @@
 
 import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, statSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { ProjectCache } from "./project-cache.js";
 import { shouldBudgetCheckpoint, buildBudgetCheckpointEntry, estimateTurnsUsed, resetBudgetState } from "./budget-checkpoint.js";
 
 export const name: string = "project";
@@ -95,8 +96,18 @@ function parseInput(raw: string, callingAgent: string): PersistentTaskConfig {
 
 // ── File helpers ───────────────────────────────────────────────────────
 
+// Module-level cache instance — lives for the duration of one workflow run.
+// Each run of the project workflow creates a fresh import context, so stale data
+// doesn't leak across runs. The cache is also flushed at the start of each run().
+const _cache = new ProjectCache();
+
 function readFile(path: string): string | null {
-  try { return readFileSync(path, "utf-8"); } catch { return null; }
+  return _cache.read(path);
+}
+
+/** Flush the project cache (call at workflow start for safety). */
+export function flushProjectCache(): void {
+  _cache.flush();
 }
 
 function ensureDir(dir: string): void {
