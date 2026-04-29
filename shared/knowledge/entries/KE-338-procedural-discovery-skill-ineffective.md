@@ -28,6 +28,10 @@ All three arms: 0% pass rate. The skill had zero effect.
 2. **Direct hints work; procedural hints don't.** This matches KE-054: implementation-bottleneck tasks respond to skills, but recognition-bottleneck tasks don't.
 3. **Next approach should be structural**, not instructional — e.g., a workflow step that forces file-dependency enumeration before any fix attempt, or a tool that surfaces related files automatically.
 
+## External Validation
+
+**DD#881** (Wu & Gong, 2026. arXiv:2604.22879): Tested 8 frontier LLMs on context-fragmented violations. Found prompt-based alignment achieves only F1=0.85 — structural enforcement (Distributed Sentinel architecture) reaches F1=0.95. Directly confirms that text-based interventions have a ceiling, and structural mechanisms are required for the remaining gap.
+
 ## Key Lesson
 
 > You cannot teach an agent to discover what it doesn't know to look for. Discovery requires recognition, and recognition doesn't improve from written procedures.
