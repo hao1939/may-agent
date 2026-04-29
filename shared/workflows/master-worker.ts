@@ -32,6 +32,7 @@ import { withRetry, isRetryableError } from "./provider-retry.ts";
 import { estimateComplexity } from "./complexity-estimator.ts";
 import { IterationTimer } from "./iteration-timer.ts";
 import { aggregateMetrics, type AggregatedMetrics } from "./metrics-aggregator.ts";
+import { createBudget, type Budget as IterationBudget } from "./iteration-budget.ts";
 
 // Global iteration timer for observability
 const iterationTimer = new IterationTimer();
@@ -359,6 +360,12 @@ ${journalContent.slice(-3000)}
       // Estimate task complexity and set appropriate timeout
       const complexity = estimateComplexity(guidance);
       ctx.log(`[work] 📊 Complexity: ${complexity.score}/5 (${complexity.description}), timeout: ${complexity.timeoutMs}ms`);
+
+      // Create iteration budget based on complexity score
+      const iterBudget = createBudget(complexity.score);
+      const budgetConfig = iterBudget.getConfig();
+      ctx.log(`[work] 💰 Budget: ${budgetConfig.maxTimeMs / 1000}s time, ${budgetConfig.maxTokens} tokens`);
+
       const outputsDir = join(dirname(projectDir), "outputs");
 
       // Generate a session-scoped checkpoint ID for this iteration
@@ -412,6 +419,16 @@ ${journalContent.slice(-3000)}
         onRetry: (err, attempt, delay) => ctx.log(`[work] ⚠️ Provider error on worker, retry ${attempt} after ${delay}ms: ${String(err).slice(0, 80)}`),
       });
       ctx.log(`[work] Iteration ${iteration} done`);
+
+      // Track budget consumption (approximate tokens from response length)
+      const approxTokens = Math.ceil(worker.lastText().length / 4);
+      iterBudget.consume(approxTokens);
+      const budgetStatus = iterBudget.check();
+      if (budgetStatus.exceeded) {
+        ctx.log(`[work] ⚠️ Budget exceeded! time=${budgetStatus.timeExceeded}, tokens=${budgetStatus.tokensExceeded} (consumed ~${approxTokens} tokens)`);
+      } else {
+        ctx.log(`[work] 💰 Budget OK: ${budgetStatus.tokensRemaining} tokens remaining, ${Math.round(budgetStatus.timeRemaining / 1000)}s time remaining`);
+      }
 
       // End iteration timer and log duration
       const timing = iterationTimer.endIteration(iterationId);
