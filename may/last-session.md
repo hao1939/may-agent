@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777464467529_28
-- **Status:** done
-- **When:** 2026-04-29T12:09:33.265Z
-- **Duration:** 1m45s
+- **Session:** s_1777464841970_39
+- **Status:** interrupted
+- **When:** 2026-04-29T12:14:56.166Z
+- **Duration:** 54s
 
 ## What Happened
-Also there's a stale Hao request (s_1777144803961) about quality assessment of skills/workflows that's been idle 88h. Let me address that.
+The eval pipeline is active (257 evals recently, 32K+ total, evaluator running right now). The P0 alert is stale. Coach has 5 errors in 6h — worth a nudge.
