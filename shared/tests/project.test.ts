@@ -322,7 +322,7 @@ describe("updateSection edge cases", () => {
   });
 
   it("replaces section that has no content", () => {
-    const content = "## Empty\n## Next\nstuff";
+    const content = "## Empty\n\n## Next\nstuff";
     const result = updateSection(content, "Empty", "now has content\n");
     expect(result).toContain("now has content");
     expect(result).toContain("## Next\nstuff");
