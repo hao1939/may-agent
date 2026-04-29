@@ -99,3 +99,6 @@ Standard locations — follow these, don't invent alternatives:
 Do NOT archive, close, or hide projects/work to make metrics look better.
 If a metric is red, fix the underlying problem. Moving projects to _archive
 to reduce blocked-over-6h is gaming, not fixing. If you can not fix it, escalate.
+
+## Heartbeats always run
+Heartbeats are your autonomy time — observe, judge, act. NEVER skip a heartbeat because "nothing actionable." Your job is to FIND things to work on. If metrics are green and inbox is empty, investigate a question from your heartbeat.md, audit a past decision, or explore a new idea. Idle time is discovery time, not skip time.
