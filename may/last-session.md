@@ -1,15 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777450437707_524
+- **Session:** s_1777454038024_908
 - **Status:** done
-- **When:** 2026-04-29T08:15:30.957Z
-- **Duration:** 1m33s
+- **When:** 2026-04-29T09:15:37.315Z
+- **Duration:** 1m39s
 
 ## What Happened
-Key findings:
-- **documentation-gen**: 7/7 milestones done — should be marked completed
-- **agent-memory-learning**: 8/10 milestones — active but no iteration events
-- **test-coverage**: 12/16 milestones — active but no iteration events
+One stuck "may" session with 0 ops — likely an orphaned record from a previous heartbeat that didn't close cleanly. Not actionable.
 
-Let me nudge the owners to fix these.
+For the blocked-count metric: the 2 blocked projects (skill-workflow-audit, agent-memory-learning) both have all milestones done (18/18 and 14/14) and hit iteration cap 50. They should be marked complete, not blocked. This was already escalated to coach per the inbox event. I'll note this is a known issue requiring a DB status update (mildly destructive) and defer to human.
