@@ -3,16 +3,14 @@
  * Catches errors and returns structured results instead of throwing.
  */
 
-export interface ErrorResult {
-  message: string;
-  stack?: string;
-  timestamp: number;
-}
-
-export interface BoundaryResult<T> {
+export interface ErrorBoundaryResult<T> {
   success: boolean;
   result?: T;
-  error?: ErrorResult;
+  error?: {
+    message: string;
+    stack?: string;
+    timestamp: number;
+  };
 }
 
 export interface ErrorBoundaryOptions<T> {
@@ -28,7 +26,7 @@ export interface ErrorBoundaryOptions<T> {
 export function withErrorBoundary<T>(
   fn: () => T,
   options?: ErrorBoundaryOptions<T>
-): BoundaryResult<T> {
+): ErrorBoundaryResult<T> {
   try {
     const result = fn();
     return { success: true, result };
@@ -37,9 +35,11 @@ export function withErrorBoundary<T>(
     if (options?.onError) {
       options.onError(error);
     }
+    if (options?.fallback !== undefined) {
+      return { success: true, result: options.fallback };
+    }
     return {
       success: false,
-      result: options?.fallback,
       error: {
         message: error.message,
         stack: error.stack,
@@ -51,12 +51,11 @@ export function withErrorBoundary<T>(
 
 /**
  * Wraps an async function in an error boundary.
- * Returns structured result instead of throwing.
  */
 export async function withAsyncErrorBoundary<T>(
   fn: () => Promise<T>,
   options?: ErrorBoundaryOptions<T>
-): Promise<BoundaryResult<T>> {
+): Promise<ErrorBoundaryResult<T>> {
   try {
     const result = await fn();
     return { success: true, result };
@@ -65,9 +64,11 @@ export async function withAsyncErrorBoundary<T>(
     if (options?.onError) {
       options.onError(error);
     }
+    if (options?.fallback !== undefined) {
+      return { success: true, result: options.fallback };
+    }
     return {
       success: false,
-      result: options?.fallback,
       error: {
         message: error.message,
         stack: error.stack,
@@ -78,32 +79,33 @@ export async function withAsyncErrorBoundary<T>(
 }
 
 /**
- * Wraps all functions of a module object with error boundaries.
- * Returns a new object where each function returns BoundaryResult.
+ * Wraps all functions in a module object with error boundaries.
  */
-export function wrapModule<M extends Record<string, any>>(
+export function wrapModule<M extends Record<string, unknown>>(
   module: M,
-  options?: ErrorBoundaryOptions<any>
-): { [K in keyof M]: M[K] extends (...args: any[]) => any ? (...args: Parameters<M[K]>) => BoundaryResult<ReturnType<M[K]>> : M[K] } {
-  const wrapped: any = {};
-  for (const key of Object.keys(module)) {
-    if (typeof module[key] === 'function') {
-      wrapped[key] = (...args: any[]) => {
-        return withErrorBoundary(() => module[key](...args), options);
+  options?: ErrorBoundaryOptions<unknown>
+): { [K in keyof M]: M[K] extends (...args: infer A) => infer R
+  ? (...args: A) => ErrorBoundaryResult<R>
+  : M[K] } {
+  const wrapped: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(module)) {
+    if (typeof value === 'function') {
+      wrapped[key] = (...args: unknown[]) => {
+        return withErrorBoundary(() => (value as Function)(...args), options);
       };
     } else {
-      wrapped[key] = module[key];
+      wrapped[key] = value;
     }
   }
-  return wrapped;
+  return wrapped as any;
 }
 
 /**
  * Creates a reusable error boundary with preset options.
  */
-export function createErrorBoundary<T>(options: ErrorBoundaryOptions<T>) {
+export function createErrorBoundary<T>(defaultOptions: ErrorBoundaryOptions<T>) {
   return {
-    wrap: (fn: () => T) => withErrorBoundary(fn, options),
-    wrapAsync: (fn: () => Promise<T>) => withAsyncErrorBoundary(fn, options),
+    wrap: (fn: () => T) => withErrorBoundary(fn, defaultOptions),
+    wrapAsync: (fn: () => Promise<T>) => withAsyncErrorBoundary(fn, defaultOptions),
   };
 }
