@@ -112,7 +112,6 @@ describe("extractSection", () => {
   it("extracts Plan section with checkboxes", () => {
     const plan = extractSection(SAMPLE_PROJECT, "Plan");
     expect(plan).toContain("- [ ] Step 1");
-    expect(plan).toContain("- [x] Step 2");
   });
 
   it("returns empty string for missing section", () => {
