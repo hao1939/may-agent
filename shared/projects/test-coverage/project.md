@@ -4,19 +4,19 @@
 **Owner**: optimizer
 **Priority**: P2
 **Workflow**: master-worker
-**Iteration**: 4
+**Iteration**: 5
 
 ## Goal
 Critical paths have test coverage. Regressions caught before deployment.
 
 ## Metrics
-- test.coverage-percent: ~35% (9 test files, 105 tests) → target 0.80
-- test.critical-paths-covered: 9/11 critical modules tested → target 1.00
-- test.pass-rate: 105/105 passing → target 1.00 ✅
-- test.threshold: 15% configured → target 60%
+- test.coverage-percent: 77.56% (16 test files, 168 tests) → target 0.80
+- test.critical-paths-covered: 11/11 critical modules tested → target 1.00 ✅
+- test.pass-rate: 168/168 passing → target 1.00 ✅
+- test.threshold: 60% configured → target 60% ✅
 
 ## Current State
-Iteration 4 complete. 105 tests passing across 9 test files. growth.ts and project-health.ts now tested. Coverage threshold exists in vitest.config.ts but set at only 15% — needs to be raised to 60%. Remaining untested: poller.ts, master.ts, worker.ts (orchestration requiring mocks).
+Iteration 5 complete. 168 tests passing across 16 test files. 77.56% line coverage — 2.44% short of 80% target. Threshold raised to 60% and enforced. Lowest coverage: verify-wrap.ts (30%), project-health.ts (44.89%), project-helpers.ts (65.71%), auto-test.ts (0%). These are the files to target to hit 80%.
 
 ## Plan
 - [x] Install vitest, create vitest.config.ts, create test/ dir, write a smoke test that passes
@@ -28,10 +28,13 @@ Iteration 4 complete. 105 tests passing across 9 test files. growth.ts and proje
 - [x] Fix failing gym test (agent="coder" vs "amy" mismatch)
 - [x] Write tests for shared/lib/ modules (growth.ts, project-health.ts)
 - [x] Add coverage threshold to vitest.config.ts
-- [ ] Raise coverage threshold from 15% to 60% in vitest.config.ts
-- [ ] Write integration-style tests for poller.ts (mock API calls, test message routing logic)
-- [ ] Run `npx vitest run --coverage` and record actual line coverage percentage
-- [ ] Re-plan: review actual coverage numbers, decide if orchestration files need tests
+- [x] Raise coverage threshold to 60% in vitest.config.ts
+- [x] Write integration-style tests for poller.ts (mock API calls, test message routing logic)
+- [x] Record actual line coverage: 77.56%
+- [ ] Increase coverage of project-health.ts (44.89% → 80%+) and verify-wrap.ts (30% → 80%+)
+- [ ] Add tests for auto-test.ts guard (currently 0% coverage)
+- [ ] Raise coverage threshold from 60% to 75% once 80% overall is reached
+- [ ] Re-plan: assess if project is complete or needs maintenance mode
 
 ## References
 
