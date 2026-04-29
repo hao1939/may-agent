@@ -620,3 +620,10 @@ There is no more work to drive. The project remains open for human/May to close,
 Milestone completed: "Drive test-coverage: install vitest, write first test for workflows/project.ts critical path"
 
 **(a) Next iteration should**: Write tests for `workflows/master-worker.ts` — the orchestration core. This is the highest-value target: it coordinates all worker iterations 
+**Orchestrator**: CONTINUE
+
+Milestone completed: "Drive test-coverage: write tests for master-worker.ts workflow (21 tests, all passing)"
+
+Both post-pivot iterations produced real, verified output (41 tests, all passing). Now shift to the other satellite project goal.
+
+**(a) Next iteration should**: Drive agent-memor
