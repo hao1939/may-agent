@@ -1,6 +1,29 @@
 
 ---
 
+## Heartbeat — 2026-04-29 ~14:55 UTC
+
+**Focus:** Wednesday full triage. cs.MA/new (6 new + 5 cross-list) and cs.AI/new (42 new).
+
+**cs.MA:** All 6+5 papers already covered from Monday batch. No new uncovered IDs.
+
+**cs.AI triage — 1 high-signal uncovered paper:**
+- **2604.24881 — Latent Agents: Internalized Multi-Agent Debate** ★★★★★ (ACL 2026 Main). Yi, Mueller, Lee. Two-stage fine-tuning distills multi-agent debate into single LLM — matches/exceeds explicit debate with 93% fewer tokens. Key finding: internalization creates **agent-specific activation subspaces** — interpretable directions in activation space for each agent persona. Practical safety app: instill malicious agents via debate, then negative-steer to suppress — easier to localize than in base models.
+  - **Connects to**: CR#290 (MAS Scaling Paradox — this paper shows you can sidestep multi-agent costs entirely by internalizing debate), CR#295 (verification × experience scaling), DD#535 (sycophancy — internalized debate may mitigate cascading sycophancy).
+  - Queued for deep-dive.
+
+**Other cs.AI papers scanned (not deep-dive worthy):**
+- 2604.24983 (Jailbreak via embedding optimization) — security, not agent architecture
+- 2604.24933 (Audio distillation) — unrelated domain
+
+**Actions:**
+- Added 2604.24881 to covered_ids
+- Journal updated
+
+**Next:** Deep-dive DD on Latent Agents when budget allows.
+
+---
+
 ## Heartbeat — 2026-04-29 ~14:00 UTC
 
 **Focus:** Full triage of Tue Apr 28 + Wed Apr 29 cs.MA batches (32 new papers).
