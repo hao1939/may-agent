@@ -50,18 +50,25 @@ interface RuntimeCtx {
 The existing contexts wrap RuntimeCtx — they don't replace it:
 
 ```
-RuntimeCtx (shared infra)
-  ├── emit, getDb, log, notify, paths
+RuntimeCtx (shared infra — ~20 methods)
+  ├── emit, dispatchEvent, getDb, log, notify, paths
+  ├── classifyError, getLastDigest, upsertDigest, classifyDigest, escalate
+  ├── readSessionMeta, getInbox, readSessionMessages, readArchivedSessionMessages
+  └── upsertEvaluation, hasEvaluation, hasLLMEvaluation, getAllEvaluations, syncResearchArtifacts
 
 HandlerContext = RuntimeCtx + handler-specific
-  + manager, triggerNow, evaluateTask, trackRequest, getSessionId, ...
+  + manager, agentName, getSessionId, triggerNow, loadAllSessionMetas, sdk
 
-WorkflowContext = RuntimeCtx + workflow-specific
-  + runAgent, runWorkflow, runFunction, summarize, done, escalate
+AgentSDK (canonical public interface — 8 methods)
+  = runAgent, createLLMSession, emit, getDb, log, notify, escalate, paths
+  Accessed via ctx.sdk on HandlerContext.
+  See: agent-sdk-gym.md
 
 Agent tools receive RuntimeCtx (or subset) via creation options
-  + opt-in: only tools that need infra access declare it
 ```
+
+The **AgentSDK** (`ctx.sdk`) is the canonical public interface for handlers and workflows.
+**RuntimeCtx** retains internal methods (digest pipeline, evaluation, research sync) used by infrastructure code.
 
 ## What Changes
 
