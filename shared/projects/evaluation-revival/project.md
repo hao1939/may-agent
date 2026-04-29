@@ -31,7 +31,7 @@ Restore the evaluation pipeline so agent performance is measured continuously. W
 - [x] Investigate coverage gap — root cause: 48h lookback vs 7d metric window (coverage-investigation.md)
 - [x] Fix coverage: increase MAX_AGE_MS from 48h to 7 days in eval-poller.ts — deployed (coverage-fix-7day.md)
 - [x] Verify deduplication: poller skips already-evaluated sessions efficiently — confirmed in source
-- [ ] Validate coverage reaches ≥50% (measure 24-48h after MAX_AGE fix)
+- [ ] Validate coverage reaches ≥50% — BLOCKED: 79 sessions processed vs ~7855 total in window. Poller at 20/run is too slow. Need to either increase MAX_SESSIONS_PER_RUN dramatically or filter out heartbeat/system sessions.
 - [x] Verify optimizer agent reads coaching file in next session — optimizer hasn't run yet since coaching file written (coaching-loop-validation.md)
 - [ ] Re-plan: once coverage ≥50% and coaching loop verified end-to-end
 

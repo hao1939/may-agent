@@ -12,7 +12,7 @@ export {
   saveIncrementalCheckpoint,
   detectIncompleteCheckpoint,
   markCheckpointComplete,
-  clearCheckpoints
+  cleanupCheckpoints
 } from './incremental-checkpoint';
 
 /** Exponential backoff retry for provider/LLM errors */
@@ -25,9 +25,9 @@ export {
 /** Validates tool outputs before persisting to disk */
 export {
   validateOutput,
-  isEmptyContent,
-  isDuplicateContent,
-  validateContentType
+  findDuplicate,
+  validateContentType,
+  hashContent
 } from './output-validator';
 
 /** Analyzes task complexity and recommends timeouts */
@@ -38,11 +38,10 @@ export {
 
 /** Tracks iteration timing with avg/median/p95 stats */
 export {
-  startIteration,
-  endIteration,
-  getStats,
-  resetTimer
+  IterationTimer,
+  formatDuration
 } from './iteration-timer';
+export type { TimerStats } from './iteration-timer';
 
 /** Per-iteration token/time budget enforcement */
 export {
@@ -52,6 +51,11 @@ export {
 
 /** Unified system health check */
 export {
-  runHealthCheck,
-  type HealthCheckResult
+  checkHealth,
+  analyzeProject,
+  parseMetrics,
+  isAtTarget,
+  isStalled,
+  extractLastActivity
 } from './health-check';
+export type { HealthReport, ProjectHealth, MetricInfo } from './health-check';
