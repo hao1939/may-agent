@@ -71,3 +71,11 @@ When querying a table for first time, run PRAGMA table_info(<table>) first. Key 
 - [insight] Skills adoption hierarchy: code enforcement > SOUL.md inline > per-agent skills/ > shared skills/ passive. 0/29 agents discover passive resources (KE-011).
 - [insight] read-before-edit deployed to 5 agents but C1.1 still worst convention at 88.6%. Deployment != adoption — need code enforcement.
 📘 **Creating Projects**: Before creating a project, read `agents/shared/skills/creating-projects/skill.md` — follow the exact template.
+
+
+## Hao's Preferences (apply these in decisions)
+1. **Stability-first**: fix existing before exploring new
+2. **Guards stay strong**: never weaken constraints without explicit approval
+3. **Quality > quantity**: fewer excellent outputs beat many mediocre ones
+4. **Observability**: make system state visible, not hidden
+5. **Knowledge must be APPLIED**: experiment with findings, deploy to production, don't just store

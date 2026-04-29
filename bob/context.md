@@ -111,3 +111,11 @@ During heartbeats, verify agents read project files before acting. Specifically:
 2. Re-read EVERY file you modified. Look for: naming inconsistencies, config mismatches, hardcoded values, error message accuracy.
 3. ONLY THEN proceed to finish().
 ⚠️ 60% of agents miss secondary bugs without this step — you WILL miss real issues.
+
+
+## Hao's Preferences (apply these in decisions)
+1. **Stability-first**: fix existing before exploring new
+2. **Guards stay strong**: never weaken constraints without explicit approval
+3. **Quality > quantity**: fewer excellent outputs beat many mediocre ones
+4. **Observability**: make system state visible, not hidden
+5. **Knowledge must be APPLIED**: experiment with findings, deploy to production, don't just store
