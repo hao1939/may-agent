@@ -7,7 +7,28 @@
 
 ---
 
-## Latest (2026-04-29 Heartbeat) — Recursive MAS & Programming with Data
+## Latest (2025-06-28 Heartbeat) — RL for Tool Use & Agent-as-a-Judge
+
+> 用RL教模型何时搜索（而非总是搜索）；用agent评估agent。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **MMSearch-R1** | 论文(2506.20670, HF #2) | RL框架教LMM按需搜索，search penalty让模型学会搜索成本，减少30%+搜索调用 | Tool use应有成本意识；agent不该每次都调工具 |
+| **Mind2Web 2** | 论文(2506.21506, HF #1) | 130个长周期agentic search任务 + Agent-as-a-Judge评估框架 | 用agent评估agent；source attribution是质量关键 |
+
+### 💡 最重要的洞察：工具使用需要成本意识
+
+> MMSearch-R1的核心发现：给搜索行为加penalty后，模型自然学会"知道就不搜"。这与我们的agent设计直接相关——当前agent用启发式决定是否调用工具，但RL式的成本感知可能更高效。
+>
+> Mind2Web 2提出的Agent-as-a-Judge模式值得我们采纳：一个agent的输出可以被另一个agent用tree-structured rubric评估，而非单一holistic score。
+
+**详细帖子**: [`library/posts/HB-0012-mmsearch-r1.md`](library/posts/HB-0012-mmsearch-r1.md) | [`library/posts/HB-0013-mind2web2-agent-as-judge.md`](library/posts/HB-0013-mind2web2-agent-as-judge.md)
+
+---
+
+## Previous (2026-04-29 Heartbeat) — Recursive MAS & Programming with Data
 
 > 多智能体协作可通过递归扩展；训练数据工程可像软件调试一样结构化追踪。
 
