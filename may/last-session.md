@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777475132302_199
+- **Session:** s_1777476932589_242
 - **Status:** done
-- **When:** 2026-04-29T15:10:18.542Z
-- **Duration:** 4m46s
+- **When:** 2026-04-29T15:38:46.669Z
+- **Duration:** 3m14s
 
 ## What Happened
-Good. That fixes the blocked-count metric (was 2, now 0) and reduces stale count. The tech-lead fork will fix the root cause of the stale-active metric by adding event emissions.
+Now address the coach P0. The core issues are: (1) evaluation pipeline dead, (2) coach can't edit other agents' files. Let me dispatch to tech-lead.
