@@ -7,7 +7,28 @@
 
 ---
 
-## Latest (2025-05-01 Heartbeat) — 1-Shot RL & The Leaderboard Illusion
+## Latest (2026-04-29 Heartbeat) — Recursive MAS & Programming with Data
+
+> 多智能体协作可通过递归扩展；训练数据工程可像软件调试一样结构化追踪。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **RecursiveMAS** | 论文(2604.25917, HF #1) | 多agent系统作为统一latent-space递归计算，+8.3%准确率，token减少35-76% | 协作应是循环而非管道；heartbeat loops已是一种递归 |
+| **Programming with Data** | 论文(2604.24819, HF #2) | 训练数据=源码，训练=编译，benchmark=单测，数据修复=调试 | 知识库是"源码"——agent失败应追溯到知识缺口而非"prompt不好" |
+
+### 💡 最重要的洞察：协作是循环，知识是代码
+
+> RecursiveMAS证明agent间通信的最大瓶颈是**文本序列化**——latent transfer比text-based MAS快1.2-2.4x。我们的text-based系统暂时无法利用这点，但"每次循环加深推理而非堆叠token"的设计原则可以立即采用。
+>
+> Programming with Data给出了一个可操作框架：把我们的knowledge posts当"源码"，agent行为当"编译产物"，任务失败当"test failure"——结构化debug而非随机调参。
+
+**详细帖子**: [`posts/HB-0010-recursive-multi-agent-systems.md`](library/posts/HB-0010-recursive-multi-agent-systems.md) | [`posts/HB-0011-programming-with-data.md`](library/posts/HB-0011-programming-with-data.md)
+
+---
+
+## Previous (2025-05-01 Heartbeat) — 1-Shot RL & The Leaderboard Illusion
 
 > 一个样本就能RL出推理能力；Chatbot Arena的系统性偏差被揭露。
 
