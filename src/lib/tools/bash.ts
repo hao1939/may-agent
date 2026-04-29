@@ -199,7 +199,7 @@ export const DEFAULT_ERROR_NUDGES: ErrorNudge[] = [
 	},
 	{
 		pattern: /node:sqlite/i,
-		hint: "\n\n💡 Hint: node:sqlite is not available. Use bun:sqlite instead. Example: bun -e \"import{Database}from'bun:sqlite'; const db=new Database('.state/may.db',{readonly:true}); ...\"",
+		hint: "\n\n💡 Hint: node:sqlite is not available. Use bun:sqlite instead. The DB MUST be opened readonly: bun -e \"import{Database}from'bun:sqlite'; const db=new Database('.state/may.db',{readonly:true}); ...\" NEVER write to the DB from bash — it causes corruption.",
 	},
 ];
 
