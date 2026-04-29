@@ -1,0 +1,60 @@
+# Sessions
+
+## The Model
+
+Every agent interaction is a **session** — a single LLM conversation with tools.
+
+```sql
+CREATE TABLE sessions (
+  sessionId       TEXT PRIMARY KEY,
+  agent           TEXT NOT NULL,
+  task            TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'running',  -- running | done | error
+  kind            TEXT,             -- job | heartbeat | chat
+  source          TEXT,             -- what triggered it
+  parentSessionId TEXT,             -- who spawned this session
+  requestId       TEXT,
+  workflowRunId   TEXT,
+  projectId       TEXT,
+  startedAt       INTEGER NOT NULL,
+  endedAt         INTEGER,
+  error           TEXT,
+  outcome         TEXT,
+  opCount         INTEGER DEFAULT 0
+);
+```
+
+## State Machine
+
+```
+created → running → done
+                  → error
+```
+
+No "pending" or "queued" state. Sessions start running immediately when spawned.
+
+## Session Tree
+
+```
+Root (May heartbeat)
+  ├── call("tech-lead", task)          ← child (blocks parent)
+  │     └── call("coder", subtask)     ← grandchild
+  └── fork("bob", task)                ← new root (async, returns immediately)
+```
+
+- **call** = synchronous, parent waits, child is linked via `parentSessionId`
+- **fork** = asynchronous, returns sessionId, new session tree
+
+## Persistence
+
+Sessions persist to:
+1. **SQLite** (`sessions` table) — for SQL queries, dashboard, status checks
+2. **Disk** (`.state/sessions/<id>/meta.json`) — full metadata, messages
+
+The DB is the queryable index. Disk is the source of truth for message history.
+
+## Implementation
+
+- **Manager:** `src/lib/manager.ts` — spawns/manages sessions
+- **DB writes:** `src/lib/db-writer.ts` — persists session events
+- **Queries:** `src/lib/requests.ts` → `upsertSession()`, `updateSessionDb()`
