@@ -371,22 +371,33 @@ describe("execute", () => {
   });
 
   it("validates output files and rejects invalid ones", async () => {
+    // This test verifies that when validateOutput returns invalid, the log shows "Rejected"
+    // We need the snapshots to differ so files appear as "changed"
     setupProjectFs({ maxIter: "1" });
     const mockedFs = vi.mocked(fs);
 
-    // Simulate files appearing after worker runs
-    let readdirCallCount = 0;
-    mockedFs.readdirSync.mockImplementation(() => {
-      readdirCallCount++;
-      if (readdirCallCount > 1) {
-        return [{ name: "report.md", isFile: () => true, isDirectory: () => false }] as any;
-      }
-      return [] as any;
+    // snapshotOutputs reads dir. First call (before) returns empty, second (after) returns a file
+    let snapCalls = 0;
+    mockedFs.existsSync.mockImplementation((p: any) => {
+      const path = String(p);
+      if (path.includes("outputs")) return true;
+      if (path.includes("project.md")) return true;
+      if (path.includes("journal.md")) return true;
+      return false;
     });
-    let statCallCount = 0;
-    mockedFs.statSync.mockImplementation(() => {
-      statCallCount++;
-      return { mtimeMs: statCallCount > 1 ? 2000 : 1000, size: 500 } as any;
+    mockedFs.readdirSync.mockImplementation((dir: any) => {
+      snapCalls++;
+      // First snapshot (before worker): empty. Second+ (after worker): has file
+      if (snapCalls <= 1) return [] as any;
+      return [{ name: "report.md", isFile: () => true, isDirectory: () => false }] as any;
+    });
+    mockedFs.statSync.mockImplementation(() => ({ mtimeMs: 2000, size: 500 } as any));
+    mockedFs.readFileSync.mockImplementation((p: any) => {
+      const path = String(p);
+      if (path.includes("report.md")) return "some content";
+      if (path.includes("project.md")) return `# Project\n**Status**: active\n**Max Iterations**: 1\n**Owner**: test\n\n## Goal\nTest`;
+      if (path.includes("journal.md")) return "# Journal\n";
+      return "";
     });
 
     vi.mocked(validateOutput).mockReturnValue({ valid: false, errors: ["Empty file"], warnings: [] });
