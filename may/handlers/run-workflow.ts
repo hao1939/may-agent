@@ -3,7 +3,7 @@
  * Loads the workflow .ts file, builds WorkflowContext, calls execute().
  * No imports from src/ — everything inline.
  */
-import { readFileSync, existsSync, readdirSync, writeFileSync, mkdirSync, appendFileSync } from "node:fs";
+import { existsSync, readdirSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.ts";
 import type { CronEntry } from "../../shared/agent-sdk.ts";
@@ -25,9 +25,9 @@ async function findWorkflow(agentDir: string, name: string, sharedDir: string): 
   throw new Error(`Workflow "${name}" not found`);
 }
 
-async function loadGuards(log: (msg: string) => void): Promise<any[]> {
+async function loadGuards(agentsRoot: string, log: (msg: string) => void): Promise<any[]> {
   const guards: any[] = [];
-  const guardsDir = resolve("/app/agents/shared/guards");
+  const guardsDir = join(agentsRoot, "shared", "guards");
   if (!existsSync(guardsDir)) return guards;
   for (const file of readdirSync(guardsDir)) {
     if (!file.endsWith(".ts") || file === "loader.ts") continue;
@@ -72,7 +72,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     const run: any = { runId, workflow: wf.name || workflowName, task, parentSessionId: `cron:${entry.name}`, startedAt: Date.now(), status: "running", steps: [] };
     saveRun(run);
 
-    const guards = await loadGuards((msg) => ctx.log(msg));
+    const guards = await loadGuards(ctx.agentsRoot, (msg) => ctx.log(msg));
     ctx.log(`[run-workflow:${entry.name}] Loaded ${guards.length} workflow guard(s)`);
 
     const workflowCtx: any = {
