@@ -36,7 +36,7 @@ Agents retain and apply lessons across sessions. Reduce repeated mistakes.
 - [x] Seed lessons.jsonl with lessons extracted from existing context.md files (20 lessons seeded)
 - [x] Measure context-learn pipeline firing rate — outputs/pipeline-metrics.md (finding: 0 organic fires)
 - [x] Diagnose root cause of pipeline not firing (session.completed never emitted — no emitter in codebase)
-- [ ] Create cron-based context-learn poller: a new handler that runs every 30min, scans recently-completed sessions in .state/sessions/history/, and dispatches context-learn events for unprocessed ones
+- [x] Create cron-based context-learn poller: context-learn-poller.ts handler + cron.json entry (30min interval, enabled)
 - [ ] File task to bob/tech-lead: add session.completed event emission in core runtime when sessions end
 - [ ] Verify organic lesson capture: confirm at least 1 lesson appears in lessons.jsonl from the poller
 - [ ] Re-plan: review metrics after organic capture is working
