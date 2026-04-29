@@ -38,7 +38,7 @@ Agents retain and apply lessons across sessions. Reduce repeated mistakes.
 - [x] Re-plan: pipeline is working, shift to observability and quality
 - [x] Validate lesson quality: sample 10 recent context.md additions across agents, assess usefulness/actionability/duplication, write outputs/lesson-quality-audit.md
 - [x] Create outputs/learning-dashboard.md: snapshot of context-learn activity (sessions processed, poller state, context.md sizes per agent, sample recent additions)
-- [ ] Extract lessons from 8 uncovered agents (tech-lead, optimizer, qa, amy-kimi, evaluator, architect, judge, master) into lessons.jsonl
+- [x] Extract lessons from 8 uncovered agents into lessons.jsonl (79 total lessons confirmed)
 - [x] Re-plan: assess repeat-mistake-rate metric, decide project closure
 
 **Re-plan (iteration 9):** Core goal achieved — agents retain and apply lessons across sessions. Pipeline is end-to-end functional. 79 lessons seeded. Organic capture working via poller. repeat-mistake-rate requires weeks of data to measure meaningfully — not actionable now. Remaining value is marginal. Closing project.
