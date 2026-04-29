@@ -64,26 +64,16 @@ export const guard: WorkflowGuard = {
     // Deduplicate
     const unique = [...new Set(violations)];
 
-    // Upgraded from warn → run_step (2026-04-24, Bob).
-    // Per H-098/EXP-188: text warnings (Ch1) ≈ 0% compliance,
-    // structural enforcement (Ch2) ≈ 100%. Injecting a corrective
-    // step forces the agent to read the files it missed.
+    // DISABLED: mid-step run_step recovery caused 56%+ recovery session overhead.
+    // The verify-after-write Tier 1 finish-block already prevents agents from
+    // finishing without reading back all modified files. Mid-step recovery is
+    // redundant. Warn only so we can track violation rate without the waste.
+    // Disabled 2026-08-01 by optimizer. See proposal 004.
     return [
       {
-        type: "run_step",
-        reason: `C1.1 Edit-Without-Read: ${unique.length} file(s) edited without prior read() in this step: ${unique.join(", ")}. ` +
-          `Convention requires reading a file before editing to prevent data loss from stale assumptions.`,
-        step: {
-          name: "c1.1-read-recovery",
-          agent: true,
-          task: `## C1.1 Recovery — Read Before Edit\n\n` +
-            `The previous step edited ${unique.length} file(s) without reading them first: ${unique.join(", ")}.\n\n` +
-            `**You MUST now:**\n` +
-            `1. read() each of these files to verify the edits are correct\n` +
-            `2. If any edit introduced errors (wrong content, lost data), fix them immediately\n` +
-            `3. Confirm each file looks correct before proceeding\n\n` +
-            `Files to verify: ${unique.map(f => `\n- \`${f}\``).join("")}`,
-        },
+        type: "warn",
+        reason: `C1.1 Edit-Without-Read: ${unique.length} file(s) edited without prior read(): ${unique.join(", ")}. ` +
+          `You must read() all modified files before finishing.`,
       },
     ];
   },

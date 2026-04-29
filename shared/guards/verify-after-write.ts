@@ -121,30 +121,11 @@ export const guard: WorkflowGuard = {
       }
     }
 
-    // === Tier 3: Mid-workflow post-hoc recovery ===
-    // For non-finish steps, inject a recovery step for any unverified writes
-    // in the current step.
-    const violations = findUnverifiedPaths(event.result.messages as any[]);
-    if (violations.length === 0) return demands;
-
-    const unique = [...new Set(violations)];
-
-    demands.push({
-      type: "run_step",
-      reason: `C1.3 Write/Edit-Without-Verify: ${unique.length} file(s) modified without subsequent read() verification: ${unique.join(", ")}. ` +
-        `Convention requires reading back modified files to catch truncation, encoding errors, or content mistakes.`,
-      step: {
-        name: "c1.3-verify-recovery",
-        agent: true,
-        task: `## C1.3 Recovery — Verify After Edit/Write\n\n` +
-          `The previous step modified ${unique.length} file(s) without reading them back to verify:\n` +
-          `${unique.map(f => `- \`${f}\``).join("\n")}\n\n` +
-          `**You MUST now:**\n` +
-          `1. read() each file to verify the contents are correct and complete\n` +
-          `2. If any file has truncation, encoding errors, or wrong content, rewrite it\n` +
-          `3. Confirm each file looks correct before proceeding`,
-      },
-    });
+    // === Tier 3: DISABLED — was injecting run_step recovery for every unverified write ===
+    // This caused 56%+ of all sessions to be recovery sessions (P0 waste).
+    // Tier 1 finish-block is sufficient: agents cannot finish(success) without
+    // verifying all writes. Mid-workflow recovery steps are redundant.
+    // Disabled 2026-08-01 by optimizer. See proposal 004.
 
     return demands;
   },
