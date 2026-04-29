@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777419896651_95
+- **Session:** s_1777421636393_101
 - **Status:** done
-- **When:** 2026-04-28T23:45:11.181Z
-- **Duration:** 14s
+- **When:** 2026-04-29T00:15:15.929Z
+- **Duration:** 1m19s
 
 ## What Happened
-File looks correct and complete.
+Fixed. The 3 stale projects were ghost entries (owner "unknown", iteration 0, no files on disk) — cancelled them.
