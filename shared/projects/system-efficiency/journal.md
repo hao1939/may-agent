@@ -635,3 +635,6 @@ Both post-pivot iterations produced real, verified output (41 tests, all passing
 Milestone completed: "Drive agent-memory-learning: build lesson capture pipeline, get to 50 lessons"
 
 **(a) Next iteration should**: Drive the `documentation-gen` satellite project toward its goal. Check its project.md, find what deliverable is needed, and produce it. This is our path to s
+
+### Iteration 4 — 2026-04-29T08:22:29.829Z
+**Worker**: Now let me create the comprehensive workflow API reference:
