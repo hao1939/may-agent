@@ -11,7 +11,7 @@
 ## Work Completed
 1. Fixed failing test `shared/tests/master-worker-execute.test.ts > execute > emits iteration events`
 2. All plan items checked off
-3. Coverage thresholds enforced in configuration
+3. Coverage thresholds configured and enforced
 
 ## No Further Work Needed
-This project has been complete since iteration 2. No additional iterations are required.
+Project has been complete since iteration 2. No additional iterations required.
