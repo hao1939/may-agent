@@ -6,6 +6,19 @@
  * If infra restructures, only this file needs updating.
  */
 
+// ── Agent SDK (canonical interface) ──────────────────────────────────
+export type {
+  AgentSDK,
+  WorkflowSDK,
+  RunOpts,
+  SessionOpts,
+  SessionHandle as SDKSessionHandle,
+  TaskResult as SDKTaskResult,
+  DoneOpts,
+  Deliverable,
+  WorkflowResult as SDKWorkflowResult,
+} from "../../src/lib/sdk.js";
+
 // ── Handler / Cron types ──────────────────────────────────────────────
 export type {
   HandlerContext,
