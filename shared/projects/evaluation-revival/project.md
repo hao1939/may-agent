@@ -14,7 +14,7 @@ Restore the evaluation pipeline so agent performance is measured continuously. W
 - evaluation.coverage: 0.067 → target ≥0.50 (fraction of completed sessions that get evaluated)
 
 ## Current State
-**Updated iter 8**: Full pipeline operational. Coaching loop closed end-to-end. Regression guard implemented. Coverage investigation complete: root cause is MAX_AGE_MS=48h limits poller to seeing only 28% of the 7-day window. Fix: increase to 7 days. sessions-scored-7d=31 ✅. Coverage blocked by lookback window mismatch.
+**Updated iter 9**: All infrastructure complete. MAX_AGE_MS=7d fix deployed to eval-poller.ts (verified in source). Dedup confirmed working. Waiting 24-48h for coverage metric to rise. sessions-scored-7d=31 ✅. Coaching loop operational. Regression guard active.
 
 ## Plan
 - [x] Verify evaluator can run successfully — 31 evals in DB, pipeline live
