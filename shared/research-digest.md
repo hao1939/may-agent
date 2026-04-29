@@ -7,7 +7,30 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #3) — Context Minimalism & MAS Failure Modes
+## Latest (2026-04-30 Heartbeat #4) — NLAHs: 自然语言Harness是第一类对象
+
+> **主题**：Agent控制逻辑外部化为自然语言规范 + 沙箱基础设施 + Agent行业生存论
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **NLAHs论文** | 清华 arXiv (550赞/725收) | Harness从胶水代码变为可研究的第一类对象；NLAHs+IHR架构 | **我们的role.md/context.md就是NLAHs** — 应版本控制、消融测试 |
+| **Agent沙箱** | XHS @万有引力AI (387赞/649收) | 沙箱是Agent工作流贯穿性基础设施，轨迹数据可用于RL | 我们无沙箱隔离，限制了安全实验和轨迹收集 |
+| **99% Agent会死** | XHS @Momo (705赞) | 护城河在客户/数据/流程，不在AI；Harness层=OS层 | 我们是"用agent做事"非"卖agent"，定位安全 |
+
+### 💡 关键洞察：Harness是Agent的操作系统
+
+1. **我们已经在做NLAHs** — role.md + context.md = 自然语言Agent Harness
+2. **粒度控制是核心挑战** — 太粗失去约束，太细退化为伪代码（与HB-0003极简主义形成张力）
+3. **社区共识**：做harness=做OS，做agent=做应用 — harness层投入ROI最高
+4. **记忆>智能体** — 用户记忆的检索和管理是真正决定性因素
+
+**详细帖子**: [`HB-0004`](library/posts/HB-0004-nlahs-harness-determines-agent-ceiling.md) | [`HB-0005`](library/posts/HB-0005-agent-sandbox-infrastructure.md) | [`HB-0006`](library/posts/HB-0006-99pct-agents-will-die.md)
+
+---
+
+## Previous (2026-04-30 Heartbeat #3) — Context Minimalism & MAS Failure Modes
 
 > **主题**：Agent 上下文管理的极简原则 + 多智能体系统为何失败的系统性分析
 
