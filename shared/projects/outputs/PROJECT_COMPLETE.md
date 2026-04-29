@@ -1,5 +1,7 @@
-# Project Complete
+# Project Status: COMPLETE
 
-This project has been marked as **COMPLETE**. No further work is required.
+This project has been complete since iteration 31. No further work is required.
 
-All deliverables have been produced and verified in prior iterations.
+All metrics are at or above target. All deliverables have been verified.
+
+**No more worker iterations should be dispatched to this project.**
