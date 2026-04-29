@@ -161,3 +161,17 @@ spent debugging ambiguous failures.
 **Fix**: Make baselining automatic for any session that will run verification. The
 rule is simple: if you plan to run `tsc` or `vitest` after changes, run it before
 changes too.
+
+---
+
+## State-Check-Before-Action (merged)
+
+Before any state-mutating operation (edit, write, destructive bash), verify
+that preconditions hold using read-only tool calls. This prevents the #1 source
+of wasted tool calls: edit() match failures from stale mental models.
+
+### Triggers
+- Before `edit()`: read the file first if you haven't in this session
+- Before `write()`: confirm the path exists/doesn't exist
+- Before destructive `bash` (`rm`, `mv`, `sed -i`): verify path/state
+- Before referencing any path not seen in this session's tool output

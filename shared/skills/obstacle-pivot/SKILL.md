@@ -234,3 +234,18 @@ without mentioning that one step was skipped.
 **Fix**: Every obstacle must be either resolved (via fallback) or reported
 (in the session output as a limitation or blocker). There is no third
 option. Use `finish(status: "partial")` if a meaningful step was blocked.
+
+---
+
+## Detecting Blocked State (merged from know-when-blocked)
+
+Before calling finish(), pause and ask:
+> "Did I actually complete what was asked? Or did I discover it can't be done?"
+
+### Signs You're Blocked
+- You identified a problem you can't solve with available tools
+- A dependency is missing/broken and you can't fix it
+- The task requires permissions/access you don't have
+
+### Required Action
+If blocked, use `finish(status: "blocked", blockers: [...])` — never claim success on an impossible task.

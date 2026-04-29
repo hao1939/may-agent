@@ -268,3 +268,19 @@ from scratch. This is the downstream cost of phantom progress.
 **Fix**: This is the problem the skill prevents. When session N materializes
 findings (Steps 2-4), session N+1 can read the findings file in 1 turn
 instead of re-investigating in 5-10 turns.
+
+---
+
+## Concise Mode (formerly: materialize-findings-concise)
+
+When the investigation is short (< 10 tool calls total), use this simplified version:
+
+### Three Rules (Concise)
+1. **EARLY WRITE** — Write first finding within first 3 tool calls
+2. **WRITE EVERY 3 COMMANDS** — Maximum gap of 3 analysis calls between writes
+3. **REFERENCE IN FINISH** — Always include deliverables in finish()
+
+### Quick Pattern
+```
+[read] → [read] → [read] → WRITE findings → [read] → [bash] → [bash] → WRITE more → ... → WRITE report → finish(deliverables: [...])
+```
