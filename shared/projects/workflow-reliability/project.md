@@ -1,7 +1,11 @@
 # Project: Workflow Reliability
 
-**Status**: closed
-**Stop Reason**: Coaching goal achieved — worker success went from 33% → 100% when runs actually execute. Remaining blocker (97% dispatch errors) is an infrastructure issue escalated to tech-lead, outside this project's scope.
+**Status**: waiting
+**Stop Reason**: WAITING
+
+This project is **closed**. No further worker iterations needed.
+
+**Summary**: The workflow-reliability project achieved its coaching goal (worker iteration success: 33% → 100% when runs exec
 
 **Owner**: coach
 **Priority**: P1
