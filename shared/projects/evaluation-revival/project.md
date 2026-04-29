@@ -25,7 +25,7 @@ Fix needed: Increase MAX_AGE_MS to 24-48h and/or increase MAX_SESSIONS_PER_RUN t
 - [x] Diagnose why evaluator stopped being triggered — eval-poller exists but has tight caps
 - [x] Create evaluation trigger — eval-poller already exists in cron.json
 - [x] Validate: evaluator produces scores for 5+ sessions — 31 in last 7 days
-- [ ] Increase eval-poller throughput: MAX_AGE_MS→48h, MAX_SESSIONS_PER_RUN→20 (file: agents/may/handlers/eval-poller.ts)
+- [x] Increase eval-poller throughput: MAX_AGE_MS→48h, MAX_SESSIONS_PER_RUN→20 (file: agents/may/handlers/eval-poller.ts)
 - [ ] Validate coverage reaches ≥50% after throughput increase (measure in ~3 days)
 - [ ] Define score thresholds that trigger coaching interventions
 - [ ] First coaching intervention based on evaluation data
