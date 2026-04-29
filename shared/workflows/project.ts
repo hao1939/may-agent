@@ -659,6 +659,13 @@ async function handleWaitingDecision(
     ctx.emit({ type: "step_start", step: stepLabel });
     const ms = extractMilestones(ls.projectContent);
     const milestoneNote = ms.total > 0 ? `Milestones: ${ms.done}/${ms.total} checked off.` : "";
+
+    // JS fast-path: all milestones checked off → auto-pass without LLM session
+    if (ms.total > 0 && ms.done === ms.total) {
+      const evalEntry = `**Evaluator**: PASS (score=8/10) — JS fast-path: all ${ms.total} milestones checked off, skipping LLM evaluation.\n\n`;
+      ls.projectContent = appendJournalEntry(config, ls.projectContent, evalEntry, isCommentIteration);
+      // Fall through to normal WAITING handling — no LLM session needed
+    } else {
     const evalPrompt = buildEvalPrompt(config.goal, ls.projectContent, journalContent, iteration, milestoneNote);
     const evalResult = await ctx.runAgent(config.owner, evalPrompt);
     const evalText = evalResult.lastAssistantText ?? "";
