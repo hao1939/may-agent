@@ -29,6 +29,7 @@ import {
 } from "./incremental-checkpoint.ts";
 import { validateOutput, type ValidationResult } from "./output-validator.ts";
 import { withRetry, isRetryableError } from "./provider-retry.ts";
+import { estimateComplexity } from "./complexity-estimator.ts";
 
 export const name: string = "master-worker";
 
@@ -331,6 +332,10 @@ ${journalContent.slice(-3000)}
       // ── Work phase ──
       ctx.log(`[work] Iteration ${iteration}/${maxIterations} starting...`);
       const guidance = orchestrator.lastText();
+
+      // Estimate task complexity and set appropriate timeout
+      const complexity = estimateComplexity(guidance);
+      ctx.log(`[work] 📊 Complexity: ${complexity.score}/5 (${complexity.description}), timeout: ${complexity.timeoutMs}ms`);
       const outputsDir = join(dirname(projectDir), "outputs");
 
       // Generate a session-scoped checkpoint ID for this iteration
