@@ -116,6 +116,12 @@ function cachedWrite(path: string, content: string): void {
   _cache.invalidate(path);
 }
 
+/** Append-through helper: appends to disk and invalidates cache. */
+function cachedAppend(path: string, content: string): void {
+  appendFileSync(path, content);
+  _cache.invalidate(path);
+}
+
 function ensureDir(dir: string): void {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }
@@ -621,13 +627,13 @@ function appendJournalEntry(
   isCommentIteration: boolean,
 ): string {
   if (isCommentIteration) {
-    if (!config.isLegacy) appendFileSync(config.journalPath, entry);
+    if (!config.isLegacy) cachedAppend(config.journalPath, entry);
   } else {
     if (config.isLegacy) {
       projectContent += entry;
       cachedWrite(config.projectPath, projectContent);
     } else {
-      appendFileSync(config.journalPath, entry);
+      cachedAppend(config.journalPath, entry);
     }
   }
   return projectContent;
@@ -817,7 +823,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         if (config.isLegacy) {
           projectContent += commentEntry;
         } else {
-          appendFileSync(config.journalPath, commentEntry);
+          cachedAppend(config.journalPath, commentEntry);
         }
 
         projectContent = clearComments(projectContent);
@@ -853,7 +859,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       if (config.isLegacy) {
         projectContent += commentEntry;
       } else {
-        appendFileSync(config.journalPath, commentEntry);
+        cachedAppend(config.journalPath, commentEntry);
       }
 
       // Clear comments — they're now in the journal
@@ -916,7 +922,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         `\n### Iteration ${iteration} — ${now}\n**Worker**: ${workerSummary}\n`);
       cachedWrite(config.projectPath, projectContent);
     } else {
-      appendFileSync(config.journalPath, journalEntry);
+      cachedAppend(config.journalPath, journalEntry);
     }
 
     // Re-read project file from disk — worker may have checked off milestones or updated sections
@@ -939,7 +945,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         projectContent = appendToSection(projectContent, "Progress Log", cpEntry);
         cachedWrite(config.projectPath, projectContent);
       } else {
-        appendFileSync(config.journalPath, cpEntry);
+        cachedAppend(config.journalPath, cpEntry);
       }
       ctx.emit({ type: "budget_checkpoint", iteration, turnsEstimate: turnsEst });
       ctx.log(`[project] Budget checkpoint at iteration ${iteration} (~${turnsEst} turns)`);
@@ -967,7 +973,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           projectContent += reviewEntry;
           cachedWrite(config.projectPath, projectContent);
         } else {
-          appendFileSync(config.journalPath, reviewEntry);
+          cachedAppend(config.journalPath, reviewEntry);
         }
         iteration++;
         continue;
@@ -980,7 +986,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         projectContent += reviewEntry;
         cachedWrite(config.projectPath, projectContent);
       } else {
-        appendFileSync(config.journalPath, reviewEntry);
+        cachedAppend(config.journalPath, reviewEntry);
       }
 
       // Update milestone checkboxes based on reviewer's assessment
