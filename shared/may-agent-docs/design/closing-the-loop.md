@@ -182,7 +182,7 @@ Added `"Can't resolve? Escalate to May via agents.send()."` to 6 block messages 
 
 #### G14: `trackRequest` Deprecation — ✅ RESOLVED
 
-**Resolved 2026-04-29.** The `requests` table has been fully removed. `trackRequest` and `updateRequest` are no-op stubs (return dummy UUID / do nothing). Work tracking uses the `sessions` table. The stubs remain to avoid breaking callers but do nothing. Use `ctx.emit()` for notifications.
+**Resolved 2026-04-29.** `trackRequest`, `updateRequest`, and `isDuplicate` fully removed from codebase (not stubs — deleted). Work tracking uses the `sessions` table. Notifications use `sdk.emit()` or `sdk.notify()`.
 
 #### G15: `onEvent` Redundancy in workflow-tool.ts
 
