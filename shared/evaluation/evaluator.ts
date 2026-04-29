@@ -556,6 +556,66 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
     return result;
   }
 
+  // ── Fast-path: shallow sessions (LLM-to-JS optimization) ────────────
+  // When ALL children completed (done/interrupted) but have very few messages
+  // (≤3), they didn't do meaningful work. Skip the LLM evaluator and return
+  // a heuristic "needs_improvement" evaluation with "shallow_session" issue.
+  const SHALLOW_MESSAGE_THRESHOLD = 3;
+  const allShallow = children.every(
+    (c) => (c.status === "done" || c.status === "interrupted") && c.messages.length <= SHALLOW_MESSAGE_THRESHOLD,
+  );
+  if (allShallow) {
+    const perAgentChainsShallow: Record<string, FailureChain[]> = {};
+    const result: TaskEvaluationResult = {
+      overall: {
+        efficiency: 0.2,
+        quality: 0.2,
+        verdict: "needs_improvement",
+        result_delivered: false,
+      },
+      agents: {},
+      usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0, cost: 0, turns: 0 },
+      lessons: null,
+      failureChains: perAgentChainsShallow,
+      sessionIds: children.map((c) => c.sessionId),
+      raw: "[heuristic: shallow sessions — skipped LLM evaluation]",
+    };
+    for (const child of children) {
+      const chains = extractFailureChains(child.messages);
+      perAgentChainsShallow[child.agent] = (perAgentChainsShallow[child.agent] ?? []).concat(chains);
+      const usage = extractUsage(child.messages);
+      const createdAt = extractTimestamp(child.sessionId);
+      result.agents[child.sessionId] = {
+        agent: child.agent,
+        sessionId: child.sessionId,
+        efficiency: 0.2,
+        quality: 0.2,
+        productive_calls: 0,
+        wasted_calls: usage.turns,
+        verdict: "needs_improvement",
+        issues: [`shallow_session: completed with only ${child.messages.length} messages — no meaningful work done`],
+      };
+      ctx.upsertEvaluation({
+        sessionId: child.sessionId,
+        agent: child.agent,
+        quality: 0.2,
+        efficiency: 0.2,
+        productiveCalls: 0,
+        wastedCalls: usage.turns,
+        verdict: "needs_improvement",
+        issues: [`shallow_session: completed with only ${child.messages.length} messages — no meaningful work done`],
+        overall: result.overall,
+        usage: usage as unknown as Record<string, unknown>,
+        failureChains: chains,
+        evaluatedByHeuristic: true,
+        skippedByJs: true,
+        createdAt,
+      });
+    }
+    appendErrorLogs(result, children);
+    return result;
+  }
+
   // Build per-agent failure chains and transcripts
   const perAgentChains: Record<string, FailureChain[]> = {};
   let perAgentTranscripts: string[] = [];
