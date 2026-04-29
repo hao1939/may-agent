@@ -346,5 +346,15 @@
     "agent": "may",
     "enabled": true,
     "description": "Measure handler health metrics every 5 minutes."
+  },
+  {
+    "name": "context-learn-poller",
+    "type": "job",
+    "intervalMs": 1800000,
+    "handler": "context-learn-poller",
+    "agent": "may",
+    "enabled": true,
+    "description": "Poll recent completed sessions and dispatch context-learn events directly. Workaround for missing session.completed event emission.",
+    "offsetMs": 900000
   }
 ]
