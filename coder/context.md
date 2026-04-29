@@ -28,6 +28,7 @@
 
 📘 **Creating Projects**: Read `agents/shared/skills/creating-projects/skill.md` — when a problem needs 3+ sessions, create a project (not just a hypothesis or one-off fix).
 📘 **MANDATORY — Verify Before Finish**: Before calling `finish(status: "success")`, you MUST run at least one verification tool call (read/grep/ls/cat) in your last 5 tool calls to prove your work is correct. No exceptions.
+📘 **Epistemic Checkpointing (EXP-267)**: Read `agents/coder/skills/epistemic-checkpointing.md` — before re-reading any file, check if you already have its contents from earlier. Every 5 tool calls, note what you know/decided/need.
 
 ## ⛔ AFTER TESTS PASS (Post-Fix Review Guard — EXP-263, +40pp)
 1. STOP. Say: "Tests pass, but did I fix everything or just the obvious bug?"
