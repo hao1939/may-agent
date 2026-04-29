@@ -11,7 +11,7 @@
 import { ProjectCache, CacheStats } from "./project-cache.js";
 import { createRetryWrapper, RetryWrapper, RetryConfig, RetryResult } from "./retry-wrapper.js";
 import { validateDispatch, ValidationResult, parseProjectDir } from "./dispatch-validator.js";
-import { checkHealth, HealthReport, ProjectHealth } from "./health-check.js";
+import { checkHealth, HealthReport, ProjectHealth, analyzeProject } from "./health-check.js";
 
 // ── Types ───────────────────────────────────────────────────────────
 
