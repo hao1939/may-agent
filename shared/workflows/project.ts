@@ -688,6 +688,7 @@ async function handleWaitingDecision(
     }
     const evalEntry = `**Evaluator**: PASS (score=${score}/10) — ${evalText.slice(0, 300)}\n\n`;
     ls.projectContent = appendJournalEntry(config, ls.projectContent, evalEntry, isCommentIteration);
+    } // close else (LLM evaluation path)
   }
 
   // Log auto-conversion in journal
