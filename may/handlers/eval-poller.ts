@@ -19,7 +19,7 @@ import { evaluateStandaloneSession } from "../../shared/evaluation/evaluator.js"
 
 const STATE_FILE = "eval-poller-processed.json";
 const MAX_SESSIONS_PER_RUN = 20; // Increased from 8 to improve coverage throughput
-const MAX_AGE_MS = 48 * 60 * 60 * 1000; // Increased from 6h to 48h to catch more sessions
+const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days to match coverage metric window
 
 // Meta-agents that shouldn't be evaluated
 const SKIP_AGENTS = new Set(["evaluator", "judge"]);
@@ -45,7 +45,7 @@ function saveState(persistDir: string, state: ProcessedState): void {
   const path = resolve(persistDir, STATE_FILE);
   mkdirSync(persistDir, { recursive: true });
   // Keep only last 500 processed IDs to avoid unbounded growth
-  state.processedSessionIds = state.processedSessionIds.slice(-500);
+  state.processedSessionIds = state.processedSessionIds.slice(-2000); // Increased for 7-day lookback
   writeFileSync(path, JSON.stringify(state, null, 2));
 }
 
