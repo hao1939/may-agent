@@ -1,0 +1,308 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import {
+  scanAllProjects,
+  diagnoseProject,
+  newProjectHealthEntry,
+  readHealthState,
+  writeHealthState,
+  readInflight,
+  writeInflight,
+  generateRunId,
+  saveWorkflowRunFile,
+  simpleHash,
+  updateField,
+  appendComment,
+  upsertProject,
+  type ProjectInfo,
+  type HealthState,
+  type ProjectHealthEntry,
+} from "../lib/project-health.ts";
+
+// Mock fs for scanAllProjects tests
+vi.mock("node:fs", async () => {
+  const actual = await vi.importActual<typeof fs>("node:fs");
+  return { ...actual };
+});
+
+describe("scanAllProjects - filesystem traversal", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = path.join("/tmp", `test-scan-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    fs.mkdirSync(tmpDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("returns empty when agentsRoot does not exist", () => {
+    const result = scanAllProjects("/nonexistent/path/xyz123");
+    expect(result).toEqual([]);
+  });
+
+  it("returns empty when agents have no workspace/projects", () => {
+    fs.mkdirSync(path.join(tmpDir, "agent1"), { recursive: true });
+    const result = scanAllProjects(tmpDir);
+    expect(result).toEqual([]);
+  });
+
+  it("skips directories without project.md", () => {
+    const projDir = path.join(tmpDir, "agent1", "workspace", "projects", "my-proj");
+    fs.mkdirSync(projDir, { recursive: true });
+    // No project.md file
+    const result = scanAllProjects(tmpDir);
+    expect(result).toEqual([]);
+  });
+
+  it("scans projects with project.md", () => {
+    const projDir = path.join(tmpDir, "agent1", "workspace", "projects", "my-proj");
+    fs.mkdirSync(projDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(projDir, "project.md"),
+      "# Project\n\n**Status**: active\n**Owner**: agent1\n**Workflow**: master-worker\n"
+    );
+    const result = scanAllProjects(tmpDir);
+    expect(result.length).toBe(1);
+    expect(result[0].status).toBe("active");
+    expect(result[0].owner).toBe("agent1");
+    expect(result[0].workflow).toBe("master-worker");
+  });
+
+  it("defaults status to active when missing", () => {
+    const projDir = path.join(tmpDir, "agent1", "workspace", "projects", "proj2");
+    fs.mkdirSync(projDir, { recursive: true });
+    fs.writeFileSync(path.join(projDir, "project.md"), "# Project\nSome content\n");
+    const result = scanAllProjects(tmpDir);
+    expect(result.length).toBe(1);
+    expect(result[0].status).toBe("active");
+  });
+
+  it("skips 'shared' and 'test' directories", () => {
+    // Create shared and test dirs — should be skipped
+    fs.mkdirSync(path.join(tmpDir, "shared", "workspace", "projects", "p"), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, "shared", "workspace", "projects", "p", "project.md"), "# P\n**Status**: active\n");
+    fs.mkdirSync(path.join(tmpDir, "test", "workspace", "projects", "p"), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, "test", "workspace", "projects", "p", "project.md"), "# P\n**Status**: active\n");
+    const result = scanAllProjects(tmpDir);
+    expect(result).toEqual([]);
+  });
+
+  it("handles multiple agents and projects", () => {
+    for (const agent of ["alice", "bob"]) {
+      for (const proj of ["proj1", "proj2"]) {
+        const projDir = path.join(tmpDir, agent, "workspace", "projects", proj);
+        fs.mkdirSync(projDir, { recursive: true });
+        fs.writeFileSync(path.join(projDir, "project.md"), `# ${proj}\n**Status**: active\n**Owner**: ${agent}\n`);
+      }
+    }
+    const result = scanAllProjects(tmpDir);
+    expect(result.length).toBe(4);
+  });
+});
+
+describe("diagnoseProject - uncovered branches", () => {
+  const now = Date.now();
+  const emptyState: HealthState = { projects: {} };
+  const emptyBreached = new Set<string>();
+  const emptyRunning = new Set<string>();
+
+  function makeProject(overrides: Partial<ProjectInfo> = {}): ProjectInfo {
+    return {
+      relPath: "agent1/workspace/projects/test-proj",
+      projectFile: "/tmp/nonexistent/project.md",
+      content: "# Test\n**Status**: active\n",
+      status: "active",
+      owner: "agent1",
+      blockerReason: "",
+      workflow: "master-worker",
+      ...overrides,
+    };
+  }
+
+  it("returns skip for unknown status", () => {
+    const proj = makeProject({ status: "unknown-status" });
+    const result = diagnoseProject(proj, emptyState, emptyBreached, emptyRunning, now, []);
+    expect(result.type).toBe("skip");
+  });
+
+  it("returns launch-workflow for active project not running", () => {
+    const proj = makeProject({ status: "active" });
+    const result = diagnoseProject(proj, emptyState, emptyBreached, emptyRunning, now, []);
+    expect(result.type).toBe("launch-workflow");
+    expect(result.reason).toContain("active project needs work");
+  });
+
+  it("returns skip for active project with live session", () => {
+    const proj = makeProject({ status: "active" });
+    const running = new Set(["agent1/test-proj"]);
+    const result = diagnoseProject(proj, emptyState, emptyBreached, running, now, []);
+    expect(result.type).toBe("skip");
+    expect(result.reason).toContain("live session");
+  });
+
+  it("returns skip for active project in cooldown", () => {
+    const proj = makeProject({ status: "active" });
+    const state: HealthState = {
+      projects: {
+        "agent1/workspace/projects/test-proj": {
+          ...newProjectHealthEntry(),
+          lastLaunch: now - 30_000, // 30 sec ago, within 60s cooldown
+        },
+      },
+    };
+    const result = diagnoseProject(proj, state, emptyBreached, emptyRunning, now, []);
+    expect(result.type).toBe("skip");
+    expect(result.reason).toContain("cooldown");
+  });
+
+  it("returns skip for closed project without unread comments", () => {
+    const proj = makeProject({ status: "closed" });
+    const result = diagnoseProject(proj, emptyState, emptyBreached, emptyRunning, now, []);
+    expect(result.type).toBe("skip");
+    expect(result.reason).toContain("closed by human");
+  });
+
+  it("treats 'done' as waiting", () => {
+    const proj = makeProject({ status: "done" });
+    const result = diagnoseProject(proj, emptyState, emptyBreached, emptyRunning, now, []);
+    // "done" → "waiting" → skip (waiting for fix)
+    expect(result.type).toBe("skip");
+    expect(result.reason).toContain("waiting");
+  });
+
+  it("treats 'complete' as waiting", () => {
+    const proj = makeProject({ status: "complete" });
+    const result = diagnoseProject(proj, emptyState, emptyBreached, emptyRunning, now, []);
+    expect(result.type).toBe("skip");
+  });
+
+  it("treats 'completed' as waiting", () => {
+    const proj = makeProject({ status: "completed" });
+    const result = diagnoseProject(proj, emptyState, emptyBreached, emptyRunning, now, []);
+    expect(result.type).toBe("skip");
+  });
+
+  it("escalates blocked project after 2 hours", () => {
+    const proj = makeProject({ status: "blocked" });
+    const state: HealthState = {
+      projects: {
+        "agent1/workspace/projects/test-proj": {
+          ...newProjectHealthEntry(),
+          lastLaunch: now - 3 * 60 * 60 * 1000, // 3 hours ago
+        },
+      },
+    };
+    const result = diagnoseProject(proj, state, emptyBreached, emptyRunning, now, []);
+    expect(result.type).toBe("escalate");
+  });
+
+  it("escalates waiting project after 24 hours", () => {
+    const proj = makeProject({ status: "waiting" });
+    const state: HealthState = {
+      projects: {
+        "agent1/workspace/projects/test-proj": {
+          ...newProjectHealthEntry(),
+          lastLaunch: now - 25 * 60 * 60 * 1000, // 25 hours ago
+        },
+      },
+    };
+    const result = diagnoseProject(proj, state, emptyBreached, emptyRunning, now, []);
+    expect(result.type).toBe("escalate");
+    expect(result.reason).toContain("25h");
+  });
+
+  it("launches for waiting project with pending comments in project.md", () => {
+    const proj = makeProject({
+      status: "waiting",
+      content: "# Project\n**Status**: waiting\n\n## Comments\n\nHuman says: please fix this\n",
+    });
+    const result = diagnoseProject(proj, emptyState, emptyBreached, emptyRunning, now, []);
+    expect(result.type).toBe("launch-workflow");
+    expect(result.reason).toContain("unread comments");
+  });
+});
+
+describe("diagnoseProject - closed with unread discussion", () => {
+  const now = Date.now();
+  const emptyState: HealthState = { projects: {} };
+
+  it("launches for closed project with unread discussion.md", () => {
+    // Create a temp dir with discussion.md
+    const tmpDir = `/tmp/test-diag-${Date.now()}`;
+    const projDir = path.join(tmpDir, "proj");
+    fs.mkdirSync(projDir, { recursive: true });
+    fs.writeFileSync(path.join(projDir, "project.md"), "# P\n**Status**: closed\n");
+    fs.writeFileSync(path.join(projDir, "discussion.md"), "# Discussion\n\nSome unread comment\n");
+
+    const proj: ProjectInfo = {
+      relPath: "agent1/workspace/projects/proj",
+      projectFile: path.join(projDir, "project.md"),
+      content: "# P\n**Status**: closed\n",
+      status: "closed",
+      owner: "agent1",
+      blockerReason: "",
+      workflow: "master-worker",
+    };
+
+    const result = diagnoseProject(proj, emptyState, new Set(), new Set(), now, []);
+    expect(result.type).toBe("launch-workflow");
+    expect(result.reason).toContain("reopening");
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+});
+
+describe("utility functions", () => {
+  it("generateRunId returns a hex string", () => {
+    const id = generateRunId();
+    expect(id).toMatch(/^[a-f0-9]+$/);
+    expect(id.length).toBeGreaterThan(0);
+  });
+
+  it("simpleHash returns consistent hash", () => {
+    expect(simpleHash("hello")).toBe(simpleHash("hello"));
+    expect(simpleHash("hello")).not.toBe(simpleHash("world"));
+  });
+
+  it("saveWorkflowRunFile writes JSON", () => {
+    const tmpDir = `/tmp/test-wfrun-${Date.now()}`;
+    fs.mkdirSync(tmpDir, { recursive: true });
+    saveWorkflowRunFile(tmpDir, { runId: "test-run", status: "ok" });
+    // Should have created a .json file in .state/workflow-runs/
+    const wfDir = path.join(tmpDir, ".state", "workflow-runs");
+    const files = fs.readdirSync(wfDir).filter(f => f.endsWith(".json"));
+    expect(files.length).toBeGreaterThan(0);
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("readHealthState returns default for missing file", () => {
+    const state = readHealthState("/nonexistent/file.json");
+    expect(state.projects).toEqual({});
+  });
+
+  it("writeHealthState and readHealthState roundtrip", () => {
+    const file = `/tmp/test-health-${Date.now()}.json`;
+    const state: HealthState = { projects: { "test": newProjectHealthEntry() } };
+    writeHealthState(file, state);
+    const read = readHealthState(file);
+    expect(read.projects["test"]).toBeDefined();
+    fs.unlinkSync(file);
+  });
+
+  it("readInflight returns empty set for missing file", () => {
+    const result = readInflight("/nonexistent/file.json");
+    expect(result.size).toBe(0);
+  });
+
+  it("writeInflight and readInflight roundtrip", () => {
+    const file = `/tmp/test-inflight-${Date.now()}.json`;
+    writeInflight(file, new Set(["a", "b"]));
+    const result = readInflight(file);
+    expect(result.size).toBe(2);
+    expect(result.has("a")).toBe(true);
+    fs.unlinkSync(file);
+  });
+});
