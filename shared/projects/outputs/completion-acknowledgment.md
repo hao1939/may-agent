@@ -1,5 +1,5 @@
 # Project Completion Acknowledgment
 
-**Status:** COMPLETE
+This project has been marked as **COMPLETE**. No further work is required.
 
-No further work is required. All metrics exceed targets and the project has been marked as complete.
+All metrics exceed targets. No additional iterations needed.
