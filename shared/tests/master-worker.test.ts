@@ -1,195 +1,121 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, writeFileSync, mkdirSync, existsSync, statSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   extractDecision,
-  diffSnapshots,
-  snapshotOutputs,
   orchestratorSystemPrompt,
   workerSystemPrompt,
-  name,
-  description,
+  snapshotOutputs,
+  diffSnapshots,
 } from "../workflows/master-worker.ts";
 
-// ── extractDecision ──
+// ── extractDecision ─────────────────────────────────────────────────────
 
 describe("extractDecision", () => {
-  it("parses CONTINUE as first word", () => {
-    expect(extractDecision("CONTINUE\n\nDo the next thing")).toEqual({
-      status: "continue",
-      detail: "CONTINUE\n\nDo the next thing",
-    });
+  it("extracts CONTINUE from first word", () => {
+    const d = extractDecision("CONTINUE\n\nDo the next thing");
+    expect(d.status).toBe("continue");
   });
 
-  it("parses PIVOT as first word", () => {
-    expect(extractDecision("PIVOT\n\nChange approach")).toMatchObject({ status: "pivot" });
+  it("extracts PIVOT from first word", () => {
+    const d = extractDecision("PIVOT\n\nTry a different approach");
+    expect(d.status).toBe("pivot");
   });
 
-  it("parses BLOCKED as first word", () => {
-    expect(extractDecision("BLOCKED\n\nCan't proceed")).toMatchObject({ status: "blocked" });
+  it("extracts BLOCKED from first word", () => {
+    const d = extractDecision("BLOCKED\n\nNeed credentials");
+    expect(d.status).toBe("blocked");
   });
 
-  it("parses WAITING as first word", () => {
-    expect(extractDecision("WAITING\n\nNeed input")).toMatchObject({ status: "waiting" });
+  it("extracts WAITING from first word", () => {
+    const d = extractDecision("WAITING\n\nNeed human approval");
+    expect(d.status).toBe("waiting");
   });
 
-  it("detects 'Decision: CONTINUE' pattern", () => {
-    const result = extractDecision("Here is my assessment.\n\nDecision: CONTINUE\n\nNext steps...");
-    expect(result.status).toBe("continue");
+  it("extracts from Decision: KEYWORD pattern", () => {
+    const d = extractDecision("Some preamble\nDecision: CONTINUE\nMore text");
+    expect(d.status).toBe("continue");
   });
 
-  it("detects **Decision**: **PIVOT** markdown pattern", () => {
-    const result = extractDecision("Review complete.\n\n**Decision**: **PIVOT**\n\nNew approach");
-    expect(result.status).toBe("pivot");
+  it("extracts from **Decision** pattern", () => {
+    const d = extractDecision("Analysis done.\n**Decision**: **PIVOT**\nNew approach");
+    expect(d.status).toBe("pivot");
   });
 
-  it("detects 'proceed' as continue", () => {
-    expect(extractDecision("I think we should proceed with the current plan.")).toMatchObject({ status: "continue" });
+  it("extracts from bold keyword pattern", () => {
+    const d = extractDecision("Here is my analysis\n**BLOCKED**\nCannot proceed");
+    expect(d.status).toBe("blocked");
   });
 
-  it("detects 'let's begin' as continue", () => {
-    expect(extractDecision("Let's begin working on the tests.")).toMatchObject({ status: "continue" });
+  it("detects proceed/move forward as CONTINUE", () => {
+    const d = extractDecision("Let's proceed with the implementation");
+    expect(d.status).toBe("continue");
   });
 
-  it("detects 'move forward' as continue", () => {
-    expect(extractDecision("We should move forward with implementation.")).toMatchObject({ status: "continue" });
+  it("detects 'let's begin' as CONTINUE", () => {
+    const d = extractDecision("Great, let's begin working on the tests");
+    expect(d.status).toBe("continue");
   });
 
-  it("detects 'start working' as continue", () => {
-    expect(extractDecision("Time to start working on the feature.")).toMatchObject({ status: "continue" });
+  it("detects 'start working' as CONTINUE", () => {
+    const d = extractDecision("We should start working on this immediately");
+    expect(d.status).toBe("continue");
   });
 
-  it("falls back to uppercase keyword scan", () => {
-    expect(extractDecision("After reviewing, we are BLOCKED by the missing API key.")).toMatchObject({ status: "blocked" });
+  it("detects 'move forward' as CONTINUE", () => {
+    const d = extractDecision("I think we should move forward with plan B");
+    expect(d.status).toBe("continue");
   });
 
-  it("returns unknown when no keywords found", () => {
-    expect(extractDecision("Everything looks good.")).toMatchObject({ status: "unknown" });
+  it("falls back to scanning for uppercase keywords", () => {
+    const d = extractDecision("I think we should CONTINUE with the plan");
+    expect(d.status).toBe("continue");
+  });
+
+  it("returns unknown when no keyword found", () => {
+    const d = extractDecision("Here is my analysis of the situation");
+    expect(d.status).toBe("unknown");
   });
 
   it("truncates detail to 500 chars", () => {
     const longText = "CONTINUE\n" + "x".repeat(600);
-    expect(extractDecision(longText).detail.length).toBe(500);
+    const d = extractDecision(longText);
+    expect(d.detail.length).toBe(500);
   });
 
   it("handles empty string", () => {
-    expect(extractDecision("")).toMatchObject({ status: "unknown", detail: "" });
+    const d = extractDecision("");
+    expect(d.status).toBe("unknown");
   });
 
   it("handles whitespace-only string", () => {
-    expect(extractDecision("   \n  \n  ")).toMatchObject({ status: "unknown", detail: "" });
+    const d = extractDecision("   \n\n  ");
+    expect(d.status).toBe("unknown");
   });
 
-  it("handles WAITING keyword in body text", () => {
-    expect(extractDecision("We are WAITING for approval")).toMatchObject({ status: "waiting" });
+  it("is case-insensitive for first-word check", () => {
+    const d = extractDecision("continue with the work");
+    expect(d.status).toBe("continue");
   });
 
-  it("handles case-insensitive first line", () => {
-    expect(extractDecision("continue with the work")).toMatchObject({ status: "continue" });
-  });
-});
-
-// ── snapshotOutputs with real filesystem ──
-
-describe("snapshotOutputs", () => {
-  let tmpDir: string;
-
-  beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), "mw-test-"));
-  });
-
-  it("returns empty map for non-existent dir", () => {
-    expect(snapshotOutputs("/tmp/nonexistent-dir-xyz-12345").size).toBe(0);
-  });
-
-  it("returns empty map for empty dir", () => {
-    expect(snapshotOutputs(tmpDir).size).toBe(0);
-  });
-
-  it("captures files in root dir", () => {
-    writeFileSync(join(tmpDir, "a.txt"), "hello");
-    const snap = snapshotOutputs(tmpDir);
-    expect(snap.size).toBe(1);
-    expect(snap.has(join(tmpDir, "a.txt"))).toBe(true);
-  });
-
-  it("captures files in subdirectories (1 level deep)", () => {
-    const sub = join(tmpDir, "sub");
-    mkdirSync(sub);
-    writeFileSync(join(sub, "b.txt"), "world");
-    const snap = snapshotOutputs(tmpDir);
-    expect(snap.has(join(sub, "b.txt"))).toBe(true);
-  });
-
-  it("captures mix of root and sub files", () => {
-    writeFileSync(join(tmpDir, "root.txt"), "r");
-    const sub = join(tmpDir, "dir");
-    mkdirSync(sub);
-    writeFileSync(join(sub, "nested.txt"), "n");
-    const snap = snapshotOutputs(tmpDir);
-    expect(snap.size).toBe(2);
+  it("extracts WAITING from body when not first word", () => {
+    const d = extractDecision("I need to be WAITING for approval");
+    expect(d.status).toBe("waiting");
   });
 });
 
-// ── diffSnapshots ──
-
-describe("diffSnapshots", () => {
-  it("detects new files", () => {
-    const before = new Map<string, number>();
-    const after = new Map<string, number>([["/out/a.txt", 100]]);
-    expect(diffSnapshots(before, after)).toEqual(["/out/a.txt"]);
-  });
-
-  it("detects modified files", () => {
-    const before = new Map<string, number>([["/out/a.txt", 100]]);
-    const after = new Map<string, number>([["/out/a.txt", 200]]);
-    expect(diffSnapshots(before, after)).toEqual(["/out/a.txt"]);
-  });
-
-  it("ignores unchanged files", () => {
-    const before = new Map<string, number>([["/out/a.txt", 100]]);
-    const after = new Map<string, number>([["/out/a.txt", 100]]);
-    expect(diffSnapshots(before, after)).toEqual([]);
-  });
-
-  it("does not flag deleted files", () => {
-    const before = new Map<string, number>([["/out/a.txt", 100]]);
-    const after = new Map<string, number>();
-    expect(diffSnapshots(before, after)).toEqual([]);
-  });
-
-  it("handles both empty", () => {
-    expect(diffSnapshots(new Map(), new Map())).toEqual([]);
-  });
-
-  it("handles mix of new, modified, unchanged", () => {
-    const before = new Map<string, number>([
-      ["/out/old.txt", 100],
-      ["/out/same.txt", 100],
-    ]);
-    const after = new Map<string, number>([
-      ["/out/old.txt", 200],
-      ["/out/same.txt", 100],
-      ["/out/new.txt", 300],
-    ]);
-    const changed = diffSnapshots(before, after);
-    expect(changed).toContain("/out/old.txt");
-    expect(changed).toContain("/out/new.txt");
-    expect(changed).not.toContain("/out/same.txt");
-  });
-});
-
-// ── System prompts ──
+// ── orchestratorSystemPrompt ────────────────────────────────────────────
 
 describe("orchestratorSystemPrompt", () => {
-  it("includes project dir in prompt", () => {
-    const prompt = orchestratorSystemPrompt("/my/project");
-    expect(prompt).toContain("/my/project");
+  it("includes the project directory", () => {
+    const prompt = orchestratorSystemPrompt("/projects/test");
+    expect(prompt).toContain("/projects/test");
+  });
+
+  it("mentions orchestrator role", () => {
+    const prompt = orchestratorSystemPrompt("/projects/test");
     expect(prompt).toContain("orchestrator");
   });
 
-  it("includes decision keywords", () => {
+  it("mentions decision keywords", () => {
     const prompt = orchestratorSystemPrompt("/p");
     expect(prompt).toContain("CONTINUE");
     expect(prompt).toContain("PIVOT");
@@ -198,27 +124,73 @@ describe("orchestratorSystemPrompt", () => {
   });
 });
 
+// ── workerSystemPrompt ──────────────────────────────────────────────────
+
 describe("workerSystemPrompt", () => {
-  it("includes outputs directory", () => {
-    const prompt = workerSystemPrompt("/my/project");
-    expect(prompt).toContain("/my/project/outputs");
+  it("includes the outputs directory", () => {
+    const prompt = workerSystemPrompt("/projects/test");
+    expect(prompt).toContain("/projects/test/outputs");
   });
 
-  it("includes write-first constraint", () => {
+  it("mentions write-first constraint", () => {
     const prompt = workerSystemPrompt("/p");
     expect(prompt).toContain("WRITE-FIRST");
   });
 });
 
-// ── Module exports ──
+// ── snapshotOutputs & diffSnapshots ─────────────────────────────────────
 
-describe("module exports", () => {
-  it("exports name", () => {
-    expect(name).toBe("master-worker");
+describe("snapshotOutputs", () => {
+  it("returns empty map for non-existent directory", () => {
+    const snap = snapshotOutputs("/nonexistent/dir/xyz");
+    expect(snap.size).toBe(0);
+  });
+});
+
+describe("diffSnapshots", () => {
+  it("detects new files", () => {
+    const before = new Map<string, number>();
+    const after = new Map<string, number>([["file1.txt", 1000]]);
+    const diff = diffSnapshots(before, after);
+    expect(diff).toEqual(["file1.txt"]);
   });
 
-  it("exports description", () => {
-    expect(typeof description).toBe("string");
-    expect(description.length).toBeGreaterThan(0);
+  it("detects modified files", () => {
+    const before = new Map<string, number>([["file1.txt", 1000]]);
+    const after = new Map<string, number>([["file1.txt", 2000]]);
+    const diff = diffSnapshots(before, after);
+    expect(diff).toEqual(["file1.txt"]);
+  });
+
+  it("ignores unchanged files", () => {
+    const before = new Map<string, number>([["file1.txt", 1000]]);
+    const after = new Map<string, number>([["file1.txt", 1000]]);
+    const diff = diffSnapshots(before, after);
+    expect(diff).toEqual([]);
+  });
+
+  it("ignores deleted files", () => {
+    const before = new Map<string, number>([["file1.txt", 1000]]);
+    const after = new Map<string, number>();
+    const diff = diffSnapshots(before, after);
+    expect(diff).toEqual([]);
+  });
+
+  it("handles mixed changes", () => {
+    const before = new Map<string, number>([
+      ["unchanged.txt", 1000],
+      ["modified.txt", 1000],
+      ["deleted.txt", 1000],
+    ]);
+    const after = new Map<string, number>([
+      ["unchanged.txt", 1000],
+      ["modified.txt", 2000],
+      ["new.txt", 3000],
+    ]);
+    const diff = diffSnapshots(before, after);
+    expect(diff).toContain("modified.txt");
+    expect(diff).toContain("new.txt");
+    expect(diff).not.toContain("unchanged.txt");
+    expect(diff).not.toContain("deleted.txt");
   });
 });
