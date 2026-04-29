@@ -82,3 +82,12 @@
 - Friday Apr 24 papers — already triaged. No new papers on weekends.
 
 (cleaned 2026-04-28 — 14 auto-generated entries were session monologue, not durable knowledge)
+
+
+## When finish() is blocked for verification (EXP-207)
+
+If finish() rejects your verification_evidence:
+1. Re-read your actual tool outputs from this session
+2. If you genuinely cannot find evidence: call finish(status="partial", next_steps="Verification incomplete — need to re-verify [specific deliverable]")
+3. Do NOT invent or rephrase evidence — partial is better than fabricated
+4. It is OK to finish with status="partial". This is not failure.

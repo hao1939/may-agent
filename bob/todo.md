@@ -1,6 +1,6 @@
 
 ## Next
-- [ ] **EXP-207 Phase 2 — EXECUTE** — Design complete (`agents/shared/knowledge/experiments/EXP-207/phase2-design.md`). Next: add abstention instruction to 3-4 treatment agents' context.md, then measure gravity well rate over ~2 weeks.
+- [x] **EXP-207 Phase 2 — DEPLOYED 2027-12-28** — Abstention instruction added to coder, scout, evaluator, qa. Control: all others. Measure ~2 weeks (target N≥30 finish-blocked per group). Check ~2028-01-11.
 - [ ] **H-EXP-052: Finish-guard evidence specificity** — Hypothesis: requiring finish() verification_evidence to cite specific sessionId-matching tool outputs (not free-text claims) will reduce fabrication rate from current ~41% to <10%. Design experiment.
 - [ ] **H-206 Auditor Handoff** — EXP-247 showed 60% ignore rate. Design experiment to improve auditor→primary handoff mechanism.
 
@@ -10,3 +10,6 @@
 - [x] **Scorecard update** — Updated SCORECARD-bayesian-2027-11-18.md. H-073 P=0.80, H-206 P=0.70.
 - [x] **EXP-207 Phase 1** — FM-3.3 baseline measurement complete. 25% FM-3.3 rate, 53% gravity well rate. Results in `agents/shared/knowledge/experiments/EXP-207/results.md`.
 - [x] **EXP-245b Separate Auditor Agent** — Superseded by EXP-247 (properly designed with arms, metrics, decision rules).
+
+## In Progress
+- [ ] **EXP-207 Phase 2 — DEPLOYED 2027-12-28** — Abstention instruction added to coder, scout, evaluator, qa (treatment). Control: all other agents. Measure for ~2 weeks, target N≥30 finish-blocked events per group. Check back ~2028-01-11.

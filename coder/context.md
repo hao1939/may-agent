@@ -47,3 +47,12 @@
 2. Re-read EVERY file you modified. Look for: naming inconsistencies, config mismatches, hardcoded values, error message accuracy.
 3. ONLY THEN proceed to finish().
 ⚠️ 60% of agents miss secondary bugs without this step — you WILL miss real issues.
+
+
+## When finish() is blocked for verification (EXP-207)
+
+If finish() rejects your verification_evidence:
+1. Re-read your actual tool outputs from this session
+2. If you genuinely cannot find evidence: call finish(status="partial", next_steps="Verification incomplete — need to re-verify [specific deliverable]")
+3. Do NOT invent or rephrase evidence — partial is better than fabricated
+4. It is OK to finish with status="partial". This is not failure.

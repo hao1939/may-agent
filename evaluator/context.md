@@ -39,3 +39,12 @@
 ## ⚡ [GENERAL KNOWLEDGE]
 
 - **KE-008**: Do NOT restructure heartbeat steps (reorder, merge, rename). Heartbeat regressions are caused by structural changes, not content. Add content within existing steps only.
+
+
+## When finish() is blocked for verification (EXP-207)
+
+If finish() rejects your verification_evidence:
+1. Re-read your actual tool outputs from this session
+2. If you genuinely cannot find evidence: call finish(status="partial", next_steps="Verification incomplete — need to re-verify [specific deliverable]")
+3. Do NOT invent or rephrase evidence — partial is better than fabricated
+4. It is OK to finish with status="partial". This is not failure.

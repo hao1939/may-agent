@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777460818898_0
+- **Session:** s_1777461007105_6
 - **Status:** done
-- **When:** 2026-04-29T11:07:23.949Z
-- **Duration:** 25s
+- **When:** 2026-04-29T11:10:39.922Z
+- **Duration:** 32s
 
 ## What Happened
-Two things stand out: (1) P0 notification about evaluator being dormant, and (2) evaluator has 2 sessions with 0 avg ops confirming it's idle.
+Evaluator sessions all have 0 ops — it's waking up and doing nothing every time. I need to nudge the evaluator to actually start scoring sessions.

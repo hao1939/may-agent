@@ -2,7 +2,7 @@
 
 **Date**: 2027-12-22
 **Author**: Bob
-**Status**: DESIGNED
+**Status**: DEPLOYED (2027-12-28) — Treatment: coder, scout, evaluator, qa. Control: all others.
 **Hypothesis**: H-073 — Providing agents an explicit abstention/escalation pathway when finish() is blocked will reduce the gravity well rate from 53% to <25%.
 
 ## Background
