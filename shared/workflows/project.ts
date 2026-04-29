@@ -746,6 +746,7 @@ async function processDecision(
 // ── Main workflow ──────────────────────────────────────────────────────
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+  _cache.flush(); // Start each execution with a clean cache
   const config = parseInput(ctx.task, ctx.agent);
 
   // Create project directory if it doesn't exist
