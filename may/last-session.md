@@ -1,17 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777441436970_165
+- **Session:** s_1777443237775_169
 - **Status:** done
-- **When:** 2026-04-29T05:44:48.883Z
-- **Duration:** 51s
+- **When:** 2026-04-29T06:15:27.951Z
+- **Duration:** 1m30s
 
 ## What Happened
-Let me address the inbox and finish. The key findings are clear:
+The P0 evaluator escalation and C1 recovery session waste are both items that need human decision-making — I can't fix the evaluator pipeline myself, and the C1 recovery pattern is an infra-level issue. Let me escalate properly.
 
-**Stale-active-count (repeated alert):** 3 orphaned projects (documentation-gen, test-coverage, agent-memory-learning) with owner "unknown", last updated Apr 28. These need their status set to 'completed' or 'abandoned' in the DB — this is a destructive DB change, so escalating to human.
-
-**Inbox decisions:**
-1. P2 stale-active-count dismissal — Acknowledged, aligns with my finding
-2. P1 C1 Recovery sessions (40%) — Worth investigating but not blocking
-3. P0 Evaluator pipeline dead 84+ days — This is the most critical item
+For the C1 recovery sessions (P1 notifications about 15-40% waste): this is a coach/optimizer concern. Let me check if anyone is actively working on it.
