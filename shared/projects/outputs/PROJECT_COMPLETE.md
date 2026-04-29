@@ -1,3 +1,3 @@
-# Project Status: COMPLETE
+# Project Complete
 
-This project has been complete since iteration 31 of the original work. No further work is needed.
+This project has been complete since iteration 31. No further work is needed.
