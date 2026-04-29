@@ -157,6 +157,24 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     return chunks;
   }
 
+
+  /** Unified outbound: all messages to user go through here.
+   * Always stores context for reply enrichment. */
+  function sendToUser(text: string, context?: { eventType?: string; agent?: string; sessionId?: string; projectId?: string; summary?: string }) {
+    if (!pendingChatId) return;
+    const ctx = {
+      eventType: context?.eventType || "response",
+      agent: context?.agent || opts.interfaceAgent,
+      sessionId: context?.sessionId || getSessionId() || undefined,
+      projectId: context?.projectId,
+      data: JSON.stringify({ text: text.slice(0, 500), summary: context?.summary }),
+    };
+    sendMessage(pendingChatId, text, undefined, ctx).catch((err) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      bus.emit({ type: "info", message: `[telegram] Send failed: ${msg}` });
+    });
+  }
+
   // ── Incoming message handling ────────────────────────────────────
 
   function isAllowed(chatId: number): boolean {
@@ -293,7 +311,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       // If no text was accumulated but errors occurred, notify user
       // (e.g., context overflow — LLM returned empty content, user gets silence)
       if (!hadText && event.errorCount && event.errorCount > 0 && pendingChatId) {
-        sendMessage(pendingChatId, `⚠️ Session error (${String(event.agent)}): response failed with ${(event as any).errorCount} error(s). The session may need to be restarted.`).catch(() => {});
+        sendToUser(`⚠️ Session error (${String(event.agent)}): response failed with ${(event as any).errorCount} error(s). The session may need to be restarted.`, { eventType: "error", agent: String(event.agent), sessionId: event.sessionId });
       }
     }
 
@@ -306,9 +324,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         const summary = (fp?.summary as string) ?? (typeof event.outcome === "string" ? event.outcome.slice(0, 200) : "completed");
         const fpStatus = (fp?.status as string) ?? event.status;
         if (fpStatus === "failure" || fpStatus === "blocked") {
-          sendMessage(pendingChatId, `❌ ${String(event.agent)} BLOCKED: ${summary}`, undefined, { eventType: "blocked", agent: String(event.agent), sessionId: (event as any).sessionId, data: JSON.stringify({ summary }) }).catch(() => {});
+          sendToUser(`❌ ${String(event.agent)} BLOCKED: ${summary}`, { eventType: "blocked", agent: String(event.agent), sessionId: (event as any).sessionId, summary });
         } else {
-          sendMessage(pendingChatId, `✅ ${String(event.agent)}: ${summary}`, undefined, { eventType: "session_end", agent: String(event.agent), sessionId: (event as any).sessionId }).catch(() => {});
+          sendToUser(`✅ ${String(event.agent)}: ${summary}`, { eventType: "session_end", agent: String(event.agent), sessionId: (event as any).sessionId, summary });
         }
       }
     }
@@ -316,7 +334,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     // When the root chat session ends with an error, notify user
     if (event.type === "session_end" && "sessionId" in event && event.sessionId === chatSid && event.error && pendingChatId) {
       const errMsg = event.error.length > 200 ? event.error.slice(0, 200) + "…" : event.error;
-      sendMessage(pendingChatId, `❌ Session ended (${event.agent}): ${errMsg}`).catch(() => {});
+      sendToUser(`❌ Session ended (${event.agent}): ${errMsg}`, { eventType: "error", agent: event.agent, sessionId: event.sessionId, summary: errMsg });
     }
 
     // Notifications — only forward those from the interface agent (May).
@@ -324,12 +342,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     // should NOT be pushed to the human's Telegram.
     if (event.type === "notification" && event.agent === opts.interfaceAgent) {
       if (pendingChatId) {
-        sendMessage(pendingChatId, `📋 ${String(event.text ?? "").slice(0, 4000)}`, undefined, {
-          eventType: "notification",
-          agent: String(event.agent ?? ""),
-          sessionId: "sessionId" in event ? String(event.sessionId) : undefined,
-          data: JSON.stringify({ text: String(event.text ?? "").slice(0, 500) }),
-        }).catch(() => {});
+        sendToUser(`📋 ${String(event.text ?? "").slice(0, 4000)}`, { eventType: "notification", agent: String(event.agent ?? ""), sessionId: "sessionId" in event ? String(event.sessionId) : undefined, summary: String(event.text ?? "").slice(0, 200) });
       }
     }
   });
@@ -340,17 +353,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     if (!text || !pendingChatId) return;
 
-    // Send with session context so replies can be enriched
-    const sessionId = getSessionId();
-    sendMessage(pendingChatId, text, undefined, {
-      eventType: "response",
-      agent: opts.interfaceAgent,
-      sessionId: sessionId || undefined,
-      data: JSON.stringify({ text: text.slice(0, 500) }),
-    }).catch((err) => {
-      const msg = err instanceof Error ? err.message : String(err);
-      bus.emit({ type: "info", message: `[telegram] Flush send failed: ${msg}` });
-    });
+    sendToUser(text);
   }
 
   // ── Long-polling loop ───────────────────────────────────────────
@@ -415,11 +418,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       unsubBus();
     },
     sendAlert: (text: string) => {
-      if (!pendingChatId) return;
-      sendMessage(pendingChatId, text).catch((err) => {
-        const msg = err instanceof Error ? err.message : String(err);
-        bus.emit({ type: "info", message: `[telegram] Alert send failed: ${msg}` });
-      });
+      sendToUser(text, { eventType: "alert" });
     },
   };
 }
