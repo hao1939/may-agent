@@ -236,6 +236,32 @@ Lightweight. One row per outbound message. Expire after 7 days.
 
 No changes. The agent receives a text message with context prepended. It reads the context and acts. Same as any task.
 
+## Session Context Enrichment
+
+When enriching a reply that has a `sessionId`, the bot also reads the session's transcript from disk and includes a summary. This enables continuation after restart.
+
+**How it works:**
+1. Reply received → look up stored context → has `sessionId`
+2. Read `.state/sessions/{sessionId}/session-compact.jsonl` (or `session.jsonl`)
+3. Extract: original task, key findings, last action before interruption
+4. Include in enriched message:
+
+```
+[User replying to notification from may about "project system-efficiency"]
+Session context (interrupted after 114 ops):
+  Task: fix project failures and blocks
+  Progress: read project.ts, edited handler, was investigating meta.json files
+  Last action: switching from grep to faster approach for 36k files
+
+User says: continue
+```
+
+**Proven by experiment:**
+- Without session context: May starts from scratch with generic plan
+- With session context: May says "let me pick up where I left off" and continues specific work
+
+**Fallback:** If session JSONL not found (cleaned up), enrichment still includes notification context (agent, event type, summary). Graceful degradation.
+
 ## What This Design Does NOT Cover
 
 - **When to notify**: projects, metrics, agents decide this. Not this design's concern.
