@@ -516,6 +516,6 @@ describe("execute", () => {
       return createMockSession(["Done"]);
     });
     await execute(ctx as any);
-    expect(ctx.emit).toHaveBeenCalledWith(expect.objectContaining({ type: "emit", event: "project.iteration" }));
+    expect(ctx.emit).toHaveBeenCalledWith(expect.objectContaining({ type: "project.iteration" }));
   });
 });
