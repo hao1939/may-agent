@@ -85,6 +85,27 @@
     ]
   },
   {
+    "name": "heartbeat-evaluator",
+    "type": "job",
+    "intervalMs": 1800000,
+    "agent": "evaluator",
+    "message": "[heartbeat] Evaluator heartbeat via per-agent workflow.",
+    "enabled": true,
+    "description": "Evaluator heartbeat \u2014 calibration, criteria evolution, signal quality, patrol (30min). Per-agent heartbeat workflow.",
+    "notifyBrief": true,
+    "handler": "run-workflow",
+    "handlerConfig": {
+      "workflow": "evaluator-heartbeat",
+      "agent": "evaluator",
+      "task": "[heartbeat] You are the Evaluator. Your files are in agents/evaluator/. Read agents/evaluator/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you did and found.",
+      "timeoutMs": 1800000
+    },
+    "offsetMs": 600000,
+    "on": [
+      "heartbeat.trigger"
+    ]
+  },
+  {
     "name": "heartbeat-scout",
     "type": "job",
     "intervalMs": 1800000,
