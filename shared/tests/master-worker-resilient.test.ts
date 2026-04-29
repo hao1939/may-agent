@@ -217,3 +217,73 @@ describe("createResilientMasterWorker", () => {
     expect(rmw).toBeInstanceOf(ResilientMasterWorker);
   });
 });
+
+// ── ResilientMasterWorker with real project dir ─────────────────────────
+
+import { mkdtempSync, writeFileSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+
+describe("ResilientMasterWorker", () => {
+  let projectDir: string;
+
+  beforeEach(() => {
+    const tmp = mkdtempSync(join(tmpdir(), "rmw-test-"));
+    projectDir = join(tmp, "project");
+    mkdirSync(projectDir, { recursive: true });
+    writeFileSync(join(projectDir, "project.md"), "# Test\n**Status**: active\n**Max Iterations**: 3\n");
+    writeFileSync(join(projectDir, "journal.md"), "# Journal\n");
+  });
+
+  it("runIteration returns failure when snapshot indicates stop", async () => {
+    // Write project as done
+    writeFileSync(join(projectDir, "project.md"), "# Test\n**Status**: done\n");
+    const rmw = createResilientMasterWorker({ projectDir, maxIterations: 3 });
+    const result = await rmw.runIteration(1, async () => "response");
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("Stopped");
+  });
+
+  it("runIteration succeeds with active project", async () => {
+    const rmw = createResilientMasterWorker({ projectDir, maxIterations: 3 });
+    const result = await rmw.runIteration(1, async () => "LLM response here");
+    expect(result.success).toBe(true);
+    expect(result.output).toBe("LLM response here");
+    expect(result.iteration).toBe(1);
+  });
+
+  it("runIteration handles LLM failure", async () => {
+    const rmw = createResilientMasterWorker({ projectDir, maxIterations: 3, retry: { maxRetries: 1, baseDelayMs: 10 } });
+    const result = await rmw.runIteration(1, async () => { throw new Error("LLM down"); });
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("LLM down");
+  });
+
+  it("run completes multiple iterations", async () => {
+    let callCount = 0;
+    const rmw = createResilientMasterWorker({ projectDir, maxIterations: 2 });
+    const runResult = await rmw.run(async () => {
+      callCount++;
+      return `Response ${callCount}`;
+    });
+    expect(runResult.totalIterations).toBe(2);
+    expect(runResult.successfulIterations).toBe(2);
+    expect(runResult.stoppedEarly).toBe(false);
+  });
+
+  it("run aborts after consecutive failures", async () => {
+    const rmw = createResilientMasterWorker({ projectDir, maxIterations: 10, retry: { maxRetries: 1, baseDelayMs: 10 } });
+    const runResult = await rmw.run(async () => { throw new Error("always fail"); });
+    expect(runResult.stoppedEarly).toBe(true);
+    expect(runResult.stopReason).toContain("consecutive failures");
+    expect(runResult.failedIterations).toBe(3);
+  });
+
+  it("getResults returns copy of results", async () => {
+    const rmw = createResilientMasterWorker({ projectDir, maxIterations: 1 });
+    await rmw.run(async () => "ok");
+    const results = rmw.getResults();
+    expect(results.length).toBe(1);
+    expect(results).not.toBe(rmw.getResults()); // different array
+  });
+});
