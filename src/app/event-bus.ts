@@ -61,6 +61,11 @@ export type SessionEvent =
 
 /** System events */
 export type SystemEvent =
+  | { type: "handler.started"; handler: string; agent: string }
+  | { type: "handler.completed"; handler: string; agent: string; durationMs: number }
+  | { type: "handler.failed"; handler: string; agent: string; error: string; durationMs: number }
+  | { type: "project.iteration"; project: string; iteration: number }
+  | { type: "project.status_changed"; project: string; from: string; to: string }
   | { type: "notification"; agent: string; text: string }
   | { type: "message_created"; from: string; to: string; task: string; requestId: string }
   | { type: "cron_fired"; job: string; agent?: string; timestamp: number }
@@ -105,14 +110,7 @@ export type AgentEvent =
   | { type: "info"; message: string; channel?: string }
   | { type: "prompt"; message: string; channel?: string };
 
-/** Domain events (handler.started, project.iteration, etc.)
- * These are NOT part of AgentEvent. They go through the bus via `as any`
- * and are persisted to the events table by DbWriter.
- * Cron dispatches them to handlers via dispatchEvent(). */
-export interface DomainEvent {
-  type: string;
-  [key: string]: unknown;
-}
+
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
