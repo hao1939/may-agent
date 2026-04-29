@@ -1,6 +1,6 @@
 # Project: Agent Memory & Learning
 
-**Status**: complete
+**Status**: active
 **Stop Reason**: All 14/14 milestones done, pipeline operational.
 **Owner**: coach
 **Priority**: P2

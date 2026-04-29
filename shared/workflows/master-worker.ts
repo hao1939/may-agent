@@ -278,6 +278,17 @@ ${journalContent.slice(-3000)}
 
     await retryWithCircuitBreaker(() => orchestrator.prompt(planningPrompt), { maxRetries: 2, label: 'orchestrator-plan' });
 
+    // STRUCTURAL GUARD: revert terminal status after planning
+    try {
+      let projContent = readFileSync(projectFile, "utf-8");
+      const sm = projContent.match(/^\*\*Status\*\*:\s*(.+)$/m);
+      if (sm && ["done", "complete", "completed", "closed", "cancelled"].includes(sm[1].trim().toLowerCase())) {
+        projContent = projContent.replace(/^\*\*Status\*\*:.*/m, "**Status**: active");
+        writeFileSync(projectFile, projContent, "utf-8");
+        ctx.log("[guard] Reverted terminal status to active");
+      }
+    } catch {}
+
     // Mark comments as read (append-only, never delete)
     if (unreadComments) {
       try {
@@ -451,6 +462,20 @@ Then provide your decision and guidance for the next iteration.`;
       }
 
       const orchestratorText = orchestrator.lastText();
+
+      // STRUCTURAL GUARD: revert terminal status written by orchestrator
+      // Orchestrators keep writing "complete"/"closed"/"done" despite instructions.
+      // Text rules don't work. Code enforces.
+      try {
+        let projContent = readFileSync(projectFile, "utf-8");
+        const statusMatch = projContent.match(/^\*\*Status\*\*:\s*(.+)$/m);
+        const currentStatus = statusMatch ? statusMatch[1].trim().toLowerCase() : "";
+        if (["done", "complete", "completed", "closed", "cancelled"].includes(currentStatus)) {
+          projContent = projContent.replace(/^\*\*Status\*\*:.*/m, "**Status**: active");
+          writeFileSync(projectFile, projContent, "utf-8");
+          ctx.log("[guard] Reverted terminal status to active — only human can close projects");
+        }
+      } catch {}
       // Mark new comments as read
       if (newComments) {
         try { appendFileSync(discussionFile, `\n---read @iter${iteration}---\n`, "utf-8"); } catch {}
