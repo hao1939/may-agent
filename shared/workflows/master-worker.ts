@@ -44,14 +44,14 @@ function extractDecision(text: string): Decision {
   const upper = firstLine.toUpperCase();
 
   // Check first line starts with a decision keyword
-  for (const s of ["CONTINUE", "PIVOT", "WAITING", "BLOCKED", "DONE"] as const) {
+  for (const s of ["CONTINUE", "PIVOT", "WAITING", "BLOCKED"] as const) {
     if (upper.startsWith(s)) {
       return { status: s.toLowerCase() as Decision["status"], detail: trimmed.slice(0, 500) };
     }
   }
 
   // Check for "Decision: KEYWORD", "**KEYWORD**", or "**Proceed**" patterns
-  const decisionPattern = /(?:\*{0,2}Decision\*{0,2}[:\s]+\*{0,2}|^|\n)\*{0,2}(CONTINUE|PIVOT|BLOCKED|WAITING|DONE)\*{0,2}/im;
+  const decisionPattern = /(?:\*{0,2}Decision\*{0,2}[:\s]+\*{0,2}|^|\n)\*{0,2}(CONTINUE|PIVOT|BLOCKED|WAITING)\*{0,2}/im;
   const patternMatch = trimmed.match(decisionPattern);
   if (patternMatch) {
     return { status: patternMatch[1].toLowerCase() as Decision["status"], detail: trimmed.slice(0, 500) };
@@ -101,10 +101,12 @@ Good metrics are measurable, connected to the goal, and have clear targets.
 Bad metrics get gamed or ignored. If a metric doesn't drive real progress, redefine it.
 
 Respond with one of these decisions as the VERY FIRST WORD:
-CONTINUE — guide the next iteration toward metric targets
-PIVOT — current approach isn't moving metrics, try something different
-BLOCKED — something external is broken, can't proceed until fixed
-WAITING — need specific external input (specify what and from whom)
+CONTINUE — guide the next iteration. If metrics are at target, raise them or find new problems.
+PIVOT — current approach isn't working, try something different.
+BLOCKED — something external is broken that you cannot fix.
+WAITING — you need something specific from a human (approval, credentials, access). Say exactly what.
+
+There is always more to do. Metrics at target? Raise the target, protect against regression, or find the next problem. Your job is to keep pushing forward.
 
 Example response format:
 CONTINUE
@@ -297,7 +299,7 @@ ${journalContent.slice(-3000)}
     if (decision.status !== "continue" && decision.status !== "pivot") {
       const stopReason = decision.detail.slice(0, 200);
       // Workflow can set waiting or blocked, never done/closed
-      const safeStatus = ["done", "closed", "complete", "completed", "cancelled"].includes(decision.status) ? "waiting" : decision.status;
+      const safeStatus = decision.status;
       updateProjectStatus(projectFile, safeStatus, stopReason);
       return safeStatus === "blocked"
         ? ctx.escalate(stopReason)
@@ -495,7 +497,7 @@ Then provide your decision and guidance for the next iteration.`;
     }
 
     // Workflow can set waiting or blocked, never done/closed
-    if (["done", "closed", "complete", "completed", "cancelled"].includes(finalStatus)) finalStatus = "waiting";
+    // finalStatus is already one of: continue/pivot/waiting/blocked/unknown
     updateProjectStatus(projectFile, finalStatus, stopReason, iteration);
     ctx.log(`[done] ${finalStatus} after ${iteration} iteration(s). ${stopReason}`);
 
