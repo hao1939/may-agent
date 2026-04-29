@@ -28,6 +28,7 @@ import {
   type CheckpointData,
 } from "./incremental-checkpoint.ts";
 import { validateOutput, type ValidationResult } from "./output-validator.ts";
+import { withRetry, isRetryableError } from "./provider-retry.ts";
 
 export const name: string = "master-worker";
 
@@ -285,7 +286,11 @@ ${journalContent.slice(-3000)}
 
     planningPrompt += `\nBased on your assessment, provide your decision and guidance for the worker.`;
 
-    await orchestrator.prompt(planningPrompt);
+    await withRetry(() => orchestrator.prompt(planningPrompt), {
+      maxRetries: 3,
+      baseDelayMs: 1000,
+      onRetry: (err, attempt, delay) => ctx.log(`[plan] ⚠️ Provider error, retry ${attempt} after ${delay}ms: ${String(err).slice(0, 80)}`),
+    });
 
 
     // Mark comments as read (append-only, never delete)
@@ -373,7 +378,11 @@ ${journalContent.slice(-3000)}
         workerPrompt = `## Task (Iteration ${iteration})\nWRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Your FIRST tool call MUST be edit() to replace the stub content with your deliverable.\n- Do NOT use read() or bash() before edit(). The stub contains only a placeholder comment.\n\n${guidance}`;
       }
 
-      await worker.prompt(workerPrompt);
+      await withRetry(() => worker.prompt(workerPrompt), {
+        maxRetries: 3,
+        baseDelayMs: 1000,
+        onRetry: (err, attempt, delay) => ctx.log(`[work] ⚠️ Provider error on worker, retry ${attempt} after ${delay}ms: ${String(err).slice(0, 80)}`),
+      });
       ctx.log(`[work] Iteration ${iteration} done`);
 
       // Save incremental checkpoint after worker completes
@@ -415,7 +424,11 @@ ${journalContent.slice(-3000)}
           (ctx as any)[`_retried_${iteration}`] = true;
           ctx.log(`[work] 🔄 RETRY: Re-prompting worker with escalated write-first constraint`);
           const retryPrompt = `🚨 YOUR PREVIOUS ATTEMPT PRODUCED 0 FILES. This is iteration ${iteration} retry.\n\nYour FIRST tool call MUST be write(). Do NOT use read() or bash() first. Do NOT claim files already exist.\n\nOriginal task:\n${guidance}`;
-          await worker.prompt(retryPrompt);
+          await withRetry(() => worker.prompt(retryPrompt), {
+            maxRetries: 3,
+            baseDelayMs: 1000,
+            onRetry: (err, attempt, delay) => ctx.log(`[work] ⚠️ Provider error on retry prompt, retry ${attempt} after ${delay}ms: ${String(err).slice(0, 80)}`),
+          });
           const retrySnap = snapshotOutputs(outputsDir);
           const retryChanged = diffSnapshots(afterSnap, retrySnap);
           if (retryChanged.length > 0) {
