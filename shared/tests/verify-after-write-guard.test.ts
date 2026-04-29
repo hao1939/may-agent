@@ -1,0 +1,240 @@
+import { describe, it, expect } from "vitest";
+
+// Import the guard module
+const guardModule = await import("../guards/verify-after-write.ts");
+const guard = guardModule.guard;
+
+function makeEvent(overrides: any = {}): any {
+  return {
+    type: "step_done",
+    source: "agent",
+    completedSteps: [],
+    result: { messages: [], ...overrides.result },
+    ...overrides,
+  };
+}
+
+function toolCallMsg(calls: Array<{ name: string; path?: string }>): any {
+  return {
+    role: "assistant",
+    content: calls.map(c => ({
+      type: "toolCall",
+      name: c.name,
+      arguments: { path: c.path },
+    })),
+  };
+}
+
+describe("verify-after-write guard", () => {
+  it("has correct name and events", () => {
+    expect(guard.name).toBe("verify-after-write");
+    expect(guard.events).toContain("step_done");
+  });
+
+  it("returns empty for non-step_done events", () => {
+    const result = guard.handle({ ...makeEvent(), type: "workflow_start" });
+    expect(result).toEqual([]);
+  });
+
+  it("returns empty for function source", () => {
+    const result = guard.handle({ ...makeEvent(), source: "function" });
+    expect(result).toEqual([]);
+  });
+
+  it("returns empty when no writes", () => {
+    const event = makeEvent({
+      result: {
+        messages: [toolCallMsg([{ name: "read", path: "foo.ts" }])],
+      },
+    });
+    expect(guard.handle(event)).toEqual([]);
+  });
+
+  it("returns empty when write is followed by read", () => {
+    const event = makeEvent({
+      result: {
+        messages: [
+          toolCallMsg([
+            { name: "write", path: "foo.ts" },
+            { name: "read", path: "foo.ts" },
+          ]),
+        ],
+      },
+    });
+    expect(guard.handle(event)).toEqual([]);
+  });
+
+  it("returns empty for non-finish steps even with unverified writes", () => {
+    const event = makeEvent({
+      result: {
+        messages: [toolCallMsg([{ name: "write", path: "foo.ts" }])],
+      },
+    });
+    // No finishResult → tier 3 is disabled, so no demands
+    expect(guard.handle(event)).toEqual([]);
+  });
+
+  it("blocks finish(success) when writes are unverified", () => {
+    const event = makeEvent({
+      result: {
+        messages: [toolCallMsg([{ name: "write", path: "foo.ts" }])],
+        finishResult: { status: "success" },
+      },
+    });
+    const demands = guard.handle(event);
+    expect(demands).toHaveLength(1);
+    expect(demands[0].type).toBe("block");
+    expect(demands[0].reason).toContain("C1.3 Verify-After-Write");
+    expect(demands[0].reason).toContain("foo.ts");
+  });
+
+  it("blocks finish(success) with multiple unverified files", () => {
+    const event = makeEvent({
+      result: {
+        messages: [
+          toolCallMsg([
+            { name: "write", path: "a.ts" },
+            { name: "edit", path: "b.ts" },
+          ]),
+        ],
+        finishResult: { status: "success" },
+      },
+    });
+    const demands = guard.handle(event);
+    expect(demands).toHaveLength(1);
+    expect(demands[0].reason).toContain("2 file(s)");
+  });
+
+  it("allows finish(success) when all writes are verified", () => {
+    const event = makeEvent({
+      result: {
+        messages: [
+          toolCallMsg([
+            { name: "write", path: "foo.ts" },
+            { name: "read", path: "foo.ts" },
+          ]),
+        ],
+        finishResult: { status: "success" },
+      },
+    });
+    expect(guard.handle(event)).toEqual([]);
+  });
+
+  it("tracks writes across completed steps", () => {
+    const event = makeEvent({
+      completedSteps: [
+        { result: { messages: [toolCallMsg([{ name: "write", path: "old.ts" }])] } },
+      ],
+      result: {
+        messages: [toolCallMsg([{ name: "write", path: "new.ts" }])],
+        finishResult: { status: "success" },
+      },
+    });
+    const demands = guard.handle(event);
+    expect(demands).toHaveLength(1);
+    expect(demands[0].reason).toContain("2 file(s)");
+  });
+
+  it("read in later step counts as verification", () => {
+    const event = makeEvent({
+      completedSteps: [
+        { result: { messages: [toolCallMsg([{ name: "write", path: "a.ts" }])] } },
+      ],
+      result: {
+        messages: [toolCallMsg([{ name: "read", path: "a.ts" }])],
+        finishResult: { status: "success" },
+      },
+    });
+    expect(guard.handle(event)).toEqual([]);
+  });
+
+  it("normalizes paths with leading ./", () => {
+    const event = makeEvent({
+      result: {
+        messages: [
+          toolCallMsg([
+            { name: "write", path: "./foo.ts" },
+            { name: "read", path: "foo.ts" },
+          ]),
+        ],
+        finishResult: { status: "success" },
+      },
+    });
+    expect(guard.handle(event)).toEqual([]);
+  });
+
+  it("handles edit calls same as write", () => {
+    const event = makeEvent({
+      result: {
+        messages: [toolCallMsg([{ name: "edit", path: "bar.ts" }])],
+        finishResult: { status: "success" },
+      },
+    });
+    const demands = guard.handle(event);
+    expect(demands).toHaveLength(1);
+    expect(demands[0].reason).toContain("bar.ts");
+  });
+
+  it("does not block non-success finish", () => {
+    const event = makeEvent({
+      result: {
+        messages: [toolCallMsg([{ name: "write", path: "foo.ts" }])],
+        finishResult: { status: "failure" },
+      },
+    });
+    // finishResult.status !== "success", so no block
+    expect(guard.handle(event)).toEqual([]);
+  });
+
+  it("handles empty messages", () => {
+    const event = makeEvent({
+      result: { messages: [], finishResult: { status: "success" } },
+    });
+    expect(guard.handle(event)).toEqual([]);
+  });
+
+  it("handles tool_use type content parts", () => {
+    const event = makeEvent({
+      result: {
+        messages: [{
+          role: "assistant",
+          content: [{
+            type: "tool_use",
+            name: "write",
+            input: { path: "x.ts" },
+          }],
+        }],
+        finishResult: { status: "success" },
+      },
+    });
+    const demands = guard.handle(event);
+    expect(demands).toHaveLength(1);
+    expect(demands[0].reason).toContain("x.ts");
+  });
+
+  it("handles messages without content array", () => {
+    const event = makeEvent({
+      result: {
+        messages: [{ role: "user", content: "hello" }],
+        finishResult: { status: "success" },
+      },
+    });
+    expect(guard.handle(event)).toEqual([]);
+  });
+
+  it("read before write does not count as verification", () => {
+    const event = makeEvent({
+      result: {
+        messages: [
+          toolCallMsg([
+            { name: "read", path: "foo.ts" },
+            { name: "write", path: "foo.ts" },
+          ]),
+        ],
+        finishResult: { status: "success" },
+      },
+    });
+    const demands = guard.handle(event);
+    expect(demands).toHaveLength(1);
+  });
+});
