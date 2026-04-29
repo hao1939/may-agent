@@ -139,6 +139,9 @@ export interface HandlerContext extends RuntimeCtx {
 
   /** Load all session metadata (active + archived). */
   loadAllSessionMetas: () => Record<string, PersistedSession>;
+
+  /** Agent SDK — the canonical capability surface. Prefer this over ctx.manager for new code. */
+  sdk: import("./sdk.js").AgentSDK;
 }
 
 /**
