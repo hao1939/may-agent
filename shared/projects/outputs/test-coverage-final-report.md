@@ -1,36 +1,47 @@
-# Test Coverage Project — Final Report
+# Test Coverage Final Report — skill-workflow-audit
 
-## Status: ✅ COMPLETE
+**Status:** ✅ Complete  
+**Date:** 2025-01-27
 
-## Results
-| Metric | Target | Actual |
-|--------|--------|--------|
-| Line coverage | 80% | 83.79% |
+## Summary
+
+Built a comprehensive test suite for the `agents/shared/` codebase from scratch. Installed vitest, configured coverage thresholds, and wrote 191 passing tests achieving 83.79% line coverage.
+
+## Coverage Stats
+
+| Metric | Value | Target |
+|--------|-------|--------|
+| Line coverage | 83.79% | 80% |
+| Tests passing | 191/191 | 100% |
+| Coverage threshold (enforced) | 60% | 60% |
 | Critical paths covered | 11/11 | 11/11 |
-| Tests passing | — | 191/191 |
-| Coverage threshold (CI gate) | 60% | Enforced in vitest.config.ts |
 
-## Test Files Created
-- `test/circuit-breaker.test.ts`
-- `test/project-helpers.test.ts`
-- `test/budget-checkpoint.test.ts`
-- `test/guards.test.ts`
-- `test/fewshot-inject-helpers.test.ts`
-- `test/verify-wrap.test.ts`
-- `test/growth.test.ts`
-- `test/project-health.test.ts`
-- `test/poller.test.ts`
-- `test/auto-test.test.ts`
+## Test File Inventory
 
-## Infrastructure
-- `vitest.config.ts` — configured with v8 coverage provider, 60% line threshold
-- `@vitest/coverage-v8` installed
+| Test File | Module Under Test | Tests |
+|-----------|------------------|-------|
+| `test/circuit-breaker.test.ts` | `shared/workflows/circuit-breaker.ts` | Circuit breaker state machine, trip/reset logic |
+| `test/project-helpers.test.ts` | `shared/workflows/project-helpers.ts` | Project file parsing, helper utilities |
+| `test/budget-checkpoint.test.ts` | `shared/workflows/budget-checkpoint.ts` | Budget tracking, checkpoint logic |
+| `test/fewshot-inject-helpers.test.ts` | `shared/workflows/fewshot-inject-helpers.ts` | Few-shot example injection |
+| `test/verify-wrap.test.ts` | `shared/workflows/verify-wrap.ts` | Verification wrapper logic |
+| `test/poller.test.ts` | `shared/workflows/poller.ts` | Message routing, API mocking, error handling |
+| `test/guards.test.ts` | `shared/guards/hallucinated-path.ts`, `read-before-edit.ts`, `finish-guard.ts`, `verify-after-write.ts` | Guard logic for tool call validation |
+| `test/auto-test.test.ts` | `shared/guards/auto-test.ts` | Auto-test guard logic |
+| `test/growth.test.ts` | `shared/lib/growth.ts` | Growth calculation functions |
+| `test/project-health.test.ts` | `shared/lib/project-health.ts` | Health scoring, status assessment |
+| `test/gym/gym.test.ts` | Gym integration scenarios | End-to-end phantom-fix scenario |
 
-## Iterations
-1. Framework setup + smoke test + circuit-breaker tests
-2. project-helpers, budget-checkpoint, guards tests (59 tests)
-3. fewshot-inject-helpers, verify-wrap, gym fix (76 tests)
-4. lib/growth, lib/project-health, coverage config (105 tests)
-5. poller.ts integration tests, threshold raised to 60% (168 tests)
-6. Coverage push: project-health, verify-wrap, auto-test expansions (191 tests, 83.79%)
-7. Confirmed complete
+## Infrastructure Created
+
+- **`/app/agents/vitest.config.ts`** — Vitest config with v8 coverage provider, 60% line threshold enforced
+- **`/app/agents/test/`** — Test directory with 11 test files
+- **`@vitest/coverage-v8`** — Installed as dev dependency
+
+## Architecture Decisions
+
+1. **Vitest over Jest** — Native TypeScript/ESM support, faster execution
+2. **v8 coverage provider** — No instrumentation overhead, accurate line coverage
+3. **60% enforced threshold** — Conservative gate; actual coverage is 83.79%
+4. **Mocking strategy** — `vi.mock()` for external API calls in poller.ts; pure function testing everywhere else
+5. **No markdown in test iterations** — Tests-only focus until all code work complete
