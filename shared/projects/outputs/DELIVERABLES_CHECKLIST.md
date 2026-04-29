@@ -1,10 +1,9 @@
-# Deliverables Checklist — Iteration 18
+# Deliverables Checklist — Iteration 19
 
-## Task: Wire iteration-monitor into master-worker.ts
+## Task: Update barrel exports + verify recordIteration integration
 
-| # | Deliverable | Status | Path/Details |
-|---|------------|--------|--------------|
-| 1 | Import `recordIteration` in master-worker.ts | DONE | `agents/shared/workflows/master-worker.ts` line 34 |
-| 2 | Call `recordIteration()` after each iteration completes | DONE | `agents/shared/workflows/master-worker.ts` lines 521-530 |
-| 3 | All tests still pass | DONE | 73 files, 1377 passed, 1 skipped |
-| 4 | Copy in outputs | DONE | `agents/shared/projects/outputs/master-worker-with-monitor.ts` |
+| # | Deliverable | Status | Path/Evidence |
+|---|------------|--------|---------------|
+| 1 | Add task-validator, task-template, iteration-monitor to lib/index.ts | DONE | `agents/shared/lib/index.ts` — added 3 export lines |
+| 2 | Verify recordIteration integrated in master-worker.ts | DONE | Already at line 34 (import) and line 524 (call) |
+| 3 | All tests pass | DONE | 73 test files, 1377 passed |
