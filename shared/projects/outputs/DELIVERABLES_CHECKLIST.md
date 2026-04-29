@@ -1,13 +1,13 @@
 # Deliverables Checklist
 
-## Task: Create health-check script and find next satellite to drive forward
+## Task: Create integration test for workflow-runner
 
 | # | Deliverable | Status | Path |
-|---|-------------|--------|------|
-| 1 | Health check script for all satellite projects | DONE | `agents/shared/scripts/health-check.sh` |
-| 2 | Copy in outputs | DONE | `agents/shared/projects/outputs/health-check.sh` |
+|---|------------|--------|------|
+| 1 | Integration test exercising workflow-runner end-to-end (no mocks) | DONE | `agents/test/workflows-integration.test.ts` |
+| 2 | Test passes in full suite (no regressions) | DONE | 520/520 tests pass across 29 files |
 
-## Notes
-- All 11 satellite projects scanned; 9/11 at target
-- No active projects have unmet metrics (hao-alignment has no numeric targets defined, documentation-gen is complete)
-- Script is executable, exits 0, prints summary
+## Details
+- 8 test cases covering: full pipeline composition, config validation, health-check with real data, dispatch-validator, ProjectCache read/write, stage timing, and workflow summarization
+- All tests use real APIs (no mocks)
+- Full test suite remains green: 520 passed, 0 failed
