@@ -35,3 +35,11 @@ Milestones completed:
 
 ### Iteration 4 — 2026-04-29T08:06:27.432Z
 **Worker**: All 105 tests pass, coverage threshold met. Now write the summary:
+**Orchestrator**: Milestones completed:
+- "Write tests for shared/lib/ modules (growth.ts, project-health.ts)"
+- "Add coverage threshold to vitest.config.ts"
+
+CONTINUE
+
+(a) Next iteration should produce: Coverage threshold raised to 60%, integration tests for poller.ts, and actual coverage numbers from `--coverage`.
+
