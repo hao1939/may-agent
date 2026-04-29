@@ -357,6 +357,11 @@ export function getDb(persistDir: string): SqliteDb {
   try {
     db.exec("CREATE INDEX IF NOT EXISTS idx_events_inbox ON events(owner, status, timestamp)");
   } catch { /* already exists */ }
+
+  // Evaluations table migrations
+  try { db.exec("ALTER TABLE evaluations ADD COLUMN createdAt INTEGER NOT NULL DEFAULT 0"); } catch { /* exists */ }
+  try { db.exec("ALTER TABLE evaluations ADD COLUMN evaluatedByHeuristic INTEGER NOT NULL DEFAULT 0"); } catch { /* exists */ }
+  try { db.exec("ALTER TABLE evaluations ADD COLUMN skippedByJs INTEGER NOT NULL DEFAULT 0"); } catch { /* exists */ }
   // Event columns for TTL and urgency (event-native: no mutable status columns)
   for (const col of ["ttl_ms INTEGER", "urgency TEXT DEFAULT 'normal'"]) {
     try { db.exec(`ALTER TABLE events ADD COLUMN ${col}`); } catch { /* already exists */ }
