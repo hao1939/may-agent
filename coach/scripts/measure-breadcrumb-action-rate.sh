@@ -104,29 +104,39 @@ if (measurable.length === 0) {
   process.exit(0);
 }
 
-// Tighter action patterns: must show metric-specific investigation
+// Action patterns: detect that the agent investigated or acted on their below-target metrics.
+// v7 (2026-04-29): Broadened patterns. Agents act on metrics using domain language
+// (e.g. "stale projects" for stale-active-count) not just the word "metric".
+// Added common investigative/corrective verbs and domain-specific terms.
 let acted = 0;
 const actionPatterns = [
   /metric/i,                    // mentioned metrics at all
   /below.target/i,              // acknowledged the breadcrumb
-  /investigat.*metric/i,        // investigated metrics
-  /check.*metric/i,             // checked metrics  
-  /metric.*check/i,
+  /investigat/i,                // investigated anything (triggered by breadcrumb context)
   /source_query/i,              // ran the metric source query
   /metric_snapshots/i,          // queried snapshot data
   /breadcrumb/i,                // explicitly referenced breadcrumbs
-  /alert.*action/i,             // took alert-driven action
   /red.*metric/i,               // acknowledged red metrics
-  /warning.*metric/i,
-  /improv.*metric/i,            // worked on improving metric
-  /metric.*improv/i,
-  /diagnos.*metric/i,           // diagnosed metric issue
   /root.caus/i,                 // root cause analysis
   /dispatch/i,                  // dispatched work (may pattern)
   /fork/i,                      // forked investigation
   /nudge/i,                     // nudged metric owner
   /freestyle-wrap/i,            // used dispatch workflow
   /runAgent/i,                  // delegated to agent
+  /escalat/i,                   // escalated an issue
+  /stale.*project/i,            // addressed stale projects (stale-active-count)
+  /ghost.*project/i,            // found ghost/orphan projects
+  /orphan/i,                    // orphaned entries
+  /blocked.*project/i,          // addressed blocked projects
+  /fix(ed|ing)?\b/i,           // fixed something
+  /resolv/i,                    // resolved an issue
+  /address/i,                   // addressed an issue
+  /diagnos/i,                   // diagnosed a problem
+  /error.*count/i,              // investigated error counts
+  /session.*waste/i,            // investigated session waste
+  /recovery.*session/i,         // investigated recovery sessions
+  /action.*rate/i,              // referenced action rate
+  /hit.rate/i,                  // referenced hit rate
 ];
 
 for (const row of measurable) {
