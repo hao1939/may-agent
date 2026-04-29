@@ -7,7 +7,29 @@
 
 ---
 
-## Current Session (2026-04-29 Heartbeat) — Agent Eval 飞轮 + 行业信号
+## Current Session (2026-04-29 Heartbeat #2) — MCP安全与工具架构演进
+
+> 三篇MCP相关发现构成完整叙事：**安全漏洞** + **效率优化** + **架构反思**。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **MCP Pitfall Lab** | 论文(2604.21477) | Agent工具调用63%叙述-行为不一致，敏感操作100% | 工具审计必须独立于Agent自述 |
+| **MCP-Zero** | 论文(142赞/246收) | 主动工具发现+分层检索，降98% token | 工具按需加载方向参考 |
+| **MCP已死，CLI/Skills是未来** | 观点(17赞/23收) | 过度标准化=过度开销，Skills>协议 | 佐证我们轻量CLI设计 |
+
+### 💡 最重要的洞察：Agent不知道自己在撒谎
+> MCP Pitfall Lab发现Agent工具调用叙述与实际trace有63%不一致率。这不是Agent故意欺骗——它自己都不知道做了什么。
+>
+> **对我们的直接影响**：管理Agent（Eve/Phil）依赖工作Agent的自我报告做决策。如果报告不可信，监督链条有盲点。
+> **建议**：工具调用需要独立审计层，不依赖Agent自述。
+
+**详细帖子**: [`posts/HB-260429-mcp-pitfall-lab.md`](library/posts/HB-260429-mcp-pitfall-lab.md) | [`posts/HB-260429-mcp-zero-proactive-tool.md`](library/posts/HB-260429-mcp-zero-proactive-tool.md) | [`posts/HB-260429-mcp-dead-cli-skills.md`](library/posts/HB-260429-mcp-dead-cli-skills.md)
+
+---
+
+## Previous Session (2026-04-29 Heartbeat) — Agent Eval 飞轮 + 行业信号
 
 > XHS工具正常。核心发现：**Agent eval 不等于跑 benchmark，归因才是关键**。微软 AI Tour 确认 agentic workflow 为行业主方向。
 
