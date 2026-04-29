@@ -44,3 +44,4 @@ may-agent-bin
 .initialized
 coverage/
 coverage/
+shared/coverage-out/
