@@ -216,7 +216,7 @@ export function diagnoseProject(
       }
     } catch {}
     if (hasUnread) {
-      return { type: "launch-workflow", reason: "closed but has unread comments — reopening" };
+      return { type: "launch-workflow", reason: "closed but has unread comments — reopening", comment: "" };
     }
     return { ...skip, reason: "closed by human" };
   }
