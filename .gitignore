@@ -42,3 +42,4 @@ environment/
 !agents/*/handlers/*.ts
 may-agent-bin
 .initialized
+coverage/
