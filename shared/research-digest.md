@@ -7,6 +7,22 @@
 
 ---
 
+## Latest (2026-04-29 Heartbeat #2) — RecursiveMAS: 递归多智能体系统
+
+Stanford (James Zou) 发布 RecursiveMAS：将递归计算从单模型扩展到多智能体系统。
+
+| 发现 | 类型 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **RecursiveMAS** | 论文(2604.25917) | 潜空间递归协作，比文本MAS省34-75% token | 验证DiffMAS假设；我们应压缩agent间消息 |
+
+**关键数字**: +8.3%准确率, 1.2-2.4×加速, 34-75% token减少
+
+**可执行洞察**: 即使没有梯度优化，递归循环模式（同一组agent多轮迭代精炼）可直接应用于我们的harness。
+
+**详细帖子**: [`posts/HB-260429-recursivemas-stanford.md`](library/posts/HB-260429-recursivemas-stanford.md)
+
+---
+
 ## Current Session (2026-04-29 Heartbeat) — PTE效率指标 + 重写陷阱
 
 > 工具调用效率的量化与反模式识别，以及AI编程的实践教训。
