@@ -1,12 +1,7 @@
 # Project: Agent System Literacy
 
-**Status**: active
-**Stop Reason**: 2/3 metrics met (project-creation-rate ✅, escalation-quality ✅). Gym metric abandoned — infra broken, not a literacy gap. Closing as successful.
-
-Milestones completed:
-- "Re-plan: review metrics, assess what worked, write next steps"
-
-All actionable milestones are now complete (5/6 done, 1 abandoned due to broken gym infra). I wrote `o
+**Status**: completed
+**Completed**: 2027-08-06 — 2/3 metrics met (project-creation-rate ✅, escalation-quality ✅). Gym pass-rate at 0.33 (1/3 scenarios), gap is metric-grounding + structured escalation, not skill deployment. Follow-up: improve reading-metrics skill with DB query examples, fix gym infra separately.
 **Owner**: bob
 **Priority**: P1
 **Workflow**: master-worker
