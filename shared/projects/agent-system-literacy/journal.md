@@ -304,3 +304,4 @@ This project is **completed**. Status updated to `completed`. No further worker 
 
 ### Iteration 4 — 2026-04-29T07:32:29.480Z
 **Worker**: 
+**Orchestrator**: Status still says "active". Let me fix that and close this project properly.
