@@ -630,3 +630,8 @@ Both post-pivot iterations produced real, verified output (41 tests, all passing
 
 ### Iteration 3 — 2026-04-29T08:19:38.683Z
 **Worker**: These are from other agents but I need to commit them to proceed:
+**Orchestrator**: CONTINUE
+
+Milestone completed: "Drive agent-memory-learning: build lesson capture pipeline, get to 50 lessons"
+
+**(a) Next iteration should**: Drive the `documentation-gen` satellite project toward its goal. Check its project.md, find what deliverable is needed, and produce it. This is our path to s

@@ -18,6 +18,7 @@
 | [metrics.md](metrics.md) | Metrics pipeline: schema, snapshots, alerts, health metrics |
 | [projects.md](projects.md) | Project system: format, lifecycle, handler, shared location |
 | [agents.md](agents.md) | Agent cooperation: call/fork/message, session tree, context |
+| [growth.md](growth.md) | Agent growth: fork/promote/discard, lab sandbox |
 
 ## Manual (How-To Guides)
 
