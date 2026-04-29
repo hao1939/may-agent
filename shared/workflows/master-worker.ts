@@ -19,6 +19,7 @@ import { resolve, join, dirname } from "node:path";
 import {
   extractField, extractSection, updateProjectStatus,
 } from "./project-helpers.ts";
+import { validateDispatch } from "./dispatch-validator.ts";
 
 export const name: string = "master-worker";
 
@@ -185,6 +186,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir = resolve(ctx.projectRoot, projectMatch[1]);
   const projectFile = join(projectDir, "project.md");
   const journalFile = join(projectDir, "journal.md");
+
+  // Pre-flight validation via dispatch-validator
+  const validation = validateDispatch(ctx.task, ctx.projectRoot);
+  if (!validation.valid) {
+    return ctx.escalate(`Dispatch validation failed:\n${validation.errors.join("\n")}`);
+  }
 
   if (!existsSync(projectFile)) {
     return ctx.escalate(`No project.md found at: ${projectFile}`);
