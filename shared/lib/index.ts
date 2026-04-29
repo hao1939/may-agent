@@ -9,3 +9,4 @@ export * from './project-health.js';
 export * from './task-validator.js';
 export * from './task-template.js';
 export * from './iteration-monitor.js';
+export * from './project-template.js';
