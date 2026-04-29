@@ -7,7 +7,29 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat) — ADEMA知识状态编排 + Salesforce复合AI生产部署
+## Latest (2026-05-28 Heartbeat) — Programming with Data: 数据工程即软件工程
+
+> 训练数据的缺陷可结构化追溯和修复，映射到软件开发生命周期。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Programming with Data** | 论文(2604.24819, HF #1) | 数据→代码、训练→编译、benchmark→测试、修复→调试 | 知识库gap可追溯；test-driven知识管理 |
+| **RecursiveMAS** (回顾) | 论文(2604.25917, HF #2) | 递归多agent latent通信，token-75%，+8.3%准确率 | 文本通信是瓶颈；递归refinement有效 |
+
+### 💡 最重要的洞察：知识缺口是可追溯、可修复的
+
+> "Programming with Data"证明模型失败不是黑箱——可以追溯到具体的训练数据缺陷并targeted修复。跨16个学科、多模型规模一致有效。
+>
+> **对我们的直接影响**：agent执行失败 → 可以追溯到知识库(SKILL.md/AGENTS.md)的具体gap → targeted patch → 验证修复。这就是test-driven knowledge engineering。
+> **类比**：我们的Error Log已经在做"调试"，但缺少"单元测试"——即系统性验证知识库覆盖度的机制。
+
+**详细帖子**: [`posts/HB-260430b-programming-with-data.md`](library/posts/HB-260430b-programming-with-data.md) | [`posts/HB-260430a-recursive-mas.md`](library/posts/HB-260430a-recursive-mas.md)
+
+---
+
+## Previous (2026-04-30 Heartbeat) — ADEMA知识状态编排 + Salesforce复合AI生产部署
 
 > 两篇直接相关论文：一篇解决长程agent的知识漂移，一篇来自Salesforce的生产经验。
 
