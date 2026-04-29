@@ -38,7 +38,7 @@ interface Decision {
   detail: string;
 }
 
-function extractDecision(text: string): Decision {
+export function extractDecision(text: string): Decision {
   const trimmed = text.trim();
   const firstLine = trimmed.split("\n")[0] || "";
   const upper = firstLine.toUpperCase();
@@ -74,7 +74,7 @@ function extractDecision(text: string): Decision {
 
 // ── System prompts ──────────────────────────────────────────────────────
 
-function orchestratorSystemPrompt(projectDir: string): string {
+export function orchestratorSystemPrompt(projectDir: string): string {
   return `You are the orchestrator and project maintainer.
 Your role: assess state, direct the worker, verify deliverables, update project.md.
 
@@ -120,7 +120,7 @@ If the worker claims success but files don't exist, the worker is wrong.
 If 3+ consecutive iterations produce no files, WRITE THE FILE YOURSELF or provide exact content in guidance.`;
 }
 
-function workerSystemPrompt(projectDir: string): string {
+export function workerSystemPrompt(projectDir: string): string {
   const outputsDir = projectDir + "/outputs";
   return `You are a worker. You receive focused tasks and produce concrete deliverables.
 
@@ -143,7 +143,7 @@ WRITE-FIRST CONSTRAINT:
 // ── Output verification ─────────────────────────────────────────────────
 
 /** Snapshot file mtimes in a directory (recursive, 2 levels deep) */
-function snapshotOutputs(dir: string): Map<string, number> {
+export function snapshotOutputs(dir: string): Map<string, number> {
   const snap = new Map<string, number>();
   if (!existsSync(dir)) return snap;
   try {

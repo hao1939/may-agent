@@ -5,6 +5,10 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     coverage: {
       provider: "istanbul",
+      include: ["workflows/**/*.ts"],
+      thresholds: {
+        lines: 30,
+      },
     },
   },
 });
