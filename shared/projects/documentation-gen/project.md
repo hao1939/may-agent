@@ -4,7 +4,7 @@
 **Owner**: coach
 **Priority**: P2
 **Workflow**: master-worker
-**Iteration**: 17
+**Iteration**: 18
 
 ## Goal
 System is self-documenting. Architecture, workflows, agent roles all have up-to-date docs.
