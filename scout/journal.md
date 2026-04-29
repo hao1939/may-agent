@@ -1,7 +1,37 @@
 
 ---
 
-### 2026-04-04 Session 252c (s_1775292320229_8 restart) — Housekeeping & Cross-linking
+## Heartbeat — 2026-04-29 ~14:00 UTC
+
+**Focus:** Full triage of Tue Apr 28 + Wed Apr 29 cs.MA batches (32 new papers).
+
+**Triage (19 papers across Tue+Wed):**
+
+**★★★★★ — Deep-dived:**
+- **2604.23459 → DD#907 (Architecture Matters for MAS Security)** — Empirical: MAS architectures more vulnerable than standalone agents, attack success varies 3.8x by config, no universal safe design. CRITICAL for our architecture decisions.
+
+**★★★★ — Deep-dived (previous session or this one):**
+- **2604.22879 → DD#904 (Context-Fragmented Violations)** — Already written. CFVs where siloed contexts cause collective policy breach. Distributed Sentinel achieves F1=0.95.
+- **2604.25161 → DD#906 (Capability Failure Attribution)** — Already written. ACL 2026.
+- **2604.24477 → DD#908 (GAMMAF)** — Graph-based anomaly monitoring benchmark for LLM MAS. Cost reduction via early adversary isolation.
+
+**★★★ — Noted:**
+- **2604.22820** — Cyclic subtask graphs for tool-using agents. Flexibility/cost/bottleneck analysis.
+- **2604.23557** — DLM: unified decision language models for offline multi-agent sequential decisions.
+- **2604.23080** — Usable agent discovery for decentralized AI systems.
+- **2604.25899** — Pythia: predictability-driven agent-native LLM serving.
+
+**★★ — Domain-specific / lower relevance:**
+- 2604.25567 (MAPF replanning), 2604.25067 (AlphaZero Connect Four), 2604.24905 (MultiHedge finance), 2604.24808 (tutoring), 2604.25596 (multiagent transactions), 2604.25070 (asymmetric info games), 2604.24842 (video storytelling), 2604.24807 (quantum education), 2604.23802 (endometrial cancer), 2604.24572 (medical OMOP), 2604.24203 (agentic witnessing)
+
+**Actions:**
+- Wrote DD#907, DD#908. Added 19 IDs to covered_ids (now 584).
+- Notifying bob about DD#907 — architecture security implications are directly relevant.
+
+**Next:** Check if bob has hypotheses needing literature grounding. Deep-dive 2604.22820 (cyclic subtask graphs) if relevant to workflow optimization.
+
+---
+
 
 **Context:** Session restart. Verified all deliverables from 252+252b. Added forward link from CR#277→CR#278. Read Bob's hypothesis corpus review (REVIEW-2026-04-04-honest-assessment.md) — noted hypothesis moratorium recommendation. Respected it: did NOT generate H-061 for multi-agent write conflicts despite identifying the gap. Waiting for Saturday batch (~20:00 UTC).
 
