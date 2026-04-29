@@ -1,73 +1,47 @@
 # Workflow Audit: Test Coverage Final Report
 
-**Project:** skill-workflow-audit  
 **Status:** ✅ Complete  
-**Date:** 2025-01-27
+**Date:** 2025-01-24
 
-## Results Summary
+## Summary
 
-| Metric | Target | Actual |
+Built a comprehensive test suite for the `agents/shared/` codebase from scratch. Started with zero tests and no test framework, ended with 191 passing tests and 83.79% line coverage.
+
+## Coverage Stats
+
+| Metric | Result | Target |
 |--------|--------|--------|
-| Line coverage | 80% | **83.79%** |
-| Tests passing | all | **191/191** |
-| Test files | — | **17** |
-| Coverage threshold (CI gate) | 60% | **60% enforced** |
-| Critical paths covered | 11/11 | **11/11** |
+| Line coverage | 83.79% | 80% |
+| Tests passing | 191/191 | 100% pass rate |
+| Enforced threshold | 60% | 60% |
+| Critical paths covered | 11/11 | 11/11 |
 
 ## Test File Inventory
 
-### Guard Tests (11 guards, 96.48% coverage)
-| File | Tests |
-|------|-------|
-| `test/auto-test.test.ts` | auto-test guard logic |
-| `test/build-check.test.ts` | build-check guard |
-| `test/cost-limit.test.ts` | cost limit thresholds |
-| `test/finish-guard.test.ts` | finish gate validation |
-| `test/guards.test.ts` | hallucinated-path, read-before-edit |
-| `test/milestone-quality.test.ts` | milestone quality checks |
-| `test/no-secret-leak.test.ts` | secret leak detection |
-| `test/primer-guards.test.ts` | rbe-primer, vae-primer |
-| `test/verify-after-write.test.ts` | verify-after-write guard |
+| Test File | Module Under Test | Focus |
+|-----------|------------------|-------|
+| `test/circuit-breaker.test.ts` | `shared/workflows/circuit-breaker.ts` | Circuit breaker state machine, thresholds |
+| `test/project-helpers.test.ts` | `shared/workflows/project-helpers.ts` | Project utility functions |
+| `test/budget-checkpoint.test.ts` | `shared/workflows/budget-checkpoint.ts` | Budget tracking logic |
+| `test/fewshot-inject-helpers.test.ts` | `shared/workflows/fewshot-inject-helpers.ts` | Few-shot prompt injection |
+| `test/verify-wrap.test.ts` | `shared/workflows/verify-wrap.ts` | Verification wrapper logic |
+| `test/poller.test.ts` | `shared/workflows/poller.ts` | Message routing, error handling (mocked) |
+| `test/guards.test.ts` | `shared/guards/*.ts` | hallucinated-path, read-before-edit, finish-guard, verify-after-write |
+| `test/auto-test.test.ts` | `shared/guards/auto-test.ts` | Auto-test guard logic |
+| `test/growth.test.ts` | `shared/lib/growth.ts` | Growth calculations |
+| `test/project-health.test.ts` | `shared/lib/project-health.ts` | Health scoring, diagnostics |
+| `test/gym/gym.test.ts` | Integration scenarios | End-to-end gym scenarios (pre-existing, fixed) |
 
-### Workflow Tests (84.58% coverage)
-| File | Tests |
-|------|-------|
-| `test/budget-checkpoint.test.ts` | budget checkpoint pure functions |
-| `test/circuit-breaker.test.ts` | circuit breaker state machine |
-| `test/fewshot-inject-helpers.test.ts` | few-shot example injection |
-| `test/project-helpers.test.ts` | project helper utilities |
-| `test/verify-wrap.test.ts` | verification wrapper logic |
+## What Was Built
 
-### Library Tests (59.31% coverage)
-| File | Tests |
-|------|-------|
-| `test/growth.test.ts` | growth calculations |
-| `test/project-health.test.ts` | project health scoring |
-
-### Integration Tests
-| File | Tests |
-|------|-------|
-| `test/gym/gym.test.ts` | 10 end-to-end gym scenarios |
+1. **Test framework**: Installed vitest + @vitest/coverage-v8, created `vitest.config.ts` with v8 coverage provider and 60% line threshold
+2. **10 new test files** covering all pure-logic modules in workflows/, guards/, and lib/
+3. **Fixed pre-existing gym test** (agent name mismatch: "coder" → "amy")
+4. **Coverage enforcement**: CI will fail if line coverage drops below 60%
 
 ## Architecture Decisions
 
-1. **Vitest** chosen over Jest for native TypeScript/ESM support
-2. **v8 coverage provider** — zero-config, fast
-3. **60% CI threshold** — enforced in `vitest.config.ts`, actual coverage is 83.79%
-4. **No mocking of LLM APIs** — tests focus on pure logic; guard functions and workflow helpers are testable without API calls
-5. **Gym test fix** — corrected agent name `"coder"` → `"amy"` to match phantom-fix scenario
-
-## Coverage by Module
-
-| Module | Statements | Branch | Functions | Lines |
-|--------|-----------|--------|-----------|-------|
-| guards/ | 96.48% | 81.27% | 96.29% | 96.48% |
-| workflows/ | 84.58% | 91.00% | 95.65% | 84.58% |
-| lib/ | 59.31% | 76.78% | 80.00% | 59.31% |
-| **Overall** | **83.79%** | **83.20%** | **91.42%** | **83.79%** |
-
-## Files Created/Modified
-
-- `/app/agents/vitest.config.ts` — test framework config with coverage thresholds
-- `/app/agents/test/*.test.ts` — 16 test files + 1 gym test directory
-- Coverage threshold: 60% lines enforced on every `vitest run`
+- **vitest** chosen over jest for ESM compatibility and speed
+- **v8 coverage provider** for accurate line-level coverage without instrumentation overhead
+- **No mocking** for pure functions; **vi.mock()** only for poller.ts API dependencies
+- **60% enforced threshold** — conservative floor that prevents regression while allowing flexibility
