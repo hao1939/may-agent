@@ -1,6 +1,6 @@
 # Project: Agent System Literacy
 
-**Status**: active
+**Status**: completed
 **Completed**: 2027-08-06 — 2/3 metrics met (project-creation-rate ✅, escalation-quality ✅). Gym pass-rate at 0.33 (1/3 scenarios), gap is metric-grounding + structured escalation, not skill deployment. Follow-up: improve reading-metrics skill with DB query examples, fix gym infra separately.
 **Closed**: 2027-09-01 — Formally closed. All actionable milestones complete. Remaining gym gap is infra issue, not skill gap.
 **Owner**: bob
