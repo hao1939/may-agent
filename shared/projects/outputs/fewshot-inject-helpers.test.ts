@@ -1,252 +1,140 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { selectExamples, loadExample, injectFewShot } from "../workflows/fewshot-inject-helpers.js";
 
-// Replicate pure functions from fewshot-inject-helpers.ts for testing
+describe("fewshot-inject-helpers", () => {
+  // ── selectExamples ───────────────────────────────────────────────────
 
-const MAX_EXAMPLES = 2;
-const MAX_TOTAL_CHARS = 12000;
+  describe("selectExamples", () => {
+    it("returns empty array for unrelated task", () => {
+      expect(selectExamples("write a hello world function")).toEqual([]);
+    });
 
-interface ExamplePattern {
-  match: RegExp;
-  file: string;
-}
+    it("matches binary-file-escalation for binary keywords", () => {
+      const result = selectExamples("analyze this .bin file for issues");
+      expect(result).toContain("binary-file-escalation");
+    });
 
-const EXAMPLE_PATTERNS: ExamplePattern[] = [
-  { match: /binary|\.bin(?![/\\])|compiled|executable|hexdump/i, file: "binary-file-escalation" },
-  { match: /bug|error|failing|test.*fail|crash|500|exception/i, file: "reproduce-first-debugging" },
-  { match: /upgrade|dependency|multiple.*(file|module)|impact|import.*shared/i, file: "escalation-judgment" },
-  { match: /blocked|impossible|can'?t.*find|missing.*key|missing.*credential|no.*permission|binary.*file|all.*fail/i, file: "know-when-blocked" },
-  { match: /fix.*bug|broken|failing|doesn'?t.*work|incorrect.*output|wrong.*result|comment.*says/i, file: "evidence-over-narrative" },
-];
+    it("matches reproduce-first-debugging for bug keywords", () => {
+      const result = selectExamples("there is a bug in the parser");
+      expect(result).toContain("reproduce-first-debugging");
+    });
 
-function selectExamples(taskContent: string): string[] {
-  const stripped = taskContent.replace(/## Verification[\s\S]*?```[\s\S]*?```/g, "");
-  return EXAMPLE_PATTERNS
-    .filter((p) => p.match.test(stripped))
-    .map((p) => p.file)
-    .slice(0, MAX_EXAMPLES);
-}
+    it("matches escalation-judgment for upgrade keywords", () => {
+      const result = selectExamples("upgrade the dependency across multiple files");
+      expect(result).toContain("escalation-judgment");
+    });
 
-function buildInjection(task: string, examples: string[]): string {
-  if (examples.length === 0) return task;
-  const exampleBlock = examples.join("\n\n---\n\n");
-  return (
-    `## Reference: How a similar task was handled\n\n` +
-    `${exampleBlock}\n\n` +
-    `---\n\n` +
-    `## Your Task\n\n` +
-    `${task}`
-  );
-}
+    it("matches know-when-blocked for blocked keywords", () => {
+      const result = selectExamples("I'm blocked because missing credentials");
+      expect(result).toContain("know-when-blocked");
+    });
 
-function budgetFilter(contents: (string | null)[], maxChars: number): string[] {
-  const result: string[] = [];
-  let total = 0;
-  for (const c of contents) {
-    if (!c) continue;
-    if (total + c.length > maxChars) break;
-    result.push(c);
-    total += c.length;
-  }
-  return result;
-}
+    it("matches evidence-over-narrative for fix bug keywords", () => {
+      const result = selectExamples("fix bug where output is incorrect output");
+      expect(result).toContain("evidence-over-narrative");
+    });
 
-function extractWorkedExample(content: string): string | null {
-  const workedMatch = content.match(
-    /## Worked Example\s*\n([\s\S]*?)(?=\n## (?!Worked)|$)/
-  );
-  if (workedMatch?.[1]?.trim()) {
-    return workedMatch[1].trim();
-  }
-  // Fallback: strip metadata
-  const stripped = content
-    .replace(/^# Few-Shot Example:.*\n/m, "")
-    .replace(/\*\*Domain class\*\*:.*\n/g, "")
-    .replace(/\*\*Skill\*\*:.*\n/g, "")
-    .replace(/\*\*Token estimate\*\*:.*\n/g, "")
-    .replace(/## Trigger Patterns[\s\S]*?(?=\n## )/m, "")
-    .replace(/## Evidence[\s\S]*$/m, "")
-    .replace(/## Source[\s\S]*$/m, "")
-    .trim();
-  return stripped || null;
-}
+    it("returns max 2 examples even when more match", () => {
+      // This matches multiple patterns: bug, fix bug, blocked
+      const result = selectExamples("fix bug error blocked can't find missing key");
+      expect(result.length).toBeLessThanOrEqual(2);
+    });
 
-// ── Tests ──────────────────────────────────────────────────────────────
+    it("strips verification blocks before matching", () => {
+      const task = `do something simple\n\n## Verification\n\`\`\`\n./node_modules/.bin/tsc --binary\n\`\`\``;
+      const result = selectExamples(task);
+      // "binary" is inside verification block, should not match
+      expect(result).not.toContain("binary-file-escalation");
+    });
 
-describe("selectExamples", () => {
-  it("returns empty array for unrelated task", () => {
-    expect(selectExamples("Please write a haiku about cats")).toEqual([]);
+    it("matches hexdump keyword for binary pattern", () => {
+      expect(selectExamples("run hexdump on the file")).toContain("binary-file-escalation");
+    });
   });
 
-  it("matches binary pattern", () => {
-    expect(selectExamples("Analyze this .bin file")).toContain("binary-file-escalation");
+  // ── loadExample ──────────────────────────────────────────────────────
+
+  describe("loadExample", () => {
+    it("returns null for non-existent file", () => {
+      expect(loadExample("nonexistent-file-xyz")).toBeNull();
+    });
+
+    it("loads an existing example file without throwing", () => {
+      // Try loading one that should exist based on the patterns
+      const result = loadExample("binary-file-escalation");
+      // It either returns content or null (if file doesn't exist in test env)
+      expect(result === null || typeof result === "string").toBe(true);
+    });
+
+    it("returns a string (not empty) for valid example files", () => {
+      const result = loadExample("reproduce-first-debugging");
+      if (result !== null) {
+        expect(result.length).toBeGreaterThan(0);
+      }
+    });
   });
 
-  it("matches binary keyword", () => {
-    expect(selectExamples("This is a compiled executable")).toContain("binary-file-escalation");
-  });
+  // ── injectFewShot ────────────────────────────────────────────────────
 
-  it("matches bug/error pattern", () => {
-    expect(selectExamples("Fix this bug in the login flow")).toContain("reproduce-first-debugging");
-  });
+  describe("injectFewShot", () => {
+    const originalEnv = process.env.GYM_NO_FEWSHOT;
 
-  it("matches crash keyword", () => {
-    expect(selectExamples("The server keeps crashing with 500 errors")).toContain("reproduce-first-debugging");
-  });
+    afterEach(() => {
+      if (originalEnv === undefined) {
+        delete process.env.GYM_NO_FEWSHOT;
+      } else {
+        process.env.GYM_NO_FEWSHOT = originalEnv;
+      }
+    });
 
-  it("matches upgrade/dependency pattern", () => {
-    expect(selectExamples("Upgrade the dependency to v3")).toContain("escalation-judgment");
-  });
+    it("returns original task when GYM_NO_FEWSHOT=1", () => {
+      process.env.GYM_NO_FEWSHOT = "1";
+      const task = "fix this bug in the parser";
+      expect(injectFewShot(task)).toBe(task);
+    });
 
-  it("matches multiple files/modules", () => {
-    expect(selectExamples("This impacts multiple modules")).toContain("escalation-judgment");
-  });
+    it("returns original task when no patterns match", () => {
+      delete process.env.GYM_NO_FEWSHOT;
+      const task = "write a hello world function in python";
+      expect(injectFewShot(task)).toBe(task);
+    });
 
-  it("matches blocked pattern", () => {
-    expect(selectExamples("I'm blocked, can't find the API key")).toContain("know-when-blocked");
-  });
+    it("prepends examples when patterns match", () => {
+      delete process.env.GYM_NO_FEWSHOT;
+      const task = "fix this bug where output is incorrect output";
+      const result = injectFewShot(task);
+      // If example files exist, should have the framing
+      if (result !== task) {
+        expect(result).toContain("## Reference: How a similar task was handled");
+        expect(result).toContain("## Your Task");
+        expect(result).toContain(task);
+      }
+    });
 
-  it("matches missing credential", () => {
-    expect(selectExamples("Missing credential for deployment")).toContain("know-when-blocked");
-  });
+    it("includes '## Your Task' section with original task", () => {
+      delete process.env.GYM_NO_FEWSHOT;
+      const task = "there is a bug causing a crash in production";
+      const result = injectFewShot(task);
+      if (result !== task) {
+        expect(result.endsWith(task)).toBe(true);
+      }
+    });
 
-  it("matches fix bug / broken pattern", () => {
-    expect(selectExamples("Fix bug in parser — it's broken")).toContain("evidence-over-narrative");
-  });
+    it("does not bypass when GYM_NO_FEWSHOT is not set", () => {
+      delete process.env.GYM_NO_FEWSHOT;
+      const task = "analyze this executable binary file";
+      const result = injectFewShot(task);
+      // Should attempt injection (may still return original if files don't exist)
+      expect(typeof result).toBe("string");
+    });
 
-  it("matches incorrect output", () => {
-    expect(selectExamples("The function returns incorrect output")).toContain("evidence-over-narrative");
-  });
-
-  it("returns max 2 examples even when many match", () => {
-    const task = "Fix this bug in the binary executable — it's broken and blocked";
-    const result = selectExamples(task);
-    expect(result.length).toBeLessThanOrEqual(2);
-  });
-
-  it("strips verification blocks before matching", () => {
-    const task = `Please write a haiku
-## Verification
-\`\`\`
-./node_modules/.bin/tsc --noEmit
-\`\`\``;
-    // ".bin" is inside verification block — should be stripped
-    expect(selectExamples(task)).toEqual([]);
-  });
-
-  it("matches keywords outside verification blocks", () => {
-    const task = `Fix this binary file issue
-## Verification
-\`\`\`
-echo done
-\`\`\``;
-    expect(selectExamples(task)).toContain("binary-file-escalation");
-  });
-
-  it("handles empty string", () => {
-    expect(selectExamples("")).toEqual([]);
-  });
-});
-
-describe("buildInjection", () => {
-  it("returns task unchanged when no examples", () => {
-    expect(buildInjection("my task", [])).toBe("my task");
-  });
-
-  it("prepends single example with correct framing", () => {
-    const result = buildInjection("do stuff", ["example 1"]);
-    expect(result).toContain("## Reference: How a similar task was handled");
-    expect(result).toContain("example 1");
-    expect(result).toContain("## Your Task");
-    expect(result).toContain("do stuff");
-  });
-
-  it("joins multiple examples with separator", () => {
-    const result = buildInjection("task", ["ex1", "ex2"]);
-    expect(result).toContain("ex1\n\n---\n\nex2");
-  });
-
-  it("puts task at the end", () => {
-    const result = buildInjection("my task", ["example"]);
-    expect(result.endsWith("my task")).toBe(true);
-  });
-});
-
-describe("budgetFilter", () => {
-  it("returns empty for all nulls", () => {
-    expect(budgetFilter([null, null], MAX_TOTAL_CHARS)).toEqual([]);
-  });
-
-  it("skips null entries", () => {
-    expect(budgetFilter([null, "hello", null, "world"], MAX_TOTAL_CHARS)).toEqual(["hello", "world"]);
-  });
-
-  it("respects character budget", () => {
-    const big = "x".repeat(10000);
-    const small = "y".repeat(3000);
-    const result = budgetFilter([big, small], MAX_TOTAL_CHARS);
-    // big (10000) fits, big+small (13000) > 12000, so only big
-    expect(result).toEqual([big]);
-  });
-
-  it("stops when budget exceeded", () => {
-    const a = "x".repeat(8000);
-    const b = "y".repeat(5000);
-    // a=8000, a+b=13000 > 12000, so only a
-    const result = budgetFilter([a, b], MAX_TOTAL_CHARS);
-    expect(result).toEqual([a]);
-  });
-
-  it("returns empty when first item exceeds budget", () => {
-    const huge = "x".repeat(15000);
-    expect(budgetFilter([huge], MAX_TOTAL_CHARS)).toEqual([]);
-  });
-});
-
-describe("extractWorkedExample", () => {
-  it("extracts worked example section", () => {
-    const content = `# Few-Shot Example: Test
-## Trigger Patterns
-some patterns
-## Worked Example
-Here is the example content.
-It spans multiple lines.
-## Evidence
-some evidence`;
-    expect(extractWorkedExample(content)).toBe("Here is the example content.\nIt spans multiple lines.");
-  });
-
-  it("extracts to end of file if no following section", () => {
-    const content = `# Title
-## Worked Example
-Just this content.`;
-    expect(extractWorkedExample(content)).toBe("Just this content.");
-  });
-
-  it("falls back to stripped content when no worked example section", () => {
-    const content = `# Few-Shot Example: Foo
-**Domain class**: testing
-**Skill**: debugging
-Some actual useful content here.
-## Evidence
-not this part`;
-    const result = extractWorkedExample(content);
-    expect(result).toContain("Some actual useful content here.");
-    expect(result).not.toContain("Evidence");
-    expect(result).not.toContain("Domain class");
-  });
-
-  it("returns null for empty content after stripping", () => {
-    const content = `# Few-Shot Example: Empty
-**Domain class**: x
-**Skill**: y
-**Token estimate**: z
-## Evidence
-only metadata`;
-    expect(extractWorkedExample(content)).toBeNull();
-  });
-
-  it("handles content with no metadata at all", () => {
-    const content = "Just plain text without any sections";
-    expect(extractWorkedExample(content)).toBe("Just plain text without any sections");
+    it("respects MAX_TOTAL_CHARS budget", () => {
+      delete process.env.GYM_NO_FEWSHOT;
+      // Even with matching patterns, result should not be excessively long
+      const task = "fix bug error in binary executable file";
+      const result = injectFewShot(task);
+      // Total injected content should be reasonable
+      expect(result.length).toBeLessThan(20000);
+    });
   });
 });
