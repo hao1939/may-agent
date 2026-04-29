@@ -1,19 +1,19 @@
-# Deliverables Checklist — Iteration 12
+# Deliverables Checklist
 
-## Task: Create `agents/shared/lib/index.ts` barrel export
-
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Barrel export file for shared lib | DONE | `agents/shared/lib/index.ts` |
-| 2 | All tests still pass (70 files) | DONE | Verified via `npx vitest run` |
-
-## Previous Iterations (cumulative)
+## Task: Failure Audit Report (Iteration 13)
 
 | # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 3 | Regression guard script | DONE | `agents/shared/scripts/test-guard.sh` |
-| 4 | Integration test in suite | DONE | `agents/shared/workflows/__tests__/integration.test.ts` |
-| 5 | hao-alignment lib with tests | DONE | `agents/shared/lib/hao-alignment/` |
-| 6 | System dashboard script | DONE | `agents/shared/scripts/system-dashboard.sh` |
-| 7 | Health check script | DONE | `agents/shared/scripts/health-check.sh` |
-| 8 | Project status report | DONE | `projects/outputs/project-status-report.md` |
+|---|-------------|--------|------|
+| 1 | Failure audit with top 5 patterns, frequency, and fixes | DONE | `/app/agents/shared/projects/outputs/failure-audit.md` |
+
+## Previous Iterations (retained)
+
+| # | Deliverable | Status | Path |
+|---|-------------|--------|------|
+| 2 | Test guard script | DONE | `agents/shared/scripts/test-guard.sh` |
+| 3 | Health check script | DONE | `agents/shared/scripts/health-check.sh` |
+| 4 | Integration test | DONE | `agents/shared/workflows/__tests__/integration.test.ts` |
+| 5 | HAO alignment lib | DONE | `agents/shared/lib/hao-alignment/` |
+| 6 | System dashboard | DONE | `agents/shared/scripts/system-dashboard.sh` |
+| 7 | Lib barrel export | DONE | `agents/shared/lib/index.ts` |
+| 8 | Project status report | DONE | `/app/agents/shared/projects/outputs/project-status-report.md` |
