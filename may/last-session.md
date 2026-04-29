@@ -1,14 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777473332316_52
+- **Session:** s_1777475132302_199
 - **Status:** done
-- **When:** 2026-04-29T14:37:22.344Z
-- **Duration:** 1m50s
+- **When:** 2026-04-29T15:10:18.542Z
+- **Duration:** 4m46s
 
 ## What Happened
-Good. I've fixed the root cause of the `project.blocked-count` metric — 3 projects (skill-workflow-audit, documentation-gen, agent-memory-learning) had stale DB status ('blocked'/'waiting') despite being complete (milestones_done == milestones_total, markdown files show "complete"). Updated them to 'complete' in the DB.
-
-The P0 coach notification is stale — coach has 4 sessions in the last 7 days and 21 sessions in the last 6 hours. It's actively running. Dismissing.
-
-System is otherwise healthy: 96% success rate, all cron jobs green, all heartbeats firing.
+Good. That fixes the blocked-count metric (was 2, now 0) and reduces stale count. The tech-lead fork will fix the root cause of the stale-active metric by adding event emissions.
