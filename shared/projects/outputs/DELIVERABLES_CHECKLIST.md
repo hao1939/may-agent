@@ -1,9 +1,12 @@
-# Deliverables Checklist
+# Deliverables Checklist — Iteration 7
 
-## Task: Create integration test in vitest-discoverable location (70 test files)
+## Task: Hao-Alignment Phase 3 Completion
 
-| # | Deliverable | Status | Path/Notes |
-|---|-------------|--------|------------|
-| 1 | Integration test in vitest test dir | DONE | `agents/shared/tests/workflows-integration-e2e.test.ts` — 4 tests exercising workflow-runner pipeline end-to-end |
-| 2 | Test suite passes with 70 files | DONE | `npx vitest run` → "Test Files 70 passed (70)" |
-| 3 | Copy in outputs | DONE | `agents/shared/projects/outputs/workflows-integration-e2e.test.ts` |
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | Correction rate measurement tool | DONE | `projects/outputs/hao-alignment-correction-rate.ts` |
+| 2 | Preference-check gate for dispatch | DONE | `projects/outputs/preference-check-gate.ts` |
+
+### Details
+1. **correction-rate.ts** — Scans Hao sessions, counts decision/rejection signals, computes correction_rate metric. CLI tool with --days flag. Verified running.
+2. **preference-check-gate.ts** — Exports `preferenceGate()` function scoring actions against 6 rules (stability-first, guards-stay-strong, observability, delegation-rules, no-zombie-work, may-must-fork). Verified with 5 test cases.
