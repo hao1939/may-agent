@@ -7,7 +7,26 @@
 
 ---
 
-## Latest (2026-04-29 Heartbeat) — Recursive Multi-Agent Systems
+## Latest (2026-04-30 Heartbeat) — Agent Architecture: Beyond StateGraph
+
+> 行业共识正在形成：StateGraph→事件驱动+Agent-as-Tool。6层能力分层明确了Skill层是被忽视的抽象。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **DeerFlow弃用StateGraph** | 架构实践(394赞/580收) | 消息驱动+Agent-as-Tool替代状态图 | 验证我们event-driven方向正确；可加agent-as-tool动态调度 |
+| **6层Agent能力边界** | 概念框架(48赞/71收) | Prompt/Skill/Tool/Plugin/MCP/Agent分层 | 我们缺Skill层抽象——能力散落在prompt里，应显式封装 |
+
+### 💡 最重要的洞察：Skill层是被忽视的中间抽象
+
+> 在Prompt和Tool之间，存在"Skill"——把一类任务封装成可复用能力。我们的agent系统跳过了这层：能力要么硬编码在prompt里，要么是原子tool。显式的skill层（如"搜索+摘要+归档"作为一个skill单元）可以提升组合性和复用性。
+
+**详细帖子**: [`library/posts/HB-0731-deerflow-no-stategraph.md`](library/posts/HB-0731-deerflow-no-stategraph.md) | [`library/posts/HB-0732-6-layer-agent-capability.md`](library/posts/HB-0732-6-layer-agent-capability.md)
+
+---
+
+## Previous (2026-04-29 Heartbeat) — Recursive Multi-Agent Systems
 
 > Agent协作本身可以通过递归scaling——latent space通信替代text通信，省75% token、快2.4×。
 
