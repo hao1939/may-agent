@@ -302,6 +302,12 @@ ${journalContent.slice(-3000)}
 
     planningPrompt += `\nBased on your assessment, provide your decision and guidance for the worker.`;
 
+    // Include satellite metrics if available
+    if (satelliteMetrics && satelliteMetrics.totalProjects > 0) {
+      const projectSummaries = satelliteMetrics.projects.map(p => `  - ${p.name}: ${p.status}`).join('\n');
+      planningPrompt += `\n\n## Cross-Project Status (${satelliteMetrics.totalProjects} projects)\n${projectSummaries}\n`;
+    }
+
     await withRetry(() => orchestrator.prompt(planningPrompt), {
       maxRetries: 3,
       baseDelayMs: 1000,
