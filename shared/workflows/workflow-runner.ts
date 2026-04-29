@@ -133,14 +133,24 @@ export async function runValidationStage(
 
 export async function runHealthCheckStage(
   config: WorkflowConfig,
-  readFn: (path: string) => string
+  readFn?: (path: string) => string | null
 ): Promise<StageResult> {
   const start = Date.now();
   if (!config.healthCheckEnabled) {
     return buildStageResult("health-check", true, start, { skipped: true });
   }
   const dirs = config.satelliteDirs ?? [];
-  const report = checkHealth(dirs, readFn);
+  const projects = dirs.map((dir) => {
+    const name = dir.split("/").pop() || dir;
+    let projectContent: string | null = null;
+    let journalContent: string | null = null;
+    if (readFn) {
+      try { projectContent = readFn(`${dir}/project.md`); } catch {}
+      try { journalContent = readFn(`${dir}/journal.md`); } catch {}
+    }
+    return { name, projectContent, journalContent };
+  });
+  const report = checkHealth(projects);
   const decision = shouldProceedAfterHealthCheck(report, config.healthCheckThreshold);
   return buildStageResult("health-check", decision.proceed, start, {
     report: report.summary,
@@ -206,7 +216,7 @@ export async function runWorkflow(
 
   // Stage 2: Health check
   const cache = new ProjectCache();
-  const readFn = options?.readFn ?? ((p: string) => cache.read(p));
+  const readFn = options?.readFn;
   const healthResult = await runHealthCheckStage(cfg, readFn);
   stages.push(healthResult);
   if (!healthResult.success) {
