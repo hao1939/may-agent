@@ -222,6 +222,54 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE INDEX IF NOT EXISTS idx_events_owner ON events(owner, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_type  ON events(event_type, timestamp);
 
+
+CREATE TABLE IF NOT EXISTS metrics (
+  id              TEXT PRIMARY KEY,
+  name            TEXT,
+  type            TEXT,
+  owner           TEXT,
+  current         REAL,
+  target          REAL,
+  threshold       REAL,
+  unit            TEXT,
+  priority        TEXT,
+  status          TEXT DEFAULT 'active',
+  blocker         TEXT,
+  project         TEXT,
+  source          TEXT,
+  source_query    TEXT,
+  source_command  TEXT,
+  sensitivity     REAL,
+  measure_interval INTEGER,
+  created_at      INTEGER,
+  updated_at      INTEGER NOT NULL DEFAULT 0,
+  closed_at       INTEGER,
+  alert_op        TEXT,
+  speed           TEXT,
+  description     TEXT,
+  direction       TEXT
+);
+
+CREATE TABLE IF NOT EXISTS metric_snapshots (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  metric_id       TEXT,
+  value           REAL,
+  sample_size     INTEGER,
+  measured_at     INTEGER,
+  measured_by     TEXT,
+  note            TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_ms_metric ON metric_snapshots(metric_id, measured_at);
+
+CREATE TABLE IF NOT EXISTS metric_alerts (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  metric_id       TEXT,
+  alert_type      TEXT,
+  message         TEXT,
+  resolved_at     INTEGER,
+  created_at      INTEGER
+);
+
 CREATE TABLE IF NOT EXISTS projects (
   id              TEXT PRIMARY KEY,
   path            TEXT NOT NULL,
