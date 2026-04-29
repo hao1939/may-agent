@@ -276,9 +276,16 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
         }
 
         // Normalize and emit to bus — single path for all commands
-        // Socket-only aliases: run → fork, close → shutdown, cancel_task → cancel, reload_agents → reload
         let busEvent: Record<string, unknown> = { ...cmd };
-        if (cmdType === "fork") {
+        if (cmdType === "emit") {
+          // Unwrap: { type: "emit", event: "heartbeat.trigger", ...data }
+          // → bus gets: { type: "heartbeat.trigger", ...data }
+          const eventName = cmd.event as string;
+          if (eventName) {
+            const { type: _, event: __, ...rest } = cmd;
+            busEvent = { type: eventName, ...rest };
+          }
+        } else if (cmdType === "fork") {
           busEvent = { type: "fork", agent: cmd.agent, task: cmd.message, opts: { source: "socket" } };
         } else if (cmdType === "fork") {
           busEvent = { type: "fork", agent: cmd.agent, task: cmd.task ?? cmd.message, opts: { source: "socket" } };
