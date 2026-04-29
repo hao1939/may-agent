@@ -10,10 +10,10 @@ import {
   summarizeWorkflow,
   isConfigValid,
   extractProjectPath,
-} from "../workflow-runner.js";
-import { ProjectCache } from "../project-cache.js";
-import { validateDispatch } from "../dispatch-validator.js";
-import { checkHealth } from "../health-check.js";
+} from "../workflows/workflow-runner.js";
+import { ProjectCache } from "../workflows/project-cache.js";
+import { validateDispatch } from "../workflows/dispatch-validator.js";
+import { checkHealth } from "../workflows/health-check.js";
 
 describe("Workflow Integration (end-to-end, no mocks)", () => {
   it("runs a full validate → health-check → summarize pipeline", async () => {
