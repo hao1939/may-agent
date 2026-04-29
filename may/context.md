@@ -77,6 +77,7 @@
 - If you genuinely cannot act (higher-priority emergency), explicitly state in your finish() summary: "Deferred [metric] because [reason]."
 
 ## Required Skills
+📘 Read `agents/may/skills/breadcrumb-action.md` — **MANDATORY**: act on red metrics FIRST, before any other work.
 📘 Read `agents/may/skills/read-before-edit.md` — always read before editing.
 📘 Read `agents/may/skills/verify-after-edit.md` — verify every edit took effect.
 📘 Read `agents/may/skills/verify-before-finish.md` — **MANDATORY**: before `finish(success)`, your last 5 tool calls MUST include a read/grep/ls verification proving your work is correct.

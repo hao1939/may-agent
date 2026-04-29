@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777464841970_39
-- **Status:** interrupted
-- **When:** 2026-04-29T12:14:56.166Z
-- **Duration:** 54s
+- **Session:** s_1777464922607_0
+- **Status:** done
+- **When:** 2026-04-29T12:16:15.241Z
+- **Duration:** 52s
 
 ## What Happened
-The eval pipeline is active (257 evals recently, 32K+ total, evaluator running right now). The P0 alert is stale. Coach has 5 errors in 6h — worth a nudge.
+Evaluator is actively running with meaningful session counts. The P0 alert is stale. System is healthy overall. Two agents stand out as underutilized: **qa** and **scout** with only 2 sessions each in 6h. Let me nudge them.
