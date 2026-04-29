@@ -11,5 +11,6 @@ export * from './task-template.js';
 export * from './iteration-monitor.js';
 export * from './project-template.js';
 export * from './session-analyzer.js';
+export * from './regression-detector.js';
 export * from './workflow-metrics.js';
 export * from './config-validator.js';
