@@ -70,7 +70,7 @@ agents({ action: "context", scope: "workflow" })
 
 ### What the summary contains
 
-Uses `summarizeForHandoff()` plus finish() structured data when available:
+Uses `summarizeForHandoff()` (from `src/lib/handoff.ts`) plus finish() structured data when available:
 - Files read and written
 - Commands run and exit codes
 - Errors encountered

@@ -3,9 +3,8 @@
 **Status:** COMPLETED
 
 ## Summary
-- **Milestones:** 5/6 completed (1 abandoned)
-- **Metrics:** 2/3 met
-- **Gym metric:** 33% achieved — gap documented with follow-up recommendations
+- 5/6 plan items completed (1 abandoned)
+- 2/3 success metrics met
+- Gym metric at 33% — gap documented with follow-up recommendations
 
-## Outcome
-Project successfully closed. No further work required.
+No further work required.
