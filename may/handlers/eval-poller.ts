@@ -18,7 +18,7 @@ import type { HandlerContext, HandlerModule, CronEntry } from "../../shared/agen
 import { evaluateStandaloneSession } from "../../shared/evaluation/evaluator.js";
 
 const STATE_FILE = "eval-poller-processed.json";
-const MAX_SESSIONS_PER_RUN = 50; // Increased from 20 to improve coverage throughput
+const MAX_SESSIONS_PER_RUN = 100; // Increased from 50 to improve coverage throughput
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days to match coverage metric window
 
 // Meta-agents that shouldn't be evaluated
@@ -81,7 +81,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       })
       .filter(({ ts }) => !isNaN(ts) && now - ts < MAX_AGE_MS)
       .sort((a, b) => b.ts - a.ts) // newest first
-      .slice(0, MAX_SESSIONS_PER_RUN * 3); // read more than needed, some will be filtered
+      .slice(0, MAX_SESSIONS_PER_RUN * 10); // need large candidate pool given 6000+ sessions/week
 
     for (const { dir } of recentSessions) {
       if (evaluated >= MAX_SESSIONS_PER_RUN) break;
