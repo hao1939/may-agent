@@ -359,13 +359,7 @@ export async function genericHeartbeat(ctx: WorkflowContext, agent: string): Pro
     return ctx.done(`Circuit breaker OPEN for ${agent}: ${circuitBlock}`);
   }
 
-  // ── DEDUP: Skip heartbeat if nothing actionable ──────────────
-  const skipReason = shouldSkipHeartbeat(ctx, agent, metrics, alerts, inbox, projects);
-  if (skipReason) {
-    ctx.emit({ type: "heartbeat_skipped", agent, reason: skipReason });
-    ctx.log(`[heartbeat:${agent}] Skipped: ${skipReason}`);
-    return ctx.done(`Heartbeat skipped (${skipReason}) — no LLM session needed.`);
-  }
+  // Heartbeats always run — the agent's job is to find things to work on
 
   // ── RED METRIC GATE (JS — no LLM cost) ──────────────────────
   const hasRedMetrics = metrics.includes("⚠️ BELOW TARGET");
