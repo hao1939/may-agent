@@ -518,6 +518,17 @@ ${journalContent.slice(-3000)}
         ctx.log(`[work] ✅ Iteration ${iteration} produced ${changedFiles.length} file(s): ${changedFiles.map(f => f.split('/').pop()).join(', ')}`);
       }
 
+      // ── Record iteration metrics ──
+      try {
+        recordIteration({
+          id: iterationId,
+          deliverableProduced: changedFiles.length > 0,
+          firstAttempt: !(ctx as any)[`_retried_${iteration}`],
+          durationMs: timing.durationMs,
+          targetPath: changedFiles[0]?.split('/').pop(),
+        });
+      } catch { /* non-critical */ }
+
       // ── Journal ──
       const workerText = worker.lastText();
       const workerSummary = workerText.length > 1500 ? workerText.slice(0, 1500) + "..." : workerText;
