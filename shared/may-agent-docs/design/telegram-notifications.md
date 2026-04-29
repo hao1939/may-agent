@@ -1,192 +1,181 @@
-# Design: Context-Aware Notifications & Reply
+# Design: Context-Enriched Reply
 
 **Status**: draft
 **Date**: 2026-04-29
 
 ## Problem
 
-You manage the system remotely via Telegram. Two gaps:
-1. **When to act**: system doesn't tell you when YOUR input is needed
-2. **How to respond**: replying to a notification loses context — May doesn't know what you're responding to
+When you reply to a Telegram notification, May gets raw text with no context. "focus on output not cost" — about what? which project? what was the current state? May has to guess or ask.
 
-## Core Insight
+## Core Idea
 
-A notification is not just an alert. It's a **context package**:
-- What happened (the trigger)
-- Why it matters (the impact)
-- What the system already tried (what failed)
-- What it needs from you (the ask)
+Every notification carries context. When you reply, your text is enriched with that context before reaching the agent. The agent receives a complete picture: what happened, why you were notified, and what you said about it.
 
-When you reply, your text is **enriched** with this context before reaching the agent. May doesn't just get "focus on output not cost" — it gets:
+## How It Works
 
 ```
-[Replying to notification about project "system-efficiency" being WAITING]
-Context: orchestrator completed all plan items, metrics at target,
-said WAITING because it ran out of things to do.
-Last iteration: 2h ago. Metric: may-session-ratio 0.12 (target 0.15).
-Previous comment from hao: "focus on output not cost"
-
-User reply: focus on output metrics not cost reduction
+System sends notification (project/agent/metric — they decide when)
+    ↓
+Notification carries structured context
+    ↓
+You reply with natural text
+    ↓
+Bot enriches: your text + notification context
+    ↓
+Agent receives full picture, acts on it
 ```
 
-The agent understands exactly what this is about without you explaining.
+## Context Structure
 
-## When to Notify
+Every notification stores a context blob when sent:
 
-Only when human input is needed. The system should handle everything else.
-
-| Trigger | Condition | Why you need to know |
-|---------|-----------|---------------------|
-| **Project WAITING** | Orchestrator said WAITING | Needs your direction or approval |
-| **Project BLOCKED >6h** | blocked-over-6h metric > 0 | Nobody could unblock it |
-| **Metric breach >1h** | Threshold breached, still breaching after 1h | System couldn't self-correct |
-| **Agent escalation to human** | escalate("human", reason) | Agent explicitly asked for you |
-| **Daily digest** | Once per day (morning) | What happened yesterday, what needs attention today |
-| **Progress update** | Every 4h during active hours | What projects accomplished since last update |
-
-The progress update is NOT an alert — it's a heartbeat for YOU. Shows what the system produced, which projects moved, what changed. You stay informed without asking.
-
-Progress update format:
-```
-📊 Progress Update (last 4h)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🏗️ Projects:
-  skill-workflow-audit: 2 iterations, deployed 3 skills to agents
-  system-efficiency: 1 iteration, redefined output metrics
+```typescript
+interface NotificationContext {
+  // What triggered the notification
+  source: {
+    type: "project" | "metric" | "agent" | "digest";
+    id: string;           // project name, metric id, agent name
+  };
   
-📦 Output: 45 real files produced
-  - outputs/skills-impact.md (new)
-  - agents/shared/skills/reading-metrics/skill.md (updated)
+  // Snapshot of state when notification was sent
+  state: Record<string, unknown>;
+  // e.g., { status: "waiting", metrics: {...}, lastIteration: "..." }
   
-📊 Metrics:
-  handler.success-rate: 96% (stable)
-  project.active-count: 3 → 5 (improved)
+  // What the system already tried or knows
+  background: string;
+  // e.g., "orchestrator completed all plan items, said WAITING"
   
-🤖 Agents: bob 12 sessions, coach 8, scout 4
+  // Timestamp
+  sentAt: number;
+}
 ```
 
-You can reply to the progress update too — "focus coach on skill delivery not experiments" goes straight to May with context.
+## Enrichment
 
-NOT notified for:
-- Handler timeouts (system handles via metrics)
-- Routine heartbeats (system's job)
-- Project iterations (progress, not a problem)
-- Metric breach that self-corrects within 1h
-
-## Notification Format
+When you reply, the bot builds an enriched message:
 
 ```
-🔔 [Project] system-efficiency is WAITING
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📊 Metrics: may-session-ratio 0.12 → target 0.15
-📋 Last work: "implemented heartbeat dedup, circuit breaker"
-⏰ Waiting since: 2h ago
-❓ Needs: your direction on next steps
+[Context from notification #{msgId}]
+Source: project "system-efficiency" (WAITING since 2h)
+State: metrics at target (may-session-ratio 0.12), all plan items checked
+Background: orchestrator completed 3 fixes (heartbeat dedup, circuit breaker, budget checkpoint), waiting for human direction
 
-💬 Reply to this message to comment on the project
+[Your reply]
+focus on output metrics not cost reduction
+
+[Instructions to agent]
+The user is responding to the above context. Act on their reply in the context of the source.
 ```
 
+The agent sees everything in one message. No back-and-forth to establish context.
+
+## Examples
+
+### Project notification → reply
+
+Notification sent:
 ```
-🔴 [Metric] handler.p95-duration breaching for 2h
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📊 Current: 274s (threshold: 240s)
-🔧 System tried: handlers have 30min timeout configured
-⏰ Breaching since: 2h ago
-❓ Needs: investigate why handlers are slow
-
-💬 Reply to direct May to investigate
-```
-
-```
-📋 [Daily Digest] 2026-04-29
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Projects: 7 active, 0 blocked, 89 iterations today
-Metrics: 2 breaching (p95-duration, active-count)
-Output: 337 real files produced
-Agents: all healthy except amy-kimi (disabled)
-
-⚠️ Needs attention:
-  - system-efficiency WAITING (2h)
-  - skill-workflow-audit: skill.verified-rate 0.20 → target 0.80
-
-💬 Reply to give instructions to May
+🔔 system-efficiency is WAITING
+Metrics at target. Orchestrator needs direction.
 ```
 
-## Reply Flow
-
-```
-You reply to notification
-    ↓
-Telegram bot receives reply
-    ↓
-Bot looks up original notification → extracts context
-    ↓
-Bot enriches your reply with context:
-    {
-      userMessage: "focus on output not cost",
-      replyTo: {
-        type: "project_waiting",
-        project: "system-efficiency",
-        metrics: { "may-session-ratio": 0.12 },
-        lastWork: "implemented heartbeat dedup",
-        waitingSince: "2h ago"
-      }
-    }
-    ↓
-May receives enriched message:
-    "User replied to project WAITING notification for system-efficiency.
-     Context: [full context from notification]
-     User says: focus on output not cost"
-    ↓
-May acts: adds comment to discussion.md, project resumes
+Context stored:
+```json
+{
+  "source": { "type": "project", "id": "system-efficiency" },
+  "state": { "status": "waiting", "metrics": { "may-session-ratio": 0.12 } },
+  "background": "3 fixes implemented, metrics met, orchestrator out of ideas"
+}
 ```
 
-## Context Types
+You reply: "focus on output metrics not cost reduction"
 
-Each notification type carries different context:
+Agent receives:
+```
+User replied to notification about project "system-efficiency" (WAITING).
+State: metrics at target, 3 fixes implemented.
+Background: orchestrator completed all plan items.
 
-| Type | Context includes |
-|------|-----------------|
-| Project WAITING | project name, metrics, last iteration summary, what orchestrator said |
-| Project BLOCKED | project name, blocker reason, how long blocked, what was tried |
-| Metric breach | metric id, current value, threshold, duration, related handler/project |
-| Agent escalation | agent name, reason, what they tried, session transcript summary |
-| Daily digest | project summary, metric summary, output count, alerts |
+User says: focus on output metrics not cost reduction
+
+Act on this: add user's feedback as comment to the project discussion,
+then trigger the project to resume with this new direction.
+```
+
+### Metric alert → reply
+
+Notification sent:
+```
+🔴 handler.p95-duration at 274s (threshold 240s) for 2h
+```
+
+You reply: "increase timeout to 10min for heartbeats"
+
+Agent receives:
+```
+User replied to metric alert for handler.p95-duration.
+State: 274s, threshold 240s, breaching 2h.
+Background: handlers run LLM sessions that take 3-5min.
+
+User says: increase timeout to 10min for heartbeats
+
+Act on this: update handlerConfig.timeoutMs for heartbeat entries in cron.json.
+```
+
+### Progress update → reply
+
+Notification sent:
+```
+📊 Progress: skill-workflow-audit deployed 3 skills, coach ran 8 sessions
+```
+
+You reply: "coach is spending too many sessions, investigate"
+
+Agent receives:
+```
+User replied to progress update.
+State: coach 8 sessions in last 4h, skill-workflow-audit active.
+Background: routine progress, no alerts.
+
+User says: coach is spending too many sessions, investigate
+
+Act on this: investigate coach's session count and efficiency.
+```
+
+### Unprompted message (no reply context)
+
+You just type: "what's the status of all projects?"
+
+Agent receives:
+```
+User message (no reply context — treat as a direct question to May).
+
+User says: what's the status of all projects?
+```
+
+No enrichment needed. May handles it like any chat message.
 
 ## Implementation
 
-### Notification emission
+### Bot side (telegram.ts)
 
-Notifications are events. The metrics-snapshot handler and project handler emit them:
+1. **On send**: store `{ telegramMsgId → NotificationContext }` mapping (in-memory or DB)
+2. **On reply**: look up context by `reply_to_message_id`, build enriched message
+3. **On non-reply**: pass through as regular message (no enrichment)
 
-```typescript
-emit("notification.human", {
-  type: "project_waiting",
-  project: "system-efficiency",
-  summary: "orchestrator completed all plan items, waiting for direction",
-  metrics: { "may-session-ratio": 0.12 },
-  context: { lastWork: "...", waitingSince: "2h ago" }
-});
-```
+### Storage
 
-### Telegram bot changes
+Simple: `Map<number, NotificationContext>` in memory. Notifications expire after 48h. If bot restarts, context is lost — replies become regular messages (graceful degradation).
 
-1. **Send notifications**: subscribe to `notification.human` events, format and send
-2. **Track sent messages**: store Telegram message_id → notification context mapping
-3. **Handle replies**: when reply received, look up context by replied-to message_id, enrich user's text, send to May
+Or: store in events table with the notification event, keyed by telegram message id.
 
-### Dedup
+### Agent side
 
-Same notification type + same project/metric → don't notify again within 6h.
-Daily digest → once per day.
+No changes. The agent receives a text message with context prepended. It reads the context and acts. Same as any task.
 
-### Escalation (not in scope but noted)
+## What This Design Does NOT Cover
 
-If you don't reply to a WAITING project notification within 24h, May sends a reminder. If 48h, May makes a judgment call (based on project context) and either continues or deprioritizes. This is future work.
-
-## What NOT to build
-
-- No custom commands (/projects, /metrics) — just talk to May
-- No Telegram keyboards/buttons — natural language replies
-- No separate notification service — events + Telegram bot is enough
-- No notification preferences UI — hardcode the rules, refine later
+- **When to notify**: projects, metrics, agents decide this. Not this design's concern.
+- **Notification format**: each notifier formats its own message. This design only adds the context blob for reply enrichment.
+- **Slash commands**: not needed. Natural language replies with context are better.
+- **Buttons/keyboards**: not needed. Text replies are universal.
