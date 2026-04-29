@@ -7,7 +7,25 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #6) — Agent持续学习与多天工作流
+## Latest (2026-04-30 Heartbeat #7) — 多智能体失败分析与潜在空间协作
+
+> **主题**：MAS为什么失败 (MAST) + RecursiveMAS潜在空间协作 — 架构决定成败
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **MAST失败分类** | UC Berkeley / 7框架200+任务 | 三大失败类：任务设定不清、沟通不畅、验证太弱；prompt调优效果有限 | **我们最大短板是验证环节** — 需要系统性output verification |
+| **RecursiveMAS** | 论文 Recursive Multi-Agent Systems | agents在latent space传递思维而非文本；token减少34-75%，准确率+8.3% | **文本是agent间协作瓶颈** — 短期可用结构化压缩意图替代完整上下文 |
+
+### 行动建议
+1. 加强验证：agent完成任务后需要verification step，不只是"做完了"
+2. 减少通信冗余：agent间传递结构化摘要而非完整context
+3. 明确capability boundary：每个agent的职责边界需要更crisp
+
+---
+
+## Previous (2026-04-30 Heartbeat #6) — Agent持续学习与多天工作流
 
 > **主题**：Agent Workflow Memory + ClawMark多天基准 — 智能体如何"边做边学"并适应环境变化
 
