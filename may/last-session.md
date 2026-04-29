@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777457643031_2
+- **Session:** s_1777460818898_0
 - **Status:** done
-- **When:** 2026-04-29T10:14:46.254Z
-- **Duration:** 43s
+- **When:** 2026-04-29T11:07:23.949Z
+- **Duration:** 25s
 
 ## What Happened
-All 3 blocked projects are owned by **coach**, and all have milestones_done == milestones_total (fully complete). They're stuck in "blocked" status despite being done. This is a coach issue - these projects need to be closed out.
+Two things stand out: (1) P0 notification about evaluator being dormant, and (2) evaluator has 2 sessions with 0 avg ops confirming it's idle.

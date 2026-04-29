@@ -1,7 +1,7 @@
 # Project: Workflow Reliability
 
-**Status**: waiting
-**Stop Reason**: WAITING
+**Status**: closed
+**Stop Reason**: CLOSED — goal achieved (33%→100% when runs execute). Remaining issue (dispatch accuracy) escalated to tech-lead.
 
 This project is **closed**. No further worker iterations needed.
 
