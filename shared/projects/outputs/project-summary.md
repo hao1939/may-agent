@@ -1,33 +1,25 @@
 # Context-Learn Pipeline — Project Summary
 
-**Status:** COMPLETED
+**Status:** COMPLETED (Iteration 10+)
 
-## Objectives Achieved
+## Achievements
+1. **Pipeline end-to-end functional** — `context-learn-poller` runs every 30min, processes sessions, updates agent context.md files
+2. **79 lessons seeded** in `/app/agents/shared/lessons.jsonl` across 10+ agents
+3. **Organic capture confirmed** — 2 sessions processed, context.md updated automatically
+4. **Lesson format defined**, retrieval system built, quality audited
 
-1. **Pipeline end-to-end functional** — `context-learn-poller` runs every 30min, scans completed sessions, dispatches `context-learn` events that update agent `context.md` files
-2. **79 lessons seeded** in `lessons.jsonl` across 10+ agents (tech-lead, optimizer, qa, amy-kimi, evaluator, architect, judge, master, coder, bob)
-3. **Organic capture confirmed** — poller processed 2 sessions, context.md files updated automatically
-4. **Lesson format defined** — JSONL with agent, category, content, source fields
-5. **Quality audited** — lesson-quality-audit.md and learning-dashboard.md produced
-
-## Infrastructure Created
-
-| Component | Path | Purpose |
-|-----------|------|---------|
-| Poller handler | `agents/may/handlers/context-learn-poller.ts` | Scans session history, dispatches context-learn events |
-| Cron entry | `agents/may/cron.json` | Runs poller every 30 minutes |
-| Lessons DB | `agents/shared/lessons.jsonl` | 79 extracted lessons |
-| State tracking | `.state/context-learn-poller-processed.json` | Tracks which sessions have been processed |
+## Key Files Modified
+- `/app/agents/may/handlers/context-learn-poller.ts` — new poller handler
+- `/app/agents/may/cron.json` — cron entry for poller (30min interval)
+- `/app/agents/shared/lessons.jsonl` — 79 seeded lessons
+- `/app/.state/context-learn-poller-processed.json` — poller state tracking
 
 ## Open Handoffs
-
-- **tech-lead (P1):** Add `session.completed` event emission in core runtime — would replace poller with direct event triggering
+- **tech-lead (P1):** Add `session.completed` event emission in core runtime to replace poller with direct event triggering
 - **repeat-mistake-rate:** Requires ~2 weeks of organic operation to measure; not actionable now
 
 ## Reports Produced
-
-- `outputs/pipeline-metrics.md` — Pipeline firing analysis
-- `outputs/poller-verification.md` — Poller test results
-- `outputs/lesson-quality-audit.md` — Quality assessment of extracted lessons
-- `outputs/learning-dashboard.md` — System activity snapshot
-- `outputs/memory-audit.md` — Initial memory file audit
+- `outputs/pipeline-metrics.md` — pipeline firing analysis
+- `outputs/poller-verification.md` — poller test results
+- `outputs/lesson-quality-audit.md` — lesson quality assessment
+- `outputs/learning-dashboard.md` — system activity snapshot
