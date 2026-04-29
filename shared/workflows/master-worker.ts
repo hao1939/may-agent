@@ -30,6 +30,10 @@ import {
 import { validateOutput, type ValidationResult } from "./output-validator.ts";
 import { withRetry, isRetryableError } from "./provider-retry.ts";
 import { estimateComplexity } from "./complexity-estimator.ts";
+import { IterationTimer } from "./iteration-timer.ts";
+
+// Global iteration timer for observability
+const iterationTimer = new IterationTimer();
 
 export const name: string = "master-worker";
 
@@ -331,6 +335,8 @@ ${journalContent.slice(-3000)}
 
       // ── Work phase ──
       ctx.log(`[work] Iteration ${iteration}/${maxIterations} starting...`);
+      const iterationId = `iter-${iteration}`;
+      iterationTimer.startIteration(iterationId);
       const guidance = orchestrator.lastText();
 
       // Estimate task complexity and set appropriate timeout
@@ -389,6 +395,14 @@ ${journalContent.slice(-3000)}
         onRetry: (err, attempt, delay) => ctx.log(`[work] ⚠️ Provider error on worker, retry ${attempt} after ${delay}ms: ${String(err).slice(0, 80)}`),
       });
       ctx.log(`[work] Iteration ${iteration} done`);
+
+      // End iteration timer and log duration
+      const timing = iterationTimer.endIteration(iterationId);
+      ctx.log(`[work] ⏱️ Iteration ${iteration} took ${timing.durationFormatted}`);
+      const stats = iterationTimer.getStats();
+      if (stats.count > 1) {
+        ctx.log(`[work] 📈 Stats: avg=${Math.round(stats.avg)}ms, median=${Math.round(stats.median)}ms, p95=${Math.round(stats.p95)}ms (n=${stats.count})`);
+      }
 
       // Save incremental checkpoint after worker completes
       saveIncrementalCheckpoint(projectDir, {
