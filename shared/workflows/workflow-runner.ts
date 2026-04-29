@@ -60,7 +60,7 @@ export function shouldProceedAfterHealthCheck(
   report: HealthReport,
   threshold: number
 ): { proceed: boolean; reason: string } {
-  if (report.projects.length === 0) {
+  if (report.summary.total === 0) {
     return { proceed: true, reason: "No projects to check" };
   }
   const healthyRatio = report.summary.healthy / report.summary.total;
