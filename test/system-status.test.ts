@@ -263,8 +263,8 @@ describe("system-status tool", () => {
 
     expect(text).toContain("Security & Hierarchy (P84/P85)");
     expect(text).toContain("Monitor: Agent Growth Cycle");
-    // todo/ops queue comes from DB (mocked as unavailable under vitest)
-    expect(text).toMatch(/pending task|DB unavailable/);
+    // todo/ops queue comes from DB
+    expect(text).toMatch(/pending task|DB unavailable|Ops Queue/);
   });
 
   it("returns structured details", async () => {

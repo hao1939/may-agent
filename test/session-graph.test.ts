@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../src/lib/manager.js";
 import { createWorkflowTool } from "../src/lib/workflow-tool.js";
-import { readWorkflowRun, listWorkflowRuns } from "../src/lib/persistence.js";
+import { getWorkflowRun, listWorkflowRunIds } from "../src/lib/requests.js";
 import type { WorkflowToolResult } from "../src/lib/workflow.js";
 import type { Model } from "@mariozechner/pi-ai";
 
@@ -154,13 +154,13 @@ describe("workflow run persistence", () => {
     expect(parsed.workflowRunId).toMatch(/^wr_/);
 
     // Check the run was persisted
-    const run = readWorkflowRun(persistDir, parsed.workflowRunId);
+    const run = getWorkflowRun(persistDir, parsed.workflowRunId);
     expect(run).not.toBeNull();
     expect(run!.workflow).toBe("simple");
     expect(run!.task).toBe("test");
     expect(run!.status).toBe("done");
     expect(run!.depth).toBe(1);
-    expect(run!.result?.summary).toBe("completed");
+    expect(run!.result_summary).toBe("completed");
   });
 
   it("workflow run records all steps with session IDs", async () => {
@@ -186,8 +186,10 @@ describe("workflow run persistence", () => {
     expect(parsed.type).toBe("done");
     if (parsed.type !== "done") return;
 
-    const run = readWorkflowRun(persistDir, parsed.workflowRunId);
-    expect(run!.steps).toEqual([]);
+    const run = getWorkflowRun(persistDir, parsed.workflowRunId);
+    // Steps are now tracked in sessions table, not on the run record
+    expect(run).not.toBeNull();
+    expect(run!.status).toBe("done");
   });
 
   it("escalated workflow persists with escalated status", async () => {
@@ -210,9 +212,9 @@ describe("workflow run persistence", () => {
     expect(parsed.type).toBe("escalated");
     if (parsed.type !== "escalated") return;
 
-    const run = readWorkflowRun(persistDir, parsed.workflowRunId);
+    const run = getWorkflowRun(persistDir, parsed.workflowRunId);
     expect(run!.status).toBe("escalated");
-    expect(run!.result?.reason).toBe("too hard");
+    expect(run!.result_reason).toBe("too hard");
   });
 
   it("crashed workflow persists with error status", async () => {
@@ -235,13 +237,13 @@ describe("workflow run persistence", () => {
     expect(parsed.type).toBe("error");
 
     // The run should be persisted with error status
-    const runs = listWorkflowRuns(persistDir);
+    const runs = listWorkflowRunIds(persistDir);
     expect(runs.length).toBe(1);
-    const run = readWorkflowRun(persistDir, runs[0]);
+    const run = getWorkflowRun(persistDir, runs[0]);
     expect(run!.status).toBe("error");
   });
 
-  it("listWorkflowRuns returns all run IDs sorted", async () => {
+  it("listWorkflowRunIds returns all run IDs sorted", async () => {
     writeWorkflow(
       "list-test.ts",
       `
@@ -259,7 +261,7 @@ describe("workflow run persistence", () => {
     await tool.execute("tc1", { action: "run", name: "list-test", task: "first" });
     await tool.execute("tc2", { action: "run", name: "list-test", task: "second" });
 
-    const runs = listWorkflowRuns(persistDir);
+    const runs = listWorkflowRunIds(persistDir);
     expect(runs.length).toBe(2);
     expect(runs[0] < runs[1]).toBe(true); // sorted by timestamp in ID
   });
@@ -411,16 +413,16 @@ describe("workflow nesting depth cap", () => {
     if (parsed.type !== "done") return;
 
     // Two workflow runs should exist
-    const runs = listWorkflowRuns(persistDir);
+    const runs = listWorkflowRunIds(persistDir);
     expect(runs.length).toBe(2);
 
-    const parentRun = readWorkflowRun(persistDir, parsed.workflowRunId);
+    const parentRun = getWorkflowRun(persistDir, parsed.workflowRunId);
     expect(parentRun!.depth).toBe(1);
-    expect(parentRun!.parentWorkflowRunId).toBeUndefined();
+    expect(parentRun!.parentWorkflowRunId).toBeNull();
 
     // Find the child run
     const childRunId = runs.find((r) => r !== parsed.workflowRunId)!;
-    const childRun = readWorkflowRun(persistDir, childRunId);
+    const childRun = getWorkflowRun(persistDir, childRunId);
     expect(childRun!.depth).toBe(2);
     expect(childRun!.parentWorkflowRunId).toBe(parsed.workflowRunId);
     expect(childRun!.workflow).toBe("child-wf");
@@ -658,7 +660,7 @@ describe("callerSessionId", () => {
     expect(parsed.type).toBe("done");
     if (parsed.type !== "done") return;
 
-    const run = readWorkflowRun(persistDir, parsed.workflowRunId);
+    const run = getWorkflowRun(persistDir, parsed.workflowRunId);
     expect(run!.parentSessionId).toBe("s_may_session");
   });
 
@@ -682,7 +684,7 @@ describe("callerSessionId", () => {
     expect(parsed.type).toBe("done");
     if (parsed.type !== "done") return;
 
-    const run = readWorkflowRun(persistDir, parsed.workflowRunId);
+    const run = getWorkflowRun(persistDir, parsed.workflowRunId);
     expect(run!.parentSessionId).toBe("unknown");
   });
 });

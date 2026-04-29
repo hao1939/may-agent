@@ -4,7 +4,7 @@
  * This is the bridge: handlers/workflows get an AgentSDK object,
  * which delegates to manager, bus, DB under the hood.
  *
- * Design: agents/shared/may-agent-docs/design/agent-sdk-gym.md
+ * Design: agents/shared/may-agent-docs/sdk.md
  */
 
 import type { AgentSDK, WorkflowSDK, RunOpts, TaskResult, SessionOpts, SessionHandle, DoneOpts, WorkflowResult } from "./sdk.js";

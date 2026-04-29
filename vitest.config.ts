@@ -33,6 +33,11 @@ export default defineConfig({
       ".state/**",
       // Gym scenario environment files are standalone scripts, not vitest tests
       "agents/gym/scenarios/**/environment/**",
+      // bun:test files (incompatible with vitest — run via `bun test src/lib/`)
+      "src/lib/__tests__/**",
+      // Agent-generated test files with missing dependencies
+      "agents/shared/projects/outputs/**",
+      "agents/shared/tests/**",
     ],
   },
 });

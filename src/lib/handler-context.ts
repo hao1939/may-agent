@@ -18,7 +18,7 @@ import type { ErrorClass } from "./classify-error.js";
 /**
  * RuntimeCtx — the shared infrastructure surface available to handlers, workflows, and agent tools.
  *
- * See: agents/shared/may-agent-docs/design/runtime-ctx.md
+ * See: agents/shared/may-agent-docs/runtime.md
  */
 export interface RuntimeCtx {
   /** Emit an event on the bus. All events go through one bus. */

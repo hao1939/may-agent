@@ -10,7 +10,7 @@
  * - Escalation: creates tracked request to May when auto-pause activates
  * - Stateless: all state derived from sessions + requests tables (survives restarts)
  *
- * Design: agents/shared/may-agent-docs/design/auto-pause-recovery.md
+ * Design: agents/shared/may-agent-docs/sessions.md
  * Replaces: R39 from CR-289-weekend-synthesis
  */
 

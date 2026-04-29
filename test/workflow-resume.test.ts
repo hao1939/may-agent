@@ -5,8 +5,9 @@ import { tmpdir } from "node:os";
 import { createWorkflowTool } from "../src/lib/workflow-tool.js";
 import { SubagentManager } from "../src/lib/manager.js";
 import type { WorkflowToolResult } from "../src/lib/workflow.js";
-import type { WorkflowRun } from "../src/lib/persistence.js";
-import { saveWorkflowRun, readWorkflowRun } from "../src/lib/persistence.js";
+import type { WorkflowRun } from "../src/lib/workflow-tool.js";
+import { insertWorkflowRun, getWorkflowRun, getWorkflowStepSessions, upsertSession } from "../src/lib/requests.js";
+import type { WorkflowRunRecord } from "../src/lib/requests.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 
 // ── Test fixtures ──────────────────────────────────────────────────────
@@ -23,6 +24,24 @@ function freshDir(): string {
 
 function writeWorkflow(name: string, content: string): void {
   writeFileSync(join(workflowDir, name), content, "utf-8");
+}
+
+/** Helper: persist a WorkflowRun via the DB-backed API */
+function saveWorkflowRunCompat(dir: string, run: WorkflowRun): void {
+  insertWorkflowRun(dir, {
+    runId: run.runId,
+    workflow: run.workflow,
+    task: run.task,
+    parentSessionId: run.parentSessionId ?? "unknown",
+    parentWorkflowRunId: (run as any).parentWorkflowRunId ?? null,
+    depth: run.depth,
+    status: run.status as any,
+    startedAt: run.startedAt,
+    endedAt: (run as any).endedAt ?? null,
+    result_summary: null,
+    result_reason: null,
+    resumedFromRunId: run.resumedFromRunId ?? null,
+  });
 }
 
 /** Create a fake session with the given assistant response.
@@ -48,7 +67,7 @@ function createArchivedSession(sessionId: string, agentName: string, task: strin
 }
 
 /** Create a fake registry entry for a session using per-session meta.json. */
-function addToRegistry(sessionId: string, agentName: string, task: string, status: string): void {
+function addToRegistry(sessionId: string, agentName: string, task: string, status: string, opts?: { workflowRunId?: string; outcome?: string }): void {
   const sessionDir = join(persistDir, "sessions", sessionId);
   mkdirSync(sessionDir, { recursive: true });
   const meta = {
@@ -59,6 +78,18 @@ function addToRegistry(sessionId: string, agentName: string, task: string, statu
     endedAt: Date.now() - 4000,
   };
   writeFileSync(join(sessionDir, "meta.json"), JSON.stringify(meta, null, 2), "utf-8");
+  if (opts?.workflowRunId) {
+    upsertSession(persistDir, {
+      sessionId,
+      agent: agentName,
+      task,
+      status,
+      startedAt: meta.startedAt,
+      endedAt: meta.endedAt,
+      workflowRunId: opts.workflowRunId,
+      outcome: opts.outcome ?? null,
+    });
+  }
 }
 
 beforeEach(() => {
@@ -119,7 +150,7 @@ describe("workflow tool: resume", () => {
       status: "running",
       steps: [],
     };
-    saveWorkflowRun(persistDir, run);
+    saveWorkflowRunCompat(persistDir, run);
 
     const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
@@ -176,11 +207,11 @@ describe("workflow tool: resume", () => {
         },
       ],
     };
-    saveWorkflowRun(persistDir, prevRun);
+    saveWorkflowRunCompat(persistDir, prevRun);
 
     // Create archived session data for step 1
     createArchivedSession("s_step1", "coder", "implement fix the bug", "I fixed the bug in main.ts");
-    addToRegistry("s_step1", "coder", "implement fix the bug", "done");
+    addToRegistry("s_step1", "coder", "implement fix the bug", "done", { workflowRunId: "wr_crashed_one", outcome: "I fixed the bug in main.ts" });
 
     // Register agents with the manager — coder is a no-op since step 1 is replayed,
     // reviewer needs to be a real (mock) agent
@@ -242,7 +273,7 @@ describe("workflow tool: resume", () => {
         },
       ],
     };
-    saveWorkflowRun(persistDir, prevRunOneStep);
+    saveWorkflowRunCompat(persistDir, prevRunOneStep);
 
     const tool = createWorkflowTool({
       manager,
@@ -296,7 +327,7 @@ describe("workflow tool: resume", () => {
       status: "running",
       steps: [],
     };
-    saveWorkflowRun(persistDir, prevRun);
+    saveWorkflowRunCompat(persistDir, prevRun);
 
     const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
@@ -310,7 +341,7 @@ describe("workflow tool: resume", () => {
     expect(parsed.type).toBe("done");
     if (parsed.type === "done") {
       // Read the new run from persistence
-      const newRun = readWorkflowRun(persistDir, parsed.workflowRunId);
+      const newRun = getWorkflowRun(persistDir, parsed.workflowRunId);
       expect(newRun).not.toBeNull();
       expect(newRun!.resumedFromRunId).toBe("wr_prev");
       expect(newRun!.status).toBe("done");
@@ -353,7 +384,7 @@ describe("workflow tool: resume", () => {
         },
       ],
     };
-    saveWorkflowRun(persistDir, prevRun);
+    saveWorkflowRunCompat(persistDir, prevRun);
 
     const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
@@ -367,10 +398,11 @@ describe("workflow tool: resume", () => {
     // Should succeed — the changed workflow doesn't call runAgent at all
     expect(parsed.type).toBe("done");
     if (parsed.type === "done") {
-      const newRun = readWorkflowRun(persistDir, parsed.workflowRunId);
+      const newRun = getWorkflowRun(persistDir, parsed.workflowRunId);
       expect(newRun!.resumedFromRunId).toBe("wr_old");
       // No steps in the new run (workflow changed, returns done immediately)
-      expect(newRun!.steps).toHaveLength(0);
+      const steps = getWorkflowStepSessions(persistDir, parsed.workflowRunId);
+      expect(steps).toHaveLength(0);
     }
   });
 

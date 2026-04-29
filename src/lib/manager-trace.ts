@@ -5,8 +5,9 @@
  * The SubagentManager.trace() method delegates to buildTrace() below.
  */
 
-import { readWorkflowRun, listWorkflowRuns } from "./persistence.js";
-import type { PersistedSession, WorkflowRun, Registry } from "./persistence.js";
+import { getWorkflowRun, listWorkflowRunIds, getWorkflowStepSessions } from "./requests.js";
+import type { WorkflowRunRecord } from "./requests.js";
+import type { PersistedSession, Registry } from "./persistence.js";
 import type { TraceNode, SessionTrace } from "./workflow.js";
 import type { ActiveSession } from "./manager-utils.js";
 
@@ -26,7 +27,7 @@ export function buildTrace(targetId: string, ctx: TraceContext): SessionTrace | 
   const { persistDir, registryData, activeSessions } = ctx;
 
   // Check if targetId is a workflow run
-  const targetRun = readWorkflowRun(persistDir, targetId);
+  const targetRun = getWorkflowRun(persistDir, targetId);
   if (targetRun) {
     return buildTraceFromWorkflowRun(targetRun, targetId, persistDir, registryData);
   }
@@ -59,7 +60,7 @@ function buildTraceFromSession(
 ): SessionTrace {
   // If this session belongs to a workflow run, build from the workflow
   if (session.workflowRunId) {
-    const run = readWorkflowRun(persistDir, session.workflowRunId);
+    const run = getWorkflowRun(persistDir, session.workflowRunId);
     if (run) {
       return buildTraceFromWorkflowRun(run, targetId, persistDir, registryData);
     }
@@ -85,16 +86,16 @@ function buildTraceFromSession(
 }
 
 function buildTraceFromWorkflowRun(
-  run: WorkflowRun,
+  run: WorkflowRunRecord,
   targetId: string,
   persistDir: string,
   registryData: Registry,
 ): SessionTrace {
   // Walk up the parent chain to find the root workflow
-  const chain: WorkflowRun[] = [run];
+  const chain: WorkflowRunRecord[] = [run];
   let current = run;
   while (current.parentWorkflowRunId) {
-    const parent = readWorkflowRun(persistDir, current.parentWorkflowRunId);
+    const parent = getWorkflowRun(persistDir, current.parentWorkflowRunId);
     if (!parent) break;
     chain.unshift(parent);
     current = parent;
@@ -104,15 +105,16 @@ function buildTraceFromWorkflowRun(
   const rootRun = chain[0];
 
   // Build the root's parent session node (May's session)
-  const parentSession = registryData.sessions[rootRun.parentSessionId];
+  const parentSessionId = rootRun.parentSessionId ?? "unknown";
+  const parentSession = registryData.sessions[parentSessionId];
   const rootNode: TraceNode = {
     type: "session",
-    id: rootRun.parentSessionId,
+    id: parentSessionId,
     label: parentSession?.agent ?? "caller",
     status: parentSession?.status ?? "unknown",
     task: parentSession?.task ?? "(unknown)",
     depth: 0,
-    isTarget: rootRun.parentSessionId === targetId,
+    isTarget: parentSessionId === targetId,
     children: [],
   };
 
@@ -126,7 +128,7 @@ function buildTraceFromWorkflowRun(
   return { targetId, path, tree: rootNode };
 }
 
-function buildWorkflowNode(run: WorkflowRun, targetId: string, persistDir: string, registryData: Registry): TraceNode {
+function buildWorkflowNode(run: WorkflowRunRecord, targetId: string, persistDir: string, registryData: Registry): TraceNode {
   const node: TraceNode = {
     type: "workflow",
     id: run.runId,
@@ -138,12 +140,13 @@ function buildWorkflowNode(run: WorkflowRun, targetId: string, persistDir: strin
     children: [],
   };
 
-  // Add steps as children
-  for (const step of run.steps) {
+  // Add steps from sessions table
+  const steps = getWorkflowStepSessions(persistDir, run.runId);
+  for (const step of steps) {
     const stepNode: TraceNode = {
       type: "session",
       id: step.sessionId,
-      label: step.agent,
+      label: step.stepLabel ?? step.agent,
       status: step.status,
       task: step.task,
       depth: run.depth,
@@ -154,27 +157,14 @@ function buildWorkflowNode(run: WorkflowRun, targetId: string, persistDir: strin
   }
 
   // Find sub-workflow runs (children of this run)
-  const allRunIds = listWorkflowRuns(persistDir);
+  const allRunIds = listWorkflowRunIds(persistDir);
   for (const runId of allRunIds) {
     if (runId === run.runId) continue;
-    const subRun = readWorkflowRun(persistDir, runId);
+    const subRun = getWorkflowRun(persistDir, runId);
     if (subRun && subRun.parentWorkflowRunId === run.runId) {
-      // Insert the sub-workflow node at the right position
-      // (after the last step that started before the sub-workflow)
       const subNode = buildWorkflowNode(subRun, targetId, persistDir, registryData);
-      // Find insertion point: after the last step whose sessionId
-      // appears in run.steps before the sub-workflow's first step
-      let insertIdx = node.children.length;
-      if (subRun.steps.length > 0) {
-        const firstSubStepId = subRun.steps[0].sessionId;
-        for (let i = 0; i < node.children.length; i++) {
-          if (node.children[i].id === firstSubStepId) {
-            insertIdx = i;
-            break;
-          }
-        }
-      }
-      node.children.splice(insertIdx, 0, subNode);
+      // Insert at end (order determined by startedAt)
+      node.children.push(subNode);
     }
   }
 
