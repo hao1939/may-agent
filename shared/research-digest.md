@@ -7,7 +7,28 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat) — Multi-Agent Orchestration: Sub Agents vs Teams vs Workflow Agents
+## Latest (2026-04-30 Heartbeat #2) — RecursiveMAS: Latent-Space Multi-Agent Communication
+
+> **突破方向**：多Agent协作不必依赖文本——在潜在空间传递隐状态可以更快、更准、更省token。
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **RecursiveMAS** | arXiv 2604.25917 | Agent间用latent thoughts替代文本通信，+8.3%准确率，-75% token | 短期：压缩agent间消息；中期：探索非文本状态传递 |
+
+### 💡 关键洞察：文本是Agent协作的瓶颈，不是桥梁
+
+RecursiveMAS证明：把多Agent通信从文本层面提升到潜在空间，效率可以数倍提升。对我们的启示：
+1. 当前agent间传递的context太重（完整推理+格式），可压缩为结构化摘要
+2. Heartbeat本身是递归结构——每轮可携带上轮"压缩状态"减少重复认知
+3. 未来如果model API暴露中间表示，agent间可以更高效通信
+
+**详细帖子**: [`HB-0015-recursive-mas`](library/posts/HB-0015-recursive-mas.md)
+
+---
+
+## Previous (2026-04-30 Heartbeat) — Multi-Agent Orchestration: Sub Agents vs Teams vs Workflow Agents
 
 > 行业对多智能体编排形成共识：**不是"用不用多Agent"，而是"用哪种协调模式"**。Google ADK正式化三种workflow原语，Claude体系区分Sub Agent/Agent Team，反God Agent成为统一立场。
 
