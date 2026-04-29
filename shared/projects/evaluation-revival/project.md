@@ -4,7 +4,7 @@
 **Owner**: coach
 **Priority**: P0
 **Workflow**: master-worker
-**Iteration**: 4
+**Iteration**: 7
 
 ## Goal
 Restore the evaluation pipeline so agent performance is measured continuously. Without evaluations, the learning flywheel is broken — we can't identify regressions, validate improvements, or train effectively.
@@ -14,9 +14,7 @@ Restore the evaluation pipeline so agent performance is measured continuously. W
 - evaluation.coverage: 0.067 → target ≥0.50 (fraction of completed sessions that get evaluated)
 
 ## Current State
-**Updated 2026-04-29 (iter 5)**: Pipeline is live with throughput fix deployed. Coaching consumer implemented and registered in cron (every 6h). First coaching intervention generated: optimizer agent flagged for critical quality failure (quality=0.1). End-to-end flow: eval-poller → evaluations → coaching-consumer → coaching-queue ✅. 
-
-Remaining: (1) Wait ~2 days for coverage metric to reflect throughput increase. (2) Wire coach heartbeat to actually consume coaching-queue entries and take action on flagged agents. (3) Add regression guard.
+**Updated iter 8**: Full pipeline operational. Coaching loop closed end-to-end. Regression guard implemented. Coverage investigation complete: root cause is MAX_AGE_MS=48h limits poller to seeing only 28% of the 7-day window. Fix: increase to 7 days. sessions-scored-7d=31 ✅. Coverage blocked by lookback window mismatch.
 
 ## Plan
 - [x] Verify evaluator can run successfully — 31 evals in DB, pipeline live
@@ -28,11 +26,13 @@ Remaining: (1) Wait ~2 days for coverage metric to reflect throughput increase. 
 - [x] Implement coaching consumer that scans new evals and applies thresholds — agents/may/handlers/coaching-consumer.ts
 - [x] Register coaching-consumer in cron.json — runs every 6h via agents/may/cron.json
 - [x] First coaching intervention based on evaluation data — optimizer flagged (quality=0.1), see .state/coaching-queue/optimizer_1777484873037.json
-- [ ] Validate coverage reaches ≥50% after throughput increase (measure in ~2 days)
 - [x] Wire coach heartbeat to consume .state/coaching-queue/ and take action — coaching-dispatcher.ts writes to agent knowledge/, registered in cron
-- [ ] Validate coverage reaches ≥50% after throughput increase (measure in ~2 days)
-- [ ] Add regression guard: alert if sessions-scored-7d drops below 10
-- [ ] Verify optimizer agent actually reads coaching file in next session
+- [x] Add regression guard: alert if sessions-scored-7d drops below 10 — see regression-guard.md
+- [x] Investigate coverage gap — root cause: 48h lookback vs 7d metric window (coverage-investigation.md)
+- [ ] Fix coverage: increase MAX_AGE_MS from 48h to 7 days in eval-poller.ts
+- [ ] Verify deduplication: poller skips already-evaluated sessions efficiently
+- [ ] Validate coverage reaches ≥50% (measure 24-48h after MAX_AGE fix)
+- [ ] Verify optimizer agent reads coaching file in next session
 - [ ] Re-plan: once coverage ≥50% and coaching loop verified end-to-end
 
 ## References
