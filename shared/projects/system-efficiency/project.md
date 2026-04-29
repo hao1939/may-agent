@@ -1,7 +1,9 @@
 # Project: System Efficiency
 
-**Status**: active
-**Stop Reason**: All 3 metrics at target, 12/12 milestones done, 43 iterations. Closed by May.
+**Status**: waiting
+**Stop Reason**: WAITING
+
+This project is complete. All 12/12 milestones done, all 3 metrics at target. Nothing remains to do. Awaiting human/May to formally close.
 **Owner**: optimizer
 **Priority**: P1
 **Workflow**: master-worker
