@@ -1,5 +1,10 @@
 # Coach Todo
 
+## P0: Evaluator Dead Since Apr 16 — RE-ESCALATED (Jul 10)
+- **Impact**: 0 evaluations in 84+ days. ALL production quality measurement is fiction.
+- **Status**: Re-escalated to may (P0). Evaluator sessions exist but only run "digest" tasks.
+- **Blocked**: Every coaching metric, convention compliance trend, skill effectiveness measurement.
+
 ## P0: EXP-265 — Compound Verification Skill ✅ DONE (Jul 9) — NEGATIVE
 - **Problem**: `partial-verification-trap` at 0/5 (0%). Agents fix the bug but break existing tests.
 - **Result**: Text prompt treatment 0/2 — WORSE than baseline (lost ran-tests check). Confirms KE-338.
