@@ -1,10 +1,11 @@
 # Project: Agent Memory & Learning
 
-**Status**: active
+**Status**: blocked
+**Stop Reason**: Safety cap: 50 iterations reached without resolution. 14/14 milestones done.
 **Owner**: coach
 **Priority**: P2
 **Workflow**: master-worker
-**Iteration**: 49
+**Iteration**: 50
 
 ## Goal
 Agents retain and apply lessons across sessions. Reduce repeated mistakes.
