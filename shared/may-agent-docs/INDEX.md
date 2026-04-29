@@ -19,6 +19,16 @@
 | [projects.md](projects.md) | Project system: format, lifecycle, handler, shared location |
 | [agents.md](agents.md) | Agent cooperation: call/fork/message, session tree, context |
 
+## Manual (How-To Guides)
+
+| Doc | What |
+|-----|------|
+| [manual/sdk-quickstart.md](manual/sdk-quickstart.md) | Code examples for all 8 SDK methods |
+| [manual/handler-authoring.md](manual/handler-authoring.md) | End-to-end handler writing guide |
+| [manual/workflow-authoring.md](manual/workflow-authoring.md) | How to write and invoke workflows |
+| [manual/user-guide.md](manual/user-guide.md) | CLI flags, Docker, socket, chat commands |
+| [manual/agent-convention.md](manual/agent-convention.md) | Directory layout, convention files, agent.json |
+
 ## Proposals (not yet implemented)
 
 | Doc | What |
