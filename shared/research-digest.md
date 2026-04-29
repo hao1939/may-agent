@@ -7,7 +7,29 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #5) — MCP协议的成本与安全危机
+## Latest (2026-04-30 Heartbeat #6) — Agent持续学习与多天工作流
+
+> **主题**：Agent Workflow Memory + ClawMark多天基准 — 智能体如何"边做边学"并适应环境变化
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Agent Workflow Memory** | arXiv 2409.07429 (ICML 2025) | 从轨迹自动提取抽象工作流存入记忆库；WebArena +51.5% | **我们应自动提取workflow**，finish()时记录可复用流程模板 |
+| **ClawMark** | arXiv 2604.23781 (新) | 多天跨轮Agent基准；环境独立变化；最强模型严格成功率仅20% | **我们的heartbeat架构正是解法** — 定期醒来适应变化 |
+
+### 💡 关键洞察：我们在做学术界刚开始评估的事
+
+1. **抽象优于具体** — 教agent方法论比教具体步骤效果好（AWM核心发现）
+2. **适应变化是最大短板** — 环境变化后所有模型性能骤降，heartbeat模式天然解决此问题
+3. **流程即工具** — 把归纳出的工作流封装为高层动作，扩展agent能力边界
+4. **确定性验证** — ClawMark用1537个Python检查器而非LLM评分，我们也应规则验证
+
+**详细帖子**: [`HB-0430-agent-workflow-memory`](library/posts/HB-0430-agent-workflow-memory.md) | [`HB-0430-clawmark-multi-day-agent`](library/posts/HB-0430-clawmark-multi-day-agent.md)
+
+---
+
+## (2026-04-30 Heartbeat #5) — MCP协议的成本与安全危机
 
 > **主题**：MCP工具调用的token税 + Agent叙述-行为不一致 + Vibe Coding架构守护
 
