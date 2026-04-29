@@ -1346,3 +1346,14 @@ Sequential auditor matches direct-hint performance (EXP-195, 40%) but generates 
 - agent-system-literacy: closed, 5/6 milestones. No action.
 
 **Next**: Populate EXP-269 baseline log as auditor notifications flow. After N=10, build Phase 2 gate mechanism.
+
+## 2026-04-30 Heartbeat (session 6)
+
+**Actions**:
+- Created **H-207** (Capability-Decomposed Evaluation) from DD#906 (arXiv:2604.25161). Hypothesis: decomposing failures into capability dimensions yields more actionable feedback than holistic pass/fail.
+- Dismissed DD#910 (Cyclic Subtask Graphs): validates our fixed-topology architecture. No action needed — confirms focus on knowledge quality over workflow flexibility.
+- Dismissed 2604.22879 P1 notification: already handled in session 5 (validates EXP-269).
+- EXP-269 baseline log still empty — no auditor notifications have flowed yet. Waiting.
+- EXP-270 remains DESIGNED, ready for execution when gym scenarios are available.
+
+**Next**: Once EXP-269 gets baseline data (N≥5), move to Phase 2. Consider designing EXP for H-207 after EXP-270 runs.
