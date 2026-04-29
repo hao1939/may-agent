@@ -4,7 +4,7 @@
 **Owner**: may
 **Priority**: P0
 **Workflow**: master-worker
-**Iteration**: 2
+**Iteration**: 3
 
 ## Goal
 Learn Hao's thinking, preferences, values, and purpose from our conversation history. Build a living model of what Hao wants so the system makes fewer decisions he has to override.
@@ -32,9 +32,9 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 - [x] Categorize: values, style preferences, technical philosophy, anti-patterns
 
 ### Phase 2: Build preference model
-- [ ] Write `agents/shared/projects/hao-alignment/preferences.md` — living document
-- [ ] Identify patterns: when does Hao say yes vs no?
-- [ ] Map decision categories where we get it wrong most
+- [x] Write `agents/shared/projects/hao-alignment/preferences.md` — living document
+- [x] Identify patterns: when does Hao say yes vs no?
+- [x] Map decision categories where we get it wrong most
 
 ### Phase 3: Integrate into system
 - [ ] Update agent context files with key preferences
