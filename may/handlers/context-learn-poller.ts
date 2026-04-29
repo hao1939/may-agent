@@ -69,9 +69,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       return;
     }
 
-    // Filter to recent sessions (extract timestamp from dir name like s_1234567890_42)
+    // Filter to recent sessions (extract timestamp from dir name like s_1234567890_42 or cron_1234567890_42)
     const recentSessions = sessionDirs
-      .filter((dir) => dir.startsWith("s_"))
+      .filter((dir) => dir.startsWith("s_") || dir.startsWith("cron_"))
       .map((dir) => {
         const parts = dir.split("_");
         const ts = parseInt(parts[1], 10);
