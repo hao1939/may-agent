@@ -15,14 +15,14 @@ Critical paths have test coverage. Regressions caught before deployment.
 - test.pass-rate: 59/60 passing (1 pre-existing gym failure) → target 1.00
 
 ## Current State
-Iteration 2 complete. Added 34 new tests: budget-checkpoint.test.ts (13 tests) and project-helpers.test.ts (21 tests). All pass. Milestones 4/8 done. Next: guards (finish-guard, hallucinated-path, read-before-edit).
+Iteration 2 complete. 59 tests passing across 5 test files (circuit-breaker, project-helpers, budget-checkpoint, guards, gym). Guards tests delivered. Next: fewshot-inject-helpers, verify-wrap, then re-plan.
 
 ## Plan
 - [x] Install vitest, create vitest.config.ts, create test/ dir, write a smoke test that passes
 - [x] Analyze codebase and write outputs/coverage-baseline.md listing functions and testability
 - [x] Write unit tests for circuit-breaker.ts (pure logic, most testable)
 - [x] Write unit tests for project-helpers.ts and budget-checkpoint.ts
-- [ ] Write unit tests for guards (finish-guard.ts, hallucinated-path.ts, read-before-edit.ts — pure logic guards)
+- [x] Write unit tests for guards (finish-guard.ts, hallucinated-path.ts, read-before-edit.ts — pure logic guards)
 - [ ] Write unit tests for fewshot-inject-helpers.ts and verify-wrap.ts
 - [ ] Fix failing gym test (agent="coder" vs "amy" mismatch)
 - [ ] Re-plan: measure coverage, assess what's left
