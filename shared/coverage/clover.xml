@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1777472441061" clover="3.2.0">
-  <project timestamp="1777472441061" name="All files">
+<coverage generated="1777472449068" clover="3.2.0">
+  <project timestamp="1777472449068" name="All files">
     <metrics statements="1655" coveredstatements="624" conditionals="1118" coveredconditionals="409" methods="232" coveredmethods="146" elements="3005" coveredelements="1179" complexity="0" loc="1655" ncloc="1655" packages="1" files="19" classes="19"/>
     <file name="budget-checkpoint.ts" path="/app/agents/shared/workflows/budget-checkpoint.ts">
       <metrics statements="21" coveredstatements="21" conditionals="8" coveredconditionals="8" methods="4" coveredmethods="4"/>
