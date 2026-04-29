@@ -25,6 +25,15 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
   const workflowsDir = join(agentsRoot, "shared", "workflows");
 
   return async (event?: TriggerEvent) => {
+    const saveRun = (run: any) => {
+      try {
+        const { writeFileSync, mkdirSync } = require("node:fs");
+        const { join } = require("node:path");
+        const dir = join(ctx.persistDir || ".state", "workflow-runs");
+        mkdirSync(dir, { recursive: true });
+        writeFileSync(join(dir, run.runId + ".json"), JSON.stringify(run), "utf-8");
+      } catch {}
+    };
     const ph = await loadProjectHealth();
     const now = Date.now();
     const healthState = ph.readHealthState(stateFile);
@@ -132,7 +141,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
       const runId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
       const wfRun = { runId, workflow: workflowName, task, parentSessionId: null as string | null, agent: project.owner, startedAt: Date.now(), status: "running", steps: [] as Array<{ sessionId: string; agent: string; status: string }> };
-      try { ctx.saveWorkflowRun(wfRun); } catch {}
+      try { saveRun(wfRun); } catch {}
 
       const workflowCtx = {
         emit: (e: any) => { try { ctx.emit(e); } catch {} },
@@ -142,7 +151,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         persistDir: ctx.persistDir,
         projectRoot: ctx.projectRoot,
         agentsRoot: ctx.agentsRoot,
-        saveWorkflowRun: (r: any) => { try { ctx.saveWorkflowRun(r); } catch {} },
+        saveWorkflowRun: (r: any) => saveRun(r),
         summarizeForHandoff: (r: any) => r?.lastAssistantText?.slice(0, 500) || "",
         task,
         agent: project.owner,
@@ -154,7 +163,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           });
           if (result.sessionId) {
             wfRun.steps.push({ sessionId: result.sessionId, agent: agentName, status: result.status ?? "done" });
-            try { ctx.saveWorkflowRun(wfRun); } catch {}
+            try { saveRun(wfRun); } catch {}
           }
           return result;
         },
@@ -181,7 +190,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
               });
               lastResponse = result.lastAssistantText || "";
               history.push({ role: "assistant", text: lastResponse.slice(0, 2000) });
-              if (result.sessionId) { wfRun.steps.push({ sessionId: result.sessionId, agent: project.owner, status: result.status ?? "done" }); try { ctx.saveWorkflowRun(wfRun); } catch {} }
+              if (result.sessionId) { wfRun.steps.push({ sessionId: result.sessionId, agent: project.owner, status: result.status ?? "done" }); try { saveRun(wfRun); } catch {} }
             },
             lastText() { return lastResponse; },
             close() {},
@@ -195,8 +204,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       };
 
       wfMod.execute(workflowCtx)
-        .then((r: any) => { ctx.log(`[project] ${project.relPath} → ${r.type}`); wfRun.status = "done"; wfRun.endedAt = Date.now(); try { ctx.saveWorkflowRun(wfRun); } catch {} })
-        .catch((e: any) => { ctx.log(`[project] ${project.relPath} ERROR: ${e}`); wfRun.status = "error"; wfRun.endedAt = Date.now(); try { ctx.saveWorkflowRun(wfRun); } catch {} })
+        .then((r: any) => { ctx.log(`[project] ${project.relPath} → ${r.type}`); wfRun.status = "done"; wfRun.endedAt = Date.now(); try { saveRun(wfRun); } catch {} })
+        .catch((e: any) => { ctx.log(`[project] ${project.relPath} ERROR: ${e}`); wfRun.status = "error"; wfRun.endedAt = Date.now(); try { saveRun(wfRun); } catch {} })
         .finally(() => {  });
 
       pState.lastLaunch = now;

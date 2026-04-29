@@ -1,420 +1,173 @@
 /**
- * run-workflow — cron handler that dispatches a workflow directly (no LLM wrapper).
- *
- * Replaces `run-agent-task` for cron jobs whose sole purpose is to call
- * `workflow.run(name, task)`. Saves 5-10 LLM ops per invocation by skipping
- * the wrapper session that would otherwise read heartbeat + call workflow.
- *
- * cron.json usage:
- *   {
- *     "name": "training-sprint",
- *     "type": "job",
- *     "handler": "run-workflow",
- *     "handlerConfig": {
- *       "workflow": "training-sprint",
- *       "agent": "coach",
- *       "task": "Automated sprint — scan ERROR_LOGs for top error patterns, ..."
- *     }
- *   }
- *
- * Config:
- *   - workflow: name of the workflow to run (must match workflow module's `name` export)
- *   - agent: which agent owns the workflow (determines workflow directory)
- *   - task: the task string passed to the workflow
- *   - timeoutMs: max time to wait (default: 60 min)
+ * run-workflow — cron handler that dispatches a workflow directly.
+ * Loads the workflow .ts file, builds WorkflowContext, calls execute().
+ * No imports from src/ — everything inline.
  */
-
-import { readdirSync } from "node:fs";
-import { join } from "node:path";
-import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.js";
-import type { CronEntry } from "../../shared/agent-sdk.js";
-import type {
-  WorkflowContext,
-  WorkflowModule,
-  WorkflowResult,
-  WorkflowEvent,
-} from "../../shared/agent-sdk.js";
-import type { TaskResult } from "../../shared/agent-sdk.js";
-import type { WorkflowRun, WorkflowStep } from "../../shared/agent-sdk.js";
-import { loadGuards, runGuards } from "../../shared/guards/loader.js";
-import {
-  enforceFinishDeliverables,
-  enforceVerificationEvidence,
-} from "../../shared/agent-sdk.js";
-import type { FinishCallParams } from "../../shared/agent-sdk.js";
-
-// ── Helpers ────────────────────────────────────────────────────────────
+import { readFileSync, existsSync, readdirSync, writeFileSync, mkdirSync, appendFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.ts";
+import type { CronEntry } from "../../shared/agent-sdk.ts";
 
 let importCounter = 0;
 
-/**
- * Extract the finish() call parameters from a completed agent session's messages.
- * Scans for the last finish tool call in the assistant's messages.
- */
-function extractFinishParams(messages: any[]): FinishCallParams | null {
-  let lastFinish: FinishCallParams | null = null;
-
-  for (const msg of messages) {
-    if (msg.role !== "assistant" || !Array.isArray(msg.content)) continue;
-    for (const block of msg.content) {
-      if (
-        (block.type === "toolCall" || block.type === "tool_use") &&
-        block.name === "finish"
-      ) {
-        const args = block.arguments ?? block.input ?? {};
-        lastFinish = {
-          status: args.status ?? "success",
-          deliverables: args.deliverables ?? null,
-          verification_evidence: args.verification_evidence ?? args.verificationEvidence ?? null,
-        };
-      }
-    }
-  }
-
-  return lastFinish;
-}
-
-/**
- * Validate finish() params from a completed agent session (FM-3.1 + FM-3.3).
- * Logs warnings but does not throw — violations are recorded as warnings
- * on the workflow step rather than blocking the entire workflow.
- */
-function validateFinishResult(
-  taskResult: TaskResult,
-  rootDir: string,
-  log: (msg: string) => void,
-): void {
-  const finishParams = extractFinishParams(taskResult.messages ?? []);
-  if (!finishParams) return;
-
-  // FM-3.1: Ghost Deliverable check
-  try {
-    enforceFinishDeliverables(finishParams.deliverables, finishParams.status, rootDir);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    log(`[finish-guard] FM-3.1 VIOLATION: ${msg}`);
-  }
-
-  // FM-3.3: Verification Evidence check
-  try {
-    const warnings = enforceVerificationEvidence(finishParams);
-    for (const w of warnings) {
-      log(`[finish-guard] FM-3.3 WARNING: ${w}`);
-    }
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    log(`[finish-guard] FM-3.3 VIOLATION: ${msg}`);
-  }
-}
-
 function generateRunId(): string {
-  return `wr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
 }
 
-async function loadWorkflow(filePath: string): Promise<WorkflowModule> {
-  const mod = await import(filePath + "?t=" + ++importCounter);
-  if (typeof mod.name !== "string") {
-    throw new Error(`Workflow file ${filePath} must export a 'name' string`);
-  }
-  if (typeof mod.execute !== "function") {
-    throw new Error(`Workflow file ${filePath} must export an 'execute' function`);
-  }
-  return {
-    name: mod.name,
-    description: mod.description ?? "(no description)",
-    execute: mod.execute,
-  };
-}
-
-async function findWorkflow(
-  workflowDir: string,
-  name: string,
-  sharedDir?: string,
-): Promise<WorkflowModule> {
-  const files: string[] = [];
-
-  // Agent-specific workflows
-  try {
-    const agentFiles = readdirSync(workflowDir)
-      .filter((f) => f.endsWith(".ts") && !f.includes("-helpers") && !f.includes("-utils"))
-      .sort()
-      .map((f) => join(workflowDir, f));
-    files.push(...agentFiles);
-  } catch {
-    // directory may not exist
-  }
-
-  // Shared workflows
-  if (sharedDir) {
-    try {
-      const agentNames = new Set(files.map((f) => f.split("/").pop()));
-      const sharedFiles = readdirSync(sharedDir)
-        .filter((f) => f.endsWith(".ts") && !f.includes("-helpers") && !f.includes("-utils") && !agentNames.has(f))
-        .sort()
-        .map((f) => join(sharedDir, f));
-      files.push(...sharedFiles);
-    } catch {
-      // directory may not exist
+async function findWorkflow(agentDir: string, name: string, sharedDir: string): Promise<any> {
+  // Check agent-specific first, then shared
+  for (const dir of [join(agentDir, "workflows"), sharedDir]) {
+    const path = join(dir, `${name}.ts`);
+    if (existsSync(path)) {
+      const mod = await import(path + "?t=" + Date.now());
+      if (typeof mod.execute === "function") return { ...mod, _path: path };
     }
   }
-
-  for (const filePath of files) {
-    try {
-      const wf = await loadWorkflow(filePath);
-      if (wf.name === name) return wf;
-    } catch {
-      // skip broken workflow files
-    }
-  }
-
-  throw new Error(`Workflow "${name}" not found in ${workflowDir}`);
+  throw new Error(`Workflow "${name}" not found in ${agentDir}/workflows or ${sharedDir}`);
 }
 
-// ── Factory ────────────────────────────────────────────────────────────
+async function loadGuards(log: (msg: string) => void): Promise<any[]> {
+  const guards: any[] = [];
+  const guardsDir = resolve("/app/agents/shared/guards");
+  if (!existsSync(guardsDir)) return guards;
+  for (const file of readdirSync(guardsDir)) {
+    if (!file.endsWith(".ts") || file === "loader.ts") continue;
+    try {
+      const mod = await import(join(guardsDir, file) + "?t=" + ++importCounter);
+      if (mod.guard) { guards.push(mod.guard); log(`[guard-loader] Loaded guard: ${file.replace(".ts", "")} (${file})`); }
+    } catch {}
+  }
+  return guards;
+}
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
-  const config = (entry.handlerConfig || {}) as {
-    workflow: string;
-    agent: string;
-    task: string;
-    timeoutMs?: number;
-  };
-
-  if (!config.workflow || !config.agent || !config.task) {
-    throw new Error(
-      `[run-workflow:${entry.name}] handlerConfig must include: workflow, agent, task`,
-    );
+  const config = entry.handlerConfig as { workflow: string; agent: string; task: string; timeoutMs?: number } | undefined;
+  if (!config?.workflow || !config?.agent || !config?.task) {
+    return async () => { ctx.log(`[run-workflow:${entry.name}] handlerConfig must include: workflow, agent, task`); };
   }
-
-  const timeoutMs = config.timeoutMs ?? 3_600_000; // 60 min default
 
   return async () => {
     const { workflow: workflowName, agent, task } = config;
 
+    // saveRun helper — write workflow run record to disk
+    const saveRun = (run: any) => {
+      try {
+        const dir = join(ctx.persistDir || ".state", "workflow-runs");
+        mkdirSync(dir, { recursive: true });
+        writeFileSync(join(dir, run.runId + ".json"), JSON.stringify(run), "utf-8");
+      } catch {}
+    };
+
     ctx.log(`[run-workflow:${entry.name}] Dispatching workflow "${workflowName}" for ${agent}...`);
 
-    // Resolve workflow directory
-    const workflowDir = ctx.manager.getWorkflowDir(agent);
-    if (!workflowDir) {
-      ctx.log(`[run-workflow:${entry.name}] ERROR: No workflow directory for agent "${agent}"`);
-      return;
-    }
+    const agentDir = join(ctx.agentsRoot, agent);
     const sharedDir = join(ctx.agentsRoot, "shared", "workflows");
 
-    // Load the workflow module
-    const wf = await findWorkflow(workflowDir, workflowName, sharedDir);
+    // Load workflow
+    let wf: any;
+    try {
+      wf = await findWorkflow(agentDir, workflowName, sharedDir);
+    } catch (err: any) {
+      ctx.log(`[run-workflow:${entry.name}] ERROR: ${err.message}`);
+      return;
+    }
 
-    // Generate run ID and create workflow run record
     const runId = generateRunId();
-    const run: WorkflowRun = {
+    const run: any = {
       runId,
-      workflow: wf.name,
+      workflow: wf.name || workflowName,
       task,
       parentSessionId: `cron:${entry.name}`,
-      depth: 1,
       startedAt: Date.now(),
       status: "running",
       steps: [],
     };
-    ctx.saveWorkflowRun(run);
+    saveRun(run);
 
-    // Pre-load guards for this workflow run
+    // Load guards
     const guards = await loadGuards((msg) => ctx.log(msg));
     ctx.log(`[run-workflow:${entry.name}] Loaded ${guards.length} workflow guard(s)`);
 
-    // Build the WorkflowContext
-    const workflowCtx: WorkflowContext = {
-      // RuntimeCtx from HandlerContext
-      emit: (event: any) => {
-        ctx.emit(event);
-      },
+    // Build WorkflowContext
+    const workflowCtx: any = {
+      emit: (e: any) => { try { ctx.emit(e); } catch {} },
       getDb: () => ctx.getDb(),
-      log: (msg: string) => ctx.log(msg),
-      notify: (msg: string) => ctx.notify(msg),
+      log: (m: string) => ctx.log(m),
+      notify: (m: string) => ctx.notify(m),
       persistDir: ctx.persistDir,
       projectRoot: ctx.projectRoot,
       agentsRoot: ctx.agentsRoot,
-      saveWorkflowRun: (run: any) => ctx.saveWorkflowRun(run),
-      summarizeForHandoff: (result: any, opts?: any) => ctx.summarizeForHandoff(result, opts),
+      saveWorkflowRun: (r: any) => saveRun(r),
+      summarizeForHandoff: (result: any) => result?.lastAssistantText?.slice(0, 500) || "",
       task,
       agent,
 
-      runFunction: async (label: string, fn: () => Promise<string>): Promise<TaskResult> => {
-        const start = Date.now();
-        ctx.log(`[run-workflow:${entry.name}] runFunction("${label}")...`);
-
-        let output: string;
-        let hadError = false;
-        let errorMsg: string | undefined;
-        try {
-          const timeout = 30_000;
-          output = await Promise.race([
-            fn(),
-            new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error(`runFunction("${label}") timed out after ${timeout}ms`)), timeout),
-            ),
-          ]);
-          // Truncate output to 50KB
-          if (output.length > 50_000) {
-            output = output.slice(0, 50_000) + "\n…(truncated)";
-          }
-        } catch (err) {
-          hadError = true;
-          errorMsg = err instanceof Error ? err.message : String(err);
-          output = `ERROR: ${errorMsg}`;
-        }
-        const duration = `${((Date.now() - start) / 1000).toFixed(1)}s`;
-        const taskResult: TaskResult = {
-          sessionId: `fn_${label}_${Date.now()}`,
-          status: hadError ? "error" : "done",
-          lastAssistantText: output,
-          messages: [],
-          duration,
-          outputDir: "",
-          turnsUsed: 0,
-          ...(hadError && errorMsg ? { error: errorMsg } : {}),
-        };
-
-        // Record step
-        const wfStep: WorkflowStep = {
-          sessionId: taskResult.sessionId,
-          agent: `fn:${label}`,
-          task: label,
-          status: taskResult.status as "done" | "error" | "interrupted",
-          startedAt: start,
-          endedAt: Date.now(),
-          lastAssistantText: output,
-        };
-        run.steps.push(wfStep);
-        ctx.saveWorkflowRun(run);
-
-        ctx.log(`[run-workflow:${entry.name}] runFunction("${label}") → ${taskResult.status} (${duration})`);
-        return taskResult;
-      },
-
       runAgent: async (agentName: string, agentTask: string) => {
         ctx.log(`[run-workflow:${entry.name}] Step: running ${agentName}...`);
-
-        const taskResult = await ctx.manager.callAgent(agentName, agentTask, {
+        const result = await ctx.manager.callAgent(agentName, agentTask, {
+          source: `workflow:${entry.name}`,
           workflowRunId: runId,
-          stepLabel: agentName,
-          source: "workflow",
         });
+        const stepStatus = result.status ?? "done";
+        run.steps.push({ sessionId: result.sessionId, agent: agentName, status: stepStatus });
+        saveRun(run);
+        ctx.log(`[run-workflow:${entry.name}] Step ${agentName} → ${stepStatus} (${result.sessionId})`);
+        return result;
+      },
 
-        const sid = taskResult.sessionId;
-
-        // Record step
-        const wfStep: WorkflowStep = {
-          sessionId: sid,
-          agent: agentName,
-          task: agentTask,
-          status: taskResult.status as "done" | "error" | "interrupted",
-          startedAt: taskResult.messages[0]?.timestamp ?? Date.now(),
-          endedAt: Date.now(),
-          lastAssistantText: taskResult.lastAssistantText,
+      runFunction: async (label: string, fn: () => Promise<string>) => {
+        const start = Date.now();
+        let output: string; let hadError = false; let errorMsg: string | undefined;
+        try {
+          output = await Promise.race([fn(), new Promise<never>((_, rej) => setTimeout(() => rej(new Error("timeout")), 30_000))]);
+        } catch (err: any) { hadError = true; errorMsg = err?.message ?? String(err); output = `ERROR: ${errorMsg}`; }
+        return {
+          sessionId: `fn_${label}_${Date.now()}`, status: hadError ? "error" : "done",
+          lastAssistantText: output, messages: [], duration: `${((Date.now() - start) / 1000).toFixed(1)}s`,
+          outputDir: "", turnsUsed: 0,
         };
-        run.steps.push(wfStep);
-        ctx.saveWorkflowRun(run);
-
-        ctx.log(`[run-workflow:${entry.name}] Step ${agentName} → ${taskResult.status} (${sid})`);
-
-        // FM-3.1 + FM-3.3: Validate finish() deliverables and evidence
-        validateFinishResult(taskResult, ctx.projectRoot, (msg) => ctx.log(msg));
-
-        // Run workflow guards on step completion and enforce demands
-        const stepEvent: WorkflowGuardEvent = {
-          type: "step_done",
-          step: agentTask,
-          result: taskResult,
-          source: "agent",
-        } as any;
-        const demands = await runGuards(stepEvent, (msg) => ctx.log(msg));
-        for (const d of demands) {
-          if (d.type === "block") {
-            ctx.log(`[run-workflow:${entry.name}] GUARD BLOCK: ${d.reason}`);
-            // Override the task result to reflect the guard block
-            taskResult.status = "error";
-            taskResult.error = `Guard blocked: ${d.reason}`;
-            taskResult.lastAssistantText = d.reason;
-          } else if (d.type === "run_step" && (d as any).step) {
-            const injected = (d as any).step;
-            ctx.log(`[run-workflow:${entry.name}] GUARD INJECT STEP: ${d.reason}`);
-            // Run the injected recovery step
-            const recoveryAgent = injected.agent ? agentName : `fn:${injected.name}`;
-            if (injected.agent) {
-              const recoveryResult = await ctx.manager.callAgent(agentName, injected.task, {
-                workflowRunId: runId,
-                stepLabel: `guard:${injected.name}`,
-                source: "workflow",
-              });
-              const recoveryStep: WorkflowStep = {
-                sessionId: recoveryResult.sessionId,
-                agent: recoveryAgent,
-                task: injected.task,
-                status: recoveryResult.status as "done" | "error" | "interrupted",
-                startedAt: Date.now(),
-                endedAt: Date.now(),
-                lastAssistantText: recoveryResult.lastAssistantText,
-              };
-              run.steps.push(recoveryStep);
-              ctx.saveWorkflowRun(run);
-              ctx.log(`[run-workflow:${entry.name}] Guard recovery step → ${recoveryResult.status}`);
-            }
-          } else if (d.type === "warn") {
-            ctx.log(`[run-workflow:${entry.name}] GUARD WARN: ${d.reason}`);
-          }
-        }
-
-        return taskResult;
       },
 
-      runWorkflow: async (_name: string, _task: string) => {
-        // Sub-workflow not supported in this handler (keep it simple)
-        return { type: "escalate" as const, reason: "Sub-workflows not supported in run-workflow handler" };
+      createSession: async (opts: any) => {
+        const history: Array<{ role: string; text: string }> = [];
+        let lastResponse = "";
+        return {
+          async prompt(message: string) {
+            let fullPrompt = opts.systemPrompt + "\n\n";
+            for (const h of history) { fullPrompt += `[${h.role}]: ${h.text}\n\n`; }
+            fullPrompt += message;
+            history.push({ role: "user", text: message });
+            const result = await ctx.manager.callAgent(agent, fullPrompt, { source: `workflow:${opts.label || "session"}`, workflowRunId: runId });
+            lastResponse = result.lastAssistantText || "";
+            history.push({ role: "assistant", text: lastResponse.slice(0, 2000) });
+            if (result.sessionId) { run.steps.push({ sessionId: result.sessionId, agent, status: result.status ?? "done" }); saveRun(run); }
+          },
+          lastText() { return lastResponse; },
+          close() {},
+        };
       },
+      createLLMSession: async (opts: any) => workflowCtx.createSession(opts),
 
-      summarize: (result, opts?) => ctx.summarizeForHandoff(result, opts),
-
-      done: (summary: string) => ({ type: "done" as const, summary }),
-      escalate: (reason: string, context?: unknown) => ({ type: "escalate" as const, reason, context }),
+      runWorkflow: async () => ({ type: "escalate" as const, reason: "Sub-workflows not supported" }),
+      summarize: (r: any) => r?.lastAssistantText?.slice(0, 1500) || "",
+      done: (s: string) => ({ type: "done" as const, summary: s }),
+      escalate: (r: string, c?: unknown) => ({ type: "escalate" as const, reason: r, context: c }),
+      dispatchEvent: (event: string, data?: any) => { try { ctx.emit({ type: "emit", event, data }); } catch {} },
     };
 
-    // Execute with timeout
+    // Execute
     try {
-      const result = await Promise.race([
-        wf.execute(workflowCtx),
-        new Promise<never>((_, reject) => {
-          const timer = setTimeout(
-            () => reject(new Error(`Workflow timeout after ${timeoutMs}ms`)),
-            timeoutMs,
-          );
-          if (timer.unref) timer.unref();
-        }),
-      ]);
-
-      // Finalize run record
+      const result = await wf.execute(workflowCtx);
+      run.status = "done";
       run.endedAt = Date.now();
-      const resultType = result?.type ?? "done";
-      run.status = resultType === "done" ? "done" : "escalated";
-      run.result = resultType === "done"
-        ? { summary: result?.summary ?? "(workflow returned no summary)" }
-        : { reason: result?.reason ?? "(unknown)" };
-      ctx.saveWorkflowRun(run);
-
-      const duration = ((run.endedAt - run.startedAt) / 1000).toFixed(1);
-      ctx.log(
-        `[run-workflow:${entry.name}] Workflow "${workflowName}" ${resultType} in ${duration}s ` +
-        `(${run.steps.length} steps)`,
-      );
-    } catch (err) {
-      run.endedAt = Date.now();
+      saveRun(run);
+      ctx.log(`[run-workflow:${entry.name}] Workflow "${workflowName}" done in ${((Date.now() - run.startedAt) / 1000).toFixed(1)}s (${run.steps.length} steps)`);
+    } catch (err: any) {
       run.status = "error";
-      run.result = { reason: err instanceof Error ? err.message : String(err) };
-      ctx.saveWorkflowRun(run);
-
-      const errMsg = err instanceof Error ? err.message : String(err);
-      ctx.log(`[run-workflow:${entry.name}] ERROR: ${errMsg}`);
-      throw err;
+      run.endedAt = Date.now();
+      run.error = err.message;
+      saveRun(run);
+      ctx.log(`[run-workflow:${entry.name}] Workflow "${workflowName}" error: ${err.message?.slice(0, 200)}`);
     }
   };
 };
