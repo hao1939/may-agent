@@ -31,7 +31,6 @@ import { validateOutput, type ValidationResult } from "./output-validator.ts";
 import { withRetry, isRetryableError } from "./provider-retry.ts";
 import { estimateComplexity } from "./complexity-estimator.ts";
 import { IterationTimer } from "./iteration-timer.ts";
-import { aggregateMetrics, type AggregatedMetrics } from "./metrics-aggregator.ts";
 import { createBudget, type Budget as IterationBudget } from "./iteration-budget.ts";
 
 // Global iteration timer for observability
@@ -269,13 +268,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
     // Aggregate cross-project metrics for orchestrator awareness
     const projectsBaseDir = dirname(projectDir);
-    let satelliteMetrics: AggregatedMetrics | null = null;
-    try {
-      satelliteMetrics = aggregateMetrics(projectsBaseDir);
-      ctx.log(`[plan] 📊 Cross-project: ${satelliteMetrics.totalProjects} projects (${satelliteMetrics.activeProjects} active, ${satelliteMetrics.completedProjects} completed)`);
-    } catch (e: any) {
-      ctx.log(`[plan] ⚠️ Could not aggregate metrics: ${e.message?.slice(0, 80)}`);
-    }
 
     let planningPrompt = `Assess this project and decide what to do next.
 
@@ -302,12 +294,6 @@ ${journalContent.slice(-3000)}
     }
 
     planningPrompt += `\nBased on your assessment, provide your decision and guidance for the worker.`;
-
-    // Include satellite metrics if available
-    if (satelliteMetrics && satelliteMetrics.totalProjects > 0) {
-      const projectSummaries = satelliteMetrics.projects.map(p => `  - ${p.name}: ${p.status}`).join('\n');
-      planningPrompt += `\n\n## Cross-Project Status (${satelliteMetrics.totalProjects} projects)\n${projectSummaries}\n`;
-    }
 
     await withRetry(() => orchestrator.prompt(planningPrompt), {
       maxRetries: 3,
