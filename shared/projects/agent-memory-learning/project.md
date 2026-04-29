@@ -1,10 +1,10 @@
 # Project: Agent Memory & Learning
 
-**Status**: complete
+**Status**: active
 **Owner**: coach
 **Priority**: P2
 **Workflow**: master-worker
-**Iteration**: 8
+**Iteration**: 9
 
 ## Goal
 Agents retain and apply lessons across sessions. Reduce repeated mistakes.
