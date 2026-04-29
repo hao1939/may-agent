@@ -1,5 +1,9 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST.md
 
-- [x] DONE: `tests/master-worker-integration.test.ts` — 24 integration tests covering dispatch validation → decision extraction → loop control → zero-output detection → max iterations → snapshot diffing → end-to-end scenarios
-- [x] DONE: All 182 tests pass across 8 files (npx vitest run exit 0)
-- [x] DONE: Copy at `agents/shared/projects/outputs/master-worker-integration.test.ts`
+## Task: Create full-stack integration test
+
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | Full stack integration test file | DONE | agents/shared/tests/full-stack-integration.test.ts |
+| 2 | All tests passing (17/17) | DONE | vitest run confirms 17 passed |
+| 3 | Copy in outputs | DONE | agents/shared/projects/outputs/full-stack-integration.test.ts |
