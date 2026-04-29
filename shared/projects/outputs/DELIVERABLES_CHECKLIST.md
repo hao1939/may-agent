@@ -1,12 +1,13 @@
 # Deliverables Checklist
 
-## Task: Project Complete - No Further Work Needed
+## Task: Create health-check script and find next satellite to drive forward
 
-| Deliverable | Status | Notes |
-|-------------|--------|-------|
-| Fix failing test | DONE | Fixed in prior iteration (iteration 1) |
-| All 1349+ tests passing | DONE | Verified in prior iterations |
-| 83.79% coverage achieved | DONE | Target was 80% |
-| 60% threshold enforced | DONE | In vitest.config.ts |
+| # | Deliverable | Status | Path |
+|---|-------------|--------|------|
+| 1 | Health check script for all satellite projects | DONE | `agents/shared/scripts/health-check.sh` |
+| 2 | Copy in outputs | DONE | `agents/shared/projects/outputs/health-check.sh` |
 
-**Project status: COMPLETE. No new deliverables required this iteration.**
+## Notes
+- All 11 satellite projects scanned; 9/11 at target
+- No active projects have unmet metrics (hao-alignment has no numeric targets defined, documentation-gen is complete)
+- Script is executable, exits 0, prints summary
