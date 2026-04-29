@@ -4,7 +4,7 @@
 **Owner**: coach
 **Priority**: P2
 **Workflow**: master-worker
-**Iteration**: 5
+**Iteration**: 6
 
 ## Goal
 Agents retain and apply lessons across sessions. Reduce repeated mistakes.
