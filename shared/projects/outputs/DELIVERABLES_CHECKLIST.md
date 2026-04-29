@@ -1,13 +1,9 @@
 # Deliverables Checklist
 
-## Task: Create integration test for workflow-runner
+## Task: Create integration test in vitest-discoverable location (70 test files)
 
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Integration test exercising workflow-runner end-to-end (no mocks) | DONE | `agents/test/workflows-integration.test.ts` |
-| 2 | Test passes in full suite (no regressions) | DONE | 520/520 tests pass across 29 files |
-
-## Details
-- 8 test cases covering: full pipeline composition, config validation, health-check with real data, dispatch-validator, ProjectCache read/write, stage timing, and workflow summarization
-- All tests use real APIs (no mocks)
-- Full test suite remains green: 520 passed, 0 failed
+| # | Deliverable | Status | Path/Notes |
+|---|-------------|--------|------------|
+| 1 | Integration test in vitest test dir | DONE | `agents/shared/tests/workflows-integration-e2e.test.ts` — 4 tests exercising workflow-runner pipeline end-to-end |
+| 2 | Test suite passes with 70 files | DONE | `npx vitest run` → "Test Files 70 passed (70)" |
+| 3 | Copy in outputs | DONE | `agents/shared/projects/outputs/workflows-integration-e2e.test.ts` |
