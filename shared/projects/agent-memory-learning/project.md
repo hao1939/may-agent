@@ -16,7 +16,7 @@ Agents retain and apply lessons across sessions. Reduce repeated mistakes.
 - memory.repeat-mistake-rate: unknown → target 0.10
 
 ## Current State
-**Iteration 7 assessment (2025-06-25):**
+**Iteration 8 assessment (2025-06-25):**
 - **Pipeline is WORKING.** The poller has fired, processed 2 sessions, and dispatched context-learn events.
 - State file at `.state/context-learn-poller-processed.json` confirms `lastRunAt` and 2 processed session IDs.
 - Key clarification: context-learn updates agent `context.md` files (add/remove facts), NOT lessons.jsonl. lessons.jsonl is a separate seeded knowledge base.
@@ -36,9 +36,10 @@ Agents retain and apply lessons across sessions. Reduce repeated mistakes.
 - [x] File task to bob/tech-lead: add session.completed event emission in core runtime (notified tech-lead P1)
 - [x] Verify organic lesson capture: poller HAS run (2 sessions processed), context-learn dispatches events that update agent context.md files
 - [x] Re-plan: pipeline is working, shift to observability and quality
-- [ ] Validate lesson quality: sample 10 recent context.md additions across agents, assess usefulness/actionability/duplication, write outputs/lesson-quality-audit.md
-- [ ] Create outputs/learning-dashboard.md: snapshot of context-learn activity (sessions processed, poller state, context.md sizes per agent, sample recent additions)
-- [ ] Re-plan: assess if project can be closed or needs further refinement
+- [x] Validate lesson quality: sample 10 recent context.md additions across agents, assess usefulness/actionability/duplication, write outputs/lesson-quality-audit.md
+- [x] Create outputs/learning-dashboard.md: snapshot of context-learn activity (sessions processed, poller state, context.md sizes per agent, sample recent additions)
+- [ ] Extract lessons from 8 uncovered agents (tech-lead, optimizer, qa, amy-kimi, evaluator, architect, judge, master) into lessons.jsonl
+- [ ] Re-plan: assess repeat-mistake-rate metric, decide project closure
 
 ## References
 
