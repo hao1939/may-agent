@@ -184,8 +184,8 @@ describe("budgetFilter", () => {
     const big = "x".repeat(10000);
     const small = "y".repeat(3000);
     const result = budgetFilter([big, small], MAX_TOTAL_CHARS);
-    // big (10000) fits, small (3000) would exceed 12000
-    expect(result).toEqual([big, small]);
+    // big (10000) fits, big+small (13000) > 12000, so only big
+    expect(result).toEqual([big]);
   });
 
   it("stops when budget exceeded", () => {
