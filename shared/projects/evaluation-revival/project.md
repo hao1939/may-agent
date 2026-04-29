@@ -29,9 +29,11 @@ Remaining: (1) Wait ~2 days for coverage metric to reflect throughput increase. 
 - [x] Register coaching-consumer in cron.json — runs every 6h via agents/may/cron.json
 - [x] First coaching intervention based on evaluation data — optimizer flagged (quality=0.1), see .state/coaching-queue/optimizer_1777484873037.json
 - [ ] Validate coverage reaches ≥50% after throughput increase (measure in ~2 days)
-- [ ] Wire coach heartbeat to consume .state/coaching-queue/ and take action (notify agent, create growth task)
+- [x] Wire coach heartbeat to consume .state/coaching-queue/ and take action — coaching-dispatcher.ts writes to agent knowledge/, registered in cron
+- [ ] Validate coverage reaches ≥50% after throughput increase (measure in ~2 days)
 - [ ] Add regression guard: alert if sessions-scored-7d drops below 10
-- [ ] Re-plan: once coverage ≥50% and coaching loop closes end-to-end
+- [ ] Verify optimizer agent actually reads coaching file in next session
+- [ ] Re-plan: once coverage ≥50% and coaching loop verified end-to-end
 
 ## References
 - .state/evaluations/ — existing evaluation outputs (last: Mar 24)
