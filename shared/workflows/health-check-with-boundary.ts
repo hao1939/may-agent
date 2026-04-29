@@ -19,22 +19,10 @@ export interface HealthCheckResult {
 export type CheckFn = () => { passed: boolean; details: string };
 
 const defaultChecks: Array<{ name: string; check: CheckFn }> = [
-  {
-    name: 'workflow-modules-importable',
-    check: () => ({ passed: true, details: '12 modules registered' })
-  },
-  {
-    name: 'test-file-count',
-    check: () => ({ passed: true, details: 'Test file count check' })
-  },
-  {
-    name: 'output-file-count',
-    check: () => ({ passed: true, details: 'Output file count check' })
-  },
-  {
-    name: 'satellite-status',
-    check: () => ({ passed: true, details: 'Satellite status check' })
-  }
+  { name: 'workflow-modules-importable', check: () => ({ passed: true, details: '12 modules registered' }) },
+  { name: 'test-file-count', check: () => ({ passed: true, details: 'Test file count check' }) },
+  { name: 'output-file-count', check: () => ({ passed: true, details: 'Output file count check' }) },
+  { name: 'satellite-status', check: () => ({ passed: true, details: 'Satellite status check' }) }
 ];
 
 export function runHealthCheckWithBoundary(
@@ -43,9 +31,8 @@ export function runHealthCheckWithBoundary(
   const results: HealthCheckItem[] = [];
 
   for (const { name, check } of checks) {
-    const result = withErrorBoundary(check, {
-      fallback: { passed: false, details: 'Check threw an error' }
-    });
+    // Don't use fallback — we need the error info when it fails
+    const result = withErrorBoundary(check);
 
     if (result.success) {
       results.push({
@@ -58,7 +45,13 @@ export function runHealthCheckWithBoundary(
         name,
         passed: false,
         details: 'Check threw an error',
-        error: result.error
+        error: result.error ? {
+          message: result.error.message,
+          stack: result.error.stack,
+          timestamp: typeof result.error.timestamp === 'number'
+            ? new Date(result.error.timestamp).toISOString()
+            : String(result.error.timestamp)
+        } : undefined
       });
     }
   }
