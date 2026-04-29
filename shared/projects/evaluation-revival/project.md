@@ -4,7 +4,7 @@
 **Owner**: coach
 **Priority**: P0
 **Workflow**: master-worker
-**Iteration**: 2
+**Iteration**: 4
 
 ## Goal
 Restore the evaluation pipeline so agent performance is measured continuously. Without evaluations, the learning flywheel is broken — we can't identify regressions, validate improvements, or train effectively.
@@ -28,7 +28,7 @@ Fix needed: Increase MAX_AGE_MS to 24-48h and/or increase MAX_SESSIONS_PER_RUN t
 - [x] Increase eval-poller throughput: MAX_AGE_MS→48h, MAX_SESSIONS_PER_RUN→20 (file: agents/may/handlers/eval-poller.ts)
 - [ ] Validate coverage reaches ≥50% after throughput increase (measure in ~3 days)
 - [x] Define score thresholds that trigger coaching interventions — see agents/shared/projects/outputs/score-thresholds.md
-- [ ] Implement coaching consumer that scans new evals and applies thresholds
+- [x] Implement coaching consumer that scans new evals and applies thresholds — agents/may/handlers/coaching-consumer.ts
 - [ ] First coaching intervention based on evaluation data
 - [ ] Re-plan: once coverage ≥50%, focus on coaching loop
 
