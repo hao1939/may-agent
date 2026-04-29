@@ -12,6 +12,25 @@ import {
   type ResilientConfig,
 } from '../workflows/master-worker-resilient';
 
+// Mock retry-wrapper
+vi.mock('../workflows/retry-wrapper', async () => {
+  const actual = await vi.importActual('../workflows/retry-wrapper');
+  return {
+    ...actual as any,
+    createRetryWrapper: vi.fn(() => ({
+      execute: vi.fn(async (fn: () => Promise<string>, _label: string) => {
+        try {
+          const value = await fn();
+          return { success: true, value, attempts: 1 };
+        } catch (error: any) {
+          return { success: false, error, attempts: 2 };
+        }
+      }),
+      getCircuitState: vi.fn(() => ({ isOpen: false, failures: 0, lastFailureTime: 0 })),
+    })),
+  };
+});
+
 // Mock the cached module
 vi.mock('../workflows/master-worker-cached', () => ({
   createCachedContext: vi.fn(() => ({
