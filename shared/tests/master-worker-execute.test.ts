@@ -430,6 +430,7 @@ describe("execute", () => {
   });
 
   it("handles review phase retry on error", async () => {
+    vi.useFakeTimers();
     setupProjectFs({ maxIter: "1" });
     const ctx = createMockCtx("project: agents/shared/projects/test");
     let reviewCalls = 0;
@@ -449,7 +450,11 @@ describe("execute", () => {
       if (label === "orchestrator") return orchSession;
       return createMockSession(["Done"]);
     });
-    await execute(ctx as any);
+    const executePromise = execute(ctx as any);
+    // Advance past all retry delays
+    await vi.runAllTimersAsync();
+    await executePromise;
+    vi.useRealTimers();
     // Review should have retried
     expect(orchSession.prompt).toHaveBeenCalledTimes(3); // plan + review attempt 1 (fail) + review attempt 2
   });
