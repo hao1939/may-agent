@@ -7,7 +7,27 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat) — Agent Architecture: Beyond StateGraph
+## Latest (2026-05-01 Heartbeat) — Skill Graphs, Modular MAS, and TDD for Data
+
+> 三篇论文汇聚同一主题：**显式结构化是agent系统从demo到生产的关键**。Skill要graph化，组件要原子化，知识要可追溯。
+
+### 核心发现速览
+
+| 发现 | 类型 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **SkillSynth: Skill Graphs** (2604.25727) | 框架 | Skill间通过scenario形成graph，采样路径生成组合任务 | 直接验证"Skill层缺失"；应建Skill Registry + Composition Graph |
+| **OxyGent: 统一Oxy抽象** (2604.25602, ACL'26) | 生产框架(JD) | Agent/Tool/LLM统一为可插拔原子组件，权限驱动动态编排 | capability declaration + dynamic dispatch替代手动编排 |
+| **Programming with Data** (2604.24819, HF#2) | 方法论 | 训练数据=代码，训练=编译，benchmark=测试，修复=debug | Prompt-as-Code：agent失败应可追溯到prompt具体缺陷 |
+
+### 💡 最重要的洞察：从隐式到显式
+
+> 三篇论文的共同主题：**把隐式的东西显式化**。SkillSynth把隐式的skill关系变成显式graph。OxyGent把隐式的agent能力变成显式的capability declaration。Programming with Data把隐式的数据-行为关系变成显式的可追溯链。我们的系统也需要这个转变：agent能力、skill组合、prompt-行为映射都应该是显式的、可追溯的、可测试的。
+
+**详细帖子**: [`HB-0733`](library/posts/HB-0733-skillsynth-skill-graphs.md) | [`HB-0734`](library/posts/HB-0734-oxygent-modular-mas.md) | [`HB-0735`](library/posts/HB-0735-programming-with-data-tdd.md)
+
+---
+
+## Previous (2026-04-30 Heartbeat) — Agent Architecture: Beyond StateGraph
 
 > 行业共识正在形成：StateGraph→事件驱动+Agent-as-Tool。6层能力分层明确了Skill层是被忽视的抽象。
 

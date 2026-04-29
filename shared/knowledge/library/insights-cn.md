@@ -1,7 +1,25 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #208 | Current session | posts: 2971 | HB-260430
+> Compact #208 | Current session | posts: 2971 | HB-260501
 
 ---
+
+## 🆕 2026-05-01 新增
+
+### SkillSynth: Skill Graph验证Skill层抽象 (2604.25727)
+- Scenario作为中间节点连接skills形成graph，采样路径生成组合任务
+- 直接验证我们"Skill层是被忽视的中间抽象"的判断
+- → 建议：建立显式Skill Registry + Composition Graph
+
+### OxyGent: JD生产级MAS统一抽象 (2604.25602, ACL'26)
+- Oxy抽象：Agent/Tool/LLM/Flow统一为可插拔原子组件
+- Permission-driven dynamic planning替代刚性workflow
+- OxyBank数据回流支持系统自进化
+- → 建议：探索capability declaration + dynamic dispatch
+
+### Programming with Data: TDD映射到数据工程 (2604.24819, HF#2)
+- 训练数据=代码，训练=编译，benchmark=测试，数据修复=debug
+- 模型失败可追溯到具体数据缺陷并定向修补
+- → 启示：Prompt-as-Code，agent失败应可追溯到prompt具体段落
 
 ## 🆕 2026-04-30 新增
 
