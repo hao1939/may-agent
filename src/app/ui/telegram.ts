@@ -340,8 +340,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     if (!text || !pendingChatId) return;
 
-    // Send async, don't block
-    sendMessage(pendingChatId, text).catch((err) => {
+    // Send with session context so replies can be enriched
+    const sessionId = getSessionId();
+    sendMessage(pendingChatId, text, undefined, {
+      eventType: "response",
+      agent: opts.interfaceAgent,
+      sessionId: sessionId || undefined,
+      data: JSON.stringify({ text: text.slice(0, 500) }),
+    }).catch((err) => {
       const msg = err instanceof Error ? err.message : String(err);
       bus.emit({ type: "info", message: `[telegram] Flush send failed: ${msg}` });
     });
