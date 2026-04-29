@@ -1,9 +1,6 @@
 # DELIVERABLES_CHECKLIST
 
-## Task: Create end-to-end smoke test
-
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Smoke test importing project-template, iteration-monitor, session-analyzer | DONE | agents/shared/tests/smoke.test.ts |
-| 2 | Test passes in vitest suite | DONE | 4 tests passed |
-| 3 | Copy in outputs | DONE | agents/shared/projects/outputs/smoke.test.ts |
+- [x] DONE — `agents/shared/lib/config-validator.ts` — validates project.md structure (sections, metrics targets, plan items)
+- [x] DONE — `agents/shared/tests/config-validator.test.ts` — 8 tests all passing
+- [x] DONE — `agents/shared/lib/index.ts` — barrel export updated with config-validator
+- [x] DONE — `agents/shared/projects/outputs/config-validator.ts` — copy in outputs

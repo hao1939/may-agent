@@ -12,3 +12,4 @@ export * from './iteration-monitor.js';
 export * from './project-template.js';
 export * from './session-analyzer.js';
 export * from './workflow-metrics.js';
+export * from './config-validator.js';
