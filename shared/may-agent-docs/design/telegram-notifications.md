@@ -208,15 +208,51 @@ No enrichment needed. May handles it like any chat message.
 
 ### Bot side (telegram.ts)
 
-1. **On send**: store `{ telegramMsgId → NotificationContext }` mapping (in-memory or DB)
-2. **On reply**: look up context by `reply_to_message_id`, build enriched message
+1. **On send**: send clean message to user. Store mapping: `telegram_message_id → event` in DB (events table, add telegram_msg_id column, or separate table)
+2. **On reply**: look up `reply_to_message_id` → get original event. From the event, reconstruct context: which agent, session, project, workflow, state at that time.
 3. **On non-reply**: pass through as regular message (no enrichment)
+
+### Context reconstruction from event
+
+The original event already carries all metadata:
+```typescript
+// The event that triggered the notification:
+{
+  type: "notification",
+  agent: "may",           // → who sent it
+  text: "...",            // → what user saw
+  sessionId: "s_123",    // → which session was running
+  // From session, we can derive:
+  //   - projectId (if session was for a project)
+  //   - workflowRunId (if session was in a workflow)
+  //   - task (what the agent was doing)
+  //   - parent session (who dispatched it)
+}
+```
+
+From `sessionId`, reconstruct:
+- `sessions.projectId` → which project
+- `sessions.task` → what was being worked on
+- `sessions.agent` → who was doing it
+- `sessions.workflowRunId` → which workflow run
+- Recent events for that project → current metrics, status
 
 ### Storage
 
-Simple: `Map<number, NotificationContext>` in memory. Notifications expire after 48h. If bot restarts, context is lost — replies become regular messages (graceful degradation).
+`notification_messages` table:
+```sql
+CREATE TABLE notification_messages (
+  telegram_msg_id  INTEGER PRIMARY KEY,
+  event_type       TEXT,
+  agent            TEXT,
+  session_id       TEXT,
+  project_id       TEXT,
+  data             TEXT,    -- JSON blob of event data
+  sent_at          INTEGER
+);
+```
 
-Or: store in events table with the notification event, keyed by telegram message id.
+Lightweight. One row per outbound message. Expire after 7 days.
 
 ### Agent side
 
