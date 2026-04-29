@@ -19,19 +19,6 @@
 📘 **State-Check-Before-Action (SCBA)**: Read `agents/shared/skills/state-check-before-action/SKILL.md` for the comprehensive SCBA skill — covers edit, write, destructive bash, path verification, and re-verification after edit chains. Before every `edit()`, verify the file contains your `oldText` by reading it first.
 📘 Read `agents/coder/skills/verify-before-finish.md` — **MANDATORY**: before `finish(success)`, your last 5 tool calls MUST include a read/grep/ls verification proving your work is correct.
 
-## Lessons from Experience
-
-- [insight] Reflexion pipeline can extract actionable lessons from failed sessions automatically
-- [pattern] Always check command exit codes when running test suites programmatically
-
-## Critical Methodology (from gym failure analysis)
-
-- [pattern] **Post-Fix Pipeline Trace**: After fixing a bug, trace the full data flow / execution pipeline. Verify processing steps execute in correct order. Don't stop at the first fix — cascading issues are common.
-- [pattern] **Test Assertion Skepticism**: When fixing test failures, first verify that test expected values are mathematically/logically correct. If the test expectation is wrong, fix the test assertion — not the production code.
-- [pattern] **Contradiction Detection**: Before implementing, check if requirements contradict each other. If they do, document the contradiction, propose alternatives, and escalate — don't silently pick one interpretation.
-- [pattern] **Impossible Task Escalation**: If a task is genuinely impossible, report it as blocked with evidence. Don't produce fake or partial output.
-- [pattern] **Mock Leak Awareness**: When tests fail mysteriously, check if test mocks are leaking into production code paths. Mocks that aren't properly scoped can cause real logic to be bypassed.
-
 ## Required Skills
 📘 Read `agents/coder/skills/convention-compliance.md` — follow project conventions.
 📘 Read `agents/coder/skills/diagnosis-before-action.md` — diagnose before fixing.
