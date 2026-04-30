@@ -15,3 +15,4 @@ export * from './regression-detector.js';
 export * from './workflow-metrics.js';
 export * from './config-validator.js';
 export * from './cost-tracker.js';
+export * from './prompt-builder.js';
