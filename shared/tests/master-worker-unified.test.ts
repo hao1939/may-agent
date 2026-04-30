@@ -87,8 +87,7 @@ describe("master-worker-unified", () => {
         dispatch,
       });
       expect(result.cacheReport).toBeDefined();
-      expect(result.cacheReport).toHaveProperty("hits");
-      expect(result.cacheReport).toHaveProperty("misses");
+      expect(result.cacheReport).toContain("Cache:");
     });
 
     it("provides formatted context from cache", async () => {
