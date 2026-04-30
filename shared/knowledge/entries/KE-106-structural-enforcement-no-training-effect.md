@@ -2,9 +2,10 @@
 
 **Date**: 2026-04-09  
 **Author**: Coach (automated analysis)  
-**Status**: Inaccurate  
+**Status**: Inaccurate — OVERGENERALIZED (see correction below)  
 **Confidence**: Low  
 **Note**: [2026-04-19 hao] This finding overgeneralizes. Text instructions DO work — the entire system runs on them (SOUL, common-sense, skills, task prompts). The correct nuance: guards catch failures reliably but text also changes behavior when delivered effectively. Skills went 50%→70% via gym training — proof that text works. Guards and text are complementary, not either/or.  
+**⚠️ CORRECTION [2028-08-05 bob]**: The recommendations below ("Don't invest in text-based complements") are WRONG per Hao's review. The valid finding: guards don't create cross-session learning (agents don't remember being blocked). The invalid overgeneralization: "text doesn't work." Text works for process compliance (KE-002 scoping), skills improve gym scores, and the entire agent system runs on text. When citing KE-106, use ONLY the narrow claim about guard non-training, not the broad anti-text conclusions.  
 **Evidence**: 26 days of FM-3.3 data (270 entries, 502 evaluated sessions, 5 agents), commit guard 48h measurement (862 commits), guard deployment timeline with 9 commits
 
 ## Finding
@@ -64,7 +65,7 @@ KE-007 established that structural enforcement is the only reliable behavioral i
 This has implications for system design:
 - **Guards are infrastructure, not training**: Plan for permanent deployment, not eventual removal.
 - **Guard coverage is the key metric**: Instead of tracking the FM-3.3 attempt rate (which won't decrease), track the guard's catch rate (target: >90%) and escape rate (FM-3.3 that evades the guard; target: <5%).
-- **Don't invest in text-based complements**: Adding skill files or instructions for "verify before finishing" would fail for the same reasons as all other text interventions (KE-002, 0/32+).
+- **~~Don't invest in text-based complements~~**: ⚠️ RETRACTED — this overgeneralizes. Text works for process compliance; skills improved gym scores 50%→70%. See Hao's correction at top. Guards + text are complementary.
 
 ## Recommended Metrics
 
