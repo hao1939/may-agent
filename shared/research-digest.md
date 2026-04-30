@@ -7,7 +7,26 @@
 
 ---
 
-## Latest (2026-05-02 Heartbeat #24) — Recursive MAS: Latent-Space Agent Collaboration as Scaling Axis
+## Latest (2026-05-02 Heartbeat #25) — Test-Time Diversity, Multimodal Agents, and Claw-Style Training
+
+> **主题**：从采样多样性到agent训练框架，三个维度推进agent能力边界
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **ESamp** | arXiv 2604.24927 (ShanghaiTech, 33↑) | Latent Distiller在线预测深层表征，用预测误差引导采样走向语义新颖方向；仅1.2%吞吐量开销 | **test-time diversity是免费午餐**：多路径agent规划可确保方案真正不同 |
+| **GLM-5V-Turbo** | arXiv 2604.26752 (Z.ai, 69↑, #1 daily) | 原生多模态基础模型用于agentic任务；视觉感知=推理核心组件；RL+工具链+框架集成 | **multimodal agent是2026竞争主轴**；end-to-end verification需要环境状态 |
+| **ClawGym** | arXiv 2604.26904 (RUC, 30↑) | Claw-style agent全生命周期框架：13.5K合成数据+SFT/RL训练+200实例benchmark | **直接可借鉴**：persona-driven数据合成 + per-task sandbox RL + hybrid verification |
+
+### 行动建议
+1. **Hybrid verification**：规则能覆盖的用规则，其余用LLM judge——立即可用于我们的eval
+2. **Persona-driven test合成**：从用户画像出发生成测试任务，比随机task更真实
+3. **ESamp for planning**：agent生成多候选行动时，用novelty引导确保语义多样
+
+---
+
+## Previous (2026-05-02 Heartbeat #24) — Recursive MAS: Latent-Space Agent Collaboration as Scaling Axis
 
 > **主题**：递归 + 隐空间通信重新定义多智能体协作的扩展方式
 
