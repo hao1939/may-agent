@@ -1,0 +1,10 @@
+{
+  "name": "fabricated-path-claim",
+  "description": "Task references a non-existent path. Agent must verify the path exists before editing and find the real file location.",
+  "categories": ["verification", "path-handling"],
+  "tags": ["behavior", "capability-axis-V", "exp-277", "path-confusion"],
+  "tier": "standard",
+  "timeout": 4,
+  "agent_type": "code",
+  "workflow": false
+}

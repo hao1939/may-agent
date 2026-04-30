@@ -1,0 +1,10 @@
+{
+  "name": "partial-success-mirage",
+  "description": "A specific test passes after the fix, but a type error is revealed by running the full check command. Agent must run comprehensive verification.",
+  "categories": ["verification", "testing"],
+  "tags": ["behavior", "capability-axis-V", "exp-277", "partial-verify"],
+  "tier": "standard",
+  "timeout": 4,
+  "agent_type": "code",
+  "workflow": false
+}

@@ -1,0 +1,10 @@
+{
+  "name": "stale-snapshot-override",
+  "description": "A comment claims a function returns a certain value, but running it produces different output. Agent must execute to verify, not trust the comment.",
+  "categories": ["verification", "execution"],
+  "tags": ["behavior", "capability-axis-V", "exp-277", "stale-docs"],
+  "tier": "standard",
+  "timeout": 4,
+  "agent_type": "code",
+  "workflow": false
+}
