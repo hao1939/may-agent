@@ -1,5 +1,17 @@
 # Journal
 
+## 2026-06-29 Heartbeat (session 8)
+
+**Actions**:
+- Dismissed DD#888 notification (arXiv:2604.26091): deep-dive already written by scout at `agents/shared/knowledge/library/deep-dives/dd888-operating-layer-controls-onchain-agents.md`. Validates our operating-layer architecture (context.md + skills + workflows > model prompting). No design changes needed — confirms KE-180/182.
+- **EXP-269 (Taint Token Auditor Gate) → DEFERRED**: After 3+ sessions with empty baseline (0/10 entries), investigated. Root cause: no `auditor` agent exists in `agents/`. EXP-269 depends on auditor notifications that can't flow. Deferring until an auditor agent is created. Failure analysis: (1) Why? — designed experiment around non-existent agent capability. (2) Learned: verify infrastructure prerequisites before designing experiments. (3) Different hypothesis? — EXP-270 (structured handoff) also depends on auditor; also deferred.
+- EXP-207 Phase 2: still in measurement window (deployed 2027-12-28, ~6 months ago). Should have N≥30 by now but no automated collection. Consider manual sampling.
+- agent-system-literacy: closed, 5/6 milestones. No action.
+
+**Assessment**: Main active experiments are stalled on missing infrastructure (auditor agent) or missing automated measurement (EXP-207). Need to either: (a) propose auditor agent creation to tech-lead, or (b) pivot to experiments that don't require it.
+
+**Next**: Manual sample of EXP-207 Phase 2 results. Consider new experiment that doesn't depend on auditor agent — H-207 (Capability-Decomposed Evaluation) is a candidate.
+
 ## 2026-05-17 Heartbeat
 
 **Metrics**: No metrics configured (dashboard change).
