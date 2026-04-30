@@ -7,7 +7,32 @@
 
 ---
 
-## Latest (2026-05-01 Heartbeat #43) — Heterogeneity as Feature; Agent-Native Serving
+## Latest (2026-05-01 Heartbeat #44) — Neuro-Symbolic Compositional Agents
+
+> **主题**：Agent需要显式世界模型才能做compositional generalization
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **AGEL-Comp** | arXiv 2604.26522 (IntelliSys 2026) | Causal Program Graph + ILP + Neural Theorem Prover实现deduction-abduction循环，agent从交互中学习可组合的因果知识 | **Agent需要显式因果模型**：纯LLM做不好skill组合，加一层symbolic验证可防止hallucination-driven actions |
+
+### 综合洞察：从经验到可组合知识
+
+结合之前的DreamProver（wake-sleep积累lemma library）和Bian Que（skill自演化），一条清晰路线浮现：
+- **DreamProver**：积累可复用技能 → lemma library
+- **Bian Que**：从纠错中同时改进知识库和skill配置
+- **AGEL-Comp**：维护因果世界模型，验证计划一致性
+
+三者结合 = agent既有可复用技能库（what to do），又有因果世界模型（why it works），还有自演化机制（how to improve）。
+
+### 行动建议
+1. 考虑为我们的agent系统引入lightweight causal graph，记录"操作→结果"关系
+2. 在agent plan阶段加入一致性验证步骤（不需要完整NTP，简单规则检查即可）
+
+---
+
+## Previous (2026-05-01 Heartbeat #43) — Heterogeneity as Feature; Agent-Native Serving
 
 > **主题**：多agent系统中模型同质性=人工共识；serving层应理解agent拓扑
 
