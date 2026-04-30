@@ -97,3 +97,9 @@ The workflow .ts file is dead code — it never fires. The heartbeat system just
 (a) Next iteration should produce: M15 — Check the next coach heartbeat session for compliance. Look at `agents/coach/last-session.md` after this current session ends to see if the NEXT heartbeat starts with GOAL/PLAN/DONE WHEN blocks.
 
 (b) What's different: M14 is now verified — the OUTPU
+
+### Iteration 13 — 2026-04-30T07:14:13.653Z
+**Worker**: Also copy to outputs:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should produce: M16 — Check compliance on the next real coach heartbeat. Read `agents/coach/last-session.md` and verify it contains GOAL/PLAN/DONE WHEN blocks at the start. If a new heartbeat hasn't fired yet, this project should pause — we can't verify until the next cy
