@@ -62,7 +62,7 @@ export interface RunResult {
   iterations: number;
   stopped: boolean;
   stopReason: string;
-  cacheReport?: { hits: number; misses: number; evictions: number };
+  cacheReport?: string;
   circuitBreakerTrips?: number;
   healthCheckResult?: { proceed: boolean; reason: string };
 }
