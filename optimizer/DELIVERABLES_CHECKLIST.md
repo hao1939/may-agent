@@ -1,15 +1,11 @@
 # Deliverables Checklist
 
-## Task: Optimizer Heartbeat — Efficiency Review
+## Task: Optimizer Heartbeat — System Health Review
 
 | # | Deliverable | Status | Evidence |
-|---|-------------|--------|----------|
-| 1 | Review metrics and alerts | DONE | All metrics healthy, no alerts |
-| 2 | Check pending events | DONE | No pending events |
-| 3 | Review projects | DONE | request-deduplication closed, no action needed |
-| 4 | Investigate efficiency/waste questions | DONE | Found 4 zombie sessions (cosmetic issue, no resource waste) |
-
-## Findings
-
-- **Zombie sessions**: 4 sessions show "running" in tracker but are unreachable (may×2, coach×2, aged 374-1263min). Cosmetic tracking issue only.
-- **No actionable waste identified** this heartbeat.
+|---|------------|--------|----------|
+| 1 | Review metrics | DONE | All metrics green: success-rate 1.0, p95 242709ms |
+| 2 | Check active alerts | DONE | None active |
+| 3 | Check pending events | DONE | None pending |
+| 4 | Review projects | DONE | request-deduplication closed, no action needed |
+| 5 | Investigate waste/efficiency | DONE | 285 sessions/6h, 2 phantom coach sessions (known issue) |
