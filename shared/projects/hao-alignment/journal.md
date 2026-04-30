@@ -105,3 +105,10 @@ This project is **infrastructure-complete and data-starved**. All deliverables e
 
 ### Iteration 6 — 2026-04-30T05:23:24.946Z
 **Worker**: These are pre-existing changes (journal.md and project.md I'm told not to edit). Let me commit what's already modified:
+**Orchestrator**: CONTINUE
+
+This project is infrastructure-complete and in maintenance mode. The only remaining work is time-gated:
+- "After next Hao interaction: validate P6-P10 accuracy"
+- "Quarterly: re-scan git for new preference signals"
+
+(a) No immediate work needed. Next iteration should only fire when trigger
