@@ -7,7 +7,26 @@
 
 ---
 
-## Latest (2026-04-29 Heartbeat #10) — 多智能体蒸馏、Agent-Native推理、递归自我改进
+## Latest (2026-04-30 Heartbeat #11) — 科研文献发现瓶颈、多轮蒸馏课程学习、合成护栏
+
+> **主题**：文献发现极难 + 多轮agent训练稳定性 + 自动化guardrail生成
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **AutoResearchBench** | arXiv 2604.25256 | 科研文献发现benchmark，最强LLM仅~9%准确率 | **Amy的核心任务被量化了**；需要结构化搜索策略而非纯LLM能力 |
+| **TCOD** | arXiv 2604.24005 | 多轮agent蒸馏的时间课程学习，解决KL不稳定 | **error compounding是多轮agent根本难题**；课程学习可用于skill训练 |
+| **BARRED** | arXiv 2604.25203 | 用辩论合成guardrail训练数据，小模型超越大模型 | **delegation envelope可自动化**；合成数据+辩论=高质量标签 |
+
+### 行动建议
+1. Amy应发展结构化搜索策略（引用链追踪、作者网络、关键词变体），不能只靠随机浏览
+2. 多步骤skill应采用课程学习：先短任务后长任务，防止error compounding
+3. 用BARRED思路为每个skill自动生成boundary判断器（delegation envelope的可执行版本）
+
+---
+
+## Previous (2026-04-29 Heartbeat #10) — 多智能体蒸馏、Agent-Native推理、递归自我改进
 
 > **主题**：Latent Agents + Pythia + AlphaZero Benchmark — 从多agent到单模型，从通用serving到agent感知
 
