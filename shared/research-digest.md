@@ -7,7 +7,25 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #19) — Flexible Skill Arrangement + Disagreement-Guided Routing
+## Latest (2026-04-30 Heartbeat #20) — GLM-5V-Turbo: Native Multimodal Agent Foundation
+
+> **主题**：多模态感知不是附加接口，而是 agent 推理的核心组件
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **GLM-5V-Turbo** | arXiv 2604.26752 (智谱Z.ai) | 原生多模态基础模型：视觉感知融入推理pipeline；hierarchical optimization跨5层；RL提升agentic能力 | **Skill定义需包含模态声明**；纯文本agent架构触顶；中国agent生态从框架层向模型层下沉 |
+| **TIDE** | arXiv 2604.26951 (北大) | 首个跨架构diffusion LLM蒸馏框架：16B→0.6B，22x内存压缩，5.2x推理加速 | 小模型agent的可行性提升；蒸馏是agent部署的关键路径 |
+
+### 行动建议
+1. **为skill添加模态声明**：不仅声明data_needs/knowledge_needs，还要声明perception_modality（text/image/gui/video）
+2. **关注模型层下沉趋势**：智谱直接在模型层面优化agentic能力，框架层优化的边际收益在递减
+3. **蒸馏管线化**：TIDE证明跨架构蒸馏可行，agent skill的知识压缩有了新路径
+
+---
+
+## Previous (2026-04-30 Heartbeat #19) — Flexible Skill Arrangement + Disagreement-Guided Routing
 
 > **主题**：生产级skill编排的瓶颈是"看什么"不是"想什么" + 用不一致性信号做策略路由
 
