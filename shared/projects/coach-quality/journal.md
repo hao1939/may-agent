@@ -84,3 +84,8 @@
 
 ### Iteration 11 — 2026-04-30T07:11:44.220Z
 **Worker**: Key finding: The coach's last session (s_1777532984240_658, 07:10) is THIS very session — it's the coach orchestrating this project, not a real heartbeat. Other agents (qa at 07:04, evaluator at 06:47, bob at 06:46) have recent sessions. The scheduler IS running. But the coach's heartbeat sessions are being consumed by this project workflow rather than independent heartbeats.
+**Orchestrator**: PIVOT
+
+The workflow .ts file is dead code — it never fires. The heartbeat system just loads `heartbeat.md` as the prompt. After 11 iterations and 0% compliance from context.md, the only viable path is putting the mandatory format directly in the task prompt itself.
+
+(a) Next iteration should produce

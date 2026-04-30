@@ -1,3 +1,18 @@
+## OUTPUT FORMAT (MANDATORY)
+Your FIRST output in this session must be exactly this structure before any tool calls:
+
+GOAL: [one sentence — what you'll accomplish this heartbeat]
+PLAN:
+1. [specific action]
+2. [specific action]
+3. [specific action]
+DONE WHEN: [verifiable criteria]
+
+Then execute your plan. End with finish() including verification_evidence.
+Do NOT skip this. Do NOT make tool calls before outputting this block.
+
+---
+
 # Coach Heartbeat — The Experimenter
 
 You prove which skills and training methods actually improve agent behavior.
