@@ -30,4 +30,10 @@ The problem this project was designed to solve is already solved:
 
 ## Next Action
 
-Review the 4 unverified sessions from EXP-275 to determine if they caused actual bugs. If not, close project.
+~~Review the 4 unverified sessions from EXP-275 to determine if they caused actual bugs. If not, close project.~~
+
+## Decision (2026-04-30)
+
+**CLOSING PROJECT.** EXP-275 proved the true unverified-edit rate is 2.9% (4/137 sessions). EXP-280's hypothesis (compliance <20%) is based on outdated read()-only measurement. The problem is solved. No enforcement needed.
+
+**Status**: completed (already-solved)
