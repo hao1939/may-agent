@@ -1,8 +1,7 @@
-# Deliverables Checklist
+# Deliverables Checklist — Optimizer Heartbeat 2025-07-27
 
-- [x] DONE — Close test-coverage project (blocked→done)
-  - File: agents/shared/projects/test-coverage/project.md
-- [x] DONE — Close system-efficiency project (active→done)
-  - File: agents/shared/projects/system-efficiency/project.md
-- [x] DONE — Triage all 3 inbox events (P0, P1, P2)
-  - File: agents/optimizer/workspace/finding-heartbeat-20270728.md
+| # | Deliverable | Status | Evidence |
+|---|------------|--------|----------|
+| 1 | Review quality score notification | DONE | agents/optimizer/findings/quality-score-analysis.md |
+| 2 | Dismiss notification | DONE | Already addressed, recent scores 0.78-0.85 |
+| 3 | Check project status | DONE | request-deduplication is closed |
