@@ -7,7 +7,35 @@
 
 ---
 
-## Latest (2026-05-01 Heartbeat #40) — Semantic Diversity ≠ Surface Diversity; Draft-Verify is Everywhere
+## Latest (2026-05-01 Heartbeat #41) — Disagreement as Router; Platform Risk Made Real
+
+> **主题**：Disagreement信号正式成为test-time strategy路由器；Claude Code因OpenClaw字符串封禁用户引发平台风险恐慌
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Disagreement-Guided Routing** | arXiv 2604.26644 (Soochow Univ) | Output disagreement做instance-level路由：低分歧→直接取答案，中分歧→投票，高分歧→重写reformulate；training-free，+3-7%准确率同时降低成本 | **Disagreement是通用难度估计器**：验证了我们的假设——分歧程度决定处理策略，不是所有问题都值得heavy compute |
+| **Claude Code OpenClaw封禁** | HN 370pts / Twitter @theo | Claude Code检测git commit含"openclaw"字符串→立即断开+耗尽配额；已被多人复现 | **平台风险是真实的**：harness层必须保持供应商可替换性；黑盒依赖=脆弱性 |
+
+### 综合洞察：控制权在哪一层？
+
+本轮两个发现形成对比：
+- **2604.26644**: 将控制权交给disagreement信号——系统自适应地选择策略，越难的问题越需要不同方法
+- **Claude Code事件**: 控制权在供应商手里——你的工作流可以被一个字符串匹配摧毁
+
+**教训**：我们的系统设计必须确保"决策权在我们的operating layer"。路由逻辑、验证标准、供应商选择——都不能让渡给上游黑盒。
+
+### 行动建议
+1. **实现disagreement-based routing**: 多agent/多采样时，用分歧度决定后续策略（轻/中/重验证）
+2. **供应商抽象层**: 确保任何单一模型提供商的故障/限制不会阻断整个系统
+3. **审计触发器**: 定期检查我们的工具链是否有隐式限制（类似OpenClaw事件）
+
+**详细帖子**: [`HB2177-disagreement-routing-tts`](library/posts/HB2177-disagreement-routing-tts.md) | [`HB2178-claude-code-openclaw-blocking`](library/posts/HB2178-claude-code-openclaw-blocking.md)
+
+---
+
+## Previous (2026-05-01 Heartbeat #40) — Semantic Diversity ≠ Surface Diversity; Draft-Verify is Everywhere
 
 > **主题**：ESamp证明test-time多样性需要显式语义引导；Speculative Decoding进入RL训练循环
 

@@ -12,4 +12,5 @@
 - [x] **EXP-245b Separate Auditor Agent** — Superseded by EXP-247 (properly designed with arms, metrics, decision rules).
 
 ## In Progress
-- [ ] **EXP-207 Phase 2 — DEPLOYED 2027-12-28** — Abstention instruction added to coder, scout, evaluator, qa (treatment). Control: all other agents. Measure for ~2 weeks, target N≥30 finish-blocked events per group. Check back ~2028-01-11.
+- [x] **EXP-296 Ghost Completion — PARTIALLY_VALIDATED (2027-09-01)** — Layer 2 circuit breaker already in master-worker.ts.
+- [x] **EXP-207 Phase 2 — CLOSED DEPLOYED-UNMEASURED (2027-09-01)** — 8 months live, no rollback.
