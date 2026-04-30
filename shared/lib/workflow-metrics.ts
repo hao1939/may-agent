@@ -1,3 +1,8 @@
+/**
+ * Workflow Metrics — aggregates iteration data by workflow type.
+ * Reads from `.state/iteration-log.json` and groups by workflow field.
+ * @module workflow-metrics
+ */
 import { readFileSync } from 'fs';
 import { join } from 'path';
 

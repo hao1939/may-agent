@@ -1,3 +1,8 @@
+/**
+ * Cost Tracker — records token usage per agent/workflow for budget monitoring.
+ * Stores data in `.state/usage-log.json`.
+ * @module cost-tracker
+ */
 import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 
