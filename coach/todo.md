@@ -3,11 +3,13 @@
 ## P1: EXP-280 — Verify-After-Edit Enforcement (NEW Jul 31)
 - **Problem**: verify-after-edit at 9% compliance system-wide, 502 failures/7d. Text coaching dead (KE-338).
 - **Treatment**: Deploy hard-rule gate skill + heartbeat enforcement to bob (highest violation count)
-- **Status**: DESIGNED. Phase 1 baseline measurement next.
+- **Status**: DEPLOYMENT REQUESTED — notified may to deploy skill + heartbeat changes (coach lacks write access)
 - **Design**: `agents/coach/workspace/EXP-280-verify-after-edit-enforcement-design.md`
+- **Log**: `agents/coach/workspace/EXP-280-deployment-log.md`
 - **Project**: verify-after-edit-enforcement
-- **Baseline**: TBD (need to sample 10 bob sessions)
+- **Baseline**: <20% estimated (system-wide 9%, bob 120 failures — highest)
 - **Target**: ≥50% compliance (from <20%)
+- **Blocked on**: may deploying changes to bob's skill + heartbeat files
 
 ## P1: EXP-275 — Optimizer Anti-Shallow + Verification (NEW Jul 30)
 - **Problem**: Optimizer worst LLM quality (0.384, n=17). Issues: UNVERIFIED_CLAIMS, LAZY, VERIFICATION_FAILURE.
