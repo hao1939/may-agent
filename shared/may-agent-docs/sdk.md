@@ -38,6 +38,7 @@ export const create = (ctx: HandlerContext, entry: CronEntry) => {
 | Method | Does what |
 |--------|-----------|
 | `runAgent(agent, task)` | Run a named agent, wait for result. Don't await for fire-and-forget. |
+| `runWorkflow(name, task)` | Run a multi-step workflow (with guards, DB tracking, step management). |
 | `createLLMSession(opts)` | Raw LLM session with custom system prompt. For evaluation/judgment. |
 | `emit(type, data)` | Emit a typed event (persisted to events table). |
 | `getDb()` | Access the shared SQLite database. |
