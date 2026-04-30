@@ -17,6 +17,11 @@ When querying a table for first time, run PRAGMA table_info(<table>) first. Key 
 
 **First actions:** Orient before acting. First 3-5 tool calls should be read/ls/grep to understand context.
 
+## ⚡ [OUTPUT ACCOUNTABILITY]
+
+- **C15.1**: By your 10th tool call, you MUST have produced at least one artifact (file write, checkpoint with data, or concrete code change). Planning-only sessions are failures.
+- **C15.2**: If you cannot produce output (blocked, missing info), call finish(status="blocked") immediately — do NOT continue reading/planning indefinitely.
+
 ## ⚡ [BEFORE EDITING ANY FILE]
 
 - **C1.1**: You MUST read() the target file first in the same session. No exceptions. (71 violations last week — your #1 issue.)

@@ -18,7 +18,8 @@ import type { HandlerContext, HandlerModule, CronEntry } from "../../shared/agen
 import { evaluateStandaloneSession } from "../../shared/evaluation/evaluator.js";
 
 const STATE_FILE = "eval-poller-processed.json";
-const MAX_SESSIONS_PER_RUN = 15; // Reduced from 100 — was causing 300s handler timeout (4 consecutive failures)
+const MAX_LLM_EVALS_PER_RUN = 12; // LLM evals are slow (~15s each) — cap to avoid 300s handler timeout
+const MAX_HEURISTIC_EVALS_PER_RUN = 200; // Heuristic evals are instant (no LLM) — process in bulk
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days to match coverage metric window
 
 // Meta-agents that shouldn't be evaluated
@@ -44,8 +45,8 @@ function loadState(persistDir: string): ProcessedState {
 function saveState(persistDir: string, state: ProcessedState): void {
   const path = resolve(persistDir, STATE_FILE);
   mkdirSync(persistDir, { recursive: true });
-  // Keep only last 500 processed IDs to avoid unbounded growth
-  state.processedSessionIds = state.processedSessionIds.slice(-2000); // Increased for 7-day lookback
+  // Keep processed IDs bounded — 10k covers ~1 week of bulk processing
+  state.processedSessionIds = state.processedSessionIds.slice(-10000);
   writeFileSync(path, JSON.stringify(state, null, 2));
 }
 
@@ -80,11 +81,15 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         return { dir, ts };
       })
       .filter(({ ts }) => !isNaN(ts) && now - ts < MAX_AGE_MS)
-      .sort((a, b) => b.ts - a.ts) // newest first
-      .slice(0, MAX_SESSIONS_PER_RUN * 10); // need large candidate pool given 6000+ sessions/week
+      .sort((a, b) => b.ts - a.ts); // newest first
+
+    let llmEvals = 0;
+    let heuristicEvals = 0;
+    let skippedNoEval = 0;
 
     for (const { dir } of recentSessions) {
-      if (evaluated >= MAX_SESSIONS_PER_RUN) break;
+      // Stop when both budgets exhausted
+      if (llmEvals >= MAX_LLM_EVALS_PER_RUN && heuristicEvals >= MAX_HEURISTIC_EVALS_PER_RUN) break;
 
       const sessionId = dir;
       if (processedSet.has(sessionId)) continue;
@@ -100,9 +105,38 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         continue;
       }
 
-      // Only process completed sessions
-      if (!meta.agent || meta.status !== "done") continue;
+      // Only process completed sessions (done, error, failed, interrupted)
+      if (!meta.agent || !meta.status) continue;
+      if (meta.status !== "done" && meta.status !== "error" && meta.status !== "failed" && meta.status !== "interrupted") continue;
       if (SKIP_AGENTS.has(meta.agent)) continue;
+
+      // Pre-check: will this session need LLM eval? Count messages to predict.
+      const sessionJsonlPath = resolve(historyDir, dir, "session.jsonl");
+      let msgCount = 0;
+      if (existsSync(sessionJsonlPath)) {
+        try {
+          const content = readFileSync(sessionJsonlPath, "utf-8");
+          msgCount = content.trim().split("\n").length;
+        } catch { /* continue with 0 */ }
+      }
+
+      // Predict if heuristic (no LLM call needed):
+      // - no messages → returns null (still mark processed)
+      // - trivial error: status error/failed + ≤4 messages
+      // - shallow: status done/interrupted + ≤3 messages
+      // - read-only dispatcher sessions are also heuristic but hard to predict without parsing
+      const willBeHeuristic =
+        msgCount === 0 ||
+        ((meta.status === "error" || meta.status === "failed") && msgCount <= 4) ||
+        ((meta.status === "done" || meta.status === "interrupted") && msgCount <= 3);
+
+      // Budget gating: skip if the relevant budget is exhausted
+      if (!willBeHeuristic && llmEvals >= MAX_LLM_EVALS_PER_RUN) {
+        continue;
+      }
+      if (willBeHeuristic && heuristicEvals >= MAX_HEURISTIC_EVALS_PER_RUN) {
+        continue;
+      }
 
       // Run standalone evaluation
       try {
@@ -115,11 +149,19 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           status: meta.status,
         });
 
-        evaluated++;
         processedSet.add(sessionId);
         state.processedSessionIds.push(sessionId);
 
         if (result) {
+          if (willBeHeuristic) {
+            heuristicEvals++;
+          } else {
+            // Check if the evaluator actually used a heuristic (read-only dispatcher etc.)
+            // by looking at whether the result came back instantly (no LLM was called).
+            // For safety, count against LLM budget regardless of prediction miss.
+            llmEvals++;
+          }
+          evaluated++;
           ctx.log(`[eval-poller] Evaluated ${meta.agent}/${sessionId}: Q=${result.quality} E=${result.efficiency} ${result.verdict}`);
 
           // Dispatch context-learn event for this session
@@ -129,6 +171,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             persistDir: ctx.persistDir,
           });
         } else {
+          skippedNoEval++;
           ctx.log(`[eval-poller] Skipped ${meta.agent}/${sessionId} (already evaluated or no messages)`);
         }
       } catch (err) {
@@ -137,6 +180,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         // Still mark as processed to avoid retrying broken sessions forever
         processedSet.add(sessionId);
         state.processedSessionIds.push(sessionId);
+        if (!willBeHeuristic) llmEvals++; // Count against budget on failure too
       }
     }
 
@@ -144,9 +188,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     saveState(ctx.persistDir, state);
 
     if (evaluated > 0) {
-      ctx.log(`[eval-poller] Evaluated ${evaluated} session(s)`);
+      ctx.log(`[eval-poller] Evaluated ${evaluated} session(s) (${llmEvals} LLM, ${heuristicEvals} heuristic, ${skippedNoEval} skipped)`);
     } else {
-      ctx.log(`[eval-poller] No new sessions to evaluate`);
+      ctx.log(`[eval-poller] No new sessions to evaluate (${skippedNoEval} skipped)`);
     }
   };
 };
