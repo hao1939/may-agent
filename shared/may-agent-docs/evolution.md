@@ -139,7 +139,7 @@ Available presets:
 | `coding` | read + write + edit + bash |
 | `agents` | call, fork, message, list, peek, cancel other agents |
 | `workflow` | list/run/resume workflows from within a session |
-| `notify` | send messages to humans or agents (lightweight) |
+| `notify` / `message-only` | send messages to humans or agents (lightweight) |
 | `scrape` | web scraping |
 | `cron` | manage cron schedules |
 | `checkpoint` | save progress mid-session |
@@ -148,6 +148,8 @@ Available presets:
 | `background-exec` | run long processes in background |
 | `claude-code` / `gemini-cli` / `codex` | delegate to external coding agents |
 | `finish` | structured session completion |
+| `cite-source` | source citation (placeholder — not yet implemented) |
+| `query_db` | database querying (placeholder — not yet implemented) |
 
 ### Custom Local Tools (agents/<name>/tools/)
 
