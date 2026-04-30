@@ -63,3 +63,9 @@
 **Orchestrator**: CONTINUE
 
 (a) Next iteration should produce: M13 — Check whether a real enforced coach heartbeat has fired. Look at `agents/coach/last-session.md` and any recent session output for GOAL/PLAN/DONE WHEN blocks produced by the 2-phase workflow. Deliver findings to `agents/shared/projects/coach-quality/
+
+### Iteration 9 — 2026-04-30T07:06:55.744Z
+**Worker**: Also write to the project-specific path:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should produce: Verify the cron scheduler is actually running and will trigger the coach heartbeat workflow. If it won't fire naturally soon, manually trigger one enforced heartbeat to validate the mechanism works end-to-end. Deliver to `agents/shared/projects/coach-qual
