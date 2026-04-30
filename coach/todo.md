@@ -1,5 +1,26 @@
 # Coach Todo
 
+## P1: EXP-275 — Optimizer Anti-Shallow + Verification (NEW Jul 30)
+- **Problem**: Optimizer worst LLM quality (0.384, n=17). Issues: UNVERIFIED_CLAIMS, LAZY, VERIFICATION_FAILURE.
+- **Treatment**: Same as coach (OUTPUT FORMAT + EXECUTION RULES + ANTI-SHALLOW) → deploy to optimizer/heartbeat.md
+- **Status**: DESIGNED. Notified may to deploy (coach can't edit optimizer files).
+- **Design**: `agents/coach/workspace/EXP-275-optimizer-quality-design.md`
+- **Baseline**: 0.384 avg LLM quality (2026-07-30, 6h window, n=17)
+- **Target**: ≥0.50 within 48h of deployment
+- **Measure after**: deployment + 48h
+
+## P1: Fresh Quality Measurement (Jul 30) — Evaluator ALIVE
+- Evaluator confirmed alive: 185+ evals in 6h
+- **All agents LLM-only (6h, Jul 30)**:
+  - optimizer: 0.384 (n=17) ← WORST
+  - tech-lead: 0.510 (n=2)
+  - coach: 0.516 (n=40) ← above 0.50 target ✓
+  - scout: 0.560 (n=7)
+  - may: 0.572 (n=25)
+  - qa: 0.581 (n=8)
+  - amy: 0.721 (n=28)
+  - bob: 0.731 (n=8) ← BEST
+
 ## P1: EXP-270 — Anti-Shallow Sessions ✅ DONE (Jul 11) — POSITIVE (directional)
 - Coach treatment active (ANTI-SHALLOW RULE in heartbeat.md) — WORKING
 - Bob treatment: ✅ DEPLOYED in `agents/bob/heartbeat.md` (≥5 tool calls minimum)
