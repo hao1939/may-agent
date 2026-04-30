@@ -1,60 +1,39 @@
-# Skill: Verify After Edit
+# Verify-After-Edit Gate
 
-**Purpose**: After every file edit, verify the change actually took effect. Files can have subtle issues (encoding problems, silent write failures, lost content) that only surface when you read the result back.
+> HARD RULE: Every edit() or write() MUST be immediately followed by read() of the same file.
 
 ## The Rule
 
-**Every `edit()` call MUST be followed by a verification step before moving on.**
-
-Note: `write()` calls for new files do NOT require verification — the content is deterministic and there is no corruption risk. This skill applies to *edits* of existing files where partial-match corruption is possible.
-
-## How to Verify
-
-### For any file:
-1. **Read-back minimum**: Always `read()` the file after writing — confirm the edit landed
-2. **Structural check**: Use `grep` to confirm specific patterns exist in the result
-
-### For JSON/config files:
-1. **Read it back**: `read("config.json")` — visually confirm the content
-2. **Validate it**: Parse it to confirm it's valid
-
-### For markdown/text files:
-1. **Read it back**: Confirm section headers, content, and structure are correct
-2. **Grep for key content**: `grep "expected phrase" file.md` — binary proof
-
-## Examples
-
-### ❌ BAD: Write and move on
 ```
-edit({ path: "workspace/todo.md", oldText: ..., newText: ... })
-→ "Edit successful. Moving on to the next task."
-```
-This is dangerous — the edit might have failed silently or lost content.
-
-### ✅ GOOD: Write, then verify structurally
-```
-edit({ path: "workspace/todo.md", oldText: ..., newText: ... })
-→ Edit applied.
-
-grep "expected content" workspace/todo.md
-→ Match found. Confirmed: edit landed correctly.
+edit(path, ...) → read(path) → confirm change is correct → continue
+write(path, ...) → read(path) → confirm content is correct → continue
 ```
 
-## Why This Matters
+**No exceptions. No skipping. No batching edits without intermediate reads.**
 
-- **Silent failures**: `edit()` can fail if oldText doesn't match exactly
-- **Content loss**: When editing large files, you might accidentally drop sections
-- **FM-3.3 prevention**: The #1 production failure mode is claiming work is done without structural evidence. Read-back + grep IS that evidence.
-- **C1.3 compliance**: This convention is measured — skipping verification = failing C1.3.
+## Why This Exists
 
-## When to Skip
+Silent edit failures are the #1 source of "I fixed it but tests still fail":
+- `oldText` didn't match → edit silently failed (wrong whitespace, stale content)
+- Write produced malformed output (truncation, encoding)
+- You edited the wrong file or wrong location
 
-- **Successful `edit()` calls** — edit() returns a diff preview that counts as verification. No separate read needed.
-- Never skip for `write()` calls — write() has no diff preview. You MUST read back.
-- Running tests does NOT count as verification for C1.3. Tests verify behavior, not that the file was written correctly. You still need to `read()` the file.
-- Never skip for files that are your primary deliverable
+## Procedure
 
+After EVERY `edit()` or `write()` call:
 
-## ⚠️ Task-Type Restriction
+1. **Immediately call `read()`** on the same file path
+2. **Visually confirm** the change appears in the read output
+3. **If the change is NOT present**: stop, diagnose why, and retry
+4. **Only then** proceed to the next action
 
-Do NOT use this skill's worked examples as templates on **discovery, exploration, or creative-inference tasks** (e.g., knowledge integration, open-ended research, novel pattern discovery). KE-133 showed a **-67pp effect** (p=0.030) — template-following displaces the open exploration these tasks require. Use this skill only for the specific task type it was designed for.
+## Anti-Patterns (DO NOT DO)
+
+❌ `edit() → edit() → edit() → finish()` (no verification)
+❌ `edit() → "looks good based on the diff preview" → finish()` (diff preview ≠ independent verification)  
+❌ `edit() → run tests → finish()` (test pass ≠ edit correctness; test might not cover your change)
+
+## Correct Pattern
+
+✅ `edit() → read() → confirm → next step`
+✅ `write() → read() → confirm → next step`
