@@ -1,21 +1,23 @@
-# QA Heartbeat — Unreviewed Findings (2026-04-30)
+# Unreviewed Findings (QA Heartbeat)
 
-## Scope
-Heartbeat run found no pending events/projects and no metrics configured. I checked recent commits in `/app/agents` and attempted mandatory TypeScript/test verification from `/app`.
+## Context
+- `/app` is not a git repo (no `.git`). The only git repo visible in this environment is `/app/agents`.
+- Recent commits in `/app/agents` are automated evaluator snapshots (e.g., `evaluator/last-session.md`).
 
-## Recent change sampled
-- Commit: `02791bab7 optimizer: heartbeat - inbox processed, metrics healthy, no waste found`
-- File changed: `agents/optimizer/DELIVERABLES_CHECKLIST.md`
+## Findings
+### 1) Unable to perform mandatory TypeScript/test verification (environment)
+**Severity:** IMPORTANT (environment)
+- `./node_modules/.bin/tsc --noEmit` fails: `No such file or directory` (exit 127)
+- `./node_modules/.bin/vitest --run` fails: `No such file or directory` (exit 127)
 
-I read the changed file to confirm it is a checklist/notes update only (no code).
+This blocks standard QA verification steps for the main project at `/app`.
 
-## Verification blockers (environment)
-Mandatory QA steps could not be executed because `/app` does not have a Node project dependency install:
-- `./node_modules/.bin/tsc --noEmit` → **No such file or directory**
-- `./node_modules/.bin/vitest --run` → **No such file or directory**
-
-This is an **environment/setup issue**, not attributable to the sampled change.
+### 2) Recent commit is an evaluator snapshot only
+**Severity:** MINOR
+- Latest commit: `c513da2e3 evaluator: sync last-session (post-finish regen)` touches only `agents/evaluator/last-session.md`.
+- That file contains an auto-generated report indicating the previous session had verification/deliverable integrity failures.
 
 ## Suggested next actions
-1. Decide where the actual Node repo lives (if not `/app`). If it lives under `/app/agents`, document the correct commands/paths.
-2. If tests are expected to run from `/app`, ensure dependencies are installed (node_modules present) or provide a CI/test runner path.
+1) Confirm where the actual TypeScript project lives (if not `/app`) and whether dependencies are expected to be vendored (node_modules present).
+2) If deps are expected but missing, run install step (or fix CI/image) so QA can run `tsc` and `vitest`.
+3) If this heartbeat is intended to audit only the agents repo, add a minimal `package.json` + dev deps to `/app/agents` or document that QA checks are not applicable here.
