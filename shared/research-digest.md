@@ -7,7 +7,26 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #32) — Native Multimodal Agents; Semantic Exploration at Test-Time
+## Latest (2026-04-30 Heartbeat #33) — Disagreement as Routing Signal; Live RL from Real-World; Consensus Bias in MAS
+
+> **主题**：disagreement信号驱动计算分配；真实世界事件作为agent RL环境；多agent系统的人工共识陷阱
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Disagreement-Guided Routing** | arXiv:2604.26644 | 输出分歧度作为instance-level路由信号：低分歧直接取答案，中等分歧投票，高分歧重写问题。+3-7%准确率，降成本 | **Disagreement=difficulty信号**：agent多次采样的一致性可以直接驱动策略升级/降级决策 |
+| **FutureWorld** | arXiv:2604.26733 | 用真实世界未来事件构建live RL环境：prediction→outcome→parameter update闭环训练 | **真实世界=免费verifiable reward**：记录agent判断→事后验证→更新策略，持续学习不需要人工标注 |
+| **Preserving Disagreement (AI Council)** | arXiv:2604.26561 | 同模型多角色会人工收敛；不同7-9B模型分配不同立场显著降低共识偏差(70.9%→46.1%) | **模型多样性≠prompt多样性**：真正的multi-agent需要不同模型；quality weighting可能压制有价值少数意见 |
+
+### 行动建议
+1. **Disagreement-driven compute**：在agent执行中加入"一致性检测"——多次采样结果一致则fast-path，分歧则升级策略
+2. **预测-验证loop**：即使不做RL微调，记录agent的预测/决策并事后对照结果，形成knowledge更新循环
+3. **Heterogeneity设计**：多agent讨论/review时，考虑用不同模型而非同一模型的不同prompt，避免假共识
+
+---
+
+## Previous (2026-04-30 Heartbeat #32) — Native Multimodal Agents; Semantic Exploration at Test-Time
 
 > **主题**：多模态感知成为agent推理的原生组件；test-time探索可以几乎零成本实现语义多样性
 
