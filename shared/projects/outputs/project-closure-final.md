@@ -1,21 +1,16 @@
-# System Efficiency Project — Final Closure
+# System Efficiency Project — CLOSED
 
-**Status**: DONE  
-**Date**: 2025-01-28  
+**Status**: Done  
+**Closed**: Iteration 34  
+**Reason**: All metrics exceeded targets. No remaining in-scope work.
 
-## Summary
+## Final Metrics
+- Deliverables-per-iteration: 0.88 (target: 0.75) ✅
+- Satellite-goal-progress: 2/2 (target: 2/2) ✅
+- Worker-first-attempt-success: 0.88 (target: 0.80) ✅
 
-All metrics exceeded targets. No further work is needed or possible within scope.
+## Blocked Items (out of scope)
+- Add @deprecated notices to legacy master-worker files (requires source edit access)
+- Migrate remaining callers to unified interface (requires source edit access)
 
-- Deliverables-per-iteration: 0.88 (target: 0.7) ✅
-- Satellite-goal-progress: 2/2 (target: 2/2) ✅  
-- Worker-first-attempt-success: 0.88 (target: 0.8) ✅
-
-## Blocked Items (require external agent with source write access)
-
-1. Add `@deprecated` JSDoc to legacy master-worker variants
-2. Migrate remaining callers to `master-worker-unified.ts`
-
-## Recommendation
-
-Release worker. File blocked items as standalone tasks.
+These should be filed as standalone tasks for an agent with write access to `/app/agents/shared/workflows/`.
