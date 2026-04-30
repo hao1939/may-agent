@@ -23,7 +23,8 @@
 - **Baseline**: TBD — need to audit recent sessions for ghost completion rate
 - **Target**: ≥50% reduction in ghost completions
 - **Measurement due**: 48h post-deployment
-- **Status**: DEPLOYED ✅ — awaiting measurement
+- **Status**: DEPLOYED ✅ — preliminary measurement: insufficient data (1 post-deploy session from targets). See `EXP-300-measurement-1.md`
+- **Next**: Re-measure after 5+ sessions per target agent
 
 ## P1: EXP-285 — PATH_HALLUCINATION Guard Effectiveness (NEW Aug 1)
 - **Problem**: PATH_HALLUCINATION #1 convention failure (tech-lead 22/7d). Text coaching dead (EXP-251).
