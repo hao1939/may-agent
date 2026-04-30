@@ -198,26 +198,6 @@ export const create: HandlerModule["create"] = (ctx, entry) => {
 
 ---
 
-## The Full SDK Surface
-
-Everything an agent or handler can do:
-
-```typescript
-interface AgentSDK {
-  runAgent(agent, task, opts?)      // Delegate work to another agent
-  runWorkflow(name, task, opts?)    // Run multi-step orchestration
-  createLLMSession(opts)            // Raw LLM session (evaluation/judgment)
-  emit(type, data?)                 // Publish typed event
-  getDb()                           // Access shared database
-  log(level, msg)                   // Diagnostic logging
-  notify(target, msg)               // "human" → Telegram, agent name → inbox
-  escalate(target, reason)          // I'm stuck, need help
-  paths                             // { persist, root, agents }
-}
-```
-
----
-
 ## Decision Guide: Which Level?
 
 | Situation | Level | Action |
