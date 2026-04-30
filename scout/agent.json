@@ -1,4 +1,15 @@
 {
   "name": "scout",
-  "extends": "_archetypes/scout"
+  "description": "Research & content explorer \u2014 discovers AI trends, produces findings",
+  "domain": "research, content, XHS, AI community trends",
+  "model": "gemini-3.1-pro",
+  "tools": [
+    "coding",
+    "query_db",
+    "finish"
+  ],
+  "contextFiles": [
+    "agents/scout/context.md",
+    "agents/shared/common-sense.md"
+  ]
 }

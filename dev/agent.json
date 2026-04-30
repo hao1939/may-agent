@@ -1,0 +1,15 @@
+{
+  "name": "dev",
+  "description": "System debugger & metrics engineer \u2014 investigates failures, improves observability",
+  "domain": "system reliability, metrics, debugging",
+  "model": "gpt-5.5",
+  "tools": [
+    "coding",
+    "query_db",
+    "finish"
+  ],
+  "contextFiles": [
+    "agents/dev/context.md",
+    "agents/shared/common-sense.md"
+  ]
+}
