@@ -1,12 +1,5 @@
 # Deliverables Checklist
 
-## Project: Test Coverage Improvement
-
-| Deliverable | Status | Notes |
-|---|---|---|
-| Lower vitest.config.ts thresholds to 85% | DONE | Completed in earlier iterations |
-| Write tests for project.ts | DONE | Completed in earlier iterations |
-| Coverage above 85% | DONE | 87.02% achieved |
-| All tests passing | DONE | 1438/1438 passing |
-
-**Project status: COMPLETE** — No further work needed.
+- [x] DONE — Tests for `fewshot-inject-helpers.ts`: `/app/agents/shared/tests/fewshot-inject-helpers.test.ts` (19 tests covering selectExamples, loadExample, injectFewShot)
+- [x] DONE — Tests for `verify-wrap.ts`: `/app/agents/shared/tests/verify-wrap.test.ts` (13 tests covering metadata and execute function)
+- [x] DONE — All 32 tests pass with `npx vitest run`
