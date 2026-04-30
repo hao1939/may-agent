@@ -56,6 +56,15 @@ Without both, agents optimize pathologically. Examples:
 
 Anti-gaming: if activity is high but impact is low, the agent is busy but not effective. The impact metric catches it.
 
+### Cadence & Phase Awareness
+
+Metrics are **slow-moving signals**. Don't chase them daily.
+
+- **Check weekly**, note direction not absolute value
+- **Match to phase**: during experiments, activity metrics may stall (that's fine — you're building evidence). During deployment, watch impact closely.
+- **One action per heartbeat, not three.** If multiple metrics are off, pick the one that matters most for your current phase. Chasing all simultaneously causes thrashing.
+- **Override signals with judgment:** A metric dip right after deploying a new intervention is expected (lagging indicator). Don't panic-react.
+
 ## Metric Lifecycle
 
 Metrics evolve — meeting a target is not done:
@@ -67,3 +76,11 @@ Metrics evolve — meeting a target is not done:
 5. **Graduate** — move to watch-only (requires human approval)
 
 A metric at target is a signal the bar is too low. Never coast.
+
+## Implementation Notes
+
+- **Source of truth**: `metrics` table in DB. This doc is design rationale.
+- **Handler**: `agents/may/handlers/metrics-snapshot.ts` — auto-registers and measures every 5min
+- **Alerting**: `agents/may/handlers/metric-alert-reactor.ts` — emits `metric.breach` events
+- **Retention**: snapshots kept 30 days, pruned after each measurement run
+- **Error isolation**: each metric measured independently — one failure doesn't block others
