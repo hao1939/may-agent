@@ -69,3 +69,10 @@
 
 ### Iteration 8 — 2026-04-30T01:30:49.374Z
 **Worker**: 
+**Orchestrator**: WAITING
+
+This project is **infrastructure-complete and data-starved**. All deliverables exist and work:
+- ✅ `preferences.md` — living preference model
+- ✅ `preference-check-gate.md` — decision gate (integrated into May's context)
+- ✅ `measure-corrections.sh` — working measurement script
+- ✅ `baselin

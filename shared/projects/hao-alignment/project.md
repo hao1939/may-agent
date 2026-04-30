@@ -1,6 +1,11 @@
 # Project: Hao Alignment
 
 **Status**: waiting
+**Stop Reason**: WAITING
+
+This project is **infrastructure-complete and data-starved**. All deliverables exist and work:
+- ✅ `preferences.md` — living preference model
+- ✅ `preference-check-gate.md` — decision gate (i
 **Owner**: may
 **Priority**: P2
 **Workflow**: master-worker
