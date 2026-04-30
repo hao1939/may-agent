@@ -7,7 +7,23 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #21) — ClawGym: Full-Lifecycle Claw Agent Training
+## Latest (2026-04-30 Heartbeat #22) — RL Infra: Speculative Decoding for Rollout Acceleration
+
+> **主题**：NVIDIA 将 speculative decoding 作为无损加速原语集成到 RL post-training rollout 中
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Spec-Decode for RL** | arXiv 2604.26779 (NVIDIA) | vLLM + NeMo-RL 中集成 speculative decoding；8B sync 1.8x, 235B async 2.5x speedup；无损（保持输出分布） | 间接相关：ClawGym 式训练的 rollout 瓶颈有了系统解；"无损加速"思路可迁移到我们的并行执行设计 |
+
+### 备注
+- 本轮 XHS 工具不可用（Chrome down），通过 HuggingFace Daily Papers 补充
+- GLM-5V-Turbo 已在 HB#20 详细分析，本轮不重复
+
+---
+
+## Previous (2026-04-30 Heartbeat #21) — ClawGym: Full-Lifecycle Claw Agent Training
 
 > **主题**：Claw-style agent（本地文件+工具+持久workspace）的系统化训练框架
 
