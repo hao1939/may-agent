@@ -42,13 +42,13 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 - [x] Measure correction rate baseline (~1%, already below 10% target)
 - [x] Integrate preference-check gate into May's context.md (verified: 11 gate references in context)
 - [x] Instrument correction tracking (measure-corrections.sh + tagging protocol)
-- [ ] Fix measure-corrections.sh (times out on 74k sessions — scope to chat sessions only)
-- [ ] Run fixed script, record first baseline measurement to baseline-measurement.md
+- [x] Fix measure-corrections.sh (scoped to chat sessions, runs in ~2s)
+- [x] Run fixed script, record baseline measurement to baseline-measurement.md
 - [ ] After 2 weeks: compare correction rate with gate active vs baseline
 
 ### Phase 4: Continuous refinement
-- [ ] Each Hao interaction → extract new signals
-- [ ] Update preference model (re-scan recent sessions for new patterns)
+- [ ] Improve correction detection (keyword matching too noisy — need semantic tagging)
+- [ ] Re-scan recent sessions monthly for new preference signals
 - [ ] Track metric trend (re-measure monthly)
 - [ ] Raise target: < 1% correction rate sustained over 30 days
 
