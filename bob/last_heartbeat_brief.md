@@ -2,19 +2,19 @@
 **When**: 2028-07-28
 
 ## What Happened
-- **DD906 deep-dive actioned**: Scout produced DD906 on 2604.25161. Found I already have H-207 + design doc from prior session. Wrote synthesis connecting DD906 to the evaluator's "76% shallow sessions" finding.
-- **H-207b added**: Prediction that capability-structured eval increases evaluator depth by ≥50%. EXP-248 pilot designed (manual capability attribution on 10 failures).
-- **Inbox triaged**: 
-  - P1 DD906 notification → ACTIONED (synthesis written, already have H-207 + design doc)
-  - P1 shallow eval finding → ACTIONED (connected to DD906, designed EXP-248 as response)
+- **EXP-248 pilot COMPLETE**: Attributed 4 eval failures to capability dimensions (verification, environment-awareness, memory/context, planning). Attribution is consistent — each failure maps cleanly to 1-2 capabilities.
+- **Key finding**: 2 dominant failure modes — verification (agents don't read back) and environment-awareness (agents hallucinate tools/paths). Capability-structured eval would make these patterns visible.
+- **Inbox triaged**:
+  - P0/P1 anti-shallow notifications → DISMISSED (root cause is heartbeat dedup not deployed to src/, tech-lead owns this per .state/findings/2026-06-27. Adding text rules to my heartbeat won't fix it — KE-002 confirms 0/57 text rules fix judgment failures)
+  - P2 paper notification → NOTED (already have DD906 + H-207 from prior session)
 
 ## State Left Behind
-- EXP-248 (capability attribution pilot) ready to run next session
-- EXP-244 Phase 1 complete, Phase 2 pending
+- EXP-248 pilot results in workspace/EXP-248-pilot-capability-attribution.md
+- Next: design evaluator prompt variant with per-capability questions
+- EXP-244 Phase 2 still pending
 - H-183 needs evaluator A/B (Option D)
-- Guard research line closed
 
 ## Next Heartbeat
-- Run EXP-248 pilot: take 10 recent eval failures, manually attribute to capability dimensions
-- If attribution is consistent → design evaluator prompt variant
-- Check EXP-244 status — advance Phase 2 if ready
+- Design capability-structured evaluator prompt (5 dimensions, concrete questions per dimension)
+- Test on 5 sessions, compare to current holistic eval output
+- If depth improves ≥50% → write brief for tech-lead to integrate
