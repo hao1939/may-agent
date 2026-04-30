@@ -40,7 +40,7 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 - [x] Update agent context files with key preferences
 - [x] Add to dispatch/escalation decision criteria (decision scorecard in preferences.md)
 - [x] Measure correction rate baseline (~1%, already below 10% target)
-- [x] Add preference-check gate to May's dispatch logic
+- [ ] Integrate preference-check gate into May's context.md (gate doc exists but not wired in)
 - [ ] Instrument correction tracking (tag overrides in session meta)
 
 ### Phase 4: Continuous refinement
