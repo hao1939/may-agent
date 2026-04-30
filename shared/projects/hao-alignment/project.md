@@ -1,7 +1,7 @@
 # Project: Hao Alignment
 
-**Status**: active
-**Stop Reason**: WAITING
+**Status**: waiting
+**Stop Reason**: No new Hao interaction data available. Git commits are all agent-authored — indirect signal approach via git is not viable.
 
 This project is **infrastructure-complete and data-starved**. All deliverables exist and work:
 - ✅ `preferences.md` — living preference model
