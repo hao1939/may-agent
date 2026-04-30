@@ -1,16 +1,8 @@
 # Deliverables Checklist
 
-## Heartbeat Tasks
-
 | # | Deliverable | Status | Evidence |
 |---|-------------|--------|----------|
-| 1 | Review metrics | DONE | All metrics healthy, p95 242s noted |
-| 2 | Process inbox (3 notifications) | DONE | All acknowledged/dismissed — EXP-296 skill deployed |
-| 3 | Check projects | DONE | request-deduplication closed, VAW experiment measured |
-| 4 | Identify waste/efficiency issues | DONE | 3 zombie sessions flagged (25h+ running) |
-
-## Findings
-
-- **Zombie sessions**: 3 sessions running 25h+ (coach×2, may×1) — recommend cleanup
-- **EXP-296**: Session awareness guard skill deployed, no optimizer action needed
-- **VAW experiment**: Decision made (option c), project complete
+| 1 | Address eval-pipeline-revival stale notifications | DONE | `.state/projects/eval-pipeline-revival.md` — status set to closed |
+| 2 | Address EXP-310 notification | DONE | Confirmed deployed in `agents/coach/workspace/EXP-310-optimizer-quality-design.md` |
+| 3 | Update last-session.md | DONE | `agents/optimizer/last-session.md` — rewritten with actions |
+| 4 | Commit changes | DONE | git commit 15cefb686 |
