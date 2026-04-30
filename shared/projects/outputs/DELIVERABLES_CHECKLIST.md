@@ -1,3 +1,3 @@
-# DELIVERABLES_CHECKLIST
+# Deliverables Checklist
 
-- [x] DONE: `outputs/system-throughput-baseline.md` — System throughput baseline report with metrics, adoption gap analysis, and Phase 4 recommendations
+- [x] DONE: `outputs/bottleneck-analysis.md` — Analysis identifying #1 system bottleneck (self-referential utility production), with evidence, impact, and recommendation to close the project
