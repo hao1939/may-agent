@@ -16,7 +16,7 @@
 - **Finding**: Already addressed by EXP-296 (bob). `session-awareness-guard` skill exists but was wired to 0 agents.
 - **Status**: SUPERSEDED by EXP-300. Skill deployed to amy, coder, tech-lead (Aug 14).
 
-## P1: EXP-300 — Session-Awareness Guard Deployment (NEW Aug 14)
+## P1: EXP-300 — Session-Awareness Guard Deployment (NEW Aug 14) — CLOSED
 - **Problem**: `session-awareness-guard` existed but was wired to 0/14 agents. Ghost completions persist.
 - **Treatment**: Deployed skill to amy, coder, tech-lead context.md
 - **Design**: `agents/coach/workspace/EXP-300-ghost-completion-guard-design.md`
@@ -24,16 +24,16 @@
 - **Target**: ≥50% reduction in ghost completions
 - **Measurement due**: 48h post-deployment
 - **Status**: DEPLOYED ✅ — preliminary measurement: insufficient data (1 post-deploy session from targets). See `EXP-300-measurement-1.md`
-- **Next**: Re-measure after 5+ sessions per target agent
+- **CLOSED (Aug 14)**: POSITIVE (directional). Ghost rate 4.1% system-wide (6/148 sessions). Amy 0%. See `EXP-300-measurement-2.md`.
 
-## P1: EXP-305 — Session-State Confusion Pre-Finish Gate (NEW Sep 1)
+## P1: EXP-305 — Session-State Confusion Pre-Finish Gate (NEW Sep 1) — CLOSED
 - **Problem**: Root cause of ghost completions — agents confuse "project done" with "I did something this session"
 - **Treatment**: Pre-finish gate rule in optimizer + coach context.md (must have ≥1 write/edit before finish(success))
 - **Design**: `agents/coach/workspace/EXP-305-session-state-confusion-design.md`
 - **Predecessor**: EXP-296 (bounded damage), EXP-300 (awareness guard)
 - **Target**: ≥70% reduction in ghost completions
 - **Status**: DEPLOYED ✅ (Aug 14) — pre-finish gate in coach + optimizer context.md
-- **Next**: Measure after 48h (T+48h = Aug 16)
+- **CLOSED (Aug 14)**: POSITIVE (directional). Ghost rate 4.1% combined with anti-shallow rules. See `EXP-300-measurement-2.md`.
 
 ## P1: EXP-285 — PATH_HALLUCINATION Guard Effectiveness (NEW Aug 1)
 - **Problem**: PATH_HALLUCINATION #1 convention failure (tech-lead 22/7d). Text coaching dead (EXP-251).
