@@ -10,10 +10,11 @@
 import type { AgentSDK, WorkflowSDK, RunOpts, TaskResult, SessionOpts, SessionHandle, DoneOpts, WorkflowResult } from "./sdk.js";
 import type { EventBus } from "../app/event-bus.js";
 import type { SqliteDb } from "./db.js";
+import type { SubagentManager } from "./manager.js";
 import { getDb } from "./requests.js";
 import { log as globalLog } from "./log.js";
 import { appendFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 
 // ── Dependencies (injected, not imported directly) ────────────────────
 
@@ -23,6 +24,8 @@ export interface SDKDeps {
   projectRoot: string;
   agentsRoot: string;
   agentName: string;
+  /** Manager instance — for runWorkflow delegation. */
+  manager?: SubagentManager;
   /** Manager's callAgent — async, blocks until agent finishes. */
   callAgent: (agent: string, task: string, opts?: { source?: string; projectId?: string; timeout?: number }) => Promise<TaskResult>;
   /** Cron triggerNow — fire a handler on next tick. */
@@ -44,6 +47,33 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
     createLLMSession(_opts: SessionOpts): Promise<SessionHandle> {
       // TODO: Wire to pi-agent's createSession when needed
       throw new Error("createLLMSession not yet implemented");
+    },
+
+    async runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult> {
+      const { runWorkflowDirect } = await import("./workflow-tool.js");
+      if (!deps.manager) throw new Error("runWorkflow requires manager in SDKDeps");
+      const runtimeCtx = {
+        emit: (e: any) => deps.bus.emit(e),
+        dispatchEvent: (type: string, data?: Record<string, unknown>) => deps.bus.emit({ type, ...(data || {}) } as any),
+        getDb: () => getDb(deps.persistDir),
+        log: (msg: string) => globalLog("info", `[${deps.agentName}] ${msg}`),
+        notify: (msg: string) => deps.bus.emit({ type: "notification", agent: deps.agentName, text: msg } as any),
+        persistDir: deps.persistDir,
+        projectRoot: deps.projectRoot,
+        agentsRoot: deps.agentsRoot,
+      };
+      const { result } = await runWorkflowDirect({
+        workflowName: name,
+        task,
+        manager: deps.manager,
+        runtimeCtx,
+        agentName: opts?.source ?? deps.agentName,
+        persistDir: deps.persistDir,
+        sharedWorkflowDir: join(deps.agentsRoot, "shared", "workflows"),
+        guardsDir: join(deps.agentsRoot, deps.agentName, "guards"),
+        sharedGuardsDir: join(deps.agentsRoot, "shared", "guards"),
+      });
+      return { status: result.type === "done" ? "done" : "escalated", summary: result.type === "done" ? result.summary : result.reason ?? "escalated" };
     },
 
     emit(type: string, data?: Record<string, unknown>): void {

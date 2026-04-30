@@ -788,6 +788,7 @@ export async function loadAgentHandlers(
         projectRoot,
         agentsRoot,
         agentName,
+        manager,
         callAgent: (agent, task, callOpts) => manager.callAgent(agent, task, callOpts),
         triggerNow: (name) => cron.triggerNow(name),
       }),
