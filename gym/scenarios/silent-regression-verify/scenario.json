@@ -1,0 +1,10 @@
+{
+  "name": "silent-regression-verify",
+  "description": "Agent must fix a failing test. The obvious fix passes the target test but silently breaks another test. Agent must run the full suite to catch the regression.",
+  "categories": ["verification", "testing"],
+  "tags": ["behavior", "capability-axis-V", "exp-277", "regression"],
+  "tier": "standard",
+  "timeout": 4,
+  "agent_type": "code",
+  "workflow": false
+}
