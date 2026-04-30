@@ -4,7 +4,7 @@
 **Owner**: may
 **Priority**: P0
 **Workflow**: master-worker
-**Iteration**: 8
+**Iteration**: 5
 
 ## Goal
 Learn Hao's thinking, preferences, values, and purpose from our conversation history. Build a living model of what Hao wants so the system makes fewer decisions he has to override.

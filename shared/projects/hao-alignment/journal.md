@@ -47,3 +47,8 @@
 
 ### Iteration 5 — 2026-04-30T01:22:27.605Z
 **Worker**: Now let me update the actual preferences.md with the new P5:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should **fix the measurement script** so it doesn't time out. The current script scans all 74k sessions — it should only scan the ~67 chat sessions (those with `kind: "chat"` in meta.json). Then run it and save output to `baseline-measurement.md`.
+
+(b) The script exists 
