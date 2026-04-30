@@ -15,7 +15,7 @@ function getDateStr() {
 
 function getTop5Metrics(): string {
   try {
-    const output = execSync("bun agents/may/workspace/tools/top5-metrics.ts", {
+    const output = execSync("bun agents/may/workspace/tools/top5-metrics.ts --digest", {
       encoding: "utf-8",
       timeout: 30000,
       cwd: process.cwd(),

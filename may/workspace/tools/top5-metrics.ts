@@ -8,8 +8,12 @@ import { Database } from "bun:sqlite";
 const db = new Database(".state/may.db", { readonly: true });
 const now = Date.now();
 const h6 = 6 * 3600_000;
-const recent = now - h6;
-const prior = now - 2 * h6;
+const h24 = 24 * 3600_000;
+const isDigestMode = process.argv.includes("--digest");
+const window = isDigestMode ? h24 : h6;
+const windowLabel = isDigestMode ? "24h" : "6h";
+const recent = now - window;
+const prior = now - 2 * window;
 
 // 1. Session success rate (last 6h vs prior 6h)
 function successRate(since: number, until: number) {
@@ -95,13 +99,61 @@ const scPrev = sessionCount(priorStart, priorEnd);
 
 const hsr = handlerSuccessRate();
 
+// 7-day history helpers
+function dailySuccessRates(): string {
+  const days: string[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const dayStart = now - (i + 1) * h24;
+    const dayEnd = now - i * h24;
+    const v = successRate(dayStart, dayEnd);
+    days.push(v !== null ? (v * 100).toFixed(0) : "-");
+  }
+  return days.join(" ");
+}
+
+function dailyQuality(): string {
+  const days: string[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const dayStart = now - (i + 1) * h24;
+    const dayEnd = now - i * h24;
+    const v = avgQuality(dayStart, dayEnd);
+    days.push(v !== null ? v.toFixed(2) : "-");
+  }
+  return days.join(" ");
+}
+
+function dailyErrors(): string {
+  const days: string[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const dayStart = now - (i + 1) * h24;
+    const dayEnd = now - i * h24;
+    const v = errorRate(dayStart, dayEnd);
+    days.push(v !== null ? (v * 100).toFixed(0) : "-");
+  }
+  return days.join(" ");
+}
+
+function dailySessions(): string {
+  const days: string[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const dayStart = now - (i + 1) * h24;
+    const dayEnd = now - i * h24;
+    days.push(String(sessionCount(dayStart, dayEnd)));
+  }
+  return days.join(" ");
+}
+
 const lines = [
   "📊 Top 5 Metrics",
   `${indicator(sr, 0.85, 0.70)} Success Rate: ${sr !== null ? (sr * 100).toFixed(0) + "%" : "n/a"} ${trend(sr, srPrev)}`,
+  `   7d: ${dailySuccessRates()}`,
   `${indicator(eq, 0.70, 0.50)} Eval Quality: ${eq !== null ? eq.toFixed(2) : "n/a"} ${trend(eq, eqPrev)}`,
+  `   7d: ${dailyQuality()}`,
   `${indicator(hsr, 0.85, 0.70)} Handler Health: ${hsr !== null ? (hsr * 100).toFixed(0) + "%" : "n/a"} →`,
   `${indicator(er, 0.10, 0.25, false)} Error Rate: ${er !== null ? (er * 100).toFixed(1) + "%" : "n/a"} ${trend(er, erPrev)}`,
-  `${indicator(sc, 15, 8)} Sessions (6h): ${sc} ${trend(sc, scPrev)}`,
+  `   7d: ${dailyErrors()}`,
+  `${indicator(sc, 15, 8)} Sessions (${windowLabel}): ${sc} ${trend(sc, scPrev)}`,
+  `   7d: ${dailySessions()}`,
 ];
 
 console.log(lines.join("\n"));
