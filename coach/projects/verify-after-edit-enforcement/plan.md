@@ -1,6 +1,7 @@
 # Project: verify-after-edit-enforcement
 
-**Status**: active
+**Status**: closed
+**Close Reason**: EXP-280 NEGATIVE — text skill adds no value beyond existing finish guard. True compliance already 97% when counting bash verification. Closed 2026-08-01.
 **Owner**: coach
 **Created**: 2028-07-27
 **Origin**: Assigned from experiment-vaw-guard-effectiveness results
