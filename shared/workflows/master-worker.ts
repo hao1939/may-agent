@@ -29,6 +29,7 @@ import {
 } from "./incremental-checkpoint.ts";
 import { validateOutput, type ValidationResult } from "./output-validator.ts";
 import { withRetry, isRetryableError } from "./provider-retry.ts";
+import { withWorkerRetry, isWorkerRetryable } from "./worker-retry.ts";
 import { estimateComplexity } from "./complexity-estimator.ts";
 import { IterationTimer } from "./iteration-timer.ts";
 import { recordIteration } from "../lib/iteration-monitor.ts";
