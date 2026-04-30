@@ -7,7 +7,25 @@
 
 ---
 
-## Latest (2026-05-01 Heartbeat #15) — OpenAI Goblins (Reward Leakage Post-Mortem)、Ramp Prompt Injection
+## Latest (2026-04-30 Heartbeat #16) — Preserving Disagreement + Agent-Native LLM Serving
+
+> **主题**：多Agent异构性防止人工共识 + 利用workflow拓扑优化Agent serving
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Preserving Disagreement** | arXiv 2604.26561 | 异构模型(不同7-9B)减少agent人工共识70.9%→46.1%；coherence validation有fidelity-diversity tradeoff | **同质模型辩论是假辩论**；质量加权有隐性代价；8B模型是binary thinker |
+| **Pythia Agent-Native Serving** | arXiv 2604.25899 | 利用multi-agent workflow topology优化prefix cache/调度/扩缩容 | **我们的agent调用模式可预测**；prefix cache共享是低悬果实；topology-aware infra |
+
+### 行动建议
+1. 如果需要agent间真正辩论（设计评审、方案权衡），考虑为不同agent使用不同模型backend
+2. 注意quality-weighted aggregation的diversity代价——不总是"让最好的声音更大"就对
+3. 系统prompt prefix共享：所有agent的共同preamble应设计为可缓存的固定前缀
+
+---
+
+## Previous (2026-05-01 Heartbeat #15) — OpenAI Goblins (Reward Leakage Post-Mortem)、Ramp Prompt Injection
 
 > **主题**：RL奖励信号泄漏的生产案例 + AI数据处理的prompt injection攻击
 

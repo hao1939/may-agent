@@ -79,3 +79,6 @@ This project is **infrastructure-complete and data-starved**. All deliverables e
 
 ### Iteration 1 — 2026-04-30T05:11:47.642Z
 **Worker**: Now I have good data. Let me analyze Hao's commits for implicit preferences and write the report.
+
+### Iteration 2 — 2026-04-30T05:14:37.447Z
+**Worker**: Now I have a rich picture. Let me write the git-signal analysis report:
