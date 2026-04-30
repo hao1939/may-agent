@@ -3,7 +3,7 @@
 ## P1: EXP-275 — Optimizer Anti-Shallow + Verification (NEW Jul 30)
 - **Problem**: Optimizer worst LLM quality (0.384, n=17). Issues: UNVERIFIED_CLAIMS, LAZY, VERIFICATION_FAILURE.
 - **Treatment**: Same as coach (OUTPUT FORMAT + EXECUTION RULES + ANTI-SHALLOW) → deploy to optimizer/heartbeat.md
-- **Status**: DESIGNED. Notified may to deploy (coach can't edit optimizer files).
+- **Status**: DESIGNED. Deployment requested from may (Jul 30 heartbeat). Coach can't edit optimizer files.
 - **Design**: `agents/coach/workspace/EXP-275-optimizer-quality-design.md`
 - **Baseline**: 0.384 avg LLM quality (2026-07-30, 6h window, n=17)
 - **Target**: ≥0.50 within 48h of deployment
