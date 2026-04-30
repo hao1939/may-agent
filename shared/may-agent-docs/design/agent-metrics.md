@@ -3,6 +3,19 @@
 **Status**: draft → revised
 **Date**: 2026-04-30 (revised 2026-07-02)
 
+## System Outcomes — The "So What?" Layer
+
+Before agent metrics: what does this system exist to do for Hao?
+
+| ID | Name | What it answers | Source | Target | Threshold | Alert |
+|----|------|-----------------|--------|--------|-----------|-------|
+| `system.decisions-handled-7d` | Decisions agents made without Hao intervention (7d) | "Am I saving Hao time?" | count sessions with task completion that didn't trigger escalation | 20 | 5 | < |
+| `system.hao-corrections-7d` | Times Hao had to correct agent behavior (7d) | "Am I causing Hao work?" | count user-response events with corrective content | 0 | 3 | > |
+| `system.cost-per-useful-session` | Avg cost of sessions that produced deliverables | "Am I efficient?" | `SELECT AVG(cost_usd) as c FROM sessions WHERE status='done' AND outcome IS NOT NULL AND startedAt > {7d}` | 0.05 | 0.15 | > |
+| `system.forward-progress-7d` | Project milestones completed (7d) | "Am I making progress?" | count milestone completions across all projects | 3 | 0 | < |
+
+**If system outcomes are red, agent-level greens don't matter.** These are the ultimate truth.
+
 ## Principle: Balanced Pairs
 
 Every agent gets at least 2 metrics on **different dimensions** to prevent single-metric gaming:
@@ -35,18 +48,17 @@ These track the health of the metrics system itself and enforce the "never coast
 | `system.metrics-freshness` | Max age (min) of any metric's last snapshot | Meta | `SELECT MAX((unixepoch()*1000 - measured_at)/60000) as c FROM metric_snapshots` | 10 | 30 | > |
 | `system.stale-green-count` | Metrics at target for >14d without target raise | Coast-detection | count metrics where current >= target for 14+ consecutive days | 0 | 3 | > |
 | `system.targets-raised-30d` | Metric targets increased in last 30d | Ambition | count metrics where target changed upward | 2 | 0 | < |
-| `evaluator.coverage` | Sessions evaluated / sessions completed (7d) | Coverage | `SELECT CAST((SELECT COUNT(*) FROM evaluations WHERE created_at > {7d}) AS REAL) / NULLIF((SELECT COUNT(*) FROM sessions WHERE startedAt > {7d} AND status='done'), 0) as c` | 0.50 | 0.10 | < |
 
 **Never-coast enforcement:** If `stale-green-count > 0`, the heartbeat surfaces those metrics for target review. Meeting a target is not the end — it's a signal to raise the bar or add dimensions.
 
 ## Metric Definitions
 
 ### May — Coordinator
-| ID | Name | Dimension | Source | Target | Threshold | Alert | Ready |
-|----|------|-----------|--------|--------|-----------|-------|-------|
-| `may.dispatch-rate-6h` | Work dispatched (6h) | Activity | `SELECT COUNT(*) as c FROM sessions WHERE source LIKE 'workflow%' AND startedAt > {6h_ago}` | 8 | 2 | < | 🟢 |
-| `may.stuck-resolution-h` | Avg hours to unblock projects | Impact | `SELECT AVG((resolved_at - created_at)/3600000.0) as c FROM events WHERE event_type='project.unblocked' AND timestamp > {7d}` | 4 | 12 | > | 🔴 no `project.unblocked` events yet |
-| `may.agent-dark-count` | Agents with 0 sessions in 8h | Health | count agents with no session | 0 | 2 | > | 🟢 |
+| ID | Name | Dimension | Source | Target | Baseline | Ready |
+|----|------|-----------|--------|--------|----------|-------|
+| `may.dispatch-rate-6h` | Distinct agents given work (6h) | Activity | `SELECT COUNT(DISTINCT agent) as c FROM sessions WHERE startedAt > {6h_ago} AND agent != 'may'` | 5 | TBD | 🟢 |
+| `may.stuck-resolution-h` | Avg hours to unblock projects | Impact | project unblock event tracking | 4 | TBD | 🔴 no events yet |
+| `may.agent-dark-count` | Agents with 0 sessions in 8h | Health | count agents with no session | 0 | TBD | 🟢 |
 
 **Balance:** Dispatching lots of work is pointless if blocks persist. Both metrics must be green.
 
@@ -64,11 +76,11 @@ These track the health of the metrics system itself and enforce the "never coast
 ---
 
 ### Coach — Trainer
-| ID | Name | Dimension | Source | Target | Threshold | Alert | Ready |
-|----|------|-----------|--------|--------|-----------|-------|-------|
-| `coach.sessions-7d` | Coaching sessions (7d) | Activity | `SELECT COUNT(*) as c FROM sessions WHERE agent='coach' AND startedAt > {7d_ago}` | 8 | 2 | < | 🟢 |
-| `coach.skill-adoption-rate` | Skills referenced in agent sessions (7d) / total skills | Impact | ratio of skills that appear in recent session transcripts vs total SKILL.md files | 0.50 | 0.20 | < | 🔴 needs transcript scanning |
-| `coach.lesson-to-behavior` | Avg eval score delta in 48h after coaching vs 48h before | Impact | `SELECT AVG(e2.quality - e1.quality) as c FROM evaluations e1 JOIN sessions cs ON cs.agent='coach' JOIN evaluations e2 ON e2.agent = e1.agent AND e2.created_at BETWEEN cs.startedAt AND cs.startedAt + 172800000 WHERE e1.created_at BETWEEN cs.startedAt - 172800000 AND cs.startedAt` | 0.05 | -0.05 | < | 🟡 needs eval volume |
+| ID | Name | Dimension | Source | Target | Baseline | Ready |
+|----|------|-----------|--------|--------|----------|-------|
+| `coach.agents-coached-7d` | Distinct agents that received coaching (7d) | Activity | `SELECT COUNT(DISTINCT task) as c FROM sessions WHERE agent='coach' AND startedAt > {7d_ago}` | 4 | TBD | 🟢 |
+| `coach.skill-adoption-rate` | Skills referenced in agent sessions (7d) / total skills | Impact | ratio of skills that appear in recent session transcripts vs total SKILL.md files | 0.50 | TBD | 🔴 needs transcript scanning |
+| `coach.lesson-to-behavior` | Avg eval score delta in 48h after coaching vs 48h before | Impact | before/after eval comparison per coached agent | 0.05 | TBD | 🟡 needs eval volume |
 
 **Balance:** Running coaching sessions that nobody applies = waste. Adoption rate reveals whether training translates to behavior.
 

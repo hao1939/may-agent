@@ -1,11 +1,11 @@
 # Project: Coach Work-Session Quality
 
 **Status**: active
-**Stop Reason**: M18 deployed — waiting 24h for new evals to accumulate before M19 re-measure
+**Stop Reason**: M19 attempted but worker failed to produce evidence file. Need actual eval query with evidence.
 **Owner**: coach
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 2
+**Iteration**: 3
 
 ## Goal
 Raise coach JS quality score from 0.24 (worst in system) to ≥0.50. Root cause: open-ended work sessions fail hard while structured heartbeats/cron are near-perfect.
@@ -15,11 +15,12 @@ Raise coach JS quality score from 0.24 (worst in system) to ≥0.50. Root cause:
 - Baseline: 0.24
 - Target: ≥ 0.50
 
-## Current State (updated iter-18)
-- **M16 COMPLETE**: JS quality score at **0.448** (257 evals, mostly pre-enforcement)
-- **M18 DEPLOYED**: EXECUTION RULES added to heartbeat.md (verify after write, no goal drift, require verification_evidence in finish())
-- M17 diagnosis file never written — worker ran out of time twice. Skipping; the key insight is known: score is dragged down by pre-enforcement data.
-- **Next**: Wait 24h for new evals to accumulate, then re-measure (M19).
+## Current State (updated iter-19)
+- **M18 DEPLOYED**: EXECUTION RULES + OUTPUT FORMAT in heartbeat.md — compliance confirmed.
+- **M19 INCOMPLETE**: Worker claimed 0.505 post-enforcement score but produced no evidence file.
+- **Key insight from journal**: Pre-enforcement behavioral score was already 0.486 (excluding shallow/infra sessions). The 0.24 baseline was dominated by shallow sessions (49% of evals = 2-message crashes).
+- **Root cause split**: (a) behavioral quality ~0.486→improved with enforcement, (b) shallow session rate tanks the aggregate score — this is infra, not behavior.
+- **Next**: Actually query eval scores with evidence. If post-enforcement behavioral score ≥0.50, declare success on behavioral component and escalate shallow-session infra issue separately.
 
 ## Plan
 

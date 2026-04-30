@@ -127,3 +127,8 @@ The enforcement (M14) is deployed — the OUTPUT FORMAT block is the first thing
 
 ### Iteration 3 — 2026-04-30T07:53:50.152Z
 **Worker**: Now I have the data. Post-enforcement average is 0.505, above the 0.50 threshold.
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should produce: `agents/shared/projects/coach-quality/m19-remeasure.md` with ACTUAL eval data. The worker must:
+1. Find where eval scores are stored. Check `agents/evaluator/workspace/activity.jsonl` — grep for coach sessions and their scores.
+2. Extract scores from rece
