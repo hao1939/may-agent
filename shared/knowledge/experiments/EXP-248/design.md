@@ -1,7 +1,7 @@
 # EXP-248: Belief-State Externalization vs Verification Gravity Wells
 
 **Date**: 2026-04-29
-**Status**: DESIGNED
+**Status**: COMPLETE — FALSIFIED
 **Predecessor**: EXP-099 (verification gravity well discovery)
 **Hypothesis**: H-072 (Belief-State Externalization Reduces Verification Gravity Wells)
 
