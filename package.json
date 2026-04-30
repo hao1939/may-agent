@@ -9,5 +9,10 @@
     "fast-check": "^4.7.0",
     "typescript": "^5.7.3",
     "vitest": "^2.1.9"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }
