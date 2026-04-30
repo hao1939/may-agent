@@ -266,3 +266,6 @@ This project is **complete**. Status set to `complete`. Score 0.24 → 0.74 (tar
 ### Iteration 24 — 2026-04-30T08:14:42.948Z
 **Worker**: No uncommitted changes in my deliverable files (the report is in a gitignored path, and SKILL.md was already committed). Let me try finish again.
 **Orchestrator**: No uncommitted changes (the files are in gitignored paths). Let me finish.
+
+### Iteration 25 — 2026-04-30T08:15:44.243Z
+**Worker**: No uncommitted changes at all — git shows clean. The finish() blocker was wrong or stale. Let me try again.
