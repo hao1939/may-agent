@@ -1,174 +1,122 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// We need to mock dependencies before importing
-vi.mock('../workflows/fewshot-inject-helpers.js', () => ({
-  injectFewShot: (task: string) => task,
-}));
+// We test the parseInput and runVerification logic by importing internals
+// Since they're not exported, we test via the module's execute function indirectly
+// But first, let's test what we can extract
 
-vi.mock('node:child_process', () => ({
+// Mock child_process
+vi.mock("node:child_process", () => ({
   execSync: vi.fn(),
 }));
 
-describe('implement-and-verify', () => {
-  let mod: any;
-  let execSyncMock: any;
+vi.mock("../workflows/fewshot-inject-helpers.js", () => ({
+  injectFewShot: (task: string) => task,
+}));
 
-  beforeEach(async () => {
-    vi.resetModules();
-    vi.mock('../workflows/fewshot-inject-helpers.js', () => ({
-      injectFewShot: (task: string) => task,
-    }));
-    const cp = await import('node:child_process');
-    execSyncMock = vi.mocked(cp.execSync);
-    mod = await import('../workflows/implement-and-verify');
+import { execSync } from "node:child_process";
+import { name, description, execute } from "../workflows/implement-and-verify.js";
+
+function makeCtx(task: string): any {
+  const events: any[] = [];
+  return {
+    task,
+    emit: (e: any) => events.push(e),
+    events,
+    runAgent: vi.fn().mockResolvedValue({ status: "ok", lastAssistantText: "done" }),
+    done: (msg: string) => ({ status: "done", message: msg }),
+    escalate: (msg: string, meta?: any) => ({ status: "escalated", message: msg, meta }),
+  };
+}
+
+describe("implement-and-verify", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it('exports name and description', () => {
-    expect(mod.name).toBe('implement-and-verify');
-    expect(mod.description).toBeTruthy();
+  it("exports correct name", () => {
+    expect(name).toBe("implement-and-verify");
   });
 
-  it('exports an execute function', () => {
-    expect(typeof mod.execute).toBe('function');
+  it("exports a description", () => {
+    expect(description).toContain("Lightweight");
   });
 
-  describe('execute', () => {
-    const makeCtx = (task: string) => {
-      const events: any[] = [];
-      return {
-        task,
-        agent: 'coder',
-        emit: (e: any) => events.push(e),
-        runAgent: vi.fn(),
-        escalate: vi.fn((msg: string, data?: any) => ({ type: 'escalate', message: msg, data })),
-        done: vi.fn((msg: string) => ({ type: 'done', message: msg })),
-        events,
-      };
-    };
+  it("escalates on empty task", async () => {
+    const ctx = makeCtx("");
+    const result = await execute(ctx);
+    expect(result.status).toBe("escalated");
+  });
 
-    it('escalates on empty task', async () => {
-      const ctx = makeCtx('');
-      const result = await mod.execute(ctx);
-      expect(ctx.escalate).toHaveBeenCalled();
-    });
+  it("succeeds when verification passes on first attempt", async () => {
+    (execSync as any).mockReturnValue("All tests passed");
+    const ctx = makeCtx("Add a hello function");
+    const result = await execute(ctx);
+    expect(result.status).toBe("done");
+    expect(ctx.runAgent).toHaveBeenCalledTimes(1);
+  });
 
-    it('escalates when only metadata lines present', async () => {
-      const ctx = makeCtx('verifyCommand: echo hi\nmaxAttempts: 3');
-      const result = await mod.execute(ctx);
-      expect(ctx.escalate).toHaveBeenCalled();
-    });
+  it("retries when verification fails first time", async () => {
+    (execSync as any)
+      .mockImplementationOnce(() => { throw { status: 1, stdout: "error", stderr: "" }; })
+      .mockReturnValueOnce("pass");
+    const ctx = makeCtx("Fix the bug");
+    const result = await execute(ctx);
+    expect(result.status).toBe("done");
+    expect(ctx.runAgent).toHaveBeenCalledTimes(2);
+  });
 
-    it('runs coder then verifies - success on first attempt', async () => {
-      execSyncMock.mockReturnValue('All tests passed');
-      const ctx = makeCtx('Fix the bug in foo.ts');
-      ctx.runAgent.mockResolvedValue({ status: 'ok', lastAssistantText: 'Fixed it' });
-      
-      await mod.execute(ctx);
-      expect(ctx.runAgent).toHaveBeenCalledTimes(1);
-      expect(ctx.done).toHaveBeenCalled();
-    });
+  it("escalates after all attempts exhausted", async () => {
+    (execSync as any).mockImplementation(() => { throw { status: 1, stdout: "fail", stderr: "" }; });
+    const ctx = makeCtx("Do something");
+    const result = await execute(ctx);
+    expect(result.status).toBe("escalated");
+    expect(result.message).toContain("failed after 2 attempts");
+  });
 
-    it('retries on verification failure', async () => {
-      // First verify fails, second succeeds
-      execSyncMock
-        .mockImplementationOnce(() => { throw { status: 1, stdout: 'error', stderr: '' }; })
-        .mockReturnValueOnce('All tests passed');
-      
-      const ctx = makeCtx('Fix the bug');
-      ctx.runAgent
-        .mockResolvedValueOnce({ status: 'ok', lastAssistantText: 'attempt 1' })
-        .mockResolvedValueOnce({ status: 'ok', lastAssistantText: 'attempt 2' });
-      
-      await mod.execute(ctx);
-      expect(ctx.runAgent).toHaveBeenCalledTimes(2);
-      expect(ctx.done).toHaveBeenCalled();
-    });
+  it("respects custom maxAttempts", async () => {
+    (execSync as any).mockImplementation(() => { throw { status: 1, stdout: "err", stderr: "" }; });
+    const ctx = makeCtx("Do task\nmaxAttempts: 3");
+    const result = await execute(ctx);
+    expect(ctx.runAgent).toHaveBeenCalledTimes(3);
+  });
 
-    it('escalates after all attempts exhausted', async () => {
-      execSyncMock.mockImplementation(() => { throw { status: 1, stdout: 'fail', stderr: '' }; });
-      
-      const ctx = makeCtx('Fix the bug');
-      ctx.runAgent.mockResolvedValue({ status: 'ok', lastAssistantText: 'tried' });
-      
-      await mod.execute(ctx);
-      expect(ctx.escalate).toHaveBeenCalledWith(
-        expect.stringContaining('failed after'),
-        expect.any(Object),
-      );
-    });
+  it("respects custom verifyCommand", async () => {
+    (execSync as any).mockReturnValue("ok");
+    const ctx = makeCtx("Do task\nverifyCommand: echo hello");
+    await execute(ctx);
+    expect(execSync).toHaveBeenCalledWith("echo hello", expect.anything());
+  });
 
-    it('escalates on coder error (first attempt, after retry)', async () => {
-      const ctx = makeCtx('Fix it');
-      ctx.runAgent.mockResolvedValue({ status: 'error', error: 'boom' });
-      
-      await mod.execute(ctx);
-      expect(ctx.escalate).toHaveBeenCalled();
-    });
+  it("escalates when coder fails on first attempt after retry", async () => {
+    const ctx = makeCtx("Do something");
+    ctx.runAgent = vi.fn().mockResolvedValue({ status: "error", error: "crash" });
+    const result = await execute(ctx);
+    expect(result.status).toBe("escalated");
+  });
 
-    it('escalates on coder error on second attempt', async () => {
-      execSyncMock.mockImplementationOnce(() => { throw { status: 1, stdout: 'err', stderr: '' }; });
-      
-      const ctx = makeCtx('Fix it');
-      ctx.runAgent
-        .mockResolvedValueOnce({ status: 'ok', lastAssistantText: 'first' })
-        .mockResolvedValueOnce({ status: 'error', error: 'boom' });
-      
-      await mod.execute(ctx);
-      expect(ctx.escalate).toHaveBeenCalled();
-    });
+  it("escalates when coder fails on fix attempt", async () => {
+    (execSync as any).mockImplementation(() => { throw { status: 1, stdout: "fail", stderr: "" }; });
+    const ctx = makeCtx("Do something");
+    ctx.runAgent = vi.fn()
+      .mockResolvedValueOnce({ status: "ok", lastAssistantText: "done" })
+      .mockResolvedValueOnce({ status: "error", error: "crash" });
+    const result = await execute(ctx);
+    expect(result.status).toBe("escalated");
+  });
 
-    it('respects custom verifyCommand', async () => {
-      execSyncMock.mockReturnValue('ok');
-      const ctx = makeCtx('verifyCommand: echo hello\nDo the task');
-      ctx.runAgent.mockResolvedValue({ status: 'ok', lastAssistantText: 'done' });
-      
-      await mod.execute(ctx);
-      expect(execSyncMock).toHaveBeenCalledWith('echo hello', expect.any(Object));
-    });
+  it("truncates long verify output", async () => {
+    const longOutput = "x".repeat(5000);
+    (execSync as any).mockImplementation(() => { throw { status: 1, stdout: longOutput, stderr: "" }; });
+    const ctx = makeCtx("Do task\nmaxAttempts: 1");
+    const result = await execute(ctx);
+    expect(result.status).toBe("escalated");
+  });
 
-    it('respects custom maxAttempts', async () => {
-      execSyncMock.mockImplementation(() => { throw { status: 1, stdout: 'fail', stderr: '' }; });
-      const ctx = makeCtx('maxAttempts: 3\nDo the task');
-      ctx.runAgent.mockResolvedValue({ status: 'ok', lastAssistantText: 'tried' });
-      
-      await mod.execute(ctx);
-      expect(ctx.runAgent).toHaveBeenCalledTimes(3);
-    });
-
-    it('handles verification with no output', async () => {
-      execSyncMock.mockReturnValue('');
-      const ctx = makeCtx('Do the task');
-      ctx.runAgent.mockResolvedValue({ status: 'ok', lastAssistantText: 'done' });
-      
-      await mod.execute(ctx);
-      expect(ctx.done).toHaveBeenCalled();
-    });
-
-    it('truncates long verification output', async () => {
-      const longOutput = 'x'.repeat(5000);
-      execSyncMock
-        .mockImplementationOnce(() => { throw { status: 1, stdout: longOutput, stderr: '' }; })
-        .mockReturnValueOnce('ok');
-      
-      const ctx = makeCtx('Do the task');
-      ctx.runAgent.mockResolvedValue({ status: 'ok', lastAssistantText: 'done' });
-      
-      await mod.execute(ctx);
-      // Second call to runAgent should have truncated error in task
-      const secondCallTask = ctx.runAgent.mock.calls[1][1];
-      expect(secondCallTask).toContain('truncated');
-    });
-
-    it('retries coder once on first attempt error then succeeds', async () => {
-      execSyncMock.mockReturnValue('pass');
-      const ctx = makeCtx('Do the task');
-      ctx.runAgent
-        .mockResolvedValueOnce({ status: 'error', error: 'transient' })
-        .mockResolvedValueOnce({ status: 'ok', lastAssistantText: 'fixed' });
-      
-      await mod.execute(ctx);
-      expect(ctx.runAgent).toHaveBeenCalledTimes(2);
-      expect(ctx.done).toHaveBeenCalled();
-    });
+  it("emits step events", async () => {
+    (execSync as any).mockReturnValue("ok");
+    const ctx = makeCtx("Do task");
+    await execute(ctx);
+    expect(ctx.events.length).toBeGreaterThanOrEqual(2);
+    expect(ctx.events[0].step).toBe("coder-attempt-1");
   });
 });

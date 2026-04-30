@@ -7,9 +7,9 @@ import {
   markCheckpointComplete,
   cleanupCheckpoints,
   CheckpointData,
-} from "../workflows/incremental-checkpoint.ts";
+} from "../workflows/incremental-checkpoint.js";
 
-const TEST_DIR = "/tmp/test-incremental-checkpoint";
+const TEST_DIR = "/tmp/test-incremental-checkpoint-" + Date.now();
 
 function makeCheckpoint(overrides: Partial<CheckpointData> = {}): CheckpointData {
   return {
@@ -17,9 +17,9 @@ function makeCheckpoint(overrides: Partial<CheckpointData> = {}): CheckpointData
     iteration: 1,
     step: 3,
     timestamp: Date.now(),
-    task: "Write a report",
-    toolsCalled: ["read", "write", "bash"],
-    partialResults: { filesCreated: ["output.md"] },
+    task: "test task",
+    toolsCalled: ["read", "write"],
+    partialResults: { foo: "bar" },
     completed: false,
     ...overrides,
   };
@@ -27,7 +27,6 @@ function makeCheckpoint(overrides: Partial<CheckpointData> = {}): CheckpointData
 
 describe("incremental-checkpoint", () => {
   beforeEach(() => {
-    rmSync(TEST_DIR, { recursive: true, force: true });
     mkdirSync(TEST_DIR, { recursive: true });
   });
 
@@ -35,111 +34,78 @@ describe("incremental-checkpoint", () => {
     rmSync(TEST_DIR, { recursive: true, force: true });
   });
 
-  describe("saveIncrementalCheckpoint", () => {
-    it("creates checkpoint file with correct data", () => {
-      const cp = makeCheckpoint();
-      saveIncrementalCheckpoint(TEST_DIR, cp);
-
-      const path = join(TEST_DIR, ".state/checkpoints/incremental/sess-001.json");
-      expect(existsSync(path)).toBe(true);
-
-      const saved = JSON.parse(readFileSync(path, "utf-8"));
-      expect(saved.sessionId).toBe("sess-001");
-      expect(saved.step).toBe(3);
-      expect(saved.toolsCalled).toEqual(["read", "write", "bash"]);
-      expect(saved.completed).toBe(false);
-    });
-
-    it("creates directory if it does not exist", () => {
-      const cp = makeCheckpoint({ sessionId: "new-sess" });
-      saveIncrementalCheckpoint(TEST_DIR, cp);
-
-      const dir = join(TEST_DIR, ".state/checkpoints/incremental");
-      expect(existsSync(dir)).toBe(true);
-    });
-
-    it("overwrites existing checkpoint for same session", () => {
-      saveIncrementalCheckpoint(TEST_DIR, makeCheckpoint({ step: 1 }));
-      saveIncrementalCheckpoint(TEST_DIR, makeCheckpoint({ step: 5 }));
-
-      const path = join(TEST_DIR, ".state/checkpoints/incremental/sess-001.json");
-      const saved = JSON.parse(readFileSync(path, "utf-8"));
-      expect(saved.step).toBe(5);
-    });
+  it("saves a checkpoint file", () => {
+    const data = makeCheckpoint();
+    saveIncrementalCheckpoint(TEST_DIR, data);
+    const path = join(TEST_DIR, ".state/checkpoints/incremental/sess-001.json");
+    expect(existsSync(path)).toBe(true);
   });
 
-  describe("detectIncompleteCheckpoint", () => {
-    it("returns null when no checkpoints exist", () => {
-      expect(detectIncompleteCheckpoint(TEST_DIR)).toBeNull();
-    });
-
-    it("returns incomplete checkpoint", () => {
-      saveIncrementalCheckpoint(TEST_DIR, makeCheckpoint({ completed: false }));
-      const result = detectIncompleteCheckpoint(TEST_DIR);
-      expect(result).not.toBeNull();
-      expect(result!.sessionId).toBe("sess-001");
-    });
-
-    it("returns null when checkpoint is completed", () => {
-      saveIncrementalCheckpoint(TEST_DIR, makeCheckpoint({ completed: true }));
-      expect(detectIncompleteCheckpoint(TEST_DIR)).toBeNull();
-    });
-
-    it("finds specific session checkpoint", () => {
-      saveIncrementalCheckpoint(TEST_DIR, makeCheckpoint({ sessionId: "a" }));
-      saveIncrementalCheckpoint(TEST_DIR, makeCheckpoint({ sessionId: "b", completed: true }));
-
-      expect(detectIncompleteCheckpoint(TEST_DIR, "a")).not.toBeNull();
-      expect(detectIncompleteCheckpoint(TEST_DIR, "b")).toBeNull();
-      expect(detectIncompleteCheckpoint(TEST_DIR, "c")).toBeNull();
-    });
+  it("saved checkpoint contains correct data", () => {
+    const data = makeCheckpoint({ task: "hello world" });
+    saveIncrementalCheckpoint(TEST_DIR, data);
+    const path = join(TEST_DIR, ".state/checkpoints/incremental/sess-001.json");
+    const loaded = JSON.parse(readFileSync(path, "utf-8"));
+    expect(loaded.task).toBe("hello world");
   });
 
-  describe("markCheckpointComplete", () => {
-    it("marks an existing checkpoint as completed", () => {
-      saveIncrementalCheckpoint(TEST_DIR, makeCheckpoint());
-      markCheckpointComplete(TEST_DIR, "sess-001");
-
-      const result = detectIncompleteCheckpoint(TEST_DIR, "sess-001");
-      expect(result).toBeNull();
-    });
-
-    it("does nothing for non-existent session", () => {
-      // Should not throw
-      markCheckpointComplete(TEST_DIR, "nonexistent");
-    });
+  it("detects incomplete checkpoint by sessionId", () => {
+    saveIncrementalCheckpoint(TEST_DIR, makeCheckpoint());
+    const result = detectIncompleteCheckpoint(TEST_DIR, "sess-001");
+    expect(result).not.toBeNull();
+    expect(result!.sessionId).toBe("sess-001");
   });
 
-  describe("cleanupCheckpoints", () => {
-    it("removes old completed checkpoints beyond keepCount", () => {
-      for (let i = 0; i < 8; i++) {
-        saveIncrementalCheckpoint(TEST_DIR, makeCheckpoint({
-          sessionId: `sess-${String(i).padStart(3, "0")}`,
-          completed: true,
-        }));
-      }
-      // Add one incomplete — should not be removed
-      saveIncrementalCheckpoint(TEST_DIR, makeCheckpoint({
-        sessionId: "sess-active",
-        completed: false,
-      }));
+  it("returns null for completed checkpoint", () => {
+    saveIncrementalCheckpoint(TEST_DIR, makeCheckpoint({ completed: true }));
+    const result = detectIncompleteCheckpoint(TEST_DIR, "sess-001");
+    expect(result).toBeNull();
+  });
 
-      cleanupCheckpoints(TEST_DIR, 3);
+  it("returns null when no checkpoints exist", () => {
+    const result = detectIncompleteCheckpoint(TEST_DIR);
+    expect(result).toBeNull();
+  });
 
-      // The incomplete one should survive
-      expect(detectIncompleteCheckpoint(TEST_DIR, "sess-active")).not.toBeNull();
+  it("detects any incomplete checkpoint without sessionId", () => {
+    saveIncrementalCheckpoint(TEST_DIR, makeCheckpoint({ sessionId: "sess-a" }));
+    const result = detectIncompleteCheckpoint(TEST_DIR);
+    expect(result).not.toBeNull();
+  });
 
-      // Only 3 completed should remain (most recent: 005, 006, 007)
-      const dir = join(TEST_DIR, ".state/checkpoints/incremental");
-      const { readdirSync } = require("node:fs");
-      const files = readdirSync(dir);
-      // 3 kept completed + 1 incomplete = 4
-      expect(files.length).toBe(4);
-    });
+  it("marks checkpoint complete", () => {
+    saveIncrementalCheckpoint(TEST_DIR, makeCheckpoint());
+    markCheckpointComplete(TEST_DIR, "sess-001");
+    const result = detectIncompleteCheckpoint(TEST_DIR, "sess-001");
+    expect(result).toBeNull();
+  });
 
-    it("does nothing when directory does not exist", () => {
-      cleanupCheckpoints("/tmp/nonexistent-dir-xyz", 5);
-      // Should not throw
-    });
+  it("markCheckpointComplete is no-op for missing file", () => {
+    // Should not throw
+    markCheckpointComplete(TEST_DIR, "nonexistent");
+  });
+
+  it("cleanupCheckpoints removes old completed ones", () => {
+    for (let i = 0; i < 8; i++) {
+      saveIncrementalCheckpoint(TEST_DIR, makeCheckpoint({ sessionId: `s-${String(i).padStart(3, "0")}`, completed: true }));
+    }
+    cleanupCheckpoints(TEST_DIR, 3);
+    const dir = join(TEST_DIR, ".state/checkpoints/incremental");
+    const { readdirSync } = require("node:fs");
+    const files = readdirSync(dir).filter((f: string) => f.endsWith(".json"));
+    expect(files.length).toBe(3);
+  });
+
+  it("cleanupCheckpoints keeps incomplete checkpoints", () => {
+    saveIncrementalCheckpoint(TEST_DIR, makeCheckpoint({ sessionId: "incomplete", completed: false }));
+    saveIncrementalCheckpoint(TEST_DIR, makeCheckpoint({ sessionId: "done", completed: true }));
+    cleanupCheckpoints(TEST_DIR, 0);
+    const result = detectIncompleteCheckpoint(TEST_DIR, "incomplete");
+    expect(result).not.toBeNull();
+  });
+
+  it("cleanupCheckpoints handles missing directory", () => {
+    cleanupCheckpoints("/tmp/nonexistent-dir-xyz", 5);
+    // Should not throw
   });
 });

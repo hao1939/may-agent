@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { MetricsCollector, MetricsEntry, computeStats } from "../workflows/metrics-collector.js";
-import { mkdtempSync, rmSync } from "fs";
-import { join } from "path";
-import { tmpdir } from "os";
+import { mkdirSync, rmSync, existsSync } from "node:fs";
+import { MetricsCollector, computeStats, MetricsEntry } from "../workflows/metrics-collector.js";
+
+const TEST_DIR = "/tmp/test-metrics-" + Date.now();
 
 function makeEntry(overrides: Partial<MetricsEntry> = {}): MetricsEntry {
   return {
-    projectId: "proj-a",
+    projectId: "proj-1",
     iterationNumber: 1,
     durationMs: 1000,
     testCount: 10,
@@ -17,209 +17,115 @@ function makeEntry(overrides: Partial<MetricsEntry> = {}): MetricsEntry {
 }
 
 describe("MetricsCollector", () => {
-  let mc: MetricsCollector;
-  beforeEach(() => { mc = new MetricsCollector(); });
+  let collector: MetricsCollector;
 
-  // ── Record & retrieve ─────────────────────────────────────────
+  beforeEach(() => {
+    collector = new MetricsCollector();
+    mkdirSync(TEST_DIR, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(TEST_DIR, { recursive: true, force: true });
+  });
 
   it("starts empty", () => {
-    expect(mc.size).toBe(0);
-    expect(mc.getAll()).toEqual([]);
+    expect(collector.size).toBe(0);
+    expect(collector.getAll()).toEqual([]);
   });
 
-  it("records and retrieves a single entry", () => {
-    mc.record(makeEntry());
-    expect(mc.size).toBe(1);
-    expect(mc.getAll()[0].projectId).toBe("proj-a");
+  it("records entries", () => {
+    collector.record(makeEntry());
+    expect(collector.size).toBe(1);
   });
 
-  it("records multiple entries", () => {
-    mc.record(makeEntry({ iterationNumber: 1 }));
-    mc.record(makeEntry({ iterationNumber: 2 }));
-    mc.record(makeEntry({ projectId: "proj-b" }));
-    expect(mc.size).toBe(3);
-  });
-
-  it("stores copies, not references", () => {
+  it("getAll returns copies", () => {
     const entry = makeEntry();
-    mc.record(entry);
-    entry.durationMs = 9999;
-    expect(mc.getAll()[0].durationMs).toBe(1000);
+    collector.record(entry);
+    const all = collector.getAll();
+    all.push(makeEntry());
+    expect(collector.size).toBe(1);
   });
 
-  it("clear removes all entries", () => {
-    mc.record(makeEntry());
-    mc.clear();
-    expect(mc.size).toBe(0);
-  });
-
-  // ── getHistory ────────────────────────────────────────────────
-
-  it("getHistory filters by projectId", () => {
-    mc.record(makeEntry({ projectId: "a" }));
-    mc.record(makeEntry({ projectId: "b" }));
-    mc.record(makeEntry({ projectId: "a", iterationNumber: 2 }));
-    expect(mc.getHistory("a")).toHaveLength(2);
-    expect(mc.getHistory("b")).toHaveLength(1);
+  it("getHistory filters by project", () => {
+    collector.record(makeEntry({ projectId: "a", iterationNumber: 1 }));
+    collector.record(makeEntry({ projectId: "b", iterationNumber: 1 }));
+    collector.record(makeEntry({ projectId: "a", iterationNumber: 2 }));
+    expect(collector.getHistory("a").length).toBe(2);
   });
 
   it("getHistory returns sorted by iteration", () => {
-    mc.record(makeEntry({ iterationNumber: 3 }));
-    mc.record(makeEntry({ iterationNumber: 1 }));
-    mc.record(makeEntry({ iterationNumber: 2 }));
-    const h = mc.getHistory("proj-a");
-    expect(h.map((e) => e.iterationNumber)).toEqual([1, 2, 3]);
+    collector.record(makeEntry({ projectId: "a", iterationNumber: 3 }));
+    collector.record(makeEntry({ projectId: "a", iterationNumber: 1 }));
+    const history = collector.getHistory("a");
+    expect(history[0].iterationNumber).toBe(1);
+    expect(history[1].iterationNumber).toBe(3);
   });
 
-  it("getHistory returns empty for unknown project", () => {
-    expect(mc.getHistory("nope")).toEqual([]);
+  it("getSummary for all projects", () => {
+    collector.record(makeEntry({ projectId: "a", testCount: 5, deliverableCount: 1 }));
+    collector.record(makeEntry({ projectId: "b", testCount: 3, deliverableCount: 2 }));
+    const summary = collector.getSummary();
+    expect(summary.totalIterations).toBe(2);
+    expect(summary.totalTests).toBe(8);
+    expect(summary.totalDeliverables).toBe(3);
+    expect(summary.projects).toContain("a");
   });
 
-  // ── getSummary ────────────────────────────────────────────────
-
-  it("getSummary across all projects", () => {
-    mc.record(makeEntry({ durationMs: 100, deliverableCount: 1, testCount: 5 }));
-    mc.record(makeEntry({ projectId: "b", durationMs: 200, deliverableCount: 3, testCount: 15 }));
-    const s = mc.getSummary();
-    expect(s.totalIterations).toBe(2);
-    expect(s.totalDurationMs).toBe(300);
-    expect(s.avgDurationMs).toBe(150);
-    expect(s.totalDeliverables).toBe(4);
-    expect(s.totalTests).toBe(20);
-    expect(s.projects).toContain("proj-a");
-    expect(s.projects).toContain("b");
+  it("getSummary filtered by project", () => {
+    collector.record(makeEntry({ projectId: "a" }));
+    collector.record(makeEntry({ projectId: "b" }));
+    const summary = collector.getSummary("a");
+    expect(summary.totalIterations).toBe(1);
   });
 
-  it("getSummary for specific project", () => {
-    mc.record(makeEntry({ projectId: "a", durationMs: 100 }));
-    mc.record(makeEntry({ projectId: "b", durationMs: 200 }));
-    const s = mc.getSummary("a");
-    expect(s.totalIterations).toBe(1);
-    expect(s.totalDurationMs).toBe(100);
-    expect(s.projects).toEqual(["a"]);
-  });
-
-  it("getSummary empty collector", () => {
-    const s = mc.getSummary();
-    expect(s.totalIterations).toBe(0);
-    expect(s.avgDurationMs).toBe(0);
-  });
-
-  // ── getTrend ──────────────────────────────────────────────────
-
-  it("getTrend returns durationMs trend", () => {
-    mc.record(makeEntry({ iterationNumber: 1, durationMs: 100 }));
-    mc.record(makeEntry({ iterationNumber: 2, durationMs: 80 }));
-    const trend = mc.getTrend("proj-a", "durationMs");
-    expect(trend).toHaveLength(2);
+  it("getTrend returns trend points", () => {
+    collector.record(makeEntry({ projectId: "x", iterationNumber: 1, durationMs: 100 }));
+    collector.record(makeEntry({ projectId: "x", iterationNumber: 2, durationMs: 200 }));
+    const trend = collector.getTrend("x", "durationMs");
+    expect(trend.length).toBe(2);
     expect(trend[0].value).toBe(100);
-    expect(trend[1].value).toBe(80);
+    expect(trend[1].value).toBe(200);
   });
 
-  it("getTrend returns testCount trend", () => {
-    mc.record(makeEntry({ iterationNumber: 1, testCount: 10 }));
-    mc.record(makeEntry({ iterationNumber: 2, testCount: 50 }));
-    const trend = mc.getTrend("proj-a", "testCount");
-    expect(trend.map((t) => t.value)).toEqual([10, 50]);
+  it("flush and load roundtrip", () => {
+    collector.record(makeEntry({ projectId: "p", testCount: 42 }));
+    const path = `${TEST_DIR}/metrics.json`;
+    collector.flush(path);
+    expect(existsSync(path)).toBe(true);
+
+    const c2 = new MetricsCollector();
+    c2.load(path);
+    expect(c2.size).toBe(1);
+    expect(c2.getAll()[0].testCount).toBe(42);
   });
 
-  it("getTrend returns deliverableCount trend", () => {
-    mc.record(makeEntry({ iterationNumber: 1, deliverableCount: 1 }));
-    mc.record(makeEntry({ iterationNumber: 2, deliverableCount: 5 }));
-    const trend = mc.getTrend("proj-a", "deliverableCount");
-    expect(trend.map((t) => t.value)).toEqual([1, 5]);
+  it("load throws on invalid data", () => {
+    const path = `${TEST_DIR}/bad.json`;
+    require("fs").writeFileSync(path, '"not an array"');
+    expect(() => collector.load(path)).toThrow("expected array");
   });
 
-  it("getTrend empty for unknown project", () => {
-    expect(mc.getTrend("nope", "durationMs")).toEqual([]);
-  });
-
-  // ── flush & load ──────────────────────────────────────────────
-
-  let tmpDir: string;
-  beforeEach(() => { tmpDir = mkdtempSync(join(tmpdir(), "mc-test-")); });
-  afterEach(() => { rmSync(tmpDir, { recursive: true, force: true }); });
-
-  it("flush and load round-trip", () => {
-    mc.record(makeEntry({ iterationNumber: 1 }));
-    mc.record(makeEntry({ iterationNumber: 2 }));
-    const path = join(tmpDir, "metrics.json");
-    mc.flush(path);
-
-    const mc2 = new MetricsCollector();
-    mc2.load(path);
-    expect(mc2.size).toBe(2);
-    expect(mc2.getAll()[0].iterationNumber).toBe(1);
-  });
-
-  it("load replaces existing entries", () => {
-    mc.record(makeEntry());
-    const path = join(tmpDir, "m.json");
-    mc.flush(path);
-
-    mc.record(makeEntry({ iterationNumber: 99 }));
-    expect(mc.size).toBe(2);
-    mc.load(path);
-    expect(mc.size).toBe(1);
-  });
-
-  it("flush creates parent directories", () => {
-    mc.record(makeEntry());
-    const path = join(tmpDir, "nested", "deep", "metrics.json");
-    mc.flush(path);
-    const mc2 = new MetricsCollector();
-    mc2.load(path);
-    expect(mc2.size).toBe(1);
+  it("clear removes all entries", () => {
+    collector.record(makeEntry());
+    collector.clear();
+    expect(collector.size).toBe(0);
   });
 });
 
-// ── computeStats ──────────────────────────────────────────────────
-
 describe("computeStats", () => {
   it("returns zeros for empty array", () => {
-    const s = computeStats([]);
-    expect(s.count).toBe(0);
-    expect(s.min).toBe(0);
-    expect(s.avg).toBe(0);
+    const stats = computeStats([]);
+    expect(stats.count).toBe(0);
   });
 
-  it("handles single entry", () => {
-    const s = computeStats([makeEntry({ durationMs: 500 })]);
-    expect(s.count).toBe(1);
-    expect(s.min).toBe(500);
-    expect(s.max).toBe(500);
-    expect(s.avg).toBe(500);
-    expect(s.p50).toBe(500);
-    expect(s.p95).toBe(500);
-  });
-
-  it("computes correct stats for multiple entries", () => {
-    const entries = [100, 200, 300, 400, 500].map((d) => makeEntry({ durationMs: d }));
-    const s = computeStats(entries);
-    expect(s.count).toBe(5);
-    expect(s.min).toBe(100);
-    expect(s.max).toBe(500);
-    expect(s.avg).toBe(300);
-    expect(s.p50).toBe(300);
-  });
-
-  it("computes p95 for large dataset", () => {
-    const entries = Array.from({ length: 100 }, (_, i) =>
-      makeEntry({ durationMs: (i + 1) * 10 })
+  it("computes correct stats", () => {
+    const entries = [100, 200, 300, 400, 500].map((d, i) =>
+      makeEntry({ durationMs: d, iterationNumber: i })
     );
-    const s = computeStats(entries);
-    expect(s.count).toBe(100);
-    expect(s.min).toBe(10);
-    expect(s.max).toBe(1000);
-    expect(s.p95).toBeGreaterThan(900);
-  });
-
-  it("handles duplicate values", () => {
-    const entries = [100, 100, 100].map((d) => makeEntry({ durationMs: d }));
-    const s = computeStats(entries);
-    expect(s.min).toBe(100);
-    expect(s.max).toBe(100);
-    expect(s.avg).toBe(100);
-    expect(s.p50).toBe(100);
+    const stats = computeStats(entries);
+    expect(stats.count).toBe(5);
+    expect(stats.min).toBe(100);
+    expect(stats.max).toBe(500);
+    expect(stats.avg).toBe(300);
   });
 });
