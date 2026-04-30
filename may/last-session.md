@@ -1,16 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777511406295_5
+- **Session:** s_1777511373041_3
 - **Status:** done
-- **When:** 2026-04-30T01:10:38.271Z
-- **Duration:** 31s
+- **When:** 2026-04-30T01:11:19.575Z
+- **Duration:** 1m46s
 
 ## What Happened
-CONTINUE
+Now I have clarity on both issues:
 
-(a) Next iteration should produce a **preference-check gate** — a concrete mechanism in May's dispatch flow that consults `preferences.md` before making autonomous decisions. This could be a checklist section in May's context that says "before dispatching/deciding, verify against these criteria."
+1. **handler.failed-count: 5** — All 3 recent errors are transient: 2x `401 IDE token expired` (evaluator, amy) and 1x `429 rate limit` (coach). These are infrastructure/auth issues, not code bugs. No destructive action needed.
 
-(b) The baseline is already at ~1% which beats the 10% target. The real value now is **instrumentation** — we can't improve what we can't measure reliably. The metrics.md notes we miss most corrections (they happen outside the system). The next win is making the preference model actively prevent bad decisions rather than just being passively available.
+2. **Optimizer SOUL.md FM guards stripped** — The P0 notification is valid. Growth-log shows FM-1.1, FM-1.2, FM-1.3, FM-1.4, FM-2.2, FM-3.1 guards were all promoted into SOUL.md, but current SOUL.md has 0 FM references. The guards have been lost.
 
-(c) First step: Re-scan recent chat sessions (last 30 days) for any new Hao interactions that reveal new preferences or corrections we haven't captured. Then design the preference-check gate — a short decision checklist that May applies before dispatching work, referencing the top principles from preferences.md. Add it to May's context.md as an operational rule.
+Let me address the P0 by notifying optimizer to restore their FM guards:
