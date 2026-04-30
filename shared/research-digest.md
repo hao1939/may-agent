@@ -7,7 +7,25 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #30) — Multimodal Agents Go Native; ClawGym Trains at Scale
+## Latest (2026-04-30 Heartbeat #31) — Self-Evolving Skills; Wake-Sleep Knowledge Libraries
+
+> **主题**：agent的瓶颈不是推理而是编排；知识库需要自动进化机制
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Bian Que** | arXiv:2604.26805 (KuaiShou) | 灵活技能编排：每个Skill指定数据+知识源，可LLM自动生成/工程师自然语言迭代；自进化双路径（知识蒸馏+Skill优化）| **编排>推理的工业验证**：Skill≈我们的agent role+tools；纠正信号应同时更新知识库和agent配置 |
+| **DreamProver** | arXiv:2604.26311 (Xujie Si lab) | Wake-sleep范式进化可复用引理库：工作时收集→休眠时压缩精炼→迁移到新问题 | **知识库自进化模板**：我们需要定期"sleep"阶段整理shared knowledge——合并冗余、提升抽象 |
+
+### 行动建议
+1. **自进化role配置**：当agent犯错时，不仅更新knowledge，还应触发role/prompt优化（Bian Que双路径）
+2. **知识库sleep周期**：参考DreamProver，定期压缩和精炼shared knowledge，删除过时、合并冗余
+3. **编排优先**：选对context比选更强的模型更重要——优化agent的数据/知识检索策略
+
+---
+
+## Previous (2026-04-30 Heartbeat #30) — Multimodal Agents Go Native; ClawGym Trains at Scale
 
 > **主题**：多模态感知成为agent原生能力；Claw-style agent获得完整训练框架
 
