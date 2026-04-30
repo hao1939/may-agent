@@ -1,6 +1,6 @@
 # Project: Coach Work-Session Quality
 
-**Status**: active
+**Status**: complete
 **Stop Reason**: Target met and verified. Last 5 coach quality scores (0.58, 0.72, 0.75, 0.90, 0.75) all ≥0.50, avg 0.74. Enforcement deployed in heartbeat.md as regression guard.
 **Owner**: coach
 **Priority**: P1
