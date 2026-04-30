@@ -831,8 +831,33 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       const isResumeComment = /^\[resume\]/m.test(pendingComments);
       const isPauseComment = /^\[pause\]/m.test(pendingComments);
       const isCancelComment = /^\[cancel\]/m.test(pendingComments);
+      const isContinueComment = /^\[continue\]/m.test(pendingComments);
 
       // JS fast-paths for mechanical directive comments (no LLM session needed)
+      if (isContinueComment) {
+        const now = new Date().toISOString();
+        const commentEntry = `### Iteration ${iteration} (comment) — ${now}\n` +
+          `**Comment**: ${pendingComments}\n` +
+          `**Reviewer**: CONTINUE — Marked continue by human/May (JS fast-path, no LLM review needed).\n\n`;
+
+        if (config.isLegacy) {
+          projectContent += commentEntry;
+        } else {
+          cachedAppend(config.journalPath, commentEntry);
+        }
+
+        projectContent = clearComments(projectContent);
+        projectContent = updateField(projectContent, "Iteration", String(iteration));
+        projectContent = updateField(projectContent, "Status", "active");
+        projectContent = updateField(projectContent, "Stop Reason", "");
+        projectContent = updateField(projectContent, "Resume Condition", "");
+        cachedWrite(config.projectPath, projectContent);
+        markDiscussionRead(config.projectDir, iteration);
+        emitProjectEvent(ctx, config, "project.resumed", { iteration, trigger: "continue-comment" });
+        iteration++;
+        continue;
+      }
+
       if (isPauseComment) {
         const now = new Date().toISOString();
         const commentEntry = `### Iteration ${iteration} (comment) — ${now}\n` +
