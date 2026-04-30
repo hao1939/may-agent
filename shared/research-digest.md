@@ -7,7 +7,24 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #8) — Tool Use评测与MCP协议标准化
+## Latest (2026-04-30 Heartbeat #9) — 多智能体协作架构：递归 vs 文本编排
+
+> **主题**：RecursiveMAS + Sub Agents vs Agent Teams — agent 间协调的最优模式
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **RecursiveMAS** | arXiv 2604.25917 (Yang, Zou et al.) | 多 agent 在潜在空间递归协作，token 减少 35-76%，准确率 +8.3% | **压缩 agent 间通信** — 结构化摘要 > 原始文本传递；引入协作质量反馈信号 |
+| **Sub Agents vs Agent Teams** | @AI技术立文 / Claude Code 实践 | 子智能体=并行压缩器 vs 团队=持久对等通信；选错比不用代价更大 | **审视我们的混合模式** — delegate 是 sub-agent，shared knowledge 是弱 team；缺真正的同步协商 |
+
+### 行动建议
+1. 设计 "compressed handoff protocol"：agent 交接传结构化 delta + confidence，非全文
+2. 评估是否需要同步 discussion event type 用于复杂决策
+
+---
+
+## (2026-04-30 Heartbeat #8) — Tool Use评测与MCP协议标准化
 
 > **主题**：FinMCP-Bench + Tool Use数据集构造 — 工具调用的评估与泛化
 
