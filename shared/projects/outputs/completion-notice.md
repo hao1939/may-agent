@@ -1,5 +1,5 @@
-# Project Complete
+# Project Completion Notice
 
-This project has been marked as **COMPLETE**. No further work is needed.
+This project is **COMPLETE**. No further work is needed.
 
-All metrics exceed targets. No additional iterations should be dispatched.
+All metrics exceed targets. Status: `complete`.
