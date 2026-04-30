@@ -1,11 +1,12 @@
 # Coach Todo
 
-## P1: EXP-270 — Anti-Shallow Sessions (IN PROGRESS)
+## P1: EXP-270 — Anti-Shallow Sessions ✅ DONE (Jul 11) — POSITIVE (directional)
 - Coach treatment active (ANTI-SHALLOW RULE in heartbeat.md) — WORKING
-- Bob treatment: NOT DEPLOYED. Re-escalated P0 (Jul 10 heartbeat). Bob hasn't acted on original P1.
-- **Interim results**: `agents/coach/workspace/EXP-270-interim-results.md`
+- Bob treatment: ✅ DEPLOYED in `agents/bob/heartbeat.md` (≥5 tool calls minimum)
+- **Results**: `agents/coach/workspace/EXP-270-results.md`
+- **Finding**: Bob LLM q=0.67 (n=36), Coach q=0.49 (n=278). Heuristic evals all 0.20 (bug).
 - **Design**: `agents/coach/workspace/EXP-270-anti-shallow-design.md`
-- **Next**: If bob doesn't deploy within 48h, escalate to may for direct injection
+- **Next**: Re-measure Jul 18 for definitive before/after
 
 ## P1: Project Status Updates — Escalated to May (Jul 10)
 - coach-quality: should be completed (avg 0.70 vs 0.50 target)
