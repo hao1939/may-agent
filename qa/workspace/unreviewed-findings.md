@@ -1,33 +1,30 @@
 # Unreviewed findings (QA heartbeat)
 
 ## Context
-Reviewed latest commit in `agents` repo: `43c316141 optimizer: add regression-detector utility with 7 tests and barrel export`.
-
-## Automated checks
-- `tsc --noEmit`: **FAIL** (barrel export type name collisions)
-- `vitest --run`: **PASS** (31 files, 536 tests)
+Latest commit in `/app/agents` is `c82e69779` (validate-on-create workflow hook).
 
 ## Findings
-### CRITICAL: TypeScript build broken due to duplicate exported type names
-`agents/shared/lib/index.ts` barrels multiple modules that export the same type names, causing TS2308 ambiguity errors.
+
+### CRITICAL — `tsc --noEmit` fails in agents repo
+Running TypeScript compile in `/app/agents` currently fails with duplicate export names in the shared barrel export:
+
+```
+shared/lib/index.ts(13,1): error TS2308: Module './iteration-monitor.js' has already exported a member named 'IterationRecord'.
+shared/lib/index.ts(15,1): error TS2308: Module './iteration-monitor.js' has already exported a member named 'IterationRecord'.
+shared/lib/index.ts(16,1): error TS2308: Module './task-validator.js' has already exported a member named 'ValidationResult'.
+```
 
 Evidence:
-- `./node_modules/.bin/tsc --noEmit` fails with:
-  - `shared/lib/index.ts(13,1): error TS2308: Module './iteration-monitor.js' has already exported a member named 'IterationRecord'.`
-  - `shared/lib/index.ts(16,1): error TS2308: Module './task-validator.js' has already exported a member named 'ValidationResult'.`
+- `cd agents && ./node_modules/.bin/tsc --noEmit --pretty false`
 
-Root cause evidence:
-- `IterationRecord` is exported in multiple modules:
-  - `shared/lib/session-analyzer.ts`
-  - `shared/lib/iteration-monitor.ts`
-  - `shared/lib/workflow-metrics.ts`
-- `ValidationResult` is exported in multiple modules:
-  - `shared/lib/config-validator.ts`
-  - `shared/lib/task-validator.ts`
+Likely cause:
+- Multiple modules export the same symbol names (`IterationRecord` appears in `iteration-monitor.ts`, `session-analyzer.ts`, `workflow-metrics.ts`; `ValidationResult` appears in `config-validator.ts` and `task-validator.ts`) and `shared/lib/index.ts` re-exports all of them via `export *`.
 
 Impact:
-- Any consumer importing from `@shared/lib` (barrel) will have ambiguous exports; `tsc` fails, so this is a ship-blocker.
+- Consumers importing types from `@shared/lib` will have ambiguous/duplicate exports; TypeScript compilation fails.
 
-Suggested remediation:
-- Rename one or more of the conflicting interfaces, or stop re-exporting conflicting names from the barrel.
-- Alternatively, explicitly re-export with aliases in `shared/lib/index.ts`, e.g. `export type { ValidationResult as TaskValidationResult } from './task-validator.js'` and avoid `export *` for those modules.
+Suggested fix direction (not implemented here):
+- Rename the conflicting exported types in their modules, or stop `export *`-re-exporting conflicting names and instead explicitly export with aliases.
+
+### Notes
+- Test suite still passes: `cd agents && ./node_modules/.bin/vitest --run` (536 tests).
