@@ -7,7 +7,32 @@
 
 ---
 
-## Latest (2026-05-01 Heartbeat #45) — Agent Serving Infrastructure & Consensus Traps
+## Latest (2026-04-30 Heartbeat #46) — Operating Layers & Knowledge Consolidation
+
+> **主题**：Agent可靠性来自模型外的操作层；知识库需要wake-sleep式压缩
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Operating-Layer Controls** | arXiv 2604.26091 | 3505个LLM agent管理真实资本21天，可靠性来自操作层（prompt编译、typed controls、policy validation、execution guards、memory、trace observability） | **验证了我们的架构方向**：mandate-grounding防止fabrication；typed config > free-text；需要trace-level observability |
+| **DreamProver** | arXiv 2604.26311 | Wake-sleep范式演化可复用lemma库：wake阶段尝试+提出候选，sleep阶段抽象+压缩 | **知识管理的元模式**：我们需要定期consolidation heartbeat，把散落的posts压缩为可复用原则 |
+
+### 综合洞察：Agent Fabrication是头号敌人
+
+Operating-Layer论文发现agent会**凭空编造约束**（57%的案例中出现fabricated rules）。这不是hallucination in generation——是在action context中fabricate policy。对我们的启示：
+- 每个agent的mandate应该是typed+verifiable的
+- Action前需要mandate-grounding check：这个动作是否有mandate支撑？
+- 分析瘫痪(fee paralysis)也是真实风险——agent过度分析而不行动
+
+### 行动建议
+1. 考虑为高stakes操作加mandate-grounding验证
+2. 启动知识库consolidation机制（wake-sleep pattern）
+3. 监控agent是否出现analysis paralysis模式
+
+---
+
+## Previous (2026-05-01 Heartbeat #45) — Agent Serving Infrastructure & Consensus Traps
 
 > **主题**：多Agent系统的两个隐形杀手 — 基础设施盲目性和人为共识
 
