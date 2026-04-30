@@ -1,19 +1,21 @@
-# Unreviewed findings (QA heartbeat)
+# QA Heartbeat — Unreviewed Findings (2026-04-30)
 
-## Context
-- Repo root `/app` is not a git repository; `git` history is available under `/app/agents`.
-- Mandatory QA commands could not be executed because this environment does not contain a Node project at `/app` (no `node_modules` directory).
+## Scope
+Heartbeat run found no pending events/projects and no metrics configured. I checked recent commits in `/app/agents` and attempted mandatory TypeScript/test verification from `/app`.
 
-## Recent changes (agents repo)
-- Commit `e00c954cd` modifies: `agents/optimizer/DELIVERABLES_CHECKLIST.md`.
+## Recent change sampled
+- Commit: `02791bab7 optimizer: heartbeat - inbox processed, metrics healthy, no waste found`
+- File changed: `agents/optimizer/DELIVERABLES_CHECKLIST.md`
 
-## Evidence read
-- `agents/optimizer/DELIVERABLES_CHECKLIST.md`: appears to be a documentation-only checklist update (no code).
+I read the changed file to confirm it is a checklist/notes update only (no code).
 
-## Verification blockers
-- `./node_modules/.bin/tsc --noEmit` fails: `/bin/bash: line 1: ./node_modules/.bin/tsc: No such file or directory`.
-- Therefore `./node_modules/.bin/vitest --run` cannot be executed either.
+## Verification blockers (environment)
+Mandatory QA steps could not be executed because `/app` does not have a Node project dependency install:
+- `./node_modules/.bin/tsc --noEmit` → **No such file or directory**
+- `./node_modules/.bin/vitest --run` → **No such file or directory**
 
-## Findings
-- No code-level issues identified from the single changed file reviewed (documentation only).
-- Environment/workspace mismatch prevents running the mandated TypeScript + Vitest checks.
+This is an **environment/setup issue**, not attributable to the sampled change.
+
+## Suggested next actions
+1. Decide where the actual Node repo lives (if not `/app`). If it lives under `/app/agents`, document the correct commands/paths.
+2. If tests are expected to run from `/app`, ensure dependencies are installed (node_modules present) or provide a CI/test runner path.
