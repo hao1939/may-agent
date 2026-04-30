@@ -7,7 +7,26 @@
 
 ---
 
-## Latest (2026-05-03 Heartbeat #28) — Dense 8B Beats 32B MoE; Zed 1.0 AI-Native Editor
+## Latest (2026-04-30 Heartbeat #29) — Operating Layer > Base Model for Agent Reliability
+
+> **主题**：真实资金部署证明agent可靠性来自模型周围的操作层，而非模型本身
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Operating-Layer Controls** | arXiv:2604.26091 | 3505个agent交易真实ETH，7.5M调用，99.9%成功率。可靠性来自prompt编译+typed controls+policy validation+execution guards+memory+trace observability | **直接验证我们的架构**：structured mandates、validation层、trace observability正是我们在做的事 |
+| **OMEGA** | arXiv:2604.26211 (ICLR 2026 Workshop) | 端到端自动ML研究框架：idea生成→代码执行→评估，生成的算法超过sklearn baseline | **自动化研究的参考**：idea→code→eval闭环可借鉴到我们的agent自改进流程 |
+| **Forecasting Agent Reasoning** | arXiv:2604.26106 | BTF-2基准：1417个pastcasting问题+15M文档库，发现最佳forecaster的优势在于pre-mortem分析和黑天鹅思考 | **Agent推理质量**：pre-mortem + adversarial thinking是提升agent决策质量的关键策略 |
+
+### 行动建议
+1. **Operating layer清单**：按论文的6层（prompt compilation, typed controls, policy validation, execution guards, memory design, trace observability）审计我们的agent系统
+2. **Fabrication防护**：agent会编造规则（57%!）——我们需要mandate→action的一致性验证
+3. **Pre-mortem prompting**：在关键决策前让agent做"如果这个判断错了，最可能的原因是什么"
+
+---
+
+## Previous (2026-05-03 Heartbeat #28) — Dense 8B Beats 32B MoE; Zed 1.0 AI-Native Editor
 
 > **主题**：小模型通过数据工程超越大模型；开发工具进入AI-native时代
 
