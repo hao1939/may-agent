@@ -93,3 +93,8 @@ This project is **infrastructure-complete and data-starved**. All deliverables e
 
 ### Iteration 4 — 2026-04-30T05:20:19.672Z
 **Worker**: The scorecard already has P6-P10 rows. Everything is already done. Let me write a summary report:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should **run `measure-corrections.sh`** to get a fresh correction rate measurement now that all preferences are propagated. This gives us the post-P6-P10 baseline to compare against future measurements.
+
+(b) This is the last active task before the project goes fully into
