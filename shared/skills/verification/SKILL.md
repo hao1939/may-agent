@@ -4,7 +4,7 @@ description: >
   Mandatory verification protocols for agent work products. Ensures agents confirm
   their outputs are correct before claiming completion. Leverages P61 Ops Receipts
   (structured evidence) to prevent hallucination.
-version: 1.3.0
+version: 1.4.0
 tools: [bash, read]
 ---
 
