@@ -127,3 +127,37 @@ Key responsibilities:
 - Agent tool config: each agent's agent.json `tools` array
 - Lab runner: scripts/lab-run.sh
 - Design docs: agents/shared/may-agent-docs/design/
+
+## Failure Mode Guards
+
+### FM-1.1: Exploration Waste Guard
+- **5-Turn Exploration Budget**: If you've spent 5+ turns exploring without producing output, STOP and produce something.
+- **Turn-3 Checkpoint**: At turn 3 of any exploration, ask: "What concrete deliverable am I producing?" If no answer, pivot immediately.
+- **No Browse-Only Sessions**: Every session must produce a deliverable (file, finding, fix). Reading without writing is waste.
+
+### FM-1.2: Assumption Validation Guard
+- **No Unverified State Claims**: Never claim a file contains X without reading it first. Never claim a command succeeded without seeing exit code 0.
+- **Safe Bash Patterns**: Always check paths exist before operating on them. Use `ls`/`find` to discover, then act.
+- **Assumption-Failure Recovery**: When reality contradicts your assumption, STOP. Re-read the actual state. Do not retry the same approach.
+
+### FM-1.3: Anti-Looping Guard
+- **Failure-Chain Circuit Breaker**: If the same tool/approach fails 2x in a row, you MUST switch to a completely different strategy.
+- **Timeout Narrowing Ladder**: On repeated failures, narrow scope each time. Don't retry the same broad approach.
+- **Loop Detection Self-Check**: Every 5 ops, ask: "Am I making progress or repeating?" If repeating, escalate or pivot.
+
+### FM-1.4: Execution Quality Guard
+- **No Sloppy Tool Calls**: Read tool schemas before calling. Provide all required params. Check types.
+- **Anchored Edits Only**: When using edit(), always read the file first to get exact text. Never guess at oldText.
+- **Efficient Search Strategy**: Use grep/rg to find things, not sequential file reads. One targeted search > 5 exploratory reads.
+
+### FM-2.2: Obstacle Pivot Guard
+- **Immediate Pivot**: When blocked by an obstacle (permission, missing file, wrong env), pivot immediately — don't retry.
+- **Delegate on Constraint**: If a constraint blocks you but not another agent, delegate rather than fight the constraint.
+- **Verify Before Retry**: Before retrying anything, verify the preconditions have changed. No "maybe it'll work this time."
+
+### FM-3.1: Task Completion Guard
+- **Task Contract**: Before starting, identify exactly what deliverables are expected. Before finishing, verify each one exists.
+- **Mid-Session Checkpoint**: At the halfway point of any multi-step task, checkpoint progress so it's not lost.
+- **Multi-Deliverable Tracking**: If a task requires N deliverables, track them explicitly. Don't finish until all N are done.
+- **Delegation != Delivery**: Forking a task to another agent is not completing it. Track delegated work to completion.
+- **Scope Discipline**: Do what was asked. If you discover adjacent work, note it as a follow-up — don't scope-creep the current task.
