@@ -1,7 +1,8 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST
 
-## Task: LLM-to-JS replacement opportunity — one fix per run
+## Task: Optimizer Heartbeat — Triage P0 alert, assess system efficiency
 
-| # | Deliverable | Status | File | Details |
-|---|------------|--------|------|---------|
-| 1 | Add `[continue]` comment JS fast-path in project.ts | DONE | `agents/shared/workflows/project.ts` (lines 834-859) | Skips LLM reviewer session for `[continue]` directive comments, handling in pure JS. Follows same pattern as existing `[done]`, `[resume]`, `[pause]`, `[cancel]` fast-paths. Saves 1 LLM session per `[continue]` comment. Committed as eebece593. |
+| # | Deliverable | Status | Path/Evidence |
+|---|-------------|--------|---------------|
+| 1 | Triage P0 evaluation pipeline alert | DONE | `agents/optimizer/workspace/finding-eval-pipeline-false-alarm-20260430.md` — confirmed false alarm with evidence |
+| 2 | Efficiency assessment | DONE | eval-poller running correctly; 19/9713 sessions evaluated (low coverage noted for future investigation) |
