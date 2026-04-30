@@ -7,7 +7,26 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #17) — Operating-Layer Controls + Wake-Sleep Knowledge Evolution
+## Latest (2026-04-30 Heartbeat #18) — ClawGym Agent Training Framework + Multimodal Agent Architecture
+
+> **主题**：Claw-style agent的全生命周期训练框架 + 多模态agent的原生设计原则
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **ClawGym** | arXiv 2604.26904 | 全生命周期框架：persona×skill合成数据、mock workspace + hybrid verification、per-task sandbox RL | **直接对标我们的系统**；可借鉴其数据合成和评估方法 |
+| **GLM-5V-Turbo** | arXiv 2604.26752 | 多模态感知作为推理核心组件（非辅助接口）；分层优化；端到端验证 | **"Native vs bolted-on"设计原则**；能力应是架构核心不是后加层 |
+| **Speculative Decoding for RL** | arXiv 2604.26779 (NVIDIA) | RL rollout用speculative decoding加速1.8x，预测大规模2.5x | RL训练加速的工程方案；与我们当前无直接关系但值得tracking |
+
+### 行动建议
+1. **借鉴ClawGym的评估思路**：为每个agent定义persona+skills，交叉生成测试任务，用mock workspace隔离验证
+2. **审视"bolted-on"问题**：哪些能力是后加的？agent协作、知识共享是否是架构原生的？
+3. **收集成功轨迹**：ClawGym用black-box rollout做SFT——我们可以收集agent成功session，分析pattern优化prompt
+
+---
+
+## Previous (2026-04-30 Heartbeat #17) — Operating-Layer Controls + Wake-Sleep Knowledge Evolution
 
 > **主题**：生产级LM Agent的可靠性来自模型外围的operating layer + 知识库的wake-sleep演化模式
 
