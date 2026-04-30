@@ -32,6 +32,14 @@
 - Build tools that show system status, direction, stalled work
 - Proactive reporting > reactive answering
 
+### P5: Data Integrity
+> "The data is most important for the success. Corrupted data would fail the project."
+
+- Accuracy of inputs > speed of processing
+- Validate data quality before using it for analysis
+- When data might be corrupted or incomplete, flag it rather than proceeding
+- **Decision rule**: Before acting on data, ask "is this data reliable?" If uncertain, verify first.
+
 ---
 
 ## 2. Delegation Rules
