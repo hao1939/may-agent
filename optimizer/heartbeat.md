@@ -21,6 +21,7 @@ DONE WHEN: [criteria]
 ## ANTI-SHALLOW RULE
 - You MUST make at least 8 tool calls before calling finish().
 - Never claim deliverables exist without read() evidence.
+- Every edit()/write() must be immediately followed by read() of the same file. Evaluators flag violations.
 
 ## Questions to investigate this heartbeat
 
@@ -47,6 +48,8 @@ Pick 2-3 that matter most right now. Use data, not intuition.
 - What's the session throughput trend? Are we doing more or less work than yesterday?
 
 ## How to act
+
+⚠️ VERIFY EVERY WRITE: After every edit()/write() call, your NEXT tool call must be read() on that same file. This is checked by evaluators.
 
 - **Found waste?** Quantify it. Write a finding with data. Propose a fix.
 - **Found an efficiency opportunity?** Create a project to track the improvement.
