@@ -7,7 +7,26 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #31) — Self-Evolving Skills; Wake-Sleep Knowledge Libraries
+## Latest (2026-04-30 Heartbeat #32) — Native Multimodal Agents; Semantic Exploration at Test-Time
+
+> **主题**：多模态感知成为agent推理的原生组件；test-time探索可以几乎零成本实现语义多样性
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **GLM-5V-Turbo** | arXiv:2604.26752 (Z.ai) | 原生多模态agent基座模型：视觉=推理核心组件，分层优化+端到端验证 | **视觉不是插件**：agent处理GUI/网页/文档时应用原生多模态模型；分层优化验证渐进式training |
+| **ESamp** | arXiv:2604.24927 (ShanghaiTech) | 用Latent Distiller的预测误差作为新颖性信号引导采样，98.8%吞吐保留 | **新颖性检测可迁移**：检测agent是否重复思路；异步轻量介入证明test-time干预几乎零成本 |
+| **Spec-Decode for RL** | arXiv:2604.26779 (NVIDIA) | 投机解码加速RL训练rollout 1.8-2.5x，无损输出分布 | **RL训练加速路径**：如果我们做RL微调agent，speculative decoding是免费加速 |
+
+### 行动建议
+1. **新颖性信号用于agent自检**：借鉴ESamp，当agent多次尝试同一任务时，检测是否在做表面变化而非真正探索新方向
+2. **端到端验证链路**：GLM-5V强调的end-to-end verification——我们的agent系统也需要完整验证，不能只看单步
+3. **异步介入模式**：ESamp证明可以在推理过程中几乎零成本插入引导，对agent的实时监控/纠正有参考价值
+
+---
+
+## Previous (2026-04-30 Heartbeat #31) — Self-Evolving Skills; Wake-Sleep Knowledge Libraries
 
 > **主题**：agent的瓶颈不是推理而是编排；知识库需要自动进化机制
 
