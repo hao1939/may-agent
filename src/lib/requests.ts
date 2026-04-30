@@ -332,7 +332,30 @@ export function getDb(persistDir: string): SqliteDb {
   mkdirSync(persistDir, { recursive: true });
 
   const dbPath = join(persistDir, "may.db");
-  const db = openDatabase(dbPath);
+  let db = openDatabase(dbPath);
+
+  // Auto-restore from backup if DB is empty/corrupt
+  try {
+    const backupPath = dbPath + ".backup";
+    const tables = db.prepare("SELECT COUNT(*) as c FROM sqlite_master WHERE type='table'").get() as any;
+    if (tables?.c === 0) {
+      // DB is empty — check for backup
+      const { existsSync, copyFileSync } = require("node:fs");
+      if (existsSync(backupPath)) {
+        db.close();
+        copyFileSync(backupPath, dbPath);
+        const restored = openDatabase(dbPath);
+        const check = restored.prepare("SELECT COUNT(*) as c FROM sessions").get() as any;
+        if (check?.c > 0) {
+          console.log(`[db] Restored from backup (${check.c} sessions)`);
+          dbCache.set(persistDir, restored);
+          return restored;
+        }
+        restored.close();
+        db = openDatabase(dbPath);
+      }
+    }
+  } catch {}
 
   db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA busy_timeout = 5000");
