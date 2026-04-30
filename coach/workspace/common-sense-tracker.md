@@ -123,5 +123,16 @@
   - No instances found of narration like "file looks correct" or "everything healthy" in any agent's context.md
 - **Notes:** Strong compliance. Context files are curated knowledge bases, not session logs. The structured deployment process (experiments/skills) naturally produces durable facts.
 
+### Never Stop at Target Met
+- **Item:** "Hitting a target is not permission to stop. Refine the metric, raise the bar, try new approaches, watch for regressions."
+- **Verified:** 2026-06-28
+- **Result:** ✅ PASS
+- **Evidence:**
+  - s_1777485521782_67 (evaluation-revival orchestrator): After sessions-scored-7d hit target, explicitly continued: "The first metric is already at target. The remaining gap is coverage" — didn't stop, pivoted to next gap
+  - Same session, iteration 6+: After pipeline was fully built, added regression guard ("protects the pipeline from silently breaking again") and then investigated coverage bottleneck — continuous forward motion
+  - s_1777471451572_2: "All 3 primary metrics are at target and all previous plan items are complete. We're now in 'raise targets and expand' mode" — explicitly raising bar after hitting targets
+  - Orchestrator workflow prompt itself encodes this: "Metrics at target? Raise the target, protect against regression, or find the next problem. Your job is to keep pushing forward."
+- **Notes:** Strong compliance. Both at individual session level (agents keep working after first metric hits target) and at system level (workflow prompts enforce this). The evaluation-revival project went through 10+ iterations despite hitting its first metric by iteration 2.
+
 ## Items Not Yet Verified
 - (none remaining)
