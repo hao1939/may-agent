@@ -1,11 +1,11 @@
 # Project: Coach Work-Session Quality
 
-**Status**: done
+**Status**: active
 **Stop Reason**: Target met — last 5 coach quality scores (0.72, 0.75, 0.9, 0.75, 0.58) all near/above 0.50, avg 0.74. Enforcement deployed as regression guard.
 **Owner**: coach
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 4
+**Iteration**: 5
 
 ## Goal
 Raise coach JS quality score from 0.24 (worst in system) to ≥0.50. Root cause: open-ended work sessions fail hard while structured heartbeats/cron are near-perfect.
