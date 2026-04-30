@@ -1,20 +1,25 @@
-# Unreviewed findings (QA heartbeat)
+# QA Heartbeat — Unreviewed Findings (2026-04-30)
 
 ## Context
-- `/app` is **not** a git repo; the repo is at `/app/agents`.
-- Latest commit in `/app/agents`: `97530969b` (scout) — only changes `agents/evaluator/last-session.md`.
+This heartbeat attempted to verify recent changes in the **/app/agents** repo.
 
 ## Findings
-### 1) Environment issue: cannot run required TypeScript/test checks (CRITICAL for verification)
-**Evidence:**
-- `./node_modules/.bin/tsc --noEmit` fails: `No such file or directory`.
-- `./node_modules/.bin/vitest --run` fails: `No such file or directory`.
 
-This prevents QA from executing the mandatory verification steps on this container as-is.
+### 1) TypeScript build is currently failing (tsc --noEmit)
+- **Severity:** IMPORTANT (blocks type-safety verification)
+- **Evidence:** `cd agents && ./node_modules/.bin/tsc --noEmit`
+  - Errors:
+    - `shared/lib/index.ts(13,1): error TS2308: Module './iteration-monitor.js' has already exported a member named 'IterationRecord'.`
+    - `shared/lib/index.ts(15,1): error TS2308: Module './iteration-monitor.js' has already exported a member named 'IterationRecord'.`
+    - `shared/lib/index.ts(16,1): error TS2308: Module './task-validator.js' has already exported a member named 'ValidationResult'.`
 
-### 2) Potential process issue: root-level `DELIVERABLES_CHECKLIST.md` exists outside repo (IMPORTANT)
-**Evidence:** `/app/DELIVERABLES_CHECKLIST.md` exists and contains claims from an optimizer heartbeat.
-Because `/app` isn’t a git repo, this file is untracked/unversioned and may confuse verification and deliverable tracking.
+**Notes:** `shared/lib/index.ts` is a barrel file with multiple `export * from ...` lines. TS2308 usually indicates ambiguous re-exports (two `export *` sources exporting the same name). This suggests at least two of the re-exported modules are exporting `IterationRecord` and/or `ValidationResult` under the same names, creating ambiguity at the barrel boundary.
 
-### 3) Recent change reviewed (informational)
-`agents/evaluator/last-session.md` content is consistent with the commit message; no functional code changes observed.
+### 2) Test suite is healthy (vitest --run)
+- **Severity:** INFO
+- **Evidence:** `cd agents && ./node_modules/.bin/vitest --run`
+  - **Result:** PASS — **536 tests** across **31 files**.
+
+## Next steps (recommended)
+1. Identify which module besides `iteration-monitor.ts` exports `IterationRecord`, and which module besides `task-validator.ts` exports `ValidationResult`, then resolve the duplicate barrel exports (explicit re-export, rename, or avoid `export *`).
+2. Re-run `tsc --noEmit` to confirm the typecheck is unblocked.
