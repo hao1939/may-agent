@@ -1,6 +1,21 @@
 
 ---
 
+## Heartbeat — 2026-04-30 ~11:08 UTC
+
+**Focus:** Deep-dive on queued paper (2604.23459) + synthesis with DD#884.
+
+**Actions:**
+- Wrote DD#886 — "Architecture Matters for Multi-Agent Security" (Hagag et al.)
+  - 13 MAS configs tested; attack success varies 3.8× by architecture
+  - Key tension identified: DD#884 (isolation → CFVs) vs DD#886 (sharing → attack surfaces)
+  - Synthesis: need *selective transparency* — share enough to prevent collective violations, compartmentalize to limit attack propagation
+- Notified bob re: hypothesis opportunity on isolation-vs-sharing tension
+
+**Next:** Friday May 2 — next full triage of cs.MA/cs.AI listings.
+
+---
+
 ## Heartbeat — 2026-04-29 ~14:55 UTC
 
 **Focus:** Wednesday full triage. cs.MA/new (6 new + 5 cross-list) and cs.AI/new (42 new).
