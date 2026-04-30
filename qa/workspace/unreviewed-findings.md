@@ -1,28 +1,30 @@
-# QA Heartbeat — Unreviewed Findings (2026-04-30)
+# Unreviewed Findings (QA heartbeat)
 
-## Scope
-Heartbeat audit with no pending events/projects. Verified latest change in `agents` repo and ran typecheck + tests.
+## 2026-04-30
 
-## Findings
+### TypeScript build is failing (CRITICAL)
 
-### 1) `tsc --noEmit` currently fails (CRITICAL)
-**Evidence:** `shared/lib/index.ts` reports duplicate re-exported members.
-- Errors observed:
-  - `shared/lib/index.ts(13,1): TS2308: Module './iteration-monitor.js' has already exported a member named 'IterationRecord'.`
-  - `shared/lib/index.ts(15,1): TS2308: Module './iteration-monitor.js' has already exported a member named 'IterationRecord'.`
-  - `shared/lib/index.ts(16,1): TS2308: Module './task-validator.js' has already exported a member named 'ValidationResult'.`
+- Command: `./node_modules/.bin/tsc --noEmit`
+- Fails with duplicate re-export name collisions in `shared/lib/index.ts`:
+  - `shared/lib/index.ts(13,1): Module './iteration-monitor.js' has already exported a member named 'IterationRecord'.`
+  - `shared/lib/index.ts(16,1): Module './task-validator.js' has already exported a member named 'ValidationResult'.`
 
-**Impact:** Typecheck is red; this can block downstream builds/CI or mask real regressions.
+**Impact:** Any consumer compiling TS in this repo will fail typechecking.
 
-**Next step suggestion:** Inspect `shared/lib/index.ts` and remove/alias duplicate exports, or make re-exports explicit to resolve ambiguity.
+**Likely cause:** Barrel export file `shared/lib/index.ts` re-exports multiple modules that each export overlapping symbol names (e.g., `IterationRecord`, `ValidationResult`) and TS considers them ambiguous.
 
-### 2) `vitest --run` tests pass but process exits non-zero due to permission error (IMPORTANT env)
-**Evidence:** All tests passed (536), but vitest throws:
-- `EACCES: permission denied, open '/app/agents/node_modules/.vite/vitest/results.json'`
+**Suggested fix direction:** In `shared/lib/index.ts`, replace `export * from './iteration-monitor.js'` and/or the conflicting module with explicit re-exports, e.g.
+`export { IterationMonitor, type IterationRecord } from './iteration-monitor.js'` and ensure no other re-export defines `IterationRecord` under same name. Similar for `ValidationResult`.
 
-**Impact:** Even with passing tests, CI would fail if it relies on exit code.
+### Vitest tests pass but runner exits non-zero due to permissions (IMPORTANT, env)
 
-**Next step suggestion:** Fix permissions/ownership on `/app/agents/node_modules/.vite/` or configure vitest cache/results output to a writable location.
+- Command: `./node_modules/.bin/vitest --run`
+- All tests pass: `536 passed (536)` across `31` files.
+- But Vitest exits with error:
+  - `EACCES: permission denied, open '/app/agents/node_modules/.vite/vitest/results.json'`
 
-### 3) Recent change verified: metrics design doc edit (MINOR)
-**Evidence:** `shared/may-agent-docs/design/agent-metrics.md` updated with cadence/phase guidance and implementation notes. Content looks coherent; no code impact.
+**Impact:** CI/local runs may fail despite green tests.
+
+**Likely cause:** `node_modules/.vite` directory is not writable under current user.
+
+**Suggested fix direction:** Ensure `node_modules/.vite` is writable (permissions/ownership), or configure Vitest cache/results output to a writable location.
