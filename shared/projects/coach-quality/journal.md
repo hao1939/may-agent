@@ -81,3 +81,6 @@
 **Orchestrator**: CONTINUE
 
 (a) Next iteration should produce: M13 verification — check whether the cron scheduler is actually running and firing `heartbeat.trigger` events. Look at OTHER agents' recent heartbeat sessions as proof the scheduler works. If other agents have recent heartbeats but coach doesn't, the issu
+
+### Iteration 11 — 2026-04-30T07:11:44.220Z
+**Worker**: Key finding: The coach's last session (s_1777532984240_658, 07:10) is THIS very session — it's the coach orchestrating this project, not a real heartbeat. Other agents (qa at 07:04, evaluator at 06:47, bob at 06:46) have recent sessions. The scheduler IS running. But the coach's heartbeat sessions are being consumed by this project workflow rather than independent heartbeats.

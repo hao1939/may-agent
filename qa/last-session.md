@@ -1,34 +1,32 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777530833131_597
+- **Session:** s_1777532634168_650
 - **Status:** done
-- **When:** 2026-04-30T06:34:31.261Z
-- **Duration:** 38s
+- **When:** 2026-04-30T07:04:42.328Z
+- **Duration:** 48s
 
 ## What Happened
 ### Summary
-Heartbeat QA found the repo root isn’t a git checkout, but `agents/` is. Recent changes are mainly evaluator heartbeat-note recording. Independent verification shows **Vitest is fully green (536 tests)**, but **TypeScript compilation fails** due to **duplicate type names being re-exported via the shared barrel** (`agents/shared/lib/index.ts`). This is a real, code-level issue that should be fixed before shipping anything that depends on `tsc --noEmit` being clean.
+Looked for unverified recent changes in the `/app/agents` repo (since `/app` itself is not a git repo). Latest change is `coach/workflows/coach-heartbeat.ts` adding a 2‑phase heartbeat workflow. Runtime tests are green, but TypeScript typecheck is currently **failing** due to duplicate barrel exports in `shared/lib/index.ts`, which is a ship-stopper for typecheck-gated workflows/CI.
 
 ### Checks
-- **tsc --noEmit:** **FAIL**  
-  Evidence: `shared/lib/index.ts(13,1)` and others: duplicate exported members `IterationRecord` and `ValidationResult` (tool output from running `cd agents && ./node_modules/.bin/tsc --noEmit`).
-- **vitest --run:** **PASS (536 tests)**  
-  Evidence: `31 passed (31)`, `536 passed (536)` (tool output from running `cd agents && ./node_modules/.bin/vitest --run`).
+- `tsc --noEmit`: **FAIL**  
+  Evidence: tool output shows TS2308 errors in `shared/lib/index.ts` about duplicate exports (`IterationRecord`, `ValidationResult`).
+- `vitest --run`: **PASS** (**536 tests**)  
+  Evidence: vitest run output shows “Tests 536 passed (536)”.
 
 ### Issues
-1. **CRITICAL — TypeScript build broken due to ambiguous re-exports**
-   - **What:** `agents/shared/lib/index.ts` re-exports modules that each define/export the same symbol names (`IterationRecord`, `ValidationResult`), causing TS2308 “already exported a member named …”.
-   - **Evidence:**
-     - `agents/shared/lib/index.ts` contents show it re-exports `task-validator.js`, `iteration-monitor.js`, `session-analyzer.js`, `workflow-metrics.js`, `config-validator.js` (read output).
-     - Multiple definitions exist:
-       - `IterationRecord` appears in `shared/lib/session-analyzer.ts`, `shared/lib/iteration-monitor.ts`, `shared/lib/workflow-metrics.ts` (grep output).
-       - `ValidationResult` appears in `shared/lib/config-validator.ts` and `shared/lib/task-validator.ts` (grep output).
-   - **Impact:** Any consumer importing from `@shared/lib` (barrel) can’t typecheck; repo-wide `tsc --noEmit` currently fails.
+1) **CRITICAL** — TypeScript build fails (duplicate barrel re-exports)  
+   - Evidence: `./node_modules/.bin/tsc --noEmit` reports:
+     - `shared/lib/index.ts(13,1)` TS2308 duplicate export `IterationRecord`
+     - `shared/lib/index.ts(16,1)` TS2308 duplicate export `ValidationResult`
+   - File reviewed: `agents/shared/lib/index.ts` (barrel exports via `export * from ...`).
 
-2. **MINOR — Heartbeat “what changed in last 6h” is hard to answer from `/app`**
-   - **What:** `/app` isn’t a git repo; only `/app/agents` is.
-   - **Evidence:** `git log` at `/app` fails: “not a git repository”.
+2) **IMPORTANT** — “no action needed” shortcut logic may never trigger as intended  
+   - Evidence: in `agents/coach/workflows/coach-heartbeat.ts`, phase-2 skip requires `!alerts && !inbox`, but `alerts`/`inbox` are strings and may be truthy even when they render “None — all clear.” / “No pending events.”, causing unnecessary execution.
 
 ### Verdict
-**FAIL** — because `./node_modules/.bin/tsc --noEmit` fails with real, reproducible TypeScript export ambiguity, and that’s a ship-blocker per QA standards. Vitest being green is good, but it doesn’t negate a broken typecheck step.
+**FAIL** — due to **CRITICAL** `tsc --noEmit` failure (typecheck break in shared barrel exports). Vitest is green, but typecheck failure blocks shipping.
+
+Deliverable: wrote findings to `agents/qa/workspace/unreviewed-findings.md`.
