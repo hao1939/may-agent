@@ -1,14 +1,17 @@
-# Coach Quality Project — Complete
+# Coach Quality Project — COMPLETE
 
-**Status**: ✅ Complete  
-**Metric**: JS quality score 0.24 → 0.74 (target ≥0.50 exceeded)
+**Status**: ✅ Complete
+**Score**: 0.24 → 0.74 average (target ≥0.50 exceeded)
 
-## Intervention
-
-Added OUTPUT FORMAT (MANDATORY) and EXECUTION RULES blocks to `agents/coach/heartbeat.md`:
-- Forces GOAL/PLAN/DONE WHEN output before any tool calls
-- Requires verify-after-write, no goal drift, evidence in finish()
+## What Was Done
+- Injected OUTPUT FORMAT (MANDATORY) block into `agents/coach/heartbeat.md`
+- Added EXECUTION RULES block into `agents/coach/heartbeat.md`
+- These enforce structured output (GOAL/PLAN/DONE WHEN) and verify-after-write discipline
 
 ## Key Insight
+- `context.md` instructions were ignored (0% compliance across 9 iterations)
+- `heartbeat.md` instructions achieved near-100% compliance immediately
+- The prompt the agent actually receives matters more than documentation files
 
-`context.md` instructions had 0% compliance. `heartbeat.md` instructions achieved ~100% compliance immediately because heartbeat.md is the actual prompt injected into every session.
+## No Further Action Needed
+Project is complete. Re-open only if scores regress below 0.50.
