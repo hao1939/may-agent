@@ -1,32 +1,34 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777532634168_650
+- **Session:** s_1777534433243_688
 - **Status:** done
-- **When:** 2026-04-30T07:04:42.328Z
-- **Duration:** 48s
+- **When:** 2026-04-30T07:34:51.221Z
+- **Duration:** 57s
 
 ## What Happened
 ### Summary
-Looked for unverified recent changes in the `/app/agents` repo (since `/app` itself is not a git repo). Latest change is `coach/workflows/coach-heartbeat.ts` adding a 2‑phase heartbeat workflow. Runtime tests are green, but TypeScript typecheck is currently **failing** due to duplicate barrel exports in `shared/lib/index.ts`, which is a ship-stopper for typecheck-gated workflows/CI.
+No active alerts/events/projects. I audited recent changes in the `/app/agents` repo and ran the required verification commands. **Vitest passes**, but **TypeScript typecheck fails** due to duplicate barrel exports in `agents/shared/lib/index.ts`, which is likely a pre-existing compile break that needs fixing before a clean `tsc` gate can pass.
 
 ### Checks
-- `tsc --noEmit`: **FAIL**  
-  Evidence: tool output shows TS2308 errors in `shared/lib/index.ts` about duplicate exports (`IterationRecord`, `ValidationResult`).
-- `vitest --run`: **PASS** (**536 tests**)  
-  Evidence: vitest run output shows “Tests 536 passed (536)”.
+- **tsc --noEmit:** **FAIL**
+  - Ran: `cd /app/agents && npx tsc --noEmit`
+  - Errors (TS2308 duplicate exports):
+    - `shared/lib/index.ts(13,1)` duplicate `IterationRecord` (from `./iteration-monitor.js`)
+    - `shared/lib/index.ts(15,1)` duplicate `IterationRecord` (from `./iteration-monitor.js`)
+    - `shared/lib/index.ts(16,1)` duplicate `ValidationResult` (from `./task-validator.js`)
+- **vitest --run:** **PASS** (**536 tests**)
+  - Ran: `cd /app/agents && npx vitest --run`
+  - Result: `31 passed (31)`, `536 passed (536)`
 
 ### Issues
-1) **CRITICAL** — TypeScript build fails (duplicate barrel re-exports)  
-   - Evidence: `./node_modules/.bin/tsc --noEmit` reports:
-     - `shared/lib/index.ts(13,1)` TS2308 duplicate export `IterationRecord`
-     - `shared/lib/index.ts(16,1)` TS2308 duplicate export `ValidationResult`
-   - File reviewed: `agents/shared/lib/index.ts` (barrel exports via `export * from ...`).
-
-2) **IMPORTANT** — “no action needed” shortcut logic may never trigger as intended  
-   - Evidence: in `agents/coach/workflows/coach-heartbeat.ts`, phase-2 skip requires `!alerts && !inbox`, but `alerts`/`inbox` are strings and may be truthy even when they render “None — all clear.” / “No pending events.”, causing unnecessary execution.
+1. **CRITICAL — TypeScript compile broken by duplicate exports**
+   - **Where:** `agents/shared/lib/index.ts` (barrel exports)
+   - **Evidence:** `npx tsc --noEmit` reports TS2308 duplicate export member names (see errors above).
+   - **Impact:** Any CI or consumer relying on `tsc` typecheck will fail even though tests pass.
 
 ### Verdict
-**FAIL** — due to **CRITICAL** `tsc --noEmit` failure (typecheck break in shared barrel exports). Vitest is green, but typecheck failure blocks shipping.
+**FAIL** — because `tsc --noEmit` is currently failing with TS2308 duplicate export errors.
 
-Deliverable: wrote findings to `agents/qa/workspace/unreviewed-findings.md`.
+### Deliverable (heartbeat notes)
+- Wrote findings to: `agents/qa/workspace/unreviewed-findings.md` (includes the tsc failure + vitest pass evidence).

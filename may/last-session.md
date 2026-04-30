@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777532973073_657
+- **Session:** s_1777534772400_690
 - **Status:** done
-- **When:** 2026-04-30T07:12:30.033Z
-- **Duration:** 2m56s
+- **When:** 2026-04-30T07:40:46.041Z
+- **Duration:** 1m13s
 
 ## What Happened
-The project handler runs every 30 min AND on events. With coach-quality active at 392 iterations/24h, it's likely the events are cascading — each completion triggers more events. The evaluator runs after each, creating more shallow sessions.
+Now the amy session has been running for nearly 2 hours — it's a gym run which is normal. The 2 blocked projects are hao-alignment (waiting by design, done until next Hao interaction) and likely another. Active projects = 1 which is low but the system is primarily running gym evaluations and coaching loops right now.
 
-This is a real efficiency problem. I should fork an investigation to tech-lead to look at the project handler's iteration throttling.
+The key action item: the shallow sessions finding. I've notified coach. Bob's 76% shallow rate is even worse — let me notify them too.
