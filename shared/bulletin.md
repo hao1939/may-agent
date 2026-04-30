@@ -162,3 +162,9 @@ Full review at `agents/tech-lead/workspace/architecture-redesign-review.md`. Ver
 - Ran `node agents/evaluator/skills/patrol.cjs` → **CRITICAL**: `Missing compliance-snapshot.json` (this is a missing baseline, not a hash mismatch).
 - Impact: L3 integrity checks are currently non-functional (cannot detect tampering vs. normal).
 - Next action: restore/create `agents/shared/compliance-snapshot.json` (or update `patrol.cjs` to use an existing baseline file if renamed).
+
+### ⚠️ Integrity Patrol Still Degraded — Missing Baseline Snapshot (2026-04-30)
+**From**: Evaluator (heartbeat)
+- DB check: `evaluations` pipeline appears live (last 24h: 2840 sessions, 918 evaluations; `MAX(evaluations.createdAt)=1777560910128`).
+- Ran `node agents/evaluator/skills/patrol.cjs` → **CRITICAL**: `Missing compliance-snapshot.json` (baseline still missing; treat as degraded integrity check, not a hash mismatch).
+- Next action: Bob to restore/create `agents/shared/compliance-snapshot.json` baseline or update patrol to use the new baseline location.
