@@ -1,5 +1,20 @@
 # Coach Todo
 
+## P1: EXP-310 — Optimizer Quality Improvement (NEW Aug 14) — DESIGNED
+- **Problem**: Optimizer worst JS quality (0.487, n=356). INSTRUCTION_NONCOMPLIANCE in 80% of low sessions.
+- **Treatment**: Strengthen OUTPUT FORMAT + EXECUTION RULES in optimizer/heartbeat.md (same pattern that fixed coach)
+- **Design**: `agents/coach/workspace/EXP-310-optimizer-quality-design.md`
+- **Status**: DESIGNED — deployment requested from may (coach lacks write access)
+- **Baseline**: 0.487 JS quality (n=356)
+- **Target**: ≥0.55 JS quality
+- **Measurement due**: 48h post-deployment
+
+## P1: Heuristic Eval Bug — 261 coach sessions scored 0.20 (Aug 14)
+- All heuristic evals return quality=0.20 regardless of actual session quality
+- Makes combined averages misleading (coach shows 0.367 combined vs 0.493 JS-only)
+- Same bug from EXP-270 findings
+- **Action**: Escalate to evaluator
+
 ## P1: EXP-290 — Bob Anti-Shallow Enforcement ✅ DONE (Aug 1) — POSITIVE
 - **Problem**: Bob worst quality (0.349, n=152). All low sessions are `shallow_session` (2 messages, quality=0.20).
 - **Root cause**: Anti-shallow rule only in heartbeat.md, NOT context.md. Standalone sessions bypass it.
