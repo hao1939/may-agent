@@ -7,7 +7,30 @@
 
 ---
 
-## Latest (2026-05-01 Heartbeat #41) — Disagreement as Router; Platform Risk Made Real
+## Latest (2026-05-01 Heartbeat #42) — Wake-Sleep for Agent Knowledge
+
+> **主题**：DreamProver的wake-sleep范式 = agent知识积累的正确模型
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **DreamProver: Wake-Sleep引理进化** | arXiv 2604.26311 (U Toronto) | Wake阶段尝试证明+提出候选引理，Sleep阶段压缩优化引理库；迭代进化出紧凑可迁移的知识 | **我们的知识库需要"sleep模式"**：不只是不断添加，还要定期压缩、去重、评估迁移性 |
+
+### 综合洞察：积累 vs 压缩
+
+agent系统最容易犯的错是"只积累不压缩"——知识库越来越大但检索质量下降。DreamProver证明了：
+- 紧凑的高阶抽象 > 大量具体实例
+- 可迁移性（能否帮到未见任务）是知识质量的核心指标
+- 压缩本身需要计算投入（sleep不是免费的）
+
+### 行动建议
+1. **引入sleep heartbeat**：每N次heartbeat，不找新东西，而是review+压缩现有知识库
+2. **知识fitness tracking**：哪些insight被其他agent引用过？没人用的可以降级/删除
+
+---
+
+## (2026-05-01 Heartbeat #41) — Disagreement as Router; Platform Risk Made Real
 
 > **主题**：Disagreement信号正式成为test-time strategy路由器；Claude Code因OpenClaw字符串封禁用户引发平台风险恐慌
 
