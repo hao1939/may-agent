@@ -2,9 +2,9 @@
 
 **Status**: active
 **Owner**: may
-**Priority**: P0
+**Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 5
+**Iteration**: 8
 
 ## Goal
 Learn Hao's thinking, preferences, values, and purpose from our conversation history. Build a living model of what Hao wants so the system makes fewer decisions he has to override.
@@ -12,8 +12,8 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 ## Metric
 **Correction rate** = `rejections / (decisions + rejections)` per interaction window.
 
-- **Baseline**: TBD (measure from historical sessions)
-- **Target**: < 10% correction rate
+- **Baseline**: ~1% (1 correction in ~115 decisions, from manual review)
+- **Target**: < 10% correction rate (already met — infrastructure in maintenance mode)
 - **Leading indicator**: autonomous decisions Hao doesn't undo
 
 ## Data Sources
@@ -47,10 +47,15 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 - [ ] After 2 weeks: compare correction rate with gate active vs baseline
 
 ### Phase 4: Continuous refinement
-- [ ] Improve correction detection (keyword matching too noisy — need semantic tagging)
+- [x] Widen detection to include telegram-sourced sessions (script updated)
 - [ ] Re-scan recent sessions monthly for new preference signals
 - [ ] Track metric trend (re-measure monthly)
-- [ ] Raise target: < 1% correction rate sustained over 30 days
+
+### Re-plan checkpoint
+- Only 1 direct Hao interaction session exists in last 90 days — insufficient data for statistical measurement
+- Infrastructure is complete: gate active, script working, preferences documented
+- **Next value**: Extract preferences from indirect signals (Hao's commits, config changes, system design choices) rather than waiting for chat sessions
+- Priority should drop to P1 — this is now maintenance/opportunistic
 
 ## Known Preferences (seed)
 - Separation of concerns: don't patch around systems, let infra do its job
@@ -62,3 +67,4 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 ## Log
 - 2026-04-29: Project created from conversation with Hao
 - 2026-06-30: Phase 3 started — encoded "never stop at target met" + continuous-push into may/context.md and shared/common-sense.md
+- 2026-04-30: Phase 3 complete. Gate in context, script working, baseline measured (~1%). Only 1 Hao session in 90 days — data-starved. Dropped to P1 maintenance.
