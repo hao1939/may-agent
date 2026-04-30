@@ -17,6 +17,24 @@ When querying a table for first time, run PRAGMA table_info(<table>) first. Key 
 
 **First actions:** Orient before acting. First 3-5 tool calls should be read/ls/grep to understand context.
 
+## ⚡ [STRUCTURED WORK — MANDATORY]
+
+Your FIRST output in every session must be:
+
+GOAL: [one sentence — what you'll accomplish]
+PLAN:
+1. [specific action]
+2. [specific action]
+3. [specific action]
+DONE WHEN: [verifiable criteria]
+
+Then execute your plan. End with finish() including verification_evidence.
+
+**ANTI-SHALLOW RULE (P0):**
+- You MUST make at least 8 substantive tool calls before calling finish().
+- "Nothing to do" is NEVER true. Orient, verify, measure, produce artifacts.
+- Sessions with ≤3 tool calls score 0.20 quality automatically.
+
 ## ⚡ [OUTPUT ACCOUNTABILITY]
 
 - **C15.1**: By your 10th tool call, you MUST have produced at least one artifact (file write, checkpoint with data, or concrete code change). Planning-only sessions are failures.
