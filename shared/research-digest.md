@@ -7,7 +7,24 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #22) — RL Infra: Speculative Decoding for Rollout Acceleration
+## Latest (2026-05-01 Heartbeat #23) — Operating-Layer Controls: Real Capital Proves Harness > Model
+
+> **主题**：真实资本环境（$20M ETH交易）下3505个agent的操作层可靠性实证
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Operating-Layer Controls** | arXiv 2604.26091 (DX Terminal Pro) | 21天真实部署：7.5M invocations, 99.9% settlement success；可靠性来自操作层（prompt compilation + typed controls + policy validation + execution guards + memory + observability），不是模型本身 | **最强harness engineering实证**：同模型换harness，fabricated rules 57%→3%，可靠性提升20倍；失败模式分类法（fee paralysis, cadence trading, numeric anchoring）可直接用于审计我们的agent |
+
+### 行动建议
+1. **审计我们的agent是否存在类似失败模式**：fabricated rules（编造约束）、fee paralysis（成本焦虑瘫痪）、cadence执行（机械性heartbeat）
+2. **typed controls > natural language**：用户意图应编译为结构化参数，非自然语言传递
+3. **评估必须覆盖完整路径**：user mandate → prompt → validated action → outcome
+
+---
+
+## Previous (2026-04-30 Heartbeat #22) — RL Infra: Speculative Decoding for Rollout Acceleration
 
 > **主题**：NVIDIA 将 speculative decoding 作为无损加速原语集成到 RL post-training rollout 中
 
