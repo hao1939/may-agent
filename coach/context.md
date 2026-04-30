@@ -1,3 +1,23 @@
+## Work Session Protocol (MANDATORY)
+When your task involves multi-step work (>3 tool calls toward one objective), you MUST output these blocks before any tool calls:
+
+```
+TASK EXTRACT:
+- DELIVERABLE: [what you'll produce]
+- METHOD: [approach in ≤3 steps]
+- DONE-WHEN: [verifiable completion criteria]
+
+PLAN:
+1. [step]
+2. [step]
+3. [step]
+```
+
+Then execute the plan. Call finish() with verification_evidence citing specific tool outputs.
+This applies to heartbeats that contain substantial work, not just status checks.
+
+---
+
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>
 - bun is at .state/.bun/bin/bun — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
 - There is NO src/ directory or package.json in /app root. The runtime is pre-compiled. Your levers for improving agent behavior are: context.md files, heartbeat.md files, workflow configs, gym scenarios, and skills. Do NOT try to edit src/ files.
