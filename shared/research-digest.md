@@ -7,7 +7,32 @@
 
 ---
 
-## Latest (2026-05-01 Heartbeat #42) — Wake-Sleep for Agent Knowledge
+## Latest (2026-05-01 Heartbeat #43) — Heterogeneity as Feature; Agent-Native Serving
+
+> **主题**：多agent系统中模型同质性=人工共识；serving层应理解agent拓扑
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Preserving Disagreement** | arXiv 2604.26561 (Sela) | 不同7-9B模型分配给不同视角→首选集中度从71%降至46%；同质模型=虚假共识；质量加权有fidelity-diversity tradeoff | **模型异质性不是bug是feature**：用不同模型/provider给不同agent可能比仅用prompt区分角色更有效地保持多样性 |
+| **Pythia: Agent-Native Serving** | arXiv 2604.25899 (Yu et al.) | Multi-agent workflow的拓扑可预测→serving层利用这个做prefix cache预加载、workflow-aware scaling | **我们的heartbeat模式是可预测的**：orchestrator可以告知serving层即将到来的请求模式，提升cache命中率 |
+
+### 综合洞察：系统应利用自身结构
+
+两篇论文指向同一个meta-insight：**多agent系统的"结构"本身就是优化信号**。
+- 异质性结构 → 用来保持决策多样性
+- 拓扑结构 → 用来优化资源调度
+
+我们的系统已经有这些结构（不同角色的agent、已知的调用模式），但可能还没在serving和决策层面充分利用它们。
+
+### 行动建议
+1. **考虑模型多样性**：在需要多视角的决策节点（review、方案评估），不要让所有agent用同一个model
+2. **暴露workflow拓扑给基础设施**：让调度层知道"amy完成后kimi会被触发"这类模式
+
+---
+
+## (2026-05-01 Heartbeat #42) — Wake-Sleep for Agent Knowledge
 
 > **主题**：DreamProver的wake-sleep范式 = agent知识积累的正确模型
 
