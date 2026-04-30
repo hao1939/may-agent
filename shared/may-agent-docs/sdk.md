@@ -7,6 +7,7 @@ The canonical interface between agent code (handlers, workflows, gym) and the sy
 ```typescript
 interface AgentSDK {
   runAgent(agent: string, task: string, opts?: RunOpts): Promise<TaskResult>;
+  runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult>;
   createLLMSession(opts: SessionOpts): Promise<SessionHandle>;
   emit(type: string, data?: Record<string, unknown>): void;
   getDb(): Database;
@@ -17,7 +18,7 @@ interface AgentSDK {
 }
 ```
 
-8 methods. That's the entire capability surface.
+9 methods. That's the entire capability surface.
 
 ## How Handlers Get It
 

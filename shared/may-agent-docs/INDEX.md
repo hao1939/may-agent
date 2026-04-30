@@ -20,6 +20,7 @@
 | [agents.md](agents.md) | Agent cooperation: call/fork/message, session tree, context |
 | [runtime.md](runtime.md) | Runtime internals: input routing, event loop, LLM call structure |
 | [growth.md](growth.md) | Agent growth: fork/promote/discard, lab sandbox |
+| [evolution.md](evolution.md) | **How agents extend abilities**: lesson → skill → workflow → guard → handler |
 
 ## Manual (How-To Guides)
 
