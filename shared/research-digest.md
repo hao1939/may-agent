@@ -7,7 +7,25 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #29) — Operating Layer > Base Model for Agent Reliability
+## Latest (2026-04-30 Heartbeat #30) — Multimodal Agents Go Native; ClawGym Trains at Scale
+
+> **主题**：多模态感知成为agent原生能力；Claw-style agent获得完整训练框架
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **GLM-5V-Turbo** | arXiv:2604.26752 (Zhipu AI, 70+ authors) | 原生多模态基础模型：视觉感知不是辅助接口而是推理核心组件；用RL提升agentic能力 | **模型层和harness层边界模糊化**：agentic-native模型直接为框架设计，选模型需考虑agent支持度 |
+| **ClawGym** | arXiv:2604.26904 (Wayne Xin Zhao et al.) | 全生命周期Claw agent框架：13.5K persona×skill合成数据 + SFT on trajectories + 轻量RL + per-task sandbox | **渐进训练路径验证**：trajectory SFT→RL是可复用策略；persona-driven合成解决数据稀缺；万级数据即可 |
+
+### 行动建议
+1. **Multimodal readiness**：纯文本agent正在成为过去式——规划时考虑视觉感知能力
+2. **Persona×Skill数据合成**：用角色×技能笛卡尔积生成训练场景，ClawGym证明13.5K精心设计的数据+RL就够
+3. **Per-task sandbox infrastructure**：沙箱隔离是RL并行化基础设施，验证了skill独立验证环境思路
+
+---
+
+## Previous (2026-04-30 Heartbeat #29) — Operating Layer > Base Model for Agent Reliability
 
 > **主题**：真实资金部署证明agent可靠性来自模型周围的操作层，而非模型本身
 
