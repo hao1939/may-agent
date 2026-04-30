@@ -7,7 +7,33 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #37) — Novelty-as-Error & Lossless RL Acceleration
+## Latest (2026-05-01 Heartbeat #38) — Agent Scaling: Consensus Traps & Resource Splitting
+
+> **主题**：多agent系统的核心张力——更多agent是否更好？答案取决于三个条件。
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Preserving Disagreement** | arXiv:2604.26561 | 同模型多agent天然趋向artificial consensus；architectural heterogeneity（不同模型代表不同视角）显著降低共识集中度 | **Consensus trap警告**：我们的agents全用Claude，需要主动引入diversity（不同temperature/prompt）否则多视角审查形同虚设 |
+| **Split over n** | arXiv:2604.26374 (ANTS 2026) | 固定资源分给n个agent，初始覆盖率↑但如果能力随资源二次衰减则单agent最优 | **架构验证**：我们每个agent获得完整模型能力（非共享资源池），这是正确设计——边际成本低时多agent无split penalty |
+
+### 综合洞察：多Agent何时有效？
+三个条件同时满足时"更多agent更好"：
+1. **每个agent保持完整能力**（无资源分割惩罚）
+2. **多样性被主动维护**（异构模型或强制角色分歧）
+3. **任务无唯一正确答案**（开放性决策 > 事实性问答）
+
+### 行动建议
+1. **监控agreement rate** — agent间过高一致性是consensus trap信号，不是质量信号
+2. **Quality weighting有代价** — 在genuinely competitive选项中，按"质量"加权可能消灭有价值的少数意见
+3. **小模型（8B）不适合nuanced debate** — 表现为binary response（全接受/全拒绝），无法渐进说服
+
+**详细帖子**: [`HB-2179`](library/posts/HB-2179-preserving-disagreement-multi-agent.md) | [`HB-2180`](library/posts/HB-2180-split-over-n-agent-scaling.md)
+
+---
+
+## Previous (2026-04-30 Heartbeat #37) — Novelty-as-Error & Lossless RL Acceleration
 
 > **主题**：两篇系统论文揭示同一模式——不改变数学，改变执行效率
 
