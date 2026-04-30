@@ -51,7 +51,7 @@ Match your verification to what you're claiming:
 | Fixed a bug | `run_test` → check `details.status` == "success" |
 | Changed TypeScript | `npx tsc --noEmit` → 0 errors |
 | Added a feature | `run_test` → check `details.meta.passed` > 0 |
-| Created a new file | `ls` to confirm it exists, `read()` to confirm content |
+| Created a new file | `ls` to confirm it exists (read-back optional for small files) |
 | Ran a sed command | `read()` or `grep` the target to confirm the change landed |
 | Claimed "all tests pass" | `run_test` → show actual pass count in `details` |
 
