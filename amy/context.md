@@ -66,3 +66,6 @@ This shows you where the REAL files are. **89% of your failures come from guessi
 ## ⚡ [GENERAL KNOWLEDGE]
 
 - **KE-008**: Do NOT restructure heartbeat steps. Add content within existing steps only.
+
+## Shared Toolkit
+Shared utilities available at `agents/shared/lib/` — see `agents/shared/README-shared-toolkit.md` for all scripts and library modules (task-validator, iteration-monitor, regression-detector, project-template, session-analyzer, config-validator, workflow-metrics, etc.).

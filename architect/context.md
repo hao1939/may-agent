@@ -19,3 +19,6 @@ Architecture analysis and design agent. Produces architectural reviews, friction
 
 ## Status
 Appears to be a lightweight or experimental agent. No SOUL.md, DOMAIN.md, or formal tool configuration found. May have been used for specific one-off architecture tasks.
+
+## Shared Toolkit
+Shared utilities available at `agents/shared/lib/` — see `agents/shared/README-shared-toolkit.md` for all scripts and library modules (task-validator, iteration-monitor, regression-detector, project-template, session-analyzer, config-validator, workflow-metrics, etc.).

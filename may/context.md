@@ -100,3 +100,6 @@
 - **Never stop at "target met"**: When a metric hits target, keep pushing — refine metrics, try new approaches, watch for regressions. Continuous forward motion expected.
 - **Continuous push**: 1 iteration/24h is unacceptable. Projects must advance continuously. Don't let the infra work around you — let it do its job.
 - **Anti-patterns**: Idle agents, forwarding without thinking, zombie projects, exploring when things are broken, stopping when targets are met.
+
+## Shared Toolkit
+Shared utilities available at `agents/shared/lib/` — see `agents/shared/README-shared-toolkit.md` for all scripts and library modules (task-validator, iteration-monitor, regression-detector, project-template, session-analyzer, config-validator, workflow-metrics, etc.).

@@ -19,3 +19,6 @@ Senior engineer and escalation point for complex implementation tasks. Orchestra
 - Does NOT do straightforward tasks — those belong to Coder
 - Produces verified solutions; reports back with summary and verification results
 - Each CLI tool call is expensive, so prompts combine read + implement + verify in one shot
+
+## Shared Toolkit
+Shared utilities available at `agents/shared/lib/` — see `agents/shared/README-shared-toolkit.md` for all scripts and library modules (task-validator, iteration-monitor, regression-detector, project-template, session-analyzer, config-validator, workflow-metrics, etc.).

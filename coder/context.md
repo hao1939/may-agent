@@ -42,3 +42,6 @@ If finish() rejects your verification_evidence:
 2. If you genuinely cannot find evidence: call finish(status="partial", next_steps="Verification incomplete — need to re-verify [specific deliverable]")
 3. Do NOT invent or rephrase evidence — partial is better than fabricated
 4. It is OK to finish with status="partial". This is not failure.
+
+## Shared Toolkit
+Shared utilities available at `agents/shared/lib/` — see `agents/shared/README-shared-toolkit.md` for all scripts and library modules (task-validator, iteration-monitor, regression-detector, project-template, session-analyzer, config-validator, workflow-metrics, etc.).

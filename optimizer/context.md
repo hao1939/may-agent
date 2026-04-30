@@ -76,3 +76,6 @@ When querying a table for first time, run PRAGMA table_info(<table>) first. Key 
 3. **Quality > quantity**: fewer excellent outputs beat many mediocre ones
 4. **Observability**: make system state visible, not hidden
 5. **Knowledge must be APPLIED**: experiment with findings, deploy to production, don't just store
+
+## Shared Toolkit
+Shared utilities available at `agents/shared/lib/` — see `agents/shared/README-shared-toolkit.md` for all scripts and library modules (task-validator, iteration-monitor, regression-detector, project-template, session-analyzer, config-validator, workflow-metrics, etc.).
