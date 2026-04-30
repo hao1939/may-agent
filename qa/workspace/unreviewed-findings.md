@@ -1,30 +1,33 @@
-# Unreviewed Findings (QA heartbeat)
+# Unreviewed Findings (QA Heartbeat)
 
-## 2026-04-30
+Date: 2026-04-30
 
-### TypeScript build is failing (CRITICAL)
+## Context
+- Repo root `/app` is not a git repo; code lives in `/app/agents` (git repo).
 
-- Command: `./node_modules/.bin/tsc --noEmit`
-- Fails with duplicate re-export name collisions in `shared/lib/index.ts`:
-  - `shared/lib/index.ts(13,1): Module './iteration-monitor.js' has already exported a member named 'IterationRecord'.`
-  - `shared/lib/index.ts(16,1): Module './task-validator.js' has already exported a member named 'ValidationResult'.`
+## Recent commits (last 10)
+From `cd /app/agents && git log --oneline -10`:
+- 6052f6b75 HB-29: Operating layer controls paper + arxiv digest update
+- 474b0d3f0 coach: EXP-280 baseline assessment + deployment request for verify-after-edit enforcement
+- 33d854505 Deploy EXP-275: optimizer quality intervention (OUTPUT FORMAT + EXECUTION RULES + ANTI-SHALLOW)
+- …
 
-**Impact:** Any consumer compiling TS in this repo will fail typechecking.
+## Verification results
+### TypeScript compile
+- `./node_modules/.bin/tsc --noEmit`: **FAIL**
+  - `shared/lib/index.ts` has ambiguous re-exports:
+    - TS2308: `IterationRecord` exported multiple times via `./iteration-monitor.js` (reported twice)
+    - TS2308: `ValidationResult` exported multiple times via `./task-validator.js`
 
-**Likely cause:** Barrel export file `shared/lib/index.ts` re-exports multiple modules that each export overlapping symbol names (e.g., `IterationRecord`, `ValidationResult`) and TS considers them ambiguous.
-
-**Suggested fix direction:** In `shared/lib/index.ts`, replace `export * from './iteration-monitor.js'` and/or the conflicting module with explicit re-exports, e.g.
-`export { IterationMonitor, type IterationRecord } from './iteration-monitor.js'` and ensure no other re-export defines `IterationRecord` under same name. Similar for `ValidationResult`.
-
-### Vitest tests pass but runner exits non-zero due to permissions (IMPORTANT, env)
-
-- Command: `./node_modules/.bin/vitest --run`
-- All tests pass: `536 passed (536)` across `31` files.
-- But Vitest exits with error:
+### Vitest
+- `./node_modules/.bin/vitest --run`: tests themselves **pass (536/536)** but command **exits 1** due to environment permission error:
   - `EACCES: permission denied, open '/app/agents/node_modules/.vite/vitest/results.json'`
+  - This appears to be a runner cache write permission issue (prevents clean CI-style execution).
 
-**Impact:** CI/local runs may fail despite green tests.
+## Files sampled
+- `shared/lib/index.ts`: barrel re-exports include `task-validator.js` and `iteration-monitor.js`, likely causing duplicate type exports.
+- `shared/research-digest.md`: very large doc update; not fully reviewed here (content appears non-code).
 
-**Likely cause:** `node_modules/.vite` directory is not writable under current user.
-
-**Suggested fix direction:** Ensure `node_modules/.vite` is writable (permissions/ownership), or configure Vitest cache/results output to a writable location.
+## Actionable items
+1. Fix barrel export ambiguity in `shared/lib/index.ts` (explicit re-export names or remove duplicates).
+2. Fix vitest cache permissions (ensure node_modules/.vite is writable, or configure vitest cache dir to a writable path for this environment).
