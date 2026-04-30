@@ -1,25 +1,20 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-30)
 
 ## Context
-This heartbeat attempted to verify recent changes in the **/app/agents** repo.
+- Repo root `/app` is **not** a git repository; the active git repo is `/app/agents`.
+- Recent commits are mostly evaluator auto-log updates. No product-feature change reviewed this heartbeat.
 
 ## Findings
+### IMPORTANT — TypeScript build currently failing in `/app/agents`
+`./node_modules/.bin/tsc --noEmit` fails with duplicate export names in the shared library barrel:
+- `shared/lib/index.ts` exports multiple modules that each export `IterationRecord` (at least `iteration-monitor.ts`, `workflow-metrics.ts`, `session-analyzer.ts`).
+- It also exports multiple modules that export `ValidationResult` (`task-validator.ts`, `config-validator.ts`).
 
-### 1) TypeScript build is currently failing (tsc --noEmit)
-- **Severity:** IMPORTANT (blocks type-safety verification)
-- **Evidence:** `cd agents && ./node_modules/.bin/tsc --noEmit`
-  - Errors:
-    - `shared/lib/index.ts(13,1): error TS2308: Module './iteration-monitor.js' has already exported a member named 'IterationRecord'.`
-    - `shared/lib/index.ts(15,1): error TS2308: Module './iteration-monitor.js' has already exported a member named 'IterationRecord'.`
-    - `shared/lib/index.ts(16,1): error TS2308: Module './task-validator.js' has already exported a member named 'ValidationResult'.`
+This produces TS2308 errors (ambiguous re-exports) and breaks consumers of `@shared/lib`.
 
-**Notes:** `shared/lib/index.ts` is a barrel file with multiple `export * from ...` lines. TS2308 usually indicates ambiguous re-exports (two `export *` sources exporting the same name). This suggests at least two of the re-exported modules are exporting `IterationRecord` and/or `ValidationResult` under the same names, creating ambiguity at the barrel boundary.
+### NOTE — Tests pass despite tsc failure
+`./node_modules/.bin/vitest --run` passes (536 tests across 31 files), so the issue is specifically with TypeScript barrel export semantics, not runtime behavior.
 
-### 2) Test suite is healthy (vitest --run)
-- **Severity:** INFO
-- **Evidence:** `cd agents && ./node_modules/.bin/vitest --run`
-  - **Result:** PASS — **536 tests** across **31 files**.
-
-## Next steps (recommended)
-1. Identify which module besides `iteration-monitor.ts` exports `IterationRecord`, and which module besides `task-validator.ts` exports `ValidationResult`, then resolve the duplicate barrel exports (explicit re-export, rename, or avoid `export *`).
-2. Re-run `tsc --noEmit` to confirm the typecheck is unblocked.
+## Evidence (tool outputs)
+- `cd agents && ./node_modules/.bin/tsc --noEmit` → TS2308 errors in `shared/lib/index.ts`.
+- `cd agents && ./node_modules/.bin/vitest --run` → 31 files, 536 tests passed.
