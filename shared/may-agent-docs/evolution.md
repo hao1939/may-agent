@@ -198,6 +198,58 @@ export const create: HandlerModule["create"] = (ctx, entry) => {
 
 ---
 
+## The Full SDK + Tool Surface
+
+### SDK (for handlers, workflows, system code)
+
+```typescript
+interface AgentSDK {
+  runAgent(agent, task, opts?)      // Delegate work to another agent
+  runWorkflow(name, task, opts?)    // Run multi-step orchestration with guards
+  createLLMSession(opts)            // Raw LLM session (evaluation/judgment)
+  emit(type, data?)                 // Publish typed event
+  getDb()                           // Access shared database
+  log(level, msg)                   // Diagnostic logging
+  notify(target, msg)               // "human" → Telegram, agent name → inbox
+  escalate(target, reason)          // I'm stuck, need help
+  paths                             // { persist, root, agents }
+}
+```
+
+### Agent Tools (for LLM sessions — the agent's action surface)
+
+| Tool | What |
+|------|------|
+| `bash(command)` | Execute shell commands |
+| `read(path)` | Read files |
+| `write(path, content)` | Create/overwrite files |
+| `edit(path, old, new)` | Surgical text replacement |
+| `agents.call(agent, task)` | Delegate to another agent (sync) |
+| `agents.fork(agent, task)` | Fire-and-forget delegation (async) |
+| `agents.message(agent, msg)` | Send a message to agent's inbox |
+| `workflow(action, name, task)` | Run a multi-step workflow |
+| `checkpoint(summary)` | Save progress mid-session |
+| `finish(summary, deliverables)` | End session with structured output |
+| `notify(target, msg)` | Send notification |
+
+### Workflow Context (for workflow .ts files)
+
+```typescript
+interface WorkflowContext {
+  task, agent                        // What and who
+  runAgent(agent, task)              // Run sub-agent step
+  runWorkflow(name, task)            // Run sub-workflow (nesting)
+  runFunction(label, fn)             // Run JS function (no LLM cost)
+  createSession(opts)                // Multi-turn session (worker pattern)
+  summarize(result)                  // Build handoff context
+  done(summary)                      // Success
+  escalate(reason)                   // Give up
+  emit(event), getDb(), log(), notify()  // Standard infra
+}
+```
+
+---
+
 ## Decision Guide: Which Level?
 
 | Situation | Level | Action |
@@ -206,7 +258,8 @@ export const create: HandlerModule["create"] = (ctx, entry) => {
 | "This pattern has 5 steps I always do" | 2 Skill | Write SKILL.md |
 | "Agents should follow this procedure automatically" | 3 Workflow | Write workflow .ts |
 | "This must NEVER be violated regardless of workflow" | 4 Guard | Write guard .ts |
-| "This should happen every N minutes / on every event" | 5 Handler | Write handler .ts |
+| "I need a new action type that doesn't exist" | 5 Tool | Write `tools/<name>.ts` |
+| "This should happen every N minutes / on every event" | 6 Handler | Write handler .ts |
 | "I don't know how to handle this" | — Escalate | `sdk.escalate("may", reason)` |
 
 ---
