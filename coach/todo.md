@@ -26,6 +26,15 @@
 - **Status**: DEPLOYED ✅ — preliminary measurement: insufficient data (1 post-deploy session from targets). See `EXP-300-measurement-1.md`
 - **Next**: Re-measure after 5+ sessions per target agent
 
+## P1: EXP-305 — Session-State Confusion Pre-Finish Gate (NEW Sep 1)
+- **Problem**: Root cause of ghost completions — agents confuse "project done" with "I did something this session"
+- **Treatment**: Pre-finish gate rule in optimizer + coach context.md (must have ≥1 write/edit before finish(success))
+- **Design**: `agents/coach/workspace/EXP-305-session-state-confusion-design.md`
+- **Predecessor**: EXP-296 (bounded damage), EXP-300 (awareness guard)
+- **Target**: ≥70% reduction in ghost completions
+- **Status**: DESIGNED — ready for deployment
+- **Next**: Deploy pre-finish gate text to optimizer + coach context.md, measure baseline first
+
 ## P1: EXP-285 — PATH_HALLUCINATION Guard Effectiveness (NEW Aug 1)
 - **Problem**: PATH_HALLUCINATION #1 convention failure (tech-lead 22/7d). Text coaching dead (EXP-251).
 - **Finding**: Guard exists as `block` type but only fires in workflow sessions. Bash SIG already blocks in direct sessions.
