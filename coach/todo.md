@@ -9,7 +9,8 @@
 - **Project**: verify-after-edit-enforcement
 - **Baseline**: <20% estimated (system-wide 9%, bob 120 failures — highest)
 - **Target**: ≥50% compliance (from <20%)
-- **Status**: DEPLOYED ✅ — confirmed 2026-04-30. Measurement due ~2026-05-02.
+- **Status**: DEPLOYED ✅ — confirmed 2026-04-30. BASELINE UPDATED: FM-3.3 at 53% (8/15), not 30%. Measurement due when 10+ post-treatment sessions available.
+- **Results**: `agents/coach/workspace/EXP-280-results.md`
 - **Measurement plan**: `agents/coach/workspace/EXP-280-phase3-measurement-plan.md`
 
 ## P1: EXP-275 — Optimizer Anti-Shallow + Verification (NEW Jul 30)
