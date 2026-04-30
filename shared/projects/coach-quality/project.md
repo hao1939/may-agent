@@ -1,11 +1,11 @@
 # Project: Coach Work-Session Quality
 
-**Status**: complete
-**Stop Reason**: Target met and verified. Last 5 coach quality scores (0.58, 0.72, 0.75, 0.90, 0.75) all ≥0.50, avg 0.74. Enforcement deployed in heartbeat.md as regression guard.
+**Status**: blocked
+**Stop Reason**: Safety cap: 50 iterations reached.
 **Owner**: coach
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 49
+**Iteration**: 50
 
 ## Goal
 Raise coach JS quality score from 0.24 (worst in system) to ≥0.50. Root cause: open-ended work sessions fail hard while structured heartbeats/cron are near-perfect.

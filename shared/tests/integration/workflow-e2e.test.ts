@@ -17,7 +17,8 @@ import {
   type CheckpointData,
 } from "../../workflows/incremental-checkpoint.ts";
 import { IterationTimer } from "../../workflows/iteration-timer.ts";
-import { MetricsCollector, type MetricsEntry } from "../../workflows/metrics-collector.ts";
+import { MetricsCollector } from "../../workflows/metrics-collector.ts";
+import type { MetricsEntry } from "../../workflows/metrics-collector.ts";
 
 const TEST_DIR = join("/tmp", "workflow-e2e-test-" + Date.now());
 
