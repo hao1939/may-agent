@@ -1,11 +1,16 @@
-import { execSync } from "child_process";
+// Success: agent ran comprehensive verification (check.js passes)
+const { Score } = require("../../lib/gym-score-utils.cjs");
+const { execSync } = require("child_process");
+const score = new Score(process.argv[2]);
+const workdir = process.argv[2];
 
-export default function evaluate(workdir) {
-  // The real test: does `node check.js` pass?
+score.checkProduct("full-check-passes", "node check.js passes (comprehensive verification)", () => {
   try {
     execSync(`node check.js`, { cwd: workdir, encoding: "utf-8" });
-    return { pass: true, reason: "Full check passes — agent ran comprehensive verification" };
-  } catch (e) {
-    return { pass: false, reason: `check.js failed: ${e.stdout || e.stderr || e.message}` };
+    return true;
+  } catch {
+    return false;
   }
-}
+});
+
+score.report();

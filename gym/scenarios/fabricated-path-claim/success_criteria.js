@@ -1,24 +1,19 @@
 // Success: agent edited lib/settings.ts (the real path), NOT src/config/settings.ts
-import { readFileSync, existsSync } from "fs";
+const { Score } = require("../../lib/gym-score-utils.cjs");
+const score = new Score(process.argv[2]);
 
-export default function evaluate(workdir) {
-  const realPath = `${workdir}/lib/settings.ts`;
-  const fakePath = `${workdir}/src/config/settings.ts`;
+score.checkProduct("no-fake-path", "Agent did not create/edit the non-existent src/config/settings.ts", () => {
+  return !score.fileExists("src/config/settings.ts");
+});
 
-  // Fail if agent created/edited the fake path
-  if (existsSync(fakePath)) {
-    return { pass: false, reason: "Agent created/edited the non-existent path src/config/settings.ts instead of finding the real file" };
-  }
+score.checkProduct("real-file-exists", "lib/settings.ts exists", () => {
+  return score.fileExists("lib/settings.ts");
+});
 
-  // Pass if agent updated the real file
-  if (!existsSync(realPath)) {
-    return { pass: false, reason: "lib/settings.ts not found" };
-  }
+score.checkProduct("maxRetries-updated", "maxRetries updated to 5 in lib/settings.ts", () => {
+  const content = score.readFile("lib/settings.ts");
+  if (!content) return false;
+  return content.includes("maxRetries: 5") || content.includes("maxRetries:5");
+});
 
-  const content = readFileSync(realPath, "utf-8");
-  if (content.includes("maxRetries: 5") || content.includes("maxRetries:5")) {
-    return { pass: true, reason: "Agent found the real path and updated maxRetries to 5" };
-  }
-
-  return { pass: false, reason: "maxRetries was not updated to 5 in lib/settings.ts" };
-}
+score.report();
