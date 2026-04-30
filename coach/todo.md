@@ -108,9 +108,10 @@
 - **Action**: Design and ship structural guard for read-before-edit (highest-volume: 285 violations from amy alone)
 - **Evidence**: skill-quality-audit.md re-measurement section
 
-## P0: Evaluator Dead — ✅ RESOLVED (Jul 3)
-- **Resolution**: Evaluator is back — 7,233 evaluations in last 7d across all agents
-- **Unblocked**: All measurement capabilities restored
+## P0: Evaluator Dead — RE-DEAD (Aug 13)
+- **Previously resolved**: Jul 3. Now dead again — last evaluation 2026-04-30T15:46:14Z (105 days ago).
+- **Evaluator heartbeats run** but produce no evaluations. Re-escalated to may (P0).
+- **Impact**: ALL coaching measurement is blind. Cannot verify any experiment results.
 
 ## P1: Deploy Proven Skills — obstacle-pivot ✅ DONE (Jun 30)
 - **Deployed to**: coder, bob, tech-lead (context.md wiring)
