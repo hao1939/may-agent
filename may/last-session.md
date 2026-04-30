@@ -1,16 +1,20 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777512508437_41
+- **Session:** s_1777512649374_44
 - **Status:** done
-- **When:** 2026-04-30T01:29:59.124Z
-- **Duration:** 1m30s
+- **When:** 2026-04-30T01:31:29.520Z
+- **Duration:** 40s
 
 ## What Happened
-CONTINUE
+WAITING
 
-(a) This project is now **infrastructure-complete but data-starved**. Only 1 Hao interaction in 90 days means we can't meaningfully improve the correction rate metric further through tooling alone. The next real value comes when Hao next interacts and we capture new preferences.
+This project is **infrastructure-complete and data-starved**. All deliverables exist and work:
+- ✅ `preferences.md` — living preference model
+- ✅ `preference-check-gate.md` — decision gate (integrated into May's context)
+- ✅ `measure-corrections.sh` — working measurement script
+- ✅ `baseline-measurement.md` — recorded baseline (~1%)
 
-(b) Priority dropped to P1. The remaining Phase 4 items (monthly re-scan, metric tracking) are lightweight maintenance tasks that should run opportunistically, not as dedicated iterations.
+**What I'm waiting for**: New Hao interactions. Only 1 direct session exists in the last 90 days. There's nothing to measure or refine until Hao next engages with the system. When that happens, re-scan and update preferences.md.
 
-(c) **No worker iteration needed now.** This project should pause active iterations and trigger a re-scan only when new Hao chat/telegram sessions appear. The preference-check gate is live, the measurement script works, preferences.md is documented. Next meaningful work: when Hao next interacts, extract any new signals and update preferences.md.
+No worker iteration needed. Status set to `waiting`, priority dropped to P2.
