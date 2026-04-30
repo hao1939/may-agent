@@ -10,7 +10,7 @@ When something happens — metric breaches, project changes, session fails, agen
 
 The EventBus is the central nervous system. Commands go in, observations come out. Components subscribe and react.
 
-**Elaborated in:** [request-event-architecture.md](request-event-architecture.md), [convention-defaults.md](convention-defaults.md)
+**Elaborated in:** [events.md](events.md)
 
 ## 2. Everything has an owner — owner is the backstop, not the first responder
 
@@ -28,7 +28,7 @@ Owner means: if this falls on the floor, it's your problem. Owners don't do all 
 
 Agents exist as **accountability boundaries**. We don't have 7 agents because we need 7 workers — any LLM can do anything. We have 7 agents because we need 7 distinct owners who accumulate domain context, watch domain metrics, and are the definitive answer to "who's responsible for this?"
 
-**Elaborated in:** [health-metrics.md](health-metrics.md), [metrics-system.md](metrics-system.md)
+**Elaborated in:** [metrics.md](metrics.md), [design/agent-metrics.md](design/agent-metrics.md)
 
 ## 3. Events must be consumed
 
@@ -36,7 +36,7 @@ No event fires into the void. Something must consume it — a handler, a subscri
 
 The escalation chain is: best-fit handler -> assigned agent -> owner -> May -> Hao.
 
-**Elaborated in:** [may-gatekeeper.md](may-gatekeeper.md), [guard-escalation.md](guard-escalation.md)
+**Elaborated in:** [projects.md](projects.md), [proposals/escalation.md](proposals/escalation.md)
 
 ## 4. Context is discovered, not dumped
 
@@ -50,9 +50,9 @@ Everything else — skills, knowledge, project history, metrics, design docs —
 
 This is deliberately minimal. Dumping context produces agents that skim. Discovery produces agents that understand.
 
-**Known gap:** Session continuity is unsolved — agents start fresh each session with zero memory of prior work. The context-learning project is designing the right approach. See [open-problems.md](open-problems.md) #1.
+**Known gap:** Session continuity is unsolved — agents start fresh each session with zero memory of prior work.
 
-**Elaborated in:** [context-injection-design.md](context-injection-design.md), [context-learning.md](context-learning.md)
+**Elaborated in:** [sessions.md](sessions.md), [heartbeat.md](heartbeat.md)
 
 ## 5. Evidence before systems
 
@@ -64,7 +64,7 @@ No multi-layer architecture before the base case is proven. No 20KB design brief
 
 The context-learning project is the canonical case study: built infrastructure first, tested, found zero improvement on derivable knowledge, pivoted to environmental knowledge, found consistent improvement, deployed.
 
-**Elaborated in:** [evidence-first-process.md](evidence-first-process.md)
+**Elaborated in:** [evidence-first.md](evidence-first.md)
 
 ## 6. Structure beats instructions
 
@@ -79,7 +79,7 @@ When agents make judgment errors, the fix is **workflow structure** — not text
 
 Guards are for things a regex can check reliably. context.md is for facts that change with the environment. Workflows are for everything that requires judgment.
 
-**Elaborated in:** [code-vs-data-decisions.md](code-vs-data-decisions.md), [guard-escalation.md](guard-escalation.md), [project-system.md](project-system.md)
+**Elaborated in:** [code-vs-data.md](code-vs-data.md), [evolution.md](evolution.md)
 
 ## 7. Metrics are signals, not targets
 
@@ -89,7 +89,7 @@ Metrics inform decisions; they don't make them. A regression is a signal to inve
 
 If an agent's output quality drops while their metric improves, the metric is being gamed. The system should catch this — May watches for the pattern.
 
-**Elaborated in:** [metrics-system.md](metrics-system.md)
+**Elaborated in:** [metrics.md](metrics.md)
 
 ## 8. Supervision is async and decoupled
 
@@ -100,7 +100,7 @@ Agents work independently. May reviews asynchronously. Intervention is the excep
 
 Agents don't need to know they're being supervised. The gatekeeper pattern requires zero code — it's a behavioral convention that May follows during her normal observation cycle.
 
-**Elaborated in:** [may-gatekeeper.md](may-gatekeeper.md), [agent-calling-guide.md](agent-calling-guide.md)
+**Elaborated in:** [agents.md](agents.md)
 
 ## 9. Convention over configuration
 
@@ -128,6 +128,24 @@ Try the simplest approach. If it works, stop.
 - A fork before a workflow (for <3-op work)
 
 Complexity is justified only when simplicity has been tried and failed with evidence.
+
+## 11. Debug the message, not the model
+
+When an agent behaves unexpectedly, the cause is almost always **something misleading in what the LLM received** — not a broken model or flawed logic. LLMs respond to their input faithfully; wrong output means wrong input.
+
+The misleading content could be anywhere in the API call:
+- System prompt (stale SOUL.md, contradictory conventions)
+- User message (ambiguous task description, wrong context)
+- Tool output (unexpected format, error messages treated as instructions)
+- Injected docs (outdated knowledge, irrelevant context confusing the task)
+
+**Debug order:**
+1. Read the full session transcript — what did the LLM actually see?
+2. Find the misleading content that caused the wrong behavior
+3. Fix the source (the doc, the prompt builder, the tool output)
+4. Only after ruling out input issues: consider workflow or infra changes
+
+Most "agent bugs" are input bugs.
 
 ---
 

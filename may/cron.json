@@ -408,22 +408,52 @@
   {
     "name": "heartbeat-scout",
     "agent": "scout",
-    "type": "heartbeat",
+    "type": "job",
     "intervalMs": 1800000,
-    "enabled": true
+    "enabled": true,
+    "handler": "run-workflow",
+    "handlerConfig": {
+      "workflow": "scout-heartbeat",
+      "agent": "scout",
+      "task": "[heartbeat] You are scout. Read your heartbeat.md and do your work.",
+      "timeoutMs": 1800000
+    },
+    "on": [
+      "heartbeat.trigger"
+    ]
   },
   {
     "name": "heartbeat-dev",
     "agent": "dev",
-    "type": "heartbeat",
+    "type": "job",
     "intervalMs": 1800000,
-    "enabled": true
+    "enabled": true,
+    "handler": "run-workflow",
+    "handlerConfig": {
+      "workflow": "dev-heartbeat",
+      "agent": "dev",
+      "task": "[heartbeat] You are dev. Read your heartbeat.md and do your work.",
+      "timeoutMs": 1800000
+    },
+    "on": [
+      "heartbeat.trigger"
+    ]
   },
   {
     "name": "heartbeat-arc",
     "agent": "arc",
-    "type": "heartbeat",
+    "type": "job",
     "intervalMs": 1800000,
-    "enabled": true
+    "enabled": true,
+    "handler": "run-workflow",
+    "handlerConfig": {
+      "workflow": "arc-heartbeat",
+      "agent": "arc",
+      "task": "[heartbeat] You are arc. Read your heartbeat.md and do your work.",
+      "timeoutMs": 1800000
+    },
+    "on": [
+      "heartbeat.trigger"
+    ]
   }
 ]

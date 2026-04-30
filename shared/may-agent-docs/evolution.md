@@ -200,21 +200,7 @@ export const create: HandlerModule["create"] = (ctx, entry) => {
 
 ## The Full SDK + Tool Surface
 
-### SDK (for handlers, workflows, system code)
-
-```typescript
-interface AgentSDK {
-  runAgent(agent, task, opts?)      // Delegate work to another agent
-  runWorkflow(name, task, opts?)    // Run multi-step orchestration with guards
-  createLLMSession(opts)            // Raw LLM session (evaluation/judgment)
-  emit(type, data?)                 // Publish typed event
-  getDb()                           // Access shared database
-  log(level, msg)                   // Diagnostic logging
-  notify(target, msg)               // "human" → Telegram, agent name → inbox
-  escalate(target, reason)          // I'm stuck, need help
-  paths                             // { persist, root, agents }
-}
-```
+See [sdk.md](sdk.md) for the canonical AgentSDK and WorkflowSDK interfaces.
 
 ### Agent Tools (for LLM sessions — the agent's action surface)
 
@@ -231,22 +217,6 @@ interface AgentSDK {
 | `checkpoint(summary)` | Save progress mid-session |
 | `finish(summary, deliverables)` | End session with structured output |
 | `notify(target, msg)` | Send notification |
-
-### Workflow Context (for workflow .ts files)
-
-```typescript
-interface WorkflowContext {
-  task, agent                        // What and who
-  runAgent(agent, task)              // Run sub-agent step
-  runWorkflow(name, task)            // Run sub-workflow (nesting)
-  runFunction(label, fn)             // Run JS function (no LLM cost)
-  createSession(opts)                // Multi-turn session (worker pattern)
-  summarize(result)                  // Build handoff context
-  done(summary)                      // Success
-  escalate(reason)                   // Give up
-  emit(event), getDb(), log(), notify()  // Standard infra
-}
-```
 
 ---
 
@@ -294,34 +264,15 @@ finish({ status: "blocked", reason: "Requirements ambiguous, need clarification"
 
 ## Growth Cycle: Testing Changes Safely
 
-Before promoting any change to production:
+See [growth.md](growth.md) for the full fork/promote/discard API.
 
-```
-1. Fork:    forkAgent(config, "coder", "coder-v2")
-2. Edit:    Modify the fork's SOUL.md, workflows, etc.
-3. Test:    Run gym scenarios against the fork
-4. Decide:  promoteAgent(config, "coder-v2", "coder")  OR  discardAgent(config, "coder-v2")
-```
-
-This applies to all levels. Want to try a new lesson? Fork, add it, run scenarios, measure quality.
+Before promoting any change to production: fork → edit → test via gym → promote or discard. This applies to all levels.
 
 ---
 
 ## Project System: Sustained Work
 
-For work that spans multiple sessions:
-
-```
-agents/shared/projects/<name>/
-  project.md        # Status, owner, plan, milestones
-  discussion.md     # Human ↔ agent communication
-```
-
-The project handler automatically:
-- Scans all projects on every tick
-- Launches workflows for active projects with no live session
-- Escalates blocked projects after timeout
-- Prevents double-launches via in-memory session tracking
+For work that spans multiple sessions, see [projects.md](projects.md).
 
 **Project lifecycle:** active → (workflow runs) → waiting/blocked → (human input) → active → done → closed
 

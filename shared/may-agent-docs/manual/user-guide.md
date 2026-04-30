@@ -197,7 +197,7 @@ Agents cooperate through 5 actions on the `agents` tool:
 | `job` | Cron, heartbeat, send, task mode | Ephemeral — auto-resumed on restart if stale. |
 | `call` | `agents.call` | Ephemeral — parent re-dispatches on its own resume. |
 
-See [Session Model](../architecture/session-model.md) for details.
+See [sessions.md](../sessions.md) for details.
 
 ## Socket Protocol
 
@@ -217,7 +217,7 @@ echo '{"type":"fork","agent":"coder","message":"fix the test"}' | socat - UNIX-C
 echo '{"type":"status"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
 ```
 
-See [Socket Protocol](../architecture/socket-protocol.md) for full command reference.
+See [runtime.md](../runtime.md) for socket protocol details.
 
 ## Cron System
 
@@ -230,7 +230,7 @@ Cron is enabled with `--cron`. Each agent can have a `cron.json` defining jobs:
 
 Handlers live in `agents/<name>/handlers/` and are auto-discovered.
 
-See [Cron System](../architecture/cron-system.md) for details.
+See [cron.md](../cron.md) for details.
 
 ## State Directory
 

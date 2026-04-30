@@ -4,8 +4,8 @@
 
 | Doc | What |
 |-----|------|
-| [core-principles.md](core-principles.md) | 10 architecture principles. Read this first. |
-| [sdk.md](sdk.md) | AgentSDK: 8-method canonical interface. The system's capability surface. |
+| [core-principles.md](core-principles.md) | 11 architecture principles. Read this first. |
+| [sdk.md](sdk.md) | AgentSDK + WorkflowSDK: the system's canonical capability surface. |
 
 ## Subsystems
 
@@ -31,6 +31,14 @@
 | [manual/workflow-authoring.md](manual/workflow-authoring.md) | How to write and invoke workflows |
 | [manual/user-guide.md](manual/user-guide.md) | CLI flags, Docker, socket, chat commands |
 | [manual/agent-convention.md](manual/agent-convention.md) | Directory layout, convention files, agent.json |
+
+## Design
+
+| Doc | What |
+|-----|------|
+| [design/agent-metrics.md](design/agent-metrics.md) | Per-agent role metrics with balanced pairs |
+| [design/unified-events.md](design/unified-events.md) | Unified event taxonomy |
+| [design/telegram-notifications.md](design/telegram-notifications.md) | Notification routing via Telegram |
 
 ## Proposals (not yet implemented)
 

@@ -1,7 +1,7 @@
 # Design: System Metrics
 
 **Status**: approved
-**Date**: 2026-04-30 (revised 2026-07-02)
+**Date**: 2026-04-30
 
 ## Architecture
 

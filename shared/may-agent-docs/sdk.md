@@ -18,7 +18,7 @@ interface AgentSDK {
 }
 ```
 
-9 methods. That's the entire capability surface.
+8 methods + 1 property. That's the entire capability surface.
 
 ## How Handlers Get It
 
@@ -55,8 +55,14 @@ Workflows get an extended interface:
 interface WorkflowSDK extends AgentSDK {
   task: string;
   agent: string;
+  runAgent(agent: string, task: string): Promise<TaskResult>;
+  runWorkflow(name: string, task: string): Promise<WorkflowResult>;
+  runFunction(label: string, fn: () => Promise<string>): Promise<TaskResult>;
+  createSession(opts: { systemPrompt: string; tools: "full" | "readonly"; label?: string }): Promise<SessionHandle>;
+  summarize(result: TaskResult): string;
   done(summary: string, opts?: { deliverables?, contextUpdates?, nextSteps? }): WorkflowResult;
-  // escalate() inherited — in workflow context, also terminates the workflow
+  escalate(reason: string, context?: unknown): WorkflowResult;
+  dispatchEvent(type: string, data?: Record<string, unknown>): void;
 }
 ```
 
