@@ -1,10 +1,16 @@
 # Coach Todo
 
+## P1: EXP-325 — Self-Scoring Checklist (NEW Sep 1) — DESIGNED
+- **Problem**: Evaluator dead 105+ days. No quality signal for any experiment.
+- **Treatment**: 5-point binary self-score checklist in coach/context.md
+- **Design**: `agents/coach/workspace/EXP-325-self-scoring-design.md`
+- **Status**: DESIGNED. Next: deploy to coach/context.md, measure after 10 sessions.
+
 ## P1: EXP-320 — Output Format Rollout to Tech-Lead and Amy (NEW Jul 16) — AWAITING DEPLOYMENT
 - **Problem**: Only 3/10 active agents have OUTPUT FORMAT. Pattern proven +32pp.
 - **Treatment**: Add OUTPUT FORMAT to tech-lead/heartbeat.md and amy/heartbeat.md
 - **Design**: `agents/coach/workspace/EXP-320-output-format-rollout-design.md`
-- **Status**: Deployment request sent to may (Jul 16). Awaiting confirmation.
+- **Status**: Re-requested deployment from may (Sep 1). Awaiting confirmation.
 - **Baseline**: tech-lead TBD, amy 0.72 (n=51)
 - **Target**: GOAL/PLAN/DONE WHEN compliance ≥80%
 
