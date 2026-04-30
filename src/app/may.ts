@@ -378,6 +378,9 @@ const loaderOpts: AgentLoaderOptions = {
 };
 
 const loadResult = await loadAgents(loaderOpts);
+console.log(`[agents] Loaded ${loadResult.added.length}: ${loadResult.added.join(", ")}`);
+console.log(`[agents] All errors: ${JSON.stringify(loadResult.errors || [])}`);
+if (loadResult.errors?.length) console.log(`[agents] Errors: ${JSON.stringify(loadResult.errors)}`);
 bus.emit({ type: "info", message: `Loaded ${loadResult.added.length} agent(s): ${loadResult.added.join(", ")}` });
 
 // Auto-generate heartbeat entries for agents with heartbeat workflows (convention-defaults Phase 3)
