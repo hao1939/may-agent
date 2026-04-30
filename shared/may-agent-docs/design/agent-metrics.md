@@ -132,23 +132,23 @@ These track the health of the metrics system itself and enforce the "never coast
 ---
 
 ### QA — Quality Guardian
-| ID | Name | Dimension | Source | Target | Threshold | Alert | Ready |
-|----|------|-----------|--------|--------|-----------|-------|-------|
-| `qa.reviews-7d` | Review sessions (7d) | Activity | `SELECT COUNT(*) as c FROM sessions WHERE agent='qa' AND startedAt > {7d_ago}` | 5 | 1 | < | 🟢 |
-| `qa.issues-caught` | Issues found before deploy (7d) | Impact | count sessions where QA output contains "FAIL"/"BUG"/"FIX" that led to a follow-up session | 3 | 0 | < | 🔴 needs output parsing |
-| `qa.false-done-rate` | Projects closed then reopened (30d) | Impact | ratio | 0 | 0.15 | > | 🔴 no project lifecycle tracking |
+| ID | Name | Dimension | Source | Target | Baseline | Ready |
+|----|------|-----------|--------|--------|----------|-------|
+| `qa.reviews-7d` | Distinct projects/PRs reviewed (7d) | Activity | `SELECT COUNT(DISTINCT task) as c FROM sessions WHERE agent='qa' AND startedAt > {7d_ago}` | 5 | TBD | 🟢 |
+| `qa.issues-caught` | Issues found before deploy (7d) | Impact | sessions where QA flagged problems that led to fixes | 3 | TBD | 🔴 needs output parsing |
+| `qa.false-done-rate` | Projects closed then reopened (30d) | Impact | ratio | 0 | TBD | 🔴 no project lifecycle tracking |
 
 **Balance:** Running reviews that always pass = rubber-stamping. QA must actually catch things. But too many false alarms is also bad (tracked via false-done being low = things don't get reopened).
 
 ---
 
 ### Evaluator — Scorer
-| ID | Name | Dimension | Source | Target | Threshold | Alert | Ready |
-|----|------|-----------|--------|--------|-----------|-------|-------|
-| `evaluator.evals-24h` | Evaluations completed (24h) | Activity | `SELECT COUNT(*) as c FROM evaluations WHERE created_at > {24h}` | 5 | 1 | < | 🟢 |
-| `evaluator.coverage` | Eval coverage (evals / sessions completed, 7d) | Coverage | `SELECT CAST((SELECT COUNT(*) FROM evaluations WHERE created_at > {7d}) AS REAL) / NULLIF((SELECT COUNT(*) FROM sessions WHERE startedAt > {7d} AND status='done'), 0) as c` | 0.50 | 0.10 | < | 🟢 |
-| `evaluator.eval-led-to-action` | Evaluations that triggered coaching/fix (7d) | Impact | count evals followed by coach session or agent fix within 24h | 2 | 0 | < | 🔴 no causal tracking |
-| `evaluator.score-spread` | Score standard deviation (should not be ~0) | Calibration | `SELECT ... as c FROM evaluations WHERE created_at > {7d}` | 0.15 | 0.05 | < | 🟢 |
+| ID | Name | Dimension | Source | Target | Baseline | Ready |
+|----|------|-----------|--------|--------|----------|-------|
+| `evaluator.coverage` | Eval coverage (evals / sessions completed, 7d) | Coverage | evals count / sessions count | 0.50 | ~0.067 | 🟢 |
+| `evaluator.evals-24h` | Evaluations completed (24h) | Activity | `SELECT COUNT(*) as c FROM evaluations WHERE created_at > {24h}` | 5 | TBD | 🟢 |
+| `evaluator.eval-led-to-action` | Evaluations that triggered coaching/fix (7d) | Impact | evals followed by coach session within 24h | 2 | TBD | 🔴 no causal tracking |
+| `evaluator.score-spread` | Score standard deviation (should not be ~0) | Calibration | stddev of eval scores (7d) | 0.15 | TBD | 🟢 |
 
 **Balance:** Evaluating lots of sessions is pointless if scores don't lead to improvement. Score spread prevents rubber-stamp (all 1.0) or all-fail (all 0.0).
 
@@ -202,24 +202,35 @@ CREATE → MEASURE → ALERT → RAISE TARGET → ADD DIMENSIONS → GRADUATE
 
 ## Implementation Phases
 
+### Phase 0: Fix outcome tracking (BLOCKER)
+Without this, half the metrics read 0:
+- Wire `sessions.outcome` from `finish()` calls — this is the single biggest data gap
+- Add `cost_usd` tracking per session
+- **Until this ships, Optimizer metrics are unmeasurable**
+
 ### Phase 1: Ship 🟢 metrics NOW
 Register these immediately — they work with current DB:
 - `may.dispatch-rate-6h`, `may.agent-dark-count`
-- `coach.sessions-7d`
+- `coach.agents-coached-7d`
 - `qa.reviews-7d`
-- `evaluator.evals-24h`, `evaluator.coverage`, `evaluator.score-spread`
+- `evaluator.coverage` (baseline: ~6.7%), `evaluator.evals-24h`, `evaluator.score-spread`
 - `tech-lead.build-green`
 - `system.metrics-freshness`
+- All system outcome metrics except `cost-per-useful-session`
+
+**Target: measure baselines for all 🟢 metrics within 48h of approval.**
 
 ### Phase 2: Fix data gaps for 🟡 metrics
-- Wire `sessions.outcome` to actually get populated (from finish() calls)
-- Add creation timestamps to knowledge entries (replace fragile mtime)
+- Populate `sessions.outcome` (Phase 0 prerequisite)
+- Add creation timestamps to knowledge entries (replace fragile mtime for Bob/Scout/Amy)
 - Build test output parser for tech-lead
+- Get enough eval volume for coach.lesson-to-behavior
 
 ### Phase 3: Build infrastructure for 🔴 metrics
 - Citation tracking system (for scout/amy impact)
-- Project lifecycle events (for QA false-done-rate)
+- Project lifecycle events (for QA false-done-rate, system.forward-progress)
 - Causal chain tracking (eval → coaching → improvement)
+- Cost baseline for optimizer
 
 ## Anti-Gaming Summary
 
