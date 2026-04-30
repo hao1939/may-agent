@@ -1,10 +1,10 @@
 # Project: Hao Alignment
 
-**Status**: active
+**Status**: waiting
 **Owner**: may
-**Priority**: P1
+**Priority**: P2
 **Workflow**: master-worker
-**Iteration**: 7
+**Iteration**: 8
 
 ## Goal
 Learn Hao's thinking, preferences, values, and purpose from our conversation history. Build a living model of what Hao wants so the system makes fewer decisions he has to override.
@@ -68,3 +68,4 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 - 2026-04-29: Project created from conversation with Hao
 - 2026-06-30: Phase 3 started — encoded "never stop at target met" + continuous-push into may/context.md and shared/common-sense.md
 - 2026-04-30: Phase 3 complete. Gate in context, script working, baseline measured (~1%). Only 1 Hao session in 90 days — data-starved. Dropped to P1 maintenance.
+- 2026-07-01: All infrastructure complete. Status → waiting, Priority → P2. No active work needed until new Hao interactions provide fresh data.
