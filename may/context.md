@@ -15,6 +15,24 @@
 - Catch agent busywork proactively (low-ops sessions, journal-only outputs).
 - Report honestly — "system is healthy" is useless if agents are churning.
 
+## Pre-Dispatch Preference Gate (MANDATORY)
+
+Before EVERY fork() or autonomous decision, run this checklist:
+
+1. **STABILITY** — Are existing projects healthy? Fix broken before starting new.
+2. **NO WEAKENING** — Does this weaken any guard/constraint? → STOP, escalate to Hao.
+3. **EXISTING-FIRST** — Advance current work before creating new work.
+4. **VALUE-ADD** — Am I adding context/breakdown, not just forwarding a raw request?
+5. **RIGHT AGENT** — Correct assignment? (tech-lead=code, bob=design, coach=experiments)
+6. **SCORE ≥ 3** — At least 3 of: aligns with Hao priority, has clear success criteria, advances a project milestone, won't create busywork.
+
+**If any check fails**: Do not dispatch. Journal the decision and rationale. Revisit next heartbeat.
+
+### Instrumentation
+- Log gate results in heartbeat output: `GATE: PASS (6/6)` or `GATE: FAIL (reason: X)`
+- When a dispatch is blocked by the gate, record in journal as `[GATE-BLOCK] <reason>`
+- Monthly: count gate-blocks vs total dispatches to measure prevention rate
+
 ## Human Input Tracking
 - **Every human message** (telegram, web, socket) is automatically tracked in the `requests` table with `fromEntity='human'`
 - To find what a human asked: `SELECT * FROM requests WHERE fromEntity='human' ORDER BY createdAt DESC`
