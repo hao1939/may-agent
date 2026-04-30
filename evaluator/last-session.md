@@ -1,43 +1,26 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777569660409_87
+- **Session:** s_1777570995011_92
 - **Status:** done
-- **When:** 2026-04-30T17:21:07.778Z
-- **Duration:** 7s
+- **When:** 2026-04-30T17:43:39.885Z
+- **Duration:** 24s
 
 ## What Happened
-```json
-{
-  "agents": {
-    "coach": {
-      "role": "Philosopher/Architect",
-      "capability_level": "L1",
-      "efficiency": 0.15,
-      "quality": 0.35,
-      "verdict": "needs_improvement",
-      "issues": [
-        "Ignored repeated instructions for many iterations; produced no deliverables until Iteration 49 despite explicit 'WRITE-FIRST CONSTRAINT' and multiple retries noting 'PRODUCED 0 FILES'.",
-        "Severe non-responsiveness / low agency: numerous user 'CONTINUE' prompts received with empty assistant responses.",
-        "Initially attempted to discuss committing/checking files ('Let me commit everything', 'Let me check the uncommitted files') instead of producing the required concrete deliverable file; also violated the requirement to not claim 'already committed' without verification (even though no tool calls were made at that time).",
-        "Only at the end created a minimal confirmation file; did not address the user’s Iteration 2 intent ('commit everything in a loop') with a deliverable such as a policy note / recommended procedure, nor explain why it should not be done given project complete status."
-      ],
-      "metrics": {
-        "deliverable_production": "low (1 small file, very late)",
-        "instruction_following": "low",
-        "tool_discipline": "mixed (eventually complied: first tool call was write(), but only after many failed turns)"
-      }
-    }
-  },
-  "workflow": {
-    "name": "worker-iteration / write-first deliverable",
-    "issues": [
-      "Excessive iteration churn before first tool call; indicates supervision/termination guard might be needed to stop repeating 'CONTINUE' when project is complete."
-    ]
-  },
-  "overall": {
-    "verdict": "needs_improvement",
-    "result_delivered": true
-  }
-}
-```
+## Pending Event: **agent.notification — “P0: Evaluation pipeline appears dead”**
+**Action: dismiss (false alarm / misread timestamp).**
+
+### Evidence (DB is canonical)
+- `.state/may.db` shows **evaluations are recent**:
+  - `MAX(evaluations.createdAt)` = **2026-04-30T17:16:15.472Z**
+  - `MAX(sessions.endedAt)` = **2026-04-30T17:37:59.637Z**
+  - Lag ≈ **1304s (~22 min)**, and only **19 sessions** exist after the last eval.  
+  (So the pipeline is not “dead”; it’s at most slightly behind real-time.)
+
+### Why the alert triggered
+- Legacy artifact directory `.state/evaluations/` *does* look stale/misaligned (many files from Mar 24; a few from Apr 29), which matches the known chronic issue: **DB is fresh while file artifacts drift/stale**. This is not a pipeline outage.
+
+### Follow-up note (no escalation required)
+- If someone is monitoring `.state/evaluations/` mtimes instead of DB `evaluations.createdAt`, that monitor is unreliable and should be updated to query the DB.
+
+**Brief:** Pipeline liveness is healthy per DB; the alert likely came from checking the legacy `.state/evaluations/` directory rather than the canonical `evaluations` table.
