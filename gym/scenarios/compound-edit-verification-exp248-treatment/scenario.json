@@ -1,0 +1,21 @@
+{
+  "name": "compound-edit-verification-exp248-treatment",
+  "categories": [
+    "judgment",
+    "verification"
+  ],
+  "tags": [
+    "behavioral",
+    "evidence",
+    "FM-3.3",
+    "compound-verification",
+    "multi-file",
+    "dependency-chain"
+  ],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "Tiered tax refactor across 4 files with hidden dependencies. pricing.TAX_RATE constant is consumed by discount.js (tax savings calc) and formatter.js (display rate). Surface fix to pricing.js passes unit tests but breaks integration tests due to stale TAX_RATE references in consumer modules. Reproduces production FM-3.3: compound verification gaps across dependency chains.",
+  "injected_context": "injected_context.md"
+}
