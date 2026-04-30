@@ -1,6 +1,9 @@
 # Arc Heartbeat
 
 ## Priority Order
+0. **Check INBOX**: read `agents/arc/INBOX.md`. If non-empty, treat its items
+   as inputs to today's priorities. (Self-fix per KE-417 — arc eats its own
+   dogfood; this is the existence proof for the priority-0 INBOX pattern.)
 1. **Read new knowledge**: check `agents/shared/knowledge/entries/` for recent additions
 2. **Check system health**: query metrics, look for patterns
 3. **Find contradictions**: compare design docs to actual behavior
