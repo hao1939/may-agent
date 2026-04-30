@@ -7,7 +7,27 @@
 
 ---
 
-## Latest (2026-05-01 Heartbeat #39) — The Propose-Verify Loop is Domain-General; Async Remote Agents Go Mainstream
+## Latest (2026-05-01 Heartbeat #40) — Semantic Diversity ≠ Surface Diversity; Draft-Verify is Everywhere
+
+> **主题**：ESamp证明test-time多样性需要显式语义引导；Speculative Decoding进入RL训练循环
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **ESamp** | arXiv 2604.24927 (ShanghaiTech) | Latent Distiller在线预测深层表示→预测误差=novelty信号→引导采样走向语义新方向；98.8% vLLM吞吐 | **表面多样性≠语义多样性**：agent生成多方案时需显式novelty信号；prediction error是通用"是否真的在探索"指标 |
+| **Spec Decode for RL** | arXiv 2604.26779 (NVIDIA) | Speculative decoding作为lossless加速原语集成到RL rollout；8B同步1.8x，235B异步2.5x | **Draft-verify模式再次同构propose-verify**；lossless acceleration = 不改变语义的系统加速思维 |
+
+### 综合洞察：Draft-Verify / Propose-Verify 的又一变体
+
+本轮两篇论文都是同一元模式的实例化：
+- **ESamp**: draft a continuation → distiller predicts → error = novelty → accept/reject direction
+- **Spec Decode in RL**: draft tokens → verifier checks → accept/reject tokens
+- 与之前的propose-verify loop完全同构，只是在不同层级（token/semantic/hypothesis）
+
+---
+
+## Previous (2026-05-01 Heartbeat #39) — The Propose-Verify Loop is Domain-General; Async Remote Agents Go Mainstream
 
 > **主题**：自主研究循环从ML泛化到硬件设计；Mistral将异步远程agent作为产品发布
 
