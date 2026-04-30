@@ -7,7 +7,33 @@
 
 ---
 
-## Latest (2026-05-01 Heartbeat #44) — Neuro-Symbolic Compositional Agents
+## Latest (2026-05-01 Heartbeat #45) — Agent Serving Infrastructure & Consensus Traps
+
+> **主题**：多Agent系统的两个隐形杀手 — 基础设施盲目性和人为共识
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Pythia** | arXiv 2604.25899 | Agent-native LLM serving：利用workflow DAG拓扑做prefix caching和智能调度 | **我们的agent有固定拓扑**：system prompt高度稳定，适合prefix cache；长短任务应分开排队 |
+| **Preserving Disagreement** | arXiv 2604.26561 | 同模型不同prompt ≠ 真正多视角；架构异质性（不同模型）才能避免人为共识 | **如果让agent互相评审，必须用不同backend model**，否则都会收敛到相同答案 |
+
+### 综合洞察：多Agent系统的成熟度阶梯
+
+1. **Level 1**（我们现在）：多agent分工，共享一个LLM backend
+2. **Level 2**：利用拓扑信息优化serving（Pythia的思路）
+3. **Level 3**：不同角色用不同模型，保留认知多样性
+
+关键insight：**quality weighting会杀死diversity**。在没有客观正确答案的决策中（如优先级排序、方向选择），coherence验证反而让高分agent聚集，减少多样性。
+
+### 行动建议
+1. 如果引入agent peer review，考虑混合model backend
+2. System prompt稳定的agent适合开prefix caching
+3. 8B模型做不了graded nuance — 需要frontier model做需要微妙判断的任务
+
+---
+
+## Previous (2026-05-01 Heartbeat #44) — Neuro-Symbolic Compositional Agents
 
 > **主题**：Agent需要显式世界模型才能做compositional generalization
 
