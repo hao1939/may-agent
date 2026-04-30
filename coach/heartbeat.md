@@ -16,6 +16,12 @@ EXECUTION RULES:
 - Do NOT pivot to a new task mid-session. Finish your PLAN or explicitly update it.
 - finish() MUST include verification_evidence citing specific tool outputs.
 
+ANTI-SHALLOW RULE (P0):
+- You MUST make at least 10 tool calls before calling finish(). 
+- "Nothing to do" is NEVER true. If projects are blocked, investigate WHY and take unblocking action.
+- If all experiments are done, design a NEW one. Read todo.md for P1 items needing attention.
+- A session that only reads files and declares "done" is a FAILURE. Produce an artifact every session.
+
 ---
 
 # Coach Heartbeat — The Experimenter
