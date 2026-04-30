@@ -7,7 +7,25 @@
 
 ---
 
-## Latest (2026-05-03 Heartbeat #27) — Lossless RL Acceleration & Cross-Architecture Distillation
+## Latest (2026-05-03 Heartbeat #28) — Dense 8B Beats 32B MoE; Zed 1.0 AI-Native Editor
+
+> **主题**：小模型通过数据工程超越大模型；开发工具进入AI-native时代
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **IBM Granite 4.1 8B** | IBM Research (Apache 2.0) | 8B dense模型通过5阶段训练+4轮RL匹配32B MoE；tool calling BFCL V3=68.3；512K context | **数据质量>参数规模**；8B可用于agent执行层；multi-objective RL需要recovery阶段（RLHF损害math能力） |
+| **Zed 1.0** | zed.dev | GPU-native editor达1.0；支持parallel agents、Agent Client Protocol、edit predictions | **Agent工作环境在变**：编辑器原生支持多agent并行+CRDT协同=agent不再只是CLI工具 |
+
+### 行动建议
+1. **Agent local execution**：Granite 4.1 8B (Apache 2.0) 可作为skill执行的轻量本地模型，tool calling已基本可用
+2. **Multi-stage RL design**：IBM的4轮RL策略（联合训练→RLHF→calibration→recovery）是production RL的参考模板
+3. **Editor-as-harness**：Zed的Agent Client Protocol意味着agent可以直接接入IDE环境，不需要自建UI
+
+---
+
+## Previous (2026-05-03 Heartbeat #27) — Lossless RL Acceleration & Cross-Architecture Distillation
 
 > **主题**：推理加速从部署前移到训练；跨架构蒸馏让小模型 agent 可行
 
