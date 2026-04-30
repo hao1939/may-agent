@@ -1,5 +1,9 @@
-# DELIVERABLES_CHECKLIST
+# Deliverables Checklist
 
-- [x] DONE — `agents/shared/scripts/weekly-report.sh` — Weekly health report generator (test metrics, iteration stats, adoption, toolkit inventory)
-- [x] DONE — `.state/health-history/report-20260430.md` — Generated report showing 81 test files, 1428 tests, 86% deliverable rate, 14/14 adoption
-- [x] DONE — `agents/shared/projects/outputs/weekly-report.sh` — Copy in outputs directory
+## Task: Wire validate-on-create hook into project.ts
+
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | Import `onProjectCreate` in project.ts | DONE | `agents/shared/workflows/project.ts` line 17 |
+| 2 | Call validation after project creation | DONE | `agents/shared/workflows/project.ts` lines 217-220 |
+| 3 | All tests pass | DONE | 81 files, 1428 tests passed |
