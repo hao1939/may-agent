@@ -1,5 +1,15 @@
-# Deliverables Checklist — Heartbeat 2025-06-27
+# Deliverables Checklist
 
-- [x] **Quality score analysis** — `agents/optimizer/findings/quality-score-analysis.md` — Investigated P1 notification, produced data-backed analysis showing improving trend
-- [x] **P1 notification addressed** — Dismissed with evidence: last 2 evals scored 0.78/0.85, optimizer not lowest agent
-- [x] **6h efficiency snapshot** — Included in findings file, identified coach as highest op consumer
+## Task: Optimizer Heartbeat — Efficiency Review
+
+| # | Deliverable | Status | Evidence |
+|---|-------------|--------|----------|
+| 1 | Review metrics and alerts | DONE | All metrics healthy, no alerts |
+| 2 | Check pending events | DONE | No pending events |
+| 3 | Review projects | DONE | request-deduplication closed, no action needed |
+| 4 | Investigate efficiency/waste questions | DONE | Found 4 zombie sessions (cosmetic issue, no resource waste) |
+
+## Findings
+
+- **Zombie sessions**: 4 sessions show "running" in tracker but are unreachable (may×2, coach×2, aged 374-1263min). Cosmetic tracking issue only.
+- **No actionable waste identified** this heartbeat.
