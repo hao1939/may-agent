@@ -135,7 +135,7 @@
 
 ### 15. LLM-Based Evaluation
 - **What**: Deep evaluation of session quality using an LLM evaluator agent.
-- **Status**: 🔴 `evaluate-session-llm` cron is **disabled**
+- **Status**: 🟡 `evaluate-session-llm` cron appears **disabled in cron config**, but the DB shows evaluations are still being written recently (likely via handler-driven evaluation).
 - **Impact**: Medium — we only get heuristic scores (mechanical checks), missing nuanced quality feedback
 - **Why disabled?**: Likely cost concerns or previous bugs
 
