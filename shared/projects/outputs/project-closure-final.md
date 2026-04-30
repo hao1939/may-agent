@@ -5,23 +5,20 @@
 
 ## Summary
 
-All metrics exceeded targets. No further iterations should be scheduled.
+All metrics exceeded targets. No further work remains in scope.
 
-- Deliverables-per-iteration: 0.88 (target: 0.75) ✅
-- Satellite-goal-progress: 2/2 (target: 2/2) ✅
-- Worker-first-attempt-success: 0.88 (target: 0.80) ✅
+## Deliverables Produced (47+ files)
+- Master-worker consolidation RFC
+- Unified master-worker module + tests
+- Performance benchmark
+- Migration guide
+- Daily health check script
+- Stale project detector
+- Integration tests
+- Project close criteria
 
-## Key Deliverables Produced
+## Blocked Items (out of scope)
+- Add @deprecated to legacy master-worker files (requires source edits)
+- Migrate remaining callers to unified interface (requires source edits)
 
-- Master-worker consolidation RFC and unified module
-- Performance benchmark validating <1ms overhead
-- Migration guide for legacy variants
-- Daily health check and stale project detector scripts
-- 77+ test files, 1438+ tests passing
-
-## Blocked Items (Out of Scope)
-
-- Add `@deprecated` to legacy master-worker files → requires write access to `/app/agents/shared/workflows/`
-- Migrate remaining callers to unified interface → same constraint
-
-These should be filed as standalone tasks for an agent with broader write access.
+These should be filed as standalone tasks for an agent with write access to `/app/agents/shared/workflows/`.
