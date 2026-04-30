@@ -1,10 +1,10 @@
 # Project: Hao Alignment
 
-**Status**: active
+**Status**: waiting
 **Owner**: may
 **Priority**: P2
 **Workflow**: master-worker
-**Iteration**: 6
+**Iteration**: 8
 
 ## Goal
 Learn Hao's thinking, preferences, values, and purpose from our conversation history. Build a living model of what Hao wants so the system makes fewer decisions he has to override.
