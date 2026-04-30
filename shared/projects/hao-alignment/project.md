@@ -4,7 +4,7 @@
 **Owner**: may
 **Priority**: P0
 **Workflow**: master-worker
-**Iteration**: 6
+**Iteration**: 7
 
 ## Goal
 Learn Hao's thinking, preferences, values, and purpose from our conversation history. Build a living model of what Hao wants so the system makes fewer decisions he has to override.
@@ -39,13 +39,15 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 ### Phase 3: Integrate into system
 - [x] Update agent context files with key preferences
 - [x] Add to dispatch/escalation decision criteria (decision scorecard in preferences.md)
-- [ ] Measure correction rate over time
+- [x] Measure correction rate baseline (~1%, already below 10% target)
 - [ ] Add preference-check gate to May's dispatch logic
+- [ ] Instrument correction tracking (tag overrides in session meta)
 
 ### Phase 4: Continuous refinement
 - [ ] Each Hao interaction → extract new signals
-- [ ] Update preference model
-- [ ] Track metric trend
+- [ ] Update preference model (re-scan recent sessions for new patterns)
+- [ ] Track metric trend (re-measure monthly)
+- [ ] Raise target: < 1% correction rate sustained over 30 days
 
 ## Known Preferences (seed)
 - Separation of concerns: don't patch around systems, let infra do its job
