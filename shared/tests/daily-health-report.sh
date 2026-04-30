@@ -20,7 +20,7 @@ TEST_EXIT=$?
 # Parse test counts
 TESTS_PASSED=$(echo "$TEST_OUTPUT" | grep -oP '\d+(?= passed)' | tail -1)
 TESTS_FAILED=$(echo "$TEST_OUTPUT" | grep -oP '\d+(?= failed)' | tail -1)
-TEST_FILES=$(echo "$TEST_OUTPUT" | grep -oP '\d+(?= test files?)' | head -1)
+TEST_FILES=$(echo "$TEST_OUTPUT" | grep 'Test Files' | grep -oP '\d+(?= passed)' | head -1)
 
 TESTS_PASSED=${TESTS_PASSED:-0}
 TESTS_FAILED=${TESTS_FAILED:-0}
