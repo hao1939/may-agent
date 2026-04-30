@@ -29,3 +29,8 @@
 
 ### Iteration 2 — 2026-04-30T06:50:53.955Z
 **Worker**: Also write to the project-specific path:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should produce M5: Edit `agents/coach/context.md` to inject the scaffold as an unavoidable preamble. The coach must output TASK EXTRACT and PLAN blocks as its first actions in any session with multi-step work.
+
+(b) What's different: The scaffold exists as a skill file bu
