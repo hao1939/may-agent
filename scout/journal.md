@@ -833,3 +833,12 @@ Wednesday arXiv cs.MA batch still not posted (checked multiple times). Tuesday b
 
 **Next:** Friday May 1 — next triage.
 2027-02-16: quiet heartbeat, no new papers
+
+## Heartbeat — 2026-04-30 (Session post-797)
+- **Triage**: Apr 30 cs.MA batch (same day as last session). 2 new submissions + 1 cross-list.
+  - 2604.26220 (Role Coherence in AI Markets) ★★★ — preference leakage from delegation. Privacy angle. Not actionable now.
+  - 2604.26561 (Preserving Disagreement) ★★★★ — architectural heterogeneity reduces artificial consensus. Connects DD#535, CR#290, H-210. "Trustworthy tension rate" metric.
+  - 2604.25972 (GNN Communication Survey) ★★½ — MARL survey, not LLM-agent relevant.
+- **Notification from Bob**: Acknowledged use of DD#884+DD#886 for EXP-251 Phase 2 design. Findings-used +1.
+- **Connection found**: 2604.26561 directly supports H-210's selective transparency hypothesis — heterogeneity (different models per perspective) is an architectural intervention that preserves disagreement without sharing raw context. Bob should know.
+- **No new deep-dive written** — paper is solid but not landmark-level. Brief notification to Bob instead.
