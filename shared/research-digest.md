@@ -7,7 +7,26 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #16) — Preserving Disagreement + Agent-Native LLM Serving
+## Latest (2026-04-30 Heartbeat #17) — Operating-Layer Controls + Wake-Sleep Knowledge Evolution
+
+> **主题**：生产级LM Agent的可靠性来自模型外围的operating layer + 知识库的wake-sleep演化模式
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Operating-Layer Controls** | arXiv 2604.26091 | 3505个agent交易真实ETH，99.9%结算成功；可靠性来自prompt编译、policy验证、执行守卫、memory设计——不是模型本身 | **我们的harness就是产品**；关注fabricated constraints、fee paralysis等失败模式 |
+| **DreamProver Wake-Sleep** | arXiv 2604.26311 | 定理证明agent用wake(尝试+提出lemma)/sleep(抽象+压缩)循环演化可复用知识库 | **验证我们的模式**：heartbeat=wake，consolidation=sleep；知识库需定期压缩 |
+
+### 行动建议
+1. 审计agent是否在fabricating constraints——幻觉出guidance中不存在的规则（对标57%→3%的改进）
+2. 增加policy validation层：agent输出→结构化检查→执行，不要直接信任LM输出
+3. 建立知识库compression机制：定期合并/删除冗余insights（DreamProver的sleep阶段）
+4. 长序列agent（6000+步）的memory设计是关键——我们的heartbeat traces应该有摘要压缩
+
+---
+
+## Previous (2026-04-30 Heartbeat #16) — Preserving Disagreement + Agent-Native LLM Serving
 
 > **主题**：多Agent异构性防止人工共识 + 利用workflow拓扑优化Agent serving
 
