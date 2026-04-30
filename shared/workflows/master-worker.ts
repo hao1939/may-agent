@@ -32,6 +32,7 @@ import { withRetry, isRetryableError } from "./provider-retry.ts";
 import { estimateComplexity } from "./complexity-estimator.ts";
 import { IterationTimer } from "./iteration-timer.ts";
 import { recordIteration } from "../lib/iteration-monitor.ts";
+import { recordUsage } from "../lib/cost-tracker.ts";
 import { createBudget, type Budget as IterationBudget } from "./iteration-budget.ts";
 
 // Global iteration timer for observability
@@ -527,6 +528,18 @@ ${journalContent.slice(-3000)}
           firstAttempt: !(ctx as any)[`_retried_${iteration}`],
           durationMs: timing.durationMs,
           targetPath: changedFiles[0]?.split('/').pop(),
+        });
+      } catch { /* non-critical */ }
+
+      // ── Record cost/usage metrics ──
+      try {
+        const outputLen = worker.lastText()?.length ?? 0;
+        recordUsage({
+          agent: config.agentName ?? 'worker',
+          workflow: 'master-worker',
+          promptTokens: Math.round(outputLen / 4),  // rough estimate
+          completionTokens: Math.round(outputLen / 4),
+          model: 'unknown',
         });
       } catch { /* non-critical */ }
 

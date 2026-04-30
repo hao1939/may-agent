@@ -1,7 +1,9 @@
-# Deliverables Checklist — Iteration 36
+# Deliverables Checklist — Iteration 39
 
-- [x] DONE: `agents/shared/lib/prompt-builder.ts` — buildPrompt utility with PromptConfig interface
-- [x] DONE: `agents/shared/lib/__tests__/prompt-builder.test.ts` — 6 tests covering all scenarios
-- [x] DONE: `agents/shared/lib/index.ts` — barrel export updated with prompt-builder
-- [x] DONE: All 80 test files pass (1422 tests)
-- [x] DONE: Copies in `agents/shared/projects/outputs/`
+## Task: Wire cost-tracker into master-worker.ts
+
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | Import `recordUsage` in master-worker.ts | DONE | `agents/shared/workflows/master-worker.ts` line 35 |
+| 2 | Add `recordUsage()` call after each iteration | DONE | `agents/shared/workflows/master-worker.ts` lines 534-544 |
+| 3 | All tests still pass | DONE | 81 files, 1428 tests passed |
