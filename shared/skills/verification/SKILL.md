@@ -47,7 +47,7 @@ Match your verification to what you're claiming:
 
 | You Did | Verify With |
 |---|---|
-| Wrote/edited a file | `read()` the modified section back |
+| Edited a file | `read()` the modified section back |
 | Fixed a bug | `run_test` → check `details.status` == "success" |
 | Changed TypeScript | `npx tsc --noEmit` → 0 errors |
 | Added a feature | `run_test` → check `details.meta.passed` > 0 |
