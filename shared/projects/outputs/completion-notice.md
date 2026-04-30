@@ -1,5 +1,5 @@
 # Project Complete
 
-This project has been marked as **COMPLETE**. No further work is needed.
+This project has been marked as **COMPLETE**. No further iterations are needed.
 
-All metrics exceed targets. No additional iterations should be dispatched.
+All objectives have been met. No additional work is required.
