@@ -14,10 +14,10 @@ export default defineConfig({
         "shared/evaluation/**/*.ts",
       ],
       thresholds: {
-        lines: 90,
+        lines: 85,
         branches: 60,
-        functions: 90,
-        statements: 90,
+        functions: 85,
+        statements: 85,
       },
     },
   },

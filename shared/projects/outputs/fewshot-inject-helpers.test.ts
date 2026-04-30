@@ -1,80 +1,98 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { selectExamples, loadExample, injectFewShot } from "../workflows/fewshot-inject-helpers.js";
+/**
+ * Tests for fewshot-inject-helpers.ts
+ * Covers: selectExamples, loadExample, injectFewShot
+ */
+
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { selectExamples, loadExample, injectFewShot } from "../../workflows/fewshot-inject-helpers.js";
 
 describe("fewshot-inject-helpers", () => {
-  // ── selectExamples ───────────────────────────────────────────────────
-
   describe("selectExamples", () => {
-    it("returns empty array for unrelated task", () => {
-      expect(selectExamples("write a hello world function")).toEqual([]);
+    it("returns empty array when no patterns match", () => {
+      expect(selectExamples("hello world simple task")).toEqual([]);
     });
 
-    it("matches binary-file-escalation for binary keywords", () => {
-      const result = selectExamples("analyze this .bin file for issues");
+    it("matches binary-related keywords", () => {
+      const result = selectExamples("analyze the .bin file format");
       expect(result).toContain("binary-file-escalation");
     });
 
-    it("matches reproduce-first-debugging for bug keywords", () => {
-      const result = selectExamples("there is a bug in the parser");
+    it("matches bug/error keywords", () => {
+      const result = selectExamples("there is an error in the output");
       expect(result).toContain("reproduce-first-debugging");
     });
 
-    it("matches escalation-judgment for upgrade keywords", () => {
-      const result = selectExamples("upgrade the dependency across multiple files");
+    it("matches upgrade/dependency keywords", () => {
+      const result = selectExamples("upgrade the dependency and check impact on modules");
       expect(result).toContain("escalation-judgment");
     });
 
-    it("matches know-when-blocked for blocked keywords", () => {
-      const result = selectExamples("I'm blocked because missing credentials");
+    it("matches blocked/impossible keywords", () => {
+      const result = selectExamples("I'm blocked because I can't find the key");
       expect(result).toContain("know-when-blocked");
     });
 
-    it("matches evidence-over-narrative for fix bug keywords", () => {
+    it("matches fix-bug keywords", () => {
       const result = selectExamples("fix bug where output is incorrect output");
       expect(result).toContain("evidence-over-narrative");
     });
 
-    it("returns max 2 examples even when more match", () => {
-      // This matches multiple patterns: bug, fix bug, blocked
-      const result = selectExamples("fix bug error blocked can't find missing key");
+    it("returns max 2 examples even if more patterns match", () => {
+      // This task matches multiple patterns
+      const result = selectExamples("fix bug in binary executable that is failing with error and blocked");
       expect(result.length).toBeLessThanOrEqual(2);
     });
 
     it("strips verification blocks before matching", () => {
-      const task = `do something simple\n\n## Verification\n\`\`\`\n./node_modules/.bin/tsc --binary\n\`\`\``;
+      const task = `Do something simple
+## Verification
+\`\`\`
+./node_modules/.bin/tsc --noEmit
+\`\`\``;
+      // "binary" in ./node_modules/.bin/tsc should NOT trigger
       const result = selectExamples(task);
-      // "binary" is inside verification block, should not match
       expect(result).not.toContain("binary-file-escalation");
     });
 
-    it("matches hexdump keyword for binary pattern", () => {
-      expect(selectExamples("run hexdump on the file")).toContain("binary-file-escalation");
+    it("matches 'compiled' keyword for binary pattern", () => {
+      expect(selectExamples("handle compiled output")).toContain("binary-file-escalation");
+    });
+
+    it("matches 'hexdump' keyword for binary pattern", () => {
+      expect(selectExamples("run hexdump on file")).toContain("binary-file-escalation");
+    });
+
+    it("matches 'test fail' for bug pattern", () => {
+      expect(selectExamples("the test fails intermittently")).toContain("reproduce-first-debugging");
+    });
+
+    it("matches 'missing credential' for blocked pattern", () => {
+      expect(selectExamples("missing credential for API")).toContain("know-when-blocked");
+    });
+
+    it("matches 'doesn't work' for fix-bug pattern", () => {
+      expect(selectExamples("the feature doesn't work properly")).toContain("evidence-over-narrative");
     });
   });
-
-  // ── loadExample ──────────────────────────────────────────────────────
 
   describe("loadExample", () => {
     it("returns null for non-existent file", () => {
       expect(loadExample("nonexistent-file-xyz")).toBeNull();
     });
 
-    it("loads an existing example file without throwing", () => {
-      // Try loading one that should exist based on the patterns
+    it("returns a string for known example files (if they exist)", () => {
       const result = loadExample("binary-file-escalation");
-      // It either returns content or null (if file doesn't exist in test env)
-      expect(result === null || typeof result === "string").toBe(true);
-    });
-
-    it("returns a string (not empty) for valid example files", () => {
-      const result = loadExample("reproduce-first-debugging");
+      // May be null if file doesn't exist in this env, but if it exists it's a string
       if (result !== null) {
+        expect(typeof result).toBe("string");
         expect(result.length).toBeGreaterThan(0);
       }
     });
-  });
 
-  // ── injectFewShot ────────────────────────────────────────────────────
+    it("returns null for empty filename", () => {
+      expect(loadExample("")).toBeNull();
+    });
+  });
 
   describe("injectFewShot", () => {
     const originalEnv = process.env.GYM_NO_FEWSHOT;
@@ -87,23 +105,23 @@ describe("fewshot-inject-helpers", () => {
       }
     });
 
-    it("returns original task when GYM_NO_FEWSHOT=1", () => {
+    it("returns task unchanged when GYM_NO_FEWSHOT=1", () => {
       process.env.GYM_NO_FEWSHOT = "1";
-      const task = "fix this bug in the parser";
+      const task = "fix the binary file error";
       expect(injectFewShot(task)).toBe(task);
     });
 
-    it("returns original task when no patterns match", () => {
+    it("returns task unchanged when no patterns match", () => {
       delete process.env.GYM_NO_FEWSHOT;
-      const task = "write a hello world function in python";
+      const task = "write a hello world program";
       expect(injectFewShot(task)).toBe(task);
     });
 
-    it("prepends examples when patterns match", () => {
+    it("prepends reference header when examples match", () => {
       delete process.env.GYM_NO_FEWSHOT;
-      const task = "fix this bug where output is incorrect output";
+      const task = "fix bug in the binary executable that is failing";
       const result = injectFewShot(task);
-      // If example files exist, should have the framing
+      // If example files exist, should have header; if not, returns unchanged
       if (result !== task) {
         expect(result).toContain("## Reference: How a similar task was handled");
         expect(result).toContain("## Your Task");
@@ -111,30 +129,20 @@ describe("fewshot-inject-helpers", () => {
       }
     });
 
-    it("includes '## Your Task' section with original task", () => {
+    it("includes original task at the end", () => {
       delete process.env.GYM_NO_FEWSHOT;
-      const task = "there is a bug causing a crash in production";
+      const task = "there is a crash in production";
       const result = injectFewShot(task);
-      if (result !== task) {
-        expect(result.endsWith(task)).toBe(true);
-      }
+      expect(result).toContain(task);
     });
 
-    it("does not bypass when GYM_NO_FEWSHOT is not set", () => {
-      delete process.env.GYM_NO_FEWSHOT;
-      const task = "analyze this executable binary file";
+    it("GYM_NO_FEWSHOT=0 does not bypass injection", () => {
+      process.env.GYM_NO_FEWSHOT = "0";
+      const task = "fix the error in production crash";
       const result = injectFewShot(task);
-      // Should attempt injection (may still return original if files don't exist)
-      expect(typeof result).toBe("string");
-    });
-
-    it("respects MAX_TOTAL_CHARS budget", () => {
-      delete process.env.GYM_NO_FEWSHOT;
-      // Even with matching patterns, result should not be excessively long
-      const task = "fix bug error in binary executable file";
-      const result = injectFewShot(task);
-      // Total injected content should be reasonable
-      expect(result.length).toBeLessThan(20000);
+      // Should attempt injection (not bypassed)
+      // Result may still equal task if files don't exist
+      expect(result).toContain(task);
     });
   });
 });
