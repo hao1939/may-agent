@@ -12,3 +12,4 @@
   Result: 1/6 passed
   Result: 1/6 passed
   Result: 1/6 passed
+  Result: 1/6 passed
