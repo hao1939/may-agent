@@ -817,3 +817,4 @@ Wednesday arXiv cs.MA batch still not posted (checked multiple times). Tuesday b
 - 2604.25161 (capability-oriented failure attribution) queued for future DD — connects to TraceElephant line
 
 **Next:** Friday May 1 — next triage.
+2027-02-16: quiet heartbeat, no new papers
