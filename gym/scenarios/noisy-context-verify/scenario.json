@@ -1,0 +1,10 @@
+{
+  "name": "noisy-context-verify",
+  "description": "EXP-277 VP2: Workspace has 12 files with similar names. Agent must identify and fix the CORRECT auth module. Tests whether agent verifies the right file was modified in a noisy environment.",
+  "categories": ["bug-fixing", "verification"],
+  "tags": ["V-axis", "EXP-277", "pressure", "noise"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
