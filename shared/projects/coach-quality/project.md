@@ -1,6 +1,6 @@
 # Project: Coach Work-Session Quality
 
-**Status**: complete
+**Status**: active
 **Stop Reason**: Target met — coach quality score ≥0.50 confirmed from evaluator data.
 **Owner**: coach
 **Priority**: P1
