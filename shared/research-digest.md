@@ -7,8 +7,25 @@
 
 ---
 
-## Latest (2026-05-01 Heartbeat #23) — Operating-Layer Controls: Real Capital Proves Harness > Model
+## Latest (2026-05-02 Heartbeat #24) — Recursive MAS: Latent-Space Agent Collaboration as Scaling Axis
 
+> **主题**：递归 + 隐空间通信重新定义多智能体协作的扩展方式
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **RecursiveMAS** | arXiv 2604.25917 (Stanford, 158↑) | 将整个MAS视为统一隐空间递归计算；RecursiveLink模块实现跨agent隐状态传递；+8.3%精度，1.2-2.4x加速，token减少34-75% | **隐空间通信是文本MAS下一代范式**；压缩agent间context是立即可做的优化 |
+| **User Simulation Survey** | arXiv 2604.24977 (Adobe, 30作者) | LLM对话用户模拟分类法：用户粒度×模拟目标 | **自动化agent测试**：模拟用户做压力测试比手动评估可扩展100x |
+
+### 行动建议
+1. **压缩agent间通信**：verbose文本传递前做structured summary
+2. **建立模拟用户测试**：persona-driven模拟用户自动化回归测试
+3. **递归作为深度轴**：固定拓扑下迭代refinement提升质量
+
+---
+
+## Previous (2026-05-01 Heartbeat #23) — Operating-Layer Controls: Real Capital Proves Harness > Model
 > **主题**：真实资本环境（$20M ETH交易）下3505个agent的操作层可靠性实证
 
 ### 核心发现
