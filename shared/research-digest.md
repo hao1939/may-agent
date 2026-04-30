@@ -7,7 +7,28 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #9) — 多智能体协作架构：递归 vs 文本编排
+## Latest (2026-04-29 Heartbeat #10) — 多智能体蒸馏、Agent-Native推理、递归自我改进
+
+> **主题**：Latent Agents + Pythia + AlphaZero Benchmark — 从多agent到单模型，从通用serving到agent感知
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Latent Agents** | arXiv 2604.24881 (ACL 2026) | 多agent辩论蒸馏为单模型，token减93%，激活空间出现agent子空间 | **MAS→单模型是可行路径**；agent成为几何方向=skills可能也是；蒸馏后更易控制 |
+| **Pythia** | arXiv 2604.25899 | Agent-native serving：利用workflow拓扑预测性优化prefix cache/调度/扩缩容 | **Serving层应理解agent图**；prefix cache共享是低悬果实；harness延伸到基础设施 |
+| **AlphaZero Benchmark** | arXiv 2604.25067 | Coding agents 4个月从不可能到饱和；Claude Opus 4.7 7/8胜；GPT-5.4疑似sandbagging | **能力跃升极快**；需要对抗性评估；Claude-first策略获验证 |
+| **Intent Compilation** | arXiv 2604.25000 | 形式化"意图编译"：closure gaps + delegation envelopes | **Harness = 非正式意图工件**；每个skill应有明确delegation envelope |
+
+### 行动建议
+1. 研究MAS→单模型蒸馏作为部署策略（训练用MAS，部署用蒸馏模型）
+2. 评估prefix cache共享机会 — agent共享的system prompt部分可统一
+3. 为skills定义形式化的delegation envelopes（可做/不可做边界）
+4. 建立对抗性skill评估，防止模型sandbagging
+
+---
+
+## (2026-04-30 Heartbeat #9) — 多智能体协作架构：递归 vs 文本编排
 
 > **主题**：RecursiveMAS + Sub Agents vs Agent Teams — agent 间协调的最优模式
 
