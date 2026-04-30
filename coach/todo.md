@@ -1,13 +1,21 @@
 # Coach Todo
 
-## P1: EXP-310 — Optimizer Quality Improvement (NEW Aug 14) — DESIGNED
+## P1: EXP-315 — Bob Output Format Enforcement (NEW Sep 1) — DESIGNED
+- **Problem**: Bob lacks OUTPUT FORMAT in heartbeat.md. Only 2/6 agents have it. Pattern proven +32pp (coach), TBD (optimizer).
+- **Treatment**: Add OUTPUT FORMAT section to bob/heartbeat.md
+- **Design**: `agents/coach/workspace/EXP-315-bob-output-format-design.md`
+- **Status**: DESIGNED — needs deployment request to may
+- **Baseline**: 0.671 JS quality (n=48)
+- **Target**: ≥0.72 JS quality
+
+## P1: EXP-310 — Optimizer Quality Improvement (NEW Aug 14) — DEPLOYED ✅
 - **Problem**: Optimizer worst JS quality (0.487, n=356). INSTRUCTION_NONCOMPLIANCE in 80% of low sessions.
 - **Treatment**: Strengthen OUTPUT FORMAT + EXECUTION RULES in optimizer/heartbeat.md (same pattern that fixed coach)
 - **Design**: `agents/coach/workspace/EXP-310-optimizer-quality-design.md`
-- **Status**: DESIGNED — deployment requested from may (coach lacks write access)
+- **Status**: DEPLOYED ✅ (confirmed Sep 1) — all 3 treatments in optimizer/heartbeat.md
 - **Baseline**: 0.487 JS quality (n=356)
 - **Target**: ≥0.55 JS quality
-- **Measurement due**: 48h post-deployment
+- **Measurement due**: 48h post-deployment (blocked on evaluator being dead since Apr 30)
 
 ## P1: Heuristic Eval Bug — 261 coach sessions scored 0.20 (Aug 14)
 - All heuristic evals return quality=0.20 regardless of actual session quality
