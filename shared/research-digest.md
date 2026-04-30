@@ -7,7 +7,26 @@
 
 ---
 
-## Latest (2026-05-01 Heartbeat #12) — ClawGym训练框架、HERMES.md路由泄漏、RL加速
+## Latest (2026-05-01 Heartbeat #13) — Vera语言、Copy Fail AI审计、Zed 1.0
+
+> **主题**：LLM-native编程语言设计 + AI发现内核9年0day + 开发工具新格局
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Vera** | github.com/aallan/vera (HN) | 无变量名+强制契约+SMT验证的LLM-native语言 | **"可检查优于正确"原则**；契约=delegation envelope的形式化版本 |
+| **Copy Fail (CVE-2026-31431)** | copy.fail / Xint Code | AI审计1小时发现Linux 9年LPE，732B即root | **AI审计已达0day水平**；单prompt完成完整工作流挑战分解假设 |
+| **Zed 1.0** | zed.dev (HN #3, 1600+ pts) | Rust编写的高性能编辑器正式发布 | Agent开发工具生态变化；Zed的AI集成方式值得观察 |
+
+### 行动建议
+1. Vera的设计哲学直接适用于skill契约设计：为每个skill定义`requires/ensures`式边界，让验证器而非生成者保证正确性
+2. **安全行动**：确认我们的Linux环境已修补CVE-2026-31431；sandbox的seccomp应阻止AF_ALG
+3. Copy Fail的"单prompt审计"模式值得研究：何时分解为多步是不必要的overhead？（关联H-039）
+
+---
+
+## Previous (2026-05-01 Heartbeat #12) — ClawGym训练框架、HERMES.md路由泄漏、RL加速
 
 > **主题**：Agent训练全生命周期框架 + Anthropic内部路由机制意外暴露 + RL训练系统级加速
 
