@@ -187,6 +187,16 @@ export class SubagentManager {
     return this.registry;
   }
 
+  /** Get the set of projectIds that have a currently-running in-memory session.
+   *  This is the ground truth — not affected by stale DB rows after restart. */
+  getRunningProjectIds(): Set<string> {
+    const ids = new Set<string>();
+    for (const s of this.activeSessions.values()) {
+      if (s.status === "running" && s.projectId) ids.add(s.projectId);
+    }
+    return ids;
+  }
+
   constructor(opts: SubagentManagerOptions) {
     this.registry = new RegistryStore(opts.persistDir);
     this._projectRoot = opts.projectRoot ?? resolve(opts.persistDir, "..");
@@ -1039,6 +1049,7 @@ export class SubagentManager {
     for (const { sessionId, persisted } of staleSessionIds) {
       if (opts?.abort) {
         this.registry.updateSessionStatus(sessionId, "interrupted", "Clean start (fresh)");
+        updateSessionDb(persistDir, sessionId, { status: "interrupted", endedAt: Date.now(), error: "Clean start (fresh)" });
         interrupted.push({
           sessionId,
           agent: persisted.agent,
@@ -1056,6 +1067,7 @@ export class SubagentManager {
       const registered = this.agents.get(persisted.agent);
       if (!registered) {
         this.registry.updateSessionStatus(sessionId, "interrupted", "Process restarted (agent not registered)");
+        updateSessionDb(persistDir, sessionId, { status: "interrupted", endedAt: Date.now(), error: "Process restarted (agent not registered)" });
         interrupted.push({
           sessionId,
           agent: persisted.agent,
@@ -1076,6 +1088,7 @@ export class SubagentManager {
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err);
         this.registry.updateSessionStatus(sessionId, "interrupted", `Resume failed: ${errMsg}`);
+        updateSessionDb(persistDir, sessionId, { status: "interrupted", endedAt: Date.now(), error: `Resume failed: ${errMsg}` });
         interrupted.push({
           sessionId,
           agent: persisted.agent,

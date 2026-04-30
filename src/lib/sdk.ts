@@ -15,6 +15,9 @@ export interface AgentSDK {
   /** Run an agent on a task, wait for result. Don't await for fire-and-forget (= fork). */
   runAgent(agent: string, task: string, opts?: RunOpts): Promise<TaskResult>;
 
+  /** Run a named workflow. Returns when workflow completes. */
+  runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult>;
+
   /** Create a raw LLM session (multi-turn, custom system prompt). For evaluation/judgment tasks. */
   createLLMSession(opts: SessionOpts): Promise<SessionHandle>;
 
