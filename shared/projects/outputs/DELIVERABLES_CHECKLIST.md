@@ -1,4 +1,7 @@
 # Deliverables Checklist
 
-- [x] DONE — `agents/shared/lib/examples/getting-started.ts`: Getting started example demonstrating all shared toolkit utilities together (generateProject, recordIteration, getMetrics, analyzeIterations, detectRegressions, validateProjectConfig, createTaskTemplate, validateWriteFirst)
-- [x] DONE — `agents/shared/projects/outputs/getting-started-example.ts`: Copy in outputs directory
+## Task: Measure toolkit adoption by other agents
+
+- [x] DONE — Search .state/ and agent sessions for shared/lib imports → `/app/agents/shared/projects/outputs/adoption-audit.md`
+- [x] DONE — Confirm 14/14 context.md files have toolkit reference → verified via grep (count=14)
+- [x] DONE — Report findings and recommendations → `/app/agents/shared/projects/outputs/adoption-audit.md`
