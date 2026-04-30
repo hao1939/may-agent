@@ -128,9 +128,8 @@ describe("IterationTimer + MetricsCollector integration", () => {
     const collector = new MetricsCollector();
 
     // Simulate timed iteration
-    timer.start("proj-1", 1);
-    // Simulate some work (timer tracks wall clock)
-    const elapsed = timer.stop("proj-1", 1);
+    timer.startIteration("proj-1-iter-1");
+    const { durationMs: elapsed } = timer.endIteration("proj-1-iter-1");
     expect(elapsed).toBeGreaterThanOrEqual(0);
 
     // Record metrics including timer output
@@ -144,7 +143,7 @@ describe("IterationTimer + MetricsCollector integration", () => {
     };
     collector.record(entry);
 
-    const summary = collector.summarize("proj-1");
+    const summary = collector.getSummary("proj-1");
     expect(summary.totalIterations).toBe(1);
     expect(summary.totalTests).toBe(15);
     expect(summary.totalDeliverables).toBe(3);
@@ -155,8 +154,8 @@ describe("IterationTimer + MetricsCollector integration", () => {
     const collector = new MetricsCollector();
 
     for (let i = 1; i <= 5; i++) {
-      timer.start("proj-2", i);
-      const elapsed = timer.stop("proj-2", i);
+      timer.startIteration(`proj-2-iter-${i}`);
+      const { durationMs: elapsed } = timer.endIteration(`proj-2-iter-${i}`);
       collector.record({
         projectId: "proj-2",
         iterationNumber: i,
@@ -167,7 +166,7 @@ describe("IterationTimer + MetricsCollector integration", () => {
       });
     }
 
-    const summary = collector.summarize("proj-2");
+    const summary = collector.getSummary("proj-2");
     expect(summary.totalIterations).toBe(5);
     expect(summary.totalTests).toBe(150); // 10+20+30+40+50
     expect(summary.totalDeliverables).toBe(15); // 1+2+3+4+5
@@ -181,7 +180,7 @@ describe("IterationTimer + MetricsCollector integration", () => {
     collector.record({ projectId: "b", iterationNumber: 1, durationMs: 200, testCount: 10, deliverableCount: 2, timestamp: 2 });
     collector.record({ projectId: "a", iterationNumber: 2, durationMs: 150, testCount: 8, deliverableCount: 1, timestamp: 3 });
 
-    const allSummary = collector.summarizeAll();
+    const allSummary = collector.getSummary();
     expect(allSummary.totalIterations).toBe(3);
     expect(allSummary.projects.length).toBe(2);
     expect(allSummary.projects).toContain("a");
