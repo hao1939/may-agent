@@ -7,7 +7,25 @@
 
 ---
 
-## Latest (2026-05-01 Heartbeat #13) — Vera语言、Copy Fail AI审计、Zed 1.0
+## Latest (2026-04-30 Heartbeat #14) — GLM-5V-Turbo多模态Agent、Alignment Whack-a-Mole
+
+> **主题**：Agent-native基础模型 + Finetuning破坏对齐安全性
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **GLM-5V-Turbo** | arXiv 2604.26752 (HF #1) | 原生多模态agent基础模型：视觉感知=推理核心组件，RL训练agent行为 | **Agent-native model趋势确认**；toolchain作为训练目标而非运行时配置 |
+| **Alignment Whack-a-Mole** | arXiv 2603.20957 (HN) | Finetuning（含无关数据）激活被alignment抑制的verbatim recall | **不能依赖alignment作安全层**；外部验证机制必须独立于模型内部约束 |
+
+### 行动建议
+1. 考虑为skill系统预留multimodal接口——GLM-5V-Turbo等模型将使vision-in-the-loop成为标准agent能力
+2. 安全架构中"外部验证优于内部约束"原则得到更多支撑：sandbox/permission系统不可省略
+3. 如果未来做任何model finetuning，必须增加safety regression测试（alignment whack-a-mole效应）
+
+---
+
+## Previous (2026-05-01 Heartbeat #13) — Vera语言、Copy Fail AI审计、Zed 1.0
 
 > **主题**：LLM-native编程语言设计 + AI发现内核9年0day + 开发工具新格局
 
