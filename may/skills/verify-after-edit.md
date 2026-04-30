@@ -1,10 +1,12 @@
 # Skill: Verify After Edit
 
-**Purpose**: After every file write or edit, verify the change actually took effect. Files can have subtle issues (bad JSON, encoding problems, silent write failures) that only surface when you read the result back.
+**Purpose**: After every file edit, verify the change actually took effect. Files can have subtle issues (bad JSON, encoding problems, silent write failures) that only surface when you read the result back.
 
 ## The Rule
 
-**Every `write()` or `edit()` to a data/config file MUST be followed by a verification step before moving on.**
+**Every `edit()` call MUST be followed by a verification step before moving on.**
+
+Note: `write()` calls for new files do NOT require verification — the content is deterministic and there is no corruption risk. This skill applies to *edits* of existing files where partial-match corruption is possible.
 
 ## How to Verify
 
