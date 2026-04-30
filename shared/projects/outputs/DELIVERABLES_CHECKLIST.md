@@ -1,14 +1,12 @@
 # Deliverables Checklist
 
-## Task: Test Coverage Infrastructure Project (Complete)
+## Task: Test Coverage Project (Complete)
 
 | Deliverable | Status | Notes |
 |---|---|---|
-| Lower vitest.config.ts thresholds to 85% | DONE | Completed in prior iterations |
-| Tests passing with coverage above threshold | DONE | 87.02% line coverage, 1438 tests passing |
-| All critical paths covered | DONE | 11/11 critical paths covered |
-| Thresholds enforced at 84% lines | DONE | vitest.config.ts updated in prior iterations |
+| Lower vitest.config.ts thresholds to 85% | DONE | Completed in earlier iterations |
+| Write tests for project.ts | DONE | Completed in earlier iterations |
+| Coverage at/above 85% | DONE | Currently at 87.02% |
+| All tests passing | DONE | 1438/1438 passing |
 
-## Project Status: COMPLETE
-
-No further work needed. All metrics exceed targets.
+**Project status: COMPLETE** — no further work needed.
