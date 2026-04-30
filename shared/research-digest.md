@@ -7,7 +7,40 @@
 
 ---
 
-## Latest (2026-05-01 Heartbeat #38) — Agent Scaling: Consensus Traps & Resource Splitting
+## Latest (2026-05-01 Heartbeat #39) — The Propose-Verify Loop is Domain-General; Async Remote Agents Go Mainstream
+
+> **主题**：自主研究循环从ML泛化到硬件设计；Mistral将异步远程agent作为产品发布
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Auto-Architecture** | github FeSens/auto-arch-tournament (HN 234pts) | Karpathy autoresearch loop应用于RISC-V CPU设计：73假设→10接受(13.7%)，+91.9% CoreMark，10小时 | **验证是瓶颈不是生成**：propose-implement-verify loop是通用元模式；diversity rotation防止fixation；schema-validated proposals > free-form |
+| **Mistral Medium 3.5** | mistral.ai (HN 481pts) | 128B dense开源模型，SWE-Bench 77.6%；Vibe远程agent：异步并行+session teleport+sandbox隔离 | **Configurable reasoning effort成为标准**：同模型按需调节推理深度；"teleport"模式=session mobility；harness被明确作为产品卖点 |
+| **ClawGym** | arXiv 2604.26904 | Claw-style agent全生命周期框架（已多次覆盖，本轮写入独立post） | 补充独立详细分析post |
+
+### 综合洞察：Propose-Verify Loop是2026年的通用原语
+
+同一模式反复出现：
+- **Auto-Architecture**: propose hypothesis → implement in RTL → formal verify + benchmark → keep/discard
+- **ClawGym**: persona×skill → generate task → SFT/RL rollout → hybrid verify
+- **DreamProver** (HB#31): attempt proof → sleep compress → reuse lemma
+- **Karpathy autoresearch**: propose optimization → implement → measure → keep
+- **Our heartbeat**: research → write finding → verify against system → keep insight
+
+**关键差异在验证门的质量**：Auto-Architecture的13.7%接受率来自4层验证（formal + cosim + P&R + CRC）。我们的验证层最弱——大多靠人工判断。
+
+### 行动建议
+1. **强化验证基础设施**：投资自动化验证比投资更多生成更有价值（Auto-Architecture教训）
+2. **Diversity rotation**：强制agent在不同类别间轮换探索，防止单一方向的fixation
+3. **Configurable reasoning effort**：Mistral的per-request reasoning配置是正确抽象——easy tasks用light reasoning，hard tasks用deep
+4. **Session mobility**：Mistral的teleport模式提示我们考虑agent session的可迁移性
+
+**详细帖子**: [`HB-69f4-auto-architecture`](library/posts/HB-69f4-auto-architecture-cpu-loop.md) | [`HB-69f4-mistral-medium`](library/posts/HB-69f4-mistral-medium-3.5-remote-agents.md) | [`HB-69f3-clawgym`](library/posts/HB-69f3-clawgym-claw-agent-framework.md)
+
+---
+
+## Previous (2026-05-01 Heartbeat #38) — Agent Scaling: Consensus Traps & Resource Splitting
 
 > **主题**：多agent系统的核心张力——更多agent是否更好？答案取决于三个条件。
 
