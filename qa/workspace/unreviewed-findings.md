@@ -1,30 +1,20 @@
 # Unreviewed findings (QA heartbeat)
 
 ## Context
-Reviewed latest agents repo state (HEAD: `9821f6605`). Confirmed deliverables checklist update and ran typecheck + test suite.
-
-## Verification
-- `vitest --run`: PASS (536 tests). Evidence: heartbeat run output shows **31 test files, 536 passed**.
-- `tsc --noEmit`: FAIL due to duplicate exports in `shared/lib/index.ts`.
+- `/app` is **not** a git repo; the repo is at `/app/agents`.
+- Latest commit in `/app/agents`: `97530969b` (scout) — only changes `agents/evaluator/last-session.md`.
 
 ## Findings
-### CRITICAL: TypeScript build fails due to ambiguous re-exports
-**Evidence:** `shared/lib/index.ts(13,1)`, `(15,1)`, `(16,1)` errors:
-- `Module './iteration-monitor.js' has already exported a member named 'IterationRecord'`
-- `Module './task-validator.js' has already exported a member named 'ValidationResult'`
+### 1) Environment issue: cannot run required TypeScript/test checks (CRITICAL for verification)
+**Evidence:**
+- `./node_modules/.bin/tsc --noEmit` fails: `No such file or directory`.
+- `./node_modules/.bin/vitest --run` fails: `No such file or directory`.
 
-**Likely cause (from file read):** `shared/lib/index.ts` barrel exports include both `export * from './task-validator.js'` and `export * from './iteration-monitor.js'` alongside other exports; TS reports duplicate type names across modules (or duplicated exports within the compiled `.js` typing surface).
+This prevents QA from executing the mandatory verification steps on this container as-is.
 
-**File evidence read:** `shared/lib/index.ts` contains:
-- `export * from './task-validator.js';`
-- `export * from './iteration-monitor.js';`
+### 2) Potential process issue: root-level `DELIVERABLES_CHECKLIST.md` exists outside repo (IMPORTANT)
+**Evidence:** `/app/DELIVERABLES_CHECKLIST.md` exists and contains claims from an optimizer heartbeat.
+Because `/app` isn’t a git repo, this file is untracked/unversioned and may confuse verification and deliverable tracking.
 
-**Impact:** Any consumer compiling the agents package with `tsc` fails; this should block shipping.
-
-## Suggested fix direction (not implemented here)
-- In `shared/lib/index.ts`, replace `export *` for the conflicting modules with explicit exports, e.g.:
-  - `export { validateWriteFirst } from './task-validator.js';`
-  - `export type { ValidationResult } from './task-validator.js';`
-  - `export { ... } from './iteration-monitor.js';`
-  - `export type { IterationRecord } from './iteration-monitor.js';`
-- Alternatively, ensure only one module exports each conflicting type name, or rename one of the types.
+### 3) Recent change reviewed (informational)
+`agents/evaluator/last-session.md` content is consistent with the commit message; no functional code changes observed.
