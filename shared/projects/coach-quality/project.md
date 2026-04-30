@@ -5,7 +5,7 @@
 **Owner**: coach
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 30
+**Iteration**: 31
 
 ## Goal
 Raise coach JS quality score from 0.24 (worst in system) to ≥0.50. Root cause: open-ended work sessions fail hard while structured heartbeats/cron are near-perfect.
