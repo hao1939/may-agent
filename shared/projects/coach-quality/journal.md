@@ -106,3 +106,8 @@ The workflow .ts file is dead code — it never fires. The heartbeat system just
 
 ### Iteration 14 — 2026-04-30T07:15:19.093Z
 **Worker**: Also write to the project-specific path:
+**Orchestrator**: WAITING
+
+The enforcement (M14) is deployed — the OUTPUT FORMAT block is the first thing in `agents/coach/heartbeat.md`. But no independent heartbeat has fired yet to test it. This project should pause and resume after 1-2 heartbeat cycles (30-60 min).
+
+**What I need**: Time for an independent coach 
