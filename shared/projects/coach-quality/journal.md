@@ -43,3 +43,11 @@
 
 ### Iteration 4 — 2026-04-30T06:55:16.650Z
 **Worker**: Both audit files exist with proper content. The task also mentions M5 (context.md injection) — I confirmed the scaffold IS already at the top of `agents/coach/context.md`.
+
+### Iteration 5 — 2026-04-30T06:57:33.220Z
+**Worker**: Now let me also write the M7 reaudit report documenting this change:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should produce: M9 — Run 2-3 gym scenarios as the coach agent and check whether the new simplified scaffold (GOAL/PLAN/DONE WHEN) appears in the output. Deliver results to `agents/shared/projects/coach-quality/m9-gym-results.md`.
+
+(b) What's different: The scaffold has b
