@@ -3,6 +3,7 @@
 <!-- KEEP THIS FILE UNDER 50 LINES. Move completed items to todo-archive.md. -->
 
 ## Active / In Progress
+- [ ] **H-210 / EXP-251 (Selective Transparency)**: Hypothesis designed from DD#884+DD#886 synthesis. Next: Phase 1 audit of inter-agent taint-token propagation. See `H-210-selective-transparency.md`.
 - [x] ~~**KE-403 Instruction Collapse**: DD893→KE-403 synthesized. Mechanistic explanation for structural interventions. Committed 2026-04-27.~~
 - [x] ~~**KE-402 Intervention Decision Tree**: Synthesized 20+ experiments into actionable framework. Committed 2026-04-27.~~
 - [x] ~~**DD#883/885/880 synthesis written**: `agents/bob/workspace/synthesis-dd883-dd885-dd880.md`. H-196 designed+resolved (falsified at 15%).~~
