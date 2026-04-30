@@ -1,12 +1,16 @@
-# Deliverables Checklist — Optimizer Heartbeat
+# Deliverables Checklist
 
-## Required
-- [x] DONE: Review metrics — all healthy (success rate 1.0, p95 242709ms)
-- [x] DONE: Process inbox (5 items) — 3 dismissed (stale EXP-295/296), 2 acknowledged (evaluator pipeline dead)
-- [x] DONE: Check projects — request-deduplication closed, no action needed
-- [x] DONE: Efficiency check — confirmed evaluator pipeline dead since Apr 29, no new waste patterns
+## Heartbeat Tasks
+
+| # | Deliverable | Status | Evidence |
+|---|-------------|--------|----------|
+| 1 | Review metrics | DONE | All metrics healthy, p95 242s noted |
+| 2 | Process inbox (3 notifications) | DONE | All acknowledged/dismissed — EXP-296 skill deployed |
+| 3 | Check projects | DONE | request-deduplication closed, VAW experiment measured |
+| 4 | Identify waste/efficiency issues | DONE | 3 zombie sessions flagged (25h+ running) |
 
 ## Findings
-- Evaluator pipeline dead 105+ days (already escalated by others, no action needed from optimizer)
-- EXP-296 ghost completion fix fully deployed and closed
-- No active waste or efficiency issues requiring intervention
+
+- **Zombie sessions**: 3 sessions running 25h+ (coach×2, may×1) — recommend cleanup
+- **EXP-296**: Session awareness guard skill deployed, no optimizer action needed
+- **VAW experiment**: Decision made (option c), project complete
