@@ -1,3 +1,4 @@
 # Deliverables Checklist
 
-- [x] DONE: `outputs/bottleneck-analysis.md` — Analysis identifying #1 system bottleneck (self-referential utility production), with evidence, impact, and recommendation to close the project
+- [x] DONE — Project closure report: `/app/agents/shared/projects/outputs/project-closure.md`
+  - Final metrics, inventory of 15 modules + 9 scripts, key lesson about adoption, recommendation to close
