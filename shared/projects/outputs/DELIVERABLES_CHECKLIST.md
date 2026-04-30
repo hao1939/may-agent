@@ -9,4 +9,4 @@
 | Achieve 85%+ line coverage | DONE | Currently at 87.02% |
 | All tests passing | DONE | 1438/1438 passing |
 
-**Project status: COMPLETE** — No further work needed this iteration.
+**Project Status: COMPLETE** — No further work needed.
