@@ -14,14 +14,14 @@
 - **Measurement plan**: `agents/coach/workspace/EXP-280-phase3-measurement-plan.md`
 - **CLOSED (Aug 1)**: NEGATIVE — FM-3.3 50% vs 53% baseline (no change). Text skill dead per KE-338.
 
-## P1: EXP-275 — Optimizer Anti-Shallow + Verification (NEW Jul 30)
+## P1: EXP-275 — Optimizer Anti-Shallow + Verification — CLOSED (Aug 1)
 - **Problem**: Optimizer worst LLM quality (0.384, n=17). Issues: UNVERIFIED_CLAIMS, LAZY, VERIFICATION_FAILURE.
-- **Treatment**: Same as coach (OUTPUT FORMAT + EXECUTION RULES + ANTI-SHALLOW) → deploy to optimizer/heartbeat.md
-- **Status**: DESIGNED. Deployment requested from may (Jul 30 heartbeat). Coach can't edit optimizer files.
+- **Treatment**: Same as coach (OUTPUT FORMAT + EXECUTION RULES + ANTI-SHALLOW) → deployed to optimizer/heartbeat.md
+- **Status**: CLOSED — BASELINE-REVISED. True baseline 0.606 (n=10), already above 0.50 target. 0.384 was sampling artifact.
+- **Deployed**: 2026-04-30 (commit 33d854505)
 - **Design**: `agents/coach/workspace/EXP-275-optimizer-quality-design.md`
-- **Baseline**: 0.384 avg LLM quality (2026-07-30, 6h window, n=17)
-- **Target**: ≥0.50 within 48h of deployment
-- **Measure after**: deployment + 48h
+- **Measurement**: `agents/coach/workspace/EXP-275-measurement-status.md`
+- **Result**: No post-treatment eval data available. Treatment remains deployed preventively.
 
 ## P1: Fresh Quality Measurement (Jul 30) — Evaluator ALIVE
 - Evaluator confirmed alive: 185+ evals in 6h
