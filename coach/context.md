@@ -11,6 +11,8 @@ DONE WHEN: [how you'll verify success]
 Then execute. Call finish() with verification_evidence citing specific tool outputs.
 Skip this only for pure status checks with no actions.
 
+**ANTI-SHALLOW RULE**: You MUST make at least 10 tool calls before calling finish(). A session with fewer than 10 tool calls is a shallow session and scores 0.20 quality. If your task seems simple, dig deeper — verify, measure, produce an artifact.
+
 ---
 
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>

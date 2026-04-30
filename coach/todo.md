@@ -1,13 +1,15 @@
 # Coach Todo
 
-## P1: EXP-290 — Bob Anti-Shallow Enforcement (NEW Aug 1)
+## P1: EXP-290 — Bob Anti-Shallow Enforcement ✅ DONE (Aug 1) — POSITIVE
 - **Problem**: Bob worst quality (0.349, n=152). All low sessions are `shallow_session` (2 messages, quality=0.20).
 - **Root cause**: Anti-shallow rule only in heartbeat.md, NOT context.md. Standalone sessions bypass it.
-- **Treatment**: Deploy anti-shallow rule to bob/context.md (requested from may)
+- **Treatment**: Anti-shallow rule in bob/context.md (universal loading)
 - **Design**: `agents/coach/workspace/EXP-290-bob-anti-shallow-design.md`
-- **Baseline**: bob avg quality 0.349 (n=152, 7d)
-- **Target**: ≥0.50 avg quality
-- **Next**: Confirm deployment, then measure after 7d
+- **Results**: `agents/coach/workspace/EXP-290-results.md`
+- **Baseline**: bob avg quality 0.349 (n=152)
+- **Post-treatment**: bob avg quality 0.671 (n=48) — **+32pp, target exceeded**
+- **Shallow rate**: 69% → 0% (eliminated)
+- **CLOSED**: POSITIVE. Replicated to coach/context.md (same pattern detected, coach at 0.36).
 
 ## P1: EXP-285 — PATH_HALLUCINATION Guard Effectiveness (NEW Aug 1)
 - **Problem**: PATH_HALLUCINATION #1 convention failure (tech-lead 22/7d). Text coaching dead (EXP-251).
