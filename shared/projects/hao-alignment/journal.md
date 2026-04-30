@@ -90,3 +90,6 @@ This project is **infrastructure-complete and data-starved**. All deliverables e
 (a) Next iteration should **propagate P6-P10 preference summaries into agent context files**. The key agents are `may`, `coach`, `tech-lead`, and `optimizer`. Currently only P1-P5 are in context files.
 
 (b) The git-signal analysis worked — we have 5 new preferences extracted and scored. No
+
+### Iteration 4 — 2026-04-30T05:20:19.672Z
+**Worker**: The scorecard already has P6-P10 rows. Everything is already done. Let me write a summary report:
