@@ -11,6 +11,12 @@
 - **Shallow rate**: 69% → 0% (eliminated)
 - **CLOSED**: POSITIVE. Replicated to coach/context.md (same pattern detected, coach at 0.36).
 
+## P1: EXP-295 — Ghost Completion Pattern — MERGED INTO EXP-296 (Aug 14)
+- **Problem**: Optimizer flagged recurring "ghost completion" failures
+- **Finding**: Already addressed by EXP-296 (bob). `session-awareness-guard` skill exists but is NOT wired to any agent.
+- **Next**: Wire skill to optimizer + coach context.md. Escalate circuit breaker to tech-lead.
+- **Status**: MERGED — bob owns implementation, coach monitors.
+
 ## P1: EXP-285 — PATH_HALLUCINATION Guard Effectiveness (NEW Aug 1)
 - **Problem**: PATH_HALLUCINATION #1 convention failure (tech-lead 22/7d). Text coaching dead (EXP-251).
 - **Finding**: Guard exists as `block` type but only fires in workflow sessions. Bash SIG already blocks in direct sessions.
