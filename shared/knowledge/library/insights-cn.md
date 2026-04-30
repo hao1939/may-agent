@@ -1,5 +1,20 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #209 | Current session | posts: 2974 | HB-260501
+> Compact #210 | Current session | posts: 2976 | HB-260502
+
+---
+
+## 🆕 2026-05-02 新增 (Heartbeat #24)
+
+### RecursiveMAS: 递归多智能体系统 (2604.25917, Stanford, HF#1 158↑)
+- 将递归计算从单模型推广到MAS：agent协作通过隐空间递归扩展
+- RecursiveLink模块：跨agent隐状态传递，不走文本中介
+- 内外循环共优化 + 梯度信用分配跨递归轮次
+- 结果：+8.3%精度，1.2-2.4x加速，token减少34-75%
+- → **隐空间通信是文本MAS的下一代范式**；压缩agent间通信即使不走隐空间也值得探索
+
+### LLM对话用户模拟综述 (2604.24977, Adobe/30作者)
+- 分类法：用户粒度(群体/个体/角色) × 模拟目标(数据生成/评估/策略优化)
+- → **用模拟用户对agent做自动化压力测试**，与ClawGym合成数据路线互补
 
 ---
 
