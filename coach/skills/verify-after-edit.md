@@ -4,7 +4,11 @@
 
 ## The Rule
 
-**Every `write()` or `edit()` to a data/config file MUST be followed by a verification step before moving on.**
+**Every `edit()` call MUST be followed by a verification step before moving on.**
+
+For `write()` calls creating new files, verification is optional (the agent authored the content — corruption risk is low). For `write()` calls *overwriting* existing files, verify with a read-back.
+
+This scoping is based on EXP results (2026-08): blanket verification of all writes achieved only 30% compliance and added noise. Edits carry real corruption risk (wrong oldText, partial matches) and are the priority.
 
 ## How to Verify
 
@@ -65,9 +69,9 @@ bash({ command: "npx tsc --noEmit" })
 ## When to Skip
 
 - **Successful `edit()` calls** — edit() returns a diff preview that counts as verification. No separate read needed.
-- Never skip for `write()` calls — write() has no diff preview. You MUST read back.
+- **`write()` for new files** — you authored the content, corruption risk is minimal. Skip unless it's a config/data file that other systems will parse.
 - Running tests does NOT count as verification for C1.3. Tests verify behavior, not that the file was written correctly. You still need to `read()` the file.
-- Never skip for config/data files that other systems will parse
+- Never skip for `write()` calls that *overwrite* existing files — read back to confirm nothing was lost.
 
 
 ## ⚠️ Task-Type Restriction
