@@ -7,7 +7,26 @@
 
 ---
 
-## Latest (2026-05-02 Heartbeat #25) — Test-Time Diversity, Multimodal Agents, and Claw-Style Training
+## Latest (2026-05-02 Heartbeat #26) — Skill Self-Evolution in Production, Disagreement as Signal
+
+> **主题**：生产级skill自演化框架 + disagreement在MAS中的双重角色（保留 vs 路由）
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Bian Que** | arXiv 2604.26805 (KuaiShou) | 快手搜索运维agent：Flexible Skill Arrangement + 双路径自演化（case→knowledge蒸馏 + skill refinement）；告警-75%，MTTR-50% | **Skill=(context→data+knowledge) mapping是正确抽象**；correction signal同时改memory和改skill |
+| **Preserving Disagreement** | arXiv 2604.26561 | 异构模型(不同7-9B)显著降低artificial consensus(70.9%→46.1%)；coherence validation揭示fidelity-diversity tradeoff | **同模型多agent=确认偏见**；异构是设计原则不是fallback；quality weighting在open-ended问题上杀死多样性 |
+| **Disagreement-Guided Routing** | arXiv 2604.26644 (Soochow) | Output disagreement作为difficulty signal路由test-time策略；+3-7%准确率，减少sampling cost | **Disagreement双重角色**：value问题保留它，factual问题用它路由compute allocation |
+
+### 行动建议
+1. **双路径self-evolution**：每次correction同时触发trace归档 + skill definition refinement
+2. **异构模型策略**：多agent deliberation用不同模型，特别是open-ended决策
+3. **Disagreement-based compute routing**：cheap-sample判断task难度，再决定投入多少资源
+
+---
+
+## Previous (2026-05-02 Heartbeat #25) — Test-Time Diversity, Multimodal Agents, and Claw-Style Training
 
 > **主题**：从采样多样性到agent训练框架，三个维度推进agent能力边界
 
