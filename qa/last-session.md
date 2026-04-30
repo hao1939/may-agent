@@ -1,34 +1,34 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777534433243_688
+- **Session:** s_1777536234677_728
 - **Status:** done
-- **When:** 2026-04-30T07:34:51.221Z
-- **Duration:** 57s
+- **When:** 2026-04-30T08:04:27.912Z
+- **Duration:** 33s
 
 ## What Happened
 ### Summary
-No active alerts/events/projects. I audited recent changes in the `/app/agents` repo and ran the required verification commands. **Vitest passes**, but **TypeScript typecheck fails** due to duplicate barrel exports in `agents/shared/lib/index.ts`, which is likely a pre-existing compile break that needs fixing before a clean `tsc` gate can pass.
+Heartbeat QA found a **TypeScript compile failure** in the `/app/agents` workspace due to **ambiguous barrel re-exports** from `agents/shared/lib/index.ts`. Despite that, the **Vitest suite passes (536 tests)**, so runtime behavior is likely unaffected, but **`tsc --noEmit` failing is a ship-stopper** for type safety and CI correctness.
 
 ### Checks
 - **tsc --noEmit:** **FAIL**
-  - Ran: `cd /app/agents && npx tsc --noEmit`
-  - Errors (TS2308 duplicate exports):
-    - `shared/lib/index.ts(13,1)` duplicate `IterationRecord` (from `./iteration-monitor.js`)
-    - `shared/lib/index.ts(15,1)` duplicate `IterationRecord` (from `./iteration-monitor.js`)
-    - `shared/lib/index.ts(16,1)` duplicate `ValidationResult` (from `./task-validator.js`)
-- **vitest --run:** **PASS** (**536 tests**)
-  - Ran: `cd /app/agents && npx vitest --run`
-  - Result: `31 passed (31)`, `536 passed (536)`
+  - Evidence: `cd agents && ./node_modules/.bin/tsc --noEmit` reports `TS2308` duplicate export member errors (see below).
+- **vitest --run:** **PASS (536 tests)**
+  - Evidence: `cd agents && ./node_modules/.bin/vitest --run` → `31 passed`, `536 passed`.
 
 ### Issues
-1. **CRITICAL — TypeScript compile broken by duplicate exports**
-   - **Where:** `agents/shared/lib/index.ts` (barrel exports)
-   - **Evidence:** `npx tsc --noEmit` reports TS2308 duplicate export member names (see errors above).
-   - **Impact:** Any CI or consumer relying on `tsc` typecheck will fail even though tests pass.
+1. **CRITICAL — TypeScript compilation broken (duplicate exports via barrel file)**
+   - **Where:** `agents/shared/lib/index.ts`  
+     - Read evidence shows it barrel-exports many modules, including:
+       - `export * from './task-validator.js';`
+       - `export * from './iteration-monitor.js';`
+       - plus others (`growth`, `project-health`, etc.)  
+       (source: `read(agents/shared/lib/index.ts, 1..120)`)
+   - **Error output (tsc):**
+     - `shared/lib/index.ts(13,1): error TS2308: Module './iteration-monitor.js' has already exported a member named 'IterationRecord'.`
+     - `shared/lib/index.ts(15,1): error TS2308: Module './iteration-monitor.js' has already exported a member named 'IterationRecord'.`
+     - `shared/lib/index.ts(16,1): error TS2308: Module './task-validator.js' has already exported a member named 'ValidationResult'.`
+   - **Impact:** Consumers importing from `@shared/lib` may get ambiguous symbol resolution; build/typecheck fails outright.
 
 ### Verdict
-**FAIL** — because `tsc --noEmit` is currently failing with TS2308 duplicate export errors.
-
-### Deliverable (heartbeat notes)
-- Wrote findings to: `agents/qa/workspace/unreviewed-findings.md` (includes the tsc failure + vitest pass evidence).
+**FAIL** — `./node_modules/.bin/tsc --noEmit` fails in `agents/` due to duplicate/ambiguous exports from the shared library barrel (`agents/shared/lib/index.ts`). Fix required before shipping.
