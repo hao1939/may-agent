@@ -14,6 +14,7 @@ import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, sta
 import { dirname, join } from "node:path";
 import { ProjectCache } from "./project-cache.js";
 import { shouldBudgetCheckpoint, buildBudgetCheckpointEntry, estimateTurnsUsed, resetBudgetState } from "./budget-checkpoint.js";
+import { onProjectCreate } from "./hooks/validate-on-create.js";
 
 export const name: string = "project";
 
@@ -212,6 +213,12 @@ Not started.
   cachedWrite(config.projectPath, projectContent);
   cachedWrite(config.journalPath, `# Journal\n\n`);
   writeFileSync(join(config.projectDir, "discussion.md"), `# Discussion\n\n`, "utf-8");
+
+  // Validate the new project.md structure
+  const validation = onProjectCreate(projectContent);
+  if (!validation.valid) {
+    console.warn(`[project] Validation warnings for ${config.projectPath}:`, validation.errors);
+  }
 }
 
 function parseProjectState(content: string): ProjectState {
