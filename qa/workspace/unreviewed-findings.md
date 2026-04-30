@@ -1,36 +1,28 @@
 # QA Heartbeat — Unreviewed Findings (2026-04-30)
 
-## Context
-Attempted standard heartbeat verification. Repository root `/app` is not a git repo; the git repo is `/app/agents`.
+## 1) TypeScript build is failing (duplicate export names)
 
-## Recent changes (last commit inspected)
-- Commit: `7b7a3e7aa` — `optimizer: heartbeat efficiency review - all metrics healthy`
-- File: `optimizer/DELIVERABLES_CHECKLIST.md`
+**Evidence:** `cd agents && ./node_modules/.bin/tsc --noEmit` fails with:
+- `shared/lib/index.ts(13,1): error TS2308: Module './iteration-monitor.js' has already exported a member named 'IterationRecord'.`
+- `shared/lib/index.ts(16,1): error TS2308: Module './task-validator.js' has already exported a member named 'ValidationResult'.`
 
-I read the file; it is a documentation-only checklist with claims about metrics and session analysis, but it does not link to queries, logs, or artifacts. No code changes observed in that commit.
+**Likely cause (needs fix by owner):** `shared/lib/index.ts` barrel re-exports multiple modules that themselves re-export identically named types (e.g., `IterationRecord`, `ValidationResult`), creating ambiguity. Suggest explicitly re-exporting with namespacing or `export type { ... } from ...` with unique names.
 
-## Mandatory checks
-### Typecheck (`tsc --noEmit`)
-FAIL in `/app/agents`:
-- `shared/lib/index.ts` has duplicate re-exports:
-  - TS2308: `IterationRecord` exported twice via `./iteration-monitor.js`
-  - TS2308: `ValidationResult` exported twice via `./task-validator.js`
+Files involved:
+- `agents/shared/lib/index.ts`
+- `agents/shared/lib/iteration-monitor.ts` (declares `export interface IterationRecord`)
+- `agents/shared/lib/task-validator.ts` (declares `export interface ValidationResult`)
 
-This blocks trusting type safety. Needs investigation/fix by owning team.
+## 2) Vitest test suite passes, but exits non-zero due to EACCES writing results cache
 
-### Tests (`vitest --run`)
-Test assertions PASS (536 tests across 31 files), but Vitest exits with **code 1** due to environment permission error:
-- Unhandled Error: `EACCES: permission denied, open '/app/agents/node_modules/.vite/vitest/results.json'`
+**Evidence:** `cd agents && ./node_modules/.bin/vitest --run`:
+- All tests pass: `Test Files 31 passed (31)`, `Tests 536 passed (536)`
+- Then errors with: `Error: EACCES: permission denied, open '/app/agents/node_modules/.vite/vitest/results.json'`
 
-This looks like a **pre-existing environment/config issue** (write permissions in `node_modules/.vite/`). Even though tests pass, CI would treat this as failure unless resolved.
+**Impact:** CI/automation will treat this as failure (exit code 1) despite green tests.
 
-## Issues
-### CRITICAL
-1. **Typecheck fails**: duplicate exports in `shared/lib/index.ts` (TS2308).
+**Likely cause (needs fix by owner):** permissions/ownership of `agents/node_modules/.vite/` directory (note mixed ownership under repo: some dirs `root:root`, some `mayagent`). Potential mitigation: configure vitest cache/results output to a writable path, or fix directory ownership.
 
-### IMPORTANT
-2. **Vitest exits non-zero due to EACCES** while trying to write results cache to `node_modules/.vite/vitest/results.json`.
-   - Suggest ensuring `.vite/` is writable or configuring Vitest cache/output to a writable path.
+## 3) Repo/root mismatch can break verification commands
 
-## Verdict
-CONDITIONAL: No functional code changes reviewed (doc-only commit inspected), but the repo currently fails `tsc --noEmit` and `vitest --run` exits 1 due to EACCES. These must be resolved for a clean verification baseline.
+I initially ran checks at `/app` and hit missing `./node_modules/.bin/tsc` and `./node_modules/.bin/vitest`. The actual project with node_modules + git repo is `/app/agents`. Tooling/docs should ensure agents run checks from correct working dir.
