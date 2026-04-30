@@ -1,6 +1,6 @@
 # Project: Hao Alignment
 
-**Status**: waiting
+**Status**: active
 **Stop Reason**: WAITING
 
 This project is **infrastructure-complete and data-starved**. All deliverables exist and work:
