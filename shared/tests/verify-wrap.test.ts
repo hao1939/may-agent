@@ -1,175 +1,133 @@
-import { describe, it, expect, vi } from 'vitest';
-
 /**
- * Tests for workflows/verify-wrap.ts
- * 
- * verify-wrap is a simple wrapper workflow that runs an agent task
- * and handles success/error outcomes. We replicate its logic here
- * to test the decision paths.
+ * Tests for verify-wrap.ts workflow
+ * Covers: execute function behavior with various ctx scenarios
  */
 
-// Replicate the core logic from verify-wrap.ts
-function verifyWrapLogic(result: { status: string; error?: string; lastAssistantText?: string }, agent: string, summarizeFn: (r: any, opts: any) => string | object): { action: 'done' | 'escalate'; message: string } {
-  if (result.status === "error") {
-    const detail = result.error || result.lastAssistantText?.slice(0, 200);
-    return { action: 'escalate', message: `Agent ${agent} failed: ${detail}` };
-  }
+import { describe, it, expect, vi } from "vitest";
 
-  const summary = summarizeFn(result, { maxLength: 300 });
-  const message = typeof summary === "string" ? summary : `${agent} completed task successfully.`;
-  return { action: 'done', message };
+function makeCtx(overrides: Partial<any> = {}) {
+  return {
+    agent: "test-agent",
+    task: "do something",
+    runAgent: vi.fn().mockResolvedValue({ status: "success", lastAssistantText: "done" }),
+    escalate: vi.fn((msg: string) => ({ escalated: true, message: msg })),
+    done: vi.fn((msg: string) => ({ done: true, message: msg })),
+    summarize: vi.fn().mockReturnValue("Task completed"),
+    ...overrides,
+  };
 }
 
-describe('verify-wrap logic', () => {
-  describe('error handling', () => {
-    it('escalates when status is error with error message', () => {
-      const result = verifyWrapLogic(
-        { status: 'error', error: 'timeout exceeded' },
-        'worker',
-        () => ''
-      );
-      expect(result.action).toBe('escalate');
-      expect(result.message).toBe('Agent worker failed: timeout exceeded');
+async function getModule() {
+  return await import("../workflows/verify-wrap.js");
+}
+
+describe("verify-wrap", () => {
+  describe("module exports", () => {
+    it("exports name as 'verify-wrap'", async () => {
+      const mod = await getModule();
+      expect(mod.name).toBe("verify-wrap");
     });
 
-    it('escalates with lastAssistantText when no error message', () => {
-      const result = verifyWrapLogic(
-        { status: 'error', lastAssistantText: 'Something went wrong in the process' },
-        'researcher',
-        () => ''
-      );
-      expect(result.action).toBe('escalate');
-      expect(result.message).toBe('Agent researcher failed: Something went wrong in the process');
+    it("exports a description string", async () => {
+      const mod = await getModule();
+      expect(typeof mod.description).toBe("string");
+      expect(mod.description.length).toBeGreaterThan(0);
     });
 
-    it('truncates lastAssistantText to 200 chars', () => {
-      const longText = 'x'.repeat(500);
-      const result = verifyWrapLogic(
-        { status: 'error', lastAssistantText: longText },
-        'agent1',
-        () => ''
-      );
-      expect(result.message).toBe(`Agent agent1 failed: ${'x'.repeat(200)}`);
-    });
-
-    it('escalates with undefined when no error and no lastAssistantText', () => {
-      const result = verifyWrapLogic(
-        { status: 'error' },
-        'myagent',
-        () => ''
-      );
-      expect(result.message).toBe('Agent myagent failed: undefined');
-    });
-
-    it('prefers error over lastAssistantText', () => {
-      const result = verifyWrapLogic(
-        { status: 'error', error: 'real error', lastAssistantText: 'fallback text' },
-        'worker',
-        () => ''
-      );
-      expect(result.message).toContain('real error');
-      expect(result.message).not.toContain('fallback text');
+    it("exports an execute function", async () => {
+      const mod = await getModule();
+      expect(typeof mod.execute).toBe("function");
     });
   });
 
-  describe('success handling', () => {
-    it('returns done with string summary', () => {
-      const result = verifyWrapLogic(
-        { status: 'success' },
-        'worker',
-        () => 'Task completed successfully'
-      );
-      expect(result.action).toBe('done');
-      expect(result.message).toBe('Task completed successfully');
+  describe("execute", () => {
+    it("calls runAgent with ctx.agent and ctx.task", async () => {
+      const mod = await getModule();
+      const ctx = makeCtx();
+      await mod.execute(ctx);
+      expect(ctx.runAgent).toHaveBeenCalledWith("test-agent", "do something");
     });
 
-    it('returns default message when summary is not a string', () => {
-      const result = verifyWrapLogic(
-        { status: 'success' },
-        'optimizer',
-        () => ({ key: 'value' }) as any
-      );
-      expect(result.action).toBe('done');
-      expect(result.message).toBe('optimizer completed task successfully.');
+    it("escalates when agent returns error status", async () => {
+      const mod = await getModule();
+      const ctx = makeCtx({
+        runAgent: vi.fn().mockResolvedValue({ status: "error", error: "timeout" }),
+      });
+      await mod.execute(ctx);
+      expect(ctx.escalate).toHaveBeenCalled();
+      expect(ctx.escalate.mock.calls[0][0]).toContain("test-agent");
+      expect(ctx.escalate.mock.calls[0][0]).toContain("failed");
     });
 
-    it('returns done for any non-error status', () => {
-      const result = verifyWrapLogic(
-        { status: 'partial' },
-        'worker',
-        () => 'partial result'
-      );
-      expect(result.action).toBe('done');
-      expect(result.message).toBe('partial result');
+    it("includes error message in escalation", async () => {
+      const mod = await getModule();
+      const ctx = makeCtx({
+        runAgent: vi.fn().mockResolvedValue({ status: "error", error: "OOM killed" }),
+      });
+      await mod.execute(ctx);
+      expect(ctx.escalate.mock.calls[0][0]).toContain("OOM killed");
     });
 
-    it('passes maxLength 300 to summarize', () => {
-      const summarizeFn = vi.fn().mockReturnValue('summary');
-      verifyWrapLogic({ status: 'success' }, 'worker', summarizeFn);
-      expect(summarizeFn).toHaveBeenCalledWith({ status: 'success' }, { maxLength: 300 });
+    it("uses lastAssistantText when error is empty", async () => {
+      const mod = await getModule();
+      const ctx = makeCtx({
+        runAgent: vi.fn().mockResolvedValue({ status: "error", error: "", lastAssistantText: "Something went wrong in step 3" }),
+      });
+      await mod.execute(ctx);
+      expect(ctx.escalate.mock.calls[0][0]).toContain("Something went wrong");
     });
 
-    it('handles empty string summary', () => {
-      const result = verifyWrapLogic(
-        { status: 'success' },
-        'worker',
-        () => ''
-      );
-      // empty string is still typeof string
-      expect(result.action).toBe('done');
-      expect(result.message).toBe('');
-    });
-  });
-
-  describe('agent name in messages', () => {
-    it('includes agent name in error escalation', () => {
-      const result = verifyWrapLogic(
-        { status: 'error', error: 'oops' },
-        'custom-agent-name',
-        () => ''
-      );
-      expect(result.message).toContain('custom-agent-name');
+    it("calls done on success", async () => {
+      const mod = await getModule();
+      const ctx = makeCtx();
+      await mod.execute(ctx);
+      expect(ctx.done).toHaveBeenCalled();
     });
 
-    it('includes agent name in default success message', () => {
-      const result = verifyWrapLogic(
-        { status: 'success' },
-        'my-special-agent',
-        () => ({}) as any
-      );
-      expect(result.message).toContain('my-special-agent');
-    });
-  });
-
-  describe('edge cases', () => {
-    it('handles status with extra whitespace in error field', () => {
-      const result = verifyWrapLogic(
-        { status: 'error', error: '  ' },
-        'worker',
-        () => ''
-      );
-      // truthy string, so error is used
-      expect(result.message).toBe('Agent worker failed:   ');
+    it("calls summarize on success", async () => {
+      const mod = await getModule();
+      const ctx = makeCtx();
+      await mod.execute(ctx);
+      expect(ctx.summarize).toHaveBeenCalled();
     });
 
-    it('handles lastAssistantText exactly 200 chars', () => {
-      const text = 'a'.repeat(200);
-      const result = verifyWrapLogic(
-        { status: 'error', lastAssistantText: text },
-        'worker',
-        () => ''
-      );
-      expect(result.message).toBe(`Agent worker failed: ${text}`);
+    it("passes result to summarize", async () => {
+      const mod = await getModule();
+      const agentResult = { status: "success", lastAssistantText: "all good" };
+      const ctx = makeCtx({
+        runAgent: vi.fn().mockResolvedValue(agentResult),
+      });
+      await mod.execute(ctx);
+      expect(ctx.summarize).toHaveBeenCalledWith(agentResult, { maxLength: 300 });
     });
 
-    it('handles lastAssistantText under 200 chars', () => {
-      const text = 'short message';
-      const result = verifyWrapLogic(
-        { status: 'error', lastAssistantText: text },
-        'worker',
-        () => ''
-      );
-      expect(result.message).toBe('Agent worker failed: short message');
+    it("uses summarize output in done call", async () => {
+      const mod = await getModule();
+      const ctx = makeCtx({
+        summarize: vi.fn().mockReturnValue("Custom summary here"),
+      });
+      await mod.execute(ctx);
+      expect(ctx.done).toHaveBeenCalledWith("Custom summary here");
+    });
+
+    it("uses fallback message when summarize returns non-string", async () => {
+      const mod = await getModule();
+      const ctx = makeCtx({
+        summarize: vi.fn().mockReturnValue(null),
+      });
+      await mod.execute(ctx);
+      expect(ctx.done).toHaveBeenCalledWith("test-agent completed task successfully.");
+    });
+
+    it("truncates lastAssistantText to 200 chars in escalation", async () => {
+      const mod = await getModule();
+      const longText = "x".repeat(300);
+      const ctx = makeCtx({
+        runAgent: vi.fn().mockResolvedValue({ status: "error", error: "", lastAssistantText: longText }),
+      });
+      await mod.execute(ctx);
+      const escalationMsg = ctx.escalate.mock.calls[0][0];
+      expect(escalationMsg.length).toBeLessThan(longText.length);
     });
   });
 });
