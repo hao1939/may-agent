@@ -1,10 +1,10 @@
 # Project: Hao Alignment
 
-**Status**: active
+**Status**: waiting
 **Owner**: may
 **Priority**: P2
 **Workflow**: master-worker
-**Iteration**: 4
+**Iteration**: 5
 
 ## Goal
 Learn Hao's thinking, preferences, values, and purpose from our conversation history. Build a living model of what Hao wants so the system makes fewer decisions he has to override.
@@ -55,7 +55,7 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 - [x] Extract git-signal preferences (P6-P10) — `git-signal-analysis.md`
 - [x] Update preferences.md scorecard with P6-P10 weights
 - [x] Propagate P6-P10 summaries into agent context files (may, coach, tech-lead, optimizer)
-- [ ] Re-run measure-corrections.sh to get fresh measurement
+- [x] Re-run measure-corrections.sh to get fresh measurement (2026-07-02: 0 corrections in 1 session — insufficient data)
 - [ ] After next Hao interaction: validate P6-P10 accuracy
 - [ ] Quarterly: re-scan git for new preference signals
 
