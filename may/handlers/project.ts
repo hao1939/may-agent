@@ -212,6 +212,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         .finally(() => {  });
 
       pState.lastLaunch = now;
+      // Track launch timestamps for hourly rate limiting (prune >2h old)
+      if (!pState.launchTimestamps) pState.launchTimestamps = [];
+      pState.launchTimestamps = pState.launchTimestamps.filter((t: number) => now - t < 7200_000);
+      pState.launchTimestamps.push(now);
       pState.consecutiveSkips = 0;
       launched++;
       const projectId = `${project.owner}/${project.relPath.split("/").pop()}`;
