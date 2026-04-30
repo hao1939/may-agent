@@ -54,8 +54,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const db = ctx.getDb();
       for (const a of db.prepare("SELECT metric_id FROM metric_alerts WHERE resolved_at IS NULL").all() as Array<{ metric_id: string }>)
         breachedMetrics.add(a.metric_id);
-      for (const r of db.prepare("SELECT DISTINCT projectId FROM sessions WHERE status='running' AND projectId IS NOT NULL").all() as Array<{ projectId: string }>)
-        runningProjects.add(r.projectId);
+    } catch { /* skip */ }
+    // Use manager's in-memory activeSessions as source of truth for running projects.
+    // This is immune to stale DB rows after restart — only truly-live sessions count.
+    try {
+      runningProjects = ctx.manager.getRunningProjectIds();
     } catch { /* skip */ }
 
     // Diagnose each project
