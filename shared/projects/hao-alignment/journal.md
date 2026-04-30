@@ -33,3 +33,8 @@
 
 ### Iteration 2 — 2026-04-30T01:13:53.280Z
 **Worker**: Now let me apply the gate to May's actual context.md:
+**Orchestrator**: CONTINUE
+
+(a) Phase 3 is nearly complete. The remaining item is **instrument correction tracking** — tag overrides/rejections in session metadata so we can measure correction rate over time automatically rather than manually scanning.
+
+(b) I wrote the preference-check gate myself since the worker fa
