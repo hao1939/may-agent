@@ -28,10 +28,10 @@ function avgQuality(since: number, until: number) {
   return row.n > 0 ? row.avg : null;
 }
 
-// 3. Test count (latest snapshot from metric_snapshots for health.test-count)
-function latestTestCount() {
+// 3. Handler success rate (from metric_snapshots)
+function handlerSuccessRate() {
   const row = db.query(
-    `SELECT value FROM metric_snapshots WHERE metric_id = 'health.test-count' ORDER BY measured_at DESC LIMIT 1`
+    `SELECT value FROM metric_snapshots WHERE metric_id = 'handler.success-rate' ORDER BY measured_at DESC LIMIT 1`
   ).get() as { value: number } | null;
   return row?.value ?? null;
 }

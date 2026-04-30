@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777529373341_579
+- **Session:** s_1777531172355_599
 - **Status:** done
-- **When:** 2026-04-30T06:12:47.228Z
-- **Duration:** 3m13s
+- **When:** 2026-04-30T06:41:51.398Z
+- **Duration:** 2m19s
 
 ## What Happened
-Projects are gitignored — they live in the filesystem + DB only. That's fine, the DB registration is what matters for the metric.
+Both active projects have 0 iterations — they're new but need to be kicked forward. Let me check their state and nudge the owners.

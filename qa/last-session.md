@@ -1,33 +1,34 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777529034332_577
+- **Session:** s_1777530833131_597
 - **Status:** done
-- **When:** 2026-04-30T06:04:55.507Z
-- **Duration:** 1m1s
+- **When:** 2026-04-30T06:34:31.261Z
+- **Duration:** 38s
 
 ## What Happened
 ### Summary
-Heartbeat review found no pending alerts/events/projects, but the repo **does not typecheck** right now: `tsc --noEmit` fails due to **duplicate exported type names in the shared barrel file** (`agents/shared/lib/index.ts`). Unit/integration tests (`vitest --run`) **do pass (536 tests)**, so runtime behavior is likely unaffected, but the TypeScript build is currently broken and should block shipping.
+Heartbeat QA found the repo root isn’t a git checkout, but `agents/` is. Recent changes are mainly evaluator heartbeat-note recording. Independent verification shows **Vitest is fully green (536 tests)**, but **TypeScript compilation fails** due to **duplicate type names being re-exported via the shared barrel** (`agents/shared/lib/index.ts`). This is a real, code-level issue that should be fixed before shipping anything that depends on `tsc --noEmit` being clean.
 
 ### Checks
-- `tsc --noEmit`: **FAIL**  
-  Evidence: `/app/agents` `tsc` reports TS2308 duplicate export members in `shared/lib/index.ts` for `IterationRecord` and `ValidationResult`.
-- `vitest --run`: **PASS** (**536 tests**)  
-  Evidence: 31 test files passed, 536 tests passed.
+- **tsc --noEmit:** **FAIL**  
+  Evidence: `shared/lib/index.ts(13,1)` and others: duplicate exported members `IterationRecord` and `ValidationResult` (tool output from running `cd agents && ./node_modules/.bin/tsc --noEmit`).
+- **vitest --run:** **PASS (536 tests)**  
+  Evidence: `31 passed (31)`, `536 passed (536)` (tool output from running `cd agents && ./node_modules/.bin/vitest --run`).
 
 ### Issues
-1. **CRITICAL** — TypeScript build broken (duplicate named exports in barrel)
-   - Evidence: `./node_modules/.bin/tsc --noEmit` fails with:
-     - `shared/lib/index.ts(13,1): ... already exported a member named 'IterationRecord'`
-     - `shared/lib/index.ts(16,1): ... already exported a member named 'ValidationResult'`
-   - Root cause (from file inspection):
-     - `shared/lib/index.ts` re-exports `./iteration-monitor.js` and `./workflow-metrics.js`, and both define `export interface IterationRecord` (confirmed in `shared/lib/iteration-monitor.ts` and `shared/lib/workflow-metrics.ts`).
-     - It also re-exports `./task-validator.js` which defines `export interface ValidationResult`, and that name appears to be colliding with another export elsewhere (tsc indicates duplication via re-export).
-   - Impact: consumers importing from `@shared/lib` will face compile-time failure; CI/build should fail.
+1. **CRITICAL — TypeScript build broken due to ambiguous re-exports**
+   - **What:** `agents/shared/lib/index.ts` re-exports modules that each define/export the same symbol names (`IterationRecord`, `ValidationResult`), causing TS2308 “already exported a member named …”.
+   - **Evidence:**
+     - `agents/shared/lib/index.ts` contents show it re-exports `task-validator.js`, `iteration-monitor.js`, `session-analyzer.js`, `workflow-metrics.js`, `config-validator.js` (read output).
+     - Multiple definitions exist:
+       - `IterationRecord` appears in `shared/lib/session-analyzer.ts`, `shared/lib/iteration-monitor.ts`, `shared/lib/workflow-metrics.ts` (grep output).
+       - `ValidationResult` appears in `shared/lib/config-validator.ts` and `shared/lib/task-validator.ts` (grep output).
+   - **Impact:** Any consumer importing from `@shared/lib` (barrel) can’t typecheck; repo-wide `tsc --noEmit` currently fails.
 
-2. **MINOR** — Can’t review “recent changes in last 6h” at repo root
-   - `/app` is not a git repo; the git repo is `/app/agents`. Not a functional issue, but it affects how heartbeat should scan changes.
+2. **MINOR — Heartbeat “what changed in last 6h” is hard to answer from `/app`**
+   - **What:** `/app` isn’t a git repo; only `/app/agents` is.
+   - **Evidence:** `git log` at `/app` fails: “not a git repository”.
 
 ### Verdict
-**FAIL** — Because `tsc --noEmit` fails with duplicate export errors in `agents/shared/lib/index.ts`. Tests passing isn’t sufficient; TypeScript compilation is a required gate.
+**FAIL** — because `./node_modules/.bin/tsc --noEmit` fails with real, reproducible TypeScript export ambiguity, and that’s a ship-blocker per QA standards. Vitest being green is good, but it doesn’t negate a broken typecheck step.
