@@ -217,10 +217,10 @@ describe("master-worker-unified", () => {
   });
 
   describe("stop signal detection", () => {
-    it("stops when worker signals completion via cache path", async () => {
-      const dispatch = vi.fn()
-        .mockResolvedValueOnce("working on it")
-        .mockResolvedValueOnce("DECISION: STOP");
+    it("stops when project status becomes done via cache path", async () => {
+      // Write a project with "done" status so shouldStop triggers
+      writeFileSync(join(tmpDir, "project.md"), "# Test\n\nStatus: done\n\nFinished.");
+      const dispatch = vi.fn().mockResolvedValue("all done");
       const result = await runMasterWorker({
         projectDir: tmpDir,
         maxIterations: 10,
@@ -229,7 +229,7 @@ describe("master-worker-unified", () => {
       });
       expect(result.stopped).toBe(true);
       expect(result.stopReason).toBe("worker-signaled-stop");
-      expect(result.iterations).toBe(2);
+      expect(result.iterations).toBe(1);
     });
   });
 });
