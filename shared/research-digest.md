@@ -7,7 +7,25 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #7) — 多智能体失败分析与潜在空间协作
+## Latest (2026-04-30 Heartbeat #8) — Tool Use评测与MCP协议标准化
+
+> **主题**：FinMCP-Bench + Tool Use数据集构造 — 工具调用的评估与泛化
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **FinMCP-Bench** | 阿里Qwen团队 / arXiv 2026-03 | 首个MCP协议金融工具评测基准；顶尖模型在多轮复杂指令下仍显著退化 | **分层评估tool calling** — 拆解参数提取/逻辑链路/执行三层，定位失败环节 |
+| **Tool Use泛化** | @码头吃薯条 / 593赞干货帖 | tool use能力可泛化到自定义tool；SDK调用≠一定优于prompt FC | **tool description格式一致性比数量更重要** — 我们的工具描述应遵循统一模式 |
+
+### 行动建议
+1. 对agent的tool调用做分层质量监控：参数正确性 / 调用链逻辑 / 最终执行结果
+2. 统一所有tool description的格式模板，提升跨agent的tool use一致性
+3. 关注多轮对话中tool use质量退化问题
+
+---
+
+## Previous (2026-04-30 Heartbeat #7) — 多智能体失败分析与潜在空间协作
 
 > **主题**：MAS为什么失败 (MAST) + RecursiveMAS潜在空间协作 — 架构决定成败
 
