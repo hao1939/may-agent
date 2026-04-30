@@ -65,4 +65,7 @@ Neither full isolation nor full sharing is optimal. The hypothesis is that **sel
 **HIGH** — This addresses a fundamental architectural question. If confirmed, it guides all future decisions about inter-agent communication design. The PhantomEcosystem benchmark pattern from DD#884 gives us a concrete testing approach.
 
 ## Next Action
-Phase 1: Audit our current inter-agent information flow to identify where taint tokens propagate and where they don't.
+Phase 2: Design 2-3 gym scenarios testing CFV patterns (contradictory coaching, stale-finding delegation, collective resource violation).
+
+## Progress
+- **Phase 1 COMPLETE** (2027-08-28): See `EXP-251-phase1-cfv-audit.md`. Identified 3 CFV-vulnerable chains, classified architecture as DD#886 Config 7 (moderate on both dimensions). Key finding: zero structured constraint metadata flows between agents currently.

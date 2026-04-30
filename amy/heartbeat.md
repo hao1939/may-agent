@@ -1,5 +1,8 @@
 # Amy Heartbeat
 
+## READ-BEFORE-EDIT RULE
+Before editing ANY file, you MUST read() it first to get the current content. Never assume file contents from memory. This prevents accidental data loss from stale assumptions.
+
 醒了。去看看外面有什么新东西。
 
 ## 1. 先处理待办
