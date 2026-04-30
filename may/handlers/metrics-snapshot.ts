@@ -1,6 +1,28 @@
 /**
  * metrics-snapshot — Measures system health metrics every 5 minutes.
- * See: agents/shared/may-agent-docs/design/health-metrics.md
+ * See: agents/shared/may-agent-docs/design/agent-metrics.md
+ *
+ * ── Doc-Code Metric Divergence ──────────────────────────────────────────────
+ * The design doc (agent-metrics.md) defines 6 metrics:
+ *   1. handler.success-rate        ✓ in code
+ *   2. handler.heartbeat-coverage  ✓ in code
+ *   3. session.error-rate-6h       ✗ NOT in code
+ *   4. system.real-output-24h      ✗ NOT in code
+ *   5. project.iterations-24h      ✓ in code
+ *   6. project.blocked-over-6h     ✓ in code
+ *
+ * This handler measures 12 metrics — the following are in code but NOT in doc:
+ *   - handler.completed-count
+ *   - handler.failed-count
+ *   - handler.p95-duration
+ *   - handler.fires-per-hour
+ *   - project.active-count
+ *   - project.blocked-count
+ *   - project.stale-active-count
+ *   - project.blocked-rate-7d
+ *
+ * Decision needed: add missing doc metrics to code, or trim code to match doc.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.ts";
 import type { CronEntry } from "../../shared/agent-sdk.ts";
@@ -24,10 +46,18 @@ const ALL_METRICS = [
   { id: "project.blocked-over-6h", name: "Projects blocked/waiting >6h", owner: "may", target: 0, threshold: 1, unit: "count", alert_op: ">" },
 ];
 
+/** Snapshot retention: keep 30 days of history */
+const RETENTION_DAYS = 30;
+
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async (_event?: TriggerEvent) => {
     const db = ctx.getDb();
     const now = Date.now();
+
+    // ── Ensure indexes exist (idempotent) ────────────────────────────
+
+    db.run("CREATE INDEX IF NOT EXISTS idx_events_type_timestamp ON events(event_type, timestamp)");
+    db.run("CREATE INDEX IF NOT EXISTS idx_metric_snapshots_measured_at ON metric_snapshots(measured_at)");
 
     // ── Helpers ──────────────────────────────────────────────────────
 
@@ -57,62 +87,90 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       db.run("UPDATE metrics SET alert_op = ?, threshold = ? WHERE id = ?", [m.alert_op, m.threshold, m.id]);
     }
 
-    // ── Measure: Handler ─────────────────────────────────────────────
+    // ── Measure: Handler (with error isolation) ──────────────────────
 
     const sixH = now - 6 * 3600000;
     const twoH = now - 2 * 3600000;
     const oneH = now - 3600000;
 
-    const completed = count("SELECT COUNT(*) as c FROM events WHERE event_type = 'handler.completed' AND timestamp > ?", sixH);
-    const failed = count("SELECT COUNT(*) as c FROM events WHERE event_type = 'handler.failed' AND timestamp > ?", sixH);
-    record("handler.completed-count", completed);
-    record("handler.failed-count", failed);
+    let completed = 0, failed = 0;
 
-    const total = completed + failed;
-    record("handler.success-rate", total > 0 ? parseFloat((completed / total).toFixed(4)) : 1, total);
+    try {
+      completed = count("SELECT COUNT(*) as c FROM events WHERE event_type = 'handler.completed' AND timestamp > ?", sixH);
+      failed = count("SELECT COUNT(*) as c FROM events WHERE event_type = 'handler.failed' AND timestamp > ?", sixH);
+      record("handler.completed-count", completed);
+      record("handler.failed-count", failed);
+    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring handler counts: ${e}`); }
 
-    const coverage = count(
-      `SELECT COUNT(DISTINCT json_extract(data, '$.agent')) as c FROM events
-       WHERE event_type = 'handler.completed' AND json_extract(data, '$.handler') LIKE 'heartbeat-%' AND timestamp > ?`, twoH);
-    record("handler.heartbeat-coverage", coverage);
+    try {
+      const total = completed + failed;
+      record("handler.success-rate", total > 0 ? parseFloat((completed / total).toFixed(4)) : 1, total);
+    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring success-rate: ${e}`); }
 
-    const durations = (db.prepare(
-      `SELECT json_extract(data, '$.durationMs') as dur FROM events
-       WHERE event_type = 'handler.completed' AND timestamp > ? ORDER BY dur ASC`
-    ).all(sixH) as any[]).map(r => r.dur).filter(d => d != null);
-    if (durations.length > 0) {
-      const p95 = durations[Math.min(Math.floor(durations.length * 0.95), durations.length - 1)];
-      record("handler.p95-duration", p95, durations.length);
-    }
+    try {
+      const coverage = count(
+        `SELECT COUNT(DISTINCT json_extract(data, '$.agent')) as c FROM events
+         WHERE event_type = 'handler.completed' AND json_extract(data, '$.handler') LIKE 'heartbeat-%' AND timestamp > ?`, twoH);
+      record("handler.heartbeat-coverage", coverage);
+    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring heartbeat-coverage: ${e}`); }
 
-    record("handler.fires-per-hour", count("SELECT COUNT(*) as c FROM events WHERE event_type = 'handler.started' AND timestamp > ?", oneH));
+    try {
+      const durations = (db.prepare(
+        `SELECT json_extract(data, '$.durationMs') as dur FROM events
+         WHERE event_type = 'handler.completed' AND timestamp > ? ORDER BY dur ASC`
+      ).all(sixH) as any[]).map(r => r.dur).filter(d => d != null);
+      if (durations.length > 0) {
+        const p95 = durations[Math.min(Math.floor(durations.length * 0.95), durations.length - 1)];
+        record("handler.p95-duration", p95, durations.length);
+      }
+    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring p95-duration: ${e}`); }
 
-    // ── Measure: Project ─────────────────────────────────────────────
+    try {
+      record("handler.fires-per-hour", count("SELECT COUNT(*) as c FROM events WHERE event_type = 'handler.started' AND timestamp > ?", oneH));
+    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring fires-per-hour: ${e}`); }
+
+    // ── Measure: Project (with error isolation) ──────────────────────
 
     const fortyEightH = now - 48 * 3600000;
     const twentyFourH = now - 24 * 3600000;
     const sevenD = now - 7 * 86400000;
 
-    record("project.active-count", count("SELECT COUNT(*) as c FROM projects WHERE status = 'active'"));
-    record("project.blocked-count", count("SELECT COUNT(*) as c FROM projects WHERE status IN ('blocked', 'waiting')"));
+    try {
+      record("project.active-count", count("SELECT COUNT(*) as c FROM projects WHERE status = 'active'"));
+    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring active-count: ${e}`); }
 
-    // Stale: active projects with no iteration event in 48h
-    const activeProjects = db.prepare("SELECT id FROM projects WHERE status = 'active'").all() as any[];
-    let stale = 0;
-    for (const p of activeProjects) {
-      const last = (db.prepare("SELECT MAX(timestamp) as t FROM events WHERE event_type = 'project.iteration' AND data LIKE ?").get(`%${p.id}%`) as any)?.t;
-      if (!last || last < fortyEightH) stale++;
-    }
-    record("project.stale-active-count", stale);
+    try {
+      record("project.blocked-count", count("SELECT COUNT(*) as c FROM projects WHERE status IN ('blocked', 'waiting')"));
+    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring blocked-count: ${e}`); }
 
-    record("project.iterations-24h", count("SELECT COUNT(*) as c FROM events WHERE event_type = 'project.iteration' AND timestamp > ?", twentyFourH));
+    // Stale: active projects with no iteration event in 48h (single query, no N+1)
+    try {
+      const stale = count(
+        `SELECT COUNT(*) as c FROM projects p
+         WHERE p.status = 'active'
+           AND NOT EXISTS (
+             SELECT 1 FROM events e
+             WHERE e.event_type = 'project.iteration'
+               AND e.timestamp > ?
+               AND e.data LIKE '%' || p.id || '%'
+           )`, fortyEightH);
+      record("project.stale-active-count", stale);
+    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring stale-active-count: ${e}`); }
 
-    const blocked7d = count("SELECT COUNT(*) as c FROM events WHERE event_type = 'project.blocked' AND timestamp > ?", sevenD);
-    const productive7d = count("SELECT COUNT(*) as c FROM events WHERE event_type IN ('project.iteration', 'project.completed') AND timestamp > ?", sevenD);
-    const total7d = blocked7d + productive7d;
-    record("project.blocked-rate-7d", total7d > 0 ? parseFloat((blocked7d / total7d).toFixed(4)) : 0);
+    try {
+      record("project.iterations-24h", count("SELECT COUNT(*) as c FROM events WHERE event_type = 'project.iteration' AND timestamp > ?", twentyFourH));
+    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring iterations-24h: ${e}`); }
 
-    record("project.blocked-over-6h", count("SELECT COUNT(*) as c FROM projects WHERE status IN ('blocked', 'waiting') AND updated_at < ?", now - 6 * 3600000));
+    try {
+      const blocked7d = count("SELECT COUNT(*) as c FROM events WHERE event_type = 'project.blocked' AND timestamp > ?", sevenD);
+      const productive7d = count("SELECT COUNT(*) as c FROM events WHERE event_type IN ('project.iteration', 'project.completed') AND timestamp > ?", sevenD);
+      const total7d = blocked7d + productive7d;
+      record("project.blocked-rate-7d", total7d > 0 ? parseFloat((blocked7d / total7d).toFixed(4)) : 0);
+    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring blocked-rate-7d: ${e}`); }
+
+    try {
+      record("project.blocked-over-6h", count("SELECT COUNT(*) as c FROM projects WHERE status IN ('blocked', 'waiting') AND updated_at < ?", now - 6 * 3600000));
+    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring blocked-over-6h: ${e}`); }
 
     // ── Generic metrics (source_query / source_command) ──────────────
 
@@ -139,6 +197,15 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         if (value !== null) { record(m.id, value); measured++; }
       } catch { /* skip individual metric errors */ }
     }
+
+    // ── Snapshot retention cleanup (keep last 30 days) ───────────────
+
+    try {
+      const cutoff = now - RETENTION_DAYS * 86400000;
+      const result = db.run("DELETE FROM metric_snapshots WHERE measured_at < ?", [cutoff]);
+      const deleted = (result as any)?.changes ?? 0;
+      if (deleted > 0) ctx.log(`[metrics-snapshot] Cleaned ${deleted} old snapshots (>${RETENTION_DAYS}d)`);
+    } catch (e) { ctx.log(`[metrics-snapshot] Error during snapshot cleanup: ${e}`); }
 
     ctx.log(`[metrics-snapshot] 12 metrics recorded (6 handler + 6 project), ${measured}/${measurable.length} source-defined`);
   };
