@@ -37,5 +37,6 @@ The problem this project was designed to solve is already solved:
 
 **REVISED.** EXP-275 showed 97% compliance counting bash verification, but EXP-280 tests whether forcing explicit read() after every edit improves quality scores. Treatment deployed to bob. Measuring until 2026-05-02.
 
-**Status**: active (EXP-280 deployed 2026-05-01, measurement due 2026-05-03)
+**Status**: closed (EXP-280 NEGATIVE — see top of file)
 **Baseline collected**: See `agents/coach/workspace/EXP-280-baseline-data.md` — bob mean quality 0.66 (n=29)
+**Closed**: 2026-04-30 — project was already closed per header. Stale notification dismissed.
