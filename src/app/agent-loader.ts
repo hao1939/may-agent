@@ -475,6 +475,7 @@ const VALID_TOOL_PRESETS = new Set([
   "notify",
   "cite-source",
   "cite_source",
+  "query_db",
 ]);
 
 const REQUIRED_FIELDS: (keyof AgentConfig)[] = ["name", "description", "domain", "model", "tools"];
@@ -605,6 +606,7 @@ export async function loadAgents(opts: AgentLoaderOptions): Promise<LoadResult> 
     const agentDir = resolve(agentsRoot, entry.name);
     const config = loadAgentConfig(agentDir, opts.bus, agentsRoot);
     if (!config) continue;
+
 
     // Validate before registering
     const errors = validateAgentConfig(config, models, agentsRoot);

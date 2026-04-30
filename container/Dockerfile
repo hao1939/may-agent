@@ -112,3 +112,4 @@ EXPOSE 6080
 EXPOSE 8080
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+# bust 1777583705
