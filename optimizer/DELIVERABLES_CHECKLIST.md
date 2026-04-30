@@ -1,10 +1,5 @@
-# Deliverables Checklist
+# Deliverables Checklist — Heartbeat 2025-06-27
 
-## Task: Optimizer Heartbeat — Efficiency Review
-
-| # | Deliverable | Status | Evidence |
-|---|------------|--------|----------|
-| 1 | Review system metrics | DONE | All metrics healthy: success-rate 1.0, p95 322s |
-| 2 | Check for waste patterns | DONE | 492 sessions analyzed, no high-waste sessions found |
-| 3 | Review active projects | DONE | request-deduplication closed, no action needed |
-| 4 | Act on findings | DONE | No actionable issues — system operating efficiently |
+- [x] **Quality score analysis** — `agents/optimizer/findings/quality-score-analysis.md` — Investigated P1 notification, produced data-backed analysis showing improving trend
+- [x] **P1 notification addressed** — Dismissed with evidence: last 2 evals scored 0.78/0.85, optimizer not lowest agent
+- [x] **6h efficiency snapshot** — Included in findings file, identified coach as highest op consumer
