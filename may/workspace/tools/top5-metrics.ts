@@ -93,13 +93,13 @@ const erPrev = errorRate(priorStart, priorEnd);
 const sc = sessionCount(recentStart, recentEnd);
 const scPrev = sessionCount(priorStart, priorEnd);
 
-const tc = latestTestCount();
+const hsr = handlerSuccessRate();
 
 const lines = [
   "📊 Top 5 Metrics",
   `${indicator(sr, 0.85, 0.70)} Success Rate: ${sr !== null ? (sr * 100).toFixed(0) + "%" : "n/a"} ${trend(sr, srPrev)}`,
   `${indicator(eq, 0.70, 0.50)} Eval Quality: ${eq !== null ? eq.toFixed(2) : "n/a"} ${trend(eq, eqPrev)}`,
-  `${indicator(tc, 50, 20)} Tests: ${tc !== null ? tc : "n/a"} →`,
+  `${indicator(hsr, 0.85, 0.70)} Handler Health: ${hsr !== null ? (hsr * 100).toFixed(0) + "%" : "n/a"} →`,
   `${indicator(er, 0.10, 0.25, false)} Error Rate: ${er !== null ? (er * 100).toFixed(1) + "%" : "n/a"} ${trend(er, erPrev)}`,
   `${indicator(sc, 15, 8)} Sessions (6h): ${sc} ${trend(sc, scPrev)}`,
 ];

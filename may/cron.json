@@ -399,6 +399,16 @@
     "offsetMs": 1200000
   },
   {
+    "name": "daily-digest",
+    "type": "job",
+    "intervalMs": 86400000,
+    "handler": "daily-digest",
+    "agent": "may",
+    "enabled": true,
+    "description": "Generate daily digest with top5 metrics, agent activity, and quality summary. Writes to agents/shared/daily-digests/YYYY-MM-DD.md.",
+    "offsetMs": 0
+  },
+  {
     "name": "heartbeat-amy",
     "type": "job",
     "intervalMs": 1800000,
