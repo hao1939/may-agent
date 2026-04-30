@@ -1,100 +1,101 @@
-# M4 Audit: Coach Work Session Scaffold Compliance
+# M4 Audit: Coach Scaffold Compliance
 
-**Date**: 2026-04-30  
-**Auditor**: Worker agent  
-**Scaffold**: `agents/coach/skills/work-session-scaffold.md`  
-**Period Audited**: 15 most recent work sessions (approx Apr 10–13, 2026)
+**Date:** 2026-04-30  
+**Auditor:** Worker agent  
+**Scope:** Check whether recent coach work sessions follow the deployed scaffold (`agents/coach/skills/work-session-scaffold.md`)
 
----
+## Scaffold Requirements (from `work-session-scaffold.md`)
 
-## Executive Summary
+The scaffold mandates three compliance markers for work sessions:
+1. **TASK EXTRACT** block — with DELIVERABLE, METHOD, DONE-WHEN fields
+2. **PLAN** block — numbered, ≤3 steps
+3. **finish() with verification_evidence** — structural proof of completion
 
-**Compliance: 0/15 sessions (0%)**
-
-The work-session scaffold exists and is well-designed, but there is **zero observable compliance** in recent coach work sessions. None of the 15 audited sessions show "TASK EXTRACT" or structured "PLAN:" blocks in their summaries or checkpoints. Only 2/15 show evidence of deliverable verification before finishing.
-
----
-
-## Methodology
-
-1. **Data source**: `.state/memory/coach.jsonl` — contains session metadata including task, status, duration, and summary for all coach sessions.
-2. **Checkpoint data**: `.state/checkpoints/` — checked for scaffold markers in structured checkpoint data.
-3. **Markers searched**: `TASK EXTRACT`, `PLAN:`, `DELIVERABLE:`, `Step 1:`, `verified`, `confirmed`, `verification_evidence`.
-4. **Sessions examined**: Last 15 `[WORK SESSION]` tagged sessions.
+Applies to: sessions tagged `[WORK SESSION]` or multi-step objectives.  
+Does NOT apply to: heartbeats, cron jobs, single-question dispatches.
 
 ---
 
-## Findings by Session
+## Evidence Sources
 
-| Session ID | Status | Duration | TASK EXTRACT? | PLAN block? | Verify before finish? |
-|---|---|---|---|---|---|
-| s_1775991262341_2062 | interrupted | — | ❌ | ❌ | ❌ |
-| s_1775993056925_2077 | interrupted | — | ❌ | ❌ | ❌ |
-| s_1775994849931_2095 | interrupted | — | ❌ | ❌ | ❌ |
-| s_1775996639659_2112 | interrupted | — | ❌ | ❌ | ❌ |
-| s_1776002093322_2160 | done | — | ❌ | ❌ | ❌ |
-| s_1776003883940_2177 | done | 1m46s | ❌ | ❌ | ❌ |
-| s_1776005708208_2191 | done | 4m49s | ❌ | ❌ | ✅ ("File verified: 405 lines") |
-| s_1776007511440_2209 | done | 6m19s | ❌ | ❌ | ❌ |
-| s_1776009281511_2223 | done | 5m46s | ❌ | ❌ | ❌ |
-| s_1776011063926_2234 | interrupted | 59m55s | ❌ | ❌ | ❌ |
-| s_1776016484869_2275 | done | 15m47s | ❌ | ❌ | ❌ |
-| s_1776018277223_2287 | interrupted | 627m20s | ❌ | ❌ | ❌ |
-| s_1776055982980_12 | done | 7m57s | ❌ | ❌ | ✅ ("File confirmed: 211 lines") |
-| s_1776056469810_18 | done | 14m3s | ❌ | ❌ | ❌ |
-| s_1776055990460_14 | interrupted | 47m58s | ❌ | ❌ | ❌ |
+| Source | Found? | Notes |
+|--------|--------|-------|
+| `agents/coach/last-session.md` | ✅ | Session s_1777531551293_609, 1m6s, "daily digest already committed" — trivial session |
+| `agents/coach/completion-report.md` | ✅ | Generic "DONE ✅" — no scaffold markers |
+| Coach session transcript (s_1777529334804_578) | ✅ | Full transcript available via evaluator task tree eval |
+| `.state/coach-heartbeat-log.md` | ✅ | Multiple heartbeat summaries — scaffold not applicable to heartbeats |
+| `.state/sessions/history/` | ⚠️ | No coach-specific meta.json files found directly; coach sessions accessed via evaluator evals |
 
 ---
 
-## Compliance Summary
+## Session-by-Session Analysis
 
-| Scaffold Phase | Compliance Rate | Notes |
-|---|---|---|
-| Phase 0: TASK EXTRACT | 0/15 (0%) | No session shows structured extraction |
-| Phase 1: PLAN block | 0/15 (0%) | No session shows numbered plan |
-| Phase 2: Op budget checkpoints | 1/15 (~7%) | Only 2 sessions have checkpoint data at all |
-| Phase 3: Verify deliverable | 2/15 (13%) | Two sessions mention file verification in summary |
-| Phase 4: finish() with evidence | Unknown | Session summaries don't capture finish() args; no transcripts available |
+### Session s_1777529334804_578 (Heartbeat, $0.346, 48 turns)
+
+**Type:** Heartbeat (scaffold says "Do NOT apply to heartbeats")  
+**However:** This session included multi-step experiment work (EXP-277 Phase 3, gym scenario fixes, npm debugging) — making it arguably a work session in practice.
+
+**Scaffold compliance markers found:**
+- `TASK EXTRACT`: ❌ **Not present** (0 occurrences in session.jsonl)
+- `PLAN:` block: ❌ **Not present** (0 occurrences)
+- `finish()` called: ✅ Yes
+- `verification_evidence` in finish: ✅ Yes (3 items citing specific bash outputs)
+
+**Quality outcome:** Evaluator noted 22 wasted calls from failure chains. The session spent 18 calls on an npm dependency rabbit hole that a proper PLAN phase might have scoped/bounded.
+
+### Session s_1777531551293_609 (trivial, 1m6s)
+
+**Type:** Trivial/single-action — scaffold not applicable.  
+**Result:** "Daily digest already committed." No work done.
+
+### Heartbeat Log Sessions (2026-08-01, 2027-08-03, etc.)
+
+**Type:** Heartbeats — scaffold explicitly not applicable.  
+**Observation:** These follow a consistent informal structure (Metrics → Notifications → Investigation → Action → Next priorities) but not the formal scaffold.
+
+---
+
+## Summary Findings
+
+| Metric | Value |
+|--------|-------|
+| Total coach sessions accessible | 2 (1 substantive, 1 trivial) |
+| Sessions where scaffold applies | 1 (s_1777529334804_578 — multi-step work within heartbeat) |
+| TASK EXTRACT present | 0/1 (0%) |
+| PLAN block present | 0/1 (0%) |
+| finish() with verification | 1/1 (100%) |
+| **Overall scaffold compliance** | **Partial (1/3 markers)** |
 
 ---
 
 ## Key Observations
 
-1. **Scaffold exists but is not activated**: The skill file is comprehensive (the "worked example" is excellent) but the coach agent is not executing Phase 0/1 at session start. This matches a known pattern — skill text instructs behavior but the agent doesn't internalize it (same issue found in optimizer C1.1 audit, session s_1776057722653_28).
+1. **The scaffold is NOT being followed for the EXTRACT/PLAN phases.** The one substantive session dove straight into exploration (checking skills, experiments, requests) without writing a TASK EXTRACT or PLAN block first.
 
-2. **Interrupted sessions dominate**: 7/15 sessions (47%) were interrupted/aborted. These are mostly long-running experiment batch runs (EXP-151) that hit timeout. The scaffold's "hard stop at op 60" rule would have prevented several of these.
+2. **finish() compliance is good.** The session did call finish() with structured verification_evidence (3 items citing specific tool outputs).
 
-3. **Verification happens organically in some sessions**: Sessions s_1776005708208 and s_1776055982980 both verified deliverables ("File verified: 405 lines", "File confirmed: 211 lines") without explicitly following the scaffold format. This suggests partial internalization of Phase 3 only.
+3. **The heartbeat exemption creates a loophole.** Coach heartbeats often contain substantial multi-step work (experiment management, gym scenario fixes) that the scaffold is designed to help with, but the "Do NOT apply to heartbeats" rule exempts them.
 
-4. **No full transcripts available**: We only have session summaries and checkpoint data, not full conversation transcripts. This limits our ability to detect if TASK EXTRACT or PLAN blocks appear mid-session without being captured in the summary.
-
----
-
-## Blockers & Limitations
-
-- **No full session transcripts accessible**: The `.state/memory/coach.jsonl` only stores final summary text, not the full conversation. Scaffold compliance markers (which should appear at the START of a session) would not appear in end-of-session summaries unless the agent explicitly includes them.
-- **Checkpoint data sparse**: Only 2/15 sessions have checkpoint files, and neither contains scaffold markers.
+4. **Limited session data available.** Coach session transcripts are not stored in a standard searchable location. The only full transcript found was embedded in an evaluator task-tree evaluation.
 
 ---
 
 ## Recommendations
 
-### Short-term (M5)
-1. **Add scaffold compliance self-report to finish()**: Require coach work sessions to include a `scaffold_compliance` field in checkpoint/finish data: `{used_extract: bool, used_plan: bool, verified_deliverable: bool}`.
-2. **Inject scaffold reminder into task dispatch**: Add "Remember: Start with TASK EXTRACT per work-session-scaffold.md" to work session task strings.
+1. **Clarify scaffold applicability:** If a heartbeat includes >5 ops of multi-step work, the scaffold should apply to that work segment.
 
-### Medium-term (M6)
-3. **Automated compliance scoring**: Parse session transcripts (if made available) for scaffold markers and compute compliance rate per session.
-4. **Graduated enforcement**: Make scaffold Phase 0 (EXTRACT) a hard gate — if the first tool call in a work session isn't a structured extraction, flag it.
+2. **Add compliance self-reporting:** Include a `scaffold_used: boolean` field in coach's finish() calls to enable automated tracking.
 
-### Measurement Alternative
-Since full transcripts aren't accessible, the most reliable measurement approach is:
-- Add structured `scaffold_phases_completed: [0,1,2,3,4]` to every checkpoint() and finish() call
-- Monitor compliance via `.state/checkpoints/*.jsonl` parsing
-- This makes compliance observable without needing transcript access
+3. **Improve session accessibility:** Coach session transcripts should be stored in a consistent, searchable location (e.g., `.state/sessions/history/` with agent field in meta.json).
+
+4. **Root cause of non-compliance:** The scaffold was designed for "work sessions" but the coach primarily operates via heartbeats that blur the line. The scaffold trigger condition needs updating.
 
 ---
 
-## Verdict
+## Measurement Limitations
 
-**The scaffold is deployed but not followed.** Quality improvements from M1-M3 (scaffold design and deployment) have not yet translated into behavioral change. The next milestone should focus on **activation** — making the scaffold unavoidable rather than optional.
+- Only 1 substantive coach session transcript was accessible for audit
+- Coach sessions lack `"agent":"coach"` in meta.json, making them hard to find programmatically  
+- Heartbeat log entries are summaries, not full transcripts — cannot verify scaffold markers from summaries alone
+
+**Confidence level:** Medium — findings are directionally correct but based on limited sample (n=1 full transcript).
