@@ -1,39 +1,27 @@
-# QA Heartbeat — Unreviewed Findings (2026-04-30)
+# Unreviewed Findings (QA Heartbeat)
 
-## 1) CRITICAL: TypeScript build is failing (duplicate export names)
+## 2026-04-30
 
-**Reproduced (this session):** `cd agents && ./node_modules/.bin/tsc --noEmit` fails with:
-- `shared/lib/index.ts(13,1): error TS2308: Module './iteration-monitor.js' has already exported a member named 'IterationRecord'.`
-- `shared/lib/index.ts(16,1): error TS2308: Module './task-validator.js' has already exported a member named 'ValidationResult'.`
+### 1) TypeScript build currently fails (CRITICAL)
+- **Command:** `cd /app/agents && ./node_modules/.bin/tsc --noEmit`
+- **Result:** FAIL
+- **Errors:**
+  - `shared/lib/index.ts(13,1): error TS2308: Module './iteration-monitor.js' has already exported a member named 'IterationRecord'.`
+  - `shared/lib/index.ts(15,1): error TS2308: Module './iteration-monitor.js' has already exported a member named 'IterationRecord'.`
+  - `shared/lib/index.ts(16,1): error TS2308: Module './task-validator.js' has already exported a member named 'ValidationResult'.`
+- **Evidence:** See QA heartbeat tool output.
+- **Hypothesis:** duplicate re-exports introduced in `shared/lib/index.ts` (barrel) due to overlapping named exports across modules.
 
-**Evidence:** `agents/shared/lib/index.ts` is a barrel file with multiple `export * from ...` lines, including:
-- `export * from './task-validator.js';`
-- `export * from './iteration-monitor.js';`
+### 2) Vitest test suite passes but exits non-zero due to permissions (IMPORTANT / Environment)
+- **Command:** `cd /app/agents && ./node_modules/.bin/vitest --run`
+- **Test outcome:** **536 tests passed**, **31 files passed**.
+- **Process result:** FAIL (exit code 1) due to:
+  - `EACCES: permission denied, open '/app/agents/node_modules/.vite/vitest/results.json'`
+- **Cause evidence:** `node_modules/.vite/vitest` and `results.json` are owned by **root:root** while the process runs as **mayagent**.
+  - `stat -c '%A %U %G %n' node_modules/.vite ...` shows root ownership.
+- **Impact:** CI/local runs may intermittently fail if cache dir is root-owned.
+- **Suggested fix:** ensure `.vite` cache is writable by the running user (e.g., delete/recreate as correct owner in image build; avoid running npm install as root; or configure vitest cache dir).
 
-This pattern will surface name collisions across re-exported modules.
-
-**Impact:** TypeScript compilation fails (exit code 2), which blocks builds/CI.
-
-**Suggested fix direction (owner):** Replace `export *` for colliding modules with explicit named exports (or rename on export), or switch to namespace exports for one module.
-
----
-
-## 2) IMPORTANT: Vitest reports all tests passing but exits non-zero due to EACCES cache write
-
-**Reproduced (this session):** `cd agents && ./node_modules/.bin/vitest --run`
-- Summary shows: `Test Files 31 passed (31)` / `Tests 536 passed (536)`
-- Then throws an unhandled error and exits with code 1:
-  - `Error: EACCES: permission denied, open '/app/agents/node_modules/.vite/vitest/results.json'`
-
-**Evidence:** permissions/ownership show the cache directory is owned by root:
-- `agents/node_modules/.vite/vitest` is `root:root` (not writable by the runtime user).
-
-**Impact:** automation treats test run as failure despite tests passing.
-
-**Suggested fix direction (owner):** Make `agents/node_modules/.vite/**` writable for the running user (ownership/permissions), or configure vitest results/cache output to a writable path.
-
----
-
-## 3) MINOR: Commands must be run from `/app/agents` (repo root)
-
-Running git/tsc/vitest from `/app` fails because it is not a git repo and doesn’t contain `node_modules/.bin/*`.
+### Files inspected
+- `agents/shared/lib/index.ts`
+- `agents/scout/journal.md`
