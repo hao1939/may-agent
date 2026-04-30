@@ -51,3 +51,9 @@
 (a) Next iteration should produce: M9 — Run 2-3 gym scenarios as the coach agent and check whether the new simplified scaffold (GOAL/PLAN/DONE WHEN) appears in the output. Deliver results to `agents/shared/projects/coach-quality/m9-gym-results.md`.
 
 (b) What's different: The scaffold has b
+
+### Iteration 7 — 2026-04-30T07:03:07.347Z
+**Worker**: Also copy the report to the project-specific path:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should produce: M12 — A gym test proving the 2-phase workflow actually produces GOAL/PLAN blocks. Run the coach heartbeat workflow (not just a raw agent session) and verify Phase 1 outputs a structured plan. Deliver to `agents/shared/projects/coach-quality/m12-gym-enforc
