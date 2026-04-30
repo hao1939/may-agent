@@ -89,3 +89,11 @@
 The workflow .ts file is dead code — it never fires. The heartbeat system just loads `heartbeat.md` as the prompt. After 11 iterations and 0% compliance from context.md, the only viable path is putting the mandatory format directly in the task prompt itself.
 
 (a) Next iteration should produce
+
+### Iteration 12 — 2026-04-30T07:13:07.439Z
+**Worker**: Now write the report:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should produce: M15 — Check the next coach heartbeat session for compliance. Look at `agents/coach/last-session.md` after this current session ends to see if the NEXT heartbeat starts with GOAL/PLAN/DONE WHEN blocks.
+
+(b) What's different: M14 is now verified — the OUTPU

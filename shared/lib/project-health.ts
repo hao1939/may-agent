@@ -13,6 +13,8 @@ import { createHash, randomBytes } from "node:crypto";
 // ── Constants ────────────────────────────────────────────────────────────
 
 export const MAX_LAUNCHES_PER_TICK = 3;
+export const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes between launches per project
+export const MAX_ITERATIONS_PER_HOUR = 2;   // Max 2 workflow launches per project per hour
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -46,6 +48,8 @@ export interface ProjectHealthEntry {
   lastEscalation: number;
   lastLaunch: number;
   lastStatusChange: number;
+  /** Timestamps of recent launches for rate limiting (pruned to last 2h) */
+  launchTimestamps?: number[];
 }
 
 export interface HealthState {
@@ -267,11 +271,17 @@ export function diagnoseProject(
       return { ...skip, reason: "project has live session" };
     }
 
-    // Cooldown — don't relaunch too fast
+    // Cooldown — don't relaunch too fast (30min between launches)
     const lastLaunch = entry?.lastLaunch || 0;
     const sinceLastLaunch = now - lastLaunch;
-    if (sinceLastLaunch < 60_000) {
-      return { ...skip, reason: "cooldown" };
+    if (sinceLastLaunch < COOLDOWN_MS) {
+      return { ...skip, reason: `cooldown (${Math.round((COOLDOWN_MS - sinceLastLaunch) / 60_000)}min remaining)` };
+    }
+
+    // Hourly iteration cap — prevent runaway cascades
+    const recentLaunches = (entry?.launchTimestamps || []).filter(t => now - t < 3600_000);
+    if (recentLaunches.length >= MAX_ITERATIONS_PER_HOUR) {
+      return { ...skip, reason: `hourly cap reached (${recentLaunches.length}/${MAX_ITERATIONS_PER_HOUR} in last hour)` };
     }
 
     return { type: "launch-workflow", reason: "active project needs work", comment: "" };
@@ -290,6 +300,7 @@ export function newProjectHealthEntry(): ProjectHealthEntry {
     lastEscalation: 0,
     lastLaunch: 0,
     lastStatusChange: 0,
+    launchTimestamps: [],
   };
 }
 
