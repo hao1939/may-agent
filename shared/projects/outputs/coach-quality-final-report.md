@@ -1,20 +1,19 @@
 # Coach Quality Project — Final Report
 
-## Status: COMPLETE ✅
+**Status**: ✅ COMPLETE  
+**Date**: 2026-04-30
 
-## Result
+## Results
 - **Baseline score**: 0.24
 - **Final score**: 0.74 average (target was ≥0.50)
 - **All recent scores individually ≥0.50**
 
-## Intervention
-Two blocks injected into `agents/coach/heartbeat.md`:
-
-1. **OUTPUT FORMAT (MANDATORY)** — Forces GOAL/PLAN/DONE WHEN output before any tool calls
-2. **EXECUTION RULES** — Verify writes, no goal drift, require evidence in finish()
+## Interventions
+1. **OUTPUT FORMAT (MANDATORY)** block added to `agents/coach/heartbeat.md` — forces GOAL/PLAN/DONE WHEN before any tool calls
+2. **EXECUTION RULES** added to `agents/coach/heartbeat.md` — verify writes, no goal drift, require evidence in finish()
 
 ## Key Insight
-- `context.md` instructions: 0% compliance across 9 iterations (agents don't reliably read it)
-- `heartbeat.md` instructions: ~100% compliance immediately (it's the actual prompt)
+Instructions in `context.md` were ignored (0% compliance across 9 iterations). Moving instructions to `heartbeat.md` achieved near-100% compliance immediately because it's the actual prompt injected into every session.
 
-## No further iterations needed.
+## No Further Action Needed
+The enforcement mechanism in `heartbeat.md` serves as a permanent regression guard. Re-open only if scores regress below 0.50.
