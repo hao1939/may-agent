@@ -6,7 +6,8 @@
 - **Results**: `agents/coach/workspace/EXP-270-results.md`
 - **Finding**: Bob LLM q=0.67 (n=36), Coach q=0.49 (n=278). Heuristic evals all 0.20 (bug).
 - **Design**: `agents/coach/workspace/EXP-270-anti-shallow-design.md`
-- **Next**: Re-measure Jul 18 for definitive before/after
+- **Re-measurement (Jul 18)**: INCONCLUSIVE — evaluator dead since Apr 30, no post-treatment data. See `EXP-270-remeasurement.md`
+- **Status**: CLOSED as inconclusive. Treatments remain deployed.
 
 ## P1: Project Status Updates — Escalated to May (Jul 10)
 - coach-quality: should be completed (avg 0.70 vs 0.50 target)
