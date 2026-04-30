@@ -115,6 +115,11 @@
 3. **Quality > quantity**: fewer excellent outputs beat many mediocre ones
 4. **Observability**: make system state visible, not hidden
 5. **Knowledge must be APPLIED**: experiment with findings, deploy to production, don't just store
+6. **Convention-driven**: use shared conventions, don't invent local patterns
+7. **Consolidation**: fewer rich files > many thin ones. Remove obsolete. Deduplicate.
+8. **Automate monitoring**: if you check it twice manually, add a cron job
+9. **Agent identity**: respect role boundaries. Check agent's defined role before assigning.
+10. **Knowledge hygiene**: never blind-overwrite. Read before writing shared files.
 
 ## Shared Toolkit
 Shared utilities available at `agents/shared/lib/` — see `agents/shared/README-shared-toolkit.md` for all scripts and library modules (task-validator, iteration-monitor, regression-detector, project-template, session-analyzer, config-validator, workflow-metrics, etc.).
