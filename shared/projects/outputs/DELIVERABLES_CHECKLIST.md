@@ -4,9 +4,9 @@
 
 | Deliverable | Status | Notes |
 |---|---|---|
-| Lower vitest.config.ts thresholds to 85% | DONE | Completed in prior iterations |
-| Write tests for project.ts | DONE | Completed in prior iterations |
-| Coverage exceeds 85% target | DONE | 87.02% line coverage achieved |
-| All tests passing | DONE | 1438/1438 tests pass |
+| Lower vitest.config.ts thresholds to 85% | DONE | Completed in earlier iterations |
+| Write tests for project.ts | DONE | Completed in earlier iterations |
+| Achieve 85%+ line coverage | DONE | Currently at 87.02% |
+| All tests passing | DONE | 1438/1438 passing |
 
-**Project Status: COMPLETE** — No further work needed this iteration.
+**Project status: COMPLETE** — no further work needed.
