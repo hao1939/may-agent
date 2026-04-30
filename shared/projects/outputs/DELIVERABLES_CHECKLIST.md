@@ -1,10 +1,5 @@
-# Deliverables Checklist — Iteration 41
+# DELIVERABLES_CHECKLIST
 
-## Task: Add JSDoc comments to lib modules
-
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | JSDoc on iteration-monitor.ts (module, interfaces, functions) | DONE | agents/shared/lib/iteration-monitor.ts |
-| 2 | JSDoc on cost-tracker.ts (module doc) | DONE | agents/shared/lib/cost-tracker.ts |
-| 3 | JSDoc on workflow-metrics.ts (module doc) | DONE | agents/shared/lib/workflow-metrics.ts |
-| 4 | All tests still pass | DONE | 81 files, 1428 tests passed |
+- [x] DONE — `agents/shared/scripts/weekly-report.sh` — Weekly health report generator (test metrics, iteration stats, adoption, toolkit inventory)
+- [x] DONE — `.state/health-history/report-20260430.md` — Generated report showing 81 test files, 1428 tests, 86% deliverable rate, 14/14 adoption
+- [x] DONE — `agents/shared/projects/outputs/weekly-report.sh` — Copy in outputs directory
