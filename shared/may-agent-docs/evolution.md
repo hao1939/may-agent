@@ -119,7 +119,64 @@ export const guard: WorkflowGuard = {
 
 ---
 
-## Level 5: Handler (reactive system behavior)
+## Level 5: Tool (new capability)
+
+A tool gives an agent a new action it can take. Two ways to add tools:
+
+### Tool Presets (agent.json)
+
+Declare standard tool bundles in your agent config:
+
+```json
+{
+  "tools": ["coding", "agents", "workflow", "scrape", "finish"]
+}
+```
+
+Available presets:
+| Preset | What it gives |
+|--------|---------------|
+| `coding` | read + write + edit + bash |
+| `agents` | call, fork, message, list, peek, cancel other agents |
+| `workflow` | list/run/resume workflows from within a session |
+| `notify` | send messages to humans or agents (lightweight) |
+| `scrape` | web scraping |
+| `cron` | manage cron schedules |
+| `checkpoint` | save progress mid-session |
+| `system-status` | inspect system health |
+| `agent-growth` | fork/promote/discard agents |
+| `background-exec` | run long processes in background |
+| `claude-code` / `gemini-cli` / `codex` | delegate to external coding agents |
+| `finish` | structured session completion |
+
+### Custom Local Tools (agents/<name>/tools/)
+
+For domain-specific capabilities, create a tool file:
+
+**Where it lives:** `agents/<name>/tools/<name>.ts`
+
+**Interface:**
+```typescript
+// Default export must be a factory function
+export default async function(opts: { projectRoot: string; agentRoot: string; persistDir: string }) {
+  return {
+    name: "my-custom-tool",
+    label: "My Tool",
+    description: "Does something domain-specific",
+    parameters: { /* JSON Schema */ },
+    async execute(toolCallId: string, params: any) {
+      // ... your logic ...
+      return { content: [{ type: "text", text: "result" }] };
+    },
+  };
+}
+```
+
+Tools are auto-discovered and hot-reloaded. No config changes needed — just create the file.
+
+---
+
+## Level 6: Handler (reactive system behavior)
 
 A handler is a persistent process that reacts to events or time. It doesn't need a workflow trigger — it runs autonomously.
 
