@@ -12,6 +12,7 @@
 - **Status**: DEPLOYED ✅ — confirmed 2026-04-30. BASELINE UPDATED: FM-3.3 at 53% (8/15), not 30%. Measurement due when 10+ post-treatment sessions available.
 - **Results**: `agents/coach/workspace/EXP-280-results.md`
 - **Measurement plan**: `agents/coach/workspace/EXP-280-phase3-measurement-plan.md`
+- **CLOSED (Aug 1)**: NEGATIVE — FM-3.3 50% vs 53% baseline (no change). Text skill dead per KE-338.
 
 ## P1: EXP-275 — Optimizer Anti-Shallow + Verification (NEW Jul 30)
 - **Problem**: Optimizer worst LLM quality (0.384, n=17). Issues: UNVERIFIED_CLAIMS, LAZY, VERIFICATION_FAILURE.
