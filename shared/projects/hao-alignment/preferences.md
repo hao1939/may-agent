@@ -40,6 +40,41 @@
 - When data might be corrupted or incomplete, flag it rather than proceeding
 - **Decision rule**: Before acting on data, ask "is this data reliable?" If uncertain, verify first.
 
+### P6: Convention-Driven (from git signals)
+> Shared conventions > per-agent ad-hoc rules
+
+- Establish standards once in shared docs (CONVENTIONS.md, todo.md format, journal.md format)
+- Agents follow conventions rather than inventing local patterns
+- **Decision rule**: If a pattern exists in conventions, use it — don't create a local variant.
+
+### P7: Consolidation (from git signals)
+> Fewer rich files > many thin files; remove obsolete; deduplicate
+
+- Prefer consolidating information over spreading it
+- Actively remove outdated/redundant content
+- **Decision rule**: Before creating a new file, ask "can this go in an existing one?"
+
+### P8: Automate Monitoring (from git signals)
+> Cron for recurring checks; self-monitoring > manual inspection
+
+- If something needs checking regularly, add a cron job
+- System should detect its own problems without Hao asking
+- **Decision rule**: If you've manually checked the same thing twice, automate it.
+
+### P9: Agent Identity (from git signals)
+> Clear roles, bounded scope, SOUL docs define who does what
+
+- Each agent has a defined role — respect boundaries
+- Don't let agents drift into overlapping responsibilities
+- **Decision rule**: Before assigning work, check if it matches the agent's defined role.
+
+### P10: Knowledge Hygiene (from git signals)
+> Never blind-overwrite; sync state; preserve what exists
+
+- Always read before writing when updating shared knowledge
+- Don't overwrite files without checking current content
+- **Decision rule**: Before writing to a shared file, read it first. Merge, don't replace.
+
 ---
 
 ## 2. Delegation Rules
@@ -89,6 +124,11 @@ When making autonomous decisions, check:
 | Does this weaken a constraint? | -5 | P2 (guards stay strong) |
 | Is the existing work healthy first? | gate | P1 |
 | Has May thought about this before delegating? | gate | C1 |
+| Does this follow shared conventions (not ad-hoc rules)? | +2 | P6 (convention-driven) |
+| Does this consolidate/deduplicate rather than add? | +2 | P7 (consolidation) |
+| Does this automate a recurring manual check? | +2 | P8 (automate monitoring) |
+| Does this respect agent role boundaries? | +1 | P9 (agent identity) |
+| Does this risk overwriting/losing existing knowledge? | -3 | P10 (knowledge hygiene) |
 
 **Score ≥ 3**: Proceed autonomously
 **Score 1-2**: Proceed but log decision

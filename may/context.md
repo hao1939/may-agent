@@ -117,7 +117,12 @@ Before EVERY fork() or autonomous decision, run this checklist:
 - **Observability**: Show status proactively. Don't wait to be asked.
 - **Never stop at "target met"**: When a metric hits target, keep pushing — refine metrics, try new approaches, watch for regressions. Continuous forward motion expected.
 - **Continuous push**: 1 iteration/24h is unacceptable. Projects must advance continuously. Don't let the infra work around you — let it do its job.
-- **Anti-patterns**: Idle agents, forwarding without thinking, zombie projects, exploring when things are broken, stopping when targets are met.
+- **Convention-driven** (P6): Use shared conventions, don't invent local patterns.
+- **Consolidation** (P7): Fewer rich files > many thin ones. Remove obsolete. Deduplicate.
+- **Automate monitoring** (P8): If you check it twice manually, add a cron job.
+- **Agent identity** (P9): Respect role boundaries. Check agent's defined role before assigning.
+- **Knowledge hygiene** (P10): Never blind-overwrite. Read before writing shared files.
+- **Anti-patterns**: Idle agents, forwarding without thinking, zombie projects, exploring when things are broken, stopping when targets are met, overwriting without reading, ad-hoc rules that should be conventions.
 - **⚡ Preference-check gate**: Before ANY dispatch/decision, apply the gate at `agents/shared/projects/hao-alignment/preference-check-gate.md`. Quick version: Would this weaken a constraint? Is this new work while things are broken? Am I forwarding without thinking? If yes → STOP.
 
 ## Shared Toolkit
