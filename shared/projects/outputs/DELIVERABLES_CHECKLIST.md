@@ -1,7 +1,7 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist — Iteration 31
 
-- [x] DONE — Identified slowest test: `agents/shared/tests/master-worker-execute.test.ts` "handles review phase retry on error" (2004ms)
-- [x] DONE — Optimized with fake timers: `agents/shared/tests/master-worker-execute.test.ts` (2004ms → ~0ms)
-- [x] DONE — Verified all 78 test files pass (1413 tests, 0 failures)
-- [x] DONE — 20% test execution time reduction (6.01s → 4.81s)
-- [x] DONE — Report: `agents/shared/projects/outputs/test-optimization-report.md`
+## Task: Add shared toolkit reference to all agent context.md files
+
+| # | Deliverable | Status | Path/Evidence |
+|---|------------|--------|---------------|
+| 1 | Add shared toolkit reference to all agent context.md files | DONE | 14 files updated: /app/agents/{amy-kimi,amy,architect,bob,coach,coder,evaluator,judge,master,may,optimizer,qa,scout,tech-lead}/context.md |
