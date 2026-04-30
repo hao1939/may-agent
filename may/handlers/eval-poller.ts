@@ -20,6 +20,7 @@ import { evaluateStandaloneSession } from "../../shared/evaluation/evaluator.js"
 const STATE_FILE = "eval-poller-processed.json";
 const MAX_LLM_EVALS_PER_RUN = 12; // LLM evals are slow (~15s each) — cap to avoid 300s handler timeout
 const MAX_HEURISTIC_EVALS_PER_RUN = 200; // Heuristic evals are instant (no LLM) — process in bulk
+const WALL_CLOCK_BUDGET_MS = 240_000; // Hard stop at 240s to stay well under 300s handler timeout
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days to match coverage metric window
 
 // Meta-agents that shouldn't be evaluated
@@ -61,6 +62,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const state = loadState(ctx.persistDir);
     const processedSet = new Set(state.processedSessionIds);
     const now = Date.now();
+    const deadline = now + WALL_CLOCK_BUDGET_MS;
     let evaluated = 0;
 
     // Scan history directory for recent sessions
@@ -88,8 +90,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     let skippedNoEval = 0;
 
     for (const { dir } of recentSessions) {
-      // Stop when both budgets exhausted
+      // Stop when both budgets exhausted or wall clock exceeded
       if (llmEvals >= MAX_LLM_EVALS_PER_RUN && heuristicEvals >= MAX_HEURISTIC_EVALS_PER_RUN) break;
+      if (Date.now() >= deadline) {
+        ctx.log("[eval-poller] Wall clock budget exceeded (240s), stopping early");
+        break;
+      }
 
       const sessionId = dir;
       if (processedSet.has(sessionId)) continue;
