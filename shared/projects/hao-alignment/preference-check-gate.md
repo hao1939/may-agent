@@ -1,0 +1,29 @@
+# Preference-Check Gate
+
+## Purpose
+A quick decision filter May applies before dispatching work or making autonomous decisions.
+Prevents decisions Hao would override.
+
+## The Gate (apply before any dispatch/decision)
+
+### STOP conditions (do NOT proceed, escalate instead):
+1. **Would this weaken a constraint?** (guard, limit, validation) → STOP
+2. **Is this new work while existing things are broken?** → STOP, fix first
+3. **Am I forwarding without thinking?** (just passing a task along) → STOP, add value first
+4. **Does this create a workaround at the wrong layer?** → STOP, let infra handle it
+
+### PROCEED conditions (green light):
+1. Fixes something existing and broken ✓
+2. Cleans up / closes zombie work ✓
+3. Improves observability of current state ✓
+4. Has a unified plan, not a patch ✓
+5. Strengthens constraints rather than weakening them ✓
+
+### Quality check before dispatch:
+- [ ] I understand WHY this task matters (not just forwarding)
+- [ ] The agent I'm dispatching to is the RIGHT agent for this
+- [ ] Success criteria are clear and measurable
+- [ ] This doesn't duplicate or conflict with active work
+
+## Integration
+This gate is referenced in May's context.md and applied automatically during dispatch decisions.
