@@ -1,10 +1,15 @@
 # Project: Hao Alignment
 
-**Status**: active
+**Status**: waiting
+**Stop Reason**: WAITING
+
+This project is **done** until external triggers arrive:
+1. **Next Hao interaction** — validate P6-P10 accuracy, capture new preferences
+2. **October 2026** — quarterly git re-scan for new pr
 **Owner**: may
 **Priority**: P2
 **Workflow**: master-worker
-**Iteration**: 7
+**Iteration**: 8
 
 ## Goal
 Learn Hao's thinking, preferences, values, and purpose from our conversation history. Build a living model of what Hao wants so the system makes fewer decisions he has to override.
@@ -77,3 +82,4 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 - 2026-04-30: Phase 3 complete. Gate in context, script working, baseline measured (~1%). Only 1 Hao session in 90 days — data-starved. Dropped to P1 maintenance.
 - 2026-07-02: Git signal analysis completed — extracted P6-P10, updated scorecard. Phase 5 started.
 - 2026-07-02: P6-P10 propagated to all agent contexts (may, coach, tech-lead, optimizer). Phase 5 complete. Project → maintenance.
+- 2026-07-02: All active work complete. Status → waiting. No worker dispatch needed until next Hao interaction or quarterly git re-scan (Oct 2026).

@@ -119,3 +119,14 @@ This project is infrastructure-complete and in maintenance mode. The only remain
 ### Iteration 7 — 2026-04-30T05:24:51.782Z
 **Worker**: 
 **Orchestrator**: The project directory is gitignored. This was noted in earlier iterations.
+
+### Iteration 8 — 2026-04-30T05:25:52.868Z
+**Worker**: 
+**Orchestrator**: WAITING
+
+This project is **done** until external triggers arrive:
+1. **Next Hao interaction** — validate P6-P10 accuracy, capture new preferences
+2. **October 2026** — quarterly git re-scan for new preference signals
+
+No worker dispatch needed. The project has:
+- ✅ P1-P10 preferences documented and 
