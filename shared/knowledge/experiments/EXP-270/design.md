@@ -1,7 +1,7 @@
 # EXP-270: Structured Taint Tokens for Auditor Handoff
 
 **Hypothesis**: H-206 (Auditor findings are ignored 60% of the time because handoff is unstructured)
-**Status**: DESIGNED
+**Status**: READY-TO-RUN (prompts defined 2028-01-05)
 **Date**: 2028-01-04
 **Inspired by**: DD#881 (arXiv:2604.22879) — Semantic Taint Token protocol for cross-agent policy enforcement
 
