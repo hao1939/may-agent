@@ -69,3 +69,15 @@
 **Orchestrator**: CONTINUE
 
 (a) Next iteration should produce: Verify the cron scheduler is actually running and will trigger the coach heartbeat workflow. If it won't fire naturally soon, manually trigger one enforced heartbeat to validate the mechanism works end-to-end. Deliver to `agents/shared/projects/coach-qual
+
+### Iteration 10 — 2026-04-30T07:09:44.239Z
+**Worker**: Now I have all the data I need. The key findings:
+
+1. The coach-heartbeat workflow IS properly registered in cron.json (30min interval, offset 180s)
+2. The workflow IS a proper 2-phase design (plan prompt → execute prompt)
+3. The most recent coach session (s_1777532455353_647) was a **worker** session for THIS project, not a real heartbeat
+4. The GOAL/PLAN/DONE WHEN strings in the session are from the context.md/workflow code being read, not from the coach actually outputting them
+5. No evidence
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should produce: M13 verification — check whether the cron scheduler is actually running and firing `heartbeat.trigger` events. Look at OTHER agents' recent heartbeat sessions as proof the scheduler works. If other agents have recent heartbeats but coach doesn't, the issu
