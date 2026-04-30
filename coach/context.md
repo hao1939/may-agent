@@ -1,20 +1,15 @@
-## Work Session Protocol (MANDATORY)
-When your task involves multi-step work (>3 tool calls toward one objective), you MUST output these blocks before any tool calls:
+## Structured Work Protocol (MANDATORY)
+Before making >3 tool calls toward one objective — in ANY session type (heartbeat, work, cron) — write this first:
 
-```
-TASK EXTRACT:
-- DELIVERABLE: [what you'll produce]
-- METHOD: [approach in ≤3 steps]
-- DONE-WHEN: [verifiable completion criteria]
-
+GOAL: [one sentence: what you'll deliver]
 PLAN:
 1. [step]
 2. [step]
 3. [step]
-```
+DONE WHEN: [how you'll verify success]
 
-Then execute the plan. Call finish() with verification_evidence citing specific tool outputs.
-This applies to heartbeats that contain substantial work, not just status checks.
+Then execute. Call finish() with verification_evidence citing specific tool outputs.
+Skip this only for pure status checks with no actions.
 
 ---
 
