@@ -35,16 +35,47 @@ export type {
 // ── Database ──────────────────────────────────────────────────────────
 export type { SqliteDb } from "../../src/lib/db.js";
 
-// ── Manager ───────────────────────────────────────────────────────────
-export type { SubagentManager } from "../../src/lib/manager.js";
+// ── Manager (inline — src/lib/manager.ts no longer on disk) ──────────
+export interface SubagentManager {
+  callAgent(agent: string, task: string, opts?: Record<string, unknown>): Promise<{
+    sessionId: string;
+    status?: string;
+    lastAssistantText?: string;
+    messages?: unknown[];
+    [key: string]: unknown;
+  }>;
+  [key: string]: unknown;
+}
 
-// ── Persistence ───────────────────────────────────────────────────────
-export type {
-  PersistedSession,
-} from "../../src/lib/persistence.js";
+// ── Persistence (inline — src/lib/persistence.ts no longer on disk) ──
+export interface PersistedSession {
+  sessionId: string;
+  agent: string;
+  status: string;
+  parentSessionId?: string;
+  task?: string;
+  startedAt?: number;
+  endedAt?: number;
+  [key: string]: unknown;
+}
 
-// ── Workflow types (in-memory, used by workflow-tool) ──────────────────
-export type { WorkflowRun, WorkflowStep } from "../../src/lib/workflow-tool.js";
+// ── Workflow types (inline — src/lib/workflow-tool.ts no longer on disk)
+export interface WorkflowStep {
+  sessionId: string;
+  agent: string;
+  status: string;
+}
+export interface WorkflowRun {
+  runId: string;
+  workflow: string;
+  task: string;
+  parentSessionId?: string;
+  startedAt: number;
+  endedAt?: number;
+  status: string;
+  steps: WorkflowStep[];
+  error?: string;
+}
 
 // ── Workflow ──────────────────────────────────────────────────────────
 export type {
