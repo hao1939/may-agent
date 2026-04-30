@@ -63,6 +63,18 @@ ${projects || "No active projects."}
 ## Your Role & Guidance
 ${guidance}`;
 
+  // ── FAST PATH: No-op detection (LLM-to-JS optimization) ──────────────
+  // When there's nothing actionable (no red metrics, no alerts, no inbox,
+  // no active projects), skip both LLM phases entirely. This eliminates
+  // ~50% of coach heartbeat LLM calls that just produce "no action needed".
+  const hasAlerts = !!alerts;
+  const hasInbox = !!inbox;
+  const hasProjects = !!projects;
+  if (!hasRedMetrics && !hasAlerts && !hasInbox && !hasProjects) {
+    ctx.emit({ type: "noop_fast_path", agent });
+    return ctx.done("Coach heartbeat: no action needed (fast-path — no red metrics, no alerts, no inbox, no projects).");
+  }
+
   // ── PHASE 1: TRIAGE & PLAN (short LLM session) ──
   ctx.emit({ type: "step_start", step: "plan" });
 
