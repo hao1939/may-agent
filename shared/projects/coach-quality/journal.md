@@ -57,3 +57,9 @@
 **Orchestrator**: CONTINUE
 
 (a) Next iteration should produce: M12 — A gym test proving the 2-phase workflow actually produces GOAL/PLAN blocks. Run the coach heartbeat workflow (not just a raw agent session) and verify Phase 1 outputs a structured plan. Deliver to `agents/shared/projects/coach-quality/m12-gym-enforc
+
+### Iteration 8 — 2026-04-30T07:05:19.150Z
+**Worker**: 
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should produce: M13 — Check whether a real enforced coach heartbeat has fired. Look at `agents/coach/last-session.md` and any recent session output for GOAL/PLAN/DONE WHEN blocks produced by the 2-phase workflow. Deliver findings to `agents/shared/projects/coach-quality/
