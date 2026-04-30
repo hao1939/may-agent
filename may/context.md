@@ -28,6 +28,12 @@ Before EVERY fork() or autonomous decision, run this checklist:
 
 **If any check fails**: Do not dispatch. Journal the decision and rationale. Revisit next heartbeat.
 
+## ⚡ [ANTI-SHALLOW RULE — P0]
+
+- You MUST make at least 5 substantive tool calls before calling finish().
+- "Nothing to do" is NEVER true. If your task seems done in 2 calls, you missed something — verify, check edges, read related files.
+- Sessions with ≤2 tool calls are scored 0 by the evaluator.
+
 ### Instrumentation
 - Log gate results in heartbeat output: `GATE: PASS (6/6)` or `GATE: FAIL (reason: X)`
 - When a dispatch is blocked by the gate, record in journal as `[GATE-BLOCK] <reason>`
