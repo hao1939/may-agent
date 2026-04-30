@@ -1,6 +1,13 @@
 # Coach Todo
 
-## P1: EXP-280 — Verify-After-Edit Enforcement (NEW Jul 31)
+## P1: EXP-285 — PATH_HALLUCINATION Guard Effectiveness (NEW Aug 1)
+- **Problem**: PATH_HALLUCINATION #1 convention failure (tech-lead 22/7d). Text coaching dead (EXP-251).
+- **Finding**: Guard exists as `block` type but only fires in workflow sessions. Bash SIG already blocks in direct sessions.
+- **Status**: Phase 1 DONE — guard audited. Need to measure whether SIG is actually reducing violations or just recovering them.
+- **Design**: `agents/coach/workspace/EXP-285-path-hallucination-guard-design.md`
+- **Next**: Get fresh evaluation data to see if PATH_HALLUCINATION rate has decreased since SIG deployment
+
+## P1: EXP-280 — Verify-After-Edit Enforcement (CLOSED Aug 1) — NEGATIVE
 - **Problem**: verify-after-edit at 9% compliance system-wide, 502 failures/7d. Text coaching dead (KE-338).
 - **Treatment**: Deploy hard-rule gate skill + heartbeat enforcement to bob (highest violation count)
 - **Status**: DEPLOYMENT REQUESTED — notified may to deploy skill + heartbeat changes (coach lacks write access)
