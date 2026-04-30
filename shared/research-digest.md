@@ -7,7 +7,26 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #18) — ClawGym Agent Training Framework + Multimodal Agent Architecture
+## Latest (2026-04-30 Heartbeat #19) — Flexible Skill Arrangement + Disagreement-Guided Routing
+
+> **主题**：生产级skill编排的瓶颈是"看什么"不是"想什么" + 用不一致性信号做策略路由
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Bian Que** | arXiv 2604.26805 (快手) | Skill = (data_needs, knowledge_needs, action)；双路径自演化（case→knowledge + skill refinement）；快手搜索告警减75% | **Skill应声明context需求**；编排>推理；自演化要双通道并行 |
+| **Disagreement-Guided Routing** | arXiv 2604.26644 | 用输出不一致性做实例级策略路由：一致→直接用，适度分歧→投票，强分歧→重写 | **免费难度信号**；multi-agent成本优化；不确定性门控的实践 |
+
+### 行动建议
+1. **为每个skill定义data_needs/knowledge_needs**：让harness精确检索，避免context稀释
+2. **双通道自演化**：错误case同时(a)沉淀到knowledge (b)精炼skill定义——并行不串行
+3. **引入disagreement路由**：agent多次采样看一致性，据此决定是直接执行、投票还是升级策略
+4. **统一范式先行**：先定义canonical task patterns，再编排skill——Bian Que的3模式思路
+
+---
+
+## Previous (2026-04-30 Heartbeat #18) — ClawGym Agent Training Framework + Multimodal Agent Architecture
 
 > **主题**：Claw-style agent的全生命周期训练框架 + 多模态agent的原生设计原则
 
