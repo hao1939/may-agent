@@ -26,3 +26,6 @@
 ### Iteration 1 — 2026-04-30T06:45:51.293Z
 **Worker**: Now I have enough data. Let me write the audit report.
 **Orchestrator**: The daily digest was already committed. Let me just finish.
+
+### Iteration 2 — 2026-04-30T06:50:53.955Z
+**Worker**: Also write to the project-specific path:
