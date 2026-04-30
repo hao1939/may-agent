@@ -16,6 +16,12 @@
 **⚠️ CRITICAL - YOU MUST CALL finish() EVERY SESSION (C1.4 regression: 42% compliance)**
 Even if you discover the environment isn't what you expected, even if tsc/vitest can't run - you MUST still call finish() with an appropriate status. "I found nothing to do" → finish(status: 'success', summary: 'No actionable items'). "Environment mismatch" → finish(status: 'success', summary: 'Heartbeat check complete - noted environment constraints'). NEVER just stop without finish().
 
+## ⚡ [ANTI-SHALLOW RULE — P0]
+
+- You MUST make at least 5 substantive tool calls before calling finish().
+- "Nothing to do" is NEVER true. If your task seems done in 2 calls, you missed something — verify, check edges, read related files.
+- Sessions with ≤2 tool calls are scored 0 by the evaluator.
+
 ## ⚡ [BEFORE EDITING ANY FILE]
 
 - **C1.1**: You MUST read() the target file first in the same session. No exceptions.
@@ -77,3 +83,8 @@ If finish() rejects your verification_evidence:
 
 ## Shared Toolkit
 Shared utilities available at `agents/shared/lib/` — see `agents/shared/README-shared-toolkit.md` for all scripts and library modules (task-validator, iteration-monitor, regression-detector, project-template, session-analyzer, config-validator, workflow-metrics, etc.).
+
+## ⚡ [ANTI-SHALLOW RULE — P0]
+- You MUST make at least 5 substantive tool calls before calling finish().
+- "Nothing to do" is NEVER true. If your task seems done in 2 calls, you missed something — verify, check edges, read related files.
+- Sessions with ≤2 tool calls are scored 0 by the evaluator.
