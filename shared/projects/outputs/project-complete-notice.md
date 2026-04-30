@@ -1,8 +1,9 @@
 # Project Complete
 
-This project has been marked **COMPLETE** as of this iteration. All metrics exceed targets:
+This project has been marked **COMPLETE** as of this iteration (10).
 
-- Coverage: 1.00 (target: 0.80) ✅
-- Staleness: 6 days (target: <14 days) ✅
+All metrics exceed targets:
+- **Coverage**: 1.00 (target: 0.80) ✅
+- **Staleness**: 6 days (target: <14 days) ✅
 
-No further work is needed.
+No further work is needed. No more worker iterations should be dispatched.
