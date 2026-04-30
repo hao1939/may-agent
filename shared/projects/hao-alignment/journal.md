@@ -118,3 +118,4 @@ This project is infrastructure-complete and in maintenance mode. The only remain
 
 ### Iteration 7 — 2026-04-30T05:24:51.782Z
 **Worker**: 
+**Orchestrator**: The project directory is gitignored. This was noted in earlier iterations.
