@@ -1,12 +1,6 @@
-# Evaluator heartbeat — 2026-04-29
+# Evaluator heartbeat journal
 
-## Checks
-- DB (canonical): evaluations MAX(createdAt)=2026-04-29T23:02:04Z; evaluations_count=539; sessions_count=1333.
-- Legacy artifacts: `.state/evaluations/` newest mtime observed = 2026-03-24.
-
-## Interpretation
-- Session evaluation pipeline is **live** (DB fresh).
-- `.state/evaluations/` staleness is consistent with **output-path drift / legacy artifact sink**, not a stopped eval job.
-
-## Follow-ups
-- None required this cycle (no red metrics; no pending events).
+## 2026-04-30
+- Checked evaluation pipeline liveness via DB: `evaluations.max(createdAt)=2026-04-30 01:13:53 UTC` (fresh) with 811 evals over 1699 sessions.
+- Confirmed `.state/evaluations/` task_tree artifacts are stale (last mtime 2026-03-24) while DB is fresh → indicates legacy output-path drift, not pipeline failure.
+- Next: consider updating criteria/docs to explicitly de-emphasize `.state/evaluations/` artifacts as a primary health signal.
