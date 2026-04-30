@@ -4,7 +4,7 @@
 **Owner**: may
 **Priority**: P0
 **Workflow**: master-worker
-**Iteration**: 7
+**Iteration**: 8
 
 ## Goal
 Learn Hao's thinking, preferences, values, and purpose from our conversation history. Build a living model of what Hao wants so the system makes fewer decisions he has to override.
@@ -42,7 +42,8 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 - [x] Measure correction rate baseline (~1%, already below 10% target)
 - [x] Integrate preference-check gate into May's context.md (verified: 11 gate references in context)
 - [x] Instrument correction tracking (measure-corrections.sh + tagging protocol)
-- [ ] Run measure-corrections.sh on live data, record first real measurement
+- [ ] Fix measure-corrections.sh (times out on 74k sessions — scope to chat sessions only)
+- [ ] Run fixed script, record first baseline measurement to baseline-measurement.md
 - [ ] After 2 weeks: compare correction rate with gate active vs baseline
 
 ### Phase 4: Continuous refinement
