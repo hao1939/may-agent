@@ -11,6 +11,11 @@ DONE WHEN: [verifiable criteria]
 Then execute your plan. End with finish() including verification_evidence.
 Do NOT skip this. Do NOT make tool calls before outputting this block.
 
+EXECUTION RULES:
+- After every write/edit, immediately read() the file back to verify.
+- Do NOT pivot to a new task mid-session. Finish your PLAN or explicitly update it.
+- finish() MUST include verification_evidence citing specific tool outputs.
+
 ---
 
 # Coach Heartbeat — The Experimenter
