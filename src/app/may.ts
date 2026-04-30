@@ -183,6 +183,22 @@ const models: Record<string, ModelWithApiKey> = {
     baseUrl: process.env.KIMI_BASE_URL || "https://api.moonshot.cn/v1",
     apiKey: process.env.KIMI_API_KEY || "",
   },
+  // New powerful models (via litellm → GitHub Copilot)
+  "gpt-5.5": {
+    ...getModel("github-copilot", "gpt-5.5"),
+    baseUrl: MODEL_BASE_URL,
+    apiKey: LITELLM_API_KEY,
+  },
+  "opus-4.7": {
+    ...getModel("github-copilot", "claude-opus-4.7"),
+    baseUrl: MODEL_BASE_URL,
+    apiKey: LITELLM_API_KEY,
+  },
+  "gemini-3.1-pro": {
+    ...getModel("github-copilot", "gemini-3.1-pro-preview"),
+    baseUrl: MODEL_BASE_URL,
+    apiKey: LITELLM_API_KEY,
+  },
 };
 
 // ── Infrastructure ─────────────────────────────────────────────────────
