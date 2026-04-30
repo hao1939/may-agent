@@ -196,10 +196,14 @@ export async function runMasterWorker(config: MasterWorkerConfig): Promise<RunRe
     }
 
     // Check stop condition
-    if (ctx && shouldStop(response)) {
-      result.stopped = true;
-      result.stopReason = "worker-signaled-stop";
-      break;
+    if (ctx) {
+      const snapshot = buildIterationSnapshot(ctx, i, maxIterations);
+      const stopCheck = shouldStop(snapshot);
+      if (stopCheck.stop) {
+        result.stopped = true;
+        result.stopReason = "worker-signaled-stop";
+        break;
+      }
     }
 
     // Flush caches between iterations
