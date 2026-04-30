@@ -40,3 +40,6 @@
 
 ### Iteration 3 — 2026-04-30T06:53:16.796Z
 **Worker**: The journal.md is already staged. Let me commit it:
+
+### Iteration 4 — 2026-04-30T06:55:16.650Z
+**Worker**: Both audit files exist with proper content. The task also mentions M5 (context.md injection) — I confirmed the scaffold IS already at the top of `agents/coach/context.md`.
