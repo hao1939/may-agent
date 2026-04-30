@@ -1,7 +1,9 @@
-# Deliverables Checklist — Iteration 31
+# Deliverables Checklist
 
-## Task: Add shared toolkit reference to all agent context.md files
+## Task: Create barrel-exports validation test
 
-| # | Deliverable | Status | Path/Evidence |
-|---|------------|--------|---------------|
-| 1 | Add shared toolkit reference to all agent context.md files | DONE | 14 files updated: /app/agents/{amy-kimi,amy,architect,bob,coach,coder,evaluator,judge,master,may,optimizer,qa,scout,tech-lead}/context.md |
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | Barrel exports test file in vitest-discoverable location | DONE | `agents/shared/tests/lib/barrel-exports.test.ts` |
+| 2 | Test validates all 9 expected exports are defined functions | DONE | Same file - checks validateWriteFirst, createTaskTemplate, recordIteration, getMetrics, generateProject, getWorkflowMetrics, analyzeIterations, validateProjectConfig, detectRegressions |
+| 3 | Tests pass | DONE | 3 tests passed via `npx vitest run barrel` |
