@@ -461,24 +461,37 @@ ${journalContent.slice(-3000)}
         const consecutive = (ctx as any)._consecutiveZeroOutput;
         ctx.log(`[work] ⚠️ WARNING: Iteration ${iteration} produced NO output files (${consecutive}/${MAX_ZERO_OUTPUT} consecutive)`);
         appendFileSync(journalFile, `\n### Iteration ${iteration} — ${new Date().toISOString()}\n**⚠️ No output files produced (${consecutive} consecutive failures)**\n`, "utf-8");
-        // V2 GUARDRAIL: Auto-retry once with escalated prompt before proceeding to review
+        // V2+V3 GUARDRAIL: Auto-retry with worker-retry module (exponential backoff)
         if (consecutive <= MAX_ZERO_OUTPUT && !(ctx as any)[`_retried_${iteration}`]) {
           (ctx as any)[`_retried_${iteration}`] = true;
-          ctx.log(`[work] 🔄 RETRY: Re-prompting worker with escalated write-first constraint`);
+          ctx.log(`[work] 🔄 RETRY: Re-prompting worker via withWorkerRetry (exponential backoff)`);
           const retryPrompt = `🚨 YOUR PREVIOUS ATTEMPT PRODUCED 0 FILES. This is iteration ${iteration} retry.\n\nYour FIRST tool call MUST be write(). Do NOT use read() or bash() first. Do NOT claim files already exist.\n\nOriginal task:\n${guidance}`;
-          await withRetry(() => worker.prompt(retryPrompt), {
-            maxRetries: 3,
-            baseDelayMs: 1000,
-            onRetry: (err, attempt, delay) => ctx.log(`[work] ⚠️ Provider error on retry prompt, retry ${attempt} after ${delay}ms: ${String(err).slice(0, 80)}`),
-          });
-          const retrySnap = snapshotOutputs(outputsDir);
-          const retryChanged = diffSnapshots(afterSnap, retrySnap);
-          if (retryChanged.length > 0) {
+          const retryResult = await withWorkerRetry(
+            async () => {
+              await withRetry(() => worker.prompt(retryPrompt), {
+                maxRetries: 3,
+                baseDelayMs: 1000,
+                onRetry: (err, attempt, delay) => ctx.log(`[work] ⚠️ Provider error on retry prompt, retry ${attempt} after ${delay}ms: ${String(err).slice(0, 80)}`),
+              });
+              const retrySnap = snapshotOutputs(outputsDir);
+              const retryChanged = diffSnapshots(afterSnap, retrySnap);
+              if (retryChanged.length === 0) {
+                throw new Error("no output: worker produced 0 files on retry");
+              }
+              return retryChanged;
+            },
+            {
+              maxRetries: 1,
+              baseDelayMs: 2000,
+              onRetry: (err, attempt, delay) => ctx.log(`[work] 🔄 Worker retry attempt ${attempt} after ${delay}ms: ${String(err).slice(0, 80)}`),
+            },
+          );
+          if (retryResult.success && retryResult.result) {
             (ctx as any)._consecutiveZeroOutput = 0;
-            ctx.log(`[work] ✅ Retry succeeded: ${retryChanged.length} file(s): ${retryChanged.map(f => f.split('/').pop()).join(', ')}`);
-            changedFiles.push(...retryChanged);
+            ctx.log(`[work] ✅ Retry succeeded (${retryResult.attempts} attempt(s)): ${retryResult.result.length} file(s): ${retryResult.result.map(f => f.split('/').pop()).join(', ')}`);
+            changedFiles.push(...retryResult.result);
           } else {
-            ctx.log(`[work] ❌ Retry also produced 0 files`);
+            ctx.log(`[work] ❌ Retry failed after ${retryResult.attempts} attempt(s): ${retryResult.errors.join('; ')}`);
           }
         }
         if (consecutive >= MAX_ZERO_OUTPUT) {

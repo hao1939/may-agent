@@ -1,150 +1,119 @@
 /**
- * Integration test: provider-retry wired into master-worker.ts
- * Verifies that transient provider errors (503) trigger retries with backoff.
+ * Tests that master-worker.ts correctly imports and uses worker-retry.ts
+ * for iteration-level retry with exponential backoff.
  */
-import { describe, it, expect, vi } from "vitest";
-import { withRetry, classifyError, isRetryableError } from "../workflows/provider-retry.ts";
+import { describe, it, expect } from "vitest";
+import { withWorkerRetry, isWorkerRetryable, calculateDelay } from "../workflows/worker-retry.ts";
 
 describe("master-worker retry integration", () => {
-  it("retries on 503 server error and eventually succeeds", async () => {
-    let callCount = 0;
-    const mockPrompt = async () => {
-      callCount++;
-      if (callCount <= 2) {
-        const err: any = new Error("Service Unavailable");
-        err.status = 503;
-        throw err;
-      }
-      return "Worker completed successfully";
-    };
-
-    const result = await withRetry(mockPrompt, {
-      maxRetries: 3,
-      baseDelayMs: 10, // fast for tests
-      onRetry: (err, attempt, delay) => {
-        // Simulates ctx.log in master-worker
-      },
-    });
-
+  it("withWorkerRetry succeeds on first attempt when fn succeeds", async () => {
+    const result = await withWorkerRetry(async () => "ok");
     expect(result.success).toBe(true);
-    expect(result.value).toBe("Worker completed successfully");
-    expect(result.attempts).toBe(3); // 2 failures + 1 success
+    expect(result.result).toBe("ok");
+    expect(result.attempts).toBe(1);
+    expect(result.errors).toHaveLength(0);
   });
 
-  it("retries on 429 rate limit", async () => {
-    let callCount = 0;
-    const mockPrompt = async () => {
-      callCount++;
-      if (callCount === 1) {
-        const err: any = new Error("Rate limited");
-        err.status = 429;
-        throw err;
-      }
-      return "OK";
-    };
-
-    const result = await withRetry(mockPrompt, {
-      maxRetries: 3,
-      baseDelayMs: 10,
-    });
-
+  it("withWorkerRetry retries once and succeeds on second attempt", async () => {
+    let calls = 0;
+    const result = await withWorkerRetry(async () => {
+      calls++;
+      if (calls === 1) throw new Error("no output: worker produced 0 files on retry");
+      return ["file1.md"];
+    }, { maxRetries: 1, baseDelayMs: 10 });
     expect(result.success).toBe(true);
+    expect(result.result).toEqual(["file1.md"]);
     expect(result.attempts).toBe(2);
+    expect(result.errors).toHaveLength(1);
   });
 
-  it("does NOT retry on 401 auth error", async () => {
-    const mockPrompt = async () => {
-      const err: any = new Error("Unauthorized");
-      err.status = 401;
-      throw err;
-    };
-
-    const result = await withRetry(mockPrompt, {
-      maxRetries: 3,
-      baseDelayMs: 10,
-    });
-
+  it("withWorkerRetry gives up after maxRetries exhausted", async () => {
+    const result = await withWorkerRetry(async () => {
+      throw new Error("no output: zero files");
+    }, { maxRetries: 1, baseDelayMs: 10 });
     expect(result.success).toBe(false);
-    expect(result.attempts).toBe(1); // no retries
+    expect(result.attempts).toBe(2);
+    expect(result.errors).toHaveLength(2);
   });
 
-  it("does NOT retry on 400 bad request", async () => {
-    const mockPrompt = async () => {
-      const err: any = new Error("Bad Request");
-      err.status = 400;
-      throw err;
-    };
-
-    const result = await withRetry(mockPrompt, {
-      maxRetries: 3,
-      baseDelayMs: 10,
-    });
-
+  it("withWorkerRetry does not retry non-retryable errors", async () => {
+    const result = await withWorkerRetry(async () => {
+      throw new Error("authentication failed");
+    }, { maxRetries: 2, baseDelayMs: 10 });
     expect(result.success).toBe(false);
     expect(result.attempts).toBe(1);
   });
 
-  it("retries on timeout errors", async () => {
-    let callCount = 0;
-    const mockPrompt = async () => {
-      callCount++;
-      if (callCount === 1) {
-        throw new Error("Request timeout after 30000ms");
-      }
-      return "Completed";
-    };
-
-    const result = await withRetry(mockPrompt, {
-      maxRetries: 3,
-      baseDelayMs: 10,
-    });
-
-    expect(result.success).toBe(true);
-    expect(result.attempts).toBe(2);
+  it("isWorkerRetryable returns true for 'no output' errors", () => {
+    expect(isWorkerRetryable(new Error("no output: worker produced 0 files on retry"))).toBe(true);
+    expect(isWorkerRetryable(new Error("zero output from worker"))).toBe(true);
   });
 
-  it("exhausts all retries and returns failure", async () => {
-    const mockPrompt = async () => {
-      const err: any = new Error("Server Error");
-      err.status = 500;
-      throw err;
-    };
-
-    const result = await withRetry(mockPrompt, {
-      maxRetries: 3,
-      baseDelayMs: 10,
-    });
-
-    expect(result.success).toBe(false);
-    expect(result.attempts).toBe(4); // 1 initial + 3 retries
+  it("isWorkerRetryable returns false for auth errors", () => {
+    expect(isWorkerRetryable(new Error("authentication failed"))).toBe(false);
+    expect(isWorkerRetryable(new Error("permission denied"))).toBe(false);
   });
 
-  it("onRetry callback is called with correct params", async () => {
-    const retries: { attempt: number; delay: number }[] = [];
-    let callCount = 0;
+  it("isWorkerRetryable returns true for timeout errors", () => {
+    expect(isWorkerRetryable(new Error("request timeout"))).toBe(true);
+    expect(isWorkerRetryable(new Error("ECONNRESET"))).toBe(true);
+  });
 
-    const mockPrompt = async () => {
-      callCount++;
-      if (callCount <= 2) {
-        const err: any = new Error("Server Error");
-        err.status = 500;
-        throw err;
-      }
-      return "done";
-    };
+  it("calculateDelay applies exponential backoff", () => {
+    const d1 = calculateDelay(1, 1000, 2, 30000);
+    const d2 = calculateDelay(2, 1000, 2, 30000);
+    const d3 = calculateDelay(3, 1000, 2, 30000);
+    // With ±10% jitter: attempt 1 ≈ 1000, attempt 2 ≈ 2000, attempt 3 ≈ 4000
+    expect(d1).toBeGreaterThan(800);
+    expect(d1).toBeLessThan(1200);
+    expect(d2).toBeGreaterThan(1600);
+    expect(d2).toBeLessThan(2400);
+    expect(d3).toBeGreaterThan(3200);
+    expect(d3).toBeLessThan(4800);
+  });
 
-    await withRetry(mockPrompt, {
-      maxRetries: 3,
+  it("calculateDelay respects maxDelayMs cap", () => {
+    const d = calculateDelay(10, 1000, 2, 5000);
+    // Should be capped at 5000 ± 10% jitter
+    expect(d).toBeLessThanOrEqual(5500);
+    expect(d).toBeGreaterThanOrEqual(4500);
+  });
+
+  it("withWorkerRetry calls onRetry callback", async () => {
+    const retryCalls: number[] = [];
+    let calls = 0;
+    await withWorkerRetry(async () => {
+      calls++;
+      if (calls === 1) throw new Error("timeout");
+      return "ok";
+    }, {
+      maxRetries: 1,
       baseDelayMs: 10,
-      onRetry: (err, attempt, delay) => {
-        retries.push({ attempt, delay });
-      },
+      onRetry: (_err, attempt) => retryCalls.push(attempt),
     });
+    expect(retryCalls).toEqual([1]);
+  });
 
-    expect(retries).toHaveLength(2);
-    expect(retries[0].attempt).toBe(1);
-    expect(retries[0].delay).toBeGreaterThanOrEqual(10);
-    expect(retries[1].attempt).toBe(2);
-    expect(retries[1].delay).toBeGreaterThanOrEqual(20); // exponential backoff
+  it("withWorkerRetry tracks totalDelayMs", async () => {
+    const result = await withWorkerRetry(async () => {
+      throw new Error("fail");
+    }, { maxRetries: 1, baseDelayMs: 50 });
+    expect(result.totalDelayMs).toBeGreaterThan(0);
+  });
+
+  it("master-worker.ts imports worker-retry module", async () => {
+    // Verify the import exists by reading the file
+    const fs = await import("node:fs");
+    const content = fs.readFileSync("/app/agents/shared/workflows/master-worker.ts", "utf-8");
+    expect(content).toContain('import { withWorkerRetry, isWorkerRetryable } from "./worker-retry.ts"');
+    expect(content).toContain("withWorkerRetry(");
+  });
+
+  it("master-worker.ts uses withWorkerRetry in zero-output retry block", async () => {
+    const fs = await import("node:fs");
+    const content = fs.readFileSync("/app/agents/shared/workflows/master-worker.ts", "utf-8");
+    // The retry block should use withWorkerRetry, not just withRetry
+    expect(content).toContain("const retryResult = await withWorkerRetry(");
+    expect(content).toContain("retryResult.success");
   });
 });
