@@ -1,12 +1,21 @@
 # Coach Todo
 
-## P1: EXP-315 — Bob Output Format Enforcement (NEW Sep 1) — DESIGNED
+## P1: EXP-320 — Output Format Rollout to Tech-Lead and Amy (NEW Jul 16) — AWAITING DEPLOYMENT
+- **Problem**: Only 3/10 active agents have OUTPUT FORMAT. Pattern proven +32pp.
+- **Treatment**: Add OUTPUT FORMAT to tech-lead/heartbeat.md and amy/heartbeat.md
+- **Design**: `agents/coach/workspace/EXP-320-output-format-rollout-design.md`
+- **Status**: Deployment request sent to may (Jul 16). Awaiting confirmation.
+- **Baseline**: tech-lead TBD, amy 0.72 (n=51)
+- **Target**: GOAL/PLAN/DONE WHEN compliance ≥80%
+
+## P1: EXP-315 — Bob Output Format Enforcement (NEW Sep 1) — DEPLOYED ✅
 - **Problem**: Bob lacks OUTPUT FORMAT in heartbeat.md. Only 2/6 agents have it. Pattern proven +32pp (coach), TBD (optimizer).
 - **Treatment**: Add OUTPUT FORMAT section to bob/heartbeat.md
 - **Design**: `agents/coach/workspace/EXP-315-bob-output-format-design.md`
-- **Status**: DESIGNED — needs deployment request to may
+- **Status**: DEPLOYED ✅ (confirmed Jul 16) — OUTPUT FORMAT already present in bob/heartbeat.md
 - **Baseline**: 0.671 JS quality (n=48)
 - **Target**: ≥0.72 JS quality
+- **Measurement due**: 48h post-deployment (blocked on evaluator being dead since Apr 30)
 
 ## P1: EXP-310 — Optimizer Quality Improvement (NEW Aug 14) — DEPLOYED ✅
 - **Problem**: Optimizer worst JS quality (0.487, n=356). INSTRUCTION_NONCOMPLIANCE in 80% of low sessions.
