@@ -69,3 +69,22 @@ Phase 2: Design 2-3 gym scenarios testing CFV patterns (contradictory coaching, 
 
 ## Progress
 - **Phase 1 COMPLETE** (2027-08-28): See `EXP-251-phase1-cfv-audit.md`. Identified 3 CFV-vulnerable chains, classified architecture as DD#886 Config 7 (moderate on both dimensions). Key finding: zero structured constraint metadata flows between agents currently.
+- **New Evidence** (2028-03-20): Two papers strengthen H-210's foundation:
+  - **arXiv:2604.23374 (NeuroTaint)**: First LLM-agent-specific taint tracking. Validates semantic taint over string-match. Their causal-influence tracking maps directly to our STT design. Key implication: Phase 2 scenarios should test *semantic transformation* of taint (agent rephrases info but harm propagates).
+  - **arXiv:2604.26561 (Preserving Disagreement)**: Architectural heterogeneity reduces artificial consensus by ~24pp. Implication for H-210: selective transparency should preserve agent *disagreement* — full sharing risks convergence on shared context, reducing diversity of judgment. This adds a third dimension to test: isolation vs selective vs full sharing on *decision diversity*.
+  - **arXiv:2604.05969 (MCPSHIELD)**: No single defense covers >34% of threat landscape. Validates selective transparency as one layer, not a complete solution. Their formal LTS model could structure our taint propagation rules.
+
+## Phase 2 Design Update (2028-03-20)
+
+Based on new evidence, Phase 2 scenarios should test THREE dimensions:
+1. **CFV Detection** (original): Does taint metadata help agents detect collectively-harmful actions?
+2. **Attack Surface** (original): Does metadata sharing create new exploitation vectors?
+3. **Decision Diversity** (NEW from 2604.26561): Does sharing reduce useful disagreement between agents?
+
+### Proposed Scenarios:
+- **Scenario A**: Contradictory coaching chain — coach gives conflicting advice to two agents about same file. With STTs, second agent sees "prior coaching constraint exists." Test: does it ask for clarification vs blindly overwriting?
+- **Scenario B**: Taint semantic transformation — agent A receives sensitive data, summarizes it (semantic change), passes summary to agent B. Test: does STT survive the transformation? (NeuroTaint's key finding: string-match fails here)
+- **Scenario C**: Diversity preservation — 3 agents evaluate same hypothesis. Full-sharing → convergence; selective metadata → preserved disagreement while still detecting CFVs.
+
+### Next Action
+Design and implement Scenario A as first gym scenario (lowest complexity, directly tests core mechanism).
