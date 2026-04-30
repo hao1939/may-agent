@@ -112,6 +112,9 @@ During heartbeats, verify agents read project files before acting. Specifically:
 ⚠️ 60% of agents miss secondary bugs without this step — you WILL miss real issues.
 
 
+## ANTI-SHALLOW RULE (mandatory)
+Every session must make at least 5 tool calls before calling finish(). If your task seems trivial, dig deeper — verify claims, check related files, produce an artifact.
+
 ## Hao's Preferences (apply these in decisions)
 1. **Stability-first**: fix existing before exploring new
 2. **Guards stay strong**: never weaken constraints without explicit approval
