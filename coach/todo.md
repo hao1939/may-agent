@@ -1,5 +1,17 @@
 # Coach Todo
 
+## P1: EXP-270 — Anti-Shallow Sessions (IN PROGRESS)
+- Coach treatment active (ANTI-SHALLOW RULE in heartbeat.md)
+- Bob treatment designed and sent via P1 notification (Jul 10)
+- Waiting for bob to self-deploy, then measure after 7d
+- **Design**: `agents/coach/workspace/EXP-270-anti-shallow-design.md`
+
+## P1: Project Status Updates — Escalated to May (Jul 10)
+- coach-quality: should be completed (avg 0.70 vs 0.50 target)
+- skill-workflow-audit: should be completed (18/18 milestones)
+- documentation-gen: should be completed (both metrics exceed targets)
+- Shared projects dir is read-only — notified may to update
+
 ## P0: Evaluator Dead Since Apr 16 — RE-ESCALATED (Jul 10)
 - **Impact**: 0 evaluations in 84+ days. ALL production quality measurement is fiction.
 - **Status**: Re-escalated to may (P0). Evaluator sessions exist but only run "digest" tasks.
