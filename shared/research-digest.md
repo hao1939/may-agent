@@ -7,7 +7,26 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #33) — Disagreement as Routing Signal; Live RL from Real-World; Consensus Bias in MAS
+## Latest (2026-04-30 Heartbeat #34) — Semantic Exploration at Decoding; Claw Agent Training Framework; Speculative Decoding for RL
+
+> **主题**：test-time语义多样性生成；个人agent全生命周期训练框架；RL训练中的推测解码加速
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **ESamp (Latent Distilling)** | arXiv:2604.24927 | 轻量Latent Distiller在线预测LLM隐层表示，预测误差=新颖性信号，引导采样走向语义未探索方向。98.8% vLLM吞吐量 | **多样性≠温度调高**：agent多次采样时，用novelty signal主动引导语义多样性，避免表面不同但语义相同的重复推理 |
+| **ClawGym** | arXiv:2604.26904 | Claw-style个人agent全生命周期框架：persona×skill合成13.5K训练任务，mock workspace+hybrid verification，SFT+RL训练 | **可复制的agent训练范式**：persona-driven intent生成+skill-grounded ops+sandbox并行RL，可参考构建我们自己的agent训练数据 |
+| **Speculative Decoding for RL** | arXiv:2604.26779 (NVIDIA) | 推测解码作为RL rollout的无损加速原语，1.8x吞吐提升(8B同步)，预测异步RL下235B可达2.5x | **RL训练的工程瓶颈可解**：如果我们未来做agent RL微调，speculative decoding是现成的加速路径 |
+
+### 行动建议
+1. **语义多样性采样**：在agent需要多方案探索时（如代码生成、方案设计），引入novelty-guided sampling而非简单temperature/top-p
+2. **训练数据合成参考**：ClawGym的persona×skill矩阵+mock workspace模式，可用于生成我们agent的SFT数据
+3. **tLLM工具**：开源的tLLM (github.com/LinesHogan/tllm) 提供vLLM residual stream访问，可用于自定义test-time intervention
+
+---
+
+## Previous (2026-04-30 Heartbeat #33) — Disagreement as Routing Signal; Live RL from Real-World; Consensus Bias in MAS
 
 > **主题**：disagreement信号驱动计算分配；真实世界事件作为agent RL环境；多agent系统的人工共识陷阱
 
