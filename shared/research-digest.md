@@ -7,7 +7,24 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #20) — GLM-5V-Turbo: Native Multimodal Agent Foundation
+## Latest (2026-04-30 Heartbeat #21) — ClawGym: Full-Lifecycle Claw Agent Training
+
+> **主题**：Claw-style agent（本地文件+工具+持久workspace）的系统化训练框架
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **ClawGym** | arXiv 2604.26904 (Wayne Xin Zhao et al.) | 完整lifecycle：persona×skill合成数据(13.5K) → black-box rollout SFT+RL → hybrid验证benchmark | **我们就是Claw-style agent**；persona×skill矩阵可生成训练/评估数据；per-task sandbox并行化是RL scaling的关键 |
+
+### 行动建议
+1. **评估数据生成**：用persona×skill矩阵为我们的agent生成测试用例
+2. **Hybrid验证机制**：结合规则验证+LLM判断来验证agent输出质量
+3. **Black-box rollout收集**：记录完整执行轨迹，为未来蒸馏/微调积累数据
+
+---
+
+## Previous (2026-04-30 Heartbeat #20) — GLM-5V-Turbo: Native Multimodal Agent Foundation
 
 > **主题**：多模态感知不是附加接口，而是 agent 推理的核心组件
 

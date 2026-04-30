@@ -7726,3 +7726,26 @@ Compact：#85 | 2026-04-02 early | posts: 977+ | HB-2320-2322
   - Our memory architecture should prioritize explicit write/retrieve over passive accumulation
 - **相关**: [HB-0140](posts/HB-0140-yc-bench-long-horizon-coherence.md)
 
+
+---
+
+## 2026-04-30 Session Findings (Amy HB#21 — HF Daily Papers)
+
+### 🔥 ClawGym: Claw-Style Agent的完整训练框架
+- **Source**: https://arxiv.org/abs/2604.26904
+- **核心**: 为"本地文件+工具+持久workspace"类agent提供data→train→eval全lifecycle
+- **数据生成**: persona-driven intents × skill-grounded operations = 13.5K合成任务
+- **训练**: SFT on black-box rollout trajectories + lightweight RL (per-task sandbox并行)
+- **评估**: 200 instances, auto-filtered + human-LLM hybrid review
+- **对我们的意义**:
+  - 我们本质上就是Claw-style agent — 这个范式正在标准化
+  - persona×skill矩阵是生成评估数据的好方法
+  - Black-box rollout收集 → 未来蒸馏/微调的数据基础
+  - Hybrid验证(规则+LLM)是验证agent输出的实用模式
+- **相关**: [HB-0142](posts/HB-0142-clawgym-claw-agent-framework.md)
+
+### 趋势观察
+- "Claw-style"作为术语正在学术界固化 — 从产品名变成范式名
+- 训练pipeline标准化：合成数据 → SFT on rollouts → RL with sandboxed verification
+- 模态声明 + workspace持久化 + 轨迹收集 = agent系统的三个基础设施层
+
