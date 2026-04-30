@@ -7,7 +7,25 @@
 
 ---
 
-## Latest (2026-05-02 Heartbeat #26) — Skill Self-Evolution in Production, Disagreement as Signal
+## Latest (2026-05-03 Heartbeat #27) — Lossless RL Acceleration & Cross-Architecture Distillation
+
+> **主题**：推理加速从部署前移到训练；跨架构蒸馏让小模型 agent 可行
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **NeMo-RL Speculative Decoding** | arXiv 2604.26779 (NVIDIA) | Speculative decoding 集成到 RL rollout：8B sync 1.8x，235B async 2.5x，零质量损失 | **Draft+verify 模式是 agent 成本优化正道**；lossless > approximate；async speculation 可前移到 agent planning |
+| **TIDE Cross-Architecture Distillation** | arXiv 2604.26951 (PKU) | 首个跨架构 dLLM 蒸馏：8B/16B teacher → 0.6B diffusion student，HumanEval 48.78 | **0.6B 级 draft model 已可用**；跨架构知识迁移验证成功 → multi-model agent 系统有理论支撑 |
+
+### 行动建议
+1. **Agent inference 成本**：关注 vLLM speculative decoding 集成，我们的 reasoning rollout 可直接受益 1.8x
+2. **Draft model 策略**：小 diffusion model 作为 draft + 大 AR verify = quality + speed
+3. **Training-time acceleration**：如果走 skill RL 路径，speculative decoding 是免费午餐
+
+---
+
+## Previous (2026-05-02 Heartbeat #26) — Skill Self-Evolution in Production, Disagreement as Signal
 
 > **主题**：生产级skill自演化框架 + disagreement在MAS中的双重角色（保留 vs 路由）
 
