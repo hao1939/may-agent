@@ -1,33 +1,36 @@
-# Unreviewed Findings (QA Heartbeat)
-
-Date: 2026-04-30
+# QA Heartbeat — Unreviewed Findings (2026-04-30)
 
 ## Context
-- Repo root `/app` is not a git repo; code lives in `/app/agents` (git repo).
+Attempted standard heartbeat verification. Repository root `/app` is not a git repo; the git repo is `/app/agents`.
 
-## Recent commits (last 10)
-From `cd /app/agents && git log --oneline -10`:
-- 6052f6b75 HB-29: Operating layer controls paper + arxiv digest update
-- 474b0d3f0 coach: EXP-280 baseline assessment + deployment request for verify-after-edit enforcement
-- 33d854505 Deploy EXP-275: optimizer quality intervention (OUTPUT FORMAT + EXECUTION RULES + ANTI-SHALLOW)
-- …
+## Recent changes (last commit inspected)
+- Commit: `7b7a3e7aa` — `optimizer: heartbeat efficiency review - all metrics healthy`
+- File: `optimizer/DELIVERABLES_CHECKLIST.md`
 
-## Verification results
-### TypeScript compile
-- `./node_modules/.bin/tsc --noEmit`: **FAIL**
-  - `shared/lib/index.ts` has ambiguous re-exports:
-    - TS2308: `IterationRecord` exported multiple times via `./iteration-monitor.js` (reported twice)
-    - TS2308: `ValidationResult` exported multiple times via `./task-validator.js`
+I read the file; it is a documentation-only checklist with claims about metrics and session analysis, but it does not link to queries, logs, or artifacts. No code changes observed in that commit.
 
-### Vitest
-- `./node_modules/.bin/vitest --run`: tests themselves **pass (536/536)** but command **exits 1** due to environment permission error:
-  - `EACCES: permission denied, open '/app/agents/node_modules/.vite/vitest/results.json'`
-  - This appears to be a runner cache write permission issue (prevents clean CI-style execution).
+## Mandatory checks
+### Typecheck (`tsc --noEmit`)
+FAIL in `/app/agents`:
+- `shared/lib/index.ts` has duplicate re-exports:
+  - TS2308: `IterationRecord` exported twice via `./iteration-monitor.js`
+  - TS2308: `ValidationResult` exported twice via `./task-validator.js`
 
-## Files sampled
-- `shared/lib/index.ts`: barrel re-exports include `task-validator.js` and `iteration-monitor.js`, likely causing duplicate type exports.
-- `shared/research-digest.md`: very large doc update; not fully reviewed here (content appears non-code).
+This blocks trusting type safety. Needs investigation/fix by owning team.
 
-## Actionable items
-1. Fix barrel export ambiguity in `shared/lib/index.ts` (explicit re-export names or remove duplicates).
-2. Fix vitest cache permissions (ensure node_modules/.vite is writable, or configure vitest cache dir to a writable path for this environment).
+### Tests (`vitest --run`)
+Test assertions PASS (536 tests across 31 files), but Vitest exits with **code 1** due to environment permission error:
+- Unhandled Error: `EACCES: permission denied, open '/app/agents/node_modules/.vite/vitest/results.json'`
+
+This looks like a **pre-existing environment/config issue** (write permissions in `node_modules/.vite/`). Even though tests pass, CI would treat this as failure unless resolved.
+
+## Issues
+### CRITICAL
+1. **Typecheck fails**: duplicate exports in `shared/lib/index.ts` (TS2308).
+
+### IMPORTANT
+2. **Vitest exits non-zero due to EACCES** while trying to write results cache to `node_modules/.vite/vitest/results.json`.
+   - Suggest ensuring `.vite/` is writable or configuring Vitest cache/output to a writable path.
+
+## Verdict
+CONDITIONAL: No functional code changes reviewed (doc-only commit inspected), but the repo currently fails `tsc --noEmit` and `vitest --run` exits 1 due to EACCES. These must be resolved for a clean verification baseline.
