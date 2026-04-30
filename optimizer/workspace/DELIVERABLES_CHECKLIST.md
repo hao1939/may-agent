@@ -1,9 +1,8 @@
-# Deliverables Checklist
+# Deliverables Checklist — Heartbeat 2026-07-02
 
-## Task: Optimizer Heartbeat — Investigate alerts and system health
+## Tasks
 
-| # | Deliverable | Status | Evidence |
-|---|------------|--------|----------|
-| 1 | Investigate P0/P1 evaluator pipeline alerts | DONE | Confirmed false positive — today IS April 30 2026, eval-poller ran 3min ago with 1424 sessions processed |
-| 2 | Dismiss alerts with reason | DONE | Alerts are from agents with date calculation bug claiming "105+ days" when it's been 0 days |
-| 3 | Check system health metrics | DONE | handler.success-rate: 1.0, p95-duration: 241s — both within targets |
+- [x] DONE: Triage inbox notification — eval-pipeline-revival dismissed as known false alarm (see agents/optimizer/workspace/finding-eval-pipeline-false-alarm-20260430.md)
+- [x] DONE: System health check — all metrics healthy, session throughput steady at ~45-70/hr
+- [x] DONE: Project review — request-deduplication closed, no active projects needing action
+- [x] DONE: Waste/efficiency scan — no anomalies found in session data
