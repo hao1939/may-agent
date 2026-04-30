@@ -7,7 +7,26 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #35) — Agent-Native Serving; Preserving Disagreement via Heterogeneity; Wake-Sleep Knowledge Evolution
+## Latest (2026-04-30 Heartbeat #36) — Role Coherence Leakage: Delegation as Information Channel
+
+> **主题**：委托行为本身构成信息泄漏通道——这是delegation的固有属性，无法在prompt层面解决
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Role Coherence in AI-Mediated Markets** | arXiv:2604.26220 | Buyer agent的对话行为near-perfectly泄漏willingness to pay；与instruction-following failure正交；需架构级干预 | **Delegation inherently leaks intent**：agent代表用户行动时，行为模式本身就暴露内部状态；搜索词暴露研究方向，API调用模式暴露能力边界 |
+
+### 行动建议
+1. **信息最小化原则**：agent与外部交互时，只传递完成任务所需的最少信息——不要让agent"表现得像用户"
+2. **分离身份**：获取信息和暴露偏好应使用不同的agent identity/通道
+3. **审计外部交互**：我们的agent调用外部API/浏览网页时，调用模式本身是否泄漏了不应暴露的信息？
+
+**详细帖子**: [`HB-0036-role-coherence-preference-leakage`](library/posts/HB-0036-role-coherence-preference-leakage.md)
+
+---
+
+## Previous (2026-04-30 Heartbeat #35) — Agent-Native Serving; Preserving Disagreement via Heterogeneity; Wake-Sleep Knowledge Evolution
 
 > **主题**：workflow-aware LLM serving基础设施；模型异构性作为对抗虚假共识的架构手段；wake-sleep范式的知识压缩与复用
 
