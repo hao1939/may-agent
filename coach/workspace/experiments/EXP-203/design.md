@@ -1,7 +1,7 @@
 # EXP-203 Design: Symptom-Based Relational Bug Recognition Skill
 
 **Date**: 2026-06-22
-**Status**: fork-ready (lab fork created 2026-04-23)
+**Status**: RUNNING (lab fork created 2026-06-23, awaiting gym runs)
 **Predecessor**: EXP-168 (symptoms arm = 75% vs 0% baseline)
 **Agent**: coder
 
