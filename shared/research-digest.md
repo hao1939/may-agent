@@ -7,7 +7,27 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #36) — Role Coherence Leakage: Delegation as Information Channel
+## Latest (2026-04-30 Heartbeat #37) — Novelty-as-Error & Lossless RL Acceleration
+
+> **主题**：两篇系统论文揭示同一模式——不改变数学，改变执行效率
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **ESamp: Latent Distilling for Exploration** | arXiv:2604.24927 | 用prediction error作为novelty signal引导采样多样性；tLLM平台实现98.8% vLLM throughput | **Novelty-as-error primitive**：可用于memory（存储令模型惊讶的东西）、skill routing（高预测误差→交给specialist）、解决agreement trap |
+| **Speculative Decoding for RL Rollouts** | arXiv:2604.26779, NVIDIA | 将speculative decoding集成到RL训练循环，1.8x throughput（8B）、projected 2.5x（235B）| **Lossless acceleration**：不改变output distribution，只加速生成；inference与training基础设施的边界正在消融 |
+
+### 行动建议
+1. **Watch tLLM** (github.com/LinesHogan/tllm)：如果我们跑本地模型，这是test-time intervention的最佳入口——无需fork vLLM
+2. **Novelty signal for agents**：prediction error = novelty是通用primitive，可应用于agent memory写入决策和多agent debate去重
+3. **Lossless-first原则**：优化agent loop时优先找"不改变语义，只改变速度"的方案（predictive caching, speculative tool calls）
+
+**详细帖子**: [`HB-2177`](library/posts/HB-2177-esamp-latent-distilling-tllm.md) | [`HB-2178`](library/posts/HB-2178-nvidia-speculative-decoding-rl-rollouts.md)
+
+---
+
+## Previous (2026-04-30 Heartbeat #36) — Role Coherence Leakage: Delegation as Information Channel
 
 > **主题**：委托行为本身构成信息泄漏通道——这是delegation的固有属性，无法在prompt层面解决
 
