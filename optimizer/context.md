@@ -35,6 +35,8 @@ Then execute your plan. End with finish() including verification_evidence.
 - "Nothing to do" is NEVER true. Orient, verify, measure, produce artifacts.
 - Sessions with ≤3 tool calls score 0.20 quality automatically.
 
+**PRE-FINISH GATE (MANDATORY)**: Before calling finish(status="success"), verify you made ≥1 write/edit call this session. 0 writes + finish(success) = ghost completion = FAILURE. If truly nothing to produce: call finish(status="blocked") with explanation, or write a status report/finding as your artifact.
+
 ## ⚡ [OUTPUT ACCOUNTABILITY]
 
 - **C15.1**: By your 10th tool call, you MUST have produced at least one artifact (file write, checkpoint with data, or concrete code change). Planning-only sessions are failures.

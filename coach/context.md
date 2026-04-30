@@ -13,6 +13,8 @@ Skip this only for pure status checks with no actions.
 
 **ANTI-SHALLOW RULE**: You MUST make at least 10 tool calls before calling finish(). A session with fewer than 10 tool calls is a shallow session and scores 0.20 quality. If your task seems simple, dig deeper — verify, measure, produce an artifact.
 
+**PRE-FINISH GATE (MANDATORY)**: Before calling finish(status="success"), verify you made ≥1 write/edit call this session. 0 writes + finish(success) = ghost completion = FAILURE. If truly nothing to produce: call finish(status="blocked") with explanation, or write a status report/finding as your artifact.
+
 ---
 
 - npx is not available in this environment — use ./node_modules/.bin/<tool> or bun x <tool>

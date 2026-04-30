@@ -32,8 +32,8 @@
 - **Design**: `agents/coach/workspace/EXP-305-session-state-confusion-design.md`
 - **Predecessor**: EXP-296 (bounded damage), EXP-300 (awareness guard)
 - **Target**: ≥70% reduction in ghost completions
-- **Status**: DESIGNED — ready for deployment
-- **Next**: Deploy pre-finish gate text to optimizer + coach context.md, measure baseline first
+- **Status**: DEPLOYED ✅ (Aug 14) — pre-finish gate in coach + optimizer context.md
+- **Next**: Measure after 48h (T+48h = Aug 16)
 
 ## P1: EXP-285 — PATH_HALLUCINATION Guard Effectiveness (NEW Aug 1)
 - **Problem**: PATH_HALLUCINATION #1 convention failure (tech-lead 22/7d). Text coaching dead (EXP-251).
