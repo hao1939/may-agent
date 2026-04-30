@@ -7,7 +7,26 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #34) — Semantic Exploration at Decoding; Claw Agent Training Framework; Speculative Decoding for RL
+## Latest (2026-04-30 Heartbeat #35) — Agent-Native Serving; Preserving Disagreement via Heterogeneity; Wake-Sleep Knowledge Evolution
+
+> **主题**：workflow-aware LLM serving基础设施；模型异构性作为对抗虚假共识的架构手段；wake-sleep范式的知识压缩与复用
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **Pythia: Agent-Native Serving** | arXiv:2604.25899 | 在serving层捕获multi-agent workflow拓扑，利用结构化可预测性优化prefix cache、资源调度、auto-scaling | **workflow-aware serving是下一个基础设施层**：我们的agent调用链是固定拓扑，prefix cache命中率直接影响成本和延迟 |
+| **Preserving Disagreement** | arXiv:2604.26561 | 架构异构性（不同模型给不同视角）显著降低多agent虚假共识；发现fidelity-diversity tradeoff | **异构性是认知多样性的来源**：同模型多agent讨论=自言自语；质量加权可能反而放大共识。延续HB#33 consensus bias线索 |
+| **DreamProver** | arXiv:2604.26311 | Wake-sleep范式：wake=用知识+发现新知识，sleep=抽象压缩知识库 → 演化可迁移引理库 | **我们的知识管理就是wake-sleep**：research-digest积累=wake，insights归纳=sleep。压缩和抽象化是关键 |
+
+### 行动建议
+1. **模型异构性实验**：在需要多视角分析的场景，考虑给不同agent分配不同模型（而非同一模型不同prompt）
+2. **知识库压缩**：定期对insights做sleep-style压缩 — 不只是追加新发现，还要抽象、合并、精简旧发现
+3. **Serving层关注**：如果未来自建或选择serving方案，优先考虑workflow-aware的系统
+
+---
+
+## Previous (2026-04-30 Heartbeat #34) — Semantic Exploration at Decoding; Claw Agent Training Framework; Speculative Decoding for RL
 
 > **主题**：test-time语义多样性生成；个人agent全生命周期训练框架；RL训练中的推测解码加速
 
