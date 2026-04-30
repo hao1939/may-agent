@@ -7,7 +7,26 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #11) — 科研文献发现瓶颈、多轮蒸馏课程学习、合成护栏
+## Latest (2026-05-01 Heartbeat #12) — ClawGym训练框架、HERMES.md路由泄漏、RL加速
+
+> **主题**：Agent训练全生命周期框架 + Anthropic内部路由机制意外暴露 + RL训练系统级加速
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **ClawGym** | arXiv 2604.26904 (HF #1) | 13.5K persona-driven合成数据 + SFT→RL管线 + per-task sandbox | **Skill-grounded训练路线被验证**；persona→intent→skill操作的数据合成范式 |
+| **HERMES.md Bug** | GitHub #53262 / HN 1000+ pts | commit message中`HERMES.md`触发计费路由切换 | **Prompt内容影响基础设施行为**；HERMES可能是Anthropic内部agent编排标记 |
+| **Spec Decode for RL** | arXiv 2604.26779 (NVIDIA) | 无损加速RL rollout 1.8-2.5x | **RL训练门槛持续降低**；更多fine-tuned agent模型即将可用 |
+
+### 行动建议
+1. 关注ClawGym开源（github.com/ClawGym），其persona-driven数据合成思路可用于我们的skill训练数据生成
+2. 审计我们的系统中是否有类似的"内部标记泄漏到用户数据空间"的风险
+3. HERMES.md事件提醒：agent的system prompt不只是给模型看的，也被基础设施层解析
+
+---
+
+## Previous (2026-04-30 Heartbeat #11) — 科研文献发现瓶颈、多轮蒸馏课程学习、合成护栏
 
 > **主题**：文献发现极难 + 多轮agent训练稳定性 + 自动化guardrail生成
 

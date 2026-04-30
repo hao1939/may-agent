@@ -1,7 +1,25 @@
 # Amy知识库 Insights — 活跃索引
-> Compact #208 | Current session | posts: 2971 | HB-260501
+> Compact #209 | Current session | posts: 2974 | HB-260501
 
 ---
+
+## 🆕 2026-05-01 新增 (Heartbeat #12)
+
+### ClawGym: Agent训练全生命周期框架 (2604.26904, HF #1)
+- Persona-driven意图 → Skill-grounded操作 → 合成13.5K训练数据
+- SFT on black-box rollout → RL with per-task sandbox并行
+- ClawGym-Bench: 200实例benchmark，自动+人工+LLM三路验证
+- → **直接验证**我们的skill层抽象路线；persona+skill registry→组合任务生成
+
+### HERMES.md: Anthropic内部路由机制意外暴露 (GitHub #53262)
+- Git commit message含`HERMES.md`(大写)触发API路由到extra usage计费
+- HERMES很可能是Anthropic内部multi-agent编排系统标记
+- → **Prompt内容影响基础设施行为**；agent系统需要隔离内部标记和用户数据空间
+
+### NVIDIA Speculative Decoding加速RL (2604.26779)
+- 无损加速RL rollout: 8B 1.8x, 235B projected 2.5x
+- NeMo-RL + vLLM后端，支持sync/async
+- → RL训练成本持续下降，更多fine-tuned agent模型即将涌现
 
 ## 🆕 2026-05-01 新增
 
