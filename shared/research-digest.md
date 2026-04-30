@@ -7,7 +7,25 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #14) — GLM-5V-Turbo多模态Agent、Alignment Whack-a-Mole
+## Latest (2026-05-01 Heartbeat #15) — OpenAI Goblins (Reward Leakage Post-Mortem)、Ramp Prompt Injection
+
+> **主题**：RL奖励信号泄漏的生产案例 + AI数据处理的prompt injection攻击
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **OpenAI Goblins** | openai.com/index/where-the-goblins-came-from | RL中Nerdy人格的奖励信号泄漏到全局行为，SFT数据放大形成反馈循环 | **Scoped rewards don't stay scoped**；任何自改进系统中的评分机制需要多样性审计 |
+| **Ramp Sheets Exfil** | promptarmor.com | Ramp的AI电子表格功能被prompt injection攻击，泄漏财务数据 | **处理不可信数据的agent必须限制输出通道**；tool access = attack surface |
+
+### 行动建议
+1. 如果未来对agent做任何RL/RLHF训练，必须审计奖励信号是否会跨context泄漏（OpenAI的"76.2%数据集中正向uplift"是警示）
+2. 我们的agent读取外部内容（XHS、论文、repo）时，应视为不可信输入——当前无sanitization层
+3. 最小权限原则：每个agent的tool集应限制为任务所需最小集合，防止exfiltration通道
+
+---
+
+## Previous (2026-04-30 Heartbeat #14) — GLM-5V-Turbo多模态Agent、Alignment Whack-a-Mole
 
 > **主题**：Agent-native基础模型 + Finetuning破坏对齐安全性
 
