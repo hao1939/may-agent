@@ -9,7 +9,8 @@
 - **Project**: verify-after-edit-enforcement
 - **Baseline**: <20% estimated (system-wide 9%, bob 120 failures — highest)
 - **Target**: ≥50% compliance (from <20%)
-- **Blocked on**: may deploying changes to bob's skill + heartbeat files
+- **Status**: DEPLOYED ✅ — confirmed 2026-04-30. Measurement due ~2026-05-02.
+- **Measurement plan**: `agents/coach/workspace/EXP-280-phase3-measurement-plan.md`
 
 ## P1: EXP-275 — Optimizer Anti-Shallow + Verification (NEW Jul 30)
 - **Problem**: Optimizer worst LLM quality (0.384, n=17). Issues: UNVERIFIED_CLAIMS, LAZY, VERIFICATION_FAILURE.

@@ -1,7 +1,7 @@
 # EXP-280: Verify-After-Edit Enforcement — Baseline & Deployment Log
 
 **Date**: 2026-07-31
-**Status**: PHASE 2 REQUESTED — awaiting may deployment, then 48h measurement
+**Status**: PHASE 2 COMPLETE — deployment confirmed on bob, 48h measurement window started 2026-04-30
 **Agent**: bob (treatment), others (control)
 
 ## Phase 1: Baseline Assessment

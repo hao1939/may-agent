@@ -34,6 +34,6 @@ The problem this project was designed to solve is already solved:
 
 ## Decision (2026-04-30)
 
-**CLOSING PROJECT.** EXP-275 proved the true unverified-edit rate is 2.9% (4/137 sessions). EXP-280's hypothesis (compliance <20%) is based on outdated read()-only measurement. The problem is solved. No enforcement needed.
+**REVISED.** EXP-275 showed 97% compliance counting bash verification, but EXP-280 tests whether forcing explicit read() after every edit improves quality scores. Treatment deployed to bob. Measuring until 2026-05-02.
 
-**Status**: completed (already-solved)
+**Status**: active (EXP-280 in measurement phase)
