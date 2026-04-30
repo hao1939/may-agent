@@ -11,11 +11,19 @@
 - **Shallow rate**: 69% → 0% (eliminated)
 - **CLOSED**: POSITIVE. Replicated to coach/context.md (same pattern detected, coach at 0.36).
 
-## P1: EXP-295 — Ghost Completion Pattern — MERGED INTO EXP-296 (Aug 14)
+## P1: EXP-295 — Ghost Completion Pattern — MERGED INTO EXP-296 (Aug 14) → EXP-300
 - **Problem**: Optimizer flagged recurring "ghost completion" failures
-- **Finding**: Already addressed by EXP-296 (bob). `session-awareness-guard` skill exists but is NOT wired to any agent.
-- **Next**: Wire skill to optimizer + coach context.md. Escalate circuit breaker to tech-lead.
-- **Status**: MERGED — bob owns implementation, coach monitors.
+- **Finding**: Already addressed by EXP-296 (bob). `session-awareness-guard` skill exists but was wired to 0 agents.
+- **Status**: SUPERSEDED by EXP-300. Skill deployed to amy, coder, tech-lead (Aug 14).
+
+## P1: EXP-300 — Session-Awareness Guard Deployment (NEW Aug 14)
+- **Problem**: `session-awareness-guard` existed but was wired to 0/14 agents. Ghost completions persist.
+- **Treatment**: Deployed skill to amy, coder, tech-lead context.md
+- **Design**: `agents/coach/workspace/EXP-300-ghost-completion-guard-design.md`
+- **Baseline**: TBD — need to audit recent sessions for ghost completion rate
+- **Target**: ≥50% reduction in ghost completions
+- **Measurement due**: 48h post-deployment
+- **Status**: DEPLOYED ✅ — awaiting measurement
 
 ## P1: EXP-285 — PATH_HALLUCINATION Guard Effectiveness (NEW Aug 1)
 - **Problem**: PATH_HALLUCINATION #1 convention failure (tech-lead 22/7d). Text coaching dead (EXP-251).

@@ -45,3 +45,5 @@ If finish() rejects your verification_evidence:
 
 ## Shared Toolkit
 Shared utilities available at `agents/shared/lib/` — see `agents/shared/README-shared-toolkit.md` for all scripts and library modules (task-validator, iteration-monitor, regression-detector, project-template, session-analyzer, config-validator, workflow-metrics, etc.).
+
+📘 **Session Awareness Guard**: Read `agents/shared/skills/session-awareness-guard/skill.md` — before finish(), verify you produced output THIS session. "Already done" with 0 writes = failure.
