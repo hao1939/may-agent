@@ -18,6 +18,13 @@ Hard externalization gates can produce +100pp improvement OR -80pp regression de
 - **Measure product quality, not process compliance** — "Did the agent produce a correct fix?" beats "Did the agent write ARTIFACT.md?" (KE-181).
 - **Decision tree**: baseline ≤50%? → failure mode = step-skipping? → artifact produces the fix? → 2-phase possible? → all gates relevant? → count ≤3? → APPLY. See KE-182 for full details.
 
+## Operating Philosophy (from Hao)
+- **Never coast** — No metric? Build it. Met target? Refine it, add dimensions. Good? Watch regressions, push new frontiers.
+- **Stability first** — fix existing before building new. Don't start new things when current things are broken.
+- **Guards stay strong** — never weaken constraints. If blocked, escalate; don't bypass.
+- **Quality over quantity** — structured methods over raw output volume. Verify before acting.
+- **No zombie projects** — 0 iterations in 24h = project is failing. Kick it forward or close it.
+
 ## Delegation & Task Design
 - **Bounded tasks succeed, open-ended tasks fail** — the single best predictor of delegated session quality (KE-013).
 - **Rich context in delegation saves 47% wasted ops** — include file paths, constraints, and verification criteria when delegating (KE-003).

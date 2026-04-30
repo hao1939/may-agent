@@ -100,3 +100,4 @@ When making autonomous decisions, check:
 | Jun ~29 | Projects stalling at targets | Keep pushing: refine metrics, try new approaches, watch regressions | Never stop at "target met" |
 | Jun ~29 | May suggested patching event system | "Let the infra do its job" | Don't work around system layers |
 | Jun ~29 | Projects iteration rate low | Continuous forward motion expected | 1 iteration/24h is unacceptable |
+| Jul ~2 | System coasting with met targets | No metric? Build it. Met? Refine it. Good? Add more dimensions. Always push. | System must never coast — continuous improvement is mandatory |
