@@ -101,3 +101,4 @@ This project is **infrastructure-complete and data-starved**. All deliverables e
 
 ### Iteration 5 — 2026-04-30T05:21:50.134Z
 **Worker**: 
+**Orchestrator**: The project files are gitignored. This is expected (noted in earlier iterations).
