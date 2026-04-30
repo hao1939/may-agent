@@ -1,15 +1,10 @@
 # Project: Hao Alignment
 
-**Status**: waiting
-**Stop Reason**: No new Hao interaction data available. Git commits are all agent-authored — indirect signal approach via git is not viable.
-
-This project is **infrastructure-complete and data-starved**. All deliverables exist and work:
-- ✅ `preferences.md` — living preference model
-- ✅ `preference-check-gate.md` — decision gate (i
+**Status**: active
 **Owner**: may
 **Priority**: P2
 **Workflow**: master-worker
-**Iteration**: 8
+**Iteration**: 3
 
 ## Goal
 Learn Hao's thinking, preferences, values, and purpose from our conversation history. Build a living model of what Hao wants so the system makes fewer decisions he has to override.
@@ -56,11 +51,16 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 - [ ] Re-scan recent sessions monthly for new preference signals
 - [ ] Track metric trend (re-measure monthly)
 
+### Phase 5: Propagate P6-P10 into agent contexts
+- [x] Extract git-signal preferences (P6-P10) — `git-signal-analysis.md`
+- [x] Update preferences.md scorecard with P6-P10 weights
+- [ ] Propagate P6-P10 summaries into agent context files (may, coach, tech-lead, optimizer)
+- [ ] Re-run measure-corrections.sh to get fresh measurement
+
 ### Re-plan checkpoint
-- Only 1 direct Hao interaction session exists in last 90 days — insufficient data for statistical measurement
-- Infrastructure is complete: gate active, script working, preferences documented
-- **Next value**: Extract preferences from indirect signals (Hao's commits, config changes, system design choices) rather than waiting for chat sessions
-- Priority should drop to P1 — this is now maintenance/opportunistic
+- Git signal analysis was viable — extracted 5 new preferences (P6-P10)
+- Scorecard updated, but agent contexts only minimally reference new preferences
+- **Next**: Propagate into agent contexts, then return to maintenance/monitoring mode
 
 ## Known Preferences (seed)
 - Separation of concerns: don't patch around systems, let infra do its job
@@ -73,4 +73,4 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 - 2026-04-29: Project created from conversation with Hao
 - 2026-06-30: Phase 3 started — encoded "never stop at target met" + continuous-push into may/context.md and shared/common-sense.md
 - 2026-04-30: Phase 3 complete. Gate in context, script working, baseline measured (~1%). Only 1 Hao session in 90 days — data-starved. Dropped to P1 maintenance.
-- 2026-07-01: All infrastructure complete. Status → waiting, Priority → P2. No active work needed until new Hao interactions provide fresh data.
+- 2026-07-02: Git signal analysis completed — extracted P6-P10, updated scorecard. Phase 5 started.

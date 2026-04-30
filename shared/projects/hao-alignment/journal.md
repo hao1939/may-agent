@@ -82,3 +82,11 @@ This project is **infrastructure-complete and data-starved**. All deliverables e
 
 ### Iteration 2 — 2026-04-30T05:14:37.447Z
 **Worker**: Now I have a rich picture. Let me write the git-signal analysis report:
+
+### Iteration 3 — 2026-04-30T05:18:17.899Z
+**Worker**: Now write the output report:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should **propagate P6-P10 preference summaries into agent context files**. The key agents are `may`, `coach`, `tech-lead`, and `optimizer`. Currently only P1-P5 are in context files.
+
+(b) The git-signal analysis worked — we have 5 new preferences extracted and scored. No
