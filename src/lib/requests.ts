@@ -334,11 +334,17 @@ export function getDb(persistDir: string): SqliteDb {
   const dbPath = join(persistDir, "may.db");
   let db = openDatabase(dbPath);
 
-  // Auto-restore from backup if DB is empty/corrupt
+  // Auto-restore from backup if DB is empty or corrupt
   try {
     const backupPath = dbPath + ".backup";
-    const tables = db.prepare("SELECT COUNT(*) as c FROM sqlite_master WHERE type='table'").get() as any;
-    if (tables?.c === 0) {
+    let needsRestore = false;
+    try {
+      const check = db.prepare("PRAGMA integrity_check(1)").get() as any;
+      if (check?.integrity_check !== "ok") needsRestore = true;
+      const tables = db.prepare("SELECT COUNT(*) as c FROM sqlite_master WHERE type='table'").get() as any;
+      if (tables?.c === 0) needsRestore = true;
+    } catch { needsRestore = true; }
+    if (needsRestore) {
       // DB is empty — check for backup
       const { existsSync, copyFileSync } = require("node:fs");
       if (existsSync(backupPath)) {
