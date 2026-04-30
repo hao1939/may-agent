@@ -1,5 +1,9 @@
 # Deliverables Checklist
 
-- [x] DONE — Project status confirmed as "done" in project.md. All metrics exceeded targets. No further work needed.
-  - Path: `/app/agents/shared/projects/system-efficiency/project.md`
-  - Status field: "done"
+## Task: Assess project and decide what to do next
+
+| Deliverable | Status | Path/Notes |
+|---|---|---|
+| Project assessment | DONE | Project is complete — all metrics exceeded targets |
+| Decision for next iteration | DONE | Decision: no further iterations needed, project is done |
+| project.md update | DONE | Status already "done" from prior iterations |
