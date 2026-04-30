@@ -114,3 +114,7 @@ The enforcement (M14) is deployed — the OUTPUT FORMAT block is the first thing
 
 ### Iteration 1 — 2026-04-30T07:48:07.687Z
 **Worker**: This is very revealing. Now let me write the diagnosis report.
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should produce two things:
+1. **M17 diagnosis file** at `agents/shared/projects/coach-quality/m17-score-diagnosis.md` — the worker failed to write this last time. It should contain: the 0.448 score, the fact that 257 evals are mostly pre-enforcement, and the top failure 
