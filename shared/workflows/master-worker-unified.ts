@@ -160,8 +160,12 @@ export async function runMasterWorker(config: MasterWorkerConfig): Promise<RunRe
     // Build context string
     let contextStr: string;
     if (ctx) {
-      const snapshot = buildIterationSnapshot(ctx, i, maxIterations);
-      contextStr = formatOrchestratorContext(snapshot);
+      const snapshot = buildIterationSnapshot(ctx, i);
+      if (snapshot) {
+        contextStr = formatOrchestratorContext(snapshot);
+      } else {
+        contextStr = `iteration ${i}/${maxIterations}`;
+      }
     } else {
       contextStr = `iteration ${i}/${maxIterations}`;
     }
@@ -197,12 +201,14 @@ export async function runMasterWorker(config: MasterWorkerConfig): Promise<RunRe
 
     // Check stop condition
     if (ctx) {
-      const snapshot = buildIterationSnapshot(ctx, i, maxIterations);
-      const stopCheck = shouldStop(snapshot);
-      if (stopCheck.stop) {
-        result.stopped = true;
-        result.stopReason = "worker-signaled-stop";
-        break;
+      const snapshot = buildIterationSnapshot(ctx, i);
+      if (snapshot) {
+        const stopCheck = shouldStop(snapshot);
+        if (stopCheck.stop) {
+          result.stopped = true;
+          result.stopReason = "worker-signaled-stop";
+          break;
+        }
       }
     }
 

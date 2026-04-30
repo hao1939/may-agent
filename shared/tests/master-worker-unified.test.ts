@@ -219,7 +219,7 @@ describe("master-worker-unified", () => {
   describe("stop signal detection", () => {
     it("stops when project status becomes done via cache path", async () => {
       // Write a project with "done" status so shouldStop triggers
-      writeFileSync(join(tmpDir, "project.md"), "# Test\n\nStatus: done\n\nFinished.");
+      writeFileSync(join(tmpDir, "project.md"), "# Test\n\n**Status**: done\n\nFinished.");
       const dispatch = vi.fn().mockResolvedValue("all done");
       const result = await runMasterWorker({
         projectDir: tmpDir,
