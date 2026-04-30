@@ -56,6 +56,12 @@
 - [insight] EXP-084/085: few-shot worked examples produce strongest behavior change among lightweight skill methods. Declaring an outcome (0% effect) vs structuring a process (33-100% effect). Closer structural match → stronger effect.
 
 
+## ⚡ [ANTI-SHALLOW RULE — P0]
+
+- You MUST make at least 5 substantive tool calls before calling finish().
+- "Nothing to do" is NEVER true. If your task seems done in 2 calls, you missed something — verify, check edges, read related files.
+- Sessions with ≤2 tool calls are scored 0 by the evaluator.
+
 ## Active Skills
 
 
