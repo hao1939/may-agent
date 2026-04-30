@@ -616,6 +616,75 @@ export async function evaluateTask(opts: EvaluateTaskOptions): Promise<TaskEvalu
     return result;
   }
 
+  // ── Fast-path: read-only dispatcher trees (LLM-to-JS optimization) ──
+  // When ALL children completed successfully and used ONLY non-mutating tools
+  // (read, agents, checkpoint, finish, workflow), the sessions just dispatched
+  // work or gathered info — no artifacts produced. Heuristic "acceptable" eval.
+  const READ_ONLY_TOOLS_TREE = new Set(["read", "agents", "checkpoint", "finish", "workflow"]);
+  const allReadOnlyDispatchers = children.every((c) => {
+    if (c.status !== "done") return false;
+    const toolCalls: string[] = [];
+    for (const msg of c.messages) {
+      if ((msg as any).role === "assistant" && Array.isArray((msg as any).content)) {
+        for (const block of (msg as any).content) {
+          if (block?.type === "toolCall") toolCalls.push(block.name);
+        }
+      }
+    }
+    return toolCalls.length > 0 && toolCalls.every((name) => READ_ONLY_TOOLS_TREE.has(name));
+  });
+  if (allReadOnlyDispatchers) {
+    const perAgentChainsRO: Record<string, FailureChain[]> = {};
+    const result: TaskEvaluationResult = {
+      overall: {
+        efficiency: 0.7,
+        quality: 0.6,
+        verdict: "acceptable",
+        result_delivered: true,
+      },
+      agents: {},
+      usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0, cost: 0, turns: 0 },
+      lessons: null,
+      failureChains: perAgentChainsRO,
+      sessionIds: children.map((c) => c.sessionId),
+      raw: "[heuristic: read-only dispatcher sessions — skipped LLM evaluation]",
+    };
+    for (const child of children) {
+      const chains = extractFailureChains(child.messages);
+      perAgentChainsRO[child.agent] = (perAgentChainsRO[child.agent] ?? []).concat(chains);
+      const usage = extractUsage(child.messages);
+      const createdAt = extractTimestamp(child.sessionId);
+      result.agents[child.sessionId] = {
+        agent: child.agent,
+        sessionId: child.sessionId,
+        efficiency: 0.7,
+        quality: 0.6,
+        productive_calls: usage.turns,
+        wasted_calls: 0,
+        verdict: "acceptable",
+        issues: [`read_only_dispatcher: session used only read/dispatch tools — heuristic evaluation`],
+      };
+      ctx.upsertEvaluation({
+        sessionId: child.sessionId,
+        agent: child.agent,
+        quality: 0.6,
+        efficiency: 0.7,
+        productiveCalls: usage.turns,
+        wastedCalls: 0,
+        verdict: "acceptable",
+        issues: [`read_only_dispatcher: session used only read/dispatch tools — heuristic evaluation`],
+        overall: result.overall,
+        usage: usage as unknown as Record<string, unknown>,
+        failureChains: chains,
+        evaluatedByHeuristic: true,
+        skippedByJs: true,
+        createdAt,
+      });
+    }
+    appendErrorLogs(result, children);
+    return result;
+  }
+
   // Build per-agent failure chains and transcripts
   const perAgentChains: Record<string, FailureChain[]> = {};
   let perAgentTranscripts: string[] = [];
