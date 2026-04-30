@@ -155,7 +155,13 @@ WRITE-FIRST CONSTRAINT:
 - When your task says to write or produce a file, your FIRST tool call MUST be write().
 - Do NOT use read() or bash() to "check if files exist" before writing. Just write.
 - Do NOT claim files "already exist" without verifying via read(). False completion claims are a critical failure mode.
-- If your task provides the content to write, write it immediately. Do not scan, explore, or verify first.`;
+- If your task provides the content to write, write it immediately. Do not scan, explore, or verify first.
+
+SESSION CONTRACT:
+- You are starting a FRESH session. Your job is to produce FILES, not verify state.
+- If the task seems "already done": produce a verification report or improvement.
+- If truly nothing remains: write a completion-evidence file documenting WHY with specific tool output.
+- An empty session (0 files produced) is always a failure, regardless of project state.`;
 }
 
 // ── Output verification ─────────────────────────────────────────────────
