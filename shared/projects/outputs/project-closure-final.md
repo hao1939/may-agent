@@ -5,16 +5,17 @@
 
 ## Summary
 
-All metrics exceeded targets. No further work is possible within scope.
+All metrics exceeded targets. No further work is needed or possible within scope.
 
 - Deliverables-per-iteration: 0.88 (target: 0.7) ✅
 - Satellite-goal-progress: 2/2 (target: 2/2) ✅  
-- Worker-first-attempt-success: 0.88 (target: 0.75) ✅
-- Output files produced: 47+
+- Worker-first-attempt-success: 0.88 (target: 0.8) ✅
 
-## Blocked Items (out of scope)
+## Blocked Items (require external agent with source write access)
 
-1. Add `@deprecated` to legacy master-worker files → requires source edits outside outputs/
-2. Migrate remaining callers to unified interface → requires source edits outside outputs/
+1. Add `@deprecated` JSDoc to legacy master-worker variants
+2. Migrate remaining callers to `master-worker-unified.ts`
 
-These should be filed as standalone tasks for an agent with write access to `/app/agents/shared/workflows/`.
+## Recommendation
+
+Release worker. File blocked items as standalone tasks.
