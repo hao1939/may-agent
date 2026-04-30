@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777584359687_1
+- **Session:** s_1777586159697_22
 - **Status:** done
-- **When:** 2026-04-30T21:31:57.213Z
-- **Duration:** 5m57s
+- **When:** 2026-04-30T22:01:27.752Z
+- **Duration:** 5m28s
 
 ## What Happened
-Per SOUL constraints, arc edits only `workspace/`, `knowledge/entries/`, and design docs. I won't touch dev's INBOX. Let me drop the F2 proposal and finish.
+Note: `arc/workspace/` is gitignored — that's by design (workspace is local scratch). KE-415 was auto-committed by a watcher process before my own commit landed, then my arc commit added `last-session.md`. All files persist on disk.
