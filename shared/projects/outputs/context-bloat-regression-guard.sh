@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# Regression guard: alerts if any agent SOUL.md or context.md grows back above targets
-# Run from repo root. Exit 1 if any file exceeds thresholds.
+# Regression guard: alerts if any SOUL.md or context.md grows back above threshold
+# Run from repo root: bash agents/shared/projects/outputs/context-bloat-regression-guard.sh
 
 SOUL_LIMIT=600
 CTX_LIMIT=450
-FAIL=0
+EXIT=0
 
 for f in agents/*/SOUL.md; do
   [ -f "$f" ] || continue
   wc=$(wc -w < "$f")
   if [ "$wc" -gt "$SOUL_LIMIT" ]; then
     echo "FAIL: $f is ${wc}w (limit ${SOUL_LIMIT}w)"
-    FAIL=1
+    EXIT=1
   fi
 done
 
@@ -20,11 +20,9 @@ for f in agents/*/context.md; do
   wc=$(wc -w < "$f")
   if [ "$wc" -gt "$CTX_LIMIT" ]; then
     echo "FAIL: $f is ${wc}w (limit ${CTX_LIMIT}w)"
-    FAIL=1
+    EXIT=1
   fi
 done
 
-if [ "$FAIL" -eq 0 ]; then
-  echo "OK: All agent files within word-count limits"
-fi
-exit $FAIL
+[ "$EXIT" -eq 0 ] && echo "OK: All files within limits"
+exit $EXIT
