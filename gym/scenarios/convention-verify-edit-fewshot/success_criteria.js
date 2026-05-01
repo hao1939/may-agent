@@ -115,6 +115,9 @@ check('C2.3: verify-after-edit', 'convention', () => {
     try { entries.push(JSON.parse(line)); } catch { /* skip */ }
   }
 
+  // DEBUG
+  require('fs').writeFileSync(require('path').join(envDir, '_debug_c23.txt'), 'entries=' + entries.length + '\n' + entries.slice(0,3).map((e,i) => '[' + i + '] role=' + e.role + ' content_type=' + (Array.isArray(e.content) ? e.content.map(c=>c.type).join(',') : typeof e.content)).join('\n'));
+
   // Extract tool calls in order
   const toolCalls = [];
   for (let i = 0; i < entries.length; i++) {
