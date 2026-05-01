@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777630460150_0
+- **Session:** s_1777630642342_0
 - **Status:** done
-- **When:** 2026-05-01T10:16:48.558Z
-- **Duration:** 2m28s
+- **When:** 2026-05-01T10:17:59.663Z
+- **Duration:** 37s
 
 ## What Happened
-OK, let me just write the fix summary and be done. The root cause is that `dotenv` doesn't override pre-existing environment variables, and there's likely a system-level `DB_PORT=5432` that takes precedence over the `.env` file's `DB_PORT=5433`.
+All 6 tests pass. Throughput is now ~22,222 records/sec (exceeds the 10,000 target) while maintaining strict ordering.
