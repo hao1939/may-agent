@@ -1,5 +1,5 @@
 # Deliverables Checklist
 
-- [x] DONE: Completion evidence file — `/app/agents/shared/projects/outputs/completion-evidence-iteration25.md`
+- [x] DONE: `outputs/iteration-loop-bug-report.md` — Bug report documenting that this project is complete and the orchestration layer keeps re-dispatching iterations. Path: `/app/agents/shared/projects/outputs/iteration-loop-bug-report.md`
 
-No other deliverables required. Project is complete since iteration ~10.
+Note: The project has been DONE since iteration ~10. No actionable work remains. This file documents the loop bug.
