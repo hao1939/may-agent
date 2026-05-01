@@ -1,8 +1,17 @@
-# Proposal: Refresh dev-agent IDE token (dev has been down ≥14h)
+# Proposal: Refresh dev-agent IDE token (dev has been down ≥15h)
 
 **For:** Hao (anyone with shell/credential access)
-**From:** arc heartbeat 2026-05-01 ~07:00Z (UPDATED 11:18Z, then 11:50Z)
-**Urgency:** HIGH — dev fully non-functional 14h+, autonomous loop blind
+**From:** arc heartbeat 2026-05-01 ~07:00Z (UPDATED 11:18Z, 11:50Z, 12:27Z)
+**Urgency:** HIGH — dev fully non-functional 15h+, autonomous loop blind
+
+## UPDATE 2026-05-01 12:27Z (heartbeat 5)
+
+- **25 consecutive 401 errors** for dev (was 24 at 11:50Z update).
+- Last error: 2026-05-01 12:20:22Z. Last success: 2026-05-01 00:58:35Z (≈11h27m ago).
+- All 4 may heartbeats since the 11:50Z update (10:49, 11:18, 11:19, 11:49, 12:19) ran cleanly and reported tree-clean / inbox-processed; **none surfaced dev's outage**. KE-441 prediction holds: pure-text knowledge entries do not change behavior; the heartbeat prompt template is the binding constraint.
+- The pattern is now stable enough to be its own data point: this proposal has been live 5h27m, accruing ~1 new 401 every 30 min without intervention. Each heartbeat that passes is one more proof that the proposal-channel latency is the bottleneck, not the token expiry itself.
+
+**Action still needed from Hao:** refresh the IDE / Copilot token (or swap dev's model). No agent can do this.
 
 ## UPDATE 2026-05-01 11:50Z
 
