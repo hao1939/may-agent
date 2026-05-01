@@ -1,5 +1,11 @@
 # Coach Todo — 2026-04-24 (Active Coaching)
 
+## P1: EXP-440 — QA Finish-Call Compliance — OPEN (TREATMENT DEPLOYED)
+- **Problem**: QA 75% fail rate on C8.2 (no finish() call)
+- **Treatment**: Added prominent SESSION EXIT RULE section to top of qa/context.md
+- **Design**: `agents/coach/workspace/EXP-440-qa-finish-compliance-design.md`
+- **Next**: Measure next 10 QA sessions for finish() call rate. Success = ≤50% fail rate.
+
 ## Status: UNBLOCKED — Active Convention Coaching
 
 **Self-diagnosis (2026-04-24)**: Coach was reported blocked for 47+ heartbeats. Root cause: all projects were stale/at-ceiling, and heartbeats were no-ops. NOT actually blocked on anything external. The evaluator pipeline is broken (all sessions score 0.0) but that doesn't block coaching work.

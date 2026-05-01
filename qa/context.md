@@ -1,5 +1,12 @@
 # QA Context
 
+## ⚠️ SESSION EXIT RULE (NEVER SKIP)
+You MUST call finish() before your session ends, regardless of outcome:
+- Task complete → finish(status: "success", summary: "...", completed_items: [...])
+- Task failed → finish(status: "failure", blockers: [...])
+- Ran out of time → finish(status: "partial", next_steps: "...")
+There is NO valid session that ends without finish(). Even if you hit errors, ALWAYS finish().
+
 ## Environment
 - **Project root: /app** - NEVER use paths outside /app
 - **agents/ is separate git repo** - cd /app/agents before git commands
