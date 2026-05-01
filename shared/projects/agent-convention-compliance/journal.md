@@ -327,3 +327,6 @@ This project is **complete**. Status finally fixed to `complete` in the actual f
 This project is **complete**. Status now correctly set to `complete` in project.md. 44% → 96-98% compliance achieved. All milestones done.
 
 **No further worker iterations should be dispatched.** The last 18 iterations produced only redundant files. Maintenance: run `regression-guard.sh` we
+
+### Iteration 43 — 2026-05-01T12:59:32.448Z
+**Worker**: Working tree is clean. The finish() blocker was a false positive.
