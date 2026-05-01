@@ -1,3 +1,13 @@
-# DELIVERABLES_CHECKLIST
+# Deliverables Checklist
 
-- [x] DONE: `outputs/scenario-dedup-analysis.md` — Gym scenario dedup analysis with retire/keep/new recommendations
+## Project: Test Coverage Improvement
+
+| Deliverable | Status | Path/Notes |
+|---|---|---|
+| Final report | DONE | `/app/agents/shared/projects/outputs/test-coverage-final-report.md` |
+| Coverage target 80% | DONE | Achieved 86.69% |
+| All tests passing | DONE | 1565/1565 |
+| Critical paths covered | DONE | 11/11 |
+| 60% threshold enforced | DONE | Configured |
+
+Project status: **COMPLETE** - no further work needed.
