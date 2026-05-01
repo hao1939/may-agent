@@ -144,7 +144,7 @@ class CacheManager {
       this._evictLRU();
     }
 
-    const expiresAt = Date.now() + (ttlSeconds * 1000);
+    const expiresAt = Date.now() + (ttlSeconds * 1000) - 1000;
 
     this.localCache.set(key, { value, expiresAt, setAt: Date.now() });
     this._touchAccessOrder(key);
