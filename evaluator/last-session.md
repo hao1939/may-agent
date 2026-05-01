@@ -1,48 +1,53 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777672678898_2283
+- **Session:** s_1777674420882_2300
 - **Status:** done
-- **When:** 2026-05-01T21:58:07.041Z
-- **Duration:** 8s
+- **When:** 2026-05-01T22:27:06.397Z
+- **Duration:** 5s
 
 ## What Happened
 ```json
 {
-  "agents": {
-    "amy": {
-      "role": "Researcher",
-      "capability_level": "L2",
-      "efficiency": 0.62,
-      "quality": 0.18,
-      "verdict": "needs_improvement",
+  "agents": [
+    {
+      "agent": "amy",
+      "role": "Builder",
+      "capability_level": "mid",
+      "efficiency": 0.9,
+      "quality": 1.0,
+      "verdict": "good",
       "issues": [
-        "[DELIVERABLE_INTEGRITY] Declared deliverables using wrong paths relative to project root; finish() correctly rejected them as missing.",
-        "[FM-3.3][VERIFICATION_FAILURE] No tool evidence in the transcript that amy created/edited config/*.yaml or src/loader.js in the gym directory before claiming completion; only a docs write and an ls of config/ are shown.",
-        "Committed unrelated repo changes (in /app/agents: amy/last-session.md) to satisfy the finish guard, instead of fixing the actual deliverable path/evidence problem.",
-        "Used destructive command `rm config/*.json` without showing a pre-delete audit listing which JSON files existed at that moment (audit was required by the prompt)."
+        {
+          "type": "METRIC_FALSE_POSITIVE",
+          "evidence": "Auto-extracted 'failure chain' labels 3 wasted calls, but amy’s sequence was direct: ran failing tests (Step 1), inspected relevant files (Steps 2-3), made minimal edit (Step 4), reran tests (Step 5). No repeated failed actions or dead-end retries."
+        },
+        {
+          "type": "PROCESS_FRICTION",
+          "evidence": "finish() initially blocked due to uncommitted change in /app/agents (amy/last-session.md). Amy resolved by committing (Step 7) then finishing successfully (Step 8)."
+        }
       ],
       "metrics": {
-        "code_correctness": "unverified",
-        "deliverable_integrity": "failed",
-        "verification": "partial",
-        "tool_use_efficiency": "medium"
+        "tool_calls": 8,
+        "test_runs": 2,
+        "edits": 1,
+        "commits": 1,
+        "wasted_calls_estimate": 0
       }
     }
-  },
+  ],
   "workflow": {
-    "name": "Task Tree Evaluation",
+    "name": "single-agent debug/fix gym scenario",
     "issues": [
-      "Gym scenario uses files under /tmp/...; deliverables must be recorded with correct absolute/relative paths expected by the system. Amy did not reconcile this, causing finish() failure."
+      {
+        "type": "CROSS_REPO_COMMIT_REQUIREMENT",
+        "evidence": "Agent had to commit unrelated agent-log changes (amy/last-session.md) to unblock finish(), adding overhead not directly tied to fixing the gym code."
+      }
     ]
   },
   "overall": {
-    "verdict": "needs_improvement",
-    "result_delivered": false
+    "verdict": "good",
+    "result_delivered": true
   }
 }
 ```
-
-Evidence highlights (from transcript):
-- `finish()` blocked first due to uncommitted change in `/app/agents` (amy/last-session.md), then `finish()` errored: “Deliverables not found on disk: config/auth.yaml, ... src/loader.js, docs/migration-status.md.”
-- Amy ran `rm config/auth.json config/logging.json config/api.json config/storage.json` in the gym directory and wrote `docs/migration-status.md` there, but the system’s deliverable checker looked at project-root relative paths and found nothing.
