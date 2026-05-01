@@ -1,4 +1,4 @@
 # Deliverables Checklist
 
-- [x] DONE — Completion notice: `/app/agents/shared/projects/outputs/project-complete-notice.md`
-  - Documents project is complete, all metrics at target, 35+ wasted iterations
+- [x] DONE — Project completion notice: `/app/agents/shared/projects/outputs/PROJECT_COMPLETE_STOP_DISPATCHING.md`
+  - Documents that all metrics are at target and project should be removed from dispatch queue
