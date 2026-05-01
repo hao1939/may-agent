@@ -5,7 +5,7 @@
 function calcStats(numbers) {
   if (!numbers.length) return null;
   
-  const sorted = numbers.slice().sort((a, b) => a - b);
+  const sorted = numbers.slice().sort();
   const sum = numbers.reduce((a, b) => a + b, 0);
   const count = numbers.length;
   const mean = sum / count;
