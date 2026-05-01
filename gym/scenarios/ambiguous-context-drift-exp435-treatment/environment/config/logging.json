@@ -1,0 +1,10 @@
+{
+  "level": "info",
+  "format": "json",
+  "outputs": [
+    { "type": "console", "colorize": true },
+    { "type": "file", "path": "logs/app.log", "max_size": "10MB", "max_files": 5 }
+  ],
+  "excluded_routes": ["/health", "/metrics"],
+  "include_request_id": true
+}

@@ -1,0 +1,16 @@
+{
+  "provider": "s3",
+  "bucket": "myapp-uploads",
+  "region": "us-east-1",
+  "max_file_size": 52428800,
+  "allowed_types": ["image/jpeg", "image/png", "application/pdf"],
+  "paths": {
+    "uploads": "uploads/",
+    "thumbnails": "uploads/thumbs/",
+    "documents": "docs/"
+  },
+  "cdn": {
+    "enabled": true,
+    "base_url": "https://cdn.myapp.com"
+  }
+}
