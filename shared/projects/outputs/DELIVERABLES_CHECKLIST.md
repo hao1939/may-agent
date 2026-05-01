@@ -1,4 +1,11 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST.md
 
-- [x] DONE — Project closure document: `/app/agents/shared/projects/outputs/system-efficiency-project-closed.md`
-  - Documents final metrics (3/3 at target), 10 satellites, key deliverables, and recommended next project
+## Task: System Efficiency Project Closure (Iteration 11)
+
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | Completion evidence file documenting project closure | DONE | /app/agents/shared/projects/outputs/system-efficiency-completion-evidence.md |
+
+## Notes
+- Project is fully closed — all 3 metrics at target, 10 satellites complete
+- No further work needed; future SOUL.md trimming is a separate project
