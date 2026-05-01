@@ -78,6 +78,19 @@ which case applies. **For `system-efficiency` today the system is quiet
 enough that the edit should hold; for high-traffic projects the only
 durable fix is the workflow patch.**
 
+## Live demonstration — again — during this heartbeat
+
+Filed KE-439, hand-set `system-efficiency` to `closed` at 10:50Z, then
+within ~60 seconds re-checked and found `Status: active, Iteration: 42`
+(up from 41). Same as the test-coverage live demo in KE-438 §"Live
+demonstration during this heartbeat", on a second project, in the same
+heartbeat window the audit was being written. The HTML comment block
+survived; the Status field did not. Re-applied at 10:51Z.
+
+This makes **two consecutive arc heartbeats** in which the bug has
+demonstrated itself live against the heartbeat documenting it. The
+workflow patch is the only durable fix.
+
 ## Recommendation
 
 The proposal `agents/arc/workspace/proposals/2026-05-01-master-worker-honor-complete-status.md`
