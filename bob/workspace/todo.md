@@ -22,6 +22,7 @@
 - [ ] **KE-440 → Gym test**: EXP-271 found "trust the test" = 21% of failures. KE-440 written. Next: design gym experiment to test whether injecting KE-440 as context reduces exp164-baseline failure rate.
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.
 - [ ] **Amy-Kimi C8.2 Compliance**: Model-level JSON bug in finish(). Options: (a) JSON repair, (b) exempt, (c) accept.
+- [ ] **EXP-299 (Obstacle Persistence)**: DESIGNED 2025-05-01. H-215: obstacle guard reduces OBSTACLE_PIVOT by ≥40%. Next: write skill file, run 40 gym trials. See `EXP-299-obstacle-persistence-intervention.md`.
 
 ## Deferred
 - [ ] **EXP-216 (Regression Awareness Skill)**: Deprioritized — Coach diverted 3x. Skill ready at `agents/.lab/regression-awareness-skill/`. Low priority.
