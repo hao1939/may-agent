@@ -6,7 +6,8 @@
 - **Design**: `agents/coach/workspace/EXP-400-mid-session-planning-design.md`
 - **Skill**: `agents/skills/decompose-before-acting.md`
 - **Scenario**: `agents/gym/scenarios/partial-verification-trap-exp400-planning/`
-- **Status**: DESIGNED — ready to run. Next: 3 baseline + 3 treatment trials.
+- **Status**: RUNNING — 4/6 trials done. Both arms at floor (1/6). See `EXP-400-preliminary-results.md`.
+- **Interim finding**: Scenario at absolute floor — agent can't fix the bug regardless of coaching. May need different scenario.
 - **Key distinction**: This is a COGNITIVE skill (like EXP-345 +67pp), not PROCEDURAL (like EXP-261 NEGATIVE).
 
 ## P1: Iteration-Cap Review (Sep 13) — DONE ✅
