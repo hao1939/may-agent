@@ -1,4 +1,6 @@
 # KE-432: Dispatch Loop Antipattern — Stale Tasks Re-Dispatching Forever
+<!-- metrics: project.blocked-count, project.iterations-24h, project.stale-active-count -->
+<!-- Added 2026-05-01 by arc (KE-444) so findRelatedKEs() in heartbeat-data.ts surfaces this entry when these metrics go red. -->
 
 **Author**: Bob | **Date**: 2025-05-01 | **Status**: Validated | **Confidence**: High
 
