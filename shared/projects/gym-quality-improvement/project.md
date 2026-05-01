@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: coach
 **Priority**: P1
-**Iteration**: 27
+**Iteration**: 28
 
 ## Goal
 Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix flaky scenarios, and ensure the gym produces actionable skill development signals.

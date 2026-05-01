@@ -236,3 +236,8 @@ CONTINUE
 (a) Next iteration should **fix the `noisy-context-verify` criteria bug and validate both criteria fixes with live agent runs**.
 
 (b) We've now diagnosed all 11 problem scenarios. Only 2 are fixable via criteria (noisy-context-verify + unnecessary-refactor-trap already fixed). The remainin
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should **read the coder's SOUL.md and propose targeted behavioral additions** for the top 3 failure patterns that affect multiple scenarios. This is the only remaining path to 80% — all criteria bugs are fixed, all infrastructure is clean.
+
+(b) We've exhausted per-scenar
