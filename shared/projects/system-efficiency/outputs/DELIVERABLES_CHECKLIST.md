@@ -1,6 +1,12 @@
-# Deliverables Checklist — Iteration 18
+# DELIVERABLES_CHECKLIST
 
-## Required Deliverables
+## Task: Fix 5 failing test suites
 
-- [x] **DONE** `outputs/new-scenarios-validation.md` — Already existed with full validation of 3 gym scenarios. Confirmed via read().
-- [x] **DONE** `outputs/efficiency-scorecard.md` — Updated with latest test counts (8886 passing), completed infrastructure fixes, satellite status. Path: `/app/agents/shared/projects/system-efficiency/outputs/efficiency-scorecard.md`
+| # | Deliverable | Status | Path |
+|---|---|---|---|
+| 1 | error-boundary source module | DONE | `agents/shared/projects/system-efficiency/workflows/error-boundary.ts` |
+| 2 | health-check source module | DONE | `agents/shared/projects/system-efficiency/workflows/health-check.ts` |
+| 3 | circuit-breaker source module | DONE | `agents/shared/projects/system-efficiency/workflows/circuit-breaker.ts` |
+| 4 | budget-checkpoint source module | DONE | `agents/shared/projects/system-efficiency/workflows/budget-checkpoint.ts` |
+| 5 | fast-path source module | DONE | `agents/shared/projects/workflows/fast-path.ts` |
+| 6 | Test fix report | DONE | `agents/shared/projects/system-efficiency/outputs/test-fix-report.md` |
