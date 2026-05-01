@@ -1,3 +1,4 @@
 # Deliverables Checklist
 
-- [x] DONE — Assess project status: Project is already closed with all metrics met. No action needed. File: `/app/agents/shared/projects/test-coverage/project.md` (status: closed)
+- [x] DONE — Set project status to `closed` to halt dispatch loop
+  - File: `/app/agents/shared/projects/test-coverage/project.md` line 4 changed to `**Status**: closed`
