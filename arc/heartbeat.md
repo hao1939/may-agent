@@ -40,6 +40,10 @@ Every heartbeat, pick ONE of these areas and check for staleness:
 - Active agent SOUL.md/context.md — references outdated tools or systems?
 
 If you find stale content:
-1. Fix it directly (simple text corrections)
-2. Write a knowledge entry explaining what changed and why
-3. If the fix requires human decision, write a proposal in `agents/arc/workspace/proposals/`
+1. **Lane check first.** If the file is in `agents/shared/knowledge/entries/`, `agents/shared/may-agent-docs/design/`, or `agents/arc/workspace/`, fix it directly. **Otherwise do not edit it** — out-of-lane edits are silently stashed by the heartbeat wrapper and discarded (KE-450, KE-451). Write a proposal in `agents/arc/workspace/proposals/` and a KE entry describing the staleness.
+2. Write a knowledge entry explaining what changed and why.
+3. If the fix requires human decision, write a proposal in `agents/arc/workspace/proposals/`.
+
+## End-of-session verification (mandatory before `finish()`)
+Run: `git -C /app/agents status --short`
+Every modified path must start with `arc/`, `shared/knowledge/entries/`, or `shared/may-agent-docs/design/`. If any other path is listed, revert it (`git -C /app/agents checkout -- <path>`) before finishing — otherwise the stash sweep discards it and you'll end the session believing a fix landed when it didn't (this is exactly the KE-449 → KE-450 failure mode).
