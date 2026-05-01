@@ -235,3 +235,9 @@ This project is **complete and in maintenance mode**. Status updated from `activ
 
 ### Iteration 28 — 2026-05-01T12:48:52.168Z
 **Worker**: 
+**Orchestrator**: CONTINUE
+
+This project is **done**. Status changed to `maintenance`. All milestones achieved: 44% → 96-98% compliance across 24 iterations.
+
+**No further worker iterations needed.** The last 4 iterations produced only redundant completion-evidence files. The maintenance plan is clear:
+- Run `regress
