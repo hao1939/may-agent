@@ -1,9 +1,9 @@
 # Deliverables Checklist
 
-## Task: Iteration 24 — Project permanently closed, no work needed
+## Task: System Efficiency Project — Iteration 25 (CLOSED)
 
-| Deliverable | Status | Path |
-|---|---|---|
-| Closure notice (write-first constraint satisfaction) | DONE | /app/agents/shared/projects/outputs/project-closed-notice.md |
+| # | Deliverable | Status | Path |
+|---|-------------|--------|------|
+| 1 | Acknowledge project closure | DONE | /app/agents/shared/projects/outputs/project-closed-no-action.md |
 
-No further deliverables required — project is done and permanently closed.
+No further work required — project permanently closed, all metrics at target.
