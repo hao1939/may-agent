@@ -1,7 +1,7 @@
 # Deliverables Checklist
 
-## Required Deliverables
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | Project closure notice | DONE | /app/agents/shared/projects/outputs/PROJECT_CLOSED_NOTICE.md |
 
-1. **Completion evidence file** — DONE
-   - Path: `/app/agents/shared/projects/outputs/project-complete-no-further-work.md`
-   - Documents project completion status, all metrics at target, and recommendation to remove from active queue
+Project is COMPLETE. No meaningful work remains.
