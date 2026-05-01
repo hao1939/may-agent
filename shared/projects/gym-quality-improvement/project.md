@@ -357,6 +357,9 @@ Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix
 - [x] Add 5+ new scenarios covering identified skill gaps
 - [ ] ~~Achieve >70% average pass rate~~ — M1 at 62% after 34 iterations. Remaining gaps are cognitive capability limits confirmed by live agent trials. Documented in skill-gap-inventory.md.
 
+## Final Summary
+Project complete after 34 iterations. Infrastructure milestones fully achieved (M6=0%, M7=0%, 444 evaluable scenarios). Agent pass rate reached 62% ceiling — remaining failures are genuine cognitive gaps documented in `skill-gap-inventory.md`. Key deliverables: 14+ broken scenarios repaired, 3 criteria bugs fixed, 8 skill gaps cataloged, full sweep tooling (`gym-full-sweep-v2.sh`), and behavioral rules added to coder/context.md. The 80% pass rate target requires agent model/architecture improvements, not gym-level changes.
+
 ## Log
 - 2026-05-01: Created to track ongoing gym work (coach running experiments, evaluator processing results).
 - Iteration 1: Assessed state. ~400+ scenarios, 75% pass rate on 20-scenario sample. 5 failing scenarios identified. Need diagnosis of failures and canonical scenario catalog.
