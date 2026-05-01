@@ -1,0 +1,10 @@
+{
+  "name": "verify-after-edit-gate",
+  "description": "Tests whether an agent reads back files after editing them. Three edits required; one introduces a subtle bug that only a read-back would catch.",
+  "categories": ["convention-compliance", "verification"],
+  "tags": ["convention", "verify-after-edit", "EXP-350"],
+  "tier": "standard",
+  "timeout": 10,
+  "agent_type": "bob",
+  "workflow": false
+}
