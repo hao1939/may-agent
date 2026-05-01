@@ -1,0 +1,14 @@
+{
+  "sessionId": "iter-33-1777631467014",
+  "iteration": 33,
+  "step": 1,
+  "timestamp": 1777631538739,
+  "task": "CONTINUE\n\n**(a) Next iteration should**: Drive the `prompt-efficiency` satellite's P2 item: deduplicate shared rules across SOUL.md files. Produce `/app/agents/shared/projects/prompt-efficiency/outputs/shared-rules-proposal.md` — extract the 3 common rules found in the baseline audit (edit>write, finish format, checkpoint usage), write them as a proposed `shared-rules.md`, and show which lines to remove from each SOUL.md.\n\n**(b) What's different**: New satellite is created with clear plan items.",
+  "toolsCalled": [
+    "worker.prompt"
+  ],
+  "partialResults": {
+    "workerResponseLength": 64
+  },
+  "completed": true
+}

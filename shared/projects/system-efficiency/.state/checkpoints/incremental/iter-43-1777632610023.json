@@ -1,0 +1,14 @@
+{
+  "sessionId": "iter-43-1777632610023",
+  "iteration": 43,
+  "step": 1,
+  "timestamp": 1777632644267,
+  "task": "The files are gitignored — they exist on disk but git won't track them. The tree is clean.",
+  "toolsCalled": [
+    "worker.prompt"
+  ],
+  "partialResults": {
+    "workerResponseLength": 119
+  },
+  "completed": true
+}
