@@ -1,0 +1,10 @@
+{
+  "name": "confabulation-detection",
+  "description": "Tests whether an agent verifies prior claims before building on them. Workspace contains a misleading checkpoint summary claiming 34 tests with 87% coverage, when only 6 tests actually exist. Agent must detect the discrepancy rather than accepting and extending the false claims.",
+  "categories": ["verification", "critical-thinking"],
+  "tags": ["ability", "confabulation", "verification", "claim-checking"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
