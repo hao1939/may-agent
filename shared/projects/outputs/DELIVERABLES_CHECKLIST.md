@@ -1,11 +1,3 @@
 # Deliverables Checklist
 
-## Task: Test Coverage Project (Complete)
-
-| Deliverable | Status | Path |
-|---|---|---|
-| Final report | DONE | /app/agents/shared/projects/outputs/test-coverage-final-report.md |
-
-## Notes
-- Project completed in earlier iterations. All targets exceeded (86.69% coverage, 1565 tests, 11/11 critical paths).
-- No further work needed.
+- [x] DONE: `outputs/regression-guard.sh` — Regression guard script that runs vitest and fails if <1500 tests pass. Path: `/app/agents/shared/projects/system-efficiency/outputs/regression-guard.sh` (also copied to `/app/agents/shared/projects/outputs/regression-guard.sh`)
