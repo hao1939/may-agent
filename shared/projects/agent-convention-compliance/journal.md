@@ -130,3 +130,8 @@ Now let me write the deliverables:
 (a) Next iteration should produce **P16.4** (scorer fix for edit()-based field preservation) and **P16.2** (C3 scorer relaxation). These are the two highest-leverage, most concrete fixes — together worth 4 checks (83% → 91%).
 
 (b) What's different: We're done trying to change agent behavio
+**Orchestrator**: CONTINUE
+
+(a) Next iteration must **validate the projected 90%** with a real gym run and patch dev's SOUL.md.
+
+(b) The scorer recalibration is verified in the code (edit()-based fast-path at lines 36-82 of multi-edit-workflow success_criteria.js). But the gym couldn't run because `GYM_AGENT_BIN` is 
