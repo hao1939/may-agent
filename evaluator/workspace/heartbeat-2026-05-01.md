@@ -1,29 +1,26 @@
-# Evaluator Heartbeat — 2026-05-01
+# Evaluator heartbeat — 2026-05-01
 
-## Checks
+## Checks performed (evidence)
 
-### Process #5 (Session Eval) — DB liveness
-- `evaluations MAX(createdAt)`: 2026-05-01 12:56:02 (table count 1971)
-- Conclusion: eval pipeline writing to DB recently (live).
-- Note: `.state/evaluations/` legacy artifacts still look stale/spotty (task_tree JSONs mostly Mar 24; some `s_*.json` Apr 29). Treat as legacy path drift, not DB pipeline failure.
+### Session-eval pipeline liveness
+- DB recency check: `evaluations.max(createdAt)=1777645584258` vs `sessions.max(startedAt)=1777645600384` → **lag ~16,126 ms** (fresh; pipeline running).  
+  Evidence: bun:sqlite query output.
 
-Evidence:
-- bun/sqlite output in transcript:
-  - `evaluations { maxCreatedAt: "2026-05-01 12:56:02", n: 1971 }`
-  - `ls .state/evaluations | tail` shows mostly Mar 24 task_tree, some Apr 29 s_*.json
+### Legacy `.state/evaluations/` artifact freshness
+- Directory listing shows most `task_tree_*.json` artifacts are **from 2026-03-24**, but a few `s_*.json` files are **from 2026-04-29**.
+- Interpretation: **DB is canonical and fresh; `.state/evaluations/` is partially stale / drifting**, consistent with prior note that task_tree artifacts appear stale.
 
-### Process #5 (Monitor Active Sessions)
-Ran `node agents/evaluator/skills/monitor-session.cjs --running`.
+### Coverage snapshot (not a configured metric, but relevant to process #5)
+- Sessions evaluated coverage: **1770 / 5863 = 0.3019**.
+- Per-agent mismatch signals potential eval-scope skew:
+  - `evaluator` has 1575 sessions but is not in evaluations top list (expected, as evaluator shouldn’t self-evaluate).
+  - `optimizer` has 1406 sessions but only 573 evaluations (maxAt older than coach).
 
-Result: 5 sessions need attention:
-1. `amy` `s_1777626616591_0`: `STALL` (idle 257 min) → recommended action: **kill**
-2. `arc` `s_1777641393486_1406`: `DRIFT` (0% task relevance in last 10 tool calls) → recommended action: **warn**
-3. `coach` `s_1777641559322_1418`: `PROTOCOL_VIOLATION` (P114 Experience Replay missing) → recommended action: **warn**
-4. `optimizer` `s_1777641854716_1439`: `PROTOCOL_VIOLATION` (P114 Experience Replay missing) → recommended action: **warn**
-5. `optimizer` `s_1777642008848_1449`: `PROTOCOL_VIOLATION` (P114 Experience Replay missing) → recommended action: **warn**
+## Findings
+1. **No liveness incident**: evaluation writes are current in DB (lag ~16s).
+2. **Output-path drift / partial staleness**: `.state/evaluations/` task_tree artifacts look stuck at 2026-03-24 while DB continues to update.
+3. **Low evaluation coverage (~30%)**: likely by design (scoped cron) but worth making explicit as a target metric and/or documenting intended sampling.
 
-Evidence: monitor-session output (command exit code 1 with summary + per-session evidence strings).
-
-## Actions taken
-- Logged the above as a heartbeat artifact for visibility + follow-up.
-- No direct interventions available from Evaluator toolset (no agent messaging/kill tool in this environment). Next step is escalation to May/Hao if someone is online.
+## Suggested follow-ups (for owner / tech lead)
+- Decide whether `.state/evaluations/task_tree_*.json` is still an expected artifact. If yes, fix writer path/job; if no, update docs/alerts to stop treating it as canonical.
+- Consider adding a real metric for evaluation coverage (sessions with evaluation / total sessions) with a target, or document why 30% is acceptable.
