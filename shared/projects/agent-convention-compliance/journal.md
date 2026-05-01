@@ -112,3 +112,8 @@ The main infrastructure fix (session finder filtering by agent name) is working.
 **Worker**: `tech-lead` isn't in the map, so it gets used directly as the agent name. That's fine — tech-lead exists. The transcript issue is the session finder not matching.
 
 Now let me write the results report and focus on the deliverables. I have real data now:
+
+### Iteration 14 — 2026-05-01T10:44:33.518Z
+**Worker**: Temp dirs get cleaned. Let me focus on writing the results and the key fix applied. The main achievement this iteration is the workflow transcript merge fix.
+
+Now let me write the deliverables:

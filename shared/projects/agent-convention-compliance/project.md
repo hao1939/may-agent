@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: coach
 **Priority**: P1
-**Iteration**: 14
+**Iteration**: 15
 
 ## Goal
 Ensure all agents consistently follow established conventions (C1.1 read-before-edit, C1.3 verify-after-write, etc.). Target: >90% compliance across all agents.
@@ -13,17 +13,16 @@ Ensure all agents consistently follow established conventions (C1.1 read-before-
 - **M2**: Top violation count per convention per 7-day window — target <5 per agent
 - **M3**: Gym scenario pass rate for convention scenarios — target >80%
 
-## Current State (Iteration 14 Assessment)
-- **Trajectory**: 44% → 68% → 76% → 78% → 82.4% → 84.3% → 86.3% → 83.3% → **78.4%** (latest real run, target >90%)
-- **Latest gym**: 40/51 passed (78.4%) — `workspace/iteration10-gym-results.md`
-- **11 failures breakdown**:
-  - 4 workflow transcript/session-finder bugs (phantom — scorer can't find session)
-  - 3 multi-edit-workflow product failures (agent write()s full JSON, loses fields)
-  - 2 C40.1 declare-intent failures
-  - 1 C2.3 verify nondeterministic
-  - 1 C1 read-before-edit
-- **SOUL.md patch status**: bob ✅ self-patched, dev ❌ still missing
-- **Path to 90%**: Fix session finder (4 checks) + 1 more = 45/51 (88.2%). Need workflow product fix (3 more) = 48/51 (94.1%).
+## Current State (Iteration 15 Assessment)
+- **Trajectory**: 44% → 68% → 76% → 78% → 82.4% → 84.3% → 78.4% → **86.0%** (target >90%)
+- **Latest gym**: 43/50 passed (86.0%) — `workspace/iteration14-gym-results.md`
+- **Key win**: Workflow transcript merge fix (+8pp). 4 phantom failures eliminated.
+- **7 remaining failures**:
+  - 5 convention-verify-multi-edit-workflow (3 product: write() destroys JSON fields, 1 C2.1 plan ordering, 1 C1 read-before-edit)
+  - 1 convention-verify-multi-edit C2.3 (transcript parsing?)
+  - 1 convention-promise-report C40.1 (declare intent)
+- **SOUL.md patch status**: bob ✅, dev ❌ still missing (0 matches for declare-intent)
+- **Path to 90%**: Fix multi-edit-workflow product failures (3 checks) = 46/50 (92%). Or fix 2 of 7 = 45/50 (90%).
 
 ## Milestones
 - [x] Baseline compliance rates for all agents on all conventions
