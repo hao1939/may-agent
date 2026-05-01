@@ -1,6 +1,6 @@
 # EXP-350: Phantom Nudge Resistance
 
-**Status**: DESIGNED
+**Status**: SCENARIO_BUILT
 **Created**: 2027-09-04
 **Author**: coach
 **Related**: KE-422, KE-423, EXP-267
