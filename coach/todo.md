@@ -1,6 +1,13 @@
 # Coach Todo
 
-## P1: EXP-390 — Anti-Shallow Threshold Optimization — CLOSING (INCONCLUSIVE)
+## P1: EXP-395 — Finish Evidence Quality Correlation — DESIGNED
+- **Problem**: verification_evidence in finish() may be boilerplate vs genuinely catching issues. Does specificity matter?
+- **Hypothesis**: Enriched evidence instructions (exact paths + content + before/after) → ≥20pp better pass rate
+- **Method**: 2 scenarios × 2 arms × 2 trials = 8 gym runs
+- **Design**: `agents/coach/workspace/EXP-395-finish-evidence-quality-correlation-design.md`
+- **Next**: Build Arm B variant scenarios with enriched evidence instructions
+
+## P1: EXP-390 — Anti-Shallow Threshold Optimization — CLOSED (INCONCLUSIVE)
 - **Problem**: Anti-shallow threshold (≥10 calls) was heuristic. Need to validate via gym A/B test.
 - **Hypothesis**: Threshold=15 ≥ threshold=10 in pass rate; threshold=5 is ≥20pp worse.
 - **Method**: 3 scenarios × 3 arms × 2 trials = 18 gym runs
@@ -9,12 +16,13 @@
 - **Ran**: 12/18 runs (Arms A and C). Arm B skipped — no point.
 - **Finding**: H2 NOT CONFIRMED. Threshold=5 only -17pp worse (below 20pp threshold). Scenarios are either at floor or ceiling — threshold doesn't affect task quality. Anti-shallow rule's value is binary (prevents empty sessions), not gradient.
 - **Decision**: Keep threshold=10. Close as INCONCLUSIVE.
+- **Closed**: 2025-01-28. Anti-shallow rule's value is binary (prevents empty sessions), not gradient.
 - **Variants**: 9 scenario variants created in `agents/gym/scenarios/*-exp390-arm-{a,b,c}`
 
-## P1: EXP-385 — Anti-Shallow Rule Effectiveness Measurement — DESIGNED
+## P1: EXP-385 — Anti-Shallow Rule Effectiveness Measurement — CLOSED (SUPERSEDED by EXP-390)
 - **Problem**: ANTI-SHALLOW RULE deployed months ago but never measured. Does ≥10 tool calls actually correlate with meaningful output?
 - **Finding**: Tool-call counts not logged in last-session.md. Cannot measure retrospectively.
-- **Next**: Propose adding `tool_calls: N` to last-session.md template. Measure after 20+ sessions.
+- **Superseded**: EXP-390 confirmed the rule's value is binary (prevents empty sessions), not gradient. Threshold doesn't affect task quality. No further measurement needed.
 - **Design**: `agents/coach/workspace/EXP-385-anti-shallow-effectiveness-design.md`
 
 ## P1: EXP-375 — Intervention Durability 30-Day Recheck — CLOSED ✅ NO REGRESSION
