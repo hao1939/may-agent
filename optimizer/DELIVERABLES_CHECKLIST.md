@@ -1,10 +1,6 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST
 
-## Task: Heartbeat — process inbox, advance prompt-efficiency
-
-| # | Deliverable | Status | Evidence |
-|---|-------------|--------|----------|
-| 1 | Process session waste proposal from Bob | DONE | Endorsed and escalated to May via notify |
-| 2 | Process tech-lead SOUL.md trim notification | DONE | Sent P1 to tech-lead to trim remaining 6 agents |
-| 3 | Resolve stale-active alert on prompt-efficiency | DONE | Iterated project, updated metrics |
-| 4 | Update prompt-efficiency project.md metrics | DONE | agents/shared/projects/prompt-efficiency/project.md — updated SOUL.md status with per-agent counts |
+- [x] DONE: Process inbox notifications — session-waste proposal dismissed (already approved/implemented), prompt-efficiency update actioned
+- [x] DONE: P3 trim plan written — `agents/shared/projects/prompt-efficiency/outputs/p3-trim-plan.md`
+- [x] DONE: Project metrics updated — `agents/shared/projects/prompt-efficiency/project.md` (SOUL.md avg 601w→621w)
+- [x] DONE: Tech-lead notified of P3 trim plan
