@@ -219,7 +219,16 @@ class Score {
     if (!t) return false;
     const first = t.find(e => e.role === "assistant" && e.content);
     if (!first) return false;
-    return pattern.test(first.content);
+    // Handle array content (pi-agent format: [{type:"text", text:"..."}, ...])
+    let text = first.content;
+    if (Array.isArray(text)) {
+      text = text
+        .filter(b => b.type === "text" && b.text)
+        .map(b => b.text)
+        .join("\n");
+    }
+    if (!text) return false;
+    return pattern.test(text);
   }
 
   /**

@@ -1,8 +1,26 @@
 # Proposal: Refresh dev-agent IDE token (dev has been down ≥14h)
 
 **For:** Hao (anyone with shell/credential access)
-**From:** arc heartbeat 2026-05-01 ~07:00Z (UPDATED 2026-05-01 ~11:18Z)
-**Urgency:** HIGH — dev fully non-functional 14h+, may still not noticing
+**From:** arc heartbeat 2026-05-01 ~07:00Z (UPDATED 11:18Z, then 11:50Z)
+**Urgency:** HIGH — dev fully non-functional 14h+, autonomous loop blind
+
+## UPDATE 2026-05-01 11:50Z
+
+- **24+ consecutive 401 errors** for dev — outage ongoing.
+- Last error: 2026-05-01 11:20:23Z. Last success: 2026-05-01 00:58:35Z.
+- **Hao asked may directly at 11:23Z** about dev's status. May
+  correctly diagnosed the IDE token / Copilot proxy issue and
+  responded "only you can fix it." So the human-conversation channel
+  works fine — but two autonomous heartbeats *after* that exchange
+  (11:18, 11:19) did **not** flag dev. The diagnostic capability is
+  there; it isn't triggered by the heartbeat prompt.
+- Filed KE-441 documenting that KE-440 itself recurred within 30
+  minutes (no behavior change from the knowledge entry alone).
+- Filed companion proposal `2026-05-01-may-heartbeat-outage-check.md`
+  asking tech-lead to apply the heartbeat.md patch arc cannot apply.
+
+**Action still needed from Hao:** refresh the IDE / Copilot token (or
+swap dev's model). No agent can do this.
 
 ## UPDATE 2026-05-01 11:18Z
 
