@@ -285,3 +285,6 @@ CONTINUE
 ### Iteration 34 — 2026-05-01T11:45:10.216Z
 **Worker**: Now copy to outputs:
 **Orchestrator**: The gym project files are already committed. The only uncommitted file is in a different project.
+
+### Iteration 35 — 2026-05-01T11:46:51.278Z
+**Worker**: The project is essentially complete. The only uncommitted changes are journal/project.md (which I'm not supposed to edit) and convention-promise-report (a different project). Let me write a completion evidence file.
