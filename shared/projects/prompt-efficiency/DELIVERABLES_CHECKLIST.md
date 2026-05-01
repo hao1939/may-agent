@@ -1,9 +1,7 @@
 # Deliverables Checklist
 
-## Task: Assess prompt-efficiency project and decide next steps
-
-| Deliverable | Status | Evidence |
-|---|---|---|
-| Verify evaluator SOUL.md trimmed | DONE | wc -w confirmed 406w |
-| Verify project.md is up to date | DONE | Already marked Complete with correct metrics |
-| Decision on next steps | DONE | No further work needed, project complete |
+| # | Deliverable | Status | Evidence |
+|---|-------------|--------|----------|
+| 1 | Assess project state | DONE | project.md Status: Complete, all metrics at target |
+| 2 | Verify evaluator trimmed | DONE | wc -w confirms 406w |
+| 3 | Decision provided | DONE | CONTINUE - project complete |
