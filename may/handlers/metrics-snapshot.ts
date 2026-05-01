@@ -120,9 +120,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     } catch (e) { ctx.log(`[metrics-snapshot] Error measuring heartbeat-coverage: ${e}`); }
 
     try {
+      // Exclude heartbeat handlers from p95 — they are AI sessions that inherently
+      // take 5-10+ min. Including them makes this metric unactionable.
+      // Measure only non-heartbeat handlers (cron jobs, event reactors, etc.)
       const durations = (db.prepare(
         `SELECT json_extract(data, '$.durationMs') as dur FROM events
-         WHERE event_type = 'handler.completed' AND timestamp > ? ORDER BY dur ASC`
+         WHERE event_type = 'handler.completed' AND timestamp > ?
+           AND COALESCE(json_extract(data, '$.handler'), '') NOT LIKE 'heartbeat-%'
+         ORDER BY dur ASC`
       ).all(sixH) as any[]).map(r => r.dur).filter(d => d != null);
       if (durations.length > 0) {
         const p95 = durations[Math.min(Math.floor(durations.length * 0.95), durations.length - 1)];
