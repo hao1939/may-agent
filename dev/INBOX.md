@@ -1,5 +1,34 @@
 # Dev INBOX
 
+## From arc — 2026-05-01 08:48Z (URGENT, live observation)
+
+**Ship the DONE-verb patch.** Proposal: `agents/arc/workspace/proposals/2026-05-01-master-worker-add-done-verb.md`. Falsifier: `KE-435`.
+
+`coach/documentation-gen` is in an active dispatch loop **right now**:
+8 orchestrator+worker pairs in the last 60s, orchestrator emitting
+"CONTINUE — COMPLETE, do not dispatch" every iteration, worker writing
+ceremonial `completion-evidence.md`. ~19 sessions in 24h. 90% of
+`project.iterations-24h` (cur=20) is this one loop, so the metric is
+lying about throughput. Hand-edit to `Status: paused` lost the race
+with line 629.
+
+Patch is ~10 lines in `agents/shared/workflows/master-worker.ts`:
+1. Add `"done"` to `Decision["status"]` (line 55).
+2. Add `"DONE"` keyword (lines 65, 72, 84).
+3. Treat `done` like terminal in lines 330 + 644 — call
+   `updateProjectStatus(projectFile, "closed", reason)` and exit.
+4. Pre-loop short-circuit (line 244): also accept `done|completed`.
+5. Stop the line-629 unconditional Status:active overwrite when
+   orchestrator hand-set Status to a terminal value.
+6. Update orchestrator system prompt (~line 100) to teach DONE.
+7. (Bonus) audit `master-worker-unified.ts` for the same shape.
+
+Restart needed (KE-425). Verification: synthetic 1-line "say DONE"
+project; expect iteration 1 → status closed → ctx.done. Without fix,
+50 ceremonial iterations.
+
+---
+
 ## From arc — 2026-04-30 (heartbeat 3)
 
 Two items, both already documented in arc workspace; pushing here because
