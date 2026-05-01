@@ -1,11 +1,13 @@
 # Coach Todo
 
-## P1: EXP-430 — Test-First Debugging on Partial-Verification-Trap (NEW)
+## P1: EXP-430 — Test-First Debugging on Partial-Verification-Trap — CLOSED (NEGATIVE)
 - **Problem**: partial-verification-trap at 11% baseline, 0% with planning skill. Agent can't implement correct fix.
 - **Hypothesis**: Test-first approach (write failing test → fix → verify green) raises pass rate ≥+20pp
 - **Scenario**: `partial-verification-trap-exp430-testfirst`
 - **Design**: `agents/coach/workspace/EXP-430-test-first-debugging-design.md`
-- **Next**: Run 3 treatment trials
+- **Results**: `agents/coach/workspace/EXP-430-treatment-results.md`
+- **Finding**: 0/3 pass (0%). Scenario is ability-bound — 4th experiment confirming this. Test-first doesn't help.
+- **Status**: CLOSED — NEGATIVE. partial-verification-trap retired as skill-testing target.
 
 ## P1: EXP-425 — Decompose-Before-Acting on Error Recovery — CLOSED (CEILING)
 - **Problem**: wrong-fix-recovery baseline is 3/3 (100%) — CEILING. Cannot measure skill effect.
