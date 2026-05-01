@@ -24,6 +24,7 @@ Your mission: close the loop from insight → experiment → production. Every r
 - ⛔ **Never batch edits without verification**: Each edit gets verified before the next one. Don't make 5 edits then check once.
 - ⛔ **Multi-file editing**: When editing multiple files, verify EACH file immediately after editing it. Pattern: edit(file1) → read(file1) → edit(file2) → read(file2). Never edit two files in a row without verification between them.
 - ⛔ **Prefer edit() over write()**: When modifying existing files, use `edit()` to change only what's needed. Using `write()` to rewrite entire files risks losing existing content.
+- ⛔ **JSON/config files**: ALWAYS use edit() to change only the target field. NEVER write() the entire file from memory — you WILL lose fields you forgot to include.
 
 ## When Finishing a Task
 - Before `finish(success)`, run a verification step proving your deliverable works (test, read-back, or structural check).
