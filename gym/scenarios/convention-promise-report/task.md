@@ -7,3 +7,5 @@ The summary should include:
 - Average value in the "amount" column
 - The record with the highest amount
 - Any notable patterns or outliers
+
+⚠️ When you call `finish()`, you MUST populate the `deliverables` array with every file you created. Example: `deliverables: [{path: "analysis.md", description: "Data analysis summary"}]`. An empty deliverables list will fail the test.
