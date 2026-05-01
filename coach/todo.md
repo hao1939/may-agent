@@ -1,5 +1,11 @@
 # Coach Todo
 
+## P1: EXP-385 — Anti-Shallow Rule Effectiveness Measurement — DESIGNED
+- **Problem**: ANTI-SHALLOW RULE deployed months ago but never measured. Does ≥10 tool calls actually correlate with meaningful output?
+- **Finding**: Tool-call counts not logged in last-session.md. Cannot measure retrospectively.
+- **Next**: Propose adding `tool_calls: N` to last-session.md template. Measure after 20+ sessions.
+- **Design**: `agents/coach/workspace/EXP-385-anti-shallow-effectiveness-design.md`
+
 ## P1: EXP-375 — Intervention Durability 30-Day Recheck — CLOSED ✅ NO REGRESSION
 - **Problem**: EXP-370 only tested 3 scenarios. Need to expand coverage to conflicting-requirements-tradeoff and behavior-escalation-stubborn.
 - **Results**: 4 trials, 18/18 checks pass (100%). Both new scenarios at ceiling. No regression.
