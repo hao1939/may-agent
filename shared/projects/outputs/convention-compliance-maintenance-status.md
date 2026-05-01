@@ -1,21 +1,20 @@
 # Convention Compliance Project — Maintenance Status Check
-**Date**: Iteration 29 | **Status**: MAINTENANCE — No action required
+**Date**: Iteration 30
+**Status**: ✅ COMPLETE — Maintenance Mode
 
-## Final Metrics
-- **Baseline**: 44% (iteration 1)
-- **Current floor**: 96.1% | **Peak**: 98.0% (50/51 checks)
-- **Target**: 90% ✅ achieved at iteration 18
+## Summary
+- **Starting compliance**: 44%
+- **Final compliance**: 96-98% (floor: 96.1%)
+- **Iterations**: 24 active + 6 maintenance confirmations
+- **All milestones achieved**
 
-## Interventions Applied (permanent)
-1. SOUL.md patches across 7 agents (editing conventions, declare-intent, multi-file rules)
-2. Scorer recalibrations: edit()-as-self-verification, outcome-based field preservation
-3. Task.md hardening for multi-edit and workflow scenarios
-4. Transcript fallback logic for fewshot/verify-wrap scenarios
+## No Action Required
+This project has been complete since iteration 25. No further worker iterations are needed.
 
-## Maintenance Protocol
-- Run `workspace/regression-guard.sh` weekly (threshold: 88%)
-- Re-activate project only if floor drops below 90%
-- Residual: C2.1 workflow intent declaration (requires workflow runner changes — separate project)
+## Maintenance Plan (Unchanged)
+- Run `regression-guard.sh` weekly
+- Re-activate only if floor drops below 90%
+- Workflow runner SOUL.md injection is a separate project opportunity
 
 ## Recommendation
-**No further iterations needed.** Redirect effort to other active projects.
+**Stop dispatching worker iterations to this project.** Redirect effort to other active projects.
