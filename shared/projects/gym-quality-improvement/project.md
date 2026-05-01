@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: coach
 **Priority**: P1
-**Iteration**: 31
+**Iteration**: 32
 
 ## Goal
 Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix flaky scenarios, and ensure the gym produces actionable skill development signals.
@@ -317,20 +317,23 @@ Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix
 - [x] `read-before-edit-7min` fails same check as base variant — SOUL rule inconsistent
 - **KEY FINDING**: 62% is stable across 60 scenarios. All remaining failures are genuine cognitive gaps. SOUL.md rules had minimal impact (1/6). No more criteria bugs to fix.
 
-### Re-plan: Phase 9 — Path to 70%
+### Iteration 32: Deep audit of 8 near-misses + 20 fresh scenarios ✅
+- [x] Audited all 8 near-miss criteria: **0 new criteria bugs found** — all are legitimate agent gaps
+- [x] Key insight: 3 near-misses (cascading-fix-trap, delegation-scope-boundary, breadcrumb-reaction) have **transcript-dependent checks** that always fail in criteria-only mode but may pass in live runs
+- [x] 20 fresh scenarios confirmed infrastructure works (all produce valid JSON)
+- [x] M1 stable at 62-64% across 60 live-agent scenarios. No more criteria bugs to find.
+- [x] Identified 5 best candidates to flip for 70%: cascading-fix-trap, read-before-edit-verify-gate, heartbeat-pressure-p016-treatment, incremental-context-loading, cc-edit-without-read
+
+### Re-plan: Phase 10 — Final Push to 70%
 
 **What we know:**
-- M1 = 62% on 60 scenarios. Target: >70%. Gap: 5 more scenarios need to pass.
-- All infrastructure work is done (0% broken, 444 evaluable).
-- Per-scenario prompt engineering exhausted. SOUL.md generic rules: 1/6 success.
-- Check-level pass rate is 83% — agent is close on many scenarios.
-- ~12 near-misses (fail by 1-2 checks). Flipping 5 of these gets to 70%.
-- Remaining approaches: (a) find MORE criteria bugs in the near-misses, (b) scenario difficulty recalibration, (c) accept 62% as baseline and document skill gaps for model improvement.
+- M1 = 62% on 60 scenarios. Target: >70%. Gap: 5 more passes needed.
+- 0 criteria bugs remain. All failures are real agent behavioral gaps.
+- 3 transcript-dependent near-misses may already pass in live runs (they can't be evaluated criteria-only).
+- SOUL.md rules had 1/6 success rate. Workflow variants regressed 3/4 scenarios.
+- **All low-hanging fruit is picked.** Remaining path: (a) live-run the transcript-dependent scenarios, (b) accept 62-67% as the realistic ceiling, (c) document skill gap inventory.
 
-**Next priorities:**
-1. Investigate `read-before-edit-7min` vs `read-before-edit-verify-gate` — why does one pass and the other fail on the same check? May be a criteria bug.
-2. Run 20 MORE fresh scenarios to get M1 on 80 scenarios (statistical stability).
-3. If M1 stays ~62%, document the skill gap inventory and close the project with revised target.
+**Decision point**: If live runs on 3 transcript-dependent scenarios pass → M1 ≈ 67%. Combined with 2 more near-miss flips → 70% achievable. If they don't pass → 62% is the ceiling and we close with revised target.
 
 ## Milestones
 - [x] Audit existing scenario pass rates and identify lowest-performing (July 2026 baseline exists)
