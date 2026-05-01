@@ -1,8 +1,8 @@
 
 ## Next
-- [x] **EXP-207 Phase 2 — DEPLOYED 2027-12-28** — Abstention instruction added to coder, scout, evaluator, qa. Control: all others. Measure ~2 weeks (target N≥30 finish-blocked per group). Check ~2028-01-11.
-- [x] **H-EXP-052: Finish-guard evidence specificity** — DESIGNED as EXP-267. See `agents/shared/knowledge/experiments/EXP-267/design.md`.
-- [x] **H-206 Auditor Handoff** — DESIGNED as EXP-270. Structured taint tokens + gate mechanism. See `agents/shared/knowledge/experiments/EXP-270/design.md`. Next: implement and run.
+- [ ] **Fix dispatch hygiene** — Clear stale task signals causing 50+ interrupted sessions. See `agents/bob/workspace/ANALYSIS-session-dormancy-2025-05-01.md`.
+- [ ] **Verify EXP-188 finish-guard status** — Is it already shipped? If yes, close the loop.
+- [ ] **EXP-267 implementation** — Finish-guard evidence specificity. See `agents/shared/knowledge/experiments/EXP-267/design.md`.
 
 ## Done
 - [x] **EXP-207 Phase 2 Design** — Designed context intervention for calibrated abstention. See `agents/shared/knowledge/experiments/EXP-207/phase2-design.md`.

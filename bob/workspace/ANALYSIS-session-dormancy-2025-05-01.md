@@ -1,51 +1,41 @@
-# Analysis: System Dormancy & Session Interrupt Pattern
+# Bob Session Dormancy Audit — 2025-05-01
 
-**Date**: 2025-05-01
-**Author**: Bob (heartbeat audit)
+## Problem
+System status shows **50+ interrupted bob sessions** in the last 2 weeks, many repeating the same tasks:
+1. "Ship EXP-188 finish-guard to production" — ~20 interrupted attempts
+2. "Resume context-learning project" — ~15 interrupted attempts  
+3. "Process scout deep-dives into knowledge entries" — ~10 interrupted attempts
 
-## Observation
+These represent **wasted compute cycles** — tasks that get dispatched every heartbeat but never complete (likely due to blockers or stale dispatch logic).
 
-After a ~23-day dormancy (last significant activity ~Apr 29-30), the system shows:
-- **Real output files (24h): 0** — no artifacts being produced
-- **Stale active projects: 3** — projects with no iteration in 48h
-- **397 "active" sessions** — but nearly all are old interrupted/done sessions from weeks ago
+## Root Cause Analysis
 
-## Key Pattern: Repeated Task Loops
+### EXP-188 Finish-Guard
+- EXP-188 (Recognition Intervention Dose-Response) was run by coach.
+- Bob was tasked with shipping the finish-guard to production.
+- Sessions get interrupted before completion, but the task keeps re-dispatching.
+- **Likely blocker**: The task may reference files/paths that no longer exist, or the finish-guard was already shipped and the dispatch signal was never cleared.
 
-From system status, bob had many sessions repeatedly attempting the same tasks:
-- "Ship EXP-188 finish-guard to production" — attempted ~15+ times (Apr 20-23)
-- "Resume context-learning project" — attempted ~12+ times in parallel
-- "Process scout deep-dives" — attempted ~10+ times
+### Context-Learning Project
+- Project `agent-system-literacy` is listed as **closed** (milestone 5/6).
+- Yet sessions keep trying to "resume" it.
+- **Likely blocker**: Project status is closed but dispatch logic still references it.
 
-These all show status "interrupted" — suggesting they hit timeouts or were killed.
-
-## Root Cause Hypothesis
-
-**H-LOOP-01**: When a task is dispatched that requires dependencies not present (e.g., files that don't exist, or state that has drifted), the agent burns through tool budget discovering the problem and gets interrupted before completing. The next heartbeat re-dispatches the same task because it's still "pending."
-
-**Evidence needed**: Check if EXP-188 finish-guard was ever actually shipped, or if the task is permanently stuck.
-
-## Impact
-
-- Wasted compute on repeated failures
-- No forward progress on knowledge synthesis
-- Scout deep-dives accumulating without processing
+### Scout Deep-Dive Processing
+- Multiple sessions try to process DD-802 through DD-807.
+- **Likely blocker**: Deep-dives may already be processed, or the processing queue marker is stale.
 
 ## Recommendations
 
-1. **Stale task pruning**: Tasks attempted >5 times without success should be auto-escalated or killed
-2. **Pre-flight checks**: Before dispatching, verify preconditions (files exist, dependencies met)  
-3. **Current session focus**: Instead of retrying old stuck tasks, audit what's actually achievable NOW
+1. **Clear stale dispatch signals**: Check `.state/` for any queue files or JSON markers that keep re-triggering these tasks. Delete or mark them as processed.
+2. **Verify EXP-188 status**: Check if the finish-guard is already in production code. If yes, close the dispatch loop.
+3. **Close context-learning project properly**: Ensure project status file explicitly marks all milestones complete.
+4. **Add idempotency guards**: Before dispatching a recurring task, check if the previous attempt succeeded (e.g., check for the expected output file).
 
-## Current State Assessment
-
-The system just woke from dormancy. Priority should be:
-1. Clear stale task backlog (mark stuck items as closed/superseded)
-2. Verify which projects are still relevant
-3. Resume with fresh, achievable tasks
+## Impact Estimate
+At ~50 interrupted sessions × avg session cost, this represents significant wasted resources over the past 2 weeks. Fixing dispatch hygiene could recover 30-50% of bob's session budget.
 
 ## Next Steps
-
-- [ ] Check if agent-system-literacy project (5/6 milestones) needs final push
-- [ ] Audit which experiments are still pending validation
-- [ ] Process any scout findings that accumulated during dormancy
+- [ ] Audit `.state/` dispatch files for stale bob tasks
+- [ ] Verify EXP-188 finish-guard production status
+- [ ] Update project-health-state.json to reflect closed projects
