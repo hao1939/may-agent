@@ -5,8 +5,10 @@
 - Design docs: `agents/shared/may-agent-docs/design/` (the system's architecture)
 - Core principles: `agents/shared/may-agent-docs/design/core-principles.md`
 - Common sense: `agents/shared/common-sense.md`
-- Session patterns: `query_db("SELECT agent, status, COUNT(*) FROM sessions GROUP BY agent, status")`
-- Metrics: `query_db("SELECT * FROM metrics WHERE status='active'")`
+- Session patterns: read via bun:sqlite readonly, e.g.
+  `bun -e "const {Database}=require('bun:sqlite'); const db=new Database('.state/may.db',{readonly:true}); console.log(db.prepare('SELECT agent, status, COUNT(*) c FROM sessions GROUP BY agent, status').all())"`
+- Metrics: same pattern with `SELECT * FROM metrics WHERE status='active'`
+- (`query_db` tool is referenced in arc/agent.json but not wired in at runtime — see KE-434)
 - Agent configs: `agents/*/SOUL.md`, `agents/*/context.md`
 
 ## How to Discover Work
