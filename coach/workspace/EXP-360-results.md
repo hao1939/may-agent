@@ -1,55 +1,62 @@
 # EXP-360 Results: Workflow-Level Forced Verification Step
 
-## Status: CLOSED ✅ POSITIVE (stability improvement)
+## Status: CLOSED — INCONCLUSIVE (baseline improved)
 
-## Date: This session
+## Protocol
+- Treatment: `convention-verify-multi-edit-workflow-gated` (Phase 3 VERIFY gate)
+- Control: `convention-verify-multi-edit-workflow` (no forced verify phase)
+- 3+ valid trials per arm attempted
 
-## Arms
-- **Treatment**: `convention-verify-multi-edit-workflow-gated` (mandatory Phase 3 VERIFY)
-- **Control**: `convention-verify-multi-edit-workflow` (existing, no forced verify phase)
+## Raw Results
 
-## Results
+### Treatment (gated)
+| Trial | Score | Failed Checks | Duration | Notes |
+|-------|-------|--------------|----------|-------|
+| 1 | 8/9 | C2.1:plan-before-acting | 70.1s | Valid |
+| 2 | 2/9 | agent_status: error | 360ms | Agent crashed — discard |
+| 3 | 2/9 | agent_status: error | 377ms | Agent crashed — discard |
+| 4 | 8/9 | C2.1:plan-before-acting | 79.3s | Valid |
+| 5 | 8/9 | C2.1:plan-before-acting | 64.0s | Valid |
 
-| Arm | Run 1 | Run 2 | Run 3 | Median | Range |
-|-----|--------|--------|--------|--------|-------|
-| Treatment (gated) | 8/9 | 8/9 | 9/9 | 8/9 | 1 |
-| Control | 2/9 | 8/9 | 8/9 | 8/9 | 6 |
+**Treatment median (valid runs): 8/9**
 
-### Treatment Detail
-- Run 1: 8/9 — only C2.1:plan-before-acting failed (stochastic, known residual)
-- Run 2: 8/9 — same single C2.1 failure
-- Run 3: 9/9 — perfect pass
+### Control (no gate)
+| Trial | Score | Failed Checks | Duration | Notes |
+|-------|-------|--------------|----------|-------|
+| 1 | 8/9 | C2.1:plan-before-acting | 52.9s | Valid |
+| 2 | 8/9 | C2.1:plan-before-acting | 64.2s | Valid |
+| 3 | 2/9 | agent_status: error | 462ms | Agent crashed — discard |
 
-### Control Detail
-- Run 1: 2/9 — catastrophic failure (7 checks failed including all product + C2.1). Agent used write() instead of edit(), destroying fields.
-- Run 2: 8/9 — only C2.1 failed
-- Run 3: 8/9 — only C2.1 failed
+**Control median (valid runs): 8/9**
 
 ## Analysis
 
-### Primary Hypothesis: Treatment median ≥ 8/9
-✅ **CONFIRMED** — Treatment median = 8/9 (actually 8.3/9 mean)
+### Key Finding: Baseline has improved since EXP-355
+EXP-355 (which motivated EXP-360) measured the control at median **5/9** with range 3. Now both arms score **8/9** consistently. The only failing check is C2.1:plan-before-acting (workflow runner strips SOUL.md context — known accepted residual from agent-convention-compliance project).
 
-### Secondary Hypothesis: Treatment variance ≤ 1
-✅ **CONFIRMED** — Treatment range = 1 (8-9), control range = 6 (2-8)
+### Why?
+Since EXP-355 was measured, the following interventions were deployed system-wide:
+- SOUL.md verify-after-edit rules (from EXP-280/340/350)
+- Post-Edit Verification rule in coder/context.md (gym-quality-improvement iter 29)
+- OUTPUT FORMAT enforcement (EXP-330)
 
-### Key Finding
-The forced verification phase **eliminates catastrophic failures**. The control has a ~33% chance of total failure (agent uses write() and destroys fields), while the treatment never drops below 8/9.
+These cumulative improvements raised the baseline to 8/9, eliminating the gap the gated variant was designed to fill.
 
-The verify phase likely forces the agent to notice field destruction and fix it, even in cases where it initially uses write() instead of edit().
+### Flakiness Note
+Both arms show ~33% agent crash rate (fast failures <500ms, agent_status: error). This is a gym runner infrastructure issue, not scenario-specific. The environment gets polluted from previous runs (files already modified).
 
-### Residual
-C2.1:plan-before-acting remains stochastic (~67% pass) in both arms. This is an orthogonal issue — the workflow runner strips SOUL.md context, so the agent sometimes skips the plan declaration.
+## Conclusion
 
-## Decision
-**POSITIVE** — The verify-wrap pattern generalizes to multi-edit workflows. Forced verification phases should be added to all edit-heavy workflows to eliminate catastrophic variance.
+**INCONCLUSIVE** — The treatment shows no improvement over control because baseline performance already reached 8/9 (the target). The gated verify phase provides no additional benefit when the agent already verifies consistently.
 
-## Impact
-- Eliminates write()-destroys-fields failure mode (worth ~6 checks when it triggers)
-- Reduces run-to-run variance from 6 to 1
-- Pattern is deployable by coach today — no infrastructure changes needed
+### Decision
+- ❌ Do NOT deploy workflow-level verify gates system-wide (no incremental benefit)
+- ✅ Prior SOUL.md + context.md interventions are working (8/9 vs historical 5/9)
+- The one remaining failure (C2.1:plan-before-acting) is an infrastructure limitation (workflow runner strips context), not an agent behavioral gap
 
-## Next Steps
-1. Update todo.md with closure
-2. Consider deploying this pattern to production multi-edit workflows
-3. The only remaining failure (C2.1) requires workflow runner changes to inject SOUL.md context — out of scope
+## Impact on Projects
+- **agent-convention-compliance**: The 98% measurement is confirmed real — C2.1 in workflow context is the accepted residual
+- **gym-quality-improvement**: No new skills needed for this scenario class
+- **EXP-360 status**: CLOSED — INCONCLUSIVE
+
+## Date: 2026-09-03
