@@ -1,36 +1,24 @@
-# Satellite Project Audit
+# Satellite Project Audit — 2026-04-29
 
-## 1. Hao Alignment
+## Summary
+3 satellites audited. 2 are waiting on human input. 1 needs work but requires cross-agent coordination.
 
-**Status**: WAITING — can be left alone  
-**Owner**: may | **Priority**: P2  
+## hao-alignment
+- **Status**: WAITING
+- **Owner**: may
+- **Assessment**: Feature-complete. All phases 1-5 done. Correction rate baseline ~1% (target <10% ✅).
+- **Blocker**: Waiting on next Hao interaction to validate P6-P10 preferences and measure correction rate with gate active.
+- **Action needed**: None from system-efficiency. Will unblock naturally when Hao interacts.
 
-**Summary**: All phases complete (P1-P10 preferences extracted and propagated to agent contexts). Correction rate baseline is ~1% (well below 10% target). Infrastructure deployed.
+## proof-of-life-dashboard
+- **Status**: WAITING
+- **Owner**: tech-lead
+- **Assessment**: Feature-complete. M1-M3 done. Dashboard renders with 🟢🔴 indicators, trend arrows, 7-day history.
+- **Blocker**: M4 — awaiting Hao feedback on whether these are the RIGHT 5 metrics.
+- **Action needed**: None from system-efficiency. Needs Hao review.
 
-**What would unblock it**: Next Hao interaction (to validate P6-P10 accuracy) or quarterly git re-scan (scheduled Oct 2026).
-
-**Recommendation**: **No action needed.** Leave in waiting state. Will self-activate on next Hao chat session.
-
----
-
-## 2. Proof-of-Life Dashboard
-
-**Status**: WAITING — can be left alone  
-**Owner**: tech-lead | **Priority**: P1  
-
-**Summary**: Feature-complete. Daily digest generates with 5 metrics (Success Rate, Eval Quality, Handler Health, Error Rate, Sessions), trend arrows, color indicators, and 7-day history lines. Only M4 (Hao feedback on metric selection) remains.
-
-**What would unblock it**: Hao reviewing the daily digest and confirming/changing the 5 metric choices.
-
-**Recommendation**: **No action needed.** Cannot proceed without human feedback. Dashboard is working and producing value as-is.
-
----
-
-## Summary Table
-
-| Project | Status | Blocker | Action |
-|---------|--------|---------|--------|
-| Hao Alignment | Waiting | Next Hao interaction | None — monitoring mode |
-| Proof-of-Life Dashboard | Waiting | Hao feedback on metrics | None — feature-complete |
-
-Both satellites are correctly in waiting state. Neither needs worker dispatch.
+## prompt-efficiency
+- **Status**: Active but blocked on cross-agent edits
+- **Assessment**: Analysis complete (prompt-trim-report.md). 9/15 SOUL.md files over 800-token target.
+- **Top 3 files needing trim**: bob (7.9KB), master (6.8KB), amy (6.4KB)
+- **Action needed**: Notify each agent's owner to trim their SOUL.md. System-efficiency cannot edit other agents' files directly.
