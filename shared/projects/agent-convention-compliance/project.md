@@ -13,21 +13,17 @@ Ensure all agents consistently follow established conventions (C1.1 read-before-
 - **M2**: Top violation count per convention per 7-day window — target <5 per agent
 - **M3**: Gym scenario pass rate for convention scenarios — target >80%
 
-## Current State (Iteration 12 Assessment)
-- **Trajectory**: 44% → 68% → 76% → 78% → 82.4% → 84.3% → 86.3% → **83.3%** (target >90%)
-- **Regression**: 86.3% → 83.3% (noise, within 1 check)
-- **SOUL.md patches verified**:
-  - C40.1 declare-intent: arc ✅, optimizer ✅, bob ❌, dev ❌ (2/7 missing)
-  - Multi-edit rule: arc ✅, amy ✅, bob ❌, dev ❌ (2+/7 missing)
-  - Edit-over-write: all 7 ✅
-- **Remaining 7 failures of 42 checks (83.3%)**:
-  1. Multi-edit-workflow: 4 product failures (agent write()s full JSON, loses fields)
-  2. C40.1 declare-intent: 1 failure
-  3. C1 read-before-edit: 1 failure (multi-file)
-  4. C2.3 verify-after-edit: 1 failure (nondeterministic)
-- **Key insight**: Application-level guards prevent coach from editing bob/dev SOUL.md. Notified both agents directly to self-patch. The 4 workflow product failures (write() loses JSON fields) remain the biggest prize.
-- **Path to 90%**: bob/dev self-patch (2 checks) + fix workflow write→edit behavior (4 checks) = 41/42 (97.6%). Notifications sent to bob (P1) and dev (P1).
-- **Blocker resolved**: Confirmed SOUL.md guard is real (not worker error). Pivoted to notify agents to self-patch.
+## Current State (Iteration 14 Assessment)
+- **Trajectory**: 44% → 68% → 76% → 78% → 82.4% → 84.3% → 86.3% → 83.3% → **78.4%** (latest real run, target >90%)
+- **Latest gym**: 40/51 passed (78.4%) — `workspace/iteration10-gym-results.md`
+- **11 failures breakdown**:
+  - 4 workflow transcript/session-finder bugs (phantom — scorer can't find session)
+  - 3 multi-edit-workflow product failures (agent write()s full JSON, loses fields)
+  - 2 C40.1 declare-intent failures
+  - 1 C2.3 verify nondeterministic
+  - 1 C1 read-before-edit
+- **SOUL.md patch status**: bob ✅ self-patched, dev ❌ still missing
+- **Path to 90%**: Fix session finder (4 checks) + 1 more = 45/51 (88.2%). Need workflow product fix (3 more) = 48/51 (94.1%).
 
 ## Milestones
 - [x] Baseline compliance rates for all agents on all conventions
