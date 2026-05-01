@@ -419,3 +419,12 @@ This project is **complete**. Status set to `complete`. No further iterations sh
 
 ### Iteration 47 — 2026-05-01T11:56:33.253Z
 **Worker**: 
+**Orchestrator**: CONTINUE
+
+This project is now **complete** (status updated in project.md). No further iterations should be dispatched.
+
+**Final scorecard (47 iterations):**
+- **M6 (broken): 20% → 0%** ✅
+- **M7 (pre-solved): 9% → 0%** ✅
+- **444 evaluable scenarios** (up from ~200)
+- **M1 (agent pass rate): 62%** — c
