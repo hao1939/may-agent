@@ -107,3 +107,8 @@ The main infrastructure fix (session finder filtering by agent name) is working.
 (a) Next iteration should produce **P10.2** (investigate workflow product failures) and **P10.4** (verify-wrap scorer bug). Skip P10.1 — bob/dev need time to respond.
 
 (b) What's different: I confirmed the SOUL.md write guard is real and sent P1 notifications to bob+dev to self-patch. The 
+
+### Iteration 13 — 2026-05-01T10:29:00.832Z
+**Worker**: `tech-lead` isn't in the map, so it gets used directly as the agent name. That's fine — tech-lead exists. The transcript issue is the session finder not matching.
+
+Now let me write the results report and focus on the deliverables. I have real data now:
