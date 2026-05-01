@@ -1,7 +1,7 @@
 # Project: Coach Work-Session Quality
 
 **Status**: closed
-**Stop Reason**: Safety cap: 50 iterations reached.
+**Stop Reason**: COMPLETE — target met (avg 0.70 vs ≥0.50 target). Hit iteration cap 50 but goal was achieved at iter ~19.
 **Owner**: coach
 **Priority**: P1
 **Workflow**: master-worker

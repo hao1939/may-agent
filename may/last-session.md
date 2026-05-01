@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777650586296_1975
+- **Session:** s_1777652387426_1998
 - **Status:** done
-- **When:** 2026-05-01T15:52:11.668Z
-- **Duration:** 2m25s
+- **When:** 2026-05-01T16:21:03.483Z
+- **Duration:** 1m16s
 
 ## What Happened
-The spec says it's already implemented with 37 tests passing. The notification is stale — dismissing it.
-
-Now let me commit and wrap up:
+The coach notification about closing projects — I'll handle this by notifying coach to close their stuck projects:
