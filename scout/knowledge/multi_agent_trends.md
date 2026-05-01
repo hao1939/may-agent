@@ -1,4 +1,3 @@
-
 # Trends in Multi-Agent coordination (Based on Chinese AI communities)
 
 1. Hierarchical vs Flat: Most production systems are moving towards hierarchical dispatching (a "boss" agent delegating to "specialist" agents) rather than flat peer-to-peer voting systems, as it reduces latency and token usage.
