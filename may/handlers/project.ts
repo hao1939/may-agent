@@ -41,6 +41,22 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const projects = ph.scanAllProjects(agentsRoot);
     if (projects.length === 0) return;
 
+    // Smart preflight: skip if all projects are blocked/waiting/closed and none have changed
+    // This prevents 78% no-op wakeups when nothing is actionable
+    const hasActionable = projects.some(p => p.status === "active" || p.status === "paused");
+    if (!hasActionable && event?.type !== "project.nudge") {
+      // Check if any blocked project's file was modified since last scan
+      const lastScan = healthState.lastFullScan || 0;
+      const hasChanges = projects.some(p => {
+        try { const stat = require("node:fs").statSync(p.projectFile); return stat.mtimeMs > lastScan; }
+        catch { return false; }
+      });
+      if (!hasChanges) {
+        ctx.log?.(`[project] Preflight skip: 0 actionable, no file changes since last scan`);
+        return;
+      }
+    }
+
     // Sync projects to DB cache
     try {
       const db = ctx.getDb();
