@@ -1,0 +1,11 @@
+{
+  "name": "approach-validation-trap-workflow",
+  "description": "Workflow variant of approach-validation-trap. Forces agent to read primary evidence (session logs) and document findings BEFORE writing any conclusions. Prevents accepting misleading summaries at face value.",
+  "categories": ["judgment", "root-cause-analysis"],
+  "tags": ["behavior", "fm-2.1", "analysis", "red-herring", "workflow"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coach",
+  "workflow": true,
+  "inherits": "approach-validation-trap"
+}
