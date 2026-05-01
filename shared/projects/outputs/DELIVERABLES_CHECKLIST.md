@@ -1,8 +1,4 @@
-# Deliverables Checklist — Iteration 42
+# Deliverables Checklist
 
-| Deliverable | Status | Path |
-|---|---|---|
-| Iteration 42 status/closure doc | DONE | `/app/agents/shared/projects/outputs/iteration-42-status.md` |
-
-## Notes
-Task was "tree is clean, nothing to commit." Produced status file confirming project closure.
+- [x] DONE: `outputs/iteration-43-completion.md` — completion evidence for iteration 43
+- [x] DONE: `outputs/project-closure.md` — verified pre-existing closure report (1839 bytes)
