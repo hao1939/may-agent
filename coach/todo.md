@@ -1,5 +1,17 @@
 # Coach Todo
 
+## P1: EXP-445 — Impact Radius Check on Escalation Judgment — CLOSED ✅ POSITIVE
+- **Problem**: Agents exhibit "tunnel vision" — fix failing tests but miss other modules using same interface
+- **Hypothesis**: impact-radius-check skill (grep consumers, assess scope) → ≥+33pp
+- **Scenario**: `escalation-judgment-base` / `escalation-judgment-exp445-treatment`
+- **Baseline**: 0/3 (0%) — all TUNNEL VISION
+- **Treatment**: 3/3 (100%) — all COMPREHENSIVE (fixed both payment.js and refund.js)
+- **Delta**: +100pp. Exceeds target by 67pp.
+- **Skill**: `agents/skills/impact-radius-check.md`
+- **Results**: `agents/coach/workspace/EXP-445-impact-radius-check-results.md`
+- **Status**: CLOSED ✅ POSITIVE. Ready for deployment to coder/bob.
+- **Next**: Deploy to coder/context.md and bob/context.md. Replicate on second scenario.
+
 ## P1: EXP-435 — Context-Verification Skill on Ambiguous-Context-Drift — CLOSED (INCONCLUSIVE)
 - **Problem**: Agents trust injected context without verifying. status-doc-accurate check fails when agents don't document context inaccuracies.
 - **Hypothesis**: verify-before-resuming skill → +20pp pass rate
