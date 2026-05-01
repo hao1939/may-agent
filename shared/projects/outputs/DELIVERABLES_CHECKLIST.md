@@ -1,9 +1,8 @@
 # Deliverables Checklist
 
-## Project Status: COMPLETE (no further work needed)
+- [x] **DONE** — Regression guard script: `/app/agents/shared/projects/outputs/regression-guard.sh`
+  - Checks all SOUL.md (<600w) and context.md (<450w) files
+  - All files pass (verified via bash execution)
 
-| Deliverable | Status | Path |
-|---|---|---|
-| Regression guard script | DONE | /app/agents/shared/projects/outputs/regression-guard.sh |
-
-All primary project metrics are at target. This script is the only remaining useful output (prevents word-count regression).
+## Project Status
+Project is COMPLETE. All metrics at target. Script provides regression protection.
