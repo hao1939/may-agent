@@ -1,7 +1,8 @@
 # Deliverables Checklist
 
-| # | Deliverable | Status | Evidence |
-|---|-------------|--------|----------|
-| 1 | Assess project state | DONE | project.md Status: Complete, all metrics at target |
-| 2 | Verify evaluator trimmed | DONE | wc -w confirms 406w |
-| 3 | Decision provided | DONE | CONTINUE - project complete |
+## Task: Assess prompt-efficiency project and decide next steps
+
+| Deliverable | Status | Evidence |
+|-------------|--------|----------|
+| Verify project state | DONE | `wc -w` confirms evaluator at 406w, project.md shows Status: Complete |
+| Decision on next steps | DONE | Project complete, no further iterations needed |
