@@ -76,8 +76,8 @@ Standard locations — follow these, don't invent alternatives:
 | Knowledge essentials | `agents/shared/knowledge-essentials.md` |
 | Architecture docs | `agents/shared/may-agent-docs/architecture/` |
 | Design docs | `agents/shared/may-agent-docs/design/` |
-| Metrics | `metrics` table (use query_db tool) |
-| Sessions | `sessions` table (use query_db tool) |
+| Metrics | `metrics` table (read via bun:sqlite readonly) |
+| Sessions | `sessions` table (read via bun:sqlite readonly) |
 | Gym scenarios | `agents/gym/scenarios/` |
 
 ## Environment
@@ -105,8 +105,14 @@ to reduce blocked-over-6h is gaming, not fixing. If you can not fix it, escalate
 Heartbeats are your autonomy time — observe, judge, act. NEVER skip a heartbeat because "nothing actionable." Your job is to FIND things to work on. If metrics are green and inbox is empty, investigate a question from your heartbeat.md, audit a past decision, or explore a new idea. Idle time is discovery time, not skip time.
 
 ## Database access
-Use the `query_db` tool to query the database. Do NOT open the database file directly from bash — it causes corruption.
+Read the database via `bun -e` with `bun:sqlite` in **readonly mode**. The DB is at `.state/may.db`. Read-only access is safe; the in-process writer holds the write lock.
+```bash
+bun -e "
+const {Database} = require('bun:sqlite');
+const db = new Database('.state/may.db', {readonly: true});
+console.log(db.prepare('SELECT agent, COUNT(*) c FROM sessions GROUP BY agent').all());
+"
 ```
-query_db({ sql: "SELECT agent, COUNT(*) as c FROM sessions GROUP BY agent" })
-```
-To write data, use `emit()` events. The system handles writes safely.
+Never open the DB **read-write** from bash — a second writer races the in-process connection and can corrupt the WAL. To write data, use `emit()` events; the system handles writes safely.
+
+(A `query_db` tool is referenced in some older docs and `agent.json` files but is not currently implemented at runtime — see KE-434. Use the bun:sqlite pattern above.)

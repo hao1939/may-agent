@@ -2,7 +2,7 @@
 
 # Database Schema Reference
 
-Database accessible via `query_db` tool. Do not open the file directly.
+Database access: read via `bun -e` with `bun:sqlite` in readonly mode (`new Database('.state/may.db', {readonly: true})`). Do not open the file read-write from bash. The legacy `query_db` tool is not currently wired in at runtime — see KE-434.
 
 ## Key Tables
 
