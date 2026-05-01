@@ -315,6 +315,8 @@ function runAgent(adapter , taskContent , workDir , agent , timeoutMs ) {
 
   // Snapshot PROJECT_ROOT before agent runs (agent may write there instead of workDir)
   const beforeSnapshot = snapshotDir(PROJECT_ROOT);
+  // Record timestamp before agent runs so we can find the correct session later
+  const agentStartTime = Date.now();
 
   // Real agent binary found via GYM_AGENT_BIN — invoke it
   // Read task file content and pass via env var to avoid shell escaping issues
@@ -373,7 +375,17 @@ function runAgent(adapter , taskContent , workDir , agent , timeoutMs ) {
         allSessionDirs = allSessionDirs.concat(histDirs);
       }
       const sessionDirs = allSessionDirs
-        .filter((d) => /^(history\/)?s_\d+/.test(d))
+        .filter((d) => {
+          if (!/^(history\/)?s_\d+/.test(d)) return false;
+          // Only consider sessions created after we started the agent
+          const name = d.includes("/") ? d.split("/").pop() : d;
+          const tsMatch = name.match(/^s_(\d+)/);
+          if (tsMatch && agentStartTime) {
+            const sessionTs = parseInt(tsMatch[1], 10);
+            if (sessionTs < agentStartTime) return false;
+          }
+          return true;
+        })
         .sort((a, b) => {
           const nameA = a.includes("/") ? a.split("/").pop() : a;
           const nameB = b.includes("/") ? b.split("/").pop() : b;
