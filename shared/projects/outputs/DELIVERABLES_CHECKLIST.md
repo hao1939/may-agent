@@ -1,7 +1,9 @@
 # Deliverables Checklist
 
-## Task: Project Complete - No Work Remaining
+## Task: Iteration 29+ of COMPLETED project
 
 | Deliverable | Status | Notes |
 |---|---|---|
-| No deliverables required | N/A | Project is DONE since iteration ~10. All 3 metrics at target, all plan items complete. This is iteration 28+ being dispatched to a completed project due to an orchestration bug. |
+| No deliverables required | N/A | Project is done since iteration ~10. All metrics at target. No work remains. |
+
+This project has been complete for 20+ iterations. The orchestration layer keeps dispatching work to a finished project.
