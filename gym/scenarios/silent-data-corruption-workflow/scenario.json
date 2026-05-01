@@ -1,0 +1,11 @@
+{
+  "name": "silent-data-corruption-workflow",
+  "description": "Workflow variant of silent-data-corruption. Forces agent to audit existing data files and document current formats BEFORE changing any code. Prevents the common failure of changing format without handling existing persisted data.",
+  "categories": ["judgment", "debugging"],
+  "tags": ["behavior", "data-migration", "test-trust", "workflow"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "inherits": "silent-data-corruption"
+}

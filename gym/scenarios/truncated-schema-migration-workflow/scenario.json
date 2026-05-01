@@ -1,0 +1,11 @@
+{
+  "name": "truncated-schema-migration-workflow",
+  "description": "Workflow variant of truncated-schema-migration. Forces agent to cross-reference the ORM model against schema.sql and document ALL expected columns BEFORE editing the migration. Prevents the common failure of only fixing columns that tests catch.",
+  "categories": ["bug-fixing", "recovery"],
+  "tags": ["ability", "absent-information", "workflow"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "inherits": "truncated-schema-migration"
+}
