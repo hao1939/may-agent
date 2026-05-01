@@ -1,9 +1,9 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777669018378_2219
+- **Session:** s_1777669042722_2222
 - **Status:** done
-- **When:** 2026-05-01T20:57:06.510Z
+- **When:** 2026-05-01T20:57:30.831Z
 - **Duration:** 8s
 
 ## What Happened
@@ -11,36 +11,33 @@
 {
   "agents": {
     "amy": {
-      "role": "Builder",
+      "role": "Researcher",
       "capability_level": "L2",
-      "efficiency": 0.72,
-      "quality": 0.95,
-      "verdict": "good",
+      "efficiency": 0.65,
+      "quality": 0.85,
+      "verdict": "acceptable",
       "issues": [
-        "Used a broad `find src -type f | xargs cat` dump early; workable in a tiny gym repo but scales poorly and can add noise (minor efficiency hit).",
-        "Finish() was blocked twice due to unrelated uncommitted changes in /app/agents (agent journal + shared knowledge entry). Amy recovered correctly by committing, but it added extra tool calls."
+        "Initial wrong path assumption caused extra filesystem search: tried reading /tmp/.../src/paginate.js (ENOENT) before discovering files live under /tmp/.../environment/src/ (3 wasted calls in the failure chain).",
+        "Two finish() attempts were blocked by the Ghost Deliverable guard due to summary wording implying changes when none were made; required rephrasing to 'analyzed/ran tests'.",
+        "Made an unrelated commit to /app/agents (amy/last-session.md) solely to satisfy the 'uncommitted changes' guard; this is meta-work not directly related to fixing/verifying the gym project."
       ],
       "metrics": {
-        "code_correctness": "high (single-line logic fix aligned with tests and rounding spec)",
-        "test_verification": "high (ran `node test.js` and got 17/17 passing)",
-        "scope_control": "high (did not modify test.js; changed only src/calculator.js)",
-        "process_hygiene": "medium (uncommitted meta-repo files delayed finish)"
+        "code_correctness": "high (no changes made; verified behavior via tests)",
+        "verification": "high (ran test suite successfully)",
+        "tool_discipline": "medium (extra calls from path discovery; multiple blocked finish attempts)"
       }
     }
   },
   "workflow": {
-    "name": "single-agent gym bugfix",
+    "name": "single-session gym bugfix verification",
     "issues": [
-      "Finish gate required committing changes in /app/agents even though the actual task code lived under /tmp gym path; caused additional overhead but was resolved."
+      "Guard friction: Ghost Deliverable rule triggered twice because summary language was interpreted as implying a code change; agent recovered by rephrasing.",
+      "Environment/layout mismatch: gym files located in /environment subdir; not discovered until after initial ENOENT + find."
     ]
   },
   "overall": {
-    "verdict": "good",
+    "verdict": "acceptable",
     "result_delivered": true
   }
 }
 ```
-
-Lessons:
-- `[amy] Prefer targeted inspection (open suspected module + run tests) over full-tree `cat` to reduce early noise and improve efficiency.`
-- `[amy] Before calling finish(), run `git status` in /app/agents to avoid repeated finish() blocks from unrelated uncommitted files.`
