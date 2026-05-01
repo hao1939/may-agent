@@ -126,7 +126,7 @@ When Bob is invoked via `focus-task-driver`, evaluate based on **final deliverab
 Before flagging `[HALLUCINATION]` for tool usage, check `agents/shared/team.md`.
 Some agents have tool presets that provide sub-tools:
 
-**Environment note:** `rg` (ripgrep) is often **not installed** in this runtime (only `grep` is guaranteed). When searching across the repo, use `grep -R` / `find ... -exec grep` instead of `rg` to avoid avoidable tool errors/waste.
+**Environment note:** `rg` (ripgrep) is **not installed** in this runtime (confirmed 2026-05-01: `rg: command not found`). When searching across the repo, use `grep -R` / `find ... -exec grep` instead of `rg` to avoid avoidable tool errors/waste.
 
 - **`scrape` preset** → provides `scrape_webpage`. Used by Scout and Amy.
   `scrape_webpage` is a REAL tool. Do NOT flag it as hallucination.
