@@ -1,3 +1,4 @@
 # Deliverables Checklist
 
-- [x] DONE — `outputs/efficiency-scorecard.md` — Full efficiency scorecard with 4 metrics, dispatch waste analysis (197/200 failures), root cause (51 archived projects), and pre-flight fix proposal
+- [x] DONE — Final report: `/app/agents/shared/projects/outputs/test-coverage-final-report.md` (verified complete)
+- [x] DONE — Completion evidence: `/app/agents/shared/projects/outputs/completion-evidence.md` (updated)
