@@ -383,3 +383,6 @@ This project is **complete**. Status set to `complete`, iteration 43.
 - **444 evaluable scenarios** (up from ~200)
 - **M1 (agent pass rate): 62%** — confirmed ceiling across 60 live-agent trials
 - **8 skill gaps docu
+
+### Iteration 44 — 2026-05-01T11:54:34.446Z
+**Worker**: 
