@@ -1,9 +1,10 @@
 # Deliverables Checklist
 
-## Task: Test Coverage Project (Complete)
+## Project: Test Coverage Improvement
 
 | Deliverable | Status | Path |
 |---|---|---|
 | Final report | DONE | /app/agents/shared/projects/outputs/test-coverage-final-report.md |
 
-All targets exceeded (86.69% coverage, 1565 tests passing, 11/11 critical paths, 60% threshold enforced). No further work needed.
+## Notes
+Project completed in earlier iterations. 86.69% coverage (target 80%), 1565 tests passing, 11/11 critical paths covered, 60% threshold enforced. No further work needed.
