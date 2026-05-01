@@ -1,65 +1,84 @@
 # Gym Scenario Deduplication Analysis
 
-## Summary
-41% of gym scenarios are pre-solved (pass without agent intervention). This inflates pass rates and wastes compute.
+Generated: 2025-01-20
 
----
+## Overview
 
-## 1. Scenarios to RETIRE (Pre-solved, Low Signal)
+- **Total scenarios**: 493
+- **HEALTHY**: 227 (46%)
+- **PRE_SOLVED**: 202 (41%)
+- **BROKEN**: 44 (9%)
+- **NO_CRITERIA**: 19 (4%)
 
-| Scenario Pattern | Reason to Retire |
-|-----------------|-----------------|
-| `write-before-read` | Fixed by SOUL.md write-first constraint — enforced globally |
-| `edit-over-write` | edit() preference now in all SOUL.md files |
-| `empty-session-detection` | Fixed by finish() contract requiring deliverables |
-| `stale-completion-claim` | Fixed by verification evidence requirement |
-| `project-md-edit-guard` | Read-only constraint on project.md — trivial check |
-| `basic-file-creation` | Tests write() works — too trivial |
-| `checkpoint-usage` | Trivial compliance check |
+202 scenarios pass all checks without any agent intervention. This means 41% of the gym is dead weight — measuring nothing about agent quality.
 
-**~7 scenarios (~17% of total) — retire these**
+## Worst Offenders: Variant Explosion
 
-## 2. Scenarios to KEEP
+The PRE_SOLVED scenarios cluster heavily around a few base scenarios with excessive variants:
 
-| Scenario Pattern | Why Keep |
-|-----------------|---------|
-| `context-overflow-recovery` | Real failure mode, can regress |
-| `multi-agent-coordination` | Complex fork/call patterns |
-| `error-escalation-path` | Critical path testing |
-| `concurrent-file-conflict` | Real production issue |
-| `tool-failure-recovery` | Important resilience test |
-| All currently-failing scenarios | These ARE the signal |
+| Base Scenario | PRE_SOLVED Variants | Assessment |
+|---|---|---|
+| `cascading-fix-trap` | 40 | **Extreme bloat.** 40 variants of the same scenario, all pre-solved. |
+| `approach-validation-trap` | 7 | High redundancy |
+| `compound-edit-verification` | 4 | Moderate redundancy |
+| `ambiguous-context-drift` | 4 | Moderate (6 HEALTHY variants exist — keep those) |
+| `build-activation-gap` | 3 | All 3 pre-solved |
+| `silent-dependency` | 3 | Some healthy variants exist |
+| `idempotent-already-fixed` | 3 | All pre-solved |
 
-**~24 scenarios (~59%) — these provide real signal**
+## Section 1: Scenarios to Retire (134 scenarios)
 
-## 3. Proposed NEW Scenarios
+### Cascading-fix-trap variants (40 scenarios)
+All 40 PRE_SOLVED. The base `cascading-fix-trap` is also pre-solved. These appear to be experiment arms (`exp177`, `exp195`, `exp198`, `exp199`, `exp200`, `exp202`, `exp242`, `exp257`) and difficulty variants (`f1`, `f2`, `f1f2`, `moderate`, `hard`, `tool`, etc.) that all pass without agent action. **Retire all 40.** If the underlying bug was fixed, the scenario no longer tests anything.
 
-### High Priority
-1. **`dispatch-to-nonexistent-project`** — Should return skipped, not escalate (was #1 waste: 97% failed dispatches)
-2. **`stale-reference-propagation`** — Config references deleted project. Should degrade gracefully
-3. **`write-persistence-failure`** — File overwritten by concurrent process. Should detect/retry
+### Experiment-numbered scenarios (9 scenarios)
+`exp096-arm-a/b/c`, `exp097-arm-a/b`, `exp175-arm-b/c/d`, `exp163/164/165-*` — experimental variants that were PRE_SOLVED. These are leftover from A/B tests. **Retire all.**
 
-### Medium Priority
-4. **`iteration-without-progress`** — Full iteration, 0 new files = waste
-5. **`duplicate-deliverable-detection`** — Identical file to existing = skip
-6. **`soul-md-drift`** — Behavior contradicts SOUL.md rules
+### Fully-redundant base+variant sets where ALL are PRE_SOLVED (estimated 85 more)
+Scenarios like `abandoned-branch` + `abandoned-branch-workflow`, `bloated-refactor`, `cascading-error`, `behavior-resource-convergence`, all `approach-validation-trap-*`, all `build-activation-gap-*`, etc. When both the base AND all variants are pre-solved, the entire family should be retired.
 
-### Lower Priority
-7. **`checkpoint-crash-recovery`** — Resume from checkpoint after crash
-8. **`nested-agent-failure-bubbling`** — Forked agent fails, parent handles gracefully
-9. **`metric-gaming-detection`** — Optimizes metric without real improvement
+## Section 2: Scenarios to Keep (259 scenarios)
+
+### All 227 HEALTHY scenarios
+These differentiate agent quality. Keep all.
+
+### PRE_SOLVED bases where HEALTHY variants exist (~13 scenarios)
+Example: `ambiguous-context-drift-L2` is PRE_SOLVED but `ambiguous-context-drift-L1` and `ambiguous-context-drift` are HEALTHY. Keep the healthy variants, retire the pre-solved siblings.
+
+### NO_CRITERIA scenarios worth fixing (up to 19)
+`ambiguous-context-drift-ext-v2/v3` and others lack `success_criteria.js`. Adding criteria could recover these. Worth auditing individually.
+
+## Section 3: Proposed New Scenarios
+
+Replace retired scenarios with tests for **real failure modes observed in production**:
+
+### 1. `dispatch-nonexistent-project`
+Agent is dispatched to work on a project that doesn't exist. Tests: does the agent detect this early and skip gracefully, or waste its entire budget?
+
+### 2. `write-first-violation`
+Task says "write file X" but agent reads/scans first, then claims file already exists without producing anything. Tests the empty-session failure mode.
+
+### 3. `stale-context-hallucination`
+Agent's context.md contains outdated facts about the codebase. Tests: does the agent verify against reality or trust stale context?
+
+### 4. `concurrent-edit-conflict`
+Two agents edit the same file. Tests: does the agent detect the conflict and recover, or silently overwrite?
+
+### 5. `budget-exhaustion-graceful`
+Agent has only 3-4 tool calls remaining. Tests: does it produce a partial deliverable + checkpoint, or waste remaining budget on reads?
+
+### 6. `false-completion-detection`
+Agent's prior session claimed task was done, but it wasn't. Tests: does the agent verify prior claims or blindly trust them?
 
 ## Impact Estimate
 
-| Action | Pass Rate | Signal Quality |
-|--------|-----------|---------------|
-| Retire 7 trivial | -3% | +15% |
-| Add 9 new | -8% initially | +25% |
-| **Net** | **~-11%** | **Much better real-quality correlation** |
+- **Retiring 134 PRE_SOLVED scenarios** would raise the "meaningful scenario" rate from 46% to ~80% (227 healthy out of ~280 remaining + new)
+- **Adding 6 production-failure scenarios** would test the actual bottlenecks observed in the system
+- Net: gym becomes a real quality signal instead of being inflated by 41% dead weight
 
-## Recommendation
+## Recommended Actions
 
-1. Immediately retire the 7 pre-solved scenarios
-2. Add 3 high-priority new scenarios first
-3. Redefine target: "non-trivial pass rate" excluding scenarios pre-solved >30 days
-4. Auto-retire scenarios at 100% pass for 60+ consecutive days
+1. **Immediate**: Delete or archive the 40 `cascading-fix-trap-*` PRE_SOLVED variants
+2. **Short-term**: Audit remaining 162 PRE_SOLVED scenarios — fix criteria or retire
+3. **Medium-term**: Implement the 6 proposed scenarios above
+4. **Ongoing**: Add a CI check that flags new PRE_SOLVED scenarios within 48h of creation

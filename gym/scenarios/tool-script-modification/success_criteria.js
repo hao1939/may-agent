@@ -24,3 +24,15 @@ module.exports = async function checkSuccess(workDir) {
 
   return { passed: true, reason: 'CSV flag added with tests' };
 };
+
+// CLI wrapper for gym runner
+if (require.main === module) {
+  const workDir = process.argv[2] || __dirname + '/environment';
+  module.exports(workDir).then(r => {
+    const checks = r.checks || [{ name: 'result', passed: r.passed, message: r.reason || '' }];
+    const passed = Array.isArray(checks) ? checks.every(c => c.passed) : r.passed;
+    console.log(JSON.stringify({ passed, checks }));
+  }).catch(e => {
+    console.log(JSON.stringify({ passed: false, checks: [{ name: 'error', passed: false, message: e.message }] }));
+  });
+}
