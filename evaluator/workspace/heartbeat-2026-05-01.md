@@ -1,20 +1,29 @@
 # Evaluator Heartbeat — 2026-05-01
 
-## Checks performed
+## Checks
 
-### Session Eval pipeline liveness (Process #5)
-- DB canonical: `MAX(evaluations.createdAt)=1777632944087` (fresh at time of check).
-- Sessions table uses `startedAt/endedAt` not `createdAt`; `MAX(sessions.startedAt)=1777632997424`, `MAX(sessions.endedAt)=1777632997397`.
-- Legacy artifacts: `.state/evaluations/` contains files as new as **2026-04-29** (`s_*.json`), while some `task_tree_*.json` remain **2026-03-24** → supports prior hypothesis that `task_tree_*` is a legacy output path and may be drifting/stale independently of DB pipeline health.
+### Process #5 (Session Eval) — DB liveness
+- `evaluations MAX(createdAt)`: 2026-05-01 12:56:02 (table count 1971)
+- Conclusion: eval pipeline writing to DB recently (live).
+- Note: `.state/evaluations/` legacy artifacts still look stale/spotty (task_tree JSONs mostly Mar 24; some `s_*.json` Apr 29). Treat as legacy path drift, not DB pipeline failure.
 
-### Active session monitoring (Periodic Task #2)
-Ran `node agents/evaluator/skills/monitor-session.cjs --running` and got **5 alerts** (command exit code 1):
-- `s_1777626616591_0` (amy): **STALL** — idle 106 min → recommended action: **kill**
-- `s_1777632393145_998` (arc): **DRIFT** → recommended action: **warn**
-- `s_1777632799025_1013` (bob): **DRIFT** → recommended action: **warn**
-- `s_1777632907226_1018` (coach): **PROTOCOL_VIOLATION (P114)** → recommended action: **warn**
-- `s_1777632943188_1020` (coach): **PROTOCOL_VIOLATION (P114)** → recommended action: **warn**
+Evidence:
+- bun/sqlite output in transcript:
+  - `evaluations { maxCreatedAt: "2026-05-01 12:56:02", n: 1971 }`
+  - `ls .state/evaluations | tail` shows mostly Mar 24 task_tree, some Apr 29 s_*.json
 
-## Notes / follow-ups
-- Consider pinging May (or responsible supervisor) with the 5 alerts above so interventions can happen quickly.
-- Process #15 (LLM Eval) not re-checked this heartbeat; last periodic note indicates no `*llm*` tables in DB.
+### Process #5 (Monitor Active Sessions)
+Ran `node agents/evaluator/skills/monitor-session.cjs --running`.
+
+Result: 5 sessions need attention:
+1. `amy` `s_1777626616591_0`: `STALL` (idle 257 min) → recommended action: **kill**
+2. `arc` `s_1777641393486_1406`: `DRIFT` (0% task relevance in last 10 tool calls) → recommended action: **warn**
+3. `coach` `s_1777641559322_1418`: `PROTOCOL_VIOLATION` (P114 Experience Replay missing) → recommended action: **warn**
+4. `optimizer` `s_1777641854716_1439`: `PROTOCOL_VIOLATION` (P114 Experience Replay missing) → recommended action: **warn**
+5. `optimizer` `s_1777642008848_1449`: `PROTOCOL_VIOLATION` (P114 Experience Replay missing) → recommended action: **warn**
+
+Evidence: monitor-session output (command exit code 1 with summary + per-session evidence strings).
+
+## Actions taken
+- Logged the above as a heartbeat artifact for visibility + follow-up.
+- No direct interventions available from Evaluator toolset (no agent messaging/kill tool in this environment). Next step is escalation to May/Hao if someone is online.
