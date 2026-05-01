@@ -569,10 +569,21 @@ function runScenario(scenarioName , agent , lab , adapter , timeoutMinutes , kee
       // Workflow: split task on --- delimiter, run phases sequentially
       const phases = taskContent.split(/\n---\n/).map((p ) => p.trim()).filter((p ) => p.length > 0);
       agentStatus = "completed";
+      const allTranscripts = [];
+      const allSessionJsonls = [];
       for (let pi = 0; pi < phases.length; pi++) {
         const phaseTask = phases[pi];
         const phaseResult = runAgent(adapter, phaseTask, tmpDir, effectiveAgent, timeoutMs);
         transcriptPath = phaseResult.transcriptPath || transcriptPath;
+        // Accumulate transcript from each phase
+        if (transcriptPath && fs.existsSync(transcriptPath)) {
+          allTranscripts.push(fs.readFileSync(transcriptPath, "utf-8"));
+        }
+        // Accumulate session JSONL if it was generated
+        const jsonlPath = path.join(tmpDir, "transcript.jsonl");
+        if (fs.existsSync(jsonlPath)) {
+          allSessionJsonls.push(fs.readFileSync(jsonlPath, "utf-8"));
+        }
         if (phaseResult.status === "skipped") {
           agentStatus = "skipped";
           break; // No point running further phases if agent is stubbed
@@ -581,6 +592,15 @@ function runScenario(scenarioName , agent , lab , adapter , timeoutMinutes , kee
           agentStatus = phaseResult.status;
           break;
         }
+      }
+      // Merge all phase transcripts so scorer sees the full workflow
+      if (allTranscripts.length > 0 && transcriptPath) {
+        fs.writeFileSync(transcriptPath, allTranscripts.join("\n--- PHASE BREAK ---\n"));
+      }
+      if (allSessionJsonls.length > 0) {
+        const merged = allSessionJsonls.join("\n");
+        fs.writeFileSync(path.join(tmpDir, "transcript.jsonl"), merged);
+        fs.writeFileSync(path.join(tmpDir, "_gym_transcript.jsonl"), merged);
       }
     } else {
       const agentResult = runAgent(adapter, taskContent, tmpDir, effectiveAgent, timeoutMs);

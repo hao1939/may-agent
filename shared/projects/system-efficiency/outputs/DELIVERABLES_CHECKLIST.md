@@ -1,4 +1,4 @@
-# Deliverables Checklist — Iteration 37
+# Deliverables Checklist — Iteration 38
 
 ## Required
-- [x] `outputs/token-savings-estimate.md` — DONE — Token savings analysis for shared-rules dedup (~1,725 tokens/session-set, ~17K/day)
+- [x] DONE — `outputs/weekly-health-dashboard.md`: Reusable weekly monitoring template (8 sections, 102 lines)
