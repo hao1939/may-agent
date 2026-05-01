@@ -1,9 +1,11 @@
-# Deliverables Checklist
+# Deliverables Checklist — Optimizer Heartbeat
 
-## Heartbeat: SOUL.md Updates
+## Task: Process notifications, check metrics and projects
 
-| # | Deliverable | Status | Path | Change |
-|---|------------|--------|------|--------|
-| 1 | Remove "When Editing Files" section (P2) | DONE | agents/optimizer/SOUL.md | Removed 7-rule section to align with other agents |
-| 2 | P0 finish-task update | N/A | - | Line doesn't exist in my SOUL.md already |
-| 3 | P1 session-awareness guard | BLOCKED | - | Notification text truncated, full content unavailable |
+| # | Deliverable | Status | Evidence |
+|---|------------|--------|----------|
+| 1 | Process P0 notification (finish deliverables rule) | DONE | Already applied — grep confirms no old text |
+| 2 | Process P2 notification (remove "When Editing Files") | DONE | Already applied — grep confirms section absent |
+| 3 | Process P1 notification (session-awareness guard) | DISMISSED | Notification truncated, no actionable content |
+| 4 | Review metrics | DONE | All healthy: success-rate 1.0, p95 within target |
+| 5 | Review projects | DONE | 48 iterations, all first-attempt successes |
