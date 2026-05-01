@@ -1,3 +1,4 @@
 # Deliverables Checklist
 
-- [x] DONE — Completion evidence file at `/app/agents/shared/projects/outputs/PROJECT_COMPLETE_EVIDENCE.md`
+- [x] DONE — Completion evidence file: `/app/agents/shared/projects/outputs/PROJECT_COMPLETE_EVIDENCE.md`
+  - Documents that the project is complete and no further iterations are needed.
