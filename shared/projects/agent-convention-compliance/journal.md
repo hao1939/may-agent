@@ -145,3 +145,6 @@ Let me write the milestone completion evidence:
 (a) Next iteration should produce **P18.1** (fix fewshot transcript bug) — this is the single highest-leverage item, worth 2 free checks that push us from 88.2% to 92.2%.
 
 (b) We're 1.8pp from 90% with 6 well-understood failures. The fewshot transcript fix is pure infrastructure — no behav
+
+### Iteration 18 — 2026-05-01T11:24:21.836Z
+**Worker**: We're at **46/51 = 90.2%**! Let me write the results and analysis.
