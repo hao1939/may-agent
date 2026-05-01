@@ -1,9 +1,7 @@
 # Deliverables Checklist
 
-## Task: Project Completion (Iteration 11)
+## Task: Project Complete - No further work needed
 
 | Deliverable | Status | Path |
 |---|---|---|
-| Completion evidence report | DONE | /app/agents/shared/projects/outputs/completion-evidence.md |
-
-No further work required — project marked complete since iteration 5.
+| Completion evidence file | DONE | /app/agents/shared/projects/outputs/completion-evidence.md |
