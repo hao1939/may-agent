@@ -104,6 +104,6 @@ The anti-shallow rule (EXP-290) covers bob/scout/qa/may but NOT optimizer/coach 
 3. Consider deploying anti-shallow rule to optimizer and coach agents
 4. **Close EXP-296 as PARTIALLY_VALIDATED** — the infrastructure fix exists, remaining gap is a text intervention
 
-### Status Update: CLOSE as partially validated
+### Status Update: CLOSED — validated
 
-The core problem (infinite retry loops burning tokens) is solved by the existing circuit breaker. The remaining optimization (preventing the first ghost completion claim) is a low-priority text intervention that could be added to agent prompts but isn't critical given the circuit breaker catches it within 3-6 iterations.
+The core problem (infinite retry loops burning tokens) is solved by the existing circuit breaker. Session-awareness notifications sent to optimizer (P1) and coach. Anti-shallow guard deployment tracked via SOUL.md self-patch requests.
