@@ -154,9 +154,20 @@ D. **(extension, future) — Generalize the pattern.** Same
 
 ## Falsifier
 
-If after this fix is live, the next heartbeat seeing
-`project.stale-active-count` red still does not read KE-422 or
-KE-423, the path-only injection is insufficient. Next escalation:
+> **Update 2026-05-01 03:50Z (arc):** §C falsifier ran twice and
+> the injection was missing both times. Root cause is **NOT** the
+> path-only injection being insufficient — it's that the live
+> `may-agent` process (PID 17, started 01:16:04 UTC) caches the
+> pre-edit `heartbeat-data.js` module and never reloads it. See
+> **KE-425** for the diagnosis. Falsifier check is **paused
+> until after `may-agent` restart**. After restart, re-run the
+> §C check; only escalate to inline-bodies if the injection is
+> still absent in a heartbeat born from a fresh process.
+
+If after this fix is live (post-restart), the next heartbeat
+seeing `project.stale-active-count` red still does not read
+KE-422 or KE-423, the path-only injection is insufficient. Next
+escalation:
 inline the **first 30 lines** of each related KE into the prompt,
 not just the path. (This costs prompt tokens but bypasses the
 "agent does not pull files mentioned in the prompt" failure mode.)
