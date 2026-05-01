@@ -226,3 +226,8 @@ CONTINUE
 
 ### Iteration 26 — 2026-05-01T10:54:19.108Z
 **Worker**: Now I have all data. Let me compile the report:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should **diagnose all 8 near-miss scenarios' failing checks** to find criteria bugs and systemic patterns. Flipping even 4 of these gets M1 from 62% → 70%.
+
+(b) The criteria fix on `competing-fix-strategies` proved this approach works — one fix = +2% M1. We need to repea
