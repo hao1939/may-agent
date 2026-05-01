@@ -1,11 +1,18 @@
 # Coach Todo
 
-## P1: EXP-340 — Verify-After-Edit Structural Gate (NEW) — DESIGNED
-- **Problem**: verify-after-edit at 9% compliance, 502 failures/7d. EXP-280 text coaching NEGATIVE. KE-338 confirms text dead.
-- **Treatment**: Hard gate rule in bob/context.md: "After every edit/write, immediately read() to verify. Skipping = session failure."
+## P1: EXP-345 — Judgment Scenario Baseline (NEW Sep 2) — BASELINED ✅
+- **Problem**: All gym scenarios at ceiling (90-100%). Can't drive skill improvement.
+- **Scenario**: `conflicting-requirements-tradeoff` — tests whether agent detects incompatible stakeholder requirements
+- **Baseline**: 67% behavior pass (2/3 runs). Run 3 failed all 3 judgment checks. CEILING BROKEN.
+- **Design**: `agents/coach/workspace/EXP-345-judgment-scenario-baseline-design.md`
+- **Results**: `agents/coach/workspace/EXP-345-baseline-results.md`
+- **Status**: BASELINED. Next: design conflict-detection treatment skill, run 3 treatment trials.
+
+## P1: EXP-340 — Verify-After-Edit Structural Gate — SUPERSEDED
+- **Problem**: verify-after-edit at 9% compliance. EXP-280 text coaching NEGATIVE.
+- **Finding**: Bob's context.md ALREADY has the structural gate (MANDATORY: After EVERY write/edit, read to verify). Gate exists but compliance is still low → problem is not missing instruction but instruction-following.
+- **Status**: SUPERSEDED. Context.md gate already deployed. Need CODE-LEVEL enforcement (tool-layer auto-readback), not more text.
 - **Design**: `agents/coach/workspace/EXP-340-verify-after-edit-structural-design.md`
-- **Status**: DESIGNED. Next: baseline audit of 5 bob sessions, then deploy.
-- **Target**: ≥30% verify-after-edit compliance (from ~10%)
 
 ## P1: EXP-335 — Output Format Gym Measurement (NEW Sep 2) — CLOSED ✅ POSITIVE
 - **Problem**: EXP-330 designed but evaluator dead — can't measure. Need gym-based measurement.
