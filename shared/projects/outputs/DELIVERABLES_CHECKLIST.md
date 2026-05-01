@@ -1,9 +1,10 @@
 # Deliverables Checklist
 
-## Task: Iteration 29+ of COMPLETED project
+## Task: Iteration 30+ of completed project (no work needed)
 
-| Deliverable | Status | Notes |
-|---|---|---|
-| No deliverables required | N/A | Project is done since iteration ~10. All metrics at target. No work remains. |
+| # | Deliverable | Status | Path |
+|---|-------------|--------|------|
+| 1 | Bug report on iteration loop | DONE | /app/agents/shared/projects/outputs/iteration-loop-bug-report.md |
 
-This project has been complete for 20+ iterations. The orchestration layer keeps dispatching work to a finished project.
+## Notes
+Project has been complete since iteration ~10. No actionable work remains.

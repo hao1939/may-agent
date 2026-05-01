@@ -1,29 +1,29 @@
 # Iteration Loop Bug Report
 
-**Date**: 2025-01-28
+**Date**: 2025-01-31
 **Project**: system-efficiency
-**Issue**: Project keeps receiving iterations despite status being "done"
+**Issue**: Worker keeps being dispatched to a completed project
 
 ## Summary
 
-The system-efficiency project has been complete since ~iteration 10. Despite the project.md status being set to "done" (verified multiple times), the orchestration layer continues dispatching iterations. We are now on iteration 27+.
+The system-efficiency project has been **done** since ~iteration 10. The worker has now been dispatched 30+ times to a completed project. Something in the orchestration layer resets project status to "active" between iterations or fails to check status before dispatching.
 
 ## Evidence
 
-- All 3 metrics at target (confirmed repeatedly)
+- All 3 metrics at target
 - All plan items checked off
 - 80+ output files produced
 - 5 satellites spawned
-- Closure documents written
-- project.md line 3 set to `**Status**: done` (verified via edit)
+- project.md status set to "done" (verified multiple times)
+- Iterations 7-30+ all received identical "project is done, stop dispatching" guidance
 
 ## Root Cause Hypothesis
 
-Something in the workflow/orchestration layer either:
-1. Resets project status to "active" between iterations
-2. Ignores the "done" status when selecting projects for dispatch
-3. Has a stale cache of project status
+The workflow infrastructure either:
+1. Resets `**Status**: done` back to `active` between iterations
+2. Does not check project status before dispatching work
+3. Has a stuck loop that ignores the done state
 
 ## Recommendation
 
-This is an infrastructure bug in the orchestration layer, not a project issue. The worker cannot fix this — it requires changes to whatever system selects projects for iteration dispatch.
+Fix the orchestration layer to respect project status = "done" and stop dispatching iterations.
