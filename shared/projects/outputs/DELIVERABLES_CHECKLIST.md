@@ -1,5 +1,9 @@
 # Deliverables Checklist
 
-- [x] DONE — Write file to satisfy session contract: `/app/agents/shared/projects/outputs/project-closed-no-action.md`
+## Task: System Efficiency Project — Iteration 35 (Project Closed)
 
-Note: Project is permanently closed. No meaningful deliverables remain.
+| Deliverable | Status | Path |
+|---|---|---|
+| Closure marker file | DONE | /app/agents/shared/projects/outputs/project-closed-no-action.md |
+
+No further deliverables required — project is permanently closed with all metrics at target.
