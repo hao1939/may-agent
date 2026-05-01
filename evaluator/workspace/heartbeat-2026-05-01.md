@@ -1,40 +1,39 @@
-# Evaluator heartbeat — 2026-05-01
+# Evaluator Heartbeat — 2026-05-01
 
-## Checks performed
+## Promise
+1. Check evaluation pipeline liveness/recency using DB as primary signal.
+2. Quantify eval coverage over the last 24h (rough proxy for “Coverage low”).
+3. Record any actionable follow-ups in a short note.
 
-### Pipeline freshness (DB canonical)
-From `.state/may.db` (readonly):
-- `evaluations.max(createdAt)` = `1777647323107`
-- `sessions.max(startedAt)` = `1777647411939`
-- Last 7d counts: `evaluations=2040`, `sessions=6053`
-- Sessions missing eval (last 7d, left join where `e.sessionId is null`) = `4256`
+## Findings (evidence)
+### DB liveness
+- `evaluations.max(createdAt)` = **1777652693541** (ms epoch)
+  - Evidence: `bun:sqlite` query output.
+- `sessions.max(startedAt)` = **1777652854191** (ms epoch)
+  - Evidence: `bun:sqlite` query output.
+- Lag ≈ **161s** between newest session start and newest evaluation.
+  - Evidence: printed `{evalMax,sessMax,lagSeconds:161}`.
 
-### Missing-eval breakdown (last 7d)
-By `kind/source` (top):
-- `job / standalone-eval`: 1477
-- `call / workflow:worker`: 1010
-- `call / workflow:orchestrator`: 758
-- `job / null`: 695
-- `call / workflow:heartbeat-evaluator`: 107
+Interpretation: evaluation writes to DB appear **live** (minutes-level lag).
 
-By `agent` (top):
-- evaluator: 1590
-- optimizer: 947
-- coach: 866
-- amy: 697
+### Coverage proxy (last 24h)
+- sessions in last 24h: **6232**
+- evaluations in last 24h: **2187**
+- proxy coverage: **0.3509**
+  - Evidence: printed `{sess24: 6232, eval24: 2187, coverage: 0.3509...}`.
 
-### Legacy artifact path
-`.state/evaluations/` contains files with mtimes through Apr 29 / Apr 20; older task_tree artifacts still dated Mar 24.
+Interpretation: if the intended behavior is to evaluate “most sessions”, coverage is likely low; if the intended behavior is sampling/filtered evaluation, this may be normal. Needs owner confirmation.
 
-## Interpretation
-- DB timestamps indicate the evaluation pipeline is *running recently* (fresh max createdAt).
-- Evaluation **coverage** is likely limited by intentional scoping / skip rules rather than a dead cron: 6053 sessions vs 2040 evals in 7 days (~34% coverage).
-- A large share of missing-eval sessions are internal workflow calls and standalone-eval jobs (may be intentionally excluded to avoid evaluating evaluators / orchestration noise).
+### Legacy artifacts sanity check
+- `.state/evaluations/` contains recent `s_*.json` dated **Apr 29**, while `task_tree_*.json` are dated **Mar 24**.
+  - Evidence: `ls -la .state/evaluations | tail`.
 
-## Action recommended
-- Decide/clarify policy: should we evaluate `workflow:*` calls and `standalone-eval` jobs?
-  - If **no**, the “coverage” metric should explicitly exclude these categories, otherwise it will always look low.
-  - If **yes**, update the evaluator job’s session filter to include these.
+Interpretation: matches known pattern: task_tree artifacts can drift/stale while DB remains fresh.
 
-## Next step (if assigned)
-- Open `agents/evaluator/knowledge/criteria.md` and document the intended evaluation scope and what is excluded from coverage.
+## Follow-ups
+- If “Coverage” is meant to be higher than ~0.35/day, recommend creating a metric and alert threshold (owned by Evaluator) and/or clarifying expected sampling rate in docs.
+
+## Results vs Promise
+1. ✅ Checked DB liveness; lag is minutes-level.
+2. ✅ Computed 24h proxy coverage (0.351).
+3. ✅ Wrote this heartbeat note with evidence and follow-up suggestion.
