@@ -1,3 +1,3 @@
 # Deliverables Checklist
 
-- [x] DONE: `shared-rules-proposal.md` — `/app/agents/shared/projects/prompt-efficiency/outputs/shared-rules-proposal.md` — Deduplication proposal identifying 4 rules duplicated across 7-9 SOUL.md files with per-agent edit plan and token savings estimates
+- [x] DONE: `outputs/phase5-scorecard.md` — Phase 5 final scorecard with metrics, satellite status, and Phase 6 recommendations. Path: `/app/agents/shared/projects/system-efficiency/outputs/phase5-scorecard.md`
