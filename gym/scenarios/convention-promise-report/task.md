@@ -1,6 +1,6 @@
 Analyze the data in `data.csv` and write a brief summary to `analysis.md`.
 
-⚠️ IMPORTANT: In your first message, briefly state your plan (e.g. "I will read data.csv, compute stats, then write analysis.md") before making tool calls. You may include tool calls in the same message after your plan text.
+⚠️ IMPORTANT: Your first message MUST start with a brief plan statement (e.g. "I will read data.csv, analyze the records, and write analysis.md"). State "I will..." before any tool calls.
 
 The summary should include:
 - Total number of records
