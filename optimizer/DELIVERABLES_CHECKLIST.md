@@ -1,9 +1,8 @@
-# Deliverables Checklist — Optimizer Heartbeat
+# Deliverables Checklist
 
-## Deliverables
+## Task: Heartbeat — Handle P0 notification + metrics check
 
-| # | Deliverable | Status | Path | Notes |
-|---|------------|--------|------|-------|
-| 1 | Review projects and act on what matters | DONE | agents/shared/projects/prompt-efficiency/project.md | Updated P2 milestone with blocker |
-| 2 | Address pending notification | DONE | N/A | Dismissed P2 churn-tax notification |
-| 3 | Key finding documented | DONE | agents/shared/projects/prompt-efficiency/project.md | shared-rules.md has zero code references |
+| # | Deliverable | Status | Path | Details |
+|---|---|---|---|---|
+| 1 | Update SOUL.md "When Finishing a Task" section | DONE | agents/optimizer/SOUL.md | Added inbox triage line per P0 notification |
+| 2 | Metrics review | DONE | — | All metrics healthy, no action needed |
