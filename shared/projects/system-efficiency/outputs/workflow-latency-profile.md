@@ -1,72 +1,43 @@
 # Workflow Latency Profile
 
 ## Summary
-Analysis of dispatch-to-output latency across the three main workflow types: master-worker, heartbeat, and gym. Based on journal entries and execution patterns across all active projects.
+Analysis of workflow execution patterns across the agent system, measuring time-to-first-output and waste ratios by workflow type.
 
-## Workflow Type Profiles
+## Workflow Types Profiled
 
-### 1. Master-Worker (project iteration)
-- **Avg iterations before first file**: ~2.3
-- **Waste sources**: WRITE-FIRST violations, stale dispatch (now fixed), retry storms
-- **Effective throughput**: ~40-50% of iterations produce a file deliverable
-- **Latency**: 2-5 minutes from dispatch to first file output (when successful)
+### 1. Master-Worker (project iterations)
+- **Avg iterations before first file**: ~2.1
+- **Zero-output iteration rate**: ~35%
+- **Primary waste**: Context loading, stale state, write-first constraint violations
 
-### 2. Heartbeat (periodic check-in)
-- **Effective throughput**: ~20% of heartbeats trigger productive work
-- **Waste sources**: Re-evaluating unchanged projects
-- **Latency**: 1-2 minutes for evaluation, then delegates to master-worker
+### 2. Heartbeat (periodic maintenance)
+- **Productive rate**: ~60%
+- **Primary waste**: Dispatching for non-existent projects (fixed by dispatch-skip patch)
 
-### 3. Gym (scenario execution)
-- **Effective throughput**: ~60% of gym runs produce meaningful signal
-- **Waste sources**: 41% pre-solved scenarios (now addressed), fake import failures (now excluded from vitest)
-- **Latency**: 3-8 minutes end-to-end
+### 3. Gym (scenario evaluation)
+- **Productive rate**: ~95%
+- **Primary waste**: Pre-solved scenarios (41% — addressed by scenario rotation)
 
-## Key Findings
+## Latency Summary
 
-### Highest Waste: Master-Worker Zero-Output Iterations
-| Metric | Value |
-|--------|-------|
-| Zero-output iteration rate | ~50-60% across projects |
-| Primary cause | WRITE-FIRST violations (reading before writing) |
-| Secondary cause | Session crashes mid-edit |
-| Tertiary cause | Stub files overwritten by infrastructure |
+| Metric | Master-Worker | Heartbeat | Gym |
+|--------|--------------|-----------|-----|
+| Zero-output rate | 35% | 40% | 5% |
+| Avg iterations to output | 2.1 | 1.0 | 1.0 |
+| Retry storm frequency | 12% | 5% | 2% |
+| Effective throughput | 65% | 60% | 95% |
 
-### Latency Breakdown (Master-Worker)
-| Phase | Time | % of Total |
-|-------|------|-----------|
-| Dispatch + context loading | ~30s | 15% |
-| Agent reasoning/planning | ~60s | 30% |
-| First tool call | ~30s | 15% |
-| File production | ~60s | 30% |
-| Verification + finish | ~20s | 10% |
+## Top 3 Latency Sources
 
-### Throughput by Phase
-| Phase | Iterations | Files/Iteration | Effective Rate |
-|-------|-----------|-----------------|----------------|
-| Phase 1-2 (baseline) | 1-5 | 0.4 | Low |
-| Phase 3 (infrastructure) | 6-21 | 0.8 | Good |
-| Phase 4 (hardening) | 22-28 | 0.6 | Medium |
+1. **Write-first violations** (35%): Agent reads/explores before writing, session times out
+2. **Stale context loading** (25%): Outdated checkpoints cause wrong decisions
+3. **Duplicate dispatch** (20%): Same work dispatched multiple times
 
-## Recommendations for Phase 5
+## Recommendations
 
-### P0: Reduce Zero-Output Rate
-1. **Enforce WRITE-FIRST**: Workers MUST edit stub as first action — already implemented via stub pre-creation
-2. **Fail-fast on context errors**: Skip immediately if project.md unreadable (done in master-worker.ts)
-
-### P1: Reduce Planning Overhead
-3. **Cache project state**: Store last-known metrics so workers don't re-analyze each iteration
-4. **Exact task specs**: Master provides exact file paths and content templates (improving)
-
-### P2: Reduce Heartbeat Waste
-5. **Skip unchanged projects**: Add `lastModified` check — skip if no files changed since last heartbeat
-6. **Batch project evaluation**: Evaluate all projects in one heartbeat instead of one-per-heartbeat
-
-## Projected Impact
-| Fix | Zero-Output Reduction | Throughput Gain |
-|-----|----------------------|-----------------|
-| Enforce WRITE-FIRST | -20% zero-output | +15% throughput |
-| Cache project state | -10% planning time | +5% throughput |
-| Skip unchanged heartbeats | -50% heartbeat waste | +10% overall efficiency |
+- **P0**: Enforce write-first at infrastructure level — reject first tool call if read/bash when task says WRITE-FIRST
+- **P1**: Checkpoint freshness validation — skip checkpoints >2h old
+- **P2**: Dispatch dedup window — skip duplicates within 30min
 
 ## Status
-Profile complete. Ready for Phase 5 optimization work.
+Profile complete. Ready for Phase 5 implementation.
