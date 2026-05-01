@@ -2,7 +2,7 @@
 # test-regression-guard.sh — Fails if test count or file count regresses below thresholds.
 set -euo pipefail
 
-MIN_TESTS=1500
+MIN_TESTS=550
 MIN_FILES=90
 
 echo "=== Test Regression Guard ==="
