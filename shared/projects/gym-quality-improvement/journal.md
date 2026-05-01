@@ -288,3 +288,11 @@ CONTINUE
 
 ### Iteration 35 — 2026-05-01T11:46:51.278Z
 **Worker**: The project is essentially complete. The only uncommitted changes are journal/project.md (which I'm not supposed to edit) and convention-promise-report (a different project). Let me write a completion evidence file.
+**Orchestrator**: CONTINUE
+
+This project has reached a natural completion point. All deliverables verified:
+
+**What was accomplished (34 iterations):**
+- **M6 (broken rate): 20% → 0%** ✅ — 14+ scenarios repaired
+- **M7 (pre-solved rate): 9% → 0%** ✅ — 7 pre-baked solutions removed
+- **Evaluable scenarios: ~200 → 444*
