@@ -1,10 +1,9 @@
-# Deliverables Checklist - Iteration 42
+# Deliverables Checklist
 
-## Task: CONTINUE (Project Closed)
+## Task: Iteration 43 — Project Closed, No Work Needed
 
-| Deliverable | Status | Notes |
+| Deliverable | Status | Path |
 |---|---|---|
-| No work required | DONE | Project is closed. All targets met (83.79% coverage, 191/191 tests, 11/11 critical paths). |
+| Acknowledge closed project | DONE | /app/agents/shared/projects/outputs/closed-project-noop.md |
 
-## Context
-This is iteration 42 of a no-op dispatch loop (KE-437). The project has been closed since iteration 4. No further work is needed.
+No work was required — project is closed with all targets met.
