@@ -35,6 +35,10 @@ const ALL_METRICS = [
   { id: "handler.failed-count", name: "Handler failures (6h)", owner: "may", target: 0, threshold: 3, unit: "count", alert_op: ">" },
   { id: "handler.success-rate", name: "Handler success rate (6h)", owner: "optimizer", target: 0.95, threshold: 0.80, unit: "ratio", alert_op: "<" },
   { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents)", owner: "may", target: 8, threshold: 6, unit: "count", alert_op: "<" },
+  // Sessions
+  { id: "session.error-rate-6h", name: "Session error rate (6h)", owner: "may", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">" },
+  // System output
+  { id: "system.real-output-24h", name: "Real output (24h)", owner: "may", target: 100, threshold: 30, unit: "count", alert_op: "<" },
   { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", target: 120000, threshold: 600000, unit: "ms", alert_op: ">" },
   { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", target: 30, threshold: 15, unit: "count", alert_op: "<" },
   // Project
@@ -92,6 +96,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const sixH = now - 6 * 3600000;
     const twoH = now - 2 * 3600000;
     const oneH = now - 3600000;
+    const twentyFourH = now - 24 * 3600000;
 
     let completed = 0, failed = 0;
 
@@ -129,10 +134,30 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       record("handler.fires-per-hour", count("SELECT COUNT(*) as c FROM events WHERE event_type = 'handler.started' AND timestamp > ?", oneH));
     } catch (e) { ctx.log(`[metrics-snapshot] Error measuring fires-per-hour: ${e}`); }
 
+    // ── Measure: Sessions/System output (with error isolation) ───────
+
+    try {
+      const total = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ?", sixH);
+      const err = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ? AND status IN ('error','interrupted')", sixH);
+      record("session.error-rate-6h", total > 0 ? parseFloat((err / total).toFixed(4)) : 0, total);
+    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring session.error-rate-6h: ${e}`); }
+
+    try {
+      // Counts "substantive" changed files in last 24h, excluding common noise dirs.
+      // Note: requires the agents repo to be a git checkout and git available.
+      const { execSync } = require("node:child_process");
+      const cmd = "git -C \"" + ctx.projectRoot + "\" log --since=24.hours --name-only --pretty=format: | " +
+        "grep -v '^$' | " +
+        "grep -Ev '^(\\.state/|node_modules/|dist/|build/|coverage/|\\.git/)' | " +
+        "sort -u | wc -l";
+      const out = execSync(cmd, { timeout: 15000, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }).trim();
+      const n = parseFloat(out);
+      if (!isNaN(n)) record("system.real-output-24h", n);
+    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring system.real-output-24h: ${e}`); }
+
     // ── Measure: Project (with error isolation) ──────────────────────
 
     const fortyEightH = now - 48 * 3600000;
-    const twentyFourH = now - 24 * 3600000;
     const sevenD = now - 7 * 86400000;
 
     try {
