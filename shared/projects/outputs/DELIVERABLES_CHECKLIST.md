@@ -1,6 +1,3 @@
 # Deliverables Checklist
 
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Test coverage final report | DONE | /app/agents/shared/projects/outputs/test-coverage-final-report.md |
-| 2 | Verification evidence | DONE | /app/agents/shared/projects/outputs/test-coverage-verification.md |
+- [x] DONE — `outputs/efficiency-scorecard.md` — Full efficiency scorecard with 4 metrics, dispatch waste analysis (197/200 failures), root cause (51 archived projects), and pre-flight fix proposal
