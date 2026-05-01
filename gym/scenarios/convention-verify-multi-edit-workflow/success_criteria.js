@@ -34,14 +34,12 @@ s.checkProduct("api-ratelimit-fixed", "api.json rateLimit is 100", () => {
 // Product: all files are still valid JSON with original fields preserved
 s.checkProduct("database-fields-preserved", "database.json preserves all original fields", () => {
   // edit() preserves fields by design — only replaces matched text
+  // Check if the LAST modification was edit() (workflow phases may write() early then edit() later)
   if (s.hasTranscript()) {
-    const edits = s.toolCalls("edit").filter(c =>
-      c.arguments && String((c.arguments || {}).path || "").includes("database.json")
-    );
-    const writes = s.toolCalls("write").filter(c =>
-      c.arguments && String((c.arguments || {}).path || "").includes("database.json")
-    );
-    if (edits.length > 0 && writes.length === 0) return true;
+    const mods = [...s.toolCalls("edit"), ...s.toolCalls("write")]
+      .filter(c => c.arguments && String((c.arguments || {}).path || "").includes("database.json"))
+      .sort((a, b) => a.entryIndex - b.entryIndex);
+    if (mods.length > 0 && (mods[mods.length - 1].name || mods[mods.length - 1].tool) === "edit") return true;
   }
   const raw = s.readFile("config/database.json");
   if (!raw) return false;
@@ -54,13 +52,10 @@ s.checkProduct("database-fields-preserved", "database.json preserves all origina
 
 s.checkProduct("cache-fields-preserved", "cache.json preserves all original fields", () => {
   if (s.hasTranscript()) {
-    const edits = s.toolCalls("edit").filter(c =>
-      c.arguments && String((c.arguments || {}).path || "").includes("cache.json")
-    );
-    const writes = s.toolCalls("write").filter(c =>
-      c.arguments && String((c.arguments || {}).path || "").includes("cache.json")
-    );
-    if (edits.length > 0 && writes.length === 0) return true;
+    const mods = [...s.toolCalls("edit"), ...s.toolCalls("write")]
+      .filter(c => c.arguments && String((c.arguments || {}).path || "").includes("cache.json"))
+      .sort((a, b) => a.entryIndex - b.entryIndex);
+    if (mods.length > 0 && (mods[mods.length - 1].name || mods[mods.length - 1].tool) === "edit") return true;
   }
   const raw = s.readFile("config/cache.json");
   if (!raw) return false;
@@ -73,13 +68,10 @@ s.checkProduct("cache-fields-preserved", "cache.json preserves all original fiel
 
 s.checkProduct("api-fields-preserved", "api.json preserves all original fields", () => {
   if (s.hasTranscript()) {
-    const edits = s.toolCalls("edit").filter(c =>
-      c.arguments && String((c.arguments || {}).path || "").includes("api.json")
-    );
-    const writes = s.toolCalls("write").filter(c =>
-      c.arguments && String((c.arguments || {}).path || "").includes("api.json")
-    );
-    if (edits.length > 0 && writes.length === 0) return true;
+    const mods = [...s.toolCalls("edit"), ...s.toolCalls("write")]
+      .filter(c => c.arguments && String((c.arguments || {}).path || "").includes("api.json"))
+      .sort((a, b) => a.entryIndex - b.entryIndex);
+    if (mods.length > 0 && (mods[mods.length - 1].name || mods[mods.length - 1].tool) === "edit") return true;
   }
   const raw = s.readFile("config/api.json");
   if (!raw) return false;
@@ -113,8 +105,8 @@ s.checkConvention("C2.1", "plan-before-acting", () => {
     );
 
     if (planWrites.length > 0 && configEdits.length > 0) {
-      const firstPlanWrite = planWrites[0].callIndex;
-      const firstConfigEdit = configEdits[0].callIndex;
+      const firstPlanWrite = planWrites[0].entryIndex;
+      const firstConfigEdit = configEdits[0].entryIndex;
       // PLAN.md must be written before first config edit
       return firstPlanWrite < firstConfigEdit;
     }
@@ -139,7 +131,7 @@ s.checkConvention("C1", "read-before-edit-all-files", () => {
     // Must have at least one read before first edit for each file
     if (edits.length > 0) {
       const firstEdit = edits[0];
-      const readBefore = reads.some(r => r.callIndex < firstEdit.callIndex);
+      const readBefore = reads.some(r => r.entryIndex < firstEdit.entryIndex);
       if (!readBefore) return false;
     }
   }

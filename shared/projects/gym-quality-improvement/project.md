@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: coach
 **Priority**: P1
-**Iteration**: 28
+**Iteration**: 29
 
 ## Goal
 Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix flaky scenarios, and ensure the gym produces actionable skill development signals.
@@ -279,13 +279,36 @@ Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix
 - [ ] Fix noisy-context-verify criteria (convert to Score class pattern)
 - [ ] Re-run unnecessary-refactor-trap + noisy-context-verify to validate fixes → projected +4% M1
 
-### Iteration 28: Fix last criteria bugs + measure M1 ceiling
-- [ ] Fix `noisy-context-verify` success_criteria.js — convert from `evaluate(sessionLog, workdir)` to Score class pattern
-- [ ] Re-run `unnecessary-refactor-trap` (2 trials) to confirm iteration 25 fix works
-- [ ] Re-run `noisy-context-verify` (2 trials) to confirm criteria fix works
-- [ ] Run 10 new scenarios (not in original 50) to expand sample to 60
-- [ ] Calculate final M1 on 60 scenarios — expected ~66% after fixes
-- [ ] Identify: what would it take to reach 80%? How many of the 6 real gaps are addressable via SOUL.md?
+### Iteration 28: Fix last criteria bugs + measure M1 ceiling ✅
+- [x] Fix `noisy-context-verify` success_criteria.js — converted to Score class pattern
+- [x] Verified `unnecessary-refactor-trap` fix works (criteria-only: 3/5 correct)
+- [x] 10 new scenarios validated (criteria-only) — all produce valid JSON, zero infra issues
+- [ ] ~~Live agent re-runs~~ — requires coach experiment dispatch, not available standalone
+- [x] Projected M1: ~66% after both fixes (from 62%)
+
+### Iteration 29: SOUL.md behavioral improvements ✅
+- [x] Analyzed existing coder guidance (verification.md, state-check-before-action.md, diagnosis-before-action.md, etc.)
+- [x] Identified 3 unaddressed failure patterns: data-first diagnosis (4 scenarios), post-edit verification (3 scenarios), prevention/close-the-loop (2 scenarios)
+- [x] Applied 3 changes to `/app/agents/coder/context.md`: Post-Edit Verification rule, Data-First Diagnosis rule, Prevention Check rule
+- [x] All 3 changes verified in place (lines 12, 16, 46 of context.md)
+- [ ] **PENDING**: Live agent validation — run 10 affected scenarios to measure M1 impact
+
+### Re-plan: Phase 7 — Validate SOUL.md Changes + Measure Final M1
+
+**What we know:**
+- M1 = 62% (50 scenarios). Projected 66% after criteria fixes. Target: >80%.
+- 3 behavioral rules added to coder/context.md targeting 9 failing scenarios.
+- If SOUL.md changes flip even 4/9 affected scenarios → M1 jumps to ~74%.
+- Remaining gap (74→80%) = 3 more scenarios, likely needs scenario-specific work or new skill files.
+- All infrastructure work is done (0% broken, 444 evaluable scenarios).
+
+### Iteration 30: Live validation of SOUL.md changes
+- [ ] Run 10 scenarios through gym with live agent (1 trial each): 6 affected by SOUL changes + 4 known passes (regression check)
+  - Affected: `cascading-fix-trap`, `read-before-edit-verify-gate`, `noisy-context-verify`, `breadcrumb-reaction`, `partial-verification-trap`, `close-the-loop`
+  - Regression: 4 from the known-pass list in iteration 24/26
+- [ ] Calculate delta: how many of the 6 affected scenarios flipped from FAIL to PASS?
+- [ ] If ≥3 flip: expand M1 to 60 scenarios with fresh data, project final M1
+- [ ] If ≤1 flip: analyze transcripts to understand why rules didn't take effect, iterate on rule wording
 
 ## Milestones
 - [x] Audit existing scenario pass rates and identify lowest-performing (July 2026 baseline exists)
@@ -315,3 +338,4 @@ Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix
 - Iteration 19: Worker produced iteration19-plan.md but did NOT execute the batch fixes. No scenario files were modified. Re-dispatching with explicit fix instructions.
 - Iteration 20: **16/17 "broken" scenarios were false positives.** Sweep script had bugs (couldn't parse mixed stdout, didn't pass workDir args). Only 1 genuinely broken scenario (scout-coder-logstats, fixed with git init). M6 revised from 3.9% to ~0.2%. Infrastructure is much healthier than reported. Remaining work: fix ~17 pre-solved scenarios (M7) and measure agent pass rates.
 - Iteration 27: **Near-miss triage complete.** All 19 failing scenarios classified. 18/19 are real agent gaps (only 1 was criteria-fixable, already fixed). Top failure patterns: over-acting/restraint (3 scenarios), incomplete verification (3), reasoning under noise (3), shallow investigation (3). Realistic M1 ceiling ~75%. Next: diagnose 7 undiagnosed batch-1 failures for criteria bugs, design "restraint" skill experiment.
+- Iteration 28-29: Fixed noisy-context-verify criteria (Score class pattern). Verified unnecessary-refactor-trap fix. Added 3 behavioral rules to coder/context.md: Data-First Diagnosis, Post-Edit Verification, Prevention Check. Rules target 9 failing scenarios. Next: live agent validation.

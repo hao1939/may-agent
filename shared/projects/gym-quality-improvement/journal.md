@@ -241,3 +241,11 @@ CONTINUE
 (a) Next iteration should **read the coder's SOUL.md and propose targeted behavioral additions** for the top 3 failure patterns that affect multiple scenarios. This is the only remaining path to 80% — all criteria bugs are fixed, all infrastructure is clean.
 
 (b) We've exhausted per-scenar
+
+### Iteration 29 — 2026-05-01T11:03:32.601Z
+**Worker**: Good — all 3 changes are in place. Let me verify the outputs file exists:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should **run the 6 affected scenarios through the gym with a live agent** to validate whether the SOUL.md changes actually improve pass rates. This is the single most important measurement — it determines whether we're on the right track or need to pivot again.
+
+(b) We'v
