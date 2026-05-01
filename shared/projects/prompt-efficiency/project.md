@@ -26,5 +26,11 @@ Reduce token waste in agent system prompts and context loading, improving throug
 ### Re-plan (2025-07-15)
 P3 is the blocker. Cannot edit SOUL.md files directly (protected). Sent P0 notification to tech-lead with specific trim instructions for qa/coach/evaluator. Next iteration: verify if tech-lead executed the trims.
 
+## Current State (2025-07-15)
+- Worker produced 2 iterations of proposal files but never edited actual SOUL.md files (can't — protected)
+- Actual SOUL.md word counts unchanged: qa=841w, coach=793w, eval=787w
+- Sent P0 to tech-lead to execute trims. Waiting on tech-lead action.
+- Once P3 done → P5 measurement pass, then project complete.
+
 ## Background
 Agent prompts contain significant duplication — the same rules (prefer edit over write, checkpoint usage, finish format) appear in every SOUL.md. Context.md files accumulate stale facts. Both waste tokens on every invocation, reducing the effective context window available for actual work.
