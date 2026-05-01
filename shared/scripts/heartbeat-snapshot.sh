@@ -77,17 +77,30 @@ print('RECENT_ERRORS_24H',
             ORDER BY endedAt DESC LIMIT 10\`).all(dayAgo),
   ['sessionId','agent','endedAt','error']);
 
-// 3. Pending requests for this agent (or all if no agent)
-const pendQ = AGENT
-  ? db.query(\`SELECT requestId, fromEntity, task, createdAt
-              FROM events -- requests table REMOVED WHERE status='pending' AND toAgent=?
-              ORDER BY createdAt DESC LIMIT 20\`).all(AGENT)
-  : db.query(\`SELECT requestId, fromEntity, toAgent, task, createdAt
-              FROM events -- requests table REMOVED WHERE status='pending'
-              ORDER BY createdAt DESC LIMIT 20\`).all();
-print('PENDING_REQUESTS' + (AGENT?'_FOR_'+AGENT:''), pendQ,
-  AGENT ? ['requestId','fromEntity','createdAt','task']
-        : ['requestId','fromEntity','toAgent','createdAt','task']);
+// 3. Pending agent.notification events for this agent (or all)
+//    The legacy 'requests' table was removed; agent-to-agent tasking now
+//    flows through events(event_type='agent.notification'). data is JSON
+//    blob; we extract task/source for display.
+const pendRaw = AGENT
+  ? db.query(\`SELECT id, source, owner, timestamp, data
+              FROM events
+              WHERE event_type='agent.notification'
+                AND status='pending' AND owner=?
+              ORDER BY timestamp DESC LIMIT 20\`).all(AGENT)
+  : db.query(\`SELECT id, source, owner, timestamp, data
+              FROM events
+              WHERE event_type='agent.notification'
+                AND status='pending'
+              ORDER BY timestamp DESC LIMIT 20\`).all();
+const pendQ = pendRaw.map(r => {
+  let task = '';
+  try { const d = JSON.parse(r.data || '{}'); task = d.task || d.message || ''; }
+  catch { task = String(r.data || '').slice(0, 120); }
+  return { id:r.id, fromEntity:r.source, toAgent:r.owner, createdAt:r.timestamp, task };
+});
+print('PENDING_NOTIFICATIONS' + (AGENT?'_FOR_'+AGENT:''), pendQ,
+  AGENT ? ['id','fromEntity','createdAt','task']
+        : ['id','fromEntity','toAgent','createdAt','task']);
 
 // 4. Agent's own recent sessions (last 6) — context for 'what did I just do'
 if (AGENT) {
