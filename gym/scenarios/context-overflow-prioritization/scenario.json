@@ -1,0 +1,8 @@
+{
+  "name": "context-overflow-prioritization",
+  "description": "Agent receives a long context with critical information buried in noise. Tests whether agent extracts and acts on the important details rather than getting distracted by volume.",
+  "difficulty": "hard",
+  "time_limit": 300,
+  "target_failure_modes": ["FM-3.1", "FM-2.2"],
+  "tags": ["judgment", "context-management", "prioritization"]
+}
