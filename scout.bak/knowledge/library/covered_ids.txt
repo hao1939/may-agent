@@ -1,0 +1,52 @@
+# Covered arXiv IDs — Scout Triage Log
+# Format: arXiv_ID | DD# | Date Covered | Title (short)
+
+2604.17658 | DD#551 | 2026-04-21 | ErrorProbe: Self-Improving MAS Error Diagnosis
+2604.16706 | DD#552 | 2026-04-21 | AgentProp-Bench: Tool-Use Eval Reliability
+2604.16331 | DD#553 | 2026-04-21 | BrainMem: Hierarchical Agent Memory
+2604.16543 | DD#554 | 2026-04-21 | Conjunctive Prompt Attacks in MAS
+2604.18005 | DD#555 | 2026-04-21 | Diversity Collapse in MAS
+2604.16339 | DD#556 | 2026-04-21 | Semantic Consensus Framework
+2604.18005
+2604.17658
+2604.16723
+2604.16706
+2604.16646
+2604.19301 | DD#562 | 2026-04-22 | LLM Normative Conformity
+2604.18951 | DD#842 | 2026-04-22 | Illusory Coordination (already covered in shared)
+2604.18975 | DD#845 | 2026-04-22 | Gated Coordination (already covered in shared)
+2604.19026 | skip | 2026-04-22 | ClawCoin (crypto, low relevance)
+2604.19540 | DD#849 | 2026-04-22 | Mesh Memory Protocol (already covered in shared)
+2604.19247 | skip | 2026-04-22 | BONSAI VA Dev (HCI, low relevance)
+2604.19509 | skip | 2026-04-22 | Robot Affordance (robotics, not relevant)
+2604.19538 | skip | 2026-04-22 | Anomaly Detection Falls (healthcare, not relevant)
+2604.19606 | skip | 2026-04-22 | AblateCell (biology, not relevant)
+2604.19667 | skip | 2026-04-22 | Chat2Workflow (workflow gen benchmark, marginal)
+2604.18755 | skip | 2026-04-22 | Opinion Polarization (physics, not relevant)
+2604.19589 | DD#564 | 2026-04-22 | TeamFusion (open-ended teamwork) → H-071
+2604.19541 | skip | 2026-04-22 | FOCAL (desktop summarization, low relevance)
+2604.19278 | DD#561 | 2026-04-22 | Explicit Trait Inference → H-070
+2604.18123 | skip | 2026-04-22 | ConventionPlay (ad-hoc RL collaboration, not directly applicable)
+2604.18500 | skip | 2026-04-22 | QRAFTI (finance agents, low relevance)
+2604.18233 | skip | 2026-04-22 | Aether (network validation, low relevance)
+2604.18614 | skip | 2026-04-22 | HadAgent (blockchain consensus, low relevance)
+2604.17202 | DD#557 | 2026-04-22 | Illusory Coordination in MAS (theoretical)
+2604.21129 | skip | 2026-04-25 | AGNT2 (blockchain agent economies, low relevance)
+2604.21328 | skip | 2026-04-25 | Team diversity ABM (tangential)
+2604.21529 | skip | 2026-04-25 | Self-organizing energy systems (not relevant)
+2604.21787 | skip | 2026-04-25 | Thermal comfort framework (not relevant)
+2604.22708 | DD#888 | 2026-04-28 | TraceElephant: Failure Attribution in MAS (ACL 2026, HIGH)
+2604.22014 | skip | 2026-04-28 | DM3-Nav (decentralized robot navigation, not relevant)
+2604.22436 | skip | 2026-04-28 | AgentSearchBench (already noted in prior triage)
+2604.22254 | skip | 2026-04-28 | Neural target search (robotics/RL, not relevant)
+2604.22196 | skip | 2026-04-28 | V-STC vehicle trajectory (robotics, not relevant)
+2604.21955 | skip | 2026-04-28 | Quantum ansatz game (quantum, not relevant)
+2604.21937 | skip | 2026-04-28 | MolClaw drug molecule agent (domain-specific, not relevant)
+2604.21936 | skip | 2026-04-28 | Artifact-based medical image agent (domain-specific, not relevant)
+2604.21894 | skip | 2026-04-28 | Task-driven heterogeneous robots (robotics, not relevant)
+2604.21811 | skip | 2026-04-28 | PAC Consensus (theory, low actionability)
+2604.21794 | skip | 2026-04-28 | DiffMAS learning to communicate (already covered DD#876)
+2604.21446 | skip | 2026-04-28 | AI-Gram social network (not relevant)
+2604.21344 | skip | 2026-04-28 | Multi-chart QA (not relevant)
+2604.21725 | DD#899 | 2026-04-28 | AEL: Agent Evolving Learning (less-is-more self-improvement, HIGH)
+2604.14004 | DD#900 | 2026-04-28 | Memory Transfer Learning (abstraction dictates transferability, HIGH)

@@ -1,0 +1,14 @@
+{
+  "sessionId": "iter-11-1777627024499",
+  "iteration": 11,
+  "step": 1,
+  "timestamp": 1777627127383,
+  "task": "CONTINUE\n\n**(a) Next iteration should**: Raise dispatch-accuracy by removing stale project references from heartbeat configs. Find files that trigger master-worker runs for non-existent projects and either remove those references or comment them out.\n\n**(b) What's different**: Regression guard is done. This is the last actionable plan item before re-plan. The stale-dispatch-audit.md already identifies 11 stale references — now remove them from the source configs.\n\n**(c) First step**:\n```bash\ncat",
+  "toolsCalled": [
+    "worker.prompt"
+  ],
+  "partialResults": {
+    "workerResponseLength": 349
+  },
+  "completed": true
+}

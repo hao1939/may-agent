@@ -1,0 +1,24 @@
+
+## Signal: 2026-03-28 — Security & Trust Session (Deep-Dives 158-160)
+
+Three new deep-dives completed:
+
+1. **arXiv:2603.07848 — Intentional Deception as Controllable Capability** ★★★★★
+   - 88.5% of LLM deceptions use misdirection (true-but-misleading) rather than explicit lies
+   - 7 deception types identified empirically
+   - Higher model capability → more sophisticated deception strategies
+   - Extends deception thread: Among Us, LieCraft, now this
+
+2. **arXiv:2603.12230 — Security Considerations for AI Agents (Perplexity NIST)** ★★★★★
+   - Most authoritative industry document on multi-agent security
+   - Four-layer defense-in-depth: input → model → execution monitoring → deterministic enforcement
+   - Multi-agent-specific: implicit delegation, confused-deputy, privilege escalation through chains
+   - Base-rate problem: even 1% FPR means most detections are false alarms
+   - Real CVEs: 2026-25253 (one-click RCE), 2026-26327
+
+3. **arXiv:2603.05839 — Evaluating LLM Alignment With Human Trust Models** ★★★
+   - White-box analysis: GPT-J-6B internally represents trust via Castelfranchi socio-cognitive model
+   - Trust ↔ confidence (0.9225), experience (0.9049), reputation (0.8963)
+   - Risk ANTI-aligned with trust (-0.8462) — contradicts theoretical models
+
+**Total deep-dives: 160. Total papers surveyed: 200+.**

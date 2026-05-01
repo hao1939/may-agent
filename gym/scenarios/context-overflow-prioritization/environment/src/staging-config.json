@@ -1,0 +1,22 @@
+{
+  "service": "api-gateway",
+  "version": "2.4.1",
+  "port": 3000,
+  "redis": {
+    "host": "redis.staging",
+    "poolSize": 50
+  },
+  "logging": {
+    "level": "debug",
+    "middleware": true
+  },
+  "validators": {
+    "userValidator": "./validators/user-validator.js",
+    "paymentValidator": "./validators/payment-validator.js",
+    "orderValidator": "./validators/order-validator.js"
+  },
+  "features": {
+    "rateLimiting": false,
+    "healthcheckQuery": true
+  }
+}

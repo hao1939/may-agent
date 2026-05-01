@@ -1,0 +1,4 @@
+{
+  "name": "scout",
+  "extends": "_archetypes/scout"
+}

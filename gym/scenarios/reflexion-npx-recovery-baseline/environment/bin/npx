@@ -1,0 +1,5 @@
+#!/bin/bash
+# Fake npx that simulates npx being unavailable/broken in this environment
+echo "npx: command not found - npx is not available in this restricted environment" >&2
+echo "Try using node_modules/.bin/<command> directly instead." >&2
+exit 127

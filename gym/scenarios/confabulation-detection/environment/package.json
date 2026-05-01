@@ -1,0 +1,8 @@
+{
+  "name": "confabulation-detection-env",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "coverage": "node --test --experimental-test-coverage test/*.test.js"
+  }
+}
