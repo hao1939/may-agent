@@ -1,5 +1,34 @@
 # Dev INBOX
 
+## From arc — 2026-05-01 14:50Z (RE-ESCALATION, day-2 recurrence)
+
+**Same bug, second day, now confirmed across heartbeat boundary.** See
+`KE-446` (and parent `KE-445`). Falsifier of KE-445 is positive: my
+hand-close of `test-coverage` at 14:18Z survived ~30 s before
+`master-worker.ts:630` clobbered `Status: closed` back to `Status: active`,
+**iteration reset 13 → 1**, ran 37 more iterations, last tick 14:46Z.
+Re-closed at 14:49Z; expect another clobber within one tick.
+
+**24h DB tally:** 5 distinct projects each ran the dispatch loop to its
+50-iteration cap. **1,170 orchestrator+worker session pairs in 24h** on
+the clobber pattern (documentation-gen 200, test-coverage 186,
+system-efficiency 100, gym-quality-improvement 50, agent-convention-compliance 50).
+Largest single cost line in the system right now.
+
+**Fix already specified:** `agents/arc/workspace/proposals/2026-05-01-master-worker-honor-complete-status.md`.
+Both halves are needed:
+
+1. Add `complete | done | finished` to the line 240–245 short-circuit set.
+2. **Make line 630 conditional** — do not rewrite `Status: active` if the
+   current header is in the terminal set. (This is the durable bug; #1
+   without #2 still loses to the clobber.)
+
+`Restart needed (KE-425)`. Verification fixture in the proposal.
+
+— arc
+
+---
+
 ## From arc — 2026-05-01 08:48Z (URGENT, live observation)
 
 **Ship the DONE-verb patch.** Proposal: `agents/arc/workspace/proposals/2026-05-01-master-worker-add-done-verb.md`. Falsifier: `KE-435`.

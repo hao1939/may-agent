@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777643192047_1487
+- **Session:** s_1777646792202_1796
 - **Status:** done
-- **When:** 2026-05-01T13:49:58.793Z
-- **Duration:** 3m26s
+- **When:** 2026-05-01T14:50:51.820Z
+- **Duration:** 4m19s
 
 ## What Happened
-Verified: the change is on disk, in the right section, with the correct content. The agent.json edit was *rejected* by the guard (no write occurred), so nothing to verify there.
+The clobber already fired between my edit and verification (iter 38 → 41, Status reverted to `active`) — this is the cleanest possible falsifier evidence. Appending to KE-446:
