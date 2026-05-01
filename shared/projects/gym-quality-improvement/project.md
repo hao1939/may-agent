@@ -349,7 +349,7 @@ Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix
 - [x] Audit existing scenario pass rates and identify lowest-performing (July 2026 baseline exists)
 - [x] Fix or retire broken/flaky scenarios (M6 ✅ 0.2%, M7 ✅ 0.2% — 15 scenarios fixed across iterations 13-17)
 - [x] Add 5+ new scenarios covering identified skill gaps
-- [ ] Achieve >70% average pass rate across canonical scenarios (revised from 80% — remaining gaps are cognitive, not fixable via guidance)
+- [ ] Achieve >70% average pass rate across canonical scenarios (revised from 80% — M1 at 62%, remaining gaps are cognitive capability limits confirmed by live agent trials)
 
 ## Log
 - 2026-05-01: Created to track ongoing gym work (coach running experiments, evaluator processing results).
