@@ -1,6 +1,6 @@
 # Project: Agent Convention Compliance
 
-**Status**: maintenance
+**Status**: active
 **Owner**: coach
 **Priority**: P3
 **Iteration**: 32
