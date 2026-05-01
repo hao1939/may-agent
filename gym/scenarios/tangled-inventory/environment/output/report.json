@@ -3,140 +3,159 @@
     "total_students": 12,
     "class_average": 81.16,
     "class_median": 84.43,
-    "highest_score": 96.1,
-    "lowest_score": 52.95,
-    "passing": 11,
-    "failing": 1
+    "highest_score": 101.1,
+    "lowest_score": 47.95,
+    "passing": 10,
+    "failing": 2
   },
   "grade_distribution": {
-    "A-": 2,
-    "B-": 2,
-    "C": 1,
-    "B+": 2,
-    "F": 1,
-    "B": 2,
-    "A": 1,
-    "D": 1
+    "A": 5,
+    "C": 2,
+    "D": 1,
+    "F": 2,
+    "C+": 1,
+    "A-": 1
   },
   "honors_list": [
     {
       "student_id": "S001",
       "name": "Alice Chen",
-      "score": 90,
-      "grade": "A-",
-      "gpa": 3.7
+      "score": 95,
+      "grade": "A",
+      "gpa": 4
     },
     {
       "student_id": "S003",
       "name": "Carol White",
-      "score": 92.55,
-      "grade": "A-",
-      "gpa": 3.7
+      "score": 97.55,
+      "grade": "A",
+      "gpa": 4
+    },
+    {
+      "student_id": "S005",
+      "name": "Eva Johnson",
+      "score": 93.3,
+      "grade": "A",
+      "gpa": 4
+    },
+    {
+      "student_id": "S008",
+      "name": "Henry Davis",
+      "score": 93.5,
+      "grade": "A",
+      "gpa": 4
     },
     {
       "student_id": "S010",
       "name": "Jack Wilson",
-      "score": 96.1,
+      "score": 101.1,
       "grade": "A",
       "gpa": 4
+    },
+    {
+      "student_id": "S012",
+      "name": "Leo Garcia",
+      "score": 90.35,
+      "grade": "A-",
+      "gpa": 3.7
     }
   ],
   "students": [
     {
       "student_id": "S001",
       "name": "Alice Chen",
-      "weighted_score": 90,
-      "letter_grade": "A-",
-      "gpa": 3.7,
-      "curved": false
+      "weighted_score": 95,
+      "letter_grade": "A",
+      "gpa": 4,
+      "curved": true
     },
     {
       "student_id": "S002",
       "name": "Bob Martinez",
-      "weighted_score": 81.85,
-      "letter_grade": "B-",
-      "gpa": 2.7,
-      "curved": true
+      "weighted_score": 76.85,
+      "letter_grade": "C",
+      "gpa": 2,
+      "curved": false
     },
     {
       "student_id": "S003",
       "name": "Carol White",
-      "weighted_score": 92.55,
-      "letter_grade": "A-",
-      "gpa": 3.7,
-      "curved": false
+      "weighted_score": 97.55,
+      "letter_grade": "A",
+      "gpa": 4,
+      "curved": true
     },
     {
       "student_id": "S004",
       "name": "David Kim",
-      "weighted_score": 73.1,
-      "letter_grade": "C",
-      "gpa": 2,
-      "curved": true
+      "weighted_score": 68.1,
+      "letter_grade": "D",
+      "gpa": 1,
+      "curved": false
     },
     {
       "student_id": "S005",
       "name": "Eva Johnson",
-      "weighted_score": 88.3,
-      "letter_grade": "B+",
-      "gpa": 3.3,
-      "curved": false
+      "weighted_score": 93.3,
+      "letter_grade": "A",
+      "gpa": 4,
+      "curved": true
     },
     {
       "student_id": "S006",
       "name": "Frank Liu",
-      "weighted_score": 52.95,
+      "weighted_score": 47.95,
       "letter_grade": "F",
       "gpa": 0,
-      "curved": true
+      "curved": false
     },
     {
       "student_id": "S007",
       "name": "Grace Park",
-      "weighted_score": 83.5,
-      "letter_grade": "B",
-      "gpa": 3,
-      "curved": true
+      "weighted_score": 78.5,
+      "letter_grade": "C+",
+      "gpa": 2.3,
+      "curved": false
     },
     {
       "student_id": "S008",
       "name": "Henry Davis",
-      "weighted_score": 88.5,
-      "letter_grade": "B+",
-      "gpa": 3.3,
-      "curved": false
+      "weighted_score": 93.5,
+      "letter_grade": "A",
+      "gpa": 4,
+      "curved": true
     },
     {
       "student_id": "S009",
       "name": "Iris Taylor",
-      "weighted_score": 80,
-      "letter_grade": "B-",
-      "gpa": 2.7,
-      "curved": true
+      "weighted_score": 75,
+      "letter_grade": "C",
+      "gpa": 2,
+      "curved": false
     },
     {
       "student_id": "S010",
       "name": "Jack Wilson",
-      "weighted_score": 96.1,
+      "weighted_score": 101.1,
       "letter_grade": "A",
       "gpa": 4,
-      "curved": false
+      "curved": true
     },
     {
       "student_id": "S011",
       "name": "Kelly Brown",
-      "weighted_score": 61.75,
-      "letter_grade": "D",
-      "gpa": 1,
-      "curved": true
+      "weighted_score": 56.75,
+      "letter_grade": "F",
+      "gpa": 0,
+      "curved": false
     },
     {
       "student_id": "S012",
       "name": "Leo Garcia",
-      "weighted_score": 85.35,
-      "letter_grade": "B",
-      "gpa": 3,
-      "curved": false
+      "weighted_score": 90.35,
+      "letter_grade": "A-",
+      "gpa": 3.7,
+      "curved": true
     }
   ]
 }
