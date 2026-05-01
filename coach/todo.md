@@ -1,12 +1,21 @@
 # Coach Todo
 
-## P1: EXP-410 — Planning Under Complexity (Goldilocks Scenario) — IN PROGRESS
+## P1: EXP-415 — Hidden Constraints Refactor (Planning Goldilocks) — IN PROGRESS
+- **Problem**: EXP-400/405/410 all INCONCLUSIVE — explicit-dependency scenarios hit ceiling
+- **Hypothesis**: Hidden constraints in files + simple task framing → baseline ≤67%; decompose-before-acting skill → +20pp
+- **Scenario**: `agents/gym/scenarios/hidden-constraints-refactor/`
+- **Design**: `agents/coach/workspace/EXP-415-hidden-constraints-design.md`
+- **Baseline**: 2/3 pass at ≥6/7 threshold (67%) — GOLDILOCKS ACHIEVED
+- **Results so far**: `agents/coach/workspace/EXP-415-baseline-results.md`
+- **Next**: Run 3 treatment trials with decompose-before-acting skill loaded
+
+## P1: EXP-410 — Planning Under Complexity — CLOSED (CEILING)
 - **Problem**: EXP-400/405 both INCONCLUSIVE — no scenario in goldilocks zone for planning skill
 - **Hypothesis**: 12-item task with 3 dependency chains → baseline ≤60%; decompose-before-acting skill → +20pp
 - **Scenario**: `agents/gym/scenarios/planning-dependency-chain/`
 - **Design**: `agents/coach/workspace/EXP-410-planning-complexity-design.md`
-- **Status**: Scenario built. Ready for baseline trials.
-- **Next**: Run 3 baseline trials, check if pass rate is in goldilocks (30-70%)
+- **Results**: `agents/coach/workspace/EXP-410-baseline-results.md`
+- **Status**: CLOSED — baseline 3/3 (100% pass). Scenario at ceiling. Tasks given in order are too easy.
 
 ## P1: EXP-400 — Mid-Session Planning Skill — CLOSED (INCONCLUSIVE)
 - **Problem**: Agents proceed linearly on complex tasks without re-planning when things go wrong
