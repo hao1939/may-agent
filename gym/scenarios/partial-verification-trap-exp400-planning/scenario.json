@@ -1,0 +1,12 @@
+{
+  "name": "partial-verification-trap-exp400-planning",
+  "categories": ["judgment", "bug-fixing"],
+  "tags": ["ability", "behavior"],
+  "tier": "standard",
+  "timeout": 3,
+  "agent_type": "coder",
+  "workflow": false,
+  "coaching": {
+    "my-instructions": "CRITICAL SKILL: decompose-before-acting\n\nBefore starting this multi-step task:\n1. DECOMPOSE — List all steps needed before writing any code\n2. SEQUENCE — Order steps so each builds on verified success of the previous\n3. CHECKPOINT — After each step, verify it worked before proceeding\n\nWhen hitting an unexpected error:\n1. STOP — Do not immediately retry\n2. DIAGNOSE — What went wrong and why?\n3. REPLAN — Choose a different approach if needed\n\nESPECIALLY: After fixing a bug, run the FULL test suite, not just the failing test. Check that your fix didn't break anything else."
+  }
+}

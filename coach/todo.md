@@ -1,5 +1,19 @@
 # Coach Todo
 
+## P1: EXP-400 — Mid-Session Planning Skill (NEW Sep 13)
+- **Problem**: Agents proceed linearly on complex tasks without re-planning when things go wrong (partial-verification-trap at 11%)
+- **Hypothesis**: Cognitive planning skill (decompose-before-acting) → ≥+33pp on complex scenarios
+- **Design**: `agents/coach/workspace/EXP-400-mid-session-planning-design.md`
+- **Skill**: `agents/skills/decompose-before-acting.md`
+- **Scenario**: `agents/gym/scenarios/partial-verification-trap-exp400-planning/`
+- **Status**: DESIGNED — ready to run. Next: 3 baseline + 3 treatment trials.
+- **Key distinction**: This is a COGNITIVE skill (like EXP-345 +67pp), not PROCEDURAL (like EXP-261 NEGATIVE).
+
+## P1: Iteration-Cap Review (Sep 13) — DONE ✅
+- Reviewed all projects that hit iteration cap 50
+- All are genuinely complete (goals met or formally closed): coach-quality, skill-workflow-audit, documentation-gen, agent-convention-compliance, agent-system-literacy, gym-quality-improvement, system-efficiency, test-coverage, workflow-reliability
+- No action needed — notification resolved.
+
 ## P1: EXP-395 — Finish Evidence Quality Correlation — CLOSED (INCONCLUSIVE)
 - **Problem**: verification_evidence in finish() may be boilerplate vs genuinely catching issues. Does specificity matter?
 - **Hypothesis**: Enriched evidence instructions (exact paths + content + before/after) → ≥20pp better pass rate
