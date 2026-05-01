@@ -127,24 +127,6 @@ export function loadProjects(ctx: WorkflowContext, agent: string): string {
       }
     }
 
-    // Also scan legacy per-agent location
-    const projDir = join(getAgentsRoot(ctx), agent, "workspace", "projects");
-    if (existsSync(projDir)) {
-      for (const entry of readdirSync(projDir, { withFileTypes: true })) {
-        if (!entry.isDirectory()) continue;
-        const pFile = join(projDir, entry.name, "project.md");
-        if (!existsSync(pFile)) continue;
-        const content = readFileSync(pFile, "utf-8");
-        const status = content.match(/^\*\*Status\*\*:\s*(\S+)/m)?.[1] ?? "?";
-        if (status === "done" || status === "complete") continue;
-        const health = content.match(/^\*\*Health\*\*:\s*(.+)/m)?.[1] ?? "";
-        const msX = (content.match(/^- \[x\]/gim) || []).length;
-        const msT = msX + (content.match(/^- \[ \]/gm) || []).length;
-        const resumeCond = content.match(/Resume.*?:(.+)/i)?.[1]?.trim() ?? "";
-        lines.push(`- **${entry.name}**: ${status} | health: ${health || "—"} | ms: ${msX}/${msT}${resumeCond ? " | resume: " + resumeCond.slice(0, 60) : ""}`);
-      }
-    }
-
     return lines.length > 0 ? lines.join("\n") : "";
   } catch { return ""; }
 }

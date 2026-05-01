@@ -43,14 +43,14 @@ describe("scanAllProjects - filesystem traversal", () => {
     expect(result).toEqual([]);
   });
 
-  it("returns empty when agents have no workspace/projects", () => {
+  it("returns empty when no shared/projects directory exists", () => {
     fs.mkdirSync(path.join(tmpDir, "agent1"), { recursive: true });
     const result = scanAllProjects(tmpDir);
     expect(result).toEqual([]);
   });
 
   it("skips directories without project.md", () => {
-    const projDir = path.join(tmpDir, "agent1", "workspace", "projects", "my-proj");
+    const projDir = path.join(tmpDir, "shared", "projects", "my-proj");
     fs.mkdirSync(projDir, { recursive: true });
     // No project.md file
     const result = scanAllProjects(tmpDir);
@@ -58,7 +58,7 @@ describe("scanAllProjects - filesystem traversal", () => {
   });
 
   it("scans projects with project.md", () => {
-    const projDir = path.join(tmpDir, "agent1", "workspace", "projects", "my-proj");
+    const projDir = path.join(tmpDir, "shared", "projects", "my-proj");
     fs.mkdirSync(projDir, { recursive: true });
     fs.writeFileSync(
       path.join(projDir, "project.md"),
@@ -72,7 +72,7 @@ describe("scanAllProjects - filesystem traversal", () => {
   });
 
   it("defaults status to active when missing", () => {
-    const projDir = path.join(tmpDir, "agent1", "workspace", "projects", "proj2");
+    const projDir = path.join(tmpDir, "shared", "projects", "proj2");
     fs.mkdirSync(projDir, { recursive: true });
     fs.writeFileSync(path.join(projDir, "project.md"), "# Project\nSome content\n");
     const result = scanAllProjects(tmpDir);
@@ -80,23 +80,28 @@ describe("scanAllProjects - filesystem traversal", () => {
     expect(result[0].status).toBe("active");
   });
 
-  it("skips 'shared' and 'test' directories", () => {
-    // Create shared and test dirs — should be skipped
-    fs.mkdirSync(path.join(tmpDir, "shared", "workspace", "projects", "p"), { recursive: true });
-    fs.writeFileSync(path.join(tmpDir, "shared", "workspace", "projects", "p", "project.md"), "# P\n**Status**: active\n");
-    fs.mkdirSync(path.join(tmpDir, "test", "workspace", "projects", "p"), { recursive: true });
-    fs.writeFileSync(path.join(tmpDir, "test", "workspace", "projects", "p", "project.md"), "# P\n**Status**: active\n");
+  it("skips _archive directory under shared/projects", () => {
+    const archDir = path.join(tmpDir, "shared", "projects", "_archive", "old");
+    fs.mkdirSync(archDir, { recursive: true });
+    fs.writeFileSync(path.join(archDir, "project.md"), "# Old\n**Status**: active\n");
     const result = scanAllProjects(tmpDir);
     expect(result).toEqual([]);
   });
 
-  it("handles multiple agents and projects", () => {
-    for (const agent of ["alice", "bob"]) {
-      for (const proj of ["proj1", "proj2"]) {
-        const projDir = path.join(tmpDir, agent, "workspace", "projects", proj);
-        fs.mkdirSync(projDir, { recursive: true });
-        fs.writeFileSync(path.join(projDir, "project.md"), `# ${proj}\n**Status**: active\n**Owner**: ${agent}\n`);
-      }
+  it("ignores legacy per-agent workspace/projects directories", () => {
+    // Legacy location should no longer be scanned (KE-426 follow-up).
+    const projDir = path.join(tmpDir, "alice", "workspace", "projects", "legacy");
+    fs.mkdirSync(projDir, { recursive: true });
+    fs.writeFileSync(path.join(projDir, "project.md"), "# L\n**Status**: active\n**Owner**: alice\n");
+    const result = scanAllProjects(tmpDir);
+    expect(result).toEqual([]);
+  });
+
+  it("handles multiple shared projects", () => {
+    for (const proj of ["proj1", "proj2", "proj3", "proj4"]) {
+      const projDir = path.join(tmpDir, "shared", "projects", proj);
+      fs.mkdirSync(projDir, { recursive: true });
+      fs.writeFileSync(path.join(projDir, "project.md"), `# ${proj}\n**Status**: active\n**Owner**: alice\n`);
     }
     const result = scanAllProjects(tmpDir);
     expect(result.length).toBe(4);

@@ -7,7 +7,7 @@
  * 3. Persist health state and inflight tracking
  */
 import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join } from "node:path";
 import { createHash, randomBytes } from "node:crypto";
 
 // ── Constants ────────────────────────────────────────────────────────────
@@ -102,7 +102,7 @@ export function appendComment(content: string, comment: string): string {
 export function scanAllProjects(agentsRoot: string): ProjectInfo[] {
   const projects: ProjectInfo[] = [];
 
-  // Scan shared projects (new location)
+  // Scan shared projects (canonical location)
   const sharedProjDir = join(agentsRoot, "shared", "projects");
   if (existsSync(sharedProjDir)) {
     try {
@@ -121,61 +121,6 @@ export function scanAllProjects(agentsRoot: string): ProjectInfo[] {
         projects.push({ relPath: `shared/projects/${projDir}`, projectFile, content, status, owner, blockerReason, workflow });
       }
     } catch { /* ignore */ }
-  }
-
-  // Also scan legacy per-agent locations
-  let agents: string[];
-  try {
-    agents = readdirSync(agentsRoot).filter(d => {
-      const p = join(agentsRoot, d);
-      return statSync(p).isDirectory() && d !== "shared" && d !== "test" && d !== "src";
-    });
-  } catch {
-    return projects;
-  }
-
-  for (const agent of agents) {
-    const projectsDir = join(agentsRoot, agent, "workspace", "projects");
-    if (!existsSync(projectsDir)) continue;
-
-    let projectDirs: string[];
-    try {
-      projectDirs = readdirSync(projectsDir).filter(d =>
-        statSync(join(projectsDir, d)).isDirectory()
-      );
-    } catch {
-      continue;
-    }
-
-    for (const projDir of projectDirs) {
-      const projectFile = join(projectsDir, projDir, "project.md");
-      if (!existsSync(projectFile)) continue;
-
-      let content: string;
-      try {
-        content = readFileSync(projectFile, "utf-8");
-      } catch {
-        continue;
-      }
-
-      const status = extractField(content, "Status").toLowerCase() || "active";
-      const owner = extractField(content, "Owner") || agent;
-      const blockerReason =
-        extractField(content, "Stop Reason") ||
-        extractSection(content, "Current State") ||
-        "";
-      const workflow = extractField(content, "Workflow").toLowerCase() || "master-worker";
-
-      projects.push({
-        relPath: relative(agentsRoot, join(projectsDir, projDir)),
-        projectFile,
-        content,
-        status,
-        owner,
-        blockerReason,
-        workflow,
-      });
-    }
   }
 
   return projects;
