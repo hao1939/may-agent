@@ -1,7 +1,4 @@
 # Deliverables Checklist
 
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Project closure notice | DONE | /app/agents/shared/projects/outputs/PROJECT_CLOSED_NOTICE.md |
-
-Project is COMPLETE. No meaningful work remains.
+- [x] DONE — Completion notice: `/app/agents/shared/projects/outputs/project-complete-notice.md`
+  - Documents project is complete, all metrics at target, 35+ wasted iterations
