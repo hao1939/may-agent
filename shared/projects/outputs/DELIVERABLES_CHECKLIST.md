@@ -1,4 +1,7 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST
 
-- [x] DONE — Completion evidence file: `/app/agents/shared/projects/outputs/project-complete-evidence.md`
-  - Documents all metrics at target, all plan items done, recommends removing from active queue
+| Deliverable | Status | Path |
+|---|---|---|
+| Completion notice | DONE | /app/agents/shared/projects/outputs/PROJECT_COMPLETE_STOP.md |
+
+Project complete since iteration 1. 42+ wasted iterations.
