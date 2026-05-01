@@ -10,12 +10,6 @@ function handleCreate(body) {
     return { status: 400, body: { error: "Validation failed", details: errors } };
   }
 
-  // Check for duplicate email before creating
-  const existing = db.findByEmail(body.email);
-  if (existing) {
-    return { status: 409, body: { error: "A user with this email already exists" } };
-  }
-
   try {
     const user = db.createUser(body.name, body.email);
     return { status: 201, body: user };
