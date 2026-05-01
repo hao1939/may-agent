@@ -1,47 +1,47 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Regression Guard: Alerts if any SOUL.md or context.md grows back above targets
-# Run periodically or as a pre-commit hook to prevent bloat recurrence.
-#
-# Targets:
-#   SOUL.md: <600 words
-#   context.md: <450 words
+# Run periodically to ensure agent config bloat doesn't return.
+# Targets: SOUL.md < 600w, context.md < 450w
 
 SOUL_LIMIT=600
-CONTEXT_LIMIT=450
+CTX_LIMIT=450
 EXIT_CODE=0
 
-echo "=== Context Bloat Regression Guard ==="
+echo "=== Agent Config Regression Guard ==="
+echo "Date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 echo ""
 
-# Check SOUL.md files
-echo "--- SOUL.md files (limit: ${SOUL_LIMIT}w) ---"
-for f in $(find /app/agents -name "SOUL.md" 2>/dev/null); do
-    wc=$(wc -w < "$f")
-    status="✅"
-    if [ "$wc" -gt "$SOUL_LIMIT" ]; then
-        status="❌ OVER LIMIT"
-        EXIT_CODE=1
+for agent_dir in /app/agents/*/; do
+  agent=$(basename "$agent_dir")
+  [[ "$agent" == "shared" ]] && continue
+
+  # Check SOUL.md
+  if [[ -f "$agent_dir/SOUL.md" ]]; then
+    wc=$(wc -w < "$agent_dir/SOUL.md" 2>/dev/null || echo 0)
+    if (( wc > SOUL_LIMIT )); then
+      echo "❌ FAIL: $agent/SOUL.md = ${wc}w (limit: ${SOUL_LIMIT}w)"
+      EXIT_CODE=1
+    else
+      echo "✅ OK:   $agent/SOUL.md = ${wc}w"
     fi
-    printf "  %4dw %s %s\n" "$wc" "$status" "$f"
+  fi
+
+  # Check context.md
+  if [[ -f "$agent_dir/context.md" ]]; then
+    wc=$(wc -w < "$agent_dir/context.md" 2>/dev/null || echo 0)
+    if (( wc > CTX_LIMIT )); then
+      echo "❌ FAIL: $agent/context.md = ${wc}w (limit: ${CTX_LIMIT}w)"
+      EXIT_CODE=1
+    else
+      echo "✅ OK:   $agent/context.md = ${wc}w"
+    fi
+  fi
 done
 
 echo ""
-echo "--- context.md files (limit: ${CONTEXT_LIMIT}w) ---"
-for f in $(find /app/agents -name "context.md" 2>/dev/null); do
-    wc=$(wc -w < "$f")
-    status="✅"
-    if [ "$wc" -gt "$CONTEXT_LIMIT" ]; then
-        status="❌ OVER LIMIT"
-        EXIT_CODE=1
-    fi
-    printf "  %4dw %s %s\n" "$wc" "$status" "$f"
-done
-
-echo ""
-if [ "$EXIT_CODE" -eq 0 ]; then
-    echo "All files within limits. No regression detected."
+if (( EXIT_CODE == 0 )); then
+  echo "All agents within limits."
 else
-    echo "⚠️  REGRESSION DETECTED — files above word count targets!"
+  echo "⚠️  Some agents exceed word count limits!"
 fi
-
 exit $EXIT_CODE

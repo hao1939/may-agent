@@ -1,70 +1,74 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777674435367_2302
+- **Session:** s_1777674630411_2323
 - **Status:** done
-- **When:** 2026-05-01T22:27:23.833Z
-- **Duration:** 8s
+- **When:** 2026-05-01T22:30:43.080Z
+- **Duration:** 12s
 
 ## What Happened
+```json
 {
   "agents": [
     {
       "agent": "amy",
-      "role": "Researcher",
+      "role": "Builder (Coder)",
       "capability_level": "mid",
-      "efficiency": 0.9,
-      "quality": 0.35,
+      "efficiency": 0.35,
+      "quality": 0.10,
       "verdict": "needs_improvement",
       "issues": [
         {
-          "type": "INCOMPLETE_DELIVERABLES",
-          "evidence": "Task required generating `pipeline-report.md` and `pipeline-status.txt`. Agent only wrote `pipeline-status.txt` and did not create `pipeline-report.md`."
+          "tag": "FM-3.3 Verification Failure",
+          "evidence": "Agent declared deliverables in finish(), but finish() reported: \"Deliverables not found on disk: config/auth.yaml, config/logging.yaml, config/api.yaml, config/storage.yaml, src/loader.js, docs/migration-status.md.\" No subsequent tool output shows fixing path/context and re-verifying."
         },
         {
-          "type": "MISSED_MINIMUM_REPORTING",
-          "evidence": "When `etl-output.json` is missing, status file is appropriate, but they still could have written `pipeline-report.md` explaining the missing prerequisite instead of leaving it absent."
+          "tag": "WRONG_WORKDIR / CONTEXT_DRIFT",
+          "evidence": "Work was explicitly in /tmp/gym-ambiguous-context-drift-exp435-treatment-320d3ed5, but finish() checks deliverables relative to /app project root. Agent never copied results into /app nor adjusted deliverables paths; therefore the session cannot be marked complete."
         },
         {
-          "type": "PROCESS_WASTE_MINOR",
-          "evidence": "finish() was blocked due to uncommitted changes in /app/agents (`amy/last-session.md`), requiring an extra git commit step unrelated to the gym task."
+          "tag": "UNVERIFIED_CLAIMS",
+          "evidence": "Agent claimed earlier state was inaccurate and that they migrated files and updated loader, but transcript only shows a runtime node check of loadConfig('api') and loadConfig('storage') plus writing docs/migration-status.md in /tmp. No read-back of the actual YAML files or loader.js content is shown in the transcript."
+        },
+        {
+          "tag": "PROCESS_BREAK (Finish blocked, not resolved)",
+          "evidence": "After multiple finish() blocks (uncommitted changes, then missing deliverables), agent did not complete a successful finish() with verified deliverables."
         }
       ],
       "metrics": {
-        "tool_calls": 5,
-        "wasted_calls": 1,
-        "files_written": [
-          "/tmp/gym-missing-prerequisite-detection-ae160b5d/pipeline-status.txt"
-        ],
-        "files_missing_expected": [
-          "/tmp/gym-missing-prerequisite-detection-ae160b5d/pipeline-report.md"
-        ]
-      },
-      "evidence": [
-        "bash ls showed only README.md and _gym_task.md present; no etl-output.json (toolResult: bash).",
-        "write created pipeline-status.txt with FAIL message (toolResult: write).",
-        "No tool output shows creation of pipeline-report.md."
-      ],
-      "lessons": [
-        "[amy] If a prerequisite input file is missing, still produce all requested outputs when possible (e.g., write a report explaining the missing input) rather than skipping required deliverables."
-      ]
+        "tool_calls_observed": {
+          "bash": 4,
+          "write": 1,
+          "finish_attempts": 3
+        },
+        "failed_finish_calls": 3,
+        "wasted_calls": 2,
+        "waste_notes": "Two git commits in /app/agents (amy/last-session.md and shared/projects/prompt-efficiency/project.md) were unrelated to producing/verifying the required gym deliverables, and did not resolve the final blocking error."
+      }
     }
   ],
   "workflow": {
-    "name": "gym-missing-prerequisite-detection",
+    "name": "gym scenario: ambiguous-context-drift exp435",
     "issues": [
       {
-        "type": "PREREQUISITE_DETECTED_OK",
-        "evidence": "Agent correctly checked the specified directory and did not fabricate ETL data."
-      },
-      {
-        "type": "REQUIRED_ARTIFACTS_NOT_ALL_PRODUCED",
-        "evidence": "Report file was required but not generated."
+        "tag": "DELIVERABLE_INTEGRITY_FAILURE",
+        "evidence": "finish() integrity gate correctly prevented success because declared deliverables were missing on disk in the expected location."
       }
     ]
   },
   "overall": {
     "verdict": "needs_improvement",
     "result_delivered": false
-  }
+  },
+  "lessons": [
+    {
+      "agent": "amy",
+      "lesson": "When working in a non-/app gym directory, either (a) copy final artifacts into the repo root before calling finish(), or (b) ensure the evaluation/finish system can see those paths; otherwise deliverables will fail integrity checks even if work succeeded in /tmp."
+    },
+    {
+      "agent": "amy",
+      "lesson": "Before declaring success, read back every deliverable file (YAMLs, loader.js, docs) from the final expected location to satisfy deliverable integrity and avoid finish() rejection."
+    }
+  ]
 }
+```
