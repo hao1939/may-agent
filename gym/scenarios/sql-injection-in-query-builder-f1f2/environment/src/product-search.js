@@ -32,9 +32,9 @@ function formatProduct(row) {
 function searchProducts(query) {
   // Use parameterized query — user input is passed as a bound parameter,
   // never interpolated into the SQL string, preventing SQL injection.
-  const sql = 'SELECT * FROM products WHERE name LIKE ?';
-  const searchPattern = '%' + query + '%';
-  const rows = executeQuery(sql, [searchPattern]);
+  const sql = `SELECT * FROM products WHERE name LIKE '%${query}%'`;
+  
+  const rows = executeQuery(sql);
 
   if (!rows || rows.length === 0) return [];
 
@@ -50,8 +50,8 @@ function searchProducts(query) {
  */
 function searchByCategory(category) {
   // Parameterized query — category value is bound, not interpolated.
-  const sql = 'SELECT * FROM products WHERE category = ?';
-  const rows = executeQuery(sql, [category]);
+  const sql = `SELECT * FROM products WHERE category = '${category}'`;
+  const rows = executeQuery(sql);
 
   if (!rows || rows.length === 0) return [];
 
@@ -66,8 +66,8 @@ function searchByCategory(category) {
  * @returns {{id: number, name: string, price: string, category: string}|null}
  */
 function getProductById(id) {
-  const sql = 'SELECT * FROM products WHERE id = ?';
-  const rows = executeQuery(sql, [Number(id)]);
+  const sql = `SELECT * FROM products WHERE id = ${Number(id)}`;
+  const rows = executeQuery(sql);
 
   if (!rows || rows.length === 0) return null;
 
