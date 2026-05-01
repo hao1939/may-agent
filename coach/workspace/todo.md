@@ -63,15 +63,14 @@ May must intervene: assign tech-lead directly via agents.call, or authorize Coac
   2. **triage-under-uncertainty**: 3 bugs, must prioritize strategically. Requires triage reasoning, not just code.
   3. **ghost-dependency-debug**: Misleading stack trace. Tests debugging depth and root cause analysis.
 - **Baselines (2026-04-10)**: ALL AT CEILING — 9/9 runs passed (100%). See `agents/coach/workspace/post-ceiling-baselines.md`
-  - skill-conflict-partial-fix: 3/3 (7/7 checks each)
-  - triage-under-uncertainty: 3/3 (8/8 checks each)
-  - ghost-dependency-debug: 3/3 (7/7 checks each, fastest at 67-82s)
+- **New scenario created (2026-05-01)**:
+  4. **conflicting-requirements-tradeoff**: Agent must detect that PM's 30s time limit and tech lead's 256MB memory limit are physically incompatible for 10M-row export. Tests judgment — will agent flag the conflict or silently violate one constraint? This is a JUDGMENT scenario (not code-fixable) which should break ceiling.
 - **Implication**: Single-session scenarios with < 10 files are within the agent's core capability regardless of scenario design. Breaking ceiling requires fundamentally different challenge types:
   - Much larger codebases (50+ files)
   - Multi-session scenarios with information loss between sessions
   - Strict step limits forcing genuine tradeoffs
   - Tasks requiring creativity, not just analysis
-- **Status**: Scenarios complete but not useful for skill development. Need next design iteration.
+- **Status**: New judgment scenario added. Needs baseline run to confirm it breaks ceiling.
 
 ---
 
