@@ -1,11 +1,14 @@
 # Coach Todo
 
-## P1: EXP-390 — Anti-Shallow Threshold Optimization — DESIGNED
+## P1: EXP-390 — Anti-Shallow Threshold Optimization — CLOSING (INCONCLUSIVE)
 - **Problem**: Anti-shallow threshold (≥10 calls) was heuristic. Need to validate via gym A/B test.
 - **Hypothesis**: Threshold=15 ≥ threshold=10 in pass rate; threshold=5 is ≥20pp worse.
 - **Method**: 3 scenarios × 3 arms × 2 trials = 18 gym runs
 - **Design**: `agents/coach/workspace/EXP-390-anti-shallow-threshold-optimization-design.md`
-- **Next**: Run Arm A baseline (6 runs: 3 scenarios × 2 trials)
+- **Results**: `agents/coach/workspace/EXP-390-arm-a-c-results.md`
+- **Ran**: 12/18 runs (Arms A and C). Arm B skipped — no point.
+- **Finding**: H2 NOT CONFIRMED. Threshold=5 only -17pp worse (below 20pp threshold). Scenarios are either at floor or ceiling — threshold doesn't affect task quality. Anti-shallow rule's value is binary (prevents empty sessions), not gradient.
+- **Decision**: Keep threshold=10. Close as INCONCLUSIVE.
 - **Variants**: 9 scenario variants created in `agents/gym/scenarios/*-exp390-arm-{a,b,c}`
 
 ## P1: EXP-385 — Anti-Shallow Rule Effectiveness Measurement — DESIGNED
