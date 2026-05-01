@@ -17,6 +17,7 @@
 - agents/coder/skills/verify-before-finish.md - verification before finish(success).
 - agents/coder/skills/convention-compliance.md - follow project conventions.
 - agents/coder/skills/diagnosis-before-action.md - diagnose before fixing.
+- agents/skills/decompose-before-acting.md - decompose complex tasks before starting; verify after each step.
 - agents/coder/skills/multi-file-discovery-completeness.md - find all affected files.
 - agents/coder/skills/task-instruction-compliance.md - follow task specs precisely.
 - agents/shared/skills/obstacle-pivot/SKILL.md - pivot on failure instead of retrying.

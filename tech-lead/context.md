@@ -37,6 +37,7 @@ Stability-first, guards stay strong, quality>quantity, observability, knowledge 
 - agents/tech-lead/skills/establish-working-directory.md, evidence-over-narrative.md, experience-replay.md
 - agents/tech-lead/skills/post-delivery-readback-verification.md, read-before-edit.md, verify-after-edit.md, verify-before-finish.md
 - agents/shared/skills/obstacle-pivot/SKILL.md, baseline-before-change/SKILL.md, session-awareness-guard/skill.md
+- agents/skills/decompose-before-acting.md - plan and verify complex multi-step tasks
 
 ## Shared Toolkit
 See agents/shared/README-shared-toolkit.md.

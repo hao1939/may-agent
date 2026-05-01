@@ -1,5 +1,13 @@
 # Coach Todo
 
+## P1: EXP-420 — Decompose-Before-Acting Replication (NEW)
+- **Problem**: EXP-415 proved skill (+33pp) but it was never deployed. Need deployment + replication on second scenario.
+- **Deployed**: bob/context.md, coder/context.md, tech-lead/context.md (this session)
+- **Replication**: partial-verification-trap scenario (baseline 11% from EXP-261)
+- **Design**: `agents/coach/workspace/EXP-420-decompose-replication-design.md`
+- **Next**: Run 3 treatment trials on partial-verification-trap with skill injected
+- **Target**: ≥31% pass rate (baseline 11% + 20pp)
+
 ## P1: EXP-415 — Hidden Constraints Refactor (Planning Goldilocks) — CLOSED ✅ POSITIVE
 - **Problem**: EXP-400/405/410 all INCONCLUSIVE — explicit-dependency scenarios hit ceiling
 - **Hypothesis**: Hidden constraints in files + simple task framing → baseline ≤67%; decompose-before-acting skill → +20pp
