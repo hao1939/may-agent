@@ -129,6 +129,11 @@ Ensure all agents consistently follow established conventions (C1.1 read-before-
 - [ ] **P17.3**: If gym confirms ≥90%, mark milestone 3+4 complete. If not, diagnose remaining failures.
 - [ ] Re-plan: based on results
 
+## Plan (Iteration 16) — Dev SOUL.md Patch + Re-run
+- [ ] **P16.1**: Verify dev applies SOUL.md patch (declare-intent + multi-file blocks). Notification sent this iteration.
+- [ ] **P16.2**: Re-run full gym suite after dev patches. Target: ≥90% (45/50).
+- [ ] **P16.3**: If still <90%, investigate remaining multi-edit-workflow product failures with scenario system prompt approach.
+
 ## Log
 - 2026-05-01: Created to track ongoing convention enforcement work (coach experiments, QA monitoring).
 - Iter 1: Baseline established. Overall compliance 44%. Worst: C2.3 (10%), C1 (25%), C40.1 (0%).

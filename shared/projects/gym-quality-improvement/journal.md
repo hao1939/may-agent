@@ -231,3 +231,8 @@ CONTINUE
 (a) Next iteration should **diagnose all 8 near-miss scenarios' failing checks** to find criteria bugs and systemic patterns. Flipping even 4 of these gets M1 from 62% → 70%.
 
 (b) The criteria fix on `competing-fix-strategies` proved this approach works — one fix = +2% M1. We need to repea
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should **fix the `noisy-context-verify` criteria bug and validate both criteria fixes with live agent runs**.
+
+(b) We've now diagnosed all 11 problem scenarios. Only 2 are fixable via criteria (noisy-context-verify + unnecessary-refactor-trap already fixed). The remainin
