@@ -18,7 +18,7 @@ Reduce token waste in agent system prompts and context loading, improving throug
 ## Plan
 
 - [x] **P1: Baseline audit** — Measure token count of every SOUL.md and context.md. Identify duplicated content across agents.
-- [~] **P2: Deduplicate shared rules** — Analysis complete: 3 rules in 6 SOUL.md files are already guard-enforced by `read-before-edit.ts`, `verify-after-write.ts`, `rbe-primer.ts`, `vae-primer.ts` (all in `agents/shared/guards/`). Removal saves ~600 tok/invocation. See `outputs/p2-dedup-analysis.md`. **BLOCKER RESOLVED**: Guards are sufficient — no need for shared-rules.md injection. **NEW BLOCKER**: Optimizer cannot edit other agents' SOUL.md files (write-blocked). Need May or tech-lead to remove the "When Editing Files" section from: amy, arc, bob, coach, dev, scout SOUL.md files.
+- [x] **P2: Deduplicate shared rules** — Removed "When Editing Files" sections from amy, arc, bob, coach, dev, scout SOUL.md files. Guards (read-before-edit.ts, verify-after-write.ts, rbe-primer.ts, vae-primer.ts) enforce these rules. Saves ~600 tok/invocation.
 - [ ] **P3: Trim verbose guidance** — Remove examples and verbose explanations from SOUL.md files. Keep only actionable rules.
 - [ ] **P4: Context.md hygiene** — Remove stale facts from context.md files. Add expiry dates to context entries.
 - [ ] **P5: Measure improvement** — Re-measure token counts after changes. Verify no quality regression in gym scores.
