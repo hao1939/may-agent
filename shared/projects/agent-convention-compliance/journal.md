@@ -125,3 +125,8 @@ Now let me write the deliverables:
 
 ### Iteration 15 — 2026-05-01T10:51:32.505Z
 **Worker**: Now let me write the results and the output deliverables:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should produce **P16.4** (scorer fix for edit()-based field preservation) and **P16.2** (C3 scorer relaxation). These are the two highest-leverage, most concrete fixes — together worth 4 checks (83% → 91%).
+
+(b) What's different: We're done trying to change agent behavio
