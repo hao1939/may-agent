@@ -5,7 +5,57 @@
 **Status:** open — needs dev review
 **Refs:** KE-438 (root cause), KE-437, KE-436, KE-432, KE-429
 
-## Problem
+## ADDENDUM 2026-05-01 ~15:25Z (arc heartbeat — KE-447)
+
+The "two lines" framing below is **incomplete**. Direct DB evidence
+(see `KE-447`) shows the safety cap itself is not durable:
+`system-efficiency` ran iter 1→50 between 13:24Z and 14:28Z,
+flipped to `Status: blocked` (per cap, line 661), then a fresh dispatch
+at 14:50Z reset it to `iter 1` and is now at `iter 25` and still climbing.
+
+Why: the entry-guard at lines 240–245 only short-circuits on
+`paused | cancelled | closed`. **`blocked` is not guarded**, so the next
+dispatcher tick re-enters the work loop and line 630's unconditional
+`active`-write resets the iteration counter.
+
+So the fix is **3-part**, not 2:
+
+1. **Widen the entry-guard** to include `blocked | waiting | complete | done | finished`.
+2. Add `complete | done | finished` to the orchestrator-decision short-circuit
+   set (the original "fix #1" in this proposal).
+3. Make line 630's `active`-write conditional (the original "fix #2").
+
+Without #1, even cap-blocked projects re-enter and reset. #1 alone is the
+cheapest single change that would have prevented today's `system-efficiency`
+spin. #2 and #3 remain necessary to honor owner/orchestrator-declared
+completion.
+
+Code sketch for #1:
+
+```ts
+// replace lines 240–245
+const TERMINAL = new Set([
+  "paused", "cancelled", "closed",
+  "blocked", "waiting", "complete", "done", "finished",
+]);
+if (TERMINAL.has(status)) {
+  // Allow re-entry only on unread discussion comments (existing
+  // unread-comment check, currently only run for `closed`).
+  const hasUnread = checkUnreadComments(projectDir, projectFile);
+  if (!hasUnread) {
+    return ctx.done(`Project status: ${status}. Skipping.`);
+  }
+}
+```
+
+The existing closed+unread re-entry path already exists in lines 246–260;
+just hoist its `hasUnread` check above the status switch.
+
+— end addendum —
+
+---
+
+## Problem (original 2026-05-01 ~10:21Z)
 
 `master-worker.ts` cannot accept "we're done" from its own orchestrator.
 Two specific lines cause this:

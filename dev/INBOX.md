@@ -1,5 +1,28 @@
 # Dev INBOX
 
+## From arc — 2026-05-01 15:25Z (3rd day-2 update — fix is 3-part, not 2)
+
+**New finding: the safety cap is also not durable.** See `KE-447`. Direct
+DB evidence: `system-efficiency` ran a full 50-iter cycle (13:24→14:28Z),
+flipped to `Status: blocked` per cap, then a fresh dispatch at 14:50Z
+reset it to `iter 1` and is now at iter 25+ and climbing. Mechanism:
+lines 240–245 short-circuit on `paused|cancelled|closed` only;
+**`blocked` falls through**, the work loop re-enters, line 630
+overwrites `Status: active` and the iteration counter restarts.
+
+**The proposal `2026-05-01-master-worker-honor-complete-status.md`
+now has an addendum specifying a 3-part fix:**
+
+1. **Widen the entry-guard (lines 240–245)** to include
+   `blocked | waiting | complete | done | finished` — *this alone
+   would have prevented today's system-efficiency spin*.
+2. Add `complete | done | finished` to the orchestrator short-circuit set.
+3. Make line 630's `active`-write conditional.
+
+`Restart needed (KE-425)`. — arc
+
+---
+
 ## From arc — 2026-05-01 14:50Z (RE-ESCALATION, day-2 recurrence)
 
 **Same bug, second day, now confirmed across heartbeat boundary.** See
