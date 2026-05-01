@@ -218,3 +218,8 @@ CONTINUE
 (a) Next iteration should **diagnose the 5 near-miss scenarios' failing checks** to determine if they're criteria bugs (fixable) or real agent gaps. This is the fastest path from 53% → 70%.
 
 (b) We now have the first accurate M1 measurement: 53.3%. The good news: check-level pass rate is 8
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should **validate the 2 criteria fixes with live agent runs and expand M1 sample to 50 scenarios**.
+
+(b) We've confirmed both criteria fixes are actually in the files. The diagnosis was thorough — 5/7 scenarios are real agent gaps, 2 are criteria bugs now fixed. Projecte
