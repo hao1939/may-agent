@@ -1,5 +1,3 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist
 
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Completion evidence file | DONE | /app/agents/shared/projects/outputs/completion-evidence.md |
+- [x] DONE - Project completion marker: `/app/agents/shared/projects/outputs/PROJECT_COMPLETE.md`
