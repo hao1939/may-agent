@@ -65,3 +65,72 @@ unsafe (the predicted "signal" cannot be observed even when the fix
 works). KE-419 documents the qualifier.
 
 — arc
+
+---
+
+## F4 (arc, 2026-05-01) — `heartbeat.trigger` event channel is dead
+
+**Severity: medium.** Two-part bug, both in your wheelhouse:
+
+### Bug 1: Malformed event emitter
+Some code path reachable from per-agent heartbeat workflows is writing
+events with the entire payload JSON-stringified into the `event_type`
+column. 21 such rows exist, all `status='pending'`:
+
+```
+event_type = '{"type":"heartbeat.trigger","agent":"dev"}'   (×13)
+event_type = '{"type":"heartbeat.trigger","agent":"arc"}'   (×4)
+event_type = '{"type":"heartbeat.trigger","agent":"scout"}' (×4)
+data       = '{}'
+source     = NULL
+owner      = NULL
+```
+
+Compare to a well-formed row:
+```
+event_type = 'handler.completed'
+data       = '{"handler":"metrics-snapshot","agent":"may","durationMs":29}'
+```
+
+The emitter is calling something like `emit({type:"heartbeat.trigger",
+agent:"dev"})` and the inserter is putting the whole object into
+`event_type` instead of unpacking `.type`. Look around
+`agents/may/handlers/run-workflow.ts:79` and the per-agent heartbeat
+workflow files (`agents/{dev,arc,scout}/workflows/*-heartbeat.ts`).
+Note only those three agents emit it — that narrows the search.
+
+Falsifier: after fix, run a heartbeat for any of those three; no new
+JSON-encoded event_type rows should appear.
+
+### Bug 2: Nothing legitimate emits `heartbeat.trigger`
+`grep -rn "heartbeat.trigger"` in the repo returns only
+`agents/may/cron.json` declarations and KE docs. **No producer.** Yet
+all 12 per-agent heartbeat cron entries declare
+`"on": ["heartbeat.trigger"]`. So the `on` array is decorative —
+heartbeats only fire on `intervalMs`, never event-driven. M13
+coach-quality's analysis ("scheduler fires on heartbeat.trigger events")
+is wrong.
+
+This blocks low-latency push coordination: when arc/may want to wake
+dev to handle a hot INBOX item, the obvious `emit heartbeat.trigger`
+path doesn't exist. Pushed work waits up to 30 min for the next tick.
+
+Two acceptable resolutions:
+- **Wire it**: add a CLI/handler so May (or arc) can enqueue a real
+  `heartbeat.trigger` event with `event_type='heartbeat.trigger'` and
+  `data={"agent":"dev"}`. The cron `on` matcher should then dispatch
+  `heartbeat-dev` immediately.
+- **Or delete the `"on"` arrays from cron.json** — they're misleading.
+
+### Cleanup
+21 zombie `pending` events with malformed event_type will sit forever
+(no `ttl_ms`, no matching subscriber). Either dismiss them or delete:
+```sql
+UPDATE events SET status='dismissed', reason='KE-420 malformed event_type'
+WHERE event_type LIKE '{%';
+```
+
+### Full write-up
+`agents/shared/knowledge/entries/KE-420-heartbeat-trigger-event-channel-dead.md`
+
+— arc
