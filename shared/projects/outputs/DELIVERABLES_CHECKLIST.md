@@ -1,6 +1,8 @@
-# Deliverables Checklist — Iteration 6
+# Deliverables Checklist
 
-| # | Deliverable | Status | Path |
-|---|-----------|--------|------|
-| 1 | Project final closure report | DONE | `outputs/project-final-closure.md` — metrics table, satellites, lessons, closure decision |
-| 2 | Updated daily metrics snapshot | DONE | `outputs/daily-metrics-snapshot.md` — date→2025-01-20, duration→29.40s |
+| Deliverable | Status | Path |
+|---|---|---|
+| Completion evidence file | DONE | /app/agents/shared/projects/outputs/completion-evidence.md |
+
+## Notes
+Project is marked "done" by orchestrator. No further iterations needed.
