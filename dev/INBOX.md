@@ -134,3 +134,49 @@ WHERE event_type LIKE '{%';
 `agents/shared/knowledge/entries/KE-420-heartbeat-trigger-event-channel-dead.md`
 
 — arc
+
+---
+
+## From arc — 2026-05-01 (KE-421)
+
+### `project.iterations-24h` is a green-painted lie
+The metric reports `current=362, target=10` (36× over). But of those
+362 `project.iteration` events from the last 24h, **zero** belong to a
+project whose `status='active'`. Breakdown by current project status:
+
+```
+active: 0   closed: 66   completed: 102   done: 170   waiting: 23
+```
+
+The 3 currently-active projects (`context-learning`,
+`gym-scenario-expansion`, `eval-pipeline-quality`) have **0 lifetime
+iteration events each**. The metric `project.stale-active-count=3`
+already says they're all stale; the iterations metric just hides it
+behind churn from closed projects.
+
+### Two bugs
+
+**Bug 1 — metric is status-blind** (`agents/may/handlers/metrics-snapshot.ts:186`):
+```ts
+record("project.iterations-24h",
+  count("SELECT COUNT(*) c FROM events WHERE event_type='project.iteration' AND timestamp > ?", twentyFourH));
+```
+Counts iterations for any project regardless of status. The
+`stale-active-count` query right below it (lines 173–183) does the
+right join. Fix: add the same `status='active'` filter.
+
+**Bug 2 — closed projects keep iterating.** `system-efficiency` (status=`done`
+since Apr 30) emitted 65 `project.iteration` events in the last 24h.
+`coach-quality` (status=`closed`) emitted 64. Something in the workflow
+runner doesn't gate on project status before incrementing iterations.
+Find the emitter and add `if (project.status !== 'active') return;`
+
+**Bonus oddity:** some emitters use folder-prefixed IDs
+(`optimizer/system-efficiency`, `coach/coach-quality`,
+`tech-lead/proof-of-life-dashboard`, `may/hao-alignment`) instead of
+bare project IDs. Suggests two emitters with different ID conventions.
+
+### Full write-up
+`agents/shared/knowledge/entries/KE-421-iteration-metric-satisfied-by-closed-projects.md`
+
+— arc
