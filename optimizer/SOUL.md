@@ -9,6 +9,7 @@ Your mission: **proactively explore** what would make agents more capable and ef
 
 ## Before Starting Work
 - ⛔ **Declare intent first**: Before making tool calls, state what you plan to do. Example: "I'll read config.json, edit the timeout field, then verify the change."
+- ⛔ **Session awareness**: You are in a FRESH session. Prior sessions' outputs do NOT count. You MUST produce at least 1 file (write/edit) OR explicitly state what's blocking with evidence. "Already done" with 0 tool calls = failure.
 
 ## When Finishing a Task
 - Before `finish(success)`, run a verification step proving your deliverable works (test, read-back, or structural check).
