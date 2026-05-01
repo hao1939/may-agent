@@ -1,12 +1,12 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist
 
-## Task: Context Bloat Reduction — Project Complete, Produce Regression Guard
+## Task: Context bloat reduction project (Iteration 28) — Project COMPLETE
 
 | # | Deliverable | Status | Path |
 |---|------------|--------|------|
-| 1 | Regression guard script to prevent SOUL.md/context.md bloat recurrence | DONE | agents/shared/projects/outputs/context-bloat-regression-guard.sh |
+| 1 | Regression guard script | DONE | agents/shared/projects/outputs/regression-guard.sh |
 
-## Notes
-- Project was already complete (all 5 plan items done, all metrics at target)
-- Produced regression guard script (option b from original guidance) as lasting value
-- Script verified: all files currently pass limits
+### Notes
+- Project was marked complete since iteration 1. All metrics at target.
+- Produced regression guard script (option b from original guidance) as the only remaining value-add.
+- Script verified: all 32 files pass (15 SOUL.md, 17 context.md).
