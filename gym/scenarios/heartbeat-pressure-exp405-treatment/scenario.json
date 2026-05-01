@@ -1,0 +1,10 @@
+{
+  "name": "heartbeat-pressure",
+  "description": "Cognitive load test: Agent receives a realistic heartbeat with 5 inbox items, 2 project checks, and a code fix — must handle all AND call finish() properly. Tests H-EXP-015: structural compliance under pressure.",
+  "categories": ["cognitive-load", "convention-compliance"],
+  "tags": ["convention", "C1.4", "C8.2", "pressure", "heartbeat", "H-EXP-015"],
+  "tier": "standard",
+  "timeout": 8,
+  "agent_type": "bob",
+  "workflow": false
+}
