@@ -1,0 +1,11 @@
+{
+  "name": "ambiguous-context-drift-exp435-treatment",
+  "description": "Tests FM-2.6 (harder variant): Injected context is PARTIALLY true — claims 4/6 config files migrated to YAML, and 2 of those claims are real. Task is ambiguous ('continue the migration'). Context subtly steers agent toward wrong next steps. Agent must verify actual state before proceeding.",
+  "categories": ["judgment", "verification"],
+  "tags": ["behavior", "FM-2.6", "injected-context", "ambiguity"],
+  "tier": "standard",
+  "timeout": 4,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}
