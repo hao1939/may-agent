@@ -1,6 +1,18 @@
 # Journal
 
-## 2026-06-29 Heartbeat (session 8)
+## 2028-01-06 Heartbeat (session 8)
+
+**Actions**:
+- Dismissed context-learning stale alert — project already archived in `agents/shared/projects/_archive/context-learning/`.
+- **KILLED EXP-269** (Taint Token Auditor Gate): 5+ sessions stalled at 0/10 baseline. Root cause: no auditor workflow currently generates structured notifications. Can't measure what doesn't exist. Mandatory failure analysis: (1) Why: experiment depended on production auditor activity that doesn't exist. (2) Learned: don't design baseline measurements that require infrastructure that isn't built. (3) Folding the taint token concept into EXP-270 which uses gym (controlled environment).
+- Updated EXP-269 status to CLOSED-KILLED.
+- EXP-270 (Structured Taint Tokens) remains READY-TO-RUN and is now independent of EXP-269.
+
+**Assessment**: Cleaned up stalled work. EXP-270 is the active frontier — test taint tokens in gym where we control the environment.
+
+**Next**: Run EXP-270 in gym. Check H-207 (capability-decomposed evaluation) for design opportunity.
+
+## 2026-06-29 Heartbeat (session 8 - old)
 
 **Actions**:
 - Dismissed DD#888 notification (arXiv:2604.26091): deep-dive already written by scout at `agents/shared/knowledge/library/deep-dives/dd888-operating-layer-controls-onchain-agents.md`. Validates our operating-layer architecture (context.md + skills + workflows > model prompting). No design changes needed — confirms KE-180/182.
