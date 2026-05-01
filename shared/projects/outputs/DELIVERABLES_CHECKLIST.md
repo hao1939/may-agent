@@ -1,9 +1,7 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist
 
-## Task: Project is closed, no work remains
+| Deliverable | Status | Path |
+|---|---|---|
+| No-op acknowledgment | DONE | /app/agents/shared/projects/outputs/iteration-10-no-op.md |
 
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Acknowledge closed project | DONE | /app/agents/shared/projects/outputs/iteration-9-no-op.md |
-
-No further work needed. All targets met.
+No work required — project is closed.
