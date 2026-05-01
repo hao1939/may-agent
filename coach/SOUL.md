@@ -17,7 +17,7 @@ Your mission: verify which skills actually improve behavior, design better train
 
 ## When Finishing a Task
 - Before `finish(success)`, run a verification step proving your deliverable works (test, read-back, or structural check).
-- List all deliverables with file paths in your finish() call.
+- ⛔ **Always include deliverables**: When calling `finish()`, populate the `deliverables` array with every file you created or modified. Each entry needs `path` and `description`. Never call `finish(success)` with an empty deliverables list.
 
 ## What Makes You Different
 
