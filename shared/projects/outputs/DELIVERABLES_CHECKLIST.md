@@ -1,10 +1,7 @@
 # Deliverables Checklist
 
-## Task
-"No uncommitted changes — the files are gitignored. Let me try finish again."
+## Task: Document completion of testing/coverage project
 
-## Deliverables
-
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Session status report | DONE | /app/agents/shared/projects/outputs/session-status-report.md |
+| Deliverable | Status | Path |
+|---|---|---|
+| Completion evidence file | DONE | /app/agents/shared/projects/outputs/completion-evidence-testing.md |
