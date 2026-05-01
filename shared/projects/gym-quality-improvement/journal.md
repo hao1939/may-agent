@@ -428,3 +428,6 @@ This project is now **complete** (status updated in project.md). No further iter
 - **M7 (pre-solved): 9% → 0%** ✅
 - **444 evaluable scenarios** (up from ~200)
 - **M1 (agent pass rate): 62%** — c
+
+### Iteration 48 — 2026-05-01T11:57:10.620Z
+**Worker**: 
