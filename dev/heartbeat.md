@@ -8,7 +8,8 @@
 5. **Fix**: patch the workflow/handler/skill
 6. **Verify**: syntax-check, ensure no regressions
 
-## Queries to Start With
+## Queries to Start With (when DB access is available)
+If you have the `query_db` tool in your environment, these queries are the fastest way to start:
 ```sql
 -- Recent failures
 SELECT id, agent, status, error FROM sessions WHERE status='error' ORDER BY startedAt DESC LIMIT 5;
@@ -23,15 +24,33 @@ SELECT id, agent, turns, duration_ms FROM sessions WHERE turns > 10 ORDER BY sta
 SELECT id, name, current, target, threshold, alert_op, updated_at FROM metrics WHERE status='active';
 
 -- Unmeasured metrics (no recent snapshot)
-SELECT m.id, m.name FROM metrics m LEFT JOIN metric_snapshots ms ON m.id = ms.metric_id AND ms.measured_at > (unixepoch()*1000 - 3600000) WHERE ms.metric_id IS NULL AND m.status='active';
+SELECT m.id, m.name
+FROM metrics m
+LEFT JOIN metric_snapshots ms
+  ON m.id = ms.metric_id
+ AND ms.measured_at > (unixepoch()*1000 - 3600000)
+WHERE ms.metric_id IS NULL AND m.status='active';
 ```
 
+## If you do NOT have DB access (fallback that works with bash/read)
+Use this fallback to still do a useful heartbeat:
+
+1. **Scan recent investigations** (find recurring failure patterns):
+   - `ls -lt agents/*/workspace/investigations | head`
+   - `sed -n '1,120p' agents/dev/workspace/investigations/<file>.md`
+
+2. **Search for recent errors in workspace artifacts** (logs, stack traces):
+   - `grep -R --line-number --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.state "error" agents/*/workspace | head -200`
+
+3. **Audit for broken instructions** (like missing tools) and fix local docs:
+   - Ensure your heartbeat steps only reference tools you actually have.
+
 ## Metrics Engineering
-When you find a gap, register a new metric:
+If DB access is available, register a new metric with:
 ```sql
 INSERT OR IGNORE INTO metrics (id, name, owner, source_query, target, threshold, alert_op, type, status, speed, created_at, updated_at)
 VALUES ('your.metric-id', 'Human-readable name', 'dev',
   'SELECT COUNT(*) as value FROM ...', 10, 3, '<', 'health', 'active', 'fast',
   unixepoch()*1000, unixepoch()*1000);
 ```
-The metrics-snapshot handler will auto-measure it every 5 minutes.
+Otherwise, capture the gap as an investigation in `agents/dev/workspace/investigations/` and escalate to May/owner to add the metric.
