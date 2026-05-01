@@ -331,7 +331,7 @@ function runAgent(adapter , taskContent , workDir , agent , timeoutMs ) {
         timeout: timeoutMs,
         stdio: "pipe",
         encoding: "utf-8",
-        env: { ...process.env, GYM_WORK_DIR: workDir, GYM_TASK_CONTENT: taskContent2 },
+        env: { ...process.env, GYM_WORK_DIR: workDir, GYM_TASK_CONTENT: taskContent2, GYM_EFFECTIVE_AGENT: agent },
       }
     ) || "";
   } catch (err) {
@@ -392,7 +392,26 @@ function runAgent(adapter , taskContent , workDir , agent , timeoutMs ) {
           return nameB.localeCompare(nameA);
         });
       if (sessionDirs.length > 0) {
-        const latestSession = sessionDirs[0];
+        // Find the session that matches our gym agent (check meta.json)
+        let selectedSession = null;
+        for (const sd of sessionDirs) {
+          const metaPath = path.join(sessionsDir, sd, "meta.json");
+          try {
+            if (fs.existsSync(metaPath)) {
+              const meta2 = JSON.parse(fs.readFileSync(metaPath, "utf-8"));
+              // Match agent name from effectiveAgent variable (passed via env)
+              const gymAgent = process.env["GYM_EFFECTIVE_AGENT"] || "";
+              if (gymAgent && meta2.agent && meta2.agent !== gymAgent) continue;
+            }
+          } catch { /* skip */ }
+          // Check if session.jsonl exists and has tool calls
+          const jp = path.join(sessionsDir, sd, "session.jsonl");
+          if (fs.existsSync(jp)) {
+            selectedSession = sd;
+            break;
+          }
+        }
+        const latestSession = selectedSession || sessionDirs[0];
         const jsonlPath = path.join(sessionsDir, latestSession, "session.jsonl");
         if (fs.existsSync(jsonlPath)) {
           const sessionData = fs.readFileSync(jsonlPath, "utf-8");
