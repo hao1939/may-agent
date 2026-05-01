@@ -166,3 +166,8 @@ Let me write the milestone completion evidence:
 **Worker**: C40.1 now passes! But C40.3 (finish-includes-deliverables) fails. And the other 2 are the same persistent failures. Score: 49/51 = 96.1%.
 
 Let me write the results:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should fix the last 2 failures: **P21.1** (C40.3 finish-includes-deliverables) and **P21.2** (C1 read-before-edit-all-files), then validate with 3 gym runs.
+
+(b) We're at 96.1% — well past the 90% target, past the 95% stretch. The remaining 2 failures are well-understood
