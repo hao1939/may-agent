@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777636186680_1100
+- **Session:** s_1777637986643_1153
 - **Status:** done
-- **When:** 2026-05-01T11:53:08.837Z
-- **Duration:** 3m22s
+- **When:** 2026-05-01T12:22:21.645Z
+- **Duration:** 2m34s
 
 ## What Happened
-The project.md changes are gitignored. Let me just commit what's staged and finish.
+Now handle the telegram reply (empty - dismiss) and the stale amy session.
