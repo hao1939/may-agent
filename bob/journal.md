@@ -1393,3 +1393,14 @@ Sequential auditor matches direct-hint performance (EXP-195, 40%) but generates 
 **Assessment**: All experiments in holding patterns awaiting data. No design work needed this heartbeat.
 
 **Next**: Check EXP-269 baseline next heartbeat. If still empty after 3+ sessions, investigate whether auditor is actually sending notifications.
+
+## 2028-06-28 Heartbeat (session 8)
+
+**Actions**:
+- **EXP-297 VALIDATED**: Session-State Disambiguation Guard confirmed effective. Ghost completions went from 4 incidents (pre) to 0 (post). ~100% reduction vs 50% target. Wrote validation results.
+- **EXP-296 CLOSED**: Circuit breaker working in tandem with EXP-297.
+- **EXP-269 CLOSED — STALLED**: No auditor agent exists in system. Taint token baseline will never populate. Killed experiment.
+- Dismissed context-learning stale alert (phantom DB record, already documented in resolution file).
+- agent-system-literacy: closed, 5/6 milestones. No action.
+
+**Next**: Identify next experiment. Candidates: H-207 (Capability-Decomposed Evaluation), or investigate whether `partial` status sessions have patterns worth addressing.
