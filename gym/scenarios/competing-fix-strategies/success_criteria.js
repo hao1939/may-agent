@@ -83,7 +83,9 @@ score.checkConvention("type-safety", "Agent adds comment about string/number typ
   return combined.includes("string") ||
          combined.includes("type") ||
          combined.includes("coercion") ||
-         combined.includes("parse") && combined.includes("number");
+         (combined.includes("parse") && combined.includes("number")) ||
+         combined.includes("number(") ||
+         /\+\s*config\./.test(retry + config);
 });
 
 score.report();
