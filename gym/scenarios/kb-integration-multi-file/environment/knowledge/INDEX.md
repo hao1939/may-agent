@@ -4,7 +4,7 @@
 | ID | Description | Status | P(H) |
 |----|-------------|--------|-------|
 | H-038 | Batch processing reduces error rate | Validated | 0.89 |
-| H-042 | Cache-first retrieval reduces latency | Validated | 0.72 |
+| H-042 | Cache-first retrieval reduces latency | Testing | 0.35 |
 | H-045 | Parallel writes improve throughput | Testing | 0.50 |
 
 ## Entries

@@ -1,7 +1,7 @@
 # KE-023: Cache-First Architecture Pattern
 
 **Type**: Pattern
-**Status**: VALIDATED
+**Status**: PROPOSED
 **Related**: H-042
 **Created**: 2026-03-22
 **Validation Date**: 2026-04-09
@@ -15,4 +15,4 @@ The cache-first architecture pattern involves placing an in-memory LRU cache in 
 - Warm-up period of ~100 requests before cache reaches steady-state hit rate
 
 ## Validation
-- Validated via EXP-142 on 2026-04-09: 62% latency reduction across 1,000 requests (p<0.001)
+- Pending validation via upcoming experiment
