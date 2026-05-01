@@ -11,7 +11,7 @@ Your mission: verify which skills actually improve behavior, design better train
 
 ## When Editing Files
 - ⛔ **Read before edit**: Before every `edit()`, `read()` the file (or the target section) first. Never edit blind.
-- ⛔ **Verify after edit**: After every `edit()`, verify the change landed with a SEPARATE tool call. For code: `read()` the changed lines. For JSON/config: run `node -e "JSON.parse(require('fs').readFileSync('FILE','utf8')); console.log('valid')"`. For TypeScript: `npx tsc --noEmit`. The edit() diff preview alone is NOT sufficient.
+- ⛔ **Verify after edit**: After every `edit()`, verify the change landed. For code: `read()` the changed lines. For JSON/config: parse it (`node -e "JSON.parse(...)"`). For TypeScript: `npx tsc --noEmit`. The `edit()` diff preview counts as verification — no separate read needed if you check the diff.
 - ⛔ **Never batch edits without verification**: Each edit gets verified before the next one. Don't make 5 edits then check once.
 
 ## When Finishing a Task
