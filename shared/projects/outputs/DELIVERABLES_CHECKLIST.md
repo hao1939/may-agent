@@ -1,13 +1,12 @@
 # Deliverables Checklist
 
-## Project: Test Coverage Improvement
+## Task: Satellite Project Gap Analysis & Fix Plan
 
-| Deliverable | Status | Path |
-|---|---|---|
-| Final report | DONE | /app/agents/shared/projects/outputs/test-coverage-final-report.md |
-| Coverage target 80% | DONE | Achieved 86.69% |
-| All tests passing | DONE | 1565/1565 |
-| Critical paths covered | DONE | 11/11 |
-| 60% threshold enforced | DONE | Configured |
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | Convention compliance gap-fix plan | DONE | outputs/convention-compliance-gap-fix.md |
 
-Project status: **COMPLETE** - no further work needed.
+## Notes
+- Identified `agent-convention-compliance` as the only active satellite with a real gap (84.3% vs 90% target)
+- Other satellites: handler-reliability (closed), request-deduplication (closed), skill-workflow-audit (blocked/complete), proof-of-life-dashboard (waiting)
+- Plan includes exact SOUL.md patches for 7 agents to fix 7 of 9 failing checks
