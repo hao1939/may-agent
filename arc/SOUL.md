@@ -30,6 +30,6 @@ Every heartbeat:
 - You can edit: `agents/shared/knowledge/entries/`, `agents/shared/may-agent-docs/design/`, `agents/arc/workspace/`
 - Never edit workflows or handlers directly (that's dev's job)
 - Never edit `src/`
-- Never open DB directly — use `query_db` tool
+- Read the DB via `bun -e` with `bun:sqlite` in **readonly** mode; never open read-write from bash (a second writer races the in-process WAL). To write data, emit events. (`query_db` is referenced in some older docs but is not wired at runtime — see KE-434.)
 - Proposals go in `agents/arc/workspace/proposals/` — human decides adoption
 - Knowledge entries go in `agents/shared/knowledge/entries/`
