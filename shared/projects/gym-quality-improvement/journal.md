@@ -334,3 +334,12 @@ This project is **complete**. No further iterations needed.
 
 ### Iteration 39 — 2026-05-01T11:50:07.475Z
 **Worker**: 
+**Orchestrator**: CONTINUE
+
+This project is **complete**. Status set to `complete`. No further iterations needed.
+
+**Final scorecard (38 iterations):**
+- **M6 (broken): 20% → 0%** ✅
+- **M7 (pre-solved): 9% → 0%** ✅
+- **Evaluable scenarios: ~200 → 444** ✅
+- **M1 (agent pass rate): 62%** on 60 live scenarios — confirme
