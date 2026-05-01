@@ -1,6 +1,7 @@
 # Deliverables Checklist
 
 ## Required
-- [x] **outputs/vitest-cleanup-report.md** — DONE
-  - Path: `/app/agents/shared/projects/system-efficiency/outputs/vitest-cleanup-report.md`
-  - Verified vitest config, documented that `gym/**` exclude works from `/app/agents/`, 536 tests pass with 0 failures
+- [x] DONE — `outputs/scenario-rotation-report.md` — Scenario rotation report with 3 new scenarios validated and retirement candidates documented. Path: `/app/agents/shared/projects/system-efficiency/outputs/scenario-rotation-report.md`
+
+## Blocked
+- [ ] BLOCKED — Actual scenario retirement — No pass-rate tracking data available to identify which scenarios to retire
