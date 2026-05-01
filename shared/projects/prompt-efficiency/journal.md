@@ -1,5 +1,8 @@
 # Journal
 
+### Manual update — 2026-06-01 (optimizer heartbeat)
+**Status**: P3 in progress. tech-lead trimmed their own SOUL.md (851w→358w). Notified tech-lead to execute remaining P3 trims per proposal (bob/amy/arc/coach/scout — ~499w savings total). Current SOUL.md avg: 601w, target <600w. Once tech-lead executes, P3 is complete and we can measure P5.
+
 ### Iteration 1 — 2026-05-01T10:47:14.711Z
 **⚠️ No output files produced (1 consecutive failures)**
 
