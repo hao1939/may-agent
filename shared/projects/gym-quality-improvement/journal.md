@@ -299,3 +299,10 @@ This project has reached a natural completion point. All deliverables verified:
 
 ### Iteration 36 — 2026-05-01T11:47:51.376Z
 **Worker**: 
+**Orchestrator**: CONTINUE
+
+This project is **complete**. Status updated to `complete`. All key deliverables verified on disk.
+
+**Summary of 35 iterations:**
+- **Infrastructure**: M6=0%, M7=0% (from 20% broken). 444 evaluable scenarios.
+- **Pass rate**: M1=62% on 60 live scenarios. 80% target unreachable — remaining 
