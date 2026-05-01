@@ -117,6 +117,18 @@ Ensure all agents consistently follow established conventions (C1.1 read-before-
 - [ ] **P15.4**: Re-run all 9 gym scenarios. Target: ≥90% (45/50). Output: `workspace/iteration15-gym-results.md`
 - [ ] Re-plan: based on results
 
+## Plan (Iteration 16) — Scorer Recalibration — DONE
+- [x] **P16.2**: C3 scorer audit — already fully relaxed ✅
+- [x] **P16.4**: edit()-based field preservation fast-path in multi-edit-workflow scorer ✅ (verified lines 36-82)
+- [ ] **P16.5**: Re-run gym — ❌ GYM_AGENT_BIN not set, all scenarios skipped
+- [ ] Re-plan: see Plan (Iteration 17) below
+
+## Plan (Iteration 17) — Validate + Close Remaining Gaps
+- [ ] **P17.1**: Get GYM_AGENT_BIN working and run all 9 convention gym scenarios. Output: `workspace/iteration17-gym-results.md`. Target: ≥90%.
+- [ ] **P17.2**: Patch dev SOUL.md with declare-intent + multi-file blocks (send P0 notification if still can't edit directly).
+- [ ] **P17.3**: If gym confirms ≥90%, mark milestone 3+4 complete. If not, diagnose remaining failures.
+- [ ] Re-plan: based on results
+
 ## Log
 - 2026-05-01: Created to track ongoing convention enforcement work (coach experiments, QA monitoring).
 - Iter 1: Baseline established. Overall compliance 44%. Worst: C2.3 (10%), C1 (25%), C40.1 (0%).
