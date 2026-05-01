@@ -148,7 +148,7 @@ describe("execute", () => {
     vi.mocked(fs.existsSync).mockReturnValue(false);
     const ctx = createMockCtx("project: agents/shared/projects/test");
     const result = await execute(ctx as any);
-    expect(ctx.escalate).toHaveBeenCalledWith(expect.stringContaining("No project.md"));
+    expect(result).toEqual(expect.objectContaining({ status: "skipped", reason: "project-not-found" }));
   });
 
   it("skips paused projects", async () => {
