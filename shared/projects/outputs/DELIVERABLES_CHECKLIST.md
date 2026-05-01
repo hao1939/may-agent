@@ -1,12 +1,10 @@
 # Deliverables Checklist
 
-## Task: Test Coverage Project (Iteration 27 - Complete, No Work Needed)
+## Task: Test Coverage Project (Complete)
 
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Final test coverage report | DONE (previous iteration) | outputs/test-coverage-final-report.md |
+| Deliverable | Status | Path |
+|---|---|---|
+| Final report | DONE | /app/agents/shared/projects/outputs/test-coverage-final-report.md |
 
 ## Notes
-- Project status: **complete** — all targets exceeded long ago
-- 86.69% coverage (target 80%), 1565 tests passing, 11/11 critical paths, 60% threshold enforced
-- No new deliverables produced this iteration — project is finished
+Project completed in earlier iterations. All targets exceeded (86.69% coverage, 1565/1565 tests, 11/11 critical paths, 60% threshold enforced). No further work needed.
