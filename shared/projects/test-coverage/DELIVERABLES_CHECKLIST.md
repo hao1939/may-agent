@@ -1,4 +1,4 @@
 # Deliverables Checklist
 
-- [x] DONE: Assess project state — verified tests via `npx vitest run`, found 1 regression
-- [x] DONE: Update project.md — `/app/agents/shared/projects/test-coverage/project.md` — updated iteration, current state, and plan with new fix item
+- [x] DONE: Verify all tests pass — 1565/1565 passing (bash: npx vitest run)
+- [x] DONE: Update project.md status to complete — `/app/agents/shared/projects/test-coverage/project.md` (status→complete, metrics updated, current state updated)
