@@ -1,26 +1,40 @@
 # Evaluator heartbeat — 2026-05-01
 
-## Checks performed (evidence)
+## Checks performed
 
-### Session-eval pipeline liveness
-- DB recency check: `evaluations.max(createdAt)=1777645584258` vs `sessions.max(startedAt)=1777645600384` → **lag ~16,126 ms** (fresh; pipeline running).  
-  Evidence: bun:sqlite query output.
+### Pipeline freshness (DB canonical)
+From `.state/may.db` (readonly):
+- `evaluations.max(createdAt)` = `1777647323107`
+- `sessions.max(startedAt)` = `1777647411939`
+- Last 7d counts: `evaluations=2040`, `sessions=6053`
+- Sessions missing eval (last 7d, left join where `e.sessionId is null`) = `4256`
 
-### Legacy `.state/evaluations/` artifact freshness
-- Directory listing shows most `task_tree_*.json` artifacts are **from 2026-03-24**, but a few `s_*.json` files are **from 2026-04-29**.
-- Interpretation: **DB is canonical and fresh; `.state/evaluations/` is partially stale / drifting**, consistent with prior note that task_tree artifacts appear stale.
+### Missing-eval breakdown (last 7d)
+By `kind/source` (top):
+- `job / standalone-eval`: 1477
+- `call / workflow:worker`: 1010
+- `call / workflow:orchestrator`: 758
+- `job / null`: 695
+- `call / workflow:heartbeat-evaluator`: 107
 
-### Coverage snapshot (not a configured metric, but relevant to process #5)
-- Sessions evaluated coverage: **1770 / 5863 = 0.3019**.
-- Per-agent mismatch signals potential eval-scope skew:
-  - `evaluator` has 1575 sessions but is not in evaluations top list (expected, as evaluator shouldn’t self-evaluate).
-  - `optimizer` has 1406 sessions but only 573 evaluations (maxAt older than coach).
+By `agent` (top):
+- evaluator: 1590
+- optimizer: 947
+- coach: 866
+- amy: 697
 
-## Findings
-1. **No liveness incident**: evaluation writes are current in DB (lag ~16s).
-2. **Output-path drift / partial staleness**: `.state/evaluations/` task_tree artifacts look stuck at 2026-03-24 while DB continues to update.
-3. **Low evaluation coverage (~30%)**: likely by design (scoped cron) but worth making explicit as a target metric and/or documenting intended sampling.
+### Legacy artifact path
+`.state/evaluations/` contains files with mtimes through Apr 29 / Apr 20; older task_tree artifacts still dated Mar 24.
 
-## Suggested follow-ups (for owner / tech lead)
-- Decide whether `.state/evaluations/task_tree_*.json` is still an expected artifact. If yes, fix writer path/job; if no, update docs/alerts to stop treating it as canonical.
-- Consider adding a real metric for evaluation coverage (sessions with evaluation / total sessions) with a target, or document why 30% is acceptable.
+## Interpretation
+- DB timestamps indicate the evaluation pipeline is *running recently* (fresh max createdAt).
+- Evaluation **coverage** is likely limited by intentional scoping / skip rules rather than a dead cron: 6053 sessions vs 2040 evals in 7 days (~34% coverage).
+- A large share of missing-eval sessions are internal workflow calls and standalone-eval jobs (may be intentionally excluded to avoid evaluating evaluators / orchestration noise).
+
+## Action recommended
+- Decide/clarify policy: should we evaluate `workflow:*` calls and `standalone-eval` jobs?
+  - If **no**, the “coverage” metric should explicitly exclude these categories, otherwise it will always look low.
+  - If **yes**, update the evaluator job’s session filter to include these.
+
+## Next step (if assigned)
+- Open `agents/evaluator/knowledge/criteria.md` and document the intended evaluation scope and what is excluded from coverage.
