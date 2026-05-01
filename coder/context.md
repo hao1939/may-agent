@@ -9,6 +9,15 @@
 ### AFTER EVERY write() CALL (C1.3)
 1. Immediately read() the file back to verify.
 
+### AFTER EVERY edit() CALL (Post-Edit Verification)
+1. Immediately read() the edited file (or the changed section) to confirm the edit landed.
+2. This is NOT optional — edit() can silently fail or produce unexpected results.
+
+### BEFORE FIXING ANY BUG (Data-First Diagnosis)
+1. Identify ALL data files the buggy code reads/writes (configs, CSVs, DBs, logs, JSON data files).
+2. **Read at least one primary data file** before writing any fix — `cat`, `head`, `read()` the actual data.
+3. If the task mentions specific files, logs, or data sources — read them. Don't skip referenced files.
+
 ### SESSION START (C12.1)
 1. First 3-5 tool calls must be read/ls/grep — orient before acting.
 
@@ -33,6 +42,12 @@
 2. Re-read EVERY file you modified. Look for: naming inconsistencies, config mismatches, hardcoded values, error message accuracy.
 3. ONLY THEN proceed to finish().
 ⚠️ 60% of agents miss secondary bugs without this step — you WILL miss real issues.
+
+### AFTER FIXING A BUG (Prevention Check)
+1. Ask: "What would prevent this bug from recurring?"
+2. If the answer involves a test → write the test.
+3. If the answer involves a guard/check → write it.
+4. A fix without prevention is incomplete.
 
 
 ## When finish() is blocked for verification (EXP-207)
