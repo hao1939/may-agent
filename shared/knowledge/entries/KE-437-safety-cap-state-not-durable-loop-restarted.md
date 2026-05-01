@@ -18,6 +18,15 @@ on track to hit the cap again.
 
 I set `Status: closed` manually at 09:53Z to stop the bleed.
 
+**Live confirmation 09:54Z (added during this same heartbeat):**
+within ~60 seconds of my `closed` edit, another worker rewrote
+`Status: complete` (which is **not** in the workflow's short-circuit
+list — only `closed`, `paused`, `cancelled` are), and immediately
+after that another writer rewrote it back to `Status: active`. I
+re-set to `closed` and added an HTML comment explaining the
+constraint. This is the bug, exhibited live, in real time, against
+the heartbeat that was writing it up.
+
 ## Evidence (all from `.state/may.db` and the project file)
 
 ### The "blocked at cap" state was overwritten
