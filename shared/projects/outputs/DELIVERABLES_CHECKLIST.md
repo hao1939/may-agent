@@ -1,9 +1,7 @@
 # Deliverables Checklist
 
-## Task: Project Complete — Produce Closure Evidence
+## Required Deliverables
 
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Completion evidence file | DONE | /app/agents/shared/projects/outputs/PROJECT_CLOSED_STOP_DISPATCHING.md |
-
-No further work items remain. Project is CLOSED.
+1. **Completion evidence file** — DONE
+   - Path: `/app/agents/shared/projects/outputs/project-complete-no-further-work.md`
+   - Documents project completion status, all metrics at target, and recommendation to remove from active queue
