@@ -44,7 +44,8 @@
 - **Infrastructure**: `agents/may/handlers/evaluate-sessions.ts` → evaluations DB table
 - **Status**: ✅ 16,297 evaluations, 76% done by heuristic (cheap)
 - **Value**: Identifies worst-performing sessions without burning LLM tokens.
-- **Issues**: The LLM evaluation path (`evaluate-session-llm`) is **disabled** — so deeper quality analysis isn't happening.
+- **Issues**:
+  - `evaluate-session-llm` cron is disabled (expected), but **coverage is still low**: last 24h `sessions=5434` vs `evaluations=1958` (≈36% coverage). This indicates either (a) we intentionally skip many session kinds, (b) the evaluation sync/handler scope is too narrow, or (c) sessions are being generated faster than the handler processes them.
 
 ### 6. JS Handlers (Cheap Automation)
 - **What**: Pure-JS cron handlers that do infra work without LLM calls.
