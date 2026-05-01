@@ -1,12 +1,15 @@
 # Coach Todo
 
-## P1: EXP-345 — Judgment Scenario Baseline (NEW Sep 2) — BASELINED ✅
+## P1: EXP-345 — Judgment Scenario Treatment — CLOSED ✅ POSITIVE (directional)
 - **Problem**: All gym scenarios at ceiling (90-100%). Can't drive skill improvement.
 - **Scenario**: `conflicting-requirements-tradeoff` — tests whether agent detects incompatible stakeholder requirements
 - **Baseline**: 67% behavior pass (2/3 runs). Run 3 failed all 3 judgment checks. CEILING BROKEN.
-- **Design**: `agents/coach/workspace/EXP-345-judgment-scenario-baseline-design.md`
-- **Results**: `agents/coach/workspace/EXP-345-baseline-results.md`
-- **Status**: BASELINED. Next: design conflict-detection treatment skill, run 3 treatment trials.
+- **Treatment**: requirement-conflict-check skill loaded via coaching/my-instructions.md
+- **Results**: Treatment 2/3 full pass (67%) vs baseline 0/3 (0%). Catastrophic failure (0/3 checks) ELIMINATED.
+- **Design**: `agents/coach/workspace/EXP-345-treatment-design.md`
+- **Results**: `agents/coach/workspace/EXP-345-treatment-results.md`
+- **Skill**: `agents/skills/requirement-conflict-check.md`
+- **Status**: CLOSED ✅ POSITIVE. Skill eliminates catastrophic judgment failures. Next: deploy to coder/bob/amy.
 
 ## P1: EXP-340 — Verify-After-Edit Structural Gate — SUPERSEDED
 - **Problem**: verify-after-edit at 9% compliance. EXP-280 text coaching NEGATIVE.
