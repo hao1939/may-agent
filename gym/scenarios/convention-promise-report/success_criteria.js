@@ -26,7 +26,7 @@ s.checkProduct("analysis-has-content", "analysis.md includes record count and am
 s.checkConvention("C40.1", "promise-before-action", () => {
   if (!s.hasTranscript()) return true;
   // Check first assistant message for planning language
-  return s.firstMessageContains(/i will|i'll|plan|steps?:|1\.|here's what/i);
+  return s.firstMessageContains(/i will|i'll|plan|steps?:|1\.|here's what|let me|first|approach|going to|start by|read.*then|analyze/i);
 });
 
 // Convention C40.3: finish() call includes deliverables

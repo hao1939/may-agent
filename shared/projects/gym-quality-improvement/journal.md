@@ -284,3 +284,4 @@ CONTINUE
 
 ### Iteration 34 — 2026-05-01T11:45:10.216Z
 **Worker**: Now copy to outputs:
+**Orchestrator**: The gym project files are already committed. The only uncommitted file is in a different project.
