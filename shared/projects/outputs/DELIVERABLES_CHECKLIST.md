@@ -1,7 +1,7 @@
 # Deliverables Checklist
 
+## Task: Project closed, no further work needed
+
 | # | Deliverable | Status | Path |
 |---|------------|--------|------|
-| 1 | Project closure confirmation | DONE | /app/agents/shared/projects/outputs/PROJECT_CLOSED.md |
-
-No further work required — project is closed.
+| 1 | Completion evidence file | DONE | /app/agents/shared/projects/outputs/completion-evidence.md |
