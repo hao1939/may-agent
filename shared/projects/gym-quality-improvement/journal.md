@@ -257,3 +257,6 @@ CONTINUE
 (a) Next iteration should **fix breadcrumb-reaction infrastructure, investigate the delegation-verify-pattern regression, and run 10 fresh scenarios** to get M1 on a 60-scenario sample and see if we're at 70%.
 
 (b) We confirmed SOUL.md rules have limited ROI (1/6). The remaining path to 70
+
+### Iteration 31 — 2026-05-01T11:27:41.197Z
+**Worker**: Excellent data. Now let me compile everything:
