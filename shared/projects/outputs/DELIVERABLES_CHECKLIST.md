@@ -1,9 +1,4 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST
 
-## Task: System Efficiency Project Closure (Iteration 11)
-
-| # | Deliverable | Status | Path |
-|---|-------------|--------|------|
-| 1 | Completion evidence file | DONE | /app/agents/shared/projects/outputs/system-efficiency-complete.md |
-
-Project is done — no further work needed. File documents final metrics, 10 satellites, and future work.
+- [x] DONE — Completion evidence file: `/app/agents/shared/projects/outputs/system-efficiency-complete.md`
+  - Updated with iteration 13 confirmation, all metrics, 10 satellites listed, future work noted
