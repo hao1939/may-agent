@@ -47,7 +47,7 @@ function searchByCategory(category) {
   if (typeof category !== 'string') return [];
 
   const sql = `SELECT * FROM products WHERE category = ?`;
-  const rows = executeQuery(sql, [category]);
+  const rows = executeQuery(sql);
   if (!rows || rows.length === 0) return [];
 
   return rows.map(formatProduct);
@@ -62,7 +62,7 @@ function searchByCategory(category) {
  */
 function getProductById(id) {
   const sql = `SELECT * FROM products WHERE id = ?`;
-  const rows = executeQuery(sql, [Number(id)]);
+  const rows = executeQuery(sql);
   if (!rows || rows.length === 0) return null;
 
   const row = rows[0];
