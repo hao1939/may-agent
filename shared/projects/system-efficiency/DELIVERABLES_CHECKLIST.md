@@ -1,10 +1,7 @@
 # Deliverables Checklist
 
-- [x] DONE — Assess project state and verify worker claims
-  - Worker claimed efficiency-scorecard.md but file didn't exist
-- [x] DONE — Write efficiency-scorecard.md directly
-  - Path: agents/shared/projects/system-efficiency/outputs/efficiency-scorecard.md
-- [x] DONE — Update project.md with new metrics, state, and plan
-  - Path: agents/shared/projects/system-efficiency/project.md
-- [x] DONE — Provide decision and guidance for next iteration
-  - Decision: CONTINUE — fix dispatch accuracy in master-worker.ts
+- [x] DONE — Assessed project state, verified outputs exist (`outputs/efficiency-scorecard.md` confirmed)
+- [x] DONE — Updated `project.md` Current State and Plan with precise next steps
+  - Path: `/app/agents/shared/projects/system-efficiency/project.md`
+  - Changes: Updated Current State to iteration 8, refined plan items with exact code fix instructions
+- [x] DONE — Provided decision and guidance for next worker iteration
