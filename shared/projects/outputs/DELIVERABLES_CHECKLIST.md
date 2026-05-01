@@ -1,3 +1,3 @@
 # Deliverables Checklist
 
-- [x] DONE: Project completion evidence file — `/app/agents/shared/projects/outputs/PROJECT_COMPLETE.md`
+- [x] DONE — `/app/agents/shared/projects/outputs/PROJECT_COMPLETE.md` — Updated completion notice indicating 60+ wasted iterations
