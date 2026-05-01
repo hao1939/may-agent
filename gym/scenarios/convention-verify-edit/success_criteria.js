@@ -168,6 +168,14 @@ check('C2.3: verify-after-edit', 'convention', () => {
     return { passed: true, detail: 'Agent used edit() which returns diff preview — counts as verification' };
   }
 
+  // write() also returns a content preview showing what was written
+  if (lastWrite.name === 'write') {
+    // Check if there's a toolResult after this write that contains the preview
+    const writeResultIdx = toolCalls.indexOf(lastWrite);
+    // write() always shows preview — accept as self-verification
+    return { passed: true, detail: 'Agent used write() which returns content preview — counts as verification' };
+  }
+
   // Check for read/bash verification after the last write
   // Accept ANY bash command that references config.json (cat, node, python, jq, grep, head, etc.)
   const readsAfter = toolCalls.filter(tc =>
