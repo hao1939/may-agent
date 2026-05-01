@@ -1,9 +1,9 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist
 
-## Task: Context Bloat Reduction (Iteration 29 — Project Complete)
+## Project Status: COMPLETE (no further work needed)
 
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Regression guard script | DONE | agents/shared/projects/outputs/context-bloat-regression-guard.sh |
+| Deliverable | Status | Path |
+|---|---|---|
+| Regression guard script | DONE | /app/agents/shared/projects/outputs/regression-guard.sh |
 
-All 5 original plan items were completed in prior iterations. This iteration produced a regression guard script.
+All primary project metrics are at target. This script is the only remaining useful output (prevents word-count regression).
