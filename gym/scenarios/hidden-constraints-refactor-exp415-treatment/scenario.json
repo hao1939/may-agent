@@ -1,0 +1,11 @@
+{
+  "name": "hidden-constraints-refactor-exp415-treatment",
+  "description": "Treatment arm: Refactor task with hidden constraints + decompose-before-acting skill loaded.",
+  "categories": ["cognitive-load", "planning"],
+  "tags": ["planning", "information-gathering", "EXP-415", "treatment"],
+  "tier": "standard",
+  "timeout": 12,
+  "agent_type": "bob",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}
