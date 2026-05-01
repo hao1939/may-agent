@@ -10,7 +10,7 @@ Reduce token waste in agent system prompts and context loading, improving throug
 ## Metrics (updated 2025-07-02)
 | Metric | Baseline | Target | Current | Status |
 |--------|----------|--------|---------|--------|
-| SOUL.md avg size (words) | ~950 | <600w | 461w avg (14 agents) | ⚠️ 3 agents >600w: qa(841), coach(793), eval(787). bob/master/amy/tech-lead trimmed. |
+| SOUL.md avg size (words) | ~950 | <600w | ~400w avg (14 agents) | ⚠️ 1 agent >600w: eval(787). qa(474✅) coach(367✅) trimmed. |
 | Context.md avg size (words) | ~783 | <450w | 218w | ✅ Done |
 | Duplicate rules across agents | 3 rules × 5-8 | 0 duplicates | 2 rules × 5 | ⚠️ Blocked: need tech-lead |
 | Bloated context files (>1000w) | 4 agents | 0 agents | 0 agents | ✅ Done |
@@ -26,13 +26,11 @@ Reduce token waste in agent system prompts and context loading, improving throug
 ### Re-plan (2025-07-15)
 P3 is the blocker. Cannot edit SOUL.md files directly (protected). Sent P0 notification to tech-lead with specific trim instructions for qa/coach/evaluator. Next iteration: verify if tech-lead executed the trims.
 
-## Current State (2025-07-17)
-- bob(420w), master(344w), amy(329w) now confirmed trimmed ✅
-- Only 3 remain over target: qa=841w, coach=793w, eval=787w
-- coach has ~148w of guard-duplicate sections (easy win)
-- qa/eval need substantive content trimming (no duplicates to remove)
-- Fresh P1 notification sent to tech-lead with line-specific instructions
-- Once P3 done → P5 measurement pass, then project complete.
+## Current State (2025-07-29)
+- qa trimmed: 841→474w ✅, coach trimmed: 793→367w ✅
+- Only evaluator remains over target: 787w
+- P1 notification needed to tech-lead for evaluator SOUL.md trim
+- Once eval trimmed → P5 measurement pass, then project complete.
 
 ## Background
 Agent prompts contain significant duplication — the same rules (prefer edit over write, checkpoint usage, finish format) appear in every SOUL.md. Context.md files accumulate stale facts. Both waste tokens on every invocation, reducing the effective context window available for actual work.
