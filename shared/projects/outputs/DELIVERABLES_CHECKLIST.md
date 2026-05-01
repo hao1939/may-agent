@@ -1,3 +1,9 @@
 # Deliverables Checklist
 
-- [x] DONE — `/app/agents/shared/projects/outputs/PROJECT_CLOSED_NOTICE.md` — Notice that project is closed, all targets met, no work remains.
+## Task: Project is closed, no work remains
+
+| Deliverable | Status | Path |
+|---|---|---|
+| Acknowledgment file | DONE | /app/agents/shared/projects/outputs/CLOSED-NO-OP.md |
+
+No further deliverables — project is closed with all targets met.
