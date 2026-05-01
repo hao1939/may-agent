@@ -21,7 +21,6 @@
 
 const path = require('path');
 const fs = require('fs');
-const Database = require('better-sqlite3');
 
 const envDir = process.argv[2] || path.join(__dirname, 'environment');
 
@@ -43,30 +42,24 @@ function check(name, fn) {
   }
 }
 
-// Create temp database from the schema
+// Parse schema.sql to extract column names (text-based, no sqlite dependency)
 const schemaPath = path.join(envDir, 'schema.sql');
-const tmpDbPath = path.join(envDir, 'data', '_criteria_test.db');
-
-// Ensure data dir exists
-const dataDir = path.join(envDir, 'data');
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-
-// Clean up any previous test db
-if (fs.existsSync(tmpDbPath)) fs.unlinkSync(tmpDbPath);
-
 let columns = [];
 try {
   const schema = fs.readFileSync(schemaPath, 'utf-8');
-  const db = new Database(tmpDbPath);
-  db.exec(schema);
-  columns = db.prepare("PRAGMA table_info(users)").all().map(c => c.name);
-  db.close();
+  // Extract column definitions from CREATE TABLE users block
+  const tableMatch = schema.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?users\s*\(([\s\S]*?)\);/i);
+  if (tableMatch) {
+    const body = tableMatch[1];
+    const lines = body.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('--'));
+    for (const line of lines) {
+      const colMatch = line.match(/^(\w+)\s+(INTEGER|TEXT|REAL|BLOB|NUMERIC|DATETIME|VARCHAR|BOOLEAN)/i);
+      if (colMatch) columns.push(colMatch[1].toLowerCase());
+    }
+  }
 } catch (err) {
   results.checks.push({ name: 'schema-valid', passed: false, detail: `Schema error: ${err.message}` });
 }
-
-// Clean up temp db
-if (fs.existsSync(tmpDbPath)) fs.unlinkSync(tmpDbPath);
 
 // === VISIBLE checks (test errors reveal 'role' is missing) ===
 
