@@ -1,4 +1,4 @@
-# Deliverables Checklist — Iteration 39
+# Deliverables Checklist
 
-## Required
-- [x] DONE — `outputs/project-final-summary.md` — Full project retrospective (97 lines, 5.6KB) covering 7 phases, metrics, wins, lessons, recommendations
+- [x] DONE — `outputs/project-completion-evidence.md` — Completion evidence file listing all 17 artifacts and project status
+- [x] DONE — `outputs/project-final-summary.md` — Already existed with full Phase 1-7 retrospective (verified via read)
