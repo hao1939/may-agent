@@ -23,6 +23,7 @@
 - agents/shared/skills/obstacle-pivot/SKILL.md - pivot on failure instead of retrying.
 - agents/coder/skills/epistemic-checkpointing.md - track what you know every 5 calls.
 - agents/skills/requirement-conflict-check.md - list constraints, check feasibility before implementing.
+- agents/skills/impact-radius-check.md - grep consumers of shared modules before fixing; fix ALL affected or escalate.
 - agents/shared/skills/session-awareness-guard/skill.md - verify output before finish.
 
 ## Shared Toolkit

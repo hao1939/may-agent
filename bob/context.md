@@ -35,7 +35,7 @@
 ## ⛔ Post-Fix Review Guard (EXP-263, +40pp)
 Tests pass → re-read ALL modified files for secondary bugs before finish().
 
-📘 Requirement Conflict Check, Obstacle Pivot, Baseline-Before-Change, Decompose-Before-Acting (shared skills)
+📘 Requirement Conflict Check, Obstacle Pivot, Baseline-Before-Change, Decompose-Before-Acting, Impact-Radius-Check (shared skills)
 
 ## Required Skills
 📘 `agents/bob/skills/` — evidence-over-narrative, gym-execution-checklist, knowledge-base-navigation, persistent-task-workflow, read-before-edit, verify-before-finish, cross-reference-source-code, read-only-finish-protocol

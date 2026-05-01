@@ -18,7 +18,7 @@
 - **Skill**: `agents/skills/impact-radius-check.md`
 - **Results**: `agents/coach/workspace/EXP-445-impact-radius-check-results.md`
 - **Status**: CLOSED ✅ POSITIVE. Ready for deployment to coder/bob.
-- **Next**: Deploy to coder/context.md and bob/context.md. Replicate on second scenario.
+- **Deployed**: 2028-02-01 to coder/context.md and bob/context.md. ✅
 
 ## P1: EXP-435 — Context-Verification Skill on Ambiguous-Context-Drift — CLOSED (INCONCLUSIVE)
 - **Problem**: Agents trust injected context without verifying. status-doc-accurate check fails when agents don't document context inaccuracies.
