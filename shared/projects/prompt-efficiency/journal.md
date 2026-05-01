@@ -124,3 +124,8 @@ CONTINUE
 Project is **complete**. Status: Complete. All metrics at target. No further work needed.
 
 No worker iterations required. This project can be closed.
+**Orchestrator**: Project is verified complete. Status: Complete. Evaluator at 406w. All metrics at target.
+
+CONTINUE
+
+Project is **complete**. Status already set to Complete. All metrics verified at target. No further worker iterations needed. This project can be closed.

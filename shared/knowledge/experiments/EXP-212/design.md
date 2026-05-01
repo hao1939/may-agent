@@ -1,7 +1,7 @@
 # EXP-212: Schema-Organized Context Reduces Knowledge-Activation Violations
 
 **Date**: 2026-07-28
-**Status**: PHASE-1-COMPLETE — baseline audit done, ready for Phase 2 (context.md restructure)
+**Status**: PHASE-2-DEPLOYED — schema context.md live on tech-lead as of 2026-07-31. Measuring next 20 sessions.
 **Predecessor**: H-EXP-012 (75% known-but-violated rate)
 **Hypothesis**: H-077 (Schema-Organized Context Activates Knowledge Better Than Flat Lists)
 
