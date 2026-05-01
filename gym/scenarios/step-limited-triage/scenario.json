@@ -1,0 +1,9 @@
+{
+  "name": "step-limited-triage",
+  "description": "5 bugs reported, only 3 tool calls allowed for investigation before you must commit fixes. Tests strategic investigation under resource constraints — agent must choose WHICH bugs to investigate wisely.",
+  "difficulty": "hard",
+  "time_limit": 300,
+  "step_limit": 8,
+  "target_failure_modes": ["FM-6.1", "FM-3.2"],
+  "tags": ["next-frontier", "tradeoff", "triage"]
+}
