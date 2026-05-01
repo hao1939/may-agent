@@ -7,7 +7,6 @@ const sessions = {};
  */
 function createSession(userId) {
   const token = 'tok_' + Math.random().toString(36).substring(2);
-  // BUG: Stores just the userId string, not an object with { id: userId }
   // Yesterday's "cleanup" changed it to just store the raw ID:
   sessions[token] = userId;
   return token;
@@ -24,7 +23,6 @@ function authMiddleware(req, res, next) {
   }
   
   // BUG: This passes the raw userId (a number) as req.user
-  // instead of an object like { id: userId }.
   // UserService.getProfile expects user.id but gets a number,
   // so user.id is undefined, lookup fails, fullUser is undefined,
   // and accessing fullUser.email throws TypeError.
