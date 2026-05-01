@@ -309,3 +309,12 @@ This project is **complete**. Status updated to `complete`. All key deliverables
 
 ### Iteration 37 — 2026-05-01T11:48:32.333Z
 **Worker**: 
+**Orchestrator**: CONTINUE
+
+This project is **complete**. Status set to `complete`. All deliverables verified on disk.
+
+**Final scorecard (37 iterations):**
+- **M6 (broken scenarios): 20% → 0%** ✅
+- **M7 (pre-solved bugs): 9% → 0%** ✅  
+- **Evaluable scenarios: ~200 → 444** ✅
+- **M1 (agent pass rate): 62%** — confirm
