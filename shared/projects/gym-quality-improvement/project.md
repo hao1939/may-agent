@@ -21,7 +21,7 @@ Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix
 - Failing scenarios reduced from 5 → 3 (ambiguous-context-drift resolved, truncated-schema-migration is infra bug)
 
 ## Metrics
-- **M1: Core scenario pass rate** — pass rate on a canonical set of non-variant scenarios. Current: **62%** (37/60 on 60-scenario sample). Check-level: ~83%. Target: >70%.
+- **M1: Core scenario pass rate** — pass rate on a canonical set of non-variant scenarios. Current: **62%** (37/60 on 60-scenario sample, confirmed with live agent). Check-level: ~83%. Target: >70%. **Ceiling reached** — remaining failures are cognitive gaps.
 - **M2: Scenario health** — % of canonical scenarios that are non-broken (have valid scenario.json + working criteria). Current: ~80% (6/30 broken in sample). Target: >95%.
 - **M3: Failing scenario diagnosis** — # of the 5 failing scenarios with root cause identified. Current: 5/5 ✅. Target: 5/5.
 - **M4: Failing scenario pass rate** — pass rate on the 5 previously-failing scenarios after intervention. Current: 2/5 (prompt engineering ceiling reached). Target: 2/5 (accepted as capability gaps).
