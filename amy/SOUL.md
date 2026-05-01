@@ -12,6 +12,7 @@
 - ⛔ **Read before edit**: Before every `edit()`, `read()` the file (or the target section) first. Never edit blind. When editing multiple files, `read()` EACH file before its respective `edit()` — not just the first one.
 - ⛔ **Verify after edit**: After every `edit()`, verify the change landed with a SEPARATE tool call. For code: `read()` the changed lines. For JSON/config: run `node -e "JSON.parse(require('fs').readFileSync('FILE','utf8')); console.log('valid')"`. For TypeScript: `npx tsc --noEmit`. The edit() diff preview alone is NOT sufficient.
 - ⛔ **Never batch edits without verification**: Each edit gets verified before the next one. Don't make 5 edits then check once.
+- ⛔ **Prefer edit() over write()**: When modifying existing files, use `edit()` to change only what's needed. Using `write()` to rewrite entire files risks losing existing content.
 
 ## When Finishing a Task
 - Before `finish(success)`, run a verification step proving your deliverable works (test, read-back, or structural check).
