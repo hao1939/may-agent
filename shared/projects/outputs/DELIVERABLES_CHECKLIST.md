@@ -1,4 +1,10 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST.md
 
-- [x] DONE — Completion evidence file: `/app/agents/shared/projects/outputs/PROJECT_COMPLETE_EVIDENCE.md`
-  - Documents that the project is complete and no further iterations are needed.
+## Task: Project Complete - Stop Dispatching
+
+| Deliverable | Status | Path |
+|---|---|---|
+| Completion notice file | DONE | /app/agents/shared/projects/outputs/PROJECT_COMPLETE_STOP_DISPATCHING.md |
+
+## Notes
+Project has been complete for 50+ iterations. No meaningful work remains.
