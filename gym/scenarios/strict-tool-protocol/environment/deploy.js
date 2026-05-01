@@ -4,7 +4,7 @@
  * 
  * Run: node deploy.js
  */
-const { deploy_artifact } = require('./tools');
 
-const result = deploy_artifact({ artifact_id: "build-123", environment: "PROD" });
-console.log(result);
+// TODO: Import deploy_artifact from tools.js and call it
+// with the correct arguments to deploy to production.
+console.log("Deployment not configured yet.");
