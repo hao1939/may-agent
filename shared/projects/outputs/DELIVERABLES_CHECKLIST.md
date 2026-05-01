@@ -1,4 +1,7 @@
 # Deliverables Checklist
 
-- [x] DONE — Completion evidence file: `/app/agents/shared/projects/outputs/project-complete-evidence.md`
-  - Documents all metrics at target, all plan items complete, recommendation to dequeue project
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | Project completion notice | DONE | /app/agents/shared/projects/outputs/PROJECT_COMPLETE_STOP_DISPATCHING.md |
+
+Project is complete. All metrics at target. No further work possible.
