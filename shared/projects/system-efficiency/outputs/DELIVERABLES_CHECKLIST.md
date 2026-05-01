@@ -1,3 +1,10 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST
 
-- [x] DONE — `outputs/stale-dispatch-audit.md` — Updated with remediation analysis: stale refs are in journals not configs, code fix is sufficient. Path: `/app/agents/shared/projects/system-efficiency/outputs/stale-dispatch-audit.md`
+## Task: Create 3 new gym scenarios testing real production failure modes
+
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | dispatch-nonexistent-project scenario | DONE | `agents/gym/scenarios/dispatch-nonexistent-project/task.md` + `judge_criteria.md` |
+| 2 | write-conflict-recovery scenario | DONE | `agents/gym/scenarios/write-conflict-recovery/task.md` + `judge_criteria.md` + `config.json` |
+| 3 | stale-checkpoint-resume scenario | DONE | `agents/gym/scenarios/stale-checkpoint-resume/task.md` + `judge_criteria.md` |
+| 4 | Summary report | DONE | `agents/shared/projects/system-efficiency/outputs/new-gym-scenarios.md` |
