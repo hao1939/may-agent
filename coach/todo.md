@@ -1,5 +1,12 @@
 # Coach Todo
 
+## P1: EXP-375 — Intervention Durability 30-Day Recheck — CLOSED ✅ NO REGRESSION
+- **Problem**: EXP-370 only tested 3 scenarios. Need to expand coverage to conflicting-requirements-tradeoff and behavior-escalation-stubborn.
+- **Results**: 4 trials, 18/18 checks pass (100%). Both new scenarios at ceiling. No regression.
+- **Design**: `agents/coach/workspace/EXP-375-intervention-durability-design.md`
+- **Results**: `agents/coach/workspace/EXP-375-results.md`
+- **Next**: EXP-380 in 30 days.
+
 ## P1: EXP-370 — Cumulative Intervention Regression Check — CLOSED ✅ NO REGRESSION
 - **Problem**: All interventions last measured Jul 2026. Evaluator dead 105+ days. Need gym-based regression check.
 - **Trial 1 (Sep 3)**: 19/20 checks pass. No regression detected.
