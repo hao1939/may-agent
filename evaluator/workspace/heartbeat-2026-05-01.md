@@ -1,39 +1,31 @@
 # Evaluator Heartbeat — 2026-05-01
 
-## Promise
-1. Check evaluation pipeline liveness/recency using DB as primary signal.
-2. Quantify eval coverage over the last 24h (rough proxy for “Coverage low”).
-3. Record any actionable follow-ups in a short note.
+## Checks performed
 
-## Findings (evidence)
-### DB liveness
-- `evaluations.max(createdAt)` = **1777652693541** (ms epoch)
-  - Evidence: `bun:sqlite` query output.
-- `sessions.max(startedAt)` = **1777652854191** (ms epoch)
-  - Evidence: `bun:sqlite` query output.
-- Lag ≈ **161s** between newest session start and newest evaluation.
-  - Evidence: printed `{evalMax,sessMax,lagSeconds:161}`.
+### Session-eval pipeline liveness (DB canonical)
+- `evaluations` is being written recently.
+  - Evidence: `MAX(evaluations.createdAt)=1777654399640` and `lag_hours≈0.058` (~3.5 minutes) at time of check.
+  - Evidence: `evaluations last 24h = 686`.
+- `sessions last 24h = 3146` (using `sessions.startedAt`, not `createdAt`).
 
-Interpretation: evaluation writes to DB appear **live** (minutes-level lag).
+### Legacy artifacts drift
+- `.state/evaluations/` still shows older `task_tree_*` artifacts mostly dated **Mar 24**, while some `s_*.json` are newer (Apr 29).
+- Interpreting this as **legacy-output-path drift**, not evaluation pipeline failure, given DB freshness.
 
-### Coverage proxy (last 24h)
-- sessions in last 24h: **6232**
-- evaluations in last 24h: **2187**
-- proxy coverage: **0.3509**
-  - Evidence: printed `{sess24: 6232, eval24: 2187, coverage: 0.3509...}`.
+### Process #15 (LLM eval) liveness
+- No DB tables matching `*llm*`.
+  - Evidence: `sqlite_master WHERE name LIKE '%llm%'` returned `[]`.
+- Conclusion: Process #15 appears **disabled/unimplemented/renamed**; docs should stop implying it is active unless a new canonical table/job exists.
 
-Interpretation: if the intended behavior is to evaluate “most sessions”, coverage is likely low; if the intended behavior is sampling/filtered evaluation, this may be normal. Needs owner confirmation.
+### Active session monitoring
+- `monitor-session.cjs --running` reported two alerts:
+  1) `amy` session `s_1777626616591_0`: `STALL` (last activity 467 min) → recommended action: `kill`.
+  2) `evaluator` session `s_1777654593416_2027`: `DRIFT` (low relevance) → recommended action: `warn`.
 
-### Legacy artifacts sanity check
-- `.state/evaluations/` contains recent `s_*.json` dated **Apr 29**, while `task_tree_*.json` are dated **Mar 24**.
-  - Evidence: `ls -la .state/evaluations | tail`.
+## Actions / Recommendations
+1. **Escalate** the stalled `amy` session to the session owner (likely May) for termination / cleanup.
+2. **Escalate** the monitor’s drift warning on the other `evaluator` session to May (possible self-referential tooling / wrong target).
+3. Open a small tracked maintenance item: clarify Process #15 (LLM eval) in docs—either revive it with a canonical DB table/job or remove references.
 
-Interpretation: matches known pattern: task_tree artifacts can drift/stale while DB remains fresh.
-
-## Follow-ups
-- If “Coverage” is meant to be higher than ~0.35/day, recommend creating a metric and alert threshold (owned by Evaluator) and/or clarifying expected sampling rate in docs.
-
-## Results vs Promise
-1. ✅ Checked DB liveness; lag is minutes-level.
-2. ✅ Computed 24h proxy coverage (0.351).
-3. ✅ Wrote this heartbeat note with evidence and follow-up suggestion.
+## Notes
+- Discovered a potential schema pitfall: `sessions` table uses `startedAt`/`endedAt` (no `createdAt`). Any liveness queries must use `startedAt`.
