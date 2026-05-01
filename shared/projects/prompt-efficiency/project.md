@@ -26,10 +26,12 @@ Reduce token waste in agent system prompts and context loading, improving throug
 ### Re-plan (2025-07-15)
 P3 is the blocker. Cannot edit SOUL.md files directly (protected). Sent P0 notification to tech-lead with specific trim instructions for qa/coach/evaluator. Next iteration: verify if tech-lead executed the trims.
 
-## Current State (2025-07-16)
-- 3 iterations of worker produced only proposal files, never edited actual SOUL.md (protected)
-- SOUL.md word counts still unchanged: qa=841w, coach=793w, eval=787w
-- Blocked on tech-lead executing trims. Multiple P0 notifications sent.
+## Current State (2025-07-17)
+- bob(420w), master(344w), amy(329w) now confirmed trimmed ✅
+- Only 3 remain over target: qa=841w, coach=793w, eval=787w
+- coach has ~148w of guard-duplicate sections (easy win)
+- qa/eval need substantive content trimming (no duplicates to remove)
+- Fresh P1 notification sent to tech-lead with line-specific instructions
 - Once P3 done → P5 measurement pass, then project complete.
 
 ## Background
