@@ -1,7 +1,7 @@
 # Deliverables Checklist
 
-| Deliverable | Status | Path |
-|---|---|---|
-| Completion evidence report | DONE | /app/agents/shared/projects/outputs/test-coverage-project-completion.md |
+## Required Deliverables
 
-Project is complete. No further work needed.
+- [x] DONE — Completion evidence file
+  - Path: `/app/agents/shared/projects/outputs/test-coverage-completion-evidence.md`
+  - Documents that project is complete with all metrics exceeded targets
