@@ -405,3 +405,6 @@ This project is **complete**. Status set to `complete`, iteration 45. No further
 - **M6 (broken): 0%** ✅ | **M7 (pre-solved): 0%** ✅
 - **444 evaluable scenarios** (up from ~200)
 - **M1 (agent pass rate): 62%** — confirmed ceiling across 60 live-agen
+
+### Iteration 46 — 2026-05-01T11:55:46.484Z
+**Worker**: 
