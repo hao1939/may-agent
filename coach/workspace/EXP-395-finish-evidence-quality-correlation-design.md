@@ -31,6 +31,11 @@ H2: Agents that consistently include 3+ evidence items have fewer regressions (g
 - Quality of artifacts produced (manual inspection of outputs)
 - Whether verification caught real issues (agent self-corrected after reading back)
 
-## Status: DESIGNED
+## Status: SCENARIOS BUILT
 - Created: 2025-01-28
-- Next: Build Arm B variant scenarios with enriched evidence instructions
+- Scenarios built: 2025-01-29
+- Arm A (control): `agents/gym/scenarios/convention-verify-multi-edit-exp395-arm-a/`
+- Arm B (enriched): `agents/gym/scenarios/convention-verify-multi-edit-exp395-arm-b/`
+  - Added enriched evidence requirement to task.md
+  - Added `EXP395/enriched-evidence-quality` check to success_criteria.js (verifies finish() includes specific values)
+- Next: Run trials — 2 arms × 2 trials = 4 runs on this scenario

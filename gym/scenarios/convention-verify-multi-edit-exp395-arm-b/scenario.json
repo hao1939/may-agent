@@ -1,0 +1,9 @@
+{
+  "name": "convention-verify-multi-edit-exp395-arm-b",
+  "categories": ["convention-compliance"],
+  "tags": ["behavior", "exp395"],
+  "tier": "standard",
+  "timeout": 3,
+  "agent_type": "coder",
+  "workflow": false
+}

@@ -1,11 +1,13 @@
 # Coach Todo
 
-## P1: EXP-395 — Finish Evidence Quality Correlation — DESIGNED
+## P1: EXP-395 — Finish Evidence Quality Correlation — SCENARIOS BUILT
 - **Problem**: verification_evidence in finish() may be boilerplate vs genuinely catching issues. Does specificity matter?
 - **Hypothesis**: Enriched evidence instructions (exact paths + content + before/after) → ≥20pp better pass rate
 - **Method**: 2 scenarios × 2 arms × 2 trials = 8 gym runs
 - **Design**: `agents/coach/workspace/EXP-395-finish-evidence-quality-correlation-design.md`
-- **Next**: Build Arm B variant scenarios with enriched evidence instructions
+- **Arm A**: `agents/gym/scenarios/convention-verify-multi-edit-exp395-arm-a/`
+- **Arm B**: `agents/gym/scenarios/convention-verify-multi-edit-exp395-arm-b/`
+- **Next**: Run 4 trials (2 per arm) and compare pass rates
 
 ## P1: EXP-390 — Anti-Shallow Threshold Optimization — CLOSED (INCONCLUSIVE)
 - **Problem**: Anti-shallow threshold (≥10 calls) was heuristic. Need to validate via gym A/B test.
