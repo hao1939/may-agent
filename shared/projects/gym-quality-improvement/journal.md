@@ -359,3 +359,6 @@ This project is **complete**. Status is now set to `complete` in project.md.
 - **M7 (pre-solved bugs): 9% → 0%** ✅
 - **Evaluable scenarios: ~200 → 444** ✅
 - **M1 (agent pass rate): 62%** — confirmed ceiling via 6
+
+### Iteration 42 — 2026-05-01T11:53:19.960Z
+**Worker**: 
