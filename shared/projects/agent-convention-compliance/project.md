@@ -14,15 +14,17 @@ Ensure all agents consistently follow established conventions (C1.1 read-before-
 - **M3**: Gym scenario pass rate for convention scenarios — target >80%
 
 ## Current State (Iteration 15 Assessment)
-- **Trajectory**: 44% → 68% → 76% → 78% → 82.4% → 84.3% → 78.4% → **86.0%** (target >90%)
-- **Latest gym**: 43/50 passed (86.0%) — `workspace/iteration14-gym-results.md`
-- **Key win**: Workflow transcript merge fix (+8pp). 4 phantom failures eliminated.
-- **7 remaining failures**:
-  - 5 convention-verify-multi-edit-workflow (3 product: write() destroys JSON fields, 1 C2.1 plan ordering, 1 C1 read-before-edit)
-  - 1 convention-verify-multi-edit C2.3 (transcript parsing?)
-  - 1 convention-promise-report C40.1 (declare intent)
-- **SOUL.md patch status**: bob ✅, dev ❌ still missing (0 matches for declare-intent)
-- **Path to 90%**: Fix multi-edit-workflow product failures (3 checks) = 46/50 (92%). Or fix 2 of 7 = 45/50 (90%).
+- **Trajectory**: 44% → 68% → 76% → 78% → 82.4% → 84.3% → 78.4% → 86.0% → **83.3%** (target >90%)
+- **Latest gym**: ~40/48 passed (83.3%) — `workspace/iteration15-gym-results.md`
+- **Regression**: -3pp from iter 14, likely noise/variance. Core issue unchanged.
+- **8 remaining failures**:
+  - 4 convention-verify-multi-edit-workflow (3 product: write() destroys JSON fields, 1 C1 read-before-edit)
+  - 1 convention-verify-multi-edit C2.3 (partial verify — 1/3 files verified, need 2/3)
+  - 1 convention-verify-edit-verify-wrap C3 (JSON validation check)
+  - 2 convention-promise-report (C40.1 declare-intent, C40.3 finish-deliverables)
+- **SOUL.md patch status**: bob ✅, dev ❌ still missing
+- **Key insight**: Task.md instructions ("use edit() not write()") are NOT overriding model behavior in workflow scenarios. Text-only interventions have hit their ceiling.
+- **Path to 90%**: Need 4 more checks. Best targets: (a) workflow scenario system prompt injection for edit()-over-write(), (b) C3 scorer relaxation, (c) dev SOUL.md patch for C40.
 
 ## Milestones
 - [x] Baseline compliance rates for all agents on all conventions
