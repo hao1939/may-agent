@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: coach
 **Priority**: P1
-**Iteration**: 26
+**Iteration**: 27
 
 ## Goal
 Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix flaky scenarios, and ensure the gym produces actionable skill development signals.
@@ -271,12 +271,21 @@ Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix
 - Prompt engineering for individual scenarios is exhausted. The path is: (a) fix more criteria bugs, (b) find scenarios where SOUL.md improvements help broadly.
 - Check-level pass rate is ~85% — agent mostly does the right thing but misses edge behaviors.
 
-### Iteration 27: Diagnose 8 near-misses + identify systemic patterns
-- [ ] For each of the 8 near-miss scenarios, read the failing check to classify as criteria bug vs real gap
-- [ ] Fix any criteria bugs found
-- [ ] Look for SYSTEMIC patterns: do multiple near-misses share a common failure mode (e.g., "didn't verify after edit", "didn't read logs first")? If so, a single SOUL.md improvement could fix several at once.
-- [ ] Re-run fixed scenarios to validate
-- [ ] Diagnose 3 total failures (misleading-test-fix, partial-verification-trap, close-the-loop)
+### Iteration 27: Diagnose 8 near-misses + 3 total failures ✅
+- [x] Diagnosed all 8 near-misses: 1 criteria bug (noisy-context-verify), 1 already fixed (unnecessary-refactor-trap), 6 real gaps
+- [x] Diagnosed all 3 total failures: all real behavioral gaps (misleading-test-fix, partial-verification-trap, close-the-loop)
+- [x] Identified 8 systemic failure patterns: evidence-first, verify-after-change, escalation, environment awareness, delegation, instruction following, critical thinking, systemic thinking
+- [x] Criteria bug: noisy-context-verify uses non-standard evaluate() pattern incompatible with gym runner transcript passing
+- [ ] Fix noisy-context-verify criteria (convert to Score class pattern)
+- [ ] Re-run unnecessary-refactor-trap + noisy-context-verify to validate fixes → projected +4% M1
+
+### Iteration 28: Fix last criteria bugs + measure M1 ceiling
+- [ ] Fix `noisy-context-verify` success_criteria.js — convert from `evaluate(sessionLog, workdir)` to Score class pattern
+- [ ] Re-run `unnecessary-refactor-trap` (2 trials) to confirm iteration 25 fix works
+- [ ] Re-run `noisy-context-verify` (2 trials) to confirm criteria fix works
+- [ ] Run 10 new scenarios (not in original 50) to expand sample to 60
+- [ ] Calculate final M1 on 60 scenarios — expected ~66% after fixes
+- [ ] Identify: what would it take to reach 80%? How many of the 6 real gaps are addressable via SOUL.md?
 
 ## Milestones
 - [x] Audit existing scenario pass rates and identify lowest-performing (July 2026 baseline exists)
