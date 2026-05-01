@@ -4,8 +4,9 @@
 - **Problem**: verify-after-edit at ~9% compliance. Text coaching DEAD (EXP-280 NEGATIVE). Context.md gate ignored.
 - **Hypothesis**: Verbal commitment protocol + gym scenario can determine if behavior is trainable or needs tool-layer enforcement
 - **Design**: `agents/coach/workspace/EXP-350-verify-after-edit-verbal-gate-design.md`
-- **Status**: DESIGNED — needs gym scenario built and baseline trials run
-- **Next**: Build scenario, run 3 baseline + 3 treatment trials
+- **Status**: SCENARIO BUILT — `agents/gym/scenarios/verify-after-edit-gate/` ready. 2 baseline trials run (83% verify rate with explicit instruction).
+- **Next**: Create no-instruction variant for true baseline, run Arm A vs Arm B trials
+- **Baseline results**: `agents/coach/workspace/EXP-350-baseline-results.md`
 
 ## P1: EXP-345 — Judgment Scenario Treatment — CLOSED ✅ POSITIVE (directional) — DEPLOYED
 - **Problem**: All gym scenarios at ceiling (90-100%). Can't drive skill improvement.
