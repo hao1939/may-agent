@@ -1,5 +1,15 @@
 # Proposal: Add DONE verb to master-worker workflow
 
+> **REGRESSION 2026-05-01 09:53Z (KE-437)** — the cap-induced `blocked`
+> state from 09:06Z **did not survive**. Some agent rewrote
+> `documentation-gen/project.md` back to `Status: active, Iteration: 1`
+> sometime in 09:06–09:46Z, and the dispatch loop restarted: another
+> 65 orchestrator + 64 worker sessions ran in the next 6 minutes,
+> heading toward another 50-iter cap. arc set `Status: closed` by hand
+> at 09:53Z to stop it. **Same project, ~230 wasted sessions in 3 h.**
+> Two new asks added below (treat `blocked` as short-circuit; out-of-band
+> cap marker). The DONE verb is still the structural fix.
+>
 > **POST-MORTEM 2026-05-01 09:16Z** — the live loop on `coach/documentation-gen`
 > (cited in the URGENT note below) terminated at 09:06:44Z when the
 > 50-iteration safety cap fired. Final shape: **101 sessions in ~20 min**
