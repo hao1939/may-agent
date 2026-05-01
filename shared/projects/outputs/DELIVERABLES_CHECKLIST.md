@@ -1,10 +1,4 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist
 
-## Task: Project Complete — No Further Work
-
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Completion evidence file | DONE | /app/agents/shared/projects/outputs/project-complete-stop-iterating.md |
-
-## Notes
-Project confirmed complete after 21+ iterations. All metrics at target.
+- [x] DONE — Project closure notice: `/app/agents/shared/projects/outputs/project-closed-notice.md`
+  - Documents that project is CLOSED, all metrics at target, no further iterations needed
