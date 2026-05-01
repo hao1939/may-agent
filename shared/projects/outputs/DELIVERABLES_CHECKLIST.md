@@ -1,10 +1,9 @@
 # Deliverables Checklist
 
-## Task: Test Coverage Project (Iteration 7)
+## Task: Test Coverage Project (Iteration 8)
 
 | Deliverable | Status | Notes |
 |---|---|---|
-| test-coverage-final-report.md | DONE | `/app/agents/shared/projects/outputs/test-coverage-final-report.md` - written in prior iterations |
-
-## Summary
-Project is complete. All targets exceeded (86.69% coverage, 1565 tests passing, 11/11 critical paths). No new deliverables required - task explicitly states no further work needed.
+| test-coverage-final-report.md | DONE (prior iterations) | `/app/agents/shared/projects/outputs/test-coverage-final-report.md` |
+| All coverage targets met | DONE | 86.69% coverage (target 80%), 1565/1565 tests passing |
+| No further work required | DONE | Project status is `complete` - no new deliverables needed |
