@@ -143,13 +143,26 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     } catch (e) { ctx.log(`[metrics-snapshot] Error measuring session.error-rate-6h: ${e}`); }
 
     try {
-      // Counts "substantive" changed files in last 24h, excluding common noise dirs.
-      // Note: requires the agents repo to be a git checkout and git available.
+      // Counts "substantive" changed/created files in last 24h, excluding noise dirs.
+      // Uses find -mmin (works without git) with fallback to git log if available.
       const { execSync } = require("node:child_process");
-      const cmd = "git -C \"" + ctx.projectRoot + "\" log --since=24.hours --name-only --pretty=format: | " +
-        "grep -v '^$' | " +
-        "grep -Ev '^(\\.state/|node_modules/|dist/|build/|coverage/|\\.git/)' | " +
-        "sort -u | wc -l";
+      let cmd: string;
+      try {
+        execSync("git -C \"" + ctx.projectRoot + "\" rev-parse --git-dir", { timeout: 5000, stdio: "pipe" });
+        // Git available — use git log for accuracy
+        cmd = "git -C \"" + ctx.projectRoot + "\" log --since=24.hours --name-only --pretty=format: | " +
+          "grep -v '^$' | " +
+          "grep -Ev '^(\\.state/sessions/|node_modules/|dist/|build/|coverage/|\\.git/)' | " +
+          "sort -u | wc -l";
+      } catch {
+        // No git — use find for files modified in last 24h
+        cmd = "find \"" + ctx.projectRoot + "\" -type f -mmin -1440 " +
+          "\\( -name '*.ts' -o -name '*.md' -o -name '*.json' \\) " +
+          "-not -path '*/.state/sessions/*' " +
+          "-not -path '*/node_modules/*' " +
+          "-not -path '*/.git/*' " +
+          "| wc -l";
+      }
       const out = execSync(cmd, { timeout: 15000, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }).trim();
       const n = parseFloat(out);
       if (!isNaN(n)) record("system.real-output-24h", n);
