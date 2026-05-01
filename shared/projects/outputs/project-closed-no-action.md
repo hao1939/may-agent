@@ -1,10 +1,8 @@
-# System Efficiency Project — CLOSED
+# System Efficiency Project — Closed
 
-This project is permanently closed. No further work needed.
+This project is permanently closed. No further work required.
 
 - Status: done
 - Metrics: 3/3 at target
 - Satellites: 10/10 complete
-- Iterations: 34 completed
-
-No action required on future dispatches.
+- Iterations: 36+ (project closed since iteration 9)
