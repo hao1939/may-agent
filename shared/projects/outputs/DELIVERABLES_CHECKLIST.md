@@ -1,9 +1,9 @@
 # Deliverables Checklist
 
-## Task: System-Efficiency Project Iteration 26 (CLOSED)
+## Task: System Efficiency Project — Iteration 27 (Project Closed)
 
 | # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Closure notice (project is done, no work remains) | DONE | /app/agents/shared/projects/outputs/project-closed-notice.md |
+|---|-------------|--------|------|
+| 1 | Acknowledge project closure | DONE | /app/agents/shared/projects/outputs/project-closed-no-action.md |
 
-Note: This project has been closed since iteration 9. All metrics at target, 10 satellites complete.
+**Notes**: Project is permanently closed. All metrics at target, 10 satellites complete. No further work required.
