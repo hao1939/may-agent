@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777598386721_4
+- **Session:** s_1777600187150_26
 - **Status:** done
-- **When:** 2026-05-01T01:22:08.844Z
-- **Duration:** 2m22s
+- **When:** 2026-05-01T01:50:59.389Z
+- **Duration:** 1m12s
 
 ## What Happened
-System is healthy. `dev` has 2 errors worth checking but error-rate is well within target (0.035). Evaluator has 131 sessions with avg 1 op each - that's the eval pipeline doing its thing.
-
-All metrics are green except the known stale-active issue which I've documented and escalated. Let me commit and finish.
+The 3 stale active projects are `context-learning` (bob), `gym-scenario-expansion` (coach), and `eval-pipeline-quality` (evaluator) — all created recently with iteration=1 and 0 milestones done. They need their owners to start working on them. Let me nudge them.
