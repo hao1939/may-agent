@@ -1,10 +1,9 @@
-# DELIVERABLES_CHECKLIST
+# Deliverables Checklist
 
-## Task: System Efficiency Project Closure (Iteration 16)
+## Task: System Efficiency Project — Iteration 17 (Project Closed)
 
 | # | Deliverable | Status | Path |
 |---|------------|--------|------|
-| 1 | Project closure notice | DONE | /app/agents/shared/projects/outputs/system-efficiency-closed.md |
+| 1 | Acknowledge project closure, produce file | DONE | /app/agents/shared/projects/outputs/project-closed-no-action.md |
 
-## Notes
-- Project has been closed since iteration 9. No new work required.
+No further work exists. Project has been done since iteration 9.
