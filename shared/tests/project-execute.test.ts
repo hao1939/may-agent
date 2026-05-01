@@ -10,7 +10,7 @@ import { join } from "node:path";
 // Import the actual module
 import { name, description, flushProjectCache, execute } from "../workflows/project.js";
 
-const TEST_DIR = join(process.cwd(), "__test_project_tmp__");
+const TEST_DIR = join("/tmp", "__test_project_tmp__");
 
 function cleanup() {
   try { rmSync(TEST_DIR, { recursive: true, force: true }); } catch {}
