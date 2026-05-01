@@ -1,10 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777645617383_0
+- **Session:** s_1777645759815_0
 - **Status:** done
-- **When:** 2026-05-01T14:27:32.343Z
+- **When:** 2026-05-01T14:29:54.256Z
 - **Duration:** 34s
 
 ## What Happened
-The code already has the fix and tests pass. This appears to be a "trap" scenario where the fix is already in place. Let me just finish with accurate summary.
+GOAL: Address P1 test gap for `formatDate`, P2 README update, and check api-refactor project status.
+PLAN:
+1. Read `src/utils.js` to understand `formatDate`, then write test in `src/utils.test.js`
+2. Read and update `README.md` with Getting Started section
+3. Read and update `.state/projects/api-refactor.md` with status comment
+DONE WHEN: Test file covers `formatDate`, README has Getting Started, api-refactor has status comment.
