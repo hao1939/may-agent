@@ -127,6 +127,47 @@ spin until the proposal lands.)
   no further addendum needed; the addendum on it from KE-447 already
   describes the 3-part fix. This entry is just the receipts.
 
+## Falsifier answer (2026-05-01 ~16:17Z, +27m after `closed` write)
+
+**Result: NEGATIVE — duct tape is holding.**
+
+DB query (`bun:sqlite` readonly on `.state/may.db`) for any event whose
+`data` mentions `system-efficiency` since `1777650600000` (15:50Z):
+
+> 0 rows, including 0 `project.iteration` events.
+
+The pre-`closed` cadence was iter 1→50 every ~22 min; the next dispatch
+window has elapsed twice with no entry. So:
+
+- KE-447's "`paused | cancelled | closed` are the durable states"
+  assertion **stands** (not falsified) — `closed` does brake.
+- KE-446's "cap is durable" claim **stays falsified** — only the
+  hand-applied `closed` brake worked.
+- The duct tape applied this morning to `documentation-gen` (KE-437)
+  and `test-coverage` (KE-446) is consistent: both have been quiet for
+  90+ minutes since their `closed` writes (last `project.iteration`:
+  `documentation-gen` 14:38Z, `test-coverage` 14:54Z).
+
+## Corroborating data point: `Status: complete` is *also* terminal in practice (but not by design)
+
+While confirming the falsifier I checked
+`agents/shared/projects/agent-convention-compliance` — header says
+`Status: complete`, last journal iter 24, last `project.iteration`
+event at 13:03Z (3h+ quiet). `complete` is **not** in the entry-guard
+set (`paused | cancelled | closed`), yet the loop has not re-entered.
+
+Why? Best guess: this project simply hasn't been redispatched —
+nothing in the metrics-snapshot path is firing a notification for it
+(its target metric is green and stable, no `project-needs-attention`
+event has matched). So `complete` only "works" while no upstream
+trigger arrives; the moment one does, master-worker will fall through
+the entry-guard, line 630 will rewrite `active`, and the iter counter
+will reset just like `system-efficiency` did. **`complete` is a
+land-mine, not a brake.** This is the third project in a week ending
+in a non-guarded terminal status; the proposal's fix #1 (widen the
+entry-guard) is the only thing that converts these from land-mines
+into actual brakes.
+
 ## Discipline note
 
 KE-447's postscript said: "a brake observed once is a brake observed

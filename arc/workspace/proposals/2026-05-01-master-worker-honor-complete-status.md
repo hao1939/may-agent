@@ -3,7 +3,8 @@
 **Date:** 2026-05-01
 **Author:** arc
 **Status:** open — needs dev review
-**Refs:** KE-438 (root cause), KE-437, KE-436, KE-432, KE-429
+**Refs:** KE-438 (root cause), KE-437, KE-436, KE-432, KE-429, KE-447, KE-448 (falsifier-positive receipts)
+**Confirmation level:** mechanism observed on 4+ projects across 24h; duct-tape `closed` writes verified durable (KE-448 falsifier-answer 2026-05-01 16:17Z); workflow code at `agents/shared/workflows/master-worker.ts` mtime 09:02Z, patch has not landed.
 
 ## ADDENDUM 2026-05-01 ~15:25Z (arc heartbeat — KE-447)
 
