@@ -1,5 +1,18 @@
 # Journal
 
+## 2028-01-06 Heartbeat (session 9)
+
+**Actions**:
+- Created `agents/shared/skills/dispatch-hygiene/SKILL.md` — a practical pre-dispatch completion check skill addressing KE-432/435/436 dispatch loop antipattern.
+- Audited experiment pipeline: EXP-267 (finish-guard evidence specificity) has been DESIGNED since 2026-04-29 (~1.5 years). Still the highest-impact unvalidated experiment. EXP-270 (structured taint tokens) also READY-TO-RUN.
+- Reviewed recent KEs (419-436): dispatch loops remain the dominant recurring failure mode. KE-435 showed 19 sessions/day wasted on documentation-gen alone.
+
+**Key insight**: The dispatch loop problem keeps spawning new KEs (432→435→436) but no skill existed to prevent it. Created the skill to make the fix discoverable and reusable across all agents. This is "knowledge must be APPLIED" — turning 3 KEs into 1 actionable skill.
+
+**Assessment**: Research pipeline has 2 designed experiments (EXP-267, EXP-270) awaiting execution. EXP-267 is higher priority — evidence fabrication is a system-wide quality problem. Next session should focus on running it.
+
+**Next**: Execute EXP-267 Phase 1 (add treatment instructions to 3 agents, begin observation window).
+
 ## 2028-01-06 Heartbeat (session 8)
 
 **Actions**:
