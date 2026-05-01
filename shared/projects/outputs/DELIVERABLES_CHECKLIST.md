@@ -1,7 +1,7 @@
-# DELIVERABLES_CHECKLIST.md
+# DELIVERABLES_CHECKLIST
 
-## Task: Iteration 12 — Project Closed, No Work Remains
+| Deliverable | Status | Path |
+|---|---|---|
+| Acknowledge closed project | DONE | /app/agents/shared/projects/outputs/STOP_DISPATCHING.md |
 
-| # | Deliverable | Status | Path |
-|---|-------------|--------|------|
-| 1 | Acknowledgment that project is closed and no work remains | DONE | /app/agents/shared/projects/outputs/iteration-12-no-op.md |
+No work remains. Project closed.
