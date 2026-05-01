@@ -1,8 +1,14 @@
-# Evaluator heartbeat journal (2026-05-01)
+# Evaluator heartbeat journal
 
-## Checks
-- DB evaluation pipeline recency: `evaluations.max(createdAt)=1777627554852` vs `sessions.max(endedAt)=1777627594144` → lag ~0.011h (~39s). So session-eval cron is live.
-- Legacy artifacts: `.state/evaluations/` contains recent `s_*.json` (Apr 29) but `task_tree_*.json` still last updated Mar 24 → likely legacy-output-path drift rather than pipeline failure.
+Date: 2026-05-01
 
-## Observations / follow-ups
-- Consider updating evaluator knowledge to clarify: canonical source is DB `evaluations` table; `.state/evaluations/task_tree_*.json` can be stale without indicating pipeline break.
+## Pipeline liveness check (session eval)
+- DB (canonical) is fresh:
+  - sessions.max(startedAt)=1777634809596
+  - evaluations.max(createdAt)=1777634736481
+  - lag ~= 84,902 ms (~1.42 min)
+  - sessions last 24h: 2165; evaluations last 24h: 515
+- Legacy artifacts path appears stale:
+  - `.state/evaluations/` newest mtime: 2026-03-24 (via `ls | tail`)
+
+Conclusion: evaluation pipeline is running and writing to DB; `.state/evaluations/` is likely a legacy output path (or a disabled secondary writer). Treat staleness as output-path drift, not pipeline failure.
