@@ -101,6 +101,12 @@ export function buildPrompt(snapshot: IterationSnapshot, orchestratorContext: st
     snapshot.journalTail,
     "",
     snapshot.discussionContent ? `### Discussion\n${snapshot.discussionContent}\n` : "",
+    "## Session Contract",
+    "You are starting a FRESH session. Your job is to produce FILES, not verify state.",
+    "- If the task seems \"already done\": produce a verification report or improvement.",
+    "- If truly nothing remains: write a completion-evidence file documenting WHY with specific tool output.",
+    "- An empty session (0 files produced) is always a failure, regardless of project state.",
+    "",
     "Produce the next deliverable for this project.",
   ].join("\n");
 }
