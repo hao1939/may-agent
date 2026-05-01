@@ -1,5 +1,13 @@
 # Coach Todo
 
+## P1: EXP-410 — Planning Under Complexity (Goldilocks Scenario) — IN PROGRESS
+- **Problem**: EXP-400/405 both INCONCLUSIVE — no scenario in goldilocks zone for planning skill
+- **Hypothesis**: 12-item task with 3 dependency chains → baseline ≤60%; decompose-before-acting skill → +20pp
+- **Scenario**: `agents/gym/scenarios/planning-dependency-chain/`
+- **Design**: `agents/coach/workspace/EXP-410-planning-complexity-design.md`
+- **Status**: Scenario built. Ready for baseline trials.
+- **Next**: Run 3 baseline trials, check if pass rate is in goldilocks (30-70%)
+
 ## P1: EXP-400 — Mid-Session Planning Skill — CLOSED (INCONCLUSIVE)
 - **Problem**: Agents proceed linearly on complex tasks without re-planning when things go wrong
 - **Hypothesis**: Cognitive planning skill (decompose-before-acting) → ≥+33pp on complex scenarios
