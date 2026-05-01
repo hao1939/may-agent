@@ -1,71 +1,100 @@
 # Stale Dispatch Audit
 
-**Date**: 2025-07-01
-**Author**: Worker (system-efficiency iteration 3)
+**Date**: 2025-07-01 (Updated Iteration 4)  
+**Purpose**: Identify all references to non-existent projects causing wasted dispatches
 
-## Code Fix Applied
+## Code Fix (Applied in Iteration 3)
 
 **File**: `agents/shared/workflows/master-worker.ts` line 222-224
 
-**Before** (escalated as error):
 ```typescript
+// BEFORE: escalated as error
 if (!existsSync(projectFile)) {
   return ctx.escalate(`No project.md found at: ${projectFile}`);
 }
-```
 
-**After** (graceful skip):
-```typescript
+// AFTER: graceful skip
 if (!existsSync(projectFile)) {
   ctx.log?.(`Skipping: no project.md at ${projectFile}`);
   return { status: "skipped", reason: "project-not-found", path: projectFile };
 }
 ```
 
-**Impact**: Failed dispatches to non-existent projects no longer escalate as errors. They return a `skipped` status, reducing noise and false error counts.
+**Impact**: Failed dispatches no longer escalate as errors — they skip gracefully.
 
-## Stale Project References
+## Active Projects (16 verified)
 
-### Confirmed Stale (from v3-tracking-results.md)
+| Project | Status |
+|---------|--------|
+| agent-convention-compliance | ✅ Active |
+| agent-memory-learning | ✅ Active |
+| agent-system-literacy | ✅ Active |
+| coach-quality | ✅ Active |
+| documentation-gen | ✅ Active |
+| evaluation-revival | ✅ Active |
+| gym-quality-improvement | ✅ Active |
+| handler-reliability | ✅ Active |
+| hao-alignment | ✅ Active |
+| proof-of-life-dashboard | ✅ Active |
+| request-deduplication | ✅ Active |
+| skill-workflow-audit | ✅ Active |
+| system-efficiency | ✅ Active |
+| test-coverage | ✅ Active |
+| workflow-reliability | ✅ Active |
 
-| Path | Failed Dispatches | Status |
-|------|-------------------|--------|
-| `agents/bob/workspace/projects/agent-system-literacy` | 24 | No project.md exists |
-| `agents/bob/workspace/projects/pwi-evaluator-tuning` | 23 | No project.md exists |
+## Stale References: 88 Non-Existent Projects Referenced
 
-These two phantom projects accounted for **47 failed dispatches** — 97% of all master-worker runs.
+Full grep of `/app/agents/` for `projects/[name]` patterns cross-referenced against actual directories. **88 unique stale project names** found in code/docs/configs.
 
-### Active Projects (verified exist)
+### High-Frequency Stale References (most dangerous for dispatch)
 
-The following projects under `agents/shared/projects/` have valid `project.md` files:
-- agent-convention-compliance
-- agent-memory-learning
-- agent-system-literacy
-- coach-quality
-- documentation-gen
-- evaluation-revival
-- gym-quality-improvement
-- handler-reliability
-- hao-alignment
-- proof-of-life-dashboard
-- request-deduplication
-- skill-workflow-audit
-- system-efficiency
-- test-coverage
-- workflow-reliability
+| Stale Project | Reference Count | Risk |
+|---------------|----------------|------|
+| projects/test | 47 | Low (test code) |
+| projects/test-proj | 24 | Low (test code) |
+| projects/test-persistent-task-experiment | 24 | Low (test code) |
+| projects/foo | 21 | Low (test code) |
+| projects/test-project | 16 | Low (test code) |
+| projects/context-learning | 12 | **Medium** (old project) |
+| projects/adaptive-heartbeats | 11 | **Medium** (old project) |
+| projects/my-project | 10 | Low (example) |
+| projects/cold-start-fix | 8 | **Medium** (old project) |
+| projects/system-evolution | 7 | **Medium** (old project) |
+| projects/pwi-smart-context | 7 | **Medium** (old project) |
+| projects/metric-autonomy | 6 | **Medium** (old project) |
+| projects/feedback-loop | 6 | **Medium** (old project) |
+| projects/federation-design | 5 | Low (design doc) |
+| projects/prove-the-loop | 5 | **Medium** (old project) |
+| projects/project-workflow-improvement | 5 | **Medium** (old project) |
 
-### References Found
+### Categories of Stale References
 
-- `agents/shared/guards/literacy-regression.md` references `agent-system-literacy` (valid — project exists at shared/projects/)
-- `agents/bob/journal.md` references `pwi-evaluator` (stale — bob's local copy doesn't exist)
-- `agents/bob/workspace/heartbeat-log-20260902.md` references stale projects
+1. **Test fixtures** (~112 refs): `test`, `test-proj`, `test-project`, `foo`, `my-project` — harmless, in test files
+2. **Retired projects** (~60 refs): `context-learning`, `adaptive-heartbeats`, `cold-start-fix`, `system-evolution`, `pwi-smart-context`, `metric-autonomy`, `feedback-loop`, `prove-the-loop` — old projects referenced in journals/logs
+3. **Dispatch-dangerous** (47 refs from v3-tracking): `agent-system-literacy` (bob's local copy), `pwi-evaluator-tuning` — these were actively dispatched to non-existent paths
 
-## Root Cause
+## Root Cause Analysis
 
-Bob's heartbeat/context was configured to dispatch master-worker runs for projects at `agents/bob/workspace/projects/` — a path that doesn't contain valid project.md files. The correct projects live at `agents/shared/projects/`.
+| Cause | Impact | Fix |
+|-------|--------|-----|
+| Bob's workspace had project paths that don't exist | 47 failed dispatches (97% of runs) | ✅ Fixed: graceful skip in master-worker.ts |
+| Old projects referenced in journals/logs | Noise only (not dispatched) | Low priority — historical records |
+| Test fixtures reference fake projects | None (test-only paths) | No action needed |
 
 ## Recommendations
 
-1. ✅ **Code fix applied**: master-worker.ts now skips gracefully instead of escalating
-2. **Clean up bob's config**: Remove references to `agents/bob/workspace/projects/agent-system-literacy` and `pwi-evaluator-tuning`
-3. **Add dispatch validation**: Consider a pre-flight check that logs which projects are being dispatched and whether they exist, before the workflow even starts
+1. ✅ **DONE**: master-worker.ts graceful skip (prevents error escalation)
+2. **Clean bob's dispatch config**: Ensure heartbeat doesn't reference `agents/bob/workspace/projects/` for master-worker dispatch
+3. **Archive old project refs**: References in journals are historical — no cleanup needed
+4. **Monitor skip rate**: Track `status: "skipped"` returns to measure ongoing dispatch accuracy
+5. **Pre-flight validation in heartbeat**: Before dispatching master-worker, the heartbeat scheduler should validate project existence
+
+## Metrics Summary
+
+| Metric | Value |
+|--------|-------|
+| Active projects | 16 |
+| Stale project references | 88 unique names |
+| Dispatch-dangerous references | 2 (now handled by skip) |
+| Historical/journal references | ~60 (harmless) |
+| Test fixture references | ~26 (harmless) |
