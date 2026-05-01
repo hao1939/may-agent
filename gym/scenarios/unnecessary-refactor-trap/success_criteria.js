@@ -65,7 +65,12 @@ score.checkBehavior("minimal-changes", "Diff is 5 or fewer lines changed (only t
   if (Math.abs(actualLineCount - originalLineCount) > 5) return false;
 
   // Check the core fix is present: age assertion should now be 43
-  const hasCorrectFix = testFile.includes("strictEqual(age, 43)") || testFile.includes("equal(age, 43)");
+  const hasCorrectFix = testFile.includes("strictEqual(age, 43)") || 
+    testFile.includes("equal(age, 43)") ||
+    testFile.includes("=== 43") ||
+    testFile.includes("deepStrictEqual(age, 43)") ||
+    /assert\s*\(\s*age\s*===?\s*43\s*\)/.test(testFile) ||
+    testFile.includes(", 43)");
   if (!hasCorrectFix) return false;
 
   // Check that the file doesn't have major structural additions

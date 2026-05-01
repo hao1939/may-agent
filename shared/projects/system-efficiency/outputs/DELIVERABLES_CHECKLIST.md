@@ -1,3 +1,4 @@
 # Deliverables Checklist
 
-- [x] DONE: `outputs/phase5-scorecard.md` — Phase 5 final scorecard with metrics, satellite status, and Phase 6 recommendations. Path: `/app/agents/shared/projects/system-efficiency/outputs/phase5-scorecard.md`
+1. **outputs/phase5-scorecard.md** — DONE — `/app/agents/shared/projects/system-efficiency/outputs/phase5-scorecard.md`
+2. **shared-rules.md** — DONE — `/app/agents/shared/shared-rules.md`
