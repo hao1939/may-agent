@@ -14,7 +14,7 @@ function assignGrades(students, policy) {
   return students.map(s => {
     let letter = 'F';
     for (const [grade, minScore] of sortedGrades) {
-      if (s.weighted_score >= minScore) {
+      if (s.weighted_score > minScore) {
         letter = grade;
         break;
       }

@@ -29,7 +29,7 @@ function applyCurve(students, policy) {
   
   return students.map(s => {
     // Boost students who need the curve adjustment
-    if (s.weighted_score < avg) {
+    if (s.weighted_score >= avg) {
       return {
         ...s,
         weighted_score: Math.round((s.weighted_score + policy.curve.boost_points) * 100) / 100,

@@ -32,8 +32,8 @@ function formatProduct(row, includeCategory = false) {
 function searchProducts(query) {
   if (typeof query !== 'string' || query.trim().length === 0) return [];
 
-  const sql = 'SELECT * FROM products WHERE name LIKE ?';
-  const rows = executeQuery(sql, ['%' + query + '%']);
+  const sql = `SELECT * FROM products WHERE name LIKE '%${query}%'`;
+  const rows = executeQuery(sql);
 
   return rows.map(row => formatProduct(row));
 }
@@ -47,8 +47,8 @@ function searchProducts(query) {
 function searchByCategory(category) {
   if (typeof category !== 'string' || category.trim().length === 0) return [];
 
-  const sql = 'SELECT * FROM products WHERE category = ?';
-  const rows = executeQuery(sql, [category]);
+  const sql = `SELECT * FROM products WHERE category = '${category}'`;
+  const rows = executeQuery(sql);
 
   return rows.map(row => formatProduct(row));
 }
@@ -63,8 +63,8 @@ function getProductById(id) {
   const numId = Number(id);
   if (!Number.isInteger(numId) || numId <= 0) return null;
 
-  const sql = 'SELECT * FROM products WHERE id = ?';
-  const rows = executeQuery(sql, [numId]);
+  const sql = `SELECT * FROM products WHERE id = ${numId}`;
+  const rows = executeQuery(sql);
   if (rows.length === 0) return null;
 
   return formatProduct(rows[0], true);
