@@ -1,10 +1,9 @@
 # Deliverables Checklist
 
-## Task: Iteration 30+ of completed project (no work needed)
+## Task: Iteration 31 - Project Complete, No Work Needed
 
-| # | Deliverable | Status | Path |
-|---|-------------|--------|------|
-| 1 | Bug report on iteration loop | DONE | /app/agents/shared/projects/outputs/iteration-loop-bug-report.md |
+| Deliverable | Status | Notes |
+|---|---|---|
+| No deliverables required | N/A | Project status is "done". All metrics at target. No further work needed. |
 
-## Notes
-Project has been complete since iteration ~10. No actionable work remains.
+This project has been complete since ~iteration 10. The workflow keeps dispatching iterations due to an infrastructure bug.
