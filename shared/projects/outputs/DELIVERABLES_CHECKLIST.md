@@ -1,9 +1,9 @@
-# DELIVERABLES_CHECKLIST
+# DELIVERABLES_CHECKLIST.md
 
-## Task: Iteration 8 - Project Closed, No Work Needed
+## Task: Project is closed, no work remains
 
-| Deliverable | Status | Path |
-|---|---|---|
-| Acknowledgment file | DONE | /app/agents/shared/projects/outputs/iteration-8-no-op.md |
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | Acknowledge closed project | DONE | /app/agents/shared/projects/outputs/iteration-9-no-op.md |
 
-Project is closed. All metrics met (83.79% coverage, 191/191 tests, 11/11 critical paths).
+No further work needed. All targets met.
