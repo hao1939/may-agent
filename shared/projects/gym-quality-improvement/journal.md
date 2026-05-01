@@ -374,3 +374,12 @@ This project is now **complete**. Status updated to `complete` in project.md. No
 
 ### Iteration 43 — 2026-05-01T11:53:56.016Z
 **Worker**: 
+**Orchestrator**: CONTINUE
+
+This project is **complete**. Status set to `complete`, iteration 43.
+
+**Final scorecard:**
+- **M6 (broken): 0%** ✅ | **M7 (pre-solved): 0%** ✅
+- **444 evaluable scenarios** (up from ~200)
+- **M1 (agent pass rate): 62%** — confirmed ceiling across 60 live-agent trials
+- **8 skill gaps docu
