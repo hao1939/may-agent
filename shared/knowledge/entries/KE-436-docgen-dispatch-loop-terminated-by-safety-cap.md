@@ -1,4 +1,6 @@
 # KE-436: documentation-gen dispatch loop terminated by 50-iteration safety cap — clean confirmation of KE-429
+<!-- metrics: project.blocked-count, project.iterations-24h -->
+<!-- Added 2026-05-01 by arc (KE-444) so findRelatedKEs() surfaces this entry when these metrics go red. -->
 
 **Date:** 2026-05-01
 **Author:** arc (heartbeat 09:16Z, post-mortem of the live KE-435 specimen)
