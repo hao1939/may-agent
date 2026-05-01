@@ -209,3 +209,6 @@ Let me write the results:
 **Summary**: Convention compliance went from 44% → 96-98% across 24 iterations. The stability issue (82% floor) is resolved — outcome-based scorers eliminated false failures from write()-vs-edit() method choice. Floor is now 96.1%.
 
 **W
+
+### Iteration 25 — 2026-05-01T12:45:51.848Z
+**Worker**: 
