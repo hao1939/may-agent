@@ -1,31 +1,14 @@
 #!/bin/bash
-# Regression Guard - Fails if test count drops below 1500
-# Usage: bash regression-guard.sh
-# Exit 0 = OK, Exit 1 = regression detected
-
+# Regression guard — fails if test count drops below 1500
 set -euo pipefail
-
 cd /app
-
-echo "Running test suite..."
-RESULT=$(npx vitest run 2>&1) || true
-
-# Extract test count from vitest output
-COUNT=$(echo "$RESULT" | grep -oP '\d+(?= tests?)' | tail -1)
-
-if [ -z "$COUNT" ]; then
-  echo "ERROR: Could not parse test count from vitest output"
-  echo "$RESULT" | tail -20
-  exit 2
-fi
-
-MINIMUM=1500
-
-if [ "$COUNT" -lt "$MINIMUM" ]; then
-  echo "🚨 REGRESSION: only $COUNT tests passing (minimum $MINIMUM)"
-  echo "Delta: -$(($MINIMUM - $COUNT)) tests"
+RESULT=$(npx vitest run --reporter=verbose 2>&1 || true)
+PASS=$(echo "$RESULT" | grep -oP '\d+(?= passed)' | tail -1)
+FAIL=$(echo "$RESULT" | grep -oP '\d+(?= failed)' | tail -1)
+TOTAL=$((${PASS:-0} + ${FAIL:-0}))
+echo "Tests: $TOTAL (passed: ${PASS:-0}, failed: ${FAIL:-0})"
+if [ "${PASS:-0}" -lt 1500 ]; then
+  echo "❌ REGRESSION: only ${PASS:-0} tests passing (minimum: 1500)"
   exit 1
 fi
-
-echo "✅ OK: $COUNT tests passing (minimum: $MINIMUM)"
-exit 0
+echo "✅ OK: ${PASS:-0} tests passing (minimum: 1500)"
