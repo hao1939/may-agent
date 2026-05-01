@@ -1,17 +1,17 @@
 # EXP-273: Results
 
-**Status**: PENDING
+**Status**: ARM-A COMPLETE, ARM-B PENDING
 
 ## Summary
 
-<one-paragraph outcome — fill after runs complete>
+Arm A retrospective audit complete. Baseline action rate is 30% (3/10), significantly lower than the 50% assumed in design. See `arm-a-retrospective.md` for full data.
 
 ## Data
 
-| Arm | N | Pass rate | Notes |
-|-----|---|-----------|-------|
-| A   |   |           |       |
-| B   |   |           |       |
+| Arm | N | Action rate | Notes |
+|-----|---|-------------|-------|
+| A   | 10 | 30% (3/10) | Retrospective audit of dd777-dd786 |
+| B   |   |             | Awaiting treatment notifications |
 
 ## Analysis
 
