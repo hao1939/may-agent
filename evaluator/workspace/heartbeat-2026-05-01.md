@@ -1,21 +1,31 @@
 # Evaluator heartbeat — 2026-05-01
 
-## Checks
+## Checks run (evidence)
+- DB recency: evaluations MAX(createdAt) = 2026-05-01 22:56:30 UTC (fresh)
+- Legacy artifacts: `.state/evaluations/` still has many files last updated ~2026-03-24, but also some from 2026-04-29 → likely legacy output path drift, not pipeline stoppage.
 
-### Session evaluation pipeline liveness (DB is canonical)
-- `evaluations.max(createdAt)` = `1777672399850`
-- `sessions.max(endedAt)` = `1777674408702`
-- lag ≈ `2,008,852 ms` (~33.5 minutes)
-- sessions ended last 24h = `3243`
-- evaluations created last 24h = `731`
+## Coverage probe
+### Last 7 days
+- sessions: 6626
+- unevaluated: 4578
+- coverage: **0.3091**
 
-Interpretation: evaluation writes are happening recently (within ~34 minutes of latest ended session), so the pipeline is live. However, coverage is partial (~22.5% of sessions in last 24h have an evaluation row), which may be expected (sampling) or a scope issue.
+Top unevaluated sources (7d):
+- evaluator: 1821/1821 unevaluated (coverage 0)
+- optimizer: 994/1642 unevaluated (coverage 0.3946)
+- coach: 855/1590 unevaluated (coverage 0.4623)
+- amy: 721/948 unevaluated (coverage 0.2395)
 
-### Legacy artifacts path
-- `.state/evaluations/` newest visible files are dated Apr 29 (and many Mar 24), suggesting this directory is not a reliable freshness indicator.
-- Treat as legacy/output drift unless a consumer still depends on this directory.
+### Last 24 hours (for freshness)
+- amy coverage24h: 0.1608 (710/846 unevaluated)
+- optimizer coverage24h: 0.2579 (584/787 unevaluated)
+- coach coverage24h: 0.3133 (480/699 unevaluated)
+- evaluator coverage24h: 0 (670/670 unevaluated)
 
-## Follow-ups proposed
-1. Confirm intended evaluation sampling rate / scope (is ~20-25% coverage expected?).
-2. If higher coverage is desired, inspect `evaluate-session-llm` cron configuration / filters (agent/kind/source).
-3. If any downstream tooling reads `.state/evaluations/`, update it to use DB tables instead.
+## Hypothesis
+The evaluation pipeline is running (evaluations table is fresh), but it is sampling/scoping such that a majority of sessions (especially for high-volume agents) are not being evaluated.
+
+A second possibility is that some sessions (e.g., evaluator’s own heartbeat sessions) are intentionally excluded from evaluation; confirm whether exclusion rules exist and whether that explains the 0% coverage for `agent='evaluator'`.
+
+## Recommended next step
+Inspect the `evaluate-session-llm` cron/job selection logic: what constraints determine which sessions get evaluated (agent allowlist, kind/source filters, max opCount, status ended, etc.)? Then decide whether to widen scope or define a formal coverage target by agent/kind.
