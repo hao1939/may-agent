@@ -1,7 +1,4 @@
 # Deliverables Checklist
 
-## Task: Iteration 32 - Project Complete, No Work Needed
-
-| Deliverable | Status | Notes |
-|-------------|--------|-------|
-| No deliverables required | N/A | Project status is "done". All 3 metrics at target. No further iterations should be dispatched. |
+- [x] DONE: Completion evidence file — `/app/agents/shared/projects/outputs/project-complete-no-work-needed.md`
+  - Documents that project is done and no further iterations needed
