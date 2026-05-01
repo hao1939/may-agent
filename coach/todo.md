@@ -1,5 +1,12 @@
 # Coach Todo
 
+## P1: EXP-430 — Test-First Debugging on Partial-Verification-Trap (NEW)
+- **Problem**: partial-verification-trap at 11% baseline, 0% with planning skill. Agent can't implement correct fix.
+- **Hypothesis**: Test-first approach (write failing test → fix → verify green) raises pass rate ≥+20pp
+- **Scenario**: `partial-verification-trap-exp430-testfirst`
+- **Design**: `agents/coach/workspace/EXP-430-test-first-debugging-design.md`
+- **Next**: Run 3 treatment trials
+
 ## P1: EXP-425 — Decompose-Before-Acting on Error Recovery — CLOSED (CEILING)
 - **Problem**: wrong-fix-recovery baseline is 3/3 (100%) — CEILING. Cannot measure skill effect.
 - **Design**: `agents/coach/workspace/EXP-425-error-recovery-decompose-design.md`
