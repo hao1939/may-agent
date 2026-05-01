@@ -75,3 +75,22 @@ module.exports = async function evaluate(sessionLog, workdir) {
 
   return results;
 };
+
+// CLI wrapper for gym runner
+if (require.main === module) {
+  const workDir = process.argv[2] || __dirname + '/environment';
+  const transcriptPath = process.argv[3];
+  let sessionLog = [];
+  if (transcriptPath) {
+    try {
+      const lines = fs.readFileSync(transcriptPath, 'utf-8').trim().split('\n');
+      sessionLog = lines.map(l => { try { return JSON.parse(l); } catch { return {}; } });
+    } catch (e) {}
+  }
+  module.exports(sessionLog, workDir).then(checks => {
+    const passed = checks.every(c => c.passed);
+    console.log(JSON.stringify({ passed, checks }));
+  }).catch(e => {
+    console.log(JSON.stringify({ passed: false, checks: [{ name: 'error', passed: false, message: e.message }] }));
+  });
+}
