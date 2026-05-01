@@ -1,8 +1,9 @@
 # Deliverables Checklist
 
-## Task: Investigate handler.p95-duration metric (601610ms vs 120000ms target)
+## Task: Heartbeat — process inbox, review projects
 
-| # | Deliverable | Status | Path | Change |
-|---|-------------|--------|------|--------|
-| 1 | Root cause identified | DONE | — | Heartbeat handlers (AI sessions, 5-10+ min) were included in p95 calc alongside fast cron handlers |
-| 2 | Fix applied | DONE | agents/may/handlers/metrics-snapshot.ts | Excluded `heartbeat-%` handlers from p95-duration query (line 129) |
+| # | Deliverable | Status | Evidence |
+|---|------------|--------|----------|
+| 1 | Add session-awareness guard to SOUL.md | DONE | agents/optimizer/SOUL.md - added guard under "Before Starting Work" |
+| 2 | Process inbox notification | DONE | Notification acted on (guard added per request) |
+| 3 | Review projects | DONE | All projects reviewed - no immediate action needed |
