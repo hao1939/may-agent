@@ -403,11 +403,23 @@ function runAgent(adapter , taskContent , workDir , agent , timeoutMs ) {
               if (agent && meta2.agent && meta2.agent !== agent) continue;
             }
           } catch { /* skip */ }
-          // Check if session.jsonl exists and has tool calls
+          // Check if session.jsonl exists and contains our gym task
           const jp = path.join(sessionsDir, sd, "session.jsonl");
           if (fs.existsSync(jp)) {
-            selectedSession = sd;
-            break;
+            // Verify this session is actually our gym run by checking for gym task marker
+            const sessionContent = fs.readFileSync(jp, "utf-8").slice(0, 2000);
+            if (sessionContent.includes("gym scenario") || sessionContent.includes("_gym_task")) {
+              selectedSession = sd;
+              break;
+            }
+            // If no gym marker found but timestamp matches closely (within 30s of agent start),
+            // accept it as likely our session
+            const sdName = sd.includes("/") ? sd.split("/").pop() : sd;
+            const sdTs = parseInt((sdName.match(/^s_(\d+)/) || [])[1] || "0", 10);
+            if (agentStartTime && sdTs >= agentStartTime && sdTs - agentStartTime < 30000) {
+              selectedSession = sd;
+              break;
+            }
           }
         }
         const latestSession = selectedSession || sessionDirs[0];
