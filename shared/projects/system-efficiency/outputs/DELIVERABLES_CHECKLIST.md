@@ -1,7 +1,4 @@
-# Deliverables Checklist — Iteration 28
+# Deliverables Checklist
 
-## Required Deliverables
-
-1. **Phase 4 Completion Report** — DONE
-   - Path: `outputs/phase4-completion.md`
-   - Contains: metrics summary, all deliverables inventory, lessons, Phase 5 recommendations
+## Required
+- [x] DONE — `outputs/workflow-latency-profile.md` — Workflow latency analysis with throughput metrics and Phase 5 recommendations (3118 bytes, 73 lines)
