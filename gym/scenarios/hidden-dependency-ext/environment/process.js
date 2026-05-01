@@ -8,7 +8,7 @@ const path = require('path');
 const { validatePricing, validateTransactions } = require('./lib/validate');
 
 const DATA_PATH = path.join(__dirname, 'data', 'transactions.csv');
-const RULES_PATH = path.join(__dirname, 'rules', 'pricing.json');
+const RUELS_PATH = path.join(__dirname, 'rules', 'pricing.json');
 const OUTPUT_DIR = path.join(__dirname, 'output');
 const OUTPUT_PATH = path.join(OUTPUT_DIR, 'report.json');
 
@@ -49,7 +49,7 @@ try {
   const count = validateTransactions(DATA_PATH);
   console.log(`Validated ${count} transactions`);
   
-  const rules = validatePricing(RULES_PATH);
+  const rules = validatePricing(RUELS_PATH);
   console.log(`Pricing rules v${rules.version} loaded`);
   
   // Process
