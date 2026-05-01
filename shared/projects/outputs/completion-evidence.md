@@ -3,10 +3,10 @@
 **Status:** CLOSED
 
 ## Metrics Achieved
-- 83.79% coverage (target: 80%) ✅
+- 83.79% code coverage (target: 80%) ✅
 - 1565/1565 tests passing ✅
 - 60% threshold enforced ✅
 - 0 test failures ✅
 
 ## Note
-Project has been closed since iteration 19. No further work is needed.
+Project has been closed since iteration 5. No further work required.
