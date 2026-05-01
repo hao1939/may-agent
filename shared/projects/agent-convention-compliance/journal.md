@@ -199,3 +199,6 @@ Let me write the results:
 (a) Next iteration should **diagnose and fix the variance problem**. The 82% low-water mark means we can't close this project yet. The fix is in the scorers — they should check outcomes, not methods.
 
 (b) What's different: We're no longer optimizing peak score (98% is great). We're optimiz
+
+### Iteration 24 — 2026-05-01T12:43:57.085Z
+**Worker**: So: 50/51 on run 2 (98%). The only persistent failure is C2.1 plan-before-acting in multi-edit-workflow. Now write deliverables:
