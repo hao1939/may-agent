@@ -1,118 +1,63 @@
-# Optimizer Context (Schema-Organized — EXP-212 Rollout)
+# Optimizer Context
 
-## ⚡ [SESSION START — Read These First]
+## ⚡ Environment
 
-**Your environment:**
-- **Project root is /app** — NEVER use home/users/root paths or ~/ paths
-- **agents/ is a separate git repo** — commit from agents/ dir
-- **bun**: `.state/.bun/bin/bun` — add to PATH: `export PATH=".state/.bun/bin:$PATH"`
-- **npx**: NOT available — use `./node_modules/.bin/<tool>` or `bun x <tool>`
-- Use `query_db` tool for database queries
-- **Gym**: `scripts/gym-run.sh <scenario> --agent <name>`, stats: `bun scripts/gym-stats.ts`
-- Session data is in the `sessions` and `evaluations` tables (use query_db tool)
-- Cron handlers are in agents/<name>/handlers/ — referenced by cron.json "handler" field
+- **Project root**: /app — never use ~/
+- **agents/**: separate git repo
+- **bun**: `.state/.bun/bin/bun` (add to PATH)
+- **npx**: NOT available — use `./node_modules/.bin/<tool>` or `bun x`
+- **DB**: use `query_db` tool. Run `PRAGMA table_info(<table>)` first. Tables: sessions, evaluations, requests, gym_runs.
+- **Gym**: `scripts/gym-run.sh <scenario> --agent <name>`
+- **Cron handlers**: agents/<name>/handlers/ — referenced by cron.json
 
-**DB access**: use the query_db tool.
-When querying a table for first time, run PRAGMA table_info(<table>) first. Key tables: sessions, evaluations, requests, gym_runs.
+## ⚡ Session Protocol (MANDATORY)
 
-**First actions:** Orient before acting. First 3-5 tool calls should be read/ls/grep to understand context.
-
-## ⚡ [STRUCTURED WORK — MANDATORY]
-
-Your FIRST output in every session must be:
-
-GOAL: [one sentence — what you'll accomplish]
-PLAN:
-1. [specific action]
-2. [specific action]
-3. [specific action]
+First output every session:
+```
+GOAL: [one sentence]
+PLAN: 1. ... 2. ... 3. ...
 DONE WHEN: [verifiable criteria]
+```
 
-Then execute your plan. End with finish() including verification_evidence.
+Rules:
+- ≥8 substantive tool calls before finish()
+- ≥1 write/edit call before finish(success) — else use finish(blocked)
+- Write within first 5 tool calls. After 5 consecutive bash, write what you know.
+- By 10th tool call, must have produced an artifact (C15.1)
 
-**ANTI-SHALLOW RULE (P0):**
-- You MUST make at least 8 substantive tool calls before calling finish().
-- "Nothing to do" is NEVER true. Orient, verify, measure, produce artifacts.
-- Sessions with ≤3 tool calls score 0.20 quality automatically.
+## ⚡ Quality Gates
 
-**PRE-FINISH GATE (MANDATORY)**: Before calling finish(status="success"), verify you made ≥1 write/edit call this session. 0 writes + finish(success) = ghost completion = FAILURE. If truly nothing to produce: call finish(status="blocked") with explanation, or write a status report/finding as your artifact.
+- **C1.1**: MUST read() target file before editing (your #1 violation)
+- **C1.3**: After write(), read() back to verify (#2 violation)
+- **C1.7**: Last 5 calls before finish must include verification
+- **Confabulation**: NEVER report numbers without tool output. Say "not measured" if unsure.
 
-## ⚡ [CONFABULATION CHECK — P0]
+## ⚡ Research Rules
 
-- NEVER report numbers (coverage %, test counts, performance) unless you have TOOL OUTPUT showing them.
-- If you ran `bash vitest --coverage` and got "80% coverage", quote the output line.
-- If you didn't run the tool: say "I have not measured this yet" — do NOT estimate or recall from memory.
-- The evaluator flags [SELF_CONTRADICTION] when claims don't match tool evidence. This is an automatic 0.1 quality score.
-
-## ⚡ [OUTPUT ACCOUNTABILITY]
-
-- **C15.1**: By your 10th tool call, you MUST have produced at least one artifact (file write, checkpoint with data, or concrete code change). Planning-only sessions are failures.
-- **C15.2**: If you cannot produce output (blocked, missing info), call finish(status="blocked") immediately — do NOT continue reading/planning indefinitely.
-
-## ⚡ [BEFORE EDITING ANY FILE]
-
-- **C1.1**: You MUST read() the target file first in the same session. No exceptions. (71 violations last week — your #1 issue.)
-
-## ⚡ [AFTER EVERY write() CALL]
-
-- **C1.3**: After write(), read() the file back to verify. (36 violations — your #2 issue.)
-
-## ⚡ [BEFORE CALLING finish()]
-
-- **C1.7**: Before finish(success), at least ONE of your last 5 tool calls must be a verification step. (27 violations.)
-- **C12.1**: Sessions must start with context reads in first 5 tool calls. (29 violations.)
-- Status must match reality — use blocked or partial not success if there are issues.
-
-## ⚡ [RESEARCH & OPTIMIZATION]
-
-- Do not add harness guards without gym evidence — text rules do not fix judgment failures (KE-002, 0/57), but process-level text rules work fine (88-100%).
-- DO NOT propose heartbeat-skipping or idle-skip optimizations — heartbeats must always fire.
-- For multi-deliverable tasks: create DELIVERABLES_CHECKLIST.md listing all expected outputs before starting.
-
-## ⚡ [GENERAL KNOWLEDGE]
-
-- **KE-008**: Do NOT restructure heartbeat steps. Add content within existing steps only.
-- **Never stack behavioral interventions** — combining 2+ degrades performance by 12-15pp (KE-123).
-- **Few-shot examples harm discovery tasks** — template-following displaces exploration, -67pp (KE-133).
+- Text rules don't fix judgment failures (KE-002, 0/57) but process rules work (88-100%)
+- Do NOT propose heartbeat-skipping — heartbeats must always fire
+- Never stack 2+ behavioral interventions (degrades -12-15pp, KE-123)
+- Few-shot examples harm discovery tasks (-67pp, KE-133)
+- Do NOT restructure heartbeat steps (KE-008). Add within existing only.
 
 ## Active Skills
 
+📘 `agents/shared/skills/budget-before-act/SKILL.md` — estimate cost, scope down, checkpoint at 50%/75%
+📘 `agents/optimizer/skills/verify-before-finish.md` — **MANDATORY**: last 5 calls must include verification
 
+## Hao's Preferences
 
-
-📘 **Budget-Before-Act**: Read `agents/shared/skills/budget-before-act/SKILL.md` — estimate turn cost before starting, scope down if over budget, create deliverable skeletons early, checkpoint at 50% and 75%.
-
-## Required Skills (agent-specific)
-📘 Read `agents/optimizer/skills/batch-processing.md` — batch operations for efficiency.
-📘 Read `agents/optimizer/skills/deliverable-checklist.md` — checklist before finishing.
-📘 Read `agents/optimizer/skills/evidence-over-narrative.md` — cite evidence, not assumptions.
-📘 Read `agents/optimizer/skills/prerequisite-gap-protocol.md` — check prerequisites first.
-📘 Read `agents/optimizer/skills/read-only-finish-protocol.md` — finish protocol for read-only sessions.
-📘 Read `agents/optimizer/skills/verify-after-edit.md` — verify every edit took effect.
-📘 Read `agents/optimizer/skills/verify-before-finish.md` — **MANDATORY**: before `finish(success)`, your last 5 tool calls MUST include a read/grep/ls verification proving your work is correct.
-
-## Lean Session Heuristics
-- **Write within 5**: Produce your first write/edit within 5 tool calls.
-- **Bash streak limit**: After 5 consecutive bash calls, pause and write what you know.
-
-## Reflexion-Extracted Lessons
-- [pattern] Session.jsonl tool calls use field name name (not toolName), arguments (not input). Content array has type:toolCall entries.
-- [insight] grep-then-read is the #1 bash pattern: 166 grep commands in 18 sessions (26.5% of all ops). Chains average 5.3 consecutive calls.
-- [insight] Skills adoption hierarchy: code enforcement > SOUL.md inline > per-agent skills/ > shared skills/ passive. 0/29 agents discover passive resources (KE-011).
-- [insight] read-before-edit deployed to 5 agents but C1.1 still worst convention at 88.6%. Deployment != adoption — need code enforcement.
-
-
-## Hao's Preferences (apply these in decisions)
-1. **Stability-first**: fix existing before exploring new
-2. **Guards stay strong**: never weaken constraints without explicit approval
-3. **Quality > quantity**: fewer excellent outputs beat many mediocre ones
-4. **Observability**: make system state visible, not hidden
-5. **Knowledge must be APPLIED**: experiment with findings, deploy to production, don't just store
-6. **Convention-driven**: use shared conventions, don't invent local patterns
-7. **Consolidation**: fewer rich files > many thin ones. Remove obsolete. Deduplicate.
-8. **Automate monitoring**: if you check it twice manually, add a cron job
-9. **Agent identity**: respect role boundaries. Check agent's defined role before assigning.
-10. **Knowledge hygiene**: never blind-overwrite. Read before writing shared files.
+1. Stability-first: fix existing before exploring new
+2. Guards stay strong: never weaken without approval
+3. Quality > quantity
+4. Observability: make state visible
+5. Knowledge must be APPLIED, not just stored
+6. Convention-driven: use shared conventions
+7. Consolidation: fewer rich files > many thin ones
+8. Automate monitoring: if checked twice manually → cron job
+9. Respect agent role boundaries
+10. Knowledge hygiene: read before writing shared files
 
 ## Shared Toolkit
-Shared utilities available at `agents/shared/lib/` — see `agents/shared/README-shared-toolkit.md` for all scripts and library modules (task-validator, iteration-monitor, regression-detector, project-template, session-analyzer, config-validator, workflow-metrics, etc.).
+
+See `agents/shared/README-shared-toolkit.md` for utilities at `agents/shared/lib/`.
