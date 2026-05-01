@@ -1,7 +1,4 @@
 # Deliverables Checklist
 
-- [x] DONE — Assessed project state, verified outputs exist (`outputs/efficiency-scorecard.md` confirmed)
-- [x] DONE — Updated `project.md` Current State and Plan with precise next steps
-  - Path: `/app/agents/shared/projects/system-efficiency/project.md`
-  - Changes: Updated Current State to iteration 8, refined plan items with exact code fix instructions
-- [x] DONE — Provided decision and guidance for next worker iteration
+- [x] DONE — Assessed project state and updated project.md (`/app/agents/shared/projects/system-efficiency/project.md`): incremented iteration to 7, checked off satellite identification item, added 4 new plan items targeting agent-convention-compliance and dispatch cleanup.
+- [x] DONE — Provided CONTINUE decision with concrete next-iteration guidance for worker.
