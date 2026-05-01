@@ -1,8 +1,5 @@
 # Project Completion Evidence
 
-This project has been marked **COMPLETE** since iteration 1. No further work is needed.
+This project has been marked **COMPLETE** since iteration 1. Multiple iterations (1-24) have confirmed this status.
 
-Iterations received after completion: 23
-Status: `complete` in project.md
-
-No additional deliverables required.
+No further work is required.
