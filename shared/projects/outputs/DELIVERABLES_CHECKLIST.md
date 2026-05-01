@@ -2,6 +2,6 @@
 
 | Deliverable | Status | Path |
 |---|---|---|
-| Completion evidence file | DONE | /app/agents/shared/projects/outputs/test-coverage-project-complete.md |
+| Completion report | DONE | /app/agents/shared/projects/outputs/test-coverage-completion-report.md |
 
-Project is complete. All metrics exceeded targets. No further work needed.
+Project is complete. No further work needed.
