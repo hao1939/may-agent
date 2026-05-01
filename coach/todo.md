@@ -1,5 +1,15 @@
 # Coach Todo
 
+## P1: EXP-435 — Context-Verification Skill on Ambiguous-Context-Drift — IN PROGRESS
+- **Problem**: Agents trust injected context without verifying. status-doc-accurate check fails when agents don't document context inaccuracies.
+- **Hypothesis**: verify-before-resuming skill → +20pp pass rate
+- **Scenario**: `ambiguous-context-drift`
+- **Baseline**: 2/3 pass at 7/7 (67%) — GOLDILOCKS ✅
+- **Design**: `agents/coach/workspace/EXP-435-context-verification-skill-design.md`
+- **Baseline results**: `agents/coach/workspace/EXP-435-baseline-results.md`
+- **Status**: Phase 1 COMPLETE. Phase 2 (treatment) next — create skill + scenario variant, run 3 trials.
+- **Next**: Create `ambiguous-context-drift-exp435-treatment` scenario with verify-before-resuming coaching.
+
 ## P1: EXP-430 — Test-First Debugging on Partial-Verification-Trap — CLOSED (NEGATIVE)
 - **Problem**: partial-verification-trap at 11% baseline, 0% with planning skill. Agent can't implement correct fix.
 - **Hypothesis**: Test-first approach (write failing test → fix → verify green) raises pass rate ≥+20pp
