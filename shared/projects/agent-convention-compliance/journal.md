@@ -140,3 +140,8 @@ Now let me write the deliverables:
 **Worker**: Results are flaky due to agent behavior variance. Best: 47/51 (92%), worst: 44/51 (86%). The multi-edit-workflow is the volatile one — depends on whether the agent uses edit() vs write().
 
 Let me write the milestone completion evidence:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should produce **P18.1** (fix fewshot transcript bug) — this is the single highest-leverage item, worth 2 free checks that push us from 88.2% to 92.2%.
+
+(b) We're 1.8pp from 90% with 6 well-understood failures. The fewshot transcript fix is pure infrastructure — no behav
