@@ -1,0 +1,10 @@
+{
+  "name": "reflexion-npx-recovery-baseline",
+  "description": "Baseline: npx recovery task WITHOUT pre-seeded lessons",
+  "categories": ["context-learning", "reflexion", "experiment"],
+  "tags": ["behavior", "error-avoidance", "npx", "baseline"],
+  "tier": "full",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

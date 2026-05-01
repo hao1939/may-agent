@@ -1,11 +1,11 @@
 {
   "name": "reflexion-npx-recovery-treatment",
-  "description": "Treatment: npx recovery task WITH pre-seeded lessons injected",
+  "description": "Treatment: npx recovery task WITH pre-seeded reflexion lesson",
   "categories": ["context-learning", "reflexion", "experiment"],
   "tags": ["behavior", "error-avoidance", "npx", "treatment"],
   "tier": "full",
   "timeout": 5,
   "agent_type": "coder",
   "workflow": false,
-  "injected_context": "lessons-context.md"
+  "context_injection": "## Learned from experience\n- When you need to run a CLI tool like prettier, use `node_modules/.bin/prettier` directly instead of `npx`, because npx is not available in this restricted environment. (source: reflexion extraction from baseline session)"
 }
