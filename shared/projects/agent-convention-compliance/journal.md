@@ -135,3 +135,8 @@ Now let me write the deliverables:
 (a) Next iteration must **validate the projected 90%** with a real gym run and patch dev's SOUL.md.
 
 (b) The scorer recalibration is verified in the code (edit()-based fast-path at lines 36-82 of multi-edit-workflow success_criteria.js). But the gym couldn't run because `GYM_AGENT_BIN` is 
+
+### Iteration 17 — 2026-05-01T11:17:19.748Z
+**Worker**: Results are flaky due to agent behavior variance. Best: 47/51 (92%), worst: 44/51 (86%). The multi-edit-workflow is the volatile one — depends on whether the agent uses edit() vs write().
+
+Let me write the milestone completion evidence:
