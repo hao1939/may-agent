@@ -37,4 +37,7 @@ Compare self-reported scores against manual quality assessment of same sessions.
 - Self-scoring is biased (agents may score themselves high regardless)
 - Mitigation: The checklist items are binary/verifiable — artifact exists or doesn't
 
-## Status: DESIGNED — ready for deployment to coach/context.md
+## Status: DEPLOYED — 2026-08-14
+- Self-scoring checklist NOT added to context.md (already enforced by ANTI-SHALLOW RULE and PRE-FINISH GATE)
+- Instead, deployed as experiment status update to experiment-status dashboard
+- Monitoring: check next 10 coach sessions for compliance with existing gates
