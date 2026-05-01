@@ -1,45 +1,50 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777640279939_1278
+- **Session:** s_1777640291346_1282
 - **Status:** done
-- **When:** 2026-05-01T12:58:11.341Z
-- **Duration:** 11s
+- **When:** 2026-05-01T12:58:21.903Z
+- **Duration:** 10s
 
 ## What Happened
 ```json
 {
   "agents": {
     "coach": {
-      "role": "Supervisor",
+      "role": "Philosopher/Architect",
       "capability_level": "L2",
-      "efficiency": 0.15,
-      "quality": 0.25,
-      "verdict": "needs_improvement",
+      "efficiency": 0.6,
+      "quality": 0.55,
+      "verdict": "acceptable",
       "issues": [
-        "Failed to follow the explicit verification rule for each worker iteration: repeatedly asserted status/verification outcomes without using read() or bash(ls) to confirm any worker-modified deliverables (Iterations 1–14 responses contain no tool evidence). [VERIFICATION_FAILURE] [FM-3.3]",
-        "Did not update project.md as required until the very end (only after Iteration 15), despite being told 'You MUST update project.md directly' and despite repeatedly claiming 'Status set to complete' earlier.",
-        "Ineffective direction: kept saying 'Do not dispatch any more worker iterations' while still choosing CONTINUE each time, which structurally invites additional iterations rather than stopping/escalating; no attempt to change plan/metrics/next steps to prevent repeat dispatch.",
-        "Did not check off plan items / update Current State / Re-plan as requested; only changed the Status line. Project maintenance responsibilities not met."
+        "Did not follow the explicit supervisor requirement to update project.md throughout the session; only updated it at the very end after many iterations of claiming the project was complete.",
+        "Repeatedly violated the task’s verification rule earlier: provided guidance based on worker-claimed deliverables without using tools to verify deliverables existed until the final step.",
+        "Allowed a long loop of redundant iterations (25–38) continuing to dispatch/continue despite repeatedly stating 'no further iterations needed', indicating weak dead-end detection / closure control.",
+        "Some guidance appears to mix up what is controllable vs not (e.g., alternating claims about SOUL.md editability/guards), without showing evidence from tools until late."
       ],
       "metrics": {
-        "decomposition": "low",
-        "resource_efficiency": "very_low",
-        "context_management": "low",
-        "deliverable_verification": "very_low",
-        "project_maintenance": "low"
+        "code_correctness": "n/a (supervisor task)",
+        "deliverable_integrity": "medium (eventually verified and edited project.md, but late)",
+        "process_compliance": "mixed (late verification, late project.md update)",
+        "dead_end_detection": "low"
       }
     }
   },
   "workflow": {
-    "name": "master-worker (documentation-gen)",
+    "name": "task-tree-evaluation / project-maintainer loop",
     "issues": [
-      "Repeated iterations continued despite the orchestrator declaring the project complete; supervisor did not take effective control actions (update status + adjust plan + provide concrete stop condition) early."
+      "Extended unproductive iteration tail: many 'complete/maintenance' status declarations without actually updating the authoritative project.md until the final tool calls.",
+      "Verification was deferred: project state and deliverables were not checked with tools after each worker iteration as required."
     ]
   },
   "overall": {
-    "verdict": "needs_improvement",
-    "result_delivered": false
+    "verdict": "acceptable",
+    "result_delivered": true
   }
 }
 ```
+
+Lessons (actionable)
+- `[coach] Update project.md as the source of truth immediately when status changes; do not rely on repeated narrative assertions that a project is complete.`
+- `[coach] Enforce the 'verify after each worker iteration' rule with tool evidence (read/ls) early; otherwise redundant iterations accumulate.`
+- `[coach] When you decide “no further work”, stop issuing CONTINUE—switch to guidance that halts dispatching and ensure project.md reflects closure.`
