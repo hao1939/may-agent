@@ -350,3 +350,12 @@ This project is **complete**. Status set to `complete`. No further iterations ne
 
 ### Iteration 41 — 2026-05-01T11:52:04.896Z
 **Worker**: 
+**Orchestrator**: CONTINUE
+
+This project is **complete**. Status is now set to `complete` in project.md.
+
+**Final scorecard (41 iterations):**
+- **M6 (broken scenarios): 20% → 0%** ✅
+- **M7 (pre-solved bugs): 9% → 0%** ✅
+- **Evaluable scenarios: ~200 → 444** ✅
+- **M1 (agent pass rate): 62%** — confirmed ceiling via 6
