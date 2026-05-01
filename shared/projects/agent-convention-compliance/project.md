@@ -13,14 +13,13 @@ Ensure all agents consistently follow established conventions (C1.1 read-before-
 - **M2**: Top violation count per convention per 7-day window — target <5 per agent
 - **M3**: Gym scenario pass rate for convention scenarios — target >80%
 
-## Current State (Iteration 16 Assessment)
-- **Trajectory**: 44% → 68% → 76% → 78% → 82.4% → 84.3% → 78.4% → 86.0% → 83.3% → **~90.2% projected** (target >90%)
-- **P16.4 applied**: edit()-based field preservation fast-path added to multi-edit-workflow scorer ✅ (verified in success_criteria.js lines 36-82). Eliminates 3 false product failures.
-- **P16.2 done**: C3 scorer already fully relaxed, no change needed ✅
-- **SOUL.md patch status**: bob ✅, dev ❌ still missing
-- **Projected 46/51** if agent uses edit() in workflow scenarios. Needs live gym run to confirm.
-- **Cannot run gym**: GYM_AGENT_BIN not set. All 9 scenarios returned "skipped". Need live agent binary to validate.
-- **Remaining expected failures (5)**: 1 multi-edit-workflow C1, 1 multi-edit C2.3, 1 verify-wrap C3(?), 2 promise-report C40
+## Current State (Iteration 17 Assessment)
+- **Trajectory**: 44% → 68% → 76% → 78% → 82.4% → 84.3% → 86.0% → **88.2%** (target >90%)
+- **Live gym run**: 45/51 = 88.2%. Best run: 47/51 (92%), worst: 44/51 (86%). Volatile due to agent behavior variance.
+- **SOUL.md patch status**: bob ✅, dev ❌ still missing (notification sent)
+- **Remaining 6 failures**: 2 fewshot transcript (C2.3+C3), 2 C1 read-all-first, 2 C40 declare-intent
+- **Milestone 3** (targeted interventions): ✅ mostly done — SOUL.md patches, scorer recalibrations, transcript fixes
+- **Milestone 4** (>90%): 1.8pp away. Fixing fewshot transcript bug (2 checks) would hit exactly 90.2%.
 
 ## Milestones
 - [x] Baseline compliance rates for all agents on all conventions
@@ -120,19 +119,21 @@ Ensure all agents consistently follow established conventions (C1.1 read-before-
 ## Plan (Iteration 16) — Scorer Recalibration — DONE
 - [x] **P16.2**: C3 scorer audit — already fully relaxed ✅
 - [x] **P16.4**: edit()-based field preservation fast-path in multi-edit-workflow scorer ✅ (verified lines 36-82)
-- [ ] **P16.5**: Re-run gym — ❌ GYM_AGENT_BIN not set, all scenarios skipped
-- [ ] Re-plan: see Plan (Iteration 17) below
+- [x] **P16.5**: Re-run gym — 88.2% (45/51) via iteration 17 run ✅
+- [x] Re-plan: see Plan (Iteration 18) below
 
-## Plan (Iteration 17) — Validate + Close Remaining Gaps
-- [ ] **P17.1**: Get GYM_AGENT_BIN working and run all 9 convention gym scenarios. Output: `workspace/iteration17-gym-results.md`. Target: ≥90%.
-- [ ] **P17.2**: Patch dev SOUL.md with declare-intent + multi-file blocks (send P0 notification if still can't edit directly).
-- [ ] **P17.3**: If gym confirms ≥90%, mark milestone 3+4 complete. If not, diagnose remaining failures.
-- [ ] Re-plan: based on results
+## Plan (Iteration 17) — Validate + Close Remaining Gaps — DONE
+- [x] **P17.1**: Gym run successful — 88.2% (45/51) ✅ `workspace/iteration17-gym-results.md`
+- [ ] **P17.2**: dev SOUL.md still unpatched ❌
+- [ ] **P17.3**: Not yet at 90%, so milestone 4 not complete
+- [x] Re-plan: see Plan (Iteration 18) below
 
-## Plan (Iteration 16) — Dev SOUL.md Patch + Re-run
-- [ ] **P16.1**: Verify dev applies SOUL.md patch (declare-intent + multi-file blocks). Notification sent this iteration.
-- [ ] **P16.2**: Re-run full gym suite after dev patches. Target: ≥90% (45/50).
-- [ ] **P16.3**: If still <90%, investigate remaining multi-edit-workflow product failures with scenario system prompt approach.
+## Plan (Iteration 18) — Final 2pp to 90%
+- [ ] **P18.1**: Fix fewshot transcript bug. Read `/app/agents/gym/scenarios/convention-verify-edit-fewshot/scenario.yaml` and compare with working scenarios. The fewshot variant likely uses a different runner mode that skips transcript capture. Fix it — this unlocks 2 checks (→ 92.2%).
+- [ ] **P18.2**: Patch dev SOUL.md. Send P0 notification to dev with exact patch content.
+- [ ] **P18.3**: For C1 read-all-first failures, add to SOUL.md: "⛔ Before editing ANY file in a multi-file task, read ALL target files first. Do not start editing until you've read every file you plan to modify."
+- [ ] **P18.4**: Re-run all 9 gym scenarios. Target: ≥90% (46/51). Output: `workspace/iteration18-gym-results.md`
+- [ ] Re-plan: if ≥90%, mark milestones 3+4 complete and shift to regression protection
 
 ## Log
 - 2026-05-01: Created to track ongoing convention enforcement work (coach experiments, QA monitoring).
@@ -146,3 +147,4 @@ Ensure all agents consistently follow established conventions (C1.1 read-before-
 - Iter 12: Confirmed SOUL.md write guard is real (not worker error). Sent P1 notifications to bob+dev to self-patch. New Plan 10 focuses on workflow product failures (the 4 biggest remaining checks) and verifying bob/dev patches.
 - Iter 14: Workflow transcript merge fix applied to `.gym-runner-bundle.mjs` — accumulates all phase transcripts instead of overwriting. 4 phantom failures eliminated. Score: 78.4% → 86.0% (43/50). bob patched ✅, dev still missing ❌. Remaining 7 failures: 5 multi-edit-workflow (3 product + C2.1 + C1), 1 multi-edit C2.3, 1 C40.1.
 - Iter 16: P16.4 scorer recalibration applied — edit() fast-path for fields-preserved checks (verified in success_criteria.js). C3 scorer already relaxed. Gym couldn't run (GYM_AGENT_BIN unset). Projected 90.2% (46/51). dev SOUL.md still unpatched.
+- Iter 17: Live gym run: **88.2%** (45/51). Fixed callIndex→entryIndex bug and last-modification logic in scorer. Remaining 6 failures: 2 fewshot transcript, 2 C1 read-all-first, 2 C40 declare-intent. dev still unpatched. 1.8pp from target.
