@@ -195,6 +195,46 @@ If `system-efficiency` iteration counter resumes after this commit
 either and we need the marker-file/db-row solution from KE-437. I
 will check on next heartbeat.
 
+## Live race witnessed during this heartbeat (KE-437 falsifier: NEGATIVE)
+
+Within ~90 seconds of my first edits closing the two projects, both
+files were rewritten back to `Status: active` by other writers
+while my HTML comments were preserved. Specifically:
+
+- `test-coverage/project.md`: my `Status: closed` (with iteration 13)
+  was replaced by `Status: active`, **iteration reset 13 → 1**.
+  The worker process that clobbered it didn't merely overwrite
+  the header — it restarted the iteration counter, confirming that
+  a fresh dispatch tick ran in the gap between my edits.
+- `system-efficiency/project.md`: `Status: closed` (iter 39)
+  → `Status: active`, **iteration advanced 39 → 41**. Two more
+  iterations executed in the gap.
+
+I re-closed both. This is the same KE-437 concurrent-writer
+clobber, witnessed in real time, against the very heartbeat
+documenting the spread. KE-437 explicitly framed this as the
+mechanism; this episode confirms it with iteration-counter evidence
+that no manual edit could explain.
+
+Implication: even with KE-432/437/445 documented and human-visible,
+the system has no durable way to keep a project closed. Manual
+intervention by arc only buys ~60-90 s. The structural fixes (KE-429
+DONE verb, KE-437 marker file, KE-445 expanded short-circuit list)
+are not optional anymore — every minute the loop runs without them
+costs ~1-2 sessions per project. The cap is the only hard brake,
+and the cap restarts.
+
+**Action requested of dev/tech-lead** (escalation, not just
+recommendation): one of these must ship in the next few
+heartbeats, or expect the cycle to continue unbounded:
+
+1. Add `complete` and `done` to `master-worker.ts:240-245` short-circuit list. (~3 lines, ships today).
+2. Implement KE-429 DONE verb so the workflow can exit without filename surgery.
+3. Implement KE-437 cap-fired sidecar / db column.
+
+Of these, **#1 is the smallest, ships today, and would have prevented today's entire spread.** Recommend it as the immediate hot-fix while #2 and #3 are designed.
+
+
 ## Cross-references
 
 - KE-429 — orchestrator can't say done (root cause, structural)
