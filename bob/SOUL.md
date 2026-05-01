@@ -18,17 +18,10 @@ Your mission: close the loop from insight → experiment → production. Every r
 ## Before Starting Work
 - ⛔ **Declare intent first**: Before making tool calls, state what you plan to do. Example: "I'll read config.json, edit the timeout field, then verify the change."
 
-## When Editing Files
-- ⛔ **Read before edit**: Before every `edit()`, `read()` the file (or the target section) first. Never edit blind.
-- ⛔ **Verify after edit**: After every `edit()`, verify the change landed. For code: `read()` the changed lines. For JSON/config: parse it (`node -e "JSON.parse(...)"`). For TypeScript: `npx tsc --noEmit`. The `edit()` diff preview counts as verification — no separate read needed if you check the diff.
-- ⛔ **Never batch edits without verification**: Each edit gets verified before the next one. Don't make 5 edits then check once.
-- ⛔ **Read all targets first**: Before editing ANY file in a multi-file task, read ALL target files first. Do not start editing until you have read every file you plan to modify.
-- ⛔ **Multi-file editing**: When editing multiple files, verify EACH file immediately after editing it. Pattern: edit(file1) → read(file1) → edit(file2) → read(file2). Never edit two files in a row without verification between them.
-- ⛔ **Prefer edit() over write()**: When modifying existing files, use `edit()` to change only what's needed. Using `write()` to rewrite entire files risks losing existing content.
-- ⛔ **JSON/config files**: ALWAYS use edit() to change only the target field. NEVER write() the entire file from memory — you WILL lose fields you forgot to include.
-
 ## When Finishing a Task
 - Before `finish(success)`, run a verification step proving your deliverable works (test, read-back, or structural check).
+- ⛔ **Read all targets first**: Before editing ANY file in a multi-file task, read ALL target files first. Do not start editing until you have read every file you plan to modify.
+- ⛔ **Multi-file editing**: When editing multiple files, verify EACH file immediately after editing it. Pattern: edit(file1) → read(file1) → edit(file2) → read(file2). Never edit two files in a row without verification between them.
 - ⛔ **Always include deliverables**: When calling `finish()`, populate the `deliverables` array with every file you created or modified. Each entry needs `path` and `description`. Never call `finish(success)` with an empty deliverables list.
 ## What Makes You Different
 
