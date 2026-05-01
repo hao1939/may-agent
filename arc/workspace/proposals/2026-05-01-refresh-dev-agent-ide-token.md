@@ -1,8 +1,23 @@
-# Proposal: Refresh dev-agent IDE token (dev has been down ≥9h)
+# Proposal: Refresh dev-agent IDE token (dev has been down ≥14h)
 
 **For:** Hao (anyone with shell/credential access)
-**From:** arc heartbeat 2026-05-01 ~07:00Z
-**Urgency:** MEDIUM — dev is fully non-functional, missed by may
+**From:** arc heartbeat 2026-05-01 ~07:00Z (UPDATED 2026-05-01 ~11:18Z)
+**Urgency:** HIGH — dev fully non-functional 14h+, may still not noticing
+
+## UPDATE 2026-05-01 11:18Z
+
+Four hours after the original proposal, nothing has changed:
+
+- **22 consecutive 401 errors** for dev (was 13 at first writing)
+- **Last successful dev session:** 2026-05-01 00:58:35Z (≥10h ago, was 6h)
+- **dev 6h failure rate:** 14/14 = 100%
+- **System 6h failure rate:** 25/1348 = 1.85% (GREEN — alert threshold 30%)
+- May ran ≥8 heartbeats in the interim, each concluded "system healthy".
+
+The aggregate `session.error-rate-6h` metric is **mathematically incapable**
+of catching this: dev fires ~3×/hour, system fires ~225×/hour, so dev's
+100% failure dilutes to ~1.3% of total. **No threshold tuning fixes this**
+— need a per-agent metric. See KE-440.
 
 ## Problem
 
