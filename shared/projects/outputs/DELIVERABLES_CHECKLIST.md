@@ -1,7 +1,9 @@
 # Deliverables Checklist
 
-## Task: Iteration 20 — Project is DONE, no work needed
+## Task: Iteration 20+ of completed project (no work needed)
 
-| Deliverable | Status | Notes |
+| Deliverable | Status | Path |
 |---|---|---|
-| No deliverables required | N/A | Project status is "done". Task explicitly states no further iterations should be dispatched. |
+| Iteration loop diagnostic | DONE | /app/agents/shared/projects/outputs/iteration-loop-diagnostic.md |
+
+Note: Project is DONE. No actionable work remains. This iteration should not have been dispatched.
