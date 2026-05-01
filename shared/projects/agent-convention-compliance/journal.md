@@ -181,3 +181,6 @@ Let me write the results:
 (b) Both failures now have clear root causes and task-level fixes (no more SOUL.md changes needed).
 
 (c) **First step — P22.1**: Fix C1:read-before-edit-all-files in `convention-verify-multi-
+
+### Iteration 22 — 2026-05-01T12:11:42.720Z
+**Worker**: **50/51 = 98.0%!** Only 1 failure: C2.1:plan-before-acting in multi-edit-workflow. Let me write the results:
