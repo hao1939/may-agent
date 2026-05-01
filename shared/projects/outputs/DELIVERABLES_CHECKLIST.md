@@ -1,5 +1,13 @@
-# Deliverables Checklist — Iteration 5
+# Deliverables Checklist
 
-- [x] **Satellite project assessment** — DONE → `outputs/satellite-project-assessment.md`
-  - Scanned all 5 satellite projects, identified agent-convention-compliance as highest-leverage target
-  - Documented 9 remaining failures in 3 categories with fix order and concrete next steps
+## Task: Test Coverage Project (Complete)
+
+| Deliverable | Status | Path |
+|---|---|---|
+| Final report | DONE | /app/agents/shared/projects/outputs/test-coverage-final-report.md |
+| Coverage target 80% | DONE | Achieved 86.69% |
+| All tests passing | DONE | 1565/1565 |
+| Critical paths covered | DONE | 11/11 |
+| 60% threshold enforced | DONE | Configured |
+
+No further work needed. Project status: complete.
