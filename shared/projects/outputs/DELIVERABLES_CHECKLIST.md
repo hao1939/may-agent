@@ -1,10 +1,5 @@
-# Deliverables Checklist — Iteration 48
+# Deliverables Checklist
 
-## Task: CONTINUE (Project Closed)
-
-| Deliverable | Status | Notes |
-|---|---|---|
-| No work required | DONE | Project is closed. All targets met (83.79% coverage, 191/191 tests, 11/11 critical paths). |
-
-## Context
-This is iteration 48 of a no-op dispatch loop (KE-437). The project has been closed since iteration 4. No further work is needed.
+## Required
+- [x] DONE: `outputs/prompt-trim-report.md` — Trim analysis with baseline sizes, specific recommendations for top 3 SOUL.md files, projected savings of ~3,125 tokens/cycle. Path: `/app/agents/shared/projects/outputs/prompt-trim-report.md`
+- [ ] BLOCKED: Direct edits to SOUL.md files — Permission system blocks optimizer from editing other agents' identity files. Requires May or tech-lead.
