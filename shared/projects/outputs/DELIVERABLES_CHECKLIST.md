@@ -1,7 +1,9 @@
-# DELIVERABLES_CHECKLIST.md
+# DELIVERABLES_CHECKLIST
+
+## Task: Iteration 8 - Project Closed, No Work Needed
 
 | Deliverable | Status | Path |
 |---|---|---|
-| Closure evidence for iteration 7 | DONE | /app/agents/shared/projects/outputs/iteration-7-closure-evidence.md |
+| Acknowledgment file | DONE | /app/agents/shared/projects/outputs/iteration-8-no-op.md |
 
-No further work required — project is closed.
+Project is closed. All metrics met (83.79% coverage, 191/191 tests, 11/11 critical paths).
