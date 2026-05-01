@@ -1,9 +1,9 @@
-# DELIVERABLES_CHECKLIST
+# Deliverables Checklist
 
-## Task: Regression guard for context bloat project (complete)
+## Task: Regression guard for completed bloat-reduction project
 
 | # | Deliverable | Status | Path |
 |---|-------------|--------|------|
 | 1 | Regression guard script | DONE | /app/agents/shared/projects/outputs/regression-guard.sh |
 
-All 16 agents verified passing (32 files checked, 0 failures). Script exits non-zero if any SOUL.md >600w or context.md >450w.
+All agent files confirmed within limits (15 SOUL.md, 17 context.md — zero failures).
