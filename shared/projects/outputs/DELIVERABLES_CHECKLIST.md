@@ -1,4 +1,9 @@
 # Deliverables Checklist
 
-- [x] DONE — Completion notice: `/app/agents/shared/projects/outputs/project-complete-notice.md`
-  - Documents project is complete, all metrics at target, recommends removing from active queue
+## Task: Project Complete — Produce Closure Evidence
+
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | Completion evidence file | DONE | /app/agents/shared/projects/outputs/PROJECT_CLOSED_STOP_DISPATCHING.md |
+
+No further work items remain. Project is CLOSED.
