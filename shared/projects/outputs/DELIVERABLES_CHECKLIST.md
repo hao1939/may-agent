@@ -1,7 +1,11 @@
 # DELIVERABLES_CHECKLIST.md
 
-- [x] DONE: Trim may/context.md — /app/agents/may/context.md (10,592 → 2,676 bytes)
-- [x] DONE: Trim coach/context.md — /app/agents/coach/context.md (~10,000 → 2,428 bytes)
-- [x] DONE: Trim bob/context.md — /app/agents/bob/context.md (~9,800 → 2,571 bytes)
-- [x] DONE: Trim tech-lead/context.md — /app/agents/tech-lead/context.md (~9,200 → 2,862 bytes)
-- [x] DONE: Report — /app/agents/shared/projects/outputs/context-hygiene-report.md
+## Task: Trim 5 bloated context.md files to under 2500 bytes each
+
+| # | Deliverable | Status | Path | Notes |
+|---|------------|--------|------|-------|
+| 1 | qa/context.md under 2500B | DONE | /app/agents/qa/context.md | 5620→1559B |
+| 2 | coder/context.md under 2500B | DONE | /app/agents/coder/context.md | 4534→1538B |
+| 3 | amy/context.md under 2500B | DONE | /app/agents/amy/context.md | 4349→1731B |
+| 4 | evaluator/context.md under 2500B | DONE | /app/agents/evaluator/context.md | 3490→1540B |
+| 5 | tech-lead/context.md under 2500B | DONE | /app/agents/tech-lead/context.md | 2862→2174B |
