@@ -1,7 +1,7 @@
 # EXP-271: Manual Capability Attribution on Agent Failures
 
 **Hypothesis**: H-CAP1 — Decomposing agent failures into capability dimensions (memory, planning, perception, tool-use) produces consistent, actionable attributions that pass/fail cannot.
-**Status**: DESIGNED
+**Status**: PHASE1_COMPLETE
 **Date**: 2026-08-29
 **Source**: DD#906 (arXiv:2604.25161), design doc `agents/bob/workspace/designs/capability-oracles-evaluator.md`
 
