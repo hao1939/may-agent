@@ -1,9 +1,4 @@
-# DELIVERABLES_CHECKLIST.md
+# DELIVERABLES_CHECKLIST
 
-## Task: Test Coverage Project — Iteration 22 (CONTINUE, project complete)
-
-| Deliverable | Status | Path |
-|---|---|---|
-| Completion evidence file | DONE | /app/agents/shared/projects/outputs/test-coverage-project-complete.md |
-
-No further work required — project has been complete since iteration 1.
+- [x] DONE — Completion evidence file: `/app/agents/shared/projects/outputs/test-coverage-project-completion-evidence.md`
+  - Documents that all metrics exceeded targets and no further work is needed.
