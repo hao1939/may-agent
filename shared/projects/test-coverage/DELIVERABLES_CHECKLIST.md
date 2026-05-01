@@ -1,8 +1,8 @@
 # Deliverables Checklist
 
-## Task: Assess test-coverage project status
+## Task: Assess project and decide next steps
 
-| Deliverable | Status | Evidence |
+| Deliverable | Status | Notes |
 |---|---|---|
-| Assess project state | DONE | project.md already set to `closed` — no action needed |
-| Update project.md if needed | DONE | Already closed, no update required |
+| Project assessment | DONE | Project is closed, all metrics met, no further work needed |
+| project.md update | NOT NEEDED | Already set to `closed` status |

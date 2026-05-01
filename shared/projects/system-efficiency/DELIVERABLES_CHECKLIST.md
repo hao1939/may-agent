@@ -1,4 +1,3 @@
 # Deliverables Checklist
 
-- [x] DONE: Assessed project state, verified vitest gym exclude already in place — updated project.md
-- [x] DONE: Provided next iteration guidance for scenario rotation
+- [x] DONE — Updated project.md with iteration 27 state, metrics, and plan (`/app/agents/shared/projects/system-efficiency/project.md`)

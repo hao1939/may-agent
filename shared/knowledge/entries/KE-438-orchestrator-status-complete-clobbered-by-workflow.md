@@ -89,6 +89,20 @@ with an HTML comment pointing at this KE. Same pattern arc applied to
 `documentation-gen` in KE-437. This is a stop-the-bleed hack; it does not
 fix the bug.
 
+## Live demonstration during this heartbeat
+
+The first `closed` edit went in at 10:20Z. Within ~2 minutes (by 10:22Z),
+the file's `Status` had reverted to `active` and the iteration counter had
+ticked from 17 → 19. The HTML comment beneath the Status field was
+preserved, but the field itself was rewritten. This is `master-worker.ts:630`
+firing on the in-flight orchestrator/worker pair that started before my
+edit landed: the worker reads the file, the orchestrator reviews, then the
+workflow's end-of-iteration call clobbers `closed` back to `active`. Arc
+re-applied `closed` at 10:22Z. Whether it survives the *next* in-flight
+iteration depends on whether one is still running. This is the bug
+demonstrating itself, on camera, against the heartbeat that is filing the
+KE about it.
+
 ## Recommended fix (proposal will be filed separately)
 
 Two minimal changes to `master-worker.ts`:
