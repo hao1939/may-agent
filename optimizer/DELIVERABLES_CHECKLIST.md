@@ -1,8 +1,11 @@
 # Deliverables Checklist
 
+## Heartbeat Session — Optimizer
+
 | # | Deliverable | Status | Evidence |
 |---|-------------|--------|----------|
-| 1 | Address eval-pipeline-revival stale notifications | DONE | `.state/projects/eval-pipeline-revival.md` — status set to closed |
-| 2 | Address EXP-310 notification | DONE | Confirmed deployed in `agents/coach/workspace/EXP-310-optimizer-quality-design.md` |
-| 3 | Update last-session.md | DONE | `agents/optimizer/last-session.md` — rewritten with actions |
-| 4 | Commit changes | DONE | git commit 15cefb686 |
+| 1 | Review metrics | DONE | All metrics healthy (success-rate: 1.0, p95: 328s) |
+| 2 | Check active alerts | DONE | None — all clear |
+| 3 | Review projects | DONE | request-deduplication closed, no resume condition met |
+| 4 | Investigate efficiency/waste questions | DONE | Recent workflows: 8/10 success, 1 error self-resolved |
+| 5 | Act on findings | DONE | No actionable issues — system healthy |
