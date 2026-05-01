@@ -1,10 +1,9 @@
 # Deliverables Checklist
 
-## Task: Heartbeat — iterate prompt-efficiency project
+## Task: Final project assessment and closure
 
 | # | Deliverable | Status | Evidence |
 |---|-------------|--------|----------|
-| 1 | Re-measure SOUL.md and context.md word counts | DONE | SOUL.md avg 676w, context.md avg 218w |
-| 2 | Update project.md metrics table | DONE | agents/shared/projects/prompt-efficiency/project.md — metrics updated to 2025-06-01 |
-| 3 | Journal entry documenting iteration | DONE | agents/shared/projects/prompt-efficiency/journal.md — appended heartbeat update |
-| 4 | Escalate P3 to tech-lead | DONE | Notified tech-lead with P1 priority to apply trimming proposal |
+| 1 | Verify all SOUL.md files <600w | DONE | wc -w confirms max 598w (may), eval 406w, avg 386w |
+| 2 | Update project.md to Complete | DONE | project.md — status set to Complete, all plan items checked, final metrics |
+| 3 | Final metrics recorded | DONE | SOUL.md 59% reduction (950→386w avg), context.md 72% reduction (783→218w avg) |
