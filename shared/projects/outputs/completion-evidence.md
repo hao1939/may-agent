@@ -7,4 +7,4 @@ This project has been marked complete since iteration 1. All metrics exceed targ
 - Staleness: 6 days vs 14 day target
 - All plan items checked off
 
-No further work is needed. This file serves as evidence that the project is done and no more iterations should be dispatched.
+No further work is needed. This file documents that repeated CONTINUE dispatches are being sent to an already-complete project.
