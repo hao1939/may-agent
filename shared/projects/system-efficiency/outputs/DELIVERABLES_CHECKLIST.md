@@ -1,9 +1,6 @@
-# DELIVERABLES_CHECKLIST
+# Deliverables Checklist
 
-## Task: Exclude gym scenarios from vitest
-
-| # | Deliverable | Status | Path |
-|---|-------------|--------|------|
-| 1 | vitest.config.ts exclude list | DONE | `/app/agents/vitest.config.ts` — added `exclude: ["gym/**", "node_modules/**", "shared/projects/outputs/**"]` |
-| 2 | regression-guard.sh fix | DONE | `outputs/regression-guard.sh` — changed `cd /app` → `cd /app/agents`, threshold 1500→500 |
-| 3 | vitest-gym-exclusion-fix.md report | DONE | `outputs/vitest-gym-exclusion-fix.md` — documents problem, finding, fix, recommendation |
+## Required
+- [x] **outputs/vitest-cleanup-report.md** — DONE
+  - Path: `/app/agents/shared/projects/system-efficiency/outputs/vitest-cleanup-report.md`
+  - Verified vitest config, documented that `gym/**` exclude works from `/app/agents/`, 536 tests pass with 0 failures
