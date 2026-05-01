@@ -1,4 +1,7 @@
 # Deliverables Checklist
 
-- [x] DONE — Project closure confirmation: `/app/agents/shared/projects/outputs/PROJECT_CLOSED.md`
-- No further work required; project status is `closed`.
+| # | Deliverable | Status | Path |
+|---|-----------|--------|------|
+| 1 | Project closure confirmation | DONE | /app/agents/shared/projects/outputs/PROJECT_CLOSED.md |
+
+Project is closed. No further work needed.
