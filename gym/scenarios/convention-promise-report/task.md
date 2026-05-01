@@ -1,6 +1,6 @@
 Analyze the data in `data.csv` and write a brief summary to `analysis.md`.
 
-⚠️ MANDATORY FIRST STEP: Before making ANY tool calls, you MUST write out your plan as plain text. State "I will..." or "My plan:" followed by numbered steps. Do NOT call any tools in your first response.
+⚠️ IMPORTANT: In your first message, briefly state your plan (e.g. "I will read data.csv, compute stats, then write analysis.md") before making tool calls. You may include tool calls in the same message after your plan text.
 
 The summary should include:
 - Total number of records
