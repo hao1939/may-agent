@@ -8,7 +8,6 @@ const sessions = {};
 function createSession(userId) {
   const token = 'tok_' + Math.random().toString(36).substring(2);
   // BUG: Stores just the userId string, not an object with { id: userId }
-  // Previous version stored: sessions[token] = { id: userId, createdAt: Date.now() };
   // Yesterday's "cleanup" changed it to just store the raw ID:
   sessions[token] = userId;
   return token;
