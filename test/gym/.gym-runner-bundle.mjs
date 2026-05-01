@@ -548,7 +548,17 @@ function runScenario(scenarioName , agent , lab , adapter , timeoutMinutes , kee
     };
   }
 
-  const taskContent = fs.readFileSync(taskPath, "utf-8");
+  let taskContent = fs.readFileSync(taskPath, "utf-8");
+
+  // Inject context (e.g. few-shot examples) if scenario.json specifies it
+  if (meta.injected_context) {
+    const ctxPath = path.join(SCENARIOS_DIR, scenarioName, meta.injected_context);
+    if (fs.existsSync(ctxPath)) {
+      const injectedCtx = fs.readFileSync(ctxPath, "utf-8");
+      taskContent = injectedCtx + "\n\n---\n\n" + taskContent;
+    }
+  }
+
   const timeoutMs = (timeoutMinutes || meta.timeout || 5) * 60 * 1000;
   const tmpDir = createTempDir(scenarioName);
 
