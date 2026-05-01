@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777625438341_0
+- **Session:** s_1777625461025_0
 - **Status:** done
-- **When:** 2026-05-01T08:50:56.037Z
-- **Duration:** 17s
+- **When:** 2026-05-01T08:51:25.604Z
+- **Duration:** 24s
 
 ## What Happened
-All three fixes applied. Port → 5432, TTL → 3600, rateLimit → 100.
+The config files don't exist on disk yet, but the task describes their current (wrong) values. I'll write the PLAN.md based on the known issues.
