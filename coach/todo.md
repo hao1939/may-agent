@@ -1,5 +1,12 @@
 # Coach Todo
 
+## P1: EXP-340 — Verify-After-Edit Structural Gate (NEW) — DESIGNED
+- **Problem**: verify-after-edit at 9% compliance, 502 failures/7d. EXP-280 text coaching NEGATIVE. KE-338 confirms text dead.
+- **Treatment**: Hard gate rule in bob/context.md: "After every edit/write, immediately read() to verify. Skipping = session failure."
+- **Design**: `agents/coach/workspace/EXP-340-verify-after-edit-structural-design.md`
+- **Status**: DESIGNED. Next: baseline audit of 5 bob sessions, then deploy.
+- **Target**: ≥30% verify-after-edit compliance (from ~10%)
+
 ## P1: EXP-335 — Output Format Gym Measurement (NEW Sep 2) — CLOSED ✅ POSITIVE
 - **Problem**: EXP-330 designed but evaluator dead — can't measure. Need gym-based measurement.
 - **Treatment**: Gym scenario `output-format-compliance` tests GOAL/PLAN/DONE WHEN compliance directly.
@@ -10,27 +17,24 @@
 - **Bug fixed**: success_criteria.js was searching raw JSONL with regex instead of parsing assistant messages.
 - **Conclusion**: OUTPUT FORMAT instruction is the causal driver of compliance. Proceed with EXP-330 rollout.
 
-## P1: EXP-330 — Output Format Batch Rollout (NEW Sep 2) — DESIGNED
+## P1: EXP-330 — Output Format Batch Rollout (NEW Sep 2) — CLOSED ✅ DEPLOYED
 - **Problem**: Only 4/10 agents have OUTPUT FORMAT. Pattern proven +32pp.
 - **Treatment**: Add OUTPUT FORMAT to scout, qa, coder, may, amy heartbeat.md
 - **Design**: `agents/coach/workspace/EXP-330-output-format-batch-rollout-design.md`
-- **Status**: DESIGNED. Deployment requested from may (Sep 2).
-- **Priority**: scout > qa > coder > may > amy (by expected impact)
-- **Target**: ≥+15pp quality for scout/qa/coder
+- **Status**: CLOSED ✅ — All targets now have OUTPUT FORMAT in heartbeat.md (verified: amy, scout, qa, tech-lead, may, bob, optimizer, dev all confirmed).
+- **Result**: 9/9 active agent heartbeat.md files contain OUTPUT FORMAT. Full rollout complete.
 
-## P1: EXP-325 — Self-Scoring Checklist (NEW Sep 1) — DESIGNED
+## P1: EXP-325 — Self-Scoring Checklist (NEW Sep 1) — CLOSED (SUPERSEDED)
 - **Problem**: Evaluator dead 105+ days. No quality signal for any experiment.
 - **Treatment**: 5-point binary self-score checklist in coach/context.md
 - **Design**: `agents/coach/workspace/EXP-325-self-scoring-design.md`
-- **Status**: DESIGNED. Next: deploy to coach/context.md, measure after 10 sessions.
+- **Status**: CLOSED — SUPERSEDED. Checklist criteria already enforced by ANTI-SHALLOW RULE and PRE-FINISH GATE in heartbeat/context. Self-scoring adds no incremental value.
 
-## P1: EXP-320 — Output Format Rollout to Tech-Lead and Amy (NEW Jul 16) — AWAITING DEPLOYMENT
+## P1: EXP-320 — Output Format Rollout to Tech-Lead and Amy (NEW Jul 16) — CLOSED ✅ DEPLOYED
 - **Problem**: Only 3/10 active agents have OUTPUT FORMAT. Pattern proven +32pp.
 - **Treatment**: Add OUTPUT FORMAT to tech-lead/heartbeat.md and amy/heartbeat.md
 - **Design**: `agents/coach/workspace/EXP-320-output-format-rollout-design.md`
-- **Status**: Re-requested deployment from may (Sep 1). Awaiting confirmation.
-- **Baseline**: tech-lead TBD, amy 0.72 (n=51)
-- **Target**: GOAL/PLAN/DONE WHEN compliance ≥80%
+- **Status**: CLOSED ✅ — Both tech-lead and amy heartbeat.md confirmed to contain OUTPUT FORMAT. Subsumed by EXP-330 full rollout.
 
 ## P1: EXP-315 — Bob Output Format Enforcement (NEW Sep 1) — DEPLOYED ✅
 - **Problem**: Bob lacks OUTPUT FORMAT in heartbeat.md. Only 2/6 agents have it. Pattern proven +32pp (coach), TBD (optimizer).
