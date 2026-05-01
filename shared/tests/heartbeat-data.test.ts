@@ -161,7 +161,8 @@ describe("loadProjects", () => {
     expect(loadProjects(ctx, "bob")).toBe("");
   });
 
-  it("loads legacy per-agent projects", () => {
+  it("ignores legacy per-agent workspace/projects directories", () => {
+    // Legacy location no longer scanned (KE-426 follow-up).
     const projDir = join(TEST_DIR, "bob", "workspace", "projects", "legproj");
     mkdirSync(projDir, { recursive: true });
     writeFileSync(join(projDir, "project.md"), `# Test
@@ -173,8 +174,7 @@ describe("loadProjects", () => {
 `, "utf-8");
 
     const ctx = makeCtx();
-    const result = loadProjects(ctx, "bob");
-    expect(result).toContain("legproj");
+    expect(loadProjects(ctx, "bob")).toBe("");
   });
 });
 
