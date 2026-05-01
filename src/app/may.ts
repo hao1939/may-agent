@@ -186,8 +186,8 @@ const models: Record<string, ModelWithApiKey> = {
   // New powerful models (via litellm → GitHub Copilot)
   "gpt-5.5": {
     ...getModel("github-copilot", "gpt-5.5"),
-    baseUrl: MODEL_BASE_URL,
-    apiKey: LITELLM_API_KEY,
+    baseUrl: "https://api.enterprise.githubcopilot.com",
+    apiKey: "dynamic", // placeholder — real token read via getCopilotToken()
   },
   "opus-4.7": {
     ...getModel("github-copilot", "claude-opus-4.7"),
@@ -379,8 +379,8 @@ const loaderOpts: AgentLoaderOptions = {
 
 const loadResult = await loadAgents(loaderOpts);
 console.log(`[agents] Loaded ${loadResult.added.length}: ${loadResult.added.join(", ")}`);
-console.log(`[agents] All errors: ${JSON.stringify(loadResult.errors || [])}`);
-if (loadResult.errors?.length) console.log(`[agents] Errors: ${JSON.stringify(loadResult.errors)}`);
+
+
 bus.emit({ type: "info", message: `Loaded ${loadResult.added.length} agent(s): ${loadResult.added.join(", ")}` });
 
 // Auto-generate heartbeat entries for agents with heartbeat workflows (convention-defaults Phase 3)

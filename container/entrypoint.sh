@@ -27,5 +27,5 @@ export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes
 for d in /home/hao/.nvm/versions/node/*/bin; do [ -d "$d" ] && export PATH="$d:$PATH" && break; done
 
 # Ensure .state/ is writable by mayagent (uid 1000)
-chown -R mayagent:mayagent /app/.state 2>/dev/null || true
+chown -R mayagent:mayagent /app/.state /app/agents 2>/dev/null || true
 exec supervisord -c /etc/supervisord.conf

@@ -108,6 +108,17 @@ export {
 
 import { log } from "./log.js";
 
+/** Read GitHub Copilot token dynamically (refreshes every ~30min). */
+function getCopilotToken(): string {
+  try {
+    const tokenPath = process.env.COPILOT_TOKEN_PATH || "/app/.copilot/api-key.json";
+    const data = JSON.parse(readFileSync(tokenPath, "utf-8"));
+    return data.token || "";
+  } catch {
+    return "";
+  }
+}
+
 /**
  * P93 Infrastructure Resilience — Automatic Retry for Transient Errors
  *
@@ -404,7 +415,9 @@ export class SubagentManager {
         ...(opts?.messages ? { messages: opts.messages } : {}),
       },
       transformContext: opts?.compactionTransform ?? this.buildTransformContext(def, undefined, sessionId),
-      getApiKey: def.apiKey ? () => def.apiKey : undefined,
+      getApiKey: def.apiKey === "dynamic"
+        ? () => getCopilotToken()
+        : def.apiKey ? () => def.apiKey : undefined,
     });
   }
 
