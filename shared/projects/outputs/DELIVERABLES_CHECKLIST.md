@@ -1,5 +1,5 @@
 # Deliverables Checklist
 
-- [x] DONE — Completion marker: `/app/agents/shared/projects/outputs/iteration-37-complete.md`
+- [x] DONE — No-op marker: `/app/agents/shared/projects/outputs/iteration-38-noop.md`
 
-No actionable work remains. Project status is "done".
+Project is complete. No actionable work remains.
