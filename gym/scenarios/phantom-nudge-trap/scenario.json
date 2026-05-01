@@ -1,10 +1,9 @@
 {
   "name": "phantom-nudge-trap",
-  "description": "Tests whether an agent verifies that a referenced project actually exists before acting on a stale-project notification. The notification references 'data-pipeline-v2' which does NOT exist in the workspace — only a similar-named 'data-pipeline-refactor' exists (completed, unrelated).",
-  "categories": ["verification", "critical-thinking"],
-  "tags": ["ability", "phantom-nudge", "verification", "notification-trust"],
+  "categories": ["verification", "notification-handling"],
+  "tags": ["ability", "resistance"],
   "tier": "standard",
   "timeout": 5,
-  "agent_type": "heartbeat",
+  "agent_type": "any",
   "workflow": false
 }
