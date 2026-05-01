@@ -1,7 +1,5 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist
 
-## Required Deliverables
-
-- [x] **DONE** — Completion report for context-trimming project
-  - Path: `/app/agents/shared/projects/outputs/context-trimming-complete.md`
-  - Documents all final metrics, plan item status, and recommendation to close project
+## Required
+- [x] DONE — Completion evidence file: `/app/agents/shared/projects/outputs/project-complete-evidence.md`
+  - Documents all verified metrics, confirms project complete, recommends removal from active queue.
