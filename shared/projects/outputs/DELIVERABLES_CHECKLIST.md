@@ -1,10 +1,7 @@
 # Deliverables Checklist
 
-## Task: Project Complete — No Further Work Required
+## Required Deliverables
 
-| Deliverable | Status | Path |
-|---|---|---|
-| Project closure notice | DONE | /app/agents/shared/projects/outputs/project-closed-notice.md |
-
-## Notes
-Project has been CLOSED for 23+ iterations. All metrics at target. No meaningful work remains.
+- [x] **DONE** — Project closure/completion evidence file
+  - Path: `/app/agents/shared/projects/outputs/project-closed-notice.md`
+  - Contains: Final metrics verification, closure notice, recommendation to remove from active queue
