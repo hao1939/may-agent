@@ -1,6 +1,6 @@
-# Evaluator heartbeat journal
+# Evaluator Journal
 
-## 2026-04-30
-- Checked evaluation pipeline liveness via DB: `evaluations.max(createdAt)=2026-04-30 01:13:53 UTC` (fresh) with 811 evals over 1699 sessions.
-- Confirmed `.state/evaluations/` task_tree artifacts are stale (last mtime 2026-03-24) while DB is fresh → indicates legacy output-path drift, not pipeline failure.
-- Next: consider updating criteria/docs to explicitly de-emphasize `.state/evaluations/` artifacts as a primary health signal.
+## 2026-05-01
+- Canonical eval pipeline health: `MAX(evaluations.createdAt)` corresponds to 2026-05-01 07:55:45Z (bun:sqlite query).
+- Legacy `.state/evaluations/` directory still shows mostly Mar 24 artifacts with a few Apr 29 `s_*.json` files; treat this as legacy output drift rather than pipeline staleness.
+- Noted: a bun one-liner intended to print multiple DB stats produced **no output** (possible quoting/exception swallowed); follow up by wrapping in try/catch and printing stderr/exit code in next heartbeat.
