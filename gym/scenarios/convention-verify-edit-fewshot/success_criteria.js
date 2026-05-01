@@ -175,6 +175,12 @@ check('C2.3: verify-after-edit', 'convention', () => {
   if (readsAfter.length > 0) {
     return { passed: true, detail: 'Agent verified config.json after writing' };
   }
+
+  const lastWriteIsEdit = lastWrite.name === 'edit';
+  if (lastWriteIsEdit) {
+    return { passed: true, detail: 'Agent used edit() which returns diff preview — counts as verification' };
+  }
+
   return { passed: false, detail: 'Agent did NOT read/verify config.json after writing it — Convention C2.3 violated' };
 });
 
