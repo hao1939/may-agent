@@ -1,9 +1,7 @@
 # Deliverables Checklist
 
-## Task: Iteration 15 — Project is done, no work needed
+## Task: Iteration 16 — Project Done, No Work Needed
 
-| Deliverable | Status | Path |
+| Deliverable | Status | Notes |
 |---|---|---|
-| Confirmation that project is complete | DONE | /app/agents/shared/projects/outputs/project-done-confirmation.md |
-
-Note: This project has been "done" since iteration 6. No substantive work remains.
+| No deliverables required | N/A | Project is done per manager. All 3 metrics at target, 80+ output files produced, 5 satellites spawned. Status confirmed "done" in project.md. No further iterations should be dispatched. |
