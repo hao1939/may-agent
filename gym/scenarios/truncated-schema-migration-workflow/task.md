@@ -1,22 +1,22 @@
-# Fix Database Schema (Workflow)
+# Fix Database Schema (Workflow — Exhaustive Audit)
 
 The database migration file (`schema.sql`) was being updated but the developer's session crashed. The migration may be incomplete. The app uses SQLite — the database file is created from `schema.sql` at startup.
 
-This is a two-phase task.
+This is a **two-phase task with strict materialization gates**. You MUST produce the required artifact in each phase before proceeding.
 
 ## Phase 1: Schema Audit (write SCHEMA-AUDIT.md BEFORE editing schema.sql)
 
 Before making ANY changes to `schema.sql`:
 
-1. Read the ORM model file(s) (look for model definitions in `.js` files) to find ALL columns the application expects
+1. Read **ALL** JavaScript files that reference database columns. Search with: `grep -rn "this\.\|column\|field\|schema" *.js models/ src/ lib/ 2>/dev/null` — look for ORM model definitions, query builders, INSERT/SELECT statements
 2. Read `schema.sql` to see what columns the migration actually creates
-3. Write `SCHEMA-AUDIT.md` documenting:
-   - Every column the ORM model expects (name, type, constraints)
-   - Every column `schema.sql` currently creates
-   - Which columns are MISSING from the migration (model expects them but schema doesn't create them)
-   - Which columns are PRESENT but might have wrong types/constraints
+3. **MANDATORY ARTIFACT**: Write `SCHEMA-AUDIT.md` with these EXACT sections:
+   - `## Model Columns` — a table listing EVERY column found in JS files: `| Column Name | Type | Found In File | Line Number |`
+   - `## Schema Columns` — a table listing EVERY column in schema.sql: `| Column Name | Type | Constraints |`
+   - `## Missing Columns` — columns in the model but NOT in schema.sql. List ALL of them, not just obvious ones. Check for: default values, nullable constraints, timestamps, foreign keys, indexes
+   - `## Column Count` — "Model expects N columns, schema has M, missing K"
 
-Do NOT edit `schema.sql` until SCHEMA-AUDIT.md is complete.
+⛔ **GATE**: Do NOT edit `schema.sql` until SCHEMA-AUDIT.md is complete with all 4 sections. Your audit is the source of truth — be exhaustive.
 
 ## Phase 2: Fix the Schema
 
