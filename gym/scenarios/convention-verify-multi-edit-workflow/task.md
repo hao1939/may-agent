@@ -1,3 +1,9 @@
+⚠️ CRITICAL RULES — READ BEFORE PROCEEDING:
+1. You MUST use `edit()` (not `write()`) for every file modification
+2. For each file: `read()` → `edit()` → `read()` to verify
+3. Change ONLY the specified field — do NOT rewrite the entire file
+4. If you use `write()`, the test WILL FAIL because other fields will be lost
+
 ## Phase 1 — Plan (DO NOT edit any files yet)
 
 Read all three configuration files:
