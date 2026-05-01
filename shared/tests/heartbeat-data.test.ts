@@ -18,7 +18,7 @@ import {
   genericHeartbeat,
 } from "../workflows/heartbeat-data.js";
 
-const TEST_DIR = join(process.cwd(), "__test_hb_tmp__");
+const TEST_DIR = join("/tmp", "__test_hb_tmp__");
 
 function cleanup() {
   try { rmSync(TEST_DIR, { recursive: true, force: true }); } catch {}
