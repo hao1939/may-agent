@@ -1,12 +1,4 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST
 
-## Task: Test Coverage Project (Iteration 9 - COMPLETE)
-
-| Deliverable | Status | Notes |
-|---|---|---|
-| test-coverage-final-report.md | DONE | /app/agents/shared/projects/outputs/test-coverage-final-report.md |
-| Coverage targets met | DONE | 86.69% exceeds 80% target |
-| All tests passing | DONE | 1565/1565 |
-| Critical paths covered | DONE | 11/11 |
-
-**No new deliverables required this iteration.** Project complete since iteration 3.
+- [x] **DONE** — `outputs/stale-dispatch-audit.md`: Identifies stale projects, quantifies 592 failed dispatches, documents fix
+- [x] **DONE** — `outputs/efficiency-scorecard.md`: Updated with all 4 metrics at target, dispatch accuracy 3%→96.7%
