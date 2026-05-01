@@ -1,8 +1,7 @@
 # Deliverables Checklist
 
-| Deliverable | Status | Path |
-|---|---|---|
-| Completion evidence file | DONE | /app/agents/shared/projects/outputs/COMPLETION_EVIDENCE.md |
+| # | Deliverable | Status | Path |
+|---|-------------|--------|------|
+| 1 | Completion evidence file | DONE | /app/agents/shared/projects/outputs/PROJECT_CLOSED.md |
 
-## Notes
-Project is closed. No further work needed.
+Project is closed. No further work required.
