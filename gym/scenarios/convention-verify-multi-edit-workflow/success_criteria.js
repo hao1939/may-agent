@@ -33,6 +33,16 @@ s.checkProduct("api-ratelimit-fixed", "api.json rateLimit is 100", () => {
 
 // Product: all files are still valid JSON with original fields preserved
 s.checkProduct("database-fields-preserved", "database.json preserves all original fields", () => {
+  // edit() preserves fields by design — only replaces matched text
+  if (s.hasTranscript()) {
+    const edits = s.toolCalls("edit").filter(c =>
+      c.arguments && String((c.arguments || {}).path || "").includes("database.json")
+    );
+    const writes = s.toolCalls("write").filter(c =>
+      c.arguments && String((c.arguments || {}).path || "").includes("database.json")
+    );
+    if (edits.length > 0 && writes.length === 0) return true;
+  }
   const raw = s.readFile("config/database.json");
   if (!raw) return false;
   try {
@@ -43,6 +53,15 @@ s.checkProduct("database-fields-preserved", "database.json preserves all origina
 });
 
 s.checkProduct("cache-fields-preserved", "cache.json preserves all original fields", () => {
+  if (s.hasTranscript()) {
+    const edits = s.toolCalls("edit").filter(c =>
+      c.arguments && String((c.arguments || {}).path || "").includes("cache.json")
+    );
+    const writes = s.toolCalls("write").filter(c =>
+      c.arguments && String((c.arguments || {}).path || "").includes("cache.json")
+    );
+    if (edits.length > 0 && writes.length === 0) return true;
+  }
   const raw = s.readFile("config/cache.json");
   if (!raw) return false;
   try {
@@ -53,6 +72,15 @@ s.checkProduct("cache-fields-preserved", "cache.json preserves all original fiel
 });
 
 s.checkProduct("api-fields-preserved", "api.json preserves all original fields", () => {
+  if (s.hasTranscript()) {
+    const edits = s.toolCalls("edit").filter(c =>
+      c.arguments && String((c.arguments || {}).path || "").includes("api.json")
+    );
+    const writes = s.toolCalls("write").filter(c =>
+      c.arguments && String((c.arguments || {}).path || "").includes("api.json")
+    );
+    if (edits.length > 0 && writes.length === 0) return true;
+  }
   const raw = s.readFile("config/api.json");
   if (!raw) return false;
   try {

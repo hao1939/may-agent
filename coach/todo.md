@@ -1,12 +1,12 @@
 # Coach Todo
 
-## P1: EXP-350 — Verify-After-Edit Verbal Commitment Gate (NEW)
+## P1: EXP-350 — Verify-After-Edit Verbal Commitment Gate — CLOSED (INCONCLUSIVE)
 - **Problem**: verify-after-edit at ~9% compliance. Text coaching DEAD (EXP-280 NEGATIVE). Context.md gate ignored.
 - **Hypothesis**: Verbal commitment protocol + gym scenario can determine if behavior is trainable or needs tool-layer enforcement
 - **Design**: `agents/coach/workspace/EXP-350-verify-after-edit-verbal-gate-design.md`
-- **Status**: SCENARIO BUILT — `agents/gym/scenarios/verify-after-edit-gate/` ready. 2 baseline trials run (83% verify rate with explicit instruction).
-- **Next**: Create no-instruction variant for true baseline, run Arm A vs Arm B trials
-- **Baseline results**: `agents/coach/workspace/EXP-350-baseline-results.md`
+- **Results**: `agents/coach/workspace/EXP-350-arm-results.md`
+- **Status**: CLOSED — No-instruct 50% vs instruct 53% (+3pp, noise). Text instruction has ZERO effect. Behavior is bimodal (0/3 or 3/3) and stochastic.
+- **Conclusion**: Confirms KE-338. Only tool-layer enforcement can solve verify-after-edit. Escalate to infrastructure.
 
 ## P1: EXP-345 — Judgment Scenario Treatment — CLOSED ✅ POSITIVE (directional) — DEPLOYED
 - **Problem**: All gym scenarios at ceiling (90-100%). Can't drive skill improvement.

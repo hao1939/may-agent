@@ -1,3 +1,5 @@
-# Deliverables Checklist — Iteration 44
+# Deliverables Checklist — Iteration 45
 
-- [x] `outputs/iteration-44-report.md` — DONE — 10-line project summary written
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | Final project status summary | DONE | `/app/agents/shared/projects/outputs/iteration-45-status.md` |
