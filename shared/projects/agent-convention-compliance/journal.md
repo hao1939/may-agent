@@ -156,3 +156,8 @@ Let me write the milestone completion evidence:
 
 ### Iteration 19 — 2026-05-01T11:44:39.103Z
 **Worker**: **94%!** That's a massive jump. Let me write the deliverables:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should fix the **C40.1 declare-intent failure** in convention-promise-report (P20.1) — this is the most deterministic of the 3 remaining failures and gets us to 96.1%.
+
+(b) We're at 94.1% with 3 remaining failures. Two are stochastic (intermittent multi-edit issues), one
