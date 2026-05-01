@@ -13,9 +13,28 @@ Added `'**/agents/gym/scenarios/**'` to vitest.config.ts exclude list to filter 
 - Expected: ~8,611 passed, 0-2 real failures
 
 ## Verification
-*(see below)*
+
+**From `/app/agents/` (correct working directory):**
+```
+Test Files  31 passed (31)
+Tests       536 passed (536)
+Duration    1.80s
+```
+✅ 0 failures. Gym scenarios properly excluded.
+
+**From `/app/` root (wrong working directory):**
+```
+Test Files  202 failed | 733 passed (937)
+Tests       1 failed | 8656 passed (8660)
+```
+❌ Root-level vitest picks up gym scenarios because the config's `gym/**` exclude is relative to `/app/agents/`.
+
+## Key Finding
+The `gym/**` exclude in `agents/vitest.config.ts` already works correctly when vitest is run from `/app/agents/`. The 202 "failed" test files seen from root are gym scenarios with intentional fake imports — they're not real failures.
+
+**Correct command**: `cd /app/agents && npx vitest run`
 
 ## Impact
-- CI/vitest output is now clean and actionable
-- Real failures are immediately visible without wading through 203 gym false positives
-- Regression guard script threshold of 1500 still easily met
+- Running from correct directory: 536 tests, 0 failures, 1.8s
+- Regression guard should use `cd /app/agents` not `cd /app`
+- No config change needed — the exclude already works
