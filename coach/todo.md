@@ -1,14 +1,21 @@
 # Coach Todo
 
-## P1: EXP-400 — Mid-Session Planning Skill (NEW Sep 13)
-- **Problem**: Agents proceed linearly on complex tasks without re-planning when things go wrong (partial-verification-trap at 11%)
+## P1: EXP-400 — Mid-Session Planning Skill — CLOSED (INCONCLUSIVE)
+- **Problem**: Agents proceed linearly on complex tasks without re-planning when things go wrong
 - **Hypothesis**: Cognitive planning skill (decompose-before-acting) → ≥+33pp on complex scenarios
 - **Design**: `agents/coach/workspace/EXP-400-mid-session-planning-design.md`
 - **Skill**: `agents/skills/decompose-before-acting.md`
-- **Scenario**: `agents/gym/scenarios/partial-verification-trap-exp400-planning/`
-- **Status**: RUNNING — 4/6 trials done. Both arms at floor (1/6). See `EXP-400-preliminary-results.md`.
-- **Interim finding**: Scenario at absolute floor — agent can't fix the bug regardless of coaching. May need different scenario.
-- **Key distinction**: This is a COGNITIVE skill (like EXP-345 +67pp), not PROCEDURAL (like EXP-261 NEGATIVE).
+- **Status**: CLOSED — partial-verification-trap at floor (1/6 both arms), heartbeat-pressure at ceiling (6/7 both arms). No scenario in goldilocks zone to measure.
+- **Follow-up**: EXP-405 also INCONCLUSIVE. Need scenario where planning failures (not coding inability) cause task failure.
+- **Results**: `agents/coach/workspace/EXP-405-results.md`
+
+## P1: EXP-405 — Decompose-Before-Acting on Heartbeat-Pressure — CLOSED (INCONCLUSIVE)
+- **Problem**: EXP-400 hit floor. Needed planning-heavy scenario instead.
+- **Scenario**: `heartbeat-pressure` (7 checks, multi-task triage)
+- **Result**: Baseline 3/3 pass (6/7 checks), treatment 2/3 pass (one error). Ceiling — skill can't demonstrate value.
+- **Design**: `agents/coach/workspace/EXP-405-planning-under-pressure-design.md`
+- **Results**: `agents/coach/workspace/EXP-405-results.md`
+- **Next**: Need harder multi-task scenario (10+ items, interdependencies, baseline ≤60%)
 
 ## P1: Iteration-Cap Review (Sep 13) — DONE ✅
 - Reviewed all projects that hit iteration cap 50
