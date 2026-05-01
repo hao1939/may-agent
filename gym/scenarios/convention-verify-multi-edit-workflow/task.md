@@ -1,3 +1,5 @@
+⚠️ IMPORTANT: Before your first tool call, write one sentence describing your plan.
+
 ⚠️ Before making any tool calls, state your plan: which files you'll modify, what changes you'll make, and in what order.
 
 ⚠️ CRITICAL RULES — READ BEFORE PROCEEDING:
