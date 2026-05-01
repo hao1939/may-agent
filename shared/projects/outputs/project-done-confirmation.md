@@ -1,5 +1,7 @@
-# Project Complete - No Further Work Needed
+# System Efficiency Project - Complete
 
-This project (system-efficiency) has been **done** since approximately iteration 10. All 3 metrics are at target, all plan items complete, 80+ output files produced, 5 satellites spawned.
+**Status**: DONE (confirmed iteration 46+)
 
-No further iterations should be dispatched.
+This project has been complete since approximately iteration 10. All 3 original metrics are at target. No further work is needed.
+
+The workflow infrastructure has a bug that keeps dispatching iterations to this completed project.
