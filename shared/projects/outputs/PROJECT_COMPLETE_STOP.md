@@ -2,6 +2,6 @@
 
 **Status**: COMPLETE / CLOSED
 **Wasted iterations**: 40+
-**All metrics at target**: SOUL.md <600w ✅, Context.md <450w ✅, 0 bloated files ✅
+**All metrics at target**: SOUL.md <600w ✅, Context.md <450w ✅, Bloated files: 0 ✅
 
 This project has been complete since iteration 1. Remove from active queue.
