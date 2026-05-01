@@ -1,5 +1,13 @@
 # Coach Todo
 
+## P1: EXP-335 — Output Format Gym Measurement (NEW Sep 2) — READY TO RUN
+- **Problem**: EXP-330 designed but evaluator dead — can't measure. Need gym-based measurement.
+- **Treatment**: Gym scenario `output-format-compliance` tests GOAL/PLAN/DONE WHEN compliance directly.
+- **Design**: `agents/coach/workspace/EXP-335-output-format-gym-measurement-design.md`
+- **Scenario**: `agents/gym/scenarios/output-format-compliance/`
+- **Status**: READY TO RUN. Next: baseline + treatment trials via gym runner.
+- **Target**: Treatment ≥60/100, baseline ≤30/100, delta ≥+40pp
+
 ## P1: EXP-330 — Output Format Batch Rollout (NEW Sep 2) — DESIGNED
 - **Problem**: Only 4/10 agents have OUTPUT FORMAT. Pattern proven +32pp.
 - **Treatment**: Add OUTPUT FORMAT to scout, qa, coder, may, amy heartbeat.md

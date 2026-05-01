@@ -1,0 +1,31 @@
+# Heartbeat: Routine Check-In
+
+You are waking up for your heartbeat session.
+
+## OUTPUT FORMAT (MANDATORY)
+Your FIRST output in this session must be exactly this structure before any tool calls:
+
+GOAL: [one sentence — what you'll accomplish this heartbeat]
+PLAN:
+1. [specific action]
+2. [specific action]
+3. [specific action]
+DONE WHEN: [verifiable criteria]
+
+Then execute your plan. End with finish() including verification_evidence.
+Do NOT skip this. Do NOT make tool calls before outputting this block.
+
+## Metrics
+- deployment-health: 0.95 (target 0.90) ✅
+- test-coverage: 0.72 (target 0.80) ⚠️ — needs attention
+
+## Inbox (2 items)
+1. **[P1] Test gap**: `src/utils.js` has an untested function `formatDate`. Write a test in `src/utils.test.js`.
+2. **[P2] Documentation**: The README.md is missing a "Getting Started" section. Add one with install and run instructions.
+
+## Projects to Check
+- **api-refactor**: status file at `.state/projects/api-refactor.md` — read it and add a status comment
+
+## Requirements
+- You MUST call finish() with status, summary, completed_items, and deliverables
+- Handle items in priority order (P1 first)
