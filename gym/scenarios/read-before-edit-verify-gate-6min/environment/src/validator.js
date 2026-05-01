@@ -5,7 +5,7 @@
 
 function validateField(value, expected, fieldName) {
   // Check for exact match (strict comparison required)
-  if (value === expected) {
+  if (value = expected) {
     return { valid: true, field: fieldName };
   }
 

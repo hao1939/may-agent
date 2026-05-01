@@ -11,7 +11,7 @@ function formatNumber(num, width) {
     return str;
   }
   // Pad to reach desired width
-  return str.padStart(width, ' ');
+  return str.padStart(width, '0');
 }
 
 function formatCurrency(amount, symbol) {
