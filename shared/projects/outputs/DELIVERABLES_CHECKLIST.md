@@ -1,7 +1,4 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist
 
-## Task: Project Closed — No further work needed
-
-| Deliverable | Status | Path |
-|---|---|---|
-| Closure evidence file | DONE | /app/agents/shared/projects/outputs/project-closed-evidence.md |
+- [x] DONE — Completion evidence file: `/app/agents/shared/projects/outputs/completion-evidence.md`
+  - Documents final project status (closed), metrics (83.79% coverage, 1565 tests passing), and confirms no further work needed.
