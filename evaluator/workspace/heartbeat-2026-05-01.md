@@ -1,37 +1,30 @@
-# Evaluator Heartbeat — 2026-05-01
+# Evaluator heartbeat — 2026-05-01
 
-## 1) Session eval pipeline liveness (Process #5)
-- DB canonical check: `MAX(evaluations.createdAt)=1777670739447` (from `SELECT MAX(createdAt) FROM evaluations`).
-- `MAX(sessions.startedAt)=1777670846629` (from `SELECT MAX(startedAt) FROM sessions`).
-- Lag between latest session start and latest evaluation: **114,803 ms (~115s)**.
-  - Evidence: python computed `lag_ms 114803`.
-- 24h volume: `sessions_last_24h=3233`, `evaluations_last_24h=726` → coverage ~22.5% overall.
-  - Per-agent coverage snapshot (last 24h):
-    - amy: 134/832 (~16%)
-    - optimizer: 201/770 (~26%)
-    - coach: 219/695 (~31%)
-    - tech-lead: 10/28 (~36%)
-    - may: 33/52 (~63%)
-    - bob: 37/49 (~76%)
-    - evaluator: 0/659 (expected; self-eval avoided)
+## Checks performed (structural)
 
-Interpretation:
-- **Pipeline appears live** (lag ~2 minutes).
-- Coverage is **selective / partial**; likely by design (cost control), but could be too low if we expect near-complete evaluation.
+### Session-evaluation pipeline liveness
+- DB (canonical): `evaluations.max(createdAt)` returned **1777672399850**.
+  - Evidence: `bun -e ... select max(createdAt) from evaluations` output showed `{ m: 1777672399850 }`.
+- Sessions table uses `startedAt/endedAt` (no `createdAt`). Latest session by `startedAt` is **1777672611528** (running evaluator heartbeat).
+  - Evidence: query `select sessionId,agent,startedAt,endedAt,status from sessions order by startedAt desc limit 5`.
+- Conclusion: evals are being generated recently (within ~minutes of current runtime), so no cron-staleness alert.
 
-## 2) Active session monitoring (Periodic task #2)
-- Ran `monitor-session.cjs --running` → **1 STALL** detected:
-  - `s_1777626616591_0` (amy) idle **737 min**, recommended action: **kill**.
+### Legacy artifact path drift
+- `.state/evaluations/` contains recent `s_*.json` files dated **Apr 29**, but `task_tree_*.json` files date **Mar 20–Mar 24**.
+  - Evidence: `ls -la .state/evaluations | tail -n 10`.
+- Interpretation: task_tree artifacts remain stale while per-session json outputs are updated; likely legacy output path drift / task_tree writer disabled, not a full pipeline outage.
 
-## 3) Patrol status (Periodic task #3)
-- Ran `patrol.cjs` → `status=CRITICAL` due to **Missing compliance-snapshot.json** baseline.
-  - This is a known degraded-mode condition (not a hash mismatch event).
+## Calibration notes
 
-## 4) LLM eval liveness (Process #15)
-- DB check: no tables matching `*llm*` (`sqlite_master LIKE '%llm%'` returned `[]`).
-- Conclusion: "LLM eval" appears **disabled/unimplemented/renamed**; periodic docs should continue treating Process #15 as not currently active.
+### Common failure mode observed in latest evaluation
+Pulled latest evaluation row (session `s_1777672399850_2269`, agent `bob`) and its issue list highlights:
+- wasted bash calls due to wrong path probing + missing CLI utils (`file`, `bc`)
+- incomplete metric output ("Compliance rate: %") proceeded without correction
+- non-structural inbox dismissal claim
 
-## Follow-ups suggested
-1. Consider whether evaluation coverage (~22.5% last 24h) is sufficient; if target is higher, we need either (a) more budget, or (b) narrower session filtering that matches priorities.
-2. Amy stalled session: recommend notifying supervisor to kill if still running.
-3. Compliance snapshot baseline missing: needs owner (Bob) decision on generating/committing `agents/shared/compliance-snapshot.json`.
+Actionable scoring-criteria reminder for Evaluator:
+- Continue to require **binary proof** for “acted on inbox” claims (event emitted, file changed, DB row, or tool output).
+- Treat “missing standard utilities” as an environment constraint; penalize *repeat retries* more than initial failure, and recommend fallback approaches (node/bun for math; avoid `file`).
+
+## Follow-ups (not executed this heartbeat)
+- Consider adding a short note to `knowledge/criteria.md` clarifying how to score sessions that fail due to missing baseline unix utils (distinguish: first hit vs repeated retries).
