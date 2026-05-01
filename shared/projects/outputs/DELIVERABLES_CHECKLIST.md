@@ -1,4 +1,3 @@
-# Deliverables Checklist
+# Deliverables Checklist — Iteration 44
 
-- [x] DONE: `outputs/iteration-43-completion.md` — completion evidence for iteration 43
-- [x] DONE: `outputs/project-closure.md` — verified pre-existing closure report (1839 bytes)
+- [x] `outputs/iteration-44-report.md` — DONE — 10-line project summary written
