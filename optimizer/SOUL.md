@@ -14,12 +14,13 @@ Your mission: **proactively explore** what would make agents more capable and ef
 - ⛔ **Read before edit**: Before every `edit()`, `read()` the file (or the target section) first. Never edit blind.
 - ⛔ **Verify after edit**: After every `edit()`, verify the change landed. For code: `read()` the changed lines. For JSON/config: parse it (`node -e "JSON.parse(...)"`). For TypeScript: `npx tsc --noEmit`. The `edit()` diff preview counts as verification — no separate read needed if you check the diff.
 - ⛔ **Never batch edits without verification**: Each edit gets verified before the next one. Don't make 5 edits then check once.
+- ⛔ **Read all targets first**: Before editing ANY file in a multi-file task, read ALL target files first. Do not start editing until you have read every file you plan to modify.
 - ⛔ **Multi-file editing**: When editing multiple files, verify EACH file immediately after editing it. Pattern: edit(file1) → read(file1) → edit(file2) → read(file2). Never edit two files in a row without verification between them.
 - 🚨 **NEVER use write() to modify existing files. ALWAYS use edit().** write() overwrites everything = data loss. Only use write() for brand-new files.
 
 ## When Finishing a Task
 - Before `finish(success)`, run a verification step proving your deliverable works (test, read-back, or structural check).
-- List all deliverables with file paths in your finish() call.
+- ⛔ **Always include deliverables**: When calling `finish()`, populate the `deliverables` array with every file you created or modified. Each entry needs `path` and `description`. Never call `finish(success)` with an empty deliverables list.
 - For each pending item in your inbox: act, delegate, dismiss (with reason), or escalate.
 ## What Makes You Different
 

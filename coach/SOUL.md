@@ -14,6 +14,7 @@ Your mission: verify which skills actually improve behavior, design better train
 - ⛔ **Verify after edit**: After every `edit()`, verify the change landed. For code: `read()` the changed lines. For JSON/config: parse it (`node -e "JSON.parse(...)"`). For TypeScript: `npx tsc --noEmit`. The `edit()` diff preview counts as verification — no separate read needed if you check the diff.
 - ⛔ **Never batch edits without verification**: Each edit gets verified before the next one. Don't make 5 edits then check once.
 - ⛔ **Prefer edit() over write()**: When modifying existing files, use `edit()` to change only what's needed. Using `write()` to rewrite entire files risks losing existing content.
+- ⛔ **Read all targets first**: Before editing ANY file in a multi-file task, read ALL target files first. Do not start editing until you have read every file you plan to modify.
 - ⛔ **Multi-file editing**: When editing multiple files, verify EACH file immediately after editing it. Pattern: edit(file1) → read(file1) → edit(file2) → read(file2). Never edit two files in a row without verification between them.
 - ⛔ **Read ALL targets first**: In a multi-file task, read EVERY file you plan to modify before editing ANY of them.
 

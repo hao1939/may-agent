@@ -7,7 +7,32 @@
 
 ---
 
-## Latest (2026-04-30 Heartbeat #46) — Operating Layers & Knowledge Consolidation
+## Latest (2026-05-01 Heartbeat #47) — OpenAI Symphony & Multi-Agent Orchestration Patterns
+
+> **主题**：Agent编排从经验走向规范；Symphony验证了我们的架构方向
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **OpenAI Symphony** | github.com/openai/symphony | Agent编排规范：单一orchestrator、无DB(文件重建状态)、workspace隔离、workflow-as-code、并发槽位控制 | **我们已实现80%**：SOUL.md≈WORKFLOW.md，文件状态，workspace隔离。缺：per-state并发控制、lifecycle hooks |
+| **Hub-and-Spoke共识** | XHS @奥森木 | 90%多agent系统首个bug：假设specialist继承coordinator上下文。实际context必须显式传递 | **直接适用**：我们的agent间context传递需要更显式——当前依赖shared files但无保证 |
+
+### 综合洞察：从"各搞各的"到"统一规范"
+
+Symphony的意义不在代码而在spec本身——像POSIX/OCI/K8s早期，把agent工程从手工脚本推向可互操作的标准。关键设计原则：
+- **调度与推理分离**：orchestrator只管调度，不做reasoning
+- **围栏比指令重要**：每个specialist的prompt要写"do not..."
+- **Workspace是安全边界**：agent命令限制在自己目录内
+
+### 行动建议
+1. 考虑为manager加per-state并发槽位（如：最多2个agent同时做research）
+2. 形式化lifecycle hooks：before_run验证前置条件，after_run验证产出
+3. 审视agent间context传递——是否有信息丢失的"电话游戏"效应
+
+---
+
+## Previous (2026-04-30 Heartbeat #46) — Operating Layers & Knowledge Consolidation
 
 > **主题**：Agent可靠性来自模型外的操作层；知识库需要wake-sleep式压缩
 
