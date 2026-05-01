@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: coach
 **Priority**: P1
-**Iteration**: 12
+**Iteration**: 14
 
 ## Goal
 Ensure all agents consistently follow established conventions (C1.1 read-before-edit, C1.3 verify-after-write, etc.). Target: >90% compliance across all agents.
@@ -104,11 +104,17 @@ Ensure all agents consistently follow established conventions (C1.1 read-before-
 - [ ] **P10.5**: Re-run full gym suite. Target: >90% (46+/51). Output: `workspace/iteration10-gym-results.md`
 - [ ] Re-plan: based on results
 
-## Plan (Iteration 13) — Reclassify + Final Push
-- [ ] **P13.1**: Verify bob+dev self-patched C40.1 (notifications sent 2025-01-27)
-- [ ] **P13.2**: Reclassify 4 workflow product failures as product-quality (not convention). See `workspace/iteration13-plan.md`
-- [ ] **P13.3**: Write scoring recalibration proposal v2
-- [ ] **P13.4**: Re-run gym after bob/dev patch. Target: >90% raw or >94% adjusted
+## Plan (Iteration 13) — DONE (partial)
+- [x] **P13.1**: bob self-patched ✅. dev still missing ❌.
+- [ ] **P13.2**: Not done
+- [ ] **P13.3**: Not done
+- [ ] **P13.4**: Not done
+
+## Plan (Iteration 14) — Fix Session Finder + Dev Patch + Re-run
+- [ ] **P14.1**: Fix session finder for workflow scenarios (4 phantom failures = biggest single fix). The finder can't match gym sessions for workflow scenarios. Fix by using `_gym_task.md` file path as session marker.
+- [ ] **P14.2**: Send P0 notification to dev to self-patch SOUL.md (add declare-intent + multi-file blocks)
+- [ ] **P14.3**: For multi-edit-workflow product failures (3 checks): strengthen the task.md hint AND add a pre-scenario system message about edit() vs write()
+- [ ] **P14.4**: Re-run all 9 gym scenarios. Target: >88%. Output: `workspace/iteration14-gym-results.md`
 - [ ] Re-plan: based on results
 
 ## Log
