@@ -1,5 +1,9 @@
 # Deliverables Checklist
 
-- [x] DONE - Project completion marker: `/app/agents/shared/projects/outputs/PROJECT_COMPLETE.md`
+## Task: Confirm project completion (Iteration 6)
 
-No further work needed. Project complete for 57+ iterations.
+| Deliverable | Status | Path |
+|---|---|---|
+| Completion evidence file | DONE | /app/agents/shared/projects/outputs/completion-evidence.md |
+
+All metrics exceeded targets. No further work needed.
