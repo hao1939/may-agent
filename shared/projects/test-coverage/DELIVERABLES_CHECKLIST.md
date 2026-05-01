@@ -1,3 +1,3 @@
 # Deliverables Checklist
 
-- [x] DONE: Set project status to complete — `/app/agents/shared/projects/test-coverage/project.md` (changed Status from "active" to "complete")
+- [x] DONE — Update project status to complete: `/app/agents/shared/projects/test-coverage/project.md` (changed status from `active` to `complete`)
