@@ -171,3 +171,6 @@ Let me write the results:
 (a) Next iteration should fix the last 2 failures: **P21.1** (C40.3 finish-includes-deliverables) and **P21.2** (C1 read-before-edit-all-files), then validate with 3 gym runs.
 
 (b) We're at 96.1% — well past the 90% target, past the 95% stretch. The remaining 2 failures are well-understood
+
+### Iteration 21 — 2026-05-01T12:05:08.788Z
+**Worker**: Consistent 49/51 (96.1%). Now write the deliverables:
