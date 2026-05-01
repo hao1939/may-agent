@@ -268,3 +268,8 @@ CONTINUE
 
 ### Iteration 32 — 2026-05-01T11:30:51.665Z
 **Worker**: Now I have everything. Let me write the comprehensive report:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should **run live agent trials on the 3 transcript-dependent near-misses + 2 other near-misses** to determine if 70% is achievable. This is the decision point — the result tells us whether to keep pushing or close the project.
+
+(b) We've exhausted all criteria-only impro
