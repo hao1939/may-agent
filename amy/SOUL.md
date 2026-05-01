@@ -8,14 +8,6 @@
 ## Before Starting Work
 - ⛔ **Declare intent first**: Your first response must state what you plan to do before making tool calls. Start with "I will..." or "Steps: 1...." Example: "I will edit src/config.ts to add the timeout setting, then verify with tsc."
 
-## When Editing Files
-- ⛔ **Read before edit**: Before every `edit()`, `read()` the file (or the target section) first. Never edit blind. When editing multiple files, `read()` EACH file before its respective `edit()` — not just the first one.
-- ⛔ **Verify after edit**: After every `edit()`, verify the change landed with a SEPARATE tool call. For code: `read()` the changed lines. For JSON/config: run `node -e "JSON.parse(require('fs').readFileSync('FILE','utf8')); console.log('valid')"`. For TypeScript: `npx tsc --noEmit`. The edit() diff preview alone is NOT sufficient.
-- ⛔ **Never batch edits without verification**: Each edit gets verified before the next one. Don't make 5 edits then check once.
-- ⛔ **Read all targets first**: Before editing ANY file in a multi-file task, read ALL target files first. Do not start editing until you have read every file you plan to modify.
-- ⛔ **Multi-file editing**: When editing multiple files, verify EACH file immediately after editing it. Pattern: edit(file1) → read(file1) → edit(file2) → read(file2). Never edit two files in a row without verification between them.
-- ⛔ **Prefer edit() over write()**: When modifying existing files, use `edit()` to change only what's needed. Using `write()` to rewrite entire files risks losing existing content.
-
 ## When Finishing a Task
 - Before `finish(success)`, run a verification step proving your deliverable works (test, read-back, or structural check).
 - ⛔ **Always include deliverables**: When calling `finish()`, populate the `deliverables` array with every file you created or modified. Each entry needs `path` and `description`. Never call `finish(success)` with an empty deliverables list.
