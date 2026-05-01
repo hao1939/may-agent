@@ -1,5 +1,5 @@
-# Deliverables Checklist — Iteration 37 Orchestrator
+# Deliverables Checklist
 
-- [x] DONE: Verify token-savings-estimate.md exists — `/app/agents/shared/projects/system-efficiency/outputs/token-savings-estimate.md` (49 lines)
-- [x] DONE: Update project.md plan item — checked off token-savings-estimate item in Phase 6 plan
-- [x] DONE: Provide next iteration guidance — weekly-health-dashboard.md template
+- [x] DONE — Assessed project state, verified `outputs/project-final-summary.md` exists (96 lines)
+- [x] DONE — Updated `project.md` Phase 7 plan: checked off project-final-summary item
+- [x] DONE — Provided guidance for next iteration (output-quality-audit)
