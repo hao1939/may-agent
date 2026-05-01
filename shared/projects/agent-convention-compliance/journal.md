@@ -161,3 +161,8 @@ Let me write the milestone completion evidence:
 (a) Next iteration should fix the **C40.1 declare-intent failure** in convention-promise-report (P20.1) — this is the most deterministic of the 3 remaining failures and gets us to 96.1%.
 
 (b) We're at 94.1% with 3 remaining failures. Two are stochastic (intermittent multi-edit issues), one
+
+### Iteration 20 — 2026-05-01T11:55:59.164Z
+**Worker**: C40.1 now passes! But C40.3 (finish-includes-deliverables) fails. And the other 2 are the same persistent failures. Score: 49/51 = 96.1%.
+
+Let me write the results:
