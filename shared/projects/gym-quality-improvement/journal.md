@@ -296,3 +296,6 @@ This project has reached a natural completion point. All deliverables verified:
 - **M6 (broken rate): 20% → 0%** ✅ — 14+ scenarios repaired
 - **M7 (pre-solved rate): 9% → 0%** ✅ — 7 pre-baked solutions removed
 - **Evaluable scenarios: ~200 → 444*
+
+### Iteration 36 — 2026-05-01T11:47:51.376Z
+**Worker**: 
