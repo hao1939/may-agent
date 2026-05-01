@@ -1,10 +1,7 @@
-# Deliverables Checklist — Iteration 38
+# Deliverables Checklist
 
-## Task: CONTINUE (Project Closed)
-
-| Deliverable | Status | Notes |
+| Deliverable | Status | Path |
 |---|---|---|
-| No work required | DONE | Project is closed, all targets met (83.79% coverage, 191/191 tests, 11/11 critical paths) |
+| Acknowledge closed project | DONE | /app/agents/shared/projects/outputs/CLOSED-NO-OP.md |
 
-## Context
-This is iteration 38 of a known dispatch loop (KE-437). The project has been closed since iteration 4. No further work is needed.
+No work required — project is closed (iteration 39 of KE-437 loop).
