@@ -399,9 +399,8 @@ function runAgent(adapter , taskContent , workDir , agent , timeoutMs ) {
           try {
             if (fs.existsSync(metaPath)) {
               const meta2 = JSON.parse(fs.readFileSync(metaPath, "utf-8"));
-              // Match agent name from effectiveAgent variable (passed via env)
-              const gymAgent = process.env["GYM_EFFECTIVE_AGENT"] || "";
-              if (gymAgent && meta2.agent && meta2.agent !== gymAgent) continue;
+              // Match agent name — use the agent parameter from runAgent scope
+              if (agent && meta2.agent && meta2.agent !== agent) continue;
             }
           } catch { /* skip */ }
           // Check if session.jsonl exists and has tool calls
