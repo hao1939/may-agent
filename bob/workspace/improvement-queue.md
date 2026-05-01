@@ -13,7 +13,7 @@
 
 - [ ] **Bayesian scorecard for H-101 through H-104**: The April 11 scorecard was done before H-101/H-102/H-103/H-104 were authored. Run explicit prior/likelihood/posterior calculations for these four new hypotheses. Output: append to or create new scorecard section.
 
-- [ ] **Meta-harness feasibility analysis**: KE-081 suggests closed-loop self-improvement. Analyze whether our system's current architecture (heartbeat dispatch, gym, guard infrastructure) could support a meta-harness — an outer loop that proposes hypotheses, designs experiments, runs them, and updates the KB without human intervention. What's the minimum viable design? Output: `workspace/DESIGN-meta-harness-feasibility.md`
+- [x] **Meta-harness feasibility analysis** → `workspace/DESIGN-meta-harness-feasibility.md` (5KB) — Phase 1 MVP identified: polling loop for experiment-completion detection. Full autonomy feasible but needs event-driven triggers. (2026-05-01): KE-081 suggests closed-loop self-improvement. Analyze whether our system's current architecture (heartbeat dispatch, gym, guard infrastructure) could support a meta-harness — an outer loop that proposes hypotheses, designs experiments, runs them, and updates the KB without human intervention. What's the minimum viable design? Output: `workspace/DESIGN-meta-harness-feasibility.md`
 
 - [ ] **Write skill: bayesian-update**: Extract the Bayesian scorecard process into a reusable skill doc that any agent could use. Output: `agents/shared/skills/bayesian-update.md` or similar path.
 
