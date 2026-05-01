@@ -1,7 +1,4 @@
 # Deliverables Checklist
 
-| Deliverable | Status | Path |
-|---|---|---|
-| Completion evidence report | DONE | /app/agents/shared/projects/outputs/completion-evidence.md |
-
-Project is complete and closed. No further work needed.
+- [x] DONE — Completion evidence file: `/app/agents/shared/projects/outputs/project-completion-evidence.md`
+  - Documents closed status, final metrics (83.79% coverage, 191/191 tests passing)
