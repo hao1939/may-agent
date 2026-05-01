@@ -1,5 +1,12 @@
 # Coach Todo
 
+## P1: EXP-355 — Convention Compliance Stability Measurement (NEW Sep 2026)
+- **Problem**: Convention compliance reported as peak (88.2%) but live runs show 75-92% variance. Single-run measurements are unreliable.
+- **Design**: `agents/coach/workspace/EXP-355-convention-stability-design.md`
+- **Protocol**: Run 9 convention scenarios × 3 trials = 27 runs. Report median + range.
+- **Status**: DESIGNED — ready for execution next session
+- **Preliminary data (this session)**: Batch run 38/51 (74.5%), individual reruns 5/5. Confirms high variance.
+
 ## P1: EXP-350 — Verify-After-Edit Verbal Commitment Gate — CLOSED (INCONCLUSIVE)
 - **Problem**: verify-after-edit at ~9% compliance. Text coaching DEAD (EXP-280 NEGATIVE). Context.md gate ignored.
 - **Hypothesis**: Verbal commitment protocol + gym scenario can determine if behavior is trainable or needs tool-layer enforcement
