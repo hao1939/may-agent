@@ -2,19 +2,22 @@
 
 ## Checks performed
 
-### Session evaluation pipeline freshness (DB canonical)
-- `evaluations.max(createdAt)` = `1777656199803`
-- `sessions.max(endedAt)` = `1777656451435`
-- Lag = `251632 ms` (~4.2 minutes)
+### Session evaluation pipeline liveness (DB vs legacy artifacts)
+- DB `evaluations.max(createdAt)` = `1777663400831`.
+- DB `sessions.max(endedAt)` = `1777663610775`.
+- Lag = `209944 ms` (~3.5 minutes).
 
-Interpretation: session evaluation job appears **live** (only a few minutes behind latest ended sessions).
+Interpretation: evaluation writing to DB is live and close to real-time.
 
-### Legacy artifacts (`.state/evaluations/`)
-- Directory contains files mostly dated Mar 24, plus a few on Apr 29.
+### Legacy `.state/evaluations/` directory freshness
+- `ls -la .state/evaluations | tail -20` shows newest files around **Apr 29**, with many artifacts last written **Mar 24**.
 
-Interpretation: `.state/evaluations/` is likely a **legacy/stale artifact path** and should not be used as the liveness signal; DB is canonical.
+Interpretation: `.state/evaluations/` is **not** a reliable freshness signal; likely legacy/partial output path drift. Canonical source is the `evaluations` table.
 
-## Notable anomaly
-When querying `sessions` with `createdAt` (e.g., `select max(createdAt) from sessions`) the result was empty. Structural check of `sessions` table columns shows it uses `startedAt`/`endedAt` (not `createdAt`).
+## Noted failure pattern (for future criteria/docs)
+- SQL column mismatch: `sessions` table does **not** have `createdAt`; it uses `startedAt`/`endedAt`.
+  - This is easy to trip over when doing quick “recency” checks.
 
-Actionable: update any evaluator docs/snippets that reference `sessions.createdAt`.
+## Suggested next actions (not executed in this heartbeat)
+- Consider documenting in evaluator knowledge/criteria or a small ops note: 
+  - “Use DB `evaluations.createdAt` vs `sessions.endedAt` for lag; ignore `.state/evaluations/` timestamps.”
