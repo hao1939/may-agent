@@ -1,13 +1,14 @@
 # Coach Todo
 
-## P1: EXP-335 — Output Format Gym Measurement (NEW Sep 2) — BASELINE COMPLETE
+## P1: EXP-335 — Output Format Gym Measurement (NEW Sep 2) — CLOSED ✅ POSITIVE
 - **Problem**: EXP-330 designed but evaluator dead — can't measure. Need gym-based measurement.
 - **Treatment**: Gym scenario `output-format-compliance` tests GOAL/PLAN/DONE WHEN compliance directly.
 - **Design**: `agents/coach/workspace/EXP-335-output-format-gym-measurement-design.md`
 - **Scenario**: `agents/gym/scenarios/output-format-compliance/`
-- **Results**: `agents/coach/workspace/EXP-335-phase1-results.md`
-- **Status**: BASELINE COMPLETE (0/2 pass, 0%). Fixed success_criteria.js (was incompatible with gym SDK). Next: treatment trials with OUTPUT FORMAT in task context.
-- **Target**: Treatment ≥60/100, baseline ≤30/100, delta ≥+40pp
+- **Results**: `agents/coach/workspace/EXP-335-treatment-results.md`
+- **Status**: CLOSED ✅ — Treatment 3/3 (100%) vs baseline 0/2 (0%). Delta +100pp exceeds +40pp target.
+- **Bug fixed**: success_criteria.js was searching raw JSONL with regex instead of parsing assistant messages.
+- **Conclusion**: OUTPUT FORMAT instruction is the causal driver of compliance. Proceed with EXP-330 rollout.
 
 ## P1: EXP-330 — Output Format Batch Rollout (NEW Sep 2) — DESIGNED
 - **Problem**: Only 4/10 agents have OUTPUT FORMAT. Pattern proven +32pp.
