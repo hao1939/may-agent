@@ -1,5 +1,12 @@
 # Coach Todo
 
+## P1: EXP-370 — Cumulative Intervention Regression Check — IN PROGRESS
+- **Problem**: All interventions last measured Jul 2026. Evaluator dead 105+ days. Need gym-based regression check.
+- **Trial 1 (Sep 3)**: 19/20 checks pass. No regression detected. OUTPUT FORMAT ✅, verify-before-finish ✅, verify-after-edit ✅.
+- **Next**: Run 2 more trials to confirm stability (n=3). Close if ≥80% overall.
+- **Design**: `agents/coach/workspace/EXP-370-regression-check-design.md`
+- **Results**: `agents/coach/workspace/EXP-370-results-trial1.md`
+
 ## P1: EXP-360 — Workflow-Level Forced Verification Step — CLOSED (INCONCLUSIVE)
 - **Problem**: verify-after-edit fails as text instruction (KE-338) but succeeds as separate workflow phase (verify-wrap 100% vs plain 60%)
 - **Hypothesis**: Adding a mandatory Phase 3 VERIFY step to multi-edit-workflow will raise median from 5/9 to ≥8/9
