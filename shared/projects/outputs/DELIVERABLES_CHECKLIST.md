@@ -1,7 +1,9 @@
-# Deliverables Checklist
+# Deliverables Checklist — Iteration 17
 
-| Deliverable | Status | Path |
-|---|---|---|
-| Stop-dispatching notice | DONE | /app/agents/shared/projects/outputs/STOP_DISPATCHING.md |
+## Task
+No work required. Project is **closed**. All targets met. This is a no-op dispatch due to KE-437 loop.
 
-Project is CLOSED. No work remains. This is iteration 16 of KE-437 loop.
+## Deliverables
+| Item | Status | Notes |
+|------|--------|-------|
+| No deliverables required | N/A | Project closed, all metrics met |
