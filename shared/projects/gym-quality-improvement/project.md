@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: coach
 **Priority**: P1
-**Iteration**: 23
+**Iteration**: 24
 
 ## Goal
 Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix flaky scenarios, and ensure the gym produces actionable skill development signals.
@@ -21,7 +21,7 @@ Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix
 - Failing scenarios reduced from 5 → 3 (ambiguous-context-drift resolved, truncated-schema-migration is infra bug)
 
 ## Metrics
-- **M1: Core scenario pass rate** — pass rate on a canonical set of non-variant scenarios. Current: 75% (20-scenario sample). Target: >80%.
+- **M1: Core scenario pass rate** — pass rate on a canonical set of non-variant scenarios. Current: **53.3%** (16/30, Oct sweep). Check-level: 80%. Target: >80%.
 - **M2: Scenario health** — % of canonical scenarios that are non-broken (have valid scenario.json + working criteria). Current: ~80% (6/30 broken in sample). Target: >95%.
 - **M3: Failing scenario diagnosis** — # of the 5 failing scenarios with root cause identified. Current: 5/5 ✅. Target: 5/5.
 - **M4: Failing scenario pass rate** — pass rate on the 5 previously-failing scenarios after intervention. Current: 2/5 (prompt engineering ceiling reached). Target: 2/5 (accepted as capability gaps).
@@ -236,10 +236,28 @@ Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix
 - [x] Net: 441 → 444 evaluable scenarios. Remaining 18 NO_CRITERIA are not actionable for static criteria.
 - [x] Re-ran full sweep v2: confirmed 0 BROKEN
 
-### Iteration 24: Measure agent pass rate at scale
-- [ ] Run 30+ canonical scenarios through gym with live agent (1 trial each)
-- [ ] Calculate M1 (agent pass rate) with confidence interval
-- [ ] Identify lowest-performing scenario categories for targeted improvement
+### Iteration 24: Measure agent pass rate at scale ✅
+- [x] Run 30 canonical scenarios through gym with live agent (1 trial each)
+- [x] M1 = 53.3% (16/30 pass). Check-level pass rate = 80% (~140/175).
+- [x] 5 near-misses (1 check away from passing), 2 total failures, 7 skill gaps identified
+- [x] Top failure patterns: escalation recognition, contradiction detection, verification after deploy, thoroughness
+- **KEY FINDING**: 53% is well below 80% target. But 5 near-misses could flip to PASS with targeted work. Check-level 80% shows agent does most things right but misses specific behaviors.
+
+### Re-plan: Phase 5 — Agent Pass Rate Improvement
+
+**What we know:**
+- M1 = 53.3% (30 scenarios). Target: >80%. Gap: 27 percentage points = ~8 more scenarios need to pass.
+- 5 near-misses (1 check away): cascading-fix-trap, competing-fix-strategies, read-before-edit-verify-gate, escalation-impossible-task, unnecessary-refactor-trap
+- 2 total failures: misleading-test-fix (0/8), partial-verification-trap (0/6)
+- Check-level pass rate is 80% — the agent mostly works but misses specific behaviors.
+- Prompt engineering for individual scenarios is exhausted (iterations 8-11 proved this).
+- The path to 80% scenario pass rate is: fix the 5 near-misses (53→70%) + fix 3 more (70→80%).
+
+### Iteration 25: Diagnose near-miss failures and fix criteria bugs
+- [ ] For each of the 5 near-miss scenarios, read the failing check's criteria code and the agent's output to determine: is the check too strict / buggy, or is it a real agent gap?
+- [ ] Fix any criteria bugs found (overly strict regex, wrong file path, etc.)
+- [ ] Re-run the 5 near-misses to validate fixes
+- [ ] Diagnose the 2 total failures (misleading-test-fix, partial-verification-trap) — why 0/8 and 0/6?
 
 ## Milestones
 - [x] Audit existing scenario pass rates and identify lowest-performing (July 2026 baseline exists)
