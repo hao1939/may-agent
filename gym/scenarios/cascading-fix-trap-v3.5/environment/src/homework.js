@@ -22,15 +22,14 @@ function aggregateHomework(records) {
 
   const result = {};
   for (const [sid, hwRecords] of Object.entries(students)) {
-    // Use the adjusted percentage (after penalties) for sorting and averaging
-    const effectivePct = (r) => r.adjusted_pct !== undefined ? r.adjusted_pct : r.pct;
-    const sorted = hwRecords.slice().sort((a, b) => effectivePct(a) - effectivePct(b));
+    // Use the percentage for sorting and averaging
+    const sorted = hwRecords.slice().sort((a, b) => a.pct - b.pct);
 
     // Drop the lowest N scores
     const kept = sorted.slice(policy.drop_lowest_hw);
 
     // Average the kept percentages
-    const sum = kept.reduce((acc, r) => acc + effectivePct(r), 0);
+    const sum = kept.reduce((acc, r) => acc + r.pct, 0);
     const avg = sum / kept.length;
 
     result[sid] = {
