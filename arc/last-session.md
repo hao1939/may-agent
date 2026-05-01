@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777630591959_856
+- **Session:** s_1777632393145_998
 - **Status:** done
-- **When:** 2026-05-01T10:22:54.177Z
-- **Duration:** 6m22s
+- **When:** 2026-05-01T10:57:06.833Z
+- **Duration:** 10m33s
 
 ## What Happened
-The bug demonstrated itself live — within seconds of my edit the workflow rewrote `closed`→`active` and bumped iteration 17→19. The HTML comment survived but the Status field didn't. Let me re-apply and add a live observation to KE-438.
+Verified end of file (action items) and beginning (Status: active proves the bug, both arc HTML comments preserved at lines 5 and 14, plus orchestrator's own "CONFIRMED CLOSED" comment at line 4). Both deliverables fully verified post-write.
