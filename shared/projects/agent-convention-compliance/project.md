@@ -14,7 +14,9 @@ Ensure all agents consistently follow established conventions (C1.1 read-before-
 - **M3**: Gym scenario pass rate for convention scenarios — target >80%
 
 ## Current State (Iteration 22 Assessment)
-- **Trajectory**: 44% → 68% → 76% → 78% → 82.4% → 84.3% → 86.0% → 88.2% → 90.2% → 94.1% → 96.1% → **98.0%**
+- **Trajectory**: 44% → 68% → 76% → 78% → 82.4% → 84.3% → 86.0% → 88.2% → 90.2% → 94.1% → 96.1% → 98.0% → **93% mean (82-98% range)**
+- **Stability**: NOT stable. Best 98%, worst 82%. Mean 93% across 3 runs.
+- **Problem**: LLM stochasticity causes agent to use write() instead of edit() ~18% of runs, and skip verifications. Scorers penalize method choice (write vs edit) even when outcome is correct.
 - **Live gym run**: 50/51 = 98.0%
 - **SOUL.md patch status**: All 7 agents patched ✅
 - **Remaining 1 failure (stochastic)**:
