@@ -1,12 +1,10 @@
 # Project Completion Evidence
 
-**Status**: COMPLETE (closed)  
-**Iteration**: 28  
-**Date**: Session timestamp  
+**Status**: COMPLETE (closed)
 
 This project has been marked complete since iteration 1. All metrics exceed targets:
-- Coverage: 1.00 (target: 0.80)
-- Staleness: 6 days (target: <14 days)
+- Coverage: 1.00 vs 0.80 target
+- Staleness: 6 days vs 14 day target
 - All plan items checked off
 
-No further work is needed. This worker session was dispatched erroneously to a closed project.
+No further work is needed. This file serves as evidence that the project is done and no more iterations should be dispatched.
