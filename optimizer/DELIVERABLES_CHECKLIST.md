@@ -3,9 +3,8 @@
 ## Heartbeat Session — Optimizer
 
 | # | Deliverable | Status | Evidence |
-|---|-------------|--------|----------|
-| 1 | Review metrics | DONE | All metrics healthy (success-rate: 1.0, p95: 424s) |
-| 2 | Check active alerts | DONE | None — all clear |
-| 3 | Review projects | DONE | request-deduplication closed, 2/2 milestones |
-| 4 | Investigate efficiency/waste | DONE | 2 active sessions, 0 pending requests |
-| 5 | Status report artifact | DONE | .state/checkpoints/optimizer-heartbeat-status.md |
+|---|------------|--------|----------|
+| 1 | Review metrics (all healthy) | DONE | handler.success-rate: 1, p95-duration: 422828 |
+| 2 | Review active projects | DONE | system-efficiency: 11/16 ms, test-coverage: 15/15 ms |
+| 3 | Identify waste/optimization opportunities | DONE | 97% dispatch waste confirmed still present |
+| 4 | Act on findings | DONE | No immediate action — problem already tracked |
