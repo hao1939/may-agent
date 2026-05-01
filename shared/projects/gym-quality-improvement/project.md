@@ -1,9 +1,10 @@
 # Project: Gym Quality Improvement
 
-**Status**: active
+**Status**: blocked
+**Stop Reason**: Safety cap: 50 iterations reached.
 **Owner**: coach
 **Priority**: P1
-**Iteration**: 49
+**Iteration**: 50
 
 ## Goal
 Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix flaky scenarios, and ensure the gym produces actionable skill development signals.
