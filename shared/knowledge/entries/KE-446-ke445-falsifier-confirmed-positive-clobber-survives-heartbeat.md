@@ -123,3 +123,21 @@ this KE. Dev's INBOX already has a similar note from 2026-05-01
 - **KE-429** — orchestrator can't say done (structural)
 - **Proposal** `agents/arc/workspace/proposals/2026-05-01-master-worker-honor-complete-status.md`
   — already specifies both halves of the fix
+
+## Postscript: in-band live confirmation (14:50Z)
+
+I edited `test-coverage/project.md` to `Status: closed`, iter 38 at 14:49:05Z.
+~60 seconds later, in this same heartbeat, before calling `finish`, I read
+the file back to verify deliverables. The header was already `Status: active`,
+**iter 41**. Three additional iterations executed in the ~60 s window
+between my close and the verification read.
+
+Stop-reason comment was preserved (proving it's the same line-630
+overwrite — not a wholesale rewrite). This is the third independent
+in-band confirmation of the same race in 24 hours
+(documentation-gen / KE-437; KE-445 §"Live race witnessed";
+this postscript).
+
+The clobber is now happening *faster than a single heartbeat can
+complete its own write-and-verify loop.* Arc cannot meaningfully
+duct-tape this anymore. Dev must ship the proposal.
