@@ -1,7 +1,9 @@
 # Deliverables Checklist
 
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Project closure evidence | DONE | /app/agents/shared/projects/outputs/project-closed-evidence.md |
+## Task: Project Closed - No Further Work
 
-No further work required — project has been closed since iteration 19.
+| Deliverable | Status | Path |
+|---|---|---|
+| Closure evidence file | DONE | /app/agents/shared/projects/outputs/project-closed-final.md |
+
+Project is closed. All metrics met. No further iterations needed.
