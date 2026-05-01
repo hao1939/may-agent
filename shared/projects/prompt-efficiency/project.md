@@ -24,7 +24,7 @@ Reduce token waste in agent system prompts and context loading, improving throug
 - [ ] **P5: Measure improvement** — Re-measure token counts after changes. Verify no quality regression in gym scores.
 
 ### Re-plan (2025-07-15)
-P3 is the blocker. Worker must trim qa, coach, evaluator SOUL.md files to <600w each. Then P5 measurement.
+P3 is the blocker. Cannot edit SOUL.md files directly (protected). Sent P0 notification to tech-lead with specific trim instructions for qa/coach/evaluator. Next iteration: verify if tech-lead executed the trims.
 
 ## Background
 Agent prompts contain significant duplication — the same rules (prefer edit over write, checkpoint usage, finish format) appear in every SOUL.md. Context.md files accumulate stale facts. Both waste tokens on every invocation, reducing the effective context window available for actual work.
