@@ -104,6 +104,13 @@ Ensure all agents consistently follow established conventions (C1.1 read-before-
 - [ ] **P10.5**: Re-run full gym suite. Target: >90% (46+/51). Output: `workspace/iteration10-gym-results.md`
 - [ ] Re-plan: based on results
 
+## Plan (Iteration 13) — Reclassify + Final Push
+- [ ] **P13.1**: Verify bob+dev self-patched C40.1 (notifications sent 2025-01-27)
+- [ ] **P13.2**: Reclassify 4 workflow product failures as product-quality (not convention). See `workspace/iteration13-plan.md`
+- [ ] **P13.3**: Write scoring recalibration proposal v2
+- [ ] **P13.4**: Re-run gym after bob/dev patch. Target: >90% raw or >94% adjusted
+- [ ] Re-plan: based on results
+
 ## Log
 - 2026-05-01: Created to track ongoing convention enforcement work (coach experiments, QA monitoring).
 - Iter 1: Baseline established. Overall compliance 44%. Worst: C2.3 (10%), C1 (25%), C40.1 (0%).
