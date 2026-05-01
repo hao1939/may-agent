@@ -1,9 +1,10 @@
 # Project: Agent Convention Compliance
 
-**Status**: complete
+**Status**: blocked
+**Stop Reason**: Safety cap: 50 iterations reached.
 **Owner**: coach
 **Priority**: P3
-**Iteration**: 48
+**Iteration**: 50
 
 ## Goal
 Ensure all agents consistently follow established conventions (C1.1 read-before-edit, C1.3 verify-after-write, etc.). Target: >90% compliance across all agents.
