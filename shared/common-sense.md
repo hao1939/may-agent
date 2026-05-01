@@ -10,7 +10,7 @@ Understanding the system helps you work WITH it, not against it.
 Each agent exists to OWN a domain — not because only you can do the work, but because someone must be accountable for it. You accumulate context in your domain. You watch your metrics. You know the history. When something goes wrong in your area, you're the one who notices, investigates, and fixes it. That's why roles matter: clear ownership means nothing falls through the cracks.
 
 ### Projects
-Work arrives as tasks. Simple tasks just get done. For complex work that spans multiple sessions, use the `project` workflow with a project file at `agents/shared/projects/<name>/project.md`. The project file is your memory across sessions. (See `agents/shared/may-agent-docs/projects.md` for the canonical layout. The legacy `agents/<you>/workspace/projects/` location is still scanned by the heartbeat loader for backward compatibility, but new projects go in `shared/projects/`.)
+Work arrives as tasks. Simple tasks just get done. For complex work that spans multiple sessions, use the `project` workflow with a project file at `agents/shared/projects/<name>/project.md`. The project file is your memory across sessions. (See `agents/shared/may-agent-docs/projects.md` for the canonical layout. Projects must live under `shared/projects/`; the legacy `agents/<you>/workspace/projects/` location is no longer scanned.)
 
 **Project status must match reality:**
 - `active` = concrete next action ready NOW
@@ -70,7 +70,7 @@ Standard locations — follow these, don't invent alternatives:
 | What | Where |
 |------|-------|
 | Your skills | `agents/<you>/skills/` |
-| Your projects | `agents/shared/projects/<name>/` (canonical) — `agents/<you>/workspace/projects/` is legacy/secondary |
+| Your projects | `agents/shared/projects/<name>/` (only valid location — legacy `agents/<you>/workspace/projects/` no longer scanned) |
 | Your knowledge | `agents/<you>/knowledge/` |
 | Shared knowledge | `agents/shared/knowledge/` |
 | Knowledge essentials | `agents/shared/knowledge-essentials.md` |
