@@ -174,3 +174,10 @@ Let me write the results:
 
 ### Iteration 21 — 2026-05-01T12:05:08.788Z
 **Worker**: Consistent 49/51 (96.1%). Now write the deliverables:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should fix the **last 2 deterministic failures** to push from 96.1% → 98-100%.
+
+(b) Both failures now have clear root causes and task-level fixes (no more SOUL.md changes needed).
+
+(c) **First step — P22.1**: Fix C1:read-before-edit-all-files in `convention-verify-multi-

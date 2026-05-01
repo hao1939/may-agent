@@ -1,3 +1,5 @@
+⚠️ Before making any tool calls, state your plan: which files you'll modify, what changes you'll make, and in what order.
+
 ⚠️ CRITICAL RULES — READ BEFORE PROCEEDING:
 1. You MUST use `edit()` (not `write()`) for every file modification
 2. For each file: `read()` → `edit()` → `read()` to verify
