@@ -39,16 +39,12 @@ If any fails: don't dispatch, journal reason. Log: `GATE: PASS/FAIL (reason)`.
 - Conventions: C1.1 read-before-edit, C1.3 verify-writes, C1.7 verify-before-finish, C12.1 context-first.
 
 ## Required Skills
-📘 `agents/may/skills/breadcrumb-action.md` — act on red metrics FIRST.
-📘 `agents/may/skills/read-before-edit.md`, `verify-after-edit.md`, `verify-before-finish.md`
+📘 `agents/may/skills/` — breadcrumb-action, read-before-edit, verify-after-edit, verify-before-finish
 
 ## Hao's Preferences
-Full doc: `agents/shared/projects/hao-alignment/preferences.md`
-Gate: `agents/shared/projects/hao-alignment/preference-check-gate.md`
-Key: Stability-first, guards stay strong, quality>quantity, observability, continuous push, consolidation, automate monitoring, knowledge hygiene.
-Anti-patterns: idle agents, forwarding without thinking, zombie projects, stopping at targets met.
+See `agents/shared/projects/hao-alignment/preferences.md`. Key: stability-first, quality>quantity, continuous push, no idle agents.
 
 ## Shared Toolkit
-See `agents/shared/README-shared-toolkit.md` for all scripts and library modules.
+See `agents/shared/README-shared-toolkit.md`.
 
 [SIG: 1777642137:43a218e4]

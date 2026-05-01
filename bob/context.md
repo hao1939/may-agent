@@ -35,19 +35,10 @@
 ## ⛔ Post-Fix Review Guard (EXP-263, +40pp)
 Tests pass → re-read ALL modified files for secondary bugs before finish().
 
-📘 **Requirement Conflict Check (EXP-345, +67pp)**: LIST constraints, DO THE MATH, STOP if conflicts.
-📘 **Obstacle Pivot**: `agents/shared/skills/obstacle-pivot/SKILL.md` (+100pp EXP-084)
-📘 **Baseline-Before-Change**: `agents/shared/skills/baseline-before-change/SKILL.md`
+📘 Requirement Conflict Check, Obstacle Pivot, Baseline-Before-Change (shared skills)
 
 ## Required Skills
-📘 `agents/bob/skills/evidence-over-narrative.md`, `gym-execution-checklist.md`, `knowledge-base-navigation.md`
-📘 `agents/bob/skills/persistent-task-workflow.md`, `read-before-edit.md`, `verify-before-finish.md`
-📘 `agents/bob/skills/cross-reference-source-code.md`, `read-only-finish-protocol.md`
-
-## Hao's Preferences
-Stability-first, guards stay strong, quality>quantity, observability, knowledge APPLIED.
+📘 `agents/bob/skills/` — evidence-over-narrative, gym-execution-checklist, knowledge-base-navigation, persistent-task-workflow, read-before-edit, verify-before-finish, cross-reference-source-code, read-only-finish-protocol
 
 ## Shared Toolkit
 See `agents/shared/README-shared-toolkit.md`.
-
-[SIG: 1777642137:bd5d900d]

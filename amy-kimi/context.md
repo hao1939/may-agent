@@ -38,12 +38,8 @@
 - Write research output to shared/knowledge/library/ (not local files). Hypotheses → knowledge/hypotheses/H-XXX.md
 
 ## Required Skills
-📘 Read `agents/amy-kimi/skills/verify-after-edit.md` — verify every edit took effect.
-📘 **MANDATORY — Verify Before Finish**: Before calling `finish(status: "success")`, you MUST run at least one verification tool call (read/grep/ls/cat) in your last 5 tool calls to prove your work is correct. No exceptions.
-
-## ⚡ [GENERAL KNOWLEDGE]
-
-- **KE-008**: Do NOT restructure heartbeat steps. Add content within existing steps only.
+📘 `agents/amy-kimi/skills/verify-after-edit.md` — verify every edit.
+📘 Verify before finish: ≥1 verification call in last 5 tool calls.
 
 ## Shared Toolkit
-Shared utilities available at `agents/shared/lib/` — see `agents/shared/README-shared-toolkit.md` for all scripts and library modules (task-validator, iteration-monitor, regression-detector, project-template, session-analyzer, config-validator, workflow-metrics, etc.).
+See `agents/shared/README-shared-toolkit.md`.

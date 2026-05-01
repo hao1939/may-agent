@@ -1,11 +1,17 @@
-# DELIVERABLES_CHECKLIST.md
+# DELIVERABLES_CHECKLIST
 
-## Task: Trim 5 bloated context.md files to under 2500 bytes each
+## Required Deliverables
 
-| # | Deliverable | Status | Path | Notes |
-|---|------------|--------|------|-------|
-| 1 | qa/context.md under 2500B | DONE | /app/agents/qa/context.md | 5620→1559B |
-| 2 | coder/context.md under 2500B | DONE | /app/agents/coder/context.md | 4534→1538B |
-| 3 | amy/context.md under 2500B | DONE | /app/agents/amy/context.md | 4349→1731B |
-| 4 | evaluator/context.md under 2500B | DONE | /app/agents/evaluator/context.md | 3490→1540B |
-| 5 | tech-lead/context.md under 2500B | DONE | /app/agents/tech-lead/context.md | 2862→2174B |
+1. **regression-guard.sh** — DONE
+   - Path: `/app/agents/shared/projects/outputs/regression-guard.sh`
+   - Executable bash script checking: context.md sizes (<2500B), test suite (≥1500 passing), average context size
+   - Verified: ALL GUARDS PASSING (8654 tests, 0 files over limit)
+
+2. **Context.md trimming (4 files)** — DONE
+   - `/app/agents/scout.bak/context.md`: 6717B → 2125B
+   - `/app/agents/amy-kimi/context.md`: 2759B → 2240B
+   - `/app/agents/may/context.md`: 2676B → 2327B
+   - `/app/agents/bob/context.md`: 2571B → 2162B
+
+3. **Deployment report** — DONE
+   - Path: `/app/agents/shared/projects/outputs/regression-guard-report.md`
