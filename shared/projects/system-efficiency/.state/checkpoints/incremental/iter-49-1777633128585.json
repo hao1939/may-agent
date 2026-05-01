@@ -1,0 +1,14 @@
+{
+  "sessionId": "iter-49-1777633128585",
+  "iteration": 49,
+  "step": 1,
+  "timestamp": 1777633174283,
+  "task": "This project is **done**. It has been complete since iteration 41. The status keeps getting clobbered back to `active` by concurrent in-flight iterations (KE-438). I've set it to `closed` again.\n\n**STOP DISPATCHING TO THIS PROJECT.**\n\nAll goals met:\n- deliverables-per-iteration: 0.89 ✅ (target 0.8)\n- satellite-goal-progress: 3/2 ✅\n- worker-first-attempt-success: 0.68 (near target 0.7)\n- 76 output files, 47 iterations, all plan items complete or intentionally dropped\n\nThe last 7+ iterations have ",
+  "toolsCalled": [
+    "worker.prompt"
+  ],
+  "partialResults": {
+    "workerResponseLength": 51
+  },
+  "completed": true
+}
