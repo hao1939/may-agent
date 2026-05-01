@@ -21,3 +21,25 @@ module.exports = async function check(sessionLog) {
 
   return { pass: true, reason: 'Build passes (agent found alternative approach)' };
 };
+
+// CLI wrapper
+if (require.main === module) {
+  const fn = module.exports;
+  Promise.resolve(fn()).then(result => {
+    console.log(JSON.stringify({
+      scenario: 'skill-regression-obstacle-pivot',
+      passed: result.pass,
+      checks: [{ name: 'build-passes', passed: result.pass, detail: result.reason }],
+      summary: result.reason
+    }, null, 2));
+    process.exit(result.pass ? 0 : 1);
+  }).catch(err => {
+    console.log(JSON.stringify({
+      scenario: 'skill-regression-obstacle-pivot',
+      passed: false,
+      checks: [{ name: 'criteria-error', passed: false, detail: err.message }],
+      summary: 'Criteria evaluation failed'
+    }, null, 2));
+    process.exit(1);
+  });
+}

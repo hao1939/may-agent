@@ -1,0 +1,9 @@
+{
+  "name": "qa-review-hard",
+  "categories": ["qa", "code-review"],
+  "tags": ["ability", "evidence-discipline"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

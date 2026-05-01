@@ -42,3 +42,17 @@ module.exports = {
     };
   }
 };
+
+// CLI wrapper
+if (require.main === module) {
+  const workDir = process.argv[2] || require('path').join(__dirname, 'environment');
+  const mod = module.exports;
+  const result = mod.evaluate(workDir);
+  console.log(JSON.stringify({
+    scenario: 'skill-delivery-obstacle-pivot',
+    passed: result.score >= 0.5,
+    checks: result.results.map(r => ({ name: r.name, passed: r.pass, detail: r.message })),
+    summary: result.score >= 0.5 ? 'Agent pivoted and produced output' : 'Agent failed to produce correct output'
+  }, null, 2));
+  process.exit(result.score >= 0.5 ? 0 : 1);
+}
