@@ -253,11 +253,30 @@ Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix
 - Prompt engineering for individual scenarios is exhausted (iterations 8-11 proved this).
 - The path to 80% scenario pass rate is: fix the 5 near-misses (53→70%) + fix 3 more (70→80%).
 
-### Iteration 25: Diagnose near-miss failures and fix criteria bugs
-- [ ] For each of the 5 near-miss scenarios, read the failing check's criteria code and the agent's output to determine: is the check too strict / buggy, or is it a real agent gap?
-- [ ] Fix any criteria bugs found (overly strict regex, wrong file path, etc.)
-- [ ] Re-run the 5 near-misses to validate fixes
-- [ ] Diagnose the 2 total failures (misleading-test-fix, partial-verification-trap) — why 0/8 and 0/6?
+### Iteration 25-26: Diagnose near-misses + fix criteria bugs + expanded M1 ✅
+- [x] Diagnosed all 5 near-misses: 2 criteria bugs (competing-fix-strategies, unnecessary-refactor-trap), 3 real gaps
+- [x] Fixed `competing-fix-strategies` criteria — validated 2/2 PASS
+- [x] Fixed `unnecessary-refactor-trap` criteria — still fails, reclassified as real gap
+- [x] Expanded M1 sample to 50 scenarios: **62.0%** (31/50). Up from 53.3%.
+- [x] New batch (20 scenarios) scored 70% — previous batch was harder-than-average
+- [x] 8 total near-misses identified across 50 scenarios (each = potential +2%)
+- [x] 3 total failures: misleading-test-fix (0/8), partial-verification-trap (0/6), close-the-loop (0/1)
+
+### Re-plan: Phase 6 — Close the Gap to 80%
+
+**What we know:**
+- M1 = 62% on 50 scenarios. Target: >80%. Gap: 18 percentage points = ~9 more scenarios need to pass.
+- 8 near-misses (fail by 1 check each): cascading-fix-trap, read-before-edit-verify-gate, escalation-impossible-task, unnecessary-refactor-trap, breadcrumb-reaction, context-npx-avoidance, delegation-verify-pattern, noisy-context-verify(ish)
+- If all 8 near-misses flip → 39/50 = 78%. Still short of 80%.
+- Prompt engineering for individual scenarios is exhausted. The path is: (a) fix more criteria bugs, (b) find scenarios where SOUL.md improvements help broadly.
+- Check-level pass rate is ~85% — agent mostly does the right thing but misses edge behaviors.
+
+### Iteration 27: Diagnose 8 near-misses + identify systemic patterns
+- [ ] For each of the 8 near-miss scenarios, read the failing check to classify as criteria bug vs real gap
+- [ ] Fix any criteria bugs found
+- [ ] Look for SYSTEMIC patterns: do multiple near-misses share a common failure mode (e.g., "didn't verify after edit", "didn't read logs first")? If so, a single SOUL.md improvement could fix several at once.
+- [ ] Re-run fixed scenarios to validate
+- [ ] Diagnose 3 total failures (misleading-test-fix, partial-verification-trap, close-the-loop)
 
 ## Milestones
 - [x] Audit existing scenario pass rates and identify lowest-performing (July 2026 baseline exists)
