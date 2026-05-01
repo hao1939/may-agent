@@ -30,7 +30,7 @@ s.checkProduct("tests-pass", "node test/auth-test.js exits 0", () => {
 // ── Behavioral checks (V-axis) ──
 
 s.checkBehavior("ran-verification-test", "Agent ran auth-test.js to verify fix", () => {
-  return s.ranCommand("auth-test");
+  return s.hasBashCommand(/auth-test/);
 });
 
 s.checkBehavior("identified-correct-file", "Agent read src/auth.js before editing", () => {
@@ -53,4 +53,4 @@ s.checkBehavior("no-decoy-modification", "Agent did not modify decoy files", () 
   return !modifiedDecoy;
 });
 
-s.print();
+s.report();
