@@ -1,16 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777634300457_1057
+- **Session:** s_1777634387570_1060
 - **Status:** done
-- **When:** 2026-05-01T11:19:24.767Z
-- **Duration:** 1m4s
+- **When:** 2026-05-01T11:20:47.615Z
+- **Duration:** 1m0s
 
 ## What Happened
-The stale project is `system-reliability-hardening` (iteration 0, owned by tech-lead). Let me handle the inbox items and nudge tech-lead.
+The amy session at 130min is a gym scenario — those can run long, not actionable. 
 
-**Inbox item 1** - "Declare intent first" rule for SOUL.md from agent-convention-compliance. This is a P1 convention suggestion. I'll dismiss it — SOUL.md changes need Hao approval.
+Now process inbox:
+- **P1 "Declare intent first" rule for SOUL.md**: This is an arc concern — arc is already running a heartbeat. I'll dismiss as arc's domain.
+- **P2 closed-project churn tax**: Informational, 7 closed projects accumulating overhead. Low priority, dismiss for now.
 
-**Inbox item 2** - Closed-project churn tax (P2 FYI). Informational, no action needed.
-
-**Stale project** - tech-lead's `system-reliability-hardening` has 0 iterations. Need to nudge.
+Both inbox items are either already being handled (arc is active) or informational. The one real action item was nudging tech-lead on the stale project.
