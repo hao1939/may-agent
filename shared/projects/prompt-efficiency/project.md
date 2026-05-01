@@ -12,7 +12,7 @@ Reduce token waste in agent system prompts and context loading, improving throug
 |--------|----------|--------|---------|
 | SOUL.md avg size (tokens) | ~950 | <800 tokens | ~950 |
 | Context.md avg size | ~783 | <600 tokens | ~783 |
-| Duplicate rules across agents | 3 rules × 5-8 agents | 0 duplicates | 3 rules × 5-8 agents |
+| Duplicate rules across agents | 3 rules × 5-8 agents | 0 duplicates | 2 rules × 5-8 agents |
 | Bloated context files (>1500tok) | 4 agents | 0 agents | 4 agents |
 
 ## Plan
