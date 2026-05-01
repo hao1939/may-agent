@@ -1,47 +1,53 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777632979015_1024
+- **Session:** s_1777633007942_1028
 - **Status:** done
-- **When:** 2026-05-01T10:56:30.546Z
-- **Duration:** 11s
+- **When:** 2026-05-01T10:57:00.283Z
+- **Duration:** 12s
 
 ## What Happened
 ```json
 {
   "agents": {
-    "optimizer": {
+    "coach": {
       "role": "Supervisor",
-      "capability_level": "L2",
-      "efficiency": 0.15,
-      "quality": 0.3,
+      "capability_level": "L3",
+      "efficiency": 0.55,
+      "quality": 0.35,
       "verdict": "needs_improvement",
       "issues": [
-        "Did not follow the session contract to verify worker deliverables after each iteration using read()/bash(ls). The transcript shows many worker claims of files created/modified, but optimizer rarely/never verified existence until very late; the contract explicitly required verification.",
-        "Repeatedly accepted or amplified unverified/incorrect worker claims (e.g., worker repeatedly produced only checklist/metadata files; optimizer continued issuing new tasks rather than enforcing verification and closing the loop).",
-        "Missed multiple hard constraints and let the workflow drift: many tasks included WRITE-FIRST/EDIT-FIRST constraints and the worker violated them; optimizer did not adapt by requiring exact tool-first behavior until very late, and even then did not verify outputs.",
-        "Confused or inconsistent guidance: sometimes demanded specific deliverables (e.g., phase retrospectives/scorecards) but then pivoted away after failures without confirming whether the stub deliverable was actually completed.",
-        "Late-stage ‘closure’ handling was incomplete: optimizer only changed `Status` to `closed` in system-efficiency/project.md, but did not update the rest of project.md plan/state as required by its own role description (check off plan items, update Current State, Re-plan).",
-        "Misattributed success: several times optimizer claimed things were 'done and verified' without providing structural evidence (no tool outputs) until the final two tool calls."
+        "[VERIFICATION_FAILURE] Repeatedly violated the explicit rule: 'After each worker iteration, verify deliverables exist with read() or bash(ls).' The coach never used read()/bash(ls) to confirm any claimed files, despite many worker claims about modified/committed files.",
+        "Accepted worker claims as ground truth (e.g., 'files modified', 'committed', 'scenario fixed', 'runner exists/doesn’t exist') without tool-based verification, then used those claims to drive pivots and plans.",
+        "Major decision-making based on unverified measurement artifacts: iterations 18-21 center on sweep results being wrong vs right; coach did not independently inspect scripts/TSV outputs to validate the worker’s sweeping conclusions.",
+        "Project management integrity gap: the role requires updating project.md; only late in the transcript is there concrete evidence of edits to project.md (iteration increment, metric update, checklist updates). Earlier turns show guidance but not verifiable project maintenance actions.",
+        "Scope-control lapse: allowed extensive churn in the project directory (many 'project complete' / 'closed' evidence files) without pushing for consolidation, raising risk of noise over signal."
       ],
       "metrics": {
-        "decomposition": "low",
-        "deliverable_verification": "very_low",
-        "dead_end_detection": "low",
-        "project_maintenance": "partial (status line edited only at end)"
+        "decomposition": "medium",
+        "dead_end_detection": "medium",
+        "context_management": "low",
+        "evidence_discipline": "very_low",
+        "project_hygiene": "low"
       }
     }
   },
   "workflow": {
-    "name": "master-worker (project maintainer/orchestrator)",
+    "name": "gym-quality-improvement / coach-orchestrator",
     "issues": [
-      "Verification failure at the orchestration layer: repeated iterations where worker output verification shows only checklist/metadata files; optimizer did not enforce 'verify deliverables exist' requirement until the end.",
-      "Looping behavior: many consecutive iterations produced no requested deliverable (or only DELIVERABLES_CHECKLIST/PROJECT_CLOSED), but optimizer continued to issue new tasks rather than stopping/pivoting to close or escalating the gitignore/KE-438 clobber problem."
+      "The supervisor did not enforce the verification contract with the worker; the process devolved into narrative-driven iteration rather than artifact-driven iteration.",
+      "High iteration count with unclear grounding: many pivots (skills → workflows → nudges → sweeps) were justified by reported data, but the coach did not require direct evidence checks.",
+      "Despite the instruction 'If 3+ consecutive iterations produce no files, WRITE THE FILE YOURSELF', the coach neither verified missing files nor executed the fallback."
     ]
   },
   "overall": {
     "verdict": "needs_improvement",
-    "result_delivered": true
+    "result_delivered": false
   }
 }
 ```
+
+Lessons (actionable)
+- `[coach] Enforce verification: after every worker output, run bash(ls) in the project dir and read() the referenced deliverable(s) before planning the next iteration.`
+- `[coach] When decisions hinge on measurements (sweep scripts, pass rates), require the raw artifact (TSV/command output) and spot-check parsing logic before pivoting.`
+- `[coach] Keep project hygiene: if many “completion evidence” files appear, require a single canonical summary + link list, otherwise the project becomes un-auditable.`

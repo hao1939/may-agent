@@ -1,45 +1,20 @@
 # Evaluator Heartbeat — 2026-05-01
 
-## Inbox / Alerts handled
+## Checks performed
 
-### Event: agent.notification — P1 stale project `eval-pipeline-quality`
-**Action**: act (triage + concrete diagnosis notes)
+### Session Eval pipeline liveness (Process #5)
+- DB canonical: `MAX(evaluations.createdAt)=1777632944087` (fresh at time of check).
+- Sessions table uses `startedAt/endedAt` not `createdAt`; `MAX(sessions.startedAt)=1777632997424`, `MAX(sessions.endedAt)=1777632997397`.
+- Legacy artifacts: `.state/evaluations/` contains files as new as **2026-04-29** (`s_*.json`), while some `task_tree_*.json` remain **2026-03-24** → supports prior hypothesis that `task_tree_*` is a legacy output path and may be drifting/stale independently of DB pipeline health.
 
-- DB liveness is **good**: `evaluations.maxCreatedAt = 2026-05-01 01:23:17 UTC`.
-- Legacy `.state/evaluations/` folder is **not** a reliable freshness indicator (it contains `task_tree_*.json` artifacts last dated ~2026-03-24, plus a few `s_*.json` dated 2026-04-29). This matches previously-known output-path drift.
+### Active session monitoring (Periodic Task #2)
+Ran `node agents/evaluator/skills/monitor-session.cjs --running` and got **5 alerts** (command exit code 1):
+- `s_1777626616591_0` (amy): **STALL** — idle 106 min → recommended action: **kill**
+- `s_1777632393145_998` (arc): **DRIFT** → recommended action: **warn**
+- `s_1777632799025_1013` (bob): **DRIFT** → recommended action: **warn**
+- `s_1777632907226_1018` (coach): **PROTOCOL_VIOLATION (P114)** → recommended action: **warn**
+- `s_1777632943188_1020` (coach): **PROTOCOL_VIOLATION (P114)** → recommended action: **warn**
 
-## Process health checks (owned)
-
-### #5 Session Evaluation — liveness
-Evidence (from `.state/may.db`):
-- `evaluations.count = 1604`
-- `sessions.count = 3460`
-- `evaluations.maxCreatedAt = 2026-05-01 01:23:17 UTC`
-
-Conclusion: evaluation pipeline is running recently.
-
-### #15 LLM Evaluation — heuristic vs LLM signals
-I re-checked the heuristic-quality anomaly (quality clustering at 0.20) using DB evidence:
-- `quality == 0.2` count: **535 / 1604**
-- Top qualities: 0.2 (535), 0.55 (106), 0.25 (98), 0.35 (97), 0.75 (75)
-- Flag combos across all evaluations:
-  - `(skippedByJs=0, evaluatedByHeuristic=0)`: **1144**
-  - `(skippedByJs=1, evaluatedByHeuristic=1)`: **460**
-  - No other combos exist.
-
-Interpretation:
-- `evaluatedByHeuristic=1` appears to be coupled to `skippedByJs=1` (no `(1,0)` rows), suggesting the heuristic evaluator isn’t producing persisted rows for non-skipped sessions (or its writes are overwritten / not emitted).
-- The 0.20 score is likely a default/min-score for “skipped” or an error path, but it is **too frequent** and will distort any quality-based alerts.
-
-## Calibration artifacts availability
-The workspace calibration streams are placeholders (symlink targets missing):
-- `consistency-flags.jsonl`, `human-reviews.jsonl`, `re-evaluations.jsonl` all contain placeholder text.
-
-This blocks normal calibration tasks until the canonical sources are restored or regenerated.
-
-## Recommended next steps (for delegation)
-1) Identify where `skippedByJs` and `evaluatedByHeuristic` are written and why only `(0,0)` and `(1,1)` combos exist.
-2) Locate the constant `0.20` path and verify intended semantics.
-3) Decide whether to:
-   - decouple “skipped” from “heuristic ran”, or
-   - remove heuristic-run flag entirely and replace with a more accurate provenance model.
+## Notes / follow-ups
+- Consider pinging May (or responsible supervisor) with the 5 alerts above so interventions can happen quickly.
+- Process #15 (LLM Eval) not re-checked this heartbeat; last periodic note indicates no `*llm*` tables in DB.
