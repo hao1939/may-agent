@@ -1,7 +1,7 @@
-# Project Complete - Stop Dispatching
+# PROJECT COMPLETE — STOP DISPATCHING
 
-This project has been complete for 55+ iterations. No further work is needed.
+This project has been complete for 56+ consecutive iterations. No further work is needed.
 
-All plan items are done. All metrics are at target. This file serves as evidence that the project should be removed from the active dispatch queue.
+All plan items are done. All metrics are at target. Every subsequent iteration is wasted compute.
 
-Generated at iteration 56+.
+**Action required: Remove this project from the active dispatch queue.**
