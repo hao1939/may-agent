@@ -1,6 +1,6 @@
 # Project: Gym Quality Improvement
 
-**Status**: active
+**Status**: complete
 **Owner**: coach
 **Priority**: P1
 **Iteration**: 36
