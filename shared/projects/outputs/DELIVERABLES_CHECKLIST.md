@@ -1,8 +1,7 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST.md
 
-| Deliverable | Status | Path |
-|---|---|---|
-| Completion report | DONE | /app/agents/shared/projects/outputs/test-coverage-completion-report.md |
-
-## Notes
-Project is complete. All metrics exceeded targets. No further work needed.
+- [x] DONE: Trim may/context.md — /app/agents/may/context.md (10,592 → 2,676 bytes)
+- [x] DONE: Trim coach/context.md — /app/agents/coach/context.md (~10,000 → 2,428 bytes)
+- [x] DONE: Trim bob/context.md — /app/agents/bob/context.md (~9,800 → 2,571 bytes)
+- [x] DONE: Trim tech-lead/context.md — /app/agents/tech-lead/context.md (~9,200 → 2,862 bytes)
+- [x] DONE: Report — /app/agents/shared/projects/outputs/context-hygiene-report.md
