@@ -13,11 +13,6 @@ function parse(input) {
     }
   }
 
-  // Validate that the trimmed input is a valid numeric string
-  if (!/^\d+(\.\d+)?$/.test(input.trim())) {
-    return null;
-  }
-
   // Parse the number
   const num = parseFloat(input);
   if (isNaN(num)) return null;
