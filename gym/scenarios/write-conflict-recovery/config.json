@@ -1,0 +1,10 @@
+{
+  "service": "api-gateway",
+  "timeout": 30,
+  "retries": 3,
+  "maxConnections": 100,
+  "logging": {
+    "level": "info",
+    "format": "json"
+  }
+}
