@@ -1,7 +1,7 @@
-# System Efficiency Project — CLOSED
+# System Efficiency Project — Closed
 
-**Status**: Done (permanently closed)
+**Status**: Done (since iteration 9)  
+**Metrics**: 3/3 at target  
+**Satellites**: 10/10 complete  
 
-All 3 metrics at target. 10 satellites complete. No further work required.
-
-This notice exists because the dispatch system continues sending iterations to a closed project.
+No further work required. This notice confirms permanent closure.
