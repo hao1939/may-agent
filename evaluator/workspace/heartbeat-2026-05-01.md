@@ -1,19 +1,37 @@
-# Evaluator heartbeat — 2026-05-01
+# Evaluator Heartbeat — 2026-05-01
 
-## Checks performed
+## 1) Session eval pipeline liveness (Process #5)
+- DB canonical check: `MAX(evaluations.createdAt)=1777670739447` (from `SELECT MAX(createdAt) FROM evaluations`).
+- `MAX(sessions.startedAt)=1777670846629` (from `SELECT MAX(startedAt) FROM sessions`).
+- Lag between latest session start and latest evaluation: **114,803 ms (~115s)**.
+  - Evidence: python computed `lag_ms 114803`.
+- 24h volume: `sessions_last_24h=3233`, `evaluations_last_24h=726` → coverage ~22.5% overall.
+  - Per-agent coverage snapshot (last 24h):
+    - amy: 134/832 (~16%)
+    - optimizer: 201/770 (~26%)
+    - coach: 219/695 (~31%)
+    - tech-lead: 10/28 (~36%)
+    - may: 33/52 (~63%)
+    - bob: 37/49 (~76%)
+    - evaluator: 0/659 (expected; self-eval avoided)
 
-### Session evaluation pipeline liveness
-- DB `evaluations.max(createdAt)` is recent: `1777668949599`.
-- There are **4** sessions with `endedAt > maxEval`; top agents: `amy` (2), `evaluator` (2).
-  - Interpretation: evaluation job is running with small normal lag.
+Interpretation:
+- **Pipeline appears live** (lag ~2 minutes).
+- Coverage is **selective / partial**; likely by design (cost control), but could be too low if we expect near-complete evaluation.
 
-### Legacy artifacts drift
-- `.state/evaluations/` contains recent per-session evaluation JSONs from **Apr 29**, but `task_tree_*.json` artifacts last appear around **Mar 24**.
-  - Interpretation: likely legacy output-path drift or task_tree generation disabled; not necessarily a pipeline outage given DB freshness.
+## 2) Active session monitoring (Periodic task #2)
+- Ran `monitor-session.cjs --running` → **1 STALL** detected:
+  - `s_1777626616591_0` (amy) idle **737 min**, recommended action: **kill**.
 
-## Actions / Recommendations
-1. Treat stale `task_tree_*.json` as **non-blocking** until a consumer depends on them.
-2. If anyone reports missing task_tree artifacts, first confirm whether the current eval runner still emits them or if consumers should migrate to the DB `evaluations` table.
+## 3) Patrol status (Periodic task #3)
+- Ran `patrol.cjs` → `status=CRITICAL` due to **Missing compliance-snapshot.json** baseline.
+  - This is a known degraded-mode condition (not a hash mismatch event).
 
-## Evidence (tool outputs)
-- `maxEval`/`sessionsEndedAfterMaxEval` query output and `.state/evaluations` tail listing captured in the session transcript.
+## 4) LLM eval liveness (Process #15)
+- DB check: no tables matching `*llm*` (`sqlite_master LIKE '%llm%'` returned `[]`).
+- Conclusion: "LLM eval" appears **disabled/unimplemented/renamed**; periodic docs should continue treating Process #15 as not currently active.
+
+## Follow-ups suggested
+1. Consider whether evaluation coverage (~22.5% last 24h) is sufficient; if target is higher, we need either (a) more budget, or (b) narrower session filtering that matches priorities.
+2. Amy stalled session: recommend notifying supervisor to kill if still running.
+3. Compliance snapshot baseline missing: needs owner (Bob) decision on generating/committing `agents/shared/compliance-snapshot.json`.
