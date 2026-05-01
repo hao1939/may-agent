@@ -1,6 +1,4 @@
 # Deliverables Checklist
 
-| # | Deliverable | Status | Evidence |
-|---|-------------|--------|----------|
-| 1 | Update project.md with current state assessment | DONE | `/app/agents/shared/projects/system-efficiency/project.md` — iteration 5, 6 satellites verified |
-| 2 | Provide decision and guidance for next iteration | DONE | CONTINUE with prompt-efficiency P3 |
+- [x] DONE — Updated project.md status to "done", marked closure item complete, cleaned current state. Path: `/app/agents/shared/projects/system-efficiency/project.md`
+- [x] DONE — Verified final summary exists. Path: `/app/agents/shared/projects/system-efficiency/outputs/system-efficiency-final.md`
