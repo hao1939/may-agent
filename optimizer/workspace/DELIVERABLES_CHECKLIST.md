@@ -1,13 +1,8 @@
-# Deliverables Checklist — Optimizer Heartbeat
-
-## Task: Routine heartbeat — check metrics, projects, investigate waste
+# Deliverables Checklist — Optimizer Heartbeat 2025-07-02
 
 | # | Deliverable | Status | Evidence |
-|---|-------------|--------|----------|
-| 1 | Metrics review | DONE | All green: success-rate 1.0, p95 422828ms |
-| 2 | Project status check | DONE | All 3 projects closed/done per finding-heartbeat-20270728.md |
-| 3 | Waste investigation | DONE | No new waste; prior finding (4 zero-cost evals) unchanged |
-| 4 | Alert response | DONE | No alerts active |
-
-## Conclusion
-No action needed this heartbeat. System healthy and efficient.
+|---|------------|--------|----------|
+| 1 | Fix prompt-efficiency project owner | DONE | `agents/shared/projects/prompt-efficiency/project.md` |
+| 2 | Update SOUL.md metrics | DONE | Same file — avg 461w |
+| 3 | Document workflow waste finding | DONE | `agents/optimizer/workspace/findings/2025-07-02-prompt-efficiency-workflow-waste.md` |
+| 4 | Process inbox notifications | DONE | Both dismissed with reason |
