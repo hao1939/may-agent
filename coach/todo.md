@@ -1,5 +1,12 @@
 # Coach Todo
 
+## P1: EXP-390 — Anti-Shallow Threshold Optimization — DESIGNED
+- **Problem**: Anti-shallow threshold (≥10 calls) was heuristic. Need to validate via gym A/B test.
+- **Hypothesis**: Threshold=15 ≥ threshold=10 in pass rate; threshold=5 is ≥20pp worse.
+- **Method**: 3 scenarios × 3 arms × 2 trials = 18 gym runs
+- **Design**: `agents/coach/workspace/EXP-390-anti-shallow-threshold-optimization-design.md`
+- **Next**: Create variant heartbeat snippets and run Arm A baseline
+
 ## P1: EXP-385 — Anti-Shallow Rule Effectiveness Measurement — DESIGNED
 - **Problem**: ANTI-SHALLOW RULE deployed months ago but never measured. Does ≥10 tool calls actually correlate with meaningful output?
 - **Finding**: Tool-call counts not logged in last-session.md. Cannot measure retrospectively.
