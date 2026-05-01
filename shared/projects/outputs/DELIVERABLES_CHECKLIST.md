@@ -3,8 +3,7 @@
 ## Task: Test Coverage Project (Complete)
 
 | Deliverable | Status | Path |
-|---|---|---|
+|-------------|--------|------|
 | Final report | DONE | /app/agents/shared/projects/outputs/test-coverage-final-report.md |
 
-## Notes
-Project completed in earlier iterations. All targets exceeded (86.69% coverage, 1565 tests, 11/11 critical paths). No further work needed.
+All targets exceeded. No further work needed. This is iteration 38+ of a completed project.
