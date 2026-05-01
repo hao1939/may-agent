@@ -15,4 +15,3 @@
 | KE-023 | Cache-first architecture pattern | Literature | 2026-03-22 |
 | KE-055 | Batch size optimization results | EXP-138 | 2026-04-01 |
 | KE-060 | Write parallelism preliminary data | EXP-139 | 2026-04-03 |
-| KE-071 | Cache-first retrieval validated | EXP-142 | 2026-04-09 |
