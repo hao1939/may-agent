@@ -51,4 +51,4 @@ Agent receives: "Refactor the API module — split routes.js into 3 files (users
 - Measure: pass rate + which specific constraints are missed
 
 ## Status
-READY TO BUILD — need to create scenario files
+COMPLETED — Treatment results POSITIVE (+33pp). See `EXP-415-treatment-results.md`.

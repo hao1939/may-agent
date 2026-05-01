@@ -1,13 +1,15 @@
 # Coach Todo
 
-## P1: EXP-415 — Hidden Constraints Refactor (Planning Goldilocks) — IN PROGRESS
+## P1: EXP-415 — Hidden Constraints Refactor (Planning Goldilocks) — CLOSED ✅ POSITIVE
 - **Problem**: EXP-400/405/410 all INCONCLUSIVE — explicit-dependency scenarios hit ceiling
 - **Hypothesis**: Hidden constraints in files + simple task framing → baseline ≤67%; decompose-before-acting skill → +20pp
 - **Scenario**: `agents/gym/scenarios/hidden-constraints-refactor/`
 - **Design**: `agents/coach/workspace/EXP-415-hidden-constraints-design.md`
 - **Baseline**: 2/3 pass at ≥6/7 threshold (67%) — GOLDILOCKS ACHIEVED
-- **Results so far**: `agents/coach/workspace/EXP-415-baseline-results.md`
-- **Next**: Run 3 treatment trials with decompose-before-acting skill loaded
+- **Treatment**: 3/3 pass at 7/7 (100%) — +33pp, exceeds +20pp target
+- **Results**: `agents/coach/workspace/EXP-415-treatment-results.md`
+- **Status**: CLOSED ✅ POSITIVE. Decompose-before-acting skill works on hidden-constraint scenarios.
+- **Next**: Deploy to bob/coder for complex refactoring tasks. Consider replication on second scenario.
 
 ## P1: EXP-410 — Planning Under Complexity — CLOSED (CEILING)
 - **Problem**: EXP-400/405 both INCONCLUSIVE — no scenario in goldilocks zone for planning skill
