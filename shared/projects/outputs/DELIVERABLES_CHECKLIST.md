@@ -1,9 +1,7 @@
-# Deliverables Checklist — Iteration 17
+# Deliverables Checklist
 
-## Task
-No work required. Project is **closed**. All targets met. This is a no-op dispatch due to KE-437 loop.
+| Deliverable | Status | Path |
+|---|---|---|
+| Closed project acknowledgment | DONE | /app/agents/shared/projects/outputs/CLOSED-NO-WORK-REMAINING.md |
 
-## Deliverables
-| Item | Status | Notes |
-|------|--------|-------|
-| No deliverables required | N/A | Project closed, all metrics met |
+No work was required — project is closed with all targets met.
