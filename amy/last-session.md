@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777631098638_0
+- **Session:** s_1777631113883_0
 - **Status:** done
-- **When:** 2026-05-01T10:25:32.501Z
-- **Duration:** 33s
+- **When:** 2026-05-01T10:25:45.356Z
+- **Duration:** 31s
 
 ## What Happened
-The config files don't exist yet. I'll create them with the "wrong" values and then write the PLAN.md.
+The validator.js already has `===` and parser.js has a different regex than described. Only formatter.js needs fixing:
