@@ -1,5 +1,13 @@
 # Coach Todo
 
+## P1: EXP-330 — Output Format Batch Rollout (NEW Sep 2) — DESIGNED
+- **Problem**: Only 4/10 agents have OUTPUT FORMAT. Pattern proven +32pp.
+- **Treatment**: Add OUTPUT FORMAT to scout, qa, coder, may, amy heartbeat.md
+- **Design**: `agents/coach/workspace/EXP-330-output-format-batch-rollout-design.md`
+- **Status**: DESIGNED. Deployment requested from may (Sep 2).
+- **Priority**: scout > qa > coder > may > amy (by expected impact)
+- **Target**: ≥+15pp quality for scout/qa/coder
+
 ## P1: EXP-325 — Self-Scoring Checklist (NEW Sep 1) — DESIGNED
 - **Problem**: Evaluator dead 105+ days. No quality signal for any experiment.
 - **Treatment**: 5-point binary self-score checklist in coach/context.md
