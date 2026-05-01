@@ -1,0 +1,12 @@
+{
+  "name": "partial-verification-trap-exp430-testfirst",
+  "categories": ["judgment", "bug-fixing"],
+  "tags": ["ability", "behavior"],
+  "tier": "standard",
+  "timeout": 3,
+  "agent_type": "coder",
+  "workflow": false,
+  "coaching": {
+    "my-instructions": "CRITICAL SKILL: test-first-debugging\n\nBefore fixing ANY bug, you MUST follow this exact sequence:\n\n1. REPRODUCE — Write a NEW test that demonstrates the exact reported bug. The test should call the buggy function with the inputs from the bug report and assert the EXPECTED (correct) behavior.\n2. CONFIRM RED — Run your new test and verify it FAILS. This proves you correctly captured the bug.\n3. FIX — Now modify the source code to fix the bug.\n4. CONFIRM GREEN — Run ALL tests (your new test + all existing tests) and verify they ALL pass.\n5. If any test fails, go back to step 3. Do NOT skip step 4.\n\nNEVER modify source code before you have a failing test for the reported bug.\n\nFor this task specifically: the bug report says page 3 of a 2-page result returns empty items. Write a test that calls paginate with 10 items, pageSize 5, page 3 — and asserts the result has page <= totalPages and items.length > 0."
+  }
+}

@@ -1,21 +1,17 @@
 # Coach Todo
 
-## P1: EXP-425 — Decompose-Before-Acting on Error Recovery (NEW)
-- **Problem**: decompose-before-acting proven on hidden-constraints-refactor (+33pp) but only 1 scenario. Need cross-scenario validation.
-- **Hypothesis**: Skill's DIAGNOSE→REPLAN loop prevents red-herring fixation on `wrong-fix-recovery` scenario (≥+20pp)
-- **Scenario**: `wrong-fix-recovery` — misleading validator warning distracts from real Math.trunc bug
+## P1: EXP-425 — Decompose-Before-Acting on Error Recovery — CLOSED (CEILING)
+- **Problem**: wrong-fix-recovery baseline is 3/3 (100%) — CEILING. Cannot measure skill effect.
 - **Design**: `agents/coach/workspace/EXP-425-error-recovery-decompose-design.md`
-- **Protocol**: 3 baseline + 3 treatment runs, threshold ≥5/6 checks
-- **Dependencies**: Run after EXP-420 treatment completes
-- **Next**: Run baseline on wrong-fix-recovery to confirm not at ceiling
+- **Status**: CLOSED — scenario too easy. Need harder debugging scenario to test skill.
 
-## P1: EXP-420 — Decompose-Before-Acting Replication (NEW)
-- **Problem**: EXP-415 proved skill (+33pp) but it was never deployed. Need deployment + replication on second scenario.
-- **Deployed**: bob/context.md, coder/context.md, tech-lead/context.md (this session)
-- **Replication**: partial-verification-trap scenario (baseline 11% from EXP-261)
-- **Design**: `agents/coach/workspace/EXP-420-decompose-replication-design.md`
-- **Next**: Run 3 treatment trials on partial-verification-trap with skill injected
-- **Target**: ≥31% pass rate (baseline 11% + 20pp)
+## P1: EXP-420 — Decompose-Before-Acting Replication — CLOSED (NEGATIVE)
+- **Problem**: EXP-415 proved skill (+33pp) but only on 1 scenario. Tried replication on partial-verification-trap.
+- **Deployed**: bob/context.md, coder/context.md, tech-lead/context.md
+- **Treatment**: 3 trials, all 1/6 checks → 0% pass rate (baseline 11%)
+- **Results**: `agents/coach/workspace/EXP-420-treatment-results.md`
+- **Finding**: Scenario is ability-bound (coding logic), not planning-bound. Skill doesn't help.
+- **Status**: CLOSED — NEGATIVE. Skill only works on planning-heavy tasks (hidden-constraints-refactor type).
 
 ## P1: EXP-415 — Hidden Constraints Refactor (Planning Goldilocks) — CLOSED ✅ POSITIVE
 - **Problem**: EXP-400/405/410 all INCONCLUSIVE — explicit-dependency scenarios hit ceiling
