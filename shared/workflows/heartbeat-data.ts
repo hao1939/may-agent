@@ -13,6 +13,42 @@ import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { checkCircuitBreaker, recordOutcome } from "./circuit-breaker.js";
 
+/**
+ * Find knowledge-base entries that mention a given metric id.
+ *
+ * Returns up to `limit` filenames sorted newest-first by KE number.
+ * Used by loadMetrics to inject prior-art KEs into the heartbeat
+ * prompt when a metric has been breaching for multiple checks
+ * (KE-423 Recommendation C — break the "write-only KB" failure
+ * mode where prior analyses do not reach the agent that needs them).
+ */
+export function findRelatedKEs(
+  agentsRoot: string,
+  metricId: string,
+  limit = 3,
+): string[] {
+  try {
+    const dir = join(agentsRoot, "shared", "knowledge", "entries");
+    if (!existsSync(dir)) return [];
+    const matches: { name: string; num: number }[] = [];
+    for (const entry of readdirSync(dir)) {
+      if (!entry.startsWith("KE-") || !entry.endsWith(".md")) continue;
+      let body: string;
+      try { body = readFileSync(join(dir, entry), "utf-8"); } catch { continue; }
+      // Match the literal metric id (dotted form) anywhere in the body.
+      // Escape dots so "project.stale-active-count" does not match unrelated ids.
+      const escaped = metricId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      if (new RegExp(escaped).test(body)) {
+        const numMatch = entry.match(/^KE-(\d+)/);
+        const num = numMatch ? parseInt(numMatch[1], 10) : 0;
+        matches.push({ name: entry, num });
+      }
+    }
+    matches.sort((a, b) => b.num - a.num);
+    return matches.slice(0, limit).map((m) => m.name);
+  } catch { return []; }
+}
+
 function getAgentsRoot(ctx: WorkflowContext): string {
   return ctx.agentsRoot || join(process.cwd(), "agents");
 }
@@ -24,6 +60,7 @@ export function loadMetrics(ctx: WorkflowContext, agent: string): string {
       "SELECT id, current, target, threshold, alert_op, source_query, source_command FROM metrics WHERE owner = ? AND status = 'active'"
     ).all(agent) as any[];
     if (!rows.length) return "";
+    const agentsRoot = getAgentsRoot(ctx);
     return rows.map((r: any) => {
       const breached = r.threshold != null && r.current != null &&
         (r.alert_op === ">" || r.alert_op === "above" ? r.current > r.threshold : r.current < r.threshold);
@@ -45,6 +82,17 @@ export function loadMetrics(ctx: WorkflowContext, agent: string): string {
         if (consecutiveBreaches >= 3) {
           line += `\n  ⛔ REPEATED ALERT (seen ${consecutiveBreaches}x): Failing for ${consecutiveBreaches} consecutive checks.`;
           line += `\n  → Investigate the root cause. If it requires destructive action (DB rebuild, data deletion), ESCALATE to human — do NOT fix autonomously.`;
+          // KE-423 Rec C: inject prior knowledge entries that already
+          // analyzed this metric, so the next agent does not re-derive
+          // (or worse, confabulate around) what's already documented.
+          const relatedKEs = findRelatedKEs(agentsRoot, r.id, 3);
+          if (relatedKEs.length > 0) {
+            line += `\n  → 📚 Prior analyses of this metric (READ BEFORE ACTING):`;
+            for (const ke of relatedKEs) {
+              line += `\n     • agents/shared/knowledge/entries/${ke}`;
+            }
+            line += `\n     If prior KEs identify this red metric as caused by fabricated/phantom data, do NOT treat it as a new investigation — follow the documented remediation or escalate.`;
+          }
         }
         if (r.source_command) line += `\n  → Diagnostic command: bash("${r.source_command}")`;
         else if (r.source_query) line += `\n  → Diagnostic query: ${r.source_query.substring(0, 120)}`;
