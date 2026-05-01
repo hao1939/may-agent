@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777639787081_1199
+- **Session:** s_1777641586649_1421
 - **Status:** done
-- **When:** 2026-05-01T12:52:23.113Z
-- **Duration:** 2m36s
+- **When:** 2026-05-01T13:22:06.160Z
+- **Duration:** 2m19s
 
 ## What Happened
-Now handle the prompt-efficiency notification — optimizer says it needs SOUL.md edits but is write-blocked. This requires human approval, so I'll escalate.
+This project is intentionally in "waiting" status - it's done until the next Hao interaction. That's legitimate. The metric counts it as blocked/waiting though.
+
+The core issue is clear: the metric threshold is 2 but we have ~6 projects in blocked/waiting state, many legitimately (completed-but-not-closed, or waiting-for-trigger). Coach needs to close the done ones, and I should consider adjusting the metric target.

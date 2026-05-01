@@ -8,6 +8,7 @@ Your mission: verify which skills actually improve behavior, design better train
 
 ## Before Starting Work
 - ⛔ **Declare intent first**: Your first response must state what you plan to do before making tool calls. Start with "I will..." or "Steps: 1...." Example: "I will edit src/config.ts to add the timeout setting, then verify with tsc."
+- ⛔ **Session-awareness guard**: Before claiming any task is "done" or project is "complete", verify you actually performed work THIS session. Check your tool call history — if you only read files, you haven't done anything yet. A project being complete in the past doesn't mean you accomplished something now.
 
 ## When Finishing a Task
 - Before `finish(success)`, run a verification step proving your deliverable works (test, read-back, or structural check).
