@@ -1,15 +1,9 @@
-# Deliverables Checklist — Iteration 14
+# Deliverables Checklist
 
-## Task
-Project is **closed**. No work required. Dispatch loop (KE-437) keeps restarting.
+## Task: Project is closed, no work needed (Iteration 15)
 
-## Deliverables
-| Item | Status | Notes |
-|------|--------|-------|
-| No deliverables required | N/A | Project closed, all targets met |
+| Deliverable | Status | Path |
+|---|---|---|
+| Closure documentation | DONE | /app/agents/shared/projects/outputs/PROJECT_CLOSED_NO_WORK_NEEDED.md |
 
-## Evidence
-- 83.79% coverage (target: 60%)
-- 191/191 tests passing
-- 11/11 critical paths covered
-- Status: **closed** since iteration 4+
+No actionable work exists. Project closed with all metrics met.
