@@ -2,22 +2,18 @@
 
 ## Checks performed
 
-### Session evaluation pipeline liveness (DB vs legacy artifacts)
-- DB `evaluations.max(createdAt)` = `1777663400831`.
-- DB `sessions.max(endedAt)` = `1777663610775`.
-- Lag = `209944 ms` (~3.5 minutes).
+### Session evaluation pipeline liveness
+- DB `evaluations.max(createdAt)` is recent: `1777668949599`.
+- There are **4** sessions with `endedAt > maxEval`; top agents: `amy` (2), `evaluator` (2).
+  - Interpretation: evaluation job is running with small normal lag.
 
-Interpretation: evaluation writing to DB is live and close to real-time.
+### Legacy artifacts drift
+- `.state/evaluations/` contains recent per-session evaluation JSONs from **Apr 29**, but `task_tree_*.json` artifacts last appear around **Mar 24**.
+  - Interpretation: likely legacy output-path drift or task_tree generation disabled; not necessarily a pipeline outage given DB freshness.
 
-### Legacy `.state/evaluations/` directory freshness
-- `ls -la .state/evaluations | tail -20` shows newest files around **Apr 29**, with many artifacts last written **Mar 24**.
+## Actions / Recommendations
+1. Treat stale `task_tree_*.json` as **non-blocking** until a consumer depends on them.
+2. If anyone reports missing task_tree artifacts, first confirm whether the current eval runner still emits them or if consumers should migrate to the DB `evaluations` table.
 
-Interpretation: `.state/evaluations/` is **not** a reliable freshness signal; likely legacy/partial output path drift. Canonical source is the `evaluations` table.
-
-## Noted failure pattern (for future criteria/docs)
-- SQL column mismatch: `sessions` table does **not** have `createdAt`; it uses `startedAt`/`endedAt`.
-  - This is easy to trip over when doing quick “recency” checks.
-
-## Suggested next actions (not executed in this heartbeat)
-- Consider documenting in evaluator knowledge/criteria or a small ops note: 
-  - “Use DB `evaluations.createdAt` vs `sessions.endedAt` for lag; ignore `.state/evaluations/` timestamps.”
+## Evidence (tool outputs)
+- `maxEval`/`sessionsEndedAfterMaxEval` query output and `.state/evaluations` tail listing captured in the session transcript.
