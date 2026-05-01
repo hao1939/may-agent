@@ -1,7 +1,7 @@
 # Deliverables Checklist
 
-## Task: Test Coverage Project - Complete (No further work needed)
+| Deliverable | Status | Path |
+|---|---|---|
+| Completion evidence file | DONE | /app/agents/shared/projects/outputs/test-coverage-completion-evidence.md |
 
-| # | Deliverable | Status | Path |
-|---|-------------|--------|------|
-| 1 | Completion evidence file | DONE | /app/agents/shared/projects/outputs/test-coverage-completion-evidence.md |
+Project is complete — no further work needed.
