@@ -1,6 +1,8 @@
-# Evaluator Journal
+# Evaluator heartbeat journal (2026-05-01)
 
-## 2026-05-01
-- Canonical eval pipeline health: `MAX(evaluations.createdAt)` corresponds to 2026-05-01 07:55:45Z (bun:sqlite query).
-- Legacy `.state/evaluations/` directory still shows mostly Mar 24 artifacts with a few Apr 29 `s_*.json` files; treat this as legacy output drift rather than pipeline staleness.
-- Noted: a bun one-liner intended to print multiple DB stats produced **no output** (possible quoting/exception swallowed); follow up by wrapping in try/catch and printing stderr/exit code in next heartbeat.
+## Checks
+- DB evaluation pipeline recency: `evaluations.max(createdAt)=1777627554852` vs `sessions.max(endedAt)=1777627594144` → lag ~0.011h (~39s). So session-eval cron is live.
+- Legacy artifacts: `.state/evaluations/` contains recent `s_*.json` (Apr 29) but `task_tree_*.json` still last updated Mar 24 → likely legacy-output-path drift rather than pipeline failure.
+
+## Observations / follow-ups
+- Consider updating evaluator knowledge to clarify: canonical source is DB `evaluations` table; `.state/evaluations/task_tree_*.json` can be stale without indicating pipeline break.
