@@ -1,6 +1,3 @@
 # Deliverables Checklist
 
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | prompt-efficiency project.md | DONE | /app/agents/shared/projects/prompt-efficiency/project.md |
-| 2 | P1 baseline audit report | DONE | /app/agents/shared/projects/prompt-efficiency/outputs/p1-baseline-audit.md |
+- [x] DONE: `shared-rules-proposal.md` — `/app/agents/shared/projects/prompt-efficiency/outputs/shared-rules-proposal.md` — Deduplication proposal identifying 4 rules duplicated across 7-9 SOUL.md files with per-agent edit plan and token savings estimates
