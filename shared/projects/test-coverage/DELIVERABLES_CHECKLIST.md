@@ -1,3 +1,8 @@
 # Deliverables Checklist
 
-- [x] DONE — Set project status to `complete` in `/app/agents/shared/projects/test-coverage/project.md` (changed `active` → `complete`)
+## Task: Assess test-coverage project status
+
+| Deliverable | Status | Evidence |
+|---|---|---|
+| Assess project state | DONE | project.md already set to `closed` — no action needed |
+| Update project.md if needed | DONE | Already closed, no update required |
