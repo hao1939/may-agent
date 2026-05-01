@@ -4,6 +4,7 @@ export default {
       'gym/**',
       'test/gym/**',
       'node_modules/**',
+      'shared/projects/outputs/**',
     ],
   },
 };
