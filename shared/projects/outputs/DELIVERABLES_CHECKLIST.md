@@ -1,3 +1,3 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST.md
 
-- [x] DONE: Completion evidence file → `/app/agents/shared/projects/outputs/PROJECT_COMPLETE_EVIDENCE.md`
+- [x] DONE — Stop-dispatching notice: `/app/agents/shared/projects/outputs/PROJECT_COMPLETE_STOP_DISPATCHING.md`
