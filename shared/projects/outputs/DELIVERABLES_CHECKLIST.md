@@ -1,7 +1,7 @@
 # DELIVERABLES_CHECKLIST.md
 
-## Task: Project is closed, no further work needed
+## Task: Project Closed — No further work needed
 
-| # | Deliverable | Status | Path |
-|---|-------------|--------|------|
-| 1 | Completion evidence file | DONE | /app/agents/shared/projects/outputs/completion-evidence.md |
+| Deliverable | Status | Path |
+|---|---|---|
+| Closure evidence file | DONE | /app/agents/shared/projects/outputs/project-closed-evidence.md |
