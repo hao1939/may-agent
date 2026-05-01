@@ -1,14 +1,7 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST
 
-## Project: Test Coverage Improvement
+## Task: Drive satellite project (gym-quality-improvement iteration 18)
 
-| Deliverable | Status | Path/Notes |
-|---|---|---|
-| Test coverage final report | DONE | `/app/agents/shared/projects/outputs/test-coverage-final-report.md` |
-| Coverage target 80% met | DONE | 86.69% achieved |
-| All tests passing | DONE | 1565/1565 tests passing |
-| Critical paths covered | DONE | 11/11 critical paths |
-| 60% threshold enforced | DONE | Configured and active |
-
-## Summary
-Project complete. No further work needed. This is iteration 42+ of a completed project.
+- [x] DONE — `outputs/gym-full-sweep.sh` — Automated script that runs every scenario's success_criteria.js and classifies as HEALTHY/PRE_SOLVED/BROKEN/NO_CRITERIA
+- [x] DONE — `outputs/gym-sweep-report.tsv` — Raw TSV data for all 492 scenarios
+- [x] DONE — `outputs/gym-sweep-report.md` — Summary report with findings and recommendations
