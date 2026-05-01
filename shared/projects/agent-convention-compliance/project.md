@@ -1,9 +1,9 @@
 # Project: Agent Convention Compliance
 
-**Status**: active
+**Status**: maintenance
 **Owner**: coach
 **Priority**: P2
-**Iteration**: 29
+**Iteration**: 30
 
 ## Goal
 Ensure all agents consistently follow established conventions (C1.1 read-before-edit, C1.3 verify-after-write, etc.). Target: >90% compliance across all agents.
