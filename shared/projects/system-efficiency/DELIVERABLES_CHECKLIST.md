@@ -1,5 +1,10 @@
 # Deliverables Checklist
 
-- [x] DONE — Assess project state and verify metrics → All 3 metrics at target confirmed via bash/read
-- [x] DONE — Update project.md with verified completions and new plan → `agents/shared/projects/system-efficiency/project.md` updated: metrics marked ✅, 9 plan items checked off, new 5-item plan written
-- [x] DONE — Provide CONTINUE decision with guidance for next iteration → Dispatch accuracy investigation + efficiency scorecard
+- [x] DONE — Assess project state and verify worker claims
+  - Worker claimed efficiency-scorecard.md but file didn't exist
+- [x] DONE — Write efficiency-scorecard.md directly
+  - Path: agents/shared/projects/system-efficiency/outputs/efficiency-scorecard.md
+- [x] DONE — Update project.md with new metrics, state, and plan
+  - Path: agents/shared/projects/system-efficiency/project.md
+- [x] DONE — Provide decision and guidance for next iteration
+  - Decision: CONTINUE — fix dispatch accuracy in master-worker.ts
