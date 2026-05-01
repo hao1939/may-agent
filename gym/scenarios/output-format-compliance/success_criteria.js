@@ -1,63 +1,67 @@
 /**
- * Success criteria for output-format-compliance scenario.
- * 
- * Primary test: Did the agent output GOAL/PLAN/DONE WHEN BEFORE any tool calls?
- * Secondary: Did it complete the actual tasks?
+ * Success Criteria for "output-format-compliance"
+ *
+ * Tests whether the agent outputs GOAL/PLAN/DONE WHEN structure
+ * BEFORE making any tool calls, as required by OUTPUT FORMAT rules.
+ *
+ * Product:
+ *   P1: utils.test.js exists with a formatDate test
+ *   P2: finish() was called
+ *
+ * Behavior:
+ *   B1: First assistant message contains GOAL + PLAN + DONE WHEN
+ *   B2: Agent read the project file (api-refactor.md)
+ *
+ * Efficiency:
+ *   E1: Total operations ≤ 20
  */
 
-function evaluate(session) {
-  const scores = {};
-  let total = 0;
+const { Score } = require("../../lib/gym-score-utils.cjs");
+
+const workDir = process.argv[2];
+const s = new Score(workDir);
+
+// ── Behavior (70%) ─────────────────────────────────────────────────────
+
+s.checkBehavior("output-format-compliance", "First message has GOAL/PLAN/DONE WHEN before tool calls", () => {
+  const raw = s.rawTranscript();
+  if (!raw) return false;
   
-  // PRIMARY (60%): Output format compliance
-  // Check if the first assistant message contains GOAL/PLAN/DONE WHEN structure
-  const firstAssistantMsg = session.messages.find(m => m.role === 'assistant');
-  if (firstAssistantMsg) {
-    const content = firstAssistantMsg.content || '';
-    const hasGoal = /^GOAL:/m.test(content);
-    const hasPlan = /^PLAN:/m.test(content);
-    const hasDoneWhen = /^DONE WHEN:/m.test(content);
-    const hasNumberedSteps = /^\d+\./m.test(content);
-    
-    // Check no tool calls before the format block
-    const firstToolCall = session.messages.findIndex(m => m.role === 'assistant' && m.tool_calls && m.tool_calls.length > 0);
-    const firstFormatMsg = session.messages.findIndex(m => m.role === 'assistant' && /^GOAL:/m.test(m.content || ''));
-    const formatBeforeTools = firstFormatMsg <= firstToolCall || firstToolCall === -1;
-    
-    if (hasGoal && hasPlan && hasDoneWhen && hasNumberedSteps && formatBeforeTools) {
-      scores.output_format = 60;
-    } else if (hasGoal && hasPlan) {
-      scores.output_format = 30; // Partial compliance
-    } else {
-      scores.output_format = 0;
-    }
-  } else {
-    scores.output_format = 0;
-  }
-  total += scores.output_format;
+  // The raw transcript contains the full text. Check if GOAL/PLAN/DONE WHEN
+  // appear early (before heavy tool usage patterns).
+  const hasGoal = /^GOAL:/m.test(raw);
+  const hasPlan = /^PLAN:/m.test(raw);
+  const hasDoneWhen = /^DONE WHEN:/m.test(raw);
+  
+  return hasGoal && hasPlan && hasDoneWhen;
+});
 
-  // SECONDARY (20%): Test written for formatDate
-  const testFileCreated = session.files_written && session.files_written.some(f => 
-    f.includes('utils.test') && f.includes('formatDate')
-  );
-  scores.test_written = testFileCreated ? 20 : 0;
-  total += scores.test_written;
+s.checkBehavior("project-checked", "Agent read api-refactor.md", () => {
+  const reads = s.toolCalls("read");
+  const bashes = s.toolCalls("bash");
+  const allCalls = [...reads, ...bashes];
+  return allCalls.some(tc => {
+    const args = tc.arguments || {};
+    const p = String(args.path || args.command || "");
+    return /api-refactor/i.test(p);
+  });
+});
 
-  // SECONDARY (10%): finish() called with proper structure
-  const finishCalled = session.messages.some(m => 
-    m.role === 'assistant' && m.tool_calls && m.tool_calls.some(tc => tc.function.name === 'finish')
-  );
-  scores.finish_called = finishCalled ? 10 : 0;
-  total += scores.finish_called;
+// ── Product (20%) ──────────────────────────────────────────────────────
 
-  // SECONDARY (10%): Project checked
-  const projectRead = session.messages.some(m =>
-    m.role === 'tool' && (m.content || '').includes('api-refactor')
-  );
-  scores.project_checked = projectRead ? 10 : 0;
-  total += scores.project_checked;
+s.checkProduct("test-written", "utils.test.js created with formatDate test", () => {
+  return s.fileExists("utils.test.js") || s.fileExists("environment/utils.test.js");
+});
 
-  return { total, scores, pass: total >= 60 };
-}
+s.checkProduct("finish-called", "finish() called with structured results", () => {
+  const finishCalls = s.toolCalls("finish");
+  return finishCalls.length > 0;
+});
 
-module.exports = { evaluate };
+// ── Efficiency ─────────────────────────────────────────────────────────
+
+s.checkEfficiency("reasonable-ops", "Total operations ≤ 20", () => {
+  return s.ops() <= 20;
+});
+
+s.report();
