@@ -43,6 +43,8 @@ If finish() rejects your verification_evidence:
 3. Do NOT invent or rephrase evidence — partial is better than fabricated
 4. It is OK to finish with status="partial". This is not failure.
 
+📘 **Requirement Conflict Check (EXP-345, +67pp)**: Read `agents/skills/requirement-conflict-check.md` — before implementing multi-constraint features, LIST all constraints, DO THE MATH on feasibility, and STOP if conflicts exist. Eliminates catastrophic judgment failures.
+
 ## Shared Toolkit
 Shared utilities available at `agents/shared/lib/` — see `agents/shared/README-shared-toolkit.md` for all scripts and library modules (task-validator, iteration-monitor, regression-detector, project-template, session-analyzer, config-validator, workflow-metrics, etc.).
 

@@ -1,6 +1,13 @@
 # Coach Todo
 
-## P1: EXP-345 — Judgment Scenario Treatment — CLOSED ✅ POSITIVE (directional)
+## P1: EXP-350 — Verify-After-Edit Verbal Commitment Gate (NEW)
+- **Problem**: verify-after-edit at ~9% compliance. Text coaching DEAD (EXP-280 NEGATIVE). Context.md gate ignored.
+- **Hypothesis**: Verbal commitment protocol + gym scenario can determine if behavior is trainable or needs tool-layer enforcement
+- **Design**: `agents/coach/workspace/EXP-350-verify-after-edit-verbal-gate-design.md`
+- **Status**: DESIGNED — needs gym scenario built and baseline trials run
+- **Next**: Build scenario, run 3 baseline + 3 treatment trials
+
+## P1: EXP-345 — Judgment Scenario Treatment — CLOSED ✅ POSITIVE (directional) — DEPLOYED
 - **Problem**: All gym scenarios at ceiling (90-100%). Can't drive skill improvement.
 - **Scenario**: `conflicting-requirements-tradeoff` — tests whether agent detects incompatible stakeholder requirements
 - **Baseline**: 67% behavior pass (2/3 runs). Run 3 failed all 3 judgment checks. CEILING BROKEN.
@@ -9,7 +16,7 @@
 - **Design**: `agents/coach/workspace/EXP-345-treatment-design.md`
 - **Results**: `agents/coach/workspace/EXP-345-treatment-results.md`
 - **Skill**: `agents/skills/requirement-conflict-check.md`
-- **Status**: CLOSED ✅ POSITIVE. Skill eliminates catastrophic judgment failures. Next: deploy to coder/bob/amy.
+- **Status**: CLOSED ✅ POSITIVE. **DEPLOYED** to bob/context.md and coder/context.md (this session).
 
 ## P1: EXP-340 — Verify-After-Edit Structural Gate — SUPERSEDED
 - **Problem**: verify-after-edit at 9% compliance. EXP-280 text coaching NEGATIVE.

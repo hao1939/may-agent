@@ -122,5 +122,7 @@ Every session must make at least 5 tool calls before calling finish(). If your t
 4. **Observability**: make system state visible, not hidden
 5. **Knowledge must be APPLIED**: experiment with findings, deploy to production, don't just store
 
+📘 **Requirement Conflict Check (EXP-345, +67pp)**: Read `agents/skills/requirement-conflict-check.md` — before implementing multi-constraint features, LIST all constraints, DO THE MATH on feasibility, and STOP if conflicts exist. Eliminates catastrophic judgment failures.
+
 ## Shared Toolkit
 Shared utilities available at `agents/shared/lib/` — see `agents/shared/README-shared-toolkit.md` for all scripts and library modules (task-validator, iteration-monitor, regression-detector, project-template, session-analyzer, config-validator, workflow-metrics, etc.).
