@@ -1,5 +1,3 @@
 # Deliverables Checklist
 
-- [x] DONE: Confirmation file written at `/app/agents/shared/projects/outputs/project-done-confirmation.md`
-
-Project is complete. No further work needed.
+- [x] DONE: Acknowledge project completion — `/app/agents/shared/projects/outputs/project-done-confirmation.md`
