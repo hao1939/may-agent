@@ -1,5 +1,14 @@
 # Coach Todo
 
+## P1: EXP-425 — Decompose-Before-Acting on Error Recovery (NEW)
+- **Problem**: decompose-before-acting proven on hidden-constraints-refactor (+33pp) but only 1 scenario. Need cross-scenario validation.
+- **Hypothesis**: Skill's DIAGNOSE→REPLAN loop prevents red-herring fixation on `wrong-fix-recovery` scenario (≥+20pp)
+- **Scenario**: `wrong-fix-recovery` — misleading validator warning distracts from real Math.trunc bug
+- **Design**: `agents/coach/workspace/EXP-425-error-recovery-decompose-design.md`
+- **Protocol**: 3 baseline + 3 treatment runs, threshold ≥5/6 checks
+- **Dependencies**: Run after EXP-420 treatment completes
+- **Next**: Run baseline on wrong-fix-recovery to confirm not at ceiling
+
 ## P1: EXP-420 — Decompose-Before-Acting Replication (NEW)
 - **Problem**: EXP-415 proved skill (+33pp) but it was never deployed. Need deployment + replication on second scenario.
 - **Deployed**: bob/context.md, coder/context.md, tech-lead/context.md (this session)
