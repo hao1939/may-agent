@@ -1,4 +1,4 @@
 # Deliverables Checklist
 
-- [x] DONE — Project closure summary: `/app/agents/shared/projects/system-efficiency/outputs/system-efficiency-final.md`
-  - Documents goal, 3/3 metrics at target, 10 satellites, timeline, key techniques, CLOSED status
+- [x] DONE — Project closure document: `/app/agents/shared/projects/outputs/system-efficiency-project-closed.md`
+  - Documents final metrics (3/3 at target), 10 satellites, key deliverables, and recommended next project
