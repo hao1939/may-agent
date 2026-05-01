@@ -1,7 +1,4 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST.md
 
-## Task: Iteration 16 — Project Done, No Work Needed
-
-| Deliverable | Status | Notes |
-|---|---|---|
-| No deliverables required | N/A | Project is done per manager. All 3 metrics at target, 80+ output files produced, 5 satellites spawned. Status confirmed "done" in project.md. No further iterations should be dispatched. |
+- [x] DONE — Completion evidence file: `/app/agents/shared/projects/outputs/completion-evidence-iteration17.md`
+  - Documents that the project is done with no remaining work
