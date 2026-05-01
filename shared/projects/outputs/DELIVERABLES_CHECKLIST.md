@@ -1,9 +1,7 @@
 # Deliverables Checklist
 
-## Task: Project is closed, no work needed (Iteration 15)
-
 | Deliverable | Status | Path |
 |---|---|---|
-| Closure documentation | DONE | /app/agents/shared/projects/outputs/PROJECT_CLOSED_NO_WORK_NEEDED.md |
+| Stop-dispatching notice | DONE | /app/agents/shared/projects/outputs/STOP_DISPATCHING.md |
 
-No actionable work exists. Project closed with all metrics met.
+Project is CLOSED. No work remains. This is iteration 16 of KE-437 loop.
