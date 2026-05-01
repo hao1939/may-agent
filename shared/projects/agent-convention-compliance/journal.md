@@ -191,3 +191,6 @@ Let me write the results:
 (b) We hit 98.0% (50/51) — all milestones complete. The last failure is stochastic (C2.1 plan-before-acting in workflow). We need to confirm stability and harden.
 
 (c) **First step — P23.2**: Edit the 
+
+### Iteration 23 — 2026-05-01T12:32:20.099Z
+**Worker**: Good, the regression guard exists. Let me finalize:
