@@ -6,4 +6,4 @@
 |---|------------|--------|------|
 | 1 | Closure confirmation file | DONE | /app/agents/shared/projects/outputs/PROJECT_CLOSED.md |
 
-No further work required. Project closed.
+No further work required - project status is `closed`.
