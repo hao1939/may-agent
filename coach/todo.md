@@ -1,5 +1,13 @@
 # Coach Todo
 
+## P1: EXP-298 — Optimizer Confabulation Guard — CLOSED ✅ POSITIVE (directional)
+- **Problem**: Optimizer sessions claimed results (coverage %, test counts) without tool output backing
+- **Treatment**: Confabulation check rule in optimizer/context.md ("NEVER report numbers without tool output")
+- **Baseline**: 3/3 sessions (100%) had unsupported claims
+- **Post-deployment**: 0/10 sessions (0%) have unsupported claims. Delta: -100pp.
+- **Measurement**: `/app/.state/experiments/EXP-298-measurement-2.md`
+- **Status**: CLOSED ✅ POSITIVE (directional). Guard kept deployed. EXP-299 not needed.
+
 ## P1: EXP-445 — Impact Radius Check on Escalation Judgment — CLOSED ✅ POSITIVE
 - **Problem**: Agents exhibit "tunnel vision" — fix failing tests but miss other modules using same interface
 - **Hypothesis**: impact-radius-check skill (grep consumers, assess scope) → ≥+33pp
