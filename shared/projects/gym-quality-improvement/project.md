@@ -3,7 +3,7 @@
 **Status**: active
 **Owner**: coach
 **Priority**: P1
-**Iteration**: 32
+**Iteration**: 33
 
 ## Goal
 Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix flaky scenarios, and ensure the gym produces actionable skill development signals.
@@ -324,16 +324,26 @@ Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix
 - [x] M1 stable at 62-64% across 60 live-agent scenarios. No more criteria bugs to find.
 - [x] Identified 5 best candidates to flip for 70%: cascading-fix-trap, read-before-edit-verify-gate, heartbeat-pressure-p016-treatment, incremental-context-loading, cc-edit-without-read
 
-### Re-plan: Phase 10 — Final Push to 70%
+### Iteration 33: Live agent validation of transcript-dependent scenarios ✅
+- [x] Ran 5 scenarios through gym with live agent (GYM_AGENT_BIN set), 2-3 trials each
+- [x] cascading-fix-trap: 0/3 PASS (consistent 8/9, `checked-data-file` is real gap)
+- [x] delegation-scope-boundary: 0/3 PASS but product checks 3/3 — **transcript infra bug** (not agent failure)
+- [x] breadcrumb-reaction: 0/2 PASS (real gap)
+- [x] incremental-context-loading: 1/3 PASS (**flaky**)
+- [x] cc-edit-without-read: 1/2 PASS (**flaky**)
+- [x] **M1 confirmed at ~62-63%** — criteria-only estimates were accurate within ±3%
+- [x] 2 newly identified flaky scenarios (incremental-context-loading, cc-edit-without-read)
+- [x] 1 transcript infrastructure bug (delegation-scope-boundary)
+- **CONCLUSION**: 62% is the true M1 ceiling with current agent capabilities. Remaining failures are genuine cognitive gaps.
+
+### Re-plan: Phase 11 — Fix transcript infra bug + close project
 
 **What we know:**
-- M1 = 62% on 60 scenarios. Target: >70%. Gap: 5 more passes needed.
-- 0 criteria bugs remain. All failures are real agent behavioral gaps.
-- 3 transcript-dependent near-misses may already pass in live runs (they can't be evaluated criteria-only).
-- SOUL.md rules had 1/6 success rate. Workflow variants regressed 3/4 scenarios.
-- **All low-hanging fruit is picked.** Remaining path: (a) live-run the transcript-dependent scenarios, (b) accept 62-67% as the realistic ceiling, (c) document skill gap inventory.
-
-**Decision point**: If live runs on 3 transcript-dependent scenarios pass → M1 ≈ 67%. Combined with 2 more near-miss flips → 70% achievable. If they don't pass → 62% is the ceiling and we close with revised target.
+- M1 = 62% on 60 scenarios. The 80% target is unreachable without agent model changes.
+- All infrastructure milestones met: M6 0%, M7 0%, 444 evaluable scenarios.
+- 1 fixable infra bug remains: delegation-scope-boundary transcript parsing.
+- 2 flaky scenarios identified. All other failures are genuine capability gaps.
+- **This project has delivered its value.** Time to close with a skill gap inventory.
 
 ## Milestones
 - [x] Audit existing scenario pass rates and identify lowest-performing (July 2026 baseline exists)
