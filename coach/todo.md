@@ -1,12 +1,19 @@
 # Coach Todo
 
+## P1: EXP-450 — Instruction Compression Effect on Compliance — DESIGN
+- **Problem**: SOUL.md files trimmed 787w→406w. Natural experiment opportunity.
+- **Hypothesis**: Compressed instructions maintain/improve compliance on remaining rules
+- **Method**: Audit 10 post-trim sessions for read-before-edit, verify-after-edit, declare-intent, deliverables-in-finish
+- **Design**: `agents/coach/workspace/EXP-450-instruction-compression-design.md`
+- **Status**: DESIGN — measurement due next heartbeat (need 10+ post-trim sessions)
+
 ## P1: EXP-298 — Optimizer Confabulation Guard — CLOSED ✅ POSITIVE (directional)
 - **Problem**: Optimizer sessions claimed results (coverage %, test counts) without tool output backing
 - **Treatment**: Confabulation check rule in optimizer/context.md ("NEVER report numbers without tool output")
 - **Baseline**: 3/3 sessions (100%) had unsupported claims
-- **Post-deployment**: 0/10 sessions (0%) have unsupported claims. Delta: -100pp.
-- **Measurement**: `/app/.state/experiments/EXP-298-measurement-2.md`
-- **Status**: CLOSED ✅ POSITIVE (directional). Guard kept deployed. EXP-299 not needed.
+- **Post-deployment**: 0/14 sessions (0%) have unsupported claims. Delta: -100pp.
+- **Measurement**: `/app/.state/experiments/EXP-298-measurement-3.md`
+- **Status**: CLOSED ✅ POSITIVE (directional). Guard kept deployed. No further measurements needed.
 
 ## P1: EXP-445 — Impact Radius Check on Escalation Judgment — CLOSED ✅ POSITIVE
 - **Problem**: Agents exhibit "tunnel vision" — fix failing tests but miss other modules using same interface
