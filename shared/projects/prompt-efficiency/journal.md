@@ -83,3 +83,8 @@
 
 ### Iteration 1 — 2026-05-01T20:47:33.824Z
 **Worker**: 
+**Orchestrator**: CONTINUE
+
+(a) Next iteration: Check if tech-lead has trimmed the 3 SOUL.md files. Run `wc -w /app/agents/qa/SOUL.md /app/agents/coach/SOUL.md /app/agents/evaluator/SOUL.md`.
+
+(b) The worker **cannot edit SOUL.md files** — 2 iterations produced only proposal files while actual files stayed at 841w/79
