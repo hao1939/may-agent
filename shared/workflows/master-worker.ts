@@ -220,7 +220,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   if (!existsSync(projectFile)) {
-    return ctx.escalate(`No project.md found at: ${projectFile}`);
+    ctx.log?.(`Skipping: no project.md at ${projectFile}`);
+    return { status: "skipped", reason: "project-not-found", path: projectFile };
   }
 
   // Ensure journal exists
