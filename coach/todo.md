@@ -1,5 +1,13 @@
 # Coach Todo
 
+## P1: EXP-360 — Workflow-Level Forced Verification Step — DESIGNED
+- **Problem**: verify-after-edit fails as text instruction (KE-338) but succeeds as separate workflow phase (verify-wrap 100% vs plain 60%)
+- **Hypothesis**: Adding a mandatory Phase 3 VERIFY step to multi-edit-workflow will raise median from 5/9 to ≥8/9
+- **Scenario**: `agents/gym/scenarios/convention-verify-multi-edit-workflow-gated/`
+- **Design**: `agents/coach/workspace/EXP-360-workflow-verify-step-design.md`
+- **Status**: DESIGNED — scenario created, ready for trial runs
+- **Next**: Run 3 trials each arm, compare medians
+
 ## P1: EXP-355 — Convention Compliance Stability Measurement — CLOSED ✅
 - **Problem**: Convention compliance reported as peak (88.2%) but live runs show 75-92% variance. Single-run measurements are unreliable.
 - **Design**: `agents/coach/workspace/EXP-355-convention-stability-design.md`
