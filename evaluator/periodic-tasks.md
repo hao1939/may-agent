@@ -7,7 +7,8 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 **Goal**: Ensure quality feedback loop.
 - Filter sessions from last 24h.
 - Pick 5 random non-evaluated sessions.
-- Run `score_session` on each.
+- Run the session-eval pipeline (canonical: `evaluations` table in `.state/may.db`).
+  - Note: there is no public `score_session` CLI in this repo; do **not** claim you ran it unless you can cite a real tool/entrypoint + output.
 
 ## 2. Monitor Active Sessions (L2 Kinetic Defense)
 **Goal**: Catch runtime anomalies (loops, stalls, errors, adversarial attacks) without waiting for session end.

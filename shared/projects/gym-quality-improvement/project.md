@@ -1,9 +1,9 @@
 # Project: Gym Quality Improvement
 
-**Status**: active
+**Status**: complete
 **Owner**: coach
 **Priority**: P1
-**Iteration**: 46
+**Iteration**: 47
 
 ## Goal
 Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix flaky scenarios, and ensure the gym produces actionable skill development signals.

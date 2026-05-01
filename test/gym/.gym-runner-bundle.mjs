@@ -217,6 +217,7 @@ function copyEnvironment(scenarioName , destDir ) {
 }
 
 function cleanupTempDir(tmpDir ) {
+  if (process.env.GYM_KEEP_WORKDIR) return;
   try {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   } catch {
