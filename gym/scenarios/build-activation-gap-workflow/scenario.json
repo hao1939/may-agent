@@ -1,0 +1,11 @@
+{
+  "name": "build-activation-gap-workflow",
+  "description": "Workflow variant of build-activation-gap. Forces agent to verify running process state AFTER deployment before declaring done. Prevents the common failure of assuming symlink update equals process activation.",
+  "categories": ["verification", "deployment"],
+  "tags": ["behavior", "deployment", "build-activation", "verification", "workflow"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "inherits": "build-activation-gap"
+}

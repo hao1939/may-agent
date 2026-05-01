@@ -1,0 +1,12 @@
+{
+  "name": "ambiguous-context-drift-workflow",
+  "description": "Workflow variant of ambiguous-context-drift. Forces agent to verify filesystem state and document actual findings BEFORE proceeding with migration. Prevents trusting injected context claims without verification.",
+  "categories": ["judgment", "verification"],
+  "tags": ["behavior", "FM-2.6", "injected-context", "ambiguity", "workflow"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": true,
+  "inherits": "ambiguous-context-drift",
+  "injected_context": "injected_context.md"
+}
