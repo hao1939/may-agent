@@ -1,4 +1,4 @@
 # Deliverables Checklist
 
-- [x] DONE — Completion notice: `/app/agents/shared/projects/outputs/PROJECT_COMPLETE_STOP.md`
-  - Project is COMPLETE. No work remains. 40+ wasted iterations.
+- [x] DONE — Completion evidence file: `/app/agents/shared/projects/outputs/project-complete-evidence.md`
+  - Documents all metrics at target, all plan items done, recommends removing from active queue
