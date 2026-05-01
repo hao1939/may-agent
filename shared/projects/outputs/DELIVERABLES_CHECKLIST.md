@@ -1,7 +1,12 @@
 # Deliverables Checklist
 
+## Task: Context-trimming project - Iteration 12 (project complete, produce regression guard)
+
 | # | Deliverable | Status | Path |
 |---|------------|--------|------|
-| 1 | Project completion notice | DONE | /app/agents/shared/projects/outputs/PROJECT_COMPLETE_STOP_DISPATCHING.md |
+| 1 | Regression guard script | DONE | /app/agents/shared/projects/outputs/regression-guard.sh |
 
-Project is complete. All metrics at target. No further work possible.
+## Notes
+- Project was already complete (all metrics at target). Produced a regression guard script as the only remaining useful artifact.
+- Script validates all SOUL.md files < 600w and context.md files < 450w.
+- All in-scope agents pass; only out-of-scope dirs (.lab, gym, _archetypes) show violations.

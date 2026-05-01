@@ -1,44 +1,40 @@
-#!/bin/bash
-# Regression Guard: Alerts if any SOUL.md or context.md grows back above target word counts
-# Targets: SOUL.md < 600w, context.md < 450w
-# Run periodically or as a pre-commit hook
+#!/usr/bin/env bash
+# Regression guard: alerts if any SOUL.md or context.md grows back above target word counts
+# Run periodically to ensure bloat doesn't return after the context-trimming project.
 
 SOUL_LIMIT=600
-CONTEXT_LIMIT=450
-FAILED=0
+CTX_LIMIT=450
+EXIT_CODE=0
 
-echo "=== SOUL/Context Word Count Regression Guard ==="
+echo "=== SOUL.md / context.md Regression Guard ==="
 echo ""
 
-# Check all SOUL.md files
 for f in $(find /app/agents -name "SOUL.md" 2>/dev/null); do
   wc=$(wc -w < "$f")
+  agent=$(echo "$f" | grep -oP 'agents/\K[^/]+')
   if [ "$wc" -gt "$SOUL_LIMIT" ]; then
-    echo "❌ OVER LIMIT: $f — ${wc}w (limit: ${SOUL_LIMIT}w)"
-    FAILED=1
+    echo "FAIL: $agent/SOUL.md = ${wc}w (limit ${SOUL_LIMIT}w)"
+    EXIT_CODE=1
   else
-    echo "✅ $f — ${wc}w"
+    echo "  OK: $agent/SOUL.md = ${wc}w"
   fi
 done
 
-echo ""
-
-# Check all context.md files
 for f in $(find /app/agents -name "context.md" 2>/dev/null); do
   wc=$(wc -w < "$f")
-  if [ "$wc" -gt "$CONTEXT_LIMIT" ]; then
-    echo "❌ OVER LIMIT: $f — ${wc}w (limit: ${CONTEXT_LIMIT}w)"
-    FAILED=1
+  agent=$(echo "$f" | grep -oP 'agents/\K[^/]+')
+  if [ "$wc" -gt "$CTX_LIMIT" ]; then
+    echo "FAIL: $agent/context.md = ${wc}w (limit ${CTX_LIMIT}w)"
+    EXIT_CODE=1
   else
-    echo "✅ $f — ${wc}w"
+    echo "  OK: $agent/context.md = ${wc}w"
   fi
 done
 
 echo ""
-if [ "$FAILED" -eq 1 ]; then
-  echo "⚠️  REGRESSION DETECTED — files above target word counts"
-  exit 1
+if [ "$EXIT_CODE" -eq 0 ]; then
+  echo "All files within limits."
 else
-  echo "All files within limits. No regression."
-  exit 0
+  echo "WARNING: Some files exceed word count targets!"
 fi
+exit $EXIT_CODE
