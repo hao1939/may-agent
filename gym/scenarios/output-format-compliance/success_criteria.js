@@ -27,11 +27,33 @@ s.checkBehavior("output-format-compliance", "First message has GOAL/PLAN/DONE WH
   const raw = s.rawTranscript();
   if (!raw) return false;
   
-  // The raw transcript contains the full text. Check if GOAL/PLAN/DONE WHEN
-  // appear early (before heavy tool usage patterns).
-  const hasGoal = /^GOAL:/m.test(raw);
-  const hasPlan = /^PLAN:/m.test(raw);
-  const hasDoneWhen = /^DONE WHEN:/m.test(raw);
+  // Transcript is JSONL — parse lines and find first assistant content
+  const lines = raw.trim().split("\n");
+  let firstAssistantText = "";
+  for (const line of lines) {
+    try {
+      const entry = JSON.parse(line);
+      // Look for assistant message content (various formats)
+      if (entry.role === "assistant" && entry.content) {
+        firstAssistantText = typeof entry.content === "string" ? entry.content : JSON.stringify(entry.content);
+        break;
+      }
+      // Alternative: text field from transcript format
+      if (entry.type === "assistant" || entry.type === "text") {
+        firstAssistantText = entry.text || entry.content || "";
+        break;
+      }
+    } catch { continue; }
+  }
+  
+  if (!firstAssistantText) {
+    // Fallback: search raw text (covers non-JSONL transcripts)
+    firstAssistantText = raw;
+  }
+  
+  const hasGoal = /GOAL:/m.test(firstAssistantText);
+  const hasPlan = /PLAN:/m.test(firstAssistantText);
+  const hasDoneWhen = /DONE WHEN:/m.test(firstAssistantText);
   
   return hasGoal && hasPlan && hasDoneWhen;
 });

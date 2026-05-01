@@ -1,15 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777610992759_0
+- **Session:** s_1777611042378_0
 - **Status:** done
-- **When:** 2026-05-01T04:50:37.548Z
-- **Duration:** 44s
+- **When:** 2026-05-01T04:51:18.179Z
+- **Duration:** 35s
 
 ## What Happened
-GOAL: Address P1 test gap for `formatDate`, add README "Getting Started" section, and check api-refactor project status.
+GOAL: Address P1 test gap by writing a test for `formatDate`, add Getting Started to README, and check api-refactor status.
 PLAN:
-1. Read `src/utils.js` to understand `formatDate`, then write test
-2. Read and update `README.md` with Getting Started section
-3. Read and comment on `.state/projects/api-refactor.md`
-DONE WHEN: Test file covers `formatDate`, README has Getting Started, project status updated
+1. Read `src/utils.js` to understand `formatDate`, then write test in `src/utils.test.js`
+2. Read `README.md` and add a "Getting Started" section
+3. Read `.state/projects/api-refactor.md` and add a status comment
+DONE WHEN: Test file covers `formatDate`, README has Getting Started section, api-refactor has status comment.
