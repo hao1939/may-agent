@@ -23,6 +23,6 @@ Known issues:
 ## Phase 2 — Execute and Verify
 
 Now execute the plan from PLAN.md:
-1. Edit each config file with the correct value
-2. After each edit, read the file back to verify the change took effect
-3. Make sure the rest of each file's content is preserved
+1. Use `edit()` to modify each config file — change ONLY the target field. Do NOT use `write()` to rewrite entire files (you will lose fields).
+2. After each edit, read the file back to verify the change took effect and all other fields are preserved.
+3. Verify each file immediately after editing it before moving to the next one.
