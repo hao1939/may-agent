@@ -18,7 +18,7 @@ Reduce token waste in agent system prompts and context loading, improving throug
 ## Plan
 
 - [x] **P1: Baseline audit** — Measure token count of every SOUL.md and context.md. Identify duplicated content across agents.
-- [ ] **P2: Deduplicate shared rules** — Extract common rules (edit>write, finish() format, checkpoint usage) into a single shared file. Reference it instead of repeating.
+- [~] **P2: Deduplicate shared rules** — Analysis complete: 3 rules in 6 SOUL.md files are already guard-enforced. Removal saves ~600 tok/invocation. See `outputs/p2-dedup-analysis.md`. Implementation pending approval.
 - [ ] **P3: Trim verbose guidance** — Remove examples and verbose explanations from SOUL.md files. Keep only actionable rules.
 - [ ] **P4: Context.md hygiene** — Remove stale facts from context.md files. Add expiry dates to context entries.
 - [ ] **P5: Measure improvement** — Re-measure token counts after changes. Verify no quality regression in gym scores.
