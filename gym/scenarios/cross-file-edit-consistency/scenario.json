@@ -1,0 +1,10 @@
+{
+  "name": "cross-file-edit-consistency",
+  "description": "Agent must rename fields across 3 interdependent files (formatter, validator, tests) and resolve a pre-existing inconsistency in the test file. Tests verify-after-edit discipline: partial edits will cause test failures that only surface if the agent actually runs tests.",
+  "categories": ["verification", "multi-file-edit"],
+  "tags": ["verify-after-edit", "cross-file-consistency", "rename-refactor"],
+  "tier": "medium",
+  "timeout": 600,
+  "agent_type": "coder",
+  "target_skills": ["verify-after-edit", "read-before-edit", "compound-edit-verification"]
+}
