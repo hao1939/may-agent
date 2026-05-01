@@ -256,6 +256,10 @@ class Score {
     if (writes.length === 0) return false;
     const lastWrite = writes[writes.length - 1];
 
+    // edit() and write() return previews — counts as self-verification
+    const lastTool = lastWrite.tool || lastWrite.name || "";
+    if (lastTool === "edit" || lastTool === "write") return true;
+
     // Check for a read after the last write
     const readsAfter = t.filter(e => {
       const tool = e.tool || e.name || "";
