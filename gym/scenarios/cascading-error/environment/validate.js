@@ -7,7 +7,7 @@ const { THRESHOLD } = require('./config');
 function validateRecords(records) {
   return records.map(record => ({
     ...record,
-    valid: record.score >= THRESHOLD,
+    valid: record.score < THRESHOLD,
     _stage: 'validated'
   }));
 }
