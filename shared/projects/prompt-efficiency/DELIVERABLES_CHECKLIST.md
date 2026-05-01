@@ -1,9 +1,9 @@
 # Deliverables Checklist
 
-## Task: Final project assessment and closure
+## Task: Assess prompt-efficiency project and decide next steps
 
-| # | Deliverable | Status | Evidence |
-|---|-------------|--------|----------|
-| 1 | Verify all SOUL.md files <600w | DONE | wc -w confirms max 598w (may), eval 406w, avg 386w |
-| 2 | Update project.md to Complete | DONE | project.md — status set to Complete, all plan items checked, final metrics |
-| 3 | Final metrics recorded | DONE | SOUL.md 59% reduction (950→386w avg), context.md 72% reduction (783→218w avg) |
+| Deliverable | Status | Evidence |
+|---|---|---|
+| Verify evaluator SOUL.md trimmed | DONE | wc -w confirmed 406w |
+| Verify project.md is up to date | DONE | Already marked Complete with correct metrics |
+| Decision on next steps | DONE | No further work needed, project complete |
