@@ -1,1 +1,0 @@
-7 services checked, 2 errors found, highest severity: critical
