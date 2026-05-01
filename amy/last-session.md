@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777627659440_0
+- **Session:** s_1777627675819_0
 - **Status:** done
-- **When:** 2026-05-01T09:27:55.462Z
-- **Duration:** 16s
+- **When:** 2026-05-01T09:28:27.836Z
+- **Duration:** 32s
 
 ## What Happened
-No config.json exists yet, so I'll create it:
+From the transcript, the previous session created `config.json` from scratch (no original file existed), so `name` and `debug` were never included. This is a bug — the file is missing those fields. I'll fix it by adding them with sensible defaults:
