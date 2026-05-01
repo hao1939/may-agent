@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777622907446_0
+- **Session:** s_1777622907423_0
 - **Status:** done
-- **When:** 2026-05-01T08:09:01.093Z
-- **Duration:** 33s
+- **When:** 2026-05-01T08:10:26.459Z
+- **Duration:** 1m59s
 
 ## What Happened
-The root cause is clear: the patch was applied to `config.md` instead of `SOUL.md`.
+All working. Now create the migration status doc and verify no JSON files remain:
