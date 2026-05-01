@@ -1,0 +1,10 @@
+{
+  "name": "planning-dependency-chain",
+  "description": "12-item task with 3 dependency chains. Tests whether agents plan execution order or proceed linearly and miss dependencies. Goldilocks target: baseline 40-60% pass rate.",
+  "categories": ["cognitive-load", "planning"],
+  "tags": ["planning", "dependencies", "EXP-410", "goldilocks"],
+  "tier": "standard",
+  "timeout": 12,
+  "agent_type": "bob",
+  "workflow": false
+}
