@@ -1,3 +1,4 @@
 # Deliverables Checklist
 
-- [x] DONE: Update project.md status to "done" — `/app/agents/shared/projects/system-efficiency/project.md` line 3 changed from "active" to "done"
+- [x] DONE: Satellite audit — `outputs/satellite-audit.md` (wrote audit of 3 satellites)
+- [x] DONE: Project.md update — `/app/agents/shared/projects/system-efficiency/project.md` (iteration 5, checked off 3 items, added re-plan)
