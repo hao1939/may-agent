@@ -7,12 +7,12 @@ Reduce token waste in agent system prompts and context loading, improving throug
 **Owner**: optimizer (system-efficiency satellite)
 **Created**: 2025-01-20
 
-## Metrics (updated 2025-06-01)
+## Metrics (updated 2025-07-02)
 | Metric | Baseline | Target | Current | Status |
 |--------|----------|--------|---------|--------|
-| SOUL.md avg size (words) | ~950 | <600w | 676w | ⚠️ Regressed. P3 not yet applied. 7 files >600w. |
-| Context.md avg size (words) | ~783 | <450w | 218w | ✅ Done (improved from 226w) |
-| Duplicate rules across agents | 3 rules × 5-8 | 0 duplicates | 2 rules × 5 (+1 missed P2) | ⚠️ Blocked: need tech-lead |
+| SOUL.md avg size (words) | ~950 | <600w | 621w | ⚠️ 7 agents >600w. optimizer+tech-lead trimmed. |
+| Context.md avg size (words) | ~783 | <450w | 218w | ✅ Done |
+| Duplicate rules across agents | 3 rules × 5-8 | 0 duplicates | 2 rules × 5 | ⚠️ Blocked: need tech-lead |
 | Bloated context files (>1000w) | 4 agents | 0 agents | 0 agents | ✅ Done |
 
 ## Plan
