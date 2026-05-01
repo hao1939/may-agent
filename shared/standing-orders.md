@@ -31,11 +31,11 @@ When Hao asks May to dispatch work, May must start it immediately using `agents.
 ### [ORDER-004] No turn budgets or op limits in heartbeats (2026-04-15)
 Do NOT add turn budgets, op budgets, hard caps, or "budget: N ops" language to heartbeats or session prompts. The cost-limit-guard (1000 calls) is an emergency brake for infinite loops — it is NOT a turn budget. For session cost control, use persistent tasks + owner review.
 - **Applies to**: all
-- **Reason**: Hard caps force-close productive sessions. Optimizer and tech-lead repeatedly re-added budget language because they see real waste — but the fix is owner review, not caps. If you see runaway sessions, report them to May.
+- **Reason**: Hard caps force-close productive sessions. Agents repeatedly re-added budget language because they see real waste — but the fix is owner review, not caps. If you see runaway sessions, report them to May.
 
 ### [ORDER-009] Guard system changes require review (2026-04-15)
 Adding, removing, or modifying guards in `compose-guards.ts` affects every session. These changes must be reviewed by May (gatekeeper) before merging. The review-branch QA process should flag `compose-guards.ts` changes for May's attention.
-- **Applies to**: all (especially tech-lead, coder)
+- **Applies to**: all
 - **Reason**: cost-limit-guard was wired in at 200 calls without review, blocking agents mid-session. System-scope changes need gatekeeper review.
 
 <!-- 
@@ -49,7 +49,7 @@ Clear, actionable instruction. One sentence if possible.
 Example:
 ### [ORDER-001] Stop generating hypotheses without testing (2026-04-11)
 Before creating any new hypothesis, you must first test or archive one existing untested hypothesis.
-- **Applies to**: bob
+- **Applies to**: all
 - **Reason**: 85% of hypotheses are untested. Stop accumulating, start resolving.
 -->
 

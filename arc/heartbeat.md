@@ -30,3 +30,16 @@ SELECT event_type, COUNT(*) as c FROM events GROUP BY event_type ORDER BY c DESC
 -- Active metrics
 SELECT id, name, current, target, threshold FROM metrics WHERE status='active';
 ```
+
+## System Coherence Audit
+Every heartbeat, pick ONE of these areas and check for staleness:
+- `agents/shared/common-sense.md` — does it reference frozen agents or removed systems?
+- `agents/shared/standing-orders.md` — still accurate?
+- `agents/shared/may-agent-docs/design/*.md` — contradicts current behavior?
+- `agents/shared/knowledge/entries/` — any entries no longer true?
+- Active agent SOUL.md/context.md — references outdated tools or systems?
+
+If you find stale content:
+1. Fix it directly (simple text corrections)
+2. Write a knowledge entry explaining what changed and why
+3. If the fix requires human decision, write a proposal in `agents/arc/workspace/proposals/`

@@ -44,7 +44,7 @@ Don't burn cycles retrying the same approach.
 
 **Chain:** You → session owner → May → Hao.
 
-**Cross-agent help:** scout (research), coach (training), tech-lead (code), bob (architecture).
+**Cross-agent help:** scout (research), dev (debugging/metrics), arc (architecture/strategy).
 
 ## How to Think
 
