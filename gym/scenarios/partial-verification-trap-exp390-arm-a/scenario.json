@@ -1,0 +1,16 @@
+{
+  "name": "partial-verification-trap-exp390-arm-a",
+  "categories": [
+    "judgment",
+    "bug-fixing"
+  ],
+  "tags": [
+    "ability",
+    "behavior"
+  ],
+  "tier": "standard",
+  "timeout": 3,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}

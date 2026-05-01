@@ -32,3 +32,27 @@ When running gym scenarios, the heartbeat content is loaded via `coaching/my-ins
 
 ## Alternative: Direct injection
 If scenarios don't have coaching/my-instructions.md, inject via the scenario's `system_prompt_append` field in config.json.
+
+## Created Scenario Variants (2026-05-01)
+All 9 gym scenario variants created via `injected_context.md`:
+
+| Scenario | Arm A (t=10) | Arm B (t=15) | Arm C (t=5) |
+|---|---|---|---|
+| partial-verification-trap | `-exp390-arm-a` | `-exp390-arm-b` | `-exp390-arm-c` |
+| convention-verify-multi-edit | `-exp390-arm-a` | `-exp390-arm-b` | `-exp390-arm-c` |
+| conflicting-requirements-tradeoff | `-exp390-arm-a` | `-exp390-arm-b` | `-exp390-arm-c` |
+
+### Run command
+```bash
+cd /app/agents && export GYM_AGENT_BIN=/usr/local/bin/may-agent && bash test/gym/run-gym.sh <scenario-name> --timeout 10
+```
+
+### Run order
+1. Arm A baseline (6 runs: 3 scenarios × 2 trials)
+2. Arm B high threshold (6 runs)
+3. Arm C low threshold (6 runs)
+
+### Data to collect per run
+- Pass/fail from success_criteria
+- Total tool calls (from session log)
+- Padding calls (manual inspection of last 3-4 calls)

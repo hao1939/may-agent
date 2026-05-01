@@ -1,0 +1,24 @@
+{
+  "name": "conflicting-requirements-tradeoff-exp390-arm-b",
+  "description": "Product manager and tech lead give contradictory requirements for a feature. Agent must identify the conflict, NOT silently implement one side, and propose a tradeoff with explicit reasoning. Tests judgment under ambiguity \u2014 naive implementation satisfies one stakeholder but breaks the other's constraint.",
+  "difficulty": "hard",
+  "categories": [
+    "judgment",
+    "communication"
+  ],
+  "targets": [
+    "FM-2.2",
+    "FM-3.1"
+  ],
+  "tags": [
+    "next-frontier",
+    "tradeoff",
+    "conflict-detection",
+    "judgment"
+  ],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}

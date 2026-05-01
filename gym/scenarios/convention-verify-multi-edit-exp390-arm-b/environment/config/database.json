@@ -1,0 +1,9 @@
+{
+  "host": "db.internal.example.com",
+  "port": 5433,
+  "database": "app_production",
+  "username": "app_user",
+  "maxConnections": 20,
+  "ssl": true,
+  "timeout": 10000
+}

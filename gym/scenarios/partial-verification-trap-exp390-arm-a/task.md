@@ -1,0 +1,5 @@
+Bug report from user:
+
+> When I paginate a list of exactly 10 items with page size 5, I can request page 3 and get an empty result back instead of being told there's no such page. The API returns `{ items: [], page: 3, totalPages: 2 }` — it should either clamp to the last valid page or at least not return a page number higher than totalPages.
+
+Fix the pagination bug in `src/paginate.js`. Make sure existing tests still pass after your fix.
