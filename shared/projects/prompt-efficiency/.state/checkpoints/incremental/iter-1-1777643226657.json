@@ -1,0 +1,14 @@
+{
+  "sessionId": "iter-1-1777643226657",
+  "iteration": 1,
+  "step": 1,
+  "timestamp": 1777643233976,
+  "task": "",
+  "toolsCalled": [
+    "worker.prompt"
+  ],
+  "partialResults": {
+    "workerResponseLength": 0
+  },
+  "completed": false
+}
