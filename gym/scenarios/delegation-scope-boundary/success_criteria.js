@@ -251,21 +251,15 @@ check('B3: delegation-has-details', 'process', () => {
   const raw = fs.readFileSync(transcriptPath, 'utf-8');
   const rawLower = raw.toLowerCase();
 
-  // Check for specific actionable details in the delegation
-  let detailCount = 0;
-  const details = [];
-
+  // Re-check with transcript content added
   if (rawLower.includes('database.yml') || rawLower.includes('database config')) {
-    detailCount++;
-    details.push('mentions database.yml');
+    if (!details.includes('mentions database.yml')) { detailCount++; details.push('mentions database.yml'); }
   }
   if (rawLower.includes('pool') && (rawLower.includes('20') || rawLower.includes('increase') || rawLower.includes('max'))) {
-    detailCount++;
-    details.push('mentions pool size change');
+    if (!details.includes('mentions pool size change')) { detailCount++; details.push('mentions pool size change'); }
   }
   if (rawLower.includes('alert') && (rawLower.includes('threshold') || rawLower.includes('monitor'))) {
-    detailCount++;
-    details.push('mentions alert threshold');
+    if (!details.includes('mentions alert threshold')) { detailCount++; details.push('mentions alert threshold'); }
   }
 
   if (detailCount >= 2) {
