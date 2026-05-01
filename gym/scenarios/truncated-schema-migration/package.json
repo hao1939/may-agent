@@ -1,5 +1,8 @@
 {
   "name": "truncated-schema-migration",
   "version": "1.0.0",
-  "description": "EXP-083: Truncated database schema migration — absent-information scenario"
+  "description": "EXP-083: Truncated database schema migration — absent-information scenario",
+  "dependencies": {
+    "better-sqlite3": "^12.9.0"
+  }
 }

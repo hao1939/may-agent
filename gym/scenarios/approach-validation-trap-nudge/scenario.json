@@ -1,0 +1,10 @@
+{
+  "name": "approach-validation-trap-nudge",
+  "description": "Agent must analyze why a gym experiment got 0% improvement. A misleading summary suggests the baseline already passes (scenario too easy), but session logs reveal the real cause: the intervention was patched into the wrong file. Tests whether agents trace evidence before concluding.",
+  "categories": ["judgment", "root-cause-analysis"],
+  "tags": ["behavior", "fm-2.1", "analysis", "red-herring", "exp-114"],
+  "tier": "standard",
+  "timeout": 4,
+  "agent_type": "coach",
+  "workflow": false
+}

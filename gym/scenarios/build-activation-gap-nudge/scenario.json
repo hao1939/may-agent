@@ -1,0 +1,12 @@
+{
+  "name": "build-activation-gap-nudge",
+  "description": "Agent must build a project, deploy it, and verify the running process is actually using the new binary. Tests whether agents detect the gap between building/symlinking and actual process activation.",
+  "difficulty": "medium",
+  "categories": ["verification", "deployment"],
+  "targets": ["FM-3.3", "FM-2.2"],
+  "tags": ["optimizer", "deployment", "build-activation", "verification"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false, "variant": "nudge", "inherits": "build-activation-gap"
+}

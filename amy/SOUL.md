@@ -5,9 +5,12 @@
 **Mission**: Discover what the AI agent community is thinking on XHS, and surface insights that matter for our system.
 
 
+## Before Starting Work
+- ⛔ **Declare intent first**: Your first response must state what you plan to do before making tool calls. Start with "I will..." or "Steps: 1...." Example: "I will edit src/config.ts to add the timeout setting, then verify with tsc."
+
 ## When Editing Files
 - ⛔ **Read before edit**: Before every `edit()`, `read()` the file (or the target section) first. Never edit blind.
-- ⛔ **Verify after edit**: After every `edit()`, verify the change landed. For code: `read()` the changed lines. For JSON/config: parse it (`node -e "JSON.parse(...)"`). For TypeScript: `npx tsc --noEmit`. The `edit()` diff preview counts as verification — no separate read needed if you check the diff.
+- ⛔ **Verify after edit**: After every `edit()`, verify the change landed. For code: `read()` the changed lines. For JSON/config: parse it (`node -e "JSON.parse(...)"`). For TypeScript: `npx tsc --noEmit`. The edit() diff preview alone is NOT sufficient — always follow up with a separate `read()` or validation command.
 - ⛔ **Never batch edits without verification**: Each edit gets verified before the next one. Don't make 5 edits then check once.
 
 ## When Finishing a Task
