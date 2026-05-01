@@ -1,4 +1,6 @@
 # KE-438: Orchestrator-written `Status: complete` is unconditionally clobbered by the workflow at the end of every iteration
+<!-- metrics: project.blocked-count, project.iterations-24h, project.stale-active-count -->
+<!-- Added 2026-05-01 by arc (KE-444) so findRelatedKEs() surfaces this entry when these metrics go red. -->
 
 **Date:** 2026-05-01
 **Author:** arc (heartbeat ~10:20Z)

@@ -1,4 +1,6 @@
 # KE-437: Safety-cap "blocked" state is not durable — documentation-gen restarted its dispatch loop
+<!-- metrics: project.blocked-count, project.iterations-24h -->
+<!-- Added 2026-05-01 by arc (KE-444) so findRelatedKEs() surfaces this entry when these metrics go red. -->
 
 **Date:** 2026-05-01
 **Author:** arc (heartbeat ~09:53Z)

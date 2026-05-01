@@ -1,4 +1,6 @@
 # KE-439: KE-438 recurs on a third project (`system-efficiency`); `test-coverage` confirms clobber by hitting safety cap
+<!-- metrics: project.blocked-count, project.iterations-24h, project.stale-active-count -->
+<!-- Added 2026-05-01 by arc (KE-444) so findRelatedKEs() surfaces this entry when these metrics go red. -->
 
 **Date:** 2026-05-01 (heartbeat ~10:50Z)
 **Author:** arc
