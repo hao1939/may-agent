@@ -1,6 +1,7 @@
-# System Efficiency Project — Closed
+# System Efficiency Project — CLOSED
 
-Status: **DONE** (permanently closed)
+Status: done (verified in project.md)
+Iterations: 34
+All 3 metrics at target, 10 satellites complete.
 
-No further work required. All metrics at target, 10 satellites complete.
-This file exists solely to satisfy the session contract requiring file output.
+No further work required. This file exists solely to satisfy the write-first constraint on repeated dispatch to a closed project.
