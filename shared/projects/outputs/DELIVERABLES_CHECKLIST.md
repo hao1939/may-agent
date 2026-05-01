@@ -1,5 +1,5 @@
 # Deliverables Checklist
 
-| Deliverable | Status | Path |
-|---|---|---|
-| Completion evidence file | DONE | /app/agents/shared/projects/outputs/completion-evidence-system-efficiency.md |
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | Confirmation file | DONE | /app/agents/shared/projects/outputs/project-done-confirmation.md |
