@@ -1,3 +1,4 @@
-# Deliverables Checklist
+# Deliverables Checklist — Iteration 41
 
-- [x] DONE — `outputs/project-closure.md` — Project closure document confirming all metrics exceeded targets
+## Required
+- [x] `outputs/project-closure.md` — DONE — Project closure document written with all achievements
