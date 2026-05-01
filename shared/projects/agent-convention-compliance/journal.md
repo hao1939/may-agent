@@ -194,3 +194,8 @@ Let me write the results:
 
 ### Iteration 23 — 2026-05-01T12:32:20.099Z
 **Worker**: Good, the regression guard exists. Let me finalize:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should **diagnose and fix the variance problem**. The 82% low-water mark means we can't close this project yet. The fix is in the scorers — they should check outcomes, not methods.
+
+(b) What's different: We're no longer optimizing peak score (98% is great). We're optimiz
