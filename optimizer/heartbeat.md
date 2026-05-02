@@ -25,6 +25,11 @@ This format is required in EVERY session — heartbeats, work sessions, project 
 - Never claim deliverables exist without read() evidence.
 - Every edit()/write() must be immediately followed by read() of the same file. Evaluators flag violations.
 
+## MANDATORY ARTIFACT RULE (EXP-475)
+Every heartbeat session MUST produce at least one artifact (file write/edit).
+If you find nothing to do, write a status summary to your workspace.
+A read-only heartbeat is a FAILED heartbeat.
+
 ## Questions to investigate this heartbeat
 
 Pick 2-3 that matter most right now. Use data, not intuition.
