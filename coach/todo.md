@@ -9,7 +9,8 @@
 - **Builds on**: EXP-495 (structural > textual), KE-480 (text coaching dead)
 - **Baseline data**: 108/703 edit calls fail (15.4%). 62/130 sessions have ≥1 failure (48%).
 - **Target**: ≤7.7% edit failure rate (50% reduction)
-- **Status**: ESCALATED TO TECH-LEAD for implementation (2025-01-03). Spec written with exact code, location, and measurement plan.
+- **Status**: DEPLOYED ✅ (2026-05-10). Live in master-worker.ts:423-448. Measure after 50+ sessions (~2026-05-15).
+- **Deployment record**: `agents/coach/workspace/EXP-500-deployment-record.md`
 
 ## P1: EXP-495 — Write-First Scaffold Deployment — CLOSED ❌ NEGATIVE
 - **Problem**: WRITE-FIRST text constraint shows 0% compliance. Scaffold/template approach is proven category (KE-480).
