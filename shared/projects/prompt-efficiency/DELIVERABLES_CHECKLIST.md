@@ -1,6 +1,5 @@
 # Deliverables Checklist
 
-| Deliverable | Status | Notes |
+| Deliverable | Status | Evidence |
 |---|---|---|
-| Assess project state | DONE | Project is complete, all metrics at target |
-| Decision on next steps | DONE | DONE - no further work needed |
+| Project assessment and decision | DONE | Project is complete per project.md metrics |
