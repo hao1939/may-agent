@@ -1,12 +1,15 @@
 # Coach Todo
 
-## P1: EXP-560 — Structural Test-File Gate — SCENARIO CREATED, AWAITING EXECUTION
+## P1: EXP-560 — Structural Test-File Gate — CLOSED ✅ POSITIVE
 - **Problem**: Agents skip test-writing even with text reminders (0/6 across EXP-555)
 - **Hypothesis**: "You CANNOT finish without a test file" threat-of-rejection gate → ≥50% pass rate
 - **Scenario**: `agents/gym/scenarios/output-format-compliance-exp560-testgate/`
 - **Design**: `agents/coach/workspace/EXP-560-structural-test-gate-design.md`
-- **Status**: `agents/coach/workspace/EXP-560-phase2-ready.md`
-- **Next**: Run 3 trials via `bash test/gym/run-gym.sh output-format-compliance-exp560-testgate --agent bob`
+- **Results**: `agents/coach/workspace/EXP-560-results.md`
+- **Finding**: Baseline 0/3 → Treatment 3/3 (+100pp). Threat-framed text gate works for priority-gap behaviors.
+- **Bug fixed**: success_criteria.js path check was too narrow (only root-level). Fixed to check src/ paths + tool-call fallback.
+- **Key insight**: KE-480 nuance — text AWARENESS nudges are dead, but text THREAT framing works by elevating priority.
+- **Status**: CLOSED ✅ POSITIVE. Next: deploy gate phrasing in master-worker.ts for test-required tasks.
 
 ## P1: EXP-555 — Task Completeness / Subtask Omission — CLOSED (PARTIALLY POSITIVE)
 - **Problem**: Agents complete primary task but skip explicit secondary requirements (test-writing, server registration, PLAN.md)
