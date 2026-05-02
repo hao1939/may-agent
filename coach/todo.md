@@ -7,11 +7,11 @@
 - **Measurement**: `agents/coach/workspace/EXP-465-phase1-measurement.md`
 - **Design**: `agents/coach/workspace/EXP-465-anti-shallow-remaining-agents-design.md`
 
-## P1: Obstacle-Persistence Skill — UNWIRED (needs deployment)
-- Skill exists at `agents/shared/skills/obstacle-persistence.md` — good quality
-- NOT wired to any agent's context. Bob designed EXP-299 but hasn't run it.
-- **Recommendation**: Deploy to bob/coder context.md (Option C: deploy + measure naturally)
-- **Next**: Request may/tech-lead to wire skill into bob + coder context.md
+## P1: Obstacle-Persistence Skill — DEPLOYED ✅ (bob + coder)
+- Skill at `agents/shared/skills/obstacle-persistence.md`
+- Deployed to bob/context.md and coder/context.md (2026-05-02)
+- Measurement: Audit 10+ sessions for persistence behavior
+- Report: `agents/coach/workspace/obstacle-persistence-deployment-report.md`
 
 ## P0: EXP-455 — Zombie Dispatch Loop in master-worker.ts — DESIGN (ESCALATED)
 - **Problem**: Completed projects receive 50+ wasted iterations because DONE is not a valid orchestrator decision.

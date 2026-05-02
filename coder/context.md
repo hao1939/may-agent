@@ -21,6 +21,7 @@
 - agents/coder/skills/multi-file-discovery-completeness.md - find all affected files.
 - agents/coder/skills/task-instruction-compliance.md - follow task specs precisely.
 - agents/shared/skills/obstacle-pivot/SKILL.md - pivot on failure instead of retrying.
+- agents/shared/skills/obstacle-persistence.md - try 2+ alternatives before abandoning a goal.
 - agents/coder/skills/epistemic-checkpointing.md - track what you know every 5 calls.
 - agents/skills/requirement-conflict-check.md - list constraints, check feasibility before implementing.
 - agents/skills/impact-radius-check.md - grep consumers of shared modules before fixing; fix ALL affected or escalate.
