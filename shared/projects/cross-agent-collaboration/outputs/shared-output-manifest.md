@@ -61,6 +61,21 @@ An index of all project deliverables available for cross-agent reuse.
 | agent-memory-learning | Memory Audit | `/app/agents/shared/projects/agent-memory-learning/outputs/memory-audit.md` | [audit] [quality] | Audit of lesson quality and retrieval effectiveness |
 | cross-agent-collaboration | Adoption Baseline | `/app/agents/shared/projects/cross-agent-collaboration/outputs/adoption-baseline.md` | [metrics] [discovery] | Baseline measurement of manifest usage (before snapshot) |
 | cross-agent-collaboration | This Manifest | `/app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md` | [discovery] [index] | Master index of all reusable deliverables |
+| agent-system-literacy | Deployment Log | `/app/agents/shared/projects/agent-system-literacy/outputs/deployment-log.md` | [docs] [workflow] | Phase 2 skill deployment steps and results |
+| agent-system-literacy | Gym Results | `/app/agents/shared/projects/agent-system-literacy/outputs/gym-results.md` | [metrics] [testing] | Gym evaluation results for literacy improvements |
+| agent-system-literacy | Investigation | `/app/agents/shared/projects/agent-system-literacy/outputs/investigation.md` | [audit] [metrics] | Root-cause analysis of why literacy metrics didn't improve |
+| agent-system-literacy | Post-Deployment Comparison | `/app/agents/shared/projects/agent-system-literacy/outputs/post-deployment-comparison.md` | [metrics] [quality] | Before/after comparison of literacy scores post-deployment |
+| agent-system-literacy | Re-Plan | `/app/agents/shared/projects/agent-system-literacy/outputs/re-plan.md` | [planning] [workflow] | Revised plan after initial approach failed |
+| documentation-gen | Completion Summary | `/app/agents/shared/projects/documentation-gen/outputs/completion-summary.md` | [docs] [retrospective] | Final project outcomes and lessons learned |
+| handler-reliability | Iteration 3 Complete | `/app/agents/shared/projects/handler-reliability/outputs/iteration-3-complete.md` | [reliability] [testing] | Final verification of handler reliability fixes |
+| prompt-efficiency | P3 Trim Plan | `/app/agents/shared/projects/prompt-efficiency/outputs/p3-trim-plan.md` | [optimization] [prompts] | Plan to trim 6 SOUL.md files over 600-word target |
+| prompt-efficiency | P3 Trimming Proposal | `/app/agents/shared/projects/prompt-efficiency/outputs/p3-trimming-proposal.md` | [optimization] [prompts] | Proposal to trim verbose/duplicate guidance from SOUL.md files |
+| skill-workflow-audit | Cycle 2 Freshness Audit | `/app/agents/shared/projects/skill-workflow-audit/outputs/cycle2-skill-freshness-audit.md` | [audit] [optimization] | Skill freshness and context cost audit (cycle 2) |
+| skill-workflow-audit | Cycle 2 VBF/SCBA Re-Audit | `/app/agents/shared/projects/skill-workflow-audit/outputs/cycle2-vbf-scba-reaudit.md` | [audit] [quality] | Re-audit of VBF and SCBA skills after changes |
+| skill-workflow-audit | Prune Execution Log | `/app/agents/shared/projects/skill-workflow-audit/outputs/prune-execution-log.md` | [optimization] [docs] | Log of skill pruning actions taken |
+| skill-workflow-audit | Replan Assessment | `/app/agents/shared/projects/skill-workflow-audit/outputs/replan-assessment.md` | [planning] [audit] | Assessment triggering project replan |
+| skill-workflow-audit | Skill Behavioral Audit | `/app/agents/shared/projects/skill-workflow-audit/outputs/skill-behavioral-audit.md` | [audit] [quality] | Analysis of whether agents actually act on injected skills |
+| skill-workflow-audit | Skill Deployment | `/app/agents/shared/projects/skill-workflow-audit/outputs/skill-deployment.md` | [workflow] [docs] | Skill deployment and gym scenario report |
 
 ## Discovery Convention
 
