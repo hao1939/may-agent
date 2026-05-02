@@ -1,13 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
+- **Session:** s_1777726173847_436
+- **Status:** done
+- **When:** 2026-05-02T12:50:57.715Z
+- **Duration:** 1m23s
+
 ## What Happened
-Heartbeat review. Two P1 notifications about EXP-495 WRITE-FIRST scaffold deployment were evaluated and found to be stale — the code change already exists in master-worker.ts:420 and measurement plan shows status AWAITING_POST_MEASUREMENT. No action needed.
-
-## Decisions
-- Dismissed EXP-495 deployment notifications as already-completed work
-- No code changes required this heartbeat
-
-## Next
-- Monitor EXP-495 measurement results after 20+ retry sessions accumulate
-- Check for dead code removal (master-worker-resilient.ts, master-worker-cached.ts, master-worker-migration-adapter.ts identified last session)
+The two notifications about EXP-495 are requesting deployment of the WRITE-FIRST scaffold change, but based on the measurement plan, this was **already deployed** (commit 2e11fdf5e, confirmed in the code at line ~420). These notifications are stale/redundant.
