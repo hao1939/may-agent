@@ -1,22 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777752634861_947
+- **Session:** s_1777754434962_983
 - **Status:** done
-- **When:** 2026-05-02T20:12:48.807Z
-- **Duration:** 2m13s
+- **When:** 2026-05-02T20:42:58.659Z
+- **Duration:** 2m23s
 
 ## What Happened
-Heartbeat complete.
-
-- Checked active metrics, recent session errors, handler failures, and slow handler durations.
-- Confirmed current reliability metrics are green, but `handler.p95-duration` remains unhealthy due to `eval-poller`.
-- Verified the eval-poller processed-without-evaluation issue is still growing:
-  - processed IDs: `2969`
-  - processed without evaluation row: `552`
-  - previous investigation count: `541`
-- Wrote and verified investigation artifact:
-
-`agents/dev/workspace/investigations/2026-05-02-eval-poller-processed-without-eval-growth.md`
-
-No handler patch was applied because current runtime instructions restrict writes to `agents/dev/workspace`; the needed fix is in `agents/may/handlers/eval-poller.ts`.
+GOAL: Investigate current failure/metric signals and produce a verified dev investigation artifact with a concrete fix or escalation.
+PLAN:
+1. Query active metrics, recent failed sessions, handler failures, and unmeasured metrics via readonly SQLite.
+2. Identify the highest-impact actionable failure or measurement gap and inspect supporting artifacts/code as needed.
+3. Document root cause, impact, and recommended fix/escalation in `agents/dev/workspace/investigations/`.
+DONE WHEN: A verified investigation file exists with evidence from metrics/session queries and a clear next action.
