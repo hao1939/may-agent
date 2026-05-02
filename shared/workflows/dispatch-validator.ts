@@ -86,13 +86,21 @@ export function validateDispatch(
       }
     }
 
-    // Check iteration cap
+    // Check iteration cap — hard block at 50 iterations
     const iterMatch = content.match(/\*\*Iteration\*\*:\s*(\d+)/);
     if (iterMatch) {
       const iteration = parseInt(iterMatch[1]);
       if (iteration >= 50) {
-        result.warnings.push(`Project at iteration ${iteration} (safety cap is 50)`);
+        result.valid = false;
+        result.errors.push(`Project at iteration ${iteration} — exceeded safety cap of 50. Must be manually reviewed.`);
       }
+    }
+
+    // Check for "done" and "complete" keywords with non-active-like statuses
+    const nonDispatchableStatuses = ["done", "complete", "completed"];
+    if (nonDispatchableStatuses.includes(status)) {
+      result.valid = false;
+      result.errors.push(`Project status is '${status}' — not dispatchable`);
     }
   } catch (e) {
     result.valid = false;
