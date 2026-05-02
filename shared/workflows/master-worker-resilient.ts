@@ -314,8 +314,8 @@ export class ResilientMasterWorker {
       if (zeroAction !== "continue") {
         const entry = `⚠️ [zero-output-breaker] ${zeroAction}: ${deliverableTracker.consecutiveZeroOutput} consecutive zero-output iterations (total: ${deliverableTracker.totalIterations}, productive: ${deliverableTracker.iterationsWithOutput})`;
         appendJournalEntry(this.ctx, entry);
-        // Phase 1: log only — no termination yet
-        // Phase 2 will add: if (zeroAction === 'terminate') { stoppedEarly = true; stopReason = entry; break; }
+        // Phase 2: terminate on sustained zero output
+        if (zeroAction === 'terminate') { stoppedEarly = true; stopReason = entry; break; }
       }
 
       if (result.error?.startsWith("Stopped:")) {
