@@ -2,5 +2,5 @@
 
 | Deliverable | Status | Notes |
 |---|---|---|
-| Project assessment | DONE | Project complete, all metrics at target |
-| project.md update | DONE | Already marked complete, no changes needed |
+| Assess project state | DONE | Project is complete, all metrics at target |
+| Decision on next steps | DONE | DONE - no further work needed |
