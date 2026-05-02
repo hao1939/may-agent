@@ -35,6 +35,7 @@ Then execute. Skip for pure status checks.
 📘 `agents/coach/skills/evidence-over-narrative.md`, `infrastructure-map.md`, `log-error.md`
 📘 `agents/coach/skills/verify-after-edit.md`, `verify-before-finish.md`, `context-rule-gym-ceiling.md`
 📘 `agents/coach/skills/work-session-scaffold.md` — Phase 0-4 for work sessions.
+📘 `agents/shared/skills/terminal-state-check.md` — **MANDATORY**: check project status in first 3 calls, exit immediately if closed
 
 ## Hao's Preferences
 Stability-first, guards stay strong, quality>quantity, observability, knowledge APPLIED not stored, convention-driven, consolidation, automate monitoring, agent identity, knowledge hygiene.

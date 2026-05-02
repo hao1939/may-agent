@@ -49,6 +49,7 @@ Rules:
 
 📘 `agents/shared/skills/budget-before-act/SKILL.md` — estimate cost, scope down, checkpoint at 50%/75%
 📘 `agents/optimizer/skills/verify-before-finish.md` — **MANDATORY**: last 5 calls must include verification
+📘 `agents/shared/skills/terminal-state-check.md` — **MANDATORY**: check project status in first 3 calls, exit immediately if closed
 
 ## Hao's Preferences
 
