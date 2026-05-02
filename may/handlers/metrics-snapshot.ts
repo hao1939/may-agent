@@ -43,7 +43,7 @@ const ALL_METRICS = [
   { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", target: 30, threshold: 15, unit: "count", alert_op: "<" },
   // Project
   { id: "project.active-count", name: "Active projects", owner: "may", target: 3, threshold: 1, unit: "count", alert_op: "<" },
-  { id: "project.blocked-count", name: "Blocked/waiting projects", owner: "may", target: 0, threshold: 2, unit: "count", alert_op: ">" },
+  { id: "project.blocked-count", name: "Blocked/waiting projects", owner: "may", target: 2, threshold: 4, unit: "count", alert_op: ">" },
   { id: "project.stale-active-count", name: "Stale active projects (no iteration 48h)", owner: "may", target: 0, threshold: 2, unit: "count", alert_op: ">" },
   { id: "project.iterations-24h", name: "Project iterations (24h)", owner: "may", target: 10, threshold: 0, unit: "count", alert_op: "<" },
   { id: "project.blocked-rate-7d", name: "Project blocked rate (7d)", owner: "may", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">" },
