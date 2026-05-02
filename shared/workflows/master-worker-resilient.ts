@@ -161,6 +161,63 @@ export function mergeResilientConfig(partial: Partial<ResilientConfig> & { proje
   };
 }
 
+// ── Zero-Output Loop Detection ──────────────────────────────────────────
+
+export interface DeliverableTracker {
+  consecutiveZeroOutput: number;
+  totalIterations: number;
+  iterationsWithOutput: number;
+}
+
+export function createDeliverableTracker(): DeliverableTracker {
+  return { consecutiveZeroOutput: 0, totalIterations: 0, iterationsWithOutput: 0 };
+}
+
+/**
+ * Determine if an iteration produced meaningful output.
+ * Output includes: non-null LLM response that isn't an error,
+ * or explicit blocked status. In logging-only mode we use the
+ * IterationResult success field as a proxy for deliverable output.
+ */
+export function hasDeliverableOutput(result: IterationResult): boolean {
+  // A successful iteration with output is considered productive
+  if (result.success && result.output && result.output.length > 0) return true;
+  // Stopped/blocked is not a loop — agent is aware
+  if (result.error?.startsWith("Stopped:")) return true;
+  return false;
+}
+
+export const ZERO_OUTPUT_ESCALATE = 3;
+export const ZERO_OUTPUT_TERMINATE = 5;
+
+export type ZeroOutputAction = "continue" | "escalate" | "terminate";
+
+export function checkZeroOutput(tracker: DeliverableTracker): ZeroOutputAction {
+  if (tracker.consecutiveZeroOutput >= ZERO_OUTPUT_TERMINATE) return "terminate";
+  if (tracker.consecutiveZeroOutput >= ZERO_OUTPUT_ESCALATE) return "escalate";
+  return "continue";
+}
+
+/**
+ * Update tracker after an iteration. Skips first iteration (planning grace).
+ * Returns the action to take.
+ */
+export function updateDeliverableTracker(tracker: DeliverableTracker, result: IterationResult): ZeroOutputAction {
+  tracker.totalIterations++;
+
+  // First iteration grace — planning pass
+  if (tracker.totalIterations <= 1) return "continue";
+
+  if (hasDeliverableOutput(result)) {
+    tracker.consecutiveZeroOutput = 0;
+    tracker.iterationsWithOutput++;
+  } else {
+    tracker.consecutiveZeroOutput++;
+  }
+
+  return checkZeroOutput(tracker);
+}
+
 // ── Orchestration class ─────────────────────────────────────────────────
 
 export class ResilientMasterWorker {
@@ -247,9 +304,19 @@ export class ResilientMasterWorker {
     this.results = [];
     let stopReason = "completed";
     let stoppedEarly = false;
+    const deliverableTracker = createDeliverableTracker();
 
     for (let i = 1; i <= this.config.maxIterations; i++) {
       const result = await this.runIteration(i, llm);
+
+      // Zero-output loop detection (Phase 1: logging only)
+      const zeroAction = updateDeliverableTracker(deliverableTracker, result);
+      if (zeroAction !== "continue") {
+        const entry = `⚠️ [zero-output-breaker] ${zeroAction}: ${deliverableTracker.consecutiveZeroOutput} consecutive zero-output iterations (total: ${deliverableTracker.totalIterations}, productive: ${deliverableTracker.iterationsWithOutput})`;
+        appendJournalEntry(this.ctx, entry);
+        // Phase 1: log only — no termination yet
+        // Phase 2 will add: if (zeroAction === 'terminate') { stoppedEarly = true; stopReason = entry; break; }
+      }
 
       if (result.error?.startsWith("Stopped:")) {
         stoppedEarly = true;
