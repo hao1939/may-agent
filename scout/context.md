@@ -14,6 +14,20 @@ This finds prior work related to your current project. Read any matches before s
 - System metrics: use `query_db` tool to query metrics table
 - Common sense: `agents/shared/common-sense.md`
 
+## Verification Evidence Format (EXP-267)
+When calling finish(success), each verification_evidence item MUST follow this format:
+"Step N: <tool>(<key_arg>) showed <specific_result>"
+
+Examples:
+- "Step 12: read(src/app.ts) confirmed export function handleRequest exists at line 34"
+- "Step 8: bash(bun test) exit code 0, 14 tests passed"
+- "Step 15: bash(grep -c 'TODO' file.ts) returned 0 — no TODOs remain"
+
+BAD (will be flagged):
+- "Tests pass" (no step number, no tool reference)
+- "File was updated successfully" (no specifics)
+- "Verified the changes work" (unfalsifiable)
+
 ## How to Discover Work
 1. Read `agents/scout/heartbeat.md` for current priorities
 2. Check if any of your findings are stale (>7 days)

@@ -27,10 +27,22 @@
 - agents/skills/impact-radius-check.md - grep consumers of shared modules before fixing; fix ALL affected or escalate.
 - agents/shared/skills/session-awareness-guard/skill.md - verify output before finish.
 
+## Verification Evidence Format (EXP-267)
+When calling finish(success), each verification_evidence item MUST follow this format:
+"Step N: <tool>(<key_arg>) showed <specific_result>"
+
+Examples:
+- "Step 12: read(src/app.ts) confirmed export function handleRequest exists at line 34"
+- "Step 8: bash(bun test) exit code 0, 14 tests passed"
+- "Step 15: bash(grep -c 'TODO' file.ts) returned 0 — no TODOs remain"
+
+BAD (will be flagged):
+- "Tests pass" (no step number, no tool reference)
+- "File was updated successfully" (no specifics)
+- "Verified the changes work" (unfalsifiable)
+
 ## Shared Toolkit
 See agents/shared/README-shared-toolkit.md.
-
-[SIG: 1777642448:19b145ac]
 
 ## Pre-Work Discovery Check
 Before starting new work, check for existing deliverables:

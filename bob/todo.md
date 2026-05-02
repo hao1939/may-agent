@@ -1,6 +1,7 @@
 
 ## Next
-- [ ] **EXP-267 deployment** — Implementation plan ready. Deploy treatment text to coder/scout/evaluator context.md. See `agents/bob/workspace/EXP-267-implementation-plan.md`.
+- [x] **EXP-267 deployment** — DEPLOYED 2025-07-03. Treatment text added to coder, scout, evaluator context.md. Measurement window: 2 weeks (measure after 2025-07-17).
+- [ ] **EXP-267 measurement** — After 2025-07-17, sample 30 finish(success) sessions per group, grade verification_evidence quality per EXP-267 decision rules.
 - [x] **H-300 Evidence Quality Decay** — COMPLETED 2025-05-02. Mean 3.25 (no intervention needed). Workers score 2.5 (monitor). See `EXP-301-evidence-quality-results.md`.
 - [x] ~~**Dispatch dedup guard**~~ — CLOSED 2025-05-02. Problem resolved by infrastructure. See `AUDIT-heartbeat-2025-05-02.md`.
 

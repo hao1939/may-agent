@@ -1,17 +1,17 @@
 # EXP-267 Status
 
-**Status**: READY_TO_DEPLOY
-**Last Updated**: 2025-05-02
+**Status**: RUNNING
+**Last Updated**: 2025-07-03
+**Deployed**: 2025-07-03
 **Owner**: bob
 
 ## Progress
 - [x] Design complete (design.md)
 - [x] Implementation plan written (agents/bob/workspace/EXP-267-implementation-plan.md)
-- [ ] Deploy treatment text to coder, scout, evaluator
-- [ ] Run 2-week measurement window
+- [x] Deploy treatment text to coder, scout, evaluator (2025-07-03)
+- [ ] Run 2-week measurement window (measure after 2025-07-17)
 - [ ] Sample and grade results
 - [ ] Decision: ADOPT / ITERATE / REJECT
 
 ## Next Action
-Deploy the treatment context instruction to treatment agents (coder, scout, evaluator).
-This requires adding the "Verification Evidence Format (EXP-267)" section to their context.md files.
+Wait for 2-week measurement window. After 2025-07-17, sample 30 finish(success) sessions per group and grade verification_evidence quality.
