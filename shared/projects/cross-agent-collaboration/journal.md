@@ -137,3 +137,6 @@ The project has excellent infrastructure but zero organic adoption after 21 iter
 (a) Next iteration should do two things:
 
 1. **Fix scout's instrumentation** — Replace the weak version with the REQUIRED
+
+### Iteration 22 — 2026-05-02T01:34:41.838Z
+**Worker**: Now write the outputs report:
