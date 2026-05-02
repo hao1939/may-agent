@@ -47,3 +47,6 @@ grep -i "<keyword>" /app/agents/
 (b) Phase 1 is verified complete — both agents have correct paths, manifest and freshness script exist. Now we shift to closing gaps and measuring.
 
 (c) First step: Run `bash /a
+
+### Iteration 9 — 2026-05-02T01:05:52.661Z
+**Worker**: Now let me update the adoption baseline with freshness results:
