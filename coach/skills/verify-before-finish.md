@@ -35,3 +35,12 @@ finish(status: "success")      ← FAILS C1.7: no verification in last 5
 ```
 
 Fix: Insert `read("output.md")` or `bash("ls -la dir && head output.md")` before finish.
+
+## Pre-Finish Verification Checklist (EXP-303)
+
+Before calling finish(), complete this checklist:
+1. **List every file you wrote or edited** this session
+2. **For each file, confirm you called read() after the write/edit** — if not, do it now
+3. **Include verification evidence** in your finish() call citing the read() output
+
+This is non-negotiable. Every write/edit MUST have a corresponding read() verification.
