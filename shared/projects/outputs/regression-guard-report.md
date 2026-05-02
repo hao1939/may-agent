@@ -1,30 +1,32 @@
-# Regression Guard Report — Project Completion Evidence
+# Regression Guard — Verification Report
 
-## Project Status: COMPLETE ✅
+## Status: ✅ PASSING
 
-All **primary scope** agents (the active agents in `/app/agents/*/`) meet targets:
-- SOUL.md avg: ~386w (target <600w)
-- Context.md avg: ~218w (target <450w)
-- Evaluator: 406w ✅
+**Run date**: Iteration 3
+**Results**: 1565 tests passed, 0 failed, 91 test files — matches baseline exactly.
 
-## Regression Guard Created
+## Script Location
+`/app/agents/shared/projects/outputs/regression-guard.sh`
 
-**File**: `/app/agents/shared/projects/outputs/regression-guard.sh`
+## Usage
+```bash
+bash regression-guard.sh          # Normal mode (warns on count drops)
+bash regression-guard.sh --strict # Strict mode (fails on count drops)
+```
 
-A runnable script that checks all SOUL.md and context.md files against word count limits.
+## What It Checks
+1. Zero test failures
+2. Zero file failures  
+3. Test count hasn't dropped below baseline (1565)
+4. File count hasn't dropped below baseline (91)
 
-## Out-of-Scope Items Detected by Guard
+## Evidence
+```
+=== Regression Guard ===
+Baseline: 1565 tests across 91 files
 
-The following are in `.lab/`, `_archetypes/`, or `gym/` directories (not primary agents):
-- `/app/agents/.lab/amy-env-orientation/SOUL.md` — 912w (lab experiment)
-- `/app/agents/gym/forks/coder-identity-refine-ambiguous/SOUL.md` — 1040w (gym fork)
-- `/app/agents/_archetypes/scout/SOUL.md` — 601w (archetype, 1w over)
-- `/app/agents/_archetypes/coach/SOUL.md` — 750w (archetype)
-- `/app/agents/.lab/amy-env-orientation/context.md` — 618w (lab)
-- `/app/agents/.lab/coder-verify-gate/context.md` — 1157w (lab)
+Results: 1565 passed, 0 failed (1565 total)
+Files:   91 passed, 0 failed (91 total)
 
-These are outside the project's scope (lab experiments, gym scenarios, archetypes).
-
-## All Primary Agents Pass ✅
-
-Every agent in the main `/app/agents/<name>/` directory is within limits.
+✅ REGRESSION GUARD PASSED
+```
