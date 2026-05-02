@@ -7,7 +7,30 @@
 
 ---
 
-## Latest (2026-05-01 Heartbeat #47) — OpenAI Symphony & Multi-Agent Orchestration Patterns
+## Latest (2026-05-02 Heartbeat #48) — RecursiveMAS: Latent-Space Multi-Agent Communication
+
+> **主题**：DeepMind证明文本通信MAS效率低下，潜空间递归通信全面优于文本传递
+
+### 核心发现
+
+| 发现 | 来源 | 核心贡献 | 对我们的意义 |
+|------|------|----------|-------------|
+| **RecursiveMAS** | arxiv 2604.25917 (DeepMind) | 用latent state替代文本做agent间通信，+8.3%准确率，1.2-2.4x加速，减少34-75% token | **验证了shared artifacts优于消息传递**：我们用文件共享状态已是正确方向，但仍有优化空间 |
+
+### 综合洞察：文本通信的天花板
+
+RecursiveMAS的核心洞察：每次agent间文本handoff都有信息损耗。对我们的启示：
+- 减少不必要的中转层——能直接读shared file的，别通过消息转述
+- 递归迭代 > 一次性输出（我们的experiment loop已在做）
+- 共享knowledge库 = 穷人版latent state sharing
+
+### 行动建议
+1. 审计当前agent间通信路径，找出冗余中转
+2. 加强shared artifacts（knowledge库、context文件）作为主要通信渠道
+
+---
+
+## (2026-05-01 Heartbeat #47) — OpenAI Symphony & Multi-Agent Orchestration Patterns
 
 > **主题**：Agent编排从经验走向规范；Symphony验证了我们的架构方向
 
