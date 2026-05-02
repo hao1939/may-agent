@@ -57,3 +57,6 @@ grep -i "<keyword>" /app/agents/
 (b) The freshness check found 30+ unindexed files. The adoption baseline is empty. These are the two gaps blocking Phase 2 progress.
 
 
+
+### Iteration 10 — 2026-05-02T01:08:08.661Z
+**Worker**: Now write the adoption baseline:
