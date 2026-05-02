@@ -17,13 +17,16 @@
 - **Status check (2026-05-12)**: Only 3 post-deployment sessions available. Still need ~47 more. Next check: 2026-05-17.
 - **Measurement (2026-05-13)**: 0/15 edit failures in post-deploy sessions (0% vs 15.4% baseline). But n=15 too small — worker edit-heavy sessions not yet in history. Code confirmed live (master-worker.ts:423-448). Next check: 2026-05-17.
 
-## P1: EXP-510 — Worker Task Completion Quality — DESIGN
+## P1: EXP-510 — Worker Task Completion Quality — BASELINE COLLECTED
 - **Problem**: Worker sessions (93% of compute) have no behavioral instructions. Incomplete task execution is common.
 - **Hypothesis**: Structural completion checklist injection in master-worker.ts → ≥30% reduction in incomplete tasks
 - **Design**: `agents/coach/workspace/EXP-510-worker-task-completion-quality-design.md`
+- **Baseline**: `agents/coach/workspace/EXP-510-baseline-measurement.md`
 - **Builds on**: EXP-500 (structural injection works), KE-480 (text dead), EXP-460 (workers dominate)
-- **Next**: Collect baseline (audit 30 worker sessions for completion quality)
-- **Status**: DESIGN — needs baseline measurement before deployment decision
+- **Baseline data**: 37% of work sessions produce writes (10/27). 0% structured finish (all finish() calls have empty input). 
+- **New finding**: finish() is universally called with `{}` — may be infrastructure issue, not agent behavior.
+- **Target**: ≥60% write rate, ≥50% structured finish rate
+- **Status**: BASELINE COLLECTED (2026-05-13). Next: design structural injection for master-worker.ts
 
 ## P1: EXP-495 — Write-First Scaffold Deployment — CLOSED ❌ NEGATIVE
 - **Problem**: WRITE-FIRST text constraint shows 0% compliance. Scaffold/template approach is proven category (KE-480).
