@@ -1,16 +1,23 @@
-# Proposal: Refresh dev-agent IDE token (RESOLVED 2026-05-02 06:10:32Z)
+# Proposal: Refresh dev-agent IDE token (STILL OPEN — KE-473 resolution claim retracted, see KE-474)
 
 **For:** Hao (anyone with shell/credential access)
-**From:** arc heartbeat 2026-05-01 ~07:00Z (UPDATED 11:18Z, 11:50Z, 12:27Z, 2026-05-02 03:20Z, 04:48Z, 05:48Z, RESOLVED 06:11Z)
-**Urgency:** ~~HIGH~~ → RESOLVED. Total downtime 29h12m, 62 consecutive 401s. See KE-473.
+**From:** arc heartbeat 2026-05-01 ~07:00Z (UPDATED 11:18Z, 11:50Z, 12:27Z, 2026-05-02 03:20Z, 04:48Z, 05:48Z, claimed-resolved 06:11Z, REOPENED 06:46Z)
+**Urgency:** HIGH (still). One anomalous success at 06:10:32Z; 401s resumed on the very next cron at 06:40:33Z. Streak now 63.
 
-## RESOLUTION 2026-05-02 06:11Z
+## REOPENED 2026-05-02 06:46Z — RESOLUTION RETRACTED (see KE-474)
 
-- First successful dev session after outage: `s_1777702232994_0` at **2026-05-02 06:10:32Z**, `status=done`, `opCount=9`. Preceding session at 05:50:25Z was the 62nd and last `401 IDE token expired`.
-- **Total downtime:** 29h12m between consecutive `done` sessions (last success 2026-05-01 00:58:35Z; recovery 2026-05-02 06:10:32Z).
-- **Proposal-to-action latency:** ~23h (proposal filed ~07:00Z 2026-05-01, action ~06:10Z 2026-05-02). 8 heartbeat updates in the interim.
-- The fix happened entirely out-of-band — no commit, event, or DB record indicates what changed. The 30-min cron fired and succeeded; nothing else in the stack moved.
-- Recurrence risk remains: `agent.error-streak-by-agent` (KE-440) still not implemented; the next token expiry will reproduce the same blind spot. See KE-473 for the full post-mortem and falsifier.
+- The success at 06:10:32Z was a single one-off. The next regular `workflow:heartbeat-dev` cron at **2026-05-02 06:40:33Z** errored with the identical `401 IDE token expired`.
+- As of 06:46Z, the latest dev session is the new error. The streak is now **63 consecutive 401s** with one anomalous success embedded.
+- KE-473's claim "outage resolved" was filed minutes before the next cron failure invalidated it. KE-474 is the supersedeing post-mortem and explicitly retracts KE-473's TL;DR.
+- Hypothesis: the 06:10Z success rode an out-of-band invocation path (note the malformed `heartbeat.trigger` event at 06:09:45Z just 47s prior) with valid auth, while the regular cron path's credential remains stale. Either that, or a token was refreshed and re-expired within ~28 minutes.
+- **No human action confirmed.** The proposal is still open, the credential still needs a real refresh, and the per-agent error-streak metric (KE-440) is still missing.
+
+## RESOLUTION 2026-05-02 06:11Z (RETRACTED — see "REOPENED" above)
+
+- ~~First successful dev session after outage: `s_1777702232994_0` at **2026-05-02 06:10:32Z**, `status=done`, `opCount=9`.~~ Was a one-off, not a fix. See KE-474.
+- ~~Total downtime: 29h12m.~~ Outage continues; total downtime is ≥30h and counting.
+- ~~Proposal-to-action latency: ~23h.~~ Unknown — no action has been confirmed.
+- Recurrence risk remains: `agent.error-streak-by-agent` (KE-440) still not implemented; the next token expiry will reproduce the same blind spot. See KE-473 + KE-474 for the full post-mortem and falsifier.
 
 ## UPDATE 2026-05-02 05:48Z (heartbeat 8, 28.8h since last success)
 
