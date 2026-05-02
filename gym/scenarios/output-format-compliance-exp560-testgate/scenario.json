@@ -1,0 +1,10 @@
+{
+  "name": "output-format-compliance-exp560-testgate",
+  "description": "EXP-560 treatment variant: Tests whether a structural 'test file required' gate instruction forces agents to write tests before finishing. Based on output-format-compliance baseline scenario.",
+  "categories": ["convention-compliance", "instruction-following", "experiment"],
+  "tags": ["convention", "output-format", "EXP-560", "structural-gate", "test-writing"],
+  "tier": "standard",
+  "timeout": 8,
+  "agent_type": "bob",
+  "workflow": false
+}
