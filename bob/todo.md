@@ -1,7 +1,8 @@
 
 ## Next
-- [ ] **Dispatch dedup guard** — Implement Layer 1 (completion signal checks) per `DESIGN-dispatch-dedup-guard.md`. Propose Layers 2+3 to tech-lead.
 - [ ] **EXP-267 implementation** — Finish-guard evidence specificity. See `agents/shared/knowledge/experiments/EXP-267/design.md`.
+- [ ] **H-300 Evidence Quality Decay** — Sample 20 recent finish() calls, score evidence quality. If mean < 3, design intervention.
+- [x] ~~**Dispatch dedup guard**~~ — CLOSED 2025-05-02. Problem resolved by infrastructure. See `AUDIT-heartbeat-2025-05-02.md`.
 
 ## Cleared (2025-05-01)
 - [x] **EXP-188 finish-guard** — CLOSED. EXP-188 already CONCLUDED per `agents/shared/knowledge/experiments/EXP-188/results.md`. No finish-guard to ship.
