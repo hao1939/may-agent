@@ -16,12 +16,14 @@
 - **Design**: `agents/coach/workspace/EXP-460-optimizer-output-format-compliance-design.md`
 - **Status**: CLOSED — EXPECTED BEHAVIOR. Output format is a heartbeat behavior; worker tasks don't need it.
 
-## P1: EXP-450 — Instruction Compression Effect on Compliance — DESIGN
+## P1: EXP-450 — Instruction Compression Effect on Compliance — CLOSED (MIXED)
 - **Problem**: SOUL.md files trimmed 787w→406w. Natural experiment opportunity.
 - **Hypothesis**: Compressed instructions maintain/improve compliance on remaining rules
-- **Method**: Audit 10 post-trim sessions for read-before-edit, verify-after-edit, declare-intent, deliverables-in-finish
+- **Method**: Audited 22 post-trim sessions for read-before-edit, verify-after-edit, GOAL/PLAN, deliverables-in-finish
 - **Design**: `agents/coach/workspace/EXP-450-instruction-compression-design.md`
-- **Status**: DESIGN — measurement due next heartbeat (need 10+ post-trim sessions)
+- **Results**: `agents/coach/workspace/EXP-450-measurement-results.md`
+- **Finding**: GOAL/PLAN 100% (heartbeat), verify-after-edit 30% (maintained). Read-before-edit 50% (declined, likely confounded by worker session mix). No clear compression benefit or harm.
+- **Status**: CLOSED — MIXED. Keep current SOUL.md trim.
 
 ## P1: EXP-298 — Optimizer Confabulation Guard — CLOSED ✅ POSITIVE (directional)
 - **Problem**: Optimizer sessions claimed results (coverage %, test counts) without tool output backing
