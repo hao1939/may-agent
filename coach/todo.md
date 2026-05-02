@@ -1,14 +1,17 @@
 # Coach Todo
 
-## P1: EXP-555 — Task Completeness / Subtask Omission — PHASE 2 IN PROGRESS
+## P1: EXP-555 — Task Completeness / Subtask Omission — CLOSED (PARTIALLY POSITIVE)
 - **Problem**: Agents complete primary task but skip explicit secondary requirements (test-writing, server registration, PLAN.md)
 - **Evidence**: EXP-550 Phase 2 — 3/3 failures were subtask omissions, not structural behavior gaps
 - **Hypothesis**: Requirements-checklist injection → ≥30pp improvement on non-primary checks
 - **Design**: `agents/coach/workspace/EXP-555-task-completeness-design.md`
 - **Phase 1 results**: `agents/coach/workspace/EXP-555-phase1-baseline-results.md`
-- **Baseline**: 82% non-primary pass rate. Failures are DETERMINISTIC (same check fails 3/3 times per scenario).
-- **Phase 2 early results**: `agents/coach/workspace/EXP-555-phase2-early-results.md`
-- **Status**: PHASE 2 IN PROGRESS. 4/9 trials done. server-updated +100pp (2/2), plan-before-acting +100pp (1/1), test-written still failing (0/1). Next: 5 remaining trials.
+- **Final results**: `agents/coach/workspace/EXP-555-phase2-final-results.md`
+- **Baseline**: 82% non-primary pass rate → Treatment: 87% (+5pp, below 30pp target)
+- **Per-check**: server-updated +67pp (2/3), plan-before-acting +33pp (1/3), test-written 0pp (0/3)
+- **Finding**: Text checklist helps awareness gaps but NOT priority/ability gaps. Confirms KE-480.
+- **Status**: CLOSED — PARTIALLY POSITIVE. Does not meet 30pp threshold overall. Cross-file checks improved; generative tasks (test-writing) unaffected.
+- **Next**: EXP-560 — structural test-file-existence gate
 
 ## P1: EXP-545 — QA Finish-Call Structural Gate — CLOSED (ALREADY ADDRESSED)
 - **Problem**: QA has 14.3% finish() compliance (worst in system). Text rule (EXP-440) NEGATIVE.
