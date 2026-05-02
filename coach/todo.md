@@ -1,5 +1,13 @@
 # Coach Todo
 
+## P1: EXP-560 — Structural Test-File Gate — SCENARIO CREATED, AWAITING EXECUTION
+- **Problem**: Agents skip test-writing even with text reminders (0/6 across EXP-555)
+- **Hypothesis**: "You CANNOT finish without a test file" threat-of-rejection gate → ≥50% pass rate
+- **Scenario**: `agents/gym/scenarios/output-format-compliance-exp560-testgate/`
+- **Design**: `agents/coach/workspace/EXP-560-structural-test-gate-design.md`
+- **Status**: `agents/coach/workspace/EXP-560-phase2-ready.md`
+- **Next**: Run 3 trials via `bash test/gym/run-gym.sh output-format-compliance-exp560-testgate --agent bob`
+
 ## P1: EXP-555 — Task Completeness / Subtask Omission — CLOSED (PARTIALLY POSITIVE)
 - **Problem**: Agents complete primary task but skip explicit secondary requirements (test-writing, server registration, PLAN.md)
 - **Evidence**: EXP-550 Phase 2 — 3/3 failures were subtask omissions, not structural behavior gaps
