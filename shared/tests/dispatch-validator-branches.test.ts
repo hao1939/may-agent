@@ -35,7 +35,7 @@ describe("dispatch-validator uncovered branches", () => {
     }
   });
 
-  it("warns about high iteration count", () => {
+  it("errors on high iteration count", () => {
     const { mkdirSync, writeFileSync, rmSync } = require("fs");
     const dir = "/tmp/dispatch-val-test-iter-" + Date.now();
     const projDir = `${dir}/myproj`;
@@ -43,7 +43,8 @@ describe("dispatch-validator uncovered branches", () => {
     writeFileSync(`${projDir}/project.md`, "**Iteration**: 55\n## Status\nactive");
     try {
       const result = validateDispatch("project: myproj", dir);
-      expect(result.warnings.some((w: string) => w.includes("iteration") || w.includes("50"))).toBe(true);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e: string) => e.includes("iteration") || e.includes("50"))).toBe(true);
     } finally {
       rmSync(dir, { recursive: true });
     }
