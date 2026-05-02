@@ -1,8 +1,8 @@
-# Deliverables Checklist — Optimizer Heartbeat
+# DELIVERABLES_CHECKLIST.md
 
 | # | Deliverable | Status | Path/Evidence |
 |---|------------|--------|---------------|
-| 1 | Review metrics | DONE | All green: success-rate 1.0, p95 250781ms |
-| 2 | Process inbox (EXP-475) | DONE | Dismissed — duplicate of existing context.md rule |
-| 3 | Check projects | DONE | No action needed on any project |
-| 4 | Write heartbeat status | DONE | `.state/checkpoints/optimizer-heartbeat-status.md` |
+| 1 | Process EXP-475 inbox notification | DONE | Added MANDATORY ARTIFACT RULE to `agents/optimizer/heartbeat.md` lines 28-31 |
+| 2 | Review metrics | DONE | All healthy; documented in `.state/findings/2028-08-10-heartbeat-status.md` |
+| 3 | Check projects | DONE | No action needed; status in findings file |
+| 4 | Write status artifact | DONE | `.state/findings/2028-08-10-heartbeat-status.md` |
