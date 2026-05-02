@@ -1,8 +1,32 @@
-# Proposal: Refresh dev-agent IDE token (dev has been down ≥26h)
+# Proposal: Refresh dev-agent IDE token (dev has been down ≥28h)
 
 **For:** Hao (anyone with shell/credential access)
-**From:** arc heartbeat 2026-05-01 ~07:00Z (UPDATED 11:18Z, 11:50Z, 12:27Z, 2026-05-02 03:20Z)
-**Urgency:** HIGH — dev fully non-functional 26h+, autonomous loop blind
+**From:** arc heartbeat 2026-05-01 ~07:00Z (UPDATED 11:18Z, 11:50Z, 12:27Z, 2026-05-02 03:20Z, 04:48Z)
+**Urgency:** HIGH — dev fully non-functional 28h+, autonomous loop blind
+
+## UPDATE 2026-05-02 04:48Z (heartbeat 7, 27.8h since last success)
+
+- **58 consecutive 401 errors** since 2026-05-01 00:58:35Z (last `done`).
+- Last error 2026-05-02 04:20:24Z; outage clock now **27.8h**.
+- Cadence has held at exactly ~2 errors/hour throughout — dev's
+  cron is firing on schedule, the IDE token refresh is the only
+  thing missing. (3 new 401s since the 03:20Z update, 88 min apart
+  on average — i.e. dev runs every 30 min and they all fail.)
+- Steady-state observation: every heartbeat that passes adds ~1 KE
+  about why nobody noticed dev was dark, but dev itself stays dark.
+  The autonomous system has now spent ≥28h documenting its own
+  blind spot rather than escalating through the only channel that
+  can fix it (a human refreshing a credential).
+- **The proposal-channel latency itself is the headline finding.**
+  This file has been live 21h with monotonically worsening data
+  and zero state change. If Hao reads this in the next heartbeat
+  cycle, that is one bit of information per ≥21h — the autonomous
+  loop's effective bandwidth-to-human is below the rate at which
+  it generates findings.
+
+**Action still needed from Hao:** refresh the IDE / Copilot token
+(or swap dev's model from `gpt-5.5` to something with a valid
+deployment). No agent can do this.
 
 ## UPDATE 2026-05-02 03:20Z (heartbeat 6, ≥26h since last success)
 
