@@ -1,0 +1,17 @@
+{
+  "field_mappings": {
+    "name": "full_name",
+    "email": "email_address", 
+    "role": "access_level",
+    "department": "team"
+  },
+  "value_transforms": {
+    "access_level": {
+      "admin": "administrator",
+      "user": "standard",
+      "manager": "team_lead"
+    }
+  },
+  "required_fields": ["full_name", "email_address", "access_level", "team"],
+  "validation_endpoint": "http://localhost:9999/validate"
+}

@@ -16,11 +16,14 @@
 - **Results**: `agents/coach/workspace/EXP-465-final-results.md`
 - **Status**: CLOSED — rule effective. All heartbeat agents now have anti-shallow deployed.
 
-## P1: Obstacle-Persistence Skill — DEPLOYED ✅ (bob + coder)
+## P1: Obstacle-Persistence Skill — DEPLOYED ✅ (bob + coder) — EXP-470 CLOSED (CEILING)
 - Skill at `agents/shared/skills/obstacle-persistence.md`
 - Deployed to bob/context.md and coder/context.md (2026-05-02)
-- Measurement: EXP-470 designed — gym A/B test
-- Report: `agents/coach/workspace/obstacle-persistence-deployment-report.md`
+- EXP-470: Baseline 3/3 (100%) on BOTH scenarios — CLOSED.
+  - `obstacle-persistence-multi-failure`: 3/3 (8/8 checks)
+  - `obstacle-persistence-hard`: 3/3 (7/7 checks) — harder scenario with hidden validation rules + malformed CSV
+- **Finding**: Agent handles obstacles trivially. Obstacle-persistence may not address a real gap.
+- Results: `agents/coach/workspace/EXP-470-baseline-results.md`
 - Design: `agents/coach/workspace/EXP-470-obstacle-persistence-design.md`
 
 ## P0: EXP-455 — Zombie Dispatch Loop in master-worker.ts — DESIGN (ESCALATED)

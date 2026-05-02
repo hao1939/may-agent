@@ -1,0 +1,10 @@
+# Validation Rules for User Migration
+# This file contains the ACTUAL validation requirements
+
+primary_key=uid
+uid_format=email_hash_8
+# The uid field must be the first 8 chars of the MD5 hash of email_address
+# Example: alice@company.com -> uid = first 8 chars of md5("alice@company.com")
+
+required_fields=full_name,email_address,access_level,team,uid
+min_records=5

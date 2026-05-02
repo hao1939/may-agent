@@ -1,0 +1,6 @@
+name,email,role,department
+Alice Johnson,alice@company.com,admin,Engineering
+Bob Smith,bob@company.com,user,Marketing
+Carol Davis,carol@company.com,admin,Engineering
+Dave Wilson,"dave@company.com,user,Sales"
+Eve Brown,eve@company.com,manager,Engineering
