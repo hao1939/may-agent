@@ -15,6 +15,7 @@
 - **Early signal**: 5/6 sessions clean (83% vs 52% baseline). n=6, need n≥50.
 - **Dashboard**: `agents/coach/workspace/experiment-dashboard-20260510.md`
 - **Status check (2026-05-12)**: Only 3 post-deployment sessions available. Still need ~47 more. Next check: 2026-05-17.
+- **Measurement (2026-05-13)**: 0/15 edit failures in post-deploy sessions (0% vs 15.4% baseline). But n=15 too small — worker edit-heavy sessions not yet in history. Code confirmed live (master-worker.ts:423-448). Next check: 2026-05-17.
 
 ## P1: EXP-510 — Worker Task Completion Quality — DESIGN
 - **Problem**: Worker sessions (93% of compute) have no behavioral instructions. Incomplete task execution is common.
