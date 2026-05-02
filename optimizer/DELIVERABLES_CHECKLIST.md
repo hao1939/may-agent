@@ -1,8 +1,9 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist
 
-| # | Deliverable | Status | Path/Evidence |
-|---|------------|--------|---------------|
-| 1 | Process EXP-475 inbox notification | DONE | Added MANDATORY ARTIFACT RULE to `agents/optimizer/heartbeat.md` lines 28-31 |
-| 2 | Review metrics | DONE | All healthy; documented in `.state/findings/2028-08-10-heartbeat-status.md` |
-| 3 | Check projects | DONE | No action needed; status in findings file |
-| 4 | Write status artifact | DONE | `.state/findings/2028-08-10-heartbeat-status.md` |
+## Heartbeat 2026-05-02T06:24Z
+
+| # | Deliverable | Status | Path |
+|---|-------------|--------|------|
+| 1 | Heartbeat status artifact | DONE | agents/optimizer/workspace/finding-heartbeat-20260502-0630.md |
+| 2 | Inbox notification 1 (cross-agent-collaboration) processed | DONE | Dismissed — tracking artifact, not real issue |
+| 3 | Inbox notification 2 (EXP-475) processed | DONE | Dismissed — rule already present in heartbeat.md |
