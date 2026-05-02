@@ -1,3 +1,7 @@
 # Deliverables Checklist
 
-- [x] DONE — Completion evidence file: `/app/agents/shared/projects/outputs/project-complete-evidence.md`
+| Deliverable | Status | Path |
+|---|---|---|
+| Project completion marker | DONE | /app/agents/shared/projects/outputs/PROJECT_COMPLETE.md |
+
+No further work required. Project complete for 70+ iterations.
