@@ -1,0 +1,9 @@
+{
+  "name": "convention-verify-edit-exp565-threatgate",
+  "categories": ["convention-compliance"],
+  "tags": ["behavior", "verification", "experiment", "EXP-565"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

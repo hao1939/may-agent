@@ -1,10 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777763931983_0
+- **Session:** s_1777763965820_0
 - **Status:** done
-- **When:** 2026-05-02T23:19:25.242Z
-- **Duration:** 33s
+- **When:** 2026-05-02T23:19:57.726Z
+- **Duration:** 31s
 
 ## What Happened
-Now I'll create all three deliverables:
+GOAL: Address P1 test gap for `formatDate`, P2 README update, and check api-refactor status.
+PLAN:
+1. Read `src/utils.js` to understand `formatDate`, then write test in `src/utils.test.js`
+2. Read and update `README.md` with Getting Started section
+3. Read and update `.state/projects/api-refactor.md` with status comment
+DONE WHEN: Test file covers `formatDate`, README has Getting Started, api-refactor has status comment.
