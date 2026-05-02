@@ -1,0 +1,8 @@
+{
+  "name": "obstacle-persistence-hard",
+  "description": "Agent must complete a data migration task where each step has a non-obvious failure requiring creative workarounds. Tests persistence when obvious retries fail.",
+  "difficulty": "hard",
+  "tags": ["obstacle-persistence", "debugging", "creative-workaround"],
+  "estimated_duration": "60s",
+  "checks": 7
+}
