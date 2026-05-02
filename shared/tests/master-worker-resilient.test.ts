@@ -10,8 +10,15 @@ import {
   mergeResilientConfig,
   ResilientMasterWorker,
   createResilientMasterWorker,
+  createDeliverableTracker,
+  hasDeliverableOutput,
+  checkZeroOutput,
+  updateDeliverableTracker,
+  ZERO_OUTPUT_ESCALATE,
+  ZERO_OUTPUT_TERMINATE,
   type IterationResult,
   type ResilientConfig,
+  type DeliverableTracker,
 } from "../workflows/master-worker-resilient.ts";
 import { type CircuitState } from "../workflows/retry-wrapper.ts";
 import { type IterationSnapshot } from "../workflows/master-worker-cached.ts";
@@ -219,5 +226,100 @@ describe("createResilientMasterWorker", () => {
   it("getResults returns empty initially", () => {
     const rmw = createResilientMasterWorker({ projectDir: "/tmp/fake-project-rmw", maxIterations: 1 });
     expect(rmw.getResults()).toEqual([]);
+  });
+});
+
+// ── Zero-Output Loop Detection ──────────────────────────────────────────
+
+function makeResult(overrides: Partial<IterationResult> = {}): IterationResult {
+  return {
+    iteration: 1,
+    success: false,
+    output: null,
+    retryAttempts: 0,
+    circuitState: "closed",
+    durationMs: 100,
+    ...overrides,
+  };
+}
+
+describe("createDeliverableTracker", () => {
+  it("initializes to zeros", () => {
+    const t = createDeliverableTracker();
+    expect(t.consecutiveZeroOutput).toBe(0);
+    expect(t.totalIterations).toBe(0);
+    expect(t.iterationsWithOutput).toBe(0);
+  });
+});
+
+describe("hasDeliverableOutput", () => {
+  it("returns true for successful iteration with output", () => {
+    expect(hasDeliverableOutput(makeResult({ success: true, output: "done" }))).toBe(true);
+  });
+  it("returns false for failed iteration", () => {
+    expect(hasDeliverableOutput(makeResult({ success: false, output: null }))).toBe(false);
+  });
+  it("returns true for stopped/blocked", () => {
+    expect(hasDeliverableOutput(makeResult({ error: "Stopped: milestone complete" }))).toBe(true);
+  });
+  it("returns false for success with empty output", () => {
+    expect(hasDeliverableOutput(makeResult({ success: true, output: "" }))).toBe(false);
+  });
+});
+
+describe("checkZeroOutput", () => {
+  it("returns continue below escalation threshold", () => {
+    expect(checkZeroOutput({ consecutiveZeroOutput: 2, totalIterations: 3, iterationsWithOutput: 0 })).toBe("continue");
+  });
+  it("returns escalate at threshold", () => {
+    expect(checkZeroOutput({ consecutiveZeroOutput: ZERO_OUTPUT_ESCALATE, totalIterations: 4, iterationsWithOutput: 0 })).toBe("escalate");
+  });
+  it("returns terminate at threshold", () => {
+    expect(checkZeroOutput({ consecutiveZeroOutput: ZERO_OUTPUT_TERMINATE, totalIterations: 6, iterationsWithOutput: 0 })).toBe("terminate");
+  });
+});
+
+describe("updateDeliverableTracker", () => {
+  it("grants first iteration grace period", () => {
+    const t = createDeliverableTracker();
+    const action = updateDeliverableTracker(t, makeResult({ success: false }));
+    expect(action).toBe("continue");
+    expect(t.consecutiveZeroOutput).toBe(0); // not incremented on first
+  });
+
+  it("increments on second zero-output iteration", () => {
+    const t = createDeliverableTracker();
+    updateDeliverableTracker(t, makeResult()); // iteration 1 (grace)
+    updateDeliverableTracker(t, makeResult()); // iteration 2
+    expect(t.consecutiveZeroOutput).toBe(1);
+  });
+
+  it("resets on productive iteration", () => {
+    const t = createDeliverableTracker();
+    updateDeliverableTracker(t, makeResult()); // grace
+    updateDeliverableTracker(t, makeResult()); // zero
+    updateDeliverableTracker(t, makeResult({ success: true, output: "file written" })); // productive
+    expect(t.consecutiveZeroOutput).toBe(0);
+    expect(t.iterationsWithOutput).toBe(1);
+  });
+
+  it("escalates after consecutive zero-output iterations", () => {
+    const t = createDeliverableTracker();
+    updateDeliverableTracker(t, makeResult()); // grace
+    for (let i = 0; i < ZERO_OUTPUT_ESCALATE; i++) {
+      const action = updateDeliverableTracker(t, makeResult());
+      if (i < ZERO_OUTPUT_ESCALATE - 1) expect(action).toBe("continue");
+      else expect(action).toBe("escalate");
+    }
+  });
+
+  it("terminates after enough consecutive zero-output iterations", () => {
+    const t = createDeliverableTracker();
+    updateDeliverableTracker(t, makeResult()); // grace
+    let lastAction: string = "continue";
+    for (let i = 0; i < ZERO_OUTPUT_TERMINATE; i++) {
+      lastAction = updateDeliverableTracker(t, makeResult());
+    }
+    expect(lastAction).toBe("terminate");
   });
 });
