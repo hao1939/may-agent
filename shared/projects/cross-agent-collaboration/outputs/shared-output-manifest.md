@@ -122,3 +122,18 @@ This manifest should be updated whenever:
 | system-efficiency | error-recovery-audit.md | Error recovery audit for agent workflows | audit, reliability |
 | system-efficiency | agent-utilization-report.md | Agent utilization and workload report | measurement, utilization |
 | system-efficiency | cross-agent-collaboration-proposal.md | Original proposal for cross-agent collaboration | design, collaboration |
+| skill-workflow-audit | skill-usage.md | Audit of which skills are actually used by agents | audit, skills, measurement |
+| skill-workflow-audit | skill-usefulness-design.md | Metric design for skill usefulness-rate | design, metrics, skills |
+| skill-workflow-audit | skill-usefulness-measurement.md | First-pass measurement of skill usefulness | measurement, skills |
+| skill-workflow-audit | skill-usefulness-redesign.md | Redesign of usefulness-rate metric | design, metrics, skills |
+| skill-workflow-audit | skill-verification.md | Skill verification report with pass/fail results | verification, skills |
+| skill-workflow-audit | vbf-remeasure.md | Re-measurement of verify-before-finish effectiveness | measurement, vbf |
+| skill-workflow-audit | verify-before-finish-strengthening.md | Plan to strengthen VBF skill adoption | design, vbf, skills |
+| skill-workflow-audit | workflows-audit.md | Audit of workflow definitions and usage | audit, workflows |
+| skill-workflow-audit | workflows-runtest.md | Test run results for workflow executions | testing, workflows |
+| system-efficiency | daily-metrics-snapshot.md | Daily iteration metrics over project lifetime | measurement, metrics |
+| system-efficiency | full-project-retrospective.md | Complete retrospective of system-efficiency project | retrospective, lessons |
+| system-efficiency | latency-profile.md | Iteration latency profiling and bottleneck analysis | measurement, performance |
+| system-efficiency | module-dependency-graph.md | Dependency graph of workflow toolkit modules | architecture, dependencies |
+| system-efficiency | cross-agent-collaboration-kickoff.md | Kickoff record for cross-agent collaboration initiative | design, collaboration |
+| system-efficiency | efficiency-v2-roadmap.md | Roadmap for resilience and performance improvements | roadmap, design |
