@@ -131,6 +131,7 @@ Bad metrics get gamed or ignored. If a metric doesn't drive real progress, redef
 Respond with one of these decisions as the VERY FIRST WORD:
 CONTINUE — guide the next iteration. If metrics are at target, raise them or find new problems.
 PIVOT — current approach isn't working, try something different.
+DONE — all plan items complete AND all metrics at target. Project is finished.
 BLOCKED — something external is broken that you cannot fix.
 WAITING — you need something specific from a human (approval, credentials, access). Say exactly what.
 
