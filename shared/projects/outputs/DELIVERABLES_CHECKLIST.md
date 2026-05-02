@@ -1,10 +1,3 @@
 # Deliverables Checklist
 
-## Task: Create workflow performance benchmark tests
-
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Performance benchmark test file with ≥10 tests | DONE | `agents/shared/tests/workflow-perf-benchmark.test.ts` |
-| 2 | All tests pass | DONE | 16/16 tests pass via `npx vitest run` |
-
-No extra report files created per task instructions.
+- [x] DONE — `agents/shared/scripts/test-quality-report.sh`: Executable script that runs vitest with coverage, reports total coverage %, lists untested files, shows test summary. Verified: 85.59% coverage, 1621 tests passed, 10 zero-coverage files identified.
