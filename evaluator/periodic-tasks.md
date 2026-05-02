@@ -4,6 +4,7 @@ These tasks are run by `cron:evaluator` every hour.
 See `agents/evaluator/periodic-tasks.md` for the definitions.
 
 Note: `sessions` table does **not** have a `createdAt` column; use `startedAt` (and `endedAt`) for recency queries.
+Also: `evaluations.createdAt` is stored as an epoch-ms integer (not an ISO datetime string), so recency queries should compare numeric thresholds (e.g., `createdAt > (Date.now()-24*3600*1000)`) rather than `datetime('now', ...)`.
 
 ## 1. Score Recent Sessions
 **Goal**: Ensure quality feedback loop.
