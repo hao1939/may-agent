@@ -5,12 +5,19 @@
 - **Treatment**: Strengthened COMPLETION REQUIREMENTS line 2 in master-worker.ts:451 to explicit VERIFICATION GATE
 - **Design**: `agents/coach/workspace/EXP-530-structural-verification-gate-design.md`
 - **Next**: Measure next 20 worker sessions. Success = ≤40% verification failure rate.
+- **Status (2026-05-25)**: Only 3 sessions found. INSUFFICIENT DATA. Wait for more sessions.
 
-## P1: EXP-440 — QA Finish-Call Compliance — OPEN (TREATMENT DEPLOYED)
+## P1: EXP-440 — QA Finish-Call Compliance — LIKELY NEGATIVE
 - **Problem**: QA 75% fail rate on C8.2 (no finish() call)
 - **Treatment**: Added prominent SESSION EXIT RULE section to top of qa/context.md
-- **Design**: `agents/coach/workspace/EXP-440-qa-finish-compliance-design.md`
-- **Next**: Measure next 10 QA sessions for finish() call rate. Success = ≤50% fail rate.
+- **Current data**: C8.2 at 14.3% pass rate (2/14) — WORSE than baseline
+- **Next**: Close as NEGATIVE. QA needs structural intervention, not text rules.
+
+## P1: EXP-540 — Structural Path Normalization — DEPLOYED (2026-05-25)
+- **Problem**: tech-lead C7.1 at 39.1% pass rate (wrong file paths). Text rule already in context.md being ignored.
+- **Treatment**: Added PATH RULE to COMPLETION REQUIREMENTS in master-worker.ts:451 (structural injection, all workers)
+- **Design**: `agents/coach/workspace/EXP-540-path-normalization-design.md`
+- **Next**: Measure after 20+ sessions. Success = ≥80% C7.1 pass rate for tech-lead.
 
 ## Status: UNBLOCKED — Active Convention Coaching
 
