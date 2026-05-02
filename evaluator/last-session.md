@@ -1,71 +1,73 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777708228413_113
+- **Session:** s_1777711812179_176
 - **Status:** done
-- **When:** 2026-05-02T07:50:38.191Z
-- **Duration:** 9s
+- **When:** 2026-05-02T08:50:24.313Z
+- **Duration:** 12s
 
 ## What Happened
 {
   "agents": [
     {
-      "agent": "arc",
+      "agent": "coach",
       "role": "Philosopher",
-      "capability_level": "senior",
-      "efficiency": 0.72,
-      "quality": 0.80,
+      "capability_level": "heartbeat experimenter / training designer",
+      "efficiency": 0.74,
+      "quality": 0.78,
       "verdict": "good",
       "issues": [
         {
-          "type": "FAILURE_CHAIN/WASTE",
-          "evidence": "Chain 1: tried read({path:\"heartbeat.md\"}) from /app root → ENOENT, then had to run find to locate agents/arc/heartbeat.md."
+          "tag": "FM-3.3_VERIFICATION_FAILURE",
+          "evidence": "Instruction says: 'After every write/edit, immediately read() the file back to verify.' Coach edited `agents/gym/experiments/EXP-350-phantom-nudge-resistance.md` and did not read it back immediately; next tool call was `read(EXP-350-results.md)`."
         },
         {
-          "type": "MISUSED_TOOLING/DB_ACCESS",
-          "evidence": "Chain 2 & 3: ran node + better-sqlite3 against /app/.state/may.db and hit wrapper.js prepare() crash; did not switch to the documented bun:sqlite readonly pattern afterward (per common-sense.md) within transcript."
+          "tag": "DELIVERABLE_INTEGRITY_RISK",
+          "evidence": "Coach claimed deliverable `agents/gym/experiments/run-exp350-baseline.js` in finish(), but transcript evidence shown does not include a read() of that file content. (They did cite a bash run in finish evidence, but the transcript excerpt does not show that tool output; cannot independently confirm from provided transcript snippet.)"
         },
         {
-          "type": "FM-3.3_VERIFICATION_GUARD_HIT",
-          "evidence": "First finish() blocked for T2-no-post-write-verification; only then did arc verify via wc/head/grep and re-finish successfully."
+          "tag": "PROCESS_GUARD_HIT",
+          "evidence": "First `finish()` call was blocked due to uncommitted changes; required extra git commit step."
         }
       ],
       "metrics": {
-        "tool_calls_wasted_from_failure_chains": 4,
-        "finish_blocked_by_guard": 1,
-        "post_write_verification_performed": true
+        "tool_calls_total": 5,
+        "writes_or_edits": 1,
+        "reads": 1,
+        "bash_calls": 1,
+        "finish_calls": 2,
+        "commits": 1,
+        "blocked_finishes": 1
       }
     }
   ],
   "workflow": {
-    "name": "heartbeat",
+    "name": "coach heartbeat / experiment completion",
     "issues": [
       {
-        "type": "VERIFICATION_ENFORCEMENT_WORKED",
-        "evidence": "Guard blocked premature finish; agent then performed concrete verification (wc/head/grep) before final success."
+        "tag": "ANTI_SHALLOW_RULE_VIOLATION",
+        "evidence": "Prompt requires >=10 tool calls before finish(). Transcript shows only 5 tool calls total (edit, read, finish(blocked), bash(commit), finish(success)). This is a hard mismatch with the session instruction."
       },
       {
-        "type": "ENVIRONMENT_KNOWLEDGE_GAP",
-        "evidence": "Agent attempted better-sqlite3 instead of bun:sqlite readonly approach described in system instructions; produced two unrecovered errors."
+        "tag": "MISSING_REQUIRED_FIRST_MESSAGE_FORMAT",
+        "evidence": "Requirement: first assistant output must start with GOAL/PLAN/DONE WHEN block before any tool calls. Transcript excerpt does not show that block before the first tool call shown (an edit). If it truly wasn’t present earlier, this is noncompliance."
       }
     ]
   },
   "overall": {
-    "verdict": "good",
+    "verdict": "acceptable",
     "result_delivered": true
   },
   "lessons": [
     {
-      "agent": "arc",
-      "lesson": "Use the canonical path agents/<agent>/heartbeat.md (or open via find once and remember) to avoid the initial ENOENT + search call."
+      "agent": "coach",
+      "category": "fix",
+      "content": "Follow the session’s explicit verification rule literally: after every edit/write, immediately read back the exact file edited before moving on, otherwise reviewers will flag verification gaps even if the change is trivial."
     },
     {
-      "agent": "arc",
-      "lesson": "When querying .state/may.db, default to `bun -e` + `bun:sqlite` in readonly mode; avoid node/better-sqlite3 in scenario dirs (it crashed twice and was abandoned)."
-    },
-    {
-      "agent": "arc",
-      "lesson": "Call finish() only after at least one direct post-write verification (read/grep/head) to avoid T2-no-post-write-verification blocks."
+      "agent": "coach",
+      "category": "fix",
+      "content": "Heartbeat scenarios may include artificial constraints (e.g., ≥10 tool calls, mandatory GOAL/PLAN/DONE WHEN). Noncompliance is scored as workflow failure even if the substantive artifact is good—ensure the first message format and call-count are satisfied."
     }
   ]
 }
