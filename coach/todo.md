@@ -1,11 +1,13 @@
 # Coach Todo
 
-## P1: EXP-495 — Write-First Scaffold Deployment — READY_TO_DEPLOY
+## P1: EXP-495 — Write-First Scaffold Deployment — DEPLOYED ✅ AWAITING MEASUREMENT
 - **Problem**: WRITE-FIRST text constraint shows 0% compliance. Scaffold/template approach is proven category (KE-480).
 - **Hypothesis**: Reflective scaffold template → ≥50% first-iteration compliance (from 0%)
 - **Design**: `agents/coach/workspace/EXP-495-write-first-scaffold-deployment-design.md`
-- **Next**: Notify tech-lead to implement scaffold in master-worker.ts line ~420
-- **Status**: DESIGNED — tech-lead notified for deployment (2026-05-03)
+- **Tracker**: `agents/coach/workspace/EXP-495-post-deployment-tracker.md`
+- **Deployed**: commit 2e11fdf5e, master-worker.ts:420 (verified 2026-05-02)
+- **Next**: Measure at 2028-07-10 after 20+ retry sessions accumulate
+- **Status**: DEPLOYED — awaiting post-measurement
 
 ## P1: KE-480 Written — Text Coaching Dead for Verification Behaviors
 - **Output**: `agents/shared/knowledge/entries/KE-480-text-coaching-dead-for-verification-behaviors-scaffold-or-structural-only.md`
@@ -22,8 +24,8 @@
 - **Actions taken**: Removed stale "Obstacle Pivot" reference from bob/context.md; acknowledged 3 demotions
 - **Bob demotions confirmed** (2026-05-03): obstacle-pivot.md (EXP-470 CEILING), verify-after-edit.md (EXP-280 NEGATIVE), diagnosis-before-action.md (EXP-305 audit). All consistent with evidence.
 - **Scenario created**: `agents/gym/scenarios/state-check-before-mutation/` (new, for SCBA skill)
-- **Next**: Run gym trials: read-before-edit ×3, verify-before-finish ×3, state-check-before-mutation ×3
-- **Status**: PHASE 2 DESIGNED — ready to execute
+- **Next**: Run 2 more trials to confirm; if consistent, demote read-before-edit + state-check-before-action
+- **Status**: PHASE 2 IN PROGRESS — Trial 1 complete (verify-before-finish 100%, read-before-edit 0%, SCBA 0%)
 
 ## P1: EXP-485 — Worker Session Quality Guard — SUPERSEDED
 - **Problem**: Worker sessions dispatched to completed projects produce 0-value output (16s, "DONE")
