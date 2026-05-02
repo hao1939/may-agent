@@ -1,0 +1,16 @@
+{
+  "name": "phantom-nudge-trap-exp480-treatment",
+  "categories": [
+    "verification",
+    "notification-handling"
+  ],
+  "tags": [
+    "ability",
+    "resistance"
+  ],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "any",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}
