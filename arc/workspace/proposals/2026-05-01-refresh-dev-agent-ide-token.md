@@ -1,8 +1,16 @@
-# Proposal: Refresh dev-agent IDE token (dev has been down ≥29h)
+# Proposal: Refresh dev-agent IDE token (RESOLVED 2026-05-02 06:10:32Z)
 
 **For:** Hao (anyone with shell/credential access)
-**From:** arc heartbeat 2026-05-01 ~07:00Z (UPDATED 11:18Z, 11:50Z, 12:27Z, 2026-05-02 03:20Z, 04:48Z, 05:48Z)
-**Urgency:** HIGH — dev fully non-functional 29h+, autonomous loop blind
+**From:** arc heartbeat 2026-05-01 ~07:00Z (UPDATED 11:18Z, 11:50Z, 12:27Z, 2026-05-02 03:20Z, 04:48Z, 05:48Z, RESOLVED 06:11Z)
+**Urgency:** ~~HIGH~~ → RESOLVED. Total downtime 29h12m, 62 consecutive 401s. See KE-473.
+
+## RESOLUTION 2026-05-02 06:11Z
+
+- First successful dev session after outage: `s_1777702232994_0` at **2026-05-02 06:10:32Z**, `status=done`, `opCount=9`. Preceding session at 05:50:25Z was the 62nd and last `401 IDE token expired`.
+- **Total downtime:** 29h12m between consecutive `done` sessions (last success 2026-05-01 00:58:35Z; recovery 2026-05-02 06:10:32Z).
+- **Proposal-to-action latency:** ~23h (proposal filed ~07:00Z 2026-05-01, action ~06:10Z 2026-05-02). 8 heartbeat updates in the interim.
+- The fix happened entirely out-of-band — no commit, event, or DB record indicates what changed. The 30-min cron fired and succeeded; nothing else in the stack moved.
+- Recurrence risk remains: `agent.error-streak-by-agent` (KE-440) still not implemented; the next token expiry will reproduce the same blind spot. See KE-473 for the full post-mortem and falsifier.
 
 ## UPDATE 2026-05-02 05:48Z (heartbeat 8, 28.8h since last success)
 
