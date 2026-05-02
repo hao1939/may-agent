@@ -618,8 +618,24 @@ Then provide your decision and guidance for the next iteration.`;
       }
       decision = extractDecision(orchestratorText);
       if (decision.status === "unknown") {
-        ctx.log("[review] Decision unclear — treating as CONTINUE");
-        decision.status = "continue";
+        // Track consecutive unclear decisions — if the orchestrator can't decide,
+        // the project likely has no more actionable work (zombie loop prevention)
+        if (typeof (ctx as any)._consecutiveUnknownDecisions === 'undefined') {
+          (ctx as any)._consecutiveUnknownDecisions = 0;
+        }
+        (ctx as any)._consecutiveUnknownDecisions++;
+        const unknownCount = (ctx as any)._consecutiveUnknownDecisions;
+        if (unknownCount >= 3) {
+          ctx.log(`[review] 🛑 ${unknownCount} consecutive unclear decisions — treating as WAITING (zombie loop prevention)`);
+          decision.status = "waiting";
+          decision.detail = `Auto-waiting: ${unknownCount} consecutive iterations with no clear orchestrator decision. Project may be complete.`;
+        } else {
+          ctx.log(`[review] Decision unclear (${unknownCount}/3) — treating as CONTINUE`);
+          decision.status = "continue";
+        }
+      } else {
+        // Reset counter on any clear decision
+        (ctx as any)._consecutiveUnknownDecisions = 0;
       }
       ctx.log(`[review] Decision: ${decision.status.toUpperCase()}`);
 
