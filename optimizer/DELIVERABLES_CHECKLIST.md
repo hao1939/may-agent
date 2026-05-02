@@ -1,7 +1,5 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist
 
-| # | Deliverable | Status | Path/Evidence |
-|---|-------------|--------|---------------|
-| 1 | Heartbeat status artifact | DONE | agents/optimizer/workspace/heartbeat-status-current.md |
-| 2 | Inbox notifications processed | DONE | Dismissed both with reasoning in status file |
-| 3 | Projects reviewed | DONE | All 5 projects assessed in status file |
+- [x] **Heartbeat artifact**: DONE — `agents/optimizer/findings/2025-05-02-heartbeat-status.md`
+- [x] **Metrics review**: DONE — all metrics checked, p95 anomaly noted
+- [x] **Project review**: DONE — 5 projects reviewed in findings file
