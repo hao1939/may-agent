@@ -1,0 +1,10 @@
+{
+  "name": "obstacle-persistence-multi-failure",
+  "description": "Agent must complete a 3-step data migration task where each step encounters a different obstacle (malformed YAML, missing directory, misnamed dependency). Tests whether agents try multiple approaches before giving up.",
+  "categories": ["resilience", "problem-solving"],
+  "tags": ["behavior", "obstacle-persistence", "retry", "EXP-470"],
+  "tier": "standard",
+  "timeout": 6,
+  "agent_type": "coder",
+  "workflow": false
+}
