@@ -1,34 +1,42 @@
 # Evaluator heartbeat — 2026-05-02
 
-## Session evaluation pipeline liveness / coverage
+## Checks performed
 
-### DB recency (canonical)
-Computed from `.state/may.db` (readonly):
-- `evaluations.max(createdAt) = 1777686991632`
-- `sessions.max(startedAt) = 1777688848293`
+### Pipeline liveness (DB canonical)
 
-Interpretation: pipeline is writing evaluations recently (not stale).
+- `evaluations.MAX(createdAt)` = **1777686991632**
+- `sessions.MAX(startedAt)` = **1777690614420**
+- **Lag** = `3622788 ms` (~**60.4 min**) between most recent session start and most recent evaluation record.
 
-### 24h volume + coverage (vs most recent session time)
-- `sessions_24h = 4334`
-- `evals_24h = 715`
-- **coverage = 0.165**
+Evidence: bun:sqlite queries in transcript.
 
-Coverage has dropped vs the last recorded check on 2026-04-30 (~0.37). This suggests either (a) more sessions are being generated (denominator jump) without a proportional increase in eval throughput, or (b) the eval job scope narrowed.
+### Coverage sample (last 24h)
 
-### Evaluations distribution skew (24h)
-Sessions by agent (top 10): optimizer 1558, coach 906, amy 846, evaluator 728, …
-Evaluations by agent (top 10): optimizer 229, coach 215, amy 136, … (notably **evaluator absent**).
+Using `startedAt >= now-24h`:
 
-Interpretation: evaluator agent sessions are not being evaluated (likely intentional to avoid self-eval), but overall coverage still appears low.
+- sessions: **4351**
+- without eval: **3645** (~**83.8%**)
 
-### Legacy artifacts
-`.state/evaluations/` newest files remain dated Mar 24.
-Interpretation: legacy-output-path drift; do not use these files for liveness.
+Breakdowns:
+- by kind: `call 2813 (no_eval 2243)`, `job 1539 (no_eval 1403)`
+- by source (top):
+  - `workflow:worker 1151 (no_eval 1088)`
+  - `workflow:orchestrator 1168 (no_eval 854)`
+  - `standalone-eval 688 (no_eval 688)`
+- by agent (top):
+  - `optimizer 1563 (no_eval 1335)`
+  - `coach 906 (no_eval 693)`
+  - `amy 846 (no_eval 710)`
+  - `evaluator 741 (no_eval 741)`
 
-## Suggested next action (not executed in this heartbeat)
-- Locate the `evaluate-session-llm` cron / job runner selection logic and confirm:
-  - expected daily session volume
-  - sampling/budget caps
-  - any filtering by agent/kind/status
-  - whether throughput settings should scale with volume
+## Interpretation
+
+- Job runner is up (`may-agent --cron` is running).
+- Evaluation writes are happening, but not keeping up with current session creation (lag ~1h) and a large fraction of sessions are not evaluated.
+- Some categories appear intentionally skipped (notably `agent=evaluator` and `source=standalone-eval`), but large unevaluated volume also comes from `workflow:worker`.
+
+## Recommended next actions (for owner)
+
+1. Inspect the evaluation cron’s selection query / skip logic to confirm whether `workflow:worker` is intentionally excluded.
+2. Decide whether “coverage” should exclude intentionally-skipped sources (`standalone-eval`, `agent=evaluator`) to avoid misleading alerts.
+3. If not intentionally excluded, consider widening evaluation scope or increasing throughput.
