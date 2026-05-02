@@ -1,29 +1,34 @@
-# System Efficiency Project — Closure Evidence
+# System Efficiency Project — Closure Notice
 
-**Status**: DONE  
-**Date**: Iteration 15  
-**Successor**: `/app/agents/shared/projects/cross-agent-collaboration/`
+**Status**: Done  
+**Date**: 2025-01-28  
 
-## Final State
+## Summary
 
 All objectives met:
-- 12/12 satellite projects at target
-- All metrics at or above threshold
-- Regression guard config produced
-- Efficiency playbook produced
-- Successor project spawned with first deliverable
+- 12/12 satellite projects completed
+- All 3 core metrics at or above target
+- Successor project `cross-agent-collaboration` spawned and active
 
-## Deliverables Produced (This Project)
+## Final Metrics
 
-| File | Location |
-|------|----------|
-| satellite-triage.md | outputs/ |
-| regression-guard-config.md | outputs/ |
-| efficiency-playbook.md | outputs/ |
-| system-efficiency-retrospective.md | outputs/ |
-| next-frontier-proposal.md | outputs/ |
-| shared-output-manifest.md | outputs/ & cross-agent-collaboration/outputs/ |
+| Metric | Target | Final |
+|--------|--------|-------|
+| satellite-goal-progress | 4 | 12 |
+| deliverables-per-iteration | 0.8 | 0.8+ |
+| zombie-project-rate | <20% | 0% |
 
-## Recommendation
+## Deliverables Produced
 
-No further iterations should be dispatched to system-efficiency. Route future work to `cross-agent-collaboration`.
+- `satellite-triage.md` — ranked assessment of all satellites
+- `regression-guard-config.md` — alert thresholds for all closed projects
+- `efficiency-playbook.md` — orchestrator/worker patterns
+- `system-efficiency-retrospective.md` — full project retro
+- `next-frontier-proposal.md` — successor project proposals
+- `shared-output-manifest.md` — cross-project output index
+
+## Successor
+
+All future work → `/app/agents/shared/projects/cross-agent-collaboration/`
+
+No further iterations should be dispatched to system-efficiency.

@@ -1,11 +1,11 @@
 # Deliverables Checklist
 
-## Task: System Efficiency Project Closure (Iteration 15)
+## Task: System Efficiency Project Closure (Iteration 16)
 
 | # | Deliverable | Status | Path |
-|---|-------------|--------|------|
-| 1 | Closure evidence file documenting project is done | DONE | /app/agents/shared/projects/outputs/system-efficiency-closure.md |
+|---|------------|--------|------|
+| 1 | Closure notice documenting project completion | DONE | /app/agents/shared/projects/outputs/system-efficiency-closure.md |
 
 ## Notes
-- Project is officially closed. No further work needed.
-- Successor project: cross-agent-collaboration
+- Project is officially done; no further work needed
+- File documents final metrics, all deliverables, and successor routing
