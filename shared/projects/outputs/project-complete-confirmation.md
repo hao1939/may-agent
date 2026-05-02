@@ -7,11 +7,11 @@
 
 This project has been complete since iteration 1. All metrics exceeded targets:
 
-- **Coverage**: 86.69% (exceeds target)
+- **Coverage**: 86.69% (target met)
 - **Tests**: 1565/1565 passing
 - **Critical paths**: 11/11 covered
-- **Threshold enforcement**: Active
+- **Threshold**: Enforced
 
 ## No Further Work Required
 
-No additional iterations should be dispatched. The project is fully complete with all deliverables produced and all metrics met.
+No additional iterations should be dispatched. The project status is `complete` in project.md.
