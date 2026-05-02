@@ -1,42 +1,24 @@
 # Evaluator heartbeat — 2026-05-02
 
-## Checks performed
+## Checks
 
-### Pipeline liveness (DB canonical)
+### Session eval freshness (DB canonical)
+- evaluations.max(createdAt) = **1777686991632**
+- sessions.max(startedAt) = **1777692415498**
+- lag_ms = **5,423,866ms (~1.5h)**
 
-- `evaluations.MAX(createdAt)` = **1777686991632**
-- `sessions.MAX(startedAt)` = **1777690614420**
-- **Lag** = `3622788 ms` (~**60.4 min**) between most recent session start and most recent evaluation record.
+Evidence: bun:sqlite query output in transcript.
 
-Evidence: bun:sqlite queries in transcript.
+### Legacy artifact freshness (.state/evaluations)
+- Directory contains artifacts from **Mar 24** plus some **Apr 29** `s_*.json`.
+- Suggests legacy-path drift/staleness vs DB pipeline liveness.
 
-### Coverage sample (last 24h)
-
-Using `startedAt >= now-24h`:
-
-- sessions: **4351**
-- without eval: **3645** (~**83.8%**)
-
-Breakdowns:
-- by kind: `call 2813 (no_eval 2243)`, `job 1539 (no_eval 1403)`
-- by source (top):
-  - `workflow:worker 1151 (no_eval 1088)`
-  - `workflow:orchestrator 1168 (no_eval 854)`
-  - `standalone-eval 688 (no_eval 688)`
-- by agent (top):
-  - `optimizer 1563 (no_eval 1335)`
-  - `coach 906 (no_eval 693)`
-  - `amy 846 (no_eval 710)`
-  - `evaluator 741 (no_eval 741)`
+Evidence: `ls -la .state/evaluations | tail -20` in transcript.
 
 ## Interpretation
+- DB-backed evaluation pipeline appears **alive** (lag ~1.5h).
+- `.state/evaluations/` is **not a reliable freshness signal**; artifacts look stale/partially updated.
 
-- Job runner is up (`may-agent --cron` is running).
-- Evaluation writes are happening, but not keeping up with current session creation (lag ~1h) and a large fraction of sessions are not evaluated.
-- Some categories appear intentionally skipped (notably `agent=evaluator` and `source=standalone-eval`), but large unevaluated volume also comes from `workflow:worker`.
-
-## Recommended next actions (for owner)
-
-1. Inspect the evaluation cron’s selection query / skip logic to confirm whether `workflow:worker` is intentionally excluded.
-2. Decide whether “coverage” should exclude intentionally-skipped sources (`standalone-eval`, `agent=evaluator`) to avoid misleading alerts.
-3. If not intentionally excluded, consider widening evaluation scope or increasing throughput.
+## Recommendation
+- Treat `.state/evaluations/` task_tree mtime staleness as **non-incident** unless DB lag grows.
+- If we need an alert, key it off DB `evaluations.max(createdAt)` lag vs `sessions.max(startedAt)`.
