@@ -190,3 +190,30 @@ This manifest should be updated whenever:
 | system-efficiency | Project Closure | `/app/agents/shared/projects/system-efficiency/outputs/project-closure.md` | [closure] [closed] | Project closure summary |
 | system-efficiency | Project Completion Evidence | `/app/agents/shared/projects/system-efficiency/outputs/project-completion-evidence.md` | [closure] [closed] | Completion evidence |
 | system-efficiency | Project Closed (dup) | `/app/agents/shared/projects/system-efficiency/outputs/project-closed.md` | [closure] [closed] | Project closed notice (duplicate) |
+| system-efficiency | PROJECT_CLOSED | `/app/agents/shared/projects/system-efficiency/outputs/PROJECT_CLOSED.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | project-completion-summary | `/app/agents/shared/projects/system-efficiency/outputs/project-completion-summary.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | project-final-summary | `/app/agents/shared/projects/system-efficiency/outputs/project-final-summary.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | prompt-trim-report | `/app/agents/shared/projects/system-efficiency/outputs/prompt-trim-report.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | satellite-audit | `/app/agents/shared/projects/system-efficiency/outputs/satellite-audit.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | satellite-closure-report | `/app/agents/shared/projects/system-efficiency/outputs/satellite-closure-report.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | scenario-dedup-analysis | `/app/agents/shared/projects/system-efficiency/outputs/scenario-dedup-analysis.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | scenario-rotation-report | `/app/agents/shared/projects/system-efficiency/outputs/scenario-rotation-report.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | shared-rules-adoption-plan | `/app/agents/shared/projects/system-efficiency/outputs/shared-rules-adoption-plan.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | stale-dispatch-audit | `/app/agents/shared/projects/system-efficiency/outputs/stale-dispatch-audit.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | stale-projects-report | `/app/agents/shared/projects/system-efficiency/outputs/stale-projects-report.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | status-check-iter6 | `/app/agents/shared/projects/system-efficiency/outputs/status-check-iter6.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | system-bottleneck-analysis | `/app/agents/shared/projects/system-efficiency/outputs/system-bottleneck-analysis.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | system-efficiency-final | `/app/agents/shared/projects/system-efficiency/outputs/system-efficiency-final.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | system-health-dashboard | `/app/agents/shared/projects/system-efficiency/outputs/system-health-dashboard.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | system-output-audit | `/app/agents/shared/projects/system-efficiency/outputs/system-output-audit.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | test-coverage-iteration13 | `/app/agents/shared/projects/system-efficiency/outputs/test-coverage-iteration13.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | test-fix-progress | `/app/agents/shared/projects/system-efficiency/outputs/test-fix-progress.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | test-fix-report | `/app/agents/shared/projects/system-efficiency/outputs/test-fix-report.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | test-suite-baseline-phase5 | `/app/agents/shared/projects/system-efficiency/outputs/test-suite-baseline-phase5.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | token-savings-estimate | `/app/agents/shared/projects/system-efficiency/outputs/token-savings-estimate.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | vitest-cleanup-report | `/app/agents/shared/projects/system-efficiency/outputs/vitest-cleanup-report.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | vitest-gym-exclusion-fix | `/app/agents/shared/projects/system-efficiency/outputs/vitest-gym-exclusion-fix.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | weekly-health-dashboard | `/app/agents/shared/projects/system-efficiency/outputs/weekly-health-dashboard.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | workflow-cookbook | `/app/agents/shared/projects/system-efficiency/outputs/workflow-cookbook.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | workflow-dep-graph | `/app/agents/shared/projects/system-efficiency/outputs/workflow-dep-graph.md` | [closed] | Archived system-efficiency output |
+| system-efficiency | workflow-latency-profile | `/app/agents/shared/projects/system-efficiency/outputs/workflow-latency-profile.md` | [closed] | Archived system-efficiency output |
