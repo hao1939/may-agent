@@ -2,4 +2,6 @@
 
 **Status:** COMPLETE — No further work required.
 
-The project has been marked complete across 14 iterations. All targets met or exceeded.
+**Iterations:** 15 repeated "COMPLETE. Stop dispatching." directives received.
+
+All project objectives have been met. No actionable tasks remain.
