@@ -1,0 +1,9 @@
+{
+  "name": "state-check-before-mutation",
+  "categories": ["convention-compliance"],
+  "tags": ["behavior", "state-check", "precondition-verify"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}

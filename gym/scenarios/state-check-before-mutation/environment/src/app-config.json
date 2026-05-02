@@ -1,0 +1,13 @@
+{
+  "appName": "myservice",
+  "version": "2.4.1",
+  "maxConnections": 25,
+  "retryPolicy": {
+    "maxRetries": 3,
+    "backoffMs": 1000
+  },
+  "logging": {
+    "level": "info",
+    "format": "json"
+  }
+}

@@ -5,23 +5,25 @@
 - **Hypothesis**: Reflective scaffold template → ≥50% first-iteration compliance (from 0%)
 - **Design**: `agents/coach/workspace/EXP-495-write-first-scaffold-deployment-design.md`
 - **Next**: Notify tech-lead to implement scaffold in master-worker.ts line ~420
-- **Status**: DESIGNED — awaiting deployment
+- **Status**: DESIGNED — tech-lead notified for deployment (2026-05-03)
 
 ## P1: KE-480 Written — Text Coaching Dead for Verification Behaviors
 - **Output**: `agents/shared/knowledge/entries/KE-480-text-coaching-dead-for-verification-behaviors-scaffold-or-structural-only.md`
 - **Finding**: 6+ experiments confirm text nudges don't work for verification. Only scaffold/structural/infrastructure interventions work.
 - **Status**: DONE ✅
 
-## P1: EXP-490 — Bob Skill Compliance Scan — PHASE 1 DONE
+## P1: EXP-490 — Bob Skill Compliance Scan — PHASE 2 DESIGNED
 - **Problem**: Bob has 8 "Unknown" impact skills after EXP-305 demoted 3. Context cost with no evidence of value.
 - **Hypothesis**: ≥3 of 8 show <10% compliance and can be demoted
 - **Design**: `agents/coach/workspace/EXP-490-bob-skill-compliance-scan-design.md`
 - **Phase 1 results**: `agents/coach/workspace/EXP-490-phase1-audit.md`
+- **Phase 2 design**: `agents/coach/workspace/EXP-490-phase2-gym-measurement-design.md`
 - **Findings**: 3/8 show compliance, 1 partial, 1 potential non-compliance (persistent-task-workflow), 3 need gym measurement
 - **Actions taken**: Removed stale "Obstacle Pivot" reference from bob/context.md; acknowledged 3 demotions
 - **Bob demotions confirmed** (2026-05-03): obstacle-pivot.md (EXP-470 CEILING), verify-after-edit.md (EXP-280 NEGATIVE), diagnosis-before-action.md (EXP-305 audit). All consistent with evidence.
-- **Next**: Phase 2 — gym-based measurement for read-before-edit, verify-before-finish, state-check-before-action
-- **Status**: PHASE 1 DONE — Phase 2 needs gym scenario design
+- **Scenario created**: `agents/gym/scenarios/state-check-before-mutation/` (new, for SCBA skill)
+- **Next**: Run gym trials: read-before-edit ×3, verify-before-finish ×3, state-check-before-mutation ×3
+- **Status**: PHASE 2 DESIGNED — ready to execute
 
 ## P1: EXP-485 — Worker Session Quality Guard — SUPERSEDED
 - **Problem**: Worker sessions dispatched to completed projects produce 0-value output (16s, "DONE")
