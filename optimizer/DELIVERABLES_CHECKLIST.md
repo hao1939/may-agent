@@ -1,7 +1,11 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST.md
 
-## Task: Optimizer Heartbeat
+## Deliverables
 
-| # | Deliverable | Status | Path | Notes |
-|---|-------------|--------|------|-------|
-| 1 | Heartbeat status artifact | DONE | agents/optimizer/workspace/heartbeat-status-current.md | Updated with current metrics, p95 observation, project statuses |
+- [x] **DONE** — Fix prompt-efficiency project status format
+  - File: `agents/shared/projects/prompt-efficiency/project.md`
+  - Changed `## Status: Complete` → `**Status**: Complete` (canonical form for extractField parsing)
+
+- [x] **DONE** — Heartbeat status artifact
+  - File: `.state/optimizer/heartbeat-status.md`
+  - Updated with current metrics, actions taken, and project status
