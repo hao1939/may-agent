@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777734860327_604
+- **Session:** s_1777736659541_636
 - **Status:** done
-- **When:** 2026-05-02T15:24:20.180Z
-- **Duration:** 9m59s
+- **When:** 2026-05-02T15:48:55.762Z
+- **Duration:** 4m36s
 
 ## What Happened
-Both files verified on-disk via read() — KE-488 has the Lesson section as written, proposal addendum is in place exactly as I wrote it.
+All my changes are in-lane (`shared/knowledge/entries/KE-489...`). The other modified `last-session.md` paths are from other agents' sessions, not my edits.
