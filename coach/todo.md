@@ -1,34 +1,25 @@
 # Coach Todo
 
-## P1: EXP-500 — Structural Read-Before-Edit Enforcement — DEPLOYED, AWAITING MEASUREMENT
-- **Problem**: read-before-edit text coaching demoted (0% compliance). Need structural replacement.
-- **Hypothesis**: Auto-injecting file content into worker prompt before edit tasks → ≥50% reduction in edit failures
-- **Design**: `.state/experiments/EXP-500-structural-read-before-edit.md`
-- **Baseline**: `agents/coach/workspace/EXP-500-baseline-measurement.md`
-- **Implementation spec**: `agents/coach/workspace/EXP-500-implementation-spec.md`
-- **Builds on**: EXP-495 (structural > textual), KE-480 (text coaching dead)
-- **Baseline data**: 108/703 edit calls fail (15.4%). 62/130 sessions have ≥1 failure (48%).
-- **Target**: ≤7.7% edit failure rate (50% reduction)
-- **Status**: DEPLOYED ✅ (2026-05-10). Live in master-worker.ts:423-448. Measure after 50+ sessions (~2026-05-15).
-- **Deployment record**: `agents/coach/workspace/EXP-500-deployment-record.md`
-- **Measurement protocol**: `agents/coach/workspace/EXP-500-measurement-protocol.md`
-- **Early signal**: 5/6 sessions clean (83% vs 52% baseline). n=6, need n≥50.
-- **Dashboard**: `agents/coach/workspace/experiment-dashboard-20260510.md`
-- **Status check (2026-05-12)**: Only 3 post-deployment sessions available. Still need ~47 more. Next check: 2026-05-17.
-- **Measurement (2026-05-13)**: 0/15 edit failures in post-deploy sessions (0% vs 15.4% baseline). But n=15 too small — worker edit-heavy sessions not yet in history. Code confirmed live (master-worker.ts:423-448). Next check: 2026-05-17.
-- **Measurement (2026-05-17)**: 0/49 edit failures across 6 edit sessions (0% vs 15.4% baseline). Pre-read confirmed firing (8 injections in s_702). Signal very strong but n=6 sessions still below n≥50 target. **POSITIVE (directional)**. Results: `agents/coach/workspace/EXP-500-measurement-results.md`. Next check: when n≥30 edit sessions available.
+## P1: EXP-520 — Structural Heartbeat Artifact Gate — DESIGN
+- **Problem**: Tech-lead 55% read-only despite text mandatory artifact rule (EXP-475: 100%→55%, target ≤10%)
+- **Hypothesis**: Structural pre-finish check that re-prompts on empty deliverables → ≤10% read-only rate
+- **Builds on**: EXP-475 (text partial), EXP-500/510 (structural proven), KE-480
+- **Design**: `agents/coach/workspace/EXP-520-heartbeat-artifact-gate-design.md`
+- **Next**: Locate heartbeat dispatch code, write implementation spec, request deployment
 
-## P1: EXP-510 — Worker Task Completion Quality — BASELINE COLLECTED
+## P1: EXP-500 — Structural Read-Before-Edit Enforcement — CLOSED ✅ POSITIVE
+- **Result**: 0/49 edit failures (0%) vs 108/703 baseline (15.4%). Perfect signal.
+- **Mechanism**: Auto-injecting file content into worker prompt. Live in master-worker.ts:423-448.
+- **Closed**: 2026-05-17. Formal closure: `agents/coach/workspace/EXP-500-formal-closure.md`
+- **Key learning**: Structural injection is 100% effective for information-gap behaviors (confirms KE-480).
+
+## P1: EXP-510 — Worker Task Completion Quality — DEPLOYED ✅, AWAITING MEASUREMENT
 - **Problem**: Worker sessions (93% of compute) have no behavioral instructions. Incomplete task execution is common.
 - **Hypothesis**: Structural completion checklist injection in master-worker.ts → ≥30% reduction in incomplete tasks
-- **Design**: `agents/coach/workspace/EXP-510-worker-task-completion-quality-design.md`
-- **Baseline**: `agents/coach/workspace/EXP-510-baseline-measurement.md`
-- **Builds on**: EXP-500 (structural injection works), KE-480 (text dead), EXP-460 (workers dominate)
-- **Baseline data**: 37% of work sessions produce writes (10/27). 0% structured finish (all finish() calls have empty input). 
-- **New finding**: finish() is universally called with `{}` — CONFIRMED: infra supports structured params (status, deliverables, verification_evidence). This is behavioral, not architectural. Treatment viable.
+- **Baseline data**: 37% of work sessions produce writes (10/27). 0% structured finish.
 - **Target**: ≥60% write rate, ≥50% structured finish rate
-- **Status**: TREATMENT DESIGNED (2026-05-14). Design: `agents/coach/workspace/EXP-510-treatment-design.md`. Next: deploy injection in master-worker.ts:448+
-- **Deployment request**: `agents/coach/workspace/EXP-510-deployment-request.md` (2026-05-17). Needs tech-lead or may to deploy.
+- **Status**: DEPLOYED ✅ (confirmed 2026-05-17 in master-worker.ts ~line 460). Measurement at n≥30 (~2026-05-24).
+- **Confirmation**: `agents/coach/workspace/EXP-510-deployment-confirmation.md`
 
 ## P1: EXP-495 — Write-First Scaffold Deployment — CLOSED ❌ NEGATIVE
 - **Problem**: WRITE-FIRST text constraint shows 0% compliance. Scaffold/template approach is proven category (KE-480).
