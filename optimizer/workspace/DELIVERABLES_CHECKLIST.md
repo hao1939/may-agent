@@ -1,9 +1,8 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist
 
-## Heartbeat Session — 2025-07-29
+## Task: Optimizer Heartbeat (2025-07-29)
 
-| # | Deliverable | Status | Path/Evidence |
-|---|-------------|--------|---------------|
-| 1 | Close prompt-efficiency project | DONE | agents/shared/projects/prompt-efficiency/project.md — status changed to "Closed" |
-| 2 | Heartbeat status report artifact | DONE | agents/optimizer/workspace/reports/heartbeat-2025-07-29.md |
-| 3 | Dismiss stale notification (0 iterations) | DONE | Project has 50+ iterations; dashboard display issue only |
+- [x] **Notification triage** — Dismissed stale prompt-efficiency alert (project confirmed closed 5/5 at `agents/shared/projects/prompt-efficiency/project.md`)
+- [x] **Project review** — All 5 projects reviewed, status documented
+- [x] **Workspace status artifact** — Written to `agents/optimizer/workspace/heartbeat-status-current.md`
+- [x] **State checkpoint updated** — `.state/optimizer/heartbeat-status.md` updated with current status
