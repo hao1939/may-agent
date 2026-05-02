@@ -22,3 +22,11 @@ Appears to be a lightweight or experimental agent. No SOUL.md, DOMAIN.md, or for
 
 ## Shared Toolkit
 Shared utilities available at `agents/shared/lib/` — see `agents/shared/README-shared-toolkit.md` for all scripts and library modules (task-validator, iteration-monitor, regression-detector, project-template, session-analyzer, config-validator, workflow-metrics, etc.).
+
+
+## Pre-Work Discovery Check
+Before starting new work, check for existing deliverables:
+```bash
+grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
+```
+If a related output exists, read it first to avoid duplicating work.

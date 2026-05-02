@@ -36,3 +36,11 @@ For each investigation, create a file in `agents/dev/workspace/investigations/`:
 ## Output Locations
 - Investigations: `agents/dev/workspace/investigations/`
 - Fixes: directly in the workflow/handler/skill files
+
+
+## Pre-Work Discovery Check
+Before starting new work, check for existing deliverables:
+```bash
+grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
+```
+If a related output exists, read it first to avoid duplicating work.

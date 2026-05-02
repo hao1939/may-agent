@@ -32,3 +32,11 @@
 See agents/shared/README-shared-toolkit.md.
 
 [SIG: 1777642448:3cb921b2]
+
+
+## Pre-Work Discovery Check
+Before starting new work, check for existing deliverables:
+```bash
+grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
+```
+If a related output exists, read it first to avoid duplicating work.

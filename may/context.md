@@ -48,3 +48,11 @@ See `agents/shared/projects/hao-alignment/preferences.md`. Key: stability-first,
 See `agents/shared/README-shared-toolkit.md`.
 
 [SIG: 1777642137:43a218e4]
+
+
+## Pre-Work Discovery Check
+Before starting new work, check for existing deliverables:
+```bash
+grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
+```
+If a related output exists, read it first to avoid duplicating work.

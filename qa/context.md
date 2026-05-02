@@ -37,3 +37,11 @@ There is NO valid session that ends without finish(). Even if you hit errors, AL
 See agents/shared/README-shared-toolkit.md.
 
 [SIG: 1777642448:4d752790]
+
+
+## Pre-Work Discovery Check
+Before starting new work, check for existing deliverables:
+```bash
+grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
+```
+If a related output exists, read it first to avoid duplicating work.

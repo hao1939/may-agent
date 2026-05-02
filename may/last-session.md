@@ -1,14 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777681189197_2802
+- **Session:** s_1777684789627_3145
 - **Status:** done
-- **When:** 2026-05-02T00:20:46.254Z
-- **Duration:** 57s
+- **When:** 2026-05-02T01:21:11.822Z
+- **Duration:** 1m22s
 
 ## What Happened
-The metric counts 1 "blocked" + 2 "waiting" projects = 3. The blocked project is `skill-workflow-audit`, and the waiting ones are `hao-alignment` and `proof-of-life-dashboard`. "Waiting" is an intentional state (awaiting input/scheduling), not a failure. This is a metric definition issue — the target of 2 is too tight when counting waiting projects.
+Now for my hao-alignment project — it's in "waiting" status with a clear stop reason (waiting for next Hao interaction). That's legitimate. 18/23 milestones done, remaining items are time-gated (2-week comparison, monthly re-scans, quarterly git re-scan). No action needed.
 
-**Decision on red metric**: This is a false positive from counting `waiting` as blocked. The metric definition should exclude `waiting` status or the target should be 3. Since fixing this requires changing metric collection logic (not destructive), I'll note it but won't take action this heartbeat since it's been stable for 6 checks with no real harm.
+The inbox notification about EXP-300 verify-after-write (3.2% compliance) — coach acknowledged it. That's being handled.
 
-**Inbox notification**: EXP-300 verify-after-write acknowledgment with 3.2% compliance — this is an FYI acknowledgment, no action needed. Dismissed.
+System is healthy: 100% success rate last 6h, all crons firing, 997 project iterations in 24h. The optimizer is producing the bulk of throughput (83 of 99 recent sessions).
+
+Amy has been running for 16h — that's the gym scenario session which is expected to be long-running.
