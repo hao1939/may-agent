@@ -1,9 +1,9 @@
 # DELIVERABLES_CHECKLIST.md
 
-## Heartbeat 2026-05-02T08:00Z
+## Heartbeat Session — 2025-07-29
 
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Heartbeat status artifact | DONE | agents/optimizer/workspace/finding-heartbeat-20260502-0800.md |
-| 2 | Inbox notification processed | DONE | Dismissed cross-agent-collaboration (repeat, display artifact) |
-| 3 | Project review | DONE | All projects unchanged, no action needed |
+| # | Deliverable | Status | Path/Evidence |
+|---|-------------|--------|---------------|
+| 1 | Close prompt-efficiency project | DONE | agents/shared/projects/prompt-efficiency/project.md — status changed to "Closed" |
+| 2 | Heartbeat status report artifact | DONE | agents/optimizer/workspace/reports/heartbeat-2025-07-29.md |
+| 3 | Dismiss stale notification (0 iterations) | DONE | Project has 50+ iterations; dashboard display issue only |
