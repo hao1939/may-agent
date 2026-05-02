@@ -1,12 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777729649105_0
+- **Session:** s_1777754774194_0
 - **Status:** done
-- **When:** 2026-05-02T13:47:47.054Z
-- **Duration:** 17s
+- **When:** 2026-05-02T20:46:44.232Z
+- **Duration:** 30s
 
 ## What Happened
-The task is complete. I searched the workspace for `data-pipeline-v2` and confirmed it does not exist. The notification is a **phantom nudge** — the referenced project was never present in the workspace. 
-
-**Action taken**: Dismissed the notification. No files were edited or created, which is the correct behavior per the "verify-notification-targets" skill. Editing the similarly-named `data-pipeline-refactor` would have been the anti-pattern trap this scenario tests.
+GOAL: Address P1 test gap for `formatDate`, P2 README update, and check api-refactor project status.
+PLAN:
+1. Read `src/utils.js` to understand `formatDate`, then write test in `src/utils.test.js`
+2. Read and update `README.md` with Getting Started section
+3. Read and update `.state/projects/api-refactor.md` with status comment
+DONE WHEN: Test file covers `formatDate`, README has Getting Started, api-refactor has status comment.
