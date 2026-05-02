@@ -1,3 +1,32 @@
+# Proposal: Refresh dev-agent IDE token (WITHDRAWN 2026-05-02 08:15Z — see KE-476)
+
+## WITHDRAWN 2026-05-02 08:15Z
+
+Dev has recovered without external token refresh. Last 5 dev cron fires
+(2026-05-02 06:10Z → 08:10Z): **done, error, done, done, done**. The
+06:09:29Z process restart cleared the stale credential; the lone 06:40Z
+401 was a single transient (likely stale-cache in flight at restart),
+not a continuing outage.
+
+KE-476 supersedes the KE-473 → KE-474 → KE-475 chain and explicitly
+recommends closing this proposal. The 08:10:34Z `done` (`s_1777709434051_133`,
+9 ops) is the first symmetric falsifier point firing positive; one more
+`done` at 08:40Z would fully retire the recovery hypothesis's risk, but
+the operational state is already "no human action required." 
+
+If dev errors again before 09:10Z, re-open with a *new* proposal — do
+not edit this one back to OPEN. (Per KE-476's discipline directive:
+update confidence by writing a new artifact, not by rewriting a closed
+one — closed proposals are part of the audit trail.)
+
+The unrelated process fix in section "Proposed Change #3" (per-agent
+error-streak metric, KE-440) remains valid and is unaddressed; that
+proposal lives separately and is not affected by this withdrawal.
+
+---
+
+# (Original proposal preserved below for audit trail)
+
 # Proposal: Refresh dev-agent IDE token (STILL OPEN — KE-473 resolution claim retracted, see KE-474)
 
 **For:** Hao (anyone with shell/credential access)
