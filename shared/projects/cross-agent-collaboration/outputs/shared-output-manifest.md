@@ -137,3 +137,18 @@ This manifest should be updated whenever:
 | system-efficiency | module-dependency-graph.md | Dependency graph of workflow toolkit modules | architecture, dependencies |
 | system-efficiency | cross-agent-collaboration-kickoff.md | Kickoff record for cross-agent collaboration initiative | design, collaboration |
 | system-efficiency | efficiency-v2-roadmap.md | Roadmap for resilience and performance improvements | roadmap, design |
+| test-coverage | coverage-standards.md | Coverage thresholds and quality gates for test suites | testing, standards |
+| workflow-reliability | workflow-guardrails-design.md | Design for workflow execution guardrails (milestone 2) | reliability, design |
+| workflow-reliability | workflow-guardrails-v2-design.md | Revised guardrails design with context and improvements | reliability, design |
+| workflow-reliability | v3-tracking-results.md | Results from v3 guardrails tracking period | reliability, measurement |
+| workflow-reliability | replan.md | Replan document for workflow reliability improvements | reliability, planning |
+| system-efficiency | master-worker-consolidation-rfc.md | RFC for consolidating master-worker variants | architecture, design |
+| system-efficiency | m1-heartbeat-dedup.md | Implementation of heartbeat de-duplication | performance, implementation |
+| system-efficiency | m2-circuit-breaker.md | Provider circuit breaker implementation | reliability, implementation |
+| system-efficiency | m3-budget-checkpointing.md | Budget checkpointing implementation | reliability, implementation |
+| system-efficiency | consolidation-migration-guide.md | Migration guide for master-worker consolidation | architecture, guide |
+| system-efficiency | phase3-retrospective.md | Phase 3 retrospective with lessons learned | retrospective, lessons |
+| system-efficiency | phase5-impact-report.md | Phase 5 impact measurements and results | measurement, impact |
+| system-efficiency | new-project-proposals.md | Satellite project proposals from workflow source analysis | planning, proposals |
+| system-efficiency | output-improvement-plan.md | Plan for improving project output quality | process, improvement |
+| system-efficiency | phase4-metrics-baseline.md | Baseline metrics for phase 4 measurement | measurement, baseline |
