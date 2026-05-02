@@ -46,4 +46,4 @@ Agents currently work in silos. Each produces deliverables that could benefit ot
 
 **Phase 1 complete**: Manifest (44 entries), discovery convention, 2 pilot agents (optimizer + scout), freshness script. All verified.
 
-**Phase 2 status**: Adoption baseline written (by orchestrator — worker failed to write it across multiple iterations). Coverage is 24% (44/~184 files). Reuse count still 0. Key gap: manifest coverage too low and no agent has actually used the manifest yet. Next priority: increase coverage and drive first real reuse instance.
+**Phase 2 status**: 3 agents instrumented (optimizer, scout, coder — all verified). Coverage still ~24% — 15+ non-archive files unindexed. Reuse count still 0. Item 11 (indexing) not yet done despite iteration 11 claiming it. Next: index files, then drive first reuse.

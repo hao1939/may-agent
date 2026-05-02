@@ -65,3 +65,8 @@ grep -i "<keyword>" /app/agents/
 (a) Next iteration should index 10 high-value unindexed files into the manifest (item 11) and instrument coder (item 12).
 
 (b) I wrote the adoption baseline myself because the worker failed to produce it across 3+ iterations. The manifest has 44 entries but 140 files are unindexed — covera
+**Orchestrator**: CONTINUE
+
+(a) Next iteration must complete item 11 — index the 15 unindexed non-archive files into the manifest. This is the last infrastructure gap before we can focus purely on driving reuse.
+
+(b) Worker has failed to expand the manifest for multiple iterations. This time I'm providing the exact f
