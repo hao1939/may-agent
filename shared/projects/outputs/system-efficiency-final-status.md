@@ -1,20 +1,21 @@
-# System Efficiency — Final Status
+# System Efficiency — Final Status Report
 
-**Project Status**: Done (closed)  
-**Date**: Iteration 17+  
+**Project Status**: Done  
+**Closed At**: Iteration ~8  
+**Current Iteration**: 21+  
 **Successor Project**: `/app/agents/shared/projects/cross-agent-collaboration/`
 
 ## Summary
-All plan items complete. All 12 satellite projects closed. All 3 core metrics at or above target.
+All 12 satellite projects reached target metrics. All plan items complete.
 No further iterations should be dispatched to this project.
 
-## Deliverables Produced (system-efficiency)
-- `outputs/satellite-triage.md` — ranked assessment of all satellites
-- `outputs/regression-guard-config.md` — alert thresholds for metric drift
-- `outputs/efficiency-playbook.md` — orchestrator/worker success patterns
-- `outputs/system-efficiency-retrospective.md` — full project retrospective
-- `outputs/next-frontier-proposal.md` — successor project proposals
-- `outputs/shared-output-manifest.md` — cross-project deliverable index
+## Key Deliverables Produced
+- `satellite-triage.md` — ranked project assessment
+- `regression-guard-config.md` — drift detection thresholds
+- `efficiency-playbook.md` — orchestrator/worker rules
+- `system-efficiency-retrospective.md` — full retrospective
+- `next-frontier-proposal.md` — successor project proposals
+- `shared-output-manifest.md` — cross-agent output index
 
-## Next Steps
-All future work → `/app/agents/shared/projects/cross-agent-collaboration/`
+## Recommendation
+Route all future work to `/app/agents/shared/projects/cross-agent-collaboration/`.

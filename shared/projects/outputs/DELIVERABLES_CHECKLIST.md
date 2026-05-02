@@ -1,7 +1,5 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist
 
 | Deliverable | Status | Path |
 |---|---|---|
-| Completion evidence file | DONE | /app/agents/shared/projects/outputs/completion-evidence.md |
-
-Task: Project marked COMPLETE across 7 iterations. No work remains.
+| Final status report (project is done, no work needed) | DONE | `/app/agents/shared/projects/outputs/system-efficiency-final-status.md` |
