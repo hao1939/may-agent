@@ -1,5 +1,7 @@
 # Deliverables Checklist
 
-- [x] DONE — Update project.md status to "done" → `/app/agents/shared/projects/system-efficiency/project.md` (changed Status: active → done)
-- [x] DONE — Verify successor project exists → `/app/agents/shared/projects/cross-agent-collaboration/project.md` (confirmed active with plan)
-- [x] DONE — Verify shared-output-manifest.md produced → `/app/agents/shared/projects/outputs/shared-output-manifest.md` (exists)
+| Deliverable | Status | Path/Notes |
+|---|---|---|
+| Update project.md status to "done" | DONE | project.md line 3: status changed active→done |
+| Verify cross-agent-collaboration successor active | DONE | /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md exists |
+| All plan items checked off | DONE | project.md — all items marked [x] |
