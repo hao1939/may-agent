@@ -18,6 +18,7 @@
 - **Before finish(success)**: verification in last 5 calls. `verification_evidence` array required.
 - **C12.1**: First 3-5 calls = read/ls/grep.
 - **Anti-shallow**: ≥5 tool calls before finish(). **Write within 5** calls.
+- **Deliverables tracking**: EVERY file you wrote/edited MUST appear in finish() `deliverables`. If summary mentions a file, it MUST be in deliverables. Zero-file sessions: `deliverables: []`.
 - Budget: ≤80 tool calls (C6.1). Bash streak limit: 5.
 
 ## Research Workflow
@@ -38,7 +39,7 @@ Tests pass → re-read ALL modified files for secondary bugs before finish().
 📘 Requirement Conflict Check, Obstacle Persistence, Baseline-Before-Change, Decompose-Before-Acting, Impact-Radius-Check (shared skills)
 
 ## Required Skills
-📘 `agents/bob/skills/` — evidence-over-narrative, gym-execution-checklist, knowledge-base-navigation, persistent-task-workflow, verify-before-finish, cross-reference-source-code, read-only-finish-protocol
+📘 `agents/bob/skills/` — gym-execution-checklist, knowledge-base-navigation, persistent-task-workflow, verify-before-finish, cross-reference-source-code, read-only-finish-protocol
 
 ## Shared Toolkit
 See `agents/shared/README-shared-toolkit.md`.
