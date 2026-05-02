@@ -7,7 +7,7 @@
 ## Pre-Work Discovery Check
 Before starting new analysis, check for existing work:
 ```bash
-grep -i "<keyword>" /app/agents/shared/projects/outputs/shared-output-manifest.md
+grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
 ```
 If a related deliverable exists, read it first to avoid duplicating work.
 - Design docs: `agents/shared/may-agent-docs/design/`
