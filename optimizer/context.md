@@ -58,13 +58,13 @@ Rules:
 9. Respect agent role boundaries
 10. Knowledge hygiene: read before writing shared files
 
-## Pre-Work Discovery Check
+## REQUIRED: Check Shared Manifest
 
-Before starting any new analysis or optimization task:
+At the START of every session, run:
 ```bash
-grep -i "<relevant-keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
+bash -c 'grep -i "$(basename $(cat .state/current-project 2>/dev/null || echo unknown))" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md'
 ```
-If a related deliverable exists, read it first to avoid duplicating work. The manifest indexes 40+ reusable outputs across all projects with tags and descriptions.
+This finds prior work related to your current project. Read any matches before starting new analysis.
 
 ## Shared Toolkit
 
