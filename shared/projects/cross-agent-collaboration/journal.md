@@ -40,3 +40,10 @@ grep -i "<keyword>" /app/agents/
 
 ### Iteration 8 — 2026-05-02T01:04:36.499Z
 **Worker**: Good. Both agents are instrumented with correct paths. No evidence of actual usage yet (no .state/ hits). Now let me write the adoption baseline report:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should do items 9 and 10: run the freshness check and create the adoption baseline document.
+
+(b) Phase 1 is verified complete — both agents have correct paths, manifest and freshness script exist. Now we shift to closing gaps and measuring.
+
+(c) First step: Run `bash /a
