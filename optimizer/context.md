@@ -62,7 +62,7 @@ Rules:
 
 Before starting any new analysis or optimization task:
 ```bash
-grep -i "<relevant-keyword>" /app/agents/shared/projects/outputs/shared-output-manifest.md
+grep -i "<relevant-keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
 ```
 If a related deliverable exists, read it first to avoid duplicating work. The manifest indexes 40+ reusable outputs across all projects with tags and descriptions.
 
