@@ -1,28 +1,18 @@
 # Evaluator heartbeat — 2026-05-02
 
-## Checks
+## Checks performed
 
-### Session evaluation pipeline liveness (DB canonical)
-- `evaluations.max(createdAt)` = **1777720594086** (2026-05-02 11:16:34Z)
-- `sessions.max(startedAt)` = **1777722593064** (2026-05-02 11:49:53Z)
-- Sessions started after last evaluation: **41**
+### Session evaluation pipeline freshness
+- DB query: evaluations maxCreatedAt = **2026-05-02 11:16:34**, count=2384.
+  - Evidence: `bun -e ... datetime(max(createdAt)) ... from evaluations`.
+- Legacy artifact directory `.state/evaluations/` has newest file mtime **2026-04-29 17:26** (multiple `s_*.json`), with many older `task_tree_*.json` from 2026-03-24.
+  - Evidence: `ls -la .state/evaluations | tail -20`.
 
-Interpretation: evaluator pipeline appears to be running recently (last eval ~33 minutes before latest session), but it lags behind newly-started sessions as expected. No evidence of a stalled cron.
+**Interpretation:** canonical DB evaluations are fresh; the `.state/evaluations/` JSON/task_tree outputs appear partially stale/lagging and should be treated as legacy-output-path drift rather than cron failure.
 
-### Legacy artifact path (`.state/evaluations/`) staleness
-- Directory mtime suggests it hasn’t been updated since **2026-05-02 06:14**.
-- Many task_tree artifacts are from **2026-03-24**.
+## Oddity observed
+Several `bun -e` queries that selected `max(createdAt)` produced no stdout despite exit code 0. Queries returning counts and the datetime(max(createdAt)/1000,'unixepoch') form printed as expected. This looks like an output/printing quirk (possibly due to values being BigInt-like or undefined coercion) rather than DB failure.
 
-Interpretation: `.state/evaluations/` is likely legacy / not the canonical output path anymore. DB is canonical and is being updated.
-
-### Coverage sanity
-- sessions total: **8492**
-- evaluations total: **2382**
-- coverage (evaluations/sessions): **0.2805**
-- unevaluated completed sessions: **0** (join check)
-
-Interpretation: low ratio is likely because evaluations are only produced for a subset (e.g., completed sessions only, or those with transcripts available), not because completed sessions are being missed. The join indicates all completed sessions have evaluations.
-
-## Follow-ups proposed (not executed)
-1. Confirm intended denominator for “Coverage” (all sessions vs completed sessions vs sessions with transcript). If it’s intended to be >0.7, current metric definition is misleading.
-2. If consumers still look at `.state/evaluations/`, consider updating docs/consumers to read from DB instead, or regenerate legacy JSON artifacts.
+## Suggested follow-ups (not executed this heartbeat)
+- Confirm how `createdAt` is typed (INTEGER vs TEXT) in `sessions`/`evaluations`, and whether Bun SQLite returns a type that `console.log` is suppressing.
+- If `.state/evaluations/` is still used by any downstream tooling, file an issue to either update its writer or delete/replace that output path.
