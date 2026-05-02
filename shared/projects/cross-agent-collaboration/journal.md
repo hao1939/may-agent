@@ -96,3 +96,6 @@ grep -i "<keyword>" /app/agents/
 (a) Next iteration should instrument remaining agents (item 16) and drive 4 more reuse instances (item 18). These are the highest-impact items — reuse count is 1/5 target.
 
 (b) Infrastructure is solid now. The bottleneck is adoption, not tooling. We need to get more agents checking the man
+
+### Iteration 16 — 2026-05-02T01:22:13.541Z
+**Worker**: Only `amy-kimi` and `scout.bak` (backup) remain uninstrumented — acceptable.

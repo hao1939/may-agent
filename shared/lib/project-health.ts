@@ -170,9 +170,9 @@ export function diagnoseProject(
     return { ...skip, reason: "closed by human" };
   }
 
-  // "done"/"complete" are treated as waiting — only "closed" is terminal
+  // "done"/"complete"/"completed" are terminal — same as closed
   if (["done", "complete", "completed"].includes(status)) {
-    status = "waiting";
+    return { ...skip, reason: `terminal status: ${status}` };
   }
 
   // Waiting/blocked — check for unread discussion comments
