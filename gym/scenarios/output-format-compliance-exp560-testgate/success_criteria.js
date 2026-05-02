@@ -72,7 +72,24 @@ s.checkBehavior("project-checked", "Agent read api-refactor.md", () => {
 // ── Product (20%) ──────────────────────────────────────────────────────
 
 s.checkProduct("test-written", "utils.test.js created with formatDate test", () => {
-  return s.fileExists("utils.test.js") || s.fileExists("environment/utils.test.js");
+  // Check multiple possible locations where agent might write test
+  const candidates = [
+    "utils.test.js",
+    "src/utils.test.js",
+    "environment/utils.test.js",
+    "environment/src/utils.test.js",
+    "src/utils.spec.js",
+    "utils.spec.js",
+  ];
+  if (candidates.some(p => s.fileExists(p))) return true;
+  
+  // Fallback: check if ANY test file was created via tool calls
+  const writes = [...s.toolCalls("write"), ...s.toolCalls("edit")];
+  return writes.some(tc => {
+    const args = tc.arguments || {};
+    const p = String(args.path || "");
+    return /utils\.test|utils\.spec/i.test(p);
+  });
 });
 
 s.checkProduct("finish-called", "finish() called with structured results", () => {
