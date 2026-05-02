@@ -1,5 +1,14 @@
 # Coach Todo
 
+## P0: EXP-455 — Zombie Dispatch Loop in master-worker.ts — DESIGN (ESCALATED)
+- **Problem**: Completed projects receive 50+ wasted iterations because DONE is not a valid orchestrator decision.
+- **Root cause**: `master-worker.ts` line 83 explicitly skips DONE. Unknown decisions default to CONTINUE (line 326). Loop runs to cap=50.
+- **Evidence**: system-efficiency (18+ zombie iterations), prompt-efficiency (55+ zombie iterations)
+- **Fix needed**: Add DONE/COMPLETE as terminal decisions in extractDecision() + while loop
+- **Escalated**: P0 to tech-lead (2026-05-02). Workaround shared with optimizer (use BLOCKED instead of CONTINUE).
+- **Design**: `agents/coach/workspace/EXP-455-zombie-dispatch-detection-design.md`
+- **Status**: DESIGN — awaiting tech-lead fix
+
 ## P1: EXP-450 — Instruction Compression Effect on Compliance — DESIGN
 - **Problem**: SOUL.md files trimmed 787w→406w. Natural experiment opportunity.
 - **Hypothesis**: Compressed instructions maintain/improve compliance on remaining rules
