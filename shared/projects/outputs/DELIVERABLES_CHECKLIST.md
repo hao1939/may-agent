@@ -1,4 +1,3 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist
 
-- [x] DONE: Completion evidence file — `/app/agents/shared/projects/outputs/completion-evidence.md`
-  - Documents that project is complete with all metrics exceeded. No further work needed.
+- [DONE] PROJECT_COMPLETE.md — `/app/agents/shared/projects/outputs/PROJECT_COMPLETE.md` — Documents project completion status
