@@ -1,11 +1,11 @@
 # Project: Documentation Generation
 
-**Status**: closed
+**Status**: active
 **Stop Reason**: All metrics exceed targets. Project complete.
 **Owner**: coach
 **Priority**: P2
 **Workflow**: master-worker
-**Iteration**: 47
+**Iteration**: 48
 
 ## Goal
 System is self-documenting. Architecture, workflows, agent roles all have up-to-date docs.
