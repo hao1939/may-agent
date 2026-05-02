@@ -1,19 +1,17 @@
 # Tech-Lead Heartbeat Log
 
-## 2026-05-18 — Heartbeat
+## 2025-06-02 — Heartbeat Check
 
 ### Inbox Processed
-1. **EXP-520 (Heartbeat Artifact Gate)** — Already deployed in `heartbeat-data.ts:438-462`. No action needed.
-2. **EXP-510 (Worker Completion Quality)** — Already deployed in `master-worker.ts:450-452`. No action needed.
-3. **EXP-510 deployment request** — Already complete.
+- **EXP-520 (Heartbeat Artifact Gate)**: Already implemented in `agents/shared/workflows/heartbeat-data.ts:437-460`. Dismissed as stale.
+- **EXP-510 (Structural Completion Quality)**: Already implemented in `agents/shared/workflows/master-worker.ts:450-452`. Dismissed as stale.
 
-### Build Health
-- TypeScript: ✅ Clean (no errors)
+### Code Health
+- **TypeScript build**: ✅ Clean (zero errors)
 
-### Observations
-- Both EXP-510 and EXP-520 are live and measuring. Coach can begin collecting data.
-- `agents/shared/workflows/` has accumulated many files (25+). Some may be dead code worth pruning (e.g., master-worker-cached.ts, master-worker-migration-adapter.ts, master-worker-resilient.ts alongside master-worker-unified.ts and master-worker.ts). Potential future simplification project.
+### Projects
+- **proof-of-life-dashboard**: waiting, no `.state/projects/` file found
+- **handler-reliability**: closed (3/3 milestones complete)
 
-### Next Heartbeat
-- Check EXP-510/520 results if coach reports them
-- Evaluate workflow file consolidation opportunity
+### Assessment
+System healthy. No build issues, no blocking work needed.

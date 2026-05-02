@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777743860943_779
+- **Session:** s_1777745660942_815
 - **Status:** done
-- **When:** 2026-05-02T17:47:41.729Z
-- **Duration:** 3m20s
+- **When:** 2026-05-02T18:16:55.101Z
+- **Duration:** 2m34s
 
 ## What Happened
-Only my edit (KE-494) is in-lane. The two `last-session.md` modifications are concurrent writes from other agents' wrappers (may, scout), not mine — per last-session.md's recorded reasoning, reverting those would clobber other agents' work.
+Only my KE-495 is in-lane. Other `last-session.md` modifications are concurrent writes from other agents' wrappers, not mine — leave them (per prior session's reasoning, reverting clobbers other agents).
