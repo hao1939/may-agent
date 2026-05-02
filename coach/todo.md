@@ -1,5 +1,21 @@
 # Coach Todo
 
+## P1: EXP-545 — QA Finish-Call Structural Gate — DESIGNED
+- **Problem**: QA has 14.3% finish() compliance (worst in system). Text rule (EXP-440) NEGATIVE.
+- **Hypothesis**: Structural gate (EXP-520 pattern) → ≥60% finish compliance
+- **Pre-req**: Verify if EXP-510 already covers QA worker sessions (may be already fixed)
+- **Design**: `agents/coach/workspace/EXP-545-qa-finish-gate-design.md`
+- **Status**: DESIGNED. Next: investigate QA session routing before implementing.
+
+## P1: EXP-530 — Structural Verification Gate — DEPLOYED, AWAITING DATA
+- **Problem**: Verification failure #1 cross-agent issue (78% failure rate)
+- **Status**: Deployed in master-worker.ts:451. Only n=3 measured. Need n=20+.
+- **Next measurement**: When 17+ more worker sessions accumulate.
+
+## P1: EXP-540 — Path Normalization — DEPLOYED, AWAITING DATA
+- **Problem**: Tech-lead C7.1 at 39.1% (wrong file paths)
+- **Status**: Deployed in master-worker.ts:451. Awaiting re-measurement.
+
 ## P1: EXP-520 — Structural Heartbeat Artifact Gate — CLOSED ✅ POSITIVE
 - **Problem**: Tech-lead 55% read-only despite text mandatory artifact rule (EXP-475: 100%→55%, target ≤10%)
 - **Hypothesis**: Structural pre-finish check that re-prompts on empty deliverables → ≤10% read-only rate
