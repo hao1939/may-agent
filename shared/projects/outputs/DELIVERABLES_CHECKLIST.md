@@ -2,6 +2,6 @@
 
 | Deliverable | Status | Path |
 |---|---|---|
-| Project completion marker | DONE | /app/agents/shared/projects/outputs/PROJECT_COMPLETE.md |
+| Completion evidence file | DONE | /app/agents/shared/projects/outputs/project-complete-evidence.md |
 
-No further work required. Project complete for 70+ iterations.
+No further work needed - project is complete.
