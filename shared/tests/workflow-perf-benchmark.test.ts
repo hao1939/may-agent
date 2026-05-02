@@ -22,7 +22,7 @@ import {
   extractField,
   extractSection,
 } from "../workflows/project-helpers.js";
-import { validateDispatch } from "../workflows/dispatch-validator.js";
+import { validateDispatch, parseProjectDir } from "../workflows/dispatch-validator.js";
 import { validateOutput } from "../workflows/output-validator.js";
 import {
   shouldBudgetCheckpoint,
@@ -95,6 +95,16 @@ ${"Lorem ipsum dolor sit amet. ".repeat(100)}
 });
 
 describe("Performance: circuit breaker", () => {
+  beforeEach(() => {
+    // Create agent dirs needed for SIGNAL files and state
+    mkdirSync(join(TMP, "shared"), { recursive: true });
+    mkdirSync(join(TMP, "test-agent"), { recursive: true });
+    mkdirSync(join(TMP, "perf-agent"), { recursive: true });
+    mkdirSync(join(TMP, "trip-agent"), { recursive: true });
+    mkdirSync(join(TMP, "cycle-agent"), { recursive: true });
+    for (let i = 0; i < 50; i++) mkdirSync(join(TMP, `agent-${i}`), { recursive: true });
+  });
+
   it("checkCircuitBreaker < 5ms (no state file)", () => {
     const elapsed = measure(() => {
       for (let i = 0; i < 100; i++) checkCircuitBreaker(TMP, "test-agent");
@@ -143,50 +153,44 @@ describe("Performance: dispatch validation", () => {
   it("validates valid dispatch < 5ms", () => {
     const elapsed = measure(() => {
       for (let i = 0; i < 100; i++) {
-        validateDispatch({
-          task: "Write a function that adds two numbers",
-          agent: "code-writer",
-          project: "test-project",
-        });
+        validateDispatch("project: agents/shared/projects/test", TMP);
       }
     });
     expect(elapsed / 100).toBeLessThan(5);
   });
 
-  it("validates invalid dispatch < 5ms", () => {
+  it("validates missing task < 5ms", () => {
     const elapsed = measure(() => {
       for (let i = 0; i < 100; i++) {
-        validateDispatch({} as any);
+        validateDispatch(undefined, TMP);
       }
     });
     expect(elapsed / 100).toBeLessThan(5);
+  });
+
+  it("parseProjectDir < 2ms", () => {
+    const elapsed = measure(() => {
+      for (let i = 0; i < 1000; i++) {
+        parseProjectDir("project: agents/shared/projects/test");
+      }
+    });
+    expect(elapsed / 1000).toBeLessThan(2);
   });
 });
 
 describe("Performance: output validation", () => {
   it("validates good output < 5ms", () => {
-    const output = {
-      status: "success",
-      summary: "Completed the task successfully with all tests passing.",
-      deliverables: [{ path: "src/main.ts", description: "Main file" }],
-    };
+    const output = "# Summary\nCompleted the task successfully with all tests passing.\n## Deliverables\n- src/main.ts\n";
     const elapsed = measure(() => {
-      for (let i = 0; i < 100; i++) validateOutput(output);
+      for (let i = 0; i < 100; i++) validateOutput("report.md", output);
     });
     expect(elapsed / 100).toBeLessThan(5);
   });
 
   it("validates large output < 10ms", () => {
-    const output = {
-      status: "success",
-      summary: "A".repeat(5000),
-      deliverables: Array.from({ length: 50 }, (_, i) => ({
-        path: `src/file-${i}.ts`,
-        description: `File ${i} with changes`,
-      })),
-    };
+    const output = "# Report\n" + "Some content line.\n".repeat(500);
     const elapsed = measure(() => {
-      for (let i = 0; i < 50; i++) validateOutput(output);
+      for (let i = 0; i < 50; i++) validateOutput("big-report.md", output);
     });
     expect(elapsed / 50).toBeLessThan(10);
   });
@@ -196,19 +200,16 @@ describe("Performance: budget checkpoint", () => {
   it("shouldBudgetCheckpoint < 2ms", () => {
     const elapsed = measure(() => {
       for (let i = 0; i < 1000; i++) {
-        shouldBudgetCheckpoint(i, 100);
+        shouldBudgetCheckpoint("proj-" + (i % 10), i, 5);
       }
     });
     expect(elapsed / 1000).toBeLessThan(2);
   });
 
   it("estimateTurnsUsed < 2ms", () => {
-    const journal = Array.from({ length: 50 }, (_, i) =>
-      `## Iteration ${i + 1}\nDid some work.\n`
-    ).join("\n");
     const elapsed = measure(() => {
-      for (let i = 0; i < 100; i++) estimateTurnsUsed(journal);
+      for (let i = 0; i < 1000; i++) estimateTurnsUsed(i, i % 2 === 0);
     });
-    expect(elapsed / 100).toBeLessThan(2);
+    expect(elapsed / 1000).toBeLessThan(2);
   });
 });
