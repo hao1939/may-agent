@@ -1,15 +1,11 @@
 {
-  "name": "convention-verify-multi-edit-workflow-gated",
-  "categories": [
-    "convention-compliance"
-  ],
-  "tags": [
-    "behavior",
-    "workflow"
-  ],
+  "name": "convention-verify-multi-edit-workflow-gated-exp555-treatment",
+  "categories": ["convention-compliance"],
+  "tags": ["behavior", "workflow", "EXP-555", "treatment"],
   "tier": "standard",
   "timeout": 3,
   "agent_type": "coder",
   "workflow": true,
-  "inherits": "convention-verify-multi-edit"
+  "inherits": "convention-verify-multi-edit",
+  "injected_context": "injected_context.md"
 }
