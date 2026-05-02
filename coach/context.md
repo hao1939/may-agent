@@ -43,3 +43,11 @@ Stability-first, guards stay strong, quality>quantity, observability, knowledge 
 See `agents/shared/README-shared-toolkit.md`.
 
 [SIG: 1777642137:085e1085]
+
+
+## Pre-Work Discovery Check
+Before starting new work, check for existing deliverables:
+```bash
+grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
+```
+If a related output exists, read it first to avoid duplicating work.
