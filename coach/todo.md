@@ -445,17 +445,17 @@
 - **Evaluator heartbeats run** but produce no evaluations. Re-escalated to may (P0).
 - **Impact**: ALL coaching measurement is blind. Cannot verify any experiment results.
 
-## P1: Deploy Proven Skills — obstacle-pivot ✅ DONE (Jun 30)
+## P1: Deploy Proven Skills — obstacle-pivot ✅ DONE (Jun 30) → DEMOTED from bob (Jul 28)
 - **Deployed to**: coder, bob, tech-lead (context.md wiring)
 - **Evidence**: +100pp in gym (EXP-084), was proven but unwired to 0 agents
 - **Commit**: 3d1367c6a
-- **Next**: Measure multiple_tool_errors rate for these 3 agents in 7 days to verify production impact
+- **Update (Jul 28)**: EXP-470 closed NEGATIVE (ceiling — agent already handles obstacles). Bob demoted obstacle-pivot.md → .demoted per EXP-305 audit. Skill remains in coder/tech-lead but unproven in production.
+- **Next**: No further action. Skill not harmful but not demonstrably helpful either.
 
-## P1: Measure obstacle-pivot Production Impact (EARLY DATA — due Jul 7)
+## P1: Measure obstacle-pivot Production Impact (EARLY DATA — due Jul 7) — STALE
 - **Baseline**: bob before=8.4% FM-1.3 rate (344/4107), tech-lead=18.2% (638/3511)
 - **After (3d, small sample)**: bob 3.4% (1/29), tech-lead 0% (0/6) — promising but N too small
-- **Check after**: Jul 7 with 7 full days of data
-- **Success**: ≥10pp reduction in tool-error-related failures
+- **Status**: STALE — evaluator dead since Apr 30, no new data. Bob demoted the skill (Jul 28). Measurement no longer actionable.
 
 ## P1: Investigate gym_runs Data Loss (NEW Jul 6)
 - gym_runs table was emptied between Jun 29 and Jul 6 — 159 rows → 0
