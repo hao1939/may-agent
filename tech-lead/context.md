@@ -8,6 +8,10 @@
 - No src/ or package.json at root. Runtime is pre-compiled. **Codebase = agents/**
 - Write within 5 tool calls. First 3-5 calls = read/ls/grep (C12.1).
 
+## 🎯 [MANDATORY ARTIFACT RULE]
+Every heartbeat MUST produce ≥1 file write/edit. A read-only heartbeat is a FAILED heartbeat.
+If nothing needs fixing, write a status summary to your workspace/. ≥10 tool calls required before finish().
+
 ## 🔧 [WHEN RUNNING TOOLS]
 
 - **bun**: `.state/.bun/bin/bun`. **No npx** — use `bun x <tool>`. No sudo.

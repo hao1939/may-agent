@@ -5,8 +5,9 @@
 - **Evidence**: tech-lead s_1777697463001_3724, optimizer s_1777696220814_3717 — both explicit "no files modified"
 - **Hypothesis**: MANDATORY ARTIFACT RULE (≥1 write/edit per heartbeat) → read-only rate ≤10%
 - **Design**: `agents/coach/workspace/EXP-475-read-only-heartbeat-design.md`
-- **Next**: Phase 1 baseline measurement (audit 20 heartbeats per agent for write count)
-- **Status**: DESIGN — baseline measurement needed before deployment
+- **Next**: Phase 3 measurement after 10+ post-treatment heartbeats (~2026-05-10)
+- **Status**: DEPLOYED — tech-lead context.md edited directly (2026-05-03), optimizer already had C15.1
+- **Phase 2 record**: `agents/coach/workspace/EXP-475-phase2-deployment.md`
 
 ## P1: EXP-465 — Anti-Shallow Rule Deployment to amy/scout/qa — CLOSED ✅ POSITIVE (directional)
 - **Phase 1**: Scout — DEPLOYED ✅. 2/3 compliant, rule internalized (agent explicitly references it).
