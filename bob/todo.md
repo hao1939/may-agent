@@ -1,7 +1,7 @@
 
 ## Next
 - [ ] **EXP-267 implementation** — Finish-guard evidence specificity. See `agents/shared/knowledge/experiments/EXP-267/design.md`.
-- [ ] **H-300 Evidence Quality Decay** — Sample 20 recent finish() calls, score evidence quality. If mean < 3, design intervention.
+- [x] **H-300 Evidence Quality Decay** — COMPLETED 2025-05-02. Mean 3.25 (no intervention needed). Workers score 2.5 (monitor). See `EXP-301-evidence-quality-results.md`.
 - [x] ~~**Dispatch dedup guard**~~ — CLOSED 2025-05-02. Problem resolved by infrastructure. See `AUDIT-heartbeat-2025-05-02.md`.
 
 ## Cleared (2025-05-01)
