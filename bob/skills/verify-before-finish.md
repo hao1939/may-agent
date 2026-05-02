@@ -15,3 +15,8 @@ Before calling finish(), complete this checklist:
 3. **Include verification evidence** in your finish() call citing the read() output
 
 This is non-negotiable. Every write/edit MUST have a corresponding read() verification.
+
+## Deliverables Requirement
+Every finish() call MUST include `deliverables` listing files you created or modified.
+Format: [{"path": "relative/path", "description": "what changed"}]
+If you made no file changes, include deliverables: [] explicitly.
