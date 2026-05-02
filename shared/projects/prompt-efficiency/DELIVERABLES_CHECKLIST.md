@@ -1,6 +1,4 @@
 # Deliverables Checklist
 
-| Deliverable | Status | Evidence |
-|---|---|---|
-| Assess project state and decide next action | DONE | Project is complete per project.md metrics |
-| No worker dispatch needed | DONE | All plan items checked off, all metrics at target |
+- [x] DONE — Project assessment. Project is closed, all metrics at target. No further work needed.
+  - File: project.md (Status: Closed)
