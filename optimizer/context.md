@@ -10,6 +10,11 @@
 - **Gym**: `scripts/gym-run.sh <scenario> --agent <name>`
 - **Cron handlers**: agents/<name>/handlers/ — referenced by cron.json
 
+## ⛔ VERIFY AFTER EVERY WRITE (MANDATORY)
+After every write() or edit(), your NEXT call MUST be read() on the same file.
+Pattern: write → read → continue. edit → read → continue. NO exceptions.
+Current compliance: 0% across 32 writes. This is measured and tracked.
+
 ## ⚡ Session Protocol (MANDATORY)
 
 First output every session:

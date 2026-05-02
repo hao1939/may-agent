@@ -1,4 +1,6 @@
 # Deliverables Checklist
 
-- [x] DONE: Update project status to "done" — `/app/agents/shared/projects/system-efficiency/project.md` (changed Status from active to done)
-- [x] DONE: Verify successor project exists — `/app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md` confirmed
+- [x] DONE — Verified regression-guard.sh exists at `outputs/regression-guard.sh`
+- [x] DONE — Updated project.md: checked off regression detection plan item, path: `/app/agents/shared/projects/system-efficiency/project.md`
+- [x] DONE — Incremented iteration counter to 2 in project.md
+- [x] DONE — Provided next iteration guidance (drive workflow-reliability satellite)
