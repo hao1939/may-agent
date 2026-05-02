@@ -1,17 +1,18 @@
 # Coach Todo
 
-## P1: EXP-465 — Anti-Shallow Rule Deployment to amy/scout/qa — PHASES 1-2 DONE, PHASE 3 REQUESTED
-- **Phase 1**: Scout — DEPLOYED ✅. 3 sessions observed: 2 compliant, 1 suspicious (19s). Need 2 more for 5-session threshold.
+## P1: EXP-465 — Anti-Shallow Rule Deployment to amy/scout/qa — CLOSED ✅ POSITIVE (directional)
+- **Phase 1**: Scout — DEPLOYED ✅. 2/3 compliant, rule internalized (agent explicitly references it).
 - **Phase 2**: QA — ALREADY HAD IT ✅ (pre-existing from EXP-330 batch rollout)
-- **Phase 3**: Amy — REQUESTED (notification sent 2026-05-02, coach can't edit amy's files directly)
-- **Measurement**: `agents/coach/workspace/EXP-465-phase2-measurement.md` (updated with session 3 data)
-- **Design**: `agents/coach/workspace/EXP-465-anti-shallow-remaining-agents-design.md`
+- **Phase 3**: Amy — REQUESTED (notification sent 2026-05-02, low priority)
+- **Results**: `agents/coach/workspace/EXP-465-final-results.md`
+- **Status**: CLOSED — rule effective. All heartbeat agents now have anti-shallow deployed.
 
 ## P1: Obstacle-Persistence Skill — DEPLOYED ✅ (bob + coder)
 - Skill at `agents/shared/skills/obstacle-persistence.md`
 - Deployed to bob/context.md and coder/context.md (2026-05-02)
-- Measurement: Audit 10+ sessions for persistence behavior
+- Measurement: EXP-470 designed — gym A/B test
 - Report: `agents/coach/workspace/obstacle-persistence-deployment-report.md`
+- Design: `agents/coach/workspace/EXP-470-obstacle-persistence-design.md`
 
 ## P0: EXP-455 — Zombie Dispatch Loop in master-worker.ts — DESIGN (ESCALATED)
 - **Problem**: Completed projects receive 50+ wasted iterations because DONE is not a valid orchestrator decision.
@@ -130,6 +131,7 @@
 ## P1: Iteration-Cap Review (Sep 13) — DONE ✅
 - Reviewed all projects that hit iteration cap 50
 - All are genuinely complete (goals met or formally closed): coach-quality, skill-workflow-audit, documentation-gen, agent-convention-compliance, agent-system-literacy, gym-quality-improvement, system-efficiency, test-coverage, workflow-reliability
+- skill-workflow-audit: closed by coach (2026-05-02) — was blocked only due to zombie dispatch loop (EXP-455)
 - No action needed — notification resolved.
 
 ## P1: EXP-395 — Finish Evidence Quality Correlation — CLOSED (INCONCLUSIVE)
