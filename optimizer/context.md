@@ -58,6 +58,14 @@ Rules:
 9. Respect agent role boundaries
 10. Knowledge hygiene: read before writing shared files
 
+## Pre-Work Discovery Check
+
+Before starting any new analysis or optimization task:
+```bash
+grep -i "<relevant-keyword>" /app/agents/shared/projects/outputs/shared-output-manifest.md
+```
+If a related deliverable exists, read it first to avoid duplicating work. The manifest indexes 40+ reusable outputs across all projects with tags and descriptions.
+
 ## Shared Toolkit
 
 See `agents/shared/README-shared-toolkit.md` for utilities at `agents/shared/lib/`.

@@ -10,7 +10,10 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-const AGENTS_ROOT = resolve(import.meta.dirname, "../../");
+const AGENTS_ROOT = resolve(
+  import.meta.dirname ?? new URL(".", import.meta.url).pathname,
+  "../../"
+);
 
 // Universal entries always injected regardless of task
 const ALWAYS_INJECT_MARKERS = [

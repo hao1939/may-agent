@@ -37,6 +37,18 @@ An index of all project deliverables available for cross-agent reuse.
 | workflow-reliability | Guardrails v3 Design | `/app/agents/shared/projects/workflow-reliability/outputs/workflow-guardrails-v3-design.md` | [workflow] [reliability] | Structural write-first enforcement via first-call gate interception |
 | workflow-reliability | Reliability Baseline | `/app/agents/shared/projects/workflow-reliability/outputs/workflow-reliability-baseline.md` | [metrics] [reliability] | Baseline: 33% worker success rate with failure mode breakdown |
 | workflow-reliability | Sustained Rate Tracking | `/app/agents/shared/projects/workflow-reliability/outputs/sustained-rate-tracking.md` | [metrics] [monitoring] | Multi-day tracking of worker iteration success rates |
+| skill-workflow-audit | Context Cost Analysis | `/app/agents/shared/projects/skill-workflow-audit/outputs/context-cost-analysis.md` | [metrics] [optimization] | Per-agent skill context token costs and bloat identification |
+| skill-workflow-audit | Per-Agent Fit Assessment | `/app/agents/shared/projects/skill-workflow-audit/outputs/per-agent-fit-assessment.md` | [audit] [quality] | Identifies agents with too many/few skills causing bloat or gaps |
+| skill-workflow-audit | Skill Prune Plan | `/app/agents/shared/projects/skill-workflow-audit/outputs/skill-prune-plan.md` | [optimization] [planning] | Actionable pruning plan for 16 conflicting skills (~85KB savings) |
+| agent-memory-learning | Structured Lesson Format | `/app/agents/shared/projects/agent-memory-learning/outputs/structured-lesson-format.md` | [docs] [workflow] | JSON schema for lesson capture with category/tag fields |
+| agent-memory-learning | Pipeline Metrics | `/app/agents/shared/projects/agent-memory-learning/outputs/pipeline-metrics.md` | [metrics] [monitoring] | Measures whether context-learn pipeline fires organically |
+| documentation-gen | Doc Freshness Checker | `/app/agents/shared/projects/documentation-gen/outputs/check-freshness.sh` | [monitoring] [docs] | Shell script reporting doc file ages and staleness |
+| documentation-gen | Doc-Gen Script | `/app/agents/shared/projects/documentation-gen/outputs/doc-gen-script.md` | [workflow] [docs] | Auto-generation pipeline spec for extracting docs from code/configs |
+| test-coverage | Test Gap Analysis | `/app/agents/shared/projects/test-coverage/outputs/test-gap-analysis.md` | [testing] [quality] | Identifies untested critical paths and prioritizes coverage work |
+| test-coverage | Critical Path Tests | `/app/agents/shared/projects/test-coverage/outputs/critical-path-tests.md` | [testing] [reliability] | Test definitions for highest-risk system paths |
+| test-coverage | Regression Test Strategy | `/app/agents/shared/projects/test-coverage/outputs/regression-test-strategy.md` | [testing] [workflow] | Strategy balancing test thoroughness with execution speed |
+| test-coverage | Coverage Baseline | `/app/agents/shared/projects/test-coverage/outputs/coverage-baseline.md` | [testing] [metrics] | Initial coverage measurements as improvement reference point |
+| test-coverage | Test Automation Plan | `/app/agents/shared/projects/test-coverage/outputs/test-automation-plan.md` | [testing] [workflow] | Automated execution strategy for continuous validation |
 | cross-agent-collaboration | This Manifest | `/app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md` | [discovery] [index] | Master index of all reusable deliverables |
 
 ## Discovery Convention

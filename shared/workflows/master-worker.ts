@@ -237,7 +237,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const status = extractField(projectContent, "Status").toLowerCase();
   const maxIterations = parseInt(extractField(projectContent, "Max Iterations")) || DEFAULT_MAX_ITERATIONS;
 
-  if (status === "paused" || status === "cancelled") {
+  if (status === "paused" || status === "cancelled" || status === "done" || status === "complete" || status === "completed") {
     return ctx.done(`Project status: ${status}. Skipping.`);
   }
 
