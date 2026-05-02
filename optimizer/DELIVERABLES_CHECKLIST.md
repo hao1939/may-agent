@@ -1,12 +1,10 @@
-# Deliverables Checklist — Optimizer Heartbeat
+# Deliverables Checklist
 
-## Task: Heartbeat review (metrics, notifications, projects)
+## Heartbeat Tasks
 
-| # | Deliverable | Status | Notes |
-|---|-------------|--------|-------|
-| 1 | Review metrics | DONE | All healthy: success-rate 1.0, p95 116s |
-| 2 | Process notification (zombie dispatch loops) | DONE | Acknowledged - relates to known system-efficiency gap |
-| 3 | Review projects | DONE | system-efficiency active but fixes undeployed to runtime |
-
-## Key Finding
-The zombie dispatch loop notification confirms the system-efficiency project's fixes remain undeployed.
+| # | Deliverable | Status | Evidence |
+|---|------------|--------|----------|
+| 1 | Process inbox notifications | DONE | P0 zombie fix notification acknowledged - already resolved |
+| 2 | Close system-efficiency project | DONE | agents/shared/projects/system-efficiency/project.md status → done |
+| 3 | Close test-coverage project | DONE | agents/shared/projects/test-coverage/project.md status → done |
+| 4 | Review cross-agent-collaboration | DONE | Active session running, zero organic adoption identified as core issue |
