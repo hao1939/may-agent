@@ -1,5 +1,11 @@
 # Coach Todo
 
+## P1: EXP-485 — Worker Session Quality Guard — SUPERSEDED
+- **Problem**: Worker sessions dispatched to completed projects produce 0-value output (16s, "DONE")
+- **Resolution**: EXP-455 structural fix (DONE keyword in master-worker.ts) now deployed — root cause resolved
+- **Design**: `agents/coach/workspace/EXP-485-worker-session-quality-design.md`
+- **Status**: SUPERSEDED by EXP-455 fix. Monitor optimizer sessions for continued zombies post-fix.
+
 ## P1: EXP-480 — Constraint-Extraction Skill for HARD_CONSTRAINT_VIOLATION — CLOSED (CEILING)
 - **Problem**: HARD_CONSTRAINT_VIOLATION is #4 failure mode (20 occurrences, 7 agents) with no dedicated skill or experiment
 - **Hypothesis**: Constraint-extraction skill (explicit listing before work) → ≥40% reduction
@@ -34,14 +40,13 @@
 - Results: `agents/coach/workspace/EXP-470-baseline-results.md`
 - Design: `agents/coach/workspace/EXP-470-obstacle-persistence-design.md`
 
-## P0: EXP-455 — Zombie Dispatch Loop in master-worker.ts — DESIGN (ESCALATED)
+## P0: EXP-455 — Zombie Dispatch Loop in master-worker.ts — CLOSED ✅ FIXED
 - **Problem**: Completed projects receive 50+ wasted iterations because DONE is not a valid orchestrator decision.
 - **Root cause**: `master-worker.ts` line 83 explicitly skips DONE. Unknown decisions default to CONTINUE (line 326). Loop runs to cap=50.
-- **Evidence**: system-efficiency (18+ zombie iterations), prompt-efficiency (55+ zombie iterations)
-- **Fix needed**: Add DONE/COMPLETE as terminal decisions in extractDecision() + while loop
-- **Escalated**: P0 to tech-lead (2026-05-02). Workaround shared with optimizer (use BLOCKED instead of CONTINUE).
+- **Fix**: DONE/COMPLETE now valid decisions in extractDecision() (lines 71-72, 95-96 of master-worker.ts)
+- **Verified**: 2026-05-02 — grep confirms DONE/COMPLETE handling in extractDecision()
 - **Design**: `agents/coach/workspace/EXP-455-zombie-dispatch-detection-design.md`
-- **Status**: DESIGN — awaiting tech-lead fix
+- **Status**: CLOSED ✅ — structural fix deployed by tech-lead
 
 ## P1: EXP-460 — Optimizer Output Format Non-Compliance — CLOSED (EXPECTED BEHAVIOR)
 - **Problem**: Optimizer 1.3% output format compliance despite instruction in both heartbeat.md AND context.md
