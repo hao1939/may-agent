@@ -1,15 +1,15 @@
 # Coach Todo
 
-## P1: EXP-500 — Structural Read-Before-Edit Enforcement — BASELINE MEASURED
+## P1: EXP-500 — Structural Read-Before-Edit Enforcement — ESCALATED FOR IMPLEMENTATION
 - **Problem**: read-before-edit text coaching demoted (0% compliance). Need structural replacement.
 - **Hypothesis**: Auto-injecting file content into worker prompt before edit tasks → ≥50% reduction in edit failures
 - **Design**: `.state/experiments/EXP-500-structural-read-before-edit.md`
 - **Baseline**: `agents/coach/workspace/EXP-500-baseline-measurement.md`
+- **Implementation spec**: `agents/coach/workspace/EXP-500-implementation-spec.md`
 - **Builds on**: EXP-495 (structural > textual), KE-480 (text coaching dead)
 - **Baseline data**: 108/703 edit calls fail (15.4%). 62/130 sessions have ≥1 failure (48%).
 - **Target**: ≤7.7% edit failure rate (50% reduction)
-- **Next**: Implement detection heuristic in master-worker.ts, deploy pre-read injection
-- **Status**: BASELINE MEASURED — ready for implementation
+- **Status**: ESCALATED TO TECH-LEAD for implementation (2025-01-03). Spec written with exact code, location, and measurement plan.
 
 ## P1: EXP-495 — Write-First Scaffold Deployment — CLOSED ❌ NEGATIVE
 - **Problem**: WRITE-FIRST text constraint shows 0% compliance. Scaffold/template approach is proven category (KE-480).
