@@ -83,3 +83,8 @@ grep -i "<keyword>" /app/agents/
 (a) Next iteration should batch-index 30 more unindexed files into the manifest (item 15) and create the weekly reuse check script (item 17).
 
 (b) Phase 2 is complete — first reuse logged, 3 agents instrumented. Now we need coverage and measurement infrastructure to drive the reuse count f
+**Orchestrator**: CONTINUE
+
+(a) Next iteration must deliver two things: the reuse-check script (item 17) and batch-index 30 files (item 15).
+
+(b) Worker claimed reuse-check.sh was created but it doesn't exist anywhere on disk. This is iteration 15 — I'm providing exact file content. **If the file is not at the exact 
