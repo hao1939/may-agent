@@ -1,21 +1,19 @@
 # Evaluator heartbeat — 2026-05-02
 
-## Pipeline liveness check (session eval)
+## Checks
 
-Evidence (DB is canonical):
-- `evaluations.max(createdAt)=1777687763508` (about 2.8 hours behind now)
-- `sessions.max(startedAt)=1777697847673`
-- lag: `10084165 ms` (~2.8h)
+### Session evaluation pipeline liveness
 
-Legacy artifacts:
-- `.state/evaluations/` newest mtime is **Mar 24** (stale), while DB has fresh evaluations ⇒ treat as output-path drift, not necessarily pipeline failure.
+**DB (canonical)**
+- `evaluations`: `max(createdAt)=1777702594254`, `count=2376`
+- `sessions`: `max(startedAt)=1777704610373`, `count=8149`
 
-Supporting outputs:
-- `ls -la .state/evaluations | tail -5` showed newest Mar 24
-- DB queries showed `evaluations` count 2367, `sessions` count 8009
+Interpretation: evaluation pipeline is producing fresh rows in `evaluations` close in time to current session activity.
 
-## Action
+**Filesystem (legacy artifacts)**
+- `.state/evaluations/` newest `task_tree_*.json` mtimes appear stuck around **2026-03-24**.
 
-Recommendation: confirm whether `evaluate-session-llm` is intentionally scheduled at multi-hour cadence or whether the cron stalled.
+Interpretation: this supports the known “legacy-output-path drift” hypothesis: DB is up to date; `.state/evaluations/` is no longer the active sink (or the writer path changed).
 
-If unintended: check job runner / scheduler code for evaluation cadence and whether it is disabled.
+### Tooling note
+- `rg` is not available in this environment; use `grep` instead.
