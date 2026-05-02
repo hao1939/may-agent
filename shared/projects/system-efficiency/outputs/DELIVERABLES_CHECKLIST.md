@@ -1,7 +1,5 @@
 # Deliverables Checklist
 
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | next-frontier-proposal.md | DONE | /app/agents/shared/projects/system-efficiency/outputs/next-frontier-proposal.md |
-| 2 | Copy efficiency-playbook.md | DONE | /app/agents/shared/projects/system-efficiency/outputs/efficiency-playbook.md |
-| 3 | Copy regression-guard-config.md | DONE | /app/agents/shared/projects/system-efficiency/outputs/regression-guard-config.md |
+## Required
+- [x] DONE — `/app/agents/shared/projects/cross-agent-collaboration/project.md` — New project spec with status active, owner optimizer, P1 priority, 3 metrics, 4-phase plan
+- [x] DONE — `/app/agents/shared/projects/system-efficiency/outputs/cross-agent-collaboration-proposal.md` — Extended version in system-efficiency outputs
