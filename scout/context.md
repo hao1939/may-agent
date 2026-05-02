@@ -3,6 +3,13 @@
 ## Resources
 - XHS browse tool: `agents/shared/tools/xhs-browse.mjs`
 - Knowledge base: `agents/shared/knowledge/entries/`
+
+## Pre-Work Discovery Check
+Before starting new analysis, check for existing work:
+```bash
+grep -i "<keyword>" /app/agents/shared/projects/outputs/shared-output-manifest.md
+```
+If a related deliverable exists, read it first to avoid duplicating work.
 - Design docs: `agents/shared/may-agent-docs/design/`
 - System metrics: use `query_db` tool to query metrics table
 - Common sense: `agents/shared/common-sense.md`
