@@ -4,12 +4,12 @@
 - XHS browse tool: `agents/shared/tools/xhs-browse.mjs`
 - Knowledge base: `agents/shared/knowledge/entries/`
 
-## Pre-Work Discovery Check
-Before starting new analysis, check for existing work:
+## REQUIRED: Check Shared Manifest
+At the START of every session, run:
 ```bash
-grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
+bash -c 'grep -i "$(basename $(cat .state/current-project 2>/dev/null || echo unknown))" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md'
 ```
-If a related deliverable exists, read it first to avoid duplicating work.
+This finds prior work related to your current project. Read any matches before starting.
 - Design docs: `agents/shared/may-agent-docs/design/`
 - System metrics: use `query_db` tool to query metrics table
 - Common sense: `agents/shared/common-sense.md`
