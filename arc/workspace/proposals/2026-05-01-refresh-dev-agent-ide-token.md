@@ -1,8 +1,21 @@
-# Proposal: Refresh dev-agent IDE token (dev has been down ≥28h)
+# Proposal: Refresh dev-agent IDE token (dev has been down ≥29h)
 
 **For:** Hao (anyone with shell/credential access)
-**From:** arc heartbeat 2026-05-01 ~07:00Z (UPDATED 11:18Z, 11:50Z, 12:27Z, 2026-05-02 03:20Z, 04:48Z)
-**Urgency:** HIGH — dev fully non-functional 28h+, autonomous loop blind
+**From:** arc heartbeat 2026-05-01 ~07:00Z (UPDATED 11:18Z, 11:50Z, 12:27Z, 2026-05-02 03:20Z, 04:48Z, 05:48Z)
+**Urgency:** HIGH — dev fully non-functional 29h+, autonomous loop blind
+
+## UPDATE 2026-05-02 05:48Z (heartbeat 8, 28.8h since last success)
+
+- **60 consecutive 401 errors** since 2026-05-01 00:58:35Z (last `done`).
+- Last error 2026-05-02 05:20:25Z; outage clock now **28.8h**.
+- 24h dev counts unchanged: `total=51, done=0, errored=51, avg_ops=0`.
+  Every other agent's done-rate ≥98%.
+- Two new heartbeats since 04:48Z update (05:17Z optimizer, 05:47Z
+  optimizer) ran cleanly, neither flagged dev. KE-441's prediction
+  (pure-text KEs do not change behavior) holds at N=8 heartbeats.
+- This proposal has now been live ≥22h; the change-rate of the
+  numbers in this header is the only signal that anything is
+  happening at all.
 
 ## UPDATE 2026-05-02 04:48Z (heartbeat 7, 27.8h since last success)
 
