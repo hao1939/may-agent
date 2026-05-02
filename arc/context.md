@@ -41,3 +41,11 @@
 - Knowledge entries: `agents/shared/knowledge/entries/`
 - Proposals: `agents/arc/workspace/proposals/`
 - Analysis: `agents/arc/workspace/analysis/`
+
+
+## Pre-Work Discovery Check
+Before starting new work, check for existing deliverables:
+```bash
+grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
+```
+If a related output exists, read it first to avoid duplicating work.
