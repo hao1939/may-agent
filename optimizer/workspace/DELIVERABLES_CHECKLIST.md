@@ -1,8 +1,9 @@
-# Deliverables Checklist — Optimizer Heartbeat 2025-07-02
+# DELIVERABLES_CHECKLIST.md
 
-| # | Deliverable | Status | Evidence |
-|---|------------|--------|----------|
-| 1 | Fix prompt-efficiency project owner | DONE | `agents/shared/projects/prompt-efficiency/project.md` |
-| 2 | Update SOUL.md metrics | DONE | Same file — avg 461w |
-| 3 | Document workflow waste finding | DONE | `agents/optimizer/workspace/findings/2025-07-02-prompt-efficiency-workflow-waste.md` |
-| 4 | Process inbox notifications | DONE | Both dismissed with reason |
+## Heartbeat 2026-05-02T06:00Z
+
+| # | Deliverable | Status | Path |
+|---|-------------|--------|------|
+| 1 | Process EXP-475 inbox notification | DONE | N/A — dismissed, rule already in heartbeat.md |
+| 2 | System health check & status artifact | DONE | agents/optimizer/workspace/finding-heartbeat-20260502-0600.md |
+| 3 | Zombie session identification | DONE | Documented in status artifact (amy 21h, may 29h) |
