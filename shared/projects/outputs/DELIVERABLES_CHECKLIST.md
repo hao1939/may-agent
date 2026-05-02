@@ -1,7 +1,7 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST.md
 
 | Deliverable | Status | Path |
 |---|---|---|
-| Project completion evidence | DONE | /app/agents/shared/projects/outputs/PROJECT_COMPLETE.md |
+| Project completion confirmation | DONE | /app/agents/shared/projects/outputs/project-complete-confirmation.md |
 
-No further work required. Project has been complete for 70+ iterations.
+No further work required - project is complete.
