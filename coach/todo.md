@@ -7,6 +7,7 @@
 - **Phase 1 results**: `agents/coach/workspace/EXP-490-phase1-audit.md`
 - **Findings**: 3/8 show compliance, 1 partial, 1 potential non-compliance (persistent-task-workflow), 3 need gym measurement
 - **Actions taken**: Removed stale "Obstacle Pivot" reference from bob/context.md; acknowledged 3 demotions
+- **Bob demotions confirmed** (2026-05-03): obstacle-pivot.md (EXP-470 CEILING), verify-after-edit.md (EXP-280 NEGATIVE), diagnosis-before-action.md (EXP-305 audit). All consistent with evidence.
 - **Next**: Phase 2 — gym-based measurement for read-before-edit, verify-before-finish, state-check-before-action
 - **Status**: PHASE 1 DONE — Phase 2 needs gym scenario design
 
