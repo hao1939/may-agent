@@ -3,10 +3,12 @@
 These tasks are run by `cron:evaluator` every hour.
 See `agents/evaluator/periodic-tasks.md` for the definitions.
 
+Note: `sessions` table does **not** have a `createdAt` column; use `startedAt` (and `endedAt`) for recency queries.
+
 ## 1. Score Recent Sessions
 **Goal**: Ensure quality feedback loop.
 - Filter sessions from last 24h.
-- Pick 5 random non-evaluated sessions.
+- Pick 5 random non-evaluated sessions (use `status='completed'` and join to `evaluations`).
 - Run the session-eval pipeline (canonical: `evaluations` table in `.state/may.db`).
   - Note: there is no public `score_session` CLI in this repo; do **not** claim you ran it unless you can cite a real tool/entrypoint + output.
 
