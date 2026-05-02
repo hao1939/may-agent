@@ -1,28 +1,32 @@
-# Evaluator Heartbeat — 2026-05-02
+# Evaluator heartbeat — 2026-05-02
 
-## Checks performed
+## Checks run (DB is canonical)
 
-### Session evaluation pipeline liveness (DB is canonical)
-- Query: max(evaluations.createdAt) vs max(sessions.startedAt), and last-24h counts.
-- Result (from DB):
-  - evalMax = 1777706023509
-  - sessMax = 1777710006182
-  - lag_ms = 3,982,673 (≈ 66 minutes)
-  - evaluations last 24h = 613
-  - sessions last 24h = 4,401
-  - coverage ≈ 613 / 4,401 = 13.9%
+### Evaluation pipeline recency
+- sessions max startedAt: **2026-05-02T09:49:56.929Z**
+- evaluations max createdAt: **2026-05-02T08:12:32.910Z**
+- 24h volume: sessions=**3973**, evaluations=**552**
+- overall coverage: evaluations/sessions = **2380/8358 = 0.285**
 
-Interpretation:
-- The evaluation pipeline is **writing** (613 evals/24h), but it’s lagging by ~1 hour behind newest sessions.
-- Coverage is **very low** (~14%). This is consistent with prior notes that the pipeline scope is narrow and/or there’s a backlog.
+### Per-agent coverage (last 24h, status='done')
+Lowest coverage:
+- evaluator: **886 sessions, 0 evals (0.000)**
+- optimizer: **1420 sessions, 211 evals (0.149)**
+- amy: **608 sessions, 98 evals (0.161)**
+- coach: **724 sessions, 162 evals (0.224)**
 
-### Legacy artifact path check
-- `.state/evaluations/` contains recent `s_*.json` updated Apr 29, but `task_tree_*.json` artifacts are last updated Mar 24.
+Note: `.state/evaluations/` contains recent `s_*.json` (Apr 29) but `task_tree_*` artifacts are older (Mar 24), consistent with “legacy output drift” rather than DB pipeline failure.
 
-Interpretation:
-- Treat `task_tree_*.json` staleness as **legacy output drift**, not definitive pipeline failure.
+## Hypotheses
+1. `eval-poller` is running and writing evaluations, but only for a subset of session kinds/agents.
+2. Evaluator-agent sessions might be intentionally excluded to avoid self-eval loops; confirm this is policy vs bug.
+3. Low overall coverage (28.5%) suggests either:
+   - high volume of sessions that are meant to be skipped (gym/heartbeat), or
+   - selection logic is too narrow.
 
-## Follow-ups suggested (not executed in this heartbeat)
-- Decide desired evaluation coverage target and which session kinds to include/exclude.
-- Check `eval-poller` behavior (enabled in `agents/may/cron.json`) for throughput/backlog; if it’s intended to be near-real-time, investigate why lag is ~1h.
-- Consider adding a metric for evaluation coverage + lag and alert on regression.
+## Suggested next actions (for May / tech-lead)
+- Confirm eval selection logic in `eval-poller` / `evaluateStandaloneSession()`:
+  - what `kind`/`source`/agent filters exist?
+  - are gym scenarios excluded? are heartbeat sessions excluded?
+- If evaluator sessions are excluded, ensure it’s explicit and documented; otherwise coverage=0 for evaluator indicates a bug/regression.
+- Add/restore a metric for evaluation coverage (overall + by-agent) so this is alertable.
