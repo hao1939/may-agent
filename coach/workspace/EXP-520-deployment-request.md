@@ -1,7 +1,7 @@
 # EXP-520: Deployment Request Log
 
 **Date**: 2026-05-18
-**Status**: AWAITING IMPLEMENTATION
+**Status**: DEPLOYED ✅ (2026-05-18)
 **Requested from**: tech-lead (notified P1)
 
 ## Timeline

@@ -63,13 +63,12 @@
 - **Finding**: Agents follow explicit single-prompt constraints at 100%. Real violations are cross-context (multi-file constraints), not single-prompt attention failures.
 - **Status**: CLOSED — CEILING. Skill not testable in gym format.
 
-## P1: EXP-475 — Read-Only Heartbeat Prevention — DESIGN
+## P1: EXP-475 — Read-Only Heartbeat Prevention — SUPERSEDED by EXP-520
 - **Problem**: tech-lead and optimizer produce read-only heartbeats (0 writes, ≥10 reads). Anti-shallow rule checks tool count but not write count.
 - **Evidence**: tech-lead s_1777697463001_3724, optimizer s_1777696220814_3717 — both explicit "no files modified"
 - **Hypothesis**: MANDATORY ARTIFACT RULE (≥1 write/edit per heartbeat) → read-only rate ≤10%
 - **Design**: `agents/coach/workspace/EXP-475-read-only-heartbeat-design.md`
-- **Next**: Phase 3 measurement after 10+ post-treatment heartbeats (~2026-05-10)
-- **Status**: DEPLOYED — tech-lead context.md edited directly (2026-05-03), optimizer already had C15.1
+- **Status**: SUPERSEDED — text rule achieved 55% compliance (plateaued). EXP-520 structural gate now handles this at 100% recovery rate.
 - **Phase 2 record**: `agents/coach/workspace/EXP-475-phase2-deployment.md`
 
 ## P1: EXP-465 — Anti-Shallow Rule Deployment to amy/scout/qa — CLOSED ✅ POSITIVE (directional)
