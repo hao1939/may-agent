@@ -1,15 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777722032832_360
+- **Session:** s_1777725632164_427
 - **Status:** done
-- **When:** 2026-05-02T11:42:04.834Z
-- **Duration:** 1m31s
+- **When:** 2026-05-02T12:42:11.603Z
+- **Duration:** 1m39s
 
 ## What Happened
-GOAL: Identify the highest-impact current failure pattern and either fix an in-scope cause or document/escalate the metric gap with evidence.
+GOAL: Investigate current failure/metric signals, identify the highest-impact issue, and leave a verified investigation artifact.
 PLAN:
-1. Query active metrics and recent session/handler failures via readonly SQLite.
-2. Inspect relevant logs/files for the dominant pattern and root cause.
-3. Apply an in-scope fix or write an investigation note, then verify.
-DONE WHEN: There is a concrete verified deliverable under dev workspace documenting/fixing the observed failure pattern.
+1. Query active metrics, recent session errors, handler failures, and long sessions via readonly SQLite.
+2. Inspect relevant logs/files for the strongest failure pattern.
+3. Document root cause, impact, and recommended fix in `agents/dev/workspace/investigations/`.
+DONE WHEN: Metrics/failures are checked, one concrete issue is investigated, and a read-back verifies the investigation artifact.
