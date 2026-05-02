@@ -152,3 +152,12 @@ This manifest should be updated whenever:
 | system-efficiency | new-project-proposals.md | Satellite project proposals from workflow source analysis | planning, proposals |
 | system-efficiency | output-improvement-plan.md | Plan for improving project output quality | process, improvement |
 | system-efficiency | phase4-metrics-baseline.md | Baseline metrics for phase 4 measurement | measurement, baseline |
+| workflow-reliability | 7-Day Tracking Day 1 | `/app/agents/shared/projects/workflow-reliability/outputs/7-day-tracking-day1.md` | [metrics] [reliability] | Day 1 reliability rate measurements |
+| workflow-reliability | Day 2 Rate Tracking | `/app/agents/shared/projects/workflow-reliability/outputs/day2-rate-tracking.md` | [metrics] [reliability] | Day 2 reliability rate measurements |
+| workflow-reliability | Day 3 Rate Tracking | `/app/agents/shared/projects/workflow-reliability/outputs/day3-rate-tracking.md` | [metrics] [reliability] | Day 3 reliability rate measurements |
+| workflow-reliability | Day 4 Rate Tracking | `/app/agents/shared/projects/workflow-reliability/outputs/day4-rate-tracking.md` | [metrics] [reliability] | Day 4 reliability rate measurements |
+| workflow-reliability | Day 5 Rate Tracking | `/app/agents/shared/projects/workflow-reliability/outputs/day5-rate-tracking.md` | [metrics] [reliability] | Day 5 reliability rate measurements |
+| workflow-reliability | Day 6 Rate Tracking | `/app/agents/shared/projects/workflow-reliability/outputs/day6-rate-tracking.md` | [metrics] [reliability] | Day 6 reliability rate measurements |
+| workflow-reliability | Day 7 Rate Tracking | `/app/agents/shared/projects/workflow-reliability/outputs/day7-rate-tracking.md` | [metrics] [reliability] | Day 7 reliability rate measurements |
+| workflow-reliability | V2 Guardrails Day 1 | `/app/agents/shared/projects/workflow-reliability/outputs/v2-guardrails-day1-tracking.md` | [metrics] [reliability] | V2 guardrails tracking day 1 results |
+| workflow-reliability | V3 Guardrails Day 1 | `/app/agents/shared/projects/workflow-reliability/outputs/v3-guardrails-day1-tracking.md` | [metrics] [reliability] | V3 guardrails tracking day 1 results |
