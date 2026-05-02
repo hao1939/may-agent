@@ -75,18 +75,19 @@ describe("dispatch-validator deep branches", () => {
     expect(r.errors.length).toBeGreaterThanOrEqual(2);
   });
 
-  // Lines 98-100: iteration cap
-  it("warns when iteration >= 50", () => {
+  // Lines 98-100: iteration cap (hard block, not warning)
+  it("errors when iteration >= 50", () => {
     setupProject("**Status**: active\n**Iteration**: 50\n");
     const r = validateDispatch(`project: proj`, tmpBase);
-    expect(r.valid).toBe(true);
-    expect(r.warnings.some(w => w.includes("50"))).toBe(true);
+    expect(r.valid).toBe(false);
+    expect(r.errors.some(e => e.includes("50"))).toBe(true);
   });
 
-  it("warns when iteration is 99", () => {
+  it("errors when iteration is 99", () => {
     setupProject("**Status**: active\n**Iteration**: 99\n");
     const r = validateDispatch(`project: proj`, tmpBase);
-    expect(r.warnings.some(w => w.includes("99"))).toBe(true);
+    expect(r.valid).toBe(false);
+    expect(r.errors.some(e => e.includes("99"))).toBe(true);
   });
 
   it("no warning when iteration < 50", () => {
