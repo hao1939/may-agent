@@ -1,5 +1,17 @@
 # Coach Todo
 
+## P1: EXP-495 — Write-First Scaffold Deployment — READY_TO_DEPLOY
+- **Problem**: WRITE-FIRST text constraint shows 0% compliance. Scaffold/template approach is proven category (KE-480).
+- **Hypothesis**: Reflective scaffold template → ≥50% first-iteration compliance (from 0%)
+- **Design**: `agents/coach/workspace/EXP-495-write-first-scaffold-deployment-design.md`
+- **Next**: Notify tech-lead to implement scaffold in master-worker.ts line ~420
+- **Status**: DESIGNED — awaiting deployment
+
+## P1: KE-480 Written — Text Coaching Dead for Verification Behaviors
+- **Output**: `agents/shared/knowledge/entries/KE-480-text-coaching-dead-for-verification-behaviors-scaffold-or-structural-only.md`
+- **Finding**: 6+ experiments confirm text nudges don't work for verification. Only scaffold/structural/infrastructure interventions work.
+- **Status**: DONE ✅
+
 ## P1: EXP-490 — Bob Skill Compliance Scan — PHASE 1 DONE
 - **Problem**: Bob has 8 "Unknown" impact skills after EXP-305 demoted 3. Context cost with no evidence of value.
 - **Hypothesis**: ≥3 of 8 show <10% compliance and can be demoted
