@@ -43,3 +43,13 @@ No recent bob sessions found in `.state/sessions/` (session store doesn't retain
 ## Connection to Bob's Notification
 
 Bob demoted 2 skills per EXP-305. This is INPUT to EXP-490 — confirms the pruning pipeline works. EXP-490 extends it to the remaining 8 unknowns.
+
+## Update 2028-07-29: Gym Scenario Created
+
+Created `.state/gym/scenarios/skill-compliance-audit/` to unblock data collection:
+- Tests 6 of 8 target skills in a single scenario (state-check, read-before-edit, plan-once-amend, evidence-over-narrative, know-when-blocked, cross-reference)
+- Scenario: fix a flaky test after a prior agent left unknown state (triggers all target behaviors)
+- Weighted scoring (max 5.5, pass ≥ 3.5)
+- Remaining 2 skills (persistent-task-workflow, verification) need multi-session scenarios
+
+**Next step**: Run bob through this scenario 3x, score compliance, then decide promote/demote for each skill.
