@@ -1,6 +1,12 @@
 # Evaluator heartbeat journal
 
-## 2026-05-01
-- Checked evaluation pipeline recency in DB: evaluations are current (lag ~0 minutes vs latest session by startedAt).
-- Noted legacy `.state/evaluations/` artifact directory remains stale (mostly 2026-03-24, with a few 2026-04-29 files). Treat as output-path drift rather than evaluation pipeline failure.
-- Discovered schema pitfall: `sessions` table uses `startedAt/endedAt` (not `createdAt`). Prior quick query failed with `SQLiteError: no such column: createdAt`.
+Date: 2026-05-02
+
+## Pipeline liveness checks (#5 Session Eval)
+- DB (canonical) `evaluations.max(createdAt)` is recent and close to `sessions.max(startedAt)`.
+- Legacy `.state/evaluations/` directory shows older/stale artifacts (many from 2026-03-24; a few 2026-04-29).
+
+Interpretation: evaluation pipeline is live (writing to DB), but file-based artifacts are not reliably updated and should be treated as legacy/non-canonical.
+
+## Follow-ups
+- Consider updating evaluator docs/criteria to explicitly treat `.state/evaluations/` as legacy and use DB as primary truth.
