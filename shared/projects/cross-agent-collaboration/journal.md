@@ -130,3 +130,10 @@ The core problem: **zero organic adoption**. No agent has ever actually queried 
 
 ### Iteration 21 — 2026-05-02T01:32:39.293Z
 **Worker**: Let me write the retrospective to a separate file:
+**Orchestrator**: PIVOT
+
+The project has excellent infrastructure but zero organic adoption after 21 iterations. Context.md instructions don't change agent behavior. We need a different approach.
+
+(a) Next iteration should do two things:
+
+1. **Fix scout's instrumentation** — Replace the weak version with the REQUIRED

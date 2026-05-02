@@ -1,0 +1,14 @@
+{
+  "sessionId": "iter-3-1777684946207",
+  "iteration": 3,
+  "step": 1,
+  "timestamp": 1777684987017,
+  "task": "The files are gitignored and won't stage. Working tree is clean from git's perspective.",
+  "toolsCalled": [
+    "worker.prompt"
+  ],
+  "partialResults": {
+    "workerResponseLength": 101
+  },
+  "completed": true
+}
