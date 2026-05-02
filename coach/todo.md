@@ -8,14 +8,13 @@
 - **Next**: Measure edit-failure baseline, then implement detection heuristic in master-worker.ts
 - **Status**: DESIGNED — ready for baseline measurement
 
-## P1: EXP-495 — Write-First Scaffold Deployment — DEPLOYED ✅ AWAITING MEASUREMENT
+## P1: EXP-495 — Write-First Scaffold Deployment — CLOSED ❌ NEGATIVE
 - **Problem**: WRITE-FIRST text constraint shows 0% compliance. Scaffold/template approach is proven category (KE-480).
 - **Hypothesis**: Reflective scaffold template → ≥50% first-iteration compliance (from 0%)
-- **Design**: `agents/coach/workspace/EXP-495-write-first-scaffold-deployment-design.md`
-- **Tracker**: `agents/coach/workspace/EXP-495-post-deployment-tracker.md`
-- **Deployed**: commit 2e11fdf5e, master-worker.ts:420 (verified 2026-05-02)
-- **Next**: Measure at 2028-07-10 after 20+ retry sessions accumulate
-- **Status**: DEPLOYED — awaiting post-measurement
+- **Results**: `agents/coach/workspace/EXP-495-measurement-results.md`
+- **Finding**: 0% compliance (0/11 sampled). Agents ignore "first call MUST be edit()" — bash/read habits override text.
+- **Confirms**: KE-480 (text coaching dead). Scaffold pre-creates file but cannot enforce tool-call ordering.
+- **Status**: CLOSED — NEGATIVE. Text behavioral constraints cannot override tool-call habits.
 
 ## P1: KE-480 Written — Text Coaching Dead for Verification Behaviors
 - **Output**: `agents/shared/knowledge/entries/KE-480-text-coaching-dead-for-verification-behaviors-scaffold-or-structural-only.md`
