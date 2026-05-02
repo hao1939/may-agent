@@ -15,3 +15,14 @@
 (a) Next iteration should complete item 6 by instrumenting a second pilot agent, then create the auto-update script (item 7).
 
 (b) Worker claimed instrumentation was done but only optimizer actually has it. The second agent is missing. I verified — no other agent's context.md mentions the 
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should fix the scout path bug and create the freshness script. Two small tasks:
+
+1. **Fix scout's context.md** — Change the wrong path from:
+```
+grep -i "<keyword>" /app/agents/shared/projects/outputs/shared-output-manifest.md
+```
+to:
+```
+grep -i "<keyword>" /app/agents/
