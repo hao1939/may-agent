@@ -1,11 +1,7 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist — 2025-05-02 Heartbeat
 
-## Deliverables
-
-- [x] **DONE** — Fix prompt-efficiency project status format
-  - File: `agents/shared/projects/prompt-efficiency/project.md`
-  - Changed `## Status: Complete` → `**Status**: Complete` (canonical form for extractField parsing)
-
-- [x] **DONE** — Heartbeat status artifact
-  - File: `.state/optimizer/heartbeat-status.md`
-  - Updated with current metrics, actions taken, and project status
+| # | Deliverable | Status | Path |
+|---|-------------|--------|------|
+| 1 | Efficiency report with data-backed findings | DONE | agents/optimizer/findings/2025-05-02-efficiency-report.md |
+| 2 | Review projects status | DONE | cross-agent-collaboration waiting (organic adoption), all others closed |
+| 3 | Produce artifact (mandatory) | DONE | Efficiency report written and verified |
