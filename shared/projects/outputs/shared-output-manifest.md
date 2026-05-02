@@ -1,65 +1,62 @@
 # Shared Output Manifest
 
-> A discoverable index of all project deliverables across the agent system.
-> Tags enable quick lookup. Check this manifest before starting new analysis.
+An index of all project deliverables available for cross-agent reuse.
 
-## Index
+## Deliverables Index
 
 | Project | Deliverable | Path | Tags | Description |
 |---------|------------|------|------|-------------|
-| system-efficiency | satellite-triage.md | /app/agents/shared/projects/outputs/satellite-triage.md | `[analysis]` `[projects]` | Ranked list of all satellite projects with gap analysis |
-| system-efficiency | regression-guard-config.md | /app/agents/shared/projects/outputs/regression-guard-config.md | `[monitoring]` `[metrics]` | Alert thresholds for all 12 satellite metrics |
-| system-efficiency | efficiency-playbook.md | /app/agents/shared/projects/outputs/efficiency-playbook.md | `[workflow]` `[patterns]` | Rules for orchestrators and workers to avoid no-op iterations |
-| system-efficiency | system-efficiency-retrospective.md | /app/agents/shared/projects/system-efficiency/outputs/system-efficiency-retrospective.md | `[docs]` `[retrospective]` | Full project retrospective with timeline and lessons |
-| system-efficiency | next-frontier-proposal.md | /app/agents/shared/projects/system-efficiency/outputs/next-frontier-proposal.md | `[planning]` `[proposals]` | Three proposals for next initiatives after satellite completion |
-| cross-agent-collaboration | shared-output-manifest.md | /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md | `[discovery]` `[index]` | This file — the master index of all reusable outputs |
-| test-coverage | coverage reports | /app/agents/shared/projects/test-coverage/outputs/ | `[testing]` `[quality]` | Test coverage analysis and improvement plans |
-| prompt-efficiency | prompt analysis | /app/agents/shared/projects/prompt-efficiency/outputs/ | `[prompts]` `[optimization]` | Token usage analysis and compression strategies |
-| coach-quality | coaching rubrics | /app/agents/shared/projects/coach-quality/outputs/ | `[coaching]` `[quality]` | Quality scoring rubrics for agent coaching |
-| handler-reliability | error patterns | /app/agents/shared/projects/handler-reliability/outputs/ | `[reliability]` `[errors]` | Handler failure patterns and retry strategies |
-| gym-quality-improvement | gym metrics | /app/agents/shared/projects/gym-quality-improvement/outputs/ | `[training]` `[quality]` | Gym exercise quality assessments |
-| agent-convention-compliance | convention docs | /app/agents/shared/projects/agent-convention-compliance/outputs/ | `[conventions]` `[compliance]` | Agent convention adherence reports |
+| system-efficiency | Satellite Triage | `/app/agents/shared/projects/outputs/satellite-triage.md` | [planning] [metrics] | Ranked list of all satellite projects with gap analysis |
+| system-efficiency | Regression Guard Config | `/app/agents/shared/projects/outputs/regression-guard-config.md` | [monitoring] [metrics] | Alert thresholds for all 12 satellite metrics |
+| system-efficiency | Efficiency Playbook | `/app/agents/shared/projects/outputs/efficiency-playbook.md` | [workflow] [patterns] | Rules for orchestrators and workers to avoid no-op iterations |
+| system-efficiency | Retrospective | `/app/agents/shared/projects/system-efficiency/outputs/system-efficiency-retrospective.md` | [docs] [retrospective] | Full project retrospective with timeline and lessons |
+| system-efficiency | Next Frontier Proposal | `/app/agents/shared/projects/system-efficiency/outputs/next-frontier-proposal.md` | [planning] [proposals] | 3 proposals for next initiatives after satellite completion |
+| test-coverage | Coverage Reports | `/app/agents/shared/projects/test-coverage/outputs/` | [testing] [quality] | Test coverage analysis and improvement tracking |
+| proof-of-life-dashboard | Dashboard Spec | `/app/agents/shared/projects/proof-of-life-dashboard/outputs/` | [monitoring] [observability] | Agent liveness monitoring specification |
+| hao-alignment | Alignment Audit | `/app/agents/shared/projects/hao-alignment/outputs/` | [docs] [compliance] | HAO compliance checks and recommendations |
+| agent-system-literacy | Literacy Guide | `/app/agents/shared/projects/agent-system-literacy/outputs/` | [docs] [onboarding] | System architecture documentation for agents |
+| evaluation-revival | Eval Framework | `/app/agents/shared/projects/evaluation-revival/outputs/` | [testing] [evaluation] | Evaluation pipeline restoration and results |
+| request-deduplication | Dedup Logic | `/app/agents/shared/projects/request-deduplication/outputs/` | [workflow] [optimization] | Request deduplication analysis and implementation |
+| prompt-efficiency | Prompt Analysis | `/app/agents/shared/projects/prompt-efficiency/outputs/` | [optimization] [prompts] | Prompt token usage analysis and improvements |
+| coach-quality | Coach Metrics | `/app/agents/shared/projects/coach-quality/outputs/` | [quality] [coaching] | Coaching output quality assessment |
+| skill-workflow-audit | Workflow Analysis | `/app/agents/shared/projects/skill-workflow-audit/outputs/` | [workflow] [audit] | Skill workflow bottleneck analysis |
+| handler-reliability | Reliability Report | `/app/agents/shared/projects/handler-reliability/outputs/` | [reliability] [errors] | Handler error rates and fix tracking |
+| gym-quality-improvement | Quality Metrics | `/app/agents/shared/projects/gym-quality-improvement/outputs/` | [quality] [training] | Gym content quality improvements |
+| agent-convention-compliance | Compliance Report | `/app/agents/shared/projects/agent-convention-compliance/outputs/` | [compliance] [conventions] | Convention adherence tracking |
+| cross-agent-collaboration | This Manifest | `/app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md` | [discovery] [index] | Master index of all reusable deliverables |
 
 ## Discovery Convention
 
 ### How to Query This Manifest
 
-**By topic tag**: Search for bracket-enclosed tags to find relevant outputs.
-```bash
-grep -i "\[testing\]" shared-output-manifest.md
-grep -i "\[workflow\]" shared-output-manifest.md
-```
+1. **By topic tag**: `grep -i "\[testing\]" shared-output-manifest.md` — finds all testing-related deliverables
+2. **By project**: `grep -i "system-efficiency" shared-output-manifest.md` — finds all outputs from a specific project
+3. **By recency**: Files are listed in approximate chronological order (newest projects at bottom)
 
-**By project**: Filter the table by project column.
-```bash
-grep "system-efficiency" shared-output-manifest.md
-```
+### Tags Reference
 
-**By recency**: Files are listed roughly in creation order. Recent additions appear at the bottom of the index table.
+- `[testing]` — test suites, coverage reports, evaluation results
+- `[docs]` — documentation, guides, onboarding materials
+- `[workflow]` — process improvements, automation specs
+- `[monitoring]` — dashboards, alerts, observability
+- `[metrics]` — measurement data, targets, tracking
+- `[planning]` — proposals, triage, roadmaps
+- `[optimization]` — efficiency improvements, deduplication
+- `[quality]` — quality assessments, rubrics, scoring
+- `[compliance]` — convention adherence, alignment checks
+- `[discovery]` — cross-agent indexing and search
 
 ### Agent Protocol
 
-1. **Before starting analysis**: Check this manifest for existing work on the same topic. Grep for relevant tags.
-2. **After producing output**: Add an entry to this manifest with path, tags, and one-line description.
-3. **When consuming another agent's output**: Note the reuse in your session (drives the cross-agent-reuse-count metric).
+Before starting any analysis or deliverable:
+1. Check this manifest for existing relevant outputs
+2. If a related deliverable exists, read it first to avoid duplication
+3. After producing a new deliverable, add an entry to this manifest
+4. Tag entries with at least 2 relevant tags from the reference above
 
-### Tag Taxonomy
+### Maintenance
 
-| Tag | Meaning |
-|-----|---------|
-| `[analysis]` | Data analysis, assessments, audits |
-| `[monitoring]` | Alerting, thresholds, health checks |
-| `[workflow]` | Process improvements, orchestration patterns |
-| `[testing]` | Test coverage, test infrastructure |
-| `[docs]` | Documentation, retrospectives |
-| `[planning]` | Proposals, roadmaps, project plans |
-| `[discovery]` | Indexing, search, cross-referencing |
-| `[prompts]` | Prompt engineering, token optimization |
-| `[quality]` | Quality metrics, scoring rubrics |
-| `[reliability]` | Error handling, resilience, retries |
-| `[conventions]` | Standards, compliance, patterns |
-| `[training]` | Gym exercises, skill development |
-| `[coaching]` | Agent coaching, feedback |
-
----
-*Last updated: This session. Maintainer: optimizer agent.*
+This manifest should be updated whenever:
+- A new project produces its first deliverable
+- A project is completed (mark its entries with ✅)
+- An output is superseded by a newer version (mark old entry with ⚠️)
