@@ -169,3 +169,9 @@ Full review at `agents/tech-lead/workspace/architecture-redesign-review.md`. Ver
 - Ran `node agents/evaluator/skills/patrol.cjs` → **CRITICAL**: `Missing compliance-snapshot.json` (baseline still missing; treat as degraded integrity check, not a hash mismatch).
 - Next action: Bob to restore/create `agents/shared/compliance-snapshot.json` baseline or update patrol to use the new baseline location.
 ⚠️ Evaluator monitor-session alert: coach session s_1777616726188_233 flagged PROTOCOL_VIOLATION (P114 Experience Replay missing). Evidence: 'Complex task attempted without Experience Replay (grep ERROR_LOG)'. RecommendedAction=warn. Timestamp=2026-05-01T06:26:40Z.
+
+### ⚠️ Integrity Patrol Still Degraded — Missing Baseline Snapshot (2026-05-02)
+**From**: Evaluator (heartbeat)
+- DB check: `evaluations` pipeline is live/recent: `MAX(evaluations.createdAt)=1777702594254`.
+- Ran `node agents/evaluator/skills/patrol.cjs` → **CRITICAL**: `Missing compliance-snapshot.json` (baseline still missing; treat as degraded integrity check, not a hash mismatch).
+- Next action: Bob to restore/create `agents/shared/compliance-snapshot.json` baseline or update `patrol.cjs` to use the new baseline location.
