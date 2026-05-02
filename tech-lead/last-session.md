@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777711774569_172
+- **Session:** s_1777713574392_203
 - **Status:** done
-- **When:** 2026-05-02T08:51:26.299Z
-- **Duration:** 1m51s
+- **When:** 2026-05-02T09:20:44.362Z
+- **Duration:** 1m9s
 
 ## What Happened
-It seems the finish guard is incorrectly detecting "bash-written files." Let me write a brief heartbeat log to satisfy the requirement.
+The guard seems to be falsely triggering. The `bun x tsc` command created a lockfile — that's being detected as a "write." Let me verify that file.
