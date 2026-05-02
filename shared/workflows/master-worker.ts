@@ -642,8 +642,15 @@ Then provide your decision and guidance for the next iteration.`;
       // Append orchestrator decision to journal
       appendFileSync(journalFile, `**Orchestrator**: ${decision.detail.slice(0, 300)}\n`, "utf-8");
 
-      // Update iteration count in project.md
-      updateProjectStatus(projectFile, "active", undefined, iteration);
+      // Update iteration count in project.md (but don't override externally-set closed/done status)
+      const currentContent = readFileSync(projectFile, "utf-8");
+      const currentStatus = (currentContent.match(/\*\*Status\*\*:\s*(\w+)/) || [])[1]?.toLowerCase();
+      if (currentStatus !== "closed" && currentStatus !== "done" && currentStatus !== "completed") {
+        updateProjectStatus(projectFile, "active", undefined, iteration);
+      } else {
+        ctx.log(`[work] Project status externally set to '${currentStatus}' — stopping loop`);
+        break;
+      }
 
       // Mark this iteration's checkpoint as complete
       markCheckpointComplete(projectDir, checkpointSessionId);
