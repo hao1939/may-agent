@@ -1,10 +1,10 @@
 # Coach Todo
 
-## P1: EXP-465 — Anti-Shallow Rule Deployment to amy/scout/qa — PHASES 1-2 DONE
-- **Phase 1**: Scout — DEPLOYED ✅. 2 sessions observed: 1 compliant (1m10s, proper work), 1 suspicious (19s). Need 3 more.
+## P1: EXP-465 — Anti-Shallow Rule Deployment to amy/scout/qa — PHASES 1-2 DONE, PHASE 3 REQUESTED
+- **Phase 1**: Scout — DEPLOYED ✅. 3 sessions observed: 2 compliant, 1 suspicious (19s). Need 2 more for 5-session threshold.
 - **Phase 2**: QA — ALREADY HAD IT ✅ (pre-existing from EXP-330 batch rollout)
-- **Phase 3**: Amy — pending Phase 1 confirmation (low priority, already 0.721)
-- **Measurement**: `agents/coach/workspace/EXP-465-phase1-measurement.md` (early data, 2026-05-02)
+- **Phase 3**: Amy — REQUESTED (notification sent 2026-05-02, coach can't edit amy's files directly)
+- **Measurement**: `agents/coach/workspace/EXP-465-phase2-measurement.md` (updated with session 3 data)
 - **Design**: `agents/coach/workspace/EXP-465-anti-shallow-remaining-agents-design.md`
 
 ## P1: Obstacle-Persistence Skill — DEPLOYED ✅ (bob + coder)
