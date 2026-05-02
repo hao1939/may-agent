@@ -1,13 +1,14 @@
 # Coach Todo
 
-## P1: EXP-555 — Task Completeness / Subtask Omission — PHASE 1 COMPLETE
+## P1: EXP-555 — Task Completeness / Subtask Omission — PHASE 2 IN PROGRESS
 - **Problem**: Agents complete primary task but skip explicit secondary requirements (test-writing, server registration, PLAN.md)
 - **Evidence**: EXP-550 Phase 2 — 3/3 failures were subtask omissions, not structural behavior gaps
 - **Hypothesis**: Requirements-checklist injection → ≥30pp improvement on non-primary checks
 - **Design**: `agents/coach/workspace/EXP-555-task-completeness-design.md`
 - **Phase 1 results**: `agents/coach/workspace/EXP-555-phase1-baseline-results.md`
 - **Baseline**: 82% non-primary pass rate. Failures are DETERMINISTIC (same check fails 3/3 times per scenario).
-- **Status**: PHASE 1 COMPLETE. Next: run Phase 2 treatment (inject TASK COMPLETENESS RULE, 3 scenarios × 3 trials)
+- **Phase 2 early results**: `agents/coach/workspace/EXP-555-phase2-early-results.md`
+- **Status**: PHASE 2 IN PROGRESS. 4/9 trials done. server-updated +100pp (2/2), plan-before-acting +100pp (1/1), test-written still failing (0/1). Next: 5 remaining trials.
 
 ## P1: EXP-545 — QA Finish-Call Structural Gate — CLOSED (ALREADY ADDRESSED)
 - **Problem**: QA has 14.3% finish() compliance (worst in system). Text rule (EXP-440) NEGATIVE.
