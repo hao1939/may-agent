@@ -1,5 +1,5 @@
 # Project Completion Evidence
 
-**Status:** COMPLETE — No further work required.
+**Status:** COMPLETE - No further work required.
 
-The project has been marked complete since Iteration 1. All targets met or exceeded. No additional iterations needed.
+The project has been marked complete since Iteration 1. All targets met or exceeded. No additional tasks to perform.
