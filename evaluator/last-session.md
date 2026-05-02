@@ -1,9 +1,9 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777720797696_337
+- **Session:** s_1777720807460_338
 - **Status:** done
-- **When:** 2026-05-02T11:20:07.459Z
+- **When:** 2026-05-02T11:20:16.856Z
 - **Duration:** 9s
 
 ## What Happened
@@ -12,44 +12,50 @@
     {
       "agent": "coach",
       "role": "Philosopher",
-      "capability_level": "coach/experimenter",
+      "capability_level": "heartbeat experimenter",
       "efficiency": 0.55,
-      "quality": 0.72,
+      "quality": 0.75,
       "verdict": "acceptable",
       "issues": [
         {
-          "type": "INSTRUCTION_NONCOMPLIANCE",
-          "tag": "FORMAT_VIOLATION",
-          "evidence": "The session-required first assistant message must start with the exact GOAL/PLAN/DONE WHEN block. In the transcript, the first visible assistant content is: “Good. Now let me update the EXP-490 progress notes…”, indicating the required block was not produced (or at least not present as the first assistant message in this session transcript)."
+          "tag": "INSTRUCTION_NONCOMPLIANCE",
+          "evidence": "First assistant message in transcript is not the required GOAL/PLAN/DONE WHEN block; instead it starts mid-execution with “Good. Now let me update…”. This violates the explicit requirement: “Your FIRST output in this session must be exactly this structure…”"
         },
         {
-          "type": "EFFICIENCY",
-          "tag": "SCOPE_CREEP_COMMIT",
-          "evidence": "Git commit shows 20 files changed with 1095 insertions and many new EXP documents unrelated to the stated plan to update todo / mark notification processed: `20 files changed, 1095 insertions(+)` and creates many `coach/workspace/EXP-4xx-*.md` files."
+          "tag": "FM-3.3_VERIFICATION_FAILURE",
+          "evidence": "Rule: “After every write/edit, immediately read() the file back to verify.” The transcript shows edits/writes (e.g., edit to EXP-490-progress-notes.md; writes to scenario files referenced in finish evidence) but no immediate read() tool outputs after each change are visible in the transcript."
         },
         {
-          "type": "WORKFLOW",
-          "tag": "VERIFICATION_GAP",
-          "evidence": "Instruction says after every write/edit, immediately read() the file back. The transcript shows an edit to `agents/coach/workspace/EXP-490-progress-notes.md` followed by finish/commit, but no explicit read() tool output is shown immediately after that edit."
+          "tag": "SCOPE/DELIVERABLE_BLOAT_RISK",
+          "evidence": "Git commit shows 20 files changed, 1095 insertions, creating many EXP-* documents unrelated to the stated plan (“update the todo… mark notification processed”). This suggests the session may have bundled many unrelated artifacts, reducing efficiency and increasing review burden."
         }
       ],
       "metrics": {
         "tool_calls": {
-          "count": 4,
-          "meets_minimum_10_rule": false,
-          "evidence": "Visible tool calls: edit, finish(blocked), bash(git commit), finish. (Earlier tool calls may exist but are not present in the provided transcript.)"
+          "observed_minimum": 3,
+          "notes": "Transcript shows edit, finish(blocked), bash(commit), finish. The finish output references additional steps (reads/writes) but those tool outputs are not present in the provided transcript segment."
         },
-        "artifact_produced": true,
-        "artifact_evidence": "Commit output confirms new files and modifications were made and committed: commit `0439f20f1`."
+        "deliverables_verified_by_artifacts": [
+          {
+            "artifact": "git commit 0439f20f1",
+            "evidence": "bash output confirms commit created multiple files including EXP-490 design/audit docs; finish output lists `.state/todo.md`, `.state/gym/scenarios/skill-compliance-audit/`, and `agents/coach/workspace/EXP-490-progress-notes.md`."
+          }
+        ],
+        "guardrail_events": [
+          {
+            "event": "finish() blocked due to uncommitted changes",
+            "evidence": "finish tool output: “finish() blocked [uncommitted changes]… Commit them… Then call finish() again.” Coach complied and committed."
+          }
+        ]
       }
     }
   ],
   "workflow": {
-    "name": "coach-heartbeat",
+    "name": "heartbeat",
     "issues": [
       {
-        "type": "PROCESS_INTEGRITY_RISK",
-        "evidence": "Finish initially blocked due to uncommitted changes; agent recovered correctly by committing, but the commit bundled a large number of files, raising reviewability and intent clarity concerns."
+        "tag": "PROCESS_DRIFT",
+        "evidence": "Heartbeat required a specific first-message structure and per-change readback verification; session transcript indicates these were not consistently followed."
       }
     ]
   },
@@ -60,15 +66,15 @@
   "lessons": [
     {
       "agent": "coach",
-      "lesson": "Keep heartbeat commits tightly scoped to the stated plan; large multi-file drops (20 files/1095 insertions) reduce auditability and look like retroactive bundling."
+      "lesson": "Always emit the mandated GOAL/PLAN/DONE WHEN block as the very first assistant output; missing it is a structural failure even if later work is good."
     },
     {
       "agent": "coach",
-      "lesson": "Comply with the required first-message GOAL/PLAN/DONE WHEN block and the ≥10 tool-call rule; missing these is a structural compliance failure regardless of outcome."
+      "lesson": "When a rule says “read back after every write/edit,” ensure the transcript contains those read() tool calls directly after each modification to avoid FM-3.3 verification gaps."
     },
     {
       "agent": "coach",
-      "lesson": "After each write/edit, immediately read() the file back and ensure the read() appears in the transcript as verification evidence."
+      "lesson": "Keep heartbeat scope tight: if the plan is “update todo + note next steps,” avoid adding many unrelated EXP documents in the same commit unless explicitly justified."
     }
   ]
 }
