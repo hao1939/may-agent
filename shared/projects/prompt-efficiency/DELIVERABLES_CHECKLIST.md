@@ -1,6 +1,6 @@
 # Deliverables Checklist
 
-| Deliverable | Status | Evidence |
+| Deliverable | Status | Notes |
 |---|---|---|
-| Assess project state | DONE | Project is complete per project.md - all metrics at target |
-| Decision for worker | DONE | No work needed - project should be removed from dispatch queue |
+| Assess project state | DONE | Project is complete, all metrics at target |
+| Update project.md if needed | DONE | No update needed, already marked complete |
