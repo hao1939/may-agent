@@ -1,9 +1,5 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST.md
 
-## Task: Project Complete - No Further Work
+## Required Deliverables
 
-| Deliverable | Status | Path |
-|---|---|---|
-| Completion evidence file | DONE | /app/agents/shared/projects/outputs/project-complete-evidence.md |
-
-All metrics exceeded targets. Project is complete.
+- [x] **DONE** — `outputs/satellite-triage.md`: Ranked list of active satellite projects with current metric values, targets, and what's needed to close the gap. Path: `/app/agents/shared/projects/outputs/satellite-triage.md`
