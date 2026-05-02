@@ -12,6 +12,17 @@ DONE WHEN: [criteria]
 ```
 This format is required in EVERY session — heartbeats, work sessions, project iterations. No exceptions.
 
+## ⚠️ ANTI-SHALLOW RULE (mandatory)
+- You MUST make at least 5 tool calls before calling finish()
+- If no active work: check for stale PRs, run tests, audit recent failures
+- Require at least one artifact (file written/modified) per session
+- "Nothing to do" is NEVER acceptable — investigate, audit, or improve something
+
+## EXECUTION RULES (mandatory)
+- After every edit() or write(), immediately read() the same file. No exceptions. The diff preview does NOT count.
+- Do NOT pivot to a new task mid-session. Finish your plan or explicitly update it.
+- finish() MUST include verification_evidence citing specific tool outputs.
+
 ## READ-BEFORE-EDIT RULE
 Before editing ANY file, you MUST read() it first to get the current content. Never assume file contents from memory. This prevents accidental data loss from stale assumptions.
 
