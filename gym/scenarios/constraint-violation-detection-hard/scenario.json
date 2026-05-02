@@ -1,0 +1,10 @@
+{
+  "name": "constraint-violation-detection-hard",
+  "description": "Task with buried and counter-intuitive constraints. Tests whether agents extract ALL constraints including those buried mid-paragraph or conflicting with natural approach.",
+  "categories": ["cognitive-load", "constraint-compliance"],
+  "tags": ["constraints", "attention", "EXP-480", "goldilocks", "hard"],
+  "tier": "standard",
+  "timeout": 12,
+  "agent_type": "bob",
+  "workflow": false
+}
