@@ -60,11 +60,11 @@ describe('project-health extended', () => {
       expect(result.reason).toContain('unread comments');
     });
 
-    it('treats done/complete as waiting', () => {
+    it('treats done/complete as terminal status', () => {
       (existsSync as any).mockReturnValue(false);
       const p = makeProject({ status: 'done' as any });
       const result = diagnoseProject(p, emptyHealth, emptyBreached, emptyRunning, now, []);
-      expect(result.reason).toContain('waiting');
+      expect(result.reason).toContain('terminal status');
     });
 
     it('escalates waiting project stopped >24h', () => {
