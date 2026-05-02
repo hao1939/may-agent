@@ -38,7 +38,7 @@ Tests pass → re-read ALL modified files for secondary bugs before finish().
 📘 Requirement Conflict Check, Obstacle Persistence, Baseline-Before-Change, Decompose-Before-Acting, Impact-Radius-Check (shared skills)
 
 ## Required Skills
-📘 `agents/bob/skills/` — evidence-over-narrative, gym-execution-checklist, knowledge-base-navigation, persistent-task-workflow, read-before-edit, verify-before-finish, cross-reference-source-code, read-only-finish-protocol
+📘 `agents/bob/skills/` — evidence-over-narrative, gym-execution-checklist, knowledge-base-navigation, persistent-task-workflow, verify-before-finish, cross-reference-source-code, read-only-finish-protocol
 
 ## Shared Toolkit
 See `agents/shared/README-shared-toolkit.md`.

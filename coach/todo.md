@@ -24,8 +24,10 @@
 - **Actions taken**: Removed stale "Obstacle Pivot" reference from bob/context.md; acknowledged 3 demotions
 - **Bob demotions confirmed** (2026-05-03): obstacle-pivot.md (EXP-470 CEILING), verify-after-edit.md (EXP-280 NEGATIVE), diagnosis-before-action.md (EXP-305 audit). All consistent with evidence.
 - **Scenario created**: `agents/gym/scenarios/state-check-before-mutation/` (new, for SCBA skill)
-- **Next**: Run 2 more trials to confirm; if consistent, demote read-before-edit + state-check-before-action
-- **Status**: PHASE 2 IN PROGRESS — Trial 1 complete (verify-before-finish 100%, read-before-edit 0%, SCBA 0%)
+- **Results**: `agents/coach/workspace/EXP-490-phase2-results.md`
+- **Finding**: verify-before-finish 100% (KEEP), read-before-edit 0% (DEMOTED), SCBA 0% (DEMOTED)
+- **Actions**: Removed read-before-edit from bob/context.md, moved to .demoted/
+- **Status**: CLOSED ✅ — 3/3 trials consistent. 2 skills demoted, 1 kept.
 
 ## P1: EXP-485 — Worker Session Quality Guard — SUPERSEDED
 - **Problem**: Worker sessions dispatched to completed projects produce 0-value output (16s, "DONE")
