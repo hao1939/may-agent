@@ -19,7 +19,10 @@ An index of all project deliverables available for cross-agent reuse.
 | request-deduplication | Dedup Logic | `/app/agents/shared/projects/request-deduplication/outputs/` | [workflow] [optimization] | Request deduplication analysis and implementation |
 | prompt-efficiency | Prompt Analysis | `/app/agents/shared/projects/prompt-efficiency/outputs/` | [optimization] [prompts] | Prompt token usage analysis and improvements |
 | coach-quality | Coach Metrics | `/app/agents/shared/projects/coach-quality/outputs/` | [quality] [coaching] | Coaching output quality assessment |
-| skill-workflow-audit | Workflow Analysis | `/app/agents/shared/projects/skill-workflow-audit/outputs/` | [workflow] [audit] | Skill workflow bottleneck analysis |
+| skill-workflow-audit | Behavioral Audit v2 | `/app/agents/shared/projects/skill-workflow-audit/outputs/skill-behavioral-audit-v2.md` | [audit] [metrics] [compliance] | Measures SCBA/Evidence/Verify compliance across 12 sessions and 7 agents |
+| skill-workflow-audit | Skill ROI Measurement | `/app/agents/shared/projects/skill-workflow-audit/outputs/skill-roi-measurement.md` | [metrics] [quality] | Top 5 skills by deployment with WITH/WITHOUT success analysis |
+| skill-workflow-audit | Skill Freshness Audit | `/app/agents/shared/projects/skill-workflow-audit/outputs/skill-freshness-audit.md` | [audit] [docs] | Per-agent skill file counts and freshness methodology |
+| skill-workflow-audit | Skill Conflict Audit | `/app/agents/shared/projects/skill-workflow-audit/outputs/skill-conflict-audit.md` | [audit] [quality] | Identifies contradictions/overlaps between skill files |
 | handler-reliability | Reliability Report | `/app/agents/shared/projects/handler-reliability/outputs/` | [reliability] [errors] | Handler error rates and fix tracking |
 | gym-quality-improvement | Quality Metrics | `/app/agents/shared/projects/gym-quality-improvement/outputs/` | [quality] [training] | Gym content quality improvements |
 | agent-convention-compliance | Compliance Report | `/app/agents/shared/projects/agent-convention-compliance/outputs/` | [compliance] [conventions] | Convention adherence tracking |
