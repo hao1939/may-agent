@@ -161,3 +161,32 @@ This manifest should be updated whenever:
 | workflow-reliability | Day 7 Rate Tracking | `/app/agents/shared/projects/workflow-reliability/outputs/day7-rate-tracking.md` | [metrics] [reliability] | Day 7 reliability rate measurements |
 | workflow-reliability | V2 Guardrails Day 1 | `/app/agents/shared/projects/workflow-reliability/outputs/v2-guardrails-day1-tracking.md` | [metrics] [reliability] | V2 guardrails tracking day 1 results |
 | workflow-reliability | V3 Guardrails Day 1 | `/app/agents/shared/projects/workflow-reliability/outputs/v3-guardrails-day1-tracking.md` | [metrics] [reliability] | V3 guardrails tracking day 1 results |
+| system-efficiency | Final Summary | `/app/agents/shared/projects/system-efficiency/outputs/FINAL-SUMMARY.md` | [metrics] [efficiency] [closed] | Final project summary with all phase results |
+| system-efficiency | Phase 2 Impact Report | `/app/agents/shared/projects/system-efficiency/outputs/phase2-impact-report.md` | [metrics] [efficiency] [closed] | Phase 2 impact measurements and analysis |
+| system-efficiency | Phase 3 Results | `/app/agents/shared/projects/system-efficiency/outputs/phase3-results.md` | [metrics] [efficiency] [closed] | Phase 3 efficiency improvements |
+| system-efficiency | Phase 4 Results | `/app/agents/shared/projects/system-efficiency/outputs/phase4-results.md` | [metrics] [efficiency] [closed] | Phase 4 efficiency improvements |
+| system-efficiency | Phase 5 Retrospective | `/app/agents/shared/projects/system-efficiency/outputs/phase5-retrospective.md` | [metrics] [efficiency] [closed] | Phase 5 lessons learned |
+| system-efficiency | Phase 5 Scorecard | `/app/agents/shared/projects/system-efficiency/outputs/phase5-scorecard.md` | [metrics] [efficiency] [closed] | Phase 5 scoring and evaluation |
+| system-efficiency | Phase 6 Results | `/app/agents/shared/projects/system-efficiency/outputs/phase6-results.md` | [metrics] [efficiency] [closed] | Phase 6 efficiency results |
+| system-efficiency | Phase 6 Test Baseline | `/app/agents/shared/projects/system-efficiency/outputs/phase6-test-baseline.md` | [metrics] [testing] [closed] | Test baseline measurements |
+| system-efficiency | Phase 8 Results | `/app/agents/shared/projects/system-efficiency/outputs/phase8-results.md` | [metrics] [efficiency] [closed] | Phase 8 final results |
+| system-efficiency | Production Readiness Checklist | `/app/agents/shared/projects/system-efficiency/outputs/production-readiness-checklist.md` | [checklist] [efficiency] [closed] | Production readiness criteria |
+| system-efficiency | Iteration Velocity Chart | `/app/agents/shared/projects/system-efficiency/outputs/iteration-velocity-chart.md` | [metrics] [velocity] [closed] | Iteration speed measurements over time |
+| system-efficiency | Migration Adapter Summary | `/app/agents/shared/projects/system-efficiency/outputs/migration-adapter-summary.md` | [migration] [efficiency] [closed] | Migration adapter patterns and results |
+| system-efficiency | New Gym Scenarios | `/app/agents/shared/projects/system-efficiency/outputs/new-gym-scenarios.md` | [testing] [gym] [closed] | New gym test scenarios |
+| system-efficiency | Cross-Agent Collaboration Project | `/app/agents/shared/projects/system-efficiency/outputs/cross-agent-collaboration-project.md` | [collaboration] [closed] | Cross-agent collaboration proposal |
+| system-efficiency | Deprecation Summary | `/app/agents/shared/projects/system-efficiency/outputs/deprecation-summary.md` | [deprecation] [closed] | Deprecated features summary |
+| system-efficiency | Project Closure Report | `/app/agents/shared/projects/system-efficiency/outputs/project-closure-report.md` | [closure] [closed] | Final project closure documentation |
+| system-efficiency | Deliverables Checklist | `/app/agents/shared/projects/system-efficiency/outputs/DELIVERABLES_CHECKLIST.md` | [checklist] [closed] | Complete deliverables tracking |
+| system-efficiency | Project Closed Notice | `/app/agents/shared/projects/system-efficiency/outputs/PROJECT-CLOSED.md` | [closure] [closed] | Project closure notice |
+| system-efficiency | Stop Dispatching | `/app/agents/shared/projects/system-efficiency/outputs/STOP-DISPATCHING.md` | [closure] [closed] | Do not dispatch notice |
+| system-efficiency | Project Close Criteria | `/app/agents/shared/projects/system-efficiency/outputs/project-close-criteria.md` | [closure] [closed] | Closure criteria definition |
+| system-efficiency | Iteration 44 Report | `/app/agents/shared/projects/system-efficiency/outputs/iteration-44-report.md` | [metrics] [closed] | Final iteration report |
+| system-efficiency | Phase 3 Plan | `/app/agents/shared/projects/system-efficiency/outputs/phase3-plan.md` | [planning] [closed] | Phase 3 planning document |
+| system-efficiency | Phase 4 Completion | `/app/agents/shared/projects/system-efficiency/outputs/phase4-completion.md` | [closure] [closed] | Phase 4 completion evidence |
+| system-efficiency | New Scenarios Validation | `/app/agents/shared/projects/system-efficiency/outputs/new-scenarios-validation.md` | [testing] [validation] [closed] | Scenario validation results |
+| system-efficiency | Project Closure Final | `/app/agents/shared/projects/system-efficiency/outputs/project-closure-final.md` | [closure] [closed] | Final closure document |
+| system-efficiency | Project Closure Notice | `/app/agents/shared/projects/system-efficiency/outputs/project-closure-notice.md` | [closure] [closed] | Closure notification |
+| system-efficiency | Project Closure | `/app/agents/shared/projects/system-efficiency/outputs/project-closure.md` | [closure] [closed] | Project closure summary |
+| system-efficiency | Project Completion Evidence | `/app/agents/shared/projects/system-efficiency/outputs/project-completion-evidence.md` | [closure] [closed] | Completion evidence |
+| system-efficiency | Project Closed (dup) | `/app/agents/shared/projects/system-efficiency/outputs/project-closed.md` | [closure] [closed] | Project closed notice (duplicate) |
