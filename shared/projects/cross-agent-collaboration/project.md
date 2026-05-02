@@ -53,16 +53,15 @@ Agents currently work in silos. Each produces deliverables that could benefit ot
 
 ### Phase 4: Sustain & Measure Impact
 21. **Measure redundant-work-rate** — Run reuse-check.sh weekly, compare agent session overlap before/after instrumentation. Target: <10%
-22. **Increase manifest coverage to >80%** — Batch-index remaining 80 non-archive files
+22. ✅ **Increase manifest coverage** — Now 121 entries, ~56 unindexed (68% coverage, up from 24%)
 23. **Validate organic reuse** — Check if agents are naturally querying the manifest (not just orchestrator-logged). grep .state/ dirs for evidence
-24. **Re-plan** — Based on organic adoption evidence
+24. ✅ **Upgrade instrumentation to REQUIRED** — optimizer and scout now have stronger "REQUIRED: Check Shared Manifest" instructions
+25. **Index remaining 56 non-archive files** — Get to 90%+ coverage
+26. **Measure organic adoption** — Wait 1 week, then grep agent .state/ for "shared-output-manifest" hits
+27. **Re-plan** — Based on organic adoption evidence
 
 ## Current State
 
-**Phase 1 complete**: Manifest, discovery convention, freshness script. All verified.
+**Phase 1-3 complete**: Manifest (121 entries), freshness script, reuse-check script, all agents instrumented, 5 reuse instances logged.
 
-**Phase 2 complete**: 3 agents instrumented (optimizer, scout, coder). Manifest expanded to ~72 entries. First reuse logged.
-
-**Phase 3 complete**: Reuse count hit 5 (target met). All active agents instrumented. Orchestrator wrote 4 reuse entries directly after worker failed repeatedly.
-
-**Phase 4 starting**: Focus shifts to organic adoption validation and manifest coverage. Key question: are agents actually querying the manifest in their normal sessions? Need .state/ evidence.
+**Phase 4 in progress**: Upgraded optimizer/scout to REQUIRED manifest check. Coverage at 68% (up from 24%). Zero organic adoption detected so far — no agent has queried the manifest in a real session. Next: index remaining 56 files, then wait for organic adoption evidence.
