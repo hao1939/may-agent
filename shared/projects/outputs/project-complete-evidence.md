@@ -1,6 +1,6 @@
 # Project Completion Evidence
 
-**Status**: COMPLETE - No further work needed.
+**Status**: COMPLETE — No further work needed.
 
 This project has been complete since iteration 1. All metrics exceeded targets:
 - 86.69% coverage (target met)
