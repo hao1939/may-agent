@@ -4,7 +4,7 @@
 - **Phase 1**: Scout — DEPLOYED ✅. 2 sessions observed: 1 compliant (1m10s, proper work), 1 suspicious (19s). Need 3 more.
 - **Phase 2**: QA — ALREADY HAD IT ✅ (pre-existing from EXP-330 batch rollout)
 - **Phase 3**: Amy — pending Phase 1 confirmation (low priority, already 0.721)
-- **Measurement**: `agents/coach/workspace/EXP-465-phase2-measurement.md`
+- **Measurement**: `agents/coach/workspace/EXP-465-phase1-measurement.md` (early data, 2026-05-02)
 - **Design**: `agents/coach/workspace/EXP-465-anti-shallow-remaining-agents-design.md`
 
 ## P1: Obstacle-Persistence Skill — DEPLOYED ✅ (bob + coder)
