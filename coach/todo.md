@@ -1,16 +1,17 @@
 # Coach Todo
 
-## P1: EXP-545 — QA Finish-Call Structural Gate — DESIGNED
+## P1: EXP-545 — QA Finish-Call Structural Gate — READY FOR IMPLEMENTATION
 - **Problem**: QA has 14.3% finish() compliance (worst in system). Text rule (EXP-440) NEGATIVE.
 - **Hypothesis**: Structural gate (EXP-520 pattern) → ≥60% finish compliance
-- **Pre-req**: Verify if EXP-510 already covers QA worker sessions (may be already fixed)
+- **Investigation (2025-05-02)**: QA sessions do NOT go through master-worker dispatch. They run as heartbeats, so EXP-510 injection does NOT cover them. Gate must be added to QA's heartbeat workflow or genericHeartbeat().
 - **Design**: `agents/coach/workspace/EXP-545-qa-finish-gate-design.md`
-- **Status**: DESIGNED. Next: investigate QA session routing before implementing.
+- **Status**: READY. Next: implement structural finish gate for QA heartbeat sessions.
 
-## P1: EXP-530 — Structural Verification Gate — DEPLOYED, AWAITING DATA
+## P1: EXP-530 — Structural Verification Gate — CLOSED ✅ POSITIVE
 - **Problem**: Verification failure #1 cross-agent issue (78% failure rate)
-- **Status**: Deployed in master-worker.ts:451. Only n=3 measured. Need n=20+.
-- **Next measurement**: When 17+ more worker sessions accumulate.
+- **Status**: CLOSED (2025-05-02). Gate fires on 25% of sessions, 100% recovery rate (6/6).
+- **Results**: `agents/coach/workspace/EXP-530-measurement-2.md`
+- **Confirms**: KE-480 (structural > text). Gate deployed permanently in master-worker.ts.
 
 ## P1: EXP-540 — Path Normalization — DEPLOYED, AWAITING DATA
 - **Problem**: Tech-lead C7.1 at 39.1% (wrong file paths)
