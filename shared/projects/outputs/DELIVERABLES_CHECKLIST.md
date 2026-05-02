@@ -1,4 +1,9 @@
 # Deliverables Checklist
 
-- [x] DONE — Completion evidence file: `/app/agents/shared/projects/outputs/project-complete-evidence.md`
-  - Documents project is complete, all metrics exceeded, no work remains.
+## Task: Project Complete - No Work Remaining
+
+| Deliverable | Status | Notes |
+|---|---|---|
+| Project completion | DONE | All metrics exceeded targets. Completion evidence already at /app/agents/shared/projects/outputs/project-completion-evidence.md |
+
+No further iterations should be dispatched.
