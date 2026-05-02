@@ -26,6 +26,17 @@ An index of all project deliverables available for cross-agent reuse.
 | handler-reliability | Reliability Report | `/app/agents/shared/projects/handler-reliability/outputs/` | [reliability] [errors] | Handler error rates and fix tracking |
 | gym-quality-improvement | Quality Metrics | `/app/agents/shared/projects/gym-quality-improvement/outputs/` | [quality] [training] | Gym content quality improvements |
 | agent-convention-compliance | Compliance Report | `/app/agents/shared/projects/agent-convention-compliance/outputs/` | [compliance] [conventions] | Convention adherence tracking |
+| agent-memory-learning | Lesson Retrieval System | `/app/agents/shared/projects/agent-memory-learning/outputs/lesson-retrieval-system.md` | [workflow] [docs] | Design for querying past lessons via .state/lessons.json before tasks |
+| agent-memory-learning | Cross-Session Retrieval | `/app/agents/shared/projects/agent-memory-learning/outputs/cross-session-retrieval.md` | [workflow] [docs] | Structured retrieval API for querying lessons without reading full checkpoints |
+| agent-memory-learning | Lesson Database v1 | `/app/agents/shared/projects/agent-memory-learning/outputs/lesson-database-v1.md` | [docs] [quality] | Initial lesson corpus with category/tag schema |
+| agent-memory-learning | Memory Benchmarks | `/app/agents/shared/projects/agent-memory-learning/outputs/memory-benchmarks.md` | [metrics] [testing] | Retrieval accuracy and latency measurements |
+| documentation-gen | Agent Onboarding Guide | `/app/agents/shared/projects/documentation-gen/outputs/agent-onboarding-guide.md` | [docs] [onboarding] | Step-by-step guide for new agents to get productive |
+| documentation-gen | Architecture Guide | `/app/agents/shared/projects/documentation-gen/outputs/architecture-guide.md` | [docs] [architecture] | Multi-agent system overview: roles, communication, shared files |
+| documentation-gen | Agent Quick Reference | `/app/agents/shared/projects/documentation-gen/outputs/agent-quick-reference.md` | [docs] [onboarding] | Cheat sheet for agent conventions and commands |
+| documentation-gen | Workflow Docs | `/app/agents/shared/projects/documentation-gen/outputs/workflow-docs.md` | [docs] [workflow] | Available workflows and how to use them |
+| workflow-reliability | Guardrails v3 Design | `/app/agents/shared/projects/workflow-reliability/outputs/workflow-guardrails-v3-design.md` | [workflow] [reliability] | Structural write-first enforcement via first-call gate interception |
+| workflow-reliability | Reliability Baseline | `/app/agents/shared/projects/workflow-reliability/outputs/workflow-reliability-baseline.md` | [metrics] [reliability] | Baseline: 33% worker success rate with failure mode breakdown |
+| workflow-reliability | Sustained Rate Tracking | `/app/agents/shared/projects/workflow-reliability/outputs/sustained-rate-tracking.md` | [metrics] [monitoring] | Multi-day tracking of worker iteration success rates |
 | cross-agent-collaboration | This Manifest | `/app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md` | [discovery] [index] | Master index of all reusable deliverables |
 
 ## Discovery Convention
