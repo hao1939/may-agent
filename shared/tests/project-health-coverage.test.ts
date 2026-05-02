@@ -170,12 +170,11 @@ describe("diagnoseProject - uncovered branches", () => {
     expect(result.reason).toContain("closed by human");
   });
 
-  it("treats 'done' as waiting", () => {
+  it("treats 'done' as terminal status", () => {
     const proj = makeProject({ status: "done" });
     const result = diagnoseProject(proj, emptyState, emptyBreached, emptyRunning, now, []);
-    // "done" → "waiting" → skip (waiting for fix)
     expect(result.type).toBe("skip");
-    expect(result.reason).toContain("waiting");
+    expect(result.reason).toContain("terminal status");
   });
 
   it("treats 'complete' as waiting", () => {
