@@ -128,10 +128,11 @@
 - **Results**: `agents/coach/workspace/EXP-405-results.md`
 - **Next**: Need harder multi-task scenario (10+ items, interdependencies, baseline ≤60%)
 
-## P1: Iteration-Cap Review (Sep 13) — DONE ✅
+## P1: Iteration-Cap Review (Sep 13, Updated May 2) — DONE ✅
 - Reviewed all projects that hit iteration cap 50
 - All are genuinely complete (goals met or formally closed): coach-quality, skill-workflow-audit, documentation-gen, agent-convention-compliance, agent-system-literacy, gym-quality-improvement, system-efficiency, test-coverage, workflow-reliability
 - skill-workflow-audit: closed by coach (2026-05-02) — was blocked only due to zombie dispatch loop (EXP-455)
+- Re-notified May 2: same project flagged again at iter 50 — already resolved, project is complete
 - No action needed — notification resolved.
 
 ## P1: EXP-395 — Finish Evidence Quality Correlation — CLOSED (INCONCLUSIVE)
