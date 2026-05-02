@@ -1,5 +1,15 @@
 # Coach Todo
 
+## P1: EXP-565 — Threat-Framed Verify-After-Edit Gate — CLOSED ✅ POSITIVE
+- **Problem**: Verify-after-edit is #1 compliance failure. 5 prior experiments (EXP-280/340/350/360) all NEGATIVE/INCONCLUSIVE.
+- **Hypothesis**: Threat-framed text ("session REJECTED") → ≥+30pp on C2.3 verify-after-edit
+- **Scenarios**: `convention-verify-edit-exp565-baseline` / `convention-verify-edit-exp565-threatgate`
+- **Design**: `agents/coach/workspace/EXP-565-threat-verify-after-edit-design.md`
+- **Results**: `agents/coach/workspace/EXP-565-results.md`
+- **Finding**: Baseline 0/3 → Treatment 3/3 (+100pp). Threat framing works for verify-after-edit.
+- **Key insight**: Extends EXP-560 — threat framing generalizes beyond test-writing to verification behaviors.
+- **Status**: CLOSED ✅ POSITIVE. Next: deploy threat-framed verify instruction to master-worker.ts and heartbeat.md files.
+
 ## P1: EXP-560 — Structural Test-File Gate — CLOSED ✅ POSITIVE
 - **Problem**: Agents skip test-writing even with text reminders (0/6 across EXP-555)
 - **Hypothesis**: "You CANNOT finish without a test file" threat-of-rejection gate → ≥50% pass rate
