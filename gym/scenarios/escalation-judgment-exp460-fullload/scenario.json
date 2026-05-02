@@ -1,0 +1,10 @@
+{
+  "name": "escalation-judgment-exp445-treatment",
+  "categories": ["judgment"],
+  "tags": ["behavior", "escalation", "EXP-445"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}
