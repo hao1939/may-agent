@@ -1,0 +1,15 @@
+# Database Configuration v1
+# WARNING: This file was auto-generated and may contain formatting issues
+
+database:
+  host: db-prod-01.internal.example.com
+  port: 5432
+  name: appdata_production
+  credentials:
+    user: migration_svc
+    password: s3cure!P@ss
+  options:
+    ssl: true
+    timeout: 30
+    retry_count  3
+    max_connections: 50

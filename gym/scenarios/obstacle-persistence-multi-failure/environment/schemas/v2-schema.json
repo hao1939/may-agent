@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["version", "connection"],
+  "properties": {
+    "version": { "type": "string", "const": "2.0" },
+    "connection": {
+      "type": "object",
+      "required": ["url", "pool_size", "timeout_ms"],
+      "properties": {
+        "url": { "type": "string", "pattern": "^postgresql://" },
+        "pool_size": { "type": "integer", "minimum": 1 },
+        "timeout_ms": { "type": "integer", "minimum": 1000 }
+      }
+    }
+  }
+}
