@@ -1,7 +1,5 @@
 # Deliverables Checklist
 
-| Deliverable | Status | Path |
-|---|---|---|
-| Project completion confirmation | DONE | /app/agents/shared/projects/outputs/project-complete-confirmation.md |
+- [x] DONE: Completion marker — `/app/agents/shared/projects/outputs/PROJECT_COMPLETE.md`
 
-No further work required. Project is complete with all metrics exceeded.
+No further work required. Project complete.
