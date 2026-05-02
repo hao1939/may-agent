@@ -35,15 +35,15 @@ Agents currently work in silos. Each produces deliverables that could benefit ot
    - ✅ scout instrumented (verified: line 10 has correct path)
 7. ✅ **Add auto-update script** — `outputs/manifest-freshness-check.sh` scans outputs dirs and reports unindexed files
 8. **Re-plan** — Phase 1 infrastructure complete. Now drive adoption and measure impact.
-9. **Run freshness check and fill gaps** — Freshness check run: 30+ unindexed files found. Need to add high-value ones to manifest.
-10. **Create adoption baseline** — adoption-baseline.md exists but is empty. Needs actual content.
-11. **Index unindexed high-value outputs** — Add entries for prompt-efficiency, handler-reliability, request-deduplication, agent-system-literacy outputs (most actionable unindexed files)
-12. **Write adoption baseline content** — Document: reuse count=0, manifest coverage gaps, timestamp, plan for measuring reuse
-13. **Instrument coder agent** — Add manifest-check to `/app/agents/coder/context.md` as third pilot
-14. **Re-plan** — After adoption baseline is written and manifest gaps filled
+9. ✅ **Run freshness check** — 140 unindexed files found (many in _archive/)
+10. ✅ **Create adoption baseline** — Written by orchestrator: reuse=0, coverage=24%, 2 agents instrumented
+11. **Index 10 highest-value unindexed outputs** — Focus on prompt-efficiency, handler-reliability, request-deduplication, agent-system-literacy (skip _archive/)
+12. **Instrument coder agent** — Add manifest-check to `/app/agents/coder/context.md` as third pilot
+13. **Drive first reuse instance** — Have optimizer or scout actually query the manifest and cite an output from another project in their next deliverable
+14. **Re-plan** — After first confirmed reuse instance
 
 ## Current State
 
-**Phase 1 complete**: Manifest (40+ entries), discovery convention, 2 pilot agents (optimizer + scout with correct paths), freshness script. All verified working.
+**Phase 1 complete**: Manifest (44 entries), discovery convention, 2 pilot agents (optimizer + scout), freshness script. All verified.
 
-**Phase 2 in progress**: Freshness check reveals 30+ unindexed files. adoption-baseline.md is empty. No evidence of manifest usage yet. Next: fill manifest gaps with high-value files, write real adoption baseline content.
+**Phase 2 status**: Adoption baseline written (by orchestrator — worker failed to write it across multiple iterations). Coverage is 24% (44/~184 files). Reuse count still 0. Key gap: manifest coverage too low and no agent has actually used the manifest yet. Next priority: increase coverage and drive first real reuse instance.

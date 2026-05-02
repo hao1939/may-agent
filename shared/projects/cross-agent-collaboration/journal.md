@@ -60,3 +60,8 @@ grep -i "<keyword>" /app/agents/
 
 ### Iteration 10 — 2026-05-02T01:08:08.661Z
 **Worker**: Now write the adoption baseline:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should index 10 high-value unindexed files into the manifest (item 11) and instrument coder (item 12).
+
+(b) I wrote the adoption baseline myself because the worker failed to produce it across 3+ iterations. The manifest has 44 entries but 140 files are unindexed — covera
