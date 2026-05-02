@@ -1,10 +1,7 @@
 # Deliverables Checklist
 
-## Task: CONTINUE (Project Complete)
+| Deliverable | Status | Path |
+|---|---|---|
+| Completion evidence file | DONE | /app/agents/shared/projects/outputs/project-complete-evidence.md |
 
-| Deliverable | Status | Notes |
-|------------|--------|-------|
-| All plan items | DONE | Completed in prior iterations |
-| All metrics at target | DONE | Confirmed in prior iterations |
-
-**Project has been complete for 90+ iterations. No further work is possible or needed.**
+Project is complete. No further work needed.
