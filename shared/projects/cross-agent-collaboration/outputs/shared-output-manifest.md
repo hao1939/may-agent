@@ -112,3 +112,13 @@ This manifest should be updated whenever:
 - A new project produces its first deliverable
 - A project is completed (mark its entries with ✅)
 - An output is superseded by a newer version (mark old entry with ⚠️)
+| cross-agent-collaboration | reuse-log.md | Tracks instances of cross-agent output reuse | reuse, measurement |
+| skill-workflow-audit | skill-roi-and-verified-rate.md | Skill ROI and verified-rate final assessment | measurement, skills |
+| skill-workflow-audit | skills-audit.md | Comprehensive skills audit report | audit, skills |
+| skill-workflow-audit | skills-impact.md | Skills impact analysis | measurement, skills |
+| skill-workflow-audit | workflow-runtime-audit.md | Workflow runtime performance audit | audit, performance |
+| system-efficiency | efficiency-scorecard.md | System efficiency scorecard with metrics | measurement, efficiency |
+| system-efficiency | final-metrics-report.md | Final metrics report for system efficiency project | measurement, efficiency |
+| system-efficiency | error-recovery-audit.md | Error recovery audit for agent workflows | audit, reliability |
+| system-efficiency | agent-utilization-report.md | Agent utilization and workload report | measurement, utilization |
+| system-efficiency | cross-agent-collaboration-proposal.md | Original proposal for cross-agent collaboration | design, collaboration |
