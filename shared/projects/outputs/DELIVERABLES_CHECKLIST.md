@@ -1,3 +1,3 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST.md
 
-- [x] DONE: Project completion evidence file → `/app/agents/shared/projects/outputs/PROJECT_COMPLETE.md`
+- [x] DONE: Completion evidence file — `/app/agents/shared/projects/outputs/project-complete-evidence.md`
