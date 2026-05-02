@@ -1,34 +1,28 @@
 # Evaluator heartbeat — 2026-05-02
 
-## Checks
+## Checks performed (structural evidence)
 
-### Session evaluation pipeline liveness
+### Session evaluation pipeline freshness (DB is canonical)
+- Evaluations latest `createdAt`: **2026-05-02T21:16:35.529Z** (count 2424)
+- Sessions latest `startedAt`: **2026-05-02T22:49:55.780Z** (count 9299)
+- Lag: **5,600,251 ms ≈ 93.3 minutes**
+- Sessions started since last evaluation: **138**
+  - Top contributors since last eval: evaluator 76, amy 33, coach 6, bob 4, tech-lead 4, others <=3
 
-- DB (canonical):
-  - `evaluations` max(createdAt) = `1777734760205` (latest evaluated session: `s_1777734760205_602`).
-  - `sessions` max(startedAt) = `1777742395340`.
-  - Lag ≈ **2.12 hours** between newest session start and newest evaluation.
+Evidence: bun/sqlite queries in tool output (see session transcript).
 
-Evidence:
-- `bun` query printed `{ e: 1777734760205, s: 1777742395340, lag_hours: 2.1208708333333335 }`.
+### Legacy artifact directory (.state/evaluations)
+- Latest mtime observed: **Apr 29** for `s_*.json`
+- `task_tree_*.json` files: latest observed **Mar 24**
 
-### Legacy artifacts
+Interpretation: DB is updating (evals through May 02), while `.state/evaluations/` looks stale → likely legacy-output-path drift (known chronic issue) rather than pipeline totally dead.
 
-- `.state/evaluations/` newest mtime observed ~**2026-03-24**, consistent with known “legacy-output-path drift” rather than pipeline failure.
+## Findings / actions
 
-Evidence:
-- `ls -la .state/evaluations | tail -5` showed files dated Mar 20–Mar 24.
+1) **Coverage risk / freshness:** Evaluation job appears to lag behind session creation by ~1.5h at the moment. This could be normal depending on cron interval/backlog, but it’s measurable: 138 unevaluated sessions currently.
 
-### Coverage snapshot
+2) **Observability gap:** No `events.event_type` entries containing `eval`/`evaluation` were found, so it’s hard to confirm handler liveness from the events table alone. (This might be expected if eval writes directly to `evaluations` without emitting events, but then we lack easy health probes.)
 
-- sessions_total = 8882
-- evaluated_sessions = 2398
-- coverage ≈ **0.270**
-
-Evidence:
-- `bun` query printed `{ sessions_total: 8882, evaluated_sessions: 2398, coverage: 0.2699842377842828 }`.
-
-## Notes / interpretation
-
-- Pipeline appears alive (evaluations within ~2h of latest session start), but coverage is low (~27%). This could be expected if the cron is intentionally scoped (e.g., only some agents/kinds), or it could indicate backpressure.
-- `.state/evaluations/` is stale vs DB; treat as legacy output path, not canonical freshness signal.
+## Recommendation (for May / tech-lead)
+- Add/confirm a lightweight emitted event like `evaluation.run.completed` with `evaluatedCount` and `latestSessionStartedAt` so evaluator can track freshness via events.
+- Alternatively, add a metric/alert: `evaluation_lag_minutes = (max(sessions.startedAt) - max(evaluations.createdAt))/60000` and threshold it.
