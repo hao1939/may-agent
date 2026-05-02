@@ -119,7 +119,7 @@ From tech-lead review (2025-05-02):
 ## Next Steps
 
 1. ~~tech-lead: Locate exact integration point~~ → **`master-worker-resilient.ts`** confirmed
-2. Implement DeliverableTracker as field on/alongside existing `HealthState`
-3. Ship as logging-only for 1 week (no termination) to validate new thresholds
+2. ~~Implement DeliverableTracker~~ → DONE (2025-05-02), logging-only in `run()` method
+3. Ship as logging-only for 1 week (no termination) to validate new thresholds ← **CURRENT**
 4. Enable enforcement after validation
 5. Track false-positive rate before tightening further
