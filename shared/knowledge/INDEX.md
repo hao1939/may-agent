@@ -773,3 +773,5 @@ See library/README.md for details. Raw archives stay agent-local.
 | KE-408 | **Single Gym Run Results Unreliable — N≥3 Required** ★★★: Phase 1 conclusions from N=1 gym runs are frequently contradicted by Phase 2. Minimum N=3, check session duration, cross-check historical. | EXP-251 Phase 3 (compression pathway). H-EXP-044. | knowledge/entries/KE-408-single-run-results-unreliable.md |
 | KE-409 | **Container Tool Availability** ★★★: Only core tools (grep, find, sed, awk, node, bun, python3) are available. rg, sqlite3, jq are NOT installed. Use alternatives. | EXP-251 Phase 3 (compression pathway). Multiple agents hit independently. | knowledge/entries/KE-409-container-tool-availability.md |
 | KE-410 | **Measurement Proxy Drift** ★★★: Metrics from proxy tables diverge from ground truth. Always validate proxy vs source on N=10 before trusting. >20% divergence = proxy is wrong. | EXP-251 Phase 3 (compression pathway). Breadcrumb-action-rate bug. | knowledge/entries/KE-410-measurement-proxy-drift.md |
+
+- [AI Agent Patterns 2024](../../scout/knowledge/agent-patterns-xhs-2024.md): Trends from XHS on Hierarchical Coordination and Three-Tier Memory models.
