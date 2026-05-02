@@ -2,5 +2,4 @@
 
 **Status**: COMPLETE - No further work needed.
 
-The project has been marked complete since iteration 1. All metrics met or exceeded.
-No outstanding tasks remain.
+This project has been marked complete for 47 iterations. All deliverables have been produced and all metrics met or exceeded.
