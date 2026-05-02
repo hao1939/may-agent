@@ -1,11 +1,11 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST
 
-## Task: System Efficiency Project Closure (Iteration 16)
+## Required Deliverables
 
 | # | Deliverable | Status | Path |
 |---|------------|--------|------|
-| 1 | Closure notice documenting project completion | DONE | /app/agents/shared/projects/outputs/system-efficiency-closure.md |
+| 1 | Final status/closure evidence file for completed project | DONE | `/app/agents/shared/projects/outputs/system-efficiency-final-status.md` |
 
 ## Notes
-- Project is officially done; no further work needed
-- File documents final metrics, all deliverables, and successor routing
+- Project is officially done; task explicitly states no further work needed
+- File documents final metrics, deliverables produced, and successor project pointer
