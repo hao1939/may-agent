@@ -1,6 +1,6 @@
 # Coach Todo
 
-## P1: EXP-520 — Structural Heartbeat Artifact Gate — DEPLOYED ✅, AWAITING MEASUREMENT
+## P1: EXP-520 — Structural Heartbeat Artifact Gate — DEPLOYED ✅, POSITIVE SIGNAL (n=7)
 - **Problem**: Tech-lead 55% read-only despite text mandatory artifact rule (EXP-475: 100%→55%, target ≤10%)
 - **Hypothesis**: Structural pre-finish check that re-prompts on empty deliverables → ≤10% read-only rate
 - **Builds on**: EXP-475 (text partial), EXP-500/510 (structural proven), KE-480
@@ -8,9 +8,9 @@
 - **Implementation spec**: `agents/coach/workspace/EXP-520-implementation-spec.md`
 - **Deployment request**: `agents/coach/workspace/EXP-520-deployment-request.md`
 - **Location**: `agents/shared/workflows/heartbeat-data.ts` → `genericHeartbeat()` (lines 440-462)
-- **Status**: DEPLOYED ✅ (2026-05-18). Uses deliverables + summary text check (not toolCalls — resolved blocker).
+- **Status**: DEPLOYED ✅ (2026-05-18). Gate triggered 7 times, **all 7 recovered with writes** (100% recovery rate).
 - **Blocker resolved**: `runAgent()` doesn't expose `toolCalls`. Implementation uses `result.deliverables` and regex on `result.summary` instead.
-- **Next**: Measure at n≥20 heartbeats (~2026-05-25). Target: read-only rate ≤10%.
+- **Next**: Measure read-only rate at n≥20 heartbeats (~2026-05-25). Early signal: 0% final read-only rate.
 
 ## P1: EXP-500 — Structural Read-Before-Edit Enforcement — CLOSED ✅ POSITIVE
 - **Result**: 0/49 edit failures (0%) vs 108/703 baseline (15.4%). Perfect signal.
@@ -18,12 +18,14 @@
 - **Closed**: 2026-05-17. Formal closure: `agents/coach/workspace/EXP-500-formal-closure.md`
 - **Key learning**: Structural injection is 100% effective for information-gap behaviors (confirms KE-480).
 
-## P1: EXP-510 — Worker Task Completion Quality — DEPLOYED ✅, AWAITING MEASUREMENT
+## P1: EXP-510 — Worker Task Completion Quality — POSITIVE ✅ (PRELIMINARY, n=13)
 - **Problem**: Worker sessions (93% of compute) have no behavioral instructions. Incomplete task execution is common.
 - **Hypothesis**: Structural completion checklist injection in master-worker.ts → ≥30% reduction in incomplete tasks
 - **Baseline data**: 37% of work sessions produce writes (10/27). 0% structured finish.
 - **Target**: ≥60% write rate, ≥50% structured finish rate
-- **Status**: DEPLOYED ✅ (confirmed 2026-05-17 in master-worker.ts ~line 460, re-confirmed 2026-05-18 via commit 2ab0b9). Measurement at n≥30 (~2026-05-24).
+- **Results (n=13)**: Write rate 76% (+39pp ✅), finish rate 69% (+69pp ✅), deliverables 100%
+- **Status**: POSITIVE (preliminary). Both targets exceeded. Re-measure at n≥30 for formal closure (~2026-05-10).
+- **Measurement**: `agents/coach/workspace/EXP-510-measurement-results.md`
 - **Confirmation**: `agents/coach/workspace/EXP-510-deployment-confirmation.md`
 
 ## P1: EXP-495 — Write-First Scaffold Deployment — CLOSED ❌ NEGATIVE
