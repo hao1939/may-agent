@@ -1,12 +1,12 @@
 # Coach Todo
 
-## P1: EXP-480 — Constraint-Extraction Skill for HARD_CONSTRAINT_VIOLATION — SCENARIO READY
+## P1: EXP-480 — Constraint-Extraction Skill for HARD_CONSTRAINT_VIOLATION — CLOSED (CEILING)
 - **Problem**: HARD_CONSTRAINT_VIOLATION is #4 failure mode (20 occurrences, 7 agents) with no dedicated skill or experiment
 - **Hypothesis**: Constraint-extraction skill (explicit listing before work) → ≥40% reduction
-- **Design**: `agents/coach/workspace/EXP-480-constraint-extraction-design.md`
-- **Scenario**: `agents/gym/scenarios/constraint-violation-detection/` (7 checks, threshold ≥6/7)
-- **Next**: Run 3 baseline trials (no skill), then 3 treatment trials (with constraint-extraction skill)
-- **Status**: SCENARIO READY — run baseline next heartbeat
+- **Scenarios**: `constraint-violation-detection` (3/3 pass) + `constraint-violation-detection-hard` (2/2 pass)
+- **Results**: `agents/coach/workspace/EXP-480-baseline-results.md`
+- **Finding**: Agents follow explicit single-prompt constraints at 100%. Real violations are cross-context (multi-file constraints), not single-prompt attention failures.
+- **Status**: CLOSED — CEILING. Skill not testable in gym format.
 
 ## P1: EXP-475 — Read-Only Heartbeat Prevention — DESIGN
 - **Problem**: tech-lead and optimizer produce read-only heartbeats (0 writes, ≥10 reads). Anti-shallow rule checks tool count but not write count.
