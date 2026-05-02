@@ -1,18 +1,15 @@
 # Tech-Lead Heartbeat Log
 
-## Latest Heartbeat
+## 2026-05-18 — Heartbeat
 
-**Build**: Clean (tsc exit 0)
-**Inbox**: 3 notifications triaged
-1. Gym runner agent_type bug — already fixed (AGENT_TYPE_MAP at runner line 519)
-2. Bob SOUL.md persistent-task rule — Bob's domain, not tech-lead
-3. Gym runner --oneshot blocker — config issue, stub-mode fallback works
+### Inbox
+- **EXP-520 (artifact gate)**: Reviewed spec. Found blocker — `runAgent()` doesn't expose `toolCalls` or `deliverables`. Notified coach with 3 options. Awaiting approach agreement before implementing.
+- **EXP-510 (completion quality)**: Already deployed at master-worker.ts:452. Dismissed.
 
-**Action**: None required. All healthy.
+### Code Health
+- `tsc --noEmit`: Clean (0 errors)
+- No build issues
 
-## 2026-05-28 Heartbeat
-
-- **Build**: No TS at project root (expected — code in agents/)
-- **proof-of-life-dashboard**: Waiting on Hao feedback (M4). No action.
-- **Session waste notification**: Dismissed. Optimizer proposal 004 covers this with 3 fix options. Not a tech-lead concern.
-- **System health**: All clear. No alerts, no blockers.
+### Projects
+- **proof-of-life-dashboard**: Waiting on Hao feedback (M4). Feature-complete. No action.
+- **handler-reliability**: Closed (3/3 milestones). No action.
