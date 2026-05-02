@@ -1,11 +1,14 @@
 # Coach Todo
 
-## P1: EXP-490 — Bob Skill Compliance Scan — DESIGN
+## P1: EXP-490 — Bob Skill Compliance Scan — PHASE 1 DONE
 - **Problem**: Bob has 8 "Unknown" impact skills after EXP-305 demoted 3. Context cost with no evidence of value.
 - **Hypothesis**: ≥3 of 8 show <10% compliance and can be demoted
 - **Design**: `agents/coach/workspace/EXP-490-bob-skill-compliance-scan-design.md`
-- **Next**: Phase 1 — audit 10+ recent bob sessions for compliance signals
-- **Status**: DESIGN — ready for Phase 1 execution
+- **Phase 1 results**: `agents/coach/workspace/EXP-490-phase1-audit.md`
+- **Findings**: 3/8 show compliance, 1 partial, 1 potential non-compliance (persistent-task-workflow), 3 need gym measurement
+- **Actions taken**: Removed stale "Obstacle Pivot" reference from bob/context.md; acknowledged 3 demotions
+- **Next**: Phase 2 — gym-based measurement for read-before-edit, verify-before-finish, state-check-before-action
+- **Status**: PHASE 1 DONE — Phase 2 needs gym scenario design
 
 ## P1: EXP-485 — Worker Session Quality Guard — SUPERSEDED
 - **Problem**: Worker sessions dispatched to completed projects produce 0-value output (16s, "DONE")
