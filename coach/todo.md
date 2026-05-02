@@ -1,5 +1,12 @@
 # Coach Todo
 
+## P1: EXP-490 — Bob Skill Compliance Scan — DESIGN
+- **Problem**: Bob has 8 "Unknown" impact skills after EXP-305 demoted 3. Context cost with no evidence of value.
+- **Hypothesis**: ≥3 of 8 show <10% compliance and can be demoted
+- **Design**: `agents/coach/workspace/EXP-490-bob-skill-compliance-scan-design.md`
+- **Next**: Phase 1 — audit 10+ recent bob sessions for compliance signals
+- **Status**: DESIGN — ready for Phase 1 execution
+
 ## P1: EXP-485 — Worker Session Quality Guard — SUPERSEDED
 - **Problem**: Worker sessions dispatched to completed projects produce 0-value output (16s, "DONE")
 - **Resolution**: EXP-455 structural fix (DONE keyword in master-worker.ts) now deployed — root cause resolved
