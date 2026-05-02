@@ -91,3 +91,8 @@ grep -i "<keyword>" /app/agents/
 
 ### Iteration 15 — 2026-05-02T01:20:10.543Z
 **Worker**: Good progress — down from the original count. Let me also copy the updated manifest to the outputs dir and update the stub:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should instrument remaining agents (item 16) and drive 4 more reuse instances (item 18). These are the highest-impact items — reuse count is 1/5 target.
+
+(b) Infrastructure is solid now. The bottleneck is adoption, not tooling. We need to get more agents checking the man
