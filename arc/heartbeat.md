@@ -17,19 +17,43 @@
 - What patterns keep recurring in failures that nobody has documented?
 
 ## Queries to Start With
-```sql
--- Agent effectiveness
-SELECT agent, COUNT(*) as total, 
-  SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) as completed,
-  AVG(turns) as avg_turns
-FROM sessions GROUP BY agent;
+Schema reality (verified 2026-05-02): the `sessions` table has no
+`turns` column — use `opCount`. Status values are `done | error |
+interrupted | running` (no `'completed'`). `events` uses `timestamp`
+(unix ms), not `created_at`. Use these columns or queries silently
+return zeros / throw `no such column`.
 
--- Recent events by type
-SELECT event_type, COUNT(*) as c FROM events GROUP BY event_type ORDER BY c DESC LIMIT 20;
+```sql
+-- Agent effectiveness (last 24h)
+SELECT agent,
+       COUNT(*) AS total,
+       SUM(CASE WHEN status='done'  THEN 1 ELSE 0 END) AS done,
+       SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) AS errored,
+       ROUND(AVG(opCount), 1) AS avg_ops
+FROM sessions
+WHERE startedAt > strftime('%s','now')*1000 - 86400000
+GROUP BY agent
+ORDER BY total DESC;
+
+-- Recent events by type (last 24h)
+SELECT event_type, COUNT(*) AS c
+FROM events
+WHERE timestamp > strftime('%s','now')*1000 - 86400000
+GROUP BY event_type
+ORDER BY c DESC
+LIMIT 20;
 
 -- Active metrics
-SELECT id, name, current, target, threshold FROM metrics WHERE status='active';
+SELECT id, name, current, target, threshold
+FROM metrics
+WHERE status='active';
 ```
+
+**Tooling note:** there is no system `sqlite3` binary. Use the
+better-sqlite3 module from
+`/app/agents/gym/scenarios/truncated-schema-migration/node_modules/better-sqlite3`
+(read-only mode). Example:
+`cd <that dir> && node -e "const db=require('better-sqlite3')('/app/.state/may.db',{readonly:true}); …"`
 
 ## System Coherence Audit
 Every heartbeat, pick ONE of these areas and check for staleness:
