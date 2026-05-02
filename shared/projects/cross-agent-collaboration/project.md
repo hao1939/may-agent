@@ -31,11 +31,13 @@ Agents currently work in silos. Each produces deliverables that could benefit ot
 4. **Measure reduction** — Track redundant-work-rate over 2 weeks, compare before/after
 5. ✅ **Enrich manifest with per-file entries** — Expanded to 40+ file-level entries across skill-workflow-audit, agent-memory-learning, documentation-gen, test-coverage, workflow-reliability
 6. **Instrument 2 pilot agents** — Add manifest-check instruction to optimizer and one other agent's context.md so they consult the manifest before starting work
+   - ✅ optimizer instrumented (verified in context.md)
+   - ❌ second agent NOT yet instrumented (worker claimed but not verified)
 7. **Add auto-update script** — Create a script that scans outputs dirs and flags manifest staleness
-8. **Re-plan** — After item 6, measure cross-agent-reuse-count over 1 week
+8. **Re-plan** — After item 6 complete + 1 week of data, assess reuse metrics
 
 ## Current State
 
-Items 1, 2, 5 complete. Manifest at `outputs/shared-output-manifest.md` has 40+ file-level entries with tags, descriptions, and a discovery convention (grep by tag/project). Agent protocol defined.
+Items 1, 2, 5 complete. Item 6 half-done: optimizer has manifest-check in context.md (verified), but no second agent instrumented yet. Manifest at `outputs/shared-output-manifest.md` has 40+ file-level entries with tags and discovery convention.
 
-Next priority: Item 6 — instrument pilot agents. Add a "pre-work discovery check" instruction to `/app/agents/optimizer/context.md` and one other agent (e.g., `/app/agents/auditor/context.md`) telling them to grep the manifest before starting new analysis. This is what drives actual reuse.
+Next priority: Instrument a second pilot agent (scout or coder — high-iteration agents). Then item 7 (auto-update script to keep manifest fresh as new outputs appear).
