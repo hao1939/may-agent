@@ -1,6 +1,6 @@
 # Coach Todo
 
-## P1: EXP-500 — Structural Read-Before-Edit Enforcement — ESCALATED FOR IMPLEMENTATION
+## P1: EXP-500 — Structural Read-Before-Edit Enforcement — DEPLOYED, AWAITING MEASUREMENT
 - **Problem**: read-before-edit text coaching demoted (0% compliance). Need structural replacement.
 - **Hypothesis**: Auto-injecting file content into worker prompt before edit tasks → ≥50% reduction in edit failures
 - **Design**: `.state/experiments/EXP-500-structural-read-before-edit.md`
@@ -14,6 +14,15 @@
 - **Measurement protocol**: `agents/coach/workspace/EXP-500-measurement-protocol.md`
 - **Early signal**: 5/6 sessions clean (83% vs 52% baseline). n=6, need n≥50.
 - **Dashboard**: `agents/coach/workspace/experiment-dashboard-20260510.md`
+- **Status check (2026-05-12)**: Only 3 post-deployment sessions available. Still need ~47 more. Next check: 2026-05-17.
+
+## P1: EXP-510 — Worker Task Completion Quality — DESIGN
+- **Problem**: Worker sessions (93% of compute) have no behavioral instructions. Incomplete task execution is common.
+- **Hypothesis**: Structural completion checklist injection in master-worker.ts → ≥30% reduction in incomplete tasks
+- **Design**: `agents/coach/workspace/EXP-510-worker-task-completion-quality-design.md`
+- **Builds on**: EXP-500 (structural injection works), KE-480 (text dead), EXP-460 (workers dominate)
+- **Next**: Collect baseline (audit 30 worker sessions for completion quality)
+- **Status**: DESIGN — needs baseline measurement before deployment decision
 
 ## P1: EXP-495 — Write-First Scaffold Deployment — CLOSED ❌ NEGATIVE
 - **Problem**: WRITE-FIRST text constraint shows 0% compliance. Scaffold/template approach is proven category (KE-480).
