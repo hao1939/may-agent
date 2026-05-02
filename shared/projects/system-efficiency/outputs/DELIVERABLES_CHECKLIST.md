@@ -1,5 +1,7 @@
-# DELIVERABLES_CHECKLIST
+# Deliverables Checklist
 
-- [x] DONE — Copy efficiency-playbook.md → `/app/agents/shared/projects/system-efficiency/outputs/efficiency-playbook.md`
-- [x] DONE — Copy regression-guard-config.md → `/app/agents/shared/projects/system-efficiency/outputs/regression-guard-config.md`
-- [x] DONE — Write system-efficiency-retrospective.md → `/app/agents/shared/projects/system-efficiency/outputs/system-efficiency-retrospective.md` (38 lines: Timeline, What Worked, What Didn't, Metrics Final, Recommendations)
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | next-frontier-proposal.md | DONE | /app/agents/shared/projects/system-efficiency/outputs/next-frontier-proposal.md |
+| 2 | Copy efficiency-playbook.md | DONE | /app/agents/shared/projects/system-efficiency/outputs/efficiency-playbook.md |
+| 3 | Copy regression-guard-config.md | DONE | /app/agents/shared/projects/system-efficiency/outputs/regression-guard-config.md |
