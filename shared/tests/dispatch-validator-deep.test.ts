@@ -107,7 +107,7 @@ describe("dispatch-validator deep branches", () => {
   it("accepts unknown status without stop reason", () => {
     setupProject("**Status**: unknown\n");
     const r = validateDispatch(`project: proj`, tmpBase);
-    expect(r.valid).toBe(false);
+    expect(r.valid).toBe(true);
   });
 
   // Combination: stop reason + active status with high iteration

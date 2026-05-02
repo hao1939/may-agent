@@ -52,7 +52,7 @@ const DEFAULT_MAX_ITERATIONS = 50; // safety cap — workflow runs until done/bl
 // ── Decision extraction ─────────────────────────────────────────────────
 
 interface Decision {
-  status: "continue" | "pivot" | "waiting" | "blocked" | "unknown";
+  status: "continue" | "pivot" | "waiting" | "blocked" | "done" | "unknown";
   detail: string;
 }
 
