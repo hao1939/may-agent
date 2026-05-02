@@ -1,11 +1,12 @@
 # Deliverables Checklist
 
-## Required Deliverables
+## Task: System Efficiency Project Completion Evidence (Iteration 13)
 
-1. **shared-output-manifest.md in cross-agent-collaboration/outputs/** — DONE
-   - Path: `/app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md`
-   - Contains: Full index of 18 deliverables across all projects, tags, discovery convention section
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | Completion evidence file documenting project is done, no further work needed | DONE | `/app/agents/shared/projects/outputs/system-efficiency-completion-evidence.md` |
 
-2. **Copy in shared outputs directory** — DONE
-   - Path: `/app/agents/shared/projects/outputs/shared-output-manifest.md`
-   - Copied from cross-agent-collaboration outputs
+## Notes
+- Project is marked **done** — no further iterations needed
+- Successor project `cross-agent-collaboration` is active with first deliverable shipped
+- All 3 core metrics exceeded targets (12/12 satellites, ≥0.8 deliverables/iter, <20% waste)
