@@ -689,9 +689,10 @@ Then provide your decision and guidance for the next iteration.`;
       stopReason = decision.detail.slice(0, 200);
     }
 
-    // Workflow can set waiting or blocked, never done/closed
-    // finalStatus is already one of: continue/pivot/waiting/blocked/unknown
-    updateProjectStatus(projectFile, finalStatus, stopReason, iteration);
+    // Workflow can set waiting, blocked, or done/closed
+    // finalStatus is one of: continue/pivot/waiting/blocked/done/unknown
+    const projectStatus = finalStatus === "done" ? "closed" : finalStatus;
+    updateProjectStatus(projectFile, projectStatus, stopReason, iteration);
     ctx.log(`[done] ${finalStatus} after ${iteration} iteration(s). ${stopReason}`);
 
     if (finalStatus === "blocked") return ctx.escalate(stopReason);
