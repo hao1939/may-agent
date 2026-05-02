@@ -448,7 +448,7 @@ ${journalContent.slice(-3000)}
       }
 
       // EXP-510: Completion quality injection for worker sessions
-      workerPrompt += `\n\n---\nCOMPLETION REQUIREMENTS (structural — do not skip):\n1. Produce at least one file write/edit as deliverable evidence\n2. After completing work, read back modified files to verify correctness\n3. Call finish() with: status ('success'|'partial'|'failure'), summary (1-2 sentences of what you did), and deliverables (list of files modified)\n4. If task cannot be completed, finish(status:'blocked') with explanation\n\nDo NOT call finish({}) with empty input. Your finish() call IS your deliverable receipt.`;
+      workerPrompt += `\n\n---\nCOMPLETION REQUIREMENTS (structural — do not skip):\n1. Produce at least one file write/edit as deliverable evidence\n2. VERIFICATION GATE (mandatory): For every file you write() or edit(), you MUST read() it back BEFORE calling finish(). Your finish() call will be rejected if deliverables include files you haven't read after modifying. List each verified file in your summary.\n3. Call finish() with: status ('success'|'partial'|'failure'), summary (1-2 sentences of what you did), and deliverables (list of files modified)\n4. If task cannot be completed, finish(status:'blocked') with explanation\n\nDo NOT call finish({}) with empty input. Your finish() call IS your deliverable receipt.`;
       ctx.log(`[work] EXP-510: Completion quality block injected`);
 
       await withRetry(() => worker.prompt(workerPrompt), {

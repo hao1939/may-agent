@@ -1,5 +1,11 @@
 # Coach Todo — 2026-04-24 (Active Coaching)
 
+## P1: EXP-530 — Structural Verification Gate — DEPLOYED (2026-07-01)
+- **Problem**: 78% verification failure rate despite text skills
+- **Treatment**: Strengthened COMPLETION REQUIREMENTS line 2 in master-worker.ts:451 to explicit VERIFICATION GATE
+- **Design**: `agents/coach/workspace/EXP-530-structural-verification-gate-design.md`
+- **Next**: Measure next 20 worker sessions. Success = ≤40% verification failure rate.
+
 ## P1: EXP-440 — QA Finish-Call Compliance — OPEN (TREATMENT DEPLOYED)
 - **Problem**: QA 75% fail rate on C8.2 (no finish() call)
 - **Treatment**: Added prominent SESSION EXIT RULE section to top of qa/context.md
