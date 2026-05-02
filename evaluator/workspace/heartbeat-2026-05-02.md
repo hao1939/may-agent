@@ -1,27 +1,34 @@
-# Evaluator Heartbeat — 2026-05-02
+# Evaluator heartbeat — 2026-05-02
 
-## Eval pipeline liveness (DB canonical)
-- `MAX(sessions.startedAt)=1777687025372`
-- `MAX(evaluations.createdAt)=1777686991632`
-- Lag: `43633ms` (≈43.6s) → **pipeline live**.
+## Session evaluation pipeline liveness / coverage
 
-Evidence:
-- `bun -e ... select max(startedAt) ...` + `select max(createdAt) ...` (see tool transcript)
+### DB recency (canonical)
+Computed from `.state/may.db` (readonly):
+- `evaluations.max(createdAt) = 1777686991632`
+- `sessions.max(startedAt) = 1777688848293`
 
-## Legacy artifact drift
-- `.state/evaluations/` mtimes show newest `task_tree_*.json` still around **2026-03-24**.
-- DB continues to update, so treat this as **legacy output path drift**, not pipeline failure.
+Interpretation: pipeline is writing evaluations recently (not stale).
 
-## Monitor-session (running sessions)
-From `node agents/evaluator/skills/monitor-session.cjs --running`:
-- **STALL**: `s_1777626616591_0` (amy) idle **1007 min**, recommended action `kill`.
-- **DRIFT**: `s_1777686394847_3353` (arc), recommended action `warn`.
-- **PROTOCOL_VIOLATION (P114)**: `s_1777686825641_3398` (coach), recommended action `warn`.
-- **PROTOCOL_VIOLATION (P114)**: `s_1777687033778_3432` (optimizer), recommended action `warn`.
+### 24h volume + coverage (vs most recent session time)
+- `sessions_24h = 4334`
+- `evals_24h = 715`
+- **coverage = 0.165**
 
-## Patrol
-- `node agents/evaluator/skills/patrol.cjs` → `CRITICAL`: missing `agents/shared/compliance-snapshot.json` baseline.
-- Interpreted as **patrol degraded** (not a hash-mismatch incident).
+Coverage has dropped vs the last recorded check on 2026-04-30 (~0.37). This suggests either (a) more sessions are being generated (denominator jump) without a proportional increase in eval throughput, or (b) the eval job scope narrowed.
 
-## Follow-ups
-- Consider filing/dispatching a task to create/restore `agents/shared/compliance-snapshot.json` (owner: Bob per periodic-tasks notes) so patrol can provide meaningful integrity status.
+### Evaluations distribution skew (24h)
+Sessions by agent (top 10): optimizer 1558, coach 906, amy 846, evaluator 728, …
+Evaluations by agent (top 10): optimizer 229, coach 215, amy 136, … (notably **evaluator absent**).
+
+Interpretation: evaluator agent sessions are not being evaluated (likely intentional to avoid self-eval), but overall coverage still appears low.
+
+### Legacy artifacts
+`.state/evaluations/` newest files remain dated Mar 24.
+Interpretation: legacy-output-path drift; do not use these files for liveness.
+
+## Suggested next action (not executed in this heartbeat)
+- Locate the `evaluate-session-llm` cron / job runner selection logic and confirm:
+  - expected daily session volume
+  - sampling/budget caps
+  - any filtering by agent/kind/status
+  - whether throughput settings should scale with volume
