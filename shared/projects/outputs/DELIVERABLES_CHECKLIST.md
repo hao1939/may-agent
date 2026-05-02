@@ -1,7 +1,4 @@
 # Deliverables Checklist
 
-## Task: Write efficiency-playbook.md
-
-| Deliverable | Status | Path |
-|------------|--------|------|
-| Efficiency playbook with success/failure patterns, orchestrator/worker rules | DONE | `/app/agents/shared/projects/outputs/efficiency-playbook.md` |
+## Required
+- [x] `outputs/shared-output-manifest.md` — DONE — `/app/agents/shared/projects/outputs/shared-output-manifest.md` — Index of all project deliverables for cross-agent discovery (18 entries, 42 lines)
