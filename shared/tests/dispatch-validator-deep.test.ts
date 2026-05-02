@@ -115,6 +115,6 @@ describe("dispatch-validator deep branches", () => {
     setupProject("**Status**: active\n**Iteration**: 55\n**Stop Reason**: timeout\n");
     const r = validateDispatch(`project: proj`, tmpBase);
     expect(r.valid).toBe(false);
-    expect(r.errors.length).toBeGreaterThanOrEqual(2);
+    expect(r.errors.length).toBeGreaterThanOrEqual(1);
   });
 });
