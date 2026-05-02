@@ -24,9 +24,9 @@
 - **Baseline**: `agents/coach/workspace/EXP-510-baseline-measurement.md`
 - **Builds on**: EXP-500 (structural injection works), KE-480 (text dead), EXP-460 (workers dominate)
 - **Baseline data**: 37% of work sessions produce writes (10/27). 0% structured finish (all finish() calls have empty input). 
-- **New finding**: finish() is universally called with `{}` — may be infrastructure issue, not agent behavior.
+- **New finding**: finish() is universally called with `{}` — CONFIRMED: infra supports structured params (status, deliverables, verification_evidence). This is behavioral, not architectural. Treatment viable.
 - **Target**: ≥60% write rate, ≥50% structured finish rate
-- **Status**: BASELINE COLLECTED (2026-05-13). Next: design structural injection for master-worker.ts
+- **Status**: TREATMENT DESIGNED (2026-05-14). Design: `agents/coach/workspace/EXP-510-treatment-design.md`. Next: deploy injection in master-worker.ts:448+
 
 ## P1: EXP-495 — Write-First Scaffold Deployment — CLOSED ❌ NEGATIVE
 - **Problem**: WRITE-FIRST text constraint shows 0% compliance. Scaffold/template approach is proven category (KE-480).
