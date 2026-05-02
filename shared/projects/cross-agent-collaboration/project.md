@@ -21,7 +21,7 @@ Agents currently work in silos. Each produces deliverables that could benefit ot
 | shared-output-discovery-rate | ✅ grep works (40+ entries) | Any agent can find relevant outputs within 1 query |
 | cross-agent-reuse-count | 5 (target hit) | 5 instances/week of one agent using another's output |
 | redundant-work-rate | ~25% estimated | <10% of iterations duplicate existing work |
-| manifest-coverage | 72 entries, ~105 unindexed | All non-archive outputs indexed |
+| manifest-coverage | ✅ 177 entries, 0 unindexed | All non-archive outputs indexed |
 | agents-instrumented | ✅ All active agents | All active agents |
 
 ## Plan
