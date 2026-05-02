@@ -212,7 +212,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     } catch (e) { ctx.log(`[metrics-snapshot] Error measuring blocked-rate-7d: ${e}`); }
 
     try {
-      record("project.blocked-over-6h", count("SELECT COUNT(*) as c FROM projects WHERE status = 'blocked' AND updated_at < ?", now - 6 * 3600000));
+      record("project.blocked-over-6h", count("SELECT COUNT(*) as c FROM projects WHERE status IN ('blocked', 'waiting') AND updated_at < ?", now - 6 * 3600000));
     } catch (e) { ctx.log(`[metrics-snapshot] Error measuring blocked-over-6h: ${e}`); }
 
     // ── Generic metrics (source_query / source_command) ──────────────
