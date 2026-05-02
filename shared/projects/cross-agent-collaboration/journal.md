@@ -99,3 +99,10 @@ grep -i "<keyword>" /app/agents/
 
 ### Iteration 16 — 2026-05-02T01:22:13.541Z
 **Worker**: Only `amy-kimi` and `scout.bak` (backup) remain uninstrumented — acceptable.
+**Orchestrator**: CONTINUE
+
+(a) Next iteration must deliver **4 real reuse instances** logged in `outputs/reuse-log.md`. This is the #1 priority — the core metric is 1/5.
+
+(b) Worker failed to deliver these last iteration despite explicit instructions. I'm being very specific this time.
+
+(c) Do exactly this 4 times, 

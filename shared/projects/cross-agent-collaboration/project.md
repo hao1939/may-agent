@@ -45,10 +45,11 @@ Agents currently work in silos. Each produces deliverables that could benefit ot
 
 ### Phase 3: Drive Adoption & Measure Impact
 15. **Index remaining non-archive outputs** — 95 files still unindexed. Batch-add top 30 with descriptions to get coverage >60%
-16. **Instrument remaining agents** — Add manifest-check to all active agents (auditor, planner, etc.)
-17. **Create weekly reuse check script** — `outputs/reuse-check.sh` that greps all agent .state/ dirs for manifest references. Worker claimed done but file missing on disk.
-18. **Drive 4 more reuse instances** — Need 5 total to hit weekly target. Identify 4 upcoming tasks where existing outputs are relevant
-19. **Re-plan** — After reuse count reaches 5
+16. ✅ **Instrument remaining agents** — All active agents instrumented (amy-kimi and scout.bak excluded as inactive)
+17. ✅ **Create weekly reuse check script** — `outputs/reuse-check.sh` verified on disk and executable
+18. **Drive 4 more reuse instances** — Need 5 total to hit weekly target. Reuse count still at 1.
+19. **Index remaining non-archive outputs** — 80 still unindexed per freshness check
+20. **Re-plan** — After reuse count reaches 5
 
 ## Current State
 
@@ -56,4 +57,4 @@ Agents currently work in silos. Each produces deliverables that could benefit ot
 
 **Phase 2 complete**: 3 agents instrumented (optimizer, scout, coder). Manifest expanded to ~72 entries. First reuse logged.
 
-**Phase 3 in progress**: Manifest has 82 table rows, 95 non-archive files still unindexed. Reuse count = 1, target = 5/week. reuse-check.sh missing (worker claimed but not on disk).
+**Phase 3 in progress**: All agents instrumented. reuse-check.sh working. Manifest ~72 entries, 80 unindexed. **Key gap: reuse count = 1, target = 5.** Need to demonstrate 4 more real reuse instances.
