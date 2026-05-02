@@ -433,5 +433,31 @@ ${redMetricDiagnostics ? "Red metric diagnostics are above — address each one,
   const result = await ctx.runAgent(agent, prompt);
   recordOutcome(agentsRoot, agent, result.status === "error",
     result.status === "error" ? "heartbeat session error" : undefined);
+
+  // ── EXP-520: HEARTBEAT ARTIFACT GATE ──────────────────────────────
+  // If agent produced no file writes, re-prompt once for an artifact.
+  // Text rules plateau at 55% compliance (EXP-475); structural enforcement needed.
+  const hasDeliverables = ((result as any).deliverables?.length ?? 0) > 0;
+  const mentionsWrite = /\b(wrote|created|updated|edited|write|edit)\b/i.test(result.summary || "");
+  if (!hasDeliverables && !mentionsWrite && result.status !== "error") {
+    ctx.emit({ type: "artifact_gate_triggered", agent });
+
+    const gatePrompt = `⚠️ ARTIFACT GATE: Your session produced no file writes.
+
+Every heartbeat MUST produce at least one artifact. This is non-negotiable.
+
+Choose one:
+1. Write a status update to your workspace (e.g. workspace/heartbeat-log.md)
+2. Document a finding from your investigation
+3. Update a tracking file (todo.md, now.md, etc.)
+
+Produce at least ONE meaningful write, then call finish() with updated deliverables.`;
+
+    const gateResult = await ctx.runAgent(agent, gatePrompt);
+    recordOutcome(agentsRoot, agent, gateResult.status === "error",
+      gateResult.status === "error" ? "artifact gate re-prompt error" : undefined);
+    return ctx.done(ctx.summarize(gateResult, { maxLength: 500 }));
+  }
+
   return ctx.done(ctx.summarize(result, { maxLength: 500 }));
 }
