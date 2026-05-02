@@ -44,9 +44,9 @@ Agents currently work in silos. Each produces deliverables that could benefit ot
 14. **Re-plan** — Phase 2 infrastructure done. Now drive organic adoption.
 
 ### Phase 3: Drive Adoption & Measure Impact
-15. **Index remaining non-archive outputs** — 105 files still unindexed. Batch-add top 30 with descriptions to get coverage >60%
+15. **Index remaining non-archive outputs** — 95 files still unindexed. Batch-add top 30 with descriptions to get coverage >60%
 16. **Instrument remaining agents** — Add manifest-check to all active agents (auditor, planner, etc.)
-17. **Create weekly reuse check** — Script that greps all agent .state/ dirs for manifest references, appends findings to reuse-log.md
+17. **Create weekly reuse check script** — `outputs/reuse-check.sh` that greps all agent .state/ dirs for manifest references. Worker claimed done but file missing on disk.
 18. **Drive 4 more reuse instances** — Need 5 total to hit weekly target. Identify 4 upcoming tasks where existing outputs are relevant
 19. **Re-plan** — After reuse count reaches 5
 
@@ -54,6 +54,6 @@ Agents currently work in silos. Each produces deliverables that could benefit ot
 
 **Phase 1 complete**: Manifest, discovery convention, freshness script. All verified.
 
-**Phase 2 complete**: 3 agents instrumented (optimizer, scout, coder). Manifest expanded to 72 entries. First reuse logged (dedup-measurement.md methodology reused).
+**Phase 2 complete**: 3 agents instrumented (optimizer, scout, coder). Manifest expanded to ~72 entries. First reuse logged.
 
-**Phase 3 starting**: Coverage still low (~40%). Reuse count = 1, target = 5/week. Need to batch-index more files and instrument remaining agents to drive organic adoption.
+**Phase 3 in progress**: Manifest has 82 table rows, 95 non-archive files still unindexed. Reuse count = 1, target = 5/week. reuse-check.sh missing (worker claimed but not on disk).
