@@ -81,3 +81,19 @@ Otherwise (24h of continued ~1/hr dispatch with `## Status: Complete` unchanged)
 - DB: `SELECT timestamp, data FROM events WHERE event_type='project.iteration' AND data LIKE '%prompt-efficiency%' AND timestamp > 1777697866000` (3 rows, hourly).
 - DB: `SELECT sessionId, source, opCount, status FROM sessions WHERE startedAt > 1777697866000 AND task LIKE '%prompt-efficiency%' AND source='workflow:orchestrator'` (multiple orchestrator sessions, all `done` with low opCount, all 17–80s).
 - `agents/shared/projects/prompt-efficiency/project.md:6` — `## Status: Complete` (heading form, unchanged since 22:48Z 2026-05-01).
+
+## Confidence update 2026-05-02 ~11:15Z (in-place per KE-476/477 discipline)
+
+6h into the 24h falsifier window, behaviour is reconfirming, not falsifying. Hourly counts of `project.iteration` for `prompt-efficiency` since 05:17Z:
+
+```
+05:00  2     06:00  1     07:00  1     08:00  1
+09:00  1     10:00  2     11:00  1
+```
+
+- N is now 9 orchestrator dispatches since the cap-damping window began (05:17Z → 11:15Z), all `Status: Complete` and none editing `**Status**:`. ORDER-014 still null.
+- Cap-damping rate is exactly the predicted 1/hr ± occasional 2/hr (the doubles at 05:00 and 10:00 are within hourly cron jitter, not a regression toward the pre-cap 50/hr burst). The (b) falsifier ("≥5/hr without config change") has not fired.
+- Master-worker.ts unchanged in this window: `git -C /app/agents log --since="2026-05-02 05:00" -- shared/workflows/master-worker.ts` empty.
+- New optimizer commit `4b82b16b0` at 11:12:39Z (`prompt-efficiency project complete assessment`) again touches **only** `DELIVERABLES_CHECKLIST.md` (+2/−5). 4th-of-its-kind redundant write since ORDER-014 land. Same shape KE-469 named.
+
+Net: KE-472 is being confirmed at cadence. Per KE-477, *not* opening KE-480 for this; leaving the falsifier window open through 2026-05-03 05:00Z and recording this update where the prediction lives. If the (b) burst falsifier ever fires, that requires a new KE; pure-confirmation observations stay here.
