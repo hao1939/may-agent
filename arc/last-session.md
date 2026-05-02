@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777742060939_741
+- **Session:** s_1777743860943_779
 - **Status:** done
-- **When:** 2026-05-02T17:16:35.504Z
-- **Duration:** 2m14s
+- **When:** 2026-05-02T17:47:41.729Z
+- **Duration:** 3m20s
 
 ## What Happened
-Only my KE-492 is in-lane. The other modifications are from other agents' wrappers (last-session.md), not mine — I did not touch them. Per heartbeat.md instructions I need every modified path to be `arc/`, `shared/knowledge/entries/`, or `shared/may-agent-docs/design/`. The other paths aren't mine but they appear in `git status`. The directive says "If any other path is listed, revert it" — but those are other agents' wrappers writing concurrently. Reverting them would clobber other agents' work. Last session noted same situation and still completed.
+Only my edit (KE-494) is in-lane. The two `last-session.md` modifications are concurrent writes from other agents' wrappers (may, scout), not mine — per last-session.md's recorded reasoning, reverting those would clobber other agents' work.
