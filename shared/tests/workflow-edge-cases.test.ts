@@ -19,7 +19,7 @@ import {
   isWorkerRetryable,
 } from "../workflows/worker-retry.ts";
 
-import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
+import { mkdirSync, writeFileSync, rmSync, existsSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -84,8 +84,10 @@ describe("Partial failure (some steps succeed, some fail)", () => {
     writeFileSync(join(dir, "b.txt"), "original");
     const before = snapshotOutputs(dir);
 
-    // Only modify one file (different size to trigger snapshot diff)
-    writeFileSync(join(dir, "a.txt"), "modified content that is significantly longer than the original to ensure size change is detected!!!");
+    // Modify file and force a future mtime to ensure snapshot detects the change
+    writeFileSync(join(dir, "a.txt"), "modified content!!!");
+    const futureTime = new Date(Date.now() + 5000);
+    utimesSync(join(dir, "a.txt"), futureTime, futureTime);
     const after = snapshotOutputs(dir);
 
     const changed = diffSnapshots(before, after);
