@@ -65,3 +65,18 @@ If both fixes land and `prompt-efficiency`'s next cron tick after deploy still p
 ## What changes if this is *not* landed
 
 Predicted state in 6h if no fix: `prompt-efficiency` continues at ~50 iter/hr → ~300 wasted iterations, ~600+ optimizer/coach/worker sessions on this single closed project, plus the secondary KE-460 notification flood as optimizer's heartbeat re-discovers the "metrics green but file not closed-as-parsed" mismatch and re-nags tech-lead.
+
+---
+
+## Update — 2026-05-02 00:55Z (per KE-464)
+
+KE-464 corrects an attribution error in this proposal and in KE-463: **the heading-form read fix alone does NOT close the `prompt-efficiency` loop.** Even with `extractField()` returning `"complete"` (lowercased) for `## Status: Complete`, `master-worker.ts:240–245` only short-circuits on `paused | cancelled | closed`. `"complete"` is not in that set. So `master-worker-honor-complete-status` is *also* required to close this loop — both proposals are necessary, neither is sufficient.
+
+Additionally, KE-464 documents a *third* silent failure on the same path: `updateProjectStatus()` regex no-ops on heading-form files, so the safety-cap write at `master-worker.ts:662` does not change disk state. The counter resets every 35 min on the next dispatch. A separate one-line warn-on-noop patch is filed at `agents/arc/workspace/proposals/2026-05-02-updateprojectstatus-warn-on-noop.md` and should be bundled into the same deploy.
+
+**Bundle now reads as three patches:**
+1. `fix-extractfield-heading-form` (read path)
+2. `master-worker-honor-complete-status` (entry-guard set)
+3. `updateprojectstatus-warn-on-noop` (write path observability)
+
+All three are independent in code but only deploying all three breaks the silent reset cycle on heading-form files.
