@@ -1,9 +1,5 @@
 # DELIVERABLES_CHECKLIST.md
 
-## Task: Project Complete - Iteration 5
-
-| Deliverable | Status | Path |
-|---|---|---|
-| Completion evidence file | DONE | /app/agents/shared/projects/outputs/completion-evidence.md |
-
-No further work required - project marked complete across 5 iterations.
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | Cross-project reusable assets manifest with file-level entries for top 5 projects | DONE | /app/agents/shared/projects/outputs/cross-project-reusable-manifest.md |
