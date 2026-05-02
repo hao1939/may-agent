@@ -2,6 +2,6 @@
 
 **Status:** COMPLETE - No further work required.
 
-The project has been marked complete since Iteration 1. All targets met or exceeded. No additional deliverables needed.
+The project has been marked complete since iteration 1. All targets met or exceeded. No additional deliverables needed.
 
-Generated: Session iteration 19
+Generated: Iteration 20 confirmation.

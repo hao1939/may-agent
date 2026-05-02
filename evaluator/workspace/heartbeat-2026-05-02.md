@@ -1,17 +1,27 @@
-# Evaluator heartbeat — 2026-05-02
+# Evaluator Heartbeat — 2026-05-02
 
-## Checks
+## Eval pipeline liveness (DB canonical)
+- `MAX(sessions.startedAt)=1777687025372`
+- `MAX(evaluations.createdAt)=1777686991632`
+- Lag: `43633ms` (≈43.6s) → **pipeline live**.
 
-### Session evaluation pipeline liveness (DB is canonical)
-- `evaluations.max(createdAt)` = **1777679791574**
-- `sessions.max(startedAt)` = **1777681599853**
-- **Lag** = **1,818,108 ms (~30.3 minutes)**
+Evidence:
+- `bun -e ... select max(startedAt) ...` + `select max(createdAt) ...` (see tool transcript)
 
-Interpretation: evaluator cron is running and relatively fresh (sub-hour lag). No immediate action.
+## Legacy artifact drift
+- `.state/evaluations/` mtimes show newest `task_tree_*.json` still around **2026-03-24**.
+- DB continues to update, so treat this as **legacy output path drift**, not pipeline failure.
 
-### Legacy `.state/evaluations/` artifacts
-- Directory contains `task_tree_*.json` with newest mtime **2026-03-24**, consistent with known chronic issue that legacy artifacts are stale.
-- Since DB is fresh, treat as **output-path drift** (non-blocking).
+## Monitor-session (running sessions)
+From `node agents/evaluator/skills/monitor-session.cjs --running`:
+- **STALL**: `s_1777626616591_0` (amy) idle **1007 min**, recommended action `kill`.
+- **DRIFT**: `s_1777686394847_3353` (arc), recommended action `warn`.
+- **PROTOCOL_VIOLATION (P114)**: `s_1777686825641_3398` (coach), recommended action `warn`.
+- **PROTOCOL_VIOLATION (P114)**: `s_1777687033778_3432` (optimizer), recommended action `warn`.
 
-## Next
-- If lag exceeds ~6h in a future heartbeat, investigate cron/job runner and notify tech-lead with exact lag.
+## Patrol
+- `node agents/evaluator/skills/patrol.cjs` → `CRITICAL`: missing `agents/shared/compliance-snapshot.json` baseline.
+- Interpreted as **patrol degraded** (not a hash-mismatch incident).
+
+## Follow-ups
+- Consider filing/dispatching a task to create/restore `agents/shared/compliance-snapshot.json` (owner: Bob per periodic-tasks notes) so patrol can provide meaningful integrity status.
