@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777731720586_555
+- **Session:** s_1777731726543_556
 - **Status:** done
-- **When:** 2026-05-02T14:22:06.542Z
-- **Duration:** 5s
+- **When:** 2026-05-02T14:22:18.171Z
+- **Duration:** 11s
 
 ## What Happened
 {
@@ -17,8 +17,16 @@
       "quality": 0.8,
       "verdict": "good",
       "issues": [
-        "No direct fix delivered (only an investigation note). This is acceptable for a heartbeat when the discovered issue is outside the allowed write scope, but it still limits practical impact.",
-        "The key DB query output that underpins the findings is truncated in the transcript, so the strongest evidence is indirect (the written investigation file + grep verification), not the raw query output."
+        {
+          "type": "SCOPE_LIMITATION",
+          "detail": "Delivered an investigation note rather than an actual fix; however the note is actionable and the session correctly reports fix as blocked by workspace-only constraint.",
+          "evidence": "Investigation file header: \"Status: evidence captured; production metric/fix blocked by workspace-only constraint\"."
+        },
+        {
+          "type": "TRACEABILITY_GAP",
+          "detail": "Core DB query evidence referenced in finish() (e.g., \"Step 4\") is not fully visible in the transcript due to truncation; cannot independently verify those specific numbers beyond the written investigation content.",
+          "evidence": "The large bash command output is truncated in the transcript; only the subsequent written/read investigation file shows the numbers."
+        }
       ],
       "metrics": {
         "tool_calls": {
@@ -28,16 +36,25 @@
           "edit": 0,
           "finish": 1
         },
+        "turns": 20,
         "wasted_calls": 0,
-        "looping": false,
-        "verification": "Performed: re-read written file and grep-verified key strings."
-      }
+        "failure_chains": 0
+      },
+      "evidence": [
+        "Followed required heartbeat format (GOAL/PLAN/DONE WHEN) immediately after reading heartbeat.md.",
+        "Created deliverable: agents/dev/workspace/investigations/2026-05-02-pending-event-backlog-and-handler-failed-staleness.md (write tool output shows 6298 bytes written).",
+        "Verified deliverable content by reading it back (read tool output shows table of pending backlog counts and handler.failed pending rows).",
+        "Extra verification via bash grep confirms file contains key recommendation string and handler.failed evidence."
+      ]
     }
   ],
   "workflow": {
     "name": "heartbeat",
     "issues": [
-      "Heartbeat produced documentation rather than a code/metric change; if the system expects heartbeat to drive fixes, this may be a throughput bottleneck, but it is consistent with the stated 'workspace-only constraint' noted in the investigation."
+      {
+        "type": "NO_CODE_FIX",
+        "detail": "Heartbeat produced investigation + metric recommendation, not a code/handler change. Acceptable when no current failures and constraints prevent a safe fix, but lower impact than remediation."
+      }
     ]
   },
   "overall": {
@@ -47,7 +64,8 @@
   "lessons": [
     {
       "agent": "dev",
-      "lesson": "When core health metrics are green, query the events ledger for structural backlog signals (e.g., large status='pending' accumulation) and document a measurement gap with a concrete proposed metric."
+      "category": "insight",
+      "content": "If events.status='pending' includes high-volume telemetry (handler.started/completed, project.iteration), backlog metrics must filter to actionable event types or they will be noisy and misleading."
     }
   ]
 }
