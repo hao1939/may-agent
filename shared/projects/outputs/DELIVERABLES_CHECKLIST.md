@@ -1,9 +1,3 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST.md
 
-## Task: Project Complete - No Work Remaining
-
-| Deliverable | Status | Notes |
-|---|---|---|
-| Project completion | DONE | All metrics exceeded targets. Completion evidence already at /app/agents/shared/projects/outputs/project-completion-evidence.md |
-
-No further iterations should be dispatched.
+- [x] DONE — Completion confirmation: `/app/agents/shared/projects/outputs/project-complete-confirmation.md`
