@@ -1,11 +1,13 @@
 # Project Completion Evidence
 
 **Status:** COMPLETE  
-**Date:** Session received explicit completion signal.
+**Generated:** Session iteration received "CONTINUE" with explicit completion notice.
 
 ## Evidence
 
-The task guidance states:
-> This project is **COMPLETE**. **Do not dispatch any more worker iterations to this project.**
+The task guidance explicitly states:
+- "This project is **COMPLETE**."
+- "Do not dispatch any more worker iterations to this project."
+- "All metrics exceed targets. Status updated to `complete`."
 
-No further work is required.
+No further work is required or appropriate for this project.
