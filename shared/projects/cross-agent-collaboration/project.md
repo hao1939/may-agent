@@ -19,9 +19,9 @@ Agents currently work in silos. Each produces deliverables that could benefit ot
 | Metric | Current | Target |
 |--------|---------|--------|
 | shared-output-discovery-rate | ✅ grep works (40+ entries) | Any agent can find relevant outputs within 1 query |
-| cross-agent-reuse-count | 0 | 5 instances/week of one agent using another's output |
+| cross-agent-reuse-count | 1 (first logged) | 5 instances/week of one agent using another's output |
 | redundant-work-rate | ~25% estimated | <10% of iterations duplicate existing work |
-| manifest-coverage | ~60 entries, 104 unindexed | All non-archive outputs indexed |
+| manifest-coverage | 72 entries, ~105 unindexed | All non-archive outputs indexed |
 | agents-instrumented | 3 (optimizer, scout, coder) | All active agents |
 
 ## Plan
@@ -38,13 +38,22 @@ Agents currently work in silos. Each produces deliverables that could benefit ot
 8. **Re-plan** — Phase 1 infrastructure complete. Now drive adoption and measure impact.
 9. ✅ **Run freshness check** — 140 unindexed files found (many in _archive/)
 10. ✅ **Create adoption baseline** — Written by orchestrator: reuse=0, coverage=24%, 2 agents instrumented
-11. **Index 10 highest-value unindexed outputs** — Focus on prompt-efficiency, handler-reliability, request-deduplication, agent-system-literacy (skip _archive/)
-12. **Instrument coder agent** — Add manifest-check to `/app/agents/coder/context.md` as third pilot
-13. **Drive first reuse instance** — Have optimizer or scout actually query the manifest and cite an output from another project in their next deliverable
-14. **Re-plan** — After first confirmed reuse instance
+11. ✅ **Index highest-value unindexed outputs** — Manifest expanded to 72 entries
+12. ✅ **Instrument coder agent** — verified
+13. ✅ **Drive first reuse instance** — Worker queried manifest, found dedup-measurement.md, logged reuse
+14. **Re-plan** — Phase 2 infrastructure done. Now drive organic adoption.
+
+### Phase 3: Drive Adoption & Measure Impact
+15. **Index remaining non-archive outputs** — 105 files still unindexed. Batch-add top 30 with descriptions to get coverage >60%
+16. **Instrument remaining agents** — Add manifest-check to all active agents (auditor, planner, etc.)
+17. **Create weekly reuse check** — Script that greps all agent .state/ dirs for manifest references, appends findings to reuse-log.md
+18. **Drive 4 more reuse instances** — Need 5 total to hit weekly target. Identify 4 upcoming tasks where existing outputs are relevant
+19. **Re-plan** — After reuse count reaches 5
 
 ## Current State
 
-**Phase 1 complete**: Manifest (44 entries), discovery convention, 2 pilot agents (optimizer + scout), freshness script. All verified.
+**Phase 1 complete**: Manifest, discovery convention, freshness script. All verified.
 
-**Phase 2 status**: 3 agents instrumented (optimizer, scout, coder — all verified). Coverage still ~24% — 15+ non-archive files unindexed. Reuse count still 0. Item 11 (indexing) not yet done despite iteration 11 claiming it. Next: index files, then drive first reuse.
+**Phase 2 complete**: 3 agents instrumented (optimizer, scout, coder). Manifest expanded to 72 entries. First reuse logged (dedup-measurement.md methodology reused).
+
+**Phase 3 starting**: Coverage still low (~40%). Reuse count = 1, target = 5/week. Need to batch-index more files and instrument remaining agents to drive organic adoption.
