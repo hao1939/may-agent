@@ -33,4 +33,12 @@ Agents currently work in silos. Each produces deliverables that could benefit ot
 
 ## Current State
 
-Items 1-2 complete. Manifest exists at `outputs/shared-output-manifest.md` with 18 entries, tag-based discovery, and an agent protocol section. However, most entries point to directories rather than specific files — this reduces discoverability. Next: enrich manifest with file-level entries for the top projects, then instrument pilot agents to actually use it.
+Items 1-2 complete. Manifest exists at `outputs/shared-output-manifest.md` with 18 entries, tag-based discovery, and an agent protocol section. Most entries point to directories rather than specific files.
+
+Key projects with rich outputs ready for file-level indexing:
+- skill-workflow-audit: 28 files (audits, metrics, prune plans)
+- agent-memory-learning: 7 files (lesson DB, retrieval, benchmarks)
+- documentation-gen: 8 files (guides, architecture, inventory)
+- test-coverage: 6 files (gap analysis, standards, strategy)
+
+Next priority: Enrich manifest with ~20 high-value file-level entries from these 4 projects, then instrument pilot agents (item 3).

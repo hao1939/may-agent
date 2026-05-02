@@ -1,5 +1,4 @@
 # Deliverables Checklist
 
-| Deliverable | Status | Notes |
-|---|---|---|
-| Assess project and decide next action | DONE | Project is complete, no work needed |
+- [x] DONE — Assess project state: Project is complete, all metrics at target. No action needed.
+  - File: /app/agents/shared/projects/prompt-efficiency/project.md (no changes needed)

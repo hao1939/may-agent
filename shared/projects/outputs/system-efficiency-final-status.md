@@ -1,35 +1,20 @@
-# System Efficiency — Final Status Report
+# System Efficiency — Final Status
 
-**Project**: system-efficiency  
-**Status**: DONE (closed 10+ iterations ago)  
-**Date**: Iteration 17 confirmation  
+**Project Status**: Done (closed)  
+**Date**: Iteration 17+  
+**Successor Project**: `/app/agents/shared/projects/cross-agent-collaboration/`
 
 ## Summary
+All plan items complete. All 12 satellite projects closed. All 3 core metrics at or above target.
+No further iterations should be dispatched to this project.
 
-All objectives achieved:
-- 12/12 satellite projects closed and at target
-- All 3 core metrics met or exceeded
-- Successor project `cross-agent-collaboration` spawned and active with first deliverable
+## Deliverables Produced (system-efficiency)
+- `outputs/satellite-triage.md` — ranked assessment of all satellites
+- `outputs/regression-guard-config.md` — alert thresholds for metric drift
+- `outputs/efficiency-playbook.md` — orchestrator/worker success patterns
+- `outputs/system-efficiency-retrospective.md` — full project retrospective
+- `outputs/next-frontier-proposal.md` — successor project proposals
+- `outputs/shared-output-manifest.md` — cross-project deliverable index
 
-## Metrics (Final)
-
-| Metric | Target | Actual | Status |
-|--------|--------|--------|--------|
-| satellite-goal-progress | 4 | 12 | ✅ Exceeded |
-| deliverables-per-iteration | 0.8 | ~0.8 | ✅ Met |
-| system-metric-coverage | 3 | 3 | ✅ Met |
-
-## Key Deliverables Produced
-
-1. `satellite-triage.md` — ranked assessment of all 12 satellites
-2. `regression-guard-config.md` — alert thresholds for all closed projects
-3. `efficiency-playbook.md` — rules for productive iterations
-4. `system-efficiency-retrospective.md` — full project retrospective
-5. `next-frontier-proposal.md` — successor project proposals
-6. `shared-output-manifest.md` — cross-agent output index (moved to successor project)
-
-## Successor
-
+## Next Steps
 All future work → `/app/agents/shared/projects/cross-agent-collaboration/`
-
-No further iterations should be dispatched to system-efficiency.
