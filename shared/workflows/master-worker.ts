@@ -85,11 +85,16 @@ export function extractDecision(text: string): Decision {
     return { status: "continue", detail: trimmed.slice(0, 500) };
   }
 
-  // Fallback: scan for uppercase keywords (skip DONE — too common as regular word)
+  // Fallback: scan for uppercase keywords (including DONE/COMPLETE for project completion)
   for (const keyword of ["CONTINUE", "PIVOT", "BLOCKED", "WAITING"] as const) {
     if (new RegExp(`\\b${keyword}\\b`).test(trimmed)) {
       return { status: keyword.toLowerCase() as Decision["status"], detail: trimmed.slice(0, 500) };
     }
+  }
+
+  // Fallback DONE/COMPLETE detection (after other keywords to avoid false positives)
+  if (/\b(DONE|COMPLETE|COMPLETED)\b/.test(trimmed) && /\b(project|all\s+metrics|all\s+milestones|stop\s+dispatching)\b/i.test(trimmed)) {
+    return { status: "done", detail: trimmed.slice(0, 500) };
   }
 
   return { status: "unknown", detail: trimmed.slice(0, 500) };
