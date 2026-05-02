@@ -1,5 +1,11 @@
 # Deliverables Checklist
 
-## Required
-- [x] DONE — `/app/agents/shared/projects/cross-agent-collaboration/project.md` — New project with status active, owner optimizer, P1 priority, goal, metrics (3), and 4-phase plan
-- [x] DONE — `/app/agents/shared/projects/system-efficiency/outputs/cross-agent-collaboration-kickoff.md` — Kickoff record documenting transition
+## Task: System Efficiency Project Closure (Iteration 16)
+
+| # | Deliverable | Status | Path/Notes |
+|---|-------------|--------|------------|
+| 1 | Project closure notice | DONE | `/app/agents/shared/projects/system-efficiency/outputs/project-closure-notice.md` |
+
+## Notes
+- Project is done; no further iterations needed
+- Successor: `/app/agents/shared/projects/cross-agent-collaboration/`
