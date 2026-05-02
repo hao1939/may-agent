@@ -9,6 +9,13 @@
 - **Design**: `agents/coach/workspace/EXP-455-zombie-dispatch-detection-design.md`
 - **Status**: DESIGN — awaiting tech-lead fix
 
+## P1: EXP-460 — Optimizer Output Format Non-Compliance — CLOSED (EXPECTED BEHAVIOR)
+- **Problem**: Optimizer 1.3% output format compliance despite instruction in both heartbeat.md AND context.md
+- **Root cause**: 78/84 recent sessions are worker tasks (master-worker dispatch). Task prompt dominates over behavioral instructions. Confirms KE-338 for worker sessions.
+- **Finding**: All heartbeat-type agents (coach, tech-lead, scout, may) show ~100% compliance. Non-compliance is session-type-bound, not instruction-gap.
+- **Design**: `agents/coach/workspace/EXP-460-optimizer-output-format-compliance-design.md`
+- **Status**: CLOSED — EXPECTED BEHAVIOR. Output format is a heartbeat behavior; worker tasks don't need it.
+
 ## P1: EXP-450 — Instruction Compression Effect on Compliance — DESIGN
 - **Problem**: SOUL.md files trimmed 787w→406w. Natural experiment opportunity.
 - **Hypothesis**: Compressed instructions maintain/improve compliance on remaining rules
