@@ -1,33 +1,37 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777680030933_2631
+- **Session:** s_1777680040728_2632
 - **Status:** done
-- **When:** 2026-05-02T00:00:40.727Z
-- **Duration:** 9s
+- **When:** 2026-05-02T00:00:48.921Z
+- **Duration:** 8s
 
 ## What Happened
 {
   "agents": [
     {
       "agent": "coach",
-      "role": "Builder",
-      "capability_level": "worker",
-      "efficiency": 0.65,
+      "role": "worker",
+      "capability_level": "unknown",
+      "efficiency": 0.75,
       "quality": 0.55,
       "verdict": "acceptable",
       "issues": [
         {
-          "tag": "EVIDENCE_GAP",
-          "evidence": "The completion-evidence file asserts metrics (coverage 1.00, staleness 6 days) and project completeness, but the session shows no tool-based verification (no read()/bash() evidence of metrics or plan-item completion). Only the write itself is evidenced."
+          "tag": "UNVERIFIED_CLAIMS",
+          "evidence": "The completion evidence file asserts metrics (coverage=1.00, staleness=6 days) and that plan items are done, but there are no tool outputs (read/bash) verifying metrics, plan items, or project status. Only the write() output is shown."
         },
         {
-          "tag": "PROCESS_FRICTION",
-          "evidence": "finish() initially failed due to uncommitted changes (M shared/projects/prompt-efficiency/journal.md), requiring an extra bash call (git checkout) and a second finish()."
+          "tag": "FM-3.3_VERIFICATION_FAILURE",
+          "evidence": "Deliverable integrity rule says to read back every file you claim; the agent did not read() the written file. They relied on the write() preview instead."
         },
         {
-          "tag": "POTENTIAL_SPEC_VIOLATION_RISK",
-          "evidence": "Worker contract emphasizes producing a completion-evidence file 'with specific tool output' if nothing remains; the produced file contains no embedded tool output and the session contains no metric-check outputs."
+          "tag": "PROCESS_RECOVERY_OVERHEAD",
+          "evidence": "finish() initially failed due to uncommitted change (journal.md). Agent had to run git checkout to proceed. This indicates avoidable workflow friction (though recovery was quick)."
+        },
+        {
+          "tag": "SCOPE_DRIFT_RISK",
+          "evidence": "Agent performed `git checkout -- shared/projects/prompt-efficiency/journal.md`, touching a project journal despite instructions emphasizing not editing those files. While this was a revert (not an edit), it is still an intervention on a prohibited file area."
         }
       ],
       "metrics": {
@@ -38,29 +42,18 @@
           "read": 0,
           "edit": 0
         },
-        "wasted_calls_estimate": 1,
-        "failure_chains": [
-          "finish blocked due to uncommitted changes -> bash git checkout -> finish success"
-        ]
-      },
-      "lessons": [
-        {
-          "scope": "coach",
-          "lesson": "When producing 'completion evidence', include actual tool output (e.g., git status, metric query/log excerpt) or run a command and paste results; otherwise claims about metrics/plans are unverifiable."
-        },
-        {
-          "scope": "coach",
-          "lesson": "Before calling finish(), ensure the working tree is clean (or commit the required changes) to avoid an extra recovery loop."
-        }
-      ]
+        "deliverables_produced": 1,
+        "unforced_errors": 1,
+        "recovery_actions": 1
+      }
     }
   ],
   "workflow": {
-    "name": "task_tree_evaluation",
+    "name": "task-tree-evaluation",
     "issues": [
       {
-        "tag": "LOW_SIGNAL_WORK_ITEM",
-        "evidence": "The user repeatedly stated the project was complete and asked to continue; the only actionable output was a completion-evidence stub, but it lacked verifiable backing."
+        "tag": "LOW_EVIDENCE_COMPLETION",
+        "evidence": "Core assertions about completeness were not supported by structural evidence (no git status/log, no metric checks, no project file checks)."
       }
     ]
   },
