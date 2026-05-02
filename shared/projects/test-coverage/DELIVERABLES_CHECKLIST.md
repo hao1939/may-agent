@@ -1,5 +1,7 @@
 # Deliverables Checklist
 
-- [x] DONE — Assess project state and update project.md
-  - File: `/app/agents/shared/projects/test-coverage/project.md`
-  - Changed status from `active` to `complete`
+## Task: Assess test-coverage project and update status
+
+| Deliverable | Status | Path/Details |
+|---|---|---|
+| Update project.md status to complete | DONE | /app/agents/shared/projects/test-coverage/project.md — changed Status from "active" to "complete" |

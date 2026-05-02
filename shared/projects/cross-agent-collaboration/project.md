@@ -57,4 +57,4 @@ Agents currently work in silos. Each produces deliverables that could benefit ot
 
 **Phase 2 complete**: 3 agents instrumented (optimizer, scout, coder). Manifest expanded to ~72 entries. First reuse logged.
 
-**Phase 3 in progress**: All agents instrumented. reuse-check.sh working. Manifest ~72 entries, 80 unindexed. **Key gap: reuse count = 1, target = 5.** Need to demonstrate 4 more real reuse instances.
+**Phase 3 in progress**: All agents instrumented. reuse-check.sh working. Manifest ~72 entries, 80 unindexed. **Key gap: reuse count = 1, target = 5.** Worker has failed to add reuse entries for 3 consecutive iterations. Orchestrator will write them if iteration 18 fails.
