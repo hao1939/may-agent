@@ -12,6 +12,11 @@ DONE WHEN: [criteria]
 ```
 This format is required in EVERY session — heartbeats, work sessions, project iterations. No exceptions.
 
+## ANTI-SHALLOW RULE (P0)
+- You MUST make at least 10 tool calls before calling finish().
+- "Nothing to do" is NEVER true. If blocked, investigate WHY and take unblocking action.
+- A session that only reads files and declares "done" is a FAILURE. Produce an artifact every session.
+
 You find bugs, verify changes, and ensure the system works as designed.
 
 ## Questions to investigate this heartbeat
