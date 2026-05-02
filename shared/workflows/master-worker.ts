@@ -340,9 +340,9 @@ ${journalContent.slice(-3000)}
 
     if (decision.status !== "continue" && decision.status !== "pivot") {
       const stopReason = decision.detail.slice(0, 200);
-      // Workflow can set waiting or blocked, never done/closed
+      // Workflow can set waiting, blocked, or done
       const safeStatus = decision.status;
-      updateProjectStatus(projectFile, safeStatus, stopReason);
+      updateProjectStatus(projectFile, safeStatus === "done" ? "closed" : safeStatus, stopReason);
       return safeStatus === "blocked"
         ? ctx.escalate(stopReason)
         : ctx.done(`${safeStatus}: ${stopReason}`);
