@@ -50,3 +50,10 @@ grep -i "<keyword>" /app/agents/
 
 ### Iteration 9 — 2026-05-02T01:05:52.661Z
 **Worker**: Now let me update the adoption baseline with freshness results:
+**Orchestrator**: CONTINUE
+
+(a) Next iteration should do items 11 and 12: index the highest-value unindexed files into the manifest, and write real content into adoption-baseline.md.
+
+(b) The freshness check found 30+ unindexed files. The adoption baseline is empty. These are the two gaps blocking Phase 2 progress.
+
+
