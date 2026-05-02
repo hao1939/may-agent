@@ -16,6 +16,7 @@
 - **Dashboard**: `agents/coach/workspace/experiment-dashboard-20260510.md`
 - **Status check (2026-05-12)**: Only 3 post-deployment sessions available. Still need ~47 more. Next check: 2026-05-17.
 - **Measurement (2026-05-13)**: 0/15 edit failures in post-deploy sessions (0% vs 15.4% baseline). But n=15 too small — worker edit-heavy sessions not yet in history. Code confirmed live (master-worker.ts:423-448). Next check: 2026-05-17.
+- **Measurement (2026-05-17)**: 0/49 edit failures across 6 edit sessions (0% vs 15.4% baseline). Pre-read confirmed firing (8 injections in s_702). Signal very strong but n=6 sessions still below n≥50 target. **POSITIVE (directional)**. Results: `agents/coach/workspace/EXP-500-measurement-results.md`. Next check: when n≥30 edit sessions available.
 
 ## P1: EXP-510 — Worker Task Completion Quality — BASELINE COLLECTED
 - **Problem**: Worker sessions (93% of compute) have no behavioral instructions. Incomplete task execution is common.
@@ -27,6 +28,7 @@
 - **New finding**: finish() is universally called with `{}` — CONFIRMED: infra supports structured params (status, deliverables, verification_evidence). This is behavioral, not architectural. Treatment viable.
 - **Target**: ≥60% write rate, ≥50% structured finish rate
 - **Status**: TREATMENT DESIGNED (2026-05-14). Design: `agents/coach/workspace/EXP-510-treatment-design.md`. Next: deploy injection in master-worker.ts:448+
+- **Deployment request**: `agents/coach/workspace/EXP-510-deployment-request.md` (2026-05-17). Needs tech-lead or may to deploy.
 
 ## P1: EXP-495 — Write-First Scaffold Deployment — CLOSED ❌ NEGATIVE
 - **Problem**: WRITE-FIRST text constraint shows 0% compliance. Scaffold/template approach is proven category (KE-480).
