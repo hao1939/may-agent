@@ -75,3 +75,6 @@ grep -i "<keyword>" /app/agents/
 (a) Next iteration should create the reuse tracking log (item 16) and then **demonstrate first actual reuse** (item 18) by having the worker query the manifest for a real topic, find a relevant file, and document the reuse.
 
 (b) Infrastructure is complete. The project's core metric — cross
+
+### Iteration 13 — 2026-05-02T01:13:12.123Z
+**Worker**: Now copy to the outputs dir and verify:
