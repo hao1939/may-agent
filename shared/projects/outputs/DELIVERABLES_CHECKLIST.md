@@ -1,4 +1,4 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST
 
-## Required
-- [x] `outputs/shared-output-manifest.md` — DONE — `/app/agents/shared/projects/outputs/shared-output-manifest.md` — Index of all project deliverables for cross-agent discovery (18 entries, 42 lines)
+- [x] DONE — `/app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md` — Master index of all project deliverables with discovery convention and tag taxonomy
+- [x] DONE — `/app/agents/shared/projects/outputs/shared-output-manifest.md` — Copy in shared outputs directory
