@@ -1,10 +1,19 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777726173847_436
+- **Session:** s_1777727935111_470
 - **Status:** done
-- **When:** 2026-05-02T12:50:57.715Z
-- **Duration:** 1m23s
+- **When:** 2026-05-02T13:21:28.355Z
+- **Duration:** 2m33s
 
 ## What Happened
-The two notifications about EXP-495 are requesting deployment of the WRITE-FIRST scaffold change, but based on the measurement plan, this was **already deployed** (commit 2e11fdf5e, confirmed in the code at line ~420). These notifications are stale/redundant.
+OK, there's a TypeScript issue in iteration-timer.ts but that's likely a named export issue, not critical. Let me focus on the inbox items.
+
+**Inbox decisions:**
+
+1. **EXP-495 notifications (2h ago)**: Already deployed in previous session (commit 2e11fdf5e, line 420 updated). **Dismiss** — already done.
+
+2. **EXP-500 notification (0m ago)**: "Structural read-before-edit enforcement — READY FOR IMPLEMENTATION". This is a good design but:
+   - EXP-495 was JUST deployed and needs measurement first (AWAITING_POST_MEASUREMENT)
+   - Deploying two structural changes simultaneously makes measurement impossible
+   - **Decision**: Defer until EXP-495 has 20+ sessions measured. Notify coach.

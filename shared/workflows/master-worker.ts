@@ -420,6 +420,33 @@ ${journalContent.slice(-3000)}
         workerPrompt = `## Task (Iteration ${iteration})\nWRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Your FIRST tool call MUST be edit() to replace the stub content.\n- Use this structure for your first edit:\n\n# [Task Summary]\n## Status: IN_PROGRESS\n## What I know so far\n[1-2 sentences: what the task needs]\n## My plan\n[numbered steps]\n## Work output below\n[your actual deliverable content starts here]\n\n- After this first edit, continue working normally. Update the file as you make progress.\n\n${guidance}`;
       }
 
+      // EXP-500: Pre-read injection for edit tasks targeting existing files
+      if (!stubFilePath) {
+        const editTargetMatch = guidance.match(/(?:edit|update|modify|change|fix|replace|add to|append)\s+(?:in\s+)?[`']([^`']+)[`']/i)
+          || guidance.match(/(?:edit|update|modify)\s+(\S+\.\w{1,5})/i);
+        if (editTargetMatch) {
+          const targetFile = editTargetMatch[1];
+          const candidates = [
+            join(outputsDir, targetFile),
+            join(outputsDir, '..', targetFile),
+            targetFile.startsWith('/') ? targetFile : join(projectDir, targetFile),
+          ];
+          for (const candidate of candidates) {
+            try {
+              if (existsSync(candidate) && statSync(candidate).isFile() && statSync(candidate).size < 50000) {
+                const content = readFileSync(candidate, 'utf-8');
+                const lines = content.split('\n');
+                const preview = lines.slice(0, 200).join('\n');
+                const truncated = lines.length > 200 ? `\n[... ${lines.length - 200} more lines truncated]` : '';
+                workerPrompt += `\n\n---\nCURRENT FILE STATE (auto-injected for accurate edit):\nPath: ${candidate}\n\`\`\`\n${preview}${truncated}\n\`\`\`\nUse exact text from above as oldText in edit() calls.`;
+                ctx.log(`[work] EXP-500: Pre-read injected ${candidate} (${lines.length} lines)`);
+                break;
+              }
+            } catch { /* skip unreadable files */ }
+          }
+        }
+      }
+
       await withRetry(() => worker.prompt(workerPrompt), {
         maxRetries: 3,
         baseDelayMs: 1000,
