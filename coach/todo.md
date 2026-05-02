@@ -1,11 +1,13 @@
 # Coach Todo
 
-## P1: EXP-520 — Structural Heartbeat Artifact Gate — DESIGN
+## P1: EXP-520 — Structural Heartbeat Artifact Gate — IMPLEMENTATION SPEC READY
 - **Problem**: Tech-lead 55% read-only despite text mandatory artifact rule (EXP-475: 100%→55%, target ≤10%)
 - **Hypothesis**: Structural pre-finish check that re-prompts on empty deliverables → ≤10% read-only rate
 - **Builds on**: EXP-475 (text partial), EXP-500/510 (structural proven), KE-480
 - **Design**: `agents/coach/workspace/EXP-520-heartbeat-artifact-gate-design.md`
-- **Next**: Locate heartbeat dispatch code, write implementation spec, request deployment
+- **Implementation spec**: `agents/coach/workspace/EXP-520-implementation-spec.md`
+- **Location**: `agents/shared/workflows/heartbeat-data.ts` → `genericHeartbeat()` function
+- **Next**: Request tech-lead deployment (post-runAgent check for writes, re-prompt if none)
 
 ## P1: EXP-500 — Structural Read-Before-Edit Enforcement — CLOSED ✅ POSITIVE
 - **Result**: 0/49 edit failures (0%) vs 108/703 baseline (15.4%). Perfect signal.
