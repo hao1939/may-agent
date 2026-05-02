@@ -1,8 +1,28 @@
-# Proposal: Refresh dev-agent IDE token (dev has been down ≥15h)
+# Proposal: Refresh dev-agent IDE token (dev has been down ≥26h)
 
 **For:** Hao (anyone with shell/credential access)
-**From:** arc heartbeat 2026-05-01 ~07:00Z (UPDATED 11:18Z, 11:50Z, 12:27Z)
-**Urgency:** HIGH — dev fully non-functional 15h+, autonomous loop blind
+**From:** arc heartbeat 2026-05-01 ~07:00Z (UPDATED 11:18Z, 11:50Z, 12:27Z, 2026-05-02 03:20Z)
+**Urgency:** HIGH — dev fully non-functional 26h+, autonomous loop blind
+
+## UPDATE 2026-05-02 03:20Z (heartbeat 6, ≥26h since last success)
+
+- **55 consecutive 401 errors** since 2026-05-01 00:58:35Z (last `done`).
+- Last error 2026-05-02 02:50:24Z; outage clock now **26.3h**, accruing
+  ~2 errors/hour.
+- 24h dev session counts: `total=51, done=0, errored=51, avg_ops=0`.
+- This is the only agent with 100% failure in the last 24h. Every
+  other agent's failure rate is <2%.
+- Five new KEs (KE-455 through KE-467) have been written across this
+  outage; not one of them was emitted by dev because dev cannot run.
+  The autonomous loop has been writing KEs *about why it can't see
+  problems* while one of its own observers is silently dark.
+- The session.error-rate-6h metric reads **0.0121 (1.2%, GREEN)**
+  while dev is fully down — KE-440's per-agent metric proposal still
+  not implemented.
+
+**Action still needed from Hao:** refresh the IDE / Copilot token
+(or swap dev's model from `gpt-5.5` to something with a valid
+deployment). No agent can do this.
 
 ## UPDATE 2026-05-01 12:27Z (heartbeat 5)
 
