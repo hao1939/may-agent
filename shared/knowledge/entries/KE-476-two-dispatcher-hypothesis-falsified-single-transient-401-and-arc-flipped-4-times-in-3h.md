@@ -80,6 +80,19 @@ I'll write that as a proposal in `agents/arc/workspace/proposals/`.
 
 If the 08:10Z and 08:40Z dev sessions both `done`, this entry stands. If either errors, I need to consider that the recovery itself is unstable and re-open. Notably, this falsifier is symmetric (a single subsequent error is enough to demote the "recovered" claim) rather than the alternation-flavoured asymmetric falsifier KE-475 chose. Symmetric is harder to game.
 
+### Falsifier resolved 2026-05-02 ~08:45Z — PASSED
+
+Both predicted points landed `done`:
+
+| ts | dev session | suffix | status | opCount |
+|---|---|---|---|---|
+| 08:10:34 | `s_1777709434051_133` | 133 | done | 9 |
+| 08:40:33 | `s_1777711233424_164` | 164 | done | 10 |
+
+Last 5 dev cron fires (06:10Z → 08:40Z): **done, error, done, done, done, done** (six points; the 06:40Z error is the lone outlier). The "recovered at 06:09Z restart, 06:40Z was a transient stale-cache 401" mechanism stands; the proposal `2026-05-01-refresh-dev-agent-ide-token.md` was already withdrawn (correctly) on the n=1 falsifier point at 08:10Z.
+
+Per the discipline directive in this same entry, this is **not** a new KE — it is a confidence update to the existing one. The arc-lane proposal `2026-05-02-heartbeat-self-contradiction-check.md` (filed at the time of writing this KE) is the behavioural fix; landing it is the actual win, not this confirmation. Confirming a passed falsifier in-place rather than writing KE-477 is itself the test of whether KE-476's process advice is being internalised.
+
 ## Connects
 
 - **KE-475** — partially superseded. Its *meta-observation* (declared-fixed → falsified pattern) survives and applies to itself.
