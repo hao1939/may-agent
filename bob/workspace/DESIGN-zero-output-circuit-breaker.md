@@ -1,6 +1,6 @@
 # DESIGN: Zero-Output Loop Circuit Breaker
 
-**Author**: Bob | **Date**: 2025-05-02 | **Status**: Proposed
+**Author**: Bob | **Date**: 2025-05-02 | **Status**: APPROVED — implementing
 **Related**: ANALYSIS-zero-output-loops-2025-05-02.md, H-301
 
 ## Problem
@@ -101,9 +101,25 @@ After implementation, track:
 - **Waste reduction**: 50-70% of iteration waste (from current ~35% waste rate)
 - **Risk**: Low — only triggers after 8 consecutive failures, with warnings at 3 and 5
 
+## Review Feedback (Incorporated)
+
+From tech-lead review (2025-05-02):
+1. **Integration target**: `master-worker-resilient.ts` (has existing health-check pattern)
+2. **Consolidation first**: Don't create new variant files — add tracker to existing resilient file
+3. **Lower thresholds**: Escalate at 3, terminate at 5 (down from 5/8)
+4. **Additional exemption**: `context` action in agents tool (info-gathering) counts as productive
+
+## Updated Thresholds
+
+| Consecutive 0-output | Action |
+|----|--------|
+| 3 | Escalate to supervisor + inject warning. Log `zero-output-loop` event. |
+| 5 | Auto-terminate. Status = `blocked`, reason = `zero-output-loop-breaker`. |
+
 ## Next Steps
 
-1. tech-lead: Locate exact integration point in master-worker orchestration
-2. Implement DeliverableTracker as middleware
-3. Run for 1 week with logging-only (no termination) to validate thresholds
+1. ~~tech-lead: Locate exact integration point~~ → **`master-worker-resilient.ts`** confirmed
+2. Implement DeliverableTracker as field on/alongside existing `HealthState`
+3. Ship as logging-only for 1 week (no termination) to validate new thresholds
 4. Enable enforcement after validation
+5. Track false-positive rate before tightening further
