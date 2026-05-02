@@ -1,9 +1,7 @@
 # Deliverables Checklist
 
-## Task: Project Complete - No further work needed
+## Task: Write efficiency-playbook.md
 
 | Deliverable | Status | Path |
-|---|---|---|
-| Completion notice | DONE | /app/agents/shared/projects/outputs/project-complete-notice.md |
-
-All metrics exceeded targets. Project has been complete for 50 iterations.
+|------------|--------|------|
+| Efficiency playbook with success/failure patterns, orchestrator/worker rules | DONE | `/app/agents/shared/projects/outputs/efficiency-playbook.md` |
