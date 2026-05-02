@@ -56,7 +56,7 @@ describe("dispatch-validator deep branches", () => {
   it("warns about stop reason on active project", () => {
     setupProject("**Status**: active\n**Stop Reason**: budget exceeded\n");
     const r = validateDispatch(`project: proj`, tmpBase);
-    expect(r.valid).toBe(false); // active + stop reason = still valid but warning
+    expect(r.valid).toBe(true); // active + stop reason = still valid but warning
     expect(r.warnings.some(w => w.includes("budget exceeded"))).toBe(true);
   });
 

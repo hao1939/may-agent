@@ -68,6 +68,11 @@ export function extractDecision(text: string): Decision {
     }
   }
 
+  // Check for DONE/COMPLETE — project is finished, stop dispatching
+  if (upper.startsWith("DONE") || upper.startsWith("COMPLETE")) {
+    return { status: "done", detail: trimmed.slice(0, 500) };
+  }
+
   // Check for "Decision: KEYWORD", "**KEYWORD**", or "**Proceed**" patterns
   const decisionPattern = /(?:\*{0,2}Decision\*{0,2}[:\s]+\*{0,2}|^|\n)\*{0,2}(CONTINUE|PIVOT|BLOCKED|WAITING)\*{0,2}/im;
   const patternMatch = trimmed.match(decisionPattern);
