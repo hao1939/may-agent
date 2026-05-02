@@ -11,6 +11,9 @@
 - **Target**: ≤7.7% edit failure rate (50% reduction)
 - **Status**: DEPLOYED ✅ (2026-05-10). Live in master-worker.ts:423-448. Measure after 50+ sessions (~2026-05-15).
 - **Deployment record**: `agents/coach/workspace/EXP-500-deployment-record.md`
+- **Measurement protocol**: `agents/coach/workspace/EXP-500-measurement-protocol.md`
+- **Early signal**: 5/6 sessions clean (83% vs 52% baseline). n=6, need n≥50.
+- **Dashboard**: `agents/coach/workspace/experiment-dashboard-20260510.md`
 
 ## P1: EXP-495 — Write-First Scaffold Deployment — CLOSED ❌ NEGATIVE
 - **Problem**: WRITE-FIRST text constraint shows 0% compliance. Scaffold/template approach is proven category (KE-480).
