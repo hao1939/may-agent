@@ -1,4 +1,8 @@
 # Deliverables Checklist
 
-- [x] DONE — Assess project status. Project is complete, all metrics at target. No work to dispatch.
-  - File: /app/agents/shared/projects/prompt-efficiency/project.md (Status: Complete, no edits needed)
+## prompt-efficiency project — Assessment
+
+| Deliverable | Status | Notes |
+|---|---|---|
+| Project assessment | DONE | Project is complete, all metrics at target |
+| No worker dispatch needed | DONE | Project status is Complete, no further work |
