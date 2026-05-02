@@ -1,6 +1,6 @@
 
 ## Next
-- [ ] **EXP-267 implementation** — Finish-guard evidence specificity. See `agents/shared/knowledge/experiments/EXP-267/design.md`.
+- [ ] **EXP-267 deployment** — Implementation plan ready. Deploy treatment text to coder/scout/evaluator context.md. See `agents/bob/workspace/EXP-267-implementation-plan.md`.
 - [x] **H-300 Evidence Quality Decay** — COMPLETED 2025-05-02. Mean 3.25 (no intervention needed). Workers score 2.5 (monitor). See `EXP-301-evidence-quality-results.md`.
 - [x] ~~**Dispatch dedup guard**~~ — CLOSED 2025-05-02. Problem resolved by infrastructure. See `AUDIT-heartbeat-2025-05-02.md`.
 
