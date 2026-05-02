@@ -124,3 +124,6 @@ cat
 (a) Next iteration should tackle items 22 and 23: batch-index 30 more unindexed files into the manifest, and search agent `.state/` directories for evidence of organic manifest usage.
 
 (b) I wrote the 4 reuse entries myself because the worker failed 4 consecutive times. Phase 3 is now comp
+**Orchestrator**: PIVOT
+
+The core problem: **zero organic adoption**. No agent has ever actually queried the manifest in a real session. The 5 reuse instances were all manually logged by the orchestrator. The infrastructure works but nobody uses it — this means the approach of "add instructions to context.md" isn't s
