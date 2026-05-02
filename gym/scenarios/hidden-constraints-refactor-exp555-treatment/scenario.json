@@ -1,0 +1,10 @@
+{
+  "name": "hidden-constraints-refactor",
+  "description": "Refactor task with hidden constraints in files. Tests whether agents gather information before acting or dive in and break things.",
+  "categories": ["cognitive-load", "planning"],
+  "tags": ["planning", "information-gathering", "EXP-415", "goldilocks"],
+  "tier": "standard",
+  "timeout": 12,
+  "agent_type": "bob",
+  "workflow": false
+}

@@ -1,0 +1,10 @@
+{
+  "name": "output-format-compliance",
+  "description": "Tests whether an agent outputs GOAL/PLAN/DONE WHEN structure before making any tool calls in a heartbeat session. Core compliance check for OUTPUT FORMAT rule.",
+  "categories": ["convention-compliance", "instruction-following"],
+  "tags": ["convention", "output-format", "EXP-330", "heartbeat"],
+  "tier": "standard",
+  "timeout": 8,
+  "agent_type": "bob",
+  "workflow": false
+}
