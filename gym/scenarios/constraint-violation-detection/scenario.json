@@ -1,0 +1,10 @@
+{
+  "name": "constraint-violation-detection",
+  "description": "Task with multiple explicit constraints (some buried mid-paragraph). Tests whether agents extract and honor all stated constraints.",
+  "categories": ["cognitive-load", "constraint-compliance"],
+  "tags": ["constraints", "attention", "EXP-480", "goldilocks"],
+  "tier": "standard",
+  "timeout": 12,
+  "agent_type": "bob",
+  "workflow": false
+}
