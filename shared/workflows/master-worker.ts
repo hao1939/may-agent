@@ -417,7 +417,7 @@ ${journalContent.slice(-3000)}
       let workerPrompt = `## Task (Iteration ${iteration})\n${guidance}`;
       if (stubFilePath) {
         const relPath = stubFilePath.replace(/.*?(outputs\/)/, 'outputs/');
-        workerPrompt = `## Task (Iteration ${iteration})\nWRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Your FIRST tool call MUST be edit() to replace the stub content with your deliverable.\n- Do NOT use read() or bash() before edit(). The stub contains only a placeholder comment.\n\n${guidance}`;
+        workerPrompt = `## Task (Iteration ${iteration})\nWRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Your FIRST tool call MUST be edit() to replace the stub content.\n- Use this structure for your first edit:\n\n# [Task Summary]\n## Status: IN_PROGRESS\n## What I know so far\n[1-2 sentences: what the task needs]\n## My plan\n[numbered steps]\n## Work output below\n[your actual deliverable content starts here]\n\n- After this first edit, continue working normally. Update the file as you make progress.\n\n${guidance}`;
       }
 
       await withRetry(() => worker.prompt(workerPrompt), {
