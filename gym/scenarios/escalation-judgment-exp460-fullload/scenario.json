@@ -1,7 +1,7 @@
 {
-  "name": "escalation-judgment-exp445-treatment",
+  "name": "escalation-judgment-exp460-fullload",
   "categories": ["judgment"],
-  "tags": ["behavior", "escalation", "EXP-445"],
+  "tags": ["behavior", "escalation", "EXP-460", "skill-saturation"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "coder",
