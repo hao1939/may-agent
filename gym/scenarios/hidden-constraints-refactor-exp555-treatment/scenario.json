@@ -1,10 +1,11 @@
 {
-  "name": "hidden-constraints-refactor",
-  "description": "Refactor task with hidden constraints in files. Tests whether agents gather information before acting or dive in and break things.",
+  "name": "hidden-constraints-refactor-exp555-treatment",
+  "description": "EXP-555 treatment: Refactor task with task completeness rule injection.",
   "categories": ["cognitive-load", "planning"],
-  "tags": ["planning", "information-gathering", "EXP-415", "goldilocks"],
+  "tags": ["planning", "information-gathering", "EXP-555", "treatment"],
   "tier": "standard",
   "timeout": 12,
   "agent_type": "bob",
-  "workflow": false
+  "workflow": false,
+  "injected_context": "injected_context.md"
 }
