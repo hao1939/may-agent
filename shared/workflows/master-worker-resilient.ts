@@ -309,7 +309,7 @@ export class ResilientMasterWorker {
     for (let i = 1; i <= this.config.maxIterations; i++) {
       const result = await this.runIteration(i, llm);
 
-      // Zero-output loop detection (Phase 1: logging only)
+      // Zero-output loop detection
       const zeroAction = updateDeliverableTracker(deliverableTracker, result);
       if (zeroAction !== "continue") {
         const entry = `⚠️ [zero-output-breaker] ${zeroAction}: ${deliverableTracker.consecutiveZeroOutput} consecutive zero-output iterations (total: ${deliverableTracker.totalIterations}, productive: ${deliverableTracker.iterationsWithOutput})`;
