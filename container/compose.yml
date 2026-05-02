@@ -21,7 +21,7 @@ services:
     volumes:
       - ../agents:/app/agents
       - ../.state:/app/.state
-      - ../litellm/github_copilot:/app/.copilot:ro
+      - /home/example-user/litellm/github_copilot:/app/.copilot:ro
     environment:
       - INSTANCE=${INSTANCE:-background}
       - MODEL_BASE_URL=${MODEL_BASE_URL:-http://host.docker.internal:4000}
