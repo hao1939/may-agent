@@ -49,6 +49,17 @@ An index of all project deliverables available for cross-agent reuse.
 | test-coverage | Regression Test Strategy | `/app/agents/shared/projects/test-coverage/outputs/regression-test-strategy.md` | [testing] [workflow] | Strategy balancing test thoroughness with execution speed |
 | test-coverage | Coverage Baseline | `/app/agents/shared/projects/test-coverage/outputs/coverage-baseline.md` | [testing] [metrics] | Initial coverage measurements as improvement reference point |
 | test-coverage | Test Automation Plan | `/app/agents/shared/projects/test-coverage/outputs/test-automation-plan.md` | [testing] [workflow] | Automated execution strategy for continuous validation |
+| prompt-efficiency | Shared Rules Proposal | `/app/agents/shared/projects/prompt-efficiency/outputs/shared-rules-proposal.md` | [optimization] [prompts] [planning] | Deduplication proposal for shared rules across agent configs |
+| prompt-efficiency | Baseline Audit | `/app/agents/shared/projects/prompt-efficiency/outputs/p1-baseline-audit.md` | [metrics] [optimization] | Token counts and size analysis of SOUL.md and context files |
+| prompt-efficiency | Dedup Analysis | `/app/agents/shared/projects/prompt-efficiency/outputs/p2-dedup-analysis.md` | [optimization] [prompts] | Guard-enforced rules duplicated in SOUL.md — removal candidates |
+| request-deduplication | Dedup Measurement | `/app/agents/shared/projects/request-deduplication/outputs/dedup-measurement.md` | [metrics] [workflow] | Quantified deduplication rates and methodology |
+| request-deduplication | Project Closure | `/app/agents/shared/projects/request-deduplication/outputs/project-closure-summary.md` | [docs] [retrospective] | Final summary with outcomes and lessons learned |
+| agent-system-literacy | Literacy Measurement | `/app/agents/shared/projects/agent-system-literacy/outputs/literacy-measurement.md` | [metrics] [onboarding] | Measurement of agent system knowledge before/after training |
+| agent-system-literacy | Regression Guard | `/app/agents/shared/projects/agent-system-literacy/outputs/regression-guard.md` | [monitoring] [metrics] | Metrics to watch for literacy regression over time |
+| documentation-gen | Docs Inventory | `/app/agents/shared/projects/documentation-gen/outputs/docs-inventory.md` | [docs] [discovery] | Complete inventory of all documentation files in the system |
+| handler-reliability | Verification Report | `/app/agents/shared/projects/handler-reliability/outputs/verification-report.md` | [reliability] [testing] | Handler fix verification with before/after error rates |
+| agent-memory-learning | Memory Audit | `/app/agents/shared/projects/agent-memory-learning/outputs/memory-audit.md` | [audit] [quality] | Audit of lesson quality and retrieval effectiveness |
+| cross-agent-collaboration | Adoption Baseline | `/app/agents/shared/projects/cross-agent-collaboration/outputs/adoption-baseline.md` | [metrics] [discovery] | Baseline measurement of manifest usage (before snapshot) |
 | cross-agent-collaboration | This Manifest | `/app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md` | [discovery] [index] | Master index of all reusable deliverables |
 
 ## Discovery Convention
