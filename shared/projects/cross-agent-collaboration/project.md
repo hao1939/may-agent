@@ -1,6 +1,6 @@
 # Cross-Agent Collaboration
 
-**Status**: active
+**Status**: waiting
 **Owner**: optimizer
 **Priority**: P1
 **Created**: 2025-01-27
@@ -56,12 +56,17 @@ Agents currently work in silos. Each produces deliverables that could benefit ot
 22. ✅ **Increase manifest coverage** — Now 121 entries, ~56 unindexed (68% coverage, up from 24%)
 23. **Validate organic reuse** — Check if agents are naturally querying the manifest (not just orchestrator-logged). grep .state/ dirs for evidence
 24. ✅ **Upgrade instrumentation to REQUIRED** — optimizer and scout now have stronger "REQUIRED: Check Shared Manifest" instructions
-25. **Index remaining 56 non-archive files** — Get to 90%+ coverage
+25. ✅ **Index remaining files** — 177 entries, 0 unindexed. 100% coverage achieved.
 26. **Measure organic adoption** — Wait 1 week, then grep agent .state/ for "shared-output-manifest" hits
 27. **Re-plan** — Based on organic adoption evidence
 
+### Phase 5: Prove Value or Close
+28. **Wait for organic adoption** — Check back in 1 week for evidence of agents querying manifest in real sessions
+29. **Measure redundant-work-rate** — Compare recent agent sessions for duplicated analysis vs. pre-manifest baseline
+30. **Decision gate** — If organic adoption >0 after 1 week, continue. If still 0, close project as infrastructure-complete but adoption-failed.
+
 ## Current State
 
-**Phase 1-3 complete**: Manifest (121 entries), freshness script, reuse-check script, all agents instrumented, 5 reuse instances logged.
+**Infrastructure 100% complete**: Manifest (177 entries, 0 unindexed), freshness script, reuse-check script, all agents instrumented with REQUIRED check, 5 reuse instances logged (all orchestrator-driven).
 
-**Phase 4 in progress**: Upgraded optimizer/scout to REQUIRED manifest check. Coverage at 68% (up from 24%). Zero organic adoption detected so far — no agent has queried the manifest in a real session. Next: index remaining 56 files, then wait for organic adoption evidence.
+**Critical gap**: Zero organic adoption. No agent has ever queried the manifest in a real session. All reuse was manually logged by orchestrator. The project should pause for 1 week to allow natural adoption, then measure. If still 0 organic hits, close the project.
