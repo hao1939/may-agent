@@ -1,16 +1,26 @@
 # Coach Todo
 
+## P1: EXP-555 — Task Completeness / Subtask Omission — DESIGNED
+- **Problem**: Agents complete primary task but skip explicit secondary requirements (test-writing, server registration, PLAN.md)
+- **Evidence**: EXP-550 Phase 2 — 3/3 failures were subtask omissions, not structural behavior gaps
+- **Hypothesis**: Requirements-checklist injection → ≥30pp improvement on non-primary checks
+- **Design**: `agents/coach/workspace/EXP-555-task-completeness-design.md`
+- **Status**: DESIGNED. Next: run Phase 1 baseline (3 scenarios × 3 trials)
+
 ## P1: EXP-545 — QA Finish-Call Structural Gate — CLOSED (ALREADY ADDRESSED)
 - **Problem**: QA has 14.3% finish() compliance (worst in system). Text rule (EXP-440) NEGATIVE.
 - **Investigation (2026-06-02)**: QA DOES use genericHeartbeat (qa-heartbeat.ts → genericHeartbeat(ctx, "qa")). EXP-520 artifact gate + EXP-510 worker injection both cover QA. Baseline was pre-deployment.
 - **Closure**: `agents/coach/workspace/EXP-545-closure.md`
 - **Status**: CLOSED — ALREADY ADDRESSED by EXP-510 + EXP-520. Re-measure when data available.
 
-## P1: EXP-550 — Structural Intervention Stack Audit — DESIGNED
+## P1: EXP-550 — Structural Intervention Stack Audit — CLOSED ✅ NO REGRESSION
 - **Problem**: 5 structural interventions deployed May 2026 (EXP-500/510/520/530/540). Need cumulative regression check + EXP-540 measurement.
 - **Hypothesis**: Stack still functional (no regression), EXP-540 path violations ≤20% (from 60.9%)
 - **Design**: `agents/coach/workspace/EXP-550-structural-stack-audit-design.md`
-- **Status**: DESIGNED. Next: run gym regression tests when session data available.
+- **Phase 1**: `agents/coach/workspace/EXP-550-phase1-verification.md` — infrastructure confirmed ✅
+- **Phase 2**: `agents/coach/workspace/EXP-550-phase2-gym-regression-results.md` — 18/21 checks (85.7%) ≥ 80% target ✅
+- **Phase 3**: SKIPPED — insufficient session data for EXP-540 path measurement
+- **Status**: CLOSED ✅ NO REGRESSION. All structural behaviors verified working. Functional task gaps (test-written, server-updated) are not structural regressions.
 
 ## P1: EXP-530 — Structural Verification Gate — CLOSED ✅ POSITIVE
 - **Problem**: Verification failure #1 cross-agent issue (78% failure rate)
