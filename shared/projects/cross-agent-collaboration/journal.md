@@ -37,3 +37,6 @@ grep -i "<keyword>" /app/agents/
 
 ### Iteration 7 — 2026-05-02T01:03:07.395Z
 **Worker**: Now let me write the deliverable log:
+
+### Iteration 8 — 2026-05-02T01:04:36.499Z
+**Worker**: Good. Both agents are instrumented with correct paths. No evidence of actual usage yet (no .state/ hits). Now let me write the adoption baseline report:
