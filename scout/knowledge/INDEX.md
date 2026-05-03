@@ -9,4 +9,4 @@
 - [Autonomous Agent Insights from XHS](./xhs_agent_insights.md)
 - [XHS Eval Trends May 2024](./xhs_eval_trends_may2024.md)
 - [Emergent Multi-Agent Coordination via Context Stigmergy](./context-stigmergy-synthesis.md)
-- Synthesis of XHS trends on multi-agent architectures.
+- [Multi-Agent Architecture Trends: XHS & Academic Synthesis (May 2024)](./multi_agent_trends_may2024_synthesis.md)
