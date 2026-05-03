@@ -1,27 +1,21 @@
-# Evaluator Heartbeat — 2026-05-03
+# Evaluator heartbeat — 2026-05-03
 
-## Checks
+## Session-eval pipeline liveness / coverage check
 
-### Session evaluation pipeline (#5)
-- DB recency check:
-  - `MAX(evaluations.createdAt)=1777788995501`
-  - `MAX(sessions.endedAt)=1777789222764`
-  - Lag: `227263ms` (~3.8 minutes)
-  - Interpretation: eval pipeline appears **live** (DB writes recent; lag small).
-- Legacy artifacts:
-  - `.state/evaluations/task_tree_*.json` newest observed mtime: **2026-03-24** (still stale).
-  - Interpretation: treat as **legacy output path drift**, not pipeline failure.
+Evidence (DB is canonical):
+- `sessions.max(startedAt)` = `1777794614019`
+- `evaluations.max(createdAt)` = `1777792355016`
+- lag = `2259003 ms` (~37.7 minutes)
+- last hour: `sessions=69`, `evaluations=1` → **coverage ~1.45%**
 
-### Patrol (integrity/coordination)
-- `node agents/evaluator/skills/patrol.cjs` → `status=CRITICAL` due to missing `agents/shared/compliance-snapshot.json` baseline.
-- Interpretation: **patrol degraded** (baseline missing), not evidence of active hash mismatch.
+Tool evidence:
+- python query: sessions/evaluations max + lag (ms)
+- python query: last-hour counts + coverage
 
-### Monitor running sessions
-- `node agents/evaluator/skills/monitor-session.cjs --running` → 2 sessions checked, 2 healthy.
+## Interpretation
+- The evaluation writer is not fully dead (1 eval in last hour), but it is severely behind / under-sampling relative to session volume.
+- Legacy `.state/evaluations/` contains recent `s_*.json` mtimes (Apr 29) while task_tree artifacts are stale (Mar 24), consistent with known drift.
 
-### LLM eval liveness (#15)
-- `.state/may.db`: `sqlite_master` tables matching `*llm*` → `[]`.
-- Interpretation: LLM-eval appears **disabled/unimplemented (or renamed)**; periodic-tasks.md should continue to treat it as missing.
-
-## Notes / follow-ups
-- Consider opening/refreshing a tracked item for restoring `agents/shared/compliance-snapshot.json` baseline (owner likely Bob per periodic-tasks.md), so `patrol.cjs` no longer reports CRITICAL by default.
+## Recommendation / escalation target
+- Treat as process #5 (Session Evaluation) degradation: either cron schedule too sparse, backlog stuck, or scope narrowed.
+- Next step: inspect cron/job runner logs/config for `evaluate-session-llm` frequency and whether it is skipping sessions.
