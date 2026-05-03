@@ -535,7 +535,7 @@ ${journalContent.slice(-3000)}
         ctx.log(`[work] ⚠️ WARNING: Iteration ${iteration} produced NO output files (${consecutive}/${MAX_ZERO_OUTPUT} consecutive)`);
         appendFileSync(journalFile, `\n### Iteration ${iteration} — ${new Date().toISOString()}\n**⚠️ No output files produced (${consecutive} consecutive failures)**\n`, "utf-8");
         // V2+V3 GUARDRAIL: Auto-retry with worker-retry module (exponential backoff)
-        if (consecutive <= MAX_ZERO_OUTPUT && !(ctx as any)[`_retried_${iteration}`]) {
+        if (process.env.ENABLE_ZERO_OUTPUT_RETRY === 'true' && consecutive <= MAX_ZERO_OUTPUT && !(ctx as any)[`_retried_${iteration}`]) {
           (ctx as any)[`_retried_${iteration}`] = true;
           ctx.log(`[work] 🔄 RETRY: Re-prompting worker via withWorkerRetry (exponential backoff)`);
           const retryFirstToolInstruction = stubFilePath
