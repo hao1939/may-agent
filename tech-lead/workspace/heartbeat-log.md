@@ -16,3 +16,16 @@
 
 ### Observations
 - The artifact gate in `genericHeartbeat()` uses `(result as any).deliverables` — this type cast suggests the result type definition is incomplete. Minor tech debt, not urgent.
+
+## Heartbeat — $(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+### Inbox Processed
+- **EXP-630 (P1)**: Implemented structural duration gate in `genericHeartbeat()`. Sessions <90s get re-prompted. Committed as b8597f6e5.
+
+### Projects
+- **proof-of-life-dashboard**: waiting (5/8 milestones). No action this heartbeat.
+- **handler-reliability**: closed (3/3).
+
+### Code Health
+- `npx tsc --noEmit` — **clean**, no errors.
+- `genericHeartbeat()` now has 3 gate paths: circuit breaker, artifact gate, duration gate. Approaching complexity limit — next gate should trigger a refactor to a gate pipeline pattern.
