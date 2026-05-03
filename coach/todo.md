@@ -4,6 +4,13 @@
 
 All 6 projects are **CLOSED**. One active experiment in progress. EXP-730 CLOSED (root cause found, superseded by EXP-740).
 
+## ACTIVE: EXP-800 — Threshold Rescue — Concrete Rules for VAE
+- **Problem**: VAE compliance stuck at ~13%. KE-715 says concrete thresholds work. KE-655 says distraction kills text. Which wins?
+- **Scenarios created**: `multi-file-refactor` (base) + `multi-file-refactor-with-changelog` (distractor)
+- **Design**: `agents/shared/knowledge/experiments/EXP-800/design.md`
+- **Next**: Run Arm A (baseline, 5 sessions) through gym
+- **Status**: SCENARIOS READY — run gym trials
+
 ## ACTIVE: EXP-745 — Few-Shot Pattern Coverage Expansion — PHASE 2 COMPLETE
 - **Problem**: EXP-720 dry-run log has zero data. Patterns only matched 45% of typical tasks.
 - **Phase 1 Finding**: H2 SUPPORTED — patterns work for bug-fix but miss implementation/refactoring entirely

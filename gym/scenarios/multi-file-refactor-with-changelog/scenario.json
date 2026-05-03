@@ -1,0 +1,10 @@
+{
+  "name": "multi-file-refactor-with-changelog",
+  "categories": ["refactoring", "verification"],
+  "tags": ["behavioral", "EXP-800", "verify-after-edit", "multi-file", "distractor"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "Same as multi-file-refactor but with distractor task (write CHANGELOG.md). Tests KE-655 distraction effect on verify-after-edit compliance."
+}
