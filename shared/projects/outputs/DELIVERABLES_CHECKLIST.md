@@ -1,12 +1,12 @@
-# DELIVERABLES_CHECKLIST.md
+# DELIVERABLES_CHECKLIST
 
-## Task: Create system health dashboard script
+## Task: Create integration tests for master-worker workflow
 
 | # | Deliverable | Status | Path |
 |---|------------|--------|------|
-| 1 | system-health.sh script (executable) | DONE | agents/shared/scripts/system-health.sh |
-| 2 | Sample output documentation | DONE | agents/shared/projects/outputs/system-health-sample.md |
+| 1 | Integration test file with e2e tests | DONE | agents/shared/tests/integration/master-worker-e2e.test.ts |
+| 2 | Test report in outputs | DONE | agents/shared/projects/outputs/integration-test-report.md |
 
-## Details
-- Script runs vitest, extracts metrics, reports coverage gaps, prints PASS/FAIL status
-- Verified working: 98/98 files, 1745 tests, STATUS: ✅ HEALTHY
+## Evidence
+- 21 tests all passing (vitest run: 404ms)
+- Covers: happy path, early termination, error handling, state transitions, extractDecision
