@@ -1,7 +1,11 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST.md
 
-## Required Deliverables
+## Task: Create workflow scaffold generator script
 
-| # | Deliverable | Status | Path | Notes |
-|---|------------|--------|------|-------|
-| 1 | Satellite project proposals document | DONE | agents/shared/projects/outputs/satellite-proposals.md | Two proposals: Error Resilience Hardening + Circuit Breaker Integration |
+| # | Deliverable | Status | Path |
+|---|-------------|--------|------|
+| 1 | scaffold-workflow.sh script | DONE | agents/shared/scripts/scaffold-workflow.sh |
+| 2 | Report documenting usage | DONE | agents/shared/projects/outputs/scaffold-workflow-report.md |
+
+## Notes
+- Script tested: generated example-test workflow + test, 4/4 vitest tests passed, cleaned up after
