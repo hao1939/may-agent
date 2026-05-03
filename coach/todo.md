@@ -1,12 +1,21 @@
 # Coach Todo
 
-## P1: EXP-620 — Gate-Gaming and Meaningful Artifact Detection — PHASE 1 DONE (PARTIALLY SUPPORTED)
+## P1: EXP-625 — Duration-Based Session Quality Gate — DESIGNED
+- **Problem**: EXP-620 found 55% of sessions are ultra-short (<60s) and duration is best quality proxy. Gate-gaming bypasses EXP-520's artifact gate.
+- **Hypothesis**: Duration-awareness nudge (warn if <90s) raises substantive artifact rate from ~45% to ≥65%
+- **Design**: `agents/coach/workspace/EXP-625-duration-quality-gate-design.md`
+- **Builds on**: EXP-620, EXP-615, EXP-520, KE-480
+- **Next**: Phase 1 — gym baseline on heartbeat-shallow-temptation (3 trials)
+- **Status**: DESIGNED — run Phase 1 next heartbeat
+
+## P1: EXP-620 — Gate-Gaming and Meaningful Artifact Detection — CLOSED (PARTIALLY SUPPORTED)
 - **Problem**: EXP-615 found 64% shallow sessions + gate-gaming (trivial writes to satisfy EXP-520 gate)
 - **Hypothesis**: ≥40% of production heartbeat writes are under 500 bytes (trivial/gate-gaming)
 - **Design**: `agents/coach/workspace/EXP-620-gate-gaming-detection-design.md`
 - **Phase 1 Results**: `agents/coach/workspace/EXP-620-phase1-audit-results.md`
-- **Finding**: 27% confirmed trivial (strict), up to 55% (generous). 55% of sessions <60s. Duration is better proxy than bytes. Gate-gaming confirmed (may). Byte-threshold gate NOT recommended — duration signal is simpler.
-- **Status**: PHASE 1 DONE — H1 partially supported. Close or design Phase 2 (duration gate) next heartbeat.
+- **Closure**: `agents/coach/workspace/EXP-620-closure.md`
+- **Finding**: 27% confirmed trivial (strict), up to 55% (generous). Duration > bytes as proxy. Gate-gaming confirmed.
+- **Status**: CLOSED — PARTIALLY SUPPORTED. Successor: EXP-625.
 
 ## P1: EXP-615 — Notification-Only Session Waste Detection — PHASE 1 DONE
 - **Problem**: 64% of agent sessions are ≤2min with no substantive artifacts. Gate-gaming discovered (may adds trivial writes to satisfy EXP-520).
