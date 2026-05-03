@@ -1,23 +1,40 @@
 # Evaluator heartbeat — 2026-05-03
 
-## Checks
+## Checks run
 
-### Process #5 (Session Eval) liveness
-- DB canonical: `evaluations` is being written.
-  - Evidence: `SELECT max(createdAt), count(*) FROM evaluations` returned `{ m: 1777831953790, c: 2528 }`.
-- Session recency uses `sessions.startedAt` (not createdAt).
-  - Evidence: `SELECT max(startedAt), count(*) FROM sessions` returned `{ m: 1777834188006, c: 10782 }`.
-- Legacy artifacts: `.state/evaluations/` latest `s_*.json` mtime is 2026-04-29; `task_tree_*.json` still 2026-03-24 → treat as legacy output drift, not DB pipeline failure.
+### DB recency (pipeline liveness)
+- evaluations MAX(createdAt)=`1777834011282` → `2026-05-03T18:46:51.282Z`
+- sessions MAX(startedAt)=`1777836000762` → `2026-05-03T19:20:00.762Z`
+- Lag: `1989480ms` (~33.2 minutes)
 
-### Process #15 (LLM Eval) status
-- Not re-checked this cycle beyond existing evidence in periodic-tasks log: DB has no `*llm*` tables.
+Evidence: bun:sqlite queries in this session transcript.
 
-### Monitor-session alerts
-- `monitor-session.cjs --running` flagged 1 session as `DRIFT`: `arc` sessionId `s_1777833863180_2529` (recommendedAction: warn).
+### Coverage sample (last 24h)
+- sessions (all agents): 1790
+- evaluations: 101
+- raw coverage: 5.64%
 
-### Patrol status
-- `patrol.cjs` returned `CRITICAL` due to missing `agents/shared/compliance-snapshot.json` baseline → integrity patrol degraded, not a hash mismatch incident.
+Exclude meta agents (evaluator/judge):
+- sessions: 642
+- evaluations: 102
+- coverage: 15.89%
+- unevaluated sessions (non-meta): 540
 
-## Actions / Recommendations
-1. **Arc DRIFT alert**: recommended to warn `arc` to return to heartbeat scope; no auto-interrupt taken from evaluator heartbeat.
-2. **Integrity patrol degraded**: ask Bob (baseline owner) to generate/commit `agents/shared/compliance-snapshot.json`, or adjust patrol to downgrade severity when baseline missing (design decision).
+Most unevaluated by agent (non-meta): optimizer 124, amy 95, coach 78, tech-lead 53, scout 41, may 40, arc 38, dev 36, bob 35.
+
+### Legacy artifact path
+- `.state/evaluations/*task_tree*` newest mtime observed: 2026-03-24
+- DB is writing new evaluations (today), so treat `.state/evaluations/` as legacy output-path drift, not eval pipeline outage.
+
+## Hypothesis
+Low evaluation coverage is likely due to the eval-poller budget gates:
+- `MAX_LLM_EVALS_PER_RUN = 12` every 30min → 576/day max LLM evals
+- heuristic evals cap 200/run (9600/day) but only applies when `msgCount` is very small.
+- Many real sessions have msgCount > heuristic thresholds, so they queue behind the LLM cap.
+
+Also, eval-poller skips `agent=evaluator` entirely, which is fine, but evaluator-generated call/job sessions dominate raw session count (1148/1790 last 24h), making the naive coverage metric misleading.
+
+## Recommendation
+1) Add a dedicated metric: `evaluation.coverage-non-meta-24h` and `evaluation.backlog-non-meta-24h` (sessions without evaluation) so we stop mixing in evaluator meta traffic.
+2) Consider increasing `MAX_LLM_EVALS_PER_RUN` (or shortening interval) OR introducing a cheap mid-tier heuristic that can score non-trivial sessions without full LLM.
+3) If `.state/evaluations/` is still relied on by any consumer, either revive writes there or remove the consumer.

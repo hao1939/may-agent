@@ -9,7 +9,7 @@
  *   import { loadMetrics, loadProjects, loadAlerts, loadHeartbeatMd, loadInbox, formatMetricsBlock } from "../../shared/workflows/heartbeat-data.js";
  */
 
-import { readFileSync, readdirSync, existsSync, appendFileSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { checkCircuitBreaker, recordOutcome } from "./circuit-breaker.js";
 
