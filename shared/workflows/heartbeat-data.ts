@@ -471,10 +471,15 @@ Produce at least ONE meaningful write, then call finish() with updated deliverab
   const turnsUsed = (result as any).turnsUsed
     ?? (result as any).tool_calls_count
     ?? 0;
-  // If turnsUsed is still unknown (0), skip the gate — we can't measure it.
-  // The artifact gate (EXP-520 above) catches low-effort sessions instead.
+  // EXP-640 FIX: ctx.runAgent() never populates turnsUsed/tool_calls_count,
+  // so turnsUsed is always 0. Use deliverables as a proxy: sessions with
+  // no deliverables and a short summary (< 200 chars) are likely trivial.
+  const deliverableCount = Array.isArray((result as any).deliverables) ? (result as any).deliverables.length : 0;
+  const summaryLength = typeof result.summary === "string" ? result.summary.length : 0;
+  const looksTrivia = turnsUsed === 0 && deliverableCount === 0 && summaryLength < 200;
+  const tooFewTurns = turnsUsed > 0 && turnsUsed < 3;
   const MINIMUM_TURNS = 3;
-  if (turnsUsed > 0 && turnsUsed < MINIMUM_TURNS && result.status !== "error") {
+  if ((tooFewTurns || looksTrivia) && result.status !== "error") {
     ctx.emit({ type: "duration_gate_triggered", agent, turns_used: turnsUsed });
     // EXP-630 measurement: persist gate trigger to filesystem for auditing
     try {
@@ -482,9 +487,12 @@ Produce at least ONE meaningful write, then call finish() with updated deliverab
       appendFileSync(join(agentsRoot, "shared", "duration-gate-triggers.log"), logLine);
     } catch (_) { /* non-critical logging */ }
 
-    const durationPrompt = `⚠️ DURATION GATE: Your session used only ${turnsUsed} tool call(s) — this suggests trivial work.
+    const triggerReason = tooFewTurns
+      ? `only ${turnsUsed} tool call(s)`
+      : `no deliverables and a very short summary (${summaryLength} chars)`;
+    const durationPrompt = `⚠️ DURATION GATE: Your session had ${triggerReason} — this suggests trivial work.
 
-Sessions with fewer than ${MINIMUM_TURNS} tool calls almost never produce substantive work. Before finishing:
+Sessions with minimal output almost never produce substantive work. Before finishing:
 
 1. Did you investigate at least one non-obvious issue?
 2. Did you produce an artifact with real analysis (not just a status echo)?
