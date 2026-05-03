@@ -59,7 +59,7 @@ You own: **#5 Session Evaluation, #15 LLM Evaluation**.
 | #5 Session Eval | **Primary**: check `.state/may.db` `evaluations MAX(createdAt)` (DB is canonical). **Secondary**: `ls -la .state/evaluations/ \| tail -5` (legacy artifacts may be stale). | If DB is stale → check cron. If DB is fresh but `.state/evaluations/` is stale → treat as legacy-output-path drift, not pipeline failure. |
 | #15 LLM Eval | Is LLM eval enabled or disabled? Is it worth the cost? | If disabled: recommend revival or permanent removal. If enabled: compare accuracy to heuristic eval. |
 
-Quick — 1 bash call to check DB recency (python3/sqlite). Move on.
+Quick — 1 bash call to check DB recency (bun:sqlite readonly). Move on.
 
 ## 3. Signal Quality Review
 
