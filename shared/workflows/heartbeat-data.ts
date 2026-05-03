@@ -469,8 +469,8 @@ Produce at least ONE meaningful write, then call finish() with updated deliverab
   //   Fixed: also check tool_calls_count; if neither available, use deliverables
   //   as a proxy — sessions with no deliverables AND short summary likely trivial.
   // EXP-710: Duration gate heuristic rewrite.
-  // ctx.runAgent() never populates turnsUsed/tool_calls_count, so we rely on
-  // output signals: summary length and output length as proxies for work done.
+  // ctx.runAgent() never populates turnsUsed/tool_calls_count — they're always 0.
+  // Use output signals as proxies for substantive work.
   const turnsUsed = (result as any).turnsUsed
     ?? (result as any).tool_calls_count
     ?? 0;
@@ -479,22 +479,25 @@ Produce at least ONE meaningful write, then call finish() with updated deliverab
     : ((result as any).finishResult?.deliverables?.length ?? 0);
   const summaryLength = typeof result.summary === "string" ? result.summary.length : 0;
   const outputLength = typeof (result as any).output === "string" ? (result as any).output.length : 0;
-  // Heuristic: session looks trivial if ALL of these hold:
-  //   - No real turn count available (turnsUsed === 0)
-  //   - Short summary (< 300 chars — substantive sessions typically write more)
-  //   - Few deliverables (0-1, since artifact gate may have forced exactly 1)
-  //   - Short output (< 1000 chars — real work produces significant output)
-  const looksTrivia = turnsUsed === 0
-    && summaryLength < 300
-    && deliverableCount <= 1
-    && outputLength < 1000;
+  // Scoring heuristic: accumulate "substance points". Gate fires if score < threshold.
+  // This replaces the old ALL-conditions-must-hold approach which never triggered
+  // because the artifact gate upstream already filtered no-deliverable sessions.
+  let substanceScore = 0;
+  if (turnsUsed >= 3) substanceScore += 3;           // real turn data (if ever available)
+  if (summaryLength >= 300) substanceScore += 2;      // substantive summary
+  if (summaryLength >= 150) substanceScore += 1;      // moderate summary
+  if (deliverableCount >= 2) substanceScore += 2;     // multiple deliverables
+  if (deliverableCount >= 1) substanceScore += 1;     // at least one deliverable
+  if (outputLength >= 1000) substanceScore += 2;      // significant output
+  // Gate fires if substance score is too low (< 3 means barely any signals of real work)
+  const looksTrivia = substanceScore < 3;
   const tooFewTurns = turnsUsed > 0 && turnsUsed < 3;
   const MINIMUM_TURNS = 3;
   if ((tooFewTurns || looksTrivia) && result.status !== "error") {
-    ctx.emit({ type: "duration_gate_triggered", agent, turns_used: turnsUsed });
+    ctx.emit({ type: "duration_gate_triggered", agent, turns_used: turnsUsed, substance_score: substanceScore });
     // EXP-630 measurement: persist gate trigger to filesystem for auditing
     try {
-      const logLine = `${new Date().toISOString()} agent=${agent} turns_used=${turnsUsed}\n`;
+      const logLine = `${new Date().toISOString()} agent=${agent} turns=${turnsUsed} score=${substanceScore} summary_len=${summaryLength} deliverables=${deliverableCount} output_len=${outputLength}\n`;
       appendFileSync(join(agentsRoot, "shared", "duration-gate-triggers.log"), logLine);
     } catch (_) { /* non-critical logging */ }
 
