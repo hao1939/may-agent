@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777777952102_1423
+- **Session:** s_1777779751989_1454
 - **Status:** done
-- **When:** 2026-05-03T03:13:35.398Z
-- **Duration:** 1m3s
+- **When:** 2026-05-03T03:42:52.387Z
+- **Duration:** 20s
 
 ## What Happened
-Both red metrics are known structural issues documented in KE-503/509: all projects are in waiting/blocked state (not active), so `active-count=0` and `blocked-over-6h=2` are expected behavior, not bugs. System is otherwise very healthy: 99% success rate, 39 fires/hour, 1003 real outputs in 24h.
+Both red metrics are **known structural issues** documented across KE-503 through KE-509: zero active projects is the root cause (all projects are in `waiting`/`blocked` state), and `blocked-over-6h` is a downstream consequence. No new investigation needed — the prior KEs are clear.
 
-The one error in the last hour was an `amy` ENOENT (file not found) — a one-off, not repeated.
+System health is excellent: 99% success rate, all 8 heartbeats covered, 37 fires/hour, 996 real output files in 24h. One minor amy ENOENT error but non-recurring.
