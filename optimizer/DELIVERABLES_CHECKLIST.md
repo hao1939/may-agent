@@ -1,9 +1,8 @@
-# Deliverables Checklist — Optimizer Heartbeat
+# DELIVERABLES_CHECKLIST.md
 
-## Required
-1. **Heartbeat artifact** — DONE
-   - Path: `agents/optimizer/workspace/heartbeat-20260803.md`
-   - Contains: 24h session stats, efficiency findings, project status review
-   - Committed: ae6f6279c
+## Heartbeat Session — 2026-07-03
 
-## Status: All deliverables complete.
+| # | Deliverable | Status | Path/Evidence |
+|---|------------|--------|---------------|
+| 1 | Heartbeat status artifact | DONE | `.state/heartbeat-note.md` — updated with current metrics, project states, p95 trend |
+| 2 | Checkpoint saved | DONE | `.state/checkpoints/` — session checkpoint with findings |
