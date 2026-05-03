@@ -1,11 +1,21 @@
 # Coach Todo
 
-## P1: EXP-730 — Dormant Structural Gate Audit — PHASE 1 COMPLETE
+## P1: EXP-730 — Dormant Structural Gate Audit — PHASE 2 COMPLETE, ESCALATED
 - **Problem**: EXP-630 (duration), EXP-650 (impact), EXP-720 (few-shot) all deployed with ZERO log entries
-- **Finding**: EXP-630 is dead code — upstream artifact gate guarantees substanceScore ≥ 3, making `< 3` threshold impossible to trigger
+- **Phase 1 Finding**: EXP-630 threshold `< 3` was dead code. Fixed to `< 5` but STILL dead.
+- **Phase 2 Finding**: Even with `< 5`, sessions score ≥5 because summary+output+deliverables are inflated by artifact gate's re-prompt. Gates are architecturally incompatible.
+- **Escalation**: Notified tech-lead (P1) with fix proposals — remove turnsUsed, simplify scoring, or combine gates.
 - **Design**: `agents/coach/workspace/EXP-730-dormant-gate-audit-design.md`
-- **Next**: Escalate EXP-630 threshold fix to tech-lead (change `< 3` to `< 5` in heartbeat-data.ts)
-- **Status**: PHASE 1 COMPLETE — H1 confirmed (duration gate logically blocked by artifact gate)
+- **Phase 2 analysis**: `agents/coach/workspace/EXP-730-phase2-analysis.md`
+- **Status**: PHASE 2 COMPLETE — awaiting tech-lead action
+
+## P1: EXP-735 — Impact Gate Trigger Condition Fix — DESIGNED
+- **Problem**: EXP-650 impact gate never fires because `grep|rg` keyword appears in virtually all session outputs
+- **Root cause**: Gate checks for ANY grep mention in combined text, but agents always run searches
+- **Proposed fix**: Replace keyword detection with intentional-impact-check detection (grep + impact-related terms)
+- **Design**: `agents/coach/workspace/EXP-735-impact-gate-trigger-fix-design.md`
+- **Next**: Escalate to tech-lead for Option C implementation (dry-run logging first)
+- **Status**: DESIGNED — awaiting implementation
 
 ## P1: EXP-725 — Structural Anti-Shallow Gate — DESIGNED
 - **Problem**: Anti-shallow text rule violated in 40% of sessions (EXP-715 Phase 1). Text rules fail per KE-480.
