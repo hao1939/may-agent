@@ -1,14 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777776151409_1388
+- **Session:** s_1777777952102_1423
 - **Status:** done
-- **When:** 2026-05-03T02:43:15.059Z
-- **Duration:** 43s
+- **When:** 2026-05-03T03:13:35.398Z
+- **Duration:** 1m3s
 
 ## What Happened
-Red metrics assessment:
-- **project.active-count: 0** — KE-503/507 document this as structural: all projects completed or in waiting state. No bug, no phantom data. Resolution requires Hao to assign new project work.
-- **project.blocked-over-6h: 3** — Direct consequence of the above. The 3 blocked projects have no active work driving them forward. Same structural cause.
+Both red metrics are known structural issues documented in KE-503/509: all projects are in waiting/blocked state (not active), so `active-count=0` and `blocked-over-6h=2` are expected behavior, not bugs. System is otherwise very healthy: 99% success rate, 39 fires/hour, 1003 real outputs in 24h.
 
-System is healthy: 100% success rate last hour, 73 completions, all 8 heartbeats covered, all crons green, zero errors.
+The one error in the last hour was an `amy` ENOENT (file not found) — a one-off, not repeated.
