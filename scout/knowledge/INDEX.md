@@ -5,3 +5,4 @@
 - [Multi-Agent Coordination Patterns](./multi-agent-coordination-2024.md)
 - [Multi-Agent Stigmergy & Routing](./multi-agent-stigmergy.md)
 - [XHS AI Agent Trends & Synthesis](./xhs-agent-trends.md)
+- [Autonomous Agent Insights from XHS](./xhs_agent_insights.md)
