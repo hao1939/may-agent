@@ -9,7 +9,9 @@
 - **Gym scenario**: `agents/gym/scenarios/bash-debug-diagnose/` (created 2028-09-01)
   - 3 cascading bugs: missing module import, method typo, off-by-one loop
   - Measures: ran-tests-first, all-tests-pass, no-blind-retries, bash-efficiency, made-fixes
-- **Status**: IN PROGRESS — scenario created, ready for baseline runs (3 trials without skill, 3 with skill)
+- **Baseline results**: `agents/coach/workspace/EXP-600-baseline-results.md`
+- **Baseline**: 4/5 (80%) × 3/3 trials. Only `bash-efficiency` fails (>8 bash calls). All behavioral checks at ceiling.
+- **Status**: IN PROGRESS — baseline complete, treatment trials next (inject skill + run 3 trials)
 
 ## P1: EXP-595 — Worker Injection Durability Check — DESIGNED
 - **Problem**: EXP-510 worker completion checklist deployed May 2026 (+39pp write, +69pp finish). Never verified for durability.
