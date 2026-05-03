@@ -15,8 +15,8 @@ From memory-stream (2025-05-03): "Evaluator penalizes notify tool usage because 
 2. Evaluator should reference agents/shared/ tool definitions, or  
 3. Eval rubric should explicitly exclude tool-choice from scoring when tools are system-provided
 
-### Status
-This appears to be a known issue (captured in memory-stream). Need to verify if anyone has filed a fix.
+### Status: RESOLVED ✅
+Verified 2025-05-03: Fix deployed in `agents/evaluator/context.md` (lists all system tools including notify) and `agents/evaluator/knowledge/criteria.md` (explicit false-positive guard rule for notify tool).
 
 ## Secondary Pattern: Zombie Sessions
 
