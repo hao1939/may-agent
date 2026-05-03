@@ -47,10 +47,17 @@ All 6 projects have been completed/closed:
 - **Blocker**: Need binary rebuild to activate dry-run logging, then Phase 2 actual injection
 - **Status**: BLOCKED on tech-lead binary rebuild
 
-### EXP-710: Task Timeout Pressure — BACKLOG
-- **Problem**: Agents take 55-99s on tasks that could complete in <40s with efficient reading. No quality gate penalizes slow completion.
-- **Hypothesis**: A "timeout-aware" skill that explicitly states "complete within N tool-call blocks" → measurable block reduction without quality loss.
-- **Status**: DESIGN NEEDED
+### EXP-710: Task Timeout Pressure — BACKLOG → SUPERSEDED BY EXP-850
+- Superseded. See EXP-850 below.
+
+### EXP-850: Tool-Call Budget Awareness — READY FOR BASELINE
+- **Design**: `agents/coach/workspace/EXP-850-task-timeout-pressure-design.md`
+- **Problem**: Agents use 20-40+ tool calls on tasks completable in 10-15. No efficiency ceiling exists (only anti-shallow floor).
+- **Hypothesis**: Concrete tool-call budget (≤15 blocks) reduces median calls by ≥25% without quality loss.
+- **Arms**: A (baseline), B (vague nudge), C (concrete budget), D (budget + anti-shallow)
+- **Scenario**: `multi-file-refactor` (reused from EXP-800)
+- **Nudge files**: `nudge-efficiency-vague.md`, `nudge-efficiency-concrete.md` in scenario dir
+- **Status**: READY — run Arm A baseline next
 
 ## P2: Backlog
 
