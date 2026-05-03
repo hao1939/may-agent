@@ -50,12 +50,12 @@ describe("verify-after-write guard", () => {
     expect(guard.handle(event)).toEqual([]);
   });
 
-  it("returns empty when write is followed by read", () => {
+  it("returns empty when edit is followed by read", () => {
     const event = makeEvent({
       result: {
         messages: [
           toolCallMsg([
-            { name: "write", path: "foo.ts" },
+            { name: "edit", path: "foo.ts" },
             { name: "read", path: "foo.ts" },
           ]),
         ],
@@ -64,27 +64,27 @@ describe("verify-after-write guard", () => {
     expect(guard.handle(event)).toEqual([]);
   });
 
-  it("returns empty for non-finish steps even with unverified writes", () => {
+  it("returns empty for non-finish steps even with unverified edits", () => {
     const event = makeEvent({
       result: {
-        messages: [toolCallMsg([{ name: "write", path: "foo.ts" }])],
+        messages: [toolCallMsg([{ name: "edit", path: "foo.ts" }])],
       },
     });
     // No finishResult → tier 3 is disabled, so no demands
     expect(guard.handle(event)).toEqual([]);
   });
 
-  it("blocks finish(success) when writes are unverified", () => {
+  it("blocks finish(success) when edits are unverified", () => {
     const event = makeEvent({
       result: {
-        messages: [toolCallMsg([{ name: "write", path: "foo.ts" }])],
+        messages: [toolCallMsg([{ name: "edit", path: "foo.ts" }])],
         finishResult: { status: "success" },
       },
     });
     const demands = guard.handle(event);
     expect(demands).toHaveLength(1);
     expect(demands[0].type).toBe("block");
-    expect(demands[0].reason).toContain("C1.3 Verify-After-Write");
+    expect(demands[0].reason).toContain("C1.3 Verify-After-Edit");
     expect(demands[0].reason).toContain("foo.ts");
   });
 
@@ -93,7 +93,7 @@ describe("verify-after-write guard", () => {
       result: {
         messages: [
           toolCallMsg([
-            { name: "write", path: "a.ts" },
+            { name: "edit", path: "a.ts" },
             { name: "edit", path: "b.ts" },
           ]),
         ],
@@ -105,12 +105,12 @@ describe("verify-after-write guard", () => {
     expect(demands[0].reason).toContain("2 file(s)");
   });
 
-  it("allows finish(success) when all writes are verified", () => {
+  it("allows finish(success) when all edits are verified", () => {
     const event = makeEvent({
       result: {
         messages: [
           toolCallMsg([
-            { name: "write", path: "foo.ts" },
+            { name: "edit", path: "foo.ts" },
             { name: "read", path: "foo.ts" },
           ]),
         ],
@@ -120,13 +120,13 @@ describe("verify-after-write guard", () => {
     expect(guard.handle(event)).toEqual([]);
   });
 
-  it("tracks writes across completed steps", () => {
+  it("tracks edits across completed steps", () => {
     const event = makeEvent({
       completedSteps: [
-        { result: { messages: [toolCallMsg([{ name: "write", path: "old.ts" }])] } },
+        { result: { messages: [toolCallMsg([{ name: "edit", path: "old.ts" }])] } },
       ],
       result: {
-        messages: [toolCallMsg([{ name: "write", path: "new.ts" }])],
+        messages: [toolCallMsg([{ name: "edit", path: "new.ts" }])],
         finishResult: { status: "success" },
       },
     });
@@ -138,7 +138,7 @@ describe("verify-after-write guard", () => {
   it("read in later step counts as verification", () => {
     const event = makeEvent({
       completedSteps: [
-        { result: { messages: [toolCallMsg([{ name: "write", path: "a.ts" }])] } },
+        { result: { messages: [toolCallMsg([{ name: "edit", path: "a.ts" }])] } },
       ],
       result: {
         messages: [toolCallMsg([{ name: "read", path: "a.ts" }])],
@@ -153,7 +153,7 @@ describe("verify-after-write guard", () => {
       result: {
         messages: [
           toolCallMsg([
-            { name: "write", path: "./foo.ts" },
+            { name: "edit", path: "./foo.ts" },
             { name: "read", path: "foo.ts" },
           ]),
         ],
@@ -163,7 +163,7 @@ describe("verify-after-write guard", () => {
     expect(guard.handle(event)).toEqual([]);
   });
 
-  it("handles edit calls same as write", () => {
+  it("handles edit calls", () => {
     const event = makeEvent({
       result: {
         messages: [toolCallMsg([{ name: "edit", path: "bar.ts" }])],
@@ -178,7 +178,7 @@ describe("verify-after-write guard", () => {
   it("does not block non-success finish", () => {
     const event = makeEvent({
       result: {
-        messages: [toolCallMsg([{ name: "write", path: "foo.ts" }])],
+        messages: [toolCallMsg([{ name: "edit", path: "foo.ts" }])],
         finishResult: { status: "failure" },
       },
     });
@@ -200,7 +200,7 @@ describe("verify-after-write guard", () => {
           role: "assistant",
           content: [{
             type: "tool_use",
-            name: "write",
+            name: "edit",
             input: { path: "x.ts" },
           }],
         }],
@@ -222,13 +222,13 @@ describe("verify-after-write guard", () => {
     expect(guard.handle(event)).toEqual([]);
   });
 
-  it("read before write does not count as verification", () => {
+  it("read before edit does not count as verification", () => {
     const event = makeEvent({
       result: {
         messages: [
           toolCallMsg([
             { name: "read", path: "foo.ts" },
-            { name: "write", path: "foo.ts" },
+            { name: "edit", path: "foo.ts" },
           ]),
         ],
         finishResult: { status: "success" },

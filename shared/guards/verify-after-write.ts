@@ -46,7 +46,7 @@ function findUnverifiedPaths(messages: any[]): string[] {
   const writtenPaths = new Map<string, number>(); // path → index of edit call
 
   for (const call of calls) {
-    if (call.name === "edit" && call.path) {
+    if ((call.name === "edit" || call.name === "write") && call.path) {
       const np = normPath(call.path);
       writtenPaths.set(np, call.index);
     } else if (call.name === "read" && call.path) {
@@ -81,7 +81,7 @@ function findSessionUnverifiedPaths(event: WorkflowGuardEvent): string[] {
   for (const messages of allMessages) {
     const calls = extractToolCalls(messages);
     for (const call of calls) {
-      if (call.name === "edit" && call.path) {
+      if ((call.name === "edit" || call.name === "write") && call.path) {
         unverified.add(normPath(call.path));
       } else if (call.name === "read" && call.path) {
         unverified.delete(normPath(call.path));

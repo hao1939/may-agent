@@ -1,10 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777803151462_1881
+- **Session:** s_1777804951159_1916
 - **Status:** done
-- **When:** 2026-05-03T10:13:18.139Z
-- **Duration:** 46s
+- **When:** 2026-05-03T10:43:36.100Z
+- **Duration:** 1m4s
 
 ## What Happened
-Both red metrics are documented in KE-513/KE-512/KE-564 as expected deterministic decay — `project.active-count=0` because all projects completed/are in waiting state, and `project.blocked-over-6h=2` is at target (not below). System is healthy: 100% success rate, 0 errors, all crons green.
+**Red metrics assessment:** KE-571 documents that `project.active-count=0` and `project.blocked-over-6h=2` are known threshold/target configuration issues, not real failures. The metric.breach pipeline emitter was never built. This is a documented design-doc drift issue, not an operational problem. Per instructions: not treating as new investigation, not taking destructive action.
+
+**System health:** All green. 100% success rate over 6h, all 8 heartbeats firing, 37 fires/hour, 0 errors. Evaluator doing bulk of work (71 sessions). No stuck sessions in recent window.
