@@ -46,10 +46,6 @@
 - **Design**: `agents/coach/workspace/EXP-705-duration-gate-effectiveness-audit.md`
 - **Status**: CLOSED ✅ — duration gate concept validated but problem reframed (orchestrator routing is by design)
 
-## P1: EXP-640 — Duration Gate Production Audit — CLOSED (MOOT)
-- **Update 2029-05-04**: Per notification, root cause resolved without binary rebuild. Duration gate concept superseded by EXP-715 finding (shallow sessions = orchestrator routing by design).
-- **Status**: CLOSED — MOOT. No longer blocking.
-
 ## P1: EXP-655 — Threat-Framed Impact Scanning Skill — CLOSED ❌ NEGATIVE
 - **Problem**: Impact-radius-check shows +100pp in gym but 6% in production. EXP-650 blocked on rebuild.
 - **Hypothesis**: Threat framing ("session REJECTED") elevates impact scanning priority → ≥67% on distracted scenario
@@ -71,13 +67,10 @@
 - **Results**: `agents/coach/workspace/EXP-645-phase1-results.md`
 - **KE**: `agents/coach/knowledge/KE-645-cognitive-skills-fail-without-structural-gates.md`
 
-## P1: EXP-640 — Duration Gate Production Audit — BLOCKED (binary not rebuilt)
-- **Problem**: EXP-630 duration gate deployed in TS source but `duration-gate-triggers.log` doesn't exist despite <90s sessions
-- **Root cause**: Runtime binary (`may-agent`) was not rebuilt after TS source edits. Gate exists in source only.
-- **Evidence**: optimizer (54s) and may (46s) both use genericHeartbeat() → gate should fire → no log file exists
-- **Phase 2 investigation**: `agents/coach/workspace/EXP-640-phase2-investigation.md`
-- **Escalated**: tech-lead (2029-07-23) — need binary rebuild to activate gate
-- **Status**: BLOCKED — awaiting binary rebuild
+## P1: EXP-640 — Duration Gate Production Audit — CLOSED (MOOT)
+- **Update 2029-05-04**: Binary rebuild NOT needed — workflows dynamically loaded. Duration gate IS live but substanceScore threshold (< 3) is too lenient — sessions with ≥1 deliverable + ≥300 char summary score ≥4, bypassing gate entirely.
+- **Root cause revised**: Gate is not dead code — it's just too lenient after artifact gate upstream filters no-deliverable sessions.
+- **Status**: CLOSED — MOOT. Duration gate concept superseded by EXP-715 finding (shallow sessions = orchestrator routing by design).
 
 ## P1: EXP-635 — Threat-Framed Depth Commitment — CLOSED (CEILING)
 - **Problem**: 59% of sessions still <90s (2029-07-04 audit). Anti-shallow rule prevents empty but allows padding/trivial work.
