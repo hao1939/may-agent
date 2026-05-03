@@ -1,21 +1,15 @@
-# Evaluator heartbeat — 2026-05-03
+# Evaluator Heartbeat — 2026-05-03
 
-## Checks performed
+## Checks
 
-### Session-evaluation pipeline liveness (DB vs legacy artifacts)
-- DB (canonical) has fresh evaluations:
-  - `evaluations.max(createdAt) = 1777808796476`
-- Sessions are still being created:
-  - `sessions.max(startedAt) = 1777809011061`
-- Lag (sessions.max(startedAt) - evaluations.max(createdAt)) = `214585 ms` (~3.6 minutes)
+### Session eval pipeline liveness (Process #5)
+- DB canonical check: `.state/may.db` shows evaluations are being written.
+  - Evidence (bun:sqlite): `evaluations.maxCreatedAt = 2026-05-03 12:16:10`, `evaluations.count = 2506`.
+- Legacy artifact directory `.state/evaluations/` still appears partially stale (many `task_tree_*.json` from 2026-03-24, but some `s_*.json` mtimes 2026-04-29). Treat as legacy-output-path drift, not pipeline failure.
 
-Interpretation: evaluation cron appears live (minutes-level lag).
+### LLM eval liveness (Process #15)
+- Not rechecked this heartbeat (prior periodic checks: no `*llm*` tables in DB). Consider either reviving LLM eval or removing docs that imply it exists.
 
-### Legacy `.state/evaluations/` artifacts
-- Directory tail shows newest mtime around **2026-03-24**.
-
-Interpretation: legacy task_tree artifact output path is stale/drifted, but not evidence of pipeline failure because DB evaluation rows are current.
-
-## Follow-ups / recommendations
-1. Add/clarify in evaluator docs: **use `sessions.startedAt` not `sessions.createdAt`** (sessions table has no `createdAt`).
-2. If any tooling still checks `.state/evaluations/` mtimes for liveness, update it to check DB `evaluations.max(createdAt)` instead.
+## Notes / Actions
+- No metrics configured; performed liveness sanity checks anyway.
+- Tooling note: `rg` is not available in this container; prefer `grep`.
