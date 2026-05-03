@@ -430,7 +430,7 @@ ${guidance}
 ${redMetricDiagnostics ? "Red metric diagnostics are above — address each one, then proceed with normal heartbeat work." : "Review your metrics, check your projects, do your job. Act on what matters."} Commit and finish.`;
 
   ctx.emit({ type: "step_start", step: "heartbeat" });
-  const heartbeatStartTime = Date.now();
+
   const result = await ctx.runAgent(agent, prompt);
   recordOutcome(agentsRoot, agent, result.status === "error",
     result.status === "error" ? "heartbeat session error" : undefined);
@@ -460,40 +460,10 @@ Produce at least ONE meaningful write, then call finish() with updated deliverab
     return ctx.done(ctx.summarize(gateResult, { maxLength: 500 }));
   }
 
-  // ── EXP-740: WALL-CLOCK DURATION GATE ──────────────────────────────
-  // Replaces EXP-630 proxy-score gate (confirmed dead code, 0 triggers ever).
-  // EXP-705/710: Sessions <60s are always shallow, >90s always substantive.
-  // Wall-clock time is independent of artifact gate — can't be inflated by re-prompt.
-  const elapsedMs = Date.now() - heartbeatStartTime;
-  const elapsedSec = Math.round(elapsedMs / 1000);
-  const TOO_FAST_THRESHOLD_SEC = 90;
-
-  if (elapsedSec < TOO_FAST_THRESHOLD_SEC && result.status !== "error") {
-    ctx.emit({ type: "duration_gate_triggered", agent, elapsed_sec: elapsedSec });
-    try {
-      const logLine = `${new Date().toISOString()} agent=${agent} elapsed_sec=${elapsedSec}\n`;
-      appendFileSync(join(agentsRoot, "shared", "duration-gate-triggers.log"), logLine);
-    } catch (_) { /* non-critical */ }
-
-    const durationPrompt = `⚠️ DURATION GATE: Your session completed in ${elapsedSec}s — under the ${TOO_FAST_THRESHOLD_SEC}s minimum.
-
-Fast sessions almost never produce meaningful work. Before finishing:
-1. Did you investigate at least one non-obvious issue?
-2. Did you produce an artifact with real analysis (not just a status echo)?
-3. Did you check for improvement opportunities beyond surface metrics?
-
-Dig deeper into one project or metric and produce a substantive artifact.`;
-
-    const durationResult = await ctx.runAgent(agent, durationPrompt);
-    recordOutcome(agentsRoot, agent, durationResult.status === "error",
-      durationResult.status === "error" ? "duration gate re-prompt error" : undefined);
-    return ctx.done(ctx.summarize(durationResult, { maxLength: 500 }));
-  }
-
-  // ── EXP-650: IMPACT-SCANNING GATE — REMOVED ──────────────────────────────
-  // Dead code — 0 triggers ever. Most sessions naturally use grep/rg, so the
-  // "edited files without searching" condition is virtually impossible.
-  // History: EXP-645 → EXP-650 → EXP-730/740 (confirmed dead, removed).
+  // ── REMOVED GATES (dead code, 0 triggers ever) ──────────────────────────────
+  // EXP-740 duration gate: sessions always >90s, never triggered. Removed.
+  // EXP-650 impact-scanning gate: grep/rg always used naturally. Removed.
+  // EXP-630 proxy-score gate: confirmed dead. Removed.
 
   return ctx.done(ctx.summarize(result, { maxLength: 500 }));
 }
