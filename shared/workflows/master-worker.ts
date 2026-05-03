@@ -455,6 +455,22 @@ ${journalContent.slice(-3000)}
       workerPrompt += `\n\n⚠️ VERIFY-AFTER-EDIT RULE (session REJECTED if violated):\nAfter EVERY write() or edit() call, you MUST immediately read() the same file to confirm the change landed correctly. If you call finish() without verifying each modified file, your session will be REJECTED and marked as a failure. This is non-negotiable.`;
       ctx.log(`[work] EXP-565: Threat-framed verify-after-edit gate injected`);
 
+      // EXP-720: Few-shot dry-run logging (measure match rate before full injection)
+      try {
+        const { selectExamples } = await import("./fewshot-inject-helpers.js");
+        const matches = selectExamples(workerPrompt);
+        if (matches.length > 0) {
+          const logLine = JSON.stringify({
+            ts: new Date().toISOString(),
+            iteration,
+            matchedFiles: matches,
+            guidancePreview: guidance.slice(0, 200),
+          });
+          appendFileSync("agents/shared/exp720-fewshot-dryrun.log", logLine + "\n");
+          ctx.log(`[work] EXP-720 dry-run: ${matches.length} few-shot match(es) — NOT injected yet`);
+        }
+      } catch { /* EXP-720: non-critical — don't break worker flow */ }
+
       await withRetry(() => worker.prompt(workerPrompt), {
         maxRetries: 3,
         baseDelayMs: 1000,
