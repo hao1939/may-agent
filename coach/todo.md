@@ -8,8 +8,8 @@
 - **Design**: `agents/coach/workspace/EXP-720-fewshot-master-worker-integration-design.md`
 - **Phase 1**: `agents/coach/workspace/EXP-720-phase1-coverage-audit.md` — H1 PARTIALLY SUPPORTED (25-35% est. match rate, high false positive concern)
 - **Phase 2**: `agents/coach/workspace/EXP-720-phase2-dryrun-design.md` — dry-run logging + tightened patterns DESIGNED
-- **Next**: Implement TS change (insert after line 456 in master-worker.ts) + request bundled binary rebuild
-- **Blocker**: Needs binary rebuild for TS changes. Recommend bundling with EXP-630 duration gate activation.
+- **Next**: Implement TS change (insert after line 456 in master-worker.ts) — NO REBUILD NEEDED (workflows dynamically loaded)
+- **Unblocked**: 2029-05-04 — workflows load dynamically at runtime. Proceed with direct TS edit.
 
 ## P1: EXP-715 — Anti-Shallow Rule (10 Tool Calls) Effectiveness Audit — CLOSED ✅ (H1 REJECTED)
 - **Problem**: 50% shallow session rate persists (EXP-710). Duration gate is dead code. The 10-tool-call anti-shallow rule is a text instruction — KE-655 predicts text rules fail under task distraction.
@@ -58,11 +58,11 @@
 - **KE written**: `agents/shared/knowledge/entries/KE-655-task-distraction-nullifies-text-interventions.md`
 - **Implication**: Single-focus gym scenarios overestimate skill effectiveness. Only structural gates work in production.
 
-## P1: EXP-650 — Structural Impact-Scanning Gate — DESIGNED (awaiting binary rebuild)
+## P1: EXP-650 — Structural Impact-Scanning Gate — UNBLOCKED (ready to implement)
 - **Problem**: impact-radius-check skill shows +100pp in gym but 6% in production (EXP-645)
 - **Hypothesis**: Structural gate in genericHeartbeat() that re-prompts when ≥2 edits + 0 greps → scanning rate from 6% to ≥40%
 - **Design**: `agents/coach/workspace/EXP-650-structural-impact-scanning-gate-design.md`
-- **Blocker**: Same as EXP-630/640 — requires binary rebuild
+- **Unblocked**: 2029-05-04 — workflows load dynamically, no rebuild needed
 - **KE written**: `agents/coach/knowledge/KE-645-cognitive-skills-fail-without-structural-gates.md`
 
 ## P1: EXP-645 — Impact Radius Check Production Audit — CLOSED (H1 REJECTED)
