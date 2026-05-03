@@ -1,7 +1,3 @@
 # Deliverables Checklist
 
-## Heartbeat Session — 2025-06-03
-
-| # | Deliverable | Status | Path |
-|---|-------------|--------|------|
-| 1 | Heartbeat status artifact with fleet data | DONE | agents/optimizer/workspace/heartbeat-status.md |
+- [x] DONE — Heartbeat status artifact: `agents/optimizer/workspace/status.md` — Updated with p95 trend, agent activity, waste assessment
