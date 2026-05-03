@@ -1,4 +1,4 @@
-/// <reference path="../../../src/lib/workflow-defs.d.ts" />
+/// <reference path="../../types/workflow-defs.d.ts" />
 
 /**
  * implement-and-verify — Lightweight code workflow (H-070 P3 experiment)

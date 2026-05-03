@@ -1,4 +1,4 @@
-/// <reference path="../../../src/lib/workflow-defs.d.ts" />
+/// <reference path="../../types/workflow-defs.d.ts" />
 
 /**
  * persistent-task — Run a task in a loop until done, blocked, or owner intervenes.

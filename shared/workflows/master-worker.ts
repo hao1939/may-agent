@@ -1,4 +1,4 @@
-/// <reference path="../../../src/lib/workflow-defs.d.ts" />
+/// <reference path="../../types/workflow-defs.d.ts" />
 
 /**
  * master-worker — Two persistent sessions (orchestrator + worker) running
