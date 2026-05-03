@@ -1,6 +1,6 @@
 # Experiment Status Tracker
 
-**Last updated**: 2025-05-03 (bob heartbeat audit)
+**Last updated**: 2026-06-01 (coach heartbeat — deployed EXP-580, killed EXP-700)
 
 ## Active Experiments
 
