@@ -5,12 +5,15 @@
 ## Active Experiments
 
 ### EXP-700: Parallel Independent Tool Calls
-- **Status**: DESIGNED, Phase 0 ready
+- **Status**: Phase 0 IN PROGRESS (2/10 trials done)
 - **Hypothesis**: Batching independent tool calls reduces tool-call blocks per session by ≥15%
 - **Skill**: `agents/.lab/exp700-batch-calls/skills/batch-independent-calls.md` ✅ written
 - **Scenario**: `efficient-file-reading-workflow` ✅ exists
-- **Next action**: Run Phase 0 baseline (5 runs without skill in gym)
-- **Blocking**: Nothing — ready to execute
+- **Results so far**: Baseline 82.8s (7/8 criteria), Treatment 65.0s (6/8 criteria) — 21% faster but -1 convention
+- **Issue**: Scenario design mismatch (treatment uses different task structure). Needs alignment.
+- **Next action**: Create aligned treatment variant; run 5+5 matched trials
+- **Blocking**: Scenario alignment needed before more trials
+- **Details**: `EXP-700-phase0-results.md`
 
 ### EXP-600: Bash Waste Reduction (diagnose-before-retry)
 - **Status**: Phase 1 DEPLOYED, awaiting measurement
