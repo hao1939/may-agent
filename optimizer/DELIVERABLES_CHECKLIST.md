@@ -1,3 +1,3 @@
 # Deliverables Checklist
 
-- [x] DONE — Heartbeat status artifact: `agents/optimizer/workspace/status.md` — Updated with p95 trend, agent activity, waste assessment
+- [x] DONE — Session waste analysis artifact: `agents/optimizer/findings/heartbeat-2025-06-03-session-waste.md` — Analyzed 398 sessions, found 15.6% zero-op waste, identified coach/bob as top offenders
