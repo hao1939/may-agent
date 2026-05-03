@@ -8,8 +8,10 @@ All 6 projects are **CLOSED**. One active experiment in progress. EXP-730 CLOSED
 - **Problem**: VAE compliance stuck at ~13%. KE-715 says concrete thresholds work. KE-655 says distraction kills text. Which wins?
 - **Scenarios created**: `multi-file-refactor` (base) + `multi-file-refactor-with-changelog` (distractor)
 - **Design**: `agents/shared/knowledge/experiments/EXP-800/design.md`
-- **Next**: Run Arm A (baseline, 5 sessions) through gym
-- **Status**: SCENARIOS READY — run gym trials
+- **VAE measurement script**: `agents/coach/workspace/exp800-vae-measure.cjs` (validated — works on real sessions)
+- **Run protocol**: `agents/coach/workspace/EXP-800-run-protocol.md`
+- **Next**: Run Arm A (baseline, 5 sessions) through gym. After each run, find session in `.state/sessions/` and run `node agents/coach/workspace/exp800-vae-measure.cjs <session.jsonl>`
+- **Status**: READY TO RUN — scenarios + measurement tooling ready
 
 ## ACTIVE: EXP-745 — Few-Shot Pattern Coverage Expansion — PHASE 2 COMPLETE
 - **Problem**: EXP-720 dry-run log has zero data. Patterns only matched 45% of typical tasks.
