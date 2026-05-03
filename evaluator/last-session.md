@@ -1,66 +1,86 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777850419528_2849
+- **Session:** s_1777850447705_2851
 - **Status:** done
-- **When:** 2026-05-03T23:20:31.760Z
-- **Duration:** 12s
+- **When:** 2026-05-03T23:21:02.104Z
+- **Duration:** 14s
 
 ## What Happened
 {
   "agents": [
     {
       "agent": "tech-lead",
-      "role": "Builder",
-      "capability_level": "tech-lead",
-      "efficiency": 0.65,
+      "role": "Supervisor (orchestrator/project maintainer)",
+      "capability_level": "senior",
+      "efficiency": 0.7,
       "quality": 0.35,
       "verdict": "needs_improvement",
       "issues": [
         {
-          "tag": "DELIVERABLE_INTEGRITY",
-          "evidence": "Agent edited `agents/shared/projects/retry-removal/project.md` (milestone checkbox), but the only successful git commit was `git add tech-lead/` and commit hash `5dc32f246` showing '1 file changed'. The attempted commit including `shared/projects/...` failed because `shared/projects` is gitignored. Therefore the claimed project milestone update was not actually delivered/committed."
+          "tag": "VERIFICATION_GAP",
+          "evidence": "After worker claimed: “✅ 1 file(s) modified: env-gate-edit-summary.md”, tech-lead did not verify that file exists (no read() / ls)."
         },
         {
-          "tag": "UNVERIFIED_CLAIMS",
-          "evidence": "Agent asserts build health: '`tsc --noEmit`: ✅ Clean (0 errors)' and references prior reads of master-worker.ts line numbers, but the transcript excerpt does not show the `bash` output for `tsc --noEmit` nor a `read` output for master-worker.ts. With evidence-first rules, these are unverified in the provided tool outputs."
+          "tag": "PROJECT_STATUS_MISMATCH",
+          "evidence": "tech-lead declared DONE while project.md Milestones still included “- [ ] Remove dead retry code” and plan includes monitoring + later removal. Marking DONE contradicts the project’s own completion criteria in the prompt (ALL plan items checked off AND ALL metrics at/above target)."
         },
         {
-          "tag": "INCORRECT_DISMISSAL",
-          "evidence": "Inbox item '#3 0% trigger rate gates' was dismissed as 'Not blocking anything currently' without any supporting investigation (no log reads, no code search). This is a P1 re-escalation per prompt and should have been acted/delegated/escalated with evidence, not dismissed without work."
+          "tag": "INCORRECT_DELIVERABLE_INTEGRITY",
+          "evidence": "finish() deliverables claim modifications to `agents/shared/workflows/master-worker.ts`, but the session’s git commit shows only `shared/workflows/fewshot-inject-helpers.ts` and `tech-lead/last-session.md` changed (2 files changed). No tool output shows master-worker.ts actually modified/committed."
         },
         {
-          "tag": "METADATA_GAMING_RISK",
-          "evidence": "Changed milestone from '[ ] Remove dead retry code' to '[x] Remove dead retry code — deferred: code remains gated ... effectively dead.' This marks completion without actually removing code; at best it's a scope reinterpretation. Also it wasn't committed due to gitignore, so it doesn't even correct the system state."
+          "tag": "WEAK_BUILD_VERIFICATION",
+          "evidence": "Attempted `npx tsc --noEmit` failed (typescript not installed). Follow-up verification was `npx -y tsx --eval \"import '/app/agents/shared/workflows/master-worker.ts'\"` with tail -5, which is a thin proxy for build/test regression and may not validate TS typechecking."
+        },
+        {
+          "tag": "PROCESS_WASTE",
+          "evidence": "Multiple finish() attempts blocked by uncommitted changes; then an extra commit attempt failed with “nothing to commit”. This indicates poor use of `git status` before committing and before calling finish()."
+        },
+        {
+          "tag": "SCOPE_DRIFT",
+          "evidence": "The worker reportedly wrote a summary file (“env-gate-edit-summary.md”) not requested by the plan; tech-lead neither confirmed it nor kept the worker focused."
         }
       ],
       "metrics": {
-        "tool_calls": 6,
-        "wasted_calls": 1,
         "failure_chains": 1,
-        "notable_events": [
-          "finish() initially blocked due to uncommitted changes; agent recovered by committing tech-lead/last-session.md only.",
-          "git add/commit including shared/projects failed due to .gitignore; agent did not resolve (e.g., -f with justification, or alternative correct repo location)."
+        "wasted_calls_estimate": 3,
+        "tool_verification_calls": [
+          "bash: attempted tsc (failed due to missing typescript)",
+          "bash: tsx import (no output)"
+        ],
+        "missing_required_verifications": [
+          "No read()/ls verification for claimed env-gate-edit-summary.md",
+          "No direct read()/grep evidence in transcript that `master-worker.ts` line 538 was actually changed (only referenced in finish evidence text)"
         ]
       },
       "lessons": [
         {
-          "scope": "tech-lead",
-          "category": "fix",
-          "content": "If a project file is under a gitignored path (e.g., `agents/shared/projects`), edits there will not ship; confirm repo tracking before editing or move/update via the correct tracked location/workflow."
+          "agent": "tech-lead",
+          "lesson": "Before marking milestones/DONE, verify the actual code change exists in the repo (read/grep the target file + confirm via git diff/status), not only via secondary execution checks."
         },
         {
-          "scope": "tech-lead",
-          "category": "pattern",
-          "content": "Do not dismiss P1 re-escalations without at least one concrete evidence-gathering step (search code/logs, identify the gates, or delegate/escalate)."
+          "agent": "tech-lead",
+          "lesson": "Don’t declare DONE unless project.md plan/milestones are satisfied per rubric; if monitoring/removal is explicitly part of the plan, status should remain CONTINUE (or adjust plan with justification and keep status active)."
+        },
+        {
+          "agent": "tech-lead",
+          "lesson": "Run `git status --short` before calling finish() and before attempting commits to avoid finish-block loops and “nothing to commit” waste."
         }
       ]
     }
   ],
   "workflow": {
-    "name": "task_tree_evaluation",
+    "name": "task-tree-evaluation",
     "issues": [
-      "Agent claimed resolution of retry-removal metadata, but structural evidence shows the milestone file edit was not committed due to gitignore; outcome not delivered."
+      {
+        "tag": "DELIVERABLE_EVIDENCE_MISMATCH",
+        "evidence": "Commit evidence indicates master-worker.ts was not part of the committed changes, yet it is listed as a deliverable and claimed modified."
+      },
+      {
+        "tag": "PREMATURE_COMPLETION_CALL",
+        "evidence": "Session ends with DONE despite remaining milestone and explicit ‘monitor 1 week’ step in plan."
+      }
     ]
   },
   "overall": {

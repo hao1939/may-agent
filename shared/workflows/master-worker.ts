@@ -29,7 +29,6 @@ import {
 } from "./incremental-checkpoint.ts";
 import { validateOutput, type ValidationResult } from "./output-validator.ts";
 import { withRetry, isRetryableError } from "./provider-retry.ts";
-import { withWorkerRetry, isWorkerRetryable } from "./worker-retry.ts";
 import { estimateComplexity } from "./complexity-estimator.ts";
 import { IterationTimer } from "./iteration-timer.ts";
 import { recordIteration } from "../lib/iteration-monitor.ts";
@@ -534,42 +533,9 @@ ${journalContent.slice(-3000)}
         const consecutive = (ctx as any)._consecutiveZeroOutput;
         ctx.log(`[work] ⚠️ WARNING: Iteration ${iteration} produced NO output files (${consecutive}/${MAX_ZERO_OUTPUT} consecutive)`);
         appendFileSync(journalFile, `\n### Iteration ${iteration} — ${new Date().toISOString()}\n**⚠️ No output files produced (${consecutive} consecutive failures)**\n`, "utf-8");
-        // V2+V3 GUARDRAIL: Auto-retry with worker-retry module (exponential backoff)
-        if (process.env.ENABLE_ZERO_OUTPUT_RETRY === 'true' && consecutive <= MAX_ZERO_OUTPUT && !(ctx as any)[`_retried_${iteration}`]) {
-          (ctx as any)[`_retried_${iteration}`] = true;
-          ctx.log(`[work] 🔄 RETRY: Re-prompting worker via withWorkerRetry (exponential backoff)`);
-          const retryFirstToolInstruction = stubFilePath
-            ? `A stub file has already been pre-created at \`${stubFilePath.replace(/.*?(outputs\/)/, 'outputs/')}\`. Your FIRST tool call MUST be edit() to replace the stub content. Do NOT use write(), read(), or bash() first. Use this exact oldText for the first edit: \`<!-- STUB: This file was pre-created by the workflow. Replace this content with your deliverable. -->\\n\`.`
-            : `Your FIRST tool call MUST be write(). Do NOT use read() or bash() first. Do NOT claim files already exist.`;
-          const retryPrompt = `🚨 YOUR PREVIOUS ATTEMPT PRODUCED 0 FILES. This is iteration ${iteration} retry.\n\n${retryFirstToolInstruction}\n\nOriginal task:\n${guidance}`;
-          const retryResult = await withWorkerRetry(
-            async () => {
-              await withRetry(() => worker.prompt(retryPrompt), {
-                maxRetries: 3,
-                baseDelayMs: 1000,
-                onRetry: (err, attempt, delay) => ctx.log(`[work] ⚠️ Provider error on retry prompt, retry ${attempt} after ${delay}ms: ${String(err).slice(0, 80)}`),
-              });
-              const retrySnap = snapshotOutputs(outputsDir);
-              const retryChanged = diffSnapshots(afterSnap, retrySnap);
-              if (retryChanged.length === 0) {
-                throw new Error("no output: worker produced 0 files on retry");
-              }
-              return retryChanged;
-            },
-            {
-              maxRetries: 1,
-              baseDelayMs: 2000,
-              onRetry: (err, attempt, delay) => ctx.log(`[work] 🔄 Worker retry attempt ${attempt} after ${delay}ms: ${String(err).slice(0, 80)}`),
-            },
-          );
-          if (retryResult.success && retryResult.result) {
-            (ctx as any)._consecutiveZeroOutput = 0;
-            ctx.log(`[work] ✅ Retry succeeded (${retryResult.attempts} attempt(s)): ${retryResult.result.length} file(s): ${retryResult.result.map(f => f.split('/').pop()).join(', ')}`);
-            changedFiles.push(...retryResult.result);
-          } else {
-            ctx.log(`[work] ❌ Retry failed after ${retryResult.attempts} attempt(s): ${retryResult.errors.join('; ')}`);
-          }
-        }
+        // Dead retry block removed — ENABLE_ZERO_OUTPUT_RETRY was never enabled,
+        // 0% recovery rate confirmed (EXP-511). Zero-output is handled by the
+        // consecutive counter + escalation below.
         if (consecutive >= MAX_ZERO_OUTPUT) {
           ctx.log(`[work] 🚨 ESCALATION: ${MAX_ZERO_OUTPUT} consecutive zero-output iterations. Injecting write-first constraint into review.`);
         }
