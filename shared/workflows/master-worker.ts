@@ -605,7 +605,7 @@ ${journalContent.slice(-3000)}
       try {
         const outputLen = worker.lastText()?.length ?? 0;
         recordUsage({
-          agent: config.agentName ?? 'worker',
+          agent: (ctx as any).agentName ?? 'worker',
           workflow: 'master-worker',
           promptTokens: Math.round(outputLen / 4),  // rough estimate
           completionTokens: Math.round(outputLen / 4),

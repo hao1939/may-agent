@@ -7,8 +7,8 @@
  */
 
 import {
-  type UnifiedOptions,
-  type UnifiedResult,
+  type MasterWorkerConfig as UnifiedOptions,
+  type RunResult as UnifiedResult,
   runMasterWorker,
 } from "./master-worker-unified.ts";
 
@@ -63,5 +63,5 @@ export async function runResilientViaUnified(
 
 // ── Re-exports for backward compatibility ───────────────────────────────
 
-export { runMasterWorker, type UnifiedOptions, type UnifiedResult } from "./master-worker-unified.ts";
+export { runMasterWorker, type MasterWorkerConfig as UnifiedOptions, type UnifiedResult } from "./master-worker-unified.ts";
 export { type ResilientConfig, type LLMProvider } from "./master-worker-resilient.ts";

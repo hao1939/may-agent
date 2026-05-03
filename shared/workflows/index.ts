@@ -33,7 +33,7 @@ export {
 /** Analyzes task complexity and recommends timeouts */
 export {
   estimateComplexity,
-  type ComplexityResult
+  type ComplexityEstimate as ComplexityResult
 } from './complexity-estimator';
 
 /** Tracks iteration timing with avg/median/p95 stats */
