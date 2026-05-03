@@ -1,10 +1,11 @@
 # DELIVERABLES_CHECKLIST.md
 
-## Task: Expand test coverage for fewshot-inject-helpers.ts and verify-wrap.ts
+## Task: Coverage Gap Audit & Extended Tests
 
-| # | Deliverable | Status | Path | Notes |
-|---|-------------|--------|------|-------|
-| 1 | Tests for fewshot-inject-helpers.ts | DONE | agents/shared/tests/fewshot-inject-helpers.test.ts | 46 tests covering selectExamples, loadExample, injectFewShot |
-| 2 | Tests for verify-wrap.ts | DONE | agents/shared/tests/verify-wrap.test.ts | 13 tests covering metadata and execute |
-| 3 | All tests passing | DONE | — | 95/95 files, 1678 tests passing |
-| 4 | Report updated | DONE | agents/shared/projects/outputs/test-fix-report.md | Added Iteration 3 section |
+| # | Deliverable | Status | File Path | Details |
+|---|------------|--------|-----------|---------|
+| 1 | Coverage gap audit report | DONE | agents/shared/projects/outputs/coverage-gap-audit.md | Ratio analysis of all 28 workflow files, identified top 3 gaps |
+| 2 | Extended tests for implement-and-verify | DONE | agents/shared/tests/implement-and-verify-extended.test.ts | 27 tests, 296 lines |
+| 3 | Extended tests for incremental-checkpoint | DONE | agents/shared/tests/incremental-checkpoint-extended.test.ts | 23 tests, 289 lines |
+| 4 | Extended tests for circuit-breaker | DONE | agents/shared/tests/circuit-breaker-extended.test.ts | 17 tests, 236 lines |
+| 5 | All tests passing | DONE | 98/98 files, 1745 tests | Confirmed via npx vitest run |
