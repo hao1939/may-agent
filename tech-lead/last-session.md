@@ -1,20 +1,25 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777846778990_2771
+- **Session:** s_1777849945200_2834
 - **Status:** done
-- **When:** 2026-05-03T22:21:13.141Z
-- **Duration:** 1m34s
+- **When:** 2026-05-03T23:13:12.484Z
+- **Duration:** 47s
 
 ## What Happened
-Build is clean — no TypeScript errors.
+CONTINUE
 
-Now let me address the notification properly. The 0% trigger rate guards are likely `no-secret-leak`, `hallucinated-path`, and `build-check`. My assessment:
+(a) Next iteration: Worker should wrap the retry block (lines 538-571) in an env-var gate. Specifically, change line 538 from:
+```
+if (consecutive <= MAX_ZERO_OUTPUT && !(ctx as any)[`_retried_${iteration}`]) {
+```
+to:
+```
+if (process.env.ENABLE_ZERO_OUTPUT_RETRY === 'true' && consecutive <= MAX_ZERO_OUTPUT && !(ctx as any)[`_retried_${iteration}`]) {
+```
 
-- **no-secret-leak**: Keep. Safety net. 0% trigger = system is healthy, not that the guard is useless.
-- **hallucinated-path**: Evaluate removal. If primers already fixed C7.1, this adds overhead per rule #5.
-- **build-check**: Evaluate removal. If agents already verify builds, this is redundant noise.
+This is a single-line edit in `/app/agents/shared/workflows/master-worker.ts` at line 538. The env var defaults to falsy (disabled) since it won't be set.
 
-But before removing anything, I should note this is a judgment call that doesn't require immediate action — the guards have near-zero runtime cost (they just check string patterns). The real question from the registry's rule #5 is whether they "dilute attention" — but with 0% trigger, they produce no output, so they can't dilute attention.
+(b) This is the first real code change. One line edit, minimal risk.
 
-**Decision**: Dismiss the escalation. 0% trigger rate for safety-net guards is the desired state. No action needed.
+(c) First step: Edit line 538 of `/app/agents/shared/workflows/master-worker.ts` to prepend `process.env.ENABLE_ZERO_OUTPUT_RETRY === 'true' &&` to the if-condition. Then verify compilation with `npx tsc --noEmit` or at minimum confirm the syntax is valid.
