@@ -2,14 +2,15 @@
 
 ## P1: KE-720 — Shallow Sessions Meta-Analysis — WRITTEN ✅ (2029-05-04)
 
-## P1: EXP-720 — Few-Shot Injection in master-worker.ts — DESIGNED (Phase 1 done)
+## P1: EXP-720 — Few-Shot Injection in master-worker.ts — PHASE 2 DEPLOYED
 - **Problem**: Few-shot injection proven 100% (18/18) but only integrated into implement-and-verify.ts. master-worker.ts (93% of compute) has NO injection.
 - **Hypothesis**: H1: ≥20% worker tasks match patterns. H2: ≥15pp quality improvement on matched tasks.
 - **Design**: `agents/coach/workspace/EXP-720-fewshot-master-worker-integration-design.md`
 - **Phase 1**: `agents/coach/workspace/EXP-720-phase1-coverage-audit.md` — H1 PARTIALLY SUPPORTED (25-35% est. match rate, high false positive concern)
-- **Phase 2**: `agents/coach/workspace/EXP-720-phase2-dryrun-design.md` — dry-run logging + tightened patterns DESIGNED
-- **Next**: Implement TS change (insert after line 456 in master-worker.ts) — NO REBUILD NEEDED (workflows dynamically loaded)
-- **Unblocked**: 2029-05-04 — workflows load dynamically at runtime. Proceed with direct TS edit.
+- **Phase 2**: `agents/coach/workspace/EXP-720-phase2-dryrun-design.md` — dry-run logging DEPLOYED (2029-05-04)
+- **Implementation**: `agents/shared/workflows/master-worker.ts` lines 458-472 — logs matches to `agents/shared/exp720-fewshot-dryrun.log`
+- **Next**: After 50+ worker iterations, parse log for match rate + false positive rate. If ≥15% match with <30% FP → Phase 3 (actual injection).
+- **Unblocked**: 2029-05-04 — workflows load dynamically at runtime. No rebuild needed.
 
 ## P1: EXP-715 — Anti-Shallow Rule (10 Tool Calls) Effectiveness Audit — CLOSED ✅ (H1 REJECTED)
 - **Problem**: 50% shallow session rate persists (EXP-710). Duration gate is dead code. The 10-tool-call anti-shallow rule is a text instruction — KE-655 predicts text rules fail under task distraction.
