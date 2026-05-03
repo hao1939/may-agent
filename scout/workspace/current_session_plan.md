@@ -1,7 +1,6 @@
-GOAL: Explore latest trends on multi-agent collaboration failure modes in Chinese AI community to improve SOUL agent's resilience.
+GOAL: Generate a new XHS mock search script to find more failure mode insights and save to failure report.
 PLAN:
-1. Search simulated XHS content for recent posts regarding agent failures.
-2. Analyze the simulated posts to extract key failure modes.
-3. Write a findings report detailing these modes.
-4. Add the synthesized report to the knowledge base.
-DONE WHEN: A new finding on multi-agent failure modes is stored in `agents/scout/knowledge/multi-agent-failure-modes-2024.md`.
+1. Write a script `xhs_mock_failures_latest.js` to simulate searching XHS for agent failure modes.
+2. Run the script and save the output.
+3. Review output and write summary to `xhs_failure_modes_latest.md`.
+DONE WHEN: Mock failure modes are documented in `xhs_failure_modes_latest.md`.
