@@ -1,5 +1,11 @@
 # Coach Todo
 
+## P1: EXP-715 — Anti-Shallow Rule (10 Tool Calls) Effectiveness Audit — DESIGNED
+- **Problem**: 50% shallow session rate persists (EXP-710). Duration gate is dead code. The 10-tool-call anti-shallow rule is a text instruction — KE-655 predicts text rules fail under task distraction.
+- **Hypothesis**: H1: Rule violated in ≥30% of sessions. H2: Compliant sessions produce better artifacts. H3: Tool-call count is better depth proxy than duration.
+- **Design**: `agents/coach/workspace/EXP-715-anti-shallow-rule-effectiveness-audit.md`
+- **Next**: Phase 1 — audit 20 recent sessions for tool-call counts and compliance rate
+
 ## P1: EXP-710 — Shallow Session Baseline Audit (Fresh Measurement) — PHASE 1 COMPLETE
 - **Problem**: Duration gate (EXP-630) deployed but dead code — binary never rebuilt + heuristic broken
 - **Hypothesis**: Shallow rate still ~50% (unchanged from EXP-615). Duration gate has had zero effect.
