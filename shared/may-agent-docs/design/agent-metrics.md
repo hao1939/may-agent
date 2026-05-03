@@ -35,7 +35,19 @@ The doc table below highlights **6 prioritized metrics** (3 infrastructure + 3 o
 | `project.iterations-24h` | Are projects advancing? | `COUNT(*)` from project.iteration events (24h) | 10 | 0 (watch-only) | below |
 | `project.blocked-over-6h` | Is work stuck? | `COUNT(*)` from projects where blocked/waiting >6h | 0 | 1 | above |
 
-If all 6 green → system is healthy and producing. If any red → investigate that layer.
+**Reading the dashboard:** if any of these 6 are red, investigate that layer. **All-green is necessary but not sufficient** — see the structural blind spots below before treating green as "healthy and producing."
+
+### All-green ≠ healthy: known structural blind spots (KE-726, 2026-05-03)
+
+The "all green → healthy" reading was falsified at 2026-05-03 20:17Z: every prioritized metric was green at the moment the system had been producing zero real project iterations for 7h. Each metric has a floor or counting rule that prevents it from alerting in a specific failure mode the metric *names*:
+
+- `project.iterations-24h` — registry `threshold=0`, alert_op=`<`. `current<0` is unreachable; the metric never fires (KE-722). Closed-project ghost iterations also count toward `current` (KE-581), so the count stays inflated even when no live project is iterating.
+- `project.active-count` — `threshold=1`. Pinned green by a single row in `status='active'`, regardless of whether that row corresponds to real iteration. A direct DB UPDATE on the row (KE-422 / KE-724) is enough to keep it green.
+- `project.blocked-over-6h` — KE-724's same UPDATE additionally clears one of the projects that would otherwise breach this metric (it was reclassified out of `waiting`).
+- `project.stale-active-count` — registry `threshold=2`, alert_op=`>`. Demands ≥3 simultaneous stale-active projects to fire, but with `active-count` capped near 1 in practice this metric cannot breach in the failure mode it describes. **Not currently in the prioritized 6** despite being the most direct signal for KE-724-class drift.
+- `system.real-output-24h` — `threshold=30`, current commonly 1000+ (≈ 30× headroom). Counts any commit (including ghost-loop and last-session.md churn). Can distinguish "system completely dark" from "system alive" but not "substance" from "plumbing."
+
+A pending registry-side proposal (`agents/arc/workspace/proposals/2026-05-03-prioritized-metrics-cannot-detect-extinction.md`) addresses the threshold floors. Until that lands and ships through `metrics-snapshot.ts`, **read this dashboard as a liveness check on plumbing, not as a substance check on output**: confirm direction with `events`-table queries (`project.iteration` counts grouped by `projectId` and project status) before concluding the system is producing.
 
 ## Balanced Pairs (for project metrics)
 
