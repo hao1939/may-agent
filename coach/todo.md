@@ -2,7 +2,7 @@
 
 ## Status Summary (updated 2026-05-03)
 
-All 6 projects are **CLOSED**. One active experiment in progress.
+All 6 projects are **CLOSED**. One active experiment in progress. EXP-730 CLOSED (root cause found, superseded by EXP-740).
 
 ## ACTIVE: EXP-745 — Few-Shot Pattern Coverage Expansion — PHASE 1 COMPLETE
 - **Problem**: EXP-720 dry-run log has zero data. Patterns only match 20% of typical tasks.
@@ -11,11 +11,10 @@ All 6 projects are **CLOSED**. One active experiment in progress.
 - **Next**: Phase 2 — design new example files for implementation/refactoring task categories
 - **Status**: PHASE 1 COMPLETE
 
-### Pending Tech-Lead Escalations (4 items)
+### Pending Tech-Lead Escalations (3 items — EXP-730 closed)
 1. **EXP-740**: Wall-clock duration gate (90s threshold) — replace dead proxy-score gate
-2. **EXP-730**: Dormant structural gate audit — 3 deployed gates have ZERO triggers
-3. **EXP-735**: Impact gate trigger condition fix — keyword detection too broad
-4. **EXP-725**: Structural anti-shallow gate — finish() rejection when tool_call_count < 10
+2. **EXP-735**: Impact gate trigger condition fix — keyword detection too broad
+3. **EXP-725**: Structural anti-shallow gate — finish() rejection when tool_call_count < 10
 
 ### Key Metrics
 - **Experiments closed**: 50+ (EXP-250 through EXP-740)
@@ -34,14 +33,16 @@ All 6 projects are **CLOSED**. One active experiment in progress.
 - **Status**: FIX DESIGNED — escalate to tech-lead for implementation
 - **Next**: Tech-lead implements wall-clock duration gate, then monitor log for trigger rate
 
-## P1: EXP-730 — Dormant Structural Gate Audit — PHASE 2 COMPLETE, ESCALATED (SUPERSEDED by EXP-740)
+## P1: EXP-730 — Dormant Structural Gate Audit — CLOSED (SUPERSEDED by EXP-740)
 - **Problem**: EXP-630 (duration), EXP-650 (impact), EXP-720 (few-shot) all deployed with ZERO log entries
 - **Phase 1 Finding**: EXP-630 threshold `< 3` was dead code. Fixed to `< 5` but STILL dead.
 - **Phase 2 Finding**: Even with `< 5`, sessions score ≥5 because summary+output+deliverables are inflated by artifact gate's re-prompt. Gates are architecturally incompatible.
+- **True Root Cause**: Artifact gate (EXP-520) re-prompt inflates substanceScore; turnsUsed always 0 (never populated). Gates architecturally incompatible.
 - **Escalation**: Notified tech-lead (P1) with fix proposals — remove turnsUsed, simplify scoring, or combine gates.
 - **Design**: `agents/coach/workspace/EXP-730-dormant-gate-audit-design.md`
 - **Phase 2 analysis**: `agents/coach/workspace/EXP-730-phase2-analysis.md`
-- **Status**: PHASE 2 COMPLETE — awaiting tech-lead action
+- **Pipeline status**: `agents/coach/workspace/experiment-pipeline-status-2026-05-03.md`
+- **Status**: CLOSED — root cause fully analyzed, SUPERSEDED by EXP-740 (wall-clock duration gate). Awaiting tech-lead action on EXP-740.
 
 ## P1: EXP-735 — Impact Gate Trigger Condition Fix — DESIGNED
 - **Problem**: EXP-650 impact gate never fires because `grep|rg` keyword appears in virtually all session outputs
