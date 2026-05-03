@@ -1,5 +1,12 @@
 # Coach Todo
 
+## P1: EXP-595 — Worker Injection Durability Check — DESIGNED
+- **Problem**: EXP-510 worker completion checklist deployed May 2026 (+39pp write, +69pp finish). Never verified for durability.
+- **Hypothesis**: Worker injection maintains ≥80% of original effect (write ≥60%, finish ≥55%)
+- **Method**: 3 gym trials with injection (Arm A) vs 3 without (Arm B) on worker-style task
+- **Design**: `agents/coach/workspace/EXP-595-worker-injection-durability-design.md`
+- **Status**: DESIGNED — ready for gym execution next heartbeat
+
 ## P0: EXP-575 — Auto-Verify-After-Edit Structural Enforcement — ESCALATED
 - **Problem**: Verify-after-edit at 9.7% despite 6 failed text interventions (EXP-280, 340, 350, 495, 565, 580)
 - **Key finding**: EXP-580 re-measurement confirms 12.9% (10/77) — no improvement from EXP-565 text gate
