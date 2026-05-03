@@ -85,16 +85,17 @@ export function extractDecision(text: string): Decision {
     return { status: "continue", detail: trimmed.slice(0, 500) };
   }
 
-  // Fallback: scan for uppercase keywords (including DONE/COMPLETE for project completion)
+  // Fallback: check DONE/COMPLETE first — a completed project should stop (EXP-700, Fix 1)
+  // Previously CONTINUE was checked before DONE, causing 58% post-DONE overrun (EXP-650)
+  if (/\b(DONE|COMPLETE|COMPLETED)\b/.test(trimmed) && /\b(project|all\s+metrics|all\s+milestones|stop\s+dispatching|finished|stop)\b/i.test(trimmed)) {
+    return { status: "done", detail: trimmed.slice(0, 500) };
+  }
+
+  // Then scan for other uppercase keywords
   for (const keyword of ["CONTINUE", "PIVOT", "BLOCKED", "WAITING"] as const) {
     if (new RegExp(`\\b${keyword}\\b`).test(trimmed)) {
       return { status: keyword.toLowerCase() as Decision["status"], detail: trimmed.slice(0, 500) };
     }
-  }
-
-  // Fallback DONE/COMPLETE detection (after other keywords to avoid false positives)
-  if (/\b(DONE|COMPLETE|COMPLETED)\b/.test(trimmed) && /\b(project|all\s+metrics|all\s+milestones|stop\s+dispatching)\b/i.test(trimmed)) {
-    return { status: "done", detail: trimmed.slice(0, 500) };
   }
 
   return { status: "unknown", detail: trimmed.slice(0, 500) };
