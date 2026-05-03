@@ -1,11 +1,12 @@
-# Deliverables Checklist
+# Deliverables Checklist — Iteration 35
 
-## Required Deliverables
+## Task: Create final project deliverables INDEX.md
 
-| # | Deliverable | Status | Path | Notes |
-|---|------------|--------|------|-------|
-| 1 | Lessons learned retrospective | DONE | agents/shared/projects/outputs/lessons-retrospective.md | 89-line doc covering 6 phases, patterns, metrics, recommendations |
+| # | Deliverable | Status | Path |
+|---|-------------|--------|------|
+| 1 | INDEX.md cataloging all 50+ output files by category | DONE | agents/shared/projects/outputs/INDEX.md |
 
-## Verification Evidence
-- edit() applied successfully to lessons-retrospective.md replacing stub content
-- read() confirmed file starts with "# Lessons Learned Retrospective" with 84+ more lines
+## Verification
+- File edited from stub to 75-line comprehensive index
+- Categories: Reports, Error Handling, Performance, TypeScript, Tools, Guides, Testing, Project Status
+- Confirmed via read() showing correct header and content
