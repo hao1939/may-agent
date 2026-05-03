@@ -1,84 +1,76 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777828816671_2431
+- **Session:** s_1777830610482_2465
 - **Status:** done
-- **When:** 2026-05-03T17:20:29.903Z
-- **Duration:** 13s
+- **When:** 2026-05-03T17:50:20.974Z
+- **Duration:** 10s
 
 ## What Happened
-```json
 {
   "agents": [
     {
-      "agent": "tech-lead",
-      "role": "Supervisor",
-      "capability_level": "tech-lead",
-      "efficiency": 0.35,
-      "quality": 0.55,
+      "agent": "coach",
+      "role": "Philosopher",
+      "capability_level": "heartbeat experimenter / training-method owner",
+      "efficiency": 0.55,
+      "quality": 0.62,
       "verdict": "acceptable",
       "issues": [
         {
-          "type": "ROLE_NONCOMPLIANCE",
-          "evidence": "Heartbeat instructions required: “For each [inbox item]: act, delegate, dismiss (with reason), or escalate.” Transcript shows the agent claiming “clear triage decisions” and summarizing, but no structured per-event act/delegate/dismiss/escalate list is present in the final outputs shown."
+          "tag": "INSTRUCTION_NONCOMPLIANCE",
+          "evidence": "The prompt required the FIRST assistant output to be a GOAL/PLAN/DONE WHEN block before any tool calls. Transcript shows the first assistant message is: “Good. Now let me also check if we can verify the tech-lead skill deployment:” followed by a bash call—no mandated block present."
         },
         {
-          "type": "FM-1.3 / LOOPING (finish guard)",
-          "evidence": "Agent called finish() three times and got blocked twice for “T2-no-post-write-verification”, then performed an unrelated read(tsconfig.json) to satisfy the guard and finished. This is process churn not contributing to task outcomes."
+          "tag": "LOOPING/FM-1.3",
+          "evidence": "Failure chain shows an initial bash find command exited code 1, followed by additional bash/cat/find/cat attempts without clear resolution; chain marked “unresolved” with 4 wasted calls."
         },
         {
-          "type": "WASTED_CALLS / ENVIRONMENT DISCOVERY ERRORS",
-          "evidence": "Failure Chain 1 begins with `cd /app && git log ...` failing because /app is not a git repo; then several find/ls commands run to rediscover structure. Auto-extracted: 12 wasted calls in Chain 1."
+          "tag": "PROCESS_GUARD_TRIGGERED",
+          "evidence": "finish() was blocked twice: first for uncommitted changes (untracked file), then for superficial verification (no post-write verification). Both required recovery steps."
         },
         {
-          "type": "DB_QUERY_MISSTEPS",
-          "evidence": "Tried `sqlite3` (missing, exit 127) and `better-sqlite3` (exit 1), then a malformed bun:sqlite import command (syntax error shown in Chain 4). All unresolved; indicates lack of adherence to documented DB access pattern."
-        },
-        {
-          "type": "UNVERIFIED/OVERCLAIMED ASSERTIONS",
-          "evidence": "Agent summary claimed “Zombie session DB empty in this context” and “Binary stale ... but cannot be rebuilt from this environment — source entry point not available.” The transcript excerpts show no successful DB query output supporting the zombie-session conclusion, and the binary rebuild limitation is asserted without a demonstrated check of build entrypoints (only git log and file age checks are evidenced)."
+          "tag": "EVIDENCE_GAPS_ON_CLAIMS",
+          "evidence": "Agent claimed “Verified all project deliverables exist (EXP-700 skill written in .lab, gym scenario exists).” The transcript includes evidence for tech-lead skills listing and greps in the tracker, but does not show direct verification outputs for the referenced gym scenario existence in this excerpt."
         }
       ],
       "metrics": {
-        "failure_chains": 4,
-        "wasted_calls_reported": 15,
-        "finish_blocked_count": 2
-      }
+        "tool_calls": 6,
+        "finish_blocked_count": 2,
+        "git_commits": 1,
+        "wasted_calls_from_failure_chains": 4
+      },
+      "lessons": [
+        {
+          "category": "fix",
+          "content": "[coach] Comply with the mandatory heartbeat header: always output GOAL/PLAN/DONE WHEN as the first assistant message before any tool call; missing it is a structural failure even if artifacts are produced."
+        },
+        {
+          "category": "pattern",
+          "content": "[coach] When a find/path probe fails (exit code 1), immediately inspect the exact error and adjust the path/query once; avoid multi-step fallback chains (cat/find/cat) that don’t converge."
+        },
+        {
+          "category": "pattern",
+          "content": "[coach] Run verification immediately after write/edit and before the first finish() attempt; also commit before finish() to avoid guard-trigger churn."
+        }
+      ]
     }
   ],
   "workflow": {
-    "name": "tech-lead-heartbeat",
+    "name": "coach-heartbeat",
     "issues": [
       {
-        "type": "TRIAGE_FORMAT_INCOMPLETE",
-        "evidence": "Required per-inbox decisioning (act/delegate/dismiss/escalate) is not clearly delivered as structured output in the transcript."
+        "tag": "GUARD_RAIL_FRICTION",
+        "evidence": "Session spent multiple steps recovering from finish() blocks (uncommitted changes, then verification depth), indicating workflow inefficiency."
       },
       {
-        "type": "INVESTIGATION_INEFFICIENT",
-        "evidence": "Significant time spent locating repo root and attempting DB tooling rather than directly using known conventions (/app/agents repo; bun:sqlite readonly pattern; .state/may.db)."
+        "tag": "ANTI_SHALLOW_RULE_VIOLATION",
+        "evidence": "Prompt required at least 10 tool calls before finish(); transcript shows 6 tool calls total (ls, finish, git commit, finish, grep, finish)."
       }
     ]
   },
   "overall": {
-    "verdict": "acceptable",
+    "verdict": "needs_improvement",
     "result_delivered": true
-  },
-  "lessons": [
-    {
-      "agent": "tech-lead",
-      "category": "fix",
-      "content": "Start in /app/agents (actual git repo) rather than /app to avoid immediate git failures and follow-on discovery churn."
-    },
-    {
-      "agent": "tech-lead",
-      "category": "fix",
-      "content": "Use the standard DB read pattern (`bun -e` + `bun:sqlite` with `.state/may.db` readonly) instead of sqlite3/better-sqlite3 attempts; malformed DB commands caused 3 separate failure chains."
-    },
-    {
-      "agent": "tech-lead",
-      "category": "pattern",
-      "content": "When the heartbeat requires per-inbox actioning, produce an explicit bullet list mapping each notification → {act|delegate|dismiss|escalate}+reason to meet role output contract and reduce ambiguity."
-    }
-  ]
+  }
 }
-```

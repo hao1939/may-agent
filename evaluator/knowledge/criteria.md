@@ -99,10 +99,13 @@ When a heartbeat is asked to "check eval recency", treat **SQLite DB liveness** 
 - If the latest evaluation is stale (>48h), report likely evaluator/cron liveness issues.
 
 **Secondary (legacy / fallback):** `.state/evaluations/` and `.state/job-history.jsonl`
-- `.state/evaluations/*.json` is frequently **stale even when DB writes are fresh** (confirmed 2026-04-06 and re-confirmed 2026-05-02; heartbeat evidence: DB had `evaluations_24h=424` while `.state/evaluations/` newest mtime was 2026-03-24). Treat it as legacy unless proven otherwise.
+- `.state/evaluations/*.json` is frequently **stale even when DB writes are fresh**. Treat it as legacy unless proven otherwise.
+  - Structural check: if DB is fresh (recent `evaluations.MAX(createdAt)`) but `ls -lt .state/evaluations | head` shows much older mtimes, classify as **legacy-output-path drift**, not a pipeline outage.
 - `.state/job-history.jsonl` may be stale (not written by the current cron system).
 
-**Recommended next step:** If DB liveness is stale, file a maintenance task to re-enable/reconnect the evaluation pipeline. If only the legacy artifacts are stale but DB is fresh, update docs/checklists to stop treating legacy paths as authoritative.
+**Recommended next step:**
+- If DB liveness is stale: investigate cron/runner and escalate with a concrete lag number.
+- If only legacy artifacts are stale but DB is fresh: update docs/checklists to stop treating legacy paths as authoritative.
 
 ### Capability Levels
 - **L1 (Auditor)**: Spots failures. Writes accurate scores.
