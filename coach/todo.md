@@ -310,6 +310,13 @@ Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-07-15.m
 - **Status**: CLOSED — PARTIALLY POSITIVE. Does not meet 30pp threshold overall. Cross-file checks improved; generative tasks (test-writing) unaffected.
 - **Next**: EXP-560 — structural test-file-existence gate
 
+## P1: EXP-800 — Threshold Rescue for VAE — CLOSED (CEILING)
+- **Problem**: Does a concrete P0 threshold instruction improve verify-after-edit rate?
+- **Results**: `agents/coach/workspace/EXP-800-results.md`
+- **Finding**: All arms 100% VAE — scenario at CEILING. sed→grep/test is natural behavior. Cannot measure instruction effect.
+- **Bug fixed**: Arms B/C/D success_criteria.js used `__dirname` not `workDir` — fixed.
+- **Status**: CLOSED — CEILING. Need harder VAE scenario (complex multi-line edits, not batch-sed-able).
+
 ## P1: EXP-545 — QA Finish-Call Structural Gate — CLOSED (ALREADY ADDRESSED)
 - **Problem**: QA has 14.3% finish() compliance (worst in system). Text rule (EXP-440) NEGATIVE.
 - **Investigation (2026-06-02)**: QA DOES use genericHeartbeat (qa-heartbeat.ts → genericHeartbeat(ctx, "qa")). EXP-520 artifact gate + EXP-510 worker injection both cover QA. Baseline was pre-deployment.
