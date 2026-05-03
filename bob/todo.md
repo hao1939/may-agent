@@ -18,6 +18,6 @@
 - [x] **EXP-245b Separate Auditor Agent** — Superseded by EXP-247 (properly designed with arms, metrics, decision rules).
 
 ## In Progress
-- [ ] **EXP-600 Threat-Framed Skill Delivery** — DESIGNED 2026-07-04. Tests whether threat-framing (KE-560) works for behavioral habits (contradicting KE-480). Next: create gym scenarios.
+- [x] **EXP-600 Bash Waste Reduction** — CLOSED NEGATIVE (2028-09-14). Diagnose-before-retry skill produced 0pp improvement on bash efficiency. Confirms KE-480 extends to efficiency behaviors. See `agents/coach/workspace/EXP-600-treatment-results.md`.
 - [x] **EXP-296 Ghost Completion — PARTIALLY_VALIDATED (2027-09-01)** — Layer 2 circuit breaker already in master-worker.ts.
 - [x] **EXP-207 Phase 2 — CLOSED DEPLOYED-UNMEASURED (2027-09-01)** — 8 months live, no rollback.
