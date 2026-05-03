@@ -373,7 +373,6 @@ export function shouldSkipHeartbeat(
 }
 
 export async function genericHeartbeat(ctx: WorkflowContext, agent: string): Promise<WorkflowResult> {
-  const heartbeatStartTime = Date.now();
   const metrics = loadMetrics(ctx, agent);
   const metricsBlock = formatMetricsBlock(ctx, agent);
   const projects = loadProjects(ctx, agent);
