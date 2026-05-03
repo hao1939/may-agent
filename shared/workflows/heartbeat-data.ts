@@ -461,21 +461,23 @@ Produce at least ONE meaningful write, then call finish() with updated deliverab
   }
 
   // ── EXP-630: DURATION QUALITY GATE ──────────────────────────────
-  // Sessions completing in <90s are almost always trivial (EXP-620).
-  // Re-prompt once if session was suspiciously fast.
-  const elapsed = Date.now() - heartbeatStartTime;
-  const MINIMUM_DURATION_MS = 90_000; // 90 seconds
-  if (elapsed < MINIMUM_DURATION_MS && result.status !== "error") {
-    ctx.emit({ type: "duration_gate_triggered", agent, elapsed_ms: elapsed });
+  // Sessions with very few tool calls are almost always trivial (EXP-620).
+  // Re-prompt once if session used too few turns.
+  // NOTE: Wall-clock time is unreliable (LLM inference always >90s).
+  //       turnsUsed is a better proxy for substantive work.
+  const turnsUsed = (result as any).turnsUsed ?? 0;
+  const MINIMUM_TURNS = 3;
+  if (turnsUsed > 0 && turnsUsed < MINIMUM_TURNS && result.status !== "error") {
+    ctx.emit({ type: "duration_gate_triggered", agent, turns_used: turnsUsed });
     // EXP-630 measurement: persist gate trigger to filesystem for auditing
     try {
-      const logLine = `${new Date().toISOString()} agent=${agent} elapsed_ms=${elapsed}\n`;
+      const logLine = `${new Date().toISOString()} agent=${agent} turns_used=${turnsUsed}\n`;
       appendFileSync(join(agentsRoot, "shared", "duration-gate-triggers.log"), logLine);
     } catch (_) { /* non-critical logging */ }
 
-    const durationPrompt = `⚠️ DURATION GATE: Your session completed in ${Math.round(elapsed / 1000)}s — this is unusually fast.
+    const durationPrompt = `⚠️ DURATION GATE: Your session used only ${turnsUsed} tool call(s) — this suggests trivial work.
 
-Sessions under 90 seconds almost never produce substantive work. Before finishing:
+Sessions with fewer than ${MINIMUM_TURNS} tool calls almost never produce substantive work. Before finishing:
 
 1. Did you investigate at least one non-obvious issue?
 2. Did you produce an artifact with real analysis (not just a status echo)?
