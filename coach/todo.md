@@ -56,12 +56,15 @@
 - **KE written**: `agents/shared/knowledge/entries/KE-655-task-distraction-nullifies-text-interventions.md`
 - **Implication**: Single-focus gym scenarios overestimate skill effectiveness. Only structural gates work in production.
 
-## P1: EXP-650 — Structural Impact-Scanning Gate — UNBLOCKED (ready to implement)
-- **Problem**: impact-radius-check skill shows +100pp in gym but 6% in production (EXP-645)
-- **Hypothesis**: Structural gate in genericHeartbeat() that re-prompts when ≥2 edits + 0 greps → scanning rate from 6% to ≥40%
+## P1: EXP-650 — Structural Impact-Scanning Gate — DEPLOYED ✅ (2029-08-04)
+- **Problem**: impact-radius-check skill shows +100pp in gym but 6% scanning in production (EXP-645)
+- **Hypothesis**: Structural gate in genericHeartbeat() re-prompts when ≥2 edits + 0 greps → scanning rate from 6% to ≥40%
 - **Design**: `agents/coach/workspace/EXP-650-structural-impact-scanning-gate-design.md`
-- **Unblocked**: 2029-05-04 — workflows load dynamically, no rebuild needed
-- **KE written**: `agents/coach/knowledge/KE-645-cognitive-skills-fail-without-structural-gates.md`
+- **Deployment**: `agents/coach/workspace/EXP-650-deployment-record.md`
+- **Implementation**: `agents/shared/workflows/heartbeat-data.ts` lines 524-555
+- **Logging**: `agents/shared/impact-gate-triggers.log`
+- **Next**: After 30+ multi-edit heartbeat sessions, check trigger rate + scanning rate improvement
+- **Status**: DEPLOYED ✅ — awaiting data accumulation
 
 ## P1: EXP-645 — Impact Radius Check Production Audit — CLOSED (H1 REJECTED)
 - **Problem**: impact-radius-check skill (+100pp in gym) shows only 6% scanning rate in production
