@@ -1,8 +1,6 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist
 
-## Heartbeat Session — 2026-07-03
+## Required
+- [x] **Heartbeat artifact** — `agents/optimizer/findings/2025-05-03-heartbeat-metrics.md` — Session throughput analysis, evaluator cost finding, recommendations
 
-| # | Deliverable | Status | Path/Evidence |
-|---|------------|--------|---------------|
-| 1 | Heartbeat status artifact | DONE | `.state/heartbeat-note.md` — updated with current metrics, project states, p95 trend |
-| 2 | Checkpoint saved | DONE | `.state/checkpoints/` — session checkpoint with findings |
+## Status: DONE
