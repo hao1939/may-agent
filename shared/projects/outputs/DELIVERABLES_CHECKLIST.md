@@ -1,6 +1,12 @@
 # DELIVERABLES_CHECKLIST.md
 
-## Task: Reduce TypeScript strict errors from 86 to <50
+## Task: Create Workflow Dependency Graph (Iteration 29)
+
+| # | Deliverable | Status | Path | Notes |
+|---|------------|--------|------|-------|
+| 1 | Dependency graph with hub/leaf analysis | DONE | agents/shared/projects/outputs/dependency-graph.md | Full graph with 29 files analyzed |
+
+## Previous: Reduce TypeScript strict errors from 86 to <50
 
 | # | Deliverable | Status | Path | Notes |
 |---|------------|--------|------|-------|
