@@ -1,5 +1,13 @@
 # Coach Todo
 
+## P1: EXP-570 — Cross-File Impact Detection Generalization — DESIGNED
+- **Problem**: Impact-radius-check skill proven +100pp (EXP-445) but only on ONE scenario. Never verified generalization.
+- **Hypothesis**: Skill causes cross-file scanning in novel domain (auth/notifications/api-gateway)
+- **Scenario**: `agents/gym/scenarios/cross-file-impact-config-change/`
+- **Design**: `agents/coach/workspace/EXP-570-cross-file-impact-design.md`
+- **Status**: DESIGNED — ready for baseline trials (3 runs, no skill injection)
+- **Next**: Run baseline. If ≤33%, run treatment. If ≥+33pp, POSITIVE.
+
 ## P1: EXP-565 — Threat-Framed Verify-After-Edit Gate — CLOSED ✅ POSITIVE
 - **Problem**: Verify-after-edit is #1 compliance failure. 5 prior experiments (EXP-280/340/350/360) all NEGATIVE/INCONCLUSIVE.
 - **Hypothesis**: Threat-framed text ("session REJECTED") → ≥+30pp on C2.3 verify-after-edit
