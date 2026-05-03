@@ -29,3 +29,15 @@
 ### Code Health
 - `npx tsc --noEmit` — **clean**, no errors.
 - `genericHeartbeat()` now has 3 gate paths: circuit breaker, artifact gate, duration gate. Approaching complexity limit — next gate should trigger a refactor to a gate pipeline pattern.
+
+## Heartbeat — 2025-07-03
+
+### Inbox Processed
+- **EXP-630 re-escalation (×2)**: Dismissed — duration gate already implemented in previous heartbeat. Notified coach to update status and begin measurement.
+
+### Code Health
+- `npx tsc --noEmit` — **clean**, zero errors.
+
+### Projects
+- **proof-of-life-dashboard**: waiting (5/8 milestones). No resume trigger.
+- **handler-reliability**: closed (3/3).
