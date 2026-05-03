@@ -37,6 +37,18 @@ vi.mock("../workflows/provider-retry.ts", () => ({
   isRetryableError: vi.fn(() => false),
 }));
 
+vi.mock("../workflows/worker-retry.ts", () => ({
+  withWorkerRetry: vi.fn(async (fn: () => any) => {
+    try {
+      const result = await fn();
+      return { success: true, result, attempts: 1, errors: [] };
+    } catch (e: any) {
+      return { success: false, result: null, attempts: 1, errors: [e.message] };
+    }
+  }),
+  isWorkerRetryable: vi.fn(() => true),
+}));
+
 vi.mock("../workflows/project-helpers.ts", () => ({
   extractField: vi.fn((content: string, field: string) => {
     const match = content.match(new RegExp(`\\*\\*${field}\\*\\*:\\s*(.+)`));

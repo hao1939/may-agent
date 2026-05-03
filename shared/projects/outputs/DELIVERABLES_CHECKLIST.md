@@ -1,9 +1,9 @@
 # DELIVERABLES_CHECKLIST.md
 
-## Task: Workflow Performance Profile
+## Task: Optimize master-worker-execute.test.ts to <12s
 
-| # | Deliverable | Status | Path |
-|---|-------------|--------|------|
-| 1 | Performance profile report with timing data | DONE | agents/shared/projects/outputs/workflow-perf-profile.md |
-| 2 | Top 3 slowest test files identified with root causes | DONE | (in report above) |
-| 3 | 3 concrete optimization proposals | DONE | (in report above) |
+| # | Deliverable | Status | Path | Details |
+|---|-------------|--------|------|---------|
+| 1 | Fix slow test file | DONE | agents/shared/tests/master-worker-execute.test.ts | Added vi.mock for worker-retry.ts, reduced from 26.58s to 0.38s |
+| 2 | Performance report | DONE | agents/shared/projects/outputs/workflow-perf-profile.md | Documents root cause, fix, and before/after metrics |
+| 3 | All tests still pass | DONE | N/A | 98/98 files, 1745 tests passing in 3.06s |
