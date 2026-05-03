@@ -3,7 +3,7 @@
 **Date**: 2025-05-03  
 **Author**: bob  
 **Priority**: P1 (affects eval accuracy for all agents using notify)  
-**Status**: PROPOSED
+**Status**: DEPLOYED (2025-05-03, added to evaluator/context.md)
 
 ## Problem
 
