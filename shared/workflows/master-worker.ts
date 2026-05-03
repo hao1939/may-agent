@@ -451,6 +451,10 @@ ${journalContent.slice(-3000)}
       workerPrompt += `\n\n---\nCOMPLETION REQUIREMENTS (structural — do not skip):\n1. Produce at least one file write/edit as deliverable evidence\n2. VERIFICATION GATE (mandatory): For every file you write() or edit(), you MUST read() it back BEFORE calling finish(). Your finish() call will be rejected if deliverables include files you haven't read after modifying. List each verified file in your summary.\n3. Call finish() with: status ('success'|'partial'|'failure'), summary (1-2 sentences of what you did), and deliverables (list of files modified)\n4. If task cannot be completed, finish(status:'blocked') with explanation\n\nDo NOT call finish({}) with empty input. Your finish() call IS your deliverable receipt.\n5. PATH RULE: ALL file paths must be relative to the project root (e.g. agents/bob/workspace/file.md). NEVER use absolute paths (/Users/*, /home/*, /root/*, ~/*).`;
       ctx.log(`[work] EXP-510: Completion quality block injected`);
 
+      // EXP-565: Threat-framed verify-after-edit gate (proven +100pp in gym)
+      workerPrompt += `\n\n⚠️ VERIFY-AFTER-EDIT RULE (session REJECTED if violated):\nAfter EVERY write() or edit() call, you MUST immediately read() the same file to confirm the change landed correctly. If you call finish() without verifying each modified file, your session will be REJECTED and marked as a failure. This is non-negotiable.`;
+      ctx.log(`[work] EXP-565: Threat-framed verify-after-edit gate injected`);
+
       await withRetry(() => worker.prompt(workerPrompt), {
         maxRetries: 3,
         baseDelayMs: 1000,
