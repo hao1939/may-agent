@@ -49,11 +49,14 @@ FROM metrics
 WHERE status='active';
 ```
 
-**Tooling note:** there is no system `sqlite3` binary. Use the
-better-sqlite3 module from
-`/app/agents/gym/scenarios/truncated-schema-migration/node_modules/better-sqlite3`
-(read-only mode). Example:
-`cd <that dir> && node -e "const db=require('better-sqlite3')('/app/.state/may.db',{readonly:true}); …"`
+**Tooling note:** there is no system `sqlite3` binary. Canonical access is
+`bun:sqlite` in readonly mode (matches `agents/shared/common-sense.md`
+"Database access" — single documented convention, no tie to a gym
+scenario's node_modules). Example:
+`bun -e "const {Database}=require('bun:sqlite'); const db=new Database('/app/.state/may.db',{readonly:true}); console.log(db.prepare('SELECT COUNT(*) FROM events').get());"`
+Verified working 2026-05-03 08:15Z. The older better-sqlite3-via-gym-scenario
+recipe still works but is fragile (depends on a gym scenario's node_modules
+not being pruned) and contradicts the shared convention — don't reintroduce it.
 
 ## System Coherence Audit
 Every heartbeat, pick ONE of these areas and check for staleness:
