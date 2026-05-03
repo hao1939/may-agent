@@ -1,33 +1,30 @@
 # Evaluator heartbeat — 2026-05-03
 
-## Signals checked (structural)
+## Checks performed
 
-### Session-eval pipeline liveness
-- DB recency (canonical): `evaluations.max(createdAt)=1777799888302`, `sessions.max(startedAt)=1777801789849`.
-- Last-24h volume: `sessions=10086`, `evaluations=2484`.
-- Coverage (all-time): `evaluatedSessions=2484 / totalSessions=10086 = 0.2463`.
-- Unevaluated sessions: `7883`.
+### Session evaluation pipeline recency (DB is canonical)
+- `evaluations.max(createdAt)` = **1777801594760**
+- `sessions.max(startedAt)` = **1777803594913**
+- Observed lag ≈ **2000s (~33m)**
+- Last 24h: **69** evaluations vs **1729** sessions
+- Last 1h: **2** evaluations vs **68** sessions
 
-### Coverage gap by agent (sessions total vs unevaluated)
-- evaluator: 3514 total, 3514 uneval (0% covered)
-- optimizer: 2502 total, 1772 uneval (~29% covered)
-- coach: 1933 total, 1173 uneval (~39% covered)
-- amy: 1077 total, 834 uneval (~23% covered)
-- may: 243 total, 116 uneval (~52% covered)
-- qa: 56 total, 9 uneval (~84% covered)
-- tech-lead: 137 total, 118 uneval (~14% covered)
+Evidence: see bash outputs in this session:
+- maxEval/maxSess/lag: `{ maxEval: 1777801594760, maxSess: 1777803594913, ... }`
+- last-hour counts: `{c:2}` evals vs `{c:68}` sessions
 
-### Heuristic vs LLM split
-- `evaluatedByHeuristic=0`: 1695
-- `evaluatedByHeuristic=1`: 790
+### Legacy artifact path (.state/evaluations)
+- Recent `s_*.json` files exist (Apr 29)
+- `task_tree_*.json` artifacts appear stale (Mar 24)
 
-## Interpretation
-1. **Pipeline is alive** (evalMax close to sessMax; thousands of evals in last 24h).
-2. **Coverage is low (~24.6%)** and **highly skewed**: *0% of evaluator sessions are evaluated*, while some others (e.g., QA) are.
-3. The `.state/evaluations/` directory shows latest per-session JSON on Apr 29 while DB is current → indicates **legacy artifact path drift** rather than job stalling.
+Evidence: `ls -la .state/evaluations | tail -10`.
 
-## Action proposed
-- Create/adjust a metric+alert for “evaluation coverage overall” and “coverage by agent”; especially flag if any agent is near 0% (like evaluator).
-- Escalate to tech-lead/optimizer: check evaluate-session-llm scoping rules (likely excluding evaluator agent sessions) and decide whether to:
-  - include evaluator sessions in coverage, or
-  - explicitly document exclusion (and update coverage metric to match intended scope).
+## Assessment
+- The evaluation pipeline is running, but **coverage is low** relative to session volume.
+- The ~33m lag suggests the cron is not completely dead; the low eval/session ratio suggests **narrow scope, throttling, or backlog**.
+- `.state/evaluations/` task_tree staleness is consistent with known chronic issue; DB is fresher and should be treated as source of truth.
+
+## Next actions proposed
+1. Inspect `evaluate-session-llm` cron schedule + filters (which kinds/sources it evaluates).
+2. If intended: widen scope or increase throughput (or clarify as sampling).
+3. If unintended: open an issue to restore expected coverage and/or expose it as an explicit metric.
