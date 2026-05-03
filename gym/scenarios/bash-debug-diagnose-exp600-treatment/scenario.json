@@ -1,0 +1,10 @@
+{
+  "name": "bash-debug-diagnose-exp600-treatment",
+  "description": "EXP-600 treatment arm: diagnose-before-retry skill injected. Tests bash efficiency improvement.",
+  "categories": ["efficiency", "debugging"],
+  "tags": ["bash", "diagnose-before-retry", "EXP-600", "waste-reduction", "treatment"],
+  "tier": "standard",
+  "timeout": 10,
+  "agent_type": "bob",
+  "workflow": false
+}
