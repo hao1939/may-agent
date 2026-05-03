@@ -1,125 +1,114 @@
+/**
+ * Tests for verify-wrap.ts workflow
+ */
 import { describe, it, expect, vi } from "vitest";
+import { name, description, execute } from "../workflows/verify-wrap.js";
 
-// verify-wrap exports simple values and an async execute function
-// We need to mock the WorkflowContext since it's an injected dependency
-
-interface MockResult {
-  status: string;
-  error?: string;
-  lastAssistantText?: string;
-}
-
-function createMockContext(overrides: Partial<{
-  agent: string;
-  task: string;
-  runAgent: (agent: string, task: string) => Promise<MockResult>;
-  escalate: (msg: string) => string;
-  summarize: (result: MockResult, opts: any) => string;
-  done: (msg: string) => string;
-}> = {}) {
-  return {
-    agent: overrides.agent ?? "test-agent",
-    task: overrides.task ?? "test task",
-    runAgent: overrides.runAgent ?? vi.fn().mockResolvedValue({ status: "success" }),
-    escalate: overrides.escalate ?? vi.fn((msg: string) => `ESCALATED: ${msg}`),
-    summarize: overrides.summarize ?? vi.fn((_r: any, _o: any) => "summary text"),
-    done: overrides.done ?? vi.fn((msg: string) => `DONE: ${msg}`),
-  };
-}
-
-describe("verify-wrap", () => {
-  let mod: { name: string; description: string; execute: (ctx: any) => Promise<any> };
-
-  it("exports name as verify-wrap", async () => {
-    mod = await import("../workflows/verify-wrap.js");
-    expect(mod.name).toBe("verify-wrap");
+describe("verify-wrap metadata", () => {
+  it("exports correct name", () => {
+    expect(name).toBe("verify-wrap");
   });
 
-  it("exports a description string", async () => {
-    mod = await import("../workflows/verify-wrap.js");
-    expect(typeof mod.description).toBe("string");
-    expect(mod.description.length).toBeGreaterThan(0);
+  it("exports a description string", () => {
+    expect(typeof description).toBe("string");
+    expect(description.length).toBeGreaterThan(0);
   });
 
-  it("exports an execute function", async () => {
-    mod = await import("../workflows/verify-wrap.js");
-    expect(typeof mod.execute).toBe("function");
+  it("exports execute as a function", () => {
+    expect(typeof execute).toBe("function");
   });
+});
+
+describe("verify-wrap execute", () => {
+  function makeCtx(overrides: Partial<any> = {}) {
+    return {
+      agent: "test-agent",
+      task: "do something",
+      runAgent: vi.fn().mockResolvedValue({ status: "success", lastAssistantText: "done" }),
+      escalate: vi.fn((msg: string) => ({ escalated: true, message: msg })),
+      summarize: vi.fn().mockReturnValue("Task completed."),
+      done: vi.fn((msg: string) => ({ done: true, message: msg })),
+      ...overrides,
+    } as any;
+  }
 
   it("calls runAgent with ctx.agent and ctx.task", async () => {
-    mod = await import("../workflows/verify-wrap.js");
-    const runAgent = vi.fn().mockResolvedValue({ status: "success" });
-    const ctx = createMockContext({ agent: "my-agent", task: "my task", runAgent });
-    await mod.execute(ctx);
-    expect(runAgent).toHaveBeenCalledWith("my-agent", "my task");
+    const ctx = makeCtx();
+    await execute(ctx);
+    expect(ctx.runAgent).toHaveBeenCalledWith("test-agent", "do something");
   });
 
-  it("calls escalate on error status", async () => {
-    mod = await import("../workflows/verify-wrap.js");
-    const runAgent = vi.fn().mockResolvedValue({ status: "error", error: "something broke" });
-    const escalate = vi.fn((msg: string) => `ESC: ${msg}`);
-    const ctx = createMockContext({ runAgent, escalate });
-    await mod.execute(ctx);
-    expect(escalate).toHaveBeenCalled();
-    expect(escalate.mock.calls[0][0]).toContain("failed");
+  it("escalates on error status", async () => {
+    const ctx = makeCtx({
+      runAgent: vi.fn().mockResolvedValue({ status: "error", error: "something broke" }),
+    });
+    const result = await execute(ctx);
+    expect(ctx.escalate).toHaveBeenCalled();
+    expect(ctx.escalate.mock.calls[0][0]).toContain("test-agent");
+    expect(ctx.escalate.mock.calls[0][0]).toContain("something broke");
   });
 
-  it("includes error message in escalation", async () => {
-    mod = await import("../workflows/verify-wrap.js");
-    const runAgent = vi.fn().mockResolvedValue({ status: "error", error: "timeout" });
-    const escalate = vi.fn((msg: string) => msg);
-    const ctx = createMockContext({ runAgent, escalate });
-    await mod.execute(ctx);
-    expect(escalate.mock.calls[0][0]).toContain("timeout");
-  });
-
-  it("uses lastAssistantText when no error field", async () => {
-    mod = await import("../workflows/verify-wrap.js");
-    const runAgent = vi.fn().mockResolvedValue({ status: "error", lastAssistantText: "I got stuck on X" });
-    const escalate = vi.fn((msg: string) => msg);
-    const ctx = createMockContext({ runAgent, escalate });
-    await mod.execute(ctx);
-    expect(escalate.mock.calls[0][0]).toContain("I got stuck");
-  });
-
-  it("calls done on success", async () => {
-    mod = await import("../workflows/verify-wrap.js");
-    const runAgent = vi.fn().mockResolvedValue({ status: "success" });
-    const done = vi.fn((msg: string) => msg);
-    const ctx = createMockContext({ runAgent, done });
-    await mod.execute(ctx);
-    expect(done).toHaveBeenCalled();
-  });
-
-  it("passes summarize result to done", async () => {
-    mod = await import("../workflows/verify-wrap.js");
-    const runAgent = vi.fn().mockResolvedValue({ status: "success" });
-    const summarize = vi.fn(() => "my summary");
-    const done = vi.fn((msg: string) => msg);
-    const ctx = createMockContext({ runAgent, done, summarize });
-    await mod.execute(ctx);
-    expect(done).toHaveBeenCalledWith("my summary");
-  });
-
-  it("uses fallback message when summarize returns non-string", async () => {
-    mod = await import("../workflows/verify-wrap.js");
-    const runAgent = vi.fn().mockResolvedValue({ status: "success" });
-    const summarize = vi.fn(() => null);
-    const done = vi.fn((msg: string) => msg);
-    const ctx = createMockContext({ agent: "coder", runAgent, done, summarize });
-    await mod.execute(ctx);
-    expect(done.mock.calls[0][0]).toContain("completed task successfully");
+  it("escalates with lastAssistantText when no error field", async () => {
+    const ctx = makeCtx({
+      runAgent: vi.fn().mockResolvedValue({ status: "error", lastAssistantText: "long text here" }),
+    });
+    await execute(ctx);
+    expect(ctx.escalate).toHaveBeenCalled();
+    expect(ctx.escalate.mock.calls[0][0]).toContain("long text");
   });
 
   it("truncates lastAssistantText to 200 chars in escalation", async () => {
-    mod = await import("../workflows/verify-wrap.js");
-    const longText = "x".repeat(500);
-    const runAgent = vi.fn().mockResolvedValue({ status: "error", lastAssistantText: longText });
-    const escalate = vi.fn((msg: string) => msg);
-    const ctx = createMockContext({ runAgent, escalate });
-    await mod.execute(ctx);
-    // The slice(0, 200) means max 200 chars of lastAssistantText
-    const escalateMsg = escalate.mock.calls[0][0];
-    expect(escalateMsg.length).toBeLessThan(500);
+    const longText = "a".repeat(500);
+    const ctx = makeCtx({
+      runAgent: vi.fn().mockResolvedValue({ status: "error", lastAssistantText: longText }),
+    });
+    await execute(ctx);
+    const msg = ctx.escalate.mock.calls[0][0];
+    expect(msg.length).toBeLessThan(300); // agent name + truncated text
+  });
+
+  it("calls done with summary on success", async () => {
+    const ctx = makeCtx();
+    await execute(ctx);
+    expect(ctx.done).toHaveBeenCalledWith("Task completed.");
+  });
+
+  it("calls summarize with result", async () => {
+    const ctx = makeCtx();
+    await execute(ctx);
+    expect(ctx.summarize).toHaveBeenCalledWith(
+      { status: "success", lastAssistantText: "done" },
+      { maxLength: 300 }
+    );
+  });
+
+  it("uses fallback message when summarize returns non-string", async () => {
+    const ctx = makeCtx({
+      summarize: vi.fn().mockReturnValue({ object: true }),
+    });
+    await execute(ctx);
+    expect(ctx.done).toHaveBeenCalledWith("test-agent completed task successfully.");
+  });
+
+  it("uses summary string directly when summarize returns string", async () => {
+    const ctx = makeCtx({
+      summarize: vi.fn().mockReturnValue("Custom summary"),
+    });
+    await execute(ctx);
+    expect(ctx.done).toHaveBeenCalledWith("Custom summary");
+  });
+
+  it("passes different agent names correctly", async () => {
+    const ctx = makeCtx({ agent: "custom-agent", task: "custom task" });
+    await execute(ctx);
+    expect(ctx.runAgent).toHaveBeenCalledWith("custom-agent", "custom task");
+  });
+
+  it("handles empty error and empty lastAssistantText", async () => {
+    const ctx = makeCtx({
+      runAgent: vi.fn().mockResolvedValue({ status: "error", error: "", lastAssistantText: "" }),
+    });
+    await execute(ctx);
+    expect(ctx.escalate).toHaveBeenCalled();
   });
 });
