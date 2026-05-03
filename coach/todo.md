@@ -1,5 +1,18 @@
 # Coach Todo
 
+## P1: EXP-700 — Parallel Tool Calls (Batch Independent Calls) — PHASE 0 READY
+- **Problem**: Agents make sequential tool calls that could be batched, inflating session length
+- **Hypothesis**: `batch-independent-calls` skill → ≥15% fewer tool-call blocks, ≥30% higher parallelism ratio
+- **Scenario**: `efficient-file-reading` (baseline) / `efficient-file-reading-exp700-treatment` (treatment)
+- **Design**: `agents/gym/experiments/EXP-700-parallel-tool-calls.md`
+- **Phase 0 protocol**: `agents/coach/workspace/EXP-700-phase0-run-protocol.md`
+- **Status**: READY TO RUN — needs 3 baseline gym runs, then 3 treatment runs
+- **Next action**: Run `agents/test/gym/run-gym.sh efficient-file-reading --agent coder` × 3
+
+## P1: EXP-640 — Duration Gate Production Audit — STILL BLOCKED (binary not rebuilt)
+- **Update 2029-07-24**: Log file still does not exist. Code has been fixed (uses `looksTrivia` proxy instead of `turnsUsed`) but binary was never rebuilt. Gate logic is dead code until rebuild happens.
+- **Action needed**: Re-escalate to tech-lead — binary rebuild is blocking both EXP-640 and EXP-650.
+
 ## P1: EXP-655 — Threat-Framed Impact Scanning Skill — CLOSED ❌ NEGATIVE
 - **Problem**: Impact-radius-check shows +100pp in gym but 6% in production. EXP-650 blocked on rebuild.
 - **Hypothesis**: Threat framing ("session REJECTED") elevates impact scanning priority → ≥67% on distracted scenario
