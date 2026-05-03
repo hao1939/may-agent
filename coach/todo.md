@@ -42,14 +42,16 @@
   - 6 checks: validation-added, test-written, read-before-edit, finish-with-deliverables, made-source-edit, reasonable-ops
 - **Status**: SCENARIO CREATED — ready for gym execution next heartbeat
 
-## P0: EXP-575 — Auto-Verify-After-Edit Structural Enforcement — ESCALATED
-- **Problem**: Verify-after-edit at 9.7% despite 6 failed text interventions (EXP-280, 340, 350, 495, 565, 580)
-- **Key finding**: EXP-580 re-measurement confirms 12.9% (10/77) — no improvement from EXP-565 text gate
+## P0: EXP-575 — Auto-Verify-After-Edit Structural Enforcement — RE-ESCALATED
+- **Problem**: Verify-after-edit at 17.4% despite 8 failed text interventions (EXP-280, 340, 350, 495, 560, 565, 580, 600)
+- **Key finding**: May 2029 re-measurement: 17.4% (12/69 edits, 24 sessions with edits). +4.5pp from EXP-580, still far below target.
 - **Hypothesis**: Auto-inject read() after every edit/write at infra level → ≥90% verification
 - **Design**: `agents/coach/workspace/EXP-575-auto-verify-after-edit-design.md`
 - **Escalation**: `agents/coach/workspace/EXP-575-escalation-request.md` — sent to tech-lead 2028-08-27 (P0)
-- **Baseline**: 12.9% (10/77 edits verified, 40 recent sessions)
-- **Status**: AWAITING IMPLEMENTATION by tech-lead
+- **Re-escalation**: Sent to tech-lead 2029-05-03 (P0) with updated measurement
+- **Latest measurement**: `agents/coach/workspace/EXP-575-remeasurement-may2029.md`
+- **Baseline**: 9.7% → 12.9% → 17.4% (marginal drift, not meaningful improvement)
+- **Status**: AWAITING IMPLEMENTATION by tech-lead — re-escalated 2029-05-03
 
 ## P1: EXP-585 — Deliverable Completeness Threat Gate — CLOSED (INCONCLUSIVE)
 - **Problem**: `incomplete-deliverables-trap` at 57% (4/7) — agents skip cross-file deliverables
