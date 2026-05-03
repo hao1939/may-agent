@@ -430,6 +430,7 @@ ${guidance}
 ${redMetricDiagnostics ? "Red metric diagnostics are above — address each one, then proceed with normal heartbeat work." : "Review your metrics, check your projects, do your job. Act on what matters."} Commit and finish.`;
 
   ctx.emit({ type: "step_start", step: "heartbeat" });
+  const heartbeatStartTime = Date.now();
   const result = await ctx.runAgent(agent, prompt);
   recordOutcome(agentsRoot, agent, result.status === "error",
     result.status === "error" ? "heartbeat session error" : undefined);
@@ -459,43 +460,40 @@ Produce at least ONE meaningful write, then call finish() with updated deliverab
     return ctx.done(ctx.summarize(gateResult, { maxLength: 500 }));
   }
 
-  // ── EXP-630 DURATION GATE: REMOVED ──────────────────────────────
-  // Dead code — never triggered in production (0 log entries ever).
-  // The upstream artifact gate (EXP-520) already ensures deliverables exist,
-  // making the substance-score heuristic redundant. Removed to reduce complexity.
-  // History: EXP-630 → EXP-710 → EXP-730 → EXP-740 (confirmed dead, removed).
+  // ── EXP-740: WALL-CLOCK DURATION GATE ──────────────────────────────
+  // Replaces EXP-630 proxy-score gate (confirmed dead code, 0 triggers ever).
+  // EXP-705/710: Sessions <60s are always shallow, >90s always substantive.
+  // Wall-clock time is independent of artifact gate — can't be inflated by re-prompt.
+  const elapsedMs = Date.now() - heartbeatStartTime;
+  const elapsedSec = Math.round(elapsedMs / 1000);
+  const TOO_FAST_THRESHOLD_SEC = 90;
 
-  // ── EXP-650: IMPACT-SCANNING GATE ──────────────────────────────
-  // Agents edit files but never check for consumers/callers (6% scanning rate, EXP-645).
-  // If agent edited ≥2 files but never ran grep/rg/find, re-prompt for impact check.
-  const outputText = typeof (result as any).output === "string" ? (result as any).output : "";
-  const summaryText = typeof result.summary === "string" ? result.summary : "";
-  const combinedText = outputText + " " + summaryText;
-  const editMentions = (combinedText.match(/\b(edit|write|edited|wrote|modified|updated)\b/gi) || []).length;
-  const grepMentions = /\b(grep|rg |ripgrep|find\s.*-name)\b/i.test(combinedText);
-  const deliverableEdits = Array.isArray((result as any).deliverables) ? (result as any).deliverables.length : 0;
-  const didMultipleEdits = deliverableEdits >= 2 || editMentions >= 3;
-  if (didMultipleEdits && !grepMentions && result.status !== "error") {
-    ctx.emit({ type: "impact_gate_triggered", agent, deliverable_edits: deliverableEdits, edit_mentions: editMentions });
+  if (elapsedSec < TOO_FAST_THRESHOLD_SEC && result.status !== "error") {
+    ctx.emit({ type: "duration_gate_triggered", agent, elapsed_sec: elapsedSec });
     try {
-      const logLine = `${new Date().toISOString()} agent=${agent} deliverable_edits=${deliverableEdits} edit_mentions=${editMentions} grep_found=${grepMentions}\n`;
-      appendFileSync(join(agentsRoot, "shared", "impact-gate-triggers.log"), logLine);
-    } catch (_) { /* non-critical logging */ }
+      const logLine = `${new Date().toISOString()} agent=${agent} elapsed_sec=${elapsedSec}\n`;
+      appendFileSync(join(agentsRoot, "shared", "duration-gate-triggers.log"), logLine);
+    } catch (_) { /* non-critical */ }
 
-    const impactPrompt = `⚠️ IMPACT CHECK REQUIRED: You modified multiple files but never checked for consumers or callers.
+    const durationPrompt = `⚠️ DURATION GATE: Your session completed in ${elapsedSec}s — under the ${TOO_FAST_THRESHOLD_SEC}s minimum.
 
-Before finishing, grep for the symbols/functions you changed to verify no downstream breakage:
-1. For each file you edited, identify the key functions/exports you changed
-2. Run \`rg "functionName"\` or \`grep -r "symbolName"\` to find all callers
-3. Verify those callers still work with your changes
+Fast sessions almost never produce meaningful work. Before finishing:
+1. Did you investigate at least one non-obvious issue?
+2. Did you produce an artifact with real analysis (not just a status echo)?
+3. Did you check for improvement opportunities beyond surface metrics?
 
-If you already verified impact through other means, explain how. Otherwise, do the check now.`;
+Dig deeper into one project or metric and produce a substantive artifact.`;
 
-    const impactResult = await ctx.runAgent(agent, impactPrompt);
-    recordOutcome(agentsRoot, agent, impactResult.status === "error",
-      impactResult.status === "error" ? "impact gate re-prompt error" : undefined);
-    return ctx.done(ctx.summarize(impactResult, { maxLength: 500 }));
+    const durationResult = await ctx.runAgent(agent, durationPrompt);
+    recordOutcome(agentsRoot, agent, durationResult.status === "error",
+      durationResult.status === "error" ? "duration gate re-prompt error" : undefined);
+    return ctx.done(ctx.summarize(durationResult, { maxLength: 500 }));
   }
+
+  // ── EXP-650: IMPACT-SCANNING GATE — REMOVED ──────────────────────────────
+  // Dead code — 0 triggers ever. Most sessions naturally use grep/rg, so the
+  // "edited files without searching" condition is virtually impossible.
+  // History: EXP-645 → EXP-650 → EXP-730/740 (confirmed dead, removed).
 
   return ctx.done(ctx.summarize(result, { maxLength: 500 }));
 }
