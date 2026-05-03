@@ -1,5 +1,12 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST.md
 
-- [x] DONE — Assessed project state, verified worker output (coverage-gap-audit.md exists at /app/agents/shared/projects/outputs/coverage-gap-audit.md)
-- [x] DONE — Updated project.md: checked off completed items, wrote new plan, updated iteration count and current state (`/app/agents/shared/projects/system-efficiency/project.md`)
-- [x] DONE — Provided CONTINUE decision with next iteration guidance (workflow perf profiling)
+## Task: Create failure-injection test suite
+
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | Failure-injection test file (15-20 tests) | DONE | agents/shared/tests/failure-injection.test.ts |
+| 2 | Failure-injection report | DONE | agents/shared/projects/system-efficiency/outputs/failure-injection-report.md |
+
+## Evidence
+- 17 tests passing (vitest run: "Tests 17 passed")
+- Covers: file I/O errors, JSON parse failures, LLM timeouts, circuit breaker

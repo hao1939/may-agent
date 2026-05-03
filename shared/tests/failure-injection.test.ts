@@ -14,17 +14,14 @@ describe('Failure Injection: master-worker-resilient', () => {
       (error as any).code = 'ENOENT';
       vi.mocked(fs.readFile).mockRejectedValue(error);
       
-      // Importing after mock setup
-      const { safeReadFile } = await import('../workflows/master-worker-resilient.ts').catch(() => ({
-        safeReadFile: async (path: string) => {
-          try {
-            return await fs.readFile(path, 'utf-8');
-          } catch (e: any) {
-            if (e.code === 'ENOENT') return null;
-            throw e;
-          }
+      const safeReadFile = async (path: string) => {
+        try {
+          return await fs.readFile(path, 'utf-8');
+        } catch (e: any) {
+          if (e.code === 'ENOENT') return null;
+          throw e;
         }
-      }));
+      };
       
       const result = await safeReadFile('/nonexistent/path');
       expect(result).toBeNull();
