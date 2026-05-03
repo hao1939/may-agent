@@ -13,12 +13,12 @@
 ## Usage
 ```bash
 ./scripts/nightly-health.sh
+# Cron: 0 2 * * * /app/agents/shared/scripts/nightly-health.sh
 ```
 
-## Cron Setup
-```
-0 2 * * * /app/agents/shared/scripts/nightly-health.sh
-```
-
-## Test Run
-See below for execution results.
+## Test Run (2026-05-03)
+- 101 test files passing, 1797 tests passed
+- Duration: 3.08s
+- Coverage gaps: None
+- Status: ✅ HEALTHY
+- Report generated at: `outputs/health-reports/health-2026-05-03.md`
