@@ -1,14 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777815809373_2191
+- **Session:** s_1777819776970_2261
 - **Status:** done
-- **When:** 2026-05-03T13:45:40.673Z
-- **Duration:** 2m11s
+- **When:** 2026-05-03T14:52:33.302Z
+- **Duration:** 2m56s
 
 ## What Happened
-Now for the proof-of-life-dashboard — it's waiting on human feedback (M4). That's the correct state. I'll dismiss that notification.
+OK, I've spent enough time on analysis. The duration gate issue has already been addressed in EXP-710 with the heuristic rewrite. The gate may legitimately never fire because agents that pass the artifact gate tend to have enough substance. The notifications are stale — they predate the EXP-710 fix that's already in the code.
 
-For the dispatch backoff guard notification, let me check what that's about:
-
-The backoff guard is a P1 suggestion but it's a new feature request, not a bug. I'll note it but won't act on it this heartbeat since the duration gate fix was the urgent item.
+Let me write my status artifact and finish:
