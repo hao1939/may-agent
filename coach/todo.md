@@ -1,12 +1,12 @@
 # Coach Todo
 
-## P1: EXP-655 — Threat-Framed Impact Scanning Skill — DESIGNED (Phase 1 ready)
+## P1: EXP-655 — Threat-Framed Impact Scanning Skill — CLOSED ❌ NEGATIVE
 - **Problem**: Impact-radius-check shows +100pp in gym but 6% in production. EXP-650 blocked on rebuild.
 - **Hypothesis**: Threat framing ("session REJECTED") elevates impact scanning priority → ≥67% on distracted scenario
-- **Design**: `agents/coach/workspace/EXP-655-threat-framed-impact-scanning-design.md`
-- **Scenario**: `agents/gym/scenarios/cross-file-impact-distracted-exp655/` (harder variant with distractor task)
-- **Next**: Run Phase 1 baseline (3 trials on distracted variant), then Treatment B (threat-framed)
-- **Builds on**: EXP-560/565 (threat framing +100pp), EXP-645 (production failure), KE-480
+- **Results**: `agents/coach/workspace/EXP-655-results.md`
+- **Finding**: Both threat framing (0/3) and full skill text (0/1) fail under task distraction. Control without distraction: 1/1 (100%). Distraction nullifies ALL text interventions.
+- **KE written**: `agents/shared/knowledge/entries/KE-655-task-distraction-nullifies-text-interventions.md`
+- **Implication**: Single-focus gym scenarios overestimate skill effectiveness. Only structural gates work in production.
 
 ## P1: EXP-650 — Structural Impact-Scanning Gate — DESIGNED (awaiting binary rebuild)
 - **Problem**: impact-radius-check skill shows +100pp in gym but 6% in production (EXP-645)
