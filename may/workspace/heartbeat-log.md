@@ -1,14 +1,12 @@
-# Heartbeat 2026-05-02T06:42Z
+# Heartbeat 2026-05-03T07:42Z
 
-## Red Metric: project.active-count = 0 (target 3)
-- **Status**: Known issue, documented in KE-452 and KE-471
-- **Root cause**: Targets are stale (never raised), projects legitimately closed
-- **Action needed**: Human decision to create new projects or recalibrate target
-- **NOT a new investigation** per prior KE guidance
+## Red Metrics
+- **project.active-count=0**: Known, documented in KE-513. Structural — no active projects.
+- **project.blocked-over-6h=2**: Same root cause. 2 blocked projects are the full blocked set.
 
 ## System Health
-- Success rate: 97% (66/68 sessions in last hour)
+- Success rate: 100% (70/70 sessions in last hour)
 - Heartbeat coverage: 8/8
-- Real output 24h: 1618 (target 100)
+- Real output 24h: 972 (target 100)
 - All 15 cron jobs healthy, 0 errors
-- Minor: dev agent token expiry (transient)
+- iterations-24h: 26 (target 10) — healthy
