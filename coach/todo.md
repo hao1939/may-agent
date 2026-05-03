@@ -1,6 +1,15 @@
 # Coach Todo
 
-## P1: EXP-730 — Dormant Structural Gate Audit — PHASE 2 COMPLETE, ESCALATED
+## P1: EXP-740 — Deployed Gate Liveness Audit — PHASE 1 COMPLETE, FIX DESIGNED
+- **Problem**: All 3 deployed gates (EXP-630 duration, EXP-650 impact, EXP-720 fewshot) have ZERO log entries
+- **Phase 1 Finding**: H1+H2 CONFIRMED — 0% trigger rate. Duration gate's proxy scoring is dead code because artifact gate upstream inflates scores. Impact gate's keyword detection is too broad.
+- **Proposed Fix**: Replace proxy-score duration gate with wall-clock time gate (90s threshold). EXP-705 confirmed <60s=shallow, >90s=substantive. Clean binary signal.
+- **Design**: `agents/coach/workspace/EXP-740-gate-liveness-audit-design.md`
+- **Results + Fix**: `agents/coach/workspace/EXP-740-phase1-results-and-fix.md`
+- **Status**: FIX DESIGNED — escalate to tech-lead for implementation
+- **Next**: Tech-lead implements wall-clock duration gate, then monitor log for trigger rate
+
+## P1: EXP-730 — Dormant Structural Gate Audit — PHASE 2 COMPLETE, ESCALATED (SUPERSEDED by EXP-740)
 - **Problem**: EXP-630 (duration), EXP-650 (impact), EXP-720 (few-shot) all deployed with ZERO log entries
 - **Phase 1 Finding**: EXP-630 threshold `< 3` was dead code. Fixed to `< 5` but STILL dead.
 - **Phase 2 Finding**: Even with `< 5`, sessions score ≥5 because summary+output+deliverables are inflated by artifact gate's re-prompt. Gates are architecturally incompatible.
