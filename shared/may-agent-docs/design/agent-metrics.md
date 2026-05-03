@@ -6,7 +6,7 @@
 ## Architecture
 
 ```
-System Metrics (6)       — "Is the system healthy and producing?"
+System Metrics (14 active in registry; 6 prioritized below)
   → Measured by metrics-snapshot handler every 5 min
   → Threshold = alert. No threshold = watch only.
 
@@ -17,7 +17,7 @@ Project Metrics          — "Is this specific work effective?"
 
 ## System Metrics
 
-6 metrics. 3 infrastructure + 3 output. All measurable today.
+The doc table below highlights **6 prioritized metrics** (3 infrastructure + 3 output). The full active set is **14** — see the `metrics` table in DB or `ALL_METRICS` in `agents/may/handlers/metrics-snapshot.ts` for the registry of record. Per KE-722, this doc and the runtime registry must agree on concrete numbers; when in doubt, the registry wins.
 
 ### Infrastructure
 

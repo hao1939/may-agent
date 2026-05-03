@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777832419820_2503
+- **Session:** s_1777832430056_2504
 - **Status:** done
-- **When:** 2026-05-03T18:20:30.056Z
-- **Duration:** 10s
+- **When:** 2026-05-03T18:20:41.412Z
+- **Duration:** 11s
 
 ## What Happened
 {
@@ -14,61 +14,75 @@
       "role": "Supervisor",
       "capability_level": "mid",
       "efficiency": 0.75,
-      "quality": 0.72,
+      "quality": 0.85,
       "verdict": "good",
       "issues": [
         {
-          "tag": "FM-1.3_COMMAND_EXIT_MISREAD",
-          "evidence": "Ran `grep -c ... heartbeat-data.ts` which printed `0` but exited code 1; agent treated this as confirmation and moved on. Transcript: tool output shows `0` then `Command exited with code 1`."
+          "type": "PROCESS_VIOLATION_RECOVERED",
+          "evidence": "finish() initially blocked for uncommitted changes (shared/workflows/master-worker.ts, tech-lead/last-session.md); agent then committed and retried."
         },
         {
-          "tag": "FM-2.1_SLOPPY_GREP_PIPELINES",
-          "evidence": "Used `grep -c` with alternation and no `-E`, causing non-zero exit behavior / mismatch. This created an avoidable failure chain (Chain 2)."
+          "type": "FM-3.3_VERIFICATION_FAILURE_RECOVERED",
+          "evidence": "finish(status:\"success\") blocked due to no post-write verification; agent then ran greps and re-finished successfully."
         },
         {
-          "tag": "FM-3.3_VERIFICATION_FAILURE_RECOVERED",
-          "evidence": "Attempted `finish()` without post-edit verification; blocked by guard; then added verification via grep and finished."
+          "type": "BASH_EXIT_CODE_MISINTERPRETATION",
+          "evidence": "Ran `grep -c ... heartbeat-data.ts` which printed 0 but exited code 1; agent treated as success ('Zero matches'). This is mostly OK for intent, but indicates weak shell-exit-code hygiene."
         },
         {
-          "tag": "INBOX_TRIAGE_WEAK_DISMISSAL",
-          "evidence": "Dismissed zombie session crisis and dispatch-dedup-guard as operational/not code without evidence-based escalation path; only attempted a file search which errored (code 1) and then stopped."
+          "type": "MISSED_EXPECTATION",
+          "evidence": "Claimed 'Build passes clean' in finish evidence, but transcript shows no `npx tsc --noEmit` run (no tool output). This is an evidence gap (claim not supported by tool output shown)."
+        },
+        {
+          "type": "MINOR_WASTE",
+          "evidence": "Lookup for DESIGN-dispatch-dedup-guard used `ls ...; find ...` which returned results but exited code 1 (wasted call per failure chain)."
         }
       ],
       "metrics": {
         "tool_calls_wasted": 2,
         "failure_chains": 2,
-        "guards_triggered": 2,
-        "commits": 2
-      }
+        "commits": 2,
+        "verification_performed": true
+      },
+      "evidence_of_work": [
+        "bash commit: `[main e6830d15a] Remove dead EXP-630 duration gate from heartbeat-data.ts` (1 file changed, 64 deletions).",
+        "bash commit: `[main db3d8003d] tech-lead: heartbeat - remove dead duration gate, triage inbox` (2 files changed).",
+        "bash grep confirmed tombstone comment: `EXP-630 DURATION GATE: REMOVED` present in agents/shared/workflows/heartbeat-data.ts."
+      ]
     }
   ],
   "workflow": {
     "name": "tech-lead-heartbeat",
     "issues": [
       {
-        "tag": "GUARD_BOUNCE_UNCOMMITTED_CHANGES",
-        "evidence": "First finish() blocked due to uncommitted changes in `shared/workflows/master-worker.ts` and `tech-lead/last-session.md`."
+        "type": "EVIDENCE_MISMATCH",
+        "evidence": "Final finish output asserts `npx tsc --noEmit passed clean` but transcript lacks corresponding bash tool output."
       },
       {
-        "tag": "GUARD_BOUNCE_SUPERFICIAL_VERIFICATION",
-        "evidence": "Second finish() blocked for T2-no-post-write-verification; agent had to add verification commands."
+        "type": "TRIAGE_QUALITY",
+        "evidence": "Agent dismissed zombie session crisis and dispatch-dedup-guard as 'operational/design doc' without escalating or creating a tracked project; given P1 severity, this is arguably under-response (though outside the <3-ops fix scope)."
       }
     ]
   },
   "overall": {
-    "verdict": "acceptable",
+    "verdict": "good",
     "result_delivered": true
   },
   "lessons": [
     {
       "agent": "tech-lead",
       "category": "fix",
-      "content": "When using grep to prove removals, prefer `rg -n \"pattern\" file || true` or `grep -En \"...\" file` and interpret exit codes; `grep -c` + bad regex can print 0 while still failing."
+      "content": "When using `grep -c`, handle exit code 1 explicitly (e.g., `grep -c ... || true`) to avoid treating a failing command as verified success."
     },
     {
       "agent": "tech-lead",
       "category": "pattern",
-      "content": "Before dismissing P1 operational alerts (e.g., zombie sessions), either escalate with concrete next-step evidence or open a tracked project; a single failed `find` is not sufficient closure."
+      "content": "Do not claim 'tsc passed' unless the tool output is present in the session transcript; run and capture `npx tsc --noEmit` as verification when asserting build health."
+    },
+    {
+      "agent": "tech-lead",
+      "category": "insight",
+      "content": "For P1 operational crises that can't be fixed in <3 ops, escalation or creating a project/task is part of supervisor responsibility; dismissing without routing risks stalling critical work."
     }
   ]
 }
