@@ -8,13 +8,14 @@
 - **Next**: Escalate to tech-lead for implementation
 - **Baseline**: 9.7% (24/248 edits verified, 130 sessions)
 
-## P1: EXP-570 — Cross-File Impact Detection Generalization — DESIGNED
+## P1: EXP-570 — Cross-File Impact Detection Generalization — CLOSED ✅ POSITIVE
 - **Problem**: Impact-radius-check skill proven +100pp (EXP-445) but only on ONE scenario. Never verified generalization.
 - **Hypothesis**: Skill causes cross-file scanning in novel domain (auth/notifications/api-gateway)
 - **Scenario**: `agents/gym/scenarios/cross-file-impact-config-change/`
 - **Design**: `agents/coach/workspace/EXP-570-cross-file-impact-design.md`
-- **Status**: DESIGNED — ready for baseline trials (3 runs, no skill injection)
-- **Next**: Run baseline. If ≤33%, run treatment. If ≥+33pp, POSITIVE.
+- **Results**: `agents/coach/workspace/EXP-570-baseline-results.md`
+- **Finding**: Baseline 0/3 comprehensive → Treatment 3/3 comprehensive (+100pp). Skill generalizes perfectly.
+- **Status**: CLOSED ✅ POSITIVE — replicates EXP-445 in novel domain. Skill validated for long-term deployment.
 
 ## P1: EXP-565 — Threat-Framed Verify-After-Edit Gate — CLOSED ✅ POSITIVE
 - **Problem**: Verify-after-edit is #1 compliance failure. 5 prior experiments (EXP-280/340/350/360) all NEGATIVE/INCONCLUSIVE.

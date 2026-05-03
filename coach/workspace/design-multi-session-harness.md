@@ -271,14 +271,17 @@ The checker can inspect transcripts to verify behavioral criteria (did the agent
 
 ### Phase 3: FM-Targeted Scenarios (2-3 sessions)
 **Dependencies**: Phase 2  
-**Status**: IN PROGRESS (ghost-deliverable-chain complete, cascading-failure-recovery pending)  
-**Deliverables**: 2 additional scenarios targeting FM-1.4 and FM-3.1
+**Status**: MOSTLY COMPLETE (ghost-deliverable-chain + variants complete, unresolved-failure-chain built, cascading-failure-recovery pending)  
+**Deliverables**: Multiple FM-targeted scenarios built and operational
 
 1. ✅ Build `ghost-deliverable-chain` (FM-3.1) — S1 extracts validation, S2 sees incomplete ghost + adds sanitization
    - First trial: 5/8 (3/6 product, 2/2 behavioral) — correctly discriminates
-2. ⬜ Build `cascading-failure-recovery` (FM-1.4) — the highest-value target per EXP-077
-3. ⬜ Run 3 baseline trials each, verify non-ceiling
-4. ⬜ Test one intervention (e.g., cross-reference skill) against baseline
+   - 8 variants created (adversarial, claim-decomposed, combined, combined-guard, context-stripped, machine-verified, verify)
+2. ✅ Build `unresolved-failure-chain` (FM-1.4) — session chain with cascading failures
+3. ✅ Build `kb-integration-failure` + 7 variants — knowledge base integration scenarios
+4. ✅ Build additional scenarios: `clean-handoff`, `context-fatigue-verification`, `instruction-override-drift`, `phase-boundary-violation`
+5. ⬜ Build `cascading-failure-recovery` (FM-1.4) — full information-loss variant per EXP-077 L3
+6. ⬜ Run systematic 3-trial baselines on newer scenarios
 
 ### Phase 4: Integration + Regression (1 session)
 **Dependencies**: Phase 3  
