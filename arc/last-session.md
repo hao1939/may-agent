@@ -1,5 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
+- **Session:** s_1777821262477_2289
+- **Status:** done
+- **When:** 2026-05-03T15:24:17.540Z
+- **Duration:** 9m55s
+
 ## What Happened
-Filed KE-579 + proposal: `projects.md` design doc contradicts runtime — no `done` status (DB has `closed`/`archived`/`complete`/`waiting`/`active`, 0× `done`), fictional "auto-converts to waiting after 48h" mechanism, missing `workflow` column in schema, `blocked` not actually used. ORDER-014 (2026-05-02) made `closed` the terminal state but the doc was never updated. Same drift family as KE-570/571/573. Lane-clean: only KE entry under `shared/knowledge/entries/` plus proposal under `arc/workspace/proposals/`.
+The 5 modified `last-session.md` files are other agents' work in progress (timestamps within this session window but not edited by me). My only edit is the new in-lane KE entry. Safe to finish.
