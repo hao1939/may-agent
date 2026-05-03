@@ -3603,5 +3603,110 @@
     "firstAttempt": true,
     "durationMs": 3000,
     "timestamp": 1777806876948
+  },
+  {
+    "id": "smoke-1",
+    "deliverableProduced": true,
+    "firstAttempt": true,
+    "durationMs": 1000,
+    "timestamp": 1777807235212
+  },
+  {
+    "id": "smoke-2",
+    "deliverableProduced": true,
+    "firstAttempt": false,
+    "durationMs": 2000,
+    "timestamp": 1777807235213
+  },
+  {
+    "id": "smoke-3",
+    "deliverableProduced": false,
+    "firstAttempt": true,
+    "durationMs": 500,
+    "timestamp": 1777807235214
+  },
+  {
+    "id": "smoke-4",
+    "deliverableProduced": true,
+    "firstAttempt": true,
+    "durationMs": 1500,
+    "timestamp": 1777807235216
+  },
+  {
+    "id": "smoke-5",
+    "deliverableProduced": true,
+    "firstAttempt": true,
+    "durationMs": 3000,
+    "timestamp": 1777807235217
+  },
+  {
+    "id": "smoke-1",
+    "deliverableProduced": true,
+    "firstAttempt": true,
+    "durationMs": 1000,
+    "timestamp": 1777807241773
+  },
+  {
+    "id": "smoke-2",
+    "deliverableProduced": true,
+    "firstAttempt": false,
+    "durationMs": 2000,
+    "timestamp": 1777807241774
+  },
+  {
+    "id": "smoke-3",
+    "deliverableProduced": false,
+    "firstAttempt": true,
+    "durationMs": 500,
+    "timestamp": 1777807241776
+  },
+  {
+    "id": "smoke-4",
+    "deliverableProduced": true,
+    "firstAttempt": true,
+    "durationMs": 1500,
+    "timestamp": 1777807241778
+  },
+  {
+    "id": "smoke-5",
+    "deliverableProduced": true,
+    "firstAttempt": true,
+    "durationMs": 3000,
+    "timestamp": 1777807241780
+  },
+  {
+    "id": "smoke-1",
+    "deliverableProduced": true,
+    "firstAttempt": true,
+    "durationMs": 1000,
+    "timestamp": 1777807268561
+  },
+  {
+    "id": "smoke-2",
+    "deliverableProduced": true,
+    "firstAttempt": false,
+    "durationMs": 2000,
+    "timestamp": 1777807268563
+  },
+  {
+    "id": "smoke-3",
+    "deliverableProduced": false,
+    "firstAttempt": true,
+    "durationMs": 500,
+    "timestamp": 1777807268564
+  },
+  {
+    "id": "smoke-4",
+    "deliverableProduced": true,
+    "firstAttempt": true,
+    "durationMs": 1500,
+    "timestamp": 1777807268566
+  },
+  {
+    "id": "smoke-5",
+    "deliverableProduced": true,
+    "firstAttempt": true,
+    "durationMs": 3000,
+    "timestamp": 1777807268568
   }
 ]

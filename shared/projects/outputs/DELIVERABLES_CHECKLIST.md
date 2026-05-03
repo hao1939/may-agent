@@ -1,12 +1,11 @@
-# DELIVERABLES_CHECKLIST
+# DELIVERABLES_CHECKLIST.md
 
-## Task: Create integration tests for master-worker workflow
+## Task: Remove/deprecate stale workflow files
 
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Integration test file with e2e tests | DONE | agents/shared/tests/integration/master-worker-e2e.test.ts |
-| 2 | Test report in outputs | DONE | agents/shared/projects/outputs/integration-test-report.md |
-
-## Evidence
-- 21 tests all passing (vitest run: 404ms)
-- Covers: happy path, early termination, error handling, state transitions, extractDecision
+| # | Deliverable | Status | Path/Evidence |
+|---|-------------|--------|---------------|
+| 1 | Identify dead workflow files (0 non-test imports) | DONE | 6 files identified via grep |
+| 2 | Remove confirmed-dead workflow files | DONE | Removed 6 files from workflows/ |
+| 3 | Remove orphaned test files | DONE | Removed 11 test files |
+| 4 | Verify tests still pass | DONE | 88/88 passing, 1551 tests |
+| 5 | Document cleanup in report | DONE | agents/shared/projects/outputs/stale-workflow-audit.md |
