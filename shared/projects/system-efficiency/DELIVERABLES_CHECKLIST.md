@@ -1,5 +1,5 @@
 # Deliverables Checklist
 
-- [x] DONE — Verified worker output (4 test files, 1678 tests passing) via `npx vitest run`
-- [x] DONE — Updated project.md: iteration 3, test stats, checked off items, new plan — `/app/agents/shared/projects/system-efficiency/project.md`
-- [x] DONE — Provided CONTINUE guidance for next iteration (coverage gap audit)
+- [x] DONE — Assessed project state, verified worker output (coverage-gap-audit.md exists at /app/agents/shared/projects/outputs/coverage-gap-audit.md)
+- [x] DONE — Updated project.md: checked off completed items, wrote new plan, updated iteration count and current state (`/app/agents/shared/projects/system-efficiency/project.md`)
+- [x] DONE — Provided CONTINUE decision with next iteration guidance (workflow perf profiling)
