@@ -3,11 +3,11 @@
 ## Checks run
 
 ### DB recency (pipeline liveness)
-- evaluations MAX(createdAt)=`1777834011282` → `2026-05-03T18:46:51.282Z`
-- sessions MAX(startedAt)=`1777836000762` → `2026-05-03T19:20:00.762Z`
-- Lag: `1989480ms` (~33.2 minutes)
+- evaluations MAX(createdAt)=`1777842798959` → `2026-05-03T21:13:18.959Z`
+- sessions MAX(startedAt)=`1777845008307` → `2026-05-03T21:50:08.307Z`
+- Lag: `2209348ms` (~36.8 minutes)
 
-Evidence: bun:sqlite queries in this session transcript.
+Evidence: bun:sqlite query in this session transcript (`lag_ms` computed from `sessions.startedAt - evaluations.createdAt`).
 
 ### Coverage sample (last 24h)
 - sessions (all agents): 1790
@@ -25,6 +25,9 @@ Most unevaluated by agent (non-meta): optimizer 124, amy 95, coach 78, tech-lead
 ### Legacy artifact path
 - `.state/evaluations/*task_tree*` newest mtime observed: 2026-03-24
 - DB is writing new evaluations (today), so treat `.state/evaluations/` as legacy output-path drift, not eval pipeline outage.
+
+## Note
+The `sessions` table does **not** have `createdAt`; it uses `startedAt`/`endedAt`. Queries against `sessions.createdAt` fail with `SQLiteError: no such column: createdAt`.
 
 ## Hypothesis
 Low evaluation coverage is likely due to the eval-poller budget gates:
