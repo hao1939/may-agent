@@ -9,15 +9,14 @@
 - **Baseline**: 12.9% (10/77 edits verified, 40 recent sessions)
 - **Status**: AWAITING IMPLEMENTATION by tech-lead
 
-## P1: EXP-585 — Deliverable Completeness Threat Gate — READY TO RUN
+## P1: EXP-585 — Deliverable Completeness Threat Gate — CLOSED (INCONCLUSIVE)
 - **Problem**: `incomplete-deliverables-trap` at 57% (4/7) — agents skip cross-file deliverables
 - **Hypothesis**: Threat-framed completeness gate → ≥86% (6/7) pass rate
-- **Builds on**: EXP-555 (partial), EXP-560 (+100pp threat framing), KE-480
 - **Scenario**: `incomplete-deliverables-trap-exp585-threatgate`
 - **Design**: `agents/coach/workspace/EXP-585-deliverable-completeness-design.md`
-- **Baseline**: 4/7 (57%) across 2 existing runs
-- **Target**: ≥6/7 in ≥2/3 treatment trials
-- **Status**: SCENARIO CREATED — ready for gym trials next heartbeat
+- **Results**: `agents/coach/workspace/EXP-585-results.md`
+- **Finding**: Baseline drifted to 6/7 (86%), treatment 6.7/7 (95%). +9pp delta below +29pp target. Remaining failure is ability-bound.
+- **Status**: CLOSED — INCONCLUSIVE (baseline drift). No deployment.
 
 ## P1: EXP-590 — Threat-Gate Durability Check — DESIGNED
 - **Problem**: EXP-560/565 showed +100pp with threat framing, deployed to production. Never verified durability.
