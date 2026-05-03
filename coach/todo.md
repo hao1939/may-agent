@@ -1,5 +1,11 @@
 # Coach Todo
 
+## P1: KE-720 — Shallow Sessions Meta-Analysis — WRITTEN ✅ (2029-05-04)
+- **Summary**: 14 experiments (EXP-605 through EXP-715) concluded that ~50% shallow session rate is orchestrator architecture, not agent failure
+- **KE written**: `knowledge/KE-720-shallow-sessions-are-architecture.md`
+- **Decision**: Stop duration-gate experiments. Anti-shallow rule works at 90% where applicable.
+- **Notification processed**: "EXP-705/710 Duration Gate — Root cause found, no binary rebuild needed"
+
 ## P1: EXP-715 — Anti-Shallow Rule (10 Tool Calls) Effectiveness Audit — CLOSED ✅ (H1 REJECTED)
 - **Problem**: 50% shallow session rate persists (EXP-710). Duration gate is dead code. The 10-tool-call anti-shallow rule is a text instruction — KE-655 predicts text rules fail under task distraction.
 - **Hypothesis**: H1: Rule violated in ≥30% of sessions. H2: Compliant sessions produce better artifacts. H3: Tool-call count is better depth proxy than duration.
