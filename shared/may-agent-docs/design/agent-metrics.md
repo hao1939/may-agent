@@ -92,7 +92,7 @@ A metric at target is a signal the bar is too low. Never coast.
 ## Implementation Notes
 
 - **Source of truth**: `metrics` table in DB. This doc is design rationale.
-- **Handler**: `agents/may/handlers/metrics-snapshot.ts` — auto-registers and measures every 5min
-- **Alerting**: `agents/may/handlers/metric-alert-reactor.ts` — emits `metric.breach` events
+- **Handler**: `agents/may/handlers/metrics-snapshot.ts` — auto-registers, measures every 5min, **and emits `metric.breach` events** when `breached && !openAlert` (see `metrics-snapshot.ts:240-279`).
+- **Alerting**: `agents/may/handlers/metric-alert-reactor.ts` — *intended* to consume `metric.breach` events and fork the owning agent. **Currently dormant** (zero lifetime fires per KE-731): `cron.json`'s reactor entry has `on: ["metric.breach"]` but no `intervalMs`, and the cron loader only subscribes entries that also have an interval (KE-455). Until the loader is fixed (proposal: `arc/workspace/proposals/2026-05-03-cron-loader-on-only-subscription-wiring.md`), reactions to breaches happen via `may`'s heartbeat hand-rolling a notification → tech-lead heartbeat — a ~30min-latency bandaid, not the sub-second fork the design intends.
 - **Retention**: snapshots kept 30 days, pruned after each measurement run
 - **Error isolation**: each metric measured independently — one failure doesn't block others
