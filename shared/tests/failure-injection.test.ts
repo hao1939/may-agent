@@ -1,317 +1,184 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs/promises';
 
-vi.mock('fs/promises');
+// Mock fs module
+vi.mock('fs/promises', () => ({
+  readFile: vi.fn(),
+  writeFile: vi.fn(),
+  mkdir: vi.fn(),
+  access: vi.fn(),
+}));
 
-describe('Failure Injection: master-worker-resilient', () => {
+// Simulated workflow helpers that mirror patterns in hardened files
+function safeJsonParse(text: string, context: string): { data: any; error?: string } {
+  try {
+    return { data: JSON.parse(text) };
+  } catch (e: any) {
+    return { data: null, error: `JSON parse failed in ${context}: ${e.message}` };
+  }
+}
+
+async function safeReadFile(path: string, fallback: string = ''): Promise<{ content: string; error?: string }> {
+  try {
+    const content = await fs.readFile(path, 'utf-8');
+    return { content: content as unknown as string };
+  } catch (e: any) {
+    return { content: fallback, error: `File read failed: ${e.code || e.message}` };
+  }
+}
+
+async function safeWriteFile(path: string, content: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await fs.writeFile(path, content);
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: `File write failed: ${e.code || e.message}` };
+  }
+}
+
+async function safeLlmCall(promptFn: () => Promise<string>, retries = 3): Promise<{ result: string; error?: string }> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const result = await promptFn();
+      return { result };
+    } catch (e: any) {
+      if (i === retries - 1) {
+        return { result: '', error: `LLM call failed after ${retries} retries: ${e.message}` };
+      }
+    }
+  }
+  return { result: '', error: 'Unexpected failure' };
+}
+
+describe('Failure Injection: File I/O Errors', () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
 
-  describe('File I/O failures', () => {
-    it('handles ENOENT on readFile gracefully', async () => {
-      const error = new Error('ENOENT: no such file or directory');
-      (error as any).code = 'ENOENT';
-      vi.mocked(fs.readFile).mockRejectedValue(error);
-      
-      const safeReadFile = async (path: string) => {
-        try {
-          return await fs.readFile(path, 'utf-8');
-        } catch (e: any) {
-          if (e.code === 'ENOENT') return null;
-          throw e;
-        }
-      };
-      
-      const result = await safeReadFile('/nonexistent/path');
-      expect(result).toBeNull();
-    });
-
-    it('handles EACCES on writeFile gracefully', async () => {
-      const error = new Error('EACCES: permission denied');
-      (error as any).code = 'EACCES';
-      vi.mocked(fs.writeFile).mockRejectedValue(error);
-      
-      const safeWriteFile = async (path: string, content: string) => {
-        try {
-          await fs.writeFile(path, content);
-          return { success: true };
-        } catch (e: any) {
-          return { success: false, error: e.code };
-        }
-      };
-      
-      const result = await safeWriteFile('/readonly/path', 'data');
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('EACCES');
-    });
-
-    it('handles disk full error on writeFile', async () => {
-      const error = new Error('ENOSPC: no space left on device');
-      (error as any).code = 'ENOSPC';
-      vi.mocked(fs.writeFile).mockRejectedValue(error);
-      
-      const safeWriteFile = async (path: string, content: string) => {
-        try {
-          await fs.writeFile(path, content);
-          return { success: true };
-        } catch (e: any) {
-          return { success: false, error: e.code, message: e.message };
-        }
-      };
-      
-      const result = await safeWriteFile('/full/disk', 'data');
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('ENOSPC');
-    });
-
-    it('handles readFile returning empty string', async () => {
-      vi.mocked(fs.readFile).mockResolvedValue('');
-      
-      const safeParseJSON = async (path: string) => {
-        try {
-          const content = await fs.readFile(path, 'utf-8');
-          if (!content) return { data: null, error: 'empty file' };
-          return { data: JSON.parse(content as string), error: null };
-        } catch (e: any) {
-          return { data: null, error: e.message };
-        }
-      };
-      
-      const result = await safeParseJSON('/empty/file');
-      expect(result.data).toBeNull();
-      expect(result.error).toBe('empty file');
-    });
+  it('handles ENOENT on readFile gracefully', async () => {
+    const err = Object.assign(new Error('File not found'), { code: 'ENOENT' });
+    vi.mocked(fs.readFile).mockRejectedValue(err);
+    const result = await safeReadFile('/nonexistent/path.json', '{}');
+    expect(result.content).toBe('{}');
+    expect(result.error).toContain('ENOENT');
   });
 
-  describe('JSON parse failures', () => {
-    it('handles malformed JSON with missing braces', () => {
-      const safeJSON = (input: string) => {
-        try { return { data: JSON.parse(input), error: null }; }
-        catch (e: any) { return { data: null, error: e.message }; }
-      };
-      
-      const result = safeJSON('{"key": "value"');
-      expect(result.data).toBeNull();
-      expect(result.error).toContain('JSON');
-    });
-
-    it('handles JSON with trailing commas', () => {
-      const safeJSON = (input: string) => {
-        try { return { data: JSON.parse(input), error: null }; }
-        catch (e: any) { return { data: null, error: e.message }; }
-      };
-      
-      const result = safeJSON('{"key": "value",}');
-      expect(result.data).toBeNull();
-      expect(result.error).toBeTruthy();
-    });
-
-    it('handles completely invalid input (binary-like)', () => {
-      const safeJSON = (input: string) => {
-        try { return { data: JSON.parse(input), error: null }; }
-        catch (e: any) { return { data: null, error: e.message }; }
-      };
-      
-      const result = safeJSON('\x00\x01\x02\x03');
-      expect(result.data).toBeNull();
-      expect(result.error).toBeTruthy();
-    });
-
-    it('handles undefined input to JSON parse', () => {
-      const safeJSON = (input: any) => {
-        try { 
-          if (input === undefined || input === null) return { data: null, error: 'null input' };
-          return { data: JSON.parse(input), error: null }; 
-        }
-        catch (e: any) { return { data: null, error: e.message }; }
-      };
-      
-      expect(safeJSON(undefined).error).toBe('null input');
-      expect(safeJSON(null).error).toBe('null input');
-    });
-
-    it('handles extremely large JSON input', () => {
-      const safeJSON = (input: string) => {
-        try {
-          if (input.length > 10_000_000) return { data: null, error: 'input too large' };
-          return { data: JSON.parse(input), error: null };
-        } catch (e: any) { return { data: null, error: e.message }; }
-      };
-      
-      const largeInput = 'x'.repeat(10_000_001);
-      const result = safeJSON(largeInput);
-      expect(result.error).toBe('input too large');
-    });
+  it('handles EACCES on readFile gracefully', async () => {
+    const err = Object.assign(new Error('Permission denied'), { code: 'EACCES' });
+    vi.mocked(fs.readFile).mockRejectedValue(err);
+    const result = await safeReadFile('/protected/file.ts', 'fallback');
+    expect(result.content).toBe('fallback');
+    expect(result.error).toContain('EACCES');
   });
 
-  describe('LLM timeout simulation', () => {
-    it('handles prompt timeout with retry', async () => {
-      let attempts = 0;
-      const mockPrompt = async () => {
-        attempts++;
-        if (attempts < 3) throw new Error('Request timeout after 30000ms');
-        return 'success response';
-      };
-      
-      const promptWithRetry = async (fn: () => Promise<string>, maxRetries = 3) => {
-        for (let i = 0; i < maxRetries; i++) {
-          try { return await fn(); }
-          catch (e: any) { if (i === maxRetries - 1) throw e; }
-        }
-        throw new Error('exhausted retries');
-      };
-      
-      const result = await promptWithRetry(mockPrompt);
-      expect(result).toBe('success response');
-      expect(attempts).toBe(3);
-    });
-
-    it('fails gracefully after max retries', async () => {
-      const mockPrompt = async () => { throw new Error('Connection refused'); };
-      
-      const promptWithRetry = async (fn: () => Promise<string>, maxRetries = 3) => {
-        for (let i = 0; i < maxRetries; i++) {
-          try { return await fn(); }
-          catch (e: any) { if (i === maxRetries - 1) return { error: e.message, retries: i + 1 }; }
-        }
-      };
-      
-      const result = await promptWithRetry(mockPrompt);
-      expect(result).toEqual({ error: 'Connection refused', retries: 3 });
-    });
-
-    it('handles rate limit (429) with backoff', async () => {
-      let attempts = 0;
-      const mockPrompt = async () => {
-        attempts++;
-        if (attempts === 1) {
-          const err = new Error('Rate limited');
-          (err as any).status = 429;
-          throw err;
-        }
-        return 'ok';
-      };
-      
-      const withBackoff = async (fn: () => Promise<string>) => {
-        try { return await fn(); }
-        catch (e: any) {
-          if (e.status === 429) {
-            await new Promise(r => setTimeout(r, 0)); // simulated backoff
-            return await fn();
-          }
-          throw e;
-        }
-      };
-      
-      const result = await withBackoff(mockPrompt);
-      expect(result).toBe('ok');
-      expect(attempts).toBe(2);
-    });
-
-    it('handles network error distinctly from timeout', async () => {
-      const classifyError = (e: Error) => {
-        if (e.message.includes('timeout')) return 'timeout';
-        if (e.message.includes('ECONNREFUSED')) return 'network';
-        if (e.message.includes('rate')) return 'rate_limit';
-        return 'unknown';
-      };
-      
-      expect(classifyError(new Error('Request timeout'))).toBe('timeout');
-      expect(classifyError(new Error('ECONNREFUSED'))).toBe('network');
-      expect(classifyError(new Error('rate limited'))).toBe('rate_limit');
-      expect(classifyError(new Error('something else'))).toBe('unknown');
-    });
-
-    it('handles partial response (stream cut off)', async () => {
-      const validateResponse = (response: string) => {
-        if (!response) return { valid: false, error: 'empty response' };
-        if (response.length < 5) return { valid: false, error: 'response too short (likely truncated)' };
-        return { valid: true, error: null };
-      };
-      
-      expect(validateResponse('')).toEqual({ valid: false, error: 'empty response' });
-      expect(validateResponse('hi')).toEqual({ valid: false, error: 'response too short (likely truncated)' });
-      expect(validateResponse('hello world')).toEqual({ valid: true, error: null });
-    });
+  it('handles ENOENT on writeFile gracefully', async () => {
+    const err = Object.assign(new Error('No such directory'), { code: 'ENOENT' });
+    vi.mocked(fs.writeFile).mockRejectedValue(err);
+    const result = await safeWriteFile('/bad/path/file.json', '{}');
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('ENOENT');
   });
 
-  describe('Combined failure scenarios', () => {
-    it('handles LLM failure + file write failure gracefully', async () => {
-      const error = new Error('EACCES');
-      (error as any).code = 'EACCES';
-      vi.mocked(fs.writeFile).mockRejectedValue(error);
-      
-      const workflow = async () => {
-        const llmResult = 'fallback response';
-        try {
-          await fs.writeFile('/path', llmResult);
-          return { saved: true, result: llmResult };
-        } catch (e: any) {
-          return { saved: false, result: llmResult, writeError: e.code };
-        }
-      };
-      
-      const result = await workflow();
-      expect(result.saved).toBe(false);
-      expect(result.result).toBe('fallback response');
-      expect(result.writeError).toBe('EACCES');
-    });
+  it('handles EACCES on writeFile gracefully', async () => {
+    const err = Object.assign(new Error('Permission denied'), { code: 'EACCES' });
+    vi.mocked(fs.writeFile).mockRejectedValue(err);
+    const result = await safeWriteFile('/readonly/file.json', 'data');
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('EACCES');
+  });
 
-    it('handles JSON parse failure from LLM response', async () => {
-      const parseLLMResponse = (raw: string) => {
-        // Try to extract JSON from markdown code blocks
-        const jsonMatch = raw.match(/```json\n([\s\S]*?)\n```/);
-        const toParse = jsonMatch ? jsonMatch[1] : raw;
-        try {
-          return { data: JSON.parse(toParse), error: null };
-        } catch (e: any) {
-          return { data: null, error: `Failed to parse LLM response: ${e.message}`, raw };
-        }
-      };
-      
-      // LLM returns prose instead of JSON
-      const result = parseLLMResponse("I think the answer is 42");
-      expect(result.data).toBeNull();
-      expect(result.error).toContain('Failed to parse LLM response');
-      
-      // LLM returns valid JSON in code block
-      const good = parseLLMResponse('```json\n{"answer": 42}\n```');
-      expect(good.data).toEqual({ answer: 42 });
-    });
+  it('handles EMFILE (too many open files) gracefully', async () => {
+    const err = Object.assign(new Error('Too many open files'), { code: 'EMFILE' });
+    vi.mocked(fs.readFile).mockRejectedValue(err);
+    const result = await safeReadFile('/any/file.ts', 'default');
+    expect(result.content).toBe('default');
+    expect(result.error).toContain('EMFILE');
+  });
 
-    it('handles cascading failures with circuit breaker pattern', async () => {
-      let failures = 0;
-      const circuitBreaker = {
-        state: 'closed' as 'closed' | 'open' | 'half-open',
-        failureCount: 0,
-        threshold: 3,
-        
-        async call(fn: () => Promise<string>) {
-          if (this.state === 'open') return { error: 'circuit open', result: null };
-          try {
-            const result = await fn();
-            this.failureCount = 0;
-            return { error: null, result };
-          } catch (e: any) {
-            this.failureCount++;
-            if (this.failureCount >= this.threshold) this.state = 'open';
-            return { error: e.message, result: null };
-          }
-        }
-      };
-      
-      const failingFn = async () => { failures++; throw new Error('service down'); };
-      
-      await circuitBreaker.call(failingFn);
-      await circuitBreaker.call(failingFn);
-      await circuitBreaker.call(failingFn);
-      
-      expect(circuitBreaker.state).toBe('open');
-      
-      const result = await circuitBreaker.call(failingFn);
-      expect(result.error).toBe('circuit open');
-      expect(failures).toBe(3); // no more calls after circuit opened
-    });
+  it('returns content on successful read', async () => {
+    vi.mocked(fs.readFile).mockResolvedValue('{"key": "value"}' as any);
+    const result = await safeReadFile('/good/file.json');
+    expect(result.content).toBe('{"key": "value"}');
+    expect(result.error).toBeUndefined();
+  });
+});
+
+describe('Failure Injection: JSON Parse Errors', () => {
+  it('handles empty string', () => {
+    const result = safeJsonParse('', 'config');
+    expect(result.data).toBeNull();
+    expect(result.error).toContain('JSON parse failed in config');
+  });
+
+  it('handles truncated JSON', () => {
+    const result = safeJsonParse('{"key": "val', 'response');
+    expect(result.data).toBeNull();
+    expect(result.error).toContain('JSON parse failed in response');
+  });
+
+  it('handles undefined-like strings', () => {
+    const result = safeJsonParse('undefined', 'llm-output');
+    expect(result.data).toBeNull();
+    expect(result.error).toContain('JSON parse failed');
+  });
+
+  it('handles valid JSON correctly', () => {
+    const result = safeJsonParse('{"status": "ok"}', 'test');
+    expect(result.data).toEqual({ status: 'ok' });
+    expect(result.error).toBeUndefined();
+  });
+
+  it('handles array JSON correctly', () => {
+    const result = safeJsonParse('[1,2,3]', 'array');
+    expect(result.data).toEqual([1, 2, 3]);
+    expect(result.error).toBeUndefined();
+  });
+});
+
+describe('Failure Injection: LLM Timeout/Errors', () => {
+  it('retries on timeout and eventually fails gracefully', async () => {
+    const timeoutFn = vi.fn().mockRejectedValue(new Error('Request timeout'));
+    const result = await safeLlmCall(timeoutFn, 3);
+    expect(timeoutFn).toHaveBeenCalledTimes(3);
+    expect(result.result).toBe('');
+    expect(result.error).toContain('failed after 3 retries');
+  });
+
+  it('succeeds on second retry after initial failure', async () => {
+    const fn = vi.fn()
+      .mockRejectedValueOnce(new Error('timeout'))
+      .mockResolvedValueOnce('success response');
+    const result = await safeLlmCall(fn, 3);
+    expect(fn).toHaveBeenCalledTimes(2);
+    expect(result.result).toBe('success response');
+    expect(result.error).toBeUndefined();
+  });
+
+  it('handles network errors', async () => {
+    const fn = vi.fn().mockRejectedValue(new Error('ECONNREFUSED'));
+    const result = await safeLlmCall(fn, 2);
+    expect(result.error).toContain('failed after 2 retries');
+    expect(result.error).toContain('ECONNREFUSED');
+  });
+
+  it('handles rate limit errors', async () => {
+    const fn = vi.fn().mockRejectedValue(new Error('429 Too Many Requests'));
+    const result = await safeLlmCall(fn, 3);
+    expect(fn).toHaveBeenCalledTimes(3);
+    expect(result.error).toContain('429 Too Many Requests');
+  });
+
+  it('succeeds immediately when no error', async () => {
+    const fn = vi.fn().mockResolvedValue('immediate success');
+    const result = await safeLlmCall(fn, 3);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(result.result).toBe('immediate success');
+  });
+
+  it('handles single retry config', async () => {
+    const fn = vi.fn().mockRejectedValue(new Error('fail'));
+    const result = await safeLlmCall(fn, 1);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(result.error).toContain('failed after 1 retries');
   });
 });
