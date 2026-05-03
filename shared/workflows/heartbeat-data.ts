@@ -489,8 +489,11 @@ Produce at least ONE meaningful write, then call finish() with updated deliverab
   if (deliverableCount >= 2) substanceScore += 2;     // multiple deliverables
   if (deliverableCount >= 1) substanceScore += 1;     // at least one deliverable
   if (outputLength >= 1000) substanceScore += 2;      // significant output
-  // Gate fires if substance score is too low (< 3 means barely any signals of real work)
-  const looksTrivia = substanceScore < 3;
+  // Gate fires if substance score is too low.
+  // NOTE: EXP-730 found threshold < 3 was dead code — upstream artifact gate (EXP-520)
+  // guarantees deliverables exist, so score was always ≥ 3. Raised to < 5 so gate
+  // catches sessions with minimal deliverables + short summaries.
+  const looksTrivia = substanceScore < 5;
   const tooFewTurns = turnsUsed > 0 && turnsUsed < 3;
   const MINIMUM_TURNS = 3;
   if ((tooFewTurns || looksTrivia) && result.status !== "error") {
