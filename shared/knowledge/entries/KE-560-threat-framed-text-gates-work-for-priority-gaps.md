@@ -38,3 +38,5 @@ You CANNOT finish without [X]. Session will be REJECTED. Do [X] FIRST, then fini
 - May produce trivial/low-quality output (agent writes minimal test to pass gate)
 - Only works for tasks within agent's ability
 - Untested at scale in production (gym only)
+- **No effect near ceiling**: EXP-585 (2029-07-05) tested threat-framed completeness gate on `incomplete-deliverables-trap`. Baseline had drifted from 57% to 90.5% — treatment showed only +4.8pp (INCONCLUSIVE). Threat framing cannot improve what's already near-ceiling.
+- **Ability gaps unaffected**: The remaining failure (`lessons-updated`) was a conditional deliverable the agent couldn't detect, not one it deprioritized.

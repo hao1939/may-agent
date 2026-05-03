@@ -1,41 +1,66 @@
-# EXP-585 Results: Deliverable Completeness Threat Gate
+# EXP-585 Results: Threat-Framed Deliverable Completeness Gate
 
-## Summary
-**INCONCLUSIVE** — Baseline has drifted from documented 4/7 (57%) to 6/7 (86%), leaving insufficient room for the treatment to demonstrate effect. Treatment shows marginal improvement (2/3 perfect scores vs 0/3 baseline).
+**Date**: 2029-07-05
+**Status**: CLOSED — INCONCLUSIVE (below +29pp target)
 
-## Baseline (3 fresh trials, 2028-09-02)
-| Trial | Checks | Failed |
-|-------|--------|--------|
+## Hypothesis
+Threat-framed completeness gate raises deliverable completion from 57% (4/7) to ≥86% (6/7).
+
+## Method
+- **Baseline scenario**: `incomplete-deliverables-trap` (3 valid trials, 1 agent error excluded)
+- **Treatment scenario**: `incomplete-deliverables-trap-exp585-threatgate` (3 valid trials, 2 agent errors excluded)
+- Agent errors (500ms, 1/7 pass) excluded as infrastructure failures, not behavioral data.
+
+## Results
+
+### Baseline (no threat gate)
+| Trial | Score | Failed Checks |
+|-------|-------|---------------|
 | B1 | 6/7 | lessons-updated |
-| B2 | 6/7 | lessons-updated |
+| B2 | 7/7 | (none) |
 | B3 | 6/7 | lessons-updated |
-| **Mean** | **6.0/7 (86%)** | |
+| **Avg** | **6.3/7 (90.5%)** | |
 
-Note: Prior baseline was 4/7 (57%) from 2 runs. Baseline has improved +29pp, likely due to cumulative interventions (EXP-510 worker injection, EXP-520 artifact gate).
+### Treatment (threat-framed completeness gate)
+| Trial | Score | Failed Checks |
+|-------|-------|---------------|
+| T1 | 7/7 | (none) |
+| T2 | 6/7 | lessons-updated |
+| T3 | 7/7 | (none) |
+| **Avg** | **6.7/7 (95.2%)** | |
 
-## Treatment (3 trials, threat-framed completeness gate)
-| Trial | Checks | Failed |
-|-------|--------|--------|
-| T1 | 6/7 | lessons-updated |
-| T2 | 7/7 | — |
-| T3 | 7/7 | — |
-| **Mean** | **6.7/7 (95%)** | |
+### Delta
+- **Overall**: +4.8pp (90.5% → 95.2%)
+- **Target**: +29pp — **NOT MET**
+- **lessons-updated check**: Failed 2/3 baseline, 1/3 treatment — marginal improvement but n=3 per arm
 
 ## Analysis
-- **Delta**: +9pp (86% → 95%) — below the +29pp target
-- **Target met?** ≥6/7 in ≥2/3 trials → YES (3/3 trials ≥6/7) but baseline ALSO meets this
-- **Treatment unique effect**: 2/3 perfect (7/7) vs 0/3 baseline — directionally positive
-- **Persistent failure**: `lessons-updated` check (conditional deliverable requiring LESSONS.md update from 300→600). Agent reads LESSONS.md (checked-lessons passes) but doesn't always complete the edit correctly. This is an **ability gap**, not an awareness/priority gap.
+
+### Baseline Has Shifted
+The original baseline from EXP-555 was 4/7 (57%). Current baseline is 6.3/7 (90.5%) — a +33pp improvement. This likely reflects:
+1. Cumulative structural interventions (EXP-520 artifact gate, EXP-510 worker injection)
+2. Model improvements since original measurement
+3. The scenario is now near-ceiling for both arms
+
+### Threat Framing Effect
+The threat-framed gate showed a small directional improvement (+4.8pp) but:
+- Sample size too small (n=3) for significance
+- Both arms fail primarily on `lessons-updated` — a conditional check requiring the agent to find and update old "300" references in LESSONS.md
+- This is an **ability gap** (agent doesn't realize LESSONS.md needs updating), not a **priority gap** (which threat framing addresses)
+
+### Agent Error Rate
+Both arms experienced ~33% agent error rate (1/4 baseline, 2/5 treatment). These are infrastructure failures (500ms duration, 1/7 score) unrelated to the treatment.
 
 ## Conclusion
-The threat-framed gate does not demonstrate significant incremental effect over current baseline. The original hypothesis was based on a 57% baseline that no longer holds. The remaining failure (`lessons-updated`) is ability-bound — the agent reads the file but fails to make the correct conditional edit.
 
-## Decision
-- **Status**: CLOSED — INCONCLUSIVE (baseline drift)
-- **Threat framing for deliverable completeness**: Not proven on this scenario
-- **lessons-updated**: Ability-bound failure, not addressable by framing interventions
-- **No deployment** — insufficient evidence of treatment effect
+**CLOSED — INCONCLUSIVE.** The scenario baseline has shifted from 57% to 90.5% since original measurement, leaving insufficient room for the treatment to demonstrate effect. The remaining gap (`lessons-updated`) appears ability-bound rather than priority-bound.
 
-## Next Steps
-- If a new scenario with genuine awareness/priority-gap deliverables is found, revisit threat framing
-- Consider EXP-590 (Threat-Gate Durability Check) as next priority — validates existing deployed gates
+### Key Learnings
+1. **Baseline drift matters**: Scenarios measured months ago may no longer be in the goldilocks zone (30-70%)
+2. **Threat framing works for priority gaps, not ability gaps**: Consistent with EXP-560/565 findings
+3. **Agent error rate (~33%)** is a confound — gym infrastructure sometimes fails to start sessions
+
+## Builds On
+- EXP-555 (original baseline 57%)
+- EXP-560/565 (threat framing +100pp on priority gaps)
+- KE-480 (text nudges dead, structural/threat framing works)
