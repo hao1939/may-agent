@@ -24,6 +24,23 @@ echo "Running system health check..."
 HEALTH_OUTPUT=$(bash scripts/system-health.sh 2>&1) || true
 EXIT_CODE=${PIPESTATUS[0]:-$?}
 
+# Performance regression detection
+PERF_THRESHOLD=5
+echo "Running performance check (threshold: ${PERF_THRESHOLD}s)..."
+VITEST_OUTPUT=$(npx vitest run 2>&1) || true
+DURATION=$(echo "$VITEST_OUTPUT" | grep -oP 'Duration\s+\K[\d.]+' | head -1)
+PERF_WARNING=""
+if [ -n "$DURATION" ]; then
+  DURATION_INT=${DURATION%.*}
+  if [ "${DURATION_INT:-0}" -ge "$PERF_THRESHOLD" ]; then
+    PERF_WARNING="⚠️ PERF REGRESSION: tests took ${DURATION}s (threshold: ${PERF_THRESHOLD}s)"
+    echo "$PERF_WARNING"
+    EXIT_CODE=2
+  else
+    echo "✅ Performance OK: ${DURATION}s (threshold: ${PERF_THRESHOLD}s)"
+  fi
+fi
+
 # Write dated report
 cat > "$REPORT_FILE" <<EOF
 # Health Report: ${DATE}
@@ -34,7 +51,8 @@ ${HEALTH_OUTPUT}
 \`\`\`
 
 ## Status
-$(if [ "${EXIT_CODE}" -eq 0 ]; then echo "✅ ALL SYSTEMS HEALTHY"; else echo "❌ ISSUES DETECTED (exit code: ${EXIT_CODE})"; fi)
+$(if [ "${EXIT_CODE}" -eq 0 ]; then echo "✅ ALL SYSTEMS HEALTHY"; elif [ "${EXIT_CODE}" -eq 2 ]; then echo "⚠️ PERFORMANCE REGRESSION DETECTED"; else echo "❌ ISSUES DETECTED (exit code: ${EXIT_CODE})"; fi)
+$(if [ -n "${PERF_WARNING}" ]; then echo ""; echo "${PERF_WARNING}"; fi)
 EOF
 
 # Append to index
