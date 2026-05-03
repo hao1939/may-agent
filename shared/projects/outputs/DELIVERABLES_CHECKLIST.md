@@ -1,11 +1,9 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist
 
-## Task: Create workflow scaffold generator script
+## Task: Add error handling to master-worker-resilient.ts
 
-| # | Deliverable | Status | Path |
-|---|-------------|--------|------|
-| 1 | scaffold-workflow.sh script | DONE | agents/shared/scripts/scaffold-workflow.sh |
-| 2 | Report documenting usage | DONE | agents/shared/projects/outputs/scaffold-workflow-report.md |
-
-## Notes
-- Script tested: generated example-test workflow + test, 4/4 vitest tests passed, cleaned up after
+| # | Deliverable | Status | Path | Changes |
+|---|-------------|--------|------|---------|
+| 1 | Add try/catch to master-worker-resilient.ts | DONE | agents/shared/workflows/master-worker-resilient.ts | Wrapped runIteration() in top-level try/catch + non-fatal journal write catch |
+| 2 | Run tests to confirm no regressions | DONE | N/A | 36/36 tests passing |
+| 3 | Write summary report | DONE | agents/shared/projects/outputs/error-handling-report.md | Before/after analysis with coverage table |

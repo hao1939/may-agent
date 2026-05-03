@@ -236,9 +236,77 @@ export class ResilientMasterWorker {
   async runIteration(iteration: number, llm: LLMProvider): Promise<IterationResult> {
     const start = Date.now();
 
-    const snapshot = buildIterationSnapshot(this.ctx, iteration);
-    if (!snapshot) {
-      return {
+    try {
+      const snapshot = buildIterationSnapshot(this.ctx, iteration);
+      if (!snapshot) {
+        return {
+          iteration,
+          success: false,
+          output: null,
+          retryAttempts: 0,
+          circuitState: classifyCircuit(
+            this.retryWrapper.getCircuitState(),
+            mergeConfig(this.config.retry).circuitRecoveryMs
+          ),
+          durationMs: Date.now() - start,
+          error: "Failed to build iteration snapshot",
+        };
+      }
+
+      const stopCheck = shouldStop(snapshot);
+      if (stopCheck.stop) {
+        return {
+          iteration,
+          success: false,
+          output: null,
+          retryAttempts: 0,
+          circuitState: classifyCircuit(
+            this.retryWrapper.getCircuitState(),
+            mergeConfig(this.config.retry).circuitRecoveryMs
+          ),
+          durationMs: Date.now() - start,
+          error: `Stopped: ${stopCheck.reason}`,
+        };
+      }
+
+      const orchestratorContext = formatOrchestratorContext(snapshot);
+      const prompt = buildPrompt(snapshot, orchestratorContext);
+
+      const retryResult: RetryResult<string> = await this.retryWrapper.execute(
+        () => llm(prompt),
+        `iteration-${iteration}`
+      );
+
+      const circuitState = classifyCircuit(
+        this.retryWrapper.getCircuitState(),
+        mergeConfig(this.config.retry).circuitRecoveryMs
+      );
+
+      const result: IterationResult = {
+        iteration,
+        success: retryResult.success,
+        output: retryResult.success ? retryResult.value : null,
+        retryAttempts: retryResult.attempts - 1,
+        circuitState,
+        durationMs: Date.now() - start,
+        error: retryResult.success ? undefined : retryResult.error?.message,
+      };
+
+      // Log to journal
+      try {
+        appendJournalEntry(this.ctx, formatJournalEntry(result));
+        flushBetweenIterations(this.ctx);
+      } catch (journalErr) {
+        // Journal write failure is non-fatal — iteration still produced output
+        console.error(`[resilient] Journal write failed for iteration ${iteration}:`, journalErr);
+      }
+
+      this.results.push(result);
+      return result;
+    } catch (err) {
+      // Top-level catch: unexpected errors in snapshot building, prompt construction, etc.
+      const error = err instanceof Error ? err : new Error(String(err));
+      const result: IterationResult = {
         iteration,
         success: false,
         output: null,
@@ -248,55 +316,11 @@ export class ResilientMasterWorker {
           mergeConfig(this.config.retry).circuitRecoveryMs
         ),
         durationMs: Date.now() - start,
-        error: "Failed to build iteration snapshot",
+        error: `Unhandled: ${error.message}`,
       };
+      this.results.push(result);
+      return result;
     }
-
-    const stopCheck = shouldStop(snapshot);
-    if (stopCheck.stop) {
-      return {
-        iteration,
-        success: false,
-        output: null,
-        retryAttempts: 0,
-        circuitState: classifyCircuit(
-          this.retryWrapper.getCircuitState(),
-          mergeConfig(this.config.retry).circuitRecoveryMs
-        ),
-        durationMs: Date.now() - start,
-        error: `Stopped: ${stopCheck.reason}`,
-      };
-    }
-
-    const orchestratorContext = formatOrchestratorContext(snapshot);
-    const prompt = buildPrompt(snapshot, orchestratorContext);
-
-    const retryResult: RetryResult<string> = await this.retryWrapper.execute(
-      () => llm(prompt),
-      `iteration-${iteration}`
-    );
-
-    const circuitState = classifyCircuit(
-      this.retryWrapper.getCircuitState(),
-      mergeConfig(this.config.retry).circuitRecoveryMs
-    );
-
-    const result: IterationResult = {
-      iteration,
-      success: retryResult.success,
-      output: retryResult.success ? retryResult.value : null,
-      retryAttempts: retryResult.attempts - 1,
-      circuitState,
-      durationMs: Date.now() - start,
-      error: retryResult.success ? undefined : retryResult.error?.message,
-    };
-
-    // Log to journal
-    appendJournalEntry(this.ctx, formatJournalEntry(result));
-    flushBetweenIterations(this.ctx);
-
-    this.results.push(result);
-    return result;
   }
 
   /** Run all iterations */
