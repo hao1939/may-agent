@@ -1,11 +1,10 @@
 # DELIVERABLES_CHECKLIST.md
 
-## Task: Remove/deprecate stale workflow files
+## Task: Phase 2 Baseline Audit
 
 | # | Deliverable | Status | Path/Evidence |
 |---|-------------|--------|---------------|
-| 1 | Identify dead workflow files (0 non-test imports) | DONE | 6 files identified via grep |
-| 2 | Remove confirmed-dead workflow files | DONE | Removed 6 files from workflows/ |
-| 3 | Remove orphaned test files | DONE | Removed 11 test files |
-| 4 | Verify tests still pass | DONE | 88/88 passing, 1551 tests |
-| 5 | Document cleanup in report | DONE | agents/shared/projects/outputs/stale-workflow-audit.md |
+| 1 | Run system-health.sh for baseline | DONE | 99 files, 1766 tests, 3.07s |
+| 2 | Audit workflows for pain points | DONE | 11/28 files lack error handling |
+| 3 | Propose 2 satellite projects | DONE | Error Resilience + Circuit Breaker Integration |
+| 4 | Write findings to phase2-baseline-audit.md | DONE | agents/shared/projects/outputs/phase2-baseline-audit.md |
