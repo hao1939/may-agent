@@ -1,9 +1,10 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST.md
 
-## Task: Create pre-commit hook script
+## Task: Create workflow scaffold generator script
 
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Pre-commit hook script | DONE | agents/shared/scripts/pre-commit |
-| 2 | README with install instructions | DONE | agents/shared/projects/system-efficiency/outputs/pre-commit-hook-readme.md |
-| 3 | Verified hook runs successfully | DONE | 99 test files passing, all checks passed |
+| # | Deliverable | Status | Path/Evidence |
+|---|-------------|--------|---------------|
+| 1 | scaffold-workflow.sh script | DONE | agents/shared/scripts/scaffold-workflow.sh |
+| 2 | Script is executable | DONE | chmod +x applied, ran successfully |
+| 3 | Test run with example | DONE | Generated example-test, 4/4 tests passed, cleaned up |
+| 4 | Report documenting usage | DONE | agents/shared/projects/system-efficiency/outputs/scaffold-workflow-report.md |
