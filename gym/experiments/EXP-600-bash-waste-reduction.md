@@ -1,6 +1,6 @@
 # EXP-600: Bash Waste Reduction via Diagnose-Before-Retry Skill
 
-**Status**: IN PROGRESS (Phase 0 — baseline)
+**Status**: IN PROGRESS (Phase 1 — treatment deployed)
 **Created**: 2026-05-02
 **Owner**: coach
 **Target agent**: tech-lead (primary), bob (secondary)
@@ -51,10 +51,22 @@ The failure pattern: agents run a bash command, it fails, they retry with minima
 - Some bash failures are unavoidable (race conditions, external deps)
 - 50 sessions may take 1-2 weeks to accumulate
 
+## Progress Log
+
+### Phase 0 — Baseline (COMPLETE)
+- Baseline waste rate: 23.3% system-wide, tech-lead top offender for bash:exit-code-nonzero (404 wasted calls)
+- Full results: `agents/gym/experiments/EXP-600-phase0-results.md`
+
+### Phase 1 — Treatment (IN PROGRESS)
+- Skill deployed to tech-lead: `agents/tech-lead/skills/diagnose-before-retry.md` (confirmed 2026-05-03)
+- Skill also in lab: `agents/.lab/diagnose-before-retry/skills/diagnose-before-retry.md`
+- **Measurement period**: Next 50 tech-lead sessions
+- **Check-in date**: 2026-05-10 (estimate ~1 week for 50 sessions)
+
 ## Next Steps
-1. Write baseline measurement script
-2. Collect baseline data from existing session logs
-3. Write the skill file
-4. Deploy to tech-lead
-5. Measure treatment phase
+1. ~~Write baseline measurement script~~ ✅
+2. ~~Collect baseline data~~ ✅ (from tool-quality-trend report)
+3. ~~Write the skill file~~ ✅
+4. ~~Deploy to tech-lead~~ ✅ (already deployed)
+5. Measure treatment phase (after 50 sessions accumulate)
 6. Write results + decision (promote/reject)
