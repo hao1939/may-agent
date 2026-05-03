@@ -28,6 +28,7 @@ const DESCRIPTION_MAP: Record<ComplexityScore, string> = {
 };
 
 export function estimateComplexity(task: string): ComplexityEstimate {
+  try {
   let score = 2; // baseline: simple task
   const lower = task.toLowerCase();
 
@@ -72,4 +73,8 @@ export function estimateComplexity(task: string): ComplexityEstimate {
     timeoutMs: TIMEOUT_MAP[clamped],
     description: DESCRIPTION_MAP[clamped],
   };
+  } catch (error) {
+    // Graceful degradation: return medium complexity on parse errors
+    return { score: 3 as ComplexityScore, timeoutMs: TIMEOUT_MAP[3], description: 'Fallback estimate due to analysis error' };
+  }
 }

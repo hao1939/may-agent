@@ -47,6 +47,7 @@ export function shouldBudgetCheckpoint(
   iteration: number,
   reviewEvery: number,
 ): boolean {
+  try {
   let state = budgetStates.get(projectId);
   if (!state) {
     state = { checkpointed: false, totalTurnsEstimate: 0 };
@@ -65,6 +66,10 @@ export function shouldBudgetCheckpoint(
   }
 
   return false;
+  } catch (error) {
+    // Graceful degradation: don't checkpoint on error
+    return false;
+  }
 }
 
 /**
