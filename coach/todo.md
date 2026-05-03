@@ -7,8 +7,9 @@
 - **Hypothesis**: H1: ≥20% worker tasks match patterns. H2: ≥15pp quality improvement on matched tasks.
 - **Design**: `agents/coach/workspace/EXP-720-fewshot-master-worker-integration-design.md`
 - **Phase 1**: `agents/coach/workspace/EXP-720-phase1-coverage-audit.md` — H1 PARTIALLY SUPPORTED (25-35% est. match rate, high false positive concern)
-- **Next**: Phase 2 — add dry-run logging to master-worker.ts, tighten regex patterns, then measure
-- **Blocker**: Needs binary rebuild for TS changes. Escalate to tech-lead when ready.
+- **Phase 2**: `agents/coach/workspace/EXP-720-phase2-dryrun-design.md` — dry-run logging + tightened patterns DESIGNED
+- **Next**: Implement TS change (insert after line 456 in master-worker.ts) + request bundled binary rebuild
+- **Blocker**: Needs binary rebuild for TS changes. Recommend bundling with EXP-630 duration gate activation.
 
 ## P1: EXP-715 — Anti-Shallow Rule (10 Tool Calls) Effectiveness Audit — CLOSED ✅ (H1 REJECTED)
 - **Problem**: 50% shallow session rate persists (EXP-710). Duration gate is dead code. The 10-tool-call anti-shallow rule is a text instruction — KE-655 predicts text rules fail under task distraction.
