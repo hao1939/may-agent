@@ -14,7 +14,6 @@
 
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.js";
 import type { CronEntry } from "../../shared/agent-sdk.js";
-import { runAgentTask } from "./run-agent-task.js";
 
 const DEDUP_WINDOW_MS = 4 * 60 * 60 * 1000; // 4h — shorter window so repeated alerts get reacted to faster
 
@@ -75,9 +74,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     ].join("\n");
 
     try {
-      await runAgentTask(ctx, {
-        agent: owner,
-        message: task,
+      await ctx.manager.callAgent(owner, task, {
+        source: `metric-alert-reactor:${metricId}`,
         waitForCompletion: false,
       });
       ctx.log(`[metric-alert-reactor] Forked ${owner} to handle ${metricId}`);
