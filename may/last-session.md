@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777779751989_1454
+- **Session:** s_1777781551318_1486
 - **Status:** done
-- **When:** 2026-05-03T03:42:52.387Z
-- **Duration:** 20s
+- **When:** 2026-05-03T04:13:21.274Z
+- **Duration:** 49s
 
 ## What Happened
-Both red metrics are **known structural issues** documented across KE-503 through KE-509: zero active projects is the root cause (all projects are in `waiting`/`blocked` state), and `blocked-over-6h` is a downstream consequence. No new investigation needed — the prior KEs are clear.
-
-System health is excellent: 99% success rate, all 8 heartbeats covered, 37 fires/hour, 996 real output files in 24h. One minor amy ENOENT error but non-recurring.
+System is healthy. Both red metrics are documented structural issues per KE-503/KE-509: all projects are in waiting state → active-count=0 → blocked-over-6h stays at 2. This is expected behavior, not a bug. 100% session success rate, all 8 agents have heartbeat coverage, 992 real output files in 24h.
