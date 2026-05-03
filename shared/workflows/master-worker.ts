@@ -135,7 +135,10 @@ DONE — all plan items complete AND all metrics at target. Project is finished.
 BLOCKED — something external is broken that you cannot fix.
 WAITING — you need something specific from a human (approval, credentials, access). Say exactly what.
 
-There is always more to do. Metrics at target? Raise the target, protect against regression, or find the next problem. Your job is to keep pushing forward.
+Push forward on real goals. But recognize when a project is DONE:
+- If ALL plan items are checked off AND ALL metrics are at/above target → say DONE.
+- Do NOT invent new work (extra tests, tooling, docs) after goals are met. That's busywork.
+- Expanding scope requires explicit new goals from the project owner, not the orchestrator.
 
 Example response format:
 CONTINUE
