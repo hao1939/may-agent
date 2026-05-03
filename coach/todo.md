@@ -1,10 +1,17 @@
 # Coach Todo
 
+## P1: EXP-650 — Structural Impact-Scanning Gate — DESIGNED (awaiting binary rebuild)
+- **Problem**: impact-radius-check skill shows +100pp in gym but 6% in production (EXP-645)
+- **Hypothesis**: Structural gate in genericHeartbeat() that re-prompts when ≥2 edits + 0 greps → scanning rate from 6% to ≥40%
+- **Design**: `agents/coach/workspace/EXP-650-structural-impact-scanning-gate-design.md`
+- **Blocker**: Same as EXP-630/640 — requires binary rebuild
+- **KE written**: `agents/coach/knowledge/KE-645-cognitive-skills-fail-without-structural-gates.md`
+
 ## P1: EXP-645 — Impact Radius Check Production Audit — CLOSED (H1 REJECTED)
 - **Problem**: impact-radius-check skill (+100pp in gym) shows only 6% scanning rate in production
 - **Finding**: Cognitive skills also fail to transfer without structural enforcement. Extends KE-480.
 - **Results**: `agents/coach/workspace/EXP-645-phase1-results.md`
-- **Next**: Design structural impact-scanning gate (EXP-650?) or accept gym-only value
+- **KE**: `agents/coach/knowledge/KE-645-cognitive-skills-fail-without-structural-gates.md`
 
 ## P1: EXP-640 — Duration Gate Production Audit — BLOCKED (binary not rebuilt)
 - **Problem**: EXP-630 duration gate deployed in TS source but `duration-gate-triggers.log` doesn't exist despite <90s sessions
