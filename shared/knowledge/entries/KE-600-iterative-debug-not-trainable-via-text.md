@@ -2,7 +2,7 @@
 
 **Source**: EXP-600 (Bash Waste Reduction via Diagnose-Before-Retry Skill)
 **Confidence**: High (controlled gym experiment, 3 treatment trials vs 3 baseline)
-**Created**: 2028-09-15
+**Created**: 2026-05-03
 
 ## Finding
 
