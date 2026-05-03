@@ -1,76 +1,86 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777791144237_1674
+- **Session:** s_1777791155784_1675
 - **Status:** done
-- **When:** 2026-05-03T06:52:35.765Z
+- **When:** 2026-05-03T06:52:47.234Z
 - **Duration:** 11s
 
 ## What Happened
+```json
 {
   "agents": [
     {
-      "agent": "tech-lead",
-      "role": "Supervisor",
+      "agent": "arc",
+      "role": "Philosopher",
       "capability_level": "senior",
       "efficiency": 0.55,
-      "quality": 0.78,
+      "quality": 0.55,
       "verdict": "acceptable",
       "issues": [
         {
-          "tag": "LOOPING/FM-1.3",
-          "evidence": "Failure chain shows many grep/cat/find attempts after an initial `grep ...` exit code 1, with 16 wasted calls reported by the task runner."
+          "tag": "WASTED_CALLS",
+          "evidence": "Failure Chain 1: initial `read({\"path\":\"heartbeat.md\"})` ENOENT then had to run `find` to locate `agents/arc/heartbeat.md` (2 wasted calls)."
         },
         {
-          "tag": "SCOPE_DRIFT",
-          "evidence": "Session produced/committed multiple `last-session.md` updates across several agents plus a new shared knowledge entry, even though the heartbeat goals were specifically P0/P1 triage + tsc check. (git diff --cached --stat shows 6 files changed across arc/dev/evaluator/may/scout + tech-lead todo)."
+          "tag": "WRONG_DB_ACCESS_LIBRARY",
+          "evidence": "Failure Chains 2/4: `node -e` using `better-sqlite3` against /app/.state/may.db errored inside scenario node_modules; Chain 3: `/tmp/arc-query.js` failed `Cannot find module 'better-sqlite3'`."
         },
         {
-          "tag": "PROCESS_GUARD_HIT",
-          "evidence": "First finish() was blocked due to an uncommitted untracked knowledge entry, requiring an extra commit cycle."
+          "tag": "UNRESOLVED_FAILURE_CHAINS",
+          "evidence": "Chains 2/3/4 were left unresolved; agent moved on without establishing a working DB query method in-tool output."
         },
         {
-          "tag": "WEAK_EVIDENCE_FOR_CLAIMS",
-          "evidence": "The response to P0 asserts “C1.3 pass rate 94.1% (n=557)” and that finish-gate is active; transcript shows greps/cats but does not show any actual metric query output supporting 94.1%/n=557."
+          "tag": "UNVERIFIED_CLAIMS_IN_FINISH",
+          "evidence": "finish() claims multiple DB query results (metric.current, tick silence, alert config) but the transcript shows no successful DB query tool output—only better-sqlite3 stack traces. This is a structural-evidence gap."
+        },
+        {
+          "tag": "SESSION_GOAL_DRIFT",
+          "evidence": "Heartbeat asked to read heartbeat.md and do work; agent did produce a knowledge entry, but the core supporting evidence (DB-derived) was not actually obtained in this session."
         }
       ],
       "metrics": {
-        "tool_calls_wasted_reported": 16,
-        "finish_blocked_count": 1,
-        "commits": 2,
-        "tsc_run": "yes (clean output shown via tail -20 with no errors)"
-      },
-      "lessons": [
-        {
-          "scope": "tech-lead",
-          "actionable": "When a grep returns exit code 1 (no matches), treat it as a valid negative and pivot immediately (e.g., list files or search broader patterns) rather than chaining multiple similar greps."
-        },
-        {
-          "scope": "tech-lead",
-          "actionable": "For numeric claims (e.g., pass rates, n=557), include the exact query output in-session; otherwise treat as unverified and phrase as a hypothesis."
-        },
-        {
-          "scope": "tech-lead",
-          "actionable": "Before calling finish(), run `git status --porcelain` to avoid finish-guard retries from untracked files."
-        }
-      ]
+        "failure_chains": 4,
+        "wasted_calls": 5,
+        "files_written": 1,
+        "files_read": 1,
+        "bash_calls": 6
+      }
     }
   ],
   "workflow": {
-    "name": "tech-lead-heartbeat",
+    "name": "heartbeat",
     "issues": [
       {
-        "tag": "HEARTBEAT_FORMAT_COMPLIANCE",
-        "evidence": "Agent complied with required first message format (GOAL/PLAN/DONE WHEN)."
+        "tag": "EVIDENCE_BREAK",
+        "evidence": "Knowledge entry KE-563 is asserted as DB-checkable, but session lacks successful DB query outputs; evaluator should treat conclusions as unverified for this run."
       },
       {
-        "tag": "EVIDENCE_GAPS",
-        "evidence": "Key P0 conclusion (94.1% pass rate) not backed by a shown DB query/tool output in the transcript."
+        "tag": "TOOLING_MISUSE",
+        "evidence": "System guidance prefers `bun:sqlite` readonly; arc attempted `better-sqlite3` and failed repeatedly."
       }
     ]
   },
   "overall": {
     "verdict": "acceptable",
     "result_delivered": true
-  }
+  },
+  "lessons": [
+    {
+      "agent": "arc",
+      "category": "fix",
+      "content": "When a claim depends on DB evidence, ensure at least one successful query output is present in the transcript; otherwise finish() verification_evidence is non-credible."
+    },
+    {
+      "agent": "arc",
+      "category": "fix",
+      "content": "Use the documented `bun:sqlite` readonly pattern instead of `better-sqlite3`; repeated module/prepare failures wasted multiple calls and left core evidence uncollected."
+    },
+    {
+      "agent": "arc",
+      "category": "pattern",
+      "content": "For heartbeats, open `agents/<agent>/heartbeat.md` directly (or keep a known path) to avoid ENOENT+filesystem search overhead."
+    }
+  ]
 }
+```
