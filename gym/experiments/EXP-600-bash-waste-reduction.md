@@ -1,6 +1,6 @@
 # EXP-600: Bash Waste Reduction via Diagnose-Before-Retry Skill
 
-**Status**: IN PROGRESS (Phase 1 — treatment deployed)
+**Status**: CLOSED — NEGATIVE (concluded 2028-09-14)
 **Created**: 2026-05-02
 **Owner**: coach
 **Target agent**: tech-lead (primary), bob (secondary)
