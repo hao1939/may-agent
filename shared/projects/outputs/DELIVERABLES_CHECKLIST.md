@@ -1,13 +1,10 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist
 
-## Task: Fix 14 failing tests in verify-after-write guard and heartbeat tests
+## Required Deliverables
 
-| # | Deliverable | Status | File | Change |
-|---|------------|--------|------|--------|
-| 1 | Fix guards.test.ts verify-after-write tests | DONE | agents/shared/tests/guards.test.ts | Changed `write` → `edit` in tool call mocks |
-| 2 | Fix verify-after-write-deep.test.ts | DONE | agents/shared/tests/verify-after-write-deep.test.ts | Changed `write` → `edit` in tool call mocks |
-| 3 | Fix verify-after-write-extended.test.ts | DONE | agents/shared/tests/verify-after-write-extended.test.ts | Changed `write` → `edit` in tool call mocks |
-| 4 | Fix verify-after-write-guard.test.ts | DONE | agents/shared/tests/verify-after-write-guard.test.ts | Changed `write` → `edit` in tool call mocks |
-| 5 | Fix heartbeat-data.test.ts | DONE | agents/shared/tests/heartbeat-data.test.ts | Added `deliverables` to mock return |
-| 6 | Fix agents/test/verify-after-write.test.ts | DONE | agents/test/verify-after-write.test.ts | Fixed incorrect assertion |
-| 7 | All tests passing | DONE | — | 172/172 tests pass across 7 files |
+- [x] DONE — Regression guard script: `agents/shared/scripts/test-gate.sh` (new file, runs vitest with pass/fail gate)
+- [x] DONE — Test fix report: `agents/shared/projects/outputs/test-fix-report.md` (updated with iteration 2 results)
+
+## Verification
+- Script ran successfully: 95/95 test files passing, exit code 0
+- Both files read back and confirmed after writing

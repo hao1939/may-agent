@@ -36,3 +36,14 @@ to the mock result.
 Test Files  7 passed (7)
 Tests       172 passed (172)
 ```
+
+## Iteration 2: Regression Guard Script
+
+Created `scripts/test-gate.sh` — a regression guard that runs `npx vitest run` and exits non-zero if any test file fails. Verified passing with 95/95 test files green.
+
+```
+🧪 Running test gate...
+========================
+ Test Files  95 passed (95)
+✅ TEST GATE PASSED
+```
