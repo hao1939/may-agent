@@ -52,18 +52,18 @@ describe("classifyCircuit", () => {
 
   it("returns open when isOpen and within recovery window", () => {
     const now = Date.now();
-    const circuit = { isOpen: true, failureCount: 3, lastFailureTime: now - 1000 };
+    const circuit = { state: "open" as const, consecutiveFailures: 3, lastFailureTime: now - 1000 };
     expect(classifyCircuit(circuit, 60000, now)).toBe("open");
   });
 
   it("returns half-open when recovery time elapsed", () => {
     const now = Date.now();
-    const circuit = { isOpen: true, failureCount: 3, lastFailureTime: now - 70000 };
+    const circuit = { state: "open" as const, consecutiveFailures: 3, lastFailureTime: now - 70000 };
     expect(classifyCircuit(circuit, 60000, now)).toBe("half-open");
   });
 
   it("returns closed when not open regardless of failure count", () => {
-    const circuit = { isOpen: false, failureCount: 5, lastFailureTime: Date.now() };
+    const circuit = { state: "closed" as const, consecutiveFailures: 5, lastFailureTime: Date.now() };
     expect(classifyCircuit(circuit, 60000)).toBe("closed");
   });
 });
