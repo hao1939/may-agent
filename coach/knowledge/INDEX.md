@@ -22,6 +22,7 @@ Scout researches (Opus). Optimizer makes agents cheaper/more robust.
 - `knowledge/model-level-attractors.md` — behaviors resistant to all methods
 - `knowledge/coaching-pipeline-learnings.md` — operational anti-patterns and rules
 - `knowledge/meta-analysis-text-vs-workflow.md` — definitive finding: text injection 4.8% success (1/21) vs workflow enforcement 100% (5/5)
+- `knowledge/KE-700-when-text-rules-work.md` — decision rule: text works for judgment gaps (fills void), fails for mechanical compliance (fights habit)
 - `knowledge/library/research-notes.md` — Scout research synthesis mapped to coaching practice
 - `workspace/experiments.jsonl` — all experiment results
 - `workspace/gym-gap-analysis.md` — FM taxonomy coverage gaps in scenario suite
