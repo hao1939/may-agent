@@ -113,8 +113,8 @@ export const guard: WorkflowGuard = {
         return [{
           type: "block",
           reason:
-            `C1.3 Verify-After-Write: Cannot finish(success) — ${sessionUnverified.length} file(s) ` +
-            `were written/edited but never read() back for verification: ` +
+            `C1.3 Verify-After-Edit: Cannot finish(success) — ${sessionUnverified.length} file(s) ` +
+            `were edited but never read() back for verification: ` +
             `${sessionUnverified.join(", ")}. ` +
             `You MUST read() each modified file to verify correctness before finishing.`,
         }];
