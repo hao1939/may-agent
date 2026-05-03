@@ -1,31 +1,78 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777817977374_2226
+- **Session:** s_1777821603483_2297
 - **Status:** done
-- **When:** 2026-05-03T14:20:33.407Z
-- **Duration:** 56s
+- **When:** 2026-05-03T15:20:12.942Z
+- **Duration:** 9s
 
 ## What Happened
-**Heartbeat actions taken (evaluator): evaluation pipeline liveness / coverage audit**
-
-### What I checked (structural)
-- **DB recency / liveness:** Queried `.state/may.db` for `MAX(evaluations.createdAt)` vs `MAX(sessions.startedAt)`.
-  - Evidence: evaluations are running, with **lag_ms = 2,224,316 (~37 min)** between newest session start and newest evaluation record.  
-  (Tool evidence: `bun -e ...` output showing `lag_ms`.)
-- **Legacy artifacts:** Listed `.state/evaluations/` tail.
-  - Evidence: recent `s_*.json` exist (Apr 29), but `task_tree_*` files are still Mar 24 → indicates **task_tree output path is stale/legacy**, not necessarily eval pipeline failure.
-
-### Key finding: “coverage gap” is mostly a status mismatch
-- I initially queried for `sessions.status='completed'` and got `0` unevaluated, but the DB shows statuses are:
-  - `done: 10342`, `error: 94`, `interrupted: 33`, `running: 4`  
-  (Tool evidence: status distribution query.)
-- When corrected to `status='done'`, unevaluated backlog is **8157 sessions**.
-  - By agent (top): evaluator **3709**, optimizer **1844**, coach **1173**, amy **840**  
-  (Tool evidence: join + group-by query.)
-
-### Outcome / next-step recommendation
-- This looks like a **pipeline filtering/scoping mismatch** (evaluations joined against sessions whose status is `done`, while some evaluation logic likely expects `completed`), plus **legacy `.state/evaluations/task_tree_*` drift**.
-- Next concrete fix to dispatch (not done in this heartbeat): update the eval cron / selector to treat `sessions.status='done'` as eligible (or unify status vocabulary), then re-check backlog size.
-
-No pending events/projects to process beyond this audit.
+{
+  "agents": [
+    {
+      "name": "bob",
+      "role": "Philosopher",
+      "capability_level": "heartbeat-innovator",
+      "efficiency": 0.6,
+      "quality": 0.25,
+      "verdict": "needs_improvement",
+      "issues": [
+        {
+          "type": "FORMAT_VIOLATION",
+          "evidence": "The session instructions require the FIRST output be the GOAL/PLAN/DONE WHEN block. The transcript begins directly with action ('Now remove the completed items...') after an edit result, with no required header visible."
+        },
+        {
+          "type": "HARD_CONSTRAINT_VIOLATION",
+          "evidence": "Execution rule: 'After every edit() or write(), immediately read() the same file. No exceptions.' Bob performed edit() on agents/bob/workspace/todo.md and did not follow with a read() of todo.md before proceeding to finish()/bash. No read(tool) call is shown after the edit."
+        },
+        {
+          "type": "FM-3.3_VERIFICATION_FAILURE",
+          "evidence": "Bob claimed deliverables in finish(), but did not show tool-based readback of both modified files within the transcript. The finish() tool output claims 'Step 3: read(ANALYSIS...)', but the transcript does not show that read call; only an edit diff is shown plus git commit. Evidence of reading todo.md after edit is absent."
+        },
+        {
+          "type": "PROCESS_RECOVERY_WITH_WASTE",
+          "evidence": "finish() was blocked due to uncommitted changes, requiring an extra bash git commit step. This was recovered correctly but indicates initial process miss."
+        }
+      ],
+      "metrics": {
+        "tool_calls_count": 3,
+        "wasted_calls_estimate": 1,
+        "files_changed": [
+          "agents/bob/workspace/todo.md",
+          "agents/bob/workspace/ANALYSIS-heartbeat-2025-05-03d.md"
+        ],
+        "commits": [
+          {
+            "hash": "e20435317",
+            "evidence": "bash output: '[main e20435317] bob: heartbeat priority analysis + todo cleanup...'"
+          }
+        ]
+      },
+      "lessons": [
+        {
+          "scope": "bob",
+          "category": "fix",
+          "content": "After every edit()/write(), immediately read() the same file in the transcript before any other step; otherwise it triggers a verification failure even if the diff looked correct."
+        },
+        {
+          "scope": "bob",
+          "category": "pattern",
+          "content": "Do the mandatory GOAL/PLAN/DONE WHEN header as the very first assistant message (before any tool-driven actions) to avoid automatic format violations."
+        }
+      ]
+    }
+  ],
+  "workflow": {
+    "name": "heartbeat",
+    "issues": [
+      {
+        "type": "CONSTRAINT_MISMATCH",
+        "evidence": "Heartbeat mandates: at least 5 tool calls and at least one artifact; artifact satisfied, but only 3 tool calls shown (edit, bash, finish)."
+      }
+    ]
+  },
+  "overall": {
+    "verdict": "needs_improvement",
+    "result_delivered": true
+  }
+}

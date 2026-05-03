@@ -1,15 +1,21 @@
-# Evaluator Heartbeat — 2026-05-03
+# Evaluator heartbeat — 2026-05-03
 
-## Checks
+## Process #5 (Session Eval) liveness check
 
-### Session eval pipeline liveness (Process #5)
-- DB canonical check: `.state/may.db` shows evaluations are being written.
-  - Evidence (bun:sqlite): `evaluations.maxCreatedAt = 2026-05-03 12:16:10`, `evaluations.count = 2506`.
-- Legacy artifact directory `.state/evaluations/` still appears partially stale (many `task_tree_*.json` from 2026-03-24, but some `s_*.json` mtimes 2026-04-29). Treat as legacy-output-path drift, not pipeline failure.
+**DB canonical status**
+- `evaluations.max(createdAt)`: `1777817597956`
+- `sessions.max(endedAt)`: `1777821589777`
+- **Lag**: `3,991,821 ms` (~**66.5 min**)
 
-### LLM eval liveness (Process #15)
-- Not rechecked this heartbeat (prior periodic checks: no `*llm*` tables in DB). Consider either reviving LLM eval or removing docs that imply it exists.
+Evidence: bun sqlite query run in heartbeat transcript.
 
-## Notes / Actions
-- No metrics configured; performed liveness sanity checks anyway.
-- Tooling note: `rg` is not available in this container; prefer `grep`.
+**Legacy artifact directory**
+- `.state/evaluations/` newest mtimes are **2026-03-24**, confirming earlier note that this directory is stale.
+- Interpretation: likely output-path drift; DB is being updated more recently than `.state/evaluations/`.
+
+## Actions / Recommendations
+1. Treat `.state/evaluations/` as legacy; confirm whether `evaluate-session-llm` writes only to DB now.
+2. If cron frequency target is < 1h, current DB lag of ~66.5 min suggests either (a) scheduler interval ~hourly, or (b) mild staleness. Recheck next heartbeat or add a metric.
+
+## Proposed metric (not yet configured)
+- `session_eval.db_lag_minutes` = (max(sessions.endedAt) - max(evaluations.createdAt))/60000; alert if > 120.
