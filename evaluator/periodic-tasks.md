@@ -53,7 +53,7 @@ Also: `evaluations.createdAt` is stored as an epoch-ms integer (not an ISO datet
 - Do NOT update `agents/shared/knowledge/strategies.md` directly (Bob reviews first).
 - **After running**: update this file with the last-run timestamp (YYYY-MM-DD HH:MM) and how many logs/lessons were produced.
 
-**Last run**: 2026-05-02 04:28Z — DB canonical check: `MAX(evaluations.createdAt)=1777686991632` (2026-05-02T01:56:31.632Z; eval pipeline live; last-24h: `sessions`=4383 vs `evaluations`=677). `MAX(sessions.startedAt)=1777696028987` (2026-05-02T04:27:08.987Z). Coverage note: among last-24h sessions, evaluation join-rate is low for major agents (optimizer 0.144, amy 0.158, coach 0.228) but **there were 0 completed sessions missing evaluations** at query time → most unevaluated sessions are likely non-COMPLETED kinds/statuses. Legacy `.state/evaluations/` still shows `task_tree_*.json` mtimes Mar 24 while `s_*.json` are Apr 29 → treat as legacy path drift, not pipeline failure.
+**Last run**: 2026-05-03 01:13Z — DB canonical check: `MAX(evaluations.createdAt)=1777768954999` (2026-05-03T00:42:34Z; eval pipeline live). `MAX(sessions.createdAt)=1777768954999` (2026-05-03T00:42:34Z). Investigation note: bob’s depressed average score (~0.408) appears strongly explained by `shallow_session` tagging (50% of bob evals); when shallow-tagged, avg score ≈0.20 vs non-shallow ≈0.617. Similar pattern for coach/optimizer (shallow avg ≈0.20).
 
 Ran `monitor-session.cjs --running`: 1 alert (`STALL` amy `s_1777626616591_0` idle 1158m; recommended action: kill). Ran `patrol.cjs`: CRITICAL due to missing `agents/shared/compliance-snapshot.json` baseline (patrol degraded, not a mismatch event).
 
