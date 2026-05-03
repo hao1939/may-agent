@@ -56,7 +56,7 @@ describe("verify-after-write guard", () => {
     expect(demands[0].reason).toContain("src/a.ts");
   });
 
-  it("does NOT block finish(success) for unverified writes (edit-only enforcement)", () => {
+  it("blocks finish(success) for unverified writes", () => {
     const event = {
       type: "step_done",
       source: "agent",
@@ -69,7 +69,9 @@ describe("verify-after-write guard", () => {
       },
       completedSteps: [],
     };
-    expect(guard.handle(event as any)).toEqual([]);
+    const demands = guard.handle(event as any);
+    expect(demands).toHaveLength(1);
+    expect(demands[0].type).toBe("block");
   });
 
   it("allows finish(success) when all edits are verified by read", () => {
