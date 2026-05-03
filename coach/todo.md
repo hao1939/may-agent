@@ -1,8 +1,12 @@
 # Coach Todo
 
-## Status Summary (updated 2026-05-03)
+## Status Summary (updated 2029-07-15)
 
-All 6 projects are **CLOSED**. One active experiment in progress. EXP-730 CLOSED (root cause found, superseded by EXP-740).
+All 6 projects are **CLOSED** (skill-workflow-audit: blocked but 18/18 milestones — effectively complete).
+Two active experiments: EXP-800 (READY TO RUN) and EXP-745 (Phase 2 complete).
+Three gate fixes blocked on tech-lead: EXP-740, EXP-735, EXP-725. Re-escalated 2029-07-15.
+All 3 deployed gate logs still empty (0% trigger rate confirmed 2029-07-15).
+Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-07-15.md`
 
 ## ACTIVE: EXP-800 — Threshold Rescue — Concrete Rules for VAE
 - **Problem**: VAE compliance stuck at ~13%. KE-715 says concrete thresholds work. KE-655 says distraction kills text. Which wins?
@@ -11,7 +15,8 @@ All 6 projects are **CLOSED**. One active experiment in progress. EXP-730 CLOSED
 - **VAE measurement script**: `agents/coach/workspace/exp800-vae-measure.cjs` (validated — works on real sessions)
 - **Run protocol**: `agents/coach/workspace/EXP-800-run-protocol.md`
 - **Next**: Run Arm A (baseline, 5 sessions) through gym. After each run, find session in `.state/sessions/` and run `node agents/coach/workspace/exp800-vae-measure.cjs <session.jsonl>`
-- **Status**: READY TO RUN — scenarios + measurement tooling ready
+- **Gym blocker (2029-07-15)**: `run-gym.sh` returns `agent_status: skipped` without `GYM_AGENT_BIN` env var. Need agent binary or use `GYM_AGENT_CMD` to dispatch. Previous EXP-700 had same issue.
+- **Status**: READY TO RUN — scenarios + measurement tooling ready, blocked on gym runner config
 
 ## ACTIVE: EXP-745 — Few-Shot Pattern Coverage Expansion — PHASE 2 COMPLETE
 - **Problem**: EXP-720 dry-run log has zero data. Patterns only matched 45% of typical tasks.
