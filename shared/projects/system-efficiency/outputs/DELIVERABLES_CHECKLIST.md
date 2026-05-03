@@ -1,9 +1,9 @@
-# DELIVERABLES_CHECKLIST
+# DELIVERABLES_CHECKLIST.md
 
-## Task: Create quality-gate.sh and maintenance runbook
+## Task: Iteration 33 (Lessons Retrospective) + Iteration 34 (Flakiness Detector)
 
 | # | Deliverable | Status | Path |
 |---|------------|--------|------|
-| 1 | quality-gate.sh script | DONE | agents/shared/scripts/quality-gate.sh |
-| 2 | Quality gate report | DONE | agents/shared/projects/system-efficiency/outputs/quality-gate-report.md |
-| 3 | Maintenance runbook | DONE | agents/shared/projects/system-efficiency/outputs/maintenance-runbook.md |
+| 1 | Lessons learned retrospective | DONE | agents/shared/projects/system-efficiency/outputs/lessons-retrospective.md |
+| 2 | Flakiness detector script | DONE | agents/shared/scripts/flakiness-detector.sh |
+| 3 | Flakiness detector report | DONE | agents/shared/projects/system-efficiency/outputs/flakiness-detector-report.md |
