@@ -13,10 +13,12 @@
 - **Hypothesis**: Structural elapsed-time check in genericHeartbeat() re-prompts agents when <90s → shallow rate drops from ~55% to ≤25%
 - **Design**: `agents/coach/workspace/EXP-630-structural-duration-gate-design.md`
 - **Closure**: `agents/coach/workspace/EXP-630-closure.md`
+- **Measurement Protocol**: `agents/coach/workspace/EXP-630-production-measurement-protocol.md`
 - **Builds on**: EXP-625 (skipped — text, KE-480 predicts failure), EXP-620, EXP-520
 - **Implementation**: `agents/shared/workflows/heartbeat-data.ts` lines 463-486
-- **Next**: Measure production effect after 50+ heartbeat sessions (gate trigger rate, shallow rate reduction)
-- **Status**: DEPLOYED ✅ — awaiting production measurement
+- **Logging added**: 2029-07-14 — filesystem logging to `agents/shared/duration-gate-triggers.log`
+- **Next**: Check duration-gate-triggers.log after 50+ sessions for trigger rate
+- **Status**: DEPLOYED ✅ — measurement logging added, awaiting data accumulation
 
 ## P1: EXP-625 — Duration-Based Session Quality Gate — SUPERSEDED by EXP-630
 - **Problem**: EXP-620 found 55% of sessions are ultra-short (<60s) and duration is best quality proxy. Gate-gaming bypasses EXP-520's artifact gate.

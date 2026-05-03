@@ -9,7 +9,7 @@
  *   import { loadMetrics, loadProjects, loadAlerts, loadHeartbeatMd, loadInbox, formatMetricsBlock } from "../../shared/workflows/heartbeat-data.js";
  */
 
-import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import { checkCircuitBreaker, recordOutcome } from "./circuit-breaker.js";
 
@@ -467,6 +467,11 @@ Produce at least ONE meaningful write, then call finish() with updated deliverab
   const MINIMUM_DURATION_MS = 90_000; // 90 seconds
   if (elapsed < MINIMUM_DURATION_MS && result.status !== "error") {
     ctx.emit({ type: "duration_gate_triggered", agent, elapsed_ms: elapsed });
+    // EXP-630 measurement: persist gate trigger to filesystem for auditing
+    try {
+      const logLine = `${new Date().toISOString()} agent=${agent} elapsed_ms=${elapsed}\n`;
+      appendFileSync(join(agentsRoot, "shared", "duration-gate-triggers.log"), logLine);
+    } catch (_) { /* non-critical logging */ }
 
     const durationPrompt = `⚠️ DURATION GATE: Your session completed in ${Math.round(elapsed / 1000)}s — this is unusually fast.
 
