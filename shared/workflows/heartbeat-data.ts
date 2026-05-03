@@ -373,6 +373,7 @@ export function shouldSkipHeartbeat(
 }
 
 export async function genericHeartbeat(ctx: WorkflowContext, agent: string): Promise<WorkflowResult> {
+  const heartbeatStartTime = Date.now();
   const metrics = loadMetrics(ctx, agent);
   const metricsBlock = formatMetricsBlock(ctx, agent);
   const projects = loadProjects(ctx, agent);
@@ -457,6 +458,31 @@ Produce at least ONE meaningful write, then call finish() with updated deliverab
     recordOutcome(agentsRoot, agent, gateResult.status === "error",
       gateResult.status === "error" ? "artifact gate re-prompt error" : undefined);
     return ctx.done(ctx.summarize(gateResult, { maxLength: 500 }));
+  }
+
+  // ── EXP-630: DURATION QUALITY GATE ──────────────────────────────
+  // Sessions completing in <90s are almost always trivial (EXP-620).
+  // Re-prompt once if session was suspiciously fast.
+  const elapsed = Date.now() - heartbeatStartTime;
+  const MINIMUM_DURATION_MS = 90_000; // 90 seconds
+  if (elapsed < MINIMUM_DURATION_MS && result.status !== "error") {
+    ctx.emit({ type: "duration_gate_triggered", agent, elapsed_ms: elapsed });
+
+    const durationPrompt = `⚠️ DURATION GATE: Your session completed in ${Math.round(elapsed / 1000)}s — this is unusually fast.
+
+Sessions under 90 seconds almost never produce substantive work. Before finishing:
+
+1. Did you investigate at least one non-obvious issue?
+2. Did you produce an artifact with real analysis (not just a status echo)?
+3. Did you check for improvement opportunities beyond surface metrics?
+
+If you genuinely completed meaningful work quickly, explain what you accomplished.
+Otherwise, dig deeper into one project or metric and produce a substantive artifact.`;
+
+    const durationResult = await ctx.runAgent(agent, durationPrompt);
+    recordOutcome(agentsRoot, agent, durationResult.status === "error",
+      durationResult.status === "error" ? "duration gate re-prompt error" : undefined);
+    return ctx.done(ctx.summarize(durationResult, { maxLength: 500 }));
   }
 
   return ctx.done(ctx.summarize(result, { maxLength: 500 }));
