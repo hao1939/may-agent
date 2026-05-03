@@ -476,7 +476,11 @@ Produce at least ONE meaningful write, then call finish() with updated deliverab
   // no deliverables and a short summary (< 200 chars) are likely trivial.
   const deliverableCount = Array.isArray((result as any).deliverables) ? (result as any).deliverables.length : 0;
   const summaryLength = typeof result.summary === "string" ? result.summary.length : 0;
-  const looksTrivia = turnsUsed === 0 && deliverableCount === 0 && summaryLength < 200;
+  // EXP-640 FIX: The artifact gate above catches no-deliverable sessions and returns early,
+  // so looksTrivia's deliverableCount===0 check was unreachable. Now we check for short
+  // summaries regardless of deliverable count — a 1-deliverable session with a tiny summary
+  // is still likely trivial (e.g. just echoed status to a log file via the artifact gate).
+  const looksTrivia = turnsUsed === 0 && summaryLength < 200;
   const tooFewTurns = turnsUsed > 0 && turnsUsed < 3;
   const MINIMUM_TURNS = 3;
   if ((tooFewTurns || looksTrivia) && result.status !== "error") {
