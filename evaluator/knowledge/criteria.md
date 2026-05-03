@@ -153,11 +153,13 @@ Some sessions legitimately contain `notify(...)` tool calls (historically arisin
 
 **Evaluator rule:** Do **not** flag `notify` as a tool hallucination **just because it is not in the evaluator agent's local tool list**. Tool reality must be judged from the *evaluated session's* tool interface.
 
+**Hard rule (scoring impact):** If the transcript does **not** include a tool allowlist/metadata block, and there is **no explicit runtime error** for the `notify` call, then `notify` is **"unverified but plausible"** and must **not** depress **quality below 0.7** by itself.
+
 **Structural evidence required before `[HALLUCINATION]`:**
 - Transcript shows an explicit tool error such as "tool not found" / "Unknown tool" / exit code 127 *for that tool call*, OR
-- The orchestration metadata/tool allowlist for that session excludes `notify`.
+- The orchestration metadata/tool allowlist for that session explicitly excludes `notify`.
 
-If the allowlist is not available in the transcript, downgrade to a note like: "Unrecognized tool name `notify`; unable to confirm allowlist from transcript" and do not depress quality below 0.7 on this factor alone.
+If the allowlist is not available in the transcript, downgrade to a note like: "Unrecognized tool name `notify`; unable to confirm allowlist from transcript" and keep the verdict driven by other issues/deliverables.
 - **`agent-growth` preset** → provides `fork_agent`, `verify_agent`, `promote_agent`, `discard_agent`.
   Used by Coach. These are REAL tools for agent lifecycle management (forking to .lab/,
   running verification, promoting changes, cleanup). Do NOT flag them as hallucination.
