@@ -2,26 +2,13 @@
  * metrics-snapshot — Measures system health metrics every 5 minutes.
  * See: agents/shared/may-agent-docs/design/agent-metrics.md
  *
- * ── Doc-Code Metric Divergence ──────────────────────────────────────────────
- * The design doc (agent-metrics.md) defines 6 metrics:
- *   1. handler.success-rate        ✓ in code
- *   2. handler.heartbeat-coverage  ✓ in code
- *   3. session.error-rate-6h       ✗ NOT in code
- *   4. system.real-output-24h      ✗ NOT in code
- *   5. project.iterations-24h      ✓ in code
- *   6. project.blocked-over-6h     ✓ in code
+ * ── Built-in Metric Registry ────────────────────────────────────────────────
+ * This handler owns the built-in system health metrics below. On every run it
+ * upserts metric rows and refreshes mutable metadata (name/owner/target/etc.)
+ * so DB rows cannot silently drift away from the registry constants.
  *
- * This handler measures 12 metrics — the following are in code but NOT in doc:
- *   - handler.completed-count
- *   - handler.failed-count
- *   - handler.p95-duration
- *   - handler.fires-per-hour
- *   - project.active-count
- *   - project.blocked-count
- *   - project.stale-active-count
- *   - project.blocked-rate-7d
- *
- * Decision needed: add missing doc metrics to code, or trim code to match doc.
+ * Custom metrics can still be measured via metrics.source_query/source_command
+ * in the generic section near the end of the handler.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.ts";
@@ -88,7 +75,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
          VALUES (?, ?, ?, NULL, ?, ?, ?, 'health', 'active', 'fast', ?, ?, ?)`,
         [m.id, m.name, m.owner, m.target, m.threshold, m.unit, m.alert_op, now, now]
       );
-      db.run("UPDATE metrics SET alert_op = ?, threshold = ? WHERE id = ?", [m.alert_op, m.threshold, m.id]);
+      db.run(
+        `UPDATE metrics
+         SET name = ?, owner = ?, target = ?, threshold = ?, unit = ?, type = 'health', status = 'active', speed = 'fast', alert_op = ?
+         WHERE id = ?`,
+        [m.name, m.owner, m.target, m.threshold, m.unit, m.alert_op, m.id]
+      );
     }
 
     // ── Measure: Handler (with error isolation) ──────────────────────
