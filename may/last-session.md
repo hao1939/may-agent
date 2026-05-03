@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777822951525_2319
+- **Session:** s_1777824750845_2352
 - **Status:** done
-- **When:** 2026-05-03T15:44:27.776Z
-- **Duration:** 1m56s
+- **When:** 2026-05-03T16:14:51.815Z
+- **Duration:** 2m20s
 
 ## What Happened
-This project is in "waiting" status by design — it's paused until the next Hao interaction. The stale metric is a known false positive. The heartbeat notes already acknowledge this: "1 stale active project: hao-alignment (waiting on Hao interaction — known, acceptable)".
+The evaluator running 70 sessions in 6h is the eval-poller doing its job — that's healthy throughput.
 
-System is healthy. The one actionable thing was the 93h idle session which I've now cancelled.
+Everything is running well. No action needed beyond acknowledging the state.

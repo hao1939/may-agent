@@ -521,5 +521,37 @@ Otherwise, dig deeper into one project or metric and produce a substantive artif
     return ctx.done(ctx.summarize(durationResult, { maxLength: 500 }));
   }
 
+  // ── EXP-650: IMPACT-SCANNING GATE ──────────────────────────────
+  // Agents edit files but never check for consumers/callers (6% scanning rate, EXP-645).
+  // If agent edited ≥2 files but never ran grep/rg/find, re-prompt for impact check.
+  const outputText = typeof (result as any).output === "string" ? (result as any).output : "";
+  const summaryText = typeof result.summary === "string" ? result.summary : "";
+  const combinedText = outputText + " " + summaryText;
+  const editMentions = (combinedText.match(/\b(edit|write|edited|wrote|modified|updated)\b/gi) || []).length;
+  const grepMentions = /\b(grep|rg |ripgrep|find\s.*-name)\b/i.test(combinedText);
+  const deliverableEdits = Array.isArray((result as any).deliverables) ? (result as any).deliverables.length : 0;
+  const didMultipleEdits = deliverableEdits >= 2 || editMentions >= 3;
+  if (didMultipleEdits && !grepMentions && result.status !== "error") {
+    ctx.emit({ type: "impact_gate_triggered", agent, deliverable_edits: deliverableEdits, edit_mentions: editMentions });
+    try {
+      const logLine = `${new Date().toISOString()} agent=${agent} deliverable_edits=${deliverableEdits} edit_mentions=${editMentions} grep_found=${grepMentions}\n`;
+      appendFileSync(join(agentsRoot, "shared", "impact-gate-triggers.log"), logLine);
+    } catch (_) { /* non-critical logging */ }
+
+    const impactPrompt = `⚠️ IMPACT CHECK REQUIRED: You modified multiple files but never checked for consumers or callers.
+
+Before finishing, grep for the symbols/functions you changed to verify no downstream breakage:
+1. For each file you edited, identify the key functions/exports you changed
+2. Run \`rg "functionName"\` or \`grep -r "symbolName"\` to find all callers
+3. Verify those callers still work with your changes
+
+If you already verified impact through other means, explain how. Otherwise, do the check now.`;
+
+    const impactResult = await ctx.runAgent(agent, impactPrompt);
+    recordOutcome(agentsRoot, agent, impactResult.status === "error",
+      impactResult.status === "error" ? "impact gate re-prompt error" : undefined);
+    return ctx.done(ctx.summarize(impactResult, { maxLength: 500 }));
+  }
+
   return ctx.done(ctx.summarize(result, { maxLength: 500 }));
 }
