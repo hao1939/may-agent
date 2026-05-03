@@ -235,6 +235,51 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       } catch { /* skip individual metric errors */ }
     }
 
+    // ── Alert lifecycle (open on breach, resolve on recovery) ───────
+
+    try {
+      const metrics = db.prepare(
+        `SELECT id, name, owner, current, target, threshold, alert_op
+         FROM metrics
+         WHERE status = 'active' AND current IS NOT NULL AND threshold IS NOT NULL`
+      ).all() as any[];
+
+      for (const m of metrics) {
+        const breached = m.alert_op === ">" || m.alert_op === "above"
+          ? m.current > m.threshold
+          : m.current < m.threshold;
+
+        const openAlert = db.prepare(
+          "SELECT id FROM metric_alerts WHERE metric_id = ? AND resolved_at IS NULL LIMIT 1"
+        ).get(m.id) as { id: number } | null;
+
+        if (breached) {
+          const direction = m.alert_op === ">" || m.alert_op === "above" ? "above" : "below";
+          const message = `${m.name ?? m.id} is ${direction} threshold: current=${m.current}, threshold=${m.threshold}, target=${m.target ?? "?"}`;
+          if (!openAlert) {
+            db.run(
+              "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
+              [m.id, "threshold", message, now]
+            );
+            try {
+              ctx.emit({
+                type: "metric.breach",
+                owner: m.owner,
+                metricId: m.id,
+                metricName: m.name,
+                current: m.current,
+                threshold: m.threshold,
+                target: m.target,
+                message,
+              } as any);
+            } catch (e) { ctx.log(`[metrics-snapshot] Error emitting metric.breach for ${m.id}: ${e}`); }
+          }
+        } else if (openAlert) {
+          db.run("UPDATE metric_alerts SET resolved_at = ? WHERE id = ?", [now, openAlert.id]);
+        }
+      }
+    } catch (e) { ctx.log(`[metrics-snapshot] Error during alert lifecycle: ${e}`); }
+
     // ── Snapshot retention cleanup (keep last 30 days) ───────────────
 
     try {
