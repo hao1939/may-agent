@@ -1,13 +1,20 @@
 # Coach Todo
 
-## P1: EXP-700 — Parallel Tool Calls (Batch Independent Calls) — PHASE 0 READY
+## P1: EXP-700 — Parallel Tool Calls (Batch Independent Calls) — CLOSED (INCONCLUSIVE)
 - **Problem**: Agents make sequential tool calls that could be batched, inflating session length
 - **Hypothesis**: `batch-independent-calls` skill → ≥15% fewer tool-call blocks, ≥30% higher parallelism ratio
-- **Scenario**: `efficient-file-reading` (baseline) / `efficient-file-reading-exp700-treatment` (treatment)
-- **Design**: `agents/gym/experiments/EXP-700-parallel-tool-calls.md`
-- **Phase 0 protocol**: `agents/coach/workspace/EXP-700-phase0-run-protocol.md`
-- **Status**: READY TO RUN — needs 3 baseline gym runs, then 3 treatment runs
-- **Next action**: Run `agents/test/gym/run-gym.sh efficient-file-reading --agent coder` × 3
+- **Results**: `agents/coach/workspace/EXP-700-baseline-results.md`
+- **Finding**: Primary metric (parallelism ratio) unmeasurable — gym runner doesn't persist transcripts. Duration -20.8% (directional) but 0pp quality delta. Variance reduction notable (σ=1.0s vs σ=23.3s).
+- **Status**: CLOSED — INCONCLUSIVE. Do NOT deploy without stronger evidence.
+
+## P1: EXP-705 — Duration Gate Effectiveness Audit — PHASE 1 COMPLETE
+- **Problem**: EXP-630 duration gate deployed but `duration-gate-triggers.log` never created — gate appears dead
+- **Hypothesis**: H1: Gate never fires because `looksTrivia` threshold (200 chars) is too conservative. H2: Wall-clock time check (< 90s) would catch ≥40% of shallow sessions.
+- **Phase 1 results**: `agents/coach/workspace/EXP-705-phase1-results.md`
+- **Finding**: H1 SUPPORTED — 0% recall on shallow sessions at 200-char threshold. Summary length is a poor proxy. Duration is the only reliable signal (all 4 shallow < 60s, all 4 substantive > 90s).
+- **Recommendation**: Add wall-clock elapsed time check (< 90s) to `looksTrivia` condition in heartbeat-data.ts
+- **Design**: `agents/coach/workspace/EXP-705-duration-gate-effectiveness-audit.md`
+- **Next action**: Escalate code change to tech-lead — need `sessionStartMs` captured at genericHeartbeat() entry
 
 ## P1: EXP-640 — Duration Gate Production Audit — STILL BLOCKED (binary not rebuilt)
 - **Update 2029-07-24**: Log file still does not exist. Code has been fixed (uses `looksTrivia` proxy instead of `turnsUsed`) but binary was never rebuilt. Gate logic is dead code until rebuild happens.
