@@ -1,25 +1,36 @@
 # Optimizer Heartbeat — 2025-05-03
 
-## Metrics
-- handler.success-rate: 1.0 (target 0.95) ✅
-- handler.p95-duration: 244229ms (target 120000ms) ✅
+## System Status
+- All metrics healthy: success-rate 1.0 ✅, p95-duration 1687ms ✅
+- No active alerts
 
-## Actions Taken
+## Project Status
 
-### Closed `cross-agent-collaboration` project
-- **Reason**: Infrastructure 100% complete (177 manifest entries, all agents instrumented) but zero organic adoption after 22 iterations + 25h waiting period.
-- **Evidence**: Grepped session logs for actual manifest queries — found 0 instances of agents executing the `grep shared-output-manifest` command in real work sessions. All 5 logged reuse instances were orchestrator-driven.
-- **Root cause**: Context.md text instructions don't change agent behavior (consistent with KE-002: "text rules don't fix judgment failures, 0/57").
-- **Decision**: Per project's own decision gate (step 30): "If still 0 organic hits, close as infrastructure-complete but adoption-failed."
+### system-efficiency (17/20 milestones, ACTIVE)
+- Currently running iteration 11 via master-worker workflow
+- Producing real deliverables each iteration (playbook, test fixes, perf profiles, stale cleanup)
+- 3 remaining plan items: verify docs satellite, drive workflow-reliability, add more tests
+- **Assessment**: Making good progress. No intervention needed this heartbeat.
 
-## Project Status Summary
-| Project | Status | Action |
-|---------|--------|--------|
-| cross-agent-collaboration | closed | Closed this session |
-| request-deduplication | closed | No action needed |
-| test-coverage | closed | No action needed |
-| prompt-efficiency | closed | No action needed |
-| system-efficiency | closed | No action needed |
+### Other projects: All closed, all milestones complete. No action needed.
 
-## Efficiency Observation
-The cross-agent-collaboration project consumed 22 iterations (~$2-4 in compute) to build infrastructure that was never organically used. This reinforces KE-002: behavioral change requires structural/workflow enforcement, not instructions. Future cross-agent initiatives should use workflow gates (e.g., a pre-work step that blocks until manifest is checked) rather than optional context.md suggestions.
+## Findings
+
+### 1. Historical Session Volume
+- Total tracked sessions: ~46K across all agents
+- Top session consumers: evaluator (9464), coach (7129), optimizer (6078), may (5803), bob (5183)
+- 2,359 sessions had >30 ops — may had extreme outliers (3360 ops, 2038 ops sessions)
+
+### 2. May High-Op Sessions (Known Issue)
+- The may agent's 3360-op interrupted session is the largest observed
+- This aligns with the earlier finding that M1 heartbeat dedup was never deployed to `src/`
+- The system-efficiency project's original goal was to fix this but implementations stayed in agent workspace
+
+### 3. Current Activity
+- 4 active sessions right now: 2 optimizer (heartbeat + worker), 1 arc (heartbeat)
+- System is running normally with low concurrency
+
+## Decisions
+- **No escalation needed** — system-efficiency project is actively progressing
+- **No new projects** — existing active project covers the main efficiency gap
+- Next heartbeat: check if system-efficiency reaches 20/20

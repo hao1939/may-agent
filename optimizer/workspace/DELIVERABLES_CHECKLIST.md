@@ -1,10 +1,7 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST.md
 
-## Task: Optimizer Heartbeat
+## Heartbeat Session — 2025-05-03
 
-| # | Deliverable | Status | Path / Evidence |
-|---|------------|--------|-----------------|
-| 1 | Review metrics | DONE | All healthy: success-rate 1.0, p95 1710ms |
-| 2 | Check active projects | DONE | test-coverage 15/19, system-efficiency 8/12 — no blockers |
-| 3 | Run test suite | DONE | 578/578 tests passing |
-| 4 | Write status artifact | DONE | `agents/optimizer/workspace/heartbeat-status-current.md` |
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | Heartbeat status artifact | DONE | agents/optimizer/workspace/heartbeat-2025-05-03.md |
