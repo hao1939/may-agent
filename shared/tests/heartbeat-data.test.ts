@@ -409,9 +409,11 @@ describe("genericHeartbeat", () => {
       agentsRoot: TEST_DIR,
     });
     ctx.runAgent.mockResolvedValueOnce({ status: "success", lastAssistantText: "Did heartbeat stuff", deliverables: [{ path: "test.md" }] });
+    // EXP-740: Duration gate fires since mock returns instantly (0s elapsed < 90s threshold)
+    ctx.runAgent.mockResolvedValueOnce({ status: "success", lastAssistantText: "Dug deeper", deliverables: [{ path: "deep.md" }] });
 
     const result = await genericHeartbeat(ctx, "bob");
-    expect(ctx.runAgent).toHaveBeenCalledTimes(1);
+    expect(ctx.runAgent).toHaveBeenCalledTimes(2);
     expect(ctx.done).toHaveBeenCalled();
   });
 
