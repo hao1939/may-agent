@@ -17,6 +17,17 @@ When evaluating an agent, the Evaluator MUST check the target agent's `SOUL.md` 
 - **If found**: Use those criteria as the primary grading rubric, in addition to the generic Core Metrics.
 - **If not found**: Use the Role-Based Core Metrics defined below.
 
+### Issue schema integrity (DB + aggregator compatibility)
+Evaluations are stored in SQLite (`.state/may.db`) with `evaluations.issues` as a JSON string.
+
+**Required schema:** `issues` MUST be a JSON array of objects that include a **string** field named `tag`.
+- ✅ Good: `{ "tag": "FM-3.3_VERIFICATION_FAILURE", "evidence": "..." }`
+- ❌ Bad (breaks analytics): `{ "type": "HARD_CONSTRAINT_VIOLATION", "evidence": "..." }` (missing `tag`)
+
+**Why this matters:** Missing `tag` silently turns into `undefined` in downstream aggregations, which can depress/warp agent averages and hide true failure patterns.
+
+**Evaluator rule:** If you see an issue object without `tag`, treat it as an evaluator bug (not a target-agent fault). Prefer mapping `type → tag` at source (e.g., `type: HARD_CONSTRAINT_VIOLATION` → `tag: PROCESS_VIOLATION` or the closest MAST code) and ensure `tag` is always present.
+
 ## Role: Builder
 **Agents**: Coder, Tech Lead, Master
 
