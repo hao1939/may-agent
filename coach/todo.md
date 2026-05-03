@@ -1,6 +1,6 @@
 # Coach Todo
 
-## P1: EXP-600 — Bash Waste Reduction via Diagnose-Before-Retry — IN PROGRESS
+## P1: EXP-600 — Bash Waste Reduction via Diagnose-Before-Retry — CLOSED ❌ NEGATIVE
 - **Problem**: bash:exit-code-nonzero = 170 occurrences, 404 wasted calls. Agents retry without analyzing errors.
 - **Hypothesis**: diagnose-before-retry skill → ≥25% reduction in bash waste rate
 - **Skill deployed**: `agents/tech-lead/skills/diagnose-before-retry.md` (2026-05-03)
@@ -10,8 +10,11 @@
   - 3 cascading bugs: missing module import, method typo, off-by-one loop
   - Measures: ran-tests-first, all-tests-pass, no-blind-retries, bash-efficiency, made-fixes
 - **Baseline results**: `agents/coach/workspace/EXP-600-baseline-results.md`
+- **Treatment results**: `agents/coach/workspace/EXP-600-treatment-results.md`
 - **Baseline**: 4/5 (80%) × 3/3 trials. Only `bash-efficiency` fails (>8 bash calls). All behavioral checks at ceiling.
-- **Status**: IN PROGRESS — baseline complete, treatment trials next (inject skill + run 3 trials)
+- **Treatment**: 3.67/5 (73%) × 3/3 trials. bash-efficiency still 0/3. Slight regression on no-blind-retries.
+- **Finding**: 0pp delta on bash-efficiency. Text skill cannot override iterative fix-test workflow habit. Confirms KE-480 for efficiency behaviors.
+- **Status**: CLOSED ❌ NEGATIVE — do NOT deploy skill
 
 ## P1: EXP-595 — Worker Injection Durability Check — DESIGNED
 - **Problem**: EXP-510 worker completion checklist deployed May 2026 (+39pp write, +69pp finish). Never verified for durability.
