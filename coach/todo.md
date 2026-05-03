@@ -11,6 +11,7 @@
 - **Implementation**: `agents/shared/workflows/master-worker.ts` lines 458-472 — logs matches to `agents/shared/exp720-fewshot-dryrun.log`
 - **Next**: After 50+ worker iterations, parse log for match rate + false positive rate. If ≥15% match with <30% FP → Phase 3 (actual injection).
 - **Unblocked**: 2029-05-04 — workflows load dynamically at runtime. No rebuild needed.
+- **Diagnostic (2026-05-03)**: Import confirmed working (`bun -e` test passes, selectExamples returns correct matches). Zero log entries because no worker sessions have run since deployment. Monitoring plan: `agents/coach/workspace/EXP-720-phase3-monitoring-plan.md`
 
 ## P1: EXP-715 — Anti-Shallow Rule (10 Tool Calls) Effectiveness Audit — CLOSED ✅ (H1 REJECTED)
 - **Problem**: 50% shallow session rate persists (EXP-710). Duration gate is dead code. The 10-tool-call anti-shallow rule is a text instruction — KE-655 predicts text rules fail under task distraction.
