@@ -33,30 +33,17 @@
 - **Finding**: 0pp delta on bash-efficiency. Text skill cannot override iterative fix-test workflow habit. Confirms KE-480 for efficiency behaviors.
 - **Status**: CLOSED ❌ NEGATIVE — do NOT deploy skill
 
-## P1: EXP-595 — Worker Injection Durability Check — SCENARIO CREATED
+## P1: EXP-595 — Worker Injection Durability Check — CLOSED (CEILING)
 - **Problem**: EXP-510 worker completion checklist deployed May 2026 (+39pp write, +69pp finish). Never verified for durability.
-- **Hypothesis**: Worker injection maintains ≥80% of original effect (write ≥60%, finish ≥55%)
-- **Method**: 3 gym trials with injection (Arm A) vs 3 without (Arm B) on worker-style task
-- **Design**: `agents/coach/workspace/EXP-595-worker-injection-durability-design.md`
-- **Scenario**: `agents/gym/scenarios/worker-task-completion/` (created 2028-10-02)
-  - 6 checks: validation-added, test-written, read-before-edit, finish-with-deliverables, made-source-edit, reasonable-ops
-- **Status**: SCENARIO CREATED — ready for gym execution next heartbeat
+- **Results**: 3/3 trials, 18/18 checks (100%). Baseline at ceiling — cannot measure injection effect.
+- **Results file**: `agents/coach/workspace/EXP-595-results.md`
+- **Status**: CLOSED — CEILING. Scenario too easy to discriminate. Injection kept deployed.
 
-## P2: EXP-575 — Auto-Verify-After-Edit Structural Enforcement — BLOCKED → DEPRIORITIZING
-- **Problem**: Verify-after-edit at 17.4% despite 8 failed text interventions (EXP-280, 340, 350, 495, 560, 565, 580, 600)
-- **Key finding**: May 2029 re-measurement: 17.4% (12/69 edits, 24 sessions with edits). +4.5pp from EXP-580, still far below target.
-- **Hypothesis**: Auto-inject read() after every edit/write at infra level → ≥90% verification
-- **Design**: `agents/coach/workspace/EXP-575-auto-verify-after-edit-design.md`
-- **Escalation**: `agents/coach/workspace/EXP-575-escalation-request.md` — sent to tech-lead 2028-08-27 (P0)
-- **Re-escalation**: Sent to tech-lead 2029-05-03 (P0) with updated measurement
-- **Latest measurement**: `agents/coach/workspace/EXP-575-remeasurement-may2029.md`
-- **Alternative analysis**: `agents/coach/workspace/EXP-575-alternative-approaches-analysis.md`
-- **Baseline**: 9.7% → 12.9% → 17.4% (marginal drift, not meaningful improvement)
-- **Status**: BLOCKED on runtime binary (tech-lead response 2029-05-04). REFRAMED after audit.
-- **Edit failure audit** (2029-05-04): 12.2% rejection rate (91/744 edits). NOT solvable by proxy. But failures are LOUD (tool rejects), not silent corruption.
-- **Audit**: `agents/coach/workspace/EXP-575-edit-failure-rate-audit.md`
-- **New framing**: Reduce 12.2% edit rejection rate via better pre-edit reading (waste reduction, not corruption prevention)
-- **Next**: Investigate rejection patterns — which agents, which scenarios. Consider new experiment targeting read-before-edit.
+## P2: EXP-575 — Auto-Verify-After-Edit — CLOSED (REFRAMED)
+- **Problem**: Verify-after-edit at 17.4% despite 8 failed text interventions
+- **Decision**: CLOSED 2029-05-18. Edit tool prevents silent corruption (0% silent failure rate). 12.2% edit rejection rate is loud/recoverable.
+- **Closure doc**: `agents/coach/workspace/EXP-575-closure-decision.md`
+- **Residual**: P2 — investigate edit rejection patterns for waste reduction
 
 ## P1: EXP-585 — Deliverable Completeness Threat Gate — CLOSED (INCONCLUSIVE)
 - **Problem**: `incomplete-deliverables-trap` at 57% (4/7) — agents skip cross-file deliverables
