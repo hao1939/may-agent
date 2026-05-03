@@ -1,12 +1,18 @@
-# Evaluator heartbeat journal
+# Evaluator heartbeat journal (2026-05-03)
 
-Date: 2026-05-02
+## Pipeline liveness / coverage spot-check
 
-## Pipeline liveness checks (#5 Session Eval)
-- DB (canonical) `evaluations.max(createdAt)` is recent and close to `sessions.max(startedAt)`.
-- Legacy `.state/evaluations/` directory shows older/stale artifacts (many from 2026-03-24; a few 2026-04-29).
+### Findings (DB is canonical)
+- `evaluations` table is being written recently (max createdAt: **2026-05-03 04:43:17**).
+- `sessions` table shows much more recent activity (max startedAt: **2026-05-03 05:20:19**).
+- Approx evaluation lag: **~0.62h (37 min)** between latest session and latest evaluation.
+- Throughput mismatch (last 1h): **sessions=69 vs evaluations=1** → indicates evaluation coverage is far below session creation rate.
 
-Interpretation: evaluation pipeline is live (writing to DB), but file-based artifacts are not reliably updated and should be treated as legacy/non-canonical.
+### Legacy artifact path drift
+- `.state/evaluations/` contains only old `task_tree_*.json` files with newest mtime **2026-03-24**.
+- Conclusion: `.state/evaluations/` is stale as an output directory; DB is fresh. Treat as legacy-output-path drift, not full pipeline failure.
 
-## Follow-ups
-- Consider updating evaluator docs/criteria to explicitly treat `.state/evaluations/` as legacy and use DB as primary truth.
+### Actions recommended
+- Investigate whether `evaluate-session-llm` is intentionally sampling (e.g., only completed sessions, only certain agents, or a budget cap).
+- If not intentional: adjust cron scope/filters or scheduling so eval count tracks session volume.
+- If intentional: add an explicit metric/label documenting sampling rate and expected lag so “low coverage” is not surprising.
