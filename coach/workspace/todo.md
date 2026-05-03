@@ -21,13 +21,13 @@ All 6 projects have been completed/closed:
 - **Deployed**: 2026-05-25 to master-worker.ts
 - **Action**: Measure tech-lead C7.1 pass rate. Close with results.
 
-### EXP-440: QA Finish-Call Compliance — CLOSE AS NEGATIVE
-- **Finding**: C8.2 at 14.3% pass rate — WORSE than baseline
-- **Action**: Write formal closure. QA needs structural fix, not text rules.
+### ~~EXP-440: QA Finish-Call Compliance — CLOSED NEGATIVE (2026-05-03)~~
+- **Result**: 14.3% pass rate, WORSE than 25% baseline. Text rules don't fix procedural behaviors.
+- **Closure**: `EXP-440-closure.md` written. Reinforces KE-480.
 
 ## P1: Next Actions
 
-1. **Close stale experiments** (EXP-440, 530, 540) — write results, archive
+1. **Close stale experiments** (~~EXP-440~~, 530, 540) — EXP-440 closed; 530/540 need more data
 2. **Gym regression run** — last run was 2026-04-09, overdue by months
 3. **Skill audit** — 12 skills deployed, verify they're still referenced and useful
 4. **New experiment design** — candidate: test judgment scenario (conflicting-requirements-tradeoff) that was designed but never baselined
