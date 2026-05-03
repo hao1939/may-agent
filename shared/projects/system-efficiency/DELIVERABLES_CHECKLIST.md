@@ -1,6 +1,5 @@
 # Deliverables Checklist
 
-- [x] DONE — Assess project state and verify metrics → All 3 metrics at target confirmed via bash
-- [x] DONE — Verify satellite projects → Both documentation-gen and workflow-reliability confirmed closed
-- [x] DONE — Update project.md with findings and new plan → `/app/agents/shared/projects/system-efficiency/project.md`
-- [x] DONE — Provide CONTINUE decision with guidance for next iteration
+- [x] DONE — Assessed project state: verified 95/95 test files passing via `npx vitest run`
+- [x] DONE — Updated `/app/agents/shared/projects/system-efficiency/project.md`: incremented iteration to 6, checked off fix-failing-tests item, updated test suite stats, added new plan items
+- [x] DONE — Provided CONTINUE decision with guidance for next iteration (regression guard script)
