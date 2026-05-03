@@ -147,6 +147,17 @@ Some agents have tool presets that provide sub-tools:
 - **`workflow` tool** → provides workflow execution. Used by May, Tech Lead, Optimizer, Coach.
 - **`cron` tool** → provides cron job management. Used by May.
 - **`socket_watch` tool** → provides socket observation. Used by Coach.
+
+### `notify` tool (false-positive guard)
+Some sessions legitimately contain `notify(...)` tool calls (historically arising from orchestration/tooling evolution where `agents.message(...)` functionality was exposed under a `notify` tool name in some workflows).
+
+**Evaluator rule:** Do **not** flag `notify` as a tool hallucination **just because it is not in the evaluator agent's local tool list**. Tool reality must be judged from the *evaluated session's* tool interface.
+
+**Structural evidence required before `[HALLUCINATION]`:**
+- Transcript shows an explicit tool error such as "tool not found" / "Unknown tool" / exit code 127 *for that tool call*, OR
+- The orchestration metadata/tool allowlist for that session excludes `notify`.
+
+If the allowlist is not available in the transcript, downgrade to a note like: "Unrecognized tool name `notify`; unable to confirm allowlist from transcript" and do not depress quality below 0.7 on this factor alone.
 - **`agent-growth` preset** → provides `fork_agent`, `verify_agent`, `promote_agent`, `discard_agent`.
   Used by Coach. These are REAL tools for agent lifecycle management (forking to .lab/,
   running verification, promoting changes, cleanup). Do NOT flag them as hallucination.
