@@ -1,5 +1,11 @@
 # Coach Todo
 
+## P1: EXP-645 — Impact Radius Check Production Audit — CLOSED (H1 REJECTED)
+- **Problem**: impact-radius-check skill (+100pp in gym) shows only 6% scanning rate in production
+- **Finding**: Cognitive skills also fail to transfer without structural enforcement. Extends KE-480.
+- **Results**: `agents/coach/workspace/EXP-645-phase1-results.md`
+- **Next**: Design structural impact-scanning gate (EXP-650?) or accept gym-only value
+
 ## P1: EXP-640 — Duration Gate Production Audit — BLOCKED (binary not rebuilt)
 - **Problem**: EXP-630 duration gate deployed in TS source but `duration-gate-triggers.log` doesn't exist despite <90s sessions
 - **Root cause**: Runtime binary (`may-agent`) was not rebuilt after TS source edits. Gate exists in source only.
