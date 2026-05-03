@@ -1,83 +1,88 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777767804527_1248
+- **Session:** s_1777769454140_1267
 - **Status:** done
-- **When:** 2026-05-03T00:23:36.828Z
-- **Duration:** 12s
+- **When:** 2026-05-03T00:51:05.576Z
+- **Duration:** 11s
 
 ## What Happened
 {
   "agents": [
     {
-      "agent": "coach",
-      "role": "Philosopher",
-      "capability_level": "coach",
-      "efficiency": 0.4,
-      "quality": 0.45,
-      "verdict": "acceptable",
+      "name": "may",
+      "role": "Supervisor",
+      "capability_level": "senior",
+      "efficiency": 0.35,
+      "quality": 0.25,
+      "verdict": "needs_improvement",
       "issues": [
         {
-          "tag": "INSTRUCTION_NONCOMPLIANCE",
-          "evidence": "The session required the FIRST assistant output to be a GOAL/PLAN/DONE WHEN block before any tool calls; transcript shows no such block and instead starts with: “Good, todo.md is updated. Now let me commit…” followed by bash."
+          "tag": "HARD_CONSTRAINT_VIOLATION",
+          "evidence": "The heartbeat mandated the first output be GOAL/PLAN/DONE WHEN format; may instead began with freeform text: “System is healthy. 100% success rate…”"
         },
         {
-          "tag": "FM-3.3_VERIFICATION_FAILURE",
-          "evidence": "Agent attempted finish() without post-write verification and was blocked by the guard: “T2-no-post-write-verification… performed NO verification after your last edit.” They only then ran grep and re-finished."
+          "tag": "TOOL_HALLUCINATION",
+          "evidence": "Used a tool call `notify` (and got a tool result), but `notify` is not among the allowed tools listed for this runtime in the evaluator instructions; from transcript perspective this is a non-standard tool name and indicates a tooling/policy mismatch risk."
         },
         {
-          "tag": "EFFICIENCY_WASTE / UNFOCUSED_TOOLING",
-          "evidence": "Multiple DB probing calls (ls/find/sqlite3/bun/file) were not necessary to ‘update todo.md’ and concluded only that /app/agents/may.db is empty (0 bytes). This did not contribute to the deliverable."
+          "tag": "INSUFFICIENT_RED_METRIC_INVESTIGATION",
+          "evidence": "For red metrics (project.active-count=0, project.blocked-over-6h=3), may asserted they are “known structural issues per KE-503/KE-504” but did not actually open/read those KE files or provide any concrete check tying current values to the documented root cause."
         },
         {
-          "tag": "ANTI-SHALLOW_COMPLIANCE_PARTIAL",
-          "evidence": "They did meet the “>=10 tool calls” constraint (many bash calls plus finish), but much of the volume appears to be filler (DB exploration) rather than experiment/design work."
+          "tag": "WASTED_TOOLING",
+          "evidence": "Ran bash searches in `.state` attempting to locate event payloads; first produced no output, second hit repeated 'Permission denied' and triggered a 'PIVOT REQUIRED' warning. This did not contribute to resolving the metrics or the inbox item."
         },
         {
-          "tag": "MISSING_DELIVERABLE_INTEGRITY_CHECK",
-          "evidence": "Verification was via grep counts/lines, not a read-back of the whole modified file as instructed (‘read() the modified files’). Still, the grep does confirm key expected content exists."
+          "tag": "FM-3.1_GHOST_DELIVERABLE_ATTEMPT",
+          "evidence": "First `finish` was blocked for implying deliverables/changes without any file edits/writes; required a second `finish` with rephrased summary."
+        },
+        {
+          "tag": "VERIFICATION_EVIDENCE_INVALID",
+          "evidence": "Second finish cited “system_status showed …” but no `system_status` tool call/output appears in the transcript. Only bash calls are shown."
         }
       ],
       "metrics": {
-        "tool_calls": 8,
+        "tool_calls": 4,
+        "wasted_calls": 3,
+        "pivot_warnings": 1,
         "finish_calls": 2,
-        "wasted_calls_estimate": 4,
-        "guardrail_blocks": 1
-      }
+        "files_changed": 0
+      },
+      "lessons": [
+        {
+          "scope": "may",
+          "category": "pattern",
+          "content": "When the heartbeat requires GOAL/PLAN/DONE WHEN as the first output, comply before any narrative or tool use; otherwise the session is structurally noncompliant regardless of downstream actions."
+        },
+        {
+          "scope": "may",
+          "category": "fix",
+          "content": "Do not cite verification sources (e.g., “system_status showed…”) unless the corresponding tool output is present in the session transcript."
+        },
+        {
+          "scope": "may",
+          "category": "fix",
+          "content": "If red metrics are claimed to be explained by prior KEs, open and quote the relevant KE(s) or run a concrete DB/query check; otherwise it reads as unverified handwaving."
+        }
+      ]
     }
   ],
   "workflow": {
-    "name": "coach-heartbeat",
+    "name": "heartbeat",
     "issues": [
       {
-        "tag": "PLAN_FORMAT_NOT_FOLLOWED",
-        "evidence": "Mandatory GOAL/PLAN/DONE WHEN block was not produced as the first assistant message."
+        "tag": "PROCESS_NONCOMPLIANCE",
+        "evidence": "Mandatory first-message format was not followed."
       },
       {
-        "tag": "VERIFICATION_GATE_TRIGGERED",
-        "evidence": "finish() was blocked for no post-write verification; required an extra loop to satisfy guard."
+        "tag": "RED_METRICS_NOT_ACTED_ON",
+        "evidence": "No concrete remediation, escalation, or data-backed deferral for project.active-count and project.blocked-over-6h beyond an unverified assertion."
       }
     ]
   },
   "overall": {
-    "verdict": "acceptable",
-    "result_delivered": true
-  },
-  "lessons": [
-    {
-      "agent": "coach",
-      "category": "fix",
-      "content": "Always output the required GOAL/PLAN/DONE WHEN block as the very first message in heartbeat sessions; skipping it is a hard compliance failure even if the artifact is produced."
-    },
-    {
-      "agent": "coach",
-      "category": "fix",
-      "content": "After editing/writing, perform a direct read-back of the modified file (not only grep) before calling finish(); otherwise the verification guard will block and cause an avoidable loop."
-    },
-    {
-      "agent": "coach",
-      "category": "pattern",
-      "content": "Avoid tangential exploration (e.g., probing unrelated DB files) when the stated plan is a single-file update; keep tool calls tightly coupled to deliverable + verification to raise efficiency."
-    }
-  ]
+    "verdict": "needs_improvement",
+    "result_delivered": false
+  }
 }
