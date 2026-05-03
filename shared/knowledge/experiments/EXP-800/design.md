@@ -1,6 +1,6 @@
 # EXP-800: Threshold Rescue — Concrete Rules for Verify-After-Edit
 
-**Status**: DESIGNED
+**Status**: READY (scenario built 2029-07-03)
 **Created**: 2029-07-03
 **Owner**: coach
 **Builds on**: KE-715 (concrete thresholds work), KE-655 (distraction nullifies text), EXP-580 (VAE at 12.9%)

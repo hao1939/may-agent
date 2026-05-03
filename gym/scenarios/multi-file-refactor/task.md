@@ -1,23 +1,16 @@
-# Rename getUserData → fetchUserProfile
+# Task: Rename `calculateTotal` → `computeOrderTotal`
 
-The function `getUserData` in `userService.js` is being renamed to `fetchUserProfile` for clarity. This function is used across the codebase.
+The function `calculateTotal` in this codebase needs to be renamed to `computeOrderTotal` for consistency with the new naming convention.
 
-## Requirements
+## What to do
 
-1. **Rename the function** in `userService.js` from `getUserData` to `fetchUserProfile`
-2. **Update all call sites** in `dashboard.js`, `api.js`, and `notifications.js`
-3. **Update the import/require** statements in each consuming file
-4. **Update tests** in `test-user.js` to use the new name
-5. **Run the test suite**: `node test-user.js` — all tests must pass with zero failures
+1. Rename the function definition in `src/pricing.js`
+2. Update the import and usage in `src/cart.js`
+3. Update the import and usage in `src/checkout.js`
+4. Update the test file `src/pricing.test.js` to use the new name
+5. Verify all files are consistent — no remaining references to `calculateTotal`
 
-## Files
-- `userService.js` — Core module (PRIMARY CHANGE — rename here)
-- `dashboard.js` — Dashboard rendering (calls getUserData)
-- `api.js` — API route handlers (calls getUserData)
-- `notifications.js` — Notification service (calls getUserData)
-- `test-user.js` — Test suite (tests getUserData)
-
-## Constraints
-- Do NOT change any business logic — only rename the function
-- The module's other exports (`createUser`, `deleteUser`) must remain unchanged
-- All 5 tests in `test-user.js` must pass after the rename
+## Success criteria
+- All 4 files updated with the new function name
+- No references to `calculateTotal` remain
+- The code is syntactically valid (imports match exports)

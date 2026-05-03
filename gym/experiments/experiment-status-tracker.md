@@ -18,7 +18,7 @@
 - **Details**: `EXP-700-phase0-results.md`
 
 ### EXP-800: Threshold Rescue — Concrete Rules for Verify-After-Edit
-- **Status**: DESIGNED (2029-07-03)
+- **Status**: READY (2029-07-03 — scenario `multi-file-refactor` built with 4 arms)
 - **Hypothesis**: Reformulating VAE as concrete-threshold P0 rule achieves ≥60% compliance even with distraction
 - **Resolves**: KE-715 vs KE-655 contradiction (concrete thresholds vs distraction nullification)
 - **Next**: Create `multi-file-refactor` gym scenario, run 4-arm experiment (20 sessions)

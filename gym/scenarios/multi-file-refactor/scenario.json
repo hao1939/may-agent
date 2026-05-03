@@ -1,10 +1,16 @@
 {
   "name": "multi-file-refactor",
-  "categories": ["refactoring", "verification"],
-  "tags": ["behavioral", "EXP-800", "verify-after-edit", "multi-file"],
+  "description": "Rename a function across 4 files, update imports, and fix tests. Requires 4-6 edit() calls — designed to measure verify-after-edit compliance (EXP-800).",
+  "categories": ["coding"],
+  "tags": ["behavior", "VAE", "EXP-800", "refactor"],
   "tier": "standard",
-  "timeout": 5,
-  "agent_type": "coder",
+  "timeout": 10,
+  "agent_type": "any",
   "workflow": false,
-  "description": "Rename getUserData→fetchUserProfile across 4 source files + update imports and tests. Designed for EXP-800: requires 6+ edits, making verify-after-edit rate measurable."
+  "variants": {
+    "baseline": { "notes": "Arm A — no VAE instruction" },
+    "vague-nudge": { "notes": "Arm B — vague VAE reminder", "injected_context": "nudge-vague.md" },
+    "concrete-threshold": { "notes": "Arm C — concrete P0 rule", "injected_context": "nudge-concrete.md" },
+    "concrete-distractor": { "notes": "Arm D — concrete P0 rule + distractor task", "injected_context": "nudge-concrete.md", "task_override": "task-with-distractor.md" }
+  }
 }
