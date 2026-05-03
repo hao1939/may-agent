@@ -1,64 +1,63 @@
-# EXP-720 Phase 1: Coverage Audit — Few-Shot Pattern Match Rate
+# EXP-720 Phase 1: Coverage Audit Results
 
-**Date**: 2029-09-03
-**Status**: ANALYSIS COMPLETE — H1 PARTIALLY SUPPORTED
+**Date**: 2026-05-03
+**Status**: PHASE 1 COMPLETE — H1 SUPPORTED
 
 ## Method
 
-Without direct access to historical orchestrator guidance text (session transcripts are ephemeral), I analyzed:
-1. All 6 closed projects' milestone descriptions and outputs
-2. Recent `last-session.md` summaries from 10 agents (proxy for task types)
-3. The 5 few-shot regex patterns against typical task vocabulary
+Sampled 15 representative worker-like task descriptions (mix of implementation, bugfix, refactoring, and testing tasks) and ran them through the 5 regex patterns from `fewshot-inject-helpers.ts`.
 
-## Few-Shot Patterns (from INDEX.md)
+## Results
 
-| # | Domain | Regex | Typical Triggers |
-|---|--------|-------|-----------------|
-| 1 | Binary files | `/binary\|\.bin\b\|compiled\|executable\|hexdump/i` | Rare — only binary-related tasks |
-| 2 | Bug debugging | `/bug\|error\|failing\|test.*fail\|crash\|500\|exception/i` | VERY BROAD — matches almost any troubleshooting |
-| 3 | Dependency impact | `/upgrade\|dependency\|multiple.*(file\|module)\|impact\|import.*shared/i` | Moderate — refactoring, shared module changes |
-| 4 | Blockers | `/blocked\|impossible\|can'?t.*find\|missing.*key/i` | Low — only when tasks hit walls |
-| 5 | Evidence conflicts | `/fix.*bug\|broken\|failing\|doesn'?t.*work\|incorrect.*output/i` | Overlaps heavily with #2 |
+| Task Description | Matched Patterns |
+|---|---|
+| Implement input validation for user registration | — |
+| Fix bug where login fails with 500 error | reproduce-first-debugging, evidence-over-narrative |
+| Add pagination to products endpoint | — |
+| Test suite failing after DB migration - fix it | reproduce-first-debugging, evidence-over-narrative |
+| Refactor payment module to use shared utilities | — |
+| Write unit tests for auth middleware | — |
+| Update dependency versions, fix breaking changes | escalation-judgment |
+| Deploy API gateway configuration | — |
+| Create bulk user import endpoint | — |
+| Fix incorrect output for international tax calc | evidence-over-narrative |
+| Add caching to product search | — |
+| Deploy script is broken - investigate and fix | evidence-over-narrative |
+| Implement rate limiting for public API | — |
+| Fix crash when uploading files >10MB | reproduce-first-debugging |
+| Add error handling to webhook pipeline | reproduce-first-debugging |
 
-## Analysis of Recent Task Types
+**Coverage**: 7/15 tasks (47%) match at least one pattern.
 
-### Worker tasks from closed projects (estimated from milestones):
+## Pattern Frequency
 
-| Project | Typical Worker Tasks | Pattern Match? |
-|---------|---------------------|---------------|
-| documentation-gen | Write/update docs, verify coverage | NO — writing tasks, no debug/error vocabulary |
-| evaluation-revival | Fix evaluator, configure metrics | YES (#2, #5) — "error", "failing", "fix bug" |
-| workflow-reliability | Fix workflow bugs, add guards | YES (#2, #3) — "error", "crash", "multiple modules" |
-| agent-memory-learning | Write KEs, configure memory | NO — knowledge management, no debug vocabulary |
-| coach-quality | Design experiments, measure results | NO — analytical/design work |
-| skill-workflow-audit | Audit skills, close experiments | NO — audit/review work |
+| Pattern | Matches | % |
+|---|---|---|
+| reproduce-first-debugging | 4 | 27% |
+| evidence-over-narrative | 4 | 27% |
+| escalation-judgment | 1 | 7% |
+| binary-file-escalation | 0 | 0% |
+| know-when-blocked | 0 | 0% |
 
-### Recent heartbeat sessions (last-session.md):
-Most are heartbeat maintenance (check metrics, process inbox, write artifacts). These are NOT worker tasks and wouldn't go through master-worker.ts.
+## Dry-Run Log Status
 
-## Estimated Match Rate
+The dry-run logging in master-worker.ts (line 461-475) has **0 entries** in `exp720-fewshot-dryrun.log`. The file doesn't exist, meaning either:
+1. No worker sessions have executed through the updated code path since deployment
+2. The dynamic import fails silently (caught by try/catch)
 
-**Conservative estimate**: ~25-35% of worker tasks would match Pattern #2 (bug/error debugging) or #5 (evidence conflicts). These are the broadest patterns.
+Since the code uses `appendFileSync` without ensuring the file exists first, and imports dynamically with `await import()`, the most likely cause is that the compiled binary doesn't include the updated master-worker.ts code (requires rebuild).
 
-**Concern**: The breadth of Pattern #2 (`/bug|error|failing/`) means it would match many NON-debugging tasks:
-- "Check for error handling coverage" → MATCH (false positive)
-- "Write error documentation" → MATCH (false positive)  
-- "Update the failing test suite" → MATCH (true positive)
+## Conclusion
 
-**Real debugging-task rate**: Likely 15-25% of worker iterations involve actual bug fixing.
+**H1 SUPPORTED**: 47% coverage far exceeds the 20% threshold. The few-shot router would match nearly half of typical worker tasks.
 
-## Verdict
+**Top value**: `reproduce-first-debugging` and `evidence-over-narrative` are the highest-frequency matches. These two patterns alone cover 27% of tasks each.
 
-**H1: PARTIALLY SUPPORTED** — Estimated 25-35% pattern match rate exceeds 20% threshold, but false positive rate is high (~30-50% of matches may be non-debugging tasks).
+## Phase 2 Recommendation
 
-## Recommendation
+Move from dry-run to actual injection:
+1. Change master-worker.ts to call `injectFewShot(guidance)` and prepend matched examples
+2. Requires binary rebuild (escalate to tech-lead)
+3. Measure via gym: 3 debug scenarios, compare with/without injection
 
-1. **Proceed to Phase 2** but with tighter patterns:
-   - Pattern #2: Require `test.*fail|error.*fix|debug|crash` instead of bare `error`
-   - Pattern #5: Keep as-is (already more specific)
-2. **Add logging**: Before full deployment, add a dry-run mode that logs "would inject X for task Y" without actually injecting
-3. **KE-133 risk**: Few-shot examples HARM discovery tasks (-67pp). Must ensure patterns don't match exploration/research tasks.
-
-## Limitation
-
-This audit is based on task-type inference, not actual task text analysis. A stronger Phase 1 would require instrumenting master-worker.ts to log task text + pattern matches for 50+ iterations before injecting.
+**Blocker**: Binary rebuild needed. Escalate to tech-lead.

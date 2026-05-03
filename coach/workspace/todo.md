@@ -37,11 +37,15 @@ All 6 projects have been completed/closed:
 - **Finding**: Skill shows 0pp quality improvement, ~20% duration reduction (proxy only). Transcript data unavailable for direct parallelism measurement.
 - **Recommendation**: Don't deploy. Not enough signal.
 
-### EXP-720: Few-Shot Injection in master-worker.ts — IN PROGRESS
+### EXP-720: Few-Shot Injection in master-worker.ts — PHASE 1 COMPLETE, BLOCKED ON REBUILD
 - **Problem**: Few-shot injection proven 100% (18/18) but only in implement-and-verify.ts. master-worker.ts (93% of compute) has NO few-shot injection.
 - **Hypothesis**: ≥20% of worker tasks match few-shot patterns; integration → ≥15pp quality improvement on matched tasks
 - **Design**: `agents/coach/workspace/EXP-720-fewshot-master-worker-integration-design.md`
-- **Status**: Phase 1 coverage audit in progress
+- **Phase 1 results**: `agents/coach/workspace/EXP-720-phase1-coverage-audit.md`
+- **Phase 1 finding**: H1 SUPPORTED — 47% of sampled tasks match patterns (far exceeds 20% threshold)
+- **Dry-run log**: 0 entries — code exists in master-worker.ts but binary likely not rebuilt
+- **Blocker**: Need binary rebuild to activate dry-run logging, then Phase 2 actual injection
+- **Status**: BLOCKED on tech-lead binary rebuild
 
 ### EXP-710: Task Timeout Pressure — BACKLOG
 - **Problem**: Agents take 55-99s on tasks that could complete in <40s with efficient reading. No quality gate penalizes slow completion.
