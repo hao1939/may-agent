@@ -764,6 +764,53 @@ async function processDecision(
   return null; // continue
 }
 
+// ── Comment directive handler (reduces duplication) ───────────────────
+
+interface DirectiveConfig {
+  label: string;          // e.g. "CONTINUE", "PAUSED", "CANCELLED", "RESUMED", "DONE"
+  status: string;         // new status field value
+  event: string;          // event name to emit
+  trigger: string;        // event trigger value
+  currentState?: string;  // optional Current State update
+  clearStopFields?: boolean; // clear Stop Reason + Resume Condition
+  returnResult?: string;  // if set, return ctx.done(this). If null, continue loop.
+}
+
+function handleDirectiveComment(
+  config: PersistentTaskConfig,
+  projectContent: string,
+  pendingComments: string,
+  iteration: number,
+  directive: DirectiveConfig,
+  ctx: WorkflowContext,
+): string {
+  const now = new Date().toISOString();
+  const commentEntry = `### Iteration ${iteration} (comment) — ${now}\n` +
+    `**Comment**: ${pendingComments}\n` +
+    `**Reviewer**: ${directive.label} — Marked ${directive.status} by human/May (JS fast-path, no LLM review needed).\n\n`;
+
+  if (config.isLegacy) {
+    projectContent += commentEntry;
+  } else {
+    cachedAppend(config.journalPath, commentEntry);
+  }
+
+  projectContent = clearComments(projectContent);
+  projectContent = updateField(projectContent, "Iteration", String(iteration));
+  projectContent = updateField(projectContent, "Status", directive.status);
+  if (directive.clearStopFields) {
+    projectContent = updateField(projectContent, "Stop Reason", "");
+    projectContent = updateField(projectContent, "Resume Condition", "");
+  }
+  if (directive.currentState) {
+    projectContent = updateSection(projectContent, "Current State", directive.currentState);
+  }
+  cachedWrite(config.projectPath, projectContent);
+  markDiscussionRead(config.projectDir, iteration);
+  emitProjectEvent(ctx, config, directive.event, { iteration, trigger: directive.trigger });
+  return projectContent;
+}
+
 // ── Main workflow ──────────────────────────────────────────────────────
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -835,119 +882,34 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
       // JS fast-paths for mechanical directive comments (no LLM session needed)
       if (isContinueComment) {
-        const now = new Date().toISOString();
-        const commentEntry = `### Iteration ${iteration} (comment) — ${now}\n` +
-          `**Comment**: ${pendingComments}\n` +
-          `**Reviewer**: CONTINUE — Marked continue by human/May (JS fast-path, no LLM review needed).\n\n`;
-
-        if (config.isLegacy) {
-          projectContent += commentEntry;
-        } else {
-          cachedAppend(config.journalPath, commentEntry);
-        }
-
-        projectContent = clearComments(projectContent);
-        projectContent = updateField(projectContent, "Iteration", String(iteration));
-        projectContent = updateField(projectContent, "Status", "active");
-        projectContent = updateField(projectContent, "Stop Reason", "");
-        projectContent = updateField(projectContent, "Resume Condition", "");
-        cachedWrite(config.projectPath, projectContent);
-        markDiscussionRead(config.projectDir, iteration);
-        emitProjectEvent(ctx, config, "project.resumed", { iteration, trigger: "continue-comment" });
+        projectContent = handleDirectiveComment(config, projectContent, pendingComments, iteration,
+          { label: "CONTINUE", status: "active", event: "project.resumed", trigger: "continue-comment", clearStopFields: true }, ctx);
         iteration++;
         continue;
       }
 
       if (isPauseComment) {
-        const now = new Date().toISOString();
-        const commentEntry = `### Iteration ${iteration} (comment) — ${now}\n` +
-          `**Comment**: ${pendingComments}\n` +
-          `**Reviewer**: PAUSED — Marked paused by human/May (JS fast-path, no LLM review needed).\n\n`;
-
-        if (config.isLegacy) {
-          projectContent += commentEntry;
-        } else {
-          cachedAppend(config.journalPath, commentEntry);
-        }
-
-        projectContent = clearComments(projectContent);
-        projectContent = updateField(projectContent, "Iteration", String(iteration));
-        projectContent = updateField(projectContent, "Status", "paused");
-        projectContent = updateSection(projectContent, "Current State", `Paused by human/May at iteration ${iteration}.`);
-        cachedWrite(config.projectPath, projectContent);
-        markDiscussionRead(config.projectDir, iteration);
-        emitProjectEvent(ctx, config, "project.paused", { iteration, trigger: "pause-comment" });
+        projectContent = handleDirectiveComment(config, projectContent, pendingComments, iteration,
+          { label: "PAUSED", status: "paused", event: "project.paused", trigger: "pause-comment", currentState: `Paused by human/May at iteration ${iteration}.` }, ctx);
         return ctx.done(`Project paused by human/May at iteration ${iteration}.`);
       }
 
       if (isCancelComment) {
-        const now = new Date().toISOString();
-        const commentEntry = `### Iteration ${iteration} (comment) — ${now}\n` +
-          `**Comment**: ${pendingComments}\n` +
-          `**Reviewer**: CANCELLED — Marked cancelled by human/May (JS fast-path, no LLM review needed).\n\n`;
-
-        if (config.isLegacy) {
-          projectContent += commentEntry;
-        } else {
-          cachedAppend(config.journalPath, commentEntry);
-        }
-
-        projectContent = clearComments(projectContent);
-        projectContent = updateField(projectContent, "Iteration", String(iteration));
-        projectContent = updateField(projectContent, "Status", "cancelled");
-        projectContent = updateSection(projectContent, "Current State", `Cancelled by human/May at iteration ${iteration}.`);
-        cachedWrite(config.projectPath, projectContent);
-        markDiscussionRead(config.projectDir, iteration);
-        emitProjectEvent(ctx, config, "project.cancelled", { iteration, trigger: "cancel-comment" });
+        projectContent = handleDirectiveComment(config, projectContent, pendingComments, iteration,
+          { label: "CANCELLED", status: "cancelled", event: "project.cancelled", trigger: "cancel-comment", currentState: `Cancelled by human/May at iteration ${iteration}.` }, ctx);
         return ctx.done(`Project cancelled by human/May at iteration ${iteration}.`);
       }
 
       if (isResumeComment) {
-        const now = new Date().toISOString();
-        const commentEntry = `### Iteration ${iteration} (comment) — ${now}\n` +
-          `**Comment**: ${pendingComments}\n` +
-          `**Reviewer**: RESUMED — Marked active by human/May (JS fast-path, no LLM review needed).\n\n`;
-
-        if (config.isLegacy) {
-          projectContent += commentEntry;
-        } else {
-          cachedAppend(config.journalPath, commentEntry);
-        }
-
-        projectContent = clearComments(projectContent);
-        projectContent = updateField(projectContent, "Iteration", String(iteration));
-        projectContent = updateField(projectContent, "Status", "active");
-        projectContent = updateField(projectContent, "Stop Reason", "");
-        projectContent = updateField(projectContent, "Resume Condition", "");
-        projectContent = updateSection(projectContent, "Current State", `Resumed by human/May at iteration ${iteration}. Continuing work.`);
-        cachedWrite(config.projectPath, projectContent);
-        markDiscussionRead(config.projectDir, iteration);
-        emitProjectEvent(ctx, config, "project.resumed", { iteration, trigger: "resume-comment" });
-        // Don't return — fall through to continue the work loop
+        projectContent = handleDirectiveComment(config, projectContent, pendingComments, iteration,
+          { label: "RESUMED", status: "active", event: "project.resumed", trigger: "resume-comment", clearStopFields: true, currentState: `Resumed by human/May at iteration ${iteration}. Continuing work.` }, ctx);
         iteration++;
         continue;
       }
 
       if (isDoneComment) {
-        const now = new Date().toISOString();
-        const commentEntry = `### Iteration ${iteration} (comment) — ${now}\n` +
-          `**Comment**: ${pendingComments}\n` +
-          `**Reviewer**: DONE — Marked done by human/May (JS fast-path, no LLM review needed).\n\n`;
-
-        if (config.isLegacy) {
-          projectContent += commentEntry;
-        } else {
-          cachedAppend(config.journalPath, commentEntry);
-        }
-
-        projectContent = clearComments(projectContent);
-        projectContent = updateField(projectContent, "Iteration", String(iteration));
-        projectContent = updateField(projectContent, "Status", "done");
-        projectContent = updateField(projectContent, "Stop Reason", "");
-        projectContent = updateField(projectContent, "Resume Condition", "");
-        projectContent = updateSection(projectContent, "Current State", `Completed. Marked done by human/May.`);
-        cachedWrite(config.projectPath, projectContent);
-        emitProjectEvent(ctx, config, "project.completed", { iteration, trigger: "done-comment" });
+        projectContent = handleDirectiveComment(config, projectContent, pendingComments, iteration,
+          { label: "DONE", status: "done", event: "project.completed", trigger: "done-comment", clearStopFields: true, currentState: `Completed. Marked done by human/May.` }, ctx);
         return ctx.done(`Project marked done by human/May at iteration ${iteration}.`);
       }
 
