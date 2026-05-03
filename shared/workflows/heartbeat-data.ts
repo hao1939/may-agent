@@ -459,70 +459,11 @@ Produce at least ONE meaningful write, then call finish() with updated deliverab
     return ctx.done(ctx.summarize(gateResult, { maxLength: 500 }));
   }
 
-  // ── EXP-630: DURATION QUALITY GATE ──────────────────────────────
-  // Sessions with very few tool calls are almost always trivial (EXP-620).
-  // Re-prompt once if session used too few turns.
-  // NOTE: Wall-clock time is unreliable (LLM inference always >90s).
-  //       turnsUsed is a better proxy for substantive work.
-  // BUG-FIX: ctx.runAgent() does not populate turnsUsed on result objects.
-  //   Previously defaulted to 0, and the `> 0` check meant gate NEVER fired.
-  //   Fixed: also check tool_calls_count; if neither available, use deliverables
-  //   as a proxy — sessions with no deliverables AND short summary likely trivial.
-  // EXP-710: Duration gate heuristic rewrite.
-  // ctx.runAgent() never populates turnsUsed/tool_calls_count — they're always 0.
-  // Use output signals as proxies for substantive work.
-  const turnsUsed = (result as any).turnsUsed
-    ?? (result as any).tool_calls_count
-    ?? 0;
-  const deliverableCount = Array.isArray((result as any).deliverables)
-    ? (result as any).deliverables.length
-    : ((result as any).finishResult?.deliverables?.length ?? 0);
-  const summaryLength = typeof result.summary === "string" ? result.summary.length : 0;
-  const outputLength = typeof (result as any).output === "string" ? (result as any).output.length : 0;
-  // Scoring heuristic: accumulate "substance points". Gate fires if score < threshold.
-  // This replaces the old ALL-conditions-must-hold approach which never triggered
-  // because the artifact gate upstream already filtered no-deliverable sessions.
-  let substanceScore = 0;
-  if (turnsUsed >= 3) substanceScore += 3;           // real turn data (if ever available)
-  if (summaryLength >= 300) substanceScore += 2;      // substantive summary
-  if (summaryLength >= 150) substanceScore += 1;      // moderate summary
-  if (deliverableCount >= 2) substanceScore += 2;     // multiple deliverables
-  if (deliverableCount >= 1) substanceScore += 1;     // at least one deliverable
-  if (outputLength >= 1000) substanceScore += 2;      // significant output
-  // Gate fires if substance score is too low.
-  // NOTE: EXP-730 found threshold < 3 was dead code — upstream artifact gate (EXP-520)
-  // guarantees deliverables exist, so score was always ≥ 3. Raised to < 5 so gate
-  // catches sessions with minimal deliverables + short summaries.
-  const looksTrivia = substanceScore < 5;
-  const tooFewTurns = turnsUsed > 0 && turnsUsed < 3;
-  const MINIMUM_TURNS = 3;
-  if ((tooFewTurns || looksTrivia) && result.status !== "error") {
-    ctx.emit({ type: "duration_gate_triggered", agent, turns_used: turnsUsed, substance_score: substanceScore });
-    // EXP-630 measurement: persist gate trigger to filesystem for auditing
-    try {
-      const logLine = `${new Date().toISOString()} agent=${agent} turns=${turnsUsed} score=${substanceScore} summary_len=${summaryLength} deliverables=${deliverableCount} output_len=${outputLength}\n`;
-      appendFileSync(join(agentsRoot, "shared", "duration-gate-triggers.log"), logLine);
-    } catch (_) { /* non-critical logging */ }
-
-    const triggerReason = tooFewTurns
-      ? `only ${turnsUsed} tool call(s)`
-      : `no deliverables and a very short summary (${summaryLength} chars)`;
-    const durationPrompt = `⚠️ DURATION GATE: Your session had ${triggerReason} — this suggests trivial work.
-
-Sessions with minimal output almost never produce substantive work. Before finishing:
-
-1. Did you investigate at least one non-obvious issue?
-2. Did you produce an artifact with real analysis (not just a status echo)?
-3. Did you check for improvement opportunities beyond surface metrics?
-
-If you genuinely completed meaningful work quickly, explain what you accomplished.
-Otherwise, dig deeper into one project or metric and produce a substantive artifact.`;
-
-    const durationResult = await ctx.runAgent(agent, durationPrompt);
-    recordOutcome(agentsRoot, agent, durationResult.status === "error",
-      durationResult.status === "error" ? "duration gate re-prompt error" : undefined);
-    return ctx.done(ctx.summarize(durationResult, { maxLength: 500 }));
-  }
+  // ── EXP-630 DURATION GATE: REMOVED ──────────────────────────────
+  // Dead code — never triggered in production (0 log entries ever).
+  // The upstream artifact gate (EXP-520) already ensures deliverables exist,
+  // making the substance-score heuristic redundant. Removed to reduce complexity.
+  // History: EXP-630 → EXP-710 → EXP-730 → EXP-740 (confirmed dead, removed).
 
   // ── EXP-650: IMPACT-SCANNING GATE ──────────────────────────────
   // Agents edit files but never check for consumers/callers (6% scanning rate, EXP-645).
