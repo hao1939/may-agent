@@ -1,5 +1,12 @@
 # Coach Todo
 
+## P1: EXP-730 — Dormant Structural Gate Audit — PHASE 1 COMPLETE
+- **Problem**: EXP-630 (duration), EXP-650 (impact), EXP-720 (few-shot) all deployed with ZERO log entries
+- **Finding**: EXP-630 is dead code — upstream artifact gate guarantees substanceScore ≥ 3, making `< 3` threshold impossible to trigger
+- **Design**: `agents/coach/workspace/EXP-730-dormant-gate-audit-design.md`
+- **Next**: Escalate EXP-630 threshold fix to tech-lead (change `< 3` to `< 5` in heartbeat-data.ts)
+- **Status**: PHASE 1 COMPLETE — H1 confirmed (duration gate logically blocked by artifact gate)
+
 ## P1: EXP-725 — Structural Anti-Shallow Gate — DESIGNED
 - **Problem**: Anti-shallow text rule violated in 40% of sessions (EXP-715 Phase 1). Text rules fail per KE-480.
 - **Hypothesis**: Structural finish() rejection when tool_call_count < 10 → shallow rate ≤10%
