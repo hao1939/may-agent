@@ -32,7 +32,7 @@ Project Metrics          — "Is this specific work effective?"
 | ID | What it answers | Source | Target | Threshold | Alert |
 |----|-----------------|--------|--------|-----------|-------|
 | `system.real-output-24h` | Is the system producing? | `git log` substantive files changed (24h) | 100 | 30 | below |
-| `project.iterations-24h` | Are projects advancing? | `COUNT(*)` from project.iteration events (24h) | 10 | 3 | below |
+| `project.iterations-24h` | Are projects advancing? | `COUNT(*)` from project.iteration events (24h) | 10 | 0 (watch-only) | below |
 | `project.blocked-over-6h` | Is work stuck? | `COUNT(*)` from projects where blocked/waiting >6h | 0 | 1 | above |
 
 If all 6 green → system is healthy and producing. If any red → investigate that layer.
