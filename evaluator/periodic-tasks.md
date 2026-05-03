@@ -53,9 +53,9 @@ Also: `evaluations.createdAt` is stored as an epoch-ms integer (not an ISO datet
 - Do NOT update `agents/shared/knowledge/strategies.md` directly (Bob reviews first).
 - **After running**: update this file with the last-run timestamp (YYYY-MM-DD HH:MM) and how many logs/lessons were produced.
 
-**Last run**: 2026-05-03 14:50Z — DB canonical check: `MAX(evaluations.createdAt)=1777817597956`; `MAX(sessions.endedAt)=1777819795179` → eval lag ≈36.6m at check time (pipeline appears live but slightly behind). Legacy `.state/evaluations/` artifacts: latest `s_*.json` mtime 2026-04-29; `task_tree_*.json` still 2026-03-24 → treat as legacy path drift, not DB liveness.
+**Last run**: 2026-05-03 20:20Z — DB canonical check: `MAX(evaluations.createdAt)=1777837490436`; `MAX(sessions.startedAt)=1777839587988` → eval lag ≈35m at check time (pipeline appears live but slightly behind). Legacy `.state/evaluations/` artifacts: latest `task_tree_*.json` mtime still 2026-03-24 → treat as legacy path drift, not DB liveness.
 
-Ran `monitor-session.cjs --running`: 3 checked, 3 healthy. Ran `patrol.cjs`: **CRITICAL** due to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded; not a hash mismatch event). Confirmed Process #15 still absent: `.state/may.db` has no `*llm*` tables.
+Ran `monitor-session.cjs --running`: 4 checked, 3 healthy, 1 `DRIFT` (arc `s_1777839263183_2631`; recommended action: warn). (Did not run `patrol.cjs` this cycle.) Confirmed Process #15 still absent: `.state/may.db` has no `*llm*` tables.
 
 **Previous run**: 2026-05-03 01:13Z — DB canonical check: `MAX(evaluations.createdAt)=1777768954999` (2026-05-03T00:42:34Z; eval pipeline live). `MAX(sessions.createdAt)=1777768954999` (2026-05-03T00:42:34Z). Investigation note: bob’s depressed average score (~0.408) appears strongly explained by `shallow_session` tagging (50% of bob evals); when shallow-tagged, avg score ≈0.20 vs non-shallow ≈0.617. Similar pattern for coach/optimizer (shallow avg ≈0.20).
 
