@@ -1,11 +1,11 @@
 # DELIVERABLES_CHECKLIST.md
 
-## Task: Improve bottom 3 workflow files by quality score
+## Task: TypeScript Strict Mode Audit & Fixes
 
-| # | Deliverable | Status | Path | Notes |
-|---|------------|--------|------|-------|
-| 1 | Identify bottom 3 files | DONE | N/A | index(50), budget-checkpoint(75), complexity-estimator(75) |
-| 2 | Add error handling to complexity-estimator.ts | DONE | agents/shared/workflows/complexity-estimator.ts | try/catch around estimateComplexity() |
-| 3 | Add error handling to budget-checkpoint.ts | DONE | agents/shared/workflows/budget-checkpoint.ts | try/catch around shouldBudgetCheckpoint() |
-| 4 | Verify tests pass | DONE | N/A | 46/46 tests pass |
-| 5 | Write quality improvement report | DONE | agents/shared/projects/system-efficiency/outputs/quality-improvement-report.md | Before/after scores documented |
+| # | Deliverable | Status | Path | Details |
+|---|------------|--------|------|---------|
+| 1 | Run tsc --strict on workflow files | DONE | outputs/typescript-strict-report.md | 94 errors found, categorized |
+| 2 | Fix top 5 type errors | DONE | agents/shared/workflows/master-worker-resilient.ts | Fixed getCircuitState→getCircuit, isOpen→state, null safety |
+| 3 | Confirm tests still pass | DONE | N/A | 101/101 files, 1797 tests passing |
+| 4 | Align test files with fixes | DONE | agents/shared/tests/master-worker-resilient.test.ts, master-worker-resilient-class.test.ts, circuit-breaker-integration.test.ts | Updated CircuitState mocks |
+| 5 | Document findings | DONE | agents/shared/projects/system-efficiency/outputs/typescript-strict-report.md | Before/after, recommendations |

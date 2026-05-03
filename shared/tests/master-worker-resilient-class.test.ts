@@ -26,7 +26,8 @@ vi.mock('../workflows/retry-wrapper', async () => {
           return { success: false, error, attempts: 2 };
         }
       }),
-      getCircuitState: vi.fn(() => ({ isOpen: false, failures: 0, lastFailureTime: 0 })),
+      getCircuitState: vi.fn(() => ({ consecutiveFailures: 0, lastFailureTime: null, state: "closed" })),
+      getCircuit: vi.fn(() => ({ consecutiveFailures: 0, lastFailureTime: null, state: "closed" })),
     })),
   };
 });
@@ -130,8 +131,8 @@ describe('master-worker-resilient (class)', () => {
     it('returns circuit state', () => {
       const worker = new ResilientMasterWorker(config);
       const state = worker.getCircuitState();
-      expect(state).toHaveProperty('isOpen');
-      expect(state.isOpen).toBe(false);
+      expect(state).toHaveProperty('state');
+      expect(state.state).toBe('closed');
     });
   });
 });

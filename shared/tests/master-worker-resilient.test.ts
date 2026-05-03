@@ -27,14 +27,14 @@ import { type IterationSnapshot } from "../workflows/master-worker-cached.ts";
 
 describe("getCircuitLabel", () => {
   it("returns 'closed' when circuit is not open", () => {
-    const circuit: CircuitState = { isOpen: false, failureCount: 0, lastFailureTime: 0 };
+    const circuit: CircuitState = { consecutiveFailures: 0, lastFailureTime: null, state: "closed" };
     expect(getCircuitLabel(circuit)).toBe("closed");
   });
 
   it("returns label based on circuit state", () => {
     // getCircuitLabel delegates to getEffectiveCircuitState which may have its own logic
     const now = Date.now();
-    const circuit: CircuitState = { isOpen: true, failureCount: 3, lastFailureTime: now };
+    const circuit: CircuitState = { consecutiveFailures: 3, lastFailureTime: now, state: "open" };
     const label = getCircuitLabel(circuit, now);
     expect(["open", "half-open", "closed"]).toContain(label);
   });
@@ -44,19 +44,19 @@ describe("getCircuitLabel", () => {
 
 describe("classifyCircuit", () => {
   it("returns 'closed' when not open", () => {
-    const circuit: CircuitState = { isOpen: false, failureCount: 0, lastFailureTime: 0 };
+    const circuit: CircuitState = { consecutiveFailures: 0, lastFailureTime: null, state: "closed" };
     expect(classifyCircuit(circuit, 5000)).toBe("closed");
   });
 
   it("returns 'open' when recently failed", () => {
     const now = Date.now();
-    const circuit: CircuitState = { isOpen: true, failureCount: 3, lastFailureTime: now };
+    const circuit: CircuitState = { consecutiveFailures: 3, lastFailureTime: now, state: "open" };
     expect(classifyCircuit(circuit, 5000, now)).toBe("open");
   });
 
   it("returns 'half-open' when recovery time has elapsed", () => {
     const now = Date.now();
-    const circuit: CircuitState = { isOpen: true, failureCount: 3, lastFailureTime: now - 10000 };
+    const circuit: CircuitState = { consecutiveFailures: 3, lastFailureTime: now - 10000, state: "open" };
     expect(classifyCircuit(circuit, 5000, now)).toBe("half-open");
   });
 });

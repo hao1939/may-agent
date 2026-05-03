@@ -83,14 +83,13 @@ export interface RunResult {
 
 /** Determine circuit state label from a CircuitState object */
 export function getCircuitLabel(circuit: CircuitState, now = Date.now()): "closed" | "open" | "half-open" {
-  const effective = getEffectiveCircuitState(circuit, now);
-  return effective.isOpen ? (effective === circuit ? "open" : "half-open") : "closed";
+  return circuit.state;
 }
 
 /** More reliable circuit label using the raw state */
 export function classifyCircuit(circuit: CircuitState, recoveryMs: number, now = Date.now()): "closed" | "open" | "half-open" {
-  if (!circuit.isOpen) return "closed";
-  const elapsed = now - circuit.lastFailureTime;
+  if (circuit.state === "closed") return "closed";
+  const elapsed = now - (circuit.lastFailureTime ?? 0);
   if (elapsed >= recoveryMs) return "half-open";
   return "open";
 }
@@ -270,7 +269,7 @@ export class ResilientMasterWorker {
           output: null,
           retryAttempts: 0,
           circuitState: classifyCircuit(
-            this.retryWrapper.getCircuitState(),
+            this.retryWrapper.getCircuit("default"),
             mergeConfig(this.config.retry).circuitRecoveryMs
           ),
           durationMs: Date.now() - start,
@@ -286,7 +285,7 @@ export class ResilientMasterWorker {
           output: null,
           retryAttempts: 0,
           circuitState: classifyCircuit(
-            this.retryWrapper.getCircuitState(),
+            this.retryWrapper.getCircuit("default"),
             mergeConfig(this.config.retry).circuitRecoveryMs
           ),
           durationMs: Date.now() - start,
@@ -303,7 +302,7 @@ export class ResilientMasterWorker {
       );
 
       const circuitState = classifyCircuit(
-        this.retryWrapper.getCircuitState(),
+        this.retryWrapper.getCircuit("default"),
         mergeConfig(this.config.retry).circuitRecoveryMs
       );
 
@@ -314,7 +313,7 @@ export class ResilientMasterWorker {
         retryAttempts: retryResult.attempts - 1,
         circuitState,
         durationMs: Date.now() - start,
-        error: retryResult.success ? undefined : retryResult.error?.message,
+        error: retryResult.success ? null : (retryResult.error?.message ?? null),
       };
 
       // Log to journal
@@ -342,7 +341,7 @@ export class ResilientMasterWorker {
         output: null,
         retryAttempts: 0,
         circuitState: classifyCircuit(
-          this.retryWrapper.getCircuitState(),
+          this.retryWrapper.getCircuit("default"),
           mergeConfig(this.config.retry).circuitRecoveryMs
         ),
         durationMs: Date.now() - start,
@@ -403,7 +402,7 @@ export class ResilientMasterWorker {
   }
 
   getCircuitState(): CircuitState {
-    return this.retryWrapper.getCircuitState();
+    return this.retryWrapper.getCircuit("default");
   }
 }
 

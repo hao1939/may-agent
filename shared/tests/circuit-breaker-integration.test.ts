@@ -91,12 +91,12 @@ describe("Circuit Breaker Integration", () => {
     });
 
     it("classifies open circuit", () => {
-      const state = { ...createInitialCircuitState(), isOpen: true, lastFailureTime: Date.now() };
+      const state = { consecutiveFailures: 5, lastFailureTime: Date.now(), state: "open" };
       expect(classifyCircuit(state, 30000)).toBe("open");
     });
 
     it("classifies half-open after recovery period", () => {
-      const state = { ...createInitialCircuitState(), isOpen: true, lastFailureTime: Date.now() - 60000 };
+      const state = { consecutiveFailures: 5, lastFailureTime: Date.now() - 60000, state: "open" };
       expect(classifyCircuit(state, 30000)).toBe("half-open");
     });
   });
