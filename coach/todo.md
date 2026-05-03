@@ -1,12 +1,12 @@
 # Coach Todo
 
-## P1: EXP-640 — Duration Gate Production Audit — IN PROGRESS
-- **Problem**: EXP-630 duration gate deployed but `duration-gate-triggers.log` doesn't exist despite <90s sessions
-- **Finding**: optimizer (54s) and may (46s) both use genericHeartbeat() and should trigger the gate
-- **Critical**: Gate may not be executing — possibly not compiled/transpiled since TS edit
-- **Design**: `agents/coach/workspace/EXP-640-duration-gate-audit.md`
-- **Next**: Escalate to tech-lead to verify gate is running in production
-- **Status**: IN PROGRESS — awaiting tech-lead verification
+## P1: EXP-640 — Duration Gate Production Audit — BLOCKED (binary not rebuilt)
+- **Problem**: EXP-630 duration gate deployed in TS source but `duration-gate-triggers.log` doesn't exist despite <90s sessions
+- **Root cause**: Runtime binary (`may-agent`) was not rebuilt after TS source edits. Gate exists in source only.
+- **Evidence**: optimizer (54s) and may (46s) both use genericHeartbeat() → gate should fire → no log file exists
+- **Phase 2 investigation**: `agents/coach/workspace/EXP-640-phase2-investigation.md`
+- **Escalated**: tech-lead (2029-07-23) — need binary rebuild to activate gate
+- **Status**: BLOCKED — awaiting binary rebuild
 
 ## P1: EXP-635 — Threat-Framed Depth Commitment — CLOSED (CEILING)
 - **Problem**: 59% of sessions still <90s (2029-07-04 audit). Anti-shallow rule prevents empty but allows padding/trivial work.
