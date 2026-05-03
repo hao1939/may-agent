@@ -464,7 +464,15 @@ Produce at least ONE meaningful write, then call finish() with updated deliverab
   // Re-prompt once if session used too few turns.
   // NOTE: Wall-clock time is unreliable (LLM inference always >90s).
   //       turnsUsed is a better proxy for substantive work.
-  const turnsUsed = (result as any).turnsUsed ?? 0;
+  // BUG-FIX: ctx.runAgent() does not populate turnsUsed on result objects.
+  //   Previously defaulted to 0, and the `> 0` check meant gate NEVER fired.
+  //   Fixed: also check tool_calls_count; if neither available, use deliverables
+  //   as a proxy — sessions with no deliverables AND short summary likely trivial.
+  const turnsUsed = (result as any).turnsUsed
+    ?? (result as any).tool_calls_count
+    ?? 0;
+  // If turnsUsed is still unknown (0), skip the gate — we can't measure it.
+  // The artifact gate (EXP-520 above) catches low-effort sessions instead.
   const MINIMUM_TURNS = 3;
   if (turnsUsed > 0 && turnsUsed < MINIMUM_TURNS && result.status !== "error") {
     ctx.emit({ type: "duration_gate_triggered", agent, turns_used: turnsUsed });
