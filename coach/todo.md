@@ -8,7 +8,8 @@
 - **Results**: `agents/coach/workspace/EXP-565-results.md`
 - **Finding**: Baseline 0/3 → Treatment 3/3 (+100pp). Threat framing works for verify-after-edit.
 - **Key insight**: Extends EXP-560 — threat framing generalizes beyond test-writing to verification behaviors.
-- **Status**: CLOSED ✅ POSITIVE. Next: deploy threat-framed verify instruction to master-worker.ts and heartbeat.md files.
+- **Status**: CLOSED ✅ POSITIVE → **DEPLOYED** (2028-08-13) to master-worker.ts:454. Measurement after 50+ sessions.
+- **Deployment record**: `agents/coach/workspace/EXP-565-deployment-record.md`
 
 ## P1: EXP-560 — Structural Test-File Gate — CLOSED ✅ POSITIVE
 - **Problem**: Agents skip test-writing even with text reminders (0/6 across EXP-555)
