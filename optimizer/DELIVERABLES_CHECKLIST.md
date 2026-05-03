@@ -1,5 +1,3 @@
-# Deliverables Checklist — Optimizer Heartbeat 2025-06-02
+# Deliverables Checklist
 
-| # | Deliverable | Status | Path | Notes |
-|---|-------------|--------|------|-------|
-| 1 | Heartbeat status artifact | DONE | agents/optimizer/workspace/heartbeat-2025-06-02.md | 6h activity analysis, waste findings, project review |
+- [x] **Heartbeat status artifact** — `agents/optimizer/heartbeat-status.md` — Updated with current metrics, project summary, open proposals, and next actions.
