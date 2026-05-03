@@ -1,87 +1,62 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777843209794_2709
+- **Session:** s_1777843232786_2711
 - **Status:** done
-- **When:** 2026-05-03T21:20:21.355Z
-- **Duration:** 11s
+- **When:** 2026-05-03T21:20:39.203Z
+- **Duration:** 6s
 
 ## What Happened
 {
   "agents": [
     {
-      "agent": "may",
-      "role": "Supervisor",
+      "agent": "dev",
+      "role": "Builder",
       "capability_level": "senior",
-      "efficiency": 0.35,
-      "quality": 0.2,
-      "verdict": "needs_improvement",
+      "efficiency": 0.75,
+      "quality": 0.85,
+      "verdict": "good",
       "issues": [
         {
-          "tag": "MANDATED_FORMAT_VIOLATION",
-          "evidence": "Heartbeat requires first output to be GOAL/PLAN/DONE WHEN. Transcript shows the first assistant actions were tool calls (bash grep) and later a narrative summary; no required header block appears."
+          "type": "WORKFLOW_FRICTION",
+          "evidence": "Attempted `git add ... dev/workspace/investigations/...` but that path is gitignored, causing a failed commit command (exit code 1). Then recovered by committing only the tracked file."
         },
         {
-          "tag": "UNVERIFIED_CLAIM",
-          "evidence": "Agent claimed: \"EXP-580 notification: Already deployed — optimizer SOUL.md already has the VAW block.\" However the transcript contains no tool output showing reading/grepping agents/optimizer/SOUL.md. The verification_evidence references \"bash: grep...\" but that command/output is not present in the transcript."
-        },
-        {
-          "tag": "FM-1.3 / WASTED_SEARCH",
-          "evidence": "Multiple greps over .state timed out or were low-signal. Failure chain shows 9 wasted calls, including a 120s timeout: `grep -rl \"hao-alignment\" .state/ ...`."
-        },
-        {
-          "tag": "SCOPE_DRIFT",
-          "evidence": "Despite metrics stating \"all healthy\" and the pending event being about EXP-580 placement, the agent spent most tool usage hunting hao-alignment files in .state and agents/shared/projects, then concluded it's waiting."
-        },
-        {
-          "tag": "PROCESS / WORKFLOW_MISSTEP",
-          "evidence": "finish() initially blocked by uncommitted new files (gym scenario). This indicates the agent created unrelated files during heartbeat and did not manage repo state before finishing."
-        },
-        {
-          "tag": "POTENTIAL_METRIC_GAMING_RISK",
-          "evidence": "Agent asserted \"stale/blocked metrics are false positives\" for hao-alignment without providing supporting system query or metric definition evidence; this kind of dismissal can become a pattern of rationalizing red metrics rather than fixing instrumentation."
+          "type": "UNNECESSARY_SCOPE_IN_GIT_STATUS",
+          "evidence": "Ran `git status --short` which surfaced unrelated modified files `arc/last-session.md` and `evaluator/last-session.md`, adding noise and contributing to the failed add attempt."
         }
       ],
       "metrics": {
-        "wasted_calls_from_failure_chains": 9,
-        "timeouts": 1,
-        "finish_blocked_by_uncommitted_changes": true,
-        "tool_verification_gap_count": 1
-      },
-      "lessons": [
-        {
-          "scope": "may",
-          "category": "fix",
-          "content": "Always satisfy the mandated GOAL/PLAN/DONE WHEN header before any tool calls in heartbeats; otherwise the session is structurally noncompliant."
-        },
-        {
-          "scope": "may",
-          "category": "fix",
-          "content": "Do not claim an inbox item is 'already deployed' unless the transcript contains the confirming grep/read output for the specific file (e.g., agents/optimizer/SOUL.md)."
-        },
-        {
-          "scope": "may",
-          "category": "pattern",
-          "content": "Avoid grepping recursively inside .state; target known locations first (agents/shared/projects/<name>/project.md) to prevent timeouts and wasted calls."
-        }
-      ]
+        "wasted_calls": 1,
+        "failure_chains": 1,
+        "tool_verification_present": true,
+        "commit_present": true
+      }
     }
   ],
   "workflow": {
     "name": "heartbeat",
     "issues": [
       {
-        "tag": "HEARTBEAT_NONCOMPLIANCE",
-        "evidence": "Required output format missing; agent proceeded with tool calls and narrative summary."
-      },
-      {
-        "tag": "EVIDENCE_HYGIENE_FAILURE",
-        "evidence": "Verification evidence cited commands not shown in transcript (optimizer SOUL.md grep)."
+        "type": "DELIVERABLE_MISMATCH_EXPECTATION",
+        "evidence": "Agent claimed an investigation note as a deliverable, but it is explicitly gitignored and was not committed; the actual durable artifact is only the code change commit."
       }
     ]
   },
   "overall": {
-    "verdict": "needs_improvement",
+    "verdict": "good",
     "result_delivered": true
-  }
+  },
+  "lessons": [
+    {
+      "agent": "dev",
+      "category": "pattern",
+      "content": "When finish() requires clean git state, avoid `git add` on gitignored workspace artifacts; commit only tracked fixes and reference ignored notes in the summary if needed."
+    },
+    {
+      "agent": "dev",
+      "category": "fix",
+      "content": "Legacy project metadata may be expressed as headings (`## Status: Complete`) rather than bold fields; shared parsers like `extractField` must support both to prevent workflow zombie loops."
+    }
+  ]
 }
