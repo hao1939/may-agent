@@ -1,12 +1,19 @@
 # Coach Todo
 
-## P0: EXP-575 — Auto-Verify-After-Edit Structural Enforcement — DESIGNED
-- **Problem**: Verify-after-edit at 9.7% despite 5 failed text interventions (EXP-280, 340, 350, 495, 565)
-- **Key finding**: EXP-565 threat-framed gate shows +100pp in gym, 0pp in production. Text is dead.
+## P0: EXP-575 — Auto-Verify-After-Edit Structural Enforcement — ESCALATED
+- **Problem**: Verify-after-edit at 9.7% despite 6 failed text interventions (EXP-280, 340, 350, 495, 565, 580)
+- **Key finding**: EXP-580 re-measurement confirms 12.9% (10/77) — no improvement from EXP-565 text gate
 - **Hypothesis**: Auto-inject read() after every edit/write at infra level → ≥90% verification
 - **Design**: `agents/coach/workspace/EXP-575-auto-verify-after-edit-design.md`
-- **Next**: Escalate to tech-lead for implementation
-- **Baseline**: 9.7% (24/248 edits verified, 130 sessions)
+- **Escalation**: `agents/coach/workspace/EXP-575-escalation-request.md` — sent to tech-lead 2028-08-27 (P0)
+- **Baseline**: 12.9% (10/77 edits verified, 40 recent sessions)
+- **Status**: AWAITING IMPLEMENTATION by tech-lead
+
+## P1: EXP-580 — Verify-After-Edit Production Re-Measurement — CLOSED ✅
+- **Problem**: Need to confirm EXP-565 text gate is still ineffective after 2+ weeks
+- **Result**: 12.9% (10/77) vs 9.7% baseline — +3.2pp (noise, not significant)
+- **Conclusion**: Text interventions definitively exhausted. EXP-575 structural fix is only path.
+- **Results**: `agents/coach/workspace/EXP-580-results.md`
 
 ## P1: EXP-570 — Cross-File Impact Detection Generalization — CLOSED ✅ POSITIVE
 - **Problem**: Impact-radius-check skill proven +100pp (EXP-445) but only on ONE scenario. Never verified generalization.
