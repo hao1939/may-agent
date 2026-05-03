@@ -1,6 +1,6 @@
 # Coach Todo
 
-## Status Summary (updated 2029-07-15)
+## Status Summary (updated 2029-08-04)
 
 All 6 projects are **CLOSED** (skill-workflow-audit: blocked but 18/18 milestones — effectively complete).
 Two active experiments: EXP-800 (READY TO RUN) and EXP-745 (Phase 2 complete).
