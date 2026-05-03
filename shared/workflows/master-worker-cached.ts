@@ -53,22 +53,37 @@ export function createCachedContext(projectDir: string, ttlMs = 30000): CachedPr
  * Read project.md with caching. Returns null if file doesn't exist.
  */
 export function readProjectFile(ctx: CachedProjectContext): string | null {
-  return ctx.cache.read(ctx.projectFile);
+  try {
+    return ctx.cache.read(ctx.projectFile);
+  } catch (err) {
+    console.error(`[master-worker-cached] Failed to read project file ${ctx.projectFile}: ${err}`);
+    return null;
+  }
 }
 
 /**
  * Read journal.md with caching. Returns empty string if file doesn't exist.
  */
 export function readJournalFile(ctx: CachedProjectContext): string {
-  return ctx.cache.read(ctx.journalFile) ?? "";
+  try {
+    return ctx.cache.read(ctx.journalFile) ?? "";
+  } catch (err) {
+    console.error(`[master-worker-cached] Failed to read journal file ${ctx.journalFile}: ${err}`);
+    return "";
+  }
 }
 
 /**
  * Read discussion.md with caching. Returns null if file doesn't exist.
  */
 export function readDiscussionFile(ctx: CachedProjectContext): string | null {
-  if (!ctx.cache.exists(ctx.discussionFile)) return null;
-  return ctx.cache.read(ctx.discussionFile);
+  try {
+    if (!ctx.cache.exists(ctx.discussionFile)) return null;
+    return ctx.cache.read(ctx.discussionFile);
+  } catch (err) {
+    console.error(`[master-worker-cached] Failed to read discussion file ${ctx.discussionFile}: ${err}`);
+    return null;
+  }
 }
 
 /**
@@ -93,8 +108,12 @@ export function writeProjectFile(ctx: CachedProjectContext, content: string): vo
  * Append to journal.md and invalidate cache (since append changes content).
  */
 export function appendJournalEntry(ctx: CachedProjectContext, entry: string): void {
-  appendFileSync(ctx.journalFile, entry, "utf-8");
-  ctx.cache.invalidate(ctx.journalFile);
+  try {
+    appendFileSync(ctx.journalFile, entry, "utf-8");
+    ctx.cache.invalidate(ctx.journalFile);
+  } catch (err) {
+    console.error(`[master-worker-cached] Failed to append to journal ${ctx.journalFile}: ${err}`);
+  }
 }
 
 // ── Snapshot for orchestrator prompt ────────────────────────────────────

@@ -115,12 +115,23 @@ export class MetricsCollector {
   }
 
   flush(path: string): void {
-    mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, JSON.stringify(this.entries, null, 2));
+    try {
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, JSON.stringify(this.entries, null, 2));
+    } catch (err) {
+      console.error(`[metrics-collector] Failed to flush metrics to ${path}: ${err}`);
+    }
   }
 
   load(path: string): void {
-    const data = JSON.parse(readFileSync(path, "utf-8"));
+    let raw: string;
+    try {
+      raw = readFileSync(path, "utf-8");
+    } catch (err) {
+      console.error(`[metrics-collector] Failed to load metrics from ${path}: ${err}`);
+      return; // Keep existing entries on file read failure
+    }
+    const data = JSON.parse(raw);
     if (!Array.isArray(data)) throw new Error("Invalid metrics file: expected array");
     this.entries = data;
   }
