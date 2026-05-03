@@ -84,7 +84,7 @@ describe("verify-after-write guard", () => {
     const demands = guard.handle(event);
     expect(demands).toHaveLength(1);
     expect(demands[0].type).toBe("block");
-    expect(demands[0].reason).toContain("C1.3 Verify-After-Edit");
+    expect(demands[0].reason).toContain("C1.3 Verify-After-Write");
     expect(demands[0].reason).toContain("foo.ts");
   });
 
