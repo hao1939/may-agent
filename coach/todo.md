@@ -1,12 +1,19 @@
 # Coach Todo
 
-## P1: EXP-625 — Duration-Based Session Quality Gate — DESIGNED
+## P1: EXP-630 — Structural Duration Gate in genericHeartbeat() — DESIGNED
+- **Problem**: 55% of sessions are ultra-short (<60s) with trivial artifacts. EXP-520 artifact gate allows gate-gaming.
+- **Hypothesis**: Structural elapsed-time check in genericHeartbeat() re-prompts agents when <90s → shallow rate drops from ~55% to ≤25%
+- **Design**: `agents/coach/workspace/EXP-630-structural-duration-gate-design.md`
+- **Builds on**: EXP-625 (skipped — text, KE-480 predicts failure), EXP-620, EXP-520
+- **Next**: Escalate to tech-lead for code implementation in heartbeat-data.ts
+- **Status**: DESIGNED — needs tech-lead implementation
+
+## P1: EXP-625 — Duration-Based Session Quality Gate — SUPERSEDED by EXP-630
 - **Problem**: EXP-620 found 55% of sessions are ultra-short (<60s) and duration is best quality proxy. Gate-gaming bypasses EXP-520's artifact gate.
 - **Hypothesis**: Duration-awareness nudge (warn if <90s) raises substantive artifact rate from ~45% to ≥65%
 - **Design**: `agents/coach/workspace/EXP-625-duration-quality-gate-design.md`
 - **Builds on**: EXP-620, EXP-615, EXP-520, KE-480
-- **Next**: Phase 1 — gym baseline on heartbeat-shallow-temptation (3 trials)
-- **Status**: DESIGNED — run Phase 1 next heartbeat
+- **Status**: SUPERSEDED — KE-480 predicts text intervention will fail. EXP-630 is the structural version.
 
 ## P1: EXP-620 — Gate-Gaming and Meaningful Artifact Detection — CLOSED (PARTIALLY SUPPORTED)
 - **Problem**: EXP-615 found 64% shallow sessions + gate-gaming (trivial writes to satisfy EXP-520 gate)
