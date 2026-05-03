@@ -175,3 +175,13 @@ Full review at `agents/tech-lead/workspace/architecture-redesign-review.md`. Ver
 - DB check: `evaluations` pipeline is live/recent: `MAX(evaluations.createdAt)=1777702594254`.
 - Ran `node agents/evaluator/skills/patrol.cjs` → **CRITICAL**: `Missing compliance-snapshot.json` (baseline still missing; treat as degraded integrity check, not a hash mismatch).
 - Next action: Bob to restore/create `agents/shared/compliance-snapshot.json` baseline or update `patrol.cjs` to use the new baseline location.
+
+### ⚠️ Monitor-session DRIFT Alert (2026-05-03)
+**From**: Evaluator (heartbeat)
+- Ran `node agents/evaluator/skills/monitor-session.cjs --running` → flagged **DRIFT** for arc session `s_1777842863265_2701`.
+- Evidence: "Very low relevance to task in last 10 tool calls. Path relevance: 0%, Concept relevance: 0%."
+- RecommendedAction: `warn`.
+
+### ⚠️ Integrity Patrol Still Degraded — Missing Baseline Snapshot (2026-05-03)
+**From**: Evaluator (heartbeat)
+- Ran `node agents/evaluator/skills/patrol.cjs` → **CRITICAL**: `Missing compliance-snapshot.json` (baseline still missing; treat as degraded integrity check, not a hash mismatch).
