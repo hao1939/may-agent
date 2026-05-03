@@ -1,0 +1,139 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/ClBxyebYctg0mxQxCm2aqaz3A3I</id>
+  <title>arXiv Query: search_query=all:"large language model" AND all:"agent" AND all:"evaluation"&amp;id_list=&amp;start=0&amp;max_results=5</title>
+  <updated>2026-05-03T09:43:49Z</updated>
+  <link href="https://arxiv.org/api/query?search_query=all:%22large+language+model%22+AND+(all:%22agent%22+AND+all:%22evaluation%22)&amp;start=0&amp;max_results=5&amp;id_list=" type="application/atom+xml"/>
+  <opensearch:itemsPerPage>5</opensearch:itemsPerPage>
+  <opensearch:totalResults>5106</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <entry>
+    <id>http://arxiv.org/abs/2604.28182v1</id>
+    <title>Exploration Hacking: Can LLMs Learn to Resist RL Training?</title>
+    <updated>2026-04-30T17:58:39Z</updated>
+    <link href="https://arxiv.org/abs/2604.28182v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2604.28182v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Reinforcement learning (RL) has become essential to the post-training of large language models (LLMs) for reasoning, agentic capabilities and alignment. Successful RL relies on sufficient exploration of diverse actions by the model during training, which creates a potential failure mode: a model could strategically alter its exploration during training to influence the subsequent training outcome. In this paper we study this behavior, called exploration hacking. First, we create model organisms of selective RL resistance by fine-tuning LLMs to follow specific underperformance strategies; these models can successfully resist our RL-based capability elicitation in agentic biosecurity and AI R&amp;D environments while maintaining performance on related tasks. We then use our model organisms to evaluate detection and mitigation strategies, including monitoring, weight noising, and SFT-based elicitation. Finally, we show that current frontier models can exhibit explicit reasoning about suppressing their exploration when provided with sufficient information about their training context, with higher rates when this information is acquired indirectly through the environment. Together, our results suggest exploration hacking is a possible failure mode of RL on sufficiently capable LLMs.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-04-30T17:58:39Z</published>
+    <arxiv:comment>81 pages, 37 figures</arxiv:comment>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Eyon Jang</name>
+    </author>
+    <author>
+      <name>Damon Falck</name>
+    </author>
+    <author>
+      <name>Joschka Braun</name>
+    </author>
+    <author>
+      <name>Nathalie Kirch</name>
+    </author>
+    <author>
+      <name>Achu Menon</name>
+    </author>
+    <author>
+      <name>Perusha Moodley</name>
+    </author>
+    <author>
+      <name>Scott Emmons</name>
+    </author>
+    <author>
+      <name>Roland S. Zimmermann</name>
+    </author>
+    <author>
+      <name>David Lindner</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2604.28157v1</id>
+    <title>FlashRT: Towards Computationally and Memory Efficient Red-Teaming for Prompt Injection and Knowledge Corruption</title>
+    <updated>2026-04-30T17:43:24Z</updated>
+    <link href="https://arxiv.org/abs/2604.28157v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2604.28157v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Long-context large language models (LLMs)-for example, Gemini-3.1-Pro and Qwen-3.5-are widely used to empower many real-world applications, such as retrieval-augmented generation, autonomous agents, and AI assistants. However, security remains a major concern for their widespread deployment, with threats such as prompt injection and knowledge corruption. To quantify the security risks faced by LLMs under these threats, the research community has developed heuristic-based and optimization-based red-teaming methods. Optimization-based methods generally produce stronger attacks than heuristic attacks and thus provide a more rigorous assessment of LLM security risks. However, they are often resource-intensive, requiring significant computation and GPU memory, especially for long context scenarios. The resource-intensive nature poses a major obstacle for the community (especially academic researchers) to systematically evaluate the security risks of long-context LLMs and assess the effectiveness of defense strategies at scale. In this work, we propose FlashRT, the first framework to improve the efficiency (in terms of both computation and memory) for optimization-based prompt injection and knowledge corruption attacks under long-context LLMs. Through extensive evaluations, we find that FlashRT consistently delivers a 2x-7x speedup (e.g., reducing runtime from one hour to less than ten minutes) and a 2x-4x reduction in GPU memory consumption (e.g., reducing from 264.1 GB to 65.7 GB GPU memory for a 32K token context) compared to state-of-the-art baseline nanoGCG. FlashRT can be broadly applied to black-box optimization methods, such as TAP and AutoDAN. We hope FlashRT can serve as a red-teaming tool to enable systematic evaluation of long-context LLM security. The code is available at: https://github.com/Wang-Yanting/FlashRT</summary>
+    <category term="cs.CR" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-04-30T17:43:24Z</published>
+    <arxiv:comment>The code is available at https://github.com/Wang-Yanting/FlashRT</arxiv:comment>
+    <arxiv:primary_category term="cs.CR"/>
+    <author>
+      <name>Yanting Wang</name>
+    </author>
+    <author>
+      <name>Chenlong Yin</name>
+    </author>
+    <author>
+      <name>Ying Chen</name>
+    </author>
+    <author>
+      <name>Jinyuan Jia</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2604.28093v1</id>
+    <title>What Makes a Good Terminal-Agent Benchmark Task: A Guideline for Adversarial, Difficult, and Legible Evaluation Design</title>
+    <updated>2026-04-30T16:37:37Z</updated>
+    <link href="https://arxiv.org/abs/2604.28093v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2604.28093v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Terminal-agent benchmarks have become a primary signal for measuring the coding and system-administration capabilities of large language models. As the market for evaluation environments grows, so does the pressure to ship tasks quickly, often without thorough adversarial review of the verification logic. This paper is a guideline for writing good benchmark tasks, drawn from over a year of contributing to and reviewing tasks for Terminal Bench. Most people write benchmark tasks the way they write prompts. They shouldn't. A prompt is designed to help the agent succeed; a benchmark is designed to find out if it can. We argue that good tasks are adversarial, difficult, and legible, and that a large class of common failure modes -- AI-generated instructions, over-prescriptive specifications, clerical difficulty, oracle solutions that assume hidden knowledge, tests that validate the wrong things, and reward-hackable environments -- are predictable consequences of treating task authoring as prompt authoring. We catalog these failure modes, argue that real difficulty is conceptual rather than environmental, and discuss recent empirical evidence that over 15% of tasks in popular terminal-agent benchmarks are reward-hackable. We hope this serves as a useful reference for benchmark maintainers, task contributors, and researchers using benchmark scores as evidence.</summary>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-04-30T16:37:37Z</published>
+    <arxiv:primary_category term="cs.AI"/>
+    <author>
+      <name>Ivan Bercovich</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2604.28076v1</id>
+    <title>TopBench: A Benchmark for Implicit Prediction and Reasoning over Tabular Question Answering</title>
+    <updated>2026-04-30T16:22:51Z</updated>
+    <link href="https://arxiv.org/abs/2604.28076v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2604.28076v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Large Language Models (LLMs) have advanced Table Question Answering, where most queries can be answered by extracting information or simple aggregation. However, a common class of real-world queries is implicitly predictive, requiring the inference of unobserved answers from historical patterns rather than mere retrieval. These queries introduce two challenges: recognizing latent intent and reliable predictive reasoning over massive tables. To assess LLMs in such Tabular questiOn answering with implicit Prediction tasks, we introduce TopBench, a benchmark consisting of 779 samples across four sub-tasks, ranging from single-point prediction to decision making, treatment effect analysis, and complex filtering, requiring models to generate outputs spanning reasoning text and structured tables. We evaluate diverse models under both text-based and agentic workflows. Experiments reveal that current models often struggle with intent recognition, defaulting to just lookups. Deeper analysis identifies that accurate intent disambiguation serves as the prerequisite for leading these predictive behaviors. Furthermore, elevating the upper bound of prediction precision requires the integration of more sophisticated modeling or reasoning capabilities.</summary>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-04-30T16:22:51Z</published>
+    <arxiv:primary_category term="cs.CL"/>
+    <author>
+      <name>An-Yang Ji</name>
+    </author>
+    <author>
+      <name>Jun-Peng Jiang</name>
+    </author>
+    <author>
+      <name>De-Chuan Zhan</name>
+    </author>
+    <author>
+      <name>Han-Jia Ye</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2604.28048v1</id>
+    <title>Stable Behavior, Limited Variation: Persona Validity in LLM Agents for Urban Sentiment Perception</title>
+    <updated>2026-04-30T15:59:11Z</updated>
+    <link href="https://arxiv.org/abs/2604.28048v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2604.28048v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Large Language Models (LLMs) are increasingly used as proxies for human perception in urban analysis, yet it remains unclear whether persona prompting produces meaningful and reproducible behavioral diversity. We investigate whether distinct personas influence urban sentiment judgments generated by multimodal LLMs. Using a factorial set of personas spanning gender, economic status, political orientation, and personality, we instantiate multiple agents per persona to evaluate urban scene images from the PerceptSent dataset and assess both within-persona consistency and cross-persona variation. Results show strong convergence among agents sharing a persona, indicating stable and reproducible behavior. However, cross-persona differentiation is limited: economic status and personality induce statistically detectable but practically modest variation, while gender shows no measurable effect and political orientation only negligible impact. Agents also exhibit an extremity bias, collapsing intermediate sentiment categories common in human annotations. As a result, performance remains strong on coarse-grained polarity tasks but degrades as sentiment resolution increases, suggesting that simple label-based persona prompting does not capture fine-grained perceptual judgments. To isolate the contribution of persona conditioning, we additionally evaluate the same model without personas. Surprisingly, the no-persona model sometimes matches or exceeds persona-conditioned agreement with human labels across all task variants, suggesting that simple label-based persona prompting may add limited annotation value in this setting.</summary>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.SI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-04-30T15:59:11Z</published>
+    <arxiv:comment>8 pages, 8 figures. IEEE DCOSS - UrbCom</arxiv:comment>
+    <arxiv:primary_category term="cs.CL"/>
+    <author>
+      <name>Neemias B da Silva</name>
+    </author>
+    <author>
+      <name>Rodrigo Minetto</name>
+    </author>
+    <author>
+      <name>Daniel Silver</name>
+    </author>
+    <author>
+      <name>Thiago H Silva</name>
+    </author>
+  </entry>
+</feed>
+
