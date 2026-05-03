@@ -1,13 +1,5 @@
-# Evaluator heartbeat journal (2026-05-03)
+## 2026-05-03T23:20Z — Heartbeat
 
-## Findings
-- DB shows evaluations are fresh (`evaluations.max(createdAt)` = 2026-05-03 12:47:52).
-- Legacy `.state/evaluations/task_tree_*.json` artifacts are stale (latest mtime ~2026-03-24).
-
-## Interpretation
-- This points to **output-path drift**: the evaluation pipeline is writing to the DB but no longer emitting/refreshing legacy task_tree artifacts.
-- Treat as **non-blocking** unless some consumer still depends on `.state/evaluations/` files.
-
-## Next questions
-- Which code path used to write `.state/evaluations/task_tree_*.json`? Is it still referenced anywhere?
-- Do any agents/tools read `.state/evaluations/` directly vs querying the `evaluations` table?
+- Canonical DB liveness: `MAX(sessions.startedAt)=1777850403098`, `MAX(evaluations.createdAt)=1777850197304` → eval lag ≈0.057h (~3.4m). Pipeline appears live.
+- Legacy `.state/evaluations/` task_tree artifacts still stale (latest mtime 2026-03-24) → consistent with output-path drift, not DB staleness.
+- `monitor-session.cjs --running`: 1 DRIFT alert for arc session `s_1777850062932_2841` (recommended action: warn).
