@@ -1,8 +1,15 @@
 # Coach Todo
 
-## Status Summary (updated 2029-05-18)
+## Status Summary (updated 2026-05-03)
 
-All 6 projects are **CLOSED**. No active experiments in progress.
+All 6 projects are **CLOSED**. One active experiment in progress.
+
+## ACTIVE: EXP-745 — Few-Shot Pattern Coverage Expansion — PHASE 1 COMPLETE
+- **Problem**: EXP-720 dry-run log has zero data. Patterns only match 20% of typical tasks.
+- **Phase 1 Finding**: H2 SUPPORTED — 80% of worker tasks don't trigger any pattern (only bug/error matches)
+- **Design**: `agents/coach/workspace/EXP-745-fewshot-coverage-expansion-design.md`
+- **Next**: Phase 2 — design new example files for implementation/refactoring task categories
+- **Status**: PHASE 1 COMPLETE
 
 ### Pending Tech-Lead Escalations (4 items)
 1. **EXP-740**: Wall-clock duration gate (90s threshold) — replace dead proxy-score gate
