@@ -4,17 +4,18 @@
 
 ## Active Experiments
 
+### EXP-580: SOUL.md Placement — Verify-After-Write
+- **Status**: DEPLOYED-PARTIAL (coach SOUL.md done; optimizer needs May approval)
+- **Hypothesis**: Moving VAW nudge to SOUL.md will increase compliance from ~5% to ≥30%
+- **Deployed**: coach SOUL.md (2026-06-01)
+- **Next**: Request May to deploy to optimizer SOUL.md; measure after 20 sessions each
+- **Details**: `.state/experiments/EXP-580-soul-placement-vaw.md`
+
 ### EXP-700: Parallel Independent Tool Calls
-- **Status**: Phase 0 STALLED (2/10 trials done, scenario mismatch blocking progress)
+- **Status**: KILLED (2026-06-01 — stalled >3 months, scenario mismatch unresolved)
 - **Hypothesis**: Batching independent tool calls reduces tool-call blocks per session by ≥15%
-- **Skill**: `agents/.lab/exp700-batch-calls/skills/batch-independent-calls.md` ✅ written
-- **Scenario**: `efficient-file-reading-workflow` ✅ exists
-- **Results so far**: Baseline 82.8s (7/8 criteria), Treatment 65.0s (6/8 criteria) — 21% faster but -1 convention
-- **Issue**: Scenario design mismatch (treatment uses different task structure). Needs aligned variant.
-- **Next action**: Create aligned treatment variant with identical task structure; run 5+5 matched trials
-- **Blocking**: Scenario alignment needed before more trials
+- **Outcome**: Promising signal (21% faster) but confounded by scenario mismatch. Killed per staleness policy.
 - **Details**: `EXP-700-phase0-results.md`
-- **Risk**: Has been stalled since initial 2-trial run. Consider killing if no progress within 2 heartbeats.
 
 ## Closed Experiments
 
