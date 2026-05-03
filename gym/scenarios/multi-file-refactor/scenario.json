@@ -1,0 +1,10 @@
+{
+  "name": "multi-file-refactor",
+  "categories": ["refactoring", "verification"],
+  "tags": ["behavioral", "EXP-800", "verify-after-edit", "multi-file"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "description": "Rename getUserData→fetchUserProfile across 4 source files + update imports and tests. Designed for EXP-800: requires 6+ edits, making verify-after-edit rate measurable."
+}
