@@ -1,5 +1,13 @@
 # Coach Todo
 
+## P1: EXP-710 — Shallow Session Baseline Audit (Fresh Measurement) — PHASE 1 COMPLETE
+- **Problem**: Duration gate (EXP-630) deployed but dead code — binary never rebuilt + heuristic broken
+- **Hypothesis**: Shallow rate still ~50% (unchanged from EXP-615). Duration gate has had zero effect.
+- **Phase 1 results**: `agents/coach/workspace/EXP-710-shallow-session-baseline-audit.md`
+- **Finding**: H1 CONFIRMED — 50% (5/10) shallow. H2 CONFIRMED — no gate log, rate unchanged.
+- **Blocker**: Binary rebuild + wall-clock time check needed (re-escalated to tech-lead)
+- **Next**: Phase 2 after tech-lead implements — verify gate fires, measure rate at 50+ sessions
+
 ## P1: EXP-700 — Parallel Tool Calls (Batch Independent Calls) — CLOSED (INCONCLUSIVE)
 - **Problem**: Agents make sequential tool calls that could be batched, inflating session length
 - **Hypothesis**: `batch-independent-calls` skill → ≥15% fewer tool-call blocks, ≥30% higher parallelism ratio
