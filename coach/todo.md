@@ -18,14 +18,15 @@
 - **Finding**: Baseline drifted to 6/7 (86%), treatment 6.7/7 (95%). +9pp delta below +29pp target. Remaining failure is ability-bound.
 - **Status**: CLOSED — INCONCLUSIVE (baseline drift). No deployment.
 
-## P1: EXP-590 — Threat-Gate Durability Check — DESIGNED
+## P1: EXP-590 — Threat-Gate Durability Check — CLOSED ✅ DURABLE
 - **Problem**: EXP-560/565 showed +100pp with threat framing, deployed to production. Never verified durability.
 - **Hypothesis**: Threat gates maintain ≥80% of original effect after 3+ months
-- **Arm A**: `convention-verify-edit-exp565-threatgate` — 3 trials (original: 3/3)
-- **Arm B**: `output-format-compliance-exp560-testgate` — 3 trials (original: 3/3)
+- **Arm A**: `convention-verify-edit-exp565-threatgate` — 2/3 pass (original: 3/3) ✅
+- **Arm B**: `output-format-compliance-exp560-testgate` — 2/3 pass (original: 3/3) ✅
 - **Target**: ≥2/3 pass on each arm
 - **Design**: `agents/coach/workspace/EXP-590-threat-gate-durability-design.md`
-- **Status**: DESIGNED — ready to run next heartbeat
+- **Results**: `agents/coach/workspace/EXP-590-results.md`
+- **Status**: CLOSED ✅ DURABLE — both arms meet threshold. No habituation detected.
 
 ## P1: EXP-580 — Verify-After-Edit Production Re-Measurement — CLOSED ✅
 - **Problem**: Need to confirm EXP-565 text gate is still ineffective after 2+ weeks
