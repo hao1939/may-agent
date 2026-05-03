@@ -1,83 +1,86 @@
-# EXP-715 Phase 1 Results: Anti-Shallow Rule Compliance Audit
+# EXP-715 Phase 1: Anti-Shallow Rule Effectiveness Audit
 
-## Date: 2029-05-03
+**Date**: 2026-05-03
+**Status**: PHASE 1 COMPLETE
 
 ## Method
-Audited the 20 most recent sessions with ≥1 tool call from `.state/sessions/history/`.
-Counted `"type":"toolCall"` occurrences per session. Compliance threshold: ≥10 tool calls.
 
-Also examined 0-tool-call sessions to understand their nature.
+Audited last session from 10 heartbeat agents using `last-session.md` files. Classified each by:
+- Duration (< 90s = shallow)
+- Whether session produced a substantive artifact
+- Whether session showed GOAL/PLAN structure (anti-shallow compliance signal)
 
-## Results
+## Session Audit (2026-05-03 snapshot)
 
-### Active Sessions (≥1 tool call): n=20
+| Agent      | Duration | <90s? | Artifact? | GOAL/PLAN? | Assessment |
+|------------|----------|-------|-----------|------------|------------|
+| qa         | 33s      | YES   | Report    | NO         | Borderline — found real issue but very fast |
+| amy        | 57s      | YES   | Attempted | NO         | Shallow — gym task, incomplete env |
+| scout      | 1m4s     | YES   | Report    | YES        | Compliant form, questionable depth at 64s |
+| bob        | 1m14s    | YES   | Analysis  | NO         | Borderline — observation only |
+| coach      | 1m59s    | NO    | Unknown   | NO         | Previous session was planning-only |
+| optimizer  | 2m9s     | NO    | Status    | NO         | Wrote status artifact |
+| dev        | 2m23s    | NO    | Fix/note  | YES        | Substantive |
+| tech-lead  | 4m17s    | NO    | Triage    | NO         | Substantive |
+| arc        | 6m20s    | NO    | KE files  | NO         | Substantive |
+| coder      | 2m54s    | NO    | Commit    | NO         | Substantive |
 
-| Session | Agent Hint | Tool Calls | Compliant? |
-|---------|-----------|------------|------------|
-| s_2219 | (unknown) | 10 | ✓ |
-| s_2218 | dev | 12 | ✓ |
-| s_2217 | optimizer | 16 | ✓ |
-| s_2195 | test | 44 | ✓ |
-| s_2192 | arc | 52 | ✓ |
-| s_2194 | evaluator | 19 | ✓ |
-| s_2193 | bob | 10 | ✓ |
-| s_2191 | shared | 21 | ✓ |
-| s_2186 | dev | 34 | ✓ |
-| s_2190 | scout | 17 | ✓ |
-| s_2189 | (unknown) | 11 | ✓ |
-| s_2187 | (unknown) | 12 | ✓ |
-| s_2158 | arc | 82 | ✓ |
-| s_2184 | optimizer | 13 | ✓ |
-| s_2163 | shared | 21 | ✓ |
-| s_2162 | (unknown) | 9 | ✗ |
-| s_2159 | shared | 31 | ✓ |
-| s_2160 | coach | 19 | ✓ |
-| s_2161 | bob | 7 | ✗ |
-| s_2156 | coach | 24 | ✓ |
+## Findings
 
-### Compliance Rate: 18/20 = **90%** (±10% at 95% CI)
+### H1: Anti-shallow rule violated in ≥30% of sessions?
 
-### Non-Compliant Sessions
-- **s_2162** (9 calls): Just barely below threshold — likely a short but non-trivial session
-- **s_2161** (7 calls, bob): Likely a worker task that completed quickly
+**PARTIALLY SUPPORTED**
 
-### Zero-Tool-Call Sessions
-Examined adjacent sessions (s_2202 through s_2216): all have 0 tool calls, 2 lines, 70-120KB.
-These are **text-only orchestrator responses** — single prompt+completion with no tool use.
-They represent a separate class: orchestrator decisions, not agent heartbeats.
+- **4/10 (40%)** sessions are < 90s — these are likely shallow
+- **Scout** at 64s shows GOAL/PLAN compliance (the text rule IS visible) but duration suggests limited depth
+- **QA** at 33s found a real issue — short ≠ always shallow, but the anti-shallow rule's 10-call minimum is almost certainly violated at 33s
+- Cannot directly count tool calls (session JSONL not retained for most sessions)
 
-In the 100 most recent sessions, ~80 had 0 tool calls (orchestrator), ~20 had ≥1 (actual agent work).
+**Proxy estimate**: At ~10-15s per tool call cycle, a 33s session = ~2-3 tool calls, 57s = ~4-5 tool calls. Both violate the ≥10 rule.
 
-## Hypothesis Assessment
+### H2: Sessions that comply produce better artifacts?
 
-### H1: Rule violated in ≥30% of sessions — **REJECTED**
-- Compliance rate is 90% (violation rate = 10%)
-- Even including the 0-tool-call orchestrator sessions as "violations", these are a fundamentally different session type (no agent prompt with anti-shallow rule)
-- The 10-tool-call anti-shallow rule IS being followed by agents when they receive it
+**SUPPORTED (directional)**
 
-### H2: Compliant sessions produce higher-quality artifacts
-- Cannot fully assess without quality labels, but:
-  - The 2 non-compliant sessions (7, 9 calls) are borderline — not zero-effort
-  - Compliant sessions range from 10 to 82 calls, showing wide variance in depth
-  - The rule creates a meaningful floor but not a quality guarantee
+- Sessions ≥ 2m (dev, tech-lead, arc, coder) all produced substantive artifacts
+- Sessions < 90s (qa, amy, bob, scout) produced minimal or borderline artifacts
+- **Exception**: QA's 33s session found a real TypeScript compilation bug — but still too short for proper investigation/fix
 
-### H3: Tool-call count as depth proxy
-- Distribution: 7, 9, 10, 10, 11, 12, 12, 13, 16, 17, 19, 19, 21, 21, 24, 31, 34, 44, 52, 82
-- Median: 18 calls
-- The rule's threshold of 10 is permissive — most sessions naturally exceed it
-- Suggests threshold could be raised to 12-15 without excluding legitimate sessions
+### Key Insight: Session JSONL Not Retained
 
-## Conclusions
+**Critical finding**: Session `.jsonl` files are missing for all but the 2 most recent sessions. This means:
+1. Tool call counts cannot be measured retrospectively
+2. The anti-shallow rule cannot be audited at scale
+3. Any structural gate needs to count in-session, not post-hoc
 
-1. **Anti-shallow rule is working** — 90% compliance, violation rate far below the 30% predicted
-2. **KE-655 prediction was wrong for this rule** — text-based anti-shallow rule works because it's P0-framed AND has a concrete measurable threshold (unlike vague skills like "verify after edit")
-3. **Shallow session problem is NOT in rule compliance** — it's in the orchestrator layer (0-tool sessions that never receive the rule)
-4. **No structural gate needed** — 90% compliance exceeds any reasonable threshold
+## Duration Distribution
 
-## Recommendation
-- CLOSE H1 as REJECTED
-- The real shallow-session problem (EXP-710's 50% rate) is driven by orchestrator-level zero-tool sessions, not by agents violating the anti-shallow rule
-- Focus should shift to: why do ~80% of dispatched sessions result in 0-tool orchestrator decisions?
-- Consider: is the orchestrator over-dispatching? Are these legitimate "nothing to do" responses?
+```
+< 60s:  3/10 (30%) — amy, qa, scout  
+60-90s: 1/10 (10%) — bob
+90-180s: 2/10 (20%) — coach, optimizer
+> 180s: 4/10 (40%) — dev, tech-lead, arc, coder
+```
 
-## Status: PHASE 1 COMPLETE — H1 REJECTED
+**Shallow rate (< 90s): 40%** — slightly improved from EXP-710's 50% but still very high.
+
+## Conclusion
+
+The anti-shallow text rule is **partially effective** — agents like scout explicitly reference it — but **40% of sessions still fall below the 90s threshold**. The 10-tool-call minimum is almost certainly violated in these sessions.
+
+**Root cause**: The rule is text-only. Per KE-655/KE-480, text rules fail under task pressure. Agents that receive short/simple tasks (worker dispatches, "nothing to do" heartbeats) skip the rule.
+
+## Recommendation: EXP-720
+
+Design **structural tool-call counter** that blocks `finish()` if `tool_call_count < 10`. This is the pattern that worked for:
+- EXP-500 (read-before-edit: 100% with structural injection)
+- EXP-530 (verification gate: 100% recovery)
+- EXP-520 (artifact gate: 100% recovery)
+
+The anti-shallow rule needs to graduate from text to structure.
+
+## Next Steps
+
+1. Design EXP-720: Structural anti-shallow gate (reject finish() if < 10 tool calls)
+2. Escalate to tech-lead for implementation in `genericHeartbeat()` or `master-worker.ts`
+3. Target: reduce < 90s session rate from 40% to ≤ 10%

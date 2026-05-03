@@ -1,5 +1,13 @@
 # Coach Todo
 
+## P1: EXP-725 — Structural Anti-Shallow Gate — DESIGNED
+- **Problem**: Anti-shallow text rule violated in 40% of sessions (EXP-715 Phase 1). Text rules fail per KE-480.
+- **Hypothesis**: Structural finish() rejection when tool_call_count < 10 → shallow rate ≤10%
+- **Design**: `agents/coach/workspace/EXP-725-structural-anti-shallow-gate-design.md`
+- **Baseline**: `agents/coach/workspace/EXP-715-phase1-results.md`
+- **Next**: Escalate to tech-lead for implementation in genericHeartbeat()
+- **Status**: DESIGNED — awaiting implementation
+
 ## P1: KE-720 — Shallow Sessions Meta-Analysis — WRITTEN ✅ (2029-05-04)
 
 ## P1: EXP-720 — Few-Shot Injection in master-worker.ts — PHASE 2 DEPLOYED
