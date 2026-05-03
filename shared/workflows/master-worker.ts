@@ -458,7 +458,7 @@ ${journalContent.slice(-3000)}
       // EXP-720: Few-shot dry-run logging (measure match rate before full injection)
       try {
         const { selectExamples } = await import("./fewshot-inject-helpers.js");
-        const matches = selectExamples(workerPrompt);
+        const matches = selectExamples(guidance);
         if (matches.length > 0) {
           const logLine = JSON.stringify({
             ts: new Date().toISOString(),
