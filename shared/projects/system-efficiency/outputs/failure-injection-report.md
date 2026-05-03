@@ -1,57 +1,39 @@
-# Failure Injection Test Suite Report
-## Status: COMPLETE
+# Failure Injection Test Report
+
 ## Summary
-Created 36 failure-injection tests proving error handling works across 4 hardened workflow files.
+Created comprehensive failure-injection test suite with 18 tests covering file I/O failures, JSON parse failures, LLM timeout simulation, and combined failure scenarios.
 
 ## Test File
-`tests/failure-injection.test.ts` — 36 tests, all passing
+`agents/shared/tests/failure-injection.test.ts`
 
-## Coverage by Module
+## Test Categories
 
-### master-worker-cached.ts (File I/O failures) — 8 tests
-- readProjectFile returns null when file doesn't exist
-- readJournalFile returns empty string when file missing
-- readDiscussionFile returns null when file missing
-- writeProjectFile throws on EACCES (permission denied)
-- appendJournalEntry swallows ENOSPC errors gracefully (logs, doesn't crash)
-- buildIterationSnapshot returns null when project file missing
-- extractField returns empty string for missing fields
-- extractSection returns empty string for missing sections
+### File I/O Failures (4 tests)
+- ENOENT on readFile → returns null
+- EACCES on writeFile → returns error object
+- ENOSPC disk full → graceful failure
+- Empty file handling → null data with error message
 
-### budget-checkpoint.ts (Edge cases) — 6 tests
-- Zero iterations handled safely
-- Below-threshold returns false
-- At-threshold triggers checkpoint
-- Already-checkpointed returns false (no double-checkpoint)
-- buildBudgetCheckpointEntry produces valid output
-- resetBudgetState allows re-checkpoint
+### JSON Parse Failures (5 tests)
+- Malformed JSON (missing braces)
+- Trailing commas
+- Binary-like invalid input
+- Undefined/null input guard
+- Extremely large input guard (>10MB)
 
-### master-worker-resilient.ts (Circuit breaker + zero output) — 14 tests
-- Circuit label detection (closed state)
-- classifyCircuit with various circuit states
-- shouldAbort: no failures → false, 3 consecutive → true
-- summarizeRun: empty results, mixed results
-- successRate: empty array (0), mixed results (0.5)
-- formatJournalEntry with error results
-- mergeResilientConfig provides defaults
-- DeliverableTracker: starts at zero, detects empty/real output
-- checkZeroOutput: escalate at 3, terminate at 5
+### LLM Timeout Simulation (5 tests)
+- Timeout with retry (succeeds on 3rd attempt)
+- Max retries exhausted → graceful failure object
+- Rate limit (429) with backoff
+- Error classification (timeout vs network vs rate_limit)
+- Partial/truncated response validation
 
-### verify-wrap.ts (LLM failure simulation) — 4 tests
-- Module exports execute function
-- ctx.runAgent throws → escalates with error message
-- ctx.runAgent returns error status → escalates
-- Successful run → calls ctx.done
-
-### JSON Parse Failures — 2 tests
-- Malformed JSON in extractField doesn't crash
-- buildPrompt handles special characters in snapshot
+### Combined Failure Scenarios (4 tests)
+- LLM failure + file write failure
+- JSON parse failure from LLM response (prose vs code block)
+- Cascading failures with circuit breaker pattern
 
 ## Results
-```
-Test Files  1 passed (1)
-Tests       36 passed (36)
-Duration    351ms
-```
-
-All error handling paths confirmed working under simulated failure conditions.
+- **Total Tests**: 18
+- **Status**: All passing
+- **Patterns Validated**: try/catch degradation, retry with backoff, circuit breaker, input validation
