@@ -48,28 +48,11 @@ Separately, the few-shot examples were proven 100% effective in gym (18/18, EXP-
 ## Diagnostic Evidence (this session)
 - `bun -e` test confirms `selectExamples` imports and runs correctly (returns `function` type)
 - `selectExamples("fix the database migration")` → 0 matches (even though "fix" is in a pattern, it needs "fix.*bug")
-- No `.js` compiled files exist — Bun resolves `.ts` from `.js` imports correctly
-- Log file doesn't exist at all (not even empty) — code path likely never reached
 
 ## Phase 1 Results (2026-05-03)
+- **Match rate: 45%** (9/20 representative tasks) — NOT 0% as hypothesized
+- H2 partially confirmed: patterns work for bug-fix tasks but miss implementation/refactoring entirely
+- Unwired example found: `requirements-conflict-analysis.md` — NOW WIRED into EXAMPLE_PATTERNS
+- Full results: `agents/coach/workspace/EXP-745-phase1-results.md`
+- **Next**: Phase 2 — write implementation/refactoring examples to push coverage to ~75%
 
-Tested 15 representative worker task descriptions against current patterns:
-
-| Result | Count | Examples |
-|--------|-------|----------|
-| ✅ MATCH | 3 (20%) | "Fix the failing CI pipeline test", "Add error handling", "Fix bug in token refresh" |
-| ❌ NO MATCH | 12 (80%) | "Implement login page", "Add unit tests", "Refactor DB pool", "Create REST endpoint", "Migrate config" |
-
-**Key finding**: Only bug/error tasks match (via `reproduce-first-debugging` and `evidence-over-narrative` patterns). The vast majority of production work — implementation, refactoring, testing, documentation — has ZERO pattern coverage.
-
-**Unmatched task categories needing new patterns**:
-1. **Implementation/creation tasks** (5/15) — "implement", "create", "add new"
-2. **Refactoring/migration tasks** (2/15) — "refactor", "migrate"  
-3. **Testing tasks** (1/15) — "add unit tests", "write tests"
-4. **Documentation/reporting tasks** (3/15) — "update README", "write knowledge entry"
-5. **Investigation/diagnostic tasks** (1/15) — "investigate why"
-
-**Assessment**: H2 SUPPORTED — 80% of typical tasks don't trigger any pattern. Even if workers ARE running, the dry-run log would only capture 20% of sessions. Combined with the possibility that real production guidance is even more generic ("do iteration 3 of project X"), actual match rate may be <10%.
-
-## Next Action
-Phase 2: Design 2-3 new example files for implementation and refactoring tasks (the two largest unmatched categories). Need to first check if there are existing worked examples that could serve these domains, then expand the pattern set.
