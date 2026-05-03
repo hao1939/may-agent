@@ -1,45 +1,29 @@
-# Bob Eval Quality Pattern Analysis — 2025-05-03
+# Analysis: Eval Quality Patterns — 2025-05-03
 
-## Summary
-Bob's average eval quality is **0.43** (209 evals), ranking 4th worst of 10 agents.
-Analysis of the 8 most recent low-quality (< 0.4) evaluations reveals **two dominant failure modes**.
+## Key Finding: Evaluator Tool Allowlist Bug
 
-## Failure Mode 1: `notify` Tool Flagged as Hallucination (50% of low evals)
-- **Pattern**: Evaluator marks `notify` tool calls as "non-existent/unauthorized tool"
-- **Root cause**: The evaluator's tool allowlist doesn't include `notify`, even though it's a real tool in the agent runtime
-- **Impact**: Q scores of 0.15-0.25 — severe penalty for using a legitimate tool
-- **Fix**: Either (a) update evaluator's tool allowlist to include `notify`, or (b) use `agents.fork` instead of `notify` where possible to avoid the false positive
+From memory-stream (2025-05-03): "Evaluator penalizes notify tool usage because its TOOLS.md only lists its own tools — when evaluating other agents it uses this incomplete list as the allowlist, causing 50% of bob's low-quality evals."
 
-### Evidence
-```
-Q=0.15: "Used a non-existent/unauthorized tool: [tool_call: notify]"
-Q=0.25: "Used a non-existent tool: `notify` is not in the allowed tool list"
-Q=0.25: "Used a non-existent tool: `notify`"
-Q=0.35: "Used a non-permitted/non-listed tool `notify`"
-```
+### Impact
+- Evaluator grades agents against an incomplete tool list
+- `notify` tool (used heavily by bob, coach, may) gets penalized as "unauthorized"
+- This systematically biases eval scores downward for coordination-heavy agents
+- Estimated 50% of bob's low-quality evaluation results are false negatives
 
-## Failure Mode 2: Missing GOAL/PLAN/DONE WHEN Format (37.5% of low evals)
-- **Pattern**: Session starts with tool calls or narrative instead of the mandatory format
-- **Root cause**: Bob begins working before outputting the required format block
-- **Impact**: Q scores of 0.35 — moderate penalty
-- **Fix**: Already addressed in this session (starting with GOAL/PLAN/DONE WHEN)
+### Recommended Fix
+1. Evaluator's TOOLS.md should include ALL system tools, or
+2. Evaluator should reference agents/shared/ tool definitions, or  
+3. Eval rubric should explicitly exclude tool-choice from scoring when tools are system-provided
 
-### Evidence
-```
-Q=0.35: "Did not follow mandatory first-message format (GOAL/PLAN/DONE WHEN)"
-Q=0.35: "Did not follow the mandated session opening format"
-Q=0.35: "Did not follow mandatory first-message format"
-```
+### Status
+This appears to be a known issue (captured in memory-stream). Need to verify if anyone has filed a fix.
 
-## Failure Mode 3: Verification Evidence Gaps (12.5%)
-- **Pattern**: finish() claims verification steps not evidenced in transcript
-- **Fix**: Ensure verification_evidence references actual tool call outputs
+## Secondary Pattern: Zombie Sessions
 
-## Recommendations
-1. **P0 — Evaluator calibration**: File issue to add `notify` to evaluator's known tool list. This alone would fix ~50% of low evals.
-2. **P1 — Format compliance**: Always emit GOAL/PLAN/DONE WHEN as literal first output (already doing this session).
-3. **P2 — Verification rigor**: Reference specific step numbers in verification_evidence.
+Dev noted: "session.error-rate-6h does not detect zombie sessions left in `running`; add or track `session.stale-running-count` for sessions with status='running' older than 30 minutes."
 
-## Impact Estimate
-If `notify` false positives are fixed: estimated quality improvement from 0.43 → ~0.55
-If format compliance also fixed: estimated quality improvement to ~0.60
+System status shows 1 idle session (may, 78h+) and hundreds of interrupted sessions. The current metrics track error rate but not staleness — a monitoring gap.
+
+### Recommended Action
+- Add `session.stale-running-count` metric
+- Alert threshold: >3 sessions running >30min without progress
