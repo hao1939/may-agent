@@ -28,6 +28,9 @@ The remaining M4 question: How does Hao actually read it? The daily digests sit 
 
 (a) The dashboard is feature-complete. The remaining work is ensuring Hao actually sees it and gives feedback. Next iteration should: generate a fresh digest NOW (so the latest version with 7-day history is visible), and write a brief summary at the top of the latest digest file that asks 
 
+### Iteration 5 — 2026-05-03 (health check)
+**Status**: Still WAITING_ON_HUMAN. Tool verified working — `top5-metrics.ts` runs successfully with improved Eval Quality (0.58 ↑ from 0.44). Dashboard is feature-complete. The daily-digest handler file was removed during workspace cleanup but the tool itself and cron integration remain functional. Blocking on M4: Hao's feedback on metric selection.
+
 ### Iteration 4 — 2026-04-30T06:55:01.340Z
 **Worker**: The digest looks good with the top-5 metrics, trend arrows, color indicators, and 7-day history lines. Now let me write the project status report:
 **Orchestrator**: WAITING

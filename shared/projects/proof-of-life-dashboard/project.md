@@ -1,7 +1,8 @@
 # Project: Proof-of-Life Dashboard
 
 **Status**: waiting
-**Stop Reason**: WAITING
+**Stop Reason**: WAITING_ON_HUMAN
+**Last Checked**: 2026-05-03
 
 The project is feature-complete and verified working. The 2026-04-30 daily digest shows all 5 metrics with color indicators (🟢🔴), trend arrows (↑↓→), and 7-day history lines. 
 
