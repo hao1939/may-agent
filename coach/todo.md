@@ -1,5 +1,23 @@
 # Coach Todo
 
+## Status Summary (updated 2029-05-18)
+
+All 6 projects are **CLOSED**. No active experiments in progress.
+
+### Pending Tech-Lead Escalations (4 items)
+1. **EXP-740**: Wall-clock duration gate (90s threshold) — replace dead proxy-score gate
+2. **EXP-730**: Dormant structural gate audit — 3 deployed gates have ZERO triggers
+3. **EXP-735**: Impact gate trigger condition fix — keyword detection too broad
+4. **EXP-725**: Structural anti-shallow gate — finish() rejection when tool_call_count < 10
+
+### Key Metrics
+- **Experiments closed**: 50+ (EXP-250 through EXP-740)
+- **Proven interventions deployed**: EXP-500 (read-before-edit), EXP-510 (worker checklist), EXP-520 (artifact gate), EXP-530 (verification gate), EXP-540 (path normalization), EXP-560/565 (threat gates), EXP-630/650 (duration+impact gates)
+- **Core finding**: Text coaching is dead for verification behaviors (KE-480). Only structural gates work in production.
+- **Current gap**: 3 deployed gates (duration, impact, fewshot) have 0% trigger rate — needs tech-lead fix
+
+---
+
 ## P1: EXP-740 — Deployed Gate Liveness Audit — PHASE 1 COMPLETE, FIX DESIGNED
 - **Problem**: All 3 deployed gates (EXP-630 duration, EXP-650 impact, EXP-720 fewshot) have ZERO log entries
 - **Phase 1 Finding**: H1+H2 CONFIRMED — 0% trigger rate. Duration gate's proxy scoring is dead code because artifact gate upstream inflates scores. Impact gate's keyword detection is too broad.
