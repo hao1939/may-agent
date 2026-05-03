@@ -1,5 +1,13 @@
 # Coach Todo
 
+## P1: EXP-600 — Bash Waste Reduction via Diagnose-Before-Retry — IN PROGRESS
+- **Problem**: bash:exit-code-nonzero = 170 occurrences, 404 wasted calls. Agents retry without analyzing errors.
+- **Hypothesis**: diagnose-before-retry skill → ≥25% reduction in bash waste rate
+- **Skill deployed**: `agents/tech-lead/skills/diagnose-before-retry.md` (2026-05-03)
+- **Baseline script**: `agents/gym/experiments/EXP-600-baseline.sh`
+- **Design**: `agents/gym/experiments/EXP-600-bash-waste-reduction.md`
+- **Status**: IN PROGRESS — skill deployed, need to run baseline measurement next heartbeat
+
 ## P1: EXP-595 — Worker Injection Durability Check — DESIGNED
 - **Problem**: EXP-510 worker completion checklist deployed May 2026 (+39pp write, +69pp finish). Never verified for durability.
 - **Hypothesis**: Worker injection maintains ≥80% of original effect (write ≥60%, finish ≥55%)
