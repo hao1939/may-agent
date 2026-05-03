@@ -32,6 +32,16 @@ All 6 projects have been completed/closed:
 3. **Skill audit** — 12 skills deployed, verify they're still referenced and useful
 4. **New experiment design** — candidate: test judgment scenario (conflicting-requirements-tradeoff) that was designed but never baselined
 
+### EXP-700: Parallel Tool Calls — CLOSED INCONCLUSIVE (2029-08-03)
+- **Results**: `EXP-700-baseline-results.md`
+- **Finding**: Skill shows 0pp quality improvement, ~20% duration reduction (proxy only). Transcript data unavailable for direct parallelism measurement.
+- **Recommendation**: Don't deploy. Not enough signal.
+
+### EXP-710: Task Timeout Pressure — NEXT CANDIDATE
+- **Problem**: Agents take 55-99s on tasks that could complete in <40s with efficient reading. No quality gate penalizes slow completion.
+- **Hypothesis**: A "timeout-aware" skill that explicitly states "complete within N tool-call blocks" → measurable block reduction without quality loss.
+- **Status**: DESIGN NEEDED
+
 ## P2: Backlog
 
 - Harder gym scenarios needed (all current at ceiling)
