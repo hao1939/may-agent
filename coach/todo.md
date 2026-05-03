@@ -19,6 +19,15 @@
 - **Target**: ≥6/7 in ≥2/3 treatment trials
 - **Status**: SCENARIO CREATED — ready for gym trials next heartbeat
 
+## P1: EXP-590 — Threat-Gate Durability Check — DESIGNED
+- **Problem**: EXP-560/565 showed +100pp with threat framing, deployed to production. Never verified durability.
+- **Hypothesis**: Threat gates maintain ≥80% of original effect after 3+ months
+- **Arm A**: `convention-verify-edit-exp565-threatgate` — 3 trials (original: 3/3)
+- **Arm B**: `output-format-compliance-exp560-testgate` — 3 trials (original: 3/3)
+- **Target**: ≥2/3 pass on each arm
+- **Design**: `agents/coach/workspace/EXP-590-threat-gate-durability-design.md`
+- **Status**: DESIGNED — ready to run next heartbeat
+
 ## P1: EXP-580 — Verify-After-Edit Production Re-Measurement — CLOSED ✅
 - **Problem**: Need to confirm EXP-565 text gate is still ineffective after 2+ weeks
 - **Result**: 12.9% (10/77) vs 9.7% baseline — +3.2pp (noise, not significant)
