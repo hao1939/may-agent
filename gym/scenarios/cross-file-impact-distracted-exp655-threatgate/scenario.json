@@ -1,0 +1,9 @@
+{
+  "name": "cross-file-impact-distracted-exp655-threatgate",
+  "categories": ["judgment"],
+  "tags": ["behavior", "impact-radius", "cross-file", "distraction", "exp655"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
