@@ -24,6 +24,13 @@
 - **Next**: Create `multi-file-refactor` gym scenario, run 4-arm experiment (20 sessions)
 - **Details**: `agents/shared/knowledge/experiments/EXP-800/design.md`
 
+### EXP-745: Few-Shot Pattern Coverage Expansion
+- **Status**: PHASE 2 COMPLETE (2029-07-03)
+- **Hypothesis**: Broadening trigger patterns to match implementation/refactoring tasks achieves ≥25% match rate
+- **Outcome**: Match rate 45% → 80% (+35pp). Two new examples: incremental-implementation, safe-refactoring.
+- **Next**: Phase 3 gym validation or production monitoring
+- **Details**: `agents/coach/workspace/EXP-745-phase2-results.md`
+
 ## Closed Experiments
 
 | ID | Name | Outcome | Skill Promoted? | Key Finding |

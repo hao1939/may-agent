@@ -4,12 +4,14 @@
 
 All 6 projects are **CLOSED**. One active experiment in progress. EXP-730 CLOSED (root cause found, superseded by EXP-740).
 
-## ACTIVE: EXP-745 — Few-Shot Pattern Coverage Expansion — PHASE 1 COMPLETE
-- **Problem**: EXP-720 dry-run log has zero data. Patterns only match 20% of typical tasks.
-- **Phase 1 Finding**: H2 SUPPORTED — 80% of worker tasks don't trigger any pattern (only bug/error matches)
+## ACTIVE: EXP-745 — Few-Shot Pattern Coverage Expansion — PHASE 2 COMPLETE
+- **Problem**: EXP-720 dry-run log has zero data. Patterns only matched 45% of typical tasks.
+- **Phase 1 Finding**: H2 SUPPORTED — patterns work for bug-fix but miss implementation/refactoring entirely
+- **Phase 2 Finding**: Two new examples created (incremental-implementation, safe-refactoring). Match rate 45% → 80%.
 - **Design**: `agents/coach/workspace/EXP-745-fewshot-coverage-expansion-design.md`
-- **Next**: Phase 2 — design new example files for implementation/refactoring task categories
-- **Status**: PHASE 1 COMPLETE
+- **Phase 2 Results**: `agents/coach/workspace/EXP-745-phase2-results.md`
+- **Next**: Phase 3 — gym validation OR monitor production trigger rate
+- **Status**: PHASE 2 COMPLETE
 
 ### Pending Tech-Lead Escalations (3 items — EXP-730 closed)
 1. **EXP-740**: Wall-clock duration gate (90s threshold) — replace dead proxy-score gate
