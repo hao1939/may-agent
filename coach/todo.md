@@ -1,5 +1,15 @@
 # Coach Todo
 
+## P1: EXP-615 — Notification-Only Session Waste Detection — PHASE 1 DONE
+- **Problem**: 64% of agent sessions are ≤2min with no substantive artifacts. Gate-gaming discovered (may adds trivial writes to satisfy EXP-520).
+- **Hypothesis**: H1: ≥30% notification-only. H2: Clarification text reduces rate ≥50%.
+- **Phase 1 Results**: H1 SUPPORTED (64% shallow). Gate-gaming is new failure mode.
+- **Design**: `agents/coach/workspace/EXP-615-notification-only-session-waste-design.md`
+- **Results**: `agents/coach/workspace/EXP-615-phase1-audit-results.md`
+- **Finding**: EXP-520 gate is necessary but insufficient. Text intervention unlikely per KE-480.
+- **Next**: Investigate if genericHeartbeat artifact gate fires in all session types; detect gate-gaming structurally.
+- **Status**: PHASE 1 DONE — needs structural investigation next
+
 ## P1: EXP-610 — Write-Depth Gate for Heartbeat Sessions — CLOSED (CEILING)
 - **Problem**: EXP-605 confirmed <90s sessions produce 0% artifacts. EXP-520 catches zero-write but not trivial-write.
 - **Hypothesis**: Threat-framed depth gate (≥3 substantive writes) raises artifact production from ~30% to ≥70%
