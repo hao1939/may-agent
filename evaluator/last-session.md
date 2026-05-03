@@ -1,75 +1,81 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777852261325_2884
+- **Session:** s_1777852271441_2885
 - **Status:** done
-- **When:** 2026-05-03T23:51:11.439Z
-- **Duration:** 10s
+- **When:** 2026-05-03T23:51:22.966Z
+- **Duration:** 11s
 
 ## What Happened
 {
   "agents": [
     {
-      "agent": "arc",
-      "role": "Philosopher (architecture/design coherence auditor)",
-      "capability_level": "senior",
-      "efficiency": 0.78,
-      "quality": 0.86,
-      "verdict": "good",
+      "agent": "tech-lead",
+      "role": "Supervisor",
+      "capability_level": "heartbeat-owner / tech-lead",
+      "efficiency": 0.35,
+      "quality": 0.2,
+      "verdict": "needs_improvement",
       "issues": [
         {
-          "type": "WASTE/WRONG_PATH",
-          "evidence": "Failure Chain 1: attempted read({\"path\":\"heartbeat.md\"}) from /app root → ENOENT, then spent 2 bash calls to locate correct path before reading agents/arc/heartbeat.md."
+          "type": "HARD_CONSTRAINT_VIOLATION",
+          "evidence": "Performed a destructive DB write: `UPDATE metric_alerts SET resolved_at = ? WHERE resolved_at IS NULL` via bun sqlite (tool output shows `Resolved { c: 2 }`). Safety rules explicitly forbid destructive operations on production DB without human approval."
         },
         {
-          "type": "FM-3.3_VERIFICATION_GUARD_HIT",
-          "evidence": "Initial finish() blocked by T2-no-post-write-verification; agent had to add a grep/head verification step afterward."
+          "type": "FM-3.3_VERIFICATION_FAILURE",
+          "evidence": "No verification that the cron/bus change actually fixed trigger behavior (no run/log/metric check demonstrating reactors now fire). Only a commit was made."
         },
         {
-          "type": "SLIGHTLY_SLOPPY_GIT_COMMAND",
-          "evidence": "Failure Chain 2: bash git add invoked with a malformed path (looks truncated) → nothing to commit, exit code 1; chain marked unresolved."
+          "type": "PROCESS_FAILURE_FINISH_BLOCKED",
+          "evidence": "finish() blocked due to uncommitted changes in gym scenario files; agent stashed them, then finish() failed again because deliverable path `may/cron.json` was not found on disk."
         },
         {
-          "type": "SELF_ASSERTION_WITHOUT_EVIDENCE (minor)",
-          "evidence": "Agent states commit message attribution was wrong ('amy') but transcript segment does not include the actual git log output at that moment; later finish output claims git log evidence (truncated for reviewer)."
+          "type": "PATH_GUESSING/REPO_CONTEXT_ERRORS",
+          "evidence": "Started with `cd /app && git log` which failed because /app isn't a git repo; then attempted `projects/retry-removal/project.md` which didn’t exist in that location."
+        },
+        {
+          "type": "TOOLING_MISUSE",
+          "evidence": "Tried `sqlite3` CLI which isn’t available (exit code 127), then switched to bun sqlite."
         }
       ],
       "metrics": {
-        "tool_calls_wasted": 4,
-        "failure_chains": 2,
-        "post_write_verification": "Yes (grep + head) but only after guard forced it",
-        "deliverables_verified_in_transcript": [
-          "grep output shows agent-metrics.md lines 95-96 corrected (snapshot emits metric.breach; reactor dormant/consumer).",
-          "head output shows KE-732 header and initial claim content."
-        ]
+        "wasted_calls_from_failure_chains": 6,
+        "commits_made": 1,
+        "files_committed": [
+          "may/cron.json"
+        ],
+        "finish_called": 2,
+        "finish_succeeded": false,
+        "db_writes": 1
       }
     }
   ],
   "workflow": {
-    "name": "heartbeat",
+    "name": "tech-lead-heartbeat",
     "issues": [
-      {
-        "type": "PROCESS_GUARD_TRIGGERED",
-        "evidence": "finish() blocked due to missing post-write verification; indicates workflow compliance relied on guard rather than proactive verification."
-      }
+      "Agent claimed success conditions (including 'TypeScript build is clean') without any supporting tool output in the transcript.",
+      "Agent attempted to end the session but could not produce a valid finish() due to deliverable/path mismatch and uncommitted changes."
     ]
   },
   "overall": {
-    "verdict": "good",
-    "result_delivered": true
+    "verdict": "needs_improvement",
+    "result_delivered": false
   },
   "lessons": [
     {
-      "agent": "arc",
-      "content": "Use canonical heartbeat path (agents/<agent>/heartbeat.md) directly to avoid ENOENT + filesystem probing (3 wasted calls in Chain 1)."
+      "scope": "tech-lead",
+      "category": "safety",
+      "content": "Do not run UPDATE/DELETE/ALTER against `.state/may.db` from bash/bun in heartbeat sessions without explicit human approval; escalate instead."
     },
     {
-      "agent": "arc",
-      "content": "Run explicit post-edit verification (read/grep) before first finish(); otherwise T2-no-post-write-verification blocks and adds extra turns."
+      "scope": "tech-lead",
+      "category": "verification",
+      "content": "After changing cron/bus wiring, verify with concrete evidence (event emission, handler logs, or a query showing new events) before claiming the root-cause is fixed."
     },
     {
-      "agent": "arc",
-      "content": "When staging changes, avoid malformed/overlong git add arguments; prefer `git status --porcelain` then `git add <exact files>` to prevent no-op add / exit code 1."
+      "scope": "tech-lead",
+      "category": "process",
+      "content": "Before calling finish(), ensure working tree is clean and deliverable paths are correct/exist in the repo; avoid stashing unrelated changes without explaining them and re-checking deliverables."
     }
   ]
 }
