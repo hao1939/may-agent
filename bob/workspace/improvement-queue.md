@@ -5,6 +5,8 @@
 
 ## Ready
 
+- [ ] **EXP Doc-Drift Detection Guard (Phase 1)**: Implement pilot drift-check script targeting `may-agent-docs/sessions.md`. Validate against known KE-570 findings. See `EXP-PROPOSAL-doc-drift-detection-guard.md`. Output: working script + test results.
+
 - [ ] **Execute H-098 consolidation**: Based on ANALYSIS-hypothesis-tensions.md, execute the 4 proposed merges (H-085, H-091, H-043, H-053, H-087 → H-098). Update H-098 hypothesis file, mark absorbed hypotheses, update PRIORITY-TRACKER. Output: updated hypothesis files + tracker.
 
 - [ ] **H-096 experiment design**: H-096 (Evaluation Architecture Determines Quality Ceiling) is at P=0.68 with no direct test. Design a minimal experiment using checkpoint decomposition on a known-hard scenario. Output: `knowledge/experiments/EXP-145/design.md` or next available number.
