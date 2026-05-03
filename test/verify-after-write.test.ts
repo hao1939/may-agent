@@ -29,7 +29,7 @@ describe("verify-after-write guard", () => {
       step: "implement",
       result: {
         messages: [
-          { content: [{ type: "toolCall", name: "write", arguments: { path: "src/a.ts" } }] },
+          { content: [{ type: "toolCall", name: "edit", arguments: { path: "src/a.ts" } }] },
         ],
       },
       completedSteps: [],
@@ -37,14 +37,14 @@ describe("verify-after-write guard", () => {
     expect(guard.handle(event as any)).toEqual([]);
   });
 
-  it("blocks finish(success) when writes are unverified", () => {
+  it("blocks finish(success) when edits are unverified", () => {
     const event = {
       type: "step_done",
       source: "agent",
       step: "implement",
       result: {
         messages: [
-          { content: [{ type: "toolCall", name: "write", arguments: { path: "src/a.ts" } }] },
+          { content: [{ type: "toolCall", name: "edit", arguments: { path: "src/a.ts" } }] },
         ],
         finishResult: { status: "success" },
       },
@@ -56,7 +56,23 @@ describe("verify-after-write guard", () => {
     expect(demands[0].reason).toContain("src/a.ts");
   });
 
-  it("allows finish(success) when all writes are verified by read", () => {
+  it("does NOT block finish(success) for unverified writes (edit-only enforcement)", () => {
+    const event = {
+      type: "step_done",
+      source: "agent",
+      step: "implement",
+      result: {
+        messages: [
+          { content: [{ type: "toolCall", name: "write", arguments: { path: "src/a.ts" } }] },
+        ],
+        finishResult: { status: "success" },
+      },
+      completedSteps: [],
+    };
+    expect(guard.handle(event as any)).toEqual([]);
+  });
+
+  it("allows finish(success) when all edits are verified by read", () => {
     const event = {
       type: "step_done",
       source: "agent",
@@ -65,7 +81,7 @@ describe("verify-after-write guard", () => {
         messages: [
           {
             content: [
-              { type: "toolCall", name: "write", arguments: { path: "src/a.ts" } },
+              { type: "toolCall", name: "edit", arguments: { path: "src/a.ts" } },
               { type: "toolCall", name: "read", arguments: { path: "src/a.ts" } },
             ],
           },
@@ -74,8 +90,7 @@ describe("verify-after-write guard", () => {
       },
       completedSteps: [],
     };
-    const demands = guard.handle(event as any);
-    expect(demands).toEqual([]);
+    expect(guard.handle(event as any)).toEqual([]);
   });
 
   it("tracks verification across multiple steps", () => {
@@ -93,14 +108,13 @@ describe("verify-after-write guard", () => {
         {
           result: {
             messages: [
-              { content: [{ type: "toolCall", name: "write", arguments: { path: "src/a.ts" } }] },
+              { content: [{ type: "toolCall", name: "edit", arguments: { path: "src/a.ts" } }] },
             ],
           },
         },
       ],
     };
-    const demands = guard.handle(event as any);
-    expect(demands).toEqual([]);
+    expect(guard.handle(event as any)).toEqual([]);
   });
 
   it("normalizes paths (strips leading ./)", () => {
@@ -112,7 +126,7 @@ describe("verify-after-write guard", () => {
         messages: [
           {
             content: [
-              { type: "toolCall", name: "write", arguments: { path: "./src/a.ts" } },
+              { type: "toolCall", name: "edit", arguments: { path: "./src/a.ts" } },
               { type: "toolCall", name: "read", arguments: { path: "src/a.ts" } },
             ],
           },
@@ -131,31 +145,13 @@ describe("verify-after-write guard", () => {
       step: "implement",
       result: {
         messages: [
-          { content: [{ type: "toolCall", name: "write", arguments: { path: "src/a.ts" } }] },
+          { content: [{ type: "toolCall", name: "edit", arguments: { path: "src/a.ts" } }] },
         ],
         finishResult: { status: "failure" },
       },
       completedSteps: [],
     };
     expect(guard.handle(event as any)).toEqual([]);
-  });
-
-  it("handles edit() the same as write()", () => {
-    const event = {
-      type: "step_done",
-      source: "agent",
-      step: "implement",
-      result: {
-        messages: [
-          { content: [{ type: "toolCall", name: "edit", arguments: { path: "src/b.ts" } }] },
-        ],
-        finishResult: { status: "success" },
-      },
-      completedSteps: [],
-    };
-    const demands = guard.handle(event as any);
-    expect(demands).toHaveLength(1);
-    expect(demands[0].reason).toContain("src/b.ts");
   });
 
   it("handles tool_use type in addition to toolCall", () => {
@@ -167,7 +163,7 @@ describe("verify-after-write guard", () => {
         messages: [
           {
             content: [
-              { type: "tool_use", name: "write", input: { path: "src/c.ts" } },
+              { type: "tool_use", name: "edit", input: { path: "src/c.ts" } },
               { type: "tool_use", name: "read", input: { path: "src/c.ts" } },
             ],
           },

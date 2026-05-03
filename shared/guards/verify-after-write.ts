@@ -1,14 +1,13 @@
 /// <reference path="../../types/workflow-defs.d.ts" />
 /**
- * verify-after-edit guard — C1.3 Write/Edit-Without-Verify detection.
+ * verify-after-edit guard — C1.3 Edit-Without-Verify detection.
  *
- * Scans step_done events for write() AND edit() tool calls where the
- * target file was not subsequently read() in the same step. Injects a
- * corrective run_step that forces the agent to verify the modified files.
+ * Scans step_done events for edit() tool calls where the target file was
+ * not subsequently read() in the same session. Blocks finish until verified.
  *
- * This is the #2 convention violation (C1.3). Same Ch1→Ch2 channel
- * switch that produced 0%→100% for C1.1 (read-before-edit guard),
- * EXP-188 (finish guard), and EXP-115 (optimizer completeness).
+ * Narrowed from write+edit to edit-only per EXP-575 decision: edits carry
+ * real corruption risk (wrong oldText, partial replacement) while new file
+ * writes are self-contained and verified by content preview.
  *
  * Design: follows read-before-edit.ts pattern exactly.
  */
@@ -44,15 +43,15 @@ function normPath(p: string): string {
  */
 function findUnverifiedPaths(messages: any[]): string[] {
   const calls = extractToolCalls(messages);
-  const writtenPaths = new Map<string, number>(); // path → index of write/edit call
+  const writtenPaths = new Map<string, number>(); // path → index of edit call
 
   for (const call of calls) {
-    if ((call.name === "write" || call.name === "edit") && call.path) {
+    if (call.name === "edit" && call.path) {
       const np = normPath(call.path);
       writtenPaths.set(np, call.index);
     } else if (call.name === "read" && call.path) {
       const np = normPath(call.path);
-      // Only counts as verification if read comes AFTER write
+      // Only counts as verification if read comes AFTER edit
       if (writtenPaths.has(np) && call.index > writtenPaths.get(np)!) {
         writtenPaths.delete(np);
       }
@@ -82,7 +81,7 @@ function findSessionUnverifiedPaths(event: WorkflowGuardEvent): string[] {
   for (const messages of allMessages) {
     const calls = extractToolCalls(messages);
     for (const call of calls) {
-      if ((call.name === "write" || call.name === "edit") && call.path) {
+      if (call.name === "edit" && call.path) {
         unverified.add(normPath(call.path));
       } else if (call.name === "read" && call.path) {
         unverified.delete(normPath(call.path));
