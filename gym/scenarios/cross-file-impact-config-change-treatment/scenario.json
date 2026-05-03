@@ -1,0 +1,10 @@
+{
+  "name": "cross-file-impact-config-change-treatment",
+  "categories": ["judgment"],
+  "tags": ["behavior", "impact-radius", "cross-file", "EXP-570", "treatment"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md"
+}
