@@ -295,7 +295,8 @@
     "description": "React to metric.breach events by forking the owning agent with remediation task.",
     "on": [
       "metric.breach"
-    ]
+    ],
+    "intervalMs": 86400000
   },
   {
     "name": "session-recovery",
@@ -305,7 +306,8 @@
       "session.failed"
     ],
     "enabled": true,
-    "description": "Auto-resume failed sessions (Ambulance Protocol). Two-tier: digest classifier \u2192 classifyError fallback. Event-only handler (no timer)."
+    "description": "Auto-resume failed sessions (Ambulance Protocol). Two-tier: digest classifier \u2192 classifyError fallback. Event-only handler (no timer).",
+    "intervalMs": 86400000
   },
   {
     "name": "session-eval",
@@ -315,7 +317,8 @@
       "session.completed"
     ],
     "enabled": true,
-    "description": "Auto-evaluate completed task trees and emit context-learn events. Event-only handler (no timer)."
+    "description": "Auto-evaluate completed task trees and emit context-learn events. Event-only handler (no timer).",
+    "intervalMs": 86400000
   },
   {
     "name": "escalation",
@@ -325,7 +328,8 @@
       "session.escalated"
     ],
     "enabled": true,
-    "description": "Route blocked/failed session escalations to human via digest classifier. Event-only handler (no timer)."
+    "description": "Route blocked/failed session escalations to human via digest classifier. Event-only handler (no timer).",
+    "intervalMs": 86400000
   },
   {
     "name": "context-learn",
@@ -335,7 +339,8 @@
       "context-learn"
     ],
     "enabled": true,
-    "description": "Extract durable facts from completed sessions into agent context.md files. Event-only handler."
+    "description": "Extract durable facts from completed sessions into agent context.md files. Event-only handler.",
+    "intervalMs": 86400000
   },
   {
     "name": "metrics-snapshot",
