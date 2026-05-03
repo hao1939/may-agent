@@ -15,8 +15,9 @@ Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-07-15.m
 - **VAE measurement script**: `agents/coach/workspace/exp800-vae-measure.cjs` (validated — works on real sessions)
 - **Run protocol**: `agents/coach/workspace/EXP-800-run-protocol.md`
 - **Next**: Run Arm A (baseline, 5 sessions) through gym. After each run, find session in `.state/sessions/` and run `node agents/coach/workspace/exp800-vae-measure.cjs <session.jsonl>`
-- **Gym blocker (2029-07-15)**: `run-gym.sh` returns `agent_status: skipped` without `GYM_AGENT_BIN` env var. Need agent binary or use `GYM_AGENT_CMD` to dispatch. Previous EXP-700 had same issue.
-- **Status**: READY TO RUN — scenarios + measurement tooling ready, blocked on gym runner config
+- **Gym blocker RESOLVED (2029-07-16)**: `GYM_AGENT_BIN=/usr/local/bin/may-agent` exists (106MB binary). Runner saves transcripts to `_transcript.txt` and finds session JSONL in `.state/sessions/`. `GYM_EXTRA_INSTRUCTIONS` env var is NOT supported — must use scenario-level `injected_context` in `scenario.json` to inject arm-specific instructions (same pattern as EXP-560/565).
+- **Arm variants created (2029-07-16)**: `multi-file-refactor-exp800-arm-b` (vague nudge), `multi-file-refactor-exp800-arm-c` (concrete threshold), `multi-file-refactor-exp800-arm-d` (concrete + distractor)
+- **Status**: UNBLOCKED — all 4 arms ready to run. Next: execute Arm A trial 1 to verify transcripts are captured.
 
 ## ACTIVE: EXP-745 — Few-Shot Pattern Coverage Expansion — PHASE 2 COMPLETE
 - **Problem**: EXP-720 dry-run log has zero data. Patterns only matched 45% of typical tasks.

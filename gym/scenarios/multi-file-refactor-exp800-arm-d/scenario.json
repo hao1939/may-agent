@@ -1,0 +1,11 @@
+{
+  "name": "multi-file-refactor-exp800-arm-d",
+  "categories": ["refactoring", "verification"],
+  "tags": ["behavioral", "EXP-800", "verify-after-edit", "multi-file", "arm-d", "distractor"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md",
+  "description": "EXP-800 Arm D: multi-file-refactor-with-changelog + concrete-threshold VAE gate. Tests whether task distraction (KE-655) overrides concrete threshold (KE-715)."
+}

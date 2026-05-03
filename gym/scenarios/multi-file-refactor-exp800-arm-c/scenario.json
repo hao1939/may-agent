@@ -1,0 +1,11 @@
+{
+  "name": "multi-file-refactor-exp800-arm-c",
+  "categories": ["refactoring", "verification"],
+  "tags": ["behavioral", "EXP-800", "verify-after-edit", "multi-file", "arm-c"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md",
+  "description": "EXP-800 Arm C: multi-file-refactor with concrete-threshold P0 VAE gate. Tests KE-715 prediction that concrete thresholds work."
+}

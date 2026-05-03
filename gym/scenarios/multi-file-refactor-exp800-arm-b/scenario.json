@@ -1,0 +1,11 @@
+{
+  "name": "multi-file-refactor-exp800-arm-b",
+  "categories": ["refactoring", "verification"],
+  "tags": ["behavioral", "EXP-800", "verify-after-edit", "multi-file", "arm-b"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false,
+  "injected_context": "injected_context.md",
+  "description": "EXP-800 Arm B: multi-file-refactor with vague VAE nudge injected. Tests whether generic 'verify your edits' instruction improves VAE rate."
+}
