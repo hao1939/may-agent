@@ -1,55 +1,68 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777843196375_2708
+- **Session:** s_1777843209794_2709
 - **Status:** done
-- **When:** 2026-05-03T21:20:09.789Z
-- **Duration:** 13s
+- **When:** 2026-05-03T21:20:21.355Z
+- **Duration:** 11s
 
 ## What Happened
 {
   "agents": [
     {
-      "name": "coach",
-      "role": "Philosopher",
-      "capability_level": "mid",
+      "agent": "may",
+      "role": "Supervisor",
+      "capability_level": "senior",
       "efficiency": 0.35,
-      "quality": 0.78,
-      "verdict": "acceptable",
+      "quality": 0.2,
+      "verdict": "needs_improvement",
       "issues": [
         {
-          "type": "HARD_CONSTRAINT_VIOLATION",
-          "tag": "FORMAT_NONCOMPLIANCE",
-          "evidence": "The prompt required the first assistant output to be a GOAL/PLAN/DONE WHEN block before any tool calls. Transcript shows the session immediately begins with tool calls (e.g., bash listings/reads) and only later narrative; no initial GOAL/PLAN/DONE WHEN block is present."
+          "tag": "MANDATED_FORMAT_VIOLATION",
+          "evidence": "Heartbeat requires first output to be GOAL/PLAN/DONE WHEN. Transcript shows the first assistant actions were tool calls (bash grep) and later a narrative summary; no required header block appears."
         },
         {
-          "type": "EFFICIENCY",
-          "tag": "LOOPING/FM-1.3",
-          "evidence": "Auto-extracted failure chain shows 17 wasted calls centered around searching for EXP-800 (grep timeout, multiple directory probes) before converging."
+          "tag": "UNVERIFIED_CLAIM",
+          "evidence": "Agent claimed: \"EXP-580 notification: Already deployed — optimizer SOUL.md already has the VAW block.\" However the transcript contains no tool output showing reading/grepping agents/optimizer/SOUL.md. The verification_evidence references \"bash: grep...\" but that command/output is not present in the transcript."
         },
         {
-          "type": "PROCESS",
-          "tag": "FM-3.3_VERIFICATION_GAP",
-          "evidence": "They edited `.state/todo.md` to add EXP-800, but there is no immediate read() of `.state/todo.md` right after the edit; the session rules required read-back after every write/edit."
+          "tag": "FM-1.3 / WASTED_SEARCH",
+          "evidence": "Multiple greps over .state timed out or were low-signal. Failure chain shows 9 wasted calls, including a 120s timeout: `grep -rl \"hao-alignment\" .state/ ...`."
         },
         {
-          "type": "WORKFLOW",
-          "tag": "FINISH_GUARD_RECOVERY",
-          "evidence": "First finish() attempt was blocked due to uncommitted changes; coach recovered by committing and re-finishing (good recovery but avoidable). Tool output: finish blocked then `git commit` succeeded."
+          "tag": "SCOPE_DRIFT",
+          "evidence": "Despite metrics stating \"all healthy\" and the pending event being about EXP-580 placement, the agent spent most tool usage hunting hao-alignment files in .state and agents/shared/projects, then concluded it's waiting."
+        },
+        {
+          "tag": "PROCESS / WORKFLOW_MISSTEP",
+          "evidence": "finish() initially blocked by uncommitted new files (gym scenario). This indicates the agent created unrelated files during heartbeat and did not manage repo state before finishing."
+        },
+        {
+          "tag": "POTENTIAL_METRIC_GAMING_RISK",
+          "evidence": "Agent asserted \"stale/blocked metrics are false positives\" for hao-alignment without providing supporting system query or metric definition evidence; this kind of dismissal can become a pattern of rationalizing red metrics rather than fixing instrumentation."
         }
       ],
       "metrics": {
-        "tool_calls": 10,
-        "wasted_calls_from_failure_chains": 17,
-        "commits": 1,
-        "finish_blocked": 1
+        "wasted_calls_from_failure_chains": 9,
+        "timeouts": 1,
+        "finish_blocked_by_uncommitted_changes": true,
+        "tool_verification_gap_count": 1
       },
-      "strengths": [
+      "lessons": [
         {
-          "evidence": "Produced real artifacts: created new gym scenario directory `agents/gym/scenarios/multi-file-refactor-with-changelog/` with `scenario.json` and `task.md` (git commit output shows create modes)."
+          "scope": "may",
+          "category": "fix",
+          "content": "Always satisfy the mandated GOAL/PLAN/DONE WHEN header before any tool calls in heartbeats; otherwise the session is structurally noncompliant."
         },
         {
-          "evidence": "Recovered from guardrail: after finish() was blocked for uncommitted changes, executed `git add` + `git commit`, then finish() succeeded (bash commit output + final finish success output)."
+          "scope": "may",
+          "category": "fix",
+          "content": "Do not claim an inbox item is 'already deployed' unless the transcript contains the confirming grep/read output for the specific file (e.g., agents/optimizer/SOUL.md)."
+        },
+        {
+          "scope": "may",
+          "category": "pattern",
+          "content": "Avoid grepping recursively inside .state; target known locations first (agents/shared/projects/<name>/project.md) to prevent timeouts and wasted calls."
         }
       ]
     }
@@ -58,35 +71,17 @@
     "name": "heartbeat",
     "issues": [
       {
-        "type": "COMPLIANCE",
-        "evidence": "Heartbeat-specific instruction (mandatory initial GOAL/PLAN/DONE WHEN) was not followed, which undermines repeatability of the heartbeat workflow."
+        "tag": "HEARTBEAT_NONCOMPLIANCE",
+        "evidence": "Required output format missing; agent proceeded with tool calls and narrative summary."
       },
       {
-        "type": "EFFICIENCY",
-        "evidence": "Large exploratory command sequence to locate EXP-800 (including a grep that timed out) before generating artifacts."
+        "tag": "EVIDENCE_HYGIENE_FAILURE",
+        "evidence": "Verification evidence cited commands not shown in transcript (optimizer SOUL.md grep)."
       }
     ]
   },
   "overall": {
-    "verdict": "acceptable",
-    "result_delivered": true,
-    "evidence": "Final finish() succeeded and a git commit was recorded: `[main 01017f226] coach: EXP-800 gym scenarios — ...` creating the distractor scenario files."
-  },
-  "lessons": [
-    {
-      "agent": "coach",
-      "category": "fix",
-      "content": "Always output the required GOAL/PLAN/DONE WHEN block before any tool call in heartbeats; missing it is a hard compliance failure even if artifacts are produced."
-    },
-    {
-      "agent": "coach",
-      "category": "fix",
-      "content": "After any edit() or write(), immediately read() the modified file to satisfy verification rules; do not rely on diff output alone."
-    },
-    {
-      "agent": "coach",
-      "category": "pattern",
-      "content": "When searching for an experiment ID, prefer narrower ripgrep scopes or known index files (coach/todo.md, .state/todo.md) before full-tree greps that risk timeout."
-    }
-  ]
+    "verdict": "needs_improvement",
+    "result_delivered": true
+  }
 }
