@@ -1,7 +1,12 @@
 # DELIVERABLES_CHECKLIST.md
 
-## Task: Stale Workflow Audit (Iteration 7)
+## Task: Create system health dashboard script
 
-| # | Deliverable | Status | Path | Notes |
-|---|------------|--------|------|-------|
-| 1 | Stale workflow audit report | DONE | agents/shared/projects/outputs/stale-workflow-audit.md | 28 files audited, 3 REMOVE, 4 DEPRECATE, 21 KEEP |
+| # | Deliverable | Status | Path |
+|---|------------|--------|------|
+| 1 | system-health.sh script (executable) | DONE | agents/shared/scripts/system-health.sh |
+| 2 | Sample output documentation | DONE | agents/shared/projects/outputs/system-health-sample.md |
+
+## Details
+- Script runs vitest, extracts metrics, reports coverage gaps, prints PASS/FAIL status
+- Verified working: 98/98 files, 1745 tests, STATUS: ✅ HEALTHY
