@@ -1,27 +1,33 @@
-# Evaluator Heartbeat — 2026-05-03
+# Evaluator heartbeat — 2026-05-03
 
-## Process check: Session Eval (#5)
-- DB recency:
-  - evaluations max(createdAt)=1777770986485 (2026-05-03T01:16:26.485Z), count=2433
-  - sessions max(startedAt)=1777773006766 (2026-05-03T01:50:06.766Z), count=9526
-- Legacy artifacts:
-  - `.state/evaluations/` newest mtime observed: 2026-03-24 (via `ls ... | tail -5`).
+## Checks performed
 
-Conclusion: evaluation pipeline is writing to DB recently; `.state/evaluations/` appears to be legacy/stale-output-path drift, not primary pipeline liveness.
+### 1) Evaluation pipeline recency (DB is canonical)
+- `evaluations.max(createdAt)` is recent: **2026-05-03 05:12:31** (all evals), and **2026-05-03 05:48:04** for non-heuristic evals.
 
-## Inbox triage
+### 2) Coverage snapshot
+- Ended sessions: **9812**
+- Ended sessions with an evaluation row: **2182** (≈22.2% coverage)
 
-### Event: P1 — evaluator false-positive on `notify` tool; bob scores depressed
-Evidence found:
-- `agents/bob/workspace/ANALYSIS-eval-quality-patterns-2025-05-03.md` states: evaluator penalizes `notify` tool usage because it uses its *own* tool allowlist when evaluating other agents.
-- Repo mentions ongoing/previous work around splitting `agents.message` into `notify` tool (optimizer archaeology notes).
+Breakdown by session kind:
+- `call`: 5642 sessions, 1984 evaluated (≈35.2%)
+- `job`: 4168 sessions, 198 evaluated (≈4.8%)
 
-Action taken this heartbeat:
-- Escalate to May: clarify evaluator rubric: **tool hallucination detection must reference the evaluated agent’s toolset**, not evaluator’s local tool list.
-- Propose rubric update: treat `notify` as a real tool if it appears in the evaluated session’s tool calls and is part of the runtime tools for that agent/workflow.
+Breakdown by agent+kind (top rows):
+- `optimizer/call`: 2489 sessions, 723 evaluated
+- `coach/call`: 1906 sessions, 750 evaluated
+- `amy/job`: 1003 sessions, 185 evaluated
+- `tech-lead/call`: 117 sessions, 13 evaluated
+- `may/chat`: 2 sessions, 0 evaluated
 
-Suggested fix directions:
-1) In evaluation prompt/template, include the tool allowlist for the evaluated session (from orchestration), rather than evaluator agent’s instructions.
-2) If allowlist not available, soften: flag as “possible tool hallucination” only when the name is not in *any known runtime tool registry* (or when tool call result is missing).
+### 3) Legacy artifact path sanity
+- `.state/evaluations/` has many files with mtimes in Mar/Apr; DB shows fresh writes. Treat as **legacy output-path drift**, not liveness failure.
 
-Status: escalated; awaiting owner response.
+## Interpretation
+- Pipeline is alive (new evaluations being written), but **coverage is structurally low**, especially for `job` sessions.
+- A large fraction of missing evaluations are `evaluator` agent sessions; likely intentional exclusions (self-eval avoidance, job kind filters), but this should be made explicit in criteria/docs.
+
+## Recommended follow-ups (not executed in this heartbeat)
+1. Confirm the evaluation selection/filter logic for `kind='job'` sessions (are they being skipped by policy or by bug?).
+2. Decide whether `job` sessions should receive heuristic evaluations at minimum to improve observability.
+3. If `.state/evaluations/` is still used by any consumers, update that pipeline or deprecate the path to avoid confusion.
