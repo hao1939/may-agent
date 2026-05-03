@@ -4,8 +4,17 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
 export function extractField(content: string, field: string): string {
-  const m = content.match(new RegExp(`^\\*\\*${field}\\*\\*:\\s*(.+)`, "m"));
-  return m ? m[1].trim() : "";
+  const escapedField = field.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  // Canonical project fields use bold labels, e.g. "**Status**: active".
+  const boldMatch = content.match(new RegExp(`^\\*\\*${escapedField}\\*\\*:\\s*(.+)`, "mi"));
+  if (boldMatch) return boldMatch[1].trim();
+
+  // Some legacy project files used heading labels, e.g. "## Status: Complete".
+  // Treat these as fields too so closed/completed projects are skipped instead
+  // of being re-dispatched into zombie master-worker loops.
+  const headingMatch = content.match(new RegExp(`^#{1,6}\\s+${escapedField}\\s*:\\s*(.+)`, "mi"));
+  return headingMatch ? headingMatch[1].trim() : "";
 }
 
 export function extractSection(content: string, heading: string): string {
