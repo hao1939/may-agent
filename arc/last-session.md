@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777835663178_2562
+- **Session:** s_1777837463248_2597
 - **Status:** done
-- **When:** 2026-05-03T19:25:59.791Z
-- **Duration:** 11m36s
+- **When:** 2026-05-03T19:51:59.146Z
+- **Duration:** 7m35s
 
 ## What Happened
-The two `last-session.md` modifications are auto-generated, not my edits — they'll be handled by the wrapper. My new file is in `shared/knowledge/entries/` which is in arc's edit lane. ✓
+Lane verified: the only tracked change I introduced is `shared/knowledge/entries/KE-725-…md` (in arc's edit lane). The proposal lives under `arc/workspace/proposals/` (also in lane; gitignored by `*/workspace/*` per repo policy). The two `M` last-session.md files are wrapper auto-generated, not my edits.

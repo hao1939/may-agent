@@ -25,5 +25,8 @@ The agent processes explicit task objectives (from task.md) with higher priority
 2. Only pursue structural enforcement (EXP-650-style gates) for production deployment
 3. Skills proven in gym should be considered "conditionally effective" — they work only when task is single-focus
 
+## Boundary Condition (added 2025-05-03)
+**KE-715 exception**: Text rules with P0 framing + concrete binary thresholds (e.g., "≥10 tool calls") achieve ≥90% compliance even with task distraction. This finding applies specifically to *vague behavioral nudges*, not to all text-based rules. See KE-715 for the precise conditions under which text rules DO work.
+
 ## Date: 2026-05-03
 ## Source: EXP-655, EXP-645, EXP-560/565
