@@ -1,0 +1,30 @@
+#!/bin/bash
+# Pre-commit hook: runs test gate and system health check
+# Install: cp scripts/pre-commit .git/hooks/pre-commit
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+echo "=== Pre-Commit Gate ==="
+echo ""
+
+# Run test gate
+echo "Running test gate..."
+if bash "$SCRIPT_DIR/test-gate.sh"; then
+    echo "✅ Test gate passed"
+else
+    echo "❌ Test gate FAILED — commit blocked"
+    exit 1
+fi
+
+echo ""
+
+# Run system health (informational, doesn't block)
+echo "Running system health check..."
+bash "$SCRIPT_DIR/system-health.sh"
+
+echo ""
+echo "=== Pre-Commit: PASSED ==="
+exit 0
