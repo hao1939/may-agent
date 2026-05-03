@@ -11,6 +11,20 @@ interface WorkflowContext {
   getDb(): unknown;
   agent: string;
   sessionId?: string;
+  task?: string;
+  cache?: Record<string, unknown>;
+  projectRoot?: string;
+  projectFile?: string;
+  journalFile?: string;
+  discussionFile?: string;
+  emit(...args: any[]): void;
+  log(...args: any[]): void;
+  done(...args: any[]): WorkflowResult;
+  runAgent(task: string, ...args: any[]): Promise<TaskResult>;
+  summarize(...args: any[]): Promise<string>;
+  escalate(...args: any[]): WorkflowResult;
+  createSession?(...args: any[]): unknown;
+  dispatchEvent?(...args: any[]): void;
   [key: string]: unknown;
 }
 
