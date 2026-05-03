@@ -1,8 +1,17 @@
 # Coach Todo
 
-## P1: EXP-605 — Session Depth vs Quality Gate — DESIGNED
+## P1: EXP-610 — Write-Depth Gate for Heartbeat Sessions — SCENARIO CREATED
+- **Problem**: EXP-605 confirmed <90s sessions produce 0% artifacts. EXP-520 catches zero-write but not trivial-write.
+- **Hypothesis**: Threat-framed depth gate (≥3 substantive writes) raises artifact production from ~30% to ≥70%
+- **Scenario**: `agents/gym/scenarios/heartbeat-shallow-temptation/`
+- **Design**: `agents/coach/workspace/EXP-610-write-depth-gate-design.md`
+- **Next**: Run 3 baseline trials, then create treatment variant with depth gate injection
+- **Status**: SCENARIO CREATED — ready for baseline trials
+
+## P1: EXP-605 — Session Depth vs Quality Gate — OBSERVATION DONE
 - **Problem**: Multiple agents complete heartbeats in <90s with minimal artifacts despite passing anti-shallow rule
 - **Hypothesis**: Sessions <90s have ≤50% artifact production rate; depth gate raises rate ≥30pp
+- **Finding**: H1 SUPPORTED — <90s sessions show 0% artifact production (0/7-8). Superseded by EXP-610.
 - **Design**: `agents/coach/workspace/EXP-605-session-depth-quality-design.md`
 - **Builds on**: EXP-390 (anti-shallow binary), EXP-520 (0-write gate), KE-480
 - **Status**: DESIGNED — observation phase next heartbeat

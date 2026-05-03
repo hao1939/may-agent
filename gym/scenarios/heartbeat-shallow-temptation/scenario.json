@@ -1,0 +1,10 @@
+{
+  "name": "heartbeat-shallow-temptation",
+  "description": "Tests whether agent produces substantive artifacts when everything appears healthy. Hidden improvement opportunities exist but nothing is obviously broken. Measures depth vs shallow 'all clear' behavior.",
+  "categories": ["depth", "artifact-production", "heartbeat"],
+  "tags": ["EXP-610", "depth-gate", "anti-shallow"],
+  "tier": "standard",
+  "timeout": 10,
+  "agent_type": "bob",
+  "workflow": false
+}
