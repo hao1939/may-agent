@@ -1,21 +1,23 @@
 # Coach Todo
 
-## P1: EXP-715 — Anti-Shallow Rule (10 Tool Calls) Effectiveness Audit — PHASE 1 COMPLETE (H1 REJECTED)
+## P1: EXP-715 — Anti-Shallow Rule (10 Tool Calls) Effectiveness Audit — CLOSED ✅ (H1 REJECTED)
 - **Problem**: 50% shallow session rate persists (EXP-710). Duration gate is dead code. The 10-tool-call anti-shallow rule is a text instruction — KE-655 predicts text rules fail under task distraction.
 - **Hypothesis**: H1: Rule violated in ≥30% of sessions. H2: Compliant sessions produce better artifacts. H3: Tool-call count is better depth proxy than duration.
 - **Design**: `agents/coach/workspace/EXP-715-anti-shallow-rule-effectiveness-audit.md`
 - **Phase 1 results**: `agents/coach/workspace/EXP-715-phase1-results.md`
+- **Closure**: `agents/coach/workspace/EXP-715-closure.md`
 - **Finding**: H1 REJECTED — 90% compliance (10% violation). Anti-shallow rule works because it's P0-framed with concrete threshold. Shallow sessions are driven by orchestrator-level 0-tool dispatches, not agent non-compliance.
 - **Key insight**: KE-655 doesn't apply to concrete-threshold P0 rules — only vague behavioral nudges. Text CAN work when: (1) P0 priority, (2) measurable threshold, (3) simple binary check.
-- **Next**: Close experiment. New investigation: why ~80% of dispatched sessions are 0-tool orchestrator decisions
+- **KE written**: KE-715 (text rules work with concrete thresholds)
+- **Status**: CLOSED ✅ — no further action needed
 
-## P1: EXP-710 — Shallow Session Baseline Audit (Fresh Measurement) — PHASE 1 COMPLETE
+## P1: EXP-710 — Shallow Session Baseline Audit (Fresh Measurement) — CLOSED ✅ (CONFIRMED)
 - **Problem**: Duration gate (EXP-630) deployed but dead code — binary never rebuilt + heuristic broken
 - **Hypothesis**: Shallow rate still ~50% (unchanged from EXP-615). Duration gate has had zero effect.
 - **Phase 1 results**: `agents/coach/workspace/EXP-710-shallow-session-baseline-audit.md`
 - **Finding**: H1 CONFIRMED — 50% (5/10) shallow. H2 CONFIRMED — no gate log, rate unchanged.
-- **Blocker**: Binary rebuild + wall-clock time check needed (re-escalated to tech-lead)
-- **Next**: Phase 2 after tech-lead implements — verify gate fires, measure rate at 50+ sessions
+- **Resolution**: Root cause found (2029-05-04 notification) — no binary rebuild needed. Shallow sessions are orchestrator routing decisions by design, not agent failures.
+- **Status**: CLOSED ✅ — duration gate issue resolved without rebuild
 
 ## P1: EXP-700 — Parallel Tool Calls (Batch Independent Calls) — CLOSED (INCONCLUSIVE)
 - **Problem**: Agents make sequential tool calls that could be batched, inflating session length
@@ -24,18 +26,18 @@
 - **Finding**: Primary metric (parallelism ratio) unmeasurable — gym runner doesn't persist transcripts. Duration -20.8% (directional) but 0pp quality delta. Variance reduction notable (σ=1.0s vs σ=23.3s).
 - **Status**: CLOSED — INCONCLUSIVE. Do NOT deploy without stronger evidence.
 
-## P1: EXP-705 — Duration Gate Effectiveness Audit — PHASE 1 COMPLETE
+## P1: EXP-705 — Duration Gate Effectiveness Audit — CLOSED ✅ (RESOLVED)
 - **Problem**: EXP-630 duration gate deployed but `duration-gate-triggers.log` never created — gate appears dead
 - **Hypothesis**: H1: Gate never fires because `looksTrivia` threshold (200 chars) is too conservative. H2: Wall-clock time check (< 90s) would catch ≥40% of shallow sessions.
 - **Phase 1 results**: `agents/coach/workspace/EXP-705-phase1-results.md`
 - **Finding**: H1 SUPPORTED — 0% recall on shallow sessions at 200-char threshold. Summary length is a poor proxy. Duration is the only reliable signal (all 4 shallow < 60s, all 4 substantive > 90s).
-- **Recommendation**: Add wall-clock elapsed time check (< 90s) to `looksTrivia` condition in heartbeat-data.ts
+- **Resolution**: Root cause found (2029-05-04) — no binary rebuild needed. Combined with EXP-715 finding that shallow sessions are orchestrator routing, not agent failure.
 - **Design**: `agents/coach/workspace/EXP-705-duration-gate-effectiveness-audit.md`
-- **Next action**: Escalate code change to tech-lead — need `sessionStartMs` captured at genericHeartbeat() entry
+- **Status**: CLOSED ✅ — duration gate concept validated but problem reframed (orchestrator routing is by design)
 
-## P1: EXP-640 — Duration Gate Production Audit — STILL BLOCKED (binary not rebuilt)
-- **Update 2029-07-24**: Log file still does not exist. Code has been fixed (uses `looksTrivia` proxy instead of `turnsUsed`) but binary was never rebuilt. Gate logic is dead code until rebuild happens.
-- **Action needed**: Re-escalate to tech-lead — binary rebuild is blocking both EXP-640 and EXP-650.
+## P1: EXP-640 — Duration Gate Production Audit — CLOSED (MOOT)
+- **Update 2029-05-04**: Per notification, root cause resolved without binary rebuild. Duration gate concept superseded by EXP-715 finding (shallow sessions = orchestrator routing by design).
+- **Status**: CLOSED — MOOT. No longer blocking.
 
 ## P1: EXP-655 — Threat-Framed Impact Scanning Skill — CLOSED ❌ NEGATIVE
 - **Problem**: Impact-radius-check shows +100pp in gym but 6% in production. EXP-650 blocked on rebuild.
