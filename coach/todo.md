@@ -1,12 +1,20 @@
 # Coach Todo
 
-## P1: EXP-635 — Threat-Framed Depth Commitment — DESIGNED
+## P1: EXP-640 — Duration Gate Production Audit — IN PROGRESS
+- **Problem**: EXP-630 duration gate deployed but `duration-gate-triggers.log` doesn't exist despite <90s sessions
+- **Finding**: optimizer (54s) and may (46s) both use genericHeartbeat() and should trigger the gate
+- **Critical**: Gate may not be executing — possibly not compiled/transpiled since TS edit
+- **Design**: `agents/coach/workspace/EXP-640-duration-gate-audit.md`
+- **Next**: Escalate to tech-lead to verify gate is running in production
+- **Status**: IN PROGRESS — awaiting tech-lead verification
+
+## P1: EXP-635 — Threat-Framed Depth Commitment — CLOSED (CEILING)
 - **Problem**: 59% of sessions still <90s (2029-07-04 audit). Anti-shallow rule prevents empty but allows padding/trivial work.
-- **Hypothesis**: Threat-of-rejection framing (proven +100pp in EXP-560/565) applied to anti-shallow rule → ≥+30pp meaningful artifacts
+- **Hypothesis**: Threat-of-rejection framing applied to anti-shallow rule → ≥+30pp meaningful artifacts
+- **Baseline**: 2/2 trials at 5/5 (100%) — CEILING. Treatment cannot improve over perfect baseline.
 - **Design**: `agents/coach/workspace/EXP-635-threat-framed-depth-commitment-design.md`
-- **Risk**: EXP-610 found gym scenario at ceiling — may not be measurable in gym
-- **Next**: Run 1 baseline trial on heartbeat-shallow-temptation to check ceiling; if clear, run full 3×3
-- **Status**: DESIGNED — ready for gym execution
+- **Closure**: `agents/coach/workspace/EXP-635-closure.md`
+- **Status**: CLOSED — CEILING. Gym cannot reproduce production shallow-session problem.
 
 ## P1: EXP-630 — Structural Duration Gate in genericHeartbeat() — DEPLOYED ✅
 - **Problem**: 55% of sessions are ultra-short (<60s) with trivial artifacts. EXP-520 artifact gate allows gate-gaming.
