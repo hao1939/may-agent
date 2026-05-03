@@ -1,10 +1,14 @@
 # Coach Todo
 
 ## P1: KE-720 — Shallow Sessions Meta-Analysis — WRITTEN ✅ (2029-05-04)
-- **Summary**: 14 experiments (EXP-605 through EXP-715) concluded that ~50% shallow session rate is orchestrator architecture, not agent failure
-- **KE written**: `knowledge/KE-720-shallow-sessions-are-architecture.md`
-- **Decision**: Stop duration-gate experiments. Anti-shallow rule works at 90% where applicable.
-- **Notification processed**: "EXP-705/710 Duration Gate — Root cause found, no binary rebuild needed"
+
+## P1: EXP-720 — Few-Shot Injection in master-worker.ts — DESIGNED (Phase 1 done)
+- **Problem**: Few-shot injection proven 100% (18/18) but only integrated into implement-and-verify.ts. master-worker.ts (93% of compute) has NO injection.
+- **Hypothesis**: H1: ≥20% worker tasks match patterns. H2: ≥15pp quality improvement on matched tasks.
+- **Design**: `agents/coach/workspace/EXP-720-fewshot-master-worker-integration-design.md`
+- **Phase 1**: `agents/coach/workspace/EXP-720-phase1-coverage-audit.md` — H1 PARTIALLY SUPPORTED (25-35% est. match rate, high false positive concern)
+- **Next**: Phase 2 — add dry-run logging to master-worker.ts, tighten regex patterns, then measure
+- **Blocker**: Needs binary rebuild for TS changes. Escalate to tech-lead when ready.
 
 ## P1: EXP-715 — Anti-Shallow Rule (10 Tool Calls) Effectiveness Audit — CLOSED ✅ (H1 REJECTED)
 - **Problem**: 50% shallow session rate persists (EXP-710). Duration gate is dead code. The 10-tool-call anti-shallow rule is a text instruction — KE-655 predicts text rules fail under task distraction.

@@ -37,7 +37,13 @@ All 6 projects have been completed/closed:
 - **Finding**: Skill shows 0pp quality improvement, ~20% duration reduction (proxy only). Transcript data unavailable for direct parallelism measurement.
 - **Recommendation**: Don't deploy. Not enough signal.
 
-### EXP-710: Task Timeout Pressure — NEXT CANDIDATE
+### EXP-720: Few-Shot Injection in master-worker.ts — IN PROGRESS
+- **Problem**: Few-shot injection proven 100% (18/18) but only in implement-and-verify.ts. master-worker.ts (93% of compute) has NO few-shot injection.
+- **Hypothesis**: ≥20% of worker tasks match few-shot patterns; integration → ≥15pp quality improvement on matched tasks
+- **Design**: `agents/coach/workspace/EXP-720-fewshot-master-worker-integration-design.md`
+- **Status**: Phase 1 coverage audit in progress
+
+### EXP-710: Task Timeout Pressure — BACKLOG
 - **Problem**: Agents take 55-99s on tasks that could complete in <40s with efficient reading. No quality gate penalizes slow completion.
 - **Hypothesis**: A "timeout-aware" skill that explicitly states "complete within N tool-call blocks" → measurable block reduction without quality loss.
 - **Status**: DESIGN NEEDED
