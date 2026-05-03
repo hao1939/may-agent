@@ -22,6 +22,11 @@ import {
 } from "./master-worker-cached.ts";
 
 import {
+  checkCircuitBreaker,
+  recordOutcome,
+} from "./circuit-breaker.ts";
+
+import {
   type RetryConfig,
   type RetryResult,
   type CircuitState,
@@ -43,6 +48,10 @@ export interface ResilientConfig {
   maxIterations: number;
   cacheTtlMs?: number;
   retry?: Partial<RetryConfig>;
+  /** Agent name for agent-level circuit breaker checks */
+  agentName?: string;
+  /** Root path for agents (for circuit breaker state) */
+  agentsRoot?: string;
 }
 
 export interface LLMProvider {
@@ -236,6 +245,22 @@ export class ResilientMasterWorker {
   async runIteration(iteration: number, llm: LLMProvider): Promise<IterationResult> {
     const start = Date.now();
 
+    // Agent-level circuit breaker pre-check
+    if (this.config.agentName && this.config.agentsRoot) {
+      const blocked = checkCircuitBreaker(this.config.agentsRoot, this.config.agentName);
+      if (blocked) {
+        return {
+          iteration,
+          success: false,
+          output: null,
+          retryAttempts: 0,
+          circuitState: "open",
+          durationMs: Date.now() - start,
+          error: `Agent circuit breaker: ${blocked}`,
+        };
+      }
+    }
+
     try {
       const snapshot = buildIterationSnapshot(this.ctx, iteration);
       if (!snapshot) {
@@ -299,6 +324,11 @@ export class ResilientMasterWorker {
       } catch (journalErr) {
         // Journal write failure is non-fatal — iteration still produced output
         console.error(`[resilient] Journal write failed for iteration ${iteration}:`, journalErr);
+      }
+
+      // Record outcome for agent-level circuit breaker
+      if (this.config.agentName && this.config.agentsRoot) {
+        recordOutcome(this.config.agentsRoot, this.config.agentName, !result.success, result.error);
       }
 
       this.results.push(result);

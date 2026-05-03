@@ -1,0 +1,9 @@
+{
+  "name": "efficient-file-reading-exp700-treatment",
+  "categories": ["convention-compliance", "efficiency"],
+  "tags": ["behavior", "grep-first-reading", "context-efficiency", "exp700"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "coder",
+  "workflow": false
+}
