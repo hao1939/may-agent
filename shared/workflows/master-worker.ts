@@ -518,7 +518,10 @@ ${journalContent.slice(-3000)}
         if (consecutive <= MAX_ZERO_OUTPUT && !(ctx as any)[`_retried_${iteration}`]) {
           (ctx as any)[`_retried_${iteration}`] = true;
           ctx.log(`[work] 🔄 RETRY: Re-prompting worker via withWorkerRetry (exponential backoff)`);
-          const retryPrompt = `🚨 YOUR PREVIOUS ATTEMPT PRODUCED 0 FILES. This is iteration ${iteration} retry.\n\nYour FIRST tool call MUST be write(). Do NOT use read() or bash() first. Do NOT claim files already exist.\n\nOriginal task:\n${guidance}`;
+          const retryFirstToolInstruction = stubFilePath
+            ? `A stub file has already been pre-created at \`${stubFilePath.replace(/.*?(outputs\/)/, 'outputs/')}\`. Your FIRST tool call MUST be edit() to replace the stub content. Do NOT use write(), read(), or bash() first. Use this exact oldText for the first edit: \`<!-- STUB: This file was pre-created by the workflow. Replace this content with your deliverable. -->\\n\`.`
+            : `Your FIRST tool call MUST be write(). Do NOT use read() or bash() first. Do NOT claim files already exist.`;
+          const retryPrompt = `🚨 YOUR PREVIOUS ATTEMPT PRODUCED 0 FILES. This is iteration ${iteration} retry.\n\n${retryFirstToolInstruction}\n\nOriginal task:\n${guidance}`;
           const retryResult = await withWorkerRetry(
             async () => {
               await withRetry(() => worker.prompt(retryPrompt), {
