@@ -1,21 +1,22 @@
-# Tech-Lead Heartbeat — 2026-05-02
+# Tech-Lead Heartbeat — 2026-05-04
 
 ## Build Status
-✅ `tsc --noEmit` passes clean — zero errors.
+- **TypeScript**: ✅ Clean (`tsc --noEmit` passes)
+- **Binary**: ⚠️ Stale (built 2026-04-23, ~11 days old). Source changes in shared/lib/ and shared/guards/ since then.
 
-## Project Status
+## Inbox Triage
 
-### proof-of-life-dashboard (waiting, 5/8 milestones)
-- Status: waiting. No action needed this heartbeat.
-- Related KE-421 notes iteration metric edge case with closed projects.
+### 1. Binary rebuild needed (P1) — ACT
+**Decision**: Escalate / delegate to dev agent. Binary (`may-agent-bin`) is from Apr 23. Multiple shared/ changes since then. 3 experiments blocked (EXP-720, EXP-630, EXP-650).
+**Action**: Notify dev agent to rebuild binary.
 
-### handler-reliability (closed, 3/3 milestones)
-- ✅ Complete. No action needed.
+### 2. Stale session detection metric gap (P1) — DISMISS
+**Reason**: This is an observability/metrics issue, not a code bug. 399 "active" sessions is a DB bookkeeping issue (sessions that crashed without cleanup). Not blocking anything. Low priority relative to the binary rebuild.
 
-## Code Health Check
-- No TODO comments in non-vendor TypeScript files.
-- No TypeScript errors.
-- Recent git activity is normal — arc, bob, optimizer, evaluator all active.
+### 3. proof-of-life-dashboard in `waiting` (P1) — ACKNOWLEDGE
+**Decision**: Project is 5/8 milestones. Status is `waiting` which is appropriate — it's waiting on binary rebuild to validate remaining milestones. Will activate once binary is current.
 
-## Assessment
-System is healthy. No build issues, no alerts, no pending events. Clean heartbeat.
+## Code Health
+- No TS errors
+- No dead code concerns this cycle
+- Main risk: stale binary blocking experiment velocity
