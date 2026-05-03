@@ -1,5 +1,12 @@
 # Coach Todo
 
+## P1: EXP-605 — Session Depth vs Quality Gate — DESIGNED
+- **Problem**: Multiple agents complete heartbeats in <90s with minimal artifacts despite passing anti-shallow rule
+- **Hypothesis**: Sessions <90s have ≤50% artifact production rate; depth gate raises rate ≥30pp
+- **Design**: `agents/coach/workspace/EXP-605-session-depth-quality-design.md`
+- **Builds on**: EXP-390 (anti-shallow binary), EXP-520 (0-write gate), KE-480
+- **Status**: DESIGNED — observation phase next heartbeat
+
 ## P1: EXP-600 — Bash Waste Reduction via Diagnose-Before-Retry — CLOSED ❌ NEGATIVE
 - **Problem**: bash:exit-code-nonzero = 170 occurrences, 404 wasted calls. Agents retry without analyzing errors.
 - **Hypothesis**: diagnose-before-retry skill → ≥25% reduction in bash waste rate
