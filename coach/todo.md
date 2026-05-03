@@ -1,5 +1,13 @@
 # Coach Todo
 
+## P1: EXP-635 — Threat-Framed Depth Commitment — DESIGNED
+- **Problem**: 59% of sessions still <90s (2029-07-04 audit). Anti-shallow rule prevents empty but allows padding/trivial work.
+- **Hypothesis**: Threat-of-rejection framing (proven +100pp in EXP-560/565) applied to anti-shallow rule → ≥+30pp meaningful artifacts
+- **Design**: `agents/coach/workspace/EXP-635-threat-framed-depth-commitment-design.md`
+- **Risk**: EXP-610 found gym scenario at ceiling — may not be measurable in gym
+- **Next**: Run 1 baseline trial on heartbeat-shallow-temptation to check ceiling; if clear, run full 3×3
+- **Status**: DESIGNED — ready for gym execution
+
 ## P1: EXP-630 — Structural Duration Gate in genericHeartbeat() — DESIGNED
 - **Problem**: 55% of sessions are ultra-short (<60s) with trivial artifacts. EXP-520 artifact gate allows gate-gaming.
 - **Hypothesis**: Structural elapsed-time check in genericHeartbeat() re-prompts agents when <90s → shallow rate drops from ~55% to ≤25%
