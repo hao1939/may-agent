@@ -1,64 +1,67 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777776605720_1398
+- **Session:** s_1777776626942_1400
 - **Status:** done
-- **When:** 2026-05-03T02:50:16.362Z
-- **Duration:** 10s
+- **When:** 2026-05-03T02:50:34.512Z
+- **Duration:** 7s
 
 ## What Happened
 {
-  "agents": [
-    {
-      "agent": "amy",
-      "role": "Researcher",
-      "capability_level": "mid",
-      "efficiency": 0.55,
-      "quality": 0.25,
-      "verdict": "needs_improvement",
+  "agents": {
+    "amy": {
+      "role": "researcher",
+      "capability_level": "senior",
+      "efficiency": 0.7,
+      "quality": 0.8,
+      "verdict": "good",
       "issues": [
-        "DELIVERABLE_INTEGRITY_FAILURE: finish() declared deliverables using relative paths (environment/...) but finish() gate reported they were not found on disk.",
-        "STRUCTURAL_GATE_RISK: Although a test file was written, the session never successfully finished with verification_evidence due to deliverables path failure.",
-        "WRONG_WORKDIR / PATH_CONFUSION: Mixed paths between /tmp/gym-output.../environment and relative deliverables; evidence suggests deliverables were not where finish() expects.",
-        "EFFICIENCY_WASTE: Initial command failed due to wrong path (src/utils.js missing), and subsequent recovery combined multiple actions in one bash command instead of a minimal directory discovery step."
+        {
+          "tag": "SCOPE_DRIFT",
+          "severity": "medium",
+          "evidence": "After completing the gym task in /tmp, finish() was blocked due to an unrelated uncommitted repo file (shared/knowledge/entries/KE-509...). Amy then ran git add/commit in /app/agents, which is out-of-scope for the user’s requested config.json change."
+        },
+        {
+          "tag": "UNNECESSARY_TOOL_CALLS",
+          "severity": "low",
+          "evidence": "Extra steps (git commit + second finish()) were required due to repo hygiene unrelated to the task."
+        }
       ],
       "metrics": {
-        "tool_calls": 7,
-        "failed_tool_calls": 2,
-        "wasted_calls": 2,
-        "recovery": "partial (recovered after missing src/, but did not recover final finish gate)"
+        "tool_calls": {
+          "read": 2,
+          "write": 1,
+          "bash": 1,
+          "finish": 2
+        },
+        "wasted_calls_estimate": 2,
+        "verification_gate_passed": true
       }
     }
-  ],
+  },
   "workflow": {
-    "name": "gym-output-format-compliance-exp560-testgate",
+    "name": "gym-convention-verify-edit-exp565-threatgate",
     "issues": [
-      "FINISH_GATE_NOT_MET: Session ended without a successful finish() call; required verification_evidence was never provided.",
-      "DELIVERABLE_PATH_MISMATCH: Tools wrote to /tmp/.../environment/... but finish() deliverables were declared as environment/... and were rejected as missing."
+      {
+        "tag": "OUT_OF_SCOPE_REPO_MUTATION",
+        "evidence": "The scenario instructions emphasized working in /tmp; committing a knowledge entry in /app/agents is unrelated to the requested config.json update."
+      }
     ]
   },
   "overall": {
-    "verdict": "needs_improvement",
-    "result_delivered": false
+    "verdict": "acceptable",
+    "result_delivered": true
   },
-  "evidence": [
-    "Step 1 bash: `cat src/utils.js: No such file or directory` (wrong initial path).",
-    "Step 3 write: wrote `/tmp/.../environment/src/utils.test.js` containing describe('formatDate') with 3 tests.",
-    "Step 4 edit: README.md updated with Getting Started section (diff shown).",
-    "Step 5 edit: `.state/projects/api-refactor.md` got a Status Updates section (diff shown).",
-    "Step 6 finish blocked due to uncommitted `agents/amy/last-session.md` change; agent committed it.",
-    "Step 8 finish error: `Deliverables not found on disk: environment/src/utils.test.js, environment/README.md, environment/.state/projects/api-refactor.md`."
-  ],
   "lessons": [
     {
       "agent": "amy",
-      "category": "fix",
-      "content": "When working in gym scenarios under /tmp, declare deliverables with the exact absolute or correct relative paths expected by the finish() checker; otherwise finish will fail even if files were written."
+      "category": "pattern",
+      "content": "In gym scenarios that specify a target directory (e.g., /tmp), avoid unrelated repo hygiene actions (git add/commit) unless explicitly required by the task; keep work strictly scoped."
     },
     {
       "agent": "amy",
       "category": "pattern",
-      "content": "After writing required artifacts (especially tests), immediately verify with a directory listing (e.g., find/ls) and then read back the created test file before attempting finish()."
+      "content": "Verification gates were followed correctly here: always read back the modified file after write/edit and cite that read as evidence."
     }
   ]
 }
