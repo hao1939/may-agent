@@ -1,23 +1,20 @@
 # Evaluator heartbeat — 2026-05-03
 
-## Checks
+## Checks performed
 
-### Session evaluation pipeline freshness (DB is canonical)
-- `evaluations.max(createdAt)` = **1777844437518** (recent)
-- `sessions (last 24h)` = **1769**
-- `evaluations (last 24h)` = **106**
-- Coverage(last 24h) = **106/1769 = 0.0599**
+### Session-evaluation pipeline liveness
+- DB (canonical):
+  - `sessions`: latest `startedAt` = **1777852217497** (sessionId `s_1777852217496_2880`, agent `evaluator`, status `running`).
+  - `evaluations`: latest `createdAt` = **1777850197304** (sessionId `s_1777850197304_2843`, agent `bob`).
+- Observed lag: **~2,019,468 ms (~33.7 minutes)** between newest session start and newest evaluation creation.
 
-Evidence: see bun:sqlite queries in heartbeat transcript.
+Interpretation: evaluation cron appears **alive but behind by ~30–35 minutes** (not days). This is not consistent with the previously-noted “stale since 2026-03-24” failure mode; instead it suggests either (a) normal queueing lag or (b) partial scoping (evaluating only completed sessions).
 
-### Legacy artifact directory
-- `.state/evaluations/` newest items visible in tail include **Apr 29** and older; many are **Mar 24**.
-- This suggests **DB evaluations are up-to-date, but legacy filesystem artifacts are not** (output path drift / older job behavior).
+### Legacy artifact path (`.state/evaluations/`)
+- Directory contains recent files dated **Apr 29**, but many legacy task_tree artifacts are dated **Mar 24**.
 
-## Assessment
-- Process #5 (Session Eval): **DB fresh** ✅. However, **coverage is low (~6%)** relative to sessions volume; likely the eval cron is sampling or scoped.
-- `.state/evaluations/` directory appears **non-canonical / stale-ish**; should not be used as primary health signal.
+Interpretation: `.state/evaluations/` mtime is **not a reliable liveness signal**; DB is the correct source of truth.
 
-## Follow-ups to consider (not executed in this heartbeat)
-1. Find how `evaluate-session-llm` selects sessions (sampling? only certain agents/kinds?) and decide whether to widen scope.
-2. Update docs/criteria to clarify that DB is canonical, `.state/evaluations/` is legacy.
+## Follow-ups recommended (not executed in this heartbeat)
+1. If the expected SLA is <10 minutes, alert/adjust cron scheduling.
+2. Verify whether `evaluate-session-llm` intentionally excludes `status='running'` sessions.
