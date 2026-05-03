@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777824860115_2355
+- **Session:** s_1777826662812_2388
 - **Status:** done
-- **When:** 2026-05-03T16:20:40.802Z
-- **Duration:** 6m20s
+- **When:** 2026-05-03T16:52:45.216Z
+- **Duration:** 8m22s
 
 ## What Happened
-Verified: both files on disk with correct content (KE-583 starts with the right title, both reference the deleted workflow names — 17 and 10 occurrences respectively).
+Verified. The `evaluator/last-session.md` is out of lane (not arc/shared) — leaving it alone per heartbeat.md rules (only revert if I touched it; it was already modified by another agent).
