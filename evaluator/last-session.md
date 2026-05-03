@@ -1,63 +1,84 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777827043561_2399
+- **Session:** s_1777828816671_2431
 - **Status:** done
-- **When:** 2026-05-03T16:50:52.181Z
-- **Duration:** 8s
+- **When:** 2026-05-03T17:20:29.903Z
+- **Duration:** 13s
 
 ## What Happened
+```json
 {
   "agents": [
     {
-      "agent": "coach",
-      "role": "Philosopher",
-      "capability_level": "mid",
+      "agent": "tech-lead",
+      "role": "Supervisor",
+      "capability_level": "tech-lead",
       "efficiency": 0.35,
-      "quality": 0.15,
-      "verdict": "needs_improvement",
+      "quality": 0.55,
+      "verdict": "acceptable",
       "issues": [
-        "FORMAT_NONCOMPLIANCE: The very first assistant message did not follow the mandated GOAL/PLAN/DONE WHEN structure; it immediately started with an action (“Now add the experiment entry to experiments.jsonl:”). This violates the session’s explicit first-message constraint.",
-        "P0_TOOL_CALL_MINIMUM_VIOLATION: The session made only 4 bash tool calls total (plus finish attempts). The instruction required at least 10 tool calls before calling finish().",
-        "FM-3.3 VERIFICATION FAILURE (structural evidence missing): The final finish() claims multiple read() verifications (“read(heartbeat-data.ts …)”, “read(EXP-650-deployment-record.md)”), but the transcript shows no read() tool calls at all. Evidence cited is not supported by tool outputs.",
-        "DELIVERABLE_INTEGRITY_RISK: The finish() lists `agents/coach/workspace/EXP-650-deployment-record.md` as a deliverable, but it is in a gitignored workspace path and was not committed; additionally, no read() output verifies its contents in the transcript.",
-        "UNVERIFIED_BUILD/TEST: Attempted to typecheck with `npx tsc` but it failed due to missing typescript. No alternative compilation/test evidence was produced."
+        {
+          "type": "ROLE_NONCOMPLIANCE",
+          "evidence": "Heartbeat instructions required: “For each [inbox item]: act, delegate, dismiss (with reason), or escalate.” Transcript shows the agent claiming “clear triage decisions” and summarizing, but no structured per-event act/delegate/dismiss/escalate list is present in the final outputs shown."
+        },
+        {
+          "type": "FM-1.3 / LOOPING (finish guard)",
+          "evidence": "Agent called finish() three times and got blocked twice for “T2-no-post-write-verification”, then performed an unrelated read(tsconfig.json) to satisfy the guard and finished. This is process churn not contributing to task outcomes."
+        },
+        {
+          "type": "WASTED_CALLS / ENVIRONMENT DISCOVERY ERRORS",
+          "evidence": "Failure Chain 1 begins with `cd /app && git log ...` failing because /app is not a git repo; then several find/ls commands run to rediscover structure. Auto-extracted: 12 wasted calls in Chain 1."
+        },
+        {
+          "type": "DB_QUERY_MISSTEPS",
+          "evidence": "Tried `sqlite3` (missing, exit 127) and `better-sqlite3` (exit 1), then a malformed bun:sqlite import command (syntax error shown in Chain 4). All unresolved; indicates lack of adherence to documented DB access pattern."
+        },
+        {
+          "type": "UNVERIFIED/OVERCLAIMED ASSERTIONS",
+          "evidence": "Agent summary claimed “Zombie session DB empty in this context” and “Binary stale ... but cannot be rebuilt from this environment — source entry point not available.” The transcript excerpts show no successful DB query output supporting the zombie-session conclusion, and the binary rebuild limitation is asserted without a demonstrated check of build entrypoints (only git log and file age checks are evidenced)."
+        }
       ],
       "metrics": {
-        "tool_calls": 4,
-        "wasted_calls": 1,
-        "failure_chains": 1,
-        "commits": 1,
-        "unverified_claims_in_finish": 1
+        "failure_chains": 4,
+        "wasted_calls_reported": 15,
+        "finish_blocked_count": 2
       }
     }
   ],
   "workflow": {
-    "name": "coach_heartbeat",
+    "name": "tech-lead-heartbeat",
     "issues": [
-      "Guardrail violations (mandatory first-message plan + minimum tool calls) were not respected; session proceeded directly to execution and attempted early finish().",
-      "Verification protocol was not followed: finish() asserted read() evidence that does not appear in the transcript."
+      {
+        "type": "TRIAGE_FORMAT_INCOMPLETE",
+        "evidence": "Required per-inbox decisioning (act/delegate/dismiss/escalate) is not clearly delivered as structured output in the transcript."
+      },
+      {
+        "type": "INVESTIGATION_INEFFICIENT",
+        "evidence": "Significant time spent locating repo root and attempting DB tooling rather than directly using known conventions (/app/agents repo; bun:sqlite readonly pattern; .state/may.db)."
+      }
     ]
   },
   "overall": {
-    "verdict": "needs_improvement",
-    "result_delivered": false
+    "verdict": "acceptable",
+    "result_delivered": true
   },
   "lessons": [
     {
-      "agent": "coach",
+      "agent": "tech-lead",
       "category": "fix",
-      "content": "Always satisfy the heartbeat’s required first-message GOAL/PLAN/DONE WHEN block before any tool calls or actions; failure voids the session regardless of later work."
+      "content": "Start in /app/agents (actual git repo) rather than /app to avoid immediate git failures and follow-on discovery churn."
     },
     {
-      "agent": "coach",
+      "agent": "tech-lead",
       "category": "fix",
-      "content": "Do not cite read()/verification evidence in finish() unless the transcript shows those tool calls; otherwise it is an evidence-integrity failure."
+      "content": "Use the standard DB read pattern (`bun -e` + `bun:sqlite` with `.state/may.db` readonly) instead of sqlite3/better-sqlite3 attempts; malformed DB commands caused 3 separate failure chains."
     },
     {
-      "agent": "coach",
+      "agent": "tech-lead",
       "category": "pattern",
-      "content": "If compilation tooling (tsc) is unavailable, either install per project norms or switch to an available verification method; do not claim “compiles” without a passing command."
+      "content": "When the heartbeat requires per-inbox actioning, produce an explicit bullet list mapping each notification → {act|delegate|dismiss|escalate}+reason to meet role output contract and reduce ambiguity."
     }
   ]
 }
+```
