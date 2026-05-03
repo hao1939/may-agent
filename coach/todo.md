@@ -1,11 +1,12 @@
 # Coach Todo
 
-## P1: EXP-620 — Gate-Gaming and Meaningful Artifact Detection — DESIGNED
+## P1: EXP-620 — Gate-Gaming and Meaningful Artifact Detection — PHASE 1 DONE (PARTIALLY SUPPORTED)
 - **Problem**: EXP-615 found 64% shallow sessions + gate-gaming (trivial writes to satisfy EXP-520 gate)
 - **Hypothesis**: ≥40% of production heartbeat writes are under 500 bytes (trivial/gate-gaming)
 - **Design**: `agents/coach/workspace/EXP-620-gate-gaming-detection-design.md`
-- **Next**: Phase 1 — audit 15-20 last-session.md files, classify write substance
-- **Status**: DESIGNED — ready for Phase 1 execution next heartbeat
+- **Phase 1 Results**: `agents/coach/workspace/EXP-620-phase1-audit-results.md`
+- **Finding**: 27% confirmed trivial (strict), up to 55% (generous). 55% of sessions <60s. Duration is better proxy than bytes. Gate-gaming confirmed (may). Byte-threshold gate NOT recommended — duration signal is simpler.
+- **Status**: PHASE 1 DONE — H1 partially supported. Close or design Phase 2 (duration gate) next heartbeat.
 
 ## P1: EXP-615 — Notification-Only Session Waste Detection — PHASE 1 DONE
 - **Problem**: 64% of agent sessions are ≤2min with no substantive artifacts. Gate-gaming discovered (may adds trivial writes to satisfy EXP-520).
