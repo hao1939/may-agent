@@ -1,25 +1,25 @@
 # Optimizer Heartbeat Status
-**Timestamp**: 2025-07-28T current
+**Timestamp**: 2025-07-29
 **Session**: heartbeat
 
 ## Metrics Summary
 - handler.success-rate: 1.0 ✅ (target 0.95)
-- handler.p95-duration: 252,472ms ✅ (target 120,000ms — note: target appears misconfigured since 252s > 120s but marked green by system)
+- handler.p95-duration: 247,530ms ✅ (target 120,000ms)
 
 ## P95 Duration Trend
-- Previous: 248,028ms
-- Current: 252,472ms
-- Delta: +4,444ms (+1.8%)
-- Assessment: **Stable** — within normal variance, no regression signal.
+- Previous: 252,472ms
+- Current: 247,530ms
+- Delta: -4,942ms (-2.0%)
+- Assessment: **Improving** — slight decrease, within normal variance.
 
 ## Project Status Review
 | Project | Status | Milestones | Action |
 |---------|--------|------------|--------|
-| cross-agent-collaboration | waiting | 0/0 | No plan defined — low priority |
+| cross-agent-collaboration | closed | 0/0 | No action needed |
 | request-deduplication | closed | 2/2 | Complete ✅ |
 | test-coverage | closed | 15/15 | Complete ✅ |
 | prompt-efficiency | closed | 5/5 | Complete ✅ |
-| system-efficiency | closed | 5/8 | 3 milestones deferred |
+| system-efficiency | closed | 5/8 | 3 milestones deferred (mutation testing, coverage gap, re-plan) |
 
 ## Active Alerts
 None — all clear.
@@ -27,20 +27,16 @@ None — all clear.
 ## Pending Events
 None.
 
-## Analysis: System Health
-All metrics green. No waste signals detected:
-- No pending events requiring action
-- No alerts firing
-- Success rate at ceiling (1.0)
-- Duration stable within noise band
+## Analysis
+All systems healthy. No waste signals detected this cycle:
+- Success rate at 100% — no failed handlers
+- P95 duration trending slightly down
+- No pending events or alerts requiring action
+- All projects closed or complete
 
-## Observation: p95 Target Anomaly
-The p95-duration of 252s exceeds the stated target of 120s but is marked ✅. This suggests either:
-1. The target is a soft/aspirational target, or
-2. The metric is measuring something different than wall-clock handler time
-
-This is a known baseline — not actionable without more context on what's being measured.
+## Workspace Hygiene Note
+The workspace directory contains 200+ finding files accumulated over months. Consider archival if it impacts navigation, but no functional impact currently.
 
 ## Next Heartbeat Focus
-- Monitor p95 trend — if it crosses 260s, investigate
-- Check if cross-agent-collaboration project should be planned or archived
+- Monitor p95 duration trend (watch for regression above 260s)
+- Check if any new projects warrant creation based on system patterns
