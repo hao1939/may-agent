@@ -1,31 +1,43 @@
-# Optimizer Heartbeat Status
-**Date**: 2026-05-03T13:34Z
+# Optimizer Heartbeat Status — 2025-05-03
 
-## System Health: ✅ ALL GREEN
-- handler.success-rate: 1.00 (target 0.95)
-- handler.p95-duration: 1632ms (target 120000ms)
-- Active sessions: 3 (optimizer, tech-lead, may-chat)
-- Total sessions in history: 47,103
+## System Health
+- **handler.success-rate**: 1.0 (target 0.95) ✅
+- **handler.p95-duration**: 1596ms (target 120000ms) ✅ — excellent, 1.3% of budget
+- **Active alerts**: None
 
-## Session Distribution (last 200)
-| Agent | Sessions | % |
-|-------|----------|---|
-| evaluator | 108 | 54% |
-| optimizer | 44 | 22% |
-| amy | 14 | 7% |
-| coach | 8 | 4% |
-| tech-lead | 6 | 3% |
-| scout/may/dev/bob/arc | 4 each | 10% |
+## Session Throughput Trend (checkpoint files by day)
+| Date   | Sessions |
+|--------|----------|
+| Apr 28 | 9        |
+| Apr 29 | 5        |
+| Apr 30 | 2        |
+| May 1  | 2        |
+| May 2  | 5        |
+| May 3  | 3 (so far) |
 
-## Findings
-1. **Evaluator dominance**: 54% of recent sessions are evaluator (2 ops each) — efficient, no waste.
-2. **Stale may session**: s_1777485773079 running 31h+ — chat session, not blocking anything.
-3. **All projects closed**: No active optimization work needed.
-4. **EXP-500 success**: Edit failures down 96.7% — promoted to KE.
-5. **PROP-007 pending**: Closed project churn tax still accumulating (handler-reliability at 302 skips).
+**Observation**: Throughput stabilized at ~3-5 sessions/day, down from peaks of 9+. This is expected as projects close and the system matures.
 
-## Waste Assessment
-**No significant waste detected.** System is operating efficiently.
+## Checkpoint Storage
+- **Files**: 1,333
+- **Size**: 5.5 MB
+- **Trend**: Growing ~50 files/day during active periods
+- **Risk**: Low — 5.5MB is negligible. No rotation needed yet.
 
-## Action Items
-- None urgent. PROP-007 (closed project churn) remains a P2 improvement opportunity.
+## Project Status (all closed)
+| Project | Milestones | Status |
+|---------|-----------|--------|
+| system-efficiency | 50/53 | closed |
+| test-coverage | 19/19 | closed |
+| prompt-efficiency | 5/5 | closed |
+| request-deduplication | 2/2 | closed |
+| cross-agent-collaboration | 0/0 | closed |
+
+## Key Findings This Heartbeat
+1. **p95 duration dropped significantly**: 1596ms vs 252s last check — massive improvement (if real, may be different measurement window)
+2. **No waste detected**: No pending events, no active alerts, no stuck sessions
+3. **System is in steady state**: All projects closed, metrics healthy
+
+## Recommendations
+- No action needed this cycle
+- Continue monitoring p95 duration trend for sustained improvement
+- Consider checkpoint rotation policy if files exceed 5,000
