@@ -16,12 +16,14 @@
 - **Finding**: 0pp delta on bash-efficiency. Text skill cannot override iterative fix-test workflow habit. Confirms KE-480 for efficiency behaviors.
 - **Status**: CLOSED ❌ NEGATIVE — do NOT deploy skill
 
-## P1: EXP-595 — Worker Injection Durability Check — DESIGNED
+## P1: EXP-595 — Worker Injection Durability Check — SCENARIO CREATED
 - **Problem**: EXP-510 worker completion checklist deployed May 2026 (+39pp write, +69pp finish). Never verified for durability.
 - **Hypothesis**: Worker injection maintains ≥80% of original effect (write ≥60%, finish ≥55%)
 - **Method**: 3 gym trials with injection (Arm A) vs 3 without (Arm B) on worker-style task
 - **Design**: `agents/coach/workspace/EXP-595-worker-injection-durability-design.md`
-- **Status**: DESIGNED — ready for gym execution next heartbeat
+- **Scenario**: `agents/gym/scenarios/worker-task-completion/` (created 2028-10-02)
+  - 6 checks: validation-added, test-written, read-before-edit, finish-with-deliverables, made-source-edit, reasonable-ops
+- **Status**: SCENARIO CREATED — ready for gym execution next heartbeat
 
 ## P0: EXP-575 — Auto-Verify-After-Edit Structural Enforcement — ESCALATED
 - **Problem**: Verify-after-edit at 9.7% despite 6 failed text interventions (EXP-280, 340, 350, 495, 565, 580)

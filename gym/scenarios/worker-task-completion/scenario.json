@@ -1,0 +1,10 @@
+{
+  "name": "worker-task-completion",
+  "description": "Tests whether an agent properly completes a worker-style task: reads context, makes edits, writes deliverables, and calls finish() with structured results. No heartbeat framing — simulates master-worker dispatch.",
+  "categories": ["completion", "worker-quality"],
+  "tags": ["worker", "EXP-595", "finish-compliance", "deliverables"],
+  "tier": "standard",
+  "timeout": 10,
+  "agent_type": "bob",
+  "workflow": false
+}

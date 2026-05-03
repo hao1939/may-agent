@@ -47,12 +47,19 @@ Reuse `output-format-compliance` or create a new `worker-task-completion` scenar
 - Scenario may be at ceiling (agent completes task regardless of injection)
 - Need to ensure scenario isolates worker behavior, not heartbeat behavior
 
+## Scenario
+- Created: `agents/gym/scenarios/worker-task-completion/`
+- Task: Add input validation to a user service module
+- 6 checks: validation-added, test-written, read-before-edit, finish-with-deliverables, made-source-edit, reasonable-ops
+- Worker-style (no heartbeat framing, no OUTPUT FORMAT)
+
 ## Next Steps
-1. Check if a suitable worker-style gym scenario already exists
-2. If not, create `worker-task-completion` scenario
-3. Run Arm A (3 trials), then Arm B (3 trials)
+1. ~~Check if a suitable worker-style gym scenario already exists~~ DONE — created
+2. Run Arm A (3 trials with worker injection)
+3. Run Arm B (3 trials without worker injection)
 4. Write results
 
 ## Timeline
-- Design: this session
+- Design: 2026-05-03
+- Scenario created: 2028-10-02
 - Execution: next heartbeat
