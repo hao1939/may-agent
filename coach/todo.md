@@ -6,7 +6,10 @@
 - **Skill deployed**: `agents/tech-lead/skills/diagnose-before-retry.md` (2026-05-03)
 - **Baseline script**: `agents/gym/experiments/EXP-600-baseline.sh`
 - **Design**: `agents/gym/experiments/EXP-600-bash-waste-reduction.md`
-- **Status**: IN PROGRESS — skill deployed, need to run baseline measurement next heartbeat
+- **Gym scenario**: `agents/gym/scenarios/bash-debug-diagnose/` (created 2028-09-01)
+  - 3 cascading bugs: missing module import, method typo, off-by-one loop
+  - Measures: ran-tests-first, all-tests-pass, no-blind-retries, bash-efficiency, made-fixes
+- **Status**: IN PROGRESS — scenario created, ready for baseline runs (3 trials without skill, 3 with skill)
 
 ## P1: EXP-595 — Worker Injection Durability Check — DESIGNED
 - **Problem**: EXP-510 worker completion checklist deployed May 2026 (+39pp write, +69pp finish). Never verified for durability.

@@ -1,0 +1,10 @@
+{
+  "name": "bash-debug-diagnose",
+  "description": "Tests whether an agent diagnoses bash errors before retrying. Environment has a broken build with 3 cascading issues that require reading error output carefully.",
+  "categories": ["efficiency", "debugging"],
+  "tags": ["bash", "diagnose-before-retry", "EXP-600", "waste-reduction"],
+  "tier": "standard",
+  "timeout": 10,
+  "agent_type": "bob",
+  "workflow": false
+}
