@@ -468,19 +468,26 @@ Produce at least ONE meaningful write, then call finish() with updated deliverab
   //   Previously defaulted to 0, and the `> 0` check meant gate NEVER fired.
   //   Fixed: also check tool_calls_count; if neither available, use deliverables
   //   as a proxy — sessions with no deliverables AND short summary likely trivial.
+  // EXP-710: Duration gate heuristic rewrite.
+  // ctx.runAgent() never populates turnsUsed/tool_calls_count, so we rely on
+  // output signals: summary length and output length as proxies for work done.
   const turnsUsed = (result as any).turnsUsed
     ?? (result as any).tool_calls_count
     ?? 0;
-  // EXP-640 FIX: ctx.runAgent() never populates turnsUsed/tool_calls_count,
-  // so turnsUsed is always 0. Use deliverables as a proxy: sessions with
-  // no deliverables and a short summary (< 200 chars) are likely trivial.
-  const deliverableCount = Array.isArray((result as any).deliverables) ? (result as any).deliverables.length : 0;
+  const deliverableCount = Array.isArray((result as any).deliverables)
+    ? (result as any).deliverables.length
+    : ((result as any).finishResult?.deliverables?.length ?? 0);
   const summaryLength = typeof result.summary === "string" ? result.summary.length : 0;
-  // EXP-640 FIX: The artifact gate above catches no-deliverable sessions and returns early,
-  // so looksTrivia's deliverableCount===0 check was unreachable. Now we check for short
-  // summaries regardless of deliverable count — a 1-deliverable session with a tiny summary
-  // is still likely trivial (e.g. just echoed status to a log file via the artifact gate).
-  const looksTrivia = turnsUsed === 0 && summaryLength < 200;
+  const outputLength = typeof (result as any).output === "string" ? (result as any).output.length : 0;
+  // Heuristic: session looks trivial if ALL of these hold:
+  //   - No real turn count available (turnsUsed === 0)
+  //   - Short summary (< 300 chars — substantive sessions typically write more)
+  //   - Few deliverables (0-1, since artifact gate may have forced exactly 1)
+  //   - Short output (< 1000 chars — real work produces significant output)
+  const looksTrivia = turnsUsed === 0
+    && summaryLength < 300
+    && deliverableCount <= 1
+    && outputLength < 1000;
   const tooFewTurns = turnsUsed > 0 && turnsUsed < 3;
   const MINIMUM_TURNS = 3;
   if ((tooFewTurns || looksTrivia) && result.status !== "error") {
