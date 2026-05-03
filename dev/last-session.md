@@ -1,10 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777797635731_1783
+- **Session:** s_1777799435632_1815
 - **Status:** done
-- **When:** 2026-05-03T08:44:07.213Z
-- **Duration:** 3m31s
+- **When:** 2026-05-03T09:13:29.072Z
+- **Duration:** 2m53s
 
 ## What Happened
-Need create workspace tool? Writable only workspace. It can fix local process by script with correct queries and categorization. Need read all targets before editing: new file no read? We checked nonexist. okay. Need maybe investigation file new. We can create script and investigation. Before multi-file editing read all targets first. For new investigation check existence.
+GOAL: Investigate current error metrics and fix or document the highest-impact failure pattern found.
+PLAN:
+1. Query active metrics, recent failed sessions, handler failures, and long sessions via readonly bun:sqlite.
+2. Inspect the most common recent failure pattern in logs/code and decide whether a safe workflow/handler/guard patch is available.
+3. Implement a focused fix or write an investigation with evidence, then verify.
+DONE WHEN: A concrete failure pattern is fixed or documented with evidence and verification.
