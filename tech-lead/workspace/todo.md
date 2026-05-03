@@ -56,7 +56,7 @@
 - [x] IT-83/IT-96 finish-guard wiring — RESOLVED. Guards ARE wired via `agents/may/handlers/run-workflow.ts:39` which imports `loadGuards`/`runGuards` from `agents/shared/guards/loader.ts`. All 9 guards fire on every workflow step. P0 notifications were stale/incorrect. Verified 2026-07-22.
 
 ## Deferred (P3) — Runtime Changes (require Hao)
-- [ ] EXP-216 Phase 2: Wire EditGuard into beforeToolCall — BLOCKED on runtime binary (see EXP-216/results.md). Workflow-level read-before-edit guard already active.
+- [ ] EXP-575 / EXP-216 Phase 2: Auto-inject read() after edit() at tool level — BLOCKED on runtime binary. Cannot implement Option A from `agents/coach/workspace/EXP-575-auto-verify-after-edit-design.md` without `beforeToolCall`/`afterToolCall` hooks in the runtime. **Current status**: Option B finish-gate already live (`verify-after-write.ts`), C1.3 pass rate at 94.1% (n=557) post write-diff enhancement. Coach's 17.4% measures raw mid-session edit→read pairs, not final verification. True auto-injection requires Hao to add afterToolCall hook to runtime binary.
 - [ ] Coach growth-cycle reliability — needs runtime changes to manager.ts
 - [ ] meta.json cost tracking — needs runtime changes (PersistedSession)
 - [ ] Gym Evolution Dual-Score Architecture — needs runtime changes (gym runner)
