@@ -1,11 +1,9 @@
 # DELIVERABLES_CHECKLIST.md
 
-## Task: Coverage Gap Audit & Extended Tests
+## Task: Workflow Performance Profile
 
-| # | Deliverable | Status | File Path | Details |
-|---|------------|--------|-----------|---------|
-| 1 | Coverage gap audit report | DONE | agents/shared/projects/outputs/coverage-gap-audit.md | Ratio analysis of all 28 workflow files, identified top 3 gaps |
-| 2 | Extended tests for implement-and-verify | DONE | agents/shared/tests/implement-and-verify-extended.test.ts | 27 tests, 296 lines |
-| 3 | Extended tests for incremental-checkpoint | DONE | agents/shared/tests/incremental-checkpoint-extended.test.ts | 23 tests, 289 lines |
-| 4 | Extended tests for circuit-breaker | DONE | agents/shared/tests/circuit-breaker-extended.test.ts | 17 tests, 236 lines |
-| 5 | All tests passing | DONE | 98/98 files, 1745 tests | Confirmed via npx vitest run |
+| # | Deliverable | Status | Path |
+|---|-------------|--------|------|
+| 1 | Performance profile report with timing data | DONE | agents/shared/projects/outputs/workflow-perf-profile.md |
+| 2 | Top 3 slowest test files identified with root causes | DONE | (in report above) |
+| 3 | 3 concrete optimization proposals | DONE | (in report above) |
