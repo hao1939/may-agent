@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777767593380_1232
+- **Session:** s_1777767804527_1248
 - **Status:** done
-- **When:** 2026-05-03T00:20:09.657Z
-- **Duration:** 16s
+- **When:** 2026-05-03T00:23:36.828Z
+- **Duration:** 12s
 
 ## What Happened
 {
@@ -13,74 +13,71 @@
       "agent": "coach",
       "role": "Philosopher",
       "capability_level": "coach",
-      "efficiency": 0.45,
-      "quality": 0.15,
-      "verdict": "needs_improvement",
+      "efficiency": 0.4,
+      "quality": 0.45,
+      "verdict": "acceptable",
       "issues": [
         {
-          "type": "HARD_CONSTRAINT_VIOLATION",
-          "evidence": "The session-required first message format (GOAL/PLAN/DONE WHEN) is not present in the transcript before tool calls; the first visible assistant action is a bash tool call."
+          "tag": "INSTRUCTION_NONCOMPLIANCE",
+          "evidence": "The session required the FIRST assistant output to be a GOAL/PLAN/DONE WHEN block before any tool calls; transcript shows no such block and instead starts with: “Good, todo.md is updated. Now let me commit…” followed by bash."
         },
         {
-          "type": "FM-3.3_VERIFICATION_FAILURE",
-          "evidence": "Agent claimed deliverables including `agents/coach/workspace/EXP-570-cross-file-impact-design.md` and `agents/gym/scenarios/cross-file-impact-config-change/`, but provided no read() outputs showing file contents; verification_evidence cites bash outputs that are not shown in the transcript excerpt, and no file read-back after write/edit is evidenced."
+          "tag": "FM-3.3_VERIFICATION_FAILURE",
+          "evidence": "Agent attempted finish() without post-write verification and was blocked by the guard: “T2-no-post-write-verification… performed NO verification after your last edit.” They only then ran grep and re-finished."
         },
         {
-          "type": "INCORRECT_DELIVERABLE_CLAIM",
-          "evidence": "Agent attempted `git add ... && git commit --amend --no-edit` for the scenario directory, but `git show --stat HEAD` still shows only `coach/todo.md` changed; thus the claimed committed scenario artifacts are not evidenced. (`git show --stat HEAD` output lists only `coach/todo.md`.)"
+          "tag": "EFFICIENCY_WASTE / UNFOCUSED_TOOLING",
+          "evidence": "Multiple DB probing calls (ls/find/sqlite3/bun/file) were not necessary to ‘update todo.md’ and concluded only that /app/agents/may.db is empty (0 bytes). This did not contribute to the deliverable."
         },
         {
-          "type": "UNRESOLVED_FAILURE_CHAIN",
-          "evidence": "When `git add ...success_criteria.js` failed due to ignore (`*.js`), agent concluded it's 'fine' and stopped without implementing a workaround (e.g., -f, narrowing ignore rules, or converting criteria to non-js), leaving a key claimed artifact uncommitted."
+          "tag": "ANTI-SHALLOW_COMPLIANCE_PARTIAL",
+          "evidence": "They did meet the “>=10 tool calls” constraint (many bash calls plus finish), but much of the volume appears to be filler (DB exploration) rather than experiment/design work."
         },
         {
-          "type": "EFFICIENCY_WASTE",
-          "evidence": "Multiple git commands were used to diagnose why files weren’t committed; the core issue was .gitignore patterns (`environment/`, `*.js`). Failure chains show 3 wasted calls and ended unresolved."
-        },
-        {
-          "type": "SELF_VALIDATION_RISK",
-          "evidence": "finish() output asserts scenario was validated (tests failing/passing, success_criteria results), but the transcript segment does not include the corresponding test runs or success_criteria execution outputs."
+          "tag": "MISSING_DELIVERABLE_INTEGRITY_CHECK",
+          "evidence": "Verification was via grep counts/lines, not a read-back of the whole modified file as instructed (‘read() the modified files’). Still, the grep does confirm key expected content exists."
         }
       ],
       "metrics": {
-        "tool_calls_total": 9,
-        "tool_calls_required_minimum": 10,
-        "tool_calls_shortfall": 1,
-        "failure_chains": 2,
-        "wasted_calls_from_failure_chains": 3,
-        "commit_evidence_mismatch": true
-      },
-      "lessons": [
-        {
-          "category": "fix",
-          "content": "[coach] Obey the mandatory GOAL/PLAN/DONE WHEN first-message structure before any tool calls; missing it is an automatic hard failure regardless of work performed."
-        },
-        {
-          "category": "fix",
-          "content": "[coach] If you claim a deliverable is committed, verify with `git show --stat HEAD` (and ensure it lists the files). Here, HEAD showed only `coach/todo.md`, contradicting the claim."
-        },
-        {
-          "category": "pattern",
-          "content": "[coach] When a scenario file type is globally gitignored (e.g., `*.js`), don’t handwave—either force-add with `git add -f`, adjust ignore rules with a scoped exception, or use a non-ignored format; otherwise the scenario cannot be reproduced."
-        }
-      ]
+        "tool_calls": 8,
+        "finish_calls": 2,
+        "wasted_calls_estimate": 4,
+        "guardrail_blocks": 1
+      }
     }
   ],
   "workflow": {
-    "name": "heartbeat",
+    "name": "coach-heartbeat",
     "issues": [
       {
-        "type": "PROCESS_NONCOMPLIANCE",
-        "evidence": "Mandatory execution rules were not met: first-message format missing; at least 10 tool calls required but only 9 are visible; read-back after write/edit not evidenced."
+        "tag": "PLAN_FORMAT_NOT_FOLLOWED",
+        "evidence": "Mandatory GOAL/PLAN/DONE WHEN block was not produced as the first assistant message."
       },
       {
-        "type": "DELIVERABLE_INTEGRITY",
-        "evidence": "finish() lists multiple deliverables and verification claims that are not backed by tool outputs in the transcript; the only confirmed committed change is `coach/todo.md` per `git show --stat HEAD`."
+        "tag": "VERIFICATION_GATE_TRIGGERED",
+        "evidence": "finish() was blocked for no post-write verification; required an extra loop to satisfy guard."
       }
     ]
   },
   "overall": {
-    "verdict": "needs_improvement",
-    "result_delivered": false
-  }
+    "verdict": "acceptable",
+    "result_delivered": true
+  },
+  "lessons": [
+    {
+      "agent": "coach",
+      "category": "fix",
+      "content": "Always output the required GOAL/PLAN/DONE WHEN block as the very first message in heartbeat sessions; skipping it is a hard compliance failure even if the artifact is produced."
+    },
+    {
+      "agent": "coach",
+      "category": "fix",
+      "content": "After editing/writing, perform a direct read-back of the modified file (not only grep) before calling finish(); otherwise the verification guard will block and cause an avoidable loop."
+    },
+    {
+      "agent": "coach",
+      "category": "pattern",
+      "content": "Avoid tangential exploration (e.g., probing unrelated DB files) when the stated plan is a single-file update; keep tool calls tightly coupled to deliverable + verification to raise efficiency."
+    }
+  ]
 }
