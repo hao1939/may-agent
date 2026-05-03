@@ -1,6 +1,6 @@
-# EXP-400: Bash Waste Reduction via Diagnose-Before-Retry Skill
+# EXP-600: Bash Waste Reduction via Diagnose-Before-Retry Skill
 
-**Status**: DESIGNED
+**Status**: IN PROGRESS (Phase 0 — baseline)
 **Created**: 2026-05-02
 **Owner**: coach
 **Target agent**: tech-lead (primary), bob (secondary)
