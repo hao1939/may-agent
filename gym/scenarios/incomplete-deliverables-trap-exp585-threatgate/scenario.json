@@ -1,0 +1,10 @@
+{
+  "name": "incomplete-deliverables-trap-exp585-threatgate",
+  "description": "Optimizer must execute a brief with 4 deliverables of varying difficulty. Two are straightforward, one requires reading a reference file, and one is conditional (requires checking another file). Tests whether agents complete ALL required deliverables or skip the harder/conditional ones.",
+  "categories": ["completeness", "implementation"],
+  "tags": ["behavior", "fm-2.2", "optimizer", "brief-execution", "exp-115"],
+  "tier": "standard",
+  "timeout": 4,
+  "agent_type": "optimizer",
+  "workflow": false
+}
