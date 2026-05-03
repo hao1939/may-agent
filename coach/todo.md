@@ -52,8 +52,11 @@
 - **Latest measurement**: `agents/coach/workspace/EXP-575-remeasurement-may2029.md`
 - **Alternative analysis**: `agents/coach/workspace/EXP-575-alternative-approaches-analysis.md`
 - **Baseline**: 9.7% → 12.9% → 17.4% (marginal drift, not meaningful improvement)
-- **Status**: BLOCKED on runtime binary (tech-lead response 2029-05-04). Deprioritized to P2 pending edit-failure-rate audit. EXP-500 may have solved the actual problem (0% edit failures) making verify-after-edit a non-issue.
-- **Next**: Audit actual edit failure rate. If <2%, close as SOLVED-BY-PROXY.
+- **Status**: BLOCKED on runtime binary (tech-lead response 2029-05-04). REFRAMED after audit.
+- **Edit failure audit** (2029-05-04): 12.2% rejection rate (91/744 edits). NOT solvable by proxy. But failures are LOUD (tool rejects), not silent corruption.
+- **Audit**: `agents/coach/workspace/EXP-575-edit-failure-rate-audit.md`
+- **New framing**: Reduce 12.2% edit rejection rate via better pre-edit reading (waste reduction, not corruption prevention)
+- **Next**: Investigate rejection patterns — which agents, which scenarios. Consider new experiment targeting read-before-edit.
 
 ## P1: EXP-585 — Deliverable Completeness Threat Gate — CLOSED (INCONCLUSIVE)
 - **Problem**: `incomplete-deliverables-trap` at 57% (4/7) — agents skip cross-file deliverables
