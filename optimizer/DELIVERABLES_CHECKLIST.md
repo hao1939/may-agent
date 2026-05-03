@@ -1,6 +1,7 @@
 # Deliverables Checklist
 
-## Task: Optimizer Heartbeat
+## Heartbeat Session — 2026-06-03
 
-- [x] **DONE** — Heartbeat status artifact: `agents/optimizer/heartbeat-status.md` — Updated with current metrics, throughput trend, checkpoint stats, project status, recommendations.
-- [x] **DONE** — Session summary: `agents/optimizer/last-session.md` — Updated with heartbeat results and next steps.
+| # | Deliverable | Status | Path |
+|---|-------------|--------|------|
+| 1 | Heartbeat findings artifact with metrics & recommendations | DONE | agents/optimizer/findings/heartbeat-2026-06-03.md |
