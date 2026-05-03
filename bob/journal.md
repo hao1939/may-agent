@@ -1417,3 +1417,14 @@ Sequential auditor matches direct-hint performance (EXP-195, 40%) but generates 
 - agent-system-literacy: closed, 5/6 milestones. No action.
 
 **Next**: Identify next experiment. Candidates: H-207 (Capability-Decomposed Evaluation), or investigate whether `partial` status sessions have patterns worth addressing.
+
+## 2025-05-03 Heartbeat (session 9)
+
+**Actions**:
+- Audited system health: 100% success rate, 228 handler completions, evaluator running 73 evals in 6h.
+- Reviewed experiment pipeline: EXP-269 closed (stalled), EXP-296/297 closed (validated). Pipeline is clear.
+- Found **EXP-249** (Capability-Structured Evaluator) fully designed but never executed. Oldest unvalidated experiment with clear test protocol.
+- Wrote execution plan: `agents/bob/workspace/EXP-249-execution-plan.md` with sample selection strategy, step-by-step protocol, and decision gates.
+- Also noted from prior analysis: evaluator tool allowlist bug (agents penalized for using `notify`) still appears unresolved. Zombie session monitoring gap persists (no `stale-running-count` metric).
+
+**Next**: Execute EXP-249 — find 5 needs_improvement sessions, run treatment evaluations, write results.
