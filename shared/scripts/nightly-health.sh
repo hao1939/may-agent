@@ -7,49 +7,48 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-DATE=$(date +%Y-%m-%d)
-TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-REPORT_DIR="$PROJECT_DIR/projects/system-efficiency/outputs/health-reports"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$PROJECT_DIR"
 
+DATE=$(date +%Y-%m-%d)
+TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S %Z")
+REPORT_DIR="projects/system-efficiency/outputs/health-reports"
+REPORT_FILE="${REPORT_DIR}/health-${DATE}.md"
+INDEX_FILE="${REPORT_DIR}/index.md"
+
+# Create report directory
 mkdir -p "$REPORT_DIR"
 
-echo "=== Nightly Health Report: $DATE ==="
-echo ""
-
-# Run system-health.sh and capture output
-HEALTH_OUTPUT=$("$SCRIPT_DIR/system-health.sh" 2>&1) || true
-HEALTH_EXIT=$?
+# Run system health check
+echo "Running system health check..."
+HEALTH_OUTPUT=$(bash scripts/system-health.sh 2>&1) || true
+EXIT_CODE=${PIPESTATUS[0]:-$?}
 
 # Write dated report
-cat > "$REPORT_DIR/health-${DATE}.md" << EOF
-# Health Report: $DATE
-## Generated: $TIMESTAMP
+cat > "$REPORT_FILE" <<EOF
+# Health Report: ${DATE}
+## Generated: ${TIMESTAMP}
 
 \`\`\`
-$HEALTH_OUTPUT
+${HEALTH_OUTPUT}
 \`\`\`
 
-## Exit Code: $HEALTH_EXIT
+## Status
+$(if [ "${EXIT_CODE}" -eq 0 ]; then echo "✅ ALL SYSTEMS HEALTHY"; else echo "❌ ISSUES DETECTED (exit code: ${EXIT_CODE})"; fi)
 EOF
 
 # Append to index
-if [ ! -f "$REPORT_DIR/index.md" ]; then
-  echo "# Health Report Index" > "$REPORT_DIR/index.md"
-  echo "" >> "$REPORT_DIR/index.md"
-  echo "| Date | Status |" >> "$REPORT_DIR/index.md"
-  echo "|------|--------|" >> "$REPORT_DIR/index.md"
+if [ ! -f "$INDEX_FILE" ]; then
+  echo "# Health Report Index" > "$INDEX_FILE"
+  echo "" >> "$INDEX_FILE"
+  echo "| Date | Status | File |" >> "$INDEX_FILE"
+  echo "|------|--------|------|" >> "$INDEX_FILE"
 fi
 
-if [ "$HEALTH_EXIT" -eq 0 ]; then
-  STATUS="✅ PASS"
-else
-  STATUS="❌ FAIL"
-fi
+STATUS_EMOJI=$(if [ "${EXIT_CODE}" -eq 0 ]; then echo "✅"; else echo "❌"; fi)
+echo "| ${DATE} | ${STATUS_EMOJI} | [Report](health-${DATE}.md) |" >> "$INDEX_FILE"
 
-echo "| $DATE | $STATUS |" >> "$REPORT_DIR/index.md"
+echo "Report written to: ${REPORT_FILE}"
 
-echo "Report written to: health-reports/health-${DATE}.md"
-echo "Status: $STATUS"
-
-exit $HEALTH_EXIT
+# Exit with health check status
+exit ${EXIT_CODE}
