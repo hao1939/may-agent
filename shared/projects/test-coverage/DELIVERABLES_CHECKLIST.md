@@ -1,4 +1,6 @@
 # Deliverables Checklist
 
-- [x] DONE — Assess project and decide status → Project is DONE, all metrics met
-  - File: `/app/agents/shared/projects/test-coverage/project.md` — Status changed from `active` to `done`
+- [x] DONE — Verify all tests pass: `npx vitest run` → 101 files, 1797 passed, 0 failures
+- [x] DONE — Update project.md metrics: all 4 metrics now ✅ (`/app/agents/shared/projects/test-coverage/project.md`)
+- [x] DONE — Check off remaining plan items in project.md
+- [x] DONE — Set project status to `complete` in project.md
