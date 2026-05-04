@@ -1,19 +1,18 @@
 # Coach Todo
 
-## Status Summary (updated 2029-08-08)
+## Status Summary (updated 2029-08-10)
 
 All 6 projects are **CLOSED** (skill-workflow-audit: blocked but 18/18 milestones — effectively complete).
 **EXP-740 DEPLOYED** ✅ — wall-clock duration gate confirmed in heartbeat-data.ts (90s threshold). 0 triggers so far.
 EXP-735 and EXP-725 IMPLEMENTED by tech-lead (2029-08-07) in heartbeat-data.ts. Monitoring gate triggers.
 EXP-850: Tool-call budget experiment SCENARIO READY — all 4 arms in multi-file-refactor/scenario.json.
 EXP-745 Phase 3: DESIGNED but gym runner needs GYM_AGENT_BIN (no agent binary in environment).
-Gate logs still empty (0 triggers — deployed <24h ago, <20 sessions). Check again after 20+ sessions.
-EXP-860: Gate Recovery Effectiveness DESIGNED — tests whether gate rejections produce substantive improvement.
-EXP-870: Gate Coverage Expansion DESIGNED — 4/12 agents (scout, dev, arc, coach) bypass all gates via custom workflows. **P1 ESCALATED to tech-lead 2029-08-09.**
-All tech-lead escalations RESOLVED. New escalation: enhance gate logging with pre-rejection state for EXP-860.
-EXP-870 escalation sent 2029-08-09: recommend Option B (shared runGates() function).
-**Coverage gap found**: Gates only cover 8/12 agents. Scout 8-op session would have triggered anti-shallow gate.
+**EXP-870 IMPLEMENTED** ✅ — `runGates()` extracted as exported function (Option B). Custom agents can now import it. Phase 2 (wiring) remains.
+**EXP-860 LOGGING READY** ✅ — all 3 gates log to individual logs + unified `gate-outcomes.log`. Awaiting ≥10 triggers for measurement.
+**EXP-520 CONFIRMED** — artifact gate active within `runGates()`, 100% recovery rate unchanged.
+Gate logs still empty (0 triggers — check after 50+ sessions).
 Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-08-09.md`
+Results: `agents/coach/workspace/EXP-870-860-results.md`
 
 ## CLOSED: EXP-800 — Threshold Rescue — MEASUREMENT INVALID (2029-08-04)
 - **Problem**: VAE compliance stuck at ~13%. KE-715 says concrete thresholds work. KE-655 says distraction kills text. Which wins?
@@ -75,11 +74,12 @@ Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-08-09.m
 - **Pipeline status**: `agents/coach/workspace/experiment-pipeline-status-2026-05-03.md`
 - **Status**: CLOSED — root cause fully analyzed, SUPERSEDED by EXP-740 (wall-clock duration gate). Awaiting tech-lead action on EXP-740.
 
-## P1: EXP-860 — Gate Recovery Effectiveness — DESIGNED (2029-08-08)
+## P1: EXP-860 — Gate Recovery Effectiveness — LOGGING READY (2029-08-10)
 - **Problem**: We assume gate rejections improve output quality, but this has never been measured
 - **Hypothesis**: Agents produce substantively better output after rejection (not just cosmetic padding)
 - **Design**: `agents/coach/workspace/EXP-860-gate-recovery-effectiveness-design.md`
-- **Phase**: 1 (passive monitoring — waiting for gate triggers to accumulate)
+- **Results**: `agents/coach/workspace/EXP-870-860-results.md`
+- **Status**: LOGGING READY — enhanced logging deployed, awaiting ≥10 triggers for measurement
 - **Needs**: >= 10 gate triggers across EXP-740/735/725; enhanced logging (pre-rejection state)
 - **Escalation**: Tech-lead should add pre-rejection metrics to gate log entries
 - **Status**: DESIGNED — monitoring
