@@ -10,7 +10,8 @@
       "consecutiveErrors": 0
     },
     "tech-lead": {
-      "consecutiveErrors": 0
+      "consecutiveErrors": 1,
+      "lastError": "heartbeat session error"
     },
     "optimizer": {
       "consecutiveErrors": 0
