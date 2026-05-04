@@ -1,43 +1,33 @@
-# Optimizer Heartbeat Status — 2025-05-03
+# Optimizer Heartbeat Status
+
+**Date**: 2025-07-04
+**Session**: heartbeat
 
 ## System Health
-- **handler.success-rate**: 1.0 (target 0.95) ✅
-- **handler.p95-duration**: 1596ms (target 120000ms) ✅ — excellent, 1.3% of budget
-- **Active alerts**: None
+All metrics green:
+- handler.success-rate: 1.0 (target 0.95) ✅
+- handler.p95-duration: 2303ms (target 120000ms) ✅
+- Active alerts: None
 
-## Session Throughput Trend (checkpoint files by day)
-| Date   | Sessions |
-|--------|----------|
-| Apr 28 | 9        |
-| Apr 29 | 5        |
-| Apr 30 | 2        |
-| May 1  | 2        |
-| May 2  | 5        |
-| May 3  | 3 (so far) |
+## Project Status
 
-**Observation**: Throughput stabilized at ~3-5 sessions/day, down from peaks of 9+. This is expected as projects close and the system matures.
+### system-efficiency (active → effectively complete)
+- All 3 metrics at or above target (deliverables-per-iteration: 1.0, satellite-goal-progress: 2/2, worker-first-attempt-success: 1.0)
+- 43 iterations completed, 9 output files produced, 5 satellite projects spawned
+- Journal says "all goals achieved" — recommend closing project
+- 400 sessions in .state/sessions/
 
-## Checkpoint Storage
-- **Files**: 1,333
-- **Size**: 5.5 MB
-- **Trend**: Growing ~50 files/day during active periods
-- **Risk**: Low — 5.5MB is negligible. No rotation needed yet.
+### Other Projects (all closed)
+- cross-agent-collaboration: closed ✅
+- request-deduplication: closed ✅ (note: "resume: New instructions from human/May" — check next heartbeat)
+- test-coverage: closed ✅ (83.79% coverage, 191/191 tests passing)
+- prompt-efficiency: closed ✅
 
-## Project Status (all closed)
-| Project | Milestones | Status |
-|---------|-----------|--------|
-| system-efficiency | 50/53 | closed |
-| test-coverage | 19/19 | closed |
-| prompt-efficiency | 5/5 | closed |
-| request-deduplication | 2/2 | closed |
-| cross-agent-collaboration | 0/0 | closed |
+## Efficiency Observations
+- Session count: 400 total sessions tracked
+- No waste signals detected this heartbeat (no alerts, no failures)
+- System running efficiently — all handlers healthy
 
-## Key Findings This Heartbeat
-1. **p95 duration dropped significantly**: 1596ms vs 252s last check — massive improvement (if real, may be different measurement window)
-2. **No waste detected**: No pending events, no active alerts, no stuck sessions
-3. **System is in steady state**: All projects closed, metrics healthy
-
-## Recommendations
-- No action needed this cycle
-- Continue monitoring p95 duration trend for sustained improvement
-- Consider checkpoint rotation policy if files exceed 5,000
+## Action Items
+1. Request closure of system-efficiency project (all goals met)
+2. Check request-deduplication for new instructions from May next session
