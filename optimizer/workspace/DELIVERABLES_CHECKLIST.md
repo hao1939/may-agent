@@ -1,7 +1,4 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist
 
-## Required Deliverables
-
-| # | Deliverable | Status | Path |
-|---|------------|--------|------|
-| 1 | Heartbeat artifact (status/findings report) | DONE | agents/optimizer/workspace/heartbeat-2026-05-04T10.md |
+- [x] DONE — Heartbeat status artifact: `agents/optimizer/workspace/heartbeat-2026-05-04T13.md`
+  - System health metrics, p95 trend, efficiency observations
