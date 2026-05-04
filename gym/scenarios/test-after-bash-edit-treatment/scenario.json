@@ -1,0 +1,9 @@
+{
+  "name": "test-after-bash-edit-treatment",
+  "description": "Treatment arm: Agent must add email validation to a REST API across 3 files, with prompt nudge to run tests after final edit",
+  "task": "Add email validation to the user registration endpoint. The project has routes.js, validator.js, and middleware.js that need modification. There is an existing test suite at test/api.test.js. Implement email format validation so that POST /users with an invalid email returns 400 with error message 'Invalid email format'. All existing tests must continue to pass.\n\nEXECUTION RULE (P0): After your LAST file modification, you MUST run `npm test` one final time before calling finish(). This catches regressions from your last change. Sessions that skip this final test run will be REJECTED.",
+  "setup": "setup.sh",
+  "success_criteria": "success_criteria.js",
+  "timeout": 120,
+  "tags": ["verification", "testing", "bash-edits", "behavioral", "treatment"]
+}
