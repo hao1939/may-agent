@@ -490,6 +490,7 @@ Produce at least ONE meaningful write, then call finish() with updated deliverab
     try {
       const logLine = `${new Date().toISOString()} agent=${agent} gate=anti-shallow tool_calls=${toolCallCount} min_required=${MIN_TOOL_CALLS} elapsed_sec=${Math.round((Date.now() - heartbeatStartTime) / 1000)} status=${result.status || "unknown"} action=re-prompt\n`;
       appendFileSync(join(agentsRoot, "shared", "anti-shallow-gate-triggers.log"), logLine);
+      appendFileSync(join(agentsRoot, "shared", "gate-outcomes.log"), logLine);
     } catch (_) { /* non-critical */ }
 
     const shallowPrompt = `⚠️ ANTI-SHALLOW GATE: Your session made only ${toolCallCount} tool calls (minimum: ${MIN_TOOL_CALLS}).
@@ -524,6 +525,7 @@ Continue working, then call finish() with updated deliverables.`;
     try {
       const logLine = `${new Date().toISOString()} agent=${agent} gate=impact deliverable_edits=${deliverableEdits} elapsed_sec=${Math.round((Date.now() - heartbeatStartTime) / 1000)} did_impact_check=false status=${result.status || "unknown"} action=re-prompt\n`;
       appendFileSync(join(agentsRoot, "shared", "impact-gate-triggers.log"), logLine);
+      appendFileSync(join(agentsRoot, "shared", "gate-outcomes.log"), logLine);
     } catch (_) { /* non-critical */ }
 
     const impactPrompt = `⚠️ IMPACT GATE: You edited ${deliverableEdits} files but didn't check for downstream consumers.
@@ -569,6 +571,12 @@ Dig deeper into one project or metric and produce a substantive artifact.`;
       durationResult.status === "error" ? "duration gate re-prompt error" : undefined);
     return ctx.done(ctx.summarize(durationResult, { maxLength: 500 }));
   }
+
+  // ── EXP-860: Log gate pass-through for false-positive rate measurement ──
+  try {
+    const logLine = `${new Date().toISOString()} agent=${agent} gate=all-passed tool_calls=${toolCallCount} elapsed_sec=${Math.round((Date.now() - heartbeatStartTime) / 1000)} deliverable_edits=${Array.isArray((result as any).deliverables) ? (result as any).deliverables.length : 0} status=${result.status || "unknown"} action=none\n`;
+    appendFileSync(join(agentsRoot, "shared", "gate-outcomes.log"), logLine);
+  } catch (_) { /* non-critical */ }
 
   return ctx.done(ctx.summarize(result, { maxLength: 500 }));
 }
