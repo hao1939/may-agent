@@ -346,6 +346,29 @@ This is a workflow-level change (modify delegation patterns) rather than a singl
 
 ---
 
+## Status Update (2029-08-08)
+
+**Production gate landscape has evolved significantly since this design was written.**
+
+The current production gate stack (in `heartbeat-data.ts`) is:
+1. **Artifact Gate** (EXP-520) — re-prompt on 0 deliverables ✅ ACTIVE (7+ historical triggers)
+2. **Anti-Shallow Gate** (EXP-725) — re-prompt if tool_call_count < 10 ✅ IMPLEMENTED 2029-08-07
+3. **Impact Gate** (EXP-735) — re-prompt if ≥2 edits + no impact search ✅ IMPLEMENTED 2029-08-07
+4. **Duration Gate** (EXP-740) — re-prompt if elapsed < 90s ✅ DEPLOYED 2029-08-07
+
+**Key findings since this doc was written:**
+- KE-480: Text coaching is dead for verification behaviors (6+ experiments confirm)
+- KE-655: Task distraction nullifies ALL text interventions
+- KE-715: Exception — concrete-threshold P0 rules DO work (binary check)
+- EXP-850: Gate interaction analysis shows early-return suppression is expected/acceptable
+
+**Gate 1 (Tech-Lead Lens) status**: NOT YET IMPLEMENTED — lens-analysis.ts content quality gate still pending
+**Gate 2 (Scout Research) status**: NOT YET IMPLEMENTED — scout workflow changes still pending
+
+Both original gates remain valid designs but lower priority now that the structural heartbeat gates cover the most common failure modes (empty sessions, shallow sessions, no impact checking, fast sessions).
+
+---
+
 ## Appendix: EXP-155 Gate Template (Reference)
 
 The proven gate pattern from EXP-155 (100% pass rate):
