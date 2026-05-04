@@ -19,10 +19,51 @@ const DEDUP_WINDOW_MS = 4 * 60 * 60 * 1000; // 4h — shorter window so repeated
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async (event?: TriggerEvent) => {
+    // If no event (timer tick), poll for unresolved alerts and process each
     if (!event?.data) {
-      ctx.log("[metric-alert-reactor] No event data, skipping.");
+      try {
+        const db = ctx.getDb();
+        const unresolved = db.prepare(
+          `SELECT ma.metric_id, ma.message, m.name as metricName, m.owner, m.threshold, m.target,
+                  (SELECT value FROM metric_values WHERE metric_id = m.id ORDER BY ts DESC LIMIT 1) as current
+           FROM metric_alerts ma
+           JOIN metrics m ON m.id = ma.metric_id
+           WHERE ma.resolved_at IS NULL`
+        ).all() as Array<{ metric_id: string; message: string; metricName: string; owner: string; threshold: number; target: number; current: number }>;
+
+        if (unresolved.length === 0) {
+          ctx.log("[metric-alert-reactor] Timer tick: no unresolved alerts.");
+          return;
+        }
+        ctx.log(`[metric-alert-reactor] Timer tick: found ${unresolved.length} unresolved alert(s), processing...`);
+        for (const row of unresolved) {
+          const syntheticEvent: TriggerEvent = {
+            type: "metric.breach",
+            data: {
+              owner: row.owner,
+              metricId: row.metric_id,
+              metricName: row.metricName,
+              current: row.current,
+              threshold: row.threshold,
+              target: row.target,
+              message: row.message,
+            },
+          };
+          // Re-invoke self with synthetic event (inline the logic below)
+          await processBreachEvent(ctx, syntheticEvent);
+        }
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        ctx.log(`[metric-alert-reactor] Timer tick DB error: ${msg}`);
+      }
       return;
     }
+
+    await processBreachEvent(ctx, event);
+  };
+};
+
+async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent) {
 
     const { owner, metricId, metricName, current, threshold, target, message } = event.data as {
       owner: string;
@@ -83,5 +124,4 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const msg = e instanceof Error ? e.message : String(e);
       ctx.log(`[metric-alert-reactor] Failed to fork ${owner}: ${msg}`);
     }
-  };
-};
+}

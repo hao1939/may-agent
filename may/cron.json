@@ -292,11 +292,11 @@
     "type": "job",
     "handler": "metric-alert-reactor",
     "enabled": true,
-    "description": "React to metric.breach events by forking the owning agent with remediation task.",
+    "description": "React to metric.breach events by forking the owning agent with remediation task. Polls unresolved alerts on timer.",
     "on": [
       "metric.breach"
     ],
-    "intervalMs": 86400000
+    "intervalMs": 300000
   },
   {
     "name": "session-recovery",
