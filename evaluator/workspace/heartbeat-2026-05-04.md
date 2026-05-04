@@ -1,45 +1,33 @@
-# Evaluator heartbeat — 2026-05-04
+# Evaluator Heartbeat — 2026-05-04
 
-## Session evaluation pipeline liveness (DB canonical)
-- `evaluations.max(createdAt)` = **1777904199425**
-- `sessions.max(endedAt)` = **1777906248194**
-- Lag = **2048769 ms (~34.1 min)**
+## Findings
 
-Interpretation: evaluation job is running recently (sub-hour lag), so no coverage/cron escalation needed.
+### 1) DB liveness: evaluation pipeline is writing, but coverage is low
+- `evaluations.max(createdAt)` is close to `sessions.max(startedAt)` (lag ~125s), so the evaluation writer is **alive**.
+- However, last-24h coverage is low:
+  - sessions (all kinds): 1504
+  - evaluated sessions: 79
+  - coverage: ~5.25%
+- Restricting to `kind='call'` improves but is still low:
+  - call sessions: 421
+  - evaluated sessions: 79
+  - coverage: ~18.76%
 
-## Legacy `.state/evaluations/` artifacts
-- Newest files in `.state/evaluations/` are dated **2026-03-24**, consistent with known drift/staleness.
+Interpretation: This looks less like a total outage and more like **intentional scope restriction (skipping job sessions)** plus **partial throughput limitation** even on call sessions.
 
-Interpretation: treat `.state/evaluations/` as legacy output path; DB is the source of truth.
+### 2) Legacy artifact path drift: `.state/evaluations/` stale relative to DB
+- `.state/evaluations` shows newest files dated Apr 29, while DB is writing evaluations “now”.
+- This matches the documented guidance in `agents/evaluator/knowledge/criteria.md`: treat `.state/evaluations/` as legacy output.
 
----
+### 3) High volume of evaluator “job” sessions
+- In last 24h: `evaluator` has 1028 `kind='job'` sessions, which dominates total sessions.
+- This inflates denominator in naive coverage metrics and may also indicate many internal jobs that are not meant to be evaluated.
 
+## Implications / Suggestions
+- A coverage metric should likely be computed on a filtered session set (e.g., `kind='call'` and maybe excluding agent='evaluator' job sessions), or we need clearer documentation on which session kinds are supposed to be evaluated.
+- If product intent is to evaluate *all call sessions*, current ~19% indicates backlog/throughput issues; likely worth May/Tech-Lead review.
 
-## What I checked
-
-### Evaluation pipeline freshness
-- DB `evaluations.max(createdAt)` is recent.
-- Lag vs newest session start: ~3,362,275 ms (~56 min).
-
-### Coverage (24h)
-- Sessions (all): 1547
-- Sessions (non-evaluator): 448
-- Evaluations: 80
-- Coverage (evaluations / non-evaluator sessions): **0.1786**
-
-### Key observation
-Most sessions in the last 24h are `agent='evaluator'` with `source='standalone-eval'`.
-- Evaluator sessions: 1099 / 1547 = **71.0%** of all sessions.
-- This makes the raw “evaluations per session” coverage look much worse than the user-visible goal (evaluate other agents’ work).
-
-### Legacy artifacts
-`.state/evaluations/` directory mtimes appear stale (mostly Mar 24, a few Apr 29), while DB is fresh.
-This supports the earlier hypothesis that `.state/evaluations/` is a legacy output path and should not be used as the primary liveness signal.
-
-## Hypothesis
-Low evaluation coverage is primarily due to (a) the high volume of evaluator/standalone-eval sessions inflating the denominator and (b) eval-poller budget caps (12 LLM / 200 heuristic per run) which may be insufficient if non-evaluator session throughput spikes.
-
-## Proposed follow-ups (not executed here)
-1. Define/track a metric: coverage over non-evaluator sessions only, and optionally exclude `source='standalone-eval'` from session denominator.
-2. Inspect eval-poller runtime logs to see if it is budget-bound each run (hitting MAX_* caps) or skipping for other reasons.
-3. If budget-bound, consider increasing MAX_HEURISTIC_EVALS_PER_RUN and/or the wall clock budget, or running eval-poller more frequently.
+## Evidence (tool outputs)
+- DB lag + counts: `{ evalMax: 1777909677238, sessMax: 1777909802340, recentSessions: 1504, recentEvals: 78, lag_ms: 125102 }`
+- Coverage computations: `{ recent_sessions: 1504, evaluated_sessions: 79, coverage: 0.0525 }` and `{ recent_call_sessions: 421, evaluated_sessions: 79, coverage: 0.1876 }`
+- Legacy path listing: `.state/evaluations/*` newest Apr 29
