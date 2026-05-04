@@ -46,7 +46,7 @@ const EXAMPLE_PATTERNS: ExamplePattern[] = [
   { match: /blocked|impossible|can'?t.*find|missing.*key|missing.*credential|no.*permission|binary.*file|all.*fail/i, file: "know-when-blocked" },
   { match: /fix.*bug|broken|failing|do(?:es)?(?:\s?n(?:o|')t).*work|incorrect.*output|wrong.*result|comment.*says|not.*work/i, file: "evidence-over-narrative" },
   { match: /contradictory|conflict.*requirement|impossible.*both|mutually.*exclusive|trade.?off|can'?t.*satisfy.*both|infeasible|requirements.*tension|constraint.*violation/i, file: "requirements-conflict-analysis" },
-  { match: /implement|create.*endpoint|add.*feature|build.*service|set up|add.*support|new.*module|add.*page|add.*route|add.*to|write.*test|add.*handling/i, file: "incremental-implementation" },
+  { match: /implement|create.*endpoint|add.*feature|build.*service|set up|add.*support|new.*module|add.*page|add.*route|write.*test|add.*handling/i, file: "incremental-implementation" },
   { match: /refactor|restructure|extract.*into|split.*into|move.*to|reorganize|clean\s|consolidate|deduplicate|DRY|remov.*unused|unused.*import/i, file: "safe-refactoring" },
 ];
 
