@@ -488,7 +488,7 @@ Produce at least ONE meaningful write, then call finish() with updated deliverab
   if (toolCallCount < MIN_TOOL_CALLS && result.status !== "error") {
     ctx.emit({ type: "anti_shallow_gate_triggered", agent, tool_calls: toolCallCount });
     try {
-      const logLine = `${new Date().toISOString()} agent=${agent} tool_calls=${toolCallCount} action=re-prompt\n`;
+      const logLine = `${new Date().toISOString()} agent=${agent} gate=anti-shallow tool_calls=${toolCallCount} min_required=${MIN_TOOL_CALLS} elapsed_sec=${Math.round((Date.now() - heartbeatStartTime) / 1000)} status=${result.status || "unknown"} action=re-prompt\n`;
       appendFileSync(join(agentsRoot, "shared", "anti-shallow-gate-triggers.log"), logLine);
     } catch (_) { /* non-critical */ }
 
@@ -522,7 +522,7 @@ Continue working, then call finish() with updated deliverables.`;
   if (deliverableEdits >= 2 && !didImpactCheck && result.status !== "error") {
     ctx.emit({ type: "impact_gate_triggered", agent, deliverable_edits: deliverableEdits });
     try {
-      const logLine = `${new Date().toISOString()} agent=${agent} deliverable_edits=${deliverableEdits} action=re-prompt\n`;
+      const logLine = `${new Date().toISOString()} agent=${agent} gate=impact deliverable_edits=${deliverableEdits} elapsed_sec=${Math.round((Date.now() - heartbeatStartTime) / 1000)} did_impact_check=false status=${result.status || "unknown"} action=re-prompt\n`;
       appendFileSync(join(agentsRoot, "shared", "impact-gate-triggers.log"), logLine);
     } catch (_) { /* non-critical */ }
 
