@@ -191,6 +191,7 @@ Use the FM code that best matches the *first real break* in the causal chain; ad
   - **FM-1.2** `[SCOPE_CREEP]` — did more than asked / repeated stale output.
   - **FM-1.3** `[LOOPING]` — repeated the same failing action 3+ times without changing approach.
   - **FM-1.4** `[HALLUCINATION]` — invented facts, files, tools, or capabilities.
+  - **Note (tool hallucination vs missing dependency):** If the transcript shows a shell error like `command not found` (exit 127), that is usually *missing dependency*, not tool hallucination. Tool hallucination is claiming outputs/calls that do not exist in the transcript.
 
 - **FC-2: Agent-System Interface (The Hands)**
   - **FM-2.1** `[PROMISE_DELIVERY_GAP]` / `[WRONG_PATH]` — promised X, delivered Y (or nothing); used wrong path/tool for the job.
