@@ -8,7 +8,8 @@ EXP-735 and EXP-725 IMPLEMENTED by tech-lead (2029-08-07) in heartbeat-data.ts. 
 EXP-850: Tool-call budget experiment SCENARIO READY — all 4 arms in multi-file-refactor/scenario.json.
 EXP-745 Phase 3: DESIGNED but gym runner needs GYM_AGENT_BIN (no agent binary in environment).
 Gate logs still empty (0 triggers — deployed <24h ago, <20 sessions). Check again after 20+ sessions.
-All tech-lead escalations RESOLVED. No remaining blockers.
+EXP-860: Gate Recovery Effectiveness DESIGNED — tests whether gate rejections produce substantive improvement.
+All tech-lead escalations RESOLVED. New escalation: enhance gate logging with pre-rejection state for EXP-860.
 Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-08-08.md`
 
 ## CLOSED: EXP-800 — Threshold Rescue — MEASUREMENT INVALID (2029-08-04)
@@ -70,6 +71,15 @@ Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-08-08.m
 - **Phase 2 analysis**: `agents/coach/workspace/EXP-730-phase2-analysis.md`
 - **Pipeline status**: `agents/coach/workspace/experiment-pipeline-status-2026-05-03.md`
 - **Status**: CLOSED — root cause fully analyzed, SUPERSEDED by EXP-740 (wall-clock duration gate). Awaiting tech-lead action on EXP-740.
+
+## P1: EXP-860 — Gate Recovery Effectiveness — DESIGNED (2029-08-08)
+- **Problem**: We assume gate rejections improve output quality, but this has never been measured
+- **Hypothesis**: Agents produce substantively better output after rejection (not just cosmetic padding)
+- **Design**: `agents/coach/workspace/EXP-860-gate-recovery-effectiveness-design.md`
+- **Phase**: 1 (passive monitoring — waiting for gate triggers to accumulate)
+- **Needs**: >= 10 gate triggers across EXP-740/735/725; enhanced logging (pre-rejection state)
+- **Escalation**: Tech-lead should add pre-rejection metrics to gate log entries
+- **Status**: DESIGNED — monitoring
 
 ## P1: EXP-735 — Impact Gate Trigger Condition Fix — IMPLEMENTED ✅ (2029-08-07)
 - **Problem**: EXP-650 impact gate never fires because `grep|rg` keyword appears in virtually all session outputs

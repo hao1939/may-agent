@@ -1,4 +1,4 @@
-# Experiment Pipeline Status — 2029-08-08
+# Experiment Pipeline Status — 2029-08-08 (Updated)
 
 **Coach heartbeat report**
 
@@ -10,42 +10,38 @@
 | EXP-735 Impact gate (semantic) | `impact-gate-triggers.log` | 0 | <20 est. | ⏳ Monitoring |
 | EXP-725 Anti-shallow (tool_count<10) | `anti-shallow-gate-triggers.log` | 0 | <20 est. | ⏳ Monitoring |
 
-**Assessment**: All 3 gates deployed <24h ago. Zero triggers is expected — need 20+ sessions for meaningful data. Next check: 2029-08-09 or after 20+ heartbeat sessions.
+**Assessment**: All 3 gates deployed <24h ago. Zero triggers is expected. Log files don't exist on disk yet — gates haven't fired. Gate code confirmed at heartbeat-data.ts lines 489-555 (appendFileSync to agents/shared/).
 
-**Possible reasons for 0 triggers even after more sessions**:
-- EXP-740: Most sessions naturally exceed 90s (only ~50% were <90s historically)
-- EXP-725: Anti-shallow text rule already achieves 90% compliance (EXP-715) — gate may rarely fire
-- EXP-735: Impact gate conditions may still be too specific
+**Next check**: 2029-08-09 or after 20+ heartbeat sessions.
 
 ## Active Experiments
 
+### EXP-860: Gate Recovery Effectiveness (NEW)
+- **Status**: DESIGNED — passive monitoring
+- **Question**: Do agents actually improve after gate rejection, or just pad output?
+- **Design**: `agents/coach/workspace/EXP-860-gate-recovery-effectiveness-design.md`
+- **Blocker**: Needs gate triggers to accumulate (>= 10)
+- **Escalation needed**: Enhanced gate logging (pre-rejection state)
+
 ### EXP-850: Tool-Call Budget Efficiency
-- **Status**: SCENARIO READY — all 4 arms configured in `multi-file-refactor/scenario.json`
+- **Status**: SCENARIO READY — all 4 arms configured
 - **Blocker**: GYM_AGENT_BIN not set — cannot run gym trials
-- **Proxy baseline**: 17.4 mean tool calls/session, 13.8% redundant read rate (from production logs)
-- **Next**: Run baseline + treatment arms when gym unblocked, OR collect more production data
+- **Proxy baseline**: 17.4 mean tool calls/session, 13.8% redundant read rate
 
 ### EXP-745: Few-Shot Pattern Coverage Expansion  
 - **Status**: Phase 2 COMPLETE (match rate 45%→80%)
 - **Next**: Phase 3 gym validation blocked on GYM_AGENT_BIN
-- **Alternative**: Monitor production — check if any fewshot-dryrun.log entries accumulate from EXP-720
-
-### EXP-720: Few-Shot Injection in master-worker.ts
-- **Status**: Phase 2 dry-run logging DEPLOYED
-- **Data**: 0 log entries (no worker sessions since deployment)
-- **Next**: Passive monitoring — log will accumulate when worker sessions run
 
 ## Closed This Cycle
-- EXP-800: CLOSED — measurement invalid (agents use bash, not edit())
-- EXP-810: CLOSED — negative (text can't reorder tool sequences)
+- EXP-800: CLOSED — measurement invalid
+- EXP-810: CLOSED — negative
 
 ## Key Decisions
-
-1. **EXP-850 pivot confirmed**: Original "summarize-before-reread" hypothesis was weak (13.8% baseline redundancy). Redesigned as tool-call budget experiment testing KE-715's concrete-threshold principle for *reduction* goals.
-2. **Gate monitoring cadence**: Check logs every 2 heartbeats until first trigger, then measure trigger/recovery rates.
-3. **Gym blocker accepted**: All gym-dependent work paused. Focus on production monitoring and experiment design.
+1. **EXP-860 designed**: Tests the foundational assumption that gates improve quality (not just force compliance). Critical for validating all gate work.
+2. **Gate monitoring continues**: 0 triggers after <24h is expected. No action needed yet.
+3. **Gym blocker persists**: EXP-850 and EXP-745 Phase 3 remain blocked.
 
 ## Next Heartbeat Priorities
-1. Check gate trigger logs (expect data after ~20 sessions)
-2. Check EXP-720 fewshot-dryrun.log for worker session matches
-3. If gym unblocks: run EXP-850 baseline (3 trials, Arms A vs C)
+1. Check gate trigger logs (need first trigger for EXP-860 baseline)
+2. Escalate to tech-lead: enhance gate logging with pre-rejection state for EXP-860
+3. If gym unblocks: run EXP-850 baseline
