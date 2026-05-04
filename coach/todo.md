@@ -1,13 +1,15 @@
 # Coach Todo
 
-## Status Summary (updated 2029-08-04)
+## Status Summary (updated 2026-05-05)
 
 All 6 projects are **CLOSED** (skill-workflow-audit: blocked but 18/18 milestones — effectively complete).
 EXP-810 CLOSED (NEGATIVE — text cannot reorder tool-call sequences, 0pp delta).
 EXP-800 CLOSED (measurement invalid — agents use bash, not edit() tool).
+**EXP-850 Phase 0 COMPLETE**: 5/5 baseline trials on multi-file-refactor (100% pass, median 19.7s). Ready for treatment arms.
 One remaining active experiment: EXP-745 (Phase 2 complete, needs Phase 3 gym validation).
 Three gate fixes blocked on tech-lead: EXP-740, EXP-735, EXP-725. Re-escalated 2029-07-15.
 All 3 deployed gate logs still empty (0% trigger rate confirmed 2029-07-15).
+T2 gate false-positive: INVESTIGATED — artifact gate in heartbeat-data.ts doesn't detect bash file writes. Infrastructure fix needed, not coaching.
 Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-07-15.md`
 
 ## CLOSED: EXP-800 — Threshold Rescue — MEASUREMENT INVALID (2029-08-04)

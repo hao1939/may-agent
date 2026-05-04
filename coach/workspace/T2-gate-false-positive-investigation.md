@@ -30,3 +30,15 @@ This is an **optimizer/infrastructure** concern, not a coaching experiment. The 
 - [ ] Optimizer to provide specific session logs showing the 4 false positives
 - [ ] Measure: how often does artifact gate fire for tech-lead? What % are genuine (no artifact) vs false-positive (artifact produced via bash)?
 - [ ] If >50% false positive: modify gate to also check for bash file-creation commands
+
+## Update (2026-05-05)
+
+Investigated `heartbeat-data.ts`. The artifact gate (line 439-459) checks for file writes only. Agents using `bash` to create/modify files (e.g., `echo > file`, `sed -i`) would trigger false positives since those aren't tracked as write/edit calls.
+
+**Root cause hypothesis**: Tech-lead sessions that produce artifacts via bash (not edit/write tool calls) trigger the artifact gate because the gate only checks the tool-call log for write/edit events, not bash side-effects.
+
+**Recommendation**: This is an infrastructure fix, not a coaching issue. The gate in `heartbeat-data.ts` should either:
+1. Parse bash commands for file-write patterns (echo/sed/tee/cp to files), or
+2. Check the filesystem diff (files changed) rather than tool-call types
+
+**Status**: INVESTIGATED — escalate to tech-lead/optimizer for gate fix. No coaching experiment needed.
