@@ -17,13 +17,17 @@ Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-07-15.m
 - **Key insight**: VAE is not the right metric. Agents bypass edit() tool entirely. EXP-575 closure was correct — edit tool already prevents silent corruption.
 - **Status**: CLOSED — MEASUREMENT INVALID
 
-## NEW: EXP-810 — Test Execution After Bash Edits — DESIGNED (2029-05-04)
+## ACTIVE: EXP-810 — Test Execution After Bash Edits — SCENARIO VALIDATED (2029-08-04)
 - **Problem**: KE-800 shows agents use bash for 90%+ edits. The real verification is test-running, not read(). Rate unknown.
 - **Hypothesis**: If baseline <70%, prompt nudge reinforcing instrumentally-valuable behavior may work (unlike VAE ceremony).
-- **Scenario**: `agents/gym/scenarios/test-after-bash-edit/` (NEW)
+- **Scenario**: `agents/gym/scenarios/test-after-bash-edit/` — VALIDATED
 - **Design**: `agents/coach/workspace/EXP-810-test-execution-after-bash-edits-design.md`
-- **Next**: Run 3 baseline trials to establish test-after-modify rate
-- **Status**: DESIGNED — ready for Phase 1 baseline measurement
+- **Readiness**: `agents/coach/workspace/EXP-810-phase1-readiness-report.md`
+- **Fixes applied**: Created task.md, populated environment/, rewrote success_criteria.js as CLI script
+- **Criteria dry-run**: 0/5 on unmodified env (correct — all checks properly fail)
+- **Blocker**: GYM_AGENT_BIN not available — cannot run live trials
+- **Next**: Run 3 baseline trials when agent binary is available
+- **Status**: SCENARIO VALIDATED — awaiting agent binary for baseline trials
 
 ## ACTIVE: EXP-745 — Few-Shot Pattern Coverage Expansion — PHASE 2 COMPLETE
 - **Problem**: EXP-720 dry-run log has zero data. Patterns only matched 45% of typical tasks.
