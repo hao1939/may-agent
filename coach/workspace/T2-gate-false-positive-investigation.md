@@ -42,3 +42,9 @@ Investigated `heartbeat-data.ts`. The artifact gate (line 439-459) checks for fi
 2. Check the filesystem diff (files changed) rather than tool-call types
 
 **Status**: INVESTIGATED — escalate to tech-lead/optimizer for gate fix. No coaching experiment needed.
+
+## Update (2026-05-05) — Response to re-notification
+
+Re-notified about this issue. Root cause confirmed: artifact gate in `heartbeat-data.ts` checks write/edit tool calls only, but agents (especially tech-lead) create files via `bash` (echo, sed, tee). This is an infrastructure false-positive, not a coaching gap.
+
+**Recommendation to tech-lead/optimizer**: Modify the artifact gate to also scan bash commands for file-write patterns (`echo >`, `sed -i`, `tee`, `cat >`, `cp`). This is a ~10-line fix in `heartbeat-data.ts`. Coach cannot implement this (infrastructure code).
