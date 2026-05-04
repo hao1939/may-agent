@@ -17,6 +17,14 @@ Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-07-15.m
 - **Key insight**: VAE is not the right metric. Agents bypass edit() tool entirely. EXP-575 closure was correct — edit tool already prevents silent corruption.
 - **Status**: CLOSED — MEASUREMENT INVALID
 
+## NEW: EXP-810 — Test Execution After Bash Edits — DESIGNED (2029-05-04)
+- **Problem**: KE-800 shows agents use bash for 90%+ edits. The real verification is test-running, not read(). Rate unknown.
+- **Hypothesis**: If baseline <70%, prompt nudge reinforcing instrumentally-valuable behavior may work (unlike VAE ceremony).
+- **Scenario**: `agents/gym/scenarios/test-after-bash-edit/` (NEW)
+- **Design**: `agents/coach/workspace/EXP-810-test-execution-after-bash-edits-design.md`
+- **Next**: Run 3 baseline trials to establish test-after-modify rate
+- **Status**: DESIGNED — ready for Phase 1 baseline measurement
+
 ## ACTIVE: EXP-745 — Few-Shot Pattern Coverage Expansion — PHASE 2 COMPLETE
 - **Problem**: EXP-720 dry-run log has zero data. Patterns only matched 45% of typical tasks.
 - **Phase 1 Finding**: H2 SUPPORTED — patterns work for bug-fix but miss implementation/refactoring entirely
