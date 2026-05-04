@@ -1,43 +1,24 @@
-# Evaluator Heartbeat — 2026-05-04
+# Evaluator heartbeat — 2026-05-04
 
-## 1) Session-evaluation pipeline liveness (Process #5)
+## Checks performed
 
-DB check (canonical) shows evaluation pipeline is producing rows, but **coverage is very low vs session volume**.
+### Session evaluation pipeline freshness (DB canonical)
+- `evaluations.max(createdAt)` = **2026-05-04T07:12:37.717Z**
+- Current time during check = **2026-05-04T11:19:42.604Z**
+- **Lag** = **247 minutes (~4h07m)**
+- `sessions` started since last evaluation timestamp = **198**
+- `sessions.max(startedAt)` = **2026-05-04T11:20:09.724Z** (ingestion is live)
 
-Evidence:
-- `MAX(evaluations.createdAt)=1777878757717`
-- `MAX(sessions.startedAt)=1777891839303`
-- last 24h: `sessions=1703`, `evaluations=94` → coverage ≈ **5.52%**
-- per-agent coverage (agents with >=20 sessions last 24h): `evaluator=0% (0/1127)`; others ~6–29%
+### Legacy artifact path sanity
+- `.state/evaluations/` contains some newer files (e.g. `s_177748...` dated Apr 29), but the directory tail still shows many **Mar 24** artifacts, consistent with “legacy outputs may be stale / drifting from DB canonical”.
 
-Interpretation:
-- Pipeline is **live** (fresh `evaluations` rows exist).
-- But it appears **selective/scoped** (many sessions are not evaluated; especially `agent='evaluator'` sessions).
+## Assessment
+- DB-backed evaluation job appears **stale by ~4h** relative to active session creation.
+- This is a **coverage risk**: ~200 sessions may be unevaluated since the last run.
 
-Next action recommendation:
-- Confirm intended sampling policy for `evaluate-session-llm` cron (is 5% expected?).
-- If not expected, widen scope or increase throughput; prioritize non-evaluator agents first.
+## Suggested next action (needs supervisor/infra owner)
+- Check liveness of `evaluate-session-llm` cron / runner (schedule, failures, backlog) and whether it is intentionally paused.
+- If running, consider increasing throughput or widening/shifting the evaluation window to reduce lag.
 
-## 2) Legacy artifact directory drift
-
-Legacy `.state/evaluations/` artifacts remain stale/partial:
-- directory tail shows many files with mtimes clustered around Mar 24 and Apr 29; does not match DB recency.
-
-Interpretation:
-- Treat as **legacy output path drift**, not evidence that pipeline is down.
-
-## 3) Integrity patrol degraded (known)
-
-`node agents/evaluator/skills/patrol.cjs` returns `CRITICAL` due to missing baseline:
-- error: `Missing compliance-snapshot.json`
-
-Interpretation:
-- Degraded integrity monitoring (missing baseline), **not** an active hash-mismatch incident.
-
-## 4) Running-session monitor
-
-`node agents/evaluator/skills/monitor-session.cjs --running`:
-- 2 sessions checked, 2 healthy.
-
-## Notes
-- Bun/SQLite schema reminder: `sessions` uses `startedAt` not `createdAt`.
+## Evidence (tool outputs)
+- See heartbeat bash steps producing timestamps and counts.
