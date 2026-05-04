@@ -1,24 +1,19 @@
-# Evaluator heartbeat — 2026-05-04
+# Evaluator Heartbeat — 2026-05-04
 
-## Checks
+## DB liveness: session eval pipeline
+- DB canonical: `evaluations.max(createdAt)=1777873353843`
+- DB canonical: `sessions.max(startedAt)=1777877418605`
+- Gap: `sessions started after last eval` = **82** (query: `count(*) where startedAt > (select max(createdAt) from evaluations)`).
 
-### Session-eval pipeline liveness (DB is canonical)
-- sessions.max(startedAt) = **1777868400349**
-- evaluations.max(createdAt) = **1777866558405**
-- eval lag ≈ **31 minutes** (computed as now - evalMax)
-- counts last 24h: sessions=**1781**, evaluations=**112**
+Interpretation: eval pipeline appears **behind** current session ingestion; legacy `.state/evaluations/` mtimes are not authoritative (latest files observed 2026-04-29, and older `task_tree_*.json` still 2026-03-24).
 
-Interpretation:
-- The session evaluation pipeline appears **live** (fresh evaluations within the last hour).
-- Coverage is not 1:1 with sessions (112 evals vs 1781 sessions in 24h), which is likely expected due to scoping/sampling; no alert triggered today.
+## Monitor running sessions
+Ran `node agents/evaluator/skills/monitor-session.cjs --running`.
+Result: **3 sessions need attention** (tool exited code 1 but produced structured JSON output):
+- `arc` `s_1777877064127_3362`: `DRIFT` (recommendedAction: warn)
+- `tech-lead` `s_1777877321932_3364`: `PROTOCOL_VIOLATION` P114 Experience Replay missing (recommendedAction: warn)
+- `coach` `s_1777877348717_3365`: `PROTOCOL_VIOLATION` P114 Experience Replay missing (recommendedAction: warn)
 
-### Legacy artifact path drift
-- `.state/evaluations/` latest files are dated **Mar 24** (tail output).
-
-Interpretation:
-- Confirms known issue: `.state/evaluations/` task_tree artifacts are stale while DB evaluations are fresh.
-- Treat as **legacy output path drift**, not a pipeline outage.
-
-## Action
-- No code/criteria change today: pipeline is live and there are no pending events/metrics.
-- Logged this heartbeat so the next calibration cycle can track whether the **eval24/sess24 ratio** meaningfully changes.
+## Notes / next actions
+- Escalate eval lag to May with concrete count (82 sessions behind) and evalMax timestamp.
+- Send warnings to arc/tech-lead/coach referencing monitor evidence (DRIFT / P114).
