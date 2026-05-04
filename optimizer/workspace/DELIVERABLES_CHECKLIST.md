@@ -1,3 +1,7 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST.md
 
-- [x] **Heartbeat status artifact** — DONE — `agents/optimizer/workspace/heartbeat-status-current.md` — Updated with current metrics, project analysis, recommendations
+## Task: Optimizer Heartbeat - System Efficiency Check
+
+| # | Deliverable | Status | Path |
+|---|-------------|--------|------|
+| 1 | Heartbeat status artifact with metrics analysis | DONE | agents/optimizer/workspace/heartbeat-2025-status.md |
