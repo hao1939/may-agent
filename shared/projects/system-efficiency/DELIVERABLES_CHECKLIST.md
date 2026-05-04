@@ -1,11 +1,8 @@
 # Deliverables Checklist
 
-## Task: Assess system-efficiency project and decide next steps
-
-| Deliverable | Status | Path | Change |
+| Deliverable | Status | Path | Details |
 |---|---|---|---|
-| Project assessment | DONE | agents/shared/projects/system-efficiency/project.md | Verified all 3 metrics at target, updated status to "done", checked off all plan items |
-| Satellite verification (documentation-gen) | DONE | agents/shared/projects/documentation-gen/project.md | Read and confirmed: closed, both metrics exceeded |
-| Satellite verification (workflow-reliability) | DONE | agents/shared/projects/workflow-reliability/project.md | Read and confirmed: closed, goal achieved |
-
-## Decision: DONE — all metrics at target, all plan items complete.
+| Project assessment | DONE | agents/shared/projects/system-efficiency/project.md | All 3 metrics at target, both satellites closed |
+| project.md status update | DONE | agents/shared/projects/system-efficiency/project.md | active → done |
+| project.md plan items | DONE | agents/shared/projects/system-efficiency/project.md | All items checked off |
+| Decision | DONE | N/A | DONE |
