@@ -9,8 +9,10 @@ EXP-850: Tool-call budget experiment SCENARIO READY — all 4 arms in multi-file
 EXP-745 Phase 3: DESIGNED but gym runner needs GYM_AGENT_BIN (no agent binary in environment).
 Gate logs still empty (0 triggers — deployed <24h ago, <20 sessions). Check again after 20+ sessions.
 EXP-860: Gate Recovery Effectiveness DESIGNED — tests whether gate rejections produce substantive improvement.
+EXP-870: Gate Coverage Expansion DESIGNED — 4/12 agents (scout, dev, arc, coach) bypass all gates via custom workflows.
 All tech-lead escalations RESOLVED. New escalation: enhance gate logging with pre-rejection state for EXP-860.
-Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-08-08.md`
+**Coverage gap found**: Gates only cover 8/12 agents. Scout 8-op session would have triggered anti-shallow gate.
+Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-08-08b.md`
 
 ## CLOSED: EXP-800 — Threshold Rescue — MEASUREMENT INVALID (2029-08-04)
 - **Problem**: VAE compliance stuck at ~13%. KE-715 says concrete thresholds work. KE-655 says distraction kills text. Which wins?
