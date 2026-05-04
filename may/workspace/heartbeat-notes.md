@@ -1,9 +1,9 @@
-# Heartbeat Notes
+# Heartbeat 2026-05-04 13:42Z
 
-## 2026-04-25: handler-health metric
+## Red Metrics
+- project.active-count=0: Known KE-744 (git assume-unchanged). Escalated to arc.
+- project.blocked-over-6h=2: Same root cause. Awaiting human auth.
 
-- **Issue**: `system.handler-health` metric reads 0 for 7+ heartbeats
-- **Root cause**: SQL query uses `artifact IN (SELECT sessionId FROM sessions WHERE agent IN ('handler'))` but no agent named 'handler' exists
-- **Actual health**: 30/32 COMPLETED = 93.75%
-- **2 failures**: heartbeat-amy-kimi timeout, optimize handler timeout (both 300s)
-- **Action**: Notified optimizer (P1) to fix metric query definition
+## System Health
+- 100% success rate, 37 fires/hr, 224 completions/6h
+- All handlers healthy, 0 errors
