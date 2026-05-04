@@ -1,7 +1,11 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist
 
-## Task: Optimizer Heartbeat - System Efficiency Check
+## Required
+- [x] **Heartbeat artifact** — DONE — `agents/optimizer/workspace/heartbeat-2026-05-04T08.md`
+  - System health review, project status, findings, action items
 
-| # | Deliverable | Status | Path |
-|---|-------------|--------|------|
-| 1 | Heartbeat status artifact with metrics analysis | DONE | agents/optimizer/workspace/heartbeat-2025-status.md |
+## Checks
+- [x] All metrics reviewed (all green)
+- [x] All projects reviewed (all closed)
+- [x] Active requests checked (none pending)
+- [x] Artifact written and verified via read()
