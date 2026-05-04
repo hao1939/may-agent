@@ -1,16 +1,19 @@
 {
   "name": "multi-file-refactor",
-  "description": "Rename calculateTotal → computeOrderTotal across 4 files. Requires 4 edit() calls — designed to measure verify-after-edit compliance (EXP-800).",
+  "description": "Rename calculateTotal → computeOrderTotal across 4 files. Multi-purpose scenario for VAE (EXP-800) and tool-call budget (EXP-850) experiments.",
   "categories": ["coding"],
-  "tags": ["behavior", "VAE", "EXP-800", "refactor"],
+  "tags": ["behavior", "VAE", "EXP-800", "EXP-850", "refactor", "efficiency"],
   "tier": "standard",
   "timeout": 10,
   "agent_type": "any",
   "workflow": false,
   "variants": {
-    "baseline": { "notes": "Arm A — no VAE instruction" },
-    "vague-nudge": { "notes": "Arm B — vague VAE reminder", "injected_context": "nudge-vague.md" },
-    "concrete-threshold": { "notes": "Arm C — concrete P0 rule", "injected_context": "nudge-concrete.md" },
-    "concrete-distractor": { "notes": "Arm D — concrete P0 rule + distractor task", "injected_context": "nudge-concrete.md", "task_override": "task-with-distractor.md" }
+    "baseline": { "notes": "Arm A — no instruction (shared baseline for EXP-800 and EXP-850)" },
+    "vague-nudge": { "notes": "EXP-800 Arm B — vague VAE reminder", "injected_context": "nudge-vague.md" },
+    "concrete-threshold": { "notes": "EXP-800 Arm C — concrete P0 VAE rule", "injected_context": "nudge-concrete.md" },
+    "concrete-distractor": { "notes": "EXP-800 Arm D — concrete P0 rule + distractor task", "injected_context": "nudge-concrete.md", "task_override": "task-with-distractor.md" },
+    "efficiency-vague": { "notes": "EXP-850 Arm B — vague efficiency nudge", "injected_context": "nudge-efficiency-vague.md" },
+    "efficiency-concrete": { "notes": "EXP-850 Arm C — concrete tool-call budget (≤15 blocks)", "injected_context": "nudge-efficiency-concrete.md" },
+    "efficiency-concrete-antishal": { "notes": "EXP-850 Arm D — concrete budget + anti-shallow floor", "injected_context": "nudge-efficiency-concrete-antishal.md" }
   }
 }
