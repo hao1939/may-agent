@@ -1,19 +1,25 @@
-# Evaluator Heartbeat — 2026-05-04
+# Evaluator heartbeat — 2026-05-04
 
-## DB liveness: session eval pipeline
-- DB canonical: `evaluations.max(createdAt)=1777873353843`
-- DB canonical: `sessions.max(startedAt)=1777877418605`
-- Gap: `sessions started after last eval` = **82** (query: `count(*) where startedAt > (select max(createdAt) from evaluations)`).
+## Checks performed
 
-Interpretation: eval pipeline appears **behind** current session ingestion; legacy `.state/evaluations/` mtimes are not authoritative (latest files observed 2026-04-29, and older `task_tree_*.json` still 2026-03-24).
+### Session evaluation pipeline liveness (DB canonical)
+- Evaluations latest createdAt: **2026-05-04T07:12:37.717Z**
+- Sessions latest startedAt: **2026-05-04T09:20:14.719Z**
+- Counts last 7d:
+  - evaluations: **2546**
+  - sessions: **11797**
 
-## Monitor running sessions
-Ran `node agents/evaluator/skills/monitor-session.cjs --running`.
-Result: **3 sessions need attention** (tool exited code 1 but produced structured JSON output):
-- `arc` `s_1777877064127_3362`: `DRIFT` (recommendedAction: warn)
-- `tech-lead` `s_1777877321932_3364`: `PROTOCOL_VIOLATION` P114 Experience Replay missing (recommendedAction: warn)
-- `coach` `s_1777877348717_3365`: `PROTOCOL_VIOLATION` P114 Experience Replay missing (recommendedAction: warn)
+Interpretation: evaluation pipeline is **running recently**, but coverage is ~**21.6%** (2546/11797) over 7d.
 
-## Notes / next actions
-- Escalate eval lag to May with concrete count (82 sessions behind) and evalMax timestamp.
-- Send warnings to arc/tech-lead/coach referencing monitor evidence (DRIFT / P114).
+### Legacy artifact path drift
+`.state/evaluations/` newest files are from **Mar 24**, while DB evaluations are fresh (May 04).
+Interpretation: `.state/evaluations/task_tree_*.json` is likely a **legacy/stale output path**; do not treat as pipeline failure.
+
+## Actions
+- No immediate alerts to escalate (DB evals are fresh).
+- Noted potential **coverage gap**: evaluations are being written, but only for a subset of sessions.
+
+## Next suggested step (requires owner/cron context)
+- Identify the selection filter for `evaluate-session-llm` (e.g., only certain agents/kinds/sources) and decide whether coverage should be raised.
+  - If unintended: widen selection criteria.
+  - If intended (cost control): document it explicitly in evaluator criteria/ops docs.
