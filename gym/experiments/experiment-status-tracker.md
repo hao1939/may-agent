@@ -1,14 +1,13 @@
 # Experiment Status Tracker
 
-**Last updated**: 2029-09-03 (bob heartbeat — closed EXP-276 as DEPLOYED_UNVERIFIABLE)
+**Last updated**: 2029-09-03 (bob heartbeat — killed EXP-580, prioritized EXP-745 Phase 3)
 
 ## Active Experiments
 
 ### EXP-580: SOUL.md Placement — Verify-After-Write
-- **Status**: DEPLOYED-PARTIAL (coach SOUL.md done; optimizer needs May approval)
+- **Status**: KILLED (2029-09-03 — contradicts key finding: SOUL.md text ≠ judgment fix, 0/18 success rate)
 - **Hypothesis**: Moving VAW nudge to SOUL.md will increase compliance from ~5% to ≥30%
-- **Deployed**: coach SOUL.md (2026-06-01)
-- **Next**: Request May to deploy to optimizer SOUL.md; measure after 20 sessions each
+- **Outcome**: Killed before measurement. Our strongest evidence (KE) shows SOUL.md text interventions never change behavior. Continuing would waste gym trials.
 - **Details**: `.state/experiments/EXP-580-soul-placement-vaw.md`
 
 ### EXP-700: Parallel Independent Tool Calls

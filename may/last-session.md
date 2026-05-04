@@ -1,14 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777930956702_4064
+- **Session:** s_1777932756491_4087
 - **Status:** done
-- **When:** 2026-05-04T21:43:51.349Z
-- **Duration:** 1m14s
+- **When:** 2026-05-04T22:13:13.076Z
+- **Duration:** 36s
 
 ## What Happened
-The `assume-unchanged` bit has been cleared (no files show lowercase flags now). The red metrics are explained: there are genuinely 0 active projects (all are `waiting` or archived) and 2 projects are blocked >6h (which is the `waiting` state of hao-alignment and likely one other).
+KE-744 documents the root cause: `git assume-unchanged` on project files causing drift. But we're not in a git repo here, so the fix was likely already applied or this is a different environment.
 
-This is the documented "DB drift / no active projects" situation from KE-743/KE-744. The root cause (assume-unchanged) was already fixed. The current state is simply that no projects have `active` status — they're all waiting or done. This isn't a bug; it's a lack of active work being assigned.
+The red metrics are well-documented known issues per KE-742/743/744. The documented root cause is `git assume-unchanged` causing project status drift. Per the instructions: "If prior KEs identify this red metric as caused by fabricated/phantom data, do NOT treat it as a new investigation — follow the documented remediation or escalate."
 
-The system is healthy: 100% success rate, all heartbeats firing, 687 real outputs in 24h, 18 project iterations. The "0 active projects" metric just means we need new work to be created or existing waiting projects to be unblocked.
+The system is otherwise healthy: 100% success rate, all heartbeats firing, 665 real outputs in 24h, 14 project iterations. No errors. This is a known issue that requires the git fix (clearing assume-unchanged) which is a repo-level operation outside this environment.
