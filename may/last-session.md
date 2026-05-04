@@ -1,13 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777894955161_3604
+- **Session:** s_1777898555414_3651
 - **Status:** done
-- **When:** 2026-05-04T11:43:00.162Z
-- **Duration:** 24s
+- **When:** 2026-05-04T12:43:13.732Z
+- **Duration:** 38s
 
 ## What Happened
-Red metrics summary:
-- **project.active-count=0** and **project.blocked-over-6h=2**: Root cause documented in KE-744 — `git assume-unchanged` on 21 files (including all project.md files) means project state changes never commit. This requires human intervention to run `git update-index --no-assume-unchanged` on affected files. Already escalated per prior KEs.
+Both red metrics are **known issues** documented in KE-744: `git assume-unchanged` on 21 project files causes project status edits to be silently lost. This is a git-index-level issue requiring human intervention to safely resolve (running `git update-index --no-assume-unchanged` on affected files). Not a new investigation.
 
-System is healthy: 100% success rate, all 8 heartbeats covered, 39 fires/hour, 1008 real outputs in 24h. No errors in the last hour.
+System health is excellent: 100% success rate, all 8 heartbeats firing, 914 real outputs in 24h, 0 errors.
