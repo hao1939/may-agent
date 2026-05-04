@@ -1,6 +1,4 @@
 # Deliverables Checklist
 
-## Required
-- [x] **Heartbeat artifact** — `agents/optimizer/findings/2025-05-03-heartbeat-metrics.md` — Session throughput analysis, evaluator cost finding, recommendations
-
-## Status: DONE
+- [x] **Heartbeat artifact**: `agents/optimizer/workspace/heartbeat-report-20250504.md` — p95 regression finding, project status, monitoring plan
+- [x] **Checkpoint saved**: p95 trend data persisted
