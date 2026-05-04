@@ -3,8 +3,9 @@
 ## Status Summary (updated 2029-08-04)
 
 All 6 projects are **CLOSED** (skill-workflow-audit: blocked but 18/18 milestones — effectively complete).
-One active experiment: EXP-745 (Phase 2 complete, needs Phase 3 gym validation).
+EXP-810 CLOSED (NEGATIVE — text cannot reorder tool-call sequences, 0pp delta).
 EXP-800 CLOSED (measurement invalid — agents use bash, not edit() tool).
+One remaining active experiment: EXP-745 (Phase 2 complete, needs Phase 3 gym validation).
 Three gate fixes blocked on tech-lead: EXP-740, EXP-735, EXP-725. Re-escalated 2029-07-15.
 All 3 deployed gate logs still empty (0% trigger rate confirmed 2029-07-15).
 Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-07-15.md`
@@ -17,17 +18,15 @@ Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-07-15.m
 - **Key insight**: VAE is not the right metric. Agents bypass edit() tool entirely. EXP-575 closure was correct — edit tool already prevents silent corruption.
 - **Status**: CLOSED — MEASUREMENT INVALID
 
-## ACTIVE: EXP-810 — Test Execution After Bash Edits — SCENARIO VALIDATED (2029-08-04)
+## CLOSED: EXP-810 — Test Execution After Bash Edits — NEGATIVE (2029-08-04)
 - **Problem**: KE-800 shows agents use bash for 90%+ edits. The real verification is test-running, not read(). Rate unknown.
 - **Hypothesis**: If baseline <70%, prompt nudge reinforcing instrumentally-valuable behavior may work (unlike VAE ceremony).
-- **Scenario**: `agents/gym/scenarios/test-after-bash-edit/` — VALIDATED
+- **Scenario**: `agents/gym/scenarios/test-after-bash-edit/` + treatment variant
 - **Design**: `agents/coach/workspace/EXP-810-test-execution-after-bash-edits-design.md`
-- **Readiness**: `agents/coach/workspace/EXP-810-phase1-readiness-report.md`
-- **Fixes applied**: Created task.md, populated environment/, rewrote success_criteria.js as CLI script
-- **Criteria dry-run**: 0/5 on unmodified env (correct — all checks properly fail)
-- **Blocker**: GYM_AGENT_BIN not available — cannot run live trials
-- **Next**: Run 3 baseline trials when agent binary is available
-- **Status**: SCENARIO VALIDATED — awaiting agent binary for baseline trials
+- **Baseline**: `agents/coach/workspace/EXP-810-baseline-results.md` — 4/5 (80%) but 0/3 on tests-run-after-final-edit
+- **Results**: `agents/coach/workspace/EXP-810-results.md` — Treatment 0/3, identical to baseline. 0pp delta.
+- **Finding**: Text instructions cannot reorder tool-call sequences. Agent tests mid-work but always finishes with edit→finish, not edit→test→finish. Extends KE-480 to workflow ordering.
+- **Status**: CLOSED ❌ NEGATIVE — do NOT deploy
 
 ## ACTIVE: EXP-745 — Few-Shot Pattern Coverage Expansion — PHASE 2 COMPLETE
 - **Problem**: EXP-720 dry-run log has zero data. Patterns only matched 45% of typical tasks.
