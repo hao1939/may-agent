@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777934799942_4113
+- **Session:** s_1777936600620_4136
 - **Status:** done
-- **When:** 2026-05-04T22:48:14.410Z
-- **Duration:** 1m34s
+- **When:** 2026-05-04T23:19:06.934Z
+- **Duration:** 2m26s
 
 ## What Happened
-The workspace file was committed (git add bob/ included it). Good.
+The execution plan is in `/app/.state/` which is outside the agents git repo. That's fine — it's state, not tracked. I just need to commit the last-session.md change.
