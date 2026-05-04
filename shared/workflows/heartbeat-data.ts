@@ -446,7 +446,15 @@ ${redMetricDiagnostics ? "Red metric diagnostics are above — address each one,
   // instructional/contextual text that happens to contain "write" or "edit".
   const hasDeliverables = ((result as any).deliverables?.length ?? 0) > 0;
   const mentionsWrite = /\b(wrote|created|updated|edited|committed|saved|modified|generated|produced|fixed)\b/i.test(result.summary || "");
-  if (!hasDeliverables && !mentionsWrite && result.status !== "error") {
+  // EXP-850: Check if agent used write/edit tools OR delegated via agents/workflow
+  // to prevent false positives on sessions that produced real artifacts.
+  const usedWriteTools = ((result as any)?.messages ?? []).some((msg: any) =>
+    Array.isArray(msg.content) && msg.content.some((part: any) =>
+      (part.type === "toolCall" || part.type === "tool_use") &&
+      (part.name === "write" || part.name === "edit" || part.name === "agents" || part.name === "workflow")
+    )
+  );
+  if (!hasDeliverables && !mentionsWrite && !usedWriteTools && result.status !== "error") {
     ctx.emit({ type: "artifact_gate_triggered", agent });
 
     const gatePrompt = `⚠️ ARTIFACT GATE: Your session produced no file writes.
