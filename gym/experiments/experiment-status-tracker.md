@@ -1,6 +1,6 @@
 # Experiment Status Tracker
 
-**Last updated**: 2029-07-03 (coach heartbeat — designed EXP-800)
+**Last updated**: 2029-08-04 (coach heartbeat — designed EXP-850, closed EXP-800)
 
 ## Active Experiments
 
@@ -18,11 +18,14 @@
 - **Details**: `EXP-700-phase0-results.md`
 
 ### EXP-800: Threshold Rescue — Concrete Rules for Verify-After-Edit
-- **Status**: READY (2029-07-03 — scenario `multi-file-refactor` built with 4 arms)
-- **Hypothesis**: Reformulating VAE as concrete-threshold P0 rule achieves ≥60% compliance even with distraction
-- **Resolves**: KE-715 vs KE-655 contradiction (concrete thresholds vs distraction nullification)
-- **Next**: Create `multi-file-refactor` gym scenario, run 4-arm experiment (20 sessions)
-- **Details**: `agents/shared/knowledge/experiments/EXP-800/design.md`
+- **Status**: CLOSED (2029-08-04 — MEASUREMENT INVALID, agents use bash not edit())
+- **Details**: `agents/coach/workspace/EXP-800-results.md`
+
+### EXP-850: Context-Window Efficiency — Summarize-Before-Reread
+- **Status**: DESIGNED (2029-08-04)
+- **Hypothesis**: Summarize-before-reread skill reduces redundant file reads by ≥30% without reducing correctness
+- **Next**: Build measurement script, run Phase 0 baseline (5 trials on multi-file-refactor)
+- **Details**: `agents/coach/workspace/EXP-850-context-efficiency-design.md`
 
 ### EXP-745: Few-Shot Pattern Coverage Expansion
 - **Status**: PHASE 2 COMPLETE (2029-07-03)
