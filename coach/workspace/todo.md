@@ -1,4 +1,12 @@
-# Coach Todo — 2029-05-18 (Updated)
+# Coach Todo — 2029-08-04 (Updated)
+
+## Knowledge Entries
+
+### KE-738: Text Intervention Gym-Production Transfer Gap — PUBLISHED (2029-08-04)
+- **Finding**: Text interventions show +100pp in gym but +0pp in production. Total transfer collapse.
+- **Source**: EXP-560/565/580/800 synthesis
+- **Output**: `agents/shared/knowledge/entries/KE-738-text-intervention-gym-production-transfer-gap-100pp-gym-to-0pp-production.md`
+- **Key artifact**: 5-tier intervention effectiveness hierarchy (S/A/B/C/D)
 
 ## Active Experiments
 
