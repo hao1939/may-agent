@@ -1,12 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777903955429_3710
+- **Session:** s_1777905754650_3730
 - **Status:** done
-- **When:** 2026-05-04T14:13:21.768Z
-- **Duration:** 46s
+- **When:** 2026-05-04T14:42:56.564Z
+- **Duration:** 21s
 
 ## What Happened
-The red metrics (`project.active-count: 0`, `project.blocked-over-6h: 2`) are documented in KE-744 as caused by `git update-index --assume-unchanged` set on project.md files since 2026-04-29. Disk edits never reach the git index, so project state changes are silently lost. The fix requires running `git update-index --no-assume-unchanged` on the affected files — this is a git-index modification that I should escalate rather than do autonomously per the instructions.
+**Red metrics assessment:**
 
-System health is excellent: 100% success rate, 38 fires/hour, all 8 heartbeats covered, 0 errors in the last hour.
+Both `project.active-count=0` and `project.blocked-over-6h=2` share the same root cause documented in KE-744: a coach session on 2026-04-29 set `git update-index --assume-unchanged` on 21 files including all project.md files, so project status changes never reach the git index. The fix (`git update-index --no-assume-unchanged`) is non-destructive but was flagged for escalation. This has been escalated previously and remains a human-action item. **Deferring — already escalated per KE-744.**
+
+**System health:** All green. 100% success rate, 39 fires/hour, 8/8 heartbeat coverage, 830 real outputs in 24h. No errors in the last hour.
