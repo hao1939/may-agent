@@ -439,7 +439,7 @@ ${redMetricDiagnostics ? "Red metric diagnostics are above — address each one,
   // If agent produced no file writes, re-prompt once for an artifact.
   // Text rules plateau at 55% compliance (EXP-475); structural enforcement needed.
   const hasDeliverables = ((result as any).deliverables?.length ?? 0) > 0;
-  const mentionsWrite = /\b(wrote|created|updated|edited|write|edit)\b/i.test(result.summary || "");
+  const mentionsWrite = /\b(wrote|created|updated|edited|write|edit|committed|saved|modified|added|generated|produced|fixed|changed|documented)\b/i.test(result.summary || "");
   if (!hasDeliverables && !mentionsWrite && result.status !== "error") {
     ctx.emit({ type: "artifact_gate_triggered", agent });
 
