@@ -1,3 +1,3 @@
 # Deliverables Checklist
 
-- [x] DONE — Heartbeat status artifact: `agents/optimizer/workspace/heartbeat-status-2026-05-03.md` — session analysis, agent ops data, recommendations
+- [x] **Heartbeat status artifact** — DONE — `agents/optimizer/workspace/heartbeat-status-current.md` — Updated with current metrics, project analysis, recommendations
