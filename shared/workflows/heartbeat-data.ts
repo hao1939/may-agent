@@ -438,6 +438,23 @@ ${redMetricDiagnostics ? "Red metric diagnostics are above — address each one,
   recordOutcome(agentsRoot, agent, result.status === "error",
     result.status === "error" ? "heartbeat session error" : undefined);
 
+  // ── EXP-870: Use shared runGates() for all gate checks ──────────
+  return runGates(ctx, agent, agentsRoot, result, heartbeatStartTime);
+}
+
+/**
+ * EXP-870: Extracted gate logic — reusable by custom-workflow agents.
+ *
+ * Call after your agent session completes. Runs artifact, anti-shallow,
+ * impact, and duration gates in sequence. Returns ctx.done() with either
+ * the gate re-prompt result or the original result summary.
+ *
+ * Usage in custom workflows:
+ *   import { runGates } from "../../shared/workflows/heartbeat-data.js";
+ *   const result = await ctx.runAgent(agent, prompt);
+ *   return runGates(ctx, agent, agentsRoot, result, startTime);
+ */
+export async function runGates(ctx: any, agent: string, agentsRoot: string, result: any, heartbeatStartTime: number) {
   // ── EXP-520: HEARTBEAT ARTIFACT GATE ──────────────────────────────
   // If agent produced no file writes, re-prompt once for an artifact.
   // Text rules plateau at 55% compliance (EXP-475); structural enforcement needed.
