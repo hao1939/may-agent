@@ -11,3 +11,4 @@
 - [Emergent Multi-Agent Coordination via Context Stigmergy](./context-stigmergy-synthesis.md)
 - [Multi-Agent Architecture Trends: XHS & Academic Synthesis (May 2024)](./multi_agent_trends_may2024_synthesis.md)
 - [XHS AI Agent Trends Report - Q2 2026](./xhs_trends_report_Q2_2026.md)
+- [Enterprise AI Agent Architecture 2026](enterprise-agent-architecture-2026.md) - Notes on the missing layers in enterprise agents based on HN discussions.
