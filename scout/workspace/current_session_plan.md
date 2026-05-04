@@ -1,6 +1,7 @@
-GOAL: Explore latest trends in Chinese AI communities (XHS) on multi-agent architectures and write a summary artifact.
+GOAL: Research latest Multi-Agent Coordination patterns on XHS and create a synthesis report.
 PLAN:
-1. Search simulated XHS content for "multi-agent architectures" or "AI agent frameworks"
-2. Extract common patterns
-3. Produce a new markdown artifact in workspace summarizing the trends
-DONE WHEN: A new artifact on XHS multi-agent trends is created.
+1. Write a script to simulate an XHS search for "multi-agent coordination" or "agent architectures".
+2. Run the script and parse the output.
+3. Synthesize the findings into a markdown report.
+4. Verify the report exists.
+DONE WHEN: A new trend report on multi-agent architectures is saved to the workspace.
