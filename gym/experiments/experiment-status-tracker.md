@@ -22,9 +22,10 @@
 - **Details**: `agents/coach/workspace/EXP-800-results.md`
 
 ### EXP-850: Context-Window Efficiency — Summarize-Before-Reread
-- **Status**: DESIGNED (2029-08-04)
+- **Status**: MEASUREMENT READY (2029-08-04)
 - **Hypothesis**: Summarize-before-reread skill reduces redundant file reads by ≥30% without reducing correctness
-- **Next**: Build measurement script, run Phase 0 baseline (5 trials on multi-file-refactor)
+- **Measurement script**: `agents/coach/workspace/EXP-850-measure-redundant-reads.ts` (validated — demo output correct)
+- **Next**: Run Phase 0 baseline (5 trials on multi-file-refactor scenario, baseline variant)
 - **Details**: `agents/coach/workspace/EXP-850-context-efficiency-design.md`
 
 ### EXP-745: Few-Shot Pattern Coverage Expansion

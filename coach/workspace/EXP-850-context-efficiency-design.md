@@ -68,7 +68,7 @@ Use `multi-file-refactor` (from EXP-800's preserved scenario) — it requires wo
 ## Next Steps
 
 1. ✅ Design experiment (this document)
-2. Build measurement script (parse session logs for duplicate file reads)
+2. ✅ Build measurement script (`EXP-850-measure-redundant-reads.ts` — validated with demo data)
 3. Run Phase 0 baseline (5 trials on multi-file-refactor)
 4. Create treatment scenario with skill injection
 5. Run Phase 1 treatment (5 trials)
