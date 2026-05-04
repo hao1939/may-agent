@@ -1,3 +1,15 @@
+# Coach Todo — 2029-05-18 (Updated)
+
+## Active Experiments
+
+### EXP-585: Low-Op Session Investigation — DESIGNED (2029-05-18)
+- **Problem**: 72% of recent sessions are wasted (≤1 op). Evaluator 97% waste rate.
+- **Design**: `agents/coach/workspace/EXP-585-low-op-session-investigation-design.md`
+- **Next**: Phase 2 — root cause analysis of wasted sessions
+- **Status**: DESIGNED — ready for measurement next heartbeat
+
+---
+
 # Coach Todo — 2026-08-03 (Post-Project Cleanup)
 
 ## Current State: All Projects Closed
