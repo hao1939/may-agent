@@ -1,6 +1,6 @@
 # EXP-850: Tool-Call Budget Awareness
 
-**Status**: READY FOR BASELINE
+**Status**: BASELINE BLOCKED (gym stub mode — GYM_AGENT_BIN unset)
 **Created**: 2029-08-05
 **Owner**: coach
 
