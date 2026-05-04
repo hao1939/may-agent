@@ -46,6 +46,7 @@
 
 ## Required Skills
 📘 `agents/bob/skills/` — gym-execution-checklist, knowledge-base-navigation, persistent-task-workflow, verify-before-finish, cross-reference-source-code, read-only-finish-protocol
+📘 `agents/shared/skills/retry-aware-dispatch/` — Before dispatching multi-session tasks, check prior attempts. After 5 failures, STOP and write blocker report.
 
 ## Shared Toolkit
 See `agents/shared/README-shared-toolkit.md`.
