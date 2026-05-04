@@ -1,22 +1,17 @@
-# Tech-Lead Heartbeat — 2026-05-04
+# Tech-Lead Heartbeat Notes
 
-## Build Status
-- **TypeScript**: ✅ Clean (`tsc --noEmit` passes)
-- **Binary**: ⚠️ Stale (built 2026-04-23, ~11 days old). Source changes in shared/lib/ and shared/guards/ since then.
+## 2026-05-04 Heartbeat
 
-## Inbox Triage
+### TypeScript Build
+- ✅ Clean (0 errors) — `npx tsc --noEmit` in `agents/`
 
-### 1. Binary rebuild needed (P1) — ACT
-**Decision**: Escalate / delegate to dev agent. Binary (`may-agent-bin`) is from Apr 23. Multiple shared/ changes since then. 3 experiments blocked (EXP-720, EXP-630, EXP-650).
-**Action**: Notify dev agent to rebuild binary.
+### KE-455/KE-731 Investigation (metric-alert-reactor can't fire on events)
+- **Root cause**: The event bus runtime (`src/lib/cron-tool.ts`) is not in this workspace. It's deployed separately and not editable from here.
+- **Workaround already in place**: All `on:`-only handlers have a dummy `intervalMs: 86400000` so they get registered by the scheduler.
+- **Actual fix needed**: The runtime event bus must be modified to dispatch events to handlers registered with `on:` fields. This is outside agent-workspace scope.
+- **Recommendation**: This is an infra/platform issue. The human operator or whoever maintains the runtime deployment needs to fix event dispatch.
 
-### 2. Stale session detection metric gap (P1) — DISMISS
-**Reason**: This is an observability/metrics issue, not a code bug. 399 "active" sessions is a DB bookkeeping issue (sessions that crashed without cleanup). Not blocking anything. Low priority relative to the binary rebuild.
-
-### 3. proof-of-life-dashboard in `waiting` (P1) — ACKNOWLEDGE
-**Decision**: Project is 5/8 milestones. Status is `waiting` which is appropriate — it's waiting on binary rebuild to validate remaining milestones. Will activate once binary is current.
-
-## Code Health
-- No TS errors
-- No dead code concerns this cycle
-- Main risk: stale binary blocking experiment velocity
+### Projects
+- `retry-removal`: closed ✅
+- `handler-reliability`: closed ✅  
+- `proof-of-life-dashboard`: waiting (no project file found in .state/projects/)
