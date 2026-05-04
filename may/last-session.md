@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777860754159_3035
+- **Session:** s_1777862553596_3072
 - **Status:** done
-- **When:** 2026-05-04T02:13:02.711Z
-- **Duration:** 28s
+- **When:** 2026-05-04T02:42:56.584Z
+- **Duration:** 22s
 
 ## What Happened
-Both red metrics are well-documented in KE-736: the `metric-alert-reactor`, `session-eval`, `escalation`, and `session-recovery` handlers are dead because they were `on:`-only at process boot. The fix is a **runtime restart** — no config edits will help. This requires human action.
+System is healthy. The two red metrics (`project.active-count=0`, `project.blocked-over-6h=2`) are the same known issue documented in KE-735/736/737: the runtime process has been running since April 29 and needs a restart to pick up handler fixes. This requires human intervention — already escalated.
 
-The system is otherwise healthy: 100% success rate, all 8 heartbeats firing, 234 handler completions, 0 errors.
+All other metrics are green. 100% success rate across 99 sessions in 6h. All 8 heartbeats firing. No errors.
