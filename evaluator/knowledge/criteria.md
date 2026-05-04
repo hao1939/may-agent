@@ -93,6 +93,10 @@ Evaluations are stored in SQLite (`.state/may.db`) with `evaluations.issues` as 
 ### Meta: Cron/Job Liveness Checks (Heartbeat)
 When a heartbeat is asked to "check eval recency", treat **SQLite DB liveness** as the primary signal.
 
+**Coverage sanity check (recommended):** Also compute a short-window coverage ratio (e.g., last 6h / last 24h) to detect partial outages where the DB is still getting *some* evaluations but the pipeline is falling behind.
+- Example query pair: `count(sessions where status='done' and startedAt>=now-6h)` vs `count(evaluations where createdAt>=now-6h)`.
+- If coverage < ~10% for last 6h (tunable), escalate as likely `evaluation-sync` liveness/scheduling issue.
+
 **Primary (current system):** `.state/may.db` → `evaluations` table
 - Query `MAX(createdAt)` from `evaluations` and compare to now.
   - If `sqlite3` CLI is unavailable, use Python (`python3 -c "import sqlite3; ..."`) to run the same query.

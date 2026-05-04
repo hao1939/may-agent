@@ -1,25 +1,23 @@
 # Evaluator heartbeat — 2026-05-04
 
-## Checks performed
+## Signals checked
 
-### Session evaluation pipeline liveness (DB canonical)
-- Evaluations latest createdAt: **2026-05-04T07:12:37.717Z**
-- Sessions latest startedAt: **2026-05-04T09:20:14.719Z**
-- Counts last 7d:
-  - evaluations: **2546**
-  - sessions: **11797**
+### DB recency
+- `evaluations.max(createdAt)` is recent: **1777878757717** (see bash output in session transcript)
+- `sessions.max(startedAt)` is more recent: **1777888204403**
 
-Interpretation: evaluation pipeline is **running recently**, but coverage is ~**21.6%** (2546/11797) over 7d.
+### Coverage (pipeline health proxy)
+Computed from DB:
+- All time: `evaluations=2595` / `sessions(status='done')=11688` → **22.2%**
+- Last 24h: `done sessions=1729`, `evaluations created=100` → **5.78%**
+- Last 6h: `done sessions=369`, `evaluations created=7` → **1.90%**
 
-### Legacy artifact path drift
-`.state/evaluations/` newest files are from **Mar 24**, while DB evaluations are fresh (May 04).
-Interpretation: `.state/evaluations/task_tree_*.json` is likely a **legacy/stale output path**; do not treat as pipeline failure.
+### Legacy artifacts
+- `.state/evaluations/*.json` newest mtime: **Apr 29** while DB has evaluations as recent as **May 4** → indicates **output-path drift** (DB is canonical; legacy folder stale).
 
-## Actions
-- No immediate alerts to escalate (DB evals are fresh).
-- Noted potential **coverage gap**: evaluations are being written, but only for a subset of sessions.
+## Interpretation
+- Evaluation is not fully down (DB is getting new rows), but **coverage is extremely low in the last 6–24h**, consistent with **intermittent/partial execution** of the `evaluation-sync` handler.
+- Prior May audit suggests a known failure mode: cron hot-reload / handler registration gaps can stop `evaluation-sync` from being invoked.
 
-## Next suggested step (requires owner/cron context)
-- Identify the selection filter for `evaluate-session-llm` (e.g., only certain agents/kinds/sources) and decide whether coverage should be raised.
-  - If unintended: widen selection criteria.
-  - If intended (cost control): document it explicitly in evaluator criteria/ops docs.
+## Action taken
+- Create an escalation note for May/tech-lead: quantify the current coverage drop and point to the likely failure mode (evaluation-sync not keeping up / not running).
