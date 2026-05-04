@@ -57,11 +57,11 @@ Also: `evaluations.createdAt` is stored as an epoch-ms integer (not an ISO datet
 
 Ran `monitor-session.cjs --running`: 4 checked, 3 healthy, 1 `DRIFT` (arc `s_1777839263183_2631`; recommended action: warn). (Did not run `patrol.cjs` this cycle.) Confirmed Process #15 still absent: `.state/may.db` has no `*llm*` tables.
 
-**Last run**: 2026-05-04 02:50Z — DB canonical check: `MAX(evaluations.createdAt)=1777862957446`; `MAX(sessions.startedAt)=1777862986632` → eval lag ≈38.6s at check time (pipeline live). Legacy `.state/evaluations/` artifacts: latest `task_tree_*.json` mtime still 2026-03-24 → treat as legacy path drift, not DB liveness.
+**Last run**: 2026-05-04 05:50Z — DB canonical check: `MAX(evaluations.createdAt)=1777867838078`; `MAX(sessions.startedAt)=1777873810596` → eval lag ≈99.5m at check time. Legacy `.state/evaluations/` artifacts: newest mtime observed 2026-04-29; `task_tree_*.json` mtimes still 2026-03-24 → treat as legacy path drift, not DB liveness.
 
-Ran `monitor-session.cjs --running`: DRIFT alerts for arc `s_1777862663963_3075` and bob `s_1777862723804_3076` (recommended action: warn).
+Did **not** run `monitor-session.cjs` or `patrol.cjs` this cycle.
 
-Ran `patrol.cjs`: CRITICAL due to missing `agents/shared/compliance-snapshot.json` baseline (patrol degraded, not a mismatch event).
+(Also confirmed schema detail: `sessions` uses `startedAt`/`endedAt` not `createdAt`; `evaluations` does have `createdAt`.)
 
 **Previous run**: 2026-05-03 01:13Z — DB canonical check: `MAX(evaluations.createdAt)=1777768954999` (2026-05-03T00:42:34Z; eval pipeline live). `MAX(sessions.createdAt)=1777768954999` (2026-05-03T00:42:34Z). Investigation note: bob’s depressed average score (~0.408) appears strongly explained by `shallow_session` tagging (50% of bob evals); when shallow-tagged, avg score ≈0.20 vs non-shallow ≈0.617. Similar pattern for coach/optimizer (shallow avg ≈0.20).
 

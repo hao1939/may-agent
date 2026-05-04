@@ -551,7 +551,7 @@ Run at least one grep/rg for callers of your modified files, then call finish().
   if (elapsedSec < TOO_FAST_THRESHOLD_SEC && result.status !== "error") {
     ctx.emit({ type: "duration_gate_triggered", agent, elapsed_sec: elapsedSec });
     try {
-      const logLine = `${new Date().toISOString()} agent=${agent} elapsed_sec=${elapsedSec}\n`;
+      const logLine = `${new Date().toISOString()} agent=${agent} gate=duration elapsed_sec=${elapsedSec} threshold_sec=${TOO_FAST_THRESHOLD_SEC} tool_calls=${toolCallCount} status=${result.status || "unknown"} action=re-prompt\n`;
       appendFileSync(join(agentsRoot, "shared", "duration-gate-triggers.log"), logLine);
     } catch (_) { /* non-critical */ }
 
