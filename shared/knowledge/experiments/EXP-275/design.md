@@ -1,7 +1,7 @@
 # EXP-275: Anti-Shallow Enforcement Efficacy
 
 **Date**: 2027-11-18
-**Status**: DESIGNED
+**Status**: CONFIRMED (observational)
 **Predecessor**: EXP-274 (verification gate), coach-quality project (M14)
 **Hypothesis**: H-275
 

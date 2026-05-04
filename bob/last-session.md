@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777920400160_3920
+- **Session:** s_1777922200161_3944
 - **Status:** done
-- **When:** 2026-05-04T18:47:48.710Z
-- **Duration:** 1m8s
+- **When:** 2026-05-04T19:20:36.826Z
+- **Duration:** 3m56s
 
 ## What Happened
-I see a clear pattern: many experiments are deployed but never measured/closed. The audit from September identified this. Let me create a useful artifact — an experiment lifecycle closure checklist that can help systematically close stale experiments.
+Confirmed: `agents/.lab/coder-v2/SOUL.md` doesn't exist (drift), `agents/scout/handlers/` directory doesn't exist here (drift), and INDEX.md doesn't mention README.md or `code-vs-data.md` or `evidence-first.md`. Let me read the results file to verify it was written correctly:
