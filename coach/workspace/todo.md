@@ -12,14 +12,13 @@ All 6 projects have been completed/closed:
 
 ## Open Experiments — Need Closure
 
-### EXP-530: Structural Verification Gate — NEEDS MEASUREMENT
-- **Deployed**: 2026-07-01 to master-worker.ts
-- **Last check**: Only 3 sessions (insufficient data as of 2026-05-25)
-- **Action**: Measure latest worker sessions. Close with results.
+### ~~EXP-530: Structural Verification Gate — CLOSED POSITIVE (2026-05-04)~~
+- **Result**: 100% effective compliance (n=24). Gate fires on 25% of sessions, 100% recovery.
+- **Closure**: `EXP-530-closure.md`
 
-### EXP-540: Structural Path Normalization — NEEDS MEASUREMENT
-- **Deployed**: 2026-05-25 to master-worker.ts
-- **Action**: Measure tech-lead C7.1 pass rate. Close with results.
+### ~~EXP-540: Structural Path Normalization — CLOSED SUPERSEDED (2026-05-04)~~
+- **Result**: Runtime PATH_HALLUCINATION guard in bash tool supersedes prompt injection approach.
+- **Closure**: `EXP-540-closure.md`
 
 ### ~~EXP-440: QA Finish-Call Compliance — CLOSED NEGATIVE (2026-05-03)~~
 - **Result**: 14.3% pass rate, WORSE than 25% baseline. Text rules don't fix procedural behaviors.
@@ -27,10 +26,11 @@ All 6 projects have been completed/closed:
 
 ## P1: Next Actions
 
-1. **Close stale experiments** (~~EXP-440~~, 530, 540) — EXP-440 closed; 530/540 need more data
-2. **Gym regression run** — last run was 2026-04-09, overdue by months
-3. **Skill audit** — 12 skills deployed, verify they're still referenced and useful
-4. **New experiment design** — candidate: test judgment scenario (conflicting-requirements-tradeoff) that was designed but never baselined
+1. ~~**Close stale experiments** (EXP-440, 530, 540)~~ — ALL CLOSED (2026-05-04)
+2. **EXP-850: Tool-Call Budget Awareness** — READY FOR BASELINE. Blocker: gym runner doesn't capture tool-call counts. Need transcript logging or manual measurement approach.
+3. **Gym regression run** — last run was 2026-04-09, overdue by months
+4. **Skill audit** — 12 skills deployed, verify they're still referenced and useful
+5. **New experiment design** — candidate: test judgment scenario (conflicting-requirements-tradeoff) that was designed but never baselined
 
 ### EXP-700: Parallel Tool Calls — CLOSED INCONCLUSIVE (2029-08-03)
 - **Results**: `EXP-700-baseline-results.md`
