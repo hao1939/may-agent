@@ -70,14 +70,15 @@ All 6 projects have been completed/closed:
 ### EXP-710: Task Timeout Pressure — BACKLOG → SUPERSEDED BY EXP-850
 - Superseded. See EXP-850 below.
 
-### EXP-850: Tool-Call Budget Awareness — READY FOR BASELINE
+### EXP-850: Tool-Call Budget Awareness — PHASE 0 BASELINE COMPLETE
 - **Design**: `agents/coach/workspace/EXP-850-task-timeout-pressure-design.md`
 - **Problem**: Agents use 20-40+ tool calls on tasks completable in 10-15. No efficiency ceiling exists (only anti-shallow floor).
 - **Hypothesis**: Concrete tool-call budget (≤15 blocks) reduces median calls by ≥25% without quality loss.
 - **Arms**: A (baseline), B (vague nudge), C (concrete budget), D (budget + anti-shallow)
 - **Scenario**: `multi-file-refactor` (reused from EXP-800)
 - **Nudge files**: `nudge-efficiency-vague.md`, `nudge-efficiency-concrete.md` in scenario dir
-- **Status**: READY — run Arm A baseline next
+- **Phase 0 results**: `agents/coach/workspace/EXP-850-phase0-baseline-results.md` — 5/5 pass, mean 20.4s
+- **Status**: BASELINE DONE — run Arms B/C/D treatment next
 
 ## P2: Backlog
 
