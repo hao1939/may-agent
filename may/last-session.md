@@ -1,12 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777889555373_3536
+- **Session:** s_1777893153485_3582
 - **Status:** done
-- **When:** 2026-05-04T10:13:32.660Z
-- **Duration:** 57s
+- **When:** 2026-05-04T11:13:53.536Z
+- **Duration:** 1m20s
 
 ## What Happened
-The root cause is documented in KE-744: `git assume-unchanged` flags on project files prevent commits from landing. This requires a destructive fix (`git update-index --no-assume-unchanged`) which per the standing instructions I should **escalate to human**.
+Clear picture: There are genuinely 0 active projects and 2 in "waiting" status (hao-alignment, proof-of-life-dashboard). The metric `project.active-count: 0` is accurate — not a data drift issue. The assume-unchanged fix was already applied.
 
-The `project.active-count=0` and `project.blocked-over-6h=2` metrics are both caused by this same git index issue documented in KE-744. Since we're not in a git repo in this environment, the fix must be applied in the actual agent runtime environment by Hao.
+The `project.blocked-over-6h: 2` refers to the 2 "waiting" projects. These are legitimately waiting (likely on human input).
+
+Per KE-743/744 guidance: this is not phantom data or DB drift — it's real state. The system has no active projects because all were completed/closed. Per my prime directive, I should consider whether new projects should be created, but the 2 waiting projects (hao-alignment, proof-of-life-dashboard) suggest work is queued awaiting human direction.
