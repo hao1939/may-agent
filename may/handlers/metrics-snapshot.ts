@@ -262,8 +262,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
               [m.id, "threshold", message, now]
             );
             try {
-              ctx.emit({
-                type: "metric.breach",
+              ctx.dispatchEvent("metric.breach", {
                 owner: m.owner,
                 metricId: m.id,
                 metricName: m.name,
@@ -271,7 +270,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
                 threshold: m.threshold,
                 target: m.target,
                 message,
-              } as any);
+              });
             } catch (e) { ctx.log(`[metrics-snapshot] Error emitting metric.breach for ${m.id}: ${e}`); }
           }
         } else if (openAlert) {

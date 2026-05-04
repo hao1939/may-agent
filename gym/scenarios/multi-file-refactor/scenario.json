@@ -1,6 +1,6 @@
 {
   "name": "multi-file-refactor",
-  "description": "Rename a function across 4 files, update imports, and fix tests. Requires 4-6 edit() calls — designed to measure verify-after-edit compliance (EXP-800).",
+  "description": "Rename calculateTotal → computeOrderTotal across 4 files. Requires 4 edit() calls — designed to measure verify-after-edit compliance (EXP-800).",
   "categories": ["coding"],
   "tags": ["behavior", "VAE", "EXP-800", "refactor"],
   "tier": "standard",
