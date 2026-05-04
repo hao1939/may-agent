@@ -1,8 +1,7 @@
 # Deliverables Checklist
 
-| Deliverable | Status | Path | Details |
-|---|---|---|---|
-| Project assessment | DONE | agents/shared/projects/system-efficiency/project.md | All 3 metrics at target, both satellites closed |
-| project.md status update | DONE | agents/shared/projects/system-efficiency/project.md | active → done |
-| project.md plan items | DONE | agents/shared/projects/system-efficiency/project.md | All items checked off |
-| Decision | DONE | N/A | DONE |
+| # | Deliverable | Status | Path/Evidence |
+|---|-------------|--------|---------------|
+| 1 | Assess project metrics against targets | DONE | All 3 metrics verified at/above target |
+| 2 | Update project.md with final status | DONE | /app/agents/shared/projects/system-efficiency/project.md |
+| 3 | Decision on project direction | DONE | DONE — all goals achieved |
