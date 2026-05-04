@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777877064127_3362
+- **Session:** s_1777878863287_3395
 - **Status:** done
-- **When:** 2026-05-04T06:55:04.390Z
-- **Duration:** 10m40s
+- **When:** 2026-05-04T07:19:08.455Z
+- **Duration:** 4m45s
 
 ## What Happened
-Lane is clean. The assume-unchanged list is the stale set already documented in KE-744 (not introduced by me, and none of them are paths I'm publishing claims about).
+Lane clean: only addition is the new KE in `shared/knowledge/entries/`. The 21 `assume-unchanged` files are the KE-744 stale set (none of them are paths my KE depends on for content). Done.

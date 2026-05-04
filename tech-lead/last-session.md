@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777875578894_3333
+- **Session:** s_1777879178544_3398
 - **Status:** done
-- **When:** 2026-05-04T06:22:08.378Z
-- **Duration:** 2m29s
+- **When:** 2026-05-04T07:21:11.525Z
+- **Duration:** 1m32s
 
 ## What Happened
-The TS is used directly (no dist/build output). The "binary rebuild" issue mentioned in EXP-640 may refer to a container/k3s deployment that uses a snapshot. This is likely outside what I can fix in this session — it's a deployment concern.
-
-Let me finish with my triage decisions:
+Now for the P2 EXP-860 notification about enhanced gate logging — that's a nice-to-have, I'll dismiss it for now since the gate coverage fix is the higher priority and logging can be a follow-up.
