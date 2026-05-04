@@ -5,13 +5,13 @@
 All 6 projects are **CLOSED** (skill-workflow-audit: blocked but 18/18 milestones — effectively complete).
 EXP-810 CLOSED (NEGATIVE — text cannot reorder tool-call sequences, 0pp delta).
 EXP-800 CLOSED (measurement invalid — agents use bash, not edit() tool).
-**EXP-850 Phase 0 COMPLETE**: 5/5 baseline trials on multi-file-refactor (100% pass, median 19.7s). Ready for treatment arms.
+**EXP-850 CLOSED**: NEGATIVE — text efficiency nudges (vague and concrete) don't reduce duration. +9.5% slower (noise). Confirms KE-480 for efficiency behaviors.
 One remaining active experiment: EXP-745 (Phase 2 complete, needs Phase 3 gym validation).
-Three gate fixes blocked on tech-lead: EXP-740, EXP-735, EXP-725. Re-escalated 2029-07-15.
+Three gate fixes blocked on tech-lead: EXP-740, EXP-735, EXP-725. Re-escalated 2029-08-06.
 All 3 deployed gate logs still empty (0% trigger rate confirmed 2029-07-15).
 T2 gate false-positive: CLOSED — artifact gate in heartbeat-data.ts doesn't detect bash file writes. Infrastructure fix needed, not coaching. EXP-850-t2-gate-false-positive.md closed 2029-08-06.
 EXP-745 Phase 3: DESIGNED — gym validation plan at `agents/coach/workspace/EXP-745-phase3-gym-validation-design.md`. Ready for trials next session.
-Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-07-15.md`
+Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-08-06.md`
 
 ## CLOSED: EXP-800 — Threshold Rescue — MEASUREMENT INVALID (2029-08-04)
 - **Problem**: VAE compliance stuck at ~13%. KE-715 says concrete thresholds work. KE-655 says distraction kills text. Which wins?
