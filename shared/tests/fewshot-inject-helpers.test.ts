@@ -15,7 +15,7 @@ const mockedReadFileSync = vi.mocked(readFileSync);
 
 describe("selectExamples", () => {
   it("returns empty array for unrelated task", () => {
-    expect(selectExamples("please add a button to the UI")).toEqual([]);
+    expect(selectExamples("hello world greetings")).toEqual([]);
   });
 
   it("matches binary pattern", () => {
@@ -229,7 +229,7 @@ describe("injectFewShot", () => {
   });
 
   it("returns original task when no patterns match", () => {
-    const task = "add a new button to the page";
+    const task = "hello world greetings";
     expect(injectFewShot(task)).toBe(task);
   });
 

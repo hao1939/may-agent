@@ -101,19 +101,18 @@ describe("master-worker retry integration", () => {
     expect(result.totalDelayMs).toBeGreaterThan(0);
   });
 
-  it("master-worker.ts imports worker-retry module", async () => {
-    // Verify the import exists by reading the file
+  it("master-worker.ts does not use withWorkerRetry (retry block removed)", async () => {
+    // Zero-output retry block was removed from master-worker.ts
+    // withWorkerRetry is still available as a utility but no longer used in the main workflow
     const fs = await import("node:fs");
     const content = fs.readFileSync("/app/agents/shared/workflows/master-worker.ts", "utf-8");
-    expect(content).toContain('import { withWorkerRetry, isWorkerRetryable } from "./worker-retry.ts"');
-    expect(content).toContain("withWorkerRetry(");
+    // Retry block was removed, so these should NOT be present
+    expect(content).not.toContain("const retryResult = await withWorkerRetry(");
   });
 
-  it("master-worker.ts uses withWorkerRetry in zero-output retry block", async () => {
-    const fs = await import("node:fs");
-    const content = fs.readFileSync("/app/agents/shared/workflows/master-worker.ts", "utf-8");
-    // The retry block should use withWorkerRetry, not just withRetry
-    expect(content).toContain("const retryResult = await withWorkerRetry(");
-    expect(content).toContain("retryResult.success");
+  it("worker-retry module still exports withWorkerRetry for other consumers", async () => {
+    // The module itself still works even though master-worker no longer uses it
+    expect(typeof withWorkerRetry).toBe("function");
+    expect(typeof isWorkerRetryable).toBe("function");
   });
 });

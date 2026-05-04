@@ -309,8 +309,8 @@ describe("execute", () => {
     await execute(ctx as any);
     // Should log warning about zero output
     expect(ctx.log).toHaveBeenCalledWith(expect.stringContaining("NO output files"));
-    // Should retry
-    expect(ctx.log).toHaveBeenCalledWith(expect.stringContaining("RETRY"));
+    // Retry block removed — zero output now goes through review which returns BLOCKED
+    expect(ctx.log).toHaveBeenCalledWith(expect.stringContaining("BLOCKED"));
   });
 
   it("detects incomplete checkpoint and resumes", async () => {
