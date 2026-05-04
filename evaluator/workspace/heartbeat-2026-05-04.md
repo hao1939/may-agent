@@ -1,23 +1,43 @@
-# Evaluator heartbeat — 2026-05-04
+# Evaluator Heartbeat — 2026-05-04
 
-## Signals checked
+## 1) Session-evaluation pipeline liveness (Process #5)
 
-### DB recency
-- `evaluations.max(createdAt)` is recent: **1777878757717** (see bash output in session transcript)
-- `sessions.max(startedAt)` is more recent: **1777888204403**
+DB check (canonical) shows evaluation pipeline is producing rows, but **coverage is very low vs session volume**.
 
-### Coverage (pipeline health proxy)
-Computed from DB:
-- All time: `evaluations=2595` / `sessions(status='done')=11688` → **22.2%**
-- Last 24h: `done sessions=1729`, `evaluations created=100` → **5.78%**
-- Last 6h: `done sessions=369`, `evaluations created=7` → **1.90%**
+Evidence:
+- `MAX(evaluations.createdAt)=1777878757717`
+- `MAX(sessions.startedAt)=1777891839303`
+- last 24h: `sessions=1703`, `evaluations=94` → coverage ≈ **5.52%**
+- per-agent coverage (agents with >=20 sessions last 24h): `evaluator=0% (0/1127)`; others ~6–29%
 
-### Legacy artifacts
-- `.state/evaluations/*.json` newest mtime: **Apr 29** while DB has evaluations as recent as **May 4** → indicates **output-path drift** (DB is canonical; legacy folder stale).
+Interpretation:
+- Pipeline is **live** (fresh `evaluations` rows exist).
+- But it appears **selective/scoped** (many sessions are not evaluated; especially `agent='evaluator'` sessions).
 
-## Interpretation
-- Evaluation is not fully down (DB is getting new rows), but **coverage is extremely low in the last 6–24h**, consistent with **intermittent/partial execution** of the `evaluation-sync` handler.
-- Prior May audit suggests a known failure mode: cron hot-reload / handler registration gaps can stop `evaluation-sync` from being invoked.
+Next action recommendation:
+- Confirm intended sampling policy for `evaluate-session-llm` cron (is 5% expected?).
+- If not expected, widen scope or increase throughput; prioritize non-evaluator agents first.
 
-## Action taken
-- Create an escalation note for May/tech-lead: quantify the current coverage drop and point to the likely failure mode (evaluation-sync not keeping up / not running).
+## 2) Legacy artifact directory drift
+
+Legacy `.state/evaluations/` artifacts remain stale/partial:
+- directory tail shows many files with mtimes clustered around Mar 24 and Apr 29; does not match DB recency.
+
+Interpretation:
+- Treat as **legacy output path drift**, not evidence that pipeline is down.
+
+## 3) Integrity patrol degraded (known)
+
+`node agents/evaluator/skills/patrol.cjs` returns `CRITICAL` due to missing baseline:
+- error: `Missing compliance-snapshot.json`
+
+Interpretation:
+- Degraded integrity monitoring (missing baseline), **not** an active hash-mismatch incident.
+
+## 4) Running-session monitor
+
+`node agents/evaluator/skills/monitor-session.cjs --running`:
+- 2 sessions checked, 2 healthy.
+
+## Notes
+- Bun/SQLite schema reminder: `sessions` uses `startedAt` not `createdAt`.
