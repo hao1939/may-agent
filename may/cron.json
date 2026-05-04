@@ -292,54 +292,39 @@
     "type": "job",
     "handler": "metric-alert-reactor",
     "enabled": true,
-    "description": "React to metric.breach events by forking the owning agent with remediation task. Polls unresolved alerts on timer.",
-    "on": [
-      "metric.breach"
-    ],
+    "description": "React to metric.breach events by forking the owning agent with remediation task. Polls unresolved alerts every 5min.",
     "intervalMs": 300000
   },
   {
     "name": "session-recovery",
     "type": "job",
     "handler": "session-recovery",
-    "on": [
-      "session.failed"
-    ],
     "enabled": true,
-    "description": "Auto-resume failed sessions (Ambulance Protocol). Two-tier: digest classifier \u2192 classifyError fallback. Event-only handler (no timer).",
+    "description": "Auto-resume failed sessions (Ambulance Protocol). Polls daily. Note: on:session.failed removed due to KE-455 (runtime ignores entries with on: field).",
     "intervalMs": 86400000
   },
   {
     "name": "session-eval",
     "type": "job",
     "handler": "session-eval",
-    "on": [
-      "session.completed"
-    ],
     "enabled": true,
-    "description": "Auto-evaluate completed task trees and emit context-learn events. Event-only handler (no timer).",
+    "description": "Auto-evaluate completed task trees. Polls daily (eval-poller handles 30min cadence). on: removed due to KE-455.",
     "intervalMs": 86400000
   },
   {
     "name": "escalation",
     "type": "job",
     "handler": "escalation",
-    "on": [
-      "session.escalated"
-    ],
     "enabled": true,
-    "description": "Route blocked/failed session escalations to human via digest classifier. Event-only handler (no timer).",
+    "description": "Route blocked/failed session escalations to human. Polls daily. on: removed due to KE-455.",
     "intervalMs": 86400000
   },
   {
     "name": "context-learn",
     "type": "job",
     "handler": "context-learn",
-    "on": [
-      "context-learn"
-    ],
     "enabled": true,
-    "description": "Extract durable facts from completed sessions into agent context.md files. Event-only handler.",
+    "description": "Extract durable facts from completed sessions. Polls daily (context-learn-poller handles 30min cadence). on: removed due to KE-455.",
     "intervalMs": 86400000
   },
   {
