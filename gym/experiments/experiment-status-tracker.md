@@ -1,6 +1,6 @@
 # Experiment Status Tracker
 
-**Last updated**: 2029-08-04 (coach heartbeat — designed EXP-850, closed EXP-800)
+**Last updated**: 2029-09-03 (bob heartbeat — closed EXP-276 as DEPLOYED_UNVERIFIABLE)
 
 ## Active Experiments
 
@@ -39,6 +39,7 @@
 
 | ID | Name | Outcome | Skill Promoted? | Key Finding |
 |----|------|---------|-----------------|-------------|
+| EXP-276 | Phantom Completion (prove-it-gate) | **CLOSED — DEPLOYED_UNVERIFIABLE** | Skill deployed to optimizer | Intervention structurally sound; no post-deployment evals exist to measure |
 | EXP-600 | Bash waste reduction (diagnose-before-retry) | **CLOSED — NEGATIVE** | Skill deployed to tech-lead but no measured impact | 23.3% baseline waste → intervention did not achieve ≥25% reduction target |
 | EXP-350 | Phantom nudge resistance | **COMPLETE — POSITIVE** | `verify-notification-targets` skill validated | Baseline 34/100 → Treatment 80/100 (+46pp). Skill works. |
 | EXP-188 | Recognition Intervention Dose-Response | **COMPLETE** | See results file | Coach ran extensive trials; see `EXP-188-results.md` |
