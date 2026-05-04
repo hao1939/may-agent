@@ -1,6 +1,6 @@
 # Experiment Status Tracker
 
-**Last updated**: 2029-09-03 (bob heartbeat — killed EXP-580, prioritized EXP-745 Phase 3)
+**Last updated**: 2029-09-04 (bob heartbeat — audit, updated EXP-850 to CLOSED)
 
 ## Active Experiments
 
@@ -21,11 +21,11 @@
 - **Details**: `agents/coach/workspace/EXP-800-results.md`
 
 ### EXP-850: Context-Window Efficiency — Summarize-Before-Reread
-- **Status**: MEASUREMENT READY (2029-08-04)
+- **Status**: CLOSED — NEGATIVE (2026-05-05)
 - **Hypothesis**: Summarize-before-reread skill reduces redundant file reads by ≥30% without reducing correctness
-- **Measurement script**: `agents/coach/workspace/EXP-850-measure-redundant-reads.ts` (validated — demo output correct)
-- **Next**: Run Phase 0 baseline (5 trials on multi-file-refactor scenario, baseline variant)
-- **Details**: `agents/coach/workspace/EXP-850-context-efficiency-design.md`
+- **Outcome**: Text-based efficiency nudges (vague and concrete) showed no duration reduction vs baseline on multi-file-refactor. Both arms slightly slower (+9.5%, +4.8%) within noise. Task too simple to differentiate.
+- **Key Finding**: Agents are already near-optimal on simple tasks; text instructions don't improve efficiency.
+- **Details**: `agents/coach/workspace/EXP-850-arm-b-c-results.md`
 
 ### EXP-745: Few-Shot Pattern Coverage Expansion
 - **Status**: PHASE 2 COMPLETE (2029-07-03)
