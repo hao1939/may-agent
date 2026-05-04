@@ -9,7 +9,7 @@
  *   import { loadMetrics, loadProjects, loadAlerts, loadHeartbeatMd, loadInbox, formatMetricsBlock } from "../../shared/workflows/heartbeat-data.js";
  */
 
-import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import { checkCircuitBreaker, recordOutcome } from "./circuit-breaker.js";
 
@@ -431,6 +431,9 @@ ${redMetricDiagnostics ? "Red metric diagnostics are above — address each one,
 
   ctx.emit({ type: "step_start", step: "heartbeat" });
 
+  // ── EXP-740: Wall-clock timer for duration gate ──────────────────
+  const heartbeatStartTime = Date.now();
+
   const result = await ctx.runAgent(agent, prompt);
   recordOutcome(agentsRoot, agent, result.status === "error",
     result.status === "error" ? "heartbeat session error" : undefined);
@@ -438,8 +441,11 @@ ${redMetricDiagnostics ? "Red metric diagnostics are above — address each one,
   // ── EXP-520: HEARTBEAT ARTIFACT GATE ──────────────────────────────
   // If agent produced no file writes, re-prompt once for an artifact.
   // Text rules plateau at 55% compliance (EXP-475); structural enforcement needed.
+  // EXP-520: Check deliverables array first (reliable), then fall back to summary keyword check.
+  // Note: mentionsWrite uses past-tense verbs only to reduce false matches from
+  // instructional/contextual text that happens to contain "write" or "edit".
   const hasDeliverables = ((result as any).deliverables?.length ?? 0) > 0;
-  const mentionsWrite = /\b(wrote|created|updated|edited|write|edit|committed|saved|modified|added|generated|produced|fixed|changed|documented)\b/i.test(result.summary || "");
+  const mentionsWrite = /\b(wrote|created|updated|edited|committed|saved|modified|generated|produced|fixed)\b/i.test(result.summary || "");
   if (!hasDeliverables && !mentionsWrite && result.status !== "error") {
     ctx.emit({ type: "artifact_gate_triggered", agent });
 
@@ -460,10 +466,34 @@ Produce at least ONE meaningful write, then call finish() with updated deliverab
     return ctx.done(ctx.summarize(gateResult, { maxLength: 500 }));
   }
 
-  // ── REMOVED GATES (dead code, 0 triggers ever) ──────────────────────────────
-  // EXP-740 duration gate: sessions always >90s, never triggered. Removed.
-  // EXP-650 impact-scanning gate: grep/rg always used naturally. Removed.
-  // EXP-630 proxy-score gate: confirmed dead. Removed.
+  // ── EXP-740: WALL-CLOCK DURATION GATE ──────────────────────────────
+  // EXP-705/710: Sessions <60s are always shallow. >90s always substantive.
+  // Uses wall-clock time instead of proxy scoring (confirmed dead code).
+  const elapsedMs = Date.now() - heartbeatStartTime;
+  const elapsedSec = Math.round(elapsedMs / 1000);
+  const TOO_FAST_THRESHOLD_SEC = 90;
+
+  if (elapsedSec < TOO_FAST_THRESHOLD_SEC && result.status !== "error") {
+    ctx.emit({ type: "duration_gate_triggered", agent, elapsed_sec: elapsedSec });
+    try {
+      const logLine = `${new Date().toISOString()} agent=${agent} elapsed_sec=${elapsedSec}\n`;
+      appendFileSync(join(agentsRoot, "shared", "duration-gate-triggers.log"), logLine);
+    } catch (_) { /* non-critical */ }
+
+    const durationPrompt = `⚠️ DURATION GATE: Your session completed in ${elapsedSec}s — under the ${TOO_FAST_THRESHOLD_SEC}s minimum.
+
+Fast sessions almost never produce meaningful work. Before finishing:
+1. Did you investigate at least one non-obvious issue?
+2. Did you produce an artifact with real analysis (not just a status echo)?
+3. Did you check for improvement opportunities beyond surface metrics?
+
+Dig deeper into one project or metric and produce a substantive artifact.`;
+
+    const durationResult = await ctx.runAgent(agent, durationPrompt);
+    recordOutcome(agentsRoot, agent, durationResult.status === "error",
+      durationResult.status === "error" ? "duration gate re-prompt error" : undefined);
+    return ctx.done(ctx.summarize(durationResult, { maxLength: 500 }));
+  }
 
   return ctx.done(ctx.summarize(result, { maxLength: 500 }));
 }
