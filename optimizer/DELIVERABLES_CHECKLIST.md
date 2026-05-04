@@ -1,4 +1,10 @@
 # Deliverables Checklist
 
-- [x] **Heartbeat artifact**: `agents/optimizer/workspace/heartbeat-report-20250504.md` — p95 regression finding, project status, monitoring plan
-- [x] **Checkpoint saved**: p95 trend data persisted
+## Required Deliverables
+
+- [x] **Heartbeat artifact** — DONE
+  - File: `agents/optimizer/heartbeat-status.md`
+  - Updated with current p95 trend (1620ms), project status table, and efficiency observations
+
+## Summary
+All heartbeat requirements met. System healthy, no action needed.
