@@ -1,35 +1,30 @@
 # Evaluator heartbeat — 2026-05-04
 
-## Signals checked
+## What I checked
 
-### Session evaluation pipeline freshness
-- DB `evaluations.max(createdAt)` = **2026-05-04T12:46:39.546Z**
-- DB `sessions.max(startedAt)` = **2026-05-04T13:20:38.672Z**
+### Evaluation pipeline freshness
+- DB `evaluations.max(createdAt)` is recent.
+- Lag vs newest session start: ~3,362,275 ms (~56 min).
 
-So the evaluation pipeline is *running* (fresh within ~34 minutes of latest session).
+### Coverage (24h)
+- Sessions (all): 1547
+- Sessions (non-evaluator): 448
+- Evaluations: 80
+- Coverage (evaluations / non-evaluator sessions): **0.1786**
 
-### Coverage (last 24h)
-- sessions (24h): **1565**
-- evaluations (24h): **81**
-- coverage: **~5.18%**
+### Key observation
+Most sessions in the last 24h are `agent='evaluator'` with `source='standalone-eval'`.
+- Evaluator sessions: 1099 / 1547 = **71.0%** of all sessions.
+- This makes the raw “evaluations per session” coverage look much worse than the user-visible goal (evaluate other agents’ work).
 
-Excluding evaluator’s own sessions:
-- non-evaluator sessions (24h): **454**
-- non-evaluator evaluations (24h): **81**
+### Legacy artifacts
+`.state/evaluations/` directory mtimes appear stale (mostly Mar 24, a few Apr 29), while DB is fresh.
+This supports the earlier hypothesis that `.state/evaluations/` is a legacy output path and should not be used as the primary liveness signal.
 
-So evaluations appear to be almost entirely for non-evaluator sessions, but still only **~17.8%** of non-evaluator sessions (81/454).
+## Hypothesis
+Low evaluation coverage is primarily due to (a) the high volume of evaluator/standalone-eval sessions inflating the denominator and (b) eval-poller budget caps (12 LLM / 200 heuristic per run) which may be insufficient if non-evaluator session throughput spikes.
 
-### Heuristic vs LLM breakdown (24h)
-- `evaluatedByHeuristic=0, skippedByJs=0`: **79**
-- `evaluatedByHeuristic=1, skippedByJs=1`: **3**
-
-This suggests the JS evaluator is skipping some items and falling back to heuristic in a small number of cases, but **the dominant issue is low overall selection/throughput**, not fallback.
-
-## Hypotheses / likely causes
-1. **Intentional sampling** (the cron/job evaluates only a subset of sessions to control cost).
-2. **Selector bug/regression** limiting which sessions qualify (e.g., only certain `kind`/`source`/status, or requiring transcripts stored in a specific path).
-3. **Backlog** is growing faster than the evaluator consumes.
-
-## Follow-ups
-- Find where session evaluation scope is defined (cron/job config): look for `evaluate-session-llm` in repo and inspect its selection query/filtering.
-- Compute **lag distribution**: sessions without evaluation by age bucket (e.g., >1h, >6h, >24h) for non-evaluator agents.
+## Proposed follow-ups (not executed here)
+1. Define/track a metric: coverage over non-evaluator sessions only, and optionally exclude `source='standalone-eval'` from session denominator.
+2. Inspect eval-poller runtime logs to see if it is budget-bound each run (hitting MAX_* caps) or skipping for other reasons.
+3. If budget-bound, consider increasing MAX_HEURISTIC_EVALS_PER_RUN and/or the wall clock budget, or running eval-poller more frequently.
