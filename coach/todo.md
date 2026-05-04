@@ -4,7 +4,7 @@
 
 All 6 projects are **CLOSED** (skill-workflow-audit: blocked but 18/18 milestones — effectively complete).
 **EXP-740 DEPLOYED** ✅ — wall-clock duration gate confirmed in heartbeat-data.ts (90s threshold). 0 triggers so far.
-Two gate fixes still blocked on tech-lead: EXP-735, EXP-725. Need re-escalation.
+EXP-735 and EXP-725 IMPLEMENTED by tech-lead (2029-08-07) in heartbeat-data.ts. Monitoring gate triggers.
 EXP-745 Phase 3: DESIGNED but gym runner needs GYM_AGENT_BIN (no agent binary in environment).
 Gate logs still empty (0 triggers). Monitoring.
 Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-08-07.md`
@@ -69,21 +69,19 @@ Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-08-07.m
 - **Pipeline status**: `agents/coach/workspace/experiment-pipeline-status-2026-05-03.md`
 - **Status**: CLOSED — root cause fully analyzed, SUPERSEDED by EXP-740 (wall-clock duration gate). Awaiting tech-lead action on EXP-740.
 
-## P1: EXP-735 — Impact Gate Trigger Condition Fix — DESIGNED
+## P1: EXP-735 — Impact Gate Trigger Condition Fix — IMPLEMENTED ✅ (2029-08-07)
 - **Problem**: EXP-650 impact gate never fires because `grep|rg` keyword appears in virtually all session outputs
 - **Root cause**: Gate checks for ANY grep mention in combined text, but agents always run searches
-- **Proposed fix**: Replace keyword detection with intentional-impact-check detection (grep + impact-related terms)
+- **Fix deployed**: Option C — semantic detection (grep + impact-related terms), checks summary for impact/downstream/consumer/caller
 - **Design**: `agents/coach/workspace/EXP-735-impact-gate-trigger-fix-design.md`
-- **Next**: Escalate to tech-lead for Option C implementation (dry-run logging first)
-- **Status**: DESIGNED — awaiting implementation
+- **Status**: IMPLEMENTED — monitoring trigger rate
 
-## P1: EXP-725 — Structural Anti-Shallow Gate — DESIGNED
+## P1: EXP-725 — Structural Anti-Shallow Gate — IMPLEMENTED ✅ (2029-08-07)
 - **Problem**: Anti-shallow text rule violated in 40% of sessions (EXP-715 Phase 1). Text rules fail per KE-480.
 - **Hypothesis**: Structural finish() rejection when tool_call_count < 10 → shallow rate ≤10%
+- **Fix deployed**: Re-prompt gate when tool_call_count < 10, with logging to anti-shallow-gate-triggers.log
 - **Design**: `agents/coach/workspace/EXP-725-structural-anti-shallow-gate-design.md`
-- **Baseline**: `agents/coach/workspace/EXP-715-phase1-results.md`
-- **Next**: Escalate to tech-lead for implementation in genericHeartbeat()
-- **Status**: DESIGNED — awaiting implementation
+- **Status**: IMPLEMENTED — monitoring trigger rate and shallow rate
 
 ## P1: KE-720 — Shallow Sessions Meta-Analysis — WRITTEN ✅ (2029-05-04)
 

@@ -474,6 +474,73 @@ Produce at least ONE meaningful write, then call finish() with updated deliverab
     return ctx.done(ctx.summarize(gateResult, { maxLength: 500 }));
   }
 
+  // ── EXP-725: STRUCTURAL ANTI-SHALLOW GATE ───────────────────────────
+  // Text-based anti-shallow rules fail under task pressure (KE-480).
+  // Count actual tool calls; re-prompt if < 10.
+  const MIN_TOOL_CALLS = 10;
+  const toolCallCount = ((result as any)?.messages ?? []).reduce((count: number, msg: any) => {
+    if (!Array.isArray(msg.content)) return count;
+    return count + msg.content.filter((part: any) =>
+      part.type === "toolCall" || part.type === "tool_use"
+    ).length;
+  }, 0);
+
+  if (toolCallCount < MIN_TOOL_CALLS && result.status !== "error") {
+    ctx.emit({ type: "anti_shallow_gate_triggered", agent, tool_calls: toolCallCount });
+    try {
+      const logLine = `${new Date().toISOString()} agent=${agent} tool_calls=${toolCallCount} action=re-prompt\n`;
+      appendFileSync(join(agentsRoot, "shared", "anti-shallow-gate-triggers.log"), logLine);
+    } catch (_) { /* non-critical */ }
+
+    const shallowPrompt = `⚠️ ANTI-SHALLOW GATE: Your session made only ${toolCallCount} tool calls (minimum: ${MIN_TOOL_CALLS}).
+
+Sessions with fewer than ${MIN_TOOL_CALLS} tool calls are almost always shallow. Continue investigating:
+1. Dig deeper into one project or metric
+2. Read actual code or data files (don't just summarize from memory)
+3. Produce a substantive artifact with real analysis
+
+Continue working, then call finish() with updated deliverables.`;
+
+    const shallowResult = await ctx.runAgent(agent, shallowPrompt);
+    recordOutcome(agentsRoot, agent, shallowResult.status === "error",
+      shallowResult.status === "error" ? "anti-shallow gate re-prompt error" : undefined);
+    return ctx.done(ctx.summarize(shallowResult, { maxLength: 500 }));
+  }
+
+  // ── EXP-735: IMPACT GATE (multi-edit impact check) ────────────────
+  // If agent edited multiple files but didn't check downstream consumers, re-prompt.
+  // Option C: semantic detection — did agent search for impact/callers/consumers?
+  const deliverableEdits = Array.isArray((result as any).deliverables) ? (result as any).deliverables.length : 0;
+  const summaryText = result.summary || "";
+  const allText = ((result as any)?.messages ?? []).map((m: any) =>
+    typeof m.content === "string" ? m.content :
+    Array.isArray(m.content) ? m.content.map((p: any) => p.text || "").join(" ") : ""
+  ).join(" ");
+  const didImpactCheck = /\b(grep|rg)\b.*\b(caller|consumer|import|require|usage)\b/i.test(allText)
+    || /impact|downstream|consumer|caller/i.test(summaryText);
+
+  if (deliverableEdits >= 2 && !didImpactCheck && result.status !== "error") {
+    ctx.emit({ type: "impact_gate_triggered", agent, deliverable_edits: deliverableEdits });
+    try {
+      const logLine = `${new Date().toISOString()} agent=${agent} deliverable_edits=${deliverableEdits} action=re-prompt\n`;
+      appendFileSync(join(agentsRoot, "shared", "impact-gate-triggers.log"), logLine);
+    } catch (_) { /* non-critical */ }
+
+    const impactPrompt = `⚠️ IMPACT GATE: You edited ${deliverableEdits} files but didn't check for downstream consumers.
+
+Before finishing, verify your changes don't break callers:
+1. Search for imports/requires of the files you modified
+2. Check if any function signatures or exports changed
+3. Verify downstream consumers still work
+
+Run at least one grep/rg for callers of your modified files, then call finish().`;
+
+    const impactResult = await ctx.runAgent(agent, impactPrompt);
+    recordOutcome(agentsRoot, agent, impactResult.status === "error",
+      impactResult.status === "error" ? "impact gate re-prompt error" : undefined);
+    return ctx.done(ctx.summarize(impactResult, { maxLength: 500 }));
+  }
+
   // ── EXP-740: WALL-CLOCK DURATION GATE ──────────────────────────────
   // EXP-705/710: Sessions <60s are always shallow. >90s always substantive.
   // Uses wall-clock time instead of proxy scoring (confirmed dead code).
