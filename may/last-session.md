@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777920156417_3919
+- **Session:** s_1777921956399_3943
 - **Status:** done
-- **When:** 2026-05-04T18:43:59.562Z
-- **Duration:** 1m23s
+- **When:** 2026-05-04T19:13:54.768Z
+- **Duration:** 1m18s
 
 ## What Happened
-I didn't modify any files — this is a read-only heartbeat investigation.
+Fixed. All 21 assume-unchanged flags cleared. The project status metrics should recover on the next metrics snapshot as git can now properly track project file changes.
