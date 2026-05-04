@@ -41,37 +41,45 @@ Add the missing event types to the typed union. Remove `DomainEvent`. Remove `as
 
 ---
 
-## Operational status (appendix, 2026-05-02 — added by arc)
+## Operational status (appendix, 2026-05-02 — added by arc; refreshed 2026-05-04)
 
 This section reflects what the runtime actually emits and consumes, so
 readers do not mistake the spec above for a live wiring diagram. Keep
 this table in sync when the wiring changes; the spec is aspirational
 when it disagrees with this table.
 
-### Emitter reality (lifetime counts in `events` table, queried 2026-05-02 ~10:18Z)
+### Emitter reality (lifetime counts in `events` table, queried 2026-05-04 ~00:15Z)
 
 | Event type | Lifetime emissions | Emitted by | Status |
 |---|---|---|---|
-| `handler.started` | 2624 | cron runner on every handler invocation | ✅ live |
-| `handler.completed` | 2617 | cron runner at handler success | ✅ live, but see KE-454 (fires on workflow-failed sessions because `await` is missing — metric is decoupled from outcome) |
+| `handler.started` | 4061 | cron runner on every handler invocation | ✅ live |
+| `handler.completed` | 4052 | cron runner at handler success | ✅ live, but see KE-454 (fires on workflow-failed sessions because `await` is missing — metric is decoupled from outcome) |
 | `handler.failed` | 5 | cron runner at handler throw — almost never thrown because handler bodies catch internally | ⚠️ rarely emitted; do not use for failure detection |
-| `project.iteration` | 1775 | both `project.ts` and `master-worker.ts`; payload shapes differ — see KE-468 | ⚠️ live but two incompatible shapes; aggregating by `projectId` undercounts ~2.5× |
-| `session.failed` | 92 | session/runtime layer on session-end with error | ✅ live; payload `{sessionId, agent, error, task}` |
+| `project.iteration` | 1842 | both `project.ts` and `master-worker.ts`; payload shapes differ — see KE-468 | ⚠️ live but two incompatible shapes; aggregating by `projectId` undercounts ~2.5× |
+| `session.failed` | 94 | session/runtime layer on session-end with error | ✅ live; payload `{sessionId, agent, error, task}` |
 | `session.completed` | **1** (lifetime — single 2026-04-30 row) | not currently emitted by any runtime path; the one extant row is anomalous | ❌ aspirational |
 | `project.status_changed` | **0** lifetime | no emitter exists | ❌ aspirational |
+| `metric.breach` | **6** (first row 2026-05-03 21:47Z) | `agents/may/handlers/metrics-snapshot.ts:266` when `breached && !openAlert` (KE-732 corrected the earlier doc that mis-attributed this to the reactor) | ⚠️ now live but consumer dormant — see Consumer reality row below |
 
 `sessions.status='done'` has 6300+ rows over the same window, so the
 6300:1 ratio between session-end transitions and `session.completed`
 events confirms there is no real emitter.
 
+**`metric.breach` is the new arrival.** It went from 0 lifetime
+emissions (2026-05-02) to 6 (2026-05-04) after the KE-728 import fix
+landed and `metrics-snapshot.ts` started running cleanly. **Emission is
+not the problem.** The 6 rows all sit at `status='pending'` with
+`handled_by=NULL`, which is the same KE-455 wedge the consumer table
+below describes: the cron loader skips `on:`-only entries.
+
 ### Consumer reality (event-only handlers in `agents/may/cron.json`)
 
 | Handler | Subscribes to | Lifetime invocations | Status |
 |---|---|---|---|
-| `session-recovery` | `session.failed` (live, 92×) | 0 | ❌ never wired — see KE-455 |
+| `session-recovery` | `session.failed` (live, 94×) | 0 | ❌ never wired — see KE-455 |
 | `session-eval` | `session.completed` (1×) | 0 | ❌ never wired |
 | `escalation` | `session.escalated` | 0 | ❌ source not emitted, handler not wired |
-| `metric-alert-reactor` | `metric.breach` | 0 | ❌ source not emitted, handler not wired |
+| `metric-alert-reactor` | `metric.breach` (live, 6×) | 0 | ❌ **source now emits, handler still dormant** — KE-731 (wedge), KE-732 (doc dual). 6 pending breach events orphaned. |
 | `context-learn` | `context-learn` | 0 | ❌ replaced de facto by timer-driven `context-learn-poller` |
 
 Two timer-driven handlers (`eval-poller`, `context-learn-poller`)
