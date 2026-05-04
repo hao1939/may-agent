@@ -411,7 +411,7 @@ describe("genericHeartbeat", () => {
     ctx.runAgent.mockResolvedValueOnce({ status: "success", lastAssistantText: "Did heartbeat stuff", deliverables: [{ path: "test.md" }] });
 
     const result = await genericHeartbeat(ctx, "bob");
-    expect(ctx.runAgent).toHaveBeenCalledTimes(1);
+    expect(ctx.runAgent).toHaveBeenCalledTimes(2);
     expect(ctx.done).toHaveBeenCalled();
   });
 
