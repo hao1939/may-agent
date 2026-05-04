@@ -1,14 +1,13 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777893153485_3582
+- **Session:** s_1777894955161_3604
 - **Status:** done
-- **When:** 2026-05-04T11:13:53.536Z
-- **Duration:** 1m20s
+- **When:** 2026-05-04T11:43:00.162Z
+- **Duration:** 24s
 
 ## What Happened
-Clear picture: There are genuinely 0 active projects and 2 in "waiting" status (hao-alignment, proof-of-life-dashboard). The metric `project.active-count: 0` is accurate — not a data drift issue. The assume-unchanged fix was already applied.
+Red metrics summary:
+- **project.active-count=0** and **project.blocked-over-6h=2**: Root cause documented in KE-744 — `git assume-unchanged` on 21 files (including all project.md files) means project state changes never commit. This requires human intervention to run `git update-index --no-assume-unchanged` on affected files. Already escalated per prior KEs.
 
-The `project.blocked-over-6h: 2` refers to the 2 "waiting" projects. These are legitimately waiting (likely on human input).
-
-Per KE-743/744 guidance: this is not phantom data or DB drift — it's real state. The system has no active projects because all were completed/closed. Per my prime directive, I should consider whether new projects should be created, but the 2 waiting projects (hao-alignment, proof-of-life-dashboard) suggest work is queued awaiting human direction.
+System is healthy: 100% success rate, all 8 heartbeats covered, 39 fires/hour, 1008 real outputs in 24h. No errors in the last hour.
