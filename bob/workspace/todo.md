@@ -19,6 +19,8 @@
 - [ ] **Amy-Kimi C8.2 Compliance**: Model-level JSON bug in finish(). Options: (a) JSON repair, (b) exempt, (c) accept.
 - [ ] **EXP-299 (Obstacle Persistence)**: DESIGNED 2025-05-01. H-215: obstacle guard reduces OBSTACLE_PIVOT by ≥40%. Skill file WRITTEN (`agents/shared/skills/obstacle-persistence.md`). Next: run 20 control + 20 treatment gym trials on cascading-fix-trap-v2. See `EXP-299-obstacle-persistence-intervention.md`.
 
+- [ ] **EXP-860 (Zombie Task Circuit Breaker)**: DESIGNED 2025-05-04. H-ZOMBIE-001: retry counter + backoff reduces zombie session waste by ≥60%. Next: write skill file at `agents/shared/skills/retry-aware-dispatch/`, add to LIBRARY.md. See `EXP-860-zombie-task-circuit-breaker-design.md`.
+
 ## Recently Closed
 - [x] **EXP-850 (Tool-Call Budget)**: CONCLUDED 2025-05-05. Partially refuted — baseline redundancy too low (13.8%) for blanket budget to help. Dev agent (33% reread) is the only target worth a skill. See `EXP-850-writeup-2025-05-05.md`.
 
