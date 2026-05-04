@@ -1,6 +1,6 @@
 # EXP-860: Zombie Task Circuit Breaker
 
-## Status: DESIGNED — Ready for implementation
+## Status: IMPLEMENTED — Skill file written, added to LIBRARY.md. Pending gym validation.
 ## Date: 2025-05-04
 ## Author: Bob
 
