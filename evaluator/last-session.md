@@ -1,41 +1,44 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777864836827_3120
+- **Session:** s_1777864844139_3121
 - **Status:** done
-- **When:** 2026-05-04T03:20:44.139Z
-- **Duration:** 7s
+- **When:** 2026-05-04T03:20:53.714Z
+- **Duration:** 9s
 
 ## What Happened
 {
   "agents": [
     {
-      "name": "amy",
-      "role": "Builder",
-      "capability_level": "mid",
-      "efficiency": 0.9,
-      "quality": 0.85,
-      "verdict": "good",
+      "agent": "amy",
+      "role": "Researcher",
+      "capability_level": "competent",
+      "efficiency": 0.85,
+      "quality": 0.45,
+      "verdict": "acceptable",
       "issues": [
         {
-          "type": "PROCESS_WASTE",
-          "evidence": "finish() was blocked due to uncommitted changes in /app/agents (amy/last-session.md), requiring an extra git commit step unrelated to the gym task."
+          "type": "PROCESS_SCOPE_VIOLATION",
+          "evidence": "Agent used `sed -i` to edit files in /tmp/gym-multi-file-refactor-f46df85f (bash call: `sed -i 's/calculateTotal/computeOrderTotal/g' ...`). This is a broad, non-targeted replace; there was no file-content verification (no `cat`/`read`) to ensure only intended identifiers changed (e.g., could have changed comments/strings/other contexts)."
         },
         {
-          "type": "RISKY_EDIT_METHOD",
-          "evidence": "Used a global sed replace across 4 files: sed -i 's/calculateTotal/computeOrderTotal/g' ..., which is efficient here but can be risky in larger codebases if the identifier appears in strings/comments or as a substring."
+          "type": "DELIVERABLE_INTEGRITY_GAP",
+          "evidence": "Agent never displayed the updated contents of the 4 target files after editing; only grep outputs were shown. Under evidence-first standards, renames should be verified in-file (definition/export/import points)."
+        },
+        {
+          "type": "WORKFLOW_CONTAMINATION",
+          "evidence": "Finish() was blocked due to unrelated repo change `M amy/last-session.md`, and agent committed it with a misleading message about codebase rename. This indicates the agent modified/committed evaluator repo artifacts unrelated to the gym task."
         }
       ],
       "metrics": {
-        "tool_calls": {
-          "bash": 5,
-          "finish": 2
-        },
+        "tool_calls": 6,
         "wasted_calls": 1,
-        "verification": [
-          "grep -rn \"calculateTotal\" src/ returned no matches after change (only '---' separator printed)",
-          "node src/pricing.test.js output: 'All tests passed!'"
-        ]
+        "verification_steps": [
+          "grep before",
+          "grep after (no calculateTotal remaining)",
+          "ran node src/pricing.test.js (PASS)"
+        ],
+        "test_evidence": "node src/pricing.test.js output shows 'All tests passed!'"
       }
     }
   ],
@@ -43,23 +46,23 @@
     "name": "gym-multi-file-refactor rename function",
     "issues": [
       {
-        "type": "DELIVERABLE_INTEGRITY_GAP",
-        "evidence": "No read-back of the modified JS files in the transcript; verification relied on grep + running tests. This is usually sufficient for a rename, but does not strictly prove export/import lines are correct beyond those signals."
+        "type": "NON_REPRODUCIBLE_DELIVERABLES",
+        "evidence": "No patch/diff or file content captured in transcript; only grep/test output. Cannot fully confirm the edits didn’t introduce subtle mistakes beyond the test file’s coverage."
       }
     ]
   },
   "overall": {
-    "verdict": "good",
+    "verdict": "acceptable",
     "result_delivered": true
   },
   "lessons": [
     {
       "agent": "amy",
-      "lesson": "When doing mechanical renames, grep for old symbol, apply change, grep again for old/new symbols, and run tests—this provides strong structural verification with minimal steps."
+      "lesson": "Avoid global `sed` identifier replacement without confirming contexts; prefer precise edits + readback of each changed file (definition, exports, imports) for deliverable integrity."
     },
     {
       "agent": "amy",
-      "lesson": "Avoid unnecessary repo-state side effects (e.g., touching /app/agents files) during gym tasks to prevent finish() blockers and extra cleanup/commit steps."
+      "lesson": "Do not commit unrelated repo files when working in an external gym directory; if a tooling guard forces a commit, ensure the committed file actually reflects the session work and message matches the change."
     }
   ]
 }
