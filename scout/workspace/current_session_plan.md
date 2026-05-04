@@ -1,6 +1,6 @@
-GOAL: Research current AI agent communication formats on Arxiv and synthesize findings.
+GOAL: Explore latest trends in Chinese AI communities (XHS) on multi-agent architectures and write a summary artifact.
 PLAN:
-1. Search arxiv for recent papers on agent communication formats.
-2. Read and synthesize the findings into a report.
-3. Save the report in the workspace.
-DONE WHEN: A report on agent communication formats is saved in the workspace.
+1. Search simulated XHS content for "multi-agent architectures" or "AI agent frameworks"
+2. Extract common patterns
+3. Produce a new markdown artifact in workspace summarizing the trends
+DONE WHEN: A new artifact on XHS multi-agent trends is created.
