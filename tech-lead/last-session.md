@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777875436269_3331
+- **Session:** s_1777875578894_3333
 - **Status:** done
-- **When:** 2026-05-04T06:19:16.157Z
-- **Duration:** 1m59s
+- **When:** 2026-05-04T06:22:08.378Z
+- **Duration:** 2m29s
 
 ## What Happened
-My changes are already in the latest commit (bob committed the file with these changes already applied). The enhanced logging is live.
+The TS is used directly (no dist/build output). The "binary rebuild" issue mentioned in EXP-640 may refer to a container/k3s deployment that uses a snapshot. This is likely outside what I can fix in this session — it's a deployment concern.
 
-Now let me notify coach that the logging enhancement is done:
+Let me finish with my triage decisions:
