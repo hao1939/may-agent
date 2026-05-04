@@ -1,5 +1,20 @@
 # Evaluator heartbeat — 2026-05-04
 
+## Session evaluation pipeline liveness (DB canonical)
+- `evaluations.max(createdAt)` = **1777904199425**
+- `sessions.max(endedAt)` = **1777906248194**
+- Lag = **2048769 ms (~34.1 min)**
+
+Interpretation: evaluation job is running recently (sub-hour lag), so no coverage/cron escalation needed.
+
+## Legacy `.state/evaluations/` artifacts
+- Newest files in `.state/evaluations/` are dated **2026-03-24**, consistent with known drift/staleness.
+
+Interpretation: treat `.state/evaluations/` as legacy output path; DB is the source of truth.
+
+---
+
+
 ## What I checked
 
 ### Evaluation pipeline freshness
