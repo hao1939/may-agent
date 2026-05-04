@@ -121,7 +121,21 @@ function shouldDispatch(ctx: WorkflowContext, agent: string, taskDescription: st
 
 ## Next Steps
 
-1. Identify exact code path where work sessions are forked from heartbeat
-2. Implement `shouldDispatch()` guard
-3. Deploy and measure over 48h
-4. If successful, propose session GC (Layer 1) to clean historical zombies
+1. ~~Identify exact code path where work sessions are forked from heartbeat~~ DONE
+2. ~~Implement `shouldDispatch()` guard~~ DONE → `agents/shared/workflows/dispatch-dedup-guard.ts`
+3. Wire guard into heartbeat workflows (import and call before ctx.runAgent)
+4. Deploy and measure over 48h
+5. If successful, propose session GC (Layer 1) to clean historical zombies
+
+## Implementation (2025-05-06)
+
+Module: `agents/shared/workflows/dispatch-dedup-guard.ts`
+- `shouldDispatch(agent, task)` → `{allowed, reason, attempts}`
+- `recordDispatch(agent, task)` — call before dispatching
+- `recordOutcome(agent, task, status)` — call after completion
+- `unblock(agent, task)` — manual escape hatch
+- `getBlockedTasks()` — diagnostics
+- `cleanup()` — TTL-based garbage collection
+
+State: `.state/dispatch-dedup.json` (no DB dependency).
+Threshold: 3 failures in 7 days → auto-block.
