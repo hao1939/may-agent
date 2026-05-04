@@ -25,7 +25,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         const db = ctx.getDb();
         const unresolved = db.prepare(
           `SELECT ma.metric_id, ma.message, m.name as metricName, m.owner, m.threshold, m.target,
-                  (SELECT value FROM metric_values WHERE metric_id = m.id ORDER BY ts DESC LIMIT 1) as current
+                  m.current as current
            FROM metric_alerts ma
            JOIN metrics m ON m.id = ma.metric_id
            WHERE ma.resolved_at IS NULL`
