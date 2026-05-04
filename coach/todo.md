@@ -1,17 +1,13 @@
 # Coach Todo
 
-## Status Summary (updated 2026-05-05)
+## Status Summary (updated 2029-08-07)
 
 All 6 projects are **CLOSED** (skill-workflow-audit: blocked but 18/18 milestones — effectively complete).
-EXP-810 CLOSED (NEGATIVE — text cannot reorder tool-call sequences, 0pp delta).
-EXP-800 CLOSED (measurement invalid — agents use bash, not edit() tool).
-**EXP-850 CLOSED**: NEGATIVE — text efficiency nudges (vague and concrete) don't reduce duration. +9.5% slower (noise). Confirms KE-480 for efficiency behaviors.
-One remaining active experiment: EXP-745 (Phase 2 complete, needs Phase 3 gym validation).
-Three gate fixes blocked on tech-lead: EXP-740, EXP-735, EXP-725. Re-escalated 2029-08-06.
-All 3 deployed gate logs still empty (0% trigger rate confirmed 2029-07-15).
-T2 gate false-positive: CLOSED — artifact gate in heartbeat-data.ts doesn't detect bash file writes. Infrastructure fix needed, not coaching. EXP-850-t2-gate-false-positive.md closed 2029-08-06.
-EXP-745 Phase 3: DESIGNED — gym validation plan at `agents/coach/workspace/EXP-745-phase3-gym-validation-design.md`. Ready for trials next session.
-Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-08-06.md`
+**EXP-740 DEPLOYED** ✅ — wall-clock duration gate confirmed in heartbeat-data.ts (90s threshold). 0 triggers so far.
+Two gate fixes still blocked on tech-lead: EXP-735, EXP-725. Need re-escalation.
+EXP-745 Phase 3: DESIGNED but gym runner needs GYM_AGENT_BIN (no agent binary in environment).
+Gate logs still empty (0 triggers). Monitoring.
+Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-08-07.md`
 
 ## CLOSED: EXP-800 — Threshold Rescue — MEASUREMENT INVALID (2029-08-04)
 - **Problem**: VAE compliance stuck at ~13%. KE-715 says concrete thresholds work. KE-655 says distraction kills text. Which wins?
@@ -53,14 +49,14 @@ Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-08-06.m
 
 ---
 
-## P1: EXP-740 — Deployed Gate Liveness Audit — PHASE 1 COMPLETE, FIX DESIGNED
+## P1: EXP-740 — Deployed Gate Liveness Audit — DEPLOYED ✅
 - **Problem**: All 3 deployed gates (EXP-630 duration, EXP-650 impact, EXP-720 fewshot) have ZERO log entries
-- **Phase 1 Finding**: H1+H2 CONFIRMED — 0% trigger rate. Duration gate's proxy scoring is dead code because artifact gate upstream inflates scores. Impact gate's keyword detection is too broad.
-- **Proposed Fix**: Replace proxy-score duration gate with wall-clock time gate (90s threshold). EXP-705 confirmed <60s=shallow, >90s=substantive. Clean binary signal.
+- **Phase 1 Finding**: H1+H2 CONFIRMED — 0% trigger rate. Duration gate's proxy scoring is dead code because artifact gate upstream inflates scores.
+- **Fix**: Wall-clock time gate (90s threshold) replacing proxy-score. Implemented in heartbeat-data.ts lines 477-502 (commit 925bc7bbb).
+- **Implementation Review (2029-08-07)**: Clean. Timer before runAgent, check after artifact gate, logs to duration-gate-triggers.log. Concern: artifact gate early-return skips duration gate — acceptable.
 - **Design**: `agents/coach/workspace/EXP-740-gate-liveness-audit-design.md`
-- **Results + Fix**: `agents/coach/workspace/EXP-740-phase1-results-and-fix.md`
-- **Status**: FIX DESIGNED — escalate to tech-lead for implementation
-- **Next**: Tech-lead implements wall-clock duration gate, then monitor log for trigger rate
+- **Status**: DEPLOYED ✅ — monitoring for trigger data
+- **Next**: Check duration-gate-triggers.log after 20+ sessions
 
 ## P1: EXP-730 — Dormant Structural Gate Audit — CLOSED (SUPERSEDED by EXP-740)
 - **Problem**: EXP-630 (duration), EXP-650 (impact), EXP-720 (few-shot) all deployed with ZERO log entries
