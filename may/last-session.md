@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777916556390_3874
+- **Session:** s_1777918356504_3896
 - **Status:** done
-- **When:** 2026-05-04T17:43:17.179Z
-- **Duration:** 40s
+- **When:** 2026-05-04T18:14:02.269Z
+- **Duration:** 1m25s
 
 ## What Happened
-Not a git repo from here. The red metrics are a known issue documented in KE-744 — the `assume-unchanged` flags on project files cause DB drift. This has been analyzed multiple times (KE-742, KE-743, KE-744) and requires human intervention to fix the git index flags. Per the alert guidance: "If prior KEs identify this red metric as caused by fabricated/phantom data, do NOT treat it as a new investigation — follow the documented remediation or escalate."
-
-System is otherwise very healthy: 100% success rate, all heartbeats firing, 767 real outputs in 24h, 18 project iterations.
+The red metrics are well-understood per KE-744. The root cause is `git update-index --assume-unchanged` set on 21 files (including all project.md files) since 2026-04-29, causing project status edits to be silently lost. The fix (`git update-index --no-assume-unchanged`) has been proposed but not executed. System is otherwise healthy: 100% success rate, all agents active, 755 real outputs in 24h.
