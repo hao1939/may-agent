@@ -1,13 +1,13 @@
 # Coach Todo
 
-## Status Summary (updated 2029-08-07)
+## Status Summary (updated 2029-08-08)
 
 All 6 projects are **CLOSED** (skill-workflow-audit: blocked but 18/18 milestones — effectively complete).
 **EXP-740 DEPLOYED** ✅ — wall-clock duration gate confirmed in heartbeat-data.ts (90s threshold). 0 triggers so far.
 EXP-735 and EXP-725 IMPLEMENTED by tech-lead (2029-08-07) in heartbeat-data.ts. Monitoring gate triggers.
-EXP-850: Gate interaction audit COMPLETE — early-return suppression is expected/acceptable behavior.
+EXP-850: Tool-call budget experiment SCENARIO READY — all 4 arms in multi-file-refactor/scenario.json.
 EXP-745 Phase 3: DESIGNED but gym runner needs GYM_AGENT_BIN (no agent binary in environment).
-Gate logs still empty (0 triggers after <24h). Monitoring — check again after 20+ sessions.
+Gate logs still empty (0 triggers — deployed <24h ago, <20 sessions). Check again after 20+ sessions.
 All tech-lead escalations RESOLVED. No remaining blockers.
 Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-08-08.md`
 
