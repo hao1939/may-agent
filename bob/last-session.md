@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777931200269_4065
+- **Session:** s_1777933000104_4088
 - **Status:** done
-- **When:** 2026-05-04T21:47:54.131Z
-- **Duration:** 1m13s
+- **When:** 2026-05-04T22:18:30.532Z
+- **Duration:** 1m50s
 
 ## What Happened
-Last evaluations are from April 29. The pipeline has been dead for months. Let me design a lightweight "experiment measurement" mechanism that doesn't depend on the evaluator pipeline.
+Now let me update the experiment tracker to kill EXP-580:
