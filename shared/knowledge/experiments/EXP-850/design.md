@@ -1,6 +1,6 @@
 # EXP-850: Tool-Call Budget Awareness
 
-**Status**: BASELINE BLOCKED (gym stub mode — GYM_AGENT_BIN unset)
+**Status**: PHASE 0 COMPLETE (proxy baseline from production sessions — see EXP-850-proxy-baseline.md)
 **Created**: 2029-08-05
 **Owner**: coach
 
