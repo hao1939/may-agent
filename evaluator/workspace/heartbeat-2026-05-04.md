@@ -1,24 +1,35 @@
 # Evaluator heartbeat — 2026-05-04
 
-## Checks performed
+## Signals checked
 
-### Session evaluation pipeline freshness (DB canonical)
-- `evaluations.max(createdAt)` = **2026-05-04T07:12:37.717Z**
-- Current time during check = **2026-05-04T11:19:42.604Z**
-- **Lag** = **247 minutes (~4h07m)**
-- `sessions` started since last evaluation timestamp = **198**
-- `sessions.max(startedAt)` = **2026-05-04T11:20:09.724Z** (ingestion is live)
+### Session evaluation pipeline freshness
+- DB `evaluations.max(createdAt)` = **2026-05-04T12:46:39.546Z**
+- DB `sessions.max(startedAt)` = **2026-05-04T13:20:38.672Z**
 
-### Legacy artifact path sanity
-- `.state/evaluations/` contains some newer files (e.g. `s_177748...` dated Apr 29), but the directory tail still shows many **Mar 24** artifacts, consistent with “legacy outputs may be stale / drifting from DB canonical”.
+So the evaluation pipeline is *running* (fresh within ~34 minutes of latest session).
 
-## Assessment
-- DB-backed evaluation job appears **stale by ~4h** relative to active session creation.
-- This is a **coverage risk**: ~200 sessions may be unevaluated since the last run.
+### Coverage (last 24h)
+- sessions (24h): **1565**
+- evaluations (24h): **81**
+- coverage: **~5.18%**
 
-## Suggested next action (needs supervisor/infra owner)
-- Check liveness of `evaluate-session-llm` cron / runner (schedule, failures, backlog) and whether it is intentionally paused.
-- If running, consider increasing throughput or widening/shifting the evaluation window to reduce lag.
+Excluding evaluator’s own sessions:
+- non-evaluator sessions (24h): **454**
+- non-evaluator evaluations (24h): **81**
 
-## Evidence (tool outputs)
-- See heartbeat bash steps producing timestamps and counts.
+So evaluations appear to be almost entirely for non-evaluator sessions, but still only **~17.8%** of non-evaluator sessions (81/454).
+
+### Heuristic vs LLM breakdown (24h)
+- `evaluatedByHeuristic=0, skippedByJs=0`: **79**
+- `evaluatedByHeuristic=1, skippedByJs=1`: **3**
+
+This suggests the JS evaluator is skipping some items and falling back to heuristic in a small number of cases, but **the dominant issue is low overall selection/throughput**, not fallback.
+
+## Hypotheses / likely causes
+1. **Intentional sampling** (the cron/job evaluates only a subset of sessions to control cost).
+2. **Selector bug/regression** limiting which sessions qualify (e.g., only certain `kind`/`source`/status, or requiring transcripts stored in a specific path).
+3. **Backlog** is growing faster than the evaluator consumes.
+
+## Follow-ups
+- Find where session evaluation scope is defined (cron/job config): look for `evaluate-session-llm` in repo and inspect its selection query/filtering.
+- Compute **lag distribution**: sessions without evaluation by age bucket (e.g., >1h, >6h, >24h) for non-evaluator agents.
