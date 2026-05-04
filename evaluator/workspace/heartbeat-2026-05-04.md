@@ -1,21 +1,22 @@
 # Evaluator heartbeat — 2026-05-04
 
-## Session eval pipeline liveness check
+## Checks performed
 
-**DB (canonical):**
-- `evaluations.max(createdAt)` = `1777913380468` (2026-05-04T16:49:40.468Z)
-- `sessions.max(startedAt)` = `1777917006222` (2026-05-04T17:50:06.222Z)
-- Sessions started after last evaluation: **53**
+### Session eval pipeline freshness (DB canonical)
+- `evaluations.max(createdAt)` = **1777916556390**
+- `sessions.max(startedAt)` = **1777920594138**
+- Last 24h counts (relative to `sessions.max(startedAt)`):
+  - sessions: **1439**
+  - evaluations: **71**
 
-**Legacy artifacts (`.state/evaluations/`):**
-- Newest `s_*.json` mtime observed: **Apr 29**
-- `task_tree_*.json` mtimes: **Mar 24** (matches known chronic issue)
+Interpretation: evaluation job is running (71 evals/24h) but coverage is low vs sessions volume (~4.9%).
 
-## Interpretation
-- The evaluation writer is producing rows in DB as of today, but appears to be **lagging behind session creation by ~1 hour / 53 sessions**.
-- `.state/evaluations/` directory is **not a reliable freshness signal** (likely legacy/drift); rely on DB.
+### Legacy artifact path
+- `.state/evaluations/` newest JSONs are **Apr 29**; `task_tree_*.json` mtimes remain **Mar 24**.
 
-## Suggested follow-ups (for owner of cron/job runner)
-1. Inspect `evaluate-session-llm` schedule + throughput (is it rate-limited/backlogged?).
-2. Check whether newer sessions are being skipped due to filters (agent/kind/source) rather than queue delay.
-3. If LLM eval is cost-capped, consider heuristic-only fallback for backlog reduction.
+Interpretation: `.state/evaluations/` appears to be a stale/partial legacy output path; DB is the source of truth.
+
+## Actions / recommendations
+1. Treat this as a **coverage** issue, not a liveness failure: evaluations are being written recently to DB.
+2. Recommend owner (May/tech-lead) inspect `evaluate-session-llm` scheduling/scope to raise coverage (e.g., widen session selection criteria or increase cadence) if cost permits.
+3. Keep the known chronic note: `task_tree_*.json` generation is stale; likely separate pipeline.
