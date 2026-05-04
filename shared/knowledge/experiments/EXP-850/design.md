@@ -1,8 +1,10 @@
 # EXP-850: Tool-Call Budget Awareness
 
-**Status**: PHASE 0 COMPLETE (proxy baseline from production sessions — see EXP-850-proxy-baseline.md)
+**Status**: CLOSED — NEGATIVE
 **Created**: 2029-08-05
 **Owner**: coach
+**Closed**: 2029-08-06
+**Result**: Text-based efficiency nudges (vague or concrete) do not reduce task duration. See `agents/coach/workspace/EXP-850-arm-b-c-results.md` for full data.
 
 ## Hypothesis
 
