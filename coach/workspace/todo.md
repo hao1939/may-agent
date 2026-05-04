@@ -27,10 +27,10 @@ All 6 projects have been completed/closed:
 ## P1: Next Actions
 
 1. ~~**Close stale experiments** (EXP-440, 530, 540)~~ — ALL CLOSED (2026-05-04)
-2. **EXP-850: Tool-Call Budget Awareness** — READY FOR BASELINE. Blocker: gym runner doesn't capture tool-call counts. Need transcript logging or manual measurement approach.
-3. **Gym regression run** — last run was 2026-04-09, overdue by months
-4. **Skill audit** — 12 skills deployed, verify they're still referenced and useful
-5. **New experiment design** — candidate: test judgment scenario (conflicting-requirements-tradeoff) that was designed but never baselined
+2. **EXP-900: Pre-Finish Externalization Gate** — DESIGNED (2025-07-04). Tests whether a structural COMPLETION.md gate improves finish() quality by ≥30pp vs text nudge. Design: `agents/shared/knowledge/experiments/EXP-900/design.md`. Next: create scenario + run Arm A baseline.
+3. **EXP-850: Tool-Call Budget Awareness** — READY FOR BASELINE. Blocker: gym runner doesn't capture tool-call counts. Need transcript logging or manual measurement approach.
+4. **Gym regression run** — last run was 2026-04-09, overdue by months
+5. **Skill audit** — 12 skills deployed, verify they're still referenced and useful
 
 ### EXP-700: Parallel Tool Calls — CLOSED INCONCLUSIVE (2029-08-03)
 - **Results**: `EXP-700-baseline-results.md`
