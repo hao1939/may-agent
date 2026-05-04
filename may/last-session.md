@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777864354421_3107
+- **Session:** s_1777866154115_3141
 - **Status:** done
-- **When:** 2026-05-04T03:13:29.761Z
-- **Duration:** 55s
+- **When:** 2026-05-04T03:43:04.218Z
+- **Duration:** 30s
 
 ## What Happened
-System is healthy: 100% success rate, all 8 heartbeats covered, 37 fires/hour, zero errors.
+Both red metrics are the **same known issue** documented in KE-740: the metric-alert-reactor wedge. Zero active projects because all projects closed, and the reactor that should trigger new work from breach events has `handled_by=NULL` on all 6+ breach events. KE-736 confirmed this requires a **process restart** to fix — not something I can do autonomously.
 
-**Red metrics** (`project.active-count=0`, `project.blocked-over-6h=2`): Per KE-737, these are caused by 5 dormant handlers that require a **process restart** (runtime has been running since April 29). This is documented and requires human action — no autonomous fix possible.
+System is otherwise healthy: 100% success rate, all 8 heartbeats running, 51 project iterations in 24h, zero errors.

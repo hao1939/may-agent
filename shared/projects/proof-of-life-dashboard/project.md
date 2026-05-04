@@ -22,7 +22,7 @@ Build a "top 5 at a glance" metrics dashboard for the proof-of-life digest that 
 
 ## Current State
 - `agents/may/workspace/tools/top5-metrics.ts` runs successfully with 🟢🟡🔴 + ↑↓→
-- `agents/may/handlers/daily-digest.ts` EXISTS — generates daily digest with top5 section
+- **⚠️ `agents/may/handlers/daily-digest.ts` is MISSING** — file does not exist on disk (verified 2026-05-04). Digest was likely generated ad-hoc, not via a persistent handler. Last digest: 2026-04-30.
 - Cron entry registered in `agents/may/cron.json` (86400000ms interval)
 - Verified: `bun agents/may/handlers/daily-digest.ts` writes `agents/shared/daily-digests/2026-04-30.md`
 - Metrics shown: Success Rate (100%), Eval Quality (0.43 🔴), Handler Health (100%), Error Rate (0%), Sessions (652)
