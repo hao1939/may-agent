@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777884661977_3481
+- **Session:** s_1777884679250_3482
 - **Status:** done
-- **When:** 2026-05-04T08:51:19.250Z
-- **Duration:** 17s
+- **When:** 2026-05-04T08:51:32.188Z
+- **Duration:** 12s
 
 ## What Happened
 {
@@ -14,65 +14,66 @@
       "role": "builder",
       "capability_level": "tech-lead",
       "efficiency": 0.25,
-      "quality": 0.55,
+      "quality": 0.6,
       "verdict": "needs_improvement",
       "issues": [
         {
           "tag": "LOOPING/FM-1.3",
-          "evidence": "Failure Chain 1 shows a long sequence of exploratory `find/grep` commands trying to locate tsconfig/package.json and gate-related code, with many returning no useful output (e.g., `ls package.json tsconfig.json` exit code 2; multiple greps in agents/src returning no results). Auto-extracted: 15 wasted calls."
+          "evidence": "Failure Chain 1 shows a long sequence of filesystem searches for tsconfig/package.json and gate-related code paths after an initial command error (exit code 2), totaling 15 wasted calls before moving on."
         },
         {
-          "tag": "WRONG_TOOL/TOOL_HALLUCINATION",
-          "evidence": "Agent used `[tool_call: notify] ...` but the evaluator toolset lists only read/bash/edit/write/finish; this indicates the agent session had (or claimed) a tool not available here. In transcript, notify succeeds, but it is not structurally verifiable as a repo artifact and suggests reliance on side-channel actions instead of tracked changes."
+          "tag": "BAD_ROOT_CAUSE_HANDLING",
+          "evidence": "Root cause was a bad bash command/path assumption (attempting `ls package.json tsconfig.json` at repo root, then repeatedly searching), instead of quickly orienting to correct working directory/layout first."
         },
         {
-          "tag": "SHALLOW_PROJECT_FOLLOWUP",
-          "evidence": "For proof-of-life-dashboard (waiting, 5/8), agent did not locate or read the actual project plan file; instead concluded 'Without a clear plan file, I can't easily advance it' after only finding `.state/integration-proof.md` and `.state/breadcrumb-final-proof.md`."
+          "tag": "PROJECT_PROCESS_GAP",
+          "evidence": "For proof-of-life-dashboard (waiting, 5/8), agent did not locate/read an actual project plan file; instead concluded 'Without a clear plan file, I can't easily advance it' after only finding .state proof artifacts."
+        },
+        {
+          "tag": "TOOL_HALLUCINATION",
+          "evidence": "Agent used a `notify` tool call in the transcript. Per this evaluator environment, valid tools are read/bash/edit/write/finish; `notify` is not a real tool here. This is transcript-level evidence of tool misuse/hallucination by the agent session."
         }
       ],
       "metrics": {
-        "tool_calls": {
-          "notable_waste": 15,
-          "failure_chains": 1
-        },
-        "verification": [
-          "Ran TypeScript check: `cd agents && npx tsc --noEmit` produced no errors (tool output showed no output).",
-          "Committed change to tech-lead/last-session.md (git commit succeeded)."
+        "tool_calls_total": 18,
+        "wasted_calls_estimate": 15,
+        "failure_chains": 1,
+        "commits": 1,
+        "files_changed": [
+          "tech-lead/last-session.md"
         ],
-        "deliverables_changed": [
-          {
-            "path": "tech-lead/last-session.md",
-            "evidence": "git commit reports 1 file changed, 4 insertions(+), 4 deletions(-)"
-          }
+        "verification_present": true,
+        "tests_or_checks_run": [
+          "cd agents && npx tsc --noEmit (no output)"
         ]
-      }
+      },
+      "lessons": [
+        {
+          "scope": "tech-lead",
+          "lesson": "Before grepping for configs (tsconfig/package.json), confirm repo layout/working directory once (e.g., `ls`/`pwd`/`find` with constraints) to avoid long recovery chains."
+        },
+        {
+          "scope": "tech-lead",
+          "lesson": "When a project is listed (proof-of-life-dashboard), locate the canonical project file under agents/shared/projects/ (or the documented location) rather than relying on .state artifacts; otherwise you can’t make real milestone progress."
+        }
+      ]
     }
   ],
   "workflow": {
     "name": "tech-lead heartbeat",
     "issues": [
       {
-        "tag": "INEFFICIENT_DISCOVERY",
-        "evidence": "Spent most of the session on broad filesystem searching rather than directly handling the inbox items or moving a project milestone; the key outcome was an approval decision and a clean tsc run."
+        "tag": "INEFFICIENT_CONTEXT_DISCOVERY",
+        "evidence": "Large portion of session spent on exploratory find/grep after initial command failure; minimal concrete output beyond a decision message and a clean tsc run."
       },
       {
-        "tag": "LIMITED_STRUCTURAL_OUTPUT",
-        "evidence": "No code improvements or project-state updates were made beyond updating last-session.md; primary action was a message/decision."
+        "tag": "DELIVERABLE_LIGHT",
+        "evidence": "Only tangible repo change was updating tech-lead/last-session.md; no code/guard integration work performed despite investigating EXP-870."
       }
     ]
   },
   "overall": {
     "verdict": "needs_improvement",
     "result_delivered": true
-  },
-  "lessons": [
-    {
-      "agent": "tech-lead",
-      "lesson": "When searching for config/build files, start from repo root (`/app/agents`) and use `git rev-parse --show-toplevel; ls` before running many `find/grep` iterations—this session lost time to incorrect working-directory assumptions (exit code 2 on `ls package.json tsconfig.json`)."
-    },
-    {
-      "agent": "tech-lead",
-      "lesson": "For project follow-up, locate the canonical project file (per conventions) rather than concluding it's missing after checking `.state/`; otherwise you risk 'no action' decisions based on incomplete discovery."
-    }
-  ]
+  }
 }
