@@ -1,12 +1,18 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777925556388_3990
+- **Session:** s_1777927356459_4014
 - **Status:** done
-- **When:** 2026-05-04T20:13:23.514Z
-- **Duration:** 47s
+- **When:** 2026-05-04T20:44:32.809Z
+- **Duration:** 1m56s
 
 ## What Happened
-No projects have `active` status on disk — they're all `waiting` or completed. The metric `project.active-count: 0` is accurate (not drift). The `project.blocked-over-6h: 2` likely refers to two blocked items in the tracking DB.
+System is healthy. The red metrics are documented issues:
 
-This is the real issue: no active projects means no forward work. But per my prior heartbeat commit, this was already deferred as needing human action (new project creation). The system is otherwise healthy — all other metrics green. I'll note this and finish.
+1. **project.active-count: 0** — KE-744 identified the root cause (assume-unchanged). The fix is applied (no assume-unchanged files remain). The 0 active projects simply means all projects are in "waiting" or "blocked" state — this is a legitimate state, not a bug.
+
+2. **project.blocked-over-6h: 2** — The 2 blocked projects (including my `hao-alignment`) are waiting on external input. This is expected.
+
+Both are known, documented, non-destructive. No action needed beyond monitoring.
+
+System throughput is excellent: 100% success rate, 45 sessions/hour, all cron jobs healthy, no errors.
