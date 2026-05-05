@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777988556795_4825
+- **Session:** s_1777990355609_4846
 - **Status:** done
-- **When:** 2026-05-05T13:43:36.141Z
-- **Duration:** 59s
+- **When:** 2026-05-05T14:13:15.808Z
+- **Duration:** 40s
 
 ## What Happened
-System is healthy. The red metrics (`project.active-count: 0`, `project.blocked-over-6h: 2`) are the well-documented KE-744 issue: `git assume-unchanged` on 21 files prevents project status changes from being committed. The fix requires `git update-index --no-assume-unchanged` which is a git index modification — per the alert guidance, this should be escalated rather than done autonomously.
+Red metrics are documented in KE-744: caused by `git update-index --assume-unchanged` on 21 files including all project.md files. Fix requires `git update-index --no-assume-unchanged` which is a destructive git index operation — per instructions, this requires human escalation.
 
-The system is otherwise performing well: 100% success rate, 37 fires/hour, all heartbeats running, 397 real outputs in 24h.
+System is healthy: 100% success rate last hour, all 8 heartbeats firing, 0 errors, 396 real outputs in 24h.

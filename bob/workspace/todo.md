@@ -17,7 +17,7 @@
 - [ ] **KE-440 → Gym test**: EXP-271 found "trust the test" = 21% of failures. KE-440 written. Next: design gym experiment to test whether injecting KE-440 as context reduces exp164-baseline failure rate.
 - [ ] **Prompt Caching**: Blocked on Hao since 2026-03-24. $36-63/day savings waiting.
 - [ ] **Amy-Kimi C8.2 Compliance**: Model-level JSON bug in finish(). Options: (a) JSON repair, (b) exempt, (c) accept.
-- [ ] **EXP-299 (Obstacle Persistence)**: DESIGNED 2025-05-01. H-215: obstacle guard reduces OBSTACLE_PIVOT by ≥40%. Skill file WRITTEN (`agents/shared/skills/obstacle-persistence.md`). Next: run 20 control + 20 treatment gym trials on cascading-fix-trap-v2. See `EXP-299-obstacle-persistence-intervention.md`.
+- [ ] **EXP-299 (Obstacle Persistence)**: READY TO RUN 2025-05-05. Treatment scenario created (`cascading-fix-trap-v3-exp299-treatment`). Kickoff script ready (`EXP-299-kickoff.sh`). Next: run 20+20 trials (est. ~$10, 6h). See `EXP-299-kickoff.sh`.
 
 - [x] **EXP-860 (Zombie Task Circuit Breaker)**: COMPLETED 2025-05-05. All 3 layers deployed. Layer 3 integrated into `heartbeat-data.ts` line 15+394-398+451. Guard active in production. See `EXP-860-completion-report.md`.
 
