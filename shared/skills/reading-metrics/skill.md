@@ -16,7 +16,32 @@ Every heartbeat when metrics are present in your prompt. Also when investigating
 ### Step 1: Understand what the metric measures
 Read the metric name. If unclear, check the metric definition in the project or config that owns it.
 
-### Step 2: Check recent history
+### Step 2: Discover what metrics exist
+
+Before querying, find available metrics:
+
+```bash
+# List all metric IDs in the database
+bun -e "
+import {Database} from 'bun:sqlite';
+const db = new Database('.state/may.db', {readonly:true});
+const rows = db.query(\"SELECT DISTINCT metric_id FROM metric_snapshots ORDER BY metric_id\").all();
+rows.forEach(r => console.log(r.metric_id));
+"
+```
+
+```bash
+# Check markdown-based metrics (fallback if DB is empty)
+ls .state/metrics/
+find .state/metrics -name "*.md" -exec head -3 {} \;
+```
+
+```bash
+# Check project-specific metrics
+grep -r "metric" .state/projects/*/project.md 2>/dev/null | grep -i "target\|baseline"
+```
+
+### Step 3: Check recent history
 Query the metrics DB to see if this is a blip or a trend:
 
 ```bash
@@ -28,19 +53,29 @@ console.table(rows);
 "
 ```
 
+```bash
+# Get a quick summary: latest value, min, max, and count per metric
+bun -e "
+import {Database} from 'bun:sqlite';
+const db = new Database('.state/may.db', {readonly:true});
+const rows = db.query(\"SELECT metric_id, COUNT(*) as readings, MIN(value) as min_val, MAX(value) as max_val, (SELECT value FROM metric_snapshots m2 WHERE m2.metric_id = m.metric_id ORDER BY measured_at DESC LIMIT 1) as latest FROM metric_snapshots m GROUP BY metric_id\").all();
+console.table(rows);
+"
+```
+
 If `may.db` doesn't exist or the table is empty, check `.state/metrics/` for markdown-based metric logs.
 
-### Step 3: Identify the cause
+### Step 4: Identify the cause
 - Single bad session or sustained trend?
 - Did something change recently? (new skill deployed, context updated, workflow modified)
 - Is it your metric or are you downstream of another agent's output?
 
-### Step 4: Act or escalate
+### Step 5: Act or escalate
 - **You can fix it**: Create a task, fix it now or next heartbeat
 - **Another agent's problem**: Notify them with metric value + context
 - **Don't understand it**: `finish(status='blocked')` with what you know
 
-### Step 5: Prevent recurrence (close the loop)
+### Step 6: Prevent recurrence (close the loop)
 Fixing once is not enough. Ask: **will this happen again?**
 
 The evolution ladder for prevention:
