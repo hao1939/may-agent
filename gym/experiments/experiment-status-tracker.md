@@ -1,6 +1,6 @@
 # Experiment Status Tracker
 
-**Last updated**: 2029-09-04 (bob heartbeat — audit, updated EXP-850 to CLOSED)
+**Last updated**: 2025-01-20 (bob heartbeat — EXP-900 Phase 0 schema assessment complete)
 
 ## Active Experiments
 
@@ -63,7 +63,7 @@
 
 ## Priority Queue (Next Experiments)
 
-1. **EXP-900: DAF Retrofit** (DESIGNED 2029-09-15): Per-dimension threshold enforcement on existing eval scores. Tests H-096 P-096c. Lowest-effort validation of strongest hypothesis. Details: `agents/bob/workspace/EXP-900-daf-retrofit-design.md`
+1. **EXP-900: DAF Retrofit** (PHASE 0 COMPLETE 2025-01-20): Schema assessment done — evaluator only has 2 dimensions (efficiency, quality), not multi-dimensional rubric. Revised to 2D masking analysis. Next: query actual evaluation data for masking signal. Details: `agents/bob/workspace/EXP-900-daf-retrofit-design.md`, `agents/bob/workspace/EXP-900-phase0-schema-assessment.md`
 2. **New: Retry-Budget Guard** (from `DESIGN-retry-budget-guard-2025-05-03.md`): Cap retries per task to prevent zombie dispatch loops
 3. **New: Context-window efficiency**: Agents re-read files they already processed. Could a "read-cache" skill help?
 
