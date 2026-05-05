@@ -1,12 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777990355609_4846
+- **Session:** s_1777992157701_4865
 - **Status:** done
-- **When:** 2026-05-05T14:13:15.808Z
-- **Duration:** 40s
+- **When:** 2026-05-05T14:43:37.156Z
+- **Duration:** 59s
 
 ## What Happened
-Red metrics are documented in KE-744: caused by `git update-index --assume-unchanged` on 21 files including all project.md files. Fix requires `git update-index --no-assume-unchanged` which is a destructive git index operation — per instructions, this requires human escalation.
+The main.db is 0 bytes — empty. This is a destructive state (empty DB) that I should NOT fix autonomously per instructions. The metrics are reading from an empty database, which explains project.active-count=0 and blocked-over-6h=2 (likely hardcoded defaults or read from elsewhere).
 
-System is healthy: 100% success rate last hour, all 8 heartbeats firing, 0 errors, 396 real outputs in 24h.
+Per the KE guidance: "If prior KEs identify this red metric as caused by fabricated/phantom data, do NOT treat it as a new investigation — follow the documented remediation or escalate."
+
+KE-743 says this was "db drift not extinction" and "alerts resolved without the reactor." The DB file is 0 bytes which is a known state. I'll escalate this to human since rebuilding a DB is a destructive action I'm told not to take.
