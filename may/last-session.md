@@ -1,14 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778011958750_5124
+- **Session:** s_1778015558636_5172
 - **Status:** done
-- **When:** 2026-05-05T20:14:09.500Z
-- **Duration:** 1m30s
+- **When:** 2026-05-05T21:13:54.217Z
+- **Duration:** 1m15s
 
 ## What Happened
-The DB is empty (0 bytes). The blocked-over-6h metric is reading from somewhere else. This is the documented phantom data issue from the KE entries — the assume-unchanged was fixed but the metric still reads stale/phantom project data. This has been failing for 10 consecutive checks and the KEs say it's caused by DB drift/phantom data.
+The red metrics (`project.active-count: 0` and `project.blocked-over-6h: 2`) are a known issue documented in KE-744. The root cause is `git update-index --assume-unchanged` set on 21 project files, causing disk edits to never reach the git index. The fix requires removing the assume-unchanged flags, which is a potentially destructive git operation that should be escalated to human.
 
-Per the instructions: "If prior KEs identify this red metric as caused by fabricated/phantom data, do NOT treat it as a new investigation — follow the documented remediation or escalate."
-
-The git assume-unchanged is already fixed. The DB is 0 bytes. The metric is reading phantom data. This requires escalation — the metric source itself needs correction, which may require a DB rebuild (destructive action).
+The system is otherwise healthy: 100% success rate, all heartbeats firing, 398 real outputs in 24h, no errors.
