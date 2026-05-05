@@ -62,10 +62,11 @@ describe("gym runner --list", () => {
     const smoke = gym("--list --tier smoke").trim().split("\n").filter(Boolean);
     const standard = gym("--list --tier standard").trim().split("\n").filter(Boolean);
     expect(standard.length).toBeGreaterThan(smoke.length);
-    // All smoke scenarios should be in standard
+    // All smoke scenarios should appear in standard list
+    const standardNames = standard.map(l => l.split("\t")[0]);
     for (const s of smoke) {
       const name = s.split("\t")[0];
-      expect(standard.some(l => l.startsWith(name!))).toBe(true);
+      expect(standardNames).toContain(name);
     }
   });
 
