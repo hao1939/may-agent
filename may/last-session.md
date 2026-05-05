@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777956156912_4409
+- **Session:** s_1777957957055_4435
 - **Status:** done
-- **When:** 2026-05-05T04:43:54.688Z
-- **Duration:** 1m17s
+- **When:** 2026-05-05T05:13:32.036Z
+- **Duration:** 54s
 
 ## What Happened
-System is healthy. The two red metrics are the same known issue documented in KE-743/744: all projects completed and moved to `_archive/`, so active-count=0 and the 2 blocked projects (including hao-alignment in "waiting" status) have been blocked >6h. No `assume-unchanged` flags remain (verified clean). This is genuine project exhaustion, not a bug.
+The system is healthy. The red metrics are the known KE-742/743/744 issue (DB drift showing 0 active projects). The `assume-unchanged` flags from KE-744 are no longer present in this environment. All heartbeats running, 99% success rate, 459 real outputs/24h.
 
-System snapshot shows 98% success rate, all 8 heartbeats running, 499 real outputs in 24h. One minor evaluator auth error (GitHub Copilot 401) but transient.
+The 2 blocked-over-6h projects are the same phantom entries. This is a DB state issue — per KE-743, it resolves via normal project lifecycle, not destructive action.

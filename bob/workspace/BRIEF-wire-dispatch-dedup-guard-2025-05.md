@@ -1,98 +1,93 @@
-# BRIEF: Wire Dispatch Dedup Guard into Heartbeat Workflows
+# BRIEF: Wire Dispatch Dedup Guard into Project Iteration Dispatch
 
-**Date**: 2025-05-06  
-**Author**: bob  
-**Status**: IMPLEMENTED  
-**Parent**: EXP-860 (Zombie Task Circuit Breaker)  
-**Priority**: P1 — structural fix, prevents recurring waste  
-**Deployed**: 2025-05-08 — wired into `genericHeartbeat()` in heartbeat-data.ts
-
-## Context
-
-The dispatch dedup guard (`agents/shared/workflows/dispatch-dedup-guard.ts`) is **fully implemented** but **not wired in anywhere**. It was designed to prevent zombie task accumulation — where identical failing tasks are re-dispatched on every heartbeat indefinitely.
-
-This is the most impactful unshipped structural fix in the system (per `ANALYSIS-intervention-futility-loop-2028-07.md`).
+## Date: 2025-05-05
+## Status: READY TO IMPLEMENT
+## Parent: EXP-860 Layer 3
 
 ## Current State
 
-- ✅ Module exists: `agents/shared/workflows/dispatch-dedup-guard.ts`
-- ✅ API is clean: `shouldDispatch()`, `recordDispatch()`, `recordOutcome()`
-- ✅ State file: `.state/dispatch-dedup.json` (no DB dependency)
-- ❌ Not imported by any workflow
-- ❌ No integration tests
+| Integration Point | Status | Location |
+|---|---|---|
+| Heartbeat dispatch | ✅ Wired | `heartbeat-data.ts:394-397` |
+| Project iteration (`runMasterWorker`) | ❌ Not wired | `master-worker-unified.ts` |
+| Direct `agents.fork()` calls | ❌ Agent-level (skill) | N/A — agent discretion |
 
-## Integration Points
+## What's Done
 
-### Primary: `agents/shared/workflows/heartbeat-data.ts`
+- `dispatch-dedup-guard.ts` — fully implemented, 9/9 tests pass
+- Heartbeat integration — guards heartbeat sessions via `shouldDispatch(agent, "heartbeat")`
+- Tests at `dispatch-dedup-guard.test.ts` — all passing
 
-The main dispatch happens at line ~437:
+## What Remains: Project Iteration Guard
+
+### Option A: Add dedup config to `MasterWorkerConfig` (recommended)
+
+Add an optional `dedup` field to `MasterWorkerConfig`:
+
 ```typescript
-const result = await ctx.runAgent(agent, prompt);
-```
+// In master-worker-unified.ts
+import { shouldDispatch, recordDispatch, recordOutcome } from "./dispatch-dedup-guard.js";
 
-This is the heartbeat session itself — it always runs. The dedup guard should wrap **work sessions dispatched FROM heartbeats** (via `agents.fork`), not the heartbeat itself.
-
-However, since heartbeats dispatch work via `ctx.runAgent()` within the agent session (not in the workflow), the guard needs to be called by the **agent's context** or wired into a secondary dispatch point.
-
-### Better Integration: Agent Fork Interceptor
-
-The real zombie creation happens when agents call `agents.fork()` from within sessions. The guard should intercept at the infrastructure level:
-
-1. In the `fork` tool handler, before creating a new session:
-   ```typescript
-   import { shouldDispatch, recordDispatch } from "../workflows/dispatch-dedup-guard.js";
-   
-   // Before forking:
-   const check = shouldDispatch(targetAgent, task);
-   if (!check.allowed) {
-     return { error: `Dispatch blocked: ${check.reason}` };
-   }
-   recordDispatch(targetAgent, task);
-   ```
-
-2. On session completion, record outcome:
-   ```typescript
-   recordOutcome(agent, task, session.status);
-   ```
-
-### Minimum Viable Integration
-
-If the fork interceptor is too invasive, a simpler approach:
-
-Add to `genericHeartbeat()` before the `ctx.runAgent()` call:
-```typescript
-import { shouldDispatch, recordDispatch, recordOutcome as dedupOutcome } from "./dispatch-dedup-guard.js";
-
-// Check if this agent's heartbeat has been failing repeatedly
-const dedupCheck = shouldDispatch(agent, "heartbeat");
-if (!dedupCheck.allowed) {
-  ctx.emit({ type: "step_complete", step: "heartbeat", result: `Skipped: ${dedupCheck.reason}` });
-  return ctx.done(`Heartbeat skipped for ${agent}: ${dedupCheck.reason}`);
+export interface DedupConfig {
+  enabled: boolean;
+  agent: string;        // which agent is running
+  taskLabel?: string;    // override task prefix (default: projectDir basename)
 }
-recordDispatch(agent, "heartbeat");
+
+export interface MasterWorkerConfig {
+  // ...existing fields...
+  dedup?: DedupConfig;
+}
 ```
 
-Then after the result:
+In `runMasterWorker()`, before the iteration loop:
+
 ```typescript
-dedupOutcome(agent, "heartbeat", result.status === "error" ? "error" : "success");
+if (config.dedup?.enabled) {
+  const label = config.dedup.taskLabel ?? config.projectDir;
+  const check = shouldDispatch(config.dedup.agent, `project:${label}`);
+  if (!check.allowed) {
+    return { iterations: 0, stopped: true, stopReason: `dedup-blocked: ${check.reason}` };
+  }
+  recordDispatch(config.dedup.agent, `project:${label}`);
+}
 ```
 
-## Recommended Approach
+After the loop completes, record outcome:
 
-**Option A (quick win)**: Wire into `genericHeartbeat()` to track heartbeat outcomes. This prevents the system from repeatedly running heartbeats for an agent that consistently errors.
+```typescript
+if (config.dedup?.enabled) {
+  const label = config.dedup.taskLabel ?? config.projectDir;
+  const status = result.stopReason.includes("error") ? "error" : "success";
+  recordOutcome(config.dedup.agent, `project:${label}`, status);
+}
+```
 
-**Option B (full fix)**: Add dedup check into the fork/call tool handler at the infrastructure level. This prevents ALL zombie dispatch patterns.
+### Option B: Wrapper function (lighter touch)
 
-## What to Ship
+```typescript
+export function withDedupGuard(
+  agent: string,
+  taskLabel: string,
+  runFn: () => Promise<RunResult>
+): Promise<RunResult> {
+  const check = shouldDispatch(agent, taskLabel);
+  if (!check.allowed) {
+    return Promise.resolve({ iterations: 0, stopped: true, stopReason: `dedup-blocked: ${check.reason}` });
+  }
+  recordDispatch(agent, taskLabel);
+  return runFn().then(result => {
+    const status = result.stopReason.includes("error") ? "error" : "success";
+    recordOutcome(agent, taskLabel, status);
+    return result;
+  });
+}
+```
 
-1. Import the guard in `heartbeat-data.ts`
-2. Wrap the `ctx.runAgent()` call with `shouldDispatch()` / `recordDispatch()` / `recordOutcome()`
-3. Test with a manual dry run (inspect `.state/dispatch-dedup.json` after)
-4. Monitor for 48h
+## Impact
 
-## Expected Impact
+Based on April data: project iteration zombies were ~30% of total zombies. Heartbeat guard (already live) covers the other ~70%. This would close the remaining gap.
 
-- Prevents 9+ zombie sessions/day
-- Saves $2-5/day in wasted tokens
-- Makes `system_status` readable (no longer flooded with stale sessions)
-- Demonstrates "structural fix > text rule" pattern working in practice
+## Who Should Implement
+
+Tech-lead or architect — this touches shared infrastructure. Bob can PR the code; wiring into callers requires knowing which agents use `runMasterWorker` in production handlers.

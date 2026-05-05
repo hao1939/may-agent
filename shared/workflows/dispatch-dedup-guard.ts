@@ -221,6 +221,37 @@ export function getBlockedTasks(): DispatchRecord[] {
 }
 
 /**
+ * Wrap any async function with dedup guard protection.
+ * Use this for project iteration dispatch or any repeated async work.
+ * 
+ * Usage:
+ *   const result = await withDedupGuard("bob", "project:my-project", async () => {
+ *     return runMasterWorker(config);
+ *   });
+ */
+export async function withDedupGuard<T extends { stopped?: boolean; stopReason?: string }>(
+  agent: string,
+  taskLabel: string,
+  runFn: () => Promise<T>,
+  opts?: { force?: boolean }
+): Promise<T | { stopped: true; stopReason: string; dedupBlocked: true }> {
+  const check = shouldDispatch(agent, taskLabel, opts);
+  if (!check.allowed) {
+    return { stopped: true, stopReason: `dedup-blocked: ${check.reason}`, dedupBlocked: true };
+  }
+  recordDispatch(agent, taskLabel);
+  try {
+    const result = await runFn();
+    const status = result.stopReason?.includes("error") ? "error" as const : "success" as const;
+    recordOutcome(agent, taskLabel, status);
+    return result;
+  } catch (err) {
+    recordOutcome(agent, taskLabel, "error");
+    throw err;
+  }
+}
+
+/**
  * Clean up stale entries older than the window.
  */
 export function cleanup(): number {
