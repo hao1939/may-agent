@@ -35,6 +35,14 @@
 - **Velocity decision (2029-09-04)**: BLOCKED(infra) — gym runner issues prevent Phase 3 trials. Paused, not killed. Resume when gym infra fixed.
 - **Details**: `agents/coach/workspace/EXP-745-phase2-results.md`
 
+### EXP-870: Structural Enforcement of Read-After-Edit
+- **Status**: DESIGNED (2025-05-07)
+- **Hypothesis**: Structural/environmental enforcement of read-after-edit achieves ≥80% compliance vs <50% with text-only rules
+- **Approach**: Auto-inject read() after every edit() (Option C) — eliminates compliance gap by construction
+- **Connection**: Directly applies KE-EXP027 (structural > text interventions)
+- **Next**: Baseline audit, then prototype in tool infrastructure
+- **Details**: `agents/bob/workspace/EXP-870-structural-enforcement-design.md`
+
 ## Closed Experiments
 
 | ID | Name | Outcome | Skill Promoted? | Key Finding |
