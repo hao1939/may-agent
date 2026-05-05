@@ -24,3 +24,8 @@
 - Codebase is clean — no build errors
 - 104 archived projects in shared/projects/_archive (normal)
 - No active tech-lead projects needed
+
+## Follow-up Heartbeat (same day)
+- Re-verified build: still clean
+- proof-of-life-dashboard: still waiting on Hao (M4 metric selection). Feature-complete at 5/8 milestones.
+- No new issues found.
