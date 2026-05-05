@@ -12,6 +12,7 @@
 import { readFileSync, readdirSync, existsSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import { checkCircuitBreaker, recordOutcome } from "./circuit-breaker.js";
+import { shouldDispatch, recordDispatch, recordOutcome as dedupRecordOutcome, cleanup as dedupCleanup } from "./dispatch-dedup-guard.js";
 
 /**
  * Find knowledge-base entries that mention a given metric id.
@@ -389,7 +390,17 @@ export async function genericHeartbeat(ctx: WorkflowContext, agent: string): Pro
     return ctx.done(`Circuit breaker OPEN for ${agent}: ${circuitBlock}`);
   }
 
-  // Heartbeats always run — the agent's job is to find things to work on
+  // ── DISPATCH DEDUP GUARD: Skip if agent heartbeat is repeatedly failing ──
+  const dedupCheck = shouldDispatch(agent, "heartbeat");
+  if (!dedupCheck.allowed) {
+    ctx.emit({ type: "dispatch_dedup_blocked", agent, reason: dedupCheck.reason, attempts: dedupCheck.attempts });
+    ctx.log(`[heartbeat:${agent}] Dispatch dedup blocked: ${dedupCheck.reason}`);
+    return ctx.done(`Dispatch dedup guard blocked heartbeat for ${agent}: ${dedupCheck.reason}`);
+  }
+  recordDispatch(agent, "heartbeat");
+
+  // Periodic cleanup of stale dedup entries
+  dedupCleanup();
 
   // ── RED METRIC GATE (JS — no LLM cost) ──────────────────────
   const hasRedMetrics = metrics.includes("⚠️ BELOW TARGET");
@@ -437,6 +448,7 @@ ${redMetricDiagnostics ? "Red metric diagnostics are above — address each one,
   const result = await ctx.runAgent(agent, prompt);
   recordOutcome(agentsRoot, agent, result.status === "error",
     result.status === "error" ? "heartbeat session error" : undefined);
+  dedupRecordOutcome(agent, "heartbeat", result.status === "error" ? "error" : "success");
 
   // ── EXP-870: Use shared runGates() for all gate checks ──────────
   return runGates(ctx, agent, agentsRoot, result, heartbeatStartTime);

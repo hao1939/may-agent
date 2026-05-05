@@ -2,9 +2,10 @@
 
 **Date**: 2025-05-06  
 **Author**: bob  
-**Status**: READY TO IMPLEMENT  
+**Status**: IMPLEMENTED  
 **Parent**: EXP-860 (Zombie Task Circuit Breaker)  
 **Priority**: P1 — structural fix, prevents recurring waste  
+**Deployed**: 2025-05-08 — wired into `genericHeartbeat()` in heartbeat-data.ts
 
 ## Context
 
