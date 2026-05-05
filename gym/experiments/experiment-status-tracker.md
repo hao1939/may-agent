@@ -1,6 +1,6 @@
 # Experiment Status Tracker
 
-**Last updated**: 2025-01-20 (bob heartbeat — EXP-900 Phase 0 schema assessment complete)
+**Last updated**: 2025-05-06 (bob heartbeat — tracker sync, EXP-860 measurement written)
 
 ## Active Experiments
 
@@ -44,6 +44,8 @@
 | EXP-350 | Phantom nudge resistance | **COMPLETE — POSITIVE** | `verify-notification-targets` skill validated | Baseline 34/100 → Treatment 80/100 (+46pp). Skill works. |
 | EXP-188 | Recognition Intervention Dose-Response | **COMPLETE** | See results file | Coach ran extensive trials; see `EXP-188-results.md` |
 | EXP-248 | Belief Externalization | **COMPLETE** | See folder | See `EXP-248/` |
+| EXP-860 | Zombie Task Circuit Breaker | **COMPLETE — DEPLOYED_POSITIVE** | Infrastructure guard (heartbeat-data.ts) | 3-layer dedup guard prevents zombie dispatch loops. Post-deployment measurement: structural validation confirmed 2025-05-06. |
+| EXP-850 | Context-Window Efficiency (Summarize-Before-Reread) | **CLOSED — NEGATIVE** | None | Text efficiency nudges showed no improvement; agents already near-optimal on simple tasks. |
 
 ## Observations from Audit (2025-05-03)
 
