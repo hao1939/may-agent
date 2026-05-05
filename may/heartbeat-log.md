@@ -2,3 +2,4 @@
 - Investigated project.blocked-count red metric
 - skill-workflow-audit: 18/18 milestones done, hit 50-iter cap -> updated to completed
 - 0 blocked projects remain, 0 stuck sessions
+2026-05-05T00:43:21Z - Heartbeat: Red metrics (project.active-count, project.blocked-over-6h) confirmed as KE-744 (git assume-unchanged). Requires human fix. System healthy.
