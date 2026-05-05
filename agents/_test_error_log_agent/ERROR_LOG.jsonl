@@ -1,5 +1,0 @@
-{"timestamp":"2026-03-12T00:00:00Z","tool":"evaluator","error":"FM-4.1: OLD_ISSUE","critique":"Previous failure","correction":"Fix it","context":"s_old"}
-{"timestamp":"2026-05-02T09:50:57.188Z","tool":"evaluator","error":"FM-3.3: INCORRECT_VERIFICATION","critique":"Declared success without evidence","correction":"","context":"s_test_003","state_snapshot":""}
-{"timestamp":"2026-05-02T09:50:57.188Z","tool":"evaluator","error":"FM-2.2: CONSTRAINT_MISMATCH","critique":"Brief explicitly instructed updating `agents/evaluator/SOUL.md`, but optimizer attempted it and hit a hard P53 boundary.","correction":"","context":"s_test_004","state_snapshot":""}
-{"timestamp":"2026-05-02T09:50:57.188Z","tool":"evaluator","error":"FM-3.1: FAILED_EDIT_NO_RECOVERY","critique":"Edit produced identical content","correction":"","context":"s_test_004","state_snapshot":""}
-{"timestamp":"2026-05-02T09:50:57.188Z","tool":"evaluator","error":"FM-2.5: UNNECESSARY_TOOL_CALL","critique":"Called agents({}) with missing params","correction":"","context":"s_test_004","state_snapshot":""}
