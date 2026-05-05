@@ -1,12 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778015558636_5172
+- **Session:** s_1778017358458_5198
 - **Status:** done
-- **When:** 2026-05-05T21:13:54.217Z
-- **Duration:** 1m15s
+- **When:** 2026-05-05T21:43:13.223Z
+- **Duration:** 34s
 
 ## What Happened
-The red metrics (`project.active-count: 0` and `project.blocked-over-6h: 2`) are a known issue documented in KE-744. The root cause is `git update-index --assume-unchanged` set on 21 project files, causing disk edits to never reach the git index. The fix requires removing the assume-unchanged flags, which is a potentially destructive git operation that should be escalated to human.
+The red metrics (`project.active-count: 0`, `project.blocked-over-6h: 2`) are documented in KE-744 as caused by `git assume-unchanged` on project files — disk edits never reach the git index, so project state changes are silently lost. This is a known issue requiring the `--no-assume-unchanged` fix which is a destructive git-index operation.
 
-The system is otherwise healthy: 100% success rate, all heartbeats firing, 398 real outputs in 24h, no errors.
+**Disposition:** Per KE-744 guidance, this requires human intervention (unsetting assume-unchanged flags). Already documented. Not a new issue.
+
+System is otherwise healthy: 100% success rate, all heartbeats firing, 228 completions in 6h, no errors.
