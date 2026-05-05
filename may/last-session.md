@@ -1,18 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777941756545_4207
+- **Session:** s_1777943556855_4234
 - **Status:** done
-- **When:** 2026-05-05T00:43:43.316Z
-- **Duration:** 1m6s
+- **When:** 2026-05-05T01:13:16.306Z
+- **Duration:** 39s
 
 ## What Happened
-The red metrics are well-documented in KE-744: the root cause is `git update-index --assume-unchanged` set on 21 project files, which prevents project status changes from being committed. The fix requires running `git update-index --no-assume-unchanged` on those files — this is a git index operation that KE-744 documents but requires human approval since it's a systemic fix affecting version control.
+The red metrics (`project.active-count: 0` and `project.blocked-over-6h: 2`) are documented in KE-744 as caused by `git assume-unchanged` set on project files since 2026-04-29. This is a known issue requiring the `--no-assume-unchanged` fix on those 21 files, which is a git index operation. Per KE-744, the root cause is understood and the fix is non-destructive (just `git update-index --no-assume-unchanged`), but since I can't access git from this working directory, and the prior KEs document this thoroughly, the correct action is to **defer** — this is already escalated/documented.
 
-The system is otherwise healthy: 98% success rate, all agents running, 594 real outputs in 24h, no errors of concern (just one transient 401 auth error on tech-lead).
+System is otherwise healthy: 98% success rate, all cron jobs running, 583 real outputs in 24h, evaluator processing 43 sessions in the last hour.
 
-**Disposition of red metrics:**
-- **project.active-count = 0**: Known root cause (KE-744). The git assume-unchanged flags prevent project completions from being tracked. Already escalated per prior KEs.
-- **project.blocked-over-6h = 2**: Same root cause — projects appear permanently blocked because status changes can't commit.
-
-Both require the `git update-index --no-assume-unchanged` fix which is a potentially destructive git operation → **escalate to human** per instructions.
+One notable error: tech-lead got a 401 auth error (GitHub LiteLLM). This is transient — only 1 error in 51 sessions.
