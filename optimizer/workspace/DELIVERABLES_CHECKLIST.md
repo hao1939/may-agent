@@ -1,5 +1,8 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist
 
-| # | Deliverable | Status | Path |
-|---|-------------|--------|------|
-| 1 | Heartbeat status artifact | DONE | agents/optimizer/workspace/heartbeat-20260504-1953.md |
+## Heartbeat Session
+
+- [x] DONE — Status artifact written: `/app/agents/optimizer/workspace/heartbeat-status.md`
+  - Updated with current metrics (success-rate: 1.0, p95: 1864ms)
+  - All 5 projects confirmed closed
+  - No alerts or action items
