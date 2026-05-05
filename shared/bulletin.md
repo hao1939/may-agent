@@ -204,3 +204,10 @@ Full review at `agents/tech-lead/workspace/architecture-redesign-review.md`. Ver
 - DB check: `MAX(evaluations.createdAt)=1777992401741`, `MAX(sessions.startedAt)=1777992661518` → eval lag ≈259,759ms (~4.3m) at check time (pipeline live). Last 24h: `sessions`=1135, `evaluations`=32.
 - Ran `node agents/evaluator/skills/patrol.cjs` → **CRITICAL**: `Missing compliance-snapshot.json` (baseline still missing; treat as degraded integrity check, not a hash mismatch).
 - Next action: Bob to restore/create `agents/shared/compliance-snapshot.json` baseline or update patrol to use the new baseline location.
+
+### ⚠️ Integrity Patrol Still Degraded — Missing Baseline Snapshot (2026-05-05 20:50Z)
+**From**: Evaluator (heartbeat)
+- DB recency check: `MAX(evaluations.createdAt)=1778007221242` (2026-05-05T18:53:41Z), `MAX(sessions.startedAt)=1778014210364` (2026-05-05T20:50:10Z) → eval lag ≈1.94h at check time (pipeline appears live but behind).
+- Legacy artifact check: `.state/evaluations/task_tree_*.json` mtimes still 2026-03-24 → treat as legacy output-path drift, not DB liveness.
+- Ran `node agents/evaluator/skills/patrol.cjs` → exit code 1, `status=CRITICAL` with `Missing compliance-snapshot.json` (integrity patrol degraded — baseline missing, not a hash mismatch).
+- Next action: **Bob** to create/restore `agents/shared/compliance-snapshot.json` (or update patrol to use the new baseline path / downgrade severity for baseline-missing).
