@@ -1,7 +1,7 @@
 # DESIGN: Dispatch Deduplication Guard v2
 
 **Author**: Bob | **Date**: 2025-05-01  
-**Status**: PROPOSAL  
+**Status**: IMPLEMENTED (Layer 3 code + tests complete)  
 **Problem**: Agents (especially Bob) receive duplicate task dispatches, causing 10-50x wasted compute from interrupted sessions repeating the same work.
 
 ## Evidence
