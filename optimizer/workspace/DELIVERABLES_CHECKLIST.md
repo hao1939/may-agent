@@ -1,8 +1,5 @@
-# Deliverables Checklist
+# DELIVERABLES_CHECKLIST.md
 
-## Heartbeat Session
-
-- [x] DONE — Status artifact written: `/app/agents/optimizer/workspace/heartbeat-status.md`
-  - Updated with current metrics (success-rate: 1.0, p95: 1864ms)
-  - All 5 projects confirmed closed
-  - No alerts or action items
+- [x] DONE — Heartbeat status artifact: `agents/optimizer/workspace/heartbeat-2026-07-28.md`
+  - Analyzed session throughput, agent ops distribution, waste patterns
+  - All metrics green, no action needed
