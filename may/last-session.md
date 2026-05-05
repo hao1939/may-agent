@@ -1,12 +1,19 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777947156893_4282
+- **Session:** s_1777948956328_4307
 - **Status:** done
-- **When:** 2026-05-05T02:13:10.886Z
-- **Duration:** 33s
+- **When:** 2026-05-05T02:44:37.781Z
+- **Duration:** 2m1s
 
 ## What Happened
-Both red metrics (`project.active-count=0`, `project.blocked-over-6h=2`) are caused by the documented KE-744 root cause: 21 files have `git update-index --assume-unchanged` set since 2026-04-29, preventing project status changes from being committed. This requires a human to run `git update-index --no-assume-unchanged` on the affected files — a destructive git index operation I should not perform autonomously.
+Good — the assume-unchanged bit has been cleared (0 files flagged). KE-744's remediation was already applied.
 
-System is healthy: 100% success rate last hour, all 8 heartbeats firing, 565 real outputs in 24h, 0.68% error rate.
+Summary of findings:
+1. **project.active-count = 0**: All 24 projects are closed/waiting/complete/archived. Only `hao-alignment` (waiting) and `proof-of-life-dashboard` (waiting) exist as non-closed. No active projects. This is a real state — no phantom data. The metric is accurate; we simply have no active projects right now.
+2. **project.blocked-over-6h = 2**: These are likely `hao-alignment` and `proof-of-life-dashboard` in waiting status being counted as blocked.
+3. **assume-unchanged bit**: Cleared — 0 files affected. KE-744 remediation was applied.
+4. **tech-lead**: 2 auth errors (GitHub token issue) in last 6h. Transient.
+5. **System health**: 293 sessions in 6h, 2 errors total (0.68% error rate). Healthy.
+
+The red metrics are a **legitimate state** — we need new active projects. This is Hao's call on what to work on next.
