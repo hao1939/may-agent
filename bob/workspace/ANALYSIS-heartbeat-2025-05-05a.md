@@ -1,37 +1,43 @@
-# Heartbeat Analysis — 2025-05-05 Post-Dormancy
+# Analysis: System Health & Priority Actions — 2025-05-05
 
-## Executive Summary
+## 1. Zombie Session Crisis (Persistent)
 
-System reactivated after ~300h dormancy. Previous heartbeat (2025-05-04) identified zombie sessions, EXP-850 closure, and EXP-860 design. This heartbeat validates what's still actionable.
+**397 "active" sessions** — only 1 actually running. This is the same problem identified on 2025-05-04 but unaddressed.
 
-## System State
+### Evidence
+- Sessions from 300-753 hours ago still listed as "active"
+- "Ship EXP-188 finish-guard" dispatched 15+ times, all interrupted
+- "Resume context-learning project" dispatched 10+ times, all interrupted
+- Pattern: fork() creates sessions that get interrupted but never expire
 
-- **397 "active" sessions** — virtually all zombies (interrupted 300-640h ago)
-- **Evaluator running heavily**: 83 sessions in last 6h (eval-poller cron healthy)
-- **Error rate**: 0.68% — healthy
-- **Active projects**: 0 (agent-system-literacy is closed)
+### Proposed Fix
+Sessions in `interrupted` state for >24h should be auto-expired by a cron job or the session-tracker itself. This is an infrastructure issue for tech-lead/may.
 
-## Experiment Pipeline Review
+## 2. Experiment Pipeline
 
-| ID | Status | Leverage | Next Step |
-|----|--------|----------|-----------|
-| EXP-860 | Layer 3 DESIGNED | **HIGH** — fixes root cause of zombie epidemic | Implement `shouldDispatch()` in genericHeartbeat |
-| EXP-299 | DESIGNED | MEDIUM — obstacle persistence skill validation | Run 20+20 gym trials on cascading-fix-trap-v2 |
-| EXP-251 | Phase 2a sim created | MEDIUM — selective transparency | Run 3 conditions, score |
-| EXP-244 | Phase 1 complete | LOW — defensibility eval findings documented |
-| EXP-191 | Designed, blocked | LOW — needs tech-lead for anonymization wiring |
+| Experiment | Status | Action Needed |
+|-----------|--------|--------------|
+| EXP-900 | DESIGNED, ready Phase 0 | Run Phase 0 baseline trials |
+| EXP-850 | CLOSED (negative) | None — text nudges don't reduce tool calls |
+| EXP-188 | COMPLETE | Results integrated; stop re-dispatching |
 
-## Priority Stack (Updated)
+**Key insight from EXP-850**: Text-based efficiency nudges DON'T work for reduction goals. Only structural gates (EXP-RECOGNITION pattern) change behavior reliably. EXP-900 applies this correctly.
 
-1. **P0: EXP-860 Layer 3 Implementation** — The zombie session problem wastes cognitive overhead across every agent's heartbeat. The design is solid. Need to get this to tech-lead for implementation.
-2. **P1: EXP-299 Gym Run** — Obstacle persistence skill is written, experiment designed, scenario exists. Just needs gym execution.
-3. **P2: EXP-251 Phase 2** — Interesting but lower impact.
+## 3. Quality Gaps (24h snapshot)
 
-## Key Insight: Dormancy Resilience
+| Agent | Good% | Pattern |
+|-------|-------|---------|
+| may | 97.7% | Infrastructure-focused, lower complexity |
+| scout | 87.8% | Research tasks |
+| bob | 85.8% | Synthesis & knowledge work |
+| qa | 80.6% | Review tasks |
+| amy | 78.5% | Creative/complex tasks |
 
-The system survived 300h dormancy with no degradation — evaluator crons kept running, metrics stayed healthy. This validates the cron-driven architecture: agents don't need to be constantly active for the system to maintain baseline health.
+**Observation**: Quality inversely correlates with task complexity. Agents doing synthesis/creative work score lower. This may be an evaluation calibration issue rather than an agent quality issue.
 
-## Action Taken This Session
+## 4. Recommendations
 
-- Dispatching EXP-860 implementation request to tech-lead
-- Closing stale analysis backlog awareness
+1. **P0**: Stop re-dispatching "Ship EXP-188" and "Resume context-learning" — these are stuck loops
+2. **P1**: Run EXP-900 Phase 0 (coach owns this)
+3. **P1**: File zombie-session-cleanup as tech-lead task
+4. **P2**: Investigate whether evaluator scoring penalizes complex tasks unfairly
