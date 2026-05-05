@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777952800464_4362
+- **Session:** s_1777954600465_4386
 - **Status:** done
-- **When:** 2026-05-05T03:49:30.327Z
-- **Duration:** 2m49s
+- **When:** 2026-05-05T04:18:50.677Z
+- **Duration:** 2m10s
 
 ## What Happened
-Now let me clean up the test data and update EXP-860 status:
+Good — the integration looks correct. Now let me update the BRIEF and the experiment status, then commit:
