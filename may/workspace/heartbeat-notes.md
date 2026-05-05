@@ -1,18 +1,14 @@
-# Heartbeat 2026-05-04 20:43Z
+# Heartbeat 2026-05-05 10:12Z
 
-## Red Metrics Assessment
+## Red Metrics Status
 
-### project.active-count: 0
-- Root cause: KE-744 (assume-unchanged on project files)
-- Status: Remediated. `git ls-files -v | grep '^h '` returns empty.
-- No active projects because all are in waiting/blocked state — legitimate.
+Both `project.active-count=0` and `project.blocked-over-6h=2` are caused by the git assume-unchanged issue documented in KE-744. Root cause: 21 files (including all project.md files) have `--assume-unchanged` set since 2026-04-29, so project state changes never reach the git index.
 
-### project.blocked-over-6h: 2
-- hao-alignment (waiting) — blocked on external input
-- Known, documented, no action needed.
+**Required fix (human only):** `git update-index --no-assume-unchanged` on affected files.
 
 ## System Health
-- 100% success rate (45 sessions/hr)
-- All 8 heartbeats covered
-- All cron jobs operational
-- 707 real outputs in 24h
+- Session success rate: 100% (45/45 in last hour)
+- All 14 cron jobs healthy
+- Heartbeat coverage: 8/8 agents
+- Error rate: 0.7%
+- No stuck sessions or failing agents
