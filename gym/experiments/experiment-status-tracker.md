@@ -66,7 +66,7 @@
 ## Priority Queue (Next Experiments)
 
 1. **EXP-900: DAF Retrofit** (BLOCKED 2025-09-03): Evaluation DB (`agents/may.db`) is empty — no tables, no data. Cannot run 2D masking analysis without evaluation records. Blocked until evaluator actually persists data. Details: `agents/bob/workspace/EXP-900-daf-retrofit-design.md`, `agents/bob/workspace/EXP-900-phase0-schema-assessment.md`
-2. **EXP-950: Retry-Budget Guard** (PHASE 1 SPEC COMPLETE 2025-09-03): Full implementation written, ready for handoff to tech-lead/may. Details: `agents/bob/workspace/EXP-950-retry-budget-guard.md`, `agents/bob/workspace/EXP-950-phase1-implementation.md`
+2. **EXP-950: Retry-Budget Guard** (COMPLETE ✅ 2025-09-05): Hypothesis validated. `dispatch-dedup-guard.ts` integrated at all 3 dispatch paths. 7-day monitoring in progress. Results: `agents/bob/workspace/EXP-950-results.md`
 3. **New: Context-window efficiency**: Agents re-read files they already processed. Could a "read-cache" skill help?
 
 ## How to Use This Tracker
