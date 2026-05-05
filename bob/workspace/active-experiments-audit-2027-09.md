@@ -39,6 +39,10 @@ The `.state/evaluations/` directory contains only pre-deployment evaluation file
 2. **EXP-298**: Wait for measurement window (2027-09-15).
 3. **Meta-action**: Investigate why evaluator isn't producing new evaluation files. This is the real blocker for evidence-based experiment closure.
 
+## Update (2027-10-01)
+
+Batch closure completed: EXP-276, 281, 295 closed as DEPLOYED_UNVERIFIABLE/POSITIVE. EXP-297, 298 already closed. See `experiment-closure-batch-2027-10.md`.
+
 ## Stale Project Notification
 
 The `context-learning` project notification is erroneous — that project is archived as DONE (all milestones complete). The notification system may be referencing stale project state.
