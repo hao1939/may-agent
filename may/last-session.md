@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777945356229_4258
+- **Session:** s_1777947156893_4282
 - **Status:** done
-- **When:** 2026-05-05T01:43:14.046Z
-- **Duration:** 37s
+- **When:** 2026-05-05T02:13:10.886Z
+- **Duration:** 33s
 
 ## What Happened
-The red metrics (`project.active-count: 0` and `project.blocked-over-6h: 2`) are documented in KE-744 as caused by `git assume-unchanged` on project files — commits silently drop project state changes. This is a known issue requiring destructive remediation (removing the assume-unchanged flags and recommitting). Per the instructions: **escalate, do not fix autonomously**.
+Both red metrics (`project.active-count=0`, `project.blocked-over-6h=2`) are caused by the documented KE-744 root cause: 21 files have `git update-index --assume-unchanged` set since 2026-04-29, preventing project status changes from being committed. This requires a human to run `git update-index --no-assume-unchanged` on the affected files — a destructive git index operation I should not perform autonomously.
 
-System health is good: 98% success rate, all cron jobs healthy, 37 fires/hour, 577 real outputs in 24h. One tech-lead auth error (GitHub token issue) — transient.
+System is healthy: 100% success rate last hour, all 8 heartbeats firing, 565 real outputs in 24h, 0.68% error rate.
