@@ -8,6 +8,7 @@
  *   - escalate persistent blockers
  */
 import { writeFileSync } from "node:fs";
+import { shouldDispatch, recordDispatch, recordOutcome } from "../../shared/workflows/dispatch-dedup-guard.js";
 import { dirname, join, resolve } from "node:path";
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.ts";
 import type { CronEntry } from "../../shared/agent-sdk.ts";
@@ -175,6 +176,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         task,
         agent: project.owner,
         runAgent: async (agentName: string, agentTask: string) => {
+          const dedupCheck = shouldDispatch(agentName, agentTask);
+          if (!dedupCheck.allowed) {
+            ctx.log(`[project] Dispatch blocked by dedup guard: ${agentName} — ${dedupCheck.reason}`);
+            try { ctx.emit({ type: "dispatch-blocked", agent: agentName, reason: dedupCheck.reason }); } catch {}
+            return { sessionId: "", status: "blocked", lastAssistantText: `Blocked: ${dedupCheck.reason}`, messages: [], duration: "0s", outputDir: "", turnsUsed: 0 };
+          }
+          recordDispatch(agentName, agentTask);
           const result = await ctx.manager.callAgent(agentName, agentTask, {
             source: "workflow",
             workflowRunId: runId,
@@ -184,6 +192,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             wfRun.steps.push({ sessionId: result.sessionId, agent: agentName, status: result.status ?? "done" });
             try { saveRun(wfRun); } catch {}
           }
+          recordOutcome(agentName, agentTask, result.status === "done" ? "success" : "failure");
           return result;
         },
         runFunction: async (label: string, fn: () => Promise<string>) => {

@@ -7,6 +7,7 @@ import { existsSync, readdirSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.ts";
 import type { CronEntry } from "../../shared/agent-sdk.ts";
+import { shouldDispatch, recordDispatch, recordOutcome } from "../../shared/workflows/dispatch-dedup-guard.js";
 
 let importCounter = 0;
 
@@ -87,11 +88,18 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       summarizeForHandoff: (result: any) => result?.lastAssistantText?.slice(0, 500) || "",
       task, agent,
       runAgent: async (agentName: string, agentTask: string) => {
+        const dedupCheck = shouldDispatch(agentName, agentTask);
+        if (!dedupCheck.allowed) {
+          ctx.log(`[run-workflow:${entry.name}] Dispatch blocked by dedup guard: ${agentName} — ${dedupCheck.reason}`);
+          return { sessionId: "", status: "blocked", lastAssistantText: `Blocked: ${dedupCheck.reason}`, messages: [], duration: "0s", outputDir: "", turnsUsed: 0 };
+        }
+        recordDispatch(agentName, agentTask);
         ctx.log(`[run-workflow:${entry.name}] Step: running ${agentName}...`);
         const result = await ctx.manager.callAgent(agentName, agentTask, { source: `workflow:${entry.name}`, workflowRunId: runId });
         run.steps.push({ sessionId: result.sessionId, agent: agentName, status: result.status ?? "done" });
         saveRun(run);
         ctx.log(`[run-workflow:${entry.name}] Step ${agentName} → ${result.status ?? "done"} (${result.sessionId})`);
+        recordOutcome(agentName, agentTask, result.status === "done" ? "success" : "failure");
         return result;
       },
       runFunction: async (label: string, fn: () => Promise<string>) => {
