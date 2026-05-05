@@ -1,12 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777997556704_4928
+- **Session:** s_1777999356391_4950
 - **Status:** done
-- **When:** 2026-05-05T16:13:28.511Z
-- **Duration:** 51s
+- **When:** 2026-05-05T16:43:10.414Z
+- **Duration:** 34s
 
 ## What Happened
-The situation is clear: there are 0 active projects and 2 blocked ones (per metrics). The assume-unchanged issue was fixed previously. The current state is that projects are either completed/archived or waiting. The `project.active-count=0` alert is a legitimate state — no work is being driven.
-
-Per prior KE-743, this was identified as "db drift not extinction" and "resolved without the reactor." Given this has been failing for 10 consecutive checks and the prior KEs say not to treat it as a new investigation, I'll defer per documented guidance. The system is otherwise healthy (222 completions, 0 errors, good output).
+Not a git repo in this context — the assume-unchanged fix needs to be applied in the actual git workspace where agents operate. This is documented in KE-744 and has been a repeated alert for 10 cycles. Per the guidance: since the fix requires running `git update-index --no-assume-unchanged` in the agents' shared git repo (which I don't have access to here), and prior KEs confirm this is a known root cause, I'll escalate to human.
