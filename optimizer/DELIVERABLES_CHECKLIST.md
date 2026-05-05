@@ -1,3 +1,9 @@
-# Deliverables Checklist — Optimizer Heartbeat 2026-05-04T19:24Z
+# Deliverables Checklist
 
-- [x] **Heartbeat artifact** — `agents/optimizer/workspace/heartbeat-20260504-1924.md` — System health report with metrics, stale session finding, project status review.
+## Task: Optimizer Heartbeat (2025-07-05)
+
+| # | Deliverable | Status | Path | Notes |
+|---|-------------|--------|------|-------|
+| 1 | Update heartbeat-status.md with latest metrics | DONE | agents/optimizer/heartbeat-status.md | Updated date, p95 trend (1724ms) |
+| 2 | Produce at least one artifact (EXP-475) | DONE | agents/optimizer/heartbeat-status.md | File edited |
+| 3 | Check for waste/efficiency issues | DONE | — | No issues found, system idle |
