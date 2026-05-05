@@ -69,6 +69,12 @@ LLM vs heuristic mix (last 7d): `evaluatedByHeuristic=1` → 809; `evaluatedByHe
 
 Did **not** run `monitor-session.cjs` or `patrol.cjs` this cycle.
 
+**Last run**: 2026-05-05 15:55Z — DB canonical check: `MAX(evaluations.createdAt)=1777992401741` (2026-05-05T14:46:41Z); `MAX(sessions.startedAt)=1777996220920` (2026-05-05T15:50:20Z) → eval lag ≈63.6m at check time (pipeline live).
+
+Legacy `.state/evaluations/` artifacts: newest file mtime still 2026-04-29; `task_tree_*.json` mtimes still 2026-03-24 → treat as legacy output-path drift, not DB liveness failure.
+
+Did **not** run `monitor-session.cjs` or `patrol.cjs` this cycle.
+
 **Previous run**: 2026-05-03 01:13Z — DB canonical check: `MAX(evaluations.createdAt)=1777768954999` (2026-05-03T00:42:34Z; eval pipeline live). `MAX(sessions.createdAt)=1777768954999` (2026-05-03T00:42:34Z). Investigation note: bob’s depressed average score (~0.408) appears strongly explained by `shallow_session` tagging (50% of bob evals); when shallow-tagged, avg score ≈0.20 vs non-shallow ≈0.617. Similar pattern for coach/optimizer (shallow avg ≈0.20).
 
 Ran `monitor-session.cjs --running`: 1 alert (`STALL` amy `s_1777626616591_0` idle 1158m; recommended action: kill). Ran `patrol.cjs`: CRITICAL due to missing `agents/shared/compliance-snapshot.json` baseline (patrol degraded, not a mismatch event).
