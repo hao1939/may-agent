@@ -63,8 +63,18 @@ Write a skill file that agents consult before dispatching multi-session work:
 ## Cost: Zero infrastructure changes needed for Layer 2
 Layer 2 is a convention/skill change only. Layer 3 requires may.db schema changes (deferred).
 
+## Implementation Status (2026-05-05)
+
+**Layer 2 DEPLOYED**: `agents/shared/tools/dispatch-registry.sh` provides:
+- `dispatch_check` — pre-dispatch gate with 3-strike rule
+- `dispatch_record` — records outcomes (success resets counter)
+- `dispatch_status` — shows all tracked tasks for an agent
+- 6h cooldown on blocked tasks, automatic reset on success
+
+**Skill updated**: `agents/shared/skills/retry-aware-dispatch/README.md` references the tool.
+
 ## Next Steps
-1. Write the skill file → `agents/shared/skills/retry-aware-dispatch/`
-2. Add to LIBRARY.md
-3. Monitor for 48h
-4. If effective, design Layer 3 infrastructure
+1. ~~Write the skill file~~ DONE
+2. ~~Add to LIBRARY.md~~ DONE
+3. Wire dispatch-registry into heartbeat handlers (Layer 1 infra)
+4. Measure zombie session reduction over next 2 weeks

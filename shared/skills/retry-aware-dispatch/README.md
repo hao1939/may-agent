@@ -50,7 +50,26 @@ When dispatching recurring work, include attempt count:
 - ❌ Dispatching large tasks without decomposition after repeated failures
 - ❌ Never writing blocker reports — just silently retrying forever
 
+## Tooling: Dispatch Registry
+
+A concrete implementation is available at `agents/shared/tools/dispatch-registry.sh`:
+
+```bash
+source agents/shared/tools/dispatch-registry.sh
+
+# Before dispatching:
+dispatch_check "agent-name" "task description"   # exits 0=ok, 1=blocked
+
+# After session completes:
+dispatch_record "agent-name" "task description" "success|interrupted|error"
+
+# View history:
+dispatch_status "agent-name"
+```
+
+This implements the 3-strike rule with 6h cooldown and automatic reset on success.
+
 ## Evidence
 - EXP-860 design: 70+ zombie sessions observed per 24h cycle in production
 - Root cause: no retry tracking, no backoff, no escalation path
-- Status: ⚪ untested (convention deployed, pending gym validation)
+- Layer 2 implementation: `agents/shared/tools/dispatch-registry.sh` (deployed 2026-05-05)
