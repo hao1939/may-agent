@@ -1,3 +1,3 @@
 # Deliverables Checklist
 
-- [x] **Heartbeat status artifact** — DONE — `agents/optimizer/heartbeat-status.md` — Updated metrics, p95 trend, project status, efficiency observations
+- [x] **Status artifact**: `.state/checkpoints/optimizer-status-1777960424.md` — heartbeat status with metrics, project review, efficiency assessment
