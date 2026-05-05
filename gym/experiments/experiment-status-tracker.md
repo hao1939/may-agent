@@ -63,10 +63,9 @@
 
 ## Priority Queue (Next Experiments)
 
-1. **EXP-700 Decision**: Kill, redesign, or unblock within 1 heartbeat
+1. **EXP-900: DAF Retrofit** (DESIGNED 2029-09-15): Per-dimension threshold enforcement on existing eval scores. Tests H-096 P-096c. Lowest-effort validation of strongest hypothesis. Details: `agents/bob/workspace/EXP-900-daf-retrofit-design.md`
 2. **New: Retry-Budget Guard** (from `DESIGN-retry-budget-guard-2025-05-03.md`): Cap retries per task to prevent zombie dispatch loops
 3. **New: Context-window efficiency**: Agents re-read files they already processed. Could a "read-cache" skill help?
-4. **H-096 test**: Evaluation Architecture Determines Quality Ceiling — needs experiment design
 
 ## How to Use This Tracker
 
