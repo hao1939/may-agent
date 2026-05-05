@@ -28,10 +28,11 @@
 - **Details**: `agents/coach/workspace/EXP-850-arm-b-c-results.md`
 
 ### EXP-745: Few-Shot Pattern Coverage Expansion
-- **Status**: PHASE 2 COMPLETE (2029-07-03)
+- **Status**: PHASE 2 COMPLETE (2029-07-03) — ⚠️ VELOCITY CHECK: 2+ heartbeats in same state
 - **Hypothesis**: Broadening trigger patterns to match implementation/refactoring tasks achieves ≥25% match rate
 - **Outcome**: Match rate 45% → 80% (+35pp). Two new examples: incremental-implementation, safe-refactoring.
 - **Next**: Phase 3 gym validation or production monitoring
+- **Velocity decision (2029-09-04)**: BLOCKED(infra) — gym runner issues prevent Phase 3 trials. Paused, not killed. Resume when gym infra fixed.
 - **Details**: `agents/coach/workspace/EXP-745-phase2-results.md`
 
 ## Closed Experiments
