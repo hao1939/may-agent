@@ -1,14 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1777979556839_4718
+- **Session:** s_1777983155632_4764
 - **Status:** done
-- **When:** 2026-05-05T11:13:03.195Z
-- **Duration:** 26s
+- **When:** 2026-05-05T12:13:39.854Z
+- **Duration:** 1m4s
 
 ## What Happened
-Clear. The root cause is well-documented: 21 files have `git assume-unchanged` set. The fix (`git update-index --no-assume-unchanged`) was already proposed by arc. This is a known issue that requires human approval since it involves git index manipulation. The alerts have been recurring for 10 checks because no human has approved the fix yet.
+The red metrics (`project.active-count=0`, `project.blocked-over-6h=2`) have a documented root cause in KE-744: 21 files have `git update-index --assume-unchanged` set since 2026-04-29, silently dropping project status edits. The fix (`git update-index --no-assume-unchanged` on those paths) requires human authorization per the escalation policy.
 
-Per the instructions: "If prior KEs identify this red metric as caused by fabricated/phantom data, do NOT treat it as a new investigation — follow the documented remediation or escalate."
-
-The documented remediation is out-of-lane and needs human approval. I'll escalate.
+System is otherwise healthy: 100% success rate, all 8 heartbeats covered, 394 real outputs in 24h, 0 errors.
