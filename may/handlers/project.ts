@@ -99,7 +99,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       }
       const pState = healthState.projects[project.relPath];
 
-      if (action.type === "skip") { pState.consecutiveSkips++; continue; }
+      if (action.type === "skip") { if (project.status !== "closed") pState.consecutiveSkips++; continue; }
 
       // Track status changes for escalation timing
       const currentStatus = project.status;
