@@ -1,6 +1,12 @@
-# Heartbeat 2026-05-04 — Red Metric Analysis
+# Red Metric Analysis — 2026-05-04
 
-## project.active-count=0, project.blocked-over-6h=2
+## project.active-count = 0 (target 3)
+- **Root cause (KE-744)**: assume-unchanged flags were set on project files
+- **Current status**: Flags already cleared (`git ls-files -v | grep '^h '` returns empty)
+- **Actual state**: There are genuinely 0 active projects — this is not data corruption
+- **Action**: Escalated to Hao for direction
 
-Root cause: KE-744 — `git assume-unchanged` on 21 project files since 2026-04-29.
-Action: Escalated to Hao (P1 notification) requesting `git update-index --no-assume-unchanged` in runtime env.
+## project.blocked-over-6h = 2 (target 0)
+- Likely stale DB entries referencing projects that no longer exist on disk
+- No blocked project.md files found in non-archived directories
+- **Action**: Escalated to Hao for direction
