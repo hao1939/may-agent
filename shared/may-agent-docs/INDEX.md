@@ -47,6 +47,7 @@
 
 | Doc | What |
 |-----|------|
+| [proposals/v2-spec.md](proposals/v2-spec.md) | v2 conformance properties P1–P10 with verification mechanisms |
 | [proposals/master-worker.md](proposals/master-worker.md) | Persistent worker/reviewer sessions with followUp() |
 | [proposals/escalation.md](proposals/escalation.md) | Escalation and recovery system |
 
