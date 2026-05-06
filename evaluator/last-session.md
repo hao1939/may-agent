@@ -1,66 +1,84 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778050331132_5664
+- **Session:** s_1778052029065_5678
 - **Status:** done
-- **When:** 2026-05-06T06:52:24.713Z
-- **Duration:** 13s
+- **When:** 2026-05-06T07:21:37.749Z
+- **Duration:** 1m8s
 
 ## What Happened
+```json
 {
   "agents": [
     {
-      "agent": "coach",
-      "role": "Supervisor (orchestrator/project maintainer)",
-      "capability_level": "mid",
-      "efficiency": 0.2,
-      "quality": 0.1,
+      "agent": "may",
+      "role": "Supervisor",
+      "capability_level": "supervisor",
+      "efficiency": 0.3,
+      "quality": 0.35,
       "verdict": "needs_improvement",
       "issues": [
         {
-          "tag": "WRONG_SCOPE",
-          "evidence": "The task was to maintain /app/agents/shared/projects/documentation-gen and update its project.md; instead the agent worked on git state and commits in shared/projects/prompt-efficiency and shared/projects/outputs/DELIVERABLES_CHECKLIST.md."
+          "tag": "FORMAT_VIOLATION",
+          "evidence": "Heartbeat required first output GOAL/PLAN/DONE WHEN; agent instead jumped directly into narrative analysis."
         },
         {
-          "tag": "NO_PROJECT_UPDATE",
-          "evidence": "No tool evidence shows reading or editing /app/agents/shared/projects/documentation-gen/project.md, despite explicit requirement: “You MUST update project.md directly”."
+          "tag": "PATH_HALLUCINATION",
+          "evidence": "Ran `cd /home/hao` which is forbidden/nonexistent; tool returned PATH_HALLUCINATION and instructed /app usage."
         },
         {
-          "tag": "VERIFICATION_FAILURE",
-          "evidence": "Agent did not verify documentation-gen deliverables via read() or bash(ls); only git commands were run (diff/status/add/commit)."
+          "tag": "WRONG_ENV_ASSUMPTION",
+          "evidence": "After switching to `/app`, ran git commands but `/app` is not a git repo (`fatal: not a git repository`). Agent concluded infra-level issue without demonstrating the correct repo location or using the provided snapshot DB query."
         },
         {
-          "tag": "PROCESS_BREAKDOWN_FINISH_BLOCKED",
-          "evidence": "finish() blocked twice: first for uncommitted changes (M shared/projects/outputs/DELIVERABLES_CHECKLIST.md), then for missing required verification_evidence. Agent never successfully completed finish() with required evidence."
+          "tag": "MISUSE_OF_EVIDENCE",
+          "evidence": "Claims 'Confirmed via KE-744' but there is no tool output showing KE-744 content was read in this session; only a `git ls-files` attempt is evidenced."
         },
         {
-          "tag": "WASTED_ACTIONS/LOOPING",
-          "evidence": "Multiple git operations unrelated to required project maintenance; failure chains show repeated attempts to add/commit ignored paths and confusion about repo state (auto-extracted 5 wasted calls)."
+          "tag": "FINISH_LOOP / PROCESS_FRICTION",
+          "evidence": "Multiple blocked finish() attempts (ghost deliverable + verification depth) before settling on status partial."
+        },
+        {
+          "tag": "METRIC_WORK_NOT_PERFORMED",
+          "evidence": "Did not run the mandated 'system snapshot' bun/sql query; did not investigate actual DB state of projects/blocked items beyond citing prior KE."
         }
       ],
       "metrics": {
-        "tool_calls": {
-          "bash": 6,
-          "finish": 2,
-          "read": 0,
-          "edit": 0,
-          "write": 0
-        },
-        "failure_chains": 3,
-        "wasted_calls_from_chains": 5
+        "tool_calls": 5,
+        "failed_tool_calls": 3,
+        "finish_blocks": 3,
+        "writes_or_edits": 0
       }
     }
   ],
   "workflow": {
-    "name": "master-worker project maintenance (documentation-gen)",
+    "name": "heartbeat",
     "issues": [
-      "Orchestrator did not perform required verification or project.md updates for documentation-gen.",
-      "Orchestrator incorrectly performed repository housekeeping/commits for other project paths instead of directing/closing the documentation-gen project.",
-      "Completion protocol not followed: finish() never succeeded with verification_evidence."
+      "Did not follow mandated heartbeat output format.",
+      "Did not execute the provided one-time DB snapshot query to ground investigation.",
+      "No escalation message was actually sent; only suggested in next_steps."
     ]
   },
   "overall": {
     "verdict": "needs_improvement",
     "result_delivered": false
-  }
+  },
+  "lessons": [
+    {
+      "agent": "may",
+      "category": "fix",
+      "content": "Follow the heartbeat contract: output GOAL/PLAN/DONE WHEN first, then run the single DB snapshot query before hypothesizing causes."
+    },
+    {
+      "agent": "may",
+      "category": "fix",
+      "content": "Do not assume repo paths (/home/hao). First locate the correct working directory under /app, or query the DB as instructed to avoid dead-end git commands."
+    },
+    {
+      "agent": "may",
+      "category": "pattern",
+      "content": "When citing a knowledge entry (KE-744) as evidence, include an actual read/grep tool output of that file in-session; otherwise it's an unverified claim."
+    }
+  ]
 }
+```
