@@ -1,8 +1,8 @@
-# Proposal: May-Agent v2 Architecture
+# May-Agent Architecture
 
-**Status**: ✅ Phases 1–5 implemented. Observation phase active. See `v2-migration-plan.md` and `v2-implementation-notes.md` for what landed.
+**Status**: Active. This is the system's architecture reference.
 
-Goal: reduce runtime complexity by converging on one primitive:
+Core primitive:
 
 ```
 event → runAgent() → session.end
@@ -518,7 +518,7 @@ Agent "arc" calls message("dev", { intent: "implementation-request", artifact: "
 
 ---
 
-## What We Lose
+## What We Lose (vs old architecture)
 
 | Lost | Severity | Mitigation |
 |------|----------|------------|
@@ -529,41 +529,15 @@ Agent "arc" calls message("dev", { intent: "implementation-request", artifact: "
 
 ---
 
-## Migration Strategy
+## Remaining Convergence
 
-0. Build a parallel test harness that runs both runtimes against the same heartbeat fixture and compares session.end shape. Ensures the wrapper is contract-compatible before cutover.
-1. Define `AgentRuntime.runAgent()` interface wrapping current manager
-2. Route dev/arc/scout through it first
-3. Port guards as runtime middleware
-4. Add typed metrics incrementally
-5. Add function workflow steps
-6. Collapse cron into event-source + handler
-7. Migrate evaluator
-8. Migrate May last
-9. Delete old manager only after no imports remain
+Items where current implementation differs from this architecture:
 
----
+| Gap | Current | Target |
+|-----|---------|--------|
+| Heartbeat trigger | Cron calls handlers directly | Cron emits `heartbeat` event on bus; handler subscribes |
+| Typed metrics | Flat schema (type='health'\|'domain') | Typed gauge/counter/health/derived with per-metric config |
+| Guard mechanism | Tool wrappers | Runtime middleware |
+| Agent runtime | SubagentManager (4k LOC) | pi-coding-agent's `createAgentSession()` |
 
-## Acceptance Criteria
-
-Before old runtime deletion:
-- dev/arc/scout complete 20 consecutive heartbeats without error
-- session.error-rate-6h does not increase
-- handler.success-rate stays >0.95
-- message.created events persist and display in receiver context
-- Telegram replies remain context-enriched
-- DB backup/restore cycle verified
-
-Guard acceptance (specific):
-- finish-guard blocks unsupported completion
-- read-before-edit blocks blind edits
-- verify-after-write blocks unverified writes
-- path guard blocks out-of-scope writes
-- query_db remains read-only and never exposes DB file path
-- tool schema guard blocks malformed tool calls
-- commit guard prevents unsafe/unreviewed commits where configured
-
-Work queue observability:
-- work-queue.proposed-pending is measured
-- work-queue.approved-pending is measured
-- oldest approved item age is visible
+See `v2-migration-plan.md` and `v2-implementation-notes.md` for migration history.
