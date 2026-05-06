@@ -88,17 +88,17 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       globalLog(level, `[${deps.agentName}] ${msg}`);
     },
 
-    notify(target: string, msg: string): void {
+    message(target: string, content: string): void {
       if (target === "human") {
         // Human-visible: push to Telegram/web via notification event
-        deps.bus.emit({ type: "notification", agent: deps.agentName, text: msg } as any);
+        deps.bus.emit({ type: "notification", agent: deps.agentName, text: content } as any);
       } else {
         // Agent-to-agent: emit v2 message.created (lands in target's inbox).
         deps.bus.emit({
           type: "message.created",
           from: deps.agentName,
           to: target,
-          content: msg,
+          content,
           priority: "P2",
         } as any);
       }
