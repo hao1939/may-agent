@@ -14,27 +14,33 @@
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.ts";
 import type { CronEntry } from "../../shared/agent-sdk.ts";
 
+// v2 metric types:
+//   gauge   — point-in-time value, can go up/down (rates, ratios, sizes)
+//   counter — monotonically increasing or rate-of-events (output, iterations)
+//   health  — boolean pass/fail or count-of-failures (build_passing, errors)
+//   derived — computed from other metrics (not yet used in built-ins)
+//
 // alert_op: "<" = alert when current < threshold (too low)
 //           ">" = alert when current > threshold (too high)
 const ALL_METRICS = [
   // Handler
-  { id: "handler.completed-count", name: "Handler completions (6h)", owner: "may", target: 50, threshold: 10, unit: "count", alert_op: "<" },
-  { id: "handler.failed-count", name: "Handler failures (6h)", owner: "may", target: 0, threshold: 3, unit: "count", alert_op: ">" },
-  { id: "handler.success-rate", name: "Handler success rate (6h)", owner: "optimizer", target: 0.95, threshold: 0.80, unit: "ratio", alert_op: "<" },
-  { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents)", owner: "may", target: 8, threshold: 6, unit: "count", alert_op: "<" },
+  { id: "handler.completed-count", name: "Handler completions (6h)", owner: "may", type: "counter", target: 50, threshold: 10, unit: "count", alert_op: "<" },
+  { id: "handler.failed-count", name: "Handler failures (6h)", owner: "may", type: "counter", target: 0, threshold: 3, unit: "count", alert_op: ">" },
+  { id: "handler.success-rate", name: "Handler success rate (6h)", owner: "optimizer", type: "gauge", target: 0.95, threshold: 0.80, unit: "ratio", alert_op: "<" },
+  { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents)", owner: "may", type: "gauge", target: 8, threshold: 6, unit: "count", alert_op: "<" },
   // Sessions
-  { id: "session.error-rate-6h", name: "Session error rate (6h)", owner: "may", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">" },
+  { id: "session.error-rate-6h", name: "Session error rate (6h)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">" },
   // System output
-  { id: "system.real-output-24h", name: "Real output (24h)", owner: "may", target: 100, threshold: 30, unit: "count", alert_op: "<" },
-  { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", target: 120000, threshold: 600000, unit: "ms", alert_op: ">" },
-  { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", target: 30, threshold: 15, unit: "count", alert_op: "<" },
+  { id: "system.real-output-24h", name: "Real output (24h)", owner: "may", type: "counter", target: 100, threshold: 30, unit: "count", alert_op: "<" },
+  { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", type: "gauge", target: 120000, threshold: 600000, unit: "ms", alert_op: ">" },
+  { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", type: "gauge", target: 30, threshold: 15, unit: "count", alert_op: "<" },
   // Project
-  { id: "project.active-count", name: "Active projects", owner: "may", target: 3, threshold: 1, unit: "count", alert_op: "<" },
-  { id: "project.blocked-count", name: "Blocked/waiting projects", owner: "may", target: 2, threshold: 4, unit: "count", alert_op: ">" },
-  { id: "project.stale-active-count", name: "Stale active projects (no iteration 48h)", owner: "may", target: 0, threshold: 2, unit: "count", alert_op: ">" },
-  { id: "project.iterations-24h", name: "Project iterations (24h)", owner: "may", target: 10, threshold: 0, unit: "count", alert_op: "<" },
-  { id: "project.blocked-rate-7d", name: "Project blocked rate (7d)", owner: "may", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">" },
-  { id: "project.blocked-over-6h", name: "Projects blocked/waiting >6h", owner: "may", target: 0, threshold: 1, unit: "count", alert_op: ">" },
+  { id: "project.active-count", name: "Active projects", owner: "may", type: "gauge", target: 3, threshold: 1, unit: "count", alert_op: "<" },
+  { id: "project.blocked-count", name: "Blocked/waiting projects", owner: "may", type: "gauge", target: 2, threshold: 4, unit: "count", alert_op: ">" },
+  { id: "project.stale-active-count", name: "Stale active projects (no iteration 48h)", owner: "may", type: "gauge", target: 0, threshold: 2, unit: "count", alert_op: ">" },
+  { id: "project.iterations-24h", name: "Project iterations (24h)", owner: "may", type: "counter", target: 10, threshold: 0, unit: "count", alert_op: "<" },
+  { id: "project.blocked-rate-7d", name: "Project blocked rate (7d)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">" },
+  { id: "project.blocked-over-6h", name: "Projects blocked/waiting >6h", owner: "may", type: "gauge", target: 0, threshold: 1, unit: "count", alert_op: ">" },
 ];
 
 /** Snapshot retention: keep 30 days of history */
@@ -72,14 +78,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     for (const m of ALL_METRICS) {
       db.run(
         `INSERT OR IGNORE INTO metrics (id, name, owner, current, target, threshold, unit, type, status, speed, alert_op, created_at, updated_at)
-         VALUES (?, ?, ?, NULL, ?, ?, ?, 'health', 'active', 'fast', ?, ?, ?)`,
-        [m.id, m.name, m.owner, m.target, m.threshold, m.unit, m.alert_op, now, now]
+         VALUES (?, ?, ?, NULL, ?, ?, ?, ?, 'active', 'fast', ?, ?, ?)`,
+        [m.id, m.name, m.owner, m.target, m.threshold, m.unit, m.type, m.alert_op, now, now]
       );
       db.run(
         `UPDATE metrics
-         SET name = ?, owner = ?, target = ?, threshold = ?, unit = ?, type = 'health', status = 'active', speed = 'fast', alert_op = ?
+         SET name = ?, owner = ?, target = ?, threshold = ?, unit = ?, type = ?, status = 'active', speed = 'fast', alert_op = ?
          WHERE id = ?`,
-        [m.name, m.owner, m.target, m.threshold, m.unit, m.alert_op, m.id]
+        [m.name, m.owner, m.target, m.threshold, m.unit, m.type, m.alert_op, m.id]
       );
     }
 
