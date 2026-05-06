@@ -112,6 +112,7 @@ Typed pub/sub. The backbone.
 
 ```typescript
 type SystemEvent =
+  | { type: "heartbeat"; agent: string }
   | { type: "handler.started"; handler: string; agent: string }
   | { type: "handler.completed"; handler: string; agent: string; durationMs: number }
   | { type: "handler.failed"; handler: string; agent: string; error: string; durationMs: number }
@@ -122,11 +123,9 @@ type SystemEvent =
   | { type: "tool.executed"; agent: string; sessionId: string; tool: string; args: any }
   | { type: "message.created"; from: string; to: string; content: string; intent?: string; artifact?: string; priority?: "P0" | "P1" | "P2" | "P3" }
 
-// Heartbeats are NOT a bus event — cron fires handler functions directly.
-// The handler emits handler.started/completed events for observability.
-
-// Everything is just: event → handler
-bus.on("session.end", (e) => updateMetrics(e));  // session results feed metric engine
+// Heartbeat is a bus event — anything can trigger it: cron timer, socket command,
+// manual trigger, another agent. The bus is the single path.
+bus.on("heartbeat", (e) => runAgent(e.agent, buildHeartbeatTask(e.agent), "heartbeat"));
 
 // Metric breach: only P0 (urgent) metrics fork directly. Everything else informs
 // the owning agent's next heartbeat via prompt context.
@@ -139,9 +138,8 @@ bus.on("metric.breach", (e) => {
 // No separate messages table — events table with owner field serves as inbox.
 bus.on("message.created", (e) => { /* already persisted by bus.emit() */ });
 
-// Cron fires handlers directly (no heartbeat event on bus).
-// Handlers emit handler.started/completed/failed for observability.
-// registerTimer("may", 20min) → cron.startEntry() → handler fires → session runs
+// Timers are event sources — cron emits heartbeat events on the bus
+registerTimer("may", "*/20 * * * *");  // emits { type: "heartbeat", agent: "may" }
 
 // Event persistence is part of emit, not a subscriber.
 // Implemented inside bus.emit():
