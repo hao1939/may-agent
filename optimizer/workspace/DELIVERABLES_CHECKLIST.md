@@ -1,5 +1,3 @@
-# DELIVERABLES_CHECKLIST.md
+# Deliverables Checklist
 
-- [x] DONE — Heartbeat artifact with findings: `agents/optimizer/workspace/heartbeat-20260805.md`
-  - Found workflow completedAt tracking bug (2843/2843 runs affected)
-  - All metrics healthy, no action needed
+- [x] **Status artifact**: `.state/checkpoints/optimizer-status-1778036044.md` — heartbeat status with metrics, projects, system health
