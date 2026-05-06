@@ -1,24 +1,24 @@
 # Project Idle Status Report
 
-**Generated:** Iteration 39 (May 6, 2025)
+**Generated:** Iteration 43 (May 6, 2025)
 **Status:** Active but idle — no actionable work
 
 ## Completed Work
-All completable plan items have been finished. The project is in a healthy maintenance state.
+All plan items that can be completed without new data are done. Propagation is complete.
 
 ## Pending Time-Gated Items
 
-| Item | Trigger Date | Status |
-|------|-------------|--------|
-| Monthly re-scan of recent sessions | June 6, 2025 | Waiting |
-| 2-week correction rate comparison | Needs new Hao interactions | Waiting |
-| Track metric trend | Monthly | Waiting |
-| Quarterly git re-scan | Oct 2026 | Waiting |
+| Item | Trigger | Due |
+|------|---------|-----|
+| Monthly re-scan of recent sessions | Calendar | June 6, 2025 |
+| Compare correction rate (2-week window) | New Hao interactions | When sufficient data exists |
+| Track metric trend | Monthly | June 6, 2025 |
+| Quarterly git re-scan | Calendar | October 2026 |
 
-## Next Actions
-1. **New Hao interaction** → mine it immediately
+## Next Action Triggers
+1. **New Hao interaction detected** → mine it immediately
 2. **June 6** → monthly re-scan
 3. **Oct 2026** → quarterly git re-scan
 
 ## Recommendation
-Stop dispatching workers until a trigger fires. 38 consecutive idle iterations confirm there is no actionable work.
+Stop dispatching worker iterations until a trigger fires. 42 consecutive no-op iterations confirm there is nothing to do.
