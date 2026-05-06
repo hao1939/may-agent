@@ -13,6 +13,10 @@ Prevents decisions Hao would override.
 4. **Does this create a workaround at the wrong layer?** → STOP, let infra handle it
 5. **Am I stopping because target is met?** → STOP, that's coasting (P11). Raise the bar or find the next problem.
 6. **Is this a recurring issue I'm just reporting?** → STOP, create a project to fix it (P14).
+7. **Am I about to adopt/rollout a change without measured proof it works?** → STOP, verify in gym first (P13).
+8. **Am I finalizing a design without peer-agent review?** → STOP, dispatch to ≥2 peers (P15).
+9. **Did I produce a review/design without a second critical pass?** → STOP, do the "what's wrong / what's missing" pass (P16).
+10. **Is the recurring problem getting a one-shot fix instead of a learning loop?** → STOP, frame as reproduce→explore→verify→adopt→track (P12).
 
 ### PROCEED conditions (green light):
 1. Fixes something existing and broken ✓
