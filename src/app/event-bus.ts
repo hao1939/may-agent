@@ -40,6 +40,7 @@ export type SessionEvent =
   | { type: "tool_result"; sessionId: string; agent: string; tool: string; preview: string; isError: boolean }
   | { type: "turn_end"; sessionId: string; agent: string; toolCalls: number; durationMs: number; turnCount?: number; errorCount?: number }
   | { type: "session_start"; sessionId: string; agent: string; task: string; parentSessionId?: string; workspacePath?: string; workflowRunId?: string; projectId?: string; source?: string; kind?: string; requestId?: string }
+  | { type: "session.start"; sessionId: string; agent: string; task: string; trigger: string; scheduledAt?: number; firedAt: number }
   | {
       type: "session_end";
       sessionId: string;
@@ -57,7 +58,8 @@ export type SessionEvent =
       filesModified?: string[];
       /** Workspace path for agent-specific file writes. */
       workspacePath?: string;
-    };
+    }
+  | { type: "session.end"; sessionId: string; agent: string; outcome: string; summary: string; durationMs: number };
 
 /** System events */
 export type SystemEvent =

@@ -751,6 +751,15 @@ export class SubagentManager {
       workspacePath: info.workspacePath,
       parentSessionId: info.parentSessionId,
     });
+    // v2 mirror: canonical dot-form event
+    this.emit({
+      type: "session.end",
+      sessionId: info.sessionId,
+      agent: info.agent,
+      outcome: info.outcome ?? info.status,
+      summary: typeof info.finishParams?.summary === "string" ? info.finishParams.summary : (info.error ?? ""),
+      durationMs: session.endedAt && session.startedAt ? session.endedAt - session.startedAt : 0,
+    });
   }
 
   /** Remove the [STARTED] sentinel file for a session. */
@@ -935,6 +944,15 @@ export class SubagentManager {
         kind: session.kind,
         requestId: opts?.requestId,
         stepLabel: opts?.stepLabel,
+      });
+      // v2 mirror: canonical dot-form event for new consumers (UI, metrics, evaluator).
+      this.emit({
+        type: "session.start",
+        sessionId,
+        agent: name,
+        task: meta?.task ?? task,
+        trigger: opts?.source ?? session.kind ?? "unknown",
+        firedAt: session.startedAt,
       });
 
       // Activity tracking handled by ActivityWriter subscriber (reacts to session_start event)
@@ -1337,6 +1355,15 @@ export class SubagentManager {
       source: persisted.source,
       kind: persisted.kind,
       requestId: persisted.requestId,
+    });
+    // v2 mirror: canonical dot-form event
+    this.emit({
+      type: "session.start",
+      sessionId,
+      agent: persisted.agent,
+      task: persisted.task,
+      trigger: persisted.source ?? persisted.kind ?? "resume",
+      firedAt: session.startedAt,
     });
 
     // Continue the agent — either resume from a pending user message or
@@ -1880,6 +1907,15 @@ export class SubagentManager {
       workspacePath: closeInfo.workspacePath,
       parentSessionId: session.parentSessionId,
       requestId: closeInfo.requestId,
+    });
+    // v2 mirror: canonical dot-form event
+    this.emit({
+      type: "session.end",
+      sessionId: closeInfo.sessionId,
+      agent: closeInfo.agent,
+      outcome: closeInfo.outcome ?? closeInfo.status,
+      summary: typeof closeInfo.finishParams?.summary === "string" ? closeInfo.finishParams.summary : (closeInfo.error ?? ""),
+      durationMs: session.endedAt && session.startedAt ? session.endedAt - session.startedAt : 0,
     });
   }
 
