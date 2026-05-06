@@ -36,7 +36,6 @@ import {
   createCheckpointTool,
 } from "../lib/index.js";
 import { createAgentGrowthTools } from "../lib/tools/agent-growth.js";
-import { createSendTool } from "../lib/tools/send-tool.js";
 import { createMessageTool } from "../lib/tools/message-tool.js";
 import type { EventBus } from "./event-bus.js";
 import { Cron } from "./cron.js";
@@ -214,30 +213,11 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
       case "notify":
       case "message": {
         // v2: `message` is the canonical async inter-agent communication tool.
-        // `notify` and `message-only` remain as deprecated aliases that wire the
-        // legacy `notify` tool. Agents can list both — `message` will dominate.
-        if (preset === "message") {
-          tools.push(
-            createMessageTool({
-              agentName: config.name,
-              agentsRoot: opts.agentsRoot,
-              persistDir,
-              emit: (event) => bus.emit(event as any),
-              getCallerSessionId: () => agentSessionIds.get(config.name),
-              triggerHeartbeat: (agentName: string) => {
-                for (const cron of agentCrons.values()) {
-                  if (cron.triggerNow(`heartbeat-${agentName}`)) return true;
-                  if (cron.triggerNow("heartbeat") && agentName === "may") return true;
-                }
-                return false;
-              },
-            }),
-          );
-          break;
-        }
-        // Legacy `notify` / `message-only` preset — same shape, different tool name.
+        // `notify` and `message-only` are deprecated aliases that route to the
+        // SAME tool (createMessageTool). The send-tool.ts wiring is no longer
+        // referenced and will be removed in the next cleanup cycle.
         tools.push(
-          createSendTool({
+          createMessageTool({
             agentName: config.name,
             agentsRoot: opts.agentsRoot,
             persistDir,
