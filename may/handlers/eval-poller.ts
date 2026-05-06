@@ -18,9 +18,10 @@ import type { HandlerContext, HandlerModule, CronEntry } from "../../shared/agen
 import { evaluateStandaloneSession } from "../../shared/evaluation/evaluator.js";
 
 const STATE_FILE = "eval-poller-processed.json";
-const MAX_LLM_EVALS_PER_RUN = 12; // LLM evals are slow (~15s each) — cap to avoid 300s handler timeout
+const MAX_LLM_EVALS_PER_RUN = 6; // LLM evals are slow and may retry — cap conservatively to avoid 300s handler timeout
 const MAX_HEURISTIC_EVALS_PER_RUN = 200; // Heuristic evals are instant (no LLM) — process in bulk
-const WALL_CLOCK_BUDGET_MS = 240_000; // Hard stop at 240s to stay well under 300s handler timeout
+const WALL_CLOCK_BUDGET_MS = 210_000; // Pre-start budget; keep margin below the platform's 300s timeout
+const MIN_REMAINING_MS_FOR_LLM_EVAL = 60_000; // Do not start a slow LLM eval without enough timeout headroom
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days to match coverage metric window
 
 // Meta-agents that shouldn't be evaluated
@@ -92,8 +93,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     for (const { dir } of recentSessions) {
       // Stop when both budgets exhausted or wall clock exceeded
       if (llmEvals >= MAX_LLM_EVALS_PER_RUN && heuristicEvals >= MAX_HEURISTIC_EVALS_PER_RUN) break;
-      if (Date.now() >= deadline) {
-        ctx.log("[eval-poller] Wall clock budget exceeded (240s), stopping early");
+      const remainingMs = deadline - Date.now();
+      if (remainingMs <= 0) {
+        ctx.log(`[eval-poller] Wall clock budget exceeded (${WALL_CLOCK_BUDGET_MS}ms), stopping early`);
         break;
       }
 
@@ -136,9 +138,16 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         ((meta.status === "error" || meta.status === "failed") && msgCount <= 4) ||
         ((meta.status === "done" || meta.status === "interrupted") && msgCount <= 3);
 
-      // Budget gating: skip if the relevant budget is exhausted
+      // Budget gating: skip if the relevant budget is exhausted.
+      // LLM evaluations can take long enough to overrun the handler timeout, and
+      // evaluateStandaloneSession() may retry once, so do not start one unless
+      // there is explicit headroom remaining.
       if (!willBeHeuristic && llmEvals >= MAX_LLM_EVALS_PER_RUN) {
         continue;
+      }
+      if (!willBeHeuristic && deadline - Date.now() < MIN_REMAINING_MS_FOR_LLM_EVAL) {
+        ctx.log(`[eval-poller] Remaining budget below ${MIN_REMAINING_MS_FOR_LLM_EVAL}ms; stopping before LLM eval`);
+        break;
       }
       if (willBeHeuristic && heuristicEvals >= MAX_HEURISTIC_EVALS_PER_RUN) {
         continue;
