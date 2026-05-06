@@ -22,23 +22,40 @@ import type { CronEntry } from "../../shared/agent-sdk.ts";
 //
 // alert_op: "<" = alert when current < threshold (too low)
 //           ">" = alert when current > threshold (too high)
-const ALL_METRICS = [
+//
+// config: JSON with type-specific alert rules:
+//   gauge:   { alert: { mode: "threshold" | "sustained", consecutive?: number } }
+//   counter: { alert: { mode: "rate", min_rate?: number, per: "hour"|"day", stall_after_ms?: number } }
+//   health:  { alert: { mode: "consecutive_failures", count: number } }
+
+interface MetricDef {
+  id: string; name: string; owner: string; type: "gauge" | "counter" | "health" | "derived";
+  target: number; threshold: number; unit: string; alert_op: "<" | ">";
+  config?: Record<string, unknown>;
+}
+
+const ALL_METRICS: MetricDef[] = [
   // Handler
-  { id: "handler.completed-count", name: "Handler completions (6h)", owner: "may", type: "counter", target: 50, threshold: 10, unit: "count", alert_op: "<" },
-  { id: "handler.failed-count", name: "Handler failures (6h)", owner: "may", type: "counter", target: 0, threshold: 3, unit: "count", alert_op: ">" },
-  { id: "handler.success-rate", name: "Handler success rate (6h)", owner: "optimizer", type: "gauge", target: 0.95, threshold: 0.80, unit: "ratio", alert_op: "<" },
+  { id: "handler.completed-count", name: "Handler completions (6h)", owner: "may", type: "counter", target: 50, threshold: 10, unit: "count", alert_op: "<",
+    config: { alert: { mode: "rate", min_rate: 2, per: "hour", stall_after_ms: 3600000 } } },
+  { id: "handler.failed-count", name: "Handler failures (6h)", owner: "may", type: "counter", target: 0, threshold: 3, unit: "count", alert_op: ">",
+    config: { alert: { mode: "rate", max_rate: 3, per: "hour" } } },
+  { id: "handler.success-rate", name: "Handler success rate (6h)", owner: "optimizer", type: "gauge", target: 0.95, threshold: 0.80, unit: "ratio", alert_op: "<",
+    config: { alert: { mode: "sustained", consecutive: 3 } } },
   { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents)", owner: "may", type: "gauge", target: 4, threshold: 3, unit: "count", alert_op: "<" },
   // Sessions
   { id: "session.error-rate-6h", name: "Session error rate (6h)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">" },
   // System output
-  { id: "system.real-output-24h", name: "Real output (24h)", owner: "may", type: "counter", target: 100, threshold: 30, unit: "count", alert_op: "<" },
+  { id: "system.real-output-24h", name: "Real output (24h)", owner: "may", type: "counter", target: 100, threshold: 30, unit: "count", alert_op: "<",
+    config: { alert: { mode: "rate", min_rate: 5, per: "hour", stall_after_ms: 7200000 } } },
   { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", type: "gauge", target: 120000, threshold: 600000, unit: "ms", alert_op: ">" },
   { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", type: "gauge", target: 15, threshold: 8, unit: "count", alert_op: "<" },
   // Project
   { id: "project.active-count", name: "Active projects", owner: "may", type: "gauge", target: 1, threshold: 0, unit: "count", alert_op: "<" },
   { id: "project.blocked-count", name: "Blocked/waiting projects", owner: "may", type: "gauge", target: 2, threshold: 4, unit: "count", alert_op: ">" },
   { id: "project.stale-active-count", name: "Stale active projects (no iteration 48h)", owner: "may", type: "gauge", target: 0, threshold: 2, unit: "count", alert_op: ">" },
-  { id: "project.iterations-24h", name: "Project iterations (24h)", owner: "may", type: "counter", target: 10, threshold: 0, unit: "count", alert_op: "<" },
+  { id: "project.iterations-24h", name: "Project iterations (24h)", owner: "may", type: "counter", target: 10, threshold: 0, unit: "count", alert_op: "<",
+    config: { alert: { mode: "rate", min_rate: 1, per: "hour", stall_after_ms: 7200000 } } },
   { id: "project.blocked-rate-7d", name: "Project blocked rate (7d)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">" },
   { id: "project.blocked-over-6h", name: "Projects blocked/waiting >6h", owner: "may", type: "gauge", target: 0, threshold: 3, unit: "count", alert_op: ">" },
 ];
@@ -73,20 +90,39 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       return (db.prepare(query).get(...args) as any)?.c || 0;
     }
 
+    const metricColumns = new Set((db.prepare("PRAGMA table_info(metrics)").all() as any[]).map(c => c.name));
+    const hasMetricConfigColumn = metricColumns.has("config");
+    const configByMetricId = new Map(ALL_METRICS.map(m => [m.id, m.config ?? null]));
+
     // ── Ensure metric rows exist ─────────────────────────────────────
 
     for (const m of ALL_METRICS) {
-      db.run(
-        `INSERT OR IGNORE INTO metrics (id, name, owner, current, target, threshold, unit, type, status, speed, alert_op, created_at, updated_at)
-         VALUES (?, ?, ?, NULL, ?, ?, ?, ?, 'active', 'fast', ?, ?, ?)`,
-        [m.id, m.name, m.owner, m.target, m.threshold, m.unit, m.type, m.alert_op, now, now]
-      );
-      db.run(
-        `UPDATE metrics
-         SET name = ?, owner = ?, target = ?, threshold = ?, unit = ?, type = ?, status = 'active', speed = 'fast', alert_op = ?
-         WHERE id = ?`,
-        [m.name, m.owner, m.target, m.threshold, m.unit, m.type, m.alert_op, m.id]
-      );
+      const configJson = m.config ? JSON.stringify(m.config) : null;
+      if (hasMetricConfigColumn) {
+        db.run(
+          `INSERT OR IGNORE INTO metrics (id, name, owner, current, target, threshold, unit, type, status, speed, alert_op, config, created_at, updated_at)
+           VALUES (?, ?, ?, NULL, ?, ?, ?, ?, 'active', 'fast', ?, ?, ?, ?)`,
+          [m.id, m.name, m.owner, m.target, m.threshold, m.unit, m.type, m.alert_op, configJson, now, now]
+        );
+        db.run(
+          `UPDATE metrics
+           SET name = ?, owner = ?, target = ?, threshold = ?, unit = ?, type = ?, status = 'active', speed = 'fast', alert_op = ?, config = COALESCE(?, config)
+           WHERE id = ?`,
+          [m.name, m.owner, m.target, m.threshold, m.unit, m.type, m.alert_op, configJson, m.id]
+        );
+      } else {
+        db.run(
+          `INSERT OR IGNORE INTO metrics (id, name, owner, current, target, threshold, unit, type, status, speed, alert_op, created_at, updated_at)
+           VALUES (?, ?, ?, NULL, ?, ?, ?, ?, 'active', 'fast', ?, ?, ?)`,
+          [m.id, m.name, m.owner, m.target, m.threshold, m.unit, m.type, m.alert_op, now, now]
+        );
+        db.run(
+          `UPDATE metrics
+           SET name = ?, owner = ?, target = ?, threshold = ?, unit = ?, type = ?, status = 'active', speed = 'fast', alert_op = ?
+           WHERE id = ?`,
+          [m.name, m.owner, m.target, m.threshold, m.unit, m.type, m.alert_op, m.id]
+        );
+      }
     }
 
     // ── Measure: Handler (with error isolation) ──────────────────────
@@ -241,20 +277,97 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       } catch { /* skip individual metric errors */ }
     }
 
-    // ── Alert lifecycle (open on breach, resolve on recovery) ───────
+    // ── Alert lifecycle (type-aware: open on breach, resolve on recovery) ───────
 
     try {
+      const configSelect = hasMetricConfigColumn ? ", config" : "";
       const metrics = db.prepare(
-        `SELECT id, name, owner, current, target, threshold, alert_op
+        `SELECT id, name, owner, current, target, threshold, alert_op, type${configSelect}
          FROM metrics
          WHERE status = 'active' AND current IS NOT NULL AND threshold IS NOT NULL`
       ).all() as any[];
 
       for (const m of metrics) {
-        const breached = m.alert_op === ">" || m.alert_op === "above"
-          ? m.current > m.threshold
-          : m.current < m.threshold;
+        const registryConfig = configByMetricId.get(m.id) ?? null;
+        const config = hasMetricConfigColumn && m.config ? JSON.parse(m.config) : registryConfig;
+        const alertConfig = config?.alert;
+        const metricType = m.type || "gauge";
 
+        // ── Type-specific breach evaluation ──
+        let breached = false;
+        let stallDetected = false;
+
+        if (metricType === "health" && alertConfig?.mode === "consecutive_failures") {
+          // Health: breach only after N consecutive failures
+          const requiredCount = alertConfig.count || 3;
+          const recentSnapshots = db.prepare(
+            "SELECT value FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT ?"
+          ).all(m.id, requiredCount) as any[];
+
+          if (recentSnapshots.length >= requiredCount) {
+            const allBreaching = recentSnapshots.every((s: any) =>
+              m.alert_op === ">" ? s.value > m.threshold : s.value < m.threshold
+            );
+            breached = allBreaching;
+          }
+        } else if (metricType === "counter" && alertConfig?.mode === "rate") {
+          // Counter: breach on rate, stall on no increment
+          // Rate check: compare last 2 snapshots
+          const lastTwo = db.prepare(
+            "SELECT value, measured_at FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 2"
+          ).all(m.id) as any[];
+
+          if (lastTwo.length === 2) {
+            const deltaMs = lastTwo[0].measured_at - lastTwo[1].measured_at;
+            const deltaValue = lastTwo[0].value - lastTwo[1].value;
+            if (deltaMs > 0) {
+              const perHour = (deltaValue / deltaMs) * 3600000;
+              const ratePer = alertConfig.per === "day" ? perHour * 24 : perHour;
+
+              if (alertConfig.min_rate != null && ratePer < alertConfig.min_rate) breached = true;
+              if (alertConfig.max_rate != null && ratePer > alertConfig.max_rate) breached = true;
+            }
+          }
+
+          // Stall detection: no change in stall_after_ms
+          if (alertConfig.stall_after_ms && lastTwo.length >= 2) {
+            const latestSnapshot = lastTwo[0];
+            // Find last snapshot where value was different
+            const lastDifferent = db.prepare(
+              "SELECT measured_at FROM metric_snapshots WHERE metric_id = ? AND value != ? ORDER BY measured_at DESC LIMIT 1"
+            ).get(m.id, latestSnapshot.value) as any;
+            const lastChangeAt = lastDifferent?.measured_at || 0;
+            if (now - lastChangeAt > alertConfig.stall_after_ms) {
+              stallDetected = true;
+            }
+          }
+
+          // Also fall through to basic threshold check for counters without rate config
+          if (!breached) {
+            breached = m.alert_op === ">" || m.alert_op === "above"
+              ? m.current > m.threshold
+              : m.current < m.threshold;
+          }
+        } else if (metricType === "gauge" && alertConfig?.mode === "sustained") {
+          // Gauge sustained: breach only after N consecutive breaching snapshots
+          const requiredCount = alertConfig.consecutive || 3;
+          const recentSnapshots = db.prepare(
+            "SELECT value FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT ?"
+          ).all(m.id, requiredCount) as any[];
+
+          if (recentSnapshots.length >= requiredCount) {
+            breached = recentSnapshots.every((s: any) =>
+              m.alert_op === ">" ? s.value > m.threshold : s.value < m.threshold
+            );
+          }
+        } else {
+          // Default (gauge threshold): immediate breach
+          breached = m.alert_op === ">" || m.alert_op === "above"
+            ? m.current > m.threshold
+            : m.current < m.threshold;
+        }
+
+        // ── Alert open/resolve ──
         const openAlert = db.prepare(
           "SELECT id FROM metric_alerts WHERE metric_id = ? AND resolved_at IS NULL LIMIT 1"
         ).get(m.id) as { id: number } | null;
@@ -269,18 +382,23 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             );
             try {
               ctx.dispatchEvent("metric.breach", {
-                owner: m.owner,
-                metricId: m.id,
-                metricName: m.name,
-                current: m.current,
-                threshold: m.threshold,
-                target: m.target,
-                message,
+                owner: m.owner, metricId: m.id, metricName: m.name,
+                current: m.current, threshold: m.threshold, target: m.target, message,
               });
             } catch (e) { ctx.log(`[metrics-snapshot] Error emitting metric.breach for ${m.id}: ${e}`); }
           }
         } else if (openAlert) {
           db.run("UPDATE metric_alerts SET resolved_at = ? WHERE id = ?", [now, openAlert.id]);
+        }
+
+        // ── Stall event (separate from breach) ──
+        if (stallDetected) {
+          const message = `${m.name ?? m.id} stalled: no change for ${Math.round((alertConfig?.stall_after_ms || 0) / 60000)}min`;
+          try {
+            ctx.dispatchEvent("metric.stalled", {
+              owner: m.owner, metricId: m.id, metricName: m.name, message,
+            });
+          } catch (e) { ctx.log(`[metrics-snapshot] Error emitting metric.stalled for ${m.id}: ${e}`); }
         }
       }
     } catch (e) { ctx.log(`[metrics-snapshot] Error during alert lifecycle: ${e}`); }
