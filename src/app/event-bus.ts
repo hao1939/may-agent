@@ -122,21 +122,43 @@ export function isSessionEvent(event: AgentEvent): event is SessionEvent {
 // ── EventBus ───────────────────────────────────────────────────────────
 
 export type Subscriber = (event: AgentEvent) => void;
+export type SubscribeOptions = { priority?: "first" | "normal" };
 
+/**
+ * EventBus — typed pub/sub.
+ *
+ * Subscriber priority semantics:
+ *   - "first" subscribers always run before "normal" subscribers, in registration order.
+ *   - Persistence (DB writer) MUST be registered with priority "first" so events become
+ *     durable before any side-effect handler runs. This is a v2 invariant: if a handler
+ *     triggers work, the originating event is already on disk.
+ *
+ * See: agents/shared/may-agent-docs/proposals/v2-architecture.md (Event Persistence as Invariant)
+ */
 export class EventBus {
-  private subscribers: Subscriber[] = [];
+  private firstSubscribers: Subscriber[] = [];
+  private normalSubscribers: Subscriber[] = [];
 
   /** Subscribe to all events. Returns unsubscribe function. */
-  subscribe(fn: Subscriber): () => void {
-    this.subscribers.push(fn);
+  subscribe(fn: Subscriber, opts?: SubscribeOptions): () => void {
+    const list = opts?.priority === "first" ? this.firstSubscribers : this.normalSubscribers;
+    list.push(fn);
     return () => {
-      this.subscribers = this.subscribers.filter((s) => s !== fn);
+      this.firstSubscribers = this.firstSubscribers.filter((s) => s !== fn);
+      this.normalSubscribers = this.normalSubscribers.filter((s) => s !== fn);
     };
   }
 
-  /** Emit an event to all subscribers. */
+  /** Emit an event. Runs "first" subscribers (persistence) before "normal" (handlers/UI). */
   emit(event: AgentEvent): void {
-    for (const fn of this.subscribers) {
+    for (const fn of this.firstSubscribers) {
+      try {
+        fn(event);
+      } catch (err) {
+        log("warn", `[event-bus] first-priority subscriber threw on event '${event.type}': ${err}`);
+      }
+    }
+    for (const fn of this.normalSubscribers) {
       try {
         fn(event);
       } catch (err) {
@@ -148,6 +170,6 @@ export class EventBus {
 
   /** Number of subscribers. */
   get listenerCount(): number {
-    return this.subscribers.length;
+    return this.firstSubscribers.length + this.normalSubscribers.length;
   }
 }

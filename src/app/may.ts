@@ -205,10 +205,13 @@ const models: Record<string, ModelWithApiKey> = {
 
 const bus = new EventBus();
 
-// DB writer subscriber — persists events to SQLite
+// DB writer subscriber — persists events to SQLite.
+// Registered with priority "first": v2 invariant that events are durable
+// BEFORE any side-effect handler runs. If a handler triggers work, the
+// originating event is already on disk (audit/replay safety).
 import { DbWriter } from "../lib/db-writer.js";
 const dbWriter = new DbWriter(PERSIST_DIR);
-bus.subscribe(dbWriter.handler);
+bus.subscribe(dbWriter.handler, { priority: "first" });
 
 // Session lifecycle subscribers — decoupled side effects
 import {
