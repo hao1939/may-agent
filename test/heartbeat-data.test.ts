@@ -3,6 +3,14 @@ import { mkdtempSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
+// Mock dispatch-dedup-guard to avoid flaky state-dependent tests
+vi.mock("../shared/workflows/dispatch-dedup-guard.js", () => ({
+  shouldDispatch: () => ({ allowed: true, attempts: 0 }),
+  recordDispatch: () => {},
+  recordOutcome: () => {},
+  cleanup: () => {},
+}));
+
 // We need to import from the shared module
 import {
   loadMetrics,
