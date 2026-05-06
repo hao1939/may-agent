@@ -93,3 +93,23 @@ The measurement query at line 111-112 stays as-is.
 - Generalizing the self-calibration to other config-driven metrics
   (e.g. `project.active-count` per KE-749). Worth doing, but as a separate
   proposal once this pattern is validated on one metric.
+
+## Addendum (2026-05-06, post-KE-760)
+
+This proposal corrects the **target/threshold** side of the metric. KE-760
+discovered an independent bug on the **measurement input** side: the
+coverage SELECT counts dispatch-dedup phantom completions (2-12ms, no agent
+session created), so even with `target=4` correctly calibrated, `current`
+holds at 4 throughout windows where an agent is auto-blocked or
+permanently dead (coach has been 100% phantom for 48h+).
+
+Companion proposal: `2026-05-06-filter-phantom-completions-from-heartbeat-coverage.md` (P0).
+
+**Both proposals are needed; either alone is insufficient:**
+- Self-calibration alone: target tracks reality, but `current=4` from
+  phantoms means the threshold never trips even when an agent is gone.
+- Duration filter alone: `current` becomes truthful, but `target=8` in a
+  4-agent topology guarantees perpetual breach until the topology shifts
+  back to 8.
+
+Recommend dev pick the pair up together. Order does not matter.
