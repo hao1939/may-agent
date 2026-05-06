@@ -95,7 +95,8 @@ When a heartbeat is asked to "check eval recency", treat **SQLite DB liveness** 
 
 **Coverage sanity check (recommended):** Also compute a short-window coverage ratio (e.g., last 6h / last 24h) to detect partial outages where the DB is still getting *some* evaluations but the pipeline is falling behind.
 - Example query pair: `count(sessions where status='done' and startedAt>=now-6h)` vs `count(evaluations where createdAt>=now-6h)`.
-- If coverage < ~10% for last 6h (tunable), escalate as likely `evaluation-sync` liveness/scheduling issue.
+- **Important:** `evaluations.createdAt` is stored as **epoch milliseconds**; `sessions.startedAt/endedAt` are also epoch milliseconds. Do **not** use `datetime('now', ...)` comparisons against these columns in SQLite; compare against `(Date.now() - windowMs)`.
+- If coverage < ~10% for last 6h (tunable), escalate as likely `evaluate-session-llm` liveness/scheduling/scope issue.
 
 **Primary (current system):** `.state/may.db` → `evaluations` table
 - Query `MAX(createdAt)` from `evaluations` and compare to now.
