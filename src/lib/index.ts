@@ -70,30 +70,16 @@ export {
   readSessionMessages,
   sessionDir,
   sessionJsonlPath,
-  findSessionJsonl,
   sessionOutputDir,
   sessionMetaPath,
   readSessionMeta,
   writeSessionMeta,
   loadAllSessionMetas,
   loadAllSessionMetasAsync,
-  readSessionMetaAsync,
-  listActiveSessionIdsAsync,
-  listArchivedSessionIdsAsync,
   listActiveSessionIds,
-  listArchivedSessionIds,
 } from "./persistence.js";
 export { createBackgroundExecTool } from "./background-exec.js";
 
-export {
-  createClaudeCodeTool,
-  createGeminiCliTool,
-  createCodexTool,
-  truncateOutput,
-  stripAnsi,
-  spawnCliAgent,
-} from "./cli-agents.js";
-export type { CliAgentToolOptions } from "./cli-agents.js";
 export { createCronTool } from "./cron-tool.js";
 export type { CronEntry } from "./cron-tool.js";
 export { spawnDetachedAgent, readIdentity } from "./detached.js";

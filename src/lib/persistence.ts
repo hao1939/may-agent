@@ -111,19 +111,6 @@ export function sessionJsonlPath(persistDir: string, sessionId: string): string 
   return join(sessionDir(persistDir, sessionId), "session.jsonl");
 }
 
-/**
- * Find the session JSONL file, checking active directory first then history archive.
- * Returns the path if found, null otherwise.
- * Use this when reading transcripts for sessions that may have been archived.
- */
-export function findSessionJsonl(persistDir: string, sessionId: string): string | null {
-  const activePath = join(sessionDir(persistDir, sessionId), "session.jsonl");
-  if (existsSync(activePath)) return activePath;
-  const archivedPath = join(historyDir(persistDir), sessionId, "session.jsonl");
-  if (existsSync(archivedPath)) return archivedPath;
-  return null;
-}
-
 /** Return the path to a session's output directory. */
 export function sessionOutputDir(persistDir: string, sessionId: string): string {
   return join(sessionDir(persistDir, sessionId), "output");

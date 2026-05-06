@@ -106,37 +106,6 @@ export function getRecentDigests(
  * Get recent digests from OTHER agents that modified files the current agent also recently touched.
  * This provides cross-agent awareness: "someone else changed something you care about."
  */
-export function getCrossAgentDigests(
-  persistDir: string,
-  excludeAgent: string,
-  recentFiles: Set<string>,
-  windowMs = 2 * 60 * 60 * 1000,
-  limit = 3,
-): DigestRow[] {
-  if (recentFiles.size === 0) return [];
-  const db = getDb(persistDir);
-  const cutoff = Date.now() - windowMs;
-  const candidates = db
-    .prepare(
-      `SELECT * FROM session_digests
-       WHERE agent != ? AND trigger = 'end' AND files_modified IS NOT NULL
-         AND created_at > ?
-       ORDER BY created_at DESC LIMIT 20`,
-    )
-    .all(excludeAgent, cutoff) as unknown as DigestRow[];
-
-  return candidates
-    .filter((d) => {
-      try {
-        const files = JSON.parse(d.files_modified!) as string[];
-        return files.some((f) => recentFiles.has(f));
-      } catch {
-        return false;
-      }
-    })
-    .slice(0, limit);
-}
-
 /**
  * Get digests with unresolved `still_open` items — sessions that ended partial/in_progress/interrupted
  * and were never followed by a success in the same session. Surfaced regardless of recency (within 24h).

@@ -26,9 +26,6 @@ import {
   createReadTool,
   createWorkflowTool,
   createBackgroundExecTool,
-  createClaudeCodeTool,
-  createGeminiCliTool,
-  createCodexTool,
   createCronTool,
   createScrapeTool,
   createSystemStatusTool,
@@ -157,33 +154,6 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
         tools.push(createReadTool(projectRoot) as any);
         break;
       }
-
-      case "claude-code":
-        tools.push(
-          createClaudeCodeTool({
-            cwd: projectRoot,
-            maxOutputLength: 80_000,
-          }),
-        );
-        break;
-
-      case "gemini-cli":
-        tools.push(
-          createGeminiCliTool({
-            cwd: projectRoot,
-            maxOutputLength: 80_000,
-          }),
-        );
-        break;
-
-      case "codex":
-        tools.push(
-          createCodexTool({
-            cwd: projectRoot,
-            maxOutputLength: 80_000,
-          }),
-        );
-        break;
 
       case "agents": {
         // Agents cooperation tool — actions: call, fork, message, list, peek, cancel, context, requests
@@ -420,9 +390,6 @@ async function loadLocalTools(agentName: string, agentDir: string, opts: AgentLo
 const VALID_TOOL_PRESETS = new Set([
   "coding",
   "read-only",
-  "claude-code",
-  "gemini-cli",
-  "codex",
   "agents",
   "workflow",
   "background-exec",
