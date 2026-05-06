@@ -328,19 +328,19 @@ const manager = new SubagentManager({
 
 // Agent-loader bookkeeping (track active session IDs, run cleanup on completion)
 bus.subscribe((event) => {
-  if (event.type === "session_start" && "agent" in event && "sessionId" in event) {
+  if (event.type === "session.start" && "agent" in event && "sessionId" in event) {
     setAgentSessionId(event.agent as string, event.sessionId as string);
   }
-  if (event.type === "session_end" && "agent" in event) {
+  if (event.type === "session.end" && "agent" in event) {
     runAgentCleanup(event.agent as string);
   }
 });
 
 // ── Session lifecycle → domain events (thin translator) ────────────────
-// Translates session_end bus events into domain events (dot-separated types).
+// Translates session.end bus events into domain events (dot-separated types).
 // DbWriter persists them, Cron dispatches them to handlers — both via bus subscription.
 bus.subscribe((event) => {
-  if (event.type !== "session_end") return;
+  if (event.type !== "session.end") return;
   const info = event as any;
 
   // Translate → session.failed (for recovery handler)

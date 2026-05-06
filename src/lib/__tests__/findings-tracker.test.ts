@@ -15,7 +15,7 @@ function makeTmpDir() {
 
 function makeSessionEndEvent(agent: string, deliverables: Array<{ path: string }>): AgentEvent {
   return {
-    type: "session_end",
+    type: "session.end",
     agent,
     sessionId: `test-${randomUUID()}`,
     timestamp: Date.now(),

@@ -332,7 +332,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
 
     // Auto-expand: child sessions inherit from parent (same as socket.ts)
-    if (event.type === "session_start" && event.parentSessionId && watchedSessions.has(event.parentSessionId)) {
+    if (event.type === "session.start" && event.parentSessionId && watchedSessions.has(event.parentSessionId)) {
       watchedSessions.add(event.sessionId);
     }
 
@@ -363,7 +363,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     // ── Child session completion: send ONE summary ──
     // When a child session in the watched tree ends, send a single
     // summary message instead of streaming all its individual turns.
-    if (event.type === "session_end" && "sessionId" in event && event.sessionId !== chatSid) {
+    if (event.type === "session.end" && "sessionId" in event && event.sessionId !== chatSid) {
       if (pendingChatId) {
         const fp = event.finishParams as Record<string, unknown> | undefined;
         const summary = (fp?.summary as string) ?? (typeof event.outcome === "string" ? event.outcome.slice(0, 200) : "completed");
@@ -371,13 +371,13 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         if (fpStatus === "failure" || fpStatus === "blocked") {
           sendToUser(`❌ ${String(event.agent)} BLOCKED: ${summary}`, { eventType: "blocked", agent: String(event.agent), sessionId: (event as any).sessionId, summary });
         } else {
-          sendToUser(`✅ ${String(event.agent)}: ${summary}`, { eventType: "session_end", agent: String(event.agent), sessionId: (event as any).sessionId, summary });
+          sendToUser(`✅ ${String(event.agent)}: ${summary}`, { eventType: "session.end", agent: String(event.agent), sessionId: (event as any).sessionId, summary });
         }
       }
     }
 
     // When the root chat session ends, check if we ever responded
-    if (event.type === "session_end" && "sessionId" in event && event.sessionId === chatSid && pendingChatId) {
+    if (event.type === "session.end" && "sessionId" in event && event.sessionId === chatSid && pendingChatId) {
       if (event.error) {
         const errMsg = String(event.error).length > 200 ? String(event.error).slice(0, 200) + "…" : String(event.error);
         sendToUser(`❌ Couldn't process your message: ${errMsg}`, { eventType: "error", agent: event.agent, sessionId: event.sessionId, summary: errMsg });

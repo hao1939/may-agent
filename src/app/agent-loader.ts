@@ -74,7 +74,7 @@ export interface AgentLoaderOptions {
 
 // ── Track active session IDs for subagent/workflow tools ────────────────
 
-/** Per-agent session ID tracking. Updated by session_start bus event. */
+/** Per-agent session ID tracking. Updated by session.start bus event. */
 const agentSessionIds = new Map<string, string>();
 
 export function getAgentSessionId(name: string): string | undefined {

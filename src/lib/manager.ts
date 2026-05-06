@@ -708,7 +708,7 @@ export class SubagentManager {
       this.registry.updateSessionStatus(session.sessionId, outcome.archiveStatus, session.error);
     } catch (metaErr) {
       log("error", `[completion] Failed to write meta.json for ${session.sessionId}: ${metaErr instanceof Error ? metaErr.message : String(metaErr)}`);
-      // Continue — still emit session_end so DB, digest, and other subscribers fire
+      // Continue — still emit session.end so DB, digest, and other subscribers fire
     }
 
     session.unsubscribe?.();
@@ -734,24 +734,7 @@ export class SubagentManager {
     // ── Notify completion ────────────────────────────────────────────
     const info = buildSessionInfo(session, outcome, (name) => this.getWorkspacePath(name));
 
-    // Emit session_end on bus (subscribers handle recovery, eval, memory, etc.)
-    this.emit({
-      type: "session_end",
-      sessionId: info.sessionId,
-      agent: info.agent,
-      status: info.status,
-      task: info.task,
-      duration: info.runtime,
-      error: info.error,
-      outcome: info.outcome,
-      opCount: info.opCount,
-      turnCount: info.turnCount,
-      finishParams: info.finishParams,
-      filesModified: info.filesModified,
-      workspacePath: info.workspacePath,
-      parentSessionId: info.parentSessionId,
-    });
-    // v2 mirror: canonical dot-form event
+    // Emit session.end on bus (subscribers handle recovery, eval, memory, persistence, etc.)
     this.emit({
       type: "session.end",
       sessionId: info.sessionId,
@@ -759,6 +742,16 @@ export class SubagentManager {
       outcome: info.outcome ?? info.status,
       summary: typeof info.finishParams?.summary === "string" ? info.finishParams.summary : (info.error ?? ""),
       durationMs: session.endedAt && session.startedAt ? session.endedAt - session.startedAt : 0,
+      // Optional rich fields used by digest, telegram, db-writer, recovery:
+      status: info.status,
+      task: info.task,
+      duration: info.runtime,
+      error: info.error,
+      opCount: info.opCount,
+      turnCount: info.turnCount,
+      finishParams: info.finishParams,
+      filesModified: info.filesModified,
+      workspacePath: info.workspacePath,
     });
   }
 
@@ -929,23 +922,9 @@ export class SubagentManager {
     this.activeSessions.set(sessionId, session);
 
     try {
-      // Emit session_start and bridge agent events to the bus
+      // Emit session.start and bridge agent events to the bus
       this.bridgeAgentEvents(name, sessionId);
       const meta = readSessionMeta(this.registry.persistDir, sessionId);
-      this.emit({
-        type: "session_start",
-        sessionId,
-        agent: name,
-        task: meta?.task ?? task,
-        parentSessionId: opts?.parentSessionId,
-        workflowRunId: opts?.workflowRunId,
-        projectId: opts?.projectId,
-        source: opts?.source,
-        kind: session.kind,
-        requestId: opts?.requestId,
-        stepLabel: opts?.stepLabel,
-      });
-      // v2 mirror: canonical dot-form event for new consumers (UI, metrics, evaluator).
       this.emit({
         type: "session.start",
         sessionId,
@@ -953,9 +932,16 @@ export class SubagentManager {
         task: meta?.task ?? task,
         trigger: opts?.source ?? session.kind ?? "unknown",
         firedAt: session.startedAt,
+        // Optional rich fields used by UI, telegram, db-writer, recovery:
+        parentSessionId: opts?.parentSessionId,
+        workflowRunId: opts?.workflowRunId,
+        projectId: opts?.projectId,
+        source: opts?.source,
+        kind: session.kind,
+        requestId: opts?.requestId,
       });
 
-      // Activity tracking handled by ActivityWriter subscriber (reacts to session_start event)
+      // Activity tracking handled by ActivityWriter subscriber (reacts to session.start event)
 
       // The initial user message is persisted via the message_end subscriber
       // when agentLoop emits it (before any LLM call). No explicit write here
@@ -1343,20 +1329,8 @@ export class SubagentManager {
     this.setupTimeout(session, def.timeoutMs);
     this.activeSessions.set(sessionId, session);
 
-    // Emit session_start and bridge agent events to the bus
+    // Emit session.start and bridge agent events to the bus
     this.bridgeAgentEvents(persisted.agent, sessionId);
-    this.emit({
-      type: "session_start",
-      sessionId,
-      agent: persisted.agent,
-      task: persisted.task,
-      parentSessionId: persisted.parentSessionId,
-      workflowRunId: persisted.workflowRunId,
-      source: persisted.source,
-      kind: persisted.kind,
-      requestId: persisted.requestId,
-    });
-    // v2 mirror: canonical dot-form event
     this.emit({
       type: "session.start",
       sessionId,
@@ -1364,6 +1338,12 @@ export class SubagentManager {
       task: persisted.task,
       trigger: persisted.source ?? persisted.kind ?? "resume",
       firedAt: session.startedAt,
+      // Optional rich fields:
+      parentSessionId: persisted.parentSessionId,
+      workflowRunId: persisted.workflowRunId,
+      source: persisted.source,
+      kind: persisted.kind,
+      requestId: persisted.requestId,
     });
 
     // Continue the agent — either resume from a pending user message or
@@ -1863,7 +1843,7 @@ export class SubagentManager {
     session.error = finishCalled ? undefined : "Closed";
     this.registry.updateSessionStatus(sessionId, finishCalled ? "done" : "interrupted", session.error);
 
-    // Extract outcome and finishParams for the session_end event
+    // Extract outcome and finishParams for the session.end event
     let outcome: string | undefined;
     let finishParams: Record<string, unknown> | undefined;
     if (finishCalled) {
@@ -1878,7 +1858,7 @@ export class SubagentManager {
     this.cleanupCallDepths(sessionId);
     this.activeSessions.delete(sessionId);
 
-    // Emit session_end on bus + legacy callback
+    // Emit session.end on bus + legacy callback
     const closeInfo = {
       sessionId, agent: session.agentName, task: session.task,
       status: session.archiveStatus!, startedAt: session.startedAt,
@@ -1892,30 +1872,22 @@ export class SubagentManager {
       requestId: session.requestId,
     };
     this.emit({
-      type: "session_end",
-      sessionId: closeInfo.sessionId,
-      agent: closeInfo.agent,
-      status: closeInfo.status,
-      task: closeInfo.task,
-      duration: closeInfo.runtime,
-      error: closeInfo.error,
-      outcome: closeInfo.outcome,
-      opCount: closeInfo.opCount,
-      turnCount: closeInfo.turnCount,
-      finishParams: closeInfo.finishParams,
-      filesModified: closeInfo.filesModified,
-      workspacePath: closeInfo.workspacePath,
-      parentSessionId: session.parentSessionId,
-      requestId: closeInfo.requestId,
-    });
-    // v2 mirror: canonical dot-form event
-    this.emit({
       type: "session.end",
       sessionId: closeInfo.sessionId,
       agent: closeInfo.agent,
       outcome: closeInfo.outcome ?? closeInfo.status,
       summary: typeof closeInfo.finishParams?.summary === "string" ? closeInfo.finishParams.summary : (closeInfo.error ?? ""),
       durationMs: session.endedAt && session.startedAt ? session.endedAt - session.startedAt : 0,
+      // Optional rich fields:
+      status: closeInfo.status,
+      task: closeInfo.task,
+      duration: closeInfo.runtime,
+      error: closeInfo.error,
+      opCount: closeInfo.opCount,
+      turnCount: closeInfo.turnCount,
+      finishParams: closeInfo.finishParams,
+      filesModified: closeInfo.filesModified,
+      workspacePath: closeInfo.workspacePath,
     });
   }
 

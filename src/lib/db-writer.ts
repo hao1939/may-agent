@@ -24,7 +24,7 @@ export class DbWriter {
   handler = (event: AgentEvent): void => {
     try {
       switch (event.type) {
-        case "session_start":
+        case "session.start":
           upsertSession(this.persistDir, {
             sessionId: event.sessionId,
             agent: event.agent,
@@ -39,9 +39,17 @@ export class DbWriter {
             stepLabel: (event as any).stepLabel,
             startedAt: Date.now(),
           });
+          // Also write event row for analytics / audit
+          try {
+            const { type, ...data } = event as any;
+            this.db.run(
+              "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?,?,?,?,?)",
+              [type, event.agent, event.agent, JSON.stringify(data), Date.now()],
+            );
+          } catch { /* best-effort */ }
           break;
 
-        case "session_end":
+        case "session.end":
           updateSessionDb(this.persistDir, event.sessionId, {
             status: event.status as any,
             error: event.error,
@@ -49,6 +57,14 @@ export class DbWriter {
             opCount: event.opCount,
             endedAt: Date.now(),
           });
+          // Also write event row for analytics / audit
+          try {
+            const { type, ...data } = event as any;
+            this.db.run(
+              "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?,?,?,?,?)",
+              [type, event.agent, event.agent, JSON.stringify(data), Date.now()],
+            );
+          } catch { /* best-effort */ }
           break;
 
         case "message.created":

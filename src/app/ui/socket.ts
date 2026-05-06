@@ -134,7 +134,7 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
           }
         } else {
           // No active chat session (e.g., after /new) — clear filter
-          // so the next session_start will be picked up
+          // so the next session.start will be picked up
           if (client.filter) client.filter.clear();
         }
       }
@@ -142,7 +142,7 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
 
     // Auto-expand: when a session starts with a parentSessionId in a client's filter,
     // add the new session to that client's filter automatically.
-    if (event.type === "session_start" && event.parentSessionId) {
+    if (event.type === "session.start" && event.parentSessionId) {
       for (const client of clients.values()) {
         if (client.filter?.has(event.parentSessionId)) {
           client.filter.add(event.sessionId);

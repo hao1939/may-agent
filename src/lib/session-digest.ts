@@ -5,7 +5,7 @@
  * Digests are stored in the session_digests DB table (append-only per session).
  *
  * Three operations:
- * - CREATE (session_start): metadata only, no LLM
+ * - CREATE (session.start): metadata only, no LLM
  * - DIGEST (checkpoint, end, etc.): LLM synthesizes what happened from transcript delta
  * - CLASSIFY (recovery triggers): code-level decision on what to do next
  *
@@ -683,13 +683,13 @@ export function logShadowComparison(
 /**
  * The single entry point for all digest operations.
  *
- * - session_start: CREATE (no LLM, just metadata)
+ * - session.start: CREATE (no LLM, just metadata)
  * - checkpoint, end, etc.: DIGEST (LLM synthesis)
  * - Recovery triggers: DIGEST + CLASSIFY
  *
  * @param persistDir - Path to the persistence directory
  * @param input - Digest input data
- * @param manager - SubagentManager for LLM calls (optional for session_start)
+ * @param manager - SubagentManager for LLM calls (optional for session.start)
  * @param triggerContext - Additional context for the LLM
  */
 export async function upsertDigest(
@@ -703,8 +703,8 @@ export async function upsertDigest(
     const step = (last?.step ?? 0) + 1;
     const now = Date.now();
 
-    // ── CREATE: session_start ────────────────────────────────────────
-    if (input.trigger === "session_start") {
+    // ── CREATE: session.start ────────────────────────────────────────
+    if (input.trigger === "session.start") {
       const id = insertDigest(persistDir, {
         sessionId: input.sessionId,
         agent: input.agent,
@@ -784,7 +784,7 @@ export async function upsertDigest(
   }
 }
 
-// ── Convenience: session_start digest (no LLM) ────────────────────────
+// ── Convenience: session.start digest (no LLM) ────────────────────────
 
 /**
  * Create the initial digest entry when a session starts.
@@ -800,7 +800,7 @@ export function createStartDigest(
     insertDigest(persistDir, {
       sessionId,
       agent,
-      trigger: "session_start",
+      trigger: "session.start",
       step: 1,
       task,
       outcome: "in_progress",

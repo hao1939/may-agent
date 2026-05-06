@@ -241,7 +241,7 @@ describe("Circuit breaker — digest-informed decisions", () => {
       undefined,
     );
 
-    handler({ type: "session_start", sessionId: "s_fallback", agent: "coder", task: "test" } as any);
+    handler({ type: "session.start", sessionId: "s_fallback", agent: "coder", task: "test" } as any);
     for (let i = 0; i < 7; i++) {
       handler({
         type: "turn_end",
@@ -266,7 +266,7 @@ describe("Circuit breaker — digest-informed decisions", () => {
       undefined,
     );
 
-    handler({ type: "session_start", sessionId: "s_warn", agent: "coder", task: "test" } as any);
+    handler({ type: "session.start", sessionId: "s_warn", agent: "coder", task: "test" } as any);
     for (let i = 0; i < 4; i++) {
       handler({
         type: "turn_end",
@@ -290,7 +290,7 @@ describe("Circuit breaker — digest-informed decisions", () => {
       undefined,
     );
 
-    handler({ type: "session_start", sessionId: "s_reset", agent: "coder", task: "test" } as any);
+    handler({ type: "session.start", sessionId: "s_reset", agent: "coder", task: "test" } as any);
     for (let i = 0; i < 5; i++) {
       handler({
         type: "turn_end",
@@ -332,7 +332,7 @@ describe("Circuit breaker — digest-informed decisions", () => {
       undefined,
     );
 
-    handler({ type: "session_start", sessionId: "s_cleanup", agent: "coder", task: "test" } as any);
+    handler({ type: "session.start", sessionId: "s_cleanup", agent: "coder", task: "test" } as any);
     for (let i = 0; i < 3; i++) {
       handler({
         type: "turn_end",
@@ -343,7 +343,7 @@ describe("Circuit breaker — digest-informed decisions", () => {
       } as any);
     }
     // Session ends
-    handler({ type: "session_end", sessionId: "s_cleanup", agent: "coder" } as any);
+    handler({ type: "session.end", sessionId: "s_cleanup", agent: "coder" } as any);
     // New errors after session_end should not accumulate
     for (let i = 0; i < 7; i++) {
       handler({
@@ -506,7 +506,7 @@ describe("Phase 4b: Escalation classifier integration", () => {
        (sessionId, agent, trigger, step, task, what_happened, outcome, still_open,
         files_modified, details, action, action_reason, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?)`,
-    ).run("s_fail_no_wh", "coder", "session_start", 1, "fix lint", null, "in_progress", null, Date.now());
+    ).run("s_fail_no_wh", "coder", "session.start", 1, "fix lint", null, "in_progress", null, Date.now());
 
     const result = makeEscalationDecision(persistDir, "s_fail_no_wh", "failure", "Something failed");
     expect(result.action).toBe("escalate");
