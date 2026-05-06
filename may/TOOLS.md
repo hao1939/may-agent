@@ -35,5 +35,5 @@ Run multi-step agent sequences. **Blocking.**
 Manage scheduled jobs: `list`, `enable(name)`, `disable(name)`, `trigger(name)`.
 
 ## Key Constraints
-- ❌ No `handoff` tool — use `agents.send()` with artifact path in the message.
+- ❌ No `handoff` tool — use `message({ to, content, artifact })` with artifact path in the content.
 - ❌ `agents.call("coder"|"qa", ...)` — blocked. Use tech-lead or workflow.

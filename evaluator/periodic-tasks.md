@@ -83,6 +83,12 @@ Ran `monitor-session.cjs --running`: 3 checked, 3 healthy.
 
 Ran `patrol.cjs`: **CRITICAL** due to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event).
 
+**Last run**: 2026-05-06 14:20Z — DB canonical check: `MAX(evaluations.createdAt)=1778066602681` (2026-05-06T11:23:22Z); `MAX(sessions.startedAt)=1778077117818` (2026-05-06T14:18:37Z) → eval lag ≈175.3m (~2h55m) at check time.
+
+Last-24h volume: `sessions`=1038 vs `evaluations`=21 → coverage appears very low (pipeline running but not keeping up / scope narrowed / job stalled intermittently).
+
+Legacy `.state/evaluations/` artifacts: newest mtime observed 2026-04-29; `task_tree_*.json` mtimes still 2026-03-24 → continue treating as legacy path drift, not DB liveness.
+
 **Previous run**: 2026-05-03 01:13Z — DB canonical check: `MAX(evaluations.createdAt)=1777768954999` (2026-05-03T00:42:34Z; eval pipeline live). `MAX(sessions.createdAt)=1777768954999` (2026-05-03T00:42:34Z). Investigation note: bob’s depressed average score (~0.408) appears strongly explained by `shallow_session` tagging (50% of bob evals); when shallow-tagged, avg score ≈0.20 vs non-shallow ≈0.617. Similar pattern for coach/optimizer (shallow avg ≈0.20).
 
 Ran `monitor-session.cjs --running`: 1 alert (`STALL` amy `s_1777626616591_0` idle 1158m; recommended action: kill). Ran `patrol.cjs`: CRITICAL due to missing `agents/shared/compliance-snapshot.json` baseline (patrol degraded, not a mismatch event).

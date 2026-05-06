@@ -435,14 +435,5 @@
     "on": [
       "heartbeat.trigger"
     ]
-  },
-  {
-    "name": "task-watchdog",
-    "type": "job",
-    "intervalMs": 3600000,
-    "message": "[cron:task-watchdog] Check for stale requests.",
-    "enabled": true,
-    "handler": "task-watchdog",
-    "description": "Nudge agents about stale requests, escalate to May/human if ignored (JS handler, 60min)"
   }
 ]

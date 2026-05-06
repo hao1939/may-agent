@@ -13,7 +13,11 @@ Interpretation: **DB is being updated recently**, while `.state/evaluations/` ta
 - Legacy `.state/evaluations/` artifacts still stale vs DB: newest `s_*.json` mtime observed **2026-04-29**, and `task_tree_*.json` still **2026-03-24**. (`ls -la .state/evaluations | tail -10`)
 - LLM eval (Process #15) still appears **disabled/unimplemented**: `.state/may.db` has no tables matching `*llm*`. (bun:sqlite)
 
-Action recommendation: escalate to May/Tech Lead to either (a) remove/rename docs referencing `.state/evaluations/` as canonical outputs, or (b) restore/redirect the legacy artifact writer so the filesystem mirror stays in sync with DB.
+### New signal: evaluation coverage appears very low (2026-05-06 14:20Z)
+- Last-24h volume: `sessions`=1038 vs `evaluations`=21.
+- Current lag at check time: `MAX(sessions.startedAt)-MAX(evaluations.createdAt)` ≈ **175.3m**.
+
+Action recommendation: escalate to May/Tech Lead to investigate eval pipeline throughput/scope (cron frequency, job errors, narrowing filters), and separately keep treating `.state/evaluations/` timestamps as non-canonical.
 
 ## Notes
 - Some bun queries returned no output when selecting from `sessions` using `createdAt` (column does not exist); correct column is `startedAt`.
