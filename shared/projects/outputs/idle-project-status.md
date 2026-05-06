@@ -1,24 +1,21 @@
 # Project Idle Status Report
 
-**Generated:** Iteration 46 (May 6, 2025)
+**Generated:** Iteration 47 (May 6, 2025)
 **Status:** Active but idle — no actionable work
 
-## Completed Work
-All plan items that can be completed without new data are done. Propagation is complete.
+## Summary
 
-## Time-Gated Items Remaining
-| Item | Trigger | Due |
-|------|---------|-----|
-| Monthly re-scan of recent sessions | Calendar | June 6, 2025 |
-| Compare correction rate (2-week window) | New Hao interactions | When sufficient data exists |
-| Track metric trend | Monthly | June 6, 2025 |
-| Quarterly git re-scan | Calendar | October 2026 |
+This project has completed all actionable work items. The remaining tasks are time-gated and cannot be executed until their triggers fire.
 
-## Next Actions
-No work should be dispatched until one of these triggers fires:
-1. **New Hao interaction detected** → mine it immediately
-2. **June 6 monthly re-scan date** → run session re-scan
-3. **October 2026** → quarterly git re-scan
+## Pending Triggers
 
-## Note
-This project has been idle for 45+ consecutive iterations with no new triggers. The orchestrator should stop dispatching workers until a trigger fires.
+| Trigger | Due Date | Action |
+|---------|----------|--------|
+| New Hao interaction | On occurrence | Mine it immediately |
+| Monthly re-scan | ~June 6, 2025 | Re-scan recent sessions |
+| Quarterly git re-scan | Oct 2026 | Full repository scan |
+| 2-week correction rate comparison | Needs more data | Compare correction rates |
+
+## Recommendation
+
+**Stop dispatching workers until a trigger fires.** There has been no actionable work for 46+ consecutive iterations. The project is healthy — it simply has no pending tasks that can be completed without new input data or a calendar date arriving.
