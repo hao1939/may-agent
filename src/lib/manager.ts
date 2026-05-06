@@ -386,10 +386,14 @@ export class SubagentManager {
       return true;
     });
 
+    // gpt-5.5 doesn't support "minimal" reasoning — use "low" as default for reasoning models
+    const thinkingLevel = def.model.reasoning ? "low" : "off";
+
     return new Agent({
       initialState: {
         systemPrompt: this.resolveSystemPrompt(def),
         model: def.model,
+        thinkingLevel,
         tools: wrapToolsWithReceipts(validTools, sessionId, {
           activeSessions: this.activeSessions,
           persistDir: this.registry.persistDir,
