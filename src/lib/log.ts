@@ -31,11 +31,6 @@ export function addLogSubscriber(fn: LogSubscriber): () => void {
   };
 }
 
-/** Reset to default console-only subscriber (for testing). */
-export function resetLogSubscribers(): void {
-  _subscribers = [consoleSubscriber];
-}
-
 /** Log a message to all subscribers. */
 export function log(level: LogLevel, message: string): void {
   for (const fn of _subscribers) {

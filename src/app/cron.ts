@@ -424,14 +424,6 @@ export class Cron {
     return this.lastFireTimes.get(entryName) ?? null;
   }
 
-  /** Get PID from a running detached job — uses inflightJobs map, no DB needed. */
-  private getRunningPid(_entryName: string): number | null {
-    return null; // Overlap detection uses inflightJobs Map
-  }
-
-  /** No-op — orphan tracking removed with requests table. Overlap uses inflightJobs. */
-  private failOrphans(_entryName: string): void {}
-
   // ── Scheduling with resume ──────────────────────────────────────────
 
   private startEntry(entry: CronEntry): void {
@@ -439,23 +431,10 @@ export class Cron {
     if (!mode) return;
 
     const fire = () => {
-      // Cron timer: skip if already running (overlap protection)
-      if (mode === "job-detached") {
-        // For detached: check if process is actually alive
-        const pid = this.getRunningPid(entry.name);
-        if (pid && this.isProcessAlive(pid)) {
-          this.onError?.(`Cron "${entry.name}" skipped — detached process still running (pid=${pid})`);
-          return;
-        }
-        // PID dead but request still active → fail the orphan
-        if (this.isRunning(entry.name)) {
-          this.failOrphans(entry.name);
-        }
-      } else {
-        if (this.isRunning(entry.name)) {
-          this.onError?.(`Cron "${entry.name}" skipped — still running`);
-          return;
-        }
+      // Overlap protection: skip if a previous run is still in flight.
+      if (this.isRunning(entry.name)) {
+        this.onError?.(`Cron "${entry.name}" skipped — still running`);
+        return;
       }
 
       // Auto-pause was removed in v0.5 cleanup — agent health is now
@@ -489,26 +468,7 @@ export class Cron {
   }
 
   /** Compute the initial delay for an entry based on when it last ran. */
-  private computeResumeDelay(entry: CronEntry, mode: string): number {
-    // Clean up orphaned running requests from previous instance
-    if (mode === "job-detached") {
-      // For detached: only fail if the PID is dead
-      const pid = this.getRunningPid(entry.name);
-      if (pid && this.isProcessAlive(pid)) {
-        // Process survived restart — schedule normally from when it started
-        const lastFire = this.getLastFireTime(entry.name);
-        if (lastFire) {
-          const elapsed = Date.now() - lastFire;
-          return elapsed >= entry.intervalMs ? 0 : entry.intervalMs - elapsed;
-        }
-      } else if (this.isRunning(entry.name)) {
-        this.failOrphans(entry.name);
-      }
-    } else if (this.isRunning(entry.name)) {
-      // In-process job from previous instance — it's dead
-      this.failOrphans(entry.name);
-    }
-
+  private computeResumeDelay(entry: CronEntry, _mode: string): number {
     const lastFire = this.getLastFireTime(entry.name);
     if (lastFire == null) {
       // Never ran — use offsetMs for deterministic staggering.
@@ -569,16 +529,6 @@ export class Cron {
 
   // ── Detached agent job: spawn separate OS process ───────────────────
 
-  private isProcessAlive(pid: number | undefined | null): boolean {
-    if (pid == null) return false;
-    try {
-      process.kill(pid, 0);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
   private fireDetachedJob(entry: CronEntry): void {
     this.onJobFire?.(entry, "detached");
 
@@ -611,11 +561,5 @@ export class Cron {
       // Error tracked via onError/notify
       this.onError?.(`Cron job "${entry.name}" detached spawn failed: ${errMsg}`);
     }
-  }
-
-  /** Get info about running detached tasks — derived from inflightJobs. */
-  getDetachedRunning(): Map<string, { sessionId: string; pid: number | undefined; startedAt: string }> {
-    // Detached task tracking now uses inflightJobs Map (in-memory)
-    return new Map();
   }
 }
