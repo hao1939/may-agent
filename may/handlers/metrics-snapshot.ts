@@ -412,7 +412,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       if (deleted > 0) ctx.log(`[metrics-snapshot] Cleaned ${deleted} old snapshots (>${RETENTION_DAYS}d)`);
     } catch (e) { ctx.log(`[metrics-snapshot] Error during snapshot cleanup: ${e}`); }
 
-    ctx.log(`[metrics-snapshot] 12 metrics recorded (6 handler + 6 project), ${measured}/${measurable.length} source-defined`);
+    ctx.log(`[metrics-snapshot] ${ALL_METRICS.length} built-in metrics recorded, ${measured}/${measurable.length} source-defined`);
   };
 };
 
