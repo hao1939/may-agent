@@ -95,6 +95,16 @@ Last-24h coverage: `sessions(status='done')`=1053 vs `evaluations`=52 → covera
 
 **Last run**: 2026-05-06 17:53Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617`; `MAX(sessions.startedAt)=1778089960785` → eval lag ≈66.4m at check time; `sessions_after_last_eval`=17 (pipeline appears live but behind current session volume).
 
+**Last run**: 2026-05-06 18:53Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617` (2026-05-06T16:46:18Z); now=2026-05-06T18:53:22Z → eval lag ≈2h07m. Last-24h volume: `sessions(endedAt>=cutoff)`=996 vs `evaluations(createdAt>=cutoff)`=48 (coverage ≈4.8%).
+
+Event bus health signal: `events` table backlog is extreme (`pending`=15772; `handled`=14 total). In last 3h, `session.end pending`=135 and `session.start pending`=134, strongly suggesting the JS handler/event-subscriber loop is not consuming events.
+
+Most recent `handler.failed` events indicate possible root causes:
+- `metrics-snapshot`: `table metrics has no column named config` (schema mismatch)
+- `eval-poller`: timed out after 300s
+
+Action recommendation: escalate to May/tech-lead to restore handler liveness (event consumer) and address metrics schema mismatch; evaluation coverage will remain low until event backlog drains.
+
 **Previous run**: 2026-05-03 01:13Z — DB canonical check: `MAX(evaluations.createdAt)=1777768954999` (2026-05-03T00:42:34Z; eval pipeline live). `MAX(sessions.createdAt)=1777768954999` (2026-05-03T00:42:34Z). Investigation note: bob’s depressed average score (~0.408) appears strongly explained by `shallow_session` tagging (50% of bob evals); when shallow-tagged, avg score ≈0.20 vs non-shallow ≈0.617. Similar pattern for coach/optimizer (shallow avg ≈0.20).
 
 Ran `monitor-session.cjs --running`: 1 alert (`STALL` amy `s_1777626616591_0` idle 1158m; recommended action: kill). Ran `patrol.cjs`: CRITICAL due to missing `agents/shared/compliance-snapshot.json` baseline (patrol degraded, not a mismatch event).
