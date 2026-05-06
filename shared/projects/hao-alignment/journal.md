@@ -212,3 +212,11 @@ Same state as before — no actionable work exists until a trigger fires. The wo
 
 ### Iteration 4 — 2026-05-06T16:19:01.653Z
 **Worker**: The file is gitignored. Let me just call finish — the file exists on disk.
+**Orchestrator**: CONTINUE
+
+No new Hao interactions detected. Project remains active but idle — all completable work is done. The worker keeps being dispatched with nothing to do.
+
+**No worker dispatch needed.** Stop dispatching until a trigger fires:
+1. New Hao interaction → mine it
+2. Monthly re-scan date passes
+3.
