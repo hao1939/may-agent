@@ -1,11 +1,75 @@
 # Proposal: May-Agent v2 Architecture
 
+**Status**: Target architecture / migration plan, not big-bang rewrite.
+
+Goal: reduce runtime complexity by converging on one primitive:
+
+```
+event → runAgent() → session.end
+```
+
+Migration must be incremental. The current system is production-active.
+
+---
+
 A **metric-driven, event-based autonomous agent system** where:
 - Users define typed metrics that drive agent direction
-- Agents are role/responsibility/context scopes — multiple agents for scoping, not limitation
+- Agents are role/responsibility/context scopes
 - Everything is an event: timers, metric changes, messages, session completions
-- Workflows relieve agents from orchestration decisions — predefined, robust, extensible
+- Workflows relieve agents from orchestration decisions
 - `pi-coding-agent` provides the full agent runtime — we don't reinvent it
+- **Convention over configuration**: every component has sensible defaults. Agents opt into custom behavior only when needed.
+
+---
+
+## Infra vs Agent Boundary
+
+The infra provides **primitives**. Agents build patterns on top.
+
+| Infra provides | Agents build |
+|---------------|-------------|
+| Event bus (typed pub/sub) | Approval gates, escalation chains |
+| Metrics (typed measurement + alerting) | Quality standards, SLOs |
+| Messages (async, persisted) | Work requests, status updates |
+| Sessions (runAgent, persist, resume) | Multi-step strategies |
+| Storage (files + SQLite) | Project docs, knowledge bases |
+| Safety (guards as middleware) | — |
+| Continuity (crash recovery) | — |
+| Workflows (step execution) | Implement-and-verify, review flows |
+
+The infra doesn't know about "work queues" or "approval gates." Those are agent behaviors using messages and project status. The infra just delivers messages and runs agents.
+
+---
+
+## Agent Independence
+
+The infra is seamless — it triggers and frames, but the agent doesn't depend on it.
+
+From the agent's perspective, every session is:
+1. Receive a prompt (don't care who sent it — timer, metric breach, or human)
+2. See context in system prompt (don't care if it was injected by MetricEngine or typed by hand)
+3. Do work with coding tools
+4. Finish
+
+The infra provides:
+- **Trigger**: when to run (timers, events) — replaceable by a human typing "go"
+- **Framing**: what matters (metrics, messages, projects in prompt) — replaceable by a human writing context
+
+The agent provides:
+- **Work**: judgment + action with coding tools
+
+The infra also provides what the agent cannot provide for itself:
+- **Observability**: session metadata, token usage, cost, duration — all recorded without agent awareness
+- **Traceability**: every tool call, every event, every message persisted with timestamps and agent attribution
+- **Correlation**: which heartbeat triggered which workflow, which metric breach led to which fix — the event trail connects them
+- **Safety**: tool guards — the agent can't police itself
+- **Continuity**: crash recovery, session resume — the agent doesn't manage its own persistence
+- **Resource management**: model routing, rate limit handling — transparent to the agent
+
+Future investment areas:
+- **Memory across sessions**: metrics history, lessons, past session summaries (needs further design)
+
+The agent just works. The infra triggers, frames, protects, records, and connects the dots.
 
 ---
 
@@ -21,24 +85,20 @@ A **metric-driven, event-based autonomous agent system** where:
 │  Metric Engine  ──────────▶ metric.breach     ──▶ runAgent()         │
 │                             metric.recovered                         │
 │                             metric.stalled                           │
-│  Agent tools    ──────────▶ inbox.message     ──▶ runAgent()         │
-│  (send, finish)             session.end       ──▶ MetricEngine       │
+│  Agent tools    ──────────▶ message.created   ──▶ ack + queue      │
+│  (message, finish)          session.end       ──▶ MetricEngine       │
 │                             tool.executed     ──▶ SQLite audit       │
 │                                                                      │
 │  Pi-coding-agent events are bridged into system events via           │
 │  session.subscribe()                                                 │
-└───────────────────────────────────┬──────────────────────────────────┘
+└───────────────────────────────────────────────────────────────────────┘
                                     │ all events persisted
                                     ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │                     SQLite (single queryable store)                   │
-│  metrics │ metric_snapshots │ sessions │ events │ projects │ inbox    │
+│  metrics │ metric_snapshots │ sessions │ events │ messages            │
 └──────────────────────────────────────────────────────────────────────┘
 ```
-
-**No Scheduler component.** Timers are event sources on the bus — same as metric breaches or inbox messages.
-
-**No Agent Runner component.** `pi-coding-agent`'s `createAgentSession()` IS the runtime. We just wire it to the bus.
 
 ---
 
@@ -50,34 +110,43 @@ Typed pub/sub. The backbone.
 
 ```typescript
 type SystemEvent =
-  | { type: "heartbeat"; agent: string }
+  | { type: "heartbeat"; agent: string; scheduledAt: number; firedAt: number }
   | { type: "metric.breach"; metric: Metric; value: number }
   | { type: "metric.recovered"; metric: Metric }
   | { type: "metric.stalled"; metric: Metric }
+  | { type: "session.start"; agent: string; id: string; trigger: string; task: string }
   | { type: "session.end"; agent: string; id: string; outcome: Outcome; summary: string }
   | { type: "session.compacted"; agent: string; id: string; reason: string }
   | { type: "tool.executed"; agent: string; sessionId: string; tool: string; args: any }
-  | { type: "inbox.message"; to: string; from: string; content: string }
-  | { type: "project.stalled"; project: string; owner: string }
+  | { type: "message.created"; from: string; to: string; content: string; intent?: string; artifact?: string; priority?: "P0" | "P1" | "P2" | "P3" }
 
 // Everything is just: event → handler
 bus.on("heartbeat", (e) => runAgent(e.agent, buildHeartbeatTask(e.agent), "heartbeat"));
 bus.on("metric.breach", (e) => runAgent(e.metric.owner, buildBreachTask(e), "metric.breach"));
-bus.on("inbox.message", (e) => runAgent(e.to, buildInboxTask(e), "inbox.message"));
+
+// Metric breach handlers are idempotent and deduped by (metric_id, status, window).
+// A metric already in breach does not trigger repeated sessions unless escalation policy says so.
+
+// Default message handler: ack + include in next heartbeat (convention over configuration)
+// Messages are NOT immediately triggering a new session — they wait for the next run.
+// Agents can register custom handlers to override this default.
+bus.on("message.created", (e) => db.markMessagePending(e));
 
 // Timers are just event sources
 registerTimer("may", "*/20 * * * *");  // emits heartbeat every 20min
 
-// All events persisted for audit
-bus.onAny((e) => db.insertEvent(e));
+// Event persistence is part of emit, not a subscriber.
+// Implemented inside bus.emit():
+//   function emit(e: SystemEvent) {
+//     db.insertEvent(e);              // durable first
+//     for (const h of handlers) h(e); // then side-effects
+//   }
 
 // UI backends are just event bus subscribers
 bus.onAny((e) => socketServer.broadcast(e));   // WebSocket → web UI
 bus.onAny((e) => telegramNotifier.handle(e));  // Telegram alerts
 bus.onAny((e) => consoleRenderer.render(e));   // Console output
 ```
-
-UI backends are not a separate component — they're just subscribers on the bus.
 
 ---
 
@@ -119,29 +188,6 @@ CREATE TABLE metric_snapshots (
 );
 ```
 
-#### Type-Specific Config Examples
-
-```typescript
-// Gauge
-{ source: "query", query: "SELECT avg(latency) FROM requests WHERE ts > ?",
-  measure_interval: 300000,
-  alert: { mode: "sustained", threshold: 200, direction: "above", consecutive: 3 } }
-
-// Counter
-{ source: "query", query: "SELECT count(*) FROM sessions WHERE agent='coder' AND started_at > ?",
-  measure_interval: 3600000,
-  alert: { mode: "rate", min_rate: 1.0, per: "hour", stall_after: "2h" } }
-
-// Health
-{ source: "command", command: "curl -sf http://localhost:8080/health",
-  measure_interval: 60000,
-  alert: { mode: "consecutive_failures", count: 3 } }
-
-// Derived
-{ formula: "metrics.successes / metrics.total",
-  alert: { mode: "threshold", threshold: 0.95, direction: "below" } }
-```
-
 #### Measurement + Alert Loop
 
 ```typescript
@@ -175,16 +221,20 @@ async function measure(metric: Metric): Promise<void> {
 
 ### 3. Agent Runs — `pi-coding-agent` + Glue (~50 LOC)
 
-**No custom agent runtime.** `pi-coding-agent` provides:
+**Target: no custom agent runtime loop.** `pi-coding-agent` owns the LLM/tool/session loop.
+
+**Migration:** all callers use `AgentRuntime.runAgent()`. Initially it wraps the current manager. Eventually it delegates directly to pi-coding-agent.
+
+`pi-coding-agent` provides:
 
 | Capability | Provided by |
 |-----------|-------------|
-| LLM loop + tool execution | `AgentSession` (wraps pi-agent-core `Agent`) |
+| LLM loop + tool execution | `AgentSession` |
 | Session persistence (crash-safe) | `SessionManager` — append-only per message |
 | Auto-compaction | Built-in, triggers on context threshold |
 | Auto-retry | Built-in, handles 429/503/overloaded |
 | Overflow recovery | Built-in |
-| Coding tools | `createCodingTools(cwd)` — read, write, edit, bash, grep, find, ls |
+| Coding tools | `createCodingTools(cwd)` |
 | Tool sandboxing | Built-in, scoped to `cwd` |
 | Custom tools | `customTools` option |
 | Event subscription | `session.subscribe(listener)` |
@@ -195,81 +245,38 @@ async function measure(metric: Metric): Promise<void> {
 async function runAgent(agentName: string, task: string, trigger: string): Promise<SessionResult> {
   const config = loadConfig(agentName);
   const sessionId = generateId();
-  const startedAt = Date.now();
 
-  // ── Create session (pi-coding-agent does everything) ───────────
   const { session } = await createAgentSession({
     cwd: config.workspace,
     model: resolveModel(config.model),
     tools: createCodingTools(config.workspace),
     customTools: [
       finishTool,
-      sendTool(bus),                    // agent action → system event
-      systemStatusTool(db),             // agent reads metrics/sessions
-      runWorkflowTool(bus, db),         // agent triggers workflows
-      queryDbTool(db),                  // raw SQL for power agents
+      messageTool(bus),                 // → message.created event
+      systemStatusTool(db),             // read metrics/sessions
+      runWorkflowTool(bus, db),         // trigger workflows
+      queryDbTool(db),                  // read-only SQL
     ],
   });
 
-  // ── Inject system prompt (metrics drive direction) ─────────────
   session.agent.state.systemPrompt = buildPrompt(config, db);
 
-  // ── Bridge: pi-coding-agent events → system EventBus ───────────
-  let turns = 0;
+  // Bridge pi-coding-agent events → system EventBus
   session.subscribe((event) => {
-    switch (event.type) {
-      case "agent_end":
-        const result = extractResult(event.messages);
-        db.insertSession({ id: sessionId, agent: agentName, task, trigger, turns, startedAt, ...result });
-        bus.emit({ type: "session.end", agent: agentName, id: sessionId, ...result });
-        break;
-      case "tool_execution_end":
-        bus.emit({ type: "tool.executed", agent: agentName, sessionId, tool: event.toolName, args: event.args });
-        break;
-      case "turn_end":
-        turns++;
-        if (turns >= config.maxTurns) session.agent.abort();
-        break;
-      case "compaction_end":
-        bus.emit({ type: "session.compacted", agent: agentName, sessionId, reason: event.reason });
-        break;
+    if (event.type === "agent_end") {
+      const result = extractResult(event.messages);
+      db.insertSession({ id: sessionId, agent: agentName, task, trigger, ...result });
+      bus.emit({ type: "session.end", agent: agentName, id: sessionId, ...result });
+    }
+    if (event.type === "tool_execution_end") {
+      bus.emit({ type: "tool.executed", agent: agentName, sessionId, tool: event.toolName, args: event.args });
     }
   });
 
-  // ── Run ────────────────────────────────────────────────────────
   await session.prompt(task);
   return extractResult(session.agent.state.messages);
 }
 ```
-
-#### The Integration Cycle
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                                                                 │
-│  ┌──────────┐    prompt injection    ┌────────────────────┐    │
-│  │  Metrics │ ──────────────────────▶│  Agent (pi-coding) │    │
-│  │  Engine  │                        │                    │    │
-│  │          │◀─── session.end ───────│  tools: send,      │    │
-│  │  measure │     (counter update)   │  system_status,    │    │
-│  │  alert   │                        │  run_workflow,     │    │
-│  │  emit    │                        │  finish            │    │
-│  └────┬─────┘                        └─────────┬──────────┘    │
-│       │                                        │               │
-│       │ metric.breach                          │ inbox.message  │
-│       ▼                                        ▼               │
-│  ┌─────────────────── Event Bus ──────────────────────────┐    │
-│  │  heartbeat │ metric.breach │ session.end │ inbox.message│    │
-│  └─────────────────────────────────────────────────────────┘    │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-**Three integration points:**
-
-1. **Metrics → Agent** (prompt injection): Agent sees typed metrics in system prompt — this IS the "direction"
-2. **Agent → System** (custom tools emit events): `send()` → `inbox.message`, `finish()` → session result, `run_workflow()` → more agent runs
-3. **System → Metrics** (measurement from session data): Counter/gauge metrics query the sessions table, closing the loop
 
 ---
 
@@ -282,9 +289,9 @@ function buildPrompt(config: AgentConfig, db: Db): string {
   return [
     config.soul,                                  // SOUL.md — role identity
     config.domain,                                // DOMAIN.md — domain knowledge
-    formatMetrics(db.getMetrics(config.name)),     // typed metric display with status
-    formatProjects(db.getProjects(config.name)),   // active projects with iterations
-    formatInbox(db.getUnreadInbox(config.name)),   // pending messages from other agents
+    formatMetrics(db.getMetrics(config.name)),     // typed metrics with status
+    formatProjects(db.getProjects(config.name)),   // active projects
+    formatMessages(db.getUnread(config.name)),     // pending messages
     config.lessons,                                // LESSONS.md — learned patterns
   ].filter(Boolean).join("\n\n---\n\n");
 }
@@ -294,17 +301,13 @@ function buildPrompt(config: AgentConfig, db: Db): string {
 
 ### 5. Workflows (~150 LOC)
 
-Agent-defined step sequences with **two step types**: agent steps (LLM) and function steps (JS, no LLM). Function steps save LLM calls by interacting with infra directly.
-
-**Crash-safe via pi-coding-agent session resume.** Each agent step is a full `runAgent()` call. If the process crashes mid-step, pi-coding-agent's `SessionManager` has the partial transcript on disk. On restart, resume via `continueRecent()`.
-
-#### Two Step Types
+Agent-defined step sequences with **two step types**: agent steps (LLM) and function steps (JS, no LLM).
 
 ```typescript
-// Agent step — runs an LLM agent (expensive, for judgment/creativity)
+// Agent step — needs judgment
 { agent: "coder", task: "Implement: {{request}}" }
 
-// Function step — runs JS directly (cheap, for mechanical ops)
+// Function step — mechanical, no LLM
 { fn: "run-tests", exec: async (ctx) => {
     const r = await ctx.exec("bun vitest --run");
     return { outcome: r.exitCode === 0 ? "success" : "error", summary: r.stdout.slice(-500) };
@@ -312,205 +315,157 @@ Agent-defined step sequences with **two step types**: agent steps (LLM) and func
 }
 ```
 
-#### Workflow Step Context (for function steps)
+#### Workflow Step Context
 
-Function steps get the same capabilities as agent tools — but without LLM overhead:
+Function steps use the same safety boundary as agent tools. They do not open DB files directly, bypass path restrictions, or write outside allowed roots.
 
 ```typescript
 interface WorkflowStepContext {
-  // Equivalent to agent's coding tools
-  exec: (cmd: string) => Promise<ExecResult>;   // = bash tool
-  readFile: (path: string) => string;            // = read tool
-  writeFile: (path: string, content: string) => void; // = write tool
-
-  // Equivalent to agent's system tools
-  db: Db;                                        // = query_db tool
-  bus: EventBus;                                 // = send tool (emit events)
-  runWorkflow: (name: string, input: Record<string, string>) => Promise<WorkflowResult>; // = run_workflow tool
-  metrics: MetricEngine;                         // = system_status tool (read/write metrics)
-
-  // Step context
-  prev?: StepResult;                             // previous step's result
-  input: Record<string, string>;                 // workflow input vars
-}
-```
-
-**Principle: function steps can do anything an agent can — minus judgment.** The context interface mirrors the tool surface. If an agent has a tool for it, a function step has a method for it. The difference: agents add reasoning, function steps are mechanical.
-
-#### Example: implement → test → fix → measure (2 LLM calls, 2 JS calls)
-
-```typescript
-// agents/tech-lead/workflows/implement-and-verify.ts
-export default {
-  name: "implement-and-verify",
-  steps: [
-    { agent: "coder", task: "Implement: {{request}}" },
-    { fn: "test", exec: async (ctx) => {
-        const r = await ctx.exec("bun vitest --run");
-        return { outcome: r.exitCode === 0 ? "success" : "error", summary: r.stdout.slice(-500) };
-      },
-    },
-    { agent: "coder", task: "Fix failures:\n{{prev.summary}}", when: "prev.outcome == 'error'" },
-    { fn: "record-metric", exec: async (ctx) => {
-        const count = ctx.db.prepare("SELECT count(*) as c FROM sessions WHERE outcome='success' AND started_at > ?").get(Date.now() - 86400000);
-        return { outcome: "success", summary: `${count.c} successes in 24h` };
-      },
-    },
-  ]
-}
-```
-
-#### Runner (with crash recovery)
-
-```typescript
-async function runWorkflow(name: string, input: Record<string, string>): Promise<WorkflowResult> {
-  const workflow = loadWorkflow(name);
-  const runId = generateId();
-  let prev: StepResult | undefined;
-
-  for (let i = 0; i < workflow.steps.length; i++) {
-    const step = workflow.steps[i];
-
-    // Crash recovery: skip completed steps
-    const existing = db.getWorkflowStep(runId, i);
-    if (existing?.outcome === "success") { prev = existing; continue; }
-    if (existing?.outcome === "interrupted" && step.agent) {
-      prev = await resumeAgent(existing.sessionId);
-      db.updateWorkflowStep(runId, i, prev);
-      continue;
-    }
-
-    // Evaluate 'when' condition
-    if (step.when && !evaluate(step.when, { prev })) continue;
-
-    // Execute based on step type
-    if (step.agent) {
-      const task = template(step.task, { ...input, prev });
-      prev = await runAgent(step.agent, task, `workflow:${name}`);
-    } else if (step.fn) {
-      const ctx: WorkflowStepContext = { db, bus, exec, readFile, writeFile, runWorkflow, metrics, prev, input };
-      prev = await step.exec(ctx);
-    }
-
-    db.insertWorkflowStep({ runId, index: i, agent: step.agent || step.fn, ...prev });
-  }
-
-  return { steps: results, outcome: prev!.outcome };
+  exec: (cmd: string) => Promise<ExecResult>;            // scoped, same sandbox as bash tool
+  readFile: (path: string) => string;                    // scoped to workspace
+  writeFile: (path: string, content: string) => void;   // scoped to workspace
+  queryDb: (sql: string) => any[];                       // read-only
+  emit: (event: SystemEvent) => void;                    // bus.emit
+  runWorkflow: (name: string, input: Record<string, string>) => Promise<WorkflowResult>;
+  prev?: StepResult;
+  input: Record<string, string>;
 }
 ```
 
 #### Crash-Safety
 
-| Step type | Crash recovery |
-|-----------|---------------|
-| Agent step | Pi-coding-agent `SessionManager` has partial transcript → `continueRecent()` |
-| Function step | Re-run (functions are short, idempotent) |
-
-Agents trigger workflows via the `run_workflow` tool. Workflows compose — a function step can call `runWorkflow()` for nested orchestration.
+| Step type | Recovery |
+|-----------|---------|
+| Agent step | `SessionManager.continueRecent()` |
+| Function step | Re-run (short, idempotent) |
 
 ---
 
-### 6. Custom Tools (~300 LOC)
+### 6. Messages
 
-These are the agent↔system bridge. Pi-coding-agent provides coding tools (read/write/edit/bash/grep/find/ls). We add system-level tools:
+One inter-agent communication primitive. Async, persisted, receiver-owned, never blocking.
 
-| Tool | Agent action | System effect |
-|------|-------------|---------------|
-| `finish` | Declare task complete with summary | Session ends, result persisted |
-| `send` | Message another agent | `inbox.message` event → next run includes it |
-| `system_status` | View metrics, sessions, projects | Reads from SQLite |
-| `run_workflow` | Trigger a named workflow | Sequential agent runs |
-| `query_db` | Raw SQL (power agents only) | Direct SQLite access |
+Messages carry intent + pointer, not large payloads. Shared artifacts remain source of truth.
 
----
-
-### 7. Storage: Files vs DB
-
-**Principle: Files for things humans/agents edit. DB for things the system produces and queries.**
-
-#### Files (human/agent-editable, git-tracked, hot-reloadable)
-
-| Data | Location | Edited by |
-|------|----------|-----------|
-| Agent identity | `agents/<name>/SOUL.md` | Human |
-| Domain knowledge | `agents/<name>/DOMAIN.md` | Human/optimizer |
-| Learned lessons | `agents/<name>/LESSONS.md` | Evaluator agent |
-| Heartbeat instructions | `agents/<name>/heartbeat.md` | Human |
-| Agent config | `agents/<name>/agent.json` | Human |
-| Workflow definitions | `agents/<name>/workflows/*.ts` | Human/agent |
-| Additional knowledge | `agents/<name>/knowledge/` | Human/agent |
-| Project definitions | `agents/<name>/projects/*.md` | Human/agent |
-| Session transcripts | Pi-coding-agent's SessionManager format | System (library handles it) |
-
-#### DB (system-produced, queryable, time-series)
-
-```sql
--- Metrics (typed, with snapshots for trends)
-CREATE TABLE metrics (id, name, type, owner, config, current, status, project, description, created_at, updated_at);
-CREATE TABLE metric_snapshots (metric_id, value, measured_at);
-
--- Session metadata (queryable summaries — full transcripts in files)
-CREATE TABLE sessions (id, agent, task, trigger, outcome, summary, started_at, ended_at, turns, tokens_in, tokens_out, cost);
-
--- Event audit trail
-CREATE TABLE events (id, type, agent, payload_json, created_at);
-
--- Inter-agent communication
-CREATE TABLE inbox (id, to_agent, from_agent, content, created_at, read_at);
-
--- Project index (cache of project.md frontmatter — file is source of truth)
-CREATE TABLE project_index (id, name, owner, status, iteration, path, last_synced_at);
-```
-
-#### Project Index Pattern
-
-Projects live as `project.md` files (human/agent-editable). DB has a **read-only index** synced on access:
-
-```typescript
-function syncProjectIndex(agentsRoot: string): void {
-  const projectFiles = glob("agents/*/projects/*.md");
-  for (const file of projectFiles) {
-    const frontmatter = parseFrontmatter(file);
-    db.upsertProjectIndex({ ...frontmatter, path: file, last_synced_at: Date.now() });
-  }
+```json
+{
+  "type": "message.created",
+  "from": "arc",
+  "to": "dev",
+  "intent": "implementation-request",
+  "artifact": "agents/shared/projects/auth-rewrite/proposal.md",
+  "content": "Proposal approved. Please implement."
 }
 ```
 
+**Default behavior (convention over configuration):** messages are ack'd and queued for the receiver's next heartbeat. They do NOT immediately trigger a new agent session. Agents can register custom handlers to override this if urgency requires it.
+
+#### Work Queue Pattern
+
+An agent-level convention (not infra). `agents/shared/work-queue.md` has sections: Proposed → Approved → Done. Agents only implement Approved items.
+
+Infra observes via metrics: `work-queue.proposed-pending`, `work-queue.approved-pending`. Work queue metrics are measured from the file by source command; the file remains source of truth.
+
 ---
 
-### 8. Config Loader (~100 LOC)
+### 7. Projects
 
-```
-agents/
-  may/
-    agent.json          -- name, model, tools, maxTurns, cron
-    SOUL.md             -- identity and role
-    DOMAIN.md           -- domain knowledge
-    LESSONS.md          -- learned lessons
-    heartbeat.md        -- heartbeat instructions
-    workflows/          -- workflow definitions (data)
-    knowledge/          -- additional context files
+A project is the context scope that makes metrics and work items intelligible.
+
+Project files keep the current canonical structure:
+
+```markdown
+# agents/shared/projects/<projectId>/project.md
+
+## Goal
+What we're doing and what done looks like.
+
+## Metrics
+Which metrics track this project.
+- build_health (health)
+- auth_latency (gauge, <200ms)
+
+## Current State
+Where we are now, what's active, recent changes.
+Includes history of what's been tried to prevent loops.
+
+## Plan
+Next steps, approach, constraints.
+
+## References
+Related docs, PRs, prior art.
 ```
 
-Hot-reload: files read at session start. Edit → takes effect next run.
+Projects answer: "given this metric is red, what's the context?"
+
+Project status values: active, blocked, waiting, closed. Only humans/may close projects.
+
+DB has a read-only index synced from files. The index is derived from canonical markdown sections, not frontmatter (current project files don't use frontmatter).
+
+```sql
+CREATE TABLE project_index (id, name, owner, status, path, last_synced_at);
+```
+
+---
+
+### 8. Storage
+
+**Files** for things humans/agents edit. **DB** for things the system produces and queries.
+
+#### Files (git-tracked, hot-reloadable)
+
+| Data | Location |
+|------|----------|
+| Agent identity | `agents/<name>/SOUL.md` |
+| Domain knowledge | `agents/<name>/DOMAIN.md` |
+| Lessons | `agents/<name>/LESSONS.md` |
+| Heartbeat instructions | `agents/<name>/heartbeat.md` |
+| Config | `agents/<name>/agent.json` |
+| Workflows | `agents/<name>/workflows/*.ts` |
+| Projects | `agents/shared/projects/<id>/project.md` |
+| Work queue | `agents/shared/work-queue.md` |
+| Session transcripts | Pi-coding-agent SessionManager format |
+
+#### DB (queryable, time-series)
+
+```sql
+CREATE TABLE metrics (id, name, type, owner, config, current, status, project, description, created_at, updated_at);
+CREATE TABLE metric_snapshots (metric_id, value, measured_at);
+CREATE TABLE sessions (id, agent, task, trigger, outcome, summary, started_at, ended_at, turns, tokens_in, tokens_out, cost);
+CREATE TABLE events (id, type, agent, payload_json, created_at);
+CREATE TABLE messages (id, to_agent, from_agent, intent, artifact, content, created_at, read_at);
+CREATE TABLE project_index (id, name, owner, status, path, last_synced_at);
+```
+
+---
+
+## Non-Negotiables
+
+v2 must preserve:
+- Tool guards (ported as runtime middleware)
+- Event persistence (all events to SQLite)
+- DB single connection + backup/restore
+- Telegram context enrichment
+- Shared project lifecycle
+- query_db read-only access
+- Model-specific quirks (gpt-5.5 responses/reasoning config)
 
 ---
 
 ## Summary
 
-| Component | LOC | Role |
-|-----------|-----|------|
-| Event bus | ~100 | Backbone — connects everything |
-| Metric engine (typed) | ~500 | THE core value — measures, alerts, drives direction |
-| Agent runs (glue) | ~50 | Wire pi-coding-agent to bus |
-| Prompt assembly | ~100 | Metrics → agent direction |
-| Workflows | ~150 | Robust orchestration sequences |
-| Custom tools | ~300 | Agent↔system bridge |
-| SQLite store | ~200 | Single queryable truth |
-| Config loader | ~100 | Load agent definitions |
-| **Total** | **~1,500** | |
+| Component | Role |
+|-----------|------|
+| Event bus | Backbone — typed pub/sub, all events persisted |
+| Metric engine | Typed measurement + alerting → drives agent direction |
+| Agent runs (glue) | Wire pi-coding-agent to bus, ~50 LOC |
+| Prompt assembly | Metrics + projects + messages → system prompt |
+| Workflows | Agent steps + function steps, crash-safe |
+| Messages | Async inter-agent communication |
+| Projects | Context scope for metrics and work |
+| Storage | Files (editable) + SQLite (queryable) |
 
-Down from ~22,600 LOC.
+~1,500 LOC core skeleton. Realistic production target: 8k–12k LOC (guards, Telegram, error handling, edge cases). The goal is fewer execution paths, not minimum LOC.
 
 ---
 
@@ -520,74 +475,75 @@ Down from ~22,600 LOC.
 
 ```
 Timer → heartbeat("may") → runAgent("may", heartbeat.md, "heartbeat")
-  → pi-coding-agent creates AgentSession
-  → system prompt includes: metrics 🔴⚠️✅, projects, inbox
+  → system prompt includes: metrics, projects, messages
   → agent sees build_health FAILING → calls run_workflow("fix-build", {})
   → workflow: coder implements fix → fn: run tests → done
-  → session.end → metric engine re-measures build_health → ✅
+  → session.end → metric engine re-measures → ✅
 ```
 
 ### Reactive metric breach
 
 ```
 MetricEngine measures api_latency → 300ms (threshold 250ms, 3 consecutive)
-  → metric.breach event → runAgent("may", "api_latency breached...", "metric.breach")
+  → metric.breach → runAgent("may", "api_latency breached...", "metric.breach")
   → agent investigates, triggers workflow
 ```
 
 ### Inter-agent communication
 
 ```
-Agent "arc" calls send("may", "auth failures repeating — suggest rate limiting")
-  → inbox.message event → persisted to inbox table
-  → next may heartbeat → prompt includes inbox → may acts on it
-```
-
-### Evaluation (event-driven, real-time)
-
-```
-session.end event (any agent)
-  → bus handler: runAgent("evaluator", "Evaluate session ${id}...", "session.end")
-  → evaluator reads session transcript, scores quality/efficiency
-  → updates metrics: agent_x_quality [gauge], agent_x_efficiency [gauge]
-  → appends lessons to agents/<name>/LESSONS.md
-  → if quality drops → metric.breach → may notified
+Agent "arc" calls message("dev", { intent: "implementation-request", artifact: "..." })
+  → message.created → persisted → next dev run includes it in prompt
 ```
 
 ---
-
-## Value Added vs Current System
-
-| Gain | Why it matters |
-|------|---------------|
-| **Typed metrics** (gauge/counter/health/derived) | Agents understand what a number means — rate, trend, consecutive failures. Better decisions. |
-| **Event-driven reactivity** | Real-time response to breaches, messages, completions. Not just cron polling. |
-| **Real-time evaluation** | Every session evaluated immediately. Lessons before next run. |
-| **One pattern for everything** | Heartbeats, breaches, evaluation — all `event → runAgent()`. |
-| **15x less code** (1,500 vs 22,600 LOC) | Fits in your head. New contributor productive in an hour. |
-| **Free library upgrades** | Pi-coding-agent improves → we benefit automatically. |
-| **Function steps in workflows** | Save ~50% LLM calls on mechanical operations. |
-| **UI backends for free** | WebSocket/Telegram/console = bus subscribers. |
 
 ## What We Lose
 
 | Lost | Severity | Mitigation |
 |------|----------|------------|
-| **14 tool guards** | Medium | Pi-coding-agent sandboxing + add back as needed. |
+| **14 tool guards** | **HIGH** | Must be ported as runtime middleware before cutover. |
+| **Production hardening** | **HIGH** | Preserve DB backup, Telegram context, zombie cleanup. |
 | **Session trees / cascading cancel** | Low | Agents independent. Turn budgets suffice. |
 | **Mid-session steering** | Low | Sessions short. Next heartbeat handles it. |
-| **Direct agent-to-agent calls** | Low | Workflows orchestrate. Send for async. |
 
 ---
 
-## Migration Path
+## Migration Strategy
 
-1. Add `@mariozechner/pi-coding-agent` as dependency
-2. Implement event bus + metric engine (can coexist with current system)
-3. Implement `runAgent()` glue function using `createAgentSession()`
-4. Port metric definitions from current flat schema to typed schema
-5. Wire cron configs (from agent.json) as timer event sources
-6. Add custom tools (send, system_status, run_workflow, finish)
-7. Port workflow definitions to simple step format
-8. Verify: same agents fire, metrics measured, sessions complete
-9. Delete: SubagentManager, workflow-tool.ts, guards, JSONL persistence, growth
+0. Build a parallel test harness that runs both runtimes against the same heartbeat fixture and compares session.end shape. Ensures the wrapper is contract-compatible before cutover.
+1. Define `AgentRuntime.runAgent()` interface wrapping current manager
+2. Route dev/arc/scout through it first
+3. Port guards as runtime middleware
+4. Add typed metrics incrementally
+5. Add function workflow steps
+6. Collapse cron into event-source + handler
+7. Migrate evaluator
+8. Migrate May last
+9. Delete old manager only after no imports remain
+
+---
+
+## Acceptance Criteria
+
+Before old runtime deletion:
+- dev/arc/scout complete 20 consecutive heartbeats without error
+- session.error-rate-6h does not increase
+- handler.success-rate stays >0.95
+- message.created events persist and display in receiver context
+- Telegram replies remain context-enriched
+- DB backup/restore cycle verified
+
+Guard acceptance (specific):
+- finish-guard blocks unsupported completion
+- read-before-edit blocks blind edits
+- verify-after-write blocks unverified writes
+- path guard blocks out-of-scope writes
+- query_db remains read-only and never exposes DB file path
+- tool schema guard blocks malformed tool calls
+- commit guard prevents unsafe/unreviewed commits where configured
+
+Work queue observability:
+- work-queue.proposed-pending is measured
+- work-queue.approved-pending is measured
+- oldest approved item age is visible
