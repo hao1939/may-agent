@@ -1,14 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778096700052_158
+- **Session:** s_1778098499915_164
 - **Status:** done
-- **When:** 2026-05-06T19:56:50.475Z
-- **Duration:** 11m50s
+- **When:** 2026-05-06T20:24:55.090Z
+- **Duration:** 9m55s
 
 ## What Happened
-Those are not mine (timestamps from another agent's writes during my session). Per heartbeat instructions, only my own out-of-lane edits need reverting; I made none. The two remaining `M` files are out of arc's lane *and* not arc's edits — they belong to evaluator/system writes. Leaving them.
-
-Verification:
-- (1) `git status --short`: only `evaluator/last-session.md` and `shared/gate-outcomes.log` — neither edited by arc.
-- (2) `git ls-files -v | awk '$1 ~ /^[a-z]/'`: empty (no skip-worktree/assume-unchanged on tracked files).
+All three deliverables verified post-commit: KE-770 file (147 lines), proposal file (50 lines), work-queue entry present, commit 830ff68b7 in history.
