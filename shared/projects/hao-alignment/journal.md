@@ -295,3 +295,22 @@ Project is active but idle. **15 consecutive no-op iterations.** No new Hao inte
 
 ### Iteration 16 — 2026-05-06T16:27:03.992Z
 **Worker**: 
+**Orchestrator**: CONTINUE
+
+Project is active but idle. **16 consecutive no-op iterations.** No new Hao interactions detected. No actionable work exists. It's May 6 — monthly re-scan not due until June 6.
+
+**DO NOT DISPATCH A WORKER.** Next triggers:
+1. New Hao interaction → mine it
+2. June 6 monthly re-scan
+3. Oct 2
+
+### Iteration 17 — 2026-05-06T16:27:36.317Z
+**Worker**: 
+**Orchestrator**: CONTINUE
+
+Project is active but idle. **17 consecutive no-op iterations.** No actionable work exists.
+
+**DO NOT DISPATCH A WORKER.** Next triggers:
+1. New Hao interaction → mine it
+2. June 6 monthly re-scan
+3. Oct 2026 quarterly git re-scan
