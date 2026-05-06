@@ -1,10 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778082536498_12
+- **Session:** s_1778082299412_8
 - **Status:** done
-- **When:** 2026-05-06T15:50:27.646Z
-- **Duration:** 1m31s
+- **When:** 2026-05-06T15:54:34.432Z
+- **Duration:** 9m35s
 
 ## What Happened
-Now append iteration 10 to journal.
+All four deliverables verified in the bbf7f1946 commit:
+- New P0 proposal exists with 7 occurrences of "duration"
+- Self-calibration proposal contains "Companion proposal" addendum line
+- work-queue.md has the new P0 line
+- KE-761 begins with the expected H1
