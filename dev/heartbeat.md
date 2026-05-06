@@ -25,13 +25,17 @@ This format is required in EVERY session — heartbeats, work sessions, project 
 If you have the `query_db` tool in your environment, these queries are the fastest way to start:
 ```sql
 -- Recent failures
-SELECT id, agent, status, error FROM sessions WHERE status='error' ORDER BY startedAt DESC LIMIT 5;
+SELECT sessionId, agent, status, error, startedAt FROM sessions WHERE status='error' ORDER BY startedAt DESC LIMIT 5;
 
 -- Handler failures
 SELECT event_type, data, timestamp FROM events WHERE event_type='handler.failed' ORDER BY timestamp DESC LIMIT 5;
 
--- Long sessions (inefficiency)
-SELECT id, agent, turns, duration_ms FROM sessions WHERE turns > 10 ORDER BY startedAt DESC LIMIT 5;
+-- Long/high-op sessions (inefficiency)
+SELECT sessionId, agent, opCount, startedAt, endedAt, (endedAt - startedAt) AS duration_ms
+FROM sessions
+WHERE opCount > 10
+ORDER BY startedAt DESC
+LIMIT 5;
 
 -- Current metrics health
 SELECT id, name, current, target, threshold, alert_op, updated_at FROM metrics WHERE status='active';

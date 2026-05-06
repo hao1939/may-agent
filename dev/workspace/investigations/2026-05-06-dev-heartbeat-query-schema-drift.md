@@ -2,7 +2,7 @@
 
 Date: 2026-05-06
 Owner: dev
-Status: investigated
+Status: fixed in dev heartbeat starter queries
 
 ## Signal
 
