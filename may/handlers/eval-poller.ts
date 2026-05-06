@@ -20,8 +20,9 @@ import { evaluateStandaloneSession } from "../../shared/evaluation/evaluator.js"
 const STATE_FILE = "eval-poller-processed.json";
 const MAX_LLM_EVALS_PER_RUN = 1; // LLM evals can approach the 300s handler timeout; run at most one per poll
 const MAX_HEURISTIC_EVALS_PER_RUN = 200; // Heuristic evals are instant (no LLM) — process in bulk
-const WALL_CLOCK_BUDGET_MS = 150_000; // Pre-start budget; keep margin below the platform's 300s timeout
+const WALL_CLOCK_BUDGET_MS = 150_000; // Total handler budget; keep margin below the platform's 300s timeout
 const MIN_REMAINING_MS_FOR_LLM_EVAL = 120_000; // Do not start a slow LLM eval without enough timeout headroom
+const LLM_EVAL_TIMEOUT_MS = 110_000; // Bound one slow evaluator session so eval-poller itself can exit cleanly
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days to match coverage metric window
 
 // Meta-agents that shouldn't be evaluated
@@ -50,6 +51,20 @@ function saveState(persistDir: string, state: ProcessedState): void {
   // Keep processed IDs bounded — 10k covers ~1 week of bulk processing
   state.processedSessionIds = state.processedSessionIds.slice(-10000);
   writeFileSync(path, JSON.stringify(state, null, 2));
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
@@ -155,7 +170,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
       // Run standalone evaluation
       try {
-        const result = await evaluateStandaloneSession({
+        const evalPromise = evaluateStandaloneSession({
           manager: ctx.manager,
           ctx,
           sessionId,
@@ -163,6 +178,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           task: meta.task || "unknown",
           status: meta.status,
         });
+        const result = willBeHeuristic
+          ? await evalPromise
+          : await withTimeout(evalPromise, Math.min(LLM_EVAL_TIMEOUT_MS, Math.max(1_000, deadline - Date.now())), `evaluation ${sessionId}`);
 
         processedSet.add(sessionId);
         state.processedSessionIds.push(sessionId);
