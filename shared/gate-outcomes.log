@@ -28,3 +28,4 @@
 2026-05-06T18:25:23.495Z agent=evaluator gate=all-passed tool_calls=25 elapsed_sec=163 deliverable_edits=0 status=done action=none
 2026-05-06T18:49:14.236Z agent=may gate=all-passed tool_calls=14 elapsed_sec=119 deliverable_edits=0 status=done action=none
 2026-05-06T18:54:57.733Z agent=evaluator gate=all-passed tool_calls=25 elapsed_sec=137 deliverable_edits=0 status=done action=none
+2026-05-06T19:18:23.794Z agent=may gate=duration elapsed_sec=69 threshold_sec=90 tool_calls=14 status=done action=re-prompt
