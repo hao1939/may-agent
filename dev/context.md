@@ -44,3 +44,12 @@ Before starting new work, check for existing deliverables:
 grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
 ```
 If a related output exists, read it first to avoid duplicating work.
+
+## Arc's Proposals (your work queue)
+Arc discovers systemic issues and writes proposals in `agents/arc/workspace/proposals/`.
+These are YOUR work items — arc identifies the problem, you fix it.
+Check for new proposals every heartbeat:
+- `ls -lt agents/arc/workspace/proposals/ | head -10`
+- Pick the highest-priority unfixed proposal
+- Implement the fix, verify it works
+- Mark the proposal as DONE (add a status line at top)

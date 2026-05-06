@@ -13,12 +13,13 @@ DONE WHEN: [criteria]
 This format is required in EVERY session — heartbeats, work sessions, project iterations. No exceptions.
 
 ## Priority Order
-1. **Check error metrics**: query session.error-rate-6h, handler.success-rate
-2. **Find failures**: query recent failed sessions and handler errors
-3. **Pick highest-impact**: which failure pattern affects the most sessions?
-4. **Investigate**: read session logs, trace the error through code
-5. **Fix**: patch the workflow/handler/skill
-6. **Verify**: syntax-check, ensure no regressions
+1. **Check arc proposals**: `ls -lt agents/arc/workspace/proposals/ | head -5` — pick highest priority unfixed one
+2. **Check error metrics**: query session.error-rate-6h, handler.success-rate
+3. **Find failures**: query recent failed sessions and handler errors
+4. **Pick highest-impact**: which failure pattern affects the most sessions?
+5. **Investigate**: read session logs, trace the error through code
+6. **Fix**: patch the workflow/handler/skill
+7. **Verify**: syntax-check, ensure no regressions
 
 ## Queries to Start With (when DB access is available)
 If you have the `query_db` tool in your environment, these queries are the fastest way to start:
