@@ -9,7 +9,6 @@ import {
   isProcessAlive,
   truncateForPrompt,
   INFRA_RETRY_MAX,
-  RESTORED_MAX_TURNS_FALLBACK,
 } from "./manager-utils.js";
 import type { RegisteredAgent, ActiveSession, RunOptions, SubagentManagerOptions } from "./manager-utils.js";
 import { createFinishGuard } from "./tools/finish-guard.js";
@@ -96,14 +95,12 @@ import {
   verifyToolOutput,
   createVerifyReceiptTool,
   wrapToolsWithReceipts,
-  getOpUsage,
 } from "./manager-receipts.js";
 export {
   signToolOutput,
   verifyToolOutput,
   createVerifyReceiptTool,
   wrapToolsWithReceipts,
-  getOpUsage,
 } from "./manager-receipts.js";
 
 import { log } from "./log.js";
@@ -868,7 +865,6 @@ export class SubagentManager {
       closed: false,
       autoClose: opts?.autoClose ?? "immediate",
       kind: opts?.kind ?? "job",
-      opBudget: 0,
       opCount: 0,
       totalToolCalls: 0,
       infraRetryCount: 0,
@@ -1310,7 +1306,6 @@ export class SubagentManager {
       closed: false,
       autoClose: persisted.autoClose ?? "immediate",
       kind: persisted.kind ?? "job",
-      opBudget: 0,
       opCount: persisted.opCount ?? 0,
       totalToolCalls: 0,
       infraRetryCount: 0,
@@ -1397,7 +1392,6 @@ export class SubagentManager {
       autoClose: s.autoClose,
       kind: s.kind,
       opCount: s.opCount,
-      opBudget: s.opBudget,
     }));
   }
 
@@ -1865,7 +1859,6 @@ export class SubagentManager {
       endedAt: session.endedAt, runtime: formatDuration(session.endedAt - session.startedAt),
       outputDir: session.outputDir, error: session.error, outcome,
       opCount: session.opCount,
-      opBudget: session.opBudget,
       turnCount: session.turnCount, finishParams,
       filesModified: [...session.filesModified],
       workspacePath: this.getWorkspacePath(session.agentName),
@@ -2144,10 +2137,6 @@ export class SubagentManager {
 
   createVerifyReceiptTool(): AgentTool {
     return createVerifyReceiptTool();
-  }
-
-  getOpUsage(sessionId: string): { opBudget: number; opCount: number } | null {
-    return getOpUsage(this.activeSessions, sessionId);
   }
 
   /** Get a handoff summary for a session (for agents.context action). */

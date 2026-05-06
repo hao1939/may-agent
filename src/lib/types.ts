@@ -60,13 +60,6 @@ export interface SubagentDefinition {
    * the Runtime Environment section.
    */
   contextFiles?: string[];
-
-  /**
-   * Operation budget: max number of state-changing tool calls (bash, write, edit, commit)
-   * allowed per session. 0 or undefined = unlimited.
-   */
-  opBudget?: number;
-
 }
 
 /** Runtime info about a session. */
@@ -94,8 +87,6 @@ export interface SessionInfo {
   kind?: SessionKind;
   /** Number of state-changing tool calls executed so far. */
   opCount?: number;
-  /** Operation budget (0 = unlimited). */
-  opBudget?: number;
   /** LLM turns completed. */
   turnCount?: number;
   /** Structured finish() parameters (context_updates, completed_items, etc). */
