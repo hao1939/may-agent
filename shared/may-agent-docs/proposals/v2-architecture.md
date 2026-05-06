@@ -13,11 +13,13 @@ Migration must be incremental. The current system is production-active.
 ---
 
 A **metric-driven, event-based autonomous agent system** where:
-- Users define typed metrics that drive agent direction
-- Agents are role/responsibility/context scopes
-- Everything is an event: timers, metric changes, messages, session completions
-- Workflows relieve agents from orchestration decisions
-- `pi-coding-agent` provides the full agent runtime — we don't reinvent it
+- **Projects are context.** Each project carries its own history, background, goals, and accumulated experience. Agents pick up that context when they work, so each iteration builds on what came before instead of starting fresh.
+- **Metrics are vitals.** Typed metrics measure progress toward project goals (and overall system health). Metrics are how the system *sees itself* — they don't drive work directly so much as they signal what needs attention.
+- **Heartbeats are agency.** A heartbeat is the recurring moment when an agent has the chance to be autonomous: read context, decide what's worth doing, act, record. Heartbeats are how ownership manifests. See `design/heartbeat-as-agency.md`.
+- Agents are role/responsibility/context scopes — accountability boundaries that own a domain.
+- Everything is an event: timers, metric changes, messages, session completions.
+- Workflows relieve agents from orchestration decisions.
+- `pi-coding-agent` provides the full agent runtime — we don't reinvent it.
 - **Convention over configuration**: every component has sensible defaults. Agents opt into custom behavior only when needed.
 
 ---
@@ -122,7 +124,14 @@ type SystemEvent =
 
 // Everything is just: event → handler
 bus.on("heartbeat", (e) => runAgent(e.agent, buildHeartbeatTask(e.agent), "heartbeat"));
-bus.on("metric.breach", (e) => runAgent(e.metric.owner, buildBreachTask(e), "metric.breach"));
+
+// Metric breach: only P0 (urgent) metrics fork directly. Everything else informs
+// the owning agent's next heartbeat via prompt context. The agent decides when
+// and how to act. See design/heartbeat-as-agency.md.
+bus.on("metric.breach", (e) => {
+  if (e.metric.priority === "P0") runAgent(e.metric.owner, buildBreachTask(e), "metric.breach");
+  // P1+: do nothing — breach is in DB, owning agent will see it at next heartbeat
+});
 
 // Metric breach handlers are idempotent and deduped by (metric_id, status, window).
 // A metric already in breach does not trigger repeated sessions unless escalation policy says so.
@@ -368,9 +377,24 @@ Infra observes via metrics: `work-queue.proposed-pending`, `work-queue.approved-
 
 ---
 
-### 7. Projects
+### 7. Projects — the context that drives the work
 
-A project is the context scope that makes metrics and work items intelligible.
+A project is **the context an agent needs to do meaningful work**: history (what's been tried), background (why this matters), goals (what done looks like), and accumulated experience (what we've learned). Projects make metrics and work items intelligible — a metric without a project is a free-floating number; a session without a project is ad-hoc work.
+
+The autonomous loop runs on projects:
+
+```
+project goal
+  └─ has metrics that measure progress
+      └─ metric breach signals "this iteration didn't work"
+          └─ agent's next heartbeat reads project context (history, goal, experience)
+              └─ agent decides next iteration based on context
+                  └─ agent runs an iteration session
+                      └─ writes journal entry capturing what was tried
+                          └─ project advances; metric updates; loop
+```
+
+Without this loop, agents thrash — re-discovering the same problem each breach, making the same fix that didn't work last time. Project context is what gives them continuity.
 
 Project files keep the current canonical structure:
 
