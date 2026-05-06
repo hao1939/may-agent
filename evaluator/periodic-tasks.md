@@ -113,6 +113,12 @@ Last-24h volume: `sessions(endedAt>=cutoff)`=894 vs `evaluations(createdAt>=cuto
 
 Action recommendation: if coverage is expected to be higher, escalate to May/tech-lead to confirm `evaluate-session-llm` schedule/scope and whether the event consumer is keeping up.
 
+**Last run**: 2026-05-06 22:06Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617`; `MAX(sessions.startedAt)=1778106161155` → eval lag ≈5.61h.
+
+Legacy `.state/evaluations/` artifacts: newest observed mtime still 2026-04-29; `task_tree_*.json` mtimes still 2026-03-24 → continue treating as legacy output-path drift, not DB liveness.
+
+Action recommendation: if lag stays >2–3h, likely `evaluate-session-llm` job is not keeping up with session volume; escalate to May/tech-lead to inspect eval job schedule/scope and event-consumer health.
+
 **Previous run**: 2026-05-03 01:13Z — DB canonical check: `MAX(evaluations.createdAt)=1777768954999` (2026-05-03T00:42:34Z; eval pipeline live). `MAX(sessions.createdAt)=1777768954999` (2026-05-03T00:42:34Z). Investigation note: bob’s depressed average score (~0.408) appears strongly explained by `shallow_session` tagging (50% of bob evals); when shallow-tagged, avg score ≈0.20 vs non-shallow ≈0.617. Similar pattern for coach/optimizer (shallow avg ≈0.20).
 
 Ran `monitor-session.cjs --running`: 1 alert (`STALL` amy `s_1777626616591_0` idle 1158m; recommended action: kill). Ran `patrol.cjs`: CRITICAL due to missing `agents/shared/compliance-snapshot.json` baseline (patrol degraded, not a mismatch event).
