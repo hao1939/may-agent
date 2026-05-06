@@ -1,0 +1,32 @@
+[
+  {
+    "topic": "RAG + Agents (Retrieval-Augmented Generation)",
+    "insights": [
+      "Moving beyond simple vector search to multi-hop reasoning RAG.",
+      "Agents are increasingly being used to pre-process and structure knowledge before retrieval.",
+      "Heavy focus on 'GraphRAG' (combining knowledge graphs with RAG) in Chinese communities."
+    ],
+    "sentiment": "Very Positive",
+    "popularity": 95
+  },
+  {
+    "topic": "Workflow Automation (Coze, Dify)",
+    "insights": [
+      "Visual programming for agents is dominating.",
+      "Users prefer rigid, deterministic node-based workflows over fully autonomous agents for business tasks.",
+      "High demand for integrations with WeChat and Feishu."
+    ],
+    "sentiment": "Positive",
+    "popularity": 90
+  },
+  {
+    "topic": "Agent Memory Architectures",
+    "insights": [
+      "Struggles with long-term memory consistency.",
+      "Emerging trend of hierarchal memory: short-term (context window), working memory (summarized state), long-term (vector DB).",
+      "Discussions on how to make agents 'forget' irrelevant information efficiently."
+    ],
+    "sentiment": "Mixed",
+    "popularity": 80
+  }
+]
