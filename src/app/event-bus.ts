@@ -22,6 +22,7 @@ export type AgentCommand =
       task: string;
       originSessionId?: string;
       opts?: { kind?: string; requestId?: string; source?: string };
+      /** @deprecated Use { type: "message", from, to, task, priority: "P0" } instead */
     }
   | { type: "message"; from: string; to: string; task: string; priority?: string; source?: string }
   | { type: "input"; sessionId?: string; text?: string; message?: string; source?: string }
@@ -85,7 +86,6 @@ export type SystemEvent =
   | { type: "handler.failed"; handler: string; agent: string; error: string; durationMs: number }
   | { type: "project.iteration"; project: string; iteration: number }
   | { type: "project.status_changed"; project: string; from: string; to: string }
-  | { type: "notification"; agent: string; text: string }
   | {
       type: "message.created";
       from: string;
@@ -95,6 +95,8 @@ export type SystemEvent =
       artifact?: string;
       priority?: "P0" | "P1" | "P2" | "P3";
     }
+  | { type: "metric.breach"; owner: string; metricId: string; metricName: string; current: number; threshold: number; target?: number; message: string }
+  | { type: "metric.recovered"; metricId: string; metricName: string }
   | { type: "cron_fired"; job: string; agent?: string; timestamp: number }
   | { type: "context-learn"; agentName: string; sessionId: string; persistDir: string }
   | {

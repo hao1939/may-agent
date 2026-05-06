@@ -31,10 +31,10 @@ export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => strin
   bus.subscribe((event) => {
     const primarySid = getPrimarySessionId?.() ?? null;
 
-    // Chat mode: only show primary session + notifications
+    // Chat mode: only show primary session + human-directed messages
     if (chatMode) {
-      if (event.type === "notification") {
-        console.log(`\n📋 ${event.agent}: ${event.text}`);
+      if (event.type === "message.created" && (event as any).to === "human") {
+        console.log(`\n📋 ${(event as any).from}: ${(event as any).content}`);
         return;
       }
       if (!primarySid) return; // no session yet, suppress all
@@ -82,8 +82,10 @@ export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => strin
       case "session.end":
         if (isSessionEvent(event)) console.log(`${DIM}[${event.agent}] ${event.status}${RESET}`);
         break;
-      case "notification":
-        console.log(`📋 ${event.agent}: ${event.text}`);
+      case "message.created":
+        if ((event as any).to === "human") {
+          console.log(`📋 ${(event as any).from}: ${(event as any).content}`);
+        }
         break;
       case "info":
         console.log(`${DIM}${(event as { message: string }).message}${RESET}`);

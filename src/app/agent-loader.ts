@@ -260,7 +260,7 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
             (msg) => bus.emit({ type: "info", message: `[cron:${config.name}] ${msg}` }),
             opts.projectRoot,
             (msg) => {
-              bus.emit({ type: "notification", agent: config.name, text: msg });
+              bus.emit({ type: "message.created", from: config.name, to: "human", content: msg } as any);
             },
             (event) => bus.emit(event),
           );

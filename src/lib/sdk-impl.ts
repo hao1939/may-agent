@@ -57,7 +57,7 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         dispatchEvent: (type: string, data?: Record<string, unknown>) => deps.bus.emit({ type, ...(data || {}) } as any),
         getDb: () => getDb(deps.persistDir),
         log: (msg: string) => globalLog("info", `[${deps.agentName}] ${msg}`),
-        notify: (msg: string) => deps.bus.emit({ type: "notification", agent: deps.agentName, text: msg } as any),
+        notify: (msg: string) => deps.bus.emit({ type: "message.created", from: deps.agentName, to: "human", content: msg } as any),
         persistDir: deps.persistDir,
         projectRoot: deps.projectRoot,
         agentsRoot: deps.agentsRoot,
@@ -90,8 +90,8 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
 
     message(target: string, content: string): void {
       if (target === "human") {
-        // Human-visible: push to Telegram/web via notification event
-        deps.bus.emit({ type: "notification", agent: deps.agentName, text: content } as any);
+        // Human-visible: push to Telegram/web via message.created to "human"
+        deps.bus.emit({ type: "message.created", from: deps.agentName, to: "human", content } as any);
       } else {
         // Agent-to-agent: emit v2 message.created (lands in target's inbox).
         deps.bus.emit({
@@ -120,11 +120,12 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         reason,
       } as any);
 
-      // Also push human-visible notification
+      // Also push human-visible message
       deps.bus.emit({
-        type: "notification",
-        agent: deps.agentName,
-        text: `\u26a0\ufe0f *Escalation*\n${deps.agentName} \u2192 ${target}: ${reason}`,
+        type: "message.created",
+        from: deps.agentName,
+        to: "human",
+        content: `\u26a0\ufe0f *Escalation*\n${deps.agentName} \u2192 ${target}: ${reason}`,
       } as any);
     },
 

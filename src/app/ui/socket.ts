@@ -112,9 +112,9 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     if ("sessionId" in event && typeof event.sessionId === "string") {
       return client.filter.has(event.sessionId);
     }
-    // notification events: skip for filtered clients (they pollute session-scoped streams).
+    // message.created to "human": skip for filtered clients (they pollute session-scoped streams).
     // Firehose clients already get them via the `return true` above.
-    if (event.type === "notification") return false;
+    if (event.type === "message.created" && (event as any).to === "human") return false;
     // system events (log, info, prompt, eval, workflow) only in firehose
     return false;
   }
@@ -285,8 +285,6 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
             const { type: _, event: __, ...rest } = cmd;
             busEvent = { type: eventName, ...rest };
           }
-        } else if (cmdType === "fork") {
-          busEvent = { type: "fork", agent: cmd.agent, task: cmd.message, opts: { source: "socket" } };
         } else if (cmdType === "fork") {
           busEvent = { type: "fork", agent: cmd.agent, task: cmd.task ?? cmd.message, opts: { source: "socket" } };
         } else if (cmdType === "close") {
