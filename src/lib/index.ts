@@ -34,7 +34,6 @@ export type {
   EditToolOptions,
   WriteToolOptions,
   CodingToolsOptions,
-  AgentGrowthToolOptions,
   TruncationResult,
   TruncationOptions,
   FinishToolOptions,
