@@ -180,7 +180,7 @@ export function createCompletenessGuard(
         `3. For each DONE item, cites the file path and what you changed\n\n` +
         `Use: write({ path: "${checklistFileName}.md", content: "..." })\n` +
         `Then call finish() again.\n\n` +
-        `Can't resolve? Escalate to May via agents.send().`;
+        `Can't resolve? Escalate to May via message({ to: "may", content: ... }).`;
 
       return {
         block: shouldBlock,

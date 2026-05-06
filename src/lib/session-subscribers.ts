@@ -78,7 +78,7 @@ export function createRequestTracker(persistDir: string): (event: AgentEvent) =>
             try {
               const db = getDb(persistDir);
               db.run("INSERT INTO events (event_type, source, owner, data, timestamp, status) VALUES (?,?,?,?,?,?)",
-                ["agent.notification", event.agent, event.agent, JSON.stringify({ task: String(item).slice(0, 500) }), Date.now(), "pending"]);
+                ["message.created", event.agent, event.agent, JSON.stringify({ from: event.agent, to: event.agent, content: String(item).slice(0, 500), task: String(item).slice(0, 500), priority: "P2" }), Date.now(), "pending"]);
             } catch { /* best-effort */ }
           } catch (err) {
             /* best-effort */

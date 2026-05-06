@@ -51,17 +51,9 @@ export class DbWriter {
           });
           break;
 
-        case "message_created":
-          // Legacy v1 event — persisted as agent.notification (no duplicate request needed).
-          this.db.run(
-            "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?,?,?,?,?)",
-            ["agent.notification", event.from, event.to, JSON.stringify({ task: event.task, from: event.from }), Date.now()]
-          );
-          break;
-
         case "message.created":
-          // v2 canonical inter-agent message — persist with from→source, to→owner mapping
-          // so existing inbox queries (which key on owner) keep working.
+          // v2 canonical inter-agent message — persist with from→source, to→owner
+          // mapping so existing inbox queries (which key on owner) keep working.
           this.db.run(
             "INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?,?,?,?,?,?)",
             [

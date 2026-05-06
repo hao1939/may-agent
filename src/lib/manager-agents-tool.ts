@@ -104,7 +104,7 @@ const AgentsToolParams = Type.Object({
         "'peek': view recent messages from a running session (requires sessionId).",
         "'cancel': kill a running session (requires sessionId).",
         "'requests': query the request tracking database (optionally filter by agent or status).",
-        "To send a one-way FYI notification, use the separate `notify` tool instead of this action list.",
+        "To send a one-way FYI notification, use the separate `message` tool instead of this action list.",
       ].join(" "),
     },
   ),
@@ -123,7 +123,7 @@ const AgentsToolParams = Type.Object({
   message: Type.Optional(
     Type.String({
       description:
-        "DEPRECATED — use the `notify` tool for FYI notifications, or `task` for 'call'/'fork'. Kept only for backward compatibility.",
+        "DEPRECATED — use the `message` tool for FYI notifications, or `task` for 'call'/'fork'. Kept only for backward compatibility.",
     }),
   ),
   sessionId: Type.Optional(
@@ -205,18 +205,18 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
     name: "agents",
     label: "Agents",
     description:
-      "Cooperate with other agents. Use 'list' to see available agents, 'call' to run one synchronously, 'fork' to start one in the background, 'peek'/'cancel' to monitor sessions, 'requests' to query the tracking DB. For one-way FYI notifications, use the separate `notify` tool.",
+      "Cooperate with other agents. Use 'list' to see available agents, 'call' to run one synchronously, 'fork' to start one in the background, 'peek'/'cancel' to monitor sessions, 'requests' to query the tracking DB. For one-way FYI notifications, use the separate `message` tool.",
     parameters: AgentsToolParams,
     execute: async (_toolCallId, _params) => {
       const params = _params as AgentsToolParamsType;
       try {
-        // Back-compat: the 'message' action is removed. Return a clear error
-        // pointing callers to notify() or agents.fork().
-        if ((params as { action?: string }).action === "message") {
+        // Back-compat: 'message' and 'send' actions are removed. Direct callers
+        // to the v2 `message` tool.
+        if ((params as { action?: string }).action === "message" || (params as { action?: string }).action === "send") {
           return textResult(
             JSON.stringify({
               error:
-                "The agents.message action has been removed. Use notify({ agent, message }) for one-way notifications, or agents.fork({ agent, task }) to dispatch work that should start immediately.",
+                "The agents.message and agents.send actions have been removed. Use the message tool: message({ to, content, intent?, priority? }) for async inter-agent communication, or agents.fork({ agent, task }) to dispatch work that should start immediately.",
             }),
           );
         }

@@ -10,11 +10,11 @@
  *   - sender never blocks waiting for a reply. Reply, if any, is a new message event.
  *
  * Back-compat:
- *   - The `notify` and `message-only` tool presets remain valid, but they
- *     now route to this same tool (createMessageTool). `send-tool.ts` is
- *     dead code pending removal.
- *   - This tool emits BOTH `message.created` (v2 canonical) and `agent.notification`
- *     (legacy — consumed by DbWriter, prompt assembly, dedup queries, etc).
+ *   - The `notify` and `message-only` tool presets were removed in v0.3 cleanup;
+ *     all agents use the `message` preset now.
+ *   - Emits a single `message.created` event. The `events` table row carries
+ *     `event_type='message.created'` and `owner=<recipient>`, which is what
+ *     the inbox query (in runtime-ctx.getInbox) reads.
  *
  * See: agents/shared/may-agent-docs/proposals/v2-architecture.md (Messages)
  */
@@ -162,19 +162,6 @@ export function createMessageTool(opts: MessageToolOptions): AgentTool {
           artifact: params.artifact,
           priority,
         });
-      } catch {
-        /* best-effort */
-      }
-
-      // ── Emit legacy event (DbWriter, prompt assembly still listen) ─
-      try {
-        opts.emit?.({
-          type: "agent.notification",
-          owner: params.to,
-          source: caller,
-          task: body,
-          artifact: params.artifact,
-        } as any);
       } catch {
         /* best-effort */
       }

@@ -237,12 +237,11 @@ bus.subscribe(createStuckDetector(
   (agent, sessionId, reason) => {
     // Circuit-breaker → diagnosis feedback loop: notify May to investigate
     bus.emit({
-      type: "message_created",
-      fromEntity: "system:circuit-breaker",
-      toAgent: "may",
-      method: "notify",
-      task: `[circuit-breaker] Agent "${agent}" terminated (session ${sessionId}): ${reason}. Investigate the root cause — check the session transcript, recent errors, and whether the agent needs guidance or a code fix.`,
-      source: "circuit-breaker",
+      type: "message.created",
+      from: "system:circuit-breaker",
+      to: "may",
+      content: `[circuit-breaker] Agent "${agent}" terminated (session ${sessionId}): ${reason}. Investigate the root cause — check the session transcript, recent errors, and whether the agent needs guidance or a code fix.`,
+      intent: "investigate",
       priority: "P1",
     } as any);
   },
@@ -615,12 +614,12 @@ bus.subscribe((event) => {
       if ("from" in event && "to" in event && "task" in event) {
         try {
           bus.emit({
-            type: "message_created",
+            type: "message.created",
             from: (event as any).from ?? "human",
             to: (event as any).to,
-            task: (event as any).task,
-            requestId: "",
-          });
+            content: (event as any).task,
+            priority: (event as any).priority,
+          } as any);
           log("info", `[message] ${(event as any).from ?? "human"} → ${(event as any).to}: ${((event as any).task as string).slice(0, 80)}`);
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
