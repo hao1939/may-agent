@@ -18,10 +18,10 @@ import type { HandlerContext, HandlerModule, CronEntry } from "../../shared/agen
 import { evaluateStandaloneSession } from "../../shared/evaluation/evaluator.js";
 
 const STATE_FILE = "eval-poller-processed.json";
-const MAX_LLM_EVALS_PER_RUN = 6; // LLM evals are slow and may retry — cap conservatively to avoid 300s handler timeout
+const MAX_LLM_EVALS_PER_RUN = 1; // LLM evals can approach the 300s handler timeout; run at most one per poll
 const MAX_HEURISTIC_EVALS_PER_RUN = 200; // Heuristic evals are instant (no LLM) — process in bulk
-const WALL_CLOCK_BUDGET_MS = 210_000; // Pre-start budget; keep margin below the platform's 300s timeout
-const MIN_REMAINING_MS_FOR_LLM_EVAL = 60_000; // Do not start a slow LLM eval without enough timeout headroom
+const WALL_CLOCK_BUDGET_MS = 150_000; // Pre-start budget; keep margin below the platform's 300s timeout
+const MIN_REMAINING_MS_FOR_LLM_EVAL = 120_000; // Do not start a slow LLM eval without enough timeout headroom
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days to match coverage metric window
 
 // Meta-agents that shouldn't be evaluated
