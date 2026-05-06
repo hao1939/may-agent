@@ -10,7 +10,7 @@
   "tools": [
     "coding",
     "agents",
-    "notify",
+    "message",
     "cron",
     "system-status",
     "cite-source",
