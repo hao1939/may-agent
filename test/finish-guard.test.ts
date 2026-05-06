@@ -7,10 +7,14 @@ import {
   guard,
 } from "../shared/guards/finish-guard.js";
 
-// Mock fs for deliverable validation
-vi.mock("fs", () => ({
-  existsSync: (p: string) => p.includes("exists"),
-}));
+// Mock fs for deliverable validation — spread the real module to avoid polluting other tests
+vi.mock("fs", async () => {
+  const actual = await vi.importActual<typeof import("fs")>("fs");
+  return {
+    ...actual,
+    existsSync: (p: string) => p.includes("exists"),
+  };
+});
 
 describe("validateFinishDeliverables", () => {
   it("returns valid for null deliverables", () => {
