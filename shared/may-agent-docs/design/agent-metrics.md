@@ -1,7 +1,20 @@
 # Design: System Metrics
 
 **Status**: approved
-**Date**: 2026-04-30
+**Date**: 2026-04-30 (updated 2026-05-06)
+
+## What metrics are for
+
+Metrics are **the system's vital signs**. They measure progress toward project goals (project metrics) and overall system health (system metrics). They are how the system *sees itself*.
+
+Metrics do not directly drive work. The driving model is:
+
+- A metric breaches → the breach is recorded as state and emitted as an event.
+- The owning agent's **next heartbeat** sees the breach in its prompt context, alongside its projects, inbox, and recent events.
+- The agent **decides** what to do about it: act now, queue it, escalate, or note without action.
+- Only **P0 (urgent) metrics fork the agent directly**, bypassing the heartbeat. Everything else waits for the agent to look.
+
+This is intentional — see `design/heartbeat-as-agency.md`. Forking on every breach makes agents reactive; deferring to heartbeats makes them deliberative. Metrics are vitals, not pagers.
 
 ## Architecture
 
