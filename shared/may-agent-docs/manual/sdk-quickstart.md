@@ -81,7 +81,8 @@ const inbox = db.prepare(`
 
 ### Agent-to-agent message
 ```typescript
-sdk.emit("agent.notification", { owner: "bob", task: "Check the failing tests" });
+sdk.notify("bob", "Check the failing tests");
+// emits: { type: "message.created", from: agent, to: "bob", content: "..." }
 ```
 
 ### Trigger another handler

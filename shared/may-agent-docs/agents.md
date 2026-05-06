@@ -19,7 +19,7 @@ sdk.runAgent("tech-lead", task);  // don't await
 
 // message (inbox)
 sdk.notify("bob", "Review this design");
-// or: sdk.emit("agent.notification", { owner: "bob", task: "..." });
+// emits: { type: "message.created", from: agent, to: "bob", content: "..." }
 ```
 
 ## Session Tree

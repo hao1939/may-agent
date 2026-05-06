@@ -162,7 +162,7 @@ LESSONS.md, knowledge/INDEX.md).
 | `socket-watch` | Watch agent sessions via socket |
 | `cron` | Schedule and manage cron jobs |
 | `scrape` | Web scraping |
-| `agent-growth` | Fork/verify/promote agents |
+| ~~`agent-growth`~~ | *(removed — growth is agent-scope, not infra)* |
 
 ### Adding a New Agent
 
@@ -181,13 +181,13 @@ Agents cooperate through 5 actions on the `agents` tool:
 | Action | Type | Description |
 |--------|------|-------------|
 | `call` | Sync | Block until child agent completes, get result |
-| `send` | Async | Write todo to target's `workspace/todo.md`, trigger heartbeat |
+| `fork` | Async | Start agent in background, returns sessionId |
 | `list` | Query | List available agents and active sessions |
 | `peek` | Query | Read a running session's progress |
 | `cancel` | Control | Stop a running session |
 
 `call` is the primary cooperation primitive — synchronous, simple, debuggable.
-`send` is for async work assignment — the target picks it up on next heartbeat.
+For async communication, use the `message` tool (emits `message.created`).
 
 ## Session Kinds
 

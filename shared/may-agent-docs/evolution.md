@@ -91,11 +91,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
 ---
 
-## Level 4: Guard (enforcement)
+## Level 4: Guard (workflow-level enforcement)
 
-A guard runs on every workflow step regardless of which workflow. It enforces invariants that should never be violated.
+> **Note:** Guards are a workflow-level pattern, not an infra primitive. The infra doesn't enforce guards — workflows opt into them.
 
-**Where it lives:** `agents/shared/guards/<name>.ts`
+A guard runs on workflow step events. It enforces invariants within a workflow.
+
+**Where it lives:** Inline in workflow definitions, or `agents/shared/guards/<name>.ts`
 
 **Interface:**
 ```typescript
@@ -103,7 +105,6 @@ export const guard: WorkflowGuard = {
   name: "build-check",
   events: ["step_done"],
   handle(event) {
-    // After any code-writing step, demand a build check
     if (event.result?.lastAssistantText?.includes("wrote")) {
       return [{ type: "run_step", step: { agent: "qa", task: "Run bun run bundle", label: "build-check" }, reason: "verify build" }];
     }
@@ -113,9 +114,9 @@ export const guard: WorkflowGuard = {
 ```
 
 **Demand types:**
-- `block` — stop the workflow immediately (hard invariant violated)
+- `block` — stop the workflow immediately
 - `warn` — inject a warning into the next step's task
-- `run_step` — inject an additional step (e.g., run tests after any code change)
+- `run_step` — inject an additional step
 
 ---
 

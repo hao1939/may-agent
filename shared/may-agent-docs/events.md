@@ -4,10 +4,9 @@
 
 ```
 Event = something that happened at a point in time (immutable, append-only)
-State = derived by querying events (no mutable status fields)
 ```
 
-No `status` column. No `UPDATE` statements. State is computed from event pairs.
+Events are the primary communication mechanism. State is derived from events where practical. Some tables (metrics, sessions) use mutable status columns for query efficiency — this is a pragmatic trade-off, not a violation. The events table remains append-only and is the audit trail.
 
 ## Schema
 
@@ -35,9 +34,8 @@ handler.failed     { handler, agent, error, durationMs }
 
 ### Session lifecycle
 ```
-session.completed  { sessionId, agent, parentSessionId, outcome }
-session.failed     { sessionId, agent, error }
-session.escalated  { sessionId, agent, finishParams }
+session.start      { sessionId, agent, task, kind, parentSessionId }
+session.end        { sessionId, agent, status, summary }
 ```
 
 ### Agent communication
