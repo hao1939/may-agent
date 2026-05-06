@@ -75,11 +75,13 @@ Legacy `.state/evaluations/` artifacts: newest file mtime still 2026-04-29; `tas
 
 Did **not** run `monitor-session.cjs` or `patrol.cjs` this cycle.
 
-**Last run**: 2026-05-05 20:20Z — DB canonical check: `MAX(evaluations.createdAt)=2026-05-05 18:53:41`; `MAX(sessions.startedAt)=2026-05-05 20:19:58` → eval lag ≈86m at check time (pipeline live).
+**Last run**: 2026-05-06 06:51Z — DB canonical check: `MAX(evaluations.createdAt)=1778028402653` (2026-05-06T00:46:42Z); `MAX(sessions.startedAt)=1778050217108` (2026-05-06T06:50:17Z) → eval lag ≈6h03m at check time (pipeline still updating; lag notable).
 
-Legacy `.state/evaluations/` artifacts: directory mtime 2026-04-29; `task_tree_*.json` mtimes still 2026-03-24 → treat as legacy output-path drift.
+Legacy `.state/evaluations/` artifacts: `task_tree_*.json` mtimes still 2026-03-24; newest `s_*.json` mtime observed 2026-04-29 → treat as legacy output-path drift, not DB liveness.
 
-Did **not** run `monitor-session.cjs` or `patrol.cjs` this cycle.
+Ran `monitor-session.cjs --running`: 3 checked, 3 healthy.
+
+Ran `patrol.cjs`: **CRITICAL** due to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event).
 
 **Previous run**: 2026-05-03 01:13Z — DB canonical check: `MAX(evaluations.createdAt)=1777768954999` (2026-05-03T00:42:34Z; eval pipeline live). `MAX(sessions.createdAt)=1777768954999` (2026-05-03T00:42:34Z). Investigation note: bob’s depressed average score (~0.408) appears strongly explained by `shallow_session` tagging (50% of bob evals); when shallow-tagged, avg score ≈0.20 vs non-shallow ≈0.617. Similar pattern for coach/optimizer (shallow avg ≈0.20).
 
