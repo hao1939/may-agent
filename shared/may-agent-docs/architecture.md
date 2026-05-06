@@ -538,6 +538,6 @@ Items where current implementation differs from this architecture:
 | ~~Heartbeat trigger~~ | ✅ Done | Cron emits `heartbeat` event on bus; handler subscribes |
 | ~~Typed metrics~~ | ✅ Done | Typed gauge/counter/health/derived with per-metric config |
 | ~~Guard mechanism~~ | ✅ Done | Already middleware (BeforeToolCallHook + composeGuards). Per-agent config deferred to runtime migration. |
-| Agent runtime | SubagentManager (4k LOC) | pi-coding-agent's `createAgentSession()` |
+| Agent runtime | SubagentManager (2.3k LOC) + `agent-runtime.ts` (v2, opt-in) | Direct Agent usage via `runAgentSession()` for all callers |
 
 See `v2-migration-plan.md` and `v2-implementation-notes.md` for migration history.
