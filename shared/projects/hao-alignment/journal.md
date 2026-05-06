@@ -209,3 +209,6 @@ Same state as before — no actionable work exists until a trigger fires. The wo
 
 **No worker dispatch needed.** Project is active but idle. Next triggers:
 1. New Hao interaction → mine immediat
+
+### Iteration 4 — 2026-05-06T16:19:01.653Z
+**Worker**: The file is gitignored. Let me just call finish — the file exists on disk.
