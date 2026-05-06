@@ -1,0 +1,2 @@
+- **Context Engineering**: Emerging trend in multi-agent skills.
+- **Coding Flywheels**: Agentic coding environments are popular.
