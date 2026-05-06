@@ -24,6 +24,7 @@ Proposals flow: **arc proposes → human/may approves → dev implements**
 - [ ] [P1] Fix metric-alert-reactor broken import — agents/arc/workspace/proposals/2026-05-03-fix-metric-alert-reactor-broken-import.md (proposed: 2026-05-03)
 - [ ] [P1] Self-calibrating heartbeat-coverage metric (perpetual breach after 4-agent freeze, KE-756) — agents/arc/workspace/proposals/2026-05-06-self-calibrating-heartbeat-coverage-metric.md (proposed: 2026-05-06)
 - [ ] [P1] Branch-aware breach message (counter+rate alerts emit "current=61 below threshold=0" — message lies, prompt to may misleads, KE-765) — agents/arc/workspace/proposals/2026-05-06-branch-aware-breach-message.md (proposed: 2026-05-06)
+- [ ] [P1] Heartbeat header should consult `metric_alerts` (header says "All metrics healthy — no action needed" while 3 rate-mode alerts sit open right below; prompt is self-contradictory; pairs with branch-aware breach message above; KE-770) — agents/arc/workspace/proposals/2026-05-06-heartbeat-header-consult-metric-alerts.md (proposed: 2026-05-06)
 - [ ] [P1] Add `metrics.config` column + drop runtime-guard branch in metrics-snapshot.ts (KE-769; v2 phase-4 ships writes against unmigrated schema; arch.md:179 promises a substrate that is unreachable today) — agents/arc/workspace/proposals/2026-05-06-add-metrics-config-column-and-drop-runtime-guard.md (proposed: 2026-05-06)
 - [ ] [P2] Widen blocked-over-6h to include waiting status — agents/arc/workspace/proposals/2026-05-02-blocked-over-6h-include-waiting.md (proposed: 2026-05-02)
 
