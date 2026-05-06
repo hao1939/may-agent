@@ -121,6 +121,8 @@ Action recommendation: if lag stays >2–3h, likely `evaluate-session-llm` job i
 
 **Last run**: 2026-05-06 22:53Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617`; `MAX(sessions.endedAt)=1778107976702` → eval lag ≈6.11h.
 
+**Last run**: 2026-05-06 23:26Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617` (still); `MAX(sessions.endedAt)=1778111590563` → eval lag ≈7.12h. Last-24h volume (approx): `sessions_last24h=796` vs `evaluations_last24h=40` → coverage ≈5.0%.
+
 Interpretation: evaluator pipeline appears **stalled** or running too infrequently relative to current session volume. Legacy `.state/evaluations/` directory still contains some newer `s_*.json` (mtime 2026-04-29) but that is not the canonical signal.
 
 Action recommendation: **escalate to May/tech-lead** to inspect `evaluate-session-llm` scheduling + event-consumer throughput; if the backlog hypothesis from earlier runs still holds, confirm whether any `handler.failed` events (e.g., `eval-poller` timeout / metrics schema mismatch) are currently blocking progress.
