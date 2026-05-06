@@ -1,17 +1,27 @@
 # Project Idle Status Report
 
-**Generated:** Iteration 18 (May 6, 2025)
+**Generated:** Iteration 20 (May 2025)
+**Status:** Active but idle — no actionable work
 
-## Status: Active but Idle
+## Summary
 
-All completable work items have been finished. Remaining items are time-gated:
+All completable work items have been finished. The project is waiting on time-gated triggers before any new work can proceed.
 
-| Item | Trigger | Due |
-|------|---------|-----|
-| Monthly re-scan | Calendar | ~June 6, 2025 |
-| 2-week correction rate comparison | New Hao interactions | TBD |
-| Quarterly git re-scan | Calendar | Oct 2026 |
+## Pending Triggers
+
+| Trigger | Due Date | Action |
+|---------|----------|--------|
+| New Hao interaction | Any time | Mine it immediately |
+| Monthly re-scan | ~June 6, 2025 | Re-scan recent sessions |
+| Quarterly git re-scan | Oct 2026 | Full repository scan |
+
+## Completed Work
+
+- All propagation tasks done
+- All immediately actionable plan items complete
+- Correction rate comparison requires more Hao interactions (2-week window)
+- Metric trend tracking is monthly
 
 ## Recommendation
 
-**Stop dispatching workers until a trigger fires.** This has been confirmed across 17 consecutive iterations with no actionable work available.
+**Do not dispatch workers until a trigger fires.** This project has had 19 consecutive idle iterations with no actionable work available.
