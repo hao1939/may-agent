@@ -94,8 +94,10 @@ Evaluations are stored in SQLite (`.state/may.db`) with `evaluations.issues` as 
 When a heartbeat is asked to "check eval recency", treat **SQLite DB liveness** as the primary signal.
 
 **Coverage sanity check (recommended):** Also compute a short-window coverage ratio (e.g., last 6h / last 24h) to detect partial outages where the DB is still getting *some* evaluations but the pipeline is falling behind.
-- Example query pair: `count(sessions where status='done' and startedAt>=now-6h)` vs `count(evaluations where createdAt>=now-6h)`.
-- **Important:** `evaluations.createdAt` is stored as **epoch milliseconds**; `sessions.startedAt/endedAt` are also epoch milliseconds. Do **not** use `datetime('now', ...)` comparisons against these columns in SQLite; compare against `(Date.now() - windowMs)`.
+- Example query pair: `count(sessions where status='done' and endedAt>=now-6h)` vs `count(evaluations where createdAt>=now-6h)`.
+- **Important:** `evaluations.createdAt` is stored as **epoch milliseconds**; `sessions.startedAt/endedAt` are also epoch milliseconds.
+  - Do **not** query `sessions.createdAt` (it does not exist).
+  - Do **not** use `datetime('now', ...)` comparisons against these columns in SQLite; compare against `(Date.now() - windowMs)` or against `(strftime('%s','now')-windowSeconds)*1000`.
 - If coverage < ~10% for last 6h (tunable), escalate as likely `evaluate-session-llm` liveness/scheduling/scope issue.
 
 **Primary (current system):** `.state/may.db` → `evaluations` table
