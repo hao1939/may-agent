@@ -81,6 +81,7 @@ export type SessionEvent =
 
 /** System events */
 export type SystemEvent =
+  | { type: "heartbeat"; agent: string; entry: string }
   | { type: "handler.started"; handler: string; agent: string }
   | { type: "handler.completed"; handler: string; agent: string; durationMs: number }
   | { type: "handler.failed"; handler: string; agent: string; error: string; durationMs: number }

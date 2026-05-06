@@ -231,9 +231,20 @@ export class Cron {
     return triggered;
   }
 
-  /** Subscribe to bus — auto-dispatch domain events (dot-separated types) to handlers. */
+  /** Subscribe to bus — auto-dispatch domain events (dot-separated types) to handlers.
+   *  Also handles `heartbeat` events: triggers the matching heartbeat entry. */
   subscribeToBus(bus: EventBus): void {
     bus.subscribe((event) => {
+      // Heartbeat event → trigger the matching cron entry
+      if (event.type === "heartbeat" && "agent" in event) {
+        const agent = (event as any).agent as string;
+        const entryName = agent === "may" ? "heartbeat" : `heartbeat-${agent}`;
+        // Only trigger if it wasn't fired by us (avoid loop: fireHandler emits → bus → triggerNow)
+        if (!this.isRunning(entryName)) {
+          this.triggerNow(entryName, { force: true });
+        }
+        return;
+      }
       if (!event.type.includes('.')) return;
       this.dispatchEvent(event.type, event as any);
     });
@@ -507,6 +518,11 @@ export class Cron {
     this.inflightJobs.set(entry.name, startMs);
     this.lastFireTimes.set(entry.name, startMs);
     const agent = entry.agent || "may";
+
+    // Emit heartbeat event on bus for heartbeat entries (event-driven: anything can trigger via bus)
+    if (entry.name.startsWith("heartbeat")) {
+      this.emitEvent?.({ type: "heartbeat", agent, entry: entry.name });
+    }
 
     this.emitEvent?.({ type: "handler.started", handler: entry.name, agent });
 
