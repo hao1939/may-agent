@@ -1,6 +1,6 @@
 # Proposal: May-Agent v2 Architecture
 
-**Status**: Target architecture / migration plan, not big-bang rewrite.
+**Status**: ✅ Phases 1–5 implemented. Observation phase active. See `v2-migration-plan.md` and `v2-implementation-notes.md` for what landed.
 
 Goal: reduce runtime complexity by converging on one primitive:
 
