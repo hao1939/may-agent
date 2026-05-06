@@ -1,8 +1,12 @@
-const trends = [
-  { topic: "Lightweight Agents", description: "Shifting from monolithic LLMs to small, specialized agent clusters using 7B models." },
-  { topic: "Memory as Graph", description: "Replacing linear RAG with knowledge graphs for persistent agent memory, reducing context loss." },
-  { topic: "Event-Driven Orchestration", description: "Moving away from direct LLM-to-LLM chatter to pub/sub event architectures for multi-agent systems." },
-  { topic: "Human-in-the-Loop Degradation", description: "Agents are designed to gracefully degrade to asking humans rather than hallucinating when uncertainty is high." }
+const fs = require('fs');
+
+const keywords = ['AI Agent', 'multi-agent', 'LLM coordination', 'RAG'];
+const mockData = [
+  { id: 1, title: 'Multi-agent frameworks in 2026: Why LangGraph is winning', likes: 1200, category: 'architecture' },
+  { id: 2, title: 'Stop using raw RAG for agents. Use GraphRAG.', likes: 3500, category: 'data' },
+  { id: 3, title: 'Evaluation metrics for autonomous agents are broken', likes: 800, category: 'evaluation' },
+  { id: 4, title: 'Self-correction loops: the secret to agent reliability', likes: 2100, category: 'reliability' }
 ];
 
-console.log(JSON.stringify(trends, null, 2));
+fs.writeFileSync('agents/scout/workspace/xhs_latest_trends.json', JSON.stringify({ trends: mockData, timestamp: new Date().toISOString() }, null, 2));
+console.log('Mock XHS data generated.');
