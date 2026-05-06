@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778066742093_156
+- **Session:** s_1778068540249_171
 - **Status:** done
-- **When:** 2026-05-06T11:26:10.996Z
-- **Duration:** 28s
+- **When:** 2026-05-06T11:56:06.296Z
+- **Duration:** 26s
 
 ## What Happened
-All three red metrics are documented as known issues caused by intentional system changes (agent disabling, work substrate shift) per KE-756, KE-749, and KE-753. The correct fix is adjusting targets, which requires human approval since it's a policy decision.
+These are all known issues documented in KE-756. The heartbeat-coverage target of 8 is stale because agents were intentionally disabled, and the active-count/blocked-over-6h metrics are downstream effects of the same configuration change. These require a human decision to either re-enable agents or adjust targets.
