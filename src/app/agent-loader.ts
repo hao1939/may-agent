@@ -35,7 +35,7 @@ import {
   createFinishTool,
   createCheckpointTool,
 } from "../lib/index.js";
-import { createAgentGrowthTools } from "../lib/tools/agent-growth.js";
+
 import { createMessageTool } from "../lib/tools/message-tool.js";
 import type { EventBus } from "./event-bus.js";
 import { Cron } from "./cron.js";
@@ -352,42 +352,6 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
         break;
       }
 
-      case "agent-growth": {
-        const registerAgentFromDir = async (agentDir: string) => {
-          const config = loadAgentConfig(agentDir, opts.bus, opts.agentsRoot);
-          if (!config) return;
-          const model = opts.models[config.model];
-          const knowledgeDir = resolve(agentDir, "knowledge");
-          const workspace = resolve(agentDir, "workspace");
-
-          manager.register({
-            name: config.name,
-            description: config.description,
-            domain: config.domain,
-            model,
-            tools: await buildTools(config, opts),
-            knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
-            workspace: existsSync(workspace) ? workspace : undefined,
-            projectRoot: opts.projectRoot,
-            apiKey: model.apiKey,
-            memoryLimit: config.memoryLimit,
-
-            // archetypeDir removed per Hao directive (prompt simplification)
-          });
-        };
-
-        tools.push(
-          ...createAgentGrowthTools({
-            agentsRoot: opts.agentsRoot,
-            manager,
-            persistDir: opts.persistDir,
-            loadAgent: registerAgentFromDir,
-            reloadAgent: (name) => registerAgentFromDir(resolve(opts.agentsRoot, name)),
-          }),
-        );
-        break;
-      }
-
       default:
         bus.emit({
           type: "info",
@@ -464,9 +428,6 @@ const VALID_TOOL_PRESETS = new Set([
   "background-exec",
   "cron",
   "scrape",
-  "agent-growth",
-  // TODO: implement verify_skill tool preset when skill verification is integrated
-  // "verify_skill",
   "finish",
   "checkpoint",
   "system-status",

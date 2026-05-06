@@ -24,19 +24,6 @@ import { generateId } from "../lib/index.js";
 // Budget tiers now auto-resolved in manager.run() — import no longer needed here
 import { getDb } from "../lib/requests.js";
 import { spawnDetachedAgent } from "../lib/detached.js";
-import {
-  isAgentAutoPaused,
-  getAutoPauseState,
-  shouldFireProbe,
-  buildProbeTaskMessage,
-  createPauseEscalation,
-  createRecoveryNotification,
-  getLastErrors,
-  parseAutoPauseConfig,
-  AUTO_PAUSE_DEFAULTS,
-  type AutoPauseConfig,
-  type AutoPauseStateInfo,
-} from "../lib/auto-pause.js";
 import type { CronEntry } from "../lib/cron-tool.js";
 import type { TriggerEvent } from "../lib/handler-context.js";
 
@@ -46,7 +33,7 @@ import type { TriggerEvent } from "../lib/handler-context.js";
 type CronHandler = (event?: TriggerEvent) => Promise<void>;
 
 /** Callback when a job fires (for notifications). */
-type CronJobCallback = (entry: CronEntry, type: "js" | "heartbeat" | "detached") => void;
+type CronJobCallback = (entry: CronEntry, type: "js" | "detached") => void;
 
 // ── Cron class ────────────────────────────────────────────────────────
 
@@ -73,10 +60,6 @@ export class Cron {
   private projectRoot: string;
   private persistDir: string;
 
-  /** Track which agents have already had an escalation created (avoid duplicates). */
-  private autoPauseEscalated = new Set<string>();
-  /** Track which agents were in auto-pause state (to detect recovery). */
-  private autoPauseActive = new Map<string, { pausedAt: number; probeCount: number }>();
   /** In-flight jobs: entry name → start timestamp. Replaces requests table overlap check. */
   private inflightJobs = new Map<string, number>();
 
@@ -402,9 +385,6 @@ export class Cron {
 
     // Manual trigger — always fire, no overlap check
     switch (mode) {
-      case "heartbeat":
-        this.fireHeartbeat(entry);
-        break;
       case "job-handler":
         this.fireHandler(entry, opts?.triggerEvent ?? { type: "manual.trigger", source: "manual", entry: entry.name, timestamp: Date.now() });
         break;
@@ -416,11 +396,8 @@ export class Cron {
   }
 
   /** Resolve the effective execution mode for an entry. */
-  private resolveMode(entry: CronEntry): "heartbeat" | "job-handler" | "job-detached" | null {
+  private resolveMode(entry: CronEntry): "job-handler" | "job-detached" | null {
     const handler = this.handlers.get(entry.name);
-
-    if (entry.type === "heartbeat") return "heartbeat";
-
     if (handler) return "job-handler";
     if (entry.agent) return "job-detached";
 
@@ -440,14 +417,6 @@ export class Cron {
       return false;
     }
     return true;
-  }
-
-  /** Check if any heartbeat for a given agent is currently active. */
-  private isAgentHeartbeatRunning(agentName: string): boolean {
-    for (const entry of this.entries) {
-      if ((entry.agent || "may") === agentName && this.isRunning(entry.name)) return true;
-    }
-    return false;
   }
 
   /** Get the last fire time for a job (epoch ms). */
@@ -471,64 +440,7 @@ export class Cron {
 
     const fire = () => {
       // Cron timer: skip if already running (overlap protection)
-      if (mode === "heartbeat") {
-        const agentName = entry.agent || "may";
-        if (this.isAgentHeartbeatRunning(agentName)) {
-          this.onError?.(`Cron "${entry.name}" skipped — ${agentName} heartbeat still running`);
-          return;
-        }
-        // DB-based auto-pause with recovery: persistent across restarts
-        const apConfig = parseAutoPauseConfig(entry.handlerConfig);
-        const apState = getAutoPauseState(this.persistDir, agentName, apConfig);
-        if (apState.state === "auto-paused") {
-          if (apState.probeDue) {
-            // Probe is due — fire a probe session instead of normal heartbeat
-            this.fireHeartbeat(entry, { probe: true, apState, apConfig });
-            return;
-          }
-          // Still paused, no probe due — skip
-          const nextProbeIn = apState.nextProbeDelayMs
-            ? `next probe in ~${Math.round(apState.nextProbeDelayMs / 60000)}m`
-            : "calculating";
-          this.onError?.(
-            `[auto-pause] Skipping ${agentName} heartbeat — paused (${apState.probeFailCount} probe failures, ${nextProbeIn})`,
-          );
-          // Create escalation on first detection (idempotent via set check)
-          if (!this.autoPauseEscalated.has(agentName)) {
-            this.autoPauseEscalated.add(agentName);
-            this.autoPauseActive.set(agentName, {
-              pausedAt: apState.pausedAt!,
-              probeCount: apState.probeFailCount,
-            });
-            const errors = getLastErrors(this.persistDir, agentName, apConfig.threshold);
-            createPauseEscalation(this.persistDir, agentName, apConfig, errors);
-            const msg = `[auto-pause] Agent "${agentName}" paused after ${apConfig.threshold} consecutive errors. Probe in ${Math.round(apConfig.initialProbeDelayMs / 60000)}m.`;
-            this.notify?.(msg);
-          }
-          return;
-        }
-        if (apState.state === "probing") {
-          // A probe is currently running — don't fire another one
-          this.onError?.(`[auto-pause] Skipping ${agentName} heartbeat — probe in progress`);
-          return;
-        }
-        // state === "running" — check if we just recovered from auto-pause
-        if (this.autoPauseActive.has(agentName)) {
-          const pauseInfo = this.autoPauseActive.get(agentName)!;
-          const pauseDurationMs = Date.now() - pauseInfo.pausedAt;
-          createRecoveryNotification(
-            this.persistDir,
-            agentName,
-            apConfig,
-            pauseInfo.probeCount,
-            pauseDurationMs,
-          );
-          this.autoPauseActive.delete(agentName);
-          this.autoPauseEscalated.delete(agentName);
-          const msg = `[auto-pause] Agent "${agentName}" recovered after ${pauseInfo.probeCount} probes.`;
-          this.notify?.(msg);
-        }
-      } else if (mode === "job-detached") {
+      if (mode === "job-detached") {
         // For detached: check if process is actually alive
         const pid = this.getRunningPid(entry.name);
         if (pid && this.isProcessAlive(pid)) {
@@ -546,22 +458,11 @@ export class Cron {
         }
       }
 
-      // Auto-pause for non-heartbeat agent modes: persistent across restarts
-      if (mode !== "heartbeat" && entry.agent) {
-        const jobApConfig = parseAutoPauseConfig(entry.handlerConfig);
-        const jobApState = getAutoPauseState(this.persistDir, entry.agent, jobApConfig);
-        if (jobApState.state === "auto-paused" && !jobApState.probeDue) {
-          this.onError?.(
-            `[auto-pause] Skipping ${entry.agent} job "${entry.name}" — paused (${jobApState.probeFailCount} probe failures)`,
-          );
-          return;
-        }
-      }
+      // Auto-pause was removed in v0.5 cleanup — agent health is now
+      // observable through metrics + escalations instead of being
+      // enforced at the cron layer.
 
       switch (mode) {
-        case "heartbeat":
-          this.fireHeartbeat(entry);
-          break;
         case "job-handler":
           this.fireHandler(entry, { type: "timer.tick", source: "timer", entry: entry.name, timestamp: Date.now() });
           break;
@@ -627,18 +528,6 @@ export class Cron {
     }
     return entry.intervalMs - elapsed;
   }
-
-  // ── Heartbeat: spawn fresh task session ─────────────────────────────
-
-  private fireHeartbeat(
-    entry: CronEntry,
-    _opts?: { probe?: boolean; apState?: AutoPauseStateInfo; apConfig?: AutoPauseConfig },
-  ): void {
-    // Legacy: no cron entries use type=heartbeat anymore.
-    // All agents use type=job + handler=run-workflow.
-    this.onError?.(`fireHeartbeat called for "${entry.name}" but type=heartbeat is deprecated. Use handler=run-workflow.`);
-  }
-
 
   // ── Job with JS handler: run in-process ─────────────────────────────
 
