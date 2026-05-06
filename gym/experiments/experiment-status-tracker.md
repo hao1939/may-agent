@@ -36,14 +36,12 @@
 - **Details**: `agents/coach/workspace/EXP-745-phase2-results.md`
 
 ### EXP-870: Structural Enforcement of Read-After-Edit
-- **Status**: RFC COMPLETE (2025-05-09)
+- **Status**: PARTIALLY DEPLOYED (2025-06-05 — Option B already exists as `verify-after-write.ts`)
 - **Hypothesis**: Structural/environmental enforcement of read-after-edit achieves ≥80% compliance vs <50% with text-only rules
-- **Approach**: Auto-inject read() after every edit() (Option C) — eliminates compliance gap by construction
-- **Connection**: Directly applies KE-EXP027 (structural > text interventions)
-- **Baseline findings**: Read-before-edit fleet ~95%, optimizer 76%. Read-after-edit estimated <50%. Text fixes confirmed 0% effective.
-- **RFC**: Implementation spec complete. Key finding: can't modify built-in edit(), need proxy `verified_edit()` tool or finish()-rejection fallback (Option B).
-- **Next**: Implement Option B (finish() rejection in master-worker.ts) as feasible first step; Option C requires infra team
-- **Details**: `agents/bob/workspace/EXP-870-structural-enforcement-design.md`, `agents/bob/workspace/EXP-870-baseline-audit.md`, `agents/bob/workspace/EXP-870-option-c-implementation-rfc.md`
+- **Discovery (2025-06-05)**: Option B (finish-block) was ALREADY IMPLEMENTED in `agents/shared/guards/verify-after-write.ts` before this experiment was designed. The guard blocks finish(success) if any edit/write lacks a subsequent read().
+- **Remaining**: Option C (auto-inject read into edit response) is the only novel proposal — would eliminate agent overhead entirely.
+- **Next**: Measure verify-after-write guard fire rate and retry cost. If significant, pursue Option C with infra team.
+- **Details**: `agents/bob/workspace/EXP-870-discovery-already-implemented.md`, `agents/bob/workspace/EXP-870-option-c-implementation-rfc.md`
 
 ## Closed Experiments
 
