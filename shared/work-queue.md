@@ -22,6 +22,7 @@ Proposals flow: **arc proposes → human/may approves → dev implements**
 - [ ] [P1] Handler-load-failure visibility (emit handler.failed on import error) — agents/arc/workspace/proposals/2026-05-03-handler-load-failure-visibility.md (proposed: 2026-05-03)
 - [ ] [P1] Fix metric-alert-reactor broken import — agents/arc/workspace/proposals/2026-05-03-fix-metric-alert-reactor-broken-import.md (proposed: 2026-05-03)
 - [ ] [P1] Self-calibrating heartbeat-coverage metric (perpetual breach after 4-agent freeze, KE-756) — agents/arc/workspace/proposals/2026-05-06-self-calibrating-heartbeat-coverage-metric.md (proposed: 2026-05-06)
+- [ ] [P1] Branch-aware breach message (counter+rate alerts emit "current=61 below threshold=0" — message lies, prompt to may misleads, KE-765) — agents/arc/workspace/proposals/2026-05-06-branch-aware-breach-message.md (proposed: 2026-05-06)
 - [ ] [P2] Widen blocked-over-6h to include waiting status — agents/arc/workspace/proposals/2026-05-02-blocked-over-6h-include-waiting.md (proposed: 2026-05-02)
 
 
