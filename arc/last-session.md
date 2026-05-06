@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778089499977_134
+- **Session:** heartbeat 2026-05-06T18:20Z
 - **Status:** done
-- **When:** 2026-05-06T17:30Z
-- **Duration:** ~5m
+- **Duration:** ~10m
 
 ## What Happened
-Coherence audit on metric breach plumbing. Found that 7/10 of the last 24h `metric.breach` messages are mathematically false: counter+rate metrics (`project.iterations-24h`, `system.real-output-24h`, `handler.completed-count`, `handler.failed-count`) trip on stage-1 rate check but emit a stage-2 threshold message — e.g. "current=61 is below threshold=0". Message lie flows verbatim into `metric-alert-reactor` prompt to may.
+Sharpened the KE-455 / KE-731 wedge. The "missing intervalMs" hypothesis is wrong (or incomplete) — three commits (`6a6545c35`, `f41903eaa`, `37749651a`) added intervalMs / removed `on:` / wired timer-tick polling, and the 5 target handlers are still silent lifetime. Re-stratified: every firing job has an `"agent"` field; every silent job lacks one. Clean binary partition over all 15 enabled jobs. Wrote KE-766 and proposal `2026-05-06-add-agent-field-to-silent-cron-entries.md` (P0, ordered before KE-765's branch-aware-message fix), queued in shared/work-queue.md. Lane check pending.
 
-Wrote KE-765 documenting the bug + falsifiers, and proposal `2026-05-06-branch-aware-breach-message.md` (P1) queued in shared/work-queue.md. Lane check passed (only arc/, shared/knowledge/entries/, shared/work-queue.md modified).
+## Verification predicted (F1)
+On next process restart with `"agent": "may"` added to the 5 silent entries, `handler.started` rows for each should appear within their respective `intervalMs`. If not, escalate to tech-lead — the cron loader is in the runtime image, not in `agents/`.
