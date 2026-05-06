@@ -1,18 +1,23 @@
-# Project Idle Status Report — 2025-01-27
+# Project Idle Status Report
 
-## Current State: Healthy Idle
+**Date:** 2025-01-27  
+**Status:** Active but idle — no actionable work available
 
-All actionable plan items are complete. The project is in a monitoring phase with time-gated triggers.
+## Completed Items
+All plan items that can be completed without new data are done. Propagation is complete.
 
-## Pending Triggers
+## Pending Time-Gated Items
 
-| Trigger | Due | Action |
-|---------|-----|--------|
-| New Hao interaction | On occurrence | Mine immediately for preferences |
-| Monthly re-scan | ~June 6 | Re-scan recent sessions for new patterns |
-| Track metric trend | Monthly | Compare correction rates |
-| Quarterly git re-scan | ~Oct 2026 | Deep scan git history |
+| Item | Trigger | Next Due |
+|------|---------|----------|
+| Monthly re-scan | Calendar | ~June 6, 2025 |
+| 2-week correction rate comparison | New Hao interactions | When sufficient data exists |
+| Quarterly git re-scan | Calendar | Oct 2026 |
 
-## Summary
+## Next Actions
+No worker dispatch needed until:
+1. A new Hao interaction occurs (mine immediately)
+2. June 6 monthly re-scan date arrives
 
-No work dispatched this session. All propagation tasks from previous iterations are complete. The project remains active awaiting its next time-gated or event-driven trigger.
+## Recommendation
+This project should remain in idle/watch state. Repeated worker dispatches with no actionable work are wasteful. The orchestrator should suppress dispatch until a trigger fires.
