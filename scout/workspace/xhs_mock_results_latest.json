@@ -1,0 +1,20 @@
+[
+  {
+    "title": "The Rise of 'Manager' Agents in Swarm Architectures",
+    "content": "In a swarm of 10+ agents, you need a hierarchical structure. A 'Manager' agent that doesn't do work, but only delegates and aggregates. Reduces token usage by 40% and speeds up task completion.",
+    "likes": 320,
+    "saves": 95
+  },
+  {
+    "title": "AI Agent Multi-Agent Collaboration: Deep Dive into Micro-Agent Patterns",
+    "content": "Recent trend: breaking down complex agents into 'Micro-Agents' that only do one specific atomic task (e.g., only formatting, only routing). Much lower hallucination rate. Using shared memory spaces instead of direct messaging.",
+    "likes": 450,
+    "saves": 120
+  },
+  {
+    "title": "Agentic Workflows > Autonomous Agents in 2026",
+    "content": "The community is moving from fully autonomous agents to strictly defined 'Agentic Workflows' (like state machines). Predictability is more important than autonomy for enterprise.",
+    "likes": 1200,
+    "saves": 560
+  }
+]

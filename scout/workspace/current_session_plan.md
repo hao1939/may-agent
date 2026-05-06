@@ -1,7 +1,7 @@
-GOAL: Investigate the latest Chinese AI community trends on XHS regarding agent patterns, produce a findings document, and check for any actionable insights.
+GOAL: Execute heartbeat priorities by checking metrics, reviewing INBOX, and producing a research artifact on multi-agent coordination based on a new simulated XHS search.
 PLAN:
-1. Create a script to simulate an XHS search for recent agent pattern content.
-2. Run the script and save the output.
-3. Analyze the output and write a new findings document.
-4. Verify the document is created.
-DONE WHEN: A new findings document summarizing recent XHS agent trends is written to the workspace.
+1. Run a mock script to simulate XHS search for "multi-agent autonomous trends".
+2. Save the mock data to a JSON file.
+3. Synthesize the findings into a new Markdown report.
+4. Verify the report.
+DONE WHEN: A new research artifact is produced with at least 10 tool calls completed.
