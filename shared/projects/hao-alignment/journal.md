@@ -148,3 +148,34 @@ This project is infrastructure-complete and in maintenance mode. The only remain
 3. Re-measure correction rate — this window had several near-corrections (Hao's "review again" implies the first response wasn't sufficient)
 4. Project should NOT return to `waiting` per P11 — needs propagation work before next checkpoint
 
+## Iteration 10 — 2026-05-03 (propagation of P11-P16 to agent contexts + gate update)
+
+**What**: Completed the propagation work flagged at the end of iteration 9.
+
+**Changes**:
+- `agents/may/context.md` — already had P11-P16 summary line (carried from prior iteration); verified.
+- `agents/coach/context.md` — extended Hao Preferences line from {P11, P12, P16} to full {P11-P16}, with coach-relevant framing on P13 (gym verification before promoting changes).
+- `agents/tech-lead/context.md` — extended from {P12, P13, P15} to full {P11-P16}; tech-lead now sees P11 (don't close at "target met"), P14 (recurring issue → project), and P16 (second critical pass).
+- `agents/optimizer/context.md` — added P12, P15, P16 to the numbered preferences list (previously had P11, P13, P14 only). Renumbered.
+- `preference-check-gate.md` — added 4 new STOP conditions (items 7-10) covering P12, P13, P15, P16. Gate now enforces all six new principles, not just P11/P14.
+
+**Verification**: All four agent context files now reference at minimum P11, P12, P13, P14, P15, P16 with role-appropriate framing. The gate is the single source of truth applied at dispatch time.
+
+**Coverage matrix**:
+| Agent | P11 | P12 | P13 | P14 | P15 | P16 |
+|-------|-----|-----|-----|-----|-----|-----|
+| may | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| coach | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| tech-lead | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| optimizer | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+**Next** (per P11 — do not coast):
+1. Re-run `measure-corrections.sh` after the next batch of Hao interactions to see whether propagation reduced near-corrections (especially the "review again with critical eyes" pattern that P16 targets).
+2. Add a metric for **gate-trigger frequency** — count how often each STOP condition fires per dispatch cycle. If P11/P14 STOPs are firing often, propagation is working; if they never fire, agents may be ignoring the gate.
+3. Watch for new Hao inputs that contradict or refine P11-P16 (per P10 knowledge hygiene, merge — don't replace).
+4. Consider whether P11-P16 need a peer-review pass per P15 itself (meta-application: did we discuss the propagation design with peer agents?).
+
+
+
+### Iteration 1 — 2026-05-06T15:49:48.137Z
+**Worker**: File is committed. No uncommitted changes remain for my files.

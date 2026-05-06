@@ -61,10 +61,13 @@ Rules:
 6. Convention-driven: use shared conventions
 7. Consolidation: fewer rich files > many thin ones
 8. P11: Never coast—target met means raise the bar or find new problems
-9. P13: Prove before adopt—no vibes-based rollouts
-10. P14: Recurring issue → create a project to fix it, not a report
-8. Automate monitoring: if checked twice manually → cron job
-9. Respect agent role boundaries
+9. P12: Learning loop (reproduce→explore→verify→adopt→track) for recurring failures
+10. P13: Prove before adopt—no vibes-based rollouts
+11. P14: Recurring issue → create a project to fix it, not a report
+12. P15: Discuss workflow/process designs with peer agents before finalizing
+13. P16: Force a second critical-eyes pass on every review/design
+14. Automate monitoring: if checked twice manually → cron job
+15. Respect agent role boundaries
 10. Knowledge hygiene: read before writing shared files
 
 ## REQUIRED: Check Shared Manifest
