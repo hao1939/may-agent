@@ -10,7 +10,9 @@
  *   - sender never blocks waiting for a reply. Reply, if any, is a new message event.
  *
  * Back-compat:
- *   - The `notify` tool (createNotifyTool) remains as a deprecated alias.
+ *   - The `notify` and `message-only` tool presets remain valid, but they
+ *     now route to this same tool (createMessageTool). `send-tool.ts` is
+ *     dead code pending removal.
  *   - This tool emits BOTH `message.created` (v2 canonical) and `agent.notification`
  *     (legacy — consumed by DbWriter, prompt assembly, dedup queries, etc).
  *
