@@ -294,7 +294,7 @@ export interface SubagentManagerOptions {
   apiGate?: import("./api-gate.js").ApiGate;
   /**
    * EventBus for session lifecycle events. When set, the manager emits
-   * session_start, session_end, and agent streaming events directly
+   * session.start, session.end, and agent streaming events directly
    * instead of going through callbacks.
    */
   bus?: ManagerEventBus;

@@ -21,7 +21,7 @@ import { writeLastSession } from "./last-session.js";
 
 export function createContextUpdater(projectRoot: string): (event: AgentEvent) => void {
   return (event: AgentEvent) => {
-    if (event.type !== "session_end") return;
+    if (event.type !== "session.end") return;
     const updates = (event.finishParams as any)?.context_updates as
       | Array<{ action: string; content: string }>
       | undefined;
@@ -65,7 +65,7 @@ export function createContextUpdater(projectRoot: string): (event: AgentEvent) =
 
 export function createRequestTracker(persistDir: string): (event: AgentEvent) => void {
   return (event: AgentEvent) => {
-    if (event.type !== "session_end") return;
+    if (event.type !== "session.end") return;
 
     const finishParams = event.finishParams as any;
     if (!finishParams) return;
@@ -122,12 +122,12 @@ export function createStuckDetector(
   const state = new Map<string, StuckState>();
 
   return (event: AgentEvent) => {
-    if (event.type === "session_start") {
+    if (event.type === "session.start") {
       state.set(event.sessionId, { consecutiveErrorTurns: 0, warned: false });
       return;
     }
 
-    if (event.type === "session_end") {
+    if (event.type === "session.end") {
       state.delete(event.sessionId);
       return;
     }
@@ -228,7 +228,7 @@ export function createAutoResume(
   const attempts = new Map<string, number>();
 
   return (event: AgentEvent) => {
-    if (event.type !== "session_end") return;
+    if (event.type !== "session.end") return;
     if (event.status !== "interrupted") return;
     // Use opCount as the work indicator — turnCount is not reliably persisted
     const workDone = (event.opCount ?? (event as any).turnCount ?? 0) > 0;
@@ -307,11 +307,11 @@ export function createAutoResume(
 
 // ── Digest Writer ───────────────────────────────────────────────────────
 // Creates session digest entries on session lifecycle events.
-// Phase 1: session_start (CREATE) and session_end (END digest).
+// Phase 1: session.start (CREATE) and session.end (END digest).
 
 export function createDigestWriter(persistDir: string): (event: AgentEvent) => void {
   return (event: AgentEvent) => {
-    if (event.type === "session_start") {
+    if (event.type === "session.start") {
       try {
         createStartDigest(persistDir, event.sessionId, event.agent, event.task ?? "");
       } catch (err) {
@@ -321,7 +321,7 @@ export function createDigestWriter(persistDir: string): (event: AgentEvent) => v
       return;
     }
 
-    if (event.type === "session_end") {
+    if (event.type === "session.end") {
       try {
         const finishParams = event.finishParams as any;
         const summary = finishParams?.summary ?? event.outcome ?? "";
@@ -368,7 +368,7 @@ export function createDigestWriter(persistDir: string): (event: AgentEvent) => v
 
 export function createLastSessionWriter(projectRoot: string): (event: AgentEvent) => void {
   return (event: AgentEvent) => {
-    if (event.type !== "session_end") return;
+    if (event.type !== "session.end") return;
 
     const finishParams = event.finishParams as any;
     // Only write if we have meaningful session data (finish() was called or we have a summary)
@@ -544,7 +544,7 @@ function jaccardSimilarity(a: string, b: string): number {
 
 export function createFindingsTracker(projectRoot: string, persistDir: string): (event: AgentEvent) => void {
   return (event: AgentEvent) => {
-    if (event.type !== "session_end") return;
+    if (event.type !== "session.end") return;
 
     const finishParams = event.finishParams as any;
     const deliverables = finishParams?.deliverables as Array<{ path?: string; description?: string }> | undefined;

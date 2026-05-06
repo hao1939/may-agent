@@ -30,7 +30,7 @@ function applyContextUpdates(
 ): void {
   const subscriber = createContextUpdater(projectRoot);
   subscriber({
-    type: "session_end",
+    type: "session.end",
     sessionId: "s_test",
     agent: agentName,
     status: "done",

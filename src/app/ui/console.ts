@@ -54,7 +54,7 @@ export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => strin
             console.log(`${DIM}[${event.tool}] ERROR: ${event.preview.slice(0, 200)}${RESET}`);
           }
           break;
-        case "session_end":
+        case "session.end":
           if (event.error) {
             console.log(`\n⚠️ ${event.error}`);
           }
@@ -75,11 +75,11 @@ export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => strin
       case "tool_result":
         if (isSessionEvent(event) && event.isError) console.log(`${DIM}[${event.agent}:${event.tool}] ERROR${RESET}`);
         break;
-      case "session_start":
+      case "session.start":
         if (isSessionEvent(event) && event.parentSessionId)
           console.log(`${DIM}[${event.agent}] started: ${event.task.slice(0, 100)}${RESET}`);
         break;
-      case "session_end":
+      case "session.end":
         if (isSessionEvent(event)) console.log(`${DIM}[${event.agent}] ${event.status}${RESET}`);
         break;
       case "notification":

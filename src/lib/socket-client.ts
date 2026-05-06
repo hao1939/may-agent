@@ -111,12 +111,12 @@ export interface SocketEvent {
  * Connect to a Unix socket and wait for a specific event type.
  * Resolves with the matching event. Rejects on timeout or socket error.
  *
- * Used primarily to wait for "session_end" or "info" events from
+ * Used primarily to wait for "session.end" or "info" events from
  * detached sub-agent processes. The socket server broadcasts all
  * AgentEvents as JSON lines.
  *
  * @param socketPath - Path to the Unix domain socket
- * @param eventType - Event type to wait for (e.g. "session_end")
+ * @param eventType - Event type to wait for (e.g. "session.end")
  * @param opts.sessionId - Optional: only match events with this sessionId
  * @param opts.timeoutMs - Timeout in ms (default: 600_000 = 10 minutes)
  */

@@ -210,14 +210,14 @@ describe("waitForSocketEvent", () => {
       socket.write(JSON.stringify({ type: "connected" }) + "\n");
       // After a short delay, emit the event we're waiting for
       setTimeout(() => {
-        socket.write(JSON.stringify({ type: "session_end", sessionId: "s_1", status: "done" }) + "\n");
+        socket.write(JSON.stringify({ type: "session.end", sessionId: "s_1", status: "done" }) + "\n");
       }, 100);
     });
 
     await new Promise<void>((resolve) => server!.listen(socketPath, () => resolve()));
 
-    const event = await waitForSocketEvent(socketPath, "session_end", { timeoutMs: 5000 });
-    expect(event.type).toBe("session_end");
+    const event = await waitForSocketEvent(socketPath, "session.end", { timeoutMs: 5000 });
+    expect(event.type).toBe("session.end");
     expect(event.sessionId).toBe("s_1");
     expect(event.status).toBe("done");
   });
@@ -227,15 +227,15 @@ describe("waitForSocketEvent", () => {
       socket.write(JSON.stringify({ type: "connected" }) + "\n");
       setTimeout(() => {
         // Wrong session
-        socket.write(JSON.stringify({ type: "session_end", sessionId: "s_other", status: "done" }) + "\n");
+        socket.write(JSON.stringify({ type: "session.end", sessionId: "s_other", status: "done" }) + "\n");
         // Right session
-        socket.write(JSON.stringify({ type: "session_end", sessionId: "s_target", status: "error" }) + "\n");
+        socket.write(JSON.stringify({ type: "session.end", sessionId: "s_target", status: "error" }) + "\n");
       }, 100);
     });
 
     await new Promise<void>((resolve) => server!.listen(socketPath, () => resolve()));
 
-    const event = await waitForSocketEvent(socketPath, "session_end", {
+    const event = await waitForSocketEvent(socketPath, "session.end", {
       sessionId: "s_target",
       timeoutMs: 5000,
     });
@@ -263,8 +263,8 @@ describe("waitForSocketEvent", () => {
 
     await new Promise<void>((resolve) => server!.listen(socketPath, () => resolve()));
 
-    await expect(waitForSocketEvent(socketPath, "session_end", { timeoutMs: 300 })).rejects.toThrow(
-      "Timeout waiting for session_end",
+    await expect(waitForSocketEvent(socketPath, "session.end", { timeoutMs: 300 })).rejects.toThrow(
+      "Timeout waiting for session.end",
     );
   });
 
@@ -278,7 +278,7 @@ describe("waitForSocketEvent", () => {
 
     await new Promise<void>((resolve) => server!.listen(socketPath, () => resolve()));
 
-    await expect(waitForSocketEvent(socketPath, "session_end", { timeoutMs: 5000 })).rejects.toThrow(
+    await expect(waitForSocketEvent(socketPath, "session.end", { timeoutMs: 5000 })).rejects.toThrow(
       "Socket closed before event received",
     );
   });

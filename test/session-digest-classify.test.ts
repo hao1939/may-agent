@@ -280,10 +280,10 @@ describe("classifyDigest", () => {
       expect(result.reason).toBe("Informational trigger");
     });
 
-    it("returns nothing for session_start trigger", () => {
+    it("returns nothing for session.start trigger", () => {
       const result = classifyDigest(
         { outcome: "in_progress", still_open: null, what_happened: "Starting" },
-        "session_start",
+        "session.start",
       );
       expect(result.action).toBe("nothing");
     });
