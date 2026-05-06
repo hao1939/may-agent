@@ -95,6 +95,7 @@ interface MetricRow {
   type: string;
   status: string;
   threshold: number | null;
+  alert_op: string | null;
   last_value: number | null;
   measured_at: number | null;
 }
@@ -112,7 +113,7 @@ function getAgentMetrics(stateDir: string, agent: string): MetricRow[] {
 
     const rows = db
       .prepare(
-        `SELECT m.id, m.name, m.current, m.target, m.unit, m.type, m.status, m.threshold,
+        `SELECT m.id, m.name, m.current, m.target, m.unit, m.type, m.status, m.threshold, m.alert_op,
                 s.value as last_value, s.measured_at
          FROM metrics m
          LEFT JOIN metric_snapshots s ON m.id = s.metric_id
@@ -137,7 +138,7 @@ function getAllActiveMetrics(stateDir: string): MetricRow[] {
 
     const rows = db
       .prepare(
-        `SELECT m.id, m.name, m.current, m.target, m.unit, m.type, m.status, m.threshold,
+        `SELECT m.id, m.name, m.current, m.target, m.unit, m.type, m.status, m.threshold, m.alert_op,
                 s.value as last_value, s.measured_at
          FROM metrics m
          LEFT JOIN metric_snapshots s ON m.id = s.metric_id
@@ -165,9 +166,25 @@ function formatMetricsSection(metrics: MetricRow[], agent?: string): string {
       const unitDisplay = m.unit ? ` ${m.unit}` : "";
       const targetPart = `target: ${m.target}`;
       const thresholdPart = m.threshold != null ? `, threshold: ${m.threshold}` : "";
-      const warn =
-        m.type === "health" && m.threshold != null && m.current != null && m.current < m.threshold ? " ⚠️" : "";
-      lines.push(`- **${m.name}**: ${currentDisplay}${unitDisplay} (${targetPart}${thresholdPart})${warn}`);
+      const typeTag = m.type ? ` [${m.type}]` : "";
+
+      // Per-type alert evaluation:
+      //   gauge   — alert when crossing threshold in alert_op direction
+      //   counter — alert when crossing threshold; rate-of-change checked elsewhere
+      //   health  — alert when current < threshold (legacy semantic)
+      //   derived — same as gauge, applied to computed value
+      let warn = "";
+      if (m.current != null && m.threshold != null) {
+        const op = m.alert_op;
+        const breached =
+          op === ">" || op === "above"
+            ? m.current > m.threshold
+            : op === "<" || op === "below" || m.type === "health"
+              ? m.current < m.threshold
+              : false;
+        if (breached) warn = " ⚠️";
+      }
+      lines.push(`- **${m.name}**${typeTag}: ${currentDisplay}${unitDisplay} (${targetPart}${thresholdPart})${warn}`);
     }
   }
   lines.push("");
