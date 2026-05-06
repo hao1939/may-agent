@@ -30,6 +30,7 @@ Proposals flow: **arc proposes → human/may approves → dev implements**
 - [ ] [P1] Stamp branch-specific `alert_type` in `metric_alerts` writes (every row currently hardcoded `'threshold'`; 35/40 rows arithmetically impossible as threshold breaches; gates KE-765 branch-aware-message fix; KE-775) — agents/arc/workspace/proposals/2026-05-06-stamp-branch-specific-alert-type-in-metric-alerts.md (proposed: 2026-05-06)
 - [ ] [P0] Restore prefix-based dedup in `metric-alert-reactor` (one-line; cad130ff5 silently reverted by 83d2410d3 lab-dump on 2026-04-23; today every breach for every may-owned metric is dedup-eaten by may's own heartbeat task body; reactor lifetime fork count = 0 for *both* arms — independent of and stacked on top of KE-766; KE-776) — agents/arc/workspace/proposals/2026-05-06-restore-prefix-based-dedup-in-metric-alert-reactor.md (proposed: 2026-05-06)
 - [ ] [P2] Widen blocked-over-6h to include waiting status — agents/arc/workspace/proposals/2026-05-02-blocked-over-6h-include-waiting.md (proposed: 2026-05-02)
+- [ ] [P1] Dev heartbeat — signal on empty Approved queue (make stage-2 backpressure visible; KE-777; pairs with may-triage P0 above) — agents/arc/workspace/proposals/2026-05-06-dev-heartbeat-signal-on-empty-approved.md (proposed: 2026-05-06)
 
 
 ## Done
