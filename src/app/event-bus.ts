@@ -68,6 +68,15 @@ export type SystemEvent =
   | { type: "project.status_changed"; project: string; from: string; to: string }
   | { type: "notification"; agent: string; text: string }
   | { type: "message_created"; from: string; to: string; task: string; requestId: string }
+  | {
+      type: "message.created";
+      from: string;
+      to: string;
+      content: string;
+      intent?: string;
+      artifact?: string;
+      priority?: "P0" | "P1" | "P2" | "P3";
+    }
   | { type: "cron_fired"; job: string; agent?: string; timestamp: number }
   | { type: "context-learn"; agentName: string; sessionId: string; persistDir: string }
   | {
