@@ -207,16 +207,9 @@ function triageItems(
   const items: AttentionItem[] = [];
   const now = Date.now();
 
-  // 1. Stale human requests (>30min)
-  const active: any[] = []; // requests table removed
-  for (const r of active) {
-    if (r.fromEntity === "human" && now - r.createdAt > 30 * 60_000) {
-      items.push({
-        level: "red",
-        message: `Unprocessed human request to ${r.toAgent} (${ago(r.createdAt)})`,
-      });
-    }
-  }
+  // 1. Stale human requests (>30min) — deprecated. The `requests` table was
+  // removed in favor of event-native tracking. Skip until reimplemented over
+  // the events table (event_type='message.created', source='human').
 
   // 2. Process failures — overdue by 2x expected interval
   for (const proc of processes) {
@@ -368,7 +361,7 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
   // ── Agent completion rates (last 24h) ──────────────────────────────
 
   let agentStatsRows: Array<{
-    toAgent: string;
+    agentName: string;
     total: number;
     completed: number;
     failed: number;
@@ -380,7 +373,7 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
     const cutoff = now - DAY;
     agentStatsRows = db
       .prepare(
-        `SELECT agent as toAgent,
+        `SELECT agent as agentName,
                 COUNT(*) as total,
                 SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed,
                 SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as failed,
@@ -397,7 +390,7 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
 
   const agentCompletionRates = new Map<string, AgentStats>();
   for (const s of agentStatsRows) {
-    agentCompletionRates.set(s.toAgent, {
+    agentCompletionRates.set(s.agentName, {
       total: s.total,
       completed: s.completed,
       failed: s.failed,
@@ -459,14 +452,14 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
       const rate = s.total > 0 ? `${Math.round((s.completed / s.total) * 100)}%` : "—";
 
       // Quality from 24h evals
-      const qEntry = agentQuality24h.get(s.toAgent);
+      const qEntry = agentQuality24h.get(s.agentName);
       const qualStr = qEntry && qEntry.count > 0 ? `${(qEntry.total / qEntry.count).toFixed(1)}` : "—";
 
       // Trend from 7d evals (excluding skipped)
-      const trend = includeEvals ? trendArrow(computeWindowedTrend(evals7dScored, s.toAgent, WEEK)) : "—";
+      const trend = includeEvals ? trendArrow(computeWindowedTrend(evals7dScored, s.agentName, WEEK)) : "—";
 
       lines.push(
-        `  ${s.toAgent.padEnd(14)} ${String(s.total).padStart(5)} ${String(s.completed).padStart(5)} ${String(s.failed).padStart(5)} ${rate.padStart(5)} ${qualStr.padStart(5)} ${trend.padStart(6)}`,
+        `  ${s.agentName.padEnd(14)} ${String(s.total).padStart(5)} ${String(s.completed).padStart(5)} ${String(s.failed).padStart(5)} ${rate.padStart(5)} ${qualStr.padStart(5)} ${trend.padStart(6)}`,
       );
     }
   } else {
@@ -609,35 +602,13 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
 
   // ── Active requests ────────────────────────────────────────────────
 
-  const active: any[] = []; // requests table removed
+  // (Active/stale request sections deprecated — the requests table was
+  // replaced by sessions + events. Use stuck_session_age metric instead.)
   lines.push("");
   lines.push("─".repeat(62));
-  lines.push(` ACTIVE REQUESTS (${active.length})`);
+  lines.push(" ACTIVE REQUESTS");
   lines.push("─".repeat(62));
-
-  if (active.length > 0) {
-    for (const r of active) {
-      const age = ago(r.createdAt);
-      const task = truncate(r.task, 55);
-      lines.push(`  [${r.status}] ${r.fromEntity} → ${r.toAgent} (${r.method}, ${age})`);
-      lines.push(`           ${task}`);
-    }
-  } else {
-    lines.push("  None");
-  }
-
-  // ── Stale requests ─────────────────────────────────────────────────
-
-  const stale: any[] = []; // requests table removed
-  if (stale.length > 0) {
-    lines.push("");
-    lines.push(`⚠️  Stale Requests (>2h): ${stale.length}`);
-    lines.push("─".repeat(62));
-    for (const r of stale) {
-      const age = ago(r.createdAt);
-      lines.push(`  [${r.status}] ${r.fromEntity} → ${r.toAgent} (${age}) ${truncate(r.task, 45)}`);
-    }
-  }
+  lines.push("  None (work tracked via sessions + events tables)");
 
   lines.push("");
   return lines.join("\n");

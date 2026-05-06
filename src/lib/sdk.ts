@@ -30,8 +30,8 @@ export interface AgentSDK {
   /** Log a diagnostic message. */
   log(level: "info" | "warn" | "error", msg: string): void;
 
-  /** Send a notification to a target. "human" → Telegram/web. Agent name → agent inbox. */
-  notify(target: string, msg: string): void;
+  /** Send an async message to a target. "human" → Telegram/web. Agent name → agent inbox. */
+  message(target: string, content: string): void;
 
   /** Escalate to a target — I'm stuck, need help. Enters escalation chain, may trigger immediate wake. */
   escalate(target: string, reason: string): void;

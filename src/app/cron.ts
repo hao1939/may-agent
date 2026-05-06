@@ -724,21 +724,6 @@ export class Cron {
     }
   }
 
-  /** Clear tracking for a detached task (called when process completes). */
-  clearDetachedTask(jobName: string): void {
-    try {
-      const db = getDb(this.persistDir);
-      const now = Date.now();
-      db.run(
-        `UPDATE requests SET status = 'COMPLETED', updatedAt = ?, completedAt = ?
-         WHERE artifact = ? AND status IN ('CREATED', 'IN_PROGRESS')`,
-        [now, now, jobName],
-      );
-    } catch {
-      /* ignore */
-    }
-  }
-
   /** Get info about running detached tasks — derived from inflightJobs. */
   getDetachedRunning(): Map<string, { sessionId: string; pid: number | undefined; startedAt: string }> {
     // Detached task tracking now uses inflightJobs Map (in-memory)
