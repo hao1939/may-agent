@@ -136,8 +136,10 @@ export function loadAlerts(ctx: WorkflowContext, agent: string): string {
   try {
     const db = ctx.getDb() as any;
     const rows = db.prepare(
-      "SELECT metric_id, severity, message FROM metric_alerts WHERE resolved_at IS NULL AND metric_id LIKE ?"
-    ).all(`${agent}.%`) as any[];
+      "SELECT a.metric_id, a.message FROM metric_alerts a " +
+      "JOIN metrics m ON m.id = a.metric_id " +
+      "WHERE a.resolved_at IS NULL AND m.owner = ?"
+    ).all(agent) as any[];
     if (!rows.length) return "";
     return rows.map((r: any) => `⚠️ ${r.metric_id}: ${r.message}`).join("\n");
   } catch { return ""; }
