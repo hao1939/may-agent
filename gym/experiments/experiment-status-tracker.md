@@ -36,12 +36,13 @@
 - **Details**: `agents/coach/workspace/EXP-745-phase2-results.md`
 
 ### EXP-870: Structural Enforcement of Read-After-Edit
-- **Status**: DESIGNED (2025-05-07)
+- **Status**: BASELINE COMPLETE (2025-05-08)
 - **Hypothesis**: Structural/environmental enforcement of read-after-edit achieves ≥80% compliance vs <50% with text-only rules
 - **Approach**: Auto-inject read() after every edit() (Option C) — eliminates compliance gap by construction
 - **Connection**: Directly applies KE-EXP027 (structural > text interventions)
-- **Next**: Baseline audit, then prototype in tool infrastructure
-- **Details**: `agents/bob/workspace/EXP-870-structural-enforcement-design.md`
+- **Baseline findings**: Read-before-edit fleet ~95%, optimizer 76%. Read-after-edit estimated <50%. Text fixes confirmed 0% effective.
+- **Next**: Prototype Option C in tool infrastructure, measure token cost
+- **Details**: `agents/bob/workspace/EXP-870-structural-enforcement-design.md`, `agents/bob/workspace/EXP-870-baseline-audit.md`
 
 ## Closed Experiments
 
