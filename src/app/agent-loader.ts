@@ -37,6 +37,7 @@ import {
 } from "../lib/index.js";
 import { createAgentGrowthTools } from "../lib/tools/agent-growth.js";
 import { createSendTool } from "../lib/tools/send-tool.js";
+import { createMessageTool } from "../lib/tools/message-tool.js";
 import type { EventBus } from "./event-bus.js";
 import { Cron } from "./cron.js";
 
@@ -210,8 +211,31 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
       }
 
       case "message-only":
-      case "notify": {
-        // Lightweight message-only tool for leaf agents — no call/peek/cancel
+      case "notify":
+      case "message": {
+        // v2: `message` is the canonical async inter-agent communication tool.
+        // `notify` and `message-only` remain as deprecated aliases that wire the
+        // legacy `notify` tool. Agents can list both — `message` will dominate.
+        if (preset === "message") {
+          tools.push(
+            createMessageTool({
+              agentName: config.name,
+              agentsRoot: opts.agentsRoot,
+              persistDir,
+              emit: (event) => bus.emit(event as any),
+              getCallerSessionId: () => agentSessionIds.get(config.name),
+              triggerHeartbeat: (agentName: string) => {
+                for (const cron of agentCrons.values()) {
+                  if (cron.triggerNow(`heartbeat-${agentName}`)) return true;
+                  if (cron.triggerNow("heartbeat") && agentName === "may") return true;
+                }
+                return false;
+              },
+            }),
+          );
+          break;
+        }
+        // Legacy `notify` / `message-only` preset — same shape, different tool name.
         tools.push(
           createSendTool({
             agentName: config.name,
@@ -473,6 +497,7 @@ const VALID_TOOL_PRESETS = new Set([
   "system_status",
   "message-only",
   "notify",
+  "message",
   "cite-source",
   "cite_source",
   "query_db",

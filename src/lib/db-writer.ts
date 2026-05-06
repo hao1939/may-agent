@@ -52,10 +52,36 @@ export class DbWriter {
           break;
 
         case "message_created":
-          // Persisted as event — no duplicate request needed
+          // Legacy v1 event — persisted as agent.notification (no duplicate request needed).
           this.db.run(
             "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?,?,?,?,?)",
             ["agent.notification", event.from, event.to, JSON.stringify({ task: event.task, from: event.from }), Date.now()]
+          );
+          break;
+
+        case "message.created":
+          // v2 canonical inter-agent message — persist with from→source, to→owner mapping
+          // so existing inbox queries (which key on owner) keep working.
+          this.db.run(
+            "INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?,?,?,?,?,?)",
+            [
+              "message.created",
+              event.from,
+              event.to,
+              JSON.stringify({
+                from: event.from,
+                to: event.to,
+                content: event.content,
+                intent: event.intent ?? null,
+                artifact: event.artifact ?? null,
+                priority: event.priority ?? "P2",
+                // Mirror to legacy 'task' field so prompt assembly (which reads
+                // data.task) renders the message even before that code is updated.
+                task: event.content,
+              }),
+              Date.now(),
+              event.priority === "P0" ? "high" : "normal",
+            ],
           );
           break;
 
