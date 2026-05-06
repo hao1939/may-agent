@@ -1,12 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778046158647_5609
+- **Session:** s_1778047958948_5632
 - **Status:** done
-- **When:** 2026-05-06T05:43:37.116Z
-- **Duration:** 58s
+- **When:** 2026-05-06T06:13:50.876Z
+- **Duration:** 1m11s
 
 ## What Happened
-The assume-unchanged flags have been cleared (0 files affected). The red metrics are a known issue that has already been remediated at the git level. The `project.active-count: 0` simply means no projects are currently in "active" status — which is fine given all work is done or blocked. The `project.blocked-over-6h: 2` reflects the 2 blocked projects which match `project.blocked-count: 2 ✅`.
+KE-744 documents the root cause: `git assume-unchanged` on 21 files prevents project status changes from being committed. The fix requires running `git update-index --no-assume-unchanged` on those files — which is a destructive/corrective action that prior KEs say to escalate.
 
-These metrics are residual — the system is healthy. Per KE-743, this was "db drift not extinction" and resolved without intervention.
+System is healthy: 100% success rate, all heartbeats firing, no errors. The idle session `s_1777485773079_0` (156h) is stale but harmless.
+
+The red metrics (`project.active-count: 0`, `project.blocked-over-6h: 2`) are the same documented issue from KE-744. The fix (removing assume-unchanged flags) has been identified but requires human approval per the escalation rules.
