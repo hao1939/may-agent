@@ -43,7 +43,7 @@ export const create = (ctx: HandlerContext, entry: CronEntry) => {
 | `emit(type, data)` | Emit a typed event (persisted to events table). |
 | `getDb()` | Access the shared SQLite database. |
 | `log(level, msg)` | Log a diagnostic message. |
-| `notify(target, msg)` | `"human"` → Telegram/web. Agent name → agent's inbox. |
+| `notify(target, msg)` | Emits `message.created` — `"human"` → Telegram/web. Agent name → agent's inbox. |
 | `escalate(target, reason)` | SOS. Enters escalation chain, may trigger immediate wake. |
 | `paths` | `{ persist, root, agents }` — system directories. |
 

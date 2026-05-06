@@ -144,7 +144,7 @@ Available presets:
 | `cron` | manage cron schedules |
 | `checkpoint` | save progress mid-session |
 | `system-status` | inspect system health |
-| `agent-growth` | fork/promote/discard agents |
+| ~~`agent-growth`~~ | *(removed — growth is agent-scope, not infra)* |
 | `background-exec` | run long processes in background |
 | `claude-code` / `gemini-cli` / `codex` | delegate to external coding agents |
 | `finish` | structured session completion |
@@ -264,11 +264,9 @@ finish({ status: "blocked", reason: "Requirements ambiguous, need clarification"
 
 ---
 
-## Growth Cycle: Testing Changes Safely
+## Growth: Agent-Scope Concern
 
-See [growth.md](growth.md) for the full fork/promote/discard API.
-
-Before promoting any change to production: fork → edit → test via gym → promote or discard. This applies to all levels.
+Growth (experimentation, iteration, improvement) is an agent's responsibility, not an infra primitive. The infra provides the fundamentals (files, events, metrics) — agents build growth patterns on top. See [growth.md](growth.md) for context.
 
 ---
 

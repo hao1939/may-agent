@@ -1,66 +1,28 @@
-# Agent Growth (Fork/Promote/Discard)
+# Agent Growth
 
-## Overview
+> **Status:** The infra-level growth system (fork/promote/discard API) was removed in v2 cleanup.
+> Growth is an **agent-scope concern**, not an infra primitive.
 
-The growth system lets you experiment with agent configurations safely. Fork an agent into a `.lab/` sandbox, test changes, then promote or discard.
+## Philosophy
 
-## API
+Agents should be able to evolve their own capabilities — try new approaches, learn from results, improve over time. But the mechanism for this belongs to the agent (via lessons, workflows, tool creation) rather than being a special infra subsystem.
 
-Exported from `agents/shared/agent-sdk.ts`:
+## How Agents Grow (v2)
 
-```typescript
-import { forkAgent, promoteAgent, discardAgent, listLabAgents } from "../shared/agent-sdk.ts";
+| Level | Mechanism | Owner |
+|-------|-----------|-------|
+| Lessons | Write to LESSONS.md | Agent |
+| Skills | Create knowledge files | Agent |
+| Workflows | Define step sequences | Agent |
+| Tools | Create `tools/<name>.ts` | Agent |
+| Handlers | Create `handlers/<name>.ts` | Agent |
 
-const config = { agentsRoot: "/path/to/agents" };
-```
+The infra provides the primitives (file system, event bus, metrics) — agents build growth patterns on top.
 
-### forkAgent(config, agentName, forkName?)
+## What Was Removed
 
-Copies an agent directory into `agents/.lab/<forkName>`:
+The old `forkAgent/promoteAgent/discardAgent` API provided infra-level agent sandboxing (`.lab/` directory). This was removed because:
 
-```typescript
-const result = forkAgent(config, "coder", "coder-experimental");
-// result: { forkName: "coder-experimental", copiedFrom: "coder", files: [...] }
-```
-
-If no `forkName`, generates one: `coder-fork-<timestamp>`.
-
-### promoteAgent(config, forkName, targetName)
-
-Copies a lab agent to the main agents directory:
-
-```typescript
-promoteAgent(config, "coder-experimental", "coder");
-// Overwrites agents/coder/ with agents/.lab/coder-experimental/
-```
-
-### discardAgent(config, forkName)
-
-Deletes a lab agent:
-
-```typescript
-discardAgent(config, "coder-experimental");
-```
-
-### listLabAgents(config)
-
-Lists agents in `.lab/` that have a `SOUL.md` or `heartbeat.md`:
-
-```typescript
-const labs = listLabAgents(config); // ["coder-experimental", "qa-v2"]
-```
-
-## Workflow
-
-```
-1. Fork:    forkAgent(config, "coder", "coder-v2")
-2. Edit:    Modify agents/.lab/coder-v2/SOUL.md, DOMAIN.md, etc.
-3. Test:    Run gym scenarios against the fork
-4. Decide:  promoteAgent(config, "coder-v2", "coder")  OR  discardAgent(config, "coder-v2")
-```
-
-## Use Cases
-
-- **Coach training**: Fork agent → inject lessons → verify via gym → promote if improved
-- **A/B testing**: Fork with different prompts, run same scenarios, compare scores
-- **Safe experimentation**: Try radical SOUL.md changes without affecting production
+1. It was never used in production
+2. Agent experimentation is better handled by the agent itself (branch, test, merge)
+3. Infra should provide fundamentals, not opinionated workflows

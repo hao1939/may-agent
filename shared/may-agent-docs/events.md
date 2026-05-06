@@ -42,10 +42,11 @@ session.escalated  { sessionId, agent, finishParams }
 
 ### Agent communication
 ```
-agent.notification { owner, source, task }
-agent.finding      { owner, source, task, finding }
+message.created    { from, to, content, intent?, priority? }  -- v2 unified primitive
 escalation.created { id, agent, reason, level }
 ```
+
+> **Note:** `agent.notification` was replaced by `message.created` with `to: "human"` for human-facing messages, or `to: "<agent>"` for inter-agent messages.
 
 ## Inbox (time-window based)
 
@@ -75,10 +76,11 @@ Events naturally expire via TTL or time window. Agents act or they don't.
 
 ## Agent-to-Agent Messaging
 
-Not a special mechanism — it's a pattern on `emit()`:
+Uses `message.created` — the single async communication primitive:
 
 ```typescript
-sdk.emit("agent.notification", { owner: "bob", task: "Review the PR" });
+sdk.notify("bob", "Review the PR");
+// Emits: { type: "message.created", from: agent, to: "bob", content: "Review the PR" }
 ```
 
 Bob sees it in his inbox on next heartbeat.

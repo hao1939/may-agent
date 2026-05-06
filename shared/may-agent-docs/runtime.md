@@ -92,7 +92,7 @@ When a session runs, the LLM receives three blocks:
 ... repeats ...
 ```
 
-**Compaction:** When tokens > ~70% of context window, old messages are structurally summarized (no LLM call, deterministic). Preserves: original task, key facts, most recent reasoning.
+**Compaction:** When tokens exceed context threshold, pi-agent-core handles compaction (LLM-powered summarization). Preserves: original task, key facts, most recent reasoning.
 
 **Overflow recovery:** When context window is hit, extract progress into handoff document for a new session.
 
