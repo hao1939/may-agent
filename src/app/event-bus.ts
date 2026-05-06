@@ -97,8 +97,6 @@ export type SystemEvent =
     }
   | { type: "metric.breach"; owner: string; metricId: string; metricName: string; current: number; threshold: number; target?: number; message: string }
   | { type: "metric.recovered"; metricId: string; metricName: string }
-  | { type: "cron_fired"; job: string; agent?: string; timestamp: number }
-  | { type: "context-learn"; agentName: string; sessionId: string; persistDir: string }
   | {
       type: "workflow";
       agent: string;
@@ -111,17 +109,6 @@ export type SystemEvent =
       reason?: string;
       task?: string;
     }
-  | {
-      type: "eval";
-      verdict: string;
-      efficiency: number;
-      quality: number;
-      tokens?: number;
-      cost?: number;
-      turns?: number;
-      failureChains?: number;
-      wastedCalls?: number;
-    };
 
 /** All typed event types — commands + observations + system */
 export type AgentEvent =

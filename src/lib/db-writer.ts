@@ -93,12 +93,6 @@ export class DbWriter {
           );
           break;
 
-        case "cron_fired":
-          // Cron history not persisted (no readers). Cron jobs themselves emit
-          // their own session.start/handler.started events which carry the
-          // necessary audit trail.
-          break;
-
         default:
           // Persist domain events (dot-separated types) to events table
           if (event.type.includes('.')) {
