@@ -94,16 +94,9 @@ export class DbWriter {
           break;
 
         case "cron_fired":
-          // Track cron job history
-          try {
-            this.db.run("INSERT INTO cron_history (job, agent, fired_at) VALUES (?, ?, ?)", [
-              event.job,
-              event.agent ?? null,
-              event.timestamp,
-            ]);
-          } catch {
-            /* table may not exist yet */
-          }
+          // Cron history not persisted (no readers). Cron jobs themselves emit
+          // their own session.start/handler.started events which carry the
+          // necessary audit trail.
           break;
 
         default:

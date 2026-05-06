@@ -1852,7 +1852,7 @@ export class SubagentManager {
     this.cleanupCallDepths(sessionId);
     this.activeSessions.delete(sessionId);
 
-    // Emit session.end on bus + legacy callback
+    // Emit session.end on bus
     const closeInfo = {
       sessionId, agent: session.agentName, task: session.task,
       status: session.archiveStatus!, startedAt: session.startedAt,
