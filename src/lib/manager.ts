@@ -2320,8 +2320,11 @@ export class SubagentManager {
   runAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string },
+    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string; useNewRuntime?: boolean },
   ): string {
+    if (opts?.useNewRuntime) {
+      return this.runAgentV2(agentName, task, opts);
+    }
     return this.run(agentName, task, {
       parentSessionId: opts?.parentSessionId,
       originSessionId: opts?.originSessionId,
@@ -2329,6 +2332,57 @@ export class SubagentManager {
       kind: "job",
       requestId: opts?.requestId,
     });
+  }
+
+  /**
+   * Run an agent using the v2 AgentRuntime (thin, no SubagentManager overhead).
+   * Fire-and-forget: returns sessionId immediately, session runs in background.
+   */
+  private runAgentV2(
+    agentName: string,
+    task: string,
+    opts?: { parentSessionId?: string; source?: string; requestId?: string },
+  ): string {
+    const registered = this.agents.get(agentName);
+    if (!registered) throw new Error(`Agent "${agentName}" not registered`);
+    const def = registered.definition;
+
+    const sessionId = generateId(def.sessionIdPrefix);
+
+    // Import and run asynchronously — don't block the caller
+    import("./agent-runtime.js").then(({ runAgentSession }) => {
+      runAgentSession({
+        agentName,
+        task,
+        model: def.model,
+        systemPrompt: this.resolveSystemPrompt(def),
+        tools: def.tools ?? [],
+        guards: [
+          createEmptyArgsGuard(),
+          createToolSchemaGuard(),
+          createPathHallucinationGuard(),
+          createCompletenessGuard(def.name),
+          createFinishGuard(),
+          createCommitGuard(def.name, this._projectRoot),
+          createVerificationDepthGuard(def.name, {}),
+          createReadDedupGuard(),
+          createSessionReadGuard(),
+          createScrapeDedupGuard(),
+        ],
+        persistDir: this.registry.persistDir,
+        timeoutMs: def.timeoutMs,
+        bus: this.bus as any,
+        parentSessionId: opts?.parentSessionId,
+        source: opts?.source ?? "agents.run",
+        kind: "job",
+        sessionId,
+        getApiKey: def.apiKey === "dynamic" ? getCopilotToken : def.apiKey ? () => def.apiKey! : undefined,
+      }).catch((err) => {
+        log("error", `[runAgentV2] Session ${sessionId} failed: ${err}`);
+      });
+    });
+
+    return sessionId;
   }
 
   /**

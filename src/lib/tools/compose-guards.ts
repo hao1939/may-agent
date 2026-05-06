@@ -33,7 +33,7 @@ export interface BeforeToolCallResult {
   steer?: string;
 }
 
-type BeforeToolCallHook = (
+export type BeforeToolCallHook = (
   context: BeforeToolCallContext,
   signal?: AbortSignal,
 ) => Promise<BeforeToolCallResult | undefined>;
