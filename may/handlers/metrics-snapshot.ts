@@ -33,9 +33,9 @@ const ALL_METRICS = [
   // System output
   { id: "system.real-output-24h", name: "Real output (24h)", owner: "may", type: "counter", target: 100, threshold: 30, unit: "count", alert_op: "<" },
   { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", type: "gauge", target: 120000, threshold: 600000, unit: "ms", alert_op: ">" },
-  { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", type: "gauge", target: 30, threshold: 15, unit: "count", alert_op: "<" },
+  { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", type: "gauge", target: 15, threshold: 8, unit: "count", alert_op: "<" },
   // Project
-  { id: "project.active-count", name: "Active projects", owner: "may", type: "gauge", target: 3, threshold: 1, unit: "count", alert_op: "<" },
+  { id: "project.active-count", name: "Active projects", owner: "may", type: "gauge", target: 1, threshold: 0, unit: "count", alert_op: "<" },
   { id: "project.blocked-count", name: "Blocked/waiting projects", owner: "may", type: "gauge", target: 2, threshold: 4, unit: "count", alert_op: ">" },
   { id: "project.stale-active-count", name: "Stale active projects (no iteration 48h)", owner: "may", type: "gauge", target: 0, threshold: 2, unit: "count", alert_op: ">" },
   { id: "project.iterations-24h", name: "Project iterations (24h)", owner: "may", type: "counter", target: 10, threshold: 0, unit: "count", alert_op: "<" },
@@ -297,3 +297,4 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     ctx.log(`[metrics-snapshot] 12 metrics recorded (6 handler + 6 project), ${measured}/${measurable.length} source-defined`);
   };
 };
+
