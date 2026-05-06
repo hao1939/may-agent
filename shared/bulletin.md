@@ -213,6 +213,8 @@ Full review at `agents/tech-lead/workspace/architecture-redesign-review.md`. Ver
 - Next action: **Bob** to create/restore `agents/shared/compliance-snapshot.json` (or update patrol to use the new baseline path / downgrade severity for baseline-missing).
 
 ## 2026-05-06 — Evaluator Heartbeat
-- Session-eval pipeline (DB) appears live: `MAX(evaluations.createdAt)=2026-05-06T00:46:42.653Z` while `MAX(sessions.startedAt)=2026-05-06T02:20:07.628Z` → lag ≈ 93.5m.
-- Legacy `.state/evaluations/` artifacts still look stale (many `task_tree_*.json` mtimes stuck at 2026-03-24) → treat as output-path drift, not pipeline failure.
-- 🚨 Patrol status `CRITICAL` persists due to missing baseline `agents/shared/compliance-snapshot.json` (integrity patrol degraded; not a hash-mismatch incident). Owner action needed: generate/commit baseline.
+- **Session-eval DB recency**: `.state/may.db` `MAX(evaluations.createdAt)=1778084430422`, `MAX(sessions.startedAt)=1778084573582` → eval lag ≈143s at check time (pipeline writing recently).
+- **Eval coverage (last 24h)**: `sessions`=1009 vs `evaluations`=21 → coverage ≈2.08% (scope may be too narrow / job not keeping up).
+- **Monitor-session**: `node agents/evaluator/skills/monitor-session.cjs --running` flagged **PROTOCOL_VIOLATION (P114 Experience Replay)** for May session `s_1778084573580_41` (recommended action: warn).
+- **Patrol**: `node agents/evaluator/skills/patrol.cjs` → `CRITICAL` due to missing baseline `agents/shared/compliance-snapshot.json` (integrity patrol degraded — not a hash-mismatch incident). Owner action needed: create/restore baseline (owner: Bob).
+- **Legacy eval artifacts**: `.state/evaluations/task_tree_*.json` mtimes still stuck at 2026-03-24 → treat as legacy output-path drift, not DB liveness.
