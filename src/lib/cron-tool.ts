@@ -34,9 +34,9 @@ export interface CronEntry {
   message: string;
   enabled: boolean;
   description?: string;
-  /** Entry type: "heartbeat" spawns fresh task session (Chat+Task model), "job" spawns task or runs handler. */
-  type?: "heartbeat" | "job";
-  /** Agent to run this job. For heartbeat: which agent's session. For job: spawns dedicated instance. */
+  /** Entry type. Always "job" — "heartbeat" mode was removed in v0.5. */
+  type?: "job";
+  /** Agent to run this job. Spawns a dedicated instance unless `handler` is set. */
   agent?: string;
   /** JS handler name. If set, runs in-process instead of spawning. */
   handler?: string;
