@@ -1,10 +1,13 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778028159195_5357
+- **Session:** s_1778029958394_5385
 - **Status:** done
-- **When:** 2026-05-06T00:43:32.205Z
-- **Duration:** 53s
+- **When:** 2026-05-06T01:13:05.650Z
+- **Duration:** 27s
 
 ## What Happened
-All projects are either archived, completed, or waiting. The project.active-count=0 is accurate — there's genuinely no active project work right now. The blocked-over-6h=2 likely refers to stale blocked projects. Per KE-743, this is DB drift/lifecycle, not an actionable issue. The system is healthy with 406 real outputs in 24h and 0 errors.
+**Red metrics assessment:**
+- `project.active-count: 0` and `project.blocked-over-6h: 2` — Per KE-744, root cause is `git update-index --assume-unchanged` set on 21 files (including all project.md files) since 2026-04-29. This causes disk edits to never reach the git index, making project state changes invisible. **Fix requires destructive git index manipulation → already escalated to human. Deferring.**
+
+System is healthy: 100% success rate, all 8 heartbeats firing, 38 fires/hour, 407 real outputs in 24h. No errors in the last hour.
