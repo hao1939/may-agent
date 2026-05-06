@@ -4,9 +4,6 @@ export type { SubagentManagerOptions, RunOptions } from "./manager.js";
 // Session recovery (Ambulance Protocol — P62)
 export { classifyError } from "./classify-error.js";
 export type { ErrorClass } from "./classify-error.js";
-// Agent growth core logic
-export { forkAgent, promoteAgent, discardAgent, listLabAgents } from "./growth.js";
-export type { GrowthConfig, PromoteResult } from "./growth.js";
 // Core coding tools (synced from pi-coding-agent)
 export {
   createReadTool,
@@ -14,7 +11,6 @@ export {
   createEditTool,
   createWriteTool,
   createCodingTools,
-  createAgentGrowthTools,
   DEFAULT_MAX_BYTES,
   DEFAULT_MAX_LINES,
   formatSize,
