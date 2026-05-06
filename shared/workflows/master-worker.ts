@@ -417,10 +417,27 @@ ${journalContent.slice(-3000)}
       }
 
       // Worker gets ONLY the orchestrator's guidance — no project.md access
-      let workerPrompt = `## Task (Iteration ${iteration})\n${guidance}`;
+      // EXP-910: Session Intent Header separates intent from context to prevent ghost completions
+      let workerPrompt = `## 🎯 SESSION INTENT (this is your job RIGHT NOW)
+Action: Complete iteration ${iteration} — produce files as evidence of progress.
+Success = at least one file written/edited with substantive content.
+Failure = reporting "already done" or producing 0 files.
+
+---
+
+## 📋 YOUR TASK (from orchestrator)
+${guidance}`;
       if (stubFilePath) {
         const relPath = stubFilePath.replace(/.*?(outputs\/)/, 'outputs/');
-        workerPrompt = `## Task (Iteration ${iteration})\nWRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Your FIRST tool call MUST be edit() to replace the stub content.\n- Use this structure for your first edit:\n\n# [Task Summary]\n## Status: IN_PROGRESS\n## What I know so far\n[1-2 sentences: what the task needs]\n## My plan\n[numbered steps]\n## Work output below\n[your actual deliverable content starts here]\n\n- After this first edit, continue working normally. Update the file as you make progress.\n\n${guidance}`;
+        workerPrompt = `## 🎯 SESSION INTENT (this is your job RIGHT NOW)
+Action: Complete iteration ${iteration} — produce files as evidence of progress.
+Success = at least one file written/edited with substantive content.
+Failure = reporting "already done" or producing 0 files.
+
+---
+
+## 📋 YOUR TASK (from orchestrator)
+WRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Your FIRST tool call MUST be edit() to replace the stub content.\n- Use this structure for your first edit:\n\n# [Task Summary]\n## Status: IN_PROGRESS\n## What I know so far\n[1-2 sentences: what the task needs]\n## My plan\n[numbered steps]\n## Work output below\n[your actual deliverable content starts here]\n\n- After this first edit, continue working normally. Update the file as you make progress.\n\n${guidance}`;
       }
 
       // EXP-500: Pre-read injection for edit tasks targeting existing files
