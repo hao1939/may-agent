@@ -1,5 +1,11 @@
-## 2026-05-03T23:20Z — Heartbeat
+# Evaluator heartbeat — 2026-05-06
 
-- Canonical DB liveness: `MAX(sessions.startedAt)=1777850403098`, `MAX(evaluations.createdAt)=1777850197304` → eval lag ≈0.057h (~3.4m). Pipeline appears live.
-- Legacy `.state/evaluations/` task_tree artifacts still stale (latest mtime 2026-03-24) → consistent with output-path drift, not DB staleness.
-- `monitor-session.cjs --running`: 1 DRIFT alert for arc session `s_1777850062932_2841` (recommended action: warn).
+## Session-eval pipeline liveness check
+- DB `evaluations` latest `createdAt`: **1778055862623** (see bun:sqlite output)
+- DB `sessions` latest `startedAt`: **1778058147662**
+- Legacy `.state/evaluations/` artifacts: newest mtime **2026-03-24** (`ls -la .state/evaluations | tail -5`)
+
+Interpretation: **DB is being updated recently**, while `.state/evaluations/` task_tree files appear stale → likely **legacy output path drift** rather than pipeline failure.
+
+## Notes
+- Some bun queries returned no output when selecting from `sessions` using `createdAt` (column does not exist); correct column is `startedAt`.

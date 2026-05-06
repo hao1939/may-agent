@@ -45,11 +45,8 @@ grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/output
 ```
 If a related output exists, read it first to avoid duplicating work.
 
-## Arc's Proposals (your work queue)
-Arc discovers systemic issues and writes proposals in `agents/arc/workspace/proposals/`.
-These are YOUR work items — arc identifies the problem, you fix it.
-Check for new proposals every heartbeat:
-- `ls -lt agents/arc/workspace/proposals/ | head -10`
-- Pick the highest-priority unfixed proposal
-- Implement the fix, verify it works
-- Mark the proposal as DONE (add a status line at top)
+## Work Queue (your primary work source)
+Read `agents/shared/work-queue.md` — section "## Approved" has items ready for implementation.
+- Only work on APPROVED items (proposed items need human/may review first)
+- After implementing, check the item off: `- [x]` and add done date
+- Read the linked proposal file for full details, evidence, and verification steps

@@ -13,6 +13,11 @@ Proposals flow: **arc proposes → human/may approves → dev implements**
 
 
 ## Proposed (needs review)
+- [ ] [P0] Fix event-only handler subscriptions (session-recovery never fires) — agents/arc/workspace/proposals/2026-05-01-fix-event-only-handler-subscriptions.md (proposed: 2026-05-01)
+- [ ] [P0] Filter closed projects from iterations-24h — agents/arc/workspace/proposals/2026-05-04-filter-closed-projects-from-iterations-24h-and-dispatch.md (proposed: 2026-05-04)
+- [ ] [P1] Handler-load-failure visibility (emit handler.failed on import error) — agents/arc/workspace/proposals/2026-05-03-handler-load-failure-visibility.md (proposed: 2026-05-03)
+- [ ] [P1] Fix metric-alert-reactor broken import — agents/arc/workspace/proposals/2026-05-03-fix-metric-alert-reactor-broken-import.md (proposed: 2026-05-03)
+- [ ] [P2] Widen blocked-over-6h to include waiting status — agents/arc/workspace/proposals/2026-05-02-blocked-over-6h-include-waiting.md (proposed: 2026-05-02)
 
 
 ## Done
