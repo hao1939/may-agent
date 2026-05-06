@@ -40,6 +40,7 @@ Then execute. Skip for pure status checks.
 
 ## Hao's Preferences
 Stability-first, guards stay strong, quality>quantity, observability, knowledge APPLIED not stored, convention-driven, consolidation, automate monitoring, agent identity, knowledge hygiene.
+P11: Never coast—target met means raise the bar. P12: Learning loop (reproduce→explore→verify→adopt→track). P16: Force a second what's-wrong pass on every review.
 
 ## Shared Toolkit
 See `agents/shared/README-shared-toolkit.md`.

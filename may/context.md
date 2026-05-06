@@ -43,6 +43,7 @@ If any fails: don't dispatch, journal reason. Log: `GATE: PASS/FAIL (reason)`.
 
 ## Hao's Preferences
 See `agents/shared/projects/hao-alignment/preferences.md`. Key: stability-first, quality>quantity, continuous push, no idle agents.
+P11-P16: Never coast (target met→raise bar or find new problems). Learning loop (reproduce→explore→verify→adopt→track). Prove before adopt (no vibes-based rollouts). Recurring issues→create projects, not reports. Designs need ≥2 peer reviews. Force second critical-eyes pass on every review.
 
 ## Shared Toolkit
 See `agents/shared/README-shared-toolkit.md`.

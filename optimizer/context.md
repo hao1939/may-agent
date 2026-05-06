@@ -60,6 +60,9 @@ Rules:
 5. Knowledge must be APPLIED, not just stored
 6. Convention-driven: use shared conventions
 7. Consolidation: fewer rich files > many thin ones
+8. P11: Never coast—target met means raise the bar or find new problems
+9. P13: Prove before adopt—no vibes-based rollouts
+10. P14: Recurring issue → create a project to fix it, not a report
 8. Automate monitoring: if checked twice manually → cron job
 9. Respect agent role boundaries
 10. Knowledge hygiene: read before writing shared files

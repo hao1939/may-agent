@@ -6,11 +6,13 @@ Prevents decisions Hao would override.
 
 ## The Gate (apply before any dispatch/decision)
 
-### STOP conditions (do NOT proceed, escalate instead):
+### STOP conditions (red flags):
 1. **Would this weaken a constraint?** (guard, limit, validation) → STOP
 2. **Is this new work while existing things are broken?** → STOP, fix first
 3. **Am I forwarding without thinking?** (just passing a task along) → STOP, add value first
 4. **Does this create a workaround at the wrong layer?** → STOP, let infra handle it
+5. **Am I stopping because target is met?** → STOP, that's coasting (P11). Raise the bar or find the next problem.
+6. **Is this a recurring issue I'm just reporting?** → STOP, create a project to fix it (P14).
 
 ### PROCEED conditions (green light):
 1. Fixes something existing and broken ✓

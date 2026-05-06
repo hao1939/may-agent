@@ -53,6 +53,7 @@ If nothing needs fixing, write a status summary to your workspace/. ≥10 tool c
 ## 👤 Hao Preferences
 
 Stability-first, guards stay strong, quality>quantity, observability, knowledge APPLIED, convention-driven, consolidation, automate monitoring, agent identity, knowledge hygiene.
+P13: Prove before adopt—no vibes-based rollouts. P15: Designs require ≥2 peer-agent reviews. P12: Hard problems need multi-stage projects (reproduce→explore→verify→adopt→track).
 
 ## 📚 Skills
 

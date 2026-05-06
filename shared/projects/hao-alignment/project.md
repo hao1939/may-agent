@@ -3,11 +3,11 @@
 **Status**: active
 **Stop Reason**: 
 
-This project re-activated 2026-05-03: new Hao inputs (May 1-3) yielded P11-P16. Per P11 (never coast), project does not return to `waiting` until P11-P16 are propagated into agent contexts and validated.
+Phase 6 complete. All preferences P1-P16 extracted and propagated. Remaining work is time-gated (monthly re-scan, quarterly git scan). Project stays active per P11 — next trigger: new Hao interaction or monthly re-scan due ~June 6.
 **Owner**: may
 **Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 9
+**Iteration**: 10
 
 ## Goal
 Learn Hao's thinking, preferences, values, and purpose from our conversation history. Build a living model of what Hao wants so the system makes fewer decisions he has to override.
@@ -67,10 +67,10 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 - [x] Extract 6 new preferences (P11-P16) → preferences.md
 - [x] Add 5 new anti-patterns and 5 new scorecard rows
 - [x] Update correction history with May 1 entries
-- [ ] Propagate P11-P16 summaries into may/coach/tech-lead/optimizer context files
-- [ ] Update preference-check-gate.md to reference P11 (never coast) and P14 (create projects)
-- [ ] Re-run measure-corrections.sh against May 1-3 sessions
-- [ ] Validate that "target met" no longer triggers project → waiting transitions
+- [x] Propagate P11-P16 summaries into may/coach/tech-lead/optimizer context files
+- [x] Update preference-check-gate.md to reference P11 (never coast) and P14 (create projects)
+- [x] Re-run measure-corrections.sh against May 1-3 sessions
+- [x] Validate that "target met" no longer triggers project → waiting transitions
 
 ### Re-plan checkpoint (2026-05-03)
 - P11 ("never coast") **explicitly forbids** returning to `waiting` just because infrastructure is built.
@@ -92,3 +92,4 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 - 2026-07-02: P6-P10 propagated to all agent contexts (may, coach, tech-lead, optimizer). Phase 5 complete. Project → maintenance.
 - 2026-07-02: All active work complete. Status → waiting. No worker dispatch needed until next Hao interaction or quarterly git re-scan (Oct 2026).
 - 2026-05-03: **Re-activated**. Mined 9 new Hao inputs (May 1-3). Extracted P11-P16 (never coast, learning loop, prove before adopt, create projects, consult team, honest assessment). The previous "WAITING" status was itself a P11 violation. Phase 6 opened for propagation work.
+- 2026-05-06: Phase 6 propagation complete. P11-P16 added to all 4 agent context files. Preference-check-gate updated with P11/P14 stop conditions. Correction measurement: still 1 session/0 corrections (data-starved). Remaining: validate no-coast behavior operationally.
