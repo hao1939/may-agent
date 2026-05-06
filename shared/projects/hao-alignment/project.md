@@ -1,15 +1,13 @@
 # Project: Hao Alignment
 
-**Status**: waiting
-**Stop Reason**: WAITING
+**Status**: active
+**Stop Reason**: 
 
-This project is **done** until external triggers arrive:
-1. **Next Hao interaction** — validate P6-P10 accuracy, capture new preferences
-2. **October 2026** — quarterly git re-scan for new pr
+This project re-activated 2026-05-03: new Hao inputs (May 1-3) yielded P11-P16. Per P11 (never coast), project does not return to `waiting` until P11-P16 are propagated into agent contexts and validated.
 **Owner**: may
-**Priority**: P2
+**Priority**: P1
 **Workflow**: master-worker
-**Iteration**: 8
+**Iteration**: 9
 
 ## Goal
 Learn Hao's thinking, preferences, values, and purpose from our conversation history. Build a living model of what Hao wants so the system makes fewer decisions he has to override.
@@ -61,13 +59,23 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 - [x] Update preferences.md scorecard with P6-P10 weights
 - [x] Propagate P6-P10 summaries into agent context files (may, coach, tech-lead, optimizer)
 - [x] Re-run measure-corrections.sh to get fresh measurement (2026-07-02: 0 corrections in 1 session — insufficient data)
-- [ ] After next Hao interaction: validate P6-P10 accuracy
+- [x] Validate P6-P10 against May 1-3 Hao inputs (P1, P7, P9, P10 all confirmed — see journal iter 9)
 - [ ] Quarterly: re-scan git for new preference signals
 
-### Re-plan checkpoint
-- All preferences (P1-P10) now propagated to all key agent contexts
-- Infrastructure fully deployed. Project enters monitoring/maintenance mode.
-- **Next**: Re-measure correction rate when sufficient new Hao interactions exist. Re-scan git quarterly.
+### Phase 6: Capture & propagate P11-P16 (May 1-3 inputs)
+- [x] Re-mine human-inputs.jsonl for inputs after 2026-04-30
+- [x] Extract 6 new preferences (P11-P16) → preferences.md
+- [x] Add 5 new anti-patterns and 5 new scorecard rows
+- [x] Update correction history with May 1 entries
+- [ ] Propagate P11-P16 summaries into may/coach/tech-lead/optimizer context files
+- [ ] Update preference-check-gate.md to reference P11 (never coast) and P14 (create projects)
+- [ ] Re-run measure-corrections.sh against May 1-3 sessions
+- [ ] Validate that "target met" no longer triggers project → waiting transitions
+
+### Re-plan checkpoint (2026-05-03)
+- P11 ("never coast") **explicitly forbids** returning to `waiting` just because infrastructure is built.
+- The project demonstrates its own metric: previous "WAITING" decision was itself a P11 violation, corrected this iteration.
+- **Next**: Phase 6 propagation work, then re-measure correction rate.
 
 ## Known Preferences (seed)
 - Separation of concerns: don't patch around systems, let infra do its job
@@ -83,3 +91,4 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 - 2026-07-02: Git signal analysis completed — extracted P6-P10, updated scorecard. Phase 5 started.
 - 2026-07-02: P6-P10 propagated to all agent contexts (may, coach, tech-lead, optimizer). Phase 5 complete. Project → maintenance.
 - 2026-07-02: All active work complete. Status → waiting. No worker dispatch needed until next Hao interaction or quarterly git re-scan (Oct 2026).
+- 2026-05-03: **Re-activated**. Mined 9 new Hao inputs (May 1-3). Extracted P11-P16 (never coast, learning loop, prove before adopt, create projects, consult team, honest assessment). The previous "WAITING" status was itself a P11 violation. Phase 6 opened for propagation work.

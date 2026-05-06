@@ -120,13 +120,31 @@ This project is infrastructure-complete and in maintenance mode. The only remain
 **Worker**: 
 **Orchestrator**: The project directory is gitignored. This was noted in earlier iterations.
 
-### Iteration 8 — 2026-04-30T05:25:52.868Z
-**Worker**: 
-**Orchestrator**: WAITING
+### Iteration 9 — 2026-05-03 (re-iteration triggered by new Hao inputs May 1-3)
 
-This project is **done** until external triggers arrive:
-1. **Next Hao interaction** — validate P6-P10 accuracy, capture new preferences
-2. **October 2026** — quarterly git re-scan for new preference signals
+**What**: Re-mined `.state/human-inputs.jsonl` for inputs after the last iteration (ts ≥ 1777526700000, ~Apr 30 22:00 UTC). Found **9 new Hao messages** spanning May 1-3 in sessions `s_1777485773079_0` and earlier carryover. Extracted 6 new preference signals.
 
-No worker dispatch needed. The project has:
-- ✅ P1-P10 preferences documented and 
+**New preferences added** (P11-P16):
+- **P11 Never Coast** — Hao repeated the entire "no metric? build it / target met? refine it" paragraph **verbatim twice in 7 hours**. Strongest signal in the window. Closing a project because target met is now an explicit anti-pattern.
+- **P12 Learning Loop** — reproduce → explore → verify (gym) → adopt → track. Hard problems need a multi-stage project, not one-shot fixes.
+- **P13 Prove Before Adopt** — "only after we proved it really works". No vibes-based rollouts.
+- **P14 Create Projects, Not Reports** — Hao twice nudged toward project creation ("start a project follow up and fix", "creating a project to learn from our conversation"). Recurring issue → project, not analysis doc.
+- **P15 Consult Team** — "discuss with team about the design, they may have better idea". Designs require ≥2 peer-agent reviews.
+- **P16 Honest Assessment** — "review again with critical eyes" surfaced gaps the first pass missed. Force a second what's-wrong pass on every review.
+
+**Updated**:
+- `preferences.md` — added P11-P16, 5 new anti-patterns, 5 new scorecard rows, 5 new correction-history entries
+- Header date bumped to 2026-05-03
+
+**Validation of P6-P10 from this window**:
+- P7 (consolidation): ✅ Hao approved metrics doc rewrite that dropped 190 lines → 70 lines
+- P10 (knowledge hygiene): ✅ "It's metric, do we really need a current state for metric?" — caught a stale-snapshot risk before it shipped
+- P9 (agent identity): ✅ "Maybe we can merge amy and scout later, but now they collect data from different sources" — respects current role boundaries
+- P1 (stability-first): ✅ "Keep the existing projects working now and fix any failures or blocks. Clean up the house before we move on" — verbatim restatement
+
+**Next**:
+1. Propagate P11-P16 summaries into agent context files (may, coach, tech-lead, optimizer) — particularly P11 (never coast) and P14 (create projects) which directly affect dispatch behavior
+2. Update preference-check-gate.md to reference new principles
+3. Re-measure correction rate — this window had several near-corrections (Hao's "review again" implies the first response wasn't sufficient)
+4. Project should NOT return to `waiting` per P11 — needs propagation work before next checkpoint
+
