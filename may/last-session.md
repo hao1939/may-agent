@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778079836157_0
+- **Session:** s_1778079903827_2
 - **Status:** done
-- **When:** 2026-05-06T15:05:03.823Z
-- **Duration:** 1m7s
+- **When:** 2026-05-06T15:08:25.653Z
+- **Duration:** 3m21s
 
 ## What Happened
-Good — all projects archived. The "blocked-over-6h" metric should now read 0. System is clean and healthy. The stale 165h session has been cancelled.
+The workflow itself has no op limit. The 25-op cap is likely from the infrastructure timeout (the sessions ran ~5 min each before abort). This might be a cost/time cap on opus sessions. Let me write the analysis artifact:
