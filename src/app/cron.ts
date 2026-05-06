@@ -208,8 +208,12 @@ export class Cron {
     }
   }
 
-  /** Dispatch a system event — triggers all handlers subscribed to this event type. */
+  /** Dispatch a system event — triggers all handlers subscribed to this event type AND emits on bus. */
   dispatchEvent(eventType: string, data?: Record<string, unknown>): number {
+    // Emit on EventBus for system-wide observability (metric.breach, etc.)
+    if (this.emitEvent) {
+      this.emitEvent({ type: eventType, ...(data || {}) } as any);
+    }
     const subscribers = this.eventSubscriptions.get(eventType);
     if (!subscribers?.size) return 0;
     let triggered = 0;

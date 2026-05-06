@@ -31,7 +31,7 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
     dispatchEvent: (eventType, data) => opts.bus.emit({ type: eventType, ...(data || {}) } as any),
     getDb: () => getDb(opts.persistDir),
     log: (msg) => globalLog("info", `[${opts.agentName}] ${msg}`),
-    notify: (msg) => opts.bus.emit({ type: "notification", agent: opts.agentName, text: msg }),
+    notify: (msg) => opts.bus.emit({ type: "message.created", from: opts.agentName, to: "human", content: msg } as any),
     persistDir: opts.persistDir,
     projectRoot: opts.projectRoot,
     agentsRoot: opts.agentsRoot,
@@ -46,8 +46,8 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
         const entry = JSON.stringify({ ts: new Date().toISOString(), agent, reason, notified: true });
         appendFileSync(escalationPath, entry + "\n", "utf-8");
       } catch { /* best-effort */ }
-      // Push to Telegram via notification event
-      opts.bus.emit({ type: "notification", agent: opts.agentName, text: `⚠️ *Agent Blocked*\n${agent} — ${reason}` });
+      // Push to Telegram via message.created to human
+      opts.bus.emit({ type: "message.created", from: opts.agentName, to: "human", content: `⚠️ *Agent Blocked*\n${agent} — ${reason}` } as any);
     },
     readSessionMeta: (sessionId) => _readSessionMeta(opts.persistDir, sessionId),
 

@@ -387,12 +387,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       sentAnyText = false; // reset for next session
     }
 
-    // Notifications — only forward those from the interface agent (May).
-    // Other agents' heartbeat briefs (bob, coach, etc.) are internal and
-    // should NOT be pushed to the human's Telegram.
-    if (event.type === "notification" && event.agent === opts.interfaceAgent) {
+    // Human-directed messages — forward to Telegram when from the interface agent.
+    if (event.type === "message.created" && (event as any).to === "human" && (event as any).from === opts.interfaceAgent) {
       if (pendingChatId) {
-        sendToUser(`📋 ${String(event.text ?? "").slice(0, 4000)}`, { eventType: "notification", agent: String(event.agent ?? ""), sessionId: "sessionId" in event ? String(event.sessionId) : undefined, summary: String(event.text ?? "").slice(0, 200) });
+        const content = String((event as any).content ?? "").slice(0, 4000);
+        sendToUser(`📋 ${content}`, { eventType: "message.created", agent: String((event as any).from ?? ""), sessionId: "sessionId" in event ? String((event as any).sessionId) : undefined, summary: content.slice(0, 200) });
       }
     }
   });

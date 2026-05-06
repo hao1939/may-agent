@@ -294,6 +294,11 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             }
             const parentSidRun = getCallerSessionId?.();
 
+            // Emit message.created for traceability (v2 convergence)
+            if (bus) {
+              bus.emit({ type: "message.created", from: callerAgentRun || "unknown", to: params.agent, content: forkTask, intent: "fork", priority: "P0" });
+            }
+
             // Fire-and-forget: start agent immediately, don't wait
             // Fork creates a new root with originSessionId linking back to the caller
             const sessionId = manager.runAgent(params.agent, forkTask, {

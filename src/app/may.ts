@@ -264,7 +264,7 @@ bus.subscribe(createAutoResume(
       const escalationPath = resolve(PERSIST_DIR, "escalations.jsonl");
       appendFileSync(escalationPath, JSON.stringify({ ts: new Date().toISOString(), agent, reason, notified: true }) + "\n", "utf-8");
     } catch { /* best-effort */ }
-    bus.emit({ type: "notification", agent: "may", text: `⚠️ *Agent Blocked*\n${agent} — ${reason}` });
+    bus.emit({ type: "message.created", from: "may", to: "human", content: `⚠️ *Agent Blocked*\n${agent} — ${reason}` } as any);
   },
   PERSIST_DIR,
   () => manager,
@@ -596,6 +596,8 @@ bus.subscribe((event) => {
       break;
     case "fork":
       if ("agent" in event && "task" in event) {
+        // Emit message.created for traceability (v2 convergence)
+        bus.emit({ type: "message.created", from: (event as any).opts?.source || "socket", to: (event as any).agent, content: (event as any).task, intent: "fork", priority: "P0" } as any);
         if (chatSession) {
           chatSession.handleInput(`@${event.agent} ${event.task}`, "socket");
         } else {
