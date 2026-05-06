@@ -1,13 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778029958394_5385
+- **Session:** s_1778031758978_5413
 - **Status:** done
-- **When:** 2026-05-06T01:13:05.650Z
-- **Duration:** 27s
+- **When:** 2026-05-06T01:43:44.786Z
+- **Duration:** 1m5s
 
 ## What Happened
-**Red metrics assessment:**
-- `project.active-count: 0` and `project.blocked-over-6h: 2` — Per KE-744, root cause is `git update-index --assume-unchanged` set on 21 files (including all project.md files) since 2026-04-29. This causes disk edits to never reach the git index, making project state changes invisible. **Fix requires destructive git index manipulation → already escalated to human. Deferring.**
+Now I see the issue clearly. The `project.active-count: 0` metric is accurate — there are zero active projects in the DB. All projects are closed/complete/archived/waiting. The `project.blocked-over-6h: 2` refers to the two "waiting" projects (hao-alignment, proof-of-life-dashboard).
 
-System is healthy: 100% success rate, all 8 heartbeats firing, 38 fires/hour, 407 real outputs in 24h. No errors in the last hour.
+Per KE-744 and KE-743, this is a known state — not phantom data. The system has no active projects because all work completed. The "blocked-over-6h" are waiting projects that need human input to unblock.
+
+This is a legitimate state that doesn't require destructive action. The system is healthy (0 errors, all agents running). The fix for `active-count` is to create new projects when there's work to do, but that requires actual work items from Hao.
