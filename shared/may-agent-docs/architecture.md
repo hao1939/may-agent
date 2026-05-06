@@ -366,6 +366,36 @@ Messages carry intent + pointer, not large payloads. Shared artifacts remain sou
 
 **Default behavior (convention over configuration):** messages are ack'd and queued for the receiver's next heartbeat. They do NOT immediately trigger a new agent session. Agents can register custom handlers to override this if urgency requires it.
 
+#### Human in the Loop
+
+Human messages (via Telegram) always target a session:
+
+| Scenario | Target |
+|----------|--------|
+| General message (not a reply) | May's **default session** — a persistent session for human conversation |
+| Reply to a specific agent message | The session that produced that message |
+
+Routing is simple:
+
+```typescript
+function onHumanMessage(text: string, replyToSessionId?: string) {
+  const targetId = replyToSessionId ?? mayDefaultSessionId;
+  const session = sessions.get(targetId);
+  if (session.status === "running") agent.steer(text);
+  else agent.followUp(text);  // wakes paused session
+}
+```
+
+**Session states:** running → paused → running → ... → completed
+
+- `finish(status: "blocked")` → session pauses (agent idle, waiting for input)
+- `finish(status: "success")` → session completes (cleaned up)
+- `followUp(message)` → wakes a paused session, agent resumes with full context
+
+**May's default session** starts on boot, immediately pauses (no initial task). Exists solely as the human conversation endpoint. Heartbeats and task work happen in separate sessions.
+
+No special "chat session" concept. No steer/input/close complexity. Just: every message has a target session, and sessions pause/resume naturally.
+
 #### Work Queue Pattern
 
 An agent-level convention (not infra). `agents/shared/work-queue.md` has sections: Proposed → Approved → Done. Agents only implement Approved items.
