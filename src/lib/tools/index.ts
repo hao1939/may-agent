@@ -9,7 +9,6 @@ export * from "./path-utils.js";
 export * from "./read.js";
 export * from "./truncate.js";
 export * from "./write.js";
-export * from "./agent-growth.js";
 export * from "./system-status.js";
 export * from "./lifecycle.js";
 export * from "./checkpoint.js";
