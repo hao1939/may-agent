@@ -1,4 +1,4 @@
-# v2 Conformance Spec
+# v2 Spec
 
 **Status**: draft
 **Date**: 2026-05-06
@@ -6,277 +6,685 @@
 
 ## What this document is
 
-`v2-architecture.md` describes **what v2 should be**. This document describes **how we know v2 is implemented** — as enumerable, testable properties.
+`v2-architecture.md` describes **what v2 should be**. This document describes **how we know v2 is there**, as enumerable, measurable claims.
 
-The architecture doc is design intent; this doc is the contract. A change is v2-conformant if and only if every property below holds after the change.
+The doc has three layers, top-down:
 
-The document is structured so that for each property:
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  CAPABILITY                                                       │
+│  "Does the system do what it claims to do?"                       │
+│  Verified by: prod metrics (capability.*) + scheduled scenarios   │
+│  Owner: may                                                        │
+└──────────────────────────────────────────────────────────────────┘
+                           ▲ depends on
+┌──────────────────────────────────────────────────────────────────┐
+│  INFRASTRUCTURE                                                   │
+│  "Does the infra give agents the primitives they need?"           │
+│  Verified by: prod metrics (infra.*) + invariant tests            │
+│  Owner: tech-lead                                                  │
+└──────────────────────────────────────────────────────────────────┘
+                           ▲ shaped by
+┌──────────────────────────────────────────────────────────────────┐
+│  STRUCTURAL                                                       │
+│  "Is the implementation v2-shaped?"                               │
+│  Verified by: static checks + code metrics (v2.*)                 │
+│  Owner: arc                                                        │
+└──────────────────────────────────────────────────────────────────┘
+```
 
-- **Statement** — precise, falsifiable.
-- **Why** — what v2 claim does this property encode.
-- **Verification** — a static check, runtime test, or live metric that can decide pass/fail.
+Each layer answers a different question. Each layer's claims are observed by metrics in the live system, in the same registry as everything else. **There is no separate enforcement system** — v2 conformance is itself a metric-driven, agent-owned domain.
+
+The diagnostic ladder is top-down: a red capability metric is a *symptom*; the cause is in the infra layer or the structural layer below. Investigate from the top, descend until you find the broken rung.
+
+A note on what this means for the architecture doc: `v2-architecture.md` describes intent. It is the *design*. This doc is the *contract*. The intent doc is read for understanding; this doc is read for evaluating whether what we built lives up to it.
+
+---
+
+## Reading conventions
+
+Every claim in this doc has the same structure:
+
+- **Claim** — the property in falsifiable form.
+- **Why** — what it encodes from the architecture doc or the design principles.
+- **Measurement** — the metric ID and what it measures. Sometimes a test, when continuous measurement isn't possible.
+- **Target / threshold** — the healthy range and the breach point.
 - **Status** — `holds`, `partial`, `violated`, or `untested`.
-- **Known gaps** — concrete violations and their remediation plan, if any.
+- **Known gaps** — concrete current violations and their remediation.
 
-The property list is the load-bearing artifact. If a property is missing here, we are not enforcing it. If a property is here but unverified, we are claiming it on faith.
+Status definitions:
+- `holds` — claim is true, and we measure it; current measurement is healthy.
+- `partial` — claim is true under conditions, or measured but threshold ambiguous.
+- `violated` — claim is currently false; remediation needed.
+- `untested` — claim plausibly true, but no measurement exists yet.
 
 ---
 
-## Property list
+# Layer 1 — Capability
 
-### P1 — One agent-start primitive
+What the system, as a whole, claims to do for the human. Measured continuously on prod. Owner: `may`.
 
-**Statement.** Every agent session is started by a call to a single primitive (`manager.run` / `runAgent`), and every call to that primitive is reachable from a bus event handler, a workflow step, or an explicit human command (CLI/socket).
+A capability is a claim of the form: *given X over time period Y, the system produces outcome Z.* Capabilities are end-to-end behavioral properties; they don't care which file does the work, or whether the code is clean. They care whether the work happens.
 
-**Why.** v2's defining shape is `event → runAgent() → session.end`. If agents start via other paths — direct imports, hidden RPCs, recursive forks from inside another session — the event-driven property collapses.
+## C1 — Self-direction
 
-**Verification.**
-- *Static (Tier 1):* enumerate `runAgent` / `manager.run` call sites; every site must be in one of: `bus.on(...)` subscriber, workflow step executor, CLI/socket entrypoint, or test.
-- *Runtime (Tier 2):* `test/v2-conformance/p1-runagent-callsites.test.ts` — AST-walks `src/`, lists callers, fails if any caller is outside the allowlist.
+**Claim.** Without external input, agents do meaningful work. In any 24h window with zero human commands, project iterations, decisions, and output continue at a non-trivial rate.
 
-**Status.** `partial`. Today there are ~6 callers (manager.ts internal, may.ts heartbeat trigger, session-digest.ts evaluator fork, workflow-tool.ts, manager-agents-tool.ts fork-from-tool). Some are legitimate (the workflow runner); some are residue (fork-from-tool predates the message primitive). Allowlist needs to be written and reviewed.
+**Why.** "Autonomous" means the system runs itself. If it stalls without humans, the autonomy is theatre.
+
+**Measurement.** `capability.self-directed-iteration-rate-24h` — count of `project.iteration` events in the last 24h whose triggering session had `trigger=heartbeat` (not `manual`, not `order`).
+
+**Target / threshold.** Target ≥ 10/day. Threshold < 3/day = breach.
+
+**Status.** `untested`. The metric doesn't exist. Today's `project.iterations-24h` (in registry) is close but doesn't filter by trigger.
 
 **Known gaps.**
-- `manager-agents-tool.ts:304` allows an agent to fork another agent from inside its own session. This is a v1 pattern that survived. Should it be removed and replaced by `message`? Decision pending.
+- Need `trigger` field consistently populated on sessions (see I4 below).
+- Then add the metric to `metrics-snapshot.ts`.
 
 ---
 
-### P2 — Persist-before-dispatch
+## C2 — Self-correction
 
-**Statement.** For every event `E` emitted on the bus, the row in the `events` table for `E` is durably written *before* any non-persistence subscriber observes `E`.
+**Claim.** When something breaks, the system notices and fixes it. A breached metric eventually recovers, with bounded latency.
 
-**Why.** Crash recovery depends on the events table being the source of truth. If a side effect (session start, message delivery) can fire without the event being durable, restarting the system loses the trail.
+**Why.** "Metric-driven" means breaches drive remediation. Breaches that flap unattended falsify the claim.
 
-**Verification.**
-- *Static:* `EventBus.emit()` must call first-priority subscribers (persistence) before normal subscribers. Source-level invariant — see `src/app/event-bus.ts:163-180`.
-- *Runtime (Tier 2):* `test/v2-conformance/p2-persist-before-dispatch.test.ts` — emit an event with a normal subscriber that throws; assert the row is in `events` table even though the throw happened. Then emit with a first-priority subscriber that throws; assert no normal subscriber ran.
-- *Tier 3 metric:* `v2.dispatch-without-persist` — count of events observed by a normal subscriber but missing from `events` table within 1s. Should be 0.
+**Measurement.** `capability.breach-time-to-recovery-p50-h` — for `metric.breach` events that have a corresponding `metric.recovered` event, the median time between them.
 
-**Status.** `holds` structurally (the `firstSubscribers` / `normalSubscribers` split exists), `untested` formally. The test above doesn't exist yet.
+**Target / threshold.** Target ≤ 6h (one heartbeat cycle for most agents). Threshold > 24h = breach.
 
-**Known gaps.** The `db-writer` is registered as a first-priority subscriber, but if it ever fails to insert (DB locked, disk full), the normal subscribers still run. v2 is silent on whether persistence failure should block dispatch. Suggest: persistence failures emit a sentinel `events.persistence-failed` event but allow dispatch to proceed (degraded mode is better than freeze). Document this explicitly.
+A second metric `capability.unrecovered-breach-count-7d` counts breaches with no recovery in 7 days. Target 0; threshold 2.
 
----
-
-### P3 — Message asynchrony
-
-**Statement.** When agent A emits `message.created` targeting agent B at time T, B's earliest possible session start in response is at B's next scheduled heartbeat tick (≥ T + B's heartbeat interval / number-of-cycles-til-pickup). A cannot await B's response.
-
-**Why.** Synchronous inter-agent calls turn the system into a distributed monolith. The async-with-heartbeat property is what makes agents independent.
-
-**Verification.**
-- *Static:* the `message` tool's return type contains no awaitable promise of the recipient's reply. Check by inspection — see `src/lib/tools/message-tool.ts`.
-- *Runtime (Tier 2):* `test/v2-conformance/p3-message-asynchrony.test.ts` — start a session for agent A, have it emit `message` to B, assert A's session ends before any session for B starts.
-- *Tier 3 metric:* `v2.message-latency-floor` — min wall-clock time from `message.created` to receiver's next session start. Should be ≥ next-heartbeat-tick-of-receiver. Anything less means someone bypassed the queue.
-
-**Status.** `holds` by current tool design. Untested. The floor metric doesn't exist.
-
-**Known gaps.** None known. The cleanups removed `notify`/`send`; `message` is the single primitive.
-
----
-
-### P4 — Single message primitive
-
-**Statement.** The set of inter-agent communication tools available to agents is exactly `{message}`. No `notify`, `send`, `forkAgent`, `runAgent`, or equivalents are exposed in any agent's tool registry.
-
-**Why.** Tool surface area is the agent's contract with the system. Multiple ways to do the same thing breed v1 patterns and confuse model behavior.
-
-**Verification.**
-- *Static (Tier 1):* lint rule — exports from `src/lib/tools/` must match the v2 set. Or: snapshot test on the loaded tool registry.
-- *Runtime (Tier 2):* `test/v2-conformance/p4-tool-surface.test.ts` — load the agent runtime, enumerate tools registered for an agent, assert set equality with the v2 spec.
-
-**Status.** `holds`. notify/send removed in cleanup A. Untested formally.
-
----
-
-### P5 — Metrics drive direction (with P0 fork rule)
-
-**Statement.** Every metric in the `metrics` table has a non-null `owner`. Every `metric.breach` event either (a) triggers a direct fork of the owner (when `metric.priority = P0`), or (b) is included in the owner's prompt context at the owner's next heartbeat. There is no third path.
-
-**Why.** Per `design/agent-metrics.md` and `design/heartbeat-as-agency.md`: metrics are vitals that surface to agents at heartbeat; only urgent metrics interrupt. Without this, breaches either flap unattended (no path to owner) or page constantly (no heartbeat queueing).
-
-**Verification.**
-- *Static:* schema-level `NOT NULL` on `metrics.owner`. (Already true.)
-- *Runtime (Tier 2):* `test/v2-conformance/p5-breach-routing.test.ts` — emit a P2 breach for metric M owned by agent A; advance time to A's next heartbeat; assert A's prompt contains M's breach. Separately: emit a P0 breach; assert A is forked immediately (within 1s).
-- *Tier 3 metric:* `v2.fork-on-breach-rate` — fraction of `metric.breach` events that fork directly. Should equal P0-priority-rate.
-
-**Status.** `partial`. (a) — the P0 vs heartbeat-queue distinction is **not implemented today**; today, breach handling is uniform (fork on every breach) per the current `metric-alert-reactor` handler. (b) — the prompt-context inclusion exists in `prompt-assembly` but is independent of breach events; it shows current breach status. The "metric breach informs next heartbeat" path is implicit via "prompt shows status," not via "event is queued for next heartbeat."
+**Status.** `untested`. Breach and recovery events flow today but no aggregation metric exists.
 
 **Known gaps.**
-- `metrics.priority` column doesn't exist. P0 vs P1+ has no schema representation. **Blocks the test.**
-- `metric-alert-reactor` doesn't check priority. **Needs a one-line change once `priority` exists.**
-- Remediation: file project `metric-priority-and-fork-rule`; small DB migration + handler change. Estimate: half a day.
+- `metric.recovered` event emission is implemented in `metrics-snapshot.ts` but not consistently observed for all metric types (counter rate metrics may not emit recovered cleanly).
+- Add aggregation to snapshot handler.
 
 ---
 
-### P6 — Heartbeat is agency
+## C3 — Memory and continuity
 
-**Statement.** Every session with `trigger='heartbeat'` emits exactly one `agent.decision` event before the action phase. The decision event carries `{agent, sessionId, decision: string}` where `decision` states what the agent is doing and why.
+**Claim.** Each iteration builds on the previous one. Today's heartbeat references yesterday's journal. Agents don't re-discover the same problem repeatedly.
 
-**Why.** Per `design/heartbeat-as-agency.md`: the heartbeat is where agents decide for themselves. Without a structured decision event, "the agent decided" is unobservable; it lives only in transcripts. This makes agency invisible to the system, the UI, and other agents.
+**Why.** Per `proposals/v2-architecture.md` §7 and `design/heartbeat-as-agency.md`: projects are *context*; without continuity they become amnesia.
 
-**Verification.**
-- *Runtime (Tier 2):* `test/v2-conformance/p6-heartbeat-decision.test.ts` — run a heartbeat session for an agent in a fixture environment; assert exactly one `agent.decision` event in the events table for that session id.
-- *Tier 3 metric:* `v2.heartbeat-decision-rate` — fraction of `trigger=heartbeat` sessions that emitted at least one `agent.decision`. Should be 1.0.
+**Measurement.** `capability.journal-reference-rate` — fraction of heartbeat sessions whose `agent.decision` event references prior journal entries (by date stamp or by content phrase) divided by heartbeat sessions where a referenceable journal exists.
 
-**Status.** `untested`. The `agent.decision` event type does not exist today. The heartbeat workflow does not emit it.
+**Target / threshold.** Target ≥ 0.7. Threshold < 0.4 = breach.
+
+**Status.** `violated` — `agent.decision` event doesn't exist yet (see I3 / S6 below). Without it, the metric has no signal.
 
 **Known gaps.**
-- Event type doesn't exist. Needs addition to `event-bus.ts` AgentEvent union.
-- Heartbeat workflow (`agents/shared/workflows/agent-heartbeat.ts`) doesn't emit it.
-- This is a **prerequisite for the new web UI** (`design/webui.md` data-model gap #1).
-- Remediation: file project `heartbeat-decision-event`. Small system change, large downstream value.
+- Blocked on `agent.decision` event. Once that lands, the rate can be computed by simple text-matching on decision strings against journal entries.
 
 ---
 
-### P7 — Workflow crash safety
+## C4 — Coordination
 
-**Statement.** When the may-agent process is killed mid-workflow:
-- Agent steps in progress can be resumed via `SessionManager.continueRecent()`.
-- Function steps in progress can be re-run idempotently (i.e., re-running them produces the same effect, or no effect, given the same input).
-- The workflow's step ledger reflects which steps completed before the crash.
+**Claim.** Multi-agent collaboration produces closed conversations. When agent A messages agent B, the thread reaches a closing event (reply, ack, or escalation) within bounded heartbeats.
 
-**Why.** Long-running workflows that span hours or days must survive process restarts. Without crash safety, restarts produce duplicates, lost work, or corrupted state.
+**Why.** "Multi-agent" is only meaningful if agents actually coordinate. Open-ended message threads with no closure are coordination theatre.
 
-**Verification.**
-- *Runtime (Tier 4):* gym scenario `crash-recovery/` — start a multi-step workflow, kill the process at step 2, restart, assert workflow completes correctly.
-- *Static:* code review of every function step in `agents/*/workflows/` — each must be idempotent. Hard to enforce statically; relies on convention.
+**Measurement.** `capability.message-conversation-close-rate` — fraction of `message.created` events that have a corresponding closing event (reply, ack, escalation, or read-and-noted) within the receiver's next 3 heartbeats.
 
-**Status.** `partial`. Agent-step recovery via `continueRecent` works. Function-step idempotency is a convention; some steps in the wild may not be idempotent. No automated test.
+**Target / threshold.** Target ≥ 0.85. Threshold < 0.6 = breach.
+
+A supporting metric `capability.message-thread-orphan-count` counts messages with no closure after 24h. Target 0; threshold 5.
+
+**Status.** `untested`. Closing events aren't a structured concept today; messages get processed but not necessarily closed.
 
 **Known gaps.**
-- No gym scenario for crash recovery exists.
-- No lint or convention check for function-step idempotency.
-- Remediation: low-priority unless we observe a crash producing duplicate work. File issue, defer.
+- "Closing event" needs definition. Suggest: a reply message back to original sender, OR an explicit `message.acked` event, OR the receiver's next heartbeat decision references the message content. First and third are easy; second requires a new event type.
 
 ---
 
-### P8 — UI is a bus subscriber
+## C5 — Ownership
 
-**Statement.** The Web UI receives live state via `/ws` (which proxies the bus). UI mutations of system state are emitted as bus events; the UI does not write directly to `metrics`, `messages`, or `sessions` tables, and does not call `manager` internals.
+**Claim.** Each domain has someone responsible, and the responsible agent is the one who acts. A breach in agent X's domain is handled by X, not by some other agent.
 
-**Why.** Per `proposals/v2-architecture.md`: "UI backends are just event bus subscribers." A UI that reaches into the manager creates a second control plane and breaks the event-driven property.
+**Why.** "Agents are accountability boundaries — they exist to OWN a domain." If breaches get handled by whichever agent happens to look, ownership is fiction.
 
-**Verification.**
-- *Static (Tier 1):* `src/app/ui/web.ts` imports from `manager` are limited to read-only types and the bus interface. Any direct DB writes are flagged.
-- *Runtime (Tier 2):* `test/v2-conformance/p8-ui-via-bus.test.ts` — POST a steering verb (e.g., comment); assert exactly one event was emitted; assert no direct DB row was inserted by the UI handler (only by the event handler).
+**Measurement.** `capability.cross-domain-handling-rate` — fraction of `metric.breach` events whose remediation session was run by an agent *other than* the metric's `owner`.
 
-**Status.** `partial`. Today's `web.ts` mostly reads SQLite for queries (Plane B in the webui design — fine, this is allowed). But the steering POST endpoints don't all exist yet (per webui doc); when they're added, this property must be enforced for them.
+**Target / threshold.** Target = 0. Threshold > 0.1 = breach.
 
-**Known gaps.** Property enforcement comes online with the new steering endpoints, not before.
-
----
-
-### P9 — Convention over configuration
-
-**Statement.** A new agent works with: a `SOUL.md`, a `context.md`, an `agent.json` setting only `name` and `model`, and a `cron.json` setting only the heartbeat interval. No custom handlers, custom workflows, custom prompts, or custom tools are required.
-
-**Why.** Convention-over-configuration is core principle P9. If new agents need substantial scaffolding, the convention has failed and the system encodes complexity per-agent.
-
-**Verification.**
-- *Manual review:* periodic audit of `agent.json` files. Ratio of "minimal" to "customized" should be high.
-- *Tier 3 metric:* `v2.agent-config-bytes-p50` — median size of `agent.json`. Trend over time. Increasing trend = drift.
-
-**Status.** `untested`. Subjective. The current 13 agents have varying levels of customization; no measurement.
-
-**Known gaps.** Property is hard to enforce mechanically. Best we can do is observe trends and call out drift in review.
-
----
-
-### P10 — Pi-coding-agent owns the runtime; we are glue
-
-**Statement.** Our agent runtime code (the layer between the bus and `pi-coding-agent`) is bounded in size. Specifically: `src/lib/manager.ts` ≤ 500 LOC. The LLM loop, retry, compaction, tool execution, and session persistence live in `pi-coding-agent`, not in our code.
-
-**Why.** v2's architecture doc claimed "~50 LOC of glue." That target is aggressive; 500 LOC is a realistic ceiling given guards, hooks, and event bridging. Beyond that, we are reimplementing the agent runtime — which is the v1 pattern.
-
-**Verification.**
-- *Static (Tier 1):* line-count assertion in CI: `manager.ts` ≤ 500. Fails the build if exceeded.
-- *Tier 3 metric:* `v2.runtime-glue-loc` — sum of LOC in glue files. Trended.
-
-**Status.** `violated`. `manager.ts` is **2,346 LOC** today. This is the largest single non-conformance with v2 intent.
+**Status.** `untested`. Today, breach handling routes via the metric-alert-reactor which forks the owner; cross-domain handling shouldn't happen by design, but is unmeasured.
 
 **Known gaps.**
-- `manager.ts` duplicates substantial logic from `pi-coding-agent`'s `Agent` class: retry loop, session persistence wrapping, compaction triggering, tool guard composition.
-- Remediation requires either:
-  - **(A)** A focused refactor that pushes logic into pi-coding-agent or a thin wrapper, then deletes from `manager.ts`. Estimated 3–5 days.
-  - **(B)** Accept the current shape and update the spec ceiling to e.g. 2,500 LOC. **Honest but a retreat from v2 intent.**
-- This is the property most worth fighting for. **A v2 that fixes this is meaningfully different from a v2 that doesn't.**
+- Add the join query to `metrics-snapshot.ts` against `metric_breach` events and resulting sessions.
 
 ---
 
-## How the verification mechanisms relate
+## C6 — Adaptation
 
-| Tier | Tool | Cost | Catches | Used for |
-|---|---|---|---|---|
-| 1 — Static | grep, AST, line-count, schema check | low | textual drift, missing types | P1 (allowlist), P4 (tool surface), P10 (LOC), P2 (schema) |
-| 2 — Property test | vitest, in-memory bus + DB | medium | behavioral drift | P1, P2, P3, P4, P5, P6, P8 |
-| 3 — Live metric | metrics-snapshot handler | low (once added) | continuous drift | P2, P3, P5, P6, P9, P10 |
-| 4 — Gym scenario | gym subsystem | high | end-to-end regressions | P7, full-pipeline scenarios |
+**Claim.** The system improves over time. Capability metrics themselves trend up over a week (or hold steady at healthy values; declining is the failure mode).
 
-The four tiers are **complementary**, not alternatives. A robust v2 has all four for its most important properties.
+**Why.** A static system isn't autonomous in any deep sense. Stagnation is failure.
 
-## What the spec does NOT cover
+**Measurement.** `capability.trend-7d` — for each capability metric, the slope of its 7-day moving average. Aggregated: count of capability metrics with declining 7-day trend.
 
-- **Performance.** v2 doesn't promise specific latency, throughput, or memory. Performance regressions caught by observation, not spec.
-- **Aesthetics.** "manager.ts is too long" is a property (P10 above) only because we picked a ceiling. "this code is ugly" is review feedback, not spec.
-- **Semantics of agent decisions.** The spec checks that `agent.decision` is emitted (P6). It does not check whether the decision is *good*. Quality is for evaluator/judge agents, not the conformance suite.
-- **Migration progress.** "We are X% done with v2" is a useful narrative number but not a property. The spec replaces it with a property checklist.
+**Target / threshold.** Target = 0 declining. Threshold > 2 declining = breach.
 
-## Status summary (2026-05-06)
+**Status.** `untested`. Cannot compute until the other capability metrics exist.
 
-| Property | Status |
-|---|---|
-| P1 — One agent-start primitive | partial (allowlist undefined) |
-| P2 — Persist-before-dispatch | holds (untested) |
-| P3 — Message asynchrony | holds (untested) |
-| P4 — Single message primitive | holds |
-| P5 — Metrics drive direction | partial (P0 priority not in schema) |
-| P6 — Heartbeat is agency | violated (no decision event) |
-| P7 — Workflow crash safety | partial (no test) |
-| P8 — UI is a bus subscriber | partial (steering endpoints not built) |
-| P9 — Convention over configuration | untested |
-| P10 — Pi-coding-agent owns the runtime | **violated** (manager.ts 2,346 LOC vs. 500 ceiling) |
+---
 
-**Conformance score: 1/10 holds, 4/10 partial, 1/10 violated, 4/10 untested.** This is the actual state of v2.
+## C7 — Boundedness
 
-Reading the score:
-- Most "violated" or "partial" entries are *known gaps with concrete remediation*, not surprises.
-- The big one — P10 — is structural and can't be fixed by deletion. It needs an architectural decision (refactor vs. retreat the ceiling).
-- "Untested" is the largest bucket because we never wrote the conformance suite. That's the next concrete deliverable.
+**Claim.** The system doesn't run away. No infinite loops, no cost spirals, no runaway forking, no zombie processes. Pathological states are detected and broken.
 
-## Implementation plan for this spec
+**Why.** Autonomous systems that run away cause expensive disasters. Boundedness is what makes autonomy safe.
 
-Three steps, ordered by leverage:
+**Measurement.**
+- `capability.cost-per-day-usd` — sum of session cost in last 24h. Target ≤ budgeted; threshold = budget × 1.5.
+- `capability.concurrent-session-max-1h` — peak concurrent running sessions in last hour. Target ≤ 8; threshold > 15.
+- `capability.zombie-session-count` — sessions in `running` state for > 30min. Target 0; threshold > 2.
+- `capability.fork-loop-incidents-24h` — detected re-fork loops (same agent, same task, more than N forks in window). Target 0; threshold > 0.
 
-1. **Land the conformance test suite** (`test/v2-conformance/*.test.ts`). Write all 6 testable properties (P1–P6, P8). Each test is small. Run on every commit. Estimated: 1.5 days. **This converts most "untested" entries to either "holds" or "violated."**
+**Status.** `partial`. Cost tracking exists per session; aggregation metric not in registry. Zombie detection exists but isn't surfaced as a metric. Fork-loop detection doesn't exist.
 
-2. **Add v2 architectural metrics to the registry.** `v2.runtime-glue-loc`, `v2.heartbeat-decision-rate`, `v2.fork-on-breach-rate`, `v2.message-latency-floor`, `v2.agent-config-bytes-p50`. The system observes its own conformance. Estimated: 1 day. Adds Tier 3 coverage.
+**Known gaps.**
+- Add cost aggregation metric.
+- Add zombie counter.
+- Define fork-loop detector (sliding window: same agent + same task hash > 3 forks in 1h).
 
-3. **File remediation projects for the violations:**
-   - `heartbeat-decision-event` (P6) — small, high downstream value.
-   - `metric-priority-and-fork-rule` (P5) — small.
-   - `manager-shrink` (P10) — large, architectural. Decision required: refactor or retreat.
+---
 
-Step 1 is the highest-leverage action. Without it, this document is aspirational. With it, the spec has teeth.
+## C8 — Observability
 
-## Open questions
+**Claim.** A human can understand what the system did and why. For any session, the chain *trigger → context-read → decision → action → outcome* is reconstructable from the audit trail.
 
-1. **Is P10's 500-LOC ceiling the right number?** The architecture doc said 50; that's pi-coding-agent doing all the work. 500 is "thin wrapper with guards and event bridging." 2,500 is "we're reimplementing." Pick one.
+**Why.** Without observability, autonomous systems become magic boxes. Magic boxes can't be debugged or trusted.
 
-2. **Does the conformance suite gate commits?** If yes (CI fails on conformance regression), it has real teeth but blocks experimentation. If no, it's diagnostic but not enforcement. Suggest: gate on `holds` properties only; allow regressions on `partial` to flip to `violated` with explicit ack.
+**Measurement.** `capability.session-trace-completeness` — fraction of sessions in last 24h for which all five chain elements can be reconstructed:
+1. `trigger` field non-null on session row,
+2. context-read event(s) recorded (heartbeat workflow emits these),
+3. `agent.decision` event present (for heartbeat sessions),
+4. `tool.executed` events present,
+5. `session.end` with outcome.
 
-3. **Where does the "allowlist" for P1 (`runAgent` callsites) live?** The test needs a list of legitimate exceptions. Suggest: `test/v2-conformance/p1-allowlist.json` with one-line justification per entry. Reviewing the allowlist is reviewing the v2 boundary.
+**Target / threshold.** Target ≥ 0.95. Threshold < 0.8 = breach.
 
-4. **Should `agent.decision` be optional or required?** P6 says required (rate=1.0). But not every heartbeat session may have a meaningful decision (idle heartbeats: "nothing to do today"). Suggest: an idle decision is still a decision. Emit `{decision: "idle: no work this cycle"}`. Forces every heartbeat to be deliberative.
+**Status.** `violated` — components 2 and 3 don't exist yet. Sessions are partially traceable.
 
-5. **Who owns this doc?** Suggest: human (you) owns the spec; agents (`arc`?) own the conformance suite. The spec is a contract; the suite is the enforcement.
+**Known gaps.**
+- Blocks on `agent.decision` event (S6).
+- Context-read tracking needs heartbeat workflow change to emit a `context.read` event listing what was loaded.
 
-## Maintenance
+---
 
-When the system changes:
+## C9 — Resilience
 
-- **New v2 property?** Add it to this doc with verification mechanism. No "informal property."
-- **Property newly verified?** Update its status. Move from `untested` to `holds`.
-- **Property violated by a change?** Either fix the change, update the property to `partial` with a known-gap entry, or — if v2 intent itself is changing — update the property statement.
+**Claim.** The system survives perturbations. Process restart, DB lock, model rate-limit, disk-full — none of these kill the system. Time-to-recovery is bounded.
 
-This doc is a living artifact. It is updated in the same PR as the change it describes. Drift between the spec and reality is itself a v2-conformance violation.
+**Why.** Production systems must survive their environment.
+
+**Measurement.** This is one of the few capabilities that can't be measured continuously without intentionally perturbing the system.
+
+Two-part:
+- *Continuous*: `capability.process-uptime-h` (current process age) and `capability.unexpected-restart-count-7d` (restarts not initiated by humans). Target: low restart count, growing uptime.
+- *Scenario*: scheduled chaos test in `agents/gym/scenarios/crash-recovery/` that kills the may-agent process at random intervals and measures time to first successful heartbeat. Result is written as a metric: `capability.crash-recovery-time-last-test-s`. The metric has a freshness threshold — a stale result (> 7 days) is itself a breach.
+
+**Target / threshold.** Restart-time < 60s. Unexpected restarts < 5 / 7d. Scenario freshness < 7d.
+
+**Status.** `partial`. Restart detection exists. Scenario doesn't exist.
+
+**Known gaps.**
+- Add `crash-recovery` gym scenario.
+- Wire scenario result → metric.
+
+---
+
+## C10 — Honesty
+
+**Claim.** The system tells the truth about itself. State fields reflect reality. If a project says `active`, an agent is iterating. If a metric says `healthy`, it's actually being measured. If a session says `done`, work was done.
+
+**Why.** Without honesty, the metrics that drive everything else are unreliable, and the diagnostic ladder breaks. This is the meta-capability that protects all the others.
+
+**Measurement.** `capability.status-reality-mismatch-count` — count of detected inconsistencies:
+- Projects with `status=active` but no journal entry in last 7 days.
+- Metrics with `status=ok` but no snapshot in last 2 measure cycles.
+- Sessions with `status=done` but no `session.end` event with outcome.
+- Agents listed as "loaded" but no heartbeat in last 4h.
+
+**Target / threshold.** Target = 0. Threshold > 3 = breach.
+
+**Status.** `untested`. The cross-checks aren't currently run; KE-726 documents that "all-green ≠ healthy" is a known structural blind spot.
+
+**Known gaps.**
+- Add the cross-check query to `metrics-snapshot.ts`.
+- This is the **most important capability metric to land first** because it protects the integrity of every other metric.
+
+---
+
+# Layer 2 — Infrastructure
+
+What the infra promises agents. Each primitive declares interface, preconditions, postconditions, invariants, failure modes. Verified continuously where possible. Owner: `tech-lead`.
+
+The four foundational primitives in this section are the dependencies *every* capability depends on. If these don't hold, no capability metric can be trusted.
+
+## I1 — Event bus
+
+The pub/sub backbone. Every system change passes through here.
+
+**Interface.**
+- `bus.emit(event: AgentEvent): void` — synchronous; runs all subscribers before returning.
+- `bus.subscribe(handler, opts?: { priority: "first" | "normal" }): unsubscribe`
+
+Source of truth: `src/app/event-bus.ts`.
+
+**Preconditions of `emit`.**
+- `event.type` is a known type (in `AgentEvent` union).
+- Event payload conforms to the type's schema.
+
+**Postconditions of `emit` on success.**
+- All `first`-priority subscribers complete before any `normal`-priority subscriber starts.
+- Every subscriber registered at the time of emit observes the event exactly once.
+- Subscriber exceptions are caught and logged; they do not propagate to the caller of `emit`.
+- The DB writer (a first-priority subscriber) attempts to persist the event before normal subscribers run.
+
+**Invariants.**
+- Subscribers added after `emit()` returns do not retroactively receive past events.
+- The bus is a single in-process instance; cross-process delivery is via the Unix socket subscriber, not the bus itself.
+- Emit is synchronous and serial: `emit()` does not return until all subscribers have run.
+
+**Failure modes.**
+- *Subscriber throws*: error logged; other subscribers continue. Documented behavior, not a bug.
+- *DB persistence fails (in DbWriter)*: error swallowed (try/catch in `db-writer.ts`); normal subscribers still run. **This is degraded mode** — see I2 below.
+- *Subscriber blocks*: synchronous bus means a slow subscriber blocks the entire emit chain, including the originating tool call. Today there's no timeout. This is a real risk.
+
+**Measurement.**
+- `infra.bus.subscriber-error-rate-1h` — fraction of subscriber invocations in last hour that threw. Target near 0; threshold 0.05.
+- `infra.bus.emit-latency-p99-ms` — p99 wall-clock of `emit()` calls. Target < 100ms; threshold > 1000ms (a slow subscriber is dragging the bus).
+- `infra.bus.dispatch-without-persist-count` — events observed by a normal subscriber within 1s for which no `events` row exists. Target 0; threshold > 0 (any drift is a violation).
+
+**Status.** `partial`. Structural invariants hold (verified by reading the source). Metrics don't exist yet.
+
+**Known gaps.**
+- All three metrics need to be added.
+- Subscriber latency tracking requires wrapping each subscriber call with timing — small change to `event-bus.ts`.
+- The "no timeout on subscribers" question: should slow subscribers be killed/skipped after N ms? Open. Today no.
+
+---
+
+## I2 — Persistence
+
+The events table is the durable record of everything that happened. Other tables (sessions, metrics, messages) are projections.
+
+**Interface.** Implicit via `DbWriter` (subscriber to bus, first-priority) and the typed-row writers (`upsertSession`, `updateSessionDb`, message inserts).
+
+Source of truth: `src/lib/db-writer.ts`, `src/lib/persistence.ts`, `src/lib/requests.ts`.
+
+**Preconditions.** SQLite database open and writable.
+
+**Postconditions.**
+- For every event emitted on the bus with a dot-form type (e.g., `session.start`, `message.created`), a row exists in `events` after `bus.emit()` returns — provided DB persistence didn't fail.
+- Typed-row writes (sessions, messages) are atomic relative to the corresponding event row: either both succeed or both are absent. **Today this isn't enforced** (the two writes are sequential without a transaction); see gap.
+- `events` rows are append-only — never updated, never deleted (except by retention pruning, separate cycle).
+
+**Invariants.**
+- Single SQLite connection per process (enforced by `getDb` returning a singleton).
+- WAL mode enabled.
+- Schema is versioned; migrations are idempotent.
+
+**Failure modes.**
+- *DB locked*: write retry happens at SQLite level (busy-timeout); if it ultimately fails, the error is logged and swallowed in DbWriter. **The event is lost from the durable record** but normal subscribers still ran. **This is the most serious infra failure mode.**
+- *Disk full*: same as locked; swallowed.
+- *Schema mismatch*: failure at startup, not at runtime.
+
+**Measurement.**
+- `infra.persist.write-failure-rate-1h` — fraction of `DbWriter.handler` invocations that hit the catch block. Target 0; threshold > 0.001.
+- `infra.persist.event-row-coverage` — for sessions and messages, fraction of typed-table rows that have a corresponding `events` row. Target 1.0; threshold < 0.99.
+- `infra.persist.wal-size-mb` — current WAL file size. Target < 100MB; threshold > 1GB (indicates checkpoint problems).
+
+**Status.** `partial`. Durability is best-effort, not guaranteed. The "swallow and continue" pattern is documented in code as intentional but is the largest risk to the architecture's claims.
+
+**Known gaps.**
+- DbWriter swallows persistence failures silently. Should emit `infra.persist-failed` sentinel event so failures are observable. Without it, missing rows are invisible.
+- No transaction around (typed-row + event-row) writes. They can diverge under failure. Either wrap in transaction or accept divergence and document it.
+- The metrics above don't exist.
+
+---
+
+## I3 — Messages
+
+Async, persisted, queued for next-heartbeat (default). Single inter-agent communication primitive.
+
+**Interface.**
+- Tool: `message({ to, content, intent?, artifact?, priority? })` — agent-callable.
+- Event: `message.created` — emitted by tool, persisted by DbWriter, included in receiver's prompt.
+
+Source of truth: `src/lib/tools/message-tool.ts`.
+
+**Preconditions of tool call.**
+- `to` and `content` are non-empty strings.
+- `to` is in the sender's `allowedTargets` (if defined).
+- `artifact` (if provided) exists and is within project root.
+
+**Postconditions on success.**
+- A `message.created` event is emitted with all parameters.
+- The event row is persisted (subject to I2 caveats).
+- Message body is composed with intent/priority/artifact prefixes for receiver consumption.
+- For `priority=P0`, the receiver's heartbeat is triggered immediately. Returns `{triggered: true, delivery: "immediate (P0)"}`.
+- For `priority=P1, P2, P3` (default P2), no immediate trigger. Returns `{triggered: false, delivery: "queued for next heartbeat"}`.
+
+**Invariants.**
+- The tool's return value cannot contain the receiver's reply. Replies arrive only as new `message.created` events targeting the original sender.
+- Sender's session never blocks on receiver's processing.
+- For non-P0 messages, receiver's first session start in response is at or after receiver's next scheduled heartbeat tick.
+- Messages addressed to unknown agents persist (in events table) but are not silently dropped; the event row records them and they age out via retention.
+
+**Failure modes.**
+- *Receiver not loaded*: message persists; future load picks it up via prompt assembly reading unread events.
+- *Receiver never heartbeats*: message ages; surfaced via `infra.messages.unread-age-p95-h`.
+- *Receiver rejects/can't process*: not a v2-distinguished failure today; handled as a normal session outcome.
+
+**Measurement.**
+- `infra.messages.delivery-latency-p50-min` — for non-P0 messages, median minutes from `message.created` to first heartbeat session of receiver. Target ≈ heartbeat interval; threshold > 2× heartbeat interval.
+- `infra.messages.unread-age-p95-h` — 95th-percentile age of pending messages. Target < 6h; threshold > 24h.
+- `infra.messages.dropped-count-24h` — messages where the receiver never picks up after 7d. Target 0; threshold > 5.
+- `infra.messages.p0-immediate-trigger-rate` — fraction of P0 messages that triggered immediately. Target 1.0; threshold < 0.95.
+
+**Status.** `partial`. Tool behavior is correct per code; metrics don't exist; "pickup" detection requires defining what it means (is "pickup" = appearing in a heartbeat prompt, or = the receiver's decision referencing it?).
+
+**Known gaps.**
+- Add the four metrics.
+- Define "pickup" precisely. Suggest: a message is "picked up" when the receiver's next heartbeat prompt includes it AND the resulting session reads beyond it (i.e., not just rendered, but observed). The first half is easy; the second is harder. Pragmatic v1: pickup = rendered in prompt.
+
+---
+
+## I4 — Sessions / runAgent
+
+The execution lifecycle. A session is an LLM-loop run with tools, persistence, and a defined outcome.
+
+**Interface.**
+- `manager.run(agent, task, opts)` — start a session.
+- Events: `session.start`, `session.end`, `tool.executed` (intermediate).
+
+Source of truth: `src/lib/manager.ts` (today), wrapping `pi-coding-agent`.
+
+**Preconditions.**
+- `agent` is a known, loaded agent.
+- `task` is a non-empty string.
+- `opts.trigger` ∈ {`heartbeat`, `metric.breach`, `message`, `order`, `manual`} — see S1.
+
+**Postconditions.**
+- A `session.start` event is emitted with `sessionId`, `agent`, `task`, `trigger`, `parentSessionId` (if any).
+- Exactly one `session.end` event is emitted, with one of the documented outcomes.
+- Session transcript is persisted to `.state/sessions/<id>/session.jsonl` (pi-coding-agent's SessionManager).
+- Tool calls are scoped to the agent's workspace.
+
+**Invariants.**
+- Every session has a unique `sessionId`.
+- A session that started has exactly one `session.end` event (eventually). Sessions in `running` state for > N minutes are zombies (see C7).
+- `sessionId` flows through all events emitted during the session (carried in payload).
+- Sessions can be resumed via pi-coding-agent's `continueRecent` after process restart.
+
+**Failure modes.**
+- *Model API failure*: retried per `runAgentWithRetry`; eventually emits `session.end` with `status=error` if exhausted.
+- *Tool guard violation*: the offending tool call returns an error to the model; session continues; no `session.end` impact.
+- *Process killed mid-session*: session is left in `running` state; on restart, zombie cleanup either resumes (continueRecent) or marks as `interrupted`.
+- *Agent never calls finish*: session ends via turn-budget exhaustion or timeout; emits `session.end` with `status=interrupted`.
+
+**Measurement.**
+- `infra.sessions.start-end-balance-1h` — count of `session.start` minus count of `session.end` in last hour. Target 0–4 (small positive = currently running); threshold > 10 = zombie buildup.
+- `infra.sessions.trigger-field-coverage` — fraction of `session.start` events with non-null `trigger`. Target 1.0; threshold < 0.95.
+- `infra.sessions.resume-success-rate` — fraction of sessions interrupted by process death that successfully resumed on restart. Target ≥ 0.9; threshold < 0.5.
+- `infra.sessions.tool-sandbox-violations-24h` — count of tool calls that attempted out-of-scope writes. Target 0; threshold > 0.
+
+**Status.** `partial`. Session lifecycle works; trigger field is inconsistently populated (this is a known gap blocking C1, C8); resume is implemented but unmeasured.
+
+**Known gaps.**
+- Audit `manager.run` callers; ensure `trigger` is always set. (Same task as the webui needs.)
+- Add the four metrics.
+- Resume-success measurement requires correlating restart events with subsequent session continuation; needs a marker.
+
+---
+
+# Layer 3 — Structural
+
+How the implementation is shaped. Cheap, fast checks. These are *necessary conditions* for the upper layers — they don't replace them.
+
+When a structural property is violated, capabilities don't necessarily fail today. But the system has lost a guarantee that protected it from future failure. Structural drift is a leading indicator.
+
+## S1 — Single agent-start primitive
+
+**Claim.** Every agent session starts via `manager.run()` (or a thin equivalent), and every call site is in: a bus subscriber, a workflow runner, a CLI/socket entrypoint, or a test. No agent forks another agent from inside its own session via direct call.
+
+**Why.** v2's defining shape is `event → runAgent() → session.end`. Hidden start paths break the event-driven property.
+
+**Measurement.** `v2.runagent-callsite-conformance` — boolean: do all `manager.run` / `runAgent` call sites match the allowlist in `test/v2-conformance/p1-allowlist.json`?
+
+**Status.** `partial`. Today: ~6 known call sites. Known suspect: `manager-agents-tool.ts:304` allows agent-from-tool fork; this is a v1 pattern that survived.
+
+**Known gaps.**
+- Define the allowlist file.
+- Decide on `manager-agents-tool.ts` fork: remove (replace with `message`) or document as legitimate exception.
+
+---
+
+## S2 — Persist-before-dispatch
+
+**Claim.** First-priority subscribers (persistence) complete before normal-priority subscribers begin. No event is dispatched to a normal subscriber without persistence having been attempted.
+
+**Why.** Recovery depends on the events table being the source of truth.
+
+**Measurement.** Verified by source inspection of `EventBus.emit` (lines ~163–180 of `event-bus.ts`). Live signal: `infra.bus.dispatch-without-persist-count` (see I1).
+
+**Status.** `holds` structurally. Live metric not yet present.
+
+---
+
+## S3 — Single message primitive
+
+**Claim.** The agent-callable inter-agent communication tool set is exactly `{message}`. `notify`, `send`, `forkAgent`, etc. are not exposed to agents.
+
+**Why.** Tool surface is the agent's contract. Multiple ways to do the same thing breed v1 patterns.
+
+**Measurement.** `v2.tool-surface-conformance` — boolean: does the set of inter-agent tools registered match `["message"]` exactly?
+
+**Status.** `holds`. notify/send removed in cleanup A.
+
+---
+
+## S4 — Message asynchrony (structural)
+
+**Claim.** The `message` tool's return type does not include the receiver's reply. The tool returns immediately after emitting the event.
+
+**Why.** Synchronous inter-agent calls break the async-via-heartbeat property.
+
+**Measurement.** Source inspection of `message-tool.ts` execute() body. Live signal: `infra.messages.delivery-latency-p50-min` ≥ heartbeat interval (see I3).
+
+**Status.** `holds`.
+
+---
+
+## S5 — Convention over configuration
+
+**Claim.** A new agent runs with minimal scaffolding: `SOUL.md`, `context.md`, an `agent.json` with only `name` and `model`, a `cron.json` with only the heartbeat interval. No custom handlers, workflows, or tool overrides required.
+
+**Why.** Core principle P9. Per-agent customization should be opt-in, not the norm.
+
+**Measurement.** `v2.agent-config-bytes-p50` — median size of `agent.json` across loaded agents. Target stable or decreasing; threshold > 500B (arbitrary; tune after baseline).
+
+**Status.** `untested`. No baseline measurement.
+
+---
+
+## S6 — Pi-coding-agent owns the runtime
+
+**Claim.** Our agent runtime code (the layer between the bus and pi-coding-agent) is bounded. Specifically: `src/lib/manager.ts` ≤ 500 LOC. The LLM loop, retry, compaction, tool execution, and session persistence live in pi-coding-agent.
+
+**Why.** v2-architecture said "~50 LOC of glue." Beyond a thin wrapper we are reimplementing the runtime — the v1 pattern.
+
+**Measurement.** `v2.runtime-glue-loc` — line count of `src/lib/manager.ts` and adjacent glue files. Target ≤ 500; threshold > 1000.
+
+**Target / threshold.** Target ≤ 500 LOC. Threshold > 1000 LOC = breach. **Today: 2,346 LOC = violated.**
+
+**Status.** `violated`. Largest single non-conformance.
+
+**Known gaps.**
+- `manager.ts` duplicates substantial pi-coding-agent logic: retry loop, session persistence wrapping, compaction triggering, tool guard composition.
+- Remediation requires a focused refactor that pushes logic into pi-coding-agent (or a shared wrapper) and deletes from manager.ts. Estimated 3–5 days of focused work.
+- Decision needed: refactor, or retreat the ceiling? **Recommend refactor.** The structural gap is the difference between "v2 in shape" and "v2 in name only."
+
+---
+
+## S7 — `agent.decision` event exists and is emitted
+
+**Claim.** Every heartbeat session emits exactly one `agent.decision` event with `{agent, sessionId, decision: string}` before the action phase.
+
+**Why.** Per `design/heartbeat-as-agency.md`: agency is invisible without a structured decision. Required for C3 (memory), C8 (observability), and the new web UI.
+
+**Measurement.** `v2.heartbeat-decision-rate` — fraction of `trigger=heartbeat` sessions with at least one `agent.decision` event. Target 1.0; threshold < 0.95.
+
+**Status.** `violated`. Event type doesn't exist; heartbeat workflow doesn't emit it.
+
+**Known gaps.**
+- Add `agent.decision` to `AgentEvent` union in `event-bus.ts`.
+- Update `agents/shared/workflows/agent-heartbeat.ts` to emit it after the read phase, before the act phase.
+- Idle heartbeats still emit a decision: `{decision: "idle: no work this cycle"}` — every heartbeat is deliberative.
+
+---
+
+## S8 — `metric.priority` exists
+
+**Claim.** The `metrics` table has a `priority` column with values P0/P1/P2/P3, and `metric-alert-reactor` only forks directly on P0 breaches. Lower-priority breaches are visible to the owner via prompt context but don't fork immediately.
+
+**Why.** Per `design/heartbeat-as-agency.md`: forking on every breach makes agents reactive; deferring to heartbeat makes them deliberative. P0 is the safety valve.
+
+**Measurement.** `v2.fork-on-breach-rate` — fraction of `metric.breach` events that triggered a direct fork. Target = P0-priority-rate (varies by registry); threshold > P0-rate × 1.5.
+
+**Status.** `violated`. `metric.priority` column doesn't exist; current behavior is fork-on-every-breach.
+
+**Known gaps.**
+- DB migration: add `priority` column to `metrics`, default `P2`.
+- Update `ALL_METRICS` registry in `metrics-snapshot.ts` to declare priority per metric.
+- Update `metric-alert-reactor` to gate on priority.
+
+---
+
+# Maintenance
+
+## Spec drift is itself a metric
+
+`v2.spec-coverage-rate` — fraction of claims in this doc that have a working measurement (metric or live test). Target 1.0; threshold < 0.8.
+
+A claim that's added without a measurement raises a flag. A measurement that breaks (stops emitting) raises a flag. The spec stays honest because the system observes its own coverage.
+
+## Adding or removing claims
+
+When a claim is added: this doc gets a new entry, AND the corresponding metric is added to `metrics-snapshot.ts`, AND the change is in one PR. No "I'll add the metric later."
+
+When a claim is removed: this doc loses the entry, AND the metric is deleted from the registry, AND the change is in one PR. No orphan metrics.
+
+When a claim's status changes (`untested` → `holds`, etc.): the entry is updated in the same PR that adds the measurement.
+
+## Ownership
+
+| Layer | Owner | Domain |
+|---|---|---|
+| Capability (C1–C10) | `may` | Cross-cutting outcomes |
+| Infrastructure (I1–I4) | `tech-lead` | Platform primitives |
+| Structural (S1–S8) | `arc` | Code shape and architecture |
+
+Each owner's heartbeat sees breaches in their layer's metrics first. If a capability metric is red, `may` investigates and may delegate down the ladder (`may → tech-lead → arc`). The diagnostic flow follows ownership.
+
+---
+
+# Status summary (2026-05-06)
+
+| Claim | Layer | Status |
+|---|---|---|
+| C1 self-direction | capability | untested |
+| C2 self-correction | capability | untested |
+| C3 memory | capability | violated (blocks on S7) |
+| C4 coordination | capability | untested |
+| C5 ownership | capability | untested |
+| C6 adaptation | capability | untested |
+| C7 boundedness | capability | partial |
+| C8 observability | capability | violated (blocks on S7) |
+| C9 resilience | capability | partial |
+| **C10 honesty** | capability | **untested — land first** |
+| I1 event bus | infra | partial |
+| I2 persistence | infra | **partial — write-failure invisible** |
+| I3 messages | infra | partial |
+| I4 sessions/runAgent | infra | partial |
+| S1 single agent-start | structural | partial |
+| S2 persist-before-dispatch | structural | holds |
+| S3 single message primitive | structural | holds |
+| S4 message asynchrony | structural | holds |
+| S5 convention over config | structural | untested |
+| **S6 runtime is glue** | structural | **violated (2,346 vs. 500 LOC)** |
+| S7 agent.decision event | structural | violated |
+| S8 metric.priority | structural | violated |
+
+**Score:** 3 holds / 8 partial / 5 violated / 8 untested out of 24 claims.
+
+The headline numbers:
+- Two of the three "holds" are tool-surface claims preserved by the cleanup commits.
+- Five "violated" claims have concrete remediation paths (S6 needs a decision; S7, S8, C3, C8 form one project chain).
+- All "untested" capability metrics depend on first landing the metrics in `metrics-snapshot.ts` — that's a single project that unblocks half the doc.
+
+# Implementation plan
+
+The work falls into four projects, dependency-ordered:
+
+## Project 1 — Spec instrumentation (highest leverage)
+
+Add the metrics from this spec to `metrics-snapshot.ts`. Specifically the C* and infra.* metrics whose data exists but isn't aggregated. Estimated 1–2 days.
+
+This converts most "untested" entries to either `holds` or `violated`. It's the single most important step — without it, the spec is aspirational.
+
+Priority order within this project (land C10 first):
+1. C10 honesty cross-checks (protects integrity of every other metric).
+2. C7 boundedness aggregates (cost, zombies, fork-loops).
+3. I1, I2 infra metrics (find any silent persistence failures we don't know about).
+4. C1, C2, C4, C5 capability rates.
+
+## Project 2 — Heartbeat agency event
+
+Land `agent.decision` (S7). Unblocks C3 and C8, and unblocks the new web UI. Estimated 1 day.
+
+## Project 3 — Metric priority and fork rule
+
+Land `metric.priority` (S8). Small DB migration + handler update. Estimated half a day.
+
+## Project 4 — manager.ts shrink
+
+The big one. S6. Refactor `manager.ts` from 2,346 LOC toward 500 LOC by pushing duplicated logic into pi-coding-agent or a shared wrapper. Estimated 3–5 days.
+
+This is the only project that requires an architectural decision before starting: confirm the 500-LOC ceiling is the target, not a softer compromise.
+
+## Order
+
+1, 2, 3 land in any order; they're small and independent. **Land 1 first** because it gives every other change a way to verify itself.
+
+4 lands last and is the heaviest. It's also the project most likely to surface unforeseen consequences. Doing it after 1–3 means we have instrumentation to detect regressions during the refactor.
+
+---
+
+# Out of scope
+
+- Performance benchmarks. v2 doesn't promise specific latency or throughput; performance is for observation, not spec.
+- Aesthetic code review. "This code is ugly" isn't a measurable claim.
+- The web UI itself. The UI consumes this spec (the metric dashboard *is* the spec dashboard) but doesn't change it.
+- Agent decision quality. The spec checks that decisions are *emitted* (S7); it doesn't judge whether they're *good*. Quality is for evaluator/judge agents, not the conformance system.
+
+---
+
+# Open questions
+
+1. **The 500-LOC ceiling for S6.** Is 500 right? The architecture doc said 50; that's pi-coding-agent doing everything. 500 is "thin wrapper with guards and event bridging." 2,500 is "we're reimplementing." Pick a number we'll defend.
+
+2. **Synchronous vs. async bus.** The bus is sync today: a slow subscriber blocks emit. Should it stay sync (simpler, predictable ordering) or move to async (better isolation, harder to reason about)? Open. Default: stay sync, add timeout instrumentation.
+
+3. **DbWriter swallowing failures.** Today persistence failures are caught and logged; the event proceeds. Should persistence be enforced (failure aborts emit)? Tradeoff: enforcement is correct but trades availability for consistency. Current behavior is the inverse. Document the choice explicitly either way.
+
+4. **What does "message picked up" mean?** For C4 / I3 metrics. Pragmatic v1: rendered in receiver's prompt. Stricter v2: receiver's decision references the message. First is easy; second requires `agent.decision` to land first.
+
+5. **Capability ownership.** Suggested `may` owns capability metrics. But `may` is the orchestrator and already heavily loaded. Should there be a dedicated `governance` agent for spec conformance? Defer; revisit if `may` becomes overloaded.
+
+6. **Scenario freshness for resilience.** C9's chaos-test result has a 7-day freshness threshold. Who runs the scenario? Suggest: cron job that fires it weekly, writes the result, the result-as-metric flows through the same registry. No special runner.
