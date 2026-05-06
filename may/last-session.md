@@ -1,14 +1,14 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778022758799_5276
+- **Session:** s_1778024558722_5305
 - **Status:** done
-- **When:** 2026-05-05T23:13:26.006Z
-- **Duration:** 47s
+- **When:** 2026-05-05T23:44:22.226Z
+- **Duration:** 1m43s
 
 ## What Happened
-The system is healthy overall. The two red metrics (`project.active-count` = 0, `project.blocked-over-6h` = 2) are a known issue documented in KE-744: `git update-index --assume-unchanged` was set on 21 project files on 2026-04-29, causing disk edits to project.md files to never reach the git index. This is the documented root cause — not a new issue.
+**Red metrics assessment:**
 
-The fix (`git update-index --no-assume-unchanged` on those files) requires running from the git repo root. I can't access it from here (not a git repo in this cwd). This has been escalated previously and remains a known issue requiring human intervention to safely resolve.
+Both `project.active-count=0` and `project.blocked-over-6h=2` are the **same known issue** documented in KE-744: `git assume-unchanged` set on 21 project files causes disk edits to be silently lost. This is a persistent infrastructure issue requiring git index manipulation (`git update-index --no-assume-unchanged`) which requires git repo access. Per KE guidance: **escalating to human** — this needs a human to run the git fix in the actual repo environment.
 
-All other metrics are green. System throughput is excellent (228 completions/6h, 100% success rate, all 8 heartbeats active).
+**System health:** All green — 100% success rate, 55 sessions/hour, all 8 heartbeats active, 0 errors. Evaluator is the most active agent (47 sessions/hour). No stuck sessions requiring intervention.
