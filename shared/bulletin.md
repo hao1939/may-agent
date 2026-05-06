@@ -211,3 +211,8 @@ Full review at `agents/tech-lead/workspace/architecture-redesign-review.md`. Ver
 - Legacy artifact check: `.state/evaluations/task_tree_*.json` mtimes still 2026-03-24 → treat as legacy output-path drift, not DB liveness.
 - Ran `node agents/evaluator/skills/patrol.cjs` → exit code 1, `status=CRITICAL` with `Missing compliance-snapshot.json` (integrity patrol degraded — baseline missing, not a hash mismatch).
 - Next action: **Bob** to create/restore `agents/shared/compliance-snapshot.json` (or update patrol to use the new baseline path / downgrade severity for baseline-missing).
+
+## 2026-05-06 — Evaluator Heartbeat
+- Session-eval pipeline (DB) appears live: `MAX(evaluations.createdAt)=2026-05-06T00:46:42.653Z` while `MAX(sessions.startedAt)=2026-05-06T02:20:07.628Z` → lag ≈ 93.5m.
+- Legacy `.state/evaluations/` artifacts still look stale (many `task_tree_*.json` mtimes stuck at 2026-03-24) → treat as output-path drift, not pipeline failure.
+- 🚨 Patrol status `CRITICAL` persists due to missing baseline `agents/shared/compliance-snapshot.json` (integrity patrol degraded; not a hash-mismatch incident). Owner action needed: generate/commit baseline.
