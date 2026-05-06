@@ -57,7 +57,7 @@ const ALL_METRICS: MetricDef[] = [
   { id: "project.iterations-24h", name: "Project iterations (24h)", owner: "may", type: "counter", target: 10, threshold: 0, unit: "count", alert_op: "<",
     config: { alert: { mode: "rate", min_rate: 1, per: "hour", stall_after_ms: 7200000 } } },
   { id: "project.blocked-rate-7d", name: "Project blocked rate (7d)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">" },
-  { id: "project.blocked-over-6h", name: "Projects blocked/waiting >6h", owner: "may", type: "gauge", target: 0, threshold: 3, unit: "count", alert_op: ">" },
+  { id: "project.blocked-over-6h", name: "Projects blocked/waiting >6h", owner: "may", type: "gauge", target: 2, threshold: 4, unit: "count", alert_op: ">" },
 ];
 
 /** Snapshot retention: keep 30 days of history */
