@@ -98,7 +98,7 @@ The agent just works. The infra triggers, frames, protects, records, and connect
                                     ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │                     SQLite (single queryable store)                   │
-│  metrics │ metric_snapshots │ sessions │ events │ messages            │
+│  metrics │ metric_snapshots │ sessions │ events │ projects            │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -112,37 +112,36 @@ Typed pub/sub. The backbone.
 
 ```typescript
 type SystemEvent =
-  | { type: "heartbeat"; agent: string; scheduledAt: number; firedAt: number }
+  | { type: "handler.started"; handler: string; agent: string }
+  | { type: "handler.completed"; handler: string; agent: string; durationMs: number }
+  | { type: "handler.failed"; handler: string; agent: string; error: string; durationMs: number }
   | { type: "metric.breach"; metric: Metric; value: number }
   | { type: "metric.recovered"; metric: Metric }
-  | { type: "metric.stalled"; metric: Metric }
   | { type: "session.start"; agent: string; id: string; trigger: string; task: string }
   | { type: "session.end"; agent: string; id: string; outcome: Outcome; summary: string }
-  | { type: "session.compacted"; agent: string; id: string; reason: string }
   | { type: "tool.executed"; agent: string; sessionId: string; tool: string; args: any }
   | { type: "message.created"; from: string; to: string; content: string; intent?: string; artifact?: string; priority?: "P0" | "P1" | "P2" | "P3" }
 
+// Heartbeats are NOT a bus event — cron fires handler functions directly.
+// The handler emits handler.started/completed events for observability.
+
 // Everything is just: event → handler
-bus.on("heartbeat", (e) => runAgent(e.agent, buildHeartbeatTask(e.agent), "heartbeat"));
+bus.on("session.end", (e) => updateMetrics(e));  // session results feed metric engine
 
 // Metric breach: only P0 (urgent) metrics fork directly. Everything else informs
-// the owning agent's next heartbeat via prompt context. The agent decides when
-// and how to act. See design/heartbeat-as-agency.md.
+// the owning agent's next heartbeat via prompt context.
 bus.on("metric.breach", (e) => {
   if (e.metric.priority === "P0") runAgent(e.metric.owner, buildBreachTask(e), "metric.breach");
-  // P1+: do nothing — breach is in DB, owning agent will see it at next heartbeat
+  // P1+: breach is in DB, owning agent will see it at next heartbeat
 });
 
-// Metric breach handlers are idempotent and deduped by (metric_id, status, window).
-// A metric already in breach does not trigger repeated sessions unless escalation policy says so.
+// Messages: persisted to events table (owner = to_agent), included in next heartbeat.
+// No separate messages table — events table with owner field serves as inbox.
+bus.on("message.created", (e) => { /* already persisted by bus.emit() */ });
 
-// Default message handler: ack + include in next heartbeat (convention over configuration)
-// Messages are NOT immediately triggering a new session — they wait for the next run.
-// Agents can register custom handlers to override this default.
-bus.on("message.created", (e) => db.markMessagePending(e));
-
-// Timers are just event sources
-registerTimer("may", "*/20 * * * *");  // emits heartbeat every 20min
+// Cron fires handlers directly (no heartbeat event on bus).
+// Handlers emit handler.started/completed/failed for observability.
+// registerTimer("may", 20min) → cron.startEntry() → handler fires → session runs
 
 // Event persistence is part of emit, not a subscriber.
 // Implemented inside bus.emit():
@@ -456,8 +455,7 @@ CREATE TABLE project_index (id, name, owner, status, path, last_synced_at);
 CREATE TABLE metrics (id, name, type, owner, config, current, status, project, description, created_at, updated_at);
 CREATE TABLE metric_snapshots (metric_id, value, measured_at);
 CREATE TABLE sessions (id, agent, task, trigger, outcome, summary, started_at, ended_at, turns, tokens_in, tokens_out, cost);
-CREATE TABLE events (id, type, agent, payload_json, created_at);
-CREATE TABLE messages (id, to_agent, from_agent, intent, artifact, content, created_at, read_at);
+CREATE TABLE events (id, type, source, owner, data, timestamp, urgency);
 CREATE TABLE project_index (id, name, owner, status, path, last_synced_at);
 ```
 
