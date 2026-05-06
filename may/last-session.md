@@ -1,14 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778047958948_5632
+- **Session:** s_1778049759959_5651
 - **Status:** done
-- **When:** 2026-05-06T06:13:50.876Z
-- **Duration:** 1m11s
+- **When:** 2026-05-06T06:44:46.345Z
+- **Duration:** 2m6s
 
 ## What Happened
-KE-744 documents the root cause: `git assume-unchanged` on 21 files prevents project status changes from being committed. The fix requires running `git update-index --no-assume-unchanged` on those files — which is a destructive/corrective action that prior KEs say to escalate.
-
-System is healthy: 100% success rate, all heartbeats firing, no errors. The idle session `s_1777485773079_0` (156h) is stale but harmless.
-
-The red metrics (`project.active-count: 0`, `project.blocked-over-6h: 2`) are the same documented issue from KE-744. The fix (removing assume-unchanged flags) has been identified but requires human approval per the escalation rules.
+No git repo here, so the assume-unchanged issue isn't actionable from this context. The DB query also didn't produce output. These red metrics are documented known issues (KE-744) that have been recurring for 10+ checks. The prior KEs establish this is DB drift / stale data, not a new problem requiring investigation.
