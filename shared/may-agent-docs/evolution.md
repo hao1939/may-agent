@@ -179,9 +179,9 @@ Tools are auto-discovered and hot-reloaded. No config changes needed — just cr
 
 ---
 
-## Level 6: Handler (reactive system behavior)
+## Level 6: Handler (reactive scheduled behavior)
 
-A handler is a persistent process that reacts to events or time. It doesn't need a workflow trigger — it runs autonomously.
+A handler is a stateless function that runs on a schedule or in response to events. The cron system calls it — the handler does its work and returns.
 
 **Where it lives:** `agents/<name>/handlers/<name>.ts`
 

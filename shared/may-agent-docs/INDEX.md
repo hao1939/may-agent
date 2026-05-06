@@ -36,7 +36,9 @@
 
 | Doc | What |
 |-----|------|
-| [design/agent-metrics.md](design/agent-metrics.md) | Per-agent role metrics with balanced pairs |
+| [design/agent-metrics.md](design/agent-metrics.md) | Metrics as system vitals; project metrics with balanced pairs |
+| [design/heartbeat-as-agency.md](design/heartbeat-as-agency.md) | Heartbeats as the moments agents are autonomous |
+| [design/webui.md](design/webui.md) | Web UI as a window into the life of the system |
 | [design/unified-events.md](design/unified-events.md) | Unified event taxonomy |
 | [design/telegram-notifications.md](design/telegram-notifications.md) | Notification routing via Telegram |
 

@@ -11,13 +11,15 @@
 ## SDK Equivalents
 
 ```typescript
-// call (sync)
+// call (sync — blocks until child finishes)
 const result = await sdk.runAgent("tech-lead", task);
 
-// fork (async)
-sdk.runAgent("tech-lead", task);  // don't await
+// fork (async — starts independent session, returns immediately)
+// Note: fork creates a new root session with originSessionId link back.
+// From handler code, use sdk.runAgent without await:
+sdk.runAgent("tech-lead", task);  // don't await = fire-and-forget
 
-// message (inbox)
+// message (async notification — delivered at next heartbeat)
 sdk.notify("bob", "Review this design");
 // emits: { type: "message.created", from: agent, to: "bob", content: "..." }
 ```

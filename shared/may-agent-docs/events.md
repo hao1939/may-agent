@@ -65,12 +65,16 @@ Events naturally expire via TTL or time window. Agents act or they don't.
 
 ## Deriving State
 
+Events support queryable state alongside mutable tables:
+
 | Question | Query |
 |----------|-------|
 | Handler last fire? | `MAX(timestamp) WHERE event_type = 'handler.started' AND handler = ?` |
 | Handler healthy? | `COUNT completed > COUNT failed` in window |
 | Agent work stats? | `sessions GROUP BY agent, status` |
-| Findings dedup? | `EXISTS WHERE event_type = 'agent.finding' AND finding = ?` |
+| Message dedup? | `EXISTS WHERE event_type = 'message.created' AND data LIKE ?` |
+
+Note: some state is maintained directly (metrics.current, sessions.status) for query efficiency. The events table serves as the audit trail and supports time-window queries that mutable tables cannot.
 
 ## Agent-to-Agent Messaging
 

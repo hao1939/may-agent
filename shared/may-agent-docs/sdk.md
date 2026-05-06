@@ -75,7 +75,7 @@ The SDK and agent tools are two sides of the same coin:
 | "Ask bob to do this" | `agents.fork("bob", task)` | `sdk.runAgent("bob", task)` |
 | "Something happened" | — | `sdk.emit("metric.breach", {...})` |
 | "Tell humans" | Telegram tool | `sdk.notify("human", msg)` |
-| "Tell bob" | `agents.notify("bob", msg)` | `sdk.notify("bob", msg)` |
+| "Tell bob" | `message({ to: "bob", content })` | `sdk.notify("bob", msg)` |
 | "I'm done" | `finish()` | `workflow.done(summary)` |
 | "I'm stuck" | `finish({ blocked })` | `sdk.escalate("may", reason)` |
 
@@ -94,7 +94,7 @@ SDK (canonical)
   ├── Agent tools wrap it    (agents.fork → sdk.runAgent)
   ├── Handlers call it       (ctx.sdk.runAgent)
   ├── Workflows call it      (ctx.sdk.runAgent)
-  └── Gym runner calls it    (adapter.runAgent)
+  └── Tests call it          (adapter.runAgent)
 ```
 
 **Litmus test:** if a new feature can't be expressed from both sides (tool AND SDK), the abstraction is wrong.

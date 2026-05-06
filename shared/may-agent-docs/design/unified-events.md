@@ -14,14 +14,14 @@ Add the missing event types to the typed union. Remove `DomainEvent`. Remove `as
 ## Event Types
 
 ```typescript
-// Add to SystemEvent union in event-bus.ts:
+// Current SystemEvent union in event-bus.ts:
 | { type: "handler.started"; handler: string; agent: string }
 | { type: "handler.completed"; handler: string; agent: string; durationMs: number }
 | { type: "handler.failed"; handler: string; agent: string; error: string; durationMs: number }
 | { type: "project.iteration"; project: string; iteration: number }
 | { type: "project.status_changed"; project: string; from: string; to: string }
-| { type: "session.completed"; sessionId: string; agent: string }
-| { type: "session.failed"; sessionId: string; agent: string; error?: string }
+| { type: "session.start"; sessionId: string; agent: string; task: string; kind?: string; parentSessionId?: string }
+| { type: "session.end"; sessionId: string; agent: string; status: string; summary?: string }
 ```
 
 ## Tables
