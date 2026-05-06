@@ -188,7 +188,6 @@ export function buildSessionInfo(
     workflowRunId: session.workflowRunId,
     stepLabel: session.stepLabel,
     opCount: session.opCount,
-    opBudget: session.opBudget,
     turnCount: session.turnCount,
     finishParams: outcome.finishParams ?? undefined,
     filesModified: [...session.filesModified],

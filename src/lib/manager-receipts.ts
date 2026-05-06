@@ -394,16 +394,3 @@ export function wrapToolsWithReceipts(tools: AgentTool[], sessionId: string, ctx
     },
   }));
 }
-
-/**
- * P85: Get current operation usage for a session.
- * Returns { opBudget, opCount } or null if session doesn't exist.
- */
-export function getOpUsage(
-  activeSessions: Map<string, ActiveSession>,
-  sessionId: string,
-): { opBudget: number; opCount: number } | null {
-  const session = activeSessions.get(sessionId);
-  if (!session) return null;
-  return { opBudget: session.opBudget, opCount: session.opCount };
-}

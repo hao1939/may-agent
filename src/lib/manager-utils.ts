@@ -154,9 +154,6 @@ export const INFRA_RETRY_BASE_DELAY_MS = 1000;
 /** Maximum identical failed tool calls before blocking. */
 export const TOOL_PIVOT_LIMIT = 3;
 
-/** @deprecated Turn limits removed — always 0 (unlimited). Watchdog handles runaway sessions. */
-export const RESTORED_MAX_TURNS_FALLBACK = 0;
-
 /** Consecutive error turns before injecting a stuck warning. */
 export const STUCK_WARNING_THRESHOLD = 3;
 
@@ -203,8 +200,6 @@ export interface ActiveSession {
   kind: SessionKind;
   /** Terminal status for archive/result reporting. Set before archival so the promise chain can read it after the session is removed from activeSessions. */
   archiveStatus?: "done" | "error" | "interrupted";
-  /** Operation budget: max state-changing tool calls allowed. 0 = unlimited. */
-  opBudget: number;
   /** Number of state-changing tool calls executed so far. */
   opCount: number;
   /** Total tool calls (including read-only). Used for shallow heartbeat detection. */
@@ -233,7 +228,7 @@ export interface ActiveSession {
   currentTurnErrors: number;
   /** Tool successes in the current turn (reset each assistant message). */
   currentTurnSuccesses: number;
-  /** @deprecated Turn budget removed. Field kept for type compat. */
+  /** Counter incremented by guards that redirect tool calls (e.g., RBE primer). */
   guardRedirectCount: number;
 }
 
@@ -261,8 +256,6 @@ export interface RunOptions {
    *  - "job": fire-and-forget, auto-resumed on restart
    *  - "call": parent-owned, not resumed independently */
   kind?: SessionKind;
-  /** @deprecated opBudget removed — always 0 (unlimited). Field kept for type compat. */
-  opBudget?: number;
   /** Order ID linking this session to a persisted human order (P209). */
   orderId?: string;
   /** Request ID linking this session to the unified request tracker. */
