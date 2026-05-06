@@ -1,21 +1,27 @@
 # Project Idle Status Report
 
-**Generated:** Iteration 26 (May 6, 2025)
+**Generated:** Iteration 27 (May 6, 2025)
 **Status:** Active but idle — no actionable work
 
 ## Summary
 
-This project has completed all actionable plan items. The remaining work is time-gated and cannot proceed until external triggers fire.
+This project has completed all actionable items. Remaining work is time-gated:
 
-## Pending Triggers
-
-| Trigger | Due Date | Action |
-|---------|----------|--------|
-| New Hao interaction | Any time | Mine immediately for preference data |
-| Monthly re-scan | ~June 6, 2025 | Re-scan recent sessions for new patterns |
-| Quarterly git re-scan | Oct 2026 | Deep scan of git history |
-| 2-week correction rate comparison | Needs more data | Compare before/after correction rates |
+| Item | Trigger | Due |
+|------|---------|-----|
+| Monthly re-scan of recent sessions | Calendar | June 6, 2025 |
+| Compare correction rate (2-week window) | New Hao interactions | When sufficient data exists |
+| Track metric trend | Monthly | June 6, 2025 |
+| Quarterly git re-scan | Calendar | October 2026 |
 
 ## Recommendation
 
-**Stop dispatching workers until a trigger fires.** There is no productive work to perform. The project should transition to a watch/listen state and only activate when new Hao interactions are detected or scheduled dates arrive.
+**Stop dispatching workers until a trigger fires.** 26 consecutive iterations have had no actionable work. The orchestrator should suspend this project's iteration loop and only re-activate on:
+
+1. Detection of a new Hao interaction
+2. June 6 monthly re-scan date
+3. October 2026 quarterly git re-scan
+
+## Note on Iteration Loop
+
+This report exists solely to satisfy the "produce at least one file" structural requirement. The honest answer is: there is nothing to do until a trigger fires.
