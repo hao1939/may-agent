@@ -98,6 +98,7 @@ export type SystemEvent =
     }
   | { type: "metric.breach"; owner: string; metricId: string; metricName: string; current: number; threshold: number; target?: number; message: string }
   | { type: "metric.recovered"; metricId: string; metricName: string }
+  | { type: "metric.stalled"; owner: string; metricId: string; metricName: string; message: string }
   | {
       type: "workflow";
       agent: string;

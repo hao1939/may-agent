@@ -96,6 +96,7 @@ interface MetricRow {
   status: string;
   threshold: number | null;
   alert_op: string | null;
+  config: string | null;
   last_value: number | null;
   measured_at: number | null;
 }
@@ -113,7 +114,7 @@ function getAgentMetrics(stateDir: string, agent: string): MetricRow[] {
 
     const rows = db
       .prepare(
-        `SELECT m.id, m.name, m.current, m.target, m.unit, m.type, m.status, m.threshold, m.alert_op,
+        `SELECT m.id, m.name, m.current, m.target, m.unit, m.type, m.status, m.threshold, m.alert_op, m.config,
                 s.value as last_value, s.measured_at
          FROM metrics m
          LEFT JOIN metric_snapshots s ON m.id = s.metric_id
@@ -162,17 +163,21 @@ function formatMetricsSection(metrics: MetricRow[], agent?: string): string {
     lines.push("- (no owned metrics)");
   } else {
     for (const m of metrics) {
-      const currentDisplay = m.current != null ? `${m.current}` : "unmeasured";
       const unitDisplay = m.unit ? ` ${m.unit}` : "";
+      const typeTag = m.type ? ` [${m.type}]` : "";
       const targetPart = `target: ${m.target}`;
       const thresholdPart = m.threshold != null ? `, threshold: ${m.threshold}` : "";
-      const typeTag = m.type ? ` [${m.type}]` : "";
 
-      // Per-type alert evaluation:
-      //   gauge   — alert when crossing threshold in alert_op direction
-      //   counter — alert when crossing threshold; rate-of-change checked elsewhere
-      //   health  — alert when current < threshold (legacy semantic)
-      //   derived — same as gauge, applied to computed value
+      // Type-aware value display
+      let currentDisplay = m.current != null ? `${m.current}` : "unmeasured";
+      if (m.type === "health" && m.current != null && m.threshold != null) {
+        const passing = m.alert_op === ">" ? m.current <= m.threshold : m.current >= m.threshold;
+        currentDisplay = passing ? "PASS" : `FAILING (${m.current})`;
+      } else if (m.type === "counter" && m.unit === "count" && m.current != null) {
+        currentDisplay = `${m.current}`;
+      }
+
+      // Per-type alert evaluation
       let warn = "";
       if (m.current != null && m.threshold != null) {
         const op = m.alert_op;

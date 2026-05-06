@@ -456,6 +456,8 @@ export function getDb(persistDir: string): SqliteDb {
   }
   // Session stepLabel column (unified session model — workflow steps tracked via sessions table)
   try { db.exec("ALTER TABLE sessions ADD COLUMN stepLabel TEXT"); } catch { /* already exists */ }
+  // Typed metrics: config JSON column for type-specific measurement + alert rules
+  try { db.exec("ALTER TABLE metrics ADD COLUMN config TEXT"); } catch { /* already exists */ }
 
   dbCache.set(persistDir, db);
   return db;
