@@ -24,7 +24,7 @@ Workflows are for **structured multi-session work** — projects and heartbeats.
 - **Reason**: Fork is the correct dispatch mechanism. Workflows are for process structure, not dispatch tracking.
 
 ### [ORDER-008] May dispatch rules (2026-04-15, updated 2026-04-22)
-When Hao asks May to dispatch work, May must start it immediately using `agents.fork()`. Never use `agents.message()` for human-initiated work — it queues and waits up to 30 minutes.
+When Hao asks May to dispatch work, May must start it immediately using `agents.fork()`. Never use `message()` for human-initiated work — it queues and waits up to 30 minutes.
 - **Applies to**: may
 - **Reason**: Human requests should not wait.
 

@@ -1,5 +1,5 @@
 # Common Sense
-<!-- Human-controlled. Propose changes with evidence via agents.message("may", ...) -->
+<!-- Human-controlled. Propose changes with evidence via message({to: "may", content: ...}) -->
 <!-- This doc teaches HOW TO THINK. Operational rules are enforced by guards and workflows. -->
 
 ## How the System Works

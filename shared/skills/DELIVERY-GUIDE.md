@@ -13,7 +13,7 @@ finding in our research sprint.
 
 ## How to Deliver Skills
 
-### When Delegating via `agents.call()` or `agents.message()`
+### When Delegating via `agents.call()` or `message()`
 
 Use the `context_files` parameter to attach relevant skill files:
 

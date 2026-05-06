@@ -56,7 +56,7 @@ Plus two generated sections:
 |---------|------|--------|
 | "I am Bob, the system architect" | SOUL.md | Identity — who you are |
 | "Design principles for may-agent" | DOMAIN.md | Domain — what you know |
-| "Use `agents.call` for sync, `agents.message` for async" | TOOLS.md | Tool usage — how to act |
+| "Use `agents.call` for sync, `message` for async" | TOOLS.md | Tool usage — how to act |
 | "Always check git status before committing" | LESSONS.md | Learned from experience |
 | "Team: Bob=architect, May=coordinator, ..." | INDEX.md | Curated context |
 | "File safety: read before write, check size" | INDEX.md | Distilled skill summary |
