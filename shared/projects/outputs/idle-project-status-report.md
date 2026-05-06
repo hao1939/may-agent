@@ -1,18 +1,17 @@
 # Project Idle Status Report
 
-**Generated:** Iteration 13  
-**Status:** Active but idle — no actionable work
+**Generated:** Iteration 16 (15 consecutive no-op iterations prior)
 
-## Completed Work
-All plan items that can be completed without new data are done.
+## Status: BLOCKED — No Actionable Work
 
-## Pending Time-Gated Items
+All completable plan items are done. Remaining items are time-gated:
 
-| Item | Trigger | Due |
-|------|---------|-----|
-| Monthly re-scan | Calendar | ~June 6 |
-| 2-week correction rate comparison | New Hao interactions | When available |
+| Item | Trigger | Earliest Date |
+|------|---------|---------------|
+| Monthly re-scan | Calendar | June 6, 2025 |
+| 2-week correction rate comparison | New Hao interactions | Unknown |
 | Quarterly git re-scan | Calendar | Oct 2026 |
 
 ## Recommendation
-**Stop dispatching workers until a trigger fires.** This project has had 12 consecutive no-op iterations. The next actionable moment is either a new Hao interaction or the June 6 monthly re-scan date.
+
+**Stop dispatching workers until a trigger fires.** This project should be marked as "idle/waiting" in the orchestrator to prevent further no-op iterations.
