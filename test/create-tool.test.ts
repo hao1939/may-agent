@@ -153,7 +153,7 @@ describe("createAgentsTool()", () => {
     // It now returns a fixed deprecation error regardless of inputs. Callers should
     // use notify({ agent, message }) or agents.fork({ agent, task }) instead.
     it("returns deprecation error regardless of inputs", async () => {
-      const deprecation = "agents.message action has been removed";
+      const deprecation = "agents.message and agents.send actions have been removed";
 
       // With full config
       const tool = manager.createAgentsTool({

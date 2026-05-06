@@ -69,7 +69,6 @@ export type SystemEvent =
   | { type: "project.iteration"; project: string; iteration: number }
   | { type: "project.status_changed"; project: string; from: string; to: string }
   | { type: "notification"; agent: string; text: string }
-  | { type: "message_created"; from: string; to: string; task: string; requestId: string }
   | {
       type: "message.created";
       from: string;

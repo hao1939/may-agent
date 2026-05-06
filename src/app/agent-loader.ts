@@ -209,13 +209,9 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
         break;
       }
 
-      case "message-only":
-      case "notify":
       case "message": {
         // v2: `message` is the canonical async inter-agent communication tool.
-        // `notify` and `message-only` are deprecated aliases that route to the
-        // SAME tool (createMessageTool). The send-tool.ts wiring is no longer
-        // referenced and will be removed in the next cleanup cycle.
+        // (Replaced legacy `notify` and `message-only` presets in v0.3.)
         tools.push(
           createMessageTool({
             agentName: config.name,
@@ -475,8 +471,6 @@ const VALID_TOOL_PRESETS = new Set([
   "checkpoint",
   "system-status",
   "system_status",
-  "message-only",
-  "notify",
   "message",
   "cite-source",
   "cite_source",

@@ -24,7 +24,7 @@ describe("event-native: events table", () => {
 
     // Insert events as immutable facts
     db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?,?,?,?,?)",
-      ["agent.notification", "coach", "may", JSON.stringify({ task: "review skill results" }), Date.now()]);
+      ["message.created", "coach", "may", JSON.stringify({ from: "coach", to: "may", content: "review skill results" }), Date.now()]);
     db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?,?,?,?,?)",
       ["handler.completed", null, null, JSON.stringify({ handler: "metrics-snapshot", agent: "may", durationMs: 5000 }), Date.now()]);
 
@@ -35,7 +35,7 @@ describe("event-native: events table", () => {
     ).all("may", twoHoursAgo) as any[];
 
     expect(inbox.length).toBe(1);
-    expect(inbox[0].event_type).toBe("agent.notification");
+    expect(inbox[0].event_type).toBe("message.created");
   });
 
   test("handler health derived from paired events", () => {

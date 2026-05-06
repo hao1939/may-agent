@@ -122,7 +122,7 @@ describe("V2 agents tool", () => {
   // It now returns a fixed deprecation error regardless of inputs. Callers should
   // use notify({ agent, message }) or agents.fork({ agent, task }) instead.
   it("message action returns deprecation error regardless of inputs", async () => {
-    const deprecation = "agents.message action has been removed";
+    const deprecation = "agents.message and agents.send actions have been removed";
     manager.register({
       name: "coder",
       description: "Writes code",
@@ -228,7 +228,7 @@ describe("V2 agents tool", () => {
     });
 
     const result = await callTool(tool, { action: "message", agent: "checkpoint", message: "save state" });
-    expect(result.error).toContain("agents.message action has been removed");
+    expect(result.error).toContain("agents.message and agents.send actions have been removed");
   });
 
   it("call allows when target is an agent, not a tool", async () => {

@@ -40,13 +40,14 @@ describe("message tool", () => {
     expect((await call(tool, { to: "dev" })).error).toMatch(/required/);
   });
 
-  it("emits both message.created and agent.notification (back-compat)", async () => {
+  it("emits exactly one message.created event (no legacy dual-emit)", async () => {
     const { tool, events } = setup();
     await call(tool, { to: "dev", content: "please implement X" });
 
     const types = events.map((e) => e.type);
     expect(types).toContain("message.created");
-    expect(types).toContain("agent.notification");
+    expect(types).not.toContain("agent.notification");
+    expect(types.filter((t) => t === "message.created")).toHaveLength(1);
   });
 
   it("default priority is P2; P0 triggers immediate heartbeat", async () => {
