@@ -93,6 +93,8 @@ Legacy `.state/evaluations/` artifacts: newest mtime observed 2026-04-29; `task_
 
 Last-24h coverage: `sessions(status='done')`=1053 vs `evaluations`=52 → coverage ≈4.9% (very low; likely eval scope/narrow sampling rather than full outage).
 
+**Last run**: 2026-05-06 17:53Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617`; `MAX(sessions.startedAt)=1778089960785` → eval lag ≈66.4m at check time; `sessions_after_last_eval`=17 (pipeline appears live but behind current session volume).
+
 **Previous run**: 2026-05-03 01:13Z — DB canonical check: `MAX(evaluations.createdAt)=1777768954999` (2026-05-03T00:42:34Z; eval pipeline live). `MAX(sessions.createdAt)=1777768954999` (2026-05-03T00:42:34Z). Investigation note: bob’s depressed average score (~0.408) appears strongly explained by `shallow_session` tagging (50% of bob evals); when shallow-tagged, avg score ≈0.20 vs non-shallow ≈0.617. Similar pattern for coach/optimizer (shallow avg ≈0.20).
 
 Ran `monitor-session.cjs --running`: 1 alert (`STALL` amy `s_1777626616591_0` idle 1158m; recommended action: kill). Ran `patrol.cjs`: CRITICAL due to missing `agents/shared/compliance-snapshot.json` baseline (patrol degraded, not a mismatch event).
