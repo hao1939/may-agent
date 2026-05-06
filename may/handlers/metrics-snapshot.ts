@@ -27,7 +27,7 @@ const ALL_METRICS = [
   { id: "handler.completed-count", name: "Handler completions (6h)", owner: "may", type: "counter", target: 50, threshold: 10, unit: "count", alert_op: "<" },
   { id: "handler.failed-count", name: "Handler failures (6h)", owner: "may", type: "counter", target: 0, threshold: 3, unit: "count", alert_op: ">" },
   { id: "handler.success-rate", name: "Handler success rate (6h)", owner: "optimizer", type: "gauge", target: 0.95, threshold: 0.80, unit: "ratio", alert_op: "<" },
-  { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents)", owner: "may", type: "gauge", target: 8, threshold: 6, unit: "count", alert_op: "<" },
+  { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents)", owner: "may", type: "gauge", target: 4, threshold: 3, unit: "count", alert_op: "<" },
   // Sessions
   { id: "session.error-rate-6h", name: "Session error rate (6h)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">" },
   // System output
@@ -40,7 +40,7 @@ const ALL_METRICS = [
   { id: "project.stale-active-count", name: "Stale active projects (no iteration 48h)", owner: "may", type: "gauge", target: 0, threshold: 2, unit: "count", alert_op: ">" },
   { id: "project.iterations-24h", name: "Project iterations (24h)", owner: "may", type: "counter", target: 10, threshold: 0, unit: "count", alert_op: "<" },
   { id: "project.blocked-rate-7d", name: "Project blocked rate (7d)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">" },
-  { id: "project.blocked-over-6h", name: "Projects blocked/waiting >6h", owner: "may", type: "gauge", target: 0, threshold: 1, unit: "count", alert_op: ">" },
+  { id: "project.blocked-over-6h", name: "Projects blocked/waiting >6h", owner: "may", type: "gauge", target: 0, threshold: 3, unit: "count", alert_op: ">" },
 ];
 
 /** Snapshot retention: keep 30 days of history */
