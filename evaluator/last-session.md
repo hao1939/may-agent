@@ -1,12 +1,7 @@
-# Last Session
-<!-- Auto-generated at session end. Do not edit manually. -->
+# Evaluator — Last Session
 
-- **Session:** s_1778165878623_2
-- **Status:** success
-- **When:** 2026-05-07T15:03:31.519Z
+- Completed aftermath review for `s_1778162188926_1` (scout heartbeat) based on transcript evidence.
+- Findings: session was interrupted after only 2 tool calls (read heartbeat, query_db metrics); no artifact or inbox check.
+- Escalated to May to rerun and investigate runner/workflow interruption if recurring.
 
-## What Happened
-Reviewed transcript for s_1778162140594_0 and wrote aftermath report capturing the interrupted/non-productive outcome, evidence, likely root cause, and escalation note. Sent FYI escalation to may about ongoing session.start re-emits and pending storm rows.
-
-## Files Modified
-- agents/evaluator/workspace/aftermath/s_1778162140594_0.md
+Artifact written (ignored by git): `agents/evaluator/workspace/aftermath/s_1778162188926_1.md`.
