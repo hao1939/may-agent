@@ -206,3 +206,7 @@ Interpretation: eval pipeline appears stalled since 2026-05-06T16:46Z while sess
 - If missing: treat as "LLM eval disabled or not implemented" and open a tracked item to either (a) add it back, or (b) remove/rename docs that imply it exists.
 
 **Last check**: 2026-04-29 — `.state/may.db` has **no** tables matching `*llm*` (query: `sqlite_master WHERE name LIKE '%llm%'` returned empty). Latest evaluator pipeline DB write still healthy: `MAX(evaluations.createdAt)=1777498157440` (2026-04-29T21:29:17Z).
+
+---
+
+**Heartbeat note**: 2026-05-07 07:23Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617`; `MAX(sessions.endedAt)=1778138492876` → eval lag ≈875m (~14.6h). Last-24h volume: `sessions(endedAt>=cutoff)`=552 vs `evaluations(createdAt>=cutoff)`=38 → coverage ≈6.9%. Sessions since last eval timestamp: 199. Interpretation: eval pipeline appears stalled; escalate to May/tech-lead to inspect `evaluate-session-llm` liveness and event-consumer throughput/timeouts.
