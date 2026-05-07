@@ -51,8 +51,8 @@ This is not a one-off doc cleanup. It is a tracking project whose first slice is
 
 ### Phase 3 — Visibility Output (Revised)
 
-- [ ] Create a script `agents/shared/scripts/conformance-report.ts` that queries the DB and generates a static HTML report showing: heartbeat timeline, session traces, and spec conformance metrics.
-- [ ] The report is viewable by opening the HTML file directly (no server needed).
+- [x] Create a script `agents/shared/scripts/conformance-report.ts` that queries the DB and generates a static HTML report showing: heartbeat timeline, session traces, and spec conformance metrics.
+- [x] The report is viewable by opening the HTML file directly (no server needed).
 - [ ] Wire the report generation into the metrics-snapshot handler so it regenerates on each heartbeat cycle.
 
 ## References
