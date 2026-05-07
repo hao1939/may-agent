@@ -2,21 +2,7 @@
  * Tests for workflows/master-worker.ts — imported directly for coverage.
  * Tests pure functions: extractDecision, diffSnapshots, orchestratorSystemPrompt, workerSystemPrompt.
  */
-import { describe, it, expect, vi } from "vitest";
-
-// Mock fs/path deps to avoid side effects on import
-vi.mock("node:fs", async () => {
-  const actual = await vi.importActual<typeof import("node:fs")>("node:fs");
-  return {
-    ...actual,
-    readFileSync: vi.fn().mockReturnValue(""),
-    writeFileSync: vi.fn(),
-    appendFileSync: vi.fn(),
-    existsSync: vi.fn().mockReturnValue(false),
-    readdirSync: vi.fn().mockReturnValue([]),
-    statSync: vi.fn().mockReturnValue({ mtimeMs: 0 }),
-  };
-});
+import { describe, it, expect } from "vitest";
 
 import {
   extractDecision,
