@@ -1,6 +1,14 @@
-# v2 Implementation Notes
+# v2 Implementation Notes (Historical — as of v0.2)
 
-**Status**: Phases 1–5 implemented on branch `v2`, tagged `v0.2-pre-v2-migration` (rollback point).
+> **⚠️ Historical document.** Written during v0.2 migration. The system has since evolved:
+> - `SubagentManager` was rewritten (not just wrapped)
+> - `notify` and `agents.fork` were removed (not just deprecated)
+> - 13 agents are active (not 5)
+> - We're past v0.7, not at the v0.2 tag
+>
+> This doc preserves what Phase 1-5 actually shipped. For current architecture, see `architecture.md`.
+
+**Status**: Historical. Phases 1–5 implemented on branch `v2`, tagged `v0.2-pre-v2-migration` (rollback point).
 
 This doc describes what actually shipped against the current `../architecture.md`
 and the original v2 proposal history.

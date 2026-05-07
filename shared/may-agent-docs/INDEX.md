@@ -19,9 +19,8 @@
 | [heartbeat.md](heartbeat.md) | Heartbeat: per-agent workflows, data loaders, auto-generation |
 | [metrics.md](metrics.md) | Metrics pipeline: schema, snapshots, alerts, health metrics |
 | [projects.md](projects.md) | Project system: format, lifecycle, handler, shared location |
-| [agents.md](agents.md) | Agent cooperation: call/fork/message, session tree, context |
+| [agents.md](agents.md) | Agent cooperation: call/message, session tree, context |
 | [runtime.md](runtime.md) | Runtime internals: input routing, event loop, LLM call structure |
-| [growth.md](growth.md) | Agent growth: philosophy and approach (agent-scope, not infra) |
 | [evolution.md](evolution.md) | **How agents extend abilities**: lesson → skill → workflow → guard → handler |
 
 ## Manual (How-To Guides)
@@ -49,7 +48,8 @@
 
 | Doc | What |
 |-----|------|
-| [proposals/v2-spec.md](proposals/v2-spec.md) | v2 conformance properties P1–P10 with verification mechanisms |
+| [proposals/v2-spec.md](proposals/v2-spec.md) | v2 conformance spec: C1–C10 conventions, I1–I4 infra, S1–S8 system properties |
+| [proposals/v2-implementation-notes.md](proposals/v2-implementation-notes.md) | Historical: what shipped in v0.2 migration |
 | [proposals/master-worker.md](proposals/master-worker.md) | Persistent worker/reviewer sessions with followUp() |
 | [proposals/escalation.md](proposals/escalation.md) | Escalation and recovery system |
 

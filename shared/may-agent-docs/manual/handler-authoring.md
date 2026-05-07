@@ -45,11 +45,9 @@ Via `ctx.sdk` (preferred):
 - `sdk.escalate(target, reason)` — escalation
 - `sdk.paths` — system directories
 
-Via `ctx` (legacy, still available):
-- `ctx.manager` — SubagentManager (for advanced session control)
+Via `ctx` (handler-specific):
 - `ctx.agentName` — the agent that owns this handler
 - `ctx.triggerNow(name)` — fire another handler immediately
-- `ctx.loadAllSessionMetas()` — all session metadata
 
 ## Hot Reload
 

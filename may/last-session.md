@@ -1,9 +1,9 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778172897466_1
+- **Session:** s_1778172950518_2
 - **Status:** success
-- **When:** 2026-05-07T16:55:24.859Z
+- **When:** 2026-05-07T16:56:52.123Z
 
 ## What Happened
-Alert is legitimate: may has 0 active projects (all are complete/done/closed/pending-review). Notified may to activate or create a project. Choosing upgrade_or_escalate since the owner needs to take action.
+Audited 5 open metric alerts — none have alert_judged events. Root cause is project.active-count=0. Nudged may (P1) to judge alerts, activate a project, and assign owner to v2.spec-coverage-rate.
