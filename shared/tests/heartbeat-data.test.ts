@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
-import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 
 import {
   loadMetrics,
@@ -91,15 +91,26 @@ describe("loadMetrics", () => {
       prepare: (sql: string) => ({
         all: (..._args: any[]) => {
           if (sql.includes("metric_snapshots")) return [];
-          if (sql.includes("metrics")) return [{ id: "v2.spec-coverage-rate", explicitOwner: null, projectOwner: "bob", current: 0.5, target: 1, threshold: 0.8, alert_op: "<", source_query: null, source_command: null }];
+          if (sql.includes("metrics")) return [{ id: "example.coverage-rate", explicitOwner: null, projectOwner: "bob", current: 0.5, target: 1, threshold: 0.8, alert_op: "<", source_query: null, source_command: null }];
           return [];
         },
         get: () => null,
       }),
     });
     const ctx = makeCtx({ db });
-    expect(loadMetrics(ctx, "bob")).toContain("v2.spec-coverage-rate");
+    expect(loadMetrics(ctx, "bob")).toContain("example.coverage-rate");
     expect(loadMetrics(ctx, "arc")).toBe("");
+  });
+
+  it("keeps v2 spec coverage explicitly owned by may while the buildout is pending review", () => {
+    const source = readFileSync(resolve(__dirname, "../../may/handlers/metrics-snapshot.ts"), "utf8");
+
+    expect(source).toContain(
+      '{ id: "v2.spec-coverage-rate", name: "v2 spec measurement coverage", owner: "may", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P2" }',
+    );
+    expect(source).not.toContain(
+      '{ id: "v2.spec-coverage-rate", name: "v2 spec measurement coverage", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P2" }',
+    );
   });
 
   it("shows consecutive breach escalation", () => {
