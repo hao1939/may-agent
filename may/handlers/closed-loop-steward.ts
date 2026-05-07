@@ -306,11 +306,18 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     ].join("\n");
 
     try {
-      await ctx.sdk.runAgent("may", task, { source: "closed-loop-steward" });
+      ctx.sdk.runAgent("may", task, { source: "closed-loop-steward" })
+        .then(() => {
+          ctx.sdk.log("info", `[closed-loop-steward] May session completed for ${alerts.length} alert(s), ${failures.length} delivery failure(s).`);
+        })
+        .catch((err) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          ctx.sdk.log("info", `[closed-loop-steward] May session failed: ${msg.slice(0, 200)}`);
+        });
       ctx.sdk.log("info", `[closed-loop-steward] Dispatched may with ${alerts.length} alert(s), ${failures.length} delivery failure(s).`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      ctx.sdk.log("info", `[closed-loop-steward] Failed: ${msg.slice(0, 200)}`);
+      ctx.sdk.log("info", `[closed-loop-steward] Failed to dispatch may: ${msg.slice(0, 200)}`);
     }
   };
 };
