@@ -327,6 +327,7 @@
     "intervalMs": 300000,
     "handler": "metrics-snapshot",
     "agent": "may",
+    "on": ["trigger.metrics-snapshot"],
     "enabled": true,
     "description": "Measure handler health metrics every 5 minutes."
   },
