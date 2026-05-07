@@ -5,7 +5,8 @@
 | Action | Behavior | When to use |
 |--------|----------|-------------|
 | `call` | Sync — blocks, returns result | Need the result to continue |
-| `message` | Fire-and-forget — inbox pickup | Background, not time-sensitive |
+| `fork` | Async — returns sessionId, you continue | Background work, don't need result now |
+| `message` | Fire-and-forget — inbox pickup | FYI notification, not time-sensitive |
 
 ## SDK And Handler Equivalents
 
@@ -27,12 +28,13 @@ sdk.message("bob", "Review this design");
 ## Session Tree
 
 ```
-call creates children under the same root:
+call creates children; fork creates independent sessions:
 
   Root (May heartbeat)
     ├── call("tech-lead", task)         ← child (blocks)
     │     └── call("coder", task)       ← grandchild
-    └── call("qa", review)             ← child
+    ├── call("qa", review)             ← child
+    └── fork("scout", task)            ← independent (non-blocking)
 ```
 
 ## Context Passing
@@ -44,9 +46,10 @@ call creates children under the same root:
 
 | Situation | Pattern |
 |-----------|---------|
-| Need answer before continuing | `sdk.runAgent()` |
+| Need answer before continuing | `call` (or `sdk.runAgent()`) |
 | Multiple agents in parallel | `Promise.all([sdk.runAgent(...), ...])` |
-| FYI notification | `sdk.message()` |
+| Background work, check later | `fork` (agents tool only, no SDK wrapper) |
+| FYI notification | `message` (or `sdk.message()`) |
 | Run a multi-step flow | `sdk.runWorkflow()` |
 
 ## Result Structure

@@ -55,6 +55,15 @@ interface Decision {
   detail: string;
 }
 
+function safeLastText(session: { lastText?: () => string } | null | undefined): string {
+  try {
+    const text = session?.lastText?.();
+    return typeof text === "string" ? text : "";
+  } catch {
+    return "";
+  }
+}
+
 export function extractDecision(text: string): Decision {
   const trimmed = text.trim();
   const firstLine = trimmed.split("\n")[0] || "";
@@ -337,7 +346,7 @@ ${journalContent.slice(-3000)}
       } catch {}
     }
 
-    let decision = extractDecision(orchestrator.lastText());
+    let decision = extractDecision(safeLastText(orchestrator));
     ctx.log(`[plan] Decision: ${decision.status.toUpperCase()}`);
 
     // Treat "unknown" as CONTINUE for the planning phase — orchestrator gave guidance but didn't use the keyword
@@ -369,7 +378,7 @@ ${journalContent.slice(-3000)}
       ctx.log(`[work] Iteration ${iteration}/${maxIterations} starting...`);
       const iterationId = `iter-${iteration}`;
       iterationTimer.startIteration(iterationId);
-      const guidance = orchestrator.lastText();
+      const guidance = safeLastText(orchestrator);
 
       // Estimate task complexity and set appropriate timeout
       const complexity = estimateComplexity(guidance);
@@ -543,7 +552,8 @@ WRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Y
       ctx.log(`[work] Iteration ${iteration} done`);
 
       // Track budget consumption (approximate tokens from response length)
-      const approxTokens = Math.ceil(worker!.lastText().length / 4);
+      const workerTextAfterPrompt = safeLastText(worker);
+      const approxTokens = Math.ceil(workerTextAfterPrompt.length / 4);
       iterBudget.consume(approxTokens);
       const budgetStatus = iterBudget.check();
       if (budgetStatus.exceeded) {
@@ -568,7 +578,7 @@ WRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Y
         timestamp: Date.now(),
         task: guidance.slice(0, 500),
         toolsCalled: ["worker.prompt"],
-        partialResults: { workerResponseLength: worker!.lastText().length },
+        partialResults: { workerResponseLength: workerTextAfterPrompt.length },
         completed: false,
       });
 
@@ -650,7 +660,7 @@ WRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Y
 
       // ── Record cost/usage metrics ──
       try {
-        const outputLen = worker!.lastText()?.length ?? 0;
+        const outputLen = workerTextAfterPrompt.length;
         recordUsage({
           agent: (ctx as any).agentName ?? 'worker',
           workflow: 'master-worker',
@@ -661,7 +671,7 @@ WRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Y
       } catch { /* non-critical */ }
 
       // ── Journal ──
-      const workerText = worker!.lastText();
+      const workerText = safeLastText(worker);
       const workerSummary = workerText.length > 1500 ? workerText.slice(0, 1500) + "..." : workerText;
       appendFileSync(journalFile, `\n### Iteration ${iteration} — ${new Date().toISOString()}\n**Worker**: ${workerSummary.slice(0, 500)}\n`, "utf-8");
 
@@ -705,7 +715,7 @@ Then provide your decision and guidance for the next iteration.`;
         }
       }
 
-      const orchestratorText = orchestrator.lastText();
+      const orchestratorText = safeLastText(orchestrator);
 
 
       // Mark new comments as read

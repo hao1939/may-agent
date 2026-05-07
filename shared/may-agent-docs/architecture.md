@@ -106,7 +106,7 @@ The agent just works. The infra triggers, frames, protects, records, and connect
 
 ## Components
 
-### 1. Event Bus (~100 LOC)
+### 1. Event Bus
 
 Typed pub/sub. The backbone.
 
@@ -156,7 +156,7 @@ bus.onAny((e) => consoleRenderer.render(e));   // Console output
 
 ---
 
-### 2. Metric Engine (~500 LOC)
+### 2. Metric Engine
 
 Typed metrics with type-specific measurement, alerting, and display.
 
@@ -225,7 +225,7 @@ async function measure(metric: Metric): Promise<void> {
 
 ---
 
-### 3. Agent Runs — `pi-coding-agent` + Glue (~50 LOC)
+### 3. Agent Runs — `pi-coding-agent` + Glue
 
 **Target: no custom agent runtime loop.** `pi-coding-agent` owns the LLM/tool/session loop.
 
@@ -303,7 +303,7 @@ function buildPrompt(config: AgentConfig): string {
 
 ---
 
-### 5. Workflows (~150 LOC)
+### 5. Workflows
 
 Agent-defined step sequences with **two step types**: agent steps (LLM) and function steps (JS, no LLM).
 
@@ -509,14 +509,14 @@ v2 must preserve:
 |-----------|------|
 | Event bus | Backbone — typed pub/sub, all events persisted |
 | Metric engine | Typed measurement + alerting → signals for agent judgment |
-| Agent runs (glue) | Wire pi-coding-agent to bus, ~50 LOC |
+| Agent runs (glue) | Wire pi-coding-agent to bus |
 | Prompt assembly | common-sense + AGENTS.md + runtime facts → system prompt |
 | Workflows | Agent steps + function steps, crash-safe |
 | Messages | Async inter-agent communication |
 | Projects | Context scope for metrics and work |
 | Storage | Files (editable) + SQLite (queryable) |
 
-~1,500 LOC core skeleton. Realistic production target: 8k–12k LOC (guards, Telegram, error handling, edge cases). The goal is fewer execution paths, not minimum LOC.
+The goal is fewer execution paths, not minimum LOC.
 
 ---
 
@@ -574,6 +574,6 @@ Items where current implementation differs from this architecture:
 | ~~Heartbeat trigger~~ | ✅ Done | Cron emits `heartbeat` event on bus; handler subscribes |
 | ~~Typed metrics~~ | ✅ Done | Typed gauge/counter/health/derived with per-metric config |
 | ~~Guard mechanism~~ | ✅ Done | Already middleware (BeforeToolCallHook + composeGuards). Per-agent config deferred to runtime migration. |
-| ~~Agent runtime~~ | ✅ Done | SubagentManager rewritten (530 LOC, uses pi-agent-core Agent directly) |
+| ~~Agent runtime~~ | ✅ Done | SubagentManager rewritten (uses pi-agent-core Agent directly) |
 
 See `v2-migration-plan.md` and `v2-implementation-notes.md` for migration history.
