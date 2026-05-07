@@ -37,10 +37,8 @@ import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } 
 
 // Re-export utilities that other modules import from manager
 export { generateId, formatDuration, truncateForPrompt, computeToolArgsKey, isToolError, getAgentDir, INFRA_RETRY_MAX } from "./manager-utils.js";
-export { extractFinishParams, isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
+export { extractFinishParams } from "./manager-retry.js";
 export { classifyError } from "./classify-error.js";
-export { buildTrace } from "./manager-trace.js";
-export { signToolOutput, verifyToolOutput, createVerifyReceiptTool, wrapToolsWithReceipts } from "./manager-receipts.js";
 export type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
 export type { RegisteredAgent } from "./manager-utils.js";
 
