@@ -59,6 +59,11 @@ function hasUncheckedTaskItems(content: string): boolean {
   return /^\s*[-*+]\s+\[\s\]\s+\S/m.test(content);
 }
 
+function hasCompleteTaskList(content: string): boolean {
+  const taskItems = content.match(/^\s*[-*+]\s+\[[ xX]\]\s+\S.*$/gm) ?? [];
+  return taskItems.length > 0 && !hasUncheckedTaskItems(content);
+}
+
 function guardDoneWithPendingProjectWork(
   decision: Decision,
   projectFile: string,
@@ -84,6 +89,28 @@ function guardDoneWithPendingProjectWork(
   ].join("\n");
   ctx.log(`[${phase}] DONE refused: project.md still has unchecked task-list items`);
   return { status: "continue", detail };
+}
+
+function coerceUnknownToDoneWhenNoPendingProjectWork(
+  decision: Decision,
+  projectFile: string,
+  ctx: WorkflowContext,
+  phase: "plan" | "review",
+): Decision {
+  if (decision.status !== "unknown") return decision;
+
+  let currentContent = "";
+  try {
+    currentContent = readFileSync(projectFile, "utf-8");
+  } catch {
+    return decision;
+  }
+
+  if (!hasCompleteTaskList(currentContent)) return decision;
+
+  const detail = "DONE\n\nProject has task-list items and all are checked. No immediate operation for this workflow pass; keep the project active for future metric/event checks.";
+  ctx.log(`[${phase}] Unknown decision treated as DONE: project.md has no unchecked task-list items`);
+  return { status: "done", detail };
 }
 
 function safeLastText(session: { lastText?: () => string } | null | undefined): string {
@@ -379,8 +406,13 @@ ${journalContent.slice(-3000)}
       } catch {}
     }
 
-    let decision = guardDoneWithPendingProjectWork(
-      extractDecision(safeLastText(orchestrator)),
+    let decision = coerceUnknownToDoneWhenNoPendingProjectWork(
+      guardDoneWithPendingProjectWork(
+        extractDecision(safeLastText(orchestrator)),
+        projectFile,
+        ctx,
+        "plan",
+      ),
       projectFile,
       ctx,
       "plan",
@@ -765,8 +797,13 @@ Then provide your decision and guidance for the next iteration.`;
       if (newComments) {
         try { appendFileSync(discussionFile, `\n---read @iter${iteration}---\n`, "utf-8"); } catch {}
       }
-      decision = guardDoneWithPendingProjectWork(
-        extractDecision(orchestratorText),
+      decision = coerceUnknownToDoneWhenNoPendingProjectWork(
+        guardDoneWithPendingProjectWork(
+          extractDecision(orchestratorText),
+          projectFile,
+          ctx,
+          "review",
+        ),
         projectFile,
         ctx,
         "review",
