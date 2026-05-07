@@ -1,10 +1,7 @@
 # Architect Heartbeat Log
 
-## 2025-01-07 - Session Note
+## 2025-01-07 — Session Note
 
-No active tasks assigned. Agent is idle and available for architecture review or design work.
+**Status**: Idle — no active tasks assigned.
 
-### Status
-- **Active tasks**: None
-- **Pending reviews**: None
-- **Available for**: Architecture analysis, system design, friction analysis
+No pending architecture reviews or design tasks in queue. Ready for work when delegated.
