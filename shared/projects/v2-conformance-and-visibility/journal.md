@@ -15,3 +15,18 @@ Completed Phase 0 cleanup:
 - Fixed stale/contradictory spec claims around C2 (`metric.recovered`), C3/C8 references to S7, S6 runtime glue LOC, S7 heartbeat workflow path, and S8 metric priority.
 
 Next action: implement the smallest computed conformance signal: `v2.manager-loc` and `v2.runtime-glue-loc`, then add `v2.spec-coverage-rate`.
+
+Completed first Phase 1 implementation slice:
+- Added built-in computed metrics `v2.manager-loc`, `v2.runtime-glue-loc`, `v2.spec-coverage-rate`, and `capability.status-reality-mismatch-count`.
+- Wired built-in metric priorities and defaulted legacy/null metric priorities to `P2`.
+- Added `metric.recovered` emission when an open metric alert resolves.
+- Updated `metric-alert-reactor` so only `P0` breaches fork immediately; lower-priority alerts remain visible through heartbeat metric context.
+- Added the legacy DB migration for `metrics.priority`.
+
+Verification:
+- `timeout 20s bun run check` passes after fixing an isolated `context-learn` type drift in the root check path.
+- `timeout 20s bun run typecheck` passes in `agents/`.
+- `timeout 20s bun vitest --run test/agent-loader.test.ts test/cron-tool.test.ts test/v2-events.test.ts` passes: 42 tests.
+- `timeout 35s bun run test` passes: 155 files, 2108 passed, 1 skipped.
+
+Next action: start Phase 2 with `agent.decision` and `context.read`.

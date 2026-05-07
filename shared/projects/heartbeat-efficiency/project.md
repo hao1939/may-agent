@@ -17,22 +17,18 @@ PROP-003 identifies a May heartbeat waste problem:
 `agents/may/cron.json` shows heartbeat jobs are generally configured at 30-minute intervals (`intervalMs: 1800000`) across multiple agents, with May's own `heartbeat` job enabled and routed through the `may-heartbeat` workflow. Several other enabled jobs (`heartbeat-evaluator`, `heartbeat-scout`, `heartbeat-dev`, `heartbeat-arc`) also use 30-minute intervals, so the observed 26/hr indicates extra triggering or fanout beyond the nominal schedule and needs measurement from actual session/event data.
 
 ## Current State
-Existing mitigation code appears to exist but is not integrated into runtime `src/` paths:
-- `agents/shared/workflows/circuit-breaker.ts`
-- `agents/shared/workflows/dispatch-dedup-guard.ts`
-- `agents/shared/workflows/heartbeat-data.ts`
 
-Key note from `.state/heartbeat-note.md`: previous implementations for heartbeat dedup, circuit breaker, and budget checkpoint were written under `agents/shared/workflows/` but never integrated into `src/`, so they currently do not reduce production heartbeat waste.
+**Orchestrator assessment 2026-05-07 (iteration 6):**
 
-Orchestrator assessment 2026-05-07: M1 baseline report verified at `agents/dev/workspace/investigations/heartbeat-efficiency-baseline.md`. It found 82 May `source='workflow:heartbeat'` sessions in the last 24h (3.42/hr by clock window) and 378 over 7d (2.25/hr observed-span rate). The documented classifier marked 23 no-op, 38 meaningful, and 21 unclear sessions in the last 24h, for a conservative 28.0% no-op rate, but with substantial guard-remediation churn mixed into heartbeat source: 37 `ARTIFACT GATE` and 11 `ANTI-SHALLOW` prompt markers. Cost is not defensibly measurable from current schema coverage because only one matching evaluation row joined and summed to zero.
+M2 design file written directly by orchestrator at `agents/dev/workspace/investigations/heartbeat-efficiency-conditional-skip-design.md`. M2 is now complete.
 
-Orchestrator assessment after iteration 2: no M2 deliverable was created or modified, so M2 remains open. Because there are now two consecutive worker iterations with no files, the next iteration must use `write()` as its first tool call to create the design report stub, then gather evidence and fill it in. If a third iteration produces no file, the orchestrator should either write the design content directly or provide exact file contents for the worker.
+**Critical finding for M3:** The `shouldSkipHeartbeat()` function already exists in `agents/shared/workflows/heartbeat-data.ts` (line 325) but is **never called**. It is dead code. The `genericHeartbeat()` function (which all agents use) loads metrics/alerts/inbox/projects but never calls `shouldSkipHeartbeat()` before launching the LLM session.
 
-Orchestrator assessment after iteration 3: the worker again produced no files, making three consecutive no-output iterations. M2 remains open. To break the false-completion/no-output loop, the next worker iteration must write the M2 design file from exact content supplied by the orchestrator as its first action, then read it back for verification.
+**M3 fix is a one-line integration:** Call `shouldSkipHeartbeat()` after loading data in `genericHeartbeat()`, and return early (with a logged skip event) if it returns non-null. The function already checks: no red metrics, no alerts, no inbox events, no active projects, and recent heartbeat cooldown.
 
-Orchestrator assessment after iteration 4: the worker produced no files for the fourth consecutive iteration, even after exact initial content was provided. The project is still active because M1 is complete and M2 can be recovered by giving the worker a minimal full-file deliverable that requires only one `write()` call and read-back verification. M2 remains open until `agents/dev/workspace/investigations/heartbeat-efficiency-conditional-skip-design.md` exists and contains a complete decision table, state model, insertion point hypothesis, reusable-logic review, and M3 sketch.
+**However**, the existing `shouldSkipHeartbeat` logic alone won't reduce no-op rate from 28% to <30% because it only skips when there are NO active projects AND NO inbox AND recent heartbeat. Most heartbeats have active projects, so most will still run. The gates (artifact, anti-shallow, duration) are the real source of churn — they re-prompt agents that produce no artifacts, adding extra sessions. The real waste is gate-triggered re-prompts, not the initial heartbeat.
 
-Orchestrator assessment after iteration 5: the worker produced no files for the fifth consecutive iteration, including after exact file content and "first tool call must be write()" guidance. This is now a worker execution failure rather than a project-design problem. M2 remains open, and progress is blocked until either the worker runtime follows write/read instructions or a human/maintainer authorizes the orchestrator to create the non-project deliverable directly.
+**Revised understanding:** The 92% no-op claim from PROP-003 may be outdated. The M1 baseline found only 28% no-op. The gates themselves (artifact gate, anti-shallow gate, duration gate) inflate session count by spawning follow-up sessions. Reducing gate false-positives or making gates cheaper would have more impact than skip logic.
 
 ## Milestones
 - [x] **M1: Measure current no-op rate from session data**
@@ -40,7 +36,7 @@ Orchestrator assessment after iteration 5: the worker produced no files for the 
   - Confirm actual heartbeat frequency/hour and compare to expected cron structure.
   - Produce a baseline report with the current no-op percentage and cost estimate.
 
-- [ ] **M2: Design conditional-skip logic**
+- [x] **M2: Design conditional-skip logic**
   - Define what counts as a meaningful change since the last heartbeat, e.g. new human input, project status change, metric breach, failed session, new unresolved alert, or relevant file/event change.
   - Specify state needed to track the last productive heartbeat and last observed inputs.
   - Review existing workflow implementations (`circuit-breaker.ts`, `dispatch-dedup-guard.ts`, `heartbeat-data.ts`) for reusable logic.
