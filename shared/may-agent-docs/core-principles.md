@@ -50,7 +50,7 @@ Everything else — skills, knowledge, project history, metrics, design docs —
 
 This is deliberately minimal. Dumping context produces agents that skim. Discovery produces agents that understand.
 
-**Known gap:** Session continuity is unsolved — agents start fresh each session with zero memory of prior work.
+Continuity across sessions comes from project journals, heartbeat reads, and `last-session.md` — not from memory injection.
 
 **Elaborated in:** [sessions.md](sessions.md), [heartbeat.md](heartbeat.md)
 
