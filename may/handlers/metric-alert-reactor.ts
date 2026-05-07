@@ -198,15 +198,32 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
         }
       }
 
-      // Dedup: check if owner already has a recent session for this metric
+      // Dedup: suppress only active metric handling or completed handling that
+      // emitted a judgment. A finished session without metric.alert_judged did
+      // not close the loop and must not block a still-breaching alert.
       const recentSession = db.prepare(
-        `SELECT sessionId FROM sessions
+        `SELECT sessionId, status, startedAt FROM sessions
          WHERE agent = ? AND source = ? AND startedAt > ?`
-      ).get(owner, `metric-alert-reactor:${metricId}`, Date.now() - DEDUP_WINDOW_MS) as { sessionId: string } | null;
+      ).get(owner, `metric-alert-reactor:${metricId}`, Date.now() - DEDUP_WINDOW_MS) as { sessionId: string; status: string; startedAt: number } | null;
 
       if (recentSession) {
-        ctx.sdk.log("info", `[metric-alert-reactor] Skipping ${metricId} — ${owner} already has recent session ${recentSession.sessionId}`);
-        return;
+        if (recentSession.status === "running") {
+          ctx.sdk.log("info", `[metric-alert-reactor] Skipping ${metricId} — ${owner} already has running session ${recentSession.sessionId}`);
+          return;
+        }
+        const judgment = db.prepare(
+          `SELECT id FROM events
+           WHERE event_type = 'metric.alert_judged'
+             AND json_extract(data, '$.metricId') = ?
+             AND timestamp >= ?
+           ORDER BY timestamp DESC
+           LIMIT 1`
+        ).get(metricId, recentSession.startedAt) as { id: number } | null;
+        if (judgment) {
+          ctx.sdk.log("info", `[metric-alert-reactor] Skipping ${metricId} — ${owner} already judged it in recent session ${recentSession.sessionId}`);
+          return;
+        }
+        ctx.sdk.log("info", `[metric-alert-reactor] Re-running ${metricId} — recent session ${recentSession.sessionId} ended without judgment`);
       }
     } catch {
       if (priority !== "P0") {

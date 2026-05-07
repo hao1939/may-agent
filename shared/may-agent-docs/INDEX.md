@@ -54,7 +54,7 @@
 | [proposals/v2-migration-plan.md](proposals/v2-migration-plan.md) | Historical: original v2 migration plan |
 | [proposals/v2-implementation-notes.md](proposals/v2-implementation-notes.md) | Historical: what shipped in v0.2 migration |
 | [proposals/v2-review-2026-05-06.md](proposals/v2-review-2026-05-06.md) | Dated snapshot: v2 review checkpoint |
-| [proposals/coordination.md](proposals/coordination.md) | Proposal: formalizing stigmergy as architectural pattern |
+| [proposals/stigmergic-coordination.md](proposals/stigmergic-coordination.md) | Proposal: formalize stigmergic coordination as a first-class pattern alongside `message` |
 
 ## Methodology
 
