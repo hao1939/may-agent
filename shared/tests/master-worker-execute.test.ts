@@ -341,6 +341,33 @@ Maintain the loop
     expect(ctx.log).toHaveBeenCalledWith(expect.stringContaining("treating as CONTINUE"));
   });
 
+  it("treats unclear planning as DONE when all task-list items are complete", async () => {
+    setupProjectFs({
+      projectContent: `# Project
+**Status**: active
+**Max Iterations**: 1
+**Owner**: test
+
+## Goal
+Maintain the loop
+
+## Plan
+- [x] Verify current state
+`,
+    });
+    const ctx = createMockCtx("project: agents/shared/projects/test");
+    ctx.createSession = vi.fn(async ({ label }: any) => {
+      if (label === "orchestrator") return createMockSession(["Looks fine. No immediate work."]);
+      return createMockSession(["work"]);
+    });
+
+    await execute(ctx as any);
+
+    expect(ctx.log).toHaveBeenCalledWith(expect.stringContaining("Unknown decision treated as DONE"));
+    expect(updateProjectStatus).toHaveBeenCalledWith(expect.any(String), "active", undefined);
+    expect(ctx.done).toHaveBeenCalledWith(expect.stringContaining("done"));
+  });
+
   it("runs work-review loop with CONTINUE then stops", async () => {
     setupProjectFs({ maxIter: "2" });
     const ctx = createMockCtx("project: agents/shared/projects/test");
@@ -424,6 +451,39 @@ Maintain the loop
 
     await execute(ctx as any);
 
+    expect(updateProjectStatus).toHaveBeenCalledWith(expect.any(String), "active", undefined, 1);
+    expect(updateProjectStatus).not.toHaveBeenCalledWith(expect.any(String), "closed", expect.anything(), expect.any(Number));
+  });
+
+  it("treats unclear review as DONE when all task-list items are complete", async () => {
+    setupProjectFs({
+      maxIter: "2",
+      projectContent: `# Project
+**Status**: active
+**Max Iterations**: 2
+**Owner**: test
+
+## Goal
+Maintain the loop
+
+## Plan
+- [x] Verify current state
+`,
+    });
+    const ctx = createMockCtx("project: agents/shared/projects/test");
+    ctx.createSession = vi.fn(async ({ label }: any) => {
+      if (label === "orchestrator") {
+        return createMockSession([
+          "CONTINUE\n\nCheck current state",
+          "Looks fine. No immediate work.",
+        ]);
+      }
+      return createMockSession(["Worker output"]);
+    });
+
+    await execute(ctx as any);
+
+    expect(ctx.log).toHaveBeenCalledWith(expect.stringContaining("Unknown decision treated as DONE"));
     expect(updateProjectStatus).toHaveBeenCalledWith(expect.any(String), "active", undefined, 1);
     expect(updateProjectStatus).not.toHaveBeenCalledWith(expect.any(String), "closed", expect.anything(), expect.any(Number));
   });
