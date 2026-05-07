@@ -155,7 +155,6 @@ Available presets:
 | `background-exec` | run long processes in background |
 | `claude-code` / `gemini-cli` / `codex` | delegate to external coding agents |
 | `finish` | structured session completion |
-| `cite-source` | source citation (placeholder — not yet implemented) |
 | `query_db` | Core read-only DB query tool. Loaded for every agent and backed by runtime `getDb()` path resolution. |
 
 ### Custom Local Tools (agents/<name>/tools/)

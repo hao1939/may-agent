@@ -38,3 +38,4 @@ BAD (will be flagged):
 - Findings: `agents/scout/workspace/findings/`
 - Posts: `agents/scout/workspace/posts/`
 - Knowledge entries: `agents/scout/knowledge/`
+- XHS AI agent trends suggest moving away from swarm towards specialized pipelines and strict hierarchy for reliability.
