@@ -13,6 +13,8 @@ import { readFileSync, readdirSync, existsSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import { checkCircuitBreaker, recordOutcome } from "./circuit-breaker.js";
 import { shouldDispatch, recordDispatch, recordOutcome as dedupRecordOutcome, cleanup as dedupCleanup } from "./dispatch-dedup-guard.js";
+import { listConfiguredAgents, resolveMetricOwner } from "../lib/metric-ownership.ts";
+import { parseProjectMeta } from "../lib/project-health.ts";
 
 /**
  * Find knowledge-base entries that mention a given metric id.
@@ -54,12 +56,24 @@ function getAgentsRoot(ctx: WorkflowContext): string {
   return ctx.agentsRoot || join(process.cwd(), "agents");
 }
 
+function loadMetricRowsForAgent(ctx: WorkflowContext, agent: string): any[] {
+  const db = ctx.getDb() as any;
+  const configuredAgents = listConfiguredAgents(getAgentsRoot(ctx));
+  const rows = db.prepare(
+    `SELECT m.id, m.current, m.target, m.threshold, m.alert_op, m.source_query, m.source_command,
+            m.owner as explicitOwner, p.owner as projectOwner
+     FROM metrics m
+     LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
+       AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
+     WHERE m.status = 'active'`
+  ).all() as any[];
+  return rows.filter((row) => resolveMetricOwner(row.id, configuredAgents, row.explicitOwner, row.projectOwner) === agent);
+}
+
 export function loadMetrics(ctx: WorkflowContext, agent: string): string {
   try {
     const db = ctx.getDb() as any;
-    const rows = db.prepare(
-      "SELECT id, current, target, threshold, alert_op, source_query, source_command FROM metrics WHERE owner = ? AND status = 'active'"
-    ).all(agent) as any[];
+    const rows = loadMetricRowsForAgent(ctx, agent);
     if (!rows.length) return "";
     const agentsRoot = getAgentsRoot(ctx);
     return rows.map((r: any) => {
@@ -116,11 +130,12 @@ export function loadProjects(ctx: WorkflowContext, agent: string): string {
         const pFile = join(sharedProjDir, entry.name, "project.md");
         if (!existsSync(pFile)) continue;
         const content = readFileSync(pFile, "utf-8");
-        const owner = content.match(/^\*\*Owner\*\*:\s*(\S+)/m)?.[1] ?? "?";
+        const meta = parseProjectMeta(content);
+        const owner = meta.owner ?? "?";
         if (owner !== agent) continue; // only show owned projects
-        const status = content.match(/^\*\*Status\*\*:\s*(\S+)/m)?.[1] ?? "?";
+        const status = meta.status ?? "?";
         if (status === "done" || status === "complete") continue;
-        const health = content.match(/^\*\*Health\*\*:\s*(.+)/m)?.[1] ?? "";
+        const health = meta.health ?? "";
         const msX = (content.match(/^- \[x\]/gim) || []).length;
         const msT = msX + (content.match(/^- \[ \]/gm) || []).length;
         const resumeCond = content.match(/Resume.*?:(.+)/i)?.[1]?.trim() ?? "";
@@ -135,11 +150,16 @@ export function loadProjects(ctx: WorkflowContext, agent: string): string {
 export function loadAlerts(ctx: WorkflowContext, agent: string): string {
   try {
     const db = ctx.getDb() as any;
-    const rows = db.prepare(
-      "SELECT a.metric_id, a.message FROM metric_alerts a " +
-      "JOIN metrics m ON m.id = a.metric_id " +
-      "WHERE a.resolved_at IS NULL AND m.owner = ?"
-    ).all(agent) as any[];
+    const configuredAgents = listConfiguredAgents(getAgentsRoot(ctx));
+    const rows = (db.prepare(
+      `SELECT a.metric_id, a.message, m.owner as explicitOwner, p.owner as projectOwner
+       FROM metric_alerts a
+       JOIN metrics m ON m.id = a.metric_id
+       LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
+         AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
+       WHERE a.resolved_at IS NULL`
+    ).all() as any[])
+      .filter((row) => resolveMetricOwner(row.metric_id, configuredAgents, row.explicitOwner, row.projectOwner) === agent);
     if (!rows.length) return "";
     return rows.map((r: any) => `⚠️ ${r.metric_id}: ${r.message}`).join("\n");
   } catch { return ""; }
@@ -224,9 +244,7 @@ export function runRedMetricCommands(ctx: WorkflowContext, agent: string): strin
   try {
     const { execSync } = require("node:child_process");
     const db = ctx.getDb() as any;
-    const rows = db.prepare(
-      "SELECT id, current, target, threshold, alert_op, source_command, source_query FROM metrics WHERE owner = ? AND status = 'active'"
-    ).all(agent) as any[];
+    const rows = loadMetricRowsForAgent(ctx, agent);
 
     const redMetrics = rows.filter((r: any) => {
       if (r.threshold == null || r.current == null) return false;

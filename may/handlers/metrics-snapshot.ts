@@ -11,12 +11,13 @@
  * in the generic section near the end of the handler.
  * ─────────────────────────────────────────────────────────────────────────────
  */
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { exec, execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.ts";
 import type { CronEntry } from "../../shared/agent-sdk.ts";
+import { listConfiguredAgents, resolveMetricOwner } from "../../shared/lib/metric-ownership.ts";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -38,6 +39,7 @@ const execFileAsync = promisify(execFile);
 interface MetricDef {
   id: string; name: string; owner?: string; type: "gauge" | "counter" | "health" | "derived";
   target: number; threshold: number; unit: string; alert_op: "<" | ">";
+  project?: string;
   priority?: "P0" | "P1" | "P2" | "P3";
   config?: Record<string, unknown>;
 }
@@ -74,7 +76,7 @@ const ALL_METRICS: MetricDef[] = [
   // v2 conformance / visibility
   { id: "v2.manager-loc", name: "Manager runtime LOC", owner: "arc", type: "gauge", target: 1000, threshold: 1500, unit: "loc", alert_op: ">", priority: "P2" },
   { id: "v2.runtime-glue-loc", name: "Runtime glue LOC", owner: "arc", type: "gauge", target: 1500, threshold: 2000, unit: "loc", alert_op: ">", priority: "P2" },
-  { id: "v2.spec-coverage-rate", name: "v2 spec measurement coverage", owner: "arc", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P1" },
+  { id: "v2.spec-coverage-rate", name: "v2 spec measurement coverage", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P1" },
   { id: "capability.status-reality-mismatch-count", name: "Status/reality mismatches", owner: "may", type: "health", target: 0, threshold: 3, unit: "count", alert_op: ">", priority: "P0",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
 ];
@@ -98,49 +100,6 @@ function countFileLines(path: string): number {
   } catch {
     return 0;
   }
-}
-
-function listConfiguredAgents(agentsRoot: string): string[] {
-  try {
-    return readdirSync(agentsRoot, { withFileTypes: true })
-      .filter(entry => entry.isDirectory() && !entry.name.startsWith("_") && entry.name !== "shared" && entry.name !== "gym")
-      .map(entry => {
-        const agentJson = join(agentsRoot, entry.name, "agent.json");
-        if (!existsSync(agentJson)) return null;
-        try {
-          const config = JSON.parse(readFileSync(agentJson, "utf8")) as { name?: string; disabled?: boolean };
-          if (config.disabled) return null;
-          return config.name ?? entry.name;
-        } catch {
-          return entry.name;
-        }
-      })
-      .filter((name): name is string => Boolean(name));
-  } catch {
-    return [];
-  }
-}
-
-function resolveMetricOwner(
-  metricId: string,
-  configuredAgents: Set<string>,
-  explicitOwner?: string | null,
-  projectOwner?: string | null,
-): string {
-  if (explicitOwner?.trim()) return explicitOwner.trim();
-  if (projectOwner?.trim()) return projectOwner.trim();
-  const prefix = metricId.split(".")[0];
-  return configuredAgents.has(prefix) ? prefix : "may";
-}
-
-function getProjectOwner(db: any, project: string | null | undefined): string | null {
-  if (!project?.trim()) return null;
-  const row = db.prepare(
-    `SELECT owner FROM projects
-     WHERE id = ? OR path = ? OR name = ?
-     LIMIT 1`
-  ).get(project, project, project) as { owner?: string | null } | null;
-  return row?.owner?.trim() || null;
 }
 
 function countSpecClaimCoverage(projectRoot: string, metricIds: Set<string>): { covered: number; total: number; rate: number } {
@@ -198,50 +157,53 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const metricColumns = new Set((db.prepare("PRAGMA table_info(metrics)").all() as any[]).map(c => c.name));
     const hasMetricConfigColumn = metricColumns.has("config");
     const hasMetricPriorityColumn = metricColumns.has("priority");
+    const hasMetricProjectColumn = metricColumns.has("project");
     const configByMetricId = new Map(ALL_METRICS.map(m => [m.id, m.config ?? null]));
-    const configuredAgents = new Set(listConfiguredAgents(ctx.agentsRoot));
+    const configuredAgents = listConfiguredAgents(ctx.agentsRoot);
 
     // ── Ensure metric rows exist ─────────────────────────────────────
 
     for (const m of ALL_METRICS) {
-      const owner = resolveMetricOwner(m.id, configuredAgents, m.owner);
+      const owner = m.owner?.trim() || null;
+      const project = m.project?.trim() || null;
       const configJson = m.config ? JSON.stringify(m.config) : null;
       const priority = m.priority ?? "P2";
-      if (hasMetricConfigColumn) {
-        db.run(
-          `INSERT OR IGNORE INTO metrics (id, name, owner, current, target, threshold, unit, type, status, speed, alert_op, config, created_at, updated_at)
-           VALUES (?, ?, ?, NULL, ?, ?, ?, ?, 'active', 'fast', ?, ?, ?, ?)`,
-          [m.id, m.name, owner, m.target, m.threshold, m.unit, m.type, m.alert_op, configJson, now, now]
-        );
-        db.run(
-          `UPDATE metrics
-           SET name = ?, owner = ?, target = ?, threshold = ?, unit = ?, type = ?, status = 'active', speed = 'fast', alert_op = ?, config = COALESCE(?, config)
-           WHERE id = ?`,
-          [m.name, owner, m.target, m.threshold, m.unit, m.type, m.alert_op, configJson, m.id]
-        );
-      } else {
-        db.run(
-          `INSERT OR IGNORE INTO metrics (id, name, owner, current, target, threshold, unit, type, status, speed, alert_op, created_at, updated_at)
-           VALUES (?, ?, ?, NULL, ?, ?, ?, ?, 'active', 'fast', ?, ?, ?)`,
-          [m.id, m.name, owner, m.target, m.threshold, m.unit, m.type, m.alert_op, now, now]
-        );
-        db.run(
-          `UPDATE metrics
-           SET name = ?, owner = ?, target = ?, threshold = ?, unit = ?, type = ?, status = 'active', speed = 'fast', alert_op = ?
-           WHERE id = ?`,
-          [m.name, owner, m.target, m.threshold, m.unit, m.type, m.alert_op, m.id]
-        );
+      const insertColumns = ["id", "name", "owner", "current", "target", "threshold", "unit", "type", "status", "speed", "alert_op"];
+      const insertValues: unknown[] = [m.id, m.name, owner, null, m.target, m.threshold, m.unit, m.type, "active", "fast", m.alert_op];
+      if (hasMetricProjectColumn) {
+        insertColumns.push("project");
+        insertValues.push(project);
       }
+      if (hasMetricConfigColumn) {
+        insertColumns.push("config");
+        insertValues.push(configJson);
+      }
+      insertColumns.push("created_at", "updated_at");
+      insertValues.push(now, now);
+      db.run(
+        `INSERT OR IGNORE INTO metrics (${insertColumns.join(", ")})
+         VALUES (${insertColumns.map(() => "?").join(", ")})`,
+        insertValues,
+      );
+
+      const updateAssignments = ["name = ?", "owner = ?", "target = ?", "threshold = ?", "unit = ?", "type = ?", "status = 'active'", "speed = 'fast'", "alert_op = ?"];
+      const updateValues: unknown[] = [m.name, owner, m.target, m.threshold, m.unit, m.type, m.alert_op];
+      if (hasMetricProjectColumn) {
+        updateAssignments.push("project = ?");
+        updateValues.push(project);
+      }
+      if (hasMetricConfigColumn) {
+        updateAssignments.push("config = COALESCE(?, config)");
+        updateValues.push(configJson);
+      }
+      updateValues.push(m.id);
+      db.run(
+        `UPDATE metrics SET ${updateAssignments.join(", ")} WHERE id = ?`,
+        updateValues,
+      );
       if (hasMetricPriorityColumn) {
         db.run("UPDATE metrics SET priority = ? WHERE id = ?", [priority, m.id]);
       }
-    }
-    for (const row of db.prepare("SELECT id, owner, project FROM metrics WHERE status = 'active' AND (owner IS NULL OR trim(owner) = '') AND project IS NOT NULL AND trim(project) != ''").all() as Array<{ id: string; owner?: string | null; project: string }>) {
-      const projectOwner = getProjectOwner(db, row.project);
-      if (projectOwner) db.run("UPDATE metrics SET owner = ? WHERE id = ?", [projectOwner, row.id]);
-    }
-    for (const row of db.prepare("SELECT id, owner FROM metrics WHERE status = 'active' AND (owner IS NULL OR trim(owner) = '')").all() as Array<{ id: string; owner?: string | null }>) {
-      db.run("UPDATE metrics SET owner = ? WHERE id = ?", [resolveMetricOwner(row.id, configuredAgents, row.owner), row.id]);
     }
     if (hasMetricPriorityColumn) {
       db.run("UPDATE metrics SET priority = 'P2' WHERE priority IS NULL");
@@ -440,7 +402,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
                AND json_extract(e.data, '$.sessionId') = s.sessionId
            )`, now - 24 * 3600000);
 
-      const configuredAgents = listConfiguredAgents(ctx.agentsRoot);
+      const configuredAgents = [...listConfiguredAgents(ctx.agentsRoot)];
       let agentsWithoutHeartbeat = 0;
       for (const agent of configuredAgents) {
         const recentHeartbeat = count(
@@ -495,7 +457,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const configSelect = hasMetricConfigColumn ? ", config" : "";
       const metrics = db.prepare(
         `SELECT m.id, m.name,
-                COALESCE(NULLIF(trim(m.owner), ''), NULLIF(trim(p.owner), ''), 'may') as owner,
+                m.owner as explicitOwner, p.owner as projectOwner,
                 m.current, m.target, m.threshold, m.alert_op, m.type${configSelect ? ", m.config" : ""}
          FROM metrics m
          LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
@@ -503,7 +465,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
          WHERE m.status = 'active' AND m.current IS NOT NULL AND m.threshold IS NOT NULL`
       ).all() as any[];
 
+      const evaluateThresholdBreach = (metric: { current: number; threshold: number; alert_op: string | null }) =>
+        metric.alert_op === ">" || metric.alert_op === "above"
+          ? metric.current > metric.threshold
+          : metric.current < metric.threshold;
+
       for (const m of metrics) {
+        const owner = resolveMetricOwner(m.id, configuredAgents, m.explicitOwner, m.projectOwner);
         const registryConfig = configByMetricId.get(m.id) ?? null;
         const config = hasMetricConfigColumn && m.config ? JSON.parse(m.config) : registryConfig;
         const alertConfig = config?.alert;
@@ -511,6 +479,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
         // ── Type-specific breach evaluation ──
         let breached = false;
+        let thresholdBreached = false;
+        let rateBreached = false;
+        let ratePer: number | null = null;
+        let rateLimit: number | null = null;
+        let rateDirection: "below" | "above" | null = null;
         let stallDetected = false;
 
         if (metricType === "health" && alertConfig?.mode === "consecutive_failures") {
@@ -538,10 +511,18 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             const deltaValue = lastTwo[0].value - lastTwo[1].value;
             if (deltaMs > 0) {
               const perHour = (deltaValue / deltaMs) * 3600000;
-              const ratePer = alertConfig.per === "day" ? perHour * 24 : perHour;
+              ratePer = alertConfig.per === "day" ? perHour * 24 : perHour;
 
-              if (alertConfig.min_rate != null && ratePer < alertConfig.min_rate) breached = true;
-              if (alertConfig.max_rate != null && ratePer > alertConfig.max_rate) breached = true;
+              if (alertConfig.min_rate != null && ratePer < alertConfig.min_rate) {
+                rateBreached = true;
+                rateLimit = alertConfig.min_rate;
+                rateDirection = "below";
+              }
+              if (alertConfig.max_rate != null && ratePer > alertConfig.max_rate) {
+                rateBreached = true;
+                rateLimit = alertConfig.max_rate;
+                rateDirection = "above";
+              }
             }
           }
 
@@ -558,12 +539,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             }
           }
 
-          // Also fall through to basic threshold check for counters without rate config
-          if (!breached) {
-            breached = m.alert_op === ">" || m.alert_op === "above"
-              ? m.current > m.threshold
-              : m.current < m.threshold;
-          }
+          // Also fall through to basic threshold check for counters without rate config.
+          // Rate-mode counters use this only as a backstop: a low event rate should
+          // not open a misleading "current is below threshold" alert when the
+          // windowed count is already healthy; stallDetected emits metric.stalled.
+          thresholdBreached = evaluateThresholdBreach(m);
+          breached = thresholdBreached || rateBreached;
         } else if (metricType === "gauge" && alertConfig?.mode === "sustained") {
           // Gauge sustained: breach only after N consecutive breaching snapshots
           const requiredCount = alertConfig.consecutive || 3;
@@ -585,23 +566,30 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
         // ── Alert open/resolve ──
         const openAlert = db.prepare(
-          "SELECT id FROM metric_alerts WHERE metric_id = ? AND resolved_at IS NULL LIMIT 1"
-        ).get(m.id) as { id: number } | null;
+          "SELECT id, alert_type, message FROM metric_alerts WHERE metric_id = ? AND resolved_at IS NULL LIMIT 1"
+        ).get(m.id) as { id: number; alert_type?: string; message?: string } | null;
 
         if (breached) {
-          const direction = m.alert_op === ">" || m.alert_op === "above" ? "above" : "below";
-          const message = `${m.name ?? m.id} is ${direction} threshold: current=${m.current}, threshold=${m.threshold}, target=${m.target ?? "?"}`;
+          const thresholdDirection = m.alert_op === ">" || m.alert_op === "above" ? "above" : "below";
+          const rateUnit = alertConfig?.per === "day" ? "day" : "hour";
+          const alertType = rateBreached && !thresholdBreached ? "rate" : "threshold";
+          const message = alertType === "rate"
+            ? `${m.name ?? m.id} rate is ${rateDirection ?? "outside"} limit: rate=${ratePer?.toFixed(2) ?? "?"}/${rateUnit}, limit=${rateLimit ?? "?"}/${rateUnit}, current=${m.current}, target=${m.target ?? "?"}`
+            : `${m.name ?? m.id} is ${thresholdDirection} threshold: current=${m.current}, threshold=${m.threshold}, target=${m.target ?? "?"}`;
+          if (openAlert && (openAlert.alert_type !== alertType || openAlert.message !== message)) {
+            db.run("UPDATE metric_alerts SET alert_type = ?, message = ? WHERE id = ?", [alertType, message, openAlert.id]);
+          }
           if (!openAlert) {
             db.run(
               "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
-              [m.id, "threshold", message, now]
+              [m.id, alertType, message, now]
             );
             const priority = hasMetricPriorityColumn
               ? ((db.prepare("SELECT COALESCE(priority, 'P2') as priority FROM metrics WHERE id = ?").get(m.id) as { priority?: string } | null)?.priority ?? "P2")
               : "P2";
             try {
               ctx.dispatchEvent("metric.breach", {
-                owner: m.owner, metricId: m.id, metricName: m.name,
+                owner, metricId: m.id, metricName: m.name,
                 current: m.current, threshold: m.threshold, target: m.target, message, priority,
               });
             } catch (e) { ctx.log(`[metrics-snapshot] Error emitting metric.breach for ${m.id}: ${e}`); }
@@ -621,7 +609,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           const message = `${m.name ?? m.id} stalled: no change for ${Math.round((alertConfig?.stall_after_ms || 0) / 60000)}min`;
           try {
             ctx.dispatchEvent("metric.stalled", {
-              owner: m.owner, metricId: m.id, metricName: m.name, message,
+              owner, metricId: m.id, metricName: m.name, message,
             });
           } catch (e) { ctx.log(`[metrics-snapshot] Error emitting metric.stalled for ${m.id}: ${e}`); }
         }

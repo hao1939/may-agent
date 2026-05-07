@@ -58,7 +58,7 @@ describe("loadMetrics", () => {
     const db = makeDb({
       prepare: (sql: string) => ({
         all: () => sql.includes("metrics") && !sql.includes("snapshots")
-          ? [{ id: "test.coverage", current: 85, target: 80, threshold: 60, alert_op: "<", source_query: null, source_command: null }]
+          ? [{ id: "test.coverage", explicitOwner: "bob", projectOwner: null, current: 85, target: 80, threshold: 60, alert_op: "<", source_query: null, source_command: null }]
           : [],
         get: () => null,
       }),
@@ -74,7 +74,7 @@ describe("loadMetrics", () => {
       prepare: (sql: string) => ({
         all: (..._args: any[]) => {
           if (sql.includes("metric_snapshots")) return [];
-          if (sql.includes("metrics")) return [{ id: "test.cov", current: 50, target: 80, threshold: 60, alert_op: "<", source_query: "SELECT 1", source_command: null }];
+          if (sql.includes("metrics")) return [{ id: "test.cov", explicitOwner: "bob", projectOwner: null, current: 50, target: 80, threshold: 60, alert_op: "<", source_query: "SELECT 1", source_command: null }];
           return [];
         },
         get: () => null,
@@ -91,7 +91,7 @@ describe("loadMetrics", () => {
       prepare: (sql: string) => ({
         all: (..._args: any[]) => {
           if (sql.includes("metric_snapshots")) return [{ value: 50 }, { value: 45 }, { value: 40 }];
-          if (sql.includes("metrics")) return [{ id: "test.cov", current: 50, target: 80, threshold: 60, alert_op: "<", source_query: null, source_command: "echo diag" }];
+          if (sql.includes("metrics")) return [{ id: "test.cov", explicitOwner: "bob", projectOwner: null, current: 50, target: 80, threshold: 60, alert_op: "<", source_query: null, source_command: "echo diag" }];
           return [];
         },
         get: () => null,
@@ -120,10 +120,13 @@ describe("loadProjects", () => {
   it("loads shared projects owned by agent", () => {
     const projDir = join(TEST_DIR, "shared", "projects", "myproj");
     mkdirSync(projDir, { recursive: true });
-    writeFileSync(join(projDir, "project.md"), `# Test
-**Owner**: bob
-**Status**: active
-**Health**: 🟢
+    writeFileSync(join(projDir, "project.md"), `---
+owner: bob
+status: active
+health: green
+---
+
+# Test
 
 ## Milestones
 - [x] Done one
@@ -140,9 +143,12 @@ describe("loadProjects", () => {
   it("skips done/complete projects", () => {
     const projDir = join(TEST_DIR, "shared", "projects", "doneproj");
     mkdirSync(projDir, { recursive: true });
-    writeFileSync(join(projDir, "project.md"), `# Test
-**Owner**: bob
-**Status**: done
+    writeFileSync(join(projDir, "project.md"), `---
+owner: bob
+status: done
+---
+
+# Test
 `, "utf-8");
 
     const ctx = makeCtx();
@@ -152,9 +158,12 @@ describe("loadProjects", () => {
   it("skips projects owned by other agents", () => {
     const projDir = join(TEST_DIR, "shared", "projects", "otherproj");
     mkdirSync(projDir, { recursive: true });
-    writeFileSync(join(projDir, "project.md"), `# Test
-**Owner**: alice
-**Status**: active
+    writeFileSync(join(projDir, "project.md"), `---
+owner: alice
+status: active
+---
+
+# Test
 `, "utf-8");
 
     const ctx = makeCtx();
@@ -187,7 +196,7 @@ describe("loadAlerts", () => {
   it("returns formatted alerts", () => {
     const db = makeDb({
       prepare: () => ({
-        all: () => [{ metric_id: "bob.coverage", severity: "warning", message: "Coverage dropped" }],
+        all: () => [{ metric_id: "bob.coverage", explicitOwner: "bob", projectOwner: null, severity: "warning", message: "Coverage dropped" }],
         get: () => null,
       }),
     });
@@ -262,7 +271,7 @@ describe("formatMetricsBlock", () => {
     const db = makeDb({
       prepare: (sql: string) => ({
         all: () => sql.includes("metrics") && !sql.includes("snapshots")
-          ? [{ id: "test.cov", current: 90, target: 80, threshold: 60, alert_op: "<", source_query: null, source_command: null }]
+          ? [{ id: "test.cov", explicitOwner: "bob", projectOwner: null, current: 90, target: 80, threshold: 60, alert_op: "<", source_query: null, source_command: null }]
           : [],
         get: () => null,
       }),
@@ -277,7 +286,7 @@ describe("formatMetricsBlock", () => {
       prepare: (sql: string) => ({
         all: (..._args: any[]) => {
           if (sql.includes("metric_snapshots")) return [];
-          if (sql.includes("metrics")) return [{ id: "test.cov", current: 50, target: 80, threshold: 60, alert_op: "<", source_query: null, source_command: null }];
+          if (sql.includes("metrics")) return [{ id: "test.cov", explicitOwner: "bob", projectOwner: null, current: 50, target: 80, threshold: 60, alert_op: "<", source_query: null, source_command: null }];
           return [];
         },
         get: () => null,
@@ -299,7 +308,7 @@ describe("runRedMetricCommands", () => {
   it("returns empty when all metrics healthy", () => {
     const db = makeDb({
       prepare: () => ({
-        all: () => [{ id: "m1", current: 90, target: 80, threshold: 60, alert_op: "<", source_command: null, source_query: null }],
+        all: () => [{ id: "m1", explicitOwner: "bob", projectOwner: null, current: 90, target: 80, threshold: 60, alert_op: "<", source_command: null, source_query: null }],
         get: () => null,
       }),
     });
@@ -310,7 +319,7 @@ describe("runRedMetricCommands", () => {
   it("runs diagnostic command for red metric", () => {
     const db = makeDb({
       prepare: () => ({
-        all: () => [{ id: "m1", current: 50, target: 80, threshold: 60, alert_op: "<", source_command: "echo hello", source_query: null }],
+        all: () => [{ id: "m1", explicitOwner: "bob", projectOwner: null, current: 50, target: 80, threshold: 60, alert_op: "<", source_command: "echo hello", source_query: null }],
         get: () => null,
       }),
     });
@@ -323,7 +332,7 @@ describe("runRedMetricCommands", () => {
   it("handles command failure gracefully", () => {
     const db = makeDb({
       prepare: () => ({
-        all: () => [{ id: "m1", current: 50, target: 80, threshold: 60, alert_op: "<", source_command: "false", source_query: null }],
+        all: () => [{ id: "m1", explicitOwner: "bob", projectOwner: null, current: 50, target: 80, threshold: 60, alert_op: "<", source_command: "false", source_query: null }],
         get: () => null,
       }),
     });
@@ -335,7 +344,7 @@ describe("runRedMetricCommands", () => {
   it("reports no diagnostic command when none configured", () => {
     const db = makeDb({
       prepare: () => ({
-        all: () => [{ id: "m1", current: 50, target: 80, threshold: 60, alert_op: "<", source_command: null, source_query: null }],
+        all: () => [{ id: "m1", explicitOwner: "bob", projectOwner: null, current: 50, target: 80, threshold: 60, alert_op: "<", source_command: null, source_query: null }],
         get: () => null,
       }),
     });
@@ -446,7 +455,7 @@ describe("genericHeartbeat", () => {
           if (sql.includes("metric_snapshots")) return [];
           if (sql.includes("metric_alerts")) return [];
           if (sql.includes("events")) return [];
-          if (sql.includes("metrics")) return [{ id: "bob.cov", current: 50, target: 80, threshold: 60, alert_op: "<", source_command: "echo diag_output", source_query: null }];
+          if (sql.includes("metrics")) return [{ id: "bob.cov", explicitOwner: "bob", projectOwner: null, current: 50, target: 80, threshold: 60, alert_op: "<", source_command: "echo diag_output", source_query: null }];
           return [];
         },
         get: () => null,

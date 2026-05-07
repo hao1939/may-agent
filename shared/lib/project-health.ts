@@ -91,7 +91,7 @@ const FIELD_TO_META_KEY: Record<string, string> = {
   "Resume Condition": "resume_condition",
 };
 
-function parseProjectMeta(content: string): ProjectMeta {
+export function parseProjectMeta(content: string): ProjectMeta {
   const m = content.match(/^---\s*\n([\s\S]*?)\n---\s*(?:\n|$)/);
   if (!m) return {};
   const meta: ProjectMeta = {};
