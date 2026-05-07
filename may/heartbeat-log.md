@@ -1,6 +1,17 @@
 # May Heartbeat Log — Latest
 
-**Timestamp:** 2026-05-07 21:48 UTC
+**Timestamp:** 2026-05-07 23:47 UTC
+
+## Quick Status (23:47 UTC)
+- **Health**: All green. 100% success rate, 20 sessions/hr
+- **v2 spec coverage**: 13.6% ⚠️ (target 80%)
+- **Low-quality sessions**: 15% (target <10%)
+- **Active agents**: arc, dev, may
+- **Action**: None needed, routine heartbeat
+
+---
+
+**Previous Timestamp:** 2026-05-07 21:48 UTC
 
 ## Quick Status (21:48 UTC)
 - System healthy: 100% success rate, 18 sessions/hr
