@@ -12,9 +12,9 @@ Migration must be incremental. The current system is production-active.
 
 ---
 
-A **metric-driven, event-based autonomous agent system** where:
+A **project-centered, event-based autonomous agent system** where:
 - **Projects are context.** Each project carries its own history, background, goals, and accumulated experience. Agents pick up that context when they work, so each iteration builds on what came before instead of starting fresh.
-- **Metrics are vitals.** Typed metrics measure progress toward project goals (and overall system health). Metrics are how the system *sees itself* — they don't drive work directly so much as they signal what needs attention.
+- **Metrics are signals.** Typed metrics measure progress toward project goals and system health. Metrics do not judge or decide; they signal what may need attention.
 - **Heartbeats are agency.** A heartbeat is the recurring moment when an agent has the chance to be autonomous: read context, decide what's worth doing, act, record. Heartbeats are how ownership manifests. See `design/heartbeat-as-agency.md`.
 - Agents are role/responsibility/context scopes — accountability boundaries that own a domain.
 - Everything is an event: timers, metric changes, messages, session completions.
@@ -413,13 +413,13 @@ The autonomous loop runs on projects:
 
 ```
 project goal
-  └─ has metrics that measure progress
-      └─ metric breach signals "this iteration didn't work"
-          └─ agent's next heartbeat reads project context (history, goal, experience)
-              └─ agent decides next iteration based on context
+  └─ has metrics that emit signals
+      └─ signal wakes a cron/event/heartbeat path
+          └─ agent reads project context, signal evidence, and recent history
+              └─ agent judges what the signal means
                   └─ agent runs an iteration session
                       └─ writes journal entry capturing what was tried
-                          └─ project advances; metric updates; loop
+                          └─ later metrics/sessions validate or falsify; loop
 ```
 
 Without this loop, agents thrash — re-discovering the same problem each breach, making the same fix that didn't work last time. Project context is what gives them continuity.
@@ -448,7 +448,7 @@ Next steps, approach, constraints.
 Related docs, PRs, prior art.
 ```
 
-Projects answer: "given this metric is red, what's the context?"
+Projects answer: "given this signal, what goal and history make it meaningful?"
 
 Project status values: active, blocked, waiting, closed. Only humans/may close projects.
 
@@ -508,7 +508,7 @@ v2 must preserve:
 | Component | Role |
 |-----------|------|
 | Event bus | Backbone — typed pub/sub, all events persisted |
-| Metric engine | Typed measurement + alerting → drives agent direction |
+| Metric engine | Typed measurement + alerting → signals for agent judgment |
 | Agent runs (glue) | Wire pi-coding-agent to bus, ~50 LOC |
 | Prompt assembly | common-sense + AGENTS.md + runtime facts → system prompt |
 | Workflows | Agent steps + function steps, crash-safe |

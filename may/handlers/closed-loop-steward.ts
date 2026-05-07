@@ -139,7 +139,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     const failureLines = failures.map((row) => {
       const data = parseEventData(row);
       return [
-        `- event#${row.id} age=${age(now, row.timestamp)} from=${String(data.from ?? row.source ?? "unknown")} to=${String(data.to ?? row.owner ?? "unknown")} priority=${String(data.priority ?? "P2")}`,
+        `- message.delivery_failed event#${row.id} age=${age(now, row.timestamp)} from=${String(data.from ?? row.source ?? "unknown")} to=${String(data.to ?? row.owner ?? "unknown")} priority=${String(data.priority ?? "P2")}`,
         `  reason=${String(data.reason ?? "unknown")}`,
         `  content=${String(data.content ?? "").slice(0, 220)}`,
       ].join("\n");
@@ -158,12 +158,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       "",
       "You own the global closed loop, not every metric. Use the generated context below as the starting point, then verify with query_db before taking action.",
       "",
+      "Mental model: project carries goal/context; metrics are signals; cron/events trigger reassessment; agents judge and act.",
+      "",
       "Rules:",
       "- Prefer native ownership: metrics.owner, then project.owner, then agent-name prefix, then may fallback.",
       "- Take the smallest operation that advances closure: route/nudge owner, fix broken ownership/routing, document a valid exception, or escalate when blocked.",
       "- Do not create a project for this cron itself. Create/update a project only when you discover systemic implementation work that cannot be completed in this run.",
       "- If this recurring procedure is wrong or stale, improve the handler/cron/config directly and verify it.",
-      "- End with: issue, owner, action taken, next judge signal.",
+      "- End with: issue, owner, judgment, action taken, next validation signal.",
       "",
       "## Open Metric Alerts",
       alertLines.length ? alertLines.join("\n") : "none",

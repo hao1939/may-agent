@@ -6,6 +6,7 @@
 |-----|------|
 | [core-principles.md](core-principles.md) | 11 architecture principles. Read this first. |
 | [architecture.md](architecture.md) | System architecture: event bus, metrics, agents, workflows, storage |
+| [work-model.md](work-model.md) | Unified model: projects hold context, metrics signal, triggers wake, agents judge |
 | [sdk.md](sdk.md) | AgentSDK + WorkflowSDK: the system's canonical capability surface. |
 
 ## Subsystems

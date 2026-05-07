@@ -77,8 +77,8 @@ Examples: fix a broken handler, restart a stuck workflow, update a project file,
 repair a bad query, or add missing measurement.
 
 Do not manually resolve the alert before the metric recovers. The next
-`metrics-snapshot` run is the judge; it resolves the alert when the value is
-back within threshold.
+`metrics-snapshot` run is a validation signal; the owner agent remains
+responsible for judging whether the issue is actually fixed.
 
 ### 3. Calibrate Metric
 

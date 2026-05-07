@@ -2,12 +2,17 @@
 
 ## Overview
 
-Every agent wakes up periodically via a **heartbeat** — a cron-triggered workflow that gives the agent context about what's happening and lets it decide what to do.
+Every agent wakes up periodically via a **heartbeat**. A heartbeat is a
+cron-triggered reassessment of the agent's standing self-maintenance context:
+identity, learned context, inbox, owned metrics, alerts, and active projects.
+It is not a separate work mode; it uses the same model as projects, metrics, and
+events: signals arrive, the agent judges, then acts or records why no action is
+needed.
 
 ## Data Flow
 
 ```
-Cron tick → heartbeat handler → loads context → runs agent session → agent acts
+Cron tick → heartbeat workflow → loads agent context/signals → runs agent session → agent judges/acts
 ```
 
 ## What Gets Loaded
@@ -19,7 +24,9 @@ The heartbeat workflow (`agents/shared/workflows/heartbeat-data.ts`) loads:
 3. **Alerts** — metric alerts requiring attention
 4. **Inbox** — recent events (time-window, last 2h) targeted at this agent
 
-All injected into the agent's task prompt as structured sections.
+All injected into the agent's task prompt as structured sections. Routine
+self-maintenance uses this implicit agent project. Durable multi-session goals
+found during heartbeat should be created or updated as shared projects.
 
 ## Per-Agent Workflows
 
@@ -38,7 +45,10 @@ Agents don't need explicit cron.json entries for heartbeats:
 
 ## Heartbeat.md (per-agent)
 
-Each agent can have `agents/<name>/heartbeat.md` — role-specific guidance read during heartbeat. Not in the system prompt — only loaded when the heartbeat fires.
+Each agent can have `agents/<name>/heartbeat.md` — role-specific guidance read
+during heartbeat. It should describe recurring inspection and judgment duties,
+not carry long-term project memory. Not in the system prompt — only loaded when
+the heartbeat fires.
 
 ## Implementation
 

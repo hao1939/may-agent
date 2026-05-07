@@ -2,7 +2,9 @@
 
 ## Overview
 
-The metrics system measures system health automatically. Built-in metrics are
+The metrics system measures system health automatically. Metrics are signals:
+they point to possible drift, progress, regression, or stale measurement. Agents
+judge the meaning using project context, facts, and recent history. Built-in metrics are
 owned by `agents/may/handlers/metrics-snapshot.ts`; custom metrics can be added
 with `source_query` or `source_command`.
 
@@ -94,9 +96,11 @@ metrics-snapshot handler
   -> metric-alert-reactor handles metric.breach events or unresolved alerts
 ```
 
-The usual human-facing path is still heartbeat-driven: agents see metric state
-and unresolved alerts during heartbeat context and decide what to do. The
-`metric-alert-reactor` can also fork an owner directly for unresolved breaches.
+The usual path is project/context-driven: agents see metric state and unresolved
+alerts, read the relevant project context when one exists, and decide what the
+signal means. `metric-alert-reactor` forks an owner directly only for P0
+breaches; lower-priority alerts remain visible for heartbeat/project/steward
+handling.
 
 Agents handling an alert must follow
 [manual/metric-alerts.md](manual/metric-alerts.md): judge the alert, choose one

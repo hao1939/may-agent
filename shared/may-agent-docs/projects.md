@@ -2,7 +2,13 @@
 
 ## Overview
 
-Projects are the unit of multi-session work. An agent works on a project across multiple heartbeats until it's done or blocked.
+Projects are the unit of explicit multi-session work. An agent works on a
+project across multiple sessions until it is done, waiting, or blocked.
+
+Heartbeat is the implicit self-maintenance project for an agent. Do not create a
+shared project for routine heartbeat behavior. Create a shared project when
+there is a durable goal that needs explicit ownership, metrics, state, and a
+journal.
 
 ## Location
 

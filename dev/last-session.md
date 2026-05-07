@@ -1,17 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778167681763_21
+- **Session:** s_1778167782349_24
 - **Status:** success
-- **When:** 2026-05-07T15:35:24.566Z
+- **When:** 2026-05-07T15:36:46.540Z
 
 ## What Happened
-Dev heartbeat completed: the Approved queue was empty, so I investigated the current session/handler failure patterns around `Clean start (fresh)` and master-worker. The production recovery path was already present in `shared/workflows/master-worker.ts`; I fixed the corresponding Vitest mock in `shared/tests/master-worker-execute.test.ts` and committed it as `0babdc56e`, with the targeted test file passing.
+Investigated `v2.spec-coverage-rate` and found it is a legitimate built-in computed metric in `agents/may/handlers/metrics-snapshot.ts`, not a stale source_query/source_command metric. Created and committed a pending-review project proposal at `agents/shared/projects/v2-spec-coverage-buildout/project.md` detailing the 3/22 covered claims, uncovered claims, and phased work to improve coverage or calibrate the spec.
 
 ## Files Modified
-- agents/shared/tests/master-worker-execute.test.ts
+- agents/shared/projects/v2-spec-coverage-buildout/project.md
 
 ## Completed
-- Checked Approved work queue and found no approved dev items
-- Investigated recent session errors and handler failures for the dev heartbeat
-- Verified master-worker Clean start recovery coverage and fixed its test mock shape
+- Investigate what v2.spec-coverage-rate measures and determine work needed to improve v2 spec coverage
+- Create a project proposal for legitimate v2 spec coverage gap

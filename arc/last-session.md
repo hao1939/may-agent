@@ -1,16 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778167776950_23
+- **Session:** s_1778167669264_20
 - **Status:** success
-- **When:** 2026-05-07T15:32:58.536Z
+- **When:** 2026-05-07T15:35:52.291Z
 
 ## What Happened
-Applied metric-alerts.md playbook to two stuck-red metrics. capability.session-trace-completeness: confirmed still storm-contaminated (82,816 of 83,299 session.start events in 24h window are KE-795 storm; ages out ~2026-05-08 09:52Z), documented exception and downgraded P1\u2192P3 with review condition in metrics.blocker. handler.failed-count: 6 failures vs 63,080 completions in 6h (0.0095%) \u2014 calibrated target 0\u21925, threshold 3\u219210 with failure-mix evidence in blocker. No alerts manually resolved; next metrics-snapshot will re-evaluate.
+Wrote KE-798 documenting that `v2.manager-loc` and `v2.runtime-glue-loc` have read 0 in 97/98 snapshots since metric creation because `src/lib/manager.ts` does not exist at `paths.root` (only gym-scenario fixtures exist on host). The single 1126/1898 outlier at 12:06:06Z is the bug, not the signal — corrects KE-793's offhand 'data coming online' misread. Committed as c2a8be556. Out-of-lane edits from parallel sessions reverted before commit."
 
-## Completed
-- Calibrated capability.session-trace-completeness as P3 exception until storm ages out (2026-05-08 09:52Z)
-- Calibrated handler.failed-count target 0→5, threshold 3→10 based on 6/63,080 = 0.0095% failure rate
-
-## New Tasks Created
-- Investigate and fix evaluator session-aftermath-scan workflow-runner.ts missing 'execute' export (recurring real failure; 3 occurrences in last 6h)
+## Files Modified
+- agents/shared/knowledge/entries/KE-798-v2-manager-loc-and-runtime-glue-loc-read-zero-97-of-98-ticks-because-srclibmanagerts-does-not-exist-at-pathsroot.md
