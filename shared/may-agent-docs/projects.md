@@ -21,6 +21,10 @@ Shared across agents — any agent can own/advance a project.
 Project metadata is machine-readable YAML frontmatter. Do not duplicate these
 fields as `**Owner**:` / `**Status**:` body lines.
 
+Project bodies should follow the same work-context convention as heartbeat:
+goal, signals, current state, plan, evidence/journal, and validation. Keep the
+sections compact; the project is memory for future sessions, not a transcript.
+
 ```markdown
 ---
 id: my-project
@@ -37,10 +41,20 @@ iteration: 0
 ## Goal
 What this project achieves.
 
+## Signals
+- metric.id — what it means and how to interpret it
+- relevant events, blockers, or user requests
+
+## Current State
+What is true now, including known constraints and current theory.
+
 ## Plan
 - [x] Step 1
 - [ ] Step 2
 - [ ] Step 3
+
+## Validation
+What signals, tests, or user feedback will show the next judgment was right.
 
 ## Journal
 ### 2026-04-29

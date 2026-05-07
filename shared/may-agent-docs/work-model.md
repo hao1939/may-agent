@@ -32,6 +32,24 @@ context, or an accepted exception. The owner agent must decide.
    when the work changes project state.
 7. Later metrics and sessions provide validation signals, not automatic truth.
 
+## Work Context Convention
+
+Every recurring work context, explicit or implicit, should answer the same
+questions:
+
+| Field | Meaning | Explicit project | Heartbeat implicit project |
+|-------|---------|------------------|----------------------------|
+| Goal | What are we trying to maintain or change? | `project.md` goal | agent identity / domain |
+| Owner | Who is accountable? | project owner | the agent |
+| Signals | What changed or needs attention? | project metrics, events, blockers | owned metrics, alerts, inbox, active projects |
+| State | What is true now? | current state / journal | context, lessons, recent sessions |
+| Plan | What should happen next? | project plan | heartbeat guidance |
+| Evidence | What happened last time? | journal/session links | last sessions, context updates, project journals |
+| Validation | How will we know the judgment was right? | later signals, tests, user feedback | later signals, tests, next heartbeat |
+
+This convention keeps the system simple: heartbeat and project use the same
+mental shape. The difference is only durability and scope.
+
 ## Heartbeat As Agent Project
 
 Heartbeat is not a separate work mode. It is the default recurring trigger for
@@ -49,6 +67,9 @@ Do not create a shared project for every heartbeat. Use the implicit agent
 project for routine self-maintenance. Create a real shared project when the
 heartbeat discovers a durable goal that needs cross-session tracking, ownership,
 metrics, and a journal.
+
+When in doubt: routine domain stewardship stays in heartbeat; a concrete,
+durable goal with state transitions becomes an explicit project.
 
 ## Cron vs Project
 

@@ -301,14 +301,14 @@ export function formatMetricsBlock(ctx: WorkflowContext, agent: string): string 
 
   const hasRed = metrics.includes("⚠️ BELOW TARGET");
   if (!hasRed) {
-    return `📊 All metrics healthy — no action needed.\n${metrics}\n`;
+    return `📊 No red metric signals. Metrics alone do not require action.\n${metrics}\n`;
   }
 
-  return `**⚡ FIRST — evaluate your metrics before anything else:**
+  return `**⚡ FIRST — review red metric signals before choosing work:**
 
 ${metrics}
 
-**Review the diagnostic commands above and investigate.** Do NOT take destructive actions (rebuild DB, delete files, rename production data). If the fix requires destructive changes, escalate to human.
+**Judge the signal in context.** Read the relevant project/agent context, then follow agents/shared/may-agent-docs/manual/metric-alerts.md. Do NOT take destructive actions (rebuild DB, delete files, rename production data). If the fix requires destructive changes, escalate to human.
 
 ---
 `;
@@ -444,25 +444,27 @@ ${redMetricDiagnostics}
 
   const prompt = `You are **${agent}** waking up for your heartbeat.
 
+Heartbeat is your implicit self-maintenance project. Use the same work model as explicit projects: goal/context + signals -> judgment -> action/evidence.
+
 ${metricsBlock}
 ${redMetricContext}
-## Active Alerts
+## Signals: Active Alerts
 ${alerts || "None — all clear."}
 If any alert is yours, follow agents/shared/may-agent-docs/manual/metric-alerts.md and state the chosen operation plus evidence in your final summary.
 
-## Pending Events (inbox)
+## Signals: Pending Events (inbox)
 ${inbox || "No pending events."}
 For each: act, delegate, dismiss (with reason), or escalate.
 
-## Your Projects
-${projects || "No active projects."}
+## Explicit Shared Projects You Own
+${projects || "No active shared projects."}
 
-## Your Role & Guidance
+## Agent Goal / Standing Plan
 ${guidance}
 
 ---
 
-${redMetricDiagnostics ? "Red metric diagnostics are above — address each one, then proceed with normal heartbeat work." : "Review your metrics, check your projects, do your job. Act on what matters."} Commit and finish.`;
+Make a judgment from the full context. If routine self-maintenance is enough, leave evidence. If you find a durable multi-session goal, create or update an explicit shared project. ${redMetricDiagnostics ? "Red metric diagnostics are above — address each signal, then proceed with normal heartbeat work." : "Review signals, projects, and guidance. Act on what matters."} Commit and finish.`;
 
   ctx.emit({ type: "step_start", step: "heartbeat" });
   ctx.emit({ type: "context.read", agent, sections: { metrics: !!metrics, projects: !!projects, inbox: !!inbox, alerts: !!alerts } });

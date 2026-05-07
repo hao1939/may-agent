@@ -32,7 +32,7 @@ Agents exist as **accountability boundaries**. We don't have 7 agents because we
 
 ## 3. Events must be consumed
 
-No event fires into the void. Something must consume it — a handler, a subscribed agent, a workflow. If nothing does, the owner picks it up. This is the **closed-loop guarantee**: every signal produces a response, even if that response is "owner triaged it and decided no action needed."
+No event fires into the void. Something must consume it — a handler, a subscribed agent, a workflow. If nothing does, the owner picks it up. This is the **closed-loop guarantee**: every signal produces a response, even if that response is "owner judged it, recorded evidence, and decided no change is needed."
 
 The escalation chain is: best-fit handler -> assigned agent -> owner -> May -> Hao.
 

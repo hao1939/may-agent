@@ -12,8 +12,20 @@ needed.
 ## Data Flow
 
 ```
-Cron tick → heartbeat workflow → loads agent context/signals → runs agent session → agent judges/acts
+Cron tick → heartbeat workflow → loads work context/signals → runs agent session → agent judges/acts/records evidence
 ```
+
+Heartbeat follows the same work-context convention as projects:
+
+| Project convention | Heartbeat source |
+|--------------------|------------------|
+| Goal | `AGENTS.md`, domain, standing responsibility |
+| Owner | the agent |
+| Signals | metrics, alerts, inbox, active projects |
+| State | `context.md`, lessons, recent sessions |
+| Plan | `heartbeat.md` and current priorities |
+| Evidence | session summary, file changes, project journal updates |
+| Validation | later metrics/events/tests/next heartbeat |
 
 ## What Gets Loaded
 
@@ -49,6 +61,16 @@ Each agent can have `agents/<name>/heartbeat.md` — role-specific guidance read
 during heartbeat. It should describe recurring inspection and judgment duties,
 not carry long-term project memory. Not in the system prompt — only loaded when
 the heartbeat fires.
+
+Good heartbeat guidance is short and procedural:
+
+- what signals to inspect,
+- how to choose the next action,
+- when to create/update an explicit project,
+- what evidence to leave.
+
+Long-running goals, decisions, and journals belong in project files or agent
+context, not in `heartbeat.md`.
 
 ## Implementation
 

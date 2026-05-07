@@ -335,7 +335,7 @@ describe("formatMetricsBlock", () => {
     expect(result).toContain("No metrics configured");
   });
 
-  it("returns 'all healthy' when no breaches", () => {
+  it("returns no red metric signal when no breaches", () => {
     const ctx = makeMockCtx({
       db: makeMockDb({
         metrics: [
@@ -344,7 +344,8 @@ describe("formatMetricsBlock", () => {
       }),
     });
     const result = formatMetricsBlock(ctx, "bob");
-    expect(result).toContain("All metrics healthy");
+    expect(result).toContain("No red metric signals");
+    expect(result).toContain("Metrics alone do not require action");
   });
 
   it("returns red metric block when breaching", () => {
@@ -358,7 +359,8 @@ describe("formatMetricsBlock", () => {
     });
     const result = formatMetricsBlock(ctx, "bob");
     expect(result).toContain("FIRST");
-    expect(result).toContain("evaluate your metrics");
+    expect(result).toContain("review red metric signals");
+    expect(result).toContain("Judge the signal in context");
   });
 });
 
@@ -501,6 +503,10 @@ describe("genericHeartbeat", () => {
     });
     const result = await genericHeartbeat(ctx, "bob");
     expect(ctx.runAgent).toHaveBeenCalledWith("bob", expect.any(String));
+    const prompt = (ctx.runAgent as any).mock.calls[0][1] as string;
+    expect(prompt).toContain("implicit self-maintenance project");
+    expect(prompt).toContain("Explicit Shared Projects You Own");
+    expect(prompt).toContain("goal/context + signals -> judgment -> action/evidence");
     expect(ctx.done).toHaveBeenCalled();
   });
 });
