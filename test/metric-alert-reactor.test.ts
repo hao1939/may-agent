@@ -19,6 +19,7 @@ describe("metric-alert-reactor", () => {
     writeFileSync(join(agentsRoot, "arc", "agent.json"), JSON.stringify({ name: "arc" }));
 
     const runs: Array<{ owner: string; task: string; source?: string }> = [];
+    const workflows: Array<{ name: string; task: string; source?: string }> = [];
     const logs: string[] = [];
     const handler = create({
       sdk: {
@@ -31,10 +32,14 @@ describe("metric-alert-reactor", () => {
           runs.push({ owner, task, source: opts?.source });
           return { sessionId: "s_alert", status: "done" };
         },
+        runWorkflow: async (name: string, task: string, opts?: { source?: string }) => {
+          workflows.push({ name, task, source: opts?.source });
+          return { status: "done", summary: "triaged" };
+        },
       },
     } as any, {} as any);
 
-    return { handler, runs, logs };
+    return { handler, runs, workflows, logs };
   }
 
   it("defers P1 alerts to heartbeat context", async () => {
@@ -59,7 +64,7 @@ describe("metric-alert-reactor", () => {
   });
 
   it("forks the owner for P0 alerts", async () => {
-    const { handler, runs } = setup();
+    const { handler, runs, workflows } = setup();
 
     await handler({
       type: "metric.breach",
@@ -75,10 +80,11 @@ describe("metric-alert-reactor", () => {
       },
     } as any);
 
-    expect(runs).toHaveLength(1);
-    expect(runs[0]).toMatchObject({ owner: "arc", source: "metric-alert-reactor:arc.down" });
-    expect(runs[0].task).toContain("[metric-alert][arc.down][P0]");
-    expect(runs[0].task).toContain("metrics snapshot is a validation signal");
-    expect(runs[0].task).not.toContain("metrics snapshot is the judge");
+    expect(runs).toEqual([]);
+    expect(workflows).toHaveLength(1);
+    expect(workflows[0]).toMatchObject({ name: "metric-alert-triage", source: "arc" });
+    expect(workflows[0].task).toContain("Run metric alert triage for arc.down");
+    expect(workflows[0].task).toContain('"type": "metric.breach"');
+    expect(workflows[0].task).toContain('"metricId": "arc.down"');
   });
 });

@@ -78,6 +78,23 @@ describe("closed-loop-steward", () => {
         now - 5 * 60_000,
       ],
     );
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      [
+        "metric.alert_judged",
+        "metric-alert-triage",
+        "arc",
+        JSON.stringify({
+          alertId: 1,
+          metricId: "arc.quality",
+          owner: "arc",
+          operation: "fix_root_cause",
+          evidence: "handler bug reproduced and fixed",
+          ownerSessionId: "s_owner_action",
+        }),
+        now - 2 * 60_000,
+      ],
+    );
 
     await handler();
 
@@ -86,9 +103,12 @@ describe("closed-loop-steward", () => {
     expect(runs[0].task).toContain("metric=arc.quality");
     expect(runs[0].task).toContain("owner=arc");
     expect(runs[0].task).toContain("s_owner_action:done:heartbeat-arc");
+    expect(runs[0].task).toContain("latest judgment: operation=fix_root_cause");
+    expect(runs[0].task).toContain("session=s_owner_action");
     expect(runs[0].task).toContain("message.delivery_failed");
     expect(runs[0].task).toContain("to=functions.message");
     expect(runs[0].task).toContain("Do not create a project for this cron itself");
+    expect(runs[0].task).toContain("metric.alert_judged");
   });
 
   it("does not dispatch another steward run while one is active", async () => {
