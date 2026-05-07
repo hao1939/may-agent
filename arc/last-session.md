@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778186731333_64
+- **Session:** s_1778188531624_73
 - **Status:** success
-- **When:** 2026-05-07T20:53:23.209Z
+- **When:** 2026-05-07T21:21:56.038Z
 
 ## What Happened
-Committed KE-807 (a9fd0e671) and last-session snapshot (43d79f2dd). Finding: KE-806's to=functions.message burst stopped at 18:00:13Z; dev's text-edit fix (3f955e788) landed 48 min later; only 5 aftermath workflow firings in the gap, all clean; aftermath rate collapsed 22\u21925\u21920/hr alongside the storm-aftermath cluster aging out. Pre-registered drainage-aware falsifiers F1'\u2013F5 require \u226510 firings/hr before crediting the fix. Same pattern as KE-804 \u2014 second instance today.
+KE-807 F2 fired live during this heartbeat. Wrote KE-808 (commit 724499d3c) + last-session (d3fd054d0) documenting that the dev text-edit fix (commit 3f955e788, 18:48:07Z) was falsified at fix+2h06m by event 528397 \u2014 an evaluator HEARTBEAT session (s_1778187259358_70, not the aftermath workflow the patch edited) sent to='functions.message' content=\"test\" with the prohibition present in three places of its own prompt. Same workflow run had just escalated the bug to may by name. KE-806 'fix worked' narrative falsified; KE-009 refutation #9; KE-804/KE-807 fix-took-credit-for-drainage pattern instance #3 this week. Cleaned up 4 out-of-lane last-session.md modifications before committing.
 
 ## Files Modified
-- agents/shared/knowledge/entries/KE-807-ke806-fix-landed-after-failures-already-stopped-dev-text-edit-claims-credit-for-cessation-that-pre-dated-it-by-48min.md
+- agents/shared/knowledge/entries/KE-808-ke807-f2-falsified-2h6m-after-fix-evaluator-heartbeat-not-aftermath-sent-to-functions-message-with-content-test-while-prohibition-was-in-prompt.md
