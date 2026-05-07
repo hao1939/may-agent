@@ -17,6 +17,38 @@ import type { CronEntry } from "../../shared/agent-sdk.js";
 import { listConfiguredAgents, resolveMetricOwner } from "../../shared/lib/metric-ownership.ts";
 
 const DEDUP_WINDOW_MS = 4 * 60 * 60 * 1000; // 4h — shorter window so repeated alerts get reacted to faster
+const P1_DIRECT_TRIAGE_AFTER_MS = 60 * 60 * 1000;
+const P1_RETRIAGE_COOLDOWN_MS = 15 * 60 * 1000;
+
+function parseJsonObject(raw: string | null | undefined): Record<string, unknown> {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed as Record<string, unknown> : {};
+  } catch {
+    return {};
+  }
+}
+
+function numberOrNull(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) return Number(value);
+  return null;
+}
+
+function parseValidationTime(value: unknown): number | null {
+  const asNumber = numberOrNull(value);
+  if (asNumber != null) return asNumber;
+  if (typeof value !== "string" || value.trim() === "" || value === "next metrics-snapshot") return null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function isBreaching(current: number | null, threshold: number | null, alertOp: string | null | undefined): boolean {
+  if (current == null || threshold == null) return false;
+  return alertOp === ">" || alertOp === "above" ? current > threshold : current < threshold;
+}
+
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   const configuredAgents = listConfiguredAgents(ctx.sdk.paths.agents);
 
@@ -97,12 +129,13 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
       const db = ctx.sdk.getDb();
       const metricRow = db.prepare(
         `SELECT COALESCE(m.priority, 'P2') as priority,
-                m.owner as explicitOwner, p.owner as projectOwner
+                m.owner as explicitOwner, p.owner as projectOwner,
+                m.current as current, m.threshold as threshold, m.alert_op as alertOp
          FROM metrics m
          LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
            AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
          WHERE m.id = ?`
-      ).get(metricId) as { priority?: string; explicitOwner?: string | null; projectOwner?: string | null } | null;
+      ).get(metricId) as { priority?: string; explicitOwner?: string | null; projectOwner?: string | null; current?: number | null; threshold?: number | null; alertOp?: string | null } | null;
       priority = metricRow?.priority ?? priority;
       if (metricRow) owner = resolveMetricOwner(metricId, configuredAgents, metricRow.explicitOwner, metricRow.projectOwner);
       if (priority !== "P0" && priority !== "P1") {
@@ -113,19 +146,55 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
       // P1 alerts: only triage if open >1h without a judgment event
       if (priority === "P1") {
         const alertRow = db.prepare(
-          `SELECT ma.created_at FROM metric_alerts ma WHERE ma.metric_id = ? AND ma.resolved_at IS NULL`
-        ).get(metricId) as { created_at: number } | null;
+          `SELECT ma.id, ma.created_at FROM metric_alerts ma WHERE ma.metric_id = ? AND ma.resolved_at IS NULL`
+        ).get(metricId) as { id: number; created_at: number } | null;
         const alertAge = alertRow ? Date.now() - alertRow.created_at : 0;
-        if (alertAge < 60 * 60 * 1000) {
+        if (alertAge < P1_DIRECT_TRIAGE_AFTER_MS) {
           ctx.sdk.log("info", `[metric-alert-reactor] P1 ${metricId} alert age ${Math.round(alertAge/60000)}m < 60m, deferring.`);
           return;
         }
         const judgedEvent = db.prepare(
-          `SELECT id FROM events WHERE event_type = 'metric.alert_judged' AND data LIKE ? ORDER BY timestamp DESC LIMIT 1`
-        ).get(`%${metricId}%`) as { id: number } | null;
+          `SELECT id, data, timestamp
+           FROM events
+           WHERE event_type = 'metric.alert_judged'
+             AND (
+               json_extract(data, '$.alertId') = ?
+               OR json_extract(data, '$.metricId') = ?
+             )
+           ORDER BY timestamp DESC
+           LIMIT 1`
+        ).get(alertRow?.id ?? null, metricId) as { id: number; data: string | null; timestamp: number } | null;
         if (judgedEvent) {
-          ctx.sdk.log("info", `[metric-alert-reactor] P1 ${metricId} already judged (event ${judgedEvent.id}), skipping.`);
-          return;
+          const judgmentData = parseJsonObject(judgedEvent.data);
+          const nextValidationAt = parseValidationTime(judgmentData.nextValidationAt);
+          if (nextValidationAt != null && Date.now() < nextValidationAt) {
+            ctx.sdk.log("info", `[metric-alert-reactor] P1 ${metricId} judged (event ${judgedEvent.id}); waiting for requested validation.`);
+            return;
+          }
+
+          const latestSnapshot = db.prepare(
+            `SELECT value, measured_at
+             FROM metric_snapshots
+             WHERE metric_id = ?
+             ORDER BY measured_at DESC
+             LIMIT 1`
+          ).get(metricId) as { value: number | null; measured_at: number } | null;
+          if (!latestSnapshot || latestSnapshot.measured_at <= judgedEvent.timestamp) {
+            ctx.sdk.log("info", `[metric-alert-reactor] P1 ${metricId} judged (event ${judgedEvent.id}); awaiting next metrics snapshot.`);
+            return;
+          }
+          if (Date.now() - judgedEvent.timestamp < P1_RETRIAGE_COOLDOWN_MS) {
+            ctx.sdk.log("info", `[metric-alert-reactor] P1 ${metricId} judged (event ${judgedEvent.id}); validation cooldown active.`);
+            return;
+          }
+
+          const currentValue = numberOrNull(latestSnapshot.value ?? metricRow?.current ?? current);
+          const thresholdValue = numberOrNull(metricRow?.threshold ?? threshold);
+          if (!isBreaching(currentValue, thresholdValue, metricRow?.alertOp)) {
+            ctx.sdk.log("info", `[metric-alert-reactor] P1 ${metricId} judged and latest snapshot is recovered; waiting for alert lifecycle.`);
+            return;
+          }
+          ctx.sdk.log("info", `[metric-alert-reactor] P1 ${metricId} still breaching after judgment event ${judgedEvent.id}; rerunning triage.`);
         }
       }
 

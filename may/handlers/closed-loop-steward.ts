@@ -27,6 +27,7 @@ type AlertRow = {
   threshold: number | null;
   target: number | null;
   priority: string | null;
+  alertOp: string | null;
 };
 
 type SessionRow = {
@@ -48,6 +49,11 @@ type EventRow = {
 type JudgmentRow = {
   data: string | null;
   timestamp: number;
+};
+
+type SnapshotRow = {
+  value: number | null;
+  measured_at: number | null;
 };
 
 const DEFAULT_LOOKBACK_MS = 6 * 60 * 60_000;
@@ -76,6 +82,11 @@ function summarizeSessions(sessions: SessionRow[], now: number): string {
     .join("; ");
 }
 
+function isBreaching(current: number | null, threshold: number | null, alertOp: string | null): boolean {
+  if (current == null || threshold == null) return false;
+  return alertOp === ">" || alertOp === "above" ? current > threshold : current < threshold;
+}
+
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
   const config = (entry.handlerConfig ?? {}) as Config;
   const lookbackMs = config.lookbackMs ?? DEFAULT_LOOKBACK_MS;
@@ -100,7 +111,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     const alerts = db.prepare(
       `SELECT ma.id, ma.metric_id, ma.message, ma.created_at,
               m.name as metricName, m.owner as explicitOwner, p.owner as projectOwner,
-              m.current, m.threshold, m.target, COALESCE(m.priority, 'P2') as priority
+              m.current, m.threshold, m.target, COALESCE(m.priority, 'P2') as priority,
+              m.alert_op as alertOp
        FROM metric_alerts ma
        LEFT JOIN metrics m ON m.id = ma.metric_id
        LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
@@ -150,6 +162,24 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
         data: judgment.data,
         timestamp: judgment.timestamp,
       }) : null;
+      const latestSnapshot = db.prepare(
+        `SELECT value, measured_at
+         FROM metric_snapshots
+         WHERE metric_id = ?
+         ORDER BY measured_at DESC
+         LIMIT 1`,
+      ).get(alert.metric_id) as SnapshotRow | null;
+      const validatedAfterJudgment = !!judgment && !!latestSnapshot?.measured_at && latestSnapshot.measured_at > judgment.timestamp;
+      const stillBreaching = isBreaching(
+        latestSnapshot?.value ?? alert.current,
+        alert.threshold,
+        alert.alertOp,
+      );
+      const validationLine = judgmentData
+        ? validatedAfterJudgment
+          ? `  validation: ${stillBreaching ? "still breaching after judgment" : "latest snapshot is in range"} (snapshot age=${age(now, latestSnapshot?.measured_at)})`
+          : `  validation: awaiting a newer metrics snapshot after judgment`
+        : `  validation: no judgment to validate`;
 
       return [
         `- alert#${alert.id} metric=${alert.metric_id} priority=${alert.priority ?? "P2"} owner=${owner} age=${age(now, alert.created_at)}`,
@@ -159,6 +189,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
         judgmentData
           ? `  latest judgment: operation=${String(judgmentData.operation ?? "unknown")} session=${String(judgmentData.ownerSessionId ?? "unknown")} age=${age(now, judgment?.timestamp)} evidence=${String(judgmentData.evidence ?? "").slice(0, 220)}`
           : `  latest judgment: none recorded (no metric.alert_judged event)`,
+        validationLine,
       ].join("\n");
     });
 
@@ -189,6 +220,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       "Rules:",
       "- Prefer native ownership: metrics.owner, then project.owner, then agent-name prefix, then may fallback.",
       "- Treat metric.alert_judged as the durable record that the owner judged an alert.",
+      "- A judgment is not closure. If a newer snapshot still breaches after judgment, route it through metric-alert-triage again or take the missing operation.",
       "- If an alert has owner activity but no metric.alert_judged event, route it through the metric-alert-triage workflow or nudge the owner to produce a structured operation.",
       "- Take the smallest operation that advances closure: route/nudge owner, fix broken ownership/routing, document a valid exception, or escalate when blocked.",
       "- Do not create a project for this cron itself. Create/update a project only when you discover systemic implementation work that cannot be completed in this run.",
