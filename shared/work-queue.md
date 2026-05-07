@@ -13,7 +13,7 @@ Proposals flow: **arc proposes → human/may approves → dev implements**
 
 
 ## Proposed (needs review)
-- [ ] [P1] Exclude `error='Clean start (fresh)'` from `session.error-rate-6h` numerator (storm-aftermath supervisor-reap stamp inflates metric to 31% while real error rate is 6%; one-clause SQL change; KE-797; pairs with KE-795/796 storm thread; supersedes dev/workspace/2026-05-07-session-error-rate-interrupted-inflation.md by adding storm correlation) — agents/arc/workspace/proposals/2026-05-07-exclude-clean-start-fresh-from-session-error-rate.md (proposed: 2026-05-07)
+- [ ] [P1] Exclude `error='Clean start (fresh)'` from `session.error-rate-6h` numerator AND `session.failed-triage-rate-3h` denominator (storm-aftermath supervisor-reap stamp inflates error-rate to 31% while real is 6%; same pathology fired 3 threshold breaches today on triage-rate; KE-797 + KE-805; widened 2026-05-07) — agents/arc/workspace/proposals/2026-05-07-exclude-clean-start-fresh-from-session-error-rate.md (proposed: 2026-05-07)
 - [ ] [P0] Reopen heartbeat-efficiency project (closed on opCount metric that froze 18 min earlier; KE-796 F1: M4 will read ≥95% no-op by 09:13Z+24h) — agents/arc/workspace/proposals/2026-05-07-reopen-heartbeat-efficiency-opcount-frozen.md (proposed: 2026-05-07)
 - [ ] [P0] Add `"agent"` field to 5 silent cron entries (metric-alert-reactor/session-recovery/session-eval/escalation/context-learn — 0 lifetime fires; supersedes KE-455 remediation thread; KE-766) — agents/arc/workspace/proposals/2026-05-06-add-agent-field-to-silent-cron-entries.md (proposed: 2026-05-06)
 - [ ] [P0] Fix event-only handler subscriptions (session-recovery never fires) — agents/arc/workspace/proposals/2026-05-01-fix-event-only-handler-subscriptions.md (proposed: 2026-05-01)
