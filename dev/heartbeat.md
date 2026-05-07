@@ -31,6 +31,8 @@ SELECT sessionId, agent, status, error, startedAt FROM sessions WHERE status='er
 SELECT event_type, data, timestamp FROM events WHERE event_type='handler.failed' ORDER BY timestamp DESC LIMIT 5;
 
 -- Long/high-op sessions (inefficiency)
+-- Caveat: sessions.opCount is currently frozen at 0 in the live runtime (KE-796).
+-- Treat an empty result as "opCount unavailable," not proof that no high-op sessions exist.
 SELECT sessionId, agent, opCount, startedAt, endedAt, (endedAt - startedAt) AS duration_ms
 FROM sessions
 WHERE opCount > 10
