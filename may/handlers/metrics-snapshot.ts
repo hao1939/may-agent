@@ -263,7 +263,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // ── Measure: Sessions/System output (with error isolation) ───────
 
     try {
-      const total = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ?", sixH);
+      // Only terminal sessions belong in the denominator. Including in-flight
+      // `running` sessions makes the rate look healthier while work is still
+      // underway and can hide short auth/API failure bursts.
+      const total = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ? AND status IN ('done','error','interrupted')", sixH);
       const err = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ? AND status IN ('error','interrupted')", sixH);
       record("session.error-rate-6h", total > 0 ? parseFloat((err / total).toFixed(4)) : 0, total);
     } catch (e) { ctx.log(`[metrics-snapshot] Error measuring session.error-rate-6h: ${e}`); }
