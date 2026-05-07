@@ -117,9 +117,12 @@ function getAgentMetrics(stateDir: string, agent: string): MetricRow[] {
         `SELECT m.id, m.name, m.current, m.target, m.unit, m.type, m.status, m.threshold, m.alert_op, m.config,
                 s.value as last_value, s.measured_at
          FROM metrics m
+         LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
+           AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
          LEFT JOIN metric_snapshots s ON m.id = s.metric_id
            AND s.measured_at = (SELECT MAX(measured_at) FROM metric_snapshots WHERE metric_id = m.id)
-         WHERE m.owner = ? AND m.status = 'active'
+         WHERE m.status = 'active'
+           AND COALESCE(NULLIF(trim(m.owner), ''), NULLIF(trim(p.owner), ''), '') = ?
          ORDER BY m.type, m.id`,
       )
       .all(agent) as unknown as MetricRow[];

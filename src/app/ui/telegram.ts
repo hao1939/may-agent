@@ -43,6 +43,7 @@ export interface TelegramBot {
 }
 
 const TELEGRAM_MAX_LENGTH = 4096;
+const PROACTIVE_DEDUPE_WINDOW_MS = 60 * 60 * 1000;
 
 export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   const { bus, manager: _manager, getSessionId } = opts;
@@ -70,6 +71,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   bus.emit({ type: "info", message: `[telegram] Bot enabled (${allowedChatIds.length} allowed chat(s))` });
   let running = true;
   let offset = 0;
+  const proactiveDedupe = new Map<string, { lastSentAt: number; suppressed: number }>();
 
   // ── Telegram API helpers ─────────────────────────────────────────
 
@@ -102,7 +104,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         // If markdown parsing fails, retry without parse_mode
         if (parseMode) {
           try {
-            await apiCall("sendMessage", { chat_id: chatId, text: chunk });
+            const result = await apiCall("sendMessage", { chat_id: chatId, text: chunk });
+            lastMsgId = result?.message_id;
           } catch (retryErr) {
             const msg = retryErr instanceof Error ? retryErr.message : String(retryErr);
             bus.emit({ type: "info", message: `[telegram] Send failed: ${msg}` });
@@ -162,6 +165,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
    * Always stores context for reply enrichment. */
   function sendToUser(text: string, context?: { eventType?: string; agent?: string; sessionId?: string; projectId?: string; summary?: string }) {
     if (!pendingChatId) return;
+    if (shouldSuppressProactive(text, context)) return;
     const ctx = {
       eventType: context?.eventType || "response",
       agent: context?.agent || opts.interfaceAgent,
@@ -173,6 +177,36 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       const msg = err instanceof Error ? err.message : String(err);
       bus.emit({ type: "info", message: `[telegram] Send failed: ${msg}` });
     });
+  }
+
+  function shouldSuppressProactive(text: string, context?: { eventType?: string; agent?: string }): boolean {
+    if (context?.eventType !== "message.created" && context?.eventType !== "alert") return false;
+
+    const now = Date.now();
+    const key = [
+      context.eventType,
+      context.agent ?? opts.interfaceAgent,
+      text.replace(/\s+/g, " ").trim().slice(0, 1000),
+    ].join("\n");
+
+    for (const [existingKey, value] of proactiveDedupe) {
+      if (now - value.lastSentAt > PROACTIVE_DEDUPE_WINDOW_MS) proactiveDedupe.delete(existingKey);
+    }
+
+    const existing = proactiveDedupe.get(key);
+    if (existing && now - existing.lastSentAt < PROACTIVE_DEDUPE_WINDOW_MS) {
+      existing.suppressed++;
+      if (existing.suppressed === 1 || existing.suppressed % 100 === 0) {
+        bus.emit({
+          type: "info",
+          message: `[telegram] Suppressed duplicate ${context.eventType} (${existing.suppressed}x): ${text.slice(0, 120)}`,
+        });
+      }
+      return true;
+    }
+
+    proactiveDedupe.set(key, { lastSentAt: now, suppressed: 0 });
+    return false;
   }
 
   // ── Incoming message handling ────────────────────────────────────
@@ -198,7 +232,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     // Context-enriched reply: if user replied to a notification, enrich their text
     let enrichedText = text;
-    const replyToMsgId = msg.reply_to_message?.message_id;
+    const replyToMsg = msg.reply_to_message;
+    const replyToMsgId = replyToMsg?.message_id;
     if (replyToMsgId) {
       try {
         const { getDb } = await import("../../lib/requests.js");
@@ -268,6 +303,27 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
               ["telegram.reply", "telegram", ctx.agent || "unknown", JSON.stringify({ enriched: true, hasSessionCtx: !!ctx.session_id, originalMsgId: replyToMsgId }), Date.now()]);
           } catch {}
+        } else {
+          const quoted = telegramMessageText(replyToMsg);
+          if (quoted) {
+            enrichedText = [
+              "[User replying to Telegram message]",
+              `Original Telegram message: ${quoted.slice(0, 1000)}`,
+              "",
+              `User says: ${text}`,
+            ].join("\n");
+            bus.emit({ type: "info", message: `[telegram] Enriched reply from Telegram quote (msg ${replyToMsgId})` });
+            try {
+              db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+                ["telegram.reply", "telegram", opts.interfaceAgent, JSON.stringify({ enriched: true, hasDbCtx: false, fallback: "telegram-quote", originalMsgId: replyToMsgId }), Date.now()]);
+            } catch {}
+          } else {
+            bus.emit({ type: "info", message: `[telegram] Reply context missing for msg ${replyToMsgId}` });
+            try {
+              db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+                ["telegram.reply", "telegram", opts.interfaceAgent, JSON.stringify({ enriched: false, reason: "context-not-found", originalMsgId: replyToMsgId }), Date.now()]);
+            } catch {}
+          }
         }
       } catch {}
     }
@@ -312,23 +368,25 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     bus.emit({ type: "input", message: finalMessage, source: "telegram" } as any);
   }
 
-  // ── Outbound: accumulate assistant text, send on turn end ────────
+  // ── Outbound: session-scoped assistant responses ─────────────────
 
-  let pendingText = "";
-  let sentAnyText = false; // track if we ever responded to the user
   const pendingChatId: string | null = allowedChatIds[0] || null;
 
   // Track the chat session tree — only forward events from the active
   // chat session and its children (delegated sub-sessions).
+  let rootChatSessionId: string | null = null;
   const watchedSessions = new Set<string>();
+  const outboundBySession = new Map<string, { pendingText: string; sentAnyText: boolean; sentText: string }>();
 
   const unsubBus = bus.subscribe((event: any) => {
-    const chatSid = getSessionId();
-
-    // Keep the watched set in sync with the current chat session
-    if (chatSid && !watchedSessions.has(chatSid)) {
+    // Root chat session starts define the Telegram response turn. Do not
+    // depend on getSessionId() later: restarts/cancellations can clear it
+    // before session.end arrives.
+    if (event.type === "session.start" && event.sessionId && isRootChatSession(event)) {
+      rootChatSessionId = event.sessionId;
       watchedSessions.clear();
-      watchedSessions.add(chatSid);
+      watchedSessions.add(event.sessionId);
+      outboundBySession.set(event.sessionId, { pendingText: "", sentAnyText: false, sentText: "" });
     }
 
     // Auto-expand: child sessions inherit from parent (same as socket.ts)
@@ -341,16 +399,21 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       if (!watchedSessions.has(event.sessionId)) return;
     }
 
-    // ── Root chat session: accumulate text & flush on turn_end ──
+    const rootSid = rootChatSessionId;
+
+    // ── Root chat session: send assistant text as it becomes available ──
     // Only stream text from the root chat session (May's direct conversation).
     // Child sessions (delegated coder, tech-lead, etc.) get ONE summary instead.
-    if (event.type === "text" && "sessionId" in event && event.sessionId === chatSid) {
-      pendingText += event.text;
+    if (event.type === "text" && "sessionId" in event && event.sessionId === rootSid) {
+      const state = sessionState(event.sessionId);
+      state.pendingText += event.text;
+      flushPendingText(event.sessionId);
     }
 
-    if (event.type === "turn_end" && "sessionId" in event && event.sessionId === chatSid) {
-      const hadText = pendingText.trim().length > 0;
-      flushPendingText();
+    if (event.type === "turn_end" && "sessionId" in event && event.sessionId === rootSid) {
+      const state = sessionState(event.sessionId);
+      const hadText = state.pendingText.trim().length > 0 || state.sentAnyText;
+      flushPendingText(event.sessionId);
 
       // If no text was accumulated but errors occurred, notify user
       // (e.g., context overflow — LLM returned empty content, user gets silence)
@@ -363,7 +426,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     // ── Child session completion: send ONE summary ──
     // When a child session in the watched tree ends, send a single
     // summary message instead of streaming all its individual turns.
-    if (event.type === "session.end" && "sessionId" in event && event.sessionId !== chatSid) {
+    if (event.type === "session.end" && "sessionId" in event && event.sessionId !== rootSid) {
       if (pendingChatId) {
         const fp = event.finishParams as Record<string, unknown> | undefined;
         const summary = (fp?.summary as string) ?? (typeof event.outcome === "string" ? event.outcome.slice(0, 200) : "completed");
@@ -377,14 +440,25 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
 
     // When the root chat session ends, check if we ever responded
-    if (event.type === "session.end" && "sessionId" in event && event.sessionId === chatSid && pendingChatId) {
+    if (event.type === "session.end" && "sessionId" in event && event.sessionId === rootSid && pendingChatId) {
+      const state = sessionState(event.sessionId);
+      flushPendingText(event.sessionId);
       if (event.error) {
         const errMsg = String(event.error).length > 200 ? String(event.error).slice(0, 200) + "…" : String(event.error);
         sendToUser(`❌ Couldn't process your message: ${errMsg}`, { eventType: "error", agent: event.agent, sessionId: event.sessionId, summary: errMsg });
-      } else if (!sentAnyText) {
-        sendToUser(`❌ Couldn't generate a response. Try again or rephrase.`, { eventType: "error", agent: event.agent, sessionId: event.sessionId });
+      } else {
+        const summary = String(event.summary ?? "").trim();
+        if (summary && shouldSendSummary(event.sessionId, summary)) {
+          sendToUser(summary, { eventType: "session.end", agent: event.agent, sessionId: event.sessionId, summary });
+          state.sentAnyText = true;
+          state.sentText += "\n" + summary;
+        } else if (!state.sentAnyText) {
+          sendToUser(`❌ Couldn't generate a response. Try again or rephrase.`, { eventType: "error", agent: event.agent, sessionId: event.sessionId });
+        }
       }
-      sentAnyText = false; // reset for next session
+      rootChatSessionId = null;
+      watchedSessions.clear();
+      outboundBySession.delete(event.sessionId);
     }
 
     // Human-directed messages — forward to Telegram when from the interface agent.
@@ -396,14 +470,49 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
   });
 
-  function flushPendingText(): void {
-    const text = pendingText.trim();
-    pendingText = "";
+  function sessionState(sessionId: string): { pendingText: string; sentAnyText: boolean; sentText: string } {
+    let state = outboundBySession.get(sessionId);
+    if (!state) {
+      state = { pendingText: "", sentAnyText: false, sentText: "" };
+      outboundBySession.set(sessionId, state);
+    }
+    return state;
+  }
+
+  function flushPendingText(sessionId: string): void {
+    const state = sessionState(sessionId);
+    const text = state.pendingText.trim();
+    state.pendingText = "";
 
     if (!text || !pendingChatId) return;
 
-    sentAnyText = true;
-    sendToUser(text);
+    state.sentAnyText = true;
+    state.sentText += "\n" + text;
+    sendToUser(text, { eventType: "response", agent: opts.interfaceAgent, sessionId });
+  }
+
+  function shouldSendSummary(sessionId: string, summary: string): boolean {
+    const sent = normalizeForCompare(sessionState(sessionId).sentText);
+    const candidate = normalizeForCompare(summary);
+    if (!candidate) return false;
+    if (!sent) return true;
+    return !sent.includes(candidate) && !candidate.includes(sent);
+  }
+
+  function normalizeForCompare(text: string): string {
+    return text.replace(/\s+/g, " ").trim();
+  }
+
+  function isRootChatSession(event: any): boolean {
+    if (event.parentSessionId) return false;
+    if (event.agent !== opts.interfaceAgent) return false;
+    if (event.kind && event.kind !== "chat") return false;
+    return event.source === "telegram" || event.sessionId === getSessionId();
+  }
+
+  function telegramMessageText(message: any): string {
+    const text = message?.text ?? message?.caption ?? "";
+    return typeof text === "string" ? text.trim() : "";
   }
 
   // ── Long-polling loop ───────────────────────────────────────────

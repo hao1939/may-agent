@@ -21,6 +21,7 @@ export {
   resolveReadPath,
   expandPath,
   createSystemStatusTool,
+  createQueryDbTool,
   createFinishTool,
   createCheckpointTool,
   readCheckpoints,

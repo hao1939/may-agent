@@ -183,7 +183,7 @@ export interface ErrorNudge {
 export const DEFAULT_ERROR_NUDGES: ErrorNudge[] = [
 	{
 		pattern: /sqlite3:\s*command not found/i,
-		hint: "\n\n💡 Hint: sqlite3 CLI is not available. Use `bun -e` with bun:sqlite. DB is at .state/may.db.",
+		hint: "\n\n💡 Hint: sqlite3 CLI is not available. Use the query_db tool for read-only DB inspection instead of guessing DB paths from bash.",
 	},
 	{
 		pattern: /bun:\s*command not found/i,
@@ -199,7 +199,7 @@ export const DEFAULT_ERROR_NUDGES: ErrorNudge[] = [
 	},
 	{
 		pattern: /node:sqlite/i,
-		hint: "\n\n💡 Hint: node:sqlite is not available. Use bun:sqlite instead. The DB MUST be opened readonly: bun -e \"import{Database}from'bun:sqlite'; const db=new Database('.state/may.db',{readonly:true}); ...\" NEVER write to the DB from bash — it causes corruption.",
+		hint: "\n\n💡 Hint: node:sqlite is not available. Use the query_db tool for read-only DB inspection instead of opening SQLite from bash.",
 	},
 ];
 

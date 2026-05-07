@@ -6,8 +6,8 @@ describe("applyErrorNudges", () => {
 		const output = "bash: sqlite3: command not found";
 		const result = applyErrorNudges(output);
 		expect(result).toContain("💡 Hint:");
-		expect(result).toContain("bun:sqlite");
-		expect(result).toContain(".state/may.db");
+		expect(result).toContain("query_db");
+		expect(result).toContain("guessing DB paths");
 	});
 
 	it("appends bun hint when 'bun: command not found' appears", () => {
@@ -37,7 +37,7 @@ describe("applyErrorNudges", () => {
 		const output = 'Error: Cannot find module "node:sqlite"';
 		const result = applyErrorNudges(output);
 		expect(result).toContain("💡 Hint:");
-		expect(result).toContain("bun:sqlite");
+		expect(result).toContain("query_db");
 	});
 
 	it("does not modify output when no patterns match", () => {
@@ -83,7 +83,7 @@ describe("applyErrorNudges", () => {
 		const output = "bash: sqlite3: command not found";
 		const result = applyErrorNudges(output, customNudges);
 		// Custom nudges replace defaults — sqlite3 hint should NOT appear
-		expect(result).not.toContain("bun:sqlite");
+		expect(result).not.toContain("query_db");
 		expect(result).toBe(output);
 	});
 

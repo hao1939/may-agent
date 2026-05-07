@@ -1,8 +1,9 @@
 /**
  * ChatSession — persistent chat session for the human-facing agent.
  *
- * Uses a single persistent session (autoClose: "never") that stays idle
- * between messages. Subsequent messages wake the session via manager.input().
+ * Each human message starts or wakes a chat turn. If the previous chat turn
+ * has already completed, the next turn resumes the same session id with the
+ * prior transcript loaded as context.
  *
  * Session state is persisted to JSONL automatically by the manager's
  * subscribeForPersistence(). On restart, the user can resume an old
@@ -176,17 +177,31 @@ export class ChatSession {
   }
 
   /**
-   * Send a message to the persistent chat session.
-   * Creates the session on first call, wakes from idle on subsequent calls.
+   * Send a message to the chat session.
+   * Creates a session on first call, wakes it while active, or resumes the same
+   * session id with prior transcript context once the previous turn completed.
    */
   private sendMessage(message: string, source?: string): void {
+    let resumeFromSessionId: string | null = null;
+    if (this.sessionId && !this.manager.hasActiveSession(this.sessionId)) {
+      resumeFromSessionId = this.sessionId;
+      this.bus.emit({
+        type: "info",
+        message: `[chat] Resuming completed session ${this.sessionId} with transcript context.`,
+      });
+      this.sessionId = null;
+    }
+
     if (!this.sessionId) {
-      // First message: create the persistent session
+      // First message, or a resumed turn after the previous chat session completed.
+      const resumeMessages = resumeFromSessionId ? this.loadResumeMessages(resumeFromSessionId) : undefined;
       this.sessionId = this.manager.run(this.agentName, message, {
+        sessionId: resumeFromSessionId ?? undefined,
         kind: "chat",
         autoClose: "never",
         compaction: true,
         source: source ?? "chat",
+        resumeMessages,
       });
       this.trackCompletion(this.sessionId);
       return;
@@ -221,6 +236,17 @@ export class ChatSession {
         this.bus.emit({ type: "info", message: `[chat] Error: ${msg}` });
         this.onDone?.();
       });
+  }
+
+  private loadResumeMessages(sessionId: string): any[] | undefined {
+    try {
+      const messages = this.manager.progress(sessionId, 200) as any[];
+      return messages.length > 0 ? messages : undefined;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.bus.emit({ type: "info", message: `[chat] Could not load transcript for ${sessionId}: ${msg}` });
+      return undefined;
+    }
   }
 
   /**

@@ -19,24 +19,62 @@ import { existsSync, unlinkSync } from "node:fs";
 import type { EventBus, AgentEvent } from "../event-bus.js";
 import type { SubagentManager } from "../../lib/index.js";
 
-// ── Valid command types (for validation) ────────────────────────────────
+// ── Frame normalization ─────────────────────────────────────────────────
+//
+// Event-first rule: socket-local protocol is tiny (`subscribe`, `status`).
+// Everything else is normalized to one bus event and emitted unchanged where
+// practical. Legacy aliases stay here at the boundary.
 
-const VALID_COMMAND_TYPES = new Set([
-  "steer",
-  "cancel",
-  "cancel_all",
-  "cancel_task",
-  "close",
-  "subscribe",
-  "status",
-  "input",
-  "fork",
-  "message",
-  "reload_agents",
-  "restart",
-  "resume",
-  "emit",
-]);
+const SOCKET_CONTROL_TYPES = new Set(["subscribe", "status"]);
+
+export type SocketFrame =
+  | { kind: "control"; command: "subscribe" | "status"; frame: Record<string, unknown> }
+  | { kind: "event"; command: string; event: Record<string, unknown> }
+  | { kind: "error"; command: unknown; message: string };
+
+export function normalizeSocketFrame(frame: Record<string, unknown>): SocketFrame {
+  const cmdType = frame.type;
+  if (typeof cmdType !== "string" || !cmdType.trim()) {
+    return { kind: "error", command: cmdType ?? null, message: `Missing or invalid event type: ${String(cmdType)}` };
+  }
+
+  if (SOCKET_CONTROL_TYPES.has(cmdType)) {
+    return { kind: "control", command: cmdType as "subscribe" | "status", frame };
+  }
+
+  if (cmdType === "emit") {
+    const eventName = frame.event;
+    if (typeof eventName !== "string" || !eventName.trim()) {
+      return { kind: "error", command: cmdType, message: "emit frame requires string field 'event'" };
+    }
+    const { type: _, event: __, ...rest } = frame;
+    return { kind: "event", command: cmdType, event: { type: eventName, ...rest } };
+  }
+
+  let event: Record<string, unknown> = { ...frame };
+
+  if (cmdType === "input") {
+    if (!event.source) event.source = "socket";
+    if (!event.message && event.content) event.message = event.content;
+  } else if (cmdType === "fork") {
+    event = {
+      type: "fork",
+      agent: frame.agent,
+      task: frame.task ?? frame.message,
+      opts: { ...(typeof frame.opts === "object" && frame.opts ? frame.opts : {}), source: "socket" },
+    };
+  } else if (cmdType === "message" && !event.task && event.content) {
+    event.task = event.content;
+  } else if (cmdType === "close") {
+    event = { type: "shutdown" };
+  } else if (cmdType === "cancel_task") {
+    event = { type: "cancel_all" };
+  } else if (cmdType === "reload_agents") {
+    event = { type: "reload" };
+  }
+
+  return { kind: "event", command: cmdType, event };
+}
 
 export interface SocketUIOptions {
   socketPath: string;
@@ -207,30 +245,20 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
           continue;
         }
 
-        // Validate command type (L4)
-        const cmdType = cmd.type;
-        if (typeof cmdType !== "string" || !VALID_COMMAND_TYPES.has(cmdType)) {
+        const normalized = normalizeSocketFrame(cmd);
+        if (normalized.kind === "error") {
           socket.write(
             JSON.stringify({
               type: "error",
-              command: cmdType ?? null,
-              message: `Unknown command type: ${String(cmdType)}`,
+              command: normalized.command ?? null,
+              message: normalized.message,
             }) + "\n",
           );
           continue;
         }
 
-        // Inject source for input commands from socket (if not already set)
-        if (cmdType === "input" && !cmd.source) {
-          cmd.source = "socket";
-        }
-        // Normalize "content" → "message" for input commands (common mistake)
-        if (cmdType === "input" && !cmd.message && cmd.content) {
-          cmd.message = cmd.content;
-        }
-
         // Handle subscribe locally (socket-server concern, not bus command)
-        if (cmdType === "subscribe") {
+        if (normalized.kind === "control" && normalized.command === "subscribe") {
           const sessions = cmd.sessions as string[] | undefined;
           const client = clients.get(socket);
           if (client && Array.isArray(sessions)) {
@@ -256,7 +284,7 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
         }
 
         // Handle status locally — return active sessions list to the requesting client
-        if (cmdType === "status") {
+        if (normalized.kind === "control" && normalized.command === "status") {
           const statusList = manager.status();
           socket.write(
             JSON.stringify({
@@ -274,29 +302,15 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
           );
           continue;
         }
+        if (normalized.kind !== "event") continue;
 
-        // Normalize and emit to bus — single path for all commands
-        let busEvent: Record<string, unknown> = { ...cmd };
-        if (cmdType === "emit") {
-          // Unwrap: { type: "emit", event: "heartbeat.trigger", ...data }
-          // → bus gets: { type: "heartbeat.trigger", ...data }
-          const eventName = cmd.event as string;
-          if (eventName) {
-            const { type: _, event: __, ...rest } = cmd;
-            busEvent = { type: eventName, ...rest };
-          }
-        } else if (cmdType === "fork") {
-          busEvent = { type: "fork", agent: cmd.agent, task: cmd.task ?? cmd.message, opts: { source: "socket" } };
-        } else if (cmdType === "close") {
-          busEvent = { type: "shutdown" };
-        } else if (cmdType === "cancel_task") {
-          busEvent = { type: "cancel_all" };
-        } else if (cmdType === "reload_agents") {
-          busEvent = { type: "reload" };
-        }
-
-        bus.emit(busEvent as Parameters<typeof bus.emit>[0]);
-        socket.write(JSON.stringify({ type: "ok", command: cmdType }) + "\n");
+        // Ack acceptance before dispatch. The bus is synchronous and handlers
+        // can be slow; socket ack means "accepted into event transport", not
+        // "all handlers completed".
+        socket.write(JSON.stringify({ type: "ok", command: normalized.command }) + "\n");
+        setImmediate(() => {
+          bus.emit(normalized.event as Parameters<typeof bus.emit>[0]);
+        });
       }
     });
 

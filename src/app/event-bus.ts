@@ -77,6 +77,13 @@ export type SessionEvent =
       filesModified?: string[];
       /** Workspace path for agent-specific file writes. */
       workspacePath?: string;
+      parentSessionId?: string;
+      workflowRunId?: string;
+      projectId?: string;
+      source?: string;
+      kind?: string;
+      requestId?: string;
+      stepLabel?: string;
     };
 
 /** System events */
