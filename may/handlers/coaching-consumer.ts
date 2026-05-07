@@ -101,7 +101,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
   return async () => {
     const evalDir = resolve(EVAL_DIR);
     if (!existsSync(evalDir)) {
-      ctx.log("[coaching-consumer] No evaluations directory found");
+      ctx.sdk.log("info", "[coaching-consumer] No evaluations directory found");
       return;
     }
 
@@ -115,7 +115,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     );
 
     if (files.length === 0) {
-      ctx.log("[coaching-consumer] No new evaluation files to process");
+      ctx.sdk.log("info", "[coaching-consumer] No new evaluation files to process");
       return;
     }
 
@@ -233,7 +233,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
       ctx.sdk.log("info", `[coaching-consumer] Generated ${recommendations.length} recommendations for ${Object.keys(byAgent).length} agents`);
     } else {
-      ctx.log("[coaching-consumer] No threshold violations found");
+      ctx.sdk.log("info", "[coaching-consumer] No threshold violations found");
     }
 
     // Save state

@@ -130,7 +130,7 @@ function countSpecClaimCoverage(projectRoot: string, metricIds: Set<string>): { 
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async (_event?: TriggerEvent) => {
-    const db = ctx.getDb();
+    const db = ctx.sdk.getDb();
     const now = Date.now();
 
     // ── Ensure indexes exist (idempotent) ────────────────────────────
@@ -160,7 +160,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const hasMetricPriorityColumn = metricColumns.has("priority");
     const hasMetricProjectColumn = metricColumns.has("project");
     const configByMetricId = new Map(ALL_METRICS.map(m => [m.id, m.config ?? null]));
-    const configuredAgents = listConfiguredAgents(ctx.agentsRoot);
+    const configuredAgents = listConfiguredAgents(ctx.sdk.paths.agents);
 
     // ── Ensure metric rows exist ─────────────────────────────────────
 
@@ -224,19 +224,19 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       failed = count("SELECT COUNT(*) as c FROM events WHERE event_type = 'handler.failed' AND timestamp > ?", sixH);
       record("handler.completed-count", completed);
       record("handler.failed-count", failed);
-    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring handler counts: ${e}`); }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring handler counts: ${e}`); }
 
     try {
       const total = completed + failed;
       record("handler.success-rate", total > 0 ? parseFloat((completed / total).toFixed(4)) : 1, total);
-    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring success-rate: ${e}`); }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring success-rate: ${e}`); }
 
     try {
       const coverage = count(
         `SELECT COUNT(DISTINCT json_extract(data, '$.agent')) as c FROM events
          WHERE event_type = 'handler.completed' AND json_extract(data, '$.handler') LIKE 'heartbeat-%' AND timestamp > ?`, twoH);
       record("handler.heartbeat-coverage", coverage);
-    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring heartbeat-coverage: ${e}`); }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring heartbeat-coverage: ${e}`); }
 
     try {
       // Exclude AI/eval handlers from p95 — they are long-running agent sessions
@@ -254,11 +254,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         const p95 = durations[Math.min(Math.floor(durations.length * 0.95), durations.length - 1)];
         record("handler.p95-duration", p95, durations.length);
       }
-    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring p95-duration: ${e}`); }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring p95-duration: ${e}`); }
 
     try {
       record("handler.fires-per-hour", count("SELECT COUNT(*) as c FROM events WHERE event_type = 'handler.started' AND timestamp > ?", oneH));
-    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring fires-per-hour: ${e}`); }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring fires-per-hour: ${e}`); }
 
     // ── Measure: Sessions/System output (with error isolation) ───────
 
@@ -269,17 +269,17 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const total = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ? AND status IN ('done','error','interrupted')", sixH);
       const err = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ? AND status IN ('error','interrupted')", sixH);
       record("session.error-rate-6h", total > 0 ? parseFloat((err / total).toFixed(4)) : 0, total);
-    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring session.error-rate-6h: ${e}`); }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring session.error-rate-6h: ${e}`); }
 
     try {
       // Counts changed/created files in last 24h without blocking the runtime
       // event loop. Socket/Telegram must stay responsive while metrics run.
       let files: string[] = [];
       try {
-        await execFileAsync("git", ["-C", ctx.projectRoot, "rev-parse", "--git-dir"], { timeout: 3000, maxBuffer: 1024 * 1024 });
+        await execFileAsync("git", ["-C", ctx.sdk.paths.root, "rev-parse", "--git-dir"], { timeout: 3000, maxBuffer: 1024 * 1024 });
         const { stdout } = await execFileAsync(
           "git",
-          ["-C", ctx.projectRoot, "log", "--since=24.hours", "--name-only", "--pretty=format:"],
+          ["-C", ctx.sdk.paths.root, "log", "--since=24.hours", "--name-only", "--pretty=format:"],
           { timeout: 5000, maxBuffer: 8 * 1024 * 1024 },
         );
         files = stdout.split("\n");
@@ -287,14 +287,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         const { stdout } = await execFileAsync(
           "find",
           [
-            ctx.projectRoot,
-            "-path", join(ctx.projectRoot, ".state"),
+            ctx.sdk.paths.root,
+            "-path", join(ctx.sdk.paths.root, ".state"),
             "-prune",
             "-o",
-            "-path", join(ctx.projectRoot, "node_modules"),
+            "-path", join(ctx.sdk.paths.root, "node_modules"),
             "-prune",
             "-o",
-            "-path", join(ctx.projectRoot, ".git"),
+            "-path", join(ctx.sdk.paths.root, ".git"),
             "-prune",
             "-o",
             "-type", "f",
@@ -315,7 +315,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         .filter(Boolean)
         .filter((file) => !/^(\.state\/sessions\/|node_modules\/|dist\/|build\/|coverage\/|\.git\/)/.test(file))).size;
       record("system.real-output-24h", n);
-    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring system.real-output-24h: ${e}`); }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring system.real-output-24h: ${e}`); }
 
     // ── Measure: Project (with error isolation) ──────────────────────
 
@@ -324,11 +324,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     try {
       record("project.active-count", count("SELECT COUNT(*) as c FROM projects WHERE status = 'active'"));
-    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring active-count: ${e}`); }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring active-count: ${e}`); }
 
     try {
       record("project.blocked-count", count("SELECT COUNT(*) as c FROM projects WHERE status IN ('blocked', 'waiting')"));
-    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring blocked-count: ${e}`); }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring blocked-count: ${e}`); }
 
     // Stale: active projects with no iteration event in 48h (single query, no N+1)
     try {
@@ -342,38 +342,38 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
                AND e.data LIKE '%' || p.id || '%'
            )`, fortyEightH);
       record("project.stale-active-count", stale);
-    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring stale-active-count: ${e}`); }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring stale-active-count: ${e}`); }
 
     try {
       record("project.iterations-24h", count("SELECT COUNT(*) as c FROM events WHERE event_type = 'project.iteration' AND timestamp > ?", twentyFourH));
-    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring iterations-24h: ${e}`); }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring iterations-24h: ${e}`); }
 
     try {
       const blocked7d = count("SELECT COUNT(*) as c FROM events WHERE event_type = 'project.blocked' AND timestamp > ?", sevenD);
       const productive7d = count("SELECT COUNT(*) as c FROM events WHERE event_type IN ('project.iteration', 'project.completed') AND timestamp > ?", sevenD);
       const total7d = blocked7d + productive7d;
       record("project.blocked-rate-7d", total7d > 0 ? parseFloat((blocked7d / total7d).toFixed(4)) : 0);
-    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring blocked-rate-7d: ${e}`); }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring blocked-rate-7d: ${e}`); }
 
     try {
       record("project.blocked-over-6h", count("SELECT COUNT(*) as c FROM projects WHERE status IN ('blocked', 'waiting') AND updated_at < ?", now - 6 * 3600000));
-    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring blocked-over-6h: ${e}`); }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring blocked-over-6h: ${e}`); }
 
     // ── Measure: v2 conformance and status honesty ───────────────────
 
     try {
-      const managerLoc = countFileLines(join(ctx.projectRoot, "src/lib/manager.ts"));
+      const managerLoc = countFileLines(join(ctx.sdk.paths.root, "src/lib/manager.ts"));
       record("v2.manager-loc", managerLoc, 1);
 
-      const runtimeGlueLoc = RUNTIME_GLUE_FILES.reduce((sum, relPath) => sum + countFileLines(join(ctx.projectRoot, relPath)), 0);
+      const runtimeGlueLoc = RUNTIME_GLUE_FILES.reduce((sum, relPath) => sum + countFileLines(join(ctx.sdk.paths.root, relPath)), 0);
       record("v2.runtime-glue-loc", runtimeGlueLoc, RUNTIME_GLUE_FILES.length);
-    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring runtime LOC: ${e}`); }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring runtime LOC: ${e}`); }
 
     try {
       const activeMetricIds = new Set((db.prepare("SELECT id FROM metrics WHERE status = 'active'").all() as Array<{ id: string }>).map(row => row.id));
-      const coverage = countSpecClaimCoverage(ctx.projectRoot, activeMetricIds);
+      const coverage = countSpecClaimCoverage(ctx.sdk.paths.root, activeMetricIds);
       record("v2.spec-coverage-rate", coverage.rate, coverage.total);
-    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring spec coverage: ${e}`); }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring spec coverage: ${e}`); }
 
     try {
       const totalSessions = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ?", twentyFourH);
@@ -397,7 +397,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         twentyFourH, now, now,
       );
       record("capability.session-trace-completeness", totalSessions > 0 ? parseFloat((completeSessions / totalSessions).toFixed(4)) : 0, totalSessions);
-    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring session trace completeness: ${e}`); }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring session trace completeness: ${e}`); }
 
     try {
       const staleActiveProjects = count(
@@ -430,7 +430,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
                AND json_extract(e.data, '$.sessionId') = s.sessionId
            )`, now - 24 * 3600000);
 
-      const configuredAgents = [...listConfiguredAgents(ctx.agentsRoot)];
+      const configuredAgents = [...listConfiguredAgents(ctx.sdk.paths.agents)];
       let agentsWithoutHeartbeat = 0;
       for (const agent of configuredAgents) {
         const recentHeartbeat = count(
@@ -468,10 +468,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           for (const s of orphaned) {
             insert.run("session.end", JSON.stringify({ sessionId: s.sessionId, agent: s.agent, status: s.status, reconciled: true }), s.endedAt || now);
           }
-          if (orphaned.length > 0) ctx.log(`[metrics-snapshot] Reconciled ${orphaned.length} orphaned session.end events`);
+          if (orphaned.length > 0) ctx.sdk.log("info", `[metrics-snapshot] Reconciled ${orphaned.length} orphaned session.end events`);
         } catch (reconErr) { /* best-effort reconciliation */ }
       }
-    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring status-reality mismatch: ${e}`); }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring status-reality mismatch: ${e}`); }
 
     // ── Generic metrics (source_query / source_command) ──────────────
 
@@ -491,7 +491,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           }
         } else if (m.source_command) {
           const { stdout } = await execAsync(m.source_command, {
-            cwd: ctx.projectRoot,
+            cwd: ctx.sdk.paths.root,
             timeout: 5000,
             maxBuffer: 1024 * 1024,
           });
@@ -640,33 +640,33 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
               ? ((db.prepare("SELECT COALESCE(priority, 'P2') as priority FROM metrics WHERE id = ?").get(m.id) as { priority?: string } | null)?.priority ?? "P2")
               : "P2";
             try {
-              ctx.dispatchEvent("metric.breach", {
+              ctx.sdk.emit("metric.breach", {
                 owner, metricId: m.id, metricName: m.name,
                 current: m.current, threshold: m.threshold, target: m.target, message, priority,
               });
-            } catch (e) { ctx.log(`[metrics-snapshot] Error emitting metric.breach for ${m.id}: ${e}`); }
+            } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error emitting metric.breach for ${m.id}: ${e}`); }
           }
         } else if (openAlert) {
           db.run("UPDATE metric_alerts SET resolved_at = ? WHERE id = ?", [now, openAlert.id]);
           try {
-            ctx.dispatchEvent("metric.recovered", {
+            ctx.sdk.emit("metric.recovered", {
               metricId: m.id,
               metricName: m.name,
             });
-          } catch (e) { ctx.log(`[metrics-snapshot] Error emitting metric.recovered for ${m.id}: ${e}`); }
+          } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error emitting metric.recovered for ${m.id}: ${e}`); }
         }
 
         // ── Stall event (separate from breach) ──
         if (stallDetected) {
           const message = `${m.name ?? m.id} stalled: no change for ${Math.round((alertConfig?.stall_after_ms || 0) / 60000)}min`;
           try {
-            ctx.dispatchEvent("metric.stalled", {
+            ctx.sdk.emit("metric.stalled", {
               owner, metricId: m.id, metricName: m.name, message,
             });
-          } catch (e) { ctx.log(`[metrics-snapshot] Error emitting metric.stalled for ${m.id}: ${e}`); }
+          } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error emitting metric.stalled for ${m.id}: ${e}`); }
         }
       }
-    } catch (e) { ctx.log(`[metrics-snapshot] Error during alert lifecycle: ${e}`); }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error during alert lifecycle: ${e}`); }
 
     // ── Snapshot retention cleanup (keep last 30 days) ───────────────
 
@@ -674,10 +674,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const cutoff = now - RETENTION_DAYS * 86400000;
       const result = db.run("DELETE FROM metric_snapshots WHERE measured_at < ?", [cutoff]);
       const deleted = (result as any)?.changes ?? 0;
-      if (deleted > 0) ctx.log(`[metrics-snapshot] Cleaned ${deleted} old snapshots (>${RETENTION_DAYS}d)`);
-    } catch (e) { ctx.log(`[metrics-snapshot] Error during snapshot cleanup: ${e}`); }
+      if (deleted > 0) ctx.sdk.log("info", `[metrics-snapshot] Cleaned ${deleted} old snapshots (>${RETENTION_DAYS}d)`);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error during snapshot cleanup: ${e}`); }
 
-    ctx.log(`[metrics-snapshot] ${ALL_METRICS.length} built-in metrics recorded, ${measured}/${measurable.length} source-defined`);
+    ctx.sdk.log("info", `[metrics-snapshot] ${ALL_METRICS.length} built-in metrics recorded, ${measured}/${measurable.length} source-defined`);
 
     // ── Fire-and-forget: regenerate conformance report ──
     try {
@@ -686,9 +686,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         stdout: "ignore",
         stderr: "ignore",
       });
-      ctx.log(`[metrics-snapshot] Conformance report regeneration triggered`);
+      ctx.sdk.log("info", `[metrics-snapshot] Conformance report regeneration triggered`);
     } catch (e) {
-      ctx.log(`[metrics-snapshot] Failed to trigger conformance report: ${e}`);
+      ctx.sdk.log("info", `[metrics-snapshot] Failed to trigger conformance report: ${e}`);
     }
   };
 };
