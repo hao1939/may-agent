@@ -678,5 +678,17 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     } catch (e) { ctx.log(`[metrics-snapshot] Error during snapshot cleanup: ${e}`); }
 
     ctx.log(`[metrics-snapshot] ${ALL_METRICS.length} built-in metrics recorded, ${measured}/${measurable.length} source-defined`);
+
+    // ── Fire-and-forget: regenerate conformance report ──
+    try {
+      Bun.spawn(["bun", "run", "agents/shared/scripts/conformance-report.ts"], {
+        cwd: import.meta.dir + "/../../..",
+        stdout: "ignore",
+        stderr: "ignore",
+      });
+      ctx.log(`[metrics-snapshot] Conformance report regeneration triggered`);
+    } catch (e) {
+      ctx.log(`[metrics-snapshot] Failed to trigger conformance report: ${e}`);
+    }
   };
 };
