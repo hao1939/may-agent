@@ -72,7 +72,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           return;
         }
         ctx.log(`[metric-alert-reactor] Timer tick: found ${unresolved.length} unresolved alert(s), processing...`);
-        for (const row of unresolved) {
+        const promises = unresolved.map((row) => {
           const syntheticEvent: TriggerEvent = {
             type: "metric.breach",
             data: {
@@ -86,9 +86,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
               priority: row.priority,
             },
           };
-          // Re-invoke self with synthetic event (inline the logic below)
-          await processBreachEvent(ctx, syntheticEvent, configuredAgents);
-        }
+          return processBreachEvent(ctx, syntheticEvent, configuredAgents);
+        });
+        await Promise.allSettled(promises);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
         ctx.log(`[metric-alert-reactor] Timer tick DB error: ${msg}`);
@@ -183,7 +183,11 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
     ].join("\n");
 
     try {
-      await ctx.sdk.runAgent(owner, task, { source: `metric-alert-reactor:${metricId}` });
+      const PER_ALERT_TIMEOUT_MS = 240_000; // 4 minutes per alert
+      await Promise.race([
+        ctx.sdk.runAgent(owner, task, { source: `metric-alert-reactor:${metricId}` }),
+        new Promise<never>((_, rej) => setTimeout(() => rej(new Error(`Per-alert timeout (${PER_ALERT_TIMEOUT_MS / 1000}s) for ${metricId}`)), PER_ALERT_TIMEOUT_MS)),
+      ]);
       ctx.log(`[metric-alert-reactor] Ran ${owner} to handle ${metricId}`);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
