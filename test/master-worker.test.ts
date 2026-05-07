@@ -60,6 +60,18 @@ describe("extractDecision", () => {
     expect(extractDecision("Time to start working on the feature.")).toMatchObject({ status: "continue" });
   });
 
+  it("treats completed observation-only guidance as done", () => {
+    expect(extractDecision("All plan items complete, all P1 metrics in range. Project remains active for observation — no new work needed.")).toMatchObject({ status: "done" });
+  });
+
+  it("treats no-new-work active-observation guidance as done", () => {
+    expect(extractDecision("No new work needed this execution. Project stays active for ongoing observation.")).toMatchObject({ status: "done" });
+  });
+
+  it("treats explicit no immediate operation as done", () => {
+    expect(extractDecision("DONE — this execution has no immediate next operation. The project remains active for future metric/event checks.")).toMatchObject({ status: "done" });
+  });
+
   it("falls back to uppercase keyword scan", () => {
     expect(extractDecision("After reviewing, we are BLOCKED by the missing API key.")).toMatchObject({ status: "blocked" });
   });

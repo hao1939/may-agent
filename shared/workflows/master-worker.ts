@@ -146,6 +146,18 @@ export function extractDecision(text: string): Decision {
     return { status: patternMatch[1].toLowerCase() as Decision["status"], detail: trimmed.slice(0, 500) };
   }
 
+  // Terminal no-op phrasing from orchestrators should stop the current run,
+  // not become worker guidance. This commonly appears when a durable project
+  // stays active for future observation after all plan items are complete.
+  const planComplete = /\ball\s+(?:\d+\s+)?(?:plan\s+items|tasks?|items|milestones)\s+(?:are\s+)?(?:verified\s+)?(?:complete|completed|checked off)\b/i.test(trimmed);
+  const metricsHealthy = /\ball\s+(?:P\d\/?)*\s*metrics\s+(?:are\s+)?(?:at|above|in range|healthy|green)\b/i.test(trimmed);
+  const noNewWork = /\bno\s+(?:new\s+)?work\s+(?:is\s+)?(?:needed|required|remaining)\b/i.test(trimmed);
+  const activeObservation = /\bproject\s+(?:stays|remains)\s+active\s+for\s+(?:ongoing\s+)?observation\b/i.test(trimmed);
+  const noImmediateOperation = /\bno\s+immediate\s+(?:next\s+)?operation\b/i.test(trimmed);
+  if ((planComplete && (metricsHealthy || noNewWork || activeObservation)) || (noNewWork && activeObservation) || noImmediateOperation) {
+    return { status: "done", detail: trimmed.slice(0, 500) };
+  }
+
   // "Proceed" / "move forward" / "start working" → CONTINUE
   if (/\b(proceed|move forward|start working|begin work|let'?s begin|let'?s start)\b/i.test(trimmed)) {
     return { status: "continue", detail: trimmed.slice(0, 500) };
@@ -153,7 +165,7 @@ export function extractDecision(text: string): Decision {
 
   // Fallback: check DONE/COMPLETE first — a completed project should stop (EXP-700, Fix 1)
   // Previously CONTINUE was checked before DONE, causing 58% post-DONE overrun (EXP-650)
-  if (/\b(DONE|COMPLETE|COMPLETED)\b/.test(trimmed) && /\b(project|all\s+metrics|all\s+milestones|stop\s+dispatching|finished|stop)\b/i.test(trimmed)) {
+  if (/\b(DONE|COMPLETE|COMPLETED)\b/i.test(trimmed) && /\b(project|all\s+metrics|all\s+milestones|stop\s+dispatching|finished|stop)\b/i.test(trimmed)) {
     return { status: "done", detail: trimmed.slice(0, 500) };
   }
 
