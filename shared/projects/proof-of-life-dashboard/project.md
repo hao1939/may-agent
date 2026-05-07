@@ -20,10 +20,11 @@ The project is feature-complete and verified working. The 2026-04-30 daily diges
 ## Goal
 Build a "top 5 at a glance" metrics dashboard for the proof-of-life digest that Hao sees. Raw numbers aren't useful — needs trend arrows (↑↓→) and good/bad indicators.
 
-## Metric
+## Signals
 - Hao feedback: are these the RIGHT 5 metrics?
 - Dashboard renders successfully in proof-of-life output
 - Top-5 section appears in daily digest files
+- Waiting state: no implementation work should continue until Hao validates metric selection.
 
 ## Current State
 - `agents/may/workspace/tools/top5-metrics.ts` runs successfully with 🟢🟡🔴 + ↑↓→
@@ -50,3 +51,11 @@ Build a "top 5 at a glance" metrics dashboard for the proof-of-life digest that 
 - [x] Add 7-day mini-history line under each metric
 - [ ] Await Hao feedback on metric selection (are these the RIGHT 5?)
 - [ ] Re-plan after M4
+
+## Validation
+- Hao confirms the selected top-5 metrics are useful at a glance, or requests changes.
+- The digest/dashboard renders with current data after any requested metric changes.
+- Any future implementation work records the exact digest path or UI screenshot/session evidence used for validation.
+
+## Journal
+- 2026-05-07: Aligned project to shared work-context convention. Current judgment: keep `waiting`; the next meaningful signal is Hao feedback on metric selection, not more autonomous implementation.

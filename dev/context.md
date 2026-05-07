@@ -50,3 +50,4 @@ Read `agents/shared/work-queue.md` — section "## Approved" has items ready for
 - Only work on APPROVED items (proposed items need human/may review first)
 - After implementing, check the item off: `- [x]` and add done date
 - Read the linked proposal file for full details, evidence, and verification steps
+- Production runtime source (src/lib/manager.ts) is not in /app/agents; fixes to session lifecycle require the core runtime source/build that produces agents/may-agent-bin.

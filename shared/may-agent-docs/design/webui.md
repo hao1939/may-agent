@@ -58,11 +58,11 @@ Three first-class concepts (defined in detail in `proposals/v2-architecture.md` 
 
 - **Project** — the context an agent works within: goals, history, journal, accumulated experience. Owned by an agent. Iterated on at heartbeat.
 - **Heartbeat** — the recurring moment when an agent reads context, decides, and acts. Where agency lives.
-- **Metric** — the system's vital sign. Measures project progress or system health. Breaches inform the next heartbeat (P0 forks immediately).
+- **Metric** — a system signal. Measures project progress or system health. Breaches inform the relevant work context (P0 forks immediately).
 
 And two relationships that connect them:
 
-- **Sessions** are iterations of projects, triggered by heartbeats (most), metric breaches (urgent), or messages.
+- **Sessions** are execution attempts for a work context, triggered by heartbeats (most), metric breaches (urgent), messages, cron, or humans.
 - **Messages** are async coordination between agents (and between humans and agents).
 
 The UI's information architecture mirrors this. Projects are the primary navigable object. Metrics belong to projects (or to the system). Heartbeats animate everything. Sessions are how iterations look from the outside; messages are how coordination looks.

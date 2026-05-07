@@ -29,14 +29,15 @@ A system with strong heartbeats is one where each agent shows up regularly, look
 
 ## What a heartbeat session is
 
-Every heartbeat session has the shape:
+Every heartbeat session follows the same work-context shape as a project:
 
-1. **Read** — agent ingests its context: project files, inbox, metrics, recent events, journal.
-2. **Decide** — agent forms an explicit intention: "I'm going to do X because Y."
-3. **Act** — agent does the work: tool calls, edits, messages.
-4. **Record** — agent leaves traces for next time: journal entries, comments, status changes, messages.
+1. **Goal/context** — agent reads identity, learned context, project files, inbox, metrics, recent events, and journals.
+2. **Signals** — agent identifies what changed or needs attention.
+3. **Judgment** — agent forms an explicit theory: "this signal means X because Y."
+4. **Act** — agent does the work: tool calls, edits, messages, delegation, or escalation.
+5. **Evidence** — agent leaves traces for next time: session summary, journal entries, comments, status changes, messages.
 
-The **decide** step is the most important. It is where agency lives. Without an explicit decision, a heartbeat is just a polling tick that happens to invoke an LLM. With it, the heartbeat is genuinely *an agent at work*.
+The **judgment** step is the most important. It is where agency lives. Without explicit judgment, a heartbeat is just a polling tick that happens to invoke an LLM. With it, the heartbeat is genuinely *an agent at work*.
 
 This is the case for surfacing the decision as a structured output of every heartbeat session (see "Implications" below), not just leaving it implicit in the transcript.
 
@@ -44,23 +45,19 @@ This is the case for surfacing the decision as a structured output of every hear
 
 | Trigger | Source | Agent's task | Agency level |
 |---|---|---|---|
-| `heartbeat` | Cron | Agent decides for itself | **High** — the agent is choosing |
-| `metric.breach` | Metric engine | Remediate a specific breach | Low — task is given |
-| `message` | Another agent or human | Process the message | Low — task is given |
+| `heartbeat` | Cron | Agent reassesses its standing work context | **High** — the agent chooses what matters |
+| `metric.breach` | Metric engine | Judge a metric signal in context | Medium for P0; otherwise handled in context |
+| `message` | Another agent or human | Judge and respond to a request/signal | Medium — task is given, response still requires judgment |
 | `order` | Human direct command | Execute the order | None — task is dictated |
 | `manual` | Human "run now" button | Whatever the prompt says | Varies |
 
-**Heartbeat is the only trigger where the agent picks its own work.** This makes heartbeat sessions structurally different from the others: they require deliberation, not just execution.
+**Heartbeat is the default trigger where the agent picks its own work.** Other triggers still use the same model, but they arrive with a narrower signal or request.
 
 ## The implication for metric breaches
 
-The v2 architecture currently says: metric breach → fork the owning agent.
-
-Under the heartbeat-as-agency framing, this should be qualified:
+Under the unified work model:
 
 > A metric breach updates state and emits an event. The owning agent's **next heartbeat** sees the breach in its context and decides whether to act now, queue it, escalate, or note it without action. **Direct fork on breach is reserved for urgent (P0) metrics.**
-
-This is a structural shift. Today's system tends to fork on every breach — a 1:1 mapping from breach to session. The agent isn't choosing; it's reacting.
 
 Better: **the agent reads its breach list at every heartbeat and decides what to do about each one.** A team lead doesn't get paged for every minor metric — they have a recurring review cadence where they look at all the metrics together and decide what matters. The heartbeat is exactly that.
 

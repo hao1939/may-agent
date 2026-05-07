@@ -33,7 +33,7 @@ The doc has three layers, top-down:
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-Each layer answers a different question. Each layer's claims are observed by metrics in the live system, in the same registry as everything else. **There is no separate enforcement system** — v2 conformance is itself a metric-driven, agent-owned domain.
+Each layer answers a different question. Each layer's claims are observed by metrics and live tests in the same system registry as everything else. **There is no separate enforcement system** — v2 conformance is an agent-owned work context whose metrics are signals, not decisions.
 
 The diagnostic ladder is top-down: a red capability metric is a *symptom*; the cause is in the infra layer or the structural layer below. Investigate from the top, descend until you find the broken rung.
 

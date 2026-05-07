@@ -15,9 +15,14 @@ Raise `v2.spec-coverage-rate` from the current 0.1364 baseline toward the declar
 
 This is a legitimate measurement gap, not a stale metric: the metric is computed from the current v2 spec and active metric registry, and it correctly reports that only 3 of 22 spec claims currently reference an active `capability.*`, `infra.*`, or `v2.*` metric in their `**Measurement.**` section.
 
-## Metric
+## Signals
 
 - `v2.spec-coverage-rate`: current 0.1364 (3/22), target 1.0, threshold 0.8.
+- `proposals/v2-spec.md` wording drift: old metric-driven language can mislead agents into treating metrics as decisions instead of signals.
+
+## Current State
+
+This is a pending-review proposal, not active implementation. The metric gap is real, but the work should not proceed as raw metric chasing. If accepted, convert this proposal into an active project whose first step is to align claim measurements with the unified work model: project context carries goals, metrics signal, agents judge, cron/events trigger.
 
 ## Evidence
 
@@ -83,6 +88,17 @@ Some claims may be measuring stale behavior rather than desired behavior:
 - [ ] At least 18 of 22 claims have active measurements (`v2.spec-coverage-rate` >= 0.8182), or the target/threshold is deliberately recalibrated with documented rationale.
 - [ ] `v2-spec.md` and `metrics-snapshot.ts` are updated together for every added/removed claim measurement.
 - [ ] Any claim intentionally covered by a live test rather than a metric is recognized by the coverage computation or the spec is changed to require metrics only.
+- [ ] The proposal's measurements are phrased as validation signals for agent judgment, not automatic pass/fail decisions.
+
+## Validation
+
+- If accepted, `v2.spec-coverage-rate` rises because real measurements/tests were added or because stale claims were deliberately calibrated.
+- The spec and metric implementation agree on what counts as coverage.
+- The resulting work does not introduce a second conformance work mode separate from projects/heartbeats/signals.
+
+## Journal
+
+- 2026-05-07: Aligned project to shared work-context convention. Current judgment: keep as `pending-review`; do not implement until the unified work model is accepted for v2 conformance measurement.
 
 ## Comments
 

@@ -17,7 +17,7 @@ describe('generateProject', () => {
     expect(projectMd).toContain('active');
   });
 
-  it('includes metrics table with current and target', () => {
+  it('includes signals table with current and target', () => {
     const { projectMd } = generateProject({
       ...basicConfig,
       metrics: [{ name: 'coverage', target: '95%', current: '80%' }],
@@ -49,6 +49,16 @@ describe('generateProject', () => {
     expect(planItems).toHaveLength(5);
     expect(planItems[0]).toContain('test-project');
     expect(planItems[2]).toContain('tests');
+  });
+
+  it('uses the shared work-context sections', () => {
+    const { projectMd } = generateProject(basicConfig);
+    expect(projectMd).toContain('## Goal');
+    expect(projectMd).toContain('## Signals');
+    expect(projectMd).toContain('## Current State');
+    expect(projectMd).toContain('## Plan');
+    expect(projectMd).toContain('## Validation');
+    expect(projectMd).toContain('## Journal');
   });
 
   it('uses custom plan items when provided', () => {

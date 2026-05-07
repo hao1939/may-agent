@@ -12,11 +12,11 @@ question is "is the system completing useful work, and when it fails, does the
 right owner act on the failure?" Coverage metrics are kept as liveness/meta
 signals only.
 
-Metrics do not directly drive work. The driving model is:
+Metrics do not directly drive work or make decisions. The unified work model is:
 
 - A metric breaches → the breach is recorded as state and emitted as an event.
-- The owning agent's **next heartbeat** sees the breach in its prompt context, alongside its projects, inbox, and recent events.
-- The agent **decides** what to do about it: act now, queue it, escalate, or note without action.
+- The owning agent sees the signal in a work context: explicit project, implicit heartbeat project, steward audit, or P0 alert task.
+- The agent **judges** what the signal means using goal, facts, history, and a causal theory, then acts, records evidence, or escalates.
 - Only **P0 (urgent) metrics fork the agent directly**, bypassing the heartbeat. Everything else waits for the agent to look.
 
 This is intentional — see `design/heartbeat-as-agency.md`. Forking on every breach makes agents reactive; deferring to heartbeats makes them deliberative. Metrics are vitals, not pagers.
@@ -59,7 +59,7 @@ concrete numbers; when in doubt, the registry wins.
 | `project.iterations-24h` | Are projects advancing? | `COUNT(*)` from project.iteration events (24h) | 10 | 0 (watch-only) | below |
 | `project.blocked-over-6h` | Is work stuck? | `COUNT(*)` from projects where blocked/waiting >6h | 2 | 4 | above |
 
-**Reading the dashboard:** if any prioritized metric is red, investigate that layer. **All-green is necessary but not sufficient** — see the structural blind spots below before treating green as "healthy and producing."
+**Reading the dashboard:** if any prioritized metric is red, treat it as a signal to investigate that layer. **All-green is necessary but not sufficient** — see the structural blind spots below before treating green as evidence of healthy production.
 
 ### All-green ≠ healthy: known structural blind spots (KE-726, 2026-05-03)
 
@@ -117,6 +117,6 @@ A metric at target is a signal the bar is too low. Never coast.
 
 - **Source of truth**: `metrics` table in DB. This doc is design rationale.
 - **Handler**: `agents/may/handlers/metrics-snapshot.ts` — auto-registers, measures every 5min, **and emits `metric.breach` events** when `breached && !openAlert` (see `metrics-snapshot.ts:240-279`).
-- **Alerting**: `agents/may/handlers/metric-alert-reactor.ts` — *intended* to consume `metric.breach` events and fork the owning agent. **Currently dormant** (zero lifetime fires per KE-731): `cron.json`'s reactor entry has `on: ["metric.breach"]` but no `intervalMs`, and the cron loader only subscribes entries that also have an interval (KE-455). Until the loader is fixed (proposal: `arc/workspace/proposals/2026-05-03-cron-loader-on-only-subscription-wiring.md`), reactions to breaches happen via `may`'s heartbeat hand-rolling a notification → tech-lead heartbeat — a ~30min-latency bandaid, not the sub-second fork the design intends.
+- **Alerting**: `agents/may/handlers/metric-alert-reactor.ts` consumes `metric.breach` events and polls unresolved alerts. P0 forks the owner directly. P1/P2/P3 remain visible as metric context for heartbeat/project/steward handling.
 - **Retention**: snapshots kept 30 days, pruned after each measurement run
 - **Error isolation**: each metric measured independently — one failure doesn't block others

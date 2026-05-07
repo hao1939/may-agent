@@ -55,13 +55,22 @@ ${owner}
 ## Phase
 ${phase}
 
-## Metrics
+## Signals
 | Metric | Current | Target |
 |--------|---------|--------|
 ${metricsSection}
 
+## Current State
+New project. Establish baseline facts before acting.
+
 ## Plan
 ${planSection}
+
+## Validation
+Use later metrics, tests, session evidence, and owner judgment to validate whether the plan worked.
+
+## Journal
+- Created project.
 
 ## Status
 active
