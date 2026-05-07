@@ -103,7 +103,7 @@ export interface TriggerEvent {
 }
 
 export interface HandlerContext extends RuntimeCtx {
-  /** SubagentManager — for run(), followUp(), etc. */
+  /** @internal Low-level session manager. Use ctx.sdk for new handler code. */
   manager: SubagentManager;
 
   /** Name of the agent that owns this handler (e.g., "may") */
@@ -118,7 +118,7 @@ export interface HandlerContext extends RuntimeCtx {
   /** Load all session metadata (active + archived). */
   loadAllSessionMetas: () => Record<string, PersistedSession>;
 
-  /** Agent SDK — the canonical capability surface. Prefer this over ctx.manager for new code. */
+  /** Agent SDK — the canonical capability surface. Use this for all new handler code. */
   sdk: import("./sdk.js").AgentSDK;
 }
 
