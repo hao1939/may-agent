@@ -3,6 +3,7 @@
  */
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { SubagentDefinition } from "./types.js";
+import { createHash } from "node:crypto";
 
 // ── ID Generation ──────────────────────────────────────────────────────
 
@@ -44,6 +45,36 @@ export function truncateForPrompt(text: string, maxLen: number): string {
   const oneLine = text.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
   if (oneLine.length <= maxLen) return oneLine;
   return oneLine.slice(0, maxLen) + "…";
+}
+
+export const TOOL_PIVOT_LIMIT = 3;
+export const STUCK_WARNING_THRESHOLD = 3;
+export const STATE_CHANGING_TOOLS = new Set(["bash", "write", "edit", "commit"]);
+
+export function computeToolArgsKey(toolName: string, params: unknown): string {
+  const normalized = params == null ? {} : params;
+  const hash = createHash("sha256")
+    .update(stableStringify(normalized))
+    .digest("hex")
+    .slice(0, 16);
+  return `${toolName}:${hash}`;
+}
+
+export function isToolError(output: string): boolean {
+  if (!output) return false;
+  return /Command exited with code [1-9]\d*/.test(output)
+    || output.startsWith("❌")
+    || /\b(ENOENT|EACCES)\b/.test(output)
+    || /command not found|No such file or directory|Permission denied/.test(output)
+    || /Could not find the exact text|File not found:|Found \d+ occurrences/.test(output)
+    || /OpBudgetExceeded|E_RETRY_LIMIT/.test(output);
+}
+
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  const obj = value as Record<string, unknown>;
+  return `{${Object.keys(obj).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(obj[key])}`).join(",")}}`;
 }
 
 // ── Interfaces ─────────────────────────────────────────────────────────

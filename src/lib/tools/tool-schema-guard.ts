@@ -121,13 +121,14 @@ function detectAgentsMissingAction(args: Record<string, unknown>): string | unde
       "agents() requires at least an `action` argument.\n" +
       "Usage: agents({ action: 'list' }) — see available agents\n" +
       "       agents({ action: 'call', agent: 'name', task: '...' }) — call an agent\n" +
-      "       agents({ action: 'message', agent: 'name', message: '...' }) — send a message"
+      "       agents({ action: 'fork', agent: 'name', task: '...' }) — start a background session\n" +
+      "Use the separate message({ to, content, intent?, priority? }) tool for inbox messages."
     );
   }
   if (!args.action) {
     return (
       "agents() is missing the required `action` argument.\n" +
-      "Valid actions: 'list', 'call', 'fork', 'message', 'peek', 'cancel'"
+      "Valid actions: 'list', 'call', 'fork', 'context', 'peek', 'cancel', 'requests'"
     );
   }
   return undefined;

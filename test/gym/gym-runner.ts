@@ -1338,10 +1338,9 @@ function readAgentModel(agentsRoot: string, agentName: string): string | null {
  * Assemble the effective system prompt, mirroring resolveSystemPrompt() in manager.ts.
  *
  * This reproduces the exact prompt the agent sees during a gym run:
- *   1. SOUL.md (per-agent identity)
- *   2. common-sense.md (shared behavioral rules)
+ *   1. common-sense.md (shared behavioral rules)
+ *   2. AGENTS.md (per-agent identity)
  *   3. Runtime Environment (generated)
- *   4. Available Tools (from agent.json tools list)
  *
  * Returns the full prompt text + its SHA-256 hash (first 12 hex chars).
  */
@@ -1358,57 +1357,28 @@ function assembleEffectivePrompt(agentsRoot: string, agentName: string): { hash:
       return content || undefined;
     };
 
-    // 1. SOUL.md — agent identity
-    const soul = loadFile(join(agentDir, "SOUL.md"));
-    if (soul) sections.push(soul);
-
-    // 2. common-sense.md — shared behavioral rules
+    // 1. common-sense.md — shared behavioral rules
     const sharedCommonSense = join(agentsRoot, "shared", "common-sense.md");
     const sharedFallback = join(PROJECT_ROOT, "agents", "shared", "common-sense.md");
     const commonSense = loadFile(existsSync(sharedCommonSense) ? sharedCommonSense : sharedFallback);
     if (commonSense) sections.push(commonSense);
 
-    // 3. Skills — behavioral patches from skills/*.md
-    const skillsDir = join(agentDir, "skills");
-    if (existsSync(skillsDir)) {
-      const skillFiles = readdirSync(skillsDir, { recursive: true })
-        .map((f) => String(f))
-        .filter((f) => f.endsWith(".md"))
-        .sort();
-      for (const sf of skillFiles) {
-        const skillContent = loadFile(join(skillsDir, sf));
-        if (skillContent) sections.push(skillContent);
-      }
-    }
-    // Note: shared skills (agents/shared/skills/) are a reference library,
-    // NOT auto-loaded. Agents adopt specific skills by copying into their
-    // own skills/ directory (e.g., via growth-cycle lab forks).
+    // 2. AGENTS.md — agent identity and operating contract
+    const identity = loadFile(join(agentDir, "AGENTS.md"));
+    if (identity) sections.push(identity);
 
-    // 4. Runtime Environment (generated — matches manager.ts)
+    // 3. Runtime Environment (generated — matches manager.ts)
     const knowledgeDir = join(agentDir, "knowledge");
     const workspace = join(agentDir, "workspace");
     const envLines = ["# Runtime Environment"];
     envLines.push(`- Project root: ${PROJECT_ROOT}`);
     envLines.push(`- Agent directory: agents/${agentName}`);
-    if (existsSync(workspace)) envLines.push(`- Workspace: agents/${agentName}/workspace (ephemeral scratch)`);
-    if (existsSync(knowledgeDir)) envLines.push(`- Knowledge: agents/${agentName}/knowledge`);
-    envLines.push(`- Already in context (do NOT re-read): SOUL.md, common-sense.md`);
-    envLines.push(`- Knowledge index: knowledge/INDEX.md (read when you need references)`);
+    if (existsSync(workspace)) envLines.push(`- Workspace: agents/${agentName}/workspace (scratch/runtime work)`);
+    if (existsSync(knowledgeDir)) envLines.push(`- Knowledge: agents/${agentName}/knowledge (read on demand; start with INDEX.md when needed)`);
+    envLines.push(`- Already in context: agents/shared/common-sense.md and this agent's AGENTS.md when present.`);
     envLines.push(``);
-    envLines.push(`All paths are relative to project root. Your workspace is the ONLY directory you should write to.`);
+    envLines.push(`All paths are relative to project root unless absolute paths are explicitly provided.`);
     sections.push(envLines.join("\n"));
-
-    // 4. Available Tools (from agent.json)
-    try {
-      const agentJson = JSON.parse(readFileSync(join(agentDir, "agent.json"), "utf-8"));
-      if (Array.isArray(agentJson.tools) && agentJson.tools.length > 0) {
-        sections.push(
-          `## Available Tools\nYou have access to these tools (and ONLY these): ${agentJson.tools.join(", ")}.\nDo not attempt to call any tool not in this list.`,
-        );
-      }
-    } catch {
-      /* no agent.json or invalid */
-    }
 
     if (sections.length === 0) return null;
 

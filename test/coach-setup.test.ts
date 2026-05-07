@@ -106,13 +106,13 @@ describe("coach: skill discovery", () => {
 });
 
 describe("coach: knowledge files", () => {
-  it("SOUL.md exists and is concise", () => {
-    // SOUL.md may live in the archetype directory when agent uses `extends`
-    let file = resolve(COACH_DIR, "SOUL.md");
+  it("AGENTS.md exists and is concise", () => {
+    // AGENTS.md may live in the archetype directory when agent uses `extends`
+    let file = resolve(COACH_DIR, "AGENTS.md");
     if (!existsSync(file)) {
       const config = JSON.parse(readFileSync(resolve(COACH_DIR, "agent.json"), "utf-8"));
       if (config.extends) {
-        file = resolve(AGENTS_ROOT, config.extends, "SOUL.md");
+        file = resolve(AGENTS_ROOT, config.extends, "AGENTS.md");
       }
     }
     expect(existsSync(file)).toBe(true);

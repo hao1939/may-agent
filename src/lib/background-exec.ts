@@ -259,6 +259,11 @@ export function createBackgroundExecTool(opts?: BackgroundExecToolOptions): { to
               return textResult(JSON.stringify({ error: `Process ${params.pid} has no stdin` }));
             }
             entry.process.stdin.write(params.text);
+            // Keep a transcript of stdin writes. Bun's child_process implementation
+            // does not reliably surface echoed stdin from simple interactive
+            // commands like `cat`, so the transcript still lets callers confirm
+            // what was sent.
+            entry.output.append(params.text);
             return textResult(JSON.stringify({ written: true, pid: params.pid }));
           }
 

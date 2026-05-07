@@ -6,7 +6,7 @@
  * variants don't accidentally regress out of the union.
  */
 
-import { describe, it, expectTypeOf } from "vitest";
+import { describe, it, expect } from "vitest";
 import type { AgentEvent } from "../src/app/event-bus.js";
 
 describe("v2 SystemEvent variants", () => {
@@ -19,7 +19,7 @@ describe("v2 SystemEvent variants", () => {
       trigger: "cron",
       firedAt: 0,
     };
-    expectTypeOf(start).toMatchTypeOf<AgentEvent>();
+    expect(start.type).toBe("session.start");
 
     const end: AgentEvent = {
       type: "session.end",
@@ -29,7 +29,7 @@ describe("v2 SystemEvent variants", () => {
       summary: "done",
       durationMs: 1000,
     };
-    expectTypeOf(end).toMatchTypeOf<AgentEvent>();
+    expect(end.type).toBe("session.end");
   });
 
   it("supports message.created with priority", () => {
@@ -40,7 +40,7 @@ describe("v2 SystemEvent variants", () => {
       content: "please implement",
       priority: "P0",
     };
-    expectTypeOf(m).toMatchTypeOf<AgentEvent>();
+    expect(m.priority).toBe("P0");
   });
 
   it("legacy session_start / session_end still work", () => {
@@ -50,6 +50,6 @@ describe("v2 SystemEvent variants", () => {
       agent: "may",
       task: "x",
     };
-    expectTypeOf(start).toMatchTypeOf<AgentEvent>();
+    expect(start.type).toBe("session_start");
   });
 });

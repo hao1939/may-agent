@@ -56,7 +56,7 @@ describe("System prompt assembly", () => {
     expect(result).not.toBeNull();
   });
 
-  it("runs with convention files (no systemPromptFiles)", async () => {
+  it("runs without a direct systemPrompt", async () => {
     // Create knowledge files
     const file1 = join(knowledgeDir, "domain.md");
     const file2 = join(knowledgeDir, "patterns.md");

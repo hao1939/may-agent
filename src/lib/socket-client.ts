@@ -11,7 +11,8 @@
  * Design: agents/may/workspace/detached-subagent-design.md
  */
 
-import { connect } from "node:net";
+import { connect, type NetConnectOpts, type Socket } from "node:net";
+import type { Duplex } from "node:stream";
 
 export interface SocketResponse {
   type: "ok" | "error";
@@ -19,8 +20,15 @@ export interface SocketResponse {
   message?: string;
 }
 
+export type SocketEndpoint = string | NetConnectOpts | (() => Duplex);
+
+function connectEndpoint(endpoint: SocketEndpoint): Socket | Duplex {
+  if (typeof endpoint === "function") return endpoint();
+  return typeof endpoint === "string" ? connect(endpoint) : connect(endpoint);
+}
+
 export function sendSocketCommand(
-  socketPath: string,
+  socketPath: SocketEndpoint,
   command: Record<string, unknown>,
   opts?: { timeoutMs?: number },
 ): Promise<SocketResponse> {
@@ -32,7 +40,7 @@ export function sendSocketCommand(
         fn();
       }
     };
-    const client = connect(socketPath);
+    const client = connectEndpoint(socketPath);
     const timeoutMs = opts?.timeoutMs ?? 5000;
     const timeout = setTimeout(() => {
       client.destroy();
@@ -121,7 +129,7 @@ export interface SocketEvent {
  * @param opts.timeoutMs - Timeout in ms (default: 600_000 = 10 minutes)
  */
 export function waitForSocketEvent(
-  socketPath: string,
+  socketPath: SocketEndpoint,
   eventType: string,
   opts?: { sessionId?: string; timeoutMs?: number },
 ): Promise<SocketEvent> {
@@ -133,7 +141,7 @@ export function waitForSocketEvent(
         fn();
       }
     };
-    const client = connect(socketPath);
+    const client = connectEndpoint(socketPath);
     const timeoutMs = opts?.timeoutMs ?? 600_000;
     const timeout = setTimeout(() => {
       client.destroy();

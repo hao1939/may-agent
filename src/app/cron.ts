@@ -1,11 +1,11 @@
 /**
  * Cron — manages periodic jobs with persistent state via request tracking.
  *
- * Three execution modes (determined by entry fields):
+ * One scheduled job shape. The executor is determined by entry fields:
+ * - `handler`: run a registered JS function in-process.
+ * - no `handler` + `agent`: spawn a detached agent process.
  *
- * 1. **heartbeat** — `manager.run()` spawns a fresh in-process task session.
- * 2. **job** (with JS handler) — runs a registered JS function in-process.
- * 3. **job** (agent task) — `spawnDetachedAgent()` in a separate OS process.
+ * Heartbeats are normal handler jobs that run per-agent heartbeat workflows.
  *
  * Each job execution is tracked as a request in `.state/may.db`.
  * On restart, jobs resume based on when they actually last ran — not from zero.
@@ -32,8 +32,10 @@ import type { TriggerEvent } from "../lib/handler-context.js";
 /** A JS function that replaces the LLM for a specific cron job. */
 type CronHandler = (event?: TriggerEvent) => Promise<void>;
 
+type CronExecutor = "handler" | "agent";
+
 /** Callback when a job fires (for notifications). */
-type CronJobCallback = (entry: CronEntry, type: "js" | "detached") => void;
+type CronJobCallback = (entry: CronEntry, executor: CronExecutor) => void;
 
 // ── Cron class ────────────────────────────────────────────────────────
 
@@ -300,7 +302,6 @@ export class Cron {
           old.message !== entry.message ||
           old.agent !== entry.agent ||
           old.handler !== entry.handler ||
-          old.type !== entry.type ||
           (old.enabled === false) !== (entry.enabled === false) ||
           JSON.stringify(old.handlerConfig ?? {}) !== JSON.stringify(entry.handlerConfig ?? {});
 
@@ -400,10 +401,10 @@ export class Cron {
 
     // Manual trigger — always fire, no overlap check
     switch (mode) {
-      case "job-handler":
+      case "handler":
         this.fireHandler(entry, opts?.triggerEvent ?? { type: "manual.trigger", source: "manual", entry: entry.name, timestamp: Date.now() });
         break;
-      case "job-detached":
+      case "agent":
         this.fireDetachedJob(entry);
         break;
     }
@@ -411,10 +412,14 @@ export class Cron {
   }
 
   /** Resolve the effective execution mode for an entry. */
-  private resolveMode(entry: CronEntry): "job-handler" | "job-detached" | null {
-    const handler = this.handlers.get(entry.name);
-    if (handler) return "job-handler";
-    if (entry.agent) return "job-detached";
+  private resolveMode(entry: CronEntry): CronExecutor | null {
+    if (entry.handler) {
+      const handler = this.handlers.get(entry.name);
+      if (handler) return "handler";
+      this.onError?.(`Cron entry "${entry.name}" declares handler "${entry.handler}" but it is not registered — skipping`);
+      return null;
+    }
+    if (entry.agent) return "agent";
 
     this.onError?.(`Cron entry "${entry.name}" has no handler and no agent — skipping`);
     return null;
@@ -457,10 +462,10 @@ export class Cron {
       // enforced at the cron layer.
 
       switch (mode) {
-        case "job-handler":
+        case "handler":
           this.fireHandler(entry, { type: "timer.tick", source: "timer", entry: entry.name, timestamp: Date.now() });
           break;
-        case "job-detached":
+        case "agent":
           this.fireDetachedJob(entry);
           break;
       }
@@ -513,7 +518,7 @@ export class Cron {
       return;
     }
 
-    this.onJobFire?.(entry, "js");
+    this.onJobFire?.(entry, "handler");
     const startMs = Date.now();
     this.inflightJobs.set(entry.name, startMs);
     this.lastFireTimes.set(entry.name, startMs);
@@ -550,7 +555,7 @@ export class Cron {
   // ── Detached agent job: spawn separate OS process ───────────────────
 
   private fireDetachedJob(entry: CronEntry): void {
-    this.onJobFire?.(entry, "detached");
+    this.onJobFire?.(entry, "agent");
 
     const sessionId = generateId("cron");
     let parentSessionId: string | undefined;

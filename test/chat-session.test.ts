@@ -330,7 +330,7 @@ describe("Session kind in resumeStaleSessions", () => {
     expect(meta!.autoClose).toBe("immediate");
   });
 
-  it("resumeStaleSessions with kinds filter only resumes matching sessions", { timeout: 15_000 }, async () => {
+  it("resumeStaleSessions with kinds filter only resumes matching sessions", async () => {
     // Create a chat session that will become stale
     const chatSid = manager.run("may", "chat task", { kind: "chat", autoClose: "never" });
     await new Promise((r) => setTimeout(r, 500));
@@ -374,7 +374,7 @@ describe("Session kind in resumeStaleSessions", () => {
       if (s.status === "running") manager2.cancel(s.sessionId);
     }
     await new Promise((r) => setTimeout(r, 200));
-  });
+  }, 15_000);
 
   it("status() includes kind field", () => {
     manager.run("may", "chat task", { kind: "chat", autoClose: "never" });

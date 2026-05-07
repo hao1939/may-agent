@@ -9,7 +9,7 @@
  * Design: P80 Environment Diversity + P13 Harness Engineering
  */
 
-import { mkdtempSync, cpSync, rmSync, existsSync, readFileSync, readdirSync } from "node:fs";
+import { mkdtempSync, cpSync, rmSync, existsSync, readFileSync, readdirSync, openSync, closeSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
@@ -66,20 +66,55 @@ export function runWithTimeout(
   entryFile: string,
   timeoutMs: number = 3000,
 ): { stdout: string; stderr: string; exitCode: number } {
-  const result = spawnSync("node", [entryFile], {
-    cwd: workDir,
-    timeout: timeoutMs,
-    encoding: "utf-8",
-    stdio: ["pipe", "pipe", "pipe"],
-    killSignal: "SIGKILL", // SIGKILL ensures process cannot ignore the signal
-  });
+  const bun = (globalThis as { Bun?: { spawnSync?: Function } }).Bun;
+  if (bun?.spawnSync) {
+    const result = bun.spawnSync(["node", entryFile], {
+      cwd: workDir,
+      timeout: timeoutMs,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const decode = (value: unknown): string => {
+      if (typeof value === "string") return value;
+      if (value instanceof Uint8Array) return new TextDecoder().decode(value);
+      return "";
+    };
+    const timedOut = result.exitCode === null || result.signalCode === "SIGTERM" || result.signalCode === "SIGKILL";
+    return {
+      stdout: decode(result.stdout),
+      stderr: decode(result.stderr),
+      exitCode: timedOut ? 124 : (result.exitCode ?? 1),
+    };
+  }
 
-  const timedOut = result.signal === "SIGKILL" || result.error?.message?.includes("ETIMEDOUT");
-  return {
-    stdout: (result.stdout as string) || "",
-    stderr: (result.stderr as string) || "",
-    exitCode: timedOut ? 124 : (result.status ?? 1),
-  };
+  const captureDir = mkdtempSync(join(tmpdir(), "gym-capture-"));
+  const stdoutPath = join(captureDir, "stdout");
+  const stderrPath = join(captureDir, "stderr");
+  const stdoutFd = openSync(stdoutPath, "w");
+  const stderrFd = openSync(stderrPath, "w");
+  let result: ReturnType<typeof spawnSync>;
+  try {
+    result = spawnSync("node", [entryFile], {
+      cwd: workDir,
+      timeout: timeoutMs,
+      stdio: ["ignore", stdoutFd, stderrFd],
+      killSignal: "SIGKILL", // SIGKILL ensures process cannot ignore the signal
+    });
+  } finally {
+    closeSync(stdoutFd);
+    closeSync(stderrFd);
+  }
+
+  try {
+    const timedOut = result!.signal === "SIGKILL" || result!.error?.message?.includes("ETIMEDOUT");
+    return {
+      stdout: readFileSync(stdoutPath, "utf-8"),
+      stderr: readFileSync(stderrPath, "utf-8"),
+      exitCode: timedOut ? 124 : (result!.status ?? 1),
+    };
+  } finally {
+    rmSync(captureDir, { recursive: true, force: true });
+  }
 }
 
 /**

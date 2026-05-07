@@ -26,7 +26,7 @@ import {
   detectConfigConflict,
 } from "./gym-harness.js";
 
-describe("Agent Gym", { timeout: 15_000 }, () => {
+describe("Agent Gym", () => {
   const tempDirs: string[] = [];
 
   afterEach(() => {
@@ -473,4 +473,4 @@ if (require.main === module) {
       }
     });
   });
-});
+}, 15_000);

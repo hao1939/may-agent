@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach } from "bun:test";
-import { Database } from "bun:sqlite";
+import { describe, it, expect, beforeEach } from "vitest";
+import Database from "better-sqlite3";
 
 // Simulate the enrichment logic (extracted from telegram.ts)
-function enrichReply(db: Database, replyToMsgId: number, userText: string): string {
+function enrichReply(db: Database.Database, replyToMsgId: number, userText: string): string {
   const ctx = db.prepare("SELECT * FROM notification_messages WHERE telegram_msg_id = ?").get(replyToMsgId) as any;
   if (!ctx) return userText; // no context found, pass through
 
@@ -21,15 +21,22 @@ function enrichReply(db: Database, replyToMsgId: number, userText: string): stri
   return parts.join("\n");
 }
 
-function storeNotification(db: Database, msgId: number, context: { eventType?: string; agent?: string; sessionId?: string; projectId?: string; data?: string }) {
-  db.run(
+function storeNotification(db: Database.Database, msgId: number, context: { eventType?: string; agent?: string; sessionId?: string; projectId?: string; data?: string }) {
+  db.prepare(
     "INSERT OR REPLACE INTO notification_messages (telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    [msgId, context.eventType || null, context.agent || null, context.sessionId || null, context.projectId || null, context.data || null, Date.now()]
+  ).run(
+    msgId,
+    context.eventType || null,
+    context.agent || null,
+    context.sessionId || null,
+    context.projectId || null,
+    context.data || null,
+    Date.now(),
   );
 }
 
 describe("Telegram Context Enrichment", () => {
-  let db: Database;
+  let db: Database.Database;
 
   beforeEach(() => {
     db = new Database(":memory:");
@@ -120,7 +127,7 @@ describe("Telegram Context Enrichment", () => {
 });
 
 describe("Telegram Reply Metric", () => {
-  let db: Database;
+  let db: Database.Database;
 
   beforeEach(() => {
     db = new Database(":memory:");
@@ -136,8 +143,8 @@ describe("Telegram Reply Metric", () => {
 
   it("tracks enriched reply as event", () => {
     // Simulate what the bot does when enriching a reply:
-    db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-      ["telegram.reply", "telegram", "may", JSON.stringify({ enriched: true, originalMsgId: 12345 }), Date.now()]);
+    db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)")
+      .run("telegram.reply", "telegram", "may", JSON.stringify({ enriched: true, originalMsgId: 12345 }), Date.now());
 
     const count = (db.prepare("SELECT COUNT(*) as c FROM events WHERE event_type = 'telegram.reply'").get() as any).c;
     expect(count).toBe(1);
@@ -147,12 +154,12 @@ describe("Telegram Reply Metric", () => {
     const now = Date.now();
     // 3 enriched replies
     for (let i = 0; i < 3; i++) {
-      db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-        ["telegram.reply", "telegram", "may", JSON.stringify({ enriched: true }), now - i * 60000]);
+      db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)")
+        .run("telegram.reply", "telegram", "may", JSON.stringify({ enriched: true }), now - i * 60000);
     }
     // 1 non-enriched reply (no context found)
-    db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-      ["telegram.reply", "telegram", "may", JSON.stringify({ enriched: false }), now - 300000]);
+    db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)")
+      .run("telegram.reply", "telegram", "may", JSON.stringify({ enriched: false }), now - 300000);
 
     const total = (db.prepare("SELECT COUNT(*) as c FROM events WHERE event_type = 'telegram.reply'").get() as any).c;
     const enriched = (db.prepare("SELECT COUNT(*) as c FROM events WHERE event_type = 'telegram.reply' AND json_extract(data, '$.enriched') = 1").get() as any).c;

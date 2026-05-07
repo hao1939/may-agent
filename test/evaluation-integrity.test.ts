@@ -88,7 +88,7 @@ describe("P98 Evaluation Integrity — Immutable Ruler", () => {
       it(`allows bob to modify evaluator/${filename}`, () => {
         const result = guardPath(path, "bob");
         // These should NOT be blocked by P98 (though some may be blocked
-        // by the existing SOUL.md/LESSONS.md guard)
+        // by the existing AGENTS.md/LESSONS.md guard)
         if (result.blocked) {
           expect(result.message).not.toContain("P98 Evaluation Integrity");
         }
@@ -97,10 +97,10 @@ describe("P98 Evaluation Integrity — Immutable Ruler", () => {
   });
 
   describe("existing guards still work alongside P98", () => {
-    it("still blocks cross-agent SOUL.md edits", () => {
-      const result = guardPath("agents/evaluator/SOUL.md", "bob");
+    it("still blocks cross-agent AGENTS.md edits", () => {
+      const result = guardPath("agents/evaluator/AGENTS.md", "bob");
       expect(result.blocked).toBe(true);
-      expect(result.message).toContain("SOUL.md");
+      expect(result.message).toContain("AGENTS.md");
     });
 
     it("allows cross-agent LESSONS.md edits (not identity-critical)", () => {

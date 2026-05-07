@@ -34,11 +34,9 @@ export interface CronEntry {
   message: string;
   enabled: boolean;
   description?: string;
-  /** Entry type. Always "job" — "heartbeat" mode was removed in v0.5. */
-  type?: "job";
-  /** Agent to run this job. Spawns a dedicated instance unless `handler` is set. */
+  /** Agent that owns/runs this job. If no `handler` is set, spawns a dedicated agent instance. */
   agent?: string;
-  /** JS handler name. If set, runs in-process instead of spawning. */
+  /** JS handler name. If set, this job runs in-process instead of spawning an agent instance. */
   handler?: string;
   /** Timeout for spawned job processes in ms (default: 600000 = 10 min). */
   timeoutMs?: number;
@@ -111,6 +109,8 @@ interface CronInput {
 export interface CronToolOptions {
   /** Path to the agent's cron.json */
   configPath: string;
+  /** Agent that owns this cron tool. New agent-message jobs default to this executor. */
+  agentName?: string;
   /** Called after any write to cron.json so the cron runner can reload. */
   onConfigChange: () => void;
   /** Whether cron is active (jobs actually fire). */
@@ -139,17 +139,17 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
     name: "cron",
     label: "cron",
     description:
-      "Manage YOUR cron jobs — recurring tasks that automatically send a message " +
-      "into your session on a fixed interval. These are your built-in scheduled tasks, " +
-      "persisted in your cron.json config file.\n\n" +
+      "Manage YOUR cron jobs — recurring tasks that run on a fixed interval. " +
+      "By default, new jobs run you as the agent executor with the configured message. " +
+      "Jobs are persisted in your cron.json config file.\n\n" +
       "Actions:\n" +
       "- list: show all your cron jobs and whether cron is currently active\n" +
       "- add: create a new job (name, intervalMs, message)\n" +
       "- remove: delete a job by name\n" +
       "- update: modify an existing job's interval or message\n" +
       "- status: brief summary (job count, enabled/disabled, next to fire)\n\n" +
-      "When cron is active (--cron flag), each job fires its message into your " +
-      "session at the configured interval. When disabled, you can still manage " +
+      "When cron is active (--cron flag), each job runs its configured executor " +
+      "at the configured interval. When disabled, you can still manage " +
       "jobs but they won't fire.",
     parameters: CronParams,
     execute: async (_toolCallId: string, _input: unknown) => {
@@ -189,6 +189,7 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
             message: input.message,
             enabled: input.enabled !== undefined ? input.enabled : true,
           };
+          if (opts.agentName) newEntry.agent = opts.agentName;
           if (input.description !== undefined)
             newEntry.description =
               input.description.length > 200 ? input.description.slice(0, 200) + "..." : input.description;

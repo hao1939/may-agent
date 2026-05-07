@@ -31,7 +31,10 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
     dispatchEvent: (eventType, data) => opts.bus.emit({ type: eventType, ...(data || {}) } as any),
     getDb: () => getDb(opts.persistDir),
     log: (msg) => globalLog("info", `[${opts.agentName}] ${msg}`),
-    notify: (msg) => opts.bus.emit({ type: "message.created", from: opts.agentName, to: "human", content: msg } as any),
+    notify: (msg) => {
+      opts.bus.emit({ type: "message.created", from: opts.agentName, to: "human", content: msg } as any);
+      opts.bus.emit({ type: "notification", agent: opts.agentName, text: msg } as any);
+    },
     persistDir: opts.persistDir,
     projectRoot: opts.projectRoot,
     agentsRoot: opts.agentsRoot,

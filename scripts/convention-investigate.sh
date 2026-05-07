@@ -250,7 +250,7 @@ SHARED_CHANGES=$(cd agents && git log --oneline -5 --since="7 days ago" -- "shar
 
 # Check if the convention is mentioned in the agent's context files
 CONTEXT_MENTIONS=""
-for f in "${AGENT_DIR}/context.md" "${AGENT_DIR}/SOUL.md" "${AGENT_DIR}/LESSONS.md" "${AGENT_DIR}/TOOLS.md"; do
+for f in "${AGENT_DIR}/context.md" "${AGENT_DIR}/AGENTS.md" "${AGENT_DIR}/LESSONS.md" "${AGENT_DIR}/TOOLS.md"; do
   if [[ -f "$f" ]]; then
     MATCH=$(grep -i -m 3 "${CONVENTION}\|${CONVENTION/C/c}" "$f" 2>/dev/null) || true
     if [[ -n "$MATCH" ]]; then

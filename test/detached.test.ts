@@ -10,9 +10,52 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from "vitest";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
-import { createServer, type Server } from "node:net";
+import { Duplex } from "node:stream";
 import { readIdentity, type InstanceIdentity } from "../src/lib/detached.js";
-import { sendSocketCommand, waitForSocketEvent } from "../src/lib/socket-client.js";
+import { sendSocketCommand, waitForSocketEvent, type SocketEndpoint } from "../src/lib/socket-client.js";
+
+type ClientHandler = (socket: Duplex) => void;
+
+function mockEndpoint(handler: ClientHandler): SocketEndpoint {
+  return () => {
+    let peer: Duplex;
+    const client = new Duplex({
+      read() {},
+      write(chunk, _encoding, callback) {
+        peer.push(Buffer.from(chunk));
+        callback();
+      },
+      final(callback) {
+        peer.push(null);
+        callback();
+      },
+    });
+    peer = new Duplex({
+      read() {},
+      write(chunk, _encoding, callback) {
+        client.push(Buffer.from(chunk));
+        callback();
+      },
+      final(callback) {
+        client.push(null);
+        callback();
+      },
+    });
+    client.on("finish", () => peer.push(null));
+    peer.on("finish", () => client.push(null));
+    client.on("close", () => {
+      if (!peer.destroyed) peer.destroy();
+    });
+    peer.on("close", () => {
+      if (!client.destroyed) client.destroy();
+    });
+    queueMicrotask(() => {
+      client.emit("connect");
+      handler(peer);
+    });
+    return client;
+  };
+}
 
 // ── readIdentity() tests ───────────────────────────────────────────────
 
@@ -86,29 +129,10 @@ describe("readIdentity", () => {
 // ── sendSocketCommand() tests ──────────────────────────────────────────
 
 describe("sendSocketCommand", () => {
-  let socketPath: string;
-  let server: Server | null = null;
-  let socketCounter = 0;
-
-  beforeEach(() => {
-    socketPath = `/tmp/test-sock-cmd-${process.pid}-${socketCounter++}.sock`;
-  });
-
-  afterEach(async () => {
-    if (server) {
-      // Force-close all connections, then close the server
-      const s = server;
-      server = null;
-      await new Promise<void>((resolve) => {
-        s.close(() => resolve());
-        // Force resolve after 1s to prevent hanging
-        setTimeout(resolve, 1000);
-      });
-    }
-  });
+  let endpoint: SocketEndpoint;
 
   it("sends a command and receives ok response", async () => {
-    server = createServer((socket) => {
+    endpoint = mockEndpoint((socket) => {
       // Send welcome message
       socket.write(JSON.stringify({ type: "connected", pid: 1 }) + "\n");
       let buffer = "";
@@ -124,15 +148,13 @@ describe("sendSocketCommand", () => {
       });
     });
 
-    await new Promise<void>((resolve) => server!.listen(socketPath, () => resolve()));
-
-    const result = await sendSocketCommand(socketPath, { type: "status" });
+    const result = await sendSocketCommand(endpoint, { type: "status" });
     expect(result.type).toBe("ok");
     expect(result.command).toBe("status");
   });
 
   it("rejects on error response", async () => {
-    server = createServer((socket) => {
+    endpoint = mockEndpoint((socket) => {
       socket.write(JSON.stringify({ type: "connected", pid: 1 }) + "\n");
       let buffer = "";
       socket.on("data", (data) => {
@@ -145,20 +167,16 @@ describe("sendSocketCommand", () => {
       });
     });
 
-    await new Promise<void>((resolve) => server!.listen(socketPath, () => resolve()));
-
-    await expect(sendSocketCommand(socketPath, { type: "bad" })).rejects.toThrow("Unknown command");
+    await expect(sendSocketCommand(endpoint, { type: "bad" })).rejects.toThrow("Unknown command");
   });
 
   it("times out if no response", async () => {
-    server = createServer((socket) => {
+    endpoint = mockEndpoint((socket) => {
       // Send welcome but never respond to commands
       socket.write(JSON.stringify({ type: "connected" }) + "\n");
     });
 
-    await new Promise<void>((resolve) => server!.listen(socketPath, () => resolve()));
-
-    await expect(sendSocketCommand(socketPath, { type: "status" }, { timeoutMs: 200 })).rejects.toThrow(
+    await expect(sendSocketCommand(endpoint, { type: "status" }, { timeoutMs: 200 })).rejects.toThrow(
       "Socket timeout",
     );
   });
@@ -168,7 +186,7 @@ describe("sendSocketCommand", () => {
   });
 
   it("skips broadcast events and only resolves on ok/error", async () => {
-    server = createServer((socket) => {
+    endpoint = mockEndpoint((socket) => {
       socket.write(JSON.stringify({ type: "connected", pid: 1 }) + "\n");
       let buffer = "";
       socket.on("data", (data) => {
@@ -185,9 +203,7 @@ describe("sendSocketCommand", () => {
       });
     });
 
-    await new Promise<void>((resolve) => server!.listen(socketPath, () => resolve()));
-
-    const result = await sendSocketCommand(socketPath, { type: "cancel", sessionId: "s_1" });
+    const result = await sendSocketCommand(endpoint, { type: "cancel", sessionId: "s_1" });
     expect(result.type).toBe("ok");
   });
 });
@@ -195,18 +211,10 @@ describe("sendSocketCommand", () => {
 // ── waitForSocketEvent() tests ─────────────────────────────────────────
 
 describe("waitForSocketEvent", () => {
-  const socketPath = `/tmp/test-sock-evt-${process.pid}.sock`;
-  let server: Server | null = null;
-
-  afterEach(async () => {
-    if (server) {
-      await new Promise<void>((resolve) => server!.close(() => resolve()));
-      server = null;
-    }
-  });
+  let endpoint: SocketEndpoint;
 
   it("resolves when matching event is received", async () => {
-    server = createServer((socket) => {
+    endpoint = mockEndpoint((socket) => {
       socket.write(JSON.stringify({ type: "connected" }) + "\n");
       // After a short delay, emit the event we're waiting for
       setTimeout(() => {
@@ -214,16 +222,14 @@ describe("waitForSocketEvent", () => {
       }, 100);
     });
 
-    await new Promise<void>((resolve) => server!.listen(socketPath, () => resolve()));
-
-    const event = await waitForSocketEvent(socketPath, "session.end", { timeoutMs: 5000 });
+    const event = await waitForSocketEvent(endpoint, "session.end", { timeoutMs: 5000 });
     expect(event.type).toBe("session.end");
     expect(event.sessionId).toBe("s_1");
     expect(event.status).toBe("done");
   });
 
   it("filters by sessionId when provided", async () => {
-    server = createServer((socket) => {
+    endpoint = mockEndpoint((socket) => {
       socket.write(JSON.stringify({ type: "connected" }) + "\n");
       setTimeout(() => {
         // Wrong session
@@ -233,9 +239,7 @@ describe("waitForSocketEvent", () => {
       }, 100);
     });
 
-    await new Promise<void>((resolve) => server!.listen(socketPath, () => resolve()));
-
-    const event = await waitForSocketEvent(socketPath, "session.end", {
+    const event = await waitForSocketEvent(endpoint, "session.end", {
       sessionId: "s_target",
       timeoutMs: 5000,
     });
@@ -244,7 +248,7 @@ describe("waitForSocketEvent", () => {
   });
 
   it("times out if event never arrives", async () => {
-    server = createServer((socket) => {
+    endpoint = mockEndpoint((socket) => {
       socket.write(JSON.stringify({ type: "connected" }) + "\n");
       // Only send irrelevant events
       let destroyed = false;
@@ -261,30 +265,26 @@ describe("waitForSocketEvent", () => {
       }, 50);
     });
 
-    await new Promise<void>((resolve) => server!.listen(socketPath, () => resolve()));
-
-    await expect(waitForSocketEvent(socketPath, "session.end", { timeoutMs: 300 })).rejects.toThrow(
+    await expect(waitForSocketEvent(endpoint, "session.end", { timeoutMs: 300 })).rejects.toThrow(
       "Timeout waiting for session.end",
     );
   });
 
   it("rejects when socket closes before event", async () => {
-    server = createServer((socket) => {
+    endpoint = mockEndpoint((socket) => {
       socket.write(JSON.stringify({ type: "connected" }) + "\n");
       setTimeout(() => {
         socket.destroy();
       }, 100);
     });
 
-    await new Promise<void>((resolve) => server!.listen(socketPath, () => resolve()));
-
-    await expect(waitForSocketEvent(socketPath, "session.end", { timeoutMs: 5000 })).rejects.toThrow(
+    await expect(waitForSocketEvent(endpoint, "session.end", { timeoutMs: 5000 })).rejects.toThrow(
       "Socket closed before event received",
     );
   });
 
   it("ignores non-matching event types", async () => {
-    server = createServer((socket) => {
+    endpoint = mockEndpoint((socket) => {
       socket.write(JSON.stringify({ type: "connected" }) + "\n");
       setTimeout(() => {
         socket.write(JSON.stringify({ type: "text", agent: "bob", text: "working" }) + "\n");
@@ -293,9 +293,7 @@ describe("waitForSocketEvent", () => {
       }, 100);
     });
 
-    await new Promise<void>((resolve) => server!.listen(socketPath, () => resolve()));
-
-    const event = await waitForSocketEvent(socketPath, "info", { timeoutMs: 5000 });
+    const event = await waitForSocketEvent(endpoint, "info", { timeoutMs: 5000 });
     expect(event.type).toBe("info");
     expect(event.message).toBe("[task] Completed");
   });

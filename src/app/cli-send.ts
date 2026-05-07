@@ -2,14 +2,14 @@
  * cli-message.ts -- Send a message to an agent from the command line.
  *
  * Usage:
- *   bun src/app/may.ts --message bob --message "do the thing"
- *   bun src/app/may.ts --message bob --message-file /tmp/brief.txt
- *   bun src/app/may.ts --message bob --message "review this" --artifact docs/design/foo.md
+ *   bun src/app/may.ts --send bob --message "do the thing"
+ *   bun src/app/may.ts --send bob --message-file /tmp/brief.txt
+ *   bun src/app/may.ts --send bob --message "review this" --artifact docs/design/foo.md
  *
  * Delivery:
  *   1. Tracks the request in the SQLite DB (always)
  *   2. Finds a live socket (scans .state/instances/ for may.sock)
- *   3. Sends via socket as "@agent message" (triggers immediate heartbeat)
+ *   3. Sends via socket as "@agent message" so May can delegate/monitor it
  *   4. If no socket found, task is still tracked in DB and will appear in next heartbeat
  *
  * Exits 0 on success, 1 on error.

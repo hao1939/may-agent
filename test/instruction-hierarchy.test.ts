@@ -38,9 +38,9 @@ describe("Instruction Hierarchy (P84)", () => {
     rmSync(agentDir, { recursive: true, force: true });
   });
 
-  it("wraps convention-file prompt in <system_instructions> tags", () => {
-    // Create SOUL.md
-    writeFileSync(join(agentDir, "SOUL.md"), "# SOUL — Test\n\n## Identity\nYou are a test agent.", "utf-8");
+  it("wraps assembled prompt in <system_instructions> tags", () => {
+    // Create AGENTS.md
+    writeFileSync(join(agentDir, "AGENTS.md"), "# AGENTS — Test\n\n## Identity\nYou are a test agent.", "utf-8");
 
     manager.register({
       name: "ih-agent",
@@ -60,7 +60,7 @@ describe("Instruction Hierarchy (P84)", () => {
 
     expect(prompt).toMatch(/^<system_instructions>\n/);
     expect(prompt).toMatch(/\n<\/system_instructions>$/);
-    expect(prompt).toContain("# SOUL — Test");
+    expect(prompt).toContain("# AGENTS — Test");
     expect(prompt).toContain("# Runtime Environment");
   });
 
@@ -84,7 +84,7 @@ describe("Instruction Hierarchy (P84)", () => {
   });
 
   it("produces identical system prompts across sessions (caching)", () => {
-    writeFileSync(join(agentDir, "SOUL.md"), "# SOUL — Cache Test\nYou are stable.", "utf-8");
+    writeFileSync(join(agentDir, "AGENTS.md"), "# AGENTS — Cache Test\nYou are stable.", "utf-8");
 
     manager.register({
       name: "cache-agent",
@@ -108,8 +108,8 @@ describe("Instruction Hierarchy (P84)", () => {
     expect(prompt1).toMatch(/^<system_instructions>/);
   });
 
-  it("wraps all convention files inside tags", () => {
-    writeFileSync(join(agentDir, "SOUL.md"), "# SOUL\nIdentity block.", "utf-8");
+  it("loads only AGENTS.md plus runtime facts inside tags", () => {
+    writeFileSync(join(agentDir, "AGENTS.md"), "# AGENTS\nIdentity block.", "utf-8");
     writeFileSync(join(agentDir, "DOMAIN.md"), "# Domain\nExpertise block.", "utf-8");
     writeFileSync(join(agentDir, "TOOLS.md"), "# Tools\nTool guide.", "utf-8");
     writeFileSync(join(agentDir, "LESSONS.md"), "# Lessons\nLearned stuff.", "utf-8");
@@ -133,7 +133,7 @@ describe("Instruction Hierarchy (P84)", () => {
     // All content should be inside the tags
     const inner = prompt.slice("<system_instructions>\n".length, prompt.length - "\n</system_instructions>".length);
 
-    expect(inner).toContain("# SOUL");
+    expect(inner).toContain("# AGENTS");
     expect(inner).toContain("# Runtime Environment");
 
     // Files no longer loaded (removed as part of prompt simplification):
@@ -147,7 +147,7 @@ describe("Instruction Hierarchy (P84)", () => {
   });
 
   it("tags appear at the outermost level (no nesting)", () => {
-    writeFileSync(join(agentDir, "SOUL.md"), "# SOUL\nTest.", "utf-8");
+    writeFileSync(join(agentDir, "AGENTS.md"), "# AGENTS\nTest.", "utf-8");
 
     manager.register({
       name: "nest-test",

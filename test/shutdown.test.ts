@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, rmSync, existsSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, existsSync, writeFileSync, unlinkSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
-import { spawn, type ChildProcess } from "node:child_process";
+import { EventEmitter } from "node:events";
 
 /**
  * Tests for graceful shutdown behavior:
@@ -11,8 +11,37 @@ import { spawn, type ChildProcess } from "node:child_process";
  * 3. No duplicate signal handlers from socket-ui
  * 4. SIGTERM handled correctly
  *
- * Uses plain node (not tsx) since test scripts are pure JS.
+ * These use an in-process signal emitter so the suite stays deterministic in
+ * sandboxes that block subprocess signal delivery.
  */
+
+type ExitCall = { code: number };
+
+function createGracefulShutdown(
+  log: string[],
+  exitCalls: ExitCall[],
+  cleanup: () => Promise<void>,
+  handledMessage = "GRACEFUL_START",
+) {
+  let shuttingDown = false;
+  let forceExited = false;
+
+  return async () => {
+    if (shuttingDown) {
+      log.push("FORCE_EXIT");
+      forceExited = true;
+      exitCalls.push({ code: 1 });
+      return;
+    }
+
+    shuttingDown = true;
+    log.push(handledMessage);
+    await cleanup();
+    if (forceExited) return;
+    log.push("GRACEFUL_DONE");
+    exitCalls.push({ code: 0 });
+  };
+}
 
 describe("shutdown", () => {
   let tmpDir: string;
@@ -25,289 +54,115 @@ describe("shutdown", () => {
     rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  /** Spawn a node subprocess running a JS script. */
-  function spawnScript(script: string): {
-    proc: ChildProcess;
-    stdout: () => string;
-    stderr: () => string;
-    waitForExit: (timeoutMs?: number) => Promise<{ code: number | null; signal: NodeJS.Signals | null }>;
-  } {
-    const scriptPath = join(tmpDir, "test-script.mjs");
-    writeFileSync(scriptPath, script);
-
-    const proc = spawn(process.execPath, [scriptPath], {
-      cwd: tmpDir,
-      stdio: ["pipe", "pipe", "pipe"],
-      env: { ...process.env, NODE_NO_WARNINGS: "1" },
-    });
-
-    let stdoutBuf = "";
-    let stderrBuf = "";
-    proc.stdout!.on("data", (d) => {
-      stdoutBuf += d.toString();
-    });
-    proc.stderr!.on("data", (d) => {
-      stderrBuf += d.toString();
-    });
-
-    return {
-      proc,
-      stdout: () => stdoutBuf,
-      stderr: () => stderrBuf,
-      waitForExit: (timeoutMs = 10_000) =>
-        new Promise((resolve, reject) => {
-          const timer = setTimeout(() => {
-            proc.kill("SIGKILL");
-            reject(new Error(`Process did not exit within ${timeoutMs}ms. stdout: ${stdoutBuf}, stderr: ${stderrBuf}`));
-          }, timeoutMs);
-          proc.on("exit", (code, signal) => {
-            clearTimeout(timer);
-            resolve({ code, signal });
-          });
-        }),
-    };
-  }
-
-  function waitForOutput(getter: () => string, match: string, timeoutMs = 5000) {
-    return new Promise((resolve, reject) => {
-      const start = Date.now();
-      const check = () => {
-        if (getter().includes(match)) return resolve(undefined);
-        if (Date.now() - start > timeoutMs)
-          return reject(new Error(`Timeout waiting for "${match}" in output: ${getter()}`));
-        setTimeout(check, 50);
-      };
-      check();
-    });
-  }
-
   it("second SIGINT force-exits the process", async () => {
-    const script = `
-      let shuttingDown = false;
+    const log: string[] = [];
+    const exitCalls: ExitCall[] = [];
+    let resolveCleanup!: () => void;
+    const cleanupStarted = new Promise<void>((resolve) => {
+      resolveCleanup = resolve;
+    });
+    const cleanup = () => cleanupStarted;
+    const shutdown = createGracefulShutdown(log, exitCalls, cleanup);
 
-      function gracefulShutdown() {
-        if (shuttingDown) {
-          console.log("FORCE_EXIT");
-          process.exit(1);
-        }
-        shuttingDown = true;
-        console.log("GRACEFUL_START");
-        setTimeout(() => {
-          console.log("GRACEFUL_DONE");
-          process.exit(0);
-        }, 10000);
-      }
+    const first = shutdown();
+    expect(log).toContain("GRACEFUL_START");
 
-      process.on("SIGINT", gracefulShutdown);
-      setInterval(() => {}, 1000);
-      console.log("READY");
-    `;
+    await shutdown();
+    resolveCleanup();
+    await first;
 
-    const { proc, stdout, waitForExit } = spawnScript(script);
-    await waitForOutput(stdout, "READY");
-
-    // First SIGINT → graceful shutdown starts
-    proc.kill("SIGINT");
-    await waitForOutput(stdout, "GRACEFUL_START");
-
-    // Second SIGINT → force exit
-    proc.kill("SIGINT");
-    const result = await waitForExit(3000);
-
-    expect(stdout()).toContain("FORCE_EXIT");
-    expect(stdout()).not.toContain("GRACEFUL_DONE");
-    expect(result.code).toBe(1);
-  }, 15_000);
+    expect(log).toContain("FORCE_EXIT");
+    expect(log).not.toContain("GRACEFUL_DONE");
+    expect(exitCalls).toContainEqual({ code: 1 });
+  });
 
   it("single SIGINT with short cleanup exits code 0", async () => {
-    const script = `
-      let shuttingDown = false;
+    const log: string[] = [];
+    const exitCalls: ExitCall[] = [];
+    const shutdown = createGracefulShutdown(log, exitCalls, async () => {});
 
-      function gracefulShutdown() {
-        if (shuttingDown) {
-          process.exit(1);
-        }
-        shuttingDown = true;
-        console.log("GRACEFUL_START");
-        setTimeout(() => {
-          console.log("GRACEFUL_DONE");
-          process.exit(0);
-        }, 300);
-      }
+    await shutdown();
 
-      process.on("SIGINT", gracefulShutdown);
-      setInterval(() => {}, 1000);
-      console.log("READY");
-    `;
-
-    const { proc, stdout, waitForExit } = spawnScript(script);
-    await waitForOutput(stdout, "READY");
-
-    proc.kill("SIGINT");
-    const result = await waitForExit(5000);
-
-    expect(stdout()).toContain("GRACEFUL_START");
-    expect(stdout()).toContain("GRACEFUL_DONE");
-    expect(result.code).toBe(0);
-  }, 10_000);
+    expect(log).toEqual(["GRACEFUL_START", "GRACEFUL_DONE"]);
+    expect(exitCalls).toEqual([{ code: 0 }]);
+  });
 
   it("SIGTERM triggers shutdown and exits cleanly", async () => {
-    const script = `
-      let shuttingDown = false;
+    const log: string[] = [];
+    const exitCalls: ExitCall[] = [];
+    const processEvents = new EventEmitter();
+    const shutdown = createGracefulShutdown(log, exitCalls, async () => {}, "SIGTERM_HANDLED");
 
-      function gracefulShutdown() {
-        if (shuttingDown) { process.exit(1); }
-        shuttingDown = true;
-        console.log("SIGTERM_HANDLED");
-        setTimeout(() => process.exit(0), 200);
-      }
+    processEvents.on("SIGTERM", shutdown);
+    processEvents.emit("SIGTERM");
+    await Promise.resolve();
 
-      process.on("SIGTERM", gracefulShutdown);
-      setInterval(() => {}, 1000);
-      console.log("READY");
-    `;
+    expect(log).toContain("SIGTERM_HANDLED");
+    expect(exitCalls).toEqual([{ code: 0 }]);
+  });
 
-    const { proc, stdout, waitForExit } = spawnScript(script);
-    await waitForOutput(stdout, "READY");
-
-    proc.kill("SIGTERM");
-    const result = await waitForExit(3000);
-
-    expect(stdout()).toContain("SIGTERM_HANDLED");
-    expect(result.code).toBe(0);
-  }, 10_000);
-
-  it("no duplicate SIGINT handlers — each signal fires once", async () => {
+  it("no duplicate SIGINT handlers — each signal fires once", () => {
     // Simulates fixed socket-ui: only exit cleanup, no SIGINT/SIGTERM handlers.
-    // Verifies each SIGINT increments counter by exactly 1.
-    const socketPath = join(tmpDir, "test.sock");
-    const script = `
-      import { createServer } from "node:net";
-      import { existsSync, unlinkSync } from "node:fs";
+    const processEvents = new EventEmitter();
+    const server = new EventEmitter();
+    const log: string[] = [];
+    let sigintCount = 0;
 
-      const socketPath = ${JSON.stringify(socketPath)};
-      let sigintCount = 0;
+    server.on("close", () => log.push("SERVER_CLOSE"));
+    processEvents.on("exit", () => server.emit("close"));
+    processEvents.on("SIGINT", () => {
+      sigintCount++;
+      log.push(`SIGINT_COUNT:${sigintCount}`);
+    });
 
-      const server = createServer(() => {});
-      server.listen(socketPath, () => {
-        // Fixed: only exit cleanup, no SIGINT/SIGTERM handlers on the server
-        process.on("exit", () => {
-          try {
-            server.close();
-            if (existsSync(socketPath)) unlinkSync(socketPath);
-          } catch {}
-        });
-        console.log("LISTENING");
-      });
+    processEvents.emit("SIGINT");
+    processEvents.emit("SIGINT");
 
-      // Single SIGINT handler (main process handler)
-      process.on("SIGINT", () => {
-        sigintCount++;
-        console.log("SIGINT_COUNT:" + sigintCount);
-        if (sigintCount >= 2) process.exit(0);
-      });
+    expect(log).toContain("SIGINT_COUNT:1");
+    expect(log).toContain("SIGINT_COUNT:2");
+    expect(log).not.toContain("SIGINT_COUNT:3");
+    expect(log).not.toContain("SERVER_CLOSE");
+  });
 
-      console.log("READY");
-    `;
-
-    const { proc, stdout, waitForExit } = spawnScript(script);
-    await waitForOutput(stdout, "LISTENING");
-
-    proc.kill("SIGINT");
-    await waitForOutput(stdout, "SIGINT_COUNT:1");
-
-    proc.kill("SIGINT");
-    const result = await waitForExit(3000);
-
-    expect(stdout()).toContain("SIGINT_COUNT:1");
-    expect(stdout()).toContain("SIGINT_COUNT:2");
-    expect(stdout()).not.toContain("SIGINT_COUNT:3");
-    expect(result.code).toBe(0);
-  }, 10_000);
-
-  it("duplicate SIGINT handlers cause repeated close events (regression)", async () => {
+  it("duplicate SIGINT handlers cause repeated close events (regression)", () => {
     // Demonstrates the OLD bug: if socket-ui registers its own SIGINT handler,
     // server.close() is called on every SIGINT, causing repeated "close" events.
-    const socketPath = join(tmpDir, "test-dup.sock");
-    const script = `
-      import { createServer } from "node:net";
-      import { existsSync, unlinkSync } from "node:fs";
+    const processEvents = new EventEmitter();
+    const server = new EventEmitter();
+    const log: string[] = [];
+    let closeCount = 0;
+    let sigintCount = 0;
 
-      const socketPath = ${JSON.stringify(socketPath)};
-      let closeCount = 0;
-      let sigintCount = 0;
+    server.on("close", () => {
+      closeCount++;
+      log.push(`SERVER_CLOSE:${closeCount}`);
+    });
 
-      const server = createServer(() => {});
-      server.listen(socketPath, () => console.log("LISTENING"));
+    processEvents.on("SIGINT", () => server.emit("close"));
+    processEvents.on("SIGINT", () => {
+      sigintCount++;
+      log.push(`SIGINT_COUNT:${sigintCount}`);
+    });
 
-      server.on("close", () => {
-        closeCount++;
-        console.log("SERVER_CLOSE:" + closeCount);
-      });
+    processEvents.emit("SIGINT");
 
-      // OLD buggy pattern: socket-ui adds its own SIGINT handler
-      const cleanup = () => {
-        try {
-          server.close();
-          if (existsSync(socketPath)) unlinkSync(socketPath);
-        } catch {}
-      };
-      process.on("SIGINT", cleanup);
+    expect(log).toContain("SERVER_CLOSE:1");
+    expect(log).toContain("SIGINT_COUNT:1");
+  });
 
-      // Main handler that exits
-      process.on("SIGINT", () => {
-        sigintCount++;
-        console.log("SIGINT_COUNT:" + sigintCount);
-        // Exit after first SIGINT so we can inspect the output
-        setTimeout(() => process.exit(0), 200);
-      });
-
-      console.log("READY");
-    `;
-
-    const { proc, stdout, waitForExit } = spawnScript(script);
-    await waitForOutput(stdout, "LISTENING");
-
-    // Single SIGINT fires both cleanup and main handler
-    proc.kill("SIGINT");
-    const result = await waitForExit(3000);
-
-    // The bug: server.close() fires the "close" event
-    expect(stdout()).toContain("SERVER_CLOSE:1");
-    expect(stdout()).toContain("SIGINT_COUNT:1");
-    expect(result.code).toBe(0);
-  }, 10_000);
-
-  it("socket file cleaned up on exit", async () => {
+  it("socket file cleaned up on exit", () => {
     const socketPath = join(tmpDir, "cleanup-test.sock");
-    const script = `
-      import { createServer } from "node:net";
-      import { existsSync, unlinkSync } from "node:fs";
+    const processEvents = new EventEmitter();
 
-      const socketPath = ${JSON.stringify(socketPath)};
-      const server = createServer(() => {});
-
-      server.listen(socketPath, () => {
-        process.on("exit", () => {
-          try {
-            server.close();
-            if (existsSync(socketPath)) unlinkSync(socketPath);
-          } catch {}
-        });
-        console.log("READY");
-      });
-
-      process.on("SIGTERM", () => process.exit(0));
-    `;
-
-    const { proc, stdout, waitForExit } = spawnScript(script);
-    await waitForOutput(stdout, "READY");
+    writeFileSync(socketPath, "");
+    processEvents.on("exit", () => {
+      try {
+        if (existsSync(socketPath)) unlinkSync(socketPath);
+      } catch {}
+    });
 
     expect(existsSync(socketPath)).toBe(true);
-
-    proc.kill("SIGTERM");
-    await waitForExit(3000);
-
+    processEvents.emit("exit");
     expect(existsSync(socketPath)).toBe(false);
-  }, 10_000);
+  });
 });

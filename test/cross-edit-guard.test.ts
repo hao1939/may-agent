@@ -12,8 +12,8 @@ describe("cross-edit-guard", () => {
   // ── May exemption ──────────────────────────────────────
 
   describe("May exemption", () => {
-    it("may can edit any agent's SOUL.md", () => {
-      const r = checkCrossEditGuard(agentPath("bob", "SOUL.md"), "may", ROOT);
+    it("may can edit any agent's AGENTS.md", () => {
+      const r = checkCrossEditGuard(agentPath("bob", "AGENTS.md"), "may", ROOT);
       expect(r.blocked).toBe(false);
     });
 
@@ -28,7 +28,7 @@ describe("cross-edit-guard", () => {
     });
 
     it("May exemption is case-insensitive", () => {
-      const r = checkCrossEditGuard(agentPath("bob", "SOUL.md"), "May", ROOT);
+      const r = checkCrossEditGuard(agentPath("bob", "AGENTS.md"), "May", ROOT);
       expect(r.blocked).toBe(false);
     });
   });
@@ -37,7 +37,7 @@ describe("cross-edit-guard", () => {
 
   describe("no agent name", () => {
     it("undefined agentName bypasses all guards", () => {
-      const r = checkCrossEditGuard(agentPath("bob", "SOUL.md"), undefined, ROOT);
+      const r = checkCrossEditGuard(agentPath("bob", "AGENTS.md"), undefined, ROOT);
       expect(r.blocked).toBe(false);
     });
   });
@@ -45,8 +45,8 @@ describe("cross-edit-guard", () => {
   // ── Own files ──────────────────────────────────────────
 
   describe("own files", () => {
-    it("agent can edit its own SOUL.md", () => {
-      const r = checkCrossEditGuard(agentPath("bob", "SOUL.md"), "bob", ROOT);
+    it("agent can edit its own AGENTS.md", () => {
+      const r = checkCrossEditGuard(agentPath("bob", "AGENTS.md"), "bob", ROOT);
       expect(r.blocked).toBe(false);
     });
 
@@ -64,12 +64,12 @@ describe("cross-edit-guard", () => {
   // ── Cross-agent protected files ────────────────────────
 
   describe("cross-agent protected files", () => {
-    it("blocks writing another agent's SOUL.md", () => {
-      const r = checkCrossEditGuard(agentPath("bob", "SOUL.md"), "optimizer", ROOT);
+    it("blocks writing another agent's AGENTS.md", () => {
+      const r = checkCrossEditGuard(agentPath("bob", "AGENTS.md"), "optimizer", ROOT);
       expect(r.blocked).toBe(true);
       expect(r.message).toContain("optimizer");
       expect(r.message).toContain("bob");
-      expect(r.message).toContain("SOUL.md");
+      expect(r.message).toContain("AGENTS.md");
     });
 
     it("blocks writing another agent's heartbeat.md", () => {
@@ -198,8 +198,14 @@ describe("cross-edit-guard", () => {
   // ── shared/ directory ──────────────────────────────────
 
   describe("shared directory", () => {
-    it("allows writing non-protected files in shared/", () => {
+    it("blocks shared common-sense.md because it is always-loaded prompt", () => {
       const r = checkCrossEditGuard(agentPath("shared", "common-sense.md"), "optimizer", ROOT);
+      expect(r.blocked).toBe(true);
+      expect(r.message).toContain("common-sense.md");
+    });
+
+    it("allows writing non-protected files in shared/", () => {
+      const r = checkCrossEditGuard(agentPath("shared", "bulletin.md"), "optimizer", ROOT);
       expect(r.blocked).toBe(false);
     });
 
@@ -213,7 +219,7 @@ describe("cross-edit-guard", () => {
 
   describe(".lab directory", () => {
     it("allows writes to .lab/ directory", () => {
-      const r = checkCrossEditGuard(agentPath(".lab", "experiment", "SOUL.md"), "optimizer", ROOT);
+      const r = checkCrossEditGuard(agentPath(".lab", "experiment", "AGENTS.md"), "optimizer", ROOT);
       expect(r.blocked).toBe(false);
     });
   });
@@ -245,9 +251,9 @@ describe("cross-edit-guard", () => {
       expect(r.blocked).toBe(false);
     });
 
-    it("blocks SOUL.md in subdirectories of other agents", () => {
+    it("blocks AGENTS.md in subdirectories of other agents", () => {
       // Protected filenames checked at any depth
-      const r = checkCrossEditGuard(agentPath("bob", "skills", "SOUL.md"), "optimizer", ROOT);
+      const r = checkCrossEditGuard(agentPath("bob", "skills", "AGENTS.md"), "optimizer", ROOT);
       expect(r.blocked).toBe(true);
     });
 

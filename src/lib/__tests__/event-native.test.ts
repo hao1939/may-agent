@@ -5,12 +5,12 @@
  * - request-status queries events/sessions for handler health & agent stats
  */
 
-import { describe, test, expect, beforeEach } from "bun:test";
+import { describe, it, expect, beforeEach } from "vitest";
 import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { getDb, closeDb } from "../requests.js";
 
-const TEST_DIR = join(import.meta.dir, ".test-event-native");
+const TEST_DIR = join(process.cwd(), "src/lib/__tests__/.test-event-native");
 
 beforeEach(() => {
   try { rmSync(TEST_DIR, { recursive: true, force: true }); } catch {}
@@ -19,7 +19,7 @@ beforeEach(() => {
 });
 
 describe("event-native: events table", () => {
-  test("events are immutable — no status column needed for queries", () => {
+  it("events are immutable — no status column needed for queries", () => {
     const db = getDb(TEST_DIR);
 
     // Insert events as immutable facts
@@ -38,7 +38,7 @@ describe("event-native: events table", () => {
     expect(inbox[0].event_type).toBe("message.created");
   });
 
-  test("handler health derived from paired events", () => {
+  it("handler health derived from paired events", () => {
     const db = getDb(TEST_DIR);
     const now = Date.now();
 
@@ -69,7 +69,7 @@ describe("event-native: events table", () => {
     expect(failed).toBe(1);
   });
 
-  test("agent work stats from sessions table", () => {
+  it("agent work stats from sessions table", () => {
     const db = getDb(TEST_DIR);
     const now = Date.now();
 
@@ -96,7 +96,7 @@ describe("event-native: events table", () => {
     expect(stats[0].failed).toBe(1);
   });
 
-  test("findings dedup uses events table", () => {
+  it("findings dedup uses events table", () => {
     const db = getDb(TEST_DIR);
     const now = Date.now();
 

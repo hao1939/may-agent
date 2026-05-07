@@ -42,7 +42,7 @@ interface ChatSessionOptions {
  *
  * First message creates the session. Subsequent messages wake it from idle.
  * Built-in commands (status, cancel, reload, etc.) are handled directly.
- * @agent prefix routes to ephemeral direct agent sessions.
+ * @agent prefix routes through the chat session as an explicit delegation request.
  */
 export class ChatSession {
   private manager: SubagentManager;
@@ -117,7 +117,7 @@ export class ChatSession {
    * Handle human input. Returns immediately.
    *
    * Built-in commands are handled directly (no LLM call).
-   * @agent prefixes route to direct agent invocation.
+   * @agent prefixes route through May for orchestration.
    * Everything else goes to the persistent session.
    */
   handleInput(message: string, source?: string): void {
@@ -333,7 +333,7 @@ export class ChatSession {
     this.onDone?.();
   }
 
-  /** Start an ephemeral direct agent session (from @agent prefix). */
+  /** Start an ephemeral direct agent session. Currently unused by @agent routing. */
   private startDirectSession(agentName: string, task: string, source?: string): void {
     this.bus.emit({ type: "info", message: `[direct] Running ${agentName}...` });
 
