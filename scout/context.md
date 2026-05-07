@@ -7,7 +7,7 @@
   - Hacker News API: `curl 'https://hn.algolia.com/api/v1/search?query=...'`
   - GitHub API: `curl 'https://api.github.com/search/repositories?q=...'`
   - Reddit JSON: `curl 'https://www.reddit.com/r/MachineLearning/.json?limit=10'`
-- **XHS**: Use `agents/shared/tools/xhs-browse.mjs` (copied from amy's tools)
+- **XHS**: Use `agents/scout/tools/xhs-browse.mjs` to browse Xiaohongshu
 - ⛔ **NEVER simulate or mock data**. If you can't reach a source, skip it and use sources you CAN reach. Every finding must be based on real data from a real API call.
 
 ## REQUIRED: Check Shared Manifest
