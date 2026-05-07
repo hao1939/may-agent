@@ -23,3 +23,13 @@
 
 ## Disposition
 All three red metrics are **previously documented known issues** (KE-792, KE-793). No new investigation or destructive action warranted. The proper fixes are infrastructure improvements (reactor dedup restoration, spec coverage buildout, trace system completion) that are tracked elsewhere.
+
+---
+
+## 2026-05-07 15:59 UTC Update
+
+- **Success rate**: 97% (29 sessions/hour)
+- **Low-quality sessions**: 46.7% (worsening — was flagged before)
+- **Active projects**: still 0
+- **Real output**: 410/24h (healthy)
+- 20+ stale/interrupted sessions visible in system status
