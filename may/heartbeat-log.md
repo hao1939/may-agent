@@ -1,6 +1,25 @@
 # May Heartbeat Log — Latest
 
-**Timestamp:** 2026-05-08 ~12:20 UTC
+**Timestamp:** 2026-05-07 18:49 UTC
+
+## System Snapshot
+- **Success rate**: 100% (30 sessions/hr)
+- **Real output**: 448/24h (healthy, target 100)
+- **Heartbeat coverage**: 4/4 agents
+- **Handler success rate**: 98.96%
+
+## Red Metrics — Unchanged
+- session-trace-completeness=0.002: KE-799/795
+- v2.spec-coverage-rate=0.14: KE-798
+- No new red metrics since last check.
+
+## Notes
+- 60 active sessions visible, most are stale/interrupted leftovers
+- System stable, no intervention needed
+
+---
+
+**Previous Timestamp:** 2026-05-08 ~12:20 UTC
 
 ## Red Metrics — All Known (10+ consecutive)
 - handler.failed-count=6: KE-793 self-loop
