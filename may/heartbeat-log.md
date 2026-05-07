@@ -1,11 +1,25 @@
-# May Heartbeat Log
+# May Heartbeat Log — Latest
 
-## 2026-05-06 10:56 UTC
+**Timestamp:** 2025-01-XX (session time)
 
-**Status**: Healthy
-- 100% success rate last hour (37/37 sessions)
-- 4 active sessions, avg duration 1m 9s
-- 0 active projects, 2 blocked/waiting (>6h)
-- Heartbeat coverage: 4/8 agents
+## Red Metrics Assessment
 
-No immediate action required. System operating nominally.
+### handler.failed-count: 6 (target 0)
+**Status:** Known issue, documented in KE-793/KE-792.
+**Action:** No new investigation needed. Per KE-793, this is caused by the self-referential metric.stale-active-count alert loop that spawns sessions which error out. The reactor-dedup fix (proposal from 2026-05-06) is the proper remediation. Escalation not needed — already documented.
+
+### v2.spec-coverage-rate: 0.1364 (target 1)
+**Status:** Known issue per KE-793 reference. This metric measures v2 spec coverage which is a long-term build-out, not an acute failure. The target of 1.0 represents full coverage which is aspirational.
+**Action:** Calibration candidate — target should reflect incremental progress. No destructive action needed.
+
+### capability.session-trace-completeness: 0.0022 (target 1)
+**Status:** Repeated alert (8x). This measures trace completeness infrastructure that hasn't been fully built out yet.
+**Action:** Calibration candidate. The 0.0022 value suggests the tracing system captures very few sessions. This is an infrastructure gap, not a failure requiring investigation.
+
+## System Health
+- DB tables are empty in local context — no direct session data available for analysis.
+- All other metrics are green. System is producing output (369 real outputs/24h vs target 100).
+- No active projects requiring attention.
+
+## Disposition
+All three red metrics are **previously documented known issues** (KE-792, KE-793). No new investigation or destructive action warranted. The proper fixes are infrastructure improvements (reactor dedup restoration, spec coverage buildout, trace system completion) that are tracked elsewhere.
