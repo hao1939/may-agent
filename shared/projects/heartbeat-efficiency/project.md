@@ -1,6 +1,9 @@
 # Project: Heartbeat Efficiency
 
-**Status**: active
+**Status**: waiting
+**Stop Reason**: WAITING
+
+The project needs 24 hours of production heartbeat data to accumulate before M4 can be completed. The code change (M3) integrates `shouldSkipHeartbeat()` into the runtime path, but no heartbe
 **Owner**: tech-lead
 **Priority**: P1
 
@@ -18,11 +21,11 @@ PROP-003 identifies a May heartbeat waste problem:
 
 ## Current State
 
-**Orchestrator assessment 2026-05-07 (iteration 7):**
+**Orchestrator assessment 2026-05-07 (iteration 8):**
 
-M1 ✅, M2 ✅, M3 ✅. The `shouldSkipHeartbeat()` call is now integrated at line 387 of `agents/shared/workflows/heartbeat-data.ts` — verified in source. It emits `heartbeat_skipped` events and returns early via `ctx.done()` when no actionable work exists.
+M1 ✅, M2 ✅, M3 ✅. M4 verification report produced at `agents/shared/projects/outputs/heartbeat-efficiency-m4-verification.md`. Finding: no heartbeat cron cycles have fired since the M3 code change (change was made within this session). Zero `heartbeat_skipped` events in runtime data — all references are in planning docs only.
 
-M4 (verify reduction) is the remaining milestone. Need to wait for production data to accumulate after the M3 change deploys, then re-measure no-op rate. Note: M1 baseline found 28% no-op (already near the <30% target), so the skip logic may bring it well below target. The real question is whether the integration is active in production and producing `heartbeat_skipped` events.
+**Waiting on**: production heartbeat cycles to accumulate (need ~24h of data after deployment). Re-check after 2026-05-08 to complete M4.
 
 ## Milestones
 - [x] **M1: Measure current no-op rate from session data**

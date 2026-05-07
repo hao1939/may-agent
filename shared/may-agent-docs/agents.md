@@ -14,9 +14,6 @@
 // call (sync — blocks until child finishes)
 const result = await sdk.runAgent("tech-lead", task);
 
-// fork (async — starts independent session, returns immediately)
-const sessionId = sdk.forkAgent("tech-lead", task);
-
 // message (async notification — delivered at next heartbeat)
 sdk.message("bob", "Review this design");
 // emits: { type: "message.created", from: agent, to: "bob", content: "..." }

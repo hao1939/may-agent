@@ -35,8 +35,7 @@ export interface ContextUpdateResult {
   removed: string[];
 }
 
-/** Minimal interface for running an LLM call — just call the agent and get text back. */
-export type LLMCaller = (agent: string, task: string) => Promise<{ lastAssistantText?: string | null }>;
+import type { AgentSDK } from "../agent-sdk.js";
 
 export interface TranscriptMessage {
   role: string;
@@ -84,7 +83,7 @@ Output \`[]\` if nothing worth learning.`;
  */
 export async function extractFacts(
   text: string,
-  manager: LLMCaller,
+  sdk: AgentSDK,
   existingContext?: string,
   label?: string,
 ): Promise<ContextUpdate[]> {
@@ -104,7 +103,7 @@ export async function extractFacts(
   ].join("\n");
 
   try {
-    const result = await manager("evaluator", prompt);
+    const result = await sdk.runAgent("evaluator", prompt);
     const response = result?.lastAssistantText ?? "";
     return parseContextUpdates(response);
   } catch {
@@ -231,7 +230,7 @@ If nothing new to learn, output the existing context unchanged. If empty and not
 export async function mergeContext(
   contextPath: string,
   text: string,
-  manager: LLMCaller,
+  sdk: AgentSDK,
   label?: string,
   maxSize = 2048,
 ): Promise<ContextUpdateResult> {
@@ -253,7 +252,7 @@ export async function mergeContext(
     "Output the complete updated context.md:",
   ].join("\n");
 
-  const result = await manager("evaluator", prompt);
+  const result = await sdk.runAgent("evaluator", prompt);
   const response = result?.lastAssistantText ?? "";
 
   const match = response.match(/```(?:markdown)?\s*\n([\s\S]*?)```/);
@@ -297,7 +296,7 @@ export interface LearnFromSessionOptions {
 export interface LearnFromSessionLLMOptions extends LearnFromSessionOptions {
   agentName: string;
   task: string;
-  manager: LLMCaller;
+  sdk: AgentSDK;
 }
 
 /**
@@ -307,13 +306,13 @@ export interface LearnFromSessionLLMOptions extends LearnFromSessionOptions {
  * Falls back to mechanical extraction if LLM fails.
  */
 export async function learnFromSessionLLM(opts: LearnFromSessionLLMOptions): Promise<ContextUpdateResult> {
-  const { agentDir, messages, agentName, task, manager, maxSize = 2048 } = opts;
+  const { agentDir, messages, agentName, task, sdk: agentSdk, maxSize = 2048 } = opts;
   const contextPath = `${agentDir}/context.md`;
   const transcript = formatTranscriptForLearning(messages);
   const label = `Agent: ${agentName}\nTask: ${task}`;
 
   try {
-    return await mergeContext(contextPath, transcript, manager, label, maxSize);
+    return await mergeContext(contextPath, transcript, agentSdk, label, maxSize);
   } catch {
     // Fallback to mechanical extraction
     return learnFromSession({ agentDir, messages, maxSize });
@@ -344,11 +343,11 @@ export function learnFromSession(opts: LearnFromSessionOptions): ContextUpdateRe
 export async function learnFromText(
   contextPath: string,
   text: string,
-  manager: LLMCaller,
+  sdk: AgentSDK,
   label?: string,
   maxSize = 2048,
 ): Promise<ContextUpdateResult> {
-  return mergeContext(contextPath, text, manager, label, maxSize);
+  return mergeContext(contextPath, text, sdk, label, maxSize);
 }
 
 // ── Transcript formatting ──────────────────────────────────────────────
