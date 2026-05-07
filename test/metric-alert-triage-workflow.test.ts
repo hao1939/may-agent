@@ -132,6 +132,7 @@ describe("metric-alert-triage workflow", () => {
 
   it("escalates instead of recording closure when owner omits the structured operation", async () => {
     const emitted: Array<Record<string, unknown>> = [];
+    const notifications: string[] = [];
     const ctx = {
       task: task(),
       agentsRoot: "/tmp/no-agents",
@@ -153,6 +154,7 @@ describe("metric-alert-triage workflow", () => {
         outputDir: "",
       }),
       emit: (event: Record<string, unknown>) => emitted.push(event),
+      notify: (msg: string) => notifications.push(msg),
       done: (summary: string) => ({ type: "done", summary }),
       escalate: (reason: string, context?: unknown) => ({ type: "escalate", reason, context }),
     } as any;
@@ -162,5 +164,8 @@ describe("metric-alert-triage workflow", () => {
     expect(result).toMatchObject({ type: "escalate" });
     expect(String((result as any).reason)).toContain("did not produce a valid METRIC_ALERT_OPERATION");
     expect(emitted).toEqual([]);
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0]).toContain("Metric alert triage needs attention for arc.quality");
+    expect(notifications[0]).toContain("owner did not produce a valid METRIC_ALERT_OPERATION");
   });
 });
