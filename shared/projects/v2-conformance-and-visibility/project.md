@@ -26,7 +26,8 @@ This is not a one-off doc cleanup. It is a tracking project whose first slice is
 - `agents/shared/may-agent-docs/proposals/v2-spec.md` has the right contract shape and is now tied to this tracking project instead of a hand-maintained status table.
 - The first integrity bugs around S6 runtime LOC, C2 recovery emission, S8 metric priority wiring, and broken S7 references have been corrected or moved into live tracking.
 - The current web UI shows useful system data but is still a dashboard/tab surface, not the proposed liveness/trace/spec-conformance window.
-- The system lacks the events needed for full trace reconstruction: `agent.decision` and `context.read`.
+- Phase 2 complete: `context.read` and `agent.decision` events now emit in every heartbeat session. `capability.session-trace-completeness` metric computes 24h completeness ratio.
+- Next: Phase 3 — visibility UI (liveness view, session trace view, spec conformance view).
 
 ## Plan
 
@@ -44,9 +45,9 @@ This is not a one-off doc cleanup. It is a tracking project whose first slice is
 
 ### Phase 2 — Trace Completeness
 
-- [ ] Add `agent.decision` event to heartbeat sessions.
-- [ ] Add `context.read` event for heartbeat context loaded before the decision.
-- [ ] Add `capability.session-trace-completeness`.
+- [x] Add `agent.decision` event to heartbeat sessions.
+- [x] Add `context.read` event for heartbeat context loaded before the decision.
+- [x] Add `capability.session-trace-completeness`.
 
 ### Phase 3 — Visibility UI
 
