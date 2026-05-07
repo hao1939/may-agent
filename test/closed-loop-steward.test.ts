@@ -27,6 +27,7 @@ describe("closed-loop-steward", () => {
     const db = getDb(root);
     const logs: string[] = [];
     const runs: Array<{ agent: string; task: string; source?: string }> = [];
+    const workflows: Array<{ name: string; task: string; source?: string }> = [];
     const handler = create({
       sdk: {
         paths: { root, agents: agentsRoot },
@@ -36,10 +37,14 @@ describe("closed-loop-steward", () => {
           runs.push({ agent, task, source: opts?.source });
           return { sessionId: "s_steward", status: "done" };
         },
+        runWorkflow: async (name: string, task: string, opts?: { source?: string }) => {
+          workflows.push({ name, task, source: opts?.source });
+          return { status: "done", summary: "triaged" };
+        },
       },
     } as any, { handlerConfig: { lookbackMs: 60 * 60_000 } } as any);
 
-    return { db, handler, logs, runs };
+    return { db, handler, logs, runs, workflows };
   }
 
   it("skips when there is no open alert or recent delivery failure", async () => {
@@ -52,7 +57,7 @@ describe("closed-loop-steward", () => {
   });
 
   it("builds live context for open alerts and failed deliveries", async () => {
-    const { db, handler, runs } = setup();
+    const { db, handler, runs, workflows } = setup();
     const now = Date.now();
     const alertCreated = now - 15 * 60_000;
 
@@ -109,6 +114,29 @@ describe("closed-loop-steward", () => {
     expect(runs[0].task).toContain("to=functions.message");
     expect(runs[0].task).toContain("Do not create a project for this cron itself");
     expect(runs[0].task).toContain("metric.alert_judged");
+    expect(workflows).toEqual([]);
+  });
+
+  it("routes unjudged P1 alerts through metric-alert-triage itself", async () => {
+    const { db, handler, workflows, runs } = setup();
+    const now = Date.now();
+
+    db.run(
+      "INSERT INTO metrics (id, name, owner, current, threshold, target, priority, alert_op, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      ["arc.quality", "Arc quality", "arc", 0.4, 0.8, 0.95, "P1", "<", now],
+    );
+    db.run(
+      "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
+      ["arc.quality", "threshold", "quality below threshold", now - 2 * 60 * 60_000],
+    );
+
+    await handler();
+
+    expect(workflows).toHaveLength(1);
+    expect(workflows[0]).toMatchObject({ name: "metric-alert-triage", source: "arc" });
+    expect(workflows[0].task).toContain("missing metric.alert_judged event");
+    expect(workflows[0].task).toContain('"metricId": "arc.quality"');
+    expect(runs).toHaveLength(1);
   });
 
   it("does not dispatch another steward run while one is active", async () => {
