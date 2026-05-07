@@ -52,6 +52,12 @@ For each open alert:
 4. Choose exactly one operation below.
 5. State the chosen operation and evidence in the session summary.
 
+When running under the `metric-alert-triage` workflow, also end with the exact
+structured footer requested by the workflow. That footer is converted into a
+durable `metric.alert_judged` event, which is what the steward and UI use for
+the closure chain. If the footer is missing, the workflow must not record the
+alert as judged.
+
 ## Available Operations
 
 ### 1. Investigate
