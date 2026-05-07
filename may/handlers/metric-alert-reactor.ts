@@ -105,9 +105,28 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
       ).get(metricId) as { priority?: string; explicitOwner?: string | null; projectOwner?: string | null } | null;
       priority = metricRow?.priority ?? priority;
       if (metricRow) owner = resolveMetricOwner(metricId, configuredAgents, metricRow.explicitOwner, metricRow.projectOwner);
-      if (priority !== "P0") {
+      if (priority !== "P0" && priority !== "P1") {
         ctx.sdk.log("info", `[metric-alert-reactor] Deferring ${metricId} (${priority}) to metric context.`);
         return;
+      }
+
+      // P1 alerts: only triage if open >1h without a judgment event
+      if (priority === "P1") {
+        const alertRow = db.prepare(
+          `SELECT ma.created_at FROM metric_alerts ma WHERE ma.metric_id = ? AND ma.resolved_at IS NULL`
+        ).get(metricId) as { created_at: number } | null;
+        const alertAge = alertRow ? Date.now() - alertRow.created_at : 0;
+        if (alertAge < 60 * 60 * 1000) {
+          ctx.sdk.log("info", `[metric-alert-reactor] P1 ${metricId} alert age ${Math.round(alertAge/60000)}m < 60m, deferring.`);
+          return;
+        }
+        const judgedEvent = db.prepare(
+          `SELECT id FROM events WHERE event_type = 'metric.alert_judged' AND data LIKE ? ORDER BY timestamp DESC LIMIT 1`
+        ).get(`%${metricId}%`) as { id: number } | null;
+        if (judgedEvent) {
+          ctx.sdk.log("info", `[metric-alert-reactor] P1 ${metricId} already judged (event ${judgedEvent.id}), skipping.`);
+          return;
+        }
       }
 
       // Dedup: check if owner already has a recent session for this metric
@@ -121,7 +140,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
         return;
       }
     } catch {
-      if (priority !== "P0") {
+      if (priority !== "P0" && priority !== "P1") {
         ctx.sdk.log("info", `[metric-alert-reactor] Deferring ${metricId} (${priority}) to metric context.`);
         return;
       }
