@@ -42,3 +42,14 @@ Next action: start Phase 2 with `agent.decision` and `context.read`.
 
 ### Iteration 1 — 2026-05-07T08:00:14.973Z
 **Worker**: 
+
+### Iteration 1 — 2026-05-07T08:30:17.187Z
+**⚠️ No output files produced (1 consecutive failures)**
+
+### Iteration 1 — 2026-05-07T08:30:17.190Z
+**Worker**: 
+
+Solidifying existing metrics loop:
+- Added explicit `metric.stale-active-count` so active metrics without a recent snapshot are visible as their own health signal.
+- Kept the implementation inside `metrics-snapshot.ts`; no separate conformance runner or new metrics subsystem.
+- Moved status-honesty measurement after generic metric measurement so freshness is checked after all metrics have had a chance to record in the current snapshot.
