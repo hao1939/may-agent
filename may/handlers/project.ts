@@ -56,6 +56,19 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const db = ctx.sdk.getDb();
       for (const a of db.prepare("SELECT metric_id FROM metric_alerts WHERE resolved_at IS NULL").all() as Array<{ metric_id: string }>)
         breachedMetrics.add(a.metric_id);
+      const runningRuns = db.prepare(
+        "SELECT task FROM workflow_runs WHERE status = 'running' AND workflow IS NOT NULL"
+      ).all() as Array<{ task?: string | null }>;
+      for (const project of projects) {
+        const projectDir = dirname(project.projectFile);
+        const projectId = `${project.owner}/${project.relPath.split("/").pop()}`;
+        if (runningRuns.some(run => {
+          const task = run.task ?? "";
+          return task.includes(`project: ${projectDir}`) || task.includes(`project: ${project.relPath}`);
+        })) {
+          runningProjects.add(projectId);
+        }
+      }
     } catch { /* skip */ }
 
     // Track blocker changes
