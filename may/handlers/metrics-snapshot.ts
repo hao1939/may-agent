@@ -412,6 +412,46 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       record("evaluator.low-quality-rate-24h", total > 0 ? parseFloat((lowQuality / total).toFixed(4)) : 0, total);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.low-quality-rate-24h: ${e}`); }
 
+    // ── Per-agent consecutive low-quality streak ─────────────────────
+    // For each active agent, count consecutive recent low-quality evaluations.
+    // When an agent hits 3+ consecutive low scores, the metric breaches and
+    // metric-alert-reactor dispatches an investigation via the standard pattern.
+    try {
+      const excludeAgents = new Set(["evaluator", "judge", "may"]);
+      const agentRows = db.prepare(
+        `SELECT DISTINCT agent FROM evaluations WHERE createdAt > ? AND agent NOT IN ('evaluator', 'judge', 'may')`,
+      ).all(twentyFourH) as Array<{ agent: string }>;
+
+      for (const { agent } of agentRows) {
+        if (excludeAgents.has(agent)) continue;
+        const metricId = `agent.${agent}.low-quality-streak`;
+
+        // Ensure metric row exists (dynamic per-agent metric)
+        const existing = db.prepare("SELECT id FROM metrics WHERE id = ?").get(metricId) as { id: string } | null;
+        if (!existing) {
+          const insertCols = ["id", "name", "owner", "current", "target", "threshold", "unit", "type", "status", "speed", "alert_op"];
+          const insertVals: unknown[] = [
+            metricId, `${agent} consecutive low-quality sessions`, "may", 0,
+            0, 3, "count", "health", "active", "fast", ">",
+          ];
+          if (hasMetricPriorityColumn) { insertCols.push("priority"); insertVals.push("P1"); }
+          db.run(`INSERT OR IGNORE INTO metrics (${insertCols.join(", ")}) VALUES (${insertCols.map(() => "?").join(", ")})`, insertVals);
+        }
+
+        // Count consecutive low-quality sessions from most recent
+        const recentEvals = db.prepare(
+          `SELECT quality FROM evaluations WHERE agent = ? AND createdAt > ? ORDER BY createdAt DESC LIMIT 10`,
+        ).all(agent, now - 48 * 60 * 60_000) as Array<{ quality: number }>;
+
+        let streak = 0;
+        for (const ev of recentEvals) {
+          if (ev.quality < 0.4) streak++;
+          else break;
+        }
+        record(metricId, streak, recentEvals.length);
+      }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring per-agent quality streaks: ${e}`); }
+
     try {
       record(
         "evaluator.stale-running-session-count",

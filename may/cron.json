@@ -460,13 +460,5 @@
     "on": [
       "heartbeat.trigger"
     ]
-  },
-  {
-    "name": "agent-health-reactor",
-    "intervalMs": 1800000,
-    "message": "agent-health-reactor",
-    "enabled": true,
-    "agent": "may",
-    "description": "Detect agents with repeated low evaluation scores and auto-investigate root causes (broken tools, wrong config, missing files). Closes the evaluator→action gap."
   }
 ]
