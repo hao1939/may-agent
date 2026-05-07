@@ -146,3 +146,10 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 **closed-loop-reliability**: Complete (8/8 milestones).
 
 **Judgment**: System nominal. No intervention required.
+
+## Heartbeat — $(date -u +%Y-%m-%dT%H:%M:%SZ)
+- **Red metric**: v2.spec-coverage-rate=0.1364 — known structural gap (KE-802, KE-798). Project `v2-spec-coverage-buildout` exists but stuck at pending-review with 0/28 milestones, 0 iterations. Judgment: CALIBRATE — this is a known instrumentation gap, not a real coverage failure. Project needs iteration to move forward but is P2.
+- **System health**: All 11 agents active. Dev has 65 errors (highest) — investigating.
+- **Projects**: closed-loop-reliability active 8/8ms. v2-spec-coverage-buildout pending-review 0/28ms.
+- **Action**: Checking dev error pattern.
+- **Dev errors**: 64/65 are "401 IDE token expired" — infrastructure auth issue. Escalating to human.
