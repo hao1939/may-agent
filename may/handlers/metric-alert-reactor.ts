@@ -129,36 +129,36 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
     }
 
     const task = [
-      `[metric-alert][${metricId}][${priority}] ${message}`,
-      ``,
-      `Your metric "${metricName}" is breaching its threshold.`,
-      `  Current: ${current}`,
-      `  Threshold: ${threshold}`,
-      `  Target: ${target}`,
-      ``,
-      `Follow agents/shared/may-agent-docs/manual/metric-alerts.md.`,
-      ``,
-      `You MUST judge the alert and take exactly ONE operation:`,
-      `1. **Investigate, then choose final operation** — if cause is unknown`,
-      `2. **Fix root cause** — change behavior/code so the metric improves`,
-      `3. **Calibrate metric** — if threshold, target, priority, or measurement is wrong`,
-      `   bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db'); db.prepare(\\"UPDATE metrics SET threshold = <new_value> WHERE id = '${metricId}'\\").run();"`,
-      `4. **Downgrade priority** — only with solid evidence that current priority is too high`,
-      `5. **Upgrade/escalate emergency** — if severity is higher than labeled or unsafe to fix`,
-      `6. **Resolve stale/transient alert state** — only if already recovered or invalid`,
-      `   bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db'); db.prepare(\\"UPDATE metric_alerts SET resolved_at = ${Date.now()} WHERE metric_id = '${metricId}' AND resolved_at IS NULL\\").run();"`,
-      `7. **Document exception** — accepted breach with reason and review condition in metrics.blocker`,
-      ``,
-      `Investigation alone is NOT sufficient. State the chosen operation and evidence in your final summary. The next metrics snapshot is a validation signal; you remain responsible for judging whether the issue recovered.`,
+      `Run metric alert triage for ${metricId}.`,
+      "",
+      "## Trigger Event",
+      "```json",
+      JSON.stringify({
+        type: "metric.breach",
+        source: "event",
+        entry: "metric-alert-reactor",
+        data: {
+          owner,
+          metricId,
+          metricName,
+          current,
+          threshold,
+          target,
+          message,
+          priority,
+        },
+        timestamp: Date.now(),
+      }, null, 2),
+      "```",
     ].join("\n");
 
     try {
       const PER_ALERT_TIMEOUT_MS = 240_000; // 4 minutes per alert
       await Promise.race([
-        ctx.sdk.runAgent(owner, task, { source: `metric-alert-reactor:${metricId}` }),
+        ctx.sdk.runWorkflow("metric-alert-triage", task, { source: owner }),
         new Promise<never>((_, rej) => setTimeout(() => rej(new Error(`Per-alert timeout (${PER_ALERT_TIMEOUT_MS / 1000}s) for ${metricId}`)), PER_ALERT_TIMEOUT_MS)),
       ]);
-      ctx.sdk.log("info", `[metric-alert-reactor] Ran ${owner} to handle ${metricId}`);
+      ctx.sdk.log("info", `[metric-alert-reactor] Ran metric-alert-triage for ${owner} to handle ${metricId}`);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       ctx.sdk.log("info", `[metric-alert-reactor] Failed to run ${owner}: ${msg}`);

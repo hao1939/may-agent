@@ -45,6 +45,11 @@ type EventRow = {
   timestamp: number;
 };
 
+type JudgmentRow = {
+  data: string | null;
+  timestamp: number;
+};
+
 const DEFAULT_LOOKBACK_MS = 6 * 60 * 60_000;
 const DEFAULT_ALERT_LIMIT = 12;
 const DEFAULT_DELIVERY_FAILURE_LIMIT = 12;
@@ -127,12 +132,33 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
          ORDER BY startedAt DESC
          LIMIT 3`,
       ).all(owner, alert.created_at ?? 0) as SessionRow[];
+      const judgment = db.prepare(
+        `SELECT data, timestamp
+         FROM events
+         WHERE event_type = 'metric.alert_judged'
+           AND (
+             json_extract(data, '$.alertId') = ?
+             OR json_extract(data, '$.metricId') = ?
+           )
+         ORDER BY timestamp DESC
+         LIMIT 1`,
+      ).get(alert.id, alert.metric_id) as JudgmentRow | null;
+      const judgmentData = judgment ? parseEventData({
+        id: 0,
+        source: null,
+        owner: null,
+        data: judgment.data,
+        timestamp: judgment.timestamp,
+      }) : null;
 
       return [
         `- alert#${alert.id} metric=${alert.metric_id} priority=${alert.priority ?? "P2"} owner=${owner} age=${age(now, alert.created_at)}`,
         `  current=${alert.current ?? "unknown"} threshold=${alert.threshold ?? "unknown"} target=${alert.target ?? "unknown"}`,
         `  message=${alert.message}`,
         `  owner activity since alert: ${summarizeSessions(ownerSessions, now)}`,
+        judgmentData
+          ? `  latest judgment: operation=${String(judgmentData.operation ?? "unknown")} session=${String(judgmentData.ownerSessionId ?? "unknown")} age=${age(now, judgment?.timestamp)} evidence=${String(judgmentData.evidence ?? "").slice(0, 220)}`
+          : `  latest judgment: none recorded (no metric.alert_judged event)`,
       ].join("\n");
     });
 
@@ -162,6 +188,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       "",
       "Rules:",
       "- Prefer native ownership: metrics.owner, then project.owner, then agent-name prefix, then may fallback.",
+      "- Treat metric.alert_judged as the durable record that the owner judged an alert.",
+      "- If an alert has owner activity but no metric.alert_judged event, route it through the metric-alert-triage workflow or nudge the owner to produce a structured operation.",
       "- Take the smallest operation that advances closure: route/nudge owner, fix broken ownership/routing, document a valid exception, or escalate when blocked.",
       "- Do not create a project for this cron itself. Create/update a project only when you discover systemic implementation work that cannot be completed in this run.",
       "- If this recurring procedure is wrong or stale, improve the handler/cron/config directly and verify it.",
