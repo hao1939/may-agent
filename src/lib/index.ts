@@ -58,11 +58,10 @@ export type {
   Demand,
   GuardModule,
 } from "./workflow.js";
-export { extractWrittenFiles, extractChangedFiles } from "./workflow-utils.js";
 export { summarizeForHandoff, extractHandoff } from "./handoff.js";
 export type { HandoffOptions } from "./handoff.js";
-export { createCompactionTransform } from "./compaction.js";
-export type { CompactionOptions, CompactionInfo } from "./compaction.js";
+export { extractKeyFacts } from "./compaction.js";
+export type { KeyFacts } from "./compaction.js";
 export { isOverflowError } from "./overflow.js";
 export {
   RegistryStore,
