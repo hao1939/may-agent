@@ -41,45 +41,60 @@ Add the missing event types to the typed union. Remove `DomainEvent`. Remove `as
 
 ---
 
-## Operational status (appendix, 2026-05-02 — added by arc; refreshed 2026-05-04)
+## Operational status (appendix, 2026-05-02 — added by arc; refreshed 2026-05-07)
 
 This section reflects what the runtime actually emits and consumes, so
 readers do not mistake the spec above for a live wiring diagram. Keep
 this table in sync when the wiring changes; the spec is aspirational
 when it disagrees with this table.
 
-### Emitter reality (lifetime counts in `events` table, queried 2026-05-04 ~00:15Z)
+### Emitter reality (lifetime counts in `events` table, queried 2026-05-07 ~02:48Z)
 
 | Event type | Lifetime emissions | Emitted by | Status |
 |---|---|---|---|
-| `handler.started` | 4061 | cron runner on every handler invocation | ✅ live |
-| `handler.completed` | 4052 | cron runner at handler success | ✅ live, but see KE-454 (fires on workflow-failed sessions because `await` is missing — metric is decoupled from outcome) |
-| `handler.failed` | 5 | cron runner at handler throw — almost never thrown because handler bodies catch internally | ⚠️ rarely emitted; do not use for failure detection |
-| `project.iteration` | 1842 | both `project.ts` and `master-worker.ts`; payload shapes differ — see KE-468 | ⚠️ live but two incompatible shapes; aggregating by `projectId` undercounts ~2.5× |
-| `session.failed` | 94 | session/runtime layer on session-end with error | ✅ live; payload `{sessionId, agent, error, task}` |
+| `handler.started` | 6706 | cron runner on every handler invocation | ✅ live |
+| `handler.completed` | 6694 | cron runner at handler success | ✅ live, but see KE-454 (fires on workflow-failed sessions because `await` is missing — metric is decoupled from outcome) |
+| `handler.failed` | 8 | cron runner at handler throw — almost never thrown because handler bodies catch internally | ⚠️ rarely emitted; do not use for failure detection |
+| `project.iteration` | 1913 (last 7d: 1547) | both `project.ts` and `master-worker.ts`; payload shapes differ — see KE-468 | ⚠️ live but two incompatible shapes (lifetime: 1778 `{project,iteration}` vs 135 `{projectId}`, ~13:1 split); aggregating by `projectId` undercounts ~14× |
+| `session.failed` | 102 | session/runtime layer on session-end with error | ✅ live; payload `{sessionId, agent, error, task}` |
 | `session.completed` | **1** (lifetime — single 2026-04-30 row) | not currently emitted by any runtime path; the one extant row is anomalous | ❌ aspirational |
 | `project.status_changed` | **0** lifetime | no emitter exists | ❌ aspirational |
-| `metric.breach` | **6** (first row 2026-05-03 21:47Z) | `agents/may/handlers/metrics-snapshot.ts:266` when `breached && !openAlert` (KE-732 corrected the earlier doc that mis-attributed this to the reactor) | ⚠️ now live but consumer dormant — see Consumer reality row below |
+| `metric.breach` | 62 (first row 2026-05-03 21:47Z) | `agents/may/handlers/metrics-snapshot.ts:266` when `breached && !openAlert`; `alert_type` is hardcoded `'threshold'` regardless of mode (KE-775) | ⚠️ live; nominal consumer (`metric-alert-reactor`) wedged dormant by KE-455-class issue + KE-776 dedup-eats-everything bug. All 62 rows `status='pending'`, `handled_by=NULL`. Many fire from rate-mode noise on rolling-window counters (KE-774) and carry the lying breach message (KE-765). |
+| `metric.stalled` | 61 (first row 2026-05-06 19:19Z, all `project.iterations-24h`) | `agents/may/handlers/metrics-snapshot.ts:398` on `stall_after_ms` window | ⚠️ live but **zero subscribers ever** — KE-781. Surfaces only via `loadInbox()` → may's heartbeat preamble, where it is dismissed alongside the lying breach noise (KE-772). The stall message ("stalled: no change for 120min") is the only correctly-worded breach signal for windowed-counter metrics; do not delete the stall arm when fixing rate-mode (proposal `2026-05-06-drop-rate-mode-from-windowed-counter-metrics.md` carries this guard since 2026-05-07). |
+| `message.created` | 13 (first row 2026-05-06 11:52Z) | message-bus emitter on agent-to-agent message create | ✅ live, low volume; consumer wiring not yet audited here |
 
 `sessions.status='done'` has 6300+ rows over the same window, so the
 6300:1 ratio between session-end transitions and `session.completed`
 events confirms there is no real emitter.
 
-**`metric.breach` is the new arrival.** It went from 0 lifetime
-emissions (2026-05-02) to 6 (2026-05-04) after the KE-728 import fix
-landed and `metrics-snapshot.ts` started running cleanly. **Emission is
-not the problem.** The 6 rows all sit at `status='pending'` with
-`handled_by=NULL`, which is the same KE-455 wedge the consumer table
-below describes: the cron loader skips `on:`-only entries.
+**`metric.breach` is no longer "the new arrival."** Between 2026-05-04
+(6 lifetime) and 2026-05-07 (62 lifetime), emission has stabilized at
+~18/day. The wedge is structural, not transient: every row sits at
+`status='pending'`, `handled_by=NULL`. The dormant-consumer story is
+unchanged from 2026-05-04; what *has* changed is that the emitter is
+now noisy enough (rate-mode alerts on rolling counters, KE-774) that
+the breach signal would be untrustworthy even if a consumer woke up.
+Fix the emitter (KE-774, KE-765, KE-775) before fixing the consumer.
+
+**`metric.stalled` is the new arrival.** First row 2026-05-06 19:19Z;
+emits one row per `metrics-snapshot` cron tick (~5 min) per stalled
+metric. Currently only `project.iterations-24h` triggers it, because
+the other two windowed-counter metrics (`handler.completed-count`,
+`system.real-output-24h`) churn on every cron cycle. Consumer side:
+**no handler subscribes**; the events accumulate forever (no reaper).
+This is the same dispatch-without-handler pattern as `metric.breach`,
+but worse: at least breach has a *named* (dormant) consumer in
+`cron.json`. Stall has none.
 
 ### Consumer reality (event-only handlers in `agents/may/cron.json`)
 
 | Handler | Subscribes to | Lifetime invocations | Status |
 |---|---|---|---|
-| `session-recovery` | `session.failed` (live, 94×) | 0 | ❌ never wired — see KE-455 |
+| `session-recovery` | `session.failed` (live, 102×) | 0 | ❌ never wired — see KE-455 |
 | `session-eval` | `session.completed` (1×) | 0 | ❌ never wired |
 | `escalation` | `session.escalated` | 0 | ❌ source not emitted, handler not wired |
-| `metric-alert-reactor` | `metric.breach` (live, 6×) | 0 | ❌ **source now emits, handler still dormant** — KE-731 (wedge), KE-732 (doc dual). 6 pending breach events orphaned. |
+| `metric-alert-reactor` | `metric.breach` (live, 62×) | 0 | ❌ **source emits 18/day, handler still dormant** — KE-731 (wedge), KE-732 (doc dual), KE-776 (dedup eats every breach). 62 pending breach events orphaned. |
+| (no handler) | `metric.stalled` (live, 61×) | n/a | ❌ **no handler exists** — KE-781. Stall signal reaches may only via `loadInbox()`, gets dismissed as noise (KE-772). Companion proposal: `agents/arc/workspace/proposals/2026-05-07-subscribe-metric-stalled-events.md`. |
 | `context-learn` | `context-learn` | 0 | ❌ replaced de facto by timer-driven `context-learn-poller` |
 
 Two timer-driven handlers (`eval-poller`, `context-learn-poller`)
