@@ -76,8 +76,10 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
 
 WORKDIR /app
 
-# Copy compiled binary from builder
+# Copy compiled runtime tools from builder. The service runs from the standalone
+# may-agent binary, but agent/operator commands and docs assume `bun` exists.
 COPY --from=builder /build/may-agent /usr/local/bin/may-agent
+COPY --from=builder /usr/local/bin/bun /usr/local/bin/bun
 
 # Copy web UI static files (not embedded in compiled binary)
 COPY src/app/ui/web-static/ /usr/local/share/may-agent-web/web-static/
@@ -104,6 +106,7 @@ ENV NODE_ENV=production
 ENV PROJECT_ROOT=/app
 ENV AGENTS_ROOT=/app/agents
 ENV STATE_DIR=/app/.state
+ENV PATH=/app/.state/.bun/bin:/usr/local/bin:$PATH
 
 # noVNC web interface
 EXPOSE 6080
