@@ -1,5 +1,7 @@
 # Design: Master-Worker Workflow (Persistent Sessions)
 
+**Status:** shipped (see `agents/shared/workflows/master-worker.ts` and variants)
+
 ## Overview
 
 Redesign the project workflow to use **two persistent sessions** — one worker, one reviewer — that stay alive across iterations. Today each iteration creates fresh sessions, losing all accumulated context. The new design uses pi-agent's `followUp()` to chain iterations within the same session, with compaction managing memory.

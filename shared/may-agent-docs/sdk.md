@@ -39,7 +39,7 @@ export const create = (ctx: HandlerContext, entry: CronEntry) => {
 |--------|-----------|
 | `runAgent(agent, task)` | Run a named agent and wait for its result. |
 | `runWorkflow(name, task)` | Run a multi-step workflow and wait for completion. Workflows are synchronous by design. |
-| `createLLMSession(opts)` | Reserved. Currently throws `createLLMSession not yet implemented`. |
+| `createLLMSession(opts)` | Reserved — not yet implemented. |
 | `emit(type, data)` | Emit a typed event (persisted to events table). |
 | `getDb()` | Access the shared SQLite database. |
 | `log(level, msg)` | Log a diagnostic message. |
@@ -69,6 +69,7 @@ The SDK and agent tools are two sides of the same coin:
 | Agent thinks | Agent tool | SDK method |
 |---|---|---|
 | "Ask bob and wait for the answer" | `agents.call("bob", task)` | `await sdk.runAgent("bob", task)` |
+| "Start bob in the background" | `agents.fork("bob", task)` | — (no SDK equivalent) |
 | "Something happened" | — | `sdk.emit("metric.breach", {...})` |
 | "Tell humans" | Telegram/human message | `sdk.message("human", msg)` |
 | "Tell bob" | `message({ to: "bob", content })` | `sdk.message("bob", msg)` |

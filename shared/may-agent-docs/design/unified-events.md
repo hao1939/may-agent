@@ -1,6 +1,6 @@
 # Design: Unified Event Model
 
-**Status**: approved
+**Status**: shipped
 **Date**: 2026-04-29
 
 ## Problem

@@ -1,6 +1,6 @@
 # Design: Heartbeat as Agency
 
-**Status**: draft
+**Status**: shipped
 **Date**: 2026-05-06
 
 ## The reframe

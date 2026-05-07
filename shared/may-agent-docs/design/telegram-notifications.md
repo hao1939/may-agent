@@ -1,6 +1,6 @@
 # Design: Context-Enriched Reply
 
-**Status**: draft
+**Status**: shipped
 **Date**: 2026-04-29
 
 ## Problem
@@ -186,7 +186,7 @@ No enrichment needed. May handles it like any chat message.
 
 ### Bot side (telegram.ts)
 
-1. **On send**: send clean message to user. Store mapping: `telegram_message_id → event` in DB (events table, add telegram_msg_id column, or separate table)
+1. **On send**: send clean message to user. Store mapping: `telegram_message_id → event` in `notification_messages` table.
 2. **On reply**: look up `reply_to_message_id` → get original event. From the event, reconstruct context: which agent, session, project, workflow, state at that time.
 3. **On non-reply**: pass through as regular message (no enrichment)
 

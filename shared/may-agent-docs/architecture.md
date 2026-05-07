@@ -69,7 +69,7 @@ The infra also provides what the agent cannot provide for itself:
 - **Resource management**: model routing, rate limit handling — transparent to the agent
 
 Future investment areas:
-- **Memory across sessions**: metrics history, lessons, past session summaries (needs further design)
+- **Memory across sessions**: projects, journals, and `last-session.md` provide continuity today; richer cross-session memory is a future area.
 
 The agent just works. The infra triggers, frames, protects, records, and connects the dots.
 
@@ -171,28 +171,7 @@ Typed metrics with type-specific measurement, alerting, and display.
 
 #### Schema
 
-```sql
-CREATE TABLE metrics (
-  id          TEXT PRIMARY KEY,
-  name        TEXT NOT NULL,
-  type        TEXT NOT NULL,  -- 'gauge' | 'counter' | 'health' | 'derived'
-  owner       TEXT NOT NULL,  -- agent responsible for this metric
-  config      TEXT NOT NULL,  -- JSON: type-specific source, thresholds, alert rules
-  current     REAL,
-  status      TEXT DEFAULT 'ok',  -- 'ok' | 'breach' | 'stalled' | 'failing'
-  project     TEXT,
-  description TEXT,
-  created_at  INTEGER,
-  updated_at  INTEGER
-);
-
-CREATE TABLE metric_snapshots (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  metric_id   TEXT NOT NULL,
-  value       REAL,
-  measured_at INTEGER NOT NULL
-);
-```
+See [metrics.md](metrics.md) for the canonical schema (metrics + metric_snapshots tables).
 
 #### Measurement + Alert Loop
 
@@ -366,36 +345,14 @@ Messages carry intent + pointer, not large payloads. Shared artifacts remain sou
 
 #### Human in the Loop
 
-Human messages target the chat router first. General messages go to May's
-persistent chat session; replies to a specific session are sent to that session
-when the UI provides the session id.
+Human messages arrive via Telegram, web UI, or socket. Routing:
 
 | Scenario | Target |
 |----------|--------|
-| General message (not a reply) | May's `ChatSession` (`kind: "chat"`, `autoClose: "never"`) |
-| Reply to a specific agent message | The producing session id, via `manager.send()` / `manager.input()` |
+| General message (not a reply) | May's chat session (`kind: "chat"`) |
+| Reply to a specific session | That session, via `manager.send()` / `manager.input()` |
 
-Routing is simple:
-
-```typescript
-function onHumanMessage(text: string, replyToSessionId?: string) {
-  if (replyToSessionId) {
-    manager.send(replyToSessionId, text);
-    return;
-  }
-
-  chatSession.handleInput(text);
-}
-```
-
-**Session states:** running → idle → running → ... → completed
-
-- Chat sessions use `autoClose: "never"` and go idle after each turn.
-- Job sessions use `autoClose: "immediate"` by default and are cleaned up when done.
-- `manager.send()` steers a running session or wakes an idle session with the new message.
-
-The chat session is created on the first human message, not at boot. Heartbeats
-and task work happen in separate fresh job sessions.
+Chat sessions use `autoClose: "never"` and persist across restarts. Heartbeats and task work use separate job sessions.
 
 #### Work Queue Pattern
 
@@ -452,10 +409,11 @@ Projects answer: "given this signal, what goal and history make it meaningful?"
 
 Project status values: active, blocked, waiting, closed. Only humans/may close projects.
 
-DB has a read-only index synced from files. The index is derived from canonical markdown sections, not frontmatter (current project files don't use frontmatter).
+DB has a read-only index synced from files. See [projects.md](projects.md) for the canonical schema.
 
 ```sql
-CREATE TABLE project_index (id, name, owner, status, path, last_synced_at);
+-- Core columns (see projects.md for full schema)
+CREATE TABLE projects (id, name, owner, status, path, updated_at);
 ```
 
 ---
@@ -480,13 +438,17 @@ CREATE TABLE project_index (id, name, owner, status, path, last_synced_at);
 
 #### DB (queryable, time-series)
 
+Core tables (see individual docs for canonical schemas):
+
 ```sql
-CREATE TABLE metrics (id, name, type, owner, config, current, status, project, description, created_at, updated_at);
-CREATE TABLE metric_snapshots (metric_id, value, measured_at);
-CREATE TABLE sessions (id, agent, task, trigger, outcome, summary, started_at, ended_at, turns, tokens_in, tokens_out, cost);
-CREATE TABLE events (id, type, source, owner, data, timestamp, urgency);
-CREATE TABLE project_index (id, name, owner, status, path, last_synced_at);
+CREATE TABLE metrics (...);           -- see metrics.md
+CREATE TABLE metric_snapshots (...);  -- see metrics.md
+CREATE TABLE sessions (...);          -- see sessions.md
+CREATE TABLE events (...);            -- see events.md
+CREATE TABLE projects (...);          -- see projects.md
 ```
+
+Full schemas are in `src/lib/requests.ts`. The docs above show the columns agents care about.
 
 ---
 

@@ -1,7 +1,7 @@
 # v2 Spec
 
 **Status**: draft
-**Date**: 2026-05-06
+**Date**: 2026-05-06 (revised 2026-05-08)
 **Companion to**: `../architecture.md` (intent), `v2-implementation-notes.md` (history)
 
 ## What this document is
@@ -99,8 +99,7 @@ A second metric `capability.unrecovered-breach-count-7d` counts breaches with no
 **Status.** `partial`. `metric.breach` and `metric.recovered` events flow from the alert lifecycle, but the recovery-latency aggregation metric does not exist yet.
 
 **Known gaps.**
-- Add the recovery-latency aggregation metric.
-- Verify breach → recovered loops against production events after the next natural recovery.
+- Add the recovery-latency aggregation metric. Breach → recovered loops are verified at production scale.
 
 ---
 
@@ -210,10 +209,10 @@ A historical residue note: the events table contains 371 `agent.notification` ev
 
 **Target / threshold.** Target ≥ 0.95. Threshold < 0.8 = breach.
 
-**Status.** `violated` — components 2 and 3 don't exist yet. Sessions are partially traceable.
+**Status.** `partial` — `agent.decision` exists but emission coverage is low (S7). Sessions are partially traceable.
 
 **Known gaps.**
-- Blocks on `agent.decision` event (S7).
+- Improve `agent.decision` emission coverage (S7).
 - Context-read tracking needs heartbeat workflow change to emit a `context.read` event listing what was loaded.
 
 ---
@@ -545,12 +544,11 @@ When a structural property is violated, capabilities don't necessarily fail toda
 
 **Measurement.** `v2.heartbeat-decision-rate` — fraction of `trigger=heartbeat` sessions with at least one `agent.decision` event. Target 1.0; threshold < 0.95.
 
-**Status.** `violated`. Event type doesn't exist; heartbeat workflow doesn't emit it.
+**Status.** `partial`. The `agent.decision` event type exists in the `AgentEvent` union and is emitted in production (observed in events table), but emission rate is low relative to heartbeat volume. The heartbeat workflow does not yet systematically emit it for every heartbeat.
 
 **Known gaps.**
-- Add `agent.decision` to `AgentEvent` union in `event-bus.ts`.
-- Update `agents/shared/workflows/heartbeat-data.ts` / generic heartbeat execution to emit it after the read phase, before the act phase.
-- Idle heartbeats still emit a decision: `{decision: "idle: no work this cycle"}` — every heartbeat is deliberative.
+- Increase emission coverage: update heartbeat workflow to emit `agent.decision` consistently after the read phase, before the act phase.
+- Idle heartbeats should still emit a decision: `{decision: "idle: no work this cycle"}` — every heartbeat is deliberative.
 
 ---
 

@@ -166,6 +166,7 @@ Something happens                           (Principle 1: event)
   -> May reviews async if system-scope      (Principle 8: decoupled supervision)
   -> Follows conventions, not configuration  (Principle 9: convention)
   -> Starts simple                          (Principle 10: simplicity)
+  -> Debugs input, not model                (Principle 11: debug the message)
 ```
 
 ## Known Tensions
