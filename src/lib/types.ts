@@ -1,6 +1,5 @@
 import type { AgentTool, AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Model, Api } from "@mariozechner/pi-ai";
-import type { CompactionOptions } from "./compaction.js";
 import type { SessionKind } from "./persistence.js";
 
 /**
@@ -48,12 +47,9 @@ export interface SubagentDefinition {
 
   /**
    * Enable automatic context compaction for long-running sessions.
-   * When message tokens exceed threshold % of context window, older messages
-   * are summarized to keep the context under control.
-   * Set to `true` for defaults, or pass CompactionOptions for fine-tuning.
-   * Only recommended for supervisor/long-running agents, not scoped sub-agents.
+   * @deprecated Not currently wired — flag is accepted but has no effect.
    */
-  compaction?: boolean | CompactionOptions;
+  compaction?: boolean;
 
   /**
    * @deprecated Volatile files should be injected as session context, not system prompt.

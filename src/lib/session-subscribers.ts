@@ -443,27 +443,6 @@ export function createFileReadTracker(persistDir: string): (event: AgentEvent) =
   };
 }
 
-/** Get cross-agent read statistics: which agents read which other agents' files. */
-export function getFileReadStats(
-  persistDir: string,
-  sinceDaysAgo = 7,
-): Array<{ reader: string; producer: string; fileCount: number; readCount: number }> {
-  const db = getDb(persistDir);
-  const since = Date.now() - sinceDaysAgo * 24 * 60 * 60 * 1000;
-
-  return db
-    .prepare(
-      `SELECT agent AS reader, producerAgent AS producer,
-              COUNT(DISTINCT filePath) AS fileCount,
-              COUNT(*) AS readCount
-       FROM file_reads
-       WHERE producerAgent IS NOT NULL AND readAt > ?
-       GROUP BY agent, producerAgent
-       ORDER BY readCount DESC`,
-    )
-    .all(since) as Array<{ reader: string; producer: string; fileCount: number; readCount: number }>;
-}
-
 // ── Findings Tracker ────────────────────────────────────────────────────
 // Auto-creates tracked requests from actionable findings in session deliverables.
 // Part of: Feedback Loop M3.
