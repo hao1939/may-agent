@@ -68,14 +68,31 @@ describe("message tool", () => {
     expect(p0Event).toBeDefined();
   });
 
-  it("respects allowedTargets allowlist", async () => {
-    const { tool } = setup({ allowedTargets: ["dev", "scout"] });
+  it("respects allowedTargets allowlist and reports invalid targets to may", async () => {
+    const { tool, events, triggers } = setup({ allowedTargets: ["dev", "scout"] });
 
     const allowed = await call(tool, { to: "dev", content: "hi" });
     expect(allowed.error).toBeUndefined();
 
     const denied = await call(tool, { to: "qa", content: "hi" });
-    expect(denied.error).toMatch(/Cannot message/);
+    expect(denied.error).toMatch(/Unknown message target/);
+    expect(triggers).toEqual([]);
+    expect(events.some((e) => e.type === "message.created" && e.to === "qa")).toBe(false);
+    expect(events).toContainEqual(expect.objectContaining({
+      type: "message.delivery_failed",
+      owner: "may",
+      from: "arc",
+      to: "qa",
+      reason: expect.stringContaining("qa"),
+      content: "hi",
+    }));
+  });
+
+  it("always allows messages to human", async () => {
+    const { tool } = setup({ allowedTargets: ["dev", "scout"] });
+
+    const allowed = await call(tool, { to: "human", content: "status" });
+    expect(allowed.error).toBeUndefined();
   });
 
   it("includes intent and content_files in body", async () => {

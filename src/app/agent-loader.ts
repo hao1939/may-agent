@@ -95,6 +95,23 @@ export function getAgentCrons(): Map<string, Cron> {
   return agentCrons;
 }
 
+function listConfiguredAgentNames(agentsRoot: string): string[] {
+  const names = new Set<string>();
+  for (const entry of readdirSync(agentsRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    if (entry.name === "shared" || entry.name === "gym" || entry.name.startsWith("_") || entry.name.startsWith(".")) continue;
+    const configPath = resolve(agentsRoot, entry.name, "agent.json");
+    if (!existsSync(configPath)) continue;
+    try {
+      const config = JSON.parse(readFileSync(configPath, "utf-8")) as { name?: string; disabled?: boolean };
+      if (!config.disabled) names.add(config.name ?? entry.name);
+    } catch {
+      names.add(entry.name);
+    }
+  }
+  return [...names].sort();
+}
+
 /** Register a cleanup function for an agent. */
 function addCleanup(agentName: string, fn: () => void): void {
   const existing = agentCleanups.get(agentName);
@@ -192,6 +209,7 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
             agentName: config.name,
             agentsRoot: opts.agentsRoot,
             persistDir,
+            allowedTargets: listConfiguredAgentNames(opts.agentsRoot),
             emit: (event) => bus.emit(event as any),
             getCallerSessionId: () => agentSessionIds.get(config.name),
             triggerHeartbeat: (agentName: string) => {
