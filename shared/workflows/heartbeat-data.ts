@@ -383,6 +383,14 @@ export async function genericHeartbeat(ctx: WorkflowContext, agent: string): Pro
   const guidance = loadHeartbeatMd(ctx, agent);
   const inbox = loadInbox(ctx, agent);
 
+  // ── CONDITIONAL SKIP: No actionable work → skip heartbeat entirely ──
+  const skipReason = shouldSkipHeartbeat(ctx, agent, metrics, alerts, inbox, projects);
+  if (skipReason) {
+    ctx.emit({ type: "heartbeat_skipped", agent, reason: skipReason });
+    ctx.log(`[heartbeat:${agent}] Skipped: ${skipReason}`);
+    return ctx.done(`Heartbeat skipped for ${agent}: ${skipReason}`);
+  }
+
   // ── CIRCUIT BREAKER: Skip if agent has too many consecutive errors ──
   const agentsRoot = getAgentsRoot(ctx);
   const circuitBlock = checkCircuitBreaker(agentsRoot, agent);
