@@ -24,6 +24,7 @@ Do NOT penalize any agent for using tools in this list. `notify` and `agents` ar
 ## Key Knowledge
 - **KE-008**: Do not restructure heartbeat steps - add content within existing steps only.
 - **KE-009**: NEVER use `to="functions.message"` in the message tool. `functions.message` is NOT an agent. Use real agent names like `may`, `arc`, `coach`. This has caused 8+ delivery failures.
+- **Aftermath escalation**: When an aftermath review needs escalation but no message/notify tool is available, write an escalation note in the artifact and finish(partial); do not put JSON or `to=functions.message` text into message content.
 
 ## Skills
 - agents/evaluator/skills/delegation-metrics.md - measure delegation effectiveness.
