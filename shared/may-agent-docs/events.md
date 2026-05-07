@@ -87,6 +87,21 @@ sdk.message("bob", "Review the PR");
 
 Bob sees it in his inbox on next heartbeat.
 
+## Socket Boundary
+
+The Unix socket is an event transport, not a second command system.
+
+- Inbound JSON lines with a string `type` are accepted as bus events.
+- `subscribe` and `status` are the only socket-local protocol frames.
+- Legacy aliases are normalized at the socket boundary:
+  `emit` unwraps to its named event, `close` becomes `shutdown`,
+  `reload_agents` becomes `reload`, and `cancel_task` becomes `cancel_all`.
+- Socket `ok` means the frame was accepted into the event transport. It does
+  not mean every handler finished.
+
+This keeps socket, Telegram, web, and runtime code on the same event-first
+path: normalize at the edge, persist via the bus, and let subscribers react.
+
 ## Implementation
 
 - **Persistence:** `src/lib/db-writer.ts` subscribes to bus, writes all events
