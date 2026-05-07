@@ -35,11 +35,8 @@ export interface ContextUpdateResult {
   removed: string[];
 }
 
-/** Minimal manager interface for running an LLM call. */
-export interface LLMCaller {
-  run: (agentName: string, task: string, opts?: { kind?: "chat" | "job" | "call" }) => string;
-  waitFor: (sessionId: string) => Promise<{ lastAssistantText?: string | null } | null>;
-}
+/** Minimal interface for running an LLM call — just call the agent and get text back. */
+export type LLMCaller = (agent: string, task: string) => Promise<{ lastAssistantText?: string | null }>;
 
 export interface TranscriptMessage {
   role: string;
@@ -107,8 +104,7 @@ export async function extractFacts(
   ].join("\n");
 
   try {
-    const sessionId = manager.run("evaluator", prompt, { kind: "job" });
-    const result = await manager.waitFor(sessionId);
+    const result = await manager("evaluator", prompt);
     const response = result?.lastAssistantText ?? "";
     return parseContextUpdates(response);
   } catch {
@@ -257,8 +253,7 @@ export async function mergeContext(
     "Output the complete updated context.md:",
   ].join("\n");
 
-  const sessionId = manager.run("evaluator", prompt, { kind: "job" });
-  const result = await manager.waitFor(sessionId);
+  const result = await manager("evaluator", prompt);
   const response = result?.lastAssistantText ?? "";
 
   const match = response.match(/```(?:markdown)?\s*\n([\s\S]*?)```/);

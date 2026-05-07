@@ -292,7 +292,7 @@
     "type": "job",
     "handler": "metric-alert-reactor",
     "enabled": true,
-    "description": "React to metric.breach events by forking the owning agent with remediation task. Polls unresolved alerts every 5min.",
+    "description": "React to P0 metric breaches by forking the owning agent with a remediation task. Lower-priority alerts stay visible in heartbeat context. Polls unresolved alerts every 5min.",
     "intervalMs": 300000
   },
   {

@@ -11,6 +11,8 @@
  * in the generic section near the end of the handler.
  * ─────────────────────────────────────────────────────────────────────────────
  */
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.ts";
 import type { CronEntry } from "../../shared/agent-sdk.ts";
 
@@ -31,37 +33,113 @@ import type { CronEntry } from "../../shared/agent-sdk.ts";
 interface MetricDef {
   id: string; name: string; owner: string; type: "gauge" | "counter" | "health" | "derived";
   target: number; threshold: number; unit: string; alert_op: "<" | ">";
+  priority?: "P0" | "P1" | "P2" | "P3";
   config?: Record<string, unknown>;
 }
 
 const ALL_METRICS: MetricDef[] = [
   // Handler
   { id: "handler.completed-count", name: "Handler completions (6h)", owner: "may", type: "counter", target: 50, threshold: 10, unit: "count", alert_op: "<",
+    priority: "P1",
     config: { alert: { mode: "rate", min_rate: 2, per: "hour", stall_after_ms: 3600000 } } },
   { id: "handler.failed-count", name: "Handler failures (6h)", owner: "may", type: "counter", target: 0, threshold: 3, unit: "count", alert_op: ">",
+    priority: "P1",
     config: { alert: { mode: "rate", max_rate: 3, per: "hour" } } },
   { id: "handler.success-rate", name: "Handler success rate (6h)", owner: "optimizer", type: "gauge", target: 0.95, threshold: 0.80, unit: "ratio", alert_op: "<",
+    priority: "P1",
     config: { alert: { mode: "sustained", consecutive: 3 } } },
-  { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents)", owner: "may", type: "gauge", target: 4, threshold: 3, unit: "count", alert_op: "<" },
+  { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents)", owner: "may", type: "gauge", target: 4, threshold: 3, unit: "count", alert_op: "<", priority: "P1" },
   // Sessions
-  { id: "session.error-rate-6h", name: "Session error rate (6h)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">" },
+  { id: "session.error-rate-6h", name: "Session error rate (6h)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P1" },
   // System output
   { id: "system.real-output-24h", name: "Real output (24h)", owner: "may", type: "counter", target: 100, threshold: 30, unit: "count", alert_op: "<",
+    priority: "P1",
     config: { alert: { mode: "rate", min_rate: 5, per: "hour", stall_after_ms: 7200000 } } },
-  { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", type: "gauge", target: 120000, threshold: 600000, unit: "ms", alert_op: ">" },
-  { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", type: "gauge", target: 15, threshold: 8, unit: "count", alert_op: "<" },
+  { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", type: "gauge", target: 120000, threshold: 600000, unit: "ms", alert_op: ">", priority: "P2" },
+  { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", type: "gauge", target: 15, threshold: 8, unit: "count", alert_op: "<", priority: "P1" },
   // Project
-  { id: "project.active-count", name: "Active projects", owner: "may", type: "gauge", target: 1, threshold: 1, unit: "count", alert_op: "<" },
-  { id: "project.blocked-count", name: "Blocked/waiting projects", owner: "may", type: "gauge", target: 2, threshold: 4, unit: "count", alert_op: ">" },
-  { id: "project.stale-active-count", name: "Stale active projects (no iteration 48h)", owner: "may", type: "gauge", target: 0, threshold: 2, unit: "count", alert_op: ">" },
+  { id: "project.active-count", name: "Active projects", owner: "may", type: "gauge", target: 1, threshold: 1, unit: "count", alert_op: "<", priority: "P1" },
+  { id: "project.blocked-count", name: "Blocked/waiting projects", owner: "may", type: "gauge", target: 2, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
+  { id: "project.stale-active-count", name: "Stale active projects (no iteration 48h)", owner: "may", type: "gauge", target: 0, threshold: 2, unit: "count", alert_op: ">", priority: "P1" },
   { id: "project.iterations-24h", name: "Project iterations (24h)", owner: "may", type: "counter", target: 10, threshold: 0, unit: "count", alert_op: "<",
+    priority: "P1",
     config: { alert: { mode: "rate", min_rate: 1, per: "hour", stall_after_ms: 7200000 } } },
-  { id: "project.blocked-rate-7d", name: "Project blocked rate (7d)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">" },
-  { id: "project.blocked-over-6h", name: "Projects blocked/waiting >6h", owner: "may", type: "gauge", target: 2, threshold: 4, unit: "count", alert_op: ">" },
+  { id: "project.blocked-rate-7d", name: "Project blocked rate (7d)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P2" },
+  { id: "project.blocked-over-6h", name: "Projects blocked/waiting >6h", owner: "may", type: "gauge", target: 2, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
+  // v2 conformance / visibility
+  { id: "v2.manager-loc", name: "Manager runtime LOC", owner: "arc", type: "gauge", target: 1000, threshold: 1500, unit: "loc", alert_op: ">", priority: "P2" },
+  { id: "v2.runtime-glue-loc", name: "Runtime glue LOC", owner: "arc", type: "gauge", target: 1500, threshold: 2000, unit: "loc", alert_op: ">", priority: "P2" },
+  { id: "v2.spec-coverage-rate", name: "v2 spec measurement coverage", owner: "arc", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P1" },
+  { id: "capability.status-reality-mismatch-count", name: "Status/reality mismatches", owner: "may", type: "health", target: 0, threshold: 3, unit: "count", alert_op: ">", priority: "P0",
+    config: { alert: { mode: "consecutive_failures", count: 2 } } },
 ];
 
 /** Snapshot retention: keep 30 days of history */
 const RETENTION_DAYS = 30;
+const RUNTIME_GLUE_FILES = [
+  "src/lib/manager.ts",
+  "src/lib/manager-utils.ts",
+  "src/lib/manager-receipts.ts",
+  "src/lib/manager-agents-tool.ts",
+];
+
+function countFileLines(path: string): number {
+  try {
+    if (!existsSync(path)) return 0;
+    const text = readFileSync(path, "utf8");
+    if (text.length === 0) return 0;
+    const newlineCount = text.match(/\n/g)?.length ?? 0;
+    return text.endsWith("\n") ? newlineCount : newlineCount + 1;
+  } catch {
+    return 0;
+  }
+}
+
+function listConfiguredAgents(agentsRoot: string): string[] {
+  try {
+    return readdirSync(agentsRoot, { withFileTypes: true })
+      .filter(entry => entry.isDirectory() && !entry.name.startsWith("_") && entry.name !== "shared" && entry.name !== "gym")
+      .map(entry => {
+        const agentJson = join(agentsRoot, entry.name, "agent.json");
+        if (!existsSync(agentJson)) return null;
+        try {
+          const config = JSON.parse(readFileSync(agentJson, "utf8")) as { name?: string; disabled?: boolean };
+          if (config.disabled) return null;
+          return config.name ?? entry.name;
+        } catch {
+          return entry.name;
+        }
+      })
+      .filter((name): name is string => Boolean(name));
+  } catch {
+    return [];
+  }
+}
+
+function countSpecClaimCoverage(projectRoot: string, metricIds: Set<string>): { covered: number; total: number; rate: number } {
+  const specPath = join(projectRoot, "agents/shared/may-agent-docs/proposals/v2-spec.md");
+  try {
+    if (!existsSync(specPath)) return { covered: 0, total: 0, rate: 0 };
+    const spec = readFileSync(specPath, "utf8");
+    const headings = [...spec.matchAll(/^## ([CIS]\d+)\s+—/gm)].map(match => ({
+      index: match.index ?? 0,
+    }));
+    let covered = 0;
+    for (let i = 0; i < headings.length; i++) {
+      const start = headings[i].index;
+      const end = i + 1 < headings.length ? headings[i + 1].index : spec.length;
+      const section = spec.slice(start, end);
+      const measurementMatch = section.match(/\*\*Measurement\.\*\*([\s\S]*?)(?=\*\*Status\.\*\*)/);
+      const measurementText = measurementMatch?.[1] ?? section;
+      const sectionMetricIds = [...measurementText.matchAll(/`((?:capability|infra|v2)\.[a-zA-Z0-9._-]+)`/g)].map(match => match[1]);
+      if (sectionMetricIds.some(id => metricIds.has(id))) covered++;
+    }
+    const total = headings.length;
+    return { covered, total, rate: total > 0 ? parseFloat((covered / total).toFixed(4)) : 0 };
+  } catch {
+    return { covered: 0, total: 0, rate: 0 };
+  }
+}
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async (_event?: TriggerEvent) => {
@@ -92,12 +170,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     const metricColumns = new Set((db.prepare("PRAGMA table_info(metrics)").all() as any[]).map(c => c.name));
     const hasMetricConfigColumn = metricColumns.has("config");
+    const hasMetricPriorityColumn = metricColumns.has("priority");
     const configByMetricId = new Map(ALL_METRICS.map(m => [m.id, m.config ?? null]));
 
     // ── Ensure metric rows exist ─────────────────────────────────────
 
     for (const m of ALL_METRICS) {
       const configJson = m.config ? JSON.stringify(m.config) : null;
+      const priority = m.priority ?? "P2";
       if (hasMetricConfigColumn) {
         db.run(
           `INSERT OR IGNORE INTO metrics (id, name, owner, current, target, threshold, unit, type, status, speed, alert_op, config, created_at, updated_at)
@@ -123,6 +203,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           [m.name, m.owner, m.target, m.threshold, m.unit, m.type, m.alert_op, m.id]
         );
       }
+      if (hasMetricPriorityColumn) {
+        db.run("UPDATE metrics SET priority = ? WHERE id = ?", [priority, m.id]);
+      }
+    }
+    if (hasMetricPriorityColumn) {
+      db.run("UPDATE metrics SET priority = 'P2' WHERE priority IS NULL");
     }
 
     // ── Measure: Handler (with error isolation) ──────────────────────
@@ -250,6 +336,71 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     try {
       record("project.blocked-over-6h", count("SELECT COUNT(*) as c FROM projects WHERE status IN ('blocked', 'waiting') AND updated_at < ?", now - 6 * 3600000));
     } catch (e) { ctx.log(`[metrics-snapshot] Error measuring blocked-over-6h: ${e}`); }
+
+    // ── Measure: v2 conformance and status honesty ───────────────────
+
+    try {
+      const managerLoc = countFileLines(join(ctx.projectRoot, "src/lib/manager.ts"));
+      record("v2.manager-loc", managerLoc, 1);
+
+      const runtimeGlueLoc = RUNTIME_GLUE_FILES.reduce((sum, relPath) => sum + countFileLines(join(ctx.projectRoot, relPath)), 0);
+      record("v2.runtime-glue-loc", runtimeGlueLoc, RUNTIME_GLUE_FILES.length);
+    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring runtime LOC: ${e}`); }
+
+    try {
+      const activeMetricIds = new Set((db.prepare("SELECT id FROM metrics WHERE status = 'active'").all() as Array<{ id: string }>).map(row => row.id));
+      const coverage = countSpecClaimCoverage(ctx.projectRoot, activeMetricIds);
+      record("v2.spec-coverage-rate", coverage.rate, coverage.total);
+    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring spec coverage: ${e}`); }
+
+    try {
+      const staleActiveProjects = count(
+        `SELECT COUNT(*) as c FROM projects p
+         WHERE p.status = 'active'
+           AND NOT EXISTS (
+             SELECT 1 FROM events e
+             WHERE e.event_type = 'project.iteration'
+               AND e.timestamp > ?
+               AND e.data LIKE '%' || p.id || '%'
+           )`, sevenD);
+
+      const staleActiveMetrics = count(
+        `SELECT COUNT(*) as c FROM metrics m
+         WHERE m.status = 'active'
+           AND NOT EXISTS (
+             SELECT 1 FROM metric_snapshots s
+             WHERE s.metric_id = m.id
+               AND s.measured_at > ?
+           )`, now - 15 * 60000);
+
+      const terminalSessionsWithoutEnd = count(
+        `SELECT COUNT(*) as c FROM sessions s
+         WHERE s.status IN ('done', 'error', 'interrupted')
+           AND NOT EXISTS (
+             SELECT 1 FROM events e
+             WHERE e.event_type = 'session.end'
+               AND json_valid(e.data)
+               AND json_extract(e.data, '$.sessionId') = s.sessionId
+           )`);
+
+      const configuredAgents = listConfiguredAgents(ctx.agentsRoot);
+      let agentsWithoutHeartbeat = 0;
+      for (const agent of configuredAgents) {
+        const recentHeartbeat = count(
+          `SELECT COUNT(*) as c FROM events
+           WHERE event_type = 'handler.completed'
+             AND json_valid(data)
+             AND json_extract(data, '$.agent') = ?
+             AND json_extract(data, '$.handler') LIKE 'heartbeat-%'
+             AND timestamp > ?`,
+          agent, now - 4 * 3600000);
+        if (recentHeartbeat === 0) agentsWithoutHeartbeat++;
+      }
+
+      const mismatchCount = staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd + agentsWithoutHeartbeat;
+      record("capability.status-reality-mismatch-count", mismatchCount,
+        configuredAgents.length + staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd);
+    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring status-reality mismatch: ${e}`); }
 
     // ── Generic metrics (source_query / source_command) ──────────────
 
@@ -380,15 +531,24 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
               "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
               [m.id, "threshold", message, now]
             );
+            const priority = hasMetricPriorityColumn
+              ? ((db.prepare("SELECT COALESCE(priority, 'P2') as priority FROM metrics WHERE id = ?").get(m.id) as { priority?: string } | null)?.priority ?? "P2")
+              : "P2";
             try {
               ctx.dispatchEvent("metric.breach", {
                 owner: m.owner, metricId: m.id, metricName: m.name,
-                current: m.current, threshold: m.threshold, target: m.target, message,
+                current: m.current, threshold: m.threshold, target: m.target, message, priority,
               });
             } catch (e) { ctx.log(`[metrics-snapshot] Error emitting metric.breach for ${m.id}: ${e}`); }
           }
         } else if (openAlert) {
           db.run("UPDATE metric_alerts SET resolved_at = ? WHERE id = ?", [now, openAlert.id]);
+          try {
+            ctx.dispatchEvent("metric.recovered", {
+              metricId: m.id,
+              metricName: m.name,
+            });
+          } catch (e) { ctx.log(`[metrics-snapshot] Error emitting metric.recovered for ${m.id}: ${e}`); }
         }
 
         // ── Stall event (separate from breach) ──
@@ -415,4 +575,3 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     ctx.log(`[metrics-snapshot] ${ALL_METRICS.length} built-in metrics recorded, ${measured}/${measurable.length} source-defined`);
   };
 };
-
