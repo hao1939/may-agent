@@ -58,6 +58,11 @@ const ALL_METRICS: MetricDef[] = [
   { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents)", owner: "may", type: "gauge", target: 4, threshold: 3, unit: "count", alert_op: "<", priority: "P1" },
   // Sessions
   { id: "session.error-rate-6h", name: "Session error rate (6h)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P1" },
+  { id: "session.failed-triage-rate-3h", name: "Failed session triage rate (3h)", owner: "evaluator", type: "gauge", target: 1.0, threshold: 0.80, unit: "ratio", alert_op: "<", priority: "P1" },
+  { id: "evaluator.aftermath-coverage-rate-3h", name: "Evaluator aftermath liveness (3h)", owner: "evaluator", type: "gauge", target: 0.80, threshold: 0.20, unit: "ratio", alert_op: "<", priority: "P3" },
+  { id: "evaluator.low-quality-rate-24h", name: "Low-quality evaluated sessions (24h)", owner: "evaluator", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P2" },
+  { id: "evaluator.stale-running-session-count", name: "Stale running sessions", owner: "evaluator", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 1 } } },
   // System output
   { id: "system.real-output-24h", name: "Real output (24h)", owner: "may", type: "counter", target: 100, threshold: 30, unit: "count", alert_op: "<",
     priority: "P1",
@@ -278,9 +283,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // ── Measure: Handler (with error isolation) ──────────────────────
 
     const sixH = now - 6 * 3600000;
+    const threeH = now - 3 * 3600000;
     const twoH = now - 2 * 3600000;
     const oneH = now - 3600000;
     const twentyFourH = now - 24 * 3600000;
+    const sevenMinutesAgo = now - 7 * 60_000;
+    const staleRunningCutoff = now - 30 * 60_000;
 
     let completed = 0, failed = 0;
 
@@ -335,6 +343,82 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const err = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ? AND status IN ('error','interrupted')", sixH);
       record("session.error-rate-6h", total > 0 ? parseFloat((err / total).toFixed(4)) : 0, total);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring session.error-rate-6h: ${e}`); }
+
+    try {
+      const failed = count(
+        `SELECT COUNT(*) as c
+         FROM sessions s
+         WHERE s.agent NOT IN ('evaluator', 'judge')
+           AND COALESCE(s.endedAt, s.startedAt) > ?
+           AND COALESCE(s.endedAt, s.startedAt) <= ?
+           AND (s.status IN ('error', 'interrupted') OR s.error IS NOT NULL)`,
+        threeH, sevenMinutesAgo,
+      );
+      const triaged = count(
+        `SELECT COUNT(DISTINCT s.sessionId) as c
+         FROM sessions s
+         JOIN evaluations e ON e.sessionId = s.sessionId
+         WHERE s.agent NOT IN ('evaluator', 'judge')
+           AND COALESCE(s.endedAt, s.startedAt) > ?
+           AND COALESCE(s.endedAt, s.startedAt) <= ?
+           AND (s.status IN ('error', 'interrupted') OR s.error IS NOT NULL)
+           AND e.verdict = 'needs_improvement'`,
+        threeH, sevenMinutesAgo,
+      );
+      record("session.failed-triage-rate-3h", failed > 0 ? parseFloat((triaged / failed).toFixed(4)) : 1, failed);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring session.failed-triage-rate-3h: ${e}`); }
+
+    try {
+      // This is a pipeline liveness/meta signal, not the north-star quality
+      // metric. A small threshold catches "evaluator stopped entirely" without
+      // making raw coverage the goal.
+      const eligible = count(
+        `SELECT COUNT(*) as c
+         FROM sessions s
+         WHERE s.status IN ('done', 'error', 'interrupted')
+           AND s.agent NOT IN ('evaluator', 'judge')
+           AND COALESCE(s.endedAt, s.startedAt) > ?
+           AND COALESCE(s.endedAt, s.startedAt) <= ?`,
+        threeH, sevenMinutesAgo,
+      );
+      const evaluated = count(
+        `SELECT COUNT(DISTINCT s.sessionId) as c
+         FROM sessions s
+         JOIN evaluations e ON e.sessionId = s.sessionId
+         WHERE s.status IN ('done', 'error', 'interrupted')
+           AND s.agent NOT IN ('evaluator', 'judge')
+           AND COALESCE(s.endedAt, s.startedAt) > ?
+           AND COALESCE(s.endedAt, s.startedAt) <= ?`,
+        threeH, sevenMinutesAgo,
+      );
+      record("evaluator.aftermath-coverage-rate-3h", eligible > 0 ? parseFloat((evaluated / eligible).toFixed(4)) : 1, eligible);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.aftermath-coverage-rate-3h: ${e}`); }
+
+    try {
+      const total = count(
+        "SELECT COUNT(*) as c FROM evaluations WHERE createdAt > ? AND agent NOT IN ('evaluator', 'judge')",
+        twentyFourH,
+      );
+      const lowQuality = count(
+        `SELECT COUNT(*) as c
+         FROM evaluations
+         WHERE createdAt > ?
+           AND agent NOT IN ('evaluator', 'judge')
+           AND (verdict = 'needs_improvement' OR quality < 0.4 OR efficiency < 0.4)`,
+        twentyFourH,
+      );
+      record("evaluator.low-quality-rate-24h", total > 0 ? parseFloat((lowQuality / total).toFixed(4)) : 0, total);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.low-quality-rate-24h: ${e}`); }
+
+    try {
+      record(
+        "evaluator.stale-running-session-count",
+        count(
+          "SELECT COUNT(*) as c FROM sessions WHERE status IN ('running', 'idle') AND agent NOT IN ('evaluator', 'judge') AND startedAt < ?",
+          staleRunningCutoff,
+        ),
+      );
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.stale-running-session-count: ${e}`); }
 
     try {
       // Counts changed/created files in last 24h without blocking the runtime

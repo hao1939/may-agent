@@ -47,7 +47,7 @@ CREATE TABLE metric_snapshots (
 );
 ```
 
-## Built-In Health Metrics (14)
+## Built-In Health Metrics
 
 **Handler health:**
 - `handler.completed-count` — completions in 6h
@@ -59,7 +59,13 @@ CREATE TABLE metric_snapshots (
 
 **Session/system health:**
 - `session.error-rate-6h` — sessions ending error/interrupted in 6h
+- `session.failed-triage-rate-3h` — failed/interrupted sessions that received `needs_improvement` triage
 - `system.real-output-24h` — substantive changed files in 24h
+
+**Evaluator health:**
+- `evaluator.aftermath-coverage-rate-3h` — aftermath pipeline liveness, not a north-star quality goal
+- `evaluator.low-quality-rate-24h` — share of evaluated sessions with low quality/efficiency
+- `evaluator.stale-running-session-count` — running/idle non-evaluator sessions older than the stale cutoff
 
 **Project health:**
 - `project.active-count`
