@@ -183,6 +183,10 @@ Ran `monitor-session.cjs --running`: 1 alert (`STALL` amy `s_1777626616591_0` id
 
 **P63 Extract Strategies — Last run**: 2026-03-30 10:41 — artifacts sampled: 6 eval JSONs + 2 monitor outputs; strategies proposed: 5 (see `agents/evaluator/workspace/proposed-strategies.md`)
 
+**Last run**: 2026-05-07 01:23Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617`; `MAX(sessions.endedAt)=1778116765770` → eval lag ≈8.55h. Last-24h volume: `sessions(endedAt>=cutoff)`=728 vs `evaluations(createdAt>=cutoff)`=39 → coverage ≈5.36%.
+
+Interpretation: evaluations are updating far slower than session throughput and may be stalled after ~2026-05-06T16:46Z. Action recommendation: escalate to May/tech-lead to inspect `evaluate-session-llm` job liveness/scope and event-consumer throughput.
+
 ## 8. Receipt Audit (P192)
 **Goal**: Verify that agents aren't fabricating success claims without cryptographic proof.
 - Check 5 recent sessions for signature validity.
