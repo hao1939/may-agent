@@ -136,6 +136,12 @@ describe("workerSystemPrompt", () => {
     const prompt = workerSystemPrompt("/p");
     expect(prompt).toContain("WRITE-FIRST");
   });
+
+  it("allows context gathering before write when needed for substantive output", () => {
+    const prompt = workerSystemPrompt("/p");
+    expect(prompt).toContain("unless you must inspect code/data first");
+    expect(prompt).toContain("gather the minimum context needed, then write/edit the deliverable");
+  });
 });
 
 // ── snapshotOutputs & diffSnapshots ─────────────────────────────────────

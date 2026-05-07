@@ -279,11 +279,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     label: "orchestrator",
   });
 
-  let worker = await ctx.createSession({
-    systemPrompt: workerSystemPrompt(dirname(projectDir)),
-    tools: "full",
-    label: "worker",
-  });
+  // Create worker sessions per iteration, not once for the whole workflow.
+  // Reusing a persistent worker conversation causes old SESSION INTENT blocks and
+  // prior assistant/user turns to accumulate, which has produced blank/error
+  // worker sessions when later iterations inherit stale instructions.
+  let worker: Awaited<ReturnType<WorkflowContext["createSession"]>> | null = null;
 
   try {
     // ── Phase 1: Planning — orchestrator assesses current state ──
@@ -420,7 +420,16 @@ ${journalContent.slice(-3000)}
         }
       }
 
-      // Worker gets ONLY the orchestrator's guidance — no project.md access
+      // Worker gets ONLY the orchestrator's guidance — no project.md access.
+      // Start a fresh worker conversation every iteration so previous SESSION INTENT
+      // blocks cannot be replayed as stale user/assistant context.
+      try { worker?.close(); } catch {}
+      worker = await ctx.createSession({
+        systemPrompt: workerSystemPrompt(dirname(projectDir)),
+        tools: "full",
+        label: "worker",
+      });
+
       // EXP-910: Session Intent Header separates intent from context to prevent ghost completions
       let workerPrompt = `## 🎯 SESSION INTENT (this is your job RIGHT NOW)
 Action: Complete iteration ${iteration} — produce files as evidence of progress.
@@ -495,7 +504,7 @@ WRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Y
         }
       } catch { /* EXP-720: non-critical — don't break worker flow */ }
 
-      let workerResult = await withRetry(() => worker.prompt(workerPrompt), {
+      let workerResult = await withRetry(() => worker!.prompt(workerPrompt), {
         maxRetries: 3,
         baseDelayMs: 1000,
         onRetry: (err, attempt, delay) => ctx.log(`[work] ⚠️ Provider error on worker, retry ${attempt} after ${delay}ms: ${String(err).slice(0, 80)}`),
@@ -511,13 +520,13 @@ WRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Y
         // start a fresh worker session once and rerun the exact same prompt.
         if (/Clean start \(fresh\)/i.test(err.message)) {
           ctx.log("[work] Worker session was reaped (Clean start); recreating worker session and retrying once");
-          try { worker.close(); } catch {}
+          try { worker?.close(); } catch {}
           worker = await ctx.createSession({
             systemPrompt: workerSystemPrompt(dirname(projectDir)),
             tools: "full",
             label: "worker",
           });
-          workerResult = await withRetry(() => worker.prompt(workerPrompt), {
+          workerResult = await withRetry(() => worker!.prompt(workerPrompt), {
             maxRetries: 1,
             baseDelayMs: 1000,
             onRetry: (retryErr, attempt, delay) => ctx.log(`[work] ⚠️ Provider error on fresh worker, retry ${attempt} after ${delay}ms: ${String(retryErr).slice(0, 80)}`),
@@ -534,7 +543,7 @@ WRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Y
       ctx.log(`[work] Iteration ${iteration} done`);
 
       // Track budget consumption (approximate tokens from response length)
-      const approxTokens = Math.ceil(worker.lastText().length / 4);
+      const approxTokens = Math.ceil(worker!.lastText().length / 4);
       iterBudget.consume(approxTokens);
       const budgetStatus = iterBudget.check();
       if (budgetStatus.exceeded) {
@@ -559,7 +568,7 @@ WRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Y
         timestamp: Date.now(),
         task: guidance.slice(0, 500),
         toolsCalled: ["worker.prompt"],
-        partialResults: { workerResponseLength: worker.lastText().length },
+        partialResults: { workerResponseLength: worker!.lastText().length },
         completed: false,
       });
 
@@ -641,7 +650,7 @@ WRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Y
 
       // ── Record cost/usage metrics ──
       try {
-        const outputLen = worker.lastText()?.length ?? 0;
+        const outputLen = worker!.lastText()?.length ?? 0;
         recordUsage({
           agent: (ctx as any).agentName ?? 'worker',
           workflow: 'master-worker',
@@ -652,7 +661,7 @@ WRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Y
       } catch { /* non-critical */ }
 
       // ── Journal ──
-      const workerText = worker.lastText();
+      const workerText = worker!.lastText();
       const workerSummary = workerText.length > 1500 ? workerText.slice(0, 1500) + "..." : workerText;
       appendFileSync(journalFile, `\n### Iteration ${iteration} — ${new Date().toISOString()}\n**Worker**: ${workerSummary.slice(0, 500)}\n`, "utf-8");
 
@@ -777,6 +786,6 @@ Then provide your decision and guidance for the next iteration.`;
 
   } finally {
     try { orchestrator.close(); } catch {}
-    try { worker.close(); } catch {}
+    try { worker?.close(); } catch {}
   }
 }
