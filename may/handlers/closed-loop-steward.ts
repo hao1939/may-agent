@@ -13,6 +13,7 @@ type Config = {
   lookbackMs?: number;
   alertLimit?: number;
   deliveryFailureLimit?: number;
+  triageLimit?: number;
 };
 
 type AlertRow = {
@@ -59,6 +60,8 @@ type SnapshotRow = {
 const DEFAULT_LOOKBACK_MS = 6 * 60 * 60_000;
 const DEFAULT_ALERT_LIMIT = 12;
 const DEFAULT_DELIVERY_FAILURE_LIMIT = 12;
+const DEFAULT_TRIAGE_LIMIT = 3;
+const RETRIAGE_COOLDOWN_MS = 15 * 60_000;
 
 function age(now: number, timestamp?: number | null): string {
   if (!timestamp) return "unknown";
@@ -87,11 +90,41 @@ function isBreaching(current: number | null, threshold: number | null, alertOp: 
   return alertOp === ">" || alertOp === "above" ? current > threshold : current < threshold;
 }
 
+function buildTriageTask(alert: AlertRow, owner: string, reason: string): string {
+  return [
+    `Run metric alert triage for ${alert.metric_id}.`,
+    "",
+    `Reason: ${reason}.`,
+    "",
+    "## Trigger Event",
+    "```json",
+    JSON.stringify({
+      type: "metric.breach",
+      source: "closed-loop-steward",
+      entry: "closed-loop-steward",
+      data: {
+        alertId: alert.id,
+        owner,
+        metricId: alert.metric_id,
+        metricName: alert.metricName ?? alert.metric_id,
+        current: alert.current,
+        threshold: alert.threshold,
+        target: alert.target,
+        message: alert.message,
+        priority: alert.priority ?? "P2",
+      },
+      timestamp: Date.now(),
+    }, null, 2),
+    "```",
+  ].join("\n");
+}
+
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
   const config = (entry.handlerConfig ?? {}) as Config;
   const lookbackMs = config.lookbackMs ?? DEFAULT_LOOKBACK_MS;
   const alertLimit = config.alertLimit ?? DEFAULT_ALERT_LIMIT;
   const deliveryFailureLimit = config.deliveryFailureLimit ?? DEFAULT_DELIVERY_FAILURE_LIMIT;
+  const triageLimit = config.triageLimit ?? DEFAULT_TRIAGE_LIMIT;
   const configuredAgents = listConfiguredAgents(ctx.sdk.paths.agents);
 
   return async () => {
@@ -134,6 +167,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       ctx.sdk.log("info", "[closed-loop-steward] Skip: no open metric alerts or recent delivery failures.");
       return;
     }
+
+    const triageCandidates: Array<{ alert: AlertRow; owner: string; reason: string }> = [];
 
     const alertLines = alerts.map((alert) => {
       const owner = resolveMetricOwner(alert.metric_id, configuredAgents, alert.explicitOwner, alert.projectOwner);
@@ -180,6 +215,27 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
           ? `  validation: ${stillBreaching ? "still breaching after judgment" : "latest snapshot is in range"} (snapshot age=${age(now, latestSnapshot?.measured_at)})`
           : `  validation: awaiting a newer metrics snapshot after judgment`
         : `  validation: no judgment to validate`;
+      const priority = alert.priority ?? "P2";
+      const activeTriage = db.prepare(
+        `SELECT runId
+         FROM workflow_runs
+         WHERE workflow = 'metric-alert-triage'
+           AND status = 'running'
+           AND task LIKE ?
+         LIMIT 1`,
+      ).get(`%${alert.metric_id}%`) as { runId: string } | null;
+      if ((priority === "P0" || priority === "P1") && !activeTriage) {
+        if (!judgmentData) {
+          triageCandidates.push({ alert, owner, reason: "missing metric.alert_judged event" });
+        } else if (
+          validatedAfterJudgment &&
+          stillBreaching &&
+          judgment &&
+          now - judgment.timestamp >= RETRIAGE_COOLDOWN_MS
+        ) {
+          triageCandidates.push({ alert, owner, reason: "still breaching after latest judgment validation" });
+        }
+      }
 
       return [
         `- alert#${alert.id} metric=${alert.metric_id} priority=${alert.priority ?? "P2"} owner=${owner} age=${age(now, alert.created_at)}`,
@@ -210,6 +266,18 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
        LIMIT 3`,
     ).all() as SessionRow[];
 
+    for (const candidate of triageCandidates.slice(0, triageLimit)) {
+      const task = buildTriageTask(candidate.alert, candidate.owner, candidate.reason);
+      ctx.sdk.runWorkflow("metric-alert-triage", task, { source: candidate.owner })
+        .then((result) => {
+          ctx.sdk.log("info", `[closed-loop-steward] Routed ${candidate.alert.metric_id} to metric-alert-triage: ${String((result as any)?.status ?? "done")}`);
+        })
+        .catch((err) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          ctx.sdk.log("info", `[closed-loop-steward] Failed to route ${candidate.alert.metric_id}: ${msg.slice(0, 200)}`);
+        });
+    }
+
     const task = [
       "[cron:closed-loop-steward] Audit whether red metrics and failed deliveries are moving toward closure.",
       "",
@@ -220,8 +288,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       "Rules:",
       "- Prefer native ownership: metrics.owner, then project.owner, then agent-name prefix, then may fallback.",
       "- Treat metric.alert_judged as the durable record that the owner judged an alert.",
-      "- A judgment is not closure. If a newer snapshot still breaches after judgment, route it through metric-alert-triage again or take the missing operation.",
-      "- If an alert has owner activity but no metric.alert_judged event, route it through the metric-alert-triage workflow or nudge the owner to produce a structured operation.",
+      "- A judgment is not closure. The handler has already routed P0/P1 alerts that need triage; do not hand-roll metric.alert_judged events.",
+      "- If routing itself is wrong, fix this handler or the workflow instead of asking an agent to improvise DB/event writes.",
       "- Take the smallest operation that advances closure: route/nudge owner, fix broken ownership/routing, document a valid exception, or escalate when blocked.",
       "- Do not create a project for this cron itself. Create/update a project only when you discover systemic implementation work that cannot be completed in this run.",
       "- If this recurring procedure is wrong or stale, improve the handler/cron/config directly and verify it.",

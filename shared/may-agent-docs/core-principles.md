@@ -26,7 +26,7 @@ Event fires
 
 Owner means: if this falls on the floor, it's your problem. Owners don't do all the work — they guarantee nothing is orphaned.
 
-Agents exist as **accountability boundaries**. We don't have 7 agents because we need 7 workers — any LLM can do anything. We have 7 agents because we need 7 distinct owners who accumulate domain context, watch domain metrics, and are the definitive answer to "who's responsible for this?"
+Agents exist as **accountability boundaries**. We don't have multiple agents because we need multiple workers — any LLM can do anything. We have separate agents because we need distinct owners who accumulate domain context, watch domain metrics, and are the definitive answer to "who's responsible for this?"
 
 **Elaborated in:** [metrics.md](metrics.md), [design/agent-metrics.md](design/agent-metrics.md)
 

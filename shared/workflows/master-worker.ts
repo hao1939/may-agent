@@ -551,8 +551,13 @@ WRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Y
       }
       ctx.log(`[work] Iteration ${iteration} done`);
 
+      // Capture the worker text immediately after prompt completion. A session can
+      // finish successfully via tool-only messages and then emit an empty final
+      // assistant text; in that case, use the structured prompt result so the
+      // review phase does not treat successful work as a blank/error response.
+      const workerTextAfterPrompt = safeLastText(worker) || ctx.summarize(workerResult.value, { maxLength: 1500 });
+
       // Track budget consumption (approximate tokens from response length)
-      const workerTextAfterPrompt = safeLastText(worker);
       const approxTokens = Math.ceil(workerTextAfterPrompt.length / 4);
       iterBudget.consume(approxTokens);
       const budgetStatus = iterBudget.check();
@@ -671,7 +676,7 @@ WRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Y
       } catch { /* non-critical */ }
 
       // ── Journal ──
-      const workerText = safeLastText(worker);
+      const workerText = workerTextAfterPrompt;
       const workerSummary = workerText.length > 1500 ? workerText.slice(0, 1500) + "..." : workerText;
       appendFileSync(journalFile, `\n### Iteration ${iteration} — ${new Date().toISOString()}\n**Worker**: ${workerSummary.slice(0, 500)}\n`, "utf-8");
 
