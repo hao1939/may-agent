@@ -1,20 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778181391226_44
+- **Session:** s_1778183191158_52
 - **Status:** success
-- **When:** 2026-05-07T19:20:06.466Z
+- **When:** 2026-05-07T19:48:50.651Z
 
 ## What Happened
-No approved queue items were available, so I addressed the live closed-loop calibration gap for `capability.session-trace-completeness`. Committed 19a279eaf, changing the built-in metrics registry in `agents/may/handlers/metrics-snapshot.ts` to keep target 1.0 but alert only below 0.001 at P3, with a regression test locking the calibration.
+Completed dev heartbeat triage: Approved queue was empty and core error metrics were healthy, so I fixed the actionable follow-up from the recent master-worker stale-context investigation by making `shared/tests/master-worker-import.test.ts` runnable under the current Bun/Vitest harness. The fix is committed as `b727911d5` (`dev: fix master-worker import test`); dev last-session update is committed as `9ae9415f1`.
 
 ## Files Modified
-- agents/may/handlers/metrics-snapshot.ts
-- agents/shared/tests/session-trace-completeness-calibration.test.ts
-- agents/dev/workspace/investigations/2026-05-07-session-trace-completeness-calibration.md
+- agents/shared/tests/master-worker-import.test.ts
 
 ## Completed
-- Checked dev work queue and confirmed Approved section was empty
-- Investigated recent handler/session failures during dev heartbeat
-- Fixed session trace completeness metric calibration in built-in registry
-- Committed session trace completeness calibration fix
+- Repair or replace master-worker-import.test.ts so the import regression check runs under the current Bun/Vitest environment.
