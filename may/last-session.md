@@ -1,12 +1,9 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778194063529_105
+- **Session:** s_1778195139503_107
 - **Status:** success
-- **When:** 2026-05-07T22:48:37.730Z
+- **When:** 2026-05-07T23:06:18.069Z
 
 ## What Happened
-Appended heartbeat status entry to /app/agents/may/heartbeat-log.md with current system metrics and concerns.
-
-## Files Modified
-- /app/agents/may/heartbeat-log.md
+Both open issues are converging: spec-coverage alert is validly waiting on pending-review project (may active), and delivery failure spam stopped 1h+ ago with no recurrence.
