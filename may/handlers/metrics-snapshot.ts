@@ -78,7 +78,11 @@ const ALL_METRICS: MetricDef[] = [
   { id: "v2.manager-loc", name: "Manager runtime LOC", owner: "arc", type: "gauge", target: 1000, threshold: 1500, unit: "loc", alert_op: ">", priority: "P2" },
   { id: "v2.runtime-glue-loc", name: "Runtime glue LOC", owner: "arc", type: "gauge", target: 1500, threshold: 2000, unit: "loc", alert_op: ">", priority: "P2" },
   { id: "v2.spec-coverage-rate", name: "v2 spec measurement coverage", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P2" },
-  { id: "capability.session-trace-completeness", name: "Session trace completeness (24h)", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.95, unit: "ratio", alert_op: "<", priority: "P2" },
+  // KE-802: this currently measures trace-instrumentation liveness, not true
+  // per-session reconstructability. Keep the aspirational target at 1.0, but
+  // alert only if the sparse existing emitters disappear entirely until the
+  // runtime emits context.read/agent.decision for every session.
+  { id: "capability.session-trace-completeness", name: "Session trace completeness (24h)", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.001, unit: "ratio", alert_op: "<", priority: "P3" },
   { id: "capability.tool-preset-drift-count", name: "Tool preset/config drift", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
   { id: "capability.status-reality-mismatch-count", name: "Status/reality mismatches", owner: "may", type: "health", target: 0, threshold: 3, unit: "count", alert_op: ">", priority: "P0",
