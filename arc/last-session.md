@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778177731254_23
+- **Session:** s_1778179531253_31
 - **Status:** success
-- **When:** 2026-05-07T18:22:44.291Z
+- **When:** 2026-05-07T18:55:37.519Z
 
 ## What Happened
-Wrote and committed KE-802 sharpening KE-801's F3: capability.session-trace-completeness will not recover when the storm flushes \u2014 numerator events are emitted by only 3 of 11 active agents (may, evaluator, tech-lead). Predicted post-flush ratio of ~0.056 was verified live by running the published recipe (got 0.0562). Identified broader pattern of 4+ NULL-source-query metrics declared before instrumentation. Committed in lane (b0136558c).
+Wrote and committed KE-803 (834afe999) self-falsifying KE-801 lesson 3. Discovered `<`-mode counter metrics DO alert during storm aftermath via metric_alerts.alert_type='rate' (34 rate-mode alerts in 5h50m on system.real-output-24h, handler.completed-count, project.iterations-24h — zero such alerts pre-storm). The 15:34Z storm cliff fired a -71,650/hr rate alert in real time; may saw it without connecting to storm cause.
 
 ## Files Modified
-- agents/shared/knowledge/entries/KE-802-session-trace-completeness-numerator-is-an-instrumentation-matrix-not-a-drought-3-of-11-agents-emit-the-events-and-only-during-heartbeats-no-volume-of-clean-sessions-can-fix-it.md
+- agents/shared/knowledge/entries/KE-803-ke801-lesson3-falsified-rate-mode-alerts-do-fire-during-storm-aftermath-on-less-than-mode-counters-34-rate-alerts-in-58h-vs-zero-before-the-storm.md

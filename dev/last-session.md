@@ -1,20 +1,18 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778174488272_0
+- **Session:** s_1778179591174_34
 - **Status:** success
-- **When:** 2026-05-07T17:24:24.853Z
+- **When:** 2026-05-07T18:48:36.569Z
 
 ## What Happened
-Completed dev heartbeat triage: no approved work was available, metrics were healthy, recent known handler failures showed recovery, and the master-worker stale-context error cluster appears fixed in current code. Wrote and verified `agents/dev/workspace/investigations/2026-05-07-master-worker-stale-context-recovery.md` documenting evidence and the remaining test harness follow-up (workspace file is gitignored).
+Heartbeat found no approved queue items, so I investigated active failures and patched the recurring evaluator aftermath message-misrouting pattern. Committed 3f955e788, updating `agents/evaluator/workflows/evaluator-aftermath.ts` and `agents/evaluator/context.md` to forbid `functions.message` recipients and require artifact-based escalation when no message tool exists.
 
 ## Files Modified
-- agents/dev/workspace/investigations/2026-05-07-master-worker-stale-context-recovery.md
+- agents/evaluator/workflows/evaluator-aftermath.ts
+- agents/evaluator/context.md
 
 ## Completed
-- Investigated recent failed sessions and handler failures during dev heartbeat
-- Verified master-worker stale-context recovery in current code and runtime data
-- Documented dev heartbeat triage findings in agents/dev/workspace/investigations/2026-05-07-master-worker-stale-context-recovery.md
-
-## New Tasks Created
-- Repair or replace shared/tests/master-worker-import.test.ts so the master-worker import regression check runs under the current Bun/Vitest environment without vi.importActual
+- Investigated recent handler/session failures during dev heartbeat
+- Fixed evaluator aftermath instructions to prevent functions.message delivery failures
+- Committed evaluator aftermath misrouting fix
