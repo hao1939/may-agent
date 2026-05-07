@@ -78,5 +78,7 @@ describe("metric-alert-reactor", () => {
     expect(runs).toHaveLength(1);
     expect(runs[0]).toMatchObject({ owner: "arc", source: "metric-alert-reactor:arc.down" });
     expect(runs[0].task).toContain("[metric-alert][arc.down][P0]");
+    expect(runs[0].task).toContain("metrics snapshot is a validation signal");
+    expect(runs[0].task).not.toContain("metrics snapshot is the judge");
   });
 });
