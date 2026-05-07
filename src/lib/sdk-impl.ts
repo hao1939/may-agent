@@ -60,15 +60,17 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         agentsRoot: deps.agentsRoot,
         agentName: deps.agentName,
       });
+      const agentForWorkflow = opts?.source ?? deps.agentName;
       const { result } = await runWorkflowDirect({
         workflowName: name,
         task,
         manager: deps.manager,
         runtimeCtx,
-        agentName: opts?.source ?? deps.agentName,
+        agentName: agentForWorkflow,
         persistDir: deps.persistDir,
+        workflowDir: join(deps.agentsRoot, agentForWorkflow, "workflows"),
         sharedWorkflowDir: join(deps.agentsRoot, "shared", "workflows"),
-        guardsDir: join(deps.agentsRoot, deps.agentName, "guards"),
+        guardsDir: join(deps.agentsRoot, agentForWorkflow, "guards"),
         sharedGuardsDir: join(deps.agentsRoot, "shared", "guards"),
       });
       return { status: result.type === "done" ? "done" : "escalated", summary: result.type === "done" ? result.summary : result.reason ?? "escalated" };
