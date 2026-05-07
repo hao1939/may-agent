@@ -23,6 +23,19 @@ interrupted | running` (no `'completed'`). `events` uses `timestamp`
 (unix ms), not `created_at`. Use these columns or queries silently
 return zeros / throw `no such column`.
 
+> **⚠️ opCount is frozen at 0 since 2026-05-07 09:13Z** (KE-796). Every
+> session in the post-cutoff window records `opCount=0` regardless of
+> tools used. Until that runtime is restored, **do not use `AVG(opCount)`
+> or `SUM(opCount)` as a session-effort proxy** — the answer is always
+> zero. Substitute one of:
+> - duration: `(endedAt-startedAt)/1000.0` seconds
+> - outcome: `outcome IS NOT NULL AND length(outcome) > 0`
+> - commit-count via `git log --author=<agent>-agent` keyed on session
+>   start timestamps
+>
+> The query block below is preserved for diagnostic value (it will start
+> reading useful again when opCount unfreezes), but **expect zeros**.
+
 ```sql
 -- Agent effectiveness (last 24h)
 SELECT agent,
