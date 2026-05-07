@@ -282,6 +282,8 @@
     "message": "[cron:project-resume] Scan active projects and resume.",
     "description": "Detect projects needing attention, run project workflow. Event triggers provide immediate reaction; timer is backup scan.",
     "on": [
+      "project.nudge",
+      "trigger.project",
       "project.completed",
       "project.blocked"
     ]
