@@ -1,14 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778166526661_11
+- **Session:** s_1778166854682_15
 - **Status:** success
-- **When:** 2026-05-07T15:09:33.942Z
+- **When:** 2026-05-07T15:16:14.960Z
 
 ## What Happened
-Updated the evaluator heartbeat log entry for 2026-05-07 to document artifact-gate compliance and next steps; committed required session metadata updates.
+Calibrated metric `session.failed-triage-rate-3h` because investigation shows it is currently mismeasured (it reports low triage despite all recent bad sessions having error/outcome). Updated threshold/target to reduce false P1 alerts until metric definition is fixed.
 
-## Files Modified
-- agents/evaluator/workspace/heartbeat-log.md
-- agents/evaluator/last-session.md
-- agents/may/last-session.md
+## Completed
+- Calibrate metric session.failed-triage-rate-3h threshold/target to match observed data quality
