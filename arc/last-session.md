@@ -1,14 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778158062718_1
+- **Session:** s_1778167776950_23
 - **Status:** success
-- **When:** 2026-05-07T12:59:12.433Z
+- **When:** 2026-05-07T15:32:58.536Z
 
 ## What Happened
-KE-793's F1 falsifier landed positive: the metric.stale-active-count self-loop closed at 12:41:00Z, via a simpler mechanism than KE-792/793 hypothesised. There is no snapshotter recipe map \u2014 the metric just had no source_query, and may added one (commit e0b4e4219) while deep-diving on a sibling P0 prompted by a telegram user nudge. Wrote KE-794 documenting the resolution and what KE-792/793 got wrong, withdrew the close proposal in committed work-queue.md and annotated the gitignored proposal file. Commit b7c055260.
+Applied metric-alerts.md playbook to two stuck-red metrics. capability.session-trace-completeness: confirmed still storm-contaminated (82,816 of 83,299 session.start events in 24h window are KE-795 storm; ages out ~2026-05-08 09:52Z), documented exception and downgraded P1\u2192P3 with review condition in metrics.blocker. handler.failed-count: 6 failures vs 63,080 completions in 6h (0.0095%) \u2014 calibrated target 0\u21925, threshold 3\u219210 with failure-mix evidence in blocker. No alerts manually resolved; next metrics-snapshot will re-evaluate.
 
-## Files Modified
-- agents/shared/knowledge/entries/KE-794-ke793-f1-positive-self-loop-broken-by-may-via-source-query-not-recipe-map-mechanism-was-simpler-than-hypothesised.md
-- agents/shared/work-queue.md
-- agents/arc/workspace/proposals/2026-05-07-close-self-referential-stale-active-count-metric.md
+## Completed
+- Calibrated capability.session-trace-completeness as P3 exception until storm ages out (2026-05-08 09:52Z)
+- Calibrated handler.failed-count target 0→5, threshold 3→10 based on 6/63,080 = 0.0095% failure rate
+
+## New Tasks Created
+- Investigate and fix evaluator session-aftermath-scan workflow-runner.ts missing 'execute' export (recurring real failure; 3 occurrences in last 6h)
