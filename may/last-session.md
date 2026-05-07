@@ -3,7 +3,11 @@
 
 - **Session:** s_1778177629270_22
 - **Status:** success
-- **When:** 2026-05-07T18:40:31.152Z
+- **When:** 2026-05-07T18:47:27.287Z
 
 ## What Happened
-Analyzed the full feedback loop. Evaluator already correctly detected scout's failures (10 sessions scored <0.5 with accurate diagnoses). The missing piece is a reactor — nobody reads evaluations and fixes agent config/tooling. Recommended adding a repeated-failure detector to auto-investigate.
+Built and deployed agent-health-reactor. Every 30min it detects agents with 3+ consecutive low eval scores, extracts common issues, and dispatches May to investigate root causes (broken tools, wrong URLs, missing files). This closes the evaluator→action gap that let scout spin for 10+ sessions with known failures.
+
+## Files Modified
+- agents/may/handlers/agent-health-reactor.ts
+- agents/may/cron.json
