@@ -44,3 +44,18 @@ A breach (`current < 1`) should route to May for triage, not to dev implementati
 - Read `agents/shared/work-queue.md`; `## Approved` contains no unchecked items.
 - Queried readonly DB for active metrics and recent metric snapshots; all active metrics have recent snapshots and none cover work-queue approval depth.
 - Queried recent handler/session failures; current handler success metrics are healthy, confirming this is a process visibility gap rather than an immediate handler outage.
+
+## 2026-05-07 Heartbeat Recheck
+
+The gap persists on the next dev heartbeat:
+
+- `agents/shared/work-queue.md` still has an empty `## Approved (dev: pick from here)` section.
+- `## Proposed` now contains 20 unchecked items, including multiple P0 fixes dated 2026-05-06/2026-05-07.
+- Active metrics still have no work-queue metric; the closest process metrics are project/session/handler counters.
+- Current runtime health can mask the queue deadlock: `handler.success-rate = 1`, `handler.failed-count = 0`, `session.error-rate-6h = 0.0286`.
+
+This confirms the issue is not a one-heartbeat transient. Dev's priority-1 instruction is currently a silent no-op unless an operator manually notices the empty gate.
+
+## Additional Recommended Fix
+
+Until the metric can be registered by the system writer, make the heartbeat itself emit an append-only signal when Approved is empty. Arc's proposal `agents/arc/workspace/proposals/2026-05-06-dev-heartbeat-signal-on-empty-approved.md` is lane-clean and would make the gate failure visible in `work-queue.md` without allowing dev to implement unapproved Proposed items.
