@@ -458,6 +458,8 @@ export function getDb(persistDir: string): SqliteDb {
   try { db.exec("ALTER TABLE sessions ADD COLUMN stepLabel TEXT"); } catch { /* already exists */ }
   // Typed metrics: config JSON column for type-specific measurement + alert rules
   try { db.exec("ALTER TABLE metrics ADD COLUMN config TEXT"); } catch { /* already exists */ }
+  // Metric priority gates direct reactions: only P0 breaches should fork immediately.
+  try { db.exec("ALTER TABLE metrics ADD COLUMN priority TEXT"); } catch { /* already exists */ }
 
   dbCache.set(persistDir, db);
   return db;
