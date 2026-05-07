@@ -430,15 +430,25 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
                AND json_extract(e.data, '$.sessionId') = s.sessionId
            )`, now - 24 * 3600000);
 
-      const configuredAgents = [...listAutonomousAgents(ctx.sdk.paths.agents)];
+      // Only check agents that have an enabled heartbeat cron job
+      const cronPath = join(ctx.sdk.paths.agents, "may", "cron.json");
+      let heartbeatAgents: string[] = [];
+      try {
+        const cron = JSON.parse(readFileSync(cronPath, "utf8")) as Array<{ name?: string; enabled?: boolean; agent?: string; handlerConfig?: { agent?: string } }>;
+        heartbeatAgents = cron
+          .filter(j => j.name?.includes("heartbeat") && j.enabled !== false)
+          .map(j => j.agent || j.handlerConfig?.agent || "")
+          .filter(Boolean);
+      } catch { /* fallback to empty */ }
+
       let agentsWithoutHeartbeat = 0;
-      for (const agent of configuredAgents) {
+      for (const agent of heartbeatAgents) {
         const recentHeartbeat = count(
           `SELECT COUNT(*) as c FROM events
            WHERE event_type = 'handler.completed'
              AND json_valid(data)
              AND json_extract(data, '$.agent') = ?
-             AND json_extract(data, '$.handler') LIKE 'heartbeat-%'
+             AND json_extract(data, '$.handler') LIKE 'heartbeat%'
              AND timestamp > ?`,
           agent, now - 4 * 3600000);
         if (recentHeartbeat === 0) agentsWithoutHeartbeat++;
@@ -446,7 +456,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
       const mismatchCount = staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd + agentsWithoutHeartbeat;
       record("capability.status-reality-mismatch-count", mismatchCount,
-        configuredAgents.length + staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd);
+        heartbeatAgents.length + staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd);
 
       // ── Reconciliation: emit session.end for orphaned terminal sessions ──
       if (terminalSessionsWithoutEnd > 0) {
