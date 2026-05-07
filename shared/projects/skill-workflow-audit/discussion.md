@@ -19,3 +19,5 @@ you need to carefully design the metric to reflect the real usage by agents! dep
 **Unblock assessment**: This project hit the 50-iteration safety cap with ALL 18/18 milestones complete and ALL 4 metrics at/above target. It's blocked by EXP-455 (zombie dispatch loop in master-worker.ts — DONE is not a valid orchestrator decision). The project is substantively **complete**. No further work needed. Status should be `closed`.
 
 **Action taken**: Escalated to tech-lead (EXP-455 P0, 2026-05-02). Workaround: project should be manually set to `closed` status.
+
+---read @plan---
