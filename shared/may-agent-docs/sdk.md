@@ -7,6 +7,7 @@ The canonical interface between agent code (handlers, workflows, gym) and the sy
 ```typescript
 interface AgentSDK {
   runAgent(agent: string, task: string, opts?: RunOpts): Promise<TaskResult>;
+  forkAgent(agent: string, task: string, opts?: RunOpts): string;
   runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult>;
   createLLMSession(opts: SessionOpts): Promise<SessionHandle>;
   emit(type: string, data?: Record<string, unknown>): void;
@@ -18,7 +19,7 @@ interface AgentSDK {
 }
 ```
 
-8 methods + 1 property. That's the entire capability surface.
+9 methods + 1 property. That's the entire capability surface.
 
 ## How Handlers Get It
 
@@ -38,6 +39,7 @@ export const create = (ctx: HandlerContext, entry: CronEntry) => {
 | Method | Does what |
 |--------|-----------|
 | `runAgent(agent, task)` | Run a named agent and wait for its result. |
+| `forkAgent(agent, task)` | Start an agent in the background. Returns sessionId immediately (non-blocking). |
 | `runWorkflow(name, task)` | Run a multi-step workflow and wait for completion. Workflows are synchronous by design. |
 | `createLLMSession(opts)` | Reserved. Currently throws `createLLMSession not yet implemented`. |
 | `emit(type, data)` | Emit a typed event (persisted to events table). |
@@ -69,7 +71,7 @@ The SDK and agent tools are two sides of the same coin:
 | Agent thinks | Agent tool | SDK method |
 |---|---|---|
 | "Ask bob and wait for the answer" | `agents.call("bob", task)` | `await sdk.runAgent("bob", task)` |
-| "Start bob in the background" | `agents.fork("bob", task)` | No `AgentSDK` method today; handlers can use `ctx.manager.runAgent(...)` when they intentionally need a background session. |
+| "Start bob in the background" | `agents.fork("bob", task)` | `sdk.forkAgent("bob", task)` |
 | "Something happened" | — | `sdk.emit("metric.breach", {...})` |
 | "Tell humans" | Telegram/human message | `sdk.message("human", msg)` |
 | "Tell bob" | `message({ to: "bob", content })` | `sdk.message("bob", msg)` |
@@ -85,15 +87,16 @@ The SDK and agent tools are two sides of the same coin:
 ## Design Rationale
 
 The SDK is the **canonical layer** for handlers and workflows. Agent tools share
-the same manager/bus internals, but not every tool action has a one-to-one SDK
-method yet.
+the same manager/bus internals. Every agent tool action has a corresponding SDK method.
 
 ```
 SDK (canonical)
   ├── Agent tools use same internals (agents.call → callAgent, agents.fork → runAgent)
-  ├── Handlers call it       (await ctx.sdk.runAgent)
-  ├── Workflows call it      (await ctx.sdk.runAgent)
+  ├── Handlers call it       (ctx.sdk.runAgent, ctx.sdk.forkAgent)
+  ├── Workflows call it      (ctx.sdk.runAgent)
   └── Tests call it          (adapter.runAgent)
 ```
 
 **Litmus test:** if a new feature can't be expressed from both sides (tool AND SDK), the abstraction is wrong.
+
+**Rule:** Handlers should use `ctx.sdk`, never `ctx.manager` directly. The manager is an implementation detail.

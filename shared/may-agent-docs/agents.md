@@ -15,8 +15,7 @@
 const result = await sdk.runAgent("tech-lead", task);
 
 // fork (async — starts independent session, returns immediately)
-// Agent sessions use the LLM-facing agents.fork tool.
-// Handler code that intentionally needs background execution can use ctx.manager.runAgent(...).
+const sessionId = sdk.forkAgent("tech-lead", task);
 
 // message (async notification — delivered at next heartbeat)
 sdk.message("bob", "Review this design");

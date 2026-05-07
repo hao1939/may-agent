@@ -61,3 +61,23 @@ The DB is the queryable index. Disk is the source of truth for message history.
 - **Manager:** `src/lib/manager.ts` — spawns/manages sessions
 - **DB writes:** `src/lib/db-writer.ts` — persists session events
 - **Queries:** `src/lib/requests.ts` → `upsertSession()`, `updateSessionDb()`
+
+## Design Decisions
+
+### autoClose is internal
+
+`autoClose` controls filesystem persistence (archive session dir to `history/` vs keep in-place).
+It's an internal detail of the persistence layer, not a user-facing concept:
+- Chat sessions use `autoClose: "never"` → dir stays in `sessions/` so they survive restarts
+- Job/call sessions use `autoClose: "immediate"` → dir moves to `sessions/history/` on completion
+
+Callers don't set it directly — it's derived from `kind`. Eventually, when we move to
+pure-SQLite session tracking, `autoClose` disappears entirely.
+
+### kind is metadata
+
+`kind` ("chat" | "job" | "call") is a query/observability tag. It does not drive session
+lifecycle — `autoClose` does that internally. The only behavioral branch on `kind`:
+`chat-session.ts` finds the existing chat session by `kind === "chat"`.
+
+Heartbeats are `job` kind sessions — there's no separate "heartbeat" kind.
