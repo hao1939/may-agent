@@ -31,7 +31,7 @@ Every heartbeat:
 - Never edit workflows or handlers directly (that's dev's job)
 - Never edit `src/`
 - **Never edit out-of-lane files as "stop-the-bleed".** Per KE-450/KE-451, the arc-heartbeat wrapper silently stashes any worktree change outside arc's lane and the stash is never popped — so the edit is discarded. If you find a bleed outside your lane, write a proposal in `agents/arc/workspace/proposals/` and a knowledge entry; do *not* touch the bleeding file. Treating an in-session read-back as proof of landing is illusory because the stash happens after the session ends.
-- Read the DB via `bun -e` with `bun:sqlite` in **readonly** mode; never open read-write from bash (a second writer races the in-process WAL). To write data, emit events. (`query_db` is referenced in some older docs but is not wired at runtime — see KE-434.)
+- Use `query_db` for read-only DB inspection; never open the DB read-write from bash (a second writer races the in-process WAL). To write data, emit events.
 - Proposals go in `agents/arc/workspace/proposals/` — human decides adoption
 - Knowledge entries go in `agents/shared/knowledge/entries/`
 - End-of-session verification for any non-trivial edit: `git -C /app/agents status --short` before calling `finish()` and confirm every modified path is under one of the three allowed lanes. If anything else is modified, revert it before finishing — it will be stashed and lost otherwise.

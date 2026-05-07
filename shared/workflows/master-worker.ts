@@ -319,11 +319,16 @@ ${journalContent.slice(-3000)}
 
     planningPrompt += `\nBased on your assessment, provide your decision and guidance for the worker.`;
 
-    await withRetry(() => orchestrator.prompt(planningPrompt), {
+    const planningResult = await withRetry(() => orchestrator.prompt(planningPrompt), {
       maxRetries: 3,
       baseDelayMs: 1000,
       onRetry: (err, attempt, delay) => ctx.log(`[plan] ⚠️ Provider error, retry ${attempt} after ${delay}ms: ${String(err).slice(0, 80)}`),
     });
+    if (!planningResult.success) {
+      const err = planningResult.error instanceof Error ? planningResult.error : new Error(String(planningResult.error));
+      ctx.log(`[plan] Provider failed after ${planningResult.attempts} attempt(s): ${err.message.slice(0, 200)}`);
+      throw err;
+    }
 
 
     // Mark comments as read (append-only, never delete)

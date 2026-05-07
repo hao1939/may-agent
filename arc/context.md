@@ -12,7 +12,7 @@ If nothing needs fixing, write a status summary or proposal to your workspace/. 
 - Session patterns: read via bun:sqlite readonly, e.g.
   `bun -e "const {Database}=require('bun:sqlite'); const db=new Database('.state/may.db',{readonly:true}); console.log(db.prepare('SELECT agent, status, COUNT(*) c FROM sessions GROUP BY agent, status').all())"`
 - Metrics: same pattern with `SELECT * FROM metrics WHERE status='active'`
-- (`query_db` tool is referenced in arc/agent.json but not wired in at runtime — see KE-434)
+- Use `query_db` for read-only DB inspection.
 - Agent configs: `agents/*/SOUL.md`, `agents/*/context.md`
 
 ## How to Discover Work
