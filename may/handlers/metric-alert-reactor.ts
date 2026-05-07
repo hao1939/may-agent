@@ -2,10 +2,10 @@
  * metric-alert-reactor — Handler that reacts to metric.breach events.
  *
  * Listens on: metric.breach
- * Action: Forks the owning agent for P0/P1 breaches. Lower-priority breaches
- * stay visible through metric alert context and are handled on heartbeat.
+ * Action: Forks the owning agent for P0 breaches. Lower-priority breaches stay
+ * visible through metric alert context and the closed-loop steward cron.
  *
- * This keeps important issues auditable while preserving heartbeat-based
+ * This keeps important issues auditable while preserving metric-context-based
  * handling for low-priority metric drift.
  *
  * Dedup: skips if the owner already has a metric-alert session for this
@@ -91,8 +91,8 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
     let owner = resolveMetricOwner(metricId, configuredAgents, eventOwner);
     let priority = eventPriority ?? "P2";
 
-    // P0/P1 alerts get an explicit owner session so handling is auditable.
-    // P2/P3 remain visible in heartbeat context through the unresolved row.
+    // P0 alerts get an explicit owner session so handling is auditable.
+    // P1/P2/P3 remain visible in metric context through the unresolved row.
     try {
       const db = ctx.sdk.getDb();
       const metricRow = db.prepare(
@@ -105,8 +105,8 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
       ).get(metricId) as { priority?: string; explicitOwner?: string | null; projectOwner?: string | null } | null;
       priority = metricRow?.priority ?? priority;
       if (metricRow) owner = resolveMetricOwner(metricId, configuredAgents, metricRow.explicitOwner, metricRow.projectOwner);
-      if (priority !== "P0" && priority !== "P1") {
-        ctx.sdk.log("info", `[metric-alert-reactor] Deferring ${metricId} (${priority}) to heartbeat context.`);
+      if (priority !== "P0") {
+        ctx.sdk.log("info", `[metric-alert-reactor] Deferring ${metricId} (${priority}) to metric context.`);
         return;
       }
 
@@ -121,11 +121,11 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
         return;
       }
     } catch {
-      if (priority !== "P0" && priority !== "P1") {
-        ctx.sdk.log("info", `[metric-alert-reactor] Deferring ${metricId} (${priority}) to heartbeat context.`);
+      if (priority !== "P0") {
+        ctx.sdk.log("info", `[metric-alert-reactor] Deferring ${metricId} (${priority}) to metric context.`);
         return;
       }
-      // DB unavailable for dedup — proceed for explicit P0/P1 events.
+      // DB unavailable for dedup — proceed for explicit P0 events.
     }
 
     const task = [

@@ -291,11 +291,27 @@
     "type": "job",
     "handler": "metric-alert-reactor",
     "enabled": true,
-    "description": "React to P0/P1 metric breaches by forking the owning agent with a remediation task. Lower-priority alerts stay visible in heartbeat context. Polls unresolved alerts every 5min.",
+    "description": "React to P0 metric breaches by forking the owning agent with a remediation task. P1/P2/P3 alerts stay visible in metric context for the closed-loop steward. Polls unresolved alerts every 5min.",
     "intervalMs": 300000,
     "on": [
       "metric.breach"
     ]
+  },
+  {
+    "name": "closed-loop-steward",
+    "type": "job",
+    "handler": "closed-loop-steward",
+    "agent": "may",
+    "enabled": true,
+    "intervalMs": 600000,
+    "message": "[cron:closed-loop-steward] Audit whether red metrics and failed deliveries are moving toward closure.",
+    "description": "May-owned closed-loop audit. Handler builds live context from open metric alerts, failed deliveries, and owner activity. Frequency can be tuned independently from heartbeat.",
+    "handlerConfig": {
+      "lookbackMs": 21600000,
+      "alertLimit": 12,
+      "deliveryFailureLimit": 12
+    },
+    "offsetMs": 120000
   },
   {
     "name": "session-recovery",
