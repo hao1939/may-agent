@@ -1,6 +1,17 @@
 # May Heartbeat Log — Latest
 
-**Timestamp:** 2026-05-07 18:49 UTC
+**Timestamp:** 2026-05-07 21:17 UTC
+
+## Quick Status
+- System healthy: 100% success rate, 19 sessions/hr
+- 61 active sessions (many stale)
+- Handler fires/hr: 66 (target 15) - elevated
+- v2 spec coverage: 13.6% ⚠️ (target 100%)
+- Low-quality sessions: 18.6% (target 10%)
+
+---
+
+## Previous: 2026-05-07 18:49 UTC
 
 ## System Snapshot
 - **Success rate**: 100% (30 sessions/hr)
