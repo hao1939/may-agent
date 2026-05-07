@@ -127,6 +127,12 @@ Legacy `.state/evaluations/` directory check: newest mtime still 2026-04-29; `ta
 
 Action recommendation: **escalate to May/tech-lead** — evaluation pipeline is not keeping up (or is stalled). If event-consumer backlog hypothesis is still active, inspect `eval-poller` timeouts and any recent `handler.failed` related to metrics schema mismatch.
 
+**Last run**: 2026-05-07 00:53Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617`; `MAX(sessions.startedAt)=1778115160780` → eval lag ≈486.4m (~8.1h). Last-24h volume: `sessions(startedAt>=cutoff)`=752 vs `evaluations(createdAt>=cutoff)`=39 → coverage ≈5.2%.
+
+Interpretation: evaluations stopped updating after 2026-05-06T16:46Z while sessions continued. This is now beyond the “pipeline behind” band and looks like a **stalled eval pipeline** (likely eval-poller timeouts / handler liveness issue).
+
+Action recommendation: **escalate to May/tech-lead** to inspect eval-poller runtime health + event consumer throughput; consider temporarily reducing eval scope (or increasing time budget) to regain liveness.
+
 **Last run**: 2026-05-06 23:26Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617` (still); `MAX(sessions.endedAt)=1778111590563` → eval lag ≈7.12h. Last-24h volume (approx): `sessions_last24h=796` vs `evaluations_last24h=40` → coverage ≈5.0%.
 
 Interpretation: evaluator pipeline appears **stalled** or running too infrequently relative to current session volume. Legacy `.state/evaluations/` directory still contains some newer `s_*.json` (mtime 2026-04-29) but that is not the canonical signal.
