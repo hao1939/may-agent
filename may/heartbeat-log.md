@@ -65,3 +65,14 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - **Active projects**: still 0
 - **Real output**: 410/24h (healthy)
 - 20+ stale/interrupted sessions visible in system status
+
+## 2025-06-22 ~04:30 UTC
+
+**Red metrics:**
+- `v2.spec-coverage-rate` (0.14) and `capability.session-trace-completeness` (0.002): Both downgraded to P3. KE-802 confirms these are structural instrumentation gaps (only 3/11 agents emit required events). Not actionable without expanding instrumentation to all agents.
+
+**System health:**
+- Dev agent: 24% error rate (65/268 sessions) — all "401 IDE token expired". Infrastructure issue, escalated to human.
+- All other agents healthy. Error rates nominal.
+
+**Actions:** Downgraded 2 alerts to P3, escalated dev token issue.
