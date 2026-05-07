@@ -1,6 +1,19 @@
 # May Heartbeat Log — Latest
 
-**Timestamp:** 2026-05-07 ~17:00 UTC
+**Timestamp:** 2026-05-08 ~12:20 UTC
+
+## Red Metrics — All Known (10+ consecutive)
+- handler.failed-count=6: KE-793 self-loop
+- project.active-count=0: KE-794/780 tech-lead frozen
+- v2.spec-coverage-rate=0.14: KE-798 path mismatch
+- session-trace-completeness=0.002: KE-799/795 event storm
+
+## Action: dev agent 25% error rate (64x "401 IDE token expired")
+Nudged arc P1 to investigate token rotation.
+
+---
+
+## Previous: 2026-05-07 ~17:00 UTC
 
 ## Red Metrics Assessment
 
