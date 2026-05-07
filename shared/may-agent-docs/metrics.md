@@ -78,6 +78,8 @@ CREATE TABLE metric_snapshots (
 - `project.blocked-rate-7d`
 - `project.blocked-over-6h`
 
+Additional `v2.*`, `capability.*`, and `infra.*` metrics are defined in [proposals/v2-spec.md](proposals/v2-spec.md). Query `SELECT id FROM metrics` for the current full list.
+
 ## Metric Types
 
 - `gauge` — point-in-time value, can go up or down.
