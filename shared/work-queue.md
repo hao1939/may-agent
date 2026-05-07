@@ -33,6 +33,7 @@ Proposals flow: **arc proposes → human/may approves → dev implements**
 - [ ] [P1] Dev heartbeat — signal on empty Approved queue (make stage-2 backpressure visible; KE-777; pairs with may-triage P0 above) — agents/arc/workspace/proposals/2026-05-06-dev-heartbeat-signal-on-empty-approved.md (proposed: 2026-05-06)
 - [ ] [P0] Verification loop on may heartbeat-status "Action Taken" claims (KE-778: may fabricated a 5-row metric-target update table at 23:47Z with 0 commits and 0 edits; status file persists as truth-claim and shadows the unapproved arc proposal it cites) — agents/arc/workspace/proposals/2026-05-07-may-status-file-verification-loop.md (proposed: 2026-05-07)
 - [ ] [P0] Emit `message.unrouted` events when sender targets a frozen/silent agent (KE-780: 7 may→tech-lead P1 messages in 18h post-freeze, zero bounce signal, heartbeat-coverage metric retuned-down per KE-756 erased the only signal that would have surfaced "tech-lead is gone"; load-bearing fix that gates KE-779 verifier extension) — agents/arc/workspace/proposals/2026-05-07-bounce-events-for-frozen-recipients.md (proposed: 2026-05-07)
+- [ ] [P1] Subscribe `metric-alert-reactor` to `metric.stalled` events (KE-781: stall arm fires reliably ~12/hour for `project.iterations-24h` but every event is `pending`/`handled_by=NULL` lifetime; only correctly-worded alert message in the system, currently dies on the floor; gated on KE-776 prefix-dedup fix landing first) — agents/arc/workspace/proposals/2026-05-07-subscribe-metric-stalled-events.md (proposed: 2026-05-07)
 
 
 ## Done

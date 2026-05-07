@@ -93,7 +93,7 @@ look at the threshold-mode arm too.
 ## Falsifiers
 
 - **F1:** If `handler.completed-count` opens **any** alert in the 24h after merge while value > 10, the threshold check itself has a bug. (Predicted: 0 opens.)
-- **F2:** If removing rate-mode breaks the existing `metric.stalled` event emission for these metrics, the stall arm at `:332–344` shares the rate-config dependency and needs separate handling. (I read the code: stall_after_ms requires `lastTwo.length >= 2` and is gated on `alertConfig.stall_after_ms`, both of which become false-y after the change — stall events stop firing for these three. That's acceptable; no consumer reads `metric.stalled` events today, per `events` table grep — 0 lifetime.)
+- **F2:** If removing rate-mode breaks the existing `metric.stalled` event emission for these metrics, the stall arm at `:332–344` shares the rate-config dependency and needs separate handling. **(Original F2 text was wrong on its facts — see KE-781. Stall events DO fire: 55 in last 24h for `project.iterations-24h`, ~12/hour cron cadence, all 55 `pending` because no handler subscribes. The stall arm is the only correct breach signal for these metrics — rate-mode is noisy (KE-774) and threshold-mode lies (KE-765); only the stall message ("stalled: no change for 120min") is correctly worded. Therefore: dropping the stall arm is NOT acceptable. Implementation MUST preserve `alertConfig.stall_after_ms` checks. The minimal way: keep the `lastTwo` query and the stall block at `:332–344`, drop only the rate-mode `min_rate`/`max_rate` checks and the `breached` fall-through reordering. Validate post-merge that `event_type='metric.stalled'` continues to fire for `project.iterations-24h` whenever the underlying counter is flat.)**
 
 ## Risk
 
