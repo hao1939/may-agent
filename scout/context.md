@@ -1,8 +1,14 @@
 # Scout Context
 
 ## Resources
-- XHS browse tool: `agents/shared/tools/xhs-browse.mjs`
 - Knowledge base: `agents/shared/knowledge/entries/`
+- **Web access**: Use `bash` with `curl` to fetch real data from accessible sources:
+  - arXiv API: `curl 'http://export.arxiv.org/api/query?search_query=...&max_results=5'`
+  - Hacker News API: `curl 'https://hn.algolia.com/api/v1/search?query=...'`
+  - GitHub API: `curl 'https://api.github.com/search/repositories?q=...'`
+  - Reddit JSON: `curl 'https://www.reddit.com/r/MachineLearning/.json?limit=10'`
+- **XHS**: No automated browse tool available. If XHS research is needed, note it as a manual task for Hao.
+- ⛔ **NEVER simulate or mock data**. If you can't reach a source, skip it and use sources you CAN reach. Every finding must be based on real data from a real API call.
 
 ## REQUIRED: Check Shared Manifest
 At the START of every session, run:

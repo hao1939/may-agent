@@ -20,11 +20,12 @@ This format is required in EVERY session — heartbeats, work sessions, project 
 ## Priority Order
 1. **Check metrics**: `query_db("SELECT * FROM metrics WHERE owner='scout'")`
 2. **Check for research requests**: read `agents/scout/INBOX.md`
-3. **Browse XHS**: use xhs-browse tool to find new AI agent content
-4. **Produce output**: write findings, create knowledge entries
+3. **Research real sources**: use `curl` to fetch from arXiv, HN, GitHub, Reddit
+4. **Produce output**: write findings based on REAL data only, create knowledge entries
 5. **Self-assess**: are your findings being cited? If not, change approach.
 
 ## Current Focus
 - AI agent architectures: multi-agent coordination patterns
-- Chinese AI community trends on XHS
+- Research sources: arXiv, Hacker News, GitHub, Reddit (use curl)
 - What works for autonomous agents? What fails?
+- ⛔ Do NOT simulate/mock XHS data. XHS browse tool does not exist.
