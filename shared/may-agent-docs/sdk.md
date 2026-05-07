@@ -8,7 +8,6 @@ The canonical interface between agent code (handlers, workflows, gym) and the sy
 interface AgentSDK {
   runAgent(agent: string, task: string, opts?: RunOpts): Promise<TaskResult>;
   runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult>;
-  createLLMSession(opts: SessionOpts): Promise<SessionHandle>;
   emit(type: string, data?: Record<string, unknown>): void;
   getDb(): Database;
   log(level: "info" | "warn" | "error", msg: string): void;
@@ -18,7 +17,9 @@ interface AgentSDK {
 }
 ```
 
-8 methods + 1 property. That's the entire capability surface.
+7 methods + 1 property. That's the entire capability surface.
+
+> **Reserved:** `createLLMSession(opts)` is defined in the interface but not yet implemented. It will provide direct LLM access for handlers that need non-agent LLM calls.
 
 ## How Handlers Get It
 
@@ -39,7 +40,6 @@ export const create = (ctx: HandlerContext, entry: CronEntry) => {
 |--------|-----------|
 | `runAgent(agent, task)` | Run a named agent and wait for its result. |
 | `runWorkflow(name, task)` | Run a multi-step workflow and wait for completion. Workflows are synchronous by design. |
-| `createLLMSession(opts)` | Reserved — not yet implemented. |
 | `emit(type, data)` | Emit a typed event (persisted to events table). |
 | `getDb()` | Access the shared SQLite database. |
 | `log(level, msg)` | Log a diagnostic message. |

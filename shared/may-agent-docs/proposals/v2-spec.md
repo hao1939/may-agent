@@ -113,10 +113,10 @@ A second metric `capability.unrecovered-breach-count-7d` counts breaches with no
 
 **Target / threshold.** Target ≥ 0.7. Threshold < 0.4 = breach.
 
-**Status.** `violated` — `agent.decision` event doesn't exist yet (see S7 below). Without it, the metric has no signal.
+**Status.** `partial` — `agent.decision` event exists but emission coverage is low (see S7). Once coverage improves, the rate can be computed by text-matching on decision strings against journal entries.
 
 **Known gaps.**
-- Blocked on `agent.decision` event. Once that lands, the rate can be computed by simple text-matching on decision strings against journal entries.
+- Improve `agent.decision` emission coverage (S7). Once that's consistent, add the `journal-reference-rate` metric.
 
 ---
 
