@@ -357,6 +357,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
          WHERE s.agent NOT IN ('evaluator', 'judge')
            AND COALESCE(s.endedAt, s.startedAt) > ?
            AND COALESCE(s.endedAt, s.startedAt) <= ?
+           AND COALESCE(s.error, '') != 'Clean start (fresh)'
            AND (s.status IN ('error', 'interrupted') OR s.error IS NOT NULL)`,
         threeH, sevenMinutesAgo,
       );
@@ -367,6 +368,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
          WHERE s.agent NOT IN ('evaluator', 'judge')
            AND COALESCE(s.endedAt, s.startedAt) > ?
            AND COALESCE(s.endedAt, s.startedAt) <= ?
+           AND COALESCE(s.error, '') != 'Clean start (fresh)'
            AND (s.status IN ('error', 'interrupted') OR s.error IS NOT NULL)
            AND e.verdict = 'needs_improvement'`,
         threeH, sevenMinutesAgo,
