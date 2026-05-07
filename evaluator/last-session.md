@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778166854682_15
+- **Session:** s_1778166843819_14
 - **Status:** success
-- **When:** 2026-05-07T15:16:14.960Z
+- **When:** 2026-05-07T15:16:51.770Z
 
 ## What Happened
-Calibrated metric `session.failed-triage-rate-3h` because investigation shows it is currently mismeasured (it reports low triage despite all recent bad sessions having error/outcome). Updated threshold/target to reduce false P1 alerts until metric definition is fixed.
+Created aftermath review for dev session s_1778162075206_0; escalated that the session appears to have auto-closed immediately (`autoClose: immediate`) and ended interrupted with `error='Clean start (fresh)'` before producing a fix or notes.
 
-## Completed
-- Calibrate metric session.failed-triage-rate-3h threshold/target to match observed data quality
+## Files Modified
+- agents/evaluator/workspace/aftermath/s_1778162075206_0.md
