@@ -33,7 +33,14 @@ vi.mock("../workflows/output-validator.ts", () => ({
 }));
 
 vi.mock("../workflows/provider-retry.ts", () => ({
-  withRetry: vi.fn((fn: () => any) => fn()),
+  withRetry: vi.fn(async (fn: () => any) => {
+    try {
+      const value = await fn();
+      return { success: true, value, attempts: 1, totalDelayMs: 0 };
+    } catch (error) {
+      return { success: false, error, attempts: 1, totalDelayMs: 0 };
+    }
+  }),
   isRetryableError: vi.fn(() => false),
 }));
 
