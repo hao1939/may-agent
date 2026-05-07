@@ -1,11 +1,10 @@
 # Agent Cooperation
 
-## Three Calling Patterns
+## Calling Patterns
 
 | Action | Behavior | When to use |
 |--------|----------|-------------|
 | `call` | Sync — blocks, returns result | Need the result to continue |
-| `fork` | Async — returns immediately | Parallel work, stay responsive |
 | `message` | Fire-and-forget — inbox pickup | Background, not time-sensitive |
 
 ## SDK And Handler Equivalents
@@ -13,6 +12,12 @@
 ```typescript
 // call (sync — blocks until child finishes)
 const result = await sdk.runAgent("tech-lead", task);
+
+// parallel calls
+const [coder, qa] = await Promise.all([
+  sdk.runAgent("coder", task),
+  sdk.runAgent("qa", review),
+]);
 
 // message (async notification — delivered at next heartbeat)
 sdk.message("bob", "Review this design");
@@ -27,37 +32,29 @@ call creates children under the same root:
   Root (May heartbeat)
     ├── call("tech-lead", task)         ← child (blocks)
     │     └── call("coder", task)       ← grandchild
-    └── call("qa", review)              ← child
-
-fork creates a new root:
-
-  Root A → fork("tech-lead", big-task)  ← returns sessionId
-  Root B (independent tree)
-    └── call("coder", subtask)
+    └── call("qa", review)             ← child
 ```
 
 ## Context Passing
 
 - **call:** child sees parent's task + context. Result flows back.
-- **fork:** new root, carries `originSessionId` link. Read-only access to origin.
 - **message:** no session until picked up. Agent sees it in heartbeat inbox.
 
 ## When to Use What
 
 | Situation | Pattern |
 |-----------|---------|
-| Need answer before continuing | `call` |
-| Dispatch work, don't wait | `fork` |
-| FYI notification | `message` |
+| Need answer before continuing | `sdk.runAgent()` |
 | Multiple agents in parallel | `Promise.all([sdk.runAgent(...), ...])` |
-| Background task | `fork` + check session status later |
+| FYI notification | `sdk.message()` |
+| Run a multi-step flow | `sdk.runWorkflow()` |
 
 ## Result Structure
 
 ```typescript
 interface TaskResult {
   sessionId: string;
-  status: string;          // "done" | "error" | "blocked"
+  status: string;          // "done" | "error" | "interrupted"
   lastAssistantText: string;
 }
 ```
