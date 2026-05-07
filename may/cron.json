@@ -283,8 +283,7 @@
     "description": "Detect projects needing attention, run project workflow. Event triggers provide immediate reaction; timer is backup scan.",
     "on": [
       "project.completed",
-      "project.blocked",
-      "metric.breach"
+      "project.blocked"
     ]
   },
   {
@@ -292,8 +291,11 @@
     "type": "job",
     "handler": "metric-alert-reactor",
     "enabled": true,
-    "description": "React to P0 metric breaches by forking the owning agent with a remediation task. Lower-priority alerts stay visible in heartbeat context. Polls unresolved alerts every 5min.",
-    "intervalMs": 300000
+    "description": "React to P0/P1 metric breaches by forking the owning agent with a remediation task. Lower-priority alerts stay visible in heartbeat context. Polls unresolved alerts every 5min.",
+    "intervalMs": 300000,
+    "on": [
+      "metric.breach"
+    ]
   },
   {
     "name": "session-recovery",
