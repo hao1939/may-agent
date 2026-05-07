@@ -1,14 +1,12 @@
 /**
- * Agents tool — extracted from manager.ts for maintainability (P5).
+ * Agents tool — lets agents cooperate: call, fork, context, list, peek, cancel, requests.
  *
- * Provides the 'agents' tool that lets agents cooperate: call, send, list,
- * peek, and cancel other agents. All functions are standalone and take their
- * dependencies as parameters (same pattern as manager-retry.ts).
+ * Takes manager dependencies as parameters to avoid circular imports.
  */
 
 import type { AgentMessage, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type, StringEnum } from "@mariozechner/pi-ai";
-import type { ActiveSession, RegisteredAgent } from "./manager-utils.js";
+import type { RegisteredAgent } from "./manager-utils.js";
 import type { SessionInfo, TaskResult } from "./types.js";
 import type { PersistedSession } from "./persistence.js";
 import { getDb } from "./requests.js";
@@ -19,7 +17,7 @@ import { getDb } from "./requests.js";
 
 export interface AgentsToolManagerDeps {
   agents: Map<string, RegisteredAgent>;
-  activeSessions: Map<string, ActiveSession>;
+  activeSessions: Map<string, { parentSessionId?: string; originSessionId?: string; workflowRunId?: string }>;
   callAgent(
     agentName: string,
     task: string,

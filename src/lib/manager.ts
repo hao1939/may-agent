@@ -12,9 +12,7 @@
 
 import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentTool, AgentMessage } from "@mariozechner/pi-agent-core";
-import type { Model } from "@mariozechner/pi-ai";
-import { mkdirSync, writeFileSync, unlinkSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync } from "node:fs";
 import {
   generateId,
   extractLastAssistantText,
@@ -23,12 +21,10 @@ import {
 import { composeGuards, type BeforeToolCallHook } from "./tools/compose-guards.js";
 import {
   ensureSessionDir,
-  sessionDir,
   appendSessionMessage,
   sessionOutputDir,
   readSessionMessages,
 } from "./persistence.js";
-import { extractFinishParams } from "./manager-retry.js";
 import type { EventBus } from "../app/event-bus.js";
 import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
 import type { SessionKind } from "./persistence.js";
@@ -36,8 +32,7 @@ import { log } from "./log.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
 
 // Re-export utilities that other modules import from manager
-export { generateId, formatDuration, truncateForPrompt, computeToolArgsKey, isToolError, getAgentDir, INFRA_RETRY_MAX } from "./manager-utils.js";
-export { extractFinishParams } from "./manager-retry.js";
+export { generateId, formatDuration, truncateForPrompt } from "./manager-utils.js";
 export { classifyError } from "./classify-error.js";
 export type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
 export type { RegisteredAgent } from "./manager-utils.js";
@@ -71,6 +66,7 @@ interface ActiveSession {
   kind: SessionKind;
   autoClose: "immediate" | "never";
   parentSessionId?: string;
+  originSessionId?: string;
   workflowRunId?: string;
   stepLabel?: string;
   timeoutTimer?: ReturnType<typeof setTimeout>;
@@ -88,6 +84,50 @@ export interface SubagentManagerOptions {
   apiGate?: any;
   /** @deprecated v2 doesn't use infraRetryMax — pi-agent-core handles retries */
   infraRetryMax?: number;
+}
+
+// ── Finish extraction ────────────────────────────────────────────────
+
+/** Extract the params from the last finish() tool call, if any. */
+function extractFinishParams(messages: any[]): {
+  status: string;
+  summary: string;
+  blockers?: { reason: string; context: string }[];
+  deliverables?: { path: string; description: string }[];
+  next_steps?: string;
+  completed_items?: string[];
+  new_items?: string[];
+  lessons?: { category: string; content: string }[];
+  verification_evidence?: string[];
+  context_updates?: { action: string; content: string }[];
+} | null {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    if (msg.role === "assistant" && Array.isArray(msg.content)) {
+      for (const block of msg.content) {
+        if (block?.type === "toolCall" && block.name === "finish" && block.args) {
+          try {
+            const args = typeof block.args === "string" ? JSON.parse(block.args) : block.args;
+            return {
+              status: args.status,
+              summary: args.summary,
+              blockers: args.blockers,
+              deliverables: args.deliverables,
+              next_steps: args.next_steps,
+              completed_items: args.completed_items,
+              new_items: args.new_items,
+              lessons: args.lessons,
+              verification_evidence: args.verification_evidence,
+              context_updates: args.context_updates,
+            };
+          } catch {
+            return null;
+          }
+        }
+      }
+    }
+  }
+  return null;
 }
 
 // ── SubagentManager (v2 implementation) ──────────────────────────────
@@ -152,7 +192,6 @@ export class SubagentManager {
     // Setup persistence
     ensureSessionDir(this._persistDir, sessionId);
     mkdirSync(sessionOutputDir(this._persistDir, sessionId), { recursive: true });
-    try { writeFileSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"), new Date().toISOString()); } catch {}
 
     // Create Agent
     const guards = this.buildGuards(def);
@@ -179,6 +218,7 @@ export class SubagentManager {
       sessionId, agent, agentName: name, task, startedAt,
       status: "running", kind, autoClose,
       parentSessionId: opts?.parentSessionId,
+      originSessionId: opts?.originSessionId,
       workflowRunId: opts?.workflowRunId,
       stepLabel: opts?.stepLabel,
       toolCalls: 0, turnCount: 0,
@@ -471,9 +511,6 @@ export class SubagentManager {
       : "done";
     const lastText = finishParams?.summary ?? extractLastAssistantText(messages) ?? "";
     const durationMs = Date.now() - startedAt;
-
-    // Remove sentinel
-    try { unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]")); } catch {}
 
     // Emit session.end
     if (this.bus) {
