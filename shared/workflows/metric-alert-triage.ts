@@ -14,6 +14,7 @@ const OPERATIONS = new Set([
   "document_exception",
   "waiting_with_evidence",
 ]);
+const OPERATION_LIST = [...OPERATIONS];
 
 type Trigger = {
   type?: string;
@@ -51,9 +52,33 @@ function numberOrNull(value: unknown): number | null {
   return null;
 }
 
-function parseOperation(text: string): { operation: string | null; evidence: string; nextValidationAt: number | null } {
-  const operation = text.match(/METRIC_ALERT_OPERATION:\s*([a-zA-Z0-9_-]+)/)?.[1]?.trim() ?? null;
-  const evidence = text.match(/METRIC_ALERT_EVIDENCE:\s*([^\n]+)/)?.[1]?.trim() ?? "";
+function finishResultText(result: TaskResult): string {
+  const finish = result.finishResult as Record<string, unknown> | undefined;
+  const parts = [
+    result.lastAssistantText ?? "",
+    typeof finish?.summary === "string" ? finish.summary : "",
+    Array.isArray(finish?.verification_evidence) ? finish.verification_evidence.join("\n") : "",
+    finish ? JSON.stringify(finish) : "",
+  ].filter(Boolean);
+  return parts.join("\n");
+}
+
+function extractEvidence(text: string, result?: TaskResult): string {
+  const explicit = text.match(/METRIC_ALERT_EVIDENCE:\s*([^\n]+)/)?.[1]?.trim();
+  if (explicit) return explicit;
+  const finish = result?.finishResult as Record<string, unknown> | undefined;
+  const summary = typeof finish?.summary === "string" ? finish.summary.trim() : "";
+  const evidence = Array.isArray(finish?.verification_evidence)
+    ? finish.verification_evidence.map(String).filter(Boolean).join("; ")
+    : "";
+  return evidence || summary;
+}
+
+function parseOperation(text: string, result?: TaskResult): { operation: string | null; evidence: string; nextValidationAt: number | null } {
+  const explicitOperation = text.match(/METRIC_ALERT_OPERATION:\s*([a-zA-Z0-9_-]+)/)?.[1]?.trim() ?? null;
+  const exactOperation = OPERATION_LIST.find((operation) => new RegExp(`\\b${operation}\\b`).test(text)) ?? null;
+  const operation = explicitOperation ?? exactOperation;
+  const evidence = extractEvidence(text, result);
   const validation = text.match(/METRIC_ALERT_NEXT_VALIDATION:\s*([^\n]+)/)?.[1]?.trim() ?? "";
   const parsedValidation = Date.parse(validation);
   return {
@@ -85,6 +110,7 @@ function buildOwnerTask(ctx: AlertContext): string {
     "- waiting_with_evidence",
     "",
     "Investigation alone is not a final operation.",
+    "If you use finish(), put the exact operation token in the finish summary, for example: `Choosing upgrade_or_escalate because ...`.",
     "",
     "## Alert",
     JSON.stringify(ctx.alert, null, 2),
@@ -194,7 +220,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     });
   }
 
-  const parsed = parseOperation(String(ownerResult.lastAssistantText ?? ""));
+  const ownerResultText = finishResultText(ownerResult);
+  const parsed = parseOperation(ownerResultText, ownerResult);
   if (!parsed.operation || !OPERATIONS.has(parsed.operation)) {
     notifyTriageEscalation(ctx, metricId, "owner did not produce a valid METRIC_ALERT_OPERATION", {
       owner: alertContext.owner,
