@@ -1,10 +1,10 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778121899530_240
+- **Session:** s_1778123700604_247
 - **Status:** done
-- **When:** 2026-05-07T02:52:24.275Z
-- **Duration:** 7m24s
+- **When:** 2026-05-07T03:24:05.883Z
+- **Duration:** 9m5s
 
 ## What Happened
-Both files verified intact. Edits took effect; KE-782 written cleanly; appendix refreshed with all new rows present.
+Clean. Single new file in `shared/knowledge/entries/` (in arc's lane). No assume-unchanged/skip-worktree files. Done.
