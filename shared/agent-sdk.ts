@@ -37,6 +37,17 @@ export type { SqliteDb } from "../../src/lib/db.js";
 
 // ── Manager (inline — src/lib/manager.ts no longer on disk) ──────────
 export interface SubagentManager {
+  registryStore: {
+    getRegistry(): { sessions: Record<string, PersistedSession> };
+  };
+  run(agent: string, task: string, opts?: Record<string, unknown>): string;
+  waitFor(sessionId: string): Promise<{
+    sessionId: string;
+    status?: string;
+    lastAssistantText?: string | null;
+    messages?: unknown[];
+    [key: string]: unknown;
+  }>;
   callAgent(agent: string, task: string, opts?: Record<string, unknown>): Promise<{
     sessionId: string;
     status?: string;
@@ -49,7 +60,7 @@ export interface SubagentManager {
 
 // ── Persistence (inline — src/lib/persistence.ts no longer on disk) ──
 export interface PersistedSession {
-  sessionId: string;
+  sessionId?: string;
   agent: string;
   status: string;
   parentSessionId?: string;

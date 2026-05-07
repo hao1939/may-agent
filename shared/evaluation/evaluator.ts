@@ -407,7 +407,7 @@ export function findUnevaluatedChildren(
     children.push({
       sessionId,
       agent: session.agent,
-      task: session.task,
+      task: session.task ?? "",
       status: session.status,
       messages,
     });
