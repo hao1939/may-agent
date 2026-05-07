@@ -340,7 +340,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       // `running` sessions makes the rate look healthier while work is still
       // underway and can hide short auth/API failure bursts.
       const total = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ? AND status IN ('done','error','interrupted')", sixH);
-      const err = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ? AND status IN ('error','interrupted')", sixH);
+      const err = count(
+        `SELECT COUNT(*) as c
+         FROM sessions
+         WHERE startedAt > ?
+           AND (status = 'error' OR (status = 'interrupted' AND COALESCE(error, '') != 'Clean start (fresh)'))`,
+        sixH,
+      );
       record("session.error-rate-6h", total > 0 ? parseFloat((err / total).toFixed(4)) : 0, total);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring session.error-rate-6h: ${e}`); }
 
