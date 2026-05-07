@@ -49,11 +49,11 @@ This is not a one-off doc cleanup. It is a tracking project whose first slice is
 - [x] Add `context.read` event for heartbeat context loaded before the decision.
 - [x] Add `capability.session-trace-completeness`.
 
-### Phase 3 — Visibility UI
+### Phase 3 — Visibility Output (Revised)
 
-- [ ] Add a liveness view: heartbeat timeline plus recent decisions.
-- [ ] Add a session trace view: trigger -> read -> decide -> act -> record.
-- [ ] Add a spec conformance view generated from live metrics.
+- [ ] Create a script `agents/shared/scripts/conformance-report.ts` that queries the DB and generates a static HTML report showing: heartbeat timeline, session traces, and spec conformance metrics.
+- [ ] The report is viewable by opening the HTML file directly (no server needed).
+- [ ] Wire the report generation into the metrics-snapshot handler so it regenerates on each heartbeat cycle.
 
 ## References
 
