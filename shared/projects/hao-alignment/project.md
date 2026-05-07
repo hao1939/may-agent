@@ -20,7 +20,7 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 ## Metric
 **Correction rate** = `rejections / (decisions + rejections)` per interaction window.
 
-- **Baseline**: ~1% (1 correction in ~115 decisions, from manual review)
+- **Baseline**: 0.9% (6 corrections in 656 unique inputs, from full corpus analysis 2026-05-07)
 - **Target**: < 10% correction rate (already met — infrastructure in maintenance mode)
 - **Leading indicator**: autonomous decisions Hao doesn't undo
 
@@ -108,3 +108,4 @@ Hao says: "you need to review metrics and explore more resources to investigate"
 - 2026-07-02: All active work complete. Status → waiting. No worker dispatch needed until next Hao interaction or quarterly git re-scan (Oct 2026).
 - 2026-05-03: **Re-activated**. Mined 9 new Hao inputs (May 1-3). Extracted P11-P16 (never coast, learning loop, prove before adopt, create projects, consult team, honest assessment). The previous "WAITING" status was itself a P11 violation. Phase 6 opened for propagation work.
 - 2026-05-06: Phase 6 propagation complete. P11-P16 added to all 4 agent context files. Preference-check-gate updated with P11/P14 stop conditions. Correction measurement: still 1 session/0 corrections (data-starved). Remaining: validate no-coast behavior operationally.
+- 2026-05-07: Phase 7 started (Hao-directed). Mined full corpus (699 inputs). Extracted P17-P21. Confirmed 74K sessions are agent ops, not unmined Hao data. Correction rate from full history: 0.9% (6/656). Created phase7-corpus-scan.md.
