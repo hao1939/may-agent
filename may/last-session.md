@@ -1,12 +1,9 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778166254641_9
+- **Session:** s_1778165615726_5
 - **Status:** success
-- **When:** 2026-05-07T15:06:14.088Z
+- **When:** 2026-05-07T15:06:45.249Z
 
 ## What Happened
-Fixed root cause of status-reality-mismatch metric breach. Changed stale-metrics detection window from 15min to 2h in metrics-snapshot.ts since heartbeat-measured metrics run on ~30min cycles. Resolved alert.
-
-## Files Modified
-- agents/may/handlers/metrics-snapshot.ts
+The evaluator-aftermath workflow error was already fixed in a prior session (commit 3924f7989). Root cause: `runWorkflow()` resolves workflows from the calling agent's dir and `shared/workflows/` only — may's handlers couldn't find evaluator's agent-specific workflow. The fix copied `evaluator-aftermath.ts` to `shared/workflows/`. DB queries confirm both handlers are now completing successfully with no errors.
