@@ -7,18 +7,18 @@ import type { CronEntry } from "../../shared/agent-sdk.ts";
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
   const config = entry.handlerConfig as { workflow: string; agent: string; task: string } | undefined;
   if (!config?.workflow || !config?.agent || !config?.task) {
-    return async () => { ctx.log(`[run-workflow:${entry.name}] handlerConfig must include: workflow, agent, task`); };
+    return async () => { ctx.sdk.log("info", `[run-workflow:${entry.name}] handlerConfig must include: workflow, agent, task`); };
   }
 
   return async () => {
     const { workflow, agent, task } = config;
-    ctx.log(`[run-workflow:${entry.name}] Dispatching workflow "${workflow}" for ${agent}...`);
+    ctx.sdk.log("info", `[run-workflow:${entry.name}] Dispatching workflow "${workflow}" for ${agent}...`);
 
     try {
       const result = await ctx.sdk.runWorkflow(workflow, task, { source: agent });
-      ctx.log(`[run-workflow:${entry.name}] Workflow "${workflow}" → ${result.status}`);
+      ctx.sdk.log("info", `[run-workflow:${entry.name}] Workflow "${workflow}" → ${result.status}`);
     } catch (err: any) {
-      ctx.log(`[run-workflow:${entry.name}] Workflow "${workflow}" error: ${err.message?.slice(0, 200)}`);
+      ctx.sdk.log("info", `[run-workflow:${entry.name}] Workflow "${workflow}" error: ${err.message?.slice(0, 200)}`);
     }
   };
 };

@@ -47,10 +47,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       }
     } catch { /* best-effort — classifier failure falls through to escalate */ }
 
-    ctx.log(`[escalation] decision=${action} source=${source} session=${sessionId} agent=${agent} status=${fp.status}`);
+    ctx.sdk.log("info", `[escalation] decision=${action} source=${source} session=${sessionId} agent=${agent} status=${fp.status}`);
 
     if (action === "escalate") {
-      ctx.escalate(agent, `${fp.status}: ${fp.summary ?? "unknown"}`);
+      ctx.sdk.escalate(agent, `${fp.status}: ${fp.summary ?? "unknown"}`);
     }
     // "nothing" / other → session ended cleanly enough, no escalation needed
   };

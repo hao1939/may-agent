@@ -37,10 +37,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     try {
       await ctx.sdk.runAgent("evaluator", task, { source: "session-eval" });
-      ctx.log(`[eval] Evaluated session ${sessionId} (agent: ${agent})`);
+      ctx.sdk.log("info", `[eval] Evaluated session ${sessionId} (agent: ${agent})`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      ctx.log(`[eval] Evaluation failed for ${sessionId}: ${msg}`);
+      ctx.sdk.log("info", `[eval] Evaluation failed for ${sessionId}: ${msg}`);
     }
   };
 };

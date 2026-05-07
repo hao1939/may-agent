@@ -105,7 +105,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       return;
     }
 
-    const state = loadState(ctx.persistDir);
+    const state = loadState(ctx.sdk.paths.persist);
     const processedSet = new Set(state.processedFiles);
     const now = Date.now();
 
@@ -119,7 +119,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       return;
     }
 
-    ctx.log(`[coaching-consumer] Processing ${files.length} new evaluation files`);
+    ctx.sdk.log("info", `[coaching-consumer] Processing ${files.length} new evaluation files`);
 
     // Collect per-agent scores across all new evals
     const agentScores: Record<string, FlaggedSession[]> = {};
@@ -228,17 +228,17 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           })),
         };
         writeFileSync(resolve(queueDir, filename), JSON.stringify(output, null, 2));
-        ctx.log(`[coaching-consumer] Wrote coaching recommendation for ${agent}: ${filename}`);
+        ctx.sdk.log("info", `[coaching-consumer] Wrote coaching recommendation for ${agent}: ${filename}`);
       }
 
-      ctx.log(`[coaching-consumer] Generated ${recommendations.length} recommendations for ${Object.keys(byAgent).length} agents`);
+      ctx.sdk.log("info", `[coaching-consumer] Generated ${recommendations.length} recommendations for ${Object.keys(byAgent).length} agents`);
     } else {
       ctx.log("[coaching-consumer] No threshold violations found");
     }
 
     // Save state
     state.lastRunAt = now;
-    saveState(ctx.persistDir, state);
+    saveState(ctx.sdk.paths.persist, state);
   };
 };
 

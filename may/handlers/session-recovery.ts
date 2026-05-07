@@ -55,7 +55,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       else action = "nothing";
     }
 
-    ctx.log(`[recovery] decision=${action} source=${source} session=${sessionId} agent=${agent}`);
+    ctx.sdk.log("info", `[recovery] decision=${action} source=${source} session=${sessionId} agent=${agent}`);
 
     // ── Act on the decision ──────────────────────────────────────────
     if (action === "resume" || action === "requeue") {
@@ -74,17 +74,17 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             what_happened: `Recovery requeue attempt ${attempts + 1}/${MAX_RECOVERY_ATTEMPTS} (${source}): ${(error ?? "unknown error").slice(0, 200)}`,
             details: { attempt: attempts + 1, maxAttempts: MAX_RECOVERY_ATTEMPTS, newSessionId, error: (error ?? "").slice(0, 300), decisionSource: source },
           }).catch(() => { /* best-effort */ });
-          ctx.log(`[recovery] Requeued ${agent} session ${sessionId} → ${newSessionId} (${source}, attempt ${attempts + 1}/${MAX_RECOVERY_ATTEMPTS})`);
+          ctx.sdk.log("info", `[recovery] Requeued ${agent} session ${sessionId} → ${newSessionId} (${source}, attempt ${attempts + 1}/${MAX_RECOVERY_ATTEMPTS})`);
         } catch (requeueErr) {
           const msg = requeueErr instanceof Error ? requeueErr.message : String(requeueErr);
-          ctx.log(`[recovery] Failed to requeue ${agent}: ${msg}`);
+          ctx.sdk.log("info", `[recovery] Failed to requeue ${agent}: ${msg}`);
         }
       } else {
-        ctx.log(`[recovery] ${agent} exhausted ${MAX_RECOVERY_ATTEMPTS} recovery attempts for task — escalating`);
-        ctx.escalate(agent, `exhausted ${MAX_RECOVERY_ATTEMPTS} recovery retries`);
+        ctx.sdk.log("info", `[recovery] ${agent} exhausted ${MAX_RECOVERY_ATTEMPTS} recovery attempts for task — escalating`);
+        ctx.sdk.escalate(agent, `exhausted ${MAX_RECOVERY_ATTEMPTS} recovery retries`);
       }
     } else if (action === "escalate") {
-      ctx.escalate(agent, `digest classifier recommended escalation for session ${sessionId}`);
+      ctx.sdk.escalate(agent, `digest classifier recommended escalation for session ${sessionId}`);
     }
     // "kill" and "nothing" → do nothing (session is dead or non-recoverable)
   };
