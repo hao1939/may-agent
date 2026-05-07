@@ -2,6 +2,9 @@
 
 ## 2025-01-07 — Session Note
 
-**Status**: Idle — no active tasks assigned.
+No active tasks assigned. Agent is idle and available for architecture review or design work.
 
-No pending architecture reviews or design tasks in queue. Ready for work when delegated.
+### Status
+- **Active tasks**: None
+- **Pending reviews**: None
+- **Blockers**: None
