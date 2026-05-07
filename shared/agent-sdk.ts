@@ -24,7 +24,6 @@ export type {
   HandlerContext,
   HandlerModule,
   TriggerEvent,
-  RuntimeCtx,
 } from "../../src/lib/handler-context.js";
 
 export type {
