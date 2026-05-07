@@ -261,6 +261,68 @@ describe("execute", () => {
     expect(ctx.done).toHaveBeenCalledWith(expect.stringContaining("waiting"));
   });
 
+  it("refuses DONE in planning when project.md still has unchecked tasks", async () => {
+    setupProjectFs({
+      maxIter: "1",
+      projectContent: `# Project
+**Status**: active
+**Max Iterations**: 1
+**Owner**: test
+
+## Goal
+Close the loop
+
+## Plan
+- [ ] Validate follow-up alert handling
+`,
+    });
+    const ctx = createMockCtx("project: agents/shared/projects/test");
+    let worker: ReturnType<typeof createMockSession> | undefined;
+    ctx.createSession = vi.fn(async ({ label }: any) => {
+      if (label === "orchestrator") {
+        return createMockSession([
+          "DONE\n\nEverything is complete",
+          "BLOCKED\n\nFollow-up still pending",
+        ]);
+      }
+      worker = createMockSession(["Checked pending work"]);
+      return worker;
+    });
+
+    await execute(ctx as any);
+
+    expect(ctx.log).toHaveBeenCalledWith(expect.stringContaining("DONE refused"));
+    expect(worker?.prompt).toHaveBeenCalledWith(expect.stringContaining("DONE refused"));
+    expect(updateProjectStatus).not.toHaveBeenCalledWith(expect.any(String), "closed", expect.any(String));
+  });
+
+  it("keeps project active when planning says DONE with no pending tasks", async () => {
+    setupProjectFs({
+      projectContent: `# Project
+**Status**: active
+**Max Iterations**: 1
+**Owner**: test
+
+## Goal
+Maintain the loop
+
+## Plan
+- [x] Validate current signal
+`,
+    });
+    const ctx = createMockCtx("project: agents/shared/projects/test");
+    ctx.createSession = vi.fn(async ({ label }: any) => {
+      if (label === "orchestrator") return createMockSession(["DONE\n\nNo immediate operation"]);
+      return createMockSession(["work"]);
+    });
+
+    await execute(ctx as any);
+
+    expect(updateProjectStatus).toHaveBeenCalledWith(expect.any(String), "active", undefined);
+    expect(updateProjectStatus).not.toHaveBeenCalledWith(expect.any(String), "closed", expect.anything());
+    expect(ctx.done).toHaveBeenCalledWith(expect.stringContaining("done"));
+  });
+
   it("treats unknown decision as CONTINUE in planning phase", async () => {
     setupProjectFs({ maxIter: "1" });
     const ctx = createMockCtx("project: agents/shared/projects/test");
@@ -296,6 +358,74 @@ describe("execute", () => {
     await execute(ctx as any);
     // Should have run up to 2 iterations
     expect(ctx.log).toHaveBeenCalledWith(expect.stringContaining("Iteration 1"));
+  });
+
+  it("refuses DONE in review when project.md still has unchecked tasks", async () => {
+    setupProjectFs({
+      maxIter: "2",
+      projectContent: `# Project
+**Status**: active
+**Max Iterations**: 2
+**Owner**: test
+
+## Goal
+Close the loop
+
+## Plan
+- [ ] Revalidate alert ownership
+`,
+    });
+    const ctx = createMockCtx("project: agents/shared/projects/test");
+    let worker: ReturnType<typeof createMockSession> | undefined;
+    ctx.createSession = vi.fn(async ({ label }: any) => {
+      if (label === "orchestrator") {
+        return createMockSession([
+          "CONTINUE\n\nInspect the pending item",
+          "DONE\n\nProject complete",
+          "BLOCKED\n\nPending item needs evidence",
+        ]);
+      }
+      worker = createMockSession(["Worker output"]);
+      return worker;
+    });
+
+    await execute(ctx as any);
+
+    expect(ctx.log).toHaveBeenCalledWith(expect.stringContaining("DONE refused"));
+    expect(worker?.prompt).toHaveBeenLastCalledWith(expect.stringContaining("DONE refused"));
+    expect(updateProjectStatus).not.toHaveBeenCalledWith(expect.any(String), "closed", expect.any(String), expect.any(Number));
+  });
+
+  it("keeps project active when review says DONE with no pending tasks", async () => {
+    setupProjectFs({
+      maxIter: "1",
+      projectContent: `# Project
+**Status**: active
+**Max Iterations**: 1
+**Owner**: test
+
+## Goal
+Maintain the loop
+
+## Plan
+- [x] Validate current signal
+`,
+    });
+    const ctx = createMockCtx("project: agents/shared/projects/test");
+    ctx.createSession = vi.fn(async ({ label }: any) => {
+      if (label === "orchestrator") {
+        return createMockSession([
+          "CONTINUE\n\nCheck current state",
+          "DONE\n\nNo immediate operation",
+        ]);
+      }
+      return createMockSession(["Worker output"]);
+    });
+
+    await execute(ctx as any);
+
+    expect(updateProjectStatus).toHaveBeenCalledWith(expect.any(String), "active", undefined, 1);
+    expect(updateProjectStatus).not.toHaveBeenCalledWith(expect.any(String), "closed", expect.anything(), expect.any(Number));
   });
 
 

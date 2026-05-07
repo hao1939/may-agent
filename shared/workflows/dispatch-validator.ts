@@ -8,6 +8,7 @@
 
 import { existsSync, readFileSync } from "fs";
 import { resolve, join } from "path";
+import { extractField } from "./project-helpers.ts";
 
 export interface ValidationResult {
   valid: boolean;
@@ -65,8 +66,7 @@ export function validateDispatch(
   // 4. Read project.md and check status
   try {
     const content = readFileSync(projectFile, "utf-8");
-    const statusMatch = content.match(/\*\*Status\*\*:\s*(\w+)/);
-    const status = statusMatch ? statusMatch[1].toLowerCase() : "unknown";
+    const status = (extractField(content, "Status") || "unknown").toLowerCase();
     result.status = status;
 
     const nonDispatchable = ["closed", "paused", "cancelled", "blocked", "waiting"];
@@ -76,20 +76,20 @@ export function validateDispatch(
     }
 
     // Check for stop reason
-    const stopMatch = content.match(/\*\*Stop Reason\*\*:\s*(.+)/);
-    if (stopMatch) {
-      result.warnings.push(`Project has stop reason: ${stopMatch[1].trim()}`);
+    const stopReason = extractField(content, "Stop Reason");
+    if (stopReason) {
+      result.warnings.push(`Project has stop reason: ${stopReason}`);
       // If there's a stop reason and status isn't active, don't dispatch
       if (status !== "active") {
         result.valid = false;
-        result.errors.push(`Project stopped: ${stopMatch[1].trim()}`);
+        result.errors.push(`Project stopped: ${stopReason}`);
       }
     }
 
     // Check iteration cap — hard block at 50 iterations
-    const iterMatch = content.match(/\*\*Iteration\*\*:\s*(\d+)/);
-    if (iterMatch) {
-      const iteration = parseInt(iterMatch[1]);
+    const iterationValue = extractField(content, "Iteration");
+    if (iterationValue) {
+      const iteration = parseInt(iterationValue);
       if (iteration >= 50) {
         result.valid = false;
         result.errors.push(`Project at iteration ${iteration} — exceeded safety cap of 50. Must be manually reviewed.`);

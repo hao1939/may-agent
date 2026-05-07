@@ -7,7 +7,7 @@
  * Project.md fields:
  *   **Workflow**: master-worker          (selects this workflow)
  *   **Max Iterations**: 5               (optional, default 5)
- *   **Status**: active/paused/cancelled/blocked/waiting/done
+ *   **Status**: active/paused/cancelled/blocked/waiting/closed
  *   **Owner**: bob
  *
  * Usage via CLI:
@@ -53,6 +53,37 @@ const DEFAULT_MAX_ITERATIONS = 50; // safety cap — workflow runs until done/bl
 interface Decision {
   status: "continue" | "pivot" | "waiting" | "blocked" | "done" | "unknown";
   detail: string;
+}
+
+function hasUncheckedTaskItems(content: string): boolean {
+  return /^\s*[-*+]\s+\[\s\]\s+\S/m.test(content);
+}
+
+function guardDoneWithPendingProjectWork(
+  decision: Decision,
+  projectFile: string,
+  ctx: WorkflowContext,
+  phase: "plan" | "review",
+): Decision {
+  if (decision.status !== "done") return decision;
+
+  let currentContent = "";
+  try {
+    currentContent = readFileSync(projectFile, "utf-8");
+  } catch {
+    return decision;
+  }
+
+  if (!hasUncheckedTaskItems(currentContent)) return decision;
+
+  const detail = [
+    "CONTINUE",
+    "",
+    "DONE refused: project.md still has unchecked task-list items.",
+    "Next iteration must resolve, explicitly re-plan, or mark those items blocked/waiting with evidence before idling this workflow pass.",
+  ].join("\n");
+  ctx.log(`[${phase}] DONE refused: project.md still has unchecked task-list items`);
+  return { status: "continue", detail };
 }
 
 function safeLastText(session: { lastText?: () => string } | null | undefined): string {
@@ -140,14 +171,16 @@ Bad metrics get gamed or ignored. If a metric doesn't drive real progress, redef
 Respond with one of these decisions as the VERY FIRST WORD:
 CONTINUE — guide the next iteration. If metrics are at target, raise them or find new problems.
 PIVOT — current approach isn't working, try something different.
-DONE — all plan items complete AND all metrics at target. Project is finished.
+DONE — this execution has no immediate next operation. The project remains active for future metric/event checks.
 BLOCKED — something external is broken that you cannot fix.
 WAITING — you need something specific from a human (approval, credentials, access). Say exactly what.
 
-Push forward on real goals. But recognize when a project is DONE:
-- If ALL plan items are checked off AND ALL metrics are at/above target → say DONE.
+Push forward on real goals. But recognize when this execution should stop:
+- If ALL plan items are checked off AND ALL metrics are at/above target → say DONE for this run.
+- If project.md still contains unchecked task-list items like "- [ ]", do not say DONE.
 - Do NOT invent new work (extra tests, tooling, docs) after goals are met. That's busywork.
 - Expanding scope requires explicit new goals from the project owner, not the orchestrator.
+- Do NOT close the project when saying DONE. Durable projects stay active so cron/event checks can maintain them.
 
 Example response format:
 CONTINUE
@@ -346,7 +379,12 @@ ${journalContent.slice(-3000)}
       } catch {}
     }
 
-    let decision = extractDecision(safeLastText(orchestrator));
+    let decision = guardDoneWithPendingProjectWork(
+      extractDecision(safeLastText(orchestrator)),
+      projectFile,
+      ctx,
+      "plan",
+    );
     ctx.log(`[plan] Decision: ${decision.status.toUpperCase()}`);
 
     // Treat "unknown" as CONTINUE for the planning phase — orchestrator gave guidance but didn't use the keyword
@@ -357,9 +395,9 @@ ${journalContent.slice(-3000)}
 
     if (decision.status !== "continue" && decision.status !== "pivot") {
       const stopReason = decision.detail.slice(0, 200);
-      // Workflow can set waiting, blocked, or done
+      // DONE ends this workflow pass but keeps the durable project active.
       const safeStatus = decision.status;
-      updateProjectStatus(projectFile, safeStatus === "done" ? "closed" : safeStatus, stopReason);
+      updateProjectStatus(projectFile, safeStatus === "done" ? "active" : safeStatus, safeStatus === "done" ? undefined : stopReason);
       return safeStatus === "blocked"
         ? ctx.escalate(stopReason)
         : ctx.done(`${safeStatus}: ${stopReason}`);
@@ -378,7 +416,7 @@ ${journalContent.slice(-3000)}
       ctx.log(`[work] Iteration ${iteration}/${maxIterations} starting...`);
       const iterationId = `iter-${iteration}`;
       iterationTimer.startIteration(iterationId);
-      const guidance = safeLastText(orchestrator);
+      const guidance = decision.detail || safeLastText(orchestrator);
 
       // Estimate task complexity and set appropriate timeout
       const complexity = estimateComplexity(guidance);
@@ -727,7 +765,12 @@ Then provide your decision and guidance for the next iteration.`;
       if (newComments) {
         try { appendFileSync(discussionFile, `\n---read @iter${iteration}---\n`, "utf-8"); } catch {}
       }
-      decision = extractDecision(orchestratorText);
+      decision = guardDoneWithPendingProjectWork(
+        extractDecision(orchestratorText),
+        projectFile,
+        ctx,
+        "review",
+      );
       if (decision.status === "unknown") {
         // Track consecutive unclear decisions — if the orchestrator can't decide,
         // the project likely has no more actionable work (zombie loop prevention)
@@ -790,10 +833,11 @@ Then provide your decision and guidance for the next iteration.`;
       stopReason = decision.detail.slice(0, 200);
     }
 
-    // Workflow can set waiting, blocked, or done/closed
+    // Workflow can set waiting/blocked, or end this pass as done while keeping
+    // the durable project active for future metric/event checks.
     // finalStatus is one of: continue/pivot/waiting/blocked/done/unknown
-    const projectStatus = finalStatus === "done" ? "closed" : finalStatus;
-    updateProjectStatus(projectFile, projectStatus, stopReason, iteration);
+    const projectStatus = finalStatus === "done" ? "active" : finalStatus;
+    updateProjectStatus(projectFile, projectStatus, finalStatus === "done" ? undefined : stopReason, iteration);
     ctx.log(`[done] ${finalStatus} after ${iteration} iteration(s). ${stopReason}`);
 
     if (finalStatus === "blocked") return ctx.escalate(stopReason);

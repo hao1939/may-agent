@@ -212,4 +212,37 @@ describe("updateProjectStatus", () => {
     const written = (writeFileSync as any).mock.calls[0][1];
     expect(written).toContain("**Iteration**: 5");
   });
+
+  it("reads fields from YAML frontmatter", () => {
+    const content = `---
+status: active
+owner: may
+iteration: 3
+---
+
+# Project
+`;
+    expect(extractField(content, "Status")).toBe("active");
+    expect(extractField(content, "Owner")).toBe("may");
+    expect(extractField(content, "Iteration")).toBe("3");
+  });
+
+  it("updates YAML frontmatter status and iteration", () => {
+    const content = `---
+id: test
+owner: may
+status: active
+iteration: 1
+---
+
+# Project
+`;
+    (readFileSync as any).mockReturnValue(content);
+
+    updateProjectStatus("/tmp/project.md", "blocked", "needs access", 2);
+    const written = (writeFileSync as any).mock.calls[0][1];
+    expect(written).toContain("status: blocked");
+    expect(written).toContain("stop_reason: needs access");
+    expect(written).toContain("iteration: 2");
+  });
 });
