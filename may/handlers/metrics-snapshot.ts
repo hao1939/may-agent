@@ -17,7 +17,7 @@ import { exec, execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.ts";
 import type { CronEntry } from "../../shared/agent-sdk.ts";
-import { listConfiguredAgents, resolveMetricOwner } from "../../shared/lib/metric-ownership.ts";
+import { listConfiguredAgents, listAutonomousAgents, resolveMetricOwner } from "../../shared/lib/metric-ownership.ts";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -430,8 +430,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
                AND json_extract(e.data, '$.sessionId') = s.sessionId
            )`, now - 24 * 3600000);
 
-      const configuredAgents = [...listConfiguredAgents(ctx.sdk.paths.agents)];
-      let agentsWithoutHeartbeat = 0;
+      const configuredAgents = [...listAutonomousAgents(ctx.sdk.paths.agents)];
       for (const agent of configuredAgents) {
         const recentHeartbeat = count(
           `SELECT COUNT(*) as c FROM events
