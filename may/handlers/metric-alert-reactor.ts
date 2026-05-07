@@ -149,7 +149,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
       `   bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db'); db.prepare(\\"UPDATE metric_alerts SET resolved_at = ${Date.now()} WHERE metric_id = '${metricId}' AND resolved_at IS NULL\\").run();"`,
       `7. **Document exception** — accepted breach with reason and review condition in metrics.blocker`,
       ``,
-      `Investigation alone is NOT sufficient. State the chosen operation and evidence in your final summary. The next metrics snapshot is the judge for whether the metric recovered.`,
+      `Investigation alone is NOT sufficient. State the chosen operation and evidence in your final summary. The next metrics snapshot is a validation signal; you remain responsible for judging whether the issue recovered.`,
     ].join("\n");
 
     try {
