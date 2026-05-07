@@ -11,9 +11,9 @@
  *   agents/<name>/workspace/   → workspace
  *   agents/<name>/workflows/   → workflowDir (if exists)
  *
- * System prompt is assembled from convention files:
- *   agents/<name>/SOUL.md, DOMAIN.md, TOOLS.md, LESSONS.md, knowledge/INDEX.md
- * No config-driven prompt injection — agent.json is purely operational.
+ * System prompt is assembled from:
+ *   agents/shared/common-sense.md + agents/<name>/AGENTS.md + generated runtime facts
+ * Domain files, skills, lessons, and knowledge indexes are read on demand.
  */
 
 import { readFileSync, existsSync, readdirSync } from "node:fs";
@@ -50,7 +50,7 @@ export interface AgentConfig {
   compaction?: boolean;
   /** Block direct delegation to specific agents via agents tool. */
   delegateDeny?: { agents: string[]; hint: string };
-  /** Additional context files to include in system prompt (relative to agent dir). */
+  /** @deprecated Volatile context should be injected at session time, not in system prompt. */
   context_files?: string[];
   /** Maximum state-changing operations (bash, write, edit, commit) per session. */
   /** Archetype to inherit from (e.g., "_archetypes/coder"). Resolved relative to agentsRoot. */
@@ -270,6 +270,7 @@ async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promis
         tools.push(
           createCronTool({
             configPath: cronPath,
+            agentName: config.name,
             onConfigChange: () => cron!.reload(),
             cronEnabled: opts.cronEnabled,
           }),
@@ -554,6 +555,7 @@ export async function loadAgents(opts: AgentLoaderOptions): Promise<LoadResult> 
       domain: config.domain,
       model,
       tools: await buildTools(config, opts),
+      agentDir,
       knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
       workspace: existsSync(workspace) ? workspace : undefined,
       projectRoot,
@@ -631,7 +633,6 @@ export function generateAutoHeartbeats(agentsRoot: string): CronEntry[] {
 
     generated.push({
       name: `heartbeat-${agentName}`,
-      type: "job",
       intervalMs: 1_800_000,
       agent: agentName,
       message: `[heartbeat] ${agentName} heartbeat (auto-generated).`,
@@ -719,6 +720,7 @@ export async function loadAgentHandlers(
         agentName,
         manager,
         callAgent: (agent, task, callOpts) => manager.callAgent(agent, task, callOpts) as any,
+        forkAgent: (agent, task, opts) => manager.runAgent(agent, task, { source: opts?.source }),
         triggerNow: (name) => cron.triggerNow(name),
       }),
     };
