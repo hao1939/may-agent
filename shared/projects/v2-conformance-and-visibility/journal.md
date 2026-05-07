@@ -77,3 +77,9 @@ Solidifying existing metrics loop:
 
 ### Iteration 3 — 2026-05-07T12:20:21.665Z
 **Worker**: 
+**Orchestrator**: DONE
+
+All plan items across all 4 phases are complete:
+- Phase 0: Spec honesty ✅
+- Phase 1: Computed conformance metrics (`v2.spec-coverage-rate`, `capability.status-reality-mismatch-count`, `v2.runtime-glue-loc`) ✅
+- Phase 2: Trace events (`agent.decision`, `context.read`) and `capability.session-t
