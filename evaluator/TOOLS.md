@@ -1,6 +1,6 @@
 <!-- SYNC:TOOLS_START -->
 ## Available Tools (auto-generated from agent.json)
-`read`, `write`, `edit`, `bash`, `cite-source`, `finish`
+`read`, `write`, `edit`, `bash`, `query_db`, `message`, `finish`
 <!-- SYNC:TOOLS_END -->
 
 # Tools — Evaluator
@@ -42,4 +42,3 @@ This skill compares recent success rates vs baseline to detect gradual degradati
 ### Detect P53 Drift (Compliance Audit)
 Run `node agents/evaluator/skills/detect-p53-drift.cjs`.
 Compares SHA256 hashes of all `SOUL.md` and `agent.json` files against `agents/bob/workspace/compliance-audit/snapshot.json`. Returns `{ passed, diffs, missing }`. Writes report to `agents/bob/workspace/compliance-audit/reports/` and posts status to `agents/shared/bulletin.md`.
-

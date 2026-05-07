@@ -11,7 +11,6 @@
 
 ## Agent Tool Allowlist (for evaluations)
 All agents have access to these system-level tools: read, write, edit, bash, agents, notify, workflow, checkpoint, system_status, finish.
-Individual agents may have additional tools (e.g., cite-source for evaluator).
 Do NOT penalize any agent for using tools in this list. `notify` and `agents` are standard communication tools.
 
 ## Evaluation Rules
