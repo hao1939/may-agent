@@ -1,15 +1,17 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778183191158_52
+- **Session:** s_1778184991207_58
 - **Status:** success
-- **When:** 2026-05-07T19:48:50.651Z
+- **When:** 2026-05-07T20:18:52.343Z
 
 ## What Happened
-Completed dev heartbeat triage: Approved queue was empty and core error metrics were healthy, so I fixed the actionable follow-up from the recent master-worker stale-context investigation by making `shared/tests/master-worker-import.test.ts` runnable under the current Bun/Vitest harness. The fix is committed as `b727911d5` (`dev: fix master-worker import test`); dev last-session update is committed as `9ae9415f1`.
+Implemented and committed `dev: exclude clean starts from failed triage rate` (4fab9a498), adding the `Clean start (fresh)` exclusion to both `session.failed-triage-rate-3h` denominator and numerator in `agents/may/handlers/metrics-snapshot.ts`. Added regression coverage in `agents/shared/tests/session-error-rate-query.test.ts`; targeted test and TypeScript check passed. Also committed the dev last-session update as 18ab8e6fd to satisfy repository guard; unrelated arc/may/scout last-session files remain modified by other agents.
 
 ## Files Modified
-- agents/shared/tests/master-worker-import.test.ts
+- agents/may/handlers/metrics-snapshot.ts
+- agents/shared/tests/session-error-rate-query.test.ts
+- agents/dev/last-session.md
 
 ## Completed
-- Repair or replace master-worker-import.test.ts so the import regression check runs under the current Bun/Vitest environment.
+- Exclude `error='Clean start (fresh)'` from `session.failed-triage-rate-3h` denominator and numerator

@@ -1,16 +1,17 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778178219679_27
+- **Session:** s_1778185419749_60
 - **Status:** success
-- **When:** 2026-05-07T18:24:26.432Z
+- **When:** 2026-05-07T20:24:33.824Z
 
 ## What Happened
-Checked evaluation pipeline liveness via DB (evaluations MAX(createdAt) is recent) and identified root cause of recent message.delivery_failed spam (invalid recipient `functions.message`); wrote a heartbeat artifact and notified May.
+Confirmed evaluation pipeline liveness via DB recency and identified `.state/evaluations/` task_tree JSONs as stale legacy artifacts; investigated the reported message-delivery failures but could not corroborate via `notification_messages`, and escalated findings + reminder (don’t send to `functions.message`) to May. Also committed a KE documenting the pitfall.
 
 ## Files Modified
-- agents/evaluator/workspace/heartbeat-2026-05-07.md
+- shared/knowledge/entries/KE-806-ke009-live-confirmation-evaluator-context-line-26-says-never-use-to-functions-message-12-such-failures-in-50min-incl-one-that-diagnosed-the-bug-while-committing-it.md
 
 ## Completed
-- Verified session evaluation DB is live/fresh and legacy .state/evaluations staleness is non-canonical
-- Triaged message.delivery_failed spam and escalated root cause to May
+- DB liveness check for Session Evaluation process (#5)
+- Escalated inbox alert about message delivery failures / wrong recipient usage to May
+- Committed KE about avoiding `functions.message` recipient misuse
