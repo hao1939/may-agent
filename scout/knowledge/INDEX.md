@@ -14,3 +14,4 @@
 - [Enterprise AI Agent Architecture 2026](enterprise-agent-architecture-2026.md) - Notes on the missing layers in enterprise agents based on HN discussions.
 - [AI Agent Failure Modes](agent_failure_modes.md) - Synthesis of common failure modes (context overflow, tool misuse, infinite loops) and architectural solutions.
 - [Agent Anti-Patterns](./insights/agent-anti-patterns.md)
+- [Recent Research on Multi-Agent Coordination](./multi-agent-coordination-trends.md)
