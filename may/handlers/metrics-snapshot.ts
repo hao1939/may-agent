@@ -419,6 +419,30 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const mismatchCount = staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd + agentsWithoutHeartbeat;
       record("capability.status-reality-mismatch-count", mismatchCount,
         configuredAgents.length + staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd);
+
+      // ── Reconciliation: emit session.end for orphaned terminal sessions ──
+      if (terminalSessionsWithoutEnd > 0) {
+        try {
+          const orphaned = db.prepare(
+            `SELECT s.sessionId, s.agent, s.status, s.endedAt
+             FROM sessions s
+             WHERE s.status IN ('done', 'error', 'interrupted')
+               AND s.startedAt > ?
+               AND NOT EXISTS (
+                 SELECT 1 FROM events e
+                 WHERE e.event_type = 'session.end'
+                   AND json_valid(e.data)
+                   AND json_extract(e.data, '$.sessionId') = s.sessionId
+               )
+             LIMIT 50`
+          ).all(now - 24 * 3600000) as Array<{ sessionId: string; agent: string; status: string; endedAt: number | null }>;
+          const insert = db.prepare("INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)");
+          for (const s of orphaned) {
+            insert.run("session.end", JSON.stringify({ sessionId: s.sessionId, agent: s.agent, status: s.status, reconciled: true }), s.endedAt || now);
+          }
+          if (orphaned.length > 0) ctx.log(`[metrics-snapshot] Reconciled ${orphaned.length} orphaned session.end events`);
+        } catch (reconErr) { /* best-effort reconciliation */ }
+      }
     } catch (e) { ctx.log(`[metrics-snapshot] Error measuring status-reality mismatch: ${e}`); }
 
     // ── Generic metrics (source_query / source_command) ──────────────
