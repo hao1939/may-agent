@@ -1,6 +1,6 @@
 <!-- SYNC:TOOLS_START -->
 ## Available Tools (auto-generated from agent.json)
-`read`, `write`, `edit`, `bash`, `scrape_webpage`, `cite-source`, `finish`
+`read`, `write`, `edit`, `bash`, `scrape`, `finish`
 <!-- SYNC:TOOLS_END -->
 
 # Tools

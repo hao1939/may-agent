@@ -78,7 +78,7 @@ describe("loadMetrics", () => {
     const ctx = makeMockCtx({
       db: makeMockDb({
         metrics: [
-          { id: "bob.coverage", current: 80, target: 70, threshold: 60, alert_op: "<", source_query: null, source_command: null },
+          { id: "bob.coverage", explicitOwner: "bob", projectOwner: null, current: 80, target: 70, threshold: 60, alert_op: "<", source_query: null, source_command: null },
         ],
       }),
     });
@@ -93,7 +93,7 @@ describe("loadMetrics", () => {
     const ctx = makeMockCtx({
       db: makeMockDb({
         metrics: [
-          { id: "bob.uptime", current: 50, target: 90, threshold: 70, alert_op: "<", source_query: "SELECT 1", source_command: null },
+          { id: "bob.uptime", explicitOwner: "bob", projectOwner: null, current: 50, target: 90, threshold: 70, alert_op: "<", source_query: "SELECT 1", source_command: null },
         ],
         metric_snapshots: [],
       }),
@@ -107,7 +107,7 @@ describe("loadMetrics", () => {
     const ctx = makeMockCtx({
       db: makeMockDb({
         metrics: [
-          { id: "bob.errors", current: 100, target: 10, threshold: 50, alert_op: ">", source_command: "echo hi", source_query: null },
+          { id: "bob.errors", explicitOwner: "bob", projectOwner: null, current: 100, target: 10, threshold: 50, alert_op: ">", source_command: "echo hi", source_query: null },
         ],
         metric_snapshots: [],
       }),
@@ -121,7 +121,7 @@ describe("loadMetrics", () => {
     const ctx = makeMockCtx({
       db: makeMockDb({
         metrics: [
-          { id: "bob.speed", current: 30, target: 90, threshold: 60, alert_op: "<", source_query: null, source_command: null },
+          { id: "bob.speed", explicitOwner: "bob", projectOwner: null, current: 30, target: 90, threshold: 60, alert_op: "<", source_query: null, source_command: null },
         ],
         metric_snapshots: [{ value: 30 }, { value: 40 }, { value: 50 }], // all below 60
       }),
@@ -151,10 +151,13 @@ describe("loadProjects", () => {
     const tmpDir = mkdtempSync(join(tmpdir(), "hb-test-"));
     const projDir = join(tmpDir, "shared", "projects", "my-proj");
     mkdirSync(projDir, { recursive: true });
-    writeFileSync(join(projDir, "project.md"), `# My Project
-**Owner**: bob
-**Status**: active
-**Health**: 🟢
+    writeFileSync(join(projDir, "project.md"), `---
+owner: bob
+status: active
+health: green
+---
+
+# My Project
 
 - [x] Step 1
 - [ ] Step 2
@@ -170,9 +173,12 @@ describe("loadProjects", () => {
     const tmpDir = mkdtempSync(join(tmpdir(), "hb-test-"));
     const projDir = join(tmpDir, "shared", "projects", "done-proj");
     mkdirSync(projDir, { recursive: true });
-    writeFileSync(join(projDir, "project.md"), `# Done
-**Owner**: bob
-**Status**: done
+    writeFileSync(join(projDir, "project.md"), `---
+owner: bob
+status: done
+---
+
+# Done
 `);
     const ctx = makeMockCtx({ agentsRoot: tmpDir });
     expect(loadProjects(ctx, "bob")).toBe("");
@@ -182,9 +188,12 @@ describe("loadProjects", () => {
     const tmpDir = mkdtempSync(join(tmpdir(), "hb-test-"));
     const projDir = join(tmpDir, "shared", "projects", "other-proj");
     mkdirSync(projDir, { recursive: true });
-    writeFileSync(join(projDir, "project.md"), `# Other
-**Owner**: amy
-**Status**: active
+    writeFileSync(join(projDir, "project.md"), `---
+owner: amy
+status: active
+---
+
+# Other
 `);
     const ctx = makeMockCtx({ agentsRoot: tmpDir });
     expect(loadProjects(ctx, "bob")).toBe("");
@@ -213,7 +222,7 @@ describe("loadAlerts", () => {
         return {
           all() {
             if (sql.includes("metric_alerts")) {
-              return [{ metric_id: "bob.speed", severity: "high", message: "Speed too low" }];
+              return [{ metric_id: "bob.speed", message: "Speed too low", explicitOwner: "bob", projectOwner: null }];
             }
             return [];
           },
@@ -330,7 +339,7 @@ describe("formatMetricsBlock", () => {
     const ctx = makeMockCtx({
       db: makeMockDb({
         metrics: [
-          { id: "bob.x", current: 90, target: 80, threshold: 70, alert_op: "<", source_query: null, source_command: null },
+          { id: "bob.x", explicitOwner: "bob", projectOwner: null, current: 90, target: 80, threshold: 70, alert_op: "<", source_query: null, source_command: null },
         ],
       }),
     });
@@ -342,7 +351,7 @@ describe("formatMetricsBlock", () => {
     const ctx = makeMockCtx({
       db: makeMockDb({
         metrics: [
-          { id: "bob.x", current: 30, target: 80, threshold: 50, alert_op: "<", source_query: null, source_command: null },
+          { id: "bob.x", explicitOwner: "bob", projectOwner: null, current: 30, target: 80, threshold: 50, alert_op: "<", source_query: null, source_command: null },
         ],
         metric_snapshots: [],
       }),
@@ -422,7 +431,7 @@ describe("runRedMetricCommands", () => {
     const ctx = makeMockCtx({
       db: makeMockDb({
         metrics: [
-          { id: "bob.x", current: 90, target: 80, threshold: 70, alert_op: "<", source_command: null, source_query: null },
+          { id: "bob.x", explicitOwner: "bob", projectOwner: null, current: 90, target: 80, threshold: 70, alert_op: "<", source_command: null, source_query: null },
         ],
       }),
     });
@@ -433,7 +442,7 @@ describe("runRedMetricCommands", () => {
     const ctx = makeMockCtx({
       db: makeMockDb({
         metrics: [
-          { id: "bob.x", current: 30, target: 80, threshold: 50, alert_op: "<", source_command: "echo diagnostic-output", source_query: null },
+          { id: "bob.x", explicitOwner: "bob", projectOwner: null, current: 30, target: 80, threshold: 50, alert_op: "<", source_command: "echo diagnostic-output", source_query: null },
         ],
       }),
     });
@@ -447,7 +456,7 @@ describe("runRedMetricCommands", () => {
     const ctx = makeMockCtx({
       db: makeMockDb({
         metrics: [
-          { id: "bob.x", current: 30, target: 80, threshold: 50, alert_op: "<", source_command: "exit 1", source_query: null },
+          { id: "bob.x", explicitOwner: "bob", projectOwner: null, current: 30, target: 80, threshold: 50, alert_op: "<", source_command: "exit 1", source_query: null },
         ],
       }),
     });
@@ -459,7 +468,7 @@ describe("runRedMetricCommands", () => {
     const ctx = makeMockCtx({
       db: makeMockDb({
         metrics: [
-          { id: "bob.x", current: 30, target: 80, threshold: 50, alert_op: "<", source_command: null, source_query: null },
+          { id: "bob.x", explicitOwner: "bob", projectOwner: null, current: 30, target: 80, threshold: 50, alert_op: "<", source_command: null, source_query: null },
         ],
       }),
     });

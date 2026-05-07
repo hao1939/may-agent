@@ -306,12 +306,42 @@
     "intervalMs": 86400000
   },
   {
-    "name": "session-eval",
+    "name": "evaluator-aftermath",
     "type": "job",
-    "handler": "session-eval",
+    "handler": "run-workflow",
+    "agent": "evaluator",
     "enabled": true,
-    "on": "session.completed",
-    "description": "Auto-evaluate completed sessions by calling the evaluator agent."
+    "on": [
+      "session.completed"
+    ],
+    "description": "Run evaluator aftermath workflow when a session ends.",
+    "handlerConfig": {
+      "workflow": "evaluator-aftermath",
+      "agent": "evaluator",
+      "task": "Evaluate the completed session, produce metrics/evaluation signal, fix obvious low-risk root causes, escalate when blocked, and capture reusable learning.",
+      "includeEvent": true,
+      "timeoutMs": 900000
+    }
+  },
+  {
+    "name": "session-aftermath-scan",
+    "type": "job",
+    "handler": "session-aftermath-scan",
+    "agent": "evaluator",
+    "enabled": true,
+    "intervalMs": 420000,
+    "on": [
+      "trigger.session-aftermath-scan"
+    ],
+    "description": "Every 7 minutes, evaluate terminal sessions missed by the completion event; skip sessions ended less than 7 minutes ago.",
+    "handlerConfig": {
+      "workflow": "evaluator-aftermath",
+      "agent": "evaluator",
+      "backfillHours": 3,
+      "fallbackDelayMs": 420000,
+      "limit": 4,
+      "timeoutMs": 900000
+    }
   },
   {
     "name": "escalation",

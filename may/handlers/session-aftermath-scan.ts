@@ -1,0 +1,98 @@
+/**
+ * session-aftermath-scan — 7-minute fallback for evaluator aftermath.
+ *
+ * Normal session completion is handled by the `session.completed` event. This
+ * cron job is only the safety net: every 7 minutes it evaluates terminal
+ * sessions that still have no evaluation and ended at least 7 minutes ago.
+ */
+
+import type { CronEntry, HandlerContext, HandlerModule } from "../../shared/agent-sdk.ts";
+
+type ScanConfig = {
+  workflow?: string;
+  agent?: string;
+  backfillHours?: number;
+  fallbackDelayMs?: number;
+  limit?: number;
+};
+
+type Candidate = {
+  sessionId: string;
+  agent: string;
+  status: string;
+};
+
+const DEFAULT_WORKFLOW = "evaluator-aftermath";
+const DEFAULT_AGENT = "evaluator";
+const DEFAULT_BACKFILL_HOURS = 3;
+const DEFAULT_FALLBACK_DELAY_MS = 7 * 60_000;
+const DEFAULT_LIMIT = 4;
+
+function taskFor(candidate: Candidate): string {
+  const trigger = {
+    type: "session.completed.backfill",
+    source: "timer",
+    entry: "session-aftermath-scan",
+    data: {
+      mode: "completed",
+      sessionId: candidate.sessionId,
+      agent: candidate.agent,
+      status: candidate.status,
+    },
+    timestamp: Date.now(),
+  };
+
+  return [
+    `Run evaluator aftermath for session ${candidate.sessionId}.`,
+    "",
+    "## Trigger Event",
+    "```json",
+    JSON.stringify(trigger, null, 2),
+    "```",
+  ].join("\n");
+}
+
+export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
+  const config = (entry.handlerConfig ?? {}) as ScanConfig;
+  const workflow = config.workflow ?? DEFAULT_WORKFLOW;
+  const agent = config.agent ?? DEFAULT_AGENT;
+  const backfillHours = config.backfillHours ?? DEFAULT_BACKFILL_HOURS;
+  const fallbackDelayMs = config.fallbackDelayMs ?? DEFAULT_FALLBACK_DELAY_MS;
+  const limit = config.limit ?? DEFAULT_LIMIT;
+
+  return async () => {
+    const db = ctx.sdk.getDb();
+    const now = Date.now();
+    const cutoff = now - backfillHours * 60 * 60_000;
+    const fallbackCutoff = now - fallbackDelayMs;
+
+    const candidates = db.prepare(
+      `SELECT s.sessionId, s.agent, s.status
+       FROM sessions s
+       LEFT JOIN evaluations e ON e.sessionId = s.sessionId
+       WHERE s.status IN ('done', 'error', 'interrupted')
+         AND s.agent NOT IN ('evaluator', 'judge')
+         AND COALESCE(s.endedAt, s.startedAt) >= ?
+         AND COALESCE(s.endedAt, s.startedAt) <= ?
+         AND e.sessionId IS NULL
+       ORDER BY COALESCE(s.endedAt, s.startedAt) DESC
+       LIMIT ?`,
+    ).all(cutoff, fallbackCutoff, limit) as Candidate[];
+
+    if (candidates.length === 0) {
+      ctx.sdk.log("info", "[session-aftermath-scan] No unevaluated sessions older than fallback delay.");
+      return;
+    }
+
+    ctx.sdk.log("info", `[session-aftermath-scan] Dispatching ${candidates.length} session(s).`);
+    for (const candidate of candidates) {
+      try {
+        const result = await ctx.sdk.runWorkflow(workflow, taskFor(candidate), { source: agent });
+        ctx.sdk.log("info", `[session-aftermath-scan] ${candidate.sessionId} -> ${result.status}`);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        ctx.sdk.log("info", `[session-aftermath-scan] ${candidate.sessionId} failed: ${msg.slice(0, 200)}`);
+      }
+    }
+  };
+};

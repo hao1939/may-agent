@@ -19,15 +19,15 @@ describe("updateField", () => {
   it("replaces an existing field value", () => {
     const md = "# Project\n**Status**: active\n**Owner**: bob";
     const result = updateField(md, "Status", "blocked");
-    expect(result).toContain("**Status**: blocked");
-    expect(result).toContain("**Owner**: bob");
+    expect(result).toContain("status: blocked");
+    expect(result).toContain("# Project");
   });
 
   it("adds field after first line if not present", () => {
     const md = "# Project\nSome text";
     const result = updateField(md, "Status", "active");
     const lines = result.split("\n");
-    expect(lines[1]).toBe("**Status**: active");
+    expect(lines[1]).toBe("status: active");
   });
 });
 

@@ -96,33 +96,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.done(`Session ${sessionId} already evaluated (${evaluation.verdict}).`);
   }
 
-  const projectRoot = String(ctx.projectRoot ?? "/app");
-  const persistDir = String((ctx as any).persistDir ?? join(projectRoot, ".state"));
-  const transcriptPath = existsSync(join(persistDir, "sessions", sessionId, "session.jsonl"))
-    ? join(persistDir, "sessions", sessionId, "session.jsonl")
-    : join(persistDir, "sessions", "history", sessionId, "session.jsonl");
-  const artifactPath = `agents/evaluator/workspace/aftermath/${sessionId}.md`;
-  mkdirSync(join(projectRoot, "agents/evaluator/workspace/aftermath"), { recursive: true });
-
-  const reviewTask = [
-    `Review session aftermath for ${sessionId}.`,
-    ``,
-    `Session: ${JSON.stringify(session, null, 2)}`,
-    `Transcript path: ${transcriptPath}`,
-    `Write your concise review to: ${artifactPath}`,
-    ``,
-    `Do exactly this loop:`,
-    `1. Evaluate outcome quality from transcript evidence, not self-claims.`,
-    `2. If root cause is obvious and low-risk, fix it now.`,
-    `3. If blocked/high-risk, escalate with a message or an escalation note.`,
-    `4. If there is reusable learning, update the right agent context/knowledge file.`,
-    `5. Verify any edit with a structural check before finish(success).`,
-    ``,
-    `Keep the artifact short with sections: Verdict, Evidence, Root Cause, Action Taken, Learning.`,
-  ].join("\n");
-
-  const review = await ctx.runAgent("evaluator", reviewTask);
   const heuristic = classifyVerdict(session);
+  const artifactPath = `agents/evaluator/workspace/aftermath/${sessionId}.md`;
 
   await (ctx as any).runFunction("record-evaluation", async () => {
     const db = ctx.getDb() as any;
@@ -145,7 +120,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           verdict: heuristic.verdict,
           status: session.status,
           aftermathWorkflow: true,
-          reviewSessionId: (review as any).sessionId,
           artifactPath,
         }),
         null,
@@ -157,6 +131,36 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     );
     return `recorded ${heuristic.verdict} evaluation for ${sessionId}`;
   });
+
+  if (heuristic.verdict === "good") {
+    return ctx.done(`Evaluated ${sessionId}: good. No review needed.`);
+  }
+
+  const projectRoot = String(ctx.projectRoot ?? "/app");
+  const persistDir = String((ctx as any).persistDir ?? join(projectRoot, ".state"));
+  const transcriptPath = existsSync(join(persistDir, "sessions", sessionId, "session.jsonl"))
+    ? join(persistDir, "sessions", sessionId, "session.jsonl")
+    : join(persistDir, "sessions", "history", sessionId, "session.jsonl");
+  mkdirSync(join(projectRoot, "agents/evaluator/workspace/aftermath"), { recursive: true });
+
+  const reviewTask = [
+    `Review session aftermath for ${sessionId}.`,
+    ``,
+    `Session: ${JSON.stringify(session, null, 2)}`,
+    `Transcript path: ${transcriptPath}`,
+    `Write your concise review to: ${artifactPath}`,
+    ``,
+    `Do exactly this loop:`,
+    `1. Evaluate outcome quality from transcript evidence, not self-claims.`,
+    `2. If root cause is obvious and low-risk, fix it now.`,
+    `3. If blocked/high-risk, escalate with a message or an escalation note.`,
+    `4. If there is reusable learning, update the right agent context/knowledge file.`,
+    `5. Verify any edit with a structural check before finish(success).`,
+    ``,
+    `Keep the artifact short with sections: Verdict, Evidence, Root Cause, Action Taken, Learning.`,
+  ].join("\n");
+
+  const review = await ctx.runAgent("evaluator", reviewTask);
 
   if ((review as any).status === "error") {
     return ctx.escalate(`Evaluator review failed for ${sessionId}`, { reviewSessionId: (review as any).sessionId });

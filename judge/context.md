@@ -10,7 +10,7 @@ Convention compliance evaluator for the Agent Gym. Assesses whether agents follo
 
 ## Key Configuration
 - **Model**: opus
-- **Tools**: `coding`, `cite-source`, `finish`
+- **Tools**: `coding`, `finish`
 - **memoryLimit**: 0 (stateless — no persistent memory across sessions)
 - Evaluates against: `CONVENTIONS.md` (C1-C7), `LESSONS.md` (C22-C40), `common-sense.md`
 
