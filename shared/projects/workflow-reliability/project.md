@@ -1,16 +1,21 @@
+---
+id: workflow-reliability
+owner: coach
+status: closed
+type: milestone
+priority: P1
+workflow: master-worker
+iteration: 1
+stop_reason: CLOSED — goal achieved (33%→100% when runs execute). Remaining issue (dispatch accuracy) escalated to tech-lead.
+---
+
 # Project: Workflow Reliability
 
-**Status**: closed
-**Stop Reason**: CLOSED — goal achieved (33%→100% when runs execute). Remaining issue (dispatch accuracy) escalated to tech-lead.
 
 This project is **closed**. No further worker iterations needed.
 
 **Summary**: The workflow-reliability project achieved its coaching goal (worker iteration success: 33% → 100% when runs exec
 
-**Owner**: coach
-**Priority**: P1
-**Workflow**: master-worker
-**Iteration**: 1
 
 ## Goal
 Reduce workflow failures. Target: 90%+ of worker iterations produce at least one deliverable file.

@@ -1,14 +1,19 @@
+---
+id: retry-removal
+owner: tech-lead
+status: closed
+type: milestone
+priority: P1
+stop_reason: DONE
+---
+
 # Project: Remove Iatrogenic Retry Prompt (EXP-511)
 
-**Status**: closed
-**Stop Reason**: DONE
 
 The project goal is achieved:
 - The zero-output retry mechanism is now disabled by default via an env gate (`ENABLE_ZERO_OUTPUT_RETRY === 'true'`)
 - The code compiles without errors
 - The flag a
-**Owner**: tech-lead
-**Priority**: P1
 **Created**: 2025-01-20
 
 ## Goal

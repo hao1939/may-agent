@@ -30,16 +30,17 @@ vi.mock('node:fs', async () => {
 describe('project-health', () => {
   describe('updateField', () => {
     it('updates existing field', () => {
-      const content = '# Project\n**Status**: active\n**Owner**: bob';
+      const content = '---\nid: test\nowner: bob\nstatus: active\n---\n\n# Project\n';
       const result = updateField(content, 'Status', 'blocked');
-      expect(result).toContain('**Status**: blocked');
-      expect(result).toContain('**Owner**: bob');
+      expect(result).toContain('status: blocked');
+      expect(result).toContain('owner: bob');
     });
 
     it('adds field if not present', () => {
       const content = '# Project\nSome content';
       const result = updateField(content, 'Status', 'active');
-      expect(result).toContain('**Status**: active');
+      expect(result).toContain('status: active');
+      expect(result).toContain('# Project');
     });
   });
 
@@ -301,7 +302,7 @@ describe('project-health', () => {
       fs.mkdirSync(projDir, { recursive: true });
       fs.writeFileSync(
         path.join(projDir, 'project.md'),
-        '# My Project\n**Status**: active\n**Owner**: alice\n**Workflow**: master-worker\n'
+        '---\nid: my-proj\nowner: alice\nstatus: active\nworkflow: master-worker\n---\n\n# My Project\n'
       );
       const projects = scanAllProjects(tmpRoot);
       expect(projects.length).toBe(1);
@@ -309,6 +310,7 @@ describe('project-health', () => {
       expect(projects[0].owner).toBe('alice');
       fs.rmSync(tmpRoot, { recursive: true });
     });
+
   });
 
   describe('upsertProject', () => {
@@ -317,7 +319,7 @@ describe('project-health', () => {
       const proj: ProjectInfo = {
         relPath: 'shared/projects/test-proj',
         projectFile: '/tmp/test/project.md',
-        content: '# Test\n**Project**: Test Project\n**Status**: active\n**Owner**: bob\n- [x] Done\n- [ ] Todo\n',
+        content: '---\nid: test-proj\nname: Test Project\nowner: bob\nstatus: active\n---\n\n# Test\n- [x] Done\n- [ ] Todo\n',
         status: 'active',
         owner: 'bob',
         blockerReason: '',

@@ -1,0 +1,1 @@
+# Multi-Agent Coordination Patterns

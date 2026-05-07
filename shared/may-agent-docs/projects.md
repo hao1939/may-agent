@@ -12,13 +12,18 @@ Shared across agents — any agent can own/advance a project.
 
 ## Project File Format
 
+Project metadata is machine-readable YAML frontmatter. Do not duplicate these
+fields as `**Owner**:` / `**Status**:` body lines.
+
 ```markdown
 ---
 id: my-project
 owner: tech-lead
 status: active
 type: milestone
-priority: high
+priority: P1
+workflow: master-worker
+iteration: 0
 ---
 
 # Project Name

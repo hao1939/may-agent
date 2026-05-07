@@ -1,13 +1,18 @@
+---
+id: hao-alignment
+owner: may
+status: active
+type: milestone
+priority: P1
+workflow: master-worker
+iteration: 50
+stop_reason: —
+---
+
 # Project: Hao Alignment
 
-**Status**: active
-**Stop Reason**: —
 
 Reactivated by Hao on 2026-05-07. Previous "complete" assessment was a P11 violation. Metrics are weak (unmeasured), data sources underexplored, correction tracking never instrumented. Phase 7 opened: deepen understanding.
-**Owner**: may
-**Priority**: P1
-**Workflow**: master-worker
-**Iteration**: 50
 
 ## Goal
 Learn Hao's thinking, preferences, values, and purpose from our conversation history. Build a living model of what Hao wants so the system makes fewer decisions he has to override.

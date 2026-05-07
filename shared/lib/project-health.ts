@@ -76,11 +76,44 @@ function launchRateLimitReason(entry: ProjectHealthEntry | undefined, now: numbe
 
 // ── Markdown helpers ─────────────────────────────────────────────────────
 
-/** Extract a **Field**: value from markdown content */
-function extractField(content: string, field: string): string {
-  const re = new RegExp(`^\\*\\*${field}\\*\\*:\\s*(.+)`, "m");
-  const m = content.match(re);
-  return m ? m[1].trim() : "";
+type ProjectMeta = Record<string, string>;
+
+const FIELD_TO_META_KEY: Record<string, string> = {
+  "Project": "name",
+  "Name": "name",
+  "Owner": "owner",
+  "Status": "status",
+  "Type": "type",
+  "Priority": "priority",
+  "Workflow": "workflow",
+  "Iteration": "iteration",
+  "Stop Reason": "stop_reason",
+  "Resume Condition": "resume_condition",
+};
+
+function parseProjectMeta(content: string): ProjectMeta {
+  const m = content.match(/^---\s*\n([\s\S]*?)\n---\s*(?:\n|$)/);
+  if (!m) return {};
+  const meta: ProjectMeta = {};
+  for (const line of m[1].split("\n")) {
+    const field = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
+    if (!field) continue;
+    meta[field[1].toLowerCase()] = field[2].trim().replace(/^["']|["']$/g, "");
+  }
+  return meta;
+}
+
+function stripProjectMeta(content: string): string {
+  return content.replace(/^---\s*\n[\s\S]*?\n---\s*(?:\n|$)/, "");
+}
+
+function formatProjectMeta(meta: ProjectMeta): string {
+  const preferred = ["id", "owner", "status", "type", "priority", "workflow", "iteration", "stop_reason", "resume_condition"];
+  const keys = [
+    ...preferred.filter(key => meta[key] !== undefined && meta[key] !== ""),
+    ...Object.keys(meta).filter(key => !preferred.includes(key) && meta[key] !== undefined && meta[key] !== "").sort(),
+  ];
+  return ["---", ...keys.map(key => `${key}: ${meta[key]}`), "---", "", ""].join("\n");
 }
 
 /** Extract the body of a ## Section */
@@ -90,16 +123,12 @@ function extractSection(content: string, heading: string): string {
   return m ? m[1].trim() : "";
 }
 
-/** Update **Field**: value in markdown content */
+/** Update a project metadata field in YAML frontmatter. */
 export function updateField(content: string, field: string, value: string): string {
-  const re = new RegExp(`^(\\*\\*${field}\\*\\*:\\s*)(.+)`, "m");
-  if (re.test(content)) {
-    return content.replace(re, `$1${value}`);
-  }
-  // If field doesn't exist, add after the first line
-  const lines = content.split("\n");
-  lines.splice(1, 0, `**${field}**: ${value}`);
-  return lines.join("\n");
+  const metaKey = FIELD_TO_META_KEY[field] ?? field.toLowerCase().replace(/\s+/g, "_");
+  const meta = parseProjectMeta(content);
+  meta[metaKey] = value;
+  return formatProjectMeta(meta) + stripProjectMeta(content).replace(/^\n+/, "");
 }
 
 /** Append a comment to the ## Comments section */
@@ -131,10 +160,11 @@ export function scanAllProjects(agentsRoot: string): ProjectInfo[] {
         if (!existsSync(projectFile)) continue;
         let content: string;
         try { content = readFileSync(projectFile, "utf-8"); } catch { continue; }
-        const status = extractField(content, "Status").toLowerCase() || "active";
-        const owner = extractField(content, "Owner") || "unknown";
-        const blockerReason = extractField(content, "Stop Reason") || extractField(content, "Resume Condition") || "";
-        const workflow = extractField(content, "Workflow") || "master-worker";
+        const meta = parseProjectMeta(content);
+        const status = meta.status?.toLowerCase() || "active";
+        const owner = meta.owner || "unknown";
+        const blockerReason = meta.stop_reason || meta.resume_condition || "";
+        const workflow = meta.workflow || "master-worker";
         projects.push({ relPath: `shared/projects/${projDir}`, projectFile, content, status, owner, blockerReason, workflow });
       }
     } catch { /* ignore */ }
@@ -326,12 +356,12 @@ export function simpleHash(str: string): string {
 
 /** Sync a scanned project to the projects table (DB cache of project.md). */
 export function upsertProject(db: any, project: ProjectInfo): void {
-  const name = extractField(project.content, "Project") ||
-    project.relPath.split("/").pop() || project.relPath;
-  const type = extractField(project.content, "Type").toLowerCase() || "milestone";
+  const meta = parseProjectMeta(project.content);
+  const name = meta.name || meta.id || project.relPath.split("/").pop() || project.relPath;
+  const type = meta.type?.toLowerCase() || "milestone";
   const workflow = project.workflow || "project";
-  const iteration = parseInt(extractField(project.content, "Iteration") || "0", 10);
-  const priority = extractField(project.content, "Priority") || "";
+  const iteration = parseInt(meta.iteration || "0", 10);
+  const priority = meta.priority || "";
   const id = project.relPath.split("/").pop() || project.relPath;
 
   // Count milestones

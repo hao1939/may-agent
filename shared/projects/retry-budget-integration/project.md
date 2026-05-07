@@ -1,13 +1,18 @@
+---
+id: retry-budget-integration
+owner: tech-lead
+status: closed
+type: milestone
+priority: P1
+stop_reason: DONE
+---
+
 # Project: Retry Budget Integration (EXP-950 Phase 2)
 
-**Status**: closed
-**Stop Reason**: DONE
 
 All implementation milestones (M1-M3) are verified complete:
 - **M1**: Dispatch paths identified in project.ts and run-workflow.ts
 - **M2**: `shouldDispatch()`/`recordDispatch()`/`recordOutcome(
-**Owner**: tech-lead
-**Priority**: P1
 
 ## Goal
 Integrate `agents/shared/utils/retry-budget.ts` into May's session dispatch flow so zombie task loops are blocked automatically.

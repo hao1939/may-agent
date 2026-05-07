@@ -1,7 +1,8 @@
 {
   "agents": {
     "may": {
-      "consecutiveErrors": 0
+      "consecutiveErrors": 2,
+      "lastError": "heartbeat session error"
     },
     "coach": {
       "consecutiveErrors": 0

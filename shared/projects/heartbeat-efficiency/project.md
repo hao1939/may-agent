@@ -1,11 +1,16 @@
+---
+id: heartbeat-efficiency
+owner: tech-lead
+status: waiting
+type: milestone
+priority: P1
+stop_reason: WAITING
+---
+
 # Project: Heartbeat Efficiency
 
-**Status**: waiting
-**Stop Reason**: WAITING
 
 The project needs 24 hours of production heartbeat data to accumulate before M4 can be completed. The code change (M3) integrates `shouldSkipHeartbeat()` into the runtime path, but no heartbe
-**Owner**: tech-lead
-**Priority**: P1
 
 ## Goal
 Reduce May's no-op heartbeat rate from 92% to <30% by implementing conditional execution: skip heartbeat runs when nothing meaningful has changed since the last heartbeat.

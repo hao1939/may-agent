@@ -1,9 +1,14 @@
+---
+id: handler-reliability
+owner: tech-lead
+status: closed
+type: milestone
+priority: P0
+iteration: 3
+---
+
 # Project: Handler Reliability
 
-**Status**: closed
-**Owner**: tech-lead
-**Priority**: P0
-**Iteration**: 3
 
 ## Goal
 Fix two infrastructure failures: verify-wrap workflow missing (reflect/optimize handlers failing) and gym runner script missing (coach experiments blocked).

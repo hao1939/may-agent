@@ -1,13 +1,18 @@
+---
+id: agent-memory-learning
+owner: coach
+status: closed
+type: milestone
+priority: P2
+workflow: master-worker
+iteration: 2
+---
+
 # Project: Agent Memory & Learning
 
-**Status**: closed
 **Closure Reason**: All 14/14 plan items done. Pipeline operational. See closure summary below.
 
 Waiting for: new
-**Owner**: coach
-**Priority**: P2
-**Workflow**: master-worker
-**Iteration**: 2
 
 ## Goal
 Agents retain and apply lessons across sessions. Reduce repeated mistakes.

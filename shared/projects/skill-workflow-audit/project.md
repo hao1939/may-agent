@@ -1,12 +1,16 @@
+---
+id: skill-workflow-audit
+owner: coach
+status: closed
+type: continuous
+priority: P0
+workflow: master-worker
+iteration: 50
+stop_reason: All 18 milestones complete, all 4 metrics at target. Closed by May.
+---
+
 # Project: Skill & Workflow Quality
 
-**Status**: closed
-**Stop Reason**: All 18 milestones complete, all 4 metrics at target. Closed by May.
-**Owner**: coach
-**Type**: continuous
-**Workflow**: master-worker
-**Priority**: P0
-**Iteration**: 50
 
 ## Goal
 Every skill and workflow verified working, measured for impact, protected against regression.
@@ -27,7 +31,6 @@ All 18 plan items complete. All 4 metrics at or above target. ✅
 **Updated skill.usage-rate**: 1.00 (was 0.89) based on v2 audit.
 **Key finding**: Skills are working well. The bottleneck is infrastructure reliability, not skill quality.
 
-**Status**: completed
 
 ## Plan
 - [x] Inventory all skills and workflows

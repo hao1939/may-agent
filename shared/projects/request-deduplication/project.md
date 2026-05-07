@@ -1,16 +1,21 @@
+---
+id: request-deduplication
+owner: optimizer
+status: closed
+type: milestone
+priority: P0
+iteration: 1
+stop_reason: WAITING
+resume_condition: New instructions from human/May.
+---
+
 # Project: Request Deduplication
 
-**Status**: closed
-**Owner**: optimizer
-**Priority**: P0
-**Iteration**: 1
 
-**Stop Reason**: WAITING
 
 Project is already closed with all metrics met. The system comment confirms closure. The project.md is clean and accurate. There is no work to dispatch.
 
 - **Status**: closed, all metrics gre
-**Resume Condition**: New instructions from human/May.
 
 Eliminate duplicate request storms. Was 78% duplicate rate causing notification cascades.
 

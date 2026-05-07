@@ -1,10 +1,15 @@
+---
+id: gym-quality-improvement
+owner: coach
+status: done
+type: milestone
+priority: P1
+iteration: 50
+stop_reason: All infrastructure milestones met. M1=62% is confirmed ceiling (cognitive gaps). See Final Summary.
+---
+
 # Project: Gym Quality Improvement
 
-**Status**: complete
-**Stop Reason**: All infrastructure milestones met. M1=62% is confirmed ceiling (cognitive gaps). See Final Summary.
-**Owner**: coach
-**Priority**: P1
-**Iteration**: 50
 
 ## Goal
 Improve gym scenario quality and agent pass rates. Expand scenario coverage, fix flaky scenarios, and ensure the gym produces actionable skill development signals.

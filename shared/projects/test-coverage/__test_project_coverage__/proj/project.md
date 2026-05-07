@@ -1,14 +1,19 @@
+---
+id: proj
+owner: test-agent
+status: waiting
+type: milestone
+priority: P1
+iteration: 2
+stop_reason: done
+resume_condition: review
+---
+
 # Project: Test
 
-**Status**: waiting
-**Owner**: test-agent
 **Worker**: test-agent
-**Priority**: P1
-**Iteration**: 2
 
-**Stop Reason**: done
 Resume when: review
-**Resume Condition**: review
 ## Goal
 Test goal
 

@@ -1,10 +1,15 @@
+---
+id: evaluation-revival
+owner: coach
+status: closed
+type: milestone
+priority: P0
+workflow: master-worker
+iteration: 9
+---
+
 # Project: Evaluation Revival
 
-**Status**: closed
-**Owner**: coach
-**Priority**: P0
-**Workflow**: master-worker
-**Iteration**: 9
 
 ## Goal
 Restore the evaluation pipeline so agent performance is measured continuously. Without evaluations, the learning flywheel is broken — we can't identify regressions, validate improvements, or train effectively.

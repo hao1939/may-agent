@@ -1,10 +1,15 @@
+---
+id: test-coverage
+owner: optimizer
+status: closed
+type: milestone
+priority: P2
+workflow: master-worker
+iteration: 13
+---
+
 # Project: Test Coverage
 
-**Status**: closed
-**Owner**: optimizer
-**Priority**: P2
-**Workflow**: master-worker
-**Iteration**: 13
 
 ## Goal
 Critical paths have test coverage. Regressions caught before deployment.

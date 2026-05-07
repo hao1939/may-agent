@@ -62,7 +62,7 @@ describe("scanAllProjects - filesystem traversal", () => {
     fs.mkdirSync(projDir, { recursive: true });
     fs.writeFileSync(
       path.join(projDir, "project.md"),
-      "# Project\n\n**Status**: active\n**Owner**: agent1\n**Workflow**: master-worker\n"
+      "---\nid: my-proj\nowner: agent1\nstatus: active\nworkflow: master-worker\n---\n\n# Project\n"
     );
     const result = scanAllProjects(tmpDir);
     expect(result.length).toBe(1);
@@ -83,7 +83,7 @@ describe("scanAllProjects - filesystem traversal", () => {
   it("skips _archive directory under shared/projects", () => {
     const archDir = path.join(tmpDir, "shared", "projects", "_archive", "old");
     fs.mkdirSync(archDir, { recursive: true });
-    fs.writeFileSync(path.join(archDir, "project.md"), "# Old\n**Status**: active\n");
+    fs.writeFileSync(path.join(archDir, "project.md"), "---\nid: old\nowner: may\nstatus: active\n---\n\n# Old\n");
     const result = scanAllProjects(tmpDir);
     expect(result).toEqual([]);
   });
@@ -92,7 +92,7 @@ describe("scanAllProjects - filesystem traversal", () => {
     // Legacy location should no longer be scanned (KE-426 follow-up).
     const projDir = path.join(tmpDir, "alice", "workspace", "projects", "legacy");
     fs.mkdirSync(projDir, { recursive: true });
-    fs.writeFileSync(path.join(projDir, "project.md"), "# L\n**Status**: active\n**Owner**: alice\n");
+    fs.writeFileSync(path.join(projDir, "project.md"), "---\nid: legacy\nowner: alice\nstatus: active\n---\n\n# L\n");
     const result = scanAllProjects(tmpDir);
     expect(result).toEqual([]);
   });
@@ -101,7 +101,7 @@ describe("scanAllProjects - filesystem traversal", () => {
     for (const proj of ["proj1", "proj2", "proj3", "proj4"]) {
       const projDir = path.join(tmpDir, "shared", "projects", proj);
       fs.mkdirSync(projDir, { recursive: true });
-      fs.writeFileSync(path.join(projDir, "project.md"), `# ${proj}\n**Status**: active\n**Owner**: alice\n`);
+      fs.writeFileSync(path.join(projDir, "project.md"), `---\nid: ${proj}\nowner: alice\nstatus: active\n---\n\n# ${proj}\n`);
     }
     const result = scanAllProjects(tmpDir);
     expect(result.length).toBe(4);

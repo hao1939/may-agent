@@ -1,11 +1,16 @@
+---
+id: coach-quality
+owner: coach
+status: closed
+type: milestone
+priority: P1
+workflow: master-worker
+iteration: 50
+stop_reason: COMPLETE — target met (avg 0.70 vs ≥0.50 target). Hit iteration cap 50 but goal was achieved at iter ~19.
+---
+
 # Project: Coach Work-Session Quality
 
-**Status**: closed
-**Stop Reason**: COMPLETE — target met (avg 0.70 vs ≥0.50 target). Hit iteration cap 50 but goal was achieved at iter ~19.
-**Owner**: coach
-**Priority**: P1
-**Workflow**: master-worker
-**Iteration**: 50
 
 ## Goal
 Raise coach JS quality score from 0.24 (worst in system) to ≥0.50. Root cause: open-ended work sessions fail hard while structured heartbeats/cron are near-perfect.

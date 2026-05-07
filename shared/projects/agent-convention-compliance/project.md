@@ -1,10 +1,15 @@
+---
+id: agent-convention-compliance
+owner: coach
+status: done
+type: milestone
+priority: P3
+iteration: 50
+stop_reason: All goals met — 98% compliance achieved with 96.1% floor. Maintenance mode.
+---
+
 # Project: Agent Convention Compliance
 
-**Status**: complete
-**Stop Reason**: All goals met — 98% compliance achieved with 96.1% floor. Maintenance mode.
-**Owner**: coach
-**Priority**: P3
-**Iteration**: 50
 
 ## Goal
 Ensure all agents consistently follow established conventions (C1.1 read-before-edit, C1.3 verify-after-write, etc.). Target: >90% compliance across all agents.

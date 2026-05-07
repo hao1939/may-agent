@@ -1,15 +1,20 @@
+---
+id: system-efficiency
+owner: optimizer
+status: closed
+type: milestone
+priority: P1
+workflow: master-worker
+iteration: 4
+stop_reason: DONE
+---
+
 # Project: System Efficiency
 
-**Status**: closed
-**Stop Reason**: DONE
 
 All plan items are checked off and all three metrics are at or above target:
 - **deliverables-per-iteration**: 1.0 (target 0.8) ✅
 - **satellite-goal-progress**: 2/2 satellites at target (documen
-**Owner**: optimizer
-**Priority**: P1
-**Workflow**: master-worker
-**Iteration**: 4
 
 ## Goal
 Maximize meaningful output of the agent system. Not about reducing cost — about doing more real work per hour. "Meaningful output" = code changes, documentation, bug fixes, features that move satellite projects toward their goals.

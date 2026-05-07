@@ -1,10 +1,15 @@
+---
+id: prompt-efficiency
+owner: optimizer
+status: closed
+type: milestone
+---
+
 # Prompt Efficiency
 
 ## Goal
 Reduce token waste in agent system prompts and context loading, improving throughput and reducing costs without degrading output quality.
 
-**Status**: Closed
-**Owner**: optimizer
 **Created**: 2025-01-20
 
 ## Metrics (updated 2025-07-02)
