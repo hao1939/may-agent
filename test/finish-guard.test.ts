@@ -1,4 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   validateFinishDeliverables,
   enforceFinishDeliverables,
@@ -6,15 +9,6 @@ import {
   enforceVerificationEvidence,
   guard,
 } from "../shared/guards/finish-guard.js";
-
-// Mock fs for deliverable validation — spread the real module to avoid polluting other tests
-vi.mock("fs", async () => {
-  const actual = await vi.importActual<typeof import("fs")>("fs");
-  return {
-    ...actual,
-    existsSync: (p: string) => p.includes("exists"),
-  };
-});
 
 describe("validateFinishDeliverables", () => {
   it("returns valid for null deliverables", () => {
@@ -24,13 +18,20 @@ describe("validateFinishDeliverables", () => {
     expect(validateFinishDeliverables([], "success", "/root").valid).toBe(true);
   });
   it("returns valid when files exist", () => {
-    const result = validateFinishDeliverables(
-      [{ path: "/exists/file.ts", description: "test" }],
-      "success",
-      "/root",
-    );
-    expect(result.valid).toBe(true);
-    expect(result.missing).toHaveLength(0);
+    const root = mkdtempSync(join(tmpdir(), "finish-guard-"));
+    try {
+      mkdirSync(join(root, "exists"), { recursive: true });
+      writeFileSync(join(root, "exists", "file.ts"), "ok");
+      const result = validateFinishDeliverables(
+        [{ path: "exists/file.ts", description: "test" }],
+        "success",
+        root,
+      );
+      expect(result.valid).toBe(true);
+      expect(result.missing).toHaveLength(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
   it("returns missing for non-existent files", () => {
     const result = validateFinishDeliverables(

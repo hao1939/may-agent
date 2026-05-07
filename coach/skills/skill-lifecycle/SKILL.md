@@ -1,3 +1,8 @@
+---
+name: skill-lifecycle
+description: Use when discovering, evaluating, testing, refining, deploying, or retiring shared skills through Coach's evidence-based skill lifecycle.
+---
+
 # Skill: Skill Lifecycle Management
 
 **Status**: Active
