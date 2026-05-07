@@ -276,8 +276,8 @@ export async function mergeContext(
   }
 
   // Compute diff for reporting
-  const oldLines = new Set(existing.split("\n").filter((l) => l.startsWith("- ")));
-  const newLines = new Set(merged.split("\n").filter((l) => l.startsWith("- ")));
+  const oldLines = new Set<string>(existing.split("\n").filter((l: string) => l.startsWith("- ")));
+  const newLines = new Set<string>(merged.split("\n").filter((l: string) => l.startsWith("- ")));
   const added = [...newLines].filter((l) => !oldLines.has(l)).map((l) => l.replace(/^- /, ""));
   const removed = [...oldLines].filter((l) => !newLines.has(l)).map((l) => l.replace(/^- /, ""));
 

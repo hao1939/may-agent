@@ -96,12 +96,11 @@ A capability is a claim of the form: *given X over time period Y, the system pro
 
 A second metric `capability.unrecovered-breach-count-7d` counts breaches with no recovery in 7 days. Target 0; threshold 2.
 
-**Status.** `violated`. `metric.breach` events flow today, and `metric.recovered` is typed in the bus, but recovery emission is not wired.
+**Status.** `partial`. `metric.breach` and `metric.recovered` events flow from the alert lifecycle, but the recovery-latency aggregation metric does not exist yet.
 
 **Known gaps.**
-- `metrics-snapshot.ts` resolves `metric_alerts` when a metric returns to healthy range but does not emit `metric.recovered`.
-- Emit `metric.recovered` from the same alert lifecycle that opens `metric.breach`.
-- Then add the recovery-latency aggregation metric.
+- Add the recovery-latency aggregation metric.
+- Verify breach → recovered loops against production events after the next natural recovery.
 
 ---
 
@@ -563,12 +562,11 @@ When a structural property is violated, capabilities don't necessarily fail toda
 
 **Measurement.** `v2.fork-on-breach-rate` — fraction of `metric.breach` events that triggered a direct fork. Target = P0-priority-rate (varies by registry); threshold > P0-rate × 1.5.
 
-**Status.** `partial`. The schema declares `metrics.priority`, but built-in metric definitions do not set it, the snapshot registry does not maintain it, and the reactor does not yet gate direct forks on `P0`.
+**Status.** `partial`. The schema declares `metrics.priority`, built-in metric definitions maintain it, legacy/null priorities default to `P2`, and `metric-alert-reactor` gates direct forks on `P0`. The live conformance metric for fork behavior does not exist yet.
 
 **Known gaps.**
-- Ensure legacy DBs have the `priority` column and default missing values to `P2`.
-- Update `ALL_METRICS` registry in `metrics-snapshot.ts` to declare priority per metric and upsert it.
-- Update `metric-alert-reactor` to gate direct forks on `priority=P0`.
+- Add `v2.fork-on-breach-rate`.
+- Audit other `metric.breach` subscribers so the P0-only direct-fork rule is system-wide, not only reactor-local.
 
 ---
 
@@ -610,11 +608,11 @@ Until the system computes conformance directly, current status is tracked in the
 - a web UI conformance view renders the status from live metrics instead of this markdown file.
 
 Current high-confidence gaps as of 2026-05-07:
-- `metric.recovered` is typed but not emitted on recovery.
+- The recovery-latency aggregation metric does not exist yet.
 - `agent.decision` does not exist, so heartbeat agency and session trace completeness are not visible.
 - `context.read` does not exist, so the read phase of a heartbeat is not auditable.
-- `metrics.priority` exists in schema but priority semantics are not wired through built-in metrics or the alert reactor.
-- Runtime glue is smaller than the pre-v2 manager but still above target and not measured continuously.
+- `v2.fork-on-breach-rate` does not exist yet, and non-reactor `metric.breach` subscribers still need audit.
+- Runtime glue is smaller than the pre-v2 manager but still above target.
 
 # Implementation plan
 
@@ -622,9 +620,9 @@ The ongoing tracking project is `agents/shared/projects/v2-conformance-and-visib
 
 ## Project 1 — Fix metric recovery emission (highest leverage, smallest)
 
-C2 is violated by a plumbing bug, not a missing measurement. `metrics-snapshot.ts` emits `metric.breach` when a metric crosses into bad range but doesn't emit `metric.recovered` on the symmetric flip back. Fix in the same handler. Estimated **2 hours**.
+Initial plumbing landed: `metrics-snapshot.ts` emits `metric.recovered` when a metric recovers and resolves its open alert.
 
-Land first; verify breach → recovered loop closes in the events table before moving on.
+Remaining: verify a natural breach → recovered loop in the events table, then add the latency aggregation metric.
 
 ## Project 2 — Land C10 honesty cross-checks
 
@@ -634,7 +632,7 @@ C10 protects every other measurement. The cross-checks are SQL queries against e
 - Sessions with `status=done` but no `session.end` event.
 - Agents listed as loaded but no recent heartbeat.
 
-Add to `metrics-snapshot.ts`. Once it runs, we'll find out what *else* the system is lying about beyond C2 — and what this hand-maintained prose is lying about right now.
+Initial cross-checks landed in `metrics-snapshot.ts`. Once they run in production, we'll find out what *else* the system is lying about beyond C2 — and what this hand-maintained prose is lying about right now.
 
 ## Project 3 — Heartbeat agency event (S7)
 
@@ -644,7 +642,9 @@ Unblocks C3 (memory), C8 (observability), and the proposed web UI's "recent deci
 
 ## Project 4 — Metric priority and fork rule (S8)
 
-Ensure legacy DBs have `metrics.priority`, default missing priorities to `P2`, update `ALL_METRICS` registry to declare priority per metric, and update `metric-alert-reactor` to gate direct fork on `priority=P0`; lower priorities inform next heartbeat via prompt context (already happens via `formatMetrics`).
+Initial priority semantics landed: legacy DBs get `metrics.priority`, missing priorities default to `P2`, `ALL_METRICS` declares priority, and `metric-alert-reactor` gates direct forks on `priority=P0`; lower priorities inform next heartbeat via prompt context.
+
+Remaining: add `v2.fork-on-breach-rate` and audit other `metric.breach` subscribers.
 
 Brings metric breaches into parity with messages, where P0 immediate-trigger already works.
 

@@ -23,8 +23,8 @@ This is not a one-off doc cleanup. It is a tracking project whose first slice is
 
 ## Current State
 
-- `agents/shared/may-agent-docs/proposals/v2-spec.md` has the right contract shape but contains stale or contradictory status claims.
-- The most visible integrity bugs are S6 runtime LOC, C2 recovered-event wording, S8 metric priority wording, and broken S7 references.
+- `agents/shared/may-agent-docs/proposals/v2-spec.md` has the right contract shape and is now tied to this tracking project instead of a hand-maintained status table.
+- The first integrity bugs around S6 runtime LOC, C2 recovery emission, S8 metric priority wiring, and broken S7 references have been corrected or moved into live tracking.
 - The current web UI shows useful system data but is still a dashboard/tab surface, not the proposed liveness/trace/spec-conformance window.
 - The system lacks the events needed for full trace reconstruction: `agent.decision` and `context.read`.
 
@@ -38,9 +38,9 @@ This is not a one-off doc cleanup. It is a tracking project whose first slice is
 
 ### Phase 1 — Minimal Conformance Signal
 
-- [ ] Add a first computed structural metric, starting with `v2.runtime-glue-loc`.
-- [ ] Add `v2.spec-coverage-rate` so unmeasured claims are visible.
-- [ ] Add `capability.status-reality-mismatch-count` cross-checks.
+- [x] Add a first computed structural metric, starting with `v2.runtime-glue-loc`.
+- [x] Add `v2.spec-coverage-rate` so unmeasured claims are visible.
+- [x] Add `capability.status-reality-mismatch-count` cross-checks.
 
 ### Phase 2 — Trace Completeness
 
