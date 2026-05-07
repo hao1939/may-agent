@@ -232,3 +232,16 @@ This preserves accountability: skipped ticks are visible, measurable, and audita
 ## Recommendation
 
 For M3, implement a conservative May-only skip gate inside `genericHeartbeat()` using the existing loaders plus DB high-water checks. Start by suppressing only the safest case: no inbox, no active alerts/breaches, no failed/interrupted/stale sessions, no May-owned project changes, no new human input, and a productive heartbeat within the freshness floor. Separately label guard remediation so future baselines can distinguish scheduled heartbeat demand from quality-gate churn.
+
+## Verification
+
+This report was updated and re-verified in the current iteration after reading the required runtime and workflow evidence. Concrete evidence checked:
+
+- `agents/may/cron.json` confirms the May `heartbeat` cron entry is enabled, runs every 1,800,000 ms, uses handler `run-workflow`, and passes `handlerConfig.workflow: "may-heartbeat"`.
+- `agents/may/handlers/run-workflow.ts` confirms the workflow handler creates `workflowCtx.runAgent()` and calls `ctx.manager.callAgent(...)` with a source template equivalent to `workflow:<entry.name>`, so May scheduled heartbeat sessions appear with `source='workflow:heartbeat'`.
+- `agents/may/workflows/may-heartbeat.ts` confirms the May workflow delegates directly to `genericHeartbeat(ctx, "may")`.
+- `agents/shared/workflows/heartbeat-data.ts` confirms `shouldSkipHeartbeat()` exists but `genericHeartbeat()` does not call it; the actual path loads metrics/projects/alerts/inbox, checks circuit breaker and dispatch dedup, records dispatch, runs red-metric diagnostics, calls `ctx.runAgent()`, and then calls `runGates()`.
+- `agents/shared/workflows/circuit-breaker.ts` and `agents/shared/workflows/dispatch-dedup-guard.ts` confirm reusable patterns for cheap state, fail-open/manual override, force semantics, windowed attempts, and record-before/after APIs.
+- `agents/shared/may-agent-docs/cron.md` and `agents/shared/may-agent-docs/heartbeat.md` confirm the documented cron-to-handler-to-heartbeat data flow and auto-heartbeat behavior, with explicit cron entries overriding auto-generated heartbeats.
+
+Structural check: the report contains the requested sections for meaningful-change definition, skip/run table, required state, runtime insertion point, reusable logic review, guard-remediation handling, bypass risks, M3 implementation sketch, and skip audit record.
