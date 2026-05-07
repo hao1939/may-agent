@@ -210,3 +210,5 @@ Interpretation: eval pipeline appears stalled since 2026-05-06T16:46Z while sess
 ---
 
 **Heartbeat note**: 2026-05-07 07:23Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617`; `MAX(sessions.endedAt)=1778138492876` → eval lag ≈875m (~14.6h). Last-24h volume: `sessions(endedAt>=cutoff)`=552 vs `evaluations(createdAt>=cutoff)`=38 → coverage ≈6.9%. Sessions since last eval timestamp: 199. Interpretation: eval pipeline appears stalled; escalate to May/tech-lead to inspect `evaluate-session-llm` liveness and event-consumer throughput/timeouts.
+
+**Heartbeat note**: 2026-05-07 07:53Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617` (2026-05-06T16:46:18Z); `MAX(sessions.startedAt)=1778140360712` (2026-05-07T07:52:40Z) → eval lag ≈15.1h. Sessions since last eval timestamp: 204 (top agents since-last-eval: may=53, evaluator=43, dev=42, scout=30, arc=29). Interpretation: evaluation pipeline appears stalled; escalate to May/tech-lead to inspect `evaluate-session-llm` cron/job liveness, event-consumer backlog, and any recent `handler.failed`/timeout signals.
