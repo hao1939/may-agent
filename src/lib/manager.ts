@@ -1,2330 +1,342 @@
-import { readFileSync, readdirSync, mkdirSync, existsSync, writeFileSync, unlinkSync } from "node:fs";
-import { Agent } from "@mariozechner/pi-agent-core";
-import type { AgentMessage, AgentEvent, AgentTool } from "@mariozechner/pi-agent-core";
-import {
-  generateId,
-  formatDuration,
-  extractLastAssistantText,
-  getAgentDir,
-  isProcessAlive,
-  truncateForPrompt,
-  INFRA_RETRY_MAX,
-} from "./manager-utils.js";
-import type { RegisteredAgent, ActiveSession, RunOptions, SubagentManagerOptions } from "./manager-utils.js";
-import { createFinishGuard } from "./tools/finish-guard.js";
-import { createReadDedupGuard } from "./tools/read-dedup-guard.js";
-import { createSessionReadGuard } from "./tools/session-read-guard.js";
-import { createScrapeDedupGuard } from "./tools/scrape-dedup-guard.js";
-import { createEmptyArgsGuard } from "./tools/empty-args-guard.js";
-import { createToolSchemaGuard } from "./tools/tool-schema-guard.js";
-import { createPathHallucinationGuard } from "./tools/path-hallucination-guard.js";
-import { createCommitGuard } from "./tools/commit-guard.js";
-import { createCompletenessGuard } from "./tools/completeness-guard.js";
-import { createVerificationDepthGuard } from "./tools/verification-depth-guard.js";
-import { composeGuards } from "./tools/compose-guards.js";
-import {
-  detectErrors,
-  clearPostFinishErrors,
-  detectShallowHeartbeat,
-  determineOutcome,
-  buildSessionInfo,
-} from "./completion.js";
-
-// Re-export everything from manager-utils so existing import paths don't break
-export {
-  generateId,
-  truncateForPrompt,
-  computeToolArgsKey,
-  isToolError,
-  getAgentDir,
-  STATE_CHANGING_TOOLS,
-  INFRA_RETRY_MAX,
-  TOOL_PIVOT_LIMIT,
-} from "./manager-utils.js";
-export type { RegisteredAgent, ActiveSession, RunOptions, SubagentManagerOptions } from "./manager-utils.js";
-import type {
-  SubagentDefinition,
-  SessionInfo,
-  TaskResult,
-  SessionTreeNode,
-  ManagerHealthReport,
-  AuditHealthOptions,
-  AuditHealthReport,
-  ReconcileReport,
-} from "./types.js";
-import { createCompactionTransform } from "./compaction.js";
-import type { CompactionOptions } from "./compaction.js";
-import { getDb, updateSessionDb, getWorkflowRun, listWorkflowRunIds, updateWorkflowRun, getWorkflowStepSessions } from "./requests.js";
-import {
-  RegistryStore,
-  sessionDir,
-  ensureSessionDir,
-  appendSessionMessage,
-  readSessionMessages,
-  sessionOutputDir,
-  listActiveSessionIds,
-  readSessionMeta,
-  writeSessionMeta,
-  readCompactedMessages,
-  saveCompactedMessages,
-  readArchivedSessionMessages,
-  historyDir,
-  archiveSession,
-} from "./persistence.js";
-import type { PersistedSession, SessionKind } from "./persistence.js";
-import type { SessionTrace } from "./workflow.js";
-import { join, dirname, relative, resolve } from "node:path";
-import { readIdentity } from "./detached.js";
-import { cleanupStepCounter } from "./tools/checkpoint.js";
-import { buildTrace } from "./manager-trace.js";
-import { hasFinishToolCall, extractFinishParams, runAgentWithRetry } from "./manager-retry.js";
-import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
-import { upsertDigest, logShadowComparison } from "./session-digest.js";
-import { isOverflowError } from "./overflow.js";
-import { summarizeForHandoff } from "./handoff.js";
-
-// classifyError is re-exported directly from classify-error.ts (no local import needed)
-
-export { isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
-// classifyError is pure string-matching — imported from classify-error.ts (no bun:sqlite deps)
-export { classifyError } from "./classify-error.js";
-export { buildTrace } from "./manager-trace.js";
-import { computeHealth, computeAuditHealth, computeReconcileHealth } from "./manager-health.js";
-import {
-  signToolOutput,
-  verifyToolOutput,
-  createVerifyReceiptTool,
-  wrapToolsWithReceipts,
-} from "./manager-receipts.js";
-export {
-  signToolOutput,
-  verifyToolOutput,
-  createVerifyReceiptTool,
-  wrapToolsWithReceipts,
-} from "./manager-receipts.js";
-
-import { log } from "./log.js";
-
-/** Read GitHub Copilot token dynamically (refreshes every ~30min). */
-function getCopilotToken(): string {
-  try {
-    const tokenPath = process.env.COPILOT_TOKEN_PATH || "/app/.copilot/api-key.json";
-    const data = JSON.parse(readFileSync(tokenPath, "utf-8"));
-    return data.token || "";
-  } catch {
-    return "";
-  }
-}
-
 /**
- * P93 Infrastructure Resilience — Automatic Retry for Transient Errors
+ * V2 Agent Runtime — replaces SubagentManager.
  *
- * The SubagentManager implements an automatic retry loop (see `runAgentWithRetry`)
- * that detects and recovers from transient infrastructure errors during agent execution.
+ * Design: pi-agent-core's Agent handles LLM loop, retry, overflow recovery.
+ * We handle: persistence, event bridging, timeout, guards, session state.
  *
- * ## Errors That Trigger Retries
+ * No zombie cleanup, no call depth tracking, no API gating, no health audits.
+ * Sessions timeout. Metrics cover health. Pi-agent-core retries.
  *
- *   1. **Empty response** — The LLM stream completes with `stopReason="stop"` but the
- *      assistant message contains no text and no turns (0 output tokens). This
- *      typically indicates a model/API/proxy issue (e.g., LiteLLM dropping the response).
- *
- *   2. **Silent stream error** — The agent loop finishes without error, but the last
- *      message is still a `user` message (no assistant reply was produced at all).
- *      This happens when the stream function throws before yielding any events.
- *
- *   3. **ToolUse mismatch** — The response has `stopReason="toolUse"` but the assistant
- *      message contains no `toolCall` content blocks (malformed model output).
- *
- * ## Errors That Are NOT Retried
- *
- *   - Aborted sessions (user/system cancellation)
- *   - Context overflow errors (retrying won't reduce context size)
- *   - Closed sessions
- *   - Non-running sessions
- *
- * ## Max Retry Count
- *
- *   Default: `INFRA_RETRY_MAX` (3). Configurable per-manager via
- *   `SubagentManagerOptions.infraRetryMax`. Set to 0 to disable retries (useful in tests).
- *
- * ## Backoff Strategy
- *
- *   Linear backoff: `attempt * INFRA_RETRY_BASE_DELAY_MS` (1s base).
- *     - Retry 1: 1s delay
- *     - Retry 2: 2s delay
- *     - Retry 3: 3s delay
- *
- *   Before each retry, the malformed assistant message (if any) is removed from the
- *   message history and the agent's error state is cleared. The retry is issued via
- *   `agent.continue()`.
- *
- * ## Detection
- *
- *   See `isRetryableInfraError()` for the full detection logic.
- *   See `runAgentWithRetry()` for the retry loop implementation.
+ * See: agents/shared/may-agent-docs/architecture.md §3 "Agent Runs"
  */
 
+import { Agent } from "@mariozechner/pi-agent-core";
+import type { AgentTool, AgentMessage } from "@mariozechner/pi-agent-core";
+import type { Model } from "@mariozechner/pi-ai";
+import { mkdirSync, writeFileSync, unlinkSync } from "node:fs";
+import { join } from "node:path";
+import {
+  generateId,
+  extractLastAssistantText,
+  formatDuration,
+} from "./manager-utils.js";
+import { composeGuards, type BeforeToolCallHook } from "./tools/compose-guards.js";
+import {
+  ensureSessionDir,
+  sessionDir,
+  appendSessionMessage,
+  sessionOutputDir,
+  readSessionMessages,
+} from "./persistence.js";
+import { extractFinishParams } from "./manager-retry.js";
+import type { EventBus } from "../app/event-bus.js";
+import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
+import type { SessionKind } from "./persistence.js";
+import { log } from "./log.js";
+import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
+
+// Re-export utilities that other modules import from manager
+export { generateId, formatDuration, truncateForPrompt, computeToolArgsKey, isToolError, getAgentDir, INFRA_RETRY_MAX } from "./manager-utils.js";
+export { extractFinishParams, isRetryableInfraError, runAgentWithRetry } from "./manager-retry.js";
+export { classifyError } from "./classify-error.js";
+export { buildTrace } from "./manager-trace.js";
+export { signToolOutput, verifyToolOutput, createVerifyReceiptTool, wrapToolsWithReceipts } from "./manager-receipts.js";
+export type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
+export type { RegisteredAgent } from "./manager-utils.js";
+
+// ── Types ─────────────────────────────────────────────────────────────
+
+export interface RunOptions {
+  sessionId?: string;
+  parentSessionId?: string;
+  parentAgentName?: string;
+  originSessionId?: string;
+  workflowRunId?: string;
+  stepLabel?: string;
+  source?: string;
+  kind?: SessionKind;
+  autoClose?: "immediate" | "never";
+  requestId?: string;
+  projectId?: string;
+  orderId?: string;
+  /** Enable compaction for long-lived sessions */
+  compaction?: boolean;
+}
+
+interface ActiveSession {
+  sessionId: string;
+  agent: Agent;
+  agentName: string;
+  task: string;
+  startedAt: number;
+  status: "running" | "paused" | "idle";
+  kind: SessionKind;
+  autoClose: "immediate" | "never";
+  parentSessionId?: string;
+  workflowRunId?: string;
+  stepLabel?: string;
+  timeoutTimer?: ReturnType<typeof setTimeout>;
+  toolCalls: number;
+  turnCount: number;
+  requestId?: string;
+  projectId?: string;
+}
+
+export interface SubagentManagerOptions {
+  persistDir: string;
+  projectRoot?: string;
+  bus?: EventBus;
+  /** @deprecated v2 doesn't use apiGate — pi-agent-core handles retries */
+  apiGate?: any;
+  /** @deprecated v2 doesn't use infraRetryMax — pi-agent-core handles retries */
+  infraRetryMax?: number;
+}
+
+// ── SubagentManager (v2 implementation) ──────────────────────────────
+
 export class SubagentManager {
-  private agents = new Map<string, RegisteredAgent>();
-  private activeSessions = new Map<string, ActiveSession>();
-  /** Stores the result promise for every session started by this manager.
-   *  Survives session removal from activeSessions so waitFor() works
-   *  even if the session completes before waitFor() is called.
-   */
-  private sessionResults = new Map<string, Promise<TaskResult>>();
-  private registry: RegistryStore;
-  private bus?: import("./manager-utils.js").ManagerEventBus;
-  private startedAt = Date.now();
+  // Public maps for AgentsToolManagerDeps compatibility
+  agents = new Map<string, { definition: SubagentDefinition }>();
+  private sessions = new Map<string, ActiveSession>();
+  private results = new Map<string, Promise<TaskResult>>();
+  private completedResults = new Map<string, TaskResult>();
+  private _persistDir: string;
   private _projectRoot: string;
-  /** Maximum call depth for callAgent chains. Prevents A→B→A infinite loops. */
-  private _maxCallDepth: number;
-  /** Maximum infrastructure retries per session turn. */
-  private _infraRetryMax: number;
-  /** Current call depth per root session (tracks nested callAgent chains). */
-  private callDepths = new Map<string, number>();
-  private apiGate?: import("./api-gate.js").ApiGate;
-  /** Tracks auto-resume attempts per session to prevent infinite loops. */
+  private bus?: EventBus;
 
-  /** Project root directory. Used for detached agent spawning. */
-  get projectRoot(): string {
-    return this._projectRoot;
-  }
-
-  /** Public accessor for the registry store. Used by evaluator to find child sessions. */
-  get registryStore(): RegistryStore {
-    return this.registry;
-  }
-
-  /** Get the set of projectIds that have a currently-running in-memory session.
-   *  This is the ground truth — not affected by stale DB rows after restart. */
-  getRunningProjectIds(): Set<string> {
-    const ids = new Set<string>();
-    for (const s of this.activeSessions.values()) {
-      if (s.status === "running" && s.projectId) ids.add(s.projectId);
-    }
-    return ids;
-  }
+  /** Expose activeSessions for AgentsToolManagerDeps */
+  get activeSessions(): Map<string, ActiveSession> { return this.sessions; }
 
   constructor(opts: SubagentManagerOptions) {
-    this.registry = new RegistryStore(opts.persistDir);
-    this._projectRoot = opts.projectRoot ?? resolve(opts.persistDir, "..");
-    this._maxCallDepth = opts.maxCallDepth ?? 10;
-    this._infraRetryMax = opts.infraRetryMax ?? INFRA_RETRY_MAX;
+    this._persistDir = opts.persistDir;
+    this._projectRoot = opts.projectRoot ?? opts.persistDir;
     this.bus = opts.bus;
-    this.apiGate = opts.apiGate;
   }
 
-  /** Emit an event on the bus (no-op if bus not configured). */
-  private emit(event: Record<string, unknown>): void {
-    this.bus?.emit(event);
-  }
+  // ── Registration ──
 
-  /**
-   * Subscribe to pi-agent-core events on a session and re-emit as bus events.
-   * Bridges low-level agent events (turn_start, message_update, tool_execution_*)
-   * to high-level bus events (text, tool_call, tool_result, turn_end).
-   */
-  private bridgeAgentEvents(agentName: string, sessionId: string): void {
-    if (!this.bus) return;
-    let toolCalls = 0;
-    let turnErrors = 0;
-    let turnStart = Date.now();
-
-    this.subscribe(sessionId, (event) => {
-      switch (event.type) {
-        case "turn_start":
-          turnStart = Date.now();
-          toolCalls = 0;
-          turnErrors = 0;
-          break;
-        case "tool_execution_start":
-          toolCalls++;
-          this.emit({ type: "tool_call", sessionId, agent: agentName, tool: event.toolName, args: event.args });
-          break;
-        case "message_update":
-          if (event.assistantMessageEvent.type === "text_delta") {
-            this.emit({ type: "text", sessionId, agent: agentName, text: event.assistantMessageEvent.delta });
-          }
-          break;
-        case "tool_execution_end": {
-          const blocks = event.result?.content ?? [];
-          const firstReal = blocks.find(
-            (b: any) => b?.type === "text" && !b.text?.startsWith("<tool_output") && b.text !== "</tool_output>",
-          );
-          const text = firstReal?.text ?? "";
-          const isError = !!event.isError;
-          if (isError) turnErrors++;
-          this.emit({
-            type: "tool_result",
-            sessionId,
-            agent: agentName,
-            tool: event.toolName,
-            preview: text.slice(0, 200),
-            isError,
-          });
-          break;
-        }
-        case "turn_end": {
-          const durationMs = Date.now() - turnStart;
-          this.emit({ type: "turn_end", sessionId, agent: agentName, toolCalls, durationMs, errorCount: turnErrors });
-          break;
-        }
-      }
-    });
-  }
-
-  /** Register a feature unit. */
   register(def: SubagentDefinition): void {
     this.agents.set(def.name, { definition: def });
-    this.registry.saveAgent(def);
   }
 
-  /** Unregister an agent (used for cleaning up temporary/forked agents). */
   unregister(name: string): void {
     this.agents.delete(name);
-    this.registry.removeAgent(name);
   }
 
-  /** Subscribe to message_end events and persist messages to session JSONL. */
-  /** Subscribe to agent events for message persistence and turn counting. */
-  private subscribeForPersistence(session: ActiveSession): void {
-    const persistDir = this.registry.persistDir;
-    const { sessionId } = session;
-    const bus = this.bus;
-    session.unsubscribe = session.agent.subscribe(async (event: AgentEvent, _signal: AbortSignal) => {
-      if (event.type === "message_end") {
-        appendSessionMessage(persistDir, sessionId, event.message);
+  hasAgent(name: string): boolean { return this.agents.has(name); }
+  agentNames(): string[] { return [...this.agents.keys()]; }
+  agentCount(): number { return this.agents.size; }
 
-        if (event.message.role === "assistant") {
-          session.turnCount++;
-        }
-      }
-    });
-  }
-
-  /** Build a transformContext function if compaction is enabled for this agent.
-   *  When sessionId is provided, compacted messages are persisted to disk
-   *  after each compaction so that resumed sessions start from the compact
-   *  snapshot instead of replaying the full (potentially overflowing) history.
-   */
-  private buildTransformContext(
-    def: SubagentDefinition,
-    compactionOverride?: boolean | CompactionOptions,
-    sessionId?: string,
-  ): ((messages: AgentMessage[], signal?: AbortSignal) => Promise<AgentMessage[]>) | undefined {
-    const compaction = compactionOverride ?? def.compaction;
-    if (!compaction) return undefined;
-    const compactionOpts: CompactionOptions = typeof compaction === "object" ? compaction : {};
-
-    const persistDir = this.registry.persistDir;
-    const innerOnCompact = compactionOpts.onCompact;
-    const bus = this.bus;
-
-    // Wrap onCompact to persist the compacted snapshot to disk.
-    // This ensures resumed sessions load the compact state, preventing
-    // the "168K token crash loop" where full JSONL always overflows.
-    const transform = createCompactionTransform(def.model, {
-      ...compactionOpts,
-      onCompact: (info) => {
-        innerOnCompact?.(info);
-        if (sessionId) {
-          bus?.emit({
-            type: "info",
-            message: `[compaction] Session ${sessionId}: ${info.messagesCompacted} msgs compacted, ${info.messagesKept} kept (${info.tokensBefore}→${info.tokensAfter} tokens, round ${info.compactionCount})`,
-          });
-        }
-      },
-    });
-
-    if (!sessionId) return transform;
-
-    // Wrap the transform to persist compacted messages after each compaction
-    return async (messages: AgentMessage[], signal?: AbortSignal): Promise<AgentMessage[]> => {
-      const result = await transform(messages, signal);
-      // If compaction occurred, the result will be shorter than the input
-      if (result.length < messages.length) {
-        try {
-          saveCompactedMessages(persistDir, sessionId, result);
-        } catch (err) {
-          // Non-fatal: persistence failure shouldn't break the agent loop
-          bus?.emit({
-            type: "warning",
-            message: `[compaction] Failed to persist compact snapshot for ${sessionId}: ${err instanceof Error ? err.message : String(err)}`,
-          });
-        }
-      }
-      return result;
-    };
-  }
-
-  /**
-   * Create an Agent instance with full tool wiring, guards, and system prompt.
-   * Shared by run() and resumeSession() — single source of truth for agent construction.
-   */
-  private createAgent(
-    def: SubagentDefinition,
-    sessionId: string,
-    opts?: { messages?: AgentMessage[]; compactionTransform?: (messages: AgentMessage[], signal?: AbortSignal) => Promise<AgentMessage[]> },
-  ): Agent {
-    // Inject sessionId into checkpoint tools
-    for (const tool of def.tools) {
-      if (tool.name === "checkpoint") {
-        if ((tool as any)._setSessionId) (tool as any)._setSessionId(sessionId);
-        if ((tool as any)._setAgentName) (tool as any)._setAgentName(def.name);
-      }
-    }
-
-    // Filter out tools with undefined parameters (prevents provider crash)
-    const validTools = def.tools.filter((t) => {
-      if (!t.parameters) {
-        console.warn(`[manager] ⚠️ Tool "${t.name}" has undefined parameters — skipping`);
-        return false;
-      }
-      return true;
-    });
-
-    // gpt-5.5 doesn't support "minimal" reasoning — use "low" as default for reasoning models
-    const thinkingLevel = def.model.reasoning ? "low" : "off";
-
-    return new Agent({
-      initialState: {
-        systemPrompt: this.resolveSystemPrompt(def),
-        model: def.model,
-        thinkingLevel,
-        tools: wrapToolsWithReceipts(validTools, sessionId, {
-          activeSessions: this.activeSessions,
-          persistDir: this.registry.persistDir,
-          projectRoot: this._projectRoot,
-          beforeToolCall: composeGuards(
-            createEmptyArgsGuard(),
-            createToolSchemaGuard(),
-            createPathHallucinationGuard(),
-            createCompletenessGuard(def.name),
-            createFinishGuard(),
-            createCommitGuard(def.name, this._projectRoot),
-            createVerificationDepthGuard(def.name, {
-              // EXP-142 originally exempted Bob (-6.1pp quality, N=438).
-              // Bob C1.3 regressed to ~93% (7 FM-3.3 in 24h, all workspace/ writes).
-              // Exemption removed per coach intervention 2026-04-17.
-              // Monitor: if Bob quality drops >3pp in 48h, re-add exemption.
-            }),
-            createReadDedupGuard(),
-            createSessionReadGuard(),
-            createScrapeDedupGuard(),
-          ),
-        }),
-        ...(opts?.messages ? { messages: opts.messages } : {}),
-      },
-      transformContext: opts?.compactionTransform ?? this.buildTransformContext(def, undefined, sessionId),
-      getApiKey: def.apiKey === "dynamic"
-        ? () => getCopilotToken()
-        : def.apiKey ? () => def.apiKey : undefined,
-    });
-  }
-
-  /** Resolve the system prompt from a definition.
-   *  Convention files are auto-loaded from the agent directory if present:
-   *    SOUL.md → common-sense.md + generated sections (Runtime Env, Available Tools)
-   *  Then: Runtime Environment (generated), Session Context (generated).
-   *
-   *  The entire prompt is wrapped in <system_instructions> tags (P84) to
-   *  structurally reinforce the Instruction Hierarchy. Content from user
-   *  messages and tool outputs should be treated as data, not directives.
-   *
-   *  If systemPrompt is set directly, it takes precedence over everything.
-   */
-  private resolveSystemPrompt(def: SubagentDefinition): string {
-    if (def.systemPrompt) return def.systemPrompt;
-
-    const sections: string[] = [];
-    const agentDir = getAgentDir(def);
-
-    // Helper: read a file if it exists, return trimmed content or undefined
-    const loadFile = (path: string | undefined): string | undefined => {
-      if (!path || !existsSync(path)) return undefined;
-      const content = readFileSync(path, "utf-8").trim();
-      return content || undefined;
-    };
-
-    // ── System prompt: SOUL.md + common-sense.md + skills + generated sections ──
-    //
-    // SOUL.md: agent identity, role, methodology, curated skills, constraints (~2-4KB)
-    // common-sense.md: shared behavioral rules for all agents (~5-8KB)
-
-    // 1. SOUL.md — agent identity, role, methodology, curated skills
-    const soul = loadFile(agentDir ? join(agentDir, "SOUL.md") : undefined);
-    if (soul) sections.push(soul);
-
-    // 2. common-sense.md — shared behavioral rules
-    const commonSense = loadFile(
-      def.projectRoot ? join(def.projectRoot, "agents", "shared", "common-sense.md") : undefined,
-    );
-    if (commonSense) sections.push(commonSense);
-
-    // Standing orders: enforced by standing-orders-check handler, not injected.
-    // See design/context-injection-design.md — structural enforcement > text in prompt.
-
-    // Knowledge essentials: on-demand per design. Agent reads when needed.
-    // Common-sense.md conventions table points to the file location.
-
-    // Skills: on-demand per design. Agent reads from agents/<name>/skills/ when needed.
-    // Common-sense.md conventions table points to the directory.
-
-    // ── Generated sections (per-agent stable — safe for KV-cache) ──
-    // True volatile data (session ID, time) was previously injected via
-    // buildSessionContext() in the first user message. That code was removed
-    // (2026-04-20). User message = task only now.
-
-    // 6. Runtime Environment — paths and workspace
-    {
-      const relPath = def.projectRoot ? (abs: string) => relative(def.projectRoot!, abs) || "." : (abs: string) => abs;
-      const envLines = [`# Runtime Environment`];
-      if (def.projectRoot) {
-        envLines.push(`- Project root: ${def.projectRoot}`);
-      }
-      if (agentDir) {
-        envLines.push(`- Agent directory: ${relPath(agentDir)}`);
-      }
-      if (def.workspace) {
-        envLines.push(`- Workspace: ${relPath(def.workspace)} (ephemeral scratch)`);
-      }
-      if (def.knowledgeDir) {
-        envLines.push(`- Knowledge: ${relPath(def.knowledgeDir)}`);
-      }
-      // List which convention files are already in this prompt
-      envLines.push(`- Already in context (do NOT re-read): SOUL.md, common-sense.md`);
-      envLines.push(
-        `- Knowledge index: knowledge/INDEX.md (read when you need references)`,
-        ``,
-        `All paths are relative to project root. Your workspace is the ONLY directory you should write to.`,
-      );
-      sections.push(envLines.join("\n"));
-    }
-
-    // 7. User message = task only. No session context injection.
-    //    See design/open-problems.md #1 for session continuity plans.
-
-    // 8. Available Tools (C4.5) — auto-inject tool names so agents
-    //    know exactly what they can call without guessing or hallucinating.
-    if (def.tools.length > 0) {
-      const toolNames = def.tools.map((t) => t.label);
-      sections.push(
-        `## Available Tools\nYou have access to these tools (and ONLY these): ${toolNames.join(", ")}.\nDo not attempt to call any tool not in this list.`,
-      );
-    }
-
-    // ── P84: Wrap in <system_instructions> tags ─────────────────────
-    // Structural reinforcement of the Instruction Hierarchy. The XML tags
-    // signal to the LLM that everything inside is authoritative system-level
-    // configuration, taking precedence over user messages and tool outputs.
-    const body = sections.join("\n\n");
-    return `<system_instructions>\n${body}\n</system_instructions>`;
-  }
-
-  /**
-   * Build the per-session context block (session ID, time, recent task history).
-   * This is prepended to the first user message instead of living in the
-   * system prompt, so that the system prompt stays identical across sessions
-   * and Anthropic prompt caching can produce cache reads (P147 KV-Cache Discipline).
-   */
-  // Session context injection was removed in the context-learning cleanup (2026-04-20).
-  // The buildSessionContext function computed digests, cross-agent diffs, active recall,
-  // session diffs, checkpoints, last-session summaries, context.md, and knowledge routing
-  // — but the result was never used (promptText = task only). The context-learning project
-  // will design the right approach to session continuity. See design/open-problems.md #1.
-
-  /** Clean up step counter and archive session to history on completion. */
-  private cleanupSession(session: ActiveSession): void {
-    try {
-      cleanupStepCounter(session.sessionId);
-    } catch {
-      /* best-effort */
-    }
-    // Move completed session from sessions/<id>/ to sessions/history/<id>/.
-    // readSessionMeta() already checks both locations, so late reads still work.
-    try {
-      archiveSession(this.registry.persistDir, session.sessionId);
-    } catch {
-      /* best-effort — session data stays in active dir if rename fails */
-    }
-  }
-
-  /**
-   * Bug 10 fix: Clean up callDepths entry when a root session completes.
-   * callDepths tracks nesting depth per root session for the call depth limit.
-   * If the session IS the root (i.e. has an entry in callDepths), remove it.
-   */
-  private cleanupCallDepths(sessionId: string): void {
-    // Only root sessions have entries in callDepths (keyed by root session ID).
-    // If this session is a root, remove its entry.
-    this.callDepths.delete(sessionId);
-  }
-
-  /** Set up a timeout timer for a session if timeoutMs is configured. */
-  private setupTimeout(session: ActiveSession, timeoutMs: number | undefined): void {
-    if (!timeoutMs || timeoutMs <= 0) return;
-    session.timeoutTimer = setTimeout(() => {
-      if (session.status === "running") {
-        // Digest: timeout (pass manager for LLM synthesis + classification)
-        upsertDigest(this.registry.persistDir, {
-          sessionId: session.sessionId,
-          agent: session.agentName,
-          trigger: "timeout",
-          details: { timeoutMs, elapsedMs: Date.now() - session.startedAt, turnCount: session.turnCount },
-        }, this).then(digest => {
-          // Shadow comparison: existing system always kills on timeout
-          logShadowComparison(session.sessionId, "timeout", "kill", digest);
-        }).catch(err => log("warn", `[digest] timeout failed: ${err}`));
-        this.cancel(session.sessionId);
-      }
-    }, timeoutMs);
-  }
-
-  /** Clear any active timeout timer for a session. */
-  private clearTimeout(session: ActiveSession): void {
-    if (session.timeoutTimer) {
-      clearTimeout(session.timeoutTimer);
-      session.timeoutTimer = undefined;
-    }
-  }
-
-  /**
-   * Common completion handler — called when the agent's turn settles (prompt()/continue() resolves).
-   *
-   * Pipeline: detectErrors → clearPostFinishErrors →
-   *           detectShallowHeartbeat → determineOutcome → archive/notify
-   *
-   * Chat sessions (autoClose="never") transition to "idle" and stay in memory.
-   * Task sessions (autoClose="immediate") are archived and removed.
-   */
-  private handleCompletion(session: ActiveSession): void {
-    this.clearTimeout(session);
-
-    // Guard: if close() already archived this session, skip.
-    if (session.closed) return;
-
-    try {
-      this.handleCompletionInner(session);
-    } catch (err) {
-      // Bug 3 fix: If the completion pipeline throws, ensure the session is
-      // still cleaned up so it doesn't get stuck in activeSessions forever.
-      log("error", `[handleCompletion] Unexpected error for ${session.sessionId}: ${err}`);
-      try {
-        session.error = session.error ?? `handleCompletion failed: ${err instanceof Error ? err.message : String(err)}`;
-        session.archiveStatus = "error";
-        session.endedAt = Date.now();
-        this.registry.updateSessionStatus(session.sessionId, "error", session.error);
-        session.unsubscribe?.();
-        this.removeSentinel(session.sessionId);
-        this.cleanupSession(session);
-      } catch {
-        /* best-effort cleanup */
-      }
-      this.activeSessions.delete(session.sessionId);
-      // Clean up callDepths for this session's root (Bug 10)
-      this.cleanupCallDepths(session.sessionId);
-      setTimeout(() => {
-        this.sessionResults.delete(session.sessionId);
-      }, 60_000);
-    }
-  }
-
-  /** Inner completion pipeline — separated so handleCompletion can wrap in try/catch. */
-  private handleCompletionInner(session: ActiveSession): void {
-    // ── Pipeline: detect and classify errors ──────────────────────────
-    detectErrors(session);
-    clearPostFinishErrors(session);
-
-    // Copy agent-level error to session BEFORE overflow detection.
-    // The LLM stores overflow errors in agent.state.errorMessage, but
-    // determineOutcome() (which normally copies it) runs AFTER the
-    // idle-return for chat sessions. Without this, overflow errors on
-    // chat sessions are invisible → session goes idle → crash loop on restart.
-    if (!session.error && session.agent.state.errorMessage) {
-      session.error = session.agent.state.errorMessage;
-    }
-
-    // Digest: overflow — pass manager for LLM synthesis + classification
-    if (session.error && isOverflowError(session.error)) {
-      upsertDigest(this.registry.persistDir, {
-        sessionId: session.sessionId,
-        agent: session.agentName,
-        trigger: "overflow",
-        details: { error: session.error.slice(0, 300), turnCount: session.turnCount },
-      }, this).then(digest => {
-        // Shadow comparison: existing system always kills on overflow (session is already dead)
-        logShadowComparison(session.sessionId, "overflow", "kill", digest);
-      }).catch(err => log("warn", `[digest] overflow failed: ${err}`));
-    }
-
-    // ── Chat sessions → idle ─────────────────────────────────────────
-    const effectivelyAborted = session.error?.includes("aborted") ?? false;
-    const overflowDetected = session.error ? isOverflowError(session.error) : false;
-    if (session.autoClose === "never" && !effectivelyAborted && !overflowDetected) {
-      // Surface errors to the user (empty responses, API failures, etc.)
-      if (session.error) {
-        this.emit({
-          type: "info",
-          message: `[${session.agentName}] ${session.error}`,
-        });
-      }
-      session.status = "idle";
-      session.turnCount = 0;
-      this.registry.updateSessionStatus(session.sessionId, "idle", session.error);
-      this.removeSentinel(session.sessionId);
-      return;
-    }
-    // Overflow on chat session: archive it instead of going idle.
-    // Keeping an overflowed chat session alive causes a crash loop:
-    // restart → resume bloated session → same overflow → repeat forever.
-    if (overflowDetected && session.autoClose === "never") {
-      this.emit({
-        type: "info",
-        message: `[${session.agentName}] Context overflow — closing session to prevent crash loop. Send a new message to start fresh.`,
-      });
-    }
-
-    // ── Task sessions → archive ──────────────────────────────────────
-    const hadErrorBeforeShallowCheck = !!session.error;
-    detectShallowHeartbeat(session);
-    // Digest: shallow_heartbeat (if detectShallowHeartbeat just set the error)
-    if (!hadErrorBeforeShallowCheck && session.error?.includes("Shallow heartbeat")) {
-      upsertDigest(this.registry.persistDir, {
-        sessionId: session.sessionId,
-        agent: session.agentName,
-        trigger: "shallow_heartbeat",
-        what_happened: `Shallow heartbeat detected after ${session.turnCount} turns — agent finished too quickly without meaningful work`,
-        details: { turnCount: session.turnCount, task: session.task.slice(0, 200) },
-      }).catch(err => log("warn", `[digest] shallow_heartbeat failed: ${err}`));
-    }
-    const outcome = determineOutcome(session);
-
-    session.archiveStatus = outcome.archiveStatus;
-    session.finishResult = outcome.finishResult;
-    try {
-      this.registry.updateSessionStatus(session.sessionId, outcome.archiveStatus, session.error);
-    } catch (metaErr) {
-      log("error", `[completion] Failed to write meta.json for ${session.sessionId}: ${metaErr instanceof Error ? metaErr.message : String(metaErr)}`);
-      // Continue — still emit session.end so DB, digest, and other subscribers fire
-    }
-
-    session.unsubscribe?.();
-    session.endedAt = Date.now();
-    this.removeSentinel(session.sessionId);
-    this.cleanupSession(session);
-    this.activeSessions.delete(session.sessionId);
-
-    // Clean up callDepths for this session's root (Bug 10)
-    this.cleanupCallDepths(session.sessionId);
-
-    // Clean up sessionResults after a delay to allow late waitFor() callers.
-    // Without this, sessionResults grows unbounded (memory leak).
-    setTimeout(() => {
-      this.sessionResults.delete(session.sessionId);
-    }, 60_000);
-
-    // ── Escalation: blocked/failure → parent or May ──────────────────
-    if (outcome.finishParams && (outcome.finishParams.status === "blocked" || outcome.finishParams.status === "failure")) {
-      this.escalateBlockedSession(session, outcome.finishParams);
-    }
-
-    // ── Notify completion ────────────────────────────────────────────
-    const info = buildSessionInfo(session, outcome, (name) => this.getWorkspacePath(name));
-
-    // Emit session.end on bus (subscribers handle recovery, eval, memory, persistence, etc.)
-    this.emit({
-      type: "session.end",
-      sessionId: info.sessionId,
-      agent: info.agent,
-      outcome: info.outcome ?? info.status,
-      summary: typeof info.finishParams?.summary === "string" ? info.finishParams.summary : (info.error ?? ""),
-      durationMs: session.endedAt && session.startedAt ? session.endedAt - session.startedAt : 0,
-      // Optional rich fields used by digest, telegram, db-writer, recovery:
-      status: info.status,
-      task: info.task,
-      duration: info.runtime,
-      error: info.error,
-      opCount: info.opCount,
-      turnCount: info.turnCount,
-      finishParams: info.finishParams,
-      filesModified: info.filesModified,
-      workspacePath: info.workspacePath,
-    });
-  }
-
-  /** Remove the [STARTED] sentinel file for a session. */
-  private removeSentinel(sessionId: string): void {
-    try {
-      const sentinelPath = join(sessionDir(this.registry.persistDir, sessionId), "[STARTED]");
-      if (existsSync(sentinelPath)) unlinkSync(sentinelPath);
-    } catch {
-      /* best-effort */
-    }
-  }
-
-  /** Escalate a blocked/failed session to the parent agent or May. */
-  private escalateBlockedSession(
-    session: ActiveSession,
-    finishParams: { status: string; summary: string; blockers?: { reason: string; context: string }[] },
-  ): void {
-    const blockerText = finishParams.blockers?.map((b) => `${b.reason}: ${b.context}`).join("; ") ?? "";
-    const escalationTask = `[escalation] ${session.agentName} session ${session.sessionId} ended ${finishParams.status}: ${finishParams.summary}${blockerText ? ` | Blockers: ${blockerText}` : ""}`;
-
-    // Emit escalation event (persisted to events table)
-    this.emit({
-      type: "emit",
-      event: "escalation.created",
-      data: {
-        id: `esc_${Date.now()}`,
-        agent: session.agentName,
-        sessionId: session.sessionId,
-        projectId: session.projectId,
-        reason: finishParams.summary,
-        blockers: blockerText,
-        level: 1,
-        source: "session",
-      },
-    } as any);
-
-    // Digest: escalation
-    upsertDigest(this.registry.persistDir, {
-      sessionId: session.sessionId,
-      agent: session.agentName,
-      trigger: "escalation",
-      details: { status: finishParams.status, summary: finishParams.summary.slice(0, 300), blockers: blockerText.slice(0, 300) },
-    }).catch(err => log("warn", `[digest] escalation failed: ${err}`));
-
-    const parentName = session.parentAgentName;
-    if (parentName) {
-      // Escalation event already emitted above — no additional tracking needed
-    }
-
-  }
-
-  run(name: string, task: string, opts?: RunOptions): string {
-    const registered = this.agents.get(name);
-    if (!registered) throw new Error(`Agent "${name}" not registered`);
-
-    const def = registered.definition;
-
-    // Hot-reload mutable config (memoryLimit) from agent.json on disk.
-    // Agent configs are loaded once at startup and cached. Without this, changes
-    // to agent.json don't take effect until restart.
-    const agentDir = getAgentDir(def);
-    if (agentDir) {
-      try {
-        const freshConfig = JSON.parse(readFileSync(join(agentDir, "agent.json"), "utf-8"));
-        if (typeof freshConfig.memoryLimit === "number" && freshConfig.memoryLimit !== def.memoryLimit) {
-          def.memoryLimit = freshConfig.memoryLimit;
-        }
-      } catch {
-        /* best-effort — fall back to cached definition */
-      }
-    }
-
-    const sessionId = opts?.sessionId ?? generateId(def.sessionIdPrefix);
-
-    // Bug 4 fix: Guard against duplicate session IDs. If a pre-assigned sessionId
-    // is already active (e.g. being resumed by resumeStaleSessions concurrently),
-    // reject to prevent orphaned agent instances.
-    if (this.activeSessions.has(sessionId)) {
-      throw new Error(`Session "${sessionId}" is already active — cannot start a duplicate`);
-    }
-
-    const persistDir = this.registry.persistDir;
-
-    // Compute output directory
-    const outputDir = sessionOutputDir(persistDir, sessionId);
-
-    // Create session directory and output subdirectory for JSONL persistence
-    ensureSessionDir(persistDir, sessionId);
-    mkdirSync(outputDir, { recursive: true });
-
-    const compactionTransform = this.buildTransformContext(def, opts?.compaction, sessionId);
-    const agent = this.createAgent(def, sessionId, { compactionTransform });
-
-    const session: ActiveSession = {
-      sessionId,
-      agentName: name,
-      agent,
-      promise: null!,
-      task,
-      startedAt: Date.now(),
-      status: "running",
-      outputDir,
-      abortController: new AbortController(),
-      parentSessionId: opts?.parentSessionId,
-      parentAgentName:
-        opts?.parentAgentName ??
-        (opts?.parentSessionId ? this.activeSessions.get(opts.parentSessionId)?.agentName : undefined),
-      originSessionId: opts?.originSessionId,
-      workflowRunId: opts?.workflowRunId,
-      stepLabel: opts?.stepLabel,
-      turnCount: 0,
-      compactionTransform,
-      closed: false,
-      autoClose: opts?.autoClose ?? "immediate",
-      kind: opts?.kind ?? "job",
-      opCount: 0,
-      totalToolCalls: 0,
-      infraRetryCount: 0,
-      toolErrorHistory: new Map(),
-      toolErrorCount: 0,
-      filesModified: new Set(),
-      orderId: opts?.orderId,
-      requestId: opts?.requestId,
-      projectId: opts?.projectId,
-      consecutiveErrorTurns: 0,
-      stuckWarningInjected: false,
-      currentTurnErrors: 0,
-      currentTurnSuccesses: 0,
-      guardRedirectCount: 0,
-    };
-
-    // Write [STARTED] sentinel
-    try {
-      const sentinelPath = join(sessionDir(persistDir, sessionId), "[STARTED]");
-      writeFileSync(sentinelPath, new Date().toISOString());
-    } catch {
-      /* best-effort */
-    }
-
-    // Subscribe for JSONL persistence before starting the prompt
-    this.subscribeForPersistence(session);
-
-    // Persist the new session to registry — merge with existing meta
-    // to preserve detached/pid/instance fields pre-written by the parent
-    const existingMeta = this.registry.getSession(sessionId);
-    this.registry.saveSession(sessionId, {
-      ...(existingMeta ?? {}),
-      agent: name,
-      task,
-      status: "running",
-      startedAt: session.startedAt,
-      parentSessionId: opts?.parentSessionId ?? existingMeta?.parentSessionId,
-      workflowRunId: opts?.workflowRunId ?? existingMeta?.workflowRunId,
-      stepLabel: opts?.stepLabel ?? existingMeta?.stepLabel,
-      source: opts?.source ?? existingMeta?.source,
-      requestId: opts?.requestId ?? existingMeta?.requestId,
-      kind: session.kind,
-      autoClose: session.autoClose,
-      orderId: session.orderId,
-    });
-
-    // Set up timeout if configured
-    this.setupTimeout(session, def.timeoutMs);
-
-    // Add to activeSessions before notifying listener (subscribe() needs it)
-    this.activeSessions.set(sessionId, session);
-
-    try {
-      // Emit session.start and bridge agent events to the bus
-      this.bridgeAgentEvents(name, sessionId);
-      const meta = readSessionMeta(this.registry.persistDir, sessionId);
-      this.emit({
-        type: "session.start",
-        sessionId,
-        agent: name,
-        task: meta?.task ?? task,
-        trigger: opts?.source ?? session.kind ?? "unknown",
-        firedAt: session.startedAt,
-        // Optional rich fields used by UI, telegram, db-writer, recovery:
-        parentSessionId: opts?.parentSessionId,
-        workflowRunId: opts?.workflowRunId,
-        projectId: opts?.projectId,
-        source: opts?.source,
-        kind: session.kind,
-        requestId: opts?.requestId,
-      });
-
-      // Activity tracking handled by ActivityWriter subscriber (reacts to session.start event)
-
-      // The initial user message is persisted via the message_end subscriber
-      // when agentLoop emits it (before any LLM call). No explicit write here
-      // to avoid duplicate JSONL entries.
-
-      // User message = task only. Session context injection was removed (2026-04-20).
-      // See design/open-problems.md #1 and context-learning project.
-      const promptText = task;
-
-      session.promise = runAgentWithRetry(
-        session,
-        this.gatedPrompt(session, () => agent.prompt(promptText)),
-        this._infraRetryMax,
-        (s) => this.handleCompletion(s),
-        this.registry.persistDir,
-      );
-
-      this.sessionResults.set(
-        sessionId,
-        session.promise.then(() => this.buildResultFromSession(session)),
-      );
-      return sessionId;
-    } catch (err) {
-      // Ghost session prevention: if anything between activeSessions.set() and
-      // session.promise assignment throws, the session would be stuck in
-      // activeSessions with no promise — never completing, blocking future
-      // heartbeats via overlap guard. Clean up to prevent this.
-      this.activeSessions.delete(sessionId);
-      this.clearTimeout(session);
-      log("error", `[run] Session ${sessionId} startup failed after activation: ${err}`);
-      try {
-        const existingMeta2 = readSessionMeta(this.registry.persistDir, sessionId);
-        if (existingMeta2) {
-          this.registry.saveSession(sessionId, {
-            ...existingMeta2,
-            status: "error",
-            error: err instanceof Error ? err.message : String(err),
-          });
-        }
-      } catch { /* best-effort — don't mask the original error */ }
-      throw err;
-    }
-  }
-
-  /** Mark any workflow runs stuck at "running" as "interrupted".
-   *  Called during startup (resumeStaleSessions). */
-  private cleanupStaleWorkflowRuns(): void {
-    const persistDir = this.registry.persistDir;
-    const runIds = listWorkflowRunIds(persistDir);
-    for (const runId of runIds) {
-      const run = getWorkflowRun(persistDir, runId);
-      if (run && run.status === "running") {
-        updateWorkflowRun(persistDir, runId, {
-          status: "interrupted",
-          endedAt: Date.now(),
-          result_reason: "Process restarted",
-        });
-      }
-    }
-  }
-
-  /**
-   * Resume sessions left in "running" or "idle" state from a previous process.
-   * Reloads their JSONL, repairs broken message sequences, and continues the agent loop.
-   * Sessions whose agent is not registered are marked as "interrupted".
-   * Also cleans up stale workflow runs.
-   *
-   * Detached sessions (separate OS processes) are skipped if their process
-   * is still alive — they survive the parent's restart by design.
-   */
-  resumeStaleSessions(opts?: { abort?: boolean; kinds?: SessionKind[] }): {
-    resumed: SessionInfo[];
-    interrupted: SessionInfo[];
-  } {
-    const registryData = this.registry.getRegistry();
-    const persistDir = this.registry.persistDir;
-    const staleSessionIds: Array<{ sessionId: string; persisted: (typeof registryData.sessions)[string] }> = [];
-    const kindFilter = opts?.kinds ? new Set(opts.kinds) : null;
-
-    // Scan for orphan [STARTED] sentinels in session directories
-    const sessionsDir = join(persistDir, "sessions");
-    if (existsSync(sessionsDir)) {
-      try {
-        const sessionDirs = readdirSync(sessionsDir);
-        for (const dirName of sessionDirs) {
-          const sentinelPath = join(sessionsDir, dirName, "[STARTED]");
-          if (existsSync(sentinelPath)) {
-            const sessionId = dirName;
-            const persisted = registryData.sessions[sessionId];
-            if (persisted && persisted.status === "running" && !isProcessAlive(persisted.pid)) {
-              const kind = persisted.kind ?? "job";
-              if (kindFilter && !kindFilter.has(kind)) continue; // not our concern — leave untouched
-              try {
-                unlinkSync(sentinelPath);
-              } catch {}
-              staleSessionIds.push({ sessionId, persisted });
-            } else if (!persisted) {
-              try {
-                unlinkSync(sentinelPath);
-              } catch {}
-            }
-          }
-        }
-      } catch (err) {
-        log(
-          "warn",
-          `[manager] Error scanning for crashed sessions: ${err instanceof Error ? err.message : String(err)}`,
-        );
-      }
-    }
-
-    // Collect remaining stale sessions from registry
-    const alreadyFound = new Set(staleSessionIds.map((s) => s.sessionId));
-    for (const [sessionId, persisted] of Object.entries(registryData.sessions)) {
-      if (alreadyFound.has(sessionId)) continue;
-      if (persisted.status !== "running" && persisted.status !== "idle") continue;
-      if (persisted.detached && isProcessAlive(persisted.pid)) continue;
-      const kind = persisted.kind ?? "job";
-      if (kindFilter && !kindFilter.has(kind)) continue; // not our concern — leave untouched
-      staleSessionIds.push({ sessionId, persisted });
-    }
-
-    const resumed: SessionInfo[] = [];
-    const interrupted: SessionInfo[] = [];
-
-    for (const { sessionId, persisted } of staleSessionIds) {
-      if (opts?.abort) {
-        this.registry.updateSessionStatus(sessionId, "interrupted", "Clean start (fresh)");
-        updateSessionDb(persistDir, sessionId, { status: "interrupted", endedAt: Date.now(), error: "Clean start (fresh)" });
-        interrupted.push({
-          sessionId,
-          agent: persisted.agent,
-          task: persisted.task,
-          status: "interrupted",
-          startedAt: persisted.startedAt,
-          endedAt: Date.now(),
-          runtime: formatDuration(Date.now() - persisted.startedAt),
-          outputDir: sessionOutputDir(persistDir, sessionId),
-          error: "Clean start (fresh)",
-        });
-        continue;
-      }
-
-      const registered = this.agents.get(persisted.agent);
-      if (!registered) {
-        this.registry.updateSessionStatus(sessionId, "interrupted", "Process restarted (agent not registered)");
-        updateSessionDb(persistDir, sessionId, { status: "interrupted", endedAt: Date.now(), error: "Process restarted (agent not registered)" });
-        interrupted.push({
-          sessionId,
-          agent: persisted.agent,
-          task: persisted.task,
-          status: "interrupted",
-          startedAt: persisted.startedAt,
-          endedAt: Date.now(),
-          runtime: formatDuration(Date.now() - persisted.startedAt),
-          outputDir: sessionOutputDir(persistDir, sessionId),
-          error: "Process restarted (agent not registered)",
-        });
-        continue;
-      }
-
-      try {
-        const info = this.resumeSession(sessionId, persisted, registered);
-        resumed.push(info);
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : String(err);
-        this.registry.updateSessionStatus(sessionId, "interrupted", `Resume failed: ${errMsg}`);
-        updateSessionDb(persistDir, sessionId, { status: "interrupted", endedAt: Date.now(), error: `Resume failed: ${errMsg}` });
-        interrupted.push({
-          sessionId,
-          agent: persisted.agent,
-          task: persisted.task,
-          status: "interrupted",
-          startedAt: persisted.startedAt,
-          endedAt: Date.now(),
-          runtime: formatDuration(Date.now() - persisted.startedAt),
-          outputDir: sessionOutputDir(persistDir, sessionId),
-          error: `Resume failed: ${errMsg}`,
-        });
-      }
-    }
-
-    this.cleanupStaleWorkflowRuns();
-    return { resumed, interrupted };
-  }
-
-  /**
-   * Mark orphaned sessions as interrupted. Called periodically.
-   * Sessions in .state/sessions/ with status "running" but not in activeSessions
-   * are orphans from a previous crash. Mark them interrupted so they're not resumed.
-   */
-  cleanupZombieSessions(): number {
-    const persistDir = this.registry.persistDir;
-    const activeIds = listActiveSessionIds(persistDir);
-    let cleaned = 0;
-    const staleThresholdMs = 30 * 60 * 1000;
-
-    // Phase 1: Clean up active session dirs that aren't actually running
-    for (const sessionId of activeIds) {
-      if (this.activeSessions.has(sessionId)) continue;
-      const meta = readSessionMeta(persistDir, sessionId);
-      if (!meta) continue;
-
-      if (meta.status === "running") {
-        if (Date.now() - (meta.startedAt ?? 0) > staleThresholdMs) {
-          try {
-            writeSessionMeta(persistDir, sessionId, { ...meta, status: "interrupted" });
-            this.registry.updateSessionStatus(sessionId, "interrupted", "Zombie cleanup");
-            // Also update DB directly (updateSessionStatus only writes meta.json)
-            try {
-              updateSessionDb(persistDir, sessionId, {
-                status: "interrupted",
-                error: "Zombie cleanup",
-                endedAt: Date.now(),
-              });
-            } catch { /* best-effort DB update */ }
-            // Digest: zombie_cleanup (pass manager for LLM synthesis + classification)
-            upsertDigest(persistDir, {
-              sessionId,
-              agent: meta.agent ?? "unknown",
-              trigger: "zombie_cleanup",
-              details: { startedAt: meta.startedAt, staleMs: Date.now() - (meta.startedAt ?? 0) },
-            }, this).then(digest => {
-              // Shadow comparison: existing system always archives zombies
-              logShadowComparison(sessionId, "zombie_cleanup", "nothing", digest);
-            }).catch(err => log("warn", `[digest] zombie_cleanup failed: ${err}`));
-            cleaned++;
-          } catch { /* best-effort */ }
-        }
-      }
-    }
-
-    // Phase 1b: Cancel in-memory sessions stuck at 0 ops for > 30 min
-    // These are sessions the manager tracks as "active" but the LLM never responded.
-    for (const [sessionId, session] of this.activeSessions) {
-      if (session.opCount > 0) continue; // making progress
-      if (session.kind === "chat") continue; // chat sessions wait for human input
-      const age = Date.now() - session.startedAt;
-      if (age < staleThresholdMs) continue;
-      try {
-        this.cancel(sessionId);
-        log("info", `[zombie-cleanup] Cancelled stuck session ${sessionId} (${session.agentName}, 0 ops, ${Math.round(age / 60000)}m old)`);
-        cleaned++;
-      } catch { /* best-effort */ }
-    }
-
-    // Phase 2: Count terminal sessions still in the active directory.
-    // These are completed sessions that stay in sessions/<id>/ (no archiving).
-    for (const sessionId of activeIds) {
-      if (this.activeSessions.has(sessionId)) continue;
-      const meta = readSessionMeta(persistDir, sessionId);
-      if (!meta) continue;
-      const terminalStatuses = ["done", "error", "interrupted"];
-      if (terminalStatuses.includes(meta.status ?? "")) {
-        cleaned++;
-      }
-    }
-
-    // Phase 3: Fix DB/disk mismatch — sessions "running" in the DB but not in memory
-    // or on disk (e.g. from process crashes where archival happened but DB wasn't updated).
-    try {
-      const db = getDb(persistDir);
-      const dbRunning = db.prepare(
-        `SELECT sessionId, startedAt FROM sessions WHERE status = 'running' AND startedAt < ?`
-      ).all(Date.now() - staleThresholdMs) as Array<{ sessionId: string; startedAt: number }>;
-
-      for (const row of dbRunning) {
-        if (this.activeSessions.has(row.sessionId)) continue;
-        // Already cleaned in Phase 1?
-        if (activeIds.includes(row.sessionId)) continue;
-        // This session is "running" in DB but not active in memory or on disk — fix the DB
-        try {
-          updateSessionDb(persistDir, row.sessionId, {
-            status: "interrupted",
-            error: "Zombie cleanup (DB-only — session already archived)",
-            endedAt: Date.now(),
-          });
-          cleaned++;
-        } catch { /* best-effort */ }
-      }
-    } catch { /* DB query failed — skip phase 3 */ }
-
-    return cleaned;
-  }
-
-  /**
-   * Resume a single stale session from disk.
-   * Reloads JSONL, repairs broken messages, injects a restart notice, and continues the agent loop.
-   */
-  private resumeSession(
-    sessionId: string,
-    persisted: PersistedSession,
-    registered: { definition: SubagentDefinition },
-  ): SessionInfo {
-    const persistDir = this.registry.persistDir;
-    const def = registered.definition;
-
-    ensureSessionDir(persistDir, sessionId);
-
-    const compactedMessages = readCompactedMessages(persistDir, sessionId);
-    let savedMessages = compactedMessages ?? readSessionMessages(persistDir, sessionId);
-    const outputDir = sessionOutputDir(persistDir, sessionId);
-
-    // Note: Overflow crash loop prevention is handled in chat-session.ts
-    // (resumeExistingSession skips sessions with overflow errors) and in
-    // handleCompletion (overflow on chat sessions → auto-archive instead of idle).
-    // Compaction persistence (buildTransformContext wraps saveCompactedMessages)
-    // ensures resumed sessions load compact state, not full JSONL.
-    const compactionTransform = this.buildTransformContext(def, undefined, sessionId);
-    const agent = this.createAgent(def, sessionId, { messages: savedMessages, compactionTransform });
-
-    // Repair broken message sequences (mid-tool-call crash).
-    const lastMsg = savedMessages.length > 0 ? savedMessages[savedMessages.length - 1] : null;
-    let lastRole = lastMsg?.role;
-
-    if (lastRole === "assistant" && lastMsg && Array.isArray(lastMsg.content)) {
-      const toolCalls = (lastMsg.content as Array<{ type: string }>).filter((b) => b?.type === "toolCall");
-      if (toolCalls.length > 0) {
-        // Inject error tool results for each pending tool call.
-        // Use messages.push (not followUp) so they appear in the message
-        // history immediately — followUp only queues for the *next* turn
-        // boundary and would be lost if the LLM call fails immediately.
-        for (const tc of toolCalls) {
-          const errorResult: AgentMessage = {
-            role: "toolResult",
-            toolCallId: (tc as any).id,
-            toolName: (tc as any).name,
-            content: [{ type: "text", text: "Error: process restarted while this tool call was in progress." }],
-            isError: true,
-            timestamp: Date.now(),
-          } as AgentMessage;
-          agent.state.messages.push(errorResult);
-        }
-        // After appending tool results, the last role is now "toolResult",
-        // so the resume path below will use agent.continue() correctly.
-        lastRole = "toolResult";
-      } else if ((lastMsg as any).stopReason === "toolUse") {
-        // Malformed response: stopReason says "toolUse" but no tool call content
-        savedMessages.pop();
-        agent.state.messages = savedMessages;
-        lastRole = savedMessages.length > 0 ? savedMessages[savedMessages.length - 1].role : undefined;
-      }
-    }
-
-    this.registry.updateSessionStatus(sessionId, "running");
-
-    const session: ActiveSession = {
-      sessionId,
-      agentName: persisted.agent,
-      agent,
-      promise: null!,
-      task: persisted.task,
-      startedAt: persisted.startedAt,
-      status: "running",
-      outputDir,
-      abortController: new AbortController(),
-      parentSessionId: persisted.parentSessionId,
-      // Bug 8 fix: Restore parentAgentName so escalation routing works after resume.
-      // Try the active session first, then fall back to persisted meta.
-      parentAgentName: persisted.parentSessionId
-        ? (this.activeSessions.get(persisted.parentSessionId)?.agentName ??
-           readSessionMeta(persistDir, persisted.parentSessionId)?.agent)
-        : undefined,
-      turnCount: savedMessages.filter((m) => m.role === "assistant").length,
-      compactionTransform,
-      closed: false,
-      autoClose: persisted.autoClose ?? "immediate",
-      kind: persisted.kind ?? "job",
-      opCount: persisted.opCount ?? 0,
-      totalToolCalls: 0,
-      infraRetryCount: 0,
-      toolErrorHistory: new Map(),
-      toolErrorCount: 0,
-      filesModified: new Set(),
-      orderId: persisted.orderId,
-      consecutiveErrorTurns: 0,
-      stuckWarningInjected: false,
-      currentTurnErrors: 0,
-      currentTurnSuccesses: 0,
-      guardRedirectCount: 0,
-    };
-
-    this.subscribeForPersistence(session);
-    this.setupTimeout(session, def.timeoutMs);
-    this.activeSessions.set(sessionId, session);
-
-    // Emit session.start and bridge agent events to the bus
-    this.bridgeAgentEvents(persisted.agent, sessionId);
-    this.emit({
-      type: "session.start",
-      sessionId,
-      agent: persisted.agent,
-      task: persisted.task,
-      trigger: persisted.source ?? persisted.kind ?? "resume",
-      firedAt: session.startedAt,
-      // Optional rich fields:
-      parentSessionId: persisted.parentSessionId,
-      workflowRunId: persisted.workflowRunId,
-      source: persisted.source,
-      kind: persisted.kind,
-      requestId: persisted.requestId,
-    });
-
-    // Continue the agent — either resume from a pending user message or
-    // inject a restart notice and let the agent continue its task.
-    const resumeMessage: AgentMessage = {
-      role: "user",
-      content: [
-        { type: "text", text: "Process restarted. Your session has been restored. Continue where you left off." },
-      ],
-      timestamp: Date.now(),
-      source: "system",
-    } as AgentMessage;
-
-    const startPromise = this.gatedPrompt(session, () =>
-      lastRole === "user" || lastRole === "toolResult" ? agent.continue() : agent.prompt(resumeMessage),
-    );
-
-    session.promise = runAgentWithRetry(session, startPromise, this._infraRetryMax, (s) => this.handleCompletion(s), this.registry.persistDir);
-
-    this.sessionResults.set(
-      sessionId,
-      session.promise.then(() => this.buildResultFromSession(session)),
-    );
-
-    return {
-      sessionId,
-      agent: persisted.agent,
-      task: persisted.task,
-      status: "running",
-      startedAt: persisted.startedAt,
-      runtime: formatDuration(Date.now() - persisted.startedAt),
-      outputDir,
-    };
-  }
-
-  /** Get all active (running) sessions. Completed sessions are not listed — use result() or progress(). */
-  status(): SessionInfo[] {
-    return Array.from(this.activeSessions.values()).map((s) => ({
-      sessionId: s.sessionId,
-      agent: s.agentName,
-      task: s.task,
-      status: s.status,
-      startedAt: s.startedAt,
-      endedAt: s.endedAt ?? (s.status !== "running" ? Date.now() : undefined),
-      runtime: formatDuration((s.endedAt ?? Date.now()) - s.startedAt),
-      outputDir: s.outputDir,
-      error: s.error,
-      parentSessionId: s.parentSessionId,
-      workflowRunId: s.workflowRunId,
-      stepLabel: s.stepLabel,
-      autoClose: s.autoClose,
-      kind: s.kind,
-      opCount: s.opCount,
-    }));
-  }
-
-  /** Get API gate status for observability. */
-  apiGateStatus(): import("./api-gate.js").ApiGateStatus[] {
-    return this.apiGate?.status() ?? [];
-  }
-
-  /** List all registered agents (name, description, domain). */
   listAgents(): Array<{ name: string; description: string; domain: string }> {
-    return Array.from(this.agents.values()).map((a) => ({
+    return [...this.agents.values()].map(a => ({
       name: a.definition.name,
       description: a.definition.description,
       domain: a.definition.domain,
     }));
   }
 
-  /** Return the number of registered agents. */
-  agentCount(): number {
-    return this.agents.size;
-  }
-
-  /** Check whether an agent with the given name is registered. */
-  hasAgent(name: string): boolean {
-    return this.agents.has(name);
-  }
-
-  /** Get the names of all registered agents. */
-  agentNames(): string[] {
-    return [...this.agents.keys()];
-  }
-
-  /** Get the full definition for a registered agent, or undefined if not registered. */
   getAgentDefinition(name: string): SubagentDefinition | undefined {
+    return this.agents.get(name)?.definition;
+  }
+
+  // ── Session lifecycle ──
+
+  run(name: string, task: string, opts?: RunOptions): string {
     const registered = this.agents.get(name);
-    return registered?.definition;
-  }
-  /** Return the number of active (running) sessions. */
-  getSessionCount(): number {
-    return this.activeSessions.size;
-  }
+    if (!registered) throw new Error(`Agent "${name}" not registered`);
+    const def = registered.definition;
 
-  /** Build a recursive tree of the session hierarchy rooted at the given session.
-   *  Looks up both active sessions and archived/completed sessions in the registry.
-   *  Recursively finds all child sessions (sessions whose parentSessionId matches).
-   */
-  getSessionTree(sessionId: string): SessionTreeNode {
-    const registryData = this.registry.getRegistry();
+    const sessionId = opts?.sessionId ?? generateId(def.sessionIdPrefix);
+    const startedAt = Date.now();
+    const kind = opts?.kind ?? "job";
+    const autoClose = opts?.autoClose ?? "immediate";
 
-    // Helper to find session data from active sessions or registry
-    const findSession = (sid: string): { agent: string; task: string; status: string; error?: string } | null => {
-      const active = this.activeSessions.get(sid);
-      if (active) {
-        return { agent: active.agentName, task: active.task, status: active.status, error: active.error };
-      }
-      const persisted = registryData.sessions[sid];
-      if (persisted) {
-        return { agent: persisted.agent, task: persisted.task, status: persisted.status, error: persisted.error };
-      }
-      return null;
-    };
+    // Setup persistence
+    ensureSessionDir(this._persistDir, sessionId);
+    mkdirSync(sessionOutputDir(this._persistDir, sessionId), { recursive: true });
+    try { writeFileSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"), new Date().toISOString()); } catch {}
 
-    // Map internal statuses to the SessionTreeNode status union
-    const mapStatus = (status: string): "running" | "completed" | "cancelled" => {
-      if (status === "running" || status === "idle") return "running";
-      if (status === "done") return "completed";
-      return "cancelled"; // error, interrupted
-    };
-
-    // Extract a result string: last assistant text from active session or archived messages
-    const extractResult = (sid: string): string | undefined => {
-      const active = this.activeSessions.get(sid);
-      if (active) {
-        const text = extractLastAssistantText(active.agent.state.messages);
-        return text ?? undefined;
-      }
-      // Try archived messages
-      try {
-        const messages = readSessionMessages(this.registry.persistDir, sid);
-        if (messages.length > 0) {
-          const text = extractLastAssistantText(messages);
-          return text ?? undefined;
-        }
-      } catch {
-        // No archived messages available
-      }
-      return undefined;
-    };
-
-    // Collect all session IDs from both active sessions and registry
-    const allSessionIds = new Set<string>();
-    for (const sid of this.activeSessions.keys()) {
-      allSessionIds.add(sid);
-    }
-    for (const sid of Object.keys(registryData.sessions)) {
-      allSessionIds.add(sid);
-    }
-
-    // Build a parent -> children index
-    const childrenOf = new Map<string, string[]>();
-    for (const sid of allSessionIds) {
-      const active = this.activeSessions.get(sid);
-      const persisted = registryData.sessions[sid];
-      const parentSid = active?.parentSessionId ?? persisted?.parentSessionId;
-      if (parentSid) {
-        const siblings = childrenOf.get(parentSid);
-        if (siblings) {
-          siblings.push(sid);
-        } else {
-          childrenOf.set(parentSid, [sid]);
-        }
-      }
-    }
-
-    // Recursive tree builder
-    const buildNode = (sid: string): SessionTreeNode => {
-      const data = findSession(sid);
-      if (!data) {
-        throw new Error(`Session "${sid}" not found`);
-      }
-      const childIds = childrenOf.get(sid) ?? [];
-      const children = childIds.map(buildNode);
-      const status = mapStatus(data.status);
-      const node: SessionTreeNode = {
-        sessionId: sid,
-        agent: data.agent,
-        task: data.task,
-        status,
-        children,
-      };
-      // Attach result for completed/cancelled sessions
-      if (status === "completed" || status === "cancelled") {
-        const result = extractResult(sid);
-        if (result !== undefined) {
-          node.result = result;
-        }
-      }
-      return node;
-    };
-
-    return buildNode(sessionId);
-  }
-
-  /** Get sessions filtered by agent name. */
-  sessions(name: string): SessionInfo[] {
-    return this.status().filter((s) => s.agent === name);
-  }
-
-  /** Get last N messages from a session.
-   *  Falls back to archived JSONL for completed sessions.
-   *  Throws if session not found.
-   */
-  progress(sessionId: string, limit?: number): AgentMessage[] {
-    const session = this.activeSessions.get(sessionId);
-    let messages: AgentMessage[];
-    if (session) {
-      messages = session.agent.state.messages;
-    } else {
-      const persisted = this.registry.getSession(sessionId);
-      if (!persisted) {
-        throw new Error(`Session "${sessionId}" not found`);
-      }
-      messages = readSessionMessages(this.registry.persistDir, sessionId);
-      // If no messages in active dir (session was archived), try history
-      if (messages.length === 0) {
-        messages = readArchivedSessionMessages(this.registry.persistDir, sessionId);
-      }
-    }
-    if (limit === undefined) return messages.slice();
-    if (limit <= 0) return [];
-    return messages.slice(-limit);
-  }
-
-  /** Get result of a completed session.
-   *  Throws if session not found, still running, or idle (Chat session).
-   *  Chat+Task model: only the interface agent can be idle.
-   */
-  result(sessionId: string): TaskResult {
-    const session = this.activeSessions.get(sessionId);
-    if (session) {
-      if (session.status === "running") {
-        throw new Error(`Session "${sessionId}" is still running`);
-      }
-      if (session.status === "idle") {
-        throw new Error(`Session "${sessionId}" is idle (Chat session) — use progress() to read messages`);
-      }
-      return this.buildResultFromSession(session);
-    }
-    // Not active — check registry for completed session
-    return this.resultFromArchive(sessionId);
-  }
-
-  /** Build a TaskResult from an ActiveSession object (which may have been removed from the map). */
-  private buildResultFromSession(session: ActiveSession): TaskResult {
-    const messages = session.agent.state.messages;
-    const retries = session.infraRetryCount;
-    const toolErrors = session.toolErrorCount;
-    const turns = session.turnCount;
-    // P20 Tainted Handoffs: mark results as unreliable when too many retries or
-    // tool errors occurred. Thresholds chosen empirically:
-    //   retries > 2: three infra retries means persistent instability (network, rate limits)
-    //   toolErrors > 1: two+ tool errors suggests the agent is struggling with the environment
-    // Downstream consumers (evaluator, parent agents) can use this signal to
-    // discount results or request re-execution.
-    const tainted = retries > 2 || toolErrors > 1;
-    return {
-      sessionId: session.sessionId,
-      status:
-        session.archiveStatus === "interrupted" || session.status === "interrupted"
-          ? "interrupted"
-          : ((session.archiveStatus ?? session.status) as "done" | "error"),
-      lastAssistantText: extractLastAssistantText(messages),
-      messages: messages.slice(),
-      duration: formatDuration((session.endedAt ?? Date.now()) - session.startedAt),
-      outputDir: session.outputDir,
-      error: session.error,
-      turnsUsed: session.turnCount,
-      instability: { retries, toolErrors, turns, verdict: tainted ? "tainted" : "clean" },
-      finishResult: session.finishResult,
-    };
-  }
-
-  /** Build a TaskResult from archived persistence data.
-   *  Throws if session not found in registry.
-   */
-  private resultFromArchive(sessionId: string): TaskResult {
-    const persisted = this.registry.getSession(sessionId);
-    if (!persisted) {
-      throw new Error(`Session "${sessionId}" not found`);
-    }
-    if (persisted.status === "running" || persisted.status === "idle") {
-      throw new Error(`Session "${sessionId}" is still running (stale registry entry)`);
-    }
-    let messages = readSessionMessages(this.registry.persistDir, sessionId);
-    // If no messages in active dir (session was archived to history), try history
-    if (messages.length === 0) {
-      messages = readArchivedSessionMessages(this.registry.persistDir, sessionId);
-    }
-    const duration = persisted.endedAt
-      ? formatDuration(persisted.endedAt - persisted.startedAt)
-      : formatDuration(Date.now() - persisted.startedAt);
-    return {
-      sessionId,
-      status: persisted.status === "interrupted" ? "interrupted" : (persisted.status as "done" | "error"),
-      lastAssistantText: extractLastAssistantText(messages),
-      messages,
-      duration,
-      outputDir: sessionOutputDir(this.registry.persistDir, sessionId),
-      error: persisted.error,
-      finishResult: (() => {
-        const fp = extractFinishParams(messages);
-        if (!fp) return undefined;
-        return {
-          status: fp.status as "success" | "failure" | "blocked" | "partial",
-          summary: fp.summary,
-          deliverables: fp.deliverables,
-          blockers: fp.blockers,
-          next_steps: fp.next_steps,
-        };
-      })(),
-    };
-  }
-  /** Check if a session is currently active in-memory. */
-  hasActiveSession(sessionId: string): boolean {
-    return this.activeSessions.has(sessionId);
-  }
-
-  /**
-   * Send input to an IDLE session (interface/chat agent), or steer a RUNNING one.
-   *
-   * If the session is IDLE, this triggers a new turn with the provided text.
-   * If the session is RUNNING, this acts as a steer() (injects message).
-   *
-   * @param sessionId - The session ID.
-   * @param text - The user input text.
-   * @returns Promise that resolves when the *new* turn completes.
-   */
-  async input(sessionId: string, text: string): Promise<TaskResult> {
-    const session = this.activeSessions.get(sessionId);
-    if (!session) {
-      throw new Error(`Session "${sessionId}" not found (or not active)`);
-    }
-
-    // Case 1: Session is RUNNING — delegate to steer
-    if (session.status === "running") {
-      this.steer(sessionId, text, "user");
-      // Return a promise that resolves when the *current* session promise resolves.
-      return this.sessionResults.get(sessionId)!;
-    }
-
-    // Case 2: Session is IDLE — wake it up
-    // Note: This is safe against double-wake in single-threaded JS because
-    // we set status synchronously before any yield point. A second input()
-    // call would see "running" and go through the steer path above.
-    if (session.status === "idle") {
-      session.status = "running";
-      session.error = undefined; // Clear previous turn's error
-      session.infraRetryCount = 0; // Reset retry counter for new turn
-      // Bug 2 fix: fresh abort controller for the new turn (previous may be aborted).
-      session.abortController = new AbortController();
-      this.registry.updateSessionStatus(sessionId, "running");
-
-      // Write [STARTED] sentinel
-      try {
-        const sentinelPath = join(sessionDir(this.registry.persistDir, session.sessionId), "[STARTED]");
-        writeFileSync(sentinelPath, new Date().toISOString());
-      } catch {
-        /* best-effort */
-      }
-
-      // Prompt the agent with new input
-      const p = runAgentWithRetry(
-        session,
-        this.gatedPrompt(session, () => session.agent.prompt(text)),
-        this._infraRetryMax,
-        (s) => this.handleCompletion(s),
-        this.registry.persistDir,
-      );
-
-      session.promise = p;
-      const resultPromise = p.then(() => this.buildResultFromSession(session));
-      this.sessionResults.set(sessionId, resultPromise);
-
-      return resultPromise;
-    }
-
-    throw new Error(`Session "${sessionId}" is in terminal state (${session.status}) — cannot accept input`);
-  }
-
-  /**
-   * Cancel a running session and all its children (cascading).
-   * No-op if session not found, already terminal, or idle interface agent (nothing to cancel).
-   *
-   * Chat+Task model: only the interface agent can be idle. Task sessions are
-   * always running or terminal — they never enter idle state.
-   * See docs/session-state-machine.md.
-   */
-  cancel(sessionId: string): void {
-    const session = this.activeSessions.get(sessionId);
-    if (!session) return;
-    if (session.status !== "running" && session.status !== "idle") return;
-
-    // Cancel children first (depth-first)
-    for (const child of this.activeSessions.values()) {
-      if (child.parentSessionId === sessionId && child.status === "running") {
-        this.cancel(child.sessionId);
-      }
-    }
-
-    // Idle interface agent: no-op — nothing is running. Use close() to destroy.
-    if (session.status === "idle") {
-      return;
-    }
-
-    // Running — abort the agent loop. handleCompletion fires when the promise settles.
-    // Bug 2 fix: abort session-level controller FIRST so gate queue waiters
-    // get rejected before releaseAll() removes them.
-    session.abortController.abort();
-    session.agent.abort();
-    // Release any API gate slot held by this session
-    this.apiGate?.releaseAll(sessionId);
-  }
-
-  /**
-   * Resume an interrupted session by ID. Used by auto-resume subscriber.
-   * Returns true if resumed, false if session not found or agent not registered.
-   */
-  resumeInterrupted(sessionId: string): boolean {
-    const persisted = readSessionMeta(this.registry.persistDir, sessionId);
-    if (!persisted) return false;
-    const agent = this.agents.get(persisted.agent);
-    if (!agent) return false;
-    // Don't resume if already active
-    if (this.activeSessions.has(sessionId)) return false;
-    try {
-      this.resumeSession(sessionId, persisted, agent);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  /**
-   * Run an LLM call through the API gate.
-   * If a gate is configured, acquires a slot before calling and releases after.
-   * If no gate, calls directly (zero overhead).
-   *
-   * Bug 2 fix: passes the session's abort signal to apiGate.acquire() so that
-   * cancel() can unblock sessions waiting in the gate queue.
-   */
-  private gatedPrompt(
-    session: ActiveSession,
-    callFn: () => Promise<void>,
-  ): Promise<void> {
-    if (!this.apiGate) return callFn();
-
-    const model = session.agent.state.model;
-    if (!model?.baseUrl) return callFn();
-
-    // Key by provider, not just baseUrl. When multiple models go through
-    // the same proxy (e.g., LiteLLM), they hit different upstream providers
-    // with independent rate limits. Use "baseUrl::provider" as the gate key.
-    const gateKey = `${model.baseUrl}::${model.provider ?? "unknown"}`;
-
-    return this.apiGate
-      .acquire(gateKey, session.sessionId, session.agentName, session.abortController.signal)
-      .then((release) =>
-        callFn().finally(release),
-      );
-  }
-
-  /**
-   * Permanently close a session — archive to disk and remove from memory.
-   *
-   * If the session is running, cancels it first (cascading children).
-   * Unlike cancel(), this always archives — even for the interface agent.
-   * The session will NOT resume on restart.
-   * See docs/session-state-machine.md.
-   */
-  close(sessionId: string): void {
-    const session = this.activeSessions.get(sessionId);
-    if (!session) return;
-
-    // Set closed flag FIRST — prevents handleCompletion (from pending abort) from acting.
-    session.closed = true;
-
-    // Cancel running work (cascading children).
-    this.cancel(sessionId);
-
-    // If already removed (task session archived by cancel), done.
-    if (!this.activeSessions.has(sessionId)) return;
-
-    // Still here — archive and remove.
-    // If finish() was already called, the agent completed gracefully — don't
-    // overwrite with "interrupted". This prevents the cron-close race where a
-    // new heartbeat fires shortly after finish() and stomps the status.
-    const finishCalled = hasFinishToolCall(session.agent.state.messages);
-
-    session.unsubscribe?.();
-    session.endedAt = Date.now();
-    session.status = "interrupted"; // in-memory type only allows running/interrupted/idle
-    session.archiveStatus = finishCalled ? "done" : "interrupted";
-    session.error = finishCalled ? undefined : "Closed";
-    this.registry.updateSessionStatus(sessionId, finishCalled ? "done" : "interrupted", session.error);
-
-    // Extract outcome and finishParams for the session.end event
-    let outcome: string | undefined;
-    let finishParams: Record<string, unknown> | undefined;
-    if (finishCalled) {
-      finishParams = extractFinishParams(session.agent.state.messages) ?? undefined;
-      outcome = (finishParams as any)?.summary;
-    }
-    if (!outcome) {
-      outcome = extractLastAssistantText(session.agent.state.messages) ?? undefined;
-    }
-
-    this.cleanupSession(session);
-    this.cleanupCallDepths(sessionId);
-    this.activeSessions.delete(sessionId);
-
-    // Emit session.end on bus
-    const closeInfo = {
-      sessionId, agent: session.agentName, task: session.task,
-      status: session.archiveStatus!, startedAt: session.startedAt,
-      endedAt: session.endedAt, runtime: formatDuration(session.endedAt - session.startedAt),
-      outputDir: session.outputDir, error: session.error, outcome,
-      opCount: session.opCount,
-      turnCount: session.turnCount, finishParams,
-      filesModified: [...session.filesModified],
-      workspacePath: this.getWorkspacePath(session.agentName),
-      requestId: session.requestId,
-    };
-    this.emit({
-      type: "session.end",
-      sessionId: closeInfo.sessionId,
-      agent: closeInfo.agent,
-      outcome: closeInfo.outcome ?? closeInfo.status,
-      summary: typeof closeInfo.finishParams?.summary === "string" ? closeInfo.finishParams.summary : (closeInfo.error ?? ""),
-      durationMs: session.endedAt && session.startedAt ? session.endedAt - session.startedAt : 0,
-      // Optional rich fields:
-      status: closeInfo.status,
-      task: closeInfo.task,
-      duration: closeInfo.runtime,
-      error: closeInfo.error,
-      opCount: closeInfo.opCount,
-      turnCount: closeInfo.turnCount,
-      finishParams: closeInfo.finishParams,
-      filesModified: closeInfo.filesModified,
-      workspacePath: closeInfo.workspacePath,
+    // Create Agent
+    const guards = this.buildGuards(def);
+    const agent = new Agent({
+      initialState: {
+        systemPrompt: def.systemPrompt ?? "",
+        model: def.model,
+        tools: def.tools,
+      },
+      beforeToolCall: guards.length ? composeGuards(...guards) : undefined,
+      getApiKey: def.apiKey === "dynamic"
+        ? () => this.getCopilotToken()
+        : def.apiKey ? () => def.apiKey! : undefined,
     });
-  }
 
-  /** Steer a running session mid-run.
-   *  Throws if session not found or not running.
-   */
-  steer(sessionId: string, message: string, source?: string): "steered" | "queued" {
-    const session = this.activeSessions.get(sessionId);
-    if (!session || session.status !== "running") {
-      throw new Error(`Session "${sessionId}" not found or not running`);
-    }
-    if (session.agent.state.isStreaming) {
-      session.agent.steer({
-        role: "user",
-        content: [{ type: "text", text: message }],
-        timestamp: Date.now(),
-        ...(source ? { source } : {}),
-      });
-      return "steered";
-    }
-    session.agent.followUp({
-      role: "user",
-      content: [{ type: "text", text: message }],
-      timestamp: Date.now(),
-      ...(source ? { source } : {}),
+    // JSONL persistence
+    agent.subscribe((event) => {
+      if (event.type === "message_end" && "message" in event) {
+        appendSessionMessage(this._persistDir, sessionId, (event as any).message);
+      }
     });
-    return "queued";
-  }
 
-  /**
-   * Inject a non-interrupting message into a running session.
-   *
-   * Unlike steer(), this never interrupts mid-turn — the message is queued
-   * via agent.followUp() and delivered at the next natural turn boundary.
-   *
-   * Use for automated event injection (socket_watch, coaching events, etc.)
-   * where the caller doesn't need to wait for a response.
-   *
-   * Throws if session not found or not running.
-   */
-  followUp(sessionId: string, message: string, source?: string): void {
-    const session = this.activeSessions.get(sessionId);
-    if (!session) {
-      throw new Error(`Session "${sessionId}" not found`);
-    }
-    if (session.status !== "running") {
-      throw new Error(`Session "${sessionId}" is not running (status: ${session.status})`);
-    }
-
-    const msg: AgentMessage = {
-      role: "user",
-      content: [{ type: "text", text: message }],
-      timestamp: Date.now(),
-      ...(source ? { source } : {}),
+    const session: ActiveSession = {
+      sessionId, agent, agentName: name, task, startedAt,
+      status: "running", kind, autoClose,
+      parentSessionId: opts?.parentSessionId,
+      workflowRunId: opts?.workflowRunId,
+      stepLabel: opts?.stepLabel,
+      toolCalls: 0, turnCount: 0,
+      requestId: opts?.requestId,
+      projectId: opts?.projectId,
     };
 
-    session.agent.followUp(msg);
-  }
+    // Event bridge
+    this.bridgeEvents(session);
 
-  /** Subscribe to agent events for a running session. Returns unsubscribe function.
-   *  Throws if session not found or not running.
-   */
-  subscribe(sessionId: string, fn: (e: AgentEvent, signal: AbortSignal) => Promise<void> | void): () => void {
-    const session = this.activeSessions.get(sessionId);
-    if (!session) {
-      throw new Error(`Session "${sessionId}" not found or not running`);
-    }
-    return session.agent.subscribe(fn);
-  }
-
-  /** Wait for a session to finish. Returns result.
-   *  Throws if session not found (neither active nor in registry).
-   *  Note: for the interface agent, this resolves after the first processing cycle
-   *  but the TaskResult status may not be meaningful. Use waitForIdle() instead.
-   */
-  async waitFor(sessionId: string): Promise<TaskResult> {
-    // Check the result promise first — works even if session already completed
-    const resultPromise = this.sessionResults.get(sessionId);
-    if (resultPromise) {
-      return resultPromise;
-    }
-    // Not started by this manager instance — check archive
-    return this.resultFromArchive(sessionId);
-  }
-
-  /**
-   * Wait for the interface (Chat) session's current processing to finish (transition to "idle").
-   * Resolves immediately if the session is already idle.
-   *
-   * Chat+Task model: for task sessions, this waits for completion (they never
-   * enter idle — they terminate with done/error/interrupted).
-   * Throws if session not found.
-   */
-  async waitForIdle(sessionId: string): Promise<void> {
-    const session = this.activeSessions.get(sessionId);
-    if (!session) {
-      throw new Error(`Session "${sessionId}" not found`);
-    }
-    if (session.status === "idle") return;
-    if (session.status !== "running") return; // already terminal
-    await session.promise;
-  }
-
-  /**
-   * Wait for a detached session to complete by polling its meta.json on disk.
-   * Returns a TaskResult built from the persisted session data.
-   *
-   * Strategy: poll meta.json for terminal status. This is the most reliable
-   * approach since the detached process always writes meta.json on completion.
-   * Socket-based instant notification is a future optimization.
-   *
-   * @param sessionId - The session ID of the detached session
-   * @param opts.pollIntervalMs - Polling interval (default: 2000ms)
-   * @param opts.timeoutMs - Overall timeout (default: 600_000ms = 10 min)
-   */
-  async waitForDetached(
-    sessionId: string,
-    opts?: { pollIntervalMs?: number; timeoutMs?: number },
-  ): Promise<TaskResult> {
-    const pollInterval = opts?.pollIntervalMs ?? 2000;
-    const timeoutMs = opts?.timeoutMs ?? 600_000;
-
-    // Check if already done
-    const initialMeta = this.registry.getSession(sessionId);
-    if (!initialMeta) {
-      throw new Error(`Session "${sessionId}" not found`);
-    }
-    if (initialMeta.status !== "running" && initialMeta.status !== "idle") {
-      return this.resultFromArchive(sessionId);
+    // Timeout
+    if (def.timeoutMs) {
+      session.timeoutTimer = setTimeout(() => {
+        log("warn", `[runtime] ${sessionId} timed out after ${def.timeoutMs}ms`);
+        agent.abort();
+      }, def.timeoutMs);
     }
 
-    // Poll meta.json until status is terminal
-    const deadline = Date.now() + timeoutMs;
-    while (Date.now() < deadline) {
-      const meta = this.registry.getSession(sessionId);
-      if (meta && meta.status !== "running" && meta.status !== "idle") {
-        return this.resultFromArchive(sessionId);
+    this.sessions.set(sessionId, session);
+
+    // Run agent
+    const promise = this.executeSession(session).then((result) => {
+      if (result.status === "done" || result.status === "error" || result.status === "interrupted") {
+        this.sessions.delete(sessionId);
+      } else {
+        session.status = "paused";
       }
-      // Also check identity.json for process exit (catches cases where
-      // meta.json wasn't updated but the process died)
-      if (initialMeta.instance) {
-        const identity = readIdentity(this.registry.persistDir, initialMeta.instance);
-        if (identity && identity.status !== "running") {
-          // Process exited — give meta.json a moment to flush, then check
-          await new Promise((r) => setTimeout(r, 500));
-          const finalMeta = this.registry.getSession(sessionId);
-          if (finalMeta && finalMeta.status !== "running" && finalMeta.status !== "idle") {
-            return this.resultFromArchive(sessionId);
-          }
-          // Process is dead but meta still says running — mark as error
-          this.registry.updateSessionStatus(sessionId, "error", "Process exited without completing");
-          return this.resultFromArchive(sessionId);
-        }
-      }
-      await new Promise((r) => setTimeout(r, pollInterval));
-    }
-    throw new Error(`Timeout waiting for detached session "${sessionId}" (${timeoutMs}ms)`);
-  }
-  // ── Path accessors ───────────────────────────────────────────────────
-
-  /** Get the knowledge directory path for a registered agent. */
-  getKnowledgePath(name: string): string | undefined {
-    const registered = this.agents.get(name);
-    return registered?.definition.knowledgeDir;
-  }
-
-  /** Get the workspace path for a registered agent. */
-  getWorkspacePath(name: string): string | undefined {
-    const registered = this.agents.get(name);
-    return registered?.definition.workspace;
-  }
-
-  /** Get the workflows directory for a registered agent.
-   *  Convention: agentDir = dirname(workspace), workflows = agentDir/workflows.
-   */
-  getWorkflowDir(name: string): string | undefined {
-    const registered = this.agents.get(name);
-    const workspace = registered?.definition.workspace;
-    if (!workspace) return undefined;
-    const agentDir = dirname(workspace);
-    return join(agentDir, "workflows");
-  }
-
-  /** Get the output directory for a session (active or archived). */
-  getOutputPath(sessionId: string): string | undefined {
-    const session = this.activeSessions.get(sessionId);
-    if (session) return session.outputDir;
-
-    // Check session directory (active location)
-    const persistDir = this.registry.persistDir;
-    const activeOutputDir = sessionOutputDir(persistDir, sessionId);
-    if (existsSync(activeOutputDir)) return activeOutputDir;
-
-    // Check archived (history) location
-    const archivedOutputDir = join(historyDir(persistDir), sessionId, "output");
-    if (existsSync(archivedOutputDir)) return archivedOutputDir;
-
-    return undefined;
-  }
-
-  // ── Session graph: trace (delegated to manager-trace.ts) ──────────────
-
-  /** Build a session trace from any session or workflow run ID.
-   *  Walks parent pointers up to the root, loads workflow run records,
-   *  and builds a tree showing the position of the target in the graph.
-   */
-  trace(targetId: string): SessionTrace | null {
-    return buildTrace(targetId, {
-      persistDir: this.registry.persistDir,
-      registryData: this.registry.getRegistry(),
-      activeSessions: this.activeSessions,
-    });
-  }
-
-  // ── Health API (delegated to manager-health.ts) ────────────────────────
-
-  /** Build the HealthContext for delegation to standalone health functions. */
-  private healthContext(): import("./manager-health.js").HealthContext {
-    return {
-      agents: this.agents,
-      activeSessions: this.activeSessions,
-      startedAt: this.startedAt,
-      persistDir: this.registry.persistDir,
-    };
-  }
-
-  /** Fast, in-memory health snapshot. Returns data the manager already knows. */
-  health(): ManagerHealthReport {
-    return computeHealth(this.healthContext());
-  }
-
-  /**
-   * Filesystem-based ground-truth scan. Inspects persisted session data on disk.
-   * Intentionally synchronous — this is a diagnostic endpoint, not a hot path.
-   */
-  async auditHealth(opts?: AuditHealthOptions): Promise<AuditHealthReport> {
-    return computeAuditHealth(this.healthContext(), opts);
-  }
-
-  /** Compare in-memory state vs filesystem and flag discrepancies. */
-  async reconcileHealth(opts?: AuditHealthOptions): Promise<ReconcileReport> {
-    return computeReconcileHealth(this.healthContext(), opts);
-  }
-
-  // ── Tool receipt signing (delegated to manager-receipts.ts) ──
-
-  signToolOutput(output: string): string {
-    return signToolOutput(output);
-  }
-
-  verifyToolOutput(content: string, signature: string): boolean {
-    return verifyToolOutput(content, signature);
-  }
-
-  createVerifyReceiptTool(): AgentTool {
-    return createVerifyReceiptTool();
-  }
-
-  /** Get a handoff summary for a session (for agents.context action). */
-  getSessionSummary(sessionId: string): { task: string; summary: string; status: string } {
-    const session = this.activeSessions.get(sessionId);
-    if (session) {
-      try {
-        const result = this.buildResultFromSession(session);
-        
-        return {
-          task: session.task,
-          summary: summarizeForHandoff(result),
-          status: session.status,
-        };
-      } catch {
-        return { task: session.task, summary: "(session in progress)", status: session.status };
-      }
-    }
-    // Try archived session
-    try {
-      const result = this.result(sessionId);
-      
-      return {
-        task: result.messages?.[0]?.content?.toString().slice(0, 200) ?? "",
-        summary: summarizeForHandoff(result),
-        status: result.status,
-      };
-    } catch {
-      return { task: "", summary: "(session not found)", status: "unknown" };
-    }
-  }
-
-  /** Get completed workflow steps (for agents.context scope: "workflow"). */
-  getWorkflowSteps(workflowRunId: string): Array<{ step: string; sessionId: string; summary: string }> {
-    const steps = getWorkflowStepSessions(this.registry.persistDir, workflowRunId);
-    return steps.map((s) => ({
-      step: s.agent,
-      sessionId: s.sessionId,
-      summary: `${s.status}: ${(s.outcome ?? "").slice(0, 300)}`,
-    }));
-  }
-
-  // ── V2: callAgent + agents tool ──────────────────────────────────────
-
-  /**
-   * Synchronous agent call — runs an agent to completion and returns the result.
-   * This is the single cooperation primitive in V2.
-   *
-   * Blocks until the child agent finishes. The child runs in-process as a
-   * new Agent instance (same event loop, different call stack frame via await).
-   *
-   * Call depth is tracked to prevent infinite recursion (A→B→A→B→...).
-   *
-   * @param name - Registered agent name
-   * @param task - Task description
-   * @param opts.parentSessionId - Parent session ID for tracking
-   * @param opts.onEvent - Streaming callback for real-time events
-   * @param opts.signal - AbortSignal for cancellation
-   * @param opts.timeout - Timeout in ms (aborts child if exceeded)
-   */
-  async callAgent(
-    name: string,
-    task: string,
-    opts?: {
-      parentSessionId?: string;
-      onEvent?: (event: AgentEvent) => void;
-      signal?: AbortSignal;
-      timeout?: number;
-      /** Workflow run ID — passed through to the spawned session for tracking. */
-      workflowRunId?: string;
-      /** Step label — passed through to the spawned session for tracking. */
-      stepLabel?: string;
-      /** Message source tag (default: "callAgent"). */
-      source?: string;
-      /** Project ID for session tracking. */
-      projectId?: string;
-    },
-  ): Promise<TaskResult> {
-    // ── Depth check ────────────────────────────────────────────────────
-    // Find the root session by walking up parentSessionId chain
-    const rootSessionId = this.findRootSession(opts?.parentSessionId);
-    const currentDepth = rootSessionId ? (this.callDepths.get(rootSessionId) ?? 0) : 0;
-
-    if (currentDepth >= this._maxCallDepth) {
-      return {
-        sessionId: "",
-        status: "error",
-        lastAssistantText: null,
-        messages: [],
-        duration: "0s",
-        outputDir: "",
-        error: `Call depth limit exceeded (${this._maxCallDepth}). This usually means agents are calling each other in a loop.`,
-      };
-    }
-
-    // Increment depth
-    if (rootSessionId) {
-      this.callDepths.set(rootSessionId, currentDepth + 1);
-    }
-
-    try {
-      // ── Start session ──────────────────────────────────────────────────
-      const sessionId = this.run(name, task, {
-        parentSessionId: opts?.parentSessionId,
-        workflowRunId: opts?.workflowRunId,
-        stepLabel: opts?.stepLabel,
-        source: opts?.source ?? "callAgent",
-        projectId: opts?.projectId,
-        kind: "call",
-      });
-
-      // Subscribe for streaming events if requested
-      let unsubscribe: (() => void) | undefined;
-      if (opts?.onEvent) {
-        try {
-          unsubscribe = this.subscribe(sessionId, opts.onEvent);
-        } catch {
-          /* session may have already completed */
-        }
-      }
-
-      // Set up timeout
-      let timeoutTimer: ReturnType<typeof setTimeout> | undefined;
-      if (opts?.timeout) {
-        timeoutTimer = setTimeout(() => {
-          this.cancel(sessionId);
-        }, opts.timeout);
-      }
-
-      // Forward abort signal
-      if (opts?.signal) {
-        if (opts.signal.aborted) {
-          this.cancel(sessionId);
-        } else {
-          opts.signal.addEventListener(
-            "abort",
-            () => {
-              this.cancel(sessionId);
-            },
-            { once: true },
-          );
-        }
-      }
-
-      // ── Wait for completion ────────────────────────────────────────────
-      const result = await this.waitFor(sessionId);
-
-      // Cleanup
-      if (timeoutTimer) clearTimeout(timeoutTimer);
-      unsubscribe?.();
-
+      this.completedResults.set(sessionId, result);
       return result;
-    } finally {
-      // Decrement depth
-      if (rootSessionId) {
-        const depth = this.callDepths.get(rootSessionId) ?? 1;
-        if (depth <= 1) {
-          this.callDepths.delete(rootSessionId);
-        } else {
-          this.callDepths.set(rootSessionId, depth - 1);
-        }
-      }
-    }
-  }
+    });
+    this.results.set(sessionId, promise);
 
-  /** Walk up the parentSessionId chain to find the root session. */
-  private findRootSession(sessionId: string | undefined): string | undefined {
-    if (!sessionId) return undefined;
-    const session = this.activeSessions.get(sessionId);
-    if (!session) return sessionId;
-    if (session.parentSessionId) {
-      return this.findRootSession(session.parentSessionId);
-    }
     return sessionId;
   }
 
-  /**
-   * Non-blocking agent run — starts an agent immediately and returns the session ID.
-   * Used by the agents tool 'run' action. Thin wrapper around this.run().
-   */
+  cancel(sessionId: string): void {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      if (session.timeoutTimer) clearTimeout(session.timeoutTimer);
+      session.agent.abort();
+      this.sessions.delete(sessionId);
+    }
+  }
+
+  close(sessionId: string): void {
+    this.cancel(sessionId);
+  }
+
+  /** Send a message to a session (replaces steer/input). */
+  send(sessionId: string, text: string): void {
+    const session = this.sessions.get(sessionId);
+    if (!session) return;
+    const msg = { role: "user" as const, content: [{ type: "text" as const, text }] };
+    if (session.status === "running") {
+      session.agent.steer(msg as any);
+    } else {
+      session.status = "running";
+      session.agent.followUp(msg as any);
+    }
+  }
+
+  /** @deprecated Use send() instead */
+  steer(sessionId: string, text: string, _source?: string): "steered" | "queued" {
+    this.send(sessionId, text);
+    return "steered";
+  }
+
+  /** @deprecated Use send() instead */
+  async input(sessionId: string, text: string): Promise<TaskResult> {
+    this.send(sessionId, text);
+    return this.waitFor(sessionId);
+  }
+
+  // ── Query ──
+
+  status(): SessionInfo[] {
+    return [...this.sessions.values()].map(s => ({
+      sessionId: s.sessionId,
+      agent: s.agentName,
+      task: s.task,
+      status: s.status === "running" ? "running" as const : "idle" as const,
+      startedAt: s.startedAt,
+      runtime: formatDuration(Date.now() - s.startedAt),
+      outputDir: sessionOutputDir(this._persistDir, s.sessionId),
+      parentSessionId: s.parentSessionId,
+      workflowRunId: s.workflowRunId,
+      stepLabel: s.stepLabel,
+      kind: s.kind,
+      autoClose: s.autoClose,
+      turnCount: s.turnCount,
+    }));
+  }
+
+  hasActiveSession(sessionId: string): boolean {
+    return this.sessions.has(sessionId);
+  }
+
+  getSessionCount(): number {
+    return this.sessions.size;
+  }
+
+  result(sessionId: string): TaskResult {
+    const completed = this.completedResults.get(sessionId);
+    if (completed) return completed;
+    throw new Error(`Session "${sessionId}" not found or still running`);
+  }
+
+  getSessionSummary(sessionId: string): { task: string; summary: string; status: string } {
+    const session = this.sessions.get(sessionId);
+    const completed = this.completedResults.get(sessionId);
+    return {
+      task: session?.task ?? completed?.sessionId ?? "",
+      summary: completed?.lastAssistantText ?? "(running)",
+      status: completed?.status ?? session?.status ?? "unknown",
+    };
+  }
+
+  progress(sessionId: string, limit = 20): AgentMessage[] {
+    const session = this.sessions.get(sessionId);
+    if (session) return (session.agent.state.messages as AgentMessage[]).slice(-limit);
+    try { return readSessionMessages(this._persistDir, sessionId).slice(-limit); } catch { return []; }
+  }
+
+  // ── Await ──
+
+  async waitFor(sessionId: string): Promise<TaskResult> {
+    const promise = this.results.get(sessionId);
+    if (!promise) throw new Error(`Session "${sessionId}" not found`);
+    return promise;
+  }
+
+  async waitForIdle(sessionId: string): Promise<void> {
+    await this.waitFor(sessionId);
+  }
+
+  async callAgent(
+    agentName: string,
+    task: string,
+    opts?: { parentSessionId?: string; source?: string; workflowRunId?: string; stepLabel?: string },
+  ): Promise<TaskResult & { messages: AgentMessage[] }> {
+    const sessionId = this.run(agentName, task, {
+      parentSessionId: opts?.parentSessionId,
+      source: opts?.source ?? "callAgent",
+      kind: "call",
+      workflowRunId: opts?.workflowRunId,
+      stepLabel: opts?.stepLabel,
+    });
+    const result = await this.waitFor(sessionId);
+    return { ...result, messages: this.progress(sessionId, 1000) };
+  }
+
   runAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string; useNewRuntime?: boolean },
+    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string },
   ): string {
-    if (opts?.useNewRuntime) {
-      return this.runAgentV2(agentName, task, opts);
-    }
     return this.run(agentName, task, {
       parentSessionId: opts?.parentSessionId,
       originSessionId: opts?.originSessionId,
@@ -2334,67 +346,189 @@ export class SubagentManager {
     });
   }
 
-  /**
-   * Run an agent using the v2 AgentRuntime (thin, no SubagentManager overhead).
-   * Fire-and-forget: returns sessionId immediately, session runs in background.
-   */
-  private runAgentV2(
-    agentName: string,
-    task: string,
-    opts?: { parentSessionId?: string; source?: string; requestId?: string },
-  ): string {
-    const registered = this.agents.get(agentName);
-    if (!registered) throw new Error(`Agent "${agentName}" not registered`);
-    const def = registered.definition;
+  // ── Compatibility stubs (v2 doesn't need these) ──
 
-    const sessionId = generateId(def.sessionIdPrefix);
+  /** @deprecated No-op in v2. Sessions timeout; no zombies. */
+  cleanupZombieSessions(): number { return 0; }
 
-    // Import and run asynchronously — don't block the caller
-    import("./agent-runtime.js").then(({ runAgentSession }) => {
-      runAgentSession({
-        agentName,
-        task,
-        model: def.model,
-        systemPrompt: this.resolveSystemPrompt(def),
-        tools: def.tools ?? [],
-        guards: [
-          createEmptyArgsGuard(),
-          createToolSchemaGuard(),
-          createPathHallucinationGuard(),
-          createCompletenessGuard(def.name),
-          createFinishGuard(),
-          createCommitGuard(def.name, this._projectRoot),
-          createVerificationDepthGuard(def.name, {}),
-          createReadDedupGuard(),
-          createSessionReadGuard(),
-          createScrapeDedupGuard(),
-        ],
-        persistDir: this.registry.persistDir,
-        timeoutMs: def.timeoutMs,
-        bus: this.bus as any,
-        parentSessionId: opts?.parentSessionId,
-        source: opts?.source ?? "agents.run",
-        kind: "job",
-        sessionId,
-        getApiKey: def.apiKey === "dynamic" ? getCopilotToken : def.apiKey ? () => def.apiKey! : undefined,
-      }).catch((err) => {
-        log("error", `[runAgentV2] Session ${sessionId} failed: ${err}`);
-      });
-    });
-
-    return sessionId;
+  /** @deprecated No-op in v2. Pi-agent-core handles crash recovery. */
+  resumeStaleSessions(_opts?: { abort?: boolean; kinds?: SessionKind[] }): { resumed: any[]; interrupted: any[] } {
+    return { resumed: [], interrupted: [] };
   }
 
-  /**
-   * Create the V2 agents tool — 7 actions: call, send, run, list, peek, cancel, requests.
-   *
-   * Delegates to the standalone `createAgentsTool()` in `manager-agents-tool.ts`.
-   * Kept as an instance method for backward compatibility with existing callers.
-   */
+  /** @deprecated No-op in v2. */
+  resumeInterrupted(_sessionId: string): boolean { return false; }
+
+  /** @deprecated No-op in v2. */
+  health(): any { return { sessions: this.sessions.size, agents: this.agents.size }; }
+
+  /** @deprecated No-op in v2. */
+  async auditHealth(): Promise<any> { return {}; }
+
+  /** @deprecated No-op in v2. */
+  apiGateStatus(): any[] { return []; }
+
+  // ── Tool creation ──
+
   createAgentsTool(opts?: CreateAgentsToolOptions): AgentTool {
-    // Cast needed: `agents` is private on SubagentManager but the extracted
-    // function needs read access. The shape matches at runtime.
-    return createAgentsToolFn(this as unknown as import("./manager-agents-tool.js").AgentsToolManagerDeps, opts);
+    return createAgentsToolFn(this as any, opts);
   }
 
+  // ── Path helpers ──
+
+  get registryStore(): { persistDir: string; getSession: (id: string) => any; updateSessionStatus: (id: string, status: string, error?: string) => void } {
+    return {
+      persistDir: this._persistDir,
+      getSession: (_id: string) => null,
+      updateSessionStatus: () => {},
+    };
+  }
+
+  /** Alias for AgentsToolManagerDeps compatibility */
+  get registry(): { persistDir: string; getSession: (id: string) => any; updateSessionStatus: (id: string, status: string, error?: string) => void } {
+    return this.registryStore;
+  }
+
+  get projectRoot(): string { return this._projectRoot; }
+
+  getWorkflowSteps(_workflowRunId: string): Array<{ step: string; sessionId: string; summary: string }> {
+    // TODO: implement via DB query when needed
+    return [];
+  }
+
+  getWorkspacePath(name: string): string | undefined {
+    return this.agents.get(name)?.definition.workspace;
+  }
+
+  getKnowledgePath(name: string): string | undefined {
+    return this.agents.get(name)?.definition.knowledgeDir;
+  }
+
+  getWorkflowDir(name: string): string | undefined {
+    const def = this.agents.get(name)?.definition;
+    if (!def?.knowledgeDir) return undefined;
+    const { dirname, join: pathJoin } = require("node:path");
+    return pathJoin(dirname(def.knowledgeDir), "workflows");
+  }
+
+  getOutputPath(sessionId: string): string | undefined {
+    return sessionOutputDir(this._persistDir, sessionId);
+  }
+
+  // ── Private ──
+
+  private buildGuards(def: SubagentDefinition): BeforeToolCallHook[] {
+    // Import guards lazily to avoid circular deps
+    const { createFinishGuard } = require("./tools/finish-guard.js");
+    const { createReadDedupGuard } = require("./tools/read-dedup-guard.js");
+    const { createSessionReadGuard } = require("./tools/session-read-guard.js");
+    const { createScrapeDedupGuard } = require("./tools/scrape-dedup-guard.js");
+    const { createEmptyArgsGuard } = require("./tools/empty-args-guard.js");
+    const { createToolSchemaGuard } = require("./tools/tool-schema-guard.js");
+    const { createPathHallucinationGuard } = require("./tools/path-hallucination-guard.js");
+    const { createCommitGuard } = require("./tools/commit-guard.js");
+    const { createCompletenessGuard } = require("./tools/completeness-guard.js");
+    const { createVerificationDepthGuard } = require("./tools/verification-depth-guard.js");
+    return [
+      createEmptyArgsGuard(),
+      createToolSchemaGuard(),
+      createPathHallucinationGuard(),
+      createCompletenessGuard(def.name),
+      createFinishGuard(),
+      createCommitGuard(def.name, this.projectRoot),
+      createVerificationDepthGuard(def.name, {}),
+      createReadDedupGuard(),
+      createSessionReadGuard(),
+      createScrapeDedupGuard(),
+    ];
+  }
+
+  private getCopilotToken(): string {
+    try {
+      const { readFileSync } = require("node:fs");
+      const tokenPath = process.env.COPILOT_TOKEN_PATH || "/app/.copilot/api-key.json";
+      const data = JSON.parse(readFileSync(tokenPath, "utf-8"));
+      return data.token || "";
+    } catch { return ""; }
+  }
+
+  private async executeSession(session: ActiveSession): Promise<TaskResult> {
+    const { agent, sessionId, agentName, task, startedAt } = session;
+
+    try {
+      await agent.prompt(task);
+      await agent.waitForIdle();
+    } catch (err) {
+      log("error", `[runtime] ${sessionId} failed: ${err}`);
+    } finally {
+      if (session.timeoutTimer) clearTimeout(session.timeoutTimer);
+    }
+
+    // Extract result
+    const messages = agent.state.messages as AgentMessage[];
+    const finishParams = extractFinishParams(messages as any[]);
+    const status: "done" | "error" | "interrupted" = finishParams?.status === "success" ? "done"
+      : finishParams?.status === "failure" ? "error"
+      : finishParams?.status === "blocked" ? "interrupted"
+      : "done";
+    const lastText = finishParams?.summary ?? extractLastAssistantText(messages) ?? "";
+    const durationMs = Date.now() - startedAt;
+
+    // Remove sentinel
+    try { unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]")); } catch {}
+
+    // Emit session.end
+    if (this.bus) {
+      this.bus.emit({
+        type: "session.end", sessionId, agent: agentName,
+        outcome: status, summary: lastText, durationMs,
+        status, task, finishParams: finishParams as any,
+      } as any);
+    }
+
+    return {
+      sessionId,
+      status,
+      lastAssistantText: lastText,
+      messages,
+      duration: formatDuration(durationMs),
+      outputDir: sessionOutputDir(this._persistDir, sessionId),
+      finishResult: finishParams as any,
+    };
+  }
+
+  private bridgeEvents(session: ActiveSession): void {
+    if (!this.bus) return;
+    const { agent, sessionId, agentName, task } = session;
+    const bus = this.bus;
+
+    bus.emit({
+      type: "session.start", sessionId, agent: agentName, task,
+      trigger: session.kind ?? "runtime",
+      firedAt: session.startedAt,
+      parentSessionId: session.parentSessionId,
+      kind: session.kind,
+    } as any);
+
+    agent.subscribe((event) => {
+      switch (event.type) {
+        case "turn_start":
+          session.turnCount++;
+          break;
+        case "tool_execution_start":
+          session.toolCalls++;
+          bus.emit({ type: "tool_call", sessionId, agent: agentName, tool: (event as any).toolName, args: (event as any).args });
+          break;
+        case "tool_execution_end": {
+          const blocks = (event as any).result?.content ?? [];
+          const text = blocks.find((b: any) => b?.type === "text" && !b.text?.startsWith("<tool_output"))?.text ?? "";
+          bus.emit({ type: "tool_result", sessionId, agent: agentName, tool: (event as any).toolName, preview: text.slice(0, 200), isError: !!(event as any).isError });
+          break;
+        }
+        case "turn_end":
+          bus.emit({ type: "turn_end", sessionId, agent: agentName, toolCalls: session.toolCalls, durationMs: 0 });
+          break;
+      }
+    });
+  }
 }
