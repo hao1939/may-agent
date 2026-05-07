@@ -1,55 +1,84 @@
-# Investigation: metrics.config schema drift still present
+# Investigation: metrics.config schema drift keeps typed metric config unreachable
 
 **Date:** 2026-05-07
-**Owner:** dev
-**Signal:** heartbeat DB check; recent `handler.failed` rows for `metrics-snapshot`.
+**Agent:** dev
+**Status:** confirmed / awaiting cross-lane migration
 
-## Summary
+## Trigger
 
-The `metrics-snapshot` handler crashed twice because code attempted to use `metrics.config` before the production SQLite schema had that column. A runtime guard was added in `agents/may/handlers/metrics-snapshot.ts`, so the handler is currently green, but the underlying schema drift remains: `PRAGMA table_info(metrics)` still shows no `config` column.
+Heartbeat check found the latest handler failures were two `metrics-snapshot` crashes:
 
-This means typed per-metric config remains unreachable in DB, despite `ALL_METRICS` defining config for counter/rate metrics. The guard is now masking the migration debt rather than fixing it.
+- `1778087051850`: `table metrics has no column named config`
+- `1778087351978`: `table metrics has no column named config`
 
-## Evidence
+Current handler metrics are green, so the immediate outage was masked by the runtime guard now present in `agents/may/handlers/metrics-snapshot.ts`.
 
-Readonly DB checks on 2026-05-07:
+## Evidence gathered
 
-- Active metrics are refreshing; `handler.success-rate = 1`, `handler.failed-count = 0` in the current 6h window.
-- Historical handler failures include two `metrics-snapshot` crashes:
-  - `1778087051850`: `table metrics has no column named config`
-  - `1778087351978`: `table metrics has no column named config`
-- `PRAGMA table_info(metrics)` contains columns through `direction`, but no `config` column.
-- `SELECT COUNT(*) FROM events WHERE event_type='handler.failed' AND json_extract(data,'$.handler')='metrics-snapshot'` returned `2`.
+Readonly schema check on `.state/may.db` shows the production `metrics` table still has no `config` column. Current columns are:
 
-File evidence:
+```text
+id
+name
+type
+owner
+current
+target
+threshold
+unit
+priority
+status
+blocker
+project
+source
+source_query
+source_command
+sensitivity
+measure_interval
+created_at
+updated_at
+closed_at
+alert_op
+speed
+description
+direction
+```
 
-- `agents/may/handlers/metrics-snapshot.ts` still contains:
-  - `const hasMetricConfigColumn = metricColumns.has("config");`
-  - dual insert/update branches that omit `config` when the column is absent.
-- Arc proposal `agents/arc/workspace/proposals/2026-05-06-add-metrics-config-column-and-drop-runtime-guard.md` already identifies the same migration gap and proposes the right structural fix.
+Readonly handler-failure query shows only the two recent `metrics-snapshot` import/runtime failures:
+
+```json
+[
+  {"timestamp":1778087351978,"data":"{\"handler\":\"metrics-snapshot\",\"agent\":\"may\",\"error\":\"table metrics has no column named config\",\"durationMs\":5}"},
+  {"timestamp":1778087051850,"data":"{\"handler\":\"metrics-snapshot\",\"agent\":\"may\",\"error\":\"table metrics has no column named config\",\"durationMs\":6}"}
+]
+```
+
+Source inspection confirms the handler currently branches on schema presence:
+
+- It computes `hasMetricConfigColumn` from `PRAGMA table_info(metrics)`.
+- If false, built-in metric upserts omit `config`.
+- Alert lifecycle selects without `config` and falls back to registry constants via `configByMetricId`.
+
+That prevents further crashes, but means database-backed typed metric config is not actually available in this environment.
 
 ## Root cause
 
-Code for v2 typed metric configs landed before the DB migration adding `metrics.config`. The follow-up runtime guard restored handler availability but left architecture/runtime drift in place. Because the handler can now succeed without the column, the system has no active failure signal for the missing schema feature.
+The typed metrics code was deployed before the schema migration adding `metrics.config`. A later guard made the handler compatible with the old schema, but that compatibility branch silently preserves the drift: the DB cannot store per-metric alert config, and any architecture/docs that assume `metrics.config` exists are false for production.
 
 ## Impact
 
-- Per-metric DB-driven alert config is unavailable; alert behavior remains source-code-only.
-- Proposed fixes that depend on branch-specific/rate-mode config remain harder or impossible to implement safely at the row level.
-- Future maintainers may assume both schemas are supported because the handler has an explicit compatibility branch.
+- The immediate handler outage has stopped because of the guard.
+- Metric alert behavior remains source-code-driven for built-ins; per-row config overrides are impossible.
+- Follow-on fixes that depend on DB-visible alert mode (for example branch-aware alert messages or dropping rate mode from selected windowed counters by DB config) are blocked or must keep patching source constants.
 
 ## Recommended fix
 
-When approved for schema work:
+This matches Arc's proposal `agents/arc/workspace/proposals/2026-05-06-add-metrics-config-column-and-drop-runtime-guard.md`:
 
-1. Add/run a migration script that executes `ALTER TABLE metrics ADD COLUMN config TEXT;` against `.state/may.db` through the system's safe migration path, not ad-hoc write access from a heartbeat.
-2. Remove the compatibility branch in `metrics-snapshot.ts` and always read/write `config`.
-3. Add a loud startup assertion if `metrics.config` is missing, so future DB restores fail visibly instead of silently disabling typed config.
+1. Add a reviewed run-once migration that executes `ALTER TABLE metrics ADD COLUMN config TEXT` against the managed writer path, not from an ad-hoc dev heartbeat.
+2. After migration is present in all environments, simplify `metrics-snapshot.ts` to require and use `metrics.config` unconditionally.
+3. Add a loud startup assertion if `metrics.config` is missing so future DB restores do not silently reintroduce this drift.
 
-## Why not patched in this heartbeat
+## Why dev did not patch directly
 
-The current heartbeat environment explicitly restricts writes to `agents/dev/workspace`. Production DB schema changes and `agents/may/handlers/` edits are outside this session's write lane, and destructive/direct DB writes are prohibited. I therefore preserved the evidence and root cause here for approval/owner action.
-
-## Metric gap
-
-The handler is green after the guard, but the schema capability is still absent. Add a schema drift metric or startup assertion for required columns so this class of drift is visible before a feature silently downgrades.
+This heartbeat's runtime constraint says `agents/dev/workspace` is the only writable directory. Also, direct production DB schema changes from bash are forbidden without explicit human approval. Therefore this session records the confirmed root cause and the exact migration/code path needed, but does not alter the handler or database.
