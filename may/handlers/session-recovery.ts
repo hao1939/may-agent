@@ -64,7 +64,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       if (attempts < MAX_RECOVERY_ATTEMPTS) {
         try {
           recoveryAttempts.set(rKey, attempts + 1);
-          const newSessionId = ctx.sdk.forkAgent(agent, task ?? "", { source: "recovery" });
+          const result = await ctx.sdk.runAgent(agent, task ?? "", { source: "recovery" });
+          const newSessionId = result.sessionId;
           // Digest: recovery_requeue
           ctx.upsertDigest({
             sessionId,

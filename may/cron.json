@@ -308,8 +308,8 @@
     "type": "job",
     "handler": "session-eval",
     "enabled": true,
-    "description": "Auto-evaluate completed task trees. Polls daily (eval-poller handles 30min cadence). on: removed due to KE-455.",
-    "intervalMs": 86400000
+    "on": "session.completed",
+    "description": "Auto-evaluate completed sessions by calling the evaluator agent."
   },
   {
     "name": "escalation",
@@ -320,14 +320,6 @@
     "intervalMs": 86400000
   },
   {
-    "name": "context-learn",
-    "type": "job",
-    "handler": "context-learn",
-    "enabled": true,
-    "description": "Extract durable facts from completed sessions. Polls daily (context-learn-poller handles 30min cadence). on: removed due to KE-455.",
-    "intervalMs": 86400000
-  },
-  {
     "name": "metrics-snapshot",
     "type": "job",
     "intervalMs": 300000,
@@ -335,26 +327,6 @@
     "agent": "may",
     "enabled": true,
     "description": "Measure handler health metrics every 5 minutes."
-  },
-  {
-    "name": "context-learn-poller",
-    "type": "job",
-    "intervalMs": 1800000,
-    "handler": "context-learn-poller",
-    "agent": "may",
-    "enabled": true,
-    "description": "Poll recent completed sessions and dispatch context-learn events directly. Workaround for missing session.completed event emission.",
-    "offsetMs": 900000
-  },
-  {
-    "name": "eval-poller",
-    "type": "job",
-    "intervalMs": 1800000,
-    "handler": "eval-poller",
-    "agent": "may",
-    "enabled": true,
-    "description": "Poll recent completed sessions and evaluate them using evaluateStandaloneSession(). Resurrects the evaluation pipeline that broke because session.completed events are never emitted and parentSessionId is never set.",
-    "offsetMs": 600000
   },
   {
     "name": "coaching-consumer",

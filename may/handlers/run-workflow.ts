@@ -95,7 +95,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
         }
         recordDispatch(agentName, agentTask);
         ctx.log(`[run-workflow:${entry.name}] Step: running ${agentName}...`);
-        const result = await ctx.manager.callAgent(agentName, agentTask, { source: `workflow:${entry.name}`, workflowRunId: runId });
+        const result = await ctx.sdk.runAgent(agentName, agentTask, { source: `workflow:${entry.name}` });
         run.steps.push({ sessionId: result.sessionId, agent: agentName, status: result.status ?? "done" });
         saveRun(run);
         ctx.log(`[run-workflow:${entry.name}] Step ${agentName} → ${result.status ?? "done"} (${result.sessionId})`);
@@ -118,7 +118,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
             for (const h of history) { fullPrompt += `[${h.role}]: ${h.text}\n\n`; }
             fullPrompt += message;
             history.push({ role: "user", text: message });
-            const result = await ctx.manager.callAgent(agent, fullPrompt, { source: `workflow:${opts.label || "session"}`, workflowRunId: runId });
+            const result = await ctx.sdk.runAgent(agent, fullPrompt, { source: `workflow:${opts.label || "session"}` });
             lastResponse = result.lastAssistantText || "";
             history.push({ role: "assistant", text: lastResponse.slice(0, 2000) });
             if (result.sessionId) { run.steps.push({ sessionId: result.sessionId, agent, status: result.status ?? "done" }); saveRun(run); }
