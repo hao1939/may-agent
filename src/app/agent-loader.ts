@@ -718,7 +718,7 @@ export async function loadAgentHandlers(
         agentsRoot,
         agentName,
         manager,
-        callAgent: (agent, task, callOpts) => manager.callAgent(agent, task, callOpts),
+        callAgent: (agent, task, callOpts) => manager.callAgent(agent, task, callOpts) as any,
         triggerNow: (name) => cron.triggerNow(name),
       }),
     };
