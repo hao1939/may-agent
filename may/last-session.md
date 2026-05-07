@@ -1,12 +1,9 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778181409196_45
+- **Session:** s_1778181939737_47
 - **Status:** success
-- **When:** 2026-05-07T19:18:20.767Z
+- **When:** 2026-05-07T19:26:39.193Z
 
 ## What Happened
-Downgraded 2 red metric alerts (v2.spec-coverage-rate, capability.session-trace-completeness) to P3 — both confirmed structural instrumentation gaps per KE-802. Identified dev agent 24% error rate from expired IDE token, notified dev.
-
-## Files Modified
-- agents/may/heartbeat-log.md
+Both open issues are trending toward closure. Alert #136 (v2.spec-coverage-rate P2) has a valid judgment and backing project in pending-review — no escalation needed. The 12 evaluator→functions.message delivery failures stopped ~1h ago (self-corrected); no new failures detected.
