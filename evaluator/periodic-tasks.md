@@ -121,6 +121,12 @@ Action recommendation: if lag stays >2–3h, likely `evaluate-session-llm` job i
 
 **Last run**: 2026-05-06 22:53Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617`; `MAX(sessions.endedAt)=1778107976702` → eval lag ≈6.11h.
 
+**Last run**: 2026-05-07 00:23Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617` (2026-05-06T16:46:18Z); `MAX(sessions.startedAt)=1778113360462` (2026-05-07T00:22:40Z) → eval lag ≈7.61h. Sessions since last evaluation timestamp: `94` (top agents: may=28, evaluator=21, arc=15, dev=15, scout=15).
+
+Legacy `.state/evaluations/` directory check: newest mtime still 2026-04-29; `task_tree_*.json` mtimes still 2026-03-24 → treat as legacy path drift, not DB liveness.
+
+Action recommendation: **escalate to May/tech-lead** — evaluation pipeline is not keeping up (or is stalled). If event-consumer backlog hypothesis is still active, inspect `eval-poller` timeouts and any recent `handler.failed` related to metrics schema mismatch.
+
 **Last run**: 2026-05-06 23:26Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617` (still); `MAX(sessions.endedAt)=1778111590563` → eval lag ≈7.12h. Last-24h volume (approx): `sessions_last24h=796` vs `evaluations_last24h=40` → coverage ≈5.0%.
 
 Interpretation: evaluator pipeline appears **stalled** or running too infrequently relative to current session volume. Legacy `.state/evaluations/` directory still contains some newer `s_*.json` (mtime 2026-04-29) but that is not the canonical signal.
