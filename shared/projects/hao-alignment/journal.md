@@ -695,3 +695,15 @@ Project is active but idle. **50 consecutive no-op iterations.** Verified at 202
 (b) What's different: 3rd attempt. Explicit file paths and requirements given.
 
 (c) First step: Create correction-tagger.sh that c
+
+### Iteration 4 — 2026-05-07T12:23:08.134Z
+**Worker**: 
+**Orchestrator**: CONTINUE
+
+(a) Next iteration: **Tune correction-tagger.sh** — the current regex produces 18% false positive rate vs the manually-verified 0.9%. The fix: examine the 126 "corrections" it flags, identify patterns that are directives not corrections (e.g., "do not X" as instruction, "stop" as part of l
+
+### Iteration 5 — 2026-05-07T12:25:25.613Z
+**⚠️ No output files produced (1 consecutive failures)**
+
+### Iteration 5 — 2026-05-07T12:25:25.617Z
+**Worker**: 
