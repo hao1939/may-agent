@@ -150,14 +150,13 @@ function pruneCompletedSteps(completedSteps: CompletedStep[]): void {
 
 async function loadWorkflow(filePath: string): Promise<WorkflowModule> {
   const mod = await import(filePath + "?t=" + ++importCounter);
-  if (typeof mod.name !== "string") {
-    throw new Error(`Workflow file ${filePath} must export a 'name' string`);
-  }
   if (typeof mod.execute !== "function") {
     throw new Error(`Workflow file ${filePath} must export an 'execute' function`);
   }
+  // name: use export, or derive from filename (e.g. "scout-heartbeat.ts" → "scout-heartbeat")
+  const name = typeof mod.name === "string" ? mod.name : filePath.split("/").pop()?.replace(/\.ts$/, "") ?? "unknown";
   return {
-    name: mod.name,
+    name,
     description: mod.description ?? "(no description)",
     execute: mod.execute,
   };
