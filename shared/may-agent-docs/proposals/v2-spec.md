@@ -96,11 +96,12 @@ A capability is a claim of the form: *given X over time period Y, the system pro
 
 A second metric `capability.unrecovered-breach-count-7d` counts breaches with no recovery in 7 days. Target 0; threshold 2.
 
-**Status.** `untested`. Breach and recovery events flow today but no aggregation metric exists.
+**Status.** `violated`. `metric.breach` events flow today, and `metric.recovered` is typed in the bus, but recovery emission is not wired.
 
 **Known gaps.**
-- `metric.recovered` event emission is implemented in `metrics-snapshot.ts` but not consistently observed for all metric types (counter rate metrics may not emit recovered cleanly).
-- Add aggregation to snapshot handler.
+- `metrics-snapshot.ts` resolves `metric_alerts` when a metric returns to healthy range but does not emit `metric.recovered`.
+- Emit `metric.recovered` from the same alert lifecycle that opens `metric.breach`.
+- Then add the recovery-latency aggregation metric.
 
 ---
 
@@ -114,7 +115,7 @@ A second metric `capability.unrecovered-breach-count-7d` counts breaches with no
 
 **Target / threshold.** Target ≥ 0.7. Threshold < 0.4 = breach.
 
-**Status.** `violated` — `agent.decision` event doesn't exist yet (see I3 / S6 below). Without it, the metric has no signal.
+**Status.** `violated` — `agent.decision` event doesn't exist yet (see S7 below). Without it, the metric has no signal.
 
 **Known gaps.**
 - Blocked on `agent.decision` event. Once that lands, the rate can be computed by simple text-matching on decision strings against journal entries.
@@ -213,7 +214,7 @@ A historical residue note: the events table contains 371 `agent.notification` ev
 **Status.** `violated` — components 2 and 3 don't exist yet. Sessions are partially traceable.
 
 **Known gaps.**
-- Blocks on `agent.decision` event (S6).
+- Blocks on `agent.decision` event (S7).
 - Context-read tracking needs heartbeat workflow change to emit a `context.read` event listing what was loaded.
 
 ---
@@ -518,20 +519,22 @@ When a structural property is violated, capabilities don't necessarily fail toda
 
 ## S6 — Pi-coding-agent owns the runtime
 
-**Claim.** Our agent runtime code (the layer between the bus and pi-coding-agent) is bounded. Specifically: `src/lib/manager.ts` ≤ 500 LOC. The LLM loop, retry, compaction, tool execution, and session persistence live in pi-coding-agent.
+**Claim.** Our agent runtime code (the layer between the bus and pi-coding-agent) is bounded. The LLM loop, retry, compaction, tool execution, and durable session persistence should live in pi-coding-agent or narrow wrappers, not sprawl through the app layer.
 
 **Why.** v2-architecture said "~50 LOC of glue." Beyond a thin wrapper we are reimplementing the runtime — the v1 pattern.
 
-**Measurement.** `v2.runtime-glue-loc` — line count of `src/lib/manager.ts` and adjacent glue files. Target ≤ 500; threshold > 1000.
+**Measurement.** `v2.runtime-glue-loc` — line count of `src/lib/manager.ts` plus adjacent runtime glue files that own session/tool lifecycle behavior. Track both:
+- `v2.manager-loc` — `src/lib/manager.ts` only.
+- `v2.runtime-glue-loc` — `src/lib/manager.ts`, `src/lib/manager-utils.ts`, `src/lib/manager-receipts.ts`, and `src/lib/manager-agents-tool.ts`.
 
-**Target / threshold.** Target ≤ 500 LOC. Threshold > 1000 LOC = breach. **Today: 2,346 LOC = violated.**
+**Target / threshold.** For `v2.manager-loc`: target ≤ 1,000 LOC, threshold > 1,500 LOC. For `v2.runtime-glue-loc`: target ≤ 1,500 LOC, threshold > 2,000 LOC. The earlier 500-LOC target was aspirational and should be treated as a stretch goal, not the breach threshold. Current spot-check on 2026-05-07: `manager.ts` = 1,119 LOC; tracked runtime glue = 1,891 LOC.
 
-**Status.** `violated`. Largest single non-conformance.
+**Status.** `partial`. The v2 rewrite removed the previous 2,346-LOC manager, but current glue is still above target and not yet measured continuously.
 
 **Known gaps.**
-- `manager.ts` duplicates substantial pi-coding-agent logic: retry loop, session persistence wrapping, compaction triggering, tool guard composition.
-- Remediation requires a focused refactor that pushes logic into pi-coding-agent (or a shared wrapper) and deletes from manager.ts. Estimated 3–5 days of focused work.
-- Decision needed: refactor, or retreat the ceiling? **Recommend refactor.** The structural gap is the difference between "v2 in shape" and "v2 in name only."
+- Add computed `v2.manager-loc` and `v2.runtime-glue-loc` metrics so this claim stops relying on hand counts.
+- Decide which adjacent files count as runtime glue and put that allowlist in code.
+- Continue deleting compatibility shims once tests cover the pi-coding-agent boundary.
 
 ---
 
@@ -547,7 +550,7 @@ When a structural property is violated, capabilities don't necessarily fail toda
 
 **Known gaps.**
 - Add `agent.decision` to `AgentEvent` union in `event-bus.ts`.
-- Update `agents/shared/workflows/agent-heartbeat.ts` to emit it after the read phase, before the act phase.
+- Update `agents/shared/workflows/heartbeat-data.ts` / generic heartbeat execution to emit it after the read phase, before the act phase.
 - Idle heartbeats still emit a decision: `{decision: "idle: no work this cycle"}` — every heartbeat is deliberative.
 
 ---
@@ -560,12 +563,12 @@ When a structural property is violated, capabilities don't necessarily fail toda
 
 **Measurement.** `v2.fork-on-breach-rate` — fraction of `metric.breach` events that triggered a direct fork. Target = P0-priority-rate (varies by registry); threshold > P0-rate × 1.5.
 
-**Status.** `violated`. `metric.priority` column doesn't exist; current behavior is fork-on-every-breach.
+**Status.** `partial`. The schema declares `metrics.priority`, but built-in metric definitions do not set it, the snapshot registry does not maintain it, and the reactor does not yet gate direct forks on `P0`.
 
 **Known gaps.**
-- DB migration: add `priority` column to `metrics`, default `P2`.
-- Update `ALL_METRICS` registry in `metrics-snapshot.ts` to declare priority per metric.
-- Update `metric-alert-reactor` to gate on priority.
+- Ensure legacy DBs have the `priority` column and default missing values to `P2`.
+- Update `ALL_METRICS` registry in `metrics-snapshot.ts` to declare priority per metric and upsert it.
+- Update `metric-alert-reactor` to gate direct forks on `priority=P0`.
 
 ---
 
@@ -597,47 +600,25 @@ Each owner's heartbeat sees breaches in their layer's metrics first. If a capabi
 
 ---
 
-# Status summary (2026-05-06, post-review)
+# Status summary
 
-> **This table is hand-maintained and decays.** It reflects the state of the system at commit `7a49e3f2` based on direct DB and code inspection. The next agent or human reading the spec should re-verify before trusting any row. The plan to make this table computed (each claim becomes a `spec.*` metric, table renders from the registry) is open work; until then, treat this as a snapshot.
+This document is the contract, not the live status page. Hand-maintained status tables decay quickly and have already misled review: S6, C2, and S8 all drifted between code reality and prose.
 
-| Claim | Layer | Status | Evidence |
-|---|---|---|---|
-| C1 self-direction | capability | partial | heartbeats fire, 1,545 `project.iteration` events / 7d; metric not formalized |
-| **C2 self-correction** | capability | **violated** | **80 `metric.breach` / 0 `metric.recovered` events in 7d — emission bug** |
-| C3 memory | capability | violated | blocks on S7 |
-| C4 coordination | capability | partial / wrong-metric | 14 `message.created` / 7d across 13 agents — stigmergy is the actual channel |
-| C5 ownership | capability | unmeasured | breach → owner routing exists structurally |
-| C6 adaptation | capability | not yet computable | depends on other capability metrics |
-| C7 boundedness | capability | partial | no aggregation; high evaluator session rate (~32/h) is unmeasured |
-| C8 observability | capability | violated | blocks on S7; trigger field at ≈98% coverage (2 null-source rows / 24h) |
-| C9 resilience | capability | untested | no chaos test |
-| **C10 honesty** | capability | **untested — land first** | this very review found exactly the dishonesty C10 catches |
-| I1 event bus | infra | holds-structural, unmeasured | 1,072 events / 24h flowing through bus |
-| I2 persistence | infra | holds-structural, **failure-invisible** | `db-writer.ts` swallows write failures silently |
-| I3 messages | infra | holds-structural, underused | tool works; usage rate is what's low |
-| I4 sessions/runAgent | infra | holds | 9 callsites all legitimate; one null-source row in 24h |
-| S1 single agent-start | structural | holds | 9 callsites verified; `manager-agents-tool.ts:302` flagged for follow-up |
-| S2 persist-before-dispatch | structural | holds | structural invariant verified |
-| S3 single message primitive | structural | holds | tool registry verified |
-| S4 message asynchrony | structural | holds | source-verified |
-| S5 convention over config | structural | holds | `agent.json` sizes 55B–615B; coach at 55B is proof |
-| **S6 runtime is glue** | structural | **HOLDS** | **`manager.ts` 635 LOC ≤ 1,000 ceiling** (was 2,346 in earlier draft — stale context) |
-| S7 agent.decision event | structural | violated | event type doesn't exist in `AgentEvent` union; nothing emits it |
-| S8 metric.priority | structural | violated | `priority` column doesn't exist on `metrics` table |
+Until the system computes conformance directly, current status is tracked in the project `agents/shared/projects/v2-conformance-and-visibility/`. The target state is:
+- each claim in this document has a metric or invariant test,
+- `v2.spec-coverage-rate` reports how much of the contract is actually measured,
+- a web UI conformance view renders the status from live metrics instead of this markdown file.
 
-**Score:** 7 holds / 5 partial / 5 violated / 7 untested-or-uncomputable out of 24 claims.
-
-Reading the score:
-- The **structural layer is in good shape** (6/8 holds). The architecture has been delivered in code. S6 (the largest historical gap) was resolved in three commits since `v0.7-v2-master-removed`; an earlier draft of this table listed it as `violated` due to stale context — the kind of dishonesty C10 is supposed to catch automatically.
-- The **infrastructure layer holds structurally** but is **uninstrumented**. We're trusting code reading rather than measuring runtime invariants. I2's swallowed-failure mode is the largest hidden risk.
-- The **capability layer is the real exposure**. Most claims are violated, untested, or measure paths agents don't take. C2 (recovery) is a 2-hour plumbing bug masquerading as architecture; C4 (coordination) measures the wrong channel; C10 (honesty) doesn't exist and the review just demonstrated why it should land first.
-
-**Honest summary**: ~70% v2-shaped code that runs / ~30% v2 properly implemented and measured. The gap is the work that's left.
+Current high-confidence gaps as of 2026-05-07:
+- `metric.recovered` is typed but not emitted on recovery.
+- `agent.decision` does not exist, so heartbeat agency and session trace completeness are not visible.
+- `context.read` does not exist, so the read phase of a heartbeat is not auditable.
+- `metrics.priority` exists in schema but priority semantics are not wired through built-in metrics or the alert reactor.
+- Runtime glue is smaller than the pre-v2 manager but still above target and not measured continuously.
 
 # Implementation plan
 
-Six small projects, dependency-ordered. **The big project (`manager.ts` shrink) that anchored the previous plan is already done** — collapsing the timeline from ~10 working days to ~3.5.
+The ongoing tracking project is `agents/shared/projects/v2-conformance-and-visibility/`. This section lists the current implementation slices; durable status belongs in the project journal until it is computed by metrics.
 
 ## Project 1 — Fix metric recovery emission (highest leverage, smallest)
 
@@ -653,7 +634,7 @@ C10 protects every other measurement. The cross-checks are SQL queries against e
 - Sessions with `status=done` but no `session.end` event.
 - Agents listed as loaded but no recent heartbeat.
 
-Add to `metrics-snapshot.ts`. Estimated **half a day**. Once it runs, we'll find out what *else* the system is lying about beyond C2 — and what this hand-maintained table is lying about right now.
+Add to `metrics-snapshot.ts`. Once it runs, we'll find out what *else* the system is lying about beyond C2 — and what this hand-maintained prose is lying about right now.
 
 ## Project 3 — Heartbeat agency event (S7)
 
@@ -663,7 +644,7 @@ Unblocks C3 (memory), C8 (observability), and the proposed web UI's "recent deci
 
 ## Project 4 — Metric priority and fork rule (S8)
 
-DB migration: add `priority` column to `metrics`, default `P2`. Update `ALL_METRICS` registry to declare priority per metric. Update `metric-alert-reactor` to gate direct fork on `priority=P0`; lower priorities inform next heartbeat via prompt context (already happens via `formatMetrics`). Estimated **half a day**.
+Ensure legacy DBs have `metrics.priority`, default missing priorities to `P2`, update `ALL_METRICS` registry to declare priority per metric, and update `metric-alert-reactor` to gate direct fork on `priority=P0`; lower priorities inform next heartbeat via prompt context (already happens via `formatMetrics`).
 
 Brings metric breaches into parity with messages, where P0 immediate-trigger already works.
 
@@ -680,7 +661,7 @@ Also add the remaining capability and infra metrics this spec already names but 
 - `infra.messages.delivery-latency-p50-min`, `infra.messages.unread-age-p95-h`, `infra.messages.dropped-count-24h`, `infra.messages.p0-immediate-trigger-rate` (I3)
 - `infra.sessions.start-end-balance-1h`, `infra.sessions.trigger-field-coverage`, `infra.sessions.zombie-count` (I4)
 
-Estimated **1 day** for the metrics + sentinel event; smallest demonstration first (`spec.s6.runtime-glue-loc` as a one-hour proof) before doing all 24.
+This is a tracking effort, not a one-shot patch. Smallest demonstration first (`v2.manager-loc` and `v2.runtime-glue-loc`) before doing all 24 claims.
 
 ## Project 6 — Rethink C4 (coordination)
 
@@ -693,9 +674,7 @@ File as a project for `arc` to investigate. Estimated **one heartbeat cycle of a
 
 ## Order
 
-1, 2, 3, 4 land in any order; they're small and independent. **Land 1 first** (smallest, most visible). 5 lands once 1–4 prove the spec works — and once 5 lands, this hand-maintained status table can be deleted. 6 is exploratory; can run in parallel with 5.
-
-**Total: ~3.5 working days** to bring the system from "v2-shaped" to "v2 properly implemented and measured."
+1, 2, 3, 4 land in any order; they're small and independent. **Land 1 first** (smallest, most visible). 5 starts with one computed structural metric and grows claim by claim. 6 is exploratory; it can run in parallel.
 
 ---
 
@@ -703,7 +682,7 @@ File as a project for `arc` to investigate. Estimated **one heartbeat cycle of a
 
 - Performance benchmarks. v2 doesn't promise specific latency or throughput; performance is for observation, not spec.
 - Aesthetic code review. "This code is ugly" isn't a measurable claim.
-- The web UI itself. The UI consumes this spec (the metric dashboard *is* the spec dashboard) but doesn't change it.
+- The full web UI implementation. This contract defines what the UI should make visible, but UI build-out is tracked by `agents/shared/projects/v2-conformance-and-visibility/`.
 - Agent decision quality. The spec checks that decisions are *emitted* (S7); it doesn't judge whether they're *good*. Quality is for evaluator/judge agents, not the conformance system.
 
 ---
