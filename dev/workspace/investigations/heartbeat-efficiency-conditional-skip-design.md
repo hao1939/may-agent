@@ -1,247 +1,305 @@
-# Heartbeat Efficiency Conditional Skip Design (M2)
+# Heartbeat Efficiency Conditional-Skip Design
 
-## Purpose
+## Summary
 
-M1 established that May `workflow:heartbeat` sessions include real scheduled heartbeats mixed with guard-remediation churn and other reruns. The M2 design goal is therefore not simply to reduce the headline no-op percentage; it is to preserve event-driven responsiveness while cheaply suppressing heartbeats when there has been no meaningful change since the last productive heartbeat, and to route guard follow-up work so it is visible as remediation rather than another ordinary heartbeat.
+M1 showed that the original reported 92% May heartbeat no-op rate is not reproduced by the latest conservative classifier: recent data showed 23 no-op, 38 meaningful, and 21 unclear May `source='workflow:heartbeat'` sessions in the last 24h, or 28.0% no-op under that classifier. However, the baseline also found substantial heartbeat-source churn from guard remediation and artifact-gate/anti-shallow follow-up sessions. Therefore the M2 design should focus on reducing avoidable scheduled heartbeat sessions and suppressing/remapping remediation fanout, while preserving responsiveness for real changes.
 
-## Runtime path traced
+The proposed conditional-skip behavior is:
 
-Evidence reviewed:
+1. Run May heartbeat when meaningful state changed since the last heartbeat.
+2. Skip scheduled May heartbeat cheaply when no meaningful state changed.
+3. Never skip explicit human-triggered, event-driven, failure-recovery, or alert/metric-breach work.
+4. Do not treat guard-remediation/artifact-gate reruns as normal scheduled heartbeats; suppress duplicates or route them through a cheaper remediation path.
 
-- `agents/may/cron.json`: the May heartbeat entry is enabled, named `heartbeat`, has `intervalMs: 1800000`, `agent: "may"`, `handler: "run-workflow"`, and `handlerConfig.workflow: "may-heartbeat"`. It also declares `on: ["heartbeat.trigger"]`, but prior KEs and the current docs indicate interval ticks are the reliable path.
-- `agents/may/handlers/run-workflow.ts`: the handler loads the workflow file, builds `workflowCtx`, and calls `wf.execute(workflowCtx)`. Its `workflowCtx.runAgent()` calls `ctx.manager.callAgent(agentName, agentTask, { source: `workflow:${entry.name}`, workflowRunId: runId })`, so the session row for the May heartbeat is `source='workflow:heartbeat'`.
-- `agents/may/workflows/may-heartbeat.ts`: the workflow is a thin wrapper: `execute = (ctx) => genericHeartbeat(ctx, "may")`.
-- `agents/shared/workflows/heartbeat-data.ts`: `genericHeartbeat()` loads metrics, projects, alerts, heartbeat.md, and inbox; checks circuit breaker and dispatch dedup; optionally runs red metric diagnostics; calls `ctx.runAgent(agent, prompt)`; then runs artifact/anti-shallow/impact/duration gates via `runGates()`.
-- `agents/shared/may-agent-docs/cron.md` and `agents/shared/may-agent-docs/heartbeat.md`: docs describe `cron.json -> Cron class -> handlers` and `Cron tick -> heartbeat handler -> loads context -> runs agent session`, with auto-heartbeat notes. Runtime reality for May is the explicit `cron.json` entry overriding any auto-generation.
+## Evidence Read
 
-Current practical path:
+- [x] `agents/may/cron.json` — May has enabled job `name: "heartbeat"`, `agent: "may"`, `handler: "run-workflow"`, `intervalMs: 1800000`, and `handlerConfig.workflow: "may-heartbeat"`; the `on: ["heartbeat.trigger"]` field exists, but the interval job is the concrete scheduled path.
+- [x] `agents/may/handlers/run-workflow.ts` — `create(ctx, entry)` loads `entry.handlerConfig`, `findWorkflow()` imports the workflow, creates a `run` with `parentSessionId: "cron:${entry.name}"`, builds `workflowCtx`, and `workflowCtx.runAgent()` calls `ctx.manager.callAgent(agentName, agentTask, { source: `workflow:${entry.name}`, workflowRunId: runId })`.
+- [x] `agents/may/workflows/may-heartbeat.ts` — exports `name = "may-heartbeat"` and `execute = (ctx) => genericHeartbeat(ctx, "may")`.
+- [x] `agents/shared/workflows/circuit-breaker.ts` — provides `checkCircuitBreaker()` / `recordOutcome()` using `agents/shared/circuit-breaker-state.json` and per-agent `SIGNAL-circuit-breaker.md`; it is a fail-safe before `ctx.runAgent()` inside `genericHeartbeat()`, but not a pre-cron/session skip gate.
+- [x] `agents/shared/workflows/dispatch-dedup-guard.ts` — provides `shouldDispatch()`, `recordDispatch()`, and `recordOutcome()` keyed by `agent::taskPrefix` in `.state/dispatch-dedup.json`; it blocks repeated failing/running dispatches after thresholds/windows, including `shouldDispatch(agent, "heartbeat")` inside `genericHeartbeat()` and `shouldDispatch(agentName, agentTask)` in `run-workflow.ts`.
+- [x] `agents/shared/workflows/heartbeat-data.ts` — `genericHeartbeat()` loads metrics/projects/alerts/heartbeat.md/inbox, checks circuit breaker and dispatch dedup, runs red metric diagnostics, constructs the heartbeat prompt, calls `ctx.runAgent(agent, prompt)`, then calls `runGates()`. `runGates()` can launch artifact/anti-shallow follow-up prompts through the same `ctx.runAgent()` path.
+- [x] Runtime trigger/session path evidence — traced path is `agents/may/cron.json` scheduled job `heartbeat` → `agents/may/handlers/run-workflow.ts:create()` → `findWorkflow(..., "may-heartbeat")` → `agents/may/workflows/may-heartbeat.ts:execute()` → `agents/shared/workflows/heartbeat-data.ts:genericHeartbeat()` → `workflowCtx.runAgent()` → `ctx.manager.callAgent(... source="workflow:heartbeat", workflowRunId=runId)`; gate follow-ups from `runGates()` reuse this source because they call the same `ctx.runAgent()` facade.
+- [x] M1 baseline report: `agents/dev/workspace/investigations/heartbeat-efficiency-baseline.md` — baseline used readonly SQLite and found 23 no-op, 38 meaningful, 21 unclear May `source='workflow:heartbeat'` sessions in 24h, plus remediation/artifact-gate churn mixed into the same source.
+
+## Meaningful Change Definition
+
+A May heartbeat should run when at least one of these changed since the last heartbeat checkpoint:
+
+1. **Human input or direct user-visible request**
+   - New user task, project instruction, approval, comment, or operator message.
+   - Any event/session source indicating human-initiated work.
+
+2. **Project state changed**
+   - Project file modified.
+   - Project status changed to active/blocked/waiting/done.
+   - New project comment or new plan item.
+   - Existing active project has a ready next action that has not been observed by a heartbeat.
+
+3. **Metric or alert changed**
+   - New metric breach.
+   - Metric moved from healthy to unhealthy.
+   - New unresolved alert/event requiring May triage.
+   - Previously unresolved alert changed state.
+
+4. **Session failure or interruption occurred**
+   - Any recent failed, errored, interrupted, timed-out, or guard-blocked session requiring supervision.
+   - A worker produced a deliverable that needs orchestration/review.
+   - Repeated no-output worker iterations need intervention.
+
+5. **Relevant event/log state changed**
+   - New event in the monitored event tables for May-owned workflows.
+   - New workflow run requiring May’s orchestration.
+   - New dispatch/fork result or review result.
+
+6. **Periodic minimum liveness interval expired**
+   - Even with no changes, run a low-frequency liveness heartbeat after a configurable maximum quiet period, e.g. 4–6 hours, to catch missed signals.
+
+A heartbeat should be considered skippable when all of these are true:
+
+- Trigger is scheduled/cron heartbeat, not direct/event-driven.
+- No new human input since last checkpoint.
+- No project status/comment/plan change since last checkpoint.
+- No new metric breach or unresolved alert since last checkpoint.
+- No failed/interrupted/guard-blocked sessions since last checkpoint.
+- No worker deliverables pending review since last checkpoint.
+- Last successful heartbeat checkpoint is recent enough to satisfy liveness requirements.
+
+## Skip/Run Decision Table
+
+| Condition since last heartbeat checkpoint | Decision | Reason |
+|---|---:|---|
+| No new events, no project changes, no metric changes, no failed sessions | Skip | Avoid no-op scheduled work |
+| New human input or operator message | Run | Human-visible work must not be delayed |
+| New task/project instruction | Run | May must orchestrate |
+| Project status/comment/plan changed | Run | Project state requires assessment |
+| Metric breach or new unresolved alert | Run | May must react to unhealthy state |
+| Failed/interrupted/timed-out session | Run | Failure supervision is meaningful |
+| Worker deliverable ready for verification | Run | Orchestrator/reviewer action needed |
+| Guard remediation or artifact-gate rerun duplicates same source/session | Suppress or route cheaply | Do not inflate heartbeat sessions with remediation churn |
+| Explicit event-driven trigger | Run | Preserve responsiveness |
+| Scheduled heartbeat after max quiet/liveness interval | Run | Catch missed signals |
+| Unknown trigger type or missing checkpoint state | Run and create checkpoint | Fail open until state is reliable |
+
+## Required State
+
+The runtime skip decision needs a cheap checkpoint record for May heartbeat state. Minimal required fields:
+
+- Agent/workflow key, e.g. `may:heartbeat`.
+- Last scheduled heartbeat check timestamp.
+- Last heartbeat run timestamp.
+- Last productive heartbeat timestamp.
+- Last skipped heartbeat timestamp.
+- Last observed event id/timestamp.
+- Last observed human input id/timestamp.
+- Last observed project modification timestamp or project snapshot hash.
+- Last observed metric breach/alert id/timestamp.
+- Last observed failed/interrupted session id/timestamp.
+- Last observed worker deliverable/review-needed session id/timestamp.
+- Skip reason and trigger id for auditability.
+
+The checkpoint must be cheap to read before creating a full agent session. It should be updated when:
+
+- A heartbeat is skipped.
+- A heartbeat is launched.
+- A heartbeat finishes and is classified productive/no-op/unclear.
+- A bypass condition forces a run.
+
+## Runtime Insertion Point
+
+The traced scheduled path is:
 
 ```text
-Cron interval tick for agents/may/cron.json entry name=heartbeat
-  -> run-workflow handler in agents/may/handlers/run-workflow.ts
-    -> load agents/may/workflows/may-heartbeat.ts
-      -> genericHeartbeat(ctx, "may") in agents/shared/workflows/heartbeat-data.ts
-        -> load DB/file context
-        -> circuit breaker / dispatch dedup / red metric diagnostics
+agents/may/cron.json entry name=heartbeat, handler=run-workflow, workflow=may-heartbeat
+  -> agents/may/handlers/run-workflow.ts:create(ctx, entry)
+     -> findWorkflow(agentDir, "may-heartbeat", sharedDir)
+     -> agents/may/workflows/may-heartbeat.ts:execute(ctx)
+     -> agents/shared/workflows/heartbeat-data.ts:genericHeartbeat(ctx, "may")
+        -> loadMetrics/loadProjects/loadAlerts/loadHeartbeatMd/loadInbox
+        -> checkCircuitBreaker(agentsRoot, "may")
+        -> shouldDispatch("may", "heartbeat") / recordDispatch("may", "heartbeat")
         -> ctx.runAgent("may", prompt)
-          -> manager.callAgent(... source="workflow:heartbeat", workflowRunId=runId)
-        -> runGates() may spawn remediation sessions/prompts
+           -> workflowCtx.runAgent in run-workflow.ts
+           -> ctx.manager.callAgent("may", prompt, { source: "workflow:heartbeat", workflowRunId: runId })
+        -> runGates(ctx, "may", ...), which may call ctx.runAgent again for artifact/anti-shallow remediation
 ```
 
-## Precise definition: meaningful change since last heartbeat
+The safest immediate insertion point available in the agent-mounted files is inside `agents/may/handlers/run-workflow.ts:create()` after `const { workflow: workflowName, agent, task } = config;` and after the entry is known to be the May scheduled heartbeat (`entry.name === "heartbeat"`, `agent === "may"`, `workflowName === "may-heartbeat"`), but before `findWorkflow()`, `generateRunId()`, guard loading, and any `ctx.manager.callAgent()` path. That location can skip the entire workflow and avoid producing a `workflow:heartbeat` session.
 
-A meaningful change is any persisted signal that could reasonably change May's autonomous decision compared with the last productive May heartbeat. The decision boundary should be based on cheap snapshots, not an LLM classification.
+If M3 can edit `src/`, an even safer long-term location is one layer earlier in the cron scheduler/handler dispatcher, before invoking the `run-workflow` handler at all. The gate needs the cron entry metadata (`entry.name`, `handler`, `handlerConfig.workflow`, `agent`) and current cheap snapshot; it does not need the workflow module loaded.
 
-For May, meaningful change since `last_observed_at` means at least one of:
+The conditional-skip gate should not live only inside `genericHeartbeat()`, because by that point the runtime has already dispatched the heartbeat workflow and may have emitted/recorded a workflow run. It also should not rely only on `circuit-breaker.ts` or `dispatch-dedup-guard.ts`: those gates suppress known failure loops, not no-meaningful-change scheduled liveness checks.
 
-1. **Human input:** a new human-originated task/comment/message/event exists after `last_observed_at`.
-2. **Metric breach or alert:** a metric owned by May newly breaches threshold, an unresolved alert is created/reopened, or a previously breaching metric changes enough to require reassessment.
-3. **Session failure/interruption:** any agent has a failed/interrupted/error session after `last_observed_at`, or a running session becomes stale.
-4. **Project change:** a project status, milestone, comment, owner, health, or actionable project artifact changes after `last_observed_at`.
-5. **Inbox event:** an event targeted to May, or a system event May owns, arrives after `last_observed_at` and is not expired by TTL.
-6. **Scheduled freshness floor:** no productive heartbeat has run within a maximum interval, even if no signal changed, so May can still perform periodic discovery.
+Concrete intended sequence:
 
-Not meaningful by itself:
+1. Cron interval tick selects `agents/may/cron.json` entry `heartbeat`.
+2. Runtime resolves handler `run-workflow` and passes the `CronEntry` to `agents/may/handlers/run-workflow.ts:create()`.
+3. Before loading/running `may-heartbeat`, call `shouldSkipHeartbeat({entry, triggerKind:"scheduled"}, checkpoint, currentSnapshot)`.
+4. If skip: write cheap audit record/event, update `lastScheduledCheck` and `lastSkippedAt`, and return from the handler without calling `ctx.manager.callAgent()`.
+5. If run: proceed with current `findWorkflow()` → `genericHeartbeat()` path and mark checkpoint as run-started.
+6. On completion: update productive/no-op/unclear classification and checkpoint using the resulting session/digest/evaluation data.
 
-- Another ordinary heartbeat tick with the same snapshots as the previous tick.
-- Gate-driven artifact/anti-shallow/duration/impact remediation caused by the current heartbeat's own guard checks.
-- Handler bookkeeping (`handler.started`/`handler.completed`) for the heartbeat being considered.
-- Metric snapshots whose measured values and breach state are unchanged and have no new alert.
+## Reusable Existing Logic
 
-## Skip/run decision table
+The following existing files should be reviewed for reusable concepts, but not assumed to be production-effective until integrated into `src/`:
 
-| Condition since last observed/productive heartbeat | Decision | Reason |
-|---|---:|---|
-| No new events + no metric/project/session changes | **Skip** | The prompt would be materially identical; running an LLM session is waste. |
-| New human input | **Run** | Human input is high-priority and may require coordination or dispatch. |
-| Metric breach or new alert | **Run** | May owns system coordination and should react to red metrics/alerts. |
-| Failed/interrupted/error session since last heartbeat | **Run** | Failures are a core May accountability signal. |
-| Project status/comment/change since last heartbeat | **Run** | Project state changes can require dispatch, review, or escalation. |
-| Guard remediation / artifact-gate rerun | **Suppress or route differently** | It should not be counted as a fresh heartbeat trigger. Record as `workflow:heartbeat:<gate>` or a remediation event/session to avoid mixing with original scheduled heartbeat baselines. |
-| Stale maximum interval exceeded, e.g. >4h since productive May heartbeat | **Run** | Preserves discovery/autonomy even when explicit signals are quiet. |
-| Skip-state read/query fails | **Run** | Fail-open; missed responsiveness is worse than one extra heartbeat. |
-| Manual force/bypass flag present | **Run** | Human/operator override. |
+### `agents/shared/workflows/circuit-breaker.ts`
 
-## State required for a cheap decision
+Observed logic:
+- `checkCircuitBreaker(agentsRoot, agent)` reads `agents/shared/circuit-breaker-state.json` and blocks only after `THRESHOLD = 3` consecutive errors while a per-agent `SIGNAL-circuit-breaker.md` exists.
+- `recordOutcome(agentsRoot, agent, isError, errorDetail)` increments/reset state after the agent run.
 
-The skip gate should need O(1) or small bounded queries. Proposed state:
+Potential reuse:
+- Simple JSON checkpoint load/save pattern.
+- Fail-safe guard before expensive `ctx.runAgent()`.
+- Manual reset semantics through signal state.
 
-- `last_heartbeat_started_at`: last scheduled heartbeat dispatch time for May.
-- `last_productive_heartbeat_at`: last May heartbeat that produced a meaningful artifact/action or handled a meaningful signal.
-- `last_observed_at`: high-water mark used for change detection.
-- `last_snapshot`: compact JSON containing:
-  - latest relevant event id/timestamp for May-owned inbox events;
-  - count and max timestamp of unresolved May-owned metric alerts;
-  - hash of active May-owned metrics' `{id,current,threshold,alert_op,breached}`;
-  - count/max timestamp of failed/interrupted sessions system-wide, optionally grouped by agent;
-  - hash/max mtime of May-owned active project files and comments;
-  - latest workflow run/session id considered.
-- `skip_count_since_run`: counter to enforce a freshness floor and help metrics.
-- `last_skip_reason`: diagnostic string.
+Risk:
+- It is error-threshold logic, not meaningful-change logic.
+- In the current path it is called inside `genericHeartbeat()` after the workflow handler has started; using the same layer is too late to avoid all workflow overhead, though it can still prevent the LLM session.
 
-A DB-backed state table would be ideal, but because agents must not write DB directly, M3 should either add a handler/runtime writer or use existing event emission. Minimal cheap record when skipped: emit an event such as `heartbeat.skipped` with owner `may`, reason, snapshot hash, last productive timestamp, and suppressed trigger path. If event emission is persisted by the runtime, that gives both visibility and measurement without opening a second writer.
+### `agents/shared/workflows/dispatch-dedup-guard.ts`
 
-## Safest runtime insertion point
+Observed logic:
+- `makeKey(agent, task)` uses an 80-character normalized prefix and stores records in `.state/dispatch-dedup.json`.
+- `shouldDispatch()` allows force overrides, resets outside a 7-day window, blocks explicitly blocked records, blocks after `MAX_FAILURES_BEFORE_BLOCK = 3`, and suppresses apparent still-running attempts for 2 hours.
+- `recordDispatch()` and `recordOutcome()` maintain attempts/failures/status.
 
-The safest insertion point is in `agents/shared/workflows/heartbeat-data.ts` at the start of `genericHeartbeat()`, immediately after cheap context loads (`loadMetrics`, `loadProjects`, `loadAlerts`, `loadInbox`) and before:
+Potential reuse:
+- Deduplication key design for remediation fanout: original session id + guard type + artifact path is safer than prompt prefix alone.
+- Cooldown/window semantics and force bypass.
+- Cheap state file mechanics if DB-backed checkpointing is unavailable in M3.
 
-- circuit breaker `recordDispatch()`;
-- red metric diagnostic command execution;
-- `ctx.runAgent()`;
-- `runGates()`.
+Risk:
+- Prompt-prefix dedup is too coarse for heartbeat skip correctness and too weak for guard remediation identity.
+- Deduping `ctx.runAgent()` calls does not stop the scheduled cron handler from starting unless the check is lifted before workflow execution.
 
-Why this point:
+### `agents/shared/workflows/heartbeat-data.ts`
 
-1. It is on the canonical May path (`may-heartbeat.ts -> genericHeartbeat`) and also benefits other generic-heartbeat agents if enabled per-agent.
-2. The existing `shouldSkipHeartbeat()` function already lives in this file, but current `genericHeartbeat()` does not call it. M3 can replace/extend this helper rather than adding another hidden mechanism.
-3. At this point the workflow already has a `WorkflowContext` with `ctx.getDb()` and `ctx.emit()`, so the decision can be DB-backed and observable.
-4. It avoids creating a May LLM session at all, which is where the cost is.
+Observed logic:
+- `loadMetrics()`, `loadProjects()`, `loadAlerts()`, `loadInbox()`, and `loadHeartbeatMd()` already define the major state surfaces May inspects during heartbeat.
+- `genericHeartbeat()` currently computes those surfaces every heartbeat, then checks circuit breaker and dispatch dedup, optionally runs red metric diagnostics, and calls `ctx.runAgent(agent, prompt)`.
+- `runGates()` performs artifact/anti-shallow/impact/duration guard handling after the main session and can re-enter `ctx.runAgent()` with remediation prompts.
 
-Do **not** put the first implementation inside `run-workflow.ts` unless the workflow context needs to avoid even loading heartbeat-data. `run-workflow.ts` is generic infrastructure for all workflows; heartbeat-specific signal rules there would be harder to reason about and risk blocking non-heartbeat workflows. A later M3/M4 can add an optional preflight hook in `run-workflow` once the heartbeat-local policy is proven.
+Potential reuse:
+- Snapshot inputs: latest owner events, metric alerts, active owned projects, and heartbeat guidance are the correct domains for “meaningful change.”
+- Existing red metric and inbox loaders can inform the run reasons, but should be converted to cheap timestamp/hash checks for a pre-session gate.
+- The post-run `runGates()` location explains why remediation churn appears under `workflow:heartbeat` and should be remapped/deduped.
 
-## Review of reusable logic
+Risk:
+- Full text loading/scanning of projects and heartbeat guidance before every skip decision may be too expensive; M3 should prefer mtimes, hashes, or compact DB counters.
+- Because `runGates()` uses the same `ctx.runAgent()` facade, remediation sessions inherit `source="workflow:heartbeat"` unless metadata/source is changed.
 
-### `circuit-breaker.ts`
+## Guard Remediation / Artifact-Gate Handling
 
-Reusable pattern:
+M1 showed many `source='workflow:heartbeat'` sessions appear to be guard remediation or artifact-gate/anti-shallow follow-up, not ordinary scheduled heartbeat no-ops.
 
-- Small JSON state file keyed by agent.
-- Fail-open/manual reset behavior via SIGNAL file deletion.
-- Simple functions: `checkCircuitBreaker()`, `recordOutcome()`, `resetCircuitBreaker()`.
+Design rule:
 
-Design implication: the heartbeat skip gate can follow the same explicit state-file pattern if DB writes are not available. However, unlike the circuit breaker, skip state is not an error throttle; it should never create a human-removable blocking file. It should be observable as routine scheduling telemetry.
+- Do not count remediation fanout as normal heartbeat liveness.
+- Use a separate trigger/source or metadata field where possible, e.g. `workflow:guard-remediation` instead of `workflow:heartbeat`.
+- Suppress duplicate remediation for the same original session/artifact/guard within a cooldown window.
+- If remediation requires a full agent, launch the specific owning agent/workflow instead of May’s generic heartbeat.
+- If remediation is only asking for a missing artifact/read-back, prefer a cheap workflow-level correction before forking a full heartbeat.
 
-### `dispatch-dedup-guard.ts`
+## Bypass Rules and Risks
 
-Reusable pattern:
+### Bypass Rules
 
-- Cheap task-key hashing/prefixing.
-- Windowed attempt records.
-- `shouldDispatch()` followed by `recordDispatch()`/`recordOutcome()`.
-- `force` override.
+Always run, regardless of skip state, when:
 
-Design implication: M3 should mirror `shouldDispatch()` with a `shouldRunHeartbeat(agent, snapshot, opts)` API returning `{ decision: "run"|"skip", reason, snapshotHash }`. Reuse `force` semantics and cleanup/windowing, but do not treat skips as failures.
+- Trigger is explicit human input.
+- Trigger is an event-driven alert or metric breach.
+- Trigger is a project status/comment/update event.
+- Trigger is a failed/interrupted session requiring review.
+- Trigger carries `force`, `manual`, `review`, `approval`, or equivalent metadata.
+- Checkpoint state is missing/corrupt/ambiguous.
+- Max quiet/liveness interval has expired.
 
-Important caveat: `genericHeartbeat()` already calls `shouldDispatch(agent, "heartbeat")`, while `run-workflow.ts` also dedups each `ctx.runAgent(agent, prompt)` by the full prompt. The skip gate should be evaluated before recording a heartbeat dispatch, otherwise skipped ticks will pollute dispatch-attempt counters.
+### Risks
 
-### `heartbeat-data.ts`
+1. **False skip**
+   - Risk: May misses real work.
+   - Mitigation: fail open on unknown state, keep liveness runs, record skip audits.
 
-Reusable/observed logic:
+2. **State query too expensive**
+   - Risk: skip gate costs nearly as much as heartbeat.
+   - Mitigation: store compact checkpoint/counters; avoid scanning large logs each time.
 
-- `loadMetrics()`, `loadAlerts()`, `loadInbox()`, `loadProjects()` already collect much of the signal needed to determine obvious run conditions.
-- `shouldSkipHeartbeat()` already exists with a coarse policy: skip only when no red metrics, no alerts, no inbox, no projects, and a recent handler.completed heartbeat exists.
-- `genericHeartbeat()` currently does **not** call `shouldSkipHeartbeat()`, so M3 should integrate or replace it.
-- `runGates()` currently turns shallow/fast/no-artifact heartbeat sessions into follow-up LLM work. M1 found this churn is mixed into `source='workflow:heartbeat'`; M3 should label or emit these as guard-remediation, not fresh scheduled heartbeats.
+3. **Metric gaming**
+   - Risk: no-op rate appears lower because sessions are hidden.
+   - Mitigation: record skipped heartbeat attempts with reasons and monitor skip correctness.
 
-## Risks and bypass rules
+4. **Remediation suppression hides real failures**
+   - Risk: duplicate suppression blocks needed guard correction.
+   - Mitigation: dedupe by original session/guard/artifact and use short cooldowns; fail open after repeated failures.
 
-Risks:
+5. **Implementation in wrong layer**
+   - Risk: workflow-only logic still launches full sessions.
+   - Mitigation: M3 must integrate before session creation in `src/`.
 
-1. **False skip:** a signal exists but is not captured by the snapshot. Mitigation: fail open on query errors, include broad session/project/alert/event checks, and enforce a maximum no-run interval.
-2. **Metric staleness:** if metrics are stale but unchanged, skipping may hide the stale-measurement problem. Mitigation: include snapshot freshness; run if metrics have not been measured recently.
-3. **Project file mtime ambiguity:** filesystem mtime/hash checks can be noisy. Mitigation: start with shared project files owned by May plus DB project metadata if available; treat comments/status changes as run signals.
-4. **Guard loop suppression hides quality failures:** suppressing guard remediation must not erase it. Mitigation: route as `heartbeat.guard_remediation` events or sessions with explicit source labels and metrics.
-5. **Agent-specific differences:** May's heartbeat is generic; dev/arc/scout historically had custom workflows. Mitigation: enable policy first for May, then consider opt-in for other agents.
+## M3 Implementation Sketch
 
-Bypass/run rules:
+M3 should implement a pre-session conditional gate for scheduled May heartbeats:
 
-- Any human/operator/manual force flag runs.
-- Any new human input runs.
-- Any new unresolved alert or breach runs.
-- Any failed/interrupted session runs.
-- Any skip-state corruption/query error runs.
-- Any agent disabled/circuit-breaker-open state should emit/record the existing circuit-breaker result, not masquerade as an idle skip.
-- Maximum silence floor, e.g. run at least once every 4 hours even if all snapshots are identical.
+1. Identify scheduled May heartbeat trigger.
+2. Load heartbeat checkpoint for `may:heartbeat`.
+3. Load or compute cheap current snapshot:
+   - latest relevant event timestamp/id
+   - latest human input timestamp/id
+   - latest project modification timestamp/hash
+   - latest metric breach/alert timestamp/id
+   - latest failed/interrupted session timestamp/id
+   - latest pending-review/deliverable timestamp/id
+4. Compare snapshot to checkpoint.
+5. Decide:
+   - `run` with reason codes if any meaningful change exists.
+   - `skip` with reason code `no_meaningful_change` if unchanged.
+   - `run` with reason `fail_open` if state is unavailable.
+6. If skipped:
+   - record audit row/event
+   - update last scheduled check and last skipped timestamp
+   - do not create full May session
+7. If run:
+   - create full May heartbeat session
+   - update checkpoint with run-started metadata
+8. On session completion:
+   - classify productive/no-op/unclear if possible
+   - update last productive heartbeat if meaningful
+   - record completion outcome
 
-## Concrete M3 implementation sketch
+Recommended tests/instrumentation:
 
-1. **Add a new helper in `heartbeat-data.ts`:**
+- Unchanged state scheduled heartbeat skips.
+- New human event bypasses skip and runs.
+- New metric breach bypasses skip and runs.
+- New failed session bypasses skip and runs.
+- Missing checkpoint runs and creates checkpoint.
+- Duplicate guard remediation within cooldown suppresses or routes cheaply.
+- Skip audit is recorded without full session creation.
 
-```ts
-export function shouldRunHeartbeat(ctx, agent, inputs, opts?) {
-  // inputs: metrics, alerts, inbox, projects loaded by existing helpers
-  // returns { decision: "run" | "skip", reason, snapshot, changedSignals }
-}
-```
+## Skip Audit Record
 
-2. **Decision inputs:**
+Every skipped heartbeat should leave a cheap audit trail with at least:
 
-- Existing strings: `metrics`, `alerts`, `inbox`, `projects`.
-- DB checks using readonly/runtime `ctx.getDb()`:
-  - latest relevant `events` row for owner/urgency/human input;
-  - unresolved `metric_alerts` joined to May-owned `metrics`;
-  - recent `sessions` with status in `error`, `interrupted`, `failed` or stale `running`;
-  - latest `metric_snapshots` for May-owned metrics;
-  - latest prior `heartbeat.skipped`/`heartbeat.ran_productive` event for state.
-- Filesystem project hash/mtime for May-owned active project directories if DB project metadata is insufficient.
+- timestamp
+- agent
+- workflow/job id
+- trigger id/source
+- decision: `skip`
+- reason code, e.g. `no_meaningful_change`
+- checkpoint id/version
+- current snapshot summary
+- last run timestamp
+- last productive timestamp
 
-3. **Integrate in `genericHeartbeat()` before `recordDispatch(agent, "heartbeat")`:**
+This preserves observability and prevents the metric from being gamed by invisible skips.
 
-```ts
-const decision = shouldRunHeartbeat(ctx, agent, { metrics, alerts, inbox, projects });
-if (decision.decision === "skip") {
-  ctx.emit({
-    type: "heartbeat.skipped",
-    agent,
-    reason: decision.reason,
-    snapshotHash: decision.snapshot.hash,
-    lastObservedAt: decision.snapshot.lastObservedAt,
-    changedSignals: decision.changedSignals,
-  });
-  ctx.log(`[heartbeat:${agent}] skipped: ${decision.reason}`);
-  return ctx.done(`heartbeat skipped: ${decision.reason}`);
-}
-```
+## M2 Acceptance Criteria
 
-4. **Record productive runs:** after `ctx.runAgent()` and gate handling, emit a `heartbeat.completed` or `heartbeat.productive` event with `agent`, `sessionId`, `workflowRunId`, `snapshotHash`, `changedSignals`, `status`, and `gateTriggered` if known. If the current workflow cannot know productivity reliably, initially record `heartbeat.ran` and let M4 improve productivity labeling.
+M2 is complete when:
 
-5. **Route guard remediation differently:** in `runGates()`, when artifact/anti-shallow/impact/duration gates re-prompt, emit structured events with `type: "heartbeat.guard_remediation"`, `gate`, `agent`, original session id if available, elapsed seconds/tool calls, and action. If changing session `source` for gate follow-ups is possible, use `source='workflow:heartbeat:<gate>'`; otherwise event telemetry at least makes the churn separable.
-
-6. **Tests/smoke checks:** update `agents/shared/tests/heartbeat-data.test.ts` for:
-
-- no changes -> skip and emits `heartbeat.skipped`;
-- human input -> run;
-- red metric/new alert -> run;
-- failed session -> run;
-- project present/changed -> run;
-- DB error -> run;
-- force option -> run;
-- skipped heartbeat does not call `ctx.runAgent()` or `recordDispatch()`.
-
-## What should be recorded when skipped
-
-At minimum, every skipped heartbeat should create observable telemetry equivalent to:
-
-```json
-{
-  "type": "heartbeat.skipped",
-  "agent": "may",
-  "reason": "idle-no-meaningful-change",
-  "trigger": "cron:heartbeat",
-  "lastProductiveHeartbeatAt": 1778120000000,
-  "lastObservedAt": 1778120000000,
-  "snapshotHash": "...",
-  "skipCountSinceRun": 1,
-  "checkedSignals": ["events", "metric_alerts", "metrics", "sessions", "projects"],
-  "changedSignals": []
-}
-```
-
-This preserves accountability: skipped ticks are visible, measurable, and auditable, without spending an LLM call.
-
-## Recommendation
-
-For M3, implement a conservative May-only skip gate inside `genericHeartbeat()` using the existing loaders plus DB high-water checks. Start by suppressing only the safest case: no inbox, no active alerts/breaches, no failed/interrupted/stale sessions, no May-owned project changes, no new human input, and a productive heartbeat within the freshness floor. Separately label guard remediation so future baselines can distinguish scheduled heartbeat demand from quality-gate churn.
-
-## Verification
-
-This report was updated and re-verified in the current iteration after reading the required runtime and workflow evidence. Concrete evidence checked:
-
-- `agents/may/cron.json` confirms the May `heartbeat` cron entry is enabled, runs every 1,800,000 ms, uses handler `run-workflow`, and passes `handlerConfig.workflow: "may-heartbeat"`.
-- `agents/may/handlers/run-workflow.ts` confirms the workflow handler creates `workflowCtx.runAgent()` and calls `ctx.manager.callAgent(...)` with a source template equivalent to `workflow:<entry.name>`, so May scheduled heartbeat sessions appear with `source='workflow:heartbeat'`.
-- `agents/may/workflows/may-heartbeat.ts` confirms the May workflow delegates directly to `genericHeartbeat(ctx, "may")`.
-- `agents/shared/workflows/heartbeat-data.ts` confirms `shouldSkipHeartbeat()` exists but `genericHeartbeat()` does not call it; the actual path loads metrics/projects/alerts/inbox, checks circuit breaker and dispatch dedup, records dispatch, runs red-metric diagnostics, calls `ctx.runAgent()`, and then calls `runGates()`.
-- `agents/shared/workflows/circuit-breaker.ts` and `agents/shared/workflows/dispatch-dedup-guard.ts` confirm reusable patterns for cheap state, fail-open/manual override, force semantics, windowed attempts, and record-before/after APIs.
-- `agents/shared/may-agent-docs/cron.md` and `agents/shared/may-agent-docs/heartbeat.md` confirm the documented cron-to-handler-to-heartbeat data flow and auto-heartbeat behavior, with explicit cron entries overriding auto-generated heartbeats.
-
-Structural check: the report contains the requested sections for meaningful-change definition, skip/run table, required state, runtime insertion point, reusable logic review, guard-remediation handling, bypass risks, M3 implementation sketch, and skip audit record.
+- This design file exists and has been read back.
+- Runtime trigger path evidence has been filled in with actual file/function names.
+- Existing shared workflow files have been reviewed and summarized.
+- The design includes skip/run rules, required state, insertion point, bypass rules, risks, and M3 implementation sketch.
