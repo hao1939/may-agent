@@ -3,11 +3,14 @@
 ## Resources
 - Knowledge base: `agents/shared/knowledge/entries/`
 - **Web access**: Use `bash` with `curl` to fetch real data from accessible sources:
-  - arXiv API: `curl 'http://export.arxiv.org/api/query?search_query=...&max_results=5'`
-  - Hacker News API: `curl 'https://hn.algolia.com/api/v1/search?query=...'`
-  - GitHub API: `curl 'https://api.github.com/search/repositories?q=...'`
-  - Reddit JSON: `curl 'https://www.reddit.com/r/MachineLearning/.json?limit=10'`
-- **XHS**: Use `agents/scout/tools/xhs-browse.mjs` to browse Xiaohongshu
+  - arXiv API: `curl -sL 'https://export.arxiv.org/api/query?search_query=...&max_results=5'` (NOTE: must use https and -L flag)
+  - Hacker News API: `curl -s 'https://hn.algolia.com/api/v1/search?query=...'`
+  - GitHub API: `curl -s 'https://api.github.com/search/repositories?q=...'`
+  - Reddit JSON: `curl -s 'https://www.reddit.com/r/MachineLearning/.json?limit=10'`
+- **XHS (小红书)**: Use `node agents/scout/tools/xhs-browse.mjs <command>`:
+  - Before first use, ensure an XHS tab exists: `curl -s -X PUT 'http://localhost:9222/json/new?https://www.xiaohongshu.com/explore'` then wait 3s
+  - Commands: `feed` (explore feed), `search <keyword>` (search notes), `read <url>` (read a note), `scroll` (load more)
+  - Example: `node agents/scout/tools/xhs-browse.mjs search "AI agent 智能体"`
 - ⛔ **NEVER simulate or mock data**. If you can't reach a source, skip it and use sources you CAN reach. Every finding must be based on real data from a real API call.
 
 ## REQUIRED: Check Shared Manifest

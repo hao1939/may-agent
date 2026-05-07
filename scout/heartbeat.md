@@ -26,6 +26,6 @@ This format is required in EVERY session — heartbeats, work sessions, project 
 
 ## Current Focus
 - AI agent architectures: multi-agent coordination patterns
-- Research sources: arXiv, Hacker News, GitHub, Reddit (use curl)
+- Research sources: XHS (小红书), arXiv, Hacker News, GitHub, Reddit
 - What works for autonomous agents? What fails?
-- ⛔ Do NOT simulate/mock XHS data. XHS browse tool does not exist.
+- For XHS: first open tab via CDP, then use xhs-browse.mjs tool
