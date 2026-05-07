@@ -16,7 +16,7 @@
  */
 
 import { Agent } from "@mariozechner/pi-agent-core";
-import type { AgentTool } from "@mariozechner/pi-agent-core";
+import type { AgentTool, AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Model } from "@mariozechner/pi-ai";
 import { mkdirSync, writeFileSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
@@ -30,6 +30,7 @@ import {
   sessionDir,
   appendSessionMessage,
   sessionOutputDir,
+  readSessionMessages,
 } from "./persistence.js";
 import { extractFinishParams } from "./manager-retry.js";
 import type { EventBus } from "../app/event-bus.js";
@@ -100,9 +101,10 @@ interface ActiveSession {
 export class V2SessionManager {
   private sessions = new Map<string, ActiveSession>();
   private results = new Map<string, Promise<SessionResult>>();
+  private completedResults = new Map<string, SessionResult>();
 
   constructor(
-    private registry: AgentRegistry,
+    public readonly registry: AgentRegistry,
     private persistDir: string,
     private bus?: EventBus,
   ) {}
@@ -155,6 +157,7 @@ export class V2SessionManager {
 
     // Cleanup on completion (not paused)
     promise.then((result) => {
+      this.completedResults.set(sessionId, result);
       const s = this.sessions.get(sessionId);
       if (s && result.status !== "blocked" && result.status !== "partial") {
         this.sessions.delete(sessionId);
@@ -201,6 +204,52 @@ export class V2SessionManager {
 
   /** Number of active sessions. */
   get activeCount(): number { return this.sessions.size; }
+
+  /** Whether a session is currently active (running or paused). */
+  hasActiveSession(sessionId: string): boolean { return this.sessions.has(sessionId); }
+
+  /** Close/remove a session from tracking. Aborts if running. */
+  close(sessionId: string): void {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      if (session.status === "running") session.agent.abort();
+      if (session.timeoutTimer) clearTimeout(session.timeoutTimer);
+      this.sessions.delete(sessionId);
+    }
+  }
+
+  /** Get the result of a completed session. */
+  result(sessionId: string): SessionResult | undefined {
+    const promise = this.results.get(sessionId);
+    if (!promise) return undefined;
+    // If already resolved, return synchronously via cached completedResults
+    return this.completedResults.get(sessionId);
+  }
+
+  /** Get session summary (from completed results). */
+  getSessionSummary(sessionId: string): { task: string; summary: string; status: string } {
+    const session = this.sessions.get(sessionId);
+    const completed = this.completedResults.get(sessionId);
+    return {
+      task: session?.task ?? completed?.sessionId ?? "",
+      summary: completed?.summary ?? "(running)",
+      status: completed?.status ?? session?.status ?? "unknown",
+    };
+  }
+
+  /** Read recent messages from a session's transcript (JSONL). */
+  progress(sessionId: string, limit = 20): AgentMessage[] {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      const msgs = session.agent.state.messages;
+      return msgs.slice(-limit) as AgentMessage[];
+    }
+    // Try reading from persisted JSONL
+    try {
+      const messages = readSessionMessages(this.persistDir, sessionId);
+      return messages.slice(-limit);
+    } catch { return []; }
+  }
 
   /** Send a message to a session. Steers if running, wakes via followUp if paused. */
   send(sessionId: string, text: string): void {
