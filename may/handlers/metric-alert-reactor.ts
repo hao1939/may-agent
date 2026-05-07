@@ -12,41 +12,11 @@
  * metric within the last 24h.
  */
 
-import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.js";
 import type { CronEntry } from "../../shared/agent-sdk.js";
+import { listConfiguredAgents, resolveMetricOwner } from "../../shared/lib/metric-ownership.ts";
 
 const DEDUP_WINDOW_MS = 4 * 60 * 60 * 1000; // 4h — shorter window so repeated alerts get reacted to faster
-const DEFAULT_OWNER = "may";
-
-function listConfiguredAgents(agentsRoot: string): Set<string> {
-  try {
-    return new Set(readdirSync(agentsRoot, { withFileTypes: true })
-      .filter(entry => entry.isDirectory() && !entry.name.startsWith(".") && !entry.name.startsWith("_") && entry.name !== "shared" && entry.name !== "gym")
-      .map(entry => {
-        const agentJson = join(agentsRoot, entry.name, "agent.json");
-        if (!existsSync(agentJson)) return null;
-        try {
-          const config = JSON.parse(readFileSync(agentJson, "utf8")) as { name?: string; disabled?: boolean };
-          if (config.disabled) return null;
-          return config.name ?? entry.name;
-        } catch {
-          return entry.name;
-        }
-      })
-      .filter((name): name is string => Boolean(name)));
-  } catch {
-    return new Set();
-  }
-}
-
-function resolveMetricOwner(metricId: string, configuredAgents: Set<string>, explicitOwner?: string | null): string {
-  if (explicitOwner?.trim()) return explicitOwner.trim();
-  const prefix = metricId.split(".")[0];
-  return configuredAgents.has(prefix) ? prefix : DEFAULT_OWNER;
-}
-
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   const configuredAgents = listConfiguredAgents(ctx.agentsRoot);
 
@@ -57,7 +27,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         const db = ctx.getDb();
         const unresolved = db.prepare(
           `SELECT ma.metric_id, ma.message, m.name as metricName,
-                  COALESCE(NULLIF(trim(m.owner), ''), NULLIF(trim(p.owner), ''), ?) as owner,
+                  m.owner as explicitOwner, p.owner as projectOwner,
                   m.threshold, m.target,
                   m.current as current, COALESCE(m.priority, 'P2') as priority
            FROM metric_alerts ma
@@ -65,7 +35,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
            LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
              AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
            WHERE ma.resolved_at IS NULL`
-        ).all(DEFAULT_OWNER) as Array<{ metric_id: string; message: string; metricName: string; owner: string; threshold: number; target: number; current: number; priority: string }>;
+        ).all() as Array<{ metric_id: string; message: string; metricName: string; explicitOwner?: string | null; projectOwner?: string | null; threshold: number; target: number; current: number; priority: string }>;
 
         if (unresolved.length === 0) {
           ctx.log("[metric-alert-reactor] Timer tick: no unresolved alerts.");
@@ -76,7 +46,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           const syntheticEvent: TriggerEvent = {
             type: "metric.breach",
             data: {
-              owner: resolveMetricOwner(row.metric_id, configuredAgents, row.owner),
+              owner: resolveMetricOwner(row.metric_id, configuredAgents, row.explicitOwner, row.projectOwner),
               metricId: row.metric_id,
               metricName: row.metricName,
               current: row.current,
@@ -127,14 +97,14 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
       const db = ctx.getDb();
       const metricRow = db.prepare(
         `SELECT COALESCE(m.priority, 'P2') as priority,
-                COALESCE(NULLIF(trim(m.owner), ''), NULLIF(trim(p.owner), ''), ?) as owner
+                m.owner as explicitOwner, p.owner as projectOwner
          FROM metrics m
          LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
            AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
          WHERE m.id = ?`
-      ).get(DEFAULT_OWNER, metricId) as { priority?: string; owner?: string } | null;
+      ).get(metricId) as { priority?: string; explicitOwner?: string | null; projectOwner?: string | null } | null;
       priority = metricRow?.priority ?? priority;
-      owner = resolveMetricOwner(metricId, configuredAgents, metricRow?.owner ?? owner);
+      if (metricRow) owner = resolveMetricOwner(metricId, configuredAgents, metricRow.explicitOwner, metricRow.projectOwner);
       if (priority !== "P0" && priority !== "P1") {
         ctx.log(`[metric-alert-reactor] Deferring ${metricId} (${priority}) to heartbeat context.`);
         return;

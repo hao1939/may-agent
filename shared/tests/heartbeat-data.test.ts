@@ -86,6 +86,22 @@ describe("loadMetrics", () => {
     expect(result).toContain("Investigate");
   });
 
+  it("uses project owner when metric owner is empty", () => {
+    const db = makeDb({
+      prepare: (sql: string) => ({
+        all: (..._args: any[]) => {
+          if (sql.includes("metric_snapshots")) return [];
+          if (sql.includes("metrics")) return [{ id: "v2.spec-coverage-rate", explicitOwner: null, projectOwner: "bob", current: 0.5, target: 1, threshold: 0.8, alert_op: "<", source_query: null, source_command: null }];
+          return [];
+        },
+        get: () => null,
+      }),
+    });
+    const ctx = makeCtx({ db });
+    expect(loadMetrics(ctx, "bob")).toContain("v2.spec-coverage-rate");
+    expect(loadMetrics(ctx, "arc")).toBe("");
+  });
+
   it("shows consecutive breach escalation", () => {
     const db = makeDb({
       prepare: (sql: string) => ({
@@ -204,6 +220,18 @@ describe("loadAlerts", () => {
     const result = loadAlerts(ctx, "bob");
     expect(result).toContain("⚠️");
     expect(result).toContain("Coverage dropped");
+  });
+
+  it("routes project-scoped alerts to the project owner", () => {
+    const db = makeDb({
+      prepare: () => ({
+        all: () => [{ metric_id: "v2.spec-coverage-rate", explicitOwner: null, projectOwner: "bob", message: "Coverage dropped" }],
+        get: () => null,
+      }),
+    });
+    const ctx = makeCtx({ db });
+    expect(loadAlerts(ctx, "bob")).toContain("v2.spec-coverage-rate");
+    expect(loadAlerts(ctx, "arc")).toBe("");
   });
 
   it("handles db errors", () => {
