@@ -273,13 +273,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   ctx.log(`[master-worker] ${projectMatch[1]} | status: ${status} | max-iter: ${maxIterations}`);
 
   // ── Create sessions ──
-  const orchestrator = await ctx.createSession({
+  let orchestrator = await ctx.createSession({
     systemPrompt: orchestratorSystemPrompt(projectDir),
     tools: "full",
     label: "orchestrator",
   });
 
-  const worker = await ctx.createSession({
+  let worker = await ctx.createSession({
     systemPrompt: workerSystemPrompt(dirname(projectDir)),
     tools: "full",
     label: "worker",
@@ -495,15 +495,41 @@ WRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Y
         }
       } catch { /* EXP-720: non-critical — don't break worker flow */ }
 
-      const workerResult = await withRetry(() => worker.prompt(workerPrompt), {
+      let workerResult = await withRetry(() => worker.prompt(workerPrompt), {
         maxRetries: 3,
         baseDelayMs: 1000,
         onRetry: (err, attempt, delay) => ctx.log(`[work] ⚠️ Provider error on worker, retry ${attempt} after ${delay}ms: ${String(err).slice(0, 80)}`),
       });
       if (!workerResult.success) {
         const err = workerResult.error instanceof Error ? workerResult.error : new Error(String(workerResult.error));
-        ctx.log(`[work] Provider failed after ${workerResult.attempts} attempt(s): ${err.message.slice(0, 200)}`);
-        throw err;
+        const errMsg = err.message.slice(0, 200);
+        ctx.log(`[work] Provider failed after ${workerResult.attempts} attempt(s): ${errMsg}`);
+
+        // The May API can return a synthetic "Clean start (fresh)" interruption
+        // when a persisted worker session is reaped/restarted mid-iteration.
+        // Retrying on the same SessionHandle just replays into the stale handle;
+        // start a fresh worker session once and rerun the exact same prompt.
+        if (/Clean start \(fresh\)/i.test(err.message)) {
+          ctx.log("[work] Worker session was reaped (Clean start); recreating worker session and retrying once");
+          try { worker.close(); } catch {}
+          worker = await ctx.createSession({
+            systemPrompt: workerSystemPrompt(dirname(projectDir)),
+            tools: "full",
+            label: "worker",
+          });
+          workerResult = await withRetry(() => worker.prompt(workerPrompt), {
+            maxRetries: 1,
+            baseDelayMs: 1000,
+            onRetry: (retryErr, attempt, delay) => ctx.log(`[work] ⚠️ Provider error on fresh worker, retry ${attempt} after ${delay}ms: ${String(retryErr).slice(0, 80)}`),
+          });
+          if (!workerResult.success) {
+            const retryErr = workerResult.error instanceof Error ? workerResult.error : new Error(String(workerResult.error));
+            ctx.log(`[work] Fresh worker failed after ${workerResult.attempts} attempt(s): ${retryErr.message.slice(0, 200)}`);
+            throw retryErr;
+          }
+        } else {
+          throw err;
+        }
       }
       ctx.log(`[work] Iteration ${iteration} done`);
 
@@ -750,7 +776,7 @@ Then provide your decision and guidance for the next iteration.`;
     return ctx.done(`${finalStatus} after ${iteration} iteration(s). ${stopReason}`);
 
   } finally {
-    orchestrator.close();
-    worker.close();
+    try { orchestrator.close(); } catch {}
+    try { worker.close(); } catch {}
   }
 }
