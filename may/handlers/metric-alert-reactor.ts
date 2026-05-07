@@ -2,11 +2,11 @@
  * metric-alert-reactor — Handler that reacts to metric.breach events.
  *
  * Listens on: metric.breach
- * Action: Forks the owning agent with a clear remediation task.
+ * Action: Forks the owning agent for P0 breaches. Lower-priority breaches stay
+ * visible through metric alert context and are handled on heartbeat.
  *
- * This closes the gap where metric.breach events were emitted but nobody
- * acted on them. The owning agent is given concrete action options
- * (fix root cause, adjust threshold, or resolve alert).
+ * This keeps urgent safety issues immediate while preserving deliberative
+ * heartbeat-based handling for normal metric drift.
  *
  * Dedup: skips if the owner already has a metric-alert session for this
  * metric within the last 24h.
@@ -25,11 +25,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         const db = ctx.getDb();
         const unresolved = db.prepare(
           `SELECT ma.metric_id, ma.message, m.name as metricName, m.owner, m.threshold, m.target,
-                  m.current as current
+                  m.current as current, COALESCE(m.priority, 'P2') as priority
            FROM metric_alerts ma
            JOIN metrics m ON m.id = ma.metric_id
            WHERE ma.resolved_at IS NULL`
-        ).all() as Array<{ metric_id: string; message: string; metricName: string; owner: string; threshold: number; target: number; current: number }>;
+        ).all() as Array<{ metric_id: string; message: string; metricName: string; owner: string; threshold: number; target: number; current: number; priority: string }>;
 
         if (unresolved.length === 0) {
           ctx.log("[metric-alert-reactor] Timer tick: no unresolved alerts.");
@@ -47,6 +47,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
               threshold: row.threshold,
               target: row.target,
               message: row.message,
+              priority: row.priority,
             },
           };
           // Re-invoke self with synthetic event (inline the logic below)
@@ -65,7 +66,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
 async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent) {
 
-    const { owner, metricId, metricName, current, threshold, target, message } = event.data as {
+    const { owner, metricId, metricName, current, threshold, target, message, priority: eventPriority } = event.data as {
       owner: string;
       metricId: string;
       metricName: string;
@@ -73,6 +74,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent) {
       threshold: number;
       target: number;
       message: string;
+      priority?: string;
     };
 
     if (!owner || !metricId) {
@@ -80,9 +82,20 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent) {
       return;
     }
 
-    // Dedup: check if owner already has a recent session for this metric
+    let priority = eventPriority ?? "P2";
+
+    // Only P0 breaches fork immediately. Lower priorities are still visible in
+    // heartbeat metric context through the unresolved alert row.
     try {
       const db = ctx.getDb();
+      const metricRow = db.prepare("SELECT COALESCE(priority, 'P2') as priority FROM metrics WHERE id = ?").get(metricId) as { priority?: string } | null;
+      priority = metricRow?.priority ?? priority;
+      if (priority !== "P0") {
+        ctx.log(`[metric-alert-reactor] Deferring ${metricId} (${priority}) to heartbeat context.`);
+        return;
+      }
+
+      // Dedup: check if owner already has a recent session for this metric
       const recentSession = db.prepare(
         `SELECT sessionId FROM sessions
          WHERE agent = ? AND task LIKE ? AND startedAt > ?`
@@ -93,11 +106,15 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent) {
         return;
       }
     } catch {
-      // DB unavailable — proceed anyway, runAgentTask will handle errors
+      if (priority !== "P0") {
+        ctx.log(`[metric-alert-reactor] Deferring ${metricId} (${priority}) to heartbeat context.`);
+        return;
+      }
+      // DB unavailable for dedup — proceed for explicit P0 events.
     }
 
     const task = [
-      `[metric-alert][${metricId}] ⚠️ ${message}`,
+      `[metric-alert][${metricId}][${priority}] ${message}`,
       ``,
       `Your metric "${metricName}" is breaching its threshold.`,
       `  Current: ${current}`,
@@ -115,13 +132,10 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent) {
     ].join("\n");
 
     try {
-      await ctx.manager.callAgent(owner, task, {
-        source: `metric-alert-reactor:${metricId}`,
-        waitForCompletion: false,
-      });
-      ctx.log(`[metric-alert-reactor] Forked ${owner} to handle ${metricId}`);
+      await ctx.sdk.runAgent(owner, task, { source: `metric-alert-reactor:${metricId}` });
+      ctx.log(`[metric-alert-reactor] Ran ${owner} to handle ${metricId}`);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
-      ctx.log(`[metric-alert-reactor] Failed to fork ${owner}: ${msg}`);
+      ctx.log(`[metric-alert-reactor] Failed to run ${owner}: ${msg}`);
     }
 }
