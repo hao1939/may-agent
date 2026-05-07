@@ -34,18 +34,23 @@ This is also what it means for the system to **fail visibly**. A dead heartbeat 
 The same human visits the UI in three different mindsets. The UI is designed in this order:
 
 - **Watcher** (10 seconds, dozens of times a day) — "Is the system alive? Is anything obviously off?" Glance at the front page. Watch for a moment. Close the tab.
-- **Steerer** (1–5 minutes) — "I want to leave a note for an agent. Comment on a project. Adjust a threshold. Reply to a breach." The verbs are participation, not control.
-- **Investigator** (15+ minutes) — "Why did agent X decide Y? What was the chain from breach to fix?" Drill in. Read transcripts. Follow links.
+- **Steerer** (1–5 minutes) — "I want to leave a note for an agent. Comment on a project. Reply to may. Drop a thought into a session." The verbs are participation, not control. **Conversation is a steering verb.**
+- **Investigator** (15+ minutes) — "Why did agent X decide Y? What did the breach-to-fix chain look like? What does KE-744 say?" Drill in. Read transcripts. Read journals. Follow cross-links.
 
-The Watcher's needs decide the front page. The Steerer's verbs decide the interactive surface. The Investigator's tools live one click away.
+The Watcher's needs decide the front page. The Steerer's verbs decide the interactive surfaces. The Investigator's tools live one click away — and there are two of them (per-session investigation, cross-cutting memory) because investigation has two natural shapes.
 
 ## What the UI is NOT
 
-- **Not a chat interface.** Telegram is chat. Agents talk to each other; they don't talk to me through the dashboard. The UI's "send" verbs are *steering*, not *conversation*.
 - **Not a configuration panel.** Agents are configured by markdown files in the repo. Editing those in a web form is the wrong abstraction — I edit them in my IDE.
 - **Not a terminal.** If I'm running commands, I'm debugging, not operating.
 - **Not a control panel.** Steering verbs *change what an agent will see at its next heartbeat*. They do not "make the agent do X right now." See `design/heartbeat-as-agency.md`.
 - **Not a re-implementation of the bus or DB.** It's a window onto them.
+
+### What about chat?
+
+An earlier revision of this doc said "not a chat interface; Telegram is chat." That was a confusion between **channel** and **purpose**. Telegram and the dashboard are two channels into the same primitive: a session with input enabled, bound to an agent. When the human is at the laptop with the dashboard open, opening Telegram to talk to may is friction. The dashboard's session-with-input surface is the laptop-side Telegram.
+
+So conversation belongs in the dashboard — but it doesn't get its own separate "chat" surface. It's the same `/sessions/:id` surface used for investigation, with input enabled when the session is open. See "The five surfaces" below.
 
 ## The system model the UI surfaces
 
@@ -62,9 +67,21 @@ And two relationships that connect them:
 
 The UI's information architecture mirrors this. Projects are the primary navigable object. Metrics belong to projects (or to the system). Heartbeats animate everything. Sessions are how iterations look from the outside; messages are how coordination looks.
 
-## The four screens
+## The five surfaces
 
-Four screens. One URL each. Deep-linkable. No tabs.
+Five surfaces. Deep-linkable URLs. The implementation may use tabs *if and only if* tabs are real URLs (paths or hashbangs that the browser back button respects).
+
+Mapping to roles:
+
+| Surface | Primary role | Notes |
+|---|---|---|
+| `/` | Watcher | liveness; heartbeat timeline; decision feed; breach summary |
+| `/projects/:id` | Steerer | comment lands → next heartbeat picks it up |
+| `/sessions/:id` | Steerer + Investigator | one surface; read-only when session is closed, input-enabled when open |
+| `/knowledge` (and sub-paths) | Investigator | KE entries, journals, hypotheses, experiments — the system's memory |
+| `/system` | Watcher → Investigator | metrics + events; the dashboard for spec conformance once that's computed |
+
+The Watcher has one front door. The Steerer has two scopes (per-project comments, per-session conversation). The Investigator has two shapes (per-trace deep-dive, cross-cutting memory). Five surfaces, three roles, one human.
 
 ### 1. `/` — The liveness view (Watcher)
 
@@ -181,7 +198,15 @@ The discussion box is **inline and conversational**, not a buried form. The late
 - **Pause / Resume** — sets project status; agent skips paused projects.
 - **Mark closed** — humans close projects, not agents.
 
-### 3. `/sessions/:id` — Session detail (Investigator)
+### 3. `/sessions/:id` — Session view (Steerer + Investigator)
+
+This is the unified surface that earlier drafts split into "chat" and "sessions." They were always the same surface viewed from different starting points. The transcript is the transcript; whether you can type into it depends on whether the session is open.
+
+**Three ways to land here:**
+
+- **Click a session** in the liveness feed, project detail, or knowledge cross-reference → `/sessions/<id>`. Read-only investigation.
+- **"Talk to may"** (or any agent) — button on `/` that resolves to the agent's *default session* (most recent open session bound to inputs). Lands you on `/sessions/<that-id>` with input enabled. Mirrors Telegram's single-thread-per-agent model.
+- **"New conversation"** — explicit button. POST creates a new session bound to the chosen agent; you land on `/sessions/<new-id>` with input enabled.
 
 A session is **a thought**. The UI renders it as one, in four phases (matching the heartbeat structure in `design/heartbeat-as-agency.md`):
 
@@ -221,10 +246,41 @@ A session is **a thought**. The UI renders it as one, in four phases (matching t
 The transcript is one click away (collapsed by default) — the structured view is the primary rendering. Investigators who need the raw tool calls can expand. Most of the time, the four-phase view is enough to understand what happened and why.
 
 **Steering verbs:**
+- **Type into the input row** (if the session is open and bound to inputs) — your message becomes part of the session's context on the next agent step. Same primitive that Telegram uses.
 - **Cancel** (if `status=running`).
-- **Message this agent** — opens compose, posts `message.created`.
+- **Message this agent** — opens compose for a *new* message to the agent (distinct from typing into this session); posts `message.created`.
 
-### 4. `/system` — System health (Watcher → Investigator)
+**Default-session resolution.** The "talk to may" entry point needs to resolve to a specific session ID. The rule: pick the most recent session for that agent that is (a) open / accepting input, (b) not a heartbeat session, (c) not a workflow-spawned worker. If none exists, the button creates one. This matches Telegram's behavior where a single thread persists across messages until explicitly closed.
+
+### 4. `/knowledge` — System memory (Investigator)
+
+The system accumulates memory in markdown: knowledge entries (KE-*), hypotheses (H-*), experiments (EXP-*), project journals, design docs, proposals. These are the substrate of agent continuity — every heartbeat reads from them. The Investigator needs the same view.
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  📁 shared / knowledge / entries                                      │
+├──────────────────────────────────────────────────────────────────────┤
+│  📁 entries                          │  KE-744: Git assume-unchanged │
+│  📁 hypotheses                       │  on workspace files           │
+│  📁 experiments                      │  ────────────────────────────  │
+│  📄 KE-001.md   1.5KB                │  Status: open                  │
+│  📄 KE-002.md   5.9KB                │  Cited in: project.active...   │
+│  📄 KE-003.md   1.0KB                │  ...                           │
+│  ...                                  │                                │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+**What it surfaces:**
+- Tree view on the left, content on the right.
+- Markdown rendered with cross-links: any `KE-NNN`, `H-NNN`, `EXP-NNN` reference becomes a clickable navigation.
+- File metadata: size, last modified, owner.
+- Sub-paths are real URLs: `/knowledge/entries/KE-744` deep-links to that file.
+
+**Why this earns its surface.** The design's own "alive" table includes **Persisting** — "journals carry forward; today's iteration references yesterday." If the human can't read what carried forward, they can't tell whether the system is persisting or just storing. `/knowledge` is the surface where that signal becomes visible. It's also where C10 (honesty) becomes legible: stale entries, orphan references, unresolved hypotheses are visible in the file tree's metadata. A future iteration can surface staleness signals ("this KE hasn't been referenced in 60 days") directly.
+
+**Steering from `/knowledge`?** No. Reading the system's memory is investigation, not steering. To act on something you read, navigate to its associated project or session and steer there.
+
+### 5. `/system` — System health (Watcher → Investigator)
 
 The metric grid lives here, not on the front page. This is where you go when the front page's breach badge is non-zero.
 
@@ -258,7 +314,7 @@ Click a metric → metric detail with breach history, sparkline, sessions spawne
 
 This screen is **secondary**. It exists for when the front page's heartbeat-and-decisions view raises a question that needs a numerical answer. It is not how the operator starts.
 
-That's all four screens. There is no Events tab, no Knowledge tab, no Benchmarks tab, no Digest tab as top-level navigation. Events stream live on the front page. Knowledge is reachable per-agent via the agent name in any session/project view. Benchmarks are deleted. Digest is reachable as a markdown file in the repo.
+That's all five surfaces. The shipped UI's `#chat` tab collapses into `/sessions/:id`. The `#benchmarks` tab is unhooked pending a future rebuild. `#metrics` and `#events` fold into `/system`. `#knowledge` stays as a first-class Investigator surface. The dashboard tab becomes `/`.
 
 ## The agency view (callout)
 
@@ -328,15 +384,16 @@ That's the entire back-end surface: 1 WebSocket + ~9 query endpoints + ~9 verb e
 
 ## What gets removed
 
-Endpoints and UI surfaces that fit no plane or no role:
+From today's UI and API surface, this revision removes or defers:
 
-| Removed | Why |
+| Removed / deferred | Why |
 |---|---|
 | `/api/requests` and Requests tab | Empty stub; table deleted in v0.2 |
-| `/api/benchmarks*` (3 endpoints) and Benchmarks tab | `gym_runs` empty, `prompt_logs` missing, subsystem dead |
+| `/api/benchmarks*` (3 endpoints) and Benchmarks tab | Currently broken; rebuild deferred. Backend routes stay for data preservation; tab is unhooked. Returns later as `/admin/benchmarks` or `/system/benchmarks` if rebuilt. |
 | `/api/digest` and Digest panel | Daily digest is a markdown file in the repo; not needed in UI |
-| Top-level Knowledge tab | Reachable per-agent in agent context views |
 | `/api/agents/activity`, `/api/agents/timeline` (current shape) | Replaced by heartbeat timeline + decisions feed |
+
+**Reversal from earlier draft.** A previous version of this section also listed "Top-level Knowledge tab" as removed ("reachable per-agent in agent context views"). That was wrong: the system's memory needs a top-level Investigator surface. `/knowledge` is now first-class — see surface 4 above.
 
 ## Constraints on the UI
 
@@ -380,15 +437,21 @@ A third change is desirable but not blocking:
 
 ## Migration steps
 
-The current `web.ts` is mostly v2-shaped on the back end. The front-end is the rewrite.
+The current `web.ts` is mostly v2-shaped on the back end. The front-end is the rewrite. The shipped UI overlaps with the design more than the earlier revision admitted: `#chat` already implements session-view-with-input, `#knowledge` already implements the file browser. The migration is mostly *renaming and rewiring*, not building from scratch.
 
-1. **Delete dead endpoints** (`/api/requests`, 3× `/api/benchmarks*`, `/api/digest`). ~200 LOC.
-2. **Add the 9 steering POST endpoints.** ~150 LOC. Each is ~15 lines: validate, emit event, return ok.
-3. **Add `/api/decisions` and `/api/heartbeats` query endpoints.** Read from `events` and `sessions`. ~50 LOC.
+1. **Delete or unhook dead endpoints.** `/api/requests`, `/api/digest`, `/api/agents/activity`, `/api/agents/timeline` (current shape). Unhook `/api/benchmarks*` from navigation but leave routes intact for future rebuild. ~150 LOC removed.
+2. **Add the steering POST endpoints.** Per-project comment, per-session input, message-to-agent. Each is ~15 lines: validate, emit event, return ok.
+3. **Add `/api/decisions` and `/api/heartbeats` query endpoints.** Read from `events` and `sessions`. ~50 LOC. Blocked on `agent.decision` event (S7).
 4. **Land the `agent.decision` event in the heartbeat workflow.** Schema + workflow change. (Coordinate with `design/heartbeat-as-agency.md` author.)
 5. **Tighten session `trigger` field population.** Audit all `runAgent` callers; ensure trigger is set.
-6. **Front-end rewrite to the four-screen layout.** Reactive to `/ws`, no polling. Largest piece.
-7. **Fold knowledge browser and digest viewer into per-agent context.** Delete top-level tabs.
+6. **Front-end rewrite to the five-surface layout.** Reactive to `/ws`, no polling. Tabs become real URLs. The biggest piece, but mostly URL/route plumbing on top of components that already exist.
+   - `#dashboard` → `/` (add heartbeat timeline + decision feed; keep agent grid as one component).
+   - `#chat` → entry points for `/sessions/:id` (default-session resolution, new-conversation button).
+   - `#knowledge` → `/knowledge` (URL-align; integrate cross-links from session and project views).
+   - `#metrics` + `#events` → `/system`.
+   - `#projects` → `/projects` and `/projects/:id` (project detail view is new).
+   - `#benchmarks` → unhooked.
+7. **Define default-session resolution.** Per-agent: most-recent open session that's not a heartbeat or worker session. Backend exposes `/api/agents/:name/default-session`. Frontend's "talk to may" button calls it and redirects.
 
 Order: 1, 2, 3, 5, 4, 7, 6. Front-end last with a stable back end.
 
