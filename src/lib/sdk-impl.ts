@@ -29,8 +29,6 @@ export interface SDKDeps {
   manager?: SubagentManager;
   /** Manager's callAgent — async, blocks until agent finishes. */
   callAgent: (agent: string, task: string, opts?: { source?: string; projectId?: string; timeout?: number }) => Promise<TaskResult>;
-  /** Manager's runAgent — fire-and-forget, returns sessionId. */
-  forkAgent: (agent: string, task: string, opts?: { source?: string }) => string;
   /** Cron triggerNow — fire a handler on next tick. */
   triggerNow?: (handlerName: string) => boolean;
 }
@@ -45,10 +43,6 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         projectId: opts?.projectId,
         timeout: opts?.timeout,
       });
-    },
-
-    forkAgent(agent: string, task: string, opts?: RunOpts): string {
-      return deps.forkAgent(agent, task, { source: opts?.source });
     },
 
     createLLMSession(_opts: SessionOpts): Promise<SessionHandle> {

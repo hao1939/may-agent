@@ -99,7 +99,8 @@ export type {
   SessionKind,
 } from "./persistence.js";
 
-export type { RuntimeCtx, HandlerContext, HandlerModule } from "./handler-context.js";
+export type { HandlerContext, HandlerModule } from "./handler-context.js";
+export type { RuntimeCtx } from "./runtime-ctx.js";
 export { buildRuntimeCtx } from "./runtime-ctx.js";
 export { retryWithBackoff } from "./retry-with-backoff.js";
 export type { RetryWithBackoffOptions } from "./retry-with-backoff.js";
