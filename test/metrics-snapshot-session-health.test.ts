@@ -105,4 +105,54 @@ describe("metrics-snapshot session health metrics", () => {
       priority: "P1",
     });
   });
+
+  it("keeps rolling-window count metrics as gauges without stale rate config", async () => {
+    const root = join(tmpdir(), `metrics-window-count-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempDirs.push(root);
+    mkdirSync(join(root, "agents"), { recursive: true });
+    mkdirSync(join(root, "src/lib"), { recursive: true });
+    writeFileSync(join(root, "src/lib/manager.ts"), "export {}\n");
+
+    const db = getDb(root);
+    const now = Date.now();
+    db.run(
+      "INSERT INTO metrics (id, name, owner, type, current, target, threshold, unit, status, speed, alert_op, config, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [
+        "project.iterations-24h",
+        "Project iterations (24h)",
+        "may",
+        "counter",
+        5,
+        10,
+        0,
+        "count",
+        "active",
+        "fast",
+        "<",
+        JSON.stringify({ alert: { mode: "rate", min_rate: 1, per: "hour" } }),
+        now - 60_000,
+        now - 60_000,
+      ],
+    );
+
+    const emitted: any[] = [];
+    const handler = create({
+      sdk: {
+        getDb: () => db,
+        paths: { root, agents: join(root, "agents") },
+        log: () => {},
+        emit: (event: any) => emitted.push(event),
+      },
+    } as any, {} as any);
+
+    await handler({ type: "trigger.metrics-snapshot" } as any);
+
+    const metric = db.prepare("SELECT type, target, threshold, config FROM metrics WHERE id = ?").get("project.iterations-24h") as any;
+    expect(metric).toMatchObject({
+      type: "gauge",
+      target: 10,
+      threshold: 1,
+      config: null,
+    });
+  });
 });
