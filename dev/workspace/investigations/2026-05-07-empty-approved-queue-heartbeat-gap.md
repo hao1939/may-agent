@@ -59,3 +59,14 @@ This confirms the issue is not a one-heartbeat transient. Dev's priority-1 instr
 ## Additional Recommended Fix
 
 Until the metric can be registered by the system writer, make the heartbeat itself emit an append-only signal when Approved is empty. Arc's proposal `agents/arc/workspace/proposals/2026-05-06-dev-heartbeat-signal-on-empty-approved.md` is lane-clean and would make the gate failure visible in `work-queue.md` without allowing dev to implement unapproved Proposed items.
+
+## 2026-05-07 Second Heartbeat Recheck
+
+The queue backpressure is still present and has grown:
+
+- `approved_unchecked=0` in `agents/shared/work-queue.md`.
+- `proposed_unchecked=23`, including multiple P0 items.
+- Readonly metrics check found `active_metrics=14` and `workqueue_metrics=0`; there is still no active work-queue metric.
+- Current runtime metrics remain mostly green (`handler.success-rate=1`, `handler.failed-count=0`, `session.error-rate-6h=0.0233`), so this process failure remains masked by infrastructure health metrics.
+
+This is now independently observed across repeated dev heartbeats. The highest-impact next action is upstream approval/triage (May/human) or registration of `workqueue.approved-unchecked-count`; dev should not bypass the Approved gate by implementing Proposed items directly.
