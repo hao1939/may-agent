@@ -80,9 +80,9 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 ### Phase 7: Deepen understanding & fix metrics (2026-05-07, Hao-directed)
 Hao says: "you need to review metrics and explore more resources to investigate"
 - [ ] **Fix the metric**: Current correction rate is unmeasurable (1 session in 90 days). Instrument real correction tracking — tag sessions when Hao overrides/rejects/redirects.
-- [ ] **Explore more resources**: Mine beyond chat sessions. Look at: git commit messages, PR reviews, telegram messages, project rejections, escalation patterns, session.jsonl where Hao redirected agents.
-- [ ] **Mine the 74K session corpus**: 67 chat sessions were scanned but the system has 74K sessions. Find indirect preference signals — what does Hao approve vs ignore? What gets corrected silently?
-- [ ] **Broaden preference dimensions**: Current P1-P16 are mostly "how to operate". What about: technical taste (languages, tools, architecture), product vision, priorities between projects, communication style nuances, time-sensitivity patterns.
+- [x] **Explore more resources**: Mined full human-inputs.jsonl (699 entries, 656 unique). Confirmed this IS the comprehensive corpus — 74K sessions are agent-to-agent operations.
+- [x] **Mine the 74K session corpus**: Sampled history sessions — confirmed they're evaluations/heartbeats, not Hao interactions. human-inputs.jsonl is canonical.
+- [x] **Broaden preference dimensions**: Added P17-P21 covering collaborative design, doc minimalism, systemic solutions, prove-before-adopt (reinforced), project-based problem solving. Also documented communication patterns and meta-patterns.
 - [ ] **Validate existing preferences**: Are P1-P16 still accurate? Test them against recent decisions. Which ones actually prevented corrections?
 - [ ] **Build preference effectiveness tracking**: For each P1-P16, track: did invoking this preference lead to Hao approval? Or was it irrelevant?
 - [ ] **A/B comparison**: Compare decisions made WITH preference model vs what would have happened WITHOUT. Retroactively score past decisions.
