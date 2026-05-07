@@ -11,7 +11,7 @@
  * in the generic section near the end of the handler.
  * ─────────────────────────────────────────────────────────────────────────────
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { exec, execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -78,6 +78,8 @@ const ALL_METRICS: MetricDef[] = [
   { id: "v2.runtime-glue-loc", name: "Runtime glue LOC", owner: "arc", type: "gauge", target: 1500, threshold: 2000, unit: "loc", alert_op: ">", priority: "P2" },
   { id: "v2.spec-coverage-rate", name: "v2 spec measurement coverage", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P2" },
   { id: "capability.session-trace-completeness", name: "Session trace completeness (24h)", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.95, unit: "ratio", alert_op: "<", priority: "P1" },
+  { id: "capability.tool-preset-drift-count", name: "Tool preset/config drift", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 1 } } },
   { id: "capability.status-reality-mismatch-count", name: "Status/reality mismatches", owner: "may", type: "health", target: 0, threshold: 3, unit: "count", alert_op: ">", priority: "P0",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
 ];
@@ -90,6 +92,61 @@ const RUNTIME_GLUE_FILES = [
   "src/lib/manager-receipts.ts",
   "src/lib/manager-agents-tool.ts",
 ];
+
+const VALID_TOOL_PRESETS = new Set([
+  "coding",
+  "read-only",
+  "agents",
+  "workflow",
+  "background-exec",
+  "cron",
+  "scrape",
+  "finish",
+  "checkpoint",
+  "system-status",
+  "system_status",
+  "message",
+  "query_db",
+  "query-db",
+]);
+
+function countFleetToolPresetIssues(agentsRoot: string): { count: number; sample: string[] } {
+  const issues: string[] = [];
+  try {
+    const entries = readdirSync(agentsRoot, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      if (entry.name === "shared" || entry.name.startsWith(".") || entry.name.startsWith("_")) continue;
+      const configPath = join(agentsRoot, entry.name, "agent.json");
+      if (!existsSync(configPath)) continue;
+
+      let config: any;
+      try {
+        config = JSON.parse(readFileSync(configPath, "utf8"));
+      } catch (err) {
+        issues.push(`${entry.name}: invalid agent.json (${err instanceof Error ? err.message : String(err)})`);
+        continue;
+      }
+
+      const agent = config.name || entry.name;
+      if (config.extends) {
+        issues.push(`${agent}: legacy extends/archetype inheritance`);
+      }
+      if (!Array.isArray(config.tools)) {
+        issues.push(`${agent}: tools must be an array`);
+        continue;
+      }
+      for (const preset of config.tools) {
+        if (typeof preset !== "string" || !VALID_TOOL_PRESETS.has(preset)) {
+          issues.push(`${agent}: unknown tool preset ${String(preset)}`);
+        }
+      }
+    }
+  } catch (err) {
+    issues.push(`fleet scan failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  return { count: issues.length, sample: issues.slice(0, 5) };
+}
 
 function countFileLines(path: string): number {
   try {
@@ -374,6 +431,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const coverage = countSpecClaimCoverage(ctx.sdk.paths.root, activeMetricIds);
       record("v2.spec-coverage-rate", coverage.rate, coverage.total);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring spec coverage: ${e}`); }
+
+    try {
+      const issues = countFleetToolPresetIssues(ctx.sdk.paths.agents);
+      record("capability.tool-preset-drift-count", issues.count, Math.max(1, configuredAgents.length));
+      if (issues.count > 0) {
+        ctx.sdk.log("info", `[metrics-snapshot] Tool preset drift: ${issues.sample.join("; ")}`);
+      }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring tool preset drift: ${e}`); }
 
     try {
       const totalSessions = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ?", twentyFourH);

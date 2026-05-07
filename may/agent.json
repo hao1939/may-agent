@@ -13,7 +13,6 @@
     "message",
     "cron",
     "system-status",
-    "cite-source",
     "finish"
   ],
   "delegateDeny": {
