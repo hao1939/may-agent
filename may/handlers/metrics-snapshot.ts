@@ -431,6 +431,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
            )`, now - 24 * 3600000);
 
       const configuredAgents = [...listAutonomousAgents(ctx.sdk.paths.agents)];
+      let agentsWithoutHeartbeat = 0;
       for (const agent of configuredAgents) {
         const recentHeartbeat = count(
           `SELECT COUNT(*) as c FROM events
