@@ -3,10 +3,11 @@
 
 - **Session:** s_1778159642609_0
 - **Status:** success
-- **When:** 2026-05-07T13:33:06.909Z
+- **When:** 2026-05-07T13:36:45.802Z
 
 ## What Happened
-Found and fixed the root cause: tech-lead commit d06c471ae re-introduced shouldSkipHeartbeat() into genericHeartbeat() on May 7, despite it being explicitly removed on Apr 29 (commit 83cc1804d) with a policy rule in common-sense.md stating 'Heartbeats always run, never skip.' Removed the skip block — heartbeats will now always spawn a full LLM session.
+Found root cause: tech-lead had a project 'heartbeat-efficiency' (from optimizer's PROP-003) whose explicit goal was to skip idle heartbeats. This project re-introduced shouldSkipHeartbeat() on May 7 — directly contradicting the Apr 29 policy 'Heartbeats always run, never skip' in common-sense.md. Fixed: removed the skip code (prior turn) and cancelled the project. Notified tech-lead P0.
 
 ## Files Modified
 - agents/shared/workflows/heartbeat-data.ts
+- agents/shared/projects/heartbeat-efficiency/project.md
