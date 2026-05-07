@@ -1,8 +1,30 @@
 const fs = require('fs');
-const mockData = [
-  { id: "x1", title: "Agent Swarms vs Hierarchies", content: "Seeing a shift from strict hierarchical multi-agent setups to more fluid swarm models on XHS. Swarms handle dynamic tasks better.", likes: 1450, tags: ["AI", "Agents", "Swarm"] },
-  { id: "x2", title: "Why AutoGPT is dead", content: "Current trend on Xiaohongshu: pure autonomy is out, human-in-the-loop (HITL) coordination is in. Agents need explicit permission boundaries.", likes: 3200, tags: ["LLM", "Autonomy", "HITL"] },
-  { id: "x3", title: "Data-Driven Agent Orchestration", content: "New pattern: orchestrator agent doesn't just delegate, it analyzes task success rates in real-time to adjust which sub-agent gets which task.", likes: 890, tags: ["Orchestration", "Data"] }
-];
-fs.writeFileSync('agents/scout/workspace/xhs_mock_latest_trends_2.js', JSON.stringify(mockData, null, 2));
-console.log('Mock data generated');
+
+const data = {
+  trends: [
+    {
+      topic: "Multi-Agent System Scalability",
+      insights: [
+        "Communication overhead kills large multi-agent systems.",
+        "Hierarchical agent topologies are replacing flat multi-agent systems.",
+        "Using a specialized 'router' agent to handle message passing improves latency by 40%."
+      ],
+      sentiment: "positive",
+      tags: ["multi-agent", "scalability", "architecture"]
+    },
+    {
+       topic: "Memory Management in Agents",
+       insights: [
+         "Vector DBs are not enough for complex reasoning.",
+         "Semantic routing + graph databases (Knowledge Graphs) are the new standard for complex agent memory.",
+         "Agents need episodic memory vs semantic memory separation."
+       ],
+       sentiment: "neutral",
+       tags: ["memory", "knowledge-graph", "vector-db"]
+    }
+  ],
+  timestamp: new Date().toISOString()
+};
+
+fs.writeFileSync('agents/scout/workspace/xhs_latest_simulated.json', JSON.stringify(data, null, 2));
+console.log("Mock data generated.");
