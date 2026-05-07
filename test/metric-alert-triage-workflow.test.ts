@@ -168,4 +168,52 @@ describe("metric-alert-triage workflow", () => {
     expect(notifications[0]).toContain("Metric alert triage needs attention for arc.quality");
     expect(notifications[0]).toContain("owner did not produce a valid METRIC_ALERT_OPERATION");
   });
+
+  it("records judgment when finish summary contains the operation token", async () => {
+    const emitted: Array<Record<string, unknown>> = [];
+    const ctx = {
+      task: task(),
+      agentsRoot: "/tmp/no-agents",
+      getDb: () => makeDb(),
+      runFunction: async (_label: string, fn: () => Promise<string>) => ({
+        sessionId: "fn_load",
+        status: "done",
+        lastAssistantText: await fn(),
+        messages: [],
+        duration: "0s",
+        outputDir: "",
+      }),
+      runAgent: async () => ({
+        sessionId: "s_owner",
+        status: "done",
+        lastAssistantText: "Alert is legitimate. Choosing upgrade_or_escalate because owner action is required.",
+        finishResult: {
+          status: "success",
+          summary: "Alert is legitimate. Choosing upgrade_or_escalate because owner action is required.",
+          verification_evidence: [
+            "query_db showed the metric is still below threshold",
+            "owner session found no safe immediate code fix",
+          ],
+        },
+        messages: [],
+        duration: "1s",
+        outputDir: "",
+      }),
+      emit: (event: Record<string, unknown>) => emitted.push(event),
+      done: (summary: string) => ({ type: "done", summary }),
+      escalate: (reason: string, context?: unknown) => ({ type: "escalate", reason, context }),
+    } as any;
+
+    const result = await execute(ctx);
+
+    expect(result).toMatchObject({ type: "done" });
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({
+      type: "metric.alert_judged",
+      metricId: "arc.quality",
+      operation: "upgrade_or_escalate",
+      evidence: "query_db showed the metric is still below threshold; owner session found no safe immediate code fix",
+      ownerSessionId: "s_owner",
+    });
+  });
 });
