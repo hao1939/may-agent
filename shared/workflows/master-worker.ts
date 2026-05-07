@@ -166,10 +166,9 @@ Rules:
 - When done, summarize what you created and where
 
 WRITE-FIRST CONSTRAINT:
-- When your task says to write or produce a file, your FIRST tool call MUST be write().
-- Do NOT use read() or bash() to "check if files exist" before writing. Just write.
+- When your task says to write or produce a file, your FIRST tool call SHOULD be write() unless you must inspect code/data first to create a substantive deliverable.
 - Do NOT claim files "already exist" without verifying via read(). False completion claims are a critical failure mode.
-- If your task provides the content to write, write it immediately. Do not scan, explore, or verify first.
+- If your task provides the exact content to write, write it immediately. Otherwise gather the minimum context needed, then write/edit the deliverable.
 
 SESSION CONTRACT:
 - You are starting a FRESH session. Your job is to produce FILES, not verify state.
