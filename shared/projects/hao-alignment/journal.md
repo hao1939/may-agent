@@ -688,3 +688,10 @@ Project is active but idle. **50 consecutive no-op iterations.** Verified at 202
 
 ### Iteration 3 — 2026-05-07T12:20:37.223Z
 **Worker**: 
+**Orchestrator**: CONTINUE
+
+(a) Next iteration: **Produce `correction-tagger.sh`** and **`phase7-preference-validation.md`**. Worker failed twice — if it fails again I write them myself.
+
+(b) What's different: 3rd attempt. Explicit file paths and requirements given.
+
+(c) First step: Create correction-tagger.sh that c

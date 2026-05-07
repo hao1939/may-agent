@@ -18,8 +18,8 @@ async function loadProjectHealth() {
 }
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
-  const agentsRoot = resolve(ctx.projectRoot, "agents");
-  const stateFile = resolve(ctx.projectRoot, ".state/project-health-state.json");
+  const agentsRoot = resolve(ctx.sdk.paths.root, "agents");
+  const stateFile = resolve(ctx.sdk.paths.root, ".state/project-health-state.json");
 
   return async (event?: TriggerEvent) => {
     const ph = await loadProjectHealth();
@@ -38,14 +38,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         catch { return false; }
       });
       if (!hasChanges) {
-        ctx.log?.(`[project] Preflight skip: 0 actionable, no file changes since last scan`);
+        ctx.sdk.log("info", `[project] Preflight skip: 0 actionable, no file changes since last scan`);
         return;
       }
     }
 
     // Sync projects to DB cache
     try {
-      const db = ctx.getDb();
+      const db = ctx.sdk.getDb();
       for (const p of projects) ph.upsertProject(db, p);
     } catch { /* best-effort */ }
 
@@ -53,7 +53,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     let breachedMetrics = new Set<string>();
     let runningProjects = new Set<string>();
     try {
-      const db = ctx.getDb();
+      const db = ctx.sdk.getDb();
       for (const a of db.prepare("SELECT metric_id FROM metric_alerts WHERE resolved_at IS NULL").all() as Array<{ metric_id: string }>)
         breachedMetrics.add(a.metric_id);
     } catch { /* skip */ }
@@ -91,7 +91,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const counts: Record<string, number> = {};
     for (const { action } of actions) counts[action.type] = (counts[action.type] ?? 0) + 1;
     if (Object.keys(counts).some(k => k !== "skip")) {
-      ctx.log(`[project] ${projects.length} projects — ${Object.entries(counts).map(([k, v]) => `${k}:${v}`).join(", ")}`);
+      ctx.sdk.log("info", `[project] ${projects.length} projects — ${Object.entries(counts).map(([k, v]) => `${k}:${v}`).join(", ")}`);
     }
 
     // Execute actions
@@ -102,7 +102,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       if (action.type === "skip") { if (project.status !== "closed") pState.consecutiveSkips++; continue; }
 
       if (action.type === "reactivate") {
-        ctx.log(`[project] Reactivating ${project.relPath}: ${action.reason}`);
+        ctx.sdk.log("info", `[project] Reactivating ${project.relPath}: ${action.reason}`);
         let content = ph.appendComment(ph.updateField(project.content, "Status", "active"), action.reason);
         writeFileSync(project.projectFile, content, "utf-8");
         pState.reactivationAttempts++;
@@ -112,7 +112,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       }
 
       if (action.type === "add-comment") {
-        ctx.log(`[project] Comment on ${project.relPath}: ${action.reason}`);
+        ctx.sdk.log("info", `[project] Comment on ${project.relPath}: ${action.reason}`);
         let content = ph.updateField(ph.appendComment(project.content, action.comment), "Status", "active");
         writeFileSync(project.projectFile, content, "utf-8");
         pState.reactivationAttempts++;
@@ -122,24 +122,24 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       }
 
       if (action.type === "escalate") {
-        ctx.log(`[project] Escalating ${project.relPath}: ${action.reason}`);
+        ctx.sdk.log("info", `[project] Escalating ${project.relPath}: ${action.reason}`);
         pState.lastEscalation = now;
-        try { ctx.notify(`🚨 Project needs attention: ${project.relPath}\nStatus: ${project.status}\nReason: ${action.reason}\nBlocker: ${project.blockerReason.slice(0, 200)}`); } catch { /* skip */ }
+        try { ctx.sdk.message("human", `🚨 Project needs attention: ${project.relPath}\nStatus: ${project.status}\nReason: ${action.reason}\nBlocker: ${project.blockerReason.slice(0, 200)}`); } catch { /* skip */ }
         continue;
       }
 
       // launch-workflow
-      if (launched >= ph.MAX_LAUNCHES_PER_TICK) { ctx.log(`[project] Skip ${project.relPath} — cap reached`); continue; }
+      if (launched >= ph.MAX_LAUNCHES_PER_TICK) { ctx.sdk.log("info", `[project] Skip ${project.relPath} — cap reached`); continue; }
 
       const workflowName = project.workflow || "project";
       const projectDir = dirname(project.projectFile);
       const task = `project: ${projectDir}\nagent: ${project.owner}\ngoal: see project file`;
 
-      ctx.log(`[project] Launching ${project.relPath} (workflow: ${workflowName}): ${action.reason}`);
+      ctx.sdk.log("info", `[project] Launching ${project.relPath} (workflow: ${workflowName}): ${action.reason}`);
 
       ctx.sdk.runWorkflow(workflowName, task, { source: project.owner })
-        .then((r) => { ctx.log(`[project] ${project.relPath} → ${r.status}`); })
-        .catch((e: any) => { ctx.log(`[project] ${project.relPath} ERROR: ${e.message?.slice(0, 200)}`); });
+        .then((r) => { ctx.sdk.log("info", `[project] ${project.relPath} → ${r.status}`); })
+        .catch((e: any) => { ctx.sdk.log("info", `[project] ${project.relPath} ERROR: ${e.message?.slice(0, 200)}`); });
 
       pState.lastLaunch = now;
       if (!pState.launchTimestamps) pState.launchTimestamps = [];
@@ -148,7 +148,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       pState.consecutiveSkips = 0;
       launched++;
       const projectId = `${project.owner}/${project.relPath.split("/").pop()}`;
-      try { ctx.emit({ type: "project.iteration", projectId } as any); } catch {}
+      try { ctx.sdk.emit("project.iteration", { projectId }); } catch {}
     }
 
     healthState.lastFullScan = now;
@@ -156,8 +156,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     if (launched > 0) {
       const source = event?.source ?? "timer";
-      ctx.emit({ type: "metric", name: source === "timer" ? "handler.project.timer-catches" : "handler.project.event-triggers", value: launched });
-      ctx.log(`[project] Launched ${launched} workflow(s) [trigger: ${event?.type ?? "timer.tick"}]`);
+      ctx.sdk.emit("metric", { name: source === "timer" ? "handler.project.timer-catches" : "handler.project.event-triggers", value: launched });
+      ctx.sdk.log("info", `[project] Launched ${launched} workflow(s) [trigger: ${event?.type ?? "timer.tick"}]`);
     }
   };
 };

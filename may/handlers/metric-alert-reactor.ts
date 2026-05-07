@@ -18,13 +18,13 @@ import { listConfiguredAgents, resolveMetricOwner } from "../../shared/lib/metri
 
 const DEDUP_WINDOW_MS = 4 * 60 * 60 * 1000; // 4h — shorter window so repeated alerts get reacted to faster
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
-  const configuredAgents = listConfiguredAgents(ctx.agentsRoot);
+  const configuredAgents = listConfiguredAgents(ctx.sdk.paths.agents);
 
   return async (event?: TriggerEvent) => {
     // If no event (timer tick), poll for unresolved alerts and process each
     if (!event?.data) {
       try {
-        const db = ctx.getDb();
+        const db = ctx.sdk.getDb();
         const unresolved = db.prepare(
           `SELECT ma.metric_id, ma.message, m.name as metricName,
                   m.owner as explicitOwner, p.owner as projectOwner,
@@ -38,10 +38,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         ).all() as Array<{ metric_id: string; message: string; metricName: string; explicitOwner?: string | null; projectOwner?: string | null; threshold: number; target: number; current: number; priority: string }>;
 
         if (unresolved.length === 0) {
-          ctx.log("[metric-alert-reactor] Timer tick: no unresolved alerts.");
+          ctx.sdk.log("info", "[metric-alert-reactor] Timer tick: no unresolved alerts.");
           return;
         }
-        ctx.log(`[metric-alert-reactor] Timer tick: found ${unresolved.length} unresolved alert(s), processing...`);
+        ctx.sdk.log("info", `[metric-alert-reactor] Timer tick: found ${unresolved.length} unresolved alert(s), processing...`);
         const promises = unresolved.map((row) => {
           const syntheticEvent: TriggerEvent = {
             type: "metric.breach",
@@ -61,7 +61,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         await Promise.allSettled(promises);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
-        ctx.log(`[metric-alert-reactor] Timer tick DB error: ${msg}`);
+        ctx.sdk.log("info", `[metric-alert-reactor] Timer tick DB error: ${msg}`);
       }
       return;
     }
@@ -84,7 +84,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
     };
 
     if (!metricId) {
-      ctx.log("[metric-alert-reactor] Missing metricId in event data.");
+      ctx.sdk.log("info", "[metric-alert-reactor] Missing metricId in event data.");
       return;
     }
 
@@ -94,7 +94,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
     // P0/P1 alerts get an explicit owner session so handling is auditable.
     // P2/P3 remain visible in heartbeat context through the unresolved row.
     try {
-      const db = ctx.getDb();
+      const db = ctx.sdk.getDb();
       const metricRow = db.prepare(
         `SELECT COALESCE(m.priority, 'P2') as priority,
                 m.owner as explicitOwner, p.owner as projectOwner
@@ -106,7 +106,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
       priority = metricRow?.priority ?? priority;
       if (metricRow) owner = resolveMetricOwner(metricId, configuredAgents, metricRow.explicitOwner, metricRow.projectOwner);
       if (priority !== "P0" && priority !== "P1") {
-        ctx.log(`[metric-alert-reactor] Deferring ${metricId} (${priority}) to heartbeat context.`);
+        ctx.sdk.log("info", `[metric-alert-reactor] Deferring ${metricId} (${priority}) to heartbeat context.`);
         return;
       }
 
@@ -117,12 +117,12 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
       ).get(owner, `metric-alert-reactor:${metricId}`, Date.now() - DEDUP_WINDOW_MS) as { sessionId: string } | null;
 
       if (recentSession) {
-        ctx.log(`[metric-alert-reactor] Skipping ${metricId} — ${owner} already has recent session ${recentSession.sessionId}`);
+        ctx.sdk.log("info", `[metric-alert-reactor] Skipping ${metricId} — ${owner} already has recent session ${recentSession.sessionId}`);
         return;
       }
     } catch {
       if (priority !== "P0" && priority !== "P1") {
-        ctx.log(`[metric-alert-reactor] Deferring ${metricId} (${priority}) to heartbeat context.`);
+        ctx.sdk.log("info", `[metric-alert-reactor] Deferring ${metricId} (${priority}) to heartbeat context.`);
         return;
       }
       // DB unavailable for dedup — proceed for explicit P0/P1 events.
@@ -158,9 +158,9 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
         ctx.sdk.runAgent(owner, task, { source: `metric-alert-reactor:${metricId}` }),
         new Promise<never>((_, rej) => setTimeout(() => rej(new Error(`Per-alert timeout (${PER_ALERT_TIMEOUT_MS / 1000}s) for ${metricId}`)), PER_ALERT_TIMEOUT_MS)),
       ]);
-      ctx.log(`[metric-alert-reactor] Ran ${owner} to handle ${metricId}`);
+      ctx.sdk.log("info", `[metric-alert-reactor] Ran ${owner} to handle ${metricId}`);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
-      ctx.log(`[metric-alert-reactor] Failed to run ${owner}: ${msg}`);
+      ctx.sdk.log("info", `[metric-alert-reactor] Failed to run ${owner}: ${msg}`);
     }
 }
