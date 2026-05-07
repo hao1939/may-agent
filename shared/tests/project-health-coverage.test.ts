@@ -20,11 +20,9 @@ import {
   type ProjectHealthEntry,
 } from "../lib/project-health.ts";
 
-// Mock fs for scanAllProjects tests
-vi.mock("node:fs", async () => {
-  const actual = await vi.importActual<typeof fs>("node:fs");
-  return { ...actual };
-});
+// NOTE: These tests run under Bun's test runner (not Vitest runtime).
+// `vi.importActual` is not available, and we don't need to mock `node:fs` here
+// because tests use a real temporary directory.
 
 describe("scanAllProjects - filesystem traversal", () => {
   let tmpDir: string;
