@@ -3,7 +3,10 @@
 
 - **Session:** s_1778159642609_0
 - **Status:** success
-- **When:** 2026-05-07T13:29:00.379Z
+- **When:** 2026-05-07T13:33:06.909Z
 
 ## What Happened
-Diagnosed why May's heartbeat shows "2 hours ago" on dashboard: the shouldSkipHeartbeat() guard in heartbeat-data.ts idle-skips the LLM session when there are no red metrics, alerts, inbox events, or active projects. The handler fires every 30min but returns in ~82ms without spawning a real session. This is intentional cost-saving behavior.
+Found and fixed the root cause: tech-lead commit d06c471ae re-introduced shouldSkipHeartbeat() into genericHeartbeat() on May 7, despite it being explicitly removed on Apr 29 (commit 83cc1804d) with a policy rule in common-sense.md stating 'Heartbeats always run, never skip.' Removed the skip block — heartbeats will now always spawn a full LLM session.
+
+## Files Modified
+- agents/shared/workflows/heartbeat-data.ts

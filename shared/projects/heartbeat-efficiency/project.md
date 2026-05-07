@@ -1,10 +1,10 @@
 ---
 id: heartbeat-efficiency
 owner: tech-lead
-status: waiting
+status: cancelled
 type: milestone
+stop_reason: "CANCELLED by Hao. This project contradicts the established policy in common-sense.md line 104: 'Heartbeats always run, never skip.' The optimizer's original PROP-003 was rejected on 2026-04-29. Heartbeats are autonomy time, not waste. Do not reopen."
 priority: P1
-stop_reason: WAITING
 ---
 
 # Project: Heartbeat Efficiency
