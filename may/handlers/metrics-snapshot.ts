@@ -57,6 +57,8 @@ const ALL_METRICS: MetricDef[] = [
     config: { alert: { mode: "rate", min_rate: 5, per: "hour", stall_after_ms: 7200000 } } },
   { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", type: "gauge", target: 120000, threshold: 600000, unit: "ms", alert_op: ">", priority: "P2" },
   { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", type: "gauge", target: 15, threshold: 8, unit: "count", alert_op: "<", priority: "P1" },
+  { id: "metric.stale-active-count", name: "Stale active metrics (>15m)", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 2 } } },
   // Project
   { id: "project.active-count", name: "Active projects", owner: "may", type: "gauge", target: 1, threshold: 1, unit: "count", alert_op: "<", priority: "P1" },
   { id: "project.blocked-count", name: "Blocked/waiting projects", owner: "may", type: "gauge", target: 2, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
@@ -76,6 +78,7 @@ const ALL_METRICS: MetricDef[] = [
 
 /** Snapshot retention: keep 30 days of history */
 const RETENTION_DAYS = 30;
+const METRIC_FRESHNESS_MS = 15 * 60000;
 const RUNTIME_GLUE_FILES = [
   "src/lib/manager.ts",
   "src/lib/manager-utils.ts",
@@ -353,7 +356,45 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       record("v2.spec-coverage-rate", coverage.rate, coverage.total);
     } catch (e) { ctx.log(`[metrics-snapshot] Error measuring spec coverage: ${e}`); }
 
+    // ── Generic metrics (source_query / source_command) ──────────────
+
+    const measurable = db.prepare(
+      "SELECT id, source_query, source_command FROM metrics WHERE status = 'active' AND (source_query IS NOT NULL OR source_command IS NOT NULL)"
+    ).all() as any[];
+
+    let measured = 0;
+    for (const m of measurable) {
+      try {
+        let value: number | null = null;
+        if (m.source_query) {
+          const row = db.prepare(m.source_query).get() as any;
+          if (row) {
+            const vals = Object.values(row).filter(v => typeof v === "number");
+            if (vals.length > 0) value = vals[0] as number;
+          }
+        } else if (m.source_command) {
+          const { execSync } = require("node:child_process");
+          const output = execSync(m.source_command, { cwd: ctx.projectRoot, timeout: 15000, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }).trim();
+          const parsed = parseFloat(output);
+          if (!isNaN(parsed)) value = parsed;
+        }
+        if (value !== null) { record(m.id, value); measured++; }
+      } catch { /* skip individual metric errors */ }
+    }
+
+    // ── Measure: metric freshness and status honesty ────────────────
+
     try {
+      const staleActiveMetrics = count(
+        `SELECT COUNT(*) as c FROM metrics m
+         WHERE m.status = 'active'
+           AND NOT EXISTS (
+             SELECT 1 FROM metric_snapshots s
+             WHERE s.metric_id = m.id
+               AND s.measured_at > ?
+           )`, now - METRIC_FRESHNESS_MS);
+      record("metric.stale-active-count", staleActiveMetrics);
+
       const staleActiveProjects = count(
         `SELECT COUNT(*) as c FROM projects p
          WHERE p.status = 'active'
@@ -363,15 +404,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
                AND e.timestamp > ?
                AND e.data LIKE '%' || p.id || '%'
            )`, sevenD);
-
-      const staleActiveMetrics = count(
-        `SELECT COUNT(*) as c FROM metrics m
-         WHERE m.status = 'active'
-           AND NOT EXISTS (
-             SELECT 1 FROM metric_snapshots s
-             WHERE s.metric_id = m.id
-               AND s.measured_at > ?
-           )`, now - 15 * 60000);
 
       const terminalSessionsWithoutEnd = count(
         `SELECT COUNT(*) as c FROM sessions s
@@ -400,33 +432,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const mismatchCount = staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd + agentsWithoutHeartbeat;
       record("capability.status-reality-mismatch-count", mismatchCount,
         configuredAgents.length + staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd);
-    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring status-reality mismatch: ${e}`); }
-
-    // ── Generic metrics (source_query / source_command) ──────────────
-
-    const measurable = db.prepare(
-      "SELECT id, source_query, source_command FROM metrics WHERE status = 'active' AND (source_query IS NOT NULL OR source_command IS NOT NULL)"
-    ).all() as any[];
-
-    let measured = 0;
-    for (const m of measurable) {
-      try {
-        let value: number | null = null;
-        if (m.source_query) {
-          const row = db.prepare(m.source_query).get() as any;
-          if (row) {
-            const vals = Object.values(row).filter(v => typeof v === "number");
-            if (vals.length > 0) value = vals[0] as number;
-          }
-        } else if (m.source_command) {
-          const { execSync } = require("node:child_process");
-          const output = execSync(m.source_command, { cwd: ctx.projectRoot, timeout: 15000, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }).trim();
-          const parsed = parseFloat(output);
-          if (!isNaN(parsed)) value = parsed;
-        }
-        if (value !== null) { record(m.id, value); measured++; }
-      } catch { /* skip individual metric errors */ }
-    }
+    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring metric freshness/status-reality mismatch: ${e}`); }
 
     // ── Alert lifecycle (type-aware: open on breach, resolve on recovery) ───────
 
