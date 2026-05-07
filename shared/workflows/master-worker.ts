@@ -496,11 +496,16 @@ WRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Y
         }
       } catch { /* EXP-720: non-critical — don't break worker flow */ }
 
-      await withRetry(() => worker.prompt(workerPrompt), {
+      const workerResult = await withRetry(() => worker.prompt(workerPrompt), {
         maxRetries: 3,
         baseDelayMs: 1000,
         onRetry: (err, attempt, delay) => ctx.log(`[work] ⚠️ Provider error on worker, retry ${attempt} after ${delay}ms: ${String(err).slice(0, 80)}`),
       });
+      if (!workerResult.success) {
+        const err = workerResult.error instanceof Error ? workerResult.error : new Error(String(workerResult.error));
+        ctx.log(`[work] Provider failed after ${workerResult.attempts} attempt(s): ${err.message.slice(0, 200)}`);
+        throw err;
+      }
       ctx.log(`[work] Iteration ${iteration} done`);
 
       // Track budget consumption (approximate tokens from response length)
