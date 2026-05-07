@@ -140,7 +140,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
         return;
       }
     } catch {
-      if (priority !== "P0" && priority !== "P1") {
+      if (priority !== "P0") {
         ctx.sdk.log("info", `[metric-alert-reactor] Deferring ${metricId} (${priority}) to metric context.`);
         return;
       }
