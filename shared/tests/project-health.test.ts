@@ -107,6 +107,22 @@ describe('project-health', () => {
       expect(result.reason).toContain('cooldown');
     });
 
+    it('force launches active project despite cooldown', () => {
+      const now = Date.now();
+      const state: HealthState = {
+        lastFullScan: 0,
+        projects: {
+          'shared/projects/test-proj': {
+            ...newProjectHealthEntry(),
+            lastLaunch: now - 30_000,
+          },
+        },
+      };
+      const result = diagnoseProject(baseProject, state, new Set(), new Set(), now, [], true);
+      expect(result.type).toBe('launch-workflow');
+      expect(result.reason).toContain('manual project trigger');
+    });
+
     it('escalates blocked projects after 2+ hours', () => {
       const proj = { ...baseProject, status: 'blocked' };
       const state: HealthState = {

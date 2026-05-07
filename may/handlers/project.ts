@@ -83,8 +83,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     // Diagnose each project
     const actions: Array<{ project: ProjectInfo; action: HealthAction }> = [];
+    const forceLaunch = event?.type === "trigger.project";
     for (const project of projects) {
-      actions.push({ project, action: ph.diagnoseProject(project, healthState, breachedMetrics, runningProjects, now, projects) });
+      actions.push({ project, action: ph.diagnoseProject(project, healthState, breachedMetrics, runningProjects, now, projects, forceLaunch) });
     }
 
     // Log non-trivial actions

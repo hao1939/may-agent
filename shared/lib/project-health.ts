@@ -192,6 +192,7 @@ export function diagnoseProject(
   runningProjects: Set<string>,
   now: number,
   allProjects: ProjectInfo[],
+  forceLaunch = false,
 ): HealthAction {
   const skip: HealthAction = { type: "skip", reason: "no action needed", comment: "" };
 
@@ -273,10 +274,12 @@ export function diagnoseProject(
       return { ...skip, reason: "project has live session" };
     }
 
-    const limited = launchRateLimitReason(entry, now);
-    if (limited) return { ...skip, reason: limited };
+    if (!forceLaunch) {
+      const limited = launchRateLimitReason(entry, now);
+      if (limited) return { ...skip, reason: limited };
+    }
 
-    return { type: "launch-workflow", reason: "active project needs work", comment: "" };
+    return { type: "launch-workflow", reason: forceLaunch ? "manual project trigger" : "active project needs work", comment: "" };
   }
 
   return skip;
