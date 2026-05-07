@@ -31,7 +31,7 @@ import type { CronEntry } from "../../shared/agent-sdk.ts";
 //   health:  { alert: { mode: "consecutive_failures", count: number } }
 
 interface MetricDef {
-  id: string; name: string; owner: string; type: "gauge" | "counter" | "health" | "derived";
+  id: string; name: string; owner?: string; type: "gauge" | "counter" | "health" | "derived";
   target: number; threshold: number; unit: string; alert_op: "<" | ">";
   priority?: "P0" | "P1" | "P2" | "P3";
   config?: Record<string, unknown>;
@@ -116,6 +116,28 @@ function listConfiguredAgents(agentsRoot: string): string[] {
   }
 }
 
+function resolveMetricOwner(
+  metricId: string,
+  configuredAgents: Set<string>,
+  explicitOwner?: string | null,
+  projectOwner?: string | null,
+): string {
+  if (explicitOwner?.trim()) return explicitOwner.trim();
+  if (projectOwner?.trim()) return projectOwner.trim();
+  const prefix = metricId.split(".")[0];
+  return configuredAgents.has(prefix) ? prefix : "may";
+}
+
+function getProjectOwner(db: any, project: string | null | undefined): string | null {
+  if (!project?.trim()) return null;
+  const row = db.prepare(
+    `SELECT owner FROM projects
+     WHERE id = ? OR path = ? OR name = ?
+     LIMIT 1`
+  ).get(project, project, project) as { owner?: string | null } | null;
+  return row?.owner?.trim() || null;
+}
+
 function countSpecClaimCoverage(projectRoot: string, metricIds: Set<string>): { covered: number; total: number; rate: number } {
   const specPath = join(projectRoot, "agents/shared/may-agent-docs/proposals/v2-spec.md");
   try {
@@ -172,40 +194,49 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const hasMetricConfigColumn = metricColumns.has("config");
     const hasMetricPriorityColumn = metricColumns.has("priority");
     const configByMetricId = new Map(ALL_METRICS.map(m => [m.id, m.config ?? null]));
+    const configuredAgents = new Set(listConfiguredAgents(ctx.agentsRoot));
 
     // ── Ensure metric rows exist ─────────────────────────────────────
 
     for (const m of ALL_METRICS) {
+      const owner = resolveMetricOwner(m.id, configuredAgents, m.owner);
       const configJson = m.config ? JSON.stringify(m.config) : null;
       const priority = m.priority ?? "P2";
       if (hasMetricConfigColumn) {
         db.run(
           `INSERT OR IGNORE INTO metrics (id, name, owner, current, target, threshold, unit, type, status, speed, alert_op, config, created_at, updated_at)
            VALUES (?, ?, ?, NULL, ?, ?, ?, ?, 'active', 'fast', ?, ?, ?, ?)`,
-          [m.id, m.name, m.owner, m.target, m.threshold, m.unit, m.type, m.alert_op, configJson, now, now]
+          [m.id, m.name, owner, m.target, m.threshold, m.unit, m.type, m.alert_op, configJson, now, now]
         );
         db.run(
           `UPDATE metrics
            SET name = ?, owner = ?, target = ?, threshold = ?, unit = ?, type = ?, status = 'active', speed = 'fast', alert_op = ?, config = COALESCE(?, config)
            WHERE id = ?`,
-          [m.name, m.owner, m.target, m.threshold, m.unit, m.type, m.alert_op, configJson, m.id]
+          [m.name, owner, m.target, m.threshold, m.unit, m.type, m.alert_op, configJson, m.id]
         );
       } else {
         db.run(
           `INSERT OR IGNORE INTO metrics (id, name, owner, current, target, threshold, unit, type, status, speed, alert_op, created_at, updated_at)
            VALUES (?, ?, ?, NULL, ?, ?, ?, ?, 'active', 'fast', ?, ?, ?)`,
-          [m.id, m.name, m.owner, m.target, m.threshold, m.unit, m.type, m.alert_op, now, now]
+          [m.id, m.name, owner, m.target, m.threshold, m.unit, m.type, m.alert_op, now, now]
         );
         db.run(
           `UPDATE metrics
            SET name = ?, owner = ?, target = ?, threshold = ?, unit = ?, type = ?, status = 'active', speed = 'fast', alert_op = ?
            WHERE id = ?`,
-          [m.name, m.owner, m.target, m.threshold, m.unit, m.type, m.alert_op, m.id]
+          [m.name, owner, m.target, m.threshold, m.unit, m.type, m.alert_op, m.id]
         );
       }
       if (hasMetricPriorityColumn) {
         db.run("UPDATE metrics SET priority = ? WHERE id = ?", [priority, m.id]);
       }
+    }
+    for (const row of db.prepare("SELECT id, owner, project FROM metrics WHERE status = 'active' AND (owner IS NULL OR trim(owner) = '') AND project IS NOT NULL AND trim(project) != ''").all() as Array<{ id: string; owner?: string | null; project: string }>) {
+      const projectOwner = getProjectOwner(db, row.project);
+      if (projectOwner) db.run("UPDATE metrics SET owner = ? WHERE id = ?", [projectOwner, row.id]);
+    }
+    for (const row of db.prepare("SELECT id, owner FROM metrics WHERE status = 'active' AND (owner IS NULL OR trim(owner) = '')").all() as Array<{ id: string; owner?: string | null }>) {
+      db.run("UPDATE metrics SET owner = ? WHERE id = ?", [resolveMetricOwner(row.id, configuredAgents, row.owner), row.id]);
     }
     if (hasMetricPriorityColumn) {
       db.run("UPDATE metrics SET priority = 'P2' WHERE priority IS NULL");
@@ -433,9 +464,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     try {
       const configSelect = hasMetricConfigColumn ? ", config" : "";
       const metrics = db.prepare(
-        `SELECT id, name, owner, current, target, threshold, alert_op, type${configSelect}
-         FROM metrics
-         WHERE status = 'active' AND current IS NOT NULL AND threshold IS NOT NULL`
+        `SELECT m.id, m.name,
+                COALESCE(NULLIF(trim(m.owner), ''), NULLIF(trim(p.owner), ''), 'may') as owner,
+                m.current, m.target, m.threshold, m.alert_op, m.type${configSelect ? ", m.config" : ""}
+         FROM metrics m
+         LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
+           AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
+         WHERE m.status = 'active' AND m.current IS NOT NULL AND m.threshold IS NOT NULL`
       ).all() as any[];
 
       for (const m of metrics) {

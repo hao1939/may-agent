@@ -19,7 +19,7 @@ The framing isn't a vibe. It maps to specific things the system already produces
 | What "alive" means | Concrete signal in the system |
 |---|---|
 | **Moving** | Heartbeat sessions firing on schedule across agents |
-| **Thinking** | Each heartbeat session produces an explicit decision ("doing X because Y") |
+| **Thinking** | Heartbeat task/outcome summaries show what each agent chose to do. A future `agent.decision` event can make this sharper, but it is not required for the first useful view. |
 | **Responding** | Comments, messages, breaches show up in the next heartbeat's context and get acted on |
 | **Persisting** | Project journals carry forward; today's iteration references yesterday's |
 | **Coordinating** | `message.created` events flow between agents, with replies that close the loop |
@@ -136,9 +136,9 @@ Answers "is the system alive?" in one screen, no clicks. Built around **movement
 
 Five panels. Each is **alive** — it updates over `/ws` as events flow. The page never reloads. Watching it for thirty seconds tells you whether the system is breathing.
 
-- **Heartbeat timeline (40% of viewport).** Per-agent track, last 4 hours, every heartbeat session as a bar. Live: new bars appear at the right edge as `session.start` events fire for `trigger=heartbeat`. The pattern of bars *is the operator's primary signal*. Even rhythm across agents = healthy. Bursts and silences = something happening. Empty tracks = an agent is dead in its seat.
+- **Heartbeat timeline (40% of viewport).** Per-agent track, last 4 hours, every heartbeat session as a bar. Phase 1 identifies heartbeat sessions from existing `sessions.source` values such as `workflow:heartbeat-*` and `[heartbeat]` task prefixes. The pattern of bars *is the operator's primary signal*. Even rhythm across agents = healthy. Bursts and silences = something happening. Empty tracks = an agent is dead in its seat.
 
-- **Recent decisions (live ticker).** Each heartbeat session emits an `agent.decision` event near the start (see `design/heartbeat-as-agency.md`). This panel renders those, newest first. The agent's voice, not its actions. *This is the panel that most clearly shows agents thinking.*
+- **Recent heartbeat outcomes (live ticker).** Phase 1 renders the existing heartbeat session task/outcome summaries, newest first. If this is too weak after using it, add `agent.decision` later as a sharper signal. The first useful view should not depend on a new event.
 
 - **Projects (sorted by recent activity).** Each project tile shows: pulse indicator (green = active in last hour, yellow = 24h, gray = dormant), name, owner, last-touched, metric summary. Click → screen 2.
 
@@ -318,11 +318,11 @@ That's all five surfaces. The shipped UI's `#chat` tab collapses into `/sessions
 
 ## The agency view (callout)
 
-The new front-page panel that didn't exist before is the **HEARTBEAT TIMELINE + RECENT DECISIONS** pair. Together they answer "are agents being agents?"
+The new front-page panel that didn't exist before is the **HEARTBEAT TIMELINE + RECENT HEARTBEAT OUTCOMES** pair. Together they answer "are agents being agents?"
 
-This is the UI element that most directly delivers the "see agents alive" experience. The timeline shows *that* agents are running. The decisions feed shows *what they're thinking*. Watching both for 30 seconds gives the visceral sense of a system at work — or, when something is wrong, of silence where there should be activity.
+This is the UI element that most directly delivers the "see agents alive" experience. The timeline shows *that* agents are running. The outcome feed shows *what they did or intended*. Watching both for 30 seconds gives the visceral sense of a system at work — or, when something is wrong, of silence where there should be activity.
 
-This pair depends on a system-level addition: the `agent.decision` event emitted by the heartbeat workflow (see `design/heartbeat-as-agency.md`). Without it, the decisions panel falls back to "first 200 chars of session output," which is much weaker. The decision event is a small change with large UI payoff.
+This pair uses existing data first: `sessions.source`, `sessions.task`, `sessions.outcome`, `session.start`, and `session.end`. A future `agent.decision` event is allowed only if the existing feed proves too weak in practice.
 
 ## The steering surface
 
@@ -342,7 +342,7 @@ The human's verbs, complete list:
 
 Five rules for the steering surface:
 
-1. **Every verb is an event.** Steering is just emitting events agents would emit themselves. The human is "another agent" with extra privileges. No special API.
+1. **Every verb has one durable effect.** Prefer the simplest durable path. Emit an event when live visibility or agent wakeup needs it; do not add event indirection just to satisfy architecture.
 2. **Verbs shape the agent's next look, not its current action.** Per `design/heartbeat-as-agency.md`, the framing is: change what the agent sees when it next heartbeats. The UI's copy reflects this ("delivered at next heartbeat") rather than implying immediate response.
 3. **Verbs are async, and the UI is honest about it.** After commenting, see the comment in discussion immediately, then watch the project's pulse for when the agent picks it up. Don't fake instant response.
 4. **No verb mutates agent state directly.** Cancelling a session emits a cancel command; the manager processes it. The UI doesn't reach into manager internals.
@@ -354,7 +354,7 @@ The "UI = bus subscriber" rule from `proposals/v2-architecture.md` applies to **
 
 ### Plane A — Live (1 endpoint)
 
-`/ws` proxies the running may-agent's Unix socket. Browser receives the firehose: `session.start`, `session.end`, `message.created`, `metric.breach`, `metric.recovered`, `agent.decision`, `project.comment`, `handler.failed`, etc.
+`/ws` proxies the running may-agent's Unix socket. Browser receives the firehose: `session.start`, `session.end`, `message.created`, `metric.breach`, `metric.recovered`, `handler.failed`, and optional future events such as `agent.decision`.
 
 **Rule**: if a screen reacts to state change *while the user is looking at it*, it watches `/ws`. No polling. No 30-second refresh timers. The websocket is the source of truth for "now."
 
@@ -371,8 +371,8 @@ Endpoints exist only for queries the live event stream cannot answer:
 | `/api/agents/:name` | `sessions`, `events`, project files | session detail header, agent context |
 | `/api/metrics` | `metrics` | screen 4 (initial load) |
 | `/api/metrics/:id` | `metrics`, `metric_snapshots`, `metric_alerts`, `events` | metric detail |
-| `/api/decisions` | `events` filtered to `agent.decision` | screen 1 (initial load) |
-| `/api/heartbeats` | `sessions` filtered to `trigger=heartbeat` | screen 1 (initial load of timeline) |
+| `/api/liveness` | `sessions`, `events`, `metrics`, `metric_alerts` | screen 1 initial load: heartbeat timeline, recent outcomes, messages, open alerts |
+| `/api/decisions` | optional future endpoint if `agent.decision` exists | screen 1 refinement |
 
 **Rule**: each endpoint queries one table or one filesystem path. No business logic. Read-only — mutations happen via Plane C.
 
@@ -380,7 +380,7 @@ Endpoints exist only for queries the live event stream cannot answer:
 
 One endpoint per verb in the steering surface. Each validates input, emits exactly one event to the bus, returns ok. The handler that picks up the event does the work — same as if an agent emitted it.
 
-That's the entire back-end surface: 1 WebSocket + ~9 query endpoints + ~9 verb endpoints + static files.
+That's the eventual back-end surface: 1 WebSocket + a small set of query endpoints + a few steering endpoints + static files. Phase 1 deliberately starts with one aggregate read-only endpoint, `/api/liveness`, so the operator can see whether the system works before expanding the API.
 
 ## What gets removed
 
@@ -421,39 +421,36 @@ The browser does not loop on a timer. Live changes come over `/ws`. Historical f
 - **SQLite is locked.** Read endpoints return 500. The UI treats this as transient, retries on user action. Live updates continue over `/ws`.
 - **Filesystem path missing.** Endpoints return `[]` or `{}` with 200. The UI shows empty state ("no projects yet"), not an error.
 - **Browser loses websocket.** Auto-reconnect with backoff. On reconnect, re-fetch the current screen's initial state, then resume listening.
-- **No `agent.decision` events flowing.** The decisions feed shows an empty state with a hint: "agents aren't emitting decisions — heartbeat workflow may need updating." This is itself a useful diagnostic.
+- **No heartbeat sessions in the last 4h.** The liveness view shows empty heartbeat tracks. This is enough to diagnose a scheduler/runtime visibility problem before adding any sharper decision event.
 
 ## Data model gaps to close
 
-Two structured fields the system doesn't currently capture cleanly. Both are pre-requisites for the UI as designed:
+Potential structured fields to add later. None are prerequisites for the first useful UI:
 
-1. **`agent.decision` event** — emitted partway through every heartbeat session, before the action phase. Carries: `agent`, `sessionId`, `decision` (the agent's "I will do X because Y" statement). Without this, the decisions feed is much weaker. Small change to the heartbeat workflow; large UI payoff. (See `design/heartbeat-as-agency.md`.)
+1. **`agent.decision` event** — optional. If heartbeat task/outcome summaries are not enough, emit this partway through every heartbeat session. Carries: `agent`, `sessionId`, `decision`.
 
-2. **Session `trigger` field consistently populated** — `heartbeat | metric.breach | message | order | manual`. The schema has the field; population is inconsistent. Tighten this so the heartbeat timeline can filter cleanly to `trigger=heartbeat`, and so screen 3 can show the trigger context at the top.
+2. **Session trigger typing** — optional. The current schema has `kind` and `source`, not a `trigger` column. Phase 1 infers heartbeat sessions from `source='workflow:heartbeat-*'` and `[heartbeat]` task prefixes. Add a formal trigger only if inference becomes unreliable.
 
-A third change is desirable but not blocking:
-
-3. **First-class metric ↔ project link in the DB.** Today metrics have an `owner` (agent) but no `project`. Without it, "metrics for this project" requires parsing markdown. Add a nullable `project_id` column on `metrics` and have the registry populate it.
+3. **Metric ↔ project population** — optional. The DB already has `metrics.project`; use and standardize that before adding any new `project_id` column.
 
 ## Migration steps
 
 The current `web.ts` is mostly v2-shaped on the back end. The front-end is the rewrite. The shipped UI overlaps with the design more than the earlier revision admitted: `#chat` already implements session-view-with-input, `#knowledge` already implements the file browser. The migration is mostly *renaming and rewiring*, not building from scratch.
 
-1. **Delete or unhook dead endpoints.** `/api/requests`, `/api/digest`, `/api/agents/activity`, `/api/agents/timeline` (current shape). Unhook `/api/benchmarks*` from navigation but leave routes intact for future rebuild. ~150 LOC removed.
-2. **Add the steering POST endpoints.** Per-project comment, per-session input, message-to-agent. Each is ~15 lines: validate, emit event, return ok.
-3. **Add `/api/decisions` and `/api/heartbeats` query endpoints.** Read from `events` and `sessions`. ~50 LOC. Blocked on `agent.decision` event (S7).
-4. **Land the `agent.decision` event in the heartbeat workflow.** Schema + workflow change. (Coordinate with `design/heartbeat-as-agency.md` author.)
-5. **Tighten session `trigger` field population.** Audit all `runAgent` callers; ensure trigger is set.
-6. **Front-end rewrite to the five-surface layout.** Reactive to `/ws`, no polling. Tabs become real URLs. The biggest piece, but mostly URL/route plumbing on top of components that already exist.
+1. **Add `/api/liveness` and render it on the current dashboard.** Use existing sessions/events/metrics only. This is the smallest loop that lets the human see whether agents are heartbeating, messaging, and breaching.
+2. **Delete or unhook dead surfaces.** `/api/requests`, `/api/digest`, `/api/agents/activity`, `/api/agents/timeline` (current shape). Unhook `/api/benchmarks*` from navigation but leave routes intact for future rebuild.
+3. **Add only the steering endpoints we actually need.** Per-project comment already works durably; add per-session input and message-to-agent only when the UI needs them outside the WebSocket path.
+4. **Front-end rewrite to the five-surface layout.** Reactive to `/ws`, no polling. Tabs become real URLs. The biggest piece, but mostly URL/route plumbing on top of components that already exist.
    - `#dashboard` → `/` (add heartbeat timeline + decision feed; keep agent grid as one component).
    - `#chat` → entry points for `/sessions/:id` (default-session resolution, new-conversation button).
    - `#knowledge` → `/knowledge` (URL-align; integrate cross-links from session and project views).
    - `#metrics` + `#events` → `/system`.
    - `#projects` → `/projects` and `/projects/:id` (project detail view is new).
    - `#benchmarks` → unhooked.
-7. **Define default-session resolution.** Per-agent: most-recent open session that's not a heartbeat or worker session. Backend exposes `/api/agents/:name/default-session`. Frontend's "talk to may" button calls it and redirects.
+5. **Define default-session resolution only when moving `#chat` to `/sessions/:id`.** Per-agent: most-recent open session that's not a heartbeat or worker session.
+6. **Optional refinements after use.** Add `agent.decision`, formal trigger typing, or richer metric-project linking only if the simple liveness view cannot answer the operator's question.
 
-Order: 1, 2, 3, 5, 4, 7, 6. Front-end last with a stable back end.
+Order: 1 first. Then do 2 and 3 only where they simplify the shipped UI. Do 4 and 5 together when moving from hash tabs to real URLs. Step 6 is explicitly last. The rule is: expose existing truth first, add primitives only after a concrete gap appears.
 
 ## Out of scope
 

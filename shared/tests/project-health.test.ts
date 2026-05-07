@@ -121,6 +121,47 @@ describe('project-health', () => {
       expect(result.type).toBe('escalate');
     });
 
+    it('skips repeated escalations during cooldown', () => {
+      const now = Date.now();
+      const proj = { ...baseProject, status: 'blocked' };
+      const state: HealthState = {
+        lastFullScan: 0,
+        projects: {
+          'shared/projects/test-proj': {
+            ...newProjectHealthEntry(),
+            lastStatusChange: now - 3 * 60 * 60 * 1000,
+            lastEscalation: now - 10 * 60 * 1000,
+          },
+        },
+      };
+      const result = diagnoseProject(proj, state, new Set(), new Set(), now, []);
+      expect(result.type).toBe('skip');
+      expect(result.reason).toContain('escalation cooldown');
+    });
+
+    it('rate limits closed projects with unread comments', () => {
+      const now = Date.now();
+      const tmpDir = path.join(tmpdir(), `closed-unread-${now}`);
+      fs.mkdirSync(tmpDir, { recursive: true });
+      const projectFile = path.join(tmpDir, 'project.md');
+      fs.writeFileSync(projectFile, '# Test\n**Status**: closed\n');
+      fs.writeFileSync(path.join(tmpDir, 'discussion.md'), '# Discussion\nPlease revisit this\n');
+      const proj = { ...baseProject, status: 'closed', projectFile };
+      const state: HealthState = {
+        lastFullScan: 0,
+        projects: {
+          'shared/projects/test-proj': {
+            ...newProjectHealthEntry(),
+            lastLaunch: now - 60 * 1000,
+          },
+        },
+      };
+      const result = diagnoseProject(proj, state, new Set(), new Set(), now, []);
+      expect(result.type).toBe('skip');
+      expect(result.reason).toContain('cooldown');
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    });
+
     it('skips waiting project within 2 hours', () => {
       const proj = { ...baseProject, status: 'waiting' };
       const state: HealthState = {

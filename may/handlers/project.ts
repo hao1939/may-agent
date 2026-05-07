@@ -76,6 +76,28 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // Keep the default as a Set: diagnoseProject calls runningProjects.has(projectId).
     // A previous placeholder assigned [] here, crashing every project handler tick.
 
+    for (const project of projects) {
+      if (!healthState.projects[project.relPath]) {
+        healthState.projects[project.relPath] = ph.newProjectHealthEntry();
+      }
+      const pState = healthState.projects[project.relPath];
+      const currentStatus = project.status;
+      if (currentStatus === "blocked" || currentStatus === "waiting") {
+        const blockerHash = ph.simpleHash(project.blockerReason);
+        if (pState.blockerHash && blockerHash && pState.blockerHash !== blockerHash) {
+          pState.lastStatusChange = now;
+          pState.lastEscalation = 0;
+        } else if (pState.lastStatusChange === 0) {
+          pState.lastStatusChange = now;
+        }
+        pState.blockerHash = blockerHash;
+      } else if (currentStatus === "active" && pState.lastStatusChange !== 0) {
+        pState.lastStatusChange = 0;
+        pState.blockerHash = "";
+        pState.lastEscalation = 0;
+      }
+    }
+
     // Diagnose each project
     const actions: Array<{ project: ProjectInfo; action: HealthAction }> = [];
     for (const project of projects) {
@@ -92,10 +114,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // Execute actions
     let launched = 0;
     for (const { project, action } of actions) {
-      if (!healthState.projects[project.relPath]) {
-        healthState.projects[project.relPath] = ph.newProjectHealthEntry();
-        healthState.projects[project.relPath].blockerHash = ph.simpleHash(project.blockerReason);
-      }
       const pState = healthState.projects[project.relPath];
 
       if (action.type === "skip") { if (project.status !== "closed") pState.consecutiveSkips++; continue; }

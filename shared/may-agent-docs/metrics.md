@@ -92,10 +92,31 @@ The usual human-facing path is still heartbeat-driven: agents see metric state
 and unresolved alerts during heartbeat context and decide what to do. The
 `metric-alert-reactor` can also fork an owner directly for unresolved breaches.
 
+Agents handling an alert must follow
+[manual/metric-alerts.md](manual/metric-alerts.md): judge the alert, choose one
+operation, and either investigate then fix, calibrate, downgrade, upgrade or
+escalate, resolve stale state, or document an exception.
+
 ## Alert Rules
 
 - `alert_op: "<"` — alert when `current < threshold`.
 - `alert_op: ">"` — alert when `current > threshold`.
+
+Owner convention:
+
+1. `metrics.owner` if set.
+2. `projects.owner` when `metrics.owner` is empty and `metrics.project` points
+   to a project row.
+3. Metric id prefix if it matches an agent name.
+4. `may` by default.
+
+System-wide `project.*` metrics with no `metrics.project` stay owned by `may`.
+Project-scoped metrics route to the project owner only when they do not declare
+their own `metrics.owner`.
+
+Ownership routing is runtime behavior, not an agent triage operation. Agents
+should not manually reroute alerts by editing `metrics.owner`; if routing is
+wrong, fix `metrics.project`, the project row's `owner`, or the resolver code.
 
 Some built-ins also define handler-local alert config in
 `metrics-snapshot.ts` for rate, sustained, or stall semantics.

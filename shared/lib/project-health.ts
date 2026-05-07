@@ -15,6 +15,7 @@ import { createHash, randomBytes } from "node:crypto";
 export const MAX_LAUNCHES_PER_TICK = 3;
 export const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes between launches per project
 export const MAX_ITERATIONS_PER_HOUR = 2;   // Max 2 workflow launches per project per hour
+export const ESCALATION_COOLDOWN_MS = 24 * 60 * 60 * 1000; // Max one human escalation per project per day
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -55,6 +56,22 @@ export interface ProjectHealthEntry {
 export interface HealthState {
   lastFullScan: number;
   projects: Record<string, ProjectHealthEntry>;
+}
+
+function launchRateLimitReason(entry: ProjectHealthEntry | undefined, now: number): string | null {
+  if (!entry) return null;
+
+  const sinceLastLaunch = now - (entry.lastLaunch || 0);
+  if (entry.lastLaunch && sinceLastLaunch < COOLDOWN_MS) {
+    return `cooldown (${Math.round((COOLDOWN_MS - sinceLastLaunch) / 60_000)}min remaining)`;
+  }
+
+  const recentLaunches = (entry.launchTimestamps || []).filter(t => now - t < 3600_000);
+  if (recentLaunches.length >= MAX_ITERATIONS_PER_HOUR) {
+    return `hourly cap reached (${recentLaunches.length}/${MAX_ITERATIONS_PER_HOUR} in last hour)`;
+  }
+
+  return null;
 }
 
 // ── Markdown helpers ─────────────────────────────────────────────────────
@@ -165,6 +182,8 @@ export function diagnoseProject(
       }
     } catch {}
     if (hasUnread) {
+      const limited = launchRateLimitReason(entry, now);
+      if (limited) return { ...skip, reason: limited };
       return { type: "launch-workflow", reason: "closed but has unread comments — reopening", comment: "" };
     }
     return { ...skip, reason: "closed by human" };
@@ -191,12 +210,20 @@ export function diagnoseProject(
     // Also check legacy ## Comments in project.md
     if (!hasUnread) hasUnread = hasPendingComments(project.content);
     if (hasUnread) {
+      const limited = launchRateLimitReason(entry, now);
+      if (limited) return { ...skip, reason: limited };
       return { type: "launch-workflow", reason: `${status} with unread comments`, comment: "" };
     }
 
     // No comments — escalate based on time
     const stoppedAt = entry?.lastStatusChange || entry?.lastLaunch || now;
     const stoppedHours = (now - stoppedAt) / (1000 * 60 * 60);
+    const lastEscalation = entry?.lastEscalation || 0;
+
+    if (lastEscalation && now - lastEscalation < ESCALATION_COOLDOWN_MS) {
+      const remainingHours = Math.ceil((ESCALATION_COOLDOWN_MS - (now - lastEscalation)) / (1000 * 60 * 60));
+      return { ...skip, reason: `escalation cooldown (${remainingHours}h remaining)` };
+    }
 
     if (stoppedHours > 24) {
       return { type: "escalate", reason: `${status} for ${Math.round(stoppedHours)}h — needs human attention`, comment: "" };
@@ -216,18 +243,8 @@ export function diagnoseProject(
       return { ...skip, reason: "project has live session" };
     }
 
-    // Cooldown — don't relaunch too fast (30min between launches)
-    const lastLaunch = entry?.lastLaunch || 0;
-    const sinceLastLaunch = now - lastLaunch;
-    if (sinceLastLaunch < COOLDOWN_MS) {
-      return { ...skip, reason: `cooldown (${Math.round((COOLDOWN_MS - sinceLastLaunch) / 60_000)}min remaining)` };
-    }
-
-    // Hourly iteration cap — prevent runaway cascades
-    const recentLaunches = (entry?.launchTimestamps || []).filter(t => now - t < 3600_000);
-    if (recentLaunches.length >= MAX_ITERATIONS_PER_HOUR) {
-      return { ...skip, reason: `hourly cap reached (${recentLaunches.length}/${MAX_ITERATIONS_PER_HOUR} in last hour)` };
-    }
+    const limited = launchRateLimitReason(entry, now);
+    if (limited) return { ...skip, reason: limited };
 
     return { type: "launch-workflow", reason: "active project needs work", comment: "" };
   }

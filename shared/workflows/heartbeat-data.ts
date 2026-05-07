@@ -426,7 +426,7 @@ export async function genericHeartbeat(ctx: WorkflowContext, agent: string): Pro
   const redMetricContext = redMetricDiagnostics ? `
 ${redMetricDiagnostics}
 
-**Review the diagnostic results above.** For each red metric, decide: fix it, escalate it, or defer with a concrete reason.
+**Review the diagnostic results above.** For each red metric, follow agents/shared/may-agent-docs/manual/metric-alerts.md and choose one operation: investigate then fix, calibrate, downgrade with evidence, upgrade/escalate emergency, resolve stale state, or document an exception.
 ` : "";
 
   const prompt = `You are **${agent}** waking up for your heartbeat.
@@ -435,6 +435,7 @@ ${metricsBlock}
 ${redMetricContext}
 ## Active Alerts
 ${alerts || "None — all clear."}
+If any alert is yours, follow agents/shared/may-agent-docs/manual/metric-alerts.md and state the chosen operation plus evidence in your final summary.
 
 ## Pending Events (inbox)
 ${inbox || "No pending events."}
