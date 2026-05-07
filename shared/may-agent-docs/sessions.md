@@ -20,7 +20,8 @@ CREATE TABLE sessions (
   endedAt         INTEGER,
   error           TEXT,
   outcome         TEXT,
-  opCount         INTEGER DEFAULT 0
+  opCount         INTEGER DEFAULT 0,
+  stepLabel       TEXT              -- workflow step label, if part of a workflow
 );
 ```
 

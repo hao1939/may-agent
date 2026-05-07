@@ -25,6 +25,8 @@ CREATE TABLE events (
 
 ## Event Types
 
+The canonical list is the `SystemEvent` union in `src/app/event-bus.ts`. Key categories agents encounter:
+
 ### Handler lifecycle (paired)
 ```
 handler.started    { handler, agent }
@@ -38,13 +40,25 @@ session.start      { sessionId, agent, task, kind, parentSessionId }
 session.end        { sessionId, agent, status, summary }
 ```
 
-### Agent communication
+### Metrics
 ```
-message.created    { from, to, content, intent?, priority? }  -- v2 unified primitive
-escalation.created { id, agent, reason, level }
+metric.breach      { metric, value }
+metric.recovered   { metric }
+metric.stalled     { metric }
+metric.alert_judged { metric, action, reason }
 ```
 
-> **Note:** `agent.notification` was replaced by `message.created` with `to: "human"` for human-facing messages, or `to: "<agent>"` for inter-agent messages.
+### Agent communication
+```
+message.created    { from, to, content, intent?, priority? }
+escalation.created { id, agent, reason, level }
+agent.decision     { agent, sessionId, decision }
+```
+
+### Other (see SystemEvent for full list)
+```
+project.iteration, project.completed, telegram.reply, tool.executed, ...
+```
 
 ## Inbox (time-window based)
 

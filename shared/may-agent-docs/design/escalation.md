@@ -2,7 +2,7 @@
 
 **Status:** shipped (partial — `escalation.created` events fire in production; full escalation chain not yet implemented)
 **Date:** 2026-04-22
-**References:** [core-principles.md](core-principles.md) (P1, P2, P3)
+**References:** [core-principles.md](../core-principles.md) (P1, P2, P3)
 
 ## Problem
 

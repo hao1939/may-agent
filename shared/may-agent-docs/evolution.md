@@ -271,7 +271,7 @@ finish({ status: "blocked", reason: "Requirements ambiguous, need clarification"
 
 ## Growth: Agent-Scope Concern
 
-Growth (experimentation, iteration, improvement) is an agent's responsibility, not an infra primitive. The infra provides the fundamentals (files, events, metrics) — agents build growth patterns on top. See [growth.md](growth.md) for context.
+Growth (experimentation, iteration, improvement) is an agent's responsibility, not an infra primitive. The infra provides the fundamentals (files, events, metrics) — agents build growth patterns on top.
 
 ---
 
@@ -279,7 +279,9 @@ Growth (experimentation, iteration, improvement) is an agent's responsibility, n
 
 For work that spans multiple sessions, see [projects.md](projects.md).
 
-**Project lifecycle:** active → (workflow runs) → waiting/blocked → (human input) → active → done → closed
+**Project lifecycle:** active → (workflow runs) → waiting/blocked → (human input) → active → done
+
+See [projects.md](projects.md) for the canonical lifecycle.
 
 ---
 
@@ -295,7 +297,7 @@ For work that spans multiple sessions, see [projects.md](projects.md).
 
 ### "Implement then verify is our default flow"
 
-**Level 3 (Workflow):** `agents/shared/workflows/implement-and-verify.ts` — any project can declare `**Workflow**: implement-and-verify`.
+**Level 3 (Workflow):** `agents/shared/workflows/implement-and-verify.ts` — any project can declare `workflow: implement-and-verify` in its YAML frontmatter.
 
 ### "Never commit secrets to git"
 

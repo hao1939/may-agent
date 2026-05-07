@@ -407,7 +407,7 @@ Related docs, PRs, prior art.
 
 Projects answer: "given this signal, what goal and history make it meaningful?"
 
-Project status values: active, blocked, waiting, closed. Only humans/may close projects.
+Project status values: active, waiting, done. See [projects.md](projects.md) for lifecycle.
 
 DB has a read-only index synced from files. See [projects.md](projects.md) for the canonical schema.
 

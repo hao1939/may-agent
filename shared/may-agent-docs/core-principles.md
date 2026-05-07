@@ -36,7 +36,7 @@ No event fires into the void. Something must consume it — a handler, a subscri
 
 The escalation chain is: best-fit handler -> assigned agent -> owner -> May -> Hao.
 
-**Elaborated in:** [projects.md](projects.md), [proposals/escalation.md](proposals/escalation.md)
+**Elaborated in:** [projects.md](projects.md), [design/escalation.md](design/escalation.md)
 
 ## 4. Context is discovered, not dumped
 

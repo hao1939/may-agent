@@ -1,6 +1,6 @@
 # Design: Web UI
 
-**Status**: review
+**Status**: draft (five-surfaces revision, 2026-05-08)
 **Date**: 2026-05-06
 **Aligned with**: `../architecture.md`, `../work-model.md`, `agent-metrics.md`, `heartbeat-as-agency.md`
 

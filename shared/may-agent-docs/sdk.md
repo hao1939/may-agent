@@ -85,16 +85,18 @@ The SDK and agent tools are two sides of the same coin:
 ## Design Rationale
 
 The SDK is the **canonical layer** for handlers and workflows. Agent tools share
-the same manager/bus internals. Every agent tool action has a corresponding SDK method.
+the same manager/bus internals. Most agent tool actions have corresponding SDK methods;
+some tool-only actions (fork, peek, cancel, context, list, requests) exist only on the
+agents tool.
 
 ```
-SDK (canonical)
+SDK (canonical for handlers/workflows)
   ├── Agent tools use same internals (agents.call → callAgent)
   ├── Handlers call it       (ctx.sdk.runAgent)
   ├── Workflows call it      (ctx.sdk.runAgent)
   └── Tests call it          (adapter.runAgent)
 ```
 
-**Litmus test:** if a new feature can't be expressed from both sides (tool AND SDK), the abstraction is wrong.
+**Litmus test:** if a new feature needs both handler and agent access, it should be expressible from both sides (tool AND SDK).
 
 **Rule:** Handlers should use `ctx.sdk`, never `ctx.manager` directly. The manager is an implementation detail.

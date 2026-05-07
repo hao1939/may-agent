@@ -27,6 +27,7 @@ CREATE TABLE metrics (
   source TEXT,
   source_query TEXT,
   source_command TEXT,
+  config TEXT,          -- JSON: additional metric configuration
   sensitivity REAL,
   measure_interval INTEGER,
   created_at INTEGER,

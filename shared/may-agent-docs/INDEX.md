@@ -43,15 +43,18 @@
 | [design/webui.md](design/webui.md) | Web UI as a window into the life of the system |
 | [design/unified-events.md](design/unified-events.md) | Unified event taxonomy |
 | [design/telegram-notifications.md](design/telegram-notifications.md) | Notification routing via Telegram |
+| [design/master-worker.md](design/master-worker.md) | Persistent worker/reviewer sessions with followUp() |
+| [design/escalation.md](design/escalation.md) | Escalation and recovery system |
 
-## Proposals (not yet implemented)
+## Proposals & History
 
 | Doc | What |
 |-----|------|
-| [proposals/v2-spec.md](proposals/v2-spec.md) | v2 conformance spec: C1–C10 conventions, I1–I4 infra, S1–S8 system properties |
+| [proposals/v2-spec.md](proposals/v2-spec.md) | v2 conformance spec: C1–C10 capabilities, I1–I4 infra, S1–S8 structural |
+| [proposals/v2-migration-plan.md](proposals/v2-migration-plan.md) | Historical: original v2 migration plan |
 | [proposals/v2-implementation-notes.md](proposals/v2-implementation-notes.md) | Historical: what shipped in v0.2 migration |
-| [proposals/master-worker.md](proposals/master-worker.md) | Persistent worker/reviewer sessions with followUp() |
-| [proposals/escalation.md](proposals/escalation.md) | Escalation and recovery system |
+| [proposals/v2-review-2026-05-06.md](proposals/v2-review-2026-05-06.md) | Dated snapshot: v2 review checkpoint |
+| [architecture/coordination.md](architecture/coordination.md) | Proposal: formalizing stigmergy as architectural pattern |
 
 ## Methodology
 

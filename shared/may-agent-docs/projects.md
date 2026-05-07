@@ -69,7 +69,7 @@ active → active (iterating)
        → done (all milestones complete — auto-converts to waiting after 48h)
 ```
 
-**Key rule:** Agents push or stop. They never mark a project "done" permanently. `done` auto-converts to `waiting` so the project can be picked up again if needed.
+**Key rule:** `done` auto-converts to `waiting` after 48h, so projects can be picked up again if needed.
 
 ## Status Transitions
 
@@ -79,7 +79,7 @@ active → active (iterating)
 | active | done | Agent (milestones complete) |
 | done | waiting | Auto (after 48h) |
 | waiting | active | Agent (unblocked/picks up) |
-| any | blocked | Human (via `[done]` comment) |
+| any | blocked | Human (via `[block]` comment) |
 
 ## Project Handler
 
@@ -100,10 +100,12 @@ CREATE TABLE projects (
   status TEXT DEFAULT 'active',
   type TEXT DEFAULT 'milestone',
   priority TEXT,
+  workflow TEXT,
   iteration INTEGER DEFAULT 0,
   milestones_done INTEGER DEFAULT 0,
   milestones_total INTEGER DEFAULT 0,
-  updated_at INTEGER
+  updated_at INTEGER,
+  closed_at INTEGER
 );
 ```
 
