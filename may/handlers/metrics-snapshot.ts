@@ -108,6 +108,7 @@ const VALID_TOOL_PRESETS = new Set([
   "message",
   "query_db",
   "query-db",
+  "cite-source",
 ]);
 
 function countFleetToolPresetIssues(agentsRoot: string): { count: number; sample: string[] } {
@@ -129,8 +130,15 @@ function countFleetToolPresetIssues(agentsRoot: string): { count: number; sample
       }
 
       const agent = config.name || entry.name;
-      if (config.extends) {
-        issues.push(`${agent}: legacy extends/archetype inheritance`);
+      if (config.extends && !Array.isArray(config.tools)) {
+        // Agent inherits tools from archetype - resolve them
+        const archetypePath = join(agentsRoot, config.extends, "agent.json");
+        if (existsSync(archetypePath)) {
+          try {
+            const archetypeConfig = JSON.parse(readFileSync(archetypePath, "utf8"));
+            config.tools = archetypeConfig.tools;
+          } catch { /* fall through to tools check */ }
+        }
       }
       if (!Array.isArray(config.tools)) {
         issues.push(`${agent}: tools must be an array`);
