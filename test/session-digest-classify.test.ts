@@ -7,7 +7,7 @@
  * Also tests logShadowComparison() logging helper.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { classifyDigest, logShadowComparison } from "../src/lib/session-digest.js";
 import type { DigestRow } from "../src/lib/session-digest.js";
 
@@ -309,14 +309,6 @@ describe("classifyDigest", () => {
 // ── logShadowComparison tests ───────────────────────────────────────────
 
 describe("logShadowComparison", () => {
-  let logSpy: ReturnType<typeof vi.fn>;
-
-  beforeEach(() => {
-    // Mock the log function
-    logSpy = vi.fn();
-    vi.doMock("../src/lib/log.js", () => ({ log: logSpy }));
-  });
-
   it("does not throw when digest is null", () => {
     // Should not throw — shadow logging is best-effort
     expect(() => {

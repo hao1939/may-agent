@@ -147,7 +147,7 @@ The evaluation system scores completed agent sessions on efficiency and quality:
 
 ### Memory
 
-Per-agent memory is stored as JSONL. After each session completes, a summary (task, status, key outcome) is appended. On future sessions, the most recent entries are injected into the system prompt, giving the agent context about its past work. A configurable limit prevents memory from consuming too much of the context window.
+Per-agent memory is stored as JSONL. Runtime/session context can inject recent summaries when needed, but long-lived memory is not part of the cached system prompt. The system prompt stays limited to shared common sense, the agent's `AGENTS.md`, and generated runtime facts.
 
 ### Event System
 
@@ -209,13 +209,18 @@ run/
 
 ```
 agents/
-  shared/                    Docs shared across agents
+  shared/
+    common-sense.md          Shared always-loaded behavioral fundamentals
+    may-agent-docs/          Architecture and operator docs
   <agent>/
-    knowledge/domain.md      Domain expertise (loaded into system prompt)
-    knowledge/lessons.md     Accumulated lessons (auto-appended by learn tool)
-    tools/INDEX.md           Tool documentation
+    agent.json               Operational config
+    AGENTS.md                Identity and stable operating contract
+    heartbeat.md             Heartbeat-only guidance
+    knowledge/INDEX.md       On-demand reference routing
+    knowledge/*.md           Domain docs and long-form references
+    skills/*.md              On-demand or explicitly adopted skills
     workflows/               Multi-step coordination patterns (.ts)
-    workspace/               Working files
+    workspace/               Scratch/runtime working files
 ```
 
 ## Requirements

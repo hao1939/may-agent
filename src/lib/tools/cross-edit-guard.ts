@@ -1,16 +1,16 @@
 /**
  * Cross-edit guard: prevents agents from modifying other agents' protected files.
  *
- * Protected files (per agent): SOUL.md, agent.json
+ * Protected files (per agent): AGENTS.md, agent.json, heartbeat.md
  * LESSONS.md is NOT protected — Coach and Bob need cross-agent access for Growth Cycle and consolidation.
- * Also protected: agents/shared/philosophy.md (only "may" can write)
+ * Also protected: agents/shared/philosophy.md and common-sense.md (only "may" can write)
  *
  * Exception: Agent "may" is exempt from all restrictions.
  */
 
 import { resolve, relative, sep } from "node:path";
 
-const PROTECTED_FILENAMES = new Set(["SOUL.md", "agent.json", "heartbeat.md"]);
+const PROTECTED_FILENAMES = new Set(["AGENTS.md", "agent.json", "heartbeat.md"]);
 
 /**
  * P98 Evaluation Integrity — Immutable Ruler Principle.
@@ -76,11 +76,15 @@ export function checkCrossEditGuard(
   const targetDirLower = targetDir.toLowerCase();
   const agentNameLower = agentName.toLowerCase();
 
-  // Guard agents/shared/philosophy.md — only may can write (and may is already exempt above)
-  if (targetDir === "shared" && relPath === ["shared", "philosophy.md"].join(sep)) {
+  // Guard shared system-level prompt/philosophy files — only may can write (and may is already exempt above)
+  const protectedSharedFiles = new Set([
+    ["shared", "philosophy.md"].join(sep),
+    ["shared", "common-sense.md"].join(sep),
+  ]);
+  if (targetDir === "shared" && protectedSharedFiles.has(relPath)) {
     return {
       blocked: true,
-      message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify agents/shared/philosophy.md. Only May can edit this file.\n\nCan't resolve? Escalate to May via message({ to: "may", content: ... }).`,
+      message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify agents/${relPath}. Only May can edit shared system-level guidance.\n\nCan't resolve? Escalate to May via message({ to: "may", content: ... }).`,
     };
   }
 
@@ -116,7 +120,7 @@ export function checkCrossEditGuard(
   // Allow writes to .lab/ directory (sandbox/fork for agent growth system)
   if (targetDir === ".lab") return { blocked: false };
 
-  // Guard agents/<other-agent>/SOUL.md, agent.json (at any depth)
+  // Guard agents/<other-agent>/AGENTS.md, agent.json, heartbeat.md (at any depth)
   // Conservative: block protected filenames even in subdirectories to prevent leaks
   if (targetDirLower !== "shared" && targetDirLower !== agentNameLower) {
     // It's another agent's directory — check if it's a protected filename
@@ -127,7 +131,7 @@ export function checkCrossEditGuard(
       }
       return {
         blocked: true,
-        message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify agents/${targetDir}/${fileName}. Only the owning agent (for SOUL.md), May, or tech-lead (for agent.json) can edit another agent's identity files.\n\nCan't resolve? Escalate to May via message({ to: "may", content: ... }).`,
+        message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify agents/${targetDir}/${fileName}. Only the owning agent, May, or tech-lead (for agent.json) can edit another agent's identity files.\n\nCan't resolve? Escalate to May via message({ to: "may", content: ... }).`,
       };
     }
   }

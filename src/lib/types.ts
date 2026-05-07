@@ -22,6 +22,8 @@ export interface SubagentDefinition {
   systemPrompt?: string;
 
   // Caller-managed paths (persisted for resume)
+  /** Agent directory containing AGENTS.md, heartbeat.md, knowledge/, workspace/, etc. */
+  agentDir?: string;
   workspace?: string;
   /** Directory containing agent knowledge files (INDEX.md, etc.). */
   knowledgeDir?: string;
@@ -54,10 +56,8 @@ export interface SubagentDefinition {
   compaction?: boolean | CompactionOptions;
 
   /**
-   * Additional context files to include in the system prompt.
-   * Paths are relative to the agent directory (e.g., "conversation-state.md").
-   * Loaded after convention files (SOUL.md, DOMAIN.md, etc.) but before
-   * the Runtime Environment section.
+   * @deprecated Volatile files should be injected as session context, not system prompt.
+   * Kept while older agent.json files migrate away from context_files.
    */
   contextFiles?: string[];
 }

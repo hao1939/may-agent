@@ -1,7 +1,9 @@
 /**
  * message-tool.ts — v2 unified inter-agent communication primitive.
  *
- * The `message` tool replaces the trio of (notify, agents.fork, agents.message).
+ * The `message` tool replaces notify-style inbox messages and the removed
+ * agents.message action. It does not replace agents.fork, which still starts an
+ * immediate background session.
  *
  * Semantics (v2):
  *   - async, persisted, receiver-owned, never blocking RPC.

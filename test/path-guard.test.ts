@@ -14,8 +14,8 @@ function blockMessage(absolutePath: string, agentName: string): string | undefin
 }
 
 describe("checkCrossEditGuard (P53/P70 cross-agent protection)", () => {
-  it("allows writes to own agent SOUL.md", () => {
-    expect(isAllowed("/app/agents/bob/SOUL.md", "bob")).toBe(true);
+  it("allows writes to own agent AGENTS.md", () => {
+    expect(isAllowed("/app/agents/bob/AGENTS.md", "bob")).toBe(true);
   });
 
   it("blocks writes to own agent agent.json (P70: immutable self-config)", () => {
@@ -33,11 +33,11 @@ describe("checkCrossEditGuard (P53/P70 cross-agent protection)", () => {
     expect(isAllowed("/app/agents/bob/LESSONS.md", "bob")).toBe(true);
   });
 
-  it("blocks writes to another agent's SOUL.md", () => {
-    const result = checkCrossEditGuard("/app/agents/coder/SOUL.md", "bob", PROJECT_ROOT);
+  it("blocks writes to another agent's AGENTS.md", () => {
+    const result = checkCrossEditGuard("/app/agents/coder/AGENTS.md", "bob", PROJECT_ROOT);
     expect(result.blocked).toBe(true);
     expect(result.message).toContain("WRITE BLOCKED");
-    expect(result.message).toContain("SOUL.md");
+    expect(result.message).toContain("AGENTS.md");
   });
 
   it("blocks writes to another agent's agent.json", () => {
@@ -66,15 +66,15 @@ describe("checkCrossEditGuard (P53/P70 cross-agent protection)", () => {
     expect(isAllowed("/app/src/lib/manager.ts", "bob")).toBe(true);
   });
 
-  it("blocks writes to nested protected files (SOUL.md in subdirectory)", () => {
-    // agents/coder/knowledge/SOUL.md — the filename matches, so it blocks
+  it("blocks writes to nested protected files (AGENTS.md in subdirectory)", () => {
+    // agents/coder/knowledge/AGENTS.md — the filename matches, so it blocks
     // This is conservative: better to block too aggressively than allow leaks
-    const result = checkCrossEditGuard("/app/agents/coder/knowledge/SOUL.md", "bob", PROJECT_ROOT);
+    const result = checkCrossEditGuard("/app/agents/coder/knowledge/AGENTS.md", "bob", PROJECT_ROOT);
     expect(result.blocked).toBe(true);
   });
 
   it("allows own agent's nested protected files", () => {
-    expect(isAllowed("/app/agents/bob/knowledge/SOUL.md", "bob")).toBe(true);
+    expect(isAllowed("/app/agents/bob/knowledge/AGENTS.md", "bob")).toBe(true);
   });
 
   it("handles deeply nested agent workspace paths", () => {
@@ -84,7 +84,7 @@ describe("checkCrossEditGuard (P53/P70 cross-agent protection)", () => {
   });
 
   it("includes the blocked agent dir and caller name in the message", () => {
-    const msg = blockMessage("/app/agents/coder/SOUL.md", "optimizer");
+    const msg = blockMessage("/app/agents/coder/AGENTS.md", "optimizer");
     expect(msg).toContain("agents/coder/");
     expect(msg).toContain("optimizer");
   });
@@ -93,8 +93,8 @@ describe("checkCrossEditGuard (P53/P70 cross-agent protection)", () => {
     expect(isAllowed("/app/agents/.lab/bob-growth-test/LESSONS.md", "coach")).toBe(true);
   });
 
-  it("allows writes to .lab/ fork SOUL.md", () => {
-    expect(isAllowed("/app/agents/.lab/bob-growth-test/SOUL.md", "coach")).toBe(true);
+  it("allows writes to .lab/ fork AGENTS.md", () => {
+    expect(isAllowed("/app/agents/.lab/bob-growth-test/AGENTS.md", "coach")).toBe(true);
   });
 
   it("allows writes to .lab/ fork agent.json", () => {
@@ -102,8 +102,8 @@ describe("checkCrossEditGuard (P53/P70 cross-agent protection)", () => {
   });
 
   // May exemption — May can edit any agent's protected files
-  it("allows May to write to another agent's SOUL.md", () => {
-    expect(isAllowed("/app/agents/bob/SOUL.md", "may")).toBe(true);
+  it("allows May to write to another agent's AGENTS.md", () => {
+    expect(isAllowed("/app/agents/bob/AGENTS.md", "may")).toBe(true);
   });
 
   it("allows May to write to another agent's agent.json", () => {
@@ -118,8 +118,8 @@ describe("checkCrossEditGuard (P53/P70 cross-agent protection)", () => {
     expect(isAllowed("/app/agents/coder/agent.json", "tech-lead")).toBe(true);
   });
 
-  it("blocks tech-lead from writing to another agent's SOUL.md", () => {
-    const result = checkCrossEditGuard("/app/agents/coder/SOUL.md", "tech-lead", PROJECT_ROOT);
+  it("blocks tech-lead from writing to another agent's AGENTS.md", () => {
+    const result = checkCrossEditGuard("/app/agents/coder/AGENTS.md", "tech-lead", PROJECT_ROOT);
     expect(result.blocked).toBe(true);
     expect(result.message).toContain("WRITE BLOCKED");
   });

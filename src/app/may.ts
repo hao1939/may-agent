@@ -1051,8 +1051,8 @@ if (CRON_ENABLED) {
   }
 
   for (const [name, cron] of getAgentCrons()) {
-    cron.onFire((entry, type) => {
-      const label = type === "js" ? "JS handler" : `detached → ${entry.agent}`;
+    cron.onFire((entry, executor) => {
+      const label = executor === "handler" ? `handler → ${entry.handler ?? entry.name}` : `agent → ${entry.agent}`;
       bus.emit({
         type: "info",
         message: `[cron] ${entry.name} fired (${label})`,

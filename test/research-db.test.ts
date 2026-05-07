@@ -479,7 +479,7 @@ describe("research-db", () => {
   // ── Integration with real data ────────────────────────────────────
 
   describe("integration: real knowledge base", () => {
-    it("syncs the actual knowledge base without errors", { timeout: 30_000 }, () => {
+    it("syncs the actual knowledge base without errors", () => {
       const realBase = "agents/shared/knowledge";
       const result = syncAll(db, realBase);
 
@@ -496,6 +496,6 @@ describe("research-db", () => {
       ];
       // Allow up to 25 errors across 120+ files (library grows over time)
       expect(totalErrors.length).toBeLessThanOrEqual(25);
-    });
+    }, 30_000);
   });
 });

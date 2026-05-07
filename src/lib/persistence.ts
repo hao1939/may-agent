@@ -45,6 +45,8 @@ export interface PersistedSession {
   source?: string;
   /** Request ID linking this session to the unified request tracker. */
   requestId?: string;
+  /** Project ID linking this session to a persisted project. */
+  projectId?: string;
   detached?: boolean;
   pid?: number;
   instance?: string;

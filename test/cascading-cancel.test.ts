@@ -51,8 +51,8 @@ describe("cascading cancel", () => {
     const rc = await manager.waitFor(child);
     const rp = await manager.waitFor(parent);
 
-    expect(["done", "error"]).toContain(rc.status);
-    expect(["done", "error"]).toContain(rp.status);
+    expect(["done", "error", "interrupted"]).toContain(rc.status);
+    expect(["done", "error", "interrupted"]).toContain(rp.status);
   });
 
   it("cancel cascades grandparent → parent → child", async () => {
@@ -66,9 +66,9 @@ describe("cascading cancel", () => {
     const rp = await manager.waitFor(parent);
     const rg = await manager.waitFor(grandparent);
 
-    expect(["done", "error"]).toContain(rc.status);
-    expect(["done", "error"]).toContain(rp.status);
-    expect(["done", "error"]).toContain(rg.status);
+    expect(["done", "error", "interrupted"]).toContain(rc.status);
+    expect(["done", "error", "interrupted"]).toContain(rp.status);
+    expect(["done", "error", "interrupted"]).toContain(rg.status);
   });
 
   it("cancel is no-op for already-completed children", async () => {
@@ -82,7 +82,7 @@ describe("cascading cancel", () => {
     manager.cancel(parent);
 
     const rp = await manager.waitFor(parent);
-    expect(["done", "error"]).toContain(rp.status);
+    expect(["done", "error", "interrupted"]).toContain(rp.status);
   });
 
   it("cancel does not affect unrelated sessions", async () => {

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createCommitGuard } from "../src/lib/tools/commit-guard.js";
 import type { BeforeToolCallContext } from "@mariozechner/pi-agent-core";
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -37,6 +37,19 @@ function makeNonFinishCtx(): BeforeToolCallContext {
     ...makeFinishCtx({}),
     toolCall: { type: "toolCall" as const, id: "tc_1", name: "read", arguments: { path: "foo" } },
   };
+}
+
+function git(cwd: string, args: string[]): void {
+  const result = spawnSync("git", args, {
+    cwd,
+    encoding: "utf-8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  if (result.status !== 0) {
+    throw new Error(
+      `git ${args.join(" ")} failed with status ${result.status}: ${result.stderr || result.stdout}`,
+    );
+  }
 }
 
 describe("commit-guard", () => {
@@ -95,13 +108,14 @@ describe("commit-guard", () => {
       mkdirSync(agentsDir, { recursive: true });
 
       // Initialize a git repo in agents/
-      execSync("git init", { cwd: agentsDir });
-      execSync("git config user.email 'test@test.com'", { cwd: agentsDir });
-      execSync("git config user.name 'Test'", { cwd: agentsDir });
+      git(agentsDir, ["init"]);
+      git(agentsDir, ["config", "user.email", "test@test.com"]);
+      git(agentsDir, ["config", "user.name", "Test"]);
 
       // Create initial commit so git status works cleanly
       writeFileSync(join(agentsDir, ".gitkeep"), "");
-      execSync("git add . && git commit -m 'init'", { cwd: agentsDir });
+      git(agentsDir, ["add", "."]);
+      git(agentsDir, ["commit", "-m", "init"]);
     });
 
     afterAll(() => {
@@ -138,7 +152,8 @@ describe("commit-guard", () => {
       const coachDir = join(agentsDir, "coach");
       mkdirSync(coachDir, { recursive: true });
       writeFileSync(join(coachDir, "context.md"), "original");
-      execSync("git add coach/ && git commit -m 'add coach'", { cwd: agentsDir });
+      git(agentsDir, ["add", "coach/"]);
+      git(agentsDir, ["commit", "-m", "add coach"]);
 
       // Now modify it
       writeFileSync(join(coachDir, "context.md"), "modified content");
@@ -152,7 +167,7 @@ describe("commit-guard", () => {
       expect(result!.reason).toContain("context.md");
 
       // Clean up — restore file
-      execSync("git checkout -- coach/", { cwd: agentsDir });
+      git(agentsDir, ["checkout", "--", "coach/"]);
     });
 
     it("blocks finish with any status (not just success)", async () => {
@@ -298,7 +313,8 @@ describe("commit-guard", () => {
       expect(blocked!.block).toBe(true);
 
       // Now commit the changes
-      execSync("git add bob/ && git commit -m 'bob: test commit'", { cwd: agentsDir });
+      git(agentsDir, ["add", "bob/"]);
+      git(agentsDir, ["commit", "-m", "bob: test commit"]);
 
       // Should now allow
       const allowed = await guard(makeFinishCtx({ status: "success", summary: "done" }));
@@ -341,7 +357,7 @@ describe("commit-guard", () => {
       const bobDir = join(agentsDir, "bob", "workspace");
       mkdirSync(bobDir, { recursive: true });
       writeFileSync(join(bobDir, "staged.md"), "staged content");
-      execSync("git add bob/", { cwd: agentsDir });
+      git(agentsDir, ["add", "bob/"]);
 
       const guard = createCommitGuard("bob", tmpDir);
       const result = await guard(makeFinishCtx({ status: "success", summary: "done" }));
@@ -351,7 +367,7 @@ describe("commit-guard", () => {
       expect(result!.reason).toContain("staged.md");
 
       // Clean up — unstage and remove
-      execSync("git reset HEAD bob/", { cwd: agentsDir });
+      git(agentsDir, ["reset", "HEAD", "bob/"]);
       rmSync(join(agentsDir, "bob", "workspace"), { recursive: true, force: true });
     });
   });

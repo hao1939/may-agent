@@ -26,6 +26,28 @@ function makeToolCtx(cronEnabled = false) {
   };
 }
 
+function makeAgentToolCtx(agentName: string) {
+  const dir = mkdtempSync(resolve(tmpdir(), "cron-tool-"));
+  const configPath = resolve(dir, "cron.json");
+  let reloadCount = 0;
+  const tool = createCronTool({
+    configPath,
+    agentName,
+    onConfigChange: () => {
+      reloadCount++;
+    },
+  });
+  return {
+    dir,
+    configPath,
+    tool,
+    get reloadCount() {
+      return reloadCount;
+    },
+    cleanup: () => rmSync(dir, { recursive: true, force: true }),
+  };
+}
+
 async function exec(tool: ReturnType<typeof createCronTool>, input: Record<string, unknown>): Promise<string> {
   const result = await tool.execute("test-call", input as any);
   return result.content[0].text;
@@ -62,6 +84,23 @@ describe("cron tool", () => {
     const entries: CronEntry[] = JSON.parse(readFileSync(ctx.configPath, "utf-8"));
     expect(entries).toHaveLength(1);
     expect(entries[0]).toEqual({ name: "health", intervalMs: 60000, message: "check health", enabled: true });
+  });
+
+  it("add defaults new jobs to the owning agent executor when agentName is set", async () => {
+    const agentCtx = makeAgentToolCtx("bob");
+    try {
+      await exec(agentCtx.tool, {
+        action: "add",
+        name: "follow-up",
+        intervalMs: 60000,
+        message: "check follow-up items",
+      });
+
+      const entries: CronEntry[] = JSON.parse(readFileSync(agentCtx.configPath, "utf-8"));
+      expect(entries[0]).toMatchObject({ name: "follow-up", agent: "bob" });
+    } finally {
+      agentCtx.cleanup();
+    }
   });
 
   it("add rejects duplicate names", async () => {
