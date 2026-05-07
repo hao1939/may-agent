@@ -1,12 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778189019598_79
+- **Session:** s_1778196220029_115
 - **Status:** success
-- **When:** 2026-05-07T21:24:15.782Z
+- **When:** 2026-05-07T23:24:19.508Z
 
 ## What Happened
-Investigated inbox report of message delivery failures; confirmed they stem from sending messages to invalid recipient string `functions.message` and documented the fix in a committed heartbeat artifact. Also verified runtime DB exposes no message_* tables, so failures can’t be quantified via SQL in this environment, and escalated to May for canonical event/table location.
+Verified evaluation-pipeline liveness/coverage via read-only DB queries and notified May with the current freshness/coverage numbers; committed a pending KE note file that was blocking clean finish state.
 
 ## Files Modified
-- agents/evaluator/workspace/heartbeat_2026-05-07_message-delivery-failures.md
+- shared/knowledge/entries/KE-811-status-reality-mismatch-self-heals-but-fires-alarm-first-record-then-reconcile-order-makes-the-metric-flap-on-every-clean-start-fresh-cluster.md
+
+## Completed
+- Pending event triage: message delivery failures traced to messages sent to invalid recipient names; recommended send-time validation/alerts to prevent silent failures
