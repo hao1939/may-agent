@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778176539711_13
+- **Session:** s_1778177139675_20
 - **Status:** success
-- **When:** 2026-05-07T17:56:47.083Z
+- **When:** 2026-05-07T18:07:08.287Z
 
 ## What Happened
-Audited 3 open alerts and 10 delivery failures. Alert#188 self-resolved (current 0.8148 > 0.8 threshold). Nudged may on stuck calibration for alert#182. Notified evaluator of systemic `functions.message` routing bug causing delivery failures.
+Audited 2 open metric alerts and 12 delivery failures. Both alerts have valid judgments but alert#182's calibration was incomplete (threshold unchanged). Evaluator has systemic tool misuse sending to "functions.message" instead of agent names. Routed both issues to may.
 
 ## Completed
-- Closed-loop steward audit of open metric alerts and delivery failures
+- Closed-loop audit of open metric alerts and delivery failures
