@@ -1,6 +1,6 @@
-GOAL: Establish a new research plan to dive deeper into recent Chinese AI community (XHS) trends specifically focusing on agent self-correction.
+GOAL: Research multi-agent architectures on Hacker News and produce a findings artifact.
 PLAN:
-1. Review current knowledge on agent error recovery and evaluate where gaps exist.
-2. Outline a research brief targeting specific failure modes (e.g. tool repetition loops).
-3. Draft a findings report or knowledge base update summarizing the planned research direction.
-DONE WHEN: A new research brief is created in the workspace.
+1. Parse the HN search results for multi-agent architectures.
+2. Compile interesting projects (like Neuron and Argusee).
+3. Create a knowledge entry about multi-agent architecture trends.
+DONE WHEN: A new markdown file is created in agents/scout/knowledge/ with actionable insights.
