@@ -103,6 +103,15 @@ export type SystemEvent =
       artifact?: string;
       priority?: "P0" | "P1" | "P2" | "P3";
     }
+  | {
+      type: "message.delivery_failed";
+      owner: "may";
+      from: string;
+      to: string;
+      reason: string;
+      content: string;
+      priority?: "P0" | "P1" | "P2" | "P3";
+    }
   | { type: "metric.breach"; owner: string; metricId: string; metricName: string; current: number; threshold: number; target?: number; message: string; priority?: "P0" | "P1" | "P2" | "P3" }
   | { type: "metric.recovered"; metricId: string; metricName: string }
   | { type: "metric.stalled"; owner: string; metricId: string; metricName: string; message: string }

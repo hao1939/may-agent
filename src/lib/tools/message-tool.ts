@@ -96,6 +96,15 @@ function textResult(text: string): AgentToolResult<undefined> {
   return { content: [{ type: "text" as const, text }], details: undefined };
 }
 
+function allowedTargetSet(targets?: string[]): Set<string> | null {
+  if (!targets) return null;
+  return new Set([...targets, "human"].map((target) => target.trim()).filter(Boolean));
+}
+
+function preview(text: string): string {
+  return text.length <= 500 ? text : `${text.slice(0, 500)}...`;
+}
+
 /**
  * Create the `message` tool — the v2 unified inter-agent communication primitive.
  */
@@ -116,11 +125,26 @@ export function createMessageTool(opts: MessageToolOptions): AgentTool {
         return textResult(JSON.stringify({ error: "'to' and 'content' are required" }));
       }
 
-      // Allowlist
-      if (opts.allowedTargets && !opts.allowedTargets.includes(params.to)) {
+      const allowedTargets = allowedTargetSet(opts.allowedTargets);
+      if (allowedTargets && !allowedTargets.has(params.to)) {
+        const reason = `Unknown message target "${params.to}"`;
+        try {
+          opts.emit?.({
+            type: "message.delivery_failed",
+            owner: "may",
+            from: opts.agentName,
+            to: params.to,
+            reason,
+            content: preview(params.content),
+            priority: params.priority ?? "P2",
+          });
+        } catch {
+          /* best-effort */
+        }
         return textResult(
           JSON.stringify({
-            error: `Cannot message "${params.to}". Allowed targets: ${opts.allowedTargets.join(", ")}`,
+            error: reason,
+            allowedTargets: [...allowedTargets].sort(),
           }),
         );
       }
