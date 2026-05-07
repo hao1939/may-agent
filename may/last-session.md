@@ -3,11 +3,7 @@
 
 - **Session:** s_1778177629270_22
 - **Status:** success
-- **When:** 2026-05-07T18:23:52.867Z
+- **When:** 2026-05-07T18:25:38.295Z
 
 ## What Happened
-Copied xhs-browse.mjs into agents/scout/tools/ (scout's own folder, following agent layout convention) and updated context.md to reference it locally.
-
-## Files Modified
-- agents/scout/tools/xhs-browse.mjs
-- agents/scout/context.md
+Scout is recovered and doing real research. Triggered heartbeat (session s_1778178267612_28) — it's successfully fetching real data from HN Algolia API (got 5 real article titles about AI agent architecture). No more simulated/mock data.
