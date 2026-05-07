@@ -193,4 +193,44 @@ describe("telegram reply e2e", () => {
 
     bot.close();
   });
+
+  it("forwards proactive may-to-human messages without an active chat turn", async () => {
+    const sentMessages: Array<{ chat_id: string; text: string }> = [];
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
+      const method = String(url).split("/").pop();
+      const body = init?.body ? JSON.parse(String(init.body)) : {};
+
+      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
+      if (method === "getUpdates") return jsonResponse([]);
+      if (method === "sendMessage") {
+        sentMessages.push(body);
+        return jsonResponse({ message_id: 500 + sentMessages.length });
+      }
+
+      throw new Error(`unexpected Telegram method: ${method}`);
+    });
+
+    const bus = new EventBus();
+    const bot = attachTelegramBot({
+      persistDir,
+      bus,
+      manager: {} as any,
+      getSessionId: () => "",
+      interfaceAgent: "may",
+    });
+
+    bus.emit({
+      type: "message.created",
+      from: "may",
+      to: "human",
+      content: "Metric alert triage needs attention for capability.session-trace-completeness.",
+    } as any);
+
+    await waitFor(() => {
+      expect(sentMessages.some((m) => m.text.includes("Metric alert triage needs attention"))).toBe(true);
+    });
+
+    bot.close();
+  });
 });
