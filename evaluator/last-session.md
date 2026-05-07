@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778175953841_3
+- **Session:** s_1778176015058_6
 - **Status:** success
-- **When:** 2026-05-07T17:46:55.045Z
+- **When:** 2026-05-07T17:47:56.165Z
 
 ## What Happened
-Wrote aftermath review for interrupted arc session s_1778175259904_1 to agents/evaluator/workspace/aftermath/s_1778175259904_1.md; verified required sections are present. Cleaned unrelated uncommitted changes created during review.
+Created aftermath report for s_1778175321804_2 based on transcript evidence and notified may that message.delivery_failed events stem from invalid recipient 'functions.message', not the steward run itself.
 
 ## Files Modified
-- agents/evaluator/workspace/aftermath/s_1778175259904_1.md
+- agents/evaluator/workspace/aftermath/s_1778175321804_2.md
