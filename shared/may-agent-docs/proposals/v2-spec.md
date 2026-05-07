@@ -2,11 +2,11 @@
 
 **Status**: draft
 **Date**: 2026-05-06
-**Companion to**: `proposals/v2-architecture.md` (intent), `proposals/v2-implementation-notes.md` (history)
+**Companion to**: `../architecture.md` (intent), `v2-implementation-notes.md` (history)
 
 ## What this document is
 
-`v2-architecture.md` describes **what v2 should be**. This document describes **how we know v2 is there**, as enumerable, measurable claims.
+`../architecture.md` describes **what v2 should be**. This document describes **how we know v2 is there**, as enumerable, measurable claims.
 
 The doc has three layers, top-down:
 
@@ -37,7 +37,7 @@ Each layer answers a different question. Each layer's claims are observed by met
 
 The diagnostic ladder is top-down: a red capability metric is a *symptom*; the cause is in the infra layer or the structural layer below. Investigate from the top, descend until you find the broken rung.
 
-A note on what this means for the architecture doc: `v2-architecture.md` describes intent. It is the *design*. This doc is the *contract*. The intent doc is read for understanding; this doc is read for evaluating whether what we built lives up to it.
+A note on what this means for the architecture doc: `../architecture.md` describes intent. It is the *design*. This doc is the *contract*. The intent doc is read for understanding; this doc is read for evaluating whether what we built lives up to it.
 
 ---
 
@@ -108,7 +108,7 @@ A second metric `capability.unrecovered-breach-count-7d` counts breaches with no
 
 **Claim.** Each iteration builds on the previous one. Today's heartbeat references yesterday's journal. Agents don't re-discover the same problem repeatedly.
 
-**Why.** Per `proposals/v2-architecture.md` §7 and `design/heartbeat-as-agency.md`: projects are *context*; without continuity they become amnesia.
+**Why.** Per `../architecture.md`, `../work-model.md`, and `../design/heartbeat-as-agency.md`: projects are *context*; without continuity they become amnesia.
 
 **Measurement.** `capability.journal-reference-rate` — fraction of heartbeat sessions whose `agent.decision` event references prior journal entries (by date stamp or by content phrase) divided by heartbeat sessions where a referenceable journal exists.
 
@@ -244,7 +244,7 @@ Two-part:
 
 **Claim.** The system tells the truth about itself. State fields reflect reality. If a project says `active`, an agent is iterating. If a metric says `healthy`, it's actually being measured. If a session says `done`, work was done.
 
-**Why.** Without honesty, the metrics that drive everything else are unreliable, and the diagnostic ladder breaks. This is the meta-capability that protects all the others.
+**Why.** Without honesty, the signals agents rely on are unreliable, and the diagnostic ladder breaks. This is the meta-capability that protects all the others.
 
 **Measurement.** `capability.status-reality-mismatch-count` — count of detected inconsistencies:
 - Projects with `status=active` but no journal entry in last 7 days.
@@ -520,7 +520,7 @@ When a structural property is violated, capabilities don't necessarily fail toda
 
 **Claim.** Our agent runtime code (the layer between the bus and pi-coding-agent) is bounded. The LLM loop, retry, compaction, tool execution, and durable session persistence should live in pi-coding-agent or narrow wrappers, not sprawl through the app layer.
 
-**Why.** v2-architecture said "~50 LOC of glue." Beyond a thin wrapper we are reimplementing the runtime — the v1 pattern.
+**Why.** The original v2 target was a thin wrapper around pi-coding-agent. Beyond a thin wrapper we are reimplementing the runtime — the v1 pattern.
 
 **Measurement.** `v2.runtime-glue-loc` — line count of `src/lib/manager.ts` plus adjacent runtime glue files that own session/tool lifecycle behavior. Track both:
 - `v2.manager-loc` — `src/lib/manager.ts` only.
@@ -541,7 +541,7 @@ When a structural property is violated, capabilities don't necessarily fail toda
 
 **Claim.** Every heartbeat session emits exactly one `agent.decision` event with `{agent, sessionId, decision: string}` before the action phase.
 
-**Why.** Per `design/heartbeat-as-agency.md`: agency is invisible without a structured decision. Required for C3 (memory), C8 (observability), and the new web UI.
+**Why.** Per `../design/heartbeat-as-agency.md`: agency is invisible without a structured decision. Required for C3 (memory), C8 (observability), and the new web UI.
 
 **Measurement.** `v2.heartbeat-decision-rate` — fraction of `trigger=heartbeat` sessions with at least one `agent.decision` event. Target 1.0; threshold < 0.95.
 
@@ -558,7 +558,7 @@ When a structural property is violated, capabilities don't necessarily fail toda
 
 **Claim.** The `metrics` table has a `priority` column with values P0/P1/P2/P3, and `metric-alert-reactor` only forks directly on P0 breaches. Lower-priority breaches are visible to the owner via prompt context but don't fork immediately.
 
-**Why.** Per `design/heartbeat-as-agency.md`: forking on every breach makes agents reactive; deferring to heartbeat makes them deliberative. P0 is the safety valve.
+**Why.** Per `../design/heartbeat-as-agency.md`: forking on every breach makes agents reactive; deferring to heartbeat makes them deliberative. P0 is the safety valve.
 
 **Measurement.** `v2.fork-on-breach-rate` — fraction of `metric.breach` events that triggered a direct fork. Target = P0-priority-rate (varies by registry); threshold > P0-rate × 1.5.
 

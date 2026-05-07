@@ -2,7 +2,8 @@
 
 **Status**: Phases 1–5 implemented on branch `v2`, tagged `v0.2-pre-v2-migration` (rollback point).
 
-This doc describes what actually shipped vs. what `v2-architecture.md` proposed.
+This doc describes what actually shipped against the current `../architecture.md`
+and the original v2 proposal history.
 
 ## What landed
 
@@ -88,7 +89,7 @@ Files:
 
 ## Acceptance criteria status
 
-From `v2-architecture.md`:
+From the v2 architecture target:
 
 - [x] `message.created` events persist and display in receiver context — emits both events; receiver inbox query (`getInbox`) reads from `events` WHERE `owner = ?`
 - [x] guards still block unsafe finish/edit behavior — guards untouched, all 14 still wired through `compose-guards.ts`

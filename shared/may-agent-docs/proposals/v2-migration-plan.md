@@ -1,7 +1,8 @@
 # v2 Migration — Detailed Plan
 
-**Status**: In progress.
-**Companion**: `proposals/v2-architecture.md` (the target).
+**Status**: Historical. The implemented state is captured in
+`v2-implementation-notes.md`; the active architecture reference is
+`../architecture.md`.
 
 ## Reality check: what already exists
 
@@ -118,7 +119,7 @@ That's the whole migration. No big rewrite.
 - Mark `notify` / `agents.fork` as legacy aliases (still supported).
 - Run for 24h with all 5 active agents and check acceptance criteria from v2 doc.
 
-**Acceptance** (from v2-architecture.md):
+**Acceptance** (from the v2 architecture target):
 - dev/arc/scout complete 20 consecutive heartbeats without error
 - session.error-rate-6h does not increase
 - handler.success-rate stays >0.95

@@ -2,7 +2,7 @@
 
 **Status**: review
 **Date**: 2026-05-06
-**Aligned with**: `proposals/v2-architecture.md`, `design/agent-metrics.md`, `design/heartbeat-as-agency.md`
+**Aligned with**: `../architecture.md`, `../work-model.md`, `agent-metrics.md`, `heartbeat-as-agency.md`
 
 ## What this UI is for
 
@@ -43,7 +43,7 @@ The Watcher's needs decide the front page. The Steerer's verbs decide the intera
 
 - **Not a configuration panel.** Agents are configured by markdown files in the repo. Editing those in a web form is the wrong abstraction — I edit them in my IDE.
 - **Not a terminal.** If I'm running commands, I'm debugging, not operating.
-- **Not a control panel.** Steering verbs *change what an agent will see at its next heartbeat*. They do not "make the agent do X right now." See `design/heartbeat-as-agency.md`.
+- **Not a control panel.** Steering verbs *change what an agent will see at its next heartbeat*. They do not "make the agent do X right now." See `heartbeat-as-agency.md`.
 - **Not a re-implementation of the bus or DB.** It's a window onto them.
 
 ### What about chat?
@@ -54,7 +54,7 @@ So conversation belongs in the dashboard — but it doesn't get its own separate
 
 ## The system model the UI surfaces
 
-Three first-class concepts (defined in detail in `proposals/v2-architecture.md` and `design/heartbeat-as-agency.md`):
+Three first-class concepts (defined in detail in `../architecture.md`, `../work-model.md`, and `heartbeat-as-agency.md`):
 
 - **Project** — the context an agent works within: goals, history, journal, accumulated experience. Owned by an agent. Iterated on at heartbeat.
 - **Heartbeat** — the recurring moment when an agent reads context, decides, and acts. Where agency lives.
@@ -208,7 +208,7 @@ This is the unified surface that earlier drafts split into "chat" and "sessions.
 - **"Talk to may"** (or any agent) — button on `/` that resolves to the agent's *default session* (most recent open session bound to inputs). Lands you on `/sessions/<that-id>` with input enabled. Mirrors Telegram's single-thread-per-agent model.
 - **"New conversation"** — explicit button. POST creates a new session bound to the chosen agent; you land on `/sessions/<new-id>` with input enabled.
 
-A session is **a thought**. The UI renders it as one, in four phases (matching the heartbeat structure in `design/heartbeat-as-agency.md`):
+A session is **a thought**. The UI renders it as one, in four phases (matching the heartbeat structure in `heartbeat-as-agency.md`):
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -343,14 +343,14 @@ The human's verbs, complete list:
 Five rules for the steering surface:
 
 1. **Every verb has one durable effect.** Prefer the simplest durable path. Emit an event when live visibility or agent wakeup needs it; do not add event indirection just to satisfy architecture.
-2. **Verbs shape the agent's next look, not its current action.** Per `design/heartbeat-as-agency.md`, the framing is: change what the agent sees when it next heartbeats. The UI's copy reflects this ("delivered at next heartbeat") rather than implying immediate response.
+2. **Verbs shape the agent's next look, not its current action.** Per `heartbeat-as-agency.md`, the framing is: change what the agent sees when it next heartbeats. The UI's copy reflects this ("delivered at next heartbeat") rather than implying immediate response.
 3. **Verbs are async, and the UI is honest about it.** After commenting, see the comment in discussion immediately, then watch the project's pulse for when the agent picks it up. Don't fake instant response.
 4. **No verb mutates agent state directly.** Cancelling a session emits a cancel command; the manager processes it. The UI doesn't reach into manager internals.
 5. **Confirmation only for destructive verbs.** Cancel a session: confirm. Comment on a project: just send. Trust the human.
 
 ## Live vs. historical: the two data planes
 
-The "UI = bus subscriber" rule from `proposals/v2-architecture.md` applies to **live updates**. For **historical state** (last 7 days of metric values, breach history, agent timeline, project journals), the UI reads SQLite and the filesystem directly. Both are correct, both are needed.
+The "UI = bus subscriber" rule from `../architecture.md` applies to **live updates**. For **historical state** (last 7 days of metric values, breach history, agent timeline, project journals), the UI reads SQLite and the filesystem directly. Both are correct, both are needed.
 
 ### Plane A — Live (1 endpoint)
 
@@ -476,9 +476,9 @@ Order: 1 first. Then do 2 and 3 only where they simplify the shipped UI. Do 4 an
 
 ## Why this is v2-shaped
 
-- **Projects are the primary navigable object** — because projects are the context (per `proposals/v2-architecture.md` §7).
-- **Heartbeats are visible** — because heartbeats are agency (per `design/heartbeat-as-agency.md`), and agency is the thing the operator most needs to see.
-- **Metrics are vitals, not pagers** — breach badge is in the top bar; the metric grid is one click in. (Per `design/agent-metrics.md`.)
+- **Projects are the primary navigable object** — because projects are the durable work context (per `../work-model.md`).
+- **Heartbeats are visible** — because heartbeats are agency (per `heartbeat-as-agency.md`), and agency is the thing the operator most needs to see.
+- **Metrics are vitals, not pagers** — breach badge is in the top bar; the metric grid is one click in. (Per `agent-metrics.md`.)
 - **Steering is participation, not control** — verbs shape what agents see at their next look. Async by design.
 - **Live + historical, no polling** — Plane A for now, Plane B for the past, never confused.
 - **The window principle** — the UI shows the system; it does not stand outside it. The human's verbs flow through the same bus the agents use.

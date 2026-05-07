@@ -147,6 +147,6 @@ The UI's verbs and copy should reflect this. "Send message" is fine, but the exp
 
 ## Relation to other docs
 
-- `proposals/v2-architecture.md` — defines heartbeat as a `heartbeat` event type that triggers `runAgent`. This doc adds the framing layer: *what heartbeat sessions are for*.
-- `design/agent-metrics.md` — defines the metric registry. Agency metrics (above) should be added to that registry.
-- `design/webui.md` — the UI is the place where heartbeat-as-agency becomes visible to humans. The dashboard's primary mood is *seeing the agents alive*, which means seeing their heartbeats.
+- `../architecture.md` — defines the event -> `runAgent()` -> `session.end` primitive. This doc adds the framing layer: *what heartbeat sessions are for*.
+- `agent-metrics.md` — defines the metric registry. Agency metrics (above) should be added to that registry.
+- `webui.md` — the UI is the place where heartbeat-as-agency becomes visible to humans. The dashboard's primary mood is *seeing the agents alive*, which means seeing their heartbeats.
