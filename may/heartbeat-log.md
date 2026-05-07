@@ -119,3 +119,20 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 **Alert #136 (v2.spec-coverage-rate = 0.1364)**: Known structural instrumentation gap per KE-802. Only 3/11 agents emit the required events. Project `v2-spec-coverage-buildout` is in `pending-review`. Judgment: **WAITING** — this metric needs calibration or the project needs human review to decide if the instrumentation should be extended to all agents or the target lowered. No destructive action taken.
 
 **closed-loop-reliability**: 8/8 milestones complete, active and healthy.
+
+## 2026-05-07 22:47 UTC
+
+**System Health**: All crons green. 100% success rate last hour (19 sessions). 4/4 heartbeat coverage.
+
+**Key Metrics**:
+- Handler success rate: 99.78%
+- Real output (24h): 451 items
+- Low-quality sessions: 16.27% (above 10% target — monitor)
+- v2 spec measurement coverage: 13.64% (well below 80% threshold ⚠️)
+
+**Active concerns**:
+1. v2 spec measurement coverage critically low (0.1364 vs 0.8 threshold)
+2. 61 "active" sessions but most are stale/interrupted — cleanup needed
+3. Handler fires/hour at 68 (vs target 15) — high but stable
+
+**Actions taken**: Status check only (artifact gate session).
