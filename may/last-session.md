@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778166254581_7
+- **Session:** s_1778166254631_8
 - **Status:** success
-- **When:** 2026-05-07T15:04:55.480Z
+- **When:** 2026-05-07T15:05:16.867Z
 
 ## What Happened
-Closed the project.iterations-24h metric and resolved the alert. The metric reached 52,089 iterations against a target of 10 — it's long surpassed its goal and the recurring rate-stall alerts were pure noise.
+Resolved stale-active-count alert. Root cause: 3 evaluator-owned metrics hadn't been snapshotted in 38-67 minutes. Notified evaluator agent to snapshot its metrics during heartbeats. Resolved the alert.
 
 ## Completed
-- Resolve project.iterations-24h metric alert by closing the completed metric
+- Investigate and resolve metric.stale-active-count alert
