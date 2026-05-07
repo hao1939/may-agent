@@ -127,7 +127,7 @@ type SystemEvent =
 // manual trigger, another agent. The bus is the single path.
 bus.on("heartbeat", (e) => runAgent(e.agent, buildHeartbeatTask(e.agent), "heartbeat"));
 
-// Metric breach: only P0 (urgent) metrics fork directly. Everything else informs
+// Metric breach: only P0 (urgent) metrics run an agent directly. Everything else informs
 // the owning agent's next heartbeat via prompt context.
 bus.on("metric.breach", (e) => {
   if (e.metric.priority === "P0") runAgent(e.metric.owner, buildBreachTask(e), "metric.breach");
