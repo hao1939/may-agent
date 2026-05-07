@@ -674,8 +674,7 @@ export async function reloadAgents(
 
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../lib/handler-context.js";
 import type { CronEntry } from "../lib/cron-tool.js";
-import { loadAllSessionMetas } from "../lib/persistence.js";
-import { buildRuntimeCtx } from "../lib/runtime-ctx.js";
+import { buildRuntimeCtx, buildSessionHelpers } from "../lib/runtime-ctx.js";
 import { buildAgentSDK } from "../lib/sdk-impl.js";
 
 /**
@@ -704,25 +703,22 @@ export async function loadAgentHandlers(
     if (handlersNeeded.length === 0) continue;
 
     // Build a HandlerContext for this agent
-    const rtx = buildRuntimeCtx({ bus, persistDir, projectRoot, agentsRoot, agentName });
-    const ctx: HandlerContext = {
-      ...rtx,
-      manager,
+    const sessionHelpers = buildSessionHelpers({ bus, persistDir, projectRoot, agentsRoot, agentName });
+    const sdk = buildAgentSDK({
+      bus,
+      persistDir,
+      projectRoot,
+      agentsRoot,
       agentName,
-      getSessionId: () => opts.getSessionId(agentName),
+      manager,
+      callAgent: (agent, task, callOpts) => manager.callAgent(agent, task, callOpts) as any,
+      triggerNow: (name) => cron.triggerNow(name),
+    });
+    const ctx: HandlerContext = {
+      sdk,
+      agentName,
       triggerNow: (entryName: string) => cron.triggerNow(entryName),
-      loadAllSessionMetas: () => loadAllSessionMetas(persistDir),
-      sdk: buildAgentSDK({
-        bus,
-        persistDir,
-        projectRoot,
-        agentsRoot,
-        agentName,
-        manager,
-        callAgent: (agent, task, callOpts) => manager.callAgent(agent, task, callOpts) as any,
-        forkAgent: (agent, task, opts) => manager.runAgent(agent, task, { source: opts?.source }),
-        triggerNow: (name) => cron.triggerNow(name),
-      }),
+      ...sessionHelpers,
     };
 
     // Group entries by handler file (multiple entries can share one handler file)

@@ -54,7 +54,7 @@ export interface WorkflowStep {
 import { insertWorkflowRun, updateWorkflowRun, getWorkflowRun, getWorkflowStepSessions } from "./requests.js";
 import { summarizeForHandoff } from "./handoff.js";
 import { log } from "./log.js";
-import type { RuntimeCtx } from "./handler-context.js";
+import type { RuntimeCtx } from "./runtime-ctx.js";
 
 // ── Tool schema ────────────────────────────────────────────────────────
 

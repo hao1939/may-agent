@@ -1,27 +1,41 @@
 /**
- * RuntimeCtx — concrete implementation of the shared infrastructure surface.
+ * RuntimeCtx — internal infrastructure surface used by workflow-tool and sdk-impl.
  *
- * Build once in the binary, pass to handlers, workflows, and agent tools.
- * See: agents/shared/may-agent-docs/runtime.md
+ * NOT exported to handlers — they use HandlerContext (which has sdk + helpers).
+ * This is the internal plumbing that WorkflowContext spreads from.
  */
 
-import type { RuntimeCtx } from "./handler-context.js";
 import type { EventBus } from "../app/event-bus.js";
-import { getDb, upsertEvaluation as _upsertEvaluation, hasEvaluation as _hasEvaluation, hasLLMEvaluation as _hasLLMEvaluation, getAllEvaluations as _getAllEvaluations } from "./requests.js";
+import type { SqliteDb } from "./db.js";
+import { getDb } from "./requests.js";
 import { log as globalLog } from "./log.js";
-import { readSessionMeta as _readSessionMeta, readSessionMessages as _readSessionMessages, readArchivedSessionMessages as _readArchivedSessionMessages } from "./persistence.js";
+import { readSessionMeta as _readSessionMeta, readSessionMessages as _readSessionMessages } from "./persistence.js";
 import { classifyError as _classifyError } from "./classify-error.js";
 import { getLastDigest as _getLastDigest, upsertDigest as _upsertDigest, classifyDigest as _classifyDigest } from "./session-digest.js";
-import { syncAll as _syncAll } from "./research-db.js";
-import { appendFileSync } from "node:fs";
-import { resolve } from "node:path";
+import type { PersistedSession } from "./persistence.js";
+import type { DigestRow, DigestInput, DigestAction } from "./session-digest.js";
+import type { ErrorClass } from "./classify-error.js";
+
+/**
+ * RuntimeCtx — internal type for workflow/sdk infra.
+ * Provides emit, getDb, log, notify, paths for WorkflowContext construction.
+ */
+export interface RuntimeCtx {
+  emit(event: { type: string; [key: string]: unknown }): void;
+  dispatchEvent(eventType: string, data?: Record<string, unknown>): void;
+  getDb(): SqliteDb;
+  log(msg: string): void;
+  notify(msg: string): void;
+  persistDir: string;
+  projectRoot: string;
+  agentsRoot: string;
+}
 
 export interface RuntimeCtxOptions {
   bus: EventBus;
   persistDir: string;
   projectRoot: string;
   agentsRoot: string;
-  /** Agent name for log/notification attribution. */
   agentName: string;
 }
 
@@ -38,52 +52,19 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
     persistDir: opts.persistDir,
     projectRoot: opts.projectRoot,
     agentsRoot: opts.agentsRoot,
-    classifyError: (error) => _classifyError(error),
-    getLastDigest: (sessionId) => _getLastDigest(opts.persistDir, sessionId),
-    upsertDigest: (input) => _upsertDigest(opts.persistDir, input),
-    classifyDigest: (digest, trigger) => _classifyDigest(digest, trigger),
-    escalate: (agent, reason) => {
-      // Persist to escalations.jsonl (survives restarts, Telegram outages)
-      try {
-        const escalationPath = resolve(opts.persistDir, "escalations.jsonl");
-        const entry = JSON.stringify({ ts: new Date().toISOString(), agent, reason, notified: true });
-        appendFileSync(escalationPath, entry + "\n", "utf-8");
-      } catch { /* best-effort */ }
-      // Push to Telegram via message.created to human
-      opts.bus.emit({ type: "message.created", from: opts.agentName, to: "human", content: `⚠️ *Agent Blocked*\n${agent} — ${reason}` } as any);
-    },
-    readSessionMeta: (sessionId) => _readSessionMeta(opts.persistDir, sessionId),
+  };
+}
 
-    // ── Event inbox (time-window based, immutable events) ────────────
-    getInbox: (inboxOpts) => {
-      const db = getDb(opts.persistDir);
-      const agent = inboxOpts?.agent ?? opts.agentName;
-      const limit = inboxOpts?.limit ?? 20;
-      const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
-      return db.prepare(`
-        SELECT id, event_type, data, urgency, timestamp
-        FROM events
-        WHERE owner = ?
-          AND timestamp > ?
-          AND (ttl_ms IS NULL OR timestamp + ttl_ms > ?)
-        ORDER BY
-          CASE WHEN urgency = 'immediate' THEN 0 ELSE 1 END,
-          timestamp DESC
-        LIMIT ?
-      `).all(agent, twoHoursAgo, Date.now(), limit) as any[];
-    },
-
-    // ── Session messages ────────────────────────────────────────────
-    readSessionMessages: (sessionId) => _readSessionMessages(opts.persistDir, sessionId),
-    readArchivedSessionMessages: (sessionId) => _readArchivedSessionMessages(opts.persistDir, sessionId),
-
-    // ── Evaluation persistence ──────────────────────────────────────
-    upsertEvaluation: (evalOpts) => _upsertEvaluation(opts.persistDir, evalOpts as any),
-    hasEvaluation: (sessionId) => _hasEvaluation(opts.persistDir, sessionId),
-    hasLLMEvaluation: (sessionId) => _hasLLMEvaluation(opts.persistDir, sessionId),
-    getAllEvaluations: () => _getAllEvaluations(opts.persistDir) as any[],
-
-    // ── Research sync ───────────────────────────────────────────────
-    syncResearchArtifacts: (basePath) => _syncAll(getDb(opts.persistDir), basePath ?? `${opts.agentsRoot}/shared/knowledge`),
+/**
+ * Build session lifecycle helpers for HandlerContext.
+ */
+export function buildSessionHelpers(opts: RuntimeCtxOptions) {
+  return {
+    classifyError: (error: string | undefined | null): ErrorClass => _classifyError(error),
+    getLastDigest: (sessionId: string): DigestRow | null => _getLastDigest(opts.persistDir, sessionId),
+    upsertDigest: (input: DigestInput): Promise<DigestRow | null> => _upsertDigest(opts.persistDir, input),
+    classifyDigest: (digest: { outcome: string; still_open: string | null; what_happened: string }, trigger: string): { action: DigestAction; reason: string } => _classifyDigest(digest, trigger),
+    readSessionMeta: (sessionId: string): PersistedSession | null => _readSessionMeta(opts.persistDir, sessionId),
+    readSessionMessages: (sessionId: string): unknown[] => _readSessionMessages(opts.persistDir, sessionId),
   };
 }

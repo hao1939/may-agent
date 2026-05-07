@@ -15,9 +15,6 @@ export interface AgentSDK {
   /** Run an agent on a task and wait for its result. */
   runAgent(agent: string, task: string, opts?: RunOpts): Promise<TaskResult>;
 
-  /** Start an agent in the background. Returns sessionId immediately (non-blocking). */
-  forkAgent(agent: string, task: string, opts?: RunOpts): string;
-
   /** Run a named workflow synchronously. Returns when workflow completes. */
   runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult>;
 
