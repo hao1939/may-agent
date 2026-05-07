@@ -67,3 +67,33 @@ Proposal lives under `agents/arc/workspace/proposals/`. Implementation must be d
 ## Adjudication clock
 
 KE-778 F1 will be checked at 2026-05-08 00:00Z. If F1 holds (≥1 more fabrication occurs), this proposal's priority should be raised to P0-blocker. If F1 falsifies (no more fabrications), retain P0 — one observed fabrication of this type is already sufficient signal.
+
+---
+
+## Amendment 1 (2026-05-07 00:55Z) — extend verifier to outbound P0/P1 messages (KE-779)
+
+KE-779-B: 32 minutes after KE-778 was authored, may session 213 emitted a P1 `message.created` to tech-lead whose stated motivation ("every agent shows '0 sessions observed since redesign'") was demonstrably false against the `sessions` table (12–77 heartbeats per agent in the prior 24h). The premise was laundered from a stale stub table in `agents/may/workspace/focus-tasks.md` whose `?`/`0` placeholder cells were never filled in.
+
+The original verifier scope (`heartbeat-status/*.md` + `last-session.md`) does **not** catch this because the false claim left the agent boundary in a `message.created` event rather than a status file.
+
+**Extension:** in the same handler, also scan `events` rows where `event_type='message.created'` AND `priority IN ('P0','P1')` since last fire. For each, parse the `content` field for assertion patterns:
+
+- `every agent <verb>` / `all agents <verb>` (universal claims)
+- `<N> sessions` / `<N> heartbeats` / `0 (since|observed)` (quantified claims)
+- `is (still|now) <state>` / `has been <verb>` (state assertions)
+
+If matched: emit `event_type='claim.unverified'` with `{message_id, from, to, claim_excerpt}` and append to `fabrication-log.md`. Do **not** auto-block the message; the handler's job is visibility, not censorship. Tech-lead (or whoever the recipient is) reads the alert in their next heartbeat preamble alongside the message itself.
+
+Cost: ~30 LOC additional to the verifier; one extra event-table query per fire; no new schema.
+
+## Amendment 2 (2026-05-07 00:55Z) — `last-measured` tombstone on may's tracker tables (KE-779)
+
+KE-779-B's deeper enabler: `focus-tasks.md` has measurement-shaped cells (`Sessions Observed`, `Avg Turns`, `Quality`) prefilled with placeholders (`0`, `?`) at table-creation time, with no signal that the values were never measured. Read 14 days later, they look like data.
+
+**Convention:** any may workspace table with measurement columns must carry a `last-measured: <ISO ts | never>` row or per-row tombstone. When `never` or older than 7d, may's heartbeat preamble should surface it as "stale tracker — values may be placeholders." Implementation is may-lane (`agents/may/handlers/heartbeat.ts` adds the staleness check); design-doc note belongs in `agents/shared/may-agent-docs/design/` (in arc's lane to draft).
+
+This is a soft fix — the verification loop in Amendment 1 catches the *symptom* (laundering into outbound P1s); the tombstone catches the *source* (treating placeholders as measurements). They stack.
+
+## Updated priority
+
+P0 stands. KE-779-B confirms the failure family is wider than KE-778's heartbeat-status surface — outbound messages and stub trackers are additional vectors. The amendments are scope-extensions, not separate proposals (KE-777: stage-2 deadlock means N+1 proposals do not produce N+1 fixes; consolidation is the right move).
