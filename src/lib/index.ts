@@ -101,8 +101,7 @@ export type {
 } from "./persistence.js";
 
 export type { HandlerContext, HandlerModule } from "./handler-context.js";
-export type { RuntimeCtx } from "./runtime-ctx.js";
-export { buildRuntimeCtx } from "./runtime-ctx.js";
+// RuntimeCtx is internal — imported directly by workflow-tool.ts and sdk-impl.ts
 export { retryWithBackoff } from "./retry-with-backoff.js";
 export type { RetryWithBackoffOptions } from "./retry-with-backoff.js";
 export { loadAgents, reloadAgents, validateAgentConfig } from "../app/agent-loader.js";

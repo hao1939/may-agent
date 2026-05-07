@@ -499,63 +499,10 @@ interface EvaluationRecord {
   agent: string;
   quality: number;
   efficiency: number;
-  productiveCalls: number;
-  wastedCalls: number;
   verdict: string;
   issues: string[];
-  overall: Record<string, unknown> | null;
   usage: Record<string, unknown> | null;
-  failureChains: unknown[];
-  evaluatedByHeuristic: boolean;
-  skippedByJs: boolean;
   createdAt: number;
-}
-
-interface UpsertEvaluationOpts {
-  sessionId: string;
-  agent: string;
-  quality: number;
-  efficiency: number;
-  productiveCalls?: number;
-  wastedCalls?: number;
-  verdict: string;
-  issues?: string[];
-  overall?: Record<string, unknown>;
-  usage?: Record<string, unknown>;
-  failureChains?: unknown[];
-  evaluatedByHeuristic?: boolean;
-  skippedByJs?: boolean;
-  createdAt: number;
-}
-
-/**
- * Insert or replace an evaluation record.
- */
-export function upsertEvaluation(persistDir: string, opts: UpsertEvaluationOpts): void {
-  const db = getDb(persistDir);
-  db.run(
-    `INSERT OR REPLACE INTO evaluations (
-      sessionId, agent, quality, efficiency, productiveCalls, wastedCalls,
-      verdict, issues, overall, usage, failureChains,
-      evaluatedByHeuristic, skippedByJs, createdAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      opts.sessionId,
-      opts.agent,
-      opts.quality,
-      opts.efficiency,
-      opts.productiveCalls ?? 0,
-      opts.wastedCalls ?? 0,
-      opts.verdict,
-      JSON.stringify(opts.issues ?? []),
-      opts.overall ? JSON.stringify(opts.overall) : null,
-      opts.usage ? JSON.stringify(opts.usage) : null,
-      JSON.stringify(opts.failureChains ?? []),
-      opts.evaluatedByHeuristic ? 1 : 0,
-      opts.skippedByJs ? 1 : 0,
-      opts.createdAt,
-    ],
-  );
 }
 
 /**
@@ -568,31 +515,6 @@ export function hasEvaluation(persistDir: string, sessionId: string): boolean {
 }
 
 /**
- * Check if a session has been LLM-evaluated (not just heuristic).
- * Returns false for heuristic-only evaluations, allowing LLM to "upgrade" them.
- */
-export function hasLLMEvaluation(persistDir: string, sessionId: string): boolean {
-  const db = getDb(persistDir);
-  const row = db.prepare(
-    "SELECT 1 FROM evaluations WHERE sessionId = ? AND evaluatedByHeuristic = 0 AND skippedByJs = 0"
-  ).get(sessionId);
-  return row !== null;
-}
-
-/**
- * Get evaluation for a specific session. Returns null if not found.
- */
-export function getEvaluation(persistDir: string, sessionId: string): EvaluationRecord | null {
-  const db = getDb(persistDir);
-  const row = db.prepare("SELECT * FROM evaluations WHERE sessionId = ?").get(sessionId) as Record<
-    string,
-    unknown
-  > | null;
-  if (!row) return null;
-  return deserializeEvalRow(row);
-}
-
-/**
  * Get all evaluations within a time window.
  */
 export function getEvaluationsSince(persistDir: string, sinceMs: number): EvaluationRecord[] {
@@ -602,79 +524,21 @@ export function getEvaluationsSince(persistDir: string, sinceMs: number): Evalua
       string,
       unknown
     >[]
-  ).map(deserializeEvalRow);
-}
-
-/**
- * Get all evaluations (no time filter).
- */
-export function getAllEvaluations(persistDir: string): EvaluationRecord[] {
-  const db = getDb(persistDir);
-  return (db.prepare("SELECT * FROM evaluations ORDER BY createdAt ASC").all() as Record<string, unknown>[]).map(
-    deserializeEvalRow,
-  );
-}
-
-/**
- * Check if an evaluation exists and has real usage data.
- * Returns { exists: boolean; hasUsage: boolean; isRecent: boolean }.
- */
-export function getEvaluationStatus(
-  persistDir: string,
-  sessionId: string,
-): {
-  exists: boolean;
-  hasUsage: boolean;
-} {
-  const db = getDb(persistDir);
-  const row = db.prepare("SELECT usage FROM evaluations WHERE sessionId = ?").get(sessionId) as {
-    usage: string | null;
-  } | null;
-  if (!row) return { exists: false, hasUsage: false };
-  if (!row.usage) return { exists: true, hasUsage: false };
-  try {
-    const u = JSON.parse(row.usage);
-    return { exists: true, hasUsage: (u.totalTokens ?? 0) > 0 || (u.turns ?? 0) > 0 };
-  } catch {
-    return { exists: true, hasUsage: false };
-  }
-}
-
-function deserializeEvalRow(row: Record<string, unknown>): EvaluationRecord {
-  return {
+  ).map((row) => ({
     sessionId: row.sessionId as string,
     agent: row.agent as string,
     quality: row.quality as number,
     efficiency: row.efficiency as number,
-    productiveCalls: row.productiveCalls as number,
-    wastedCalls: row.wastedCalls as number,
     verdict: row.verdict as string,
-    issues: parseJsonArray(row.issues as string | null) as string[],
-    overall: parseJsonObject(row.overall as string | null),
-    usage: parseJsonObject(row.usage as string | null),
-    failureChains: parseJsonArray(row.failureChains as string | null),
-    evaluatedByHeuristic: (row.evaluatedByHeuristic as number) === 1,
-    skippedByJs: (row.skippedByJs as number) === 1,
+    issues: safeParseJson(row.issues as string | null, []) as string[],
+    usage: safeParseJson(row.usage as string | null, null),
     createdAt: row.createdAt as number,
-  };
+  }));
 }
 
-function parseJsonArray(s: string | null): unknown[] {
-  if (!s) return [];
-  try {
-    return JSON.parse(s);
-  } catch {
-    return [];
-  }
-}
-
-function parseJsonObject(s: string | null): Record<string, unknown> | null {
-  if (!s) return null;
-  try {
-    return JSON.parse(s);
-  } catch {
-    return null;
-  }
+function safeParseJson(s: string | null, fallback: any): any {
+  if (!s) return fallback;
+  try { return JSON.parse(s); } catch { return fallback; }
 }
 
 // ── Session DB helpers ─────────────────────────────────────────────────
