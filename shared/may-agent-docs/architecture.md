@@ -548,14 +548,19 @@ Agent "arc" calls message("dev", { intent: "implementation-request", artifact: "
 
 ---
 
-## What We Lose (vs old architecture)
+## What Changed (v1 → v2)
 
-| Lost | Severity | Mitigation |
-|------|----------|------------|
-| **14 tool guards** | **HIGH** | Must be ported as runtime middleware before cutover. |
-| **Production hardening** | **HIGH** | Preserve DB backup, Telegram context, zombie cleanup. |
-| **Session trees / cascading cancel** | Low | Agents independent. Turn budgets suffice. |
-| **Mid-session steering** | Low | Sessions short. Next heartbeat handles it. |
+| Removed | Rationale |
+|---------|-----------|
+| Zombie cleanup | Sessions timeout; no zombies possible |
+| Resume stale sessions | Pi-agent-core handles crash recovery |
+| Call depth tracking | Turn budgets prevent infinite recursion |
+| API gating | Pi-agent-core handles retries natively |
+| Health audits | Metrics cover system health |
+| Tool receipts | Guards via `beforeToolCall` suffice |
+| Infra retry loop | Pi-agent-core retries built-in |
+
+Tool guards, DB backup, Telegram: all preserved in v2.
 
 ---
 
@@ -568,6 +573,6 @@ Items where current implementation differs from this architecture:
 | ~~Heartbeat trigger~~ | ✅ Done | Cron emits `heartbeat` event on bus; handler subscribes |
 | ~~Typed metrics~~ | ✅ Done | Typed gauge/counter/health/derived with per-metric config |
 | ~~Guard mechanism~~ | ✅ Done | Already middleware (BeforeToolCallHook + composeGuards). Per-agent config deferred to runtime migration. |
-| Agent runtime | SubagentManager (2.3k LOC) + `agent-runtime.ts` (v2, opt-in) | Direct Agent usage via `runAgentSession()` for all callers |
+| ~~Agent runtime~~ | ✅ Done | SubagentManager rewritten (530 LOC, uses pi-agent-core Agent directly) |
 
 See `v2-migration-plan.md` and `v2-implementation-notes.md` for migration history.
