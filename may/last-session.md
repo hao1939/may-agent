@@ -3,7 +3,7 @@
 
 - **Session:** s_1778159642609_0
 - **Status:** success
-- **When:** 2026-05-07T13:24:30.873Z
+- **When:** 2026-05-07T13:29:00.379Z
 
 ## What Happened
-Verified May's heartbeat is running normally — handler fired 1.5 min ago, full workflow completed 42 min ago. Cron is enabled at 30-min intervals.
+Diagnosed why May's heartbeat shows "2 hours ago" on dashboard: the shouldSkipHeartbeat() guard in heartbeat-data.ts idle-skips the LLM session when there are no red metrics, alerts, inbox events, or active projects. The handler fires every 30min but returns in ~82ms without spawning a real session. This is intentional cost-saving behavior.
