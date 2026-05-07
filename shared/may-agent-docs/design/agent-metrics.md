@@ -5,7 +5,12 @@
 
 ## What metrics are for
 
-Metrics are **the system's vital signs**. They measure progress toward project goals (project metrics) and overall system health (system metrics). They are how the system *sees itself*.
+Metrics are **the system's vital signs**. They measure progress toward project goals (project metrics), execution quality, and overall system health. They are how the system *sees itself*.
+
+The primary question is not "did we evaluate enough sessions?" The primary
+question is "is the system completing useful work, and when it fails, does the
+right owner act on the failure?" Coverage metrics are kept as liveness/meta
+signals only.
 
 Metrics do not directly drive work. The driving model is:
 
@@ -19,7 +24,7 @@ This is intentional — see `design/heartbeat-as-agency.md`. Forking on every br
 ## Architecture
 
 ```
-System Metrics (14 active in registry; 6 prioritized below)
+System Metrics (registry in metrics-snapshot.ts; prioritized set below)
   → Measured by metrics-snapshot handler every 5 min
   → Threshold = alert. No threshold = watch only.
 
@@ -30,25 +35,31 @@ Project Metrics          — "Is this specific work effective?"
 
 ## System Metrics
 
-The doc table below highlights **6 prioritized metrics** (3 infrastructure + 3 output). The full active set is **14** — see the `metrics` table in DB or `ALL_METRICS` in `agents/may/handlers/metrics-snapshot.ts` for the registry of record. Per KE-722, this doc and the runtime registry must agree on concrete numbers; when in doubt, the registry wins.
+The doc table below highlights the prioritized metrics. See the `metrics` table
+in DB or `ALL_METRICS` in `agents/may/handlers/metrics-snapshot.ts` for the
+registry of record. Per KE-722, this doc and the runtime registry must agree on
+concrete numbers; when in doubt, the registry wins.
 
 ### Infrastructure
 
 | ID | What it answers | Source | Target | Threshold | Alert |
 |----|-----------------|--------|--------|-----------|-------|
 | `handler.success-rate` | Are handlers working? | `handler.completed / (completed + failed)` from events (6h) | 0.95 | 0.80 | below |
-| `handler.heartbeat-coverage` | Is any agent dark? | `COUNT(DISTINCT agent)` from heartbeat events (2h) | 8 | 6 | below |
+| `handler.heartbeat-coverage` | Is any agent dark? | `COUNT(DISTINCT agent)` from heartbeat events (2h) | 4 | 3 | below |
 | `session.error-rate-6h` | Is anything failing? | `error+interrupted / total` from sessions (6h) | 0.10 | 0.30 | above |
+| `evaluator.stale-running-session-count` | Is work hanging? | running/idle non-evaluator sessions older than stale cutoff | 0 | 0 | above |
 
-### Output
+### Quality / Output
 
 | ID | What it answers | Source | Target | Threshold | Alert |
 |----|-----------------|--------|--------|-----------|-------|
+| `session.failed-triage-rate-3h` | Are failures being acted on? | failed/interrupted sessions with `needs_improvement` evaluation (3h) | 1.00 | 0.80 | below |
+| `evaluator.low-quality-rate-24h` | Is evaluated work low quality? | low-quality or inefficient evaluations / all evaluations (24h) | 0.10 | 0.30 | above |
 | `system.real-output-24h` | Is the system producing? | `git log` substantive files changed (24h) | 100 | 30 | below |
 | `project.iterations-24h` | Are projects advancing? | `COUNT(*)` from project.iteration events (24h) | 10 | 0 (watch-only) | below |
-| `project.blocked-over-6h` | Is work stuck? | `COUNT(*)` from projects where blocked/waiting >6h | 0 | 1 | above |
+| `project.blocked-over-6h` | Is work stuck? | `COUNT(*)` from projects where blocked/waiting >6h | 2 | 4 | above |
 
-**Reading the dashboard:** if any of these 6 are red, investigate that layer. **All-green is necessary but not sufficient** — see the structural blind spots below before treating green as "healthy and producing."
+**Reading the dashboard:** if any prioritized metric is red, investigate that layer. **All-green is necessary but not sufficient** — see the structural blind spots below before treating green as "healthy and producing."
 
 ### All-green ≠ healthy: known structural blind spots (KE-726, 2026-05-03)
 
