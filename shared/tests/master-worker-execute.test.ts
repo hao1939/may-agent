@@ -293,6 +293,54 @@ describe("execute", () => {
     expect(ctx.log).toHaveBeenCalledWith(expect.stringContaining("Iteration 1"));
   });
 
+
+  it("recreates worker once after Clean start (fresh) provider failure", async () => {
+    setupProjectFs({ maxIter: "1" });
+    const mockedFs = vi.mocked(fs);
+    let snapCalls = 0;
+    mockedFs.existsSync.mockImplementation((p: any) => {
+      const path = String(p);
+      if (path.includes("outputs")) return true;
+      if (path.includes("project.md")) return true;
+      if (path.includes("journal.md")) return true;
+      return false;
+    });
+    mockedFs.readdirSync.mockImplementation(() => {
+      snapCalls++;
+      if (snapCalls <= 1) return [] as any;
+      return [{ name: "recovered.md", isFile: () => true, isDirectory: () => false }] as any;
+    });
+    mockedFs.statSync.mockReturnValue({ mtimeMs: 2000, size: 500 } as any);
+    mockedFs.readFileSync.mockImplementation((p: any) => {
+      const path = String(p);
+      if (path.includes("recovered.md")) return "recovered output";
+      if (path.includes("project.md")) return `# Project\n**Status**: active\n**Max Iterations**: 1\n**Owner**: test\n\n## Goal\nTest`;
+      if (path.includes("journal.md")) return "# Journal\n";
+      return "";
+    });
+
+    const ctx = createMockCtx("project: agents/shared/projects/test");
+    const firstWorker = {
+      prompt: vi.fn(async () => { throw new Error("Clean start (fresh)"); }),
+      lastText: vi.fn(() => ""),
+      close: vi.fn(),
+    };
+    const freshWorker = createMockSession(["Created recovered.md"]);
+    ctx.createSession = vi.fn(async ({ label }: any) => {
+      if (label === "orchestrator") return createMockSession(["CONTINUE\n\nWrite recovered.md", "BLOCKED\n\nDone"]);
+      return ctx.createSession.mock.calls.filter(([arg]: any[]) => arg.label === "worker").length === 1
+        ? firstWorker
+        : freshWorker;
+    });
+
+    await execute(ctx as any);
+
+    expect(ctx.createSession).toHaveBeenCalledTimes(3);
+    expect(firstWorker.close).toHaveBeenCalled();
+    expect(freshWorker.prompt).toHaveBeenCalled();
+    expect(ctx.log).toHaveBeenCalledWith(expect.stringContaining("Worker session was reaped"));
+  });
+
   it("handles zero output from worker and retries", async () => {
     setupProjectFs({ maxIter: "1" });
     vi.mocked(fs.readdirSync).mockReturnValue([] as any);
