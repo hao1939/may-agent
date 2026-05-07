@@ -30,8 +30,8 @@ export interface PreflightCheck {
 
 export interface CronEntry {
   name: string;
-  intervalMs: number;
-  message: string;
+  intervalMs?: number;
+  message?: string;
   enabled: boolean;
   description?: string;
   /** Agent that owns/runs this job. If no `handler` is set, spawns a dedicated agent instance. */
@@ -164,7 +164,8 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
           const lines = entries.map((e) => {
             const prefix = e.enabled ? "" : "[DISABLED] ";
             const desc = e.description ? ` — ${e.description.slice(0, 50)}` : "";
-            return `- ${prefix}${e.name}: every ${(e.intervalMs / 1000).toFixed(0)}s → "${e.message.slice(0, 100)}"${desc}`;
+            const cadence = e.intervalMs ? `every ${(e.intervalMs / 1000).toFixed(0)}s` : "event-only";
+            return `- ${prefix}${e.name}: ${cadence} → "${(e.message ?? e.handler ?? "").slice(0, 100)}"${desc}`;
           });
           lines.push("", status);
           return textResult(lines.join("\n"));
@@ -241,8 +242,13 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
           if (enabledEntries.length === 0) {
             nextToFire = "Next to fire: none (all jobs disabled)";
           } else {
-            const shortest = enabledEntries.reduce((a, b) => (a.intervalMs <= b.intervalMs ? a : b));
-            nextToFire = `Next to fire: "${shortest.name}" (every ${(shortest.intervalMs / 1000).toFixed(0)}s)`;
+            const timedEntries = enabledEntries.filter((e) => e.intervalMs);
+            if (timedEntries.length === 0) {
+              nextToFire = "Next to fire: none (event-only jobs wait for events)";
+            } else {
+              const shortest = timedEntries.reduce((a, b) => ((a.intervalMs ?? Infinity) <= (b.intervalMs ?? Infinity) ? a : b));
+              nextToFire = `Next to fire: "${shortest.name}" (every ${((shortest.intervalMs ?? 0) / 1000).toFixed(0)}s)`;
+            }
           }
           return textResult(`${entries.length} job(s) configured\n` + `${nextToFire}\n\n` + status);
         }

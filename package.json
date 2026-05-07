@@ -7,6 +7,8 @@
     "check": "tsc --noEmit",
     "test": "bun vitest --run",
     "bundle": "mkdir -p bundle && bun build --compile src/app/binary-entry.ts --outfile bundle/may-agent",
+    "reload": "bun run bundle && docker exec may-agent supervisorctl stop may-agent && docker cp bundle/may-agent may-agent:/usr/local/bin/may-agent && docker exec may-agent chmod +x /usr/local/bin/may-agent && docker exec may-agent supervisorctl start may-agent",
+    "reload:web": "docker cp src/app/ui/web-static/. may-agent:/usr/local/share/may-agent-web/web-static/",
     "build": "docker build --network=host -t localhost/may-agent:latest -f container/Dockerfile .",
     "up": "docker compose -f ./container/compose.yml up -d",
     "down": "docker compose -f ./container/compose.yml down",

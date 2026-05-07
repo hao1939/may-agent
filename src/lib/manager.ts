@@ -96,6 +96,7 @@ interface ActiveSession {
   originSessionId?: string;
   workflowRunId?: string;
   stepLabel?: string;
+  source?: string;
   timeoutTimer?: ReturnType<typeof setTimeout>;
   toolCalls: number;
   turnCount: number;
@@ -134,9 +135,10 @@ function extractFinishParams(messages: any[]): {
     const msg = messages[i];
     if (msg.role === "assistant" && Array.isArray(msg.content)) {
       for (const block of msg.content) {
-        if (block?.type === "toolCall" && block.name === "finish" && block.args) {
+        const rawArgs = block?.arguments ?? block?.args;
+        if (block?.type === "toolCall" && block.name === "finish" && rawArgs) {
           try {
-            const args = typeof block.args === "string" ? JSON.parse(block.args) : block.args;
+            const args = typeof rawArgs === "string" ? JSON.parse(rawArgs) : rawArgs;
             return {
               status: args.status,
               summary: args.summary,
@@ -270,6 +272,7 @@ export class SubagentManager {
       originSessionId: opts?.originSessionId,
       workflowRunId: opts?.workflowRunId,
       stepLabel: opts?.stepLabel,
+      source: opts?.source,
       toolCalls: 0, turnCount: 0,
       requestId: opts?.requestId,
       projectId: opts?.projectId,
@@ -339,7 +342,7 @@ export class SubagentManager {
   /** Send a message to a session (replaces steer/input). */
   send(sessionId: string, text: string): void {
     const session = this._sessions.get(sessionId);
-    if (!session) return;
+    if (!session) throw new Error(`Session "${sessionId}" not found`);
     const msg = { role: "user" as const, content: [{ type: "text" as const, text }] };
     if (session.status === "running") {
       session.agent.steer(msg as any);
@@ -1063,6 +1066,13 @@ export class SubagentManager {
         type: "session.end", sessionId, agent: agentName,
         outcome: status, summary: lastText, durationMs,
         status, task, finishParams: finishParams as any,
+        parentSessionId: session.parentSessionId,
+        workflowRunId: session.workflowRunId,
+        projectId: session.projectId,
+        source: session.source,
+        kind: session.kind,
+        requestId: session.requestId,
+        stepLabel: session.stepLabel,
       } as any);
     }
 
@@ -1092,7 +1102,12 @@ export class SubagentManager {
       trigger: session.kind ?? "runtime",
       firedAt: session.startedAt,
       parentSessionId: session.parentSessionId,
+      workflowRunId: session.workflowRunId,
+      projectId: session.projectId,
+      source: session.source,
       kind: session.kind,
+      requestId: session.requestId,
+      stepLabel: session.stepLabel,
     } as any);
 
     agent.subscribe((event) => {
@@ -1108,6 +1123,17 @@ export class SubagentManager {
           const blocks = (event as any).result?.content ?? [];
           const text = blocks.find((b: any) => b?.type === "text" && !b.text?.startsWith("<tool_output"))?.text ?? "";
           bus.emit({ type: "tool_result", sessionId, agent: agentName, tool: (event as any).toolName, preview: text.slice(0, 200), isError: !!(event as any).isError });
+          break;
+        }
+        case "message_end": {
+          const message = (event as any).message;
+          if (message?.role !== "assistant" || !Array.isArray(message.content)) break;
+          const text = message.content
+            .filter((block: any) => block?.type === "text" && typeof block.text === "string" && block.text.trim())
+            .map((block: any) => block.text)
+            .join("\n")
+            .trim();
+          if (text) bus.emit({ type: "text", sessionId, agent: agentName, text });
           break;
         }
         case "turn_end":

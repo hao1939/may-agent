@@ -3,14 +3,14 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { getModel } from "@mariozechner/pi-ai";
 import { SubagentManager } from "../src/lib/manager.js";
 import { ChatSession } from "../src/app/chat-session.js";
 import { EventBus } from "../src/app/event-bus.js";
-import { readSessionMeta, writeSessionMeta, ensureSessionDir } from "../src/lib/persistence.js";
+import { appendSessionMessage, readSessionMeta, writeSessionMeta, ensureSessionDir } from "../src/lib/persistence.js";
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 
 // ── Helpers ─────────────────────────────────────────────────────────────
@@ -107,18 +107,27 @@ describe("ChatSession", () => {
     expect(status[0].autoClose).toBe("never");
   });
 
-  it("reuses the same session for subsequent messages", async () => {
+  it("resumes the same session id with prior transcript context after completion", async () => {
+    const runOpts: any[] = [];
+    const originalRun = manager.run.bind(manager);
+    (manager as any).run = (agentName: string, task: string, opts?: any) => {
+      runOpts.push(opts ?? {});
+      return originalRun(agentName, task, opts);
+    };
+
     const session = new ChatSession({ manager, bus, agentName: "may", persistDir });
     session.handleInput("first message");
 
     const firstId = session.getSessionId();
     expect(firstId).toBeTruthy();
 
-    // Wait for session to go idle
+    // Wait for first turn to complete.
     await new Promise((r) => setTimeout(r, 500));
 
     session.handleInput("second message");
     expect(session.getSessionId()).toBe(firstId);
+    expect(runOpts[1]?.resumeMessages?.length).toBeGreaterThan(0);
+    expect(runOpts[1]?.sessionId).toBe(firstId);
   });
 
   it("ignores empty input", () => {
@@ -375,6 +384,43 @@ describe("Session kind in resumeStaleSessions", () => {
     }
     await new Promise((r) => setTimeout(r, 200));
   }, 15_000);
+
+  it("resumeStaleSessions resumes stale chat sessions with the same session id", () => {
+    const chatSid = "s_restart_chat";
+    ensureSessionDir(persistDir, chatSid);
+    writeSessionMeta(persistDir, chatSid, {
+      agent: "may",
+      task: "continue this Telegram reply",
+      status: "running",
+      startedAt: Date.now() - 10_000,
+      kind: "chat",
+      autoClose: "never",
+      source: "telegram",
+    });
+    appendSessionMessage(persistDir, chatSid, {
+      role: "user",
+      content: [{ type: "text", text: "continue this Telegram reply" }],
+      timestamp: Date.now() - 10_000,
+    } as any);
+    writeFileSync(join(persistDir, "sessions", chatSid, "[STARTED]"), new Date().toISOString(), "utf-8");
+
+    const manager2 = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    manager2.register({
+      name: "may",
+      description: "Test agent",
+      domain: "testing",
+      model: mockModel(),
+      tools: [echoTool()],
+    });
+
+    const { resumed, interrupted } = manager2.resumeStaleSessions({ kinds: ["chat"] });
+
+    expect(resumed.some((s) => s.sessionId === chatSid && s.kind === "chat")).toBe(true);
+    expect(interrupted.some((s) => s.sessionId === chatSid)).toBe(false);
+    expect(manager2.hasActiveSession(chatSid)).toBe(true);
+
+    manager2.cancel(chatSid);
+  });
 
   it("status() includes kind field", () => {
     manager.run("may", "chat task", { kind: "chat", autoClose: "never" });

@@ -32,6 +32,25 @@
   .stat .label { font-size: 11px; color: var(--fg2); text-transform: uppercase; letter-spacing: 0.5px; }
   .stat .value { font-size: 22px; font-weight: 600; margin-top: 2px; }
 
+  /* Liveness */
+  .liveness { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+  .liveness h2 { font-size: 14px; margin-bottom: 12px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .liveness .subtle { color: var(--fg2); font-size: 12px; font-weight: 400; }
+  .liveness-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr); gap: 16px; }
+  .liveness-section h3 { font-size: 11px; color: var(--fg2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .heartbeat-row { display: grid; grid-template-columns: 84px minmax(0, 1fr) 90px; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .heartbeat-agent { color: var(--fg2); font-size: 12px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .heartbeat-track { height: 18px; background: var(--bg); border-radius: 4px; position: relative; overflow: hidden; }
+  .heartbeat-dot { position: absolute; top: 3px; width: 5px; height: 12px; border-radius: 2px; background: var(--green); opacity: 0.9; cursor: pointer; }
+  .heartbeat-dot.error { background: var(--red); }
+  .heartbeat-dot.running { background: var(--accent); }
+  .heartbeat-last { color: var(--fg2); font-size: 11px; white-space: nowrap; }
+  .liveness-list { display: flex; flex-direction: column; gap: 8px; }
+  .liveness-item { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 12px; }
+  .liveness-item strong { color: var(--fg); }
+  .liveness-item .meta { color: var(--fg2); margin-bottom: 2px; }
+  .liveness-alert { border-left: 3px solid var(--yellow); }
+
   /* Filters */
   .filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
   .filters select, .filters input { background: var(--bg2); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 13px; }
@@ -275,9 +294,9 @@
 <div class="main">
   <!-- Dashboard -->
   <div id="dashboard">
-    <div id="digest-panel" style="margin-bottom:20px"></div>
     <div id="health-summary" class="health-summary"></div>
     <div id="health-graphs" style="margin:16px 0;display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:12px"></div>
+    <div id="liveness-panel" class="liveness"></div>
     <div id="agent-grid" class="agent-grid"></div>
     <div id="agent-deep-dive" class="agent-deep-dive" style="display:none"></div>
     <div id="activity-timeline" class="timeline-section" style="display:none">
@@ -509,6 +528,110 @@ async function loadHealthGraphs() {
     }
   }
   container.innerHTML = html;
+}
+
+// ── Liveness View ────────────────────────────────────────────────────
+
+let livenessRefreshTimer = null;
+
+function formatAgo(ts) {
+  if (!ts) return 'never';
+  const ms = Date.now() - ts;
+  if (ms < 60000) return 'just now';
+  if (ms < 3600000) return Math.round(ms / 60000) + 'm ago';
+  if (ms < 86400000) return Math.round(ms / 3600000) + 'h ago';
+  return Math.round(ms / 86400000) + 'd ago';
+}
+
+function scheduleLivenessRefresh() {
+  if (livenessRefreshTimer) clearTimeout(livenessRefreshTimer);
+  livenessRefreshTimer = setTimeout(loadLiveness, 500);
+}
+
+async function loadLiveness() {
+  const panel = document.getElementById('liveness-panel');
+  if (!panel) return;
+  try {
+    const res = await fetch('/api/liveness');
+    const data = await res.json();
+    const summary = data.summary || {};
+    const agents = data.agents || [];
+    const since = Date.now() - 4 * 60 * 60 * 1000;
+    const span = Date.now() - since;
+    const alerts = data.alerts || [];
+    const decisions = data.recentDecisions || [];
+    const messages = data.messages || [];
+
+    let html = `<h2>
+      <span>System liveness</span>
+      <span class="subtle">${summary.heartbeatAgents4h || 0}/${summary.agentsConfigured || 0} agents heartbeated in 4h · ${summary.activeSessions || 0} active · ${summary.openAlerts || 0} open alerts</span>
+    </h2>`;
+
+    html += `<div class="liveness-grid">`;
+    html += `<div class="liveness-section"><h3>Heartbeat timeline, last 4h</h3>`;
+    if (!agents.length) {
+      html += `<div class="liveness-item">No configured agents found.</div>`;
+    } else {
+      for (const agent of agents) {
+        const sessions = agent.sessions || [];
+        html += `<div class="heartbeat-row">
+          <div class="heartbeat-agent" title="${esc(agent.name)}">${esc(agent.name)}</div>
+          <div class="heartbeat-track">`;
+        for (const s of sessions) {
+          const left = Math.max(0, Math.min(99, ((s.startedAt - since) / span) * 100));
+          const cls = s.status === 'error' ? 'error' : s.status === 'running' ? 'running' : '';
+          html += `<span class="heartbeat-dot ${cls}" style="left:${left}%" title="${esc(agent.name)} ${esc(s.status || '')} ${formatAgo(s.startedAt)}" onclick="loadSessionDetail('${esc(s.sessionId)}')"></span>`;
+        }
+        html += `</div><div class="heartbeat-last">${formatAgo(agent.lastHeartbeat)}</div></div>`;
+      }
+    }
+    html += `</div>`;
+
+    html += `<div class="liveness-section"><h3>Recent heartbeat outcomes</h3><div class="liveness-list">`;
+    if (decisions.length === 0) {
+      html += `<div class="liveness-item">No heartbeat sessions in the last 4 hours.</div>`;
+    } else {
+      for (const item of decisions.slice(0, 5)) {
+        html += `<div class="liveness-item" onclick="loadSessionDetail('${esc(item.sessionId)}')" style="cursor:pointer">
+          <div class="meta">${formatAgo(item.timestamp)} · <strong>${esc(item.agent)}</strong> · ${esc(item.status || '')}</div>
+          <div>${esc(item.text || '(no outcome yet)')}</div>
+        </div>`;
+      }
+    }
+    html += `</div></div>`;
+    html += `</div>`;
+
+    html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:16px">`;
+    html += `<div class="liveness-section"><h3>Open alerts</h3><div class="liveness-list">`;
+    if (alerts.length === 0) {
+      html += `<div class="liveness-item">No open metric alerts.</div>`;
+    } else {
+      for (const alert of alerts.slice(0, 4)) {
+        html += `<div class="liveness-item liveness-alert">
+          <div class="meta">${formatAgo(alert.createdAt)} · <strong>${esc(alert.metricId)}</strong> · ${esc(alert.priority || 'P2')}</div>
+          <div>${esc(alert.message || '')}</div>
+        </div>`;
+      }
+    }
+    html += `</div></div>`;
+
+    html += `<div class="liveness-section"><h3>Recent messages</h3><div class="liveness-list">`;
+    if (messages.length === 0) {
+      html += `<div class="liveness-item">No messages in the last hour.</div>`;
+    } else {
+      for (const msg of messages.slice(0, 4)) {
+        html += `<div class="liveness-item">
+          <div class="meta">${formatAgo(msg.timestamp)} · <strong>${esc(String(msg.from || 'unknown'))}</strong> -> ${esc(String(msg.to || 'unknown'))}${msg.priority ? ' · ' + esc(String(msg.priority)) : ''}</div>
+          <div>${esc(String(msg.content || ''))}</div>
+        </div>`;
+      }
+    }
+    html += `</div></div></div>`;
+
+    panel.innerHTML = html;
+  } catch (e) {
+    panel.innerHTML = `<h2>System liveness</h2><div class="liveness-item">Failed to load liveness: ${esc(e.message || String(e))}</div>`;
+  }
 }
 
 // ── Agent Status Grid ─────────────────────────────────────────────────
@@ -1087,7 +1210,6 @@ function switchToChat(message) {
   document.getElementById('dashboard').classList.add('hidden');
   document.getElementById('chat').classList.remove('hidden');
   document.getElementById('benchmarks').classList.add('hidden');
-  document.getElementById('requests').classList.add('hidden');
   initChat();
 
   // Pre-fill the input with the context message
@@ -1378,11 +1500,12 @@ function connectWs() {
   ws.onmessage = (e) => {
     try {
       const event = JSON.parse(e.data);
+      const eventType = typeof event.type === 'string' ? event.type.replace(/\./g, '_') : event.type;
 
       // The socket server filters events via subscribe — we receive only
       // events from our session tree + notifications. No client-side filtering needed.
 
-      switch (event.type) {
+      switch (eventType) {
         case 'text':
           if (!currentAssistant) {
             currentAssistant = document.createElement('div');
@@ -1434,6 +1557,7 @@ function connectWs() {
             renderSessionPicker();
           }
           addFeedItem(event.agent, 'started session: ' + (event.task || '').slice(0, 80), 'start');
+          scheduleLivenessRefresh();
           break;
         }
         case 'session_end': {
@@ -1448,8 +1572,25 @@ function connectWs() {
           activeSessions = activeSessions.filter(s => s.sessionId !== event.sessionId);
           renderSessionPicker();
           addFeedItem(event.agent, 'finished (' + (event.status || '?') + (event.duration ? ', ' + event.duration : '') + ')', event.status === 'error' ? 'end-error' : 'end-good');
+          scheduleLivenessRefresh();
           break;
         }
+        case 'message_created':
+          addFeedItem(event.from || event.source || 'message', (event.content || event.message || '').slice(0, 120), 'notification');
+          scheduleLivenessRefresh();
+          break;
+        case 'metric_breach':
+          addFeedItem(event.owner || 'metric', (event.metricId || 'metric') + ' breached', 'notification');
+          scheduleLivenessRefresh();
+          break;
+        case 'metric_recovered':
+          addFeedItem('metric', (event.metricId || 'metric') + ' recovered', 'end-good');
+          scheduleLivenessRefresh();
+          break;
+        case 'handler_failed':
+          addFeedItem(event.agent || event.handler || 'handler', (event.error || 'handler failed').slice(0, 120), 'end-error');
+          scheduleLivenessRefresh();
+          break;
         case 'notification': {
           const div = document.createElement('div');
           div.className = 'msg';
@@ -1833,9 +1974,9 @@ async function loadDigest(date) {
 
 // ── Init ──────────────────────────────────────────────────────────────
 
-loadDigest();
 loadHealth();
 loadHealthGraphs();
+loadLiveness();
 loadAgentGrid();
 loadTimeline();
 loadStats();

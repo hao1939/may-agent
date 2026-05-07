@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { validateAgentConfig, type AgentConfig } from "../src/app/agent-loader.js";
-import { resolve } from "node:path";
+import { loadAgents, validateAgentConfig, type AgentConfig } from "../src/app/agent-loader.js";
+import { findFleetToolPresetIssues, findUnhandledToolPresets, VALID_TOOL_PRESETS } from "../src/lib/tool-preset-registry.js";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 
 const AGENTS_ROOT = resolve(import.meta.dirname, "..", "agents");
 
@@ -69,61 +72,69 @@ describe("validateAgentConfig", () => {
 
     for (const entry of entries) {
       if (!entry.isDirectory() || entry.name === "shared") continue;
-      if (entry.name.startsWith("_")) continue; // Skip archetype directories
+      if (entry.name.startsWith("_")) continue; // Skip legacy/private directories
       const configPath = resolve(AGENTS_ROOT, entry.name, "agent.json");
       if (!existsSync(configPath)) continue;
 
       const raw = readFileSync(configPath, "utf-8");
-      let config = JSON.parse(raw) as AgentConfig;
-
-      // Resolve archetype inheritance before validating
-      if (config.extends) {
-        const archetypePath = resolve(AGENTS_ROOT, config.extends, "agent.json");
-        if (existsSync(archetypePath)) {
-          const parentRaw = readFileSync(archetypePath, "utf-8");
-          const parentConfig = JSON.parse(parentRaw) as AgentConfig;
-          config = {
-            ...parentConfig,
-            ...config,
-            name: config.name,
-            tools: [...new Set([...(parentConfig.tools || []), ...(config.tools || [])])],
-          };
-        }
-      }
+      const config = JSON.parse(raw) as AgentConfig;
 
       const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
       expect(errors, `agent "${config.name}" has validation errors`).toEqual([]);
     }
   });
 
-  it("accepts config with valid extends field", () => {
-    const config: AgentConfig = {
-      name: "acme-coder",
-      description: "Coder for Acme team",
-      domain: "coding",
-      model: "opus",
-      tools: ["coding"],
-      extends: "_archetypes/coder",
-    };
-    // Note: validation of extends requires the archetype to exist on disk,
-    // so for unit tests where _archetypes doesn't exist, we skip the extends check
-    // by not adding the archetype dir. The validator will flag it.
-    const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
-    // Will have extends error since _archetypes/coder doesn't exist on disk
-    const nonExtendsErrors = errors.filter((e) => e.field !== "extends");
-    expect(nonExtendsErrors).toEqual([]);
+  it("has no valid-but-unhandled tool presets", () => {
+    expect(findUnhandledToolPresets()).toEqual([]);
   });
 
-  it("rejects extends pointing to nonexistent archetype", () => {
-    const config: AgentConfig = {
-      name: "bad-agent",
-      description: "test",
-      domain: "test",
-      model: "opus",
-      tools: ["coding"],
-      extends: "_archetypes/nonexistent",
-    };
-    const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
-    expect(errors.some((e) => e.field === "extends" && e.message.includes("not found"))).toBe(true);
+  it("has no fleet tool preset drift or legacy archetype inheritance", () => {
+    expect(findFleetToolPresetIssues(AGENTS_ROOT)).toEqual([]);
+  });
+
+  it("wires every valid preset without falling through to unknown-preset logging", async () => {
+    const root = mkdtempSync(join(tmpdir(), "agent-loader-presets-"));
+    try {
+      const agentsRoot = join(root, "agents");
+      const agentDir = join(agentsRoot, "all-presets");
+      mkdirSync(agentDir, { recursive: true });
+      writeFileSync(
+        join(agentDir, "agent.json"),
+        JSON.stringify({
+          name: "all-presets",
+          description: "All preset smoke test",
+          domain: "test",
+          model: "opus",
+          tools: [...VALID_TOOL_PRESETS],
+        }),
+      );
+
+      const messages: string[] = [];
+      const manager = {
+        hasAgent: () => false,
+        register: () => undefined,
+        createAgentsTool: () => ({
+          name: "agents",
+          label: "Agents",
+          description: "test",
+          parameters: {} as any,
+          execute: async () => ({ content: [{ type: "text" as const, text: "ok" }] }),
+        }),
+      };
+
+      await loadAgents({
+        agentsRoot,
+        projectRoot: root,
+        persistDir: join(root, ".state"),
+        models: { opus: { id: "opus", provider: "test", apiKey: "test" } } as any,
+        manager: manager as any,
+        bus: { emit: (event: { message?: string }) => { if (event.message) messages.push(event.message); } } as any,
+        cronEnabled: false,
+      });
+
+      expect(messages.filter((message) => message.includes("Unknown tool preset"))).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

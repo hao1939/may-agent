@@ -321,11 +321,13 @@ function insertDigest(
     action_reason?: string | null;
     created_at: number;
   },
+  opts?: { onConflict?: "ignore" },
 ): number {
   const db = getDb(persistDir);
+  const insertVerb = opts?.onConflict === "ignore" ? "INSERT OR IGNORE" : "INSERT";
   const result = db
     .prepare(
-      `INSERT INTO session_digests
+      `${insertVerb} INTO session_digests
        (sessionId, agent, trigger, step, task, what_happened, outcome, still_open,
         files_modified, details, action, action_reason, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -774,7 +776,7 @@ export function createStartDigest(
       task,
       outcome: "in_progress",
       created_at: Date.now(),
-    });
+    }, { onConflict: "ignore" });
   } catch (err) {
     log("warn", `[digest] Failed to create start digest for ${sessionId}: ${err}`);
   }
@@ -858,5 +860,4 @@ export function createCheckpointDigest(
     log("warn", `[digest] Failed to create checkpoint digest for ${sessionId}: ${err}`);
   }
 }
-
 

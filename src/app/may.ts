@@ -359,10 +359,11 @@ bus.subscribe((event) => {
   }
 
   // Translate → session.completed (for eval handler)
-  if (info.parentSessionId && info.agent !== "evaluator") {
+  if (info.agent !== "evaluator" && info.agent !== "judge") {
     bus.emit({ type: "session.completed",
       sessionId: info.sessionId, agent: info.agent,
       parentSessionId: info.parentSessionId, outcome: info.outcome,
+      status: info.status, source: info.source, kind: info.kind,
     } as any);
   }
 });
@@ -425,7 +426,7 @@ let activeRL: ReturnType<typeof createInterface> | null = null;
 /** Track whether Ctrl+C cancel has been issued (second Ctrl+C force-quits). */
 let cancelledOnce = false;
 
-function gracefulShutdown() {
+function gracefulShutdown(opts: { preserveSessions?: boolean } = {}) {
   if (shuttingDown) {
     process.kill(process.pid, "SIGKILL");
     return;
@@ -444,11 +445,15 @@ function gracefulShutdown() {
     activeRL = null;
   }
 
-  // Cancel all running sessions
-  chatSession?.cancelAll();
-  for (const s of manager.status()) {
-    if (s.status === "running") {
-      manager.cancel(s.sessionId);
+  if (opts.preserveSessions) {
+    bus.emit({ type: "info", message: "[shutdown] Preserving running sessions for restart/resume" });
+  } else {
+    // Explicit close/cancel semantics: mark sessions interrupted.
+    chatSession?.cancelAll();
+    for (const s of manager.status()) {
+      if (s.status === "running") {
+        manager.cancel(s.sessionId);
+      }
     }
   }
 
@@ -489,7 +494,8 @@ process.on("SIGINT", () => {
 });
 process.on("SIGTERM", () => {
   bus.emit({ type: "info", message: "[signal] SIGTERM received" });
-  gracefulShutdown();
+  // Supervisor/docker restarts should leave running sessions resumable.
+  gracefulShutdown({ preserveSessions: true });
 });
 process.on("SIGHUP", () => {
   bus.emit({ type: "info", message: "[signal] SIGHUP received (ignoring)" });

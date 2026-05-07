@@ -39,6 +39,38 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return getDb(STATE_DIR);
   }
 
+  function listConfiguredAgents(): string[] {
+    try {
+      return readdirSync(AGENTS_ROOT, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory() && !entry.name.startsWith(".") && !entry.name.startsWith("_") && entry.name !== "shared" && entry.name !== "gym")
+        .map((entry) => {
+          const configPath = join(AGENTS_ROOT, entry.name, "agent.json");
+          if (!existsSync(configPath)) return null;
+          try {
+            const config = JSON.parse(readFileSync(configPath, "utf-8")) as { name?: string; disabled?: boolean; heartbeat?: boolean };
+            if (config.disabled || config.heartbeat === false) return null;
+            return config.name ?? entry.name;
+          } catch {
+            return entry.name;
+          }
+        })
+        .filter((name): name is string => Boolean(name))
+        .sort();
+    } catch {
+      return [];
+    }
+  }
+
+  function parseEventData(data: unknown): Record<string, unknown> {
+    if (!data || typeof data !== "string") return {};
+    try {
+      const parsed = JSON.parse(data);
+      return parsed && typeof parsed === "object" ? parsed as Record<string, unknown> : {};
+    } catch {
+      return {};
+    }
+  }
+
   function findSocketPath(): string | null {
     const instancesDir = join(STATE_DIR, "instances");
     if (!existsSync(instancesDir)) return null;
@@ -67,6 +99,105 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   function handleRequests(_url: URL): Response {
     return json({ rows: [], total: 0 }); // requests table removed
+  }
+
+  function handleLiveness(): Response {
+    const db = _db();
+    const now = Date.now();
+    const fourHours = now - 4 * 60 * 60 * 1000;
+    const oneHour = now - 60 * 60 * 1000;
+    const agents = listConfiguredAgents();
+
+    const heartbeatRows = db.prepare(
+      `SELECT sessionId, agent, task, status, kind, source, startedAt, endedAt, outcome
+       FROM sessions
+       WHERE startedAt > ?
+         AND (
+           source LIKE 'workflow:heartbeat%'
+           OR source = 'heartbeat'
+           OR task LIKE '[heartbeat]%'
+         )
+       ORDER BY startedAt ASC`
+    ).all(fourHours) as any[];
+
+    const byAgent = new Map<string, any[]>();
+    for (const agent of agents) byAgent.set(agent, []);
+    for (const row of heartbeatRows) {
+      if (!byAgent.has(row.agent)) byAgent.set(row.agent, []);
+      byAgent.get(row.agent)!.push(row);
+    }
+
+    const agentRows = [...byAgent.entries()].map(([name, sessions]) => {
+      const last = sessions[sessions.length - 1] ?? null;
+      return {
+        name,
+        heartbeatCount: sessions.length,
+        lastHeartbeat: last?.startedAt ?? null,
+        lastStatus: last?.status ?? null,
+        sessions,
+      };
+    }).sort((a, b) => (b.lastHeartbeat ?? 0) - (a.lastHeartbeat ?? 0));
+
+    const activeSessions = (db.prepare("SELECT COUNT(*) as c FROM sessions WHERE status IN ('running', 'idle')").get() as any)?.c ?? 0;
+    const openAlerts = db.prepare(
+      `SELECT ma.metric_id as metricId, ma.message, ma.created_at as createdAt,
+              COALESCE(NULLIF(trim(m.owner), ''), NULLIF(trim(p.owner), ''), 'may') as owner,
+              m.project, m.priority, m.current, m.threshold, m.target
+       FROM metric_alerts ma
+       LEFT JOIN metrics m ON m.id = ma.metric_id
+       LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
+         AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
+       WHERE ma.resolved_at IS NULL
+       ORDER BY ma.created_at DESC
+       LIMIT 20`
+    ).all() as any[];
+
+    const messages = (db.prepare(
+      `SELECT event_type, source, owner, data, timestamp
+       FROM events
+       WHERE event_type = 'message.created' AND timestamp > ?
+       ORDER BY timestamp DESC
+       LIMIT 20`
+    ).all(oneHour) as any[]).map((row) => {
+      const data = parseEventData(row.data);
+      return {
+        timestamp: row.timestamp,
+        from: data.from ?? row.source ?? "unknown",
+        to: data.to ?? row.owner ?? "unknown",
+        priority: data.priority ?? null,
+        intent: data.intent ?? null,
+        content: data.content ?? "",
+      };
+    });
+
+    const recentDecisions = [...heartbeatRows]
+      .sort((a, b) => b.startedAt - a.startedAt)
+      .slice(0, 8)
+      .map((row) => ({
+        sessionId: row.sessionId,
+        agent: row.agent,
+        timestamp: row.startedAt,
+        status: row.status,
+        text: (row.outcome || row.task || "").replace(/^\[heartbeat\]\s*/i, "").slice(0, 220),
+      }));
+
+    const staleAgents = agentRows.filter((agent) => !agent.lastHeartbeat).map((agent) => agent.name);
+
+    return json({
+      summary: {
+        agentsConfigured: agents.length,
+        heartbeatAgents4h: agentRows.filter((agent) => agent.lastHeartbeat).length,
+        heartbeats4h: heartbeatRows.length,
+        activeSessions,
+        openAlerts: openAlerts.length,
+        staleAgents: staleAgents.length,
+      },
+      agents: agentRows,
+      heartbeats: heartbeatRows,
+      recentDecisions,
+      messages,
+      alerts: openAlerts,
+    });
   }
 
   function handleSession(sessionId: string): Response {
@@ -521,10 +652,16 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function handleMetrics(_url: URL): Response {
     const db = _db();
     const metrics = db.prepare(`
-      SELECT m.id, m.name, m.type, m.owner, m.current, m.target, m.threshold,
+      SELECT m.id, m.name, m.type,
+             COALESCE(NULLIF(trim(m.owner), ''), NULLIF(trim(p.owner), ''), 'may') as owner,
+             m.owner as explicitOwner, m.project, m.current, m.target, m.threshold,
              m.unit, m.priority, m.status, m.speed, m.alert_op,
              m.source, m.updated_at
-      FROM metrics m WHERE m.status = 'active' ORDER BY m.owner, m.priority, m.name
+      FROM metrics m
+      LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
+        AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
+      WHERE m.status = 'active'
+      ORDER BY owner, m.priority, m.name
     `).all() as any[];
 
     const snapshots = db.prepare(`
@@ -897,6 +1034,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         return new Response("WebSocket upgrade failed", { status: 400 });
       }
       if (url.pathname === "/api/requests") return handleRequests(url);
+      if (url.pathname === "/api/liveness") return handleLiveness();
       if (url.pathname === "/api/stats") return handleStats();
       if (url.pathname === "/api/agents/activity") return handleAgentActivity();
       if (url.pathname === "/api/agents/timeline") return handleAgentTimeline(url);

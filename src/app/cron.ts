@@ -165,15 +165,16 @@ export class Cron {
         return this.entries;
       }
       this.entries = parsed.filter((entry: CronEntry) => {
-        if (!entry.name || !entry.intervalMs) {
+        const hasEventSubscription = Array.isArray(entry.on) && entry.on.length > 0;
+        if (!entry.name || (!entry.intervalMs && !hasEventSubscription)) {
           this.onError?.(`Invalid cron entry: ${JSON.stringify(entry)}`);
           return false;
         }
-        if (!entry.message && !entry.agent) {
-          this.onError?.(`Cron entry "${entry.name}" needs message or agent`);
+        if (!entry.handler && !entry.message && !entry.agent) {
+          this.onError?.(`Cron entry "${entry.name}" needs handler, message, or agent`);
           return false;
         }
-        if (entry.intervalMs < 10_000) {
+        if (entry.intervalMs != null && entry.intervalMs < 10_000) {
           this.onError?.(`Cron job "${entry.name}" intervalMs too low (${entry.intervalMs}ms < 10s minimum)`);
           return false;
         }
@@ -201,7 +202,7 @@ export class Cron {
   private buildEventSubscriptions(): void {
     this.eventSubscriptions.clear();
     for (const entry of this.entries) {
-      if (!entry.enabled || !entry.on?.length) continue;
+      if (entry.enabled === false || !entry.on?.length) continue;
       for (const eventType of entry.on) {
         let set = this.eventSubscriptions.get(eventType);
         if (!set) { set = new Set(); this.eventSubscriptions.set(eventType, set); }
@@ -210,12 +211,16 @@ export class Cron {
     }
   }
 
-  /** Dispatch a system event — triggers all handlers subscribed to this event type AND emits on bus. */
+  /** Dispatch a new system event — emits it on the bus, then triggers subscribed handlers. */
   dispatchEvent(eventType: string, data?: Record<string, unknown>): number {
-    // Emit on EventBus for system-wide observability (metric.breach, etc.)
     if (this.emitEvent) {
       this.emitEvent({ type: eventType, ...(data || {}) } as any);
     }
+    return this.triggerSubscribers(eventType, data);
+  }
+
+  /** Trigger handlers subscribed to an event that is already on the bus. */
+  private triggerSubscribers(eventType: string, data?: Record<string, unknown>): number {
     const subscribers = this.eventSubscriptions.get(eventType);
     if (!subscribers?.size) return 0;
     let triggered = 0;
@@ -248,7 +253,7 @@ export class Cron {
         return;
       }
       if (!event.type.includes('.')) return;
-      this.dispatchEvent(event.type, event as any);
+      this.triggerSubscribers(event.type, event as any);
     });
   }
 
@@ -302,6 +307,7 @@ export class Cron {
           old.message !== entry.message ||
           old.agent !== entry.agent ||
           old.handler !== entry.handler ||
+          JSON.stringify(old.on ?? []) !== JSON.stringify(entry.on ?? []) ||
           (old.enabled === false) !== (entry.enabled === false) ||
           JSON.stringify(old.handlerConfig ?? {}) !== JSON.stringify(entry.handlerConfig ?? {});
 
@@ -353,7 +359,7 @@ export class Cron {
           }
 
           this.onError?.(
-            `Reloaded "${entry.name}": intervalMs=${entry.intervalMs}${old ? ` (was ${old.intervalMs})` : " (new)"}`,
+            `Reloaded "${entry.name}": intervalMs=${entry.intervalMs ?? "event-only"}${old ? ` (was ${old.intervalMs ?? "event-only"})` : " (new)"}`,
           );
         }
         // Unchanged entries keep their existing timer — no reset
@@ -379,15 +385,20 @@ export class Cron {
     return [...this.entries];
   }
 
-  /** Trigger a cron entry immediately. Always fires (no overlap check).
-   *  Returns false only if entry not found or debounced. */
+  /** Trigger a cron entry immediately. Force bypasses debounce, but never overlaps a running entry.
+   *  Returns false if entry not found, debounced, or already running. */
   triggerNow(entryName: string, opts?: { force?: boolean; triggerEvent?: TriggerEvent }): boolean {
     const entry = this.entries.find((e) => e.name === entryName);
     if (!entry) return false;
 
+    if (this.isRunning(entryName)) {
+      this.onError?.(`Cron "${entryName}" trigger skipped — still running`);
+      return false;
+    }
+
     // Debounce rapid re-triggers (unless forced)
     if (!opts?.force) {
-      const cooldownMs = Math.max(entry.intervalMs * 0.75, this.defaultCooldownMs);
+      const cooldownMs = Math.max((entry.intervalMs ?? this.defaultCooldownMs) * 0.75, this.defaultCooldownMs);
       try {
         const lastFire = this.getLastFireTime(entryName);
         if (lastFire && Date.now() - lastFire < cooldownMs) return false;
@@ -449,6 +460,7 @@ export class Cron {
   private startEntry(entry: CronEntry): void {
     const mode = this.resolveMode(entry);
     if (!mode) return;
+    if (!entry.intervalMs) return; // event-only subscription; triggerSubscribers fires it.
 
     const fire = () => {
       // Overlap protection: skip if a previous run is still in flight.
@@ -489,6 +501,7 @@ export class Cron {
 
   /** Compute the initial delay for an entry based on when it last ran. */
   private computeResumeDelay(entry: CronEntry, _mode: string): number {
+    const intervalMs = entry.intervalMs ?? this.defaultCooldownMs;
     const lastFire = this.getLastFireTime(entry.name);
     if (lastFire == null) {
       // Never ran — use offsetMs for deterministic staggering.
@@ -498,15 +511,15 @@ export class Cron {
         return offset;
       }
       const MAX_INITIAL_JITTER_MS = 5 * 60 * 1000; // 5 minutes
-      const jitterWindow = Math.min(entry.intervalMs, MAX_INITIAL_JITTER_MS);
+      const jitterWindow = Math.min(intervalMs, MAX_INITIAL_JITTER_MS);
       return Math.floor(Math.random() * jitterWindow);
     }
 
     const elapsed = Date.now() - lastFire;
-    if (elapsed >= entry.intervalMs) {
+    if (elapsed >= intervalMs) {
       return 0; // overdue
     }
-    return entry.intervalMs - elapsed;
+    return intervalMs - elapsed;
   }
 
   // ── Job with JS handler: run in-process ─────────────────────────────

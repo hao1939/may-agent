@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../src/lib/manager.js";
 import { readSessionMeta, writeSessionMeta, ensureSessionDir, appendSessionMessage } from "../src/lib/persistence.js";
+import { EventBus, type AgentEvent } from "../src/app/event-bus.js";
 import type { Model } from "@mariozechner/pi-ai";
 
 function fakeModel(): Model<any> {
@@ -87,6 +88,59 @@ describe("Bug 3: handleCompletion error recovery", () => {
 
     // Session should be cleaned up regardless
     expect(manager.hasActiveSession(sessionId)).toBe(false);
+  });
+});
+
+describe("session.start metadata", () => {
+  let persistDir: string;
+
+  beforeEach(() => {
+    persistDir = mkdtempSync(join(tmpdir(), "may-lifecycle-meta-"));
+  });
+
+  afterEach(() => {
+    if (existsSync(persistDir)) {
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
+
+  it("emits source metadata for audit and dedup", async () => {
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    bus.subscribe((event) => events.push(event));
+    const manager = new SubagentManager({ persistDir, bus, infraRetryMax: 0 });
+    registerAgent(manager);
+
+    const sessionId = manager.run("test-agent", "do something", {
+      source: "metric-alert-reactor:test.metric",
+      kind: "call",
+      requestId: "req-1",
+      parentSessionId: "s_parent",
+    });
+
+    try {
+      await manager.waitFor(sessionId);
+    } catch {
+      // Fake model may fail; this test only needs the start event.
+    }
+
+    const start = events.find((event) => event.type === "session.start" && event.sessionId === sessionId);
+    expect(start).toMatchObject({
+      type: "session.start",
+      source: "metric-alert-reactor:test.metric",
+      kind: "call",
+      requestId: "req-1",
+      parentSessionId: "s_parent",
+    });
+
+    const end = events.find((event) => event.type === "session.end" && event.sessionId === sessionId);
+    expect(end).toMatchObject({
+      type: "session.end",
+      source: "metric-alert-reactor:test.metric",
+      kind: "call",
+      requestId: "req-1",
+      parentSessionId: "s_parent",
+    });
   });
 });
 
