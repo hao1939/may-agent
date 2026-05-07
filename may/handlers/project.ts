@@ -72,11 +72,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       for (const a of db.prepare("SELECT metric_id FROM metric_alerts WHERE resolved_at IS NULL").all() as Array<{ metric_id: string }>)
         breachedMetrics.add(a.metric_id);
     } catch { /* skip */ }
-    // Use manager's in-memory activeSessions as source of truth for running projects.
-    // This is immune to stale DB rows after restart — only truly-live sessions count.
-    try {
-      runningProjects = ctx.manager.getRunningProjectIds();
-    } catch { /* skip */ }
+    // TODO: Populate this from manager-owned live session state when exposed in HandlerContext.
+    // Keep the default as a Set: diagnoseProject calls runningProjects.has(projectId).
+    // A previous placeholder assigned [] here, crashing every project handler tick.
 
     // Diagnose each project
     const actions: Array<{ project: ProjectInfo; action: HealthAction }> = [];
@@ -183,7 +181,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             return { sessionId: "", status: "blocked", lastAssistantText: `Blocked: ${dedupCheck.reason}`, messages: [], duration: "0s", outputDir: "", turnsUsed: 0 };
           }
           recordDispatch(agentName, agentTask);
-          const result = await ctx.manager.callAgent(agentName, agentTask, {
+          const result = await ctx.sdk.runAgent(agentName, agentTask, {
             source: "workflow",
             workflowRunId: runId,
             projectId: `${project.owner}/${project.relPath.split("/").pop()}`,
@@ -212,8 +210,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
               for (const h of history) { fullPrompt += `[${h.role}]: ${h.text}\n\n`; }
               fullPrompt += message;
               history.push({ role: "user", text: message });
-              const result = await ctx.manager.callAgent(project.owner, fullPrompt, {
-                source: `workflow:${label}`, workflowRunId: runId,
+              const result = await ctx.sdk.runAgent(project.owner, fullPrompt, {
+                source: `workflow:${label}`,
                 projectId: `${project.owner}/${project.relPath.split("/").pop()}`,
               });
               lastResponse = result.lastAssistantText || "";
