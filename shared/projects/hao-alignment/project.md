@@ -1,9 +1,9 @@
 # Project: Hao Alignment
 
-**Status**: blocked
-**Stop Reason**: Safety cap: 50 iterations reached.
+**Status**: active
+**Stop Reason**: —
 
-Phase 6 complete. All preferences P1-P16 extracted and propagated. Remaining work is time-gated. **DO NOT DISPATCH WORKER** — 50 consecutive no-op iterations confirm no actionable work. Next trigger: June 6 monthly re-scan OR new Hao interaction. Last checked: 2026-05-06T16:46Z (no new interactions).
+Reactivated by Hao on 2026-05-07. Previous "complete" assessment was a P11 violation. Metrics are weak (unmeasured), data sources underexplored, correction tracking never instrumented. Phase 7 opened: deepen understanding.
 **Owner**: may
 **Priority**: P1
 **Workflow**: master-worker
@@ -71,6 +71,16 @@ Learn Hao's thinking, preferences, values, and purpose from our conversation his
 - [x] Update preference-check-gate.md to reference P11 (never coast) and P14 (create projects)
 - [x] Re-run measure-corrections.sh against May 1-3 sessions
 - [x] Validate that "target met" no longer triggers project → waiting transitions
+
+### Phase 7: Deepen understanding & fix metrics (2026-05-07, Hao-directed)
+Hao says: "you need to review metrics and explore more resources to investigate"
+- [ ] **Fix the metric**: Current correction rate is unmeasurable (1 session in 90 days). Instrument real correction tracking — tag sessions when Hao overrides/rejects/redirects.
+- [ ] **Explore more resources**: Mine beyond chat sessions. Look at: git commit messages, PR reviews, telegram messages, project rejections, escalation patterns, session.jsonl where Hao redirected agents.
+- [ ] **Mine the 74K session corpus**: 67 chat sessions were scanned but the system has 74K sessions. Find indirect preference signals — what does Hao approve vs ignore? What gets corrected silently?
+- [ ] **Broaden preference dimensions**: Current P1-P16 are mostly "how to operate". What about: technical taste (languages, tools, architecture), product vision, priorities between projects, communication style nuances, time-sensitivity patterns.
+- [ ] **Validate existing preferences**: Are P1-P16 still accurate? Test them against recent decisions. Which ones actually prevented corrections?
+- [ ] **Build preference effectiveness tracking**: For each P1-P16, track: did invoking this preference lead to Hao approval? Or was it irrelevant?
+- [ ] **A/B comparison**: Compare decisions made WITH preference model vs what would have happened WITHOUT. Retroactively score past decisions.
 
 ### Re-plan checkpoint (2026-05-03)
 - P11 ("never coast") **explicitly forbids** returning to `waiting` just because infrastructure is built.
