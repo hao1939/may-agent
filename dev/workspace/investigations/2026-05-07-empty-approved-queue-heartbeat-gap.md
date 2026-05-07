@@ -70,3 +70,14 @@ The queue backpressure is still present and has grown:
 - Current runtime metrics remain mostly green (`handler.success-rate=1`, `handler.failed-count=0`, `session.error-rate-6h=0.0233`), so this process failure remains masked by infrastructure health metrics.
 
 This is now independently observed across repeated dev heartbeats. The highest-impact next action is upstream approval/triage (May/human) or registration of `workqueue.approved-unchecked-count`; dev should not bypass the Approved gate by implementing Proposed items directly.
+
+## 2026-05-07 Third Heartbeat Recheck
+
+The gate remains stuck:
+
+- `approved_unchecked=0` from the `## Approved` section.
+- `proposed_unchecked=23` from the `## Proposed` section, including many P0/P1 infrastructure fixes.
+- `workqueue_metrics=0` in the active `metrics` table, so there is still no registered metric for this queue state.
+- Current health metrics still do not force attention to the queue: `handler.success-rate=1`, `handler.failed-count=0`, `session.error-rate-6h=0.023`; `project.active-count=0` is red-ish but measures project activity, not the unapproved implementation backlog.
+
+Conclusion: this has matured from a transient observation into a persistent process-control failure. Dev has no approved implementation work while the Proposed backlog grows, and the runtime still lacks a metric that points May/human triage at the blocked approval gate.
