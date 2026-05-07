@@ -77,6 +77,7 @@ const ALL_METRICS: MetricDef[] = [
   { id: "v2.manager-loc", name: "Manager runtime LOC", owner: "arc", type: "gauge", target: 1000, threshold: 1500, unit: "loc", alert_op: ">", priority: "P2" },
   { id: "v2.runtime-glue-loc", name: "Runtime glue LOC", owner: "arc", type: "gauge", target: 1500, threshold: 2000, unit: "loc", alert_op: ">", priority: "P2" },
   { id: "v2.spec-coverage-rate", name: "v2 spec measurement coverage", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P2" },
+  { id: "capability.session-trace-completeness", name: "Session trace completeness (24h)", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.95, unit: "ratio", alert_op: "<", priority: "P1" },
   { id: "capability.status-reality-mismatch-count", name: "Status/reality mismatches", owner: "may", type: "health", target: 0, threshold: 3, unit: "count", alert_op: ">", priority: "P0",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
 ];
@@ -370,6 +371,30 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const coverage = countSpecClaimCoverage(ctx.projectRoot, activeMetricIds);
       record("v2.spec-coverage-rate", coverage.rate, coverage.total);
     } catch (e) { ctx.log(`[metrics-snapshot] Error measuring spec coverage: ${e}`); }
+
+    try {
+      const totalSessions = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ?", twentyFourH);
+      const completeSessions = count(
+        `SELECT COUNT(*) as c FROM sessions s
+         WHERE s.startedAt > ?
+           AND EXISTS (
+             SELECT 1 FROM events e
+             WHERE e.event_type = 'context.read'
+               AND json_valid(e.data)
+               AND json_extract(e.data, '$.agent') = s.agent
+               AND e.timestamp BETWEEN s.startedAt AND COALESCE(s.endedAt, ?)
+           )
+           AND EXISTS (
+             SELECT 1 FROM events e
+             WHERE e.event_type = 'agent.decision'
+               AND json_valid(e.data)
+               AND json_extract(e.data, '$.agent') = s.agent
+               AND e.timestamp BETWEEN s.startedAt AND COALESCE(s.endedAt, ?)
+           )`,
+        twentyFourH, now, now,
+      );
+      record("capability.session-trace-completeness", totalSessions > 0 ? parseFloat((completeSessions / totalSessions).toFixed(4)) : 0, totalSessions);
+    } catch (e) { ctx.log(`[metrics-snapshot] Error measuring session trace completeness: ${e}`); }
 
     try {
       const staleActiveProjects = count(

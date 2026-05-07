@@ -470,11 +470,13 @@ ${guidance}
 ${redMetricDiagnostics ? "Red metric diagnostics are above — address each one, then proceed with normal heartbeat work." : "Review your metrics, check your projects, do your job. Act on what matters."} Commit and finish.`;
 
   ctx.emit({ type: "step_start", step: "heartbeat" });
+  ctx.emit({ type: "context.read", agent, sections: { metrics: !!metrics, projects: !!projects, inbox: !!inbox, alerts: !!alerts } });
 
   // ── EXP-740: Wall-clock timer for duration gate ──────────────────
   const heartbeatStartTime = Date.now();
 
   const result = await ctx.runAgent(agent, prompt);
+  ctx.emit({ type: "agent.decision", agent, status: result.status, hasDeliverables: !!(result.deliverables?.length) });
   recordOutcome(agentsRoot, agent, result.status === "error",
     result.status === "error" ? "heartbeat session error" : undefined);
   dedupRecordOutcome(agent, "heartbeat", result.status === "error" ? "error" : "success");
