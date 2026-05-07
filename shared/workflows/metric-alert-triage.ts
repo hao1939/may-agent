@@ -105,6 +105,15 @@ function buildOwnerTask(ctx: AlertContext): string {
   ].join("\n");
 }
 
+function notifyTriageEscalation(ctx: WorkflowContext, metricId: string, reason: string, details?: Record<string, unknown>): void {
+  try {
+    const suffix = details ? `\n${JSON.stringify(details)}` : "";
+    ctx.notify(`Metric alert triage needs attention for ${metricId}: ${reason}${suffix}`);
+  } catch {
+    // Notification is best-effort; the workflow escalation remains durable.
+  }
+}
+
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const trigger = extractTrigger(String(ctx.task ?? ""));
   const data = triggerData(trigger);
@@ -165,6 +174,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   });
 
   if (loaded.status === "error") {
+    notifyTriageEscalation(ctx, metricId, "failed to load metric alert context", { error: loaded.error });
     return ctx.escalate(`Failed to load metric alert context for ${metricId}`, { error: loaded.error });
   }
 
@@ -173,6 +183,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const ownerResult = await ctx.runAgent(alertContext.owner, ownerTask);
 
   if (ownerResult.status === "error" || ownerResult.status === "interrupted") {
+    notifyTriageEscalation(ctx, metricId, `owner triage session failed (${ownerResult.status})`, {
+      owner: alertContext.owner,
+      ownerSessionId: ownerResult.sessionId,
+    });
     return ctx.escalate(`Owner triage session failed for ${metricId}`, {
       owner: alertContext.owner,
       ownerSessionId: ownerResult.sessionId,
@@ -182,6 +196,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   const parsed = parseOperation(String(ownerResult.lastAssistantText ?? ""));
   if (!parsed.operation || !OPERATIONS.has(parsed.operation)) {
+    notifyTriageEscalation(ctx, metricId, "owner did not produce a valid METRIC_ALERT_OPERATION", {
+      owner: alertContext.owner,
+      ownerSessionId: ownerResult.sessionId,
+      operation: parsed.operation,
+    });
     return ctx.escalate(`Owner triage for ${metricId} did not produce a valid METRIC_ALERT_OPERATION`, {
       owner: alertContext.owner,
       ownerSessionId: ownerResult.sessionId,
