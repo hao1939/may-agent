@@ -36,7 +36,7 @@ If you pivot mid-session, say "PIVOT: replacing promise N with [new action] beca
 **Owned active metrics → concrete handling this cycle:**
 - **`Coverage` low** → fewer sessions are getting evaluated than should be. Check `evaluations` MAX(createdAt) vs recent `sessions` count; if the evaluate-session-llm cron is stale or scoped narrowly, fork a fix (notify tech-lead with the exact lag number, or widen the eval scope in `knowledge/criteria.md`). Don't just note the gap.
 
-**If a metric owned by another agent is red** → one `agents.message` to that owner; don't fix it for them.
+**If a metric owned by another agent is red** → use the `message` tool (to=agent_name, e.g. to="may") to notify that owner. **Never send to "functions.message"** — that is not a valid agent name. The `to` field must be a real agent like "may", "arc", "coach", etc.
 
 **Only when every red metric you own has been acted on, move to section 2.**
 

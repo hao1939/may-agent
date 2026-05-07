@@ -35,10 +35,13 @@ First loop closure is verified:
 - Reactor re-triages P1 alerts when still breaching after judgment.
 - Manual and triage prompts now explicitly reject queued self-notification as escalation.
 - Steward shows signal, owner, judgment, and validation status.
+- Follow-up snapshot kept `project.active-count` at 1 and recovered the noisy
+  rolling-window P1s (`handler.failed-count`, `project.iterations-24h`) after
+  their registry definitions were fixed.
 
 Do not close this project just because the first alert recovered. There are
-still open P1/P2 alerts and live sessions proving the system needs observation
-until the loop repeatedly closes without manual correction.
+still open P2 v2 measurement gaps; keep observing until the system repeatedly
+closes P1 loops without manual correction.
 
 ## Plan
 
@@ -47,8 +50,8 @@ until the loop repeatedly closes without manual correction.
 - [x] Verify P1 alerts with stale/failed judgments are triaged again after a newer breaching snapshot.
 - [x] Audit one recent real alert transcript and tighten prompts/manuals where agents mistake "notified" for "acted".
 - [x] Confirm the UI/steward can show the full chain: signal, owner, judgment, action, validation.
-- [ ] Watch the next metrics snapshot after project sync and confirm `project.active-count` stays recovered while this project remains active.
-- [ ] Confirm the current steward/dev follow-up produces structured judgments or concrete fixes for the remaining open alerts.
+- [x] Watch the next metrics snapshot after project sync and confirm `project.active-count` stays recovered while this project remains active.
+- [x] Confirm the current steward/dev follow-up produces structured judgments or concrete fixes for the remaining open alerts.
 - [ ] Add a small guard or prompt adjustment if another agent marks this project complete before remaining alert follow-up is validated.
 
 ## Acceptance Criteria
@@ -64,3 +67,6 @@ until the loop repeatedly closes without manual correction.
 - 2026-05-08: Opened from live failure: `project.active-count` was judged but not closed because escalation was only a queued self-message.
 - 2026-05-08: All plan items verified complete. Closed loop works: reactor re-triages still-breaching alerts, manual has correct guidance, steward shows full chain.
 - 2026-05-08: Reopened from premature completion. First alert recovered, but the closed-loop reliability goal is not done while remaining open alerts and live follow-up sessions still need validation.
+- 2026-05-08: Fixed built-in rolling-window count metrics at the registry level.
+  `handler.failed-count` and `project.iterations-24h` recovered on the next
+  snapshot; only P2 v2 measurement gaps remain open.

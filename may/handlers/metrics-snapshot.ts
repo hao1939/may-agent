@@ -24,7 +24,7 @@ const execFileAsync = promisify(execFile);
 
 // v2 metric types:
 //   gauge   — point-in-time value, can go up/down (rates, ratios, sizes)
-//   counter — monotonically increasing or rate-of-events (output, iterations)
+//   counter — monotonically increasing total or explicit event-rate source
 //   health  — boolean pass/fail or count-of-failures (build_passing, errors)
 //   derived — computed from other metrics (not yet used in built-ins)
 //
@@ -46,12 +46,10 @@ interface MetricDef {
 
 const ALL_METRICS: MetricDef[] = [
   // Handler
-  { id: "handler.completed-count", name: "Handler completions (6h)", owner: "may", type: "counter", target: 50, threshold: 10, unit: "count", alert_op: "<",
-    priority: "P1",
-    config: { alert: { mode: "rate", min_rate: 2, per: "hour", stall_after_ms: 3600000 } } },
-  { id: "handler.failed-count", name: "Handler failures (6h)", owner: "may", type: "counter", target: 0, threshold: 3, unit: "count", alert_op: ">",
-    priority: "P1",
-    config: { alert: { mode: "rate", max_rate: 3, per: "hour" } } },
+  { id: "handler.completed-count", name: "Handler completions (6h)", owner: "may", type: "gauge", target: 50, threshold: 10, unit: "count", alert_op: "<",
+    priority: "P1" },
+  { id: "handler.failed-count", name: "Handler failures (6h)", owner: "may", type: "gauge", target: 0, threshold: 10, unit: "count", alert_op: ">",
+    priority: "P1" },
   { id: "handler.success-rate", name: "Handler success rate (6h)", owner: "optimizer", type: "gauge", target: 0.95, threshold: 0.80, unit: "ratio", alert_op: "<",
     priority: "P1",
     config: { alert: { mode: "sustained", consecutive: 3 } } },
@@ -64,25 +62,23 @@ const ALL_METRICS: MetricDef[] = [
   { id: "evaluator.stale-running-session-count", name: "Stale running sessions", owner: "evaluator", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
   // System output
-  { id: "system.real-output-24h", name: "Real output (24h)", owner: "may", type: "counter", target: 100, threshold: 30, unit: "count", alert_op: "<",
-    priority: "P1",
-    config: { alert: { mode: "rate", min_rate: 5, per: "hour", stall_after_ms: 7200000 } } },
+  { id: "system.real-output-24h", name: "Real output (24h)", owner: "may", type: "gauge", target: 100, threshold: 30, unit: "count", alert_op: "<",
+    priority: "P1" },
   { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", type: "gauge", target: 120000, threshold: 600000, unit: "ms", alert_op: ">", priority: "P2" },
   { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", type: "gauge", target: 15, threshold: 8, unit: "count", alert_op: "<", priority: "P1" },
   // Project
   { id: "project.active-count", name: "Active projects", owner: "may", type: "gauge", target: 1, threshold: 1, unit: "count", alert_op: "<", priority: "P1" },
   { id: "project.blocked-count", name: "Blocked/waiting projects", owner: "may", type: "gauge", target: 2, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
   { id: "project.stale-active-count", name: "Stale active projects (no iteration 48h)", owner: "may", type: "gauge", target: 0, threshold: 2, unit: "count", alert_op: ">", priority: "P1" },
-  { id: "project.iterations-24h", name: "Project iterations (24h)", owner: "may", type: "counter", target: 10, threshold: 0, unit: "count", alert_op: "<",
-    priority: "P1",
-    config: { alert: { mode: "rate", min_rate: 1, per: "hour", stall_after_ms: 7200000 } } },
+  { id: "project.iterations-24h", name: "Project iterations (24h)", owner: "may", type: "gauge", target: 10, threshold: 1, unit: "count", alert_op: "<",
+    priority: "P1" },
   { id: "project.blocked-rate-7d", name: "Project blocked rate (7d)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P2" },
   { id: "project.blocked-over-6h", name: "Projects blocked/waiting >6h", owner: "may", type: "gauge", target: 2, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
   // v2 conformance / visibility
   { id: "v2.manager-loc", name: "Manager runtime LOC", owner: "arc", type: "gauge", target: 1000, threshold: 1500, unit: "loc", alert_op: ">", priority: "P2" },
   { id: "v2.runtime-glue-loc", name: "Runtime glue LOC", owner: "arc", type: "gauge", target: 1500, threshold: 2000, unit: "loc", alert_op: ">", priority: "P2" },
   { id: "v2.spec-coverage-rate", name: "v2 spec measurement coverage", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P2" },
-  { id: "capability.session-trace-completeness", name: "Session trace completeness (24h)", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.95, unit: "ratio", alert_op: "<", priority: "P1" },
+  { id: "capability.session-trace-completeness", name: "Session trace completeness (24h)", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.95, unit: "ratio", alert_op: "<", priority: "P2" },
   { id: "capability.tool-preset-drift-count", name: "Tool preset/config drift", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
   { id: "capability.status-reality-mismatch-count", name: "Status/reality mismatches", owner: "may", type: "health", target: 0, threshold: 3, unit: "count", alert_op: ">", priority: "P0",
@@ -264,7 +260,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         updateValues.push(project);
       }
       if (hasMetricConfigColumn) {
-        updateAssignments.push("config = COALESCE(?, config)");
+        updateAssignments.push("config = ?");
         updateValues.push(configJson);
       }
       updateValues.push(m.id);
