@@ -15,3 +15,4 @@
 - [AI Agent Failure Modes](agent_failure_modes.md) - Synthesis of common failure modes (context overflow, tool misuse, infinite loops) and architectural solutions.
 - [Agent Anti-Patterns](./insights/agent-anti-patterns.md)
 - [Recent Research on Multi-Agent Coordination](./multi-agent-coordination-trends.md)
+- [Recent OSS Multi-Agent Architectures](./recent-oss-coordination.md)
