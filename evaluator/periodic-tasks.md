@@ -187,6 +187,10 @@ Ran `monitor-session.cjs --running`: 1 alert (`STALL` amy `s_1777626616591_0` id
 
 Interpretation: evaluations are updating far slower than session throughput and may be stalled after ~2026-05-06T16:46Z. Action recommendation: escalate to May/tech-lead to inspect `evaluate-session-llm` job liveness/scope and event-consumer throughput.
 
+**Last run**: 2026-05-07 01:53Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617`; `MAX(sessions.startedAt)=1778118760597`; `MAX(sessions.endedAt)=1778118479536` → eval lag ≈9.12h. Sessions since last evaluation timestamp: `110`. Last-24h volume: `sessions(endedAt>=cutoff)`=707 vs `evaluations(createdAt>=cutoff)`=39 → coverage ≈5.52%.
+
+Interpretation: eval pipeline appears stalled since 2026-05-06T16:46Z while sessions continue; coverage remains ~5%. Action recommendation: escalate to May/tech-lead to check `evaluate-session-llm` liveness (cron) and event-consumer throughput/timeouts.
+
 ## 8. Receipt Audit (P192)
 **Goal**: Verify that agents aren't fabricating success claims without cryptographic proof.
 - Check 5 recent sessions for signature validity.
