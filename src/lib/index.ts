@@ -90,12 +90,6 @@ export type {
   SubagentDefinition,
   ModelWithApiKey,
   SessionInfo,
-  SessionTreeNode,
-  ManagerHealthReport,
-  HealthActiveSession,
-  AuditHealthOptions,
-  AuditHealthReport,
-  ReconcileReport,
   TaskResult,
 } from "./types.js";
 export type {
