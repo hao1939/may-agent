@@ -23,6 +23,7 @@ Do NOT penalize any agent for using tools in this list. `notify` and `agents` ar
 
 ## Key Knowledge
 - **KE-008**: Do not restructure heartbeat steps - add content within existing steps only.
+- **KE-009**: NEVER use `to="functions.message"` in the message tool. `functions.message` is NOT an agent. Use real agent names like `may`, `arc`, `coach`. This has caused 8+ delivery failures.
 
 ## Skills
 - agents/evaluator/skills/delegation-metrics.md - measure delegation effectiveness.
