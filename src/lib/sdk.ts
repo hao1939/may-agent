@@ -12,13 +12,16 @@ import type { SqliteDb } from "./db.js";
 // ── Core SDK ──────────────────────────────────────────────────────────
 
 export interface AgentSDK {
-  /** Run an agent on a task, wait for result. Don't await for fire-and-forget (= fork). */
+  /** Run an agent on a task and wait for its result. */
   runAgent(agent: string, task: string, opts?: RunOpts): Promise<TaskResult>;
 
-  /** Run a named workflow. Returns when workflow completes. */
+  /** Start an agent in the background. Returns sessionId immediately (non-blocking). */
+  forkAgent(agent: string, task: string, opts?: RunOpts): string;
+
+  /** Run a named workflow synchronously. Returns when workflow completes. */
   runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult>;
 
-  /** Create a raw LLM session (multi-turn, custom system prompt). For evaluation/judgment tasks. */
+  /** Reserved for future raw LLM sessions. Currently not implemented by sdk-impl.ts. */
   createLLMSession(opts: SessionOpts): Promise<SessionHandle>;
 
   /** Emit a typed event (persisted to events table). */

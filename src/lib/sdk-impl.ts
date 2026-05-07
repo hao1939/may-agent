@@ -13,6 +13,7 @@ import type { SqliteDb } from "./db.js";
 import type { SubagentManager } from "./manager.js";
 import { getDb } from "./requests.js";
 import { log as globalLog } from "./log.js";
+import { buildRuntimeCtx } from "./runtime-ctx.js";
 import { appendFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
@@ -28,6 +29,8 @@ export interface SDKDeps {
   manager?: SubagentManager;
   /** Manager's callAgent — async, blocks until agent finishes. */
   callAgent: (agent: string, task: string, opts?: { source?: string; projectId?: string; timeout?: number }) => Promise<TaskResult>;
+  /** Manager's runAgent — fire-and-forget, returns sessionId. */
+  forkAgent: (agent: string, task: string, opts?: { source?: string }) => string;
   /** Cron triggerNow — fire a handler on next tick. */
   triggerNow?: (handlerName: string) => boolean;
 }
@@ -44,6 +47,10 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       });
     },
 
+    forkAgent(agent: string, task: string, opts?: RunOpts): string {
+      return deps.forkAgent(agent, task, { source: opts?.source });
+    },
+
     createLLMSession(_opts: SessionOpts): Promise<SessionHandle> {
       // TODO: Wire to pi-agent's createSession when needed
       throw new Error("createLLMSession not yet implemented");
@@ -52,16 +59,13 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
     async runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult> {
       const { runWorkflowDirect } = await import("./workflow-tool.js");
       if (!deps.manager) throw new Error("runWorkflow requires manager in SDKDeps");
-      const runtimeCtx = {
-        emit: (e: any) => deps.bus.emit(e),
-        dispatchEvent: (type: string, data?: Record<string, unknown>) => deps.bus.emit({ type, ...(data || {}) } as any),
-        getDb: () => getDb(deps.persistDir),
-        log: (msg: string) => globalLog("info", `[${deps.agentName}] ${msg}`),
-        notify: (msg: string) => deps.bus.emit({ type: "message.created", from: deps.agentName, to: "human", content: msg } as any),
+      const runtimeCtx = buildRuntimeCtx({
+        bus: deps.bus,
         persistDir: deps.persistDir,
         projectRoot: deps.projectRoot,
         agentsRoot: deps.agentsRoot,
-      };
+        agentName: deps.agentName,
+      });
       const { result } = await runWorkflowDirect({
         workflowName: name,
         task,
