@@ -23,6 +23,11 @@ describe("classifyError", () => {
     expect(classifyError({ status: 503, message: "Service Unavailable" })).toBe("retryable");
   });
 
+  it("classifies provider deployment cooldowns as retryable even when embedded in 429 text", () => {
+    const err = new Error('429 {"error":{"message":"No deployments available for selected model, Try again in 5 seconds"}}');
+    expect(classifyError(err)).toBe("retryable");
+  });
+
   it("classifies timeout errors as retryable", () => {
     expect(classifyError(new Error("Request timeout after 30s"))).toBe("retryable");
   });

@@ -56,6 +56,12 @@ export function classifyError(error: unknown): ErrorCategory {
   // Check error message patterns
   const message = getErrorMessage(error).toLowerCase();
 
+  // Some provider gateways wrap HTTP status codes inside the Error message
+  // instead of exposing `status`/`statusCode` fields.
+  if (/\b429\b/.test(message)) return "retryable";
+  if (/\b5\d\d\b/.test(message)) return "retryable";
+  if (/\b4\d\d\b/.test(message)) return "non-retryable";
+
   const retryablePatterns = [
     "timeout",
     "etimedout",
