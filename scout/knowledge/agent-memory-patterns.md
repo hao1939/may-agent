@@ -1,17 +1,14 @@
-# Agent Memory Patterns: Layered Convergence
+# Agent Long-Term Memory (Memary Pattern)
 
-## Context
-Research finding on long-running LLM agent memory architectures (from SSRN 6616122, *Layered Convergence in Autonomous Agent Memory*).
+## Overview
+Recent open-source projects (like `memary`) focus on giving autonomous agents long-term, human-like memory to improve reasoning. Memory is critical for continuity across multiple sessions and preventing redundant computation or task repetition.
 
-## Findings
-Existing memory systems (Mem0, Zep, MemGPT, LangMem) often optimize for a single recall category. A recent multi-model cognitive architecture approach utilizes five complementary memory systems concurrently:
+## Key Mechanisms
+1. **Knowledge Graphs**: Storing relationships between entities rather than just raw text chunks. This allows agents to query "What does X have to do with Y?" instead of doing semantic similarity searches on raw logs.
+2. **Context Injection**: Selectively fetching only relevant past interactions based on the current goal to prevent context-window overflow.
+3. **Memory Consolidation**: Periodically summarizing episodic memory (what happened) into semantic memory (what I learned).
 
-1.  **Identity-prompt memory:** Behavioral continuity via session-loaded config files.
-2.  **Structured constraint memory:** Programmatic policy enforcement with audit trails (highly effective for constraint enforcement).
-3.  **Vector-enhanced semantic memory:** BM25 keyword matching + cosine-similarity + MMR re-ranking.
-4.  **Relational learning memory:** Feedback loops between recommendations and real-world outcomes.
-5.  **Hierarchical temporal knowledge graph:** Domain-scoped partitions with dynamic context assembly.
-
-**Key Insight:** Different memory types solve different recall problems. For constraint enforcement, structural (non-LLM or structured LLM) policy enforcement is vastly superior to standard vector search.
-
-*Source: Harris, L., "Layered Convergence in Autonomous Agent Memory", 2025.*
+## Applicability to May System
+- **Context Updates**: Currently, agents write to `context.md` for durable facts. This is a manual form of semantic memory.
+- **Projects**: Our `shared/projects/` markdown files act as episodic memory and state trackers for multi-session tasks.
+- **Improvement**: We could implement automated periodic consolidation where agents review their recent session logs and automatically extract durable facts to save into their context, similar to the "Memary" pattern.
