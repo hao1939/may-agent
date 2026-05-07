@@ -13,8 +13,13 @@
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { exec, execFile } from "node:child_process";
+import { promisify } from "node:util";
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.ts";
 import type { CronEntry } from "../../shared/agent-sdk.ts";
+
+const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 // v2 metric types:
 //   gauge   — point-in-time value, can go up/down (rates, ratios, sizes)
@@ -301,29 +306,49 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     } catch (e) { ctx.log(`[metrics-snapshot] Error measuring session.error-rate-6h: ${e}`); }
 
     try {
-      // Counts "substantive" changed/created files in last 24h, excluding noise dirs.
-      // Uses find -mmin (works without git) with fallback to git log if available.
-      const { execSync } = require("node:child_process");
-      let cmd: string;
+      // Counts changed/created files in last 24h without blocking the runtime
+      // event loop. Socket/Telegram must stay responsive while metrics run.
+      let files: string[] = [];
       try {
-        execSync("git -C \"" + ctx.projectRoot + "\" rev-parse --git-dir", { timeout: 5000, stdio: "pipe" });
-        // Git available — use git log for accuracy
-        cmd = "git -C \"" + ctx.projectRoot + "\" log --since=24.hours --name-only --pretty=format: | " +
-          "grep -v '^$' | " +
-          "grep -Ev '^(\\.state/sessions/|node_modules/|dist/|build/|coverage/|\\.git/)' | " +
-          "sort -u | wc -l";
+        await execFileAsync("git", ["-C", ctx.projectRoot, "rev-parse", "--git-dir"], { timeout: 3000, maxBuffer: 1024 * 1024 });
+        const { stdout } = await execFileAsync(
+          "git",
+          ["-C", ctx.projectRoot, "log", "--since=24.hours", "--name-only", "--pretty=format:"],
+          { timeout: 5000, maxBuffer: 8 * 1024 * 1024 },
+        );
+        files = stdout.split("\n");
       } catch {
-        // No git — use find for files modified in last 24h
-        cmd = "find \"" + ctx.projectRoot + "\" -type f -mmin -1440 " +
-          "\\( -name '*.ts' -o -name '*.md' -o -name '*.json' \\) " +
-          "-not -path '*/.state/sessions/*' " +
-          "-not -path '*/node_modules/*' " +
-          "-not -path '*/.git/*' " +
-          "| wc -l";
+        const { stdout } = await execFileAsync(
+          "find",
+          [
+            ctx.projectRoot,
+            "-path", join(ctx.projectRoot, ".state"),
+            "-prune",
+            "-o",
+            "-path", join(ctx.projectRoot, "node_modules"),
+            "-prune",
+            "-o",
+            "-path", join(ctx.projectRoot, ".git"),
+            "-prune",
+            "-o",
+            "-type", "f",
+            "-mmin", "-1440",
+            "(",
+            "-name", "*.ts",
+            "-o", "-name", "*.md",
+            "-o", "-name", "*.json",
+            ")",
+            "-print",
+          ],
+          { timeout: 5000, maxBuffer: 8 * 1024 * 1024 },
+        );
+        files = stdout.split("\n");
       }
-      const out = execSync(cmd, { timeout: 15000, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }).trim();
-      const n = parseFloat(out);
-      if (!isNaN(n)) record("system.real-output-24h", n);
+      const n = new Set(files
+        .map((file) => file.trim())
+        .filter(Boolean)
+        .filter((file) => !/^(\.state\/sessions\/|node_modules\/|dist\/|build\/|coverage\/|\.git\/)/.test(file))).size;
+      record("system.real-output-24h", n);
     } catch (e) { ctx.log(`[metrics-snapshot] Error measuring system.real-output-24h: ${e}`); }
 
     // ── Measure: Project (with error isolation) ──────────────────────
@@ -407,12 +432,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const terminalSessionsWithoutEnd = count(
         `SELECT COUNT(*) as c FROM sessions s
          WHERE s.status IN ('done', 'error', 'interrupted')
+           AND s.startedAt > ?
            AND NOT EXISTS (
              SELECT 1 FROM events e
              WHERE e.event_type = 'session.end'
                AND json_valid(e.data)
                AND json_extract(e.data, '$.sessionId') = s.sessionId
-           )`);
+           )`, now - 24 * 3600000);
 
       const configuredAgents = listConfiguredAgents(ctx.agentsRoot);
       let agentsWithoutHeartbeat = 0;
@@ -450,8 +476,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             if (vals.length > 0) value = vals[0] as number;
           }
         } else if (m.source_command) {
-          const { execSync } = require("node:child_process");
-          const output = execSync(m.source_command, { cwd: ctx.projectRoot, timeout: 15000, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }).trim();
+          const { stdout } = await execAsync(m.source_command, {
+            cwd: ctx.projectRoot,
+            timeout: 5000,
+            maxBuffer: 1024 * 1024,
+          });
+          const output = stdout.trim();
           const parsed = parseFloat(output);
           if (!isNaN(parsed)) value = parsed;
         }
