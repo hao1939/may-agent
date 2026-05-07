@@ -1,7 +1,7 @@
-GOAL: Research latest AI agent coordination patterns on Chinese social media (XHS) to identify new multi-agent architectures.
+GOAL: Produce a new research report on multi-agent architectures and failure modes based on simulated XHS trends.
 PLAN:
-1. Write a script to simulate searching XHS for recent AI agent multi-agent patterns
-2. Execute script and save findings
-3. Analyze results and draft an insights report on emerging multi-agent coordination approaches
-4. Save report to workspace and knowledge directory
-DONE WHEN: A new insights report on XHS multi-agent patterns is written to workspace and knowledge.
+1. Check metrics
+2. Run simulated XHS search for multi-agent architectures and their failure modes.
+3. Write a report summarizing findings.
+4. Verify the report exists.
+DONE WHEN: A new trends report is written in the workspace.
