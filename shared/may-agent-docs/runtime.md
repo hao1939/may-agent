@@ -9,7 +9,7 @@ How the binary processes input, runs sessions concurrently, and structures LLM c
 User input goes through `ChatSession.handleInput()`:
 
 1. **Built-in commands** (`status`, `cancel`, `reload`, `/new`) — handled directly, no LLM
-2. **@agent prefix** (`@coder fix the test`) — ephemeral `kind: "job"` session on target agent
+2. **@agent prefix** (`@coder fix the test`) — rewritten into May's chat session as a delegation request; May forks/monitors the target agent
 3. **Normal message** — routed to the persistent chat session:
    - No session yet → `manager.run(agent, message, { kind: "chat", autoClose: "never" })`
    - Session exists → `manager.input(sessionId, message)` (wakes if idle, steers if running)
@@ -28,9 +28,9 @@ User input goes through `ChatSession.handleInput()`:
 
 | Entry type | Execution |
 |-----------|-----------|
-| JS handler | In-process function, no LLM |
-| Agent task | `manager.run(agent, message, { kind: "job" })` |
-| Heartbeat | Fire into persistent session via `followUp` |
+| JS handler | In-process function, no direct LLM unless the handler/workflow calls one |
+| Detached agent job | `spawnDetachedAgent()` in a separate OS process |
+| Heartbeat handler | Cron-triggered workflow builds context, then starts a fresh agent task session via `ctx.runAgent()` / `sdk.runAgent()` |
 
 ## Event Channels
 
@@ -57,30 +57,23 @@ When a session runs, the LLM receives three blocks:
 
 ```
 ┌─────────────────────────────────────────────┐
-│ 1. SOUL.md         — identity, mission       │
-│ 2. DOMAIN.md       — domain expertise        │
-│ 3. TOOLS.md        — tool usage guide        │
-│ 4. shared/LESSONS  — team-wide learnings     │
-│ 5. LESSONS.md      — agent-specific learnings│
-│ 6. INDEX.md        — curated references      │
-│ 7. shared/INDEX.md — team knowledge index    │
-│ 8. common-sense.md — behavioral fundamentals │
-│ 9. Runtime env     — paths, workspace        │
-│10. Available tools — tool name list          │
+│ 1. common-sense.md — behavioral fundamentals │
+│ 2. AGENTS.md       — identity and contract   │
+│ 3. Runtime env     — paths, workspace, tools │
 └─────────────────────────────────────────────┘
 ```
 
-**Total: ~10-25 KB** depending on agent. Stable across sessions (LLM prefix caching).
+Stable across sessions for LLM prefix caching. `DOMAIN.md`, `TOOLS.md`,
+`LESSONS.md`, `knowledge/INDEX.md`, `skills/*.md`, `heartbeat.md`, and
+`last-session.md` are not automatically loaded.
 
 ### 2. First User Message (changes per session)
 
 | Section | Source |
 |---------|--------|
 | Session ID + time | Generated |
-| Recent Task History | `.state/memory/<agent>.jsonl` (last N summaries) |
-| Active Recall | `workspace/ERROR_LOG.jsonl` (past failure patterns) |
-| Last Checkpoint | `.state/checkpoints/` (resume point) |
-| context_files | Agent-specific volatile context |
+| Runtime context | Session-specific facts from the caller/workflow |
+| Optional continuity | Generated summaries such as `last-session.md` when a workflow injects them |
 | **Task** | The actual work request |
 
 ### 3. Conversation History (grows during session)
@@ -109,11 +102,10 @@ When a session runs, the LLM receives three blocks:
 | Field | Effect |
 |-------|--------|
 | `model` | Which LLM to call |
-| `opBudget` | Injected into tool results when >50% consumed; session stopped when exceeded |
-| `memoryLimit` | How many past session summaries in first user message |
+| `memoryLimit` | Legacy limit for caller-managed memory injection |
 | `compaction` | Whether to enable context compaction |
 | `tools` | Which tools available (mapped to presets) |
-| `contextFiles` | Extra files in first user message |
+| `contextFiles` | Deprecated; volatile context should be session context, not system prompt |
 
 ## Implementation
 

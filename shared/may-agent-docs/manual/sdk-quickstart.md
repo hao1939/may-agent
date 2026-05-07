@@ -5,12 +5,13 @@ The AgentSDK is available to all handlers via `ctx.sdk`. 8 methods + 1 property 
 ## Run an Agent
 
 ```typescript
-// Sync (wait for result)
 const result = await sdk.runAgent("tech-lead", "Review this PR");
 // result.status, result.lastAssistantText, result.sessionId
 
-// Async (fire-and-forget)
-sdk.runAgent("coder", "Fix the type error in utils.ts");  // don't await
+const [coder, qa] = await Promise.all([
+  sdk.runAgent("coder", "Implement the fix"),
+  sdk.runAgent("qa", "Review the fix"),
+]);
 ```
 
 ## Emit an Event
@@ -36,11 +37,11 @@ sdk.log("warn", "Threshold approaching");
 sdk.log("error", "Failed to connect");
 ```
 
-## Notify
+## Message
 
 ```typescript
-sdk.notify("human", "Deploy complete ✅");     // → Telegram/web
-sdk.notify("bob", "Your PR was merged");       // → bob's inbox
+sdk.message("human", "Deploy complete");     // → Telegram/web
+sdk.message("bob", "Your PR was merged");    // → bob's inbox
 ```
 
 ## Escalate
@@ -57,17 +58,11 @@ sdk.paths.root     // project root
 sdk.paths.agents   // agents/ directory
 ```
 
-## Create Raw LLM Session
+## Raw LLM Sessions
 
-```typescript
-const session = await sdk.createLLMSession({
-  systemPrompt: "You are a code reviewer. Be concise.",
-  tools: "readonly",
-});
-await session.prompt("Review this function: ...");
-const review = session.lastText();
-session.close();
-```
+`sdk.createLLMSession()` is reserved in the type surface, but the current
+implementation throws `createLLMSession not yet implemented`. Use
+`sdk.runAgent()` or a workflow step until this is wired.
 
 ## Common Patterns
 
@@ -81,7 +76,7 @@ const inbox = db.prepare(`
 
 ### Agent-to-agent message
 ```typescript
-sdk.notify("bob", "Check the failing tests");
+sdk.message("bob", "Check the failing tests");
 // emits: { type: "message.created", from: agent, to: "bob", content: "..." }
 ```
 

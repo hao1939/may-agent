@@ -14,7 +14,7 @@ describe("growth", () => {
     // Create a sample agent
     const agentDir = join(agentsRoot, "test-agent");
     mkdirSync(agentDir, { recursive: true });
-    writeFileSync(join(agentDir, "SOUL.md"), "# Test Agent");
+    writeFileSync(join(agentDir, "AGENTS.md"), "# Test Agent");
     writeFileSync(join(agentDir, "heartbeat.md"), "# HB");
   });
 
@@ -27,8 +27,8 @@ describe("growth", () => {
       const result = forkAgent(config, "test-agent", "my-fork");
       expect(result.forkName).toBe("my-fork");
       expect(result.copiedFrom).toBe("test-agent");
-      expect(result.files).toContain("SOUL.md");
-      expect(existsSync(join(agentsRoot, ".lab", "my-fork", "SOUL.md"))).toBe(true);
+      expect(result.files).toContain("AGENTS.md");
+      expect(existsSync(join(agentsRoot, ".lab", "my-fork", "AGENTS.md"))).toBe(true);
     });
 
     it("generates fork name if not provided", () => {
@@ -45,8 +45,8 @@ describe("growth", () => {
     it("copies fork to target location", () => {
       forkAgent(config, "test-agent", "my-fork");
       const result = promoteAgent(config, "my-fork", "promoted-agent");
-      expect(result.promoted).toContain("SOUL.md");
-      expect(existsSync(join(agentsRoot, "promoted-agent", "SOUL.md"))).toBe(true);
+      expect(result.promoted).toContain("AGENTS.md");
+      expect(existsSync(join(agentsRoot, "promoted-agent", "AGENTS.md"))).toBe(true);
     });
 
     it("throws for non-existent fork", () => {
@@ -72,13 +72,13 @@ describe("growth", () => {
       expect(listLabAgents(config)).toEqual([]);
     });
 
-    it("lists agents with SOUL.md or heartbeat.md", () => {
+    it("lists agents with AGENTS.md or heartbeat.md", () => {
       forkAgent(config, "test-agent", "fork1");
       const list = listLabAgents(config);
       expect(list).toContain("fork1");
     });
 
-    it("excludes directories without SOUL.md or heartbeat.md", () => {
+    it("excludes directories without AGENTS.md or heartbeat.md", () => {
       mkdirSync(join(agentsRoot, ".lab", "empty-dir"), { recursive: true });
       forkAgent(config, "test-agent", "valid-fork");
       const list = listLabAgents(config);

@@ -4,6 +4,11 @@
 
 A workflow is a TypeScript file in `agents/<name>/workflows/` or `agents/shared/workflows/`. It exports `name`, `description`, and an `execute` function:
 
+Workflows are deliberately synchronous: each step returns a result before the
+next step runs, and `runWorkflow()` resolves only when the workflow is done or
+escalated. Use `agents.fork` for background agent sessions outside workflow
+control.
+
 ```typescript
 import type { WorkflowContext, WorkflowModule, WorkflowResult } from "../../shared/agent-sdk.ts";
 import type { TaskResult } from "../../shared/agent-sdk.ts";
@@ -34,7 +39,7 @@ Available via `ctx`:
 | `ctx.task` | The original task string |
 | `ctx.agent` | The agent that invoked this workflow |
 | `ctx.runAgent(name, task)` | Run a sub-agent, wait for result |
-| `ctx.runWorkflow(name, task)` | Run a sub-workflow (composition) |
+| `ctx.runWorkflow(name, task)` | Run a sub-workflow, wait for result |
 | `ctx.runFunction(label, fn)` | Run a JS function as a step (no LLM cost) |
 | `ctx.summarize(result)` | Build rich context from a TaskResult for handoff |
 | `ctx.createSession(opts)` | Persistent multi-turn session (worker pattern) |
@@ -160,7 +165,7 @@ Guards are pure functions: event in → demands out. They can `block`, `warn`, o
 
 ```bash
 # Run workflow via CLI
-./may.sh task "workflow implement-and-verify: fix the type error"
+bun src/app/may.ts --run-workflow implement-and-verify "fix the type error"
 
 # Or invoke from a handler test
 bun test agents/shared/workflows/__tests__/my-workflow.test.ts

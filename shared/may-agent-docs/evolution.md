@@ -26,7 +26,9 @@ You do work. Something goes wrong, or you discover a better way.
 
 Write it down so you don't forget.
 
-**Where it lives:** `agents/<you>/LESSONS.md` (auto-loaded every session)
+**Where it lives:** `agents/<you>/LESSONS.md` or `agents/<you>/knowledge/`.
+Lessons are not auto-loaded. Promote only durable always-on behavior into
+`AGENTS.md`.
 
 **Format:**
 ```markdown
@@ -65,6 +67,10 @@ Then structured sections: Context, Core Principles, Actions, Anti-patterns.
 ## Level 3: Workflow (automated multi-step pattern)
 
 A workflow codifies a skill into executable orchestration. Agents don't need to remember the steps — the workflow handles sequencing.
+
+Workflow execution is synchronous by design. A workflow step waits for its
+agent/function/sub-workflow result before the next step runs; this keeps
+orchestration simple and auditable.
 
 **Where it lives:** `agents/shared/workflows/<name>.ts`
 
@@ -140,7 +146,7 @@ Available presets:
 | `coding` | read + write + edit + bash |
 | `agents` | call, fork, message, list, peek, cancel other agents |
 | `workflow` | list/run/resume workflows from within a session |
-| `notify` / `message-only` | send messages to humans or agents (lightweight) |
+| `message` | send messages to humans or agents (lightweight) |
 | `scrape` | web scraping |
 | `cron` | manage cron schedules |
 | `checkpoint` | save progress mid-session |
@@ -215,11 +221,10 @@ See [sdk.md](sdk.md) for the canonical AgentSDK and WorkflowSDK interfaces.
 | `edit(path, old, new)` | Surgical text replacement |
 | `agents.call(agent, task)` | Delegate to another agent (sync) |
 | `agents.fork(agent, task)` | Fire-and-forget delegation (async) |
-| `agents.message(agent, msg)` | Send a message to agent's inbox |
+| `message(target, content)` | Send a human or agent message |
 | `workflow(action, name, task)` | Run a multi-step workflow |
 | `checkpoint(summary)` | Save progress mid-session |
 | `finish(summary, deliverables)` | End session with structured output |
-| `notify(target, msg)` | Send notification |
 
 ---
 

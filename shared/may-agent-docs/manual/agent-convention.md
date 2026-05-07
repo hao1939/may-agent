@@ -4,167 +4,132 @@
 
 ```
 agents/<name>/
-  agent.json              # Required. Operational config (model, tools, limits).
+  agent.json              # Required. Operational config: model, tools, limits.
+  AGENTS.md               # Required. Identity and stable operating contract.
+  heartbeat.md            # Optional. Heartbeat-only guidance, not system prompt.
   cron.json               # Optional. Cron job definitions.
-  heartbeat.md            # Optional. Read by agent during heartbeat (not in prompt).
-
-  SOUL.md                 # Convention file. Identity, mission, values.
-  DOMAIN.md               # Convention file. Domain expertise.
-  TOOLS.md                # Convention file. Tool usage guide.
-  LESSONS.md              # Convention file. Accumulated learnings.
 
   knowledge/              # On-demand reference material.
-    INDEX.md              # Convention file. Curated context, references, skills.
-    *.md                  # Referenced from INDEX.md, read on demand.
+    INDEX.md              # Routing table for references.
+    *.md                  # Domain docs, playbooks, long-form knowledge.
 
-  workspace/              # Ephemeral scratch (gitignored, not in prompt).
-    *.md                  # Working documents (journal, notes, etc.).
+  skills/                 # On-demand or explicitly adopted skills.
+    *.md
 
-  handlers/               # JS cron handlers (optional).
-  workflows/              # Workflow definitions (optional).
+  workspace/              # Scratch/runtime work, not system prompt.
+    *.md
 
-agents/shared/            # Shared reference material (read on demand, not auto-loaded).
-  team.md                 # Team roster and roles.
-  philosophy.md           # Design philosophy.
-  best-practices.md       # Engineering practices.
-  skills/                 # Skill guides (full versions, read on demand).
-    file-safety/SKILL.md
-    agent-coordination/SKILL.md
-    ...
+  handlers/               # JS cron/event handlers.
+  workflows/              # Workflow definitions.
+  last-session.md         # Generated runtime memory, not system prompt.
+
+agents/shared/
+  common-sense.md         # Shared always-loaded behavioral fundamentals.
+  knowledge/              # Shared references, read on demand.
+  skills/                 # Shared skill library, read on demand.
+  may-agent-docs/         # Architecture and operator docs.
 ```
 
-## Convention Files
+## Prompt Files
 
-Five files auto-loaded into the system prompt by naming convention. No config needed.
-Missing files are silently skipped.
+Only two authored files are always loaded into the v2 system prompt:
 
-| File | Location | Purpose | Prompt Order |
-|------|----------|---------|-------------|
-| `SOUL.md` | `agents/<name>/SOUL.md` | Identity, mission, personality, values | 1st |
-| `DOMAIN.md` | `agents/<name>/DOMAIN.md` | Domain expertise, scope, boundaries | 2nd |
-| `TOOLS.md` | `agents/<name>/TOOLS.md` | Tool usage patterns and guidelines | 3rd |
-| `LESSONS.md` | `agents/<name>/LESSONS.md` | Accumulated learnings from experience | 4th |
-| `INDEX.md` | `agents/<name>/knowledge/INDEX.md` | Curated context: team, skills, project layout, references | 5th |
+| File | Purpose | Loaded |
+|------|---------|--------|
+| `agents/shared/common-sense.md` | Shared behavioral fundamentals and repo conventions | Every agent session |
+| `agents/<name>/AGENTS.md` | Agent identity, responsibility, constraints, escalation posture | That agent's sessions |
 
-Plus two generated sections:
-- **Runtime Environment** (6th) — project root, paths, workspace, list of convention files already in context
-- **Session Context** (7th) — session ID, recent task history from memory
+Everything else is discoverable context. `DOMAIN.md`, `TOOLS.md`, `LESSONS.md`,
+`knowledge/INDEX.md`, `skills/*.md`, `heartbeat.md`, `last-session.md`, and
+`workspace/*` are not automatically loaded into the system prompt.
 
-### What Goes Where
+## What Goes Where
 
-| Content | File | Reason |
-|---------|------|--------|
-| "I am Bob, the system architect" | SOUL.md | Identity — who you are |
-| "Design principles for may-agent" | DOMAIN.md | Domain — what you know |
-| "Use `agents.call` for sync, `message` for async" | TOOLS.md | Tool usage — how to act |
-| "Always check git status before committing" | LESSONS.md | Learned from experience |
-| "Team: Bob=architect, May=coordinator, ..." | INDEX.md | Curated context |
-| "File safety: read before write, check size" | INDEX.md | Distilled skill summary |
-| "For full guide: read agents/shared/skills/file-safety/SKILL.md" | INDEX.md | Reference pointer |
-| "Key dirs: src/lib/, src/app/, agents/, test/" | INDEX.md | Project structure |
-| Detailed scraping methodology (200 lines) | knowledge/*.md | Too large for prompt |
-| Todo lists, journals, draft reports | workspace/*.md | Working documents |
+| Content | Location | Reason |
+|---------|----------|--------|
+| "I am Bob, the system architect" | `AGENTS.md` | Stable identity |
+| "Own architecture tradeoffs and escalation briefs" | `AGENTS.md` | Durable responsibility |
+| "Use evidence before changing evaluation criteria" | `AGENTS.md` | Always-on constraint |
+| "Long metric debugging recipe" | `knowledge/*.md` or `skills/*.md` | Situational reference |
+| "Read X when handling Y" | `knowledge/INDEX.md` | Discovery routing |
+| Heartbeat investigation prompts | `heartbeat.md` | Heartbeat workflow only |
+| Recent notes, drafts, temporary plans | `workspace/` | Runtime scratch |
+| Generated session continuity | `last-session.md` | Runtime/session context |
 
-### INDEX.md: The Context Hub
+If a lesson must affect every session, promote the distilled invariant into
+`AGENTS.md`. If it is situational, keep it in `knowledge/` or `skills/` and
+link it from `knowledge/INDEX.md`.
 
-INDEX.md replaces three former mechanisms: `sharedKnowledge`, `skills`, and `projectStructure`.
-Each agent distills shared knowledge into its own INDEX.md tailored to its role.
+## AGENTS.md Shape
 
-Typical structure:
+Keep `AGENTS.md` concise and durable:
 
 ```markdown
-# Knowledge Context
+# AGENTS — <Name>
 
-## Team
-Bob is the architect. May coordinates. Tech-lead implements via coder + QA.
-Coach trains agents. Optimizer analyzes performance. Scout and Amy research.
+## Identity
+Who this agent is.
 
-## Design Philosophy (distilled)
-- Filesystem is truth. Sessions are ephemeral, knowledge persists.
-- Agents own their context. No shared mutable state.
-- Sync call for cooperation, async send for todo assignment.
+## Responsibility
+What this agent owns and is accountable for.
 
-## Skills (distilled)
-- **File safety**: Read before write. Check size before full read.
-- **Agent coordination**: call (sync), send (async todo), list, peek, cancel.
-- **Document collaboration**: Review with `> [Name date]` blockquote comments.
+## Operating Model
+How it approaches work.
 
-## Project Layout
-- src/lib/ — core library (manager.ts, types.ts, tools/)
-- src/app/ — application layer (may.ts, agent-loader.ts, cron.ts)
-- agents/ — agent configs, knowledge, handlers
-- test/ — test files
+## Delegation and Escalation
+Who it should involve and when.
 
-## Available References
-Read on demand when relevant:
-- agents/shared/philosophy.md — full design philosophy (24KB)
-- agents/shared/best-practices.md — full best practices (24KB)
-- agents/shared/skills/ — full skill guides
+## Constraints
+Stable rules that must apply every session.
+
+## References
+Pointers to knowledge files, not copied knowledge.
 ```
 
-### Two Layers
-
-**Always-loaded (convention files at agent root + knowledge/INDEX.md)**:
-These define *who the agent is*. Auto-loaded every session. UPPERCASE signals
-"this is in the system prompt automatically."
-
-**On-demand (knowledge/, workspace/, agents/shared/)**:
-Read by the agent via file tools when a task needs them. DOMAIN.md should
-list what's available so the agent knows what to read.
-
-**Rule of thumb**: If a file is >100 lines, it belongs in `knowledge/` as a
-reference, not in a convention file. Convention files should be concise — the
-*what* and *why*, not the full *how*.
-
-## agent.json Schema
-
-```jsonc
-{
-  "name": "coder",                    // Must match directory name
-  "description": "Writes code...",    // One-line role summary
-  "domain": "may-agent implementation", // Domain of expertise
-  "model": "opus",                    // Key into models map
-  "tools": ["coding", "agents"],      // Tool presets
-  "maxTurns": 30,                     // Optional: turn limit
-  "memoryLimit": 20,                  // Optional: memory entries in prompt
-  "delegateDeny": {                   // Optional: block delegation
-    "agents": ["coder", "qa"],
-    "hint": "Use agents.call for direct work instead"
-  }
-}
-```
-
-agent.json is **purely operational**. No prompt-related fields. All prompt
-content lives in the 5 convention files.
+`AGENTS.md` is also the pi-coding-agent-compatible file name. Running pi from
+inside an agent directory can pick up that agent's instructions without May
+needing a May-specific identity filename.
 
 ## System Prompt Assembly
 
-`resolveSystemPrompt()` in `src/lib/manager.ts` (~90 lines):
+`resolveSystemPrompt()` in `src/lib/manager.ts` builds:
 
-1. **SOUL.md** — identity, mission, values
-2. **DOMAIN.md** — domain expertise
-3. **TOOLS.md** — tool usage guide
-4. **LESSONS.md** — accumulated learnings
-5. **knowledge/INDEX.md** — curated context (team, skills, references)
-6. **Runtime Environment** — paths, workspace, loaded files list (generated)
-7. **Session Context** — session ID, recent task history from memory (generated)
+1. `agents/shared/common-sense.md`
+2. `agents/<name>/AGENTS.md`
+3. generated runtime facts: project root, agent directory, workspace, knowledge path, available tools
 
-Stable content first (cache-friendly for LLM prefix caching), volatile last.
+If `systemPrompt` is set directly on `SubagentDefinition`, convention-file
+assembly is bypassed. That escape hatch is for tests and special runtime
+sessions, not normal agent configuration.
 
-If `systemPrompt` is set directly on `SubagentDefinition`, all convention
-file loading is bypassed (escape hatch for tests and special cases).
+## agent.json
+
+`agent.json` is operational only:
+
+```jsonc
+{
+  "name": "coder",
+  "description": "Writes code and returns verified patches",
+  "domain": "may-agent implementation",
+  "model": "opus",
+  "tools": ["coding", "agents", "finish"],
+  "memoryLimit": 20,
+  "compaction": true
+}
+```
+
+Do not put prose instructions in `agent.json`.
 
 ## Adding a New Agent
 
-1. Create `agents/<name>/agent.json` with operational config
-2. Create `agents/<name>/SOUL.md` — identity and mission
-3. Create `agents/<name>/DOMAIN.md` — domain expertise, reference file list
-4. Optionally: `TOOLS.md`, `LESSONS.md`, `knowledge/INDEX.md`
-5. Restart or `reload` command
+1. Create `agents/<name>/agent.json`.
+2. Create `agents/<name>/AGENTS.md`.
+3. Optionally create `heartbeat.md`, `knowledge/INDEX.md`, `knowledge/*.md`, `skills/*.md`, handlers, or workflows.
+4. Restart or use the runtime reload command.
 
 ## Common Mistakes
 
-- **Bloated DOMAIN.md** — move detailed methodology to `knowledge/`, keep DOMAIN concise
-- **Putting shared files in prompt** — `agents/shared/` is a reference, not auto-loaded. Distill into INDEX.md
-- **Missing INDEX.md references** — if knowledge/ has files, list them in INDEX.md so the agent knows to read them
-- **workspace/ in git** — workspace is ephemeral scratch, gitignored. knowledge/ is curated, preserved in git
+- **Prompt bloat:** Put long methodology in `knowledge/`, not `AGENTS.md`.
+- **Hidden auto-load assumptions:** Files are not prompt just because they are uppercase.
+- **Lessons as a dump:** Distill durable lessons before promoting them into `AGENTS.md`.
+- **Workspace as memory:** `workspace/` is scratch. Curated knowledge belongs in `knowledge/`.

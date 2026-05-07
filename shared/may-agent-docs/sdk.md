@@ -12,7 +12,7 @@ interface AgentSDK {
   emit(type: string, data?: Record<string, unknown>): void;
   getDb(): Database;
   log(level: "info" | "warn" | "error", msg: string): void;
-  notify(target: string, msg: string): void;
+  message(target: string, content: string): void;
   escalate(target: string, reason: string): void;
   paths: { persist: string; root: string; agents: string };
 }
@@ -37,13 +37,13 @@ export const create = (ctx: HandlerContext, entry: CronEntry) => {
 
 | Method | Does what |
 |--------|-----------|
-| `runAgent(agent, task)` | Run a named agent, wait for result. Don't await for fire-and-forget. |
-| `runWorkflow(name, task)` | Run a multi-step workflow (with guards, DB tracking, step management). |
-| `createLLMSession(opts)` | Raw LLM session with custom system prompt. For evaluation/judgment. |
+| `runAgent(agent, task)` | Run a named agent and wait for its result. |
+| `runWorkflow(name, task)` | Run a multi-step workflow and wait for completion. Workflows are synchronous by design. |
+| `createLLMSession(opts)` | Reserved. Currently throws `createLLMSession not yet implemented`. |
 | `emit(type, data)` | Emit a typed event (persisted to events table). |
 | `getDb()` | Access the shared SQLite database. |
 | `log(level, msg)` | Log a diagnostic message. |
-| `notify(target, msg)` | Emits `message.created` — `"human"` → Telegram/web. Agent name → agent's inbox. |
+| `message(target, content)` | Emits `message.created` — `"human"` → Telegram/web. Agent name → agent's inbox. |
 | `escalate(target, reason)` | SOS. Enters escalation chain, may trigger immediate wake. |
 | `paths` | `{ persist, root, agents }` — system directories. |
 
@@ -57,12 +57,8 @@ interface WorkflowSDK extends AgentSDK {
   agent: string;
   runAgent(agent: string, task: string): Promise<TaskResult>;
   runWorkflow(name: string, task: string): Promise<WorkflowResult>;
-  runFunction(label: string, fn: () => Promise<string>): Promise<TaskResult>;
-  createSession(opts: { systemPrompt: string; tools: "full" | "readonly"; label?: string }): Promise<SessionHandle>;
-  summarize(result: TaskResult): string;
   done(summary: string, opts?: { deliverables?, contextUpdates?, nextSteps? }): WorkflowResult;
-  escalate(reason: string, context?: unknown): WorkflowResult;
-  dispatchEvent(type: string, data?: Record<string, unknown>): void;
+  escalate(target: string, reason: string): void;
 }
 ```
 
@@ -72,10 +68,11 @@ The SDK and agent tools are two sides of the same coin:
 
 | Agent thinks | Agent tool | SDK method |
 |---|---|---|
-| "Ask bob to do this" | `agents.fork("bob", task)` | `sdk.runAgent("bob", task)` |
+| "Ask bob and wait for the answer" | `agents.call("bob", task)` | `await sdk.runAgent("bob", task)` |
+| "Start bob in the background" | `agents.fork("bob", task)` | No `AgentSDK` method today; handlers can use `ctx.manager.runAgent(...)` when they intentionally need a background session. |
 | "Something happened" | — | `sdk.emit("metric.breach", {...})` |
-| "Tell humans" | Telegram tool | `sdk.notify("human", msg)` |
-| "Tell bob" | `message({ to: "bob", content })` | `sdk.notify("bob", msg)` |
+| "Tell humans" | Telegram/human message | `sdk.message("human", msg)` |
+| "Tell bob" | `message({ to: "bob", content })` | `sdk.message("bob", msg)` |
 | "I'm done" | `finish()` | `workflow.done(summary)` |
 | "I'm stuck" | `finish({ blocked })` | `sdk.escalate("may", reason)` |
 
@@ -87,13 +84,15 @@ The SDK and agent tools are two sides of the same coin:
 
 ## Design Rationale
 
-The SDK is the **canonical layer**. Agent tools are thin wrappers over it.
+The SDK is the **canonical layer** for handlers and workflows. Agent tools share
+the same manager/bus internals, but not every tool action has a one-to-one SDK
+method yet.
 
 ```
 SDK (canonical)
-  ├── Agent tools wrap it    (agents.fork → sdk.runAgent)
-  ├── Handlers call it       (ctx.sdk.runAgent)
-  ├── Workflows call it      (ctx.sdk.runAgent)
+  ├── Agent tools use same internals (agents.call → callAgent, agents.fork → runAgent)
+  ├── Handlers call it       (await ctx.sdk.runAgent)
+  ├── Workflows call it      (await ctx.sdk.runAgent)
   └── Tests call it          (adapter.runAgent)
 ```
 

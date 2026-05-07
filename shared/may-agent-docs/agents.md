@@ -8,19 +8,18 @@
 | `fork` | Async — returns immediately | Parallel work, stay responsive |
 | `message` | Fire-and-forget — inbox pickup | Background, not time-sensitive |
 
-## SDK Equivalents
+## SDK And Handler Equivalents
 
 ```typescript
 // call (sync — blocks until child finishes)
 const result = await sdk.runAgent("tech-lead", task);
 
 // fork (async — starts independent session, returns immediately)
-// Note: fork creates a new root session with originSessionId link back.
-// From handler code, use sdk.runAgent without await:
-sdk.runAgent("tech-lead", task);  // don't await = fire-and-forget
+// Agent sessions use the LLM-facing agents.fork tool.
+// Handler code that intentionally needs background execution can use ctx.manager.runAgent(...).
 
 // message (async notification — delivered at next heartbeat)
-sdk.notify("bob", "Review this design");
+sdk.message("bob", "Review this design");
 // emits: { type: "message.created", from: agent, to: "bob", content: "..." }
 ```
 
@@ -53,7 +52,7 @@ fork creates a new root:
 |-----------|---------|
 | Need answer before continuing | `call` |
 | Dispatch work, don't wait | `fork` |
-| FYI notification | `message` (notify) |
+| FYI notification | `message` |
 | Multiple agents in parallel | `Promise.all([sdk.runAgent(...), ...])` |
 | Background task | `fork` + check session status later |
 

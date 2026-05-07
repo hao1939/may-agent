@@ -3,21 +3,24 @@
 ## Starting an Instance
 
 ```bash
-# Interactive chat with May
-./may.sh --chat --console --socket
+# Local full stack: chat + cron + console + socket + web UI
+./start.sh
 
-# Interactive chat with a different agent
-AGENT=bob ./may.sh --chat --console --socket
+# Direct interactive chat with May
+bun src/app/may.ts --chat --console --socket
+
+# Direct interactive chat with a different agent
+bun src/app/may.ts --agent bob --chat --console --socket
 
 # Full production mode (chat + cron + telegram)
-./may.sh --chat --console --socket --cron --telegram
+bun src/app/may.ts --chat --console --socket --cron --telegram
 
 # Cron-only daemon (no interactive chat)
-./may.sh --cron --socket
+bun src/app/may.ts --cron --socket
 
 # One-off task (runs and exits)
-./may.sh task "run the daily review"
-AGENT=bob ./may.sh task "check your periodic tasks"
+bun src/app/may.ts --task "run the daily review"
+bun src/app/may.ts --agent bob --task "check your periodic tasks"
 ```
 
 ### Flags
@@ -31,23 +34,20 @@ AGENT=bob ./may.sh task "check your periodic tasks"
 | `--telegram` | Enable Telegram bot for notifications |
 | `--status` | Print system dashboard and exit (agent quality, process health, trends) |
 | `--status --notify` | Print dashboard and also send it to Telegram |
-| `--send @agent "msg"` | Send a message to an agent and exit |
+| `--send <agent> --message "msg"` | Send a message to an agent and exit |
 
-At least one of `--chat`, `--cron`, or `--task` is required.
+At least one of `--chat`, `--cron`, `--task`, `--oneshot`, `--status`, `--message`, or `--emit` is required.
 
-### Instance Management (may.sh)
+### Local Startup
 
 ```bash
-./may.sh [name] [flags]        # Interactive foreground
-./may.sh start [name] [flags]  # Background (tmux)
-./may.sh stop [name]           # Stop instance
-./may.sh restart [name]        # Hot-reload
-./may.sh list                  # List instances
-./may.sh logs [name]           # Tail logs
-./may.sh attach [name]         # Attach to tmux
-./may.sh send [name] "msg"     # Send message to running instance
-./may.sh task "msg"            # One-off task (foreground, exits on completion)
+./start.sh
 ```
+
+`start.sh` loads `.env`, starts the virtual display/browser helpers, then runs
+`bun src/app/may.ts --chat --cron --console --socket --web "$@"`.
+
+For one-off commands, prefer direct `bun src/app/may.ts ...` invocation.
 
 ## Chat Session
 
@@ -84,16 +84,16 @@ you> now add tests for it
 you> @coder fix the failing test in test/retry.test.ts
 ```
 
-Creates an **ephemeral session** directly on the named agent, bypassing the
-interface agent. The interface agent's persistent session stays idle and
-untouched. When the direct session finishes, control returns to the prompt.
+Routes through the interface agent's persistent chat session as an explicit
+delegation request. May is instructed to fork the named agent, stay responsive,
+peek at the result, and report back.
 
 | | Normal input | `@agent` prefix |
 |---|---|---|
-| Routes through | Interface agent's persistent session | Direct ephemeral session on target |
-| Interface agent sees result? | Yes | No |
-| Session kind | `chat` | `job` |
-| Use case | Coordinated multi-agent work | Quick one-off tasks |
+| Routes through | Interface agent's persistent session | Interface agent's persistent session |
+| Interface agent sees result? | Yes | Yes |
+| Session kind | `chat` | `chat` plus May-managed fork |
+| Use case | General coordination | Explicit delegation to a named agent |
 
 ## Agents
 
@@ -141,8 +141,9 @@ untouched. When the direct session finishes, control returns to the prompt.
 | `delegateDeny` | No | Block delegation to specific agents |
 
 agent.json is **purely operational** — model, tools, limits, delegation rules.
-All prompt content lives in convention files (SOUL.md, DOMAIN.md, TOOLS.md,
-LESSONS.md, knowledge/INDEX.md).
+Always-loaded prompt content lives in `agents/shared/common-sense.md` and the
+agent's `AGENTS.md`. Domain docs, tool recipes, lessons, skills, and knowledge
+indexes are read on demand.
 
 ### Tool Presets
 
@@ -167,24 +168,25 @@ LESSONS.md, knowledge/INDEX.md).
 ### Adding a New Agent
 
 1. Create `agents/<name>/agent.json`
-2. Create `agents/<name>/SOUL.md` — identity and mission
-3. Create `agents/<name>/DOMAIN.md` — domain expertise
-4. Optionally: `TOOLS.md`, `LESSONS.md`, `knowledge/INDEX.md`
-5. Restart or type `reload` in chat
+2. Create `agents/<name>/AGENTS.md` — identity and mission
+3. Optionally create `heartbeat.md`, `knowledge/INDEX.md`, `knowledge/*.md`, `skills/*.md`, handlers, or workflows
+4. Restart or type `reload` in chat
 
 See [Agent Convention](agent-convention.md) for full directory layout.
 
 ## Agent Cooperation (V2)
 
-Agents cooperate through 5 actions on the `agents` tool:
+Agents cooperate through 7 actions on the `agents` tool:
 
 | Action | Type | Description |
 |--------|------|-------------|
 | `call` | Sync | Block until child agent completes, get result |
 | `fork` | Async | Start agent in background, returns sessionId |
+| `context` | Query | Read parent/origin/root/workflow context |
 | `list` | Query | List available agents and active sessions |
 | `peek` | Query | Read a running session's progress |
 | `cancel` | Control | Stop a running session |
+| `requests` | Query | Inspect tracked sessions/requests |
 
 `call` is the primary cooperation primitive — synchronous, simple, debuggable.
 For async communication, use the `message` tool (emits `message.created`).
@@ -223,9 +225,9 @@ See [runtime.md](../runtime.md) for socket protocol details.
 
 Cron is enabled with `--cron`. Each agent can have a `cron.json` defining jobs:
 
-- **Heartbeat jobs**: Fire into a persistent agent session (`type: "heartbeat"`)
+- **Heartbeat jobs**: Run a heartbeat workflow that starts a fresh agent task session (`handler` entry, `type` remains `"job"` or omitted)
 - **JS handlers**: Run in-process functions (`handler: "evaluate-sessions"`)
-- **Agent tasks**: Dispatch to agent via `run-agent-task` handler
+- **Detached agent tasks**: Spawn an agent task in a separate OS process (`agent` + `message`)
 - **Pre-checked heartbeats**: Check if work exists before spawning LLM session
 
 Handlers live in `agents/<name>/handlers/` and are auto-discovered.
@@ -259,13 +261,13 @@ See [cron.md](../cron.md) for details.
 
 ```bash
 # Start background instance
-docker compose -f docker/docker-compose.yml up -d
+docker compose -f container/compose.yml up -d
 
-# Attach
-./may.sh attach
+# Start local foreground instance
+./start.sh
 
-# View logs
-./may.sh logs
+# Direct status check
+bun src/app/may.ts --status
 ```
 
 Docker uses `INSTANCE=background` to avoid collision with interactive instances.

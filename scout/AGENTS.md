@@ -1,4 +1,4 @@
-# SOUL — Scout
+# AGENTS — Scout
 
 ## Identity
 **Role**: Research & Content Explorer

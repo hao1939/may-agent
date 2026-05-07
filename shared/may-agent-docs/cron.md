@@ -7,7 +7,7 @@ The cron system schedules handler execution. Handlers are TypeScript functions t
 ## How It Works
 
 ```
-cron.json defines entries → Cron class schedules ticks → handlers fire
+cron.json defines entries → Cron class schedules ticks → handler or detached job fires
 ```
 
 Each cron entry:
@@ -24,6 +24,8 @@ Each cron entry:
 - `intervalMs` — how often to fire (timer)
 - `on` — event types that also trigger this handler (reactive)
 - `handler` — filename in `agents/<agent>/handlers/`
+- `agent` + `message` without a handler — detached agent job in a separate OS process
+- `type` — optional legacy field; current entries are jobs (`"job"` or omitted), not `"heartbeat"`
 
 ## Handler Structure
 

@@ -9,8 +9,8 @@ CREATE TABLE sessions (
   sessionId       TEXT PRIMARY KEY,
   agent           TEXT NOT NULL,
   task            TEXT NOT NULL,
-  status          TEXT NOT NULL DEFAULT 'running',  -- running | done | error
-  kind            TEXT,             -- job | heartbeat | chat
+  status          TEXT NOT NULL DEFAULT 'running',  -- running | idle | done | error | interrupted
+  kind            TEXT,             -- chat | job | call
   source          TEXT,             -- what triggered it
   parentSessionId TEXT,             -- who spawned this session
   requestId       TEXT,
@@ -27,11 +27,14 @@ CREATE TABLE sessions (
 ## State Machine
 
 ```
-created → running → done
+created → running → idle      (chat sessions, autoClose: "never")
+                  → done      (completed job/call sessions)
                   → error
+                  → interrupted
 ```
 
 No "pending" or "queued" state. Sessions start running immediately when spawned.
+Heartbeats are `job` sessions whose `source` identifies the heartbeat workflow.
 
 ## Session Tree
 

@@ -41,7 +41,7 @@ Via `ctx.sdk` (preferred):
 - `sdk.emit(type, data)` — emit events
 - `sdk.runAgent(agent, task)` — run another agent
 - `sdk.log(level, msg)` — logging
-- `sdk.notify(target, msg)` — notifications
+- `sdk.message(target, content)` — human or agent messages
 - `sdk.escalate(target, reason)` — escalation
 - `sdk.paths` — system directories
 

@@ -286,19 +286,17 @@ async function runAgent(agentName: string, task: string, trigger: string): Promi
 
 ---
 
-### 4. Prompt Assembly (~100 LOC)
+### 4. Prompt Assembly
 
-Where metrics become agent direction.
+The system prompt is deliberately small and stable. Metrics, projects, messages,
+and recent history are runtime/session context, not cached system prompt.
 
 ```typescript
-function buildPrompt(config: AgentConfig, db: Db): string {
+function buildPrompt(config: AgentConfig): string {
   return [
-    config.soul,                                  // SOUL.md — role identity
-    config.domain,                                // DOMAIN.md — domain knowledge
-    formatMetrics(db.getMetrics(config.name)),     // typed metrics with status
-    formatProjects(db.getProjects(config.name)),   // active projects
-    formatMessages(db.getUnread(config.name)),     // pending messages
-    config.lessons,                                // LESSONS.md — learned patterns
+    shared.commonSense,                           // common-sense.md — shared fundamentals
+    config.identity,                              // AGENTS.md — role identity
+    formatRuntimeEnvironment(config),             // paths, workspace, tools
   ].filter(Boolean).join("\n\n---\n\n");
 }
 ```
@@ -368,33 +366,36 @@ Messages carry intent + pointer, not large payloads. Shared artifacts remain sou
 
 #### Human in the Loop
 
-Human messages (via Telegram) always target a session:
+Human messages target the chat router first. General messages go to May's
+persistent chat session; replies to a specific session are sent to that session
+when the UI provides the session id.
 
 | Scenario | Target |
 |----------|--------|
-| General message (not a reply) | May's **default session** — a persistent session for human conversation |
-| Reply to a specific agent message | The session that produced that message |
+| General message (not a reply) | May's `ChatSession` (`kind: "chat"`, `autoClose: "never"`) |
+| Reply to a specific agent message | The producing session id, via `manager.send()` / `manager.input()` |
 
 Routing is simple:
 
 ```typescript
 function onHumanMessage(text: string, replyToSessionId?: string) {
-  const targetId = replyToSessionId ?? mayDefaultSessionId;
-  const session = sessions.get(targetId);
-  if (session.status === "running") agent.steer(text);
-  else agent.followUp(text);  // wakes paused session
+  if (replyToSessionId) {
+    manager.send(replyToSessionId, text);
+    return;
+  }
+
+  chatSession.handleInput(text);
 }
 ```
 
-**Session states:** running → paused → running → ... → completed
+**Session states:** running → idle → running → ... → completed
 
-- `finish(status: "blocked")` → session pauses (agent idle, waiting for input)
-- `finish(status: "success")` → session completes (cleaned up)
-- `followUp(message)` → wakes a paused session, agent resumes with full context
+- Chat sessions use `autoClose: "never"` and go idle after each turn.
+- Job sessions use `autoClose: "immediate"` by default and are cleaned up when done.
+- `manager.send()` steers a running session or wakes an idle session with the new message.
 
-**May's default session** starts on boot, immediately pauses (no initial task). Exists solely as the human conversation endpoint. Heartbeats and task work happen in separate sessions.
-
-No special "chat session" concept. No steer/input/close complexity. Just: every message has a target session, and sessions pause/resume naturally.
+The chat session is created on the first human message, not at boot. Heartbeats
+and task work happen in separate fresh job sessions.
 
 #### Work Queue Pattern
 
@@ -467,7 +468,7 @@ CREATE TABLE project_index (id, name, owner, status, path, last_synced_at);
 
 | Data | Location |
 |------|----------|
-| Agent identity | `agents/<name>/SOUL.md` |
+| Agent identity | `agents/<name>/AGENTS.md` |
 | Domain knowledge | `agents/<name>/DOMAIN.md` |
 | Lessons | `agents/<name>/LESSONS.md` |
 | Heartbeat instructions | `agents/<name>/heartbeat.md` |
@@ -509,7 +510,7 @@ v2 must preserve:
 | Event bus | Backbone — typed pub/sub, all events persisted |
 | Metric engine | Typed measurement + alerting → drives agent direction |
 | Agent runs (glue) | Wire pi-coding-agent to bus, ~50 LOC |
-| Prompt assembly | Metrics + projects + messages → system prompt |
+| Prompt assembly | common-sense + AGENTS.md + runtime facts → system prompt |
 | Workflows | Agent steps + function steps, crash-safe |
 | Messages | Async inter-agent communication |
 | Projects | Context scope for metrics and work |
@@ -525,7 +526,7 @@ v2 must preserve:
 
 ```
 Timer → heartbeat("may") → runAgent("may", heartbeat.md, "heartbeat")
-  → system prompt includes: metrics, projects, messages
+  → runtime context includes metrics, projects, messages
   → agent sees build_health FAILING → calls run_workflow("fix-build", {})
   → workflow: coder implements fix → fn: run tests → done
   → session.end → metric engine re-measures → ✅

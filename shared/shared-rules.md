@@ -1,6 +1,6 @@
 # Shared Agent Rules
 
-These rules apply to ALL agents. Reference this file instead of duplicating in each SOUL.md.
+These rules apply to ALL agents. Reference this file instead of duplicating in each AGENTS.md.
 
 ## Rule 1: edit() over write()
 🚨 NEVER use write() to modify existing files. ALWAYS use edit(). write() overwrites everything = data loss.

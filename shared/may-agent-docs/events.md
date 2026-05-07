@@ -81,7 +81,7 @@ Note: some state is maintained directly (metrics.current, sessions.status) for q
 Uses `message.created` — the single async communication primitive:
 
 ```typescript
-sdk.notify("bob", "Review the PR");
+sdk.message("bob", "Review the PR");
 // Emits: { type: "message.created", from: agent, to: "bob", content: "Review the PR" }
 ```
 

@@ -133,10 +133,13 @@ A second metric `capability.unrecovered-breach-count-7d` counts breaches with no
 
 A supporting metric `capability.message-thread-orphan-count` counts messages with no closure after 24h. Target 0; threshold 5.
 
-**Status.** `untested`. Closing events aren't a structured concept today; messages get processed but not necessarily closed.
+**Status.** `violated by usage pattern, not by mechanism`. **14 `message.created` events in 7 days across 13 agents** (~2/day). The primitive works but is barely used. Agents prefer stigmergic coordination via shared file edits (project journals, `agents/shared/projects/*`) over explicit messaging. This is plausibly correct v2 behavior — KE-style stigmergy is a legitimate multi-agent pattern — but it means the spec's `message-conversation-close-rate` measures a primitive that's not the actual coordination channel.
+
+A historical residue note: the events table contains 371 `agent.notification` events from a deprecated code path. Daily counts trended 120/day (Apr 30) → 4/day (May 6); confirmed not currently emitted from any source in `src/` or `agents/`. These will age out via retention; the test in `test/message-tool.test.ts:49` already asserts no new emissions of this type.
 
 **Known gaps.**
-- "Closing event" needs definition. Suggest: a reply message back to original sender, OR an explicit `message.acked` event, OR the receiver's next heartbeat decision references the message content. First and third are easy; second requires a new event type.
+- The capability metric is wrong, not the system. The decision is: (a) drive `message` usage up via prompt/convention changes, or (b) replace the metric with stigmergy-aware measurement (e.g., "fraction of project journal entries that reference another agent's project workspace").
+- Suggested resolution: keep `capability.message-conversation-close-rate` as a measurement of the explicit-message channel (it should still close when used), AND add `capability.cross-agent-file-reference-rate` for the stigmergic channel.
 
 ---
 
@@ -503,7 +506,7 @@ When a structural property is violated, capabilities don't necessarily fail toda
 
 ## S5 — Convention over configuration
 
-**Claim.** A new agent runs with minimal scaffolding: `SOUL.md`, `context.md`, an `agent.json` with only `name` and `model`, a `cron.json` with only the heartbeat interval. No custom handlers, workflows, or tool overrides required.
+**Claim.** A new agent runs with minimal scaffolding: `AGENTS.md`, `context.md`, an `agent.json` with only `name` and `model`, a `cron.json` with only the heartbeat interval. No custom handlers, workflows, or tool overrides required.
 
 **Why.** Core principle P9. Per-agent customization should be opt-in, not the norm.
 

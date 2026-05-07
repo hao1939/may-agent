@@ -41,7 +41,7 @@ The escalation chain is: best-fit handler -> assigned agent -> owner -> May -> H
 ## 4. Context is discovered, not dumped
 
 System prompt = just enough to START discovering. Agents get:
-- **SOUL.md** — who you are
+- **AGENTS.md** — who you are
 - **common-sense.md** — how to think, where things are
 - **Tools** — what you can do
 - **Runtime** — paths, workspace
@@ -109,7 +109,7 @@ When behavior can be derived from a naming convention, don't build configuration
 - Metric `coach.skill-effectiveness` → coach owns it. No registry needed.
 - Event `metric.breach` with `data.owner: "coach"` → coach is accountable. No lookup needed.
 - File under `agents/bob/` (skills/, knowledge/, workspace/) → bob owns it. No mapping needed.
-- Cron entry with `agent: "scout"` → scout's heartbeat. No routing table needed.
+- Heartbeat workflow for `scout` → scout's heartbeat. No routing table needed.
 
 (Note: shared projects at `agents/shared/projects/<name>/` no longer encode owner in the path — ownership lives in the `**Owner**:` field of `project.md`. This is the one place we accepted configuration over convention, because projects must be shareable across owners.)
 
@@ -136,7 +136,7 @@ Complexity is justified only when simplicity has been tried and failed with evid
 When an agent behaves unexpectedly, the cause is almost always **something misleading in what the LLM received** — not a broken model or flawed logic. LLMs respond to their input faithfully; wrong output means wrong input.
 
 The misleading content could be anywhere in the API call:
-- System prompt (stale SOUL.md, contradictory conventions)
+- System prompt (stale AGENTS.md, contradictory conventions)
 - User message (ambiguous task description, wrong context)
 - Tool output (unexpected format, error messages treated as instructions)
 - Injected docs (outdated knowledge, irrelevant context confusing the task)

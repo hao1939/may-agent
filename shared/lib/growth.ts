@@ -72,6 +72,6 @@ export function listLabAgents(config: GrowthConfig): string[] {
   if (!existsSync(labDir)) return [];
   return readdirSync(labDir).filter((name) => {
     const p = join(labDir, name);
-    return existsSync(join(p, "SOUL.md")) || existsSync(join(p, "heartbeat.md"));
+    return existsSync(join(p, "AGENTS.md")) || existsSync(join(p, "heartbeat.md"));
   });
 }
