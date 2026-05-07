@@ -2,19 +2,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs";
 import { execute, name, description } from "../workflows/master-worker.ts";
 
-// Mock fs
-vi.mock("node:fs", async () => {
-  const actual = await vi.importActual<typeof fs>("node:fs");
-  return {
-    ...actual,
-    readFileSync: vi.fn(),
-    writeFileSync: vi.fn(),
-    appendFileSync: vi.fn(),
-    existsSync: vi.fn(),
-    readdirSync: vi.fn(),
-    statSync: vi.fn(),
-  };
-});
+// Mock fs. Keep this factory synchronous for Bun's Vitest-compatible runner;
+// `vi.importActual` is not available there, and master-worker only needs these
+// named fs functions in this test file.
+vi.mock("node:fs", () => ({
+  readFileSync: vi.fn(),
+  writeFileSync: vi.fn(),
+  appendFileSync: vi.fn(),
+  existsSync: vi.fn(),
+  readdirSync: vi.fn(),
+  statSync: vi.fn(),
+}));
 
 // Mock dependencies
 vi.mock("../workflows/dispatch-validator.ts", () => ({

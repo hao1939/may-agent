@@ -31,6 +31,10 @@ The owner is responsible for judging the alert. For cross-domain metrics, the
 owner may delegate, but the owner remains accountable until the alert is fixed,
 resolved, downgraded, excepted, or escalated.
 
+A `metric.alert_judged` event means the owner made a judgment. It is not proof
+that the alert is closed. Closure still needs a concrete operation and a later
+validation signal, usually the next `metrics-snapshot` and `metric.recovered`.
+
 ## Priority
 
 - `P0`: safety or system integrity. Must get explicit owner action now.
@@ -81,6 +85,10 @@ Use when the metric is real and the owner can correct the cause safely.
 
 Examples: fix a broken handler, restart a stuck workflow, update a project file,
 repair a bad query, or add missing measurement.
+
+The operation is not complete until the owner has actually made the change or
+started the workflow that can make it. Saying that someone should act later is
+not a fix.
 
 Do not manually resolve the alert before the metric recovers. The next
 `metrics-snapshot` run is a validation signal; the owner agent remains
@@ -140,6 +148,11 @@ Escalate to human when:
 
 Escalation must include: metric id, current value, threshold, evidence checked,
 and the decision needed from the human.
+
+Do not "escalate" by sending a queued message to the same owner that is already
+running the triage. If the owner is you and the action is safe, do it and choose
+`fix_root_cause`. If it requires a human/product decision or unsafe operation,
+notify the human with the required decision and choose `upgrade_or_escalate`.
 
 ### 6. Resolve Stale Or Transient Alert
 
@@ -215,5 +228,6 @@ when followed by a final operation or an explicit escalation.
 - Downgrading because the alert is annoying.
 - Resolving a still-breaching metric without fixing or calibrating it.
 - Treating heartbeat visibility as acknowledgement.
+- Treating a queued self-notification as escalation.
 - Assuming `metric_alerts` rows are the source of truth. The metric row and
   snapshots are the measurement; alert rows are lifecycle state.

@@ -110,6 +110,8 @@ function buildOwnerTask(ctx: AlertContext): string {
     "- waiting_with_evidence",
     "",
     "Investigation alone is not a final operation.",
+    "A final operation must leave evidence that something concrete changed, was deliberately accepted, or was escalated to the right human/project context.",
+    "A queued message to the same owner is not escalation; if the owner can safely change state, use fix_root_cause and do it.",
     "If you use finish(), put the exact operation token in the finish summary, for example: `Choosing upgrade_or_escalate because ...`.",
     "",
     "## Alert",
