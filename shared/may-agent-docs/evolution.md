@@ -156,7 +156,7 @@ Available presets:
 | `claude-code` / `gemini-cli` / `codex` | delegate to external coding agents |
 | `finish` | structured session completion |
 | `cite-source` | source citation (placeholder — not yet implemented) |
-| `query_db` | DB query tool — listed in some `agent.json` configs but **not currently wired in at runtime**; use `bun:sqlite` readonly from bash. See KE-434. |
+| `query_db` | Core read-only DB query tool. Loaded for every agent and backed by runtime `getDb()` path resolution. |
 
 ### Custom Local Tools (agents/<name>/tools/)
 

@@ -105,14 +105,8 @@ to reduce blocked-over-6h is gaming, not fixing. If you can not fix it, escalate
 Heartbeats are your autonomy time — observe, judge, act. NEVER skip a heartbeat because "nothing actionable." Your job is to FIND things to work on. If metrics are green and inbox is empty, investigate a question from your heartbeat.md, audit a past decision, or explore a new idea. Idle time is discovery time, not skip time.
 
 ## Database access
-Read the database via `bun -e` with `bun:sqlite` in **readonly mode**. The DB is at `.state/may.db`. Read-only access is safe; the in-process writer holds the write lock.
-```bash
-bun -e "
-const {Database} = require('bun:sqlite');
-const db = new Database('.state/may.db', {readonly: true});
-console.log(db.prepare('SELECT agent, COUNT(*) c FROM sessions GROUP BY agent').all());
-"
-```
-Never open the DB **read-write** from bash — a second writer races the in-process connection and can corrupt the WAL. To write data, use `emit()` events; the system handles writes safely.
+Use the `query_db` tool for read-only database inspection. It uses the runtime `getDb()` convention, so do not guess DB paths and do not call `sqlite3`.
 
-(A `query_db` tool is referenced in some older docs and `agent.json` files but is not currently implemented at runtime — see KE-434. Use the bun:sqlite pattern above.)
+Example: `query_db({ "sql": "SELECT agent, COUNT(*) c FROM sessions GROUP BY agent" })`
+
+Never open the DB **read-write** from bash — a second writer races the in-process connection and can corrupt the WAL. To write data, use `emit()` events; the system handles writes safely.

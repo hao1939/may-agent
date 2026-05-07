@@ -2,7 +2,7 @@
 
 # Database Schema Reference
 
-Database access: read via `bun -e` with `bun:sqlite` in readonly mode (`new Database('.state/may.db', {readonly: true})`). Do not open the file read-write from bash. The legacy `query_db` tool is not currently wired in at runtime — see KE-434.
+Database access: use the `query_db` tool for read-only inspection. It uses the runtime `getDb()` path convention, so agents should not guess `.state/may.db` or call `sqlite3`. Handlers and workflows use `sdk.getDb()` / `ctx.getDb()`. Do not open the file read-write from bash.
 
 ## Key Tables
 
