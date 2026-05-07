@@ -1,12 +1,9 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778177629270_22
+- **Session:** s_1778180739761_40
 - **Status:** success
-- **When:** 2026-05-07T18:57:13.190Z
+- **When:** 2026-05-07T19:07:00.519Z
 
 ## What Happened
-Refactored to follow the existing pattern: metrics-snapshot now measures `agent.<name>.low-quality-streak` per agent (P1, threshold=3). When any agent has 3+ consecutive low-quality evaluations, it breaches → fires metric.breach event → metric-alert-reactor dispatches investigation automatically. Removed the standalone agent-health-reactor handler and cron — no new machinery needed, just a new metric feeding the existing pipeline.
-
-## Files Modified
-- agents/may/handlers/metrics-snapshot.ts
+Audited 2 open alerts and 12 delivery failures. alert#136 (spec-coverage) validly waiting on project review. alert#182 (session-trace-completeness) judged calibrate_metric 2h ago but never executed — nudged may. 12 evaluator→functions.message delivery failures flagged as systemic evaluator bug.
