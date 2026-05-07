@@ -5,35 +5,65 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { execSync } from "child_process";
+import { spawnSync } from "child_process";
+import { closeSync, mkdtempSync, openSync, readFileSync, rmSync } from "fs";
+import { tmpdir } from "os";
 import { resolve, join } from "path";
 
-const AGENTS_ROOT = resolve(join(__dirname, "../.."));
+const AGENTS_ROOT = resolve(join(import.meta.dirname, "../.."));
 const PROJECT_ROOT = resolve(join(AGENTS_ROOT, ".."));
 const RUN_GYM = join(AGENTS_ROOT, "test/gym/run-gym.sh");
 
+function splitArgs(args: string): string[] {
+  return args.trim().split(/\s+/).filter(Boolean);
+}
+
+function runGym(args: string): { stdout: string; stderr: string; status: number | null } {
+  const tmp = mkdtempSync(join(tmpdir(), "agents-gym-test-"));
+  const stdoutPath = join(tmp, "stdout");
+  const stderrPath = join(tmp, "stderr");
+  const stdoutFd = openSync(stdoutPath, "w");
+  const stderrFd = openSync(stderrPath, "w");
+  try {
+    const result = spawnSync("bash", [RUN_GYM, ...splitArgs(args)], {
+      cwd: PROJECT_ROOT,
+      timeout: 120_000,
+      env: { ...process.env, GYM_PROJECT_ROOT: PROJECT_ROOT },
+      stdio: ["ignore", stdoutFd, stderrFd],
+    });
+    closeSync(stdoutFd);
+    closeSync(stderrFd);
+    return {
+      stdout: readFileSync(stdoutPath, "utf-8"),
+      stderr: readFileSync(stderrPath, "utf-8"),
+      status: result.status,
+    };
+  } finally {
+    try {
+      closeSync(stdoutFd);
+    } catch {}
+    try {
+      closeSync(stderrFd);
+    } catch {}
+    rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
 function gym(args: string): string {
-  return execSync(`bash ${RUN_GYM} ${args}`, {
-    cwd: PROJECT_ROOT,
-    encoding: "utf-8",
-    timeout: 120_000,
-    env: { ...process.env, GYM_PROJECT_ROOT: PROJECT_ROOT },
-    stdio: ["pipe", "pipe", "pipe"],
-  });
+  const result = runGym(args);
+  if (result.status !== 0) {
+    throw Object.assign(new Error(`run-gym failed with status ${result.status}`), result);
+  }
+  return result.stdout;
 }
 
 function gymAllowFail(args: string): { stdout: string; stderr: string; status: number } {
-  try {
-    const stdout = gym(args);
-    return { stdout, stderr: "", status: 0 };
-  } catch (err: unknown) {
-    const execErr = Object(err);
-    return {
-      stdout: (execErr.stdout ?? "").toString(),
-      stderr: (execErr.stderr ?? "").toString(),
-      status: execErr.status ?? 1,
-    };
-  }
+  const result = runGym(args);
+  return {
+    stdout: result.stdout,
+    stderr: result.stderr,
+    status: result.status ?? 1,
+  };
 }
 
 describe("gym runner --list", () => {
