@@ -111,3 +111,11 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 **Active work**: arc, dev, scout running heartbeats. 1 active project, 1 blocked/waiting.
 
 **No immediate action needed** — system is stable and self-operating.
+
+## 2025-06-12T~22:30Z Heartbeat
+
+**System health**: All agents active. `dev` has elevated error rate (65/275 = 24%) — worth monitoring but not new. All other agents <3% error rate.
+
+**Alert #136 (v2.spec-coverage-rate = 0.1364)**: Known structural instrumentation gap per KE-802. Only 3/11 agents emit the required events. Project `v2-spec-coverage-buildout` is in `pending-review`. Judgment: **WAITING** — this metric needs calibration or the project needs human review to decide if the instrumentation should be extended to all agents or the target lowered. No destructive action taken.
+
+**closed-loop-reliability**: 8/8 milestones complete, active and healthy.
