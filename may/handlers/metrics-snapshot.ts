@@ -490,7 +490,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
              SELECT 1 FROM metric_snapshots s
              WHERE s.metric_id = m.id
                AND s.measured_at > ?
-           )`, now - 15 * 60000);
+           )`, now - 2 * 3600000);  // 2h window: heartbeat-measured metrics run on ~30min cycles
 
       const terminalSessionsWithoutEnd = count(
         `SELECT COUNT(*) as c FROM sessions s
