@@ -5,7 +5,7 @@ status: active
 type: calibration
 priority: P2
 workflow: project
-iteration: 1
+iteration: 2
 ---
 
 # Evaluator Low Quality Rate Calibration
@@ -14,8 +14,8 @@ iteration: 1
 Bring `evaluator.low-quality-rate-24h` below threshold (0.3) and toward target (0.1) by determining whether the breach is caused by (a) evaluator rubric/threshold calibration, or (b) a real system-wide drop in session quality.
 
 ## Current State
-Iteration 1. Milestones: 0/0 done.
-Reviewer: - **I believe**: The breach is largely driven by a **scoring/heuristic shift** (heuristicVersion=2) that marks many sessions as `needs_improvement` (often at quality=0.55) for **process/guard hygiene*
+Iteration 2. Milestones: 0/0 done.
+Reviewer: - **I believe**: The breach is primarily **mechanical**: heuristic v2 (`agents/evaluator/workflows/evaluator-aftermath.ts`) flips any “issue” into `needs_improvement` (often `quality=0.55`), and the d
 ## Signals
 - Metric row (2026-05-08): current=0.3889, threshold=0.3, target=0.1.
 - Last 24h: 414 evaluations, 161 `needs_improvement`, 0 `fail` => 38.9% low.
@@ -44,7 +44,7 @@ Project format normalized to the current shared-project convention: YAML frontma
 
 ## Artifacts
 - outputs/iteration-1-diagnosis.md
-
+- outputs/iteration-2-mechanism-and-fix-options.md
 
 ## Context
 - Heuristic evaluation dominates the last 24h window; heuristicVersion=2 slice has ~0.70 needs_improvement rate vs ~0.165 for heuristicVersion=null.

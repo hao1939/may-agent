@@ -1,12 +1,9 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778236269509_32
+- **Session:** s_1778239406957_4
 - **Status:** success
-- **When:** 2026-05-08T10:31:51.157Z
+- **When:** 2026-05-08T11:26:51.973Z
 
 ## What Happened
-Audited 3 open alerts and 4 failed deliveries. Relayed evaluator's blocked escalation to may (routing bug: evaluator sends to "functions.message" instead of using message tool). Notified evaluator of the bug. Nudged scout to judge 2 unjudged/stale alerts.
-
-## Completed
-- Closed-loop audit of red metrics and failed deliveries
+Choosing resolve_stale because the invalid-format-count=2 is not reproducible — running the same validation function now finds 0 invalid projects. The spike was transient (race during file write). The next metrics-snapshot will measure 0 and auto-resolve the alert.
