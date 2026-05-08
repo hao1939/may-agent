@@ -67,3 +67,4 @@ New project. First iteration should query the last 24h of alerts and produce the
 - Recurring patterns get escalated to projects
 
 ## Journal
+- 2026-05-08: First daily report produced. 30 alerts in 24h, 25 resolved, 4 unresolved. Top pattern: project.invalid-format-count is noisy (10 firings), evaluator heuristic scoring is root cause of 3/4 unresolved alerts. Report at reports/2026-05-08.md.
