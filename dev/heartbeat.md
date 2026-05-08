@@ -80,7 +80,11 @@ investigation artifact just to prove activity. Instead:
 1. Triage pending events explicitly in `finish()` as acted/delegated/dismissed/escalated.
 2. Check `git status --short`; if there is dirty state, classify it as source work,
    intentional generated runtime files, or a risk that needs escalation before committing.
-3. Only write a new artifact when it records a clear follow-up task, owner, falsifiable
+3. Stage and commit only intentional source/docs/artifact files. Do not include incidental
+   `*/last-session.md` or `shared/*.log` runtime updates unless they are the explicit
+   deliverable; clean or escalate them before `finish()` so the guard is satisfied without
+   noisy generated-file commits.
+4. Only write a new artifact when it records a clear follow-up task, owner, falsifiable
    observation, or code/doc change. Routine healthy checks can be evidenced directly from
    tool outputs in `verification_evidence`.
 
