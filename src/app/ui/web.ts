@@ -1277,7 +1277,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         writeFileSync(discFile, `# Discussion\n${entry}`, "utf-8");
       }
 
-      // Auto-resume if blocked/waiting
+      // Legacy project files used bold status fields. New YAML projects are
+      // resumed by the project handler after the event below.
       let resumed = false;
       let content = readFileSync(projectFile, "utf-8");
       const statusMatch = content.match(/^\*\*Status\*\*:\s*(.+)$/m);
@@ -1288,7 +1289,15 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         resumed = true;
       }
 
-      return json({ ok: true, resumed });
+      const trigger = await sendUnixCommand({
+        type: "emit",
+        event: "project.nudge",
+        source: "web-ui",
+        projectPath: path,
+        comment: true,
+      });
+
+      return json({ ok: true, resumed: resumed || trigger.ok, triggered: trigger.ok, triggerError: trigger.error });
     } catch (e: any) {
       return json({ error: e.message }, 500);
     }
