@@ -10,7 +10,7 @@ iteration: 2
 
 # Evaluator Low-Quality Rate Calibration
 
-**Iteration**: 1
+**Iteration**: 2
 ## Goal
 Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior failures from (b) pipeline/guard false-penalties, and ensure evaluator scoring produces low false-good overturns.
 
@@ -19,9 +19,8 @@ Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior
 - Metric: `evaluator.false-good-rate-sample` current 0.5714 (threshold 0.2, target 0.05) but denominator only 7 reviewed sessions (sample instability).
 
 ## Current State
-Iteration 1. Milestones: 0/0 done.
-Reviewer: ### EXP-215 (externalize beliefs)
-1. **I believe**: The project is still in the “diagnosis” phase; we don’t yet have a concrete separation of (a) fixable agent behavior failures vs (b) pipeline/guard
+Iteration 2. Milestones: 0/0 done.
+Reviewer: - **I believe**: Iteration 2 successfully identified the exact mechanism causing the spike: `classifyVerdict()`’s step-function (“any issue ⇒ quality=0.55 ⇒ needs_improvement”) plus a small set of hyg
 ## Plan
 1. **Metric decomposition proposal**: draft a split of low-quality-rate into sub-metrics by issue class (schema errors, finish/uncommitted, terminal interruptions) to avoid conflating agent quality with infra/guard friction.
 2. **Criteria calibration**: review evaluator criteria for (a) terminal interrupted sessions (Clean start) and (b) finish-blocked sessions; decide whether to classify as NI vs excluded/exception.
@@ -77,3 +76,4 @@ Milestone checkoff: Iteration 2 — mechanism + fix options
 - Replace stale: Project header shows `iteration: 2` though we’re at Iteration 4; treat project.md as human-owned; worker should avoid modifying it.”
 - Approval packet exists (Iteration 5) but does not change runtime behavior; the loop must close by patching **where paging/alerting chooses the metric** (may be in-repo or external).
 - Next action is to **locate the paging/alert hook** via targeted ripgrep, then propose a minimal change to repoint paging from `evaluator.low-quality-rate-24h` to `evaluator.substantive-low-quality-rate-24h`, with verification steps.
+- Iteration 2 located heuristic mechanism in `agents/evaluator/workflows/evaluator-aftermath.ts` (step-function: any `issues` => `quality=0.55` and `needs_improvement`; failed statuses => `quality=0.2`). - Rollout/refresh logic in `agents/may/handlers/session-aftermath-scan.ts` refreshes stale **good** evals on heuristicVersion bump but does not refresh NI (“NI sticky”). - Most NI sessions in the DB-stratified sample were triggered by hygiene/pipeline flags (finish blocked, schema/query error, interrupted/clean start), suggesting false-penalties are a major driver; next step is transcript-level audit + explicit rubric mapping for “substantive vs hygiene vs unscorable.”

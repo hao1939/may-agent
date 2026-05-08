@@ -6,7 +6,7 @@
 **File:** `agents/evaluator/workflows/evaluator-aftermath.ts`
 
 Key entry points:
-- `export const HEURISTIC_VERSION = 3;` (line near top of file)
+- `export const HEURISTIC_VERSION = 3;` (near top of file)
 - `classifyVerdict(session, transcript)` — produces `quality`, `efficiency`, `verdict`, and `issues`.
 - `transcriptIssues(transcript)` — extracts hygiene/process issues from transcript text.
 
