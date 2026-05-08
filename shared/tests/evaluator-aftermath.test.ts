@@ -30,13 +30,42 @@ describe("evaluator aftermath transcript checks", () => {
     expect(verdict.issues).toContain("schema/query error in transcript");
   });
 
-  it("flags metric health claims without live DB evidence", () => {
+  it("flags metric health claims without live evidence", () => {
     const verdict = classifyVerdict(
       { status: "done", opCount: 0 },
       "DONE\n\nAll P1 metrics are in range. project.md says the system is healthy.",
     );
 
     expect(verdict.verdict).toBe("needs_improvement");
-    expect(verdict.issues).toContain("metric health claim without live query");
+    expect(verdict.issues).toContain("metric health claim without live evidence");
+  });
+
+  it("accepts workflow-collected live signals as metric evidence", () => {
+    const verdict = classifyVerdict(
+      { status: "done", opCount: 0 },
+      [
+        "## Live Runtime Signals (workflow-collected)",
+        "Status: available",
+        "Counts: active P0/P1 metrics=2; open P0/P1 alerts=0; open lower-priority alerts=0; active projects=1",
+        "DONE",
+        "All P1 metrics are in range based on workflow-collected live signals.",
+      ].join("\n"),
+    );
+
+    expect(verdict.issues).not.toContain("metric health claim without live evidence");
+  });
+
+  it("flags unavailable workflow-collected signals as reliability issue", () => {
+    const verdict = classifyVerdict(
+      { status: "done", opCount: 0 },
+      [
+        "## Live Runtime Signals (workflow-collected)",
+        "Status: unavailable",
+        "Error: no such table: metrics",
+      ].join("\n"),
+    );
+
+    expect(verdict.verdict).toBe("needs_improvement");
+    expect(verdict.issues).toContain("workflow live signal injection unavailable");
   });
 });
