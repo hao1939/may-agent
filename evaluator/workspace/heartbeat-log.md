@@ -23,6 +23,10 @@
   - sessions total: not queried
   - metrics last updated_at: not queried
 
+## 2026-05-08 (follow-up)
+- Fix: attempted to create a new log file but it already existed; used `edit()` instead to avoid accidental data loss.
+- Reminder: always `read()` before `write()` when touching an existing artifact.
+
 ### Template for future heartbeat entries
 - What signal triggered this work (metric, message, failure):
 - What I checked (files/queries/commands):
