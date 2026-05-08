@@ -10,6 +10,7 @@ iteration: 1
 
 # Evaluator Low-Quality Rate Calibration
 
+**Status**: active
 ## Goal
 Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior failures from (b) pipeline/guard false-penalties, and ensure evaluator scoring produces low false-good overturns.
 
