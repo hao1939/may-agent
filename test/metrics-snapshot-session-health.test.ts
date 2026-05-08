@@ -155,4 +155,93 @@ describe("metrics-snapshot session health metrics", () => {
       config: null,
     });
   });
+
+  it("counts only active project iteration events", async () => {
+    const root = join(tmpdir(), `metrics-project-iterations-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempDirs.push(root);
+    mkdirSync(join(root, "agents"), { recursive: true });
+    mkdirSync(join(root, "src/lib"), { recursive: true });
+    writeFileSync(join(root, "src/lib/manager.ts"), "export {}\n");
+
+    const db = getDb(root);
+    const now = Date.now();
+    db.run(
+      "INSERT INTO projects (id, path, name, owner, status, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+      ["active-work", "shared/projects/active-work", "active-work", "may", "active", now],
+    );
+    db.run(
+      "INSERT INTO projects (id, path, name, owner, status, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+      ["closed-work", "shared/projects/closed-work", "closed-work", "may", "closed", now],
+    );
+    db.run(
+      "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
+      ["project.iteration", JSON.stringify({ projectId: "may/active-work" }), now - 60_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
+      ["project.iteration", JSON.stringify({ project: "/app/agents/shared/projects/active-work", iteration: 2 }), now - 50_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
+      ["project.iteration", JSON.stringify({ projectId: "may/closed-work" }), now - 40_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
+      ["project.iteration", JSON.stringify({ projectId: "unknown/missing-work" }), now - 30_000],
+    );
+
+    const handler = create({
+      sdk: {
+        getDb: () => db,
+        paths: { root, agents: join(root, "agents") },
+        log: () => {},
+        emit: () => {},
+      },
+    } as any, {} as any);
+
+    await handler({ type: "trigger.metrics-snapshot" } as any);
+
+    const metric = db.prepare("SELECT current FROM metrics WHERE id = ?").get("project.iterations-24h") as any;
+    const snapshot = db.prepare("SELECT value, sample_size FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 1").get("project.iterations-24h") as any;
+    expect(metric.current).toBe(2);
+    expect(snapshot).toMatchObject({ value: 2, sample_size: 4 });
+  });
+
+  it("measures autonomous rate across non-evaluator work sessions", async () => {
+    const root = join(tmpdir(), `metrics-autonomous-rate-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempDirs.push(root);
+    mkdirSync(join(root, "agents"), { recursive: true });
+    mkdirSync(join(root, "src/lib"), { recursive: true });
+    writeFileSync(join(root, "src/lib/manager.ts"), "export {}\n");
+
+    const db = getDb(root);
+    const now = Date.now();
+    for (const [sessionId, agent, source] of [
+      ["s_heartbeat", "may", "workflow:may-heartbeat"],
+      ["s_steward", "may", "closed-loop-steward"],
+      ["s_manual", "may", "telegram.reply"],
+      ["s_eval", "evaluator", "workflow:evaluator-aftermath"],
+    ] as const) {
+      db.run(
+        "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt, endedAt) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [sessionId, agent, "task", "done", source, now - 60_000, now - 30_000],
+      );
+    }
+
+    const handler = create({
+      sdk: {
+        getDb: () => db,
+        paths: { root, agents: join(root, "agents") },
+        log: () => {},
+        emit: () => {},
+      },
+    } as any, {} as any);
+
+    await handler({ type: "trigger.metrics-snapshot" } as any);
+
+    const metric = db.prepare("SELECT current FROM metrics WHERE id = ?").get("capability.self-directed-iteration-rate-24h") as any;
+    const snapshot = db.prepare("SELECT value, sample_size FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 1").get("capability.self-directed-iteration-rate-24h") as any;
+    expect(metric.current).toBe(0.6667);
+    expect(snapshot.sample_size).toBe(3);
+  });
 });
