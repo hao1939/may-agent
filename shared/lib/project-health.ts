@@ -119,7 +119,7 @@ export function validateProjectFormat(content: string, expectedId?: string): str
   if (expectedId && meta.id && meta.id !== expectedId) {
     errors.push(`frontmatter id '${meta.id}' does not match directory '${expectedId}'`);
   }
-  if (/^\s*\*\*(Owner|Status)\*\*:\s*/mi.test(stripProjectMeta(content))) {
+  if (/^\s*\*\*(Owner|Status):?\*\*:?\s*/mi.test(stripProjectMeta(content))) {
     errors.push("metadata duplicated as bold body field");
   }
 
