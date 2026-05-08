@@ -1,10 +1,11 @@
 ---
 id: v2-spec-coverage-buildout
 owner: may
-status: active
+status: waiting
 type: milestone
 priority: P2
-iteration: 2
+iteration: 3
+stop_reason: Auto-waiting: 3 consecutive iterations with no clear orchestrator decision. Project may be complete.
 ---
 
 # Project Proposal: v2 Spec Coverage Buildout

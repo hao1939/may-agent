@@ -22,3 +22,4 @@
 
 ### Iteration 3 — 2026-05-08T05:11:43.729Z
 **Worker**: Produced iteration 3 progress report for v2-spec-coverage-buildout. Coverage has doubled from 0.1364 (3/22) to 0.2727 (6/22) organically. Project remains P2 pending-review with no action needed.
+**Orchestrator**: Auto-waiting: 3 consecutive iterations with no clear orchestrator decision. Project may be complete.
