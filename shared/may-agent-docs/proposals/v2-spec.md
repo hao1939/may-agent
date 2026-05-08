@@ -131,7 +131,7 @@ A second metric `capability.unrecovered-breach-count-7d` counts breaches with no
 
 A supporting metric `capability.message-thread-orphan-count` counts messages with no closure after 24h. Target 0; threshold 5.
 
-**Status.** `violated by usage pattern, not by mechanism`. **14 `message.created` events in 7 days across 13 agents** (~2/day). The primitive works but is barely used. Agents prefer stigmergic coordination via shared file edits (project journals, `agents/shared/projects/*`) over explicit messaging. This is plausibly correct v2 behavior — KE-style stigmergy is a legitimate multi-agent pattern — but it means the spec's `message-conversation-close-rate` measures a primitive that's not the actual coordination channel.
+**Status.** `violated by usage pattern, not by mechanism`. The `message.created` event fires (primitive works) but at low volume — query `events` table for current count. Agents prefer stigmergic coordination via shared file edits (project journals, `agents/shared/projects/*`) over explicit messaging. This is plausibly correct v2 behavior — see `proposals/stigmergic-coordination.md` — but it means the spec's `message-conversation-close-rate` measures a primitive that's not the actual coordination channel.
 
 A historical residue note: the events table contains 371 `agent.notification` events from a deprecated code path. Daily counts trended 120/day (Apr 30) → 4/day (May 6); confirmed not currently emitted from any source in `src/` or `agents/`. These will age out via retention; the test in `test/message-tool.test.ts:49` already asserts no new emissions of this type.
 
@@ -662,7 +662,7 @@ This is a tracking effort, not a one-shot patch. Smallest demonstration first (`
 
 ## Project 6 — Rethink C4 (coordination)
 
-The `message-conversation-close-rate` metric measures a path agents don't take (14 messages / 7 days). Either:
+The `message-conversation-close-rate` metric measures a path agents don't take (low message volume; see `proposals/stigmergic-coordination.md`). Either:
 - Drive message volume up via prompt/convention changes (`arc` writes a proposal).
 - Add `capability.cross-agent-file-reference-rate` to measure the stigmergic channel agents actually use.
 - Both (recommended).
