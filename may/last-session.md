@@ -1,9 +1,9 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778239406957_4
+- **Session:** s_1778240006393_15
 - **Status:** success
-- **When:** 2026-05-08T11:26:51.973Z
+- **When:** 2026-05-08T11:34:11.353Z
 
 ## What Happened
-Choosing resolve_stale because the invalid-format-count=2 is not reproducible — running the same validation function now finds 0 invalid projects. The spike was transient (race during file write). The next metrics-snapshot will measure 0 and auto-resolve the alert.
+Audited 2 open alerts and 6 delivery failures. Re-routed the P0 escalation (evaluator.low-quality-rate-24h) to human since evaluator was targeting invalid "hao". Notified evaluator about invalid targets ("hao", "functions.message"). Scout alert#197 is P3 with valid downgrade judgment—no action needed.

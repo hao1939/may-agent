@@ -11,12 +11,12 @@ iteration: 2
 # Evaluator Low Quality Rate Calibration
 
 **Iteration**: 5
+**Status**: blocked
 ## Goal
 Bring `evaluator.low-quality-rate-24h` below threshold (0.3) and toward target (0.1) by determining whether the breach is caused by (a) evaluator rubric/threshold calibration, or (b) a real system-wide drop in session quality.
 
 ## Current State
-Iteration 2. Milestones: 0/0 done.
-Reviewer: - **I believe**: The breach is primarily **mechanical**: heuristic v2 (`agents/evaluator/workflows/evaluator-aftermath.ts`) flips any “issue” into `needs_improvement` (often `quality=0.55`), and the d
+Blocked: 5 consecutive iterations without milestone progress. Approach needs rethinking.
 ## Signals
 - Metric row (2026-05-08): current=0.3889, threshold=0.3, target=0.1.
 - Last 24h: 414 evaluations, 161 `needs_improvement`, 0 `fail` => 38.9% low.
@@ -54,3 +54,6 @@ Project format normalized to the current shared-project convention: YAML frontma
 - Heuristic evaluation dominates the last 24h window; heuristicVersion=2 slice has ~0.70 needs_improvement rate vs ~0.165 for heuristicVersion=null.
 - Top needs_improvement “issues” are largely hygiene/process/guard failures (finish blocked by uncommitted changes; schema/query error in transcript; interrupted/clean start).
 - Next investigation should identify heuristic v2 rule locations + perform a small stratified manual audit to determine false positives vs intended penalties and pick an intervention (rubric vs heuristic tuning vs workflow fixes).
+- DB check confirms `evaluator.low-quality-rate-24h` is still **0.3925** and active; proposed `evaluator.substantive-low-quality-rate-24h` is **not present** in `metrics` yet.
+- Repeated iteration failures are dominated by process/tooling: `shared/projects/**` is `.gitignore`’d and accidental edits to `shared/projects/.../project.md` create uncommitted-change blocks; therefore avoid generating/committing artifacts there.
+- Next unblock requires an explicit governance decision (May/owner): approve metric split + alert pivot, or mandate heuristic v2 tuning instead.
