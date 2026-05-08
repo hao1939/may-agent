@@ -18,8 +18,9 @@
 
 ## Queries to Start With
 Schema reality (verified 2026-05-08): the `sessions` table has no
-`turns` column — use `opCount`. Status values are `done | error |
-interrupted | running` (no `'completed'`). `events` uses `timestamp`
+`turns` column — use `opCount`. Its PK is **`sessionId`**, not `id`
+(aftermath flagged s_1778222607213_0 for `SELECT id FROM sessions`).
+Status values are `done | error | interrupted | running` (no `'completed'`). `events` uses `timestamp`
 (unix ms, not `created_at`) and stores its JSON blob in column `data`
 (NOT `payload` — recurring footgun; aftermath flagged
 s_1778213206775_3 for it). `metrics` uses `updated_at` (NOT
