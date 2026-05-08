@@ -57,6 +57,13 @@ type SnapshotRow = {
   measured_at: number | null;
 };
 
+type TableInfoRow = {
+  name: string;
+  type: string;
+};
+
+const SCHEMA_TABLES = ["sessions", "events", "metrics", "metric_alerts"] as const;
+
 const DEFAULT_LOOKBACK_MS = 6 * 60 * 60_000;
 const DEFAULT_ALERT_LIMIT = 12;
 const DEFAULT_DELIVERY_FAILURE_LIMIT = 12;
@@ -88,6 +95,18 @@ function summarizeSessions(sessions: SessionRow[], now: number): string {
 function isBreaching(current: number | null, threshold: number | null, alertOp: string | null): boolean {
   if (current == null || threshold == null) return false;
   return alertOp === ">" || alertOp === "above" ? current > threshold : current < threshold;
+}
+
+function formatSchema(rows: TableInfoRow[]): string {
+  if (rows.length === 0) return "(schema unavailable)";
+  return rows.map((row) => `${row.name}${row.type ? ` ${row.type}` : ""}`).join(", ");
+}
+
+function loadSchemaBrief(db: ReturnType<HandlerContext["sdk"]["getDb"]>): string[] {
+  return SCHEMA_TABLES.map((table) => {
+    const rows = db.prepare(`PRAGMA table_info(${table})`).all() as TableInfoRow[];
+    return `- ${table}: ${formatSchema(rows)}`;
+  });
 }
 
 function buildTriageTask(alert: AlertRow, owner: string, reason: string): string {
@@ -130,6 +149,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
   return async () => {
     const db = ctx.sdk.getDb();
     const now = Date.now();
+    const schemaBrief = loadSchemaBrief(db);
 
     const running = db.prepare(
       `SELECT sessionId FROM sessions
@@ -282,7 +302,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       "[cron:closed-loop-steward] Audit whether red metrics and failed deliveries are moving toward closure.",
       "",
       "You own the global closed loop, not every metric. The generated context below is workflow-collected live evidence.",
-      "Use query_db only when the context is missing or internally inconsistent. If you do query, inspect schema first with PRAGMA table_info; do not guess runtime DB column names.",
+      "The handler has already collected live alert/delivery context below so you should not need exploratory SQL for routine audit decisions.",
+      "If you do need SQL, use the injected schema and safe-query examples below; do not guess runtime DB column names.",
       "If the context lacks a fact this audit needs, record that as a handler data-collection gap so the next run can be fixed to inject it.",
       "",
       "Mental model: project carries goal/context; metrics are signals; cron/events trigger reassessment; agents judge and act.",
@@ -296,6 +317,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       "- Do not create a project for this cron itself. Create/update a project only when you discover systemic implementation work that cannot be completed in this run.",
       "- If this recurring procedure is wrong or stale, improve the handler/cron/config directly and verify it.",
       "- End with: issue, owner, judgment, action taken, next validation signal.",
+      "",
+      "## Runtime DB Schema (safe query reference)",
+      ...schemaBrief,
+      "",
+      "## Safe Query Examples",
+      "- Recent sessions: `SELECT sessionId, agent, status, source, startedAt, endedAt, error FROM sessions ORDER BY startedAt DESC LIMIT 5;`",
+      "- Recent message failures: `SELECT id, source, owner, data, timestamp FROM events WHERE event_type='message.delivery_failed' ORDER BY timestamp DESC LIMIT 5;`",
+      "- Metric alert context: `SELECT ma.id, ma.metric_id, m.name, m.owner, ma.message, ma.created_at FROM metric_alerts ma LEFT JOIN metrics m ON m.id = ma.metric_id WHERE ma.resolved_at IS NULL ORDER BY ma.created_at DESC LIMIT 5;`",
       "",
       "## Open Metric Alerts",
       alertLines.length ? alertLines.join("\n") : "none",

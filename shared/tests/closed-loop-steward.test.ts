@@ -4,6 +4,10 @@ import { create } from "../../may/handlers/closed-loop-steward.js";
 function makeDb(openAlerts: unknown[] = []) {
   return {
     prepare: vi.fn((sql: string) => {
+      if (sql.startsWith("PRAGMA table_info(")) {
+        const table = sql.match(/PRAGMA table_info\(([^)]+)\)/)?.[1] ?? "unknown";
+        return { all: vi.fn(() => [{ name: `${table}_id`, type: "TEXT" }]) };
+      }
       if (sql.includes("WHERE agent = 'may'") && sql.includes("status = 'running'")) {
         return { get: vi.fn(() => null) };
       }
@@ -46,7 +50,7 @@ function makeCtx(db: ReturnType<typeof makeDb>, runAgent = vi.fn(() => new Promi
 }
 
 describe("closed-loop-steward handler", () => {
-  it("returns immediately after dispatching may instead of awaiting the may session", async () => {
+  it("injects runtime schema and returns immediately after dispatching may instead of awaiting the may session", async () => {
     const db = makeDb([
       {
         id: 123,
