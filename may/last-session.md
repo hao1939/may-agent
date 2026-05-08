@@ -1,12 +1,13 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778274629385_135
+- **Session:** s_1778275931372_166
 - **Status:** success
-- **When:** 2026-05-08T21:11:48.673Z
+- **When:** 2026-05-08T21:34:14.865Z
 
 ## What Happened
-Produced first daily alert review report for 2025-07-05. 36 alerts across 12 metrics in 24h; 32 resolved, 4 unresolved. Key findings: project.invalid-format-count is noisy (14/36 alerts, all self-resolving), and the 4 unresolved alerts all relate to session quality issues. Report sent to human via Telegram.
+Choosing fix_root_cause because 2 project.md files had duplicated bold metadata fields in the body. Removed `**Status**: blocked` from evaluator-low-quality-rate-calibration/project.md and `**Status**: active` from ruflo-learning-loop/project.md. Validator now reports 0 invalid formats.
 
 ## Files Modified
-- /app/agents/shared/projects/daily-alert-review/outputs/2025-07-05-report.md
+- agents/shared/projects/evaluator-low-quality-rate-calibration/project.md
+- agents/shared/projects/ruflo-learning-loop/project.md
