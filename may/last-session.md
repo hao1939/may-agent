@@ -1,9 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778217402777_5
+- **Session:** s_1778236269509_32
 - **Status:** success
-- **When:** 2026-05-08T05:17:27.700Z
+- **When:** 2026-05-08T10:31:51.157Z
 
 ## What Happened
-Audited 4 open metric alerts and 1 delivery failure. All alerts are P2 and either self-resolving (uptime, iteration-rate), marginally breaching with active owner (evaluator low-quality-rate), or already tracked by a project (spec-coverage). The `functions.message` delivery failure is a known recurring evaluator bug (KE-009 documented) with placeholder content — low impact. No escalation or new projects needed.
+Audited 3 open alerts and 4 failed deliveries. Relayed evaluator's blocked escalation to may (routing bug: evaluator sends to "functions.message" instead of using message tool). Notified evaluator of the bug. Nudged scout to judge 2 unjudged/stale alerts.
+
+## Completed
+- Closed-loop audit of red metrics and failed deliveries

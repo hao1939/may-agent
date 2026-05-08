@@ -11,7 +11,7 @@ iteration: 0
 # Project: Scout Second Brain Learning
 
 **Status**: active
-**Iteration**: 1
+**Iteration**: 2
 ## Goal
 
 Learn from `eugeniughelbur/obsidian-second-brain` and adapt the smallest useful
@@ -19,8 +19,8 @@ set of knowledge-base practices that make scout findings easier to maintain,
 reuse, and turn into system improvements.
 
 ## Current State
-Iteration 1. Milestones: 4/5 done.
-Reviewer: 1. **I believe**: The worker successfully identified 3 practices (AI-First Preamble, In-place Updates, Source-Grounded Claims) and attempted to write them to `outputs/pilot-practices.md`, but failed t
+Iteration 2. Milestones: 5/5 done.
+Reviewer: 1. **I believe**: The worker successfully modified the 3 scout knowledge files and verified them, completing the work for the application milestone, but hit the uncommitted changes guardrail because t
 ## Context
 
 Reference repo:
@@ -47,7 +47,7 @@ Initial hypothesis:
 - [x] Write `agents/scout/knowledge/obsidian-second-brain-patterns.md` with: applicable ideas, non-applicable ideas, risks, and a smallest pilot.
 - [x] Pick 2-3 practices for a scout-only pilot. Prefer practices that reduce duplicate notes and improve downstream reuse.
 - [x] Apply the pilot to 3-5 recent scout knowledge artifacts.
-- [ ] Review metrics and downstream references after the pilot; decide whether to keep, adjust, or discard the practices.
+- [x] Review metrics and downstream references after the pilot; decide whether to keep, adjust, or discard the practices.
 
 ## Resources
 
