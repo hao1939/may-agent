@@ -10,6 +10,7 @@ iteration: 1
 
 # Evaluator Low-Quality Rate Calibration
 
+**Iteration**: 1
 ## Goal
 Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior failures from (b) pipeline/guard false-penalties, and ensure evaluator scoring produces low false-good overturns.
 
@@ -36,6 +37,7 @@ Reviewer: - **I believe**: The largest driver of `evaluator.low-quality-rate-24h
 
 
 ## Artifacts
+- outputs/iteration-1-deliverable-unscorable-split.md
 - outputs/iteration-1-diagnosis.md
 - outputs/iteration-1-2026-05-08-pipeline-vs-behavior-split.md
 - outputs/iteration-1-deliverable-heuristic-v2-calibration-plan.md
@@ -46,7 +48,6 @@ Reviewer: - **I believe**: The largest driver of `evaluator.low-quality-rate-24h
 - outputs/iteration-1-2026-05-08-evidence-refresh.md
 - outputs/iteration-5-approval-packet.md
 - outputs/iteration1-attribution-summary.md
-
 
 ## Context
 - `issues[0]` top driver in last 24h is `shallow_session:*` (~1006); other large NI drivers include `finish blocked by uncommitted changes` (~142), `terminal status: interrupted` (~62), `schema/query error in transcript` (~60).
