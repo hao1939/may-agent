@@ -10,7 +10,6 @@ iteration: 1
 
 # Evaluator low-quality-rate (24h) calibration
 
-**Status**: active
 ## Goal
 Bring `evaluator.low-quality-rate-24h` back under control (target 0.1, alert threshold 0.3) by identifying whether the spike is (a) real widespread quality drop, (b) heuristic-eval calibration issue, or (c) evaluation pipeline mode drift (LLM eval disabled/stalled) and then proposing the right remediation.
 
@@ -21,19 +20,8 @@ Bring `evaluator.low-quality-rate-24h` back under control (target 0.1, alert thr
   - KE-809/KE-801 (storm contamination patterns)
 
 ## Current State
-Evidence from DB (2026-05-08):
-- Last 24h scored sessions: 216 needs_improvement / 452 total = 0.4779.
-- Spread across multiple agents (suggests system-wide scoring skew vs one agent collapse):
-  - may: 118/266 = 0.4436
-  - scout: 49/95 = 0.5158
-  - dev: 33/56 = 0.5893
-  - arc: 15/34 = 0.4412
-- Evaluation mode: 452/452 have `evaluatedByHeuristic=1` (no LLM eval contributing in this window).
-- Evaluation pipeline liveness (DB): `evaluations MAX(createdAt)` is fresh.
-- Legacy `.state/evaluations/` artifacts are stale (mostly Mar/Apr), indicating output-path drift vs pipeline failure.
-
-Hypothesis (most likely): heuristic evaluator is currently the only scorer; its thresholds are too harsh or it is misclassifying a common pattern, inflating needs_improvement to ~0.48.
-
+Iteration 2. Milestones: 0/0 done.
+Reviewer: - **I believe**: The spike is primarily **real “process hygiene” incidents being counted as low-quality** because `evaluator-aftermath.ts` forces `verdict=needs_improvement` at **quality=0.55 whenever
 ## Plan
 1. **Confirm intended evaluation mode**: is `evaluate-session-llm` disabled by design? If yes, update alerting/targets to match heuristic baseline; if no, escalate to re-enable/fix pipeline. (Owner: may/tech-lead)
 2. **Find top heuristic “issues” driving needs_improvement**: aggregate `evaluations.issues` (JSON) to determine the dominant failure reasons.
@@ -50,3 +38,21 @@ Hypothesis (most likely): heuristic evaluator is currently the only scorer; its 
 
 ## Journal
 - 2026-05-08: Established DB-ground-truth rate (0.4779 = 216/452) and confirmed all evaluations in window are heuristic. Notified May asking whether LLM eval is intended to be off and suggesting calibration/alerting adjustment.
+
+
+## Artifacts
+- outputs/iteration-1-diagnosis.md
+- outputs/iteration-1-deliverable-heuristic-v2-calibration-plan.md
+- outputs/iteration-3-impact-model-and-recommendation.md
+- outputs/iteration-4-metric-split-implementation-plan.md
+- outputs/iteration-2-mechanism-and-fix-options.md
+- outputs/iteration-1-2026-05-08-evidence-refresh.md
+- outputs/iteration-5-approval-packet.md
+
+
+## Context
+- Heuristic scoring is implemented in `agents/evaluator/workflows/evaluator-aftermath.ts` with `HEURISTIC_VERSION = 3`.
+- `classifyVerdict()` is a step function: terminal failure → quality 0.2 NI; any detected issue → quality 0.55 NI; no issues → quality 0.85 good.
+- Top hygiene triggers are explicit transcript detectors: “finish() blocked [uncommitted changes]”, `/no such column|table/` (schema/query error), “workflow live signal injection unavailable”, etc.
+- There is heuristic version drift: aftermath workflow writes hv=3 while fallback scan defaults hv=2; mixed versions persist in DB due to refresh rules.
+- Next step: quantify last-24h low-quality attribution by (bucket/status/issues) and compute counterfactual metric impact for exempting top hygiene issues, then choose one intervention.
