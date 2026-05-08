@@ -1,3 +1,9 @@
-# Session Info\nI investigated metric scout.good-session-rate-24h.
-Session Fri May  8 21:11:26 UTC 2026 - Investigating scout metrics. Found recent errors in sessions.
-# Heartbeat Log\n\n- Fri May  8 21:11:58 UTC 2026: Monitored recent AI agent discussions. Focus remains on discovering actionable cross-agent patterns from XHS and other community platforms. No immediate anomalies detected.
+# Scout Operations Journal
+
+## 2026-05-08 Update
+- Investigated metric alert for `scout.operational-friction-rate-24h` and `scout.good-session-rate-24h`.
+- The dominant issues in the evaluations table are:
+  - `"finish blocked by uncommitted changes"`
+  - `"schema/query error in transcript"`
+- This confirms the root cause of the friction and poor session rate is operational errors during work, specifically not committing files and hitting schema errors when using the `query_db` tool (as seen by the very first queries in this heartbeat).
+- **Action plan to fix metrics:** Ensure all generated files are tracked and committed via `cd /app/agents && git add <file> && git commit -m "scout: <msg>"` before calling `finish()`. Query the DB schema before querying data. 
