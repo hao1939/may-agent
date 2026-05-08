@@ -2368,19 +2368,48 @@ async function loadMetricsTab() {
     html += `<div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center"><div style="font-size:24px;font-weight:bold">${data.metrics.length}</div><div style="font-size:11px;color:var(--fg2)">Total Active</div></div>`;
     html += `</div>`;
 
-    // By owner tables (all metrics)
-    const byOwner = {};
-    for (const m of data.metrics) { if (!byOwner[m.owner]) byOwner[m.owner] = []; byOwner[m.owner].push(m); }
-    for (const [owner, ms] of Object.entries(byOwner).sort()) {
+    // Group by operator-facing axis, not by owner. Three buckets per webui.md /system mock:
+    //   AGENCY — are agents being agents?
+    //   INFRASTRUCTURE — is the runtime healthy?
+    //   OUTPUT — is work actually getting done?
+    // Mapping is a cheap prefix rule. Anything unmatched falls into 'Other'.
+    function axisOf(id) {
+      if (id.startsWith('agent.') || id.startsWith('capability.')) return 'Agency';
+      if (id.startsWith('handler.') || id.startsWith('session.') || id.startsWith('evaluator.') || id.startsWith('metric.') || id.startsWith('v2.')) return 'Infrastructure';
+      if (id.startsWith('project.') || id.startsWith('system.')) return 'Output';
+      return 'Other';
+    }
+    const AXIS_ORDER = ['Agency', 'Infrastructure', 'Output', 'Other'];
+    const AXIS_BLURB = {
+      Agency: 'Are agents being agents? (heartbeats, self-direction, idle rate)',
+      Infrastructure: 'Is the runtime healthy? (handlers, sessions, evaluators)',
+      Output: 'Is work getting done? (projects, deliverables)',
+      Other: 'Uncategorised — ID prefix not recognised by axis rule.',
+    };
+    const byAxis = {Agency: [], Infrastructure: [], Output: [], Other: []};
+    for (const m of data.metrics) byAxis[axisOf(m.id)].push(m);
+    // Within axis: alerting first, then by ID alpha.
+    for (const axis of AXIS_ORDER) {
+      byAxis[axis].sort((a, b) => {
+        const aa = (a.threshold != null && a.current != null && ((a.alert_op === 'above' || a.alert_op === '>') ? a.current > a.threshold : a.current < a.threshold)) ? 0 : 1;
+        const bb = (b.threshold != null && b.current != null && ((b.alert_op === 'above' || b.alert_op === '>') ? b.current > b.threshold : b.current < b.threshold)) ? 0 : 1;
+        return aa - bb || a.id.localeCompare(b.id);
+      });
+    }
+    for (const axis of AXIS_ORDER) {
+      const ms = byAxis[axis];
+      if (ms.length === 0) continue;
       html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px">`;
-      html += `<h3 style="margin:0 0 10px;font-size:14px;color:var(--fg)">${owner} <span style="color:var(--fg2);font-weight:normal;font-size:12px">(${ms.length})</span></h3>`;
+      html += `<h3 style="margin:0 0 4px;font-size:14px;color:var(--fg)">${axis} <span style="color:var(--fg2);font-weight:normal;font-size:12px">(${ms.length})</span></h3>`;
+      html += `<div style="font-size:11px;color:var(--fg2);margin-bottom:10px">${AXIS_BLURB[axis]}</div>`;
       html += `<table style="width:100%;border-collapse:collapse;font-size:12px">`;
-      html += `<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 8px;color:var(--fg2)">Metric</th><th style="padding:4px 8px;color:var(--fg2)">Current</th><th style="padding:4px 8px;color:var(--fg2)">Target</th><th style="padding:4px 8px;color:var(--fg2)">Type</th><th style="padding:4px 8px;color:var(--fg2)">Updated</th></tr>`;
+      html += `<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 8px;color:var(--fg2)">Metric</th><th style="padding:4px 8px;color:var(--fg2)">Owner</th><th style="padding:4px 8px;color:var(--fg2)">Current</th><th style="padding:4px 8px;color:var(--fg2)">Target</th><th style="padding:4px 8px;color:var(--fg2)">Type</th><th style="padding:4px 8px;color:var(--fg2)">Updated</th></tr>`;
       for (const m of ms) {
         const snap = snapMap[m.id]; const val = m.current != null ? m.current : '—';
         const isAlert = m.threshold != null && m.current != null && ((m.alert_op === 'above' || m.alert_op === '>') ? m.current > m.threshold : m.current < m.threshold);
         html += `<tr style="border-bottom:1px solid var(--bg3,#333);cursor:pointer" onclick="showMetricHistory('${m.id}')">`;
         html += `<td style="padding:4px 8px">${m.name}<br><span style="color:var(--fg2);font-size:11px">${m.id}</span></td>`;
+        html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2);font-size:11px">${m.owner||''}</td>`;
         html += `<td style="padding:4px 8px;text-align:center;${isAlert?'color:var(--red);font-weight:bold':''}">${val}${m.unit||''}</td>`;
         html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${m.target}${m.unit||''} <button title="Edit threshold (current: ${m.threshold ?? '—'})" onclick="verbEditThreshold('${m.id}', ${m.threshold ?? 'null'}, event)" style="background:none;border:none;color:var(--fg2);cursor:pointer;padding:0 2px">✎</button></td>`;
         html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${m.type}</td>`;
