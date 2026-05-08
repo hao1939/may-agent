@@ -1709,11 +1709,35 @@ async function loadAgentAbout(name) {
     const d = await r.json();
     if (d.error) throw new Error(d.error);
     const cfg = d.agentJson;
-    const loaded = d.files || [];
+    const promptFiles = d.promptFiles || [];
+    const otherFiles = d.otherFiles || [];
+    const promptBytes = promptFiles.reduce((s, f) => s + (f.bytes || 0), 0);
 
     let html = '';
+
+    // ── In-prompt section: what's actually loaded into the model's context. ──
+    html += `<div style="margin-bottom:16px">`;
+    html += `<h3 style="margin:0 0 4px;font-size:13px;color:var(--fg);display:flex;align-items:center;gap:8px">In the system prompt <span style="color:var(--fg2);font-size:11px;font-weight:normal">${promptFiles.length} file${promptFiles.length===1?'':'s'} · ${promptBytes.toLocaleString()} bytes loaded into every session</span></h3>`;
+    html += `<div style="font-size:11px;color:var(--fg2);margin-bottom:8px">This is what the agent actually "knows" — auto-injected by manager.ts on every session start.</div>`;
+    if (promptFiles.length === 0) {
+      html += `<div style="color:var(--fg2);padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:6px">No prompt files found. Agent will run with empty system prompt.</div>`;
+    } else {
+      for (const f of promptFiles) {
+        html += `<details open style="background:var(--bg2);border:1px solid var(--accent);border-radius:6px;padding:10px 12px;margin-bottom:8px">`;
+        html += `<summary style="cursor:pointer;font-weight:500;font-size:13px;color:var(--fg);display:flex;align-items:center;gap:8px">
+          <span>${esc(f.name)}</span>
+          <span style="color:var(--fg2);font-weight:normal;font-size:11px">${(f.bytes||0).toLocaleString()} bytes</span>
+          <span style="color:var(--accent);font-weight:normal;font-size:10px;margin-left:auto">${esc(f.source || '')}</span>
+        </summary>`;
+        html += `<div class="md-rendered" style="margin-top:10px;font-size:13px;border-top:1px solid var(--border);padding-top:10px">${window.marked && window.marked.parse ? window.marked.parse(f.content) : '<pre>' + esc(f.content) + '</pre>'}</div>`;
+        html += `</details>`;
+      }
+    }
+    html += `</div>`;
+
+    // ── agent.json metadata box. ──
     if (cfg) {
-      html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px">`;
+      html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:16px">`;
       html += `<h3 style="margin:0 0 8px;font-size:13px;color:var(--fg2)">agent.json</h3>`;
       html += `<table style="font-size:13px"><tbody>`;
       for (const k of ['name','description','domain','model','compaction']) {
@@ -1722,14 +1746,24 @@ async function loadAgentAbout(name) {
       if (Array.isArray(cfg.tools)) html += `<tr><td style="padding:2px 12px 2px 0;color:var(--fg2);vertical-align:top">tools (${cfg.tools.length})</td><td style="font-size:11px;color:var(--fg2)">${cfg.tools.map(t => esc(typeof t === 'string' ? t : (t.name || JSON.stringify(t)))).join(', ')}</td></tr>`;
       html += `</tbody></table></div>`;
     }
-    for (const f of loaded) {
-      const open = f.name === 'SOUL.md' || f.name === 'DOMAIN.md';
-      html += `<details ${open ? 'open' : ''} style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px">`;
-      html += `<summary style="cursor:pointer;font-weight:500;font-size:13px;color:var(--fg)">${esc(f.name)} <span style="color:var(--fg2);font-weight:normal;font-size:11px">(${f.bytes} bytes)</span></summary>`;
-      html += `<div class="md-rendered" style="margin-top:10px;font-size:13px">${window.marked && window.marked.parse ? window.marked.parse(f.content) : '<pre>' + esc(f.content) + '</pre>'}</div>`;
-      html += `</details>`;
+
+    // ── Other on-disk files: convention files agents may read on demand. ──
+    if (otherFiles.length > 0) {
+      html += `<div>`;
+      html += `<h3 style="margin:0 0 4px;font-size:13px;color:var(--fg2)">On-disk only <span style="font-size:11px;font-weight:normal">${otherFiles.length} file${otherFiles.length===1?'':'s'} · not in prompt</span></h3>`;
+      html += `<div style="font-size:11px;color:var(--fg2);margin-bottom:8px">Convention files. Agent reads these on demand (not auto-injected). Editing them does not change the agent's knowledge until they read it.</div>`;
+      for (const f of otherFiles) {
+        html += `<details style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:6px">`;
+        html += `<summary style="cursor:pointer;font-weight:500;font-size:13px;color:var(--fg)">${esc(f.name)} <span style="color:var(--fg2);font-weight:normal;font-size:11px">${(f.bytes||0).toLocaleString()} bytes</span></summary>`;
+        html += `<div class="md-rendered" style="margin-top:10px;font-size:13px;border-top:1px solid var(--border);padding-top:10px">${window.marked && window.marked.parse ? window.marked.parse(f.content) : '<pre>' + esc(f.content) + '</pre>'}</div>`;
+        html += `</details>`;
+      }
+      html += `</div>`;
     }
-    if (!cfg && loaded.length === 0) html = `<div style="color:var(--fg2);padding:24px">No agent.json or identity files (SOUL.md, DOMAIN.md, heartbeat.md, ...) found for <b>${esc(name)}</b>.</div>`;
+
+    if (!cfg && promptFiles.length === 0 && otherFiles.length === 0) {
+      html = `<div style="color:var(--fg2);padding:24px">No agent.json, no prompt files, and no convention files for <b>${esc(name)}</b>.</div>`;
+    }
     body.innerHTML = html;
   } catch (e) {
     body.innerHTML = `<div style="color:var(--red);padding:16px">Failed: ${esc(e.message)}</div>`;

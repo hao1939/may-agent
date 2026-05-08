@@ -1200,35 +1200,74 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   /**
-   * GET /api/agents/:name/about — returns the agent's identity files for
-   * the About sub-tab on the agent detail view. One round-trip vs. four
-   * /api/browse calls (which can't read agents/<name>/ anyway — browse is
-   * hard-restricted to agents/shared/).
+   * GET /api/agents/:name/about — returns what's actually in the agent's
+   * head: the system-prompt-loaded files (the operator's mental model is
+   * 'what does this agent know?'), separated from supplementary files
+   * that exist on disk but aren't auto-injected.
    *
-   * Returns: { name, agentJson, files: [{name, content}] }
-   * Standard file list: SOUL.md, heartbeat.md, context.md, DOMAIN.md,
-   * TOOLS.md, LESSONS.md, AGENTS.md. Missing files are silently dropped.
+   * Source of truth (manager.ts:resolveSystemPrompt):
+   *   1. agents/shared/common-sense.md  (shared, every agent)
+   *   2. agents/<name>/AGENTS.md         (agent identity, this agent only)
+   *   3. <runtime metadata block>        (synthesized at session start)
+   *   PLUS def.systemPrompt if explicitly set in agent.json (overrides 1+2).
+   *
+   * Returns:
+   *   { name, agentJson,
+   *     promptFiles: [{name, path, content, bytes, source}],
+   *     otherFiles:  [{name, path, content, bytes}] }
+   *
+   * If agent.json has an explicit systemPrompt, it's returned in promptFiles
+   * as { name: '<inline systemPrompt>', source: 'agent.json' } and the
+   * standard files are demoted to otherFiles.
    */
   function handleAgentAbout(agentName: string): Response {
     if (!agentName) return json({ error: "agent required" }, 400);
     const agentDir = join(AGENTS_ROOT, agentName);
     if (!existsSync(agentDir)) return json({ error: "agent not found" }, 404);
-    let agentJson: Record<string, unknown> | null = null;
+    let agentJson: Record<string, any> | null = null;
     try {
       const cfgPath = join(agentDir, "agent.json");
       if (existsSync(cfgPath)) agentJson = JSON.parse(readFileSync(cfgPath, "utf-8"));
     } catch { /* skip */ }
-    const wantFiles = ["SOUL.md", "DOMAIN.md", "heartbeat.md", "context.md", "TOOLS.md", "LESSONS.md", "AGENTS.md"];
-    const files: Array<{ name: string; content: string; bytes: number }> = [];
-    for (const f of wantFiles) {
-      const p = join(agentDir, f);
-      if (!existsSync(p)) continue;
+
+    const readFile = (path: string, displayName: string, source: string) => {
+      if (!existsSync(path)) return null;
       try {
-        const content = readFileSync(p, "utf-8");
-        files.push({ name: f, content, bytes: content.length });
-      } catch { /* skip */ }
+        const content = readFileSync(path, "utf-8");
+        return { name: displayName, path: path.replace(STATE_DIR + "/..", "").replace(/^\//, ""), content, bytes: content.length, source };
+      } catch { return null; }
+    };
+
+    const promptFiles: Array<Record<string, unknown>> = [];
+    const otherFiles: Array<Record<string, unknown>> = [];
+
+    // explicit systemPrompt overrides file-loading.
+    if (agentJson && typeof agentJson.systemPrompt === "string") {
+      promptFiles.push({
+        name: "<inline systemPrompt>",
+        path: `agents/${agentName}/agent.json#systemPrompt`,
+        content: agentJson.systemPrompt,
+        bytes: agentJson.systemPrompt.length,
+        source: "agent.json",
+      });
+    } else {
+      // Standard prompt assembly: shared common-sense + agent's AGENTS.md.
+      const sharedPath = join(AGENTS_ROOT, "shared", "common-sense.md");
+      const sharedFile = readFile(sharedPath, "shared/common-sense.md", "manager.ts");
+      if (sharedFile) promptFiles.push({ ...sharedFile, source: "shared (every agent)" });
+      const agentsMd = readFile(join(agentDir, "AGENTS.md"), "AGENTS.md", "identity");
+      if (agentsMd) promptFiles.push({ ...agentsMd, source: "agent identity (this agent)" });
     }
-    return json({ name: agentName, agentJson, files });
+
+    // Other on-disk files (NOT in prompt). Useful for context but not auto-loaded.
+    // Includes commonly-named convention files; agent decides when to read them.
+    const otherCandidates = ["SOUL.md", "DOMAIN.md", "heartbeat.md", "context.md", "TOOLS.md", "LESSONS.md"];
+    for (const f of otherCandidates) {
+      const file = readFile(join(agentDir, f), f, "on-disk only");
+      if (file) otherFiles.push(file);
+    }
+
+    return json({ name: agentName, agentJson, promptFiles, otherFiles });
   }
 
   function handleAgentDefaultSession(agentName: string): Response {
