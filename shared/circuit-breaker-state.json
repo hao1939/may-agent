@@ -23,8 +23,7 @@
       "consecutiveErrors": 0
     },
     "evaluator": {
-      "consecutiveErrors": 1,
-      "lastError": "duration gate re-prompt error"
+      "consecutiveErrors": 0
     },
     "arc": {
       "consecutiveErrors": 0

@@ -1,32 +1,23 @@
 # Closed-Loop Steward Audit Log
 
-## Run: 2026-05-08
+## Latest Audit (current run)
 
-### Open Alerts Summary
-| Alert | Metric | Owner | Status |
-|-------|--------|-------|--------|
-| #189 | capability.self-directed-iteration-rate-24h | may | No judgment. Nudged may. |
-| #190 | capability.process-uptime-h | may | No judgment. Nudged may. |
-| #191 | evaluator.low-quality-rate-24h | evaluator | Metric likely miscomputed (counts needs_improvement not low_quality). Re-routed lost evaluator finding to may. |
-| #192 | v2.spec-coverage-rate | may | Prior judgment 13h ago; still breaching. Project v2-spec-coverage-buildout status=waiting. |
+### Alerts Reviewed
+| Alert | Metric | Status | Action |
+|-------|--------|--------|--------|
+| #215 | project.invalid-format-count | RESOLVED by may (fix_root_cause) | No further action |
+| #195 | evaluator.low-quality-rate-24h | BREACHING 11h, escalation lost | Re-escalated to may (event#534311) |
+| #218 | evaluator.false-good-rate-sample | FRESH (2m), no judgment yet | Allow triage workflow to fire |
+| #197 | scout.operational-friction-rate-24h | P3, stable | No action needed |
+| #213 | scout.good-session-rate-24h | P3, re-alerted | No action needed |
 
-### Delivery Failures
-| Event | From | Issue | Action |
-|-------|------|-------|--------|
-| #530687 | evaluator | Sent to functions.message | Content re-routed to may via message tool |
-| #530208 | evaluator | Sent to functions.message (placeholder) | No action needed |
+### Systemic Issues
+- Evaluator sends messages to `functions.message` (invalid target) despite instructions in context.md, aftermath workflow, and triage workflow. 6+ failures in 6h. Needs infrastructure guard.
 
-### Conclusion
-- Evaluator context.md line 26 already prohibits functions.message usage; workflow line 335 has guardrail. Recurring issue is model compliance, not code gap.
-- All alerts either have prior judgment or have been nudged to owner.
-- Next validation: confirm may judges alerts #189/#190/#191 in next heartbeat cycle.
+### Actions Taken
+- Sent P1 escalation to may covering heuristic-only evaluator and functions.message bug (event#534311)
 
-## Audit 2025-01-07T~current
-
-| Issue | Owner | Judgment | Action | Next Signal |
-|-------|-------|----------|--------|-------------|
-| alert#189 iteration-rate=0.12 | may | self-healing (restart) | none | uptime >1h should resolve |
-| alert#190 uptime=0.01h | may | expected post-restart | none | auto-clears at 1h |
-| alert#191 low-quality-rate=0.35 | evaluator | actively owned | none | evaluator heartbeat judgment |
-| alert#192 spec-coverage=0.27 | may | prior judgment 13h ago (waiting) | none | project pending-review resolves |
-| delivery failures #530687/#530208 | evaluator | known-fixed bug (KE-009) | none | no new failures expected |
+### Next Validation
+- Confirm may processes escalation in next heartbeat
+- Confirm evaluator.low-quality-rate-24h starts improving after intervention
+- Monitor for new functions.message delivery failures
