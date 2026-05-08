@@ -3160,7 +3160,7 @@ async function showProjectDetail(path) {
   html += `<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--fg2);margin-top:6px">`;
   html += `<span>owner: <a href="#/agents/${esc(detail.owner)}" style="color:var(--accent);text-decoration:none">${esc(detail.owner)}</a></span>`;
   html += `<span>iteration ${detail.iteration ?? 0}</span>`;
-  html += `<span>${detail.sessionCount} sessions</span>`;
+  html += `<span title="Sessions tagged with projectId; +mentions = task body references this project but wasn't dispatched through it">${detail.sessionCount} sessions${detail.mentionCount ? ` (+${detail.mentionCount} mentions)` : ''}</span>`;
   if (detail.updatedAt) html += `<span>updated ${esc(timeAgo(detail.updatedAt))}</span>`;
   if (detail.createdAt) html += `<span>created ${esc(timeAgo(detail.createdAt))}</span>`;
   html += `</div>`;
@@ -3229,7 +3229,8 @@ async function showProjectDetail(path) {
   html += `<button class="tab-btn active" onclick="switchProjectTab(this,'project')" style="background:none;border:none;border-bottom:2px solid var(--accent);color:var(--accent);padding:8px 16px;cursor:pointer;font-size:13px">Project</button>`;
   html += `<button class="tab-btn" onclick="switchProjectTab(this,'journal')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Journal</button>`;
   html += `<button class="tab-btn" onclick="switchProjectTab(this,'discussion')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Discussion</button>`;
-  html += `<button class="tab-btn" onclick="switchProjectTab(this,'sessions')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Sessions${detail.sessionCount ? ` <span style="font-size:10px;background:var(--bg);padding:1px 6px;border-radius:8px;margin-left:4px">${detail.sessionCount}</span>` : ''}</button>`;
+  const totalSessionLink = (detail.sessionCount || 0) + (detail.mentionCount || 0);
+  html += `<button class="tab-btn" onclick="switchProjectTab(this,'sessions')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Sessions${totalSessionLink ? ` <span style="font-size:10px;background:var(--bg);padding:1px 6px;border-radius:8px;margin-left:4px">${totalSessionLink}</span>` : ''}</button>`;
   html += `</div>`;
   html += `<div id="project-tab-content" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;max-height:70vh;overflow-y:auto"></div>`;
 
@@ -3292,20 +3293,45 @@ async function loadProjectTab(tab) {
     } else if (tab === 'sessions') {
       const res = await fetch(`/api/projects/sessions?path=${encodeURIComponent(_projectDetailPath)}`);
       const rows = await res.json();
-      if (rows.length === 0) { el.innerHTML = '<div style="color:var(--fg2)">No sessions found for this project.</div>'; return; }
-      let html = `<table style="width:100%;border-collapse:collapse;font-size:13px">`;
-      html += `<tr style="border-bottom:2px solid var(--border)"><th style="padding:6px;text-align:left">Session</th><th>Agent</th><th>Status</th><th>Ops</th><th>Time</th><th>Task</th></tr>`;
-      for (const s of rows) {
-        html += `<tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="toggleProjectSession(this,'${esc(s.sessionId)}')">`;
-        html += `<td style="padding:6px;font-family:monospace;font-size:11px">${esc((s.sessionId||'').slice(-12))}</td>`;
-        html += `<td>${esc(s.agent||'')}</td>`;
-        html += `<td>${esc(s.status||'')}</td>`;
-        html += `<td>${s.opCount ?? ''}</td>`;
-        html += `<td style="color:var(--fg2);font-size:12px">${s.startedAt ? timeAgo(s.startedAt) : ''}</td>`;
-        html += `<td style="color:var(--fg2);font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((s.task||'').slice(0,60))}</td>`;
-        html += `</tr>`;
+      if (rows.length === 0) {
+        el.innerHTML = `<div style="color:var(--fg2)">
+          <p style="margin:0 0 8px">No sessions linked to this project.</p>
+          <p style="margin:0;font-size:12px">Sessions are linked two ways:</p>
+          <ul style="font-size:12px;margin:4px 0 0 20px">
+            <li><b>Tagged</b>: dispatched through this project's workflow (sets <code>sessions.projectId</code>).</li>
+            <li><b>Mention</b>: task body references the project name. Best-effort; only shown for projects with name length ≥ 6.</li>
+          </ul>
+          <p style="margin:8px 0 0;font-size:12px;color:var(--fg2)">If you expected work here, the project may not be wired into a workflow yet.</p>
+        </div>`;
+        return;
       }
-      html += `</table>`;
+      // Group: tagged first, then mentions, then workflow-file fallbacks.
+      const tagged = rows.filter(r => r.link === 'tagged' || !r.link);
+      const mentions = rows.filter(r => r.link === 'mention');
+      const workflow = rows.filter(r => r.link === 'workflow-file');
+      let html = '';
+      const renderTable = (group, label, hint, badgeColor) => {
+        if (group.length === 0) return '';
+        let h = `<div style="margin-bottom:14px">`;
+        h += `<h4 style="margin:0 0 4px;font-size:12px;color:var(--fg2);display:flex;align-items:center;gap:6px"><span style="background:${badgeColor};color:#000;padding:1px 7px;border-radius:8px;font-size:10px;font-weight:600">${label}</span><span style="color:var(--fg2);font-size:11px;font-weight:normal">${group.length} · ${hint}</span></h4>`;
+        h += `<table style="width:100%;border-collapse:collapse;font-size:13px">`;
+        h += `<tr style="border-bottom:2px solid var(--border)"><th style="padding:6px;text-align:left">Session</th><th>Agent</th><th>Status</th><th>Ops</th><th>Time</th><th>Task</th></tr>`;
+        for (const s of group) {
+          h += `<tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="toggleProjectSession(this,'${esc(s.sessionId)}')">`;
+          h += `<td style="padding:6px;font-family:monospace;font-size:11px">${esc((s.sessionId||'').slice(-12))}</td>`;
+          h += `<td>${esc(s.agent||'')}</td>`;
+          h += `<td>${esc(s.status||'')}</td>`;
+          h += `<td>${s.opCount ?? ''}</td>`;
+          h += `<td style="color:var(--fg2);font-size:12px">${s.startedAt ? timeAgo(s.startedAt) : ''}</td>`;
+          h += `<td style="color:var(--fg2);font-size:12px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((s.task||'').slice(0,80))}</td>`;
+          h += `</tr>`;
+        }
+        h += `</table></div>`;
+        return h;
+      };
+      html += renderTable(tagged,   'TAGGED',   'dispatched through this project',                      'var(--green)');
+      html += renderTable(mentions, 'MENTION',  'task body references this project (not dispatched here)', 'var(--orange,#e8a44c)');
+      html += renderTable(workflow, 'WORKFLOW', 'recovered from workflow run files',                     'var(--accent)');
       el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = 'inherit';
       el.innerHTML = html;
     }
