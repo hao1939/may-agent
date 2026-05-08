@@ -19,9 +19,9 @@ set of knowledge-base practices that make scout findings easier to maintain,
 reuse, and turn into system improvements.
 
 ## Current State
-Iteration 3. Milestones: 5/5 done.
-Reviewer: 1. **I believe**: The worker has successfully completed all 5 milestones, including clearing the git guardrail, creating the pilot review document, and making a final evaluation decision.
-2. **I'm unc
+Iteration 4. Milestones: 5/5 done.
+Reviewer: 1. **I believe**: All 5 milestones of this project have been successfully completed, verified, and the changes committed. The worker has outputted a signal that it is ready for review.
+2. **I'm uncert
 ## Context
 
 Reference repo:

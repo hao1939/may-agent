@@ -110,3 +110,17 @@ WAITING: All milestones are complete, project is ready for human review. Resume 
 
 **Agent response:**
 All milestones completed. Wrote ready-for-review.md to signal the project is waiting for human evaluation.
+**Reviewer**: CONTINUE — 1. **I believe**: All 5 milestones of this project have been successfully completed, verified, and the changes committed. The worker has outputted a signal that it is ready for review.
+2. **I'm uncertain about**: Whether the project owner will accept the simulated metrics and the chosen practices, or if they will request real-world evaluation or modifications.
+3. **I'd change my mind if**: The human reviewer comes back with specific feedback requiring changes to the practices or further evaluation steps.
+
+## Questions You Must Answer Each Review
+1. **Is the goal closer?** Yes, the goal is fully achieved from the agent's perspective.
+2. **What did we learn?** The worker successfully implemented the practices, cleared guardrails, and finalized the outputs.
+3. **Is the current milestone the right next step?** There are no current milestones left.
+4. **Are we closing the loop?** Yes, the pilot phase is complete and awaiting review.
+5. **Is it verified?** Yes, the deliverables have been verified by the worker in previous steps.
+6. **What's blocking progress?** The project is complete and simply requires human approval.
+
+WAITING: All milestones are complete, and the project is ready for human review. Resume when: A human or May reviews the implementation and either marks the project done or provides feedback for adjustments.
+
