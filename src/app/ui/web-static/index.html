@@ -802,7 +802,7 @@ async function renderLivenessProjects() {
         : '';
       // Path -> route id (strip 'agents/' prefix)
       const routeId = String(p.path || '').replace(/^agents\//, '');
-      html += `<div class="liveness-item" style="cursor:pointer;display:flex;align-items:center;gap:10px" onclick="routeTo('/projects/' + ${JSON.stringify(routeId)})">
+      html += `<div class="liveness-item" style="cursor:pointer;display:flex;align-items:center;gap:10px" onclick="routeTo('/projects/' + '${attrEsc(routeId)}')">
         <span style="color:${pulseColor};font-size:14px" title="${formatAgo(p.updatedAt)}">${pulse}</span>
         <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><strong>${esc(p.name)}</strong>${owner ? ` <span class="meta">${esc(owner)}</span>` : ''}</span>
         <span class="meta" style="font-size:11px">${formatAgo(p.updatedAt)}</span>
@@ -1877,7 +1877,7 @@ async function loadAgentOverview(name) {
       for (const p of [...activeProjects, ...inactiveProjects]) {
         const muted = HIDDEN.has(p.status);
         const projPath = (p.path || '').replace(/^agents\//, '');
-        html += `<div onclick="routeTo('/projects/' + ${JSON.stringify(projPath)})" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:7px 12px;border-bottom:1px solid var(--border);cursor:pointer;${muted ? 'opacity:0.55' : ''}" onmouseover="this.style.background='var(--bg3,#222)'" onmouseout="this.style.background=''">`;
+        html += `<div onclick="routeTo('/projects/' + '${attrEsc(projPath)}')" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:7px 12px;border-bottom:1px solid var(--border);cursor:pointer;${muted ? 'opacity:0.55' : ''}" onmouseover="this.style.background='var(--bg3,#222)'" onmouseout="this.style.background=''">`;
         html += `<div style="min-width:0"><div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</div><div style="font-size:10px;color:var(--fg2)">${p.milestonesDone ?? 0}/${p.milestonesTotal ?? 0} milestones · iter ${p.iteration ?? 0}</div></div>`;
         html += `<div style="font-size:11px;color:var(--fg2)">${esc(p.status||'')}</div>`;
         html += `<div style="font-size:10px;color:var(--fg2);white-space:nowrap">${p.updatedAt ? timeAgo(p.updatedAt) : '—'}</div>`;
@@ -2260,6 +2260,15 @@ document.getElementById('chat-input').addEventListener('keydown', (e) => {
 function esc(s) {
   if (!s) return '';
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// HTML attribute-safe escape: also escapes both quote types so the value
+// can be embedded inside onclick="..." or onclick='...' without breaking
+// out. Use this for any user-derived string spliced into an inline
+// event handler attribute.
+function attrEsc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 // ── Steering verbs ──────────────────────────────────────────────────────────────
@@ -3086,7 +3095,7 @@ async function loadProjects() {
         ? `<div style="display:flex;align-items:center;gap:4px"><div style="width:60px;height:6px;background:var(--bg3);border-radius:3px"><div style="width:${Math.round(p.milestonesDone/p.milestonesTotal*100)}%;height:100%;background:var(--green);border-radius:3px"></div></div><span>${p.milestonesDone}/${p.milestonesTotal}</span></div>`
         : '<span style="color:var(--fg2)">—</span>';
 
-      html += `<tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="routeTo('/projects/' + ${JSON.stringify(p.path.replace(/^agents\//, ''))})">` +
+      html += `<tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="routeTo('/projects/' + '${attrEsc(p.path.replace(/^agents\//, ''))}')">` +
         `<td style="padding:8px;font-weight:500">${esc(p.name)}</td>` +
         `<td>${esc(p.owner)}</td>` +
         `<td><span style="color:${statusColor}">${esc(p.status)}</span></td>` +
