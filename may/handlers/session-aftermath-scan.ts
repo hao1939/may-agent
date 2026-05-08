@@ -27,7 +27,7 @@ const DEFAULT_WORKFLOW = "evaluator-aftermath";
 const DEFAULT_AGENT = "evaluator";
 const DEFAULT_BACKFILL_HOURS = 3;
 const DEFAULT_FALLBACK_DELAY_MS = 7 * 60_000;
-const DEFAULT_LIMIT = 4;
+const DEFAULT_LIMIT = 12;
 const DEFAULT_HEURISTIC_VERSION = 2;
 
 function taskFor(candidate: Candidate): string {

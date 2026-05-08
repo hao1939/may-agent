@@ -357,7 +357,7 @@
       "agent": "evaluator",
       "backfillHours": 3,
       "fallbackDelayMs": 420000,
-      "limit": 4,
+      "limit": 12,
       "timeoutMs": 900000
     }
   },
