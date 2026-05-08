@@ -1084,6 +1084,8 @@ const telegramBot = TELEGRAM_ENABLED
   ? attachTelegramBot({
       bus,
       manager,
+      persistDir: PERSIST_DIR,
+      projectRoot: PROJECT_ROOT,
       getSessionId: () => taskSessionId ?? chatSession?.getSessionId() ?? "",
       interfaceAgent,
     })

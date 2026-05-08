@@ -71,6 +71,17 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
   }
 
+  function parseProjectIdentity(path: string, content?: string): { owner: string; name: string; projectId: string } {
+    const parts = path.split("/");
+    const name = parts[1] === "shared" && parts[2] === "projects"
+      ? parts[3]?.replace(/\.md$/, "") ?? ""
+      : parts[parts.length - 1]?.replace(/\.md$/, "") ?? "";
+    let owner = parts[1] === "shared" ? "shared" : parts[1] ?? "";
+    const ownerMatch = content?.match(/^---\s*\n[\s\S]*?\nowner:\s*([^\n]+)\n[\s\S]*?\n---/m);
+    if (ownerMatch?.[1]) owner = ownerMatch[1].trim().replace(/^["']|["']$/g, "");
+    return { owner, name, projectId: `${owner}/${name}` };
+  }
+
   function findSocketPath(): string | null {
     const instancesDir = join(STATE_DIR, "instances");
     if (!existsSync(instancesDir)) return null;
@@ -935,18 +946,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       }
     }
 
-    // Derive identity.
-    const parts = path.split("/");
-    let owner: string;
-    let projectName: string;
-    if (parts[1] === "shared" && parts[2] === "projects") {
-      owner = frontmatter.owner || "shared";
-      projectName = parts[3]?.replace(/\.md$/, "") ?? "";
-    } else {
-      owner = frontmatter.owner || parts[1] || "";
-      projectName = parts[parts.length - 1]?.replace(/\.md$/, "") ?? "";
-    }
-    const projectId = parts[1] === "shared" ? `shared/${projectName}` : `${parts[1]}/${projectName}`;
+    // Derive identity. Canonical projectId is owner/name, even for shared path.
+    const identity = parseProjectIdentity(path, content);
+    const owner = frontmatter.owner || identity.owner;
+    const projectName = identity.name;
+    const projectId = `${owner}/${projectName}`;
 
     // Extract Goal section (everything between '## Goal' and the next '## ').
     let goal: string | null = null;
@@ -1070,17 +1074,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!path) return json({ error: "path required" }, 400);
     if (!path.match(/^agents\/(shared\/projects\/|[^/]+\/workspace\/projects\/)/)) return json({ error: "Access denied" }, 403);
 
-    const parts = path.split("/");
-    let owner: string;
-    let name: string;
-    if (parts[1] === "shared" && parts[2] === "projects") {
-      owner = "shared";
-      name = parts[3]?.replace(/\.md$/, "") ?? "";
-    } else {
-      owner = parts[1] ?? "";
-      name = parts[parts.length - 1]?.replace(/\.md$/, "") ?? "";
-    }
-    const projectId = `${owner}/${name}`;
+    let content = "";
+    try { content = readFileSync(path.endsWith(".md") ? join(PROJECT_ROOT, path) : join(PROJECT_ROOT, path, "project.md"), "utf-8"); } catch {}
+    const { name, projectId } = parseProjectIdentity(path, content);
 
     // link confidence ranking; lower = stronger.
     const RANK: Record<string, number> = { tagged: 0, workflow: 1, "file-read": 2, child: 3, mention: 4 };
@@ -1190,20 +1186,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function handleProjectSessions(url: URL): Response {
     const path = url.searchParams.get("path");
     if (!path) return json({ error: "path required" }, 400);
-    // Derive projectId from path:
-    //   agents/shared/projects/<name> → shared/<name>
-    //   agents/<owner>/workspace/projects/<name> → <owner>/<name>
-    const parts = path.split("/");
-    let owner: string;
-    let name: string;
-    if (parts[1] === "shared" && parts[2] === "projects") {
-      owner = "shared";
-      name = parts[3]?.replace(/\.md$/, "") ?? "";
-    } else {
-      owner = parts[1] ?? "";
-      name = parts[parts.length - 1]?.replace(/\.md$/, "") ?? "";
-    }
-    const projectId = `${owner}/${name}`;
+    // Canonical projectId is owner/name, even for shared path.
+    let content = "";
+    try { content = readFileSync(path.endsWith(".md") ? join(PROJECT_ROOT, path) : join(PROJECT_ROOT, path, "project.md"), "utf-8"); } catch {}
+    const { name, projectId } = parseProjectIdentity(path, content);
 
     // Two-tier query:
     //   tier 1 = sessions where projectId column is set (canonical — tagged at

@@ -452,7 +452,7 @@ export class SubagentManager {
   async callAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; source?: string; workflowRunId?: string; stepLabel?: string },
+    opts?: { parentSessionId?: string; source?: string; workflowRunId?: string; projectId?: string; stepLabel?: string },
   ): Promise<TaskResult & { messages: AgentMessage[] }> {
     const parentDepth = opts?.parentSessionId ? (this.callDepths.get(opts.parentSessionId) ?? 0) : 0;
     if (parentDepth >= this._maxCallDepth) {
@@ -471,6 +471,7 @@ export class SubagentManager {
       source: opts?.source ?? "callAgent",
       kind: "call",
       workflowRunId: opts?.workflowRunId,
+      projectId: opts?.projectId,
       stepLabel: opts?.stepLabel,
     });
     this.callDepths.set(sessionId, parentDepth + 1);

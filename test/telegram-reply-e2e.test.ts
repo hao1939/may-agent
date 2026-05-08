@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
-import { resolve } from "node:path";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { EventBus } from "../src/app/event-bus.js";
 import { attachTelegramBot } from "../src/app/ui/telegram.js";
+import { getDb } from "../src/lib/requests.js";
 
 function jsonResponse(result: unknown) {
   return {
@@ -232,5 +233,87 @@ describe("telegram reply e2e", () => {
     });
 
     bot.close();
+  });
+
+  it("turns a Telegram reply to a project notification into a project comment nudge", async () => {
+    const projectRoot = mkdtempSync(resolve(tmpdir(), "telegram-project-root-"));
+    const projectDir = join(projectRoot, "agents", "shared", "projects", "example-project");
+    mkdirSync(projectDir, { recursive: true });
+    writeFileSync(
+      join(projectDir, "project.md"),
+      "---\nid: example-project\nowner: scout\nstatus: pending-review\n---\n\n# Project\n",
+      "utf-8",
+    );
+
+    const db = getDb(persistDir);
+    db.run(
+      "INSERT OR REPLACE INTO notification_messages (telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [700, "message.created", "may", null, "agents/shared/projects/example-project", JSON.stringify({ text: "Project needs review" }), Date.now()],
+    );
+
+    const sentMessages: Array<{ chat_id: string; text: string }> = [];
+    let getUpdatesCount = 0;
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
+      const method = String(url).split("/").pop();
+      const body = init?.body ? JSON.parse(String(init.body)) : {};
+
+      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
+      if (method === "getUpdates") {
+        getUpdatesCount++;
+        if (getUpdatesCount === 1) {
+          return jsonResponse([
+            {
+              update_id: 11,
+              message: {
+                message_id: 701,
+                chat: { id: 12345 },
+                text: "please revise the scoped plan",
+                reply_to_message: {
+                  message_id: 700,
+                  text: "Project needs review",
+                },
+              },
+            },
+          ]);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 25));
+        return jsonResponse([]);
+      }
+      if (method === "sendMessage") {
+        sentMessages.push(body);
+        return jsonResponse({ message_id: 800 + sentMessages.length });
+      }
+      throw new Error(`unexpected Telegram method: ${method}`);
+    });
+
+    const bus = new EventBus();
+    const nudges: any[] = [];
+    const inputs: any[] = [];
+    bus.subscribe((event: any) => {
+      if (event.type === "project.nudge") nudges.push(event);
+      if (event.type === "input") inputs.push(event);
+    });
+
+    const bot = attachTelegramBot({
+      persistDir,
+      projectRoot,
+      bus,
+      manager: {} as any,
+      getSessionId: () => "",
+      interfaceAgent: "may",
+    });
+
+    await waitFor(() => {
+      expect(nudges).toHaveLength(1);
+      expect(nudges[0].projectPath).toBe("agents/shared/projects/example-project");
+      expect(nudges[0].comment).toBe(true);
+      expect(inputs).toHaveLength(0);
+      expect(readFileSync(join(projectDir, "discussion.md"), "utf-8")).toContain("please revise the scoped plan");
+      expect(sentMessages.some((m) => m.text.includes("Resuming the project now"))).toBe(true);
+    });
+
+    bot.close();
+    rmSync(projectRoot, { recursive: true, force: true });
   });
 });
