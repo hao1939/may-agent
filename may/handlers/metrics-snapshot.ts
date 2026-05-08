@@ -663,7 +663,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
          WHERE startedAt > ?
            AND agent NOT IN ('evaluator', 'judge')
            AND COALESCE(source, '') NOT LIKE 'workflow:evaluator-%'
-           AND COALESCE(source, '') NOT IN ('telegram', 'api', 'manual', 'cli')`,
+           AND COALESCE(source, '') NOT LIKE 'telegram%'
+           AND COALESCE(source, '') NOT LIKE 'socket%'
+           AND COALESCE(source, '') NOT IN ('api', 'manual', 'cli')`,
         twentyFourH,
       );
       record("capability.self-directed-iteration-rate-24h",
