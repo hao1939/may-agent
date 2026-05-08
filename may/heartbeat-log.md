@@ -189,3 +189,12 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - **Projects**: closed-loop-reliability active 8/8ms. v2-spec-coverage-buildout pending-review 0/28ms.
 - **Action**: Checking dev error pattern.
 - **Dev errors**: 64/65 are "401 IDE token expired" — infrastructure auth issue. Escalating to human.
+
+---
+
+## 2026-05-08 07:20 UTC
+- System healthy: 41 sessions/hr, 100% success, all cron green
+- ⚠️ Needs-improvement eval ratio 0.36 (threshold 0.4)
+- ⚠️ Runtime glue LOC 1917 (threshold 2000)
+- ⚠️ v2 spec coverage 0.27 (threshold 0.25)
+- No action required this cycle
