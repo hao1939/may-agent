@@ -64,12 +64,18 @@ Use this fallback to still do a useful heartbeat:
 3. **Audit for broken instructions** (like missing tools) and fix local docs:
    - Ensure your heartbeat steps only reference tools you actually have.
 
+## Low-Signal Heartbeat Discipline
+When the Approved queue is empty and metrics are healthy, do not create a new
+investigation artifact just to prove activity. Instead:
+
+1. Triage pending events explicitly in `finish()` as acted/delegated/dismissed/escalated.
+2. Check `git status --short`; if there is dirty state, classify it as source work,
+   intentional generated runtime files, or a risk that needs escalation before committing.
+3. Only write a new artifact when it records a clear follow-up task, owner, falsifiable
+   observation, or code/doc change. Routine healthy checks can be evidenced directly from
+   tool outputs in `verification_evidence`.
+
 ## Metrics Engineering
-If DB access is available, register a new metric with:
-```sql
-INSERT OR IGNORE INTO metrics (id, name, owner, source_query, target, threshold, alert_op, type, status, speed, created_at, updated_at)
-VALUES ('your.metric-id', 'Human-readable name', 'dev',
-  'SELECT COUNT(*) as value FROM ...', 10, 3, '<', 'health', 'active', 'fast',
-  unixepoch()*1000, unixepoch()*1000);
-```
-Otherwise, capture the gap as an investigation in `agents/dev/workspace/investigations/` and escalate to May/owner to add the metric.
+`query_db` is read-only. Do not attempt to register metrics with SQL from a heartbeat.
+If a metric gap is discovered, capture the proposed metric/query in an investigation or
+proposal and escalate to the appropriate owner so the system can apply the write safely.
