@@ -10,8 +10,6 @@ iteration: 1
 
 # Evaluator low-quality-rate calibration
 
-**Iteration**: 5
-**Status**: blocked
 ## Goal
 Reduce false/unstable NI (needs_improvement) labeling by heuristic evaluator so that:
 - `evaluator.low-quality-rate-24h` trends back below threshold (0.3) and toward target (0.1), and
