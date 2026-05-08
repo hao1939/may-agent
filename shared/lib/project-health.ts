@@ -16,6 +16,7 @@ export const MAX_LAUNCHES_PER_TICK = 3;
 export const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes between launches per project
 export const MAX_ITERATIONS_PER_HOUR = 2;   // Max 2 workflow launches per project per hour
 export const ESCALATION_COOLDOWN_MS = 24 * 60 * 60 * 1000; // Max one human escalation per project per day
+const COMMENT_RESUME_STATUSES = new Set(["waiting", "blocked", "pending-review"]);
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -241,7 +242,7 @@ export function diagnoseProject(
       }
     } catch {}
     if (hasUnread) {
-      const limited = launchRateLimitReason(entry, now);
+      const limited = forceLaunch ? null : launchRateLimitReason(entry, now);
       if (limited) return { ...skip, reason: limited };
       return { type: "launch-workflow", reason: "closed but has unread comments — reopening", comment: "" };
     }
@@ -253,8 +254,8 @@ export function diagnoseProject(
     return { ...skip, reason: `terminal status: ${status}` };
   }
 
-  // Waiting/blocked — check for unread discussion comments
-  if (status === "waiting" || status === "blocked") {
+  // Paused-for-input states — check for unread discussion comments
+  if (COMMENT_RESUME_STATUSES.has(status)) {
     // Check discussion.md for unread comments (after last ---read marker)
     let hasUnread = false;
     try {
@@ -269,9 +270,13 @@ export function diagnoseProject(
     // Also check legacy ## Comments in project.md
     if (!hasUnread) hasUnread = hasPendingComments(project.content);
     if (hasUnread) {
-      const limited = launchRateLimitReason(entry, now);
+      const limited = forceLaunch ? null : launchRateLimitReason(entry, now);
       if (limited) return { ...skip, reason: limited };
       return { type: "launch-workflow", reason: `${status} with unread comments`, comment: "" };
+    }
+
+    if (status === "pending-review") {
+      return { ...skip, reason: "pending-review — waiting for review" };
     }
 
     // No comments — escalate based on time

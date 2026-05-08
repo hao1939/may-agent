@@ -225,6 +225,62 @@ describe("diagnoseProject - uncovered branches", () => {
     expect(result.type).toBe("launch-workflow");
     expect(result.reason).toContain("unread comments");
   });
+
+  it("launches for pending-review project with unread discussion.md", () => {
+    const tmpDir = `/tmp/test-pending-review-${Date.now()}`;
+    const projDir = path.join(tmpDir, "proj");
+    fs.mkdirSync(projDir, { recursive: true });
+    fs.writeFileSync(path.join(projDir, "project.md"), "---\nid: proj\nowner: scout\nstatus: pending-review\n---\n\n# Project\n");
+    fs.writeFileSync(path.join(projDir, "discussion.md"), "# Discussion\n\n### hao - 2026-05-08\nPlease revise the plan.\n");
+
+    const proj = makeProject({
+      relPath: "shared/projects/proj",
+      projectFile: path.join(projDir, "project.md"),
+      status: "pending-review",
+      owner: "scout",
+      content: fs.readFileSync(path.join(projDir, "project.md"), "utf-8"),
+    });
+    const result = diagnoseProject(proj, emptyState, emptyBreached, emptyRunning, now, []);
+    expect(result.type).toBe("launch-workflow");
+    expect(result.reason).toContain("pending-review");
+    expect(result.reason).toContain("unread comments");
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("bypasses cooldown for forced unread-comment launch", () => {
+    const tmpDir = `/tmp/test-forced-comment-${Date.now()}`;
+    const projDir = path.join(tmpDir, "proj");
+    fs.mkdirSync(projDir, { recursive: true });
+    fs.writeFileSync(path.join(projDir, "project.md"), "---\nid: proj\nowner: scout\nstatus: pending-review\n---\n\n# Project\n");
+    fs.writeFileSync(path.join(projDir, "discussion.md"), "# Discussion\n\n### hao - 2026-05-08\nPlease revise the plan.\n");
+
+    const proj = makeProject({
+      relPath: "shared/projects/proj",
+      projectFile: path.join(projDir, "project.md"),
+      status: "pending-review",
+      owner: "scout",
+      content: fs.readFileSync(path.join(projDir, "project.md"), "utf-8"),
+    });
+    const state: HealthState = {
+      projects: {
+        "shared/projects/proj": {
+          ...newProjectHealthEntry(),
+          lastLaunch: now - 60_000,
+        },
+      },
+    };
+
+    const rateLimited = diagnoseProject(proj, state, emptyBreached, emptyRunning, now, []);
+    expect(rateLimited.type).toBe("skip");
+    expect(rateLimited.reason).toContain("cooldown");
+
+    const forced = diagnoseProject(proj, state, emptyBreached, emptyRunning, now, [], true);
+    expect(forced.type).toBe("launch-workflow");
+    expect(forced.reason).toContain("unread comments");
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
 });
 
 describe("diagnoseProject - closed with unread discussion", () => {
