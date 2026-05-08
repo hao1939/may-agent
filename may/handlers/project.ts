@@ -29,6 +29,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const projects = ph.scanAllProjects(agentsRoot);
     if (projects.length === 0) return;
 
+    const invalidProjects = projects.filter(p => p.formatErrors?.length);
+    if (invalidProjects.length > 0) {
+      ctx.sdk.log("info", `[project] ${invalidProjects.length} invalid project file(s): ${invalidProjects.map(p => `${p.relPath} (${p.formatErrors!.join("; ")})`).join(", ")}`);
+    }
+
     // Smart preflight: skip if all projects are blocked/waiting/closed and none have changed
     const hasActionable = projects.some(p => p.status === "active" || p.status === "paused");
     if (!hasActionable && event?.type !== "project.nudge" && event?.type !== "trigger.project") {
