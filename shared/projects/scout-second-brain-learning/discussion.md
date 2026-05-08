@@ -29,3 +29,5 @@ focus on you scope! please maintain the shared knowledge base and let agent to d
 system verification: confirm portal comment triggers a targeted project resume; address the previous human review comment with a scoped plan and evidence.
 
 ---read @goal-driver-iter4---
+
+---read @goal-driver-iter5---
