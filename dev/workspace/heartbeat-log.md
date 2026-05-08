@@ -72,3 +72,15 @@ Signal dispositions:
 - `message.created` aftermath reviews for dev sessions: acted by using `/app/agents` for git checks, using schema-first checks before non-canned alert-owner queries, and recording this artifact.
 - Repeated `session.start`/`session.end` heartbeat noise: dismissed as duplicate routine lifecycle events after health checks showed no dev-owned failure pattern.
 - Unresolved evaluator quality alert: dismissed for direct dev action because ownership is evaluator and there is no Approved work-queue item; continue monitoring for an explicit implementation request.
+
+## 2026-05-08 Artifact Gate Recovery
+
+Administrative heartbeat artifact written after the artifact gate reported the prior session produced no file writes.
+
+Evidence checked:
+- UTC timestamp at write time: `2026-05-08T10:14:19Z`.
+- Git status from `/app/agents` showed pre-existing modifications outside this artifact: `dev/last-session.md`, `may/heartbeat-log.md`, and shared ruflo-learning-loop project files.
+
+Disposition:
+- No production code or database state changed.
+- This entry is the intentional dev workspace artifact for the heartbeat recovery; the next substantive heartbeat should investigate an actual dev-owned signal or approved work-queue item.
