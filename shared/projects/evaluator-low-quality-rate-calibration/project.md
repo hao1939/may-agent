@@ -10,6 +10,7 @@ iteration: 2
 
 # Evaluator Low-Quality Rate Calibration
 
+**Iteration**: 1
 ## Goal
 Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior failures from (b) pipeline/guard false-penalties, and ensure evaluator scoring produces low false-good overturns.
 
@@ -41,6 +42,7 @@ Blocked: 5 consecutive iterations without milestone progress. Approach needs ret
 - outputs/iteration-1-deliverable-heuristic-v2-calibration-plan.md
 - outputs/iteration-3-impact-model-and-recommendation.md
 - outputs/iteration-4-metric-split-implementation-plan.md
+- outputs/iteration-1-metric-alert-wiring-and-pivot-options.md
 - outputs/iteration-1-deliverable.md
 - outputs/iteration-1-discovery-and-patch-plan.md
 - outputs/iteration-1-2026-05-08-alert-wiring-discovery.md
