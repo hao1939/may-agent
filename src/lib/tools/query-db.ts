@@ -25,6 +25,8 @@ interface QueryDbDetails {
   columns: string[];
 }
 
+type RuntimeDb = ReturnType<typeof getDb>;
+
 function textResult(text: string, details?: QueryDbDetails): AgentToolResult<QueryDbDetails | undefined> {
   return { content: [{ type: "text" as const, text }], details };
 }
@@ -111,16 +113,71 @@ function queryWithLimit(sql: string): string {
   return `SELECT * FROM (${sql}) LIMIT ?`;
 }
 
+function referencedTables(sql: string, errorMessage: string): string[] {
+  const tables = new Set<string>();
+  const tableError = errorMessage.match(/no such table:\s*([A-Za-z_][A-Za-z0-9_]*)/i)?.[1];
+  if (tableError) tables.add(tableError);
+
+  for (const match of sql.matchAll(/\b(?:from|join)\s+([A-Za-z_][A-Za-z0-9_]*)/gi)) {
+    tables.add(match[1]);
+  }
+  for (const match of sql.matchAll(/\bpragma\s+(?:table_info|table_xinfo|index_list|foreign_key_list)\s*\(\s*['"]?([A-Za-z_][A-Za-z0-9_]*)/gi)) {
+    tables.add(match[1]);
+  }
+
+  return [...tables];
+}
+
+function schemaForTables(db: RuntimeDb, tables: string[]): Record<string, string[]> {
+  const schema: Record<string, string[]> = {};
+  for (const table of tables) {
+    try {
+      const rows = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name?: string }>;
+      if (rows.length > 0) schema[table] = rows.map((row) => String(row.name));
+    } catch {
+      // Best-effort hint only.
+    }
+  }
+  return schema;
+}
+
+function allTables(db: RuntimeDb): string[] {
+  try {
+    return (db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").all() as Array<{ name?: string }>)
+      .map((row) => String(row.name))
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function buildSchemaErrorPayload(db: RuntimeDb | undefined, sql: string | undefined, error: string): Record<string, unknown> {
+  const payload: Record<string, unknown> = { error };
+  if (!db || !sql || !/no such (?:column|table):/i.test(error)) return payload;
+
+  const tables = referencedTables(sql, error);
+  const schema = schemaForTables(db, tables);
+  if (Object.keys(schema).length > 0) {
+    payload.hint = "The query referenced columns that do not exist. Use the schema below and retry with the real column names.";
+    payload.schema = schema;
+  } else {
+    payload.hint = "Inspect table schemas before retrying, for example: PRAGMA table_info(sessions).";
+  }
+  if (/no such table:/i.test(error)) payload.availableTables = allTables(db);
+
+  return payload;
+}
+
 export function createQueryDbTool(persistDir: string): AgentTool {
   return {
     name: "query_db",
     label: "Query DB",
     description:
-      "Run a bounded read-only query against the runtime SQLite DB. Use this instead of sqlite3, bun:sqlite, or guessing .state/may.db. Allows SELECT/WITH and read-only PRAGMA only.",
+      "Run a bounded read-only query against the runtime SQLite DB. Use this instead of sqlite3, bun:sqlite, or guessing .state/may.db. Allows SELECT/WITH and read-only PRAGMA only. For unfamiliar tables, inspect schema first with PRAGMA table_info(table).",
     parameters: Type.Object({
       sql: Type.String({
         description:
-          "A single read-only SQL statement. Allowed: SELECT, WITH, or read-only PRAGMA such as PRAGMA table_info(sessions).",
+          "A single read-only SQL statement. Allowed: SELECT, WITH, or read-only PRAGMA such as PRAGMA table_info(sessions). Do not guess columns for runtime tables.",
       }),
       params: Type.Optional(
         Type.Array(Type.Unknown(), {
@@ -135,14 +192,16 @@ export function createQueryDbTool(persistDir: string): AgentTool {
       ),
     }),
     execute: async (_toolCallId, rawParams) => {
+      let db: RuntimeDb | undefined;
+      let sql: string | undefined;
       try {
         const params = rawParams as QueryDbParams;
-        const sql = normalizeSql(params.sql);
+        sql = normalizeSql(params.sql);
         assertReadOnlySql(sql);
 
         const limit = clampLimit(params.limit);
         const bindParams = Array.isArray(params.params) ? params.params : [];
-        const db = getDb(persistDir);
+        db = getDb(persistDir);
 
         const isPragma = /^\s*pragma\b/i.test(sql);
         const statement = db.prepare(isPragma ? sql : queryWithLimit(sql));
@@ -161,7 +220,7 @@ export function createQueryDbTool(persistDir: string): AgentTool {
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        return textResult(JSON.stringify({ error: message }, null, 2));
+        return textResult(JSON.stringify(buildSchemaErrorPayload(db, sql, message), null, 2));
       }
     },
   };
