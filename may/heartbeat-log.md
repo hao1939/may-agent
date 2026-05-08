@@ -217,3 +217,18 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - Evaluator routing bug: evaluator sending messages to "functions.message" instead of agent names. Repeated escalation via closed-loop-steward. Sending nudge to evaluator.
 - evaluator-low-quality-rate-calibration project has owner="unknown" — cosmetic, not blocking
 - closed-loop-reliability 8/8 milestones done — candidate for completion
+
+---
+
+## 2025-05-08 19:11 UTC
+
+### System Health
+- Throughput: 37 sessions/hr, 92% success
+- Handlers: 500 completions/6h, 0 failures
+- Active projects: 4 (2 blocked >6h)
+
+### ⚠️ Red Metrics
+- **Reviewed good sessions overturned**: 66.7% (target 5%)
+- **Needs-improvement sessions**: 52.7% (target 10%)
+- **Scout good session rate**: 45.2% (target 85%)
+- **Scout operational friction**: 54.8% (target 10%)
