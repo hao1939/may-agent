@@ -9,6 +9,7 @@ describe("metrics-snapshot session health metrics", () => {
   const tempDirs: string[] = [];
 
   afterEach(() => {
+    delete process.env.MAY_AGENT_BUILD_METRICS_PATH;
     for (const dir of tempDirs.splice(0)) {
       closeDb(dir);
       rmSync(dir, { recursive: true, force: true });
@@ -207,8 +208,8 @@ describe("metrics-snapshot session health metrics", () => {
     expect(snapshot).toMatchObject({ value: 2, sample_size: 4 });
   });
 
-  it("measures autonomous rate across non-evaluator work sessions", async () => {
-    const root = join(tmpdir(), `metrics-autonomous-rate-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  it("retires noncritical metrics and resolves their open alerts", async () => {
+    const root = join(tmpdir(), `metrics-retired-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     tempDirs.push(root);
     mkdirSync(join(root, "agents"), { recursive: true });
     mkdirSync(join(root, "src/lib"), { recursive: true });
@@ -216,15 +217,18 @@ describe("metrics-snapshot session health metrics", () => {
 
     const db = getDb(root);
     const now = Date.now();
-    for (const [sessionId, agent, source] of [
-      ["s_heartbeat", "may", "workflow:may-heartbeat"],
-      ["s_steward", "may", "closed-loop-steward"],
-      ["s_manual", "may", "telegram.reply"],
-      ["s_eval", "evaluator", "workflow:evaluator-aftermath"],
-    ] as const) {
+    for (const metricId of [
+      "v2.spec-coverage-rate",
+      "capability.self-directed-iteration-rate-24h",
+      "agent.dev.low-quality-streak",
+    ]) {
       db.run(
-        "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt, endedAt) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [sessionId, agent, "task", "done", source, now - 60_000, now - 30_000],
+        "INSERT INTO metrics (id, name, owner, type, current, target, threshold, unit, status, speed, alert_op, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [metricId, metricId, "may", "gauge", 0, 1, 0.5, "ratio", "active", "fast", "<", now - 60_000, now - 60_000],
+      );
+      db.run(
+        "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
+        [metricId, "threshold", `${metricId} breached`, now - 60_000],
       );
     }
 
@@ -239,9 +243,14 @@ describe("metrics-snapshot session health metrics", () => {
 
     await handler({ type: "trigger.metrics-snapshot" } as any);
 
-    const metric = db.prepare("SELECT current FROM metrics WHERE id = ?").get("capability.self-directed-iteration-rate-24h") as any;
-    const snapshot = db.prepare("SELECT value, sample_size FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 1").get("capability.self-directed-iteration-rate-24h") as any;
-    expect(metric.current).toBe(0.6667);
-    expect(snapshot.sample_size).toBe(3);
+    const retired = db.prepare(
+      "SELECT COUNT(*) as c FROM metrics WHERE status = 'retired' AND id IN ('v2.spec-coverage-rate', 'capability.self-directed-iteration-rate-24h', 'agent.dev.low-quality-streak')",
+    ).get() as any;
+    const openRetiredAlerts = db.prepare(
+      "SELECT COUNT(*) as c FROM metric_alerts WHERE resolved_at IS NULL AND metric_id IN ('v2.spec-coverage-rate', 'capability.self-directed-iteration-rate-24h', 'agent.dev.low-quality-streak')",
+    ).get() as any;
+
+    expect(retired.c).toBe(3);
+    expect(openRetiredAlerts.c).toBe(0);
   });
 });
