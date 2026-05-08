@@ -40,3 +40,19 @@ Signal dispositions:
 - Previous implementation requests for Alert#191: dismissed as already acted in commit `e09c84086` (`dev: align evaluator quality metric wording`); current unresolved ownership is evaluator, not dev.
 
 Next check: continue using canned SQL or `PRAGMA table_info(...)` before non-canned queries, and keep heartbeat commits limited to intentional docs/artifacts.
+
+## 2026-05-08 Aftermath Habit Check
+
+Routine heartbeat follow-up to evaluator aftermath `s_1778222730433_3`.
+
+Evidence checked:
+- Approved queue remains empty; no implementation item was available for dev to pick up.
+- Canned health queries show `session.error-rate-6h=0.0267`, `handler.success-rate=1`, and `handler.failed-count=0`; no active metric is missing a snapshot in the last hour.
+- The heartbeat header said active alerts were clear, but `metric_alerts` has unresolved alert `#191` for `evaluator.low-quality-rate-24h` (`current=0.3675`, `threshold=0.3`). This is evaluator-owned and was already relayed to may/evaluator, so dev action is watch-only unless an approved implementation request appears.
+- Followed the aftermath advice by running git checks from `/app/agents` and using `PRAGMA table_info(metrics)` before the non-canned metric-owner lookup.
+- Dirty repo state at start was generated runtime state only: `dev/last-session.md`, `evaluator/last-session.md`, `may/last-session.md`, and `shared/gate-outcomes.log`; these should be restored rather than committed unless explicitly requested.
+
+Signal dispositions:
+- Aftermath review `s_1778222730433_3`: acted by applying the git-cwd, schema-first, and alert cross-check habits in this heartbeat.
+- Alert #191 / evaluator quality metric messages: dismissed for direct dev action because the metric owner is evaluator and the May relay/status update is already present; monitor for an approved work-queue item or implementation request.
+- Prior session-start/session-end noise and artifact-gate reminders: acknowledged as historical heartbeat/system events; no code change needed.
