@@ -10,7 +10,8 @@ iteration: 2
 
 # Evaluator Low-Quality Rate Calibration
 
-**Iteration**: 4
+**Iteration**: 5
+**Status**: blocked
 ## Goal
 Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior failures from (b) pipeline/guard false-penalties, and ensure evaluator scoring produces low false-good overturns.
 
@@ -19,8 +20,7 @@ Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior
 - Metric: `evaluator.false-good-rate-sample` current 0.5714 (threshold 0.2, target 0.05) but denominator only 7 reviewed sessions (sample instability).
 
 ## Current State
-Iteration 4. Milestones: 0/0 done.
-Reviewer: [PIVOT] - **I believe**: The project is blocked by an *operational wiring* gap: we have strong evidence + a metric-split plan, but we still haven’t identified (or proven absent) the **in-repo consumer
+Blocked: 5 consecutive iterations without milestone progress. Approach needs rethinking.
 ## Plan
 1. **Metric decomposition proposal**: draft a split of low-quality-rate into sub-metrics by issue class (schema errors, finish/uncommitted, terminal interruptions) to avoid conflating agent quality with infra/guard friction.
 2. **Criteria calibration**: review evaluator criteria for (a) terminal interrupted sessions (Clean start) and (b) finish-blocked sessions; decide whether to classify as NI vs excluded/exception.
@@ -77,3 +77,6 @@ Milestone checkoff: Iteration 2 — mechanism + fix options
 - Approval packet exists (Iteration 5) but does not change runtime behavior; the loop must close by patching **where paging/alerting chooses the metric** (may be in-repo or external).
 - Next action is to **locate the paging/alert hook** via targeted ripgrep, then propose a minimal change to repoint paging from `evaluator.low-quality-rate-24h` to `evaluator.substantive-low-quality-rate-24h`, with verification steps.
 - Iteration 2 located heuristic mechanism in `agents/evaluator/workflows/evaluator-aftermath.ts` (step-function: any `issues` => `quality=0.55` and `needs_improvement`; failed statuses => `quality=0.2`). - Rollout/refresh logic in `agents/may/handlers/session-aftermath-scan.ts` refreshes stale **good** evals on heuristicVersion bump but does not refresh NI (“NI sticky”). - Most NI sessions in the DB-stratified sample were triggered by hygiene/pipeline flags (finish blocked, schema/query error, interrupted/clean start), suggesting false-penalties are a major driver; next step is transcript-level audit + explicit rubric mapping for “substantive vs hygiene vs unscorable.”
+- Worker is stuck due to *execution/tooling failures*, not analysis: `functions.message` was called with `content` as an object (must be string), and repeated attempts got tangled with git because `shared/projects/**` is ignored and `project.md` was unintentionally modified; also saw transient `.git/index.lock` errors.
+- The substantive metric (`evaluator.substantive-low-quality-rate-24h`) is already implemented in `agents/may/handlers/metrics-snapshot.ts`; remaining work is **governance + alert repointing**, not metric computation.
+- Iteration 5 approval packet contains the distilled ask + tables and should be the canonical reference when messaging May.
