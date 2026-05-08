@@ -1,50 +1,55 @@
 # Daily Alert Review — 2026-05-08
 
-**Period:** 2026-05-08 04:12 – 17:10 UTC  
-**Total alerts:** 26  
-**Unresolved:** 3
+**Period:** 2026-05-08 04:12 – 18:05 UTC  
+**Total alerts:** 30  
+**Unresolved:** 4  
 
 ## Summary by Metric
 
-| Metric | Alerts | Unresolved | Severity |
-|--------|--------|------------|----------|
-| project.invalid-format-count | 10 | 0 | Low (all self-resolved) |
-| scout.good-session-rate-24h | 5 | 1 | **Medium** |
-| metric.stale-active-count | 3 | 0 | Low (all self-resolved) |
-| evaluator.low-quality-rate-24h | 3 | 1 | **High** |
-| scout.operational-friction-rate-24h | 1 | 1 | **High** |
-| v2.spec-coverage-rate | 1 | 0 | Medium (resolved) |
-| capability.self-directed-iteration-rate-24h | 1 | 0 | Medium (resolved) |
-| capability.process-uptime-h | 2 | 0 | Low (restarts, self-resolved) |
-| session.failed-triage-rate-3h | 1 | 0 | Low (resolved) |
+| Metric | Alerts | Still Open? | Severity |
+|--------|--------|-------------|----------|
+| project.invalid-format-count | 10 | No (recurring, self-resolving) | Low |
+| scout.good-session-rate-24h | 5 | **Yes** (0.46, threshold 0.65) | High |
+| evaluator.low-quality-rate-24h | 3 | **Yes** (0.51, threshold 0.30) | High |
+| metric.stale-active-count | 3 | No | Low |
+| scout.operational-friction-rate-24h | 1 | **Yes** (0.54, threshold 0.30) | High |
+| evaluator.false-good-rate-sample | 1 | **Yes** (0.67, threshold 0.20) | High |
+| evaluator.triage-closure-rate-24h | 1 | No | Medium |
+| evaluator.meaningful-review-rate-24h | 1 | No | Medium |
+| session.failed-triage-rate-3h | 1 | No | Medium |
+| capability.process-uptime-h | 2 | No | Low |
+| capability.self-directed-iteration-rate-24h | 1 | No | Medium |
+| v2.spec-coverage-rate | 1 | No | Medium |
 
-## Active/Unresolved Alerts (Require Attention)
+## Critical Open Issues
 
-### 1. evaluator.low-quality-rate-24h — 49.8% (threshold: 30%, target: 10%)
-- **Since:** 07:28 UTC
-- **Impact:** Nearly half of evaluated sessions are low-quality. This is the most critical systemic issue.
-- **Recommendation:** Investigate common failure modes in recent evaluations. Consider tightening session guidance or adding pre-flight checks.
+### 1. Scout Good Session Rate — 0.46 (target: 0.85)
+- Fired 5 times today; resolved briefly but dropped again
+- Currently far below threshold (0.65) and target (0.85)
+- **Action needed:** Investigate root causes of poor sessions
 
-### 2. scout.operational-friction-rate-24h — 53.1% (threshold: 30%, target: 10%)
-- **Since:** 08:03 UTC
-- **Impact:** Over half of scout sessions hit operational friction (tooling issues, unclear context, etc).
-- **Recommendation:** Review recent scout session logs for recurring friction patterns. May need tooling or documentation improvements.
+### 2. Evaluator Low Quality Rate — 0.51 (target: 0.10)
+- Over half of evaluated sessions rated needs-improvement
+- Correlated with scout good-session-rate decline
+- **Action needed:** Review common failure patterns in recent evaluations
 
-### 3. scout.good-session-rate-24h — 46.9% (threshold: 65%, target: 85%)
-- **Since:** 16:35 UTC
-- **Impact:** Correlated with the above two — low quality + high friction = low good-session rate.
-- **Recommendation:** This is a downstream symptom. Fixing #1 and #2 should improve this.
+### 3. Scout Operational Friction Rate — 0.54 (target: 0.10)
+- Over half of sessions hitting operational friction
+- Unresolved since 08:03 UTC
+- **Action needed:** Identify friction sources (tooling? context? permissions?)
 
-## Patterns & Observations
+### 4. Evaluator False Good Rate — 0.67 (target: 0.05)
+- 2/3 of reviewed "good" sessions were overturned
+- Newest alert (18:05), not yet resolved
+- **Action needed:** Evaluator calibration may need tuning
 
-1. **project.invalid-format-count** fired 10 times but always self-resolved within minutes. This is a noisy alert — consider adding a debounce/cooldown or raising the threshold to reduce alert fatigue.
+## Recurring Low-Priority Patterns
 
-2. **Stale metrics** alerts (3 occurrences) also self-resolved quickly — likely transient during low-activity periods.
+- **project.invalid-format-count**: 10 alerts, all self-resolved within ~15-30 min. Likely transient format violations during project edits. Not urgent but could benefit from preventive validation.
+- **metric.stale-active-count**: Spikes around process restarts. All resolved.
 
-3. The three unresolved alerts are all interrelated quality/friction metrics and represent the primary systemic concern for the system today.
+## Recommendations
 
-## Recommended Actions
-
-- [ ] **P0:** Root-cause the 50% low-quality session rate — pull recent "needs-improvement" evaluations and categorize failure reasons
-- [ ] **P1:** Audit scout operational friction — identify top friction sources (missing context? tool failures? unclear tasks?)
-- [ ] **P2:** Add cooldown to `project.invalid-format-count` alert to reduce noise (10 alerts in 24h, all transient)
+1. **P0:** Address scout quality/friction — the operational friction rate (54%) is likely causing the poor session quality (46% good). A single root-cause fix could resolve both.
+2. **P1:** Recalibrate evaluator — false-good-rate at 67% suggests evaluator is too lenient, then reviews overturn. Tighten scoring criteria.
+3. **P2:** Add pre-commit validation for project.md format to prevent recurring noise alerts.
