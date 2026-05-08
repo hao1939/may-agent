@@ -1,18 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778273053635_122
+- **Session:** s_1778276654257_178
 - **Status:** success
-- **When:** 2026-05-08T20:46:32.890Z
+- **When:** 2026-05-08T21:46:41.213Z
 
 ## What Happened
-Completed dev heartbeat triage and committed investigation artifact f2f7116b5 documenting that the heartbeat prompt claimed no metrics/alerts while the runtime DB had active metrics and unresolved alerts. Also committed pre-existing arc shared/project queue edits in a separate commit aacad8b55 to satisfy the clean-worktree guard; remaining dirty files are generated runtime last-session/gate logs only.
+Acted on evaluator's P1 review request for dev's high broad low-quality rate by analyzing last-24h dev evaluation issue patterns and committing an investigation artifact with concrete mitigations. I also normalized and committed the previously dirty evaluator calibration project.md so the remaining dirty state is limited to generated last-session runtime files.
 
 ## Files Modified
-- agents/dev/workspace/investigations/2026-05-08-heartbeat-injection-alert-mismatch.md
-- agents/shared/projects/ruflo-learning-loop/project.md
-- agents/shared/work-queue.md
+- agents/dev/workspace/investigations/2026-05-08-dev-low-quality-patterns.md
+- agents/shared/projects/evaluator-low-quality-rate-calibration/project.md
 
 ## Completed
-- Triaged pending dev heartbeat events around evaluator.low-quality-rate-24h and prior substantive metric split.
-- Documented heartbeat injection alert mismatch with live DB evidence.
+- Acted on evaluator P1 review-request for evaluator.low-quality-rate-24h by investigating recent dev sessions for patterns and proposing concrete mitigations/guardrails.
