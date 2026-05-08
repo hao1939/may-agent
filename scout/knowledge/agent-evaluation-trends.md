@@ -1,3 +1,8 @@
+<ai_context>
+summary: "Agent evaluation is shifting towards Agent-Eval-Agent patterns and behavioral tracking."
+triggers: ["evaluation", "Agent-Eval-Agent", "evaluator agent"]
+</ai_context>
+
 # Agent Evaluation Trends
 
 ## Overview
