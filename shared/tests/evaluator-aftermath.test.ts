@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   HEURISTIC_VERSION,
+  buildReviewTask,
+  classifyEvaluationLane,
   classifyVerdict,
   evaluationHeuristicVersion,
   shouldRefreshEvaluation,
+  transcriptOutputSignals,
   transcriptIssues,
 } from "../../evaluator/workflows/evaluator-aftermath.ts";
 
@@ -142,5 +145,89 @@ describe("evaluator aftermath transcript checks", () => {
     expect(shouldRefreshEvaluation({ verdict: "good", overall: "{}" }, heuristic)).toBe(true);
     expect(shouldRefreshEvaluation({ verdict: "good", overall: JSON.stringify({ heuristicVersion: HEURISTIC_VERSION }) }, heuristic)).toBe(false);
     expect(shouldRefreshEvaluation({ verdict: "needs_improvement", overall: "{}" }, heuristic)).toBe(false);
+  });
+
+  it("routes failed or issue-bearing sessions to triage", () => {
+    const heuristic = classifyVerdict(
+      { status: "done", opCount: 0 },
+      "finish() blocked [uncommitted changes]\nno such column: metric_name",
+    );
+
+    const route = classifyEvaluationLane({ status: "done", opCount: 0 }, "", heuristic);
+
+    expect(route.lane).toBe("needs_triage");
+    expect(route.reason).toContain("schema/query error in transcript");
+  });
+
+  it("routes good sessions with material output as success candidates", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "w1",
+            name: "write",
+            arguments: { path: "agents/shared/projects/example/outputs/result.md", content: "value" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "b1",
+            name: "bash",
+            arguments: { command: "bun test agents/shared/tests/example.test.ts" },
+          },
+        ],
+      }),
+    ].join("\n");
+
+    expect(transcriptOutputSignals({ status: "done", projectId: "example" }, transcript)).toEqual([
+      "file write/edit",
+      "project artifact",
+      "verification command",
+      "project-linked session",
+    ]);
+    expect(classifyEvaluationLane({ status: "done", opCount: 10, projectId: "example" }, transcript).lane).toBe("success_candidate");
+  });
+
+  it("routes good sessions without material output as routine ok", () => {
+    const transcript = JSON.stringify({
+      role: "assistant",
+      content: [
+        {
+          type: "toolCall",
+          id: "q1",
+          name: "query_db",
+          arguments: { sql: "SELECT COUNT(*) FROM metrics" },
+        },
+      ],
+    });
+
+    expect(classifyEvaluationLane({ status: "done", opCount: 10 }, transcript).lane).toBe("routine_ok");
+  });
+
+  it("review prompt treats heuristics as routing signals and asks for output quality", () => {
+    const task = buildReviewTask({
+      sessionId: "s_1",
+      session: { sessionId: "s_1", agent: "dev", status: "done" },
+      transcriptPath: ".state/sessions/history/s_1/session.jsonl",
+      artifactPath: "agents/evaluator/workspace/aftermath/s_1.md",
+      workflowCollectedFacts: "## Workflow-Collected Session Facts\n- Heuristic verdict: good",
+      route: {
+        lane: "success_candidate",
+        reason: "good session with material output: file write/edit",
+        signals: ["file write/edit"],
+      },
+    });
+
+    expect(task).toContain("routing signals, not the final judgment");
+    expect(task).toContain("did this session produce real value");
+    expect(task).toContain("inspect the actual artifacts, diffs, or relevant files");
+    expect(task).toContain("Output Quality");
+    expect(task).toContain("Learning Created: yes|no");
   });
 });

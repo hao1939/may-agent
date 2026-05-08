@@ -60,6 +60,10 @@ const ALL_METRICS: MetricDef[] = [
   { id: "session.failed-triage-rate-3h", name: "Failed session triage rate (3h)", owner: "evaluator", type: "gauge", target: 1.0, threshold: 0.80, unit: "ratio", alert_op: "<", priority: "P1" },
   { id: "evaluator.aftermath-coverage-rate-3h", name: "Evaluator aftermath liveness (3h)", owner: "evaluator", type: "gauge", target: 0.80, threshold: 0.20, unit: "ratio", alert_op: "<", priority: "P3" },
   { id: "evaluator.low-quality-rate-24h", name: "Needs-improvement/low-score evaluated sessions (24h)", owner: "evaluator", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P2" },
+  { id: "evaluator.meaningful-review-rate-24h", name: "Evaluator meaningful review rate (24h)", owner: "evaluator", type: "gauge", target: 0.90, threshold: 0.70, unit: "ratio", alert_op: "<", priority: "P2" },
+  { id: "evaluator.triage-closure-rate-24h", name: "Evaluator triage closure rate (24h)", owner: "evaluator", type: "gauge", target: 0.90, threshold: 0.70, unit: "ratio", alert_op: "<", priority: "P2" },
+  { id: "evaluator.success-candidates-24h", name: "Good sessions marked for learning (24h)", owner: "evaluator", type: "gauge", target: 1, threshold: 0, unit: "count", alert_op: "<", priority: "P3" },
+  { id: "evaluator.success-learnings-24h", name: "Learnings extracted from good sessions (24h)", owner: "evaluator", type: "gauge", target: 1, threshold: 0, unit: "count", alert_op: "<", priority: "P3" },
   { id: "evaluator.stale-running-session-count", name: "Stale running sessions", owner: "evaluator", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
   // System output
@@ -381,6 +385,52 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       );
       record("evaluator.low-quality-rate-24h", total > 0 ? parseFloat((needsImprovementOrLowScore / total).toFixed(4)) : 0, total);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.low-quality-rate-24h: ${e}`); }
+
+    try {
+      const routedForReview = count(
+        `SELECT COUNT(*) as c
+         FROM events
+         WHERE event_type = 'evaluation.routed'
+           AND timestamp > ?
+           AND json_extract(data, '$.lane') IN ('needs_triage', 'success_candidate')`,
+        twentyFourH,
+      );
+      const reviewed = count(
+        "SELECT COUNT(*) as c FROM events WHERE event_type = 'evaluation.reviewed' AND timestamp > ?",
+        twentyFourH,
+      );
+      record("evaluator.meaningful-review-rate-24h", routedForReview > 0 ? parseFloat((Math.min(reviewed, routedForReview) / routedForReview).toFixed(4)) : 1, routedForReview);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.meaningful-review-rate-24h: ${e}`); }
+
+    try {
+      const triageRouted = count(
+        `SELECT COUNT(*) as c
+         FROM events
+         WHERE event_type = 'evaluation.routed'
+           AND timestamp > ?
+           AND json_extract(data, '$.lane') = 'needs_triage'`,
+        twentyFourH,
+      );
+      const triageClosed = count(
+        "SELECT COUNT(*) as c FROM events WHERE event_type = 'evaluation.triage_closed' AND timestamp > ?",
+        twentyFourH,
+      );
+      record("evaluator.triage-closure-rate-24h", triageRouted > 0 ? parseFloat((Math.min(triageClosed, triageRouted) / triageRouted).toFixed(4)) : 1, triageRouted);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.triage-closure-rate-24h: ${e}`); }
+
+    try {
+      record(
+        "evaluator.success-candidates-24h",
+        count("SELECT COUNT(*) as c FROM events WHERE event_type = 'evaluation.success_candidate' AND timestamp > ?", twentyFourH),
+      );
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.success-candidates-24h: ${e}`); }
+
+    try {
+      record(
+        "evaluator.success-learnings-24h",
+        count("SELECT COUNT(*) as c FROM events WHERE event_type = 'evaluation.learning_created' AND timestamp > ?", twentyFourH),
+      );
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.success-learnings-24h: ${e}`); }
 
     try {
       record(
