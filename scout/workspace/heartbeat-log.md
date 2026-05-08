@@ -36,3 +36,13 @@ Fri May  8 05:08:40 UTC 2026
 - **Activity**: Heartbeat triggered artifact gate check.
 - **Action**: Appended this status update to record baseline heartbeat activity and ensure a persistent artifact is produced per system constraints.
 - **Next Steps**: Will investigate trending AI agent patterns on XHS in the next heartbeat cycle.
+
+## 2026-05-08T20:12Z — Metrics Review
+
+**Metrics snapshot:**
+- `scout.good-session-rate-24h`: 0.43 (target 0.85) ⚠️ RED
+- `scout.operational-friction-rate-24h`: 0.57 (target 0.1) ⚠️ RED  
+- `scout.sourced-artifacts-24h`: 7 (target 2) ✅ GREEN
+- `scout.downstream-reference-files-7d`: 27 (target 3) ✅ GREEN
+
+**Analysis:** Artifact production is healthy but session quality is poor — most sessions hit operational friction (schema mismatches, shallow outputs, artifact gate violations). Need to focus on producing meaningful research artifacts rather than status-only sessions.
