@@ -180,11 +180,11 @@ A historical residue note: the events table contains 371 `agent.notification` ev
 
 **Measurement.**
 - `capability.cost-per-day-usd` — sum of session cost in last 24h. Target ≤ budgeted; threshold = budget × 1.5.
-- `capability.concurrent-session-max-1h` — peak concurrent running sessions in last hour. Target ≤ 8; threshold > 15.
-- `capability.zombie-session-count` — sessions in `running` state for > 30min. Target 0; threshold > 2.
+- `capability.concurrent-session-max-1h` — peak concurrent running sessions in last hour (sampled every 5min). Target ≤ 8; threshold > 15.
+- `capability.zombie-session-count` — sessions in `running`/`idle` state for > 30min. Target 0; threshold > 2.
 - `capability.fork-loop-incidents-24h` — detected re-fork loops (same agent, same task, more than N forks in window). Target 0; threshold > 0.
 
-**Status.** `partial`. Cost tracking exists per session; aggregation metric not in registry. Zombie detection exists but isn't surfaced as a metric. Fork-loop detection doesn't exist.
+**Status.** `partial`. `capability.zombie-session-count` and `capability.concurrent-session-max-1h` are now measured in `metrics-snapshot.ts`. Cost tracking and fork-loop detection remain unimplemented.
 
 **Known gaps.**
 - Add cost aggregation metric.
@@ -225,12 +225,12 @@ A historical residue note: the events table contains 371 `agent.notification` ev
 **Measurement.** This is one of the few capabilities that can't be measured continuously without intentionally perturbing the system.
 
 Two-part:
-- *Continuous*: `capability.process-uptime-h` (current process age) and `capability.unexpected-restart-count-7d` (restarts not initiated by humans). Target: low restart count, growing uptime.
+- *Continuous*: `capability.process-uptime-h` (hours since earliest currently-running session, computed in `metrics-snapshot.ts`) and `capability.unexpected-restart-count-7d` (restarts not initiated by humans). Target: low restart count, growing uptime.
 - *Scenario*: scheduled chaos test in `agents/gym/scenarios/crash-recovery/` that kills the may-agent process at random intervals and measures time to first successful heartbeat. Result is written as a metric: `capability.crash-recovery-time-last-test-s`. The metric has a freshness threshold — a stale result (> 7 days) is itself a breach.
 
 **Target / threshold.** Restart-time < 60s. Unexpected restarts < 5 / 7d. Scenario freshness < 7d.
 
-**Status.** `partial`. Restart detection exists. Scenario doesn't exist.
+**Status.** `partial`. `capability.process-uptime-h` is now measured in `metrics-snapshot.ts`. Restart detection and chaos scenario don't exist.
 
 **Known gaps.**
 - Add `crash-recovery` gym scenario.
