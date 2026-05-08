@@ -5,18 +5,17 @@ status: active
 type: calibration
 priority: P2
 workflow: project
-iteration: 0
+iteration: 1
 ---
 
 # Evaluator Low Quality Rate Calibration
 
-**Status**: active
 ## Goal
 Bring `evaluator.low-quality-rate-24h` below threshold (0.3) and toward target (0.1) by determining whether the breach is caused by (a) evaluator rubric/threshold calibration, or (b) a real system-wide drop in session quality.
 
 ## Current State
-`evaluator.low-quality-rate-24h` has been breaching repeatedly (~10 consecutive checks). Prior storm-related KEs show that some metrics were contaminated by event-storm windows, but current evidence suggests this metric’s numerator/denominator is coming from recent evaluation rows (not a backlog artifact).
-
+Iteration 1. Milestones: 0/0 done.
+Reviewer: - **I believe**: The breach is largely driven by a **scoring/heuristic shift** (heuristicVersion=2) that marks many sessions as `needs_improvement` (often at quality=0.55) for **process/guard hygiene*
 ## Signals
 - Metric row (2026-05-08): current=0.3889, threshold=0.3, target=0.1.
 - Last 24h: 414 evaluations, 161 `needs_improvement`, 0 `fail` => 38.9% low.
@@ -34,10 +33,20 @@ Bring `evaluator.low-quality-rate-24h` below threshold (0.3) and toward target (
    - If most are clearly NI → treat as system-wide quality regression; notify may/coach/optimizer with top recurrent issues.
 4. **Metric improvement loop:** after calibration, watch 24h trend for 1–2 cycles.
 
-## Success criteria
+## Validation
 - Metric snapshot falls below 0.3 for at least 3 consecutive snapshots.
 - A written artifact exists showing: sample, decision, and rubric/threshold change (if any).
 
 ## Journal
 ### 2026-05-08
 Project format normalized to the current shared-project convention: YAML frontmatter owns metadata; body sections carry work context only.
+
+
+## Artifacts
+- outputs/iteration-1-diagnosis.md
+
+
+## Context
+- Heuristic evaluation dominates the last 24h window; heuristicVersion=2 slice has ~0.70 needs_improvement rate vs ~0.165 for heuristicVersion=null.
+- Top needs_improvement “issues” are largely hygiene/process/guard failures (finish blocked by uncommitted changes; schema/query error in transcript; interrupted/clean start).
+- Next investigation should identify heuristic v2 rule locations + perform a small stratified manual audit to determine false positives vs intended penalties and pick an intervention (rubric vs heuristic tuning vs workflow fixes).

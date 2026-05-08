@@ -9,7 +9,6 @@ iteration: 0
 ---
 
 # Project: Scout Second Brain Learning
-**Status**: active
 ## Goal
 
 Learn from `eugeniughelbur/obsidian-second-brain` and adapt the smallest useful
@@ -40,7 +39,7 @@ Initial hypothesis:
 - `scout.operational-friction-rate-24h`: should recover by reducing finish blocks, schema errors, and broad git/add churn.
 - `scout.downstream-reference-files-7d`: should stay healthy or improve as findings become easier for other agents to reuse.
 
-## Milestones
+## Plan
 
 - [x] Read the repo README and map the main knowledge-base practices to our agent system.
 - [x] Write `agents/scout/knowledge/obsidian-second-brain-patterns.md` with: applicable ideas, non-applicable ideas, risks, and a smallest pilot.
