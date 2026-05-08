@@ -126,6 +126,62 @@ describe("evaluator aftermath transcript checks", () => {
     expect(verdict.issues).not.toContain("metric health claim without live evidence");
   });
 
+  it("flags explicit forbidden-file edits as constraint violations", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "user",
+        content: "Task constraints: You CANNOT edit the project file or journal. Forbidden: STATUS.md and NEXT.md.",
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "e1",
+            name: "edit",
+            arguments: { path: "agents/shared/projects/ruflo-learning-loop/outputs/STATUS.md", oldText: "a", newText: "b" },
+          },
+        ],
+      }),
+    ].join("\n");
+
+    const verdict = classifyVerdict({ status: "done", opCount: 0 }, transcript);
+
+    expect(verdict.verdict).toBe("needs_improvement");
+    expect(verdict.issues).toContain("constraint violation: edited forbidden path(s): STATUS.md");
+    expect(classifyEvaluationLane({ status: "done", opCount: 0 }, transcript, verdict).lane).toBe("needs_triage");
+  });
+
+  it("flags forbidden edits observed in git status output", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "user",
+        content: "Do not edit agents/shared/projects/ruflo-learning-loop/outputs/NEXT.md.",
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "b1",
+            name: "bash",
+            arguments: { command: "git status --short agents/shared/projects/ruflo-learning-loop/outputs/NEXT.md" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "b1",
+        toolName: "bash",
+        content: [{ type: "text", text: " M agents/shared/projects/ruflo-learning-loop/outputs/NEXT.md\n" }],
+      }),
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toContain(
+      "constraint violation: edited forbidden path(s): agents/shared/projects/ruflo-learning-loop/outputs/NEXT.md",
+    );
+  });
+
   it("flags unavailable workflow-collected signals as reliability issue", () => {
     const verdict = classifyVerdict(
       { status: "done", opCount: 0 },

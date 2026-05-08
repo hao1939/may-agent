@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 export const name = "evaluator-aftermath";
 export const description = "Evaluate session aftermath, cancel stale running sessions, and drive repair/learning.";
-export const HEURISTIC_VERSION = 3;
+export const HEURISTIC_VERSION = 4;
 
 export type EvaluationLane = "needs_triage" | "success_candidate" | "routine_ok";
 
@@ -65,7 +65,71 @@ export function transcriptIssues(transcript: string): string[] {
     issues.push("metric health claim without live evidence");
   }
 
+  const forbiddenPaths = forbiddenEditPathsFromTask(liveText);
+  if (forbiddenPaths.length > 0) {
+    const editedForbidden = editedForbiddenPaths(ownText, forbiddenPaths);
+    if (editedForbidden.length > 0) {
+      issues.push(`constraint violation: edited forbidden path(s): ${editedForbidden.join(", ")}`);
+    }
+  }
+
   return issues;
+}
+
+function forbiddenEditPathsFromTask(text: string): string[] {
+  const paths = new Set<string>();
+  const lines = text.split(/\n/);
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i] ?? "";
+    const lower = line.toLowerCase();
+    if (!/(forbidden|cannot|must not|do not|don't|no edits?|not edit|never edit)/.test(lower)) continue;
+
+    for (const match of line.matchAll(/(?:agents\/)?[\w.-]+(?:\/[\w.-]+)+/g)) {
+      const raw = match[0].replace(/[).,;:'\"]+$/, "");
+      if (raw.includes("/")) paths.add(raw);
+    }
+    for (const match of line.matchAll(/\b[A-Z][A-Z0-9_-]*\.md\b/g)) {
+      paths.add(match[0]);
+    }
+  }
+  return [...paths];
+}
+
+function editedForbiddenPaths(ownText: string, forbiddenPaths: string[]): string[] {
+  const edited = new Set<string>();
+  const canonicalForbiddenPaths = canonicalizeForbiddenPaths(forbiddenPaths);
+  const editJsonPattern = /\{"name":"(?:write|edit|apply_patch)","arguments":\{[^\n]*?"(?:path|filePath)":"([^"]+)"/g;
+  for (const match of ownText.matchAll(editJsonPattern)) {
+    const editedPath = match[1] ?? "";
+    for (const forbidden of canonicalForbiddenPaths) {
+      if (pathMatchesForbidden(editedPath, forbidden)) edited.add(forbidden);
+    }
+  }
+
+  for (const forbidden of canonicalForbiddenPaths) {
+    const escaped = escapeRegExp(forbidden);
+    if (new RegExp(`\\b(?:M|A|AM|MM)\\s+[^\\n]*${escaped}(?:\\s|$)`).test(ownText)) {
+      edited.add(forbidden);
+    }
+  }
+
+  return [...edited];
+}
+
+function canonicalizeForbiddenPaths(forbiddenPaths: string[]): string[] {
+  return forbiddenPaths.filter((candidate) => {
+    if (candidate.includes("/")) return true;
+    return !forbiddenPaths.some((other) => other !== candidate && pathMatchesForbidden(other, candidate));
+  });
+}
+
+function pathMatchesForbidden(editedPath: string, forbiddenPath: string): boolean {
+  if (!editedPath || !forbiddenPath) return false;
+  return editedPath === forbiddenPath || editedPath.endsWith(`/${forbiddenPath}`) || editedPath.endsWith(forbiddenPath);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function contentText(content: any): string {
