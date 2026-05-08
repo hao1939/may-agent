@@ -664,7 +664,7 @@ describe("callerSessionId", () => {
     expect(run!.parentSessionId).toBe("s_may_session");
   });
 
-  it("workflow without callerSessionId uses 'unknown'", async () => {
+  it("workflow without callerSessionId has no parent session", async () => {
     writeWorkflow(
       "no-caller.ts",
       `
@@ -685,6 +685,35 @@ describe("callerSessionId", () => {
     if (parsed.type !== "done") return;
 
     const run = getWorkflowRun(persistDir, parsed.workflowRunId);
-    expect(run!.parentSessionId).toBe("unknown");
+    expect(run!.parentSessionId).toBeNull();
+  });
+
+  it("workflow run stores projectId when launched for a project", async () => {
+    writeWorkflow(
+      "project-tag-test.ts",
+      `
+      export const name = "project-tag-test";
+      export const description = "Project tag test";
+      export async function execute(ctx) {
+        return ctx.done("done");
+      }
+    `,
+    );
+
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const tool = createWorkflowTool({
+      manager,
+      workflowDir,
+      persistDir,
+      projectId: "scout/scout-second-brain-learning",
+    });
+
+    const result = await tool.execute("tc1", { action: "run", name: "project-tag-test", task: "test" });
+    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    expect(parsed.type).toBe("done");
+    if (parsed.type !== "done") return;
+
+    const run = getWorkflowRun(persistDir, parsed.workflowRunId);
+    expect(run!.projectId).toBe("scout/scout-second-brain-learning");
   });
 });

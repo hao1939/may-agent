@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE INDEX IF NOT EXISTS idx_sess_agent   ON sessions(agent);
 CREATE INDEX IF NOT EXISTS idx_sess_status  ON sessions(status);
 CREATE INDEX IF NOT EXISTS idx_sess_parent  ON sessions(parentSessionId);
+CREATE INDEX IF NOT EXISTS idx_sess_workflow ON sessions(workflowRunId);
 CREATE INDEX IF NOT EXISTS idx_sess_started ON sessions(startedAt);
 
 -- Gym benchmark runs and checks
@@ -305,6 +306,7 @@ CREATE TABLE IF NOT EXISTS workflow_runs (
   task                TEXT NOT NULL,
   parentSessionId     TEXT,
   parentWorkflowRunId TEXT,
+  projectId           TEXT,
   depth               INTEGER DEFAULT 1,
   status              TEXT DEFAULT 'running',
   startedAt           INTEGER NOT NULL,
@@ -429,6 +431,48 @@ export function getDb(persistDir: string): SqliteDb {
     db.exec("CREATE INDEX IF NOT EXISTS idx_sess_project ON sessions(projectId)");
   } catch {
     /* already exists */
+  }
+  try {
+    db.exec("CREATE INDEX IF NOT EXISTS idx_sess_workflow ON sessions(workflowRunId)");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("ALTER TABLE workflow_runs ADD COLUMN projectId TEXT");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("CREATE INDEX IF NOT EXISTS idx_wfr_project ON workflow_runs(projectId)");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.run("UPDATE workflow_runs SET parentSessionId = NULL WHERE parentSessionId = 'unknown'");
+  } catch {
+    /* best-effort cleanup */
+  }
+  try {
+    db.run(`
+      UPDATE workflow_runs
+      SET projectId = (
+        SELECT MAX(s.projectId)
+        FROM sessions s
+        WHERE s.workflowRunId = workflow_runs.runId
+          AND s.projectId IS NOT NULL
+          AND s.projectId != ''
+      )
+      WHERE (projectId IS NULL OR projectId = '')
+        AND (
+          SELECT COUNT(DISTINCT s.projectId)
+          FROM sessions s
+          WHERE s.workflowRunId = workflow_runs.runId
+            AND s.projectId IS NOT NULL
+            AND s.projectId != ''
+        ) = 1
+    `);
+  } catch {
+    /* best-effort backfill */
   }
 
   // Events table migrations (columns added after initial schema)
@@ -628,6 +672,7 @@ export interface WorkflowRunRecord {
   task: string;
   parentSessionId: string | null;
   parentWorkflowRunId: string | null;
+  projectId?: string | null;
   depth: number;
   status: string;
   startedAt: number;
@@ -642,11 +687,11 @@ export function insertWorkflowRun(persistDir: string, run: WorkflowRunRecord): v
   const db = getDb(persistDir);
   db.run(
     `INSERT OR REPLACE INTO workflow_runs
-      (runId, workflow, task, parentSessionId, parentWorkflowRunId, depth, status, startedAt, endedAt, result_summary, result_reason, resumedFromRunId)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (runId, workflow, task, parentSessionId, parentWorkflowRunId, projectId, depth, status, startedAt, endedAt, result_summary, result_reason, resumedFromRunId)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       run.runId, run.workflow, run.task, run.parentSessionId, run.parentWorkflowRunId,
-      run.depth, run.status, run.startedAt, run.endedAt,
+      run.projectId ?? null, run.depth, run.status, run.startedAt, run.endedAt,
       run.result_summary, run.result_reason, run.resumedFromRunId,
     ],
   );
