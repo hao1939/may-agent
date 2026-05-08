@@ -1735,18 +1735,6 @@ async function loadAgentAbout(name) {
     }
     html += `</div>`;
 
-    // ── agent.json metadata box. ──
-    if (cfg) {
-      html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:16px">`;
-      html += `<h3 style="margin:0 0 8px;font-size:13px;color:var(--fg2)">agent.json</h3>`;
-      html += `<table style="font-size:13px"><tbody>`;
-      for (const k of ['name','description','domain','model','compaction']) {
-        if (cfg[k] != null) html += `<tr><td style="padding:2px 12px 2px 0;color:var(--fg2)">${k}</td><td>${esc(String(cfg[k]))}</td></tr>`;
-      }
-      if (Array.isArray(cfg.tools)) html += `<tr><td style="padding:2px 12px 2px 0;color:var(--fg2);vertical-align:top">tools (${cfg.tools.length})</td><td style="font-size:11px;color:var(--fg2)">${cfg.tools.map(t => esc(typeof t === 'string' ? t : (t.name || JSON.stringify(t)))).join(', ')}</td></tr>`;
-      html += `</tbody></table></div>`;
-    }
-
     // ── Other on-disk files: convention files agents may read on demand. ──
     if (otherFiles.length > 0) {
       html += `<div>`;
@@ -1800,11 +1788,13 @@ async function loadAgentOverview(name) {
   body.innerHTML = '<div style="color:var(--fg2);padding:24px">Loading overview…</div>';
   try {
     // Fetch in parallel.
-    const [metricsRes, projectsRes, livenessRes] = await Promise.all([
+    const [metricsRes, projectsRes, livenessRes, aboutRes] = await Promise.all([
       fetch('/api/metrics').then(r => r.json()),
       fetch('/api/projects').then(r => r.json()),
       fetch('/api/liveness').then(r => r.json()),
+      fetch(`/api/agents/${encodeURIComponent(name)}/about`).then(r => r.json()).catch(() => ({agentJson: null})),
     ]);
+    const cfg = aboutRes && aboutRes.agentJson;
     const ownedMetrics = (metricsRes.metrics || []).filter(m => m.owner === name);
     const ownedProjects = (projectsRes || []).filter(p => p.owner === name);
     const sessions = (livenessRes.agents || []).find(a => a.name === name)?.sessions || [];
@@ -1838,8 +1828,18 @@ async function loadAgentOverview(name) {
 
     let html = `<div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start">`;
 
-    // ── Left column: Metrics with sparklines ──
+    // ── Left column: agent.json brief, then Metrics with sparklines ──
     html += `<div>`;
+    if (cfg) {
+      html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:12px">`;
+      html += `<h3 style="margin:0 0 6px;font-size:12px;color:var(--fg2)">agent.json</h3>`;
+      html += `<table style="font-size:12px;width:100%"><tbody>`;
+      for (const k of ['name','description','domain','model','compaction']) {
+        if (cfg[k] != null) html += `<tr><td style="padding:2px 12px 2px 0;color:var(--fg2);vertical-align:top;white-space:nowrap">${k}</td><td>${esc(String(cfg[k]))}</td></tr>`;
+      }
+      if (Array.isArray(cfg.tools)) html += `<tr><td style="padding:2px 12px 2px 0;color:var(--fg2);vertical-align:top;white-space:nowrap">tools (${cfg.tools.length})</td><td style="font-size:11px;color:var(--fg2)">${cfg.tools.map(t => esc(typeof t === 'string' ? t : (t.name || JSON.stringify(t)))).join(', ')}</td></tr>`;
+      html += `</tbody></table></div>`;
+    }
     html += `<h3 style="margin:0 0 8px;font-size:13px;color:var(--fg2);display:flex;align-items:center;gap:8px">Metrics <span style="color:var(--fg)">${ownedMetrics.length}</span>${breached.length > 0 ? `<span style="color:var(--red);font-size:11px">⚠ ${breached.length} breached</span>` : ''}</h3>`;
     if (ownedMetrics.length === 0) {
       html += `<div style="color:var(--fg2);font-size:12px;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:6px">No metrics owned.</div>`;
