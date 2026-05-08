@@ -113,6 +113,7 @@ function buildOwnerTask(ctx: AlertContext): string {
     "A final operation must leave evidence that something concrete changed, was deliberately accepted, or was escalated to the right human/project context.",
     "A queued message to the same owner is not escalation; if the owner can safely change state, use fix_root_cause and do it.",
     "If you use finish(), put the exact operation token in the finish summary, for example: `Choosing upgrade_or_escalate because ...`.",
+    "NEVER use to=\"functions.message\" in the message tool — it is NOT an agent. Use real agent names: may, arc, dev, scout, coach.",
     "",
     "## Alert",
     JSON.stringify(ctx.alert, null, 2),
