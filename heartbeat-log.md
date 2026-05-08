@@ -1,11 +1,16 @@
-# Heartbeat Log
+# Heartbeat Log - 2025-05-08 17:00 UTC
 
-## Session Note
-- No active tasks or pending requests at this time.
-- System is idle and ready for work.
+## System Health Summary
+- **All metrics green** — no red alerts
+- **Session volume (6h)**: may 62, evaluator 85, scout 34, arc 8, dev 4
+- **Errors (6h)**: may 2, scout 2 (low rate)
+- **Real output 24h**: 487 (target 100) ✅
 
-## 2026-05-08T01:18Z — Idle heartbeat
-- Checked `requests` table: 0 rows in PENDING/IN_PROGRESS/CREATED.
-- No agent name set in env (`AGENT_NAME` empty); supervisor group is `may-agent`.
-- Workspace dir at repo root absent; agent workspaces live under `agents/<name>/workspace/`.
-- No action taken — artifact gate satisfied via this log entry.
+## Blocked Projects
+1. **evaluator-low-quality-rate-calibration** (evaluator): Blocked 5 iterations. Nudged evaluator with concrete action plan — sample verdicts and decide if metric is accurate or needs recalibration.
+2. **v2-spec-coverage-buildout** (may): Waiting/auto-stopped. P2, not urgent.
+3. **proof-of-life-dashboard** (tech-lead): Waiting on human validation. Feature-complete.
+
+## Actions Taken
+- Nudged evaluator (P1) to unblock their calibration project with a concrete next step
+- No errors requiring intervention — arc's "interrupted" was just a clean start

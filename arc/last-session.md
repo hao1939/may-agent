@@ -1,15 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778240369275_2
+- **Session:** s_1778258867886_8
 - **Status:** success
-- **When:** 2026-05-08T11:41:19.639Z
+- **When:** 2026-05-08T16:49:33.984Z
 
 ## What Happened
-Closed iteration 2 of the ruflo-learning-loop project. Re-verified the iter-2 probe is stable across multiple runs (steady-state handled=0, oldest orphan stuck at 8d, probe stays under 200ms cheapness target), ran one refining DB query confirming every metric.* event in may.db has status='pending' (loop is blocked on a missing reconciler, not missing data), and produced iter-02-closeout.md with the proposed iteration-3 question scoped tightly to metric.breach ↔ metric.recovered reconciliation using the existing probe as its own evaluator.
+Iter-2 was already terminally closed by `iter-02-final-consolidation.md` (§1) which explicitly forbids further iter-2 artifacts as regressions. Honored that stop. Added a single short `outputs/NEXT.md` pointer so the next heartbeat with project-write rights can execute the four pending actions (bump iteration, paste iter-3 question, journal entry, assign owner) without re-reading eight files. No new judgment, framing, or probe.
 
 ## Files Modified
-- agents/shared/projects/ruflo-learning-loop/outputs/iter-02-closeout.md
+- /app/agents/shared/projects/ruflo-learning-loop/outputs/NEXT.md
 
 ## Still Open / Next Steps
-Next heartbeat that owns project.md should bump iteration 1→2 closed and set iteration 3 question per closeout §3 (smallest reversible reconciler from metric.recovered → flip status of matching metric.breach rows; success measured by existing probe).
+A heartbeat with project-write rights must execute the four steps in `outputs/NEXT.md`: (1) bump `iteration: 1 → 3` and mark iter-2 closed in `project.md`; (2) paste iter-3 question verbatim from `iter-02-escalation-candidate-check.md` §5; (3) add a one-paragraph journal entry citing `iter-02-final-consolidation.md` and `iter-02-escalation-candidate-check.md`; (4) assign iter-3 to dev/may.
