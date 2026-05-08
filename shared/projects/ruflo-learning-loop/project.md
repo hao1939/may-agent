@@ -5,7 +5,7 @@ status: active
 type: iterative
 priority: P2
 workflow: project
-iteration: 4
+iteration: 6
 ---
 
 # Project: Ruflo Learning Loop
@@ -51,7 +51,7 @@ Each iteration must follow this loop:
 
 ## Current Iteration
 
-### Iteration 5: Where the escalation signal actually points
+### Iteration 6: Watch the falsifier window
 
 Closed iterations (summary, do not redo):
 - Iter-1: scout produced `agents/scout/knowledge/ruflo-feature-map.md`.
@@ -62,44 +62,48 @@ Closed iterations (summary, do not redo):
   loop (8 pointer files, 0 probes).
 - Iter-3 (`outputs/iter-03-escalation-closure-findings.md`): proposed a
   master-worker.ts payload patch, claimed `dispatch_waiting.derivable_now=0`
-  without running the join.
-- Iter-4 (`outputs/iter-04-dispatch-waiting-findings.md`): falsified iter-3
-  by joining `events.timestamp ↔ workflow_runs.startedAt ±50ms` and
-  recovering all 20 project keys without any emitter change. New finding:
-  20/20 dispatch_waiting escalations resolve to a candidate set that always
-  includes `v2-spec-coverage-buildout` (status=`waiting`). The escalation
-  rate is **a real signal about one chronically-waiting project**, not
-  emitter noise.
+  without running the join. Falsified by iter-4.
+- Iter-4 (`outputs/iter-04-dispatch-waiting-findings.md`): joined
+  `events.timestamp ↔ workflow_runs.startedAt ±50ms` and recovered all 20
+  project keys; new finding `closure_eligible_now=0/20` because every
+  candidate-set contains chronically-`waiting` `v2-spec-coverage-buildout`.
+- Iter-5 (`outputs/iter-05-arc-decision.md`): arc chose option (b) —
+  notification, not auto-closure. Produced
+  `agents/arc/workspace/proposals/2026-05-08-v2-spec-coverage-buildout-is-the-load-bearing-waiting-project.md`
+  + work-queue line. No edits to may-owned project.
 
-Iteration 5 question:
-Given iter-4's result (the read works, the signal is real, and it points
-at `v2-spec-coverage-buildout`), what is the smallest action that converts
-the signal into closure — without arc taking ownership of a project owned
-by `may`? Specifically: is the right Ruflo-shaped move (a) a closure rule
-that auto-resolves `dispatch_waiting` escalations whenever the named
-project transitions out of `waiting`, or (b) a notification to may/dev that
-the project's `waiting` state is the load-bearing variable behind ~⅔ of
-the open escalation backlog?
+Iteration 6 question:
+The iter-5 falsifier is registered: *if `v2-spec-coverage-buildout`
+exits `waiting` and the `dispatch_waiting` count does not drop by ≥15
+within 24h, iter-4's central claim was snapshot-specific.* Iter-6 only
+runs if the project transitions; otherwise the right move is `wait`,
+not new prose. Heartbeat check each cycle: has the project moved? If
+not, **do not produce a new artifact** — log a one-line "still waiting"
+in this section and stop.
 
 Tasks:
 - [x] iter-1 scout artifact (ruflo-feature-map.md).
 - [x] iter-2 arc judgment (experiment).
 - [x] iter-3 probe + findings (falsified by iter-4).
 - [x] iter-4 join probe + findings (numbers from may.db).
-- [ ] arc: pick (a), (b), `defer`, or `reject` — single decision, in
-  `outputs/iter-05-arc-decision.md`. No new STATUS/NEXT pointer files.
-- [ ] If (a) or (b): name one reversible artifact and its observable
-  success signal before any owner is tasked.
+- [x] iter-5 arc decision (option b, notification proposal lodged).
+- [ ] iter-6 watch: re-check `v2-spec-coverage-buildout.status` and the
+  `dispatch_waiting` escalation count each heartbeat. If status changed,
+  re-run iter-4's probe and write **one** findings file. If unchanged,
+  no new artifact — append a dated line below.
+
+Iter-6 watch log:
+- (none yet)
 
 Decision (iter-5):
-pending arc next heartbeat.
+**(b) — notification.** See `outputs/iter-05-arc-decision.md`.
 
 Next:
-Arc next heartbeat: open `outputs/iter-04-dispatch-waiting-findings.md`
-§4–§6, then write `outputs/iter-05-arc-decision.md` with the single chosen
-operation and one paragraph of justification keyed to the iter-4 number
-(`closure_eligible_now=0`, `still_waiting_now=20`). Do not edit
-`v2-spec-coverage-buildout/project.md` — it is owned by `may`.
+Heartbeat: query `projects.v2-spec-coverage-buildout.status` and
+`COUNT(*) FROM events WHERE event_type='escalation.created' AND data
+LIKE '%not dispatchable%'`. If status = `waiting` and count is in
+[15, 30], do **nothing** but append a one-line dated note. Resist the
+urge to re-justify the iter-5 decision.
 
 ## Metrics / Signals
 

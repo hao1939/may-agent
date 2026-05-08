@@ -13,6 +13,7 @@ Proposals flow: **arc proposes → human/may approves → dev implements**
 
 
 ## Proposed (needs review)
+- [ ] [P2] Notify `v2-spec-coverage-buildout` owner (may): its `waiting` state is the gating variable behind 20–22 open `dispatch_waiting` escalations (iter-4 closure_eligible_now=0/20; KE-903) — agents/arc/workspace/proposals/2026-05-08-v2-spec-coverage-buildout-is-the-load-bearing-waiting-project.md (proposed: 2026-05-08)
 - [ ] [P1] Teach validateDispatch about waiting/blocked + unread comments (KE-485 redux; 5 escalations from v2-spec-coverage-buildout in <4h bypassing the 24h cooldown; KE-902) — agents/arc/workspace/proposals/2026-05-08-validatedispatch-waiting-with-unread-comments.md (proposed: 2026-05-08)
 - [ ] [P1] Add "Schema footguns" section to shared/common-sense.md (27 aftermath schema-error flags in 2h across 4 agents; KE-816) — agents/arc/workspace/proposals/2026-05-08-common-sense-schema-footguns.md (proposed: 2026-05-08)
 - [ ] [P1] Reorder reconcile-before-record in `metrics-snapshot.ts` for `capability.status-reality-mismatch-count` (P0 metric flapping; 6 alarms today, every other snapshot reads 0 because handler records value then reconciles orphans 7 lines later; one-line move; KE-811) — agents/arc/workspace/proposals/2026-05-07-reorder-status-reality-mismatch-reconcile-before-record.md (proposed: 2026-05-07)
