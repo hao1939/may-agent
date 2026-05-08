@@ -27,7 +27,7 @@
 
 | Doc | What |
 |-----|------|
-| [manual/sdk-quickstart.md](manual/sdk-quickstart.md) | Code examples for all 8 SDK methods |
+| [manual/sdk-quickstart.md](manual/sdk-quickstart.md) | Code examples for all 7 SDK methods |
 | [manual/handler-authoring.md](manual/handler-authoring.md) | End-to-end handler writing guide |
 | [manual/workflow-authoring.md](manual/workflow-authoring.md) | How to write and invoke workflows |
 | [manual/metric-alerts.md](manual/metric-alerts.md) | How agents triage, fix, downgrade, resolve, or escalate metric alerts |
