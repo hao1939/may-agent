@@ -11,6 +11,7 @@ iteration: 1
 # Evaluator Low-Quality Rate Calibration
 
 **Status**: active
+**Iteration**: 1
 ## Goal
 Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior failures from (b) pipeline/guard false-penalties, and ensure evaluator scoring produces low false-good overturns.
 
@@ -42,3 +43,16 @@ Evidence from DB (2026-05-08 ~19:50Z):
 
 ## Journal
 - 2026-05-08: Updated project with current breach evidence and top NI drivers; confirmed eval pipeline is live via DB even though `.state/evaluations/` artifacts are stale.
+
+
+## Artifacts
+- outputs/iteration-1-diagnosis.md
+- outputs/iteration-1-2026-05-08-pipeline-vs-behavior-split.md
+- outputs/iteration-1-deliverable-heuristic-v2-calibration-plan.md
+- outputs/iteration-3-impact-model-and-recommendation.md
+- outputs/iteration-4-metric-split-implementation-plan.md
+- outputs/iteration-1-deliverable.md
+- outputs/iteration-2-mechanism-and-fix-options.md
+- outputs/iteration-1-2026-05-08-evidence-refresh.md
+- outputs/iteration-5-approval-packet.md
+- outputs/iteration1-attribution-summary.md
