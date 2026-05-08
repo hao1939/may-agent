@@ -1,6 +1,6 @@
 # SDK Quick Reference
 
-The AgentSDK is available to all handlers via `ctx.sdk`. 8 methods + 1 property — see [sdk.md](../sdk.md) for full interface.
+The AgentSDK is available to all handlers via `ctx.sdk`. 7 methods + 1 property — see [sdk.md](../sdk.md) for full interface.
 
 ## Run an Agent
 
