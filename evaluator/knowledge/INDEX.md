@@ -27,3 +27,4 @@ Coach trains (Opus). Optimizer analyzes (Opus).
 - `agents/shared/skills/` — full skill guides
 - `agents/shared/knowledge/mast-taxonomy.md` — MAST failure taxonomy: FM codes (failure modes: repetitive, tool misuse, premature termination, lazy/shortcut, wrong sequence) + FC codes (failure causes: planning, goal misalignment, context loss, knowledge gap, error non-recovery). Use FM+FC pairs in issue descriptions.
 - `agents/evaluator/knowledge/adversarial-evaluation.md` — P108 Adversarial Evaluation: defense against fake policy refusals, self-validation prompt injection, and reasoning hijack. Includes evidence hierarchy (tool outputs > tool calls > reasoning > self-assessment).
+- `agents/evaluator/knowledge/aftermath-reviews.md` — recurring issues seen in aftermath reviews + recommended fixes
