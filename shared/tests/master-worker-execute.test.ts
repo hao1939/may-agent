@@ -223,6 +223,54 @@ describe("execute", () => {
     expect(ctx.createSession).toHaveBeenCalledWith(expect.objectContaining({ label: "worker" }));
   });
 
+  it("injects workflow-collected live runtime signals into planning prompt", async () => {
+    setupProjectFs({ maxIter: "1" });
+    const ctx = createMockCtx("project: agents/shared/projects/test") as any;
+    ctx.getDb = vi.fn(() => ({
+      prepare: vi.fn((sql: string) => ({
+        all: vi.fn(() => {
+          if (sql.includes("FROM metric_alerts")) {
+            return [{
+              id: 9,
+              metricId: "telegram.delivery",
+              message: "Delivery stalled",
+              createdAt: 1778210000000,
+              metricName: "Telegram delivery",
+              owner: "may",
+              priority: "P1",
+              current: 1,
+              target: 0,
+              threshold: 0,
+            }];
+          }
+          return [{
+            id: "system.loop-closed-rate",
+            name: "Loop closed rate",
+            owner: "may",
+            priority: "P1",
+            current: 0.8,
+            target: 0.9,
+            threshold: 0.7,
+            alertOp: "<",
+          }];
+        }),
+        get: vi.fn(() => ({ current: 1 })),
+      })),
+    }));
+    ctx.createSession = vi.fn(async ({ label }: any) => {
+      if (label === "orchestrator") return createMockSession(["DONE\n\nNo immediate operation"]);
+      return createMockSession(["work"]);
+    });
+
+    await execute(ctx);
+
+    const orchestrator = ctx.createSession.mock.results[0].value ? await ctx.createSession.mock.results[0].value : null;
+    expect(orchestrator.prompt).toHaveBeenCalledWith(expect.stringContaining("## Live Runtime Signals (workflow-collected)"));
+    expect(orchestrator.prompt).toHaveBeenCalledWith(expect.stringContaining("Status: available"));
+    expect(orchestrator.prompt).toHaveBeenCalledWith(expect.stringContaining("system.loop-closed-rate"));
+    expect(orchestrator.prompt).toHaveBeenCalledWith(expect.stringContaining("telegram.delivery"));
+  });
+
   it("closes sessions in finally block", async () => {
     setupProjectFs();
     const ctx = createMockCtx("project: agents/shared/projects/test");
