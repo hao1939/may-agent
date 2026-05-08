@@ -21,6 +21,20 @@ import type { BeforeToolCallContext, BeforeToolCallResult } from "./compose-guar
 /** Timeout for git commands (ms). git status should complete in <100ms. */
 const GIT_TIMEOUT_MS = 5_000;
 
+const GENERATED_RUNTIME_PATHS = new Set([
+  "shared/gate-outcomes.log",
+]);
+
+function normalizeStatusPath(line: string): string {
+  const porcelain = line.match(/^.. (.+)$/);
+  if (porcelain) return porcelain[1].trim();
+  return line.replace(/^[ MARCUD?!]{1,2}\s+/, "").trim();
+}
+
+function isGeneratedRuntimePath(path: string, agentName: string): boolean {
+  return path === `${agentName}/last-session.md` || GENERATED_RUNTIME_PATHS.has(path);
+}
+
 /**
  * Run a git command and return stdout. Rejects on non-zero exit or timeout.
  */
@@ -88,7 +102,16 @@ export function createCommitGuard(
       if (!changedFiles) return undefined; // No uncommitted changes — allow finish
 
       // Count changed files
-      const fileLines = changedFiles.split("\n").filter((line) => line.trim());
+      const allFileLines = changedFiles.split("\n").filter((line) => line.trim());
+      const ignoredFileLines = allFileLines.filter((line) =>
+        isGeneratedRuntimePath(normalizeStatusPath(line), agentName),
+      );
+      const fileLines = allFileLines.filter((line) =>
+        !isGeneratedRuntimePath(normalizeStatusPath(line), agentName),
+      );
+
+      if (fileLines.length === 0) return undefined; // Runtime handoff/log churn should not block finish.
+
       const fileCount = fileLines.length;
 
       // Format the file list (indent each line)
@@ -112,6 +135,9 @@ export function createCommitGuard(
         reason:
           `finish() blocked [uncommitted changes]: You have ${fileCount} uncommitted file(s) in agents/:\n` +
           `${fileList}\n\n` +
+          (ignoredFileLines.length > 0
+            ? `Ignored generated runtime file(s):\n${ignoredFileLines.map((line) => `  ${line}`).join("\n")}\n\n`
+            : "") +
           `Commit them with a descriptive message before calling finish():\n` +
           `  cd ${projectRoot}/agents && ${addCmd} && git commit -m "${agentName}: <describe what you did>"\n\n` +
           `Good messages: "${agentName}: H-045 Decision Topology hypothesis", "${agentName}: new skill for evidence-first debugging"\n` +

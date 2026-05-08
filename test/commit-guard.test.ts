@@ -128,6 +128,26 @@ describe("commit-guard", () => {
       expect(result).toBeUndefined();
     });
 
+    it("allows finish when only generated runtime files changed", async () => {
+      const mayDir = join(agentsDir, "may");
+      const sharedDir = join(agentsDir, "shared");
+      mkdirSync(mayDir, { recursive: true });
+      mkdirSync(sharedDir, { recursive: true });
+      writeFileSync(join(mayDir, "last-session.md"), "second runtime baseline");
+      writeFileSync(join(sharedDir, "gate-outcomes.log"), "second runtime baseline\n");
+      git(agentsDir, ["add", "may/last-session.md", "shared/gate-outcomes.log"]);
+      git(agentsDir, ["commit", "-m", "update tracked runtime baseline"]);
+
+      writeFileSync(join(mayDir, "last-session.md"), "new");
+      writeFileSync(join(sharedDir, "gate-outcomes.log"), "old\nnew\n");
+
+      const guard = createCommitGuard("may", tmpDir);
+      const result = await guard(makeFinishCtx({ status: "success", summary: "done" }));
+      expect(result).toBeUndefined();
+
+      git(agentsDir, ["checkout", "--", "may/last-session.md", "shared/gate-outcomes.log"]);
+    });
+
     it("blocks finish when agent has uncommitted changes (new file)", async () => {
       // Create a new file in bob's workspace
       const bobDir = join(agentsDir, "bob", "workspace");
@@ -220,6 +240,35 @@ describe("commit-guard", () => {
 
       // Clean up
       rmSync(join(agentsDir, "shared"), { recursive: true, force: true });
+    });
+
+    it("omits generated runtime files from broad commit instructions", async () => {
+      const mayDir = join(agentsDir, "may");
+      const sharedDir = join(agentsDir, "shared");
+      mkdirSync(mayDir, { recursive: true });
+      mkdirSync(sharedDir, { recursive: true });
+      writeFileSync(join(mayDir, "last-session.md"), "baseline for mixed runtime test");
+      writeFileSync(join(sharedDir, "gate-outcomes.log"), "baseline for mixed runtime test\n");
+      git(agentsDir, ["add", "may/last-session.md", "shared/gate-outcomes.log"]);
+      git(agentsDir, ["commit", "-m", "update tracked runtime baseline"]);
+
+      writeFileSync(join(mayDir, "last-session.md"), "new");
+      writeFileSync(join(sharedDir, "gate-outcomes.log"), "old\nnew\n");
+      writeFileSync(join(sharedDir, "protocol.md"), "# Protocol");
+
+      const guard = createCommitGuard("may", tmpDir);
+      const result = await guard(makeFinishCtx({ status: "success", summary: "done" }));
+
+      expect(result).toBeDefined();
+      expect(result!.block).toBe(true);
+      expect(result!.reason).toContain("protocol.md");
+      expect(result!.reason).toContain("Ignored generated runtime file(s):");
+      expect(result!.reason).toContain("may/last-session.md");
+      expect(result!.reason).toContain("shared/gate-outcomes.log");
+      expect(result!.reason).toContain("git add may/ shared/");
+
+      git(agentsDir, ["checkout", "--", "may/last-session.md", "shared/gate-outcomes.log"]);
+      rmSync(join(agentsDir, "shared", "protocol.md"), { force: true });
     });
 
     it("blocks finish when agent has uncommitted changes in .lab/", async () => {

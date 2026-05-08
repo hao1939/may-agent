@@ -63,6 +63,36 @@ describe("query_db tool", () => {
     expect(parsed.rows.some((row: { name?: string }) => row.name === "sessionId")).toBe(true);
   });
 
+  it("returns table schema hints when a query guesses wrong columns", async () => {
+    getDb(persistDir);
+    const tool = createQueryDbTool(persistDir);
+    const result = await runQuery(tool, {
+      sql: "SELECT current_value, target_value FROM metrics",
+    });
+    const parsed = JSON.parse(resultText(result));
+
+    expect(parsed.error).toContain("no such column");
+    expect(parsed.hint).toContain("real column names");
+    expect(parsed.schema.metrics).toContain("current");
+    expect(parsed.schema.metrics).toContain("target");
+    expect(parsed.schema.metrics).toContain("threshold");
+    expect(parsed.schema.metrics).not.toContain("current_value");
+  });
+
+  it("returns schema hints for joined alert queries that use legacy open-alert columns", async () => {
+    getDb(persistDir);
+    const tool = createQueryDbTool(persistDir);
+    const result = await runQuery(tool, {
+      sql: "SELECT metric_name, status FROM metric_alerts WHERE status = 'open'",
+    });
+    const parsed = JSON.parse(resultText(result));
+
+    expect(parsed.error).toContain("no such column");
+    expect(parsed.schema.metric_alerts).toContain("metric_id");
+    expect(parsed.schema.metric_alerts).toContain("resolved_at");
+    expect(parsed.schema.metric_alerts).not.toContain("status");
+  });
+
   it("is loaded as a core tool for agents", async () => {
     const root = mkdtempSync(join(tmpdir(), "query-db-loader-"));
     try {
