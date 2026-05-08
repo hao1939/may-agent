@@ -26,6 +26,9 @@
     },
     "arc": {
       "consecutiveErrors": 0
+    },
+    "dev": {
+      "consecutiveErrors": 0
     }
   }
 }
