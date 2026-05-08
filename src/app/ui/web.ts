@@ -1041,9 +1041,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     try { body = await req.json() as { content?: string }; } catch { return json({ error: "invalid json" }, 400); }
     const content = (body.content ?? "").trim();
     if (!content) return json({ error: "content required" }, 400);
-    // Use the existing "message" socket command which routes to the active
-    // session’s input queue. The agent picks it up at next step.
-    const result = await sendUnixCommand({ type: "message", sessionId, content });
+    // Use 'steer' — may.ts handles both branches:
+    //   idle session    → manager.input()  (resumes from prior context with this as next user turn)
+    //   running session → manager.steer()  (delivers mid-flight, agent sees it next tool turn)
+    // The previous 'message' command required from/to/task and silently
+    // dropped sessionId/content; this endpoint returned 200 but the agent
+    // never saw the message.
+    const result = await sendUnixCommand({ type: "steer", sessionId, message: content });
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, sessionId, deliveredAt: Date.now() });
   }
