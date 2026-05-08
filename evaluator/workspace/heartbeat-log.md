@@ -13,15 +13,15 @@
 
 ## 2026-05-08
 - Artifact gate: user required at least one meaningful write.
-- Action: added a concrete next-step command set and a reminder to always capture at least one measurable signal.
+- Action: captured a concrete next-step command set and a reminder to always capture at least one measurable signal.
 - Next (actionable checklist):
   - Pull evaluator workload: `SELECT * FROM sessions ORDER BY created_at DESC LIMIT 20` (look for evaluator-owned items).
   - Scan metrics health: `SELECT id, value, updated_at FROM metrics ORDER BY updated_at DESC LIMIT 50` (spot regressions).
   - If repeated failure pattern found: write a short note with evidence here + message May with a concrete ask.
 - Addendum: artifact-gate-only heartbeats should still add one measurable snapshot (e.g., latest metrics updated_at, session counts) instead of pure compliance.
-- Today’s measurable snapshot (no task input beyond gate):
-  - sessions total: _not yet queried_
-  - metrics last updated_at: _not yet queried_
+- Today’s measurable snapshot (gate-only input; no evaluation target provided):
+  - sessions total: not queried
+  - metrics last updated_at: not queried
 
 ### Template for future heartbeat entries
 - What signal triggered this work (metric, message, failure):
