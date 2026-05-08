@@ -50,33 +50,55 @@ Each iteration must follow this loop:
 
 ## Current Iteration
 
-### Iteration 1: Closed-loop visibility
+### Iteration 5: Where the escalation signal actually points
 
-Question:
-What does Ruflo do for workflow/task/agent visibility that may-agent lacks, and
-is there one simple idea we can test without importing a swarm framework?
+Closed iterations (summary, do not redo):
+- Iter-1: scout produced `agents/scout/knowledge/ruflo-feature-map.md`.
+  Ruflo's idea = statusline discipline (subsystems dump cheap state, one
+  composable script reads).
+- Iter-2: arc judgment = `experiment`; refined target = `escalation.resolved`
+  emitter for one reason class. Anti-pattern logged: meta-bookkeeping doom
+  loop (8 pointer files, 0 probes).
+- Iter-3 (`outputs/iter-03-escalation-closure-findings.md`): proposed a
+  master-worker.ts payload patch, claimed `dispatch_waiting.derivable_now=0`
+  without running the join.
+- Iter-4 (`outputs/iter-04-dispatch-waiting-findings.md`): falsified iter-3
+  by joining `events.timestamp ↔ workflow_runs.startedAt ±50ms` and
+  recovering all 20 project keys without any emitter change. New finding:
+  20/20 dispatch_waiting escalations resolve to a candidate set that always
+  includes `v2-spec-coverage-buildout` (status=`waiting`). The escalation
+  rate is **a real signal about one chronically-waiting project**, not
+  emitter noise.
+
+Iteration 5 question:
+Given iter-4's result (the read works, the signal is real, and it points
+at `v2-spec-coverage-buildout`), what is the smallest action that converts
+the signal into closure — without arc taking ownership of a project owned
+by `may`? Specifically: is the right Ruflo-shaped move (a) a closure rule
+that auto-resolves `dispatch_waiting` escalations whenever the named
+project transitions out of `waiting`, or (b) a notification to may/dev that
+the project's `waiting` state is the load-bearing variable behind ~⅔ of
+the open escalation backlog?
 
 Tasks:
-- [x] scout: write `agents/scout/knowledge/ruflo-feature-map.md` from real
-  Ruflo source/docs evidence.
-- [ ] arc: judge which visibility idea fits may-agent's work model.
-- [ ] arc: decide exactly one next action: reject, defer, experiment, or
-  re-investigate.
-- [ ] dev/may: run one tiny experiment only if arc explicitly chooses
-  experiment.
-- [ ] evaluator: observe whether the experiment improves visibility or adds
-  noise.
+- [x] iter-1 scout artifact (ruflo-feature-map.md).
+- [x] iter-2 arc judgment (experiment).
+- [x] iter-3 probe + findings (falsified by iter-4).
+- [x] iter-4 join probe + findings (numbers from may.db).
+- [ ] arc: pick (a), (b), `defer`, or `reject` — single decision, in
+  `outputs/iter-05-arc-decision.md`. No new STATUS/NEXT pointer files.
+- [ ] If (a) or (b): name one reversible artifact and its observable
+  success signal before any owner is tasked.
 
-Decision:
-pending. Scout produced `agents/scout/knowledge/ruflo-feature-map.md`; arc must
-judge whether the evidence is sufficient or whether the right next operation is
-`re-investigate`.
+Decision (iter-5):
+pending arc next heartbeat.
 
 Next:
-Arc next heartbeat: read scout's feature map, spot-check the cited Ruflo docs,
-then choose exactly one decision: `reject`, `defer`, `experiment`, or
-`re-investigate`. If `experiment`, name one reversible experiment and its
-observable success signal.
+Arc next heartbeat: open `outputs/iter-04-dispatch-waiting-findings.md`
+§4–§6, then write `outputs/iter-05-arc-decision.md` with the single chosen
+operation and one paragraph of justification keyed to the iter-4 number
+(`closure_eligible_now=0`, `still_waiting_now=20`). Do not edit
+`v2-spec-coverage-buildout/project.md` — it is owned by `may`.
 
 ## Metrics / Signals
 
