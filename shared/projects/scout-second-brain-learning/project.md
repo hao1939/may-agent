@@ -11,7 +11,7 @@ iteration: 0
 # Project: Scout Second Brain Learning
 
 **Status**: active
-**Iteration**: 3
+**Iteration**: 4
 ## Goal
 
 Learn from `eugeniughelbur/obsidian-second-brain` and adapt the smallest useful
@@ -68,4 +68,5 @@ Initial hypothesis:
 ## Artifacts
 - outputs/pilot-practices-selection.md
 - outputs/pilot-practices.md
+- outputs/ready-for-review.md
 - outputs/pilot-review.md
