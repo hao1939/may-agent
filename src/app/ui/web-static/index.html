@@ -448,7 +448,19 @@ function render() {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   // Surface initialization
   if (tab === 'sessions') initChat();
-  if (tab === 'knowledge') loadKnowledge();
+  if (tab === 'knowledge') {
+    // Deep-link support: #/knowledge/<sub-path>. If sub-path looks like a file, view it.
+    const sub = (params.path || '').replace(/^knowledge\//, '');
+    if (sub && /\.[a-z0-9]+$/i.test(sub)) {
+      // Show the dir tree, then load the file.
+      const dir = sub.replace(/\/[^/]+$/, '');
+      browsePath(dir).then(() => viewFile(sub));
+    } else if (sub) {
+      browsePath(sub);
+    } else {
+      loadKnowledge();
+    }
+  }
   if (tab === 'system') { loadMetricsTab(); loadEvents(); }
   if (tab === 'projects') {
     // Project id deep-link: #/projects/<owner>/<name> or legacy 'shared/projects/<name>'
@@ -648,7 +660,7 @@ async function loadLiveness() {
           const cls = s.status === 'error' ? 'error' : s.status === 'running' ? 'running' : '';
           html += `<span class="heartbeat-dot ${cls}" style="left:${left}%" title="${esc(agent.name)} ${esc(s.status || '')} ${formatAgo(s.startedAt)}" onclick="loadSessionDetail('${esc(s.sessionId)}')"></span>`;
         }
-        html += `</div><div class="heartbeat-last">${formatAgo(agent.lastHeartbeat)}</div></div>`;
+        html += `</div><div class="heartbeat-last">${formatAgo(agent.lastHeartbeat)} <button title="Heartbeat now" onclick="verbHeartbeatNow('${esc(agent.name)}', event)" style="background:none;border:1px solid var(--border);color:var(--fg2);border-radius:3px;padding:1px 6px;font-size:11px;cursor:pointer;margin-left:4px">♥</button></div></div>`;
       }
     }
     html += `</div>`;
@@ -673,8 +685,11 @@ async function loadLiveness() {
       html += `<div class="liveness-item">No open metric alerts.</div>`;
     } else {
       for (const alert of alerts.slice(0, 4)) {
+        const resolveBtn = alert.alertId
+          ? `<button title="Resolve" onclick="verbResolveAlert(${Number(alert.alertId)}, event)" style="background:none;border:1px solid var(--border);color:var(--fg2);border-radius:3px;padding:1px 6px;font-size:11px;cursor:pointer;float:right">resolve</button>`
+          : '';
         html += `<div class="liveness-item liveness-alert">
-          <div class="meta">${formatAgo(alert.createdAt)} · <strong>${esc(alert.metricId)}</strong> · ${esc(alert.priority || 'P2')}</div>
+          <div class="meta">${formatAgo(alert.createdAt)} · <strong>${esc(alert.metricId)}</strong> · ${esc(alert.priority || 'P2')} ${resolveBtn}</div>
           <div>${esc(alert.message || '')}</div>
         </div>`;
       }
@@ -694,9 +709,51 @@ async function loadLiveness() {
     }
     html += `</div></div></div>`;
 
+    // — Projects panel (design's screen-1 fifth panel) — sorted by activity —
+    html += `<div class="liveness-section" style="margin-top:16px"><h3>Projects · sorted by recent activity</h3><div class="liveness-list" id="liveness-projects">Loading…</div></div>`;
+
     panel.innerHTML = html;
+    void renderLivenessProjects();
   } catch (e) {
     panel.innerHTML = `<h2>System liveness</h2><div class="liveness-item">Failed to load liveness: ${esc(e.message || String(e))}</div>`;
+  }
+}
+
+// Renders the projects-by-activity strip on the dashboard.
+// Pulse: green = touched in last hour, yellow = last 24h, gray = older.
+async function renderLivenessProjects() {
+  const el = document.getElementById('liveness-projects');
+  if (!el) return;
+  try {
+    const res = await fetch('/api/projects');
+    const all = await res.json();
+    if (!Array.isArray(all)) { el.innerHTML = ''; return; }
+    // Active only — hide done/blocked from the front-page strip.
+    const active = all.filter(p => p.status !== 'done' && p.status !== 'blocked');
+    active.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    if (active.length === 0) { el.innerHTML = `<div class="liveness-item">No active projects.</div>`; return; }
+    const now = Date.now();
+    let html = '';
+    for (const p of active.slice(0, 6)) {
+      const age = now - (p.updatedAt || 0);
+      const pulse = age < 3600_000 ? '●' : age < 86_400_000 ? '◐' : '○';
+      const pulseColor = age < 3600_000 ? 'var(--green,#3fb950)' : age < 86_400_000 ? 'var(--yellow,#d29922)' : 'var(--fg2)';
+      const owner = p.owner && p.owner !== 'unknown' ? p.owner : '';
+      const metricSummary = (p.metrics && p.metrics.length)
+        ? `${p.metrics.length} metric${p.metrics.length === 1 ? '' : 's'}`
+        : '';
+      // Path -> route id (strip 'agents/' prefix)
+      const routeId = String(p.path || '').replace(/^agents\//, '');
+      html += `<div class="liveness-item" style="cursor:pointer;display:flex;align-items:center;gap:10px" onclick="routeTo('/projects/' + ${JSON.stringify(routeId)})">
+        <span style="color:${pulseColor};font-size:14px" title="${formatAgo(p.updatedAt)}">${pulse}</span>
+        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><strong>${esc(p.name)}</strong>${owner ? ` <span class="meta">${esc(owner)}</span>` : ''}</span>
+        <span class="meta" style="font-size:11px">${formatAgo(p.updatedAt)}</span>
+        ${metricSummary ? `<span class="meta" style="font-size:11px">${esc(metricSummary)}</span>` : ''}
+      </div>`;
+    }
+    el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = `<div class="liveness-item">Failed to load projects: ${esc(e.message || String(e))}</div>`;
   }
 }
 
@@ -1445,10 +1502,19 @@ function toggleMarkdown() {
   });
 }
 
+function linkifyRefs(html) {
+  if (!html) return html;
+  // KE-NNN, H-NNN, EXP-NNN — route to knowledge surface so deep links work cross-pane.
+  html = html.replace(/\b(KE-\d+)\b/g, '<a href="#/knowledge/entries/$1.md" onclick="event.stopPropagation()">$1</a>');
+  html = html.replace(/\b(H-\d+)\b/g, '<a href="#/knowledge/hypotheses/$1.md" onclick="event.stopPropagation()">$1</a>');
+  html = html.replace(/\b(EXP-\d+)\b/g, '<a href="#/knowledge/experiments/$1.md" onclick="event.stopPropagation()">$1</a>');
+  return html;
+}
+
 function renderAssistantMsg(el, text) {
   el.dataset.raw = text;
   if (renderMd && window.marked && window.marked.parse) {
-    el.innerHTML = window.marked.parse(text);
+    el.innerHTML = linkifyRefs(window.marked.parse(text));
     el.classList.add('md-rendered');
   } else {
     el.textContent = text;
@@ -1474,7 +1540,7 @@ function renderSessionPicker() {
     const label = s.agent + ' (' + s.sessionId.slice(-6) + ')';
     const task = (s.task || '').slice(0, 80);
     const statusIcon = s.status === 'idle' ? '💤 ' : '';
-    html += `<button class="ask-btn" style="${color}" onclick="switchSession('${s.sessionId}')" title="${esc(task)}">${statusIcon}${label}</button> `;
+    html += `<span class="session-pill" style="display:inline-flex;align-items:center;gap:0;margin-right:4px"><button class="ask-btn" style="${color};border-top-right-radius:0;border-bottom-right-radius:0;border-right:none" onclick="switchSession('${s.sessionId}')" title="${esc(task)}">${statusIcon}${label}</button><button class="ask-btn" style="${color};border-top-left-radius:0;border-bottom-left-radius:0;padding:2px 6px" onclick="verbCancelSession('${s.sessionId}', event)" title="Cancel session">✕</button></span>`;
   }
   if (visible.length === 0) {
     html += '<span style="color:var(--fg2);font-size:11px">No active sessions</span>';
@@ -1749,6 +1815,84 @@ document.getElementById('chat-input').addEventListener('keydown', (e) => {
 function esc(s) {
   if (!s) return '';
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Steering verbs ──────────────────────────────────────────────────────────────
+// Tiny toast for verb feedback. Honesty-of-latency: "queued at <time>".
+function toast(msg, kind) {
+  let host = document.getElementById('toast-host');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'toast-host';
+    host.style.cssText = 'position:fixed;bottom:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:6px;max-width:340px';
+    document.body.appendChild(host);
+  }
+  const el = document.createElement('div');
+  const bg = kind === 'error' ? 'rgba(244,67,54,0.95)' : kind === 'ok' ? 'rgba(63,185,80,0.95)' : 'rgba(50,55,65,0.95)';
+  el.style.cssText = `background:${bg};color:#fff;padding:8px 12px;border-radius:6px;font-size:12px;box-shadow:0 4px 12px rgba(0,0,0,0.3);opacity:0;transition:opacity 0.15s`;
+  el.textContent = msg;
+  host.appendChild(el);
+  requestAnimationFrame(() => { el.style.opacity = '1'; });
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 200); }, 3500);
+}
+
+async function steer(method, path, body, opts) {
+  opts = opts || {};
+  if (opts.confirm && !confirm(opts.confirm)) return { cancelled: true };
+  try {
+    const init = { method };
+    if (body !== undefined) {
+      init.headers = { 'Content-Type': 'application/json' };
+      init.body = JSON.stringify(body);
+    }
+    const res = await fetch(path, init);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast(`✗ ${opts.label || path}: ${data.error || res.statusText}`, 'error');
+      return { ok: false, error: data.error || res.statusText, status: res.status };
+    }
+    toast(`✓ ${opts.label || path} — queued at ${new Date().toLocaleTimeString()}`, 'ok');
+    return { ok: true, data };
+  } catch (e) {
+    toast(`✗ ${opts.label || path}: ${e.message || e}`, 'error');
+    return { ok: false, error: String(e) };
+  }
+}
+
+// Verb wrappers (one per endpoint). Stop event so row clicks don't fire.
+function stopEv(ev) { if (ev) { ev.stopPropagation(); ev.preventDefault(); } }
+
+async function verbHeartbeatNow(agent, ev) {
+  stopEv(ev);
+  await steer('POST', `/api/agents/${encodeURIComponent(agent)}/heartbeat-now`, { actor: 'human' }, { label: `heartbeat ${agent}` });
+  scheduleLivenessRefresh();
+}
+
+async function verbResolveAlert(alertId, ev) {
+  stopEv(ev);
+  const reason = prompt('Resolution note (optional):', '') ?? '';
+  await steer('POST', `/api/alerts/${alertId}/resolve`, { reason }, { label: `resolve alert ${alertId}` });
+  if (typeof loadMetricsTab === 'function') loadMetricsTab();
+  scheduleLivenessRefresh();
+}
+
+async function verbEditThreshold(metricId, current, ev) {
+  stopEv(ev);
+  const raw = prompt(`New threshold for ${metricId} (current: ${current ?? '—'}):`, String(current ?? ''));
+  if (raw == null) return;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) { toast('threshold must be a number', 'error'); return; }
+  await steer('POST', `/api/metrics/${encodeURIComponent(metricId)}/threshold`, { threshold: n }, { label: `threshold ${metricId}` });
+  if (typeof loadMetricsTab === 'function') loadMetricsTab();
+}
+
+async function verbCancelSession(sessionId, ev) {
+  stopEv(ev);
+  await steer('POST', `/api/sessions/${encodeURIComponent(sessionId)}/cancel`, {}, {
+    confirm: `Cancel session ${sessionId.slice(0, 12)}?`,
+    label: `cancel ${sessionId.slice(0, 8)}`,
+  });
+  scheduleLivenessRefresh();
 }
 
 // ── Benchmarks ────────────────────────────────────────────────────────
@@ -2130,11 +2274,7 @@ async function viewFile(path) {
 
 function renderFileContent(el, text, path) {
   if (path.endsWith('.md') && window.marked && window.marked.parse) {
-    let html = window.marked.parse(text);
-    // Make KE-XXX, H-XXX, EXP-XXX clickable
-    html = html.replace(/\b(KE-\d+)\b/g, '<a href="#" onclick="event.preventDefault(); browsePath(\'knowledge/entries\'); setTimeout(() => viewFile(\'knowledge/entries/$1.md\'), 200)">$1</a>');
-    html = html.replace(/\b(H-\d+)\b/g, '<a href="#" onclick="event.preventDefault(); browsePath(\'knowledge/hypotheses\'); setTimeout(() => viewFile(\'knowledge/hypotheses/$1.md\'), 200)">$1</a>');
-    html = html.replace(/\b(EXP-\d+)\b/g, '<a href="#" onclick="event.preventDefault(); browsePath(\'knowledge/experiments\'); setTimeout(() => viewFile(\'knowledge/experiments/$1/results.md\'), 200)">$1</a>');
+    let html = linkifyRefs(window.marked.parse(text));
     el.innerHTML = '<div class="md-rendered">' + html + '</div>';
   } else if (path.endsWith('.json')) {
     try {
@@ -2202,7 +2342,7 @@ async function loadMetricsTab() {
         html += `<tr style="border-bottom:1px solid var(--bg3,#333);cursor:pointer" onclick="showMetricHistory('${m.id}')">`;
         html += `<td style="padding:4px 8px">${m.name}<br><span style="color:var(--fg2);font-size:11px">${m.id}</span></td>`;
         html += `<td style="padding:4px 8px;text-align:center;${isAlert?'color:var(--red);font-weight:bold':''}">${val}${m.unit||''}</td>`;
-        html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${m.target}${m.unit||''}</td>`;
+        html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${m.target}${m.unit||''} <button title="Edit threshold (current: ${m.threshold ?? '—'})" onclick="verbEditThreshold('${m.id}', ${m.threshold ?? 'null'}, event)" style="background:none;border:none;color:var(--fg2);cursor:pointer;padding:0 2px">✎</button></td>`;
         html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${m.type}</td>`;
         html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2);font-size:11px">${snap ? timeAgo(snap.measured_at) : '—'}</td></tr>`;
       }

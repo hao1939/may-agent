@@ -148,7 +148,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     const activeSessions = (db.prepare("SELECT COUNT(*) as c FROM sessions WHERE status IN ('running', 'idle')").get() as any)?.c ?? 0;
     const openAlerts = db.prepare(
-      `SELECT ma.metric_id as metricId, ma.message, ma.created_at as createdAt,
+      `SELECT ma.id as alertId, ma.metric_id as metricId, ma.message, ma.created_at as createdAt,
               COALESCE(NULLIF(trim(m.owner), ''), NULLIF(trim(p.owner), ''), 'may') as owner,
               m.project, m.priority, m.current, m.threshold, m.target
        FROM metric_alerts ma
