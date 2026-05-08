@@ -10,7 +10,7 @@ iteration: 1
 
 # Evaluator Low-Quality Rate Calibration
 
-**Iteration**: 1
+**Iteration**: 2
 ## Goal
 Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior failures from (b) pipeline/guard false-penalties, and ensure evaluator scoring produces low false-good overturns.
 
@@ -19,8 +19,9 @@ Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior
 - Metric: `evaluator.false-good-rate-sample` current 0.5714 (threshold 0.2, target 0.05) but denominator only 7 reviewed sessions (sample instability).
 
 ## Current State
-Iteration 1. Milestones: 0/0 done.
-Reviewer: - **I believe**: The low-quality metric is currently inflated by a large “unscorable/pipeline” slice (schema/query transcript errors + interrupted/error sessions), and the worker produced a reasonable
+Iteration 2. Milestones: 0/0 done.
+Reviewer: I believe:
+- Heuristic “aftermath” scoring is using a step-function: **any detected `issues[]` ⇒ verdict=needs_improvement, quality=0.55**, which mechanically inflates `evaluator.low-quality-rate-24h`
 ## Plan
 1. **Metric decomposition proposal**: draft a split of low-quality-rate into sub-metrics by issue class (schema errors, finish/uncommitted, terminal interruptions) to avoid conflating agent quality with infra/guard friction.
 2. **Criteria calibration**: review evaluator criteria for (a) terminal interrupted sessions (Clean start) and (b) finish-blocked sessions; decide whether to classify as NI vs excluded/exception.
@@ -54,3 +55,4 @@ Reviewer: - **I believe**: The low-quality metric is currently inflated by a lar
 - Pipeline-like categories (`terminal interrupted/error`, `schema/query error in transcript`) currently show `ni_rate = 1.0`, indicating likely “unscorable treated as NI”.
 - Proposed direction: introduce `unknown/unscorable` verdict/flag and exclude from `evaluator.low-quality-rate-24h`, while tracking separate `unscorable/transcript-error/runner-interruption` metrics to avoid false-good inflation.
 - Key open ambiguity: `shallow_session:*` needs session-level sampling to classify as pipeline misfire vs agent-controlled early bail.
+- Heuristic scoring is implemented in `agents/evaluator/workflows/evaluator-aftermath.ts`; `classifyVerdict()` uses a step-function: `issues.length>0 => quality=0.55, verdict=needs_improvement`.- Top issue strings map to specific triggers in `transcriptIssues()` (literal `finish() blocked [uncommitted changes]`; regex `/no such column|no such table/i`) and session fields (`status in {error, interrupted}`; `session.error` e.g. `Clean start (fresh)`).- `shouldRefreshEvaluation()` refreshes stale **good** heuristic evaluations but does not refresh `needs_improvement`, so hv=2 NI labels can persist even after `HEURISTIC_VERSION` increments.
