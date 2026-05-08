@@ -10,7 +10,8 @@ iteration: 2
 
 # Evaluator Low-Quality Rate Calibration
 
-**Iteration**: 2
+**Iteration**: 5
+**Status**: blocked
 ## Goal
 Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior failures from (b) pipeline/guard false-penalties, and ensure evaluator scoring produces low false-good overturns.
 
@@ -19,8 +20,7 @@ Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior
 - Metric: `evaluator.false-good-rate-sample` current 0.5714 (threshold 0.2, target 0.05) but denominator only 7 reviewed sessions (sample instability).
 
 ## Current State
-Iteration 2. Milestones: 0/0 done.
-Reviewer: - **I believe**: We now have a clear *mechanism-level* explanation: `evaluator-aftermath` uses a step-function where **any** `issues.length>0` forces `verdict=needs_improvement` at **quality=0.55**, a
+Blocked: 5 consecutive iterations without milestone progress. Approach needs rethinking.
 ## Plan
 1. **Metric decomposition proposal**: draft a split of low-quality-rate into sub-metrics by issue class (schema errors, finish/uncommitted, terminal interruptions) to avoid conflating agent quality with infra/guard friction.
 2. **Criteria calibration**: review evaluator criteria for (a) terminal interrupted sessions (Clean start) and (b) finish-blocked sessions; decide whether to classify as NI vs excluded/exception.
@@ -70,3 +70,8 @@ Milestone checkoff: Iteration 2 — mechanism + fix options
 - `transcriptIssues()` maps literal/regex triggers to dominant hygiene issues: uncommitted-changes finish block, SQLite “no such table/column”, broad may/shared commit, committed runtime files, live-signal injection unavailable, metric health claim without evidence.
 - `session-aftermath-scan.ts` uses `DEFAULT_HEURISTIC_VERSION = 2` and only refreshes evaluations when prior verdict was **good** and has lower heuristicVersion; NI evaluations are not refreshed when heuristicVersion increments (NI can be sticky across versions).
 - DB-stratified sample suggests NI is dominated by hygiene/pipeline triggers; next step requires transcript/artifact audit + a single intervention decision (metric split vs heuristic tuning vs workflow fixes).
+- Add: “`agents/shared/projects/**` appears gitignored; committing project outputs fails and triggers finish() ‘uncommitted changes’ guard. Future work should write artifacts under `agents/evaluator/workspace/` (or escalate via message) to avoid this trap.”
+- Add: “Next critical unknown is the *metric consumer* (where `evaluator.low-quality-rate-24h` triggers alerts). Need repo-wide search for metric id / thresholding logic; if absent, alerting is external and requires escalation.”
+- Replace stale: Project header shows `iteration: 2` though we’re at Iteration 4; treat project.md as human-owned; worker should avoid modifying it.”
+- Approval packet exists (Iteration 5) but does not change runtime behavior; the loop must close by patching **where paging/alerting chooses the metric** (may be in-repo or external).
+- Next action is to **locate the paging/alert hook** via targeted ripgrep, then propose a minimal change to repoint paging from `evaluator.low-quality-rate-24h` to `evaluator.substantive-low-quality-rate-24h`, with verification steps.
