@@ -281,7 +281,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     const task = [
       "[cron:closed-loop-steward] Audit whether red metrics and failed deliveries are moving toward closure.",
       "",
-      "You own the global closed loop, not every metric. Use the generated context below as the starting point, then verify with query_db before taking action.",
+      "You own the global closed loop, not every metric. The generated context below is workflow-collected live evidence.",
+      "Use query_db only when the context is missing or internally inconsistent. If you do query, inspect schema first with PRAGMA table_info; do not guess runtime DB column names.",
+      "If the context lacks a fact this audit needs, record that as a handler data-collection gap so the next run can be fixed to inject it.",
       "",
       "Mental model: project carries goal/context; metrics are signals; cron/events trigger reassessment; agents judge and act.",
       "",
