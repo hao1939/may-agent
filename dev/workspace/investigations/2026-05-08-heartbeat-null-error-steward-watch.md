@@ -31,13 +31,13 @@ Recent `sessions.status='error'` rows include repeated pairs:
 - `may` `closed-loop-steward` sessions `s_1778203539819_150` and `s_1778205939498_158` ended `error` with `error=NULL` and empty summary.
 - Corresponding evaluator aftermath sessions `s_1778203540602_151` and `s_1778205940263_159` also ended `error`.
 
-Evidence from session transcripts via `jq` showed the may and evaluator sessions had only the user prompt followed by an empty assistant message (`content: []`), with no tool calls or explicit exception in the transcript. Session digests recorded these as terminal status errors and heuristic evaluations.
+Evidence from session transcripts via JSON extraction showed the may sessions had only the user prompt followed by an empty assistant message (`content: []`) whose `stopReason` was `error`. The transcript-level `errorMessage` was a model/provider authentication failure: `401 ... Github_copilotException - IDE token expired: unauthorized: token expired ... Received Model Group=claude-opus-4.6`. Session rows still recorded `error=NULL`, so the DB summary hides the root cause even though the transcript contains it.
 
-Counter-signal: later `closed-loop-steward` session `s_1778206539560_160` completed `done` in `46112ms`, and handler metrics remain healthy. This indicates a transient empty-response/model/runtime issue rather than a currently broken handler implementation.
+Counter-signal: later `closed-loop-steward` sessions completed successfully, and handler metrics remain healthy (`handler.success-rate=1`, `handler.failed-count=0`). This indicates a transient provider/token issue rather than a currently broken handler implementation.
 
 ## Judgment
-No code patch is warranted this heartbeat. The highest-impact actionable queue is empty, handler health is green, all active metrics have fresh snapshots, and the only open alert is may-owned pending-review work. The null-error steward/evaluator pattern should remain a watchpoint; if it repeats in consecutive future runs or raises `session.error-rate-6h`, investigate empty assistant response handling/error propagation.
+No code patch is warranted this heartbeat. The highest-impact actionable queue is empty, handler health is green, all active metrics have fresh snapshots, and the only open alert is may-owned pending-review work. The latest error cluster is now explained as provider token expiry, and later steward runs recovered; if this repeats in consecutive future runs or raises `session.error-rate-6h`, investigate provider-token alerting and why `sessions.error` remains null when transcript `errorMessage` is present.
 
 ## Follow-up watchpoints
 - Empty Approved queue continues to be the main dev throughput blocker.
-- Watch for repeated `status='error' AND error IS NULL` sessions with empty assistant content; if persistent, inspect the session runner's handling of empty final assistant messages.
+- Watch for repeated `status='error' AND error IS NULL` sessions where transcript `errorMessage` contains a provider failure; if persistent, inspect the session runner's propagation of transcript error messages into `sessions.error`.
