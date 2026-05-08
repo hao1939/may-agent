@@ -312,9 +312,10 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               bus.emit({ type: "message.created", from: callerAgentRun || "unknown", to: params.agent, content: forkTask, intent: "fork", priority: "P0" });
             }
 
-            // Fire-and-forget: start agent immediately, don't wait
-            // Fork creates a new root with originSessionId linking back to the caller
+            // Fire-and-forget: start agent immediately, don't wait.
+            // It is still a causal child of the caller for traceability.
             const sessionId = manager.runAgent(params.agent, forkTask, {
+              parentSessionId: parentSidRun,
               originSessionId: parentSidRun,
               workflowRunId: lineage.workflowRunId,
               projectId: lineage.projectId,
