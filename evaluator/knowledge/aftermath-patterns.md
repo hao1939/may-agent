@@ -1,11 +1,16 @@
-# Aftermath Review Patterns
+# Aftermath Patterns (Evaluator)
 
-## Orchestrator premature DONE / no verification
-**Symptom**: session ends with `outcome: done` and `opCount: 0` (no tool-based verification), plus no concrete next operation for worker.
+## Finish blocked by uncommitted changes
+Common failure mode: an agent creates required deliverables under `agents/<agent>/...` but calls `finish()` before committing them. The guard blocks with a message listing uncommitted files.
 
-**Why it matters**: closed-loop reliability depends on evidence and a validation path; “healthy” claims must be verified. Orchestrator must either schedule a next check or explicitly move project to waiting/blocked with a clear resume trigger.
+**Mitigation checklist (agent-side):**
+- `cd /app/agents && git status --porcelain`
+- `git add <deliverables>`
+- `git commit -m "<agent>: <specific change>"`
+- then call `finish()`
 
-**Checklist**
-- Verify claimed deliverables exist (`read`/`bash ls`) before checking plan items.
-- If project remains `active`, produce a next-iteration operation (even if “observe next snapshot”).
-- Use DONE only when (a) no unchecked plan items and (b) the run contract truly has no next action.
+## Missing ripgrep (rg) in runtime
+Some sessions assume `rg` is installed; in this environment it may not be. Prefer portable fallbacks (`grep -R`, `find ... -exec grep`) or explicitly install only when allowed by workflow.
+
+## Telemetry mismatch: opCount=0 with tool calls present
+Observed at least once: workflow summary lists opCount=0 while transcript clearly includes tool calls. This can cause evaluator heuristics to misfire; flag to maintainers for investigation.
