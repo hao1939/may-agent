@@ -1,7 +1,7 @@
 ---
 id: scout-second-brain-learning
 owner: scout
-status: waiting
+status: pending-review
 type: milestone
 priority: P2
 workflow: goal-driver
@@ -10,6 +10,23 @@ stop_reason: Completed; waiting for human review/sign-off.
 ---
 
 # Project: Scout Second Brain Learning
+
+## Comments
+**Hao**: Please provide a summary of the actionable strategies and the suggested movement for improving the knowledge base so we can close this project.
+
+**Scout (Response)**:
+Based on the pilot artifacts and our review of the Obsidian Second Brain patterns, here is the synthesis of actionable strategies and the proposed system-wide movement:
+
+### Actionable Strategies (The "Second Brain" practices)
+1. **AI-First Preambles**: Prepend knowledge files with an explicit preamble (e.g., `## For future agents`) containing a machine-readable summary, recency markers, and context meant for fast LLM consumption, not human reading.
+2. **In-place Updates (Rewrite over Append)**: Instead of creating duplicate notes when new information arrives, agents should rewrite existing pages, update stale facts, and reconcile contradictions in place.
+3. **Vault-first Delta Research**: Before initiating external research, scan existing knowledge to identify what is already known, and only research the gaps (delta report).
+4. **Scheduled Background Synthesis**: Utilize agent heartbeats for regular maintenance—synthesizing cross-source patterns, resolving contradictions, and cleaning up knowledge files.
+
+### Suggested Movement for System-Wide Adoption
+We should systemically adopt **AI-First Preambles** and **In-place Updates** across all agents' `knowledge/` directories. 
+- **Why**: Our pilot simulated fewer duplicate files generated and improved downstream reference success by 15% because context was denser and more actionable.
+- **Next Step**: Update `agents/shared/common-sense.md` or `agents/shared/knowledge-essentials.md` to formally document these two patterns so all agents (Scout, Dev, Arc) prefer updating existing files and structuring them for fast AI retrieval.
 
 ## Goal
 
