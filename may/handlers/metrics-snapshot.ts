@@ -617,7 +617,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     try {
       const totalSessions24h = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ?", twentyFourH);
       const heartbeatSessions24h = count(
-        "SELECT COUNT(*) as c FROM sessions WHERE startedAt > ? AND source LIKE 'workflow:heartbeat%'",
+        `SELECT COUNT(*) as c FROM sessions
+         WHERE startedAt > ?
+           AND (
+             source = 'workflow:heartbeat'
+             OR source LIKE 'workflow:heartbeat-%'
+             OR source LIKE 'workflow:%-heartbeat'
+           )`,
         twentyFourH,
       );
       record("capability.self-directed-iteration-rate-24h",
