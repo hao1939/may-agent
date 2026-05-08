@@ -464,7 +464,11 @@ ${guidance}
 
 ---
 
-Make a judgment from the full context. If routine self-maintenance is enough, leave evidence. If you find a durable multi-session goal, create or update an explicit shared project. ${redMetricDiagnostics ? "Red metric diagnostics are above — address each signal, then proceed with normal heartbeat work." : "Review signals, projects, and guidance. Act on what matters."} Commit and finish.`;
+Make a judgment from the full context. If routine self-maintenance is enough, leave evidence. If you find a durable multi-session goal, create or update an explicit shared project. ${redMetricDiagnostics ? "Red metric diagnostics are above — address each signal, then proceed with normal heartbeat work." : "Review signals, projects, and guidance. Act on what matters."}
+
+Before calling finish(success), read() every file you wrote or edited in this session and cite that read-back in verification_evidence. The verify-after-write guard rejects successful finishes for unread modified files.
+
+Commit and finish.`;
 
   ctx.emit({ type: "step_start", step: "heartbeat" });
   ctx.emit({ type: "context.read", agent, sections: { metrics: !!metrics, projects: !!projects, inbox: !!inbox, alerts: !!alerts } });
@@ -472,7 +476,7 @@ Make a judgment from the full context. If routine self-maintenance is enough, le
   // ── EXP-740: Wall-clock timer for duration gate ──────────────────
   const heartbeatStartTime = Date.now();
 
-  const result = await ctx.runAgent(agent, prompt);
+  const result: any = await ctx.runAgent(agent, prompt);
   ctx.emit({ type: "agent.decision", agent, status: result.status, hasDeliverables: !!(result.deliverables?.length) });
   recordOutcome(agentsRoot, agent, result.status === "error",
     result.status === "error" ? "heartbeat session error" : undefined);
