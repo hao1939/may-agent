@@ -114,6 +114,9 @@ describe("closed-loop-steward", () => {
     expect(runs[0].task).toContain("to=functions.message");
     expect(runs[0].task).toContain("Do not create a project for this cron itself");
     expect(runs[0].task).toContain("metric.alert_judged");
+    expect(runs[0].task).toContain("workflow-collected live evidence");
+    expect(runs[0].task).toContain("Use query_db only when the context is missing or internally inconsistent");
+    expect(runs[0].task).toContain("PRAGMA table_info");
     expect(workflows).toEqual([]);
   });
 
