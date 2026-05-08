@@ -1052,8 +1052,86 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return json({ ok: true, sessionId, deliveredAt: Date.now() });
   }
 
-  async function handleAgentHeartbeatNow(req: Request, agentName: string): Promise<Response> {
+  /**
+   * Resolve the "default chat session" for an agent. Telegram-style: each
+   * agent has one persistent thread; this endpoint returns its sessionId.
+   *
+   * Strategy: pick the most-recently-active session for this agent
+   * regardless of status (running/idle/done/error/interrupted). The 3b
+   * cold-resume path means even a 'done' session can be woken up by
+   * messaging it. Heartbeat / worker / fork-spawn sessions are NOT chat
+   * threads (they're throwaway task runs) so we exclude them.
+   *
+   * Returns {sessionId: null} if no chat thread exists yet — UI can then
+   * POST /api/agents/:name/message to spawn one.
+   */
+  function handleAgentDefaultSession(agentName: string): Response {
     if (!agentName) return json({ error: "agent required" }, 400);
+    try {
+      const db = _db();
+      // Most-recent non-throwaway session for this agent. We exclude:
+      //   - kind='heartbeat' / 'worker' (workflow-internal sessions)
+      //   - tasks starting with '[heartbeat]' or matching the heartbeat
+      //     prompt body (legacy fallback for sessions that pre-date kind)
+      const row = db.prepare(`
+        SELECT sessionId, status, startedAt, kind, substr(task, 1, 200) as task
+        FROM sessions
+        WHERE agent = ?
+          AND COALESCE(kind, '') NOT IN ('heartbeat', 'worker')
+          AND (task IS NULL OR task NOT LIKE '[heartbeat]%')
+          AND (task IS NULL OR task NOT LIKE 'You are %waking up for your heartbeat.%')
+        ORDER BY startedAt DESC
+        LIMIT 1
+      `).get(agentName) as { sessionId: string; status: string; startedAt: number; kind: string | null; task: string } | undefined;
+      if (!row) return json({ agent: agentName, sessionId: null });
+      return json({
+        agent: agentName,
+        sessionId: row.sessionId,
+        status: row.status,
+        startedAt: row.startedAt,
+        kind: row.kind,
+        task: row.task,
+      });
+    } catch (e) {
+      return json({ error: e instanceof Error ? e.message : String(e) }, 500);
+    }
+  }
+
+  /**
+   * Send a message to an agent. Telegram-style:
+   *   1. resolve default session (most-recent non-throwaway)
+   *   2. if a session exists, forward to /api/sessions/:id/message which
+   *      uses the 'steer' command (handles running/idle/cold uniformly).
+   *   3. if no session exists yet, spawn a fresh one with the message as
+   *      the task. Returns the new sessionId.
+   *
+   * Either way the response shape is {ok:true, sessionId, deliveredAt}.
+   */
+  async function handleAgentMessage(req: Request, agentName: string): Promise<Response> {
+    if (!agentName) return json({ error: "agent required" }, 400);
+    let body: { content?: string };
+    try { body = await req.json() as { content?: string }; } catch { return json({ error: "invalid json" }, 400); }
+    const content = (body.content ?? "").trim();
+    if (!content) return json({ error: "content required" }, 400);
+
+    // Resolve default session.
+    const resolveResp = handleAgentDefaultSession(agentName);
+    const resolved = await resolveResp.json() as { agent: string; sessionId: string | null };
+    if (resolved.sessionId) {
+      const result = await sendUnixCommand({ type: "steer", sessionId: resolved.sessionId, message: content });
+      if (!result.ok) return json({ error: result.error }, 503);
+      return json({ ok: true, agent: agentName, sessionId: resolved.sessionId, deliveredAt: Date.now(), spawned: false });
+    }
+
+    // No prior session — spawn one. Use 'fork' command which routes through
+    // manager.run() and is the canonical way to start a fresh agent session
+    // from outside the runtime.
+    const result = await sendUnixCommand({ type: "fork", agent: agentName, task: content, opts: { kind: "chat", source: "web-ui" } });
+    if (!result.ok) return json({ error: result.error }, 503);
+    return json({ ok: true, agent: agentName, sessionId: null, deliveredAt: Date.now(), spawned: true });
+  }
+
+  async function handleAgentHeartbeatNow(req: Request, agentName: string): Promise<Response> {    if (!agentName) return json({ error: "agent required" }, 400);
     // Resolve actor from request body if provided, default to "human" (UI).
     let actor = "human";
     try {
@@ -1182,6 +1260,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/agents/activity") return handleAgentActivity();
       if (url.pathname === "/api/agents/timeline") return handleAgentTimeline(url);
       if (url.pathname === "/api/agents/health") return handleSystemHealth();
+      const defaultSessionMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/default-session$/);
+      if (defaultSessionMatch) return handleAgentDefaultSession(defaultSessionMatch[1]);
       if (url.pathname === "/api/digest") return handleDigest(url);
       if (url.pathname === "/api/benchmarks") return handleBenchmarks(url);
       if (url.pathname === "/api/benchmarks/prompts") return handleBenchmarkPrompts(url);
@@ -1220,6 +1300,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         if (sessionMessageMatch) return handleSessionMessage(req, sessionMessageMatch[1]);
         const heartbeatNowMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/heartbeat-now$/);
         if (heartbeatNowMatch) return handleAgentHeartbeatNow(req, heartbeatNowMatch[1]);
+        const agentMessageMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/message$/);
+        if (agentMessageMatch) return handleAgentMessage(req, agentMessageMatch[1]);
         const thresholdMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/threshold$/);
         if (thresholdMatch) return handleMetricThreshold(req, decodeURIComponent(thresholdMatch[1]));
         const alertResolveMatch = url.pathname.match(/^\/api\/alerts\/([^/]+)\/resolve$/);
