@@ -54,7 +54,7 @@ concrete numbers; when in doubt, the registry wins.
 | ID | What it answers | Source | Target | Threshold | Alert |
 |----|-----------------|--------|--------|-----------|-------|
 | `session.failed-triage-rate-3h` | Are failures being acted on? | failed/interrupted sessions with `needs_improvement` evaluation (3h) | 1.00 | 0.80 | below |
-| `evaluator.low-quality-rate-24h` | Is evaluated work low quality? | low-quality or inefficient evaluations / all evaluations (24h) | 0.10 | 0.30 | above |
+| `evaluator.low-quality-rate-24h` | Is evaluated work frequently `needs_improvement` or low-scoring? | `needs_improvement`/`low_quality` verdicts or low quality/efficiency scores / all evaluations (24h) | 0.10 | 0.30 | above |
 | `system.real-output-24h` | Is the system producing? | `git log` substantive files changed (24h) | 100 | 30 | below |
 | `project.iterations-24h` | Are projects advancing? | `COUNT(*)` from project.iteration events (24h) | 10 | 0 (watch-only) | below |
 | `project.blocked-over-6h` | Is work stuck? | `COUNT(*)` from projects where blocked/waiting >6h | 2 | 4 | above |

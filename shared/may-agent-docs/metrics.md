@@ -67,7 +67,7 @@ CREATE TABLE metric_snapshots (
 
 **Evaluator health:**
 - `evaluator.aftermath-coverage-rate-3h` — aftermath pipeline liveness, not a north-star quality goal
-- `evaluator.low-quality-rate-24h` — share of evaluated sessions with low quality/efficiency
+- `evaluator.low-quality-rate-24h` — share of evaluated sessions with `needs_improvement`/`low_quality` verdicts or low quality/efficiency scores
 - `evaluator.stale-running-session-count` — running/idle non-evaluator sessions older than the stale cutoff
 
 **Project health:**

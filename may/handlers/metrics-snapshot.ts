@@ -58,7 +58,7 @@ const ALL_METRICS: MetricDef[] = [
   { id: "session.error-rate-6h", name: "Session error rate (6h)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P1" },
   { id: "session.failed-triage-rate-3h", name: "Failed session triage rate (3h)", owner: "evaluator", type: "gauge", target: 1.0, threshold: 0.80, unit: "ratio", alert_op: "<", priority: "P1" },
   { id: "evaluator.aftermath-coverage-rate-3h", name: "Evaluator aftermath liveness (3h)", owner: "evaluator", type: "gauge", target: 0.80, threshold: 0.20, unit: "ratio", alert_op: "<", priority: "P3" },
-  { id: "evaluator.low-quality-rate-24h", name: "Low-quality evaluated sessions (24h)", owner: "evaluator", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P2" },
+  { id: "evaluator.low-quality-rate-24h", name: "Needs-improvement/low-score evaluated sessions (24h)", owner: "evaluator", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P2" },
   { id: "evaluator.stale-running-session-count", name: "Stale running sessions", owner: "evaluator", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
   // System output
@@ -413,15 +413,15 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         "SELECT COUNT(*) as c FROM evaluations WHERE createdAt > ? AND agent NOT IN ('evaluator', 'judge')",
         twentyFourH,
       );
-      const lowQuality = count(
+      const needsImprovementOrLowScore = count(
         `SELECT COUNT(*) as c
          FROM evaluations
          WHERE createdAt > ?
            AND agent NOT IN ('evaluator', 'judge')
-           AND (verdict = 'needs_improvement' OR quality < 0.4 OR efficiency < 0.4)`,
+           AND (verdict IN ('needs_improvement', 'low_quality') OR quality < 0.4 OR efficiency < 0.4)`,
         twentyFourH,
       );
-      record("evaluator.low-quality-rate-24h", total > 0 ? parseFloat((lowQuality / total).toFixed(4)) : 0, total);
+      record("evaluator.low-quality-rate-24h", total > 0 ? parseFloat((needsImprovementOrLowScore / total).toFixed(4)) : 0, total);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.low-quality-rate-24h: ${e}`); }
 
     // ── Per-agent consecutive low-quality streak ─────────────────────
