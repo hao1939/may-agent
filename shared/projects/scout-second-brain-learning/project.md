@@ -11,7 +11,7 @@ iteration: 0
 # Project: Scout Second Brain Learning
 
 **Status**: active
-**Iteration**: 3
+**Iteration**: 4
 ## Goal
 
 Learn from `eugeniughelbur/obsidian-second-brain` and adapt the smallest useful
@@ -19,8 +19,8 @@ set of knowledge-base practices that make scout findings easier to maintain,
 reuse, and turn into system improvements.
 
 ## Current State
-Iteration 3. Milestones: 0/0 done.
-Reviewer: 1. **I believe**: The worker has successfully cleared the final system guardrail by committing the changes, and has written the final review document, meaning all identified milestones for this projec
+Iteration 4. Milestones: 0/0 done.
+Reviewer: 1. **I believe**: All milestones for this project have been successfully completed as of Iteration 3, and the worker is currently spinning trying to create unnecessary "flag files" because the project
 ## Context
 
 Reference repo:
@@ -72,6 +72,7 @@ Initial hypothesis:
 - outputs/ready-for-review.md
 - outputs/pilot-review.md
 - outputs/final-summary.md
+- outputs/ready-for-review-flag.md
 - outputs/wrap-up.md
 - outputs/agent-second-brain-guidelines.md
 - outputs/ai-first-preamble-pilot.md
