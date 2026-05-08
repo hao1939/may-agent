@@ -10,7 +10,8 @@ iteration: 2
 
 # Evaluator Low-Quality Rate Calibration
 
-**Iteration**: 4
+**Iteration**: 5
+**Status**: blocked
 ## Goal
 Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior failures from (b) pipeline/guard false-penalties, and ensure evaluator scoring produces low false-good overturns.
 
@@ -19,8 +20,7 @@ Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior
 - Metric: `evaluator.false-good-rate-sample` current 0.5714 (threshold 0.2, target 0.05) but denominator only 7 reviewed sessions (sample instability).
 
 ## Current State
-Iteration 4. Milestones: 0/0 done.
-Reviewer: [PIVOT] 1) **I believe**: The project is blocked by an *operational failure*, not missing analysis: Iteration 4 introduced **uncommitted changes** in `agents/shared/projects/.../project.md`, which is
+Blocked: 5 consecutive iterations without milestone progress. Approach needs rethinking.
 ## Plan
 1. **Metric decomposition proposal**: draft a split of low-quality-rate into sub-metrics by issue class (schema errors, finish/uncommitted, terminal interruptions) to avoid conflating agent quality with infra/guard friction.
 2. **Criteria calibration**: review evaluator criteria for (a) terminal interrupted sessions (Clean start) and (b) finish-blocked sessions; decide whether to classify as NI vs excluded/exception.
@@ -63,3 +63,5 @@ Reviewer: [PIVOT] 1) **I believe**: The project is blocked by an *operational fa
 - Implementation plan exists (iteration-4 output), but next work must prioritize a clean, deterministic handoff and guard-safe patch snippet for `agents/may/handlers/metrics-snapshot.ts`.
 
 Milestone checkoff: Iteration 2 — mechanism + fix options
+- We now have Iterations 3–5 as an approval-quality packet; the remaining gap is **operational wiring**: where `evaluator.low-quality-rate-24h` is actually consumed for paging/thresholding.
+- Next step should be **in-repo consumer/alert discovery** (search for metric usage), enabling an end-to-end patch; if not found, explicitly identify the external alert owner/system to unblock governance.
