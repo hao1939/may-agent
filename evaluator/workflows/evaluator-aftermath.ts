@@ -5,6 +5,7 @@ import { join } from "node:path";
 
 export const name = "evaluator-aftermath";
 export const description = "Evaluate session aftermath, cancel stale running sessions, and drive repair/learning.";
+export const HEURISTIC_VERSION = 2;
 
 function extractTrigger(task: string): any {
   const match = task.match(/## Trigger Event\s*```json\s*([\s\S]*?)\s*```/);
@@ -62,6 +63,24 @@ export function classifyVerdict(session: any, transcript = ""): { quality: numbe
   };
 }
 
+export function evaluationHeuristicVersion(evaluation: any): number {
+  if (!evaluation?.overall) return 0;
+  try {
+    const parsed = typeof evaluation.overall === "string" ? JSON.parse(evaluation.overall) : evaluation.overall;
+    const version = Number(parsed?.heuristicVersion ?? 0);
+    return Number.isFinite(version) ? version : 0;
+  } catch {
+    return 0;
+  }
+}
+
+export function shouldRefreshEvaluation(evaluation: any, heuristic: { verdict: string; issues: string[] }): boolean {
+  if (!evaluation) return true;
+  if (String(evaluation.verdict) !== "good") return false;
+  if (evaluationHeuristicVersion(evaluation) >= HEURISTIC_VERSION) return false;
+  return true;
+}
+
 function getSessionIdFromTrigger(trigger: any): string | undefined {
   const data = trigger?.data ?? trigger ?? {};
   const direct = data.sessionId;
@@ -104,7 +123,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const loaded = await (ctx as any).runFunction("load-session", async () => {
     const db = ctx.getDb() as any;
     const session = db.prepare("SELECT * FROM sessions WHERE sessionId = ?").get(sessionId);
-    const evaluation = db.prepare("SELECT sessionId, verdict, createdAt FROM evaluations WHERE sessionId = ?").get(sessionId);
+    const evaluation = db.prepare("SELECT sessionId, verdict, overall, createdAt FROM evaluations WHERE sessionId = ?").get(sessionId);
     return JSON.stringify({ session, evaluation });
   });
 
@@ -134,16 +153,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.done(`Cancelled stale ${session.status} session ${sessionId} (${session.agent}), age ${Math.round(ageMs / 60000)}m.`);
   }
 
-  if (evaluation) {
-    return ctx.done(`Session ${sessionId} already evaluated (${evaluation.verdict}).`);
-  }
-
   const projectRoot = String(ctx.projectRoot ?? "/app");
   const persistDir = String((ctx as any).persistDir ?? join(projectRoot, ".state"));
   const transcriptPath = sessionTranscriptPath(persistDir, sessionId);
   const transcript = readSessionTranscript(transcriptPath);
   const heuristic = classifyVerdict(session, transcript);
   const artifactPath = `agents/evaluator/workspace/aftermath/${sessionId}.md`;
+
+  if (!shouldRefreshEvaluation(evaluation, heuristic)) {
+    return ctx.done(`Session ${sessionId} already evaluated (${evaluation.verdict}).`);
+  }
 
   await (ctx as any).runFunction("record-evaluation", async () => {
     const db = ctx.getDb() as any;
@@ -166,6 +185,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           verdict: heuristic.verdict,
           status: session.status,
           aftermathWorkflow: true,
+          heuristicVersion: HEURISTIC_VERSION,
+          ...(evaluation ? { refreshedFrom: evaluation.verdict } : {}),
           ...(heuristic.verdict === "good" ? {} : { artifactPath }),
         }),
         null,

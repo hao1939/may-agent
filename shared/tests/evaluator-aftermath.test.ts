@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { classifyVerdict, transcriptIssues } from "../../evaluator/workflows/evaluator-aftermath.ts";
+import {
+  HEURISTIC_VERSION,
+  classifyVerdict,
+  evaluationHeuristicVersion,
+  shouldRefreshEvaluation,
+  transcriptIssues,
+} from "../../evaluator/workflows/evaluator-aftermath.ts";
 
 describe("evaluator aftermath transcript checks", () => {
   it("flags schema guessing and runtime-file commit friction", () => {
@@ -67,5 +73,14 @@ describe("evaluator aftermath transcript checks", () => {
 
     expect(verdict.verdict).toBe("needs_improvement");
     expect(verdict.issues).toContain("workflow live signal injection unavailable");
+  });
+
+  it("refreshes stale good heuristic evaluations", () => {
+    const heuristic = { verdict: "needs_improvement", issues: ["schema/query error in transcript"] };
+
+    expect(evaluationHeuristicVersion({ overall: JSON.stringify({ heuristicVersion: HEURISTIC_VERSION }) })).toBe(HEURISTIC_VERSION);
+    expect(shouldRefreshEvaluation({ verdict: "good", overall: "{}" }, heuristic)).toBe(true);
+    expect(shouldRefreshEvaluation({ verdict: "good", overall: JSON.stringify({ heuristicVersion: HEURISTIC_VERSION }) }, heuristic)).toBe(false);
+    expect(shouldRefreshEvaluation({ verdict: "needs_improvement", overall: "{}" }, heuristic)).toBe(false);
   });
 });

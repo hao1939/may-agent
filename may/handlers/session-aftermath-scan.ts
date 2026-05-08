@@ -14,6 +14,7 @@ type ScanConfig = {
   backfillHours?: number;
   fallbackDelayMs?: number;
   limit?: number;
+  heuristicVersion?: number;
 };
 
 type Candidate = {
@@ -27,6 +28,7 @@ const DEFAULT_AGENT = "evaluator";
 const DEFAULT_BACKFILL_HOURS = 3;
 const DEFAULT_FALLBACK_DELAY_MS = 7 * 60_000;
 const DEFAULT_LIMIT = 4;
+const DEFAULT_HEURISTIC_VERSION = 2;
 
 function taskFor(candidate: Candidate): string {
   const trigger = {
@@ -59,6 +61,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
   const backfillHours = config.backfillHours ?? DEFAULT_BACKFILL_HOURS;
   const fallbackDelayMs = config.fallbackDelayMs ?? DEFAULT_FALLBACK_DELAY_MS;
   const limit = config.limit ?? DEFAULT_LIMIT;
+  const heuristicVersion = config.heuristicVersion ?? DEFAULT_HEURISTIC_VERSION;
 
   return async () => {
     const db = ctx.sdk.getDb();
@@ -74,10 +77,16 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
          AND s.agent NOT IN ('evaluator', 'judge')
          AND COALESCE(s.endedAt, s.startedAt) >= ?
          AND COALESCE(s.endedAt, s.startedAt) <= ?
-         AND e.sessionId IS NULL
+         AND (
+           e.sessionId IS NULL
+           OR (
+             e.verdict = 'good'
+             AND COALESCE(CAST(json_extract(e.overall, '$.heuristicVersion') AS INTEGER), 0) < ?
+           )
+         )
        ORDER BY COALESCE(s.endedAt, s.startedAt) DESC
        LIMIT ?`,
-    ).all(cutoff, fallbackCutoff, limit) as Candidate[];
+    ).all(cutoff, fallbackCutoff, heuristicVersion, limit) as Candidate[];
 
     if (candidates.length === 0) {
       ctx.sdk.log("info", "[session-aftermath-scan] No unevaluated sessions older than fallback delay.");
