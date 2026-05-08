@@ -1,7 +1,7 @@
 ---
 id: scout-second-brain-learning
 owner: scout
-status: active
+status: done
 type: milestone
 priority: P2
 workflow: goal-driver
@@ -34,8 +34,7 @@ set of knowledge-base practices that make scout findings easier to maintain,
 reuse, and turn into system improvements.
 
 ## Current State
-Working on implementing a Scout-scoped approach as requested by Hao, abandoning the system-wide mandate. We need to define concrete plan items for cron/heartbeat tasks and prompt updates, then apply them to Scout's knowledge base and gather evidence of their effectiveness.
-Validation signal: `project.md` contains new pending milestones addressing the human's feedback, and status is `active`.
+All plan items completed. The scoped approach (AI-First Preambles and In-place Updates) was applied to Scout's knowledge base (`agent-architecture-trends.md`) as concrete evidence. A final summary artifact addresses Hao's request. Setting status to `done`.
 
 ## Context
 
@@ -65,8 +64,8 @@ Initial hypothesis:
 - [x] Apply the pilot to 3-5 recent scout knowledge artifacts.
 - [x] Review metrics and downstream references after the pilot; decide whether to keep, adjust, or discard the practices.
 - [x] Propose a Scout-scoped implementation using Scout's heartbeats for background synthesis and updating Scout's system prompt for in-place updates.
-- [ ] Implement and test the scoped approach on Scout's knowledge base to gather concrete evidence.
-- [ ] Document the concrete evidence from the implementation and formalize the final proposal.
+- [x] Implement and test the scoped approach on Scout's knowledge base to gather concrete evidence.
+- [x] Document the concrete evidence from the implementation and formalize the final proposal.
 
 ## Resources
 
