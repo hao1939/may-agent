@@ -1,21 +1,28 @@
 import { describe, it, expect } from 'vitest';
 import { validateProjectConfig } from '../config-validator.js';
 
-const validProject = `# My Project
+const validProject = `---
+id: my-project
+owner: evaluator
+status: active
+workflow: project
+---
 
-## Status
-active
+# My Project
 
 ## Goal
 Do something great
 
-## Metrics
+## Signals
 - test-coverage: 80% → 95%
 - speed: 100ms → 50ms
 
 ## Plan
 - [ ] First task
 - [x] Done task
+
+## Validation
+The next run confirms the signal moved in the right direction.
 `;
 
 describe('validateProjectConfig', () => {
@@ -25,11 +32,11 @@ describe('validateProjectConfig', () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it('errors on missing Status section', () => {
-    const content = validProject.replace(/## Status\nactive\n/, '');
+  it('errors on missing status frontmatter', () => {
+    const content = validProject.replace(/status: active\n/, '');
     const result = validateProjectConfig(content);
     expect(result.valid).toBe(false);
-    expect(result.errors).toContain('Missing required section: Status');
+    expect(result.errors).toContain('Missing required frontmatter: status');
   });
 
   it('errors on missing Goal section', () => {
@@ -39,11 +46,11 @@ describe('validateProjectConfig', () => {
     expect(result.errors).toContain('Missing required section: Goal');
   });
 
-  it('errors on missing Metrics section', () => {
-    const content = validProject.replace(/## Metrics[\s\S]*?(?=## Plan)/, '');
+  it('warns on missing Signals and Metrics sections', () => {
+    const content = validProject.replace(/## Signals[\s\S]*?(?=## Plan)/, '');
     const result = validateProjectConfig(content);
-    expect(result.valid).toBe(false);
-    expect(result.errors).toContain('Missing required section: Metrics');
+    expect(result.valid).toBe(true);
+    expect(result.warnings).toContain('Project should include Signals or Metrics section');
   });
 
   it('errors on missing Plan section', () => {
@@ -54,7 +61,9 @@ describe('validateProjectConfig', () => {
   });
 
   it('warns on metrics without targets', () => {
-    const content = validProject.replace('- test-coverage: 80% → 95%', '- test-coverage: 80%');
+    const content = validProject
+      .replace('## Signals', '## Metrics')
+      .replace('- test-coverage: 80% → 95%', '- test-coverage: 80%');
     const result = validateProjectConfig(content);
     expect(result.valid).toBe(true);
     expect(result.warnings.some(w => w.includes('without target'))).toBe(true);

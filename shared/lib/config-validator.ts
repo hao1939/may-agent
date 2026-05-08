@@ -8,17 +8,50 @@ export interface ValidationResult {
   warnings: string[];
 }
 
+function extractFrontmatter(content: string): Record<string, string> | null {
+  const match = content.match(/^---\s*\n([\s\S]*?)\n---\s*(?:\n|$)/);
+  if (!match) return null;
+
+  const result: Record<string, string> = {};
+  for (const line of match[1].split("\n")) {
+    const field = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
+    if (!field) continue;
+    result[field[1].trim()] = field[2].trim().replace(/^["\x27]|["\x27]$/g, "");
+  }
+  return result;
+}
+
+function hasSection(content: string, section: string): boolean {
+  return new RegExp(`^#+\\s+${section}\\b`, "mi").test(content);
+}
+
 export function validateProjectConfig(content: string): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  // Check required sections
-  const requiredSections = ['Status', 'Goal', 'Metrics', 'Plan'];
+  const frontmatter = extractFrontmatter(content);
+  if (!frontmatter) {
+    errors.push("Missing YAML frontmatter");
+  } else {
+    for (const field of ["id", "owner", "status"]) {
+      if (!frontmatter[field]) {
+        errors.push(`Missing required frontmatter: ${field}`);
+      }
+    }
+  }
+
+  const requiredSections = ["Goal", "Plan"];
   for (const section of requiredSections) {
-    const pattern = new RegExp(`^#+\\s+${section}`, 'm');
-    if (!pattern.test(content)) {
+    if (!hasSection(content, section)) {
       errors.push(`Missing required section: ${section}`);
     }
+  }
+
+  if (!hasSection(content, "Signals") && !hasSection(content, "Metrics")) {
+    warnings.push("Project should include Signals or Metrics section");
+  }
+  if (!hasSection(content, "Validation")) {
+    warnings.push("Project should include Validation section");
   }
 
   // Check metrics have targets (→ or -> format)

@@ -4,11 +4,11 @@
  * master-worker — Two persistent sessions (orchestrator + worker) running
  * a review-first → work → review → work loop.
  *
- * Project.md fields:
- *   **Workflow**: master-worker          (selects this workflow)
- *   **Max Iterations**: 5               (optional, default 5)
- *   **Status**: active/paused/cancelled/blocked/waiting/closed
- *   **Owner**: bob
+ * Project.md frontmatter:
+ *   workflow: master-worker             (selects this workflow)
+ *   max_iterations: 5                   (optional, default 50)
+ *   status: active                      (paused/cancelled/blocked/waiting/closed stop dispatch)
+ *   owner: bob
  *
  * Usage via CLI:
  *   bun src/app/may.ts --run-workflow master-worker "project: agents/shared/projects/my-project"

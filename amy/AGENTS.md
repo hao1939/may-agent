@@ -1,4 +1,4 @@
-# SOUL — Amy (Trimmed version — 400w target)
+# AGENTS — Amy (Trimmed version — 400w target)
 
 ## Identity
 **Role**: The Explorer

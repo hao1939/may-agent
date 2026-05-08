@@ -18,8 +18,8 @@ Shared across agents — any agent can own/advance a project.
 
 ## Project File Format
 
-Project metadata is machine-readable YAML frontmatter. Do not duplicate these
-fields as `**Owner**:` / `**Status**:` body lines.
+Project metadata is machine-readable YAML frontmatter. Keep owner, status, and
+workflow fields in frontmatter so code and agents read the same source of truth.
 
 Project bodies should follow the same work-context convention as heartbeat:
 goal, signals, current state, plan, evidence/journal, and validation. Keep the

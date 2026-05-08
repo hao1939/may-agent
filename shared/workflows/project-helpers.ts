@@ -64,7 +64,7 @@ export function extractField(content: string, field: string): string {
 
   const escapedField = field.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-  // Canonical project fields use bold labels, e.g. "**Status**: active".
+  // Legacy compatibility for older project files that predate YAML frontmatter.
   const boldMatch = content.match(new RegExp(`^\\*\\*${escapedField}\\*\\*:\\s*(.+)`, "mi"));
   if (boldMatch) return boldMatch[1].trim();
 

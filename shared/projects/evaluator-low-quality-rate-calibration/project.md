@@ -10,6 +10,7 @@ iteration: 0
 
 # Evaluator Low Quality Rate Calibration
 
+**Status**: active
 ## Goal
 Bring `evaluator.low-quality-rate-24h` below threshold (0.3) and toward target (0.1) by determining whether the breach is caused by (a) evaluator rubric/threshold calibration, or (b) a real system-wide drop in session quality.
 

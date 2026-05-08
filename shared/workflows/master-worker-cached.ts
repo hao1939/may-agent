@@ -185,7 +185,7 @@ export function formatOrchestratorContext(snapshot: IterationSnapshot): string {
     `## Iteration ${snapshot.iteration}/${snapshot.maxIterations}`,
     "",
     `**Goal**: ${snapshot.goal}`,
-    `**Status**: ${snapshot.status}`,
+    `Status: ${snapshot.status}`,
     "",
     "## project.md",
     snapshot.projectContent,

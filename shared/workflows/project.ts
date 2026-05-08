@@ -205,15 +205,23 @@ ${config.goal}
 ## Current State
 Not started.
 
+## Signals
+- Project created from workflow request; refine metrics and signals during the first iteration.
+
 ## Context
 (Key discoveries and facts will be accumulated here by the reviewer across iterations.)
 
-## Milestones
+## Plan
 - [ ] Define success criteria and first milestone
+
+## Validation
+- Success criteria are explicit and checked before status changes.
 
 ## Resources
 
 ## Artifacts
+
+## Journal
 
 `;
   cachedWrite(config.projectPath, projectContent);

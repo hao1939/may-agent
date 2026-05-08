@@ -1,31 +1,45 @@
 import { describe, it, expect } from 'vitest';
 import { onProjectCreate, requireValidProject } from '../workflows/hooks/validate-on-create.js';
 
-const validProject = `# Test Project
+const validProject = `---
+id: test-project
+owner: evaluator
+status: active
+workflow: project
+---
 
-## Status
-active
+# Test Project
 
 ## Goal
 Build something great
 
-## Metrics
+## Signals
 - coverage: 50% → 80%
 
 ## Plan
 - [ ] Do the thing
+
+## Validation
+Coverage signal improves.
 `;
 
-const missingGoal = `# Test Project
+const missingGoal = `---
+id: test-project
+owner: evaluator
+status: active
+workflow: project
+---
 
-## Status
-active
+# Test Project
 
-## Metrics
+## Signals
 - coverage: 50% → 80%
 
 ## Plan
 - [ ] Do the thing
+
+## Validation
+Coverage signal improves.
 `;
 
 const missingSections = `# Test Project
@@ -33,10 +47,14 @@ const missingSections = `# Test Project
 Just some text without proper sections.
 `;
 
-const noMetricTarget = `# Test Project
+const noMetricTarget = `---
+id: test-project
+owner: evaluator
+status: active
+workflow: project
+---
 
-## Status
-active
+# Test Project
 
 ## Goal
 Build it
@@ -46,6 +64,9 @@ Build it
 
 ## Plan
 - [ ] Do the thing
+
+## Validation
+Coverage signal improves.
 `;
 
 describe('onProjectCreate', () => {

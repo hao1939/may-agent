@@ -466,7 +466,7 @@ ${guidance}
 
 Make a judgment from the full context. If routine self-maintenance is enough, leave evidence. If you find a durable multi-session goal, create or update an explicit shared project. ${redMetricDiagnostics ? "Red metric diagnostics are above — address each signal, then proceed with normal heartbeat work." : "Review signals, projects, and guidance. Act on what matters."}
 
-When creating a shared project, write `agents/shared/projects/<id>/project.md` with YAML frontmatter. Do not use `**Owner**:` or `**Status**:` body fields. Minimal skeleton:
+When creating a shared project, use this canonical layout at `agents/shared/projects/<id>/project.md`; metadata lives in YAML frontmatter:
 \`\`\`markdown
 ---
 id: <id>

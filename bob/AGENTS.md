@@ -1,4 +1,4 @@
-# SOUL — Bob (Trimmed version — 480w target)
+# AGENTS — Bob (Trimmed version — 480w target)
 
 ## ⚠️ CRITICAL: Active Projects → workflow.run
 
