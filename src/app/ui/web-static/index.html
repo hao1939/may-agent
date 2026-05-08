@@ -289,10 +289,13 @@
   <h1>may-agent</h1>
   <div class="tabs">
     <div class="tab active" data-tab="live" data-route="/">Live</div>
+    <div class="tab" data-tab="agents" data-route="/agents">Agents</div>
     <div class="tab" data-tab="projects" data-route="/projects">Projects</div>
-    <div class="tab" data-tab="sessions" data-route="/sessions">Sessions</div>
+    <div class="tab" data-tab="metrics" data-route="/metrics">Metrics</div>
     <div class="tab" data-tab="knowledge" data-route="/knowledge">Knowledge</div>
     <div class="tab" data-tab="system" data-route="/system">System</div>
+    <!-- Sessions reachable via deep-link (#/sessions/:id) but not in primary nav.
+         They are always reached *through* an agent, project, or heartbeat. -->
     <!-- Benchmarks tab unhooked per webui.md design (deferred rebuild). Routes /api/benchmarks* preserved. -->
   </div>
 </div>
@@ -386,6 +389,10 @@
     <div id="projects-content"></div>
   </div>
 
+  <div id="agents" class="hidden">
+    <div id="agents-content"></div>
+  </div>
+
   <div id="events" class="hidden">
     <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center">
       <select id="events-owner" onchange="loadEvents()"><option value="">All owners</option></select>
@@ -414,11 +421,13 @@ let offset = 0;
 const limit = 30;
 
 // ── Router ────────────────────────────────────────────────────────────
-// Hash routes: #/ #/projects #/projects/:id #/sessions #/sessions/:id
+// Hash routes: #/ #/agents #/agents/<name> #/projects #/projects/:id
+//              #/metrics #/metrics/<id>  #/sessions/:id
 //              #/knowledge #/knowledge/<sub-path> #/system
 // Legacy bare names (#dashboard, #chat, #metrics, #events) still work via aliases.
 const LEGACY_TAB_ALIAS = {
-  dashboard: 'live', chat: 'sessions', metrics: 'system', events: 'system',
+  dashboard: 'live', chat: 'sessions', events: 'system',
+  // 'metrics' previously aliased to system; now metrics is its own top-level tab.
 };
 
 function parseHash() {
@@ -430,6 +439,7 @@ function parseHash() {
   if (head === 'projects') return { tab: 'projects', params: { id: segs.slice(1).join('/') || null } };
   if (head === 'sessions') return { tab: 'sessions', params: { id: segs[1] || null } };
   if (head === 'agents') return { tab: 'agents', params: { name: segs[1] || null } };
+  if (head === 'metrics') return { tab: 'metrics', params: { id: segs.slice(1).join('/') || null } };
   if (head === 'knowledge') return { tab: 'knowledge', params: { path: segs.slice(1).join('/') || '' } };
   if (head === 'system') return { tab: 'system', params: {} };
   if (head === 'live') return { tab: 'live', params: {} };
@@ -450,24 +460,30 @@ function render() {
   // Pane visibility — design's 5 surfaces map onto existing panes:
   //   live  → #dashboard
   //   projects → #projects (with optional :id deep-link via params.id)
-  //   sessions → #chat (chat already implements session-with-input)
+  //   agents → #agents (list) or #chat (when name set)
+  //   metrics → #metrics (own tab; previously folded into system)
+  //   sessions → #chat (deep-link only, not in primary nav)
   //   knowledge → #knowledge
-  //   system → #metrics + #events stacked
+  //   system → #events (events + runtime; metrics moved out)
+  const inAgentChat = tab === 'agents' && !!params.name;
   document.getElementById('dashboard').classList.toggle('hidden', tab !== 'live');
   document.getElementById('projects').classList.toggle('hidden', tab !== 'projects');
-  // Sessions and agents both render through the chat pane; agents wraps it
-  // with default-session resolution.
-  document.getElementById('chat').classList.toggle('hidden', tab !== 'sessions' && tab !== 'agents');
+  document.getElementById('agents').classList.toggle('hidden', tab !== 'agents' || !!params.name);
+  document.getElementById('chat').classList.toggle('hidden', tab !== 'sessions' && !inAgentChat);
   document.getElementById('benchmarks').classList.toggle('hidden', true);  // always hidden (deferred)
   document.getElementById('knowledge').classList.toggle('hidden', tab !== 'knowledge');
-  document.getElementById('metrics').classList.toggle('hidden', tab !== 'system');
+  // #metrics pane now serves the dedicated Metrics tab. System tab no longer renders it.
+  document.getElementById('metrics').classList.toggle('hidden', tab !== 'metrics');
   document.getElementById('events').classList.toggle('hidden', tab !== 'system');
   // Tab highlight
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   // Surface initialization
   if (tab === 'sessions') initChat(params.id || null);
-  if (tab !== 'agents') currentAgentChat = null;
-  if (tab === 'agents') initAgentChat(params.name);
+  if (tab !== 'agents' || !inAgentChat) currentAgentChat = null;
+  if (tab === 'agents') {
+    if (params.name) initAgentChat(params.name);
+    else loadAgentsTab();
+  }
   if (tab === 'knowledge') {
     // Deep-link support: #/knowledge/<sub-path>. If sub-path looks like a file, view it.
     const sub = (params.path || '').replace(/^knowledge\//, '');
@@ -481,7 +497,8 @@ function render() {
       loadKnowledge();
     }
   }
-  if (tab === 'system') { loadMetricsTab(); loadEvents(); }
+  if (tab === 'metrics') loadMetricsTab();
+  if (tab === 'system') loadEvents();
   if (tab === 'projects') {
     // Project id deep-link: #/projects/<owner>/<name> or legacy 'shared/projects/<name>'
     if (params.id) {
@@ -670,17 +687,17 @@ async function loadLiveness() {
     // configured agent: name + status dot + last-heartbeat-age. Click to
     // open #/agents/<name> chat. Stale agents (no heartbeat in 4h) are
     // muted but still clickable — you can wake them by sending a message.
-    html += `<div class="liveness-section" style="margin:8px 0 12px"><h3 style="font-size:11px;color:var(--fg2);margin:0 0 6px">Talk to an agent</h3><div class="agent-contact-strip" style="display:flex;flex-wrap:wrap;gap:6px">`;
+    // Compact contact strip — the full Agents tab has the rich card grid.
+    // Here we just expose names as quick chat entry points.
+    html += `<div class="liveness-section" style="margin:8px 0 12px"><h3 style="font-size:11px;color:var(--fg2);margin:0 0 6px;display:flex;align-items:center;gap:8px">Talk to an agent <a href="#/agents" style="color:var(--accent);text-decoration:none;font-size:10px">see all →</a></h3><div class="agent-contact-strip" style="display:flex;flex-wrap:wrap;gap:4px">`;
     for (const agent of agents) {
       const ageMs = agent.lastHeartbeat ? (Date.now() - agent.lastHeartbeat) : null;
       const stale = ageMs == null || ageMs > 4 * 3600 * 1000;
-      const dot = stale ? '○' : (agent.lastStatus === 'error' ? '●' : '●');
       const dotColor = stale ? 'var(--fg2)' : (agent.lastStatus === 'error' ? 'var(--red)' : 'var(--green)');
       const ageLabel = ageMs == null ? 'no heartbeat' : formatAgo(agent.lastHeartbeat);
-      html += `<button class="agent-tile" onclick="routeTo('/agents/${esc(agent.name)}')" title="Open chat with ${esc(agent.name)} — last heartbeat: ${esc(ageLabel)}" style="display:flex;align-items:center;gap:6px;padding:4px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:14px;color:var(--fg);cursor:pointer;font-size:12px;${stale ? 'opacity:0.55' : ''}">
-        <span style="color:${dotColor};font-size:10px">${dot}</span>
-        <span style="font-weight:500">${esc(agent.name)}</span>
-        <span style="color:var(--fg2);font-size:10px">${esc(ageLabel)}</span>
+      html += `<button class="agent-tile" onclick="routeTo('/agents/${esc(agent.name)}')" title="Open chat with ${esc(agent.name)} — ${esc(ageLabel)}" style="display:flex;align-items:center;gap:5px;padding:3px 9px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;color:var(--fg);cursor:pointer;font-size:12px;${stale ? 'opacity:0.55' : ''}">
+        <span style="color:${dotColor};font-size:9px">●</span>
+        <span>${esc(agent.name)}</span>
       </button>`;
     }
     html += `</div></div>`;
@@ -2676,6 +2693,63 @@ function timeAgo(ts) {
 }
 
 // ── Projects ──────────────────────────────────────────────────────────
+
+async function loadAgentsTab() {
+  const el = document.getElementById('agents-content');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--fg2);padding:24px">Loading agents…</div>';
+  try {
+    const r = await fetch('/api/agents');
+    const agents = await r.json();
+    if (agents.error) throw new Error(agents.error);
+
+    // Top header + intro.
+    let html = `<div style="margin-bottom:16px">
+      <h2 style="margin:0 0 4px;font-size:18px">Agents <span style="color:var(--fg2);font-weight:normal;font-size:13px">(${agents.length})</span></h2>
+      <div style="font-size:12px;color:var(--fg2)">Each agent owns a domain. Click a card to talk to them, see their projects, metrics, and recent work.</div>
+    </div>`;
+
+    html += `<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:12px">`;
+    for (const a of agents) {
+      const ageMs = a.lastSessionAt ? (Date.now() - a.lastSessionAt) : null;
+      const stale = ageMs == null || ageMs > 4 * 3600 * 1000;
+      const dotColor = stale ? 'var(--fg2)' : (a.errors4h > 0 ? 'var(--red)' : 'var(--green)');
+      const ageLabel = ageMs == null ? 'no recent session' : timeAgo(a.lastSessionAt);
+
+      html += `<div onclick="routeTo('/agents/${esc(a.name)}')" style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:border-color 0.1s;${stale ? 'opacity:0.7' : ''}" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">`;
+
+      // Header: dot + name + model badge.
+      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="color:${dotColor};font-size:12px">●</span>
+        <span style="font-weight:600;font-size:15px">${esc(a.name)}</span>
+        ${a.model ? `<span style="margin-left:auto;font-size:10px;color:var(--fg2);background:var(--bg3,#222);padding:2px 6px;border-radius:8px">${esc(a.model)}</span>` : ''}
+      </div>`;
+
+      // Description.
+      if (a.description) {
+        html += `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px;line-height:1.4;min-height:34px">${esc(String(a.description).slice(0, 140))}</div>`;
+      } else {
+        html += `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px;font-style:italic;min-height:34px">No description in agent.json</div>`;
+      }
+
+      // Stats row: 4 chips.
+      html += `<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:11px;color:var(--fg2)">
+        <span title="Last session" style="background:var(--bg);padding:2px 8px;border-radius:8px">⏱ ${esc(ageLabel)}</span>
+        <span title="Heartbeats in 4h / sessions in 4h" style="background:var(--bg);padding:2px 8px;border-radius:8px">♥ ${a.heartbeats4h}/${a.sessions4h} (4h)</span>
+        <span title="Active projects / total" style="background:var(--bg);padding:2px 8px;border-radius:8px;${a.projectsActive > 0 ? 'color:var(--green)' : ''}">📁 ${a.projectsActive}/${a.projectsTotal}</span>
+        <span title="Owned metrics; breached count" style="background:var(--bg);padding:2px 8px;border-radius:8px;${a.metricBreached > 0 ? 'color:var(--red)' : ''}">∆ ${a.metricCount}${a.metricBreached > 0 ? ` (${a.metricBreached} ⚠)` : ''}</span>
+        ${a.errors4h > 0 ? `<span style="background:var(--bg);padding:2px 8px;border-radius:8px;color:var(--red)" title="Errored sessions in 4h">✗ ${a.errors4h}</span>` : ''}
+      </div>`;
+
+      html += `</div>`;
+    }
+    html += `</div>`;
+
+    el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = `<div style="color:var(--red);padding:16px">Failed to load agents: ${esc(e.message)}</div>`;
+  }
+}
 
 async function loadProjects() {
   try {

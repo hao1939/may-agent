@@ -1065,6 +1065,129 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
    * Returns {sessionId: null} if no chat thread exists yet — UI can then
    * POST /api/agents/:name/message to spawn one.
    */
+  /**
+   * GET /api/agents — list all configured agents with rollups for the
+   * Agents tab card grid. One row per agent.
+   *
+   * Aggregates from multiple sources:
+   *   - agent.json:        description, model, tool count
+   *   - sessions table:    heartbeats4h, last heartbeat, recent session count
+   *   - metrics table:     owned-metric count, alerting count
+   *   - filesystem scan:   project count for this owner (active+all)
+   *
+   * Cheap to compute (one query each); not cached. If this becomes a hot
+   * path, memoize per ~5s.
+   */
+  function handleAgents(): Response {
+    try {
+      const db = _db();
+      const fourHourAgo = Date.now() - 4 * 60 * 60 * 1000;
+      const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+
+      // 1. Discover agents from agents/ filesystem (source of truth: agent.json).
+      const agents: Array<Record<string, unknown>> = [];
+      for (const dir of readdirSync(AGENTS_ROOT, { withFileTypes: true })) {
+        if (!dir.isDirectory() || dir.name.startsWith(".") || dir.name === "shared") continue;
+        const agentJsonPath = join(AGENTS_ROOT, dir.name, "agent.json");
+        if (!existsSync(agentJsonPath)) continue;
+        let cfg: Record<string, any> = {};
+        try { cfg = JSON.parse(readFileSync(agentJsonPath, "utf-8")); } catch { /* skip */ }
+        const name = cfg.name || dir.name;
+        agents.push({
+          name,
+          description: cfg.description || "",
+          domain: cfg.domain || "",
+          model: cfg.model || "",
+          toolCount: Array.isArray(cfg.tools) ? cfg.tools.length : 0,
+        });
+      }
+
+      // 2. Per-agent session/metric rollups (single query each, indexed on agent).
+      for (const a of agents) {
+        const name = a.name as string;
+
+        // Sessions in 4h, partitioned into heartbeat vs other.
+        const sess4h = db.prepare(`
+          SELECT
+            COUNT(*) as total,
+            SUM(CASE WHEN COALESCE(kind,'') = 'heartbeat' OR task LIKE '[heartbeat]%' OR task LIKE 'You are %waking up for your heartbeat.%' THEN 1 ELSE 0 END) as heartbeats,
+            MAX(startedAt) as lastStart,
+            SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as errors
+          FROM sessions WHERE agent = ? AND startedAt >= ?
+        `).get(name, fourHourAgo) as any;
+        a.sessions4h = sess4h?.total ?? 0;
+        a.heartbeats4h = sess4h?.heartbeats ?? 0;
+        a.lastSessionAt = sess4h?.lastStart ?? null;
+        a.errors4h = sess4h?.errors ?? 0;
+
+        // Sessions in 24h (for context).
+        const sess24h = (db.prepare(`SELECT COUNT(*) as c FROM sessions WHERE agent = ? AND startedAt >= ?`).get(name, dayAgo) as any)?.c ?? 0;
+        a.sessions24h = sess24h;
+
+        // Owned metrics + breaches.
+        const mets = db.prepare(`
+          SELECT id, current, threshold, alert_op FROM metrics WHERE owner = ?
+        `).all(name) as Array<{id: string; current: number | null; threshold: number | null; alert_op: string | null}>;
+        a.metricCount = mets.length;
+        a.metricBreached = mets.filter(m => {
+          if (m.threshold == null || m.current == null) return false;
+          const above = m.alert_op === "above" || m.alert_op === ">";
+          return above ? m.current > m.threshold : m.current < m.threshold;
+        }).length;
+      }
+
+      // 3. Project counts per owner (filesystem scan).
+      const projByOwner: Record<string, { active: number; total: number }> = {};
+      try {
+        const HIDDEN = new Set(["done", "complete", "closed", "waiting", "blocked", "paused"]);
+        const scanDir = (root: string, fallbackOwner: string | null) => {
+          if (!existsSync(root)) return;
+          for (const entry of readdirSync(root, { withFileTypes: true })) {
+            if (!entry.isDirectory()) continue;
+            const projectFile = join(root, entry.name, "project.md");
+            if (!existsSync(projectFile)) continue;
+            let owner = fallbackOwner ?? "unknown";
+            let status = "unknown";
+            try {
+              const content = readFileSync(projectFile, "utf-8");
+              const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n/);
+              if (fmMatch) {
+                const oM = fmMatch[1].match(/^owner:\s*(.+?)\s*$/m);
+                const sM = fmMatch[1].match(/^status:\s*(.+?)\s*$/m);
+                if (oM) owner = oM[1];
+                if (sM) status = sM[1];
+              }
+            } catch { /* skip */ }
+            const key = owner;
+            if (!projByOwner[key]) projByOwner[key] = { active: 0, total: 0 };
+            projByOwner[key].total += 1;
+            if (!HIDDEN.has(status)) projByOwner[key].active += 1;
+          }
+        };
+        scanDir(join(AGENTS_ROOT, "shared", "projects"), null);
+        for (const dir of readdirSync(AGENTS_ROOT, { withFileTypes: true })) {
+          if (!dir.isDirectory() || dir.name.startsWith(".") || dir.name === "shared") continue;
+          scanDir(join(AGENTS_ROOT, dir.name, "workspace", "projects"), dir.name);
+        }
+      } catch { /* leave empty */ }
+      for (const a of agents) {
+        const counts = projByOwner[a.name as string] || { active: 0, total: 0 };
+        a.projectsActive = counts.active;
+        a.projectsTotal = counts.total;
+      }
+
+      // Sort: active first (recent session), then alphabetic.
+      agents.sort((a: any, b: any) => {
+        const aTime = a.lastSessionAt || 0;
+        const bTime = b.lastSessionAt || 0;
+        return bTime - aTime || String(a.name).localeCompare(String(b.name));
+      });
+      return json(agents);
+    } catch (e) {
+      return json({ error: e instanceof Error ? e.message : String(e) }, 500);
+    }
+  }
+
   function handleAgentDefaultSession(agentName: string): Response {
     if (!agentName) return json({ error: "agent required" }, 400);
     try {
@@ -1257,6 +1380,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       }
       if (url.pathname === "/api/liveness") return handleLiveness();
       if (url.pathname === "/api/stats") return handleStats();
+      if (url.pathname === "/api/agents") return handleAgents();
       if (url.pathname === "/api/agents/activity") return handleAgentActivity();
       if (url.pathname === "/api/agents/timeline") return handleAgentTimeline(url);
       if (url.pathname === "/api/agents/health") return handleSystemHealth();
