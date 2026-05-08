@@ -72,15 +72,14 @@ A capability is a claim of the form: *given X over time period Y, the system pro
 
 **Why.** "Autonomous" means the system runs itself. If it stalls without humans, the autonomy is theatre.
 
-**Measurement.** `capability.self-directed-iteration-rate-24h` — count of `project.iteration` events in the last 24h whose triggering session had `trigger=heartbeat` (not `manual`, not `order`).
+**Measurement.** `capability.self-directed-iteration-rate-24h` — fraction of sessions in the last 24h whose `source` field starts with `workflow:heartbeat` (autonomous trigger) over total sessions. Computed in `metrics-snapshot.ts`.
 
-**Target / threshold.** Target ≥ 10/day. Threshold < 3/day = breach.
+**Target / threshold.** Target ≥ 0.80. Threshold < 0.50 = breach.
 
-**Status.** `untested`. The metric doesn't exist. Today's `project.iterations-24h` (in registry) is close but doesn't filter by trigger.
+**Status.** `measured`. Metric registered and computed in `metrics-snapshot.ts` since 2025-05-07.
 
 **Known gaps.**
-- Need `trigger` field consistently populated on sessions (see I4 below).
-- Then add the metric to `metrics-snapshot.ts`.
+- Uses `source LIKE 'workflow:heartbeat%'` as proxy for autonomous trigger; a dedicated `trigger` field (see I4) would be more precise.
 
 ---
 
