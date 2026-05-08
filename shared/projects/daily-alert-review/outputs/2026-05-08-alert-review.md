@@ -1,55 +1,78 @@
 # Daily Alert Review — 2026-05-08
 
-**Period:** 2026-05-08 04:12 – 18:05 UTC  
-**Total alerts:** 30  
-**Unresolved:** 4  
+**Period:** Last 24 hours (approx 1778194000000–1778280593000 epoch ms)
+**Total alerts fired:** 43
+**Currently unresolved:** 4
+
+---
 
 ## Summary by Metric
 
-| Metric | Alerts | Still Open? | Severity |
-|--------|--------|-------------|----------|
-| project.invalid-format-count | 10 | No (recurring, self-resolving) | Low |
-| scout.good-session-rate-24h | 5 | **Yes** (0.46, threshold 0.65) | High |
-| evaluator.low-quality-rate-24h | 3 | **Yes** (0.51, threshold 0.30) | High |
-| metric.stale-active-count | 3 | No | Low |
-| scout.operational-friction-rate-24h | 1 | **Yes** (0.54, threshold 0.30) | High |
-| evaluator.false-good-rate-sample | 1 | **Yes** (0.67, threshold 0.20) | High |
-| evaluator.triage-closure-rate-24h | 1 | No | Medium |
-| evaluator.meaningful-review-rate-24h | 1 | No | Medium |
-| session.failed-triage-rate-3h | 1 | No | Medium |
-| capability.process-uptime-h | 2 | No | Low |
-| capability.self-directed-iteration-rate-24h | 1 | No | Medium |
-| v2.spec-coverage-rate | 1 | No | Medium |
+| Metric | Fires | Unresolved | Severity |
+|--------|-------|------------|----------|
+| `project.invalid-format-count` | 17 | 0 | 🟡 Noisy |
+| `scout.good-session-rate-24h` | 6 | **1** | 🔴 Critical |
+| `evaluator.false-good-rate-sample` | 5 | **1** | 🔴 Critical |
+| `metric.stale-active-count` | 3 | 0 | 🟢 Resolved |
+| `evaluator.low-quality-rate-24h` | 3 | **1** | 🔴 Critical |
+| `session.failed-triage-rate-3h` | 2 | 0 | 🟢 Resolved |
+| `capability.process-uptime-h` | 2 | 0 | 🟢 Resolved |
+| `scout.operational-friction-rate-24h` | 1 | **1** | 🔴 Critical |
+| `evaluator.triage-closure-rate-24h` | 1 | 0 | 🟢 Resolved |
+| `evaluator.meaningful-review-rate-24h` | 1 | 0 | 🟢 Resolved |
+| `capability.self-directed-iteration-rate-24h` | 1 | 0 | 🟢 Resolved |
+| `v2.spec-coverage-rate` | 1 | 0 | 🟢 Resolved |
 
-## Critical Open Issues
+---
 
-### 1. Scout Good Session Rate — 0.46 (target: 0.85)
-- Fired 5 times today; resolved briefly but dropped again
-- Currently far below threshold (0.65) and target (0.85)
-- **Action needed:** Investigate root causes of poor sessions
+## Unresolved Alerts (Require Attention)
 
-### 2. Evaluator Low Quality Rate — 0.51 (target: 0.10)
-- Over half of evaluated sessions rated needs-improvement
-- Correlated with scout good-session-rate decline
-- **Action needed:** Review common failure patterns in recent evaluations
+### 1. `scout.good-session-rate-24h` — Good session rate at 34.3% (threshold: 65%, target: 85%)
+- **Alert ID:** 225, created ~8h ago
+- **Impact:** Over half of sessions are not meeting quality bar. This has been persistently below threshold with 6 fires in 24h.
+- **Recommendation:** Investigate root causes of poor session outcomes. Check for pattern in failing sessions (specific agents, task types).
 
-### 3. Scout Operational Friction Rate — 0.54 (target: 0.10)
-- Over half of sessions hitting operational friction
-- Unresolved since 08:03 UTC
-- **Action needed:** Identify friction sources (tooling? context? permissions?)
+### 2. `evaluator.false-good-rate-sample` — False-good rate at 46.7% (threshold: 20%, target: 5%)
+- **Alert ID:** 229, created ~7h ago
+- **Impact:** Nearly half of sessions evaluated as "good" are overturned on review. Evaluator quality is severely degraded.
+- **Recommendation:** Review evaluator prompts/criteria. The rate spiked from 50% → 60% → 46.7%, showing instability. May need evaluator calibration.
 
-### 4. Evaluator False Good Rate — 0.67 (target: 0.05)
-- 2/3 of reviewed "good" sessions were overturned
-- Newest alert (18:05), not yet resolved
-- **Action needed:** Evaluator calibration may need tuning
+### 3. `evaluator.low-quality-rate-24h` — Low-quality rate at 62% (threshold: 30%, target: 10%)
+- **Alert ID:** 195, created ~15h ago
+- **Impact:** Majority of evaluated sessions are low-quality. Combined with the false-good rate, evaluation reliability is very poor.
+- **Recommendation:** This is the broadest quality signal. Correlates with scout good-session-rate. Systemic quality issue.
 
-## Recurring Low-Priority Patterns
+### 4. `scout.operational-friction-rate-24h` — Operational friction at 65.7% (threshold: 30%, target: 10%)
+- **Alert ID:** 197, created ~14h ago
+- **Impact:** Two-thirds of sessions hit operational friction (tool errors, config issues, etc.).
+- **Recommendation:** Audit recent sessions for common friction patterns (missing tools, DB errors, config drift).
 
-- **project.invalid-format-count**: 10 alerts, all self-resolved within ~15-30 min. Likely transient format violations during project edits. Not urgent but could benefit from preventive validation.
-- **metric.stale-active-count**: Spikes around process restarts. All resolved.
+---
 
-## Recommendations
+## Noise Analysis
 
-1. **P0:** Address scout quality/friction — the operational friction rate (54%) is likely causing the poor session quality (46% good). A single root-cause fix could resolve both.
-2. **P1:** Recalibrate evaluator — false-good-rate at 67% suggests evaluator is too lenient, then reviews overturn. Tighten scoring criteria.
-3. **P2:** Add pre-commit validation for project.md format to prevent recurring noise alerts.
+### `project.invalid-format-count` — 17 fires, all resolved
+This metric fires and self-resolves repeatedly (threshold=0 means any invalid format triggers it). It fired 17 times in 24h, making it the noisiest alert. 
+
+**Recommendation:** Either fix the recurring invalid project.md formats at the source, or raise the threshold from 0 to reduce noise.
+
+---
+
+## Key Patterns
+
+1. **Quality crisis:** 3 of 4 unresolved alerts relate to session/evaluation quality. The scout good-session-rate (34%), evaluator false-good-rate (47%), and low-quality-rate (62%) paint a picture of systemic quality degradation.
+
+2. **Operational friction is high:** 65.7% friction rate suggests infrastructure/tooling issues are a major contributor to poor session outcomes.
+
+3. **Alert noise:** `project.invalid-format-count` and `handler.completed-count` (from earlier in the window) produce many transient alerts that self-resolve within minutes. Consider tuning thresholds or adding debounce.
+
+4. **Positive signals:** Process uptime, stale metrics, triage closure, and meaningful review rate all resolved within the period.
+
+---
+
+## Recommended Actions (Priority Order)
+
+1. **P0:** Investigate operational friction sources — this likely drives the quality metrics down
+2. **P0:** Review evaluator calibration — 47% false-good rate means evaluations are unreliable
+3. **P1:** Analyze failing sessions to find common patterns in the 66% that aren't "good"
+4. **P2:** Tune `project.invalid-format-count` threshold to reduce alert noise
