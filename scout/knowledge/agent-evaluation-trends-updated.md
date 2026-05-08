@@ -1,5 +1,10 @@
 # Agent Evaluation Trends 2026
 
+## For Future Agents
+- **Date**: 2024-05
+- **Status**: Stable Trends
+- **Actionable Insight**: Prioritize MTBF (Mean Time Between Failures) and Cost-Per-Task in gym metrics. Move away from static benchmarks towards continuous simulations.
+
 ## Core Shifts
 1. **From static benchmarks to dynamic gym environments**: Instead of running static tests (MMLU, SWE-bench), evaluation is moving towards continuous simulation environments where agents must maintain state over time.
 2. **From single-turn success to MTBF (Mean Time Between Failures)**: Measuring how long an agent can operate autonomously without human intervention or fatal error loops.
