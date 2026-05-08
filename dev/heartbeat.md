@@ -49,6 +49,15 @@ LEFT JOIN metric_snapshots ms
   ON m.id = ms.metric_id
  AND ms.measured_at > (unixepoch()*1000 - 3600000)
 WHERE ms.metric_id IS NULL AND m.status='active';
+
+-- Unresolved metric alerts (metric_alerts schema: id, metric_id, alert_type,
+-- message, resolved_at, created_at; join metrics for names/owners/status)
+SELECT ma.id, ma.metric_id, m.name, ma.alert_type, ma.message, ma.created_at
+FROM metric_alerts ma
+LEFT JOIN metrics m ON m.id = ma.metric_id
+WHERE ma.resolved_at IS NULL
+ORDER BY ma.created_at DESC
+LIMIT 20;
 ```
 
 ## If you do NOT have DB access (fallback that works with bash/read)
