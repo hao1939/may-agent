@@ -120,3 +120,18 @@ Signal dispositions:
 - Recent handler failures: acted by checking the import/export path and confirming later handler completion; no patch needed unless the failure recurs after the current module state.
 - `metric.stale-active-count` alert: dismissed for direct dev action because owner is may and canned unmeasured-metrics evidence is clean; next snapshot/recovery should validate.
 - Routine heartbeat `session.start`/`session.end` lifecycle events: dismissed after queue, metrics, alerts, failure, and git hygiene checks.
+
+## 2026-05-08 Artifact Gate Follow-up: Approved Queue Still Empty
+
+Artifact-gate recovery write after a heartbeat produced no durable file artifact.
+
+Evidence checked:
+- UTC timestamp at write time: `2026-05-08T11:10:41Z`.
+- `agents/shared/work-queue.md` still has an empty `## Approved` section; dev has no approved implementation item to pick up.
+- Latest metric snapshot checked this turn showed runtime health remains non-blocking for dev-owned action: `session.error-rate-6h=0.0094`, `handler.success-rate=0.9955`, `handler.failed-count=2`, `handler.p95-duration=62480ms`.
+- Open alerts checked this turn were `metric.stale-active-count` (may), `scout.operational-friction-rate-24h` (scout), and `evaluator.low-quality-rate-24h` (evaluator); none are directly dev-owned.
+- A direct stale-active-metrics query returned zero rows older than 15 minutes despite alert #200, so the stale-count alert appears recovered in current metric data and awaits alert resolution rather than a dev patch.
+
+Disposition:
+- This entry is the required meaningful heartbeat artifact.
+- No production code, database state, or shared workflow file was changed by this follow-up.
