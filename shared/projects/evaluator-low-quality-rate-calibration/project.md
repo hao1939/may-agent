@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 workflow: project
-iteration: 1
+iteration: 2
 ---
 
 # Evaluator Low-Quality Rate Calibration
@@ -18,7 +18,8 @@ Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior
 - Metric: `evaluator.false-good-rate-sample` current 0.5714 (threshold 0.2, target 0.05) but denominator only 7 reviewed sessions (sample instability).
 
 ## Current State
-Blocked: 5 consecutive iterations without milestone progress. Approach needs rethinking.
+Iteration 2. Milestones: 0/0 done.
+Reviewer note: metric remains above threshold (current ~0.588 > 0.3); dominant driver appears to be the step-function heuristic where any single issue yields `needs_improvement`, but the note was truncated by a prior session and needs owner review.
 ## Plan
 1. **Metric decomposition proposal**: draft a split of low-quality-rate into sub-metrics by issue class (schema errors, finish/uncommitted, terminal interruptions) to avoid conflating agent quality with infra/guard friction.
 2. **Criteria calibration**: review evaluator criteria for (a) terminal interrupted sessions (Clean start) and (b) finish-blocked sessions; decide whether to classify as NI vs excluded/exception.
@@ -42,6 +43,7 @@ Blocked: 5 consecutive iterations without milestone progress. Approach needs ret
 - outputs/iteration-3-impact-model-and-recommendation.md
 - outputs/iteration-4-metric-split-implementation-plan.md
 - outputs/iteration-1-deliverable.md
+- outputs/iteration-1-2026-05-08-alert-wiring-discovery.md
 - outputs/iteration-2-mechanism-and-fix-options.md
 - outputs/iteration-1-2026-05-08-evidence-refresh.md
 - outputs/iteration-5-approval-packet.md
