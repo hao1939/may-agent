@@ -10,7 +10,8 @@ iteration: 1
 
 # Evaluator low-quality-rate calibration
 
-**Iteration**: 4
+**Iteration**: 5
+**Status**: blocked
 ## Goal
 Reduce false/unstable NI (needs_improvement) labeling by heuristic evaluator so that:
 - `evaluator.low-quality-rate-24h` trends back below threshold (0.3) and toward target (0.1), and
@@ -21,9 +22,7 @@ Reduce false/unstable NI (needs_improvement) labeling by heuristic evaluator so 
 - `evaluator.false-good-rate-sample` currently 0.6667 (> threshold 0.2; target 0.05), but already documented as an exception until sample size stabilizes (see metric blocker).
 
 ## Current State
-Iteration 4. Milestones: 0/0 done.
-Reviewer: [PIVOT] ### 1) I believe
-- The spike is mostly **mechanical/definition-driven**: `evaluator.low-quality-rate-24h` is a gauge in `agents/may/handlers/metrics-snapshot.ts` that counts “needs_improvement
+Blocked: 5 consecutive iterations without milestone progress. Approach needs rethinking.
 ## Plan
 1. Ground-truth check (requires coordination): obtain a small LLM-eval sample (even 20 sessions) to estimate heuristic precision/recall and isolate whether the NI spike is real agent regressions vs heuristic drift.
 2. Heuristic rule audit: identify top NI issue patterns in the last 24h (e.g., verification discipline, tool misuse, self-reference traps) and confirm they correspond to actual transcript evidence.
@@ -48,7 +47,8 @@ Reviewer: [PIVOT] ### 1) I believe
 - outputs/iteration-5-approval-packet.md
 - outputs/iteration1-attribution-summary.md
 
-
 ## Context
 - Add: `shared/projects/** is gitignored in this repo; worker cannot commit iteration outputs there; finish() can be blocked by accidental edits (project.md) and uncommitted changes. Future work should produce handoff artifacts under agents/evaluator/workspace/ and message May/human for landing code changes.`
 - Add: `metrics registry for evaluator.low-quality-rate-24h confirmed in agents/may/handlers/metrics-snapshot.ts (ALL_METRICS entry); computation section still needs line-anchored extraction for PR-ready patch kit.`
+- Iteration 5 produced an approval packet (`outputs/iteration-5-approval-packet.md`) explicitly asking May to approve metric split + alert pivot; it includes current vs substantive-only rates (current ~0.53, substantive-only ~0.078) and a rollback plan.
+- Primary blocker is now **governance/ownership** (approval to pivot alerting) + **closing the loop** (capture decision + produce merge-ready minimal diff touching only `agents/may/handlers/metrics-snapshot.ts`, avoiding ignored `shared/projects/.../project.md` edits).
