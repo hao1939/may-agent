@@ -18,7 +18,7 @@ import type { CronEntry } from "../../shared/agent-sdk.js";
 import { listConfiguredAgents, resolveMetricOwner } from "../../shared/lib/metric-ownership.ts";
 
 const DEDUP_WINDOW_MS = 4 * 60 * 60 * 1000; // 4h — shorter window so repeated alerts get reacted to faster
-const DIRECT_TRIAGE_AFTER_MS = 60 * 60 * 1000;
+const DIRECT_TRIAGE_AFTER_MS = 10 * 60 * 1000;
 const P1_RETRIAGE_COOLDOWN_MS = 15 * 60 * 1000;
 
 function parseJsonObject(raw: string | null | undefined): Record<string, unknown> {
@@ -145,14 +145,15 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
         return;
       }
 
-      // P1/P2 alerts: only triage if open >1h without a judgment event.
+      // P1/P2 alerts: allow a short grace period for heartbeat context, then
+      // require an explicit durable judgment so the loop does not stall.
       if (priority === "P1" || priority === "P2") {
         const alertRow = db.prepare(
           `SELECT ma.id, ma.created_at FROM metric_alerts ma WHERE ma.metric_id = ? AND ma.resolved_at IS NULL`
         ).get(metricId) as { id: number; created_at: number } | null;
         const alertAge = alertRow ? Date.now() - alertRow.created_at : 0;
         if (alertAge < DIRECT_TRIAGE_AFTER_MS) {
-          ctx.sdk.log("info", `[metric-alert-reactor] ${priority} ${metricId} alert age ${Math.round(alertAge/60000)}m < 60m, deferring.`);
+          ctx.sdk.log("info", `[metric-alert-reactor] ${priority} ${metricId} alert age ${Math.round(alertAge/60000)}m < ${Math.round(DIRECT_TRIAGE_AFTER_MS / 60000)}m, deferring.`);
           return;
         }
         const judgedEvent = db.prepare(

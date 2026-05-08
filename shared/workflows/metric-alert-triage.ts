@@ -25,6 +25,7 @@ type AlertContext = {
   alert: Record<string, unknown> | null;
   metric: Record<string, unknown> | null;
   snapshots: Array<Record<string, unknown>>;
+  relatedEvents: Array<Record<string, unknown>>;
   ownerSessions: Array<Record<string, unknown>>;
   owner: string;
   metricId: string;
@@ -93,6 +94,23 @@ function formatRows(rows: Array<Record<string, unknown>>): string {
   return rows.map((row) => `- ${JSON.stringify(row)}`).join("\n");
 }
 
+function relatedEventTypes(metricId: string): string[] {
+  switch (metricId) {
+    case "evaluator.false-good-rate-sample":
+      return ["evaluation.false_good", "evaluation.reviewed", "evaluation.success_candidate"];
+    case "evaluator.meaningful-review-rate-24h":
+      return ["evaluation.routed", "evaluation.reviewed"];
+    case "evaluator.triage-closure-rate-24h":
+      return ["evaluation.routed", "evaluation.triage_closed", "evaluation.reviewed"];
+    case "evaluator.success-candidates-24h":
+      return ["evaluation.success_candidate"];
+    case "evaluator.success-learnings-24h":
+      return ["evaluation.success_candidate", "evaluation.learning_created"];
+    default:
+      return [];
+  }
+}
+
 function buildOwnerTask(ctx: AlertContext): string {
   return [
     `[metric-alert-triage] Judge metric alert ${ctx.metricId}.`,
@@ -123,6 +141,9 @@ function buildOwnerTask(ctx: AlertContext): string {
     "",
     "## Recent Snapshots",
     formatRows(ctx.snapshots),
+    "",
+    "## Metric Source Events",
+    formatRows(ctx.relatedEvents),
     "",
     "## Recent Owner Sessions Since Alert",
     formatRows(ctx.ownerSessions),
@@ -182,6 +203,18 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
        LIMIT 10`,
     ).all(metricId) as Array<Record<string, unknown>>;
 
+    const eventTypes = relatedEventTypes(metricId);
+    const relatedEvents = eventTypes.length > 0
+      ? db.prepare(
+        `SELECT id, event_type, source, owner, timestamp, data
+         FROM events
+         WHERE timestamp >= ?
+           AND event_type IN (${eventTypes.map(() => "?").join(", ")})
+         ORDER BY timestamp DESC
+         LIMIT 20`,
+      ).all(Math.max(0, createdAt || Date.now() - 24 * 60 * 60_000), ...eventTypes) as Array<Record<string, unknown>>
+      : [];
+
     const ownerSessions = db.prepare(
       `SELECT sessionId, status, source, startedAt, endedAt
        FROM sessions
@@ -194,6 +227,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       alert,
       metric,
       snapshots,
+      relatedEvents,
       ownerSessions,
       owner,
       metricId,
