@@ -59,7 +59,8 @@ const ALL_METRICS: MetricDef[] = [
   { id: "session.error-rate-6h", name: "Session error rate (6h)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P1" },
   { id: "session.failed-triage-rate-3h", name: "Failed session triage rate (3h)", owner: "evaluator", type: "gauge", target: 1.0, threshold: 0.80, unit: "ratio", alert_op: "<", priority: "P1" },
   { id: "evaluator.aftermath-coverage-rate-3h", name: "Evaluator aftermath liveness (3h)", owner: "evaluator", type: "gauge", target: 0.80, threshold: 0.20, unit: "ratio", alert_op: "<", priority: "P3" },
-  { id: "evaluator.low-quality-rate-24h", name: "Needs-improvement/low-score evaluated sessions (24h)", owner: "evaluator", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P2" },
+  { id: "evaluator.low-quality-rate-24h", name: "Broad needs-improvement/low-score evaluated sessions (24h)", owner: "evaluator", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P2" },
+  { id: "evaluator.substantive-low-quality-rate-24h", name: "Substantive evaluator quality failures (24h)", owner: "evaluator", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P2" },
   { id: "evaluator.meaningful-review-rate-24h", name: "Evaluator meaningful review rate (24h)", owner: "evaluator", type: "gauge", target: 0.90, threshold: 0.70, unit: "ratio", alert_op: "<", priority: "P2" },
   { id: "evaluator.triage-closure-rate-24h", name: "Evaluator triage closure rate (24h)", owner: "evaluator", type: "gauge", target: 0.90, threshold: 0.70, unit: "ratio", alert_op: "<", priority: "P2" },
   { id: "evaluator.false-good-rate-sample", name: "Reviewed good sessions overturned (24h)", owner: "evaluator", type: "gauge", target: 0.05, threshold: 0.20, unit: "ratio", alert_op: ">", priority: "P2" },
@@ -386,6 +387,28 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       );
       record("evaluator.low-quality-rate-24h", total > 0 ? parseFloat((needsImprovementOrLowScore / total).toFixed(4)) : 0, total);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.low-quality-rate-24h: ${e}`); }
+
+    try {
+      const total = count(
+        "SELECT COUNT(*) as c FROM evaluations WHERE createdAt > ? AND agent NOT IN ('evaluator', 'judge')",
+        twentyFourH,
+      );
+      const substantiveLowQuality = count(
+        `SELECT COUNT(*) as c
+         FROM evaluations e
+         LEFT JOIN sessions s ON s.sessionId = e.sessionId
+         WHERE e.createdAt > ?
+           AND e.agent NOT IN ('evaluator', 'judge')
+           AND (
+             s.status IN ('error', 'interrupted')
+             OR lower(COALESCE(e.issues, '')) LIKE '%tool hallucination%'
+             OR lower(COALESCE(e.issues, '')) LIKE '%verification failure%'
+             OR lower(COALESCE(e.issues, '')) LIKE '%blind overwrite%'
+           )`,
+        twentyFourH,
+      );
+      record("evaluator.substantive-low-quality-rate-24h", total > 0 ? parseFloat((substantiveLowQuality / total).toFixed(4)) : 0, total);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.substantive-low-quality-rate-24h: ${e}`); }
 
     try {
       const routedForReview = count(
