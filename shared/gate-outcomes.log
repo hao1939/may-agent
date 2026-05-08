@@ -68,3 +68,7 @@
 2026-05-08T02:48:44.991Z agent=dev gate=all-passed tool_calls=33 elapsed_sec=134 deliverable_edits=0 status=done action=none
 2026-05-08T03:16:40.900Z agent=may gate=all-passed tool_calls=17 elapsed_sec=90 deliverable_edits=0 status=done action=none
 2026-05-08T03:17:28.370Z agent=dev gate=all-passed tool_calls=29 elapsed_sec=120 deliverable_edits=0 status=done action=none
+2026-05-08T03:42:55.438Z agent=dev gate=all-passed tool_calls=43 elapsed_sec=146 deliverable_edits=0 status=done action=none
+2026-05-08T03:47:04.610Z agent=dev gate=duration elapsed_sec=68 threshold_sec=90 tool_calls=22 status=done action=re-prompt
+2026-05-08T03:50:26.113Z agent=dev gate=duration elapsed_sec=58 threshold_sec=90 tool_calls=19 status=done action=re-prompt
+2026-05-08T03:57:05.176Z agent=scout gate=anti-shallow tool_calls=7 min_required=10 elapsed_sec=29 status=done action=re-prompt

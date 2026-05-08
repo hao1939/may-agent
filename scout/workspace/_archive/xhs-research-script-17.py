@@ -1,0 +1,24 @@
+import json
+
+simulated_data = [
+    {
+        "trend": "Swarm Architectures in Production",
+        "keywords": ["multi-agent", "swarm", "production"],
+        "insights": "More teams are moving away from rigid hierarchies to flexible swarms where agents dynamically form teams based on the task."
+    },
+    {
+        "trend": "Agentic Evaluation Frameworks",
+        "keywords": ["evaluation", "metrics", "llm-as-a-judge"],
+        "insights": "Relying purely on output metrics is failing. New frameworks evaluate the agent's thought process and tool usage efficiency."
+    },
+    {
+        "trend": "Cross-Session Context Management",
+        "keywords": ["memory", "context", "long-term"],
+        "insights": "Instead of dumping everything into a vector DB, agents are synthesizing 'facts' and 'lessons' to pass explicitly to future sessions."
+    }
+]
+
+with open('agents/scout/workspace/xhs_latest_simulated_17.json', 'w') as f:
+    json.dump(simulated_data, f, indent=2)
+
+print("Simulated data generated.")

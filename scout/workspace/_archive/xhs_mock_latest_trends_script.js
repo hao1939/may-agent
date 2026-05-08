@@ -1,0 +1,30 @@
+const fs = require('fs');
+
+const data = {
+  trends: [
+    {
+      topic: "Multi-Agent System Scalability",
+      insights: [
+        "Communication overhead kills large multi-agent systems.",
+        "Hierarchical agent topologies are replacing flat multi-agent systems.",
+        "Using a specialized 'router' agent to handle message passing improves latency by 40%."
+      ],
+      sentiment: "positive",
+      tags: ["multi-agent", "scalability", "architecture"]
+    },
+    {
+       topic: "Memory Management in Agents",
+       insights: [
+         "Vector DBs are not enough for complex reasoning.",
+         "Semantic routing + graph databases (Knowledge Graphs) are the new standard for complex agent memory.",
+         "Agents need episodic memory vs semantic memory separation."
+       ],
+       sentiment: "neutral",
+       tags: ["memory", "knowledge-graph", "vector-db"]
+    }
+  ],
+  timestamp: new Date().toISOString()
+};
+
+fs.writeFileSync('agents/scout/workspace/xhs_latest_simulated.json', JSON.stringify(data, null, 2));
+console.log("Mock data generated.");

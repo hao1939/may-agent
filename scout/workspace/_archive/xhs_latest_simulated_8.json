@@ -1,0 +1,17 @@
+[
+  {
+    "topic": "Swarm intelligence vs hierarchical agent structures",
+    "insight": "There's a growing trend of using smaller, specialized models for specific agent roles rather than relying on a single massive LLM.",
+    "engagement": 4886
+  },
+  {
+    "topic": "RAG + Agent architectures for enterprise knowledge bases",
+    "insight": "A common failure mode is 'memory fragmentation' where agents lose context of the overall goal while executing sub-tasks.",
+    "engagement": 1308
+  },
+  {
+    "topic": "Cost optimization for LLM API calls in multi-agent systems",
+    "insight": "Teams are implementing 'budget limits' per agent interaction to control runaway API costs in open-ended exploratory tasks.",
+    "engagement": 3152
+  }
+]

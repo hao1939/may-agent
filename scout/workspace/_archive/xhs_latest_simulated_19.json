@@ -1,0 +1,10 @@
+{
+  "source": "xiaohongshu",
+  "topic": "AI Agent Architectures",
+  "trends": [
+    "Rising popularity of local LLM orchestration using Ollama and strict JSON parsing",
+    "Multi-agent frameworks shifting towards decoupled state machines",
+    "Memory persistence becoming standard via embedded vector stores like ChromaDB"
+  ],
+  "insight": "The community is prioritizing stability and deterministic execution over open-ended generative capabilities."
+}

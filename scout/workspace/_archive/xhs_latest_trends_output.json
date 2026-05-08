@@ -1,0 +1,32 @@
+[
+  {
+    "keyword": "multi-agent frameworks",
+    "popularity": 85,
+    "trend": "up",
+    "note": "Growing interest in decentralized execution and stigmergy."
+  },
+  {
+    "keyword": "agent memory structures",
+    "popularity": 92,
+    "trend": "up",
+    "note": "Shift from simple vector DBs to structured graph+vector hybrid memory."
+  },
+  {
+    "keyword": "RAG optimization",
+    "popularity": 78,
+    "trend": "stable",
+    "note": "Standard practice now, focus is on cost reduction and latency."
+  },
+  {
+    "keyword": "agent evaluation metrics",
+    "popularity": 88,
+    "trend": "up",
+    "note": "High demand for standardized benchmarks beyond pass/fail."
+  },
+  {
+    "keyword": "local models for agents",
+    "popularity": 95,
+    "trend": "up",
+    "note": "Privacy concerns driving adoption of fast local models (Llama 3, Qwen) for routing."
+  }
+]

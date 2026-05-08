@@ -1,0 +1,18 @@
+{
+  "top_trends": [
+    "Multi-modal agents handling vision and action streams simultaneously",
+    "RAG evaluation metrics focusing on faithfulness over precision",
+    "Agent-to-agent negotiation protocols over natural language"
+  ],
+  "community_insights": [
+    "XHS creators are sharing patterns for 'agent-based testing' where AI tests AI.",
+    "Developers are frustrated with the fragility of prompt-chaining in multi-step workflows."
+  ],
+  "hot_keywords": [
+    "LLM OS",
+    "Agentic Testing",
+    "Cost-Routing",
+    "SLM",
+    "State Machines"
+  ]
+}
