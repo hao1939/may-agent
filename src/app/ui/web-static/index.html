@@ -1574,7 +1574,7 @@ function initChat(deepLinkSessionId) {
   }
 }
 
-let currentAgentSubTab = 'chat';
+let currentAgentSubTab = 'overview';
 let _projectDetailPath = '';  // hoisted: render() reads/writes this on first paint
 let currentAgentChat = null;
 
@@ -1607,7 +1607,7 @@ async function initAgentChat(name) {
   // #chat pane is visible vs. the detail body in #agents-content.
   await renderAgentDetail(name);
   // Default sub-tab is chat; load the thread.
-  switchAgentSubTab(currentAgentSubTab || 'chat');
+  switchAgentSubTab(currentAgentSubTab || 'overview');
 }
 
 async function renderAgentDetail(name) {
