@@ -18,6 +18,7 @@
   - Pull evaluator workload: `SELECT * FROM sessions ORDER BY created_at DESC LIMIT 20` (look for evaluator-owned items).
   - Scan metrics health: `SELECT id, value, updated_at FROM metrics ORDER BY updated_at DESC LIMIT 50` (spot regressions).
   - If repeated failure pattern found: write a short note with evidence here + message May with concrete ask.
+- Concrete observation (lightweight, no DB access this heartbeat): the workspace heartbeat log already contains a durable template section; keep using it to avoid no-signal entries.
 - Addendum: artifact-gate-only heartbeats should still add *one concrete observation* (even if tiny), e.g., a metric delta or a session-count snapshot.
 
 ### Template for future heartbeat entries
