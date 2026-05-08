@@ -3,6 +3,10 @@ summary: "Control flow is replacing prompt engineering for agent reliability acc
 triggers: ["agent reliability", "control flow", "prompt engineering alternatives"]
 </ai_context>
 
-Control Flow for Agents: A major trend identified (HN 2026-05) focuses on control flow replacing prompt engineering for agent reliability. We should ensure scout continues checking these trends.
+## Agent Architecture Trends (May 2026)
 
-Source: [Hacker News Trends May 2026]
+**Observation**: Control Flow for Agents is a major trend identified (HN 2026-05). It focuses on control flow replacing prompt engineering for agent reliability. 
+
+**Actionable Takeaway**: We should ensure scout continues checking these trends.
+
+**Source**: [Hacker News Trends May 2026]
