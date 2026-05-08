@@ -5,12 +5,27 @@ import { join } from "node:path";
 
 export const name = "evaluator-aftermath";
 export const description = "Evaluate session aftermath, cancel stale running sessions, and drive repair/learning.";
-export const HEURISTIC_VERSION = 2;
+export const HEURISTIC_VERSION = 3;
+
+export type EvaluationLane = "needs_triage" | "success_candidate" | "routine_ok";
 
 type TranscriptView = {
   text: string;
   liveEvidenceText: string;
   toolCallCount?: number;
+};
+
+type HeuristicVerdict = {
+  quality: number;
+  efficiency: number;
+  verdict: string;
+  issues: string[];
+};
+
+type EvaluationRoute = {
+  lane: EvaluationLane;
+  reason: string;
+  signals: string[];
 };
 
 function extractTrigger(task: string): any {
@@ -172,6 +187,54 @@ export function classifyVerdict(session: any, transcript = ""): { quality: numbe
   };
 }
 
+export function transcriptOutputSignals(session: any, transcript: string): string[] {
+  const signals = new Set<string>();
+  const view = sessionOwnedTranscriptView(transcript);
+  const ownText = view.text;
+
+  if (/"name":"(?:write|edit|apply_patch)"/.test(ownText)) signals.add("file write/edit");
+  if (/\bgit\s+commit\b/.test(ownText)) signals.add("git commit");
+  if (/agents\/shared\/projects\/[^/\s"']+\/(?:outputs\/|project\.md|journal\.md)/.test(ownText)) {
+    signals.add("project artifact");
+  }
+  if (/agents\/[^/\s"']+\/knowledge\//.test(ownText)) signals.add("knowledge update");
+  if (/\b(?:bun|npm|pnpm|yarn)\s+(?:test|run\s+(?:test|check|build))\b|\bvitest\b|\bpytest\b|\bPASS\b/i.test(ownText)) {
+    signals.add("verification command");
+  }
+  if (session?.projectId) signals.add("project-linked session");
+  if (session?.workflowRunId) signals.add("workflow-linked session");
+
+  return [...signals];
+}
+
+export function classifyEvaluationLane(session: any, transcript: string, heuristic: HeuristicVerdict = classifyVerdict(session, transcript)): EvaluationRoute {
+  if (heuristic.verdict !== "good") {
+    return {
+      lane: "needs_triage",
+      reason: heuristic.issues.length ? heuristic.issues.join("; ") : `verdict=${heuristic.verdict}`,
+      signals: heuristic.issues,
+    };
+  }
+
+  const signals = transcriptOutputSignals(session, transcript);
+  const materialSignals = signals.filter((signal) =>
+    ["file write/edit", "git commit", "project artifact", "knowledge update"].includes(signal),
+  );
+  if (materialSignals.length > 0) {
+    return {
+      lane: "success_candidate",
+      reason: `good session with material output: ${materialSignals.join(", ")}`,
+      signals,
+    };
+  }
+
+  return {
+    lane: "routine_ok",
+    reason: signals.length ? `good session; no material output signal (${signals.join(", ")})` : "good session; no material output signal",
+    signals,
+  };
+}
+
 export function evaluationHeuristicVersion(evaluation: any): number {
   if (!evaluation?.overall) return 0;
   try {
@@ -218,6 +281,74 @@ function readSessionTranscript(path: string): string {
   } catch {
     return "";
   }
+}
+
+function readArtifact(path: string): string {
+  try {
+    return existsSync(path) ? readFileSync(path, "utf-8") : "";
+  } catch {
+    return "";
+  }
+}
+
+export function artifactVerdict(artifactText: string): string | null {
+  const match = artifactText.match(/^\s*#{1,3}\s*Verdict\s*\n+\s*([a-z_ -]+)/im);
+  const raw = match?.[1]?.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (!raw) return null;
+  if (raw.startsWith("needs_triage")) return "needs_improvement";
+  if (raw.startsWith("needs_improvement")) return "needs_improvement";
+  if (raw.startsWith("low_quality")) return "needs_improvement";
+  if (raw.startsWith("good")) return "good";
+  if (raw.startsWith("acceptable")) return "acceptable";
+  return raw;
+}
+
+function shouldOverrideWithReview(heuristicVerdict: string, reviewedVerdict: string | null): boolean {
+  if (!reviewedVerdict) return false;
+  return heuristicVerdict === "good" && ["needs_improvement", "acceptable"].includes(reviewedVerdict);
+}
+
+export function buildReviewTask(params: {
+  sessionId: string;
+  session: any;
+  transcriptPath: string;
+  artifactPath: string;
+  workflowCollectedFacts: string;
+  route: EvaluationRoute;
+}): string {
+  const { sessionId, session, transcriptPath, artifactPath, workflowCollectedFacts, route } = params;
+  const lanePurpose = route.lane === "needs_triage"
+    ? "Find the root cause, fix it if obvious and low-risk, otherwise escalate with evidence."
+    : "Judge why this good session produced real value, inspect the actual output, and extract reusable learning if present.";
+
+  return [
+    `Review session aftermath for ${sessionId}.`,
+    ``,
+    `Session: ${JSON.stringify(session, null, 2)}`,
+    `Transcript path: ${transcriptPath}`,
+    `Evaluation lane: ${route.lane}`,
+    `Routing reason: ${route.reason}`,
+    `Output signals: ${route.signals.length ? route.signals.join(", ") : "none"}`,
+    ``,
+    workflowCollectedFacts,
+    ``,
+    `The workflow facts and heuristic are routing signals, not the final judgment. Your job is to decide from goal/context/facts whether the session produced real value, merely avoided errors, or needs repair.`,
+    `Use bounded transcript commands (grep/jq/sed/head/tail) for targeted evidence. Do not load the whole session.jsonl into context. When the session changed files or produced artifacts, inspect the actual artifacts, diffs, or relevant files; do not judge from transcript self-claims alone.`,
+    ``,
+    `Lane purpose: ${lanePurpose}`,
+    `Write your concise review to: ${artifactPath}`,
+    ``,
+    `Do exactly this loop:`,
+    `1. Evaluate outcome quality: did this session produce real value for its task/project goal?`,
+    `2. Check the actual output artifacts/diffs/files when the route signals material output.`,
+    `3. Write the concise review to the artifact path above.`,
+    `4. Immediately call read() on that same artifact path and confirm the file contains the required sections.`,
+    `5. For needs_triage: if root cause is obvious and low-risk, fix it now and verify; if blocked/high-risk, escalate with a real agent recipient (may, arc, dev, scout, coach) or an escalation note in the artifact. NEVER use "functions.message" as the 'to' field.`,
+    `6. For success_candidate: extract why it worked. If there is reusable learning, update the right agent context/knowledge file.`,
+    `7. Only then call finish(success) or finish(partial); the verify-after-write guard rejects success if the artifact was written but not read back.`,
+    ``,
+    `Keep the artifact short with sections: Verdict, Evidence, Output Quality, Root Cause, Action Taken, Learning, Learning Created: yes|no.`,
+  ].join("\n");
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -267,8 +398,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const transcriptPath = sessionTranscriptPath(persistDir, sessionId);
   const transcript = readSessionTranscript(transcriptPath);
   const heuristic = classifyVerdict(session, transcript);
+  const route = classifyEvaluationLane(session, transcript, heuristic);
   const workflowCollectedFacts = formatWorkflowCollectedFacts(session, transcript, heuristic);
   const artifactPath = `agents/evaluator/workspace/aftermath/${sessionId}.md`;
+  const artifactAbsPath = join(projectRoot, artifactPath);
 
   if (!shouldRefreshEvaluation(evaluation, heuristic)) {
     return ctx.done(`Session ${sessionId} already evaluated (${evaluation.verdict}).`);
@@ -296,8 +429,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           status: session.status,
           aftermathWorkflow: true,
           heuristicVersion: HEURISTIC_VERSION,
+          lane: route.lane,
+          routeReason: route.reason,
+          outputSignals: route.signals,
           ...(evaluation ? { refreshedFrom: evaluation.verdict } : {}),
-          ...(heuristic.verdict === "good" ? {} : { artifactPath }),
+          ...(route.lane === "routine_ok" ? {} : { artifactPath }),
         }),
         null,
         JSON.stringify([]),
@@ -309,35 +445,28 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return `recorded ${heuristic.verdict} evaluation for ${sessionId}`;
   });
 
-  if (heuristic.verdict === "good") {
-    return ctx.done(`Evaluated ${sessionId}: good. No review needed.`);
+  ctx.emit({
+    type: "evaluation.routed",
+    source: "evaluator-aftermath",
+    owner: "evaluator",
+    sessionId,
+    agent: session.agent,
+    lane: route.lane,
+    verdict: heuristic.verdict,
+    reason: route.reason,
+    signals: route.signals,
+    projectId: session.projectId ?? null,
+    workflowRunId: session.workflowRunId ?? null,
+    heuristicVersion: HEURISTIC_VERSION,
+  } as any);
+
+  if (route.lane === "routine_ok") {
+    return ctx.done(`Evaluated ${sessionId}: good (${route.lane}). No review needed.`);
   }
 
   mkdirSync(join(projectRoot, "agents/evaluator/workspace/aftermath"), { recursive: true });
 
-  const reviewTask = [
-    `Review session aftermath for ${sessionId}.`,
-    ``,
-    `Session: ${JSON.stringify(session, null, 2)}`,
-    `Transcript path: ${transcriptPath}`,
-    ``,
-    workflowCollectedFacts,
-    ``,
-    `Use the workflow-collected facts above as primary evidence. Only inspect the transcript for short confirming quotes or missing context. Do not use read() on session.jsonl; use bounded bash grep/jq/sed instead. Query the DB only if the injected facts are missing or inconsistent, and inspect schema first.`,
-    ``,
-    `Write your concise review to: ${artifactPath}`,
-    ``,
-    `Do exactly this loop:`,
-    `1. Evaluate outcome quality from transcript evidence, not self-claims.`,
-    `2. Write the concise review to the artifact path above.`,
-    `3. Immediately call read() on that same artifact path and confirm the file contains the required sections.`,
-    `4. If root cause is obvious and low-risk, fix it now; verify any additional edit by reading/checking it too.`,
-    `5. If blocked/high-risk, escalate with a real agent recipient (for example may, arc, dev, scout, coach) or an escalation note in the artifact. NEVER use "functions.message" as the 'to' field — it is NOT an agent, it is a tool namespace. If you need to message someone, use to="may" or to="arc" etc. If unsure, just write the note in the artifact and finish(partial).`,
-    `6. If there is reusable learning, update the right agent context/knowledge file.`,
-    `7. Only then call finish(success); the verify-after-write guard rejects success if the artifact was written but not read back.`,
-    ``,
-    `Keep the artifact short with sections: Verdict, Evidence, Root Cause, Action Taken, Learning.`,
-  ].join("\n");
+  const reviewTask = buildReviewTask({ sessionId, session, transcriptPath, artifactPath, workflowCollectedFacts, route });
 
   const review = await ctx.runAgent("evaluator", reviewTask);
 
@@ -345,5 +474,105 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.escalate(`Evaluator review failed for ${sessionId}`, { reviewSessionId: (review as any).sessionId });
   }
 
-  return ctx.done(`Evaluated ${sessionId}: ${heuristic.verdict}. Review session: ${(review as any).sessionId}. Artifact: ${artifactPath}`);
+  const artifactText = readArtifact(artifactAbsPath);
+  const reviewedVerdict = artifactVerdict(artifactText);
+  if (shouldOverrideWithReview(heuristic.verdict, reviewedVerdict)) {
+    await (ctx as any).runFunction("record-review-override", async () => {
+      const db = ctx.getDb() as any;
+      const nextVerdict = reviewedVerdict === "acceptable" ? "needs_improvement" : reviewedVerdict;
+      const prior = db.prepare("SELECT overall FROM evaluations WHERE sessionId = ?").get(sessionId) as any;
+      let overall: Record<string, unknown> = {};
+      try {
+        overall = prior?.overall ? JSON.parse(prior.overall) : {};
+      } catch {
+        overall = {};
+      }
+      overall.reviewedVerdict = reviewedVerdict;
+      overall.reviewOverride = true;
+      overall.reviewSessionId = (review as any).sessionId;
+      overall.artifactPath = artifactPath;
+      db.run(
+        `UPDATE evaluations
+         SET verdict = ?,
+             quality = MIN(COALESCE(quality, 0.55), ?),
+             issues = ?,
+             overall = ?
+         WHERE sessionId = ?`,
+        [
+          nextVerdict,
+          reviewedVerdict === "acceptable" ? 0.65 : 0.55,
+          JSON.stringify([...(heuristic.issues ?? []), `review override: ${reviewedVerdict}`]),
+          JSON.stringify(overall),
+          sessionId,
+        ],
+      );
+      return `review override ${heuristic.verdict} -> ${nextVerdict}`;
+    });
+    ctx.emit({
+      type: "evaluation.false_good",
+      source: "evaluator-aftermath",
+      owner: "evaluator",
+      sessionId,
+      agent: session.agent,
+      heuristicVerdict: heuristic.verdict,
+      reviewedVerdict,
+      reviewSessionId: (review as any).sessionId,
+      artifactPath,
+    } as any);
+  }
+
+  ctx.emit({
+    type: "evaluation.reviewed",
+    source: "evaluator-aftermath",
+    owner: "evaluator",
+    sessionId,
+    agent: session.agent,
+    lane: route.lane,
+    verdict: heuristic.verdict,
+    reviewedVerdict,
+    reviewSessionId: (review as any).sessionId,
+    artifactPath,
+    artifactFound: artifactText.length > 0,
+  } as any);
+
+  if (route.lane === "success_candidate") {
+    ctx.emit({
+      type: "evaluation.success_candidate",
+      source: "evaluator-aftermath",
+      owner: "evaluator",
+      sessionId,
+      agent: session.agent,
+      reason: route.reason,
+      signals: route.signals,
+      reviewSessionId: (review as any).sessionId,
+      artifactPath,
+    } as any);
+  }
+
+  if (route.lane === "needs_triage") {
+    ctx.emit({
+      type: "evaluation.triage_closed",
+      source: "evaluator-aftermath",
+      owner: "evaluator",
+      sessionId,
+      agent: session.agent,
+      reviewSessionId: (review as any).sessionId,
+      artifactPath,
+    } as any);
+  }
+
+  if (/Learning Created:\s*yes/i.test(artifactText)) {
+    ctx.emit({
+      type: "evaluation.learning_created",
+      source: "evaluator-aftermath",
+      owner: "evaluator",
+      sessionId,
+      agent: session.agent,
+      lane: route.lane,
+      reviewSessionId: (review as any).sessionId,
+      artifactPath,
+    } as any);
+  }
+
+  return ctx.done(`Evaluated ${sessionId}: ${heuristic.verdict} (${route.lane}). Review session: ${(review as any).sessionId}. Artifact: ${artifactPath}`);
 }
