@@ -17,11 +17,16 @@
 - What patterns keep recurring in failures that nobody has documented?
 
 ## Queries to Start With
-Schema reality (verified 2026-05-02): the `sessions` table has no
+Schema reality (verified 2026-05-08): the `sessions` table has no
 `turns` column — use `opCount`. Status values are `done | error |
 interrupted | running` (no `'completed'`). `events` uses `timestamp`
-(unix ms), not `created_at`. Use these columns or queries silently
-return zeros / throw `no such column`.
+(unix ms, not `created_at`) and stores its JSON blob in column `data`
+(NOT `payload` — recurring footgun; aftermath flagged
+s_1778213206775_3 for it). `metrics` uses `updated_at` (NOT
+`lastUpdated`) and `current` (NOT `value` / `current_value`); there is
+no `config` table — config is the `metrics.config` TEXT column. When in
+doubt, the `query_db` tool returns the schema in its error hint, or run
+`PRAGMA table_info(<table>)` first. (KE-816)
 
 > **⚠️ opCount is frozen at 0 since 2026-05-07 09:13Z** (KE-796). Every
 > session in the post-cutoff window records `opCount=0` regardless of
