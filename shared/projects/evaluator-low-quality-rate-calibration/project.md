@@ -10,7 +10,6 @@ iteration: 1
 
 # Evaluator low-quality-rate (24h) calibration
 
-**Status**: active
 ## Goal
 Bring `evaluator.low-quality-rate-24h` back under control (target 0.1, alert threshold 0.3) by identifying whether the spike is (a) real widespread quality drop, (b) heuristic-eval calibration issue, or (c) evaluation pipeline mode drift (LLM eval disabled/stalled) and then proposing the right remediation.
 
