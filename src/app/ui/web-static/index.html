@@ -3230,6 +3230,7 @@ async function showProjectDetail(path) {
   html += `<button class="tab-btn" onclick="switchProjectTab(this,'journal')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Journal</button>`;
   html += `<button class="tab-btn" onclick="switchProjectTab(this,'discussion')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Discussion</button>`;
   const totalSessionLink = (detail.sessionCount || 0) + (detail.mentionCount || 0);
+  html += `<button class="tab-btn" onclick="switchProjectTab(this,'lineage')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Lineage</button>`;
   html += `<button class="tab-btn" onclick="switchProjectTab(this,'sessions')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Sessions${totalSessionLink ? ` <span style="font-size:10px;background:var(--bg);padding:1px 6px;border-radius:8px;margin-left:4px">${totalSessionLink}</span>` : ''}</button>`;
   html += `</div>`;
   html += `<div id="project-tab-content" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;max-height:70vh;overflow-y:auto"></div>`;
@@ -3290,6 +3291,12 @@ async function loadProjectTab(tab) {
       el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = '13px';
       if (window.marked?.parse) { el.innerHTML = window.marked.parse(data.content || 'No discussion yet'); el.classList.add('md-rendered'); }
       else { el.style.whiteSpace = 'pre-wrap'; el.style.fontFamily = 'monospace'; el.textContent = data.content || 'No discussion yet'; }
+    } else if (tab === 'lineage') {
+      const res = await fetch(`/api/projects/lineage?path=${encodeURIComponent(_projectDetailPath)}`);
+      const data = await res.json();
+      if (data.error) { el.innerHTML = `<div style="color:var(--red)">${esc(data.error)}</div>`; return; }
+      el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = 'inherit';
+      renderProjectLineage(el, data);
     } else if (tab === 'sessions') {
       const res = await fetch(`/api/projects/sessions?path=${encodeURIComponent(_projectDetailPath)}`);
       const rows = await res.json();
@@ -3337,6 +3344,132 @@ async function loadProjectTab(tab) {
     }
   } catch(e) {
     el.innerHTML = `<div style="color:var(--red)">Failed: ${e.message}</div>`;
+  }
+}
+
+// ── Project Lineage ────────────────────────────────────────────────────
+// Renders the full causal session list for a project as a top-down
+// timeline. Each row: timestamp · link badge · agent · status dot ·
+// session id · task snippet. Click expands inline session_digests.
+//
+// 'link' provenance encodes how this session was associated:
+//   tagged    — sessions.projectId set (canonical)
+//   workflow  — dispatched by a workflow run that mentions the project
+//   file-read — the agent read a file inside the project dir
+//   child     — spawned by a session already on the list
+//   mention   — task body mentions the project name
+function renderProjectLineage(el, data) {
+  const sessions = data.sessions || [];
+  const digestsBySession = data.digestsBySession || {};
+  const byLink = data.byLink || {};
+
+  if (sessions.length === 0) {
+    el.innerHTML = `<div style="color:var(--fg2);padding:16px">
+      <p style="margin:0 0 8px"><b>No sessions found</b> for this project across any signal.</p>
+      <p style="margin:0;font-size:12px">We checked: tagged projectId, workflow_runs mentioning the project,
+      file_reads inside the project dir, task body mentions, and child sessions of any of the above.</p>
+      <p style="margin:8px 0 0;font-size:12px">If you expected work, the project may not have started or its file paths haven't been touched yet.</p>
+    </div>`;
+    return;
+  }
+
+  // Header chips: link distribution at a glance.
+  const linkColors = {
+    tagged: { bg: 'var(--green)', fg: '#000' },
+    workflow: { bg: 'var(--accent)', fg: '#fff' },
+    'file-read': { bg: 'var(--orange,#e8a44c)', fg: '#000' },
+    child: { bg: 'var(--bg3,#222)', fg: 'var(--fg)' },
+    mention: { bg: 'var(--bg2)', fg: 'var(--fg2)' },
+  };
+  const linkExplain = {
+    tagged: 'sessions.projectId set (workflow dispatched)',
+    workflow: 'workflow run task references this project',
+    'file-read': 'agent read a file inside this project',
+    child: 'child of another session on this list',
+    mention: 'task body mentions the project name',
+  };
+
+  let html = '';
+  html += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;font-size:11px;align-items:center">`;
+  html += `<span style="color:var(--fg2)">${sessions.length} sessions — by link:</span>`;
+  for (const link of ['tagged', 'workflow', 'file-read', 'child', 'mention']) {
+    if (!byLink[link]) continue;
+    const c = linkColors[link];
+    html += `<span title="${esc(linkExplain[link])}" style="background:${c.bg};color:${c.fg};padding:2px 8px;border-radius:8px;font-weight:600;font-size:10px">${esc(link)} · ${byLink[link]}</span>`;
+  }
+  html += `</div>`;
+
+  // Group by day for readable scrolling.
+  let lastDay = '';
+  html += `<div style="position:relative">`;
+  html += `<div style="position:absolute;left:90px;top:0;bottom:0;width:2px;background:var(--border)"></div>`;
+  for (const s of sessions) {
+    const d = new Date(s.startedAt || 0);
+    const day = d.toISOString().slice(0, 10);
+    if (day !== lastDay) {
+      html += `<div style="position:relative;padding:10px 0 4px 110px;font-size:11px;color:var(--fg2);font-weight:600">${esc(day)}</div>`;
+      lastDay = day;
+    }
+    const time = d.toTimeString().slice(0, 5);
+    const c = linkColors[s.link] || linkColors.mention;
+    const statusColor = s.status === 'error' ? 'var(--red)' : (s.status === 'done' ? 'var(--fg2)' : 'var(--green)');
+    const taskSnippet = (s.task || '').replace(/\n/g, ' ').slice(0, 110);
+    const digests = digestsBySession[s.sessionId] || [];
+
+    html += `<div style="position:relative;padding:6px 0 6px 110px;border-bottom:1px solid var(--border)">`;
+    // Time on the left of the spine.
+    html += `<div style="position:absolute;left:0;top:8px;width:84px;text-align:right;font-size:11px;color:var(--fg2);font-family:monospace">${esc(time)}</div>`;
+    // Dot on the spine.
+    html += `<div style="position:absolute;left:86px;top:11px;width:10px;height:10px;border-radius:50%;background:${c.bg};border:2px solid var(--bg)"></div>`;
+    // Body.
+    html += `<div onclick="toggleLineageDigest(this, '${esc(s.sessionId)}')" style="cursor:pointer">`;
+    html += `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px">`;
+    html += `<span style="background:${c.bg};color:${c.fg};padding:1px 7px;border-radius:8px;font-size:9px;font-weight:600;text-transform:uppercase">${esc(s.link)}</span>`;
+    html += `<span style="color:${statusColor};font-size:8px">●</span>`;
+    html += `<a href="#/agents/${esc(s.agent || '')}" style="color:var(--accent);text-decoration:none;font-weight:500" onclick="event.stopPropagation()">${esc(s.agent || '?')}</a>`;
+    html += `<span style="color:var(--fg2);font-family:monospace;font-size:11px">${esc((s.sessionId||'').slice(-12))}</span>`;
+    if (s.kind && s.kind !== 'call') html += `<span style="color:var(--fg2);font-size:10px">${esc(s.kind)}</span>`;
+    if (s.opCount != null) html += `<span style="color:var(--fg2);font-size:10px" title="operations">${s.opCount} ops</span>`;
+    if (digests.length > 0) html += `<span style="font-size:10px;color:var(--accent)" title="${digests.length} digest entries available">≡ ${digests.length}</span>`;
+    html += `<a href="#/sessions/${esc(s.sessionId)}" onclick="event.stopPropagation()" style="margin-left:auto;color:var(--fg2);text-decoration:none;font-size:11px">open →</a>`;
+    html += `</div>`;
+    html += `<div style="font-size:11px;color:var(--fg2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">${esc(taskSnippet)}</div>`;
+    html += `</div>`;
+    // Digest container (lazy-revealed).
+    html += `<div data-digest-for="${esc(s.sessionId)}" style="display:none;margin-top:8px;padding:10px 12px;background:var(--bg);border-left:3px solid ${c.bg};border-radius:4px;font-size:12px"></div>`;
+    html += `</div>`;
+  }
+  html += `</div>`;
+  el.innerHTML = html;
+  // Stash digests in window for the toggle handler.
+  window._lineageDigests = digestsBySession;
+}
+
+function toggleLineageDigest(triggerEl, sessionId) {
+  const container = triggerEl.parentElement.querySelector(`[data-digest-for]`);
+  if (!container) return;
+  if (container.style.display === 'none') {
+    container.style.display = 'block';
+    if (!container.dataset.rendered) {
+      const digests = (window._lineageDigests || {})[sessionId] || [];
+      let h = '';
+      if (digests.length === 0) {
+        h = `<div style="color:var(--fg2);font-style:italic">No session_digests recorded for this session. <a href="#/sessions/${esc(sessionId)}" style="color:var(--accent)">Open full session →</a></div>`;
+      } else {
+        for (const d of digests) {
+          h += `<div style="margin-bottom:8px">`;
+          h += `<div style="font-size:10px;color:var(--fg2);margin-bottom:2px">step ${d.step ?? '?'} · ${esc(d.trigger || '')} · ${esc(d.outcome || 'in_progress')}</div>`;
+          if (d.what_happened) h += `<div style="font-size:12px;line-height:1.4"><b>did:</b> ${esc(String(d.what_happened).slice(0, 400))}</div>`;
+          if (d.still_open) h += `<div style="font-size:12px;line-height:1.4;color:var(--orange,#e8a44c)"><b>still open:</b> ${esc(String(d.still_open).slice(0, 400))}</div>`;
+          if (d.action) h += `<div style="font-size:12px;line-height:1.4"><b>next:</b> ${esc(String(d.action).slice(0, 200))}${d.action_reason ? ' — ' + esc(String(d.action_reason).slice(0,200)) : ''}</div>`;
+          h += `</div>`;
+        }
+      }
+      container.innerHTML = h;
+      container.dataset.rendered = '1';
+    }
+  } else {
+    container.style.display = 'none';
   }
 }
 
