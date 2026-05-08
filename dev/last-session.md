@@ -1,16 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778276654257_178
+- **Session:** s_1778283853594_300
 - **Status:** success
-- **When:** 2026-05-08T21:46:41.213Z
+- **When:** 2026-05-08T23:47:16.313Z
 
 ## What Happened
-Acted on evaluator's P1 review request for dev's high broad low-quality rate by analyzing last-24h dev evaluation issue patterns and committing an investigation artifact with concrete mitigations. I also normalized and committed the previously dirty evaluator calibration project.md so the remaining dirty state is limited to generated last-session runtime files.
+Acted on the P1 evaluator.false-good-rate-sample implementation request by hardening evaluator-aftermath heuristics to detect explicit forbidden-file edits as constraint violations, preventing such sessions from routing as success candidates. Committed the fix in /app/agents as 060ca35ab (`dev: flag forbidden edits in evaluator aftermath`).
 
 ## Files Modified
-- agents/dev/workspace/investigations/2026-05-08-dev-low-quality-patterns.md
-- agents/shared/projects/evaluator-low-quality-rate-calibration/project.md
+- agents/evaluator/workflows/evaluator-aftermath.ts
+- agents/shared/tests/evaluator-aftermath.test.ts
 
 ## Completed
-- Acted on evaluator P1 review-request for evaluator.low-quality-rate-24h by investigating recent dev sessions for patterns and proposing concrete mitigations/guardrails.
+- Acted on pending evaluator implementation-request for evaluator.false-good-rate-sample by adding constraint_violation negative signal to evaluator-aftermath success_candidate heuristics.
