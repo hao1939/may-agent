@@ -1188,6 +1188,38 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
   }
 
+  /**
+   * GET /api/agents/:name/about — returns the agent's identity files for
+   * the About sub-tab on the agent detail view. One round-trip vs. four
+   * /api/browse calls (which can't read agents/<name>/ anyway — browse is
+   * hard-restricted to agents/shared/).
+   *
+   * Returns: { name, agentJson, files: [{name, content}] }
+   * Standard file list: SOUL.md, heartbeat.md, context.md, DOMAIN.md,
+   * TOOLS.md, LESSONS.md, AGENTS.md. Missing files are silently dropped.
+   */
+  function handleAgentAbout(agentName: string): Response {
+    if (!agentName) return json({ error: "agent required" }, 400);
+    const agentDir = join(AGENTS_ROOT, agentName);
+    if (!existsSync(agentDir)) return json({ error: "agent not found" }, 404);
+    let agentJson: Record<string, unknown> | null = null;
+    try {
+      const cfgPath = join(agentDir, "agent.json");
+      if (existsSync(cfgPath)) agentJson = JSON.parse(readFileSync(cfgPath, "utf-8"));
+    } catch { /* skip */ }
+    const wantFiles = ["SOUL.md", "DOMAIN.md", "heartbeat.md", "context.md", "TOOLS.md", "LESSONS.md", "AGENTS.md"];
+    const files: Array<{ name: string; content: string; bytes: number }> = [];
+    for (const f of wantFiles) {
+      const p = join(agentDir, f);
+      if (!existsSync(p)) continue;
+      try {
+        const content = readFileSync(p, "utf-8");
+        files.push({ name: f, content, bytes: content.length });
+      } catch { /* skip */ }
+    }
+    return json({ name: agentName, agentJson, files });
+  }
+
   function handleAgentDefaultSession(agentName: string): Response {
     if (!agentName) return json({ error: "agent required" }, 400);
     try {
@@ -1381,11 +1413,12 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/liveness") return handleLiveness();
       if (url.pathname === "/api/stats") return handleStats();
       if (url.pathname === "/api/agents") return handleAgents();
-      if (url.pathname === "/api/agents/activity") return handleAgentActivity();
-      if (url.pathname === "/api/agents/timeline") return handleAgentTimeline(url);
+      if (url.pathname === "/api/agents/activity") return handleAgentActivity();      if (url.pathname === "/api/agents/timeline") return handleAgentTimeline(url);
       if (url.pathname === "/api/agents/health") return handleSystemHealth();
       const defaultSessionMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/default-session$/);
       if (defaultSessionMatch) return handleAgentDefaultSession(defaultSessionMatch[1]);
+      const aboutMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/about$/);
+      if (aboutMatch) return handleAgentAbout(aboutMatch[1]);
       if (url.pathname === "/api/digest") return handleDigest(url);
       if (url.pathname === "/api/benchmarks") return handleBenchmarks(url);
       if (url.pathname === "/api/benchmarks/prompts") return handleBenchmarkPrompts(url);

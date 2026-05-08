@@ -468,7 +468,7 @@ function render() {
   const inAgentChat = tab === 'agents' && !!params.name;
   document.getElementById('dashboard').classList.toggle('hidden', tab !== 'live');
   document.getElementById('projects').classList.toggle('hidden', tab !== 'projects');
-  document.getElementById('agents').classList.toggle('hidden', tab !== 'agents' || !!params.name);
+  document.getElementById('agents').classList.toggle('hidden', tab !== 'agents');
   document.getElementById('chat').classList.toggle('hidden', tab !== 'sessions' && !inAgentChat);
   document.getElementById('benchmarks').classList.toggle('hidden', true);  // always hidden (deferred)
   document.getElementById('knowledge').classList.toggle('hidden', tab !== 'knowledge');
@@ -1575,6 +1575,7 @@ function initChat(deepLinkSessionId) {
   }
 }
 
+let currentAgentSubTab = 'chat';
 let currentAgentChat = null;
 
 /**
@@ -1600,21 +1601,228 @@ async function initAgentChat(name) {
     header.querySelector('.banner-name').textContent = name || '';
   }
   if (!name) { switchSession(null); return; }
+  // Render agent detail header + sub-tab nav into #agents-content (above the
+  // chat pane). The agent detail uses sub-tabs: Chat (default), About,
+  // Metrics, Projects, Sessions. Switching sub-tab toggles whether the
+  // #chat pane is visible vs. the detail body in #agents-content.
+  await renderAgentDetail(name);
+  // Default sub-tab is chat; load the thread.
+  switchAgentSubTab(currentAgentSubTab || 'chat');
+}
+
+async function renderAgentDetail(name) {
+  const el = document.getElementById('agents-content');
+  if (!el) return;
+  // Fetch summary stats from /api/agents (same source as list view).
+  let summary = null;
+  try {
+    const r = await fetch('/api/agents');
+    const all = await r.json();
+    summary = (all || []).find(a => a.name === name) || null;
+  } catch {}
+
+  const dotColor = summary && summary.lastSessionAt && (Date.now() - summary.lastSessionAt < 4*3600*1000)
+    ? (summary.errors4h > 0 ? 'var(--red)' : 'var(--green)')
+    : 'var(--fg2)';
+
+  let html = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+    <button onclick="routeTo('/agents')" style="padding:4px 10px;background:var(--bg3,#222);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer;font-size:12px">← All agents</button>
+    <span style="color:${dotColor};font-size:14px">●</span>
+    <h2 style="margin:0;font-size:18px">${esc(name)}</h2>
+    ${summary && summary.model ? `<span style="font-size:11px;color:var(--fg2);background:var(--bg3,#222);padding:2px 7px;border-radius:8px">${esc(summary.model)}</span>` : ''}
+    <button onclick="verbHeartbeatNow('${esc(name)}', event)" title="Trigger a heartbeat for ${esc(name)} now" style="margin-left:auto;padding:4px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer;font-size:12px">♥ heartbeat-now</button>
+  </div>`;
+  if (summary && summary.description) {
+    html += `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px">${esc(summary.description)}</div>`;
+  }
+  // Sub-tab nav.
+  const subTabs = ['chat', 'about', 'metrics', 'projects', 'sessions'];
+  html += `<div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:12px">`;
+  for (const t of subTabs) {
+    const active = t === currentAgentSubTab;
+    html += `<button onclick="switchAgentSubTab('${t}')" style="background:none;border:none;border-bottom:2px solid ${active ? 'var(--accent)' : 'transparent'};color:${active ? 'var(--accent)' : 'var(--fg2)'};padding:8px 16px;cursor:pointer;font-size:13px;text-transform:capitalize">${t}</button>`;
+  }
+  html += `</div>`;
+  // Sub-tab body container; populated by switchAgentSubTab().
+  html += `<div id="agent-subtab-body"></div>`;
+  el.innerHTML = html;
+}
+
+function switchAgentSubTab(tab) {
+  currentAgentSubTab = tab;
+  // Update sub-tab nav highlight.
+  const nav = document.querySelector('#agents-content > div:nth-child(3)');
+  if (nav) {
+    [...nav.children].forEach(btn => {
+      const isActive = btn.textContent.trim().toLowerCase() === tab;
+      btn.style.borderBottomColor = isActive ? 'var(--accent)' : 'transparent';
+      btn.style.color = isActive ? 'var(--accent)' : 'var(--fg2)';
+    });
+  }
+  const body = document.getElementById('agent-subtab-body');
+  const chatPane = document.getElementById('chat');
+  const agentsPane = document.getElementById('agents');
+  // Make sure both panes are visible (the global render() set agents=visible
+  // and chat=visible because inAgentChat=true). If sub-tab is non-chat, hide chat.
+  if (tab === 'chat') {
+    if (chatPane) chatPane.classList.remove('hidden');
+    if (body) body.innerHTML = '';
+    // Resolve & load the chat thread (same as before).
+    void loadAgentChatThread(currentAgentChat);
+  } else {
+    if (chatPane) chatPane.classList.add('hidden');
+    if (body) body.innerHTML = '<div style="color:var(--fg2);padding:24px">Loading…</div>';
+    if (tab === 'about') void loadAgentAbout(currentAgentChat);
+    else if (tab === 'metrics') void loadAgentMetrics(currentAgentChat);
+    else if (tab === 'projects') void loadAgentProjects(currentAgentChat);
+    else if (tab === 'sessions') void loadAgentSessions(currentAgentChat);
+  }
+  // Keep agents pane visible regardless.
+  if (agentsPane) agentsPane.classList.remove('hidden');
+}
+
+async function loadAgentChatThread(name) {
+  if (!name) return;
   try {
     const r = await fetch(`/api/agents/${encodeURIComponent(name)}/default-session`);
     const d = await r.json();
     if (d.sessionId) {
-      // Existing thread — load it.
       if (d.sessionId !== currentSessionId) switchSession(d.sessionId);
     } else {
-      // No thread yet. Show empty chat; the compose-box send path will spawn one.
       currentSessionId = null;
       const messages = document.getElementById('chat-messages');
-      messages.innerHTML = '<div style="color:var(--fg2);font-size:13px;padding:24px;text-align:center">No conversation with <b>' + name + '</b> yet. Send a message to start one.</div>';
+      if (messages) messages.innerHTML = '<div style="color:var(--fg2);font-size:13px;padding:24px;text-align:center">No conversation with <b>' + esc(name) + '</b> yet. Send a message to start one.</div>';
     }
   } catch (e) {
     const messages = document.getElementById('chat-messages');
-    messages.innerHTML = '<div style="color:var(--red);padding:16px">Failed to load chat with ' + name + ': ' + e.message + '</div>';
+    if (messages) messages.innerHTML = '<div style="color:var(--red);padding:16px">Failed: ' + esc(e.message) + '</div>';
+  }
+}
+
+async function loadAgentAbout(name) {
+  const body = document.getElementById('agent-subtab-body');
+  if (!body || !name) return;
+  try {
+    const r = await fetch(`/api/agents/${encodeURIComponent(name)}/about`);
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    const cfg = d.agentJson;
+    const loaded = d.files || [];
+
+    let html = '';
+    if (cfg) {
+      html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px">`;
+      html += `<h3 style="margin:0 0 8px;font-size:13px;color:var(--fg2)">agent.json</h3>`;
+      html += `<table style="font-size:13px"><tbody>`;
+      for (const k of ['name','description','domain','model','compaction']) {
+        if (cfg[k] != null) html += `<tr><td style="padding:2px 12px 2px 0;color:var(--fg2)">${k}</td><td>${esc(String(cfg[k]))}</td></tr>`;
+      }
+      if (Array.isArray(cfg.tools)) html += `<tr><td style="padding:2px 12px 2px 0;color:var(--fg2);vertical-align:top">tools (${cfg.tools.length})</td><td style="font-size:11px;color:var(--fg2)">${cfg.tools.map(t => esc(typeof t === 'string' ? t : (t.name || JSON.stringify(t)))).join(', ')}</td></tr>`;
+      html += `</tbody></table></div>`;
+    }
+    for (const f of loaded) {
+      const open = f.name === 'SOUL.md' || f.name === 'DOMAIN.md';
+      html += `<details ${open ? 'open' : ''} style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px">`;
+      html += `<summary style="cursor:pointer;font-weight:500;font-size:13px;color:var(--fg)">${esc(f.name)} <span style="color:var(--fg2);font-weight:normal;font-size:11px">(${f.bytes} bytes)</span></summary>`;
+      html += `<div class="md-rendered" style="margin-top:10px;font-size:13px">${window.marked && window.marked.parse ? window.marked.parse(f.content) : '<pre>' + esc(f.content) + '</pre>'}</div>`;
+      html += `</details>`;
+    }
+    if (!cfg && loaded.length === 0) html = `<div style="color:var(--fg2);padding:24px">No agent.json or identity files (SOUL.md, DOMAIN.md, heartbeat.md, ...) found for <b>${esc(name)}</b>.</div>`;
+    body.innerHTML = html;
+  } catch (e) {
+    body.innerHTML = `<div style="color:var(--red);padding:16px">Failed: ${esc(e.message)}</div>`;
+  }
+}
+
+async function loadAgentMetrics(name) {
+  const body = document.getElementById('agent-subtab-body');
+  if (!body || !name) return;
+  try {
+    const r = await fetch('/api/metrics');
+    const d = await r.json();
+    const owned = (d.metrics || []).filter(m => m.owner === name);
+    if (owned.length === 0) {
+      body.innerHTML = `<div style="color:var(--fg2);padding:24px">No metrics owned by <b>${esc(name)}</b>.</div>`;
+      return;
+    }
+    let html = `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px">${owned.length} metrics owned by ${esc(name)}. Click to see history. ✎ edits threshold.</div>`;
+    html += `<table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="border-bottom:1px solid var(--border);text-align:left"><th style="padding:6px">Metric</th><th>Current</th><th>Target</th><th>Type</th></tr>`;
+    for (const m of owned) {
+      const above = m.alert_op === 'above' || m.alert_op === '>';
+      const breached = m.threshold != null && m.current != null && (above ? m.current > m.threshold : m.current < m.threshold);
+      html += `<tr style="border-bottom:1px solid var(--bg3,#222);cursor:pointer" onclick="showMetricHistory('${esc(m.id)}')">`;
+      html += `<td style="padding:6px">${esc(m.name)}<br><span style="color:var(--fg2);font-size:11px">${esc(m.id)}</span></td>`;
+      html += `<td style="padding:6px;text-align:center;${breached ? 'color:var(--red);font-weight:bold' : ''}">${m.current ?? '—'}${m.unit||''}</td>`;
+      html += `<td style="padding:6px;text-align:center;color:var(--fg2)">${m.target ?? '—'}${m.unit||''} <button title="Edit threshold" onclick="verbEditThreshold('${esc(m.id)}', ${m.threshold ?? 'null'}, event)" style="background:none;border:none;color:var(--fg2);cursor:pointer">✎</button></td>`;
+      html += `<td style="padding:6px;text-align:center;color:var(--fg2)">${esc(m.type||'')}</td></tr>`;
+    }
+    html += `</table>`;
+    body.innerHTML = html;
+  } catch (e) {
+    body.innerHTML = `<div style="color:var(--red);padding:16px">Failed: ${esc(e.message)}</div>`;
+  }
+}
+
+async function loadAgentProjects(name) {
+  const body = document.getElementById('agent-subtab-body');
+  if (!body || !name) return;
+  try {
+    const r = await fetch('/api/projects');
+    const all = await r.json();
+    const owned = (all || []).filter(p => p.owner === name);
+    if (owned.length === 0) {
+      body.innerHTML = `<div style="color:var(--fg2);padding:24px">No projects owned by <b>${esc(name)}</b>.</div>`;
+      return;
+    }
+    const HIDDEN = new Set(['done','complete','closed','waiting','blocked','paused']);
+    const active = owned.filter(p => !HIDDEN.has(p.status));
+    const inactive = owned.filter(p => HIDDEN.has(p.status));
+    let html = `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px">${active.length} active / ${inactive.length} inactive. Click to open project detail.</div>`;
+    html += `<table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="border-bottom:1px solid var(--border);text-align:left"><th style="padding:6px">Project</th><th>Status</th><th>Iter</th><th>Milestones</th><th>Updated</th></tr>`;
+    for (const p of [...active, ...inactive]) {
+      const muted = HIDDEN.has(p.status);
+      html += `<tr style="border-bottom:1px solid var(--bg3,#222);cursor:pointer;${muted?'opacity:0.55':''}" onclick="routeTo('/projects/' + ${JSON.stringify(p.path.replace(/^agents\//, ''))})">`;
+      html += `<td style="padding:6px;font-weight:500">${esc(p.name)}</td>`;
+      html += `<td style="padding:6px">${esc(p.status||'')}</td>`;
+      html += `<td style="padding:6px;text-align:center;color:var(--fg2)">${p.iteration ?? 0}</td>`;
+      html += `<td style="padding:6px;color:var(--fg2)">${p.milestonesDone ?? 0}/${p.milestonesTotal ?? 0}</td>`;
+      html += `<td style="padding:6px;color:var(--fg2);font-size:11px">${p.updatedAt ? timeAgo(p.updatedAt) : '—'}</td>`;
+      html += `</tr>`;
+    }
+    html += `</table>`;
+    body.innerHTML = html;
+  } catch (e) {
+    body.innerHTML = `<div style="color:var(--red);padding:16px">Failed: ${esc(e.message)}</div>`;
+  }
+}
+
+async function loadAgentSessions(name) {
+  const body = document.getElementById('agent-subtab-body');
+  if (!body || !name) return;
+  // Reuse /api/projects/sessions semantics by hitting a generic search;
+  // for now query liveness which already has per-agent recent sessions.
+  try {
+    const r = await fetch('/api/liveness');
+    const d = await r.json();
+    const ag = (d.agents || []).find(a => a.name === name);
+    const sessions = ag?.sessions || [];
+    if (sessions.length === 0) {
+      body.innerHTML = `<div style="color:var(--fg2);padding:24px">No recent sessions for <b>${esc(name)}</b> in the last 4 hours.</div>`;
+      return;
+    }
+    let html = `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px">Last 4 hours — ${sessions.length} sessions. Click to open.</div>`;
+    html += `<table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="border-bottom:1px solid var(--border);text-align:left"><th style="padding:6px">Session</th><th>Status</th><th>When</th></tr>`;
+    for (const s of sessions.slice().reverse()) {
+      html += `<tr style="border-bottom:1px solid var(--bg3,#222);cursor:pointer" onclick="loadSessionDetail('${esc(s.sessionId)}')">`;
+      html += `<td style="padding:6px;font-family:monospace;font-size:11px">${esc((s.sessionId||'').slice(-12))}</td>`;
+      html += `<td style="padding:6px">${esc(s.status||'')}</td>`;
+      html += `<td style="padding:6px;color:var(--fg2);font-size:11px">${s.startedAt ? timeAgo(s.startedAt) : '—'}</td>`;
+      html += `</tr>`;
+    }
+    html += `</table>`;
+    body.innerHTML = html;
+  } catch (e) {
+    body.innerHTML = `<div style="color:var(--red);padding:16px">Failed: ${esc(e.message)}</div>`;
   }
 }
 
