@@ -641,7 +641,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           parentSessionId,
           workflowRunId: runId,
           stepLabel: agentName,
-          source: "workflow",
+          source: `workflow:${workflow.name}`,
         });
 
         const sid = taskResult.sessionId;
