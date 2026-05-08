@@ -84,6 +84,17 @@ investigation artifact just to prove activity. Instead:
    observation, or code/doc change. Routine healthy checks can be evidenced directly from
    tool outputs in `verification_evidence`.
 
+## DB and Shell Query Discipline
+Aftermath reviews repeatedly flag avoidable heartbeat friction from schema and tooling
+assumptions. Keep heartbeat checks boring and known-good:
+
+- Use the canned SQL above unchanged when possible.
+- Before any new or uncertain query, inspect the table with `PRAGMA table_info(<table>)`
+  or rely on `query_db`'s schema hint, then retry with real columns.
+- Do not use `rg` in portable heartbeat commands; this environment may not have ripgrep.
+  Use `grep -R --exclude-dir=.state --exclude-dir=node_modules --exclude-dir=.git` or
+  `find` with pruned noisy directories instead.
+
 ## Metrics Engineering
 `query_db` is read-only. Do not attempt to register metrics with SQL from a heartbeat.
 If a metric gap is discovered, capture the proposed metric/query in an investigation or
