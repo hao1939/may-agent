@@ -11,7 +11,7 @@ iteration: 0
 # Project: Scout Second Brain Learning
 
 **Status**: active
-**Iteration**: 2
+**Iteration**: 3
 ## Goal
 
 Learn from `eugeniughelbur/obsidian-second-brain` and adapt the smallest useful
@@ -19,8 +19,8 @@ set of knowledge-base practices that make scout findings easier to maintain,
 reuse, and turn into system improvements.
 
 ## Current State
-Iteration 2. Milestones: 0/0 done.
-Reviewer: 1. **I believe**: The worker successfully verified `outputs/pilot-practices.md`, edited 3 scout knowledge files, and verified those edits with `read()`. However, the worker failed to commit the modifi
+Iteration 3. Milestones: 0/0 done.
+Reviewer: 1. **I believe**: The worker has successfully cleared the final system guardrail by committing the changes, and has written the final review document, meaning all identified milestones for this projec
 ## Context
 
 Reference repo:
