@@ -1,12 +1,11 @@
 ---
 id: scout-second-brain-learning
 owner: scout
-status: pending-review
+status: active
 type: milestone
 priority: P2
 workflow: goal-driver
-iteration: 3
-stop_reason: Completed; waiting for human review/sign-off.
+iteration: 4
 ---
 
 # Project: Scout Second Brain Learning
@@ -35,8 +34,8 @@ set of knowledge-base practices that make scout findings easier to maintain,
 reuse, and turn into system improvements.
 
 ## Current State
-Waiting: All 5/5 milestones are complete, the pilot has been conducted, and the final artifacts (including `pilot-review.md`) have been generated and committed. The project is effectively finished. Autonomous workers were previously spinning on busywork because the project lacked formal closure. We must wait for human review and sign-off.
-Validation signal: Human updates project status to `done` or `pending-review` to officially close out the work.
+Working on implementing a Scout-scoped approach as requested by Hao, abandoning the system-wide mandate. We need to define concrete plan items for cron/heartbeat tasks and prompt updates, then apply them to Scout's knowledge base and gather evidence of their effectiveness.
+Validation signal: `project.md` contains new pending milestones addressing the human's feedback, and status is `active`.
 
 ## Context
 
@@ -65,6 +64,9 @@ Initial hypothesis:
 - [x] Pick 2-3 practices for a scout-only pilot. Prefer practices that reduce duplicate notes and improve downstream reuse.
 - [x] Apply the pilot to 3-5 recent scout knowledge artifacts.
 - [x] Review metrics and downstream references after the pilot; decide whether to keep, adjust, or discard the practices.
+- [ ] Propose a Scout-scoped implementation using Scout's heartbeats for background synthesis and updating Scout's system prompt for in-place updates.
+- [ ] Implement and test the scoped approach on Scout's knowledge base to gather concrete evidence.
+- [ ] Document the concrete evidence from the implementation and formalize the final proposal.
 
 ## Resources
 
