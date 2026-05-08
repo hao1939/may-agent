@@ -20,16 +20,8 @@ Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior
 - Metric: `evaluator.false-good-rate-sample` current 0.5714 (threshold 0.2, target 0.05) but denominator only 7 reviewed sessions (sample instability).
 
 ## Current State
-Evidence from DB (2026-05-08 ~19:50Z):
-- `evaluator.low-quality-rate-24h` snapshots are stable and breaching (0.521 → 0.543 over the last hour).
-- 24h NI rates by agent are high across the board (may/scout/arc/dev all >0.5), suggesting systemic factors rather than a single-agent regression.
-- Top NI issue drivers (counts in last 24h):
-  - `schema/query error in transcript` (56)
-  - `finish blocked by uncommitted changes` (50)
-  - `finish blocked... + broad may/shared commit during session` (40)
-  - terminal interruptions/clean-start: `terminal status: interrupted` + `error: Clean start (fresh)` (13)
-- Liveness: evaluations are being produced (MAX(evaluations.createdAt)=2026-05-08 19:46Z; n=453 in 24h). Legacy `.state/evaluations/task_tree_*.json` artifacts are stale (mtime Mar 2026) but DB is canonical.
-
+Iteration 1. Milestones: 0/0 done.
+Reviewer: - **I believe**: The largest driver of `evaluator.low-quality-rate-24h` is *not* real agent “quality” but evaluator-side classification: `shallow_session:*` (≈1006), plus pipeline faults (`terminal st
 ## Plan
 1. **Metric decomposition proposal**: draft a split of low-quality-rate into sub-metrics by issue class (schema errors, finish/uncommitted, terminal interruptions) to avoid conflating agent quality with infra/guard friction.
 2. **Criteria calibration**: review evaluator criteria for (a) terminal interrupted sessions (Clean start) and (b) finish-blocked sessions; decide whether to classify as NI vs excluded/exception.
@@ -56,3 +48,10 @@ Evidence from DB (2026-05-08 ~19:50Z):
 - outputs/iteration-1-2026-05-08-evidence-refresh.md
 - outputs/iteration-5-approval-packet.md
 - outputs/iteration1-attribution-summary.md
+
+
+## Context
+- `issues[0]` top driver in last 24h is `shallow_session:*` (~1006); other large NI drivers include `finish blocked by uncommitted changes` (~142), `terminal status: interrupted` (~62), `schema/query error in transcript` (~60).
+- Pipeline-like categories (`terminal interrupted/error`, `schema/query error in transcript`) currently show `ni_rate = 1.0`, indicating likely “unscorable treated as NI”.
+- Proposed direction: introduce `unknown/unscorable` verdict/flag and exclude from `evaluator.low-quality-rate-24h`, while tracking separate `unscorable/transcript-error/runner-interruption` metrics to avoid false-good inflation.
+- Key open ambiguity: `shallow_session:*` needs session-level sampling to classify as pipeline misfire vs agent-controlled early bail.
