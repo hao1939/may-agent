@@ -3,6 +3,8 @@ id: prompt-efficiency
 owner: optimizer
 status: closed
 type: milestone
+priority: P2
+iteration: 1
 ---
 
 # Prompt Efficiency
