@@ -11,6 +11,7 @@ iteration: 0
 # Project: Scout Second Brain Learning
 
 **Status**: active
+**Iteration**: 1
 ## Goal
 
 Learn from `eugeniughelbur/obsidian-second-brain` and adapt the smallest useful
@@ -18,9 +19,9 @@ set of knowledge-base practices that make scout findings easier to maintain,
 reuse, and turn into system improvements.
 
 ## Current State
-Iteration 4. Milestones: 5/5 done.
-Reviewer: 1. **I believe**: All 5 milestones of this project have been successfully completed, verified, and the changes committed. The worker has outputted a signal that it is ready for review.
-2. **I'm uncert
+Iteration 1. Milestones: 0/0 done.
+Reviewer: Before You Decide — Externalize Your Beliefs:
+1. **I believe**: The worker successfully generated a pilot document based on the `obsidian-second-brain` repo but failed the system guard because it didn
 ## Context
 
 Reference repo:
@@ -65,7 +66,13 @@ Initial hypothesis:
 - Prefer concise, agent-readable notes with clear "actionable implication" sections.
 
 ## Artifacts
+- outputs/knowledge-operations-guide.md
 - outputs/pilot-practices-selection.md
+- outputs/pilot-guidelines.md
 - outputs/pilot-practices.md
 - outputs/ready-for-review.md
 - outputs/pilot-review.md
+- outputs/final-summary.md
+- outputs/wrap-up.md
+- outputs/agent-second-brain-guidelines.md
+- outputs/ai-first-preamble-pilot.md
