@@ -1576,6 +1576,7 @@ function initChat(deepLinkSessionId) {
 }
 
 let currentAgentSubTab = 'chat';
+let _projectDetailPath = '';  // hoisted: render() reads/writes this on first paint
 let currentAgentChat = null;
 
 /**
@@ -3015,7 +3016,6 @@ async function loadProjects() {
   }
 }
 
-let _projectDetailPath = '';
 async function showProjectDetail(path) {
   _projectDetailPath = path;
   const el = document.getElementById('projects-content');
