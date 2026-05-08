@@ -232,3 +232,23 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - **Needs-improvement sessions**: 52.7% (target 10%)
 - **Scout good session rate**: 45.2% (target 85%)
 - **Scout operational friction**: 54.8% (target 10%)
+
+---
+
+## 2025-05-08 19:42 UTC — Steward Heartbeat
+
+### System Health
+- Throughput: 60 sessions/hr, 95% success rate
+- All health checks: PASS
+- Handler success rate: 100% (6h)
+
+### Red Metrics
+1. **Reviewed good sessions overturned**: 0.57 (target 0.05) ⚠️
+2. **Needs-improvement sessions**: 54% (target 10%) ⚠️
+3. **Scout good session rate**: 0.45 (target 0.85) ⚠️
+4. **Scout operational friction**: 0.55 (target 0.1) ⚠️
+
+### Assessment
+- Scout quality and friction remain the dominant issues
+- Evaluator overturn rate suggests calibration drift
+- 99 "active" sessions, most stale — cosmetic but noisy
