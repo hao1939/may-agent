@@ -10,6 +10,8 @@ iteration: 0
 
 # Project: Scout Second Brain Learning
 
+**Status**: active
+
 ## Goal
 
 Learn from `eugeniughelbur/obsidian-second-brain` and adapt the smallest useful
