@@ -1,11 +1,12 @@
 ---
 id: scout-second-brain-learning
 owner: scout
-status: active
+status: waiting
 type: milestone
 priority: P2
 workflow: project
-iteration: 0
+iteration: 3
+stop_reason: Completed; waiting for human review/sign-off.
 ---
 
 # Project: Scout Second Brain Learning
@@ -17,8 +18,9 @@ set of knowledge-base practices that make scout findings easier to maintain,
 reuse, and turn into system improvements.
 
 ## Current State
-Iteration 4. Milestones: 0/0 done.
-Reviewer: 1. **I believe**: All milestones for this project have been successfully completed as of Iteration 3, and the worker is currently spinning trying to create unnecessary "flag files" because the project
+Waiting: All 5/5 milestones are complete, the pilot has been conducted, and the final artifacts (including `pilot-review.md`) have been generated and committed. The project is effectively finished. Autonomous workers were previously spinning on busywork because the project lacked formal closure. We must wait for human review and sign-off.
+Validation signal: Human updates project status to `done` or `pending-review` to officially close out the work.
+
 ## Context
 
 Reference repo:

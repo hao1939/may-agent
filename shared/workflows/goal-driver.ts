@@ -35,6 +35,7 @@ interface GoalDriverConfig {
 interface ProjectFacts {
   id: string;
   status: string;
+  stopReason: string;
   iteration: number;
   goal: string;
   currentState: string;
@@ -51,6 +52,14 @@ interface DriverDecision {
   nextAction: string;
   validationSignal: string;
   raw: string;
+}
+
+type AgentResult = Awaited<ReturnType<WorkflowContext["runAgent"]>>;
+
+interface AgentTextResult {
+  result: AgentResult;
+  text: string;
+  attempts: number;
 }
 
 function field(raw: string, name: string): string | undefined {
@@ -109,6 +118,7 @@ function collectFacts(config: GoalDriverConfig): ProjectFacts {
   return {
     id,
     status,
+    stopReason: extractField(content, "Stop Reason"),
     iteration,
     goal: extractSection(content, "Goal"),
     currentState: extractSection(content, "Current State"),
@@ -139,6 +149,35 @@ function appendJournal(config: GoalDriverConfig, entry: string): void {
   appendFileSync(config.journalPath, `${entry.trimEnd()}\n\n`, "utf-8");
 }
 
+function compactLine(text: string, maxLength = 180): string {
+  const oneLine = text.replace(/\s+/g, " ").trim();
+  if (oneLine.length <= maxLength) return oneLine;
+  const prefix = oneLine.slice(0, maxLength);
+  const sentenceEnd = prefix.lastIndexOf(".");
+  if (sentenceEnd >= 40) return prefix.slice(0, sentenceEnd + 1);
+  const wordEnd = prefix.lastIndexOf(" ");
+  return `${prefix.slice(0, wordEnd >= 40 ? wordEnd : maxLength).trimEnd()}...`;
+}
+
+async function runAgentForText(
+  ctx: WorkflowContext,
+  agent: string,
+  prompt: string,
+  attempts = 2,
+): Promise<AgentTextResult> {
+  let last: AgentResult | null = null;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    last = await ctx.runAgent(agent, prompt);
+    const text = last.lastAssistantText?.trim() ?? "";
+    if (text) return { result: last, text, attempts: attempt };
+    if (attempt < attempts) {
+      ctx.log(`goal-driver: ${agent} produced no assistant text on attempt ${attempt}; retrying`);
+    }
+  }
+  if (!last) throw new Error("runAgentForText called with zero attempts");
+  return { result: last, text: "", attempts };
+}
+
 function buildDriverPrompt(facts: ProjectFacts, cycle: number): string {
   const pending = facts.plan.pending.length > 0
     ? facts.plan.pending.map((item) => `- [ ] ${item}`).join("\n")
@@ -155,6 +194,7 @@ Mental model:
 - Project file, plan items, metrics/signals, artifacts, and journal are evidence.
 - Use the project frame when it helps; do not obey stale state blindly.
 - Each run should make one useful movement toward the goal or escalate clearly.
+- This is the judgment step: answer from the evidence below; the worker step performs changes if needed.
 - If the next useful movement is unclear, risky, or requires human judgment, say ESCALATE or WAITING.
 - Do not create ceremonial "ready" files or busywork.
 
@@ -165,8 +205,10 @@ ${cycle}
 ${facts.goal || "(missing goal)"}
 
 ## Current State
-status=${facts.status}
-iteration=${facts.iteration}
+Current project metadata is the source of truth for status:
+- status=${facts.status}
+- stop_reason=${facts.stopReason || "(none)"}
+- iteration=${facts.iteration}
 ${facts.currentState || "(empty)"}
 
 ## Signals
@@ -186,6 +228,7 @@ ${artifacts}
 ${facts.context || "(empty)"}
 
 ## Recent Journal
+Older journal entries may describe stale status. Treat them as history, not current metadata.
 ${facts.recentJournal || "(empty)"}
 
 Decide the next movement. Your first line must be exactly one of:
@@ -273,8 +316,27 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const now = new Date().toISOString();
 
     ctx.emit({ type: "step_start", step: `goal-driver-judge-${cycle}` });
-    const judgment = await ctx.runAgent(config.owner, buildDriverPrompt(facts, cycle));
-    const decision = parseDecision(judgment.lastAssistantText ?? "");
+    const judgment = await runAgentForText(ctx, config.owner, buildDriverPrompt(facts, cycle));
+    if (!judgment.text) {
+      const reason = judgment.result.error || `owner agent ended with status=${judgment.result.status}`;
+      appendJournal(config, `### Goal Driver Cycle ${cycle} Runtime Failure — ${now}
+**Owner**: ${config.owner}
+**Attempts**: ${judgment.attempts}
+**Status**: ${judgment.result.status}
+**Error**: ${reason}`);
+      updateProjectStatus(config.projectPath, "waiting", "Owner agent produced no response", iteration);
+      updateCurrentState(config, `Waiting: goal-driver could not collect an owner judgment.
+Owner: ${config.owner}
+Attempts: ${judgment.attempts}
+Status: ${judgment.result.status}
+Error: ${reason}`);
+      return ctx.escalate("Goal-driver owner agent produced no response.", {
+        owner: config.owner,
+        status: judgment.result.status,
+        error: judgment.result.error,
+      });
+    }
+    const decision = parseDecision(judgment.text);
 
     appendJournal(config, `### Goal Driver Cycle ${cycle} — ${now}
 **Facts**: status=${facts.status}; iteration=${facts.iteration}; plan=${facts.plan.done}/${facts.plan.total}; artifacts=${facts.artifacts.length}
@@ -290,13 +352,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }
 
     if (decision.kind === "WAITING") {
-      updateProjectStatus(config.projectPath, "waiting", decision.rationale.slice(0, 200), iteration);
+      updateProjectStatus(config.projectPath, "waiting", compactLine(decision.rationale || decision.nextAction), iteration);
       updateCurrentState(config, `Waiting: ${decision.rationale || decision.nextAction}\nValidation signal: ${decision.validationSignal || "(missing)"}`);
       return ctx.done(`Waiting: ${decision.rationale || decision.nextAction}`);
     }
 
     if (decision.kind === "ESCALATE") {
-      updateProjectStatus(config.projectPath, "waiting", decision.rationale.slice(0, 200), iteration);
+      updateProjectStatus(config.projectPath, "waiting", compactLine(decision.rationale || decision.nextAction), iteration);
       updateCurrentState(config, `Escalated: ${decision.rationale || decision.nextAction}\nValidation signal: ${decision.validationSignal || "(missing)"}`);
       return ctx.escalate(decision.rationale || "Goal-driver owner escalated uncertainty.", { decision: decision.raw });
     }
