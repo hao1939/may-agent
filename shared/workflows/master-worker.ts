@@ -48,6 +48,201 @@ export const description: string =
 
 const DEFAULT_MAX_ITERATIONS = 50; // safety cap — workflow runs until done/blocked/waiting
 
+// ── Workflow-owned live signals ────────────────────────────────────────
+
+interface LiveRuntimeMetric {
+  id: string;
+  name: string | null;
+  owner: string | null;
+  priority: string | null;
+  current: number | null;
+  target: number | null;
+  threshold: number | null;
+  alertOp: string | null;
+}
+
+interface LiveRuntimeAlert {
+  id: number;
+  metricId: string | null;
+  message: string | null;
+  createdAt: number | null;
+  metricName: string | null;
+  owner: string | null;
+  priority: string | null;
+  current: number | null;
+  target: number | null;
+  threshold: number | null;
+}
+
+export interface LiveRuntimeSignals {
+  available: boolean;
+  collectedAt: string;
+  p0p1Metrics: LiveRuntimeMetric[];
+  openAlerts: LiveRuntimeAlert[];
+  counts: {
+    activeP0P1Metrics: number;
+    openP0P1Alerts: number;
+    openLowerPriorityAlerts: number;
+    activeProjectCount: number | null;
+  };
+  error?: string;
+}
+
+function normalizeNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function normalizeString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+function firstFunctionText(result: any): string {
+  return String(result?.lastAssistantText ?? result?.output ?? result ?? "");
+}
+
+function unavailableLiveRuntimeSignals(error: string): LiveRuntimeSignals {
+  return {
+    available: false,
+    collectedAt: new Date().toISOString(),
+    p0p1Metrics: [],
+    openAlerts: [],
+    counts: {
+      activeP0P1Metrics: 0,
+      openP0P1Alerts: 0,
+      openLowerPriorityAlerts: 0,
+      activeProjectCount: null,
+    },
+    error,
+  };
+}
+
+export async function collectLiveRuntimeSignals(ctx: WorkflowContext): Promise<LiveRuntimeSignals> {
+  const load = async () => {
+    const getDb = (ctx as any).getDb;
+    if (typeof getDb !== "function") {
+      return unavailableLiveRuntimeSignals("runtime DB is not available in this workflow context");
+    }
+
+    const db = getDb.call(ctx) as any;
+    const p0p1Rows = db.prepare(
+      `SELECT id, name, owner, priority, current, target, threshold, alert_op as alertOp
+       FROM metrics
+       WHERE COALESCE(status, 'active') = 'active'
+         AND COALESCE(priority, 'P2') IN ('P0', 'P1')
+       ORDER BY COALESCE(priority, 'P2') ASC, id ASC`,
+    ).all() as any[];
+
+    const alertRows = db.prepare(
+      `SELECT ma.id, ma.metric_id as metricId, ma.message, ma.created_at as createdAt,
+              m.name as metricName, m.owner, COALESCE(m.priority, 'P2') as priority,
+              m.current, m.target, m.threshold
+       FROM metric_alerts ma
+       LEFT JOIN metrics m ON m.id = ma.metric_id
+       WHERE ma.resolved_at IS NULL
+       ORDER BY COALESCE(m.priority, 'P2') ASC, ma.created_at ASC
+       LIMIT 20`,
+    ).all() as any[];
+
+    const activeProject = db.prepare(
+      `SELECT current
+       FROM metrics
+       WHERE id = 'project.active-count' OR name = 'project.active-count'
+       ORDER BY updated_at DESC
+       LIMIT 1`,
+    ).get() as { current?: number } | null;
+
+    const openP0P1Alerts = alertRows.filter((row) => ["P0", "P1"].includes(String(row.priority ?? "P2"))).length;
+    return {
+      available: true,
+      collectedAt: new Date().toISOString(),
+      p0p1Metrics: p0p1Rows.map((row) => ({
+        id: String(row.id),
+        name: normalizeString(row.name),
+        owner: normalizeString(row.owner),
+        priority: normalizeString(row.priority),
+        current: normalizeNumber(row.current),
+        target: normalizeNumber(row.target),
+        threshold: normalizeNumber(row.threshold),
+        alertOp: normalizeString(row.alertOp),
+      })),
+      openAlerts: alertRows.map((row) => ({
+        id: Number(row.id),
+        metricId: normalizeString(row.metricId),
+        message: normalizeString(row.message),
+        createdAt: normalizeNumber(row.createdAt),
+        metricName: normalizeString(row.metricName),
+        owner: normalizeString(row.owner),
+        priority: normalizeString(row.priority),
+        current: normalizeNumber(row.current),
+        target: normalizeNumber(row.target),
+        threshold: normalizeNumber(row.threshold),
+      })),
+      counts: {
+        activeP0P1Metrics: p0p1Rows.length,
+        openP0P1Alerts,
+        openLowerPriorityAlerts: Math.max(0, alertRows.length - openP0P1Alerts),
+        activeProjectCount: normalizeNumber(activeProject?.current),
+      },
+    } satisfies LiveRuntimeSignals;
+  };
+
+  try {
+    if (typeof (ctx as any).runFunction === "function") {
+      const result = await (ctx as any).runFunction("collect-live-runtime-signals", async () => JSON.stringify(await load()));
+      return JSON.parse(firstFunctionText(result)) as LiveRuntimeSignals;
+    }
+    return await load();
+  } catch (error) {
+    return unavailableLiveRuntimeSignals(String(error instanceof Error ? error.message : error).slice(0, 300));
+  }
+}
+
+function metricValue(value: number | null): string {
+  return value === null ? "?" : String(value);
+}
+
+export function formatLiveRuntimeSignals(signals: LiveRuntimeSignals): string {
+  const lines = [
+    "## Live Runtime Signals (workflow-collected)",
+    `Status: ${signals.available ? "available" : "unavailable"}`,
+    `Collected at: ${signals.collectedAt}`,
+  ];
+
+  if (!signals.available) {
+    lines.push(`Error: ${signals.error ?? "unknown"}`);
+    lines.push("Do not claim live metric health from this block. Query the runtime DB only if current metric evidence is required.");
+    return lines.join("\n");
+  }
+
+  lines.push(
+    `Counts: active P0/P1 metrics=${signals.counts.activeP0P1Metrics}; open P0/P1 alerts=${signals.counts.openP0P1Alerts}; open lower-priority alerts=${signals.counts.openLowerPriorityAlerts}; active projects=${metricValue(signals.counts.activeProjectCount)}`,
+  );
+
+  if (signals.p0p1Metrics.length) {
+    lines.push("P0/P1 metrics:");
+    for (const metric of signals.p0p1Metrics.slice(0, 12)) {
+      lines.push(
+        `- ${metric.id} (${metric.priority ?? "P?"}, owner=${metric.owner ?? "?"}): current=${metricValue(metric.current)}, target=${metricValue(metric.target)}, threshold=${metricValue(metric.threshold)}, alert_op=${metric.alertOp ?? "?"}`,
+      );
+    }
+  } else {
+    lines.push("P0/P1 metrics: none active.");
+  }
+
+  if (signals.openAlerts.length) {
+    lines.push("Open alerts:");
+    for (const alert of signals.openAlerts) {
+      lines.push(
+        `- #${alert.id} ${alert.metricId ?? "unknown"} (${alert.priority ?? "P?"}, owner=${alert.owner ?? "?"}): ${alert.message ?? "no message"} | current=${metricValue(alert.current)}, target=${metricValue(alert.target)}, threshold=${metricValue(alert.threshold)}`,
+      );
+    }
+  } else {
+    lines.push("Open alerts: none.");
+  }
+
+  return lines.join("\n");
+}
+
 // ── Decision extraction ─────────────────────────────────────────────────
 
 interface Decision {
@@ -206,7 +401,12 @@ Your job is to PUSH THE PROJECT FORWARD:
 Metrics tell you where you are. The work is what gets you there.
 Good metrics are measurable, connected to the goal, and have clear targets.
 Bad metrics get gamed or ignored. If a metric doesn't drive real progress, redefine it.
-When you claim live runtime metrics are healthy, verify them from the runtime DB with query_db.
+Use the workflow-collected Live Runtime Signals block as primary current metric evidence.
+Only call query_db if those signals are unavailable, missing, or inconsistent with other facts.
+If you must manually query because Live Runtime Signals are unavailable, treat that as a workflow reliability issue:
+- Continue only after collecting the needed live facts yourself.
+- Record the workflow signal failure as a finding or plan item unless you can fix it immediately.
+- Do not silently normalize manual fallback; the workflow should collect these facts on later runs.
 The embedded project.md is context, not current metric evidence.
 
 Respond with one of these decisions as the VERY FIRST WORD:
@@ -219,7 +419,7 @@ WAITING — you need something specific from a human (approval, credentials, acc
 Push forward on real goals. But recognize when this execution should stop:
 - If ALL plan items are checked off AND ALL metrics are at/above target → say DONE for this run.
 - If project.md still contains unchecked task-list items like "- [ ]", do not say DONE.
-- If saying DONE because metrics are healthy, cite live metric evidence from query_db, not only project.md prose.
+- If saying DONE because metrics are healthy, cite live metric evidence from the workflow-collected block, not only project.md prose.
 - Do NOT invent new work (extra tests, tooling, docs) after goals are met. That's busywork.
 - Expanding scope requires explicit new goals from the project owner, not the orchestrator.
 - Do NOT close the project when saying DONE. Durable projects stay active so cron/event checks can maintain them.
@@ -374,10 +574,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     // ── Phase 1: Planning — orchestrator assesses current state ──
     ctx.log("[plan] Orchestrator assessing project state...");
 
-    // Aggregate cross-project metrics for orchestrator awareness
-    const projectsBaseDir = dirname(projectDir);
+    const liveRuntimeSignals = await collectLiveRuntimeSignals(ctx);
+    const liveRuntimeSignalsBlock = formatLiveRuntimeSignals(liveRuntimeSignals);
+    ctx.log(`[plan] Live runtime signals: ${liveRuntimeSignals.available ? "available" : `unavailable (${liveRuntimeSignals.error ?? "unknown"})`}`);
 
     let planningPrompt = `Assess this project and decide what to do next.
+
+${liveRuntimeSignalsBlock}
 
 ## project.md
 ${projectContent}
@@ -768,6 +971,9 @@ WRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Y
 
       // ── Review phase ──
       ctx.log(`[review] Orchestrator evaluating iteration ${iteration}...`);
+      const reviewLiveRuntimeSignals = await collectLiveRuntimeSignals(ctx);
+      const reviewLiveRuntimeSignalsBlock = formatLiveRuntimeSignals(reviewLiveRuntimeSignals);
+      ctx.log(`[review] Live runtime signals: ${reviewLiveRuntimeSignals.available ? "available" : `unavailable (${reviewLiveRuntimeSignals.error ?? "unknown"})`}`);
 
       // Check for new comments since last read
       let newComments = "";
@@ -784,6 +990,8 @@ WRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Y
 ${workerSummary}
 
 **Output verification**: ${changedFiles.length === 0 ? '⚠️ NO files were created or modified this iteration. Consider requiring write() as the first tool call in next guidance.' : `✅ ${changedFiles.length} file(s) modified: ${changedFiles.map(f => f.split('/').pop()).join(', ')}`}
+
+${reviewLiveRuntimeSignalsBlock}
 
 ${(ctx as any)._consecutiveZeroOutput >= MAX_ZERO_OUTPUT ? `**🚨 ESCALATION**: Worker has produced 0 output files for ${(ctx as any)._consecutiveZeroOutput} consecutive iterations. This is likely a "false completion claim" failure mode. Options:\n1. Provide EXACT file content in your guidance so worker just needs to write()\n2. Write the file yourself using your tools\n3. PIVOT to a completely different approach` : ''}
 
