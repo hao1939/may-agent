@@ -319,6 +319,8 @@ ${decision.validationSignal || "(record what should validate this movement)"}
 ## Working Rules
 - Make the smallest useful movement toward the goal.
 - If the requested move is unsafe or unclear, stop and report exactly why.
+- Before editing a file, read the current file contents you will change.
+- After every edit/write, read the changed file back and inspect the diff before finishing.
 - Prefer updating existing project/context/knowledge files over creating duplicate artifacts.
 - Use ${config.projectDir}/outputs only for genuinely useful project artifacts.
 - Commit intentional changes in agents/ before finishing.
