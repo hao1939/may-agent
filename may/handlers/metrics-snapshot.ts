@@ -522,7 +522,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
                AND s.measured_at > ?
            )`, now - 2 * 3600000);  // 2h window: heartbeat-measured metrics run on ~30min cycles
 
-      const terminalSessionsWithoutEnd = count(
+      let terminalSessionsWithoutEnd = count(
         `SELECT COUNT(*) as c FROM sessions s
          WHERE s.status IN ('done', 'error', 'interrupted')
            AND s.startedAt > ?
@@ -557,11 +557,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         if (recentHeartbeat === 0) agentsWithoutHeartbeat++;
       }
 
-      const mismatchCount = staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd + agentsWithoutHeartbeat;
-      record("capability.status-reality-mismatch-count", mismatchCount,
-        heartbeatAgents.length + staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd);
-
-      // ── Reconciliation: emit session.end for orphaned terminal sessions ──
+      // ── Reconciliation: emit session.end for orphaned terminal sessions before recording state ──
       if (terminalSessionsWithoutEnd > 0) {
         try {
           const orphaned = db.prepare(
@@ -582,8 +578,22 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             insert.run("session.end", JSON.stringify({ sessionId: s.sessionId, agent: s.agent, status: s.status, reconciled: true }), s.endedAt || now);
           }
           if (orphaned.length > 0) ctx.sdk.log("info", `[metrics-snapshot] Reconciled ${orphaned.length} orphaned session.end events`);
+          terminalSessionsWithoutEnd = count(
+            `SELECT COUNT(*) as c FROM sessions s
+             WHERE s.status IN ('done', 'error', 'interrupted')
+               AND s.startedAt > ?
+               AND NOT EXISTS (
+                 SELECT 1 FROM events e
+                 WHERE e.event_type = 'session.end'
+                   AND json_valid(e.data)
+                   AND json_extract(e.data, '$.sessionId') = s.sessionId
+               )`, now - 24 * 3600000);
         } catch (reconErr) { /* best-effort reconciliation */ }
       }
+
+      const mismatchCount = staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd + agentsWithoutHeartbeat;
+      record("capability.status-reality-mismatch-count", mismatchCount,
+        heartbeatAgents.length + staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring status-reality mismatch: ${e}`); }
 
     // ── Generic metrics (source_query / source_command) ──────────────
