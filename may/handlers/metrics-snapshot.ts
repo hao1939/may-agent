@@ -11,13 +11,13 @@
  * in the generic section near the end of the handler.
  * ─────────────────────────────────────────────────────────────────────────────
  */
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { exec, execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.ts";
 import type { CronEntry } from "../../shared/agent-sdk.ts";
-import { listConfiguredAgents, listAutonomousAgents, resolveMetricOwner } from "../../shared/lib/metric-ownership.ts";
+import { listConfiguredAgents, resolveMetricOwner } from "../../shared/lib/metric-ownership.ts";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -72,126 +72,27 @@ const ALL_METRICS: MetricDef[] = [
   { id: "project.stale-active-count", name: "Stale active projects (no iteration 48h)", owner: "may", type: "gauge", target: 0, threshold: 2, unit: "count", alert_op: ">", priority: "P1" },
   { id: "project.iterations-24h", name: "Project iterations (24h)", owner: "may", type: "gauge", target: 10, threshold: 1, unit: "count", alert_op: "<",
     priority: "P1" },
-  { id: "project.blocked-rate-7d", name: "Project blocked rate (7d)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P2" },
   { id: "project.blocked-over-6h", name: "Projects blocked/waiting >6h", owner: "may", type: "gauge", target: 2, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
-  // v2 conformance / visibility
-  { id: "v2.manager-loc", name: "Manager runtime LOC", owner: "arc", type: "gauge", target: 1000, threshold: 1500, unit: "loc", alert_op: ">", priority: "P2" },
-  { id: "v2.runtime-glue-loc", name: "Runtime glue LOC", owner: "arc", type: "gauge", target: 1500, threshold: 2000, unit: "loc", alert_op: ">", priority: "P2" },
-  { id: "v2.spec-coverage-rate", name: "v2 spec measurement coverage", owner: "may", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.25, unit: "ratio", alert_op: "<", priority: "P2" },
-  // KE-802: this currently measures trace-instrumentation liveness, not true
-  // per-session reconstructability. Keep the aspirational target at 1.0, but
-  // alert only if the sparse existing emitters disappear entirely until the
-  // runtime emits context.read/agent.decision for every session.
-  { id: "capability.session-trace-completeness", name: "Session trace completeness (24h)", owner: "may", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.001, unit: "ratio", alert_op: "<", priority: "P3" },
-  { id: "capability.tool-preset-drift-count", name: "Tool preset/config drift", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
-    config: { alert: { mode: "consecutive_failures", count: 1 } } },
   { id: "capability.status-reality-mismatch-count", name: "Status/reality mismatches", owner: "may", type: "health", target: 0, threshold: 3, unit: "count", alert_op: ">", priority: "P0",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
-  // v2-spec-coverage-buildout Phase 1 metrics
-  { id: "capability.self-directed-iteration-rate-24h", name: "Self-directed iteration rate (24h)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0.80, threshold: 0.50, unit: "ratio", alert_op: "<", priority: "P2" },
   { id: "capability.zombie-session-count", name: "Zombie sessions (running >30min)", owner: "may", project: "v2-spec-coverage-buildout", type: "health", target: 0, threshold: 2, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
-  { id: "capability.process-uptime-h", name: "Process uptime (hours)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 168, threshold: 0.01, unit: "hours", alert_op: "<", priority: "P3",
-    config: { alert: { mode: "consecutive_failures", count: 3 } } },
-  { id: "capability.concurrent-session-max-1h", name: "Peak concurrent sessions (1h)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 8, threshold: 15, unit: "count", alert_op: ">", priority: "P1" },
+];
+
+const RETIRED_METRIC_IDS = [
+  "project.blocked-rate-7d",
+  "v2.manager-loc",
+  "v2.runtime-glue-loc",
+  "v2.spec-coverage-rate",
+  "capability.session-trace-completeness",
+  "capability.tool-preset-drift-count",
+  "capability.self-directed-iteration-rate-24h",
+  "capability.process-uptime-h",
+  "capability.concurrent-session-max-1h",
 ];
 
 /** Snapshot retention: keep 30 days of history */
 const RETENTION_DAYS = 30;
-const RUNTIME_GLUE_FILES = [
-  "src/lib/manager.ts",
-  "src/lib/manager-utils.ts",
-  "src/lib/manager-receipts.ts",
-  "src/lib/manager-agents-tool.ts",
-];
-const DEFAULT_BUILD_METRICS_PATH = "/usr/local/share/may-agent/build-metrics.json";
-
-const VALID_TOOL_PRESETS = new Set([
-  "coding",
-  "read-only",
-  "agents",
-  "workflow",
-  "background-exec",
-  "cron",
-  "scrape",
-  "finish",
-  "checkpoint",
-  "system-status",
-  "system_status",
-  "message",
-  "query_db",
-  "query-db",
-  "cite-source",
-]);
-
-function countFleetToolPresetIssues(agentsRoot: string): { count: number; sample: string[] } {
-  const issues: string[] = [];
-  try {
-    const entries = readdirSync(agentsRoot, { withFileTypes: true });
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
-      if (entry.name === "shared" || entry.name.startsWith(".") || entry.name.startsWith("_")) continue;
-      const configPath = join(agentsRoot, entry.name, "agent.json");
-      if (!existsSync(configPath)) continue;
-
-      let config: any;
-      try {
-        config = JSON.parse(readFileSync(configPath, "utf8"));
-      } catch (err) {
-        issues.push(`${entry.name}: invalid agent.json (${err instanceof Error ? err.message : String(err)})`);
-        continue;
-      }
-
-      const agent = config.name || entry.name;
-      if (config.extends && !Array.isArray(config.tools)) {
-        // Agent inherits tools from archetype - resolve them
-        const archetypePath = join(agentsRoot, config.extends, "agent.json");
-        if (existsSync(archetypePath)) {
-          try {
-            const archetypeConfig = JSON.parse(readFileSync(archetypePath, "utf8"));
-            config.tools = archetypeConfig.tools;
-          } catch { /* fall through to tools check */ }
-        }
-      }
-      if (!Array.isArray(config.tools)) {
-        issues.push(`${agent}: tools must be an array`);
-        continue;
-      }
-      for (const preset of config.tools) {
-        if (typeof preset !== "string" || !VALID_TOOL_PRESETS.has(preset)) {
-          issues.push(`${agent}: unknown tool preset ${String(preset)}`);
-        }
-      }
-    }
-  } catch (err) {
-    issues.push(`fleet scan failed: ${err instanceof Error ? err.message : String(err)}`);
-  }
-  return { count: issues.length, sample: issues.slice(0, 5) };
-}
-
-function countFileLines(path: string): number {
-  try {
-    if (!existsSync(path)) return 0;
-    const text = readFileSync(path, "utf8");
-    if (text.length === 0) return 0;
-    const newlineCount = text.match(/\n/g)?.length ?? 0;
-    return text.endsWith("\n") ? newlineCount : newlineCount + 1;
-  } catch {
-    return 0;
-  }
-}
-
-function readBuildMetric(id: string): number | null {
-  const path = process.env.MAY_AGENT_BUILD_METRICS_PATH || DEFAULT_BUILD_METRICS_PATH;
-  try {
-    if (!existsSync(path)) return null;
-    const parsed = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
-    const value = parsed[id];
-    return typeof value === "number" && Number.isFinite(value) ? value : null;
-  } catch {
-    return null;
-  }
-}
 
 function projectSlugFromRef(raw: string | null | undefined): string | null {
   if (!raw?.trim()) return null;
@@ -211,31 +112,6 @@ function projectSlugFromIterationData(data: string | null): string | null {
     return projectSlugFromRef(raw);
   } catch {
     return null;
-  }
-}
-
-function countSpecClaimCoverage(projectRoot: string, metricIds: Set<string>): { covered: number; total: number; rate: number } {
-  const specPath = join(projectRoot, "agents/shared/may-agent-docs/proposals/v2-spec.md");
-  try {
-    if (!existsSync(specPath)) return { covered: 0, total: 0, rate: 0 };
-    const spec = readFileSync(specPath, "utf8");
-    const headings = [...spec.matchAll(/^## ([CIS]\d+)\s+—/gm)].map(match => ({
-      index: match.index ?? 0,
-    }));
-    let covered = 0;
-    for (let i = 0; i < headings.length; i++) {
-      const start = headings[i].index;
-      const end = i + 1 < headings.length ? headings[i + 1].index : spec.length;
-      const section = spec.slice(start, end);
-      const measurementMatch = section.match(/\*\*Measurement\.\*\*([\s\S]*?)(?=\*\*Status\.\*\*)/);
-      const measurementText = measurementMatch?.[1] ?? section;
-      const sectionMetricIds = [...measurementText.matchAll(/`((?:capability|infra|v2)\.[a-zA-Z0-9._-]+)`/g)].map(match => match[1]);
-      if (sectionMetricIds.some(id => metricIds.has(id))) covered++;
-    }
-    const total = headings.length;
-    return { covered, total, rate: total > 0 ? parseFloat((covered / total).toFixed(4)) : 0 };
-  } catch {
-    return { covered: 0, total: 0, rate: 0 };
   }
 }
 
@@ -320,6 +196,25 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     if (hasMetricPriorityColumn) {
       db.run("UPDATE metrics SET priority = 'P2' WHERE priority IS NULL");
     }
+
+    // Historical rows remain queryable, but retired/noncritical metrics should
+    // not appear in active watches or keep unresolved alerts alive.
+    try {
+      const placeholders = RETIRED_METRIC_IDS.map(() => "?").join(", ");
+      db.run(
+        `UPDATE metrics
+         SET status = 'retired', closed_at = COALESCE(closed_at, ?), updated_at = ?
+         WHERE id IN (${placeholders}) OR id LIKE 'agent.%.low-quality-streak'`,
+        [now, now, ...RETIRED_METRIC_IDS],
+      );
+      db.run(
+        `UPDATE metric_alerts
+         SET resolved_at = COALESCE(resolved_at, ?)
+         WHERE resolved_at IS NULL
+           AND (metric_id IN (${placeholders}) OR metric_id LIKE 'agent.%.low-quality-streak')`,
+        [now, ...RETIRED_METRIC_IDS],
+      );
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error retiring noncritical metrics: ${e}`); }
 
     // ── Measure: Handler (with error isolation) ──────────────────────
 
@@ -459,46 +354,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       record("evaluator.low-quality-rate-24h", total > 0 ? parseFloat((needsImprovementOrLowScore / total).toFixed(4)) : 0, total);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.low-quality-rate-24h: ${e}`); }
 
-    // ── Per-agent consecutive low-quality streak ─────────────────────
-    // For each active agent, count consecutive recent low-quality evaluations.
-    // When an agent hits 3+ consecutive low scores, the metric breaches and
-    // metric-alert-reactor dispatches an investigation via the standard pattern.
-    try {
-      const excludeAgents = new Set(["evaluator", "judge", "may"]);
-      const agentRows = db.prepare(
-        `SELECT DISTINCT agent FROM evaluations WHERE createdAt > ? AND agent NOT IN ('evaluator', 'judge', 'may')`,
-      ).all(twentyFourH) as Array<{ agent: string }>;
-
-      for (const { agent } of agentRows) {
-        if (excludeAgents.has(agent)) continue;
-        const metricId = `agent.${agent}.low-quality-streak`;
-
-        // Ensure metric row exists (dynamic per-agent metric)
-        const existing = db.prepare("SELECT id FROM metrics WHERE id = ?").get(metricId) as { id: string } | null;
-        if (!existing) {
-          const insertCols = ["id", "name", "owner", "current", "target", "threshold", "unit", "type", "status", "speed", "alert_op"];
-          const insertVals: unknown[] = [
-            metricId, `${agent} consecutive low-quality sessions`, "may", 0,
-            0, 3, "count", "health", "active", "fast", ">",
-          ];
-          if (hasMetricPriorityColumn) { insertCols.push("priority"); insertVals.push("P1"); }
-          db.run(`INSERT OR IGNORE INTO metrics (${insertCols.join(", ")}) VALUES (${insertCols.map(() => "?").join(", ")})`, insertVals);
-        }
-
-        // Count consecutive low-quality sessions from most recent
-        const recentEvals = db.prepare(
-          `SELECT quality FROM evaluations WHERE agent = ? AND createdAt > ? ORDER BY createdAt DESC LIMIT 10`,
-        ).all(agent, now - 48 * 60 * 60_000) as Array<{ quality: number }>;
-
-        let streak = 0;
-        for (const ev of recentEvals) {
-          if (ev.quality < 0.4) streak++;
-          else break;
-        }
-        record(metricId, streak, recentEvals.length);
-      }
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring per-agent quality streaks: ${e}`); }
-
     try {
       record(
         "evaluator.stale-running-session-count",
@@ -601,94 +456,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring iterations-24h: ${e}`); }
 
     try {
-      const blocked7d = count("SELECT COUNT(*) as c FROM events WHERE event_type = 'project.blocked' AND timestamp > ?", sevenD);
-      const productive7d = count("SELECT COUNT(*) as c FROM events WHERE event_type IN ('project.iteration', 'project.completed') AND timestamp > ?", sevenD);
-      const total7d = blocked7d + productive7d;
-      record("project.blocked-rate-7d", total7d > 0 ? parseFloat((blocked7d / total7d).toFixed(4)) : 0);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring blocked-rate-7d: ${e}`); }
-
-    try {
       record("project.blocked-over-6h", count("SELECT COUNT(*) as c FROM projects WHERE status IN ('blocked', 'waiting') AND updated_at < ?", now - 6 * 3600000));
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring blocked-over-6h: ${e}`); }
 
-    // ── Measure: v2 conformance and status honesty ───────────────────
-
-    try {
-      const liveManagerLoc = countFileLines(join(ctx.sdk.paths.root, "src/lib/manager.ts"));
-      const managerLoc = liveManagerLoc > 0 ? liveManagerLoc : readBuildMetric("v2.manager-loc") ?? 0;
-      record("v2.manager-loc", managerLoc, 1);
-
-      const liveGlueCounts = RUNTIME_GLUE_FILES.map((relPath) => countFileLines(join(ctx.sdk.paths.root, relPath)));
-      const runtimeGlueLoc = liveGlueCounts.some((count) => count > 0)
-        ? liveGlueCounts.reduce((sum, count) => sum + count, 0)
-        : readBuildMetric("v2.runtime-glue-loc") ?? 0;
-      record("v2.runtime-glue-loc", runtimeGlueLoc, RUNTIME_GLUE_FILES.length);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring runtime LOC: ${e}`); }
-
-    try {
-      const activeMetricIds = new Set((db.prepare("SELECT id FROM metrics WHERE status = 'active'").all() as Array<{ id: string }>).map(row => row.id));
-      const coverage = countSpecClaimCoverage(ctx.sdk.paths.root, activeMetricIds);
-      record("v2.spec-coverage-rate", coverage.rate, coverage.total);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring spec coverage: ${e}`); }
-
-    try {
-      const issues = countFleetToolPresetIssues(ctx.sdk.paths.agents);
-      record("capability.tool-preset-drift-count", issues.count, Math.max(1, configuredAgents.length));
-      if (issues.count > 0) {
-        ctx.sdk.log("info", `[metrics-snapshot] Tool preset drift: ${issues.sample.join("; ")}`);
-      }
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring tool preset drift: ${e}`); }
-
-    try {
-      const totalSessions = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ?", twentyFourH);
-      const completeSessions = count(
-        `SELECT COUNT(*) as c FROM sessions s
-         WHERE s.startedAt > ?
-           AND EXISTS (
-             SELECT 1 FROM events e
-             WHERE e.event_type = 'context.read'
-               AND json_valid(e.data)
-               AND json_extract(e.data, '$.agent') = s.agent
-               AND e.timestamp BETWEEN s.startedAt AND COALESCE(s.endedAt, ?)
-           )
-           AND EXISTS (
-             SELECT 1 FROM events e
-             WHERE e.event_type = 'agent.decision'
-               AND json_valid(e.data)
-               AND json_extract(e.data, '$.agent') = s.agent
-               AND e.timestamp BETWEEN s.startedAt AND COALESCE(s.endedAt, ?)
-           )`,
-        twentyFourH, now, now,
-      );
-      record("capability.session-trace-completeness", totalSessions > 0 ? parseFloat((completeSessions / totalSessions).toFixed(4)) : 0, totalSessions);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring session trace completeness: ${e}`); }
-
-    // ── Measure: v2-spec-coverage-buildout Phase 1 metrics ─────────
-
-    // C1: Self-directed iteration rate (24h)
-    // Fraction of non-evaluator work sessions started by autonomous triggers.
-    try {
-      const totalSessions24h = count(
-        `SELECT COUNT(*) as c FROM sessions
-         WHERE startedAt > ?
-           AND agent NOT IN ('evaluator', 'judge')
-           AND COALESCE(source, '') NOT LIKE 'workflow:evaluator-%'`,
-        twentyFourH,
-      );
-      const autonomousSessions24h = count(
-        `SELECT COUNT(*) as c FROM sessions
-         WHERE startedAt > ?
-           AND agent NOT IN ('evaluator', 'judge')
-           AND COALESCE(source, '') NOT LIKE 'workflow:evaluator-%'
-           AND COALESCE(source, '') NOT LIKE 'telegram%'
-           AND COALESCE(source, '') NOT LIKE 'socket%'
-           AND COALESCE(source, '') NOT IN ('api', 'manual', 'cli')`,
-        twentyFourH,
-      );
-      record("capability.self-directed-iteration-rate-24h",
-        totalSessions24h > 0 ? parseFloat((autonomousSessions24h / totalSessions24h).toFixed(4)) : 0,
-        totalSessions24h);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring self-directed-iteration-rate: ${e}`); }
+    // ── Measure: status honesty ─────────────────────────────────────
 
     // C7: Zombie session count (running >30min)
     try {
@@ -698,26 +469,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       );
       record("capability.zombie-session-count", zombies);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring zombie-session-count: ${e}`); }
-
-    // C7: Peak concurrent sessions in last hour
-    try {
-      // Approximate: count sessions that overlapped with each 5-min bucket in the last hour
-      let maxConcurrent = 0;
-      for (let t = oneH; t <= now; t += 5 * 60_000) {
-        const concurrent = count(
-          "SELECT COUNT(*) as c FROM sessions WHERE startedAt <= ? AND (endedAt IS NULL OR endedAt >= ?)",
-          t, t,
-        );
-        if (concurrent > maxConcurrent) maxConcurrent = concurrent;
-      }
-      record("capability.concurrent-session-max-1h", maxConcurrent);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring concurrent-session-max: ${e}`); }
-
-    // C9: Process uptime for this may-agent runtime process.
-    try {
-      const uptimeH = parseFloat((process.uptime() / 3600).toFixed(2));
-      record("capability.process-uptime-h", uptimeH);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring process-uptime: ${e}`); }
 
     try {
       const staleActiveProjects = count(

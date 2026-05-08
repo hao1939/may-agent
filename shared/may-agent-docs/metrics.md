@@ -75,10 +75,19 @@ CREATE TABLE metric_snapshots (
 - `project.blocked-count`
 - `project.stale-active-count`
 - `project.iterations-24h`
-- `project.blocked-rate-7d`
 - `project.blocked-over-6h`
 
-Additional `v2.*`, `capability.*`, and `infra.*` metrics are defined in [proposals/v2-spec.md](proposals/v2-spec.md). Query `SELECT id FROM metrics` for the current full list.
+**Status honesty:**
+- `metric.stale-active-count`
+- `capability.status-reality-mismatch-count`
+- `capability.zombie-session-count`
+
+Conformance/tracking metrics such as `v2.*`, trace-completeness,
+self-directed rate, process uptime, concurrency peak, tool-preset drift,
+project blocked-rate, and dynamic per-agent low-quality streaks are retired from
+active alerting unless they become operationally load-bearing again. Their
+history can remain in the DB, but they should not be handled as live system
+health alerts.
 
 ## Metric Types
 
