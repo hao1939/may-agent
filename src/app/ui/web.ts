@@ -108,10 +108,16 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   // ── API handlers ──────────────────────────────────────────────────
 
-  function handleLiveness(): Response {
+  function handleLiveness(url?: URL): Response {
     const db = _db();
     const now = Date.now();
-    const fourHours = now - 4 * 60 * 60 * 1000;
+    // Window for the activity timeline. Default 4h. Operator-selectable
+    // from the WebUI via ?hours=N (clamped 1..72).
+    const rawHours = Number(url?.searchParams.get("hours"));
+    const hours = Number.isFinite(rawHours) && rawHours > 0
+      ? Math.min(72, Math.max(1, rawHours))
+      : 4;
+    const since = now - hours * 60 * 60 * 1000;
     const oneHour = now - 60 * 60 * 1000;
     const agents = listConfiguredAgents();
 
@@ -137,19 +143,20 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
            OR task LIKE 'You are %waking up for your heartbeat.%'
          )
        ORDER BY startedAt ASC`
-    ).all(fourHours) as any[];
+    ).all(since) as any[];
 
-    // All sessions in the last 4h (not just heartbeats). The timeline
-    // shows everything an agent did so the operator sees real activity
-    // distribution, not only the cron tick. Each session is classified
-    // into a 'kind' bucket which maps to a color in the frontend.
+    // All sessions in the selected window (not just heartbeats). The
+    // timeline shows everything an agent did so the operator sees real
+    // activity distribution, not only the cron tick. Each session is
+    // classified into a 'category' bucket which maps to a color in the
+    // frontend.
     const allRows = db.prepare(
       `SELECT sessionId, agent, task, status, kind, source, projectId, parentSessionId,
               startedAt, endedAt, outcome
        FROM sessions
        WHERE startedAt > ? AND agent IS NOT NULL AND agent != ''
        ORDER BY startedAt ASC`
-    ).all(fourHours) as any[];
+    ).all(since) as any[];
 
     // Heartbeat detection mirrors heartbeatRows above (same predicates).
     // Pre-build a Set of heartbeat sessionIds for O(1) classification.
@@ -247,8 +254,14 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return json({
       summary: {
         agentsConfigured: agents.length,
+        // NOTE: keep `*4h` field names even though the window is now
+        // operator-selectable — they're consumed elsewhere as the
+        // "heartbeat coverage in window" signal, and the window default
+        // is still 4h. Use `windowHours` for accurate labeling.
         heartbeatAgents4h: agentRows.filter((agent) => agent.lastHeartbeat).length,
         heartbeats4h: heartbeatRows.length,
+        windowHours: hours,
+        windowSince: since,
         activeSessions,
         openAlerts: openAlerts.length,
         staleAgents: staleAgents.length,
@@ -1818,7 +1831,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         if (server.upgrade(req)) return undefined;
         return new Response("WebSocket upgrade failed", { status: 400 });
       }
-      if (url.pathname === "/api/liveness") return handleLiveness();
+      if (url.pathname === "/api/liveness") return handleLiveness(url);
       if (url.pathname === "/api/stats") return handleStats();
       if (url.pathname === "/api/agents") return handleAgents();
       if (url.pathname === "/api/agents/activity") return handleAgentActivity();      if (url.pathname === "/api/agents/timeline") return handleAgentTimeline(url);

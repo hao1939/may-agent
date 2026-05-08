@@ -58,8 +58,13 @@
   .heartbeat-dot.error         { background: var(--red); }
   .heartbeat-dot.running       { box-shadow: 0 0 0 1px var(--fg); }
   .heartbeat-last { color: var(--fg2); font-size: 11px; white-space: nowrap; }
-  .heartbeat-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; font-size: 11px; color: var(--fg2); }
-  .heartbeat-legend .swatch { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+  .heartbeat-legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; font-size: 11px; color: var(--fg2); }
+  .heartbeat-legend .chip { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; user-select: none; transition: opacity 0.1s, background 0.1s; }
+  .heartbeat-legend .chip:hover { background: var(--bg3); }
+  .heartbeat-legend .chip.off { opacity: 0.35; }
+  .heartbeat-legend .chip.off .swatch { filter: grayscale(1); }
+  .heartbeat-legend .swatch { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; }
+  .heartbeat-legend .note { padding: 2px 0; opacity: 0.7; }
   .liveness-list { display: flex; flex-direction: column; gap: 8px; }
   .liveness-item { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 12px; }
   .liveness-item strong { color: var(--fg); }
@@ -656,6 +661,42 @@ async function loadHealthGraphs() {
 
 let livenessRefreshTimer = null;
 
+// Activity-timeline category filter. All categories enabled by default.
+// 'error' is an overlay: when off, status=error sessions are hidden
+// regardless of base category. When on, they render in their base color
+// (or red, if the base color is the error red itself).
+const TIMELINE_CATEGORIES = ['heartbeat', 'project', 'chat', 'workflow', 'other', 'error'];
+const TIMELINE_CATEGORY_COLORS = {
+  heartbeat: 'var(--green)', project: 'var(--purple)', chat: 'var(--accent)',
+  workflow: 'var(--yellow)', other: 'var(--fg2)', error: 'var(--red)',
+};
+const TIMELINE_CATEGORY_FILTER = new Set(TIMELINE_CATEGORIES);
+
+// Activity-timeline window in hours. Operator-selectable from the legend.
+// Backend clamps to 1..72. Defaults to 4h to match the original behavior.
+const TIMELINE_WINDOW_OPTIONS = [4, 8, 12, 24, 48];
+let livenessHours = 4;
+
+function toggleTimelineCategory(cat) {
+  if (TIMELINE_CATEGORY_FILTER.has(cat)) {
+    TIMELINE_CATEGORY_FILTER.delete(cat);
+    // Don't allow leaving the filter empty — auto-reset to all-on if the
+    // user accidentally removes the last enabled chip.
+    if (TIMELINE_CATEGORY_FILTER.size === 0) {
+      for (const c of TIMELINE_CATEGORIES) TIMELINE_CATEGORY_FILTER.add(c);
+    }
+  } else {
+    TIMELINE_CATEGORY_FILTER.add(cat);
+  }
+  loadLiveness();
+}
+
+function setTimelineHours(h) {
+  if (livenessHours === h) return;
+  livenessHours = h;
+  loadLiveness();
+}
+
 function formatAgo(ts) {
   if (!ts) return 'never';
   const ms = Date.now() - ts;
@@ -674,11 +715,14 @@ async function loadLiveness() {
   const panel = document.getElementById('liveness-panel');
   if (!panel) return;
   try {
-    const res = await fetch('/api/liveness');
+    const res = await fetch('/api/liveness?hours=' + encodeURIComponent(livenessHours));
     const data = await res.json();
     const summary = data.summary || {};
     const agents = data.agents || [];
-    const since = Date.now() - 4 * 60 * 60 * 1000;
+    // Window the backend actually used (it clamps 1..72). Fall back to
+    // local livenessHours if absent (older builds).
+    const windowHours = Number(summary.windowHours) || livenessHours;
+    const since = Number(summary.windowSince) || (Date.now() - windowHours * 60 * 60 * 1000);
     const span = Date.now() - since;
     const alerts = data.alerts || [];
     const decisions = data.recentDecisions || [];
@@ -710,21 +754,46 @@ async function loadLiveness() {
     html += `</div></div>`;
 
     // Timeline as the dominant element (full width, screen-1 layout).
-    html += `<div class="liveness-section liveness-timeline"><h3>Activity timeline, last 4h</h3>`;
-    html += `<div class="heartbeat-legend">
-      <span><span class="swatch" style="background:var(--green)"></span>heartbeat</span>
-      <span><span class="swatch" style="background:var(--purple)"></span>project</span>
-      <span><span class="swatch" style="background:var(--accent)"></span>chat</span>
-      <span><span class="swatch" style="background:var(--yellow)"></span>workflow</span>
-      <span><span class="swatch" style="background:var(--fg2)"></span>other</span>
-      <span><span class="swatch" style="background:var(--red)"></span>error (any kind)</span>
-      <span style="opacity:0.7">— ring = currently running</span>
-    </div>`;
+    const windowLabel = windowHours === 1 ? '1h'
+      : windowHours === 24 ? '1 day'
+      : windowHours === 48 ? '2 days'
+      : windowHours + 'h';
+    html += `<div class="liveness-section liveness-timeline"><h3 style="display:flex;align-items:center;gap:10px;justify-content:space-between"><span>Activity timeline, last ${esc(windowLabel)}</span><span class="heartbeat-legend" style="margin:0">`;
+    // Window selector (chips, same look as category chips).
+    for (const h of TIMELINE_WINDOW_OPTIONS) {
+      const on = h === windowHours;
+      const lbl = h === 24 ? '1d' : h === 48 ? '2d' : h + 'h';
+      html += `<span class="chip${on ? '' : ' off'}" onclick="setTimelineHours(${h})" title="Show last ${esc(lbl)}" style="padding:1px 7px;font-size:10px">${esc(lbl)}</span>`;
+    }
+    html += `</span></h3>`;
+    // Interactive legend — click a chip to toggle that category.
+    html += `<div class="heartbeat-legend">`;
+    for (const cat of TIMELINE_CATEGORIES) {
+      const on = TIMELINE_CATEGORY_FILTER.has(cat);
+      const label = cat === 'error' ? 'error (any kind)' : cat;
+      html += `<span class="chip${on ? '' : ' off'}" onclick="toggleTimelineCategory('${cat}')" title="Click to ${on ? 'hide' : 'show'} ${esc(cat)} sessions"><span class="swatch" style="background:${TIMELINE_CATEGORY_COLORS[cat]}"></span>${esc(label)}</span>`;
+    }
+    html += `<span class="note">— ring = currently running</span></div>`;
+
+    // Snapshot the filter for this render pass so dots and per-row counts
+    // agree even if the user toggles mid-render (next click triggers a new
+    // loadLiveness anyway).
+    const filter = TIMELINE_CATEGORY_FILTER;
+    const showError = filter.has('error');
+
     if (!agents.length) {
       html += `<div class="liveness-item">No configured agents found.</div>`;
     } else {
       for (const agent of agents) {
         const sessions = agent.sessions || [];
+        // Apply category filter for this row's dots. Error is an overlay:
+        // when off, error-status dots are hidden entirely; when on, they
+        // render only if their base category is also enabled.
+        const visibleSessions = sessions.filter((s) => {
+          const cat = s.category || 'other';
+          if (s.status === 'error') return showError && filter.has(cat);
+          return filter.has(cat);
+        });
         // Compact per-category counts in the agent label tooltip so hovering
         // tells the operator the activity mix without expanding rows.
         const cc = agent.categoryCounts || {};
@@ -732,10 +801,13 @@ async function loadLiveness() {
           .filter((k) => (cc[k] || 0) > 0)
           .map((k) => `${k}:${cc[k]}`)
           .join(' ');
+        const filterTip = filter.size < TIMELINE_CATEGORIES.length
+          ? ` · showing ${visibleSessions.length}/${sessions.length}`
+          : '';
         html += `<div class="heartbeat-row">
-          <div class="heartbeat-agent" title="${esc(agent.name)} — ${esc(mixTip || 'no activity')}">${esc(agent.name)}</div>
+          <div class="heartbeat-agent" title="${esc(agent.name)} — ${esc(mixTip || 'no activity')}${esc(filterTip)}">${esc(agent.name)}</div>
           <div class="heartbeat-track">`;
-        for (const s of sessions) {
+        for (const s of visibleSessions) {
           const left = Math.max(0, Math.min(99, ((s.startedAt - since) / span) * 100));
           const cat = `cat-${s.category || 'other'}`;
           const errCls = s.status === 'error' ? ' error' : '';
