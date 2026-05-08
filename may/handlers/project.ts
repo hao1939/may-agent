@@ -179,7 +179,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
       ctx.sdk.log("info", `[project] Launching ${project.relPath} (workflow: ${workflowName}): ${action.reason}`);
 
-      ctx.sdk.runWorkflow(workflowName, task, { source: project.owner })
+      const projectId = `${project.owner}/${project.relPath.split("/").pop()}`;
+      ctx.sdk.runWorkflow(workflowName, task, { source: project.owner, projectId })
         .then((r) => { ctx.sdk.log("info", `[project] ${project.relPath} → ${r.status}`); })
         .catch((e: any) => { ctx.sdk.log("info", `[project] ${project.relPath} ERROR: ${e.message?.slice(0, 200)}`); });
 
@@ -189,7 +190,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       pState.launchTimestamps.push(now);
       pState.consecutiveSkips = 0;
       launched++;
-      const projectId = `${project.owner}/${project.relPath.split("/").pop()}`;
       try { ctx.sdk.emit("project.iteration", { projectId }); } catch {}
     }
 
