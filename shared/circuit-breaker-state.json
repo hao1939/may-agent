@@ -25,8 +25,7 @@
       "consecutiveErrors": 0
     },
     "arc": {
-      "consecutiveErrors": 2,
-      "lastError": "heartbeat session error"
+      "consecutiveErrors": 0
     },
     "dev": {
       "consecutiveErrors": 0
