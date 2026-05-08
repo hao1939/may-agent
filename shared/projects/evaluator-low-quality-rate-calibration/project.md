@@ -10,6 +10,7 @@ iteration: 2
 
 # Evaluator Low Quality Rate Calibration
 
+**Iteration**: 5
 ## Goal
 Bring `evaluator.low-quality-rate-24h` below threshold (0.3) and toward target (0.1) by determining whether the breach is caused by (a) evaluator rubric/threshold calibration, or (b) a real system-wide drop in session quality.
 
@@ -44,7 +45,10 @@ Project format normalized to the current shared-project convention: YAML frontma
 
 ## Artifacts
 - outputs/iteration-1-diagnosis.md
+- outputs/iteration-3-impact-model-and-recommendation.md
+- outputs/iteration-4-metric-split-implementation-plan.md
 - outputs/iteration-2-mechanism-and-fix-options.md
+- outputs/iteration-5-approval-packet.md
 
 ## Context
 - Heuristic evaluation dominates the last 24h window; heuristicVersion=2 slice has ~0.70 needs_improvement rate vs ~0.165 for heuristicVersion=null.
