@@ -102,3 +102,21 @@ Signal dispositions:
 - Prior `session.end` artifact-gate recovery entry: dismissed as already acted; this entry records the current check rather than duplicating recovery only.
 - Routine heartbeat session lifecycle events: dismissed after queue, metric, alert, and recent-failure checks found no dev-owned implementation action.
 - Scout/evaluator metric alerts: dismissed for direct dev action because ownership is scout/evaluator and no Approved implementation item exists; continue monitoring.
+
+## 2026-05-08 Metrics Snapshot Import Watch
+
+Routine heartbeat escalated from the latest handler failure rows rather than creating a new code change.
+
+Evidence checked:
+- UTC timestamp at write time: `2026-05-08T11:07:53Z`.
+- `agents/shared/work-queue.md` Approved section is empty; all visible implementation candidates remain Proposed.
+- Current active metrics are mostly healthy for dev-owned work: `session.error-rate-6h=0.0094`, `handler.success-rate=0.9955`, and `handler.failed-count=2` remains below its alert threshold of `10`.
+- Direct alert cross-check found unresolved alerts `#195` (`evaluator.low-quality-rate-24h`, owner evaluator), `#197` (`scout.operational-friction-rate-24h`, owner scout), and `#200` (`metric.stale-active-count`, owner may). None are dev-owned; `#200` is likely a transient/stale-snapshot symptom because the unmeasured-metrics query returned zero active metrics without a snapshot in the last hour.
+- Recent `handler.failed` rows showed two `metrics-snapshot` import failures for `validateProjectFormat`, but the latest `handler.completed` rows also show `metrics-snapshot` completed after those failures, and filesystem evidence confirms both `agents/shared/lib/project-health.ts` exports `validateProjectFormat` and `agents/may/handlers/metrics-snapshot.ts` imports it from `../../shared/lib/project-health.ts`.
+- Git status showed only generated `*/last-session.md` churn before this intentional heartbeat log edit.
+
+Signal dispositions:
+- Evaluator aftermath message for `s_1778236883138_40`: acted by classifying dirty files and staging only this intentional artifact, not generated `last-session.md` files.
+- Recent handler failures: acted by checking the import/export path and confirming later handler completion; no patch needed unless the failure recurs after the current module state.
+- `metric.stale-active-count` alert: dismissed for direct dev action because owner is may and canned unmeasured-metrics evidence is clean; next snapshot/recovery should validate.
+- Routine heartbeat `session.start`/`session.end` lifecycle events: dismissed after queue, metrics, alerts, failure, and git hygiene checks.
