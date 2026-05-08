@@ -1035,6 +1035,158 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     });
   }
 
+  /**
+   * GET /api/projects/lineage?path=<projectPath> — every session that
+   * causally touched this project, deduplicated, with provenance.
+   *
+   * The premise: there is no single source of truth for 'sessions in a
+   * project'. Only ~27% of sessions have sessions.projectId set (the
+   * canonical tag, only populated by workflow dispatch). The rest of
+   * the lineage emerges from 5 independent signals combined:
+   *
+   *   tier 1 (tagged):    sessions.projectId = <owner>/<name>
+   *   tier 2 (workflow):  sessions.workflowRunId in (runs whose task
+   *                       mentions the project path)
+   *   tier 3 (file-read): file_reads.filePath like %/<name>/% — the
+   *                       session opened a file inside the project dir.
+   *                       This is *strong* signal even if the session
+   *                       was a heartbeat (agent literally looked).
+   *   tier 4 (mention):   sessions.task like %<name>% — weakest, only
+   *                       used if name is distinctive (length ≥ 6).
+   *   tier 5 (children):  sessions.parentSessionId in (any of above)
+   *                       — recursive descent so worker sessions show
+   *                       up under their master.
+   *
+   * Output: deduplicated by sessionId, sorted by startedAt, each session
+   * carries its `link` provenance (highest-confidence wins on dedup).
+   * Returns parentSessionId so the frontend can render a tree.
+   *
+   * Scale: 15k sessions · 6k file_reads · 8k workflow_runs. All queries
+   * indexed-or-bounded; tier 4 LIKE %name% is the slowest (~5–10ms).
+   * Total budget: <50ms for any project. Acceptable for review UX.
+   */
+  function handleProjectLineage(url: URL): Response {
+    const path = url.searchParams.get("path");
+    if (!path) return json({ error: "path required" }, 400);
+    if (!path.match(/^agents\/(shared\/projects\/|[^/]+\/workspace\/projects\/)/)) return json({ error: "Access denied" }, 403);
+
+    const parts = path.split("/");
+    let owner: string;
+    let name: string;
+    if (parts[1] === "shared" && parts[2] === "projects") {
+      owner = "shared";
+      name = parts[3]?.replace(/\.md$/, "") ?? "";
+    } else {
+      owner = parts[1] ?? "";
+      name = parts[parts.length - 1]?.replace(/\.md$/, "") ?? "";
+    }
+    const projectId = `${owner}/${name}`;
+
+    // link confidence ranking; lower = stronger.
+    const RANK: Record<string, number> = { tagged: 0, workflow: 1, "file-read": 2, child: 3, mention: 4 };
+    const byId = new Map<string, any>();
+    const accept = (row: any, link: string) => {
+      if (!row?.sessionId) return;
+      const existing = byId.get(row.sessionId);
+      if (!existing || RANK[link] < RANK[existing.link]) {
+        byId.set(row.sessionId, { ...row, link });
+      }
+    };
+
+    const SELECT = `SELECT sessionId, agent, status, kind, source, parentSessionId, workflowRunId, projectId, startedAt, endedAt, opCount, outcome, task FROM sessions`;
+    const db = _db();
+
+    try {
+      // tier 1: tagged.
+      for (const r of db.prepare(`${SELECT} WHERE projectId = ? ORDER BY startedAt DESC LIMIT 200`).all(projectId) as any[]) {
+        accept(r, "tagged");
+      }
+
+      // tier 2: workflow_runs whose task mentions the project path or name.
+      // Project path appears in master-worker tasks like 'project: /app/agents/shared/projects/<name>'.
+      const runRows = db.prepare(
+        `SELECT runId FROM workflow_runs WHERE task LIKE ? OR task LIKE ? LIMIT 200`
+      ).all(`%${path}%`, `%projects/${name}%`) as Array<{ runId: string }>;
+      if (runRows.length > 0) {
+        const placeholders = runRows.map(() => "?").join(",");
+        const ids = runRows.map(r => r.runId);
+        for (const r of db.prepare(`${SELECT} WHERE workflowRunId IN (${placeholders}) ORDER BY startedAt DESC LIMIT 200`).all(...ids) as any[]) {
+          accept(r, "workflow");
+        }
+      }
+
+      // tier 3: file_reads of any file inside the project dir.
+      // filePath patterns vary: '/app/agents/shared/projects/<name>/...', './agents/...', 'agents/...'
+      const readRows = db.prepare(
+        `SELECT DISTINCT sessionId FROM file_reads WHERE filePath LIKE ? OR filePath LIKE ? OR filePath LIKE ? LIMIT 500`
+      ).all(
+        `%/projects/${name}/%`,
+        `%projects/${name}/%`,
+        `%${path}/%`,
+      ) as Array<{ sessionId: string }>;
+      if (readRows.length > 0) {
+        const placeholders = readRows.map(() => "?").join(",");
+        const ids = readRows.map(r => r.sessionId);
+        for (const r of db.prepare(`${SELECT} WHERE sessionId IN (${placeholders}) ORDER BY startedAt DESC LIMIT 500`).all(...ids) as any[]) {
+          accept(r, "file-read");
+        }
+      }
+
+      // tier 4: task mention. Only if name is distinctive.
+      if (name.length >= 6) {
+        for (const r of db.prepare(`${SELECT} WHERE task LIKE ? AND (projectId IS NULL OR projectId != ?) ORDER BY startedAt DESC LIMIT 100`).all(`%${name}%`, projectId) as any[]) {
+          accept(r, "mention");
+        }
+      }
+
+      // tier 5: children of any session above (one-level descent; recursive
+      // descent left for later if needed). parentSessionId is barely populated
+      // today (5 rows) but if it grows this is the hook.
+      const ids = [...byId.keys()];
+      if (ids.length > 0 && ids.length <= 200) {
+        const placeholders = ids.map(() => "?").join(",");
+        for (const r of db.prepare(`${SELECT} WHERE parentSessionId IN (${placeholders}) ORDER BY startedAt DESC LIMIT 200`).all(...ids) as any[]) {
+          accept(r, "child");
+        }
+      }
+    } catch (e) {
+      return json({ error: e instanceof Error ? e.message : String(e) }, 500);
+    }
+
+    // Sort by startedAt asc (oldest first — timeline reads top-down).
+    const sessions = [...byId.values()].sort((a, b) => (a.startedAt || 0) - (b.startedAt || 0));
+
+    // Counts by link for the header chips.
+    const byLink: Record<string, number> = { tagged: 0, workflow: 0, "file-read": 0, child: 0, mention: 0 };
+    for (const s of sessions) byLink[s.link] = (byLink[s.link] || 0) + 1;
+
+    // Optionally pull session_digests for first N sessions — inline review fuel.
+    // Capped to 30 to keep payload reasonable; the rest can be fetched on click.
+    const digestIds = sessions.slice(0, 30).map(s => s.sessionId);
+    const digestsBySession: Record<string, any[]> = {};
+    if (digestIds.length > 0) {
+      try {
+        const placeholders = digestIds.map(() => "?").join(",");
+        const rows = db.prepare(
+          `SELECT sessionId, step, trigger, what_happened, outcome, still_open, action, action_reason, created_at FROM session_digests WHERE sessionId IN (${placeholders}) ORDER BY sessionId, step`
+        ).all(...digestIds) as any[];
+        for (const d of rows) {
+          if (!digestsBySession[d.sessionId]) digestsBySession[d.sessionId] = [];
+          digestsBySession[d.sessionId].push(d);
+        }
+      } catch { /* digest table may differ */ }
+    }
+
+    return json({
+      path,
+      projectId,
+      total: sessions.length,
+      byLink,
+      sessions,
+      digestsBySession,
+    });
+  }
+
   function handleProjectSessions(url: URL): Response {
     const path = url.searchParams.get("path");
     if (!path) return json({ error: "path required" }, 400);
@@ -1645,6 +1797,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/projects") return handleProjects();
       if (url.pathname === "/api/projects/content") return handleProjectContent(url);
       if (url.pathname === "/api/projects/detail") return handleProjectDetail(url);
+      if (url.pathname === "/api/projects/lineage") return handleProjectLineage(url);
       if (url.pathname === "/api/projects/journal") return handleProjectJournal(url);
       if (url.pathname === "/api/projects/discussion") return handleProjectDiscussion(url);
       if (url.pathname === "/api/projects/sessions") return handleProjectSessions(url);
