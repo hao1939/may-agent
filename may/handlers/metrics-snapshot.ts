@@ -62,6 +62,7 @@ const ALL_METRICS: MetricDef[] = [
   { id: "evaluator.low-quality-rate-24h", name: "Needs-improvement/low-score evaluated sessions (24h)", owner: "evaluator", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P2" },
   { id: "evaluator.meaningful-review-rate-24h", name: "Evaluator meaningful review rate (24h)", owner: "evaluator", type: "gauge", target: 0.90, threshold: 0.70, unit: "ratio", alert_op: "<", priority: "P2" },
   { id: "evaluator.triage-closure-rate-24h", name: "Evaluator triage closure rate (24h)", owner: "evaluator", type: "gauge", target: 0.90, threshold: 0.70, unit: "ratio", alert_op: "<", priority: "P2" },
+  { id: "evaluator.false-good-rate-sample", name: "Reviewed good sessions overturned (24h)", owner: "evaluator", type: "gauge", target: 0.05, threshold: 0.20, unit: "ratio", alert_op: ">", priority: "P2" },
   { id: "evaluator.success-candidates-24h", name: "Good sessions marked for learning (24h)", owner: "evaluator", type: "gauge", target: 1, threshold: 0, unit: "count", alert_op: "<", priority: "P3" },
   { id: "evaluator.success-learnings-24h", name: "Learnings extracted from good sessions (24h)", owner: "evaluator", type: "gauge", target: 1, threshold: 0, unit: "count", alert_op: "<", priority: "P3" },
   { id: "evaluator.stale-running-session-count", name: "Stale running sessions", owner: "evaluator", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
@@ -417,6 +418,22 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       );
       record("evaluator.triage-closure-rate-24h", triageRouted > 0 ? parseFloat((Math.min(triageClosed, triageRouted) / triageRouted).toFixed(4)) : 1, triageRouted);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.triage-closure-rate-24h: ${e}`); }
+
+    try {
+      const reviewedGood = count(
+        `SELECT COUNT(*) as c
+         FROM events
+         WHERE event_type = 'evaluation.reviewed'
+           AND timestamp > ?
+           AND json_extract(data, '$.verdict') = 'good'`,
+        twentyFourH,
+      );
+      const falseGood = count(
+        "SELECT COUNT(*) as c FROM events WHERE event_type = 'evaluation.false_good' AND timestamp > ?",
+        twentyFourH,
+      );
+      record("evaluator.false-good-rate-sample", reviewedGood > 0 ? parseFloat((falseGood / reviewedGood).toFixed(4)) : 0, reviewedGood);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.false-good-rate-sample: ${e}`); }
 
     try {
       record(

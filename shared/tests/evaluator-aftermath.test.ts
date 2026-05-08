@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   HEURISTIC_VERSION,
+  artifactVerdict,
   buildReviewTask,
   classifyEvaluationLane,
   classifyVerdict,
@@ -229,5 +230,12 @@ describe("evaluator aftermath transcript checks", () => {
     expect(task).toContain("inspect the actual artifacts, diffs, or relevant files");
     expect(task).toContain("Output Quality");
     expect(task).toContain("Learning Created: yes|no");
+  });
+
+  it("normalizes artifact verdicts for reviewed false-good sessions", () => {
+    expect(artifactVerdict("## Verdict\nneeds_triage\n")).toBe("needs_improvement");
+    expect(artifactVerdict("## Verdict\nNeeds Improvement\n")).toBe("needs_improvement");
+    expect(artifactVerdict("## Verdict\ngood\n")).toBe("good");
+    expect(artifactVerdict("## Evidence\nnone\n")).toBeNull();
   });
 });
