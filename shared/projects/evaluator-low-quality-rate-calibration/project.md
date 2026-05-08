@@ -5,48 +5,47 @@ status: active
 type: milestone
 priority: P1
 workflow: project
-iteration: 6
+iteration: 1
 ---
 
-# Evaluator low-quality-rate 24h calibration
+# Evaluator low-quality-rate (24h) calibration
 
 ## Goal
-Reduce `evaluator.low-quality-rate-24h` to ≤0.10 *without gaming* by improving evaluation calibration and/or restoring LLM-based eval, so “needs_improvement” is a meaningful signal.
+Bring `evaluator.low-quality-rate-24h` back under control (target 0.1, alert threshold 0.3) by identifying whether the spike is (a) real widespread quality drop, (b) heuristic-eval calibration issue, or (c) evaluation pipeline mode drift (LLM eval disabled/stalled) and then proposing the right remediation.
 
 ## Signals
-- Metric alert: `evaluator.low-quality-rate-24h` repeatedly failing (10 consecutive checks).
-- Current snapshot (this heartbeat): 0.4597.
+- Metric alert: `evaluator.low-quality-rate-24h` ~0.48 (repeated, 10 consecutive checks).
+- Prior KEs warn about storm contamination and about misreading quiescence as resolution:
+  - KE-812 (restart can quiet pathologies without fixes)
+  - KE-809/KE-801 (storm contamination patterns)
 
 ## Current State
-Iteration 2. Milestones: 0/0 done.
-Reviewer: - **I believe**: Heuristic v2 is working as implemented, but it’s *miscalibrated for the metric*: `any issues => verdict=needs_improvement (quality=0.55)` makes `evaluator.low-quality-rate-24h` largel
+Evidence from DB (2026-05-08):
+- Last 24h scored sessions: 216 needs_improvement / 452 total = 0.4779.
+- Spread across multiple agents (suggests system-wide scoring skew vs one agent collapse):
+  - may: 118/266 = 0.4436
+  - scout: 49/95 = 0.5158
+  - dev: 33/56 = 0.5893
+  - arc: 15/34 = 0.4412
+- Evaluation mode: 452/452 have `evaluatedByHeuristic=1` (no LLM eval contributing in this window).
+- Evaluation pipeline liveness (DB): `evaluations MAX(createdAt)` is fresh.
+- Legacy `.state/evaluations/` artifacts are stale (mostly Mar/Apr), indicating output-path drift vs pipeline failure.
+
+Hypothesis (most likely): heuristic evaluator is currently the only scorer; its thresholds are too harsh or it is misclassifying a common pattern, inflating needs_improvement to ~0.48.
+
 ## Plan
-1. Identify the heuristic evaluation rubric/codepath producing `needs_improvement` at ~45–50% base rate.
-2. Sample 20 recent `needs_improvement` + 20 recent `good` and categorize issue triggers; check for over-weighting of minor process misses (e.g., lack of structural verification, verbosity, extra tool calls).
-3. Propose rubric changes (thresholds / mapping issues→verdict) or re-enable LLM eval.
-4. Validate via 24h rolling metric drop and spot-check that “needs_improvement” still catches real failures.
+1. **Confirm intended evaluation mode**: is `evaluate-session-llm` disabled by design? If yes, update alerting/targets to match heuristic baseline; if no, escalate to re-enable/fix pipeline. (Owner: may/tech-lead)
+2. **Find top heuristic “issues” driving needs_improvement**: aggregate `evaluations.issues` (JSON) to determine the dominant failure reasons.
+3. **Spot-check**: sample 10 sessions scored needs_improvement across different agents, verify if the heuristic is over-triggering.
+4. **Remediation proposal** (one of):
+   - tune heuristic thresholds
+   - re-weight verdict rules
+   - temporarily adjust alert threshold while LLM eval is off
+   - or re-enable LLM eval if it’s the intended canonical scorer
 
 ## Validation
-- Primary: `evaluator.low-quality-rate-24h` ≤ 0.10 for 3 consecutive checks.
-- Secondary: manual audit of sampled evaluations shows “needs_improvement” corresponds to genuinely action-blocking or repeated failures, not minor style issues.
+- Metric returns below threshold 0.3 (and ideally toward target 0.1) for at least 24h.
+- Evidence query: `needs_improvement / total` in last 24h computed from `sessions ⨝ evaluations`.
 
 ## Journal
-- 2026-05-08: Reconfirmed persistent failure is not storm-only contamination: 459 evals in last 24h with 0.4597 low-rate; all heuristic-evaluated. Notified May with breakdown and suggestion to adjust heuristic or restore LLM eval.
-
-
-## Artifacts
-- outputs/iteration-1-diagnosis.md
-- outputs/iteration-1-deliverable-heuristic-v2-calibration-plan.md
-- outputs/iteration-3-impact-model-and-recommendation.md
-- outputs/iteration-4-metric-split-implementation-plan.md
-- outputs/iteration-2-mechanism-and-fix-options.md
-- outputs/iteration-5-approval-packet.md
-
-## Context
-- Metric `evaluator.low-quality-rate-24h` current is 0.4632 (target 0.10); `metrics.source_query` is currently NULL in DB, so the computation source/config needs investigation before attempting to change the metric definition.
-- Iteration-1 output proposes adding `overall.lowQualityCategory` (outcome/process/infra) to heuristic v2 results and redefining the metric to count only outcome-category NI, plus adding separate process/infra issue-rate metrics.
-- Worker claims LLM lane absent (no non-heuristic evaluations); next iteration must verify with DB queries and quantify NI breakdown (process-only vs outcome/terminal) via backtest.
-- Heuristic v2 mechanism is confirmed in `agents/evaluator/workflows/evaluator-aftermath.ts`: **any** issue forces `verdict=needs_improvement` with `quality=0.55`; interrupted/error forces `quality=0.2`.
-- Top issue triggers are direct string/regex matches in `transcriptIssues()` (e.g., “finish() blocked [uncommitted changes]”, `/no such table|column/`) plus terminal status mapping.
-- Manual audit indicates many `quality=0.55` NIs are **process-only** (hygiene/guard friction), suggesting `evaluator.low-quality-rate-24h` is currently overloaded vs “outcome quality” intent.
-- Possible infra reliability gap: many rows reference an `overall.artifactPath` whose file is missing on disk, harming auditability; needs confirmation and fix path.
+- 2026-05-08: Established DB-ground-truth rate (0.4779 = 216/452) and confirmed all evaluations in window are heuristic. Notified May asking whether LLM eval is intended to be off and suggesting calibration/alerting adjustment.
