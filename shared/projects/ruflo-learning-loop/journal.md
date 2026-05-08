@@ -68,3 +68,28 @@ CONTEXT_UPDATE:
 - Anti-pattern observed iter-2: meta-bookkeeping doom loop (8 pointer/closeout files, 0 experiment runs). Next iteration must produce a number from may.db, not another pointer.
 - Forbidden in iter-3: any new `iter-02-*.md`, STATUS.md/NEXT.md edits, files whose body is "no new judgment."
 
+
+---
+
+## Heartbeat note (post iter-4): iteration counter resync + iter-5 framing
+
+- Project metadata `iteration:` was stuck at `1` across iter-2/3/4. This
+  heartbeat bumped it to `4` and reframed `## Current Iteration` to open
+  iter-5. (Iter-2's anti-bookkeeping rule still holds; this is a one-shot
+  resync, not a new pointer file.)
+- Iter-4's central finding (`outputs/iter-04-dispatch-waiting-findings.md`)
+  is now the load-bearing input for iter-5: 20/20 open `dispatch_waiting`
+  escalations are derivable today via the `workflow_runs` join, and 0/20
+  are closure-eligible because every batched candidate set includes the
+  chronically-`waiting` `v2-spec-coverage-buildout` (owner=`may`).
+- Iter-5 question recorded in `project.md`: pick (a) auto-closure rule on
+  `project.status` transition, (b) notification to may/dev that one
+  project is the load-bearing variable, `defer`, or `reject`. Decision
+  artifact: `outputs/iter-05-arc-decision.md` (does not exist yet — next
+  arc heartbeat owns it).
+- Durable lesson from iter-3→iter-4 captured as KE-903 ("run the
+  strongest available read before recommending an emitter/schema write")
+  so it survives outside this project.
+- Out-of-lane temptation resisted: did **not** edit
+  `agents/shared/projects/v2-spec-coverage-buildout/project.md`
+  (owner=`may`).
