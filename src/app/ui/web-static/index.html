@@ -38,6 +38,13 @@
   .liveness .subtle { color: var(--fg2); font-size: 12px; font-weight: 400; }
   .liveness-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr); gap: 16px; }
   .liveness-section h3 { font-size: 11px; color: var(--fg2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  /* Timeline-dominant variant per webui.md screen-1: full-width, taller, primary signal. */
+  .liveness-section.liveness-timeline { min-height: 35vh; }
+  .liveness-row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+  @media (max-width: 900px) { .liveness-row3 { grid-template-columns: 1fr; } }
+  .breach-badge { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; cursor: pointer; vertical-align: middle; }
+  .breach-badge.healthy { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+  .breach-badge.alerting { background: rgba(244,67,54,0.15); color: var(--red); border: 1px solid rgba(244,67,54,0.3); }
   .heartbeat-row { display: grid; grid-template-columns: 84px minmax(0, 1fr) 90px; align-items: center; gap: 10px; margin-bottom: 6px; }
   .heartbeat-agent { color: var(--fg2); font-size: 12px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .heartbeat-track { height: 18px; background: var(--bg); border-radius: 4px; position: relative; overflow: hidden; }
@@ -293,9 +300,13 @@
 <div class="main">
   <!-- Dashboard -->
   <div id="dashboard">
+    <div id="liveness-panel" class="liveness"></div>
+    <details id="legacy-dashboard" style="margin-top:24px">
+      <summary style="cursor:pointer;color:var(--fg2);font-size:12px;padding:8px 0">
+        ▸ Legacy panels (health summary, agent grid, activity timeline, live feed)
+      </summary>
     <div id="health-summary" class="health-summary"></div>
     <div id="health-graphs" style="margin:16px 0;display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:12px"></div>
-    <div id="liveness-panel" class="liveness"></div>
     <div id="agent-grid" class="agent-grid"></div>
     <div id="agent-deep-dive" class="agent-deep-dive" style="display:none"></div>
     <div id="activity-timeline" class="timeline-section" style="display:none">
@@ -323,9 +334,8 @@
     </div>
     <div class="stats" id="stats"></div>
     <div id="detail-panel"></div>
+    </details>
   </div>
-
-  <!-- Chat -->
   <div id="chat" class="hidden">
     <div class="chat-container">
       <div style="display:flex;align-items:center;gap:8px">
@@ -447,7 +457,7 @@ function render() {
   // Tab highlight
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   // Surface initialization
-  if (tab === 'sessions') initChat();
+  if (tab === 'sessions') initChat(params.id || null);
   if (tab === 'knowledge') {
     // Deep-link support: #/knowledge/<sub-path>. If sub-path looks like a file, view it.
     const sub = (params.path || '').replace(/^knowledge\//, '');
@@ -642,11 +652,12 @@ async function loadLiveness() {
 
     let html = `<h2>
       <span>System liveness</span>
-      <span class="subtle">${summary.heartbeatAgents4h || 0}/${summary.agentsConfigured || 0} agents heartbeated in 4h · ${summary.activeSessions || 0} active · ${summary.openAlerts || 0} open alerts</span>
+      <span class="subtle">${summary.heartbeatAgents4h || 0}/${summary.agentsConfigured || 0} agents heartbeated in 4h · ${summary.activeSessions || 0} active</span>
+      <span class="breach-badge ${(summary.openAlerts || 0) > 0 ? 'alerting' : 'healthy'}" onclick="routeTo('/system')" title="Click to open System tab">${(summary.openAlerts || 0) > 0 ? '⚠ ' + summary.openAlerts + ' breach' + (summary.openAlerts === 1 ? '' : 'es') : '✓ healthy'}</span>
     </h2>`;
 
-    html += `<div class="liveness-grid">`;
-    html += `<div class="liveness-section"><h3>Heartbeat timeline, last 4h</h3>`;
+    // Timeline as the dominant element (full width, screen-1 layout).
+    html += `<div class="liveness-section liveness-timeline"><h3>Heartbeat timeline, last 4h</h3>`;
     if (!agents.length) {
       html += `<div class="liveness-item">No configured agents found.</div>`;
     } else {
@@ -665,7 +676,9 @@ async function loadLiveness() {
     }
     html += `</div>`;
 
-    html += `<div class="liveness-section"><h3>Recent heartbeat outcomes</h3><div class="liveness-list">`;
+    // Three-column row: decisions / alerts / messages.
+    html += `<div class="liveness-row3">`;
+    html += `<div class="liveness-section"><h3>Recent decisions</h3><div class="liveness-list">`;
     if (decisions.length === 0) {
       html += `<div class="liveness-item">No heartbeat sessions in the last 4 hours.</div>`;
     } else {
@@ -677,9 +690,7 @@ async function loadLiveness() {
       }
     }
     html += `</div></div>`;
-    html += `</div>`;
 
-    html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:16px">`;
     html += `<div class="liveness-section"><h3>Open alerts</h3><div class="liveness-list">`;
     if (alerts.length === 0) {
       html += `<div class="liveness-item">No open metric alerts.</div>`;
@@ -1480,10 +1491,37 @@ function addFeedItem(agent, text, type) {
   }
 }
 
-function initChat() {
-  if (chatInitialized) return;
-  chatInitialized = true;
-  // WS is now connected on page load; no need to call connectWs() here
+function initChat(deepLinkSessionId) {
+  if (!chatInitialized) {
+    chatInitialized = true;
+    // WS is now connected on page load; no need to call connectWs() here
+  }
+  // Honor deep-link first.
+  if (deepLinkSessionId && deepLinkSessionId !== currentSessionId) {
+    switchSession(deepLinkSessionId);
+    return;
+  }
+  // Default-session resolution: if nothing selected, pick the most-recent
+  // open non-heartbeat / non-worker session per agent. Per webui.md §5.
+  // The bus updates `activeSessions` continuously via session.start/end —
+  // this is the only place we read it for default selection.
+  if (!currentSessionId && Array.isArray(activeSessions) && activeSessions.length) {
+    const candidates = activeSessions.filter(s => {
+      if (s.status !== 'running' && s.status !== 'idle') return false;
+      const task = String(s.task || '').toLowerCase();
+      const kind = String(s.kind || '').toLowerCase();
+      // Skip heartbeat and worker-pattern sessions — those are not for chat.
+      if (kind === 'heartbeat' || kind === 'worker') return false;
+      if (task.startsWith('[heartbeat]')) return false;
+      if (task.includes('waking up for your heartbeat')) return false;
+      return true;
+    });
+    if (candidates.length) {
+      // Most-recent first — use startedAt if present, else first in the array.
+      candidates.sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0));
+      switchSession(candidates[0].sessionId);
+    }
+  }
 }
 
 function toggleMarkdown() {
