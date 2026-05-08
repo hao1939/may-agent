@@ -10,6 +10,7 @@ iteration: 6
 
 # Evaluator low-quality-rate 24h calibration
 
+**Status**: active
 ## Goal
 Reduce `evaluator.low-quality-rate-24h` to ≤0.10 *without gaming* by improving evaluation calibration and/or restoring LLM-based eval, so “needs_improvement” is a meaningful signal.
 
