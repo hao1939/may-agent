@@ -39,7 +39,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     if (!hasActionable && event?.type !== "project.nudge" && event?.type !== "trigger.project") {
       const lastScan = healthState.lastFullScan || 0;
       const hasChanges = projects.some(p => {
-        try { const stat = require("node:fs").statSync(p.projectFile); return stat.mtimeMs > lastScan; }
+        try {
+          const fs = require("node:fs");
+          const projectChanged = fs.statSync(p.projectFile).mtimeMs > lastScan;
+          const discussionFile = resolve(dirname(p.projectFile), "discussion.md");
+          const discussionChanged = fs.existsSync(discussionFile) && fs.statSync(discussionFile).mtimeMs > lastScan;
+          return projectChanged || discussionChanged;
+        }
         catch { return false; }
       });
       if (!hasChanges) {

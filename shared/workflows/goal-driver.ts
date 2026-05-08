@@ -43,6 +43,7 @@ interface ProjectFacts {
   signals: string;
   plan: ReturnType<typeof extractMilestones>;
   artifacts: string[];
+  pendingComments: string;
   recentJournal: string;
 }
 
@@ -110,6 +111,24 @@ function readRecentJournal(journalPath: string, maxChars = 5000): string {
   return text.length <= maxChars ? text : text.slice(text.length - maxChars);
 }
 
+function readUnreadDiscussion(projectDir: string): string {
+  const discussionPath = join(projectDir, "discussion.md");
+  if (!existsSync(discussionPath)) return "";
+  const content = readFileSync(discussionPath, "utf-8");
+  const lastMarker = content.lastIndexOf("---read @");
+  if (lastMarker >= 0) {
+    const afterMarker = content.indexOf("\n", lastMarker);
+    return afterMarker === -1 ? "" : content.slice(afterMarker + 1).trim();
+  }
+  return content.replace(/^# Discussion\s*/i, "").trim();
+}
+
+function markDiscussionRead(projectDir: string, iteration: number): void {
+  const discussionPath = join(projectDir, "discussion.md");
+  if (!existsSync(discussionPath)) return;
+  appendFileSync(discussionPath, `\n---read @goal-driver-iter${iteration}---\n`, "utf-8");
+}
+
 function collectFacts(config: GoalDriverConfig): ProjectFacts {
   const content = readFileSync(config.projectPath, "utf-8");
   const id = extractField(content, "Project") || basename(config.projectDir);
@@ -126,6 +145,7 @@ function collectFacts(config: GoalDriverConfig): ProjectFacts {
     signals: extractSection(content, "Signals") || extractSection(content, "Metrics"),
     plan: extractMilestones(content),
     artifacts: listArtifacts(config.projectDir),
+    pendingComments: [extractSection(content, "Comments"), readUnreadDiscussion(config.projectDir)].filter(Boolean).join("\n").trim(),
     recentJournal: readRecentJournal(config.journalPath),
   };
 }
@@ -226,6 +246,10 @@ ${artifacts}
 
 ## Context
 ${facts.context || "(empty)"}
+
+## Pending Comments
+These are new human/agent comments to judge. Treat comments as evidence and direction, not automatic truth.
+${facts.pendingComments || "(none)"}
 
 ## Recent Journal
 Older journal entries may describe stale status. Treat them as history, not current metadata.
@@ -339,8 +363,8 @@ Error: ${reason}`);
     const decision = parseDecision(judgment.text);
 
     appendJournal(config, `### Goal Driver Cycle ${cycle} — ${now}
-**Facts**: status=${facts.status}; iteration=${facts.iteration}; plan=${facts.plan.done}/${facts.plan.total}; artifacts=${facts.artifacts.length}
-**Decision**: ${decision.kind}
+**Facts**: status=${facts.status}; iteration=${facts.iteration}; plan=${facts.plan.done}/${facts.plan.total}; artifacts=${facts.artifacts.length}; comments=${facts.pendingComments ? "yes" : "no"}
+${facts.pendingComments ? `**Pending Comments**: ${facts.pendingComments}\n` : ""}**Decision**: ${decision.kind}
 **Rationale**: ${decision.rationale || "(missing)"}
 **Next Action**: ${decision.nextAction || "(missing)"}
 **Validation Signal**: ${decision.validationSignal || "(missing)"}`);
@@ -350,6 +374,8 @@ Error: ${reason}`);
       updateCurrentState(config, `Waiting: owner judgment did not use the goal-driver decision format. Last raw response:\n${decision.raw.slice(0, 1000)}`);
       return ctx.escalate("Goal-driver owner judgment was not machine-readable.", { raw: decision.raw });
     }
+
+    if (facts.pendingComments) markDiscussionRead(config.projectDir, iteration);
 
     if (decision.kind === "WAITING") {
       updateProjectStatus(config.projectPath, "waiting", compactLine(decision.rationale || decision.nextAction), iteration);

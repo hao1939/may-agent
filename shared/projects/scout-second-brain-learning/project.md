@@ -4,7 +4,7 @@ owner: scout
 status: waiting
 type: milestone
 priority: P2
-workflow: project
+workflow: goal-driver
 iteration: 3
 stop_reason: Completed; waiting for human review/sign-off.
 ---
