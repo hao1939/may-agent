@@ -755,7 +755,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       try {
         const content = readFileSync(projectFile, "utf-8");
         // Parse YAML frontmatter if present (current convention).
-        // Falls back to old `**Owner**: x` line format for legacy projects.
+        // Legacy per-agent projects may still use old `**Owner**: x` lines.
+        const isSharedProject = relPath.startsWith("agents/shared/projects/");
         let frontmatter: Record<string, string> = {};
         const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n/);
         if (fmMatch) {
@@ -764,9 +765,18 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
             if (kv) frontmatter[kv[1].toLowerCase()] = kv[2];
           }
         }
+        const formatErrors: string[] = [];
+        if (isSharedProject && !fmMatch) formatErrors.push("missing YAML frontmatter");
+        for (const required of ["id", "owner", "status"]) {
+          if (isSharedProject && !frontmatter[required]) formatErrors.push(`missing frontmatter field: ${required}`);
+        }
+        if (isSharedProject && content.replace(/^---\n[\s\S]*?\n---\n/, "").match(/^\s*\*\*(Owner|Status):?\*\*:?\s*/mi)) {
+          formatErrors.push("metadata duplicated as bold body field");
+        }
         const field = (n: string) => {
-          // YAML frontmatter wins; fall back to bold-prefixed line.
+          // YAML frontmatter wins; fall back to bold-prefixed line only for legacy projects.
           if (frontmatter[n.toLowerCase()] !== undefined) return frontmatter[n.toLowerCase()];
+          if (isSharedProject) return null;
           const m = content.match(new RegExp(`^\\*\\*${n}\\*\\*:\\s*(.+)$`, "m"));
           return m ? m[1].trim() : null;
         };
@@ -780,6 +790,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           priority: field("Priority"),
           iteration: parseInt(field("Iteration") || "0", 10),
           health: field("Health"),
+          formatErrors,
           milestonesDone: msX,
           milestonesTotal: msX + msO,
           metrics: (() => {
