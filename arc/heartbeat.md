@@ -99,7 +99,7 @@ Run **both** of these:
 1. `git -C /app/agents status --short`
 2. `git -C /app/agents ls-files -v | awk '$1 ~ /^[a-z]/'`
 
-For (1): every modified path must start with `arc/`, `shared/knowledge/entries/`, or `shared/may-agent-docs/design/`. If any other path is listed, revert it (`git -C /app/agents checkout -- <path>`) before finishing — otherwise the stash sweep discards it and you'll end the session believing a fix landed when it didn't (KE-449 → KE-450).
+For (1): every modified path must start with `arc/`, `shared/knowledge/entries/`, `shared/may-agent-docs/design/`, or an `owner: arc` shared project. If any other path is listed, revert it (`git -C /app/agents checkout -- <path>`) before finishing — otherwise the stash sweep discards it and you'll end the session believing a fix landed when it didn't (KE-449 → KE-450).
 
 For (2): the output must be **empty**. Any line returned is a tracked file with `assume-unchanged` (`h`) or `skip-worktree` (`S`) set, meaning git is silently filtering edits to that path — `git status` will lie about it (KE-744). If the output is non-empty, **do not trust any file content read** during this session for those paths; cross-check against `git show :<path>` (the index blob) before publishing claims that depend on file content.
 
