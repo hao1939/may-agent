@@ -610,6 +610,53 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       record("capability.session-trace-completeness", totalSessions > 0 ? parseFloat((completeSessions / totalSessions).toFixed(4)) : 0, totalSessions);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring session trace completeness: ${e}`); }
 
+    // ── Measure: v2-spec-coverage-buildout Phase 1 metrics ─────────
+
+    // C1: Self-directed iteration rate (24h)
+    // Fraction of sessions started by heartbeat (autonomous) vs total sessions
+    try {
+      const totalSessions24h = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ?", twentyFourH);
+      const heartbeatSessions24h = count(
+        "SELECT COUNT(*) as c FROM sessions WHERE startedAt > ? AND source LIKE 'workflow:heartbeat%'",
+        twentyFourH,
+      );
+      record("capability.self-directed-iteration-rate-24h",
+        totalSessions24h > 0 ? parseFloat((heartbeatSessions24h / totalSessions24h).toFixed(4)) : 0,
+        totalSessions24h);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring self-directed-iteration-rate: ${e}`); }
+
+    // C7: Zombie session count (running >30min)
+    try {
+      const zombies = count(
+        "SELECT COUNT(*) as c FROM sessions WHERE status IN ('running', 'idle') AND startedAt < ?",
+        staleRunningCutoff,
+      );
+      record("capability.zombie-session-count", zombies);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring zombie-session-count: ${e}`); }
+
+    // C7: Peak concurrent sessions in last hour
+    try {
+      // Approximate: count sessions that overlapped with each 5-min bucket in the last hour
+      let maxConcurrent = 0;
+      for (let t = oneH; t <= now; t += 5 * 60_000) {
+        const concurrent = count(
+          "SELECT COUNT(*) as c FROM sessions WHERE startedAt <= ? AND (endedAt IS NULL OR endedAt >= ?)",
+          t, t,
+        );
+        if (concurrent > maxConcurrent) maxConcurrent = concurrent;
+      }
+      record("capability.concurrent-session-max-1h", maxConcurrent);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring concurrent-session-max: ${e}`); }
+
+    // C9: Process uptime (hours since earliest currently-running session)
+    try {
+      const earliest = (db.prepare(
+        "SELECT MIN(startedAt) as t FROM sessions WHERE status IN ('running', 'idle')"
+      ).get() as any)?.t;
+      const uptimeH = earliest ? parseFloat(((now - earliest) / 3600000).toFixed(2)) : 0;
+      record("capability.process-uptime-h", uptimeH);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring process-uptime: ${e}`); }
+
     try {
       const staleActiveProjects = count(
         `SELECT COUNT(*) as c FROM projects p
