@@ -1,19 +1,17 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778206591650_161
+- **Session:** s_1778208391429_168
 - **Status:** success
-- **When:** 2026-05-08T02:18:44.984Z
+- **When:** 2026-05-08T02:48:44.984Z
 
 ## What Happened
-Completed dev heartbeat triage: Approved queue is empty, active runtime metrics are healthy, the sole open alert is may-owned/pending-review, and recent null-error steward/evaluator sessions appear transient with a later successful steward run. Recorded and committed the watchpoint investigation at `agents/dev/workspace/investigations/2026-05-08-heartbeat-null-error-steward-watch.md` (`3eaadd212`) and committed `dev/last-session.md` update (`676653feb`).
+Completed dev heartbeat triage: Approved queue is empty, dev-owned inbox items are lifecycle events dismissed as already acted, runtime metrics are healthy, and the latest error cluster is a recovered provider-token failure rather than a handler bug. Wrote and committed investigation evidence at agents/dev/workspace/investigations/2026-05-08-heartbeat-provider-token-recovery.md (commit 6b41d1b90); pre-existing evaluator/last-session.md remains modified by runtime outside my deliverable.
 
 ## Files Modified
-- agents/dev/workspace/investigations/2026-05-08-heartbeat-null-error-steward-watch.md
-- agents/dev/last-session.md
+- agents/dev/workspace/investigations/2026-05-08-heartbeat-provider-token-recovery.md
 
 ## Completed
-- Reviewed dev heartbeat pending events and dismissed lifecycle/runtime telemetry as already acted or non-dev-owned.
-- Checked Approved work queue and found no approved implementation items.
-- Queried active metrics, recent session errors, handler failures, unmeasured metrics, open alerts, and pending events for heartbeat triage.
-- Recorded and committed dev heartbeat null-error steward watch investigation.
+- Checked Approved work queue and confirmed no dev implementation item is available
+- Queried session and handler health metrics plus recent failures for heartbeat triage
+- Investigated recent null-error steward sessions and documented provider-token expiry recovery evidence
