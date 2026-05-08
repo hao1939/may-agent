@@ -308,6 +308,30 @@ function shouldOverrideWithReview(heuristicVerdict: string, reviewedVerdict: str
   return heuristicVerdict === "good" && ["needs_improvement", "acceptable"].includes(reviewedVerdict);
 }
 
+export function falseGoodEventPayload(params: {
+  sessionId: string;
+  agent: string;
+  heuristicVerdict: string;
+  reviewedVerdict: string;
+  reviewSessionId: string;
+  artifactPath: string;
+}): Record<string, unknown> {
+  const newVerdict = params.reviewedVerdict === "acceptable" ? "needs_improvement" : params.reviewedVerdict;
+  return {
+    source: "evaluator-aftermath",
+    owner: "evaluator",
+    evaluationId: params.sessionId,
+    sessionId: params.sessionId,
+    agent: params.agent,
+    originalVerdict: params.heuristicVerdict,
+    newVerdict,
+    heuristicVerdict: params.heuristicVerdict,
+    reviewedVerdict: params.reviewedVerdict,
+    reviewSessionId: params.reviewSessionId,
+    artifactPath: params.artifactPath,
+  };
+}
+
 export function buildReviewTask(params: {
   sessionId: string;
   session: any;
@@ -510,14 +534,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     });
     ctx.emit({
       type: "evaluation.false_good",
-      source: "evaluator-aftermath",
-      owner: "evaluator",
-      sessionId,
-      agent: session.agent,
-      heuristicVerdict: heuristic.verdict,
-      reviewedVerdict,
-      reviewSessionId: (review as any).sessionId,
-      artifactPath,
+      ...falseGoodEventPayload({
+        sessionId,
+        heuristicVerdict: heuristic.verdict,
+        reviewedVerdict,
+        reviewSessionId: (review as any).sessionId,
+        artifactPath,
+        agent: session.agent,
+      }),
     } as any);
   }
 

@@ -6,6 +6,7 @@ import {
   classifyEvaluationLane,
   classifyVerdict,
   evaluationHeuristicVersion,
+  falseGoodEventPayload,
   shouldRefreshEvaluation,
   transcriptOutputSignals,
   transcriptIssues,
@@ -237,5 +238,28 @@ describe("evaluator aftermath transcript checks", () => {
     expect(artifactVerdict("## Verdict\nNeeds Improvement\n")).toBe("needs_improvement");
     expect(artifactVerdict("## Verdict\ngood\n")).toBe("good");
     expect(artifactVerdict("## Evidence\nnone\n")).toBeNull();
+  });
+
+  it("emits false-good events with generic and review-specific verdict fields", () => {
+    expect(falseGoodEventPayload({
+      sessionId: "s_1",
+      agent: "may",
+      heuristicVerdict: "good",
+      reviewedVerdict: "acceptable",
+      reviewSessionId: "s_review",
+      artifactPath: "agents/evaluator/workspace/aftermath/s_1.md",
+    })).toMatchObject({
+      source: "evaluator-aftermath",
+      owner: "evaluator",
+      evaluationId: "s_1",
+      sessionId: "s_1",
+      agent: "may",
+      originalVerdict: "good",
+      newVerdict: "needs_improvement",
+      heuristicVerdict: "good",
+      reviewedVerdict: "acceptable",
+      reviewSessionId: "s_review",
+      artifactPath: "agents/evaluator/workspace/aftermath/s_1.md",
+    });
   });
 });
