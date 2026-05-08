@@ -96,6 +96,66 @@ describe("evaluator aftermath transcript checks", () => {
     expect(verdict.issues).toContain("anti-shallow gate not satisfied: 2/10 tool calls");
   });
 
+  it("ignores target transcript failures quoted inside evaluator review sessions", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "bash-1",
+            name: "bash",
+            arguments: { command: "sed -n '1,200p' .state/sessions/history/s_target/session.jsonl" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "bash-1",
+        toolName: "bash",
+        content: [
+          {
+            type: "text",
+            text: "target said no such column: summary and later finish() blocked [uncommitted changes]",
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "write-1",
+            name: "write",
+            arguments: { path: "agents/evaluator/workspace/aftermath/s_target.md", content: "review" },
+          },
+        ],
+      }),
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toEqual([]);
+  });
+
+  it("detects anti-shallow gate failures from direct session tool calls", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          { type: "toolCall", id: "q1", name: "query_db", arguments: { sql: "SELECT 1" } },
+          { type: "toolCall", id: "b1", name: "bash", arguments: { command: "ls agents/scout/workspace" } },
+        ],
+      }),
+    ].join("\n");
+
+    const verdict = classifyVerdict(
+      { status: "done", opCount: 0, task: "⚠️ ANTI-SHALLOW GATE: Your session made only 7 tool calls (minimum: 10)." },
+      transcript,
+    );
+
+    expect(verdict.verdict).toBe("needs_improvement");
+    expect(verdict.issues).toContain("anti-shallow gate not satisfied: 2/10 tool calls");
+  });
+
   it("flags metric health claims without live evidence", () => {
     const verdict = classifyVerdict(
       { status: "done", opCount: 0 },

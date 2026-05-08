@@ -7,6 +7,12 @@ export const name = "evaluator-aftermath";
 export const description = "Evaluate session aftermath, cancel stale running sessions, and drive repair/learning.";
 export const HEURISTIC_VERSION = 2;
 
+type TranscriptView = {
+  text: string;
+  liveEvidenceText: string;
+  toolCallCount?: number;
+};
+
 function extractTrigger(task: string): any {
   const match = task.match(/## Trigger Event\s*```json\s*([\s\S]*?)\s*```/);
   if (!match) return null;
@@ -19,29 +25,131 @@ function extractTrigger(task: string): any {
 
 export function transcriptIssues(transcript: string): string[] {
   const issues: string[] = [];
-  const hasLiveRuntimeSignals = /## Live Runtime Signals \(workflow-collected\)[\s\S]{0,800}?Status: available/.test(transcript);
-  const liveRuntimeSignalsUnavailable = /## Live Runtime Signals \(workflow-collected\)[\s\S]{0,800}?Status: unavailable/.test(transcript);
+  const view = sessionOwnedTranscriptView(transcript);
+  const ownText = view.text;
+  const liveText = view.liveEvidenceText;
+  const hasLiveRuntimeSignals = /## Live Runtime Signals \(workflow-collected\)[\s\S]{0,800}?Status: available/.test(liveText);
+  const liveRuntimeSignalsUnavailable = /## Live Runtime Signals \(workflow-collected\)[\s\S]{0,800}?Status: unavailable/.test(liveText);
 
-  if (transcript.includes("finish() blocked [uncommitted changes]")) {
+  if (ownText.includes("finish() blocked [uncommitted changes]")) {
     issues.push("finish blocked by uncommitted changes");
   }
-  if (/no such column:/i.test(transcript)) {
+  if (/no such column:/i.test(ownText) || /no such table:/i.test(ownText)) {
     issues.push("schema/query error in transcript");
   }
-  if (/git\s+add\s+may\/\s+shared\/\s+&&\s+git\s+commit/.test(transcript)) {
+  if (/git\s+add\s+may\/\s+shared\/\s+&&\s+git\s+commit/.test(ownText)) {
     issues.push("broad may/shared commit during session");
   }
-  if (/last-session\.md/.test(transcript) && /gate-outcomes\.log/.test(transcript) && /git\s+commit/.test(transcript)) {
+  if (/last-session\.md/.test(ownText) && /gate-outcomes\.log/.test(ownText) && /git\s+add[^;\n]*(last-session\.md|gate-outcomes\.log|may\/\s+shared\/)[\s\S]{0,240}git\s+commit/.test(ownText)) {
     issues.push("committed generated runtime files");
   }
   if (liveRuntimeSignalsUnavailable) {
     issues.push("workflow live signal injection unavailable");
   }
-  if (/\ball P[01] metrics (?:are )?(?:in range|healthy|green|at target)\b/i.test(transcript) && !/"name":"query_db"/.test(transcript) && !hasLiveRuntimeSignals) {
+  if (/\ball P[01] metrics (?:are )?(?:in range|healthy|green|at target)\b/i.test(ownText) && !/"name":"query_db"/.test(ownText) && !hasLiveRuntimeSignals) {
     issues.push("metric health claim without live evidence");
   }
 
   return issues;
+}
+
+function contentText(content: any): string {
+  if (Array.isArray(content)) return content.map((part) => String(part?.text ?? "")).filter(Boolean).join("\n");
+  return typeof content === "string" ? content : "";
+}
+
+function toolCalls(content: any): any[] {
+  return Array.isArray(content) ? content.filter((part) => part?.type === "toolCall" && typeof part?.name === "string") : [];
+}
+
+function parseJsonlTranscript(transcript: string): any[] | null {
+  const lines = transcript.split(/\n/).filter((line) => line.trim().startsWith("{"));
+  if (lines.length === 0) return null;
+  const parsed: any[] = [];
+  for (const line of lines) {
+    try {
+      parsed.push(JSON.parse(line));
+    } catch {
+      return null;
+    }
+  }
+  return parsed.length > 0 ? parsed : null;
+}
+
+function sessionOwnedTranscriptView(transcript: string): TranscriptView {
+  const records = parseJsonlTranscript(transcript);
+  if (!records) return { text: transcript, liveEvidenceText: transcript };
+
+  const own: string[] = [];
+  const liveEvidence: string[] = [];
+  const callsById = new Map<string, any>();
+  let toolCallCount = 0;
+
+  for (const record of records) {
+    if (record?.role === "user") {
+      liveEvidence.push(contentText(record.content));
+    }
+
+    if (record?.role === "assistant") {
+      const assistantText = contentText(record.content);
+      if (assistantText) own.push(assistantText);
+
+      for (const call of toolCalls(record.content)) {
+        toolCallCount += 1;
+        callsById.set(String(call.id), call);
+        own.push(JSON.stringify({ name: call.name, arguments: call.arguments ?? {} }));
+      }
+    }
+
+    if (record?.role === "toolResult") {
+      const toolName = String(record.toolName ?? "");
+      const text = contentText(record.content);
+      const call = callsById.get(String(record.toolCallId));
+      const command = String(call?.arguments?.command ?? "");
+
+      if (toolName === "query_db" || toolName === "finish") {
+        own.push(text);
+      } else if (toolName === "bash") {
+        own.push(command);
+        if (/\bgit\s+(?:status|add|commit|diff|show)\b/.test(command)) own.push(text);
+      } else if (toolName === "read" && /\.state\/sessions\/(?:history\/)?[^/\s]+\/session\.jsonl/.test(String(call?.arguments?.path ?? ""))) {
+        own.push("SESSION_READ_BLOCKED_OR_ATTEMPTED");
+      }
+    }
+  }
+
+  return {
+    text: own.join("\n"),
+    liveEvidenceText: liveEvidence.concat(own).join("\n"),
+    toolCallCount,
+  };
+}
+
+function antiShallowIssues(session: any, transcript: string): string[] {
+  if (session?.agent === "evaluator" || session?.agent === "judge") return [];
+  const task = String(session?.task ?? "");
+  if (!/ANTI-SHALLOW GATE/i.test(task)) return [];
+  const threshold = Number(task.match(/minimum:\s*(\d+)/i)?.[1] ?? 10);
+  const view = sessionOwnedTranscriptView(transcript);
+  const count = view.toolCallCount;
+  if (typeof count === "number" && Number.isFinite(threshold) && count < threshold) {
+    return [`anti-shallow gate not satisfied: ${count}/${threshold} tool calls`];
+  }
+  return [];
+}
+
+function formatWorkflowCollectedFacts(session: any, transcript: string, heuristic: { verdict: string; issues: string[] }): string {
+  const view = sessionOwnedTranscriptView(transcript);
+  const lines = [
+    `Status: ${String(session?.status ?? "unknown")}`,
+    `Error: ${session?.error ? String(session.error).slice(0, 240) : "none"}`,
+    `Recorded opCount: ${Number(session?.opCount ?? 0)}`,
+    `Transcript tool calls: ${typeof view.toolCallCount === "number" ? view.toolCallCount : "unknown"}`,
+    `Heuristic verdict: ${heuristic.verdict}`,
+    `Heuristic issues: ${heuristic.issues.length ? heuristic.issues.join("; ") : "none"}`,
+  ];
+
+  return ["## Workflow-Collected Session Facts", ...lines.map((line) => `- ${line}`)].join("\n");
 }
 
 export function classifyVerdict(session: any, transcript = ""): { quality: number; efficiency: number; verdict: string; issues: string[] } {
@@ -53,6 +161,7 @@ export function classifyVerdict(session: any, transcript = ""): { quality: numbe
   if (session?.error) issues.push(`error: ${String(session.error).slice(0, 240)}`);
   if (opCount > 0 && opCount < 3 && status === "done") issues.push(`shallow session: ${opCount} ops`);
   issues.push(...transcriptIssues(transcript));
+  issues.push(...antiShallowIssues(session, transcript));
 
   const failed = status === "error" || status === "interrupted" || !!session?.error;
   return {
@@ -158,6 +267,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const transcriptPath = sessionTranscriptPath(persistDir, sessionId);
   const transcript = readSessionTranscript(transcriptPath);
   const heuristic = classifyVerdict(session, transcript);
+  const workflowCollectedFacts = formatWorkflowCollectedFacts(session, transcript, heuristic);
   const artifactPath = `agents/evaluator/workspace/aftermath/${sessionId}.md`;
 
   if (!shouldRefreshEvaluation(evaluation, heuristic)) {
@@ -210,6 +320,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     ``,
     `Session: ${JSON.stringify(session, null, 2)}`,
     `Transcript path: ${transcriptPath}`,
+    ``,
+    workflowCollectedFacts,
+    ``,
+    `Use the workflow-collected facts above as primary evidence. Only inspect the transcript for short confirming quotes or missing context. Do not use read() on session.jsonl; use bounded bash grep/jq/sed instead. Query the DB only if the injected facts are missing or inconsistent, and inspect schema first.`,
+    ``,
     `Write your concise review to: ${artifactPath}`,
     ``,
     `Do exactly this loop:`,
