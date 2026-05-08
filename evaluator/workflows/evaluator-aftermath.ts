@@ -332,7 +332,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `2. Write the concise review to the artifact path above.`,
     `3. Immediately call read() on that same artifact path and confirm the file contains the required sections.`,
     `4. If root cause is obvious and low-risk, fix it now; verify any additional edit by reading/checking it too.`,
-    `5. If blocked/high-risk, escalate with a real agent recipient (for example may, arc, dev, scout, coach) or an escalation note in the artifact. NEVER use functions.message as a recipient; if no message/notify tool is available, do not fake it — write the escalation note and finish(partial).`,
+    `5. If blocked/high-risk, escalate with a real agent recipient (for example may, arc, dev, scout, coach) or an escalation note in the artifact. NEVER use "functions.message" as the 'to' field — it is NOT an agent, it is a tool namespace. If you need to message someone, use to="may" or to="arc" etc. If unsure, just write the note in the artifact and finish(partial).`,
     `6. If there is reusable learning, update the right agent context/knowledge file.`,
     `7. Only then call finish(success); the verify-after-write guard rejects success if the artifact was written but not read back.`,
     ``,
