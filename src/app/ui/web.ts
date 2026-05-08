@@ -981,16 +981,33 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       }
     } catch { /* tolerate missing column */ }
 
-    // Recent sessions for this project (reuses handleProjectSessions logic).
+    // Recent sessions for this project. Two-tier:
+    //   tier 1: rows tagged with projectId (canonical)
+    //   tier 2: rows whose task mentions the project name (best-effort)
     let recentSessions: Array<Record<string, unknown>> = [];
     let sessionCount = 0;
+    let mentionCount = 0;
     try {
-      const rows = db.prepare(
+      const tagged = db.prepare(
         `SELECT sessionId, agent, status, startedAt, endedAt, task FROM sessions WHERE projectId = ? ORDER BY startedAt DESC LIMIT 10`
       ).all(projectId) as any[];
-      recentSessions = rows;
+      for (const r of tagged) recentSessions.push({ ...r, link: "tagged" });
       const cnt = db.prepare(`SELECT COUNT(*) as c FROM sessions WHERE projectId = ?`).get(projectId) as any;
       sessionCount = cnt?.c ?? 0;
+      // Tier 2 — only if tagged is short.
+      if (tagged.length < 10 && projectName.length >= 6) {
+        const seen = new Set(tagged.map(t => t.sessionId));
+        const mentions = db.prepare(
+          `SELECT sessionId, agent, status, startedAt, endedAt, task FROM sessions WHERE (projectId IS NULL OR projectId = '') AND task LIKE ? ORDER BY startedAt DESC LIMIT 10`
+        ).all(`%${projectName}%`) as any[];
+        for (const r of mentions) {
+          if (!seen.has(r.sessionId)) recentSessions.push({ ...r, link: "mention" });
+        }
+        const mcnt = db.prepare(
+          `SELECT COUNT(*) as c FROM sessions WHERE (projectId IS NULL OR projectId = '') AND task LIKE ?`
+        ).get(`%${projectName}%`) as any;
+        mentionCount = mcnt?.c ?? 0;
+      }
     } catch { /* skip */ }
 
     return json({
@@ -1011,6 +1028,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       ownedMetrics,
       citedMetricsResolved,
       sessionCount,
+      mentionCount,
       recentSessions,
       updatedAt: stat ? Math.floor(stat.mtimeMs) : null,
       createdAt: stat ? Math.floor(stat.ctimeMs) : null,
@@ -1034,19 +1052,40 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       name = parts[parts.length - 1]?.replace(/\.md$/, "") ?? "";
     }
     const projectId = `${owner}/${name}`;
-    // Try projectId query first
+
+    // Two-tier query:
+    //   tier 1 = sessions where projectId column is set (canonical — tagged at
+    //            dispatch time by the workflow runtime)
+    //   tier 2 = sessions where the task body mentions the project name
+    //            (best-effort — catches heartbeat sessions that reference the
+    //            project but weren't dispatched through it)
+    // Always return both, with `link` field marking provenance so the UI
+    // can distinguish 'work done on this project' vs 'mentioned this project'.
+    const sessions: any[] = [];
     try {
       const db = _db();
-      const rows = db.prepare(
+      const tagged = db.prepare(
         "SELECT sessionId, agent, status, opCount, startedAt, endedAt, task FROM sessions WHERE projectId = ? ORDER BY startedAt DESC LIMIT 50"
       ).all(projectId) as any[];
-      if (rows.length > 0) return json(rows);
+      for (const r of tagged) sessions.push({ ...r, link: "tagged" });
+      // Tier 2: only if tagged is short, look for task mentions. Cap the
+      // scan so big DBs don't get slow; project names are typically distinctive
+      // (e.g. 'evaluator-low-quality-rate-calibration') so LIKE %name% is safe.
+      if (tagged.length < 20 && name.length >= 6) {
+        const seen = new Set(tagged.map(t => t.sessionId));
+        const mentions = db.prepare(
+          "SELECT sessionId, agent, status, opCount, startedAt, endedAt, task FROM sessions WHERE (projectId IS NULL OR projectId = '') AND task LIKE ? ORDER BY startedAt DESC LIMIT 30"
+        ).all(`%${name}%`) as any[];
+        for (const r of mentions) {
+          if (!seen.has(r.sessionId)) sessions.push({ ...r, link: "mention" });
+        }
+      }
     } catch { /* projectId column may not exist */ }
 
-    // Fallback: scan workflow run files (both directories)
-    // Try both with and without "agents/" prefix since paths vary
+    if (sessions.length > 0) return json(sessions);
+
+    // Final fallback: scan workflow run files (legacy path).
     const searchPaths = [path, path.replace(/^agents\//, "")];
-    const sessions: any[] = [];
     for (const dir of [join(STATE_DIR, "workflow-runs"), join(STATE_DIR, "workflows")]) {
       try {
         for (const f of readdirSync(dir)) {
@@ -1054,7 +1093,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
             const run = JSON.parse(readFileSync(join(dir, f), "utf-8"));
             if (searchPaths.some(sp => run.task?.includes(sp))) {
               for (const step of run.steps ?? []) {
-                if (step.sessionId) sessions.push({ sessionId: step.sessionId, agent: step.agent, status: step.status, startedAt: step.startedAt, task: step.task?.slice(0, 80) });
+                if (step.sessionId) sessions.push({ sessionId: step.sessionId, agent: step.agent, status: step.status, startedAt: step.startedAt, task: step.task?.slice(0, 80), link: "workflow-file" });
               }
             }
           } catch { /* skip corrupted files */ }
@@ -1334,8 +1373,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
    * that exist on disk but aren't auto-injected.
    *
    * Source of truth (manager.ts:resolveSystemPrompt):
-   *   1. agents/shared/common-sense.md  (shared, every agent)
-   *   2. agents/<name>/AGENTS.md         (agent identity, this agent only)
+   *   1. agents/shared/common-sense.md  (shared defaults, every agent)
+   *   2. agents/<name>/AGENTS.md         (agent identity; role-specific behavior takes precedence)
    *   3. <runtime metadata block>        (synthesized at session start)
    *   PLUS def.systemPrompt if explicitly set in agent.json (overrides 1+2).
    *
@@ -1379,7 +1418,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         source: "agent.json",
       });
     } else {
-      // Standard prompt assembly: shared common-sense + agent's AGENTS.md.
+      // Standard prompt assembly: shared defaults, then role-specific identity.
       const sharedPath = join(AGENTS_ROOT, "shared", "common-sense.md");
       const sharedFile = readFile(sharedPath, "shared/common-sense.md", "manager.ts");
       if (sharedFile) promptFiles.push({ ...sharedFile, source: "shared (every agent)" });
