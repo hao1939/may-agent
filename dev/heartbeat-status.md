@@ -1,6 +1,25 @@
 # Dev Heartbeat Status
 
-Updated: 2026-05-08T05:12:00Z
+Updated: 2026-05-08T05:21:00Z
+
+## 2026-05-08T05:21Z heartbeat update
+
+Judgment: no approved dev implementation item is available, and core dev-owned runtime health remains acceptable. The active work-queue `## Approved` section is empty; recent dev aftermath reviews identify process issues (schema guessing, unavailable `rg`, and commit hygiene) already addressed by the current `agents/dev/heartbeat.md` guidance, so this heartbeat used only the canned SQL and portable shell commands.
+
+Evidence snapshot:
+- Work queue: `## Approved` remains empty; P0/P1 implementation candidates are still under `## Proposed` and await approval.
+- Core metrics: `handler.success-rate=1`, `handler.failed-count=0`, `session.error-rate-6h=0.0337`, `agent.dev.low-quality-streak=0`, and no active metrics are missing a snapshot in the last hour.
+- Recent handler failures: newest `handler.failed` event is an older `closed-loop-steward` timeout at timestamp `1778173876392`; current 6h handler failed count is zero.
+- Recent session errors: latest rows are may/evaluator sessions with null DB `error`; no current dev-owned code failure cluster is evident.
+- Open alerts: four unresolved alerts exist (`v2.spec-coverage-rate`, `evaluator.low-quality-rate-24h`, `capability.self-directed-iteration-rate-24h`, `capability.process-uptime-h`), but none were injected as dev-owned active alerts in this prompt.
+- Git state: dirty files at start were runtime-generated `*/last-session.md` markers and `shared/gate-outcomes.log`; they are preserved rather than discarded.
+
+Current pending event dispositions:
+- Acted: read latest aftermath for `s_1778217282285_1`; it flagged schema/query error and finish blocked by uncommitted changes, so this heartbeat stayed on canned SQL and checked git status early.
+- Acted: read aftermath for `s_1778216847231_76`; it flagged `rg` usage and generated-file commits, so this heartbeat used `find`/`grep`-compatible shell and explicitly classified dirty runtime files.
+- Acted: reread recent schema/finalization aftermath reviews for `s_1778202991454_146`, `s_1778204791049_156`, `s_1778212840940_7`, `s_1778206591650_161`, `s_1778208391429_168`, and `s_1778212024610_6`; current behavior incorporates their schema-first/canned-query and finish-hygiene recommendations.
+- Dismissed: repeated `session.start` and routine `session.end` events are informational and superseded by this heartbeat's fresh evidence.
+- Dismissed as not dev-authorized: prior project-iterations anomaly and other Proposed work-queue items remain unapproved implementation work.
 
 ## Current heartbeat judgment
 
