@@ -1,7 +1,7 @@
 # Design: Web UI
 
-**Status**: draft (five-surfaces revision, 2026-05-08)
-**Date**: 2026-05-06
+**Status**: partially shipped (2026-05-08)
+**Date**: 2026-05-06 (revised 2026-05-08)
 **Aligned with**: `../architecture.md`, `../work-model.md`, `agent-metrics.md`, `heartbeat-as-agency.md`
 
 ## What this UI is for
@@ -437,18 +437,25 @@ Potential structured fields to add later. None are prerequisites for the first u
 
 The current `web.ts` is mostly v2-shaped on the back end. The front-end is the rewrite. The shipped UI overlaps with the design more than the earlier revision admitted: `#chat` already implements session-view-with-input, `#knowledge` already implements the file browser. The migration is mostly *renaming and rewiring*, not building from scratch.
 
-1. **Add `/api/liveness` and render it on the current dashboard.** Use existing sessions/events/metrics only. This is the smallest loop that lets the human see whether agents are heartbeating, messaging, and breaching.
-2. **Delete or unhook dead surfaces.** `/api/requests`, `/api/digest`, `/api/agents/activity`, `/api/agents/timeline` (current shape). Unhook `/api/benchmarks*` from navigation but leave routes intact for future rebuild.
-3. **Add only the steering endpoints we actually need.** Per-project comment already works durably; add per-session input and message-to-agent only when the UI needs them outside the WebSocket path.
-4. **Front-end rewrite to the five-surface layout.** Reactive to `/ws`, no polling. Tabs become real URLs. The biggest piece, but mostly URL/route plumbing on top of components that already exist.
-   - `#dashboard` → `/` (add heartbeat timeline + decision feed; keep agent grid as one component).
-   - `#chat` → entry points for `/sessions/:id` (default-session resolution, new-conversation button).
-   - `#knowledge` → `/knowledge` (URL-align; integrate cross-links from session and project views).
-   - `#metrics` + `#events` → `/system`.
-   - `#projects` → `/projects` and `/projects/:id` (project detail view is new).
-   - `#benchmarks` → unhooked.
-5. **Define default-session resolution only when moving `#chat` to `/sessions/:id`.** Per-agent: most-recent open session that's not a heartbeat or worker session.
-6. **Optional refinements after use.** Add `agent.decision`, formal trigger typing, or richer metric-project linking only if the simple liveness view cannot answer the operator's question.
+**Status as of 2026-05-08** (commit `f46e71ad` `webui: align with five-surface design`):
+
+1. ✅ **`/api/liveness` shipped and rendered.** Heartbeat detection fixed (was missing ~80% of heartbeats due to per-agent workflow path bypassing the `[heartbeat]` task prefix). Verified: 6/3 → 31/5 heartbeats/agents detected in 4h after the fix.
+2. ✅ **Dead surfaces unhooked.** `/api/requests` deleted; `Benchmarks` tab unhooked from header. `/api/digest`, `/api/agents/activity`, `/api/agents/timeline` are still wired to the current dashboard panels because removing them now would break visible features before their replacement panels (heartbeat timeline + decision ticker + conversation strip) are built. Defer their deletion until step 4's panel rebuild.
+3. ✅ **Five steering POST endpoints shipped.** `POST /api/sessions/:id/cancel`, `POST /api/sessions/:id/message`, `POST /api/agents/:name/heartbeat-now`, `POST /api/metrics/:id/threshold`, `POST /api/alerts/:id/resolve`. Each emits one typed event with `source: "web-ui"` (or `"human"` for heartbeat-now).
+4. ⏳ **Front-end — plumbing done; visual rewrite still pending.**
+   - ✅ Hash router shipped: `#/`, `#/projects`, `#/projects/:id`, `#/sessions`, `#/sessions/:id`, `#/knowledge`, `#/system`. Legacy hashes (`#dashboard`, `#chat`, `#metrics`, `#events`) still resolve via aliases for one release.
+   - ✅ Tabs renamed `Dashboard`/`Chat`/`Metrics`/`Events` → `Live`/`Sessions`/`System`. `Benchmarks` removed from nav.
+   - ✅ WebSocket pub-sub layer shipped: panels can `busSubscribe(eventType, fn)` to live events.
+   - ⏳ The visual rewrite of `/` (heartbeat timeline + decision ticker + projects-by-activity tiles + conversation strip in the layout from §1) is **not done in this pass**. The current dashboard panels (health summary, agent grid, activity timeline, live activity feed) still render. They work; they just don't yet match the design's layout.
+5. ⏳ **Default-session resolution rule documented but not yet implemented.** `#chat` already resolves to a session-with-input surface; the rule needs to be encoded in `initChat()` (most-recent open non-heartbeat/worker session, else create one).
+6. **Optional refinements** — deferred. `agent.decision` is now firing in production (28 lifetime, all in last 24h — see v2-spec.md S7). Once emission coverage is high enough to support the front-page decision ticker, the design can rely on it instead of falling back to `sessions.outcome`.
+
+What remains for a fully spec-aligned UI:
+
+- The five-panel layout on `/` (heartbeat timeline as the dominant element, recent decisions ticker, projects sorted by recent activity, conversation strip, breach badge in top bar).
+- Default-session resolution wired into the Sessions surface.
+- Knowledge cross-link rendering (`KE-NNN` references become `<a href="#/knowledge/entries/KE-NNN">`).
+- Steering verb UI surfaces (cancel-session button, threshold edit, alert-resolve verb on metric detail). Endpoints exist; UI affordances do not.
 
 Order: 1 first. Then do 2 and 3 only where they simplify the shipped UI. Do 4 and 5 together when moving from hash tabs to real URLs. Step 6 is explicitly last. The rule is: expose existing truth first, add primitives only after a concrete gap appears.
 
