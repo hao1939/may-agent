@@ -1,17 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778215047293_57
+- **Session:** s_1778217282285_1
 - **Status:** success
-- **When:** 2026-05-08T04:39:29.138Z
+- **When:** 2026-05-08T05:17:19.275Z
 
 ## What Happened
-Completed dev heartbeat self-maintenance: approved queue remains empty, core dev health checks are in range, evaluator aftermath signals were explicitly triaged, and a tracked heartbeat checklist artifact was written/read/committed at agents/dev/heartbeat-status.md (commit 98581a00c). Also preserved a concurrent shared work-queue proposal change in commit 1033f5676 so finish guard could pass without discarding it.
+Completed dev heartbeat self-maintenance: Approved queue is empty, core handler/session health is in range, pending aftermath/inbox signals were triaged, and `agents/dev/heartbeat.md` was hardened against recurring schema/tooling mistakes. Committed primary dev change in `9b4826adc`; also preserved concurrent heartbeat marker/log outputs in `c8fd4b4e1` and `d78245e32` so the tracked repo stayed clean (only ignored `shared/gate-outcomes.log` remained).
 
 ## Files Modified
-- agents/dev/heartbeat-status.md
-- agents/shared/work-queue.md
+- agents/dev/heartbeat.md
+- agents/evaluator/last-session.md
+- agents/may/last-session.md
+- agents/scout/last-session.md
+- agents/scout/workspace/heartbeat-log.md
 
 ## Completed
 - Triage pending dev heartbeat events and aftermath reviews
-- Create and commit dev heartbeat artifact with explicit event dispositions and checklist
+- Harden dev heartbeat guidance against recurring schema/query and rg availability mistakes
+- Check dev heartbeat queue, metrics, recent failures, handler failures, unresolved alerts, and repository dirty state
