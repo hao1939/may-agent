@@ -23,6 +23,9 @@
     },
     "evaluator": {
       "consecutiveErrors": 0
+    },
+    "arc": {
+      "consecutiveErrors": 0
     }
   }
 }
