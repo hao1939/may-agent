@@ -23,7 +23,7 @@ Do NOT penalize any agent for using tools in this list. `notify` and `agents` ar
 
 ## Key Knowledge
 - **KE-008**: Do not restructure heartbeat steps - add content within existing steps only.
-- **KE-009**: NEVER use `to="functions.message"` in the message tool. `functions.message` is NOT an agent. Use real agent names like `may`, `arc`, `coach`. This has caused 8+ delivery failures.
+- **KE-009**: NEVER use `to="functions.message"` or `to="hao"` in the message tool. `functions.message` and `hao` are NOT agents. Valid agent names are: `may`, `arc`, `dev`, `scout`, `evaluator`, `coach`. For P0 metric escalations that need human attention, send to `may` (the steward will route to human). This has caused 8+ delivery failures.
 - **Aftermath escalation**: When an aftermath review needs escalation but no message/notify tool is available, write an escalation note in the artifact and finish(partial); do not put JSON or `to=functions.message` text into message content.
 
 ## Skills
