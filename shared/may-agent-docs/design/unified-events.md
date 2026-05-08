@@ -68,14 +68,19 @@ Note: `session.completed` has no real emitter — session lifecycle produces `se
 
 ### Consumer reality (event-only handlers in `agents/may/cron.json`)
 
-| Handler | Subscribes to | Lifetime invocations | Status |
-|---|---|---|---|
-| `session-recovery` | `session.failed` (live, 102×) | 0 | ❌ never wired — see KE-455 |
-| `session-eval` | `session.completed` (1×) | 0 | ❌ never wired |
-| `escalation` | `session.escalated` | 0 | ❌ source not emitted, handler not wired |
-| `metric-alert-reactor` | `metric.breach` (live, 62×) | 0 | ❌ **source emits 18/day, handler still dormant** — KE-731 (wedge), KE-732 (doc dual), KE-776 (dedup eats every breach). 62 pending breach events orphaned. |
-| (no handler) | `metric.stalled` (live, 61×) | n/a | ❌ **no handler exists** — KE-781. Stall signal reaches may only via `loadInbox()`, gets dismissed as noise (KE-772). Companion proposal: `agents/arc/workspace/proposals/2026-05-07-subscribe-metric-stalled-events.md`. |
-| `context-learn` | `context-learn` | 0 | ❌ replaced de facto by timer-driven `context-learn-poller` |
+For live numbers, query:
+```sql
+SELECT handler_name, COUNT(*) FROM handler_runs WHERE started_at > unixepoch() * 1000 - 86400000 * 7 GROUP BY handler_name;
+```
+
+| Handler | Subscribes to | Status notes |
+|---|---|---|
+| `session-recovery` | `session.failed` | ❌ never wired — see KE-455 |
+| `session-eval` | `session.completed` | ❌ never wired |
+| `escalation` | `session.escalated` | ❌ source not emitted, handler not wired |
+| `metric-alert-reactor` | `metric.breach` | ❌ source emits regularly, handler dormant — KE-731, KE-732, KE-776 (dedup eats every breach) |
+| (no handler) | `metric.stalled` | ❌ **no handler exists** — KE-781. Stall signal reaches may only via `loadInbox()`, gets dismissed as noise (KE-772). Companion proposal: `agents/arc/workspace/proposals/2026-05-07-subscribe-metric-stalled-events.md`. |
+| `context-learn` | `context-learn` | ❌ replaced de facto by timer-driven `context-learn-poller` |
 
 Two timer-driven handlers (`eval-poller`, `context-learn-poller`)
 explicitly call themselves bandaids for the broken event-only chain in
