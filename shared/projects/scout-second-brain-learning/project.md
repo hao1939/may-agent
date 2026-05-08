@@ -19,10 +19,7 @@ reuse, and turn into system improvements.
 
 ## Current State
 
-Not started. Scout has strong research output, but recent work shows too much
-artifact churn, finish friction, duplicate/stale notes, and weak conversion from
-"interesting finding" to "other agents can act on this." This project should
-improve the knowledge system without creating a broad rewrite.
+Started. Added source evidence from the repository README to the first knowledge artifact (`obsidian-second-brain-patterns.md`), mapped core practices, and noted unsupported claims. Ready to pick the 2-3 pilot practices next.
 
 ## Context
 

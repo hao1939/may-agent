@@ -2,10 +2,15 @@
 
 ## Applicable Ideas
 - **Notes for AI, not humans**: The "AI-first vault rule" where notes have a preamble for future-AI, machine-readable structure, and recency markers. Instead of human-readable wikis, the context is built for retrieval.
+  - *Source evidence: "Note format: AI-first: `## For future Claude` preamble + frontmatter for LLM retrieval, not human review" (README.md).*
 - **Rewriting instead of appending**: When new information arrives, existing notes are updated, and contradictions are reconciled automatically, rather than just appending new disjointed files.
+  - *Source evidence: "New sources: Rewrite existing pages. People get updated, claims revised, stale facts replaced" (README.md).*
 - **Vault-first deep research**: Before researching externally, the system scans existing knowledge to find what's already known, identifying only the gaps to research (delta report).
+  - *Source evidence: "Vault-first synthesis knows what you already know and fills only the gaps" (README.md).*
 - **Background Scheduled Agents**: Agents running on a cron schedule (nightly, weekly) to synthesize cross-source patterns, resolve contradictions, and clean up the knowledge base while the user sleeps.
+  - *Source evidence: "4 scheduled agents: nightly close, weekly review, contradiction sweep, vault-health check" (README.md).*
 - **Bi-temporal facts**: Tracking when a fact was true in the world vs when the vault learned about it, providing an audit trail for changing beliefs.
+  - *(Note: removed claim as not explicitly supported in README introduction; could be inferred from "stale facts replaced", but unverified).*
 
 ## Non-Applicable Ideas
 - **Obsidian/Markdown specific tooling**: We don't need Obsidian-specific UI or local filesystem setups. Our system is already a bespoke agentic workspace.
