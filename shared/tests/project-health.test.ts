@@ -13,6 +13,7 @@ import {
   saveWorkflowRunFile,
   simpleHash,
   upsertProject,
+  validateProjectFormat,
   MAX_LAUNCHES_PER_TICK,
   type ProjectInfo,
   type HealthState,
@@ -41,6 +42,24 @@ describe('project-health', () => {
       const result = updateField(content, 'Status', 'active');
       expect(result).toContain('status: active');
       expect(result).toContain('# Project');
+    });
+  });
+
+  describe('validateProjectFormat', () => {
+    it('accepts canonical shared project frontmatter', () => {
+      const content = '---\nid: test-proj\nowner: bob\nstatus: active\n---\n\n# Test\n';
+      expect(validateProjectFormat(content, 'test-proj')).toEqual([]);
+    });
+
+    it('rejects legacy bold metadata in shared projects', () => {
+      const content = '# Test\n\n**Owner:** bob\n**Status:** active\n';
+      expect(validateProjectFormat(content, 'test-proj')).toEqual(expect.arrayContaining([
+        'missing YAML frontmatter',
+        'missing frontmatter field: id',
+        'missing frontmatter field: owner',
+        'missing frontmatter field: status',
+        'metadata duplicated as bold body field',
+      ]));
     });
   });
 
@@ -324,6 +343,22 @@ describe('project-health', () => {
       expect(projects.length).toBe(1);
       expect(projects[0].status).toBe('active');
       expect(projects[0].owner).toBe('alice');
+      expect(projects[0].formatErrors).toEqual([]);
+      fs.rmSync(tmpRoot, { recursive: true });
+    });
+
+    it('flags shared projects with legacy metadata format', () => {
+      const tmpRoot = path.join(tmpdir(), `agents-${Date.now()}`);
+      const projDir = path.join(tmpRoot, 'shared', 'projects', 'legacy-proj');
+      fs.mkdirSync(projDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(projDir, 'project.md'),
+        '# Legacy Project\n\n**Owner:** alice\n**Status:** active\n'
+      );
+      const projects = scanAllProjects(tmpRoot);
+      expect(projects.length).toBe(1);
+      expect(projects[0].owner).toBe('unknown');
+      expect(projects[0].formatErrors).toContain('missing YAML frontmatter');
       fs.rmSync(tmpRoot, { recursive: true });
     });
 
