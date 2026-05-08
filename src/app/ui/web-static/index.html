@@ -48,10 +48,18 @@
   .heartbeat-row { display: grid; grid-template-columns: 84px minmax(0, 1fr) 90px; align-items: center; gap: 10px; margin-bottom: 6px; }
   .heartbeat-agent { color: var(--fg2); font-size: 12px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .heartbeat-track { height: 18px; background: var(--bg); border-radius: 4px; position: relative; overflow: hidden; }
-  .heartbeat-dot { position: absolute; top: 3px; width: 5px; height: 12px; border-radius: 2px; background: var(--green); opacity: 0.9; cursor: pointer; }
-  .heartbeat-dot.error { background: var(--red); }
-  .heartbeat-dot.running { background: var(--accent); }
+  .heartbeat-dot { position: absolute; top: 3px; width: 5px; height: 12px; border-radius: 2px; opacity: 0.9; cursor: pointer; }
+  /* Category colors. Red overrides everything for status=error. */
+  .heartbeat-dot.cat-heartbeat { background: var(--green); }
+  .heartbeat-dot.cat-project   { background: var(--purple); }
+  .heartbeat-dot.cat-chat      { background: var(--accent); }
+  .heartbeat-dot.cat-workflow  { background: var(--yellow); }
+  .heartbeat-dot.cat-other     { background: var(--fg2); }
+  .heartbeat-dot.error         { background: var(--red); }
+  .heartbeat-dot.running       { box-shadow: 0 0 0 1px var(--fg); }
   .heartbeat-last { color: var(--fg2); font-size: 11px; white-space: nowrap; }
+  .heartbeat-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; font-size: 11px; color: var(--fg2); }
+  .heartbeat-legend .swatch { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
   .liveness-list { display: flex; flex-direction: column; gap: 8px; }
   .liveness-item { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 12px; }
   .liveness-item strong { color: var(--fg); }
@@ -702,21 +710,44 @@ async function loadLiveness() {
     html += `</div></div>`;
 
     // Timeline as the dominant element (full width, screen-1 layout).
-    html += `<div class="liveness-section liveness-timeline"><h3>Heartbeat timeline, last 4h</h3>`;
+    html += `<div class="liveness-section liveness-timeline"><h3>Activity timeline, last 4h</h3>`;
+    html += `<div class="heartbeat-legend">
+      <span><span class="swatch" style="background:var(--green)"></span>heartbeat</span>
+      <span><span class="swatch" style="background:var(--purple)"></span>project</span>
+      <span><span class="swatch" style="background:var(--accent)"></span>chat</span>
+      <span><span class="swatch" style="background:var(--yellow)"></span>workflow</span>
+      <span><span class="swatch" style="background:var(--fg2)"></span>other</span>
+      <span><span class="swatch" style="background:var(--red)"></span>error (any kind)</span>
+      <span style="opacity:0.7">— ring = currently running</span>
+    </div>`;
     if (!agents.length) {
       html += `<div class="liveness-item">No configured agents found.</div>`;
     } else {
       for (const agent of agents) {
         const sessions = agent.sessions || [];
+        // Compact per-category counts in the agent label tooltip so hovering
+        // tells the operator the activity mix without expanding rows.
+        const cc = agent.categoryCounts || {};
+        const mixTip = ['heartbeat','project','chat','workflow','other']
+          .filter((k) => (cc[k] || 0) > 0)
+          .map((k) => `${k}:${cc[k]}`)
+          .join(' ');
         html += `<div class="heartbeat-row">
-          <div class="heartbeat-agent" title="${esc(agent.name)}">${esc(agent.name)}</div>
+          <div class="heartbeat-agent" title="${esc(agent.name)} — ${esc(mixTip || 'no activity')}">${esc(agent.name)}</div>
           <div class="heartbeat-track">`;
         for (const s of sessions) {
           const left = Math.max(0, Math.min(99, ((s.startedAt - since) / span) * 100));
-          const cls = s.status === 'error' ? 'error' : s.status === 'running' ? 'running' : '';
-          html += `<span class="heartbeat-dot ${cls}" style="left:${left}%" title="${esc(agent.name)} ${esc(s.status || '')} ${formatAgo(s.startedAt)}" onclick="loadSessionDetail('${esc(s.sessionId)}')"></span>`;
+          const cat = `cat-${s.category || 'other'}`;
+          const errCls = s.status === 'error' ? ' error' : '';
+          const runCls = s.status === 'running' ? ' running' : '';
+          const label = s.category === 'heartbeat' ? 'heartbeat'
+                      : s.category === 'project' ? `project ${s.projectId || ''}`.trim()
+                      : s.category === 'chat' ? 'chat'
+                      : s.category === 'workflow' ? (s.source || 'workflow')
+                      : (s.source || 'session');
+          html += `<span class="heartbeat-dot ${cat}${errCls}${runCls}" style="left:${left}%" title="${esc(agent.name)} · ${esc(label)} · ${esc(s.status || '')} · ${formatAgo(s.startedAt)}" onclick="loadSessionDetail('${esc(s.sessionId)}')"></span>`;
         }
-        html += `</div><div class="heartbeat-last">${formatAgo(agent.lastHeartbeat)} <button title="Heartbeat now" onclick="verbHeartbeatNow('${esc(agent.name)}', event)" style="background:none;border:1px solid var(--border);color:var(--fg2);border-radius:3px;padding:1px 6px;font-size:11px;cursor:pointer;margin-left:4px">♥</button></div></div>`;
+        html += `</div><div class="heartbeat-last" title="Last heartbeat (agency tick)">${formatAgo(agent.lastHeartbeat)} <button title="Heartbeat now" onclick="verbHeartbeatNow('${esc(agent.name)}', event)" style="background:none;border:1px solid var(--border);color:var(--fg2);border-radius:3px;padding:1px 6px;font-size:11px;cursor:pointer;margin-left:4px">♥</button></div></div>`;
       }
     }
     html += `</div>`;
