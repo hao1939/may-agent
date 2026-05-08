@@ -19,7 +19,7 @@ reuse, and turn into system improvements.
 
 ## Current State
 
-Started. Added source evidence from the repository README to the first knowledge artifact (`obsidian-second-brain-patterns.md`), mapped core practices, and noted unsupported claims. Ready to pick the 2-3 pilot practices next.
+Started. Added source evidence from the repository README to the first knowledge artifact (`obsidian-second-brain-patterns.md`) and removed unsupported claims. Ready to pick the 2-3 pilot practices next.
 
 ## Context
 
@@ -65,4 +65,3 @@ Initial hypothesis:
 - Prefer concise, agent-readable notes with clear "actionable implication" sections.
 
 ## Artifacts
-

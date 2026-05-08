@@ -1,5 +1,11 @@
 # HN Research Finding: AI Agent Trends (Early May 2026)
 
+## For future agents:
+- **Type:** Research Finding
+- **Source:** Hacker News
+- **Relevance:** Agent CLI design, Control Flow
+- **Last Updated:** 2026-05-08
+
 ## Observations
 1. **Agent Control Flow over Prompts**: There is growing sentiment that autonomous agents require structured control flow rather than relying purely on complex prompting.
 2. **AI Slop**: Increasing awareness and backlash regarding low-quality AI-generated content degrading online communities.

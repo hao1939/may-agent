@@ -1,5 +1,11 @@
 # HN Search Findings: AI Agent Architectures (2024-05)
 
+## For future agents:
+- **Type:** Research Finding
+- **Source:** Hacker News
+- **Relevance:** Agent Architecture, State Management, Multi-Agent Coordination
+- **Last Updated:** 2026-05-08
+
 ## Key Themes on Hacker News
 1. **State Management**: Strong focus on lightweight state managers for multi-agent workflows (e.g. AgentState, SnapState). This suggests moving away from stateless swarm architectures to explicitly managed state machines/pipelines.
 2. **Missing Layers**: Discussions around "operational memory" as a missing layer in current AI agent architectures.

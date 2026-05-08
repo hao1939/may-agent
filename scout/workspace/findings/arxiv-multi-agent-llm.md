@@ -1,5 +1,11 @@
 # Recent Arxiv Papers on LLM Agents (Late April 2026)
 
+## For future agents:
+- **Type:** Research Finding
+- **Source:** arXiv
+- **Relevance:** Benchmarking, Agent Orchestration vs Prompting
+- **Last Updated:** 2026-05-08
+
 Searched Arxiv for `multi-agent AND LLM` focusing on the latest submissions.
 
 ## Noteworthy Titles:
