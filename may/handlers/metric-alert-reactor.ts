@@ -2,8 +2,9 @@
  * metric-alert-reactor — Handler that reacts to metric.breach events.
  *
  * Listens on: metric.breach
- * Action: Forks the owning agent for P0 breaches. Lower-priority breaches stay
- * visible through metric alert context and the closed-loop steward cron.
+ * Action: Forks the owning agent for P0 breaches. P1/P2 breaches get explicit
+ * owner triage after they remain open long enough to need a durable judgment.
+ * P3 alerts stay visible through metric alert context and the steward cron.
  *
  * This keeps important issues auditable while preserving metric-context-based
  * handling for low-priority metric drift.
@@ -17,7 +18,7 @@ import type { CronEntry } from "../../shared/agent-sdk.js";
 import { listConfiguredAgents, resolveMetricOwner } from "../../shared/lib/metric-ownership.ts";
 
 const DEDUP_WINDOW_MS = 4 * 60 * 60 * 1000; // 4h — shorter window so repeated alerts get reacted to faster
-const P1_DIRECT_TRIAGE_AFTER_MS = 60 * 60 * 1000;
+const DIRECT_TRIAGE_AFTER_MS = 60 * 60 * 1000;
 const P1_RETRIAGE_COOLDOWN_MS = 15 * 60 * 1000;
 
 function parseJsonObject(raw: string | null | undefined): Record<string, unknown> {
@@ -123,8 +124,9 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
     let owner = resolveMetricOwner(metricId, configuredAgents, eventOwner);
     let priority = eventPriority ?? "P2";
 
-    // P0 alerts get an explicit owner session so handling is auditable.
-    // P1/P2/P3 remain visible in metric context through the unresolved row.
+    // P0 alerts get an immediate explicit owner session so handling is auditable.
+    // P1/P2 alerts get explicit triage after a short grace period. P3 remains
+    // visible in metric context only.
     try {
       const db = ctx.sdk.getDb();
       const metricRow = db.prepare(
@@ -138,19 +140,19 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
       ).get(metricId) as { priority?: string; explicitOwner?: string | null; projectOwner?: string | null; current?: number | null; threshold?: number | null; alertOp?: string | null } | null;
       priority = metricRow?.priority ?? priority;
       if (metricRow) owner = resolveMetricOwner(metricId, configuredAgents, metricRow.explicitOwner, metricRow.projectOwner);
-      if (priority !== "P0" && priority !== "P1") {
+      if (priority !== "P0" && priority !== "P1" && priority !== "P2") {
         ctx.sdk.log("info", `[metric-alert-reactor] Deferring ${metricId} (${priority}) to metric context.`);
         return;
       }
 
-      // P1 alerts: only triage if open >1h without a judgment event
-      if (priority === "P1") {
+      // P1/P2 alerts: only triage if open >1h without a judgment event.
+      if (priority === "P1" || priority === "P2") {
         const alertRow = db.prepare(
           `SELECT ma.id, ma.created_at FROM metric_alerts ma WHERE ma.metric_id = ? AND ma.resolved_at IS NULL`
         ).get(metricId) as { id: number; created_at: number } | null;
         const alertAge = alertRow ? Date.now() - alertRow.created_at : 0;
-        if (alertAge < P1_DIRECT_TRIAGE_AFTER_MS) {
-          ctx.sdk.log("info", `[metric-alert-reactor] P1 ${metricId} alert age ${Math.round(alertAge/60000)}m < 60m, deferring.`);
+        if (alertAge < DIRECT_TRIAGE_AFTER_MS) {
+          ctx.sdk.log("info", `[metric-alert-reactor] ${priority} ${metricId} alert age ${Math.round(alertAge/60000)}m < 60m, deferring.`);
           return;
         }
         const judgedEvent = db.prepare(

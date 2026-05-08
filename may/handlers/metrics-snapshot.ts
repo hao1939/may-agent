@@ -12,7 +12,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { exec, execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.ts";
@@ -82,7 +82,7 @@ const ALL_METRICS: MetricDef[] = [
   // per-session reconstructability. Keep the aspirational target at 1.0, but
   // alert only if the sparse existing emitters disappear entirely until the
   // runtime emits context.read/agent.decision for every session.
-  { id: "capability.session-trace-completeness", name: "Session trace completeness (24h)", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.001, unit: "ratio", alert_op: "<", priority: "P3" },
+  { id: "capability.session-trace-completeness", name: "Session trace completeness (24h)", owner: "may", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.001, unit: "ratio", alert_op: "<", priority: "P3" },
   { id: "capability.tool-preset-drift-count", name: "Tool preset/config drift", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
   { id: "capability.status-reality-mismatch-count", name: "Status/reality mismatches", owner: "may", type: "health", target: 0, threshold: 3, unit: "count", alert_op: ">", priority: "P0",
@@ -176,6 +176,27 @@ function countFileLines(path: string): number {
     return text.endsWith("\n") ? newlineCount : newlineCount + 1;
   } catch {
     return 0;
+  }
+}
+
+function projectSlugFromRef(raw: string | null | undefined): string | null {
+  if (!raw?.trim()) return null;
+  const normalized = raw.replace(/\\/g, "/").replace(/\/+$/, "");
+  return basename(normalized).trim() || null;
+}
+
+function projectSlugFromIterationData(data: string | null): string | null {
+  if (!data) return null;
+  try {
+    const parsed = JSON.parse(data) as { projectId?: unknown; project?: unknown };
+    const raw = typeof parsed.projectId === "string"
+      ? parsed.projectId
+      : typeof parsed.project === "string"
+        ? parsed.project
+        : "";
+    return projectSlugFromRef(raw);
+  } catch {
+    return null;
   }
 }
 
@@ -548,7 +569,21 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring stale-active-count: ${e}`); }
 
     try {
-      record("project.iterations-24h", count("SELECT COUNT(*) as c FROM events WHERE event_type = 'project.iteration' AND timestamp > ?", twentyFourH));
+      const activeProjectSlugs = new Set((db.prepare(
+        "SELECT id, name, path FROM projects WHERE status = 'active'",
+      ).all() as Array<{ id: string; name: string; path: string }>).flatMap((p) => [
+        p.id,
+        p.name,
+        projectSlugFromRef(p.path),
+      ]).filter((slug): slug is string => Boolean(slug)));
+      const iterationRows = db.prepare(
+        "SELECT data FROM events WHERE event_type = 'project.iteration' AND timestamp > ?",
+      ).all(twentyFourH) as Array<{ data: string | null }>;
+      const activeIterations = iterationRows.filter((row) => {
+        const slug = projectSlugFromIterationData(row.data);
+        return slug != null && activeProjectSlugs.has(slug);
+      }).length;
+      record("project.iterations-24h", activeIterations, iterationRows.length);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring iterations-24h: ${e}`); }
 
     try {
@@ -613,21 +648,32 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // ── Measure: v2-spec-coverage-buildout Phase 1 metrics ─────────
 
     // C1: Self-directed iteration rate (24h)
-    // Fraction of sessions started by heartbeat (autonomous) vs total sessions
+    // Fraction of non-evaluator work sessions started by autonomous triggers.
     try {
-      const totalSessions24h = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ?", twentyFourH);
-      const heartbeatSessions24h = count(
+      const totalSessions24h = count(
         `SELECT COUNT(*) as c FROM sessions
          WHERE startedAt > ?
+           AND agent NOT IN ('evaluator', 'judge')
+           AND COALESCE(source, '') NOT LIKE 'workflow:evaluator-%'`,
+        twentyFourH,
+      );
+      const autonomousSessions24h = count(
+        `SELECT COUNT(*) as c FROM sessions
+         WHERE startedAt > ?
+           AND agent NOT IN ('evaluator', 'judge')
            AND (
              source = 'workflow:heartbeat'
              OR source LIKE 'workflow:heartbeat-%'
              OR source LIKE 'workflow:%-heartbeat'
+             OR source = 'closed-loop-steward'
+             OR source = 'project'
+             OR source = 'metric-alert-reactor'
+             OR source = 'session-recovery'
            )`,
         twentyFourH,
       );
       record("capability.self-directed-iteration-rate-24h",
-        totalSessions24h > 0 ? parseFloat((heartbeatSessions24h / totalSessions24h).toFixed(4)) : 0,
+        totalSessions24h > 0 ? parseFloat((autonomousSessions24h / totalSessions24h).toFixed(4)) : 0,
         totalSessions24h);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring self-directed-iteration-rate: ${e}`); }
 
@@ -654,12 +700,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       record("capability.concurrent-session-max-1h", maxConcurrent);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring concurrent-session-max: ${e}`); }
 
-    // C9: Process uptime (hours since earliest currently-running session)
+    // C9: Process uptime for this may-agent runtime process.
     try {
-      const earliest = (db.prepare(
-        "SELECT MIN(startedAt) as t FROM sessions WHERE status IN ('running', 'idle')"
-      ).get() as any)?.t;
-      const uptimeH = earliest ? parseFloat(((now - earliest) / 3600000).toFixed(2)) : 0;
+      const uptimeH = parseFloat((process.uptime() / 3600).toFixed(2));
       record("capability.process-uptime-h", uptimeH);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring process-uptime: ${e}`); }
 
