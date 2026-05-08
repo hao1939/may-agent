@@ -54,7 +54,7 @@ const ALL_METRICS: MetricDef[] = [
   { id: "handler.success-rate", name: "Handler success rate (6h)", owner: "optimizer", type: "gauge", target: 0.95, threshold: 0.80, unit: "ratio", alert_op: "<",
     priority: "P1",
     config: { alert: { mode: "sustained", consecutive: 3 } } },
-  { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents)", owner: "may", type: "gauge", target: 4, threshold: 3, unit: "count", alert_op: "<", priority: "P1" },
+  { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents with sessions in 2h)", owner: "may", type: "gauge", target: 8, threshold: 3, unit: "count", alert_op: "<", priority: "P0" },
   // Sessions
   { id: "session.error-rate-6h", name: "Session error rate (6h)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P1" },
   { id: "session.failed-triage-rate-3h", name: "Failed session triage rate (3h)", owner: "evaluator", type: "gauge", target: 1.0, threshold: 0.80, unit: "ratio", alert_op: "<", priority: "P1" },
@@ -265,9 +265,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring success-rate: ${e}`); }
 
     try {
+      // Count agents that actually ran a heartbeat SESSION (not just the handler).
+      // The handler fires even when the workflow fails to load — sessions are the real signal.
       const coverage = count(
-        `SELECT COUNT(DISTINCT json_extract(data, '$.agent')) as c FROM events
-         WHERE event_type = 'handler.completed' AND json_extract(data, '$.handler') LIKE 'heartbeat-%' AND timestamp > ?`, twoH);
+        `SELECT COUNT(DISTINCT agent) as c FROM sessions
+         WHERE startedAt > ?
+           AND (source LIKE 'workflow:%heartbeat%' OR source = 'heartbeat' OR task LIKE '[heartbeat]%'
+                OR task LIKE 'You are %waking up for your heartbeat.%')`, twoH);
       record("handler.heartbeat-coverage", coverage);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring heartbeat-coverage: ${e}`); }
 
