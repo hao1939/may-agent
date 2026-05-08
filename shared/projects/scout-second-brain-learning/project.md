@@ -19,7 +19,8 @@ reuse, and turn into system improvements.
 
 ## Current State
 
-Started. Added source evidence from the repository README to the first knowledge artifact (`obsidian-second-brain-patterns.md`) and removed unsupported claims. Ready to pick the 2-3 pilot practices next.
+Started. Added source evidence from the repository README to the first knowledge artifact (`obsidian-second-brain-patterns.md`) and removed unsupported claims.
+Scout also tried an AI-first preamble on three recent workspace findings. The next step is still to explicitly choose the 2-3 pilot practices and decide whether those workspace findings count as the pilot target artifacts before marking more milestones complete.
 
 ## Context
 
