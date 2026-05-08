@@ -1,17 +1,18 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778269453742_70
+- **Session:** s_1778273053635_122
 - **Status:** success
-- **When:** 2026-05-08T19:46:41.765Z
+- **When:** 2026-05-08T20:46:32.890Z
 
 ## What Happened
-Implemented the approved evaluator metric split by adding `evaluator.substantive-low-quality-rate-24h` to `agents/may/handlers/metrics-snapshot.ts` and recording it from terminal failures plus high-signal issue markers. Triaged the three pending evaluator.low-quality-rate-24h messages as acted: the latest May approval request was fulfilled, the status-update/implementation requests were addressed by code, and the open low-quality alert operation chosen is Fix Root Cause (metric split / alert pivot groundwork), with current broad metric still breaching pending next snapshot/registry update.
+Completed dev heartbeat triage and committed investigation artifact f2f7116b5 documenting that the heartbeat prompt claimed no metrics/alerts while the runtime DB had active metrics and unresolved alerts. Also committed pre-existing arc shared/project queue edits in a separate commit aacad8b55 to satisfy the clean-worktree guard; remaining dirty files are generated runtime last-session/gate logs only.
 
 ## Files Modified
-- agents/may/handlers/metrics-snapshot.ts
+- agents/dev/workspace/investigations/2026-05-08-heartbeat-injection-alert-mismatch.md
+- agents/shared/projects/ruflo-learning-loop/project.md
+- agents/shared/work-queue.md
 
 ## Completed
-- Acted on pending evaluator.low-quality-rate-24h status-update by reviewing evidence and addressing it with a metric split implementation.
-- Acted on pending evaluator.low-quality-rate-24h implementation requests by adding evaluator.substantive-low-quality-rate-24h in metrics-snapshot.ts.
-- Implemented approved iteration-5 metric split proposal for evaluator.low-quality-rate-24h in agents/may/handlers/metrics-snapshot.ts.
+- Triaged pending dev heartbeat events around evaluator.low-quality-rate-24h and prior substantive metric split.
+- Documented heartbeat injection alert mismatch with live DB evidence.

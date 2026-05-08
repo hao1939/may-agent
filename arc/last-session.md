@@ -1,15 +1,13 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778258867886_8
+- **Session:** s_1778272829373_112
 - **Status:** success
-- **When:** 2026-05-08T16:49:33.984Z
+- **When:** 2026-05-08T20:48:21.078Z
 
 ## What Happened
-Iter-2 was already terminally closed by `iter-02-final-consolidation.md` (§1) which explicitly forbids further iter-2 artifacts as regressions. Honored that stop. Added a single short `outputs/NEXT.md` pointer so the next heartbeat with project-write rights can execute the four pending actions (bump iteration, paste iter-3 question, journal entry, assign owner) without re-reading eight files. No new judgment, framing, or probe.
+Iter-5 applies iter-4's "run the join before recommending a write" discipline to the two escalation classes iter-3 declared derivable but never tested. Probe finds iter-3's closure rule would silently mark 5/38 still-live escalations as resolved (13.2% false-closure rate); 5 evaluator_review_failed escalations have no successor review yet still match iter-3's "session terminal" rule.
 
 ## Files Modified
-- /app/agents/shared/projects/ruflo-learning-loop/outputs/NEXT.md
-
-## Still Open / Next Steps
-A heartbeat with project-write rights must execute the four steps in `outputs/NEXT.md`: (1) bump `iteration: 1 → 3` and mark iter-2 closed in `project.md`; (2) paste iter-3 question verbatim from `iter-02-escalation-candidate-check.md` §5; (3) add a one-paragraph journal entry citing `iter-02-final-consolidation.md` and `iter-02-escalation-candidate-check.md`; (4) assign iter-3 to dev/may.
+- agents/shared/projects/ruflo-learning-loop/outputs/iter-05-closure-rule-falsification-probe.mjs
+- agents/shared/projects/ruflo-learning-loop/outputs/iter-05-closure-rule-falsification-findings.md

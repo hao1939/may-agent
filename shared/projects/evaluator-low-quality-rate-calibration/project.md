@@ -20,7 +20,7 @@ Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior
 
 ## Current State
 Iteration 1. Milestones: 0/0 done.
-Reviewer: - **I believe**: The largest driver of `evaluator.low-quality-rate-24h` is *not* real agent “quality” but evaluator-side classification: `shallow_session:*` (≈1006), plus pipeline faults (`terminal st
+Reviewer: - **I believe**: The low-quality metric is currently inflated by a large “unscorable/pipeline” slice (schema/query transcript errors + interrupted/error sessions), and the worker produced a reasonable
 ## Plan
 1. **Metric decomposition proposal**: draft a split of low-quality-rate into sub-metrics by issue class (schema errors, finish/uncommitted, terminal interruptions) to avoid conflating agent quality with infra/guard friction.
 2. **Criteria calibration**: review evaluator criteria for (a) terminal interrupted sessions (Clean start) and (b) finish-blocked sessions; decide whether to classify as NI vs excluded/exception.
