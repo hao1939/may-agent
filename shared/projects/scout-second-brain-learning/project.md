@@ -64,7 +64,7 @@ Initial hypothesis:
 - [x] Pick 2-3 practices for a scout-only pilot. Prefer practices that reduce duplicate notes and improve downstream reuse.
 - [x] Apply the pilot to 3-5 recent scout knowledge artifacts.
 - [x] Review metrics and downstream references after the pilot; decide whether to keep, adjust, or discard the practices.
-- [ ] Propose a Scout-scoped implementation using Scout's heartbeats for background synthesis and updating Scout's system prompt for in-place updates.
+- [x] Propose a Scout-scoped implementation using Scout's heartbeats for background synthesis and updating Scout's system prompt for in-place updates.
 - [ ] Implement and test the scoped approach on Scout's knowledge base to gather concrete evidence.
 - [ ] Document the concrete evidence from the implementation and formalize the final proposal.
 
