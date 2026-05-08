@@ -1,6 +1,25 @@
 # Dev Heartbeat Status
 
-Updated: 2026-05-08T05:21:00Z
+Updated: 2026-05-08T05:33:00Z
+
+## 2026-05-08T05:33Z heartbeat update
+
+Judgment: no approved dev implementation item is available, and current core handler/session health does not show a dev-owned failure cluster. This heartbeat acted on the newest evaluator aftermath feedback by avoiding schema-guessing queries, checking git state early, and classifying runtime-generated dirt as not an intended deliverable.
+
+Evidence snapshot:
+- Work queue: `## Approved` is empty; implementation candidates remain under `## Proposed` and await approval.
+- Core metrics: `handler.success-rate=1`, `handler.failed-count=0`, `session.error-rate-6h=0.0329`, `handler.heartbeat-coverage=4`, and `agent.dev.low-quality-streak=0`.
+- Recent handler failures: newest `handler.failed` event remains an older `closed-loop-steward` timeout at timestamp `1778173876392`; the active metric reports zero handler failures in the current 6h window.
+- Recent failed sessions: latest errors are may/evaluator rows with null DB `error`, not a fresh dev-owned code failure cluster.
+- Open alerts: four unresolved alerts exist; owners are may (`v2.spec-coverage-rate`, `capability.self-directed-iteration-rate-24h`, `capability.process-uptime-h`) and evaluator (`evaluator.low-quality-rate-24h`), so no dev-owned active-alert operation is required.
+- Git state: dirty files were runtime-generated `*/last-session.md` markers and `shared/gate-outcomes.log`; based on the latest aftermath guidance, they are not staged as the heartbeat deliverable.
+
+Current pending event dispositions:
+- Acted: read latest aftermath `s_1778217551630_7`; it flagged generated runtime commits, so this heartbeat commits only the intentional status artifact and leaves/generated dirt classified separately rather than treating it as source work.
+- Acted: read aftermath `s_1778217282285_1`; it flagged schema guessing and finish hygiene, so this heartbeat used canned SQL and checked git state early.
+- Acted: read aftermath `s_1778204791049_156`, `s_1778212840940_7`, and `s_1778206591650_161`; their schema/finalization lessons are incorporated in this run.
+- Dismissed: repeated `session.start` and routine `session.end` events are informational and superseded by this heartbeat's fresh checks.
+- Dismissed as not dev-authorized: Proposed work-queue items, including the `project.iterations-24h` anomaly follow-up, remain unapproved implementation work.
 
 ## 2026-05-08T05:21Z heartbeat update
 
