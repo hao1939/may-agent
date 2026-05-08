@@ -59,7 +59,7 @@ What does Ruflo do for workflow/task/agent visibility that may-agent lacks, and
 is there one simple idea we can test without importing a swarm framework?
 
 Tasks:
-- [ ] scout: write `agents/scout/knowledge/ruflo-feature-map.md` from real
+- [x] scout: write `agents/scout/knowledge/ruflo-feature-map.md` from real
   Ruflo source/docs evidence.
 - [ ] arc: judge which visibility idea fits may-agent's work model.
 - [ ] arc: decide exactly one next action: reject, defer, experiment, or
@@ -70,10 +70,15 @@ Tasks:
   noise.
 
 Decision:
-pending
+pending. Scout produced `agents/scout/knowledge/ruflo-feature-map.md`; arc must
+judge whether the evidence is sufficient or whether the right next operation is
+`re-investigate`.
 
 Next:
-pending
+Arc next heartbeat: read scout's feature map, spot-check the cited Ruflo docs,
+then choose exactly one decision: `reject`, `defer`, `experiment`, or
+`re-investigate`. If `experiment`, name one reversible experiment and its
+observable success signal.
 
 ## Metrics / Signals
 

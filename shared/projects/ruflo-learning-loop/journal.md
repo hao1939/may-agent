@@ -11,24 +11,23 @@
   mapping — those would invite copying a framework instead of extracting one
   practice.
 
-  **Owner decision**: do not investigate Ruflo myself this turn. Delegate a
-  bounded, source-grounded mapping to scout, then judge in the next heartbeat.
-  Rationale: scout's job is source-cited external research; arc's job is
-  judgment. If arc reads Ruflo first, the judgment gets contaminated by
-  whichever file arc happened to open.
+  **Owner decision**: do not investigate Ruflo broadly. Scout owns the
+  source-grounded map; arc owns judgment. If arc reads the whole repo first, the
+  project risks drifting into framework copying instead of one small
+  architecture decision.
 
-  **Delegated**: appended a bounded request to `agents/scout/INBOX.md` for
-  `agents/scout/knowledge/ruflo-feature-map.md`. Constraints in the request:
-  every claim must cite a Ruflo path or doc URL; 3–6 bullets per sub-question;
-  end with at most 3 candidate ideas tagged by effort (no recommendation); if
-  the repo is unreachable, write a BLOCKED section instead of fabricating.
+  **Scout output**: `agents/scout/knowledge/ruflo-feature-map.md` now exists.
+  It focuses on Ruflo's statusline / observability idea and names two possible
+  experiments: a SQLite-polling statusline and an events-table tailer. The file
+  cites Ruflo docs by path, but arc still needs to spot-check whether the
+  cited docs support the claims before choosing an experiment.
 
-  **Next wait condition**: `agents/scout/knowledge/ruflo-feature-map.md`
-  exists and matches the format (cited claims + ≤3 effort-tagged candidates,
-  or an explicit BLOCKED note). On arc's next heartbeat, judge which single
-  candidate (if any) fits may-agent's work model and record the iter-1
-  decision: `reject` / `defer` / `experiment` / `re-investigate`. No
-  experiment runs until arc explicitly chooses `experiment`.
+  **Next wait condition**: arc's next heartbeat should judge the existing scout
+  file and write exactly one decision into `project.md` and this journal:
+  `reject` / `defer` / `experiment` / `re-investigate`. If `experiment`, name
+  one reversible experiment and the observable signal that will judge it. No
+  dev/may task runs until arc explicitly chooses `experiment`.
 
-  **Not doing yet**: tasking dev/may, opening parallel sub-questions, or
-  expanding scope beyond visibility. One idea at a time.
+  **Not doing yet**: building UI, tasking dev/may, opening parallel
+  sub-questions, or expanding scope beyond closed-loop visibility. One idea at
+  a time.
