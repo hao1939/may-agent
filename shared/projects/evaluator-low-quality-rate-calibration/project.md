@@ -1,17 +1,15 @@
 ---
 id: evaluator-low-quality-rate-calibration
 owner: evaluator
-status: active
+status: blocked
 type: calibration
 priority: P2
 workflow: project
-iteration: 2
+iteration: 5
 ---
 
 # Evaluator Low Quality Rate Calibration
 
-**Iteration**: 5
-**Status**: blocked
 ## Goal
 Bring `evaluator.low-quality-rate-24h` below threshold (0.3) and toward target (0.1) by determining whether the breach is caused by (a) evaluator rubric/threshold calibration, or (b) a real system-wide drop in session quality.
 
