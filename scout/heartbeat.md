@@ -24,6 +24,12 @@ This format is required in EVERY session — heartbeats, work sessions, project 
 4. **Produce output**: write findings based on REAL data only, create knowledge entries
 5. **Self-assess**: are your findings being cited? If not, change approach.
 
+## Metric Guidance
+- `scout.sourced-artifacts-24h`: progress signal. If low, produce one concise finding from real sources. Do not touch old files just to move the count.
+- `scout.good-session-rate-24h`: quality signal. If low, narrow scope and verify before finish.
+- `scout.operational-friction-rate-24h`: blocker signal. If red, fix the workflow issue first: schema-check before DB queries, avoid broad git adds, verify after edits, and leave the worktree clean or explain the blocker.
+- `scout.downstream-reference-files-7d`: impact/creativity proxy. If low, make findings easier for other agents to use: name the affected project/agent, state the actionable implication, and link the source artifact.
+
 ## Current Focus
 - AI agent architectures: multi-agent coordination patterns
 - Research sources: XHS (小红书), arXiv, Hacker News, GitHub, Reddit
