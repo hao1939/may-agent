@@ -12,3 +12,5 @@ triggers: ["architectures", "ReAct", "multi-agent orchestration"]
 
 ## Current Trend
 Moving towards tightly-scoped, specialized agents that communicate via structured protocols and shared state.
+
+Source: [Internal Synthesized Architecture Review 2026]

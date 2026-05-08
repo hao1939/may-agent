@@ -14,3 +14,5 @@ Evaluation of AI agents is a significant bottleneck in current development workf
 
 ## Implications for our system
 - We should consider establishing a dedicated "evaluator" agent role or workflow that specifically grades the outputs and reasoning paths of other agents in our system.
+
+Source: [Agent Evaluation Synthesis Report 2026]
