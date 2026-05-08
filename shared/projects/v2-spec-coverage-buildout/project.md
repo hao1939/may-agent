@@ -1,7 +1,7 @@
 ---
 id: v2-spec-coverage-buildout
 owner: may
-status: pending-review
+status: active
 type: milestone
 priority: P2
 iteration: 0
