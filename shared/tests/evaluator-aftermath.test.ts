@@ -29,4 +29,14 @@ describe("evaluator aftermath transcript checks", () => {
     expect(verdict.quality).toBe(0.55);
     expect(verdict.issues).toContain("schema/query error in transcript");
   });
+
+  it("flags metric health claims without live DB evidence", () => {
+    const verdict = classifyVerdict(
+      { status: "done", opCount: 0 },
+      "DONE\n\nAll P1 metrics are in range. project.md says the system is healthy.",
+    );
+
+    expect(verdict.verdict).toBe("needs_improvement");
+    expect(verdict.issues).toContain("metric health claim without live query");
+  });
 });

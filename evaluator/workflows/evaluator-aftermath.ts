@@ -31,6 +31,9 @@ export function transcriptIssues(transcript: string): string[] {
   if (/last-session\.md/.test(transcript) && /gate-outcomes\.log/.test(transcript) && /git\s+commit/.test(transcript)) {
     issues.push("committed generated runtime files");
   }
+  if (/\ball P[01] metrics (?:are )?(?:in range|healthy|green|at target)\b/i.test(transcript) && !/"name":"query_db"/.test(transcript)) {
+    issues.push("metric health claim without live query");
+  }
 
   return issues;
 }

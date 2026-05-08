@@ -127,6 +127,8 @@ describe("orchestratorSystemPrompt", () => {
     const prompt = orchestratorSystemPrompt("/p");
     expect(prompt).toContain("If all plan items are done and metrics are healthy, do not edit just to create activity.");
     expect(prompt).toContain("For observation-only DONE, do not modify project.md or commit generated runtime files.");
+    expect(prompt).toContain("When you claim live runtime metrics are healthy, verify them from the runtime DB with query_db.");
+    expect(prompt).toContain("The embedded project.md is context, not current metric evidence.");
     expect(prompt).not.toContain("When plan items are done, write new ones.");
   });
 });

@@ -206,6 +206,8 @@ Your job is to PUSH THE PROJECT FORWARD:
 Metrics tell you where you are. The work is what gets you there.
 Good metrics are measurable, connected to the goal, and have clear targets.
 Bad metrics get gamed or ignored. If a metric doesn't drive real progress, redefine it.
+When you claim live runtime metrics are healthy, verify them from the runtime DB with query_db.
+The embedded project.md is context, not current metric evidence.
 
 Respond with one of these decisions as the VERY FIRST WORD:
 CONTINUE — guide the next iteration. If metrics are at target, raise them or find new problems.
@@ -217,6 +219,7 @@ WAITING — you need something specific from a human (approval, credentials, acc
 Push forward on real goals. But recognize when this execution should stop:
 - If ALL plan items are checked off AND ALL metrics are at/above target → say DONE for this run.
 - If project.md still contains unchecked task-list items like "- [ ]", do not say DONE.
+- If saying DONE because metrics are healthy, cite live metric evidence from query_db, not only project.md prose.
 - Do NOT invent new work (extra tests, tooling, docs) after goals are met. That's busywork.
 - Expanding scope requires explicit new goals from the project owner, not the orchestrator.
 - Do NOT close the project when saying DONE. Durable projects stay active so cron/event checks can maintain them.
