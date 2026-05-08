@@ -1635,8 +1635,12 @@ async function renderAgentDetail(name) {
   if (summary && summary.description) {
     html += `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px">${esc(summary.description)}</div>`;
   }
-  // Sub-tab nav.
-  const subTabs = ['chat', 'about', 'metrics', 'projects', 'sessions'];
+  // Sub-tab nav. Three tabs: Chat (default Telegram thread), Overview
+  // (dense dashboard — metrics with sparklines, projects, sessions),
+  // About (identity files). Overview merges what was previously three
+  // separate sub-tabs because they're all 'what does this agent own?' —
+  // shown side-by-side they tell the story faster.
+  const subTabs = ['chat', 'overview', 'about'];
   html += `<div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:12px">`;
   for (const t of subTabs) {
     const active = t === currentAgentSubTab;
@@ -1672,10 +1676,8 @@ function switchAgentSubTab(tab) {
   } else {
     if (chatPane) chatPane.classList.add('hidden');
     if (body) body.innerHTML = '<div style="color:var(--fg2);padding:24px">Loading…</div>';
-    if (tab === 'about') void loadAgentAbout(currentAgentChat);
-    else if (tab === 'metrics') void loadAgentMetrics(currentAgentChat);
-    else if (tab === 'projects') void loadAgentProjects(currentAgentChat);
-    else if (tab === 'sessions') void loadAgentSessions(currentAgentChat);
+    if (tab === 'overview') void loadAgentOverview(currentAgentChat);
+    else if (tab === 'about') void loadAgentAbout(currentAgentChat);
   }
   // Keep agents pane visible regardless.
   if (agentsPane) agentsPane.classList.remove('hidden');
@@ -1734,97 +1736,154 @@ async function loadAgentAbout(name) {
   }
 }
 
-async function loadAgentMetrics(name) {
+// ── Sparkline ──────────────────────────────────────────────────────────
+// Tiny inline SVG sparkline. ~120x32px. Renders a polyline through the
+// values, with optional threshold band as a dashed horizontal line.
+function sparkline(values, opts = {}) {
+  const w = opts.width || 120, h = opts.height || 32, pad = 2;
+  if (!values || values.length === 0) return `<svg width="${w}" height="${h}"></svg>`;
+  const min = Math.min(...values), max = Math.max(...values);
+  const span = max - min || 1;
+  const stepX = values.length > 1 ? (w - 2 * pad) / (values.length - 1) : 0;
+  const yOf = v => h - pad - ((v - min) / span) * (h - 2 * pad);
+  const pts = values.map((v, i) => `${(pad + i * stepX).toFixed(1)},${yOf(v).toFixed(1)}`).join(' ');
+  let extras = '';
+  if (opts.threshold != null && opts.threshold >= min && opts.threshold <= max) {
+    const ty = yOf(opts.threshold);
+    extras += `<line x1="0" x2="${w}" y1="${ty}" y2="${ty}" stroke="var(--red)" stroke-width="1" stroke-dasharray="2,2" opacity="0.6"/>`;
+  }
+  const color = opts.color || 'var(--accent)';
+  return `<svg width="${w}" height="${h}" style="display:block"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5"/>${extras}</svg>`;
+}
+
+// ── Agent Overview ─────────────────────────────────────────────────────
+// Single dense panel: metrics with sparklines, projects, sessions.
+// All rows clickable to drill in. Layout: 2 columns on wide screens
+// (metrics left, projects+sessions right); single column on narrow.
+async function loadAgentOverview(name) {
   const body = document.getElementById('agent-subtab-body');
   if (!body || !name) return;
+  body.innerHTML = '<div style="color:var(--fg2);padding:24px">Loading overview…</div>';
   try {
-    const r = await fetch('/api/metrics');
-    const d = await r.json();
-    const owned = (d.metrics || []).filter(m => m.owner === name);
-    if (owned.length === 0) {
-      body.innerHTML = `<div style="color:var(--fg2);padding:24px">No metrics owned by <b>${esc(name)}</b>.</div>`;
-      return;
-    }
-    let html = `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px">${owned.length} metrics owned by ${esc(name)}. Click to see history. ✎ edits threshold.</div>`;
-    html += `<table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="border-bottom:1px solid var(--border);text-align:left"><th style="padding:6px">Metric</th><th>Current</th><th>Target</th><th>Type</th></tr>`;
-    for (const m of owned) {
+    // Fetch in parallel.
+    const [metricsRes, projectsRes, livenessRes] = await Promise.all([
+      fetch('/api/metrics').then(r => r.json()),
+      fetch('/api/projects').then(r => r.json()),
+      fetch('/api/liveness').then(r => r.json()),
+    ]);
+    const ownedMetrics = (metricsRes.metrics || []).filter(m => m.owner === name);
+    const ownedProjects = (projectsRes || []).filter(p => p.owner === name);
+    const sessions = (livenessRes.agents || []).find(a => a.name === name)?.sessions || [];
+
+    // Fetch sparkline data for the most-relevant metrics. To keep latency
+    // bounded, pull history for at most 12 metrics: alerting first, then
+    // by priority (P0 > P1 > P2). Each call is cheap (~5–20ms server-side).
+    const breached = ownedMetrics.filter(m => {
+      if (m.threshold == null || m.current == null) return false;
       const above = m.alert_op === 'above' || m.alert_op === '>';
-      const breached = m.threshold != null && m.current != null && (above ? m.current > m.threshold : m.current < m.threshold);
-      html += `<tr style="border-bottom:1px solid var(--bg3,#222);cursor:pointer" onclick="showMetricHistory('${esc(m.id)}')">`;
-      html += `<td style="padding:6px">${esc(m.name)}<br><span style="color:var(--fg2);font-size:11px">${esc(m.id)}</span></td>`;
-      html += `<td style="padding:6px;text-align:center;${breached ? 'color:var(--red);font-weight:bold' : ''}">${m.current ?? '—'}${m.unit||''}</td>`;
-      html += `<td style="padding:6px;text-align:center;color:var(--fg2)">${m.target ?? '—'}${m.unit||''} <button title="Edit threshold" onclick="verbEditThreshold('${esc(m.id)}', ${m.threshold ?? 'null'}, event)" style="background:none;border:none;color:var(--fg2);cursor:pointer">✎</button></td>`;
-      html += `<td style="padding:6px;text-align:center;color:var(--fg2)">${esc(m.type||'')}</td></tr>`;
-    }
-    html += `</table>`;
-    body.innerHTML = html;
-  } catch (e) {
-    body.innerHTML = `<div style="color:var(--red);padding:16px">Failed: ${esc(e.message)}</div>`;
-  }
-}
+      return above ? m.current > m.threshold : m.current < m.threshold;
+    });
+    const sortedForSpark = [...ownedMetrics].sort((a, b) => {
+      const aBr = breached.includes(a) ? 0 : 1;
+      const bBr = breached.includes(b) ? 0 : 1;
+      if (aBr !== bBr) return aBr - bBr;
+      const prio = { P0: 0, P1: 1, P2: 2, P3: 3 };
+      return (prio[a.priority] ?? 9) - (prio[b.priority] ?? 9);
+    });
+    const sparkTargets = sortedForSpark.slice(0, 12);
+    const histories = await Promise.all(sparkTargets.map(m =>
+      fetch(`/api/metrics/${encodeURIComponent(m.id)}/history?days=7`).then(r => r.json()).catch(() => ({snapshots:[]}))
+    ));
+    const histById = {};
+    sparkTargets.forEach((m, i) => { histById[m.id] = (histories[i].snapshots || []).map(s => s.value); });
 
-async function loadAgentProjects(name) {
-  const body = document.getElementById('agent-subtab-body');
-  if (!body || !name) return;
-  try {
-    const r = await fetch('/api/projects');
-    const all = await r.json();
-    const owned = (all || []).filter(p => p.owner === name);
-    if (owned.length === 0) {
-      body.innerHTML = `<div style="color:var(--fg2);padding:24px">No projects owned by <b>${esc(name)}</b>.</div>`;
-      return;
-    }
+    // ── Render ──
     const HIDDEN = new Set(['done','complete','closed','waiting','blocked','paused']);
-    const active = owned.filter(p => !HIDDEN.has(p.status));
-    const inactive = owned.filter(p => HIDDEN.has(p.status));
-    let html = `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px">${active.length} active / ${inactive.length} inactive. Click to open project detail.</div>`;
-    html += `<table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="border-bottom:1px solid var(--border);text-align:left"><th style="padding:6px">Project</th><th>Status</th><th>Iter</th><th>Milestones</th><th>Updated</th></tr>`;
-    for (const p of [...active, ...inactive]) {
-      const muted = HIDDEN.has(p.status);
-      html += `<tr style="border-bottom:1px solid var(--bg3,#222);cursor:pointer;${muted?'opacity:0.55':''}" onclick="routeTo('/projects/' + ${JSON.stringify(p.path.replace(/^agents\//, ''))})">`;
-      html += `<td style="padding:6px;font-weight:500">${esc(p.name)}</td>`;
-      html += `<td style="padding:6px">${esc(p.status||'')}</td>`;
-      html += `<td style="padding:6px;text-align:center;color:var(--fg2)">${p.iteration ?? 0}</td>`;
-      html += `<td style="padding:6px;color:var(--fg2)">${p.milestonesDone ?? 0}/${p.milestonesTotal ?? 0}</td>`;
-      html += `<td style="padding:6px;color:var(--fg2);font-size:11px">${p.updatedAt ? timeAgo(p.updatedAt) : '—'}</td>`;
-      html += `</tr>`;
+    const activeProjects = ownedProjects.filter(p => !HIDDEN.has(p.status));
+    const inactiveProjects = ownedProjects.filter(p => HIDDEN.has(p.status));
+
+    let html = `<div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start">`;
+
+    // ── Left column: Metrics with sparklines ──
+    html += `<div>`;
+    html += `<h3 style="margin:0 0 8px;font-size:13px;color:var(--fg2);display:flex;align-items:center;gap:8px">Metrics <span style="color:var(--fg)">${ownedMetrics.length}</span>${breached.length > 0 ? `<span style="color:var(--red);font-size:11px">⚠ ${breached.length} breached</span>` : ''}</h3>`;
+    if (ownedMetrics.length === 0) {
+      html += `<div style="color:var(--fg2);font-size:12px;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:6px">No metrics owned.</div>`;
+    } else {
+      html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden">`;
+      // Sort: breached first (red), then by priority.
+      for (const m of sortedForSpark) {
+        const isBr = breached.includes(m);
+        const above = m.alert_op === 'above' || m.alert_op === '>';
+        const series = histById[m.id] || [];
+        const sparkColor = isBr ? 'var(--red)' : (m.priority === 'P0' ? 'var(--orange,#e8a44c)' : 'var(--accent)');
+        html += `<div onclick="showMetricHistory('${esc(m.id)}')" title="Click for full chart" style="display:grid;grid-template-columns:minmax(0,1fr) 130px 90px;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer;${isBr ? 'background:rgba(255,80,80,0.06)' : ''}" onmouseover="this.style.background='var(--bg3,#222)'" onmouseout="this.style.background='${isBr ? 'rgba(255,80,80,0.06)' : ''}'">`;
+        // Name + id.
+        html += `<div style="min-width:0"><div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(m.name)}</div><div style="font-size:10px;color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(m.id)}${m.priority ? ` · ${esc(m.priority)}` : ''}</div></div>`;
+        // Sparkline.
+        html += `<div>${series.length > 1 ? sparkline(series, {threshold: m.threshold, color: sparkColor, width:130, height:28}) : `<span style="color:var(--fg2);font-size:10px">no history</span>`}</div>`;
+        // Current value vs target.
+        html += `<div style="text-align:right;font-size:12px"><span style="font-weight:600;${isBr ? 'color:var(--red)' : ''}">${m.current ?? '—'}${m.unit||''}</span>${m.threshold != null ? `<div style="font-size:10px;color:var(--fg2)">${above ? '≤' : '≥'} ${m.threshold}${m.unit||''}</div>` : ''}</div>`;
+        html += `</div>`;
+      }
+      html += `</div>`;
     }
-    html += `</table>`;
+    html += `</div>`;
+
+    // ── Right column: Projects (top), Sessions (bottom) ──
+    html += `<div style="display:flex;flex-direction:column;gap:16px">`;
+
+    // Projects.
+    html += `<div>`;
+    html += `<h3 style="margin:0 0 8px;font-size:13px;color:var(--fg2);display:flex;align-items:center;gap:8px">Projects <span style="color:var(--fg)">${activeProjects.length} active</span><span style="color:var(--fg2);font-size:11px">/ ${ownedProjects.length} total</span></h3>`;
+    if (ownedProjects.length === 0) {
+      html += `<div style="color:var(--fg2);font-size:12px;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:6px">No projects owned.</div>`;
+    } else {
+      html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden">`;
+      for (const p of [...activeProjects, ...inactiveProjects]) {
+        const muted = HIDDEN.has(p.status);
+        const projPath = (p.path || '').replace(/^agents\//, '');
+        html += `<div onclick="routeTo('/projects/' + ${JSON.stringify(projPath)})" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:7px 12px;border-bottom:1px solid var(--border);cursor:pointer;${muted ? 'opacity:0.55' : ''}" onmouseover="this.style.background='var(--bg3,#222)'" onmouseout="this.style.background=''">`;
+        html += `<div style="min-width:0"><div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</div><div style="font-size:10px;color:var(--fg2)">${p.milestonesDone ?? 0}/${p.milestonesTotal ?? 0} milestones · iter ${p.iteration ?? 0}</div></div>`;
+        html += `<div style="font-size:11px;color:var(--fg2)">${esc(p.status||'')}</div>`;
+        html += `<div style="font-size:10px;color:var(--fg2);white-space:nowrap">${p.updatedAt ? timeAgo(p.updatedAt) : '—'}</div>`;
+        html += `</div>`;
+      }
+      html += `</div>`;
+    }
+    html += `</div>`;
+
+    // Sessions.
+    html += `<div>`;
+    html += `<h3 style="margin:0 0 8px;font-size:13px;color:var(--fg2);display:flex;align-items:center;gap:8px">Recent sessions <span style="color:var(--fg)">${sessions.length}</span><span style="color:var(--fg2);font-size:11px">last 4h</span></h3>`;
+    if (sessions.length === 0) {
+      html += `<div style="color:var(--fg2);font-size:12px;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:6px">No sessions in the last 4 hours.</div>`;
+    } else {
+      html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden">`;
+      for (const s of sessions.slice().reverse().slice(0, 15)) {
+        const statusColor = s.status === 'error' ? 'var(--red)' : (s.status === 'done' ? 'var(--fg2)' : 'var(--green)');
+        html += `<div onclick="loadSessionDetail('${esc(s.sessionId)}')" style="display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 12px;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='var(--bg3,#222)'" onmouseout="this.style.background=''">`;
+        html += `<span style="color:${statusColor};font-size:9px">●</span>`;
+        html += `<div style="min-width:0;font-family:monospace;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc((s.sessionId||'').slice(-12))}</div>`;
+        html += `<div style="font-size:10px;color:var(--fg2);white-space:nowrap">${s.startedAt ? timeAgo(s.startedAt) : '—'}</div>`;
+        html += `</div>`;
+      }
+      if (sessions.length > 15) {
+        html += `<div style="padding:6px 12px;font-size:11px;color:var(--fg2);text-align:center">+${sessions.length - 15} older</div>`;
+      }
+      html += `</div>`;
+    }
+    html += `</div>`;
+
+    html += `</div>`;  // right column
+    html += `</div>`;  // grid
+
     body.innerHTML = html;
   } catch (e) {
-    body.innerHTML = `<div style="color:var(--red);padding:16px">Failed: ${esc(e.message)}</div>`;
+    body.innerHTML = `<div style="color:var(--red);padding:16px">Failed to load overview: ${esc(e.message)}</div>`;
   }
 }
 
-async function loadAgentSessions(name) {
-  const body = document.getElementById('agent-subtab-body');
-  if (!body || !name) return;
-  // Reuse /api/projects/sessions semantics by hitting a generic search;
-  // for now query liveness which already has per-agent recent sessions.
-  try {
-    const r = await fetch('/api/liveness');
-    const d = await r.json();
-    const ag = (d.agents || []).find(a => a.name === name);
-    const sessions = ag?.sessions || [];
-    if (sessions.length === 0) {
-      body.innerHTML = `<div style="color:var(--fg2);padding:24px">No recent sessions for <b>${esc(name)}</b> in the last 4 hours.</div>`;
-      return;
-    }
-    let html = `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px">Last 4 hours — ${sessions.length} sessions. Click to open.</div>`;
-    html += `<table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="border-bottom:1px solid var(--border);text-align:left"><th style="padding:6px">Session</th><th>Status</th><th>When</th></tr>`;
-    for (const s of sessions.slice().reverse()) {
-      html += `<tr style="border-bottom:1px solid var(--bg3,#222);cursor:pointer" onclick="loadSessionDetail('${esc(s.sessionId)}')">`;
-      html += `<td style="padding:6px;font-family:monospace;font-size:11px">${esc((s.sessionId||'').slice(-12))}</td>`;
-      html += `<td style="padding:6px">${esc(s.status||'')}</td>`;
-      html += `<td style="padding:6px;color:var(--fg2);font-size:11px">${s.startedAt ? timeAgo(s.startedAt) : '—'}</td>`;
-      html += `</tr>`;
-    }
-    html += `</table>`;
-    body.innerHTML = html;
-  } catch (e) {
-    body.innerHTML = `<div style="color:var(--red);padding:16px">Failed: ${esc(e.message)}</div>`;
-  }
-}
 
 function toggleMarkdown() {
   renderMd = !renderMd;
