@@ -577,8 +577,21 @@ bus.subscribe((event) => {
         const target = sessions.find((s) => s.sessionId === targetSid);
         if (target?.status === "idle") {
           manager.input(targetSid, steerText);
-        } else {
+        } else if (target) {
+          // running
           manager.steer(targetSid, steerText, "human");
+        } else {
+          // No live session in memory — try to resume from cold storage.
+          // This is the Telegram path: a chat thread can always receive a
+          // message; if the agent isn't currently "online" the message wakes
+          // it up with the prior transcript intact.
+          try {
+            manager.resumeSession(targetSid, steerText, { source: event.source ?? "human" });
+            log("info", `[steer] Resumed cold session ${targetSid}`);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            log("error", `[steer] ${msg}`);
+          }
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);

@@ -26,11 +26,12 @@ import {
   sessionOutputDir,
   readSessionMessages,
   readArchivedSessionMessages,
+  unarchiveSession,
   RegistryStore,
   sessionDir,
   archiveSession,
 } from "./persistence.js";
-import { updateSessionDb, listWorkflowRunIds, getWorkflowRun, updateWorkflowRun, hasEvaluation } from "./requests.js";
+import { updateSessionDb, listWorkflowRunIds, getWorkflowRun, updateWorkflowRun, hasEvaluation, getDb } from "./requests.js";
 import { readIdentity } from "./detached.js";
 import type { EventBus } from "../app/event-bus.js";
 import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
@@ -580,6 +581,83 @@ export class SubagentManager {
   /** @deprecated No-op in v2. */
   resumeInterrupted(_sessionId: string): boolean { return false; }
 
+  /**
+   * Resume a cold (done/error/interrupted) session with a new user message.
+   *
+   * Reuses the original sessionId so the JSONL transcript grows in place
+   * (Telegram-style: one persistent thread per chat). The new message is
+   * appended after the rebuilt transcript as the next user turn.
+   *
+   * Throws if the session is unknown or already active in memory — callers
+   * should check `_sessions.has(sessionId)` first and use steer/input for
+   * live sessions.
+   */
+  resumeSession(sessionId: string, message: string, opts?: { source?: string }): string {
+    if (this._sessions.has(sessionId)) {
+      throw new Error(`Session "${sessionId}" is already active — use steer/input instead`);
+    }
+    const meta = this._registry.getSession(sessionId);
+    if (!meta) throw new Error(`Session "${sessionId}" not found`);
+    if (!this.agents.has(meta.agent)) {
+      throw new Error(`Agent "${meta.agent}" is not registered (cannot resume session ${sessionId})`);
+    }
+
+    // Promote the JSONL/output dir back to live before reading the prior
+    // transcript or running the agent. archiveSession() moves a finished
+    // session to history/<sid>/; resume needs that content back in
+    // sessions/<sid>/ so appendSessionMessage and the transcript reader
+    // both see the full thread.
+    try { unarchiveSession(this._persistDir, sessionId); } catch { /* best-effort */ }
+
+    // Rebuild prior transcript with any pending tool-calls repaired.
+    const resumeMessages = this.buildResumeMessages(sessionId);
+
+    // Replace the auto-generated "Process restarted..." tail with the
+    // operator's actual message. buildResumeMessages always ends with a user
+    // turn (either the original last user turn, or the synthetic restart
+    // notice it just appended). We overwrite the tail when it is the
+    // synthetic notice so the new user turn lands cleanly.
+    const tail: any = resumeMessages[resumeMessages.length - 1];
+    const isSyntheticRestart = tail?.role === "user"
+      && Array.isArray(tail.content)
+      && tail.content[0]?.type === "text"
+      && /^Process restarted\./.test(String(tail.content[0]?.text ?? ""));
+    if (isSyntheticRestart) resumeMessages.pop();
+    const newUserTurn: any = {
+      role: "user",
+      content: [{ type: "text", text: message }],
+      timestamp: Date.now(),
+    };
+    resumeMessages.push(newUserTurn);
+    // Persist the injected user turn to JSONL now — message_end events only
+    // fire for messages the agent itself emits, so without this the operator's
+    // turn would not appear in transcript views.
+    try { appendSessionMessage(this._persistDir, sessionId, newUserTurn); } catch { /* best-effort */ }
+
+    // Clear stale endedAt/error in the DB row so the session looks fresh
+    // again. updateSessionDb uses COALESCE(?, endedAt) which keeps the old
+    // value on null, so we have to write directly.
+    try {
+      const db = getDb(this._persistDir);
+      db.run(`UPDATE sessions SET status = 'running', endedAt = NULL, error = NULL WHERE sessionId = ?`, [sessionId]);
+    } catch { /* best-effort — manager.run will re-save the registry row */ }
+
+    this.run(meta.agent, meta.task, {
+      sessionId,
+      parentSessionId: meta.parentSessionId,
+      workflowRunId: meta.workflowRunId,
+      stepLabel: meta.stepLabel,
+      source: opts?.source ?? "resume",
+      kind: meta.kind ?? "job",
+      autoClose: meta.autoClose ?? "immediate",
+      requestId: meta.requestId,
+      orderId: meta.orderId,
+      startedAt: meta.startedAt,
+      resumeMessages,
+    });
+    return sessionId;
+  }
+
   health(): any {
     const activeSessions = this.status();
     return {
@@ -862,7 +940,8 @@ export class SubagentManager {
   }
 
   private buildResumeMessages(sessionId: string): AgentMessage[] {
-    const messages = readSessionMessages(this._persistDir, sessionId);
+    let messages = readSessionMessages(this._persistDir, sessionId);
+    if (messages.length === 0) messages = readArchivedSessionMessages(this._persistDir, sessionId);
     const repaired = messages.slice();
     const last = repaired[repaired.length - 1] as any;
     const pendingToolCalls = last?.role === "assistant" && Array.isArray(last.content)
