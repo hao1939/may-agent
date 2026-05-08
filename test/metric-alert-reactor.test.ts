@@ -131,6 +131,29 @@ describe("metric-alert-reactor", () => {
     expect(workflows[0].task).toContain('"metricId": "arc.down"');
   });
 
+  it("reruns P0 triage when a recent completed session emitted no judgment", async () => {
+    const { db, handler, workflows, logs } = setupWithDb();
+    const now = Date.now();
+    db.run(
+      "INSERT INTO metrics (id, name, owner, current, threshold, target, priority, alert_op, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      ["arc.down", "Arc down", "arc", 2, 1, 0, "P0", ">", now],
+    );
+    db.run(
+      "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
+      ["arc.down", "threshold", "critical failure", now - 60_000],
+    );
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, source, status, startedAt, endedAt, task) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      ["s_recent", "arc", "metric-alert-reactor:arc.down", "done", now - 10 * 60_000, now - 9 * 60_000, "old triage"],
+    );
+
+    await handler();
+
+    expect(workflows).toHaveLength(1);
+    expect(workflows[0]).toMatchObject({ name: "metric-alert-triage", source: "arc" });
+    expect(logs.some((msg) => msg.includes("ended without judgment"))).toBe(true);
+  });
+
   it("triages an old P1 alert that has no judgment", async () => {
     const { db, handler, workflows } = setupWithDb();
     const now = Date.now();
