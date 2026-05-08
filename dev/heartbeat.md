@@ -95,6 +95,9 @@ assumptions. Keep heartbeat checks boring and known-good:
 - Use the canned SQL above unchanged when possible.
 - Before any new or uncertain query, inspect the table with `PRAGMA table_info(<table>)`
   or rely on `query_db`'s schema hint, then retry with real columns.
+- Message/inbox records are not in a `messages` table. For recent delivered-message
+  evidence, use the `events` table (`event_type='message.created'`, JSON in `data`) or
+  inspect `notification_messages` with `PRAGMA table_info(notification_messages)` first.
 - Do not use `rg` in portable heartbeat commands; this environment may not have ripgrep.
   Use `grep -R --exclude-dir=.state --exclude-dir=node_modules --exclude-dir=.git` or
   `find` with pruned noisy directories instead.
