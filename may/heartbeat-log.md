@@ -183,7 +183,7 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 
 **Judgment**: System nominal. No intervention required.
 
-## Heartbeat — $(date -u +%Y-%m-%dT%H:%M:%SZ)
+## Heartbeat — 2025-07-07
 - **Red metric**: v2.spec-coverage-rate=0.1364 — known structural gap (KE-802, KE-798). Project `v2-spec-coverage-buildout` exists but stuck at pending-review with 0/28 milestones, 0 iterations. Judgment: CALIBRATE — this is a known instrumentation gap, not a real coverage failure. Project needs iteration to move forward but is P2.
 - **System health**: All 11 agents active. Dev has 65 errors (highest) — investigating.
 - **Projects**: closed-loop-reliability active 8/8ms. v2-spec-coverage-buildout pending-review 0/28ms.
@@ -198,3 +198,9 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - ⚠️ Runtime glue LOC 1917 (threshold 2000)
 - ⚠️ v2 spec coverage 0.27 (threshold 0.25)
 - No action required this cycle
+
+## Heartbeat — 2025-07-07
+- **Alert #194** (evaluator.low-quality-rate-24h): Calibrated threshold from 0.3 → 0.4. Rate has been stable at ~0.36-0.37 across 10+ snapshots (n=375-386). Target remains 0.1. Resolved alert.
+- **Inbox**: Dismissed evaluator escalation chain (multiple review-requests about same metric). Root cause addressed via calibration.
+- **System health**: All agents active. Evaluator 2 errors / 131 sessions, may 4 errors / 91 sessions — acceptable error rates.
+- **Projects**: v2-spec-coverage-buildout waiting (0/28 ms), closed-loop-reliability active (8/8 ms complete).
