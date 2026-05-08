@@ -343,6 +343,11 @@
         <button id="scroll-toggle" onclick="toggleChatScroll()" title="Auto-scroll to bottom on new messages">⬇ Auto-scroll</button>
         <button class="ask-btn" id="md-toggle" onclick="toggleMarkdown()" style="margin-left:auto;font-size:11px">Raw</button>
       </div>
+      <div id="chat-agent-banner" style="display:none;align-items:center;gap:8px;padding:8px 12px;background:var(--bg2);border:1px solid var(--accent);border-radius:8px;margin:4px 0;font-size:13px">
+        <span style="color:var(--fg2)">Chatting with</span>
+        <b class="banner-name" style="color:var(--accent)"></b>
+        <span style="color:var(--fg2);font-size:11px;margin-left:auto">Telegram-style: messages persist; agent resumes from prior context</span>
+      </div>
       <div id="session-picker" style="display:flex;gap:4px;flex-wrap:wrap;padding:4px 0;font-size:12px"></div>
       <div class="chat-messages" id="chat-messages"></div>
       <div class="chat-input-row">
@@ -424,6 +429,7 @@ function parseHash() {
   if (LEGACY_TAB_ALIAS[head]) return { tab: LEGACY_TAB_ALIAS[head], params: {} };
   if (head === 'projects') return { tab: 'projects', params: { id: segs.slice(1).join('/') || null } };
   if (head === 'sessions') return { tab: 'sessions', params: { id: segs[1] || null } };
+  if (head === 'agents') return { tab: 'agents', params: { name: segs[1] || null } };
   if (head === 'knowledge') return { tab: 'knowledge', params: { path: segs.slice(1).join('/') || '' } };
   if (head === 'system') return { tab: 'system', params: {} };
   if (head === 'live') return { tab: 'live', params: {} };
@@ -449,7 +455,9 @@ function render() {
   //   system → #metrics + #events stacked
   document.getElementById('dashboard').classList.toggle('hidden', tab !== 'live');
   document.getElementById('projects').classList.toggle('hidden', tab !== 'projects');
-  document.getElementById('chat').classList.toggle('hidden', tab !== 'sessions');
+  // Sessions and agents both render through the chat pane; agents wraps it
+  // with default-session resolution.
+  document.getElementById('chat').classList.toggle('hidden', tab !== 'sessions' && tab !== 'agents');
   document.getElementById('benchmarks').classList.toggle('hidden', true);  // always hidden (deferred)
   document.getElementById('knowledge').classList.toggle('hidden', tab !== 'knowledge');
   document.getElementById('metrics').classList.toggle('hidden', tab !== 'system');
@@ -458,6 +466,8 @@ function render() {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   // Surface initialization
   if (tab === 'sessions') initChat(params.id || null);
+  if (tab !== 'agents') currentAgentChat = null;
+  if (tab === 'agents') initAgentChat(params.name);
   if (tab === 'knowledge') {
     // Deep-link support: #/knowledge/<sub-path>. If sub-path looks like a file, view it.
     const sub = (params.path || '').replace(/^knowledge\//, '');
@@ -655,6 +665,25 @@ async function loadLiveness() {
       <span class="subtle">${summary.heartbeatAgents4h || 0}/${summary.agentsConfigured || 0} agents heartbeated in 4h · ${summary.activeSessions || 0} active</span>
       <span class="breach-badge ${(summary.openAlerts || 0) > 0 ? 'alerting' : 'healthy'}" onclick="routeTo('/system')" title="Click to open System tab">${(summary.openAlerts || 0) > 0 ? '⚠ ' + summary.openAlerts + ' breach' + (summary.openAlerts === 1 ? '' : 'es') : '✓ healthy'}</span>
     </h2>`;
+
+    // Agent contact strip — Telegram-style entry points. One tile per
+    // configured agent: name + status dot + last-heartbeat-age. Click to
+    // open #/agents/<name> chat. Stale agents (no heartbeat in 4h) are
+    // muted but still clickable — you can wake them by sending a message.
+    html += `<div class="liveness-section" style="margin:8px 0 12px"><h3 style="font-size:11px;color:var(--fg2);margin:0 0 6px">Talk to an agent</h3><div class="agent-contact-strip" style="display:flex;flex-wrap:wrap;gap:6px">`;
+    for (const agent of agents) {
+      const ageMs = agent.lastHeartbeat ? (Date.now() - agent.lastHeartbeat) : null;
+      const stale = ageMs == null || ageMs > 4 * 3600 * 1000;
+      const dot = stale ? '○' : (agent.lastStatus === 'error' ? '●' : '●');
+      const dotColor = stale ? 'var(--fg2)' : (agent.lastStatus === 'error' ? 'var(--red)' : 'var(--green)');
+      const ageLabel = ageMs == null ? 'no heartbeat' : formatAgo(agent.lastHeartbeat);
+      html += `<button class="agent-tile" onclick="routeTo('/agents/${esc(agent.name)}')" title="Open chat with ${esc(agent.name)} — last heartbeat: ${esc(ageLabel)}" style="display:flex;align-items:center;gap:6px;padding:4px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:14px;color:var(--fg);cursor:pointer;font-size:12px;${stale ? 'opacity:0.55' : ''}">
+        <span style="color:${dotColor};font-size:10px">${dot}</span>
+        <span style="font-weight:500">${esc(agent.name)}</span>
+        <span style="color:var(--fg2);font-size:10px">${esc(ageLabel)}</span>
+      </button>`;
+    }
+    html += `</div></div>`;
 
     // Timeline as the dominant element (full width, screen-1 layout).
     html += `<div class="liveness-section liveness-timeline"><h3>Heartbeat timeline, last 4h</h3>`;
@@ -1498,6 +1527,9 @@ function initChat(deepLinkSessionId) {
     chatInitialized = true;
     // WS is now connected on page load; no need to call connectWs() here
   }
+  // Hide the agent-chat banner when entering plain sessions mode.
+  const banner = document.getElementById('chat-agent-banner');
+  if (banner) banner.style.display = 'none';
   // Honor deep-link first.
   if (deepLinkSessionId && deepLinkSessionId !== currentSessionId) {
     switchSession(deepLinkSessionId);
@@ -1523,6 +1555,49 @@ function initChat(deepLinkSessionId) {
       candidates.sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0));
       switchSession(candidates[0].sessionId);
     }
+  }
+}
+
+let currentAgentChat = null;
+
+/**
+ * Telegram-style chat with a specific agent. Reuses the #chat pane:
+ *   1. Fetch /api/agents/:name/default-session to find the agent's persistent
+ *      thread (most-recent non-throwaway session, any status).
+ *   2. switchSession() loads transcript and binds compose box.
+ *   3. If no session exists yet, show an empty chat; first message will
+ *      spawn one via /api/agents/:name/message (handled in chat-input).
+ *
+ * Header banner shows which agent we're talking to so the user can tell
+ * agent-chat from arbitrary-session view.
+ */
+async function initAgentChat(name) {
+  if (!chatInitialized) {
+    chatInitialized = true;
+  }
+  currentAgentChat = name;
+  // Update the chat header to show the agent name.
+  const header = document.getElementById('chat-agent-banner');
+  if (header) {
+    header.style.display = name ? 'flex' : 'none';
+    header.querySelector('.banner-name').textContent = name || '';
+  }
+  if (!name) { switchSession(null); return; }
+  try {
+    const r = await fetch(`/api/agents/${encodeURIComponent(name)}/default-session`);
+    const d = await r.json();
+    if (d.sessionId) {
+      // Existing thread — load it.
+      if (d.sessionId !== currentSessionId) switchSession(d.sessionId);
+    } else {
+      // No thread yet. Show empty chat; the compose-box send path will spawn one.
+      currentSessionId = null;
+      const messages = document.getElementById('chat-messages');
+      messages.innerHTML = '<div style="color:var(--fg2);font-size:13px;padding:24px;text-align:center">No conversation with <b>' + name + '</b> yet. Send a message to start one.</div>';
+    }
+  } catch (e) {
+    const messages = document.getElementById('chat-messages');
+    messages.innerHTML = '<div style="color:var(--red);padding:16px">Failed to load chat with ' + name + ': ' + e.message + '</div>';
   }
 }
 
@@ -1834,8 +1909,20 @@ function sendChat() {
   }
 
   if (currentSessionId) {
-    // Steer the selected session
+    // Steer the selected session (works for running, idle, and — via 3b
+    // cold-resume — done/error/interrupted sessions too).
     ws.send(JSON.stringify({ type: 'steer', sessionId: currentSessionId, message: msg }));
+  } else if (currentAgentChat) {
+    // Telegram-style: agent chat with no session yet. POST spawns one.
+    fetch('/api/agents/' + encodeURIComponent(currentAgentChat) + '/message', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ content: msg }),
+    }).then(r => r.json()).then(d => {
+      // After spawn, re-resolve default session so the WS subscribes properly.
+      if (d.sessionId) switchSession(d.sessionId);
+      else setTimeout(() => initAgentChat(currentAgentChat), 800);
+    }).catch(e => toast('Failed: ' + e.message));
   } else {
     // Chat mode — input to the interface agent
     ws.send(JSON.stringify({ type: 'input', message: msg }));
