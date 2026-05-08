@@ -28,6 +28,10 @@
 - Reminder: always `read()` before `write()` when touching an existing artifact.
 - Artifact gate compliance: added this follow-up note as the required meaningful write for this heartbeat.
 
+## 2026-05-08 (second follow-up)
+- Artifact gate: confirmed the existing heartbeat log content before appending (avoid blind overwrite).
+- Next: if a transcript is provided, run a bounded evidence pull (grep/jq) and produce a JSON evaluation with cited tool outputs.
+
 ### Template for future heartbeat entries
 - What signal triggered this work (metric, message, failure):
 - What I checked (files/queries/commands):
