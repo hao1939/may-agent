@@ -10,6 +10,7 @@ iteration: 2
 
 # Evaluator Low-Quality Rate Calibration
 
+**Iteration**: 2
 ## Goal
 Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior failures from (b) pipeline/guard false-penalties, and ensure evaluator scoring produces low false-good overturns.
 
@@ -18,8 +19,8 @@ Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior
 - Metric: `evaluator.false-good-rate-sample` current 0.5714 (threshold 0.2, target 0.05) but denominator only 7 reviewed sessions (sample instability).
 
 ## Current State
-Iteration 1. Milestones: 0/0 done.
-Reviewer: - **I believe**: We now have a concrete in-repo “consumer” for `evaluator.low-quality-rate-24h` alerting/thresholding (`agents/may/handlers/metrics-snapshot.ts`), and a plausible patch direction: aler
+Iteration 2. Milestones: 0/0 done.
+Reviewer: - **I believe**: We now have a clear *mechanism-level* explanation: `evaluator-aftermath` uses a step-function where **any** `issues.length>0` forces `verdict=needs_improvement` at **quality=0.55**, a
 ## Plan
 1. **Metric decomposition proposal**: draft a split of low-quality-rate into sub-metrics by issue class (schema errors, finish/uncommitted, terminal interruptions) to avoid conflating agent quality with infra/guard friction.
 2. **Criteria calibration**: review evaluator criteria for (a) terminal interrupted sessions (Clean start) and (b) finish-blocked sessions; decide whether to classify as NI vs excluded/exception.
@@ -43,6 +44,7 @@ Reviewer: - **I believe**: We now have a concrete in-repo “consumer” for `ev
 - outputs/iteration-3-impact-model-and-recommendation.md
 - outputs/iteration-4-metric-split-implementation-plan.md
 - outputs/iteration-1-deliverable.md
+- outputs/iteration-1-discovery-and-patch-plan.md
 - outputs/iteration-1-2026-05-08-alert-wiring-discovery.md
 - outputs/iteration-2-mechanism-and-fix-options.md
 - outputs/iteration-1-2026-05-08-evidence-refresh.md
@@ -64,3 +66,7 @@ Reviewer: - **I believe**: We now have a concrete in-repo “consumer” for `ev
 Milestone checkoff: Iteration 2 — mechanism + fix options
 - We now have Iterations 3–5 as an approval-quality packet; the remaining gap is **operational wiring**: where `evaluator.low-quality-rate-24h` is actually consumed for paging/thresholding.
 - Next step should be **in-repo consumer/alert discovery** (search for metric usage), enabling an end-to-end patch; if not found, explicitly identify the external alert owner/system to unblock governance.
+- Heuristic evaluator is in `agents/evaluator/workflows/evaluator-aftermath.ts` with `HEURISTIC_VERSION = 3`; `classifyVerdict()` uses a step-function: `failed => quality 0.2/NI`, else `issues.length>0 => quality 0.55/NI`, else `0.85/good`.
+- `transcriptIssues()` maps literal/regex triggers to dominant hygiene issues: uncommitted-changes finish block, SQLite “no such table/column”, broad may/shared commit, committed runtime files, live-signal injection unavailable, metric health claim without evidence.
+- `session-aftermath-scan.ts` uses `DEFAULT_HEURISTIC_VERSION = 2` and only refreshes evaluations when prior verdict was **good** and has lower heuristicVersion; NI evaluations are not refreshed when heuristicVersion increments (NI can be sticky across versions).
+- DB-stratified sample suggests NI is dominated by hygiene/pipeline triggers; next step requires transcript/artifact audit + a single intervention decision (metric split vs heuristic tuning vs workflow fixes).
