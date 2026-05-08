@@ -466,6 +466,33 @@ ${guidance}
 
 Make a judgment from the full context. If routine self-maintenance is enough, leave evidence. If you find a durable multi-session goal, create or update an explicit shared project. ${redMetricDiagnostics ? "Red metric diagnostics are above — address each signal, then proceed with normal heartbeat work." : "Review signals, projects, and guidance. Act on what matters."}
 
+When creating a shared project, write `agents/shared/projects/<id>/project.md` with YAML frontmatter. Do not use `**Owner**:` or `**Status**:` body fields. Minimal skeleton:
+\`\`\`markdown
+---
+id: <id>
+owner: ${agent}
+status: active
+type: milestone
+priority: P2
+workflow: project
+iteration: 0
+---
+
+# <Project Name>
+
+## Goal
+
+## Signals
+
+## Current State
+
+## Plan
+
+## Validation
+
+## Journal
+\`\`\`
+
 Before calling finish(success), read() every file you wrote or edited in this session and cite that read-back in verification_evidence. The verify-after-write guard rejects successful finishes for unread modified files.
 
 Commit and finish.`;
