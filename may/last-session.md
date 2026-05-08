@@ -1,12 +1,9 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778198739859_128
+- **Session:** s_1778199339791_130
 - **Status:** success
-- **When:** 2026-05-08T00:06:23.689Z
+- **When:** 2026-05-08T00:16:33.094Z
 
 ## What Happened
-Both issues are stable and already tracked. Alert #136 (spec-coverage 0.1364 vs 0.8) has not moved but has a remediation project (v2-spec-coverage-buildout, pending-review) — prior run judged as waiting. Delivery failures (evaluator→functions.message) were already escalated to may as an evaluator prompt bug 10m ago. No new action required.
-
-## Completed
-- Closed-loop steward audit: confirmed both open issues are tracked with owners and remediation paths
+Audited two open issues. Alert#136 (v2.spec-coverage-rate at 0.1364 vs 0.8): project v2-spec-coverage-buildout exists in pending-review, judgment is waiting_with_evidence — on track, owner is may. Message delivery failures: identified systemic bug where evaluator sends to "functions.message" (13 occurrences); notified may at P1.
