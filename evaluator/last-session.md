@@ -1,12 +1,12 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778246628207_37
+- **Session:** s_1778247595986_42
 - **Status:** success
-- **When:** 2026-05-08T13:25:08.716Z
+- **When:** 2026-05-08T13:40:49.539Z
 
 ## What Happened
-Created aftermath review for session s_1778245769679_32 and queued an FYI escalation to may about finish() blocking on ignored shared/projects edits.
+Wrote and verified aftermath review for s_1778247549813_39; committed evaluator/shared changes to avoid finish-guard issues; notified may about key issues (finish guard + evidence mismatch).
 
 ## Files Modified
-- agents/evaluator/workspace/aftermath/s_1778245769679_32.md
+- agents/evaluator/workspace/aftermath/s_1778247549813_39.md
