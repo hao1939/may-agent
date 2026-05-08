@@ -29,6 +29,7 @@ export interface WorkflowRun {
   task: string;
   parentSessionId: string;
   parentWorkflowRunId?: string;
+  projectId?: string;
   depth: number;
   startedAt: number;
   endedAt?: number;
@@ -196,7 +197,7 @@ async function findWorkflow(
   sharedDir?: string,
 ): Promise<{ workflow: WorkflowModule | null; error: string | null }> {
   const files = listWorkflowFiles(workflowDir, sharedDir);
-  let loadError: string | null = null;
+  const loadErrors: string[] = [];
 
   for (const filePath of files) {
     try {
@@ -205,11 +206,15 @@ async function findWorkflow(
         return { workflow: wf, error: null };
       }
     } catch (err) {
-      loadError = err instanceof Error ? err.message : String(err);
+      const msg = err instanceof Error ? err.message : String(err);
+      const shortPath = filePath.split("/").slice(-3).join("/");
+      loadErrors.push(`${shortPath}: ${msg}`);
     }
   }
 
-  const error = loadError ? `Workflow "${name}" not found (load error: ${loadError})` : `Workflow "${name}" not found`;
+  const error = loadErrors.length > 0
+    ? `Workflow "${name}" not found. Load errors:\n  ${loadErrors.join("\n  ")}`
+    : `Workflow "${name}" not found`;
   return { workflow: null, error };
 }
 
@@ -506,6 +511,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     const runId = generateRunId();
     const localSteps: CompletedStep[] = [];
     let stepCounter = 0;
+    const effectiveProjectId = previousRun?.projectId ?? opts.projectId;
     // Once we detect a mismatch (workflow code changed), stop replaying
     let replayExhausted = false;
 
@@ -516,6 +522,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       task,
       parentSessionId: parentSessionId ?? "unknown",
       parentWorkflowRunId,
+      projectId: effectiveProjectId,
       depth,
       startedAt: Date.now(),
       status: "running",
@@ -527,8 +534,9 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         runId,
         workflow: workflow.name,
         task,
-        parentSessionId: parentSessionId ?? "unknown",
+        parentSessionId: parentSessionId ?? null,
         parentWorkflowRunId: parentWorkflowRunId ?? null,
+        projectId: effectiveProjectId ?? null,
         depth,
         status: "running",
         startedAt: run.startedAt,
@@ -646,7 +654,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         const taskResult = await manager.callAgent(agentName, effectiveTask, {
           parentSessionId,
           workflowRunId: runId,
-          projectId: opts.projectId,
+          projectId: effectiveProjectId,
           stepLabel: agentName,
           source: `workflow:${workflow.name}`,
         });
@@ -686,7 +694,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           const demands = emitAndCollectDemands(guards, guardEvent);
           if (demands.length > 0) {
             await resolveDemands(demands, runId, completedSteps, steeringQueue, injectedStepCount, maxInjected,
-              manager, parentSessionId, opts.projectId, onEvent, run, persistDir ?? undefined, guardWarnings);
+              manager, parentSessionId, effectiveProjectId, onEvent, run, persistDir ?? undefined, guardWarnings);
           }
         }
 
@@ -754,7 +762,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           const demands = emitAndCollectDemands(guards, guardEvent);
           if (demands.length > 0) {
             await resolveDemands(demands, runId, completedSteps, steeringQueue, injectedStepCount, maxInjected,
-              manager, parentSessionId, opts.projectId, onEvent, run, persistDir ?? undefined, guardWarnings);
+              manager, parentSessionId, effectiveProjectId, onEvent, run, persistDir ?? undefined, guardWarnings);
           }
         }
 
@@ -838,7 +846,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             const taskResult = await manager.callAgent(agentName, fullPrompt, {
               parentSessionId,
               workflowRunId: runId,
-              projectId: opts.projectId,
+              projectId: effectiveProjectId,
               stepLabel: stepName,
               source: `workflow:${label}`,
             });
@@ -880,7 +888,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
               const demands = emitAndCollectDemands(guards, guardEvent);
               if (demands.length > 0) {
                 await resolveDemands(demands, runId, completedSteps, steeringQueue, injectedStepCount, maxInjected,
-                  manager, parentSessionId, opts.projectId, onEvent, run, persistDir ?? undefined, guardWarnings);
+                  manager, parentSessionId, effectiveProjectId, onEvent, run, persistDir ?? undefined, guardWarnings);
               }
             }
           },
@@ -903,7 +911,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         };
         const demands = emitAndCollectDemands(guards, doneEvent);
         await resolveDemands(demands, runId, completedSteps, steeringQueue, injectedStepCount, maxInjected,
-          manager, parentSessionId, opts.projectId, onEvent, run, persistDir ?? undefined, guardWarnings);
+          manager, parentSessionId, effectiveProjectId, onEvent, run, persistDir ?? undefined, guardWarnings);
       }
 
       // Finalize the workflow run
@@ -1104,6 +1112,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             task: prevRunRecord.task,
             parentSessionId: prevRunRecord.parentSessionId ?? "unknown",
             parentWorkflowRunId: prevRunRecord.parentWorkflowRunId ?? undefined,
+            projectId: prevRunRecord.projectId ?? opts.projectId,
             depth: prevRunRecord.depth,
             startedAt: prevRunRecord.startedAt,
             endedAt: prevRunRecord.endedAt ?? undefined,
@@ -1133,7 +1142,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             resumeWf,
             prevRun.task,
             prevRun.depth,
-            prevRun.parentSessionId,
+            prevRun.parentSessionId === "unknown" ? undefined : prevRun.parentSessionId,
             prevRun.parentWorkflowRunId,
             prevRun,
           );

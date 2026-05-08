@@ -1091,8 +1091,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
    * the lineage emerges from 5 independent signals combined:
    *
    *   tier 1 (tagged):    sessions.projectId = <owner>/<name>
-   *   tier 2 (workflow):  sessions.workflowRunId in (runs whose task
-   *                       mentions the project path)
+   *   tier 2 (workflow):  sessions.workflowRunId in (runs tagged with
+   *                       projectId, or legacy runs whose task mentions
+   *                       the project path)
    *   tier 3 (file-read): file_reads.filePath like %/<name>/% — the
    *                       session opened a file inside the project dir.
    *                       This is *strong* signal even if the session
@@ -1140,11 +1141,12 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         accept(r, "tagged");
       }
 
-      // tier 2: workflow_runs whose task mentions the project path or name.
+      // tier 2: workflow_runs tagged with this project, plus legacy runs
+      // whose task mentions the project path or name.
       // Project path appears in master-worker tasks like 'project: /app/agents/shared/projects/<name>'.
       const runRows = db.prepare(
-        `SELECT runId FROM workflow_runs WHERE task LIKE ? OR task LIKE ? LIMIT 200`
-      ).all(`%${path}%`, `%projects/${name}%`) as Array<{ runId: string }>;
+        `SELECT runId FROM workflow_runs WHERE projectId = ? OR task LIKE ? OR task LIKE ? LIMIT 200`
+      ).all(projectId, `%${path}%`, `%projects/${name}%`) as Array<{ runId: string }>;
       if (runRows.length > 0) {
         const placeholders = runRows.map(() => "?").join(",");
         const ids = runRows.map(r => r.runId);

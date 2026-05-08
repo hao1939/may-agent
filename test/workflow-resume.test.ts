@@ -34,6 +34,7 @@ function saveWorkflowRunCompat(dir: string, run: WorkflowRun): void {
     task: run.task,
     parentSessionId: run.parentSessionId ?? "unknown",
     parentWorkflowRunId: (run as any).parentWorkflowRunId ?? null,
+    projectId: run.projectId ?? null,
     depth: run.depth,
     status: run.status as any,
     startedAt: run.startedAt,
@@ -322,6 +323,7 @@ describe("workflow tool: resume", () => {
       workflow: "simple-resume",
       task: "some task",
       parentSessionId: "parent_1",
+      projectId: "scout/scout-second-brain-learning",
       depth: 1,
       startedAt: Date.now() - 60000,
       status: "running",
@@ -344,6 +346,7 @@ describe("workflow tool: resume", () => {
       const newRun = getWorkflowRun(persistDir, parsed.workflowRunId);
       expect(newRun).not.toBeNull();
       expect(newRun!.resumedFromRunId).toBe("wr_prev");
+      expect(newRun!.projectId).toBe("scout/scout-second-brain-learning");
       expect(newRun!.status).toBe("done");
     }
   });
