@@ -104,6 +104,7 @@ const RUNTIME_GLUE_FILES = [
   "src/lib/manager-receipts.ts",
   "src/lib/manager-agents-tool.ts",
 ];
+const DEFAULT_BUILD_METRICS_PATH = "/usr/local/share/may-agent/build-metrics.json";
 
 const VALID_TOOL_PRESETS = new Set([
   "coding",
@@ -177,6 +178,18 @@ function countFileLines(path: string): number {
     return text.endsWith("\n") ? newlineCount : newlineCount + 1;
   } catch {
     return 0;
+  }
+}
+
+function readBuildMetric(id: string): number | null {
+  const path = process.env.MAY_AGENT_BUILD_METRICS_PATH || DEFAULT_BUILD_METRICS_PATH;
+  try {
+    if (!existsSync(path)) return null;
+    const parsed = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+    const value = parsed[id];
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+  } catch {
+    return null;
   }
 }
 
@@ -601,10 +614,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // ── Measure: v2 conformance and status honesty ───────────────────
 
     try {
-      const managerLoc = countFileLines(join(ctx.sdk.paths.root, "src/lib/manager.ts"));
+      const liveManagerLoc = countFileLines(join(ctx.sdk.paths.root, "src/lib/manager.ts"));
+      const managerLoc = liveManagerLoc > 0 ? liveManagerLoc : readBuildMetric("v2.manager-loc") ?? 0;
       record("v2.manager-loc", managerLoc, 1);
 
-      const runtimeGlueLoc = RUNTIME_GLUE_FILES.reduce((sum, relPath) => sum + countFileLines(join(ctx.sdk.paths.root, relPath)), 0);
+      const liveGlueCounts = RUNTIME_GLUE_FILES.map((relPath) => countFileLines(join(ctx.sdk.paths.root, relPath)));
+      const runtimeGlueLoc = liveGlueCounts.some((count) => count > 0)
+        ? liveGlueCounts.reduce((sum, count) => sum + count, 0)
+        : readBuildMetric("v2.runtime-glue-loc") ?? 0;
       record("v2.runtime-glue-loc", runtimeGlueLoc, RUNTIME_GLUE_FILES.length);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring runtime LOC: ${e}`); }
 
