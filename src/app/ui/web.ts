@@ -889,6 +889,134 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
   }
 
+  /**
+   * GET /api/projects/detail?path=<projectPath> — dense rollup for the
+   * project detail page header. Replaces the operator's eyeballing of
+   * project.md frontmatter / scrolling for goals.
+   *
+   * Returns:
+   *   {
+   *     path, name, owner,                  — identity
+   *     frontmatter: {...},                  — raw parsed YAML
+   *     status, iteration, priority,         — promoted from frontmatter
+   *     goal: string|null,                  — first ## Goal section content
+   *     milestonesDone, milestonesTotal,    — counted from '- [ ]' / '- [x]'
+   *     citedMetrics: [string],             — metric-id-shaped tokens in body
+   *     ownedMetrics: [Metric],             — metrics where project=<id>
+   *     sessionCount, recentSessions: [..], — from sessions table
+   *     updatedAt, createdAt,               — file mtime / ctime
+   *   }
+   */
+  function handleProjectDetail(url: URL): Response {
+    const path = url.searchParams.get("path");
+    if (!path) return json({ error: "path required" }, 400);
+    if (!path.match(/^agents\/(shared\/projects\/|[^/]+\/workspace\/projects\/)/)) return json({ error: "Access denied" }, 403);
+    const filePath = path.endsWith(".md") ? join(PROJECT_ROOT, path) : join(PROJECT_ROOT, path, "project.md");
+    if (!existsSync(filePath)) return json({ error: "not found" }, 404);
+
+    let content = "";
+    let stat: { mtimeMs: number; ctimeMs: number } | null = null;
+    try {
+      content = readFileSync(filePath, "utf-8");
+      stat = statSync(filePath);
+    } catch (e) {
+      return json({ error: e instanceof Error ? e.message : String(e) }, 500);
+    }
+
+    // Parse frontmatter ("---\n...\n---").
+    const frontmatter: Record<string, string> = {};
+    const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n?/);
+    let body = content;
+    if (fmMatch) {
+      body = content.slice(fmMatch[0].length);
+      for (const ln of fmMatch[1].split("\n")) {
+        const kv = ln.match(/^([a-zA-Z_][a-zA-Z0-9_-]*):\s*(.+?)\s*$/);
+        if (kv) frontmatter[kv[1]] = kv[2];
+      }
+    }
+
+    // Derive identity.
+    const parts = path.split("/");
+    let owner: string;
+    let projectName: string;
+    if (parts[1] === "shared" && parts[2] === "projects") {
+      owner = frontmatter.owner || "shared";
+      projectName = parts[3]?.replace(/\.md$/, "") ?? "";
+    } else {
+      owner = frontmatter.owner || parts[1] || "";
+      projectName = parts[parts.length - 1]?.replace(/\.md$/, "") ?? "";
+    }
+    const projectId = parts[1] === "shared" ? `shared/${projectName}` : `${parts[1]}/${projectName}`;
+
+    // Extract Goal section (everything between '## Goal' and the next '## ').
+    let goal: string | null = null;
+    const goalMatch = body.match(/^##\s+Goal\s*\n([\s\S]*?)(?=\n##\s|$)/m);
+    if (goalMatch) goal = goalMatch[1].trim() || null;
+
+    // Count milestones: lines like '- [ ] foo' / '- [x] foo' anywhere in body.
+    const checkboxes = body.match(/^[\s\-*]*\[[ xX]\]/gm) || [];
+    const milestonesTotal = checkboxes.length;
+    const milestonesDone = (body.match(/^[\s\-*]*\[[xX]\]/gm) || []).length;
+
+    // Find metric-id-shaped backtick tokens in the body.
+    const cited = new Set<string>();
+    const re = /`([a-z]+(?:\.[a-z0-9-]+)+)`/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(body)) !== null) {
+      // Only keep tokens that look like our metric IDs (start with a known
+      // axis prefix). Limits noise (e.g., file paths like 'foo.md').
+      const tok = m[1];
+      if (/^(metric|capability|project|handler|session|evaluator|agent|system|v2)\./.test(tok)) cited.add(tok);
+    }
+
+    // Resolve owned metrics + cited-metrics-that-exist via DB.
+    const db = _db();
+    let ownedMetrics: Array<Record<string, unknown>> = [];
+    let citedMetricsResolved: Array<Record<string, unknown>> = [];
+    try {
+      ownedMetrics = db.prepare(`SELECT id, name, current, threshold, alert_op, unit, priority, type FROM metrics WHERE project = ?`).all(projectName) as any[];
+      if (cited.size > 0) {
+        const placeholders = [...cited].map(() => "?").join(",");
+        citedMetricsResolved = db.prepare(`SELECT id, name, current, threshold, alert_op, unit, priority, type FROM metrics WHERE id IN (${placeholders})`).all(...[...cited]) as any[];
+      }
+    } catch { /* tolerate missing column */ }
+
+    // Recent sessions for this project (reuses handleProjectSessions logic).
+    let recentSessions: Array<Record<string, unknown>> = [];
+    let sessionCount = 0;
+    try {
+      const rows = db.prepare(
+        `SELECT sessionId, agent, status, startedAt, endedAt, task FROM sessions WHERE projectId = ? ORDER BY startedAt DESC LIMIT 10`
+      ).all(projectId) as any[];
+      recentSessions = rows;
+      const cnt = db.prepare(`SELECT COUNT(*) as c FROM sessions WHERE projectId = ?`).get(projectId) as any;
+      sessionCount = cnt?.c ?? 0;
+    } catch { /* skip */ }
+
+    return json({
+      path,
+      name: projectName,
+      owner,
+      projectId,
+      frontmatter,
+      status: frontmatter.status || null,
+      iteration: frontmatter.iteration ? Number(frontmatter.iteration) : 0,
+      priority: frontmatter.priority || null,
+      type: frontmatter.type || null,
+      workflow: frontmatter.workflow || null,
+      goal,
+      milestonesTotal,
+      milestonesDone,
+      citedMetrics: [...cited],
+      ownedMetrics,
+      citedMetricsResolved,
+      sessionCount,
+      recentSessions,
+      updatedAt: stat ? Math.floor(stat.mtimeMs) : null,
+      createdAt: stat ? Math.floor(stat.ctimeMs) : null,
+    });
+  }
+
   function handleProjectSessions(url: URL): Response {
     const path = url.searchParams.get("path");
     if (!path) return json({ error: "path required" }, 400);
@@ -1261,7 +1389,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     // Other on-disk files (NOT in prompt). Useful for context but not auto-loaded.
     // Includes commonly-named convention files; agent decides when to read them.
-    const otherCandidates = ["SOUL.md", "DOMAIN.md", "heartbeat.md", "context.md", "TOOLS.md", "LESSONS.md"];
+    const otherCandidates = ["DOMAIN.md", "heartbeat.md", "context.md", "TOOLS.md", "LESSONS.md"];
     for (const f of otherCandidates) {
       const file = readFile(join(agentDir, f), f, "on-disk only");
       if (file) otherFiles.push(file);
@@ -1477,6 +1605,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/metrics") return handleMetrics(url);
       if (url.pathname === "/api/projects") return handleProjects();
       if (url.pathname === "/api/projects/content") return handleProjectContent(url);
+      if (url.pathname === "/api/projects/detail") return handleProjectDetail(url);
       if (url.pathname === "/api/projects/journal") return handleProjectJournal(url);
       if (url.pathname === "/api/projects/discussion") return handleProjectDiscussion(url);
       if (url.pathname === "/api/projects/sessions") return handleProjectSessions(url);

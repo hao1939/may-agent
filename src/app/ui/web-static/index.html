@@ -3111,20 +3111,144 @@ async function loadProjects() {
 async function showProjectDetail(path) {
   _projectDetailPath = path;
   const el = document.getElementById('projects-content');
-  let html = `<button onclick="routeTo('/projects')" style="margin-bottom:12px;padding:4px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer">← Back</button>`;
-  html += `<div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:12px">`;
-  html += `<button class="tab-btn active" onclick="switchProjectTab(this,'project')" style="background:none;border:none;border-bottom:2px solid var(--accent);color:var(--accent);padding:8px 16px;cursor:pointer;font-size:13px">Project</button>`;
-  html += `<button class="tab-btn" onclick="switchProjectTab(this,'journal')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Journal</button>`;
-  html += `<button class="tab-btn" onclick="switchProjectTab(this,'discussion')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Discussion</button>`;
-  html += `<button class="tab-btn" onclick="switchProjectTab(this,'sessions')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Sessions</button>`;
+  el.innerHTML = '<div style="color:var(--fg2);padding:24px">Loading project…</div>';
+
+  // Fetch the rollup first — we need it for the header card.
+  let detail = null;
+  try {
+    const r = await fetch(`/api/projects/detail?path=${encodeURIComponent(path)}`);
+    detail = await r.json();
+    if (detail.error) throw new Error(detail.error);
+  } catch (e) {
+    el.innerHTML = `<div style="color:var(--red);padding:16px">Failed to load project: ${esc(e.message)}</div>`;
+    return;
+  }
+
+  // Status badge color.
+  const statusColors = {
+    active: 'var(--green)', running: 'var(--green)',
+    waiting: 'var(--orange,#e8a44c)', blocked: 'var(--red)', paused: 'var(--orange,#e8a44c)',
+    done: 'var(--fg2)', complete: 'var(--fg2)', closed: 'var(--fg2)',
+  };
+  const statusColor = statusColors[detail.status] || 'var(--fg2)';
+  const milestonePct = detail.milestonesTotal > 0 ? Math.round(100 * detail.milestonesDone / detail.milestonesTotal) : 0;
+
+  let html = '';
+
+  // Back button row.
+  html += `<button onclick="routeTo('/projects')" style="margin-bottom:12px;padding:4px 12px;background:var(--bg3,#222);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer;font-size:12px">← All projects</button>`;
+
+  // ── Header card ──
+  html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:14px">`;
+  // Title row.
+  html += `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">`;
+  html += `<h2 style="margin:0;font-size:18px">${esc(detail.name)}</h2>`;
+  html += `<span style="color:${statusColor};font-size:11px;text-transform:uppercase;font-weight:600;letter-spacing:0.05em;background:var(--bg);padding:2px 8px;border:1px solid ${statusColor};border-radius:10px">${esc(detail.status || 'unknown')}</span>`;
+  if (detail.priority) html += `<span style="color:var(--fg2);font-size:11px;background:var(--bg);padding:2px 7px;border-radius:10px">${esc(detail.priority)}</span>`;
+  if (detail.workflow) html += `<span style="color:var(--fg2);font-size:11px;background:var(--bg);padding:2px 7px;border-radius:10px">workflow: ${esc(detail.workflow)}</span>`;
   html += `</div>`;
+  // Owner / dates / iteration row.
+  html += `<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--fg2);margin-top:6px">`;
+  html += `<span>owner: <a href="#/agents/${esc(detail.owner)}" style="color:var(--accent);text-decoration:none">${esc(detail.owner)}</a></span>`;
+  html += `<span>iteration ${detail.iteration ?? 0}</span>`;
+  html += `<span>${detail.sessionCount} sessions</span>`;
+  if (detail.updatedAt) html += `<span>updated ${esc(timeAgo(detail.updatedAt))}</span>`;
+  if (detail.createdAt) html += `<span>created ${esc(timeAgo(detail.createdAt))}</span>`;
+  html += `</div>`;
+  // Goal.
+  if (detail.goal) {
+    html += `<div style="margin-top:10px;padding:10px 12px;background:var(--bg);border-left:3px solid var(--accent);border-radius:4px;font-size:13px;line-height:1.5">`;
+    html += `<div style="font-size:10px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Goal</div>`;
+    // Render as markdown if available, else plaintext.
+    const goalHtml = window.marked && window.marked.parse ? window.marked.parse(detail.goal) : '<pre style="white-space:pre-wrap;margin:0;font-family:inherit">' + esc(detail.goal) + '</pre>';
+    html += `<div class="md-rendered" style="font-size:13px">${goalHtml}</div>`;
+    html += `</div>`;
+  }
+  // Milestone progress bar.
+  if (detail.milestonesTotal > 0) {
+    const barColor = milestonePct === 100 ? 'var(--green)' : (milestonePct >= 50 ? 'var(--accent)' : 'var(--orange,#e8a44c)');
+    html += `<div style="margin-top:10px">`;
+    html += `<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--fg2);margin-bottom:3px"><span>Milestones</span><span>${detail.milestonesDone} / ${detail.milestonesTotal} · ${milestonePct}%</span></div>`;
+    html += `<div style="height:6px;background:var(--bg);border-radius:3px;overflow:hidden"><div style="height:100%;background:${barColor};width:${milestonePct}%;transition:width 0.3s"></div></div>`;
+    html += `</div>`;
+  }
+  html += `</div>`;
+
+  // ── Metrics row ──
+  const allProjectMetrics = [...(detail.ownedMetrics || []), ...(detail.citedMetricsResolved || [])];
+  // De-duplicate by id (a metric could be both owned and cited).
+  const metricsById = {};
+  for (const m of allProjectMetrics) metricsById[m.id] = m;
+  const projectMetrics = Object.values(metricsById);
+  if (projectMetrics.length > 0) {
+    html += `<div style="margin-bottom:14px">`;
+    html += `<h3 style="margin:0 0 8px;font-size:13px;color:var(--fg2);display:flex;align-items:center;gap:8px">Metrics <span style="font-size:11px;font-weight:normal">${detail.ownedMetrics.length} owned${detail.citedMetricsResolved.length > 0 ? `, ${detail.citedMetricsResolved.length} cited` : ''}</span></h3>`;
+    html += `<div id="project-metrics-grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:8px">`;
+    for (const m of projectMetrics) {
+      const above = m.alert_op === 'above' || m.alert_op === '>';
+      const breached = m.threshold != null && m.current != null && (above ? m.current > m.threshold : m.current < m.threshold);
+      const sparkColor = breached ? 'var(--red)' : 'var(--accent)';
+      const cited = !detail.ownedMetrics.find(o => o.id === m.id);
+      html += `<div data-metric-id="${esc(m.id)}" onclick="showMetricHistory('${esc(m.id)}')" style="background:var(--bg2);border:1px solid ${breached ? 'var(--red)' : 'var(--border)'};border-radius:6px;padding:10px;cursor:pointer" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='${breached ? 'var(--red)' : 'var(--border)'}'">`;
+      html += `<div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;margin-bottom:2px"><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(m.name)}</span>${cited ? '<span style="font-size:9px;color:var(--fg2);background:var(--bg);padding:1px 5px;border-radius:6px">cited</span>' : ''}</div>`;
+      html += `<div style="font-size:10px;color:var(--fg2);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(m.id)}</div>`;
+      // Sparkline placeholder — will be filled async after this loop.
+      html += `<div class="spark-slot" style="min-height:32px"><span style="font-size:10px;color:var(--fg2)">loading…</span></div>`;
+      html += `<div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px"><span style="font-weight:600;${breached ? 'color:var(--red)' : ''}">${m.current ?? '—'}${m.unit||''}</span>${m.threshold != null ? `<span style="color:var(--fg2)">${above ? '≤' : '≥'} ${m.threshold}${m.unit||''}</span>` : ''}</div>`;
+      html += `</div>`;
+    }
+    // Cited but not in DB.
+    const unresolved = (detail.citedMetrics || []).filter(id => !metricsById[id]);
+    for (const id of unresolved) {
+      html += `<div style="background:var(--bg2);border:1px dashed var(--border);border-radius:6px;padding:10px;opacity:0.6">`;
+      html += `<div style="font-size:12px;font-weight:500;color:var(--fg2)">${esc(id)}</div>`;
+      html += `<div style="font-size:10px;color:var(--fg2);margin-top:4px">cited but not registered as a metric</div>`;
+      html += `</div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  // ── Comment input ──
   html += `<div style="margin:0 0 12px;display:flex;gap:8px;align-items:center">`;
   html += `<input id="project-comment" placeholder="Add a comment (auto-resumes blocked/waiting projects)..." style="flex:1;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--fg);font-size:13px" onkeydown="if(event.key==='Enter')addProjectComment()">`;
   html += `<button onclick="addProjectComment()" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap">Comment</button>`;
   html += `</div>`;
   html += `<div id="project-comment-status" style="font-size:12px;margin:-8px 0 8px;display:none"></div>`;
+
+  // ── Sub-tabs ──
+  html += `<div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:12px">`;
+  html += `<button class="tab-btn active" onclick="switchProjectTab(this,'project')" style="background:none;border:none;border-bottom:2px solid var(--accent);color:var(--accent);padding:8px 16px;cursor:pointer;font-size:13px">Project</button>`;
+  html += `<button class="tab-btn" onclick="switchProjectTab(this,'journal')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Journal</button>`;
+  html += `<button class="tab-btn" onclick="switchProjectTab(this,'discussion')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Discussion</button>`;
+  html += `<button class="tab-btn" onclick="switchProjectTab(this,'sessions')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Sessions${detail.sessionCount ? ` <span style="font-size:10px;background:var(--bg);padding:1px 6px;border-radius:8px;margin-left:4px">${detail.sessionCount}</span>` : ''}</button>`;
+  html += `</div>`;
   html += `<div id="project-tab-content" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;max-height:70vh;overflow-y:auto"></div>`;
+
   el.innerHTML = html;
+
+  // Async: fetch sparklines for project metrics and inject into slots.
+  if (projectMetrics.length > 0) {
+    Promise.all(projectMetrics.map(m =>
+      fetch(`/api/metrics/${encodeURIComponent(m.id)}/history?days=7`).then(r => r.json()).catch(() => ({snapshots:[]}))
+    )).then(results => {
+      results.forEach((res, i) => {
+        const m = projectMetrics[i];
+        const card = document.querySelector(`[data-metric-id="${CSS.escape(m.id)}"]`);
+        if (!card) return;
+        const slot = card.querySelector('.spark-slot');
+        if (!slot) return;
+        const series = (res.snapshots || []).map(s => s.value);
+        if (series.length < 2) {
+          slot.innerHTML = '<span style="font-size:10px;color:var(--fg2)">no history yet</span>';
+        } else {
+          const above = m.alert_op === 'above' || m.alert_op === '>';
+          const breached = m.threshold != null && m.current != null && (above ? m.current > m.threshold : m.current < m.threshold);
+          slot.innerHTML = sparkline(series, { threshold: m.threshold, color: breached ? 'var(--red)' : 'var(--accent)', width: 200, height: 32 });
+        }
+      });
+    });
+  }
+
   loadProjectTab('project');
 }
 
