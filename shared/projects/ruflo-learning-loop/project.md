@@ -10,6 +10,7 @@ iteration: 4
 
 # Project: Ruflo Learning Loop
 
+**Status**: active
 ## Goal
 
 Learn from `ruvnet/ruflo` through repeated investigate -> judge -> experiment
