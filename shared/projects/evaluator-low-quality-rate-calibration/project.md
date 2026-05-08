@@ -11,7 +11,7 @@ iteration: 6
 # Evaluator low-quality-rate 24h calibration
 
 **Status**: active
-**Iteration**: 1
+**Iteration**: 2
 ## Goal
 Reduce `evaluator.low-quality-rate-24h` to ≤0.10 *without gaming* by improving evaluation calibration and/or restoring LLM-based eval, so “needs_improvement” is a meaningful signal.
 
@@ -20,8 +20,8 @@ Reduce `evaluator.low-quality-rate-24h` to ≤0.10 *without gaming* by improving
 - Current snapshot (this heartbeat): 0.4597.
 
 ## Current State
-Iteration 1. Milestones: 0/0 done.
-Reviewer: - **I believe**: The metric is high primarily because heuristic v2 maps *any* detected process/hygiene issue to `verdict="needs_improvement"`, and the LLM-eval lane appears absent—so the heuristic eff
+Iteration 2. Milestones: 0/0 done.
+Reviewer: - **I believe**: Heuristic v2 is working as implemented, but it’s *miscalibrated for the metric*: `any issues => verdict=needs_improvement (quality=0.55)` makes `evaluator.low-quality-rate-24h` largel
 ## Plan
 1. Identify the heuristic evaluation rubric/codepath producing `needs_improvement` at ~45–50% base rate.
 2. Sample 20 recent `needs_improvement` + 20 recent `good` and categorize issue triggers; check for over-weighting of minor process misses (e.g., lack of structural verification, verbosity, extra tool calls).
@@ -44,8 +44,11 @@ Reviewer: - **I believe**: The metric is high primarily because heuristic v2 map
 - outputs/iteration-2-mechanism-and-fix-options.md
 - outputs/iteration-5-approval-packet.md
 
-
 ## Context
 - Metric `evaluator.low-quality-rate-24h` current is 0.4632 (target 0.10); `metrics.source_query` is currently NULL in DB, so the computation source/config needs investigation before attempting to change the metric definition.
 - Iteration-1 output proposes adding `overall.lowQualityCategory` (outcome/process/infra) to heuristic v2 results and redefining the metric to count only outcome-category NI, plus adding separate process/infra issue-rate metrics.
 - Worker claims LLM lane absent (no non-heuristic evaluations); next iteration must verify with DB queries and quantify NI breakdown (process-only vs outcome/terminal) via backtest.
+- Heuristic v2 mechanism is confirmed in `agents/evaluator/workflows/evaluator-aftermath.ts`: **any** issue forces `verdict=needs_improvement` with `quality=0.55`; interrupted/error forces `quality=0.2`.
+- Top issue triggers are direct string/regex matches in `transcriptIssues()` (e.g., “finish() blocked [uncommitted changes]”, `/no such table|column/`) plus terminal status mapping.
+- Manual audit indicates many `quality=0.55` NIs are **process-only** (hygiene/guard friction), suggesting `evaluator.low-quality-rate-24h` is currently overloaded vs “outcome quality” intent.
+- Possible infra reliability gap: many rows reference an `overall.artifactPath` whose file is missing on disk, harming auditability; needs confirmation and fix path.
