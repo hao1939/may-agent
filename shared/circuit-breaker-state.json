@@ -1,7 +1,8 @@
 {
   "agents": {
     "may": {
-      "consecutiveErrors": 0
+      "consecutiveErrors": 1,
+      "lastError": "duration gate re-prompt error"
     },
     "coach": {
       "consecutiveErrors": 0
