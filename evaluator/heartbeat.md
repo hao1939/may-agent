@@ -96,4 +96,9 @@ End with a 2-3 sentence brief of what you calibrated, improved, or found.
 
 ---
 
+## Heartbeat log
+
+### 2026-05-08
+- Investigated red metric `evaluator.low-quality-rate-24h` (~0.33). DB shows 117/348 `needs_improvement` in last 24h (0 fails), spread across may/dev/arc/scout; suggests calibration/threshold mismatch vs “phantom data” contamination. Notified May with evidence.
+
 **Note:** Session evaluation (scoring individual transcripts) is handled by the `evaluate-session-llm` cron job, which runs on a fixed schedule with a focused evaluation protocol. Your heartbeat is for calibration, criteria evolution, and signal quality — the creative work that makes evaluations better over time.
