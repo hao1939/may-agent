@@ -107,6 +107,71 @@ describe("metrics-snapshot session health metrics", () => {
     });
   });
 
+  it("measures evaluator review and learning routing from events", async () => {
+    const root = join(tmpdir(), `metrics-evaluator-events-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempDirs.push(root);
+    mkdirSync(join(root, "agents"), { recursive: true });
+    mkdirSync(join(root, "src/lib"), { recursive: true });
+    writeFileSync(join(root, "src/lib/manager.ts"), "export {}\n");
+
+    const db = getDb(root);
+    const now = Date.now();
+    db.run(
+      "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
+      ["evaluation.routed", JSON.stringify({ sessionId: "s_triage", lane: "needs_triage" }), now - 60_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
+      ["evaluation.routed", JSON.stringify({ sessionId: "s_success", lane: "success_candidate" }), now - 50_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
+      ["evaluation.routed", JSON.stringify({ sessionId: "s_routine", lane: "routine_ok" }), now - 40_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
+      ["evaluation.reviewed", JSON.stringify({ sessionId: "s_triage", lane: "needs_triage" }), now - 30_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
+      ["evaluation.reviewed", JSON.stringify({ sessionId: "s_success", lane: "success_candidate", verdict: "good", reviewedVerdict: "needs_improvement" }), now - 25_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
+      ["evaluation.false_good", JSON.stringify({ sessionId: "s_success", heuristicVerdict: "good", reviewedVerdict: "needs_improvement" }), now - 24_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
+      ["evaluation.triage_closed", JSON.stringify({ sessionId: "s_triage" }), now - 20_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
+      ["evaluation.success_candidate", JSON.stringify({ sessionId: "s_success" }), now - 10_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
+      ["evaluation.learning_created", JSON.stringify({ sessionId: "s_success" }), now - 5_000],
+    );
+
+    const handler = create({
+      sdk: {
+        getDb: () => db,
+        paths: { root, agents: join(root, "agents") },
+        log: () => {},
+        emit: () => {},
+      },
+    } as any, {} as any);
+
+    await handler({ type: "trigger.metrics-snapshot" } as any);
+
+    const metric = (id: string) => db.prepare("SELECT current, target, threshold, priority FROM metrics WHERE id = ?").get(id) as any;
+    expect(metric("evaluator.meaningful-review-rate-24h")).toMatchObject({ current: 1, target: 0.9, threshold: 0.7, priority: "P2" });
+    expect(metric("evaluator.triage-closure-rate-24h")).toMatchObject({ current: 1, target: 0.9, threshold: 0.7, priority: "P2" });
+    expect(metric("evaluator.false-good-rate-sample")).toMatchObject({ current: 1, target: 0.05, threshold: 0.2, priority: "P2" });
+    expect(metric("evaluator.success-candidates-24h")).toMatchObject({ current: 1, target: 1, threshold: 0, priority: "P3" });
+    expect(metric("evaluator.success-learnings-24h")).toMatchObject({ current: 1, target: 1, threshold: 0, priority: "P3" });
+  });
+
   it("keeps rolling-window count metrics as gauges without stale rate config", async () => {
     const root = join(tmpdir(), `metrics-window-count-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     tempDirs.push(root);
