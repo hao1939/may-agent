@@ -10,6 +10,8 @@ iteration: 1
 
 # Evaluator low-quality-rate (24h) calibration
 
+**Status**: active
+**Iteration**: 1
 ## Goal
 Bring `evaluator.low-quality-rate-24h` back under control (target 0.1, alert threshold 0.3) by identifying whether the spike is (a) real widespread quality drop, (b) heuristic-eval calibration issue, or (c) evaluation pipeline mode drift (LLM eval disabled/stalled) and then proposing the right remediation.
 
@@ -48,7 +50,7 @@ Reviewer: - **I believe**: The spike is primarily **real “process hygiene” i
 - outputs/iteration-2-mechanism-and-fix-options.md
 - outputs/iteration-1-2026-05-08-evidence-refresh.md
 - outputs/iteration-5-approval-packet.md
-
+- outputs/iteration1-attribution-summary.md
 
 ## Context
 - Heuristic scoring is implemented in `agents/evaluator/workflows/evaluator-aftermath.ts` with `HEURISTIC_VERSION = 3`.

@@ -1,8 +1,7 @@
 {
   "agents": {
     "may": {
-      "consecutiveErrors": 1,
-      "lastError": "duration gate re-prompt error"
+      "consecutiveErrors": 0
     },
     "coach": {
       "consecutiveErrors": 0
@@ -26,7 +25,8 @@
       "consecutiveErrors": 0
     },
     "arc": {
-      "consecutiveErrors": 0
+      "consecutiveErrors": 1,
+      "lastError": "heartbeat session error"
     },
     "dev": {
       "consecutiveErrors": 0

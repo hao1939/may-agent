@@ -10,6 +10,7 @@ iteration: 0
 
 # Project: Daily Alert Review
 
+**Status**: active
 ## Goal
 
 Every day, review all metric alerts from the past 24h. For each:
