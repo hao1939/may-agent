@@ -1,17 +1,24 @@
-# evaluator-low-quality-rate-calibration
+---
+id: evaluator-low-quality-rate-calibration
+owner: evaluator
+status: active
+type: calibration
+priority: P2
+workflow: project
+iteration: 0
+---
 
-**Owner:** evaluator
-**Status:** active
+# Evaluator Low Quality Rate Calibration
 
 ## Goal
 Bring `evaluator.low-quality-rate-24h` below threshold (0.3) and toward target (0.1) by determining whether the breach is caused by (a) evaluator rubric/threshold calibration, or (b) a real system-wide drop in session quality.
 
-## Context
+## Current State
 `evaluator.low-quality-rate-24h` has been breaching repeatedly (~10 consecutive checks). Prior storm-related KEs show that some metrics were contaminated by event-storm windows, but current evidence suggests this metric’s numerator/denominator is coming from recent evaluation rows (not a backlog artifact).
 
-## Signals / Evidence
+## Signals
 - Metric row (2026-05-08): current=0.3889, threshold=0.3, target=0.1.
-- Last 24h: 414 evaluations, 161 `needs_improvement`, 0 `fail` → 38.9% low.
+- Last 24h: 414 evaluations, 161 `needs_improvement`, 0 `fail` => 38.9% low.
 - By agent (low/total in last 24h):
   - may 83/232 (35.8%)
   - dev 32/67 (47.8%)
@@ -30,4 +37,6 @@ Bring `evaluator.low-quality-rate-24h` below threshold (0.3) and toward target (
 - Metric snapshot falls below 0.3 for at least 3 consecutive snapshots.
 - A written artifact exists showing: sample, decision, and rubric/threshold change (if any).
 
-## Comments
+## Journal
+### 2026-05-08
+Project format normalized to the current shared-project convention: YAML frontmatter owns metadata; body sections carry work context only.

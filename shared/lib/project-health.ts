@@ -34,6 +34,8 @@ export interface ProjectInfo {
   blockerReason: string;
   /** Parsed workflow field (default: "project") */
   workflow: string;
+  /** Project file format violations. Empty means current convention. */
+  formatErrors?: string[];
 }
 
 export interface HealthAction {
@@ -103,6 +105,27 @@ export function parseProjectMeta(content: string): ProjectMeta {
   return meta;
 }
 
+export function validateProjectFormat(content: string, expectedId?: string): string[] {
+  const errors: string[] = [];
+  const hasFrontmatter = /^---\s*\n[\s\S]*?\n---\s*(?:\n|$)/.test(content);
+  const meta = parseProjectMeta(content);
+
+  if (!hasFrontmatter) {
+    errors.push("missing YAML frontmatter");
+  }
+  for (const key of ["id", "owner", "status"]) {
+    if (!meta[key]) errors.push(`missing frontmatter field: ${key}`);
+  }
+  if (expectedId && meta.id && meta.id !== expectedId) {
+    errors.push(`frontmatter id '${meta.id}' does not match directory '${expectedId}'`);
+  }
+  if (/^\s*\*\*(Owner|Status)\*\*:\s*/mi.test(stripProjectMeta(content))) {
+    errors.push("metadata duplicated as bold body field");
+  }
+
+  return errors;
+}
+
 function stripProjectMeta(content: string): string {
   return content.replace(/^---\s*\n[\s\S]*?\n---\s*(?:\n|$)/, "");
 }
@@ -161,11 +184,12 @@ export function scanAllProjects(agentsRoot: string): ProjectInfo[] {
         let content: string;
         try { content = readFileSync(projectFile, "utf-8"); } catch { continue; }
         const meta = parseProjectMeta(content);
+        const formatErrors = validateProjectFormat(content, projDir);
         const status = meta.status?.toLowerCase() || "active";
         const owner = meta.owner || "unknown";
         const blockerReason = meta.stop_reason || meta.resume_condition || "";
         const workflow = meta.workflow || "master-worker";
-        projects.push({ relPath: `shared/projects/${projDir}`, projectFile, content, status, owner, blockerReason, workflow });
+        projects.push({ relPath: `shared/projects/${projDir}`, projectFile, content, status, owner, blockerReason, workflow, formatErrors });
       }
     } catch { /* ignore */ }
   }
@@ -199,6 +223,10 @@ export function diagnoseProject(
   // Already running — don't double-launch
   const entry = healthState.projects[project.relPath];
   let status = project.status;
+
+  if (project.formatErrors?.length) {
+    return { ...skip, reason: `invalid project format: ${project.formatErrors.join("; ")}` };
+  }
 
   // "closed" is terminal — unless there are unread comments (human wants it reopened)
   if (status === "closed") {

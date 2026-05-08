@@ -11,13 +11,14 @@
  * in the generic section near the end of the handler.
  * ─────────────────────────────────────────────────────────────────────────────
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
 import { exec, execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.ts";
 import type { CronEntry } from "../../shared/agent-sdk.ts";
 import { listConfiguredAgents, resolveMetricOwner } from "../../shared/lib/metric-ownership.ts";
+import { validateProjectFormat } from "../../shared/lib/project-health.ts";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -73,6 +74,8 @@ const ALL_METRICS: MetricDef[] = [
   { id: "project.iterations-24h", name: "Project iterations (24h)", owner: "may", type: "gauge", target: 10, threshold: 1, unit: "count", alert_op: "<",
     priority: "P1" },
   { id: "project.blocked-over-6h", name: "Projects blocked/waiting >6h", owner: "may", type: "gauge", target: 2, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
+  { id: "project.invalid-format-count", name: "Invalid project.md format", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 1 } } },
   { id: "capability.status-reality-mismatch-count", name: "Status/reality mismatches", owner: "may", type: "health", target: 0, threshold: 3, unit: "count", alert_op: ">", priority: "P0",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
   { id: "capability.zombie-session-count", name: "Zombie sessions (running >30min)", owner: "may", project: "v2-spec-coverage-buildout", type: "health", target: 0, threshold: 2, unit: "count", alert_op: ">", priority: "P1",
@@ -113,6 +116,27 @@ function projectSlugFromIterationData(data: string | null): string | null {
   } catch {
     return null;
   }
+}
+
+function countInvalidSharedProjectFormats(agentsRoot: string): number {
+  const sharedProjectsDir = join(agentsRoot, "shared", "projects");
+  if (!existsSync(sharedProjectsDir)) return 0;
+
+  let invalid = 0;
+  for (const entry of readdirSync(sharedProjectsDir)) {
+    if (entry === "_archive") continue;
+    const projectDir = join(sharedProjectsDir, entry);
+    try {
+      if (!statSync(projectDir).isDirectory()) continue;
+      const projectFile = join(projectDir, "project.md");
+      if (!existsSync(projectFile)) continue;
+      const content = readFileSync(projectFile, "utf-8");
+      if (validateProjectFormat(content, entry).length > 0) invalid++;
+    } catch {
+      invalid++;
+    }
+  }
+  return invalid;
 }
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
@@ -458,6 +482,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     try {
       record("project.blocked-over-6h", count("SELECT COUNT(*) as c FROM projects WHERE status IN ('blocked', 'waiting') AND updated_at < ?", now - 6 * 3600000));
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring blocked-over-6h: ${e}`); }
+
+    try {
+      record("project.invalid-format-count", countInvalidSharedProjectFormats(ctx.sdk.paths.agents));
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring invalid-format-count: ${e}`); }
 
     // ── Measure: status honesty ─────────────────────────────────────
 

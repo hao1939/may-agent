@@ -44,13 +44,20 @@ export function generateProject(config: ProjectConfig): ProjectOutput {
     .map((item, i) => `${i + 1}. [ ] ${item}`)
     .join('\n');
 
-  const projectMd = `# ${name}
+  const projectMd = `---
+id: ${name}
+owner: ${owner}
+status: active
+type: milestone
+priority: P2
+workflow: project
+iteration: 0
+---
+
+# ${name}
 
 ## Goal
 ${goal}
-
-## Owner
-${owner}
 
 ## Phase
 ${phase}
@@ -71,9 +78,6 @@ Use later metrics, tests, session evidence, and owner judgment to validate wheth
 
 ## Journal
 - Created project.
-
-## Status
-active
 `;
 
   return { projectMd, planItems: finalPlanItems };
