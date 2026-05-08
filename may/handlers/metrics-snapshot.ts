@@ -87,6 +87,12 @@ const ALL_METRICS: MetricDef[] = [
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
   { id: "capability.status-reality-mismatch-count", name: "Status/reality mismatches", owner: "may", type: "health", target: 0, threshold: 3, unit: "count", alert_op: ">", priority: "P0",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
+  // v2-spec-coverage-buildout Phase 1 metrics
+  { id: "capability.self-directed-iteration-rate-24h", name: "Self-directed iteration rate (24h)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0.80, threshold: 0.50, unit: "ratio", alert_op: "<", priority: "P2" },
+  { id: "capability.zombie-session-count", name: "Zombie sessions (running >30min)", owner: "may", project: "v2-spec-coverage-buildout", type: "health", target: 0, threshold: 2, unit: "count", alert_op: ">", priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 2 } } },
+  { id: "capability.process-uptime-h", name: "Process uptime (hours)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 168, threshold: 1, unit: "hours", alert_op: "<", priority: "P2" },
+  { id: "capability.concurrent-session-max-1h", name: "Peak concurrent sessions (1h)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 8, threshold: 15, unit: "count", alert_op: ">", priority: "P1" },
 ];
 
 /** Snapshot retention: keep 30 days of history */
