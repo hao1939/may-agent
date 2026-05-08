@@ -210,3 +210,10 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - ⚠️ Scout friction 36.4%, needs-improvement 38.8%
 - arc starting ruflo-learning-loop project
 - All 14 cron jobs healthy
+
+## 2026-05-08 10:43 UTC
+- 6h snapshot: dev 21 sess (1 err), evaluator 129, may 73 (1 err), scout 24, arc 5 — all healthy
+- 3 open alerts: scout.good-session-rate (0.64), scout.operational-friction-rate (0.36), evaluator.low-quality-rate (0.39)
+- Evaluator routing bug: evaluator sending messages to "functions.message" instead of agent names. Repeated escalation via closed-loop-steward. Sending nudge to evaluator.
+- evaluator-low-quality-rate-calibration project has owner="unknown" — cosmetic, not blocking
+- closed-loop-reliability 8/8 milestones done — candidate for completion
