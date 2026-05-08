@@ -1,8 +1,13 @@
 # May Heartbeat Log — Latest
 
-**Timestamp:** 2026-05-07 23:47 UTC
+**Timestamp:** 2025-06-15 23:57 UTC
 
-## Quick Status (23:47 UTC)
+## Quick Status (23:57 UTC)
+- **Red metric**: v2.spec-coverage-rate 0.1364 — known structural gap (KE-802/KE-798). Project `v2-spec-coverage-buildout` pending-review.
+- **New signal**: Evaluator sending messages to "functions.message" (13 failures). Sent P0 fix message.
+- **All other metrics**: green.
+
+## Previous: Quick Status (23:47 UTC)
 - **Health**: All green. 100% success rate, 20 sessions/hr
 - **v2 spec coverage**: 13.6% ⚠️ (target 80%)
 - **Low-quality sessions**: 15% (target <10%)
