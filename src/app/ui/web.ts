@@ -754,8 +754,20 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const processProject = (projectFile: string, relPath: string, name: string, fallbackOwner: string) => {
       try {
         const content = readFileSync(projectFile, "utf-8");
-        const field = (name: string) => {
-          const m = content.match(new RegExp(`^\\*\\*${name}\\*\\*:\\s*(.+)$`, "m"));
+        // Parse YAML frontmatter if present (current convention).
+        // Falls back to old `**Owner**: x` line format for legacy projects.
+        let frontmatter: Record<string, string> = {};
+        const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n/);
+        if (fmMatch) {
+          for (const line of fmMatch[1].split("\n")) {
+            const kv = line.match(/^([a-z_]+):\s*(.+?)\s*$/i);
+            if (kv) frontmatter[kv[1].toLowerCase()] = kv[2];
+          }
+        }
+        const field = (n: string) => {
+          // YAML frontmatter wins; fall back to bold-prefixed line.
+          if (frontmatter[n.toLowerCase()] !== undefined) return frontmatter[n.toLowerCase()];
+          const m = content.match(new RegExp(`^\\*\\*${n}\\*\\*:\\s*(.+)$`, "m"));
           return m ? m[1].trim() : null;
         };
         const msX = (content.match(/^- \[x\]/gim) || []).length;
