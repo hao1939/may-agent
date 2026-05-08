@@ -46,8 +46,8 @@ Initial hypothesis:
 
 ## Milestones
 
-- [ ] Read the repo README and map the main knowledge-base practices to our agent system.
-- [ ] Write `agents/scout/knowledge/obsidian-second-brain-patterns.md` with: applicable ideas, non-applicable ideas, risks, and a smallest pilot.
+- [x] Read the repo README and map the main knowledge-base practices to our agent system.
+- [x] Write `agents/scout/knowledge/obsidian-second-brain-patterns.md` with: applicable ideas, non-applicable ideas, risks, and a smallest pilot.
 - [ ] Pick 2-3 practices for a scout-only pilot. Prefer practices that reduce duplicate notes and improve downstream reuse.
 - [ ] Apply the pilot to 3-5 recent scout knowledge artifacts.
 - [ ] Review metrics and downstream references after the pilot; decide whether to keep, adjust, or discard the practices.
