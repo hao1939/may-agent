@@ -1,21 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778202991454_146
+- **Session:** s_1778204791049_156
 - **Status:** success
-- **When:** 2026-05-08T01:19:20.114Z
+- **When:** 2026-05-08T01:48:04.976Z
 
 ## What Happened
-Completed dev heartbeat triage: Approved queue remains empty, core session/handler metrics are healthy, pending dev inbox events were dismissed as heartbeat lifecycle/already-acted items, and I documented the only notable reality gap (`dev-heartbeat` workflow row marked escalated despite successful child session). Committed the investigation as bb76c2cf4 (`dev: record heartbeat workflow status triage`).
+Completed dev heartbeat triage: Approved queue is empty, dev-owned inbox items are lifecycle events already acted/dismissed, core handler/session metrics are healthy, and the only open alert is may-owned v2.spec-coverage-rate. Documented the recovered transient may/evaluator error pair and committed it as d2cccd4f7 (`dev: record heartbeat recovered error triage`).
 
 ## Files Modified
-- agents/dev/workspace/investigations/2026-05-08-heartbeat-workflow-status-and-empty-approved.md
+- agents/dev/workspace/investigations/2026-05-08-heartbeat-empty-approved-and-recovered-errors.md
 
 ## Completed
-- Checked dev heartbeat Approved work queue and found no approved implementation item
-- Queried current metrics, recent failed sessions, handler failures, unmeasured metrics, message delivery failures, metric alerts, and workflow run statuses
-- Handled pending dev inbox signals by dismissing session.start lifecycle events and prior session.end events as already acted/documented
-- Recorded and committed dev heartbeat workflow status triage artifact
-
-## New Tasks Created
-- If successful dev-heartbeat child sessions continue to produce `workflow_runs.status='escalated'` with null `result_reason`, trace workflow result-state persistence in a dedicated approved project/proposal.
+- Completed dev heartbeat self-maintenance triage for empty Approved queue, runtime health, pending inbox lifecycle events, and recovered transient errors.
