@@ -139,20 +139,62 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
        ORDER BY startedAt ASC`
     ).all(fourHours) as any[];
 
+    // All sessions in the last 4h (not just heartbeats). The timeline
+    // shows everything an agent did so the operator sees real activity
+    // distribution, not only the cron tick. Each session is classified
+    // into a 'kind' bucket which maps to a color in the frontend.
+    const allRows = db.prepare(
+      `SELECT sessionId, agent, task, status, kind, source, projectId, parentSessionId,
+              startedAt, endedAt, outcome
+       FROM sessions
+       WHERE startedAt > ? AND agent IS NOT NULL AND agent != ''
+       ORDER BY startedAt ASC`
+    ).all(fourHours) as any[];
+
+    // Heartbeat detection mirrors heartbeatRows above (same predicates).
+    // Pre-build a Set of heartbeat sessionIds for O(1) classification.
+    const heartbeatIds = new Set(heartbeatRows.map((r) => r.sessionId));
+
+    function classifyKind(row: any): string {
+      if (heartbeatIds.has(row.sessionId)) return "heartbeat";
+      const src = String(row.source || "").toLowerCase();
+      // Project work: explicit projectId tag or source mentions a project
+      // workflow. (`workflow:project` is the generic project worker.)
+      if (row.projectId && String(row.projectId).trim() !== "") return "project";
+      if (src === "workflow:project" || src.startsWith("workflow:project-")) return "project";
+      // Chat: human-initiated turns (telegram, web UI, CLI, explicit chat kind)
+      if (row.kind === "chat") return "chat";
+      if (src === "telegram" || src === "web" || src === "human" || src === "cli") return "chat";
+      if (src.includes("chat") || src.includes("message")) return "chat";
+      // Workflow: any workflow-dispatched session that isn't a heartbeat or
+      // project. Catches aftermath, triage, orchestrator, goal-driver,
+      // closed-loop-steward, etc. — the bulk of background agent activity.
+      if (src.startsWith("workflow:") || src === "closed-loop-steward") return "workflow";
+      return "other";
+    }
+
     const byAgent = new Map<string, any[]>();
     for (const agent of agents) byAgent.set(agent, []);
-    for (const row of heartbeatRows) {
+    for (const row of allRows) {
       if (!byAgent.has(row.agent)) byAgent.set(row.agent, []);
-      byAgent.get(row.agent)!.push(row);
+      // 'category' is the timeline bucket (heartbeat / project / chat /
+      // workflow / other). Distinct from row.kind which is the DB-level
+      // session kind (call / chat / etc).
+      byAgent.get(row.agent)!.push({ ...row, category: classifyKind(row) });
     }
 
     const agentRows = [...byAgent.entries()].map(([name, sessions]) => {
-      const last = sessions[sessions.length - 1] ?? null;
+      const heartbeatsForAgent = sessions.filter((s) => s.category === "heartbeat");
+      const lastHb = heartbeatsForAgent[heartbeatsForAgent.length - 1] ?? null;
+      const categoryCounts: Record<string, number> = { heartbeat: 0, project: 0, chat: 0, workflow: 0, other: 0 };
+      for (const s of sessions) categoryCounts[s.category] = (categoryCounts[s.category] || 0) + 1;
       return {
         name,
-        heartbeatCount: sessions.length,
-        lastHeartbeat: last?.startedAt ?? null,
-        lastStatus: last?.status ?? null,
+        heartbeatCount: heartbeatsForAgent.length,
+        sessionCount: sessions.length,
+        categoryCounts,
+        lastHeartbeat: lastHb?.startedAt ?? null,
+        lastStatus: lastHb?.status ?? null,
         sessions,
       };
     }).sort((a, b) => (b.lastHeartbeat ?? 0) - (a.lastHeartbeat ?? 0));

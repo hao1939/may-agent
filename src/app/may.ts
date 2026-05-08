@@ -1,6 +1,6 @@
 import { createInterface } from "node:readline";
 import { execSync } from "node:child_process";
-import { resolve } from "node:path";
+import { resolve, join } from "node:path";
 import { existsSync, readFileSync, writeFileSync, appendFileSync, unlinkSync, mkdirSync } from "node:fs";
 import { getModel } from "@mariozechner/pi-ai";
 import type { ModelWithApiKey } from "../lib/types.js";
@@ -394,6 +394,32 @@ if (autoHeartbeats.length > 0) {
 // Subscribe all crons to bus for event-driven handler dispatch
 for (const cron of getAgentCrons().values()) {
   cron.subscribeToBus(bus);
+}
+
+// ── Startup workflow validation ───────────────────────────────────────
+// Pre-flight: try importing all heartbeat workflows to catch syntax errors early.
+// A broken shared workflow (like heartbeat-data.ts) silently kills ALL heartbeats.
+{
+  const sharedWfDir = join(AGENTS_ROOT, "shared", "workflows");
+  const heartbeatFiles = autoHeartbeats.map(e => {
+    const agentWfDir = join(AGENTS_ROOT, e.agent!, "workflows");
+    return join(agentWfDir, `${e.agent}-heartbeat.ts`);
+  }).filter(f => existsSync(f));
+
+  let failures = 0;
+  for (const f of heartbeatFiles) {
+    try {
+      await import(f);
+    } catch (err) {
+      failures++;
+      const msg = err instanceof Error ? err.message : String(err);
+      bus.emit({ type: "info", message: `[startup-check] ⚠️ WORKFLOW BROKEN: ${f.split("/").slice(-3).join("/")} — ${msg}` });
+      console.error(`[startup-check] BROKEN WORKFLOW: ${f}\n  ${msg}`);
+    }
+  }
+  if (failures > 0) {
+    bus.emit({ type: "info", message: `[startup-check] ⚠️ ${failures} heartbeat workflow(s) failed to load! Heartbeats will NOT fire for those agents.` });
+  }
 }
 
 // ── Event routing ──────────────────────────────────────────────────────
