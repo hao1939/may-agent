@@ -482,7 +482,7 @@ export class SubagentManager {
   runAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string },
+    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string; workflowRunId?: string; projectId?: string },
   ): string {
     return this.run(agentName, task, {
       parentSessionId: opts?.parentSessionId,
@@ -490,6 +490,8 @@ export class SubagentManager {
       source: opts?.source ?? "agents.run",
       kind: "job",
       requestId: opts?.requestId,
+      workflowRunId: opts?.workflowRunId,
+      projectId: opts?.projectId,
     });
   }
 

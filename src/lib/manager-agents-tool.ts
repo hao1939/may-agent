@@ -17,16 +17,16 @@ import { getDb } from "./requests.js";
 
 export interface AgentsToolManagerDeps {
   agents: Map<string, RegisteredAgent>;
-  activeSessions: Map<string, { parentSessionId?: string; originSessionId?: string; workflowRunId?: string }>;
+  activeSessions: Map<string, { parentSessionId?: string; originSessionId?: string; workflowRunId?: string; projectId?: string }>;
   callAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string },
+    opts?: { parentSessionId?: string; workflowRunId?: string; projectId?: string; source?: string },
   ): Promise<TaskResult & { messages: AgentMessage[] }>;
   runAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string },
+    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string; workflowRunId?: string; projectId?: string },
   ): string;
   status(): SessionInfo[];
   progress(sessionId: string, limit?: number): AgentMessage[];
@@ -199,6 +199,16 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
   const triggerHeartbeat = opts?.triggerHeartbeat;
   const bus = opts?.bus;
 
+  const getCallerLineage = (sessionId?: string): { workflowRunId?: string; projectId?: string } => {
+    if (!sessionId) return {};
+    const active = manager.activeSessions.get(sessionId);
+    const persisted = manager.registry.getSession(sessionId);
+    return {
+      workflowRunId: active?.workflowRunId ?? persisted?.workflowRunId,
+      projectId: active?.projectId ?? persisted?.projectId,
+    };
+  };
+
   return {
     name: "agents",
     label: "Agents",
@@ -249,10 +259,14 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               return textResult(JSON.stringify({ error: `Cannot call "${params.agent}" directly. ${callDeny.hint}` }));
             }
             const parentSid = getCallerSessionId?.();
+            const lineage = getCallerLineage(parentSid);
 
             // Sync call: blocks until done
             const result = await manager.callAgent(params.agent, params.task, {
               parentSessionId: parentSid,
+              workflowRunId: lineage.workflowRunId,
+              projectId: lineage.projectId,
+              source: "agents.call",
             });
 
             // Return result without full messages array (too large for tool output)
@@ -291,6 +305,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               return textResult(JSON.stringify({ error: `Cannot fork "${params.agent}" directly. ${callDeny.hint}` }));
             }
             const parentSidRun = getCallerSessionId?.();
+            const lineage = getCallerLineage(parentSidRun);
 
             // Emit message.created for traceability (v2 convergence)
             if (bus) {
@@ -301,6 +316,8 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             // Fork creates a new root with originSessionId linking back to the caller
             const sessionId = manager.runAgent(params.agent, forkTask, {
               originSessionId: parentSidRun,
+              workflowRunId: lineage.workflowRunId,
+              projectId: lineage.projectId,
               source: "agents.fork",
             });
 
