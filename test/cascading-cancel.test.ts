@@ -139,6 +139,35 @@ describe("parentSessionId via createAgentsTool", () => {
     expect(registry.sessions[sessionId].parentSessionId).toBe(callerSid);
   });
 
+  it("call action inherits workflowRunId and projectId from the caller session", async () => {
+    const callerSid = "caller_project";
+    (manager as any).registry.saveSession(callerSid, {
+      agent: "worker",
+      task: "caller",
+      status: "running",
+      startedAt: Date.now(),
+      workflowRunId: "wr_project",
+      projectId: "scout/scout-second-brain-learning",
+    });
+    const tool = manager.createAgentsTool({
+      getCallerSessionId: () => callerSid,
+    });
+
+    const result = await tool.execute("tc1", {
+      action: "call",
+      agent: "worker",
+      task: "do work",
+    });
+
+    const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
+    const sessionId = parsed.sessionId;
+
+    const registry = (manager as any).registry.getRegistry();
+    expect(registry.sessions[sessionId].parentSessionId).toBe(callerSid);
+    expect(registry.sessions[sessionId].workflowRunId).toBe("wr_project");
+    expect(registry.sessions[sessionId].projectId).toBe("scout/scout-second-brain-learning");
+  });
+
   it("call without getCallerSessionId has no parentSessionId", async () => {
     const tool = manager.createAgentsTool();
 

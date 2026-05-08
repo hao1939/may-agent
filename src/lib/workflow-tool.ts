@@ -487,6 +487,19 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     const v = opts.callerSessionId;
     return typeof v === "function" ? v() : v;
   };
+  const getCallerSessionMeta = (sessionId?: string) => {
+    if (!sessionId) return {};
+    const managerWithState = manager as unknown as {
+      activeSessions?: Map<string, { workflowRunId?: string; projectId?: string }>;
+      registry?: { getSession(sessionId: string): { workflowRunId?: string; projectId?: string } | null };
+    };
+    const active = managerWithState.activeSessions?.get(sessionId);
+    const persisted = managerWithState.registry?.getSession(sessionId);
+    return {
+      workflowRunId: active?.workflowRunId ?? persisted?.workflowRunId,
+      projectId: active?.projectId ?? persisted?.projectId,
+    };
+  };
 
   let activeSteeringQueue: string[] | null = null;
   let activeWorkflowName: string | null = null;
@@ -511,7 +524,8 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     const runId = generateRunId();
     const localSteps: CompletedStep[] = [];
     let stepCounter = 0;
-    const effectiveProjectId = previousRun?.projectId ?? opts.projectId;
+    const callerMeta = getCallerSessionMeta(parentSessionId);
+    const effectiveProjectId = previousRun?.projectId ?? opts.projectId ?? callerMeta.projectId;
     // Once we detect a mismatch (workflow code changed), stop replaying
     let replayExhausted = false;
 
@@ -1086,7 +1100,9 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             return textResult(JSON.stringify({ type: "error", workflow: params.name, error: findError }));
           }
 
-          return runOrResume(workflow, params.task, 1, resolveCallerSessionId(), undefined);
+          const callerSessionId = resolveCallerSessionId();
+          const callerMeta = getCallerSessionMeta(callerSessionId);
+          return runOrResume(workflow, params.task, 1, callerSessionId, callerMeta.workflowRunId);
         }
 
         case "resume": {

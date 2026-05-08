@@ -716,4 +716,44 @@ describe("callerSessionId", () => {
     const run = getWorkflowRun(persistDir, parsed.workflowRunId);
     expect(run!.projectId).toBe("scout/scout-second-brain-learning");
   });
+
+  it("workflow launched from a session inherits caller project and workflow lineage", async () => {
+    writeWorkflow(
+      "caller-lineage-test.ts",
+      `
+      export const name = "caller-lineage-test";
+      export const description = "Caller lineage test";
+      export async function execute(ctx) {
+        return ctx.done("done");
+      }
+    `,
+    );
+
+    const callerSid = "s_project_caller";
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    (manager as any).registry.saveSession(callerSid, {
+      agent: "worker",
+      task: "caller",
+      status: "running",
+      startedAt: Date.now(),
+      workflowRunId: "wr_parent",
+      projectId: "scout/scout-second-brain-learning",
+    });
+    const tool = createWorkflowTool({
+      manager,
+      workflowDir,
+      persistDir,
+      callerSessionId: callerSid,
+    });
+
+    const result = await tool.execute("tc1", { action: "run", name: "caller-lineage-test", task: "test" });
+    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    expect(parsed.type).toBe("done");
+    if (parsed.type !== "done") return;
+
+    const run = getWorkflowRun(persistDir, parsed.workflowRunId);
+    expect(run!.parentSessionId).toBe(callerSid);
+    expect(run!.parentWorkflowRunId).toBe("wr_parent");
+    expect(run!.projectId).toBe("scout/scout-second-brain-learning");
+  });
 });
