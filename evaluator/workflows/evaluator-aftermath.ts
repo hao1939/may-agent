@@ -1,6 +1,6 @@
 /// <reference path="../../types/workflow-defs.d.ts" />
 
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 export const name = "evaluator-aftermath";
@@ -16,7 +16,26 @@ function extractTrigger(task: string): any {
   }
 }
 
-function classifyVerdict(session: any): { quality: number; efficiency: number; verdict: string; issues: string[] } {
+export function transcriptIssues(transcript: string): string[] {
+  const issues: string[] = [];
+
+  if (transcript.includes("finish() blocked [uncommitted changes]")) {
+    issues.push("finish blocked by uncommitted changes");
+  }
+  if (/no such column:/i.test(transcript)) {
+    issues.push("schema/query error in transcript");
+  }
+  if (/git\s+add\s+may\/\s+shared\/\s+&&\s+git\s+commit/.test(transcript)) {
+    issues.push("broad may/shared commit during session");
+  }
+  if (/last-session\.md/.test(transcript) && /gate-outcomes\.log/.test(transcript) && /git\s+commit/.test(transcript)) {
+    issues.push("committed generated runtime files");
+  }
+
+  return issues;
+}
+
+export function classifyVerdict(session: any, transcript = ""): { quality: number; efficiency: number; verdict: string; issues: string[] } {
   const issues: string[] = [];
   const status = String(session?.status ?? "unknown");
   const opCount = Number(session?.opCount ?? 0);
@@ -24,6 +43,7 @@ function classifyVerdict(session: any): { quality: number; efficiency: number; v
   if (status === "error" || status === "interrupted") issues.push(`terminal status: ${status}`);
   if (session?.error) issues.push(`error: ${String(session.error).slice(0, 240)}`);
   if (opCount > 0 && opCount < 3 && status === "done") issues.push(`shallow session: ${opCount} ops`);
+  issues.push(...transcriptIssues(transcript));
 
   const failed = status === "error" || status === "interrupted" || !!session?.error;
   return {
@@ -48,6 +68,20 @@ function getModeFromTrigger(trigger: any): string {
 
 function firstText(result: any): string {
   return String(result?.lastAssistantText ?? result?.output ?? "{}");
+}
+
+function sessionTranscriptPath(persistDir: string, sessionId: string): string {
+  const activePath = join(persistDir, "sessions", sessionId, "session.jsonl");
+  if (existsSync(activePath)) return activePath;
+  return join(persistDir, "sessions", "history", sessionId, "session.jsonl");
+}
+
+function readSessionTranscript(path: string): string {
+  try {
+    return existsSync(path) ? readFileSync(path, "utf-8") : "";
+  } catch {
+    return "";
+  }
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -96,7 +130,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.done(`Session ${sessionId} already evaluated (${evaluation.verdict}).`);
   }
 
-  const heuristic = classifyVerdict(session);
+  const projectRoot = String(ctx.projectRoot ?? "/app");
+  const persistDir = String((ctx as any).persistDir ?? join(projectRoot, ".state"));
+  const transcriptPath = sessionTranscriptPath(persistDir, sessionId);
+  const transcript = readSessionTranscript(transcriptPath);
+  const heuristic = classifyVerdict(session, transcript);
   const artifactPath = `agents/evaluator/workspace/aftermath/${sessionId}.md`;
 
   await (ctx as any).runFunction("record-evaluation", async () => {
@@ -120,7 +158,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           verdict: heuristic.verdict,
           status: session.status,
           aftermathWorkflow: true,
-          artifactPath,
+          ...(heuristic.verdict === "good" ? {} : { artifactPath }),
         }),
         null,
         JSON.stringify([]),
@@ -136,11 +174,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.done(`Evaluated ${sessionId}: good. No review needed.`);
   }
 
-  const projectRoot = String(ctx.projectRoot ?? "/app");
-  const persistDir = String((ctx as any).persistDir ?? join(projectRoot, ".state"));
-  const transcriptPath = existsSync(join(persistDir, "sessions", sessionId, "session.jsonl"))
-    ? join(persistDir, "sessions", sessionId, "session.jsonl")
-    : join(persistDir, "sessions", "history", sessionId, "session.jsonl");
   mkdirSync(join(projectRoot, "agents/evaluator/workspace/aftermath"), { recursive: true });
 
   const reviewTask = [

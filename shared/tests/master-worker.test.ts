@@ -122,6 +122,13 @@ describe("orchestratorSystemPrompt", () => {
     expect(prompt).toContain("BLOCKED");
     expect(prompt).toContain("WAITING");
   });
+
+  it("allows observation-only DONE without project churn", () => {
+    const prompt = orchestratorSystemPrompt("/p");
+    expect(prompt).toContain("If all plan items are done and metrics are healthy, do not edit just to create activity.");
+    expect(prompt).toContain("For observation-only DONE, do not modify project.md or commit generated runtime files.");
+    expect(prompt).not.toContain("When plan items are done, write new ones.");
+  });
 });
 
 // ── workerSystemPrompt ──────────────────────────────────────────────────

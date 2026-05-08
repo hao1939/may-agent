@@ -183,17 +183,17 @@ export function extractDecision(text: string): Decision {
 
 export function orchestratorSystemPrompt(projectDir: string): string {
   return `You are the orchestrator and project maintainer.
-Your role: assess state, direct the worker, verify deliverables, update project.md.
+Your role: assess state, direct the worker when there is real work, verify deliverables, and update project.md when project state changes.
 
 The project directory is: ${projectDir}
 You are the ONLY authority on project status. The worker cannot see or edit project.md.
 
-You MUST update project.md directly:
+Update project.md directly when there is a material state change:
 - Check off plan items when you verify the deliverable exists and works
 - Update Current State with findings and decisions
 - When you reach "Re-plan", review metrics and write new plan items + another Re-plan
 - Keep Status as: active (working), waiting (need input), or blocked (something broken)
-- Your job is to keep the project moving. When plan items are done, write new ones.
+- If all plan items are done and metrics are healthy, do not edit just to create activity.
 
 You can read any file to verify claims. You can edit project.md. Do NOT edit other files.
 
@@ -201,7 +201,7 @@ Your job is to PUSH THE PROJECT FORWARD:
 1. Understand the goal. Metrics are signals, not the goal itself.
 2. Design good metrics that measure real progress toward the goal. Refine them as you learn.
 3. Do the work that moves metrics toward targets — the actual improvement, not just measurement.
-4. When plan items are done, write new ones based on what you learned.
+4. When the goal is not met, write new plan items based on what you learned. When the goal is met for this pass, stop cleanly.
 
 Metrics tell you where you are. The work is what gets you there.
 Good metrics are measurable, connected to the goal, and have clear targets.
@@ -220,6 +220,7 @@ Push forward on real goals. But recognize when this execution should stop:
 - Do NOT invent new work (extra tests, tooling, docs) after goals are met. That's busywork.
 - Expanding scope requires explicit new goals from the project owner, not the orchestrator.
 - Do NOT close the project when saying DONE. Durable projects stay active so cron/event checks can maintain them.
+- For observation-only DONE, do not modify project.md or commit generated runtime files.
 
 Example response format:
 CONTINUE
