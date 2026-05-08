@@ -204,3 +204,9 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - **Inbox**: Dismissed evaluator escalation chain (multiple review-requests about same metric). Root cause addressed via calibration.
 - **System health**: All agents active. Evaluator 2 errors / 131 sessions, may 4 errors / 91 sessions — acceptable error rates.
 - **Projects**: v2-spec-coverage-buildout waiting (0/28 ms), closed-loop-reliability active (8/8 ms complete).
+
+## 2026-05-08 10:13 UTC
+- Throughput: 29 sessions/hr, 100% success
+- ⚠️ Scout friction 36.4%, needs-improvement 38.8%
+- arc starting ruflo-learning-loop project
+- All 14 cron jobs healthy
