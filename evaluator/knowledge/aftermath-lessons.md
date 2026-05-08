@@ -1,5 +1,4 @@
-# Aftermath Lessons
+# Aftermath review lessons
 
-## 2026-05-08 — DB schema assumptions in orchestrator sessions
-- Prefer `PRAGMA table_info(<table>)` (or use schema hints from query errors) before writing queries against runtime tables.
-- Don’t state alert severity/priority unless it is returned by the query (or you explicitly join to a table that contains severity).
+## Duration-gate sessions
+- If a session is duration-gated for being too short, evidence of value must include at least one durable output: (1) an artifact summarizing findings + next steps, (2) a low-risk patch with verification, or (3) an escalation message with concrete evidence. Pure exploration (reads/queries) is not sufficient.
