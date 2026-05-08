@@ -11,7 +11,7 @@
  */
 
 import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, statSync, readdirSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { ProjectCache } from "./project-cache.js";
 import { shouldBudgetCheckpoint, buildBudgetCheckpointEntry, estimateTurnsUsed, resetBudgetState } from "./budget-checkpoint.js";
 import { onProjectCreate } from "./hooks/validate-on-create.js";
@@ -185,13 +185,19 @@ function catalogOutputs(projectDir: string, projectContent: string): string {
 function createProjectDir(config: PersistentTaskConfig): void {
   ensureDir(config.projectDir);
   ensureDir(join(config.projectDir, "outputs"));
-  const projectContent = `# Project: ${config.goal}
+  const projectId = basename(config.projectDir);
+  const projectContent = `---
+id: ${projectId}
+owner: ${config.owner}
+status: active
+type: milestone
+priority: P1
+workflow: project
+iteration: 0
+worker: ${config.worker}
+---
 
-**Status**: active
-**Owner**: ${config.owner}
-**Worker**: ${config.worker}
-**Priority**: P1
-**Iteration**: 0
+# Project: ${config.goal}
 
 ## Goal
 ${config.goal}
@@ -222,11 +228,13 @@ Not started.
 }
 
 function parseProjectState(content: string): ProjectState {
+  const frontmatterStatus = content.match(/^---\s*\n[\s\S]*?\nstatus:\s*(.+?)\s*\n[\s\S]*?\n---\s*(?:\n|$)/i);
   const statusMatch = content.match(/^\*\*Status\*\*:\s*(.+)$/m);
-  const status = statusMatch ? statusMatch[1].trim().toLowerCase().split(" ")[0] : "active";
+  const status = (frontmatterStatus?.[1] || statusMatch?.[1] || "active").trim().toLowerCase().split(" ")[0];
   const iterHeaders = [...content.matchAll(/^### Iteration (\d+)/gm)];
   // Also check the Iteration field
-  const iterField = content.match(/^\*\*Iteration\*\*:\s*(\d+)/m);
+  const frontmatterIter = content.match(/^---\s*\n[\s\S]*?\niteration:\s*(\d+)\s*\n[\s\S]*?\n---\s*(?:\n|$)/i);
+  const iterField = frontmatterIter || content.match(/^\*\*Iteration\*\*:\s*(\d+)/m);
   const lastIteration = iterField ? parseInt(iterField[1], 10) :
     (iterHeaders.length > 0 ? Math.max(...iterHeaders.map(m => parseInt(m[1], 10))) : 0);
   return { status, lastIteration };
