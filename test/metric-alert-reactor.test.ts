@@ -166,6 +166,43 @@ describe("metric-alert-reactor", () => {
     expect(workflows[0].task).toContain('"metricId": "arc.quality"');
   });
 
+  it("triages an old P2 alert that has no judgment", async () => {
+    const { db, handler, workflows } = setupWithDb();
+    const now = Date.now();
+    db.run(
+      "INSERT INTO metrics (id, name, owner, current, threshold, target, priority, alert_op, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      ["arc.coverage", "Arc coverage", "arc", 0.4, 0.8, 0.95, "P2", "<", now],
+    );
+    db.run(
+      "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
+      ["arc.coverage", "threshold", "coverage below threshold", now - 2 * 60 * 60_000],
+    );
+
+    await handler();
+
+    expect(workflows).toHaveLength(1);
+    expect(workflows[0]).toMatchObject({ name: "metric-alert-triage", source: "arc" });
+    expect(workflows[0].task).toContain('"metricId": "arc.coverage"');
+  });
+
+  it("keeps fresh P2 alerts in metric context", async () => {
+    const { db, handler, workflows, logs } = setupWithDb();
+    const now = Date.now();
+    db.run(
+      "INSERT INTO metrics (id, name, owner, current, threshold, target, priority, alert_op, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      ["arc.coverage", "Arc coverage", "arc", 0.4, 0.8, 0.95, "P2", "<", now],
+    );
+    db.run(
+      "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
+      ["arc.coverage", "threshold", "coverage below threshold", now - 10 * 60_000],
+    );
+
+    await handler();
+
+    expect(workflows).toEqual([]);
+    expect(logs.some((msg) => msg.includes("P2 arc.coverage alert age"))).toBe(true);
+  });
+
   it("retriages a judged P1 alert when a newer snapshot still breaches", async () => {
     const { db, handler, workflows, logs } = setupWithDb();
     const now = Date.now();

@@ -19,6 +19,12 @@ services:
       - "${NOVNC_PORT:-6080}:6080"
       - "${WEB_PORT:-8080}:8080"
     volumes:
+      - ../src:/app/src
+      - ../test:/app/test
+      - ../package.json:/app/package.json:ro
+      - ../bun.lock:/app/bun.lock:ro
+      - ../tsconfig.json:/app/tsconfig.json:ro
+      - ../node_modules:/app/node_modules
       - ../agents:/app/agents
       - ../.state:/app/.state
       - /home/example-user/litellm/github_copilot:/app/.copilot:ro
