@@ -17,6 +17,7 @@
  */
 
 import { setDefaultAutoSelectFamily } from "node:net";
+import { resolve, join } from "node:path";
 import { type EventBus } from "../event-bus.js";
 import type { SubagentManager } from "../../lib/index.js";
 
@@ -30,6 +31,7 @@ try {
 
 export interface TelegramBotOptions {
   persistDir?: string;
+  projectRoot?: string;
   bus: EventBus;
   manager: SubagentManager;
   getSessionId: () => string;
@@ -49,6 +51,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   const { bus, manager: _manager, getSessionId } = opts;
 
   const token = process.env.TELEGRAM_BOT_TOKEN || "";
+  const projectRoot = opts.projectRoot ?? process.env.PROJECT_ROOT ?? resolve(opts.persistDir ?? ".state", "..");
   const allowedChatIds = (process.env.TELEGRAM_CHAT_ID || "")
     .split(",")
     .map((id) => id.trim())
@@ -209,6 +212,61 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     return false;
   }
 
+  function normalizeProjectPath(value: unknown): string | null {
+    if (typeof value !== "string" || !value.trim()) return null;
+    let path = value.trim()
+      .replace(/^\/app\//, "")
+      .replace(new RegExp(`^${escapeRegExp(projectRoot)}/`), "")
+      .replace(/^\.?\//, "")
+      .replace(/\/project\.md$/, "")
+      .replace(/[),.;:]+$/, "")
+      .replace(/\/$/, "");
+    if (!path.startsWith("agents/")) path = `agents/${path}`;
+    if (!/^agents\/(shared\/projects\/|[^/]+\/workspace\/projects\/)[^/\s]+/.test(path)) return null;
+    return path;
+  }
+
+  function extractProjectPath(text: string): string | null {
+    const candidates = text.match(/(?:\/app\/)?(?:agents\/)?(?:shared\/projects\/|[^/\s]+\/workspace\/projects\/)[A-Za-z0-9._-]+(?:\/project\.md)?/g) ?? [];
+    for (const candidate of candidates) {
+      const normalized = normalizeProjectPath(candidate);
+      if (normalized) return normalized;
+    }
+    return null;
+  }
+
+  function escapeRegExp(text: string): string {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  async function appendProjectDiscussionComment(projectPath: string, comment: string): Promise<boolean> {
+    const normalized = normalizeProjectPath(projectPath);
+    if (!normalized) return false;
+
+    const { existsSync, appendFileSync, writeFileSync } = await import("node:fs");
+    const projectDir = join(projectRoot, normalized);
+    const projectFile = join(projectDir, "project.md");
+    if (!existsSync(projectFile)) {
+      bus.emit({ type: "info", message: `[telegram] Project reply target not found: ${normalized}` });
+      return false;
+    }
+
+    const date = new Date().toISOString().slice(0, 10);
+    const discussionFile = join(projectDir, "discussion.md");
+    const entry = `\n### hao — ${date}\n${comment.trim()}\n`;
+    if (existsSync(discussionFile)) appendFileSync(discussionFile, entry, "utf-8");
+    else writeFileSync(discussionFile, `# Discussion\n${entry}`, "utf-8");
+
+    bus.emit({
+      type: "project.nudge",
+      source: "telegram",
+      projectPath: normalized,
+      comment: true,
+    } as any);
+    bus.emit({ type: "info", message: `[telegram] Project comment appended and nudged: ${normalized}` });
+    return true;
+  }
+
   // ── Incoming message handling ────────────────────────────────────
 
   function isAllowed(chatId: number): boolean {
@@ -242,6 +300,21 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         const db = getDb(opts.persistDir ?? ".state");
         const ctx = db.prepare("SELECT * FROM notification_messages WHERE telegram_msg_id = ?").get(replyToMsgId) as any;
         if (ctx) {
+          const projectPath = normalizeProjectPath(ctx.project_id);
+          if (projectPath && await appendProjectDiscussionComment(projectPath, text)) {
+            try {
+              db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+                ["telegram.reply", "telegram", ctx.agent || "unknown", JSON.stringify({ enriched: true, projectPath, delivery: "project-comment", originalMsgId: replyToMsgId }), Date.now()]);
+            } catch {}
+            await sendMessage(chatIdStr, `Comment added to ${projectPath}. Resuming the project now.`, undefined, {
+              eventType: "project.comment",
+              agent: ctx.agent || opts.interfaceAgent,
+              projectId: projectPath,
+              data: JSON.stringify({ replyToMsgId }),
+            });
+            return;
+          }
+
           const parts: string[] = [];
           parts.push(`[User replying to notification${ctx.agent ? ` from ${ctx.agent}` : ""}${ctx.project_id ? ` about project "${ctx.project_id}"` : ""}]`);
           if (ctx.data) {
@@ -465,7 +538,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     if (event.type === "message.created" && (event as any).to === "human" && (event as any).from === opts.interfaceAgent) {
       if (pendingChatId) {
         const content = String((event as any).content ?? "").slice(0, 4000);
-        sendToUser(`📋 ${content}`, { eventType: "message.created", agent: String((event as any).from ?? ""), sessionId: "sessionId" in event ? String((event as any).sessionId) : undefined, summary: content.slice(0, 200) });
+        const projectId = normalizeProjectPath((event as any).projectPath ?? (event as any).projectId) ?? extractProjectPath(content) ?? undefined;
+        sendToUser(`📋 ${content}`, { eventType: "message.created", agent: String((event as any).from ?? ""), sessionId: "sessionId" in event ? String((event as any).sessionId) : undefined, projectId, summary: content.slice(0, 200) });
       }
     }
   });

@@ -72,6 +72,7 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         sharedWorkflowDir: join(deps.agentsRoot, "shared", "workflows"),
         guardsDir: join(deps.agentsRoot, agentForWorkflow, "guards"),
         sharedGuardsDir: join(deps.agentsRoot, "shared", "guards"),
+        projectId: opts?.projectId,
       });
       return { status: result.type === "done" ? "done" : "escalated", summary: result.type === "done" ? result.summary : result.reason ?? "escalated" };
     },

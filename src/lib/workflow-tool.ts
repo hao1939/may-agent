@@ -282,6 +282,7 @@ async function resolveDemands(
   maxInjected: number,
   manager: SubagentManager,
   parentSessionId: string | undefined,
+  projectId: string | undefined,
   onEvent: ((event: WorkflowEvent) => void) | undefined,
   run: WorkflowRun,
   persistDir: string | undefined,
@@ -331,6 +332,7 @@ async function resolveDemands(
         const taskResult = await manager.callAgent(demand.step.agent, demand.step.task, {
           parentSessionId,
           workflowRunId: runId,
+          projectId,
           stepLabel: label,
           source: "guard",
         });
@@ -381,6 +383,7 @@ export interface RunWorkflowDirectOpts {
   guardsDir?: string;
   sharedGuardsDir?: string;
   parentSessionId?: string;
+  projectId?: string;
   onEvent?: (event: WorkflowEvent) => void;
 }
 
@@ -403,6 +406,7 @@ export async function runWorkflowDirect(
     persistDir: opts.persistDir,
     agentName: opts.agentName,
     parentSessionId: opts.parentSessionId,
+    projectId: opts.projectId,
     onEvent: opts.onEvent,
     runtimeCtx: opts.runtimeCtx,
   });
@@ -464,6 +468,8 @@ export interface WorkflowToolOptions {
   onEvent?: (event: WorkflowEvent) => void;
   /** Parent session ID for spawned sessions. */
   parentSessionId?: string;
+  /** Canonical project id for sessions spawned by this workflow. */
+  projectId?: string;
   /** Pre-built RuntimeCtx — shared infra (emit, getDb, log, notify, paths). */
   runtimeCtx?: RuntimeCtx;
 }
@@ -640,6 +646,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         const taskResult = await manager.callAgent(agentName, effectiveTask, {
           parentSessionId,
           workflowRunId: runId,
+          projectId: opts.projectId,
           stepLabel: agentName,
           source: `workflow:${workflow.name}`,
         });
@@ -679,7 +686,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           const demands = emitAndCollectDemands(guards, guardEvent);
           if (demands.length > 0) {
             await resolveDemands(demands, runId, completedSteps, steeringQueue, injectedStepCount, maxInjected,
-              manager, parentSessionId, onEvent, run, persistDir ?? undefined, guardWarnings);
+              manager, parentSessionId, opts.projectId, onEvent, run, persistDir ?? undefined, guardWarnings);
           }
         }
 
@@ -747,7 +754,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           const demands = emitAndCollectDemands(guards, guardEvent);
           if (demands.length > 0) {
             await resolveDemands(demands, runId, completedSteps, steeringQueue, injectedStepCount, maxInjected,
-              manager, parentSessionId, onEvent, run, persistDir ?? undefined, guardWarnings);
+              manager, parentSessionId, opts.projectId, onEvent, run, persistDir ?? undefined, guardWarnings);
           }
         }
 
@@ -831,6 +838,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             const taskResult = await manager.callAgent(agentName, fullPrompt, {
               parentSessionId,
               workflowRunId: runId,
+              projectId: opts.projectId,
               stepLabel: stepName,
               source: `workflow:${label}`,
             });
@@ -872,7 +880,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
               const demands = emitAndCollectDemands(guards, guardEvent);
               if (demands.length > 0) {
                 await resolveDemands(demands, runId, completedSteps, steeringQueue, injectedStepCount, maxInjected,
-                  manager, parentSessionId, onEvent, run, persistDir ?? undefined, guardWarnings);
+                  manager, parentSessionId, opts.projectId, onEvent, run, persistDir ?? undefined, guardWarnings);
               }
             }
           },
@@ -895,7 +903,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         };
         const demands = emitAndCollectDemands(guards, doneEvent);
         await resolveDemands(demands, runId, completedSteps, steeringQueue, injectedStepCount, maxInjected,
-          manager, parentSessionId, onEvent, run, persistDir ?? undefined, guardWarnings);
+          manager, parentSessionId, opts.projectId, onEvent, run, persistDir ?? undefined, guardWarnings);
       }
 
       // Finalize the workflow run
