@@ -28,7 +28,8 @@
       "consecutiveErrors": 0
     },
     "dev": {
-      "consecutiveErrors": 0
+      "consecutiveErrors": 1,
+      "lastError": "heartbeat session error"
     }
   }
 }
