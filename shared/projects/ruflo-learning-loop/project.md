@@ -11,6 +11,7 @@ iteration: 1
 # Project: Ruflo Learning Loop
 
 **Status**: active
+**Iteration**: 2
 ## Goal
 
 Learn from `ruvnet/ruflo` through repeated investigate -> judge -> experiment
@@ -18,14 +19,9 @@ loops, and adopt only the smallest ideas that improve may-agent's autonomous
 closed loop without adding unnecessary orchestration complexity.
 
 ## Current State
-
-Started from human request. Arc owns the project because the core work is
-architectural judgment: deciding which outside ideas fit may-agent's mental
-model and which should be rejected. Scout should do source-grounded research
-tasks; dev/may should only experiment after arc narrows the scope.
-
+Iteration 2. Milestones: 0/0 done.
+Reviewer: **I believe**: The worker has spent iteration 2 producing 8+ self-referential bookkeeping artifacts (STATUS.md, NEXT.md, "final consolidation", "closeout", "escalation candidate check") that all say t
 ## Context
-
 Reference repo:
 - https://github.com/ruvnet/ruflo
 
@@ -38,6 +34,11 @@ Current hypothesis:
 - The first iteration should focus on closed-loop visibility because may-agent
   currently needs clearer evidence that agents notice signals, act, and update
   durable project state.
+- Iter-1 + iter-2 produced: scout's ruflo-feature-map.md (Ruflo's idea = statusline discipline: subsystems dump cheap JSON, one script reads); arc judgment = `experiment`; refined target = emit `escalation.resolved` for one reason class (live DB has 20 open `escalation.created`, 0 closures ever — non-working loop, mirrors the visibility gap Ruflo's discipline addresses).
+- Iter-3 question (verbatim source: outputs/iter-02-escalation-candidate-check.md §5): does `escalation.created` need a sibling source-of-truth table, or is `events.status` legitimately the right home because no subsystem owns it?
+- Iter-3 owner = dev/may (per NEXT.md §4); arc's role is pre/post go-no-go only.
+- Anti-pattern observed iter-2: meta-bookkeeping doom loop (8 pointer/closeout files, 0 experiment runs). Next iteration must produce a number from may.db, not another pointer.
+- Forbidden in iter-3: any new `iter-02-*.md`, STATUS.md/NEXT.md edits, files whose body is "no new judgment."
 
 ## Work Model
 
@@ -100,3 +101,14 @@ observable success signal.
 - Experiments must be reversible and small enough to judge from real evidence.
 
 ## Artifacts
+- outputs/iter-02-probe-run.md
+- outputs/NEXT.md
+- outputs/iter-02-source-of-truth-correction.md
+- outputs/iter-02-final-consolidation.md
+- outputs/loop-closure-probe-v2.mjs
+- outputs/iter-02-followup-feasibility.md
+- outputs/iter-02-closeout.md
+- outputs/iter-02-escalation-candidate-check.md
+- outputs/loop-closure-probe.mjs
+- outputs/STATUS.md
+- outputs/iter-02-arc-judgment.md
