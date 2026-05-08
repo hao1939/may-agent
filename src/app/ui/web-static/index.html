@@ -281,13 +281,12 @@
 <div class="header">
   <h1>may-agent</h1>
   <div class="tabs">
-    <div class="tab active" data-tab="dashboard">Dashboard</div>
-    <div class="tab" data-tab="projects">Projects</div>
-    <div class="tab" data-tab="chat">Chat</div>
-    <div class="tab" data-tab="knowledge">Knowledge</div>
-    <div class="tab" data-tab="benchmarks">Benchmarks</div>
-    <div class="tab" data-tab="metrics">Metrics</div>
-    <div class="tab" data-tab="events">Events</div>
+    <div class="tab active" data-tab="live" data-route="/">Live</div>
+    <div class="tab" data-tab="projects" data-route="/projects">Projects</div>
+    <div class="tab" data-tab="sessions" data-route="/sessions">Sessions</div>
+    <div class="tab" data-tab="knowledge" data-route="/knowledge">Knowledge</div>
+    <div class="tab" data-tab="system" data-route="/system">System</div>
+    <!-- Benchmarks tab unhooked per webui.md design (deferred rebuild). Routes /api/benchmarks* preserved. -->
   </div>
 </div>
 
@@ -394,32 +393,99 @@ window.onerror = function(msg, url, line, col, err) {
 };
 
 // ── State ─────────────────────────────────────────────────────────────
-let currentTab = location.hash.slice(1) || 'dashboard';
+let currentTab = 'live';
+let currentRouteParams = {};
 let offset = 0;
 const limit = 30;
+
+// ── Router ────────────────────────────────────────────────────────────
+// Hash routes: #/ #/projects #/projects/:id #/sessions #/sessions/:id
+//              #/knowledge #/knowledge/<sub-path> #/system
+// Legacy bare names (#dashboard, #chat, #metrics, #events) still work via aliases.
+const LEGACY_TAB_ALIAS = {
+  dashboard: 'live', chat: 'sessions', metrics: 'system', events: 'system',
+};
+
+function parseHash() {
+  const raw = location.hash.replace(/^#\/?/, '');
+  if (!raw) return { tab: 'live', params: {} };
+  const segs = raw.split('/').filter(Boolean);
+  const head = segs[0];
+  if (LEGACY_TAB_ALIAS[head]) return { tab: LEGACY_TAB_ALIAS[head], params: {} };
+  if (head === 'projects') return { tab: 'projects', params: { id: segs.slice(1).join('/') || null } };
+  if (head === 'sessions') return { tab: 'sessions', params: { id: segs[1] || null } };
+  if (head === 'knowledge') return { tab: 'knowledge', params: { path: segs.slice(1).join('/') || '' } };
+  if (head === 'system') return { tab: 'system', params: {} };
+  if (head === 'live') return { tab: 'live', params: {} };
+  return { tab: 'live', params: {} };
+}
+
+function routeTo(route) {
+  // Normalize: routeTo('/projects/foo') sets hash to '#/projects/foo'
+  if (!route.startsWith('/')) route = '/' + route;
+  location.hash = '#' + route;
+  // hashchange handler will fire and call render()
+}
+
+function render() {
+  const { tab, params } = parseHash();
+  currentTab = tab;
+  currentRouteParams = params;
+  // Pane visibility — design's 5 surfaces map onto existing panes:
+  //   live  → #dashboard
+  //   projects → #projects (with optional :id deep-link via params.id)
+  //   sessions → #chat (chat already implements session-with-input)
+  //   knowledge → #knowledge
+  //   system → #metrics + #events stacked
+  document.getElementById('dashboard').classList.toggle('hidden', tab !== 'live');
+  document.getElementById('projects').classList.toggle('hidden', tab !== 'projects');
+  document.getElementById('chat').classList.toggle('hidden', tab !== 'sessions');
+  document.getElementById('benchmarks').classList.toggle('hidden', true);  // always hidden (deferred)
+  document.getElementById('knowledge').classList.toggle('hidden', tab !== 'knowledge');
+  document.getElementById('metrics').classList.toggle('hidden', tab !== 'system');
+  document.getElementById('events').classList.toggle('hidden', tab !== 'system');
+  // Tab highlight
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  // Surface initialization
+  if (tab === 'sessions') initChat();
+  if (tab === 'knowledge') loadKnowledge();
+  if (tab === 'system') { loadMetricsTab(); loadEvents(); }
+  if (tab === 'projects') {
+    // Project id deep-link: #/projects/<owner>/<name> or legacy 'shared/projects/<name>'
+    if (params.id) {
+      // params.id arrives as e.g. 'shared/projects/foo' or '<owner>/workspace/projects/<name>'
+      // The existing showProjectDetail() expects a full 'agents/...' path.
+      _projectDetailPath = 'agents/' + params.id;
+      showProjectDetail(_projectDetailPath);
+    } else {
+      _projectDetailPath = null;
+      loadProjects();
+    }
+  }
+}
+
+window.addEventListener('hashchange', render);
+
+// ── WebSocket pub-sub ──────────────────────────────────────────────────
+// Panels can subscribe to live events flowing through /ws.
+//   const off = busSubscribe('message.created', e => render(e));
+//   off();  // unsubscribe
+// Use '*' to receive every event.
+window.__busSubs = {};
+function busSubscribe(type, fn) {
+  if (!window.__busSubs[type]) window.__busSubs[type] = new Set();
+  window.__busSubs[type].add(fn);
+  return () => { window.__busSubs[type].delete(fn); };
+}
+window.busSubscribe = busSubscribe;
 
 // ── Tabs ──────────────────────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    currentTab = tab.dataset.tab;
-    location.hash = currentTab;
-    document.getElementById('dashboard').classList.toggle('hidden', currentTab !== 'dashboard');
-    document.getElementById('projects').classList.toggle('hidden', currentTab !== 'projects');
-    document.getElementById('chat').classList.toggle('hidden', currentTab !== 'chat');
-    document.getElementById('benchmarks').classList.toggle('hidden', currentTab !== 'benchmarks');
-    document.getElementById('knowledge').classList.toggle('hidden', currentTab !== 'knowledge');
-    document.getElementById('metrics').classList.toggle('hidden', currentTab !== 'metrics');
-    document.getElementById('events').classList.toggle('hidden', currentTab !== 'events');
-    if (currentTab === 'chat') initChat();
-    if (currentTab === 'benchmarks') loadBenchmarks();
-    if (currentTab === 'knowledge') loadKnowledge();
-    if (currentTab === 'metrics') loadMetricsTab();
-    if (currentTab === 'projects') loadProjects();
-    if (currentTab === 'events') loadEvents();
+    routeTo(tab.dataset.route);
   });
 });
+
 
 // ── Dashboard ─────────────────────────────────────────────────────────
 
@@ -1203,14 +1269,8 @@ function renderTree(children) {
 // ── Ask about (bridge dashboard → chat) ───────────────────────────────
 
 function switchToChat(message) {
-  // Switch to chat tab
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelector('[data-tab="chat"]').classList.add('active');
-  currentTab = 'chat';
-  document.getElementById('dashboard').classList.add('hidden');
-  document.getElementById('chat').classList.remove('hidden');
-  document.getElementById('benchmarks').classList.add('hidden');
-  initChat();
+  // Switch to sessions tab via the router
+  routeTo('/sessions');
 
   // Pre-fill the input with the context message
   const input = document.getElementById('chat-input');
@@ -1501,6 +1561,16 @@ function connectWs() {
     try {
       const event = JSON.parse(e.data);
       const eventType = typeof event.type === 'string' ? event.type.replace(/\./g, '_') : event.type;
+
+      // Live event pub-sub: panels subscribe via window.busSubscribe(type, fn)
+      // and get the raw (unmangled) event. Type matches AgentEvent shape:
+      // 'session.start', 'session.end', 'message.created', 'metric.breach', etc.
+      if (typeof event.type === 'string' && window.__busSubs) {
+        const subs = window.__busSubs[event.type];
+        if (subs) for (const fn of subs) { try { fn(event); } catch (err) { console.error('bus sub err', err); } }
+        const all = window.__busSubs['*'];
+        if (all) for (const fn of all) { try { fn(event); } catch (err) { console.error('bus * sub err', err); } }
+      }
 
       // The socket server filters events via subscribe — we receive only
       // events from our session tree + notifications. No client-side filtering needed.
@@ -1983,25 +2053,8 @@ loadStats();
 loadRequests();
 connectWs();
 
-// Apply initial tab from URL hash
-if (currentTab && currentTab !== 'dashboard') {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  const activeTab = document.querySelector(`[data-tab="${currentTab}"]`);
-  if (activeTab) activeTab.classList.add('active');
-  document.getElementById('dashboard').classList.add('hidden');
-  document.getElementById('projects').classList.toggle('hidden', currentTab !== 'projects');
-  document.getElementById('chat').classList.toggle('hidden', currentTab !== 'chat');
-  document.getElementById('benchmarks').classList.toggle('hidden', currentTab !== 'benchmarks');
-  document.getElementById('knowledge').classList.toggle('hidden', currentTab !== 'knowledge');
-  document.getElementById('metrics').classList.toggle('hidden', currentTab !== 'metrics');
-  document.getElementById('events').classList.toggle('hidden', currentTab !== 'events');
-  if (currentTab === 'chat') initChat();
-  if (currentTab === 'benchmarks') loadBenchmarks();
-  if (currentTab === 'knowledge') loadKnowledge();
-  if (currentTab === 'metrics') loadMetricsTab();
-  if (currentTab === 'projects') loadProjects();
-  if (currentTab === 'events') loadEvents();
-}
+// Apply initial route from URL hash (delegates to router)
+render();
 
 // ── Knowledge Browser ─────────────────────────────────────────────────
 let kbCurrentPath = '';
@@ -2359,7 +2412,7 @@ async function loadProjects() {
         ? `<div style="display:flex;align-items:center;gap:4px"><div style="width:60px;height:6px;background:var(--bg3);border-radius:3px"><div style="width:${Math.round(p.milestonesDone/p.milestonesTotal*100)}%;height:100%;background:var(--green);border-radius:3px"></div></div><span>${p.milestonesDone}/${p.milestonesTotal}</span></div>`
         : '<span style="color:var(--fg2)">—</span>';
 
-      html += `<tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="showProjectDetail('${esc(p.path)}')">` +
+      html += `<tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="routeTo('/projects/' + ${JSON.stringify(p.path.replace(/^agents\//, ''))})">` +
         `<td style="padding:8px;font-weight:500">${esc(p.name)}</td>` +
         `<td>${esc(p.owner)}</td>` +
         `<td><span style="color:${statusColor}">${esc(p.status)}</span></td>` +
@@ -2385,7 +2438,7 @@ let _projectDetailPath = '';
 async function showProjectDetail(path) {
   _projectDetailPath = path;
   const el = document.getElementById('projects-content');
-  let html = `<button onclick="loadProjects()" style="margin-bottom:12px;padding:4px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer">← Back</button>`;
+  let html = `<button onclick="routeTo('/projects')" style="margin-bottom:12px;padding:4px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer">← Back</button>`;
   html += `<div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:12px">`;
   html += `<button class="tab-btn active" onclick="switchProjectTab(this,'project')" style="background:none;border:none;border-bottom:2px solid var(--accent);color:var(--accent);padding:8px 16px;cursor:pointer;font-size:13px">Project</button>`;
   html += `<button class="tab-btn" onclick="switchProjectTab(this,'journal')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Journal</button>`;
@@ -2522,7 +2575,7 @@ async function toggleProjectSession(row, sessionId) {
     let html = `<div style="margin-bottom:8px;font-size:12px;color:var(--fg2)">`;
     html += `<strong>${esc(s.agent)}</strong> · ${s.opCount || 0} ops · `;
     html += s.startedAt ? timeAgo(s.startedAt) : '';
-    html += ` <a href="#" style="color:var(--accent);margin-left:8px" onclick="event.preventDefault();location.hash='dashboard';document.querySelector('[data-tab=dashboard]').click();setTimeout(()=>loadSessionDetail('${esc(sessionId)}'),100)">Open full →</a>`;
+    html += ` <a href="#" style="color:var(--accent);margin-left:8px" onclick="event.preventDefault();routeTo('/');setTimeout(()=>loadSessionDetail('${esc(sessionId)}'),100)">Open full →</a>`;
     html += `</div>`;
 
     if (s.task) {

@@ -97,10 +97,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   // ── API handlers ──────────────────────────────────────────────────
 
-  function handleRequests(_url: URL): Response {
-    return json({ rows: [], total: 0 }); // requests table removed
-  }
-
   function handleLiveness(): Response {
     const db = _db();
     const now = Date.now();
@@ -109,13 +105,25 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const agents = listConfiguredAgents();
 
     const heartbeatRows = db.prepare(
+      // Heartbeat detection covers all dispatch styles in production:
+      //   1. Cron-driven sessions whose task starts with "[heartbeat]".
+      //   2. Per-agent workflow sessions whose task is rebuilt internally
+      //      to start with "You are **<agent>** waking up for your heartbeat."
+      //      (Source is just "workflow"; only the task body identifies it.
+      //      We anchor at the start of task to avoid matching aftermath
+      //      reviews that embed a heartbeat session's JSON inside their task.)
+      //   3. Future workflows that adopt source="workflow:<agent>-heartbeat"
+      //      or source="heartbeat" once we standardize trigger typing.
+      // TODO: replace string matching once heartbeat workflows set a typed
+      // source / trigger field (see webui.md "Data model gaps to close" §2).
       `SELECT sessionId, agent, task, status, kind, source, startedAt, endedAt, outcome
        FROM sessions
        WHERE startedAt > ?
          AND (
-           source LIKE 'workflow:heartbeat%'
+           source LIKE 'workflow:%heartbeat%'
            OR source = 'heartbeat'
            OR task LIKE '[heartbeat]%'
+           OR task LIKE 'You are %waking up for your heartbeat.%'
          )
        ORDER BY startedAt ASC`
     ).all(fourHours) as any[];
@@ -972,6 +980,126 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     });
   }
 
+  // ── Steering verbs (POST → Unix socket) ───────────────────────────
+  //
+  // The web process does not own the bus or manager. To trigger an action in
+  // the running may-agent, we send a JSON command line over the same Unix
+  // socket that the WebSocket already proxies. Each command is fire-and-forget
+  // (we do not wait for a structured reply); failures surface as a 503.
+  //
+  // Per webui.md "Plane C — Steering verbs": one event per verb, async.
+
+  function sendUnixCommand(command: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
+    return new Promise((resolve) => {
+      const socketPath = findSocketPath();
+      if (!socketPath) {
+        resolve({ ok: false, error: "agent socket not found" });
+        return;
+      }
+      const sock = connect(socketPath);
+      let settled = false;
+      const finish = (result: { ok: boolean; error?: string }) => {
+        if (settled) return;
+        settled = true;
+        try { sock.destroy(); } catch { /* ignore */ }
+        resolve(result);
+      };
+      sock.on("connect", () => {
+        sock.write(JSON.stringify(command) + "\n");
+        // Give the agent a tick to ack, then close. We don’t parse the reply.
+        setTimeout(() => finish({ ok: true }), 50);
+      });
+      sock.on("error", (err: Error) => finish({ ok: false, error: err.message }));
+      setTimeout(() => finish({ ok: false, error: "socket timeout" }), 2000);
+    });
+  }
+
+  async function handleSessionCancel(sessionId: string): Promise<Response> {
+    if (!sessionId) return json({ error: "sessionId required" }, 400);
+    // The socket protocol uses cancel_all (one-active-task per agent today);
+    // sessionId is recorded in the audit event for traceability.
+    const result = await sendUnixCommand({ type: "cancel_task", sessionId });
+    if (!result.ok) return json({ error: result.error }, 503);
+    return json({ ok: true, sessionId });
+  }
+
+  async function handleSessionMessage(req: Request, sessionId: string): Promise<Response> {
+    if (!sessionId) return json({ error: "sessionId required" }, 400);
+    let body: { content?: string };
+    try { body = await req.json() as { content?: string }; } catch { return json({ error: "invalid json" }, 400); }
+    const content = (body.content ?? "").trim();
+    if (!content) return json({ error: "content required" }, 400);
+    // Use the existing "message" socket command which routes to the active
+    // session’s input queue. The agent picks it up at next step.
+    const result = await sendUnixCommand({ type: "message", sessionId, content });
+    if (!result.ok) return json({ error: result.error }, 503);
+    return json({ ok: true, sessionId, deliveredAt: Date.now() });
+  }
+
+  async function handleAgentHeartbeatNow(req: Request, agentName: string): Promise<Response> {
+    if (!agentName) return json({ error: "agent required" }, 400);
+    // Resolve actor from request body if provided, default to "human" (UI).
+    let actor = "human";
+    try {
+      const body = await req.json() as { actor?: string };
+      if (body.actor) actor = String(body.actor);
+    } catch { /* body optional */ }
+    // Heartbeat handlers subscribe to heartbeat.trigger events.
+    // We emit via the socket so the bus actually fires.
+    const result = await sendUnixCommand({
+      type: "emit",
+      event: "heartbeat.trigger",
+      agent: agentName,
+      source: actor,
+    });
+    if (!result.ok) return json({ error: result.error }, 503);
+    return json({ ok: true, agent: agentName, triggeredAt: Date.now() });
+  }
+
+  async function handleMetricThreshold(req: Request, metricId: string): Promise<Response> {
+    if (!metricId) return json({ error: "metricId required" }, 400);
+    let body: { threshold?: number };
+    try { body = await req.json() as { threshold?: number }; } catch { return json({ error: "invalid json" }, 400); }
+    if (typeof body.threshold !== "number" || !Number.isFinite(body.threshold)) {
+      return json({ error: "threshold (finite number) required" }, 400);
+    }
+    const db = _db();
+    const existing = db.prepare("SELECT id, threshold FROM metrics WHERE id = ?").get(metricId) as { id: string; threshold: number | null } | undefined;
+    if (!existing) return json({ error: "metric not found" }, 404);
+    db.prepare("UPDATE metrics SET threshold = ?, updated_at = ? WHERE id = ?").run(body.threshold, Date.now(), metricId);
+    // Best-effort emit so subscribers see the change.
+    void sendUnixCommand({
+      type: "emit",
+      event: "metric.threshold_changed",
+      metric: metricId,
+      from: existing.threshold,
+      to: body.threshold,
+      source: "web-ui",
+    });
+    return json({ ok: true, metric: metricId, from: existing.threshold, to: body.threshold });
+  }
+
+  async function handleAlertResolve(req: Request, alertId: string): Promise<Response> {
+    const id = parseInt(alertId, 10);
+    if (!Number.isFinite(id)) return json({ error: "numeric alertId required" }, 400);
+    let body: { reason?: string } = {};
+    try { body = await req.json() as { reason?: string }; } catch { /* body optional */ }
+    const db = _db();
+    const existing = db.prepare("SELECT id, metric_id, resolved_at FROM metric_alerts WHERE id = ?").get(id) as { id: number; metric_id: string; resolved_at: number | null } | undefined;
+    if (!existing) return json({ error: "alert not found" }, 404);
+    if (existing.resolved_at !== null) return json({ ok: true, alreadyResolved: true });
+    db.prepare("UPDATE metric_alerts SET resolved_at = ? WHERE id = ?").run(Date.now(), id);
+    void sendUnixCommand({
+      type: "emit",
+      event: "metric.alert_resolved",
+      metric: existing.metric_id,
+      alertId: id,
+      source: "web-ui",
+      reason: body.reason ?? null,
+    });
+    return json({ ok: true, alertId: id });
+  }
+
   // ── WebSocket proxy ─────────────────────────────────────────────────
 
   const wsToUnix = new Map<any, Socket>();
@@ -1033,7 +1161,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         if (server.upgrade(req)) return undefined;
         return new Response("WebSocket upgrade failed", { status: 400 });
       }
-      if (url.pathname === "/api/requests") return handleRequests(url);
       if (url.pathname === "/api/liveness") return handleLiveness();
       if (url.pathname === "/api/stats") return handleStats();
       if (url.pathname === "/api/agents/activity") return handleAgentActivity();
@@ -1068,6 +1195,21 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (sessionMatch) return handleSession(sessionMatch[1]);
       const transcriptMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/transcript$/);
       if (transcriptMatch) return handleTranscript(transcriptMatch[1]);
+
+      // ── Steering verbs (POST) ───────────────────────────────────────
+      if (req.method === "POST") {
+        const sessionCancelMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/cancel$/);
+        if (sessionCancelMatch) return handleSessionCancel(sessionCancelMatch[1]);
+        const sessionMessageMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/message$/);
+        if (sessionMessageMatch) return handleSessionMessage(req, sessionMessageMatch[1]);
+        const heartbeatNowMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/heartbeat-now$/);
+        if (heartbeatNowMatch) return handleAgentHeartbeatNow(req, heartbeatNowMatch[1]);
+        const thresholdMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/threshold$/);
+        if (thresholdMatch) return handleMetricThreshold(req, decodeURIComponent(thresholdMatch[1]));
+        const alertResolveMatch = url.pathname.match(/^\/api\/alerts\/([^/]+)\/resolve$/);
+        if (alertResolveMatch) return handleAlertResolve(req, alertResolveMatch[1]);
+      }
+
       if (url.pathname === "/" || url.pathname === "/index.html") return serveIndex();
       return new Response("Not found", { status: 404 });
     },
