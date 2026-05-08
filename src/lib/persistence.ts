@@ -167,6 +167,25 @@ export function archiveSession(persistDir: string, sessionId: string): void {
   renameSync(src, dest);
 }
 
+/**
+ * Move a session's JSONL/output back from history/ to the live sessions/ dir.
+ * Used by Manager.resumeSession() when the operator messages a cold-archived
+ * session: the session has to be "live" again so appendSessionMessage and
+ * downstream tools (transcript reader, message_end subscriber) write/read
+ * from the same path the live runtime expects.
+ *
+ * Idempotent: if the live dir already exists or the archive is missing,
+ * does nothing.
+ */
+export function unarchiveSession(persistDir: string, sessionId: string): void {
+  const src = join(historyDir(persistDir), sessionId);
+  const dest = sessionDir(persistDir, sessionId);
+  if (!existsSync(src)) return;
+  if (existsSync(dest)) return;
+  mkdirSync(join(persistDir, "sessions"), { recursive: true });
+  renameSync(src, dest);
+}
+
 // ── Session meta.json helpers ─────────────────────────────────────────
 
 /** Path to a session's meta.json (in active session dir). */
