@@ -18,7 +18,8 @@ Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior
 - Metric: `evaluator.false-good-rate-sample` current 0.5714 (threshold 0.2, target 0.05) but denominator only 7 reviewed sessions (sample instability).
 
 ## Current State
-Blocked: 5 consecutive iterations without milestone progress. Approach needs rethinking.
+Iteration 1. Milestones: 0/0 done.
+Reviewer: - **I believe**: We now have a concrete in-repo “consumer” for `evaluator.low-quality-rate-24h` alerting/thresholding (`agents/may/handlers/metrics-snapshot.ts`), and a plausible patch direction: aler
 ## Plan
 1. **Metric decomposition proposal**: draft a split of low-quality-rate into sub-metrics by issue class (schema errors, finish/uncommitted, terminal interruptions) to avoid conflating agent quality with infra/guard friction.
 2. **Criteria calibration**: review evaluator criteria for (a) terminal interrupted sessions (Clean start) and (b) finish-blocked sessions; decide whether to classify as NI vs excluded/exception.
