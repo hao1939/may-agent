@@ -1,11 +1,21 @@
-# Heartbeat 2026-05-05 21:12Z
+# May Heartbeat Log — 2025-05-08 06:46 UTC
 
-## Red Metrics Disposition
-- **project.active-count=0**: Known issue (KE-744). Git assume-unchanged flags. Requires human escalation.
-- **project.blocked-over-6h=2**: Same root cause (KE-744).
+## System Health Summary
+- **Throughput**: 32 sessions/hour, 100% success rate
+- **Active sessions**: 7 running
+- **All cron jobs healthy**: 13 jobs, 0 errors
 
-## System Health
-- 100% success rate, 48 sessions/hour
-- All 8 heartbeats firing
-- 398 real outputs in 24h
-- No errors in last hour
+## Alerts (⚠️ metrics breaching thresholds)
+1. **Process uptime**: 0.04h (threshold: 1h) — recent restart
+2. **Self-directed iteration rate**: 0.33 (threshold: 0.5) — needs more autonomous work
+3. **Needs-improvement sessions**: 35% (threshold: 30%) — quality slightly below target
+4. **v2 spec coverage**: 27% (threshold: 80%) — major gap
+
+## Actions Taken
+- Reviewed system status dashboard
+- No blocking issues requiring immediate intervention
+- Metric alerts being triaged by dedicated handlers (4 active alert-triage sessions)
+
+## Next Steps
+- v2 spec coverage is the biggest gap — needs dedicated work
+- Self-directed iteration rate should improve as agents stabilize
