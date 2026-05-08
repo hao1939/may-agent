@@ -17,6 +17,20 @@ async function loadProjectHealth() {
   return await import(`../../shared/lib/project-health.ts?t=${Date.now()}`) as typeof import("../../shared/lib/project-health.ts");
 }
 
+function normalizeProjectPath(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  return value
+    .trim()
+    .replace(/^agents\//, "")
+    .replace(/\/project\.md$/, "")
+    .replace(/\/$/, "");
+}
+
+function matchesProjectTarget(project: ProjectInfo, target: string | null): boolean {
+  if (!target) return true;
+  return project.relPath === target || project.projectFile.endsWith(`/${target}/project.md`);
+}
+
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   const agentsRoot = resolve(ctx.sdk.paths.root, "agents");
   const stateFile = resolve(ctx.sdk.paths.root, ".state/project-health-state.json");
@@ -107,8 +121,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     // Diagnose each project
     const actions: Array<{ project: ProjectInfo; action: HealthAction }> = [];
-    const forceLaunch = event?.type === "trigger.project";
+    const targetProject = normalizeProjectPath(event?.data?.projectPath);
+    const commentNudge = event?.type === "project.nudge" && event?.data?.comment === true && !!targetProject;
     for (const project of projects) {
+      if (targetProject && !matchesProjectTarget(project, targetProject)) continue;
+      const forceLaunch = event?.type === "trigger.project" || commentNudge;
       actions.push({ project, action: ph.diagnoseProject(project, healthState, breachedMetrics, runningProjects, now, projects, forceLaunch) });
     }
 
