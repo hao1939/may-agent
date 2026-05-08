@@ -21,3 +21,7 @@ Moved the reconciliation block before the metric `record()` call and changed `te
 ## Follow-up
 
 Watch the next 48h for new `metric_alerts` rows on `capability.status-reality-mismatch-count`. KE-811 predicts zero new rows if this fix addresses the flap.
+
+### 2026-05-08 Heartbeat Check
+
+Follow-up heartbeat rechecked the metric after commit `dbaf03d22`. The current metric row was green (`current=0`, `threshold=3`), unmeasured-active-metrics query returned 0 rows, and recent snapshots showed the latest two `capability.status-reality-mismatch-count` values as `0, 0` after the earlier `4 -> 0 -> 1 -> 0` flap pattern. No additional code change was warranted; continue watching for new unresolved `metric_alerts` rows on this metric.
