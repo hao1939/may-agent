@@ -56,3 +56,19 @@ Signal dispositions:
 - Aftermath review `s_1778222730433_3`: acted by applying the git-cwd, schema-first, and alert cross-check habits in this heartbeat.
 - Alert #191 / evaluator quality metric messages: dismissed for direct dev action because the metric owner is evaluator and the May relay/status update is already present; monitor for an approved work-queue item or implementation request.
 - Prior session-start/session-end noise and artifact-gate reminders: acknowledged as historical heartbeat/system events; no code change needed.
+
+## 2026-05-08 Heartbeat Queue/Alert Cross-check
+
+Routine self-maintenance with no approved dev implementation item.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty; all listed implementation candidates remain in Proposed, so dev should not implement them without approval.
+- Active metrics snapshot is broadly healthy for dev operations: `handler.success-rate=1`, `handler.failed-count=0`, `session.error-rate-6h=0.0267`, and no active metric is missing a snapshot in the last hour.
+- The heartbeat header reported no active alerts, but a direct `metric_alerts` cross-check found unresolved alert `#194` for `evaluator.low-quality-rate-24h` (`current=0.3679`, threshold `0.3`, owner `evaluator`). This is not a dev-owned alert; dev disposition is watch-only unless a May-approved implementation request appears.
+- Recent `handler.failed` rows are older historical failures while the current 6h failure metric is zero.
+- Git status from `/app/agents` shows generated runtime files only: `dev/last-session.md`, `evaluator/last-session.md`, `may/last-session.md`, and `shared/gate-outcomes.log`, plus this intentional heartbeat log edit.
+
+Signal dispositions:
+- `message.created` aftermath reviews for dev sessions: acted by using `/app/agents` for git checks, using schema-first checks before non-canned alert-owner queries, and recording this artifact.
+- Repeated `session.start`/`session.end` heartbeat noise: dismissed as duplicate routine lifecycle events after health checks showed no dev-owned failure pattern.
+- Unresolved evaluator quality alert: dismissed for direct dev action because ownership is evaluator and there is no Approved work-queue item; continue monitoring for an explicit implementation request.
