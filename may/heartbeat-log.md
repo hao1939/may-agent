@@ -252,3 +252,22 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - Scout quality and friction remain the dominant issues
 - Evaluator overturn rate suggests calibration drift
 - 99 "active" sessions, most stale — cosmetic but noisy
+
+---
+
+## 2026-05-08 23:11 UTC
+
+### System Health
+- Throughput: 54 sessions/hr, 98% success
+- Cron: All 11 jobs healthy
+- Health checks: All PASS
+
+### ⚠️ Metrics Needing Attention
+- **Evaluator overturn rate**: 46.7% (target 5%)
+- **Scout good session rate**: 34.3% (target 85%)
+- **Scout operational friction**: 65.7% (target 10%)
+- **Needs-improvement sessions**: 62.0% (target 10%)
+
+### Next Actions
+- Investigate scout friction root causes
+- Review evaluator scoring calibration
