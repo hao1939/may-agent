@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   extractDecision,
+  formatLiveRuntimeSignals,
   orchestratorSystemPrompt,
   workerSystemPrompt,
   snapshotOutputs,
@@ -127,9 +128,73 @@ describe("orchestratorSystemPrompt", () => {
     const prompt = orchestratorSystemPrompt("/p");
     expect(prompt).toContain("If all plan items are done and metrics are healthy, do not edit just to create activity.");
     expect(prompt).toContain("For observation-only DONE, do not modify project.md or commit generated runtime files.");
-    expect(prompt).toContain("When you claim live runtime metrics are healthy, verify them from the runtime DB with query_db.");
+    expect(prompt).toContain("Use the workflow-collected Live Runtime Signals block as primary current metric evidence.");
+    expect(prompt).toContain("If you must manually query because Live Runtime Signals are unavailable");
     expect(prompt).toContain("The embedded project.md is context, not current metric evidence.");
     expect(prompt).not.toContain("When plan items are done, write new ones.");
+  });
+});
+
+// ── Live Runtime Signals ───────────────────────────────────────────────
+
+describe("formatLiveRuntimeSignals", () => {
+  it("formats available workflow-collected runtime signals", () => {
+    const block = formatLiveRuntimeSignals({
+      available: true,
+      collectedAt: "2026-05-08T00:00:00.000Z",
+      counts: {
+        activeP0P1Metrics: 1,
+        openP0P1Alerts: 0,
+        openLowerPriorityAlerts: 1,
+        activeProjectCount: 3,
+      },
+      p0p1Metrics: [{
+        id: "system.loop-closed-rate",
+        name: "Loop closed rate",
+        owner: "may",
+        priority: "P1",
+        current: 0.8,
+        target: 0.9,
+        threshold: 0.7,
+        alertOp: "<",
+      }],
+      openAlerts: [{
+        id: 7,
+        metricId: "telegram.delivery",
+        message: "Delivery failures detected",
+        createdAt: 1778210000000,
+        metricName: "Telegram delivery",
+        owner: "may",
+        priority: "P2",
+        current: 1,
+        target: 0,
+        threshold: 0,
+      }],
+    });
+
+    expect(block).toContain("## Live Runtime Signals (workflow-collected)");
+    expect(block).toContain("Status: available");
+    expect(block).toContain("system.loop-closed-rate");
+    expect(block).toContain("telegram.delivery");
+  });
+
+  it("formats unavailable signals as a fallback instruction", () => {
+    const block = formatLiveRuntimeSignals({
+      available: false,
+      collectedAt: "2026-05-08T00:00:00.000Z",
+      counts: {
+        activeP0P1Metrics: 0,
+        openP0P1Alerts: 0,
+        openLowerPriorityAlerts: 0,
+        activeProjectCount: null,
+      },
+      p0p1Metrics: [],
+      openAlerts: [],
+      error: "no such table: metrics",
+    });
+
+    expect(block).toContain("Status: unavailable");
+    expect(block).toContain("Query the runtime DB only if current metric evidence is required.");
   });
 });
 

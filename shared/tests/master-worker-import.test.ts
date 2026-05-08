@@ -6,6 +6,7 @@ import { describe, it, expect } from "vitest";
 
 import {
   extractDecision,
+  formatLiveRuntimeSignals,
   orchestratorSystemPrompt,
   workerSystemPrompt,
   snapshotOutputs,
@@ -97,6 +98,44 @@ describe("orchestratorSystemPrompt", () => {
     expect(prompt).toContain("PIVOT");
     expect(prompt).toContain("BLOCKED");
     expect(prompt).toContain("WAITING");
+  });
+
+  it("uses workflow-collected live runtime signals before manual query fallback", () => {
+    const prompt = orchestratorSystemPrompt("/any");
+    expect(prompt).toContain("Use the workflow-collected Live Runtime Signals block as primary current metric evidence.");
+    expect(prompt).toContain("Only call query_db if those signals are unavailable");
+  });
+});
+
+describe("formatLiveRuntimeSignals", () => {
+  it("includes current counts and open alerts", () => {
+    const block = formatLiveRuntimeSignals({
+      available: true,
+      collectedAt: "2026-05-08T00:00:00.000Z",
+      counts: {
+        activeP0P1Metrics: 0,
+        openP0P1Alerts: 1,
+        openLowerPriorityAlerts: 0,
+        activeProjectCount: null,
+      },
+      p0p1Metrics: [],
+      openAlerts: [{
+        id: 1,
+        metricId: "metric.a",
+        message: "bad",
+        createdAt: 1,
+        metricName: "Metric A",
+        owner: "dev",
+        priority: "P1",
+        current: 1,
+        target: 0,
+        threshold: 0,
+      }],
+    });
+
+    expect(block).toContain("Status: available");
+    expect(block).toContain("open P0/P1 alerts=1");
+    expect(block).toContain("metric.a");
   });
 });
 
