@@ -10,7 +10,7 @@ iteration: 2
 
 # Evaluator Low-Quality Rate Calibration
 
-**Iteration**: 2
+**Iteration**: 4
 ## Goal
 Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior failures from (b) pipeline/guard false-penalties, and ensure evaluator scoring produces low false-good overturns.
 
@@ -19,8 +19,8 @@ Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior
 - Metric: `evaluator.false-good-rate-sample` current 0.5714 (threshold 0.2, target 0.05) but denominator only 7 reviewed sessions (sample instability).
 
 ## Current State
-Iteration 2. Milestones: 0/0 done.
-Reviewer: - **I believe**: Iteration 2 successfully identified the exact mechanism causing the spike: `classifyVerdict()`’s step-function (“any issue ⇒ quality=0.55 ⇒ needs_improvement”) plus a small set of hyg
+Iteration 4. Milestones: 0/0 done.
+Reviewer: [PIVOT] - **I believe**: The project is blocked by an *operational wiring* gap: we have strong evidence + a metric-split plan, but we still haven’t identified (or proven absent) the **in-repo consumer
 ## Plan
 1. **Metric decomposition proposal**: draft a split of low-quality-rate into sub-metrics by issue class (schema errors, finish/uncommitted, terminal interruptions) to avoid conflating agent quality with infra/guard friction.
 2. **Criteria calibration**: review evaluator criteria for (a) terminal interrupted sessions (Clean start) and (b) finish-blocked sessions; decide whether to classify as NI vs excluded/exception.
