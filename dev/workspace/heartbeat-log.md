@@ -84,3 +84,21 @@ Evidence checked:
 Disposition:
 - No production code or database state changed.
 - This entry is the intentional dev workspace artifact for the heartbeat recovery; the next substantive heartbeat should investigate an actual dev-owned signal or approved work-queue item.
+
+## 2026-05-08 Heartbeat Queue and Dirty-State Triage
+
+Routine self-maintenance with explicit event and repository hygiene disposition.
+
+Evidence checked:
+- UTC timestamp at write time: `2026-05-08T10:43:02Z`.
+- `agents/shared/work-queue.md` Approved section is empty; all visible requests remain Proposed, so no implementation item is available for dev.
+- Core runtime metrics are currently not dev-blocking: `session.error-rate-6h=0.01`, `handler.success-rate=1`, `handler.failed-count=0`, and no active metric lacks a snapshot in the last hour.
+- Unresolved metric alerts exist for `scout.good-session-rate-24h`, `scout.operational-friction-rate-24h`, and `evaluator.low-quality-rate-24h`; none are dev-owned, so direct dev action is watch-only unless an approved work-queue item appears.
+- Recent `handler.failed` rows are historical relative to current `handler.failed-count=0`; the latest dev error session (`s_1778226100190_1`) ended in under 1s with `error=NULL`, matching the already-acted artifact-gate lifecycle noise rather than a new recurring code failure.
+- Git status showed only runtime `last-session.md` churn from may/scout plus this intentional heartbeat log edit by the time of this note; do not commit runtime files unless they are explicit deliverables.
+
+Signal dispositions:
+- Prior `session.start` artifact-gate warning: acted by appending this meaningful heartbeat artifact.
+- Prior `session.end` artifact-gate recovery entry: dismissed as already acted; this entry records the current check rather than duplicating recovery only.
+- Routine heartbeat session lifecycle events: dismissed after queue, metric, alert, and recent-failure checks found no dev-owned implementation action.
+- Scout/evaluator metric alerts: dismissed for direct dev action because ownership is scout/evaluator and no Approved implementation item exists; continue monitoring.
