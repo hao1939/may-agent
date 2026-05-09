@@ -24,6 +24,10 @@
 - Symptom: a session produces a useful calibration/report artifact, but it relies only on file reads and repeats outdated status claims (`retired`, old coverage values) that runtime DB queries would have corrected.
 - Fix: when an artifact makes claims about metric status or current values, verify those claims against `metrics` and, if timing matters, `metric_snapshots` before crediting the analysis as fully accurate. Keep the strategic value if rankings/mappings still hold, but note the stale-status root cause.
 
+## Pattern: copied example timestamps can silently invalidate “live” DB triage
+- Symptom: an agent copies literal epoch values from a prompt/example into `query_db`, so a supposed “last 6h” or “current running sessions” query actually scans an old window and yields impossible results like negative ages.
+- Fix: treat hardcoded time literals in operational queries as a review smell. When the session goal is live triage, require evidence that the time window was computed at runtime or at least sanity-check the returned ages/counts before crediting the conclusions.
+
 ## Pattern: partial file reads can create fake “missing config” mismatches
 - Symptom: an agent reads only the top of a long config file, does not see the relevant entry, and concludes a cron/job/handler is missing even though `grep` or a later offset read shows it exists.
 - Fix: when checking for the presence of a config entry in a long file, use `grep -n` first, then read the matching region by offset before making an absence claim.
