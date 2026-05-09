@@ -26,7 +26,8 @@
       "consecutiveErrors": 0
     },
     "arc": {
-      "consecutiveErrors": 0
+      "consecutiveErrors": 1,
+      "lastError": "anti-shallow gate re-prompt error"
     },
     "dev": {
       "consecutiveErrors": 0
