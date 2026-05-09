@@ -19,6 +19,7 @@ RUN bun install --frozen-lockfile
 
 # Copy source + config
 COPY src/ src/
+COPY packages/ packages/
 COPY tsconfig.json ./
 
 # Compile standalone binary
@@ -86,7 +87,8 @@ COPY --from=builder /build/may-agent /usr/local/bin/may-agent
 COPY --from=builder /usr/local/bin/bun /usr/local/bin/bun
 
 # Copy web UI static files (not embedded in compiled binary)
-COPY src/app/ui/web-static/ /usr/local/share/may-agent-web/web-static/
+COPY packages/webui/ /app/packages/webui/
+COPY packages/webui/static/ /usr/local/share/may-agent-web/static/
 
 # CLI agent configs (codex needs config.toml to route through litellm)
 COPY container/codex-config.toml /etc/codex/config.toml

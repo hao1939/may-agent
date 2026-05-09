@@ -140,7 +140,7 @@ const WEB_ONLY_MODE = WEB_ENABLED
 
 if (WEB_ONLY_MODE) {
   const webPort = parseInt(process.env.WEB_PORT || "8080", 10);
-  const { startWebUI } = await import("./ui/web.js");
+  const { startWebUI } = await import("../../packages/webui/src/server.js");
   const { port } = startWebUI({ stateDir: PERSIST_DIR, port: webPort });
   writeIdentity({
     pid: process.pid,
@@ -306,7 +306,7 @@ if (CONSOLE_ENABLED) attachConsoleUI(bus, () => taskSessionId ?? chatSession?.ge
 // Web UI — runs in-process when --web is passed
 if (WEB_ENABLED) {
   const webPort = parseInt(process.env.WEB_PORT || "8080", 10);
-  const { startWebUI } = await import("./ui/web.js");
+  const { startWebUI } = await import("../../packages/webui/src/server.js");
   const { port } = startWebUI({ stateDir: PERSIST_DIR, port: webPort });
   bus.emit({ type: "info", message: `[web] Dashboard running on http://localhost:${port}` });
 }

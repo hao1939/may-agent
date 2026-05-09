@@ -1,8 +1,9 @@
+#!/usr/bin/env bun
 /**
  * may-agent Web UI — HTTP server for dashboard + chat.
  *
- * Can run standalone: bun src/app/ui/web.ts --state-dir .state --port 8080
- * Can be imported:    import { startWebUI } from "./ui/web.js"
+ * Can run standalone: bun packages/webui/src/server.ts --state-dir .state --port 8080
+ * Can be imported:    import { startWebUI } from "@may-agent/webui"
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -18,8 +19,7 @@ declare const Bun: {
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { connect } from "node:net";
-import { getDb } from "../../lib/requests.js";
-import type { SqliteDb } from "../../lib/db.js";
+import { openStateDb, type SqliteDb } from "./state-db.js";
 import type { Socket } from "node:net";
 
 // ── Public API ────────────────────────────────────────────────────────
@@ -51,7 +51,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   const AGENTS_ROOT = process.env.AGENTS_ROOT || resolve(PROJECT_ROOT, "agents");
 
   function _db(): SqliteDb {
-    return getDb(STATE_DIR);
+    return openStateDb(join(STATE_DIR, "may.db"));
   }
 
   function listConfiguredAgents(): string[] {
@@ -886,8 +886,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   function serveIndex(): Response {
     const candidates = [
-      join(dirname(new URL(import.meta.url).pathname), "web-static", "index.html"),
+      join(dirname(new URL(import.meta.url).pathname), "..", "static", "index.html"),
+      "/usr/local/share/may-agent-web/static/index.html",
       "/usr/local/share/may-agent-web/web-static/index.html",
+      join(STATE_DIR, "..", "packages", "webui", "static", "index.html"),
       join(STATE_DIR, "..", "src", "app", "ui", "web-static", "index.html"),
     ];
     for (const p of candidates) {
