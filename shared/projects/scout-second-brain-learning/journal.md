@@ -260,6 +260,37 @@ WAITING: All milestones are complete and the final pilot-review.md has been gene
 **Next Action**: Wait for a human or May to review the artifacts (pilot-review.md, etc.) and update the project status to `done` or `pending-review`.
 **Validation Signal**: Human updates project.md to `done`.
 
+### Manual Reframe — 2026-05-09
+Hao rejected the prior closure because the project should drive behavior change
+and notice gain, not just produce artifacts. Reopened the project around loaded
+Scout behavior plus live signals:
+
+- Installed Scout knowledge-management behavior in `agents/scout/AGENTS.md`.
+- Added heartbeat guidance to search existing knowledge before external research
+  or new files, and to improve existing notes when adoption is low.
+- Repaired stale pilot metadata in the touched knowledge files.
+- Added metrics for `scout.knowledge-practice-loaded` and
+  `scout.knowledge-preamble-coverage` so the project can observe adoption
+  instead of citing simulated pilot gains.
+
+Next validation: run metrics snapshot, record the baseline, then watch a real
+Scout session for search-before-create and in-place update behavior.
+
+### Metrics Baseline — 2026-05-09
+Manual metrics snapshot recorded the new Scout knowledge signals:
+
+- `scout.knowledge-practice-loaded = 1`: the behavior is loaded in Scout's
+  prompt/heartbeat.
+- `scout.knowledge-preamble-coverage = 0.0526`: only a small fraction of
+  knowledge files have an AI-first preamble, so adoption must improve gradually
+  through normal Scout work rather than bulk edits.
+- `scout.sourced-artifacts-24h = 10`: sourced output remains healthy.
+- `scout.downstream-reference-files-7d = 35`: downstream reference signal is
+  healthy; keep watching whether it stays healthy as knowledge becomes denser.
+
+Next validation: inspect a subsequent Scout session for search-before-create
+and in-place update behavior.
+
 ### Goal Driver Cycle 1 — 2026-05-08T15:11:48.140Z
 **Facts**: status=waiting; iteration=1; plan=5/5; artifacts=13
 **Decision**: WAITING
@@ -375,4 +406,3 @@ We should systemically adopt **AI-First Preambles** and **In-place Updates** acr
 **Rationale**: Hao requested a final summary to close the project. The current plan requires us to actually implement the scoped approach (AI-First Preambles and In-place updates) on a few files in Scout's knowledge base to gather concrete evidence before formalizing the final proposal. We should apply the practices to real files, document the evidence, provide the final summary, check off the remaining plan items, and close the project.
 **Next Action**: Execute the pending plan items: apply "AI-First Preambles" and "In-place Updates" to 2-3 files in `agents/scout/knowledge/`. Document the evidence of effectiveness in a final summary artifact that directly addresses Hao's request. Then update the project plan, set status to `done`, and mark the project complete.
 **Validation Signal**: Status is `done`, plan items are checked off, and a final summary artifact exists containing the concrete evidence and actionable strategies.
-

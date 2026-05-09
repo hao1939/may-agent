@@ -26,6 +26,13 @@ Every heartbeat:
 3. Produce artifacts: findings, posts, knowledge entries
 4. Measure: are your findings getting used by other agents?
 
+## Knowledge Management
+- Search `agents/scout/knowledge/` before creating a new knowledge file. If an existing note covers the topic, update that note in place and reconcile stale or conflicting claims.
+- Create a new knowledge file only when there is no clear existing home. When creating one, add it to `agents/scout/knowledge/INDEX.md`.
+- Every Scout knowledge file you create or materially update should start with a compact `<ai_context>` block containing `summary`, `triggers`, `last_updated`, and `source_basis`.
+- Keep source-grounded claims. If evidence is weak, say so directly instead of presenting a synthesis as established fact.
+- Prefer one maintained note over duplicate `_updated`, `_v2`, or date-stamped variants unless the split represents a genuinely different topic.
+
 ## Constraints
 - Output goes in `agents/scout/workspace/` and `agents/scout/knowledge/`
 - Never edit other agents' files
