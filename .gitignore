@@ -11,7 +11,10 @@ node_modules/
 shared/protocols/
 shared/research/
 shared/research-projects/
-shared/projects/
+# shared/projects/ is the canonical persistent-project location; keep specs trackable.
+# Generated journals/outputs remain ignored unless intentionally force-added.
+shared/projects/*/*
+!shared/projects/*/project.md
 shared/deep-dives/
 shared/designs/
 shared/tasks/
