@@ -52,3 +52,34 @@ Routine self-maintenance plus targeted inbox investigation was sufficient this h
 ### Git State Classification
 
 Ambient dirty state before this artifact consisted of runtime/session files (`*/last-session.md`, shared gate logs), other agents' source/project updates (`scout/knowledge/agent-architecture-trends.md`, `shared/projects/scout-second-brain-learning/*`, `shared/projects/v2-spec-coverage-buildout/*`), and no dev-owned source changes. This heartbeat intentionally commits only this dev-owned heartbeat log entry.
+
+## 2026-05-09 12:20 UTC
+
+### Judgment
+
+Routine self-maintenance was sufficient this heartbeat. The Approved queue remains empty; there are no dev-owned active alerts; handler health is green (`handler.success-rate=1`, `handler.failed-count=0`); all active metrics have recent snapshots; and the owned `eval-llm-lane-restoration` project remains correctly `pending-review` because `eval.llm-coverage-lag-h=0.36` and `eval.llm-evals-24h=13` show the deep-eval lane is live.
+
+### Evidence
+
+- Approved queue: empty under `## Approved` in `agents/shared/work-queue.md`.
+- Current active metrics: `handler.success-rate=1`, `handler.failed-count=0`, `session.error-rate-6h=0.1376` below its alert threshold `0.3`, `eval.llm-coverage-lag-h=0.36` below threshold `4`, and `eval.llm-evals-24h=13` above target `4`.
+- Unresolved alerts: only scout-owned `scout.knowledge-preamble-coverage`, `scout.good-session-rate-24h`, and `scout.operational-friction-rate-24h`; no dev-owned alerts.
+- Unmeasured active metrics: zero in the last hour.
+- Recent handler failures: latest rows are old `metrics-snapshot` export mismatch / old aftermath workflow load failures, while current handler metrics are green.
+- Recent failed sessions: evaluator aftermath errors around `s_1778319773931_34` and `s_1778319753845_33` are provider/runtime failures (`IDE token expired` or empty assistant response before tool use), already visible to evaluator; no dev-owned source fix is indicated from this heartbeat.
+- Owned project check: `agents/shared/projects/eval-llm-lane-restoration/project.md` remains `pending-review` with resume only on reviewer change request or eval-lane regression; current eval metrics do not meet that resume trigger.
+
+### Pending Event Triage
+
+- `[2m] session.end` for prior dev heartbeat triage: dismissed as already completed; this run rechecked live queue, metric, alert, and project evidence.
+- `[3m] session.start (×7)` duplicate dev heartbeat starts: dismissed as scheduler/heartbeat noise after confirming no approved implementation item and no dev-owned alert.
+- `[24m] session.end` prior dev heartbeat investigation: dismissed as already recorded; no new implementation request attached.
+- `[39m] evaluator FYI for s_1778325688720_72 schema-guessing miss`: dismissed for code action because the prior run recovered, produced a substantive artifact, and the current heartbeat used canned/schema-safe queries.
+- `[52m] eval-llm-lane liveness audit session.end`: acted by rechecking the owned project and current eval metrics; lane remains live so project stays pending-review.
+- `[55m] duration-gate session.start warning`: acted by doing a full heartbeat with DB checks, event triage, dirty-state classification, and a durable log entry.
+- `[55m] evaluator FYI for s_1778325540677_66 finish-guard false positive`: dismissed for now because a previous dev heartbeat already inspected transcript lines and documented the plausible false positive; no recurrence or editable guard path appeared in this run.
+- `[1h-2h] older dev heartbeat/session.end events`: dismissed as historical context already superseded by current live evidence.
+
+### Git State Classification
+
+`git status --short` showed ambient dirty state in runtime/session files (`*/last-session.md`, shared gate logs), may-owned source/project work (`may/handlers/metrics-snapshot.ts`, `shared/projects/v2-spec-coverage-buildout/*`), and other agents' runtime files. This heartbeat intentionally commits only `agents/dev/workspace/heartbeat.md` and does not stage or alter ambient non-dev work.
