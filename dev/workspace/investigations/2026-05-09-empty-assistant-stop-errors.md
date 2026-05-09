@@ -25,8 +25,12 @@ This looks like a runtime/provider contract problem or prompt/model compliance i
 - `eval.llm-coverage-lag-h` remains below threshold for now, but repeated `evaluation.deep_failed` events will eventually reduce deep-eval coverage if successful runs do not continue.
 - The lack of an explicit error string in `sessions.error` makes this easy to misclassify as generic evaluator failure unless transcripts are sampled.
 
+## Current Alert Status
+
+2026-05-09 heartbeat follow-up found the pattern is now first-class visible as metric `session.empty-assistant-stop-count-1h`: current `28`, threshold `0`, alert `#249`, owner `may`, priority `P1`. The metric did what the previous investigation requested: this failure mode is now visible without manual transcript sampling. Related health checks show the old provider first-turn class is resolved (`session.first-turn-error-count-1h=0`) and LLM eval liveness continues (`evaluation.deep_recorded` at runtime timestamp `1778314258425`, `eval.llm-coverage-lag-h=1.02 < 4`). The current damage remains concentrated in evaluator aftermath sessions: the 12 latest evaluator `status='error'` rows are `workflow:evaluator-aftermath`/`workflow:evaluator-heartbeat` with `error=NULL`.
+
 ## Next Steps
 
-1. Watch whether evaluator errors continue to dominate the last-hour error grouping.
+1. Watch whether evaluator errors continue to dominate the last-hour error grouping and whether alert `#249` receives a `metric.alert_judged` owner decision from may.
 2. If the pattern persists, patch the evaluator/deep-eval prompts or runtime wrapper to reject empty `content=[]` normal-stop responses as retryable, bounded by a small retry count.
-3. Consider a metric or event counter for `assistant_empty_stop_error` so this failure mode is visible without manual transcript inspection.
+3. Do not add a duplicate metric: `session.empty-assistant-stop-count-1h` already covers this failure mode.
