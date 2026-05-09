@@ -42,6 +42,10 @@
   - Query recent sessions to find items needing evaluation: `SELECT id, agent, status, created_at FROM sessions ORDER BY created_at DESC LIMIT 20`.
   - If given a session.jsonl path, pull evidence with bounded `rg`/`jq`/`head`/`tail` and produce the required JSON evaluation.
 
+## 2026-05-09 (artifact-gate follow-up)
+- Compliance: attempted `write()` to an existing file; it was blocked by the safety guard (prevented accidental truncation). I then `read()` the file and used `edit()` to append this note.
+- Process improvement: for any existing artifact, always `read()` first and use `edit()` unless you intend to rewrite the entire file.
+
 ### Template for future heartbeat entries
 - What signal triggered this work (metric, message, failure):
 - What I checked (files/queries/commands):
