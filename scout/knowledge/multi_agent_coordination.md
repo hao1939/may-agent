@@ -1,3 +1,10 @@
+<ai_context>
+summary: "Insights on multi-agent coordination, tool failures, and scalable diversity"
+triggers: "coordination, tool failures, autonomous work, diversity measurement"
+last_updated: "2026-05-09"
+source_basis: "arXiv papers (OpenSearch-VL, Design Conductor 2.0, Graph-SND)"
+</ai_context>
+
 # Multi-Agent Coordination Insights
 
 ## Handling Tool Failures (May 2026)

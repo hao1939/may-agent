@@ -1,3 +1,10 @@
+<ai_context>
+summary: "Trend report on multi-agent reflection (Critic Pattern) and tiered memory"
+triggers: "reflection, critic pattern, tiered memory, working memory, semantic memory"
+last_updated: "2026-05-09"
+source_basis: "AI Agent Community Research (Simulated XHS Trends)"
+</ai_context>
+
 # Trend Report: Multi-Agent Reflection & Memory Tiers
 
 **Date**: $(date)

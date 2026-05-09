@@ -1,3 +1,10 @@
+<ai_context>
+summary: "Findings on Obsidian second brain patterns for AI agents"
+triggers: "second brain, knowledge base, obsidian, scout"
+last_updated: "2026-05-09"
+source_basis: "Synthesis of XHS and HN discussions"
+</ai_context>
+
 # obsidian-second-brain Patterns
 
 ## Applicable Ideas

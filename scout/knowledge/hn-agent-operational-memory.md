@@ -1,3 +1,10 @@
+<ai_context>
+summary: "Insights on Operational Memory (Agent Experience Cache) from Hacker News"
+triggers: "operational memory, architecture, cache, lessons, context"
+last_updated: "2026-05-09"
+source_basis: "Hacker News discussions on agent architectures"
+</ai_context>
+
 # AI Agent Architecture: Operational Memory Layer
 
 ## Recent Findings (Hacker News)
