@@ -1,11 +1,13 @@
 {
-  "name": "@may-agent/control-client",
+  "name": "@may-agent/control",
   "version": "0.1.0",
   "type": "module",
   "private": true,
   "exports": {
     ".": "./src/index.ts",
-    "./protocol": "./src/protocol.ts"
+    "./client": "./src/client.ts",
+    "./protocol": "./src/protocol.ts",
+    "./server": "./src/server.ts"
   },
   "files": [
     "src"

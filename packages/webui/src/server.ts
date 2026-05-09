@@ -19,7 +19,7 @@ declare const Bun: {
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import type { Duplex } from "node:stream";
-import { connectSocketEndpoint, findDaemonSocket, sendDaemonEvent } from "../../control-client/src/index.js";
+import { connectSocketEndpoint, findDaemonSocket, sendDaemonEvent } from "../../control/src/client.js";
 import { openStateDb, type SqliteDb } from "./state-db.js";
 
 // ── Public API ────────────────────────────────────────────────────────

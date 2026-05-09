@@ -17,7 +17,7 @@
 
 import { resolve } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
-import { findDaemonSocket, sendAgentMessage } from "../../packages/control-client/src/index.js";
+import { findDaemonSocket, sendAgentMessage } from "../../packages/control/src/client.js";
 
 
 export interface SendOptions {

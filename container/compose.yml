@@ -20,7 +20,7 @@ services:
       - "${WEB_PORT:-8080}:8080"
     volumes:
       - ../agents:/app/agents
-      - ../packages/control-client:/app/packages/control-client
+      - ../packages/control:/app/packages/control
       - ../packages/webui:/app/packages/webui
       - ../.state:/app/.state
       - /home/hao/litellm/github_copilot:/app/.copilot:ro

@@ -26,7 +26,7 @@ import {
 import { resolveProjectRoot } from "./bundle-mode.js";
 import { getDb, closeAllDbs } from "../lib/requests.js";
 import { log } from "../lib/log.js";
-import { emitDaemonEvent } from "../../packages/control-client/src/index.js";
+import { emitDaemonEvent } from "../../packages/control/src/client.js";
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
 if (process.argv.includes("--version") || process.argv.includes("-v")) {
