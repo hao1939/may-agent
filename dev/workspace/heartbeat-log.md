@@ -243,3 +243,15 @@ Signal dispositions:
 - Pending-review dev projects: dismissed for action now because their resume triggers are not met and current LLM-eval metrics remain live (`eval.llm-coverage-lag-h=0.38`, `eval.llm-evals-24h=23`).
 
 Next check: if the missing `src/lib/metrics.js` import error appears again after this entry with no later `metrics-snapshot` completion, inspect new uncommitted `agent-sdk.ts` changes first before touching handler code.
+
+## 2026-05-09 Artifact Gate Recovery
+
+The artifact gate reported that this heartbeat produced no file writes, so this status update records the recovery action as the required durable artifact. I did not change code or production data in this follow-up; the only intentional change is this workspace note.
+
+Initial hygiene signal:
+- `git status --short` from `/app/agents` showed multiple pre-existing dirty paths outside this deliverable, including other agents' `last-session.md` files, shared runtime logs, shared project notes, and `test/guards.test.ts`.
+- Those paths are not part of this recovery artifact and should not be staged or committed by this session.
+
+Next substantive dev heartbeat:
+- Investigate a dev-owned failure pattern or metric gap rather than stopping after administrative recovery.
+- Keep staging limited to explicit intentional deliverables and report any unrelated dirty worktree paths instead of committing them.
