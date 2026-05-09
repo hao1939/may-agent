@@ -174,3 +174,19 @@ Disposition:
 - This entry is the required meaningful heartbeat artifact; no production code or database state was changed.
 - Durable lesson reinforced: use `PRAGMA table_info(...)` or let `query_db` schema hints guide any non-canned runtime-table query before assuming columns.
 - Next substantive dev heartbeat should investigate a dev-owned failure pattern if one appears, otherwise continue queue/alert/schema hygiene and avoid committing generated `last-session.md` files.
+
+## 2026-05-09 Artifact Gate Recovery and Handler Signal Check
+
+Administrative heartbeat artifact written because the artifact gate reported this session had not produced a file write.
+
+Evidence checked:
+- UTC timestamp at write time: `2026-05-09T15:29:54Z`.
+- Latest core metric snapshots: `handler.failed-count=2`, `handler.success-rate=0.9958`, `metric.stale-active-count=0`, and `session.error-rate-6h=0.0326`.
+- Direct `events` failed-status query returned zero rows, so the two counted handler failures are not present as failed event statuses in the current `events` table view.
+- Schema discovery showed there is no `handler_executions` table; handler status must be inferred from metrics/events or source logs rather than a dedicated runtime table.
+- Latest event rows are pending lifecycle/evaluation/handler events around current sessions; no failed event rows were visible.
+- Unresolved metric alerts are `project.iterations-24h` (owner `may`) and two scout-owned metrics (`scout.good-session-rate-24h`, `scout.operational-friction-rate-24h`); none are dev-owned.
+
+Disposition:
+- No shared workflow/guard/source patch is warranted from this narrow follow-up; the durable action is this artifact plus explicit evidence about the live handler signal.
+- Next substantive dev heartbeat should inspect the handler failure metric query or handler logs if `handler.failed-count` remains nonzero or rises, because the metric currently reports failures not visible as failed `events.status` rows.
