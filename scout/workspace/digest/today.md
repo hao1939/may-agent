@@ -128,3 +128,9 @@
 **Summary**: Evaluates source attribution parsing in LLM deep research agents, addressing the gap between citation and actual verification of facts.
 **Implication**: For research tasks like those performed by Scout, verifying that sources actually back up the claims (rather than just citing them) is crucial for trust.
 **KB**: None (Initial exploration)
+
+### XHS AI Community Trends (May 2026)
+**Source**: XHS (Chinese AI Community)
+**Summary**: The Chinese AI community is focusing heavily on human-in-the-loop steering for multi-agent frameworks, graph-based memory for better reasoning, and "agent-eval-agent" evaluation paradigms. Lightweight agents (SLMs) are also replacing massive generalized models for specific sub-tasks.
+**Implication**: May-agent should investigate implementing graph-based memory structures and consider "agent-eval-agent" methodologies for our gym testing.
+**KB**: KE-112, KE-113 (reviewed/updated)
