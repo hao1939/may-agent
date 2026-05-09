@@ -3175,3 +3175,60 @@ CONTEXT_UPDATE:
 - The remaining gap is evaluator scoring quality: `evaluator.false-good-rate-sample` is still elevated (`0.3438`), so the next milestone must target false-good root causes in `agents/evaluator/workflows/evaluator-aftermath.ts`.
 - `evaluation.false_good` is emitted when heuristic verdict `good` is later reviewed as `acceptable` or `needs_improvement`; preventing recurrence now requires a tested hardening change, not more metric-governance work.
 
+### Iteration 6 — 2026-05-09T08:52:45.666Z
+**Worker**: **Status:** done (1m17s)
+
+**Errors encountered:**
+- [finish] finish(status: "success") blocked: You claimed 1 deliverable(s) (message:may) but your session transcript contains no write, edit, or file-producing bash commands. Either:
+1. Actually write/edit the files before calling finish()
+2. Remove deliverables you didn't create this session
+3. Use status: "p
+- [finish] finish() blocked [uncommitted changes]: You have 2 uncommitted file(s) in agents/:
+   M shared/projects/evaluator-low-quality-rate-calibration/journal.md
+   M shared/projects/evaluator-low-quality-rate-calibration/project.md
+
+Ignored generated runtime file(s):
+  M evaluator/last-session.md
+   M shar
+
+**Agent response:**
+Queried runtime metrics, confirmed current values and thresholds, and sent a direct inline governance-escalation message to May requesting approve/reject plus owner for alert pivot vs heuristic tuning.
+**Reviewer**: BLOCKED — The project now depends on an explicit May/owner governance decision on metric intent. Resume when: May (or the named metric owner) responds yes/no on adding `evaluator.substantive-low-quality-rate-24h` and moving alert thresholding to it, or rejects that path and explicitly chooses heuristic v2 tuning instead.
+
+- **I believe**: The actual outcome metric is **not closer** yet; the core analysis is already sufficient, and the remaining blocker is no longer technical discovery but **approval/ownership** for changing what gets measured and alerted on.
+- **I'm uncertain about**: Whether May actually received and will act on the iteration-6 escalation, and whether the worker’s repeated `project.md`/`journal.md` dirtiness is user-caused or workflow-caused and therefore unavoidable within this task format.
+- **I'd change my mind if**: We get a concrete owner decision with an implementation path, or evidence that the worker can land a code/test change without triggering the same repo-hygiene/finish traps.
+
+### Review answers
+
+1. **Is the goal closer?**  
+   Not materially. `evaluator.low-quality-rate-24h` has not been shown to improve; the only movement is escalation toward a decision.
+
+2. **What did we learn?**  
+   - More planning artifacts under `shared/projects/**` do not help.  
+   - Inline escalation is the least-waste path.  
+   - The real bottleneck is governance, not additional analysis.  
+   - There is still a recurring process failure around `project.md`/`journal.md` becoming dirty.
+
+3. **Is the current milestone the right next step?**  
+   No further worker iteration is the right step until approval arrives. The next useful milestone is an **owner decision**, not another document.
+
+4. **Are we closing the loop?**  
+   Partially. We identified the root cause category split and escalated the policy choice, but recurrence is not prevented until either:
+   - the metric/alert definition changes, or
+   - heuristic scoring changes, with tests.
+
+5. **Is it verified?**  
+   No end-state fix is verified. There is still no implemented metric split, no heuristic change, and no gym/test proving reduced false penalties.
+
+6. **What’s blocking progress?**  
+   A **specific external dependency**: approval from May/metric owner on whether hygiene-only NI should remain in the alert-driving metric or be split into a separate substantive metric.
+
+### Why BLOCKED instead of CONTINUE/PIVOT
+A pivot has already happened repeatedly. Another worker iteration would likely just produce another artifact or another escalation attempt. The remaining dependency is an external yes/no decision that the worker cannot manufacture through more analysis.
+
+### CONTEXT_UPDATE:
+- Analysis is decision-ready; additional worker iterations are unlikely to improve `evaluator.low-quality-rate-24h` without a May/owner ruling on metric intent.
+- Current hard blocker is governance: approve/reject adding `evaluator.substantive-low-quality-rate-24h` and moving alert thresholding to it, or choose heuristic v2 tuning instead.
+- Repeated repo-hygiene failures around `shared/projects/.../project.md` and `journal.md` are now a secondary process hazard, but not the primary blocker.
+

@@ -476,6 +476,7 @@ function buildWorkerPrompt(
   prompt += `## Rules\n`;
   prompt += `- Produce at least one concrete deliverable this iteration.\n`;
   prompt += `- Put all output files in: ${outputsDir}/\n`;
+  prompt += `- Before finish(success), call read() on every file you write() or edit(); tests and grep can supplement read-back but do not replace it.\n`;
   prompt += `- You CANNOT edit the project file or journal.\n`;
 
   return prompt;
