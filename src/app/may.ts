@@ -126,6 +126,37 @@ const INITIAL_TASK = (() => {
   return null;
 })();
 
+const WEB_ONLY_MODE = WEB_ENABLED
+  && !CHAT_MODE
+  && !CRON_ENABLED
+  && !SOCKET_ENABLED
+  && !TELEGRAM_ENABLED
+  && !ONESHOT_MODE
+  && !STATUS_MODE
+  && !MESSAGE_MODE
+  && !EMIT_MODE
+  && !RUN_WORKFLOW
+  && !INITIAL_TASK;
+
+if (WEB_ONLY_MODE) {
+  const webPort = parseInt(process.env.WEB_PORT || "8080", 10);
+  const { startWebUI } = await import("./ui/web.js");
+  const { port } = startWebUI({ stateDir: PERSIST_DIR, port: webPort });
+  writeIdentity({
+    pid: process.pid,
+    agent: "web",
+    instance: INSTANCE_LABEL,
+    socket: "",
+    startedAt: new Date().toISOString(),
+    startedBy: "web",
+    task: null,
+    status: "running",
+  });
+  console.log(`[web] Dashboard running on http://localhost:${port}`);
+  setInterval(() => {}, 30_000);
+  await new Promise(() => {});
+}
+
 // --oneshot CLI parameters
 const ONESHOT_TIMEOUT_MINUTES = (() => {
   const arg = process.argv.find((a) => a.startsWith("--timeout="));
@@ -920,8 +951,8 @@ if (RUN_WORKFLOW) {
   process.exit(0);
 }
 
-if (!CHAT_MODE && !INITIAL_TASK && !CRON_ENABLED && !ONESHOT_MODE) {
-  console.error("Error: need --chat, --task, --oneshot, --status, --message, --emit, or --cron.");
+if (!CHAT_MODE && !INITIAL_TASK && !CRON_ENABLED && !ONESHOT_MODE && !WEB_ENABLED && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {
+  console.error("Error: need --chat, --task, --oneshot, --status, --message, --emit, --web, --socket, --telegram, or --cron.");
   process.exit(1);
 }
 
@@ -1128,7 +1159,7 @@ const telegramBot = TELEGRAM_ENABLED
 
 // ── Main loop ──────────────────────────────────────────────────────────
 
-if (!CHAT_MODE && !CRON_ENABLED) {
+if (!CHAT_MODE && !CRON_ENABLED && !WEB_ENABLED && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {
   // Task mode: agent already ran to completion above.
   bus.emit({ type: "info", message: `[task] Task completed. Exiting.` });
   process.exit(0);
