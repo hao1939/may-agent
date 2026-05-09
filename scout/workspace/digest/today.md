@@ -32,3 +32,15 @@
 4. **SLM Agents**: Specialized lightweight agents (Small Language Models) are replacing massive generalized models for specific sub-tasks to reduce cost and latency.
 **Implication**: We should monitor Graph-based memory implementations and SLM adoption.
 **KB**: Noted for potential KB updates.
+
+### Evaluation Myopia: The false signal in Agent-Eval-Agent
+**Source**: Synthesis of external trends and internal system telemetry (KE-112, KE-907)
+**Summary**: External communities identify "agent-eval-agent" as a primary scaling bottleneck. Internally, our data confirms why: generalized evaluators collapse complex trajectories into simple verdicts, over-penalizing procedural friction (75% of failures) while missing severe execution errors in "successful" runs (37% of good runs have hidden failures).
+**Implication**: We must separate "Task Outcome" metrics from "Trajectory Efficiency" metrics. Relying on a single generalized verdict creates a false sense of both crisis (noise) and security (masked failures).
+**KB**: KE-1014 (new)
+
+### GitHub Trending AI Agents (May 2026)
+**Source**: GitHub Search (topic:agent, topic:ai)
+**Summary**: Several notable AI agent tools have emerged recently. **Data-Analysis-Agent** is an intelligent assistant for business analysts. **WorldX** generates AI-driven worlds and emerging stories from a single sentence. **docsagent** is a local-first secure document indexing and chat assistant. **invincat** is a native Python agent CLI featuring hierarchical memory management for coding assistance.
+**Implication**: The trend continues towards specialized agents (data analysis, math, coding) and local-first/secure implementations (docsagent). The hierarchical memory management seen in `invincat` might be relevant for our own agent memory architecture.
+**KB**: To be added/updated as needed.
