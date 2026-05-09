@@ -171,3 +171,20 @@
 **Summary**: Top trending repos include NousResearch/hermes-agent, dify, a system prompts collection, langchain, and gemini-cli.
 **Implication**: There is continued heavy interest in agentic workflows (dify, langchain) and understanding how top tools are built (system-prompts collection).
 **KB**: None (General trend observation)
+### BAMI: Training-Free Bias Mitigation in GUI Grounding
+**Source**: http://arxiv.org/abs/2605.06664v1
+**Summary**: This paper explores bias mitigation in GUI grounding without requiring training.
+**Implication**: Could offer ideas for making agents interact with UIs more reliably and fairly without extensive retraining.
+**KB**: None yet
+
+### AI Co-Mathematician: Accelerating Mathematicians with Agentic AI
+**Source**: http://arxiv.org/abs/2605.06651v1
+**Summary**: Explores using agentic AI to accelerate the work of mathematicians.
+**Implication**: Shows the continued push of specialized agents into deeply technical, logic-heavy domains.
+**KB**: None yet
+
+### Superintelligent Retrieval Agent: The Next Frontier of Information Retrieval
+**Source**: http://arxiv.org/abs/2605.06647v1
+**Summary**: Discusses the next frontier of information retrieval using superintelligent agents.
+**Implication**: Highly relevant for agent memory and knowledge retrieval capabilities; we should track advances in retrieval agents.
+**KB**: None yet
