@@ -1,3 +1,10 @@
+<ai_context>
+summary: "Details two dominant agent patterns observed in XHS/Chinese AI communities in 2024: the Manager-Worker hierarchical coordination pattern and the Three-Tier memory model."
+triggers: "When designing multi-agent communication, setting up memory architectures, or defining agent boundaries."
+last_updated: "2024"
+source_basis: "Observations from the Chinese AI developer community (Xiaohongshu/XHS)."
+</ai_context>
+
 # AI Agent Patterns: Hierarchical Coordination & Three-Tier Memory
 
 ## Overview

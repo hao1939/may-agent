@@ -1,3 +1,10 @@
+<ai_context>
+summary: "May 2026 analysis of XHS and AI community trends showing a backlash against over-engineered frameworks, an emphasis on observability, and real-time state visibility."
+triggers: "When evaluating new frameworks, designing observability features, or making architectural decisions."
+last_updated: "2026-05"
+source_basis: "XHS and AI community sentiment (May 2026)."
+</ai_context>
+
 # XHS & AI Community Trends: May 2026 Analysis
 
 ## Key Themes Discovered

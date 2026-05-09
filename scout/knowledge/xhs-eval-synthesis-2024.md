@@ -1,3 +1,10 @@
+<ai_context>
+summary: "Synthesis of evaluative trends for agents in H2 2024 from XHS, emphasizing real-world integration, operational memory, qualitative feedback, and graceful tool degradation."
+triggers: "When designing agent evaluation criteria or testing for robustness."
+last_updated: "2024-H2"
+source_basis: "XHS posts and trends regarding agent evaluation (H2 2024)."
+</ai_context>
+
 # Synthesis of Evaluative Trends for Agents in H2 2024 (XHS Focus)
 
 ## Key Findings

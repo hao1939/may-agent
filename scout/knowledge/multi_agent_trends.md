@@ -1,3 +1,9 @@
+<ai_context>
+summary: "High-level trends in multi-agent coordination from Chinese AI communities, focusing on hierarchical dispatching, shared memory, and explicit tool calling."
+triggers: "When designing agent interaction, communication protocols, or tool access."
+last_updated: "2024"
+source_basis: "Observations from Chinese AI communities."
+</ai_context>
 
 # Trends in Multi-Agent coordination (Based on Chinese AI communities)
 

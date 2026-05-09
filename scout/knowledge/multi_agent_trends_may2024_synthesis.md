@@ -1,3 +1,10 @@
+<ai_context>
+summary: "Synthesized trends in multi-agent architecture from May 2024, highlighting metric-driven autonomy, adversarial evaluation, strict boundaries, and proactive idle time."
+triggers: "When designing agent architecture, evaluating agents, or defining agent interaction patterns."
+last_updated: "2024-05"
+source_basis: "XHS (Chinese AI communities) and academic discussions (May 2024)."
+</ai_context>
+
 # Multi-Agent Architecture Trends: XHS & Academic Synthesis (May 2024)
 
 Based on recent observations from Chinese AI communities (XHS) and academic discussions, several distinct trends are shaping the design of autonomous multi-agent systems.
