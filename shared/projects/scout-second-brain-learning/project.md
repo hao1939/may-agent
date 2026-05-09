@@ -1,13 +1,13 @@
 ---
 id: scout-second-brain-learning
 owner: scout
-status: waiting
+status: active
 type: milestone
 priority: P2
 workflow: goal-driver
 iteration: 7
-stop_reason: Push phase installed behavior and metrics; waiting for a real Scout knowledge-producing session to validate adoption.
-resume_condition: Reactivate when Scout completes a knowledge-producing heartbeat/project after this baseline, when scout.knowledge-practice-loaded drops below 1, when scout.knowledge-preamble-coverage remains below threshold after Scout touches knowledge files, or when downstream-reference-files-7d drops.
+stop_reason:
+resume_condition:
 ---
 
 # Project: Scout Second Brain Learning
@@ -22,17 +22,19 @@ misleading than before, and live signals can show whether the practice is
 adopted and useful.
 
 ## Current State
-Push phase complete; adoption validation still pending.
+Actively correcting validation failures from the first real heartbeat after the
+behavior install.
 
-The project worker tried to close this by inspecting recent Scout sessions, but
-those sessions were the goal-driver sessions for this project, not an
-independent Scout knowledge-producing heartbeat/project. That does not prove
-the new behavior works in normal Scout work.
+Scout did run a non-project heartbeat after the baseline and did touch existing
+knowledge files, which is a positive signal. However, the same heartbeat also
+created a ceremonial `scout-metric-dismissal-2026-05-09` project and described
+`scout.knowledge-preamble-coverage` as a dismissible metric. That is the wrong
+behavior: preamble coverage is a real adoption signal, not a false-positive
+alert to dismiss.
 
-Keep the project in `waiting` while the system watches for a real Scout session
-that creates or updates knowledge after this baseline. When that happens,
-inspect whether Scout searched existing knowledge first, updated in place when
-appropriate, and kept source-grounded `<ai_context>` metadata.
+Current push: remove the bogus dismissal project, tighten heartbeat guidance so
+metric alert judgments do not become fake projects, then run another Scout
+heartbeat to verify the behavior is cleaner.
 
 Baseline from manual metrics snapshot on 2026-05-09:
 
@@ -77,8 +79,10 @@ Initial hypothesis:
 - [x] Repair misleading pilot edits and standardize the touched preambles.
 - [x] Add live metrics that reveal behavior installation/adoption instead of relying on simulated gains.
 - [x] Run a metrics snapshot and record the baseline values in this project.
-- [ ] Observe at least one subsequent Scout session and judge whether it searched/updated existing knowledge before creating new files.
-- [x] Move to `waiting` with a clear watch condition once the push phase is complete.
+- [x] Observe at least one subsequent Scout session and judge whether it searched/updated existing knowledge before creating new files.
+- [ ] Fix the heartbeat prompt gap that caused Scout to create a ceremonial metric-dismissal project.
+- [ ] Observe one subsequent Scout heartbeat after the prompt fix.
+- [ ] Move to `waiting` with a clear watch condition once the prompt fix is verified.
 
 ## Watch Conditions
 

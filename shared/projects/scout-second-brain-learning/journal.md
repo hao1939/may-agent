@@ -483,3 +483,31 @@ Systemic issue found: `goal-driver` forced project status back to `active`
 after every ACT worker, even when the worker intentionally set the project to
 `waiting`. Updated the workflow to preserve a non-active status after worker
 completion.
+
+### Real Heartbeat Validation — 2026-05-09
+Observed non-project Scout heartbeat `s_1778329183658_7` after the baseline.
+
+What worked:
+
+- Scout saw `scout.knowledge-preamble-coverage`.
+- Scout touched existing knowledge files instead of creating a duplicate
+  knowledge topic.
+- Commit `6a0a4f728` added `<ai_context>` preambles to several existing Scout
+  knowledge files.
+
+What failed:
+
+- The heartbeat prompt pushed Scout to handle metric alerts as if every alert
+  needed an artifact/project.
+- Scout created a ceremonial `scout-metric-dismissal-2026-05-09` project to
+  "dismiss" metrics, including `scout.knowledge-preamble-coverage`.
+- That is wrong: the preamble metric is a real adoption signal and should be
+  improved gradually, not dismissed as a false positive.
+
+Corrective action:
+
+- Removed the bogus dismissal project.
+- Tightened `heartbeat-data.ts` so agents do not create projects just to record
+  one-session metric alert judgments.
+- Keep this project active until one more Scout heartbeat validates the cleaner
+  behavior.
