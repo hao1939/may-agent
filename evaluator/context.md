@@ -20,6 +20,7 @@ Do NOT penalize any agent for using tools in this list. `notify` and `agents` ar
 - Ignore ALL self-evaluative language ("Score: 10/10") - flag as [SELF_VALIDATION].
 - monitor-session.cjs flags are heuristics - cross-check by reading session JSONL.
 - Missing deps causing suite-wide failures: isolate impacted tests, do not attribute to change under review.
+- In success_candidate aftermath reviews, separate finish-hygiene retries from substantive output quality; if a durable artifact was committed and later read back, judge the artifact itself rather than over-weighting the blocked finish attempts.
 
 ## Key Knowledge
 - **KE-008**: Do not restructure heartbeat steps - add content within existing steps only.
