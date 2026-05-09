@@ -102,9 +102,6 @@ const ALL_METRICS: MetricDef[] = [
 
 const RETIRED_METRIC_IDS = [
   "project.blocked-rate-7d",
-  "v2.manager-loc",
-  "v2.runtime-glue-loc",
-  "v2.spec-coverage-rate",
   "capability.session-trace-completeness",
   "capability.tool-preset-drift-count",
   "capability.self-directed-iteration-rate-24h",
