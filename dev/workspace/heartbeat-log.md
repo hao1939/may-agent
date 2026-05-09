@@ -255,3 +255,25 @@ Initial hygiene signal:
 Next substantive dev heartbeat:
 - Investigate a dev-owned failure pattern or metric gap rather than stopping after administrative recovery.
 - Keep staging limited to explicit intentional deliverables and report any unrelated dirty worktree paths instead of committing them.
+
+## 2026-05-09 Heartbeat: Queue Clear, LLM Lane Live, Handler Failure Recovered
+
+Routine heartbeat with explicit disposition of the latest inbox warnings and project signals.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty, so no approved dev implementation item is available this heartbeat.
+- Owned projects remain `pending-review`; neither resume trigger is met. `eval.llm-coverage-lag-h=0.44` and `eval.llm-evals-24h=24` show the bounded non-heuristic evaluator lane is still live.
+- Core runtime metrics remain below dev action thresholds: `session.error-rate-6h=0.0486`, `handler.success-rate=0.9955`, and `handler.failed-count=2` below threshold `10`.
+- Direct unresolved alerts are `project.iterations-24h` plus two scout-owned metrics; none are dev-owned. Operation chosen: dismiss for direct dev action and leave to may/scout unless an Approved queue item appears.
+- Latest `handler.failed` remains the known recovered `metrics-snapshot` import error (`../../src/lib/metrics.js`) followed by repeated `metrics-snapshot` completions through `1778352858656`, so no patch is justified from the current signal.
+- Unmeasured metrics are the two scout knowledge metrics only; no dev-owned metric gap was found.
+- Recent error sessions are scout/evaluator sessions with `error=NULL`; there is no repeated dev-owned stack signature in the latest five error sessions.
+- Git status before this artifact still shows unrelated dirty runtime/project/test paths (`*/last-session.md`, shared gate logs, scout/may project artifacts, and `test/guards.test.ts`). These are classified as pre-existing or externally owned and unsafe for dev to stage or clean in this heartbeat.
+
+Signal dispositions:
+- Artifact-gate/session-start warnings: acted by writing this falsifiable heartbeat artifact and by planning narrow staging of only `dev/workspace/heartbeat-log.md`.
+- Prior session-end entries about empty queue and healthy metrics: dismissed as already acted after rechecking the queue and live DB state.
+- Evaluator FYI about the finish deliverable guard bug: dismissed as already acted by the prior guard-fix heartbeat; no fresh matching failure is visible in current metrics.
+- Pending-review project reminders: dismissed for action now because review/resume triggers are absent and their live validation metrics still hold.
+
+Next check: continue watching for recurrence of the missing `src/lib/metrics.js` import error without later completions; if it recurs, inspect `agents/shared/agent-sdk.ts` changes before patching handlers.
