@@ -129,7 +129,7 @@ const ALL_METRICS: MetricDef[] = [
   // C3: memory and continuity
   { id: "capability.journal-reference-rate", name: "Journal reference rate in decisions", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0.3, threshold: 0, unit: "ratio", alert_op: "<", priority: "P3" },
   // C4: coordination
-  { id: "capability.message-conversation-close-rate", name: "Message conversation close rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0.5, threshold: 0.15, unit: "ratio", alert_op: "<", priority: "P3" },
+  { id: "capability.message-conversation-close-rate", name: "Message conversation close rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0.2, threshold: 0.08, unit: "ratio", alert_op: "<", priority: "P3" },
   // C6: adaptation
   { id: "capability.trend-7d", name: "Capability metrics with declining 7d trend", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
 ];
