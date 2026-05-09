@@ -95,6 +95,31 @@ describe("message tool", () => {
     expect(allowed.error).toBeUndefined();
   });
 
+  it("normalizes human aliases", async () => {
+    const { tool, events } = setup({ allowedTargets: ["dev", "scout"] });
+
+    const allowed = await call(tool, { to: "hao", content: "status" });
+    expect(allowed.error).toBeUndefined();
+    expect(allowed.to).toBe("human");
+    expect(events).toContainEqual(expect.objectContaining({
+      type: "message.created",
+      to: "human",
+    }));
+  });
+
+  it("rejects tool namespace targets with an actionable hint", async () => {
+    const { tool, events } = setup({ allowedTargets: ["dev", "scout"] });
+
+    const denied = await call(tool, { to: "functions.message", content: "hi" });
+    expect(denied.error).toMatch(/Unknown message target/);
+    expect(denied.hint).toMatch(/tool namespace/);
+    expect(events).toContainEqual(expect.objectContaining({
+      type: "message.delivery_failed",
+      to: "functions.message",
+      reason: expect.stringContaining("tool namespace"),
+    }));
+  });
+
   it("includes intent and content_files in body", async () => {
     const { tool, events } = setup();
     await call(tool, {

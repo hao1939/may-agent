@@ -27,10 +27,16 @@ import type { Socket } from "node:net";
 const LIVE_VITAL_METRIC_IDS = [
   "agent.heartbeat-dark-count-2h",
   "agent.config-invalid-count-1h",
+  "handler.success-rate",
+  "session.error-rate-6h",
   "session.first-turn-error-count-1h",
   "session.empty-assistant-stop-count-1h",
   "message.delivery-failed-count-1h",
+  "capability.zombie-session-count",
+  "evaluator.stale-running-session-count",
   "eval.llm-coverage-lag-h",
+  "project.iterations-24h",
+  "system.real-output-24h",
 ];
 
 export interface WebUIOptions {

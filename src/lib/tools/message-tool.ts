@@ -46,7 +46,7 @@ export interface MessageToolOptions {
 const messageParams = Type.Object({
   to: Type.String({
     description:
-      "Receiver agent name. The message is queued for the receiver's next heartbeat.",
+      "Receiver agent name, or 'human'. Do not use tool names like 'functions.message' or 'functions.finish'. The message is queued for the receiver's next heartbeat.",
   }),
   content: Type.String({
     description:
@@ -105,6 +105,24 @@ function preview(text: string): string {
   return text.length <= 500 ? text : `${text.slice(0, 500)}...`;
 }
 
+function normalizeTarget(target: string): string {
+  const trimmed = target.trim();
+  const lower = trimmed.toLowerCase();
+  if (lower === "hao" || lower === "user" || lower === "operator") return "human";
+  return trimmed;
+}
+
+function targetHint(target: string, allowedTargets: Set<string> | null): string {
+  if (/^(functions?|tools?)\./i.test(target)) {
+    return `"${target}" is a tool namespace, not a message receiver. To send a message, call the message tool itself with to set to an agent name such as "may", "dev", "scout", or "human".`;
+  }
+  if (target.includes(".")) {
+    return `"${target}" does not look like an agent name. Use an exact configured agent name or "human".`;
+  }
+  const allowed = allowedTargets ? [...allowedTargets].sort().join(", ") : "configured agent names or human";
+  return `Use one of: ${allowed}.`;
+}
+
 /**
  * Create the `message` tool — the v2 unified inter-agent communication primitive.
  */
@@ -125,16 +143,19 @@ export function createMessageTool(opts: MessageToolOptions): AgentTool {
         return textResult(JSON.stringify({ error: "'to' and 'content' are required" }));
       }
 
+      const requestedTarget = params.to;
+      params.to = normalizeTarget(params.to);
       const allowedTargets = allowedTargetSet(opts.allowedTargets);
       if (allowedTargets && !allowedTargets.has(params.to)) {
         const reason = `Unknown message target "${params.to}"`;
+        const hint = targetHint(requestedTarget, allowedTargets);
         try {
           opts.emit?.({
             type: "message.delivery_failed",
             owner: "may",
             from: opts.agentName,
-            to: params.to,
-            reason,
+            to: requestedTarget,
+            reason: `${reason}. ${hint}`,
             content: preview(params.content),
             priority: params.priority ?? "P2",
           });
@@ -144,6 +165,7 @@ export function createMessageTool(opts: MessageToolOptions): AgentTool {
         return textResult(
           JSON.stringify({
             error: reason,
+            hint,
             allowedTargets: [...allowedTargets].sort(),
           }),
         );
