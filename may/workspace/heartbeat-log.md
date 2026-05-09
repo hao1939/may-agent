@@ -1,35 +1,25 @@
-# May Heartbeat Log
+# May Heartbeat Log — 2026-05-09 15:55 UTC
 
-## 2026-05-09T14:57 UTC (post-restart)
-
-### System Health
-- **Throughput (30m)**: 31 sessions, 77% success rate
+## System Health Summary
+- **Active sessions**: 3
+- **Success rate (1h)**: 97% (68/70)
 - **All health checks**: PASS
-- **DB size**: 1105 MB | Process uptime: 1h (recent restart)
-- **Cron**: All 18 jobs healthy, 0 errors
+- **Cron jobs**: All 19 running without errors
 
-### Breached Metrics
-| Metric | Value | Threshold | Target |
+## Metrics Needing Attention
+| Metric | Value | Threshold | Status |
 |--------|-------|-----------|--------|
-| Scout good session rate (24h) | 0.19 | 0.65 | 0.85 |
-| Scout operational friction (24h) | 0.81 | 0.30 | 0.10 |
-| Failed session triage rate (3h) | 0.75 | 0.80 | 1.00 |
+| Active project iterations (24h) | 0 | 1 | ⚠️ Below threshold |
+| Scout good session rate (24h) | 0.18 | 0.65 | ⚠️ Well below |
+| Scout operational friction (24h) | 0.85 | 0.30 | ⚠️ High friction |
 
-### Near-threshold Warnings
-- Evaluator meaningful review rate: 0.82 (target 0.9, threshold 0.7)
-- Evaluator triage closure rate: 0.83 (target 0.9, threshold 0.7)
-- Broad needs-improvement rate: 0.76 (threshold 0.8) — approaching
+## Dirty Worktree Paths (not owned by may)
+- `arc/last-session.md` — arc agent
+- `dev/last-session.md` — dev agent
+- `evaluator/last-session.md` — evaluator agent
+- `scout/context.md`, `scout/last-session.md` — scout agent
+- `shared/` logs and project files — various agents
 
-### Errors (30m)
-- 7 errors, mostly "Agent ended without producing a response" — evaluator(3), may(1), scout(1), unknown(2)
-- Pattern: empty-response errors clustered, likely process restart artifact
-
-### Actions Taken
-- No P0 interventions needed — metric-alert-reactor tracking breaches
-- Scout friction is the dominant issue; being handled by scout's own workflows
-
----
-
-## 2026-05-09T14:54 UTC
-
-- Initial heartbeat after restart. 63 sessions/hr, 87% success rate. Same 3 breaches noted.
+## Actions
+- No blocking issues for may orchestrator
+- Scout friction rate warrants investigation next heartbeat
