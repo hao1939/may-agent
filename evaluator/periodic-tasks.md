@@ -214,6 +214,14 @@ Ran `monitor-session.cjs --running`: 4 checked, 3 healthy, 1 `PROTOCOL_VIOLATION
 
 Ran `patrol.cjs`: **CRITICAL** due to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
 
+**Last run**: 2026-05-09 09:33Z — DB canonical check confirms session-eval pipeline still live/recent (`MAX(evaluations.createdAt)=1778319126247`; `MAX(sessions.startedAt)=1778319126252`; lag ≈5ms; `evals_last24h=569`; `llm_evals_last24h=8`). Legacy `.state/evaluations/` artifacts remain stale (`task_tree_*.json` still Mar 24; newest top-level `s_*.json` observed Apr 29) → continue treating as legacy output-path drift, not DB liveness.
+
+Ran `monitor-session.cjs --running`: 3 checked, 3 healthy.
+
+Ran `patrol.cjs`: **CRITICAL** due to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob again.
+
+Signal-quality note: `events` table status remains overwhelmingly `pending` (`pending=541341`, `handled=14`, `dismissed=4`, `done=1`), while recent `session.start/end` and `evaluation.*` events are also marked `pending`; notified May that this likely means event-status backlog is no longer a trustworthy liveness signal unless confirmed otherwise.
+
 ---
 
 **Heartbeat note**: 2026-05-07 07:23Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617`; `MAX(sessions.endedAt)=1778138492876` → eval lag ≈875m (~14.6h). Last-24h volume: `sessions(endedAt>=cutoff)`=552 vs `evaluations(createdAt>=cutoff)`=38 → coverage ≈6.9%. Sessions since last eval timestamp: 199. Interpretation: eval pipeline appears stalled; escalate to May/tech-lead to inspect `evaluate-session-llm` liveness and event-consumer throughput/timeouts.
