@@ -10,3 +10,6 @@
 
 ## 2026-05-09 — s_1778349968391_145
 - In success-candidate aftermath reviews, inspect adjacent knowledge artifacts for novelty, not just correctness: a cleanly committed KB entry can still be low-leverage if it substantially overlaps an existing entry (here KE-1020 vs KE-1011).
+
+## 2026-05-09 — s_1778359911953_268
+- For creative heartbeat reviews, separate prompt compliance from delivered value: a session can ship a real, committed synthesis artifact yet still miss required pre-work (for example, not reading the mandated metric-analysis KEs/manual first). Credit the durable insight, but note the skipped prerequisite as an output-quality downgrade rather than treating the whole run as empty.
