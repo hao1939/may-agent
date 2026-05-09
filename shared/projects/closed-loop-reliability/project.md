@@ -41,16 +41,24 @@ runtime fixes improved the loop:
 - The steward/reactor can re-triage judged alerts that remain breaching after a newer snapshot.
 - Live UI now shows core vitals.
 
-Current snapshot (2026-05-09): all P0/P1 runtime reliability vitals are green,
-but two scout-owned P3 alerts remain open:
+Current snapshot (2026-05-09): all P0/P1 runtime reliability vitals are green.
+Three lower-priority alerts remain open:
 
-- `scout.operational-friction-rate-24h` (#197)
-- `scout.good-session-rate-24h` (#225)
+- **#255** `v2.spec-coverage-rate` (P2, may): judgment=downgrade_priority. Owning
+  project `v2-spec-coverage-buildout` exists, status=waiting for human review at
+  0.7727 coverage. Has a clear resume condition. No action needed from this project.
+- **#197** `scout.operational-friction-rate-24h` (P3, scout): judgment=downgrade_priority.
+  Current=0.735 vs threshold=0.3. Metric source is evaluation verdicts (86/117 = 74%
+  needs_improvement in 24h). Root cause: evaluator heuristic quality, not scout ops.
+  Owning project: `evaluator-low-quality-rate-calibration` (blocked on human input).
+- **#225** `scout.good-session-rate-24h` (P3, scout): judgment=resolve_stale (prior
+  alert resolved, new one re-fired). Current=0.265 vs threshold=0.65. Same root cause:
+  evaluator heuristic verdicts. Same owning dependency.
 
-Lower priority does not mean closed. Because those metrics have no associated
-project and no validation path visible in this project, the next run must either
-confirm Scout has durable judgment/action/validation evidence, create/nudge an
-owning project, calibrate the metrics, or document a real exception.
+Decision: all three open alerts have owning projects or identified root causes.
+#255 → v2-spec-coverage-buildout (waiting). #197/#225 → evaluator heuristic
+quality, tracked by evaluator-low-quality-rate-calibration (blocked on human).
+No new work from this project; root causes are upstream.
 
 ## Plan
 
@@ -60,10 +68,16 @@ owning project, calibrate the metrics, or document a real exception.
 - [x] Audit one recent real alert transcript and tighten prompts/manuals where agents mistake "notified" for "acted".
 - [x] Confirm the UI/steward can show the full chain: signal, owner, judgment, action, validation.
 - [x] Harden core runtime signals: opCount persistence, clean-start resume, message target validation, alert re-triage, Live vitals.
-- [ ] Re-check current open alerts and record for each one: owner, latest judgment, concrete operation, and next validation signal.
-- [ ] If an open alert is outside this project's direct ownership, confirm the owning project/agent is actually moving it; otherwise create a nudge or plan item with evidence.
-- [ ] Review the latest `closed-loop-reliability` workflow run. If it returns observation-only `DONE` while open reliability signals exist, fix the project workflow/prompt so it replans or records a concrete exception.
-- [ ] After the next metrics snapshot, update this project with what recovered, what remains open, and the smallest next operation.
+- [x] Re-check current open alerts and record for each one: owner, latest judgment, concrete operation, and next validation signal.
+- [x] If an open alert is outside this project's direct ownership, confirm the owning project/agent is actually moving it; otherwise create a nudge or plan item with evidence.
+- [x] Review the latest `closed-loop-reliability` workflow run. If it returns observation-only `DONE` while open reliability signals exist, fix the project workflow/prompt so it replans or records a concrete exception.
+- [x] After the next metrics snapshot, update this project with what recovered, what remains open, and the smallest next operation.
+
+### Re-plan (2026-05-09)
+- [x] Audit all open alerts: identify owner, latest judgment, root cause, and owning project for each.
+- [ ] Confirm evaluator-low-quality-rate-calibration unblocks (human responds) or nudge; scout P3 alerts #197/#225 depend on it.
+- [ ] After evaluator calibration resolves, verify scout alerts #197/#225 recover on next snapshot.
+- [ ] Re-plan: review metrics and decide next items or close this pass.
 
 ## Acceptance Criteria
 
@@ -84,3 +98,4 @@ owning project, calibrate the metrics, or document a real exception.
   snapshot; only P2 v2 measurement gaps remain open.
 - Iteration 1: All plan items verified complete. All P1 metrics in range. Project stays active for observation; no new work items needed until regression.
 - 2026-05-09: First reframe attempt was not enough: the orchestrator marked all new items complete because the remaining alerts were P3 and Scout-owned. Treating "has owner" as closure is wrong. Workflow prompt now requires durable judgment/action/validation evidence before alert-related items can close.
+- 2026-05-09: Audited all 3 open alerts. #255 has owning project (v2-spec-coverage-buildout, waiting). #197 and #225 source is evaluation verdicts not sessions — 74% needs_improvement from evaluator heuristics. Root cause is evaluator quality, tracked by evaluator-low-quality-rate-calibration (blocked on human). Re-planned accordingly.
