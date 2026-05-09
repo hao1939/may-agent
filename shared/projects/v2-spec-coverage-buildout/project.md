@@ -4,7 +4,7 @@ owner: may
 status: active
 type: milestone
 priority: P2
-iteration: 4
+iteration: 6
 workflow: project
 stop_reason: 
 resume_condition: 
@@ -24,7 +24,9 @@ This is a legitimate measurement gap, not a stale metric: the metric is computed
 - `proposals/v2-spec.md` wording drift: old metric-driven language can mislead agents into treating metrics as decisions instead of signals.
 
 ## Current State
-Active: Restarting after prior worker failures. Next step: Phase 0 calibration.
+Iteration 6. Milestones: 0/0 done.
+Reviewer: 1. **I believe**: Real progress — metric moved from 0.1364 to 0.2727 (doubled). Changes are committed and producing snapshots. S5, S6, and spec corrections are live.
+2. **I'm uncertain about**: What t
 ## Evidence
 
 - Source: `agents/may/handlers/metrics-snapshot.ts` defines built-in metric `v2.spec-coverage-rate` and computes it in `countSpecClaimCoverage()`.
@@ -102,3 +104,8 @@ Some claims may be measuring stale behavior rather than desired behavior:
 - 2026-05-07: Aligned project to shared work-context convention. Current judgment: keep as `pending-review`; do not implement until the unified work model is accepted for v2 conformance measurement.
 
 ## Comments
+
+
+## Artifacts
+- outputs/iteration-6-implementation.md
+- outputs/calibration-report.md
