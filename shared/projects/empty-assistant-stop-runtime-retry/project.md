@@ -60,4 +60,10 @@ Heartbeat rechecked the metric and alert state after the escalation. `session.em
 
 Disposition: keep this project `blocked` rather than closing it. Closing would imply the runner retry contract landed, but the scoped implementation still belongs to the external runtime/session-runner owner; dev's local heartbeat action is to monitor for recurrence and preserve the required patch/test contract here.
 
+### 2026-05-09 — Heartbeat recheck: stable below alert threshold
+
+Dev heartbeat rechecked system signals after the prior escalation. The active metrics snapshot shows `session.empty-assistant-stop-count-1h=5` with target `5` and threshold `15`, `session.first-turn-error-count-1h=0`, `handler.success-rate=1`, and `session.error-rate-6h=0.2129` below the `0.3` alert threshold. There are no unresolved alerts for this metric; only scout-owned P3 alerts remain open.
+
+Disposition: continue to keep this project `blocked` on external runtime/session-runner ownership. The immediate metric signal is stable, but no in-tree retry hook has landed, so the scoped bounded-retry contract remains the next action if the runtime owner provides access or implements it.
+
 ## Comments
