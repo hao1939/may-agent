@@ -47,3 +47,7 @@
 ## Pattern: short-interval follow-up reviews can still add value through delta tracking
 - Symptom: a follow-up review happens minutes after a fuller report, so there is little new raw data and the session risks repeating prior analysis.
 - Fix: if the underlying evidence is still fresh, verify the live state, then produce a compact status tracker that answers "what changed / what remains unacted on" instead of redoing the whole review. Credit sessions that transform prior findings into explicit recommendation-tracking with current unresolved items.
+
+## Pattern: no-action worker tasks can collapse into compliance-only status reports
+- Symptom: a worker session with "no actionable work" writes a short status note that mostly restates the orchestrator prompt or project blocker, sometimes with stale template residue like an incorrect generated date.
+- Fix: credit the session only for the narrow value it actually delivered: an auditable receipt that the blocked/no-action state was recorded. Downgrade output quality if there is no fresh metric/project verification, and note the workflow incentive that pushed the agent toward artifact compliance over substantive progress.
