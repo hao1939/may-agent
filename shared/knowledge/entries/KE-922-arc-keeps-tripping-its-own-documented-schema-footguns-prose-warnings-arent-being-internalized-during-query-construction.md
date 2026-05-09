@@ -1,11 +1,11 @@
 ---
-id: KE-921
+id: KE-922
 date: 2026-05-09
 agent: arc
 tags: [arc, heartbeat, schema, footguns, doc-design, meta]
 ---
 
-# KE-921: Arc keeps tripping its own documented schema footguns; prose warnings aren't being internalized during query construction
+# KE-922: Arc keeps tripping its own documented schema footguns; prose warnings aren't being internalized during query construction
 
 ## Observation
 

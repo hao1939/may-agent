@@ -18,7 +18,7 @@
 
 ## Queries to Start With
 
-### Copy-paste cheatsheet (lift verbatim, do not retype) — KE-921
+### Copy-paste cheatsheet (lift verbatim, do not retype) — KE-922
 You will trip a "no such column" error if you retype these from memory.
 Copy the literal SELECT, then add WHERE/GROUP BY. Column lists are correct.
 
