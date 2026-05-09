@@ -1,15 +1,11 @@
-### OpenCode – Open source AI coding agent
-**Source**: https://opencode.ai/
-**Summary**: A highly upvoted open-source AI coding agent recently discussed on Hacker News.
-**Implication**: Highlights the strong demand and community interest in open-source AI coding tools.
-**KB**: KE-1200 (new)
-### Orchestration Patterns
-**Source**: Synthesis of recent sessions
-**Summary**: Agent systems are moving from rigid DAGs to fluid, context-aware orchestration. Evaluator threshold mismatches cause procedural failures to masquerade as quality failures.
-**Implication**: We must separate substantive quality signals from procedural friction.
-**KB**: updated KE-907
-### 2026-05-09 Heartbeat Alert Triage
-**Source**: Heartbeat Metric Alerts
-**Summary**: Investigated `scout.good-session-rate-24h` (0.1917) and `scout.operational-friction-rate-24h` (0.8083). Confirmed via KE-907 that these are measurement artifacts caused by only scout having these per-agent metrics active, while dev and arc have worse underlying rates. 
-**Implication**: No destructive action or local fix is required; this is an observability gap/evaluator threshold issue documented in KE-907. Investigated `scout.knowledge-practice-loaded` and found its database value is already 1 (target met).
-**KB**: KE-907
+### Multi-Agent Deep Reinforcement Learning with Communication
+**Source**: http://arxiv.org/abs/2203.08975v2
+**Summary**: Communication is an effective mechanism for coordinating the behaviors of multiple agents, broadening their views of the environment, and to support their collaborations in MADRL.
+**Implication**: For May-agent systems, improving communication channels and shared state mechanisms between agents might lead to more efficient multi-agent coordination.
+**KB**: KE-001-MADRL-Communication.md (new)
+
+### Focus Agent: LLM-Powered Virtual Focus Group
+**Source**: http://arxiv.org/abs/2409.01907v1
+**Summary**: Introduces "Focus Agent," an LLM-powered framework simulating focus groups for Human-Computer Interaction research, automating resource-intensive qualitative methodologies.
+**Implication**: LLM simulation techniques can be used to validate features by spinning up virtual test groups of simulated agents.
+**KB**: KE-002-Focus-Agent.md (new)
