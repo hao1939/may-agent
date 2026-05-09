@@ -244,7 +244,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
            AND task LIKE ?
          LIMIT 1`,
       ).get(`%${alert.metric_id}%`) as { runId: string } | null;
-      if ((priority === "P0" || priority === "P1") && !activeTriage) {
+      if ((priority === "P0" || priority === "P1" || priority === "P2") && !activeTriage) {
         if (!judgmentData) {
           triageCandidates.push({ alert, owner, reason: "missing metric.alert_judged event" });
         } else if (
@@ -303,6 +303,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       "",
       "You own the global closed loop, not every metric. The generated context below is workflow-collected live evidence.",
       "The handler has already collected live alert/delivery context below so you should not need exploratory SQL for routine audit decisions.",
+      "Use query_db only when the context is missing or internally inconsistent.",
       "If you do need SQL, use the injected schema and safe-query examples below; do not guess runtime DB column names.",
       "If the context lacks a fact this audit needs, record that as a handler data-collection gap so the next run can be fixed to inject it.",
       "",
@@ -311,7 +312,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       "Rules:",
       "- Prefer native ownership: metrics.owner, then project.owner, then agent-name prefix, then may fallback.",
       "- Treat metric.alert_judged as the durable record that the owner judged an alert.",
-      "- A judgment is not closure. The handler has already routed P0/P1 alerts that need triage; do not hand-roll metric.alert_judged events.",
+      "- A judgment is not closure. The handler has already routed P0/P1/P2 alerts that need triage; do not hand-roll metric.alert_judged events.",
       "- If routing itself is wrong, fix this handler or the workflow instead of asking an agent to improvise DB/event writes.",
       "- Take the smallest operation that advances closure: route/nudge owner, fix broken ownership/routing, document a valid exception, or escalate when blocked.",
       "- Do not create a project for this cron itself. Create/update a project only when you discover systemic implementation work that cannot be completed in this run.",
@@ -322,6 +323,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       ...schemaBrief,
       "",
       "## Safe Query Examples",
+      "- Inspect a table schema before querying an unfamiliar field: `PRAGMA table_info(metrics);`",
       "- Recent sessions: `SELECT sessionId, agent, status, source, startedAt, endedAt, error FROM sessions ORDER BY startedAt DESC LIMIT 5;`",
       "- Recent message failures: `SELECT id, source, owner, data, timestamp FROM events WHERE event_type='message.delivery_failed' ORDER BY timestamp DESC LIMIT 5;`",
       "- Metric alert context: `SELECT ma.id, ma.metric_id, m.name, m.owner, ma.message, ma.created_at FROM metric_alerts ma LEFT JOIN metrics m ON m.id = ma.metric_id WHERE ma.resolved_at IS NULL ORDER BY ma.created_at DESC LIMIT 5;`",

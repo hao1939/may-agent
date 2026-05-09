@@ -123,6 +123,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
 
     let owner = resolveMetricOwner(metricId, configuredAgents, eventOwner);
     let priority = eventPriority ?? "P2";
+    let forceRetriageAfterJudgment = false;
 
     // P0 alerts get an immediate explicit owner session so handling is auditable.
     // P1/P2 alerts get explicit triage after a short grace period. P3 remains
@@ -198,6 +199,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
             return;
           }
           ctx.sdk.log("info", `[metric-alert-reactor] P1 ${metricId} still breaching after judgment event ${judgedEvent.id}; rerunning triage.`);
+          forceRetriageAfterJudgment = true;
         }
       }
 
@@ -224,7 +226,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
            ORDER BY timestamp DESC
            LIMIT 1`
         ).get(metricId, recentTriageRun.startedAt) as { id: number } | null;
-        if (judgment) {
+        if (judgment && !forceRetriageAfterJudgment) {
           ctx.sdk.log("info", `[metric-alert-reactor] Skipping ${metricId} — recent triage workflow ${recentTriageRun.runId} emitted judgment ${judgment.id}`);
           return;
         }
@@ -251,7 +253,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
            ORDER BY timestamp DESC
            LIMIT 1`
         ).get(metricId, recentSession.startedAt) as { id: number } | null;
-        if (judgment) {
+        if (judgment && !forceRetriageAfterJudgment) {
           ctx.sdk.log("info", `[metric-alert-reactor] Skipping ${metricId} — ${owner} already judged it in recent session ${recentSession.sessionId}`);
           return;
         }
