@@ -40,6 +40,10 @@
 - Symptom: routing labels a session as a `knowledge update`, but the transcript only reads an existing KE/article and then calls `finish()` with no written deliverables.
 - Fix: verify authorship and actual file changes before crediting material output. Reading a pre-existing knowledge file can justify a diagnosis, but it is not itself a new artifact or knowledge update.
 
+## Pattern: pre-existing mock research is not fresh exploration
+- Symptom: a session tasked with exploring an external source (for example XHS) only reads local mock scripts or prewritten workspace summaries, then finishes as if fresh research was performed.
+- Fix: inspect the transcript for real external collection or newly written source notes, and check mtimes/diffs on cited artifacts. If the session only consumed pre-existing mock/local material, credit it as lightweight synthesis at most, not as source exploration or a knowledge update.
+
 ## Pattern: metric-alert dismissal can collapse into artifact-gate compliance
 - Symptom: a heartbeat reads an existing metric-analysis KE, writes a one-line workspace note like "dismissing per KE-...", and finishes without fresh metric checks, follow-through, or any substantive downstream work.
 - Fix: when reviewing alert-handling sessions, separate the diagnosis from the session's own contribution. Credit the reused KE for the diagnosis, but require fresh evidence or a real operational action before treating the session itself as materially successful.
