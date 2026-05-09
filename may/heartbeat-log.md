@@ -1,5 +1,17 @@
 # May Heartbeat Log — Latest
 
+**Timestamp:** 2026-06-12 ~13:20 UTC
+
+## Quick Status (current)
+- **Red metrics:** `project.iterations-24h=0` — known structural zero (KE-905), all projects paused. Downgraded.
+- **System health:** 12 agents active, error rates normal. No stuck sessions.
+- **Inbox:** 3 P1 aftermath reviews (informational), no urgent actions.
+- **Projects:** 0 active/blocked — confirms iterations metric is structural.
+
+---
+
+## Previous Entry
+
 **Timestamp:** 2026-06-11 08:00 UTC
 
 ## Quick Status (current)
