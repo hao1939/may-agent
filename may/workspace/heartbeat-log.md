@@ -32,4 +32,4 @@
 
 ## 2026-05-09T14:54 UTC
 
-- Initial heartbeat after restart. 63 sessions/hr, 87% success. Same 3 breaches noted.
+- Initial heartbeat after restart. 63 sessions/hr, 87% success rate. Same 3 breaches noted.
