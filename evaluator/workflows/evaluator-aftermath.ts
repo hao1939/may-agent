@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 export const name = "evaluator-aftermath";
 export const description = "Evaluate session aftermath, cancel stale running sessions, and drive repair/learning.";
-export const HEURISTIC_VERSION = 5;
+export const HEURISTIC_VERSION = 6;
 
 export type EvaluationLane = "needs_triage" | "success_candidate" | "routine_ok";
 
@@ -51,7 +51,7 @@ export function transcriptIssues(transcript: string): string[] {
   if (ownText.includes("finish() blocked [uncommitted changes]")) {
     issues.push("finish blocked by uncommitted changes");
   }
-  if (/no such column:/i.test(ownText) || /no such table:/i.test(ownText)) {
+  if (hasUnresolvedSchemaQueryIssue(transcript, ownText)) {
     issues.push("schema/query error in transcript");
   }
   if (/git\s+add\s+may\/\s+shared\/\s+&&\s+git\s+commit/.test(ownText)) {
@@ -132,6 +132,22 @@ function pathMatchesForbidden(editedPath: string, forbiddenPath: string): boolea
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function hasUnresolvedSchemaQueryIssue(_transcript: string, ownText: string): boolean {
+  const lastSchemaError = Math.max(ownText.lastIndexOf("no such column:"), ownText.lastIndexOf("no such table:"));
+  if (lastSchemaError === -1) return false;
+
+  const afterLastSchemaError = ownText.slice(lastSchemaError);
+  return !/\{"name":"query_db","arguments":\{/.test(afterLastSchemaError);
+}
+
+function hasUnresolvedFinishBlockedIssue(ownText: string): boolean {
+  const lastFinishBlocked = ownText.lastIndexOf("finish() blocked [uncommitted changes]");
+  if (lastFinishBlocked === -1) return false;
+
+  const afterLastFinishBlocked = ownText.slice(lastFinishBlocked + "finish() blocked [uncommitted changes]".length);
+  return !/\{"name":"finish","arguments":\{/.test(afterLastFinishBlocked);
 }
 
 function finishBlockedByUncommittedChanges(transcript: string): boolean {

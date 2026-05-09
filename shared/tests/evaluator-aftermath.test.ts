@@ -255,6 +255,49 @@ describe("evaluator aftermath transcript checks", () => {
     expect(transcriptIssues(transcript)).toEqual(["schema/query error in transcript"]);
   });
 
+  it("does not flag schema/query error when a later query_db call recovers", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "q1",
+            name: "query_db",
+            arguments: { sql: "SELECT summary FROM sessions" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "q1",
+        toolName: "query_db",
+        isError: false,
+        content: [{ type: "text", text: '{"error":"no such column: summary","schema":{"sessions":["sessionId","agent"]}}' }],
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "q2",
+            name: "query_db",
+            arguments: { sql: "SELECT sessionId, agent FROM sessions" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "q2",
+        toolName: "query_db",
+        isError: false,
+        content: [{ type: "text", text: '{"rowCount":1,"rows":[{"sessionId":"s1","agent":"arc"}]}' }],
+      }),
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toEqual([]);
+  });
+
   it("detects anti-shallow gate failures from direct session tool calls", () => {
     const transcript = [
       JSON.stringify({
@@ -417,6 +460,60 @@ describe("evaluator aftermath transcript checks", () => {
 
     expect(route.lane).toBe("needs_triage");
     expect(route.reason).toContain("schema/query error in transcript");
+  });
+
+  it("routes recovered schema/query sessions with material output as success candidates", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "q1",
+            name: "query_db",
+            arguments: { sql: "SELECT summary FROM sessions" },
+          },
+          {
+            type: "toolCall",
+            id: "w1",
+            name: "write",
+            arguments: { path: "agents/shared/knowledge/recovery-note.md", content: "ok" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "q1",
+        toolName: "query_db",
+        isError: false,
+        content: [{ type: "text", text: '{"error":"no such column: summary"}' }],
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "q2",
+            name: "query_db",
+            arguments: { sql: "SELECT sessionId FROM sessions" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "q2",
+        toolName: "query_db",
+        isError: false,
+        content: [{ type: "text", text: '{"rowCount":1,"rows":[{"sessionId":"s1"}]}' }],
+      }),
+    ].join("\n");
+
+    const heuristic = classifyVerdict({ status: "done", opCount: 10 }, transcript);
+    const route = classifyEvaluationLane({ status: "done", opCount: 10 }, transcript, heuristic);
+
+    expect(heuristic.verdict).toBe("good");
+    expect(heuristic.issues).toEqual([]);
+    expect(route.lane).toBe("success_candidate");
   });
 
   it("routes good sessions with material output as success candidates", () => {
