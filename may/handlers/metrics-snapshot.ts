@@ -126,6 +126,10 @@ const ALL_METRICS: MetricDef[] = [
   { id: "capability.unrecovered-breach-count-7d", name: "Unrecovered breaches (7d)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0, threshold: 10, unit: "count", alert_op: ">", priority: "P3" },
   // C5: ownership
   { id: "capability.cross-domain-handling-rate", name: "Cross-domain breach handling rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0, threshold: 0.1, unit: "ratio", alert_op: ">", priority: "P2" },
+  // C3: memory and continuity
+  { id: "capability.journal-reference-rate", name: "Journal reference rate in decisions", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0.7, threshold: 0.1, unit: "ratio", alert_op: "<", priority: "P2" },
+  // C4: coordination
+  { id: "capability.message-conversation-close-rate", name: "Message conversation close rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0.85, threshold: 0.3, unit: "ratio", alert_op: "<", priority: "P2" },
   // C6: adaptation
   { id: "capability.trend-7d", name: "Capability metrics with declining 7d trend", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
 ];
@@ -1178,6 +1182,68 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const crossRate = totalBreaches > 0 ? parseFloat((crossDomain / totalBreaches).toFixed(4)) : 0;
       record("capability.cross-domain-handling-rate", crossRate, totalBreaches);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring capability.cross-domain-handling-rate: ${e}`); }
+
+    // C3: capability.journal-reference-rate — fraction of agent.decision events referencing journal/context
+    try {
+      const decisions = db.prepare(`
+        SELECT data FROM events
+        WHERE event_type = 'agent.decision' AND timestamp > ?
+      `).all(now - 7 * 86400000) as any[];
+      if (decisions.length > 0) {
+        let withRef = 0;
+        const journalPatterns = [/\d{4}-\d{2}-\d{2}/, /journal/, /context\.md/, /iteration/, /previous/, /last session/, /prior/i];
+        for (const d of decisions) {
+          try {
+            const dataStr = typeof d.data === 'string' ? d.data : JSON.stringify(d.data);
+            if (journalPatterns.some(p => p.test(dataStr))) withRef++;
+          } catch { /* skip malformed */ }
+        }
+        record("capability.journal-reference-rate", parseFloat((withRef / decisions.length).toFixed(4)), decisions.length);
+      } else {
+        record("capability.journal-reference-rate", 0, 0);
+      }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring capability.journal-reference-rate: ${e}`); }
+
+    // C4: capability.message-conversation-close-rate — fraction of messages with replies
+    try {
+      // Sample up to 200 recent messages to avoid O(n²) on 85k+ rows
+      const msgs = db.prepare(`
+        SELECT data, timestamp FROM events
+        WHERE event_type = 'message.created' AND timestamp > ?
+        ORDER BY timestamp DESC LIMIT 200
+      `).all(now - 7 * 86400000) as any[];
+      if (msgs.length > 0) {
+        let eligible = 0;
+        let withReply = 0;
+        for (const m of msgs) {
+          try {
+            const parsed = typeof m.data === 'string' ? JSON.parse(m.data) : m.data;
+            const sender = parsed.from;
+            const receiver = parsed.to;
+            if (!sender || !receiver || receiver === 'human') continue;
+            eligible++;
+            // Check if receiver replied to sender within 24h
+            const reply = db.prepare(`
+              SELECT 1 FROM events
+              WHERE event_type = 'message.created'
+                AND timestamp > ? AND timestamp < ?
+                AND data LIKE ? AND data LIKE ?
+              LIMIT 1
+            `).get(
+              m.timestamp,
+              m.timestamp + 86400000,
+              `%"from":"${receiver}"%`,
+              `%"to":"${sender}"%`
+            ) as any;
+            if (reply) withReply++;
+          } catch { /* skip malformed */ }
+        }
+        const rate = eligible > 0 ? parseFloat((withReply / eligible).toFixed(4)) : 0;
+        record("capability.message-conversation-close-rate", rate, eligible);
+      } else {
+        record("capability.message-conversation-close-rate", 0, 0);
+      }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring capability.message-conversation-close-rate: ${e}`); }
 
     // C6: capability.trend-7d — count of capability metrics with declining 7-day trend
     try {
