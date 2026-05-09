@@ -1,7 +1,8 @@
 {
   "agents": {
     "may": {
-      "consecutiveErrors": 0
+      "consecutiveErrors": 1,
+      "lastError": "heartbeat session error"
     },
     "coach": {
       "consecutiveErrors": 0
@@ -16,7 +17,8 @@
       "consecutiveErrors": 0
     },
     "scout": {
-      "consecutiveErrors": 0
+      "consecutiveErrors": 1,
+      "lastError": "heartbeat session error"
     },
     "qa": {
       "consecutiveErrors": 0
@@ -26,8 +28,8 @@
       "lastError": "heartbeat session error"
     },
     "arc": {
-      "consecutiveErrors": 1,
-      "lastError": "anti-shallow gate re-prompt error"
+      "consecutiveErrors": 2,
+      "lastError": "heartbeat session error"
     },
     "dev": {
       "consecutiveErrors": 0
