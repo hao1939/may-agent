@@ -28,6 +28,9 @@ function makeDb() {
       { value: 0.4, measured_at: Date.now(), note: "latest" },
       { value: 0.5, measured_at: Date.now() - 300_000, note: "previous" },
     ],
+    relatedEvents: [
+      { id: 11, event_type: "evaluation.false_good", timestamp: Date.now() - 30_000, data: JSON.stringify({ sessionId: "s_false_good" }) },
+    ],
     ownerSessions: [
       { sessionId: "s_prior", status: "done", source: "heartbeat-arc", startedAt: Date.now() - 30_000, endedAt: Date.now() - 20_000 },
     ],
@@ -43,6 +46,7 @@ function makeDb() {
         },
         all(..._args: unknown[]) {
           if (sql.includes("FROM metric_snapshots")) return rows.snapshots;
+          if (sql.includes("FROM events")) return rows.relatedEvents;
           if (sql.includes("FROM sessions")) return rows.ownerSessions;
           return [];
         },
@@ -51,7 +55,7 @@ function makeDb() {
   };
 }
 
-function task() {
+function task(metricId = "arc.quality") {
   return [
     "Run metric alert triage.",
     "",
@@ -62,7 +66,7 @@ function task() {
       data: {
         alertId: 7,
         owner: "arc",
-        metricId: "arc.quality",
+        metricId,
         metricName: "Arc quality",
         current: 0.4,
         threshold: 0.8,
@@ -117,6 +121,7 @@ describe("metric-alert-triage workflow", () => {
     expect(result).toMatchObject({ type: "done" });
     expect(agentTasks[0]).toContain("METRIC_ALERT_OPERATION");
     expect(agentTasks[0]).toContain("Metrics are signals, not judges");
+    expect(agentTasks[0]).toContain("## Metric Source Events");
     expect(emitted).toHaveLength(1);
     expect(emitted[0]).toMatchObject({
       type: "metric.alert_judged",
@@ -128,6 +133,47 @@ describe("metric-alert-triage workflow", () => {
       ownerSessionId: "s_owner",
       workflow: "metric-alert-triage",
     });
+  });
+
+  it("injects metric source events for evaluator false-good triage", async () => {
+    const agentTasks: string[] = [];
+    const ctx = {
+      task: task("evaluator.false-good-rate-sample"),
+      agentsRoot: "/tmp/no-agents",
+      getDb: () => makeDb(),
+      runFunction: async (_label: string, fn: () => Promise<string>) => ({
+        sessionId: "fn_load",
+        status: "done",
+        lastAssistantText: await fn(),
+        messages: [],
+        duration: "0s",
+        outputDir: "",
+      }),
+      runAgent: async (_agent: string, agentTask: string) => {
+        agentTasks.push(agentTask);
+        return {
+          sessionId: "s_owner",
+          status: "done",
+          lastAssistantText: [
+            "METRIC_ALERT_OPERATION: upgrade_or_escalate",
+            "METRIC_ALERT_EVIDENCE: source events inspected",
+            "METRIC_ALERT_NEXT_VALIDATION: next metrics-snapshot",
+          ].join("\n"),
+          messages: [],
+          duration: "1s",
+          outputDir: "",
+        };
+      },
+      emit: () => {},
+      done: (summary: string) => ({ type: "done", summary }),
+      escalate: (reason: string, context?: unknown) => ({ type: "escalate", reason, context }),
+    } as any;
+
+    await execute(ctx);
+
+    expect(agentTasks[0]).toContain("## Metric Source Events");
+    expect(agentTasks[0]).toContain("evaluation.false_good");
+    expect(agentTasks[0]).toContain("s_false_good");
   });
 
   it("escalates instead of recording closure when owner omits the structured operation", async () => {

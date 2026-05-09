@@ -194,7 +194,7 @@ describe("metric-alert-reactor", () => {
     );
     db.run(
       "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
-      ["arc.coverage", "threshold", "coverage below threshold", now - 10 * 60_000],
+      ["arc.coverage", "threshold", "coverage below threshold", now - 5 * 60_000],
     );
 
     await handler();
