@@ -1,17 +1,15 @@
 ---
 id: evaluator-low-quality-rate-calibration
 owner: evaluator
-status: active
+status: blocked
 type: milestone
 priority: P1
 workflow: project
-iteration: 2
+iteration: 5
 ---
 
 # Evaluator Low-Quality Rate Calibration
 
-**Iteration**: 5
-**Status**: blocked
 ## Goal
 Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior failures from (b) pipeline/guard false-penalties, and ensure evaluator scoring produces low false-good overturns.
 
