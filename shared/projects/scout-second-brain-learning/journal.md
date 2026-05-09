@@ -463,3 +463,23 @@ Before finish
 **Agent response:**
 Changed project metadata from active to waiting with scout.knowledge-preamble-coverage as the resume trigger, formally pausing the project as all plan items are complete, and committed the changes.
 
+### Manual Correction — 2026-05-09
+The goal-driver worker overclaimed closure. It treated its own project driver
+sessions as evidence that Scout's normal knowledge-producing behavior had
+changed. That is not valid evidence.
+
+Corrected project state:
+
+- Keep `status: waiting` because the push phase is complete and we should not
+  run filler work.
+- Leave the adoption-validation plan item unchecked until a real Scout
+  heartbeat/project produces or updates knowledge after the baseline.
+- Replace `resume_on` with conventional `stop_reason` and `resume_condition`
+  metadata so the project has a clear watch condition.
+- Watch `scout.knowledge-practice-loaded`, `scout.knowledge-preamble-coverage`,
+  and `scout.downstream-reference-files-7d` as signals, not proof.
+
+Systemic issue found: `goal-driver` forced project status back to `active`
+after every ACT worker, even when the worker intentionally set the project to
+`waiting`. Updated the workflow to preserve a non-active status after worker
+completion.
