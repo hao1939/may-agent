@@ -7,3 +7,6 @@
 
 ## 2026-05-09 — s_1778318801048_15
 - Arc heartbeat hygiene reviews must distinguish the agent's own edit set from ambient shared-worktree dirt; concurrent `*/last-session.md` and gate-log modifications are not, by themselves, evidence of an arc lane violation.
+
+## 2026-05-09 — s_1778349968391_145
+- In success-candidate aftermath reviews, inspect adjacent knowledge artifacts for novelty, not just correctness: a cleanly committed KB entry can still be low-leverage if it substantially overlaps an existing entry (here KE-1020 vs KE-1011).
