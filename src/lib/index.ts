@@ -75,6 +75,7 @@ export {
   readSessionMeta,
   writeSessionMeta,
   loadAllSessionMetas,
+  loadActiveSessionMetas,
   loadAllSessionMetasAsync,
   listActiveSessionIds,
 } from "./persistence.js";

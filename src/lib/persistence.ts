@@ -277,6 +277,18 @@ export function loadAllSessionMetas(persistDir: string): Record<string, Persiste
   return result;
 }
 
+/** Scan active session meta.json files only.
+ *  Startup stale-session recovery should not walk archived history; archived
+ *  sessions are cold records and cannot be in-process work to resume. */
+export function loadActiveSessionMetas(persistDir: string): Record<string, PersistedSession> {
+  const result: Record<string, PersistedSession> = {};
+  for (const sid of listActiveSessionIds(persistDir)) {
+    const meta = readSessionMeta(persistDir, sid);
+    if (meta) result[sid] = meta;
+  }
+  return result;
+}
+
 // ── Async variants (non-blocking I/O for large state directories) ────
 
 /** Async version of readSessionMeta. Uses fs/promises for non-blocking I/O. */

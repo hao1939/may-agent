@@ -26,6 +26,7 @@ import {
   sessionOutputDir,
   readSessionMessages,
   readArchivedSessionMessages,
+  loadActiveSessionMetas,
   unarchiveSession,
   RegistryStore,
   sessionDir,
@@ -567,9 +568,9 @@ export class SubagentManager {
 
   /** Resume or interrupt sessions left running by a previous process. */
   resumeStaleSessions(opts?: { abort?: boolean; kinds?: SessionKind[] }): { resumed: SessionInfo[]; interrupted: SessionInfo[] } {
-    const registryData = this._registry.getRegistry();
+    const activeSessions = loadActiveSessionMetas(this._persistDir);
     const kindFilter = opts?.kinds ? new Set(opts.kinds) : null;
-    const stale = new Map<string, (typeof registryData.sessions)[string]>();
+    const stale = new Map<string, (typeof activeSessions)[string]>();
 
     const sessionsRoot = join(this._persistDir, "sessions");
     if (existsSync(sessionsRoot)) {
@@ -578,7 +579,7 @@ export class SubagentManager {
           if (dirName === "history") continue;
           const sentinelPath = join(sessionsRoot, dirName, "[STARTED]");
           if (!existsSync(sentinelPath)) continue;
-          const persisted = registryData.sessions[dirName];
+          const persisted = activeSessions[dirName];
           if (!persisted) {
             try { unlinkSync(sentinelPath); } catch {}
             continue;
@@ -595,7 +596,7 @@ export class SubagentManager {
       }
     }
 
-    for (const [sessionId, persisted] of Object.entries(registryData.sessions)) {
+    for (const [sessionId, persisted] of Object.entries(activeSessions)) {
       if (stale.has(sessionId)) continue;
       if (persisted.status !== "running" && persisted.status !== "idle") continue;
       const kind = persisted.kind ?? "job";
@@ -647,7 +648,7 @@ export class SubagentManager {
     }
 
     this.cleanupStaleWorkflowRuns();
-    const releasedOrphanLeases = releaseOrphanedHeartbeatDispatchLeases(this._persistDir, this._registry.getRegistry().sessions);
+    const releasedOrphanLeases = releaseOrphanedHeartbeatDispatchLeases(this._persistDir, activeSessions);
     for (const agent of releasedOrphanLeases) {
       log("info", `[manager] Released orphaned heartbeat dispatch lease for ${agent}`);
     }

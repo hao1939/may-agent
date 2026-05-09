@@ -178,7 +178,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       //      or source="heartbeat" once we standardize trigger typing.
       // TODO: replace string matching once heartbeat workflows set a typed
       // source / trigger field (see webui.md "Data model gaps to close" §2).
-      `SELECT sessionId, agent, task, status, kind, source, startedAt, endedAt, outcome
+      `SELECT sessionId, agent, status, kind, source, startedAt, endedAt
        FROM sessions
        WHERE startedAt > ?
          AND (
@@ -196,8 +196,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     // classified into a 'category' bucket which maps to a color in the
     // frontend.
     const allRows = db.prepare(
-      `SELECT sessionId, agent, task, status, kind, source, projectId, parentSessionId,
-              startedAt, endedAt, outcome
+      `SELECT sessionId, agent, status, kind, source, projectId, parentSessionId,
+              startedAt, endedAt
        FROM sessions
        WHERE startedAt > ? AND agent IS NOT NULL AND agent != ''
        ORDER BY startedAt ASC`
@@ -307,9 +307,19 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       };
     });
 
-    const recentDecisions = [...heartbeatRows]
-      .sort((a, b) => b.startedAt - a.startedAt)
-      .slice(0, 8)
+    const recentDecisions = (db.prepare(
+      `SELECT sessionId, agent, task, status, startedAt, outcome
+       FROM sessions
+       WHERE startedAt > ?
+         AND (
+           source LIKE 'workflow:%heartbeat%'
+           OR source = 'heartbeat'
+           OR task LIKE '[heartbeat]%'
+           OR task LIKE 'You are %waking up for your heartbeat.%'
+         )
+       ORDER BY startedAt DESC
+       LIMIT 8`
+    ).all(since) as any[])
       .map((row) => ({
         sessionId: row.sessionId,
         agent: row.agent,

@@ -294,6 +294,26 @@ describe("SubagentManager.resumeStaleSessions()", () => {
     expect(interrupted).toEqual([]);
   });
 
+  it("does not scan archived sessions during stale recovery", () => {
+    const archivedDir = join(persistDir, "sessions", "history", "archived-running");
+    mkdirSync(archivedDir, { recursive: true });
+    writeFileSync(
+      join(archivedDir, "meta.json"),
+      JSON.stringify({
+        agent: "agent-a",
+        task: "archived task",
+        status: "running",
+        startedAt: Date.now() - 60000,
+      } satisfies PersistedSession),
+    );
+
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    registerAgent(manager, "agent-a");
+    const { resumed, interrupted } = manager.resumeStaleSessions();
+    expect(resumed).toEqual([]);
+    expect(interrupted).toEqual([]);
+  });
+
   it("does not touch done/error/interrupted sessions", () => {
     writeRegistryState(persistDir, {
       "s-done": { agent: "a", task: "t", status: "done", startedAt: Date.now() - 60000, endedAt: Date.now() - 55000 },
