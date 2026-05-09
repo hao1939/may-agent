@@ -344,6 +344,38 @@ Close the loop
     expect(updateProjectStatus).not.toHaveBeenCalledWith(expect.any(String), "closed", expect.any(String));
   });
 
+  it("converts DONE to WAITING when pending planning work needs human input", async () => {
+    setupProjectFs({
+      maxIter: "3",
+      projectContent: `# Project
+**Status**: active
+**Max Iterations**: 3
+**Owner**: test
+
+## Goal
+Close the loop
+
+## Plan
+- [ ] Wait for human decision on metric intent
+`,
+    });
+    const ctx = createMockCtx("project: agents/shared/projects/test");
+    let workerCreated = false;
+    ctx.createSession = vi.fn(async ({ label }: any) => {
+      if (label === "orchestrator") {
+        return createMockSession(["DONE\n\nNo actionable work remains; blocked on human decision."]);
+      }
+      workerCreated = true;
+      return createMockSession(["unexpected worker"]);
+    });
+
+    await execute(ctx as any);
+
+    expect(ctx.log).toHaveBeenCalledWith(expect.stringContaining("DONE converted to WAITING"));
+    expect(workerCreated).toBe(false);
+    expect(updateProjectStatus).toHaveBeenCalledWith(expect.any(String), "waiting", expect.stringContaining("WAITING"));
+  });
+
   it("keeps project active when planning says DONE with no pending tasks", async () => {
     setupProjectFs({
       projectContent: `# Project

@@ -294,6 +294,18 @@ function hasCompleteTaskList(content: string): boolean {
   return taskItems.length > 0 && !hasUncheckedTaskItems(content);
 }
 
+function uncheckedTaskItems(content: string, limit = 5): string[] {
+  const lines = content.match(/^\s*[-*+]\s+\[\s\]\s+\S.*$/gm) ?? [];
+  return lines.slice(0, limit).map((line) => line.trim());
+}
+
+function saysNoAutonomousOperation(text: string): boolean {
+  return /\bno\s+actionable\s+work\b/i.test(text)
+    || /\bno\s+autonomous\s+(?:operation|work|action)\b/i.test(text)
+    || /\b(?:blocked|waiting)\s+on\s+(?:upstream\s+)?human\b/i.test(text)
+    || /\b(?:awaiting|requires?|needs?)\s+human\s+(?:input|decision|approval|review|response)\b/i.test(text);
+}
+
 function guardDoneWithPendingProjectWork(
   decision: Decision,
   projectFile: string,
@@ -311,11 +323,34 @@ function guardDoneWithPendingProjectWork(
 
   if (!hasUncheckedTaskItems(currentContent)) return decision;
 
+  const pending = uncheckedTaskItems(currentContent);
+  if (saysNoAutonomousOperation(decision.detail)) {
+    const detail = [
+      "WAITING",
+      "",
+      "DONE converted to WAITING: project.md still has unchecked task-list items, and the orchestrator reported no autonomous operation remains.",
+      pending.length ? "Pending items:" : "",
+      ...pending.map((item) => `- ${item.replace(/^\s*[-*+]\s+\[\s\]\s*/, "")}`),
+      "",
+      "Resume when the named human/upstream dependency responds, or when a new metric/event creates an autonomous operation.",
+    ].join("\n");
+    ctx.log(`[${phase}] DONE converted to WAITING: pending items require external input`);
+    return { status: "waiting", detail };
+  }
+
   const detail = [
     "CONTINUE",
     "",
     "DONE refused: project.md still has unchecked task-list items.",
-    "Next iteration must resolve, explicitly re-plan, or mark those items blocked/waiting with evidence before idling this workflow pass.",
+    pending.length ? "Pending items:" : "",
+    ...pending.map((item) => `- ${item.replace(/^\s*[-*+]\s+\[\s\]\s*/, "")}`),
+    "",
+    "Next iteration must handle the first pending item with a concrete operation:",
+    "- resolve it and update project.md with evidence,",
+    "- nudge/escalate the owner when the item depends on another agent or human,",
+    "- mark the item/project waiting or blocked with a clear resume condition, or",
+    "- replace stale pending items with a better re-plan.",
+    "Do not produce a generic status report.",
   ].join("\n");
   ctx.log(`[${phase}] DONE refused: project.md still has unchecked task-list items`);
   return { status: "continue", detail };
@@ -457,7 +492,8 @@ WAITING — you need something specific from a human (approval, credentials, acc
 
 Push forward on real goals. But recognize when this execution should stop:
 - If ALL plan items are checked off AND ALL metrics are at/above target → say DONE for this run.
-- If project.md still contains unchecked task-list items like "- [ ]", do not say DONE.
+- If project.md still contains unchecked task-list items like "- [ ]", do not say DONE. Either CONTINUE with the next concrete operation, or WAITING/BLOCKED with an explicit resume condition when no autonomous operation can move it.
+- Do not add unchecked items and then say DONE in the same response.
 - If saying DONE because metrics are healthy, cite live metric evidence from the workflow-collected block, not only project.md prose.
 - Do NOT invent new work (extra tests, tooling, docs) after goals are met. That's busywork.
 - Expanding scope requires explicit new goals from the project owner, not the orchestrator.

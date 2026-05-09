@@ -5,7 +5,7 @@ status: active
 type: continuous
 priority: P1
 workflow: master-worker
-iteration: 1
+iteration: 3
 ---
 
 # Project: Closed Loop Reliability
@@ -84,9 +84,14 @@ which awaits human decision on metric intent. No actionable work this execution.
 ### Re-plan (2026-05-09)
 - [x] Audit all open alerts: identify owner, latest judgment, root cause, and owning project for each.
 - [x] Audit new alert #256 `project.blocked-count`: root cause is multiple projects blocked on human decisions; documented.
-- [ ] Confirm evaluator-low-quality-rate-calibration unblocks (human responds) or nudge; scout P3 alerts #197/#225 depend on it.
-- [ ] After evaluator calibration resolves, verify scout alerts #197/#225 recover on next snapshot.
-- [ ] Re-plan: review metrics and decide next items or close this pass.
+- [x] Record the external dependency: `evaluator-low-quality-rate-calibration` needs a human decision before #197/#225 can recover.
+- [x] Stop this pass without creating filler work; keep the project active for future metric/event checks.
+
+### Watch Conditions
+
+- If `evaluator-low-quality-rate-calibration` leaves blocked/waiting, verify #197/#225 on the next metrics snapshot.
+- If a P0/P1 runtime reliability vital regresses, re-plan immediately.
+- If `project.blocked-count` stays open after human decisions land, audit the remaining blocked projects and nudge their owners.
 
 ## Acceptance Criteria
 
