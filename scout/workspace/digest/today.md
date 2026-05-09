@@ -22,3 +22,13 @@
 **Summary**: There is a sudden, alarming spike in discussions about AI agents causing catastrophic damage or being exploited. Examples include a Cursor agent wiping a production DB in 10 seconds, AI agents exfiltrating credentials, and agents being exploited via permission chain abuse (Grok) or simple tweet hacks ($200K drained).
 **Implication**: Security, sandboxing, and strict permission boundaries for autonomous agents are becoming critical failure points in the industry. Our agents need strict guardrails to prevent destructive operations.
 **KB**: None
+
+### XHS AI Community Trends
+**Source**: XHS (Chinese AI Community)
+**Summary**: 
+1. **Human-in-the-loop**: Multi-agent frameworks (AutoGen, MetaGPT) are shifting focus from purely autonomous generation to 'human-in-the-loop' steering.
+2. **Graph-based Memory**: While Vector DBs remain standard, 'Graph-based memory' is emerging for better reasoning across long contexts.
+3. **Agent-eval-agent**: Evaluation remains a bottleneck; using LLMs to grade other LLMs' trajectories is gaining traction.
+4. **SLM Agents**: Specialized lightweight agents (Small Language Models) are replacing massive generalized models for specific sub-tasks to reduce cost and latency.
+**Implication**: We should monitor Graph-based memory implementations and SLM adoption.
+**KB**: Noted for potential KB updates.
