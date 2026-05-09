@@ -121,6 +121,13 @@ const ALL_METRICS: MetricDef[] = [
   { id: "v2.session-trace-completeness", name: "Session trace completeness (24h)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.5, unit: "ratio", alert_op: "<", priority: "P2" },
   { id: "v2.process-uptime-h", name: "Process uptime (hours)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 24, threshold: 1, unit: "hours", alert_op: "<", priority: "P2" },
   { id: "v2.fork-on-breach-rate", name: "Fork-on-breach rate for P0 metrics", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.5, unit: "ratio", alert_op: "<", priority: "P2" },
+  // C2: breach recovery metrics
+  { id: "capability.breach-time-to-recovery-p50-h", name: "Breach-to-recovery median latency (hours)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 6, threshold: 24, unit: "hours", alert_op: ">", priority: "P2" },
+  { id: "capability.unrecovered-breach-count-7d", name: "Unrecovered breaches (7d)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0, threshold: 2, unit: "count", alert_op: ">", priority: "P2" },
+  // C5: ownership
+  { id: "capability.cross-domain-handling-rate", name: "Cross-domain breach handling rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0, threshold: 0.1, unit: "ratio", alert_op: ">", priority: "P2" },
+  // C6: adaptation
+  { id: "capability.trend-7d", name: "Capability metrics with declining 7d trend", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0, threshold: 2, unit: "count", alert_op: ">", priority: "P2" },
 ];
 
 const RETIRED_METRIC_IDS = [
@@ -1094,6 +1101,106 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       // If priority column exists and P0 metrics exist, the structural claim is met
       record("v2.fork-on-breach-rate", p0Count > 0 ? 1.0 : 0, p0Count);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring v2.fork-on-breach-rate: ${e}`); }
+
+    // C2: capability.breach-time-to-recovery-p50-h — median breach→recovery latency
+    try {
+      // For each breach, find the next recovery of the same metricId
+      const recoveryDeltas = db.prepare(`
+        WITH breaches AS (
+          SELECT timestamp, json_extract(data, '$.metricId') as metricId
+          FROM events WHERE event_type = 'metric.breach' AND timestamp > ?
+        ),
+        recoveries AS (
+          SELECT timestamp, json_extract(data, '$.metricId') as metricId
+          FROM events WHERE event_type = 'metric.recovered' AND timestamp > ?
+        ),
+        matched AS (
+          SELECT b.metricId, b.timestamp as breach_ts,
+            (SELECT MIN(r.timestamp) FROM recoveries r WHERE r.metricId = b.metricId AND r.timestamp > b.timestamp) as recovery_ts
+          FROM breaches b
+        )
+        SELECT (recovery_ts - breach_ts) / 3600000.0 as delta_h
+        FROM matched
+        WHERE recovery_ts IS NOT NULL
+        ORDER BY delta_h
+      `).all(now - 7 * 86400000, now - 7 * 86400000) as any[];
+      if (recoveryDeltas.length > 0) {
+        const mid = Math.floor(recoveryDeltas.length / 2);
+        const p50 = recoveryDeltas.length % 2 === 1
+          ? recoveryDeltas[mid].delta_h
+          : (recoveryDeltas[mid - 1].delta_h + recoveryDeltas[mid].delta_h) / 2;
+        record("capability.breach-time-to-recovery-p50-h", parseFloat(p50.toFixed(2)), recoveryDeltas.length);
+      } else {
+        record("capability.breach-time-to-recovery-p50-h", 0, 0);
+      }
+      // Unrecovered breaches in 7d
+      const unrecovered = count(`
+        SELECT COUNT(*) as c FROM (
+          SELECT json_extract(data, '$.metricId') as metricId, timestamp
+          FROM events WHERE event_type = 'metric.breach' AND timestamp > ?
+        ) b
+        WHERE NOT EXISTS (
+          SELECT 1 FROM events r
+          WHERE r.event_type = 'metric.recovered'
+            AND json_extract(r.data, '$.metricId') = b.metricId
+            AND r.timestamp > b.timestamp
+        )
+      `, now - 7 * 86400000);
+      record("capability.unrecovered-breach-count-7d", unrecovered);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring capability.breach-time-to-recovery-p50-h: ${e}`); }
+
+    // C5: capability.cross-domain-handling-rate — breaches handled by non-owner agent
+    try {
+      // Find breach events with owner, then check if the remediation session was run by a different agent
+      const breachesWithOwner = db.prepare(`
+        SELECT json_extract(data, '$.owner') as owner, json_extract(data, '$.metricId') as metricId, timestamp
+        FROM events WHERE event_type = 'metric.breach' AND timestamp > ?
+      `).all(now - 7 * 86400000) as any[];
+      let totalBreaches = 0;
+      let crossDomain = 0;
+      for (const b of breachesWithOwner) {
+        if (!b.owner || !b.metricId) continue;
+        totalBreaches++;
+        // Check if a session was forked for this breach by a different agent
+        const handlerSession = db.prepare(`
+          SELECT agent FROM sessions
+          WHERE startedAt > ? AND startedAt < ? AND agent != ?
+            AND (task LIKE ? OR task LIKE ?)
+          LIMIT 1
+        `).get(b.timestamp - 5000, b.timestamp + 300000, b.owner, `%${b.metricId}%`, `%breach%`) as any;
+        if (handlerSession) crossDomain++;
+      }
+      const crossRate = totalBreaches > 0 ? parseFloat((crossDomain / totalBreaches).toFixed(4)) : 0;
+      record("capability.cross-domain-handling-rate", crossRate, totalBreaches);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring capability.cross-domain-handling-rate: ${e}`); }
+
+    // C6: capability.trend-7d — count of capability metrics with declining 7-day trend
+    try {
+      const capMetrics = db.prepare(`
+        SELECT DISTINCT metric_id FROM metric_snapshots
+        WHERE metric_id LIKE 'capability.%' AND measured_at > ?
+      `).all(now - 7 * 86400000) as any[];
+      let declining = 0;
+      for (const m of capMetrics) {
+        const snapshots = db.prepare(`
+          SELECT value, measured_at FROM metric_snapshots
+          WHERE metric_id = ? AND measured_at > ?
+          ORDER BY measured_at ASC
+        `).all(m.metric_id, now - 7 * 86400000) as any[];
+        if (snapshots.length < 2) continue;
+        // Simple linear regression slope
+        const n = snapshots.length;
+        let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+        const t0 = snapshots[0].measured_at;
+        for (const s of snapshots) {
+          const x = (s.measured_at - t0) / 3600000; // hours
+          sumX += x; sumY += s.value; sumXY += x * s.value; sumX2 += x * x;
+        }
+        const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+        if (slope < -0.001) declining++; // small negative threshold to avoid noise
+      }
+      record("capability.trend-7d", declining, capMetrics.length);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring capability.trend-7d: ${e}`); }
 
     // v2.spec-coverage-rate — count claims with active, measured metrics
     try {
