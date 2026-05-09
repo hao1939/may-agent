@@ -293,3 +293,23 @@ Inbox sanity check: four of the five recent aftermath targets already exist (`s_
 Signal-quality note: `events.status` totals are still backlog/noise (`pending=543445`, `handled=14`, `dismissed=4`, `done=1`), while raw hourly activity remains high (`session.start`=108, `handler.started`=84, `session.end`=70, `handler.completed`=62, `evaluation.routed`=34). Continue treating event rows/timestamps as meaningful and status totals as non-canonical for liveness.
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` remain placeholder stubs generated 2026-04-29, so there are still no fresh calibration-disagreement inputs to process this cycle.
+
+**Last run**: 2026-05-09 14:42Z — DB canonical check confirms session-eval pipeline is still live/recent (`MAX(evaluations.createdAt)=1778337465672`; `MAX(sessions.startedAt)=1778337696941`; `MAX(sessions.endedAt)=1778337695873`; lag ≈231.3s vs `startedAt`, ≈230.2s vs `endedAt`; `evals_last24h=659`; `llm_evals_last24h=20`; `sessions_last24h=1510`). Legacy `.state/evaluations/` top-level artifacts remain stale at the filesystem layer (`ls -la .state/evaluations/ | tail -5` still shows only Mar 20/24 `task_tree_*` files), so continue treating that directory as a legacy output-path signal rather than the canonical liveness source.
+
+Inbox sanity check on the currently surfaced evaluator targets found all four sampled aftermath artifacts already present in workspace (`s_1778337329169_6`, `s_1778335857217_7`, `s_1778335656242_1`, `s_1778337329094_5`), so those pending event rows are best treated as already-acted/in-flight backlog noise rather than dropped aftermath work.
+
+Ran `monitor-session.cjs --running`: 2 checked, 1 healthy, 1 `PRODUCTIVITY_STALL` (active arc session `s_1778337144235_1`; evidence: 20 tool calls with 0 file writes; recommended action: warn). Notified May.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` remain placeholder stubs generated 2026-04-29, so there are still no fresh calibration-disagreement inputs to process this cycle.
+
+**Last run**: 2026-05-09 15:09Z — DB canonical check confirms session-eval pipeline is still live/recent (`MAX(evaluations.createdAt)=1778339123587`; `MAX(sessions.startedAt)=1778339343999`; `MAX(sessions.endedAt)=1778339187133`; lag ≈220.4s vs `startedAt`, ≈63.5s vs `endedAt`; `evals_last24h=662`; `llm_evals_last24h=21`; `sessions_last24h=1530`). Legacy `.state/evaluations/` top-level artifacts remain stale at the filesystem layer (`find .state/evaluations -maxdepth 1 -type f -printf '%TY-%Tm-%Td %TH:%TM %f\n' | sort | tail -5` shows only Apr 20/29 files), so continue treating that directory as a legacy output-path signal rather than the canonical liveness source.
+
+Inbox sanity check on the currently surfaced evaluator targets found all five sampled aftermath artifacts already present in workspace (`s_1778338498840_6`, `s_1778338567933_8`, `s_1778337144235_1`, `s_1778335656242_1`, `s_1778338529281_7`), so those pending event rows are best treated as already-acted/in-flight backlog noise rather than dropped aftermath work.
+
+Ran `monitor-session.cjs --running`: 4 checked, 2 healthy, 2 `PRODUCTIVITY_STALL` alerts (arc `s_1778338854796_9`: 20 tool calls / 0 writes; dev `s_1778339078795_14`: 23 tool calls / 0 writes). Notified May.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` are still placeholder stubs generated 2026-04-29, so there are still no fresh calibration-disagreement inputs to process this cycle.
