@@ -298,12 +298,6 @@ function detectNoPostWriteVerification(calls: ToolCallRecord[]): DetectionResult
 
   const lastWrite = writeCalls.reduce((a, b) => a.index > b.index ? a : b);
 
-  // edit() and write() are self-verifying — they return diffs/previews inline.
-  // Only bash-based writes (redirects, sed -i) need separate post-write verification.
-  if (lastWrite.name === "edit" || lastWrite.name === "write") {
-    return { rule: "T2-no-post-write-verification", detected: false, message: "" };
-  }
-
   const lastWriteIndex = lastWrite.index;
 
   // Any verification call after the last write?

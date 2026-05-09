@@ -11,7 +11,7 @@ import { generateDiffString } from "./edit-diff.js";
 
 const writeSchema: TSchema = Type.Object({
 	path: Type.String({ description: "Path to the file to write (relative or absolute). Parent directories are created automatically. For small changes to existing files, prefer edit() instead." }),
-	content: Type.String({ description: "Complete content to write to the file. This replaces the entire file — if the file exists and you only want to change part of it, use edit() instead. A preview of the written content is returned for verification." }),
+	content: Type.String({ description: "Complete content to write to the file. This replaces the entire file — if the file exists and you only want to change part of it, use edit() instead. A preview of the written content is returned for quick inspection; read the file back before finish(success)." }),
 });
 
 export interface WriteToolInput { path: string; content: string; }
@@ -84,7 +84,7 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 		description: [
 			"Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
 			"For small changes to existing files, prefer edit() — it's safer (no accidental data loss).",
-			"A content preview is returned so you can verify without a separate read() call.",
+			"A content preview is returned for quick inspection; read() the file back before finish(success).",
 			"Writes that shrink a file below 50% of its original size are blocked (use edit() or read the full file first).",
 		].join(" "),
 		parameters: writeSchema,
@@ -159,8 +159,8 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 
 				if (isAborted()) return { content: [{ type: "text" as const, text: "" }], details: undefined };
 
-				// Smart Write: include content preview so agents can verify
-				// without a separate read() call (saves 1 turn per write — C44)
+				// Smart Write: include content preview for immediate inspection.
+				// Agents still need a read-back before finish(success).
 				// For overwrites: show unified diff (like edit() does)
 				// For new files: show content preview
 				const lines = sanitizedContent.split("\n");
@@ -183,7 +183,7 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 						"```diff",
 						shownDiff,
 						"```",
-						isDiffTruncated ? "Diff truncated. Verify the changes above. If incorrect, re-write immediately." : "Verify the diff above. If incorrect, re-write immediately.",
+						isDiffTruncated ? "Diff truncated. Inspect the changes above, then read() this file before finish(success)." : "Inspect the diff above, then read() this file before finish(success).",
 					].join("\n");
 				} else {
 					// New file: show content preview
@@ -198,7 +198,7 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 						"```",
 						preview,
 						"```",
-						isTruncated ? "Verify the preview above. If incorrect, re-write immediately." : "Verify the content above matches your intent.",
+						isTruncated ? "Inspect the preview above, then read() this file before finish(success)." : "Inspect the content above, then read() this file before finish(success).",
 					].join("\n");
 				}
 

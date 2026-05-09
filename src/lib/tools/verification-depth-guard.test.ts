@@ -120,15 +120,16 @@ describe("verification-depth-guard", () => {
       expect(result).toBeUndefined();
     });
 
-    test("single git command doesn't trigger for self-verifying edit()", async () => {
+    test("single git command triggers T2 after edit without read-back", async () => {
       const guard = createVerificationDepthGuard("bob");
       const ctx = makeContext([
         { name: "edit", args: { path: "agents/shared/common-sense.md", oldText: "old", newText: "new" } },
         { name: "bash", args: { command: "git status agents/shared/" } },
       ]);
       const result = await guard(ctx);
-      // edit() is self-verifying — returns diff inline
-      expect(result).toBeUndefined();
+      expect(result).toBeDefined();
+      expect(result!.block).toBe(true);
+      expect(result!.reason).toContain("T2-no-post-write-verification");
     });
 
     test("single git command triggers T2 for bash writes", async () => {
@@ -158,23 +159,27 @@ describe("verification-depth-guard", () => {
       expect(result!.reason).toContain("T2-no-post-write-verification");
     });
 
-    test("edit() is self-verifying (returns diff), no separate verification needed", async () => {
+    test("blocks edit() without separate verification", async () => {
       const guard = createVerificationDepthGuard("bob");
       const ctx = makeContext([
         { name: "read", args: { path: "agents/bob/todo.md" } },
         { name: "edit", args: { path: "agents/bob/todo.md", oldText: "old", newText: "new" } },
       ]);
       const result = await guard(ctx);
-      expect(result).toBeUndefined();
+      expect(result).toBeDefined();
+      expect(result!.block).toBe(true);
+      expect(result!.reason).toContain("T2-no-post-write-verification");
     });
 
-    test("write() is self-verifying (returns preview), no separate verification needed", async () => {
+    test("blocks write() without separate verification", async () => {
       const guard = createVerificationDepthGuard("bob");
       const ctx = makeContext([
         { name: "write", args: { path: "agents/bob/todo.md", content: "new content" } },
       ]);
       const result = await guard(ctx);
-      expect(result).toBeUndefined();
+      expect(result).toBeDefined();
+      expect(result!.block).toBe(true);
+      expect(result!.reason).toContain("T2-no-post-write-verification");
     });
 
     test("allows when read() follows write()", async () => {
