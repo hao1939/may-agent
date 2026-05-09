@@ -1025,11 +1025,13 @@ writeIdentity({
 // ── Start cron jobs (--cron to enable) ──────────────────────────────────
 
 if (CRON_ENABLED) {
-  // Resume stale job sessions from a previous process crash.
-  const { resumed, interrupted } = manager.resumeStaleSessions({ kinds: ["job"] });
-  // Clean up orphaned non-job sessions (call) — these have no trigger to self-resume.
+  // Resume stale job and call sessions from a previous process crash. Workflow
+  // runs themselves are marked interrupted, but their active child agent
+  // sessions can still continue from the persisted transcript instead of being
+  // reported as synthetic "Clean start (fresh)" failures.
+  const { resumed, interrupted } = manager.resumeStaleSessions({ kinds: ["job", "call"] });
   // Chat sessions are handled separately: in CHAT_MODE they're resumed, otherwise interrupted.
-  const { interrupted: orphansCleaned } = manager.resumeStaleSessions({ abort: true, kinds: ["call"] });
+  const orphansCleaned: typeof interrupted = [];
   if (!CHAT_MODE) {
     // Daemon mode without telegram: clean up orphaned chat sessions
     const { interrupted: chatCleaned } = manager.resumeStaleSessions({ abort: true, kinds: ["chat"] });

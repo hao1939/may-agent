@@ -38,7 +38,7 @@
   .liveness .subtle { color: var(--fg2); font-size: 12px; font-weight: 400; }
   .liveness-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr); gap: 16px; }
   .liveness-section h3 { font-size: 11px; color: var(--fg2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-  .vitals-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin: 8px 0 12px; }
+  .vitals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 8px; margin: 8px 0 12px; }
   .vital-card { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; min-width: 0; cursor: pointer; }
   .vital-card:hover { border-color: var(--accent); }
   .vital-card.alerting { border-color: rgba(248,81,73,0.7); background: rgba(248,81,73,0.08); }
@@ -750,14 +750,19 @@ async function loadLiveness() {
     const vitals = data.vitals || [];
     const decisions = data.recentDecisions || [];
     const messages = data.messages || [];
+    const windowLabel = windowHours === 1 ? '1h'
+      : windowHours === 24 ? '1 day'
+      : windowHours === 48 ? '2 days'
+      : windowHours + 'h';
 
     let html = `<h2>
       <span>System liveness</span>
-      <span class="subtle">${summary.heartbeatAgents4h || 0}/${summary.expectedHeartbeatAgents || summary.agentsConfigured || 0} scheduled agents heartbeated in 4h · ${summary.activeSessions || 0} active</span>
+      <span class="subtle">${summary.heartbeatAgents4h || 0}/${summary.expectedHeartbeatAgents || summary.agentsConfigured || 0} scheduled agents heartbeated in ${esc(windowLabel)} · ${summary.activeSessions || 0} active</span>
       <span class="breach-badge ${(summary.openAlerts || 0) > 0 ? 'alerting' : 'healthy'}" onclick="routeTo('/system')" title="Click to open System tab">${(summary.openAlerts || 0) > 0 ? '⚠ ' + summary.openAlerts + ' breach' + (summary.openAlerts === 1 ? '' : 'es') : '✓ healthy'}</span>
     </h2>`;
 
     if (vitals.length > 0) {
+      html += `<div class="liveness-section"><h3>Core vitals</h3>`;
       html += `<div class="vitals-grid">`;
       for (const metric of vitals) {
         const alerting = !!(metric.breached || metric.alertOpen);
@@ -769,7 +774,7 @@ async function loadLiveness() {
           <div class="vital-sub">${esc(threshold)}${metric.updatedAt ? ' · ' + esc(formatAgo(metric.updatedAt)) : ''}</div>
         </div>`;
       }
-      html += `</div>`;
+      html += `</div></div>`;
     }
 
     // Agent contact strip — Telegram-style entry points. One tile per
@@ -792,10 +797,6 @@ async function loadLiveness() {
     html += `</div></div>`;
 
     // Timeline as the dominant element (full width, screen-1 layout).
-    const windowLabel = windowHours === 1 ? '1h'
-      : windowHours === 24 ? '1 day'
-      : windowHours === 48 ? '2 days'
-      : windowHours + 'h';
     html += `<div class="liveness-section liveness-timeline"><h3 style="display:flex;align-items:center;gap:10px;justify-content:space-between"><span>Activity timeline, last ${esc(windowLabel)}</span><span class="heartbeat-legend" style="margin:0">`;
     // Window selector (chips, same look as category chips).
     for (const h of TIMELINE_WINDOW_OPTIONS) {

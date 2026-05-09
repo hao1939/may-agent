@@ -1215,6 +1215,7 @@ export class SubagentManager {
       endedAt: Date.now(),
       error: errorText,
       outcome: lastText,
+      opCount: session.toolCalls,
     });
 
     // Emit session.end
@@ -1223,6 +1224,8 @@ export class SubagentManager {
         type: "session.end", sessionId, agent: agentName,
         outcome: status, summary: lastText, durationMs,
         status, task, finishParams: finishParams as any,
+        opCount: session.toolCalls,
+        turnCount: session.turnCount,
         parentSessionId: session.parentSessionId,
         workflowRunId: session.workflowRunId,
         projectId: session.projectId,
