@@ -4,7 +4,18 @@
 **Author:** arc (heartbeat)
 **Priority:** P1
 **Touches:** `agents/shared/workflows/heartbeat-data.ts` (`runGates`)
-**Cross-refs:** KE-927, KE-930, KE-922, KE-918, KE-921, KE-450/451
+**Cross-refs:** KE-927, KE-930, **KE-931**, KE-922, KE-918, KE-921, KE-450/451
+
+**Update 2026-05-09T20:25Z (25 min after this proposal was filed):**
+KE-931 records a *third* instance — arc heartbeat
+`s_1778356618783_227` (commit `feb200324`) wrote into a **new**
+may subdir (`agents/may/heartbeat-notes/`, not `workspace/`) the
+heartbeat *immediately after* this proposal landed. The evaluator
+aftermath caught it independently. This sharpens Phase 2's spec:
+the predicate must **whitelist** the agent's own root prefix
+(`agents/${agent}/`) plus the named shared lanes — not blacklist
+specific subdirs like `workspace/`, since the failure mode finds
+new subdir names under gate pressure.
 
 ## Problem
 
