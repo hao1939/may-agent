@@ -101,6 +101,45 @@ describe("evaluator aftermath transcript checks", () => {
     expect(route.lane).toBe("success_candidate");
   });
 
+  it("does not downgrade finish-only sessions that retry finish(success) after committing", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "assistant",
+        content: [{ type: "toolCall", id: "f1", name: "finish", arguments: { status: "success", summary: "done" } }],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "f1",
+        toolName: "finish",
+        isError: true,
+        content: [{ type: "text", text: "finish() blocked [uncommitted changes]" }],
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          { type: "toolCall", id: "b1", name: "bash", arguments: { command: "cd /app/agents && git add file.md && git commit -m fix" } },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "b1",
+        toolName: "bash",
+        content: [{ type: "text", text: "[main abc123] fix\n 1 file changed" }],
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [{ type: "toolCall", id: "f2", name: "finish", arguments: { status: "success", summary: "done" } }],
+      }),
+    ].join("\n");
+
+    const verdict = classifyVerdict({ status: "done", opCount: 12 }, transcript);
+    const route = classifyEvaluationLane({ status: "done", opCount: 12 }, transcript, verdict);
+
+    expect(verdict.verdict).toBe("good");
+    expect(verdict.issues).toEqual(["finish blocked by uncommitted changes"]);
+    expect(route.lane).toBe("success_candidate");
+  });
+
   it("still downgrades unresolved finish-only dirty-worktree sessions", () => {
     const verdict = classifyVerdict(
       { status: "interrupted", opCount: 20 },

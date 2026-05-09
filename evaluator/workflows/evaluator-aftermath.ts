@@ -183,9 +183,9 @@ function sessionSelfRepairedOrCleanlyExited(session: any, transcript: string): b
   const ownText = view.text;
   if (!ownText.includes("finish() blocked [uncommitted changes]")) return false;
 
-  if (/"name":"finish","arguments":\{[^\n]*"status":"(?:partial|blocked|failure)"/.test(ownText)) return true;
-
   const postBlockedText = ownText.slice(ownText.lastIndexOf("finish() blocked [uncommitted changes]"));
+  if (/"name":"finish","arguments":\{[^\n]*"status":"(?:success|partial|blocked|failure)"/.test(postBlockedText)) return true;
+
   return /\bgit\s+commit\b/.test(postBlockedText) && /(?:\bgit\s+status\s+--short\b|\bgit\s+status\b)/.test(postBlockedText);
 }
 
