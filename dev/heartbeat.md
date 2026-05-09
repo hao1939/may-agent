@@ -98,6 +98,9 @@ assumptions. Keep heartbeat checks boring and known-good:
 - Message/inbox records are not in a `messages` table. For recent delivered-message
   evidence, use the `events` table (`event_type='message.created'`, JSON in `data`) or
   inspect `notification_messages` with `PRAGMA table_info(notification_messages)` first.
+- The `sessions` table has no `summary` column. Session summaries are embedded in
+  `events.data` for `event_type='session.end'`; use `sessions.outcome/error/status`
+  for table-only checks, or query `events` when summary text is needed.
 - Do not use `rg` in portable heartbeat commands; this environment may not have ripgrep.
   Use `grep -R --exclude-dir=.state --exclude-dir=node_modules --exclude-dir=.git` or
   `find` with pruned noisy directories instead.
