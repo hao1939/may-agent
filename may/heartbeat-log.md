@@ -1,8 +1,19 @@
 # May Heartbeat Log — Latest
 
-**Timestamp:** 2025-07-07 ~current UTC
+**Timestamp:** 2026-05-09 13:51 UTC
 
 ## Quick Status (current)
+
+- **System**: 98% success rate, 5/5 heartbeat coverage, all health PASS
+- **Breaching**: Scout good-session-rate 0.198 ⚠️, Scout friction 0.80 ⚠️
+- **Projects**: 2 active push, 0 blocked
+- **DB**: 1102 MB (ok)
+
+---
+
+## Previous: 2025-07-07
+
+## Quick Status (archived)
 
 **System:** Healthy. 6 agents active, low error rates. 506 real outputs/24h.
 **Red metrics:** All 3 are repeated structural issues (10x each), documented in KE-802+. No action needed.
