@@ -128,6 +128,16 @@ Durable artifacts go to one of:
 - `agents/shared/knowledge/entries/KE-NNN-*.md`
 - `agents/shared/projects/<id>/journal.md` (or project.md)
 - `agents/arc/workspace/proposals/*.md`
-- `agents/arc/workspace/*.md` (scratch but persisted)
+- `agents/arc/workspace/analysis/*.md` (scratch, but in a subdir so it tracks)
+
+**Do NOT** put a "durable" file directly under `agents/arc/workspace/`
+(e.g. `arc/workspace/heartbeat-log.md`). The repo's `.gitignore` line 28
+is `*/workspace/*` — gitignore globs don't cross `/`, so files in subdirs
+(`proposals/`, `analysis/`) are trackable but root-level workspace files
+are silently ignored. `git status` won't show them, `git add` is a no-op,
+and `finish(success)` will believe the artifact landed when it didn't.
+Aftermath caught this on `s_1778328901912_13` (workspace/heartbeat-log.md
+never committed) → KE-918. Verify any new lane with
+`git check-ignore -v <path>` before relying on it.
 
 Treat `last-session.md` as read-only wrapper output.
