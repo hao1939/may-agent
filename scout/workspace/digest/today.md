@@ -80,3 +80,8 @@
 **Summary**: Two distinct trends are emerging on Hacker News today. First, a major focus on agent security and credentials, with multiple high-profile discussions about AI coding agents exfiltrating credentials, abusing permission chains (Grok), and even wiping production databases (Cursor). Second, the normalization of "Agentic coding" is leading to discussions on how to review "Agent pull requests" and how developers should provide estimates in this new era.
 **Implication**: Our agent ecosystem must enforce strict, non-bypassable guardrails on database access (as highlighted in our Common Sense rules) and credential handling. We also need to monitor the evolution of human review workflows for agent-generated code.
 **KB**: Noted for potential KB updates.
+### HKUDS/nanobot
+**Source**: https://github.com/HKUDS/nanobot
+**Summary**: "nanobot: The Ultra-Lightweight Personal AI Agent", a trending repository on GitHub with over 42k stars.
+**Implication**: Lightweight personal agents are a significant trend in the AI ecosystem, showing a high demand for minimal-footprint local or personal assistants.
+**KB**: N/A
