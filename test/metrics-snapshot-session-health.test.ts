@@ -66,6 +66,13 @@ describe("metrics-snapshot session health metrics", () => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       ["s_done_good", "scout", 0.85, 0.8, 5, 0, "good", now],
     );
+    db.run(
+      `INSERT INTO evaluations (
+        sessionId, agent, quality, efficiency, productiveCalls, wastedCalls,
+        verdict, createdAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ["s_self", "evaluator", 0.5, 0.5, 1, 0, "acceptable", now],
+    );
 
     const emitted: any[] = [];
     const handler = create({
@@ -93,11 +100,17 @@ describe("metrics-snapshot session health metrics", () => {
       threshold: 0.2,
       priority: "P3",
     });
+    expect(metric("eval.llm-evals-24h")).toMatchObject({
+      current: 2,
+      target: 4,
+      threshold: 1,
+      priority: "P2",
+    });
     expect(metric("evaluator.low-quality-rate-24h")).toMatchObject({
       current: 0.5,
       target: 0.1,
-      threshold: 0.3,
-      priority: "P2",
+      threshold: 0.8,
+      priority: "P3",
     });
     expect(metric("evaluator.stale-running-session-count")).toMatchObject({
       current: 1,
@@ -271,6 +284,95 @@ describe("metrics-snapshot session health metrics", () => {
     const snapshot = db.prepare("SELECT value, sample_size FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 1").get("project.iterations-24h") as any;
     expect(metric.current).toBe(2);
     expect(snapshot).toMatchObject({ value: 2, sample_size: 4 });
+  });
+
+  it("measures critical runtime signals with explicit owners", async () => {
+    const root = join(tmpdir(), `metrics-critical-signals-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempDirs.push(root);
+    mkdirSync(join(root, "agents", "may"), { recursive: true });
+    mkdirSync(join(root, "agents", "scout"), { recursive: true });
+    mkdirSync(join(root, "src/lib"), { recursive: true });
+    writeFileSync(join(root, "src/lib/manager.ts"), "export {}\n");
+    writeFileSync(join(root, "agents", "may", "agent.json"), JSON.stringify({
+      name: "may",
+      description: "system owner",
+      domain: "system",
+      model: "test",
+      tools: [],
+    }));
+    writeFileSync(join(root, "agents", "scout", "agent.json"), JSON.stringify({
+      name: "scout",
+      description: "research",
+      domain: "research",
+      model: "test",
+      tools: [],
+    }));
+    writeFileSync(join(root, "agents", "may", "cron.json"), JSON.stringify([
+      { name: "heartbeat", enabled: true, handlerConfig: { agent: "may", workflow: "may-heartbeat" } },
+      { name: "heartbeat-scout", enabled: true, handlerConfig: { agent: "scout", workflow: "scout-heartbeat" } },
+      { name: "heartbeat-disabled", enabled: false, handlerConfig: { agent: "disabled", workflow: "disabled-heartbeat" } },
+    ]));
+
+    const db = getDb(root);
+    const now = Date.now();
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt, endedAt, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      ["hb_may", "may", "[heartbeat] May", "done", "workflow:may-heartbeat", now - 20 * 60_000, now - 19 * 60_000, 2],
+    );
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      ["s_zero_op", "arc", "call model", "error", now - 10 * 60_000, now - 9 * 60_000, "Connection error", 0],
+    );
+    mkdirSync(join(root, "sessions", "history", "s_zero_op"), { recursive: true });
+    writeFileSync(
+      join(root, "sessions", "history", "s_zero_op", "session.jsonl"),
+      [
+        JSON.stringify({ role: "user", content: [{ type: "text", text: "call model" }] }),
+        JSON.stringify({ role: "assistant", content: [], stopReason: "error", errorMessage: "Connection error." }),
+      ].join("\n") + "\n",
+    );
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      ["s_tool_error", "arc", "after tools", "error", now - 8 * 60_000, now - 7 * 60_000, "tool failed", 2],
+    );
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      ["s_empty_stop", "evaluator", "review", "error", now - 6 * 60_000, now - 5 * 60_000, null, 0],
+    );
+    mkdirSync(join(root, "sessions", "history", "s_empty_stop"), { recursive: true });
+    writeFileSync(
+      join(root, "sessions", "history", "s_empty_stop", "session.jsonl"),
+      [
+        JSON.stringify({ role: "user", content: [{ type: "text", text: "review" }] }),
+        JSON.stringify({ role: "assistant", content: [], stopReason: "stop" }),
+      ].join("\n") + "\n",
+    );
+    db.run(
+      "INSERT INTO events (event_type, owner, data, timestamp) VALUES (?, ?, ?, ?)",
+      ["agent.config_invalid", "may", JSON.stringify({ count: 2, message: "Unknown model" }), now - 5 * 60_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, owner, data, timestamp) VALUES (?, ?, ?, ?)",
+      ["message.delivery_failed", "may", JSON.stringify({ from: "evaluator", to: "functions.message", reason: "invalid target" }), now - 4 * 60_000],
+    );
+
+    const handler = create({
+      sdk: {
+        getDb: () => db,
+        paths: { root, agents: join(root, "agents") },
+        log: () => {},
+        emit: () => {},
+      },
+    } as any, {} as any);
+
+    await handler({ type: "trigger.metrics-snapshot" } as any);
+
+    const metric = (id: string) => db.prepare("SELECT current, owner, target, threshold, priority FROM metrics WHERE id = ?").get(id) as any;
+    expect(metric("agent.heartbeat-dark-count-2h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P0" });
+    expect(metric("agent.config-invalid-count-1h")).toMatchObject({ current: 2, owner: "may", target: 0, threshold: 0, priority: "P0" });
+    expect(metric("session.first-turn-error-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 10, priority: "P1" });
+    expect(metric("session.empty-assistant-stop-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
+    expect(metric("message.delivery-failed-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
   });
 
   it("retires noncritical metrics and resolves their open alerts", async () => {

@@ -24,6 +24,15 @@ import type { Socket } from "node:net";
 
 // ── Public API ────────────────────────────────────────────────────────
 
+const LIVE_VITAL_METRIC_IDS = [
+  "agent.heartbeat-dark-count-2h",
+  "agent.config-invalid-count-1h",
+  "session.first-turn-error-count-1h",
+  "session.empty-assistant-stop-count-1h",
+  "message.delivery-failed-count-1h",
+  "eval.llm-coverage-lag-h",
+];
+
 export interface WebUIOptions {
   stateDir: string;
   port: number;
@@ -59,6 +68,35 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     } catch {
       return [];
     }
+  }
+
+  function listScheduledHeartbeatAgents(configuredAgents: string[]): string[] {
+    const configured = new Set(configuredAgents);
+    const agents = new Set<string>();
+    const cronPath = join(AGENTS_ROOT, "may", "cron.json");
+    try {
+      const cron = JSON.parse(readFileSync(cronPath, "utf-8")) as Array<{
+        name?: string;
+        enabled?: boolean;
+        agent?: string;
+        handler?: string;
+        handlerConfig?: { agent?: string; workflow?: string };
+      }>;
+      for (const entry of cron) {
+        if (entry.enabled === false) continue;
+        const isHeartbeat = entry.name === "heartbeat"
+          || entry.name?.startsWith("heartbeat-")
+          || entry.handler === "heartbeat"
+          || entry.handlerConfig?.workflow?.includes("heartbeat");
+        if (!isHeartbeat) continue;
+        const agent = (entry.handlerConfig?.agent || entry.agent || "").trim();
+        if (agent && configured.has(agent)) agents.add(agent);
+      }
+    } catch {
+      // If cron metadata is unavailable, fall back to all configured agents.
+      for (const agent of configuredAgents) agents.add(agent);
+    }
+    return [...agents].sort();
   }
 
   function parseEventData(data: unknown): Record<string, unknown> {
@@ -120,6 +158,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const since = now - hours * 60 * 60 * 1000;
     const oneHour = now - 60 * 60 * 1000;
     const agents = listConfiguredAgents();
+    const scheduledHeartbeatAgents = new Set(listScheduledHeartbeatAgents(agents));
 
     const heartbeatRows = db.prepare(
       // Heartbeat detection covers all dispatch styles in production:
@@ -220,6 +259,30 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
        LIMIT 20`
     ).all() as any[];
 
+    const metricOrder = new Map(LIVE_VITAL_METRIC_IDS.map((id, idx) => [id, idx]));
+    const vitalPlaceholders = LIVE_VITAL_METRIC_IDS.map(() => "?").join(", ");
+    const openAlertMetricIds = new Set(openAlerts.map((alert) => alert.metricId));
+    const vitals = db.prepare(
+      `SELECT id, name, owner, current, target, threshold, unit, priority, alert_op, updated_at as updatedAt
+       FROM metrics
+       WHERE id IN (${vitalPlaceholders}) AND status = 'active'`
+    ).all(...LIVE_VITAL_METRIC_IDS) as any[];
+    const vitalMetrics = vitals
+      .map((m) => {
+        const current = typeof m.current === "number" ? m.current : null;
+        const threshold = typeof m.threshold === "number" ? m.threshold : null;
+        const breached = current != null && threshold != null
+          ? (m.alert_op === ">" || m.alert_op === "above" ? current > threshold : current < threshold)
+          : false;
+        return {
+          ...m,
+          owner: m.owner || "may",
+          breached,
+          alertOpen: openAlertMetricIds.has(m.id),
+        };
+      })
+      .sort((a, b) => (metricOrder.get(a.id) ?? 999) - (metricOrder.get(b.id) ?? 999));
+
     const messages = (db.prepare(
       `SELECT event_type, source, owner, data, timestamp
        FROM events
@@ -249,16 +312,20 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         text: (row.outcome || row.task || "").replace(/^\[heartbeat\]\s*/i, "").slice(0, 220),
       }));
 
-    const staleAgents = agentRows.filter((agent) => !agent.lastHeartbeat).map((agent) => agent.name);
+    const scheduledAgentRows = agentRows.filter((agent) => scheduledHeartbeatAgents.has(agent.name));
+    const scheduledHeartbeatRows = scheduledAgentRows.filter((agent) => agent.lastHeartbeat);
+    const staleAgents = scheduledAgentRows.filter((agent) => !agent.lastHeartbeat).map((agent) => agent.name);
 
     return json({
       summary: {
-        agentsConfigured: agents.length,
+        agentsConfigured: scheduledHeartbeatAgents.size || agents.length,
+        agentsTotal: agents.length,
+        expectedHeartbeatAgents: scheduledHeartbeatAgents.size || agents.length,
         // NOTE: keep `*4h` field names even though the window is now
         // operator-selectable — they're consumed elsewhere as the
         // "heartbeat coverage in window" signal, and the window default
         // is still 4h. Use `windowHours` for accurate labeling.
-        heartbeatAgents4h: agentRows.filter((agent) => agent.lastHeartbeat).length,
+        heartbeatAgents4h: scheduledHeartbeatRows.length,
         heartbeats4h: heartbeatRows.length,
         windowHours: hours,
         windowSince: since,
@@ -271,6 +338,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       recentDecisions,
       messages,
       alerts: openAlerts,
+      vitals: vitalMetrics,
     });
   }
 

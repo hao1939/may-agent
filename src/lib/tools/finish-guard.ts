@@ -208,11 +208,11 @@ export function createFinishGuard(): (
       hasWriteEvidence = true;
     }
 
-    // CLI coding agents (claude_code, codex_cli, gemini_cli) have full filesystem
+    // CLI worker agents (cc_worker, codex_worker) have full filesystem
     // access — their writes don't appear in the tool transcript.
     if (
       !hasWriteEvidence &&
-      (toolNames.has("claude_code") || toolNames.has("codex_cli") || toolNames.has("gemini_cli"))
+      (toolNames.has("cc_worker") || toolNames.has("codex_worker"))
     ) {
       hasWriteEvidence = true;
     }

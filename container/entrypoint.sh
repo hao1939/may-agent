@@ -26,6 +26,10 @@ export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes
 # Add host node bin to PATH for CLI coding agents (claude, codex, gemini)
 for d in /home/hao/.nvm/versions/node/*/bin; do [ -d "$d" ] && export PATH="$d:$PATH" && break; done
 
+# Codex CLI config (route through litellm)
+mkdir -p "${HOME}/.codex"
+cp /etc/codex/config.toml "${HOME}/.codex/config.toml"
+
 # Ensure .state/ is writable by mayagent (uid 1000)
 chown -R mayagent:mayagent /app/.state /app/agents 2>/dev/null || true
 exec supervisord -c /etc/supervisord.conf
