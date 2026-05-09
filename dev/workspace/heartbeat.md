@@ -83,3 +83,38 @@ Routine self-maintenance was sufficient this heartbeat. The Approved queue remai
 ### Git State Classification
 
 `git status --short` showed ambient dirty state in runtime/session files (`*/last-session.md`, shared gate logs), may-owned source/project work (`may/handlers/metrics-snapshot.ts`, `shared/projects/v2-spec-coverage-buildout/*`), and other agents' runtime files. This heartbeat intentionally commits only `agents/dev/workspace/heartbeat.md` and does not stage or alter ambient non-dev work.
+
+## 2026-05-09 12:35 UTC
+
+### Judgment
+
+Routine self-maintenance plus explicit inbox triage is sufficient this heartbeat. The Approved queue is empty, current dev-relevant metrics are green (`handler.success-rate=1`, `handler.failed-count=0`, `session.error-rate-6h=0.0996`), every active metric has a recent snapshot, and `eval-llm-lane-restoration` remains correctly `pending-review` because the non-heuristic eval lane is live (`eval.llm-coverage-lag-h=0`, `eval.llm-evals-24h=15`).
+
+### Evidence
+
+- Approved queue: empty under `## Approved` in `agents/shared/work-queue.md`.
+- Current active metrics: `handler.success-rate=1`, `handler.failed-count=0`, `session.error-rate-6h=0.0996` below threshold `0.3`, `eval.llm-coverage-lag-h=0` below threshold `4`, and `eval.llm-evals-24h=15` above target `4`.
+- Unmeasured active metrics: zero in the last hour.
+- Unresolved alerts: only scout-owned `scout.knowledge-preamble-coverage`, `scout.good-session-rate-24h`, and `scout.operational-friction-rate-24h`; no dev-owned alert required metric-alert operation.
+- Recent handler failures: latest `handler.failed` rows are stale restored-lane issues while current handler metrics are green.
+- Recent failed sessions: latest rows are evaluator-owned errors with null `sessions.error`; no new dev-owned failure pattern surfaced from the canned query.
+- Owned project check: `agents/shared/projects/eval-llm-lane-restoration/project.md` remains `pending-review` with resume only on reviewer request or eval-lane regression, neither of which is true in current metrics.
+
+### Pending Event Triage
+
+- `[13m] evaluator FYI for s_1778329173414_5 failed write/read-back guard friction`: acted/dismissed as already addressed by the earlier dev guard fix thread and this run's evidence check; it is the same failed-write verification pattern as prior FYIs, with no new current recurrence needing another patch.
+- `[18m] prior dev heartbeat session.end`: dismissed as completed prior maintenance; current live checks supersede its summary.
+- `[19m] duplicate dev session.start burst`: dismissed as heartbeat scheduler noise after confirming no approved work item and no dev-owned alert.
+- `[21m] prior dev heartbeat triage`: dismissed as already completed; current canned DB checks revalidated the same state.
+- `[43m] prior dev heartbeat investigation`: dismissed as historical context with no attached new implementation request.
+- `[58m] evaluator FYI for s_1778325688720_72 schema-guessing miss`: dismissed for code action because the current heartbeat used canned schema-safe queries and the standing heartbeat guidance already contains the schema-first rule.
+- `[1h] eval-llm-lane liveness audit session.end`: acted by re-reading the owned project and current eval metrics; lane remains live so project stays pending-review.
+- `[1h] duration-gate warning`: acted by performing a full DB/project/git/inbox triage and recording a durable log entry.
+- `[1h] prior dev heartbeat log session.end`: dismissed as completed maintenance.
+- `[1h] evaluator FYI for s_1778325540677_66 finish-guard false positive`: dismissed as already investigated and documented in the 12:14 heartbeat; no new dirty-file false positive appeared in this run.
+- `[2h] project.blocked-count refire investigation`: dismissed/delegated to may because project metric ownership and the earlier analysis already identify the alert semantics; no dev-owned code action is attached.
+- `[2h] older dev heartbeat session.end`: dismissed as superseded by current live evidence.
+
+### Git State Classification
+
+`git status --short` showed only ambient runtime/session files, shared gate logs, and other agents' project/source work before this edit. This heartbeat intentionally commits only `agents/dev/workspace/heartbeat.md` and leaves ambient non-dev dirty state unstaged.
