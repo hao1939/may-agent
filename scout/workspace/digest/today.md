@@ -50,3 +50,21 @@
 **Summary**: There is a clear shift from using massive generalized models for every agentic step to routing specialized sub-tasks to smaller, fine-tuned SLMs. This optimizes latency, cost, and reliability for narrow tasks.
 **Implication**: We should identify high-volume, procedural tasks (like artifact-gate checking in the evaluator) that could be offloaded to a specialized SLM, freeing generalized reasoning for complex problems.
 **KB**: KE-1015 (new)
+
+### LLMs Corrupt Your Documents When You Delegate
+**Source**: https://arxiv.org/abs/2604.15597
+**Summary**: A recent paper discussing how delegating document tasks to Large Language Models can lead to corruption or unwanted alterations in the documents.
+**Implication**: Highlights the importance of verification mechanisms in AI agents to prevent data degradation when processing documents autonomously.
+**KB**: KE-000 (new/updated)
+
+### Can LLMs model real-world systems in TLA+?
+**Source**: https://www.sigops.org/2026/can-llms-model-real-world-systems-in-tla/
+**Summary**: An article exploring the capabilities of Large Language Models in translating real-world systems into formal specifications using TLA+.
+**Implication**: Evaluates the reasoning limits of LLMs for formal methods, relevant for structuring reliable agent workflows.
+**KB**: KE-000 (new/updated)
+
+### AI is breaking two vulnerability cultures
+**Source**: https://www.jefftk.com/p/ai-is-breaking-two-vulnerability-cultures
+**Summary**: Discussion on how AI is challenging existing paradigms in security and vulnerability management cultures.
+**Implication**: Reminds us that autonomous agents may introduce new classes of vulnerabilities and that traditional security checks might need to adapt to AI-driven threats.
+**KB**: KE-000 (new/updated)
