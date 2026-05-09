@@ -273,3 +273,15 @@ Ran `monitor-session.cjs --running`: 2 checked, 2 healthy. One active evaluator 
 Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob again.
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` remain placeholder stubs, so there are still no fresh calibration-disagreement inputs to process this cycle.
+
+**Last run**: 2026-05-09 13:36Z — DB canonical check confirms session-eval pipeline is still live/recent (`MAX(evaluations.createdAt)=1778333594011`; `MAX(sessions.startedAt)=1778333722788`; `MAX(sessions.endedAt)=1778333511045`; lag ≈128.8s vs `startedAt`, and evaluations are already newer than the latest `endedAt` by ≈83.0s; `evals_last24h=649`; `llm_evals_last24h=16`; `sessions_last24h=1475`). Legacy `.state/evaluations/` top-level artifacts remain stale (`ls -la .state/evaluations/ | tail -5` still shows only Mar 20/24 `task_tree_*` files), so continue treating that directory as a legacy output-path signal rather than the canonical liveness source.
+
+Ran `monitor-session.cjs --running`: 3 checked, 2 healthy, 1 `PROTOCOL_VIOLATION` (active arc session `s_1778333211891_7`; evidence: missing P114 Experience Replay; recommended action: warn). Notified May.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
+
+Inbox sanity check: four of the five recent aftermath targets already exist (`s_1778328772342_5.md`, `s_1778330660815_8.md`, `s_1778332817730_10.md`, `s_1778333243068_9.md`), and the remaining target `s_1778332759010_6` has an active evaluator review session (`s_1778333594021_12`), so current aftermath coverage appears caught up rather than dropped.
+
+Signal-quality note: `events.status` totals are still backlog/noise (`pending=543445`, `handled=14`, `dismissed=4`, `done=1`), while raw hourly activity remains high (`session.start`=108, `handler.started`=84, `session.end`=70, `handler.completed`=62, `evaluation.routed`=34). Continue treating event rows/timestamps as meaningful and status totals as non-canonical for liveness.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` remain placeholder stubs generated 2026-04-29, so there are still no fresh calibration-disagreement inputs to process this cycle.
