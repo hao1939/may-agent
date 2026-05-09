@@ -54,4 +54,17 @@ describe("findDaemonSocket", () => {
 
     expect(findDaemonSocket(root, { agent: "*" })).toBe(runningSocket);
   });
+
+  it("does not return job sockets for daemon wildcard discovery", async () => {
+    const root = mkdtempSync(join(tmpdir(), "control-client-"));
+    roots.push(root);
+    const jobDir = join(root, "instances", "job-cron_old");
+    mkdirSync(jobDir, { recursive: true });
+    const jobSocket = join(jobDir, "bob.sock");
+    makeSocketLikeFifo(jobSocket);
+    writeFileSync(join(jobDir, "identity.json"), JSON.stringify({ status: "running" }), "utf-8");
+
+    expect(findDaemonSocket(root, { agent: "*" })).toBeNull();
+    expect(findDaemonSocket(root, { agent: "bob" })).toBe(jobSocket);
+  });
 });

@@ -56,6 +56,7 @@ import { insertWorkflowRun, updateWorkflowRun, getWorkflowRun, getWorkflowStepSe
 import { summarizeForHandoff } from "./handoff.js";
 import { log } from "./log.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
+import { createUnavailableMetricService } from "./metrics.js";
 
 // ── Tool schema ────────────────────────────────────────────────────────
 
@@ -585,6 +586,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         getDb: () => { throw new Error("No runtimeCtx — getDb unavailable"); },
         log: (_msg: string) => {},
         notify: (_msg: string) => {},
+        metrics: createUnavailableMetricService("No runtimeCtx - metrics unavailable"),
         persistDir: persistDir ?? "",
         projectRoot: "",
         agentsRoot: "",

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { create } from "../agents/may/handlers/metrics-snapshot.ts";
 import { closeDb, getDb } from "../src/lib/requests.js";
+import { createMetricService } from "../src/lib/metrics.js";
 
 describe("metrics-snapshot session health metrics", () => {
   const tempDirs: string[] = [];
@@ -15,6 +16,20 @@ describe("metrics-snapshot session health metrics", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  function sdk(root: string, db: ReturnType<typeof getDb>, emit: (event: any) => void = () => {}) {
+    return {
+      getDb: () => db,
+      paths: { root, agents: join(root, "agents") },
+      log: () => {},
+      emit,
+      metrics: createMetricService({
+        getDb: () => db,
+        emit: (type, data) => emit({ type, ...(data || {}) }),
+        measuredBy: "metrics-snapshot",
+      }),
+    };
+  }
 
   it("measures failure triage as an outcome metric and aftermath coverage as liveness", async () => {
     const root = join(tmpdir(), `metrics-session-health-${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -76,12 +91,7 @@ describe("metrics-snapshot session health metrics", () => {
 
     const emitted: any[] = [];
     const handler = create({
-      sdk: {
-        getDb: () => db,
-        paths: { root, agents: join(root, "agents") },
-        log: () => {},
-        emit: (event: any) => emitted.push(event),
-      },
+      sdk: sdk(root, db, (event: any) => emitted.push(event)),
     } as any, {} as any);
 
     await handler({ type: "trigger.metrics-snapshot" } as any);
@@ -167,12 +177,7 @@ describe("metrics-snapshot session health metrics", () => {
     );
 
     const handler = create({
-      sdk: {
-        getDb: () => db,
-        paths: { root, agents: join(root, "agents") },
-        log: () => {},
-        emit: () => {},
-      },
+      sdk: sdk(root, db),
     } as any, {} as any);
 
     await handler({ type: "trigger.metrics-snapshot" } as any);
@@ -216,12 +221,7 @@ describe("metrics-snapshot session health metrics", () => {
 
     const emitted: any[] = [];
     const handler = create({
-      sdk: {
-        getDb: () => db,
-        paths: { root, agents: join(root, "agents") },
-        log: () => {},
-        emit: (event: any) => emitted.push(event),
-      },
+      sdk: sdk(root, db, (event: any) => emitted.push(event)),
     } as any, {} as any);
 
     await handler({ type: "trigger.metrics-snapshot" } as any);
@@ -270,12 +270,7 @@ describe("metrics-snapshot session health metrics", () => {
     );
 
     const handler = create({
-      sdk: {
-        getDb: () => db,
-        paths: { root, agents: join(root, "agents") },
-        log: () => {},
-        emit: () => {},
-      },
+      sdk: sdk(root, db),
     } as any, {} as any);
 
     await handler({ type: "trigger.metrics-snapshot" } as any);
@@ -357,12 +352,7 @@ describe("metrics-snapshot session health metrics", () => {
     );
 
     const handler = create({
-      sdk: {
-        getDb: () => db,
-        paths: { root, agents: join(root, "agents") },
-        log: () => {},
-        emit: () => {},
-      },
+      sdk: sdk(root, db),
     } as any, {} as any);
 
     await handler({ type: "trigger.metrics-snapshot" } as any);
@@ -400,12 +390,7 @@ describe("metrics-snapshot session health metrics", () => {
     }
 
     const handler = create({
-      sdk: {
-        getDb: () => db,
-        paths: { root, agents: join(root, "agents") },
-        log: () => {},
-        emit: () => {},
-      },
+      sdk: sdk(root, db),
     } as any, {} as any);
 
     await handler({ type: "trigger.metrics-snapshot" } as any);
