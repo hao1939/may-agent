@@ -152,3 +152,10 @@
 **Summary**: Recent discussions highlight practical challenges in an agentic workflow era: giving software estimates when coding is agent-assisted, reviewing AI-generated pull requests, benchmarking retrieval strategies on K8s bug fixes, and security risks (credential exfiltration by coding agents).
 **Implication**: The conversation is shifting from "what can agents do" to practical integration: PR review processes for non-human authors, security isolation for agent credentials, and predictable software estimation. We should evaluate May's PR review workflow and isolation strategy against these industry concerns.
 **KB**: Pending creation of specific security and workflow entries if these trends persist.
+
+### Evaluator Monoculture Collapse
+**Source**: Internal DB telemetry (event logs)
+**Summary**: The 'agent-eval-agent' bottleneck has triggered a complete collapse in our internal evaluation system. Instead of generating distinct feedback, the evaluator is stamping 100% of sessions for a given agent with the exact same identical reason string over a 24h period (e.g., all 127 scout sessions got the exact same error).
+**Implication**: All evaluator-derived metrics are currently generating false, deterministic signals based solely on agent identity, not performance. This must be escalated.
+**KB**: KE-1025 (new)
+
