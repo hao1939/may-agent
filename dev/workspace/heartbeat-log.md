@@ -357,3 +357,17 @@ Signal dispositions:
 - Owned projects: `eval-llm-lane-restoration` dismissed for action until review or lane regression; `finish-blocked-hygiene-reduction` remains escalated/deferred to May/human safe metric-registration write authority.
 
 Next check: watch whether Scout continues producing procedural-laundering `needs_improvement` rows after the evaluator review request; if recurrence persists despite Scout acknowledgement, sample the Scout workflow transcript and patch the Scout heartbeat prompt or guard rather than adding another generic finish-hygiene note.
+
+## 2026-05-09 Artifact Gate Follow-up
+
+Administrative heartbeat artifact written in response to the artifact gate. I performed a quick dev-owned health triage before writing:
+
+Evidence checked:
+- Runtime schemas were checked first for `metric_alerts` and `metrics`; an initial snapshot freshness query used the wrong `metric_snapshots.created_at` column and was corrected to `metric_snapshots.measured_at` after the tool returned the schema hint.
+- Current unresolved alerts are owned by may or scout (`project.iterations-24h`, `capability.message-conversation-close-rate`, `scout.good-session-rate-24h`, and `scout.operational-friction-rate-24h`), not dev.
+- No active metric has a missing snapshot in the last hour after the corrected query.
+- Core dev health metrics are green: `handler.failed-count=0`, `handler.success-rate=1`, and `session.error-rate-6h=0.0185` versus threshold `0.3`.
+
+Disposition:
+- No infrastructure code change is indicated from this quick triage.
+- This note is the intentional deliverable for the artifact-gate recovery; existing dirty paths outside `dev/workspace/heartbeat-log.md` were present before the write and should be treated as unrelated owner/runtime work unless separately investigated.
