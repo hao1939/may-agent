@@ -428,3 +428,20 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 4. **v2 spec measurement coverage**: 77.3% (threshold 80%)
 
 ### All Health Checks: PASS
+
+---
+
+## 2026-05-09 11:19 UTC — Artifact Gate Heartbeat
+
+### System Health
+- Active sessions: 3 | Success rate (1h): 100% (63/63) | Handler fires/hr: 76
+
+### Breached Metrics
+- Scout good session rate: 0.20 (target 0.85) ⚠️
+- Scout operational friction: 0.80 (target 0.10) ⚠️
+- v2 spec measurement coverage: 0.77 (target 1.0) ⚠️
+
+### Notes
+- All health checks passing. DB at 1094 MB.
+- 158 "active" sessions mostly stale/interrupted — cosmetic issue.
+- Evaluator throughput strong (34 sessions/hr).
