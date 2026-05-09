@@ -16,8 +16,7 @@
       "consecutiveErrors": 0
     },
     "scout": {
-      "consecutiveErrors": 1,
-      "lastError": "heartbeat threw: Workflow blocked by guard: C1.3 Verify-After-Write: Cannot finish(success) — 1 file(s) were written but never read() back for verification: agents/scout/workspace/heartbeat-log.md. You MUST read() eac"
+      "consecutiveErrors": 0
     },
     "qa": {
       "consecutiveErrors": 0
