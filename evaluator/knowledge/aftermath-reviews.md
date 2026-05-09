@@ -56,6 +56,10 @@
 - Symptom: a heartbeat makes no repo edits or new artifacts, but it runs live checks that confirm a previously observed incident has actually stayed recovered and that apparent hygiene dirt is ambient rather than the agent's responsibility.
 - Fix: do not require file output as the only signal of value. Verify the fresh DB/query evidence and lane-aware judgment directly from the transcript and current repo state; credit the session as acceptable/good operational maintenance when it prevents unnecessary churn, while still noting that it is not a material knowledge update or code change.
 
+## Pattern: heartbeat-to-project escalation can be substantive output
+- Symptom: a heartbeat does not ship code, but it uses fresh runtime evidence to identify a repeated cross-workflow problem with no active owner and turns it into a new shared project with baselines, validation queries, and a concrete next intervention.
+- Fix: inspect the created project artifact and commit rather than downgrading the session as mere maintenance. Credit it as good material output when the project is properly scoped, grounded in live evidence, and creates a durable ownership/validation path for follow-through.
+
 ## Pattern: artifact-gated recovery sessions can still produce substantive value
 - Symptom: a session starts from a low-bar prompt like "produce any artifact," which makes the resulting write look like mere compliance at first glance.
 - Fix: inspect the actual artifact and source evidence before judging. If the agent used live sources and turned the forced write into a concrete, system-relevant analysis, credit the substantive output while separately noting any scoping or verification hiccups (for example writing into another agent's workspace or missing the first read-back).
