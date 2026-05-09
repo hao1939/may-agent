@@ -157,3 +157,20 @@ Signal dispositions:
 - Earlier heartbeat `session.end` entries about empty queue / header wording / schema habits: dismissed as already acted; current checks followed those habits.
 
 Judgment: no new shared project or code patch is warranted this heartbeat. The only durable action is this traceable heartbeat log entry documenting event disposition and live evidence.
+
+## 2026-05-09 Artifact Gate and Schema Drift Follow-up
+
+Administrative heartbeat artifact written after the artifact gate reported that the prior session produced no file writes.
+
+Evidence checked:
+- UTC timestamp at write time: `2026-05-09T03:15:58Z`.
+- Initial schema-assuming queries failed on `metric_snapshots.status`, `events.handler`, and `metric_alerts.owner`; the tool returned live schemas showing the correct columns are `metric_snapshots(metric_id,value,measured_at,note)`, `events(event_type,source,status,handled_by,reason,timestamp)`, and `metric_alerts(metric_id,alert_type,message,resolved_at,created_at)`.
+- Corrected snapshot query showed the latest metric batch at `1778296494706`, including `metric.stale-active-count=0`, `project.invalid-format-count=0`, `project.blocked-over-6h=2`, `scout.good-session-rate-24h=0.2816`, and `scout.operational-friction-rate-24h=0.7184`.
+- Direct unresolved-alert query found three active alerts: `#225 scout.good-session-rate-24h`, `#197 scout.operational-friction-rate-24h`, and `#195 evaluator.low-quality-rate-24h`; none are dev-owned based on metric IDs/messages.
+- Event check after the latest snapshot found 8 pending lifecycle/router events and no completed/failed handler rows in that tiny window; the latest event rows are routine session/handler lifecycle entries around this heartbeat.
+- Git status before this write showed only generated `*/last-session.md` runtime churn (`arc`, `dev`, `evaluator`, `may`) and no intentional dev source changes.
+
+Disposition:
+- This entry is the required meaningful heartbeat artifact; no production code or database state was changed.
+- Durable lesson reinforced: use `PRAGMA table_info(...)` or let `query_db` schema hints guide any non-canned runtime-table query before assuming columns.
+- Next substantive dev heartbeat should investigate a dev-owned failure pattern if one appears, otherwise continue queue/alert/schema hygiene and avoid committing generated `last-session.md` files.
