@@ -1,7 +1,7 @@
 ---
 id: empty-assistant-stop-runtime-retry
 owner: dev
-status: closed
+status: done
 type: milestone
 priority: P1
 workflow: project
