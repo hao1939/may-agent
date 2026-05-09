@@ -56,7 +56,7 @@ Pick 2-3 that matter most right now. Use data, not intuition.
 
 ## How to act
 
-⚠️ VERIFY FILE CHANGES: write() returns a content/diff preview you may cite as verification. After edit(), read() the edited file back before finishing. This is checked by evaluators.
+⚠️ VERIFY FILE CHANGES: After any write() or edit(), read() the changed file back before finish(success). Tool previews are for inspection only; they do not satisfy the read-back guard.
 
 - **Found waste?** Quantify it. Write a finding with data. Propose a fix.
 - **Found an efficiency opportunity?** Create a project to track the improvement.
