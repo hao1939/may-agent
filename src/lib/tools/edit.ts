@@ -72,7 +72,7 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 			"The oldText must match exactly (including whitespace and newlines).",
 			"If oldText is not found, the call fails — read the file first to get the exact text.",
 			"If oldText appears more than once, the call fails — include more surrounding context to make it unique.",
-			"A diff preview is returned so you can verify the change without a separate read() call.",
+			"A diff preview is returned for quick inspection; read() the file back before finish(success).",
 			"For new files or full rewrites, use write() instead.",
 		].join(" "),
 		parameters: editSchema,
@@ -161,8 +161,8 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 
 				const diffResult = generateDiffString(baseContent, newContent);
 
-				// Smart Edit: include diff context in response so agents can verify
-				// without a separate read() call (saves 1 turn per edit)
+				// Smart Edit: include diff context for immediate inspection.
+				// Agents still need a read-back before finish(success).
 				const diffPreview = diffResult.diff;
 				const lineInfo = diffResult.firstChangedLine
 					? ` (line ${diffResult.firstChangedLine})`
@@ -178,7 +178,7 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 					"```diff",
 					shownDiff,
 					"```",
-					"Verify the diff above. If incorrect, re-edit immediately.",
+					"Inspect the diff above, then read() this file before finish(success).",
 				].join("\n");
 
 				return {

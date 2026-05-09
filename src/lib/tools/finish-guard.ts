@@ -90,7 +90,6 @@ function hasBashWriteEvidence(messages: BeforeToolCallContext["context"]["messag
 function hasVerificationAfterLastWrite(messages: BeforeToolCallContext["context"]["messages"]): boolean {
   // Walk messages to find indices of tool calls
   let lastWriteIdx = -1;
-  let lastWriteName = "";
   let hasVerifyAfterWrite = false;
 
   for (let i = 0; i < messages.length; i++) {
@@ -106,7 +105,6 @@ function hasVerificationAfterLastWrite(messages: BeforeToolCallContext["context"
       // Is this a write/edit?
       if (WRITE_TOOL_NAMES.has(name)) {
         lastWriteIdx = i;
-        lastWriteName = name;
         hasVerifyAfterWrite = false; // Reset — need new verification after this write
         continue;
       }
@@ -118,7 +116,6 @@ function hasVerificationAfterLastWrite(messages: BeforeToolCallContext["context"
           const cmd = args.command;
           if (BASH_WRITE_PATTERNS.test(cmd)) {
             lastWriteIdx = i;
-            lastWriteName = "bash";
             hasVerifyAfterWrite = false;
             continue;
           }
@@ -148,10 +145,6 @@ function hasVerificationAfterLastWrite(messages: BeforeToolCallContext["context"
 
   // No writes found — nothing to verify, safe to proceed
   if (lastWriteIdx === -1) return true;
-
-  // edit() and write() are self-verifying — they return diffs/previews inline.
-  // Only bash-based writes need separate post-write verification.
-  if (lastWriteName === "write" || lastWriteName === "edit") return true;
 
   return hasVerifyAfterWrite;
 }
