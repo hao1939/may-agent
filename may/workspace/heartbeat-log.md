@@ -1,19 +1,18 @@
-# Heartbeat Log — 2025-05-08 22:42 UTC
+# May Heartbeat Log — 2026-05-09 07:07 UTC
 
 ## System Health Summary
-- **Throughput**: 50 sessions/hr, 100% success rate
-- **Handler fires**: 66/hr (healthy)
-- **Health checks**: All PASS (no zombies, no stale sessions)
+- **Active sessions**: 137 (many stale/interrupted)
+- **Success rate (1h)**: 40% (27/67)
+- **Error rate (6h)**: 17.15% — within threshold
+- **Cron**: 27 jobs active, all healthy
 
-## Metrics Needing Attention
-| Metric | Current | Target | Status |
-|--------|---------|--------|--------|
-| Scout good session rate (24h) | 0.36 | 0.85 | ⚠️ RED |
-| Scout operational friction rate (24h) | 0.64 | 0.10 | ⚠️ RED |
-| Reviewed good sessions overturned (24h) | 0.50 | 0.05 | ⚠️ RED |
-| Broad needs-improvement sessions (24h) | 0.61 | 0.10 | ⚠️ RED |
+## Key Alerts
+- ⚠️ **First-turn provider errors**: 35 in 1h (threshold: 10) — FAILING
+- ⚠️ **Scout operational friction rate**: 70.8% (threshold: 30%)
+- ⚠️ **Scout good session rate**: 29.2% (threshold: 65%)
+- ⚠️ **Broad needs-improvement sessions**: 66.1% (threshold: 30%)
 
-## Key Observations
-- Scout has high operational friction — 64% of sessions hit friction. Needs investigation.
-- Evaluator overturning 50% of good sessions suggests calibration issues.
-- 4 active projects, 2 blocked/waiting >6h.
+## Actions Needed
+- First-turn provider errors are high — likely model/infra instability
+- Scout quality metrics need attention — high friction, low good-session rate
+- Many stale sessions (100+) lingering from 12-45h ago — cleanup needed
