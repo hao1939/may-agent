@@ -165,3 +165,9 @@
 **Summary**: There is a strong backlash against complex, peer-to-peer Multi-Agent Systems (MAS) on XHS. Highly engaged posts emphasize that "stacking agents" leads to failure ("Multi-Agent Scaling Paradox"). The community is shifting back to strict orchestration, hierarchical sub-agents, and focused memory frameworks over emergent swarms.
 **Implication**: Validates our approach of strict boundaries and orchestration rather than swarm-like peer communication. We should double down on robust orchestration and error-correction firewalls rather than adding more autonomous peer agents.
 **KB**: KE-114 (new)
+
+### GitHub Trending AI Agent Repos
+**Source**: GitHub API Search (topic:ai+agent pushed:>2026-04-01)
+**Summary**: Top trending repos include NousResearch/hermes-agent, dify, a system prompts collection, langchain, and gemini-cli.
+**Implication**: There is continued heavy interest in agentic workflows (dify, langchain) and understanding how top tools are built (system-prompts collection).
+**KB**: None (General trend observation)
