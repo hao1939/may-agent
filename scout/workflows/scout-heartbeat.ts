@@ -56,6 +56,15 @@ This session is for **creative, autonomous work** — things nobody asked you to
 - Update or create shared knowledge entries (agents/shared/knowledge/entries/KE-NNN.md)
 - Append any notable insights to agents/scout/workspace/digest/today.md
 
+## Finish Hygiene (required before finish(success))
+Scout sessions frequently modify tracked knowledge/digest files. Do this BEFORE the first finish(success), not only after a guard rejection:
+1. After every write/edit/append, verify the changed file with read() (preferred) or a targeted file check for shell-written content.
+2. Run \`cd /app/agents && git status --short\` and identify only your intentional deliverables.
+3. Stage exact intentional paths only; never use \`git add .\`. If a Scout workspace deliverable is ignored, use \`git add -f -- '<exact path>'\`.
+4. Commit intentional deliverables with a descriptive \`scout: ...\` message.
+5. Re-run \`cd /app/agents && git status --short\`. Do not stage runtime files like \`scout/last-session.md\`, shared gate logs, or unrelated project files.
+6. In finish(success), list deliverables and cite read-back, commit id/output, and status check evidence.
+
 ${metricsBlock}
 
 ## Alerts

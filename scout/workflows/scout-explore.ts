@@ -29,10 +29,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   // The task comes from cron handlerConfig.task — source-specific instructions
   const task = ctx.task || "Explore sources and update shared knowledge base.";
+  const prompt = `${task}
+
+## Finish Hygiene (required before finish(success))
+Scout explore usually updates tracked digest, workspace, or shared knowledge files. Do this BEFORE the first finish(success), not only after a guard rejection:
+1. After every write/edit/append, verify the changed file with read() (preferred) or a targeted file check for shell-written content.
+2. Run \`cd /app/agents && git status --short\` and identify only your intentional deliverables.
+3. Stage exact intentional paths only; never use \`git add .\`. If a Scout workspace deliverable is ignored, use \`git add -f -- '<exact path>'\`.
+4. Commit intentional deliverables with a descriptive \`scout: ...\` message.
+5. Re-run \`cd /app/agents && git status --short\`. Do not stage runtime files like \`scout/last-session.md\`, shared gate logs, or unrelated project files.
+6. In finish(success), list deliverables and cite read-back, commit id/output, and status check evidence.`;
 
   let result: any;
   try {
-    result = await ctx.runAgent(agent, task);
+    result = await ctx.runAgent(agent, prompt);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     recordOutcome(agentsRoot, agent, true, `explore threw: ${message.slice(0, 200)}`);
