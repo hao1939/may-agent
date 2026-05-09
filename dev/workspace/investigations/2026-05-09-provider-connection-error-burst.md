@@ -61,3 +61,15 @@ Follow-up on the pending evaluator messages shows three distinct failure classes
 3. **`cc_worker` has a separate Claude CLI/proxy/tool-result path failure.** Master smoke sessions `s_1778311263045_23` and `s_1778311441039_29` successfully invoked `cc_worker`, but the worker CLI initialized and then emitted repeated `api_retry` events with `error="unknown"` before timing out (`exit 143`). Older master session `s_1778308550775_8` also demonstrated direct `curl` to `http://host.docker.internal:4000/v1/messages` works while the Claude CLI retries forever, suggesting a CLI/proxy auth or request-format mismatch. Session `s_1778310041133_0` shows an additional runtime adapter bug: `cc_worker` returned a toolResult with `isError=false` and no `content`, then the assistant loop crashed with `undefined is not an object (evaluating 'content.some')`.
 
 Judgment: no dev-owned code patch is safe from this heartbeat because the direct fix points are outside dev's editable surface (`src` runtime adapter and `agents/master/tools/cc-worker.ts`). The actionable next steps are: keep alert #248 open until the next snapshot drops below threshold, route the `cc_worker` CLI/proxy and empty-toolResult issues to the runtime/master owner, and treat `Clean start (fresh)` clusters as supervisor-lifecycle reaps rather than task failures.
+
+## 2026-05-09 07:50 UTC heartbeat update
+
+Current follow-up shows the first-turn/provider burst is below alert threshold, while startup/reap and evaluator-afterwatch noise continue:
+
+- `session.first-turn-error-count-1h` is now `current=9`, below threshold `10`; alert `#248` is resolved at `1778312083897`.
+- `session.error-rate-6h` remains elevated but green (`0.1828` vs threshold `0.3`), and handler health remains clean (`handler.success-rate=1`, `handler.failed-count=0`).
+- Last-hour session grouping shows `18` `status='error'` rows and `12` `status='interrupted'` rows with `error='Clean start (fresh)'`, but `58` sessions completed successfully.
+- The sampled latest evaluator aftermath error `s_1778312613795_7` ended with empty summary/`finishParams=null` and generated an escalation, consistent with evaluator review-session fragility rather than a handler failure.
+- The sampled latest `Clean start (fresh)` session `s_1778312521177_5` has only `session.start` and reconciled `session.end` events, matching the supervisor-lifecycle reap class described above.
+
+Judgment: dismiss the pending duplicate zero-op/provider messages as already acted via this investigation. Do not patch code this heartbeat; the open actionable runtime fixes remain the previously identified out-of-scope `cc_worker`/adapter issues plus continued May ownership of any renewed first-turn metric alert.
