@@ -37,6 +37,7 @@ const DEDUP_FILE = "dispatch-dedup.json";
 const MAX_FAILURES_BEFORE_BLOCK = 3;
 const WINDOW_DAYS = 7;
 const PREFIX_LENGTH = 80;
+export const DEFAULT_RUNNING_LEASE_MS = 10 * 60 * 1000;
 
 function getDbPath(): string {
   return join(STATE_DIR, DEDUP_FILE);
@@ -77,7 +78,7 @@ function isWithinWindow(dateStr: string): boolean {
 export function shouldDispatch(
   agent: string,
   taskDescription: string,
-  opts?: { force?: boolean }
+  opts?: { force?: boolean; runningLeaseMs?: number }
 ): { allowed: boolean; reason?: string; attempts?: number } {
   if (opts?.force) {
     return { allowed: true, reason: "force override" };
@@ -116,11 +117,18 @@ export function shouldDispatch(
 
   // If currently "running" (last status), check for staleness
   if (record.lastStatus === "running") {
-    const hoursSince = (Date.now() - new Date(record.lastAttempt).getTime()) / (1000 * 60 * 60);
-    if (hoursSince < 2) {
-      return { allowed: false, reason: "Task appears to still be running (started <2h ago)", attempts: record.attempts };
+    const runningLeaseMs = opts?.runningLeaseMs ?? DEFAULT_RUNNING_LEASE_MS;
+    const msSince = Date.now() - new Date(record.lastAttempt).getTime();
+    if (msSince < runningLeaseMs) {
+      return {
+        allowed: false,
+        reason: `Task appears to still be running (started <${Math.ceil(runningLeaseMs / 60000)}m ago)`,
+        attempts: record.attempts,
+      };
     }
-    // If >2h, likely interrupted — count as failure
+    // Lease expired. The caller may dispatch again; the next recordDispatch()
+    // replaces the stale running marker. Running is a short lease, not durable
+    // liveness truth, because process death can strand this JSON state.
   }
 
   return { allowed: true, attempts: record.attempts };

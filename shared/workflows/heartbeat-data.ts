@@ -503,7 +503,15 @@ Commit and finish.`;
   // ── EXP-740: Wall-clock timer for duration gate ──────────────────
   const heartbeatStartTime = Date.now();
 
-  const result: any = await ctx.runAgent(agent, prompt);
+  let result: any;
+  try {
+    result = await ctx.runAgent(agent, prompt);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    recordOutcome(agentsRoot, agent, true, `heartbeat threw: ${message.slice(0, 200)}`);
+    dedupRecordOutcome(agent, "heartbeat", "error");
+    throw err;
+  }
   ctx.emit({ type: "agent.decision", agent, status: result.status, hasDeliverables: !!(result.deliverables?.length) });
   recordOutcome(agentsRoot, agent, result.status === "error",
     result.status === "error" ? "heartbeat session error" : undefined);

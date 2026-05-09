@@ -3,7 +3,8 @@
  * Validates dedup logic without hitting real filesystem by testing exported functions.
  */
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
-import { existsSync, unlinkSync, readFileSync } from "fs";
+import { existsSync, unlinkSync, readFileSync, writeFileSync, rmSync, mkdirSync } from "fs";
+import { join } from "path";
 import {
   shouldDispatch,
   recordDispatch,
@@ -14,6 +15,8 @@ import {
 } from "./dispatch-dedup-guard.js";
 
 const DEDUP_FILE = ".state/dispatch-dedup.json";
+const ORIGINAL_CWD = process.cwd();
+const TEST_CWD = join("/tmp", "__dispatch_dedup_guard_test__");
 
 function clearDb() {
   if (existsSync(DEDUP_FILE)) unlinkSync(DEDUP_FILE);
@@ -24,8 +27,17 @@ function readDb() {
 }
 
 describe("dispatch-dedup-guard", () => {
-  beforeEach(clearDb);
-  afterEach(clearDb);
+  beforeEach(() => {
+    rmSync(TEST_CWD, { recursive: true, force: true });
+    mkdirSync(TEST_CWD, { recursive: true });
+    process.chdir(TEST_CWD);
+    clearDb();
+  });
+  afterEach(() => {
+    clearDb();
+    process.chdir(ORIGINAL_CWD);
+    rmSync(TEST_CWD, { recursive: true, force: true });
+  });
 
   test("allows first dispatch of a new task", () => {
     const result = shouldDispatch("bob", "Ship EXP-188 results");
@@ -108,12 +120,24 @@ describe("dispatch-dedup-guard", () => {
     expect(blocked[0].agent).toBe("bob");
   });
 
-  test("running task within 2h is blocked", () => {
+  test("running task within lease is blocked", () => {
     recordDispatch("bob", "running-task");
     // lastStatus is "running", just dispatched
     const result = shouldDispatch("bob", "running-task");
     expect(result.allowed).toBe(false);
     expect(result.reason).toContain("still be running");
+  });
+
+  test("running task after lease expiry is allowed", () => {
+    recordDispatch("bob", "stale-running-task");
+    const db = readDb();
+    const key = Object.keys(db.records)[0];
+    db.records[key].lastAttempt = new Date(Date.now() - 11 * 60 * 1000).toISOString();
+    writeFileSync(DEDUP_FILE, JSON.stringify(db, null, 2));
+
+    const result = shouldDispatch("bob", "stale-running-task");
+    expect(result.allowed).toBe(true);
+    expect(result.attempts).toBe(1);
   });
 
   test("different agents have independent records", () => {
