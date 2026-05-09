@@ -1,11 +1,11 @@
 ---
 id: ruflo-learning-loop
 owner: arc
-status: active
+status: paused
 type: iterative
 priority: P2
 workflow: project
-iteration: 9
+iteration: 12
 ---
 
 # Project: Ruflo Learning Loop
