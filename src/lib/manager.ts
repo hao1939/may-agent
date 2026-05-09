@@ -1067,6 +1067,7 @@ export class SubagentManager {
     if (relWorkspace) lines.push(`- Workspace: ${relWorkspace} (scratch/runtime work)`);
     if (relKnowledge) lines.push(`- Knowledge: ${relKnowledge} (read on demand; start with INDEX.md when needed)`);
     lines.push("- Already in context: agents/shared/common-sense.md and this agent's AGENTS.md when present.");
+    lines.push("- Prompt precedence: common-sense is the shared default; this agent's AGENTS.md is the role-specific identity layer and takes precedence for agent-specific behavior.");
     if (toolNames.length > 0) {
       lines.push(`- Available tools: ${toolNames.join(", ")}`);
     }

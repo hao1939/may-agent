@@ -13,6 +13,8 @@
  *
  * System prompt is assembled from:
  *   agents/shared/common-sense.md + agents/<name>/AGENTS.md + generated runtime facts
+ * The order is intentional: shared defaults first, then agent identity as the
+ * more specific layer for role-specific behavior.
  * Domain files, skills, lessons, and knowledge indexes are read on demand.
  */
 
@@ -471,6 +473,14 @@ function loadAgentConfig(agentDir: string, bus: EventBus): AgentConfig | null {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     bus.emit({ type: "info", message: `[loader] Failed to parse ${configPath}: ${msg}` });
+    bus.emit({
+      type: "agent.config_invalid",
+      owner: "may",
+      agent: agentDir.split(/[\\/]/).pop() || "<unknown>",
+      count: 1,
+      message: `Failed to parse ${configPath}: ${msg}`,
+      priority: "P0",
+    });
     return null;
   }
 }
@@ -543,6 +553,14 @@ export async function loadAgents(opts: AgentLoaderOptions): Promise<LoadResult> 
   if (allErrors.length > 0) {
     const report = allErrors.map((e) => `  ${e.agent}.${e.field}: ${e.message}`).join("\n");
     opts.bus.emit({ type: "info", message: `[loader] Skipped agents with config errors:\n${report}` });
+    opts.bus.emit({
+      type: "agent.config_invalid",
+      owner: "may",
+      count: allErrors.length,
+      errors: allErrors,
+      message: `Skipped agents with config errors:\n${report}`,
+      priority: "P0",
+    });
   }
 
   return { added, updated };

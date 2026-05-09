@@ -76,6 +76,10 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
 
 WORKDIR /app
 
+# Install CLI agent tools (claude-code, codex) — used as worker agents
+# They route through litellm proxy for model access
+RUN npm install -g @anthropic-ai/claude-code @openai/codex 2>/dev/null || true
+
 # Copy compiled runtime tools from builder. The service runs from the standalone
 # may-agent binary, but agent/operator commands and docs assume `bun` exists.
 COPY --from=builder /build/may-agent /usr/local/bin/may-agent
@@ -84,12 +88,15 @@ COPY --from=builder /usr/local/bin/bun /usr/local/bin/bun
 # Copy web UI static files (not embedded in compiled binary)
 COPY src/app/ui/web-static/ /usr/local/share/may-agent-web/web-static/
 
+# CLI agent configs (codex needs config.toml to route through litellm)
+COPY container/codex-config.toml /etc/codex/config.toml
+
 # Copy supervisord config
 COPY container/supervisord.conf /etc/supervisord.conf
 
 # Copy entrypoints and helpers
-COPY container/entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/entrypoint.sh
+COPY container/entrypoint.sh container/start-chrome.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/start-chrome.sh
 
 # Create user for uid 1000 (SSH requires a passwd entry)
 RUN useradd -u 1000 -d /app/.state -s /bin/bash mayagent 2>/dev/null || true

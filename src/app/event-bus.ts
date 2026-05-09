@@ -112,6 +112,15 @@ export type SystemEvent =
       content: string;
       priority?: "P0" | "P1" | "P2" | "P3";
     }
+  | {
+      type: "agent.config_invalid";
+      owner: "may";
+      agent?: string;
+      count?: number;
+      errors?: Array<{ agent: string; field: string; message: string }>;
+      message: string;
+      priority?: "P0" | "P1" | "P2" | "P3";
+    }
   | { type: "metric.breach"; owner: string; metricId: string; metricName: string; current: number; threshold: number; target?: number; message: string; priority?: "P0" | "P1" | "P2" | "P3" }
   | { type: "metric.recovered"; metricId: string; metricName: string }
   | { type: "metric.stalled"; owner: string; metricId: string; metricName: string; message: string }

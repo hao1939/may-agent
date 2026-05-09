@@ -175,6 +175,11 @@ const models: Record<string, ModelWithApiKey> = {
     baseUrl: MODEL_BASE_URL,
     apiKey: LITELLM_API_KEY,
   },
+  "gpt-5.4": {
+    ...getModel("github-copilot", "gpt-5.4"),
+    baseUrl: MODEL_BASE_URL,
+    apiKey: LITELLM_API_KEY,
+  },
   kimi: {
     ...getModel("openai", "gpt-4o"),
     api: "openai-completions" as const,
@@ -183,11 +188,11 @@ const models: Record<string, ModelWithApiKey> = {
     baseUrl: process.env.KIMI_BASE_URL || "https://api.moonshot.cn/v1",
     apiKey: process.env.KIMI_API_KEY || "",
   },
-  // New powerful models (via litellm → GitHub Copilot)
+  // New powerful models (via LiteLLM -> GitHub Copilot)
   "gpt-5.5": {
     ...getModel("github-copilot", "gpt-5.5"),
-    baseUrl: "https://api.enterprise.githubcopilot.com",
-    apiKey: "dynamic", // placeholder — real token read via getCopilotToken()
+    baseUrl: MODEL_BASE_URL,
+    apiKey: LITELLM_API_KEY,
   },
   "opus-4.7": {
     ...getModel("github-copilot", "claude-opus-4.7"),
@@ -635,8 +640,10 @@ bus.subscribe((event) => {
       if ("agent" in event && "task" in event) {
         // Emit message.created for traceability (v2 convergence)
         bus.emit({ type: "message.created", from: (event as any).opts?.source || "socket", to: (event as any).agent, content: (event as any).task, intent: "fork", priority: "P0" } as any);
-        if (chatSession) {
-          chatSession.handleInput(`@${event.agent} ${event.task}`, "socket");
+        // Messages to May go through chatSession (she interprets intent).
+        // All other agents get dispatched directly — no LLM-as-router overhead.
+        if (chatSession && event.agent === "may") {
+          chatSession.handleInput(event.task, "socket");
         } else {
           const sessionId = manager.run(event.agent, event.task, {
             kind: (event.opts?.kind as "chat" | "job" | "call" | undefined) ?? "job",

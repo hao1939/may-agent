@@ -1,0 +1,10 @@
+model_provider = "litellm"
+model = "gpt-5.5"
+model_reasoning_effort = "high"
+personality = "pragmatic"
+
+[model_providers.litellm]
+name = "LiteLLM"
+base_url = "http://host.docker.internal:4000/v1"
+env_key = "LITELLM_API_KEY"
+wire_api = "responses"

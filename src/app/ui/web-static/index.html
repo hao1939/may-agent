@@ -38,6 +38,18 @@
   .liveness .subtle { color: var(--fg2); font-size: 12px; font-weight: 400; }
   .liveness-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr); gap: 16px; }
   .liveness-section h3 { font-size: 11px; color: var(--fg2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .vitals-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin: 8px 0 12px; }
+  .vital-card { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; min-width: 0; cursor: pointer; }
+  .vital-card:hover { border-color: var(--accent); }
+  .vital-card.alerting { border-color: rgba(248,81,73,0.7); background: rgba(248,81,73,0.08); }
+  .vital-card .vital-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }
+  .vital-card .vital-label { color: var(--fg2); font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vital-card .vital-owner { color: var(--fg2); font-size: 10px; flex: 0 0 auto; }
+  .vital-card .vital-value { font-size: 20px; font-weight: 600; line-height: 1.2; margin-top: 3px; overflow-wrap: anywhere; }
+  .vital-card.alerting .vital-value { color: var(--red); }
+  .vital-card .vital-sub { color: var(--fg2); font-size: 10px; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (max-width: 980px) { .vitals-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .vitals-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   /* Timeline-dominant variant per webui.md screen-1: full-width, taller, primary signal. */
   .liveness-section.liveness-timeline { min-height: 35vh; }
   .liveness-row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
@@ -706,6 +718,16 @@ function formatAgo(ts) {
   return Math.round(ms / 86400000) + 'd ago';
 }
 
+function formatMetricValue(value, unit) {
+  if (value == null || Number.isNaN(Number(value))) return '—';
+  const n = Number(value);
+  if (unit === 'ratio') return Math.round(n * 100) + '%';
+  if (unit === 'hours') return n >= 10 ? Math.round(n) + 'h' : n.toFixed(1).replace(/\.0$/, '') + 'h';
+  if (unit === 'ms') return n >= 1000 ? Math.round(n / 1000) + 's' : Math.round(n) + 'ms';
+  if (Math.abs(n) < 10 && n % 1 !== 0) return n.toFixed(2).replace(/0+$/, '').replace(/\.$/, '') + (unit && unit !== 'count' ? unit : '');
+  return String(Math.round(n)) + (unit && unit !== 'count' ? unit : '');
+}
+
 function scheduleLivenessRefresh() {
   if (livenessRefreshTimer) clearTimeout(livenessRefreshTimer);
   livenessRefreshTimer = setTimeout(loadLiveness, 500);
@@ -725,14 +747,30 @@ async function loadLiveness() {
     const since = Number(summary.windowSince) || (Date.now() - windowHours * 60 * 60 * 1000);
     const span = Date.now() - since;
     const alerts = data.alerts || [];
+    const vitals = data.vitals || [];
     const decisions = data.recentDecisions || [];
     const messages = data.messages || [];
 
     let html = `<h2>
       <span>System liveness</span>
-      <span class="subtle">${summary.heartbeatAgents4h || 0}/${summary.agentsConfigured || 0} agents heartbeated in 4h · ${summary.activeSessions || 0} active</span>
+      <span class="subtle">${summary.heartbeatAgents4h || 0}/${summary.expectedHeartbeatAgents || summary.agentsConfigured || 0} scheduled agents heartbeated in 4h · ${summary.activeSessions || 0} active</span>
       <span class="breach-badge ${(summary.openAlerts || 0) > 0 ? 'alerting' : 'healthy'}" onclick="routeTo('/system')" title="Click to open System tab">${(summary.openAlerts || 0) > 0 ? '⚠ ' + summary.openAlerts + ' breach' + (summary.openAlerts === 1 ? '' : 'es') : '✓ healthy'}</span>
     </h2>`;
+
+    if (vitals.length > 0) {
+      html += `<div class="vitals-grid">`;
+      for (const metric of vitals) {
+        const alerting = !!(metric.breached || metric.alertOpen);
+        const value = formatMetricValue(metric.current, metric.unit);
+        const threshold = metric.threshold == null ? 'no threshold' : `${metric.alert_op === '>' || metric.alert_op === 'above' ? 'max' : 'min'} ${formatMetricValue(metric.threshold, metric.unit)}`;
+        html += `<div class="vital-card ${alerting ? 'alerting' : ''}" onclick="routeTo('/metrics/${attrEsc(metric.id)}')" title="${esc(metric.id)} · owner ${esc(metric.owner || 'may')} · ${esc(threshold)}">
+          <div class="vital-top"><span class="vital-label">${esc(metric.name || metric.id)}</span><span class="vital-owner">${esc(metric.owner || 'may')}</span></div>
+          <div class="vital-value">${esc(value)}</div>
+          <div class="vital-sub">${esc(threshold)}${metric.updatedAt ? ' · ' + esc(formatAgo(metric.updatedAt)) : ''}</div>
+        </div>`;
+      }
+      html += `</div>`;
+    }
 
     // Agent contact strip — Telegram-style entry points. One tile per
     // configured agent: name + status dot + last-heartbeat-age. Click to
@@ -2892,7 +2930,7 @@ async function loadMetricsTab() {
     // Mapping is a cheap prefix rule. Anything unmatched falls into 'Other'.
     function axisOf(id) {
       if (id.startsWith('agent.') || id.startsWith('capability.')) return 'Agency';
-      if (id.startsWith('handler.') || id.startsWith('session.') || id.startsWith('evaluator.') || id.startsWith('metric.') || id.startsWith('v2.')) return 'Infrastructure';
+      if (id.startsWith('handler.') || id.startsWith('session.') || id.startsWith('evaluator.') || id.startsWith('message.') || id.startsWith('metric.') || id.startsWith('v2.')) return 'Infrastructure';
       if (id.startsWith('project.') || id.startsWith('system.')) return 'Output';
       return 'Other';
     }
