@@ -12,6 +12,7 @@ export type EvaluationLane = "needs_triage" | "success_candidate" | "routine_ok"
 type TranscriptView = {
   text: string;
   liveEvidenceText: string;
+  userText: string;
   toolCallCount?: number;
 };
 
@@ -43,6 +44,7 @@ export function transcriptIssues(transcript: string): string[] {
   const view = sessionOwnedTranscriptView(transcript);
   const ownText = view.text;
   const liveText = view.liveEvidenceText;
+  const taskText = view.userText;
   const hasLiveRuntimeSignals = /## Live Runtime Signals \(workflow-collected\)[\s\S]{0,800}?Status: available/.test(liveText);
   const liveRuntimeSignalsUnavailable = /## Live Runtime Signals \(workflow-collected\)[\s\S]{0,800}?Status: unavailable/.test(liveText);
 
@@ -65,7 +67,7 @@ export function transcriptIssues(transcript: string): string[] {
     issues.push("metric health claim without live evidence");
   }
 
-  const forbiddenPaths = forbiddenEditPathsFromTask(liveText);
+  const forbiddenPaths = forbiddenEditPathsFromTask(taskText);
   if (forbiddenPaths.length > 0) {
     const editedForbidden = editedForbiddenPaths(ownText, forbiddenPaths);
     if (editedForbidden.length > 0) {
@@ -157,16 +159,19 @@ function parseJsonlTranscript(transcript: string): any[] | null {
 
 function sessionOwnedTranscriptView(transcript: string): TranscriptView {
   const records = parseJsonlTranscript(transcript);
-  if (!records) return { text: transcript, liveEvidenceText: transcript };
+  if (!records) return { text: transcript, liveEvidenceText: transcript, userText: transcript };
 
   const own: string[] = [];
   const liveEvidence: string[] = [];
+  const userOnly: string[] = [];
   const callsById = new Map<string, any>();
   let toolCallCount = 0;
 
   for (const record of records) {
     if (record?.role === "user") {
-      liveEvidence.push(contentText(record.content));
+      const userText = contentText(record.content);
+      liveEvidence.push(userText);
+      userOnly.push(userText);
     }
 
     if (record?.role === "assistant") {
@@ -200,6 +205,7 @@ function sessionOwnedTranscriptView(transcript: string): TranscriptView {
   return {
     text: own.join("\n"),
     liveEvidenceText: liveEvidence.concat(own).join("\n"),
+    userText: userOnly.join("\n"),
     toolCallCount,
   };
 }

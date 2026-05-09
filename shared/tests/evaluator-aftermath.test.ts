@@ -182,6 +182,34 @@ describe("evaluator aftermath transcript checks", () => {
     );
   });
 
+  it("ignores path-like prose in assistant-created artifacts when extracting forbidden paths", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "user",
+        content: [
+          "Task constraints: You CANNOT edit the project file or journal.",
+          "Write recommendations to agents/shared/projects/daily-alert-review/outputs/2026-05-09-recommendations.md.",
+        ].join("\n"),
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "w1",
+            name: "write",
+            arguments: {
+              path: "agents/shared/projects/daily-alert-review/outputs/2026-05-09-recommendations.md",
+              content: "- metric config owner\n- evaluator/scout owner\n",
+            },
+          },
+        ],
+      }),
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toEqual([]);
+  });
+
   it("flags unavailable workflow-collected signals as reliability issue", () => {
     const verdict = classifyVerdict(
       { status: "done", opCount: 0 },
