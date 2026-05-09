@@ -201,6 +201,35 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
         }
       }
 
+      const recentTriageRun = db.prepare(
+        `SELECT runId, status, startedAt
+         FROM workflow_runs
+         WHERE workflow = 'metric-alert-triage'
+           AND startedAt > ?
+           AND task LIKE ?
+         ORDER BY startedAt DESC
+         LIMIT 1`
+      ).get(Date.now() - DEDUP_WINDOW_MS, `%${metricId}%`) as { runId: string; status: string; startedAt: number } | null;
+
+      if (recentTriageRun) {
+        if (recentTriageRun.status === "running") {
+          ctx.sdk.log("info", `[metric-alert-reactor] Skipping ${metricId} — metric-alert-triage already running (${recentTriageRun.runId})`);
+          return;
+        }
+        const judgment = db.prepare(
+          `SELECT id FROM events
+           WHERE event_type = 'metric.alert_judged'
+             AND json_extract(data, '$.metricId') = ?
+             AND timestamp >= ?
+           ORDER BY timestamp DESC
+           LIMIT 1`
+        ).get(metricId, recentTriageRun.startedAt) as { id: number } | null;
+        if (judgment) {
+          ctx.sdk.log("info", `[metric-alert-reactor] Skipping ${metricId} — recent triage workflow ${recentTriageRun.runId} emitted judgment ${judgment.id}`);
+          return;
+        }
+      }
+
       // Dedup: suppress only active metric handling or completed handling that
       // emitted a judgment. A finished session without metric.alert_judged did
       // not close the loop and must not block a still-breaching alert.
