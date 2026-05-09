@@ -73,6 +73,10 @@
 - Fix: inspect the actual artifact and source evidence before judging. If the agent used live sources and turned the forced write into a concrete, system-relevant analysis, credit the substantive output while separately noting any scoping or verification hiccups (for example writing into another agent's workspace or missing the first read-back).
 - Extra caution: verify that the recovery artifact is both **tracked/committable** and **in-lane** before treating it as the session's real output. A workspace write can satisfy the local gate yet fail to ship if the path is gitignored, and a write into another agent's workspace can look readable while still violating ownership/lane rules. If the agent catches that quickly and pivots to a tracked in-lane file, score the pivot as recovery rather than as a failed outcome; if it does not, treat the artifact as structurally invalid even when the content itself is useful.
 
+## Pattern: cross-agent tracked artifacts can be real output but still weakly scoped
+- Symptom: a session under one agent label ships a committed artifact inside another agent's tracked tree (for example an `arc` session appending `may/heartbeat-log.md`).
+- Fix: separate deliverable integrity from scope quality. If the commit landed and the file content is real, do not mark it as fake output; instead credit the narrow operational value and note the ownership/lane miss as an output-quality downgrade unless there is explicit cross-agent handoff authority.
+
 ## Pattern: ignored workspace artifact can still count when explicitly force-added and shipped
 - Symptom: a session writes a useful artifact under an ignored `workspace/` path, hits an initial `git add` failure, then force-adds the exact file and lands a clean commit containing that artifact.
 - Fix: do not dismiss the output just because the first add failed or because the file lives under `workspace/`. Inspect the landed commit/diff: if the agent explicitly used `git add -f <exact path>`, committed only the intended artifact, and the reviewed content matches the diff, treat it as real shipped output. Penalize only the minor recovery overhead, not the final deliverable.
