@@ -81,6 +81,69 @@ describe("evaluator aftermath transcript checks", () => {
     expect(transcriptIssues(transcript)).toEqual([]);
   });
 
+  it("ignores successful query_db rows that quote historical schema errors", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "q1",
+            name: "query_db",
+            arguments: { sql: "SELECT event_type, data FROM events ORDER BY timestamp DESC LIMIT 1" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "q1",
+        toolName: "query_db",
+        isError: false,
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              rowCount: 1,
+              rows: [
+                {
+                  event_type: "message.created",
+                  data: "Aftermath says prior target queried no such column: summary and no such table: messages",
+                },
+              ],
+            }),
+          },
+        ],
+      }),
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toEqual([]);
+  });
+
+  it("still flags failed query_db schema errors", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "q1",
+            name: "query_db",
+            arguments: { sql: "SELECT summary FROM sessions" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "q1",
+        toolName: "query_db",
+        isError: true,
+        content: [{ type: "text", text: '{"error":"no such column: summary"}' }],
+      }),
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toEqual(["schema/query error in transcript"]);
+  });
+
   it("detects anti-shallow gate failures from direct session tool calls", () => {
     const transcript = [
       JSON.stringify({

@@ -191,7 +191,11 @@ function sessionOwnedTranscriptView(transcript: string): TranscriptView {
       const call = callsById.get(String(record.toolCallId));
       const command = String(call?.arguments?.command ?? "");
 
-      if (toolName === "query_db" || toolName === "finish") {
+      if (toolName === "query_db") {
+        if (record?.isError === true || /"error"\s*:\s*"(?:[^"]*no such (?:column|table)[^"]*)"/i.test(text)) {
+          own.push(text);
+        }
+      } else if (toolName === "finish") {
         own.push(text);
       } else if (toolName === "bash") {
         own.push(command);
