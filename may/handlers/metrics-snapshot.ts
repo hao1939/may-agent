@@ -93,7 +93,7 @@ const ALL_METRICS: MetricDef[] = [
   { id: "project.active-count", name: "Active push projects", owner: "may", type: "gauge", target: 0, threshold: 0, unit: "count", alert_op: "<", priority: "P3" },
   { id: "project.blocked-count", name: "Blocked projects", owner: "may", type: "gauge", target: 0, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
   { id: "project.stale-active-count", name: "Stale active projects (no iteration 48h)", owner: "may", type: "gauge", target: 0, threshold: 2, unit: "count", alert_op: ">", priority: "P1" },
-  { id: "project.iterations-24h", name: "Active project iterations (24h)", owner: "may", type: "gauge", target: 0, threshold: 0, unit: "count", alert_op: "<",
+  { id: "project.iterations-24h", name: "Active project iterations (24h)", owner: "may", type: "gauge", target: 10, threshold: 1, unit: "count", alert_op: "<",
     priority: "P3" },
   { id: "project.blocked-over-6h", name: "Projects blocked >6h", owner: "may", type: "gauge", target: 0, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
   { id: "project.invalid-format-count", name: "Invalid project.md format", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
@@ -135,6 +135,7 @@ const ALL_METRICS: MetricDef[] = [
 ];
 
 const RETIRED_METRIC_IDS = [
+  "v2.spec-coverage-rate",
   "project.blocked-rate-7d",
   "capability.session-trace-completeness",
   "capability.tool-preset-drift-count",
@@ -353,14 +354,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // ── Helpers ──────────────────────────────────────────────────────
 
     function record(id: string, value: number, sampleSize?: number) {
-      db.run("UPDATE metrics SET current = ?, updated_at = ? WHERE id = ?", [value, now, id]);
-      if (sampleSize != null) {
-        db.run("INSERT INTO metric_snapshots (metric_id, value, sample_size, measured_at, measured_by) VALUES (?, ?, ?, ?, ?)",
-          [id, value, sampleSize, now, "metrics-snapshot"]);
-      } else {
-        db.run("INSERT INTO metric_snapshots (metric_id, value, measured_at, measured_by) VALUES (?, ?, ?, ?)",
-          [id, value, now, "metrics-snapshot"]);
-      }
+      metricService.record(id, value, sampleSize != null ? { sampleSize, measuredAt: now } : { measuredAt: now });
     }
 
     function count(query: string, ...args: any[]): number {
@@ -398,60 +392,19 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       return sessions.filter((session) => !ended.has(session.sessionId));
     }
 
-    const metricColumns = new Set((db.prepare("PRAGMA table_info(metrics)").all() as any[]).map(c => c.name));
-    const hasMetricConfigColumn = metricColumns.has("config");
-    const hasMetricPriorityColumn = metricColumns.has("priority");
-    const hasMetricProjectColumn = metricColumns.has("project");
-    const configByMetricId = new Map(ALL_METRICS.map(m => [m.id, m.config ?? null]));
     const configuredAgents = listConfiguredAgents(ctx.sdk.paths.agents);
+    const metricService = ctx.sdk.metrics;
+    if (!metricService) throw new Error("MetricService unavailable on ctx.sdk");
 
     // ── Ensure metric rows exist ─────────────────────────────────────
 
-    for (const m of ALL_METRICS) {
-      const owner = m.owner?.trim() || null;
-      const project = m.project?.trim() || null;
-      const configJson = m.config ? JSON.stringify(m.config) : null;
-      const priority = m.priority ?? "P2";
-      const insertColumns = ["id", "name", "owner", "current", "target", "threshold", "unit", "type", "status", "speed", "alert_op"];
-      const insertValues: unknown[] = [m.id, m.name, owner, null, m.target, m.threshold, m.unit, m.type, "active", "fast", m.alert_op];
-      if (hasMetricProjectColumn) {
-        insertColumns.push("project");
-        insertValues.push(project);
-      }
-      if (hasMetricConfigColumn) {
-        insertColumns.push("config");
-        insertValues.push(configJson);
-      }
-      insertColumns.push("created_at", "updated_at");
-      insertValues.push(now, now);
-      db.run(
-        `INSERT OR IGNORE INTO metrics (${insertColumns.join(", ")})
-         VALUES (${insertColumns.map(() => "?").join(", ")})`,
-        insertValues,
-      );
-
-      const updateAssignments = ["name = ?", "owner = ?", "target = ?", "threshold = ?", "unit = ?", "type = ?", "status = 'active'", "speed = 'fast'", "alert_op = ?"];
-      const updateValues: unknown[] = [m.name, owner, m.target, m.threshold, m.unit, m.type, m.alert_op];
-      if (hasMetricProjectColumn) {
-        updateAssignments.push("project = ?");
-        updateValues.push(project);
-      }
-      if (hasMetricConfigColumn) {
-        updateAssignments.push("config = ?");
-        updateValues.push(configJson);
-      }
-      updateValues.push(m.id);
-      db.run(
-        `UPDATE metrics SET ${updateAssignments.join(", ")} WHERE id = ?`,
-        updateValues,
-      );
-      if (hasMetricPriorityColumn) {
-        db.run("UPDATE metrics SET priority = ? WHERE id = ?", [priority, m.id]);
-      }
-    }
-    if (hasMetricPriorityColumn) {
-      db.run("UPDATE metrics SET priority = 'P2' WHERE priority IS NULL");
-    }
+    metricService.defineMany(ALL_METRICS.map((m) => ({
+      ...m,
+      alertOp: m.alert_op,
+      status: "active",
+      speed: "fast",
+    })));
+    db.run("UPDATE metrics SET priority = 'P2' WHERE priority IS NULL");
 
     // Historical rows remain queryable, but retired/noncritical metrics should
     // not appear in active watches or keep unresolved alerts alive.
@@ -1357,166 +1310,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // ── Alert lifecycle (type-aware: open on breach, resolve on recovery) ───────
 
     try {
-      const configSelect = hasMetricConfigColumn ? ", config" : "";
-      const metrics = db.prepare(
-        `SELECT m.id, m.name,
-                m.owner as explicitOwner, p.owner as projectOwner,
-                m.current, m.target, m.threshold, m.alert_op, m.type${configSelect ? ", m.config" : ""}
-         FROM metrics m
-         LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
-           AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
-         WHERE m.status = 'active' AND m.current IS NOT NULL AND m.threshold IS NOT NULL`
-      ).all() as any[];
-
-      const evaluateThresholdBreach = (metric: { current: number; threshold: number; alert_op: string | null }) =>
-        metric.alert_op === ">" || metric.alert_op === "above"
-          ? metric.current > metric.threshold
-          : metric.current < metric.threshold;
-
-      for (const m of metrics) {
-        const owner = resolveMetricOwner(m.id, configuredAgents, m.explicitOwner, m.projectOwner);
-        const registryConfig = configByMetricId.get(m.id) ?? null;
-        const config = hasMetricConfigColumn && m.config ? JSON.parse(m.config) : registryConfig;
-        const alertConfig = config?.alert;
-        const metricType = m.type || "gauge";
-
-        // ── Type-specific breach evaluation ──
-        let breached = false;
-        let thresholdBreached = false;
-        let rateBreached = false;
-        let ratePer: number | null = null;
-        let rateLimit: number | null = null;
-        let rateDirection: "below" | "above" | null = null;
-        let stallDetected = false;
-
-        if (metricType === "health" && alertConfig?.mode === "consecutive_failures") {
-          // Health: breach only after N consecutive failures
-          const requiredCount = alertConfig.count || 3;
-          const recentSnapshots = db.prepare(
-            "SELECT value FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT ?"
-          ).all(m.id, requiredCount) as any[];
-
-          if (recentSnapshots.length >= requiredCount) {
-            const allBreaching = recentSnapshots.every((s: any) =>
-              m.alert_op === ">" ? s.value > m.threshold : s.value < m.threshold
-            );
-            breached = allBreaching;
-          }
-        } else if (metricType === "counter" && alertConfig?.mode === "rate") {
-          // Counter: breach on rate, stall on no increment
-          // Rate check: compare last 2 snapshots
-          const lastTwo = db.prepare(
-            "SELECT value, measured_at FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 2"
-          ).all(m.id) as any[];
-
-          if (lastTwo.length === 2) {
-            const deltaMs = lastTwo[0].measured_at - lastTwo[1].measured_at;
-            const deltaValue = lastTwo[0].value - lastTwo[1].value;
-            if (deltaMs > 0) {
-              const perHour = (deltaValue / deltaMs) * 3600000;
-              ratePer = alertConfig.per === "day" ? perHour * 24 : perHour;
-
-              if (alertConfig.min_rate != null && ratePer < alertConfig.min_rate) {
-                rateBreached = true;
-                rateLimit = alertConfig.min_rate;
-                rateDirection = "below";
-              }
-              if (alertConfig.max_rate != null && ratePer > alertConfig.max_rate) {
-                rateBreached = true;
-                rateLimit = alertConfig.max_rate;
-                rateDirection = "above";
-              }
-            }
-          }
-
-          // Stall detection: no change in stall_after_ms
-          if (alertConfig.stall_after_ms && lastTwo.length >= 2) {
-            const latestSnapshot = lastTwo[0];
-            // Find last snapshot where value was different
-            const lastDifferent = db.prepare(
-              "SELECT measured_at FROM metric_snapshots WHERE metric_id = ? AND value != ? ORDER BY measured_at DESC LIMIT 1"
-            ).get(m.id, latestSnapshot.value) as any;
-            const lastChangeAt = lastDifferent?.measured_at || 0;
-            if (now - lastChangeAt > alertConfig.stall_after_ms) {
-              stallDetected = true;
-            }
-          }
-
-          // Also fall through to basic threshold check for counters without rate config.
-          // Rate-mode counters use this only as a backstop: a low event rate should
-          // not open a misleading "current is below threshold" alert when the
-          // windowed count is already healthy; stallDetected emits metric.stalled.
-          thresholdBreached = evaluateThresholdBreach(m);
-          breached = thresholdBreached || rateBreached;
-        } else if (metricType === "gauge" && alertConfig?.mode === "sustained") {
-          // Gauge sustained: breach only after N consecutive breaching snapshots
-          const requiredCount = alertConfig.consecutive || 3;
-          const recentSnapshots = db.prepare(
-            "SELECT value FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT ?"
-          ).all(m.id, requiredCount) as any[];
-
-          if (recentSnapshots.length >= requiredCount) {
-            breached = recentSnapshots.every((s: any) =>
-              m.alert_op === ">" ? s.value > m.threshold : s.value < m.threshold
-            );
-          }
-        } else {
-          // Default (gauge threshold): immediate breach
-          breached = m.alert_op === ">" || m.alert_op === "above"
-            ? m.current > m.threshold
-            : m.current < m.threshold;
-        }
-
-        // ── Alert open/resolve ──
-        const openAlert = db.prepare(
-          "SELECT id, alert_type, message FROM metric_alerts WHERE metric_id = ? AND resolved_at IS NULL LIMIT 1"
-        ).get(m.id) as { id: number; alert_type?: string; message?: string } | null;
-
-        if (breached) {
-          const thresholdDirection = m.alert_op === ">" || m.alert_op === "above" ? "above" : "below";
-          const rateUnit = alertConfig?.per === "day" ? "day" : "hour";
-          const alertType = rateBreached && !thresholdBreached ? "rate" : "threshold";
-          const message = alertType === "rate"
-            ? `${m.name ?? m.id} rate is ${rateDirection ?? "outside"} limit: rate=${ratePer?.toFixed(2) ?? "?"}/${rateUnit}, limit=${rateLimit ?? "?"}/${rateUnit}, current=${m.current}, target=${m.target ?? "?"}`
-            : `${m.name ?? m.id} is ${thresholdDirection} threshold: current=${m.current}, threshold=${m.threshold}, target=${m.target ?? "?"}`;
-          if (openAlert && (openAlert.alert_type !== alertType || openAlert.message !== message)) {
-            db.run("UPDATE metric_alerts SET alert_type = ?, message = ? WHERE id = ?", [alertType, message, openAlert.id]);
-          }
-          if (!openAlert) {
-            db.run(
-              "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
-              [m.id, alertType, message, now]
-            );
-            const priority = hasMetricPriorityColumn
-              ? ((db.prepare("SELECT COALESCE(priority, 'P2') as priority FROM metrics WHERE id = ?").get(m.id) as { priority?: string } | null)?.priority ?? "P2")
-              : "P2";
-            try {
-              ctx.sdk.emit("metric.breach", {
-                owner, metricId: m.id, metricName: m.name,
-                current: m.current, threshold: m.threshold, target: m.target, message, priority,
-              });
-            } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error emitting metric.breach for ${m.id}: ${e}`); }
-          }
-        } else if (openAlert) {
-          db.run("UPDATE metric_alerts SET resolved_at = ? WHERE id = ?", [now, openAlert.id]);
-          try {
-            ctx.sdk.emit("metric.recovered", {
-              metricId: m.id,
-              metricName: m.name,
-            });
-          } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error emitting metric.recovered for ${m.id}: ${e}`); }
-        }
-
-        // ── Stall event (separate from breach) ──
-        if (stallDetected) {
-          const message = `${m.name ?? m.id} stalled: no change for ${Math.round((alertConfig?.stall_after_ms || 0) / 60000)}min`;
-          try {
-            ctx.sdk.emit("metric.stalled", {
-              owner, metricId: m.id, metricName: m.name, message,
-            });
-          } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error emitting metric.stalled for ${m.id}: ${e}`); }
-        }
-      }
+      metricService.evaluate();
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error during alert lifecycle: ${e}`); }
 
     // ── Snapshot retention cleanup (keep last 30 days) ───────────────
