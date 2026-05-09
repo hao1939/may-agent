@@ -63,6 +63,7 @@
 ## Pattern: artifact-gated recovery sessions can still produce substantive value
 - Symptom: a session starts from a low-bar prompt like "produce any artifact," which makes the resulting write look like mere compliance at first glance.
 - Fix: inspect the actual artifact and source evidence before judging. If the agent used live sources and turned the forced write into a concrete, system-relevant analysis, credit the substantive output while separately noting any scoping or verification hiccups (for example writing into another agent's workspace or missing the first read-back).
+- Extra caution: verify that the recovery artifact is in a tracked, committable location before treating it as the session's real output. A workspace write can satisfy the local gate yet fail to ship if the path is gitignored; if the agent catches that quickly and pivots to a tracked file, score the pivot as recovery rather than as a failed outcome.
 
 ## Pattern: a blocked first finish does not negate a good outcome when recovery is immediate
 - Symptom: a session's first `finish(success)` is rejected for missing read-back verification, which can make the whole run look low-quality if the review stops there.
