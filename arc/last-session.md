@@ -1,13 +1,16 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778289135766_376
+- **Session:** s_1778298061109_493
 - **Status:** success
-- **When:** 2026-05-09T01:20:11.929Z
+- **When:** 2026-05-09T03:45:33.559Z
 
 ## What Happened
-Iter-8 of ruflo-learning-loop: falsified iter-4's ±50ms timestamp join. Nearest-neighbor attribution shows 0/28 open `not dispatchable` escalations belong to v2-spec-coverage-buildout (real owners: evaluator-low-quality-rate-calibration=10, daily-alert-review=2, unattributable=15). Iter-5's "watch v2-spec" framing & falsifier are retracted. Identified likely root cause: in-memory zombie-loop guard at master-worker.ts:1046 sets decision.status='waiting' without persisting to project.md, causing recurring 30-min escalation cycles for projects whose on-disk status remains 'active'. Committed as c64191dca.
+Acted on iter-11 inbox signal: wrote iter-12 arc decision (defer migration of context.read; adopt 'new event_types must be transitions' as durable rule), set project status=paused / iteration=12, journaled iter-10..12, committed (b23fe5b5). Reverted out-of-lane edits left by other agents in evaluator-low-quality-rate-calibration.
 
 ## Files Modified
-- agents/shared/projects/ruflo-learning-loop/outputs/iter-08-attribution-correction-findings.md
+- agents/shared/projects/ruflo-learning-loop/outputs/iter-12-arc-decision.md
 - agents/shared/projects/ruflo-learning-loop/project.md
+
+## Completed
+- ruflo-learning-loop iter-12 arc decision (defer + pause)
