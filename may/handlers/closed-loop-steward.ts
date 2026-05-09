@@ -313,6 +313,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       "- Prefer native ownership: metrics.owner, then project.owner, then agent-name prefix, then may fallback.",
       "- Treat metric.alert_judged as the durable record that the owner judged an alert.",
       "- A judgment is not closure. The handler has already routed P0/P1/P2 alerts that need triage; do not hand-roll metric.alert_judged events.",
+      "- Never attempt direct DB writes from bash/node/sqlite during this audit. query_db is read-only; if a state change is needed, route/escalate or fix the handler/workflow code instead of improvising DB/event writes.",
       "- If routing itself is wrong, fix this handler or the workflow instead of asking an agent to improvise DB/event writes.",
       "- Take the smallest operation that advances closure: route/nudge owner, fix broken ownership/routing, document a valid exception, or escalate when blocked.",
       "- Do not create a project for this cron itself. Create/update a project only when you discover systemic implementation work that cannot be completed in this run.",

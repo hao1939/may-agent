@@ -80,6 +80,34 @@ describe("closed-loop-steward handler", () => {
     expect(runAgent).toHaveBeenCalledWith("may", expect.stringContaining("[cron:closed-loop-steward]"), { source: "closed-loop-steward" });
   });
 
+  it("warns may not to attempt direct DB writes during the audit", async () => {
+    const db = makeDb([
+      {
+        id: 123,
+        metric_id: "handler.failed-count",
+        message: "Handler failures above threshold",
+        created_at: Date.now() - 60_000,
+        metricName: "Handler failures",
+        explicitOwner: "may",
+        projectOwner: null,
+        current: 5,
+        threshold: 3,
+        target: 0,
+        priority: "P2",
+        alertOp: ">",
+      },
+    ]);
+    const runAgent = vi.fn(() => Promise.resolve({ status: "done" }));
+    const ctx = makeCtx(db, runAgent);
+    const handler = create(ctx, { handlerConfig: {} } as any);
+
+    await handler();
+
+    const task = runAgent.mock.calls[0]?.[1];
+    expect(task).toContain("Never attempt direct DB writes from bash/node/sqlite during this audit");
+    expect(task).toContain("route/escalate or fix the handler/workflow code instead of improvising DB/event writes");
+  });
+
   it("skips without dispatch when no alerts or delivery failures exist", async () => {
     const db = makeDb([]);
     const runAgent = vi.fn(() => Promise.resolve({ status: "done" }));

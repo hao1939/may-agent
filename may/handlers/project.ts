@@ -179,6 +179,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
       ctx.sdk.log("info", `[project] Launching ${project.relPath} (workflow: ${workflowName}): ${action.reason}`);
 
+      if (project.status !== "active") {
+        let content = ph.updateField(project.content, "Status", "active");
+        content = ph.updateField(content, "Stop Reason", "");
+        content = ph.updateField(content, "Resume Condition", "");
+        content = ph.updateField(content, "Resume After", "");
+        writeFileSync(project.projectFile, content, "utf-8");
+      }
+
       const projectId = `${project.owner}/${project.relPath.split("/").pop()}`;
       ctx.sdk.runWorkflow(workflowName, task, { source: project.owner, projectId })
         .then((r) => { ctx.sdk.log("info", `[project] ${project.relPath} → ${r.status}`); })
