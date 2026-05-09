@@ -1,168 +1,170 @@
-# Iteration 2 — Mechanism + Fix Options (heuristic v2)
+# Iteration 2 — Mechanism + manual audit + fix options
 
-## 1) Where heuristic v2 is implemented + the exact rules
+## 1) Where heuristic v2 is implemented + exact rules
 
-### 1.1 Primary implementation (classification + issue extraction)
+### A. Heuristic evaluator implementation (routing + scoring)
 **File:** `agents/evaluator/workflows/evaluator-aftermath.ts`
 
-Key functions:
-- `transcriptIssues(transcript: string): string[]` — extracts *hygiene / pipeline* issue strings by pattern-matching the transcript.
-- `classifyVerdict(session, transcript)` — converts session fields + transcript issues into `(quality, verdict, issues)`.
+Key constants/functions:
+- `export const HEURISTIC_VERSION = 4;`
+- `transcriptIssues(transcript: string): string[]` — extracts “issues” by transcript regex/string matches + constraint checks.
+- `classifyVerdict(session, transcript)` — maps session status/opCount + transcriptIssues → {quality, verdict, issues}.
+- `shouldRefreshEvaluation(evaluation, heuristic)` — only refreshes older evaluations when the *previous verdict was good*.
 
-**Step-function scoring rule (main driver of “quality=0.55”):**
-```ts
-const failed = status === "error" || status === "interrupted" || !!session?.error;
-return {
-  quality: failed ? 0.2 : issues.length ? 0.55 : 0.85,
-  verdict: failed || issues.length ? "needs_improvement" : "good",
-  issues,
-};
-```
-Meaning:
-- Any `status in {error, interrupted}` or any non-null `session.error` ⇒ `quality=0.2` + `needs_improvement`.
-- Else, **any non-empty `issues[]`** ⇒ `quality=0.55` + `needs_improvement`.
-- Else ⇒ `quality=0.85` + `good`.
+#### classifyVerdict() step function (root cause)
+From `classifyVerdict()`:
+- `failed := status in {'error','interrupted'} OR !!session.error`
+- `issues :=`
+  - `terminal status: ${status}` when status is error/interrupted
+  - `error: ${session.error}` when session.error exists
+  - `shallow session: ${opCount} ops` when `done` and `0 < opCount < 3`
+  - `...transcriptIssues(transcript)`
+  - `...antiShallowIssues(session, transcript)`
 
-### 1.2 Rules corresponding to the top NI “issues”
-All are in `transcriptIssues()` unless otherwise noted:
+**Verdict mapping:**
+- if `failed` → `quality=0.2`, `verdict='needs_improvement'`
+- else if `issues.length>0` → `quality=0.55`, `verdict='needs_improvement'`
+- else → `quality=0.85`, `verdict='good'`
 
-#### A) “finish blocked by uncommitted changes”
-**Rule:**
-```ts
-if (ownText.includes("finish() blocked [uncommitted changes]")) {
-  issues.push("finish blocked by uncommitted changes");
-}
-```
-This is a pure transcript substring match: any `finish()` toolResult containing that phrase triggers NI.
+This is a *hard gate*: **any issue (even purely hygiene/process) forces NI at 0.55**.
 
-#### B) “schema/query error in transcript”
-**Rule:**
-```ts
-if (/no such column:/i.test(ownText) || /no such table:/i.test(ownText)) {
-  issues.push("schema/query error in transcript");
-}
-```
-This is a regex match over the “session-owned transcript view” (includes assistant text + tool calls, and for `query_db` toolResults includes the tool output text).
+#### transcriptIssues(): exact top-issue detectors
+Also in `agents/evaluator/workflows/evaluator-aftermath.ts`:
 
-#### C) “terminal status: interrupted” + “error: Clean start (fresh)”
-These are from **session table fields**, not transcript parsing:
-```ts
-if (status === "error" || status === "interrupted") issues.push(`terminal status: ${status}`);
-if (session?.error) issues.push(`error: ${String(session.error).slice(0, 240)}`);
-```
-So if `sessions.status='interrupted'` and `sessions.error='Clean start (fresh)'`, the heuristic deterministically emits those issues and assigns `quality=0.2`.
+Top issue → detector:
+- **“finish blocked by uncommitted changes”**
+  - `if (ownText.includes("finish() blocked [uncommitted changes]")) issues.push("finish blocked by uncommitted changes")`
+- **“schema/query error in transcript”**
+  - `if (/no such column:/i.test(ownText) || /no such table:/i.test(ownText)) issues.push("schema/query error in transcript")`
+- **“terminal status: interrupted” / “error: Clean start (fresh)”**
+  - `if (status === 'error' || status === 'interrupted') issues.push('terminal status: ...')`
+  - `if (session?.error) issues.push('error: ...')` (e.g. includes the literal “Clean start (fresh)” when present)
 
-### 1.3 Where heuristicVersion=2 is applied / rolled out (refresh mechanics)
+Other hygiene-ish detectors that can force NI=0.55:
+- broad commits: `/git\s+add\s+may\/\s+shared\/\s+&&\s+git\s+commit/`
+- committed generated runtime files: looks for `last-session.md` + `gate-outcomes.log` + a `git add ... && git commit` sequence
+- live signal unavailable: matches “Live Runtime Signals ... Status: unavailable” in workflow-collected facts
+- metric health claim without evidence: claims “all P0 metrics green/healthy” without query_db or live signals
+- constraint violation: edited forbidden paths inferred from the task text
+
+
+### B. Where `heuristicVersion=2` comes from / rollout
 **File:** `agents/may/handlers/session-aftermath-scan.ts`
 
-- This cron is a fallback: it re-runs evaluation for terminal sessions that have **no** evaluation, *or* have a **good** evaluation with a lower heuristic version.
-- Default config uses:
-```ts
-const DEFAULT_HEURISTIC_VERSION = 2;
-```
-- Critically, the refresh condition is:
-```sql
-e.sessionId IS NULL
-OR (e.verdict = 'good' AND json_extract(e.overall,'$.heuristicVersion') < ?)
-```
-So **needs_improvement evaluations do not get refreshed** when heuristic versions bump (“NI-sticky”). This can inflate/extend the impact of an overly-harsh v2 if it is the first heuristic to label a session NI.
+- `DEFAULT_HEURISTIC_VERSION = 2`
+- The scan dispatches the `evaluator-aftermath` workflow for terminal sessions missing evaluations, **or** for sessions whose existing evaluation is `good` with heuristicVersion < configured version.
 
----
+Important nuance (version stickiness):
+- The scan refresh predicate is:
+  - `e.sessionId IS NULL OR (e.verdict='good' AND json_extract(e.overall,'$.heuristicVersion') < heuristicVersion)`
+- **It does *not* refresh `needs_improvement` evaluations** when heuristicVersion changes.
+
+So even as `HEURISTIC_VERSION` increments (now 4 in evaluator-aftermath), older hv=2 NI rows can persist (NI is sticky), and the backfill scan itself is configured to **2** unless overridden in cron config.
+
 
 ## 2) Stratified manual audit (n=20)
 
-Method:
-- Stratified by `(heuristicVersion, verdict)` using `evaluations.overall -> $.heuristicVersion`.
-- For each sampled session, checked:
-  - DB `evaluations.issues` (root cause category)
-  - For a few representative ones, verified by grepping the transcript JSONL for the triggering phrase.
+Method (verifiable):
+- Sampled sessionIds from the DB by stratum using `evaluations.createdAt`, `verdict`, and `overall.heuristicVersion`.
+- For each, I classified it as:
+  - **Hygiene/process**: failure is primarily guard/tooling hygiene (e.g., finish blocked, schema query error, wrong tool usage), not task-output reasoning.
+  - **Unscorable/pipeline**: terminal interrupted/clean-start; no meaningful content to judge.
+  - **Substantive**: actual poor task-quality (wrong, incomplete, misleading output) independent of hygiene.
 
-### Legend
-- **Substantive low-quality** = task outcome appears wrong/incomplete (not just hygiene)
-- **Hygiene/process** = guard/commit/tooling hygiene failure dominates; outcome may be unknown
-- **Unscorable/pipeline** = interrupted/clean start, query schema errors, etc. where the “NI” is mostly a pipeline signal, not an agent capability signal
+Note: For many hv=2 sessions, the `issues` string itself is sufficient to classify (because the heuristic detectors are literal and the issues are pure hygiene). For several examples, transcript snippets show the `query_db` schema error output that triggers the “schema/query error” issue.
 
-### 2.1 hv=2 + verdict=needs_improvement (10)
-| sessionId | q | issues (abridged) | classification | justification |
-|---|---:|---|---|---|
-| s_1778262140393_13 | 0.55 | finish blocked; broad may/shared commit; committed runtime files | Hygiene/process | Transcript contains explicit `finish() blocked [uncommitted changes]` (verified by grep). NI is from guard failure, not task reasoning quality. |
-| s_1778261147546_2 | 0.55 | schema/query error | Unscorable/pipeline | `query_db` toolResult contains `no such column: id` (verified by grep). This is likely a schema introspection mistake; hard to infer task outcome quality. |
-| s_1778261139993_1 | 0.55 | finish blocked | Hygiene/process | Pure finish guard hygiene; evaluation step-function assigns 0.55 if any issue exists. |
-| s_1778261255980_7 | 0.20 | terminal interrupted; error Clean start (fresh) | Unscorable/pipeline | Session table has `status=interrupted` and `error=Clean start (fresh)`; heuristic deterministically sets q=0.2. This reflects runner interruption, not task outcome. |
-| s_1778261317514_9 | 0.20 | terminal interrupted; Clean start; schema/query error | Unscorable/pipeline | Same interruption + additional query error; dominated by inability to complete a run. |
-| s_1778261673918_5 | 0.55 | schema/query error | Unscorable/pipeline | Same regex trigger; without further artifact review, this reads as tooling/schema mismatch rather than reasoning collapse. |
-| s_1778260767916_5 | 0.55 | finish blocked; broad commit | Hygiene/process | Triggered by finish guard + risky commit pattern; outcome unknown but the failure mode is process hygiene. |
-| s_1778260774855_7 | 0.55 | finish blocked | Hygiene/process | Again a finish guard failure; this is explicitly process. |
-| s_1778260767387_4 | 0.55 | schema/query error | Unscorable/pipeline | Query error pattern; tends to be a brittle trigger (regex) and frequently not an actual “task failure.” |
-| s_1778260995450_10 | 0.55 | finish blocked | Hygiene/process | Finish guard. |
+### A) 10 sessions: hv=2 + verdict=needs_improvement (targeting quality≈0.55)
 
-**Audit take-away:** 10/10 are dominated by hygiene/pipeline flags rather than clear substantive task failure.
+| sessionId | issues (from DB) | Manual judgment | Justification (1–2 sentences) |
+|---|---|---|---|
+| s_1778215006826_55 | ["schema/query error in transcript"] | Hygiene | Triggered by `query_db` returning “no such column …”; this is a schema-guessing mistake, not substantive task-quality failure. |
+| s_1778221045539_43 | ["schema/query error in transcript"] | Hygiene | Same pattern: invalid SQL column/table reference flagged by heuristic regex. |
+| s_1778251169310_70 | ["finish blocked by uncommitted changes","broad may/shared commit during session"] | Hygiene | Failing the finish guard and doing broad git add/commit is process hygiene; does not imply the reasoning/output was low quality. |
+| s_1778204791049_156 | ["schema/query error in transcript"] | Hygiene | Schema/query error indicates tool/query hygiene failure. |
+| s_1778222786105_9 | ["finish blocked by uncommitted changes"] | Hygiene | Explicit finish guard failure; task output quality unknown/secondary. |
+| s_1778258372398_2 | ["finish blocked by uncommitted changes"] | Hygiene | Same: operational hygiene. |
+| s_1778232477825_3 | ["terminal status: interrupted","error: Clean start (fresh)"] | Unscorable/pipeline | Interrupted + “Clean start (fresh)” looks like runner restart / non-work termination; not substantive. |
+| s_1778251727094_5 | ["finish blocked by uncommitted changes"] | Hygiene | Pure finish/commit hygiene. |
+| s_1778221601625_51 | ["finish blocked by uncommitted changes","broad may/shared commit during session","committed generated runtime files"] | Hygiene | All issues are repo hygiene/guard compliance, not task reasoning quality. |
+| s_1778222762890_6 | ["finish blocked by uncommitted changes"] | Hygiene | Pure guard hygiene failure. |
 
-### 2.2 hv=NULL + verdict=needs_improvement (5)
-| sessionId | q | issues (abridged) | classification | justification |
-|---|---:|---|---|---|
-| s_1778211956403_3 | 0.55 | schema/query error; committed runtime files | Hygiene/process | Same trigger set; still process/tooling. |
-| s_1778211943135_2 | 0.55 | schema/query error | Unscorable/pipeline | Query error; outcome unclear. |
-| s_1778211315535_5 | 0.20 | interrupted; Clean start; schema/query error | Unscorable/pipeline | Runner interruption dominates. |
-| s_1778211629857_6 | 0.55 | finish blocked; schema/query error; broad commit; runtime files; live signals unavailable | Hygiene/process | A pileup of hygiene flags; not a reasoning-quality diagnosis. |
-| s_1778211532870_3 | 0.55 | schema/query error | Unscorable/pipeline | Query error. |
+**Tally (hv=2 + NI):** 8 hygiene, 1 unscorable/pipeline, 1 hygiene+pipeline (counted as hygiene above when not terminal).
 
-**Audit take-away:** 5/5 also look hygiene/pipeline dominated.
 
-### 2.3 hv=2 + verdict=good (5)
-| sessionId | q | issues | classification | justification |
-|---|---:|---|---|---|
-| s_1778260767342_3 | 0.85 | [] | Likely OK | No heuristic issues; by definition the heuristic sees no transcript/session red flags. |
-| s_1778259480085_9 | 0.85 | [] | Likely OK | Same. |
-| s_1778258867886_8 | 0.85 | [] | Likely OK | Same. |
-| s_1778258366478_1 | 0.85 | [] | Likely OK | Same. |
-| s_1778258262135_22 | 0.85 | [] | Likely OK | Same. |
+### B) 5 sessions: hv=NULL + verdict=needs_improvement
 
-**Note:** “good” here only means “no detected red flags,” not that the task outcome is verified high-quality; but it does show the NI spike is concentrated in the specific hygiene/pipeline triggers above.
+These are rarer in current windows; sampled from the last 30 days.
 
----
+| sessionId | issues (from DB) | Manual judgment | Justification |
+|---|---|---|---|
+| s_1777680453712_2687 | structured issues: PROCESS_FAILURE / VERIFICATION_GAP / LOOPING | Substantive | Clear repeated failure to comply with stop/decision requirements, unverified deliverables, and looping—this is task/process failure at the outcome level, not just a one-off tool hiccup. |
+| s_1777623697271_349 | long freeform issues referencing missing deliverables, no readbacks, symlink/gitignore confusion | Substantive | Multiple claimed deliverables without evidence + repeated wasted cycles; this is genuine low-quality completion behavior. |
+| s_1777538683350_1082 | verification failure + instruction noncompliance | Substantive | Explicitly failed to verify required deliverables/readbacks and violated “edit only project.md” constraint—real quality failure. |
+| s_1777683491123_2963 | ["shallow_session: ... only 2 messages"] | Unscorable/pipeline | Too little content to judge; essentially a null session. |
+| s_1777036260240_119 | ["shallow_session: ... only 2 messages"] | Unscorable/pipeline | Same pattern: no meaningful work performed. |
 
-## 3) Fix options (interventions) + expected metric impact
+**Tally (hv=null + NI):** 3 substantive, 2 unscorable.
 
-### Option 1 — Rubric/metric change (separate “substantive” vs “hygiene/unscorable”)
-**Change:** Define/alert on a *substantive* low-quality metric that excludes:
-- interruptions / runner errors (`status in {error, interrupted}` or `session.error` set)
-- schema/query errors
-- finish blocked / git hygiene issues
-…while still tracking those in separate reliability metrics.
 
-**Expected impact:** Large immediate reduction in `evaluator.low-quality-rate-24h`-style paging pressure if the alert pivots to substantive failures. In the audited slice, 15/15 NI examples were hygiene/unscorable dominated; excluding them would push the effective NI rate far closer to actual task-quality failures.
+### C) 5 sessions: hv=2 + verdict=good
 
-**Risk:** If hygiene issues are actually critical to product quality, excluding them could hide real problems. Mitigation: introduce parallel “pipeline reliability” metrics with their own thresholds.
+All have `issues=[]` and `quality=0.85` by definition.
 
-### Option 2 — Heuristic tuning (reduce false-positive / brittle triggers)
-**Change ideas:**
-1) Replace the step-function `issues.length>0 => NI` with a weighted scoring scheme, e.g.:
-   - “finish blocked” counts as *process warning* but does not force NI unless combined with other evidence.
-   - “schema/query error” only counts if it aborts the session goal (e.g., repeated errors, or no subsequent successful query).
-2) Add a new verdict bucket: `unscorable` for `(status=interrupted OR error contains 'Clean start')` and exclude from low-quality rate.
+| sessionId | Manual judgment | Justification |
+|---|---|---|
+| s_1778246349619_33 | Likely good | No heuristic issues detected; under this heuristic, “good” means it avoided the known hygiene triggers and terminal failure signals. |
+| s_1778216928244_80 | Likely good | Same. |
+| s_1778256686089_13 | Likely good | Same. |
+| s_1778233269083_3 | Likely good | Same. |
+| s_1778224546835_1 | Likely good | Same. |
 
-**Expected impact:** Moderate-to-large reduction in NI rate; would especially reduce the mass of quality=0.55 sessions.
+Note: This stratum cannot confirm “substantive success” without reading artifacts/transcripts, but it shows the rule behavior: **good == no detected issues**.
 
-**Risk:** More complex heuristic = harder to maintain; needs unit tests (there are evaluator aftermath tests in `agents/shared/tests/evaluator-aftermath.test.ts`).
 
-### Option 3 — Workflow/source fixes (reduce incidence of the triggers)
-**Change:** Reduce upstream hygiene failures so the existing heuristic rubric is satisfied more often:
-- Prevent writing to gitignored `agents/shared/projects/**` during normal sessions (or ensure outputs land in a committable workspace).
-- Add a standard “schema first” snippet and enforce it in templates to avoid `no such column/table` query errors.
-- Investigate/mitigate “Clean start (fresh)” interruptions (runner stability).
+## 3) Causal conclusion
 
-**Expected impact:** Slower but durable reduction. If “finish blocked” and “schema/query error” dominate NI counts, cutting their incidence could substantially reduce the broad low-quality metric without changing rubric.
+- The **dominant mechanism** for the spike is not “reasoning collapse”; it is the **hard step-function**: *any* hygiene/process/pipeline issue → `needs_improvement` at `quality=0.55`.
+- The top breached issues (“finish blocked…”, “schema/query error…”, “interrupted/clean start”) are **direct string/regex triggers**, so they will fire frequently and deterministically.
+- Rollout nuance: `session-aftermath-scan` defaults to hv=2 and **won’t refresh NI rows**, so hv=2 NI labels can persist, and hv drift is expected.
 
-**Risk:** Some causes (runner interruptions) may be outside agent control; needs owner escalation.
 
----
+## 4) Fix options (interventions) + expected metric impact
 
-## 4) Answers to the iteration questions (as-of this artifact)
+### Option 1 — Rubric/metric change: separate “substantive quality” from “hygiene/unscorable”
+**Change:** Redefine/replace `evaluator.low-quality-rate-24h` for paging to exclude:
+- `terminal status: interrupted/error` + “Clean start (fresh)” cases (unscorable)
+- pure hygiene issues (finish blocked, schema/query error, broad commit, committed runtime files, live-signal unavailable)
 
-1) **Is the goal closer?** No—this iteration is a mechanism audit; it does not change the metric yet.
-2) **What did we learn?** The dominant v2 NI labels are mechanically produced by a small set of brittle transcript/session-field triggers, and the scoring is a step-function (any issue => NI/q=0.55).
-3) **Is the current milestone the right next step?** Yes—mechanism is now pinned down with file/module + rule strings.
-4) **Are we closing the loop?** Closer: we now have concrete levers (metric split, heuristic reweight, workflow fixes).
-5) **Is it verified?** Partially: we verified rule locations via source inspection, and verified several trigger phrases directly in transcripts with grep.
-6) **What’s blocking progress?** No external blocker; next step is choosing the intervention owner (rubric vs heuristic vs workflow) and implementing with tests + alerting alignment.
+**Why it moves the metric:** The audit shows hv=2 NI is overwhelmingly hygiene/unscorable. Excluding these should move the “reasoning quality” rate closer to the baseline (likely near the already-low substantive metric that’s been discussed elsewhere).
+
+**Risk:** You lose an alert for operational hygiene regressions. Mitigate by creating a separate “hygiene failure rate” metric with its own threshold.
+
+
+### Option 2 — Heuristic tuning: don’t map hygiene-only issues to NI=0.55
+**Change:** In `classifyVerdict()`, bucket issues into `substantiveIssues` vs `hygieneIssues` vs `unscorableSignals`.
+- If only hygieneIssues present (and not failed), keep `verdict='good'` but include issues in `overall.hygieneIssues`.
+- If failed/unscorable, set `verdict='unscorable'` (new) or keep NI but exclude from quality metric.
+
+**Expected impact:** Directly reduces NI count without requiring metric SQL changes. Given the sample, this could remove ~70–90% of hv=2 NI entries if hygiene dominates.
+
+**Risk:** False-goods: sessions that are “technically bad” in process might still be considered NI by policy. This needs explicit product decision: are we measuring “task quality” or “operational correctness”?
+
+
+### Option 3 — Workflow fix: reduce hygiene trigger incidence upstream
+**Change targets:**
+- **finish blocked by uncommitted changes**: improve agent guidance to avoid modifying gitignored `agents/shared/projects/**` (or change the guard to special-case gitignored paths) and enforce `git status --short` checks before finish.
+- **schema/query error in transcript**: encourage use of `PRAGMA table_info(...)` before SELECT; optionally add a helper snippet in prompts.
+- **interrupted/clean start**: treat as runner instability; consider changing scoring to unscorable and/or make recovery workflow not count as low quality.
+
+**Expected impact:** Slower but durable reduction: fewer hygiene triggers means fewer NI sessions under current heuristic.
+
+**Risk:** Requires behavior change across multiple agents; may take time to move a 24h window metric.
+
+
+## 5) Recommended next step (closing the loop)
+Pick one of:
+1) **Alerting/rubric pivot** (recommended): page on substantive metric; track hygiene separately.
+2) **Heuristic refactor**: introduce hygiene/unscorable buckets so “NI” aligns with substantive failures.
+3) **Workflow hardening**: reduce trigger incidence (especially finish-block + schema errors).
+
+The choice is governance: what do we want “low-quality-rate” to mean? The current heuristic encodes “any hygiene failure is low quality.”
