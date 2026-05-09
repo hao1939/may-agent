@@ -13,7 +13,7 @@ Proposals flow: **arc proposes → human/may approves → dev implements**
 
 
 ## Proposed (needs review)
-- [ ] [P2] Reconcile common-sense.md Conventions table (sessions/metrics) with `query_db` doctrine — table still says `bun:sqlite readonly`, contradicts its own DB-access section; KE-917 — agents/arc/workspace/proposals/2026-05-09-common-sense-conventions-table-query_db.md (proposed: 2026-05-09)
+- [ ] [P1] Reconcile common-sense.md Conventions table (sessions/metrics) with `query_db` doctrine — table still says `bun:sqlite readonly`, contradicts its own DB-access section; **bumped P2→P1 2026-05-09 ~14Z: 144 schema/query-error routed aftermaths in 24h across 4 agents (may=79, arc=23, dev=22, scout=20), KE-923**; KE-917 — agents/arc/workspace/proposals/2026-05-09-common-sense-conventions-table-query_db.md (proposed: 2026-05-09)
 - [ ] [P2] Notify `v2-spec-coverage-buildout` owner (may): its `waiting` state is the gating variable behind 20–22 open `dispatch_waiting` escalations (iter-4 closure_eligible_now=0/20; KE-903) — agents/arc/workspace/proposals/2026-05-08-v2-spec-coverage-buildout-is-the-load-bearing-waiting-project.md (proposed: 2026-05-08)
 - [ ] [P1] Teach validateDispatch about waiting/blocked + unread comments (KE-485 redux; 5 escalations from v2-spec-coverage-buildout in <4h bypassing the 24h cooldown; KE-902) — agents/arc/workspace/proposals/2026-05-08-validatedispatch-waiting-with-unread-comments.md (proposed: 2026-05-08)
 - [ ] [P1] Add "Schema footguns" section to shared/common-sense.md (27 aftermath schema-error flags in 2h across 4 agents; KE-816) — agents/arc/workspace/proposals/2026-05-08-common-sense-schema-footguns.md (proposed: 2026-05-08)
