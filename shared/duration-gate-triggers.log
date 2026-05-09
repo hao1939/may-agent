@@ -30,3 +30,5 @@
 2026-05-09T08:27:56.090Z agent=dev gate=duration elapsed_sec=88 threshold_sec=90 tool_calls=26 status=done action=re-prompt
 2026-05-09T08:30:42.549Z agent=scout gate=duration elapsed_sec=61 threshold_sec=90 tool_calls=12 status=done action=re-prompt
 2026-05-09T09:05:43.436Z agent=dev gate=duration elapsed_sec=86 threshold_sec=90 tool_calls=21 status=done action=re-prompt
+2026-05-09T09:26:17.305Z agent=scout gate=duration elapsed_sec=52 threshold_sec=90 tool_calls=12 status=done action=re-prompt
+2026-05-09T09:28:09.904Z agent=arc gate=duration elapsed_sec=89 threshold_sec=90 tool_calls=12 status=done action=re-prompt

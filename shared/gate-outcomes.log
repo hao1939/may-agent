@@ -132,3 +132,11 @@
 2026-05-09T08:30:42.549Z agent=scout gate=duration elapsed_sec=61 threshold_sec=90 tool_calls=12 status=done action=re-prompt
 2026-05-09T08:33:02.027Z agent=dev gate=all-passed tool_calls=27 elapsed_sec=149 deliverable_edits=0 status=done action=none
 2026-05-09T08:36:54.203Z agent=arc gate=all-passed tool_calls=41 elapsed_sec=445 deliverable_edits=0 status=done action=none
+2026-05-09T09:05:43.436Z agent=dev gate=duration elapsed_sec=86 threshold_sec=90 tool_calls=21 status=done action=re-prompt
+2026-05-09T09:08:32.945Z agent=arc gate=all-passed tool_calls=22 elapsed_sec=185 deliverable_edits=0 status=done action=none
+2026-05-09T09:17:49.894Z agent=evaluator gate=all-passed tool_calls=31 elapsed_sec=297 deliverable_edits=0 status=done action=none
+2026-05-09T09:24:50.197Z agent=dev gate=all-passed tool_calls=25 elapsed_sec=116 deliverable_edits=0 status=done action=none
+2026-05-09T09:26:17.305Z agent=scout gate=duration elapsed_sec=52 threshold_sec=90 tool_calls=12 status=done action=re-prompt
+2026-05-09T09:28:09.904Z agent=arc gate=duration elapsed_sec=89 threshold_sec=90 tool_calls=12 status=done action=re-prompt
+2026-05-09T09:35:55.933Z agent=evaluator gate=all-passed tool_calls=30 elapsed_sec=241 deliverable_edits=0 status=done action=none
+2026-05-09T09:48:14.703Z agent=dev gate=all-passed tool_calls=36 elapsed_sec=121 deliverable_edits=0 status=done action=none

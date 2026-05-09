@@ -36,6 +36,10 @@
 - Symptom: routing labels a session as a `knowledge update`, but the transcript only reads an existing KE/article and then calls `finish()` with no written deliverables.
 - Fix: verify authorship and actual file changes before crediting material output. Reading a pre-existing knowledge file can justify a diagnosis, but it is not itself a new artifact or knowledge update.
 
+## Pattern: metric-alert dismissal can collapse into artifact-gate compliance
+- Symptom: a heartbeat reads an existing metric-analysis KE, writes a one-line workspace note like "dismissing per KE-...", and finishes without fresh metric checks, follow-through, or any substantive downstream work.
+- Fix: when reviewing alert-handling sessions, separate the diagnosis from the session's own contribution. Credit the reused KE for the diagnosis, but require fresh evidence or a real operational action before treating the session itself as materially successful.
+
 ## Pattern: short-interval follow-up reviews can still add value through delta tracking
 - Symptom: a follow-up review happens minutes after a fuller report, so there is little new raw data and the session risks repeating prior analysis.
 - Fix: if the underlying evidence is still fresh, verify the live state, then produce a compact status tracker that answers "what changed / what remains unacted on" instead of redoing the whole review. Credit sessions that transform prior findings into explicit recommendation-tracking with current unresolved items.

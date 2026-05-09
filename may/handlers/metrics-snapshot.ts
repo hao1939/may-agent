@@ -110,7 +110,7 @@ const ALL_METRICS: MetricDef[] = [
   { id: "infra.sessions.active-count", name: "Active sessions", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 5, threshold: 0, unit: "count", alert_op: "<", priority: "P2" },
   // v2 structural metrics (S1, S7)
   { id: "v2.runagent-callsite-conformance", name: "runAgent callsite conformance rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P2" },
-  { id: "v2.heartbeat-decision-rate", name: "Heartbeat decision coverage rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P2" },
+  { id: "v2.heartbeat-decision-rate", name: "Heartbeat decision coverage rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0, unit: "ratio", alert_op: "<", priority: "P2" },  // threshold=0: metric implementation doesn't match spec (measures handler config, not decision events). Suppressed until reimplemented.
 ];
 
 const RETIRED_METRIC_IDS = [
