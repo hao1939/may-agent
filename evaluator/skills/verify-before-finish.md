@@ -5,22 +5,22 @@
 
 ## The Rule
 
-Before calling `finish(status: "success")`, your **last 5 tool calls** must include at least ONE verification action:
-- `read()` — confirm a file you created/modified
-- `bash()` with grep/ls/cat/test — confirm expected state  
-- Any tool that produces evidence your work is correct
+Before calling `finish(status: "success")`, your recent tool calls must include verification evidence:
+- `read()` every file you changed with `write()` or `edit()`
+- `bash()` with grep/ls/cat/test may support claims about shell-written files or behavior
+- Tool previews are not read-back verification
 
 ## Quick Check
 
 Before typing `finish(success)`, ask: **"What tool output proves my work is correct?"**
 
-- If you can point to a recent read/grep/test output → ✅ proceed
-- If your last 5 calls were all write/edit/bash-writes → ❌ STOP, add one verification
+- If every direct write/edit has a later read() and your behavioral claims have evidence → ✅ proceed
+- If any file you wrote/edited lacks a later read() → ❌ STOP, read it back
 
 ## Even For Trivial Sessions
 
 Even if the task was simple (echo hello, write one file, heartbeat admin):
-- **Still read back** at least one artifact before finishing
+- **Still read back** every file you wrote or edited before finishing
 - The convention checker doesn't care about task complexity — it checks tool history
 
 ## Anti-Pattern
