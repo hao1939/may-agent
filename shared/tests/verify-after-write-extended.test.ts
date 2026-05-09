@@ -63,16 +63,13 @@ describe('verify-after-write guard', () => {
     expect(guard.handle(event as any)).toEqual([]);
   });
 
-  it('blocks finish when writes are unverified', () => {
+  it('allows finish when writes are unverified because write returns a preview', () => {
     const event = makeEvent(
       [toolCallMsg('write', 'foo.ts')],
       [],
       { status: 'success' },
     );
-    const demands = guard.handle(event as any);
-    expect(demands.length).toBe(1);
-    expect(demands[0].type).toBe('block');
-    expect(demands[0].reason).toContain('foo.ts');
+    expect(guard.handle(event as any)).toEqual([]);
   });
 
   it('blocks finish when edit is unverified', () => {
@@ -96,15 +93,13 @@ describe('verify-after-write guard', () => {
     expect(guard.handle(event as any)).toEqual([]);
   });
 
-  it('blocks finish when write in earlier step was never read', () => {
+  it('allows finish when write in earlier step was never read', () => {
     const event = makeEvent(
       [toolCallMsg('read', 'other.ts')],
       [{ result: { messages: [toolCallMsg('write', 'foo.ts')] } }],
       { status: 'success' },
     );
-    const demands = guard.handle(event as any);
-    expect(demands.length).toBe(1);
-    expect(demands[0].reason).toContain('foo.ts');
+    expect(guard.handle(event as any)).toEqual([]);
   });
 
   it('does not block non-success finish', () => {
@@ -127,7 +122,8 @@ describe('verify-after-write guard', () => {
     );
     const demands = guard.handle(event as any);
     expect(demands.length).toBe(1);
-    expect(demands[0].reason).toContain('2 file(s)');
+    expect(demands[0].reason).toContain('b.ts');
+    expect(demands[0].reason).not.toContain('a.ts');
   });
 
   it('normalizes paths with ./', () => {

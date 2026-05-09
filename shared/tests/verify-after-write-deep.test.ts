@@ -46,19 +46,16 @@ describe("verify-after-write guard", () => {
     expect(guard.handle(event)).toEqual([]);
   });
 
-  it("blocks finish when writes are unverified", () => {
+  it("allows finish when writes are unverified because write returns a preview", () => {
     const msgs = [makeMsg([{ name: "write", path: "foo.ts" }])];
     const event = makeEvent({
       messages: msgs,
       finishResult: { status: "success" },
     });
-    const demands = guard.handle(event);
-    expect(demands.length).toBe(1);
-    expect(demands[0].type).toBe("block");
-    expect(demands[0].reason).toContain("foo.ts");
+    expect(guard.handle(event)).toEqual([]);
   });
 
-  it("allows finish when all writes are verified by read", () => {
+  it("allows finish when writes are followed by read", () => {
     const msgs = [
       makeMsg([
         { name: "write", path: "foo.ts" },
@@ -121,7 +118,8 @@ describe("verify-after-write guard", () => {
     });
     const demands = guard.handle(event);
     expect(demands.length).toBe(1);
-    expect(demands[0].reason).toContain("2 file(s)");
+    expect(demands[0].reason).toContain("b.ts");
+    expect(demands[0].reason).not.toContain("a.ts");
   });
 
   it("does not block non-success finish", () => {
@@ -157,7 +155,7 @@ describe("verify-after-write guard", () => {
     expect(guard.handle(event)).toEqual([]);
   });
 
-  it("read before write does not count as verification", () => {
+  it("read before write is allowed because writes do not require a later read", () => {
     const msgs = [
       makeMsg([
         { name: "read", path: "foo.ts" },
@@ -168,9 +166,7 @@ describe("verify-after-write guard", () => {
       messages: msgs,
       finishResult: { status: "success" },
     });
-    const demands = guard.handle(event);
-    expect(demands.length).toBe(1);
-    expect(demands[0].reason).toContain("foo.ts");
+    expect(guard.handle(event)).toEqual([]);
   });
 
   it("handles toolCall type as well as tool_use", () => {

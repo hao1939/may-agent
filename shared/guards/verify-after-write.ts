@@ -39,14 +39,14 @@ function normPath(p: string): string {
 }
 
 /**
- * Find unverified write/edit paths in a single step's messages.
+ * Find unverified edit paths in a single step's messages.
  */
 function findUnverifiedPaths(messages: any[]): string[] {
   const calls = extractToolCalls(messages);
-  const writtenPaths = new Map<string, number>(); // path → index of edit call
+  const writtenPaths = new Map<string, number>(); // path -> index of edit call
 
   for (const call of calls) {
-    if ((call.name === "edit" || call.name === "write") && call.path) {
+    if (call.name === "edit" && call.path) {
       const np = normPath(call.path);
       writtenPaths.set(np, call.index);
     } else if (call.name === "read" && call.path) {
@@ -75,13 +75,15 @@ function findSessionUnverifiedPaths(event: WorkflowGuardEvent): string[] {
   }
   allMessages.push(event.result.messages as any[]);
 
-  // Build global write→read tracking across all steps in order
+  // Build global edit->read tracking across all steps in order.
+  // write() returns a content/diff preview and is intentionally not blocked
+  // here; see the EXP-575 note in the file header.
   const unverified = new Set<string>();
 
   for (const messages of allMessages) {
     const calls = extractToolCalls(messages);
     for (const call of calls) {
-      if ((call.name === "edit" || call.name === "write") && call.path) {
+      if (call.name === "edit" && call.path) {
         unverified.add(normPath(call.path));
       } else if (call.name === "read" && call.path) {
         unverified.delete(normPath(call.path));
@@ -113,7 +115,7 @@ export const guard: WorkflowGuard = {
           type: "block",
           reason:
             `C1.3 Verify-After-Write: Cannot finish(success) — ${sessionUnverified.length} file(s) ` +
-            `were written but never read() back for verification: ` +
+            `were edited but never read() back for verification: ` +
             `${sessionUnverified.join(", ")}. ` +
             `You MUST read() each modified file to verify correctness before finishing.`,
         }];

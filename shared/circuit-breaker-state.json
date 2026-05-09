@@ -22,8 +22,9 @@
       "consecutiveErrors": 0
     },
     "evaluator": {
-      "consecutiveErrors": 2,
-      "lastError": "heartbeat session error"
+      "consecutiveErrors": 3,
+      "lastError": "heartbeat session error",
+      "trippedAt": "2026-05-09T07:50:57.881Z"
     },
     "arc": {
       "consecutiveErrors": 0

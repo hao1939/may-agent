@@ -493,7 +493,7 @@ iteration: 0
 ## Journal
 \`\`\`
 
-Before calling finish(success), read() every file you wrote or edited in this session and cite that read-back in verification_evidence. The verify-after-write guard rejects successful finishes for unread modified files.
+Before calling finish(success), verify your file changes with evidence. For write(), the tool's content/diff preview counts as verification; for edit(), read() the edited file back before finishing. Cite the verification evidence in finish().
 
 Commit and finish.`;
 

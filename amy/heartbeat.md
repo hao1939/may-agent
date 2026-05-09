@@ -19,7 +19,7 @@ This format is required in EVERY session — heartbeats, work sessions, project 
 - "Nothing to do" is NEVER acceptable — investigate, audit, or improve something
 
 ## EXECUTION RULES (mandatory)
-- After every edit() or write(), immediately read() the same file. No exceptions. The diff preview does NOT count.
+- write() returns a content/diff preview you may cite as verification. After edit(), read() the edited file back before finishing.
 - Do NOT pivot to a new task mid-session. Finish your plan or explicitly update it.
 - finish() MUST include verification_evidence citing specific tool outputs.
 

@@ -20,10 +20,7 @@
 Schema reality (verified 2026-05-08): the `sessions` table has no
 `turns` column — use `opCount`. Its PK is **`sessionId`**, not `id`
 (aftermath flagged s_1778222607213_0 for `SELECT id FROM sessions`).
-Status values are `done | error | interrupted | running` (no `'completed'`). `events` uses `timestamp`
-(unix ms, not `created_at`) and stores its JSON blob in column `data`
-(NOT `payload` — recurring footgun; aftermath flagged
-s_1778213206775_3 for it). `metrics` uses `updated_at` (NOT
+Status values are `done | error | interrupted | running` (no `'completed'`). `events` columns: `id, event_type, source, owner, data, timestamp, status, handled_by, result, reason, retry_count, ttl_ms, urgency` — there is **no** `session_id`, no `agent`, no `created_at`, and no `payload`. To filter events by session or agent, use `data LIKE '%<sessionId>%'` or `json_extract(data,'$.agent')='arc'` against the JSON blob. Aftermath flagged s_1778213206775_3 for `payload` and s_1778311834038_35 (2026-05-09) for both `session_id` and `agent` in the same session — recurring footgun. (KE-910) `metrics` uses `updated_at` (NOT
 `lastUpdated`) and `current` (NOT `value` / `current_value`); there is
 no `config` table — config is the `metrics.config` TEXT column. The
 `projects` table uses **`id`** (PK, not `projectId`) and **`updated_at`**

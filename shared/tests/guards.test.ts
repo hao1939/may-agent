@@ -277,16 +277,12 @@ describe("verify-after-write guard", () => {
     expect(guard.handle(event)).toEqual([]);
   });
 
-  it("blocks finish(success) with unverified write", () => {
+  it("allows finish(success) with unverified write because write returns a preview", () => {
     const event = makeStepDoneEvent(
       [{ name: "write", input: { path: "out.ts" } }],
       { finishResult: { status: "success" } }
     );
-    const demands = guard.handle(event);
-    expect(demands).toHaveLength(1);
-    expect(demands[0].type).toBe("block");
-    expect(demands[0].reason).toContain("C1.3");
-    expect(demands[0].reason).toContain("out.ts");
+    expect(guard.handle(event)).toEqual([]);
   });
 
   it("allows finish(success) when all writes verified", () => {
@@ -327,7 +323,8 @@ describe("verify-after-write guard", () => {
     );
     const demands = guard.handle(event);
     expect(demands).toHaveLength(1);
-    expect(demands[0].reason).toContain("2 file(s)");
+    expect(demands[0].reason).toContain("b.ts");
+    expect(demands[0].reason).not.toContain("a.ts");
   });
 
   it("does not block finish(failure)", () => {
