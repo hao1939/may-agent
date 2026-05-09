@@ -1,7 +1,8 @@
 {
   "agents": {
     "may": {
-      "consecutiveErrors": 0
+      "consecutiveErrors": 1,
+      "lastError": "heartbeat threw: Workflow blocked by guard: C7.1 Hallucinated Path: bash command(s) reference non-existent path(s): /Users/hao. The project root is /app. Use relative paths or /app/... instead."
     },
     "coach": {
       "consecutiveErrors": 0
