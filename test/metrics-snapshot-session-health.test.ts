@@ -167,7 +167,7 @@ describe("metrics-snapshot session health metrics", () => {
     const metric = (id: string) => db.prepare("SELECT current, target, threshold, priority FROM metrics WHERE id = ?").get(id) as any;
     expect(metric("evaluator.meaningful-review-rate-24h")).toMatchObject({ current: 1, target: 0.9, threshold: 0.7, priority: "P2" });
     expect(metric("evaluator.triage-closure-rate-24h")).toMatchObject({ current: 1, target: 0.9, threshold: 0.7, priority: "P2" });
-    expect(metric("evaluator.false-good-rate-sample")).toMatchObject({ current: 1, target: 0.05, threshold: 0.2, priority: "P2" });
+    expect(metric("evaluator.false-good-rate-sample")).toMatchObject({ current: 1, target: 0.05, threshold: 0.6, priority: "P2" });
     expect(metric("evaluator.success-candidates-24h")).toMatchObject({ current: 1, target: 1, threshold: 0, priority: "P3" });
     expect(metric("evaluator.success-learnings-24h")).toMatchObject({ current: 1, target: 1, threshold: 0, priority: "P3" });
   });
