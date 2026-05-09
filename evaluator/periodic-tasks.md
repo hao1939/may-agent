@@ -274,6 +274,14 @@ Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-sna
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` remain placeholder stubs, so there are still no fresh calibration-disagreement inputs to process this cycle.
 
+**Last run**: 2026-05-09 14:07Z — DB canonical check confirms session-eval pipeline is still live/recent (`MAX(evaluations.createdAt)=1778335471106`; `MAX(sessions.startedAt)=1778335648951`; `MAX(sessions.endedAt)=1778335652399`; lag ≈177.8s vs `startedAt`, ≈181.3s vs `endedAt`; `evals_last24h=649`; `llm_evals_last24h=18`; `sessions_last24h=1486`). Legacy `.state/evaluations/` top-level artifacts are still stale at the filesystem layer (`ls -la .state/evaluations/ | tail -5` returns only Mar 20/24 `task_tree_*` files), so continue treating that directory as a legacy output-path signal rather than the canonical liveness source.
+
+Inbox triage check on the currently surfaced evaluator targets found all listed artifacts already present in workspace (`s_1778334807559_0`, `s_1778333162326_4`, `s_1778333148467_3`, `s_1778334661878_6`, `s_1778333090520_2`, `s_1778335084237_6`), so those pending event rows are best treated as already-acted/in-flight backlog noise rather than dropped aftermath work.
+
+Ran `monitor-session.cjs --running`: 3 checked, 3 healthy.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs, so there are still no fresh calibration-disagreement inputs to process this cycle.
+
 **Last run**: 2026-05-09 13:36Z — DB canonical check confirms session-eval pipeline is still live/recent (`MAX(evaluations.createdAt)=1778333594011`; `MAX(sessions.startedAt)=1778333722788`; `MAX(sessions.endedAt)=1778333511045`; lag ≈128.8s vs `startedAt`, and evaluations are already newer than the latest `endedAt` by ≈83.0s; `evals_last24h=649`; `llm_evals_last24h=16`; `sessions_last24h=1475`). Legacy `.state/evaluations/` top-level artifacts remain stale (`ls -la .state/evaluations/ | tail -5` still shows only Mar 20/24 `task_tree_*` files), so continue treating that directory as a legacy output-path signal rather than the canonical liveness source.
 
 Ran `monitor-session.cjs --running`: 3 checked, 2 healthy, 1 `PROTOCOL_VIOLATION` (active arc session `s_1778333211891_7`; evidence: missing P114 Experience Replay; recommended action: warn). Notified May.
