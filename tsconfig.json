@@ -12,6 +12,6 @@
     "declarationMap": true,
     "sourceMap": true
   },
-  "include": ["src", "agents/shared/evaluation"],
+  "include": ["src", "packages", "agents/shared/evaluation"],
   "exclude": ["agents/gym"]
 }

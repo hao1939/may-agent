@@ -1,0 +1,20 @@
+{
+  "name": "@may-agent/webui",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "may-agent-web": "./src/server.ts"
+  },
+  "exports": {
+    ".": "./src/server.ts"
+  },
+  "files": [
+    "src",
+    "static"
+  ],
+  "scripts": {
+    "dev": "bun src/server.ts --state-dir ../../.state --port 8080",
+    "check": "tsc --noEmit -p tsconfig.json"
+  }
+}
