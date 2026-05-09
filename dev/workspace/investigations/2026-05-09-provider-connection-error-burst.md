@@ -38,3 +38,16 @@ ORDER BY errors DESC;
 ```
 
 If the count continues rising or crosses the session error alert threshold, escalate to May/Hao as provider/runtime instability with this artifact and the cited session IDs.
+
+## 2026-05-09 07:05 UTC heartbeat update
+
+The burst is now directly visible through a P1 metric:
+
+- Open alert `#248` for `session.first-turn-error-count-1h`; metric row shows owner `may`, current `42`, threshold `0`, target `0`, priority `P1`.
+- Latest snapshots for `session.first-turn-error-count-1h` both measured `42`.
+- Last-hour `sessions` query found `42` total `status='error'` sessions, grouped as: may `20`, evaluator `16`, scout `3`, arc `2`, master `1`.
+- Spot checks of current recent transcripts confirm the same two-line, pre-tool-call pattern for `s_1778309976332_10`, `s_1778309955448_7`, `s_1778309919794_3`, and `s_1778309634407_0`: user prompt followed by assistant `stopReason="error"` and `errorMessage="Connection error."`.
+- One sampled evaluator aftermath session, `s_1778308950409_10`, instead ended before tools with `401 IDE token expired: unauthorized: token expired`, so the broader first-turn metric is mixing at least two provider/auth failure modes.
+- Handler metrics remain healthy (`handler.success-rate=1`, `handler.failed-count=0`), and two successful sessions in the last 10 minutes indicate this is not a total runtime outage.
+
+Judgment: no code patch is indicated from this heartbeat. The alert is May-owned and already in the closed-loop/steward path; dev's action is to preserve the failure pattern evidence and watch for continued growth or a threshold-crossing `session.error-rate-6h` regression.
