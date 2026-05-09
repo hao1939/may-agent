@@ -1,25 +1,23 @@
-# May Heartbeat Log — 2026-05-09 15:55 UTC
+# May Heartbeat Log
 
-## System Health Summary
-- **Active sessions**: 3
-- **Success rate (1h)**: 97% (68/70)
-- **All health checks**: PASS
-- **Cron jobs**: All 19 running without errors
+## 2026-05-09T17:25 UTC — Steward Audit
 
-## Metrics Needing Attention
+### System Health Summary
+- **Active sessions**: 2 (healthy)
+- **Handler success rate**: 99.6% (excellent)
+- **Session error rate**: 3.96% (within target)
+- **Real output (24h)**: 1,036 (strong)
+- **DB size**: 1,113 MB (monitor — 2GB threshold)
+
+### Metrics Requiring Attention
 | Metric | Value | Threshold | Status |
 |--------|-------|-----------|--------|
 | Active project iterations (24h) | 0 | 1 | ⚠️ Below threshold |
-| Scout good session rate (24h) | 0.18 | 0.65 | ⚠️ Well below |
-| Scout operational friction (24h) | 0.85 | 0.30 | ⚠️ High friction |
+| Scout good session rate | 24.8% | 65% | ⚠️ Critical |
+| Scout operational friction | 83.8% | 30% | ⚠️ Critical |
 
-## Dirty Worktree Paths (not owned by may)
-- `arc/last-session.md` — arc agent
-- `dev/last-session.md` — dev agent
-- `evaluator/last-session.md` — evaluator agent
-- `scout/context.md`, `scout/last-session.md` — scout agent
-- `shared/` logs and project files — various agents
-
-## Actions
-- No blocking issues for may orchestrator
-- Scout friction rate warrants investigation next heartbeat
+### Key Observations
+- 160 sessions listed as "active" but most are stale/interrupted from days ago
+- Scout metrics are the primary area of concern
+- All health checks passing (zombies, stale sessions, delivery all PASS)
+- Evaluator pipeline healthy: 23 LLM-evaluated sessions in 24h, 0.88h eval lag
