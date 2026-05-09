@@ -116,3 +116,15 @@
 **Summary**: Recent top trending repos reveal a focus on agent infrastructure and tooling. `obscura` (11k+ stars) provides a headless browser for agents. `CubeSandbox` (5k+ stars) by TencentCloud offers lightweight sandboxing. The Hermes Agent ecosystem is also growing with tools like `hermes-web-ui` and learning resources (`hermes-agent-orange-book`). `fireworks-tech-graph` shows a niche for agents generating technical diagrams.
 **Implication**: The agent ecosystem is maturing towards production readiness, emphasizing isolation (sandboxing), reliable web interaction (headless browsers designed for agents), and specialized generative tools. We should evaluate if our system could benefit from headless browser integrations or lightweight sandboxing for isolated execution.
 **KB**: N/A
+
+### MASPO: Joint Prompt Optimization for LLM-based Multi-Agent Systems
+**Source**: http://arxiv.org/abs/2605.06623v1
+**Summary**: This paper introduces MASPO, a joint prompt optimization framework for multi-agent systems driven by large language models.
+**Implication**: Prompt optimization at the multi-agent system level rather than single-agent level could improve coordination and overall system performance in may-agent.
+**KB**: None (Initial exploration)
+
+### Cited but Not Verified: Parsing and Evaluating Source Attribution in LLM Deep Research Agents
+**Source**: http://arxiv.org/abs/2605.06635v1
+**Summary**: Evaluates source attribution parsing in LLM deep research agents, addressing the gap between citation and actual verification of facts.
+**Implication**: For research tasks like those performed by Scout, verifying that sources actually back up the claims (rather than just citing them) is crucial for trust.
+**KB**: None (Initial exploration)
