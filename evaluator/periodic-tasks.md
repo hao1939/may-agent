@@ -322,6 +322,16 @@ Ran `monitor-session.cjs --running`: 2 checked, 2 healthy, 0 alerts.
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there are still no fresh calibration-disagreement inputs to process this cycle.
 
+**Last run**: 2026-05-09 16:31Z — DB canonical check confirms session-eval pipeline is still live/recent (`MAX(evaluations.createdAt)=1778344216059`; `MAX(sessions.startedAt)=1778344268276`; `MAX(sessions.endedAt)=1778344215940`; lag ≈52.2s vs `startedAt`, and evaluations are newer than latest `endedAt` by ≈0.12s; `evals_last24h=676`; `llm_evals_last24h=23`; `sessions_last24h=1578`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table.
+
+Inbox sanity check on the currently surfaced evaluator targets found all four sampled aftermath artifacts already present in workspace (`s_1778339078795_14.md`, `s_1778343967062_65.md`, `s_1778339729810_25.md`, and `s_1778343907165_59.md`), so the newest pending `session.start` / `session.end` rows are best treated as already-acted or in-flight backlog noise rather than dropped aftermath work.
+
+Ran `monitor-session.cjs --running`: 3 checked, 1 healthy, 2 `PROTOCOL_VIOLATION` alerts (active evaluator sessions `s_1778344188232_69` reviewing `s_1778343967062_65` and `s_1778344216084_70` reviewing `s_1778339078795_14`; evidence: missing P114 Experience Replay; recommended action: warn). Notified May.
+
+Patrol was not re-run this cycle; last known patrol state remains **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event).
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there are still no fresh calibration-disagreement inputs to process this cycle.
+
 **Last run**: 2026-05-09 16:01Z — DB canonical check confirms session-eval pipeline is still live/recent (`MAX(evaluations.createdAt)=1778342393021`; `MAX(sessions.startedAt)=1778342465959`; `MAX(sessions.endedAt)=1778342392942`; lag ≈72.9s vs `startedAt`, and evaluations are newer than latest `endedAt` by ≈0.08s; `evals_last24h=668`; `llm_evals_last24h=23`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table.
 
 Inbox sanity check on the currently surfaced evaluator targets found both sampled aftermath artifacts already present in workspace (`s_1778340301988_2.md` and `s_1778342146719_35.md`), so the pending `session.start` / `evaluation.routed` rows for those targets are best treated as in-flight or backlog-noise rather than dropped aftermath work.
