@@ -6,7 +6,7 @@ type: milestone
 priority: P2
 workflow: master-worker
 iteration: 50
-stop_reason: Safety cap: 50 iterations reached.
+stop_reason: "Safety cap: 50 iterations reached."
 ---
 
 # Project: Documentation Generation

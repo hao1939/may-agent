@@ -6,7 +6,7 @@ type: milestone
 priority: P1
 workflow: master-worker
 iteration: 50
-stop_reason: Safety cap: 50 iterations reached without resolution. 5/6 milestones done.
+stop_reason: "Safety cap: 50 iterations reached without resolution. 5/6 milestones done."
 ---
 
 # Project: Agent System Literacy
