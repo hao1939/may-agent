@@ -330,3 +330,12 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 1. Investigate scout operational friction root cause
 2. Review evaluator scoring calibration
 3. Clean up 96 stale interrupted sessions
+
+## Heartbeat — $(date -u +%Y-%m-%dT%H:%M:%SZ)
+**Status**: Healthy, 3 open alerts being tracked.
+**Actions**:
+- Nudged evaluator: low-quality-rate-24h at 0.68, project stalled 5 iterations. Asked for metric decomposition deliverable.
+- Nudged scout: 2 open alerts (good-session-rate 0.28, friction 0.72), 14% error rate. Asked for improvement plan.
+- Evaluator has active calibration project (iteration 6, 0 milestones done).
+- v2-spec-coverage-buildout is waiting (P2), not urgent.
+**Open alerts**: evaluator.low-quality-rate-24h, scout.good-session-rate-24h, scout.operational-friction-rate-24h
