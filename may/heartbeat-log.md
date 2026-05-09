@@ -481,3 +481,15 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - All health checks passing. DB at 1094 MB.
 - 158 "active" sessions mostly stale/interrupted — cosmetic issue.
 - Evaluator throughput strong (34 sessions/hr).
+
+---
+
+## 2026-05-09 16:26 UTC — Artifact Gate Heartbeat
+
+### System Health (last 1h)
+- Sessions: 50 done / 1 interrupted / 5 running → 98% success
+- DB still ~1094 MB; no new error spikes.
+
+### Status
+- No new P0/P1 from prior triage. Known breaches (Scout friction, v2 coverage) unchanged.
+- Nothing actionable this beat — artifact written to satisfy gate.
