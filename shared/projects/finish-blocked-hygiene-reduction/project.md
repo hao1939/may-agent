@@ -6,7 +6,7 @@ type: milestone
 priority: P1
 workflow: project
 iteration: 6
-stop_reason: — the worker completed **Add or propose tracking** by producing the required approval/ops packet, but actual metric registration requires a safe runtime DB write path that this worker/reviewer does no
+stop_reason: — the worker completed **Add or propose tracking** by producing the required approval/ops packet, but actual metric registration requires a safe runtime DB write path that this worker/reviewer does not have.
 resume_condition: May/human executes the exact `INSERT ... ON CONFLICT DO UPDATE` statements from `outputs/iteration-6-split-metric-registration.md` through the safe runtime writer path, then confirms both `session.finish-blocked-uncommitted-count-24h` and `session.finish-blocked-unresolved-count-24h` exist in `metrics` and have fresh `metric_snapshots`.
 ---
 
@@ -24,7 +24,8 @@ Reduce sessions that reach `finish()` with uncommitted/dirty worktree changes, b
 - `evaluator.low-quality-rate-24h=0.7472` remains high as a dashboard/friction metric, while `evaluator.substantive-low-quality-rate-24h=0.1447` is much lower; this project targets the hygiene/friction gap rather than hiding it.
 
 ## Current State
-Blocked: — the worker completed **Add or propose tracking** by producing the required approval/ops packet, but actual metric registration requires a safe runti
+Blocked: the worker completed **Add or propose tracking** by producing the required approval/ops packet, but actual metric registration requires a safe runtime DB write path that this worker/reviewer does not have.
+
 ## Plan
 
 1. **Reproduce the fresh residual sources**: sample recent `workflow:scout-explore`, `workflow:scout-heartbeat`, `closed-loop-steward`, and `workflow:dev-heartbeat` transcripts with post-`c052855aa` finish/uncommitted `needs_improvement` verdicts to identify whether dirty paths are intentional deliverables, generated runtime files, or unrelated ambient state.
