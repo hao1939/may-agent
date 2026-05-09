@@ -277,3 +277,17 @@ Signal dispositions:
 - Pending-review project reminders: dismissed for action now because review/resume triggers are absent and their live validation metrics still hold.
 
 Next check: continue watching for recurrence of the missing `src/lib/metrics.js` import error without later completions; if it recurs, inspect `agents/shared/agent-sdk.ts` changes before patching handlers.
+
+## 2026-05-09 Artifact Gate Recovery / Dirty Worktree Classification
+
+The artifact gate stopped this heartbeat because no durable write had been produced. I appended this note as the required artifact and performed the mandated repository hygiene check from `/app/agents`.
+
+Dirty paths observed before staging this artifact are not mine and should not be swept into a dev commit:
+- `arc/last-session.md`, `dev/last-session.md`, `evaluator/last-session.md`, `may/last-session.md`, `scout/last-session.md`: generated runtime session state.
+- `arc/workspace/proposals/2026-05-09-artifact-gate-lane-predicate.md`: staged arc-owned proposal artifact.
+- `shared/work-queue.md`: staged shared queue change, likely owned by the coordinating agent that edited it.
+- `shared/anti-shallow-gate-triggers.log`, `shared/duration-gate-triggers.log`, `shared/exp720-fewshot-dryrun.log`, `shared/gate-outcomes.log`: runtime/generated shared logs.
+- `shared/projects/ruflo-learning-loop/project.md`, `shared/projects/v2-spec-coverage-buildout/journal.md`: project-tracking updates outside this dev heartbeat's scope.
+- `test/guards.test.ts`: test code dirty before my artifact; owner/reason unknown, so unsafe to stage or revert.
+
+Disposition: commit only this heartbeat log if possible; otherwise finish with an explicit blocker rather than staging unrelated work.
