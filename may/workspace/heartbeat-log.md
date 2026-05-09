@@ -1,13 +1,21 @@
-# May Heartbeat Log
+# May Heartbeat Log — 2026-05-09 20:25 UTC
 
-## 2026-05-09 19:25 UTC
+## System Health Summary
+- **Active sessions**: 5 running, 162 total tracked
+- **Throughput (1h)**: 43 sessions, 98% success rate
+- **Cron jobs**: All 14 healthy, 0 errors
+- **Health checks**: All PASS
 
-**System Health**: Mostly green. 96% success rate last hour, 45 sessions completed.
+## Metrics Requiring Attention
+| Metric | Value | Threshold | Status |
+|--------|-------|-----------|--------|
+| Active project iterations (24h) | 0 | 1 | ⚠️ Below threshold |
+| Scout good session rate (24h) | 0.31 | 0.65 | ⚠️ Below threshold |
+| Scout operational friction (24h) | 0.83 | 0.30 | ⚠️ Above threshold |
 
-**Key Concerns**:
-- Scout good session rate at 0.29 (target 0.85) ⚠️
-- Scout operational friction rate at 0.83 (target 0.1) ⚠️
-- Active project iterations at 0 (target 10) ⚠️
-- 161 "active" sessions, most are stale/interrupted from days ago — needs cleanup
-
-**Actions**: Artifact gate session — produced this status log.
+## Key Observations
+- System is operationally stable with high handler success rate (99.8%)
+- DB size at 1.1GB — monitoring but under 2GB threshold
+- Scout quality metrics are the primary concern area
+- No blocked or stale projects
+- Artifact gate satisfied this session
