@@ -72,6 +72,8 @@ interface LiveRuntimeAlert {
   current: number | null;
   target: number | null;
   threshold: number | null;
+  latestJudgment: string | null;
+  latestJudgmentAt: number | null;
 }
 
 export interface LiveRuntimeSignals {
@@ -135,7 +137,29 @@ export async function collectLiveRuntimeSignals(ctx: WorkflowContext): Promise<L
     const alertRows = db.prepare(
       `SELECT ma.id, ma.metric_id as metricId, ma.message, ma.created_at as createdAt,
               m.name as metricName, m.owner, COALESCE(m.priority, 'P2') as priority,
-              m.current, m.target, m.threshold
+              m.current, m.target, m.threshold,
+              (
+                SELECT e.data
+                FROM events e
+                WHERE e.event_type = 'metric.alert_judged'
+                  AND (
+                    json_extract(e.data, '$.alertId') = ma.id
+                    OR json_extract(e.data, '$.metricId') = ma.metric_id
+                  )
+                ORDER BY e.timestamp DESC
+                LIMIT 1
+              ) as latestJudgment,
+              (
+                SELECT e.timestamp
+                FROM events e
+                WHERE e.event_type = 'metric.alert_judged'
+                  AND (
+                    json_extract(e.data, '$.alertId') = ma.id
+                    OR json_extract(e.data, '$.metricId') = ma.metric_id
+                  )
+                ORDER BY e.timestamp DESC
+                LIMIT 1
+              ) as latestJudgmentAt
        FROM metric_alerts ma
        LEFT JOIN metrics m ON m.id = ma.metric_id
        WHERE ma.resolved_at IS NULL
@@ -176,6 +200,8 @@ export async function collectLiveRuntimeSignals(ctx: WorkflowContext): Promise<L
         current: normalizeNumber(row.current),
         target: normalizeNumber(row.target),
         threshold: normalizeNumber(row.threshold),
+        latestJudgment: normalizeString(row.latestJudgment),
+        latestJudgmentAt: normalizeNumber(row.latestJudgmentAt),
       })),
       counts: {
         activeP0P1Metrics: p0p1Rows.length,
@@ -232,8 +258,17 @@ export function formatLiveRuntimeSignals(signals: LiveRuntimeSignals): string {
   if (signals.openAlerts.length) {
     lines.push("Open alerts:");
     for (const alert of signals.openAlerts) {
+      let judgment = "latest_judgment=none";
+      if (alert.latestJudgment) {
+        try {
+          const data = JSON.parse(alert.latestJudgment) as Record<string, unknown>;
+          judgment = `latest_judgment=operation:${String(data.operation ?? "unknown")}, next:${String(data.nextValidation ?? data.next_validation ?? "unknown")}`;
+        } catch {
+          judgment = "latest_judgment=unparseable";
+        }
+      }
       lines.push(
-        `- #${alert.id} ${alert.metricId ?? "unknown"} (${alert.priority ?? "P?"}, owner=${alert.owner ?? "?"}): ${alert.message ?? "no message"} | current=${metricValue(alert.current)}, target=${metricValue(alert.target)}, threshold=${metricValue(alert.threshold)}`,
+        `- #${alert.id} ${alert.metricId ?? "unknown"} (${alert.priority ?? "P?"}, owner=${alert.owner ?? "?"}): ${alert.message ?? "no message"} | current=${metricValue(alert.current)}, target=${metricValue(alert.target)}, threshold=${metricValue(alert.threshold)} | ${judgment}`,
       );
     }
   } else {
@@ -408,6 +443,10 @@ If you must manually query because Live Runtime Signals are unavailable, treat t
 - Record the workflow signal failure as a finding or plan item unless you can fix it immediately.
 - Do not silently normalize manual fallback; the workflow should collect these facts on later runs.
 The embedded project.md is context, not current metric evidence.
+For projects whose goal/signals explicitly mention reliability, closed-loop, or metric alerts:
+- Open alerts in the Live Runtime Signals block are in scope even when they are lower priority or owned by another agent.
+- Do not mark an alert-related plan item complete merely because the metric has an owner.
+- Completion requires durable evidence: latest judgment, concrete operation, and next validation signal; otherwise CONTINUE by nudging the owner, adding/adjusting a project, calibrating the metric, or documenting a real exception.
 
 Respond with one of these decisions as the VERY FIRST WORD:
 CONTINUE — guide the next iteration. If metrics are at target, raise them or find new problems.

@@ -41,13 +41,16 @@ runtime fixes improved the loop:
 - The steward/reactor can re-triage judged alerts that remain breaching after a newer snapshot.
 - Live UI now shows core vitals.
 
-Current snapshot (2026-05-09): All P0/P1 metrics are healthy. Only 2 open alerts
-remain, both P3 scout-owned (`scout.operational-friction-rate-24h` #197,
-`scout.good-session-rate-24h` #225). These are outside this project's ownership
-and have no associated project. Scout owns them; if they persist, scout should
-create a project or calibrate thresholds. No May-owned or reliability-critical
-alerts are open. The closed-loop mechanism (signal→owner→judgment→action→validation)
-is functioning correctly for all P0/P1 metrics.
+Current snapshot (2026-05-09): all P0/P1 runtime reliability vitals are green,
+but two scout-owned P3 alerts remain open:
+
+- `scout.operational-friction-rate-24h` (#197)
+- `scout.good-session-rate-24h` (#225)
+
+Lower priority does not mean closed. Because those metrics have no associated
+project and no validation path visible in this project, the next run must either
+confirm Scout has durable judgment/action/validation evidence, create/nudge an
+owning project, calibrate the metrics, or document a real exception.
 
 ## Plan
 
@@ -57,10 +60,10 @@ is functioning correctly for all P0/P1 metrics.
 - [x] Audit one recent real alert transcript and tighten prompts/manuals where agents mistake "notified" for "acted".
 - [x] Confirm the UI/steward can show the full chain: signal, owner, judgment, action, validation.
 - [x] Harden core runtime signals: opCount persistence, clean-start resume, message target validation, alert re-triage, Live vitals.
-- [x] Re-check current open alerts and record for each one: owner, latest judgment, concrete operation, and next validation signal.
-- [x] If an open alert is outside this project's direct ownership, confirm the owning project/agent is actually moving it; otherwise create a nudge or plan item with evidence.
-- [x] Review the latest `closed-loop-reliability` workflow run. If it returns observation-only `DONE` while open reliability signals exist, fix the project workflow/prompt so it replans or records a concrete exception.
-- [x] After the next metrics snapshot, update this project with what recovered, what remains open, and the smallest next operation.
+- [ ] Re-check current open alerts and record for each one: owner, latest judgment, concrete operation, and next validation signal.
+- [ ] If an open alert is outside this project's direct ownership, confirm the owning project/agent is actually moving it; otherwise create a nudge or plan item with evidence.
+- [ ] Review the latest `closed-loop-reliability` workflow run. If it returns observation-only `DONE` while open reliability signals exist, fix the project workflow/prompt so it replans or records a concrete exception.
+- [ ] After the next metrics snapshot, update this project with what recovered, what remains open, and the smallest next operation.
 
 ## Acceptance Criteria
 
@@ -80,4 +83,4 @@ is functioning correctly for all P0/P1 metrics.
   `handler.failed-count` and `project.iterations-24h` recovered on the next
   snapshot; only P2 v2 measurement gaps remain open.
 - Iteration 1: All plan items verified complete. All P1 metrics in range. Project stays active for observation; no new work items needed until regression.
-- 2026-05-09: All plan items complete. Open alert audit: only 2 P3 scout-owned alerts remain (#197, #225), outside this project's scope. All P0/P1 metrics healthy. Project stays active for regression monitoring.
+- 2026-05-09: First reframe attempt was not enough: the orchestrator marked all new items complete because the remaining alerts were P3 and Scout-owned. Treating "has owner" as closure is wrong. Workflow prompt now requires durable judgment/action/validation evidence before alert-related items can close.
