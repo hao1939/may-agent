@@ -60,6 +60,10 @@
 - Symptom: a heartbeat does not ship code, but it uses fresh runtime evidence to identify a repeated cross-workflow problem with no active owner and turns it into a new shared project with baselines, validation queries, and a concrete next intervention.
 - Fix: inspect the created project artifact and commit rather than downgrading the session as mere maintenance. Credit it as good material output when the project is properly scoped, grounded in live evidence, and creates a durable ownership/validation path for follow-through.
 
+## Pattern: local failure pattern upgraded to shared lever is substantive output
+- Symptom: a self-maintenance session starts from one agent's recurring mistake, then checks live cross-agent evidence, verifies the same failure cluster elsewhere, and converts the finding into a shared knowledge entry plus reprioritized proposal/work-queue movement.
+- Fix: judge the landed shared artifact and queue movement directly. If the session quantified the broader pattern, inspected real artifacts from multiple agents, and strengthened a system-level intervention, score it as real value rather than dismissing it as merely "another heartbeat note."
+
 ## Pattern: artifact-gated recovery sessions can still produce substantive value
 - Symptom: a session starts from a low-bar prompt like "produce any artifact," which makes the resulting write look like mere compliance at first glance.
 - Fix: inspect the actual artifact and source evidence before judging. If the agent used live sources and turned the forced write into a concrete, system-relevant analysis, credit the substantive output while separately noting any scoping or verification hiccups (for example writing into another agent's workspace or missing the first read-back).
