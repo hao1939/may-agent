@@ -291,3 +291,20 @@ Dirty paths observed before staging this artifact are not mine and should not be
 - `test/guards.test.ts`: test code dirty before my artifact; owner/reason unknown, so unsafe to stage or revert.
 
 Disposition: commit only this heartbeat log if possible; otherwise finish with an explicit blocker rather than staging unrelated work.
+
+## 2026-05-09 Artifact Gate Recovery and Runtime Signal Check
+
+Administrative heartbeat artifact written after the artifact gate reported this session produced no file writes.
+
+Evidence checked:
+- UTC timestamp at write time: `2026-05-09T21:29:33Z`.
+- Initial `/app/agents` dirty-state classification found pre-existing/generated runtime files: `arc/last-session.md`, `dev/last-session.md`, `evaluator/last-session.md`, `may/last-session.md`, `scout/last-session.md`, shared gate log files, shared project files, and `test/guards.test.ts`. These are not part of this artifact-gate recovery deliverable and should not be staged by dev without separate ownership review.
+- A schema-assuming metric query failed on `metrics.active`; corrected query used `metrics.status='active'`, reinforcing the schema-first habit for non-canned runtime DB queries.
+- Current core runtime metrics are not dev-blocking: `handler.failed-count=0`, `handler.success-rate=1`, `handler.completed-count=422`, and `session.error-rate-6h=0.0281` at snapshot `1778362025978`.
+- Direct failed-event query returned zero `events.status='failed'` rows.
+- Active unresolved metric alerts are owned by `may` (`project.iterations-24h`, `capability.message-conversation-close-rate`) and `scout` (`scout.good-session-rate-24h`, `scout.operational-friction-rate-24h`); none are dev-owned.
+
+Disposition:
+- This note is the required meaningful file artifact for the heartbeat recovery.
+- No shared workflow, guard, handler, production database, or test file was intentionally changed by this recovery step.
+- Finish hygiene should stage only `dev/workspace/heartbeat-log.md`; all other dirty paths are unrelated/pre-existing and require their respective owners or a separate scoped task.
