@@ -2,8 +2,8 @@
  * finish() Commit Guard — beforeToolCall hook.
  *
  * Intercepts `finish()` calls (any status) and checks for uncommitted changes
- * in the agent's directory AND cross-agent directories (shared/, .lab/, gym/).
- * If found, blocks finish and tells the agent to commit their work first.
+ * matching this session's deliverables or direct write/edit tool calls. If found,
+ * blocks finish and tells the agent to commit only those files first.
  *
  * This is L5 structural enforcement to fix the 74% auto-commit problem.
  * Agents must commit their own work with descriptive messages instead of
@@ -33,6 +33,64 @@ function normalizeStatusPath(line: string): string {
 
 function isGeneratedRuntimePath(path: string, agentName: string): boolean {
   return path === `${agentName}/last-session.md` || GENERATED_RUNTIME_PATHS.has(path);
+}
+
+function normalizeAgentRepoPath(path: string): string | undefined {
+  const normalized = path
+    .replace(/^\/app\/agents\//, "")
+    .replace(/^\/app\//, "")
+    .replace(/^\.\//, "")
+    .replace(/\/+/g, "/");
+  if (normalized.startsWith("agents/")) return normalized.slice("agents/".length);
+  if (
+    normalized.startsWith("shared/") ||
+    normalized.startsWith(".lab/") ||
+    normalized.startsWith("gym/") ||
+    /^[^/]+\//.test(normalized)
+  ) {
+    return normalized;
+  }
+  return undefined;
+}
+
+function shellQuote(path: string): string {
+  return `'${path.replace(/'/g, "'\\''")}'`;
+}
+
+function extractToolWritePaths(messages: BeforeToolCallContext["context"]["messages"]): string[] {
+  const paths: string[] = [];
+  for (const msg of messages) {
+    if (msg.role !== "assistant" || !Array.isArray(msg.content)) continue;
+    for (const block of msg.content) {
+      if (!block || typeof block !== "object" || !("type" in block) || block.type !== "toolCall" || !("name" in block)) {
+        continue;
+      }
+      const name = (block as { name: string }).name;
+      if (name !== "write" && name !== "edit") continue;
+
+      const rawArgs = "arguments" in block ? (block as { arguments: unknown }).arguments : undefined;
+      let args: Record<string, unknown> = {};
+      if (typeof rawArgs === "string") {
+        try { args = JSON.parse(rawArgs); } catch { /* ignore malformed tool args */ }
+      } else if (rawArgs && typeof rawArgs === "object") {
+        args = rawArgs as Record<string, unknown>;
+      }
+
+      if (typeof args.path === "string") {
+        const normalized = normalizeAgentRepoPath(args.path);
+        if (normalized) paths.push(normalized);
+      }
+    }
+  }
+  return paths;
+}
+
+function changedPathFromStatusLine(line: string): string {
+  return normalizeStatusPath(line);
+}
+
+function isSameOrChild(path: string, ownerPath: string): boolean {
+  return path === ownerPath || path.startsWith(`${ownerPath.replace(/\/$/, "")}/`);
 }
 
 /**
@@ -77,13 +135,10 @@ export function createCommitGuard(
     const agentsDir = resolve(projectRoot, "agents");
 
     try {
-      // Check for uncommitted changes across ALL paths the agent may have written to.
-      // Previously only checked `${agentName}/`, which missed writes to shared/,
-      // .lab/, gym/, and cross-agent directories. Now we check:
-      // 1. The agent's own directory
-      // 2. shared/, .lab/, gym/ (common cross-agent write targets)
-      // We still don't check OTHER agent directories (e.g., bob checking alice/)
-      // to avoid blocking on another agent's uncommitted work.
+      // Check broad candidate paths, then narrow to this session's claimed or
+      // direct write/edit paths. Shared project files are a common write target,
+      // but blocking on all dirty shared/ files pressures agents into committing
+      // unrelated work.
       const pathsToCheck = [
         `${agentName}/`,
         "shared/",
@@ -112,23 +167,42 @@ export function createCommitGuard(
 
       if (fileLines.length === 0) return undefined; // Runtime handoff/log churn should not block finish.
 
-      const fileCount = fileLines.length;
+      const args = ctx.args as {
+        deliverables?: Array<{ path?: string }>;
+      };
+      const claimedPaths = (args.deliverables ?? [])
+        .map((d) => typeof d.path === "string" ? normalizeAgentRepoPath(d.path) : undefined)
+        .filter((p): p is string => !!p);
+      const touchedPaths = extractToolWritePaths(ctx.context.messages);
+      const ownedPaths = new Set([...claimedPaths, ...touchedPaths]);
+
+      const ownedFileLines = ownedPaths.size > 0
+        ? fileLines.filter((line) => {
+            const changedPath = changedPathFromStatusLine(line);
+            return [...ownedPaths].some((ownedPath) => isSameOrChild(changedPath, ownedPath));
+          })
+        : fileLines.filter((line) => changedPathFromStatusLine(line).startsWith(`${agentName}/`));
+
+      if (ownedFileLines.length === 0) {
+        return {
+          block: false,
+          reason:
+            `Uncommitted files exist in agents/, but none match this session's deliverables or write/edit paths. ` +
+            `Do not commit unrelated files just to satisfy finish().`,
+        };
+      }
+
+      const fileCount = ownedFileLines.length;
 
       // Format the file list (indent each line)
-      const fileList = fileLines.map((line) => `  ${line}`).join("\n");
+      const fileList = ownedFileLines.map((line) => `  ${line}`).join("\n");
 
-      // Build git add command that covers all affected paths
-      const addPaths = [
-        `${agentName}/`,
-        ...["shared/", ".lab/", "gym/"].filter((p) =>
-          fileLines.some((line) => line.slice(3).startsWith(p)),
-        ),
-      ].join(" ");
+      const addPaths = ownedFileLines.map(changedPathFromStatusLine);
 
       // If any changed path is under */workspace/*, use `git add -f` because
       // agents/.gitignore ignores workspace/ contents.
-      const needsForce = fileLines.some((line) => line.slice(3).includes("/workspace/"));
-      const addCmd = needsForce ? `git add -f ${addPaths}` : `git add ${addPaths}`;
+      const needsForce = addPaths.some((path) => path.includes("/workspace/") || path.startsWith("shared/projects/"));
+      const addCmd = `${needsForce ? "git add -f" : "git add"} -- ${addPaths.map(shellQuote).join(" ")}`;
 
       return {
         block: true,
@@ -137,6 +211,9 @@ export function createCommitGuard(
           `${fileList}\n\n` +
           (ignoredFileLines.length > 0
             ? `Ignored generated runtime file(s):\n${ignoredFileLines.map((line) => `  ${line}`).join("\n")}\n\n`
+            : "") +
+          (ownedFileLines.length < fileLines.length
+            ? `Not blocking on unrelated dirty file(s):\n${fileLines.filter((line) => !ownedFileLines.includes(line)).map((line) => `  ${line}`).join("\n")}\n\n`
             : "") +
           `Commit them with a descriptive message before calling finish():\n` +
           `  cd ${projectRoot}/agents && ${addCmd} && git commit -m "${agentName}: <describe what you did>"\n\n` +
