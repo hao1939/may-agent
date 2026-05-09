@@ -192,20 +192,35 @@ describe("verification-depth-guard", () => {
       expect(result).toBeUndefined();
     });
 
-    test("allows when bash grep follows write()", async () => {
+    test("blocks when bash grep follows write() without read-back", async () => {
       const guard = createVerificationDepthGuard("bob");
       const ctx = makeContext([
         { name: "edit", args: { path: "src/utils.ts", oldText: "old", newText: "new" } },
         { name: "bash", args: { command: "grep 'new' src/utils.ts" } },
       ]);
       const result = await guard(ctx);
-      expect(result).toBeUndefined();
+      expect(result).toBeDefined();
+      expect(result!.block).toBe(true);
+      expect(result!.reason).toContain("read() on every file");
     });
 
-    test("allows when test runner follows write()", async () => {
+    test("blocks when test runner follows write() without read-back", async () => {
       const guard = createVerificationDepthGuard("bob");
       const ctx = makeContext([
         { name: "edit", args: { path: "src/pricing.ts", oldText: "old", newText: "new" } },
+        { name: "bash", args: { command: "node test-pricing.js" } },
+      ]);
+      const result = await guard(ctx);
+      expect(result).toBeDefined();
+      expect(result!.block).toBe(true);
+      expect(result!.reason).toContain("read() on every file");
+    });
+
+    test("allows when read-back and test runner follow write()", async () => {
+      const guard = createVerificationDepthGuard("bob");
+      const ctx = makeContext([
+        { name: "edit", args: { path: "src/pricing.ts", oldText: "old", newText: "new" } },
+        { name: "read", args: { path: "src/pricing.ts" } },
         { name: "bash", args: { command: "node test-pricing.js" } },
       ]);
       const result = await guard(ctx);
