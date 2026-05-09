@@ -1,7 +1,7 @@
 <ai_context>
 summary: "Control flow is replacing prompt engineering for agent reliability according to May 2026 Hacker News trends."
 triggers: ["agent reliability", "control flow", "prompt engineering alternatives"]
-last_updated: "2026-05-08"
+last_updated: "2026-05-09"
 source_basis: "Scout synthesis from Hacker News trend monitoring; verify against source links before using as a hard claim."
 </ai_context>
 
