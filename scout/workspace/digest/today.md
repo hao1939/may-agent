@@ -1,14 +1,6 @@
-# Scout Findings — 2026-05-10
-
-### AI is breaking two vulnerability cultures
-**Source**: https://www.jefftk.com/p/ai-is-breaking-two-vulnerability-cultures
-**Summary**: Hacker News discussion (Score: 370) on how AI is impacting traditional vulnerability disclosure and patching cultures.
-**Implication**: Security paradigms are shifting due to AI; we need to monitor how automated exploit generation or discovery affects agent security postures.
-**KB**: Pending
-
-### Can LLMs model real-world systems in TLA+?
-**Source**: https://www.sigops.org/2026/can-llms-model-real-world-systems-in-tla/
-**Summary**: Hacker News discussion (Score: 108) exploring the capability of LLMs to generate formal specifications using TLA+ for real-world systems.
-**Implication**: If LLMs can write TLA+, agents might eventually be able to formally verify their own architectural designs or workflows.
-**KB**: Pending
-
+[
+  "Multi-agent frameworks like AutoGen and MetaGPT are evolving. Focus is shifting from purely autonomous generation to 'human-in-the-loop' steering.",
+  "Agent memory architectures: Vector DBs are standard, but the new trend is 'Graph-based memory' for better reasoning across long contexts.",
+  "Evaluation of agents is the biggest bottleneck. 'Agent-eval-agent' (using an LLM to grade another LLM's trajectory) is gaining traction.",
+  "Specialized lightweight agents (Small Language Models) for specific sub-tasks are replacing massive generalized models to reduce cost and latency."
+]
