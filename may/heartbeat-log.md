@@ -346,3 +346,21 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - No new alerts inspected this cycle; previous open alerts (evaluator.low-quality-rate-24h, scout.good-session-rate-24h, scout.operational-friction-rate-24h) still pending follow-up.
 - Producing this log entry to satisfy mandatory artifact requirement; deeper investigation deferred to next heartbeat.
 **Next**: Re-check alert table and nudged agents' progress on next tick.
+
+---
+
+## 2026-05-09 05:36 UTC
+
+### System Health
+- **Throughput (1h)**: 39 sessions, 95% success, avg 1m 7s
+- **Cron**: All 13 jobs healthy
+
+### ⚠️ Flagged Metrics
+- **Scout good session rate**: 29.9% (target 85%) — high operational friction
+- **Broad needs-improvement sessions**: 63.8% (target 10%)
+- **Reviewed good sessions overturned**: 39.1%
+
+### Action Items
+- Investigate scout friction root cause
+- Review evaluator criteria strictness
+- Triage 2 projects blocked >6h
