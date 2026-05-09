@@ -1,28 +1,11 @@
 # May Heartbeat Log
 
-## 2026-05-09T17:55 UTC — Closed-Loop Steward Audit
+## 2026-05-10T~01:15Z
 
-### System Health Summary
-- **Active sessions**: 2 (healthy)
-- **Success rate (1h)**: 96% (46/48)
-- **Handler success rate**: 99.6%
-- **All health checks**: PASS
+**Red metrics:** project.iterations-24h=0 (target 10) — 10th consecutive alert. Per KE-905, this is a known condition: both shared projects (daily-alert-review, closed-loop-reliability) are legitimately paused/waiting. No action required.
 
-### Metrics Requiring Attention
-| Metric | Value | Target | Status |
-|--------|-------|--------|--------|
-| Active project iterations (24h) | 0 | 10 | ⚠️ Below threshold |
-| Scout good session rate (24h) | 26% | 85% | ⚠️ Well below target |
-| Scout operational friction rate (24h) | 83% | 10% | ⚠️ Critical |
-| Scout knowledge preamble coverage | 30% | 80% | Needs improvement |
+**System health (last ~3h):** evaluator=87 sessions (0 err), may=32 (0 err), scout=20 (1 err), dev=10 (0 err), arc=9 (0 err). Healthy.
 
-### Key Observations
-1. **Scout is struggling**: 83% operational friction rate, only 26% good session rate. Root cause likely relates to knowledge preamble coverage being at 30%.
-2. **No active project iterations in 24h**: Projects may be stale or blocked. Zero active push projects aligns with this.
-3. **DB size at 1.1GB** — above 500MB target but well within 2GB threshold.
-4. **Evaluator performing well**: 84% meaningful review rate, aftermath liveness at 93%.
+**Inbox:** Steward audits and review requests — routine, no escalation needed.
 
-### Actions Taken
-- Reviewed full system status and metric dashboard
-- No urgent P0 breaches requiring immediate fork
-- Scout metrics are concerning but not yet at threshold for automated intervention
+**Judgment:** System healthy, no actionable issues. Projects paused by design.
