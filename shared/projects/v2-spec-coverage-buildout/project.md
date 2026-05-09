@@ -1,7 +1,7 @@
 ---
 id: v2-spec-coverage-buildout
 owner: may
-status: active
+status: done
 type: milestone
 priority: P2
 workflow: project
@@ -22,7 +22,7 @@ This is a legitimate measurement gap, not a stale metric: the metric is computed
 - `proposals/v2-spec.md` wording drift: old metric-driven language can mislead agents into treating metrics as decisions instead of signals.
 
 ## Current State
-Metric is at 0.9091 (20/22 claims covered, up from 0.1364 baseline). Only 2 claims remain uncovered. Phase 1-2 checklist items are substantially complete. Remaining work: Phase 4 calibration for the last 2 claims (likely C3, C6 or C4). Near acceptance criteria threshold of 18/22.
+**DONE.** Metric reached 1.0 (22/22 claims covered, up from 0.1364 baseline). All phases complete. Project closed 2026-05-09.
 ## Evidence
 
 - Source: `agents/may/handlers/metrics-snapshot.ts` defines built-in metric `v2.spec-coverage-rate` and computes it in `countSpecClaimCoverage()`.
