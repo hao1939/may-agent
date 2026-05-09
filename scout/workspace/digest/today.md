@@ -206,3 +206,9 @@
 **Summary**: Introduces SIRA, which compresses multi-round exploratory search into a single corpus-discriminative retrieval action. It uses offline document enrichment and online query expansion validated by document-frequency statistics to form a single weighted BM25 query.
 **Implication**: Shows a way to optimize agent retrieval by moving from iterative search to single, highly-informed, corpus-aware queries, potentially reducing latency and cost in RAG agents.
 **KB**: KE-002 (new)
+
+### LLMs corrupt your documents when you delegate
+**Source**: https://arxiv.org/abs/2604.15597
+**Summary**: A recent arXiv paper discussing how delegating document creation to LLMs leads to corruption or degradation of the document's structure and content.
+**Implication**: Highlights the risks of full autonomous delegation for writing and documentation tasks, emphasizing the need for human-in-the-loop and better tooling.
+**KB**: KE-021 (new)
