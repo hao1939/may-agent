@@ -323,8 +323,15 @@ ${decision.validationSignal || "(record what should validate this movement)"}
 - After every edit/write, read the changed file back and inspect the diff before finishing.
 - Prefer updating existing project/context/knowledge files over creating duplicate artifacts.
 - Use ${config.projectDir}/outputs only for genuinely useful project artifacts.
-- Commit intentional changes in agents/ before finishing.
-- End with what changed and what signal should be checked next.`;
+- End with what changed and what signal should be checked next.
+
+## Finish Hygiene (mandatory before finish(success))
+1. Read back every file you wrote or edited using read(); shell cat/head/grep does not satisfy the read-back guard.
+2. Run \`cd /app/agents && git status --short\` and classify every dirty path.
+3. Stage and commit only intentional deliverables with explicit paths; never use broad \`git add .\`.
+4. Do not commit unrelated dirty agent/runtime files just to satisfy the guard. If unrelated or unsafe dirty paths remain, finish(partial/blocked) and name the exact path plus owner/escalation needed.
+5. After any commit, re-run \`cd /app/agents && git status --short\`; success requires a clean agents worktree or an explicit blocker.
+6. In finish(success), cite the read-back evidence, commit id, and clean-status check in verification_evidence.`;
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {

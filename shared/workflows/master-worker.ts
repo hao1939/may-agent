@@ -44,6 +44,17 @@ export const description: string =
   "Two-session workflow: orchestrator directs strategy, worker executes. " +
   "Review-first pattern ensures focused work from iteration 1.";
 
+const FINISH_HYGIENE_INSTRUCTIONS = [
+  "",
+  "## Finish Hygiene (mandatory before finish(success))",
+  "1. Read back every file you wrote or edited using read(); shell cat/head/grep does not satisfy the read-back guard.",
+  "2. Run `cd /app/agents && git status --short` and classify every dirty path.",
+  "3. Stage and commit only intentional deliverables with explicit paths; never use broad `git add .`.",
+  "4. Do not commit unrelated dirty agent/runtime files just to satisfy the guard. If unrelated or unsafe dirty paths remain, finish(partial/blocked) and name the exact path plus owner/escalation needed.",
+  "5. After any commit, re-run `cd /app/agents && git status --short`; success requires a clean agents worktree or an explicit blocker.",
+  "6. In finish(success), cite the read-back evidence, commit id, and clean-status check in verification_evidence.",
+].join("\n");
+
 // ── Config ──────────────────────────────────────────────────────────────
 
 const DEFAULT_MAX_ITERATIONS = 50; // safety cap — workflow runs until done/blocked/waiting
@@ -509,7 +520,9 @@ CONTINUE
 
 VERIFICATION RULE: After each worker iteration, verify deliverables exist with read() or bash(ls).
 If the worker claims success but files don't exist, the worker is wrong.
-If 3+ consecutive iterations produce no files, WRITE THE FILE YOURSELF or provide exact content in guidance.`;
+If 3+ consecutive iterations produce no files, WRITE THE FILE YOURSELF or provide exact content in guidance.
+
+If you edit project.md, apply finish hygiene before a successful finish: read back project.md, run \`cd /app/agents && git status --short\`, stage only the project.md path explicitly, commit it, re-run status, and cite the clean-status check plus commit id. If unrelated dirty paths remain, do not commit them; finish(partial/blocked) with exact paths and escalation needed.`;
 }
 
 export function workerSystemPrompt(projectDir: string): string {
@@ -858,7 +871,7 @@ WRITE-FIRST CONSTRAINT:\n- A stub file has been pre-created at \`${relPath}\`. Y
       ctx.log(`[work] EXP-510: Completion quality block injected`);
 
       // EXP-565: Threat-framed verify-after-edit gate (proven +100pp in gym)
-      workerPrompt += `\n\n⚠️ VERIFY-AFTER-EDIT RULE (session REJECTED if violated):\nAfter EVERY write() or edit() call, you MUST immediately read() the same file to confirm the change landed correctly. If you call finish() without verifying each modified file, your session will be REJECTED and marked as a failure. This is non-negotiable.`;
+      workerPrompt += `\n\n⚠️ VERIFY-AFTER-EDIT RULE (session REJECTED if violated):\nAfter EVERY write() or edit() call, you MUST immediately read() the same file to confirm the change landed correctly. If you call finish() without verifying each modified file, your session will be REJECTED and marked as a failure. This is non-negotiable.${FINISH_HYGIENE_INSTRUCTIONS}`;
       ctx.log(`[work] EXP-565: Threat-framed verify-after-edit gate injected`);
 
       // EXP-720: Few-shot dry-run logging (measure match rate before full injection)
