@@ -101,3 +101,8 @@
 2026-05-09T00:46:32.874Z agent=dev gate=all-passed tool_calls=29 elapsed_sec=140 deliverable_edits=0 status=done action=none
 2026-05-09T03:45:33.571Z agent=arc gate=all-passed tool_calls=41 elapsed_sec=272 deliverable_edits=0 status=done action=none
 2026-05-09T03:46:56.437Z agent=dev gate=all-passed tool_calls=24 elapsed_sec=164 deliverable_edits=0 status=done action=none
+2026-05-09T04:18:14.035Z agent=dev gate=all-passed tool_calls=54 elapsed_sec=242 deliverable_edits=0 status=done action=none
+2026-05-09T04:46:04.579Z agent=arc gate=all-passed tool_calls=30 elapsed_sec=303 deliverable_edits=0 status=done action=none
+2026-05-09T04:47:40.746Z agent=dev gate=all-passed tool_calls=32 elapsed_sec=207 deliverable_edits=0 status=done action=none
+2026-05-09T05:12:11.452Z agent=arc gate=anti-shallow tool_calls=8 min_required=10 elapsed_sec=71 status=done action=re-prompt
+2026-05-09T05:19:26.441Z agent=dev gate=all-passed tool_calls=45 elapsed_sec=312 deliverable_edits=0 status=done action=none

@@ -1,12 +1,18 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778298688630_511
-- **Status:** success
-- **When:** 2026-05-09T03:52:08.189Z
+- **Session:** s_1778304698044_2
+- **Status:** partial
+- **When:** 2026-05-09T05:34:03.307Z
 
 ## What Happened
-Wrote aftermath review for session s_1778298086866_495 with transcript-backed evidence of schema/query errors, guard blocks, and repo/path confusion; escalated findings to may.
+Reviewed s_1778304209311_1 transcript (single message tool call) and produced committed aftermath report; escalated to may about evaluator message routing failures (to=functions.message/hao) that block closure.
 
 ## Files Modified
-- agents/evaluator/workspace/aftermath/s_1778298086866_495.md
+- agents/evaluator/workspace/aftermath/s_1778304209311_1.md
+
+## Completed
+- Aftermath review written for s_1778304209311_1
+
+## Still Open / Next Steps
+May: address systemic message routing invalid targets (prompt/handler guardrails) and re-run steward; validate by checking message.delivery_failed events drop and P0 eval.llm-coverage-lag-h alert is actively escalated/resolved.
