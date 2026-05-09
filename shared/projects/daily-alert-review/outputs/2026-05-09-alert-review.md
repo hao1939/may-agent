@@ -1,67 +1,79 @@
 # Daily Alert Review — 2026-05-09
 
-**Period:** 2026-05-08 ~09:00 UTC → 2026-05-09 ~09:00 UTC  
-**Total alerts:** 52  
-**Unresolved:** 2
+**Period:** Last 24 hours  
+**Total alerts:** 244  
+**Unique metrics alerted:** 30  
+**Currently unresolved:** 4 alerts across 4 metrics
 
 ---
 
-## Summary by Metric
+## 🔴 Unresolved Alerts (Action Required)
 
-| Metric | Alerts | Resolved | Unresolved | Priority | Owner |
-|--------|--------|----------|------------|----------|-------|
-| Invalid project.md format | 22 | 22 | 0 | P1 | may |
-| Failed session triage rate (3h) | 8 | 8 | 0 | P1 | evaluator |
-| Scout good session rate (24h) | 6 | 5 | **1** | P3 | scout |
-| Reviewed good sessions overturned (24h) | 5 | 5 | 0 | P2 | evaluator |
-| Stale active metrics (>15m) | 3 | 3 | 0 | P1 | may |
-| Empty assistant stops (1h) | 1 | 0 | **1** | P2 | may |
-| First-turn provider errors (1h) | 1 | 1 | 0 | P1 | may |
-| Zero-op session errors (1h) | 1 | 1 | 0 | P1 | may |
-| LLM evaluation lag | 1 | 1 | 0 | P0 | evaluator |
-| Evaluator triage closure rate (24h) | 1 | 1 | 0 | P2 | evaluator |
-| Evaluator meaningful review rate (24h) | 1 | 1 | 0 | P2 | evaluator |
+| Metric | Message | Since |
+|--------|---------|-------|
+| `scout.good-session-rate-24h` | Rate 25.4% (threshold: 65%, target: 85%) | ~6h ago |
+| `scout.operational-friction-rate-24h` | Rate 74.6% (threshold: 30%, target: 10%) | ~25h ago |
+| `v2.spec-coverage-rate` | Coverage 54.5% (threshold: 80%, target: 100%) | ~1h ago |
+| `v2.heartbeat-decision-rate` | Rate 0% (threshold: 80%, target: 100%) | ~30min ago |
 
----
+### Analysis
 
-## Key Findings
+1. **Scout quality is critically low.** Good session rate at 25% is less than half the 65% threshold. Combined with 75% operational friction, this indicates systemic session quality problems — not transient noise.
 
-### 🔴 Unresolved Alerts (2)
+2. **v2 spec coverage** has improved (was 27%, now 55%) but still well below 80% threshold. Incremental progress.
 
-1. **Empty assistant stops (1h)** — current=23, threshold=15 (P2, owner: may)
-   - Fired at ~08:45 UTC, not yet resolved. Indicates sessions ending with empty assistant turns.
-
-2. **Scout good session rate (24h)** — current=26.6%, threshold=65% (P3, owner: scout)
-   - Fired at ~02:18 UTC, not resolved. Scout's good session rate is far below target (85%). This has been a recurring issue — 6 alerts in 24h, with the rate declining from 65% to 27%.
-
-### 🟡 Top Noisy Metrics
-
-1. **Invalid project.md format** — 22 alerts, all self-resolving within minutes. This metric fires and resolves constantly (~1 alert/hr). The threshold is 0, so any momentary spike triggers it. **Recommendation:** Raise threshold to ≥2 or add a cooldown period to reduce noise.
-
-2. **Failed session triage rate (3h)** — 8 alerts, all self-resolving. Triage rate dips briefly below 80% then recovers. Transient dips are normal. **Recommendation:** Consider a sustained-breach window (e.g., must stay below threshold for 10+ min before alerting).
-
-### 🟢 Resolved Issues
-
-- **LLM evaluation lag** (P0) — peaked at 65.9h lag, resolved after evaluator caught up. This was the highest-priority alert.
-- **First-turn provider errors** — spike of 12 errors in 1h, resolved within ~40min.
-- **Zero-op session errors** — spike of 42, resolved within 4min. Likely a transient burst.
-- **Evaluator quality metrics** (triage closure, meaningful review, false-good rate) — all briefly breached then recovered.
+3. **Heartbeat decision rate** at 0% is a new alert — may indicate a measurement or deployment issue.
 
 ---
 
-## Owner Summary
+## 📊 Top Alert Sources (by frequency)
 
-| Owner | Total Alerts | Unresolved | Action Needed |
-|-------|-------------|------------|---------------|
-| may | 27 | 1 | Investigate empty assistant stops; reduce project.md format alert noise |
-| evaluator | 16 | 0 | No action — all resolved |
-| scout | 6 | 1 | Good session rate declining, needs attention |
+| Metric | Count | Status |
+|--------|-------|--------|
+| `system.real-output-24h` | 61 | ✅ Resolved |
+| `handler.completed-count` | 61 | ✅ Resolved |
+| `project.invalid-format-count` | 24 | ✅ Resolved |
+| `project.iterations-24h` | 22 | ✅ Resolved |
+| `session.failed-triage-rate-3h` | 11 | ✅ Resolved |
+| `project.active-count` | 10 | ✅ Resolved |
+| `metric.stale-active-count` | 8 | ✅ Resolved |
+| `capability.status-reality-mismatch-count` | 7 | ✅ Resolved |
+| `scout.good-session-rate-24h` | 6 | ⚠️ 1 unresolved |
 
 ---
 
-## Recommendations
+## 🔁 Noisy/Flapping Metrics
 
-1. **Reduce noise on `project.invalid-format-count`** — 22 alerts/day for a self-correcting issue is excessive. Raise threshold or add hysteresis.
-2. **Investigate scout good session rate decline** — rate dropped from ~65% to ~27% over 24h. Root cause analysis needed.
-3. **Monitor empty assistant stops** — newly unresolved, may indicate a session management issue.
-4. **Add alert cooldowns** — several metrics fire and resolve within minutes repeatedly. A minimum re-alert interval would cut noise significantly.
+These metrics fired repeatedly and self-resolved, suggesting thresholds are too tight or the system oscillates around the boundary:
+
+- **`system.real-output-24h`** — 61 alerts, all resolved. Constant churn.
+- **`handler.completed-count`** — 61 alerts, all resolved. Same pattern.
+- **`project.invalid-format-count`** — 24 alerts. Format issues keep appearing and getting fixed.
+- **`project.iterations-24h`** — 22 alerts. Frequent threshold crossings.
+
+**Recommendation:** Consider adding hysteresis/cooldown to these metrics or widening thresholds to reduce alert fatigue.
+
+---
+
+## 🟡 Notable Resolved Alerts
+
+- **`evaluator.false-good-rate-sample`** — Hit 60% (threshold 20%). Evaluator was marking sessions as good that were later overturned. Resolved after ~12h.
+- **`evaluator.low-quality-rate-24h`** — 67.6% low-quality sessions (threshold 30%). Resolved.
+- **`capability.status-reality-mismatch-count`** — Peaked at 28 mismatches (threshold 3). Resolved.
+- **`session.zero-op-error-count-1h`** — 42 zero-op errors in one hour. Resolved quickly.
+- **`eval.llm-coverage-lag-h`** — 66h lag before resolution. LLM evals were significantly behind.
+
+---
+
+## Summary
+
+The system is **operationally noisy** — 244 alerts in 24h is excessive. Two structural issues dominate:
+
+1. **Scout session quality** is the most concerning unresolved problem (25% good rate, 75% friction).
+2. **Alert fatigue** from flapping metrics (`real-output`, `handler.completed-count`) drowns out signal.
+
+### Recommended Actions
+1. Investigate root cause of low scout good-session-rate
+2. Add cooldown/debounce to high-frequency alerting metrics
+3. Review `v2.heartbeat-decision-rate` — 0% suggests broken measurement
+4. Consider raising thresholds for metrics that routinely self-resolve within minutes
