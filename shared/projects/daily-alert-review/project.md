@@ -1,7 +1,7 @@
 ---
 id: daily-alert-review
 owner: may
-status: waiting
+status: paused
 type: recurring
 priority: P1
 workflow: project
