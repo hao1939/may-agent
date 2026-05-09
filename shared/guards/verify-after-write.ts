@@ -14,10 +14,28 @@
 function extractToolCalls(messages: any[]): Array<{ name: string; path?: string; index: number }> {
   const calls: Array<{ name: string; path?: string; index: number }> = [];
   let idx = 0;
+  const failedToolCallIds = new Set<string>();
+
+  for (const msg of messages ?? []) {
+    if (msg.role === "toolResult" && msg.isError) {
+      const id = msg.toolCallId;
+      if (id) failedToolCallIds.add(id);
+    }
+    if (!Array.isArray(msg.content)) continue;
+    for (const part of msg.content) {
+      if (part.type === "toolResult" && part.isError) {
+        const id = part.toolCallId ?? msg.toolCallId;
+        if (id) failedToolCallIds.add(id);
+      }
+    }
+  }
+
   for (const msg of messages ?? []) {
     if (!Array.isArray(msg.content)) continue;
     for (const part of msg.content) {
       if (part.type === "toolCall" || part.type === "tool_use") {
+        const id = part.id ?? part.toolCallId;
+        if (id && failedToolCallIds.has(id)) continue;
         const name = part.name ?? part.toolName;
         const args = part.arguments ?? part.input ?? {};
         calls.push({ name, path: args.path, index: idx++ });
