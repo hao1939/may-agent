@@ -245,3 +245,15 @@ Ran `monitor-session.cjs --running`: 2 checked, 1 healthy, 1 `PROTOCOL_VIOLATION
 Ran `patrol.cjs`: **CRITICAL** due to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
 
 Signal-quality note: `events.status` remains overwhelmingly `pending` (`pending=541904`, `handled=14`, `dismissed=4`, `done=1`). In the last hour, pending events include `session.start`=97, `session.end`=92, `handler.started`=89, `handler.completed`=84, `evaluation.routed`=54, `evaluation.reviewed`=37, and `evaluation.success_candidate`=9. Treat event status counts as backlog/noise for now rather than as a trustworthy liveness or routing-completion signal.
+
+**Last run**: 2026-05-09 10:57Z — DB canonical check confirms session-eval pipeline is still live/recent (`MAX(evaluations.createdAt)=1778324052638`; `MAX(sessions.startedAt)=1778324219164`; `MAX(sessions.endedAt)=1778324191844`; lag ≈166.5s vs `startedAt`, ≈139.2s vs `endedAt`; `evals_last24h=603`; `llm_evals_last24h=11`; `sessions_last24h=1368`). Legacy `.state/evaluations/` top-level artifacts remain stale at the filesystem layer (`find .state/evaluations -maxdepth 1 -type f | sort | tail -5` still returns only old `task_tree_*` files) → continue treating `.state/evaluations/` as a legacy output-path signal, not the canonical liveness source.
+
+Ran `monitor-session.cjs --running`: 1 checked, 1 healthy.
+
+Ran `patrol.cjs`: **CRITICAL** due to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
+
+Signal-quality note: `events.status` counts are still unusable as a liveness metric (`pending=542136`, `handled=14`, `dismissed=4`, `done=1`), but raw hourly event volume shows the system is active (`session.start`=84, `session.end`=78, `handler.started`=82, `handler.completed`=76 in the last hour). Continue treating event *rows/timestamps* as meaningful and event *status totals* as backlog/noise until proven otherwise.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` are still placeholder stubs generated 2026-04-29, so they remain unusable as current calibration inputs.
+
+Governance note: repo search confirms the broad/substantive alert pivot already landed in `agents/may/handlers/metrics-snapshot.ts` (`evaluator.low-quality-rate-24h` threshold 0.80 / P3 dashboard-only; `evaluator.substantive-low-quality-rate-24h` threshold 0.30 / P1 primary alert), so the shared calibration project's current `waiting` status remains aligned with code reality.
