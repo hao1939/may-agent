@@ -882,6 +882,93 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         heartbeatAgents.length + staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring status-reality mismatch: ${e}`); }
 
+    // ── Measure: v2 spec metrics (S5, S6, coverage rate) ─────────────
+
+    // S5: agent-config-bytes-p50 — median agent.json size
+    try {
+      const agentJsonFiles = readdirSync(ctx.sdk.paths.agents)
+        .map(d => join(ctx.sdk.paths.agents, d, "agent.json"))
+        .filter(f => existsSync(f));
+      const sizes = agentJsonFiles.map(f => statSync(f).size).sort((a, b) => a - b);
+      if (sizes.length > 0) {
+        const mid = Math.floor(sizes.length / 2);
+        const median = sizes.length % 2 === 0 ? Math.round((sizes[mid - 1] + sizes[mid]) / 2) : sizes[mid];
+        record("v2.agent-config-bytes-p50", median, sizes.length);
+      }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring v2.agent-config-bytes-p50: ${e}`); }
+
+    // S6: manager-loc and runtime-glue-loc
+    try {
+      const managerFiles = ["manager.ts"];
+      const glueFiles = ["manager.ts", "manager-utils.ts", "manager-receipts.ts", "manager-agents-tool.ts"];
+      const findLoc = async (files: string[]): Promise<number> => {
+        let total = 0;
+        for (const f of files) {
+          try {
+            const { stdout } = await execAsync(`find ${ctx.sdk.paths.root} -name "${f}" -not -path "*/node_modules/*" -not -path "*/.state/*" -not -path "*/gym/*" -print -quit`, { timeout: 3000 });
+            const path = stdout.trim();
+            if (path) {
+              const { stdout: loc } = await execAsync(`wc -l < "${path}"`, { timeout: 2000 });
+              total += parseInt(loc.trim()) || 0;
+            }
+          } catch { /* file not found */ }
+        }
+        return total;
+      };
+      const managerLoc = await findLoc(managerFiles);
+      const glueLoc = await findLoc(glueFiles);
+      if (managerLoc > 0) record("v2.manager-loc", managerLoc);
+      if (glueLoc > 0) record("v2.runtime-glue-loc", glueLoc);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring v2.manager-loc / v2.runtime-glue-loc: ${e}`); }
+
+    // v2.spec-coverage-rate — count claims with active, measured metrics
+    try {
+      // Claims and their metric IDs (from v2-spec.md)
+      const claimMetrics: Record<string, string[]> = {
+        C1: ["capability.self-directed-iteration-rate-24h"],
+        C2: ["capability.breach-time-to-recovery-p50-h"],
+        C3: ["capability.journal-reference-rate"],
+        C4: ["capability.message-conversation-close-rate"],
+        C5: ["capability.cross-domain-handling-rate"],
+        C6: ["capability.trend-7d"],
+        C7: ["capability.zombie-session-count", "capability.concurrent-session-max-1h", "capability.cost-per-day-usd", "capability.fork-loop-incidents-24h"],
+        C8: ["capability.session-trace-completeness"],
+        C9: ["capability.process-uptime-h"],
+        C10: ["capability.status-reality-mismatch-count"],
+        I1: ["infra.bus.event-count-1h"],
+        I2: ["infra.persist.db-size-mb"],
+        I3: ["infra.messages.delivery-rate"],
+        I4: ["infra.sessions.active-count"],
+        S1: ["v2.runagent-callsite-conformance"],
+        S2: [],  // structural hold
+        S3: [],  // structural hold
+        S4: [],  // structural hold
+        S5: ["v2.agent-config-bytes-p50"],
+        S6: ["v2.manager-loc", "v2.runtime-glue-loc"],
+        S7: ["v2.heartbeat-decision-rate"],
+        S8: ["v2.fork-on-breach-rate"],
+      };
+      const totalClaims = Object.keys(claimMetrics).length;  // 22
+      let measured = 0;
+      for (const [claim, metricIds] of Object.entries(claimMetrics)) {
+        if (metricIds.length === 0) {
+          // Structural holds count as measured
+          measured++;
+          continue;
+        }
+        // A claim is measured if at least one of its metrics is active and has a recent snapshot
+        const hasActive = metricIds.some(mid => {
+          const row = db.prepare("SELECT status FROM metrics WHERE id = ? AND status = 'active'").get(mid) as any;
+          if (!row) return false;
+          const snap = db.prepare("SELECT 1 FROM metric_snapshots WHERE metric_id = ? AND measured_at > ? LIMIT 1").get(mid, now - 24 * 3600000) as any;
+          return !!snap;
+        });
+        if (hasActive) measured++;
+      }
+      const rate = parseFloat((measured / totalClaims).toFixed(4));
+      record("v2.spec-coverage-rate", rate, totalClaims);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring v2.spec-coverage-rate: ${e}`); }
+
     // ── Generic metrics (source_query / source_command) ──────────────
 
     const measurable = db.prepare(
