@@ -1,7 +1,7 @@
 # Design: System Metrics
 
 **Status**: approved
-**Date**: 2026-04-30 (updated 2026-05-06)
+**Date**: 2026-04-30 (updated 2026-05-09)
 
 ## What metrics are for
 
@@ -49,8 +49,12 @@ alerting until they become necessary for keeping the loop running.
 | ID | What it answers | Source | Target | Threshold | Alert |
 |----|-----------------|--------|--------|-----------|-------|
 | `handler.success-rate` | Are handlers working? | `handler.completed / (completed + failed)` from events (6h) | 0.95 | 0.80 | below |
-| `handler.heartbeat-coverage` | Is any agent dark? | `COUNT(DISTINCT agent)` from heartbeat events (2h) | 4 | 3 | below |
+| `handler.heartbeat-coverage` | Are heartbeat sessions happening broadly? | `COUNT(DISTINCT agent)` from heartbeat sessions (2h) | 8 | 3 | below |
+| `agent.heartbeat-dark-count-2h` | Did any scheduled heartbeat agent go dark? | enabled heartbeat cron agents with no heartbeat session in 2h | 0 | 0 | above |
+| `agent.config-invalid-count-1h` | Did runtime skip an agent due to invalid config? | durable `agent.config_invalid` events (1h) | 0 | 0 | above |
 | `session.error-rate-6h` | Is anything failing? | `error+interrupted / total` from sessions (6h) | 0.10 | 0.30 | above |
+| `session.first-turn-error-count-1h` | Is the provider/model failing before the agent can act? | recent error/interrupted sessions whose first assistant transcript row has `stopReason=error` or provider error text | 0 | 0 | above |
+| `message.delivery-failed-count-1h` | Are inter-agent messages failing to route? | `message.delivery_failed` events (1h) | 0 | 0 | above |
 | `evaluator.stale-running-session-count` | Is work hanging? | running/idle non-evaluator sessions older than stale cutoff | 0 | 0 | above |
 
 ### Quality / Output

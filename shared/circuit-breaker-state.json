@@ -1,7 +1,7 @@
 {
   "agents": {
     "may": {
-      "consecutiveErrors": 1,
+      "consecutiveErrors": 2,
       "lastError": "heartbeat session error"
     },
     "coach": {
@@ -17,7 +17,7 @@
       "consecutiveErrors": 0
     },
     "scout": {
-      "consecutiveErrors": 1,
+      "consecutiveErrors": 2,
       "lastError": "heartbeat session error"
     },
     "qa": {
