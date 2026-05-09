@@ -135,3 +135,25 @@ Evidence checked:
 Disposition:
 - This entry is the required meaningful heartbeat artifact.
 - No production code, database state, or shared workflow file was changed by this follow-up.
+
+## 2026-05-09 Heartbeat Queue/Alert Sanity Check
+
+Routine self-maintenance after the previous dev heartbeat completed the evaluator scoring sanity-check request.
+
+Evidence checked:
+- UTC timestamp at write time: `2026-05-09T03:14:48Z`.
+- `agents/shared/work-queue.md` Approved section is still empty; all visible implementation candidates remain in Proposed, so no approved dev implementation item was available.
+- Active metrics exist despite the legacy injected header wording; current core dev/runtime signals are healthy: `handler.success-rate=1`, `handler.failed-count=0`, and `session.error-rate-6h=0.0354`.
+- No active metric is missing a snapshot in the last hour.
+- Direct `metric_alerts` cross-check shows unresolved alerts for `scout.good-session-rate-24h`, `scout.operational-friction-rate-24h`, and `evaluator.low-quality-rate-24h`; none are dev-owned. Manual metric-alert operation for dev: dismiss/no-op, because ownership is scout/evaluator and there is no approved implementation request.
+- Recent `handler.failed` rows are historical; the latest active metric snapshot has `handler.failed-count=0`, so no current handler patch is indicated.
+- Recent sessions show the current dev heartbeat running and the surrounding evaluator/may sessions completing successfully.
+- Git status showed only generated runtime files (`arc/last-session.md`, `evaluator/last-session.md`, `may/last-session.md`) before this intentional log entry.
+
+Signal dispositions:
+- Prior dev `session.end` for the evaluator scoring sanity-check: acted; artifact was already committed as `24b856102` and the request is complete.
+- Duplicate `session.start` heartbeat lifecycle events: dismissed as routine after health checks and current-session DB evidence.
+- Evaluator P1 review request about quantized scoring: acted in the prior heartbeat; dismissed here as already complete, with no new dev action required.
+- Earlier heartbeat `session.end` entries about empty queue / header wording / schema habits: dismissed as already acted; current checks followed those habits.
+
+Judgment: no new shared project or code patch is warranted this heartbeat. The only durable action is this traceable heartbeat log entry documenting event disposition and live evidence.
