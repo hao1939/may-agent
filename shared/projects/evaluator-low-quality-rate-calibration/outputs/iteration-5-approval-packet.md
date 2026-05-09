@@ -1,64 +1,57 @@
-# Iteration 5 — Approval packet: pivot alerting from broad NI-rate to substantive-quality rate
+# Iteration 5 — Approval packet: pivot paging from broad NI-rate to substantive-quality rate
 
 ## One-paragraph ask (approval needed)
-Please approve an **alerting/policy pivot** for evaluator quality monitoring: keep collecting `evaluator.low-quality-rate-24h` as the broad friction signal, but **move paging/thresholding intent to `evaluator.substantive-low-quality-rate-24h`** so alerts represent substantive output-quality failures rather than mixed hygiene/process penalties. The quantitative impact model from Iteration 3 shows the current broad rate at **0.6807** (356/523), while a hygiene-excluded counterfactual is **0.0975** (51/523) and the substantive-only counterfactual is **0.0765** (40/523). The substantive metric is already present in `agents/may/handlers/metrics-snapshot.ts`; approval is needed to make it the primary alert target and to preserve the broad metric as a dashboard/secondary signal.
+Please approve an **alerting / ownership decision** for evaluator quality monitoring: keep collecting `evaluator.low-quality-rate-24h` as the broad friction signal, but **treat `evaluator.substantive-low-quality-rate-24h` as the primary thresholded / paging quality metric** so alerts represent substantive output-quality failures rather than mixed hygiene/process penalties. Iteration 3’s DB-backed impact model showed the broad rate at **0.6807** (356/523), versus **0.0975** when hygiene-only cases are excluded and **0.0765** for substantive-only failures. In current runtime metrics, the broad metric remains high at **0.6809** while the substantive metric is much lower at **0.1586**. The substantive metric is already registered and measured in `agents/may/handlers/metrics-snapshot.ts`; approval is needed mainly to confirm policy intent and repoint any alerting/attention from the broad metric to the substantive one.
 
-## Table 1 — Observed rates (last 24h; DB-backed in Iteration 3)
+## Table 1 — Observed rates and counterfactuals
 
-| Definition | Metric / counterfactual | Numerator / Denominator | Rate |
+| Definition | Source | Numerator / Denominator | Rate |
 |---|---|---:|---:|
-| **Current (baseline)** | `evaluator.low-quality-rate-24h` definition: `verdict IN ('needs_improvement','low_quality') OR quality < 0.4 OR efficiency < 0.4` | 356 / 523 | **0.6807** |
-| **Hygiene-excluded (counterfactual)** | Baseline low-quality excluding issues containing hygiene markers: `finish() blocked`, `uncommitted changes`, `schema/query error in transcript` | 51 / 523 | **0.0975** |
-| **Substantive-only (counterfactual)** | `sessions.status IN ('error','interrupted')` OR issues contain `tool hallucination`, `verification failure`, `blind overwrite` | 40 / 523 | **0.0765** |
+| Current broad low-quality rate | Iteration 3 recomputation of `evaluator.low-quality-rate-24h` | 356 / 523 | **0.6807** |
+| Hygiene-excluded counterfactual | Iteration 3 recomputation excluding `finish() blocked`, `uncommitted changes`, `schema/query error in transcript` | 51 / 523 | **0.0975** |
+| Substantive-only counterfactual | Iteration 3 recomputation using `sessions.status IN ('error','interrupted')` or issues containing `tool hallucination`, `verification failure`, `blind overwrite` | 40 / 523 | **0.0765** |
+| Current runtime broad metric | `metrics` table snapshot | n/a | **0.6809** |
+| Current runtime substantive metric | `metrics` table snapshot | n/a | **0.1586** |
 
 Notes:
-- In this 24h slice, the substantive-only count was driven entirely by **terminal failures**; the three substantive marker strings were 0 occurrences.
-- This strongly suggests the current breach is dominated by **definition/aggregation**, not a broad collapse in substantive work quality.
+- The runtime numbers drift slightly from Iteration 3 because the 24h window moved, but the separation remains large.
+- The broad metric is still dominated by non-substantive friction; the substantive metric is materially lower and better aligned with “actual quality failure” intent.
 
-## Table 2 — Proposed metrics + thresholds
+## Table 2 — Proposed metrics and thresholds
 
-| Metric id | Purpose | Recommended target | Recommended threshold | Recommended use |
+| Metric id | Purpose | Target | Threshold | Recommended use |
 |---|---|---:|---:|---|
-| `evaluator.low-quality-rate-24h` | Broad friction rate: hygiene/process + substantive NI/low-score outcomes | 0.10 | 0.30 (or higher if retained) | Dashboard / secondary alert, not primary paging |
-| `evaluator.substantive-low-quality-rate-24h` | Substantive evaluator quality failures only | 0.10 | **0.30** | **Primary paging / thresholded quality alert** |
-| Optional follow-up metric family | Explicit hygiene or unscorable rate(s) | 0.05–0.10 | TBD | Route pipeline/process regressions to the right owner |
+| `evaluator.low-quality-rate-24h` | Broad friction rate: hygiene/process + substantive NI/low-score outcomes | 0.10 | 0.80 | Dashboard / secondary signal only |
+| `evaluator.substantive-low-quality-rate-24h` | Substantive evaluator quality failures only | 0.10 | 0.30 | **Primary thresholded / paging quality metric** |
+| Follow-up hygiene metrics (optional) | Explicit process / pipeline regressions | TBD | TBD | Route operational hygiene issues to the right owner without conflating them with quality |
 
 ## Exact code touch list
 
-### Confirmed current code state
-The substantive metric is already registered and measured in `agents/may/handlers/metrics-snapshot.ts` (re-verified in this iteration):
-- Registry entries: lines reported by grep at **70–71**
+### Already verified in repo
+`agents/may/handlers/metrics-snapshot.ts` already contains both the registry entries and the measurement logic:
+- Registry entries: lines `72`–`73`
   - `evaluator.low-quality-rate-24h`
   - `evaluator.substantive-low-quality-rate-24h`
-- Measurement calls: lines reported by grep at **541** and **563**
+- Measurement calls: lines `618` and `640`
   - `record("evaluator.low-quality-rate-24h", ...)`
   - `record("evaluator.substantive-low-quality-rate-24h", ...)`
 
-Implication: the remaining decision is primarily **which metric should drive paging/thresholding**, not whether the substantive metric can be computed.
-
-### Files that would change if alerting is in-repo
-1. `agents/may/handlers/metrics-snapshot.ts`
-   - **Only if needed for metadata/threshold alignment**; substantive metric measurement already exists.
-   - Possible change: clarify naming/description so broad vs substantive intent is explicit.
-2. **Alert consumer file(s), if any, discovered via metric-id usage search**
-   - Repoint alerting from `evaluator.low-quality-rate-24h` to `evaluator.substantive-low-quality-rate-24h`.
-   - If the consumer is not in-repo, no code change is required here.
-
-### If alerting is external
-- No repo code change is required to change paging behavior.
-- Required action is an **owner-approved alert rule update** in the external alerting system.
+### Files that would need to change
+1. **If alert routing is in-repo:** the file that currently consumes `evaluator.low-quality-rate-24h` for paging/thresholding should be repointed to `evaluator.substantive-low-quality-rate-24h`.
+2. `agents/may/handlers/metrics-snapshot.ts` — **only if** we want metadata cleanup (for example, keeping the broad metric explicitly labeled dashboard-only, which is already true in the registry text).
+3. **If alerting is external:** no repo code change is required; the owner just updates the alert rule to watch `evaluator.substantive-low-quality-rate-24h` instead of the broad metric.
 
 ## Rollback plan
-1. Repoint paging/thresholding back to `evaluator.low-quality-rate-24h`.
-2. Keep `evaluator.substantive-low-quality-rate-24h` collecting as a dashboard metric for comparison and future calibration.
-3. No migration or destructive backfill is needed; both metrics are derived from existing `evaluations` and `sessions` data at snapshot time.
+1. Switch the alert/threshold consumer back to `evaluator.low-quality-rate-24h`.
+2. Continue collecting `evaluator.substantive-low-quality-rate-24h` as a comparison/dashboard metric.
+3. No migration, backfill, or destructive DB change is needed because both metrics are derived from existing `evaluations` and `sessions` data at snapshot time.
 
 ## Why approval is the right next step
-- The blocker is now **governance/intent**, not analysis: should broad hygiene/process NI drive the same alert as substantive quality failures?
-- The worker has already been stalled by repo hygiene traps around `agents/shared/projects/**` and accidental `project.md` edits; another planning loop is unlikely to change runtime behavior.
-- Because the substantive metric already exists in code, approval can unlock a low-risk alert pivot without waiting for a larger implementation cycle.
+- The blocker is now **governance / metric intent**, not analysis: should hygiene/process NI page the same way as substantive output-quality failures?
+- The worker stall pattern was operational (`project.md` edits, ignored files, commit/finish guard failures), so another planning-only loop is unlikely to change runtime behavior.
+- Because the substantive metric already exists in runtime code and in the `metrics` table, approval can unlock a low-risk alert pivot without waiting for a larger implementation cycle.
 
 ## References
 - Iteration 3 impact model: `agents/shared/projects/evaluator-low-quality-rate-calibration/outputs/iteration-3-impact-model-and-recommendation.md`
 - Iteration 4 implementation plan: `agents/shared/projects/evaluator-low-quality-rate-calibration/outputs/iteration-4-metric-split-implementation-plan.md`
-- Metric registry/measurement file: `agents/may/handlers/metrics-snapshot.ts`
+- Metric implementation: `agents/may/handlers/metrics-snapshot.ts`
