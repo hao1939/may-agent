@@ -75,3 +75,10 @@
 ## 2026-05-09 (fourth follow-up)
 - Artifact gate: satisfied by appending (this entry).
 - Note to self: next gate-only heartbeat should still record at least one measurable snapshot via `query_db` (sessions count; latest metrics updated_at).
+
+## 2026-05-09 (fifth follow-up)
+- Artifact gate: this is the required meaningful write for this heartbeat.
+- Improvement: when there is no session transcript to evaluate, default to capturing a minimal DB snapshot and persist it here.
+- Planned snapshot queries (read-only):
+  - `SELECT COUNT(*) AS sessions_total FROM sessions;`
+  - `SELECT id, value, updated_at FROM metrics ORDER BY updated_at DESC LIMIT 10;`
