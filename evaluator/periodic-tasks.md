@@ -206,7 +206,13 @@ Interpretation: eval pipeline appears stalled since 2026-05-06T16:46Z while sess
 - Secondary signal: job/cron references or any dedicated `*llm*` tables. Absence of `*llm*` tables alone is **not** proof that Process #15 is disabled, because LLM evaluations may be stored in the shared `evaluations` table.
 - If both the primary signal and runtime job evidence are missing: treat as "LLM eval disabled or not implemented" and open a tracked item to either (a) add it back, or (b) remove/rename docs that imply it exists.
 
-**Last check**: 2026-05-09 — `.state/may.db` still has **no** tables matching `*llm*`, but Process #15 is clearly active in the shared `evaluations` table: `evals_last24h=539`, `llm_evals_last24h=6` (`evaluatedByHeuristic=0`), `MAX(evaluations.createdAt)=1778316576092`, `MAX(sessions.startedAt)=1778316730457` (lag ≈2.6m at check time). Conclusion: LLM eval is enabled, just not via a dedicated `llm_*` table.
+**Last check**: 2026-05-09 09:14Z — `.state/may.db` still has **no** tables matching `*llm*`, but Process #15 is clearly active in the shared `evaluations` table: `evals_last24h=558`, `llm_evals_last24h=7` (`evaluatedByHeuristic=0`), `MAX(evaluations.createdAt)=1778317938580`, `MAX(sessions.startedAt)=1778317973081` (lag ≈34.5s at check time). Conclusion: LLM eval is enabled, just not via a dedicated `llm_*` table.
+
+**Last run**: 2026-05-09 09:14Z — DB canonical check confirms session-eval pipeline live/recent (`MAX(evaluations.createdAt)=1778317938580`; `MAX(sessions.startedAt)=1778317973081`; lag ≈34.5s). Legacy `.state/evaluations/` artifacts remain stale (`task_tree_*.json` still Mar 24; newest top-level `s_*.json` observed Apr 29) → continue treating as legacy output-path drift, not DB liveness.
+
+Ran `monitor-session.cjs --running`: 4 checked, 3 healthy, 1 `PROTOCOL_VIOLATION` (active evaluator session `s_1778317938585_19`; P114 Experience Replay missing; recommended action: warn).
+
+Ran `patrol.cjs`: **CRITICAL** due to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
 
 ---
 
