@@ -19,8 +19,8 @@ Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior
 - Metric: `evaluator.false-good-rate-sample` current 0.5714 (threshold 0.2, target 0.05) but denominator only 7 reviewed sessions (sample instability).
 
 ## Current State
-Iteration 2. Milestones: 0/0 done.
-Reviewer: - **I believe**: We now have a concrete causal mechanism: heuristic v2’s step-function (`issues.length>0 => quality=0.55 + needs_improvement`) plus a few brittle transcript/session-field triggers is d
+Iteration 4. Milestones: 0/0 done.
+Reviewer: [PIVOT] 1. **I believe**: We have enough analysis + an implementation plan, but we are blocked by *process failures* (worker created unintended edits in ignored paths, and misused `message()`), so the
 ## Plan
 1. **Metric decomposition proposal**: draft a split of low-quality-rate into sub-metrics by issue class (schema errors, finish/uncommitted, terminal interruptions) to avoid conflating agent quality with infra/guard friction.
 2. **Criteria calibration**: review evaluator criteria for (a) terminal interrupted sessions (Clean start) and (b) finish-blocked sessions; decide whether to classify as NI vs excluded/exception.
@@ -93,3 +93,6 @@ Milestone checkoff: Iteration 2 — mechanism + fix options
 - Next unblock requires **verifying whether `evaluator.substantive-low-quality-rate-24h` exists in runtime `metrics`**; if it exists, alert pivot can happen without code changes; if not, code implementation is required.
 - `evaluator.substantive-low-quality-rate-24h` now exists in `metrics` and is low (0.0855) while `evaluator.low-quality-rate-24h` is very high (0.6823); project must now validate that the split corresponds to hygiene-only vs substantive failures using empirical `evaluations/sessions` data, then target the dominant hygiene driver(s) for behavior fixes or safely pivot alerting.
 - Heuristic v2 mechanism is a step-function in `agents/evaluator/workflows/evaluator-aftermath.ts`: failed sessions => q=0.2/NI; else any `issues[]` => q=0.55/NI; else q=0.85/good. - Top NI issues are triggered by simple transcript substring/regex matches (`finish() blocked [uncommitted changes]`, `no such column/table`) plus session fields (`status=interrupted`, `session.error='Clean start (fresh)'`). - `agents/may/handlers/session-aftermath-scan.ts` uses `DEFAULT_HEURISTIC_VERSION=2` and refreshes only missing evals or prior **good** evals; **needs_improvement is sticky** across heuristic version bumps. - Manual audit (n=20) suggests the majority of hv=2 NI cases are hygiene/unscorable rather than substantive task-quality failures; next step is to locate the exact computation of `evaluator.low-quality-rate-24h` and backtest proposed rubric/heuristic changes against it.
+- Iteration 4 worker hit process blockers: uncommitted edits to `shared/projects/**` (gitignored) and incorrect `message()` invocation; no implementation landed.
+- DB schema shows `evaluations.issues` is `TEXT` (not guaranteed JSON); must probe `json_valid(issues)` before using `json_each` in metrics SQL.
+- `sessions.status` exists and is joinable via `sessions.sessionId = evaluations.sessionId` for substantive failure detection.

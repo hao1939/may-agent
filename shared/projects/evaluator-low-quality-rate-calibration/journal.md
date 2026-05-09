@@ -2908,3 +2908,65 @@ Received arguments:
 
 **Agent response:**
 Created PR-ready implementation plan for splitting evaluator low-quality into broad vs substantive metrics, with exact SQL, alerting recommendations, and verification queries.
+**Reviewer**: CONTINUE — [PIVOT] 1. **I believe**: We have enough analysis + an implementation plan, but we are blocked by *process failures* (worker created unintended edits in ignored paths, and misused `message()`), so the project isn’t reaching “implemented + verified metric change.”
+2. **I’m uncertain about**: Whether `evaluations.issues` is valid JSON in practice (schema says TEXT), and whether the worker’s plan will actually run without `json_each` errors; also whether a normalized issues table exists (it likely doesn’t).
+3. **I’d change my mind if**: A quick DB probe shows `json_valid(e.issues)=1` for most rows (so the JSON-based SQL is safe), and we can compute the substantive rate robustly without string-LIKE.
+
+## 3 alternative approaches (ranked)
+
+1) **DB-first harden the SQL + implement minimal code diff in tracked repo (highest feasibility):**  
+   Before editing any TS, probe the DB to determine the safest “substantive” predicate. Then implement `evaluator.substantive-low-quality-rate-24h` using that predicate, plus a verification query. This avoids shipping brittle SQL that crashes at runtime.
+
+2) **Zero-code alerting pivot (medium):**  
+   Leave metrics as-is; change alert config (wherever thresholds are defined) to page on an existing substantive-ish metric if present. Risk: may not exist / policy might require code anyway.
+
+3) **Heuristic v2 reclassify hygiene-only issues (lower):**  
+   Change evaluator heuristic so hygiene issues do not force NI. Harder to tune, and more likely to create false-greens.
+
+Pick **approach #1**.
+
+---
+
+## (a) Concrete output (next iteration)
+Produce **two artifacts**:
+
+1) `agents/shared/projects/evaluator-low-quality-rate-calibration/outputs/iteration-5-db-probe-and-safe-sql.md` containing:
+- Results of DB probes: `% of evaluations.issues that are json_valid`, plus a few example rows of `issues`
+- Decision: use JSON-based `json_each` vs fallback `LIKE`
+- Final SQL snippets for numerator/denominator that are guaranteed to run in this DB
+
+2) A **single PR-ready code change** (in the *non-ignored* repo area) implementing the metric with the chosen safe SQL in `agents/may/handlers/metrics-snapshot.ts`, plus a short “how to verify” section in the output doc.
+
+Also: **do not touch** `agents/shared/projects/**` except writing the new output file (even if gitignored, it’s fine to exist; just don’t attempt to commit it). And do not attempt to commit anything this iteration—just implement + verify locally.
+
+---
+
+## (b) What’s different
+Previous iterations were “plan the metric split” and got stuck in git/process issues. This pivot is **DB-first validation** to ensure the SQL won’t crash, then **minimal implementation** with a verification query. It’s an execution strategy designed to avoid another non-working “plan-only” loop.
+
+---
+
+## (c) First step (EXACT first command for the worker)
+Run this DB probe via `query_db` (NOT bash), and paste results into the new output doc:
+
+```sql
+WITH last24 AS (
+  SELECT issues
+  FROM evaluations
+  WHERE createdAt > (strftime('%s','now') - 86400)*1000
+    AND agent NOT IN ('evaluator','judge')
+  LIMIT 500
+)
+SELECT
+  SUM(CASE WHEN issues IS NULL THEN 1 ELSE 0 END) AS null_issues,
+  SUM(CASE WHEN issues IS NOT NULL AND json_valid(issues) THEN 1 ELSE 0 END) AS json_valid,
+  SUM(CASE WHEN issues IS NOT NULL AND NOT json_valid(issues) THEN 1 ELSE 0 END) AS json_invalid,
+  COUNT(*) AS sample_n
+FROM last24;
+```
+
+CONTEXT_UPDATE:
+- Iteration 4 worker hit process blockers: uncommitted edits to `shared/projects/**` (gitignored) and incorrect `message()` invocation; no implementation landed.
+- DB schema shows `evaluations.issues` is `TEXT` (not guaranteed JSON); must probe `json_valid(issues)` before using `json_each` in metrics SQL.
+- `sessions.status` exists and is joinable via `sessions.sessionId = evaluations.sessionId` for substantive failure detection.
+
