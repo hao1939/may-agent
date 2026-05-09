@@ -86,15 +86,23 @@ function forbiddenEditPathsFromTask(text: string): string[] {
     const lower = line.toLowerCase();
     if (!/(forbidden|cannot|must not|do not|don't|no edits?|not edit|never edit)/.test(lower)) continue;
 
-    for (const match of line.matchAll(/(?:agents\/)?[\w.-]+(?:\/[\w.-]+)+/g)) {
+    for (const match of line.matchAll(/(?:\/app\/|\.state\/|src\/|agents\/)?[\w.-]+(?:\/[\w.-]+)+/g)) {
       const raw = match[0].replace(/[).,;:'\"]+$/, "");
-      if (raw.includes("/")) paths.add(raw);
+      if (looksLikeConcreteForbiddenPath(raw)) paths.add(raw);
     }
     for (const match of line.matchAll(/\b[A-Z][A-Z0-9_-]*\.md\b/g)) {
       paths.add(match[0]);
     }
   }
   return [...paths];
+}
+
+function looksLikeConcreteForbiddenPath(candidate: string): boolean {
+  if (!candidate.includes("/")) return false;
+  if (candidate.startsWith("/app/") || candidate.startsWith("agents/") || candidate.startsWith("src/") || candidate.startsWith(".state/")) {
+    return true;
+  }
+  return /\/[^/\s]+\.[A-Za-z0-9._-]+$/.test(candidate);
 }
 
 function editedForbiddenPaths(ownText: string, forbiddenPaths: string[]): string[] {

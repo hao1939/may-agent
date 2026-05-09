@@ -506,6 +506,31 @@ describe("evaluator aftermath transcript checks", () => {
     expect(transcriptIssues(transcript)).toEqual([]);
   });
 
+  it("ignores slash tokens from review-only task prose when extracting forbidden paths", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "user",
+        content: "[REVIEW ONLY — no file edits expected.] Routing reason: constraint violation: edited forbidden path(s): finish/uncommitted.",
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "w1",
+            name: "write",
+            arguments: {
+              path: "agents/shared/projects/finish-blocked-hygiene-reduction/outputs/sample.md",
+              content: "sample",
+            },
+          },
+        ],
+      }),
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toEqual([]);
+  });
+
   it("flags unavailable workflow-collected signals as reliability issue", () => {
     const verdict = classifyVerdict(
       { status: "done", opCount: 0 },
