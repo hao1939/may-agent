@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeSocketFrame } from "../src/app/ui/socket.js";
+import { normalizeSocketFrame } from "../packages/control-client/src/protocol.js";
 
 describe("socket frame normalization", () => {
   it("passes raw bus events through by default", () => {
