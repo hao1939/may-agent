@@ -329,10 +329,11 @@ describe("loadInbox", () => {
 // ── formatMetricsBlock ───────────────────────────────────────────────────
 
 describe("formatMetricsBlock", () => {
-  it("returns 'no metrics' when none configured", () => {
+  it("returns no owned metrics message when none are owned by the agent", () => {
     const ctx = makeMockCtx({ db: makeMockDb({ metrics: [] }) });
     const result = formatMetricsBlock(ctx, "bob");
-    expect(result).toContain("No metrics configured");
+    expect(result).toContain("No metrics owned by bob");
+    expect(result).not.toContain("No metrics configured");
   });
 
   it("returns no red metric signal when no breaches", () => {

@@ -297,7 +297,7 @@ export function runRedMetricCommands(ctx: WorkflowContext, agent: string): strin
  */
 export function formatMetricsBlock(ctx: WorkflowContext, agent: string): string {
   const metrics = loadMetrics(ctx, agent);
-  if (!metrics) return "📊 No metrics configured.\n";
+  if (!metrics) return `📊 No metrics owned by ${agent}. Check system-level metrics if your heartbeat guidance requires it.\n`;
 
   const hasRed = metrics.includes("⚠️ BELOW TARGET");
   if (!hasRed) {

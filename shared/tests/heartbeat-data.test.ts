@@ -102,12 +102,11 @@ describe("loadMetrics", () => {
     expect(loadMetrics(ctx, "arc")).toBe("");
   });
 
-  it("keeps v2 spec coverage explicitly owned by may while the buildout is pending review", () => {
+  it("keeps retired v2 spec coverage out of active heartbeat ownership", () => {
     const source = readFileSync(resolve(__dirname, "../../may/handlers/metrics-snapshot.ts"), "utf8");
 
-    expect(source).toContain(
-      '{ id: "v2.spec-coverage-rate", name: "v2 spec measurement coverage", owner: "may", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P2" }',
-    );
+    expect(source).toContain('"v2.spec-coverage-rate",');
+    expect(source).toContain("const RETIRED_METRIC_IDS");
     expect(source).not.toContain(
       '{ id: "v2.spec-coverage-rate", name: "v2 spec measurement coverage", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P2" }',
     );
@@ -300,10 +299,11 @@ describe("loadInbox", () => {
 });
 
 describe("formatMetricsBlock", () => {
-  it("returns no metrics message when empty", () => {
+  it("returns no owned metrics message when empty", () => {
     const ctx = makeCtx();
     const result = formatMetricsBlock(ctx, "bob");
-    expect(result).toContain("No metrics configured");
+    expect(result).toContain("No metrics owned by bob");
+    expect(result).not.toContain("No metrics configured");
   });
 
   it("returns all healthy message", () => {
@@ -317,7 +317,7 @@ describe("formatMetricsBlock", () => {
     });
     const ctx = makeCtx({ db });
     const result = formatMetricsBlock(ctx, "bob");
-    expect(result).toContain("All metrics healthy");
+    expect(result).toContain("No red metric signals");
   });
 
   it("returns red metric block with investigation prompt", () => {
@@ -334,7 +334,7 @@ describe("formatMetricsBlock", () => {
     const ctx = makeCtx({ db });
     const result = formatMetricsBlock(ctx, "bob");
     expect(result).toContain("FIRST");
-    expect(result).toContain("evaluate your metrics");
+    expect(result).toContain("Judge the signal in context");
   });
 });
 
