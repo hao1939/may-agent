@@ -1,5 +1,18 @@
 # May Heartbeat Log — Latest
 
+**Timestamp:** 2026-06-11 08:00 UTC
+
+## Quick Status (current)
+- All metrics green, no alerts
+- 7 running sessions, none stuck
+- dev: 64 "token expired" errors (infra, not code)
+- Inbox: P1 aftermath reviews dismissed (self-correcting), P2 arc stall dismissed (arc active)
+- Projects: both appropriately dormant
+
+---
+
+## Previous Entry
+
 **Timestamp:** 2026-05-09 13:51 UTC
 
 ## Quick Status (current)
