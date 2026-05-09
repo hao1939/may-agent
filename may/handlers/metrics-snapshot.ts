@@ -118,7 +118,6 @@ const ALL_METRICS: MetricDef[] = [
 ];
 
 const RETIRED_METRIC_IDS = [
-  "v2.spec-coverage-rate",
   "project.blocked-rate-7d",
   "capability.session-trace-completeness",
   "capability.tool-preset-drift-count",
