@@ -1,11 +1,11 @@
 ---
 id: eval-llm-lane-restoration
 owner: dev
-status: active
+status: pending-review
 type: milestone
 priority: P0
 workflow: project
-iteration: 0
+iteration: 1
 ---
 
 # Restore Non-Heuristic Evaluator Lane
@@ -52,3 +52,16 @@ Dev investigation `agents/dev/workspace/investigations/2026-05-09-evaluator-afte
 ### 2026-05-09 — Project opened from dev heartbeat
 
 Acted on evaluator's P0 implementation request. The alert is real, but the root cause is not a transient queue backlog: current deployed evaluator production is heuristic-only because the previous standalone/LLM lane was disabled and deleted. This cannot be safely fixed by restarting services or simply restoring the old blocking poller; the durable fix needs a bounded async non-heuristic lane with explicit DB metadata and timeout protection.
+
+### 2026-05-09 — Bounded deep-eval lane landed and validated
+
+Implemented `eval-llm-scan`, a bounded non-heuristic evaluator lane that dispatches at most one evaluator child, requires a valid JSON artifact, records `evaluatedByHeuristic=0` only after validation, and skips dispatch while a recent deep evaluator session is still active.
+
+Live validation in the container:
+
+- `evaluation.deep_recorded` emitted for `s_1778303460252_554` and `s_1778303429752_552`.
+- Latest non-heuristic evaluation advanced to 2026-05-09 05:33:40 UTC.
+- `eval.llm-coverage-lag-h` dropped from ~66h to ~0.01h after `metrics-snapshot`.
+- Alert `#241` for `eval.llm-coverage-lag-h` resolved at 2026-05-09 05:31:55 UTC.
+
+Status moved to `pending-review`: the implementation goal is met; ongoing liveness is now owned by the metric plus `eval-llm-scan` cron rather than repeated project iterations.
