@@ -1,3 +1,15 @@
+---
+title: Emerging Pattern - Agent Context Osmosis
+tags: [architecture, context, memory, multi-agent]
+---
+
+<ai_context>
+summary: "Agents lack human 'osmosis' (implicit context). A proposed solution is having agents continuously crawl system artifacts (PRs, issues, chats) to build a live knowledge base of implicit decisions and conventions, which other agents can query."
+triggers: ["context sharing", "multi-agent memory", "implicit knowledge", "osmosis problem"]
+last_updated: "2026-05-09"
+source_basis: "Hacker News: 'The bottleneck was never the code' (The Typical Set)"
+</ai_context>
+
 # Emerging Pattern: Agents and Shared Context (The "Osmosis" Problem)
 
 ## Observation
