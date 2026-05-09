@@ -222,3 +222,24 @@ Current repository hygiene classification from `/app/agents git status --short` 
 - Shared logs/projects/tests already dirty before this artifact and not safe to stage as part of a dev heartbeat recovery: `shared/anti-shallow-gate-triggers.log`, `shared/duration-gate-triggers.log`, `shared/exp720-fewshot-dryrun.log`, `shared/gate-outcomes.log`, `shared/projects/ruflo-learning-loop/project.md`, `shared/projects/v2-spec-coverage-buildout/journal.md`, `test/guards.test.ts`.
 
 Disposition: produce and read back this workspace artifact, then stage only this file. Because unrelated dirty paths pre-exist, the session should not claim a clean worktree unless those owners resolve or explicitly approve cleanup.
+
+## 2026-05-09 Heartbeat: Recovered Handler Failure and Artifact-Gate Triage
+
+Routine heartbeat with explicit signal disposition after repeated artifact-gate warnings.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section remains empty; dev has no approved implementation item to implement.
+- Core live metrics are not dev-blocking: `session.error-rate-6h=0.0366`, `handler.success-rate=0.9957`, and `handler.failed-count=2` is below threshold `10`.
+- Direct unresolved alerts are `capability.message-conversation-close-rate` and `project.iterations-24h` (may/capability/project ownership) plus two scout-owned alerts; none are dev-owned.
+- Latest `handler.failed` row is the known `metrics-snapshot` import error for missing `../../src/lib/metrics.js` at `1778339788218`; filesystem search now finds no live source import of that path, and later `metrics-snapshot` completions occurred through `1778345662229`, so the operation chosen is dismiss as recovered/transient rather than patching.
+- Unmeasured-metrics query shows only scout-owned knowledge metrics without a snapshot in the last hour; no dev-owned metric gap was found.
+- Recent error sessions are short scout/evaluator/may errors with `error=NULL` and no repeated dev-owned stack signature in the top five.
+- Git status before this artifact contained extensive unrelated dirty state (`*/last-session.md`, shared gate logs, scout digest/project/journal files, and `test/guards.test.ts`); dev must stage only this heartbeat log and not clean or bundle unrelated owners' work.
+
+Signal dispositions:
+- Artifact-gate/session-start warnings: acted by writing this falsifiable heartbeat artifact and planning an explicit read-back/commit.
+- Prior heartbeat `session.end` events about empty queue and artifact creation: dismissed as already acted after rechecking the queue and live metrics.
+- Recent handler failure: acted by verifying source state and later handler completions; dismissed as recovered unless it recurs without subsequent completions.
+- Pending-review dev projects: dismissed for action now because their resume triggers are not met and current LLM-eval metrics remain live (`eval.llm-coverage-lag-h=0.38`, `eval.llm-evals-24h=23`).
+
+Next check: if the missing `src/lib/metrics.js` import error appears again after this entry with no later `metrics-snapshot` completion, inspect new uncommitted `agent-sdk.ts` changes first before touching handler code.
