@@ -81,12 +81,6 @@ const ALL_METRICS: MetricDef[] = [
   // System output
   { id: "system.real-output-24h", name: "Real output (24h)", owner: "may", type: "gauge", target: 100, threshold: 30, unit: "count", alert_op: "<",
     priority: "P1" },
-  // Scout knowledge behavior
-  { id: "scout.knowledge-practice-loaded", name: "Scout knowledge practice loaded", owner: "scout", project: "scout-second-brain-learning", type: "health", target: 1, threshold: 1, unit: "boolean", alert_op: "<",
-    priority: "P2",
-    config: { alert: { mode: "consecutive_failures", count: 1 } } },
-  { id: "scout.knowledge-preamble-coverage", name: "Scout knowledge preamble coverage", owner: "scout", project: "scout-second-brain-learning", type: "gauge", target: 0.8, threshold: 0.25, unit: "ratio", alert_op: "<",
-    priority: "P3" },
   { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", type: "gauge", target: 120000, threshold: 600000, unit: "ms", alert_op: ">", priority: "P2" },
   { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", type: "gauge", target: 15, threshold: 8, unit: "count", alert_op: "<", priority: "P1" },
   // Project
@@ -290,56 +284,7 @@ function hasEmptyAssistantStop(persistDir: string, sessionId: string): boolean {
   return false;
 }
 
-function listMarkdownFilesRecursive(dir: string): string[] {
-  if (!existsSync(dir)) return [];
-  const files: string[] = [];
-  for (const entry of readdirSync(dir)) {
-    const path = join(dir, entry);
-    let stat;
-    try {
-      stat = statSync(path);
-    } catch {
-      continue;
-    }
-    if (stat.isDirectory()) {
-      files.push(...listMarkdownFilesRecursive(path));
-    } else if (entry.endsWith(".md") && entry !== "INDEX.md") {
-      files.push(path);
-    }
-  }
-  return files;
-}
 
-function hasScoutKnowledgePracticeLoaded(agentsRoot: string): boolean {
-  try {
-    const agentPrompt = readFileSync(join(agentsRoot, "scout", "AGENTS.md"), "utf8");
-    const heartbeat = readFileSync(join(agentsRoot, "scout", "heartbeat.md"), "utf8");
-    return /Search `agents\/scout\/knowledge\/` before creating a new knowledge file/.test(agentPrompt)
-      && /update that note in place/i.test(agentPrompt)
-      && /<ai_context>/.test(agentPrompt)
-      && /Check existing knowledge/i.test(heartbeat)
-      && /knowledge-preamble-coverage/.test(heartbeat);
-  } catch {
-    return false;
-  }
-}
-
-function scoutKnowledgePreambleCoverage(agentsRoot: string): { value: number; sampleSize: number } {
-  const files = listMarkdownFilesRecursive(join(agentsRoot, "scout", "knowledge"));
-  if (files.length === 0) return { value: 1, sampleSize: 0 };
-  let withPreamble = 0;
-  for (const file of files) {
-    try {
-      const prefix = readFilePrefix(file, 4096).trimStart();
-      if (prefix.startsWith("<ai_context>") || prefix.startsWith("## For future agents")) {
-        withPreamble++;
-      }
-    } catch {
-      // Treat unreadable files as not covered; the sample size still exposes the issue.
-    }
-  }
-  return { value: Number((withPreamble / files.length).toFixed(4)), sampleSize: files.length };
-}
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async (_event?: TriggerEvent) => {
@@ -793,16 +738,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       record("system.real-output-24h", n);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring system.real-output-24h: ${e}`); }
 
-    // ── Measure: Scout knowledge behavior ───────────────────────────
-
-    try {
-      record("scout.knowledge-practice-loaded", hasScoutKnowledgePracticeLoaded(ctx.sdk.paths.agents) ? 1 : 0);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring scout.knowledge-practice-loaded: ${e}`); }
-
-    try {
-      const coverage = scoutKnowledgePreambleCoverage(ctx.sdk.paths.agents);
-      record("scout.knowledge-preamble-coverage", coverage.value, coverage.sampleSize);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring scout.knowledge-preamble-coverage: ${e}`); }
 
     // ── Measure: Project (with error isolation) ──────────────────────
 
