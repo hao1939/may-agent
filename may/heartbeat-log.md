@@ -305,3 +305,9 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - Handlers: 100% success (416/6h), all health checks PASS
 - ⚠️ Scout friction: 71.8%, needs-improvement: 68.1%
 - Status: Nominal
+
+## 2026-05-09 02:12 UTC
+- Throughput: 58 sessions/hr, 100% success
+- Handler fires/hr: 74
+- Real output (24h): 608
+- ⚠️ Broad needs-improvement: 68% | Scout good rate: 28% | Scout friction: 72%
