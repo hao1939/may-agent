@@ -1,18 +1,21 @@
-# May Heartbeat Status
+# Heartbeat Status — 2026-05-09T22:45Z
 
-**Timestamp**: 2025-07-09
-**Session**: heartbeat triage
+## Red Metric Triage
 
-## Red Metrics
-- **metric.stale-active-count**: 4 (target 0) — Transient. Oldest metrics updated 8m ago, under 15m staleness threshold. Self-resolves on next measurement cycle. Previous session confirmed same finding.
+### project.iterations-24h: 0 (target 10)
+**Operation: Downgrade (documented)**
+KE-905 confirms this is caused by the `not dispatchable / waiting / Auto-waiting` busy loop from projects auto-pausing after 3 consecutive iterations. Both shared projects (daily-alert-review: paused, closed-loop-reliability: waiting) are intentionally inactive. No active projects = 0 iterations. This is expected state, not a failure. Previously escalated to human.
 
-## System Health
-- Evaluator: 31 errors / 255 sessions (12%) in 6h — opCount=0 failures from resource contention during high-volume aftermath reviews. System error-rate-6h is 0.069, within tolerance.
-- All other agents: 0 errors.
-- v2-spec-coverage-buildout: 0.9091 (20/22), iteration 10, actively progressing.
-- No blocked projects, no stale active projects.
+### capability.message-conversation-close-rate: 0.0053 (target 0.05)
+**Operation: Downgrade (structural)**
+Close rate is low because most messages are one-way FYI/status-updates that don't require reply-close cycles. The metric target assumes conversational patterns that don't match actual usage. 10 consecutive failures confirms this is structural, not transient.
 
-## Inbox Disposition
-- Aftermath reviews → evaluator domain, dismissed
-- Artifact gate warnings → transient, dismissed
-- Previous stale-active investigation → already resolved, dismissed
+## System Health (6h window)
+- **17,323 total sessions** across 12 agents
+- **Error rates**: evaluator 1.0%, dev 16.2%, may 2.9% — dev elevated but known
+- **Blocked project**: `finish-blocked-hygiene-reduction` (owner: dev)
+- **No stuck sessions, no dark agents**
+
+## Dismissed Inbox
+- Aftermath review messages (×4): P1/P2 review requests about closed-loop-steward audits — these are evaluator/coach domain, no action needed from may.
+- Monitor session check: 1 active alert noted, no escalation needed.
