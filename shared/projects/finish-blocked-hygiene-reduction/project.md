@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 workflow: project
-iteration: 0
+iteration: 1
 ---
 
 # Finish-Blocked Hygiene Reduction
@@ -82,3 +82,14 @@ Acted on evaluator FYI for arc session `s_1778334807559_0`: after real commits, 
 ### 2026-05-09 — Heartbeat validation after prompt/guard patches
 
 Heartbeat validation found the broad 24h signature still noisy at `236` finish/uncommitted evaluations, with top sources `scout-heartbeat=56`, `closed-loop-steward=39`, `may-heartbeat=33`, `metric-alert-triage=28`, `project=25`, `dev-heartbeat=23`, and `orchestrator=17`. A 1h slice showed only three fresh cases: a dev heartbeat that shipped the finish-guard alias fix but closed partial on ambient dirty state, a dev project iteration whose deep eval judged the prompt patches as real value despite noisy 24h movement, and the arc alias-friction case that the guard patch already addressed. Decision: no new prompt patch this heartbeat; continue to watch the 1h slice after propagation, with special attention to ambient shared worktree dirt versus true uncommitted intentional deliverables.
+
+### 2026-05-09 — Post-classifier-validation heartbeat
+
+Heartbeat validation after evaluator v5/classifier work found the 24h finish/uncommitted signature at `234` evaluations, essentially flat versus the prior `236`, but the 1h source mix changed to `arc-heartbeat=3`, `project=2`, `scout-explore=1`, `may-heartbeat=1`, and `dev-heartbeat=1`. Current system signals are otherwise healthy for dev-owned scope: `session.error-rate-6h=0.027`, `handler.success-rate=0.9979`, and `eval.llm-coverage-lag-h=0.03`. Decision: keep the project active for continued measurement rather than patching prompts again immediately; the next useful action is sampling fresh 1h cases to distinguish ambient shared worktree dirt from true uncommitted intentional deliverables after the classifier self-repair change propagates.
+
+
+## Artifacts
+- outputs/iteration-1-source-attribution-and-prompt-patches.md
+- outputs/iteration-1-orchestrator-goal-driver-addendum.md
+- outputs/iteration-1-evaluator-self-repair-classification.md
+- outputs/iteration-1-live-residual-attribution.md
