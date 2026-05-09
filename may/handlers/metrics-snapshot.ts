@@ -11,7 +11,7 @@
  * in the generic section near the end of the handler.
  * ─────────────────────────────────────────────────────────────────────────────
  */
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { closeSync, existsSync, openSync, readFileSync, readSync, readdirSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
 import { exec, execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -55,8 +55,14 @@ const ALL_METRICS: MetricDef[] = [
     priority: "P1",
     config: { alert: { mode: "sustained", consecutive: 3 } } },
   { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents with sessions in 2h)", owner: "may", type: "gauge", target: 8, threshold: 3, unit: "count", alert_op: "<", priority: "P0" },
+  { id: "agent.heartbeat-dark-count-2h", name: "Scheduled heartbeat agents dark (2h)", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P0",
+    config: { alert: { mode: "consecutive_failures", count: 1 } } },
+  { id: "agent.config-invalid-count-1h", name: "Agent config load errors (1h)", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P0",
+    config: { alert: { mode: "consecutive_failures", count: 1 } } },
   // Sessions
   { id: "session.error-rate-6h", name: "Session error rate (6h)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P1" },
+  { id: "session.first-turn-error-count-1h", name: "First-turn provider errors (1h)", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 1 } } },
   { id: "session.failed-triage-rate-3h", name: "Failed session triage rate (3h)", owner: "evaluator", type: "gauge", target: 1.0, threshold: 0.80, unit: "ratio", alert_op: "<", priority: "P1" },
   { id: "evaluator.aftermath-coverage-rate-3h", name: "Evaluator aftermath liveness (3h)", owner: "evaluator", type: "gauge", target: 0.80, threshold: 0.20, unit: "ratio", alert_op: "<", priority: "P3" },
   { id: "eval.llm-coverage-lag-h", name: "LLM evaluation lag (hours since last non-heuristic eval)", owner: "evaluator", type: "gauge", target: 1, threshold: 4, unit: "hours", alert_op: ">", priority: "P0" },
@@ -88,6 +94,8 @@ const ALL_METRICS: MetricDef[] = [
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
   { id: "capability.zombie-session-count", name: "Zombie sessions (running >30min)", owner: "may", project: "v2-spec-coverage-buildout", type: "health", target: 0, threshold: 2, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
+  { id: "message.delivery-failed-count-1h", name: "Message delivery failures (1h)", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 1 } } },
 ];
 
 const RETIRED_METRIC_IDS = [
@@ -100,6 +108,7 @@ const RETIRED_METRIC_IDS = [
   "capability.self-directed-iteration-rate-24h",
   "capability.process-uptime-h",
   "capability.concurrent-session-max-1h",
+  "session.zero-op-error-count-1h",
 ];
 
 /** Snapshot retention: keep 30 days of history */
@@ -145,6 +154,77 @@ function countInvalidSharedProjectFormats(agentsRoot: string): number {
     }
   }
   return invalid;
+}
+
+function listEnabledHeartbeatAgents(agentsRoot: string, configuredAgents: Set<string>): string[] {
+  const cronPath = join(agentsRoot, "may", "cron.json");
+  const agents = new Set<string>();
+  try {
+    const cron = JSON.parse(readFileSync(cronPath, "utf8")) as Array<{
+      name?: string;
+      enabled?: boolean;
+      agent?: string;
+      handler?: string;
+      handlerConfig?: { agent?: string; workflow?: string };
+    }>;
+    for (const entry of cron) {
+      if (entry.enabled === false) continue;
+      const isHeartbeat = entry.name === "heartbeat"
+        || entry.name?.startsWith("heartbeat-")
+        || entry.handlerConfig?.workflow?.includes("heartbeat")
+        || entry.handler === "heartbeat";
+      if (!isHeartbeat) continue;
+      const agent = (entry.handlerConfig?.agent || entry.agent || "").trim();
+      if (agent && configuredAgents.has(agent)) agents.add(agent);
+    }
+  } catch {
+    // No cron file means no scheduled heartbeat expectation.
+  }
+  return [...agents].sort();
+}
+
+function readFilePrefix(path: string, maxBytes = 512 * 1024): string {
+  const fd = openSync(path, "r");
+  try {
+    const buffer = Buffer.alloc(maxBytes);
+    const bytes = readSync(fd, buffer, 0, maxBytes, 0);
+    return buffer.toString("utf8", 0, bytes);
+  } finally {
+    closeSync(fd);
+  }
+}
+
+function sessionJsonlPath(persistDir: string, sessionId: string): string | null {
+  const active = join(persistDir, "sessions", sessionId, "session.jsonl");
+  if (existsSync(active)) return active;
+  const archived = join(persistDir, "sessions", "history", sessionId, "session.jsonl");
+  return existsSync(archived) ? archived : null;
+}
+
+function hasFirstAssistantProviderError(persistDir: string, sessionId: string): boolean {
+  const path = sessionJsonlPath(persistDir, sessionId);
+  if (!path) return false;
+  try {
+    const prefix = readFilePrefix(path);
+    for (const line of prefix.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      let msg: any;
+      try {
+        msg = JSON.parse(trimmed);
+      } catch {
+        continue;
+      }
+      if (msg?.role !== "assistant") continue;
+      const stopReason = String(msg.stopReason ?? "").toLowerCase();
+      const errorMessage = String(msg.errorMessage ?? "").toLowerCase();
+      return stopReason === "error"
+        || /connection error|rate limit|unauthorized|forbidden|unsupported model|unknown model|overloaded|timeout|api/.test(errorMessage);
+    }
+  } catch {
+    return false;
+  }
+  return false;
 }
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
@@ -284,6 +364,33 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring heartbeat-coverage: ${e}`); }
 
     try {
+      const heartbeatAgents = listEnabledHeartbeatAgents(ctx.sdk.paths.agents, configuredAgents);
+      let dark = 0;
+      for (const agent of heartbeatAgents) {
+        const recent = count(
+          `SELECT COUNT(*) as c FROM sessions
+           WHERE agent = ?
+             AND startedAt > ?
+             AND (source LIKE 'workflow:%heartbeat%' OR source = 'heartbeat' OR task LIKE '[heartbeat]%'
+                  OR task LIKE 'You are %waking up for your heartbeat.%')`,
+          agent, twoH,
+        );
+        if (recent === 0) dark++;
+      }
+      record("agent.heartbeat-dark-count-2h", dark, heartbeatAgents.length);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring agent.heartbeat-dark-count-2h: ${e}`); }
+
+    try {
+      const row = db.prepare(
+        `SELECT COALESCE(SUM(COALESCE(json_extract(data, '$.count'), 1)), 0) as c
+         FROM events
+         WHERE event_type = 'agent.config_invalid'
+           AND timestamp > ?`,
+      ).get(oneH) as { c?: number } | undefined;
+      record("agent.config-invalid-count-1h", Number(row?.c ?? 0));
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring agent.config-invalid-count-1h: ${e}`); }
+
+    try {
       // Exclude AI/eval handlers from p95 — they are long-running agent sessions
       // or pollers, not infrastructure reactor latency. Including them makes this
       // metric unactionable for handler health; measure only infra handlers here.
@@ -321,6 +428,28 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       );
       record("session.error-rate-6h", total > 0 ? parseFloat((err / total).toFixed(4)) : 0, total);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring session.error-rate-6h: ${e}`); }
+
+    try {
+      const candidates = db.prepare(
+        `SELECT sessionId
+         FROM sessions
+         WHERE startedAt > ?
+           AND COALESCE(error, '') != 'Clean start (fresh)'
+           AND status IN ('error', 'interrupted')
+         ORDER BY startedAt DESC
+         LIMIT 200`,
+      ).all(oneH) as Array<{ sessionId: string }>;
+      const persistDir = ctx.sdk.paths.persist ?? ctx.sdk.paths.root;
+      const firstTurnErrors = candidates.filter((s) => hasFirstAssistantProviderError(persistDir, s.sessionId)).length;
+      record("session.first-turn-error-count-1h", firstTurnErrors, candidates.length);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring session.first-turn-error-count-1h: ${e}`); }
+
+    try {
+      record(
+        "message.delivery-failed-count-1h",
+        count("SELECT COUNT(*) as c FROM events WHERE event_type = 'message.delivery_failed' AND timestamp > ?", oneH),
+      );
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring message.delivery-failed-count-1h: ${e}`); }
 
     try {
       const failed = count(
@@ -647,16 +776,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
                AND json_extract(e.data, '$.sessionId') = s.sessionId
            )`, now - 24 * 3600000);
 
-      // Only check agents that have an enabled heartbeat cron job
-      const cronPath = join(ctx.sdk.paths.agents, "may", "cron.json");
-      let heartbeatAgents: string[] = [];
-      try {
-        const cron = JSON.parse(readFileSync(cronPath, "utf8")) as Array<{ name?: string; enabled?: boolean; agent?: string; handlerConfig?: { agent?: string } }>;
-        heartbeatAgents = cron
-          .filter(j => j.name?.includes("heartbeat") && j.enabled !== false)
-          .map(j => j.agent || j.handlerConfig?.agent || "")
-          .filter(Boolean);
-      } catch { /* fallback to empty */ }
+      // Only check agents that have an enabled heartbeat cron job.
+      const heartbeatAgents = listEnabledHeartbeatAgents(ctx.sdk.paths.agents, configuredAgents);
 
       let agentsWithoutHeartbeat = 0;
       for (const agent of heartbeatAgents) {

@@ -1,12 +1,13 @@
 ---
 id: v2-spec-coverage-buildout
 owner: may
-status: waiting
+status: blocked
 type: milestone
 priority: P2
-iteration: 3
+iteration: 4
 workflow: project
-stop_reason: "Auto-waiting: 3 consecutive iterations with no clear orchestrator decision. Project may be complete."
+stop_reason: 
+resume_condition: 
 ---
 
 # Project Proposal: v2 Spec Coverage Buildout
@@ -23,9 +24,7 @@ This is a legitimate measurement gap, not a stale metric: the metric is computed
 - `proposals/v2-spec.md` wording drift: old metric-driven language can mislead agents into treating metrics as decisions instead of signals.
 
 ## Current State
-
-This is a pending-review proposal, not active implementation. The metric gap is real, but the work should not proceed as raw metric chasing. If accepted, convert this proposal into an active project whose first step is to align claim measurements with the unified work model: project context carries goals, metrics signal, agents judge, cron/events trigger.
-
+Blocked: Worker failed 2 consecutive times.
 ## Evidence
 
 - Source: `agents/may/handlers/metrics-snapshot.ts` defines built-in metric `v2.spec-coverage-rate` and computes it in `countSpecClaimCoverage()`.
@@ -103,5 +102,3 @@ Some claims may be measuring stale behavior rather than desired behavior:
 - 2026-05-07: Aligned project to shared work-context convention. Current judgment: keep as `pending-review`; do not implement until the unified work model is accepted for v2 conformance measurement.
 
 ## Comments
-
-- 2026-05-07 dev investigation: metric is legitimate. It is a built-in computed metric, not a stale `source_query`/`source_command` row. The low value reflects real missing measurement coverage across the v2 contract.
