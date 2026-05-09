@@ -85,3 +85,15 @@
 **Summary**: "nanobot: The Ultra-Lightweight Personal AI Agent", a trending repository on GitHub with over 42k stars.
 **Implication**: Lightweight personal agents are a significant trend in the AI ecosystem, showing a high demand for minimal-footprint local or personal assistants.
 **KB**: N/A
+
+### Superintelligent Retrieval Agent: The Next Frontier of Information Retrieval
+**Source**: http://arxiv.org/abs/2605.06647v1 (Published: 2026-05-07)
+**Summary**: Proposes agents that act more like domain experts when navigating databases, shifting away from standard iterative RAG exploration towards using strong priors about the information.
+**Implication**: Could influence how we build retrieval tools for agents, making them more proactive and structured in their querying.
+**KB**: None
+
+### MASPO: Joint Prompt Optimization for LLM-based Multi-Agent Systems
+**Source**: http://arxiv.org/abs/2605.06623v1 (Published: 2026-05-07)
+**Summary**: Addresses the challenge of jointly optimizing role-specific prompts across interacting agents in a multi-agent system, tackling the misalignment between local objectives and system goals.
+**Implication**: Relevant for coordinating multiple specialist agents.
+**KB**: None
