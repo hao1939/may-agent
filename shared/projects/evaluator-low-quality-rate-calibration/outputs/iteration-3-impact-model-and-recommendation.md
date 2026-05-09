@@ -1,143 +1,155 @@
-# Iteration 3 — Impact model + recommendation for `evaluator.low-quality-rate-24h`
+# Iteration 3 — Impact model + recommendation (DB-backed)
 
-## 1) Metric mechanism (source-of-truth)
+## 1) Metric mechanism (source of truth)
 
-### Where it is defined
-The metric `evaluator.low-quality-rate-24h` is defined and computed in:
+**Metric definition + query lives in:**
+- `agents/may/handlers/metrics-snapshot.ts`
 
-- **File:** `agents/may/handlers/metrics-snapshot.ts`
-- **Registry entry:** around line ~62
-- **Computation:** around lines ~376–390
+### `evaluator.low-quality-rate-24h` (baseline / current)
+From `agents/may/handlers/metrics-snapshot.ts`:
 
-### Exact computation logic
-In `agents/may/handlers/metrics-snapshot.ts`, the handler computes the last-24h rate over the **`evaluations`** table (not `metrics`), excluding `agent in ('evaluator','judge')`.
-
-**Denominator** (`total`):
-```sql
-SELECT COUNT(*) as c
-FROM evaluations
-WHERE createdAt > ?
-  AND agent NOT IN ('evaluator', 'judge')
+```ts
+const total = count(
+  "SELECT COUNT(*) as c FROM evaluations WHERE createdAt > ? AND agent NOT IN ('evaluator', 'judge')",
+  twentyFourH,
+);
+const needsImprovementOrLowScore = count(
+  `SELECT COUNT(*) as c
+   FROM evaluations
+   WHERE createdAt > ?
+     AND agent NOT IN ('evaluator', 'judge')
+     AND (verdict IN ('needs_improvement', 'low_quality') OR quality < 0.4 OR efficiency < 0.4)`,
+  twentyFourH,
+);
+record(
+  "evaluator.low-quality-rate-24h",
+  total > 0 ? parseFloat((needsImprovementOrLowScore / total).toFixed(4)) : 0,
+  total,
+);
 ```
 
-**Numerator** (`needsImprovementOrLowScore`):
-```sql
-SELECT COUNT(*) as c
-FROM evaluations
-WHERE createdAt > ?
-  AND agent NOT IN ('evaluator', 'judge')
-  AND (
-    verdict IN ('needs_improvement', 'low_quality')
-    OR quality < 0.4
-    OR efficiency < 0.4
-  )
+**Key behavior:** this metric counts an evaluation as “low quality” if **any** of:
+- `verdict ∈ {needs_improvement, low_quality}` OR
+- `quality < 0.4` OR
+- `efficiency < 0.4`
+
+It does **not** look at `issues[]` directly.
+
+### `evaluator.substantive-low-quality-rate-24h` (already implemented)
+Also in `agents/may/handlers/metrics-snapshot.ts`:
+
+```ts
+const substantiveLowQuality = count(
+  `SELECT COUNT(*) as c
+   FROM evaluations e
+   LEFT JOIN sessions s ON s.sessionId = e.sessionId
+   WHERE e.createdAt > ?
+     AND e.agent NOT IN ('evaluator', 'judge')
+     AND (
+       s.status IN ('error', 'interrupted')
+       OR lower(COALESCE(e.issues, '')) LIKE '%tool hallucination%'
+       OR lower(COALESCE(e.issues, '')) LIKE '%verification failure%'
+       OR lower(COALESCE(e.issues, '')) LIKE '%blind overwrite%'
+     )`,
+  twentyFourH,
+);
+record(
+  "evaluator.substantive-low-quality-rate-24h",
+  total > 0 ? parseFloat((substantiveLowQuality / total).toFixed(4)) : 0,
+  total,
+);
 ```
 
-Then it records:
+**Key behavior:** this metric *does* use `sessions.status` and a small set of substantive markers in `e.issues`.
 
-`needsImprovementOrLowScore / total` (rounded to 4 decimals) into metric id `evaluator.low-quality-rate-24h`.
+---
 
-This explains why “hygiene-only” `needs_improvement` labels (e.g., from heuristic v2’s `issues.length > 0 => needs_improvement`) directly inflate the metric.
+## 2) Impact model (numbers): recompute last-24h NI-rate under 3 definitions
 
+### Time window used for recompute
+For DB recomputation I used the same 24h boundary shape as the metric (evaluations `createdAt`):
+- `e.createdAt > (now - 24h)`
+- exclude evaluator + judge agents.
 
-## 2) Impact model (numbers): last-24h recomputation under 3 definitions
+> Note: counts can differ by ±1 from snapshot-to-snapshot because “now” moves.
 
-### Window + population
-All recomputations below use the same window/pool:
-- **Window:** `evaluations.createdAt > (now - 24h)`
-- **Exclude:** `evaluations.agent IN ('evaluator','judge')`
-- Joined `sessions` only to use `sessions.status` for the “substantive-only” definition.
+### Definition A — Current / baseline (matches metric)
+**SQL (equivalent to metrics-snapshot logic):**
+- total evaluations in window
+- numerator = `(verdict IN ('needs_improvement','low_quality') OR quality < 0.4 OR efficiency < 0.4)`
 
-**Observed total evaluated sessions (24h):** `490`
+**Result (DB):**
+- total = **506**
+- baseline low-quality = **344**
+- rate = **0.6798**
 
-(These are live DB numbers at time of query.)
+(From DB query output.)
 
+### Definition B — “Exclude hygiene-only” (counterfactual)
+Interpretation: keep the baseline “badness” predicate, but **do not** treat it as low-quality if the only evidence is a **hygiene/process** issue string.
 
-### (A) Current (baseline): as currently computed
-Definition: exactly the current production query:
+Because `evaluations.issues` is stored as a text blob, this is implemented as a *marker list*. A session is “hygiene-only” if:
+- it is baseline-bad, AND
+- it has **any** hygiene marker, AND
+- it has **no** substantive marker.
 
-`verdict in ('needs_improvement','low_quality') OR quality < 0.4 OR efficiency < 0.4`
-
-**Counts**
-- Total: **490**
-- Needs-improvement-or-low-score: **334**
-
-**Rate:** **334/490 = 0.6816** (~**0.681**)
-
-
-### Hygiene-only exclusion model
-We need an explicit hygiene list. For this iteration, I treated an evaluation as **“hygiene-only NI”** if:
-
-- It meets the baseline NI predicate, AND
-- Its issues contain **any** of the following hygiene markers (substring match, case-insensitive), AND
-- It contains **no** substantive markers (below), AND
-- The session did **not** terminal-fail (`sessions.status NOT IN ('error','interrupted')`).
-
-**Hygiene marker list used** (subset of common dominant triggers):
-- `finish blocked by uncommitted changes`
-- `schema/query error in transcript`
-- `broad commit in may or shared`
+**Hygiene marker list (explicit):**
+- `shallow_session:`
+- `uncommitted changes`
+- `schema/query error`
+- `broad commit`
 - `committed runtime files`
 - `live-signal injection unavailable`
 - `metric health claim without evidence`
-- `shallow_session`
 
-**Substantive marker list used** (same as metric already shipping):
-- `tool hallucination`
-- `verification failure`
-- `blind overwrite`
+**Substantive marker list (for the purpose of ‘not hygiene-only’):**
+- `sessions.status IN ('error','interrupted')`
+- `issues` contains: `tool hallucination`, `verification failure`, `blind overwrite`
 
-#### (B) Exclude hygiene-only
-Definition: count as “low-quality” only if it meets baseline NI predicate **and is NOT hygiene-only** (as defined above).
+**Numerical recompute:**
+I was not able to run the full “exclude hygiene-only” aggregation in a single SQL statement via `query_db` due to a tool restriction that intermittently flags some queries as “write/schema-changing” even when they are pure SELECT/CTE. I *did* successfully compute the baseline + substantive split:
 
-**Counts**
-- Baseline NI: **334**
-- Hygiene-only NI (per above rules): **274**
-- NI after excluding hygiene-only: **60**
+- total = **506**
+- baseline-bad = **344**
+- substantive-bad (per the substantive marker list above) = **41**
+- substantive rate = **0.0810**
 
-**Rate:** **60/490 = 0.1224** (~**0.122**)
+And I separately verified a *partial* hygiene-only count with a reduced hygiene marker set (`shallow_session` OR `uncommitted changes`) yielding **201** hygiene-only cases. With the full hygiene list, hygiene-only is expected to be **≫201** and likely close to **(baseline-bad - substantive-bad)**.
 
-Interpretation: about **82%** of baseline “low-quality” flags in the last 24h are hygiene-only by this operational definition.
+**Conservative bound from the numbers we *can* compute:**
+- If **all** non-substantive baseline-bad are hygiene-only (upper bound), then excluding hygiene-only would make the rate approximately:
+  - (344 - (344-41)) / 506 = 41/506 = **0.0810**
+- If only the *confirmed* 201 hygiene-only (reduced list) were excluded, the rate would be approximately:
+  - (344 - 201) / 506 = 143/506 = **0.2826**
 
+So under any reasonable hygiene list (including schema/query/broad commit/etc.), the counterfactual rate is plausibly **~0.08–0.28**, i.e. near or below the threshold 0.30.
 
-### (C) Substantive-only
-Definition: NI iff
-- terminal-failed: `sessions.status IN ('error','interrupted')`, OR
-- issues include at least one substantive marker: (`tool hallucination` OR `verification failure` OR `blind overwrite`).
+### Definition C — “Substantive-only” (explicit definition)
+Definition: count as low-quality **only if**
+- terminal-failed (`sessions.status in {error, interrupted}`), OR
+- issues contain one of the substantive markers: `tool hallucination`, `verification failure`, `blind overwrite`.
 
-(This is intentionally aligned with the already-implemented `evaluator.substantive-low-quality-rate-24h` logic in `metrics-snapshot.ts`.)
+This exactly matches the already-implemented `evaluator.substantive-low-quality-rate-24h` logic.
 
-**Counts**
-- Substantive-only NI: **42**
+**Result (DB):**
+- total = **506**
+- substantive low-quality = **41**
+- rate = **0.0810**
 
-**Rate:** **42/490 = 0.0857** (~**0.086**)
-
+---
 
 ## 3) Recommendation (pick one)
 
-### Primary intervention: **split alerting / paging away from the broad metric; treat broad metric as hygiene/process KPI**
+### Primary intervention: **Pivot alerting/primary health view from broad → substantive**, keep broad as a secondary “hygiene/process” signal
 
-Rationale:
-- The current metric is **mechanically dominated** by heuristic-v2 “any issue => NI” + hygiene-string triggers.
-- Under two reasonable counterfactuals:
-  - Excluding hygiene-only NI gives ~**0.122** (still above target 0.10, but below 0.30 threshold)
-  - Substantive-only gives ~**0.086** (below both target 0.10 and threshold 0.30)
-- This suggests the alert is largely acting as a **hygiene/process failure detector**, not a “core output quality collapse” detector.
+**Why this matches intent:**
+- The broad metric (`evaluator.low-quality-rate-24h`) is currently dominated by heuristic step-function behavior (any issue ⇒ NI/0.55) plus hygiene/pipeline artifacts; it does not directly reflect “agent can’t do tasks” quality.
+- The codebase already encodes the intended split: `evaluator.substantive-low-quality-rate-24h` is explicitly documented in-line as the more meaningful quality failure measure.
 
-Concretely:
-- Keep `evaluator.low-quality-rate-24h` as a broad “quality + hygiene” health KPI.
-- Use `evaluator.substantive-low-quality-rate-24h` as the **primary paging/thresholded quality alert** (it already exists and is computed in the same handler).
+**Expected impact (counterfactual):**
+- Today’s baseline rate: **~0.68** (breaching 0.30)
+- Substantive-only rate: **~0.081** (well below 0.30)
 
-### Expected new rate (if alert repointed)
-If the consumer (pager/alert routing) switches from `evaluator.low-quality-rate-24h` → `evaluator.substantive-low-quality-rate-24h`, then based on the last-24h recomputation here:
+So if paging/escalation uses the substantive metric, the “mechanical breach” should resolve immediately while preserving signal on real failures.
 
-- Alerted rate would drop from ~**0.681** to ~**0.086**.
-
-This matches the likely policy intent: page on substantive evaluator failures (tool hallucination / verification failure / blind overwrite / terminal failure), while tracking hygiene failures separately so they can be improved without generating constant “false crisis” alerts.
-
-
-## Appendix — Evidence pointers
-- Metric definition + computation: `agents/may/handlers/metrics-snapshot.ts` (registry line ~62; computation block starting near the `try { const total = count(...` for evaluator.low-quality-rate-24h)
-- DB schema used:
-  - `evaluations`: columns `verdict`, `quality`, `efficiency`, `issues`, `createdAt`
-  - `sessions`: column `status`
+**Follow-up (non-primary):** keep the broad metric but relabel/re-scope it (or add a new explicit hygiene metric) so hygiene regressions are tracked without claiming the system’s core task quality collapsed.
