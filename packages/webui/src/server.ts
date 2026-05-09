@@ -18,9 +18,9 @@ declare const Bun: {
 };
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
-import { connect } from "node:net";
+import type { Duplex } from "node:stream";
+import { connectSocketEndpoint, findDaemonSocket, sendDaemonEvent } from "../../control-client/src/index.js";
 import { openStateDb, type SqliteDb } from "./state-db.js";
-import type { Socket } from "node:net";
 
 // ── Public API ────────────────────────────────────────────────────────
 
@@ -127,27 +127,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   function findSocketPath(): string | null {
-    const instancesDir = join(STATE_DIR, "instances");
-    if (!existsSync(instancesDir)) return null;
-    const candidates: Array<{ path: string; running: boolean }> = [];
-    for (const name of readdirSync(instancesDir)) {
-      const dir = join(instancesDir, name);
-      try {
-        for (const file of readdirSync(dir)) {
-          if (file.endsWith(".sock")) {
-            const sockPath = join(dir, file);
-            if (!existsSync(sockPath)) continue;
-            let running = false;
-            try {
-              const identity = JSON.parse(readFileSync(join(dir, "identity.json"), "utf-8"));
-              running = identity.status === "running";
-            } catch {}
-            candidates.push({ path: sockPath, running });
-          }
-        }
-      } catch {}
-    }
-    return candidates.find((c) => c.running)?.path ?? candidates[0]?.path ?? null;
+    return findDaemonSocket(STATE_DIR, { agent: "*" });
   }
 
   // ── API handlers ──────────────────────────────────────────────────
@@ -1416,9 +1396,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         resumed = true;
       }
 
-      const trigger = await sendUnixCommand({
-        type: "emit",
-        event: "project.nudge",
+      const trigger = await sendDaemonFrame({
+        type: "project.nudge",
         source: "web-ui",
         projectPath: path,
         comment: true,
@@ -1458,45 +1437,29 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     });
   }
 
-  // ── Steering verbs (POST → Unix socket) ───────────────────────────
+  // ── Steering verbs (POST → daemon event socket) ───────────────────
   //
-  // The web process does not own the bus or manager. To trigger an action in
-  // the running may-agent, we send a JSON command line over the same Unix
-  // socket that the WebSocket already proxies. Each command is fire-and-forget
-  // (we do not wait for a structured reply); failures surface as a 503.
+  // The web process does not own the bus or manager. It sends event frames to
+  // the daemon and waits only for the daemon's transport ack.
   //
   // Per webui.md "Plane C — Steering verbs": one event per verb, async.
 
-  function sendUnixCommand(command: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
-    return new Promise((resolve) => {
-      const socketPath = findSocketPath();
-      if (!socketPath) {
-        resolve({ ok: false, error: "agent socket not found" });
-        return;
-      }
-      const sock = connect(socketPath);
-      let settled = false;
-      const finish = (result: { ok: boolean; error?: string }) => {
-        if (settled) return;
-        settled = true;
-        try { sock.destroy(); } catch { /* ignore */ }
-        resolve(result);
-      };
-      sock.on("connect", () => {
-        sock.write(JSON.stringify(command) + "\n");
-        // Give the agent a tick to ack, then close. We don’t parse the reply.
-        setTimeout(() => finish({ ok: true }), 50);
-      });
-      sock.on("error", (err: Error) => finish({ ok: false, error: err.message }));
-      setTimeout(() => finish({ ok: false, error: "socket timeout" }), 2000);
-    });
+  async function sendDaemonFrame(frame: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
+    const socketPath = findSocketPath();
+    if (!socketPath) return { ok: false, error: "agent socket not found" };
+    try {
+      await sendDaemonEvent(socketPath, frame, { timeoutMs: 2000 });
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    }
   }
 
   async function handleSessionCancel(sessionId: string): Promise<Response> {
     if (!sessionId) return json({ error: "sessionId required" }, 400);
     // The socket protocol uses cancel_all (one-active-task per agent today);
     // sessionId is recorded in the audit event for traceability.
-    const result = await sendUnixCommand({ type: "cancel_task", sessionId });
+    const result = await sendDaemonFrame({ type: "cancel_task", sessionId });
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, sessionId });
   }
@@ -1513,7 +1476,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     // The previous 'message' command required from/to/task and silently
     // dropped sessionId/content; this endpoint returned 200 but the agent
     // never saw the message.
-    const result = await sendUnixCommand({ type: "steer", sessionId, message: content });
+    const result = await sendDaemonFrame({ type: "steer", sessionId, message: content });
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, sessionId, deliveredAt: Date.now() });
   }
@@ -1778,7 +1741,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const resolveResp = handleAgentDefaultSession(agentName);
     const resolved = await resolveResp.json() as { agent: string; sessionId: string | null };
     if (resolved.sessionId) {
-      const result = await sendUnixCommand({ type: "steer", sessionId: resolved.sessionId, message: content });
+      const result = await sendDaemonFrame({ type: "steer", sessionId: resolved.sessionId, message: content });
       if (!result.ok) return json({ error: result.error }, 503);
       return json({ ok: true, agent: agentName, sessionId: resolved.sessionId, deliveredAt: Date.now(), spawned: false });
     }
@@ -1786,7 +1749,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     // No prior session — spawn one. Use 'fork' command which routes through
     // manager.run() and is the canonical way to start a fresh agent session
     // from outside the runtime.
-    const result = await sendUnixCommand({ type: "fork", agent: agentName, task: content, opts: { kind: "chat", source: "web-ui" } });
+    const result = await sendDaemonFrame({ type: "fork", agent: agentName, task: content, opts: { kind: "chat", source: "web-ui" } });
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, agent: agentName, sessionId: null, deliveredAt: Date.now(), spawned: true });
   }
@@ -1798,11 +1761,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const body = await req.json() as { actor?: string };
       if (body.actor) actor = String(body.actor);
     } catch { /* body optional */ }
-    // Heartbeat handlers subscribe to heartbeat.trigger events.
-    // We emit via the socket so the bus actually fires.
-    const result = await sendUnixCommand({
-      type: "emit",
-      event: "heartbeat.trigger",
+    const result = await sendDaemonFrame({
+      type: "heartbeat.trigger",
       agent: agentName,
       source: actor,
     });
@@ -1822,9 +1782,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!existing) return json({ error: "metric not found" }, 404);
     db.prepare("UPDATE metrics SET threshold = ?, updated_at = ? WHERE id = ?").run(body.threshold, Date.now(), metricId);
     // Best-effort emit so subscribers see the change.
-    void sendUnixCommand({
-      type: "emit",
-      event: "metric.threshold_changed",
+    void sendDaemonFrame({
+      type: "metric.threshold_changed",
       metric: metricId,
       from: existing.threshold,
       to: body.threshold,
@@ -1843,9 +1802,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!existing) return json({ error: "alert not found" }, 404);
     if (existing.resolved_at !== null) return json({ ok: true, alreadyResolved: true });
     db.prepare("UPDATE metric_alerts SET resolved_at = ? WHERE id = ?").run(Date.now(), id);
-    void sendUnixCommand({
-      type: "emit",
-      event: "metric.alert_resolved",
+    void sendDaemonFrame({
+      type: "metric.alert_resolved",
       metric: existing.metric_id,
       alertId: id,
       source: "web-ui",
@@ -1856,7 +1814,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   // ── WebSocket proxy ─────────────────────────────────────────────────
 
-  const wsToUnix = new Map<any, Socket>();
+  const wsToUnix = new Map<any, Duplex>();
 
   function proxyWebSocket(ws: any): void {
     const socketPath = findSocketPath();
@@ -1865,7 +1823,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       ws.close();
       return;
     }
-    const unix = connect(socketPath);
+    const unix = connectSocketEndpoint(socketPath);
     wsToUnix.set(ws, unix);
     let buffer = "";
     unix.on("data", (chunk: Buffer) => {

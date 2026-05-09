@@ -26,6 +26,7 @@ import {
 import { resolveProjectRoot } from "./bundle-mode.js";
 import { getDb, closeAllDbs } from "../lib/requests.js";
 import { log } from "../lib/log.js";
+import { emitDaemonEvent } from "../../packages/control-client/src/index.js";
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
 if (process.argv.includes("--version") || process.argv.includes("-v")) {
@@ -811,23 +812,15 @@ if (MESSAGE_MODE) {
 
 if (EMIT_MODE) {
   // ── Emit mode: send event to running instance via socket ──────────
-  const net = await import("node:net");
-  const socketPath = SOCKET_PATH;
-  const payload = JSON.stringify({ type: "emit", event: EMIT_MODE.event, ...(EMIT_MODE.data || {}) }) + "\n";
-  const client = net.createConnection(socketPath, () => {
-    client.write(payload);
-    client.end();
-  });
-  client.on("error", (err: Error) => {
-    console.error(`Failed to connect to socket ${socketPath}: ${err.message}`);
-    process.exit(1);
-  });
-  client.on("end", () => {
+  try {
+    await emitDaemonEvent(SOCKET_PATH, EMIT_MODE.event, EMIT_MODE.data || {});
     console.log(`Event emitted: ${EMIT_MODE.event}`);
     process.exit(0);
-  });
-  // Don't fall through
-  await new Promise(() => {}); // keep alive until socket closes
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`Failed to connect to socket ${SOCKET_PATH}: ${message}`);
+    process.exit(1);
+  }
 }
 
 if (RUN_WORKFLOW) {

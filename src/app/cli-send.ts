@@ -16,8 +16,8 @@
  */
 
 import { resolve } from "node:path";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { sendSocketCommand } from "../lib/socket-client.js";
+import { existsSync, readFileSync } from "node:fs";
+import { findDaemonSocket, sendAgentMessage } from "../../packages/control-client/src/index.js";
 
 
 export interface SendOptions {
@@ -27,36 +27,6 @@ export interface SendOptions {
   persistDir: string;
   agentsRoot: string;
   source?: string;
-}
-
-/**
- * Find a live socket by scanning instance directories.
- * Returns the first socket path that exists, or null.
- */
-function findSocket(persistDir: string): string | null {
-  const instancesDir = resolve(persistDir, "instances");
-  if (!existsSync(instancesDir)) return null;
-
-  try {
-    const dirs = readdirSync(instancesDir);
-    for (const dir of dirs) {
-      const sockPath = resolve(instancesDir, dir, "may.sock");
-      if (existsSync(sockPath)) {
-        try {
-          // Check if it's actually a socket (not a stale file)
-          const stat = statSync(sockPath);
-          if (stat.isSocket?.() || stat.isFIFO?.()) return sockPath;
-          // On some systems isSocket() isn't reliable, try anyway
-          return sockPath;
-        } catch {
-          continue;
-        }
-      }
-    }
-  } catch {
-    // Can't read instances dir
-  }
-  return null;
 }
 
 export async function cliSend(opts: SendOptions): Promise<void> {
@@ -79,16 +49,10 @@ export async function cliSend(opts: SendOptions): Promise<void> {
   }
 
   // Try socket delivery first — chatSession.handleInput will track in DB
-  const socketPath = findSocket(persistDir);
+  const socketPath = findDaemonSocket(persistDir);
   if (socketPath) {
     try {
-      // Use @agent prefix so ChatSession routes it correctly
-      const socketMessage = `@${agent} ${fullMessage}`;
-      const result = await sendSocketCommand(socketPath, {
-        type: "input",
-        message: socketMessage,
-        source: source ?? "cli",
-      });
+      const result = await sendAgentMessage(socketPath, agent, fullMessage, source ?? "cli");
 
       if (result.type === "ok") {
         console.log(`Sent to ${agent} via socket (${socketPath})`);

@@ -86,7 +86,8 @@ RUN npm install -g @anthropic-ai/claude-code @openai/codex 2>/dev/null || true
 COPY --from=builder /build/may-agent /usr/local/bin/may-agent
 COPY --from=builder /usr/local/bin/bun /usr/local/bin/bun
 
-# Copy web UI static files (not embedded in compiled binary)
+# Copy web UI and its shared control client (not embedded in the WebUI process)
+COPY packages/control-client/ /app/packages/control-client/
 COPY packages/webui/ /app/packages/webui/
 COPY packages/webui/static/ /usr/local/share/may-agent-web/static/
 
