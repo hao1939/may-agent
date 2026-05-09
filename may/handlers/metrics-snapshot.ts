@@ -1133,19 +1133,24 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       } else {
         record("capability.breach-time-to-recovery-p50-h", 0, 0);
       }
-      // Unrecovered breaches in 7d
+      // Unrecovered breaches in 7d — count distinct metrics whose latest breach has no subsequent recovery
       const unrecovered = count(`
         SELECT COUNT(*) as c FROM (
-          SELECT json_extract(data, '$.metricId') as metricId, timestamp
-          FROM events WHERE event_type = 'metric.breach' AND timestamp > ?
+          SELECT metricId, MAX(timestamp) as latest_breach
+          FROM (
+            SELECT json_extract(data, '$.metricId') as metricId, timestamp
+            FROM events WHERE event_type = 'metric.breach' AND timestamp > ?
+          )
+          WHERE metricId NOT IN (${RETIRED_METRIC_IDS.map(() => '?').join(',')})
+          GROUP BY metricId
         ) b
         WHERE NOT EXISTS (
           SELECT 1 FROM events r
           WHERE r.event_type = 'metric.recovered'
             AND json_extract(r.data, '$.metricId') = b.metricId
-            AND r.timestamp > b.timestamp
+            AND r.timestamp > b.latest_breach
         )
-      `, now - 7 * 86400000);
+      `, now - 7 * 86400000, ...RETIRED_METRIC_IDS);
       record("capability.unrecovered-breach-count-7d", unrecovered);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring capability.breach-time-to-recovery-p50-h: ${e}`); }
 
@@ -1177,8 +1182,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // C6: capability.trend-7d — count of capability metrics with declining 7-day trend
     try {
       const capMetrics = db.prepare(`
-        SELECT DISTINCT metric_id FROM metric_snapshots
-        WHERE metric_id LIKE 'capability.%' AND measured_at > ?
+        SELECT DISTINCT ms.metric_id FROM metric_snapshots ms
+        LEFT JOIN metrics m ON ms.metric_id = m.id
+        WHERE ms.metric_id LIKE 'capability.%' AND ms.measured_at > ?
+          AND ms.metric_id != 'capability.trend-7d'
+          AND (m.status IS NULL OR m.status != 'retired')
       `).all(now - 7 * 86400000) as any[];
       let declining = 0;
       for (const m of capMetrics) {
