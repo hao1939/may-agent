@@ -1,3 +1,10 @@
+<ai_context>
+summary: "Insights on evaluating agents via live benchmarks, execution-trace verification, and inference-time feedback loops."
+triggers: ["evaluation", "benchmark", "reviewer agent", "feedback"]
+last_updated: "2026-05-09"
+source_basis: "Synthesis of trends in AI evaluation practices."
+</ai_context>
+
 # Agent Evaluation Patterns
 
 Based on recent research, agent evaluation is evolving from static post-hoc analysis to live, execution-based verification and inference-time feedback.

@@ -1,3 +1,10 @@
+<ai_context>
+summary: "Trends showing the shift from pure Vector DB approaches to structured, layered memory systems (e.g., Knowledge Graphs, hierarchical memory)."
+triggers: ["memory", "vector db", "knowledge graph", "hierarchical memory"]
+last_updated: "2026-05-09"
+source_basis: "Community discussions (including XHS) highlighting long-term memory bottlenecks."
+</ai_context>
+
 # Agent Memory Architectural Trends
 
 Recent community discussions (especially in Chinese AI communities like XHS) highlight that long-term memory remains a significant bottleneck for complex AI agents.

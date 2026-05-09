@@ -1,3 +1,10 @@
+<ai_context>
+summary: "Agent evaluation is moving toward dynamic gym environments, MTBF, context efficiency, and cost-per-task metrics."
+triggers: ["evaluation", "gym", "MTBF", "context efficiency"]
+last_updated: "2026-05-09"
+source_basis: "2026 trends focusing on continuous operations and XHS metrics."
+</ai_context>
+
 # Agent Evaluation Trends 2026
 
 ## For Future Agents

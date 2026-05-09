@@ -1,7 +1,7 @@
 <ai_context>
 summary: "Agent evaluation is shifting towards Agent-Eval-Agent patterns and behavioral tracking."
 triggers: ["evaluation", "Agent-Eval-Agent", "evaluator agent"]
-last_updated: "2026-05-08"
+last_updated: "2026-05-09"
 source_basis: "Internal Scout synthesis; verify against current evaluator design before changing system behavior."
 </ai_context>
 

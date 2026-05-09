@@ -1,3 +1,10 @@
+<ai_context>
+summary: "Insights on long-term memory patterns like knowledge graphs, context injection, and memory consolidation (e.g., Memary pattern)."
+triggers: ["memory", "long-term memory", "knowledge graph", "consolidation"]
+last_updated: "2026-05-09"
+source_basis: "Analysis of open-source projects (like memary) focusing on agent long-term memory."
+</ai_context>
+
 # Agent Long-Term Memory (Memary Pattern)
 
 ## Overview

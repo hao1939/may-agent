@@ -1,3 +1,10 @@
+<ai_context>
+summary: "Core architecture patterns focusing on monitor agents and lightweight loops for better reliability and debugging."
+triggers: ["patterns", "monitor agent", "watchdog", "lightweight loops"]
+last_updated: "2026-05-09"
+source_basis: "Community observations including XHS and general AI trends."
+</ai_context>
+
 # Agent Architecture Patterns
 
 This document records effective patterns discovered from the community.
