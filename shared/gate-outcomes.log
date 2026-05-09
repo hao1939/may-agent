@@ -125,3 +125,5 @@
 2026-05-09T07:35:14.907Z agent=dev gate=all-passed tool_calls=30 elapsed_sec=137 deliverable_edits=0 status=done action=none
 2026-05-09T07:46:41.429Z agent=dev gate=all-passed tool_calls=31 elapsed_sec=137 deliverable_edits=0 status=done action=none
 2026-05-09T07:50:57.882Z agent=evaluator gate=all-passed tool_calls=0 elapsed_sec=7 deliverable_edits=0 status=error action=none
+2026-05-09T07:53:07.214Z agent=dev gate=all-passed tool_calls=36 elapsed_sec=136 deliverable_edits=0 status=done action=none
+2026-05-09T07:55:55.956Z agent=scout gate=anti-shallow tool_calls=6 min_required=10 elapsed_sec=34 status=done action=re-prompt
