@@ -154,6 +154,32 @@ describe("metric-alert-reactor", () => {
     expect(logs.some((msg) => msg.includes("ended without judgment"))).toBe(true);
   });
 
+  it("dedups P0 alerts when a recent triage workflow emitted a judgment", async () => {
+    const { db, handler, workflows, logs } = setupWithDb();
+    const now = Date.now();
+    db.run(
+      "INSERT INTO metrics (id, name, owner, current, threshold, target, priority, alert_op, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      ["arc.down", "Arc down", "arc", 2, 1, 0, "P0", ">", now],
+    );
+    db.run(
+      "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
+      ["arc.down", "threshold", "critical failure", now - 60_000],
+    );
+    db.run(
+      "INSERT INTO workflow_runs (runId, workflow, task, status, startedAt, endedAt) VALUES (?, ?, ?, ?, ?, ?)",
+      ["wr_recent", "metric-alert-triage", "Run metric alert triage for arc.down", "done", now - 5 * 60_000, now - 4 * 60_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
+      ["metric.alert_judged", JSON.stringify({ metricId: "arc.down", operation: "upgrade_or_escalate" }), now - 4 * 60_000],
+    );
+
+    await handler();
+
+    expect(workflows).toEqual([]);
+    expect(logs.some((msg) => msg.includes("recent triage workflow wr_recent emitted judgment"))).toBe(true);
+  });
+
   it("triages an old P1 alert that has no judgment", async () => {
     const { db, handler, workflows } = setupWithDb();
     const now = Date.now();
