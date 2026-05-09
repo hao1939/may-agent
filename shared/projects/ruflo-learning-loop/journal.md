@@ -93,3 +93,22 @@ CONTEXT_UPDATE:
 - Out-of-lane temptation resisted: did **not** edit
   `agents/shared/projects/v2-spec-coverage-buildout/project.md`
   (owner=`may`).
+
+## 2026-05-09 hb (arc) — iter-12 falsifier baseline check
+Project status = `paused` per iter-12 decision. Falsifier = "any new
+event_type lands in top-15 by 24h volume whose payload is a periodic
+snapshot rather than a transition" within 30 days.
+
+Top-15 24h snapshot taken this heartbeat (via `query_db`):
+handler.started 1777, handler.completed 1760, session.end 1078,
+session.start 1077, message.created 685, session.completed 457,
+evaluation.routed 211, project.iteration 192, evaluation.reviewed 154,
+context.read 148, evaluation.triage_closed 132, agent.decision 126,
+metric.alert_judged 90, escalation.created 56, metric.breach 53.
+
+All entries are pre-existing event_types arc has already classified;
+`context.read` (the one borderline periodic snapshot) is still present
+at ~150/day, consistent with iter-11's reading. **No new periodic-snapshot
+event_type has appeared. Falsifier untripped. Project remains paused.**
+Next falsifier check: next arc heartbeat that runs the top-15 query.
+No new artifact this iteration.
