@@ -17,7 +17,40 @@
 - What patterns keep recurring in failures that nobody has documented?
 
 ## Queries to Start With
-Schema reality (verified 2026-05-08): the `sessions` table has no
+
+### Copy-paste cheatsheet (lift verbatim, do not retype) — KE-921
+You will trip a "no such column" error if you retype these from memory.
+Copy the literal SELECT, then add WHERE/GROUP BY. Column lists are correct.
+
+```sql
+-- sessions: PK is sessionId (NOT id). status ∈ {done,error,interrupted,running}.
+-- No stopReason column — that lives in session.end event data JSON.
+SELECT sessionId, agent, status, startedAt, endedAt, opCount, outcome, error
+FROM sessions
+WHERE startedAt > strftime('%s','now')*1000 - 21600000
+ORDER BY startedAt DESC;
+
+-- events: NO session_id, NO agent, NO created_at, NO payload columns.
+-- Filter by JSON: data LIKE '%<sessionId>%' or json_extract(data,'$.agent')='arc'.
+SELECT id, event_type, source, owner, timestamp, status, urgency
+FROM events
+WHERE timestamp > strftime('%s','now')*1000 - 21600000
+  AND json_extract(data,'$.agent') = 'arc'
+ORDER BY timestamp DESC;
+
+-- metrics: column is `current` (NOT value), `updated_at` (NOT lastUpdated).
+SELECT id, name, current, target, threshold, status, updated_at
+FROM metrics
+WHERE status = 'active';
+
+-- projects: PK is `id` (NOT projectId), `updated_at` (NOT updatedAt).
+SELECT id, name, owner, status, priority, milestones_done, milestones_total, updated_at
+FROM projects
+WHERE owner = 'arc';
+```
+
+### Schema reality (the *why* behind the cheatsheet)
+Verified 2026-05-08: the `sessions` table has no
 `turns` column — use `opCount`. Its PK is **`sessionId`**, not `id`
 (aftermath flagged s_1778222607213_0 for `SELECT id FROM sessions`).
 Status values are `done | error | interrupted | running` (no `'completed'`). There is **no `stopReason` column** on `sessions` — that field lives in transcript JSONL / `session.end` event `data`. Use `error` or `outcome` (both TEXT on `sessions`) for first-class queryable status, or `json_extract(data,'$.stopReason')` on the matching `session.end` event (KE-916). `events` columns: `id, event_type, source, owner, data, timestamp, status, handled_by, result, reason, retry_count, ttl_ms, urgency` — there is **no** `session_id`, no `agent`, no `created_at`, and no `payload`. To filter events by session or agent, use `data LIKE '%<sessionId>%'` or `json_extract(data,'$.agent')='arc'` against the JSON blob. Aftermath flagged s_1778213206775_3 for `payload` and s_1778311834038_35 (2026-05-09) for both `session_id` and `agent` in the same session — recurring footgun. (KE-910) `metrics` uses `updated_at` (NOT
