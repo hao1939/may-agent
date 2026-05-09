@@ -336,3 +336,24 @@ Signal dispositions:
 - Owned project reminders: `eval-llm-lane-restoration` dismissed for action until review or lane regression; `finish-blocked-hygiene-reduction` escalated/deferred to May/human safe write path for metric registration.
 
 Next check: continue monitoring the split finish-blocked metric registration blocker and the LLM-eval liveness metrics; do not patch code unless a fresh recurrence or approved implementation item appears.
+
+## 2026-05-09 Heartbeat: Scout Friction Signal Already Routed, Dev Blockers External
+
+Routine heartbeat with explicit disposition of current inbox events and owned project state.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty; all visible implementation candidates remain Proposed, so dev has no approved implementation item to implement this turn.
+- Core runtime metrics are healthy for dev-owned infrastructure action: `session.error-rate-6h=0.0218`, `handler.success-rate=1`, `handler.failed-count=0`, and the latest unresolved alerts are owned by may/project/capability or scout, not dev.
+- `eval-llm-lane-restoration` remains pending-review with the non-heuristic evaluator lane live: latest non-heuristic evaluation is `2026-05-09 23:25:55` UTC and measured lag is `0.01h`, below the 4h alert threshold.
+- `finish-blocked-hygiene-reduction` remains correctly blocked on the external safe-write step for split metric registration; this heartbeat has only read-only DB access and should not attempt direct metric-table writes.
+- The pending Scout friction events were acted on by prior/parallel sessions: the scout workflows now include pre-finish hygiene instructions, and evaluator aftermath for `s_1778368911788_382` escalated the fresh procedural-laundering pattern to scout with a concrete P1 review request.
+- Fresh 1h Scout evaluation sample is mixed rather than a new dev-owned code failure: 7 Scout evaluations, 2 `needs_improvement`, 4 `good`, and one `acceptable`; the latest NI case is the already-escalated `workflow:scout-heartbeat` procedural-laundering session.
+- Current `/app/agents` dirty state contains unrelated runtime/project/test paths (`*/last-session.md`, shared gate logs, `shared/projects/ruflo-learning-loop/project.md`, `shared/projects/v2-spec-coverage-buildout/journal.md`, and `test/guards.test.ts`). Dev should not stage or clean those in this heartbeat.
+
+Signal dispositions:
+- Scout operational-friction `message.created` / `session.start`: acted by verifying the root cause is already routed to scout and by checking fresh Scout evaluation incidence; no additional dev patch is justified this turn.
+- Recent `session.end` entries about dev heartbeat artifacts and finish-blocked work: dismissed as already acted after rechecking live metrics and project resume conditions.
+- Duplicate heartbeat `session.start` events: dismissed as lifecycle noise after queue/metric/project checks.
+- Owned projects: `eval-llm-lane-restoration` dismissed for action until review or lane regression; `finish-blocked-hygiene-reduction` remains escalated/deferred to May/human safe metric-registration write authority.
+
+Next check: watch whether Scout continues producing procedural-laundering `needs_improvement` rows after the evaluator review request; if recurrence persists despite Scout acknowledgement, sample the Scout workflow transcript and patch the Scout heartbeat prompt or guard rather than adding another generic finish-hygiene note.
