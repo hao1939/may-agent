@@ -202,10 +202,11 @@ Interpretation: eval pipeline appears stalled since 2026-05-06T16:46Z while sess
 ## 9. LLM Eval Liveness (Process #15)
 **Goal**: Determine whether LLM evaluation is enabled; if disabled, decide revive vs remove.
 - Canonical source: `.state/may.db` (do not rely on legacy artifact directories).
-- Check for existence of any `*llm*` table names (e.g., `llm_evaluations`) and/or a dedicated LLM-eval job/cron.
-- If missing: treat as "LLM eval disabled or not implemented" and open a tracked item to either (a) add it back, or (b) remove/rename docs that imply it exists.
+- Primary signal: recent rows in `evaluations` with `COALESCE(evaluatedByHeuristic,1)=0`.
+- Secondary signal: job/cron references or any dedicated `*llm*` tables. Absence of `*llm*` tables alone is **not** proof that Process #15 is disabled, because LLM evaluations may be stored in the shared `evaluations` table.
+- If both the primary signal and runtime job evidence are missing: treat as "LLM eval disabled or not implemented" and open a tracked item to either (a) add it back, or (b) remove/rename docs that imply it exists.
 
-**Last check**: 2026-04-29 — `.state/may.db` has **no** tables matching `*llm*` (query: `sqlite_master WHERE name LIKE '%llm%'` returned empty). Latest evaluator pipeline DB write still healthy: `MAX(evaluations.createdAt)=1777498157440` (2026-04-29T21:29:17Z).
+**Last check**: 2026-05-09 — `.state/may.db` still has **no** tables matching `*llm*`, but Process #15 is clearly active in the shared `evaluations` table: `evals_last24h=539`, `llm_evals_last24h=6` (`evaluatedByHeuristic=0`), `MAX(evaluations.createdAt)=1778316576092`, `MAX(sessions.startedAt)=1778316730457` (lag ≈2.6m at check time). Conclusion: LLM eval is enabled, just not via a dedicated `llm_*` table.
 
 ---
 
