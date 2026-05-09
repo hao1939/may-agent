@@ -34,3 +34,15 @@ This looks like a runtime/provider contract problem or prompt/model compliance i
 1. Watch whether evaluator errors continue to dominate the last-hour error grouping and whether alert `#249` receives a `metric.alert_judged` owner decision from may.
 2. If the pattern persists, patch the evaluator/deep-eval prompts or runtime wrapper to reject empty `content=[]` normal-stop responses as retryable, bounded by a small retry count.
 3. Do not add a duplicate metric: `session.empty-assistant-stop-count-1h` already covers this failure mode.
+
+## 2026-05-09 Heartbeat Follow-up
+
+Latest heartbeat evidence confirms two overlapping runtime reliability patterns:
+
+- The old first-turn provider `Connection error` burst is not currently active: `session.first-turn-error-count-1h=0`, while handler health is green (`handler.success-rate=1`).
+- The empty-assistant-stop cluster remains the active high-impact failure: `session.empty-assistant-stop-count-1h=28` with unresolved alert `#249`; the last-hour failure grouping is dominated by `workflow:evaluator-aftermath` (`26` `status='error'`, `error=NULL` rows) plus one evaluator heartbeat and one eval-llm-scan error.
+- The non-heuristic evaluator lane is still alive despite the empty-stop failures: recent `evaluation.deep_recorded` events exist at `1778314957883`, `1778314476521`, `1778314258425`, `1778313194374`, `1778312523657`, and `1778312072140`; `eval.llm-coverage-lag-h=0.13` and `eval.llm-evals-24h=4`.
+- May's metric-alert triage chose `upgrade_or_escalate` for alert `#249` and requested a code fix: add bounded retry logic for empty assistant `stop` responses in the session runner. That code path is outside dev's editable `/app/agents` scope in this container, so the safe dev action is to preserve evidence and escalate/track rather than attempt a production runner patch here.
+- A separate `Clean start (fresh)` interruption pattern persists in recent sessions across evaluator, may, arc, and dev, but it is distinct from the empty assistant `status='error'` rows and should not be merged with the empty-stop metric.
+
+Recommended owner action: implement bounded retry/fallback in the session runner for normal-stop responses with no assistant content/tool calls, and keep the retry budget small (for example 2 attempts) so evaluator aftermath does not amplify provider load.
