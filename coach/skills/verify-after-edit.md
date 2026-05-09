@@ -68,10 +68,9 @@ bash({ command: "npx tsc --noEmit" })
 
 ## When to Skip
 
-- **Successful `edit()` calls** — edit() returns a diff preview that counts as verification. No separate read needed.
-- **`write()` for new files** — you authored the content, corruption risk is minimal. Skip unless it's a config/data file that other systems will parse.
+- Do not skip read-back after `write()` or `edit()` if you plan to call `finish(success)`.
 - Running tests does NOT count as verification for C1.3. Tests verify behavior, not that the file was written correctly. You still need to `read()` the file.
-- Never skip for `write()` calls that *overwrite* existing files — read back to confirm nothing was lost.
+- Never skip for config/data files that other systems will parse.
 
 
 ## ⚠️ Task-Type Restriction
