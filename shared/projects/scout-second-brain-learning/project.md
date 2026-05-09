@@ -33,7 +33,7 @@ The next real Scout heartbeat, session `s_1778329915911_13`, behaved better:
 it used live metrics, improved existing knowledge files, committed the work in
 `47991bc2a`, read files back after guard feedback, and did not create another
 fake metric-dismissal project. The adoption metric moved from `0.1404` to
-`0.193`. It is still below threshold, but that is acceptable here because this
+`0.2281`. It is still below threshold, but that is acceptable here because this
 project's goal is behavior change with observable gain, not bulk-editing the
 knowledge base until a ratio turns green.
 
@@ -145,5 +145,5 @@ Initial hypothesis:
 - Re-ran a real Scout heartbeat. Session `s_1778329915911_13` updated existing
   knowledge files, committed `47991bc2a`, recovered from guard feedback, and
   finished successfully.
-- `scout.knowledge-preamble-coverage` improved from `0.1404` to `0.193`; leave
+- `scout.knowledge-preamble-coverage` improved from `0.1404` to `0.2281`; leave
   the project waiting and let normal Scout work continue adoption gradually.
