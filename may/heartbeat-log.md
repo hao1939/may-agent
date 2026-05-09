@@ -271,3 +271,24 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 ### Next Actions
 - Investigate scout friction root causes
 - Review evaluator scoring calibration
+
+---
+
+## 2026-05-09 00:12 UTC
+
+### System Health
+- Throughput: 62 sessions/hr, 94% success rate
+- Handlers: 68/hr, 100% success, p95 51s
+- Projects: 4 active, 2 blocked >6h
+- Health checks: All PASS
+
+### ⚠️ Flagged Metrics
+- Good sessions overturned: 47.4% (target 5%)
+- Needs-improvement sessions: 65% (target 10%)
+- Scout good rate: 31.7% (target 85%)
+- Scout friction: 68.3% (target 10%)
+
+### Notes
+- Evaluator overturn rate very high — criteria may be too strict
+- Scout friction is the dominant quality issue
+- Infrastructure is healthy
