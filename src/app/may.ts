@@ -1,7 +1,7 @@
 import { createInterface } from "node:readline";
 import { execSync } from "node:child_process";
 import { resolve, join } from "node:path";
-import { existsSync, readFileSync, writeFileSync, appendFileSync, unlinkSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, appendFileSync, mkdirSync } from "node:fs";
 import { getModel } from "@mariozechner/pi-ai";
 import type { ModelWithApiKey } from "../lib/types.js";
 import {
@@ -9,18 +9,18 @@ import {
 } from "../lib/index.js";
 import { EventBus } from "./event-bus.js";
 import { ChatSession } from "./chat-session.js";
+import { attachCommandRouter } from "./command-router.js";
+import { startInterfaceRuntime } from "./interface-startup.js";
+import { startCronRuntime } from "./cron-startup.js";
 import { attachConsoleUI } from "./ui/console.js";
-import { attachSocketUI } from "./ui/socket.js";
 import { attachTelegramBot } from "./ui/telegram.js";
 import {
   loadAgents,
   reloadAgents,
   setAgentSessionId,
-  getAgentSessionId,
   runAgentCleanup,
   getAgentCrons,
   generateAutoHeartbeats,
-  loadAgentHandlers,
   type AgentLoaderOptions,
 } from "./agent-loader.js";
 import { resolveProjectRoot } from "./bundle-mode.js";
@@ -575,154 +575,18 @@ process.on("exit", (code) => {
   } catch {}
 });
 
-// ── Command routing (socket/telegram → chat loop or built-in) ───────────
+// ── Command routing (socket/telegram -> chat loop or built-in) ──────────
 
-/**
- * Unified input handler. All channels (terminal, socket, telegram) route here.
- * In chat mode, delegates to ChatSession. In task/cron mode, handles commands directly.
- */
-function handleInput(message: string, source?: string): void {
-  cancelledOnce = false;
-  if (chatSession) {
-    chatSession.handleInput(message, source);
-    return;
-  }
-
-  // Task/cron mode: only handle built-in commands
-  const lower = message.trim().toLowerCase();
-  if (lower === "status") {
-    const sessions = manager.status();
-    if (sessions.length === 0) {
-      bus.emit({ type: "info", message: "[status] No active sessions" });
-    } else {
-      const lines = sessions.map(
-        (s) => `  ${s.agent} (${s.sessionId}): ${s.status} — "${s.task.slice(0, 80)}" [${s.runtime}]`,
-      );
-      bus.emit({ type: "info", message: `[status] ${sessions.length} active session(s):\n${lines.join("\n")}` });
-    }
-    return;
-  }
-  if (lower === "cancel" || lower === "cancel all") {
-    for (const s of manager.status()) {
-      if (s.status === "running") manager.cancel(s.sessionId);
-    }
-    bus.emit({ type: "info", message: "[cmd] Cancelled all running sessions" });
-    return;
-  }
-  if (lower === "reload") {
-    handleReload();
-    return;
-  }
-  if (lower === "restart") {
-    gracefulRestart();
-    return;
-  }
-  if (lower === "close") {
-    gracefulShutdown();
-    return;
-  }
-
-  bus.emit({ type: "info", message: `[cmd] Input ignored (no chat session). Use --chat for interactive mode.` });
-}
-
-// ── Core command subscriber — handles commands from the EventBus ────────
-bus.subscribe((event) => {
-  switch (event.type) {
-    case "input":
-      handleInput(event.message ?? event.text ?? "", event.source);
-      break;
-    case "steer": {
-      const targetSid = event.sessionId;
-      const steerText = event.message ?? event.text ?? "";
-      if (!targetSid) break;
-      try {
-        const sessions = manager.status();
-        const target = sessions.find((s) => s.sessionId === targetSid);
-        if (target?.status === "idle") {
-          manager.input(targetSid, steerText);
-        } else if (target) {
-          // running
-          manager.steer(targetSid, steerText, "human");
-        } else {
-          // No live session in memory — try to resume from cold storage.
-          // This is the Telegram path: a chat thread can always receive a
-          // message; if the agent isn't currently "online" the message wakes
-          // it up with the prior transcript intact.
-          try {
-            manager.resumeSession(targetSid, steerText, { source: event.source ?? "human" });
-            log("info", `[steer] Resumed cold session ${targetSid}`);
-          } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            log("error", `[steer] ${msg}`);
-          }
-        }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        log("error", `[steer] ${msg}`);
-      }
-      break;
-    }
-    case "cancel":
-      if (event.sessionId) manager.cancel(event.sessionId);
-      break;
-    case "cancel_all":
-      handleInput("cancel all");
-      break;
-    case "fork":
-      if ("agent" in event && "task" in event) {
-        // Emit message.created for traceability (v2 convergence)
-        bus.emit({ type: "message.created", from: (event as any).opts?.source || "socket", to: (event as any).agent, content: (event as any).task, intent: "fork", priority: "P0" } as any);
-        // Messages to May go through chatSession (she interprets intent).
-        // All other agents get dispatched directly — no LLM-as-router overhead.
-        if (chatSession && event.agent === "may") {
-          chatSession.handleInput(event.task, "socket");
-        } else {
-          const sessionId = manager.run(event.agent, event.task, {
-            kind: (event.opts?.kind as "chat" | "job" | "call" | undefined) ?? "job",
-            requestId: event.opts?.requestId,
-          });
-          log("info", `[fork] Started ${event.agent} session: ${sessionId}`);
-        }
-      }
-      break;
-    case "reload":
-      handleReload();
-      break;
-    case "message":
-      if ("from" in event && "to" in event && "task" in event) {
-        try {
-          bus.emit({
-            type: "message.created",
-            from: (event as any).from ?? "human",
-            to: (event as any).to,
-            content: (event as any).task,
-            priority: (event as any).priority,
-          } as any);
-          log("info", `[message] ${(event as any).from ?? "human"} → ${(event as any).to}: ${((event as any).task as string).slice(0, 80)}`);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          log("error", `[message] Failed: ${msg}`);
-        }
-      }
-      break;
-    case "resume":
-      if ("sessionId" in event && event.sessionId) {
-        const ok = manager.resumeInterrupted(event.sessionId);
-        if (ok) {
-          log("info", `[resume] Resumed session ${event.sessionId}`);
-        } else {
-          log("warn", `[resume] Failed to resume session ${event.sessionId}`);
-        }
-      }
-      break;
-    case "restart":
-      gracefulRestart();
-      break;
-    case "shutdown":
-      gracefulShutdown();
-      break;
-  }
+const commandRouter = attachCommandRouter({
+  bus,
+  manager,
+  getChatSession: () => chatSession,
+  clearCancelLatch: () => { cancelledOnce = false; },
+  reload: handleReload,
+  restart: gracefulRestart,
+  shutdown: gracefulShutdown,
 });
+const handleInput = commandRouter.handleInput;
 
 // ── Backward compat: onCommand removed ──────────────────────────────────
 // All commands now flow through bus.subscribe() above.
@@ -738,42 +602,15 @@ if (!manager.hasAgent(interfaceAgent)) {
 
 // ── Socket + PID file ────────────────────────────────────────────────────
 
-const INSTANCE_DIR = resolve(INSTANCES_DIR, INSTANCE_LABEL);
-const sockName = `${interfaceAgent}.sock`;
-const pidName = `${interfaceAgent}.pid`;
-const SOCKET_PATH = resolve(INSTANCE_DIR, sockName);
-const PID_PATH = resolve(INSTANCE_DIR, pidName);
-
-mkdirSync(INSTANCE_DIR, { recursive: true });
-writeFileSync(PID_PATH, String(process.pid), "utf-8");
-const cleanupPid = () => {
-  try {
-    if (existsSync(PID_PATH)) unlinkSync(PID_PATH);
-  } catch {
-    /* ignore */
-  }
-};
-process.on("exit", cleanupPid);
-
-const socketUI = SOCKET_ENABLED
-  ? await attachSocketUI({
-      socketPath: SOCKET_PATH,
-      bus,
-      manager,
-      getSessionId: () => taskSessionId ?? chatSession?.getSessionId() ?? "",
-      agentName: interfaceAgent,
-      instance: INSTANCE_LABEL,
-    })
-  : { close: () => {}, clientCount: () => 0 };
-
-if (SOCKET_ENABLED) {
-  bus.emit({ type: "info", message: `[instance:${INSTANCE_LABEL}] PID ${process.pid}, socket ${sockName}` });
-} else {
-  bus.emit({
-    type: "info",
-    message: `[instance:${INSTANCE_LABEL}] PID ${process.pid}, socket disabled (use --socket to enable)`,
-  });
-}
+const { socketPath: SOCKET_PATH, socketUI } = await startInterfaceRuntime({
+  socketEnabled: SOCKET_ENABLED,
+  persistDir: PERSIST_DIR,
+  instanceLabel: INSTANCE_LABEL,
+  interfaceAgent,
+  bus,
+  manager,
+  getSessionId: () => taskSessionId ?? chatSession?.getSessionId() ?? "",
+});
 
 // ── Prompt helper ──────────────────────────────────────────────────────
 
@@ -1049,92 +886,13 @@ writeIdentity({
 // ── Start cron jobs (--cron to enable) ──────────────────────────────────
 
 if (CRON_ENABLED) {
-  // Resume stale job and call sessions from a previous process crash. Workflow
-  // runs themselves are marked interrupted, but their active child agent
-  // sessions can still continue from the persisted transcript instead of being
-  // reported as synthetic "Clean start (fresh)" failures.
-  const { resumed, interrupted } = manager.resumeStaleSessions({ kinds: ["job", "call"] });
-  // Chat sessions are handled separately: in CHAT_MODE they're resumed, otherwise interrupted.
-  const orphansCleaned: typeof interrupted = [];
-  if (!CHAT_MODE) {
-    // Daemon mode without telegram: clean up orphaned chat sessions
-    const { interrupted: chatCleaned } = manager.resumeStaleSessions({ abort: true, kinds: ["chat"] });
-    orphansCleaned.push(...chatCleaned);
-  } else {
-    // Chat mode: resume idle chat sessions (preserves conversation history)
-    const { resumed: chatResumed } = manager.resumeStaleSessions({ kinds: ["chat"] });
-    resumed.push(...chatResumed);
-    // Now that sessions are loaded, let ChatSession attach to the newest
-    // and close orphan duplicates
-    if (chatSession) chatSession.resumeAfterLoad();
-  }
-  if (resumed.length > 0) {
-    bus.emit({
-      type: "info",
-      message: `[startup] Resumed ${resumed.length} session(s): ${resumed.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}`,
-    });
-  }
-  if (interrupted.length > 0) {
-    bus.emit({
-      type: "info",
-      message: `[startup] ${interrupted.length} session(s) could not resume: ${interrupted.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}`,
-    });
-  }
-  if (orphansCleaned.length > 0) {
-    bus.emit({
-      type: "info",
-      message: `[startup] Cleaned up ${orphansCleaned.length} orphaned session(s): ${orphansCleaned.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}`,
-    });
-  }
-
-  // Archive zombie sessions: dirs in sessions/ with terminal status that were never archived
-  const zombiesArchived = manager.cleanupZombieSessions();
-  if (zombiesArchived > 0) {
-    bus.emit({
-      type: "info",
-      message: `[startup] Archived ${zombiesArchived} zombie session(s) with terminal status`,
-    });
-  }
-
-  const handlerResult = await loadAgentHandlers({
-    ...loaderOpts,
-    getSessionId: (agentName: string) => {
-      return getAgentSessionId(agentName) ?? null;
-    },
+  await startCronRuntime({
+    manager,
+    bus,
+    loaderOpts,
+    chatMode: CHAT_MODE,
+    chatSession,
   });
-  if (handlerResult.registered.length > 0) {
-    bus.emit({
-      type: "info",
-      message: `[handlers] Registered ${handlerResult.registered.length}: ${handlerResult.registered.join(", ")}`,
-    });
-  }
-  if (handlerResult.errors.length > 0) {
-    bus.emit({
-      type: "info",
-      message: `[handlers] ⚠️ ${handlerResult.errors.length} error(s): ${handlerResult.errors.join("; ")}`,
-    });
-    // Write failures to request DB so they show in --status process health
-    for (const err of handlerResult.errors) {
-      const handlerName = err.match(/"(\w[\w-]*)\.(js|ts)"/)?.[1] ?? err.match(/"([^"]+)"/)?.[1] ?? "unknown";
-      log("warn", `[handlers] Failed to load handler "${handlerName}": ${err}`);
-    }
-  }
-
-  for (const [name, cron] of getAgentCrons()) {
-    cron.onFire((entry, executor) => {
-      const label = executor === "handler" ? `handler → ${entry.handler ?? entry.name}` : `agent → ${entry.agent}`;
-      bus.emit({
-        type: "info",
-        message: `[cron] ${entry.name} fired (${label})`,
-      });
-    });
-
-    const entries = cron.getEntries();
-    if (entries.length > 0) {
-      bus.emit({ type: "info", message: `[cron:${name}] Starting ${entries.length} job(s)` });
-      cron.start();
-    }
-  }
 }
 
 // ── Telegram bot (--telegram flag to enable) ─────────────────────────
