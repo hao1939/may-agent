@@ -458,7 +458,7 @@
     "handlerConfig": {
       "workflow": "scout-explore",
       "agent": "scout",
-      "task": "Explore arXiv for recent papers on multi-agent systems, LLM agents, agent coordination, and autonomous systems. Use the arXiv API to fetch real papers. For each interesting find: create or update a KE entry in agents/shared/knowledge/entries/. Append a summary to agents/scout/workspace/digest/today.md.",
+      "task": "Explore arXiv for recent AI agent papers.",
       "timeoutMs": 600000
     },
     "offsetMs": 0
@@ -474,7 +474,7 @@
     "handlerConfig": {
       "workflow": "scout-explore",
       "agent": "scout",
-      "task": "Explore Hacker News for recent discussions about AI agents, autonomous coding, LLM orchestration, and multi-agent systems. Use the HN Algolia API. For each interesting find: create or update a KE entry in agents/shared/knowledge/entries/. Append a summary to agents/scout/workspace/digest/today.md.",
+      "task": "Explore Hacker News for AI agent discussions.",
       "timeoutMs": 600000
     },
     "offsetMs": 900000
@@ -490,7 +490,7 @@
     "handlerConfig": {
       "workflow": "scout-explore",
       "agent": "scout",
-      "task": "Explore \u5c0f\u7ea2\u4e66 (XHS) for AI agent discussions in the Chinese AI community. Use node agents/scout/tools/xhs-browse.mjs to browse. Search for: \u667a\u80fd\u4f53, AI agent, \u591aagent, \u81ea\u4e3bagent. For each interesting find: create or update a KE entry in agents/shared/knowledge/entries/. Append a summary to agents/scout/workspace/digest/today.md.",
+      "task": "Explore \u5c0f\u7ea2\u4e66 (XHS) for Chinese AI community trends.",
       "timeoutMs": 600000
     },
     "offsetMs": 1800000
@@ -506,7 +506,7 @@
     "handlerConfig": {
       "workflow": "scout-explore",
       "agent": "scout",
-      "task": "Explore GitHub for trending AI agent repositories, new frameworks, and coordination tools. Use the GitHub API. Focus on: multi-agent frameworks, coding agents, agent memory systems, evaluation tools. For each interesting find: create or update a KE entry in agents/shared/knowledge/entries/. Append a summary to agents/scout/workspace/digest/today.md.",
+      "task": "Explore GitHub for trending AI agent repos and tools.",
       "timeoutMs": 600000
     },
     "offsetMs": 2700000
@@ -522,7 +522,7 @@
     "handlerConfig": {
       "workflow": "scout-daily-digest",
       "agent": "scout",
-      "task": "Compile today's research digest. Read agents/scout/workspace/digest/today.md, format a concise summary of the day's findings, and call finish() with the digest text. The system will send it via Telegram. Then archive today.md to agents/scout/workspace/digest/YYYY-MM-DD.md and create a fresh today.md.",
+      "task": "Compile today's research digest and send to Hao.",
       "timeoutMs": 300000
     },
     "offsetMs": 0
