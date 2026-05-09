@@ -409,3 +409,15 @@ Ran `monitor-session.cjs --running`: 4 checked, 4 healthy.
 Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
+
+**Last run**: 2026-05-09 21:02Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778360231953`; `MAX(sessions.startedAt)=1778360468530`; `MAX(sessions.endedAt)=1778360414096`; lag ≈236.6s vs `startedAt`, ≈182.1s vs `endedAt`; `evals_last24h=665`; `llm_evals_last24h=25`; `sessions_started_last24h=1516`; `sessions_ended_last24h=1514`). This keeps Process #5 live and Process #15 active, while the absence of dedicated `*llm*` tables remains a schema choice rather than a liveness issue.
+
+Inbox triage on the surfaced pending rows found the newest evaluator aftermath target `s_1778360165352_274` already routed and in-flight via active evaluator session `s_1778360493602_280`, while reviewed targets `s_1778360148620_273` and `s_1778360104282_271` already have completed aftermath artifacts in `agents/evaluator/workspace/aftermath/`; treat the corresponding pending `session.*` / `evaluation.*` rows as in-flight or backlog noise rather than dropped work.
+
+Ran `monitor-session.cjs --running`: 3 checked, 2 healthy, 1 `PROTOCOL_VIOLATION` (active arc session `s_1778360231882_277`; evidence: missing P114 Experience Replay; recommended action: warn). Notified May.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
+
+Calibration note: newest `evaluation.false_good` event (`s_1778360148620_273`) matches the recently added success-candidate false-good guard in `agents/evaluator/knowledge/criteria.md`: the reviewed session did fresh verification but produced no new durable artifact, so `acceptable` is more accurate than the routed `good`.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
