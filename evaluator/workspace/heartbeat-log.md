@@ -51,6 +51,10 @@
 - Action taken: appended this entry.
 - Next: if a specific session evaluation task arrives, record evaluation evidence and resulting JSON in a dedicated file under `agents/evaluator/workspace/` before calling `finish()`.
 
+## 2026-05-09 (third follow-up)
+- Artifact gate: this heartbeat contained only an instruction to produce an artifact.
+- Improvement: when no concrete evaluation target is provided, default to capturing one measurable snapshot via read-only DB queries (sessions count + most recent metrics update time) in the next heartbeat.
+
 ### Template for future heartbeat entries
 - What signal triggered this work (metric, message, failure):
 - What I checked (files/queries/commands):
