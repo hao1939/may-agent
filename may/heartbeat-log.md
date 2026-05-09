@@ -519,3 +519,21 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 **Blocked projects**: 1. **DB size**: 1123 MB.
 
 **Action**: No urgent interventions needed. Scout metrics remain primary concern.
+
+---
+
+## 2026-05-09T21:55 UTC — Closed-Loop Steward Audit
+
+### System Health
+- Throughput: 42 sessions/hr, 100% success
+- Active sessions: 2 | Handler fires: 72/hr
+- All 15 cron jobs healthy, 0 errors
+
+### Breaches (4)
+- Active project iterations (24h): 0 (threshold 1) ⚠️
+- Scout good session rate: 0.34 (threshold 0.65) ⚠️
+- Scout operational friction: 0.82 (threshold 0.30) ⚠️
+- Message close rate: 0.016 (threshold 0.02) ⚠️
+
+### No Action Required
+- DB 1124MB (within limits), eval lag 0.38h, no zombies
