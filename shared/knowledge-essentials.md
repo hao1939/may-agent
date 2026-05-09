@@ -18,6 +18,11 @@ Hard externalization gates can produce +100pp improvement OR -80pp regression de
 - **Measure product quality, not process compliance** — "Did the agent produce a correct fix?" beats "Did the agent write ARTIFACT.md?" (KE-181).
 - **Decision tree**: baseline ≤50%? → failure mode = step-skipping? → artifact produces the fix? → 2-phase possible? → all gates relevant? → count ≤3? → APPLY. See KE-182 for full details.
 
+## Knowledge Base Management (The "Second Brain" Pattern)
+- **AI-First Preambles**: Every knowledge file must begin with an `<ai_context>` block containing `summary`, `triggers` (keywords), and `last_updated`. This allows agents to quickly scan and grep knowledge without reading the whole file.
+- **In-place Updates**: When new information arrives, rewrite existing knowledge pages instead of appending duplicates. This maintains a high signal-to-noise ratio and prevents knowledge fragmentation.
+- **Vault-first Research**: Always scan existing knowledge before initiating external research to identify deltas and avoid redundant work.
+
 ## Operating Philosophy (from Hao)
 - **Never coast** — No metric? Build it. Met target? Refine it, add dimensions. Good? Watch regressions, push new frontiers.
 - **Stability first** — fix existing before building new. Don't start new things when current things are broken.
