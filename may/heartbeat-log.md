@@ -401,3 +401,12 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - **Investigation**: Metric is brand new (single snapshot). Counts error/interrupted sessions with empty assistant response in first turn. Threshold of 0 is unrealistic for a system running ~100 fires/hour.
 - **Operation**: Calibrate. Raised threshold to 15, target to 5, priority P2, consecutive_failures=2. Will monitor next snapshots.
 - **System health**: All other 18 metrics green. Dev error rate elevated but known (IDE tokens). Evaluator has 7506 sessions (71 errors = ~1%).
+
+## 2025-05-09 09:09 UTC
+- **Throughput (1h)**: 85 sessions, 99% success
+- **Health checks**: All PASS
+- ⚠️ Scout good session rate: 25.6% (target 85%)
+- ⚠️ Scout friction: 74.4% (target <10%)
+- Session error rate: 20.9%
+- Evaluator overturn rate: 34.4% (target 5%)
+- Real output: 632 (24h) — strong
