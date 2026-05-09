@@ -147,3 +147,4 @@ Initial hypothesis:
   finished successfully.
 - `scout.knowledge-preamble-coverage` improved from `0.1404` to `0.2281`; leave
   the project waiting and let normal Scout work continue adoption gradually.
+  - Snapshot 2026-05-09 (later): `scout.knowledge-preamble-coverage` is `0.2982`.
