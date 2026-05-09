@@ -49,7 +49,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     }
 
     // Smart preflight: skip if all projects are blocked/waiting/closed and none have changed
-    const hasActionable = projects.some(p => p.status === "active" || p.status === "paused");
+    const hasActionable = projects.some(p => p.status === "active");
     if (!hasActionable && event?.type !== "project.nudge" && event?.type !== "trigger.project") {
       const lastScan = healthState.lastFullScan || 0;
       const hasChanges = projects.some(p => {
