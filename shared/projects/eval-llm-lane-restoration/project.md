@@ -6,6 +6,8 @@ type: milestone
 priority: P0
 workflow: project
 iteration: 1
+stop_reason: Bounded deep-eval lane landed and live validation showed non-heuristic evaluations advancing; awaiting review instead of more worker iterations.
+resume_condition: Reviewer requests changes, the deep-eval lane stops producing `evaluatedByHeuristic=0` rows, or `eval.llm-coverage-lag-h` breaches again.
 ---
 
 # Restore Non-Heuristic Evaluator Lane

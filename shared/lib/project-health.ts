@@ -16,7 +16,7 @@ export const MAX_LAUNCHES_PER_TICK = 3;
 export const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes between launches per project
 export const MAX_ITERATIONS_PER_HOUR = 2;   // Max 2 workflow launches per project per hour
 export const ESCALATION_COOLDOWN_MS = 24 * 60 * 60 * 1000; // Max one human escalation per project per day
-const COMMENT_RESUME_STATUSES = new Set(["waiting", "blocked", "pending-review"]);
+const COMMENT_RESUME_STATUSES = new Set(["waiting", "blocked", "pending-review", "paused"]);
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -132,7 +132,7 @@ function stripProjectMeta(content: string): string {
 }
 
 function formatProjectMeta(meta: ProjectMeta): string {
-  const preferred = ["id", "owner", "status", "type", "priority", "workflow", "iteration", "stop_reason", "resume_condition"];
+  const preferred = ["id", "owner", "status", "type", "priority", "workflow", "iteration", "stop_reason", "resume_condition", "resume_after"];
   const keys = [
     ...preferred.filter(key => meta[key] !== undefined && meta[key] !== ""),
     ...Object.keys(meta).filter(key => !preferred.includes(key) && meta[key] !== undefined && meta[key] !== "").sort(),
@@ -206,6 +206,13 @@ function hasPendingComments(content: string): boolean {
   return comments.length > 0;
 }
 
+function parseResumeAfter(content: string): number | null {
+  const value = parseProjectMeta(content).resume_after;
+  if (!value) return null;
+  const ts = Date.parse(value);
+  return Number.isFinite(ts) ? ts : null;
+}
+
 /**
  * Diagnose what action a project needs.
  * This is the core decision function — one branch per project state.
@@ -275,8 +282,18 @@ export function diagnoseProject(
       return { type: "launch-workflow", reason: `${status} with unread comments`, comment: "" };
     }
 
-    if (status === "pending-review") {
-      return { ...skip, reason: "pending-review — waiting for review" };
+    const resumeAfter = parseResumeAfter(project.content);
+    if (resumeAfter !== null) {
+      if (now >= resumeAfter) {
+        const limited = forceLaunch ? null : launchRateLimitReason(entry, now);
+        if (limited) return { ...skip, reason: limited };
+        return { type: "launch-workflow", reason: `${status} resume_after is due`, comment: "" };
+      }
+      return { ...skip, reason: `${status} until ${new Date(resumeAfter).toISOString()}` };
+    }
+
+    if (status === "pending-review" || status === "paused") {
+      return { ...skip, reason: status === "pending-review" ? "pending-review — waiting for review" : "paused — waiting for explicit resume" };
     }
 
     // No comments — escalate based on time

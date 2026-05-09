@@ -7,6 +7,7 @@ priority: P1
 workflow: master-worker
 iteration: 4
 stop_reason: WAITING_ON_HUMAN
+resume_condition: Hao confirms the top-five metric selection or requests a specific dashboard/digest change.
 ---
 
 # Project: Proof-of-Life Dashboard
@@ -14,8 +15,6 @@ stop_reason: WAITING_ON_HUMAN
 **Last Checked**: 2026-05-03
 
 The project is feature-complete and verified working. The 2026-04-30 daily digest shows all 5 metrics with color indicators (🟢🔴), trend arrows (↑↓→), and 7-day history lines. 
-
-**What's nee
 
 ## Goal
 Build a "top 5 at a glance" metrics dashboard for the proof-of-life digest that Hao sees. Raw numbers aren't useful — needs trend arrows (↑↓→) and good/bad indicators.

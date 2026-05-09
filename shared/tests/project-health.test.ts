@@ -142,6 +142,41 @@ describe('project-health', () => {
       expect(result.reason).toContain('manual project trigger');
     });
 
+    it('launches paused project only when explicit comments are pending', () => {
+      const proj = {
+        ...baseProject,
+        status: 'paused',
+        content: '# Test\n## Comments\n- resume with new evidence\n',
+      };
+      const result = diagnoseProject(proj, emptyState, new Set(), new Set(), Date.now(), []);
+      expect(result.type).toBe('launch-workflow');
+      expect(result.reason).toContain('paused with unread comments');
+    });
+
+    it('keeps waiting project stopped until resume_after is due', () => {
+      const now = Date.now();
+      const proj = {
+        ...baseProject,
+        status: 'waiting',
+        content: `---\nresume_after: ${new Date(now + 60_000).toISOString()}\n---\n# Test\n`,
+      };
+      const result = diagnoseProject(proj, emptyState, new Set(), new Set(), now, []);
+      expect(result.type).toBe('skip');
+      expect(result.reason).toContain('until');
+    });
+
+    it('launches waiting project when resume_after is due', () => {
+      const now = Date.now();
+      const proj = {
+        ...baseProject,
+        status: 'waiting',
+        content: `---\nresume_after: ${new Date(now - 60_000).toISOString()}\n---\n# Test\n`,
+      };
+      const result = diagnoseProject(proj, emptyState, new Set(), new Set(), now, []);
+      expect(result.type).toBe('launch-workflow');
+      expect(result.reason).toContain('resume_after is due');
+    });
+
     it('escalates blocked projects after 2+ hours', () => {
       const proj = { ...baseProject, status: 'blocked' };
       const state: HealthState = {

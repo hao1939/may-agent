@@ -1,13 +1,13 @@
 ---
 id: evaluator-low-quality-rate-calibration
 owner: evaluator
-status: active
+status: waiting
 type: milestone
 priority: P1
 workflow: project
 iteration: 6
-stop_reason:
-resume_condition:
+stop_reason: Governance decision required. Further worker iterations are producing artifacts instead of changing runtime behavior.
+resume_condition: May or the metric owner chooses one path: make evaluator.substantive-low-quality-rate-24h the alert-driving metric, or keep broad low-quality-rate alerting and tune the heuristic.
 ---
 
 # Evaluator Low-Quality Rate Calibration
@@ -21,7 +21,16 @@ Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior
 - Metric: `evaluator.false-good-rate-sample` current 0.5714 (threshold 0.2, target 0.05) but denominator only 7 reviewed sessions (sample instability).
 
 ## Current State
-Blocked: The project now depends on an explicit May/owner governance decision on metric intent. Resume when: May (or the named metric owner) responds yes/no on
+
+Waiting: The project now depends on an explicit May/owner governance decision on
+metric intent. The technical evidence is sufficient; more autonomous worker
+iterations are unlikely to improve the metric until the owner chooses a path.
+
+Resume when May or the named metric owner chooses one of:
+
+- Make `evaluator.substantive-low-quality-rate-24h` the alert-driving metric.
+- Keep broad `evaluator.low-quality-rate-24h` alerting and tune the heuristic
+  instead.
 ## Plan
 1. **Metric decomposition proposal**: draft a split of low-quality-rate into sub-metrics by issue class (schema errors, finish/uncommitted, terminal interruptions) to avoid conflating agent quality with infra/guard friction.
 2. **Criteria calibration**: review evaluator criteria for (a) terminal interrupted sessions (Clean start) and (b) finish-blocked sessions; decide whether to classify as NI vs excluded/exception.

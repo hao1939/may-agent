@@ -1,13 +1,14 @@
 ---
 id: daily-alert-review
 owner: may
-status: active
+status: waiting
 type: recurring
 priority: P1
 workflow: project
 iteration: 4
-stop_reason:
-resume_condition:
+stop_reason: Daily alert review for 2026-05-09 is complete. This recurring project should not run again until the next daily cycle or a human asks for an ad hoc review.
+resume_condition: next daily review cycle (2026-05-10) or human asks for an ad hoc alert review.
+resume_after: 2026-05-10T00:00:00Z
 ---
 
 # Project: Daily Alert Review
@@ -50,7 +51,11 @@ Send via Telegram (use `message("human", report)`):
 ```
 
 ## Current State
-Waiting: Daily alert review for 2026-05-09 is complete (review, recommendations, and status tracker produced). The project goal is truncated (cuts off at "For 
+
+Waiting: Daily alert review for 2026-05-09 is complete (review,
+recommendations, and status tracker produced). This is a recurring review, not
+a continuously executing project. Resume on the next daily cycle or when a
+human explicitly asks for an ad hoc alert review.
 ## Plan
 
 1. Query `metric_alerts` for last 24h (both resolved and unresolved)
