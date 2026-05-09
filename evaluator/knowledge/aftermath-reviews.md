@@ -15,3 +15,7 @@
 ## Pattern: success-candidate evidence should favor actual artifacts over transcript anomalies
 - Symptom: a transcript snippet suggests a missing file or path mismatch, but the produced artifact, tracked source file, test, and runtime DB evidence all confirm the deliverable exists.
 - Fix: for success-candidate aftermath reviews, inspect the actual artifact and current tracked files before downgrading the session based on one anomalous tool result. Use transcript anomalies as cautions to note, not as sole grounds to reject a verified outcome.
+
+## Pattern: partial file reads can create fake “missing config” mismatches
+- Symptom: an agent reads only the top of a long config file, does not see the relevant entry, and concludes a cron/job/handler is missing even though `grep` or a later offset read shows it exists.
+- Fix: when checking for the presence of a config entry in a long file, use `grep -n` first, then read the matching region by offset before making an absence claim.
