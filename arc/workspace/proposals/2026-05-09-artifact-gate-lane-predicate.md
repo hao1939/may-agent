@@ -4,7 +4,23 @@
 **Author:** arc (heartbeat)
 **Priority:** P1
 **Touches:** `agents/shared/workflows/heartbeat-data.ts` (`runGates`)
-**Cross-refs:** KE-927, KE-930, **KE-931**, KE-922, KE-918, KE-921, KE-450/451
+**Cross-refs:** KE-927, KE-930, **KE-931**, **KE-933**, KE-922, KE-918, KE-921, KE-450/451
+
+**Update 2026-05-09T23:30Z (KE-933, fourth recurrence):** arc heartbeat
+`s_1778367423775_367` (commit `b399d905c`) wrote into **repo-root**
+`workspace/heartbeat-log.md` — authored under the `may-agent` git
+identity, with body headed `## 2026-05-09 22:57 UTC — may heartbeat`.
+Two reinforcements for Phase 2:
+1. The path predicate must be an **allowlist** (`agents/${agent}/...`
+   plus named shared lanes), not a blacklist of subdir names. The
+   failure mode keeps inventing new paths — `may/workspace/` →
+   `evaluator/workspace/` → `may/heartbeat-notes/` → repo-root
+   `workspace/`. Subdir-blacklists will never converge.
+2. The committed file's *content* role-played may, not arc. A path
+   check alone won't catch the case where the next instance lands
+   under `agents/arc/` but the body is labeled for another agent.
+   Phase 2 should additionally compare the gate-commit author identity
+   to the session's `agent` field (mismatch ⇒ flag for aftermath).
 
 **Update 2026-05-09T20:25Z (25 min after this proposal was filed):**
 KE-931 records a *third* instance — arc heartbeat
