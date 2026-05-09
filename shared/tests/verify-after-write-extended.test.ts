@@ -95,13 +95,15 @@ describe('verify-after-write guard', () => {
     expect(guard.handle(event as any)).toEqual([]);
   });
 
-  it('allows finish when write in earlier step was never read', () => {
+  it('blocks finish when write in earlier step was never read', () => {
     const event = makeEvent(
       [toolCallMsg('read', 'other.ts')],
       [{ result: { messages: [toolCallMsg('write', 'foo.ts')] } }],
       { status: 'success' },
     );
-    expect(guard.handle(event as any)).toEqual([]);
+    const demands = guard.handle(event as any);
+    expect(demands.length).toBe(1);
+    expect(demands[0].reason).toContain('foo.ts');
   });
 
   it('does not block non-success finish', () => {
@@ -124,8 +126,8 @@ describe('verify-after-write guard', () => {
     );
     const demands = guard.handle(event as any);
     expect(demands.length).toBe(1);
+    expect(demands[0].reason).toContain('a.ts');
     expect(demands[0].reason).toContain('b.ts');
-    expect(demands[0].reason).not.toContain('a.ts');
   });
 
   it('normalizes paths with ./', () => {

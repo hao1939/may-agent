@@ -157,7 +157,7 @@ describe("verify-after-write guard", () => {
     expect(guard.handle(event)).toEqual([]);
   });
 
-  it("read before write is allowed because writes do not require a later read", () => {
+  it("read before write does not verify a later write", () => {
     const msgs = [
       makeMsg([
         { name: "read", path: "foo.ts" },
@@ -168,7 +168,9 @@ describe("verify-after-write guard", () => {
       messages: msgs,
       finishResult: { status: "success" },
     });
-    expect(guard.handle(event)).toEqual([]);
+    const demands = guard.handle(event);
+    expect(demands.length).toBe(1);
+    expect(demands[0].reason).toContain("foo.ts");
   });
 
   it("handles toolCall type as well as tool_use", () => {

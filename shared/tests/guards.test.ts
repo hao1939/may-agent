@@ -46,7 +46,7 @@ describe("hallucinated-path guard", () => {
     const event = makeStepDoneEvent([{ name: "bash", input: { command: "cat /home/user/file.txt" } }]);
     const demands = guard.handle(event);
     expect(demands).toHaveLength(1);
-    expect(demands[0].type).toBe("block");
+    expect(demands[0].type).toBe("warn");
     expect(demands[0].reason).toContain("Hallucinated Path");
   });
 
@@ -54,7 +54,7 @@ describe("hallucinated-path guard", () => {
     const event = makeStepDoneEvent([{ name: "bash", input: { command: "ls /Users/dev/project" } }]);
     const demands = guard.handle(event);
     expect(demands).toHaveLength(1);
-    expect(demands[0].type).toBe("block");
+    expect(demands[0].type).toBe("warn");
   });
 
   it("detects /root/ paths", () => {
