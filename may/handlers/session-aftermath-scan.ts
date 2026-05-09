@@ -14,6 +14,7 @@ type ScanConfig = {
   backfillHours?: number;
   fallbackDelayMs?: number;
   limit?: number;
+  maxConcurrent?: number;
   heuristicVersion?: number;
 };
 
@@ -27,7 +28,8 @@ const DEFAULT_WORKFLOW = "evaluator-aftermath";
 const DEFAULT_AGENT = "evaluator";
 const DEFAULT_BACKFILL_HOURS = 3;
 const DEFAULT_FALLBACK_DELAY_MS = 7 * 60_000;
-const DEFAULT_LIMIT = 12;
+const DEFAULT_LIMIT = 2;
+const DEFAULT_MAX_CONCURRENT = 2;
 const DEFAULT_HEURISTIC_VERSION = 2;
 
 function taskFor(candidate: Candidate): string {
@@ -61,6 +63,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
   const backfillHours = config.backfillHours ?? DEFAULT_BACKFILL_HOURS;
   const fallbackDelayMs = config.fallbackDelayMs ?? DEFAULT_FALLBACK_DELAY_MS;
   const limit = config.limit ?? DEFAULT_LIMIT;
+  const maxConcurrent = config.maxConcurrent ?? DEFAULT_MAX_CONCURRENT;
   const heuristicVersion = config.heuristicVersion ?? DEFAULT_HEURISTIC_VERSION;
 
   return async () => {
@@ -68,6 +71,17 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     const now = Date.now();
     const cutoff = now - backfillHours * 60 * 60_000;
     const fallbackCutoff = now - fallbackDelayMs;
+
+    const running = db.prepare(
+      `SELECT COUNT(*) AS c
+       FROM workflow_runs
+       WHERE workflow = ?
+         AND status = 'running'`,
+    ).get(workflow) as { c?: number } | undefined;
+    if ((running?.c ?? 0) >= maxConcurrent) {
+      ctx.sdk.log("info", `[session-aftermath-scan] Skipping: ${running?.c ?? 0} ${workflow} workflow(s) already running.`);
+      return;
+    }
 
     const candidates = db.prepare(
       `SELECT s.sessionId, s.agent, s.status
