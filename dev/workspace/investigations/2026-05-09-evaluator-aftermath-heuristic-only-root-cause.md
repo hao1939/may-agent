@@ -100,3 +100,7 @@ Recommended safe sequence:
 - Acted on P1 implementation request id 538267 with DB, code, and git-history evidence.
 - Related evaluator low-quality alert is owner=evaluator; dev investigated root cause and recommends promoting the existing LLM-lag metric proposal plus async deep-scoring restoration.
 - Dismissed routine recent session.start/session.end signals as superseded by this investigation.
+
+## 2026-05-09 heartbeat follow-up
+
+Implemented the first recommended visibility fix in `agents/may/handlers/metrics-snapshot.ts`: added built-in metric `eval.llm-coverage-lag-h` (owner `evaluator`, P0, target 1h, threshold 4h, alert when `>` threshold) and a snapshot measurement based on `MAX(createdAt)` where `evaluatedByHeuristic = 0`. At implementation time the read-only verification query reported `lag_h = 65.38` and `last_nonheuristic = 2026-05-06 11:23:22`, so the new metric should breach immediately on the next metrics snapshot instead of letting the heuristic-only pipeline look healthy.
