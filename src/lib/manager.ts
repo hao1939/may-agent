@@ -1135,6 +1135,7 @@ export class SubagentManager {
 
     const toolNames = def.tools.map((tool: any) => tool?.name).filter(Boolean);
     const lines = ["# Runtime Environment"];
+    lines.push(`- Current time: ${new Date().toISOString()}`);
     lines.push(`- Project root: ${root}`);
     if (relAgentDir) lines.push(`- Agent directory: ${relAgentDir}`);
     if (relWorkspace) lines.push(`- Workspace: ${relWorkspace} (scratch/runtime work)`);
