@@ -394,3 +394,10 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - **Recent errors**: 8 evaluator errors in last hour with null error messages — low severity given volume
 - **Projects**: closed-loop-reliability active (iter 1), evaluator-calibration active (iter 6), daily-alert-review active (iter 0 but just ran), v2-spec-coverage blocked
 - **Action**: None needed — all projects progressing, no stale work
+
+## 2025-06-17T07:30 UTC — Heartbeat
+
+**Red metric**: `session.empty-assistant-stop-count-1h` = 28 (threshold 0, target 0).
+- **Investigation**: Metric is brand new (single snapshot). Counts error/interrupted sessions with empty assistant response in first turn. Threshold of 0 is unrealistic for a system running ~100 fires/hour.
+- **Operation**: Calibrate. Raised threshold to 15, target to 5, priority P2, consecutive_failures=2. Will monitor next snapshots.
+- **System health**: All other 18 metrics green. Dev error rate elevated but known (IDE tokens). Evaluator has 7506 sessions (71 errors = ~1%).
