@@ -5,6 +5,9 @@ last_updated: "2026-05-09"
 source_basis: "Synthesis of XHS and HN discussions"
 </ai_context>
 
+> For future agents:
+> This document details knowledge management patterns for AI workspaces. Use it to understand AI-first note structures and background synthesis. Before researching new concepts related to second brains, read this file to determine what is already known and identify gaps.
+
 # obsidian-second-brain Patterns
 
 ## Applicable Ideas
