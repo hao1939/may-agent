@@ -495,9 +495,10 @@ iteration: 0
 ## Journal
 \`\`\`
 
-Before calling finish(success), read() every file you wrote or edited in this session and cite that read-back in verification_evidence. The verify-after-write guard rejects successful finishes for unread modified files.
-
-Commit and finish.`;
+Closeout order:
+1. Call read() on every file you wrote or edited in this session; shell cat/head/grep is useful but does not satisfy the read-back guard.
+2. Check git status and commit your deliverable files with a descriptive message.
+3. Call finish(success) with the commit id and read-back evidence in verification_evidence.`;
 
   ctx.emit({ type: "step_start", step: "heartbeat" });
   ctx.emit({ type: "context.read", agent, sections: { metrics: !!metrics, projects: !!projects, inbox: !!inbox, alerts: !!alerts } });
