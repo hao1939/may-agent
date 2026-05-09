@@ -121,6 +121,10 @@
 - Symptom: a session's first `finish(success)` is rejected for missing read-back verification, which can make the whole run look low-quality if the review stops there.
 - Fix: continue through the transcript. If the agent immediately performs the required read() calls, verifies the edited files, and then finishes cleanly with a real deliverable, score the outcome from the recovered end state and count the initial finish block as minor efficiency waste rather than a failed session.
 
+## Pattern: repeated finish-block friction can be a workflow-prompt gap, not an agent-specific hygiene failure
+- Symptom: many sessions from the same workflow keep hitting `finish() blocked [uncommitted changes]` or read-back guards, but sampled transcripts show the agents reliably recover once the guard spells out the exact closeout steps.
+- Fix: inspect the source workflow prompt before blaming the agent. If the workflow does not tell the agent to read back files, stage exact paths, commit, and re-check status *before the first* `finish(success)`, credit sessions that patch the workflow prompt itself as a system-level fix rather than treating the friction as mere user error.
+
 ## Pattern: finish can reject repo-relative deliverables even when the committed file is real
 - Symptom: a session writes and commits a file under `/app/agents/...`, then `finish(success)` fails with `Deliverables not found on disk` when the deliverable is reported as a repo-relative path like `may/workspace/heartbeat-log.md`.
 - Fix: verify the artifact actually exists and inspect the landed commit/diff. If the outcome is otherwise valid, treat the first finish failure as a path-normalization hiccup and expect immediate recovery by retrying with the absolute `/app/agents/...` path. Penalize efficiency lightly, not outcome quality.
