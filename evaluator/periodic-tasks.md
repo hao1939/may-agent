@@ -441,3 +441,13 @@ Ran `monitor-session.cjs --running`: 1 checked, 1 healthy.
 Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event).
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` are still placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
+
+**Last run**: 2026-05-09 22:31Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778365854137`; `MAX(sessions.startedAt)=1778365868480`; `MAX(sessions.endedAt)=1778365854082`; lag ≈14.3s vs `startedAt`, and evaluations are newer than latest `endedAt` by ≈0.06s; `evals_last24h=670`; `llm_evals_last24h=28`; `sessions_last24h=1503`). This keeps Process #5 live and Process #15 active, while the absence of dedicated `*llm*` tables remains a schema choice rather than a liveness issue.
+
+Inbox triage on the currently surfaced aftermath targets found `agents/evaluator/workspace/aftermath/s_1778365801326_343.md`, `s_1778363468347_311.md`, and `s_1778358304450_242.md` already present, so the newest pending `session.*` / `evaluation.*` rows are best treated as already-handled or in-flight backlog noise rather than dropped evaluator work.
+
+Ran `monitor-session.cjs --running`: 2 checked, 1 healthy, 1 `PROTOCOL_VIOLATION` on an active evaluator aftermath review session (`s_1778365854144_344`; evidence: missing P114 Experience Replay; recommended action: warn). Notified May.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` remain placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
