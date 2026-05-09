@@ -96,6 +96,7 @@ Iter-6 watch log:
 - 2026-05-08: v2-spec-coverage-buildout.status=`waiting`; dispatch_waiting count=23 (in [15,30]). No change. Falsifier window still open. No new artifact.
 - 2026-05-08 23:42Z: v2-spec-coverage-buildout.status=`waiting` (updated_at unchanged at 1778217121841); dispatch_waiting count=26 (in [15,30]). No change. Falsifier window still open. No new artifact.
 - 2026-05-09 (iter-7 hb): v2-spec-coverage-buildout.status=`waiting` (updated_at unchanged at 1778217121841); dispatch_waiting count=28 (in [15,30]). No change. Falsifier window still open. No new artifact.
+- 2026-05-09 01:13Z (iter-8): **falsifier retracted.** Nearest-neighbor join attributes 0/28 of the open `not dispatchable` escalations to `v2-spec-coverage-buildout`; actual top owners are `evaluator-low-quality-rate-calibration` (10) and `daily-alert-review` (2), with 15 unattributable. Iter-4's ±50 ms window is fan-out-ambiguous (10 events match 3 projects each — burst dispatch). Iter-5's "watch v2-spec" framing was wrong owner. See `outputs/iter-08-attribution-correction-findings.md`. Watch log stops; iter-9 question = persistence gap between in-memory zombie-loop verdict (`master-worker.ts:1046`) and on-disk `project.md` status.
 
 Decision (iter-5):
 **(b) — notification.** See `outputs/iter-05-arc-decision.md`.
