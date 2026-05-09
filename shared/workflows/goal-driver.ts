@@ -401,6 +401,13 @@ ${facts.pendingComments ? `**Pending Comments**: ${facts.pendingComments}\n` : "
     const worker = await ctx.runAgent(config.worker, buildWorkerPrompt(facts, decision, config));
     const workerSummary = ctx.summarize(worker, { maxLength: 1500 });
     appendJournal(config, `**Worker Result Cycle ${cycle}**: ${workerSummary}`);
+
+    const afterWorker = collectFacts(config);
+    if (afterWorker.status && afterWorker.status !== "active") {
+      appendJournal(config, `**Workflow Note Cycle ${cycle}**: Worker left project status as \`${afterWorker.status}\`; preserving it instead of forcing \`active\`.`);
+      return ctx.done(`Worker left project ${afterWorker.status}: ${workerSummary.slice(0, 500)}`);
+    }
+
     updateProjectStatus(config.projectPath, "active", undefined, iteration);
     updateCurrentState(config, `Iteration ${iteration} via goal-driver.\nLast decision: ${decision.kind}\nWorker result: ${workerSummary.slice(0, 1000)}\nNext validation signal: ${decision.validationSignal || "(missing)"}`);
   }
