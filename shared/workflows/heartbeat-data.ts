@@ -56,6 +56,17 @@ function getAgentsRoot(ctx: WorkflowContext): string {
   return ctx.agentsRoot || join(process.cwd(), "agents");
 }
 
+const FINISH_HYGIENE_INSTRUCTIONS = [
+  "",
+  "Finish hygiene (do this before every successful finish):",
+  "1. Call read() on every file you wrote or edited; shell cat/head/grep does not satisfy the read-back guard.",
+  "2. Run `cd /app/agents && git status --short` and classify every dirty path before committing.",
+  "3. Stage only your intentional deliverables with explicit paths; never use broad `git add .` or stage unrelated agent/runtime work.",
+  "4. If a dirty path is unrelated or unsafe to clean, do not commit it just to satisfy the guard. finish(partial/blocked) and name the exact path plus owner/escalation needed.",
+  "5. After committing, re-run `cd /app/agents && git status --short`; success requires a clean agents worktree or an explicit blocker.",
+  "6. In finish(success), cite the commit id, the clean-status check, and read-back evidence in verification_evidence.",
+].join("\n");
+
 function loadMetricRowsForAgent(ctx: WorkflowContext, agent: string): any[] {
   const db = ctx.getDb() as any;
   const configuredAgents = listConfiguredAgents(getAgentsRoot(ctx));
@@ -495,10 +506,7 @@ iteration: 0
 ## Journal
 \`\`\`
 
-Closeout order:
-1. Call read() on every file you wrote or edited in this session; shell cat/head/grep is useful but does not satisfy the read-back guard.
-2. Check git status and commit your deliverable files with a descriptive message.
-3. Call finish(success) with the commit id and read-back evidence in verification_evidence.`;
+${FINISH_HYGIENE_INSTRUCTIONS}`;
 
   ctx.emit({ type: "step_start", step: "heartbeat" });
   ctx.emit({ type: "context.read", agent, sections: { metrics: !!metrics, projects: !!projects, inbox: !!inbox, alerts: !!alerts } });
@@ -565,7 +573,8 @@ Choose one:
 2. Document a finding from your investigation
 3. Update a tracking file (todo.md, now.md, etc.)
 
-Produce at least ONE meaningful write, then call finish() with updated deliverables.`;
+Produce at least ONE meaningful write, then call finish() with updated deliverables.
+${FINISH_HYGIENE_INSTRUCTIONS}`;
 
     const gateResult = await ctx.runAgent(agent, gatePrompt);
     recordOutcome(agentsRoot, agent, gateResult.status === "error",
@@ -599,7 +608,8 @@ Sessions with fewer than ${MIN_TOOL_CALLS} tool calls are almost always shallow.
 2. Read actual code or data files (don't just summarize from memory)
 3. Produce a substantive artifact with real analysis
 
-Continue working, then call finish() with updated deliverables.`;
+Continue working, then call finish() with updated deliverables.
+${FINISH_HYGIENE_INSTRUCTIONS}`;
 
     const shallowResult = await ctx.runAgent(agent, shallowPrompt);
     recordOutcome(agentsRoot, agent, shallowResult.status === "error",
@@ -634,7 +644,8 @@ Before finishing, verify your changes don't break callers:
 2. Check if any function signatures or exports changed
 3. Verify downstream consumers still work
 
-Run at least one grep/rg for callers of your modified files, then call finish().`;
+Run at least one grep/rg for callers of your modified files, then call finish().
+${FINISH_HYGIENE_INSTRUCTIONS}`;
 
     const impactResult = await ctx.runAgent(agent, impactPrompt);
     recordOutcome(agentsRoot, agent, impactResult.status === "error",
@@ -664,7 +675,8 @@ Fast sessions almost never produce meaningful work. Before finishing:
 2. Did you produce an artifact with real analysis (not just a status echo)?
 3. Did you check for improvement opportunities beyond surface metrics?
 
-Dig deeper into one project or metric and produce a substantive artifact.`;
+Dig deeper into one project or metric and produce a substantive artifact.
+${FINISH_HYGIENE_INSTRUCTIONS}`;
 
     const durationResult = await ctx.runAgent(agent, durationPrompt);
     recordOutcome(agentsRoot, agent, durationResult.status === "error",

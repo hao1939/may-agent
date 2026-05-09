@@ -66,3 +66,9 @@ Initial baseline from 2026-05-09 heartbeat: total `233`; top sources `workflow:s
 ### 2026-05-09 — Opened from dev heartbeat
 
 Opened because routine heartbeat evidence showed healthy handlers and no dev-owned alerts, but the prior substantive driver refresh plus fresh DB validation identified a durable cross-workflow reliability problem. The next concrete action is transcript sampling for the top sources, then a narrow workflow/guard prompt patch rather than more evaluator calibration.
+
+### 2026-05-09 — First hygiene prompt patch
+
+Fresh validation during the next heartbeat showed the 24h finish/uncommitted signature at `239`, with top sources `workflow:scout-heartbeat=55`, `closed-loop-steward=41`, `workflow:may-heartbeat=33`, `workflow:metric-alert-triage=30`, `workflow:project=27`, and `workflow:dev-heartbeat=21`. Sampled recent evaluated sessions confirmed the repeated issue is evaluator-classified `finish blocked by uncommitted changes`; the auth-failure event for `s_1778330703266_10` was a separate provider-token problem, not a finish hygiene root cause.
+
+Patched the shared heartbeat prompts and gate re-prompts to reuse a single explicit finish-hygiene block, and patched the `metric-alert-triage` and `project` worker prompts to require git-status classification, explicit-path staging, no broad `git add .`, read-back evidence, post-commit clean-status checks, and partial/blocked finish when unrelated dirty paths remain. Next validation is another 24h comparison of the validation/source-attribution queries after these prompt changes have runtime exposure.
