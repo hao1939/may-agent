@@ -4,6 +4,10 @@
 - Symptom: querying `events.type` (or other guessed columns) fails; session then uses PRAGMA to discover real schema.
 - Fix: if table is unfamiliar, run `PRAGMA table_info(<table>)` first.
 
+## Pattern: aggregate root-cause claims need direct corroboration, not just ambient repo state
+- Symptom: a session analyzes broad metric regressions and correctly spots a likely culprit (for example shared dirty worktree friction), but it supports the causal claim only with current ambient `git status` plus issue counts, without directly tying the affected session cohort to that ambient condition.
+- Fix: credit the analysis for surfacing a plausible high-value lever, but note the evidence gap. For strong-quality credit, require one more check that links the aggregate issue to representative sessions (for example sampled transcripts, guarded finish outputs, or commit/status evidence from the affected agent over the same window).
+
 ## Pattern: finish blocked by uncommitted agent repo changes
 - Symptom: `finish()` guard blocks with `uncommitted changes` and lists modified files.
 - Fix: check `git status` in /app/agents early; commit small, descriptive changes before calling `finish()`.
