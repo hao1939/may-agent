@@ -188,3 +188,9 @@
 **Summary**: Discusses the next frontier of information retrieval using superintelligent agents.
 **Implication**: Highly relevant for agent memory and knowledge retrieval capabilities; we should track advances in retrieval agents.
 **KB**: None yet
+
+### GitHub AI Agent Trends: Headless Browsers & Sandboxes (May 2026)
+**Source**: GitHub Search (AI Agent, >Apr 2026)
+**Summary**: High growth in infrastructure for agents: `obscura` (headless browser for agents, 11k+ stars) and `CubeSandbox` (secure lightweight sandbox for AI agents by Tencent, 5k+ stars). Another trending repo is `fireworks-tech-graph` for generating technical diagrams from natural language.
+**Implication**: The agent ecosystem is moving heavily towards robust execution environments (browsers and secure sandboxes) rather than just frameworks. We should consider evaluating CubeSandbox for secure execution of arbitrary code in our agent workflows.
+**KB**: KE-021 (New/Pending)
