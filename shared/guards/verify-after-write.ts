@@ -1,13 +1,9 @@
 /// <reference path="../../types/workflow-defs.d.ts" />
 /**
- * verify-after-edit guard — C1.3 Edit-Without-Verify detection.
+ * verify-after-write guard — C1.3 Write/Edit-Without-Verify detection.
  *
- * Scans step_done events for edit() tool calls where the target file was
+ * Scans step_done events for write()/edit() tool calls where the target file was
  * not subsequently read() in the same session. Blocks finish until verified.
- *
- * Narrowed from write+edit to edit-only per EXP-575 decision: edits carry
- * real corruption risk (wrong oldText, partial replacement) while new file
- * writes are self-contained and verified by content preview.
  *
  * Design: follows read-before-edit.ts pattern exactly.
  */
@@ -43,10 +39,10 @@ function normPath(p: string): string {
  */
 function findUnverifiedPaths(messages: any[]): string[] {
   const calls = extractToolCalls(messages);
-  const writtenPaths = new Map<string, number>(); // path -> index of edit call
+  const writtenPaths = new Map<string, number>(); // path -> index of write/edit call
 
   for (const call of calls) {
-    if (call.name === "edit" && call.path) {
+    if ((call.name === "write" || call.name === "edit") && call.path) {
       const np = normPath(call.path);
       writtenPaths.set(np, call.index);
     } else if (call.name === "read" && call.path) {
@@ -62,7 +58,7 @@ function findUnverifiedPaths(messages: any[]): string[] {
 }
 
 /**
- * Scan all completed steps + current step for unverified writes across
+ * Scan all completed steps + current step for unverified writes/edits across
  * the entire session. A read() in a later step counts as verification.
  */
 function findSessionUnverifiedPaths(event: WorkflowGuardEvent): string[] {
@@ -75,15 +71,13 @@ function findSessionUnverifiedPaths(event: WorkflowGuardEvent): string[] {
   }
   allMessages.push(event.result.messages as any[]);
 
-  // Build global edit->read tracking across all steps in order.
-  // write() returns a content/diff preview and is intentionally not blocked
-  // here; see the EXP-575 note in the file header.
+  // Build global write/edit->read tracking across all steps in order.
   const unverified = new Set<string>();
 
   for (const messages of allMessages) {
     const calls = extractToolCalls(messages);
     for (const call of calls) {
-      if (call.name === "edit" && call.path) {
+      if ((call.name === "write" || call.name === "edit") && call.path) {
         unverified.add(normPath(call.path));
       } else if (call.name === "read" && call.path) {
         unverified.delete(normPath(call.path));
@@ -105,7 +99,7 @@ export const guard: WorkflowGuard = {
     const demands: Demand[] = [];
 
     // === Tier 1: Finish-block enforcement ===
-    // If this step is finishing with success, block if ANY writes across the
+    // If this step is finishing with success, block if ANY modifications across the
     // entire session remain unverified. Same pattern as finish-guard (EXP-188).
     const finishResult = event.result?.finishResult;
     if (finishResult && finishResult.status === "success") {
@@ -115,7 +109,7 @@ export const guard: WorkflowGuard = {
           type: "block",
           reason:
             `C1.3 Verify-After-Write: Cannot finish(success) — ${sessionUnverified.length} file(s) ` +
-            `were edited but never read() back for verification: ` +
+            `were written or edited but never read() back for verification: ` +
             `${sessionUnverified.join(", ")}. ` +
             `You MUST read() each modified file to verify correctness before finishing.`,
         }];

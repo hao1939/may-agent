@@ -63,13 +63,15 @@ describe('verify-after-write guard', () => {
     expect(guard.handle(event as any)).toEqual([]);
   });
 
-  it('allows finish when writes are unverified because write returns a preview', () => {
+  it('blocks finish when write is unverified', () => {
     const event = makeEvent(
       [toolCallMsg('write', 'foo.ts')],
       [],
       { status: 'success' },
     );
-    expect(guard.handle(event as any)).toEqual([]);
+    const demands = guard.handle(event as any);
+    expect(demands.length).toBe(1);
+    expect(demands[0].reason).toContain('foo.ts');
   });
 
   it('blocks finish when edit is unverified', () => {

@@ -46,13 +46,15 @@ describe("verify-after-write guard", () => {
     expect(guard.handle(event)).toEqual([]);
   });
 
-  it("allows finish when writes are unverified because write returns a preview", () => {
+  it("blocks finish when write is unverified", () => {
     const msgs = [makeMsg([{ name: "write", path: "foo.ts" }])];
     const event = makeEvent({
       messages: msgs,
       finishResult: { status: "success" },
     });
-    expect(guard.handle(event)).toEqual([]);
+    const demands = guard.handle(event);
+    expect(demands.length).toBe(1);
+    expect(demands[0].reason).toContain("foo.ts");
   });
 
   it("allows finish when writes are followed by read", () => {
@@ -118,8 +120,8 @@ describe("verify-after-write guard", () => {
     });
     const demands = guard.handle(event);
     expect(demands.length).toBe(1);
+    expect(demands[0].reason).toContain("a.ts");
     expect(demands[0].reason).toContain("b.ts");
-    expect(demands[0].reason).not.toContain("a.ts");
   });
 
   it("does not block non-success finish", () => {

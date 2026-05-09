@@ -181,7 +181,7 @@ Ran `monitor-session.cjs --running`: 1 alert (`STALL` amy `s_1777626616591_0` id
 
 **Previous run**: 2026-04-04 08:46 — ran `node agents/evaluator/skills/monitor-session.cjs --running`; result: 5 checked, 4 healthy, 1 `PROTOCOL_VIOLATION` (coach P114 Experience Replay missing). Also ran `node agents/evaluator/skills/patrol.cjs` → status `CRITICAL` with error `Missing compliance-snapshot.json`.
 
-**P63 Extract Strategies — Last run**: 2026-03-30 10:41 — artifacts sampled: 6 eval JSONs + 2 monitor outputs; strategies proposed: 5 (see `agents/evaluator/workspace/proposed-strategies.md`)
+**P63 Extract Strategies — Last run**: 2026-05-09 04:15Z — artifacts sampled: 3 recent non-evaluator session logs (`.state/sessions/s_1778314995929_7/session.jsonl`, `.state/sessions/s_1778309936890_5/session.jsonl`, `.state/sessions/s_1778306527063_13/session.jsonl`); lessons proposed: 4 (see `agents/evaluator/workspace/proposed-strategies.md`).
 
 **Last run**: 2026-05-07 01:23Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617`; `MAX(sessions.endedAt)=1778116765770` → eval lag ≈8.55h. Last-24h volume: `sessions(endedAt>=cutoff)`=728 vs `evaluations(createdAt>=cutoff)`=39 → coverage ≈5.36%.
 
