@@ -55,10 +55,18 @@ Three lower-priority alerts remain open:
   alert resolved, new one re-fired). Current=0.265 vs threshold=0.65. Same root cause:
   evaluator heuristic verdicts. Same owning dependency.
 
-Decision: all three open alerts have owning projects or identified root causes.
+Decision: all three prior open alerts have owning projects or identified root causes.
 #255 → v2-spec-coverage-buildout (waiting). #197/#225 → evaluator heuristic
 quality, tracked by evaluator-low-quality-rate-calibration (blocked on human).
-No new work from this project; root causes are upstream.
+
+New alert #256 `project.blocked-count` (P2, may) fired: current=5, threshold=4,
+target=2. This is a meta-metric — too many projects stuck in blocked/waiting.
+Root cause: several projects are blocked on human governance decisions. This
+alert is legitimate but not actionable from this project; the fix is humans
+unblocking the upstream projects.
+
+Remaining plan items (#197/#225 recovery) are blocked on evaluator-low-quality-rate-calibration
+which awaits human decision on metric intent. No actionable work this execution.
 
 ## Plan
 
@@ -75,6 +83,7 @@ No new work from this project; root causes are upstream.
 
 ### Re-plan (2026-05-09)
 - [x] Audit all open alerts: identify owner, latest judgment, root cause, and owning project for each.
+- [x] Audit new alert #256 `project.blocked-count`: root cause is multiple projects blocked on human decisions; documented.
 - [ ] Confirm evaluator-low-quality-rate-calibration unblocks (human responds) or nudge; scout P3 alerts #197/#225 depend on it.
 - [ ] After evaluator calibration resolves, verify scout alerts #197/#225 recover on next snapshot.
 - [ ] Re-plan: review metrics and decide next items or close this pass.
@@ -98,4 +107,5 @@ No new work from this project; root causes are upstream.
   snapshot; only P2 v2 measurement gaps remain open.
 - Iteration 1: All plan items verified complete. All P1 metrics in range. Project stays active for observation; no new work items needed until regression.
 - 2026-05-09: First reframe attempt was not enough: the orchestrator marked all new items complete because the remaining alerts were P3 and Scout-owned. Treating "has owner" as closure is wrong. Workflow prompt now requires durable judgment/action/validation evidence before alert-related items can close.
+- 2026-05-09: New alert #256 project.blocked-count (P2) appeared — 5 blocked projects. Root cause: human governance decisions pending. Documented; not actionable from this project.
 - 2026-05-09: Audited all 3 open alerts. #255 has owning project (v2-spec-coverage-buildout, waiting). #197 and #225 source is evaluation verdicts not sessions — 74% needs_improvement from evaluator heuristics. Root cause is evaluator quality, tracked by evaluator-low-quality-rate-calibration (blocked on human). Re-planned accordingly.
