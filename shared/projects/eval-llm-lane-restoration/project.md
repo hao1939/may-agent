@@ -10,6 +10,8 @@ iteration: 1
 
 # Restore Non-Heuristic Evaluator Lane
 
+**Iteration**: 1
+
 ## Goal
 
 Restore a safe non-heuristic/LLM-backed evaluation producer so `eval.llm-coverage-lag-h` returns below its 4h alert threshold without reintroducing the old 300s handler timeout failure.

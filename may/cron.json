@@ -362,6 +362,25 @@
     }
   },
   {
+    "name": "eval-llm-scan",
+    "type": "job",
+    "handler": "eval-llm-scan",
+    "agent": "evaluator",
+    "enabled": true,
+    "intervalMs": 1800000,
+    "on": [
+      "trigger.eval-llm-scan"
+    ],
+    "description": "Bounded non-heuristic evaluator lane. Processes at most one terminal session per run and records only validated artifacts.",
+    "handlerConfig": {
+      "backfillHours": 24,
+      "fallbackDelayMs": 900000,
+      "runTimeoutMs": 240000,
+      "activeWindowMs": 1800000,
+      "artifactLimit": 3
+    }
+  },
+  {
     "name": "escalation",
     "type": "job",
     "handler": "escalation",
