@@ -1,79 +1,71 @@
-# Daily Alert Review — 2026-05-09
+# 📊 Daily Alert Review — 2026-05-09
 
-**Period:** Last 24 hours  
-**Total alerts:** 244  
-**Unique metrics alerted:** 30  
-**Currently unresolved:** 4 alerts across 4 metrics
+**Period**: 2026-05-08 09:30 UTC → 2026-05-09 09:30 UTC  
+**Total alerts**: 56 (53 resolved, 3 unresolved)
 
----
+## Fired (56 alerts)
 
-## 🔴 Unresolved Alerts (Action Required)
+### project.invalid-format-count — 24 firings (43% of all alerts) 🔴 NOISY
+- Threshold: >0 → alert. Fires every time any project.md has a formatting issue.
+- All 24 resolved automatically (self-healing or agent fixes).
+- **This is the #1 noise source**, same as last report. Each firing resolves in ~5-15 min.
 
-| Metric | Message | Since |
-|--------|---------|-------|
-| `scout.good-session-rate-24h` | Rate 25.4% (threshold: 65%, target: 85%) | ~6h ago |
-| `scout.operational-friction-rate-24h` | Rate 74.6% (threshold: 30%, target: 10%) | ~25h ago |
-| `v2.spec-coverage-rate` | Coverage 54.5% (threshold: 80%, target: 100%) | ~1h ago |
-| `v2.heartbeat-decision-rate` | Rate 0% (threshold: 80%, target: 100%) | ~30min ago |
+### session.failed-triage-rate-3h — 8 firings
+- Threshold: <0.8 triage rate. Values ranged 0.46–0.75.
+- All resolved. Flickers around threshold repeatedly throughout the day.
+- Pattern: rate dips during low-volume periods when a single untriaged session tanks the ratio.
 
-### Analysis
+### scout.good-session-rate-24h — 6 firings
+- Good session rate dropped as low as 0.25 (target 0.85, threshold 0.65).
+- 1 still **unresolved** (id 225, current=0.2542). Significant quality concern.
 
-1. **Scout quality is critically low.** Good session rate at 25% is less than half the 65% threshold. Combined with 75% operational friction, this indicates systemic session quality problems — not transient noise.
+### evaluator.false-good-rate-sample — 5 firings
+- Rate spiked to 0.47–0.60 (threshold 0.20, target 0.05).
+- All resolved. Evaluator was marking sessions "good" that were later overturned.
+- Indicates evaluator quality calibration issues.
 
-2. **v2 spec coverage** has improved (was 27%, now 55%) but still well below 80% threshold. Incremental progress.
+### metric.stale-active-count — 4 firings
+- Stale metrics accumulate periodically. All resolved.
 
-3. **Heartbeat decision rate** at 0% is a new alert — may indicate a measurement or deployment issue.
+### One-off alerts (all resolved)
+- `session.empty-assistant-stop-count-1h`: 23 empty stops (threshold 15) → resolved
+- `session.first-turn-error-count-1h`: 12 provider errors (threshold 10) → resolved
+- `session.zero-op-error-count-1h`: 42 zero-op errors (threshold 0) → resolved
+- `eval.llm-coverage-lag-h`: 65.9h lag (threshold 4h) → resolved
+- `evaluator.triage-closure-rate-24h`: 50% (threshold 70%) → resolved
+- `evaluator.meaningful-review-rate-24h`: 50% (threshold 70%) → resolved
+- `capability.status-reality-mismatch-count`: 8 mismatches (threshold 3) → resolved
 
----
+## Unresolved (3)
 
-## 📊 Top Alert Sources (by frequency)
+| ID | Metric | Message | Since |
+|----|--------|---------|-------|
+| 253 | v2.heartbeat-decision-rate | current=0, threshold=0.8 | 09:23 UTC |
+| 250 | v2.spec-coverage-rate | current=0.5455, threshold=0.8 | 09:12 UTC |
+| 225 | scout.good-session-rate-24h | current=0.2542, threshold=0.65 | ~28h ago |
 
-| Metric | Count | Status |
-|--------|-------|--------|
-| `system.real-output-24h` | 61 | ✅ Resolved |
-| `handler.completed-count` | 61 | ✅ Resolved |
-| `project.invalid-format-count` | 24 | ✅ Resolved |
-| `project.iterations-24h` | 22 | ✅ Resolved |
-| `session.failed-triage-rate-3h` | 11 | ✅ Resolved |
-| `project.active-count` | 10 | ✅ Resolved |
-| `metric.stale-active-count` | 8 | ✅ Resolved |
-| `capability.status-reality-mismatch-count` | 7 | ✅ Resolved |
-| `scout.good-session-rate-24h` | 6 | ⚠️ 1 unresolved |
+- **v2.heartbeat-decision-rate** and **v2.spec-coverage-rate**: Both v2 metrics are new and may not have enough data yet. Need investigation into whether v2 measurement pipeline is running.
+- **scout.good-session-rate-24h**: Open for ~28h. Only 25% of sessions rated "good" — well below 65% threshold. This is the most concerning unresolved alert.
 
----
+## Pushback — Threshold Recommendations
 
-## 🔁 Noisy/Flapping Metrics
+| Metric | Current Threshold | Firings/24h | Recommendation |
+|--------|------------------|-------------|----------------|
+| project.invalid-format-count | >0 | 24 | **Raise to ≥3**. Single transient format errors self-resolve in minutes. Threshold of 0 creates 43% of all alert noise. |
+| session.failed-triage-rate-3h | <0.8 | 8 | **Lower to 0.6** or use minimum sample size (e.g., ignore when <5 sessions in window). Flickering around threshold during low-volume periods. |
 
-These metrics fired repeatedly and self-resolved, suggesting thresholds are too tight or the system oscillates around the boundary:
+These two metrics account for **32 of 56 alerts (57%)** — consistent with iteration 1 finding that ~50% of alerts are noise from 2 metrics.
 
-- **`system.real-output-24h`** — 61 alerts, all resolved. Constant churn.
-- **`handler.completed-count`** — 61 alerts, all resolved. Same pattern.
-- **`project.invalid-format-count`** — 24 alerts. Format issues keep appearing and getting fixed.
-- **`project.iterations-24h`** — 22 alerts. Frequent threshold crossings.
+## Patterns
 
-**Recommendation:** Consider adding hysteresis/cooldown to these metrics or widening thresholds to reduce alert fatigue.
+1. **Alert volume down from 244 → 56** compared to the period analyzed in iteration 1. Significant improvement, but still noisy.
+2. **project.invalid-format-count remains the top noise source** (24/56 = 43%). No action taken since last report's recommendation.
+3. **Evaluator quality is a systemic concern**: false-good-rate hit 60%, scout good-session-rate at 25%. The evaluation pipeline is not accurately judging session quality.
+4. **Session quality declining**: scout.good-session-rate-24h has been persistently below threshold, dropping from ~0.64 to 0.25 over the period. This may indicate a real degradation in agent output quality or a miscalibrated evaluator — needs investigation.
+5. **v2 metrics are new and cold-starting**: two v2 alerts opened but may just need pipeline warmup time.
 
----
+## Action Items
 
-## 🟡 Notable Resolved Alerts
-
-- **`evaluator.false-good-rate-sample`** — Hit 60% (threshold 20%). Evaluator was marking sessions as good that were later overturned. Resolved after ~12h.
-- **`evaluator.low-quality-rate-24h`** — 67.6% low-quality sessions (threshold 30%). Resolved.
-- **`capability.status-reality-mismatch-count`** — Peaked at 28 mismatches (threshold 3). Resolved.
-- **`session.zero-op-error-count-1h`** — 42 zero-op errors in one hour. Resolved quickly.
-- **`eval.llm-coverage-lag-h`** — 66h lag before resolution. LLM evals were significantly behind.
-
----
-
-## Summary
-
-The system is **operationally noisy** — 244 alerts in 24h is excessive. Two structural issues dominate:
-
-1. **Scout session quality** is the most concerning unresolved problem (25% good rate, 75% friction).
-2. **Alert fatigue** from flapping metrics (`real-output`, `handler.completed-count`) drowns out signal.
-
-### Recommended Actions
-1. Investigate root cause of low scout good-session-rate
-2. Add cooldown/debounce to high-frequency alerting metrics
-3. Review `v2.heartbeat-decision-rate` — 0% suggests broken measurement
-4. Consider raising thresholds for metrics that routinely self-resolve within minutes
+1. **Urgent**: Investigate why scout.good-session-rate is at 25% — is this real quality degradation or evaluator miscalibration?
+2. **Reduce noise**: Adjust `project.invalid-format-count` threshold from 0→3 and `session.failed-triage-rate-3h` threshold from 0.8→0.6 (or add minimum sample size).
+3. **Monitor**: v2 metric pipeline — confirm heartbeat-decision-rate and spec-coverage-rate are measuring correctly.
