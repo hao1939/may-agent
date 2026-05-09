@@ -95,6 +95,7 @@ Tasks:
 Iter-6 watch log:
 - 2026-05-08: v2-spec-coverage-buildout.status=`waiting`; dispatch_waiting count=23 (in [15,30]). No change. Falsifier window still open. No new artifact.
 - 2026-05-08 23:42Z: v2-spec-coverage-buildout.status=`waiting` (updated_at unchanged at 1778217121841); dispatch_waiting count=26 (in [15,30]). No change. Falsifier window still open. No new artifact.
+- 2026-05-09 (iter-7 hb): v2-spec-coverage-buildout.status=`waiting` (updated_at unchanged at 1778217121841); dispatch_waiting count=28 (in [15,30]). No change. Falsifier window still open. No new artifact.
 
 Decision (iter-5):
 **(b) — notification.** See `outputs/iter-05-arc-decision.md`.
