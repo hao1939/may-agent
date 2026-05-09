@@ -68,3 +68,6 @@
 - **What I checked:** Existing `agents/evaluator/workspace/heartbeat-log.md` to avoid blind overwrite.
 - **Decision:** Append (not rewrite) a new entry using `edit()`.
 - **Deliverable:** This appended entry (keeps a durable audit trail).
+
+## 2026-05-09 (gate compliance note)
+- Added a durable reminder: for existing artifacts, `read()` then `edit()`; avoid `write()` unless doing a full-file rewrite.
