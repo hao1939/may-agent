@@ -3011,3 +3011,80 @@ CONTEXT_UPDATE:
 - `evaluator.substantive-low-quality-rate-24h` already exists in `agents/may/handlers/metrics-snapshot.ts`; it can serve as a guardrail metric if heuristic v2 stops penalizing hygiene via verdict.
 - Next strategy: change heuristic v2 to *separate hygiene vs substantive issues* so only substantive issues affect verdict/quality; hygiene becomes a separate tracked signal.
 
+### Iteration 3 — 2026-05-09T03:50:26.288Z
+**Worker**: **Status:** done (5m54s)
+
+**Files modified:**
+- agents/shared/projects/evaluator-low-quality-rate-calibration/outputs/iteration-3-impact-model-and-recommendation.md
+
+**Files read (not modified):**
+- agents/may/handlers/metrics-snapshot.ts
+- may/handlers/metrics-snapshot.ts
+- /app/agents/may/handlers/metrics-snapshot.ts
+
+**Errors encountered:**
+- [bash] grep: agents/may/handlers/metrics-snapshot.ts: No such file or directory
+
+
+Command exited with code 2
+- [read] ENOENT: no such file or directory, access '/app/may/handlers/metrics-snapshot.ts'
+- [read] ENOENT: no such file or directory, access '/app/may/handlers/metrics-snapshot.ts'
+- [read] ENOENT: no such file or directory, access '/app/may/handlers/metrics-snapshot.ts'
+- [read] ENOENT: no such file or directory, access '/app/may/handlers/metrics-snapshot.ts'
+
+**Agent response:**
+Located the source-of-truth computation for evaluator.low-quality-rate-24h in may/handlers/metrics-snapshot.ts and produced an iteration-3 DB-backed counterfactual impact model quantifying baseline vs hygiene-excluded vs substantive-only rates, with a recommendation to pivot alerting toward the substantive metric/split hygiene separately.
+**Reviewer**: CONTINUE — [PIVOT] - **I believe**: We now have enough evidence that the *metric definition* (counting any `needs_improvement`, including hygiene-only heuristic-v2 issues) is the primary driver of the breach; further “analysis iterations” won’t move `evaluator.low-quality-rate-24h` without an intervention.  
+- **I’m uncertain about**: Which downstream **alert/paging policy** (or dashboard gate) is wired to `evaluator.low-quality-rate-24h`, and who owns changing that policy/threshold/metric selection.  
+- **I’d change my mind if**: A fresh DB recomputation over the last 24h shows the metric is now <0.3 *without* any changes (meaning the breach was transient), or if the alerting system cannot be repointed and the only acceptable fix is changing scoring/heuristics upstream.
+
+## 1) Is the goal closer?
+No. The output shows `evaluator.low-quality-rate-24h` would still be ~0.68 under the current definition; no change has been applied to reduce it.
+
+## 2) What did we learn?
+Iteration 3 found the metric’s actual computation and produced a strong counterfactual: excluding a small set of hygiene markers drops the rate to ~0.0975, and a “substantive” definition is ~0.0765. This indicates the breach is largely “hygiene friction,” not core output-quality collapse.
+
+## 3) Is the current milestone the right next step?
+No—continuing mechanism/impact modeling is now diminishing returns. The next milestone must be **wiring/policy change**: repoint alerting away from the broad metric or split it into separate alert channels.
+
+## 4) Are we closing the loop?
+Not yet. We’ve identified the cause, but we haven’t changed the metric/alerting rubric nor reduced the hygiene triggers upstream.
+
+## 5) Is it verified?
+Partially: the metric computation is verified via code excerpt and DB counts in the report, but the **alerting linkage** (what actually pages / what the goal target applies to) is not verified.
+
+## 6) What’s blocking progress?
+We don’t know where the **alert threshold/monitor** is configured that enforces the 0.3 target for `evaluator.low-quality-rate-24h`. Without locating that, we can’t implement the recommended pivot.
+
+---
+
+## 3 alternative approaches (ranked)
+
+1) **Find and change the alerting/monitor wiring**: Locate where `evaluator.low-quality-rate-24h` is used for paging/thresholds; repoint to `evaluator.substantive-low-quality-rate-24h` (already computed) or adjust the broad metric’s threshold/labeling.  
+2) **Change the metric definition in code**: Modify `may/handlers/metrics-snapshot.ts` so `evaluator.low-quality-rate-24h` excludes hygiene-only issues or rename/split metrics (broad vs substantive).  
+3) **Change heuristic v2 scoring**: Keep metric definition but stop hygiene-only “issues” from becoming `needs_improvement` (or change how issues are categorized), reducing NI volume at the source.
+
+Approach #1 is best because it’s lowest-risk (no evaluator logic changes), uses an already-existing substantive metric, and directly addresses “false-penalties” at the monitoring layer.
+
+---
+
+## Next iteration guidance (Approach #1)
+
+### (a) Concrete output
+Produce: `agents/shared/projects/evaluator-low-quality-rate-calibration/outputs/iteration-4-alert-wiring-and-change-plan.md` containing:
+- Exact file(s) / config(s) where `evaluator.low-quality-rate-24h` is referenced for thresholds/alerts/dashboards.
+- The minimal proposed change: **switch alert target to `evaluator.substantive-low-quality-rate-24h`** (or add a new alert), including before/after snippets or exact identifiers.
+- Owner list: who must approve/merge (May? manager?), and rollback plan.
+
+### (b) What’s different
+Previous iterations were **diagnosis/modeling**. This is **integration + control-plane discovery**: find the *actual place* that turns the metric into an operational failure signal and change that wiring.
+
+### (c) First step (EXACT first command)
+Run this read-only search to find where the metric id is used (no `rg`):
+
+```bash
+grep -R --line-number --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.state "evaluator.low-quality-rate-24h" /app
+```
+
+Milestone checkoff: **Iteration 3 — impact model + recommendation**
+

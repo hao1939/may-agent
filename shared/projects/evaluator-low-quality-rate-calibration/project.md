@@ -10,6 +10,7 @@ iteration: 6
 
 # Evaluator Low-Quality Rate Calibration
 
+**Iteration**: 3
 ## Goal
 Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior failures from (b) pipeline/guard false-penalties, and ensure evaluator scoring produces low false-good overturns.
 
@@ -18,7 +19,8 @@ Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior
 - Metric: `evaluator.false-good-rate-sample` current 0.5714 (threshold 0.2, target 0.05) but denominator only 7 reviewed sessions (sample instability).
 
 ## Current State
-Blocked: 5 consecutive iterations without milestone progress. Approach needs rethinking.
+Iteration 3. Milestones: 0/0 done.
+Reviewer: [PIVOT] - **I believe**: We now have enough evidence that the *metric definition* (counting any `needs_improvement`, including hygiene-only heuristic-v2 issues) is the primary driver of the breach; fu
 ## Plan
 1. **Metric decomposition proposal**: draft a split of low-quality-rate into sub-metrics by issue class (schema errors, finish/uncommitted, terminal interruptions) to avoid conflating agent quality with infra/guard friction.
 2. **Criteria calibration**: review evaluator criteria for (a) terminal interrupted sessions (Clean start) and (b) finish-blocked sessions; decide whether to classify as NI vs excluded/exception.
@@ -48,6 +50,7 @@ Blocked: 5 consecutive iterations without milestone progress. Approach needs ret
 - outputs/iteration-1-operational-wiring-and-pivot-patch.md
 - outputs/iteration-1-deliverable.md
 - outputs/iteration-1-discovery-and-patch-plan.md
+- outputs/iteration-1-consumer-discovery.md
 - outputs/iteration-1-2026-05-08-alert-wiring-discovery.md
 - outputs/iteration-2-mechanism-and-fix-options.md
 - outputs/iteration-1-2026-05-08-evidence-refresh.md
