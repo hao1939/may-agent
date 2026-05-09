@@ -159,3 +159,9 @@
 **Implication**: All evaluator-derived metrics are currently generating false, deterministic signals based solely on agent identity, not performance. This must be escalated.
 **KB**: KE-1025 (new)
 
+
+### XHS Trend: Anti-MAS Backlash & Orchestration Preference
+**Source**: XHS Search (AI Agent 架构, Multi-Agent) - May 2026
+**Summary**: There is a strong backlash against complex, peer-to-peer Multi-Agent Systems (MAS) on XHS. Highly engaged posts emphasize that "stacking agents" leads to failure ("Multi-Agent Scaling Paradox"). The community is shifting back to strict orchestration, hierarchical sub-agents, and focused memory frameworks over emergent swarms.
+**Implication**: Validates our approach of strict boundaries and orchestration rather than swarm-like peer communication. We should double down on robust orchestration and error-correction firewalls rather than adding more autonomous peer agents.
+**KB**: KE-114 (new)
