@@ -71,3 +71,7 @@
 
 ## 2026-05-09 (gate compliance note)
 - Added a durable reminder: for existing artifacts, `read()` then `edit()`; avoid `write()` unless doing a full-file rewrite.
+
+## 2026-05-09 (fourth follow-up)
+- Artifact gate: satisfied by appending (this entry).
+- Note to self: next gate-only heartbeat should still record at least one measurable snapshot via `query_db` (sessions count; latest metrics updated_at).
