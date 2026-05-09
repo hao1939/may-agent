@@ -58,6 +58,8 @@ alerting until they become necessary for keeping the loop running.
 | ID | What it answers | Source | Target | Threshold | Alert |
 |----|-----------------|--------|--------|-----------|-------|
 | `session.failed-triage-rate-3h` | Are failures being acted on? | failed/interrupted sessions with `needs_improvement` evaluation (3h) | 1.00 | 0.80 | below |
+| `eval.llm-coverage-lag-h` | Has the LLM evaluation lane gone silent? | hours since latest `evaluatedByHeuristic=0` evaluation | 1 | 4 | above |
+| `eval.llm-evals-24h` | Did enough sessions get deep evaluation recently? | count of non-evaluator `evaluatedByHeuristic=0` evaluations (24h) | 4 | 1 | below |
 | `evaluator.low-quality-rate-24h` | Is evaluated work frequently `needs_improvement` or low-scoring? | `needs_improvement`/`low_quality` verdicts or low quality/efficiency scores / all evaluations (24h) | 0.10 | 0.30 | above |
 | `system.real-output-24h` | Is the system producing? | `git log` substantive files changed (24h) | 100 | 30 | below |
 | `project.iterations-24h` | Are projects advancing? | active project.iteration events (24h) | 10 | 1 | below |
@@ -95,6 +97,15 @@ Read this dashboard as a liveness check on plumbing plus a first-pass quality
 signal, not proof of substance. Confirm direction with session transcripts,
 project journals, and `project.iteration` events before concluding the system is
 producing meaningful work.
+
+### Evaluator LLM Lane Signals
+
+`eval.llm-coverage-lag-h` and `eval.llm-evals-24h` are deliberately separate.
+The lag metric catches lane death and is urgent. The count metric catches
+sampling starvation and is advisory. A low count is not proof that evaluator
+should create more reviews; evaluator should first check whether there were
+eligible recent sessions, whether `eval-llm-scan` ran, and whether model/runtime
+failures or skip rules prevented useful deep evaluation.
 
 ## Balanced Pairs (for project metrics)
 

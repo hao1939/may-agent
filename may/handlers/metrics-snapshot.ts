@@ -60,6 +60,7 @@ const ALL_METRICS: MetricDef[] = [
   { id: "session.failed-triage-rate-3h", name: "Failed session triage rate (3h)", owner: "evaluator", type: "gauge", target: 1.0, threshold: 0.80, unit: "ratio", alert_op: "<", priority: "P1" },
   { id: "evaluator.aftermath-coverage-rate-3h", name: "Evaluator aftermath liveness (3h)", owner: "evaluator", type: "gauge", target: 0.80, threshold: 0.20, unit: "ratio", alert_op: "<", priority: "P3" },
   { id: "eval.llm-coverage-lag-h", name: "LLM evaluation lag (hours since last non-heuristic eval)", owner: "evaluator", type: "gauge", target: 1, threshold: 4, unit: "hours", alert_op: ">", priority: "P0" },
+  { id: "eval.llm-evals-24h", name: "LLM-evaluated sessions (24h)", owner: "evaluator", type: "gauge", target: 4, threshold: 1, unit: "count", alert_op: "<", priority: "P2" },
   { id: "evaluator.low-quality-rate-24h", name: "Broad needs-improvement/low-score evaluated sessions (24h)", owner: "evaluator", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P2" },
   { id: "evaluator.substantive-low-quality-rate-24h", name: "Substantive evaluator quality failures (24h)", owner: "evaluator", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P2" },
   { id: "evaluator.meaningful-review-rate-24h", name: "Evaluator meaningful review rate (24h)", owner: "evaluator", type: "gauge", target: 0.90, threshold: 0.70, unit: "ratio", alert_op: "<", priority: "P2" },
@@ -380,6 +381,20 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const lagH = lastNonHeuristicEval ? (now - lastNonHeuristicEval) / 3600000 : 9999;
       record("eval.llm-coverage-lag-h", parseFloat(lagH.toFixed(2)));
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring eval.llm-coverage-lag-h: ${e}`); }
+
+    try {
+      record(
+        "eval.llm-evals-24h",
+        count(
+          `SELECT COUNT(*) as c
+           FROM evaluations
+           WHERE evaluatedByHeuristic = 0
+             AND createdAt > ?
+             AND agent NOT IN ('evaluator', 'judge')`,
+          twentyFourH,
+        ),
+      );
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring eval.llm-evals-24h: ${e}`); }
 
     try {
       const total = count(

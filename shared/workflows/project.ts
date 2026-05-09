@@ -127,8 +127,52 @@ function ensureDir(dir: string): void {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }
 
+const PROJECT_FIELD_TO_META_KEY: Record<string, string> = {
+  "Project": "name",
+  "Name": "name",
+  "Owner": "owner",
+  "Status": "status",
+  "Type": "type",
+  "Priority": "priority",
+  "Workflow": "workflow",
+  "Iteration": "iteration",
+  "Max Iterations": "max_iterations",
+  "Stop Reason": "stop_reason",
+  "Resume Condition": "resume_condition",
+};
+
+function projectMetaKeyForField(field: string): string {
+  return PROJECT_FIELD_TO_META_KEY[field] ?? field.toLowerCase().replace(/\s+/g, "_");
+}
+
+function projectFrontmatterBounds(content: string): { end: number } | null {
+  const match = content.match(/^---\s*\n([\s\S]*?)\n---\s*(?:\n|$)/);
+  if (!match) return null;
+  return { end: match[0].length };
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function updateField(content: string, field: string, value: string): string {
-  const regex = new RegExp(`^(\\*\\*${field}\\*\\*:\\s*).*$`, "m");
+  const frontmatter = projectFrontmatterBounds(content);
+  if (frontmatter) {
+    const key = projectMetaKeyForField(field);
+    const sanitized = value.replace(/\s+/g, " ").trim();
+    const lines = content.slice(0, frontmatter.end).split("\n");
+    const lineRe = new RegExp(`^${escapeRegExp(key)}:\\s*`);
+    const idx = lines.findIndex(line => lineRe.test(line));
+    if (idx >= 0) {
+      lines[idx] = `${key}: ${sanitized}`;
+    } else {
+      const closingIdx = lines.findIndex((line, lineIdx) => lineIdx > 0 && line.trim() === "---");
+      lines.splice(closingIdx >= 1 ? closingIdx : lines.length, 0, `${key}: ${sanitized}`);
+    }
+    return lines.join("\n") + content.slice(frontmatter.end);
+  }
+
+  const regex = new RegExp(`^(\\*\\*${escapeRegExp(field)}\\*\\*:\\s*).*$`, "m");
   if (regex.test(content)) return content.replace(regex, `$1${value}`);
   // Insert after the last ** field before ## sections
   const insertPoint = content.search(/^## /m);
