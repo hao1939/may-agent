@@ -190,3 +190,24 @@ Evidence checked:
 Disposition:
 - No shared workflow/guard/source patch is warranted from this narrow follow-up; the durable action is this artifact plus explicit evidence about the live handler signal.
 - Next substantive dev heartbeat should inspect the handler failure metric query or handler logs if `handler.failed-count` remains nonzero or rises, because the metric currently reports failures not visible as failed `events.status` rows.
+
+## 2026-05-09 Heartbeat: Metrics Snapshot Transient and Dirty-State Risk
+
+Routine heartbeat with no Approved implementation item and no dev-owned active alert, but with explicit follow-up on the latest handler failure signal and repository hygiene risk.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty; all visible work remains Proposed, so dev should not implement it without approval.
+- Owned projects `finish-blocked-hygiene-reduction` and `eval-llm-lane-restoration` are both `pending-review`; neither resume trigger is currently met. `eval.llm-coverage-lag-h=0.44h` and `eval.llm-evals-24h=22` confirm the LLM lane is still live.
+- Current core runtime metrics are below dev alert thresholds: `session.error-rate-6h=0.0292`, `handler.success-rate=0.9958`, and `handler.failed-count=2` (below threshold `10`). No active metric lacks a snapshot in the last hour.
+- Latest `handler.failed` includes a `metrics-snapshot` import error (`Cannot find module '../../src/lib/metrics.js'`) at `1778339788218`, but subsequent `metrics-snapshot` runs completed repeatedly through `1778342058783`; operation chosen: dismiss as transient/recovered, continue watching rather than patching.
+- Direct unresolved alerts are `project.iterations-24h` (may-owned/project-system), `scout.good-session-rate-24h`, and `scout.operational-friction-rate-24h`; none are dev-owned. Operation chosen: dismiss for direct dev action and leave to owners/approved queue.
+- Recent failed sessions include scout/evaluator workflow errors with `error=NULL`; current `session.error-rate-6h` is low and there is no repeating dev-owned code signature in the top five.
+- Git status before this artifact showed extensive pre-existing dirty state outside dev's intended artifact, including runtime `*/last-session.md`, shared gate logs, scout context, shared projects, and `test/guards.test.ts`. These are classified as unrelated/unsafe for dev to stage or clean in this heartbeat.
+
+Signal dispositions:
+- Artifact-gate/session-start warnings: acted by writing this meaningful heartbeat entry with falsifiable checks and next-state classification.
+- Prior session-end entries about empty Approved queue and artifact-gate recovery: dismissed as already acted; this heartbeat rechecked the queue and live metrics.
+- Recent handler failure: acted by checking later handler completion evidence; dismissed as recovered because snapshots completed after the failure.
+- Pending-review projects: dismissed for action now because resume triggers are not met.
+
+Next check: if `handler.failed-count` rises toward threshold or the same `metrics-snapshot` import error recurs without later completions, inspect `agents/may/handlers/metrics-snapshot.ts` and `agents/shared/agent-sdk.ts` import resolution; otherwise avoid patching transient recovered failures.
