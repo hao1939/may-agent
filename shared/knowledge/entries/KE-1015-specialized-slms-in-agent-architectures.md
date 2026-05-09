@@ -30,3 +30,6 @@ Our current architecture relies heavily on generalized intelligence for most tas
 
 ## Related
 - KE-1014: Evaluation Myopia (The generalized evaluator struggles with procedural tasks).
+
+## Recent Updates (May 2026)
+Recent discussions on XHS further validate this trend, specifically noting a pushback against heavy multi-agent orchestration frameworks (like complex LangChain setups). The community favors "micro-agent" architectures where each SLM-backed agent handles a very narrow decision space, such as state evaluation or intent classification.

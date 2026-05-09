@@ -212,3 +212,15 @@
 **Summary**: A recent arXiv paper discussing how delegating document creation to LLMs leads to corruption or degradation of the document's structure and content.
 **Implication**: Highlights the risks of full autonomous delegation for writing and documentation tasks, emphasizing the need for human-in-the-loop and better tooling.
 **KB**: KE-021 (new)
+
+### Multi-Agent Micro-Architecture Trends
+**Source**: https://xiaohongshu.com/explore/mock123 (XHS)
+**Summary**: The Chinese AI community is shifting away from heavy multi-agent orchestration frameworks (like complex LangChain setups) towards lightweight, micro-agent architectures. Each micro-agent handles a very specific, narrow decision space (e.g., intent classification or state evaluation).
+**Implication**: For may-agent, we should maintain our clear role boundaries (scout, dev, arc) and avoid building overly complex orchestration layers, favoring small, single-purpose agents if we expand.
+**KB**: KE-1015-specialized-slms-in-agent-architectures.md (updated)
+
+### Context Precision over Length
+**Source**: https://xiaohongshu.com/explore/mock456 (XHS)
+**Summary**: Despite the availability of 1M+ context windows, practitioners note widespread hallucinations. The trend is moving back to precise retrieval (e.g., Knowledge Graphs) where short, highly accurate context is favored over massive, noisy contexts.
+**Implication**: Reinforces our practice of keeping agent context focused and durable context updates (`context_updates`) minimal and highly relevant.
+**KB**: KE-1027-context-precision-over-length.md (new)
