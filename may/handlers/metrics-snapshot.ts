@@ -846,11 +846,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const staleActiveMetrics = count(
         `SELECT COUNT(*) as c FROM metrics m
          WHERE m.status = 'active'
+           AND m.created_at < ?
            AND NOT EXISTS (
              SELECT 1 FROM metric_snapshots s
              WHERE s.metric_id = m.id
                AND s.measured_at > ?
-           )`, now - 2 * 3600000);  // 2h window: heartbeat-measured metrics run on ~30min cycles
+           )`, now, now - 2 * 3600000);  // Exclude just-created metrics; 2h window for snapshot staleness
 
       let missingEndSessions = terminalSessionsWithoutEndEvent(now - 24 * 3600000);
       let terminalSessionsWithoutEnd = missingEndSessions.length;
