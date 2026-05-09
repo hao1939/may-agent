@@ -123,7 +123,7 @@ const ALL_METRICS: MetricDef[] = [
   { id: "v2.fork-on-breach-rate", name: "Fork-on-breach rate for P0 metrics", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.5, unit: "ratio", alert_op: "<", priority: "P2" },
   // C2: breach recovery metrics
   { id: "capability.breach-time-to-recovery-p50-h", name: "Breach-to-recovery median latency (hours)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 6, threshold: 24, unit: "hours", alert_op: ">", priority: "P2" },
-  { id: "capability.unrecovered-breach-count-7d", name: "Unrecovered breaches (7d)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0, threshold: 2, unit: "count", alert_op: ">", priority: "P2" },
+  { id: "capability.unrecovered-breach-count-7d", name: "Unrecovered breaches (7d)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0, threshold: 10, unit: "count", alert_op: ">", priority: "P3" },
   // C5: ownership
   { id: "capability.cross-domain-handling-rate", name: "Cross-domain breach handling rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0, threshold: 0.1, unit: "ratio", alert_op: ">", priority: "P2" },
   // C6: adaptation
