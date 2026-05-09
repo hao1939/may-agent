@@ -292,3 +292,10 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - Evaluator overturn rate very high — criteria may be too strict
 - Scout friction is the dominant quality issue
 - Infrastructure is healthy
+
+## 2026-05-09 00:42 UTC
+- Throughput: 53 sessions/hr, 91% success. Infrastructure healthy.
+- ⚠️ Evaluator overturning 47% of good sessions (target <5%)
+- ⚠️ Scout good rate 30% (target 85%), friction 70%
+- 4 active projects, 2 blocked >6h
+
