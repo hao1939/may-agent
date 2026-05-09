@@ -33,6 +33,7 @@ export function findDaemonSocket(persistDir: string, opts: FindDaemonSocketOptio
     for (const instance of readdirSync(instancesDir)) {
       const dir = join(instancesDir, instance);
       try {
+        if (agent === "*" && instance.startsWith("job-")) continue;
         const files = readdirSync(dir);
         for (const file of files) {
           if (file !== `${agent}.sock` && !(agent === "*" && file.endsWith(".sock"))) continue;

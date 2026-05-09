@@ -1,0 +1,94 @@
+import { afterEach, describe, expect, it } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { closeDb, getDb } from "./requests.js";
+import { createMetricService } from "./metrics.js";
+
+describe("MetricService", () => {
+  const roots: string[] = [];
+
+  afterEach(() => {
+    for (const root of roots.splice(0)) {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  function harness() {
+    const root = mkdtempSync(join(tmpdir(), "metric-service-"));
+    roots.push(root);
+    const db = getDb(root);
+    const emitted: Array<{ type: string; data?: Record<string, unknown> }> = [];
+    const service = createMetricService({
+      getDb: () => db,
+      emit: (type, data) => emitted.push({ type, data }),
+      measuredBy: "test",
+      now: () => 10_000,
+    });
+    return { db, service, emitted };
+  }
+
+  it("defines, records, opens, and recovers threshold alerts", () => {
+    const { db, service, emitted } = harness();
+
+    service.define({
+      id: "scout.idea-yield-24h",
+      name: "Scout useful ideas",
+      type: "gauge",
+      target: 3,
+      threshold: 1,
+      unit: "count",
+      alertOp: "<",
+      priority: "P2",
+    });
+
+    service.record("scout.idea-yield-24h", 0, { sampleSize: 1, note: "none" });
+    expect(service.evaluate("scout.idea-yield-24h")).toMatchObject([
+      { metricId: "scout.idea-yield-24h", status: "breached" },
+    ]);
+
+    const alert = db.prepare("SELECT metric_id, resolved_at FROM metric_alerts WHERE metric_id = ?").get("scout.idea-yield-24h") as any;
+    expect(alert).toMatchObject({ metric_id: "scout.idea-yield-24h", resolved_at: null });
+    expect(emitted[0]).toMatchObject({
+      type: "metric.breach",
+      data: { owner: "scout", metricId: "scout.idea-yield-24h", priority: "P2" },
+    });
+
+    service.record("scout.idea-yield-24h", 4);
+    expect(service.evaluate("scout.idea-yield-24h")).toMatchObject([
+      { metricId: "scout.idea-yield-24h", status: "recovered" },
+    ]);
+    expect(emitted[1]).toMatchObject({
+      type: "metric.recovered",
+      data: { metricId: "scout.idea-yield-24h" },
+    });
+  });
+
+  it("supports source-defined metrics and manual alerts", () => {
+    const { db, service, emitted } = harness();
+
+    service.define({
+      id: "custom.queue-depth",
+      owner: "may",
+      threshold: 10,
+      target: 0,
+      unit: "count",
+      alertOp: ">",
+      sourceQuery: "SELECT 12 AS value",
+      sourceCommand: undefined,
+    });
+    service.alert("custom.queue-depth", "Queue depth needs attention", { priority: "P1", evidence: "manual test" });
+
+    const metric = db.prepare("SELECT owner, source_query FROM metrics WHERE id = ?").get("custom.queue-depth") as any;
+    expect(metric).toMatchObject({ owner: "may", source_query: "SELECT 12 AS value" });
+    expect(emitted[0]).toMatchObject({
+      type: "metric.breach",
+      data: {
+        owner: "may",
+        metricId: "custom.queue-depth",
+        priority: "P1",
+      },
+    });
+  });
+});

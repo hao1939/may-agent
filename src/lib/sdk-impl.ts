@@ -14,6 +14,7 @@ import type { SubagentManager } from "./manager.js";
 import { getDb } from "./requests.js";
 import { log as globalLog } from "./log.js";
 import { buildRuntimeCtx } from "./runtime-ctx.js";
+import { createMetricService } from "./metrics.js";
 import { appendFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
@@ -84,6 +85,13 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
     getDb(): SqliteDb {
       return getDb(deps.persistDir);
     },
+
+    metrics: createMetricService({
+      getDb: () => getDb(deps.persistDir),
+      emit: (type, data) => deps.bus.emit({ type, ...(data || {}) } as any),
+      measuredBy: deps.agentName,
+      log: (msg) => globalLog("info", `[${deps.agentName}] ${msg}`),
+    }),
 
     log(level: "info" | "warn" | "error", msg: string): void {
       globalLog(level, `[${deps.agentName}] ${msg}`);

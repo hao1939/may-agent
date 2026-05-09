@@ -1,5 +1,6 @@
 import type { TaskResult } from "./types.js";
 import type { HandoffOptions } from "./handoff.js";
+import type { MetricService } from "./metrics.js";
 
 // ── Workflow Events ────────────────────────────────────────────────────
 
@@ -86,6 +87,9 @@ export interface WorkflowContext {
 
   /** Send a human-visible notification (Telegram, web). */
   notify(msg: string): void;
+
+  /** Define, record, evaluate, and inspect system metrics. */
+  metrics: MetricService;
 
   /** Persistent state directory. */
   persistDir: string;

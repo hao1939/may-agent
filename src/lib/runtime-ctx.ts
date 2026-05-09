@@ -9,6 +9,7 @@ import type { EventBus } from "../app/event-bus.js";
 import type { SqliteDb } from "./db.js";
 import { getDb } from "./requests.js";
 import { log as globalLog } from "./log.js";
+import { createMetricService, type MetricService } from "./metrics.js";
 import { readSessionMeta as _readSessionMeta, readSessionMessages as _readSessionMessages } from "./persistence.js";
 import { classifyError as _classifyError } from "./classify-error.js";
 import { getLastDigest as _getLastDigest, upsertDigest as _upsertDigest, classifyDigest as _classifyDigest } from "./session-digest.js";
@@ -26,6 +27,7 @@ export interface RuntimeCtx {
   getDb(): SqliteDb;
   log(msg: string): void;
   notify(msg: string): void;
+  metrics: MetricService;
   persistDir: string;
   projectRoot: string;
   agentsRoot: string;
@@ -49,6 +51,12 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
       opts.bus.emit({ type: "message.created", from: opts.agentName, to: "human", content: msg } as any);
       opts.bus.emit({ type: "notification", agent: opts.agentName, text: msg } as any);
     },
+    metrics: createMetricService({
+      getDb: () => getDb(opts.persistDir),
+      emit: (type, data) => opts.bus.emit({ type, ...(data || {}) } as any),
+      measuredBy: opts.agentName,
+      log: (msg) => globalLog("info", `[${opts.agentName}] ${msg}`),
+    }),
     persistDir: opts.persistDir,
     projectRoot: opts.projectRoot,
     agentsRoot: opts.agentsRoot,

@@ -8,6 +8,7 @@
  */
 
 import type { SqliteDb } from "./db.js";
+import type { MetricService } from "./metrics.js";
 
 // ── Core SDK ──────────────────────────────────────────────────────────
 
@@ -26,6 +27,9 @@ export interface AgentSDK {
 
   /** Access the shared database. */
   getDb(): SqliteDb;
+
+  /** Define, record, evaluate, and inspect system metrics. */
+  metrics: MetricService;
 
   /** Log a diagnostic message. */
   log(level: "info" | "warn" | "error", msg: string): void;
