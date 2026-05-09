@@ -145,7 +145,7 @@ no-op via the wrapper) and you need `git add -f` to land it.
 believe the artifact landed when it didn't. Aftermath caught the root
 variant on `s_1778328901912_13` → KE-918, and the may heartbeat hit the
 **repo-root** `agents/workspace/` variant 13:25Z one heartbeat later →
-KE-920. Verify any new lane with `git check-ignore -v <path>` before
+KE-921. Verify any new lane with `git check-ignore -v <path>` before
 relying on it; if it returns a match, use `git add -f` and re-check
 with `git ls-files -- <path>` that the file is now tracked.
 
