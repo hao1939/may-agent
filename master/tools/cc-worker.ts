@@ -6,6 +6,10 @@ import { spawn } from "child_process";
 
 const TIMEOUT_DEFAULT = 300;
 
+function textResult(text: string) {
+  return { content: [{ type: "text" as const, text }], details: undefined };
+}
+
 export default function factory(_opts: { projectRoot: string; agentRoot: string; persistDir: string }) {
   return {
     name: "cc_worker",
@@ -26,7 +30,8 @@ export default function factory(_opts: { projectRoot: string; agentRoot: string;
       required: ["prompt"],
       additionalProperties: false,
     },
-    async execute({ prompt, timeout, cwd, model, continue_session, max_turns }: any) {
+    async execute(_toolCallId: string, params: any) {
+      const { prompt, timeout, cwd, model, continue_session, max_turns } = params;
       const timeoutSec = timeout ?? TIMEOUT_DEFAULT;
       const workDir = cwd ?? _opts.projectRoot;
 
@@ -49,8 +54,10 @@ export default function factory(_opts: { projectRoot: string; agentRoot: string;
         HOME: process.env.HOME || "/app/.state",
       };
 
-      return new Promise<string>((resolve) => {
-        const child = spawn("claude", args, { cwd: workDir, env, timeout: timeoutSec * 1000 });
+      return new Promise((resolve) => {
+        const spawnOpts: any = { cwd: workDir, env, timeout: timeoutSec * 1000 };
+        if (process.getuid?.() === 0) spawnOpts.uid = 1000;
+        const child = spawn("claude", args, spawnOpts);
         const chunks: string[] = [];
         let lastResult = "";
 
@@ -78,15 +85,15 @@ export default function factory(_opts: { projectRoot: string; agentRoot: string;
 
         child.on("close", (code) => {
           if (lastResult) {
-            resolve(lastResult);
+            resolve(textResult(lastResult));
           } else {
             const output = chunks.join("").slice(-8000);
-            resolve(code === 0 ? output || "(no output)" : `[exit ${code}] ${output}`);
+            resolve(textResult(code === 0 ? output || "(no output)" : `[exit ${code}] ${output}`));
           }
         });
 
         child.on("error", (err) => {
-          resolve(`[error] ${err.message}`);
+          resolve(textResult(`[error] ${err.message}`));
         });
       });
     },
