@@ -1,13 +1,13 @@
 ---
 id: scout-second-brain-learning
 owner: scout
-status: active
+status: waiting
 type: milestone
 priority: P2
 workflow: goal-driver
-iteration: 7
-stop_reason:
-resume_condition:
+iteration: 8
+stop_reason: "Behavior installed and validated in a real Scout heartbeat; remaining work is gradual adoption, not an active push."
+resume_condition: "Resume if Scout creates ceremonial metric-dismissal work again, knowledge-practice-loaded drops below 1, or knowledge-preamble-coverage stops improving after real Scout knowledge sessions."
 ---
 
 # Project: Scout Second Brain Learning
@@ -22,19 +22,20 @@ misleading than before, and live signals can show whether the practice is
 adopted and useful.
 
 ## Current State
-Actively correcting validation failures from the first real heartbeat after the
-behavior install.
+Waiting after a clean validation heartbeat.
 
-Scout did run a non-project heartbeat after the baseline and did touch existing
-knowledge files, which is a positive signal. However, the same heartbeat also
-created a ceremonial `scout-metric-dismissal-2026-05-09` project and described
-`scout.knowledge-preamble-coverage` as a dismissible metric. That is the wrong
-behavior: preamble coverage is a real adoption signal, not a false-positive
-alert to dismiss.
+The first real heartbeat after the behavior install was mixed: Scout touched
+existing knowledge files, but also created a ceremonial metric-dismissal project
+and treated `scout.knowledge-preamble-coverage` as dismissible. That prompt gap
+was fixed.
 
-Current push: remove the bogus dismissal project, tighten heartbeat guidance so
-metric alert judgments do not become fake projects, then run another Scout
-heartbeat to verify the behavior is cleaner.
+The next real Scout heartbeat, session `s_1778329915911_13`, behaved better:
+it used live metrics, improved existing knowledge files, committed the work in
+`47991bc2a`, read files back after guard feedback, and did not create another
+fake metric-dismissal project. The adoption metric moved from `0.1404` to
+`0.193`. It is still below threshold, but that is acceptable here because this
+project's goal is behavior change with observable gain, not bulk-editing the
+knowledge base until a ratio turns green.
 
 Baseline from manual metrics snapshot on 2026-05-09:
 
@@ -81,17 +82,16 @@ Initial hypothesis:
 - [x] Run a metrics snapshot and record the baseline values in this project.
 - [x] Observe at least one subsequent Scout session and judge whether it searched/updated existing knowledge before creating new files.
 - [x] Fix the heartbeat prompt gap that caused Scout to create a ceremonial metric-dismissal project.
-- [ ] Observe one subsequent Scout heartbeat after the prompt fix.
-- [ ] Move to `waiting` with a clear watch condition once the prompt fix is verified.
+- [x] Observe one subsequent Scout heartbeat after the prompt fix.
+- [x] Move to `waiting` with a clear watch condition once the prompt fix is verified.
 
 ## Watch Conditions
 
-- Reactivate after Scout completes a real knowledge-producing heartbeat/project
-  after the 2026-05-09 baseline.
 - Reactivate immediately if `scout.knowledge-practice-loaded < 1`.
-- Reactivate if `scout.knowledge-preamble-coverage` stays below threshold after
-  Scout touches knowledge files; fix adoption through normal high-value edits,
-  not bulk metric gaming.
+- Reactivate if Scout creates another ceremonial metric-dismissal project.
+- Reactivate if `scout.knowledge-preamble-coverage` stops improving across real
+  Scout knowledge-producing sessions; fix adoption through normal high-value
+  edits, not bulk metric gaming.
 - Reactivate if `scout.downstream-reference-files-7d` drops below threshold.
 
 ## Acceptance Criteria
@@ -133,3 +133,17 @@ Initial hypothesis:
 - outputs/wrap-up.md
 - outputs/agent-second-brain-guidelines.md
 - outputs/ai-first-preamble-pilot.md
+
+## Journal
+
+2026-05-09:
+- Installed Scout knowledge-management behavior and live metrics.
+- First live validation found a real prompt failure: Scout created a ceremonial
+  metric-dismissal project for a real adoption signal.
+- Fixed the prompt gap in Scout heartbeat guidance and shared heartbeat prompt
+  construction.
+- Re-ran a real Scout heartbeat. Session `s_1778329915911_13` updated existing
+  knowledge files, committed `47991bc2a`, recovered from guard feedback, and
+  finished successfully.
+- `scout.knowledge-preamble-coverage` improved from `0.1404` to `0.193`; leave
+  the project waiting and let normal Scout work continue adoption gradually.
