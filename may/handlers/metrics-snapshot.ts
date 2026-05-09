@@ -63,6 +63,8 @@ const ALL_METRICS: MetricDef[] = [
   { id: "session.error-rate-6h", name: "Session error rate (6h)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P1" },
   { id: "session.first-turn-error-count-1h", name: "First-turn provider errors (1h)", owner: "may", type: "health", target: 0, threshold: 10, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
+  { id: "session.empty-assistant-stop-count-1h", name: "Empty assistant stops (1h)", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 1 } } },
   { id: "session.failed-triage-rate-3h", name: "Failed session triage rate (3h)", owner: "evaluator", type: "gauge", target: 1.0, threshold: 0.80, unit: "ratio", alert_op: "<", priority: "P1" },
   { id: "evaluator.aftermath-coverage-rate-3h", name: "Evaluator aftermath liveness (3h)", owner: "evaluator", type: "gauge", target: 0.80, threshold: 0.20, unit: "ratio", alert_op: "<", priority: "P3" },
   { id: "eval.llm-coverage-lag-h", name: "LLM evaluation lag (hours since last non-heuristic eval)", owner: "evaluator", type: "gauge", target: 1, threshold: 4, unit: "hours", alert_op: ">", priority: "P0" },
@@ -220,6 +222,35 @@ function hasFirstAssistantProviderError(persistDir: string, sessionId: string): 
       const errorMessage = String(msg.errorMessage ?? "").toLowerCase();
       return stopReason === "error"
         || /connection error|rate limit|unauthorized|forbidden|unsupported model|unknown model|overloaded|timeout|api/.test(errorMessage);
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
+function hasEmptyAssistantStop(persistDir: string, sessionId: string): boolean {
+  const path = sessionJsonlPath(persistDir, sessionId);
+  if (!path) return false;
+  try {
+    const prefix = readFilePrefix(path);
+    for (const line of prefix.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      let msg: any;
+      try {
+        msg = JSON.parse(trimmed);
+      } catch {
+        continue;
+      }
+      if (msg?.role !== "assistant") continue;
+      const content = msg.content;
+      const emptyContent = Array.isArray(content)
+        ? content.length === 0
+        : typeof content === "string"
+          ? content.trim().length === 0
+          : content == null;
+      return emptyContent && String(msg.stopReason ?? "").toLowerCase() === "stop";
     }
   } catch {
     return false;
@@ -474,6 +505,21 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const firstTurnErrors = candidates.filter((s) => hasFirstAssistantProviderError(persistDir, s.sessionId)).length;
       record("session.first-turn-error-count-1h", firstTurnErrors, candidates.length);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring session.first-turn-error-count-1h: ${e}`); }
+
+    try {
+      const candidates = db.prepare(
+        `SELECT sessionId
+         FROM sessions
+         WHERE startedAt > ?
+           AND status IN ('error', 'interrupted')
+           AND COALESCE(error, '') != 'Clean start (fresh)'
+         ORDER BY startedAt DESC
+         LIMIT 300`,
+      ).all(oneH) as Array<{ sessionId: string }>;
+      const persistDir = ctx.sdk.paths.persist ?? ctx.sdk.paths.root;
+      const emptyStops = candidates.filter((s) => hasEmptyAssistantStop(persistDir, s.sessionId)).length;
+      record("session.empty-assistant-stop-count-1h", emptyStops, candidates.length);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring session.empty-assistant-stop-count-1h: ${e}`); }
 
     try {
       record(
