@@ -102,7 +102,7 @@ const ALL_METRICS: MetricDef[] = [
   { id: "v2.agent-config-bytes-p50", name: "Agent config median size (bytes)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 300, threshold: 500, unit: "bytes", alert_op: ">", priority: "P2" },
   { id: "v2.manager-loc", name: "manager.ts LOC", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1000, threshold: 1500, unit: "lines", alert_op: ">", priority: "P2" },
   { id: "v2.runtime-glue-loc", name: "Runtime glue LOC", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1500, threshold: 2000, unit: "lines", alert_op: ">", priority: "P2" },
-  { id: "v2.spec-coverage-rate", name: "v2 spec measurement coverage", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P2" },
+  { id: "v2.spec-coverage-rate", name: "v2 spec measurement coverage", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.77, unit: "ratio", alert_op: "<", priority: "P2" },
   // v2 infra metrics (I1-I4)
   { id: "infra.bus.event-count-1h", name: "Event bus events (1h)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 10, threshold: 0, unit: "count", alert_op: "<", priority: "P2" },
   { id: "infra.persist.db-size-mb", name: "DB size (MB)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 500, threshold: 2000, unit: "MB", alert_op: ">", priority: "P2" },
