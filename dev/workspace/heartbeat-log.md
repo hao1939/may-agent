@@ -211,3 +211,14 @@ Signal dispositions:
 - Pending-review projects: dismissed for action now because resume triggers are not met.
 
 Next check: if `handler.failed-count` rises toward threshold or the same `metrics-snapshot` import error recurs without later completions, inspect `agents/may/handlers/metrics-snapshot.ts` and `agents/shared/agent-sdk.ts` import resolution; otherwise avoid patching transient recovered failures.
+
+## 2026-05-09 Artifact Gate Recovery
+
+The artifact gate reported that the prior heartbeat produced no file writes, so this entry records the required durable artifact before session completion.
+
+Current repository hygiene classification from `/app/agents git status --short` at session start:
+- Intentional deliverable for this recovery: `dev/workspace/heartbeat-log.md`.
+- Generated/runtime state not owned by this change: `arc/last-session.md`, `dev/last-session.md`, `evaluator/last-session.md`, `may/last-session.md`, `scout/last-session.md`.
+- Shared logs/projects/tests already dirty before this artifact and not safe to stage as part of a dev heartbeat recovery: `shared/anti-shallow-gate-triggers.log`, `shared/duration-gate-triggers.log`, `shared/exp720-fewshot-dryrun.log`, `shared/gate-outcomes.log`, `shared/projects/ruflo-learning-loop/project.md`, `shared/projects/v2-spec-coverage-buildout/journal.md`, `test/guards.test.ts`.
+
+Disposition: produce and read back this workspace artifact, then stage only this file. Because unrelated dirty paths pre-exist, the session should not claim a clean worktree unless those owners resolve or explicitly approve cleanup.
