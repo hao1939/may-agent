@@ -237,3 +237,11 @@ Ran `monitor-session.cjs --running`: 2 checked, 1 healthy, 1 `PROTOCOL_VIOLATION
 Signal-quality note: `events` table status is still overwhelmingly `pending` (`pending=541534`, `handled=14`, `dismissed=4`, `done=1`). In the last hour, pending events include `session.start`=101, `session.end`=100, `evaluation.routed`=57, `evaluation.reviewed`=38, `evaluation.triage_closed`=32, `evaluation.success_candidate`=6. Treat `events.status` as backlog/noise for now rather than a trustworthy liveness signal.
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` are still placeholder stubs generated 2026-04-29, so they are not currently usable as calibration inputs.
+
+**Last run**: 2026-05-09 10:27Z — DB canonical check confirms session-eval pipeline is still live/recent (`MAX(evaluations.createdAt)=1778322455111`; `MAX(sessions.startedAt)=1778322455118`; `MAX(sessions.endedAt)=1778322455081`; lag ≈7ms; `evals_last24h=602`; `llm_evals_last24h=10`). Legacy `.state/evaluations/` artifacts remain stale at the filesystem layer (latest top-level files still Apr 29) → continue treating `.state/evaluations/` as a legacy output-path signal, not the canonical liveness source.
+
+Ran `monitor-session.cjs --running`: 2 checked, 1 healthy, 1 `PROTOCOL_VIOLATION` (active evaluator session `s_1778322366953_16`; evidence: missing P114 Experience Replay; recommended action: warn). Notified May.
+
+Ran `patrol.cjs`: **CRITICAL** due to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
+
+Signal-quality note: `events.status` remains overwhelmingly `pending` (`pending=541904`, `handled=14`, `dismissed=4`, `done=1`). In the last hour, pending events include `session.start`=97, `session.end`=92, `handler.started`=89, `handler.completed`=84, `evaluation.routed`=54, `evaluation.reviewed`=37, and `evaluation.success_candidate`=9. Treat event status counts as backlog/noise for now rather than as a trustworthy liveness or routing-completion signal.
