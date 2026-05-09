@@ -62,3 +62,9 @@
 - Decision + rationale:
 - Deliverables produced:
 - Follow-ups / handoffs:
+
+## 2026-05-09 (artifact gate)
+- **Trigger:** User artifact gate: “Every heartbeat MUST produce at least one artifact.”
+- **What I checked:** Existing `agents/evaluator/workspace/heartbeat-log.md` to avoid blind overwrite.
+- **Decision:** Append (not rewrite) a new entry using `edit()`.
+- **Deliverable:** This appended entry (keeps a durable audit trail).
