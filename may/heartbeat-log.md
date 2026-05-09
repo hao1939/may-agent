@@ -410,3 +410,21 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - Session error rate: 20.9%
 - Evaluator overturn rate: 34.4% (target 5%)
 - Real output: 632 (24h) — strong
+
+---
+
+## 2026-05-09 10:19 UTC
+
+### System Health Summary
+- **Active sessions**: 2 (healthy)
+- **Throughput**: 98 sessions/hour, 98% success rate
+- **Handler fires**: 92/hour, 100% success rate
+- **DB size**: 1089 MB
+
+### Breached Metrics (4)
+1. **Blocked/waiting projects**: 5 (threshold 4)
+2. **Scout good session rate**: 25.9% (threshold 65%)
+3. **Scout operational friction rate**: 74.1% (threshold 30%)
+4. **v2 spec measurement coverage**: 77.3% (threshold 80%)
+
+### All Health Checks: PASS
