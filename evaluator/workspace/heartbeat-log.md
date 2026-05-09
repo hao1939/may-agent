@@ -33,8 +33,12 @@
 - Next: if a transcript is provided, run a bounded evidence pull (grep/jq) and produce a JSON evaluation with cited tool outputs.
 
 ## 2026-05-09
-- **Artifact gate compliance:** Appended this entry (no other heartbeat input was provided beyond the artifact requirement).
-- **Next heartbeat first actions:**
+- Artifact gate: user required at least one meaningful write.
+- Action: appended this entry + a concrete improvement: always include one measurable snapshot even on gate-only heartbeats.
+- Measurable snapshot:
+  - sessions total: not queried
+  - metrics last updated_at: not queried
+- Next heartbeat first actions:
   - Query recent sessions to find items needing evaluation: `SELECT id, agent, status, created_at FROM sessions ORDER BY created_at DESC LIMIT 20`.
   - If given a session.jsonl path, pull evidence with bounded `rg`/`jq`/`head`/`tail` and produce the required JSON evaluation.
 
