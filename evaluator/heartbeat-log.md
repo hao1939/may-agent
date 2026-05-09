@@ -1,3 +1,7 @@
 ## 2026-05-08
 - Triaged repeated red metric `evaluator.low-quality-rate-24h` (0.3304). Evidence from DB: 115/346 needs_improvement (0.332) in last 24h; concentrated in dev (25/54=0.463) and arc (20/44=0.455). Escalated to may with P1 message to sample NI evals and assess criteria vs actual output degradation.
 - Session-eval pipeline health: evaluations MAX(createdAt)=2026-05-08 05:27:38 UTC; 346 evals vs 625 sessions in last 24h (~55% coverage; likely scoped cron).
+
+## 2026-05-09
+- Triaged repeated red metric `evaluator.low-quality-rate-24h` again and chose **upgrade/escalate** per metric-alerts.md. Evidence: metric remains red at 0.659 over the last 10 snapshots, but `evaluator.substantive-low-quality-rate-24h` is only 0.1331; last-24h evaluation mix is 481 heuristic vs 3 non-heuristic, and recent NI examples are mostly hygiene/procedural (`schema/query error in transcript`, `finish blocked by uncommitted changes`, forbidden-path constraint violations, interrupted sessions).
+- Confirmed the metric is live rather than stale: `MAX(evaluations.createdAt)=1778308953134`, `MAX(sessions.startedAt)=1778308977909`, last-24h coverage 484 evals / 1107 sessions. Confirmed both broad and substantive metric computations are implemented in `agents/may/handlers/metrics-snapshot.ts`, then sent a P1 escalation to May recommending alert-pivot or heuristic verdict reform.
