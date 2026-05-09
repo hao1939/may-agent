@@ -41,6 +41,77 @@ describe("evaluator aftermath transcript checks", () => {
     expect(verdict.issues).toContain("schema/query error in transcript");
   });
 
+  it("does not downgrade finish-only self-repaired dirty-worktree sessions", () => {
+    const transcript = [
+      "finish() blocked [uncommitted changes]",
+      "git status --short",
+      " M shared/projects/example/outputs/result.md",
+      "git add -f shared/projects/example/outputs/result.md && git commit -m \"dev: add result\"",
+      "[main abc123] dev: add result",
+    ].join("\n");
+
+    const verdict = classifyVerdict({ status: "done", opCount: 20 }, transcript);
+    const route = classifyEvaluationLane({ status: "done", opCount: 20 }, transcript, verdict);
+
+    expect(verdict.verdict).toBe("good");
+    expect(verdict.quality).toBe(0.85);
+    expect(verdict.issues).toEqual(["finish blocked by uncommitted changes"]);
+    expect(route.lane).toBe("success_candidate");
+    expect(route.reason).toContain("self-repaired");
+  });
+
+  it("does not downgrade finish-only sessions that cleanly exit partial instead of committing ambient dirt", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "f1",
+            name: "finish",
+            arguments: { status: "success", summary: "done" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "f1",
+        toolName: "finish",
+        isError: true,
+        content: [{ type: "text", text: "finish() blocked [uncommitted changes]" }],
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "f2",
+            name: "finish",
+            arguments: { status: "partial", summary: "ambient dirt remains" },
+          },
+        ],
+      }),
+    ].join("\n");
+
+    const verdict = classifyVerdict({ status: "done", opCount: 20 }, transcript);
+    const route = classifyEvaluationLane({ status: "done", opCount: 20 }, transcript, verdict);
+
+    expect(verdict.verdict).toBe("good");
+    expect(verdict.issues).toEqual(["finish blocked by uncommitted changes"]);
+    expect(route.lane).toBe("success_candidate");
+  });
+
+  it("still downgrades unresolved finish-only dirty-worktree sessions", () => {
+    const verdict = classifyVerdict(
+      { status: "interrupted", opCount: 20 },
+      "finish() blocked [uncommitted changes]\ngit status --short",
+    );
+
+    expect(verdict.verdict).toBe("needs_improvement");
+    expect(verdict.quality).toBe(0.2);
+    expect(verdict.issues).toContain("finish blocked by uncommitted changes");
+  });
+
   it("ignores target transcript failures quoted inside evaluator review sessions", () => {
     const transcript = [
       JSON.stringify({

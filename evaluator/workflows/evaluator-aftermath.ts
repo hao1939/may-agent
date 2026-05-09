@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 export const name = "evaluator-aftermath";
 export const description = "Evaluate session aftermath, cancel stale running sessions, and drive repair/learning.";
-export const HEURISTIC_VERSION = 4;
+export const HEURISTIC_VERSION = 5;
 
 export type EvaluationLane = "needs_triage" | "success_candidate" | "routine_ok";
 
@@ -134,6 +134,24 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function finishBlockedByUncommittedChanges(transcript: string): boolean {
+  return sessionOwnedTranscriptView(transcript).text.includes("finish() blocked [uncommitted changes]");
+}
+
+function sessionSelfRepairedOrCleanlyExited(session: any, transcript: string): boolean {
+  const status = String(session?.status ?? "unknown");
+  if (status === "error" || status === "interrupted" || session?.error) return false;
+
+  const view = sessionOwnedTranscriptView(transcript);
+  const ownText = view.text;
+  if (!ownText.includes("finish() blocked [uncommitted changes]")) return false;
+
+  if (/"name":"finish","arguments":\{[^\n]*"status":"(?:partial|blocked|failure)"/.test(ownText)) return true;
+
+  const postBlockedText = ownText.slice(ownText.lastIndexOf("finish() blocked [uncommitted changes]"));
+  return /\bgit\s+commit\b/.test(postBlockedText) && /(?:\bgit\s+status\s+--short\b|\bgit\s+status\b)/.test(postBlockedText);
+}
+
 function contentText(content: any): string {
   if (Array.isArray(content)) return content.map((part) => String(part?.text ?? "")).filter(Boolean).join("\n");
   return typeof content === "string" ? content : "";
@@ -254,10 +272,16 @@ export function classifyVerdict(session: any, transcript = ""): { quality: numbe
   issues.push(...antiShallowIssues(session, transcript));
 
   const failed = status === "error" || status === "interrupted" || !!session?.error;
+  const finishOnlySelfRepaired =
+    !failed &&
+    issues.length === 1 &&
+    issues[0] === "finish blocked by uncommitted changes" &&
+    sessionSelfRepairedOrCleanlyExited(session, transcript);
+
   return {
-    quality: failed ? 0.2 : issues.length ? 0.55 : 0.85,
+    quality: failed ? 0.2 : finishOnlySelfRepaired ? 0.85 : issues.length ? 0.55 : 0.85,
     efficiency: opCount > 60 ? 0.35 : opCount > 30 ? 0.55 : 0.8,
-    verdict: failed || issues.length ? "needs_improvement" : "good",
+    verdict: failed || (issues.length && !finishOnlySelfRepaired) ? "needs_improvement" : "good",
     issues,
   };
 }
@@ -288,6 +312,14 @@ export function classifyEvaluationLane(session: any, transcript: string, heurist
       lane: "needs_triage",
       reason: heuristic.issues.length ? heuristic.issues.join("; ") : `verdict=${heuristic.verdict}`,
       signals: heuristic.issues,
+    };
+  }
+
+  if (finishBlockedByUncommittedChanges(transcript)) {
+    return {
+      lane: "success_candidate",
+      reason: "finish/uncommitted friction self-repaired or cleanly exited; review output quality separately from hygiene friction",
+      signals: [...heuristic.issues, ...transcriptOutputSignals(session, transcript)],
     };
   }
 
