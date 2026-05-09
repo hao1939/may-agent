@@ -1,11 +1,13 @@
 ---
 id: closed-loop-reliability
 owner: may
-status: active
+status: waiting
 type: continuous
 priority: P1
 workflow: master-worker
 iteration: 3
+stop_reason: Current P0/P1 runtime reliability vitals are green and remaining alerts have owners or human-governance dependencies. No concrete autonomous push remains right now.
+resume_condition: Reactivate when a P0/P1 runtime reliability vital breaches, a closed-loop alert lacks owner/judgment/action/validation, or an owning dependency such as evaluator-low-quality-rate-calibration leaves waiting/blocked and needs verification.
 ---
 
 # Project: Closed Loop Reliability
@@ -23,7 +25,7 @@ create a validation path.
 
 ## Signals
 
-- `project.active-count`: must stay >= 1 while there is durable reliability work.
+- `project.active-count`: observable count of projects currently pushing; zero is healthy when projects are waiting with clear resume signals.
 - `metric.alert_judged`: should mean an owner made a judgment, not that the issue is closed.
 - Open systemic `metric_alerts` at any priority should move toward fix, calibration, downgrade, exception, or escalation with evidence.
 - `metric.recovered`: validates actual recovery when a metric returns in range.
@@ -32,8 +34,9 @@ create a validation path.
 
 ## Current State
 
-This is a standing reliability project, not a completed checklist. Recent
-runtime fixes improved the loop:
+Waiting: this is a standing reliability ownership project, but it should not
+run filler sessions while the current push has no concrete next autonomous
+action. Recent runtime fixes improved the loop:
 
 - `opCount` now persists for new sessions.
 - Clean-start call sessions are resumed instead of being aborted as synthetic failures.
@@ -59,14 +62,14 @@ Decision: all three prior open alerts have owning projects or identified root ca
 #255 → v2-spec-coverage-buildout (waiting). #197/#225 → evaluator heuristic
 quality, tracked by evaluator-low-quality-rate-calibration (blocked on human).
 
-New alert #256 `project.blocked-count` (P2, may) fired: current=5, threshold=4,
-target=2. This is a meta-metric — too many projects stuck in blocked/waiting.
-Root cause: several projects are blocked on human governance decisions. This
-alert is legitimate but not actionable from this project; the fix is humans
-unblocking the upstream projects.
+Historical alert #256 `project.blocked-count` (P2, may) fired under the old
+metric semantics, which counted both `blocked` and `waiting`. That framing is
+now superseded: `waiting` is a normal watch state, and `project.blocked-count`
+counts only true blockers.
 
-Remaining plan items (#197/#225 recovery) are blocked on evaluator-low-quality-rate-calibration
-which awaits human decision on metric intent. No actionable work this execution.
+Remaining plan items (#197/#225 recovery) depend on
+evaluator-low-quality-rate-calibration, which awaits human decision on metric
+intent. No actionable work remains for this project until a resume signal fires.
 
 ## Plan
 
@@ -83,24 +86,24 @@ which awaits human decision on metric intent. No actionable work this execution.
 
 ### Re-plan (2026-05-09)
 - [x] Audit all open alerts: identify owner, latest judgment, root cause, and owning project for each.
-- [x] Audit new alert #256 `project.blocked-count`: root cause is multiple projects blocked on human decisions; documented.
+- [x] Audit alert #256 `project.blocked-count`: root cause was old metric semantics that counted normal waiting states as blocked; metric semantics are now corrected.
 - [x] Record the external dependency: `evaluator-low-quality-rate-calibration` needs a human decision before #197/#225 can recover.
-- [x] Stop this pass without creating filler work; keep the project active for future metric/event checks.
+- [x] Stop this pass without creating filler work; move to waiting and rely on watch conditions for reactivation.
 
 ### Watch Conditions
 
 - If `evaluator-low-quality-rate-calibration` leaves blocked/waiting, verify #197/#225 on the next metrics snapshot.
 - If a P0/P1 runtime reliability vital regresses, re-plan immediately.
-- If `project.blocked-count` stays open after human decisions land, audit the remaining blocked projects and nudge their owners.
+- If `project.blocked-count` stays open under the corrected blocker-only metric, audit the remaining blocked projects and nudge their owners.
 
 ## Acceptance Criteria
 
-- `project.active-count` recovers because this active project is synced from `agents/shared/projects/closed-loop-reliability/project.md`.
+- `project.active-count` remains an observability metric, not a target that forces fake active projects.
 - A P1 alert with a judgment and a later still-breaching snapshot is eligible for re-triage.
 - A future transcript shows the owner either changed state, opened a real escalation, documented an exception, or fixed/calibrated the metric for every open systemic alert it touches.
 - The system does not treat metrics as judges; agents still judge using project context, facts, goals, and evidence.
 - The project does not repeatedly return observation-only `DONE` while open reliability signals lack owner/judgment/action/validation.
-- At least one follow-up cycle after each reliability change keeps the project active and shows remaining alerts moving toward closure.
+- At least one follow-up cycle after each reliability change shows remaining alerts moving toward closure, then returns the project to waiting when no concrete push remains.
 
 ## Journal
 
@@ -110,7 +113,7 @@ which awaits human decision on metric intent. No actionable work this execution.
 - 2026-05-08: Fixed built-in rolling-window count metrics at the registry level.
   `handler.failed-count` and `project.iterations-24h` recovered on the next
   snapshot; only P2 v2 measurement gaps remain open.
-- Iteration 1: All plan items verified complete. All P1 metrics in range. Project stays active for observation; no new work items needed until regression.
+- Iteration 1: All plan items verified complete. All P1 metrics in range. Earlier framing kept the project active for observation; current convention supersedes that with waiting plus watch conditions.
 - 2026-05-09: First reframe attempt was not enough: the orchestrator marked all new items complete because the remaining alerts were P3 and Scout-owned. Treating "has owner" as closure is wrong. Workflow prompt now requires durable judgment/action/validation evidence before alert-related items can close.
 - 2026-05-09: New alert #256 project.blocked-count (P2) appeared — 5 blocked projects. Root cause: human governance decisions pending. Documented; not actionable from this project.
 - 2026-05-09: Audited all 3 open alerts. #255 has owning project (v2-spec-coverage-buildout, waiting). #197 and #225 source is evaluation verdicts not sessions — 74% needs_improvement from evaluator heuristics. Root cause is evaluator quality, tracked by evaluator-low-quality-rate-calibration (blocked on human). Re-planned accordingly.

@@ -13,7 +13,10 @@ Migration must be incremental. The current system is production-active.
 ---
 
 A **project-centered, event-based autonomous agent system** where:
-- **Projects are context.** Each project carries its own history, background, goals, and accumulated experience. Agents pick up that context when they work, so each iteration builds on what came before instead of starting fresh.
+- **Projects are context and ownership.** Each project carries its own history,
+  background, goals, accumulated experience, and current lifecycle state.
+  `active` means push now; `waiting` means watch until a resume signal makes
+  work actionable again.
 - **Metrics are signals.** Typed metrics measure progress toward project goals and system health. Metrics do not judge or decide; they signal what may need attention.
 - **Heartbeats are agency.** A heartbeat is the recurring moment when an agent has the chance to be autonomous: read context, decide what's worth doing, act, record. Heartbeats are how ownership manifests. See `design/heartbeat-as-agency.md`.
 - Agents are role/responsibility/context scopes — accountability boundaries that own a domain.

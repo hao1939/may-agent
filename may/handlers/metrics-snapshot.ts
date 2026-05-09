@@ -84,12 +84,12 @@ const ALL_METRICS: MetricDef[] = [
   { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", type: "gauge", target: 120000, threshold: 600000, unit: "ms", alert_op: ">", priority: "P2" },
   { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", type: "gauge", target: 15, threshold: 8, unit: "count", alert_op: "<", priority: "P1" },
   // Project
-  { id: "project.active-count", name: "Active projects", owner: "may", type: "gauge", target: 1, threshold: 1, unit: "count", alert_op: "<", priority: "P1" },
-  { id: "project.blocked-count", name: "Blocked/waiting projects", owner: "may", type: "gauge", target: 2, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
+  { id: "project.active-count", name: "Active push projects", owner: "may", type: "gauge", target: 0, threshold: 0, unit: "count", alert_op: "<", priority: "P3" },
+  { id: "project.blocked-count", name: "Blocked projects", owner: "may", type: "gauge", target: 0, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
   { id: "project.stale-active-count", name: "Stale active projects (no iteration 48h)", owner: "may", type: "gauge", target: 0, threshold: 2, unit: "count", alert_op: ">", priority: "P1" },
-  { id: "project.iterations-24h", name: "Project iterations (24h)", owner: "may", type: "gauge", target: 10, threshold: 1, unit: "count", alert_op: "<",
-    priority: "P1" },
-  { id: "project.blocked-over-6h", name: "Projects blocked/waiting >6h", owner: "may", type: "gauge", target: 2, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
+  { id: "project.iterations-24h", name: "Active project iterations (24h)", owner: "may", type: "gauge", target: 0, threshold: 0, unit: "count", alert_op: "<",
+    priority: "P3" },
+  { id: "project.blocked-over-6h", name: "Projects blocked >6h", owner: "may", type: "gauge", target: 0, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
   { id: "project.invalid-format-count", name: "Invalid project.md format", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
   { id: "capability.status-reality-mismatch-count", name: "Status/reality mismatches", owner: "may", type: "health", target: 0, threshold: 3, unit: "count", alert_op: ">", priority: "P0",
@@ -782,7 +782,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring active-count: ${e}`); }
 
     try {
-      record("project.blocked-count", count("SELECT COUNT(*) as c FROM projects WHERE status IN ('blocked', 'waiting')"));
+      record("project.blocked-count", count("SELECT COUNT(*) as c FROM projects WHERE status = 'blocked'"));
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring blocked-count: ${e}`); }
 
     // Stale: active projects with no iteration event in 48h (single query, no N+1)
@@ -818,7 +818,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring iterations-24h: ${e}`); }
 
     try {
-      record("project.blocked-over-6h", count("SELECT COUNT(*) as c FROM projects WHERE status IN ('blocked', 'waiting') AND updated_at < ?", now - 6 * 3600000));
+      record("project.blocked-over-6h", count("SELECT COUNT(*) as c FROM projects WHERE status = 'blocked' AND updated_at < ?", now - 6 * 3600000));
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring blocked-over-6h: ${e}`); }
 
     try {

@@ -32,6 +32,34 @@ context, or an accepted exception. The owner agent must decide.
    when the work changes project state.
 7. Later metrics and sessions provide validation signals, not automatic truth.
 
+## Project Lifecycle
+
+The default project mode is intensive work. No extra `run_mode` field is
+needed.
+
+- `active` means push now. The owner should keep working while there is a
+  concrete next autonomous action and a meaningful validation signal.
+- `waiting` means watch. The current push has reached a useful stop point, and
+  the project should resume only when its `resume_condition`, `resume_after`,
+  comment, event, or metric signal arrives.
+- `blocked` means an external dependency prevents progress.
+- `pending-review` means owner or human judgment is required before more work.
+- `paused` means an intentional hold; resume only from an explicit signal.
+- `done` / `complete` / `closed` means no current ownership loop is expected.
+
+Projects move like this:
+
+```
+signal arrives -> active push -> evidence -> waiting/blocked/pending-review/done
+                                      ^                  |
+                                      └---- resume signal ┘
+```
+
+Do not keep a project `active` just to monitor it. Monitoring belongs in
+metrics, cron/steward checks, heartbeat context, and `resume_condition`. When a
+signal makes work actionable again, reactivate the project and push intensively
+until the next meaningful stop.
+
 ## Work Context Convention
 
 Every recurring work context, explicit or implicit, should answer the same

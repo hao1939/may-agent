@@ -2,8 +2,9 @@
 
 ## Overview
 
-Projects are the unit of explicit multi-session work. An agent works on a
-project across multiple sessions until it is done, waiting, or blocked.
+Projects are the unit of explicit multi-session work. A project holds the
+durable goal and context; its `status` says whether the owner should push now
+or wait for a resume signal.
 
 Heartbeat is the implicit self-maintenance project for an agent. Do not create a
 shared project for routine heartbeat behavior. Create a shared project when
@@ -64,30 +65,36 @@ Completed step 1. Next: step 2.
 ## Lifecycle
 
 ```
-active → active (iterating)
-       → waiting (blocked on external input)
-       → done (all milestones complete — auto-converts to waiting after 48h)
+signal/comment/metric/event
+  -> active
+  -> intensive work while a concrete next autonomous action exists
+  -> waiting | blocked | pending-review | done | closed
+  -> resume signal can make it active again
 ```
 
-**Key rule:** `done` auto-converts to `waiting` after 48h, so projects can be picked up again if needed.
+**Key rule:** `active` means push now. Do not keep a project `active` only to
+monitor it. Monitoring belongs in `resume_condition`, `resume_after`, metrics,
+events, cron/steward checks, and heartbeat context.
 
 ## Status Transitions
 
 | From | To | Who |
 |------|----|-----|
-| active | waiting | Agent (blocked/needs input) |
-| active | done | Agent (milestones complete) |
-| done | waiting | Auto (after 48h) |
-| waiting | active | Agent (unblocked/picks up) |
-| any | blocked | Human (via `[block]` comment) |
+| active | active | Agent keeps pushing because concrete work remains |
+| active | waiting | Agent reached a useful stop point; watch for a resume signal |
+| active | blocked | Agent found an external dependency |
+| active | pending-review | Agent needs owner/human judgment |
+| active | done/closed | Goal complete; no current ownership loop needed |
+| waiting/blocked/pending-review/paused | active | Comment, `resume_after`, event, metric signal, or owner judgment makes work actionable |
 
 ## Project Handler
 
-`agents/may/handlers/project.ts` runs on heartbeat:
-- Scans active projects
-- Checks staleness (no iteration in 48h)
-- Emits `project.iteration` / `project.blocked` events
-- Records metrics (`project.active-count`, etc.)
+`agents/may/handlers/project.ts` runs on timer and project events:
+- Launches `active` projects, subject to cooldown and running-session checks.
+- Resumes waiting-like projects when unread comments or due `resume_after`
+  make work actionable.
+- Escalates true blockers after cooldown.
+- Syncs project files into the DB cache for metrics and UI.
 
 ## DB Table
 

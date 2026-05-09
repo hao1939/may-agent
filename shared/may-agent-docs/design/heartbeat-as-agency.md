@@ -67,11 +67,24 @@ Trade-off: latency. A breach detected at minute 3 of a 20-minute heartbeat cycle
 
 ## The implication for projects
 
-Heartbeats are how projects stay alive. A project without an agent that picks it up at heartbeat is a project on life support. The cadence of heartbeat-driven iteration is the project's pulse.
+Heartbeats are how agents notice project signals, but a project should not stay
+`active` just to prove it is alive. A project is alive when its durable context
+is accurate, its watch signals are visible, and the owner reactivates it when
+work becomes actionable.
 
-Conversely: a heartbeat without a project to advance is an idle heartbeat. An agent that consistently has nothing to do at heartbeat is an agent without a domain — either the domain has been emptied, the agent has lost the plot, or the system never actually gave the agent ownership of anything.
+When a project is `active`, the default is intensive work: keep pushing until
+the current meaningful goal is reached, blocked, needs review, or has no
+concrete next autonomous action. Then update the project to `waiting`,
+`blocked`, `pending-review`, or `done` with evidence and a resume condition.
 
-This is why **agent.idle-rate** is a meaningful health metric. Not "is the heartbeat firing on schedule" (that's cron health) but "is the agent *using* its heartbeats to advance work?"
+Conversely: a heartbeat without an active project can still be healthy if the
+agent is watching its domain and there is no actionable signal. It is unhealthy
+when the agent ignores signals, repeats observation-only work, or leaves
+projects `active` while doing nothing substantive.
+
+This is why **agent.idle-rate** is a meaningful health metric only in context:
+not "is there always project work?", but "when signals exist, does the agent
+notice, judge, and act?"
 
 ## What "alive" looks like
 

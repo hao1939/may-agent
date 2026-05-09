@@ -73,11 +73,11 @@ CREATE TABLE metric_snapshots (
 - `evaluator.stale-running-session-count` — running/idle non-evaluator sessions older than the stale cutoff
 
 **Project health:**
-- `project.active-count`
-- `project.blocked-count`
+- `project.active-count` — observable count of projects currently pushing; not a health target by itself
+- `project.blocked-count` — true blocked projects only
 - `project.stale-active-count`
-- `project.iterations-24h`
-- `project.blocked-over-6h`
+- `project.iterations-24h` — observable active-project iteration volume; not a health target by itself
+- `project.blocked-over-6h` — true blocked projects older than 6h
 
 **Status honesty:**
 - `metric.stale-active-count`
