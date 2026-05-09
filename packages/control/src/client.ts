@@ -28,7 +28,7 @@ export function findDaemonSocket(persistDir: string, opts: FindDaemonSocketOptio
   const instancesDir = resolve(persistDir, "instances");
   if (!existsSync(instancesDir)) return null;
 
-  const candidates: Array<{ path: string; running: boolean }> = [];
+  const candidates: Array<{ path: string; running: boolean; instance: string; mtimeMs: number }> = [];
   try {
     for (const instance of readdirSync(instancesDir)) {
       const dir = join(instancesDir, instance);
@@ -38,9 +38,11 @@ export function findDaemonSocket(persistDir: string, opts: FindDaemonSocketOptio
           if (file !== `${agent}.sock` && !(agent === "*" && file.endsWith(".sock"))) continue;
           const socketPath = join(dir, file);
           if (!existsSync(socketPath)) continue;
+          let mtimeMs = 0;
           try {
             const stat = statSync(socketPath);
             if (!stat.isSocket?.() && !stat.isFIFO?.()) continue;
+            mtimeMs = stat.mtimeMs;
           } catch {
             continue;
           }
@@ -51,7 +53,7 @@ export function findDaemonSocket(persistDir: string, opts: FindDaemonSocketOptio
           } catch {
             running = false;
           }
-          candidates.push({ path: socketPath, running });
+          candidates.push({ path: socketPath, running, instance, mtimeMs });
         }
       } catch {
         continue;
@@ -61,8 +63,15 @@ export function findDaemonSocket(persistDir: string, opts: FindDaemonSocketOptio
     return null;
   }
 
-  if (preferRunning) return candidates.find((candidate) => candidate.running)?.path ?? candidates[0]?.path ?? null;
-  return candidates[0]?.path ?? null;
+  const ranked = candidates.sort((a, b) => {
+    const aDaemon = !a.instance.startsWith("job-");
+    const bDaemon = !b.instance.startsWith("job-");
+    if (agent === "*" && aDaemon !== bDaemon) return aDaemon ? -1 : 1;
+    if (preferRunning && a.running !== b.running) return a.running ? -1 : 1;
+    if (aDaemon !== bDaemon) return aDaemon ? -1 : 1;
+    return b.mtimeMs - a.mtimeMs;
+  });
+  return ranked[0]?.path ?? null;
 }
 
 export function sendSocketCommand(
