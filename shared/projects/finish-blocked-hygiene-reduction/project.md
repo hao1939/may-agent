@@ -1,13 +1,13 @@
 ---
 id: finish-blocked-hygiene-reduction
 owner: dev
-status: active
+status: blocked
 type: milestone
 priority: P1
 workflow: project
-iteration: 4
-stop_reason: null
-resume_condition: Fresh post-c052855aa finish/uncommitted evaluations are again routing needs_improvement; resume condition met on 2026-05-09 heartbeat.
+iteration: 6
+stop_reason: — the worker completed **Add or propose tracking** by producing the required approval/ops packet, but actual metric registration requires a safe runtime DB write path that this worker/reviewer does no
+resume_condition: May/human executes the exact `INSERT ... ON CONFLICT DO UPDATE` statements from `outputs/iteration-6-split-metric-registration.md` through the safe runtime writer path, then confirms both `session.finish-blocked-uncommitted-count-24h` and `session.finish-blocked-unresolved-count-24h` exist in `metrics` and have fresh `metric_snapshots`.
 ---
 
 # Finish-Blocked Hygiene Reduction
@@ -24,9 +24,7 @@ Reduce sessions that reach `finish()` with uncommitted/dirty worktree changes, b
 - `evaluator.low-quality-rate-24h=0.7472` remains high as a dashboard/friction metric, while `evaluator.substantive-low-quality-rate-24h=0.1447` is much lower; this project targets the hygiene/friction gap rather than hiding it.
 
 ## Current State
-
-Iteration 4 reopened the project from `pending-review`: the resume trigger fired because fresh post-`c052855aa` finish/uncommitted evaluations are routing `needs_improvement` again. Heartbeat validation found 23 post-patch finish/uncommitted rows: 18 `good` and 5 `needs_improvement`, with residual needs-improvement cases in `workflow:scout-explore`, `workflow:dev-heartbeat`, `workflow:scout-heartbeat`, and `closed-loop-steward`. Next action is source-specific sampling to distinguish true unresolved dirty exits from repaired exits still overridden by review metadata.
-
+Blocked: — the worker completed **Add or propose tracking** by producing the required approval/ops packet, but actual metric registration requires a safe runti
 ## Plan
 
 1. **Reproduce the fresh residual sources**: sample recent `workflow:scout-explore`, `workflow:scout-heartbeat`, `closed-loop-steward`, and `workflow:dev-heartbeat` transcripts with post-`c052855aa` finish/uncommitted `needs_improvement` verdicts to identify whether dirty paths are intentional deliverables, generated runtime files, or unrelated ambient state.
@@ -96,10 +94,13 @@ Heartbeat validation found the pending-review resume condition is now met: since
 Heartbeat sampling showed the residual finish/uncommitted `needs_improvement` bucket is partly a classifier artifact: repaired sessions reviewed as `acceptable` were forcibly remapped to `needs_improvement`, even though the review text said the session shipped real output with weaker quality. Patched `evaluator-aftermath` so review overrides preserve `acceptable` as the stored verdict/event value while still lowering quality to `0.65`; true `needs_improvement` reviews remain downgraded. Fresh validation before patch: 24h raw finish/uncommitted signature `208`, with `187 needs_improvement`, `20 good`, and `1 acceptable`; the 1h slice had two residual needs-improvement rows, one reviewed `acceptable` and one true `needs_improvement`.
 
 ## Artifacts
+- outputs/iteration-5-source-specific-residual-sampling.md
+- outputs/iteration-6-split-metric-registration.md
 - outputs/iteration-1-source-attribution-and-prompt-patches.md
 - outputs/iteration-2-post-patch-evaluator-routing.md
 - outputs/iteration-1-orchestrator-goal-driver-addendum.md
 - outputs/iteration-1-evaluator-self-repair-classification.md
+- outputs/iteration-3-fresh-incidence-and-tracking.md
 - outputs/iteration-1-live-residual-attribution.md
 
 ## Context
@@ -111,3 +112,9 @@ Heartbeat sampling showed the residual finish/uncommitted `needs_improvement` bu
 - Iteration 2 added a regression test in `agents/shared/tests/evaluator-aftermath.test.ts`; worker reported 27 evaluator aftermath tests passing.
 - Fresh post-`c052855aa` DB check found 1 finish/uncommitted evaluation and it routed `good`, with `session.status=done`, `session.outcome=done`, and latest digest `success`.
 - Next validation should focus on fresh post-`c052855aa` raw incidence and durable split metrics for raw finish-blocked attempts versus unresolved dirty exits.
+- Iteration 5 found 25 post-`c052855aa` finish-blocked rows: 19 `good`, 6 `needs_improvement`, and 0 strict unresolved dirty exits; residual NI rows were review overrides or one anti-shallow penalty.
+- Independent review query at 2026-05-09T20:31Z found raw_24h=208, strict_unresolved_24h=3, post_cutoff_raw=26, post_cutoff_strict_unresolved=0.
+- The live `metrics` table still has no rows for `session.finish-blocked-uncommitted-count-24h` or `session.finish-blocked-unresolved-count-24h`; next work should register or prepare an approval packet for these split metrics.
+- Iteration 6 completed **Add or propose tracking** by producing `outputs/iteration-6-split-metric-registration.md`, an approval/ops packet with idempotent SQL for the raw and strict finish-blocked metrics.
+- Review recheck found both split metrics still absent from `metrics`; current read-only source-query values are raw_24h=209 and strict_unresolved_24h=3.
+- Project is blocked on safe runtime DB write authority to register the two metric rows and verify `metric_snapshots`; no further worker sampling/prompt patching is indicated unless strict unresolved exits increase.
