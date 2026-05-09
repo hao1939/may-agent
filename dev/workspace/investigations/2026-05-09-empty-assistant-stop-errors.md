@@ -46,3 +46,44 @@ Latest heartbeat evidence confirms two overlapping runtime reliability patterns:
 - A separate `Clean start (fresh)` interruption pattern persists in recent sessions across evaluator, may, arc, and dev, but it is distinct from the empty assistant `status='error'` rows and should not be merged with the empty-stop metric.
 
 Recommended owner action: implement bounded retry/fallback in the session runner for normal-stop responses with no assistant content/tool calls, and keep the retry budget small (for example 2 attempts) so evaluator aftermath does not amplify provider load.
+
+## 2026-05-09 Dev Implementation Scope Note
+
+The P1 implementation request for alert `#249` asks dev to implement or scope a bounded retry/fallback for empty assistant normal-stop responses. I re-checked the writable `/app/agents` tree and confirmed the production session runner/orchestrator code path that converts provider messages into `sessions.status='error'` rows is not present here: a pruned `find /app -maxdepth 2` shows only `/app/agents` plus runtime/system directories, and pruned searches under `agents/shared`, `agents/may`, and `agents/dev` find workflow helpers and historical coverage HTML, not the live provider message loop that owns assistant `content=[]` / `stopReason="stop"` handling.
+
+Concrete patch for the runtime owner (the service/session-runner repository outside this container's editable agent tree):
+
+```ts
+const MAX_EMPTY_ASSISTANT_STOP_RETRIES = 2;
+
+function isEmptyAssistantStop(message: AssistantMessage | null | undefined): boolean {
+  const hasContent = Array.isArray(message?.content) && message.content.length > 0;
+  const hasToolCalls = Array.isArray(message?.toolCalls) && message.toolCalls.length > 0;
+  return message?.role === "assistant"
+    && message.stopReason === "stop"
+    && !hasContent
+    && !hasToolCalls;
+}
+
+for (let attempt = 0; attempt <= MAX_EMPTY_ASSISTANT_STOP_RETRIES; attempt++) {
+  const response = await callProvider(request);
+  if (!isEmptyAssistantStop(response.assistantMessage)) return response;
+
+  emit("session.empty_assistant_stop.retry", { sessionId, attempt, max: MAX_EMPTY_ASSISTANT_STOP_RETRIES });
+  if (attempt === MAX_EMPTY_ASSISTANT_STOP_RETRIES) {
+    throw new RetryableProviderContractError("Provider returned empty assistant content with stopReason=stop");
+  }
+
+  request = addRetryNudge(request,
+    "Your previous response was empty. Continue the task and either call a tool or provide a substantive final answer.");
+}
+```
+
+Required safeguards for that runtime patch:
+
+- Retry only on the precise normal-stop/no-content/no-tool-call shape; do not retry explicit refusal, max-token, tool-use, or provider-error stops through this branch.
+- Cap retries at two attempts per session and emit retry/exhaustion events so `session.empty-assistant-stop-count-1h` can distinguish retried-and-recovered vs exhausted failures.
+- Preserve the original transcript entries for all attempts so aftermath/evaluator can diagnose provider behavior without losing evidence.
+- Add a unit/integration test with a fake provider returning two empty stop responses then a tool/final response, plus an exhaustion test verifying the runner records a structured error rather than `error=NULL`.
+
+Escalation target: runtime/session-runner owner (outside `/app/agents`; likely the application service that owns the provider loop and `sessions` table writes). Dev should not attempt a partial fix inside evaluator prompts or metrics calibration because the failure is occurring after provider normal-stop responses across evaluator aftermath and deep-eval sessions.
