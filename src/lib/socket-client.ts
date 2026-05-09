@@ -7,10 +7,10 @@ export {
   sendDaemonInput,
   sendSocketCommand,
   waitForSocketEvent,
-} from "../../packages/control-client/src/index.js";
+} from "../../packages/control/src/client.js";
 export type {
   FindDaemonSocketOptions,
   SocketEndpoint,
   SocketEvent,
   SocketResponse,
-} from "../../packages/control-client/src/index.js";
+} from "../../packages/control/src/client.js";

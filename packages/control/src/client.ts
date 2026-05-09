@@ -4,9 +4,10 @@ import { join, resolve } from "node:path";
 import type { Duplex } from "node:stream";
 
 export interface SocketResponse {
-  type: "ok" | "error";
+  type: "ok" | "error" | "status";
   command?: string;
   message?: string;
+  [key: string]: unknown;
 }
 
 export type SocketEndpoint = string | NetConnectOpts | (() => Duplex);
@@ -101,7 +102,7 @@ export function sendSocketCommand(
         if (!trimmed) continue;
         try {
           const parsed = JSON.parse(trimmed) as SocketResponse;
-          if (parsed.type === "ok" || parsed.type === "error") {
+          if (parsed.type === "ok" || parsed.type === "error" || parsed.type === command.type) {
             clearTimeout(timeout);
             client.destroy();
             if (parsed.type === "error") {
@@ -218,7 +219,7 @@ export function sendDaemonEvent(
 export function sendDaemonInput(
   endpoint: SocketEndpoint,
   message: string,
-  source = "control-client",
+  source = "control",
   opts?: { timeoutMs?: number },
 ): Promise<SocketResponse> {
   return sendSocketCommand(endpoint, { type: "input", message, source }, opts);
@@ -228,7 +229,7 @@ export function sendAgentMessage(
   endpoint: SocketEndpoint,
   agent: string,
   message: string,
-  source = "control-client",
+  source = "control",
   opts?: { timeoutMs?: number },
 ): Promise<SocketResponse> {
   return sendDaemonInput(endpoint, `@${agent} ${message}`, source, opts);
