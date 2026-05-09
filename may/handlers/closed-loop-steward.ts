@@ -286,7 +286,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
        LIMIT 3`,
     ).all() as SessionRow[];
 
-    for (const candidate of triageCandidates.slice(0, triageLimit)) {
+    const routedTriageCandidates = triageCandidates.slice(0, triageLimit);
+    for (const candidate of routedTriageCandidates) {
       const task = buildTriageTask(candidate.alert, candidate.owner, candidate.reason);
       ctx.sdk.runWorkflow("metric-alert-triage", task, { source: candidate.owner })
         .then((result) => {
@@ -297,6 +298,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
           ctx.sdk.log("info", `[closed-loop-steward] Failed to route ${candidate.alert.metric_id}: ${msg.slice(0, 200)}`);
         });
     }
+
+    const routedTriageLines = routedTriageCandidates.map((candidate) => (
+      `- ${candidate.alert.metric_id} owner=${candidate.owner} reason=${candidate.reason}`
+    ));
 
     const task = [
       "[cron:closed-loop-steward] Audit whether red metrics and failed deliveries are moving toward closure.",
@@ -337,6 +342,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       "",
       "## Recent Steward Runs",
       recentStewardRuns.length ? summarizeSessions(recentStewardRuns, now) : "none",
+      "",
+      "## Routed Triage This Run",
+      routedTriageLines.length ? routedTriageLines.join("\n") : "none",
     ].join("\n");
 
     try {
