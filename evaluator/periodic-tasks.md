@@ -229,3 +229,11 @@ Signal-quality note: `events` table status remains overwhelmingly `pending` (`pe
 **Heartbeat note**: 2026-05-07 07:53Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617` (2026-05-06T16:46:18Z); `MAX(sessions.startedAt)=1778140360712` (2026-05-07T07:52:40Z) → eval lag ≈15.1h. Sessions since last eval timestamp: 204 (top agents since-last-eval: may=53, evaluator=43, dev=42, scout=30, arc=29). Interpretation: evaluation pipeline appears stalled; escalate to May/tech-lead to inspect `evaluate-session-llm` cron/job liveness, event-consumer backlog, and any recent `handler.failed`/timeout signals.
 
 **Heartbeat note**: 2026-05-07 08:23Z — DB canonical check (epoch-ms numeric): `MAX(evaluations.createdAt)=1778085978617`; `MAX(sessions.endedAt)=1778141889187` → eval lag ≈15.5h. Last-24h volume: `sessions`=518 vs `evaluations`=38 → coverage ≈7.3%. Interpretation unchanged: eval pipeline appears stalled / not keeping up; treat `.state/evaluations/` directory as legacy/stale output-path.
+
+**Last run**: 2026-05-09 09:54Z — DB canonical check confirms session-eval pipeline remains live/recent (`MAX(evaluations.createdAt)=1778320329040`; `MAX(sessions.startedAt)=1778320427194`; lag ≈98.2s; `evals_last24h=586`; `llm_evals_last24h=9`). Legacy `.state/evaluations/` artifacts were not re-checked this cycle.
+
+Ran `monitor-session.cjs --running`: 2 checked, 1 healthy, 1 `PROTOCOL_VIOLATION` (active may session `s_1778320108817_10`; evidence: missing P114 Experience Replay; recommended action: warn). Notified May.
+
+Signal-quality note: `events` table status is still overwhelmingly `pending` (`pending=541534`, `handled=14`, `dismissed=4`, `done=1`). In the last hour, pending events include `session.start`=101, `session.end`=100, `evaluation.routed`=57, `evaluation.reviewed`=38, `evaluation.triage_closed`=32, `evaluation.success_candidate`=6. Treat `events.status` as backlog/noise for now rather than a trustworthy liveness signal.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` are still placeholder stubs generated 2026-04-29, so they are not currently usable as calibration inputs.
