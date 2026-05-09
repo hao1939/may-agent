@@ -102,14 +102,11 @@ describe("loadMetrics", () => {
     expect(loadMetrics(ctx, "arc")).toBe("");
   });
 
-  it("keeps retired v2 spec coverage out of active heartbeat ownership", () => {
+  it("includes v2 spec coverage as active metric in ALL_METRICS", () => {
     const source = readFileSync(resolve(__dirname, "../../may/handlers/metrics-snapshot.ts"), "utf8");
 
-    expect(source).toContain('"v2.spec-coverage-rate",');
-    expect(source).toContain("const RETIRED_METRIC_IDS");
-    expect(source).not.toContain(
-      '{ id: "v2.spec-coverage-rate", name: "v2 spec measurement coverage", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P2" }',
-    );
+    expect(source).not.toContain('"v2.spec-coverage-rate",\n');  // not in RETIRED list
+    expect(source).toContain('id: "v2.spec-coverage-rate"');      // in ALL_METRICS
   });
 
   it("shows consecutive breach escalation", () => {

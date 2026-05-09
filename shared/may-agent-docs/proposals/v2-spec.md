@@ -252,7 +252,7 @@ Two-part:
 
 **Target / threshold.** Target = 0. Threshold > 3 = breach.
 
-**Status.** `untested`. The cross-checks aren't currently run; KE-726 documents that "all-green ≠ healthy" is a known structural blind spot.
+**Status.** `measured`. The cross-checks run in `metrics-snapshot.ts` every 5 minutes via `capability.status-reality-mismatch-count`.
 
 **Known gaps.**
 - Add the cross-check query to `metrics-snapshot.ts`.
@@ -510,7 +510,7 @@ When a structural property is violated, capabilities don't necessarily fail toda
 
 **Measurement.** `v2.agent-config-bytes-p50` — median size of `agent.json` across loaded agents. Target stable or decreasing; threshold > 500B (arbitrary; tune after baseline).
 
-**Status.** `untested`. No baseline measurement.
+**Status.** `measured`. Computed by `metrics-snapshot.ts` as `v2.agent-config-bytes-p50`.
 
 ---
 
