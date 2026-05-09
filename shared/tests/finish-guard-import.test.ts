@@ -68,6 +68,23 @@ describe("validateFinishDeliverables", () => {
     expect(result.valid).toBe(true);
     expect(fs.existsSync).toHaveBeenCalledWith("/absolute/path.ts");
   });
+
+  it("accepts agents-repo-relative deliverable paths when the agents-prefixed file exists", () => {
+    (fs.existsSync as any).mockImplementation((p: string) =>
+      p === "/app/agents/shared" || p === "/app/agents/shared/projects/demo/project.md",
+    );
+
+    const result = validateFinishDeliverables(
+      [{ path: "shared/projects/demo/project.md", description: "project" }],
+      "success",
+      "/app",
+    );
+
+    expect(result.valid).toBe(true);
+    expect(result.missing).toEqual([]);
+    expect(fs.existsSync).toHaveBeenCalledWith("/app/shared/projects/demo/project.md");
+    expect(fs.existsSync).toHaveBeenCalledWith("/app/agents/shared/projects/demo/project.md");
+  });
 });
 
 describe("enforceFinishDeliverables", () => {

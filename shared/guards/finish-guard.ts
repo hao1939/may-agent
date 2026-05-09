@@ -115,6 +115,31 @@ import * as fs from "fs";
 import * as path from "path";
 
 /**
+ * Return plausible on-disk locations for a declared deliverable path.
+ *
+ * The finish tool runs with project root `/app`, while agents often work inside
+ * the `/app/agents` repository and naturally report paths such as
+ * `shared/projects/x/project.md` or `arc/heartbeat.md`.  Treat those as
+ * repo-relative aliases for `agents/shared/...` / `agents/arc/...` instead of
+ * rejecting otherwise-real deliverables as ghosts.
+ */
+function deliverablePathCandidates(deliverablePath: string, rootDir: string): string[] {
+  if (path.isAbsolute(deliverablePath)) return [deliverablePath];
+
+  const normalized = deliverablePath.replace(/^\.\//, "").replace(/\/+/g, "/");
+  const candidates = [path.join(rootDir, normalized)];
+
+  if (!normalized.startsWith("agents/") && path.basename(rootDir) !== "agents") {
+    const firstSegment = normalized.split("/")[0];
+    if (firstSegment && fs.existsSync(path.join(rootDir, "agents", firstSegment))) {
+      candidates.push(path.join(rootDir, "agents", normalized));
+    }
+  }
+
+  return candidates;
+}
+
+/**
  * Validate that all declared deliverables exist on disk.
  * Returns a result object (non-throwing).
  */
@@ -128,8 +153,8 @@ export function validateFinishDeliverables(
   }
   const missing: string[] = [];
   for (const d of deliverables) {
-    const abs = path.isAbsolute(d.path) ? d.path : path.join(rootDir, d.path);
-    if (!fs.existsSync(abs)) {
+    const exists = deliverablePathCandidates(d.path, rootDir).some((candidate) => fs.existsSync(candidate));
+    if (!exists) {
       missing.push(d.path);
     }
   }
