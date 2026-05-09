@@ -1,12 +1,15 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778288589653_366
+- **Session:** s_1778289379030_381
 - **Status:** success
-- **When:** 2026-05-09T01:03:31.642Z
+- **When:** 2026-05-09T01:16:50.616Z
 
 ## What Happened
-Reviewed may session s_1778288530382_365 and verified material output: commit b640518c1 adjusting evaluator.false-good-rate-sample threshold in may/handlers/metrics-snapshot.ts. Wrote aftermath review and read it back for verification.
+Wrote aftermath review for session s_1778289252994_379, verified the actual code change (commit 95ff69577 to dev/heartbeat.md) and documented why the session is needs_improvement (schema/query error + forbidden-path edit). Escalated to May with recommendation to clarify/adjust allowed edit surface for heartbeat guidance.
 
 ## Files Modified
-- agents/evaluator/workspace/aftermath/s_1778288530382_365.md
+- agents/evaluator/workspace/aftermath/s_1778289252994_379.md
+
+## Completed
+- Aftermath review written for s_1778289252994_379 (needs_triage lane).

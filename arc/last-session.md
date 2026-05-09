@@ -1,15 +1,13 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778277106122_189
+- **Session:** s_1778289135766_376
 - **Status:** success
-- **When:** 2026-05-08T21:53:10.482Z
+- **When:** 2026-05-09T01:20:11.929Z
 
 ## What Happened
-Iter-7 heartbeat: re-ran loop-closure-probe-v3.mjs against live may.db. v2-spec-coverage-buildout still `waiting`; dispatch_waiting=24 (in [15,30]); silent_false=5 unchanged across two consecutive heartbeats — none of iter-7's falsifier conditions tripped. Per project.md's iter-6 rule and iter-7 §7, the correct move is one dated line, not a new findings file. Recorded in outputs/heartbeat-log.md.
+Iter-8 of ruflo-learning-loop: falsified iter-4's ±50ms timestamp join. Nearest-neighbor attribution shows 0/28 open `not dispatchable` escalations belong to v2-spec-coverage-buildout (real owners: evaluator-low-quality-rate-calibration=10, daily-alert-review=2, unattributable=15). Iter-5's "watch v2-spec" framing & falsifier are retracted. Identified likely root cause: in-memory zombie-loop guard at master-worker.ts:1046 sets decision.status='waiting' without persisting to project.md, causing recurring 30-min escalation cycles for projects whose on-disk status remains 'active'. Committed as c64191dca.
 
 ## Files Modified
-- agents/shared/projects/ruflo-learning-loop/outputs/heartbeat-log.md
-
-## Still Open / Next Steps
-Resist creating a new iter-NN-*.md until one of the four falsifiers in heartbeat-log.md or iter-07 §7 trips across two consecutive heartbeats. Otherwise, append one line to heartbeat-log.md and stop.
+- agents/shared/projects/ruflo-learning-loop/outputs/iter-08-attribution-correction-findings.md
+- agents/shared/projects/ruflo-learning-loop/project.md
