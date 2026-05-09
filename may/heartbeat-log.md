@@ -369,3 +369,14 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - System: 77% success rate, 71 sessions/hr, 27 cron jobs active
 - Alerts: Scout quality 28.6% (target 85%), friction 71.4%, broad needs-improvement 67.7%
 - 139 active sessions, many stale. 3 projects, 2 blocked. No action needed.
+
+## 2026-05-09T08:05 UTC
+
+### Actions Taken
+- **Approved evaluator calibration pivot**: Broad metric `evaluator.low-quality-rate-24h` demoted to dashboard-only (threshold 0.80, P3). Substantive metric `evaluator.substantive-low-quality-rate-24h` promoted to primary alert (P1, threshold 0.30). Evidence: broad rate 68% is dominated by hygiene/process NI, substantive rate is ~8%.
+- **Master errors**: 4/5 sessions errored in 6h but all are cc_worker tool testing — not actionable.
+- **Open alerts**: 3 unresolved (scout good-session-rate, scout friction-rate, evaluator low-quality-rate). Evaluator alert should self-resolve after threshold change. Scout alerts need separate investigation.
+
+### System Snapshot
+- Sessions (6h): evaluator 207 (22 err), may 99 (23 err), dev 22 (2 err), arc 16 (3 err), scout 15 (3 err), master 5 (4 err)
+- 3 active projects, 2 blocked, 1 blocked >6h

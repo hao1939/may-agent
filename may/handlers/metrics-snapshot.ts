@@ -67,8 +67,8 @@ const ALL_METRICS: MetricDef[] = [
   { id: "evaluator.aftermath-coverage-rate-3h", name: "Evaluator aftermath liveness (3h)", owner: "evaluator", type: "gauge", target: 0.80, threshold: 0.20, unit: "ratio", alert_op: "<", priority: "P3" },
   { id: "eval.llm-coverage-lag-h", name: "LLM evaluation lag (hours since last non-heuristic eval)", owner: "evaluator", type: "gauge", target: 1, threshold: 4, unit: "hours", alert_op: ">", priority: "P0" },
   { id: "eval.llm-evals-24h", name: "LLM-evaluated sessions (24h)", owner: "evaluator", type: "gauge", target: 4, threshold: 1, unit: "count", alert_op: "<", priority: "P2" },
-  { id: "evaluator.low-quality-rate-24h", name: "Broad needs-improvement/low-score evaluated sessions (24h)", owner: "evaluator", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P2" },
-  { id: "evaluator.substantive-low-quality-rate-24h", name: "Substantive evaluator quality failures (24h)", owner: "evaluator", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P2" },
+  { id: "evaluator.low-quality-rate-24h", name: "Broad needs-improvement/low-score evaluated sessions (24h, dashboard only)", owner: "evaluator", type: "gauge", target: 0.10, threshold: 0.80, unit: "ratio", alert_op: ">", priority: "P3" },
+  { id: "evaluator.substantive-low-quality-rate-24h", name: "Substantive evaluator quality failures (24h)", owner: "evaluator", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P1" },
   { id: "evaluator.meaningful-review-rate-24h", name: "Evaluator meaningful review rate (24h)", owner: "evaluator", type: "gauge", target: 0.90, threshold: 0.70, unit: "ratio", alert_op: "<", priority: "P2" },
   { id: "evaluator.triage-closure-rate-24h", name: "Evaluator triage closure rate (24h)", owner: "evaluator", type: "gauge", target: 0.90, threshold: 0.70, unit: "ratio", alert_op: "<", priority: "P2" },
   { id: "evaluator.false-good-rate-sample", name: "Reviewed good sessions overturned (24h)", owner: "evaluator", type: "gauge", target: 0.05, threshold: 0.60, unit: "ratio", alert_op: ">", priority: "P2" },
@@ -252,6 +252,37 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     function count(query: string, ...args: any[]): number {
       return (db.prepare(query).get(...args) as any)?.c || 0;
+    }
+
+    function terminalSessionsWithoutEndEvent(since: number, limit = 5000): Array<{ sessionId: string; agent: string; status: string; endedAt: number | null }> {
+      const sessions = db.prepare(
+        `SELECT sessionId, agent, status, endedAt
+         FROM sessions
+         WHERE status IN ('done', 'error', 'interrupted')
+           AND startedAt > ?
+         ORDER BY startedAt DESC
+         LIMIT ?`,
+      ).all(since, limit) as Array<{ sessionId: string; agent: string; status: string; endedAt: number | null }>;
+      if (sessions.length === 0) return [];
+
+      const endRows = db.prepare(
+        `SELECT data
+         FROM events
+         WHERE event_type = 'session.end'
+           AND timestamp > ?`,
+      ).all(since) as Array<{ data: string | null }>;
+
+      const ended = new Set<string>();
+      for (const row of endRows) {
+        if (!row.data) continue;
+        try {
+          const parsed = JSON.parse(row.data) as { sessionId?: unknown };
+          if (typeof parsed.sessionId === "string" && parsed.sessionId) ended.add(parsed.sessionId);
+        } catch {
+          // Ignore malformed historic event payloads.
+        }
+      }
+      return sessions.filter((session) => !ended.has(session.sessionId));
     }
 
     const metricColumns = new Set((db.prepare("PRAGMA table_info(metrics)").all() as any[]).map(c => c.name));
@@ -765,16 +796,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
                AND s.measured_at > ?
            )`, now - 2 * 3600000);  // 2h window: heartbeat-measured metrics run on ~30min cycles
 
-      let terminalSessionsWithoutEnd = count(
-        `SELECT COUNT(*) as c FROM sessions s
-         WHERE s.status IN ('done', 'error', 'interrupted')
-           AND s.startedAt > ?
-           AND NOT EXISTS (
-             SELECT 1 FROM events e
-             WHERE e.event_type = 'session.end'
-               AND json_valid(e.data)
-               AND json_extract(e.data, '$.sessionId') = s.sessionId
-           )`, now - 24 * 3600000);
+      let missingEndSessions = terminalSessionsWithoutEndEvent(now - 24 * 3600000);
+      let terminalSessionsWithoutEnd = missingEndSessions.length;
 
       // Only check agents that have an enabled heartbeat cron job.
       const heartbeatAgents = listEnabledHeartbeatAgents(ctx.sdk.paths.agents, configuredAgents);
@@ -795,34 +818,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       // ── Reconciliation: emit session.end for orphaned terminal sessions before recording state ──
       if (terminalSessionsWithoutEnd > 0) {
         try {
-          const orphaned = db.prepare(
-            `SELECT s.sessionId, s.agent, s.status, s.endedAt
-             FROM sessions s
-             WHERE s.status IN ('done', 'error', 'interrupted')
-               AND s.startedAt > ?
-               AND NOT EXISTS (
-                 SELECT 1 FROM events e
-                 WHERE e.event_type = 'session.end'
-                   AND json_valid(e.data)
-                   AND json_extract(e.data, '$.sessionId') = s.sessionId
-               )
-             LIMIT 50`
-          ).all(now - 24 * 3600000) as Array<{ sessionId: string; agent: string; status: string; endedAt: number | null }>;
+          const orphaned = missingEndSessions.slice(0, 50);
           const insert = db.prepare("INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)");
           for (const s of orphaned) {
             insert.run("session.end", JSON.stringify({ sessionId: s.sessionId, agent: s.agent, status: s.status, reconciled: true }), s.endedAt || now);
           }
           if (orphaned.length > 0) ctx.sdk.log("info", `[metrics-snapshot] Reconciled ${orphaned.length} orphaned session.end events`);
-          terminalSessionsWithoutEnd = count(
-            `SELECT COUNT(*) as c FROM sessions s
-             WHERE s.status IN ('done', 'error', 'interrupted')
-               AND s.startedAt > ?
-               AND NOT EXISTS (
-                 SELECT 1 FROM events e
-                 WHERE e.event_type = 'session.end'
-                   AND json_valid(e.data)
-                   AND json_extract(e.data, '$.sessionId') = s.sessionId
-               )`, now - 24 * 3600000);
+          missingEndSessions = terminalSessionsWithoutEndEvent(now - 24 * 3600000);
+          terminalSessionsWithoutEnd = missingEndSessions.length;
         } catch (reconErr) { /* best-effort reconciliation */ }
       }
 
