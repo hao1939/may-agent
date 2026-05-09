@@ -90,6 +90,14 @@ Evaluations are stored in SQLite (`.state/may.db`) with `evaluations.issues` as 
 6. **Score-scale integrity**: When multiple scoring scales exist (e.g., 0–1 vs 1–5), the evaluation output must either (a) normalize to a single canonical scale, or (b) explicitly label which scale was used and avoid cross-scale thresholds (e.g., do not apply `quality>=3` to 0–1 scores).
 7. **Keying correctness**: When aggregating across sessions, keys must be unique to the unit of evaluation (prefer `sessionId` over `agentName`) to avoid overwriting/duplicating scores in multi-child pipelines.
 
+### Success-Candidate Calibration (False-Good Guard)
+When reviewing or calibrating `success_candidate` routes, distinguish **fresh substantive work** from **artifact-shaped noise**.
+
+- A commit + file write is **not sufficient by itself** for a `good` judgment if the session mostly repackaged pre-existing local material, re-logged an already-known fact, or produced a malformed/low-value append.
+- For research/knowledge sessions, check whether the cited source material was actually gathered or validated during the session versus copied from an older local mock/stub.
+- For heartbeat/no-op maintenance sessions, credit real operational verification, but do **not** describe them as `knowledge update` / `material output` unless they created a new durable artifact with novel content.
+- If the route says `good` because of `git commit` + `file write/edit`, but the artifact's substance is weak, unsupported, or merely restates existing knowledge, prefer `acceptable` or `needs_improvement` and explicitly call out the false-good pattern.
+
 ### Meta: Cron/Job Liveness Checks (Heartbeat)
 When a heartbeat is asked to "check eval recency", treat **SQLite DB liveness** as the primary signal.
 

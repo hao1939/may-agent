@@ -389,3 +389,13 @@ Ran `monitor-session.cjs --running`: 2 checked, 1 healthy, 1 `PROTOCOL_VIOLATION
 Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event).
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
+
+**Last run**: 2026-05-09 20:01Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778356861909`; `MAX(sessions.startedAt)=1778356868501`; `MAX(sessions.endedAt)=1778356861868`; lag ≈6.6s vs `startedAt`, ≈0.04s vs `endedAt`; `evals_last24h=663`; `llm_evals_last24h=24`; `sessions_last24h=1522`). This keeps Process #5 live and Process #15 active, while `.state/evaluations/` remains a non-canonical legacy path.
+
+Inbox triage check on the surfaced aftermath targets found two already covered artifacts (`s_1778356552486_224`, `s_1778356504164_221`) and one in-flight review (`s_1778356618783_227` is actively being reviewed by evaluator session `s_1778356861914_230`), so the newest pending `session.start` / `evaluation.*` rows were treated as already-acted or in-flight rather than dropped work.
+
+Ran `monitor-session.cjs --running`: 2 checked, 2 healthy.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
+
+Calibration note: reviewed recent `evaluation.false_good` examples and tightened `agents/evaluator/knowledge/criteria.md` with a new success-candidate false-good guard so commit+write heuristics do not over-credit repackaged, malformed, or merely re-logged output.
