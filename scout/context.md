@@ -4,6 +4,7 @@
 - Knowledge base: `agents/shared/knowledge/entries/`
 - **Web access**: Use `bash` with `curl` to fetch real data from accessible sources:
   - arXiv API: `curl -sL 'https://export.arxiv.org/api/query?search_query=...&max_results=5'` (NOTE: must use https and -L flag; `sortOrder=descending` works, `sortOrder=desc` returns HTTP 400)
+  - For arXiv-derived findings, capture and inspect the API `summary`/abstract text before writing `Summary` or `Implication`; title-only inference is not sufficient.
   - Hacker News API: `curl -s 'https://hn.algolia.com/api/v1/search?query=...'`
   - GitHub API: `curl -s 'https://api.github.com/search/repositories?q=...'`
   - Reddit JSON: `curl -s 'https://www.reddit.com/r/MachineLearning/.json?limit=10'`
