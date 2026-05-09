@@ -111,6 +111,35 @@ describe("closed-loop-steward handler", () => {
     expect(task).toContain("route/escalate or fix the handler/workflow code instead of improvising DB/event writes");
   });
 
+  it("warns may that owner activity alone is not closure evidence", async () => {
+    const db = makeDb([
+      {
+        id: 225,
+        metric_id: "scout.good-session-rate-24h",
+        message: "Scout good session rate below threshold",
+        created_at: Date.now() - 60_000,
+        metricName: "Scout good session rate",
+        explicitOwner: "scout",
+        projectOwner: null,
+        current: 0.24,
+        threshold: 0.65,
+        target: 0.85,
+        priority: "P3",
+        alertOp: "<",
+      },
+    ]);
+    const runAgent = vi.fn(() => Promise.resolve({ status: "done" }));
+    const ctx = makeCtx(db, runAgent);
+    const handler = create(ctx, { handlerConfig: {} } as any);
+
+    await handler();
+
+    const task = runAgent.mock.calls[0]?.[1];
+    expect(task).toContain("do not conclude 'no action' from owner activity alone");
+    expect(task).toContain("Recent owner activity is context, not closure evidence");
+    expect(task).toContain("Closure evidence is a resolved alert, an in-range latest snapshot");
+  });
+
   it("skips without dispatch when no alerts or delivery failures exist", async () => {
     const db = makeDb([]);
     const runAgent = vi.fn(() => Promise.resolve({ status: "done" }));

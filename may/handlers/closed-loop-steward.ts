@@ -321,6 +321,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       "- Never attempt direct DB writes from bash/node/sqlite during this audit. query_db is read-only; if a state change is needed, route/escalate or fix the handler/workflow code instead of improvising DB/event writes.",
       "- If routing itself is wrong, fix this handler or the workflow instead of asking an agent to improvise DB/event writes.",
       "- Take the smallest operation that advances closure: route/nudge owner, fix broken ownership/routing, document a valid exception, or escalate when blocked.",
+      "- For every open alert, name the issue, owner, judgment, action taken, and next validation signal. If an alert is still breaching after a prior judgment, do not conclude 'no action' from owner activity alone; either record a valid exception with evidence, route/nudge the owner, or describe the concrete blocker/data gap.",
+      "- Recent owner activity is context, not closure evidence. Closure evidence is a resolved alert, an in-range latest snapshot, a newer metric.alert_judged event with a validation plan, or a specific action/escalation you take this run.",
       "- Do not create a project for this cron itself. Create/update a project only when you discover systemic implementation work that cannot be completed in this run.",
       "- If this recurring procedure is wrong or stale, improve the handler/cron/config directly and verify it.",
       "- Finish hygiene: before finish(success), read back every edited file, run `cd /app/agents && git status --short`, classify every dirty path, stage only intentional deliverables with explicit paths, and never commit unrelated dirty files just to satisfy the guard.",
