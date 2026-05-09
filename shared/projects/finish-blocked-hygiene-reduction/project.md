@@ -1,13 +1,13 @@
 ---
 id: finish-blocked-hygiene-reduction
 owner: dev
-status: pending-review
+status: active
 type: milestone
 priority: P1
 workflow: project
-iteration: 3
-stop_reason: Iteration 3 found the post-classifier-patch residual finish/uncommitted case routed good, with no fresh unresolved dirty-exit pattern requiring another prompt or guard patch.
-resume_condition: Resume if post-c052855aa finish/uncommitted evaluations route needs_improvement again, raw unresolved dirty exits remain high after 24h rolloff, or reviewer requests more source-specific hygiene work.
+iteration: 4
+stop_reason: null
+resume_condition: Fresh post-c052855aa finish/uncommitted evaluations are again routing needs_improvement; resume condition met on 2026-05-09 heartbeat.
 ---
 
 # Finish-Blocked Hygiene Reduction
@@ -25,11 +25,11 @@ Reduce sessions that reach `finish()` with uncommitted/dirty worktree changes, b
 
 ## Current State
 
-Iteration 3 moved the project to `pending-review`. The post-`c052855aa` validation slice contains one finish/uncommitted evaluation, and it routed `good` with `session.status=done` and `session.outcome=done`; the 24h raw count remains rolloff-noisy at 235, so no further prompt/guard patch is justified until fresh unresolved dirty exits reappear.
+Iteration 4 reopened the project from `pending-review`: the resume trigger fired because fresh post-`c052855aa` finish/uncommitted evaluations are routing `needs_improvement` again. Heartbeat validation found 23 post-patch finish/uncommitted rows: 18 `good` and 5 `needs_improvement`, with residual needs-improvement cases in `workflow:scout-explore`, `workflow:dev-heartbeat`, `workflow:scout-heartbeat`, and `closed-loop-steward`. Next action is source-specific sampling to distinguish true unresolved dirty exits from repaired exits still overridden by review metadata.
 
 ## Plan
 
-1. **Reproduce the top sources**: sample recent `workflow:scout-heartbeat`, `closed-loop-steward`, and `workflow:may-heartbeat` transcripts with the finish/uncommitted signature to identify whether dirty paths are intentional deliverables, generated runtime files, or unrelated ambient state.
+1. **Reproduce the fresh residual sources**: sample recent `workflow:scout-explore`, `workflow:scout-heartbeat`, `closed-loop-steward`, and `workflow:dev-heartbeat` transcripts with post-`c052855aa` finish/uncommitted `needs_improvement` verdicts to identify whether dirty paths are intentional deliverables, generated runtime files, or unrelated ambient state.
 2. **Patch the highest-leverage source**: update the relevant workflow/handler/guard prompt to give exact safe next actions for dirty files, preserving the rule to avoid broad `git add` and not stage unrelated agent work.
 3. **Add or propose tracking**: if the runtime metric registry is accessible through the safe event/write path, register a `session.finish-blocked-uncommitted-count-24h` metric; otherwise keep the SQL in this project as the validation query.
 4. **Validate reduction**: compare the 24h finish/uncommitted count and top-source distribution before and after the first patch.
@@ -86,6 +86,10 @@ Heartbeat validation found the broad 24h signature still noisy at `236` finish/u
 ### 2026-05-09 — Iteration 3 closeout validation
 
 Post-classifier-patch validation shows the remaining fresh finish/uncommitted signal is no longer an evaluator low-quality misclassification driver. The 24h raw signature is still `235` while old rows roll off, but the post-`c052855aa` slice contains exactly one row (`s_1778339078795_14`, `workflow:project`) and it routed `verdict=good` with `session.status=done` and `session.outcome=done`. Moved the project to `pending-review` instead of patching again; resume only if fresh post-patch rows route `needs_improvement` or show unresolved dirty exits.
+
+### 2026-05-09 — Reopened from heartbeat residual validation
+
+Heartbeat validation found the pending-review resume condition is now met: since evaluator classifier commit `c052855aa`, finish/uncommitted evaluations include 23 rows, with 18 `good` and 5 still routing `needs_improvement`. The residual cases are `workflow:scout-explore` (`s_1778356268434_217`, `s_1778348168426_122`), `workflow:dev-heartbeat` (`s_1778343965279_64`), `workflow:scout-heartbeat` (`s_1778340111148_0`), and `closed-loop-steward` (`s_1778340047294_1`). Reopened to `active` for iteration 4; next work should sample those transcripts and patch the highest-leverage source-specific closeout path or evaluator override rule.
 
 ## Artifacts
 - outputs/iteration-1-source-attribution-and-prompt-patches.md
