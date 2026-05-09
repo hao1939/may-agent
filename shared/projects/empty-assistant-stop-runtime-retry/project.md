@@ -16,8 +16,8 @@ Get the live session runner to treat provider normal-stop responses with no assi
 
 ## Signals
 
-- Open alert `#249` for `session.empty-assistant-stop-count-1h`: current `23`, threshold `15`, target `5`, owner `may`, priority `P1`.
-- Recent session errors are dominated by evaluator sessions with `status='error'`, `error=NULL`, and normal provider stops that produced empty assistant content.
+- Alert `#249` for `session.empty-assistant-stop-count-1h` opened at current `23` over threshold `15`; heartbeat recheck found it resolved with current `5`, threshold `15`, target `5`.
+- Recent session errors were dominated by evaluator sessions with `status='error'`, `error=NULL`, and normal provider stops that produced empty assistant content.
 - Evaluator's P1 implementation request asked dev to implement or scope a bounded retry/fallback and identify the true code owner if the runner code is outside dev's writable scope.
 - Existing investigation: `agents/dev/workspace/investigations/2026-05-09-empty-assistant-stop-errors.md`.
 
@@ -25,7 +25,7 @@ Get the live session runner to treat provider normal-stop responses with no assi
 
 Dev can edit `/app/agents` workflow/handler/guard files, but the production provider/session-runner loop that converts assistant messages into `sessions` rows is not present in this container. Searches found only helper/test code such as `agents/shared/workflows/provider-retry.ts`, `agents/shared/workflows/workflow-runner.ts`, and session analysis/tests; those do not own the live provider message loop or `sessions.status='error'` writes.
 
-Because the actionable fix belongs to the runtime/session-runner service outside `/app/agents`, this project is blocked on runtime-owner access or handoff. The metric is real and still breaching; this file preserves the scoped patch contract so the issue is not lost in heartbeat churn.
+Because the actionable fix belongs to the runtime/session-runner service outside `/app/agents`, this project is blocked on runtime-owner access or handoff. The metric breach has cleared, but this file preserves the scoped patch contract so the issue is not lost if the provider shape recurs.
 
 ## Plan
 
@@ -53,5 +53,11 @@ Because the actionable fix belongs to the runtime/session-runner service outside
 Dev triaged the implementation request and confirmed this is the active system reliability alert: `session.empty-assistant-stop-count-1h` is 23 over threshold 15, while `session.first-turn-error-count-1h=0`, `handler.success-rate=1`, and `eval.llm-coverage-lag-h=0.03`. Recent `evaluation.deep_recorded` events show the eval LLM lane is alive, so the failure is specifically empty normal-stop responses causing evaluator sessions to error.
 
 Dev cannot safely implement the runner retry inside `/app/agents` because the live provider/session-runner loop is outside the editable tree. The chosen alert operation is `upgrade_or_escalate`: the breach is real, the fix is concrete, but it requires runtime owner access. This project is blocked until that owner can patch the service or provide dev access to the runner code.
+
+### 2026-05-09 — Heartbeat recheck: alert resolved, code owner still external
+
+Heartbeat rechecked the metric and alert state after the escalation. `session.empty-assistant-stop-count-1h` is now `5` with threshold `15` and target `5`, and alert `#249` is resolved at runtime timestamp `1778316637883`. The immediate paging condition has cleared, but recent `sessions` rows still show the historical evaluator `status='error'` / `error=NULL` cluster and no in-tree runtime retry hook has appeared.
+
+Disposition: keep this project `blocked` rather than closing it. Closing would imply the runner retry contract landed, but the scoped implementation still belongs to the external runtime/session-runner owner; dev's local heartbeat action is to monitor for recurrence and preserve the required patch/test contract here.
 
 ## Comments

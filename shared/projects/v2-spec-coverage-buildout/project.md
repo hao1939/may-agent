@@ -1,7 +1,7 @@
 ---
 id: v2-spec-coverage-buildout
 owner: may
-status: blocked
+status: active
 type: milestone
 priority: P2
 iteration: 4
@@ -24,7 +24,7 @@ This is a legitimate measurement gap, not a stale metric: the metric is computed
 - `proposals/v2-spec.md` wording drift: old metric-driven language can mislead agents into treating metrics as decisions instead of signals.
 
 ## Current State
-Blocked: Worker failed 2 consecutive times.
+Active: Restarting after prior worker failures. Next step: Phase 0 calibration.
 ## Evidence
 
 - Source: `agents/may/handlers/metrics-snapshot.ts` defines built-in metric `v2.spec-coverage-rate` and computes it in `countSpecClaimCoverage()`.
