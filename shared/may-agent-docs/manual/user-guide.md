@@ -106,7 +106,7 @@ peek at the result, and report back.
 | **tech-lead** | opus | Designs and delegates implementation |
 | **coder** | opus | Writes code, runs tests |
 | **qa** | gpt-5.2 | Reviews code |
-| **evaluator** | gpt-5.2 | Scores sessions, extracts lessons |
+| **evaluator** | gpt-5.4 | Scores sessions, extracts lessons |
 | **optimizer** | opus | Implements system improvements |
 | **coach** | opus | Trains agents via fork/verify cycle |
 | **master** | opus | Uses CLI agents for complex tasks |
@@ -134,7 +134,7 @@ peek at the result, and report back.
 | `name` | Yes | Must match directory name |
 | `description` | Yes | Role summary (visible to other agents) |
 | `domain` | Yes | Domain of expertise |
-| `model` | Yes | Model key: `opus`, `gpt52`, `gemini3pro`, etc. |
+| `model` | Yes | Model key: `opus`, `gpt52`, `gpt-5.4`, `gemini-3.1-pro`, etc. |
 | `tools` | Yes | Tool presets (see below) |
 | `maxTurns` | No | Max assistant turns before auto-abort |
 | `memoryLimit` | No | Number of recent memory entries in prompt (default: 20) |

@@ -22,7 +22,8 @@
       "consecutiveErrors": 0
     },
     "evaluator": {
-      "consecutiveErrors": 0
+      "consecutiveErrors": 1,
+      "lastError": "heartbeat session error"
     },
     "arc": {
       "consecutiveErrors": 1,
