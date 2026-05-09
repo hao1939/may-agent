@@ -20,7 +20,7 @@
 Schema reality (verified 2026-05-08): the `sessions` table has no
 `turns` column — use `opCount`. Its PK is **`sessionId`**, not `id`
 (aftermath flagged s_1778222607213_0 for `SELECT id FROM sessions`).
-Status values are `done | error | interrupted | running` (no `'completed'`). `events` columns: `id, event_type, source, owner, data, timestamp, status, handled_by, result, reason, retry_count, ttl_ms, urgency` — there is **no** `session_id`, no `agent`, no `created_at`, and no `payload`. To filter events by session or agent, use `data LIKE '%<sessionId>%'` or `json_extract(data,'$.agent')='arc'` against the JSON blob. Aftermath flagged s_1778213206775_3 for `payload` and s_1778311834038_35 (2026-05-09) for both `session_id` and `agent` in the same session — recurring footgun. (KE-910) `metrics` uses `updated_at` (NOT
+Status values are `done | error | interrupted | running` (no `'completed'`). There is **no `stopReason` column** on `sessions` — that field lives in transcript JSONL / `session.end` event `data`. Use `error` or `outcome` (both TEXT on `sessions`) for first-class queryable status, or `json_extract(data,'$.stopReason')` on the matching `session.end` event (KE-916). `events` columns: `id, event_type, source, owner, data, timestamp, status, handled_by, result, reason, retry_count, ttl_ms, urgency` — there is **no** `session_id`, no `agent`, no `created_at`, and no `payload`. To filter events by session or agent, use `data LIKE '%<sessionId>%'` or `json_extract(data,'$.agent')='arc'` against the JSON blob. Aftermath flagged s_1778213206775_3 for `payload` and s_1778311834038_35 (2026-05-09) for both `session_id` and `agent` in the same session — recurring footgun. (KE-910) `metrics` uses `updated_at` (NOT
 `lastUpdated`) and `current` (NOT `value` / `current_value`); there is
 no `config` table — config is the `metrics.config` TEXT column. The
 `projects` table uses **`id`** (PK, not `projectId`) and **`updated_at`**
@@ -113,3 +113,21 @@ When you write a proposal in `agents/arc/workspace/proposals/`:
    - [ ] [P0|P1|P2] <title> — agents/arc/workspace/proposals/<filename> (proposed: YYYY-MM-DD)
    ```
 3. Proposals are NOT actionable until moved to "## Approved" by human or may.
+
+## Durable artifacts: do NOT use `agents/arc/last-session.md`
+
+`agents/arc/last-session.md` is a runtime-managed template that is
+**overwritten by the session-end hook every heartbeat** (banner:
+`<!-- Auto-generated at session end. Do not edit manually. -->`). If
+arc commits hand-written content to it, the next heartbeat regenerates
+the file and the content is gone from `HEAD` — only `git show <sha>:`
+will see it. Aftermath caught this on `s_1778322020840_11` (commit
+`8bd7aa604`) → KE-916.
+
+Durable artifacts go to one of:
+- `agents/shared/knowledge/entries/KE-NNN-*.md`
+- `agents/shared/projects/<id>/journal.md` (or project.md)
+- `agents/arc/workspace/proposals/*.md`
+- `agents/arc/workspace/*.md` (scratch but persisted)
+
+Treat `last-session.md` as read-only wrapper output.
