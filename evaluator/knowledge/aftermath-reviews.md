@@ -105,6 +105,10 @@
 - Symptom: a session's first `finish(success)` is rejected for missing read-back verification, which can make the whole run look low-quality if the review stops there.
 - Fix: continue through the transcript. If the agent immediately performs the required read() calls, verifies the edited files, and then finishes cleanly with a real deliverable, score the outcome from the recovered end state and count the initial finish block as minor efficiency waste rather than a failed session.
 
+## Pattern: finish can reject repo-relative deliverables even when the committed file is real
+- Symptom: a session writes and commits a file under `/app/agents/...`, then `finish(success)` fails with `Deliverables not found on disk` when the deliverable is reported as a repo-relative path like `may/workspace/heartbeat-log.md`.
+- Fix: verify the artifact actually exists and inspect the landed commit/diff. If the outcome is otherwise valid, treat the first finish failure as a path-normalization hiccup and expect immediate recovery by retrying with the absolute `/app/agents/...` path. Penalize efficiency lightly, not outcome quality.
+
 ## Pattern: finish-hygiene self-repair includes retrying `finish(success)` after the commit
 - Symptom: a session hits `finish() blocked [uncommitted changes]`, commits the intended file, then retries `finish(success)` directly without an extra `git status`; naive heuristics may still mark it `needs_improvement`.
 - Fix: judge the recovery window after the blocked finish, not just the presence of a later `git status`. A post-blocked successful terminal `finish(...)` after the commit is enough evidence of a clean self-repair unless the session later ends interrupted/error.
