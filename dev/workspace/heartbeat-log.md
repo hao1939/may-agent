@@ -308,3 +308,9 @@ Disposition:
 - This note is the required meaningful file artifact for the heartbeat recovery.
 - No shared workflow, guard, handler, production database, or test file was intentionally changed by this recovery step.
 - Finish hygiene should stage only `dev/workspace/heartbeat-log.md`; all other dirty paths are unrelated/pre-existing and require their respective owners or a separate scoped task.
+
+## 2026-05-09 Artifact Gate Recovery
+
+Artifact gate required a durable heartbeat write because the prior session produced no file writes. This entry records the recovery action and preserves a concrete follow-up: next autonomous dev heartbeat should inspect recent failure/metric signals before deciding whether to patch workflow/handler code or document an investigation.
+
+No production files or runtime databases were changed as part of this recovery artifact.
