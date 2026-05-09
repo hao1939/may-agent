@@ -177,6 +177,26 @@ describe('project-health', () => {
       expect(result.reason).toContain('resume_after is due');
     });
 
+    it('does not escalate waiting project with a resume condition', () => {
+      const proj = {
+        ...baseProject,
+        status: 'waiting',
+        content: '---\nresume_condition: metric breaches again\n---\n# Test\n',
+      };
+      const state: HealthState = {
+        lastFullScan: 0,
+        projects: {
+          'shared/projects/test-proj': {
+            ...newProjectHealthEntry(),
+            lastStatusChange: Date.now() - 3 * 60 * 60 * 1000,
+          },
+        },
+      };
+      const result = diagnoseProject(proj, state, new Set(), new Set(), Date.now(), []);
+      expect(result.type).toBe('skip');
+      expect(result.reason).toContain('resume condition');
+    });
+
     it('escalates blocked projects after 2+ hours', () => {
       const proj = { ...baseProject, status: 'blocked' };
       const state: HealthState = {

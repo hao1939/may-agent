@@ -292,6 +292,10 @@ export function diagnoseProject(
       return { ...skip, reason: `${status} until ${new Date(resumeAfter).toISOString()}` };
     }
 
+    if (status === "waiting" && parseProjectMeta(project.content).resume_condition) {
+      return { ...skip, reason: "waiting — watching resume condition" };
+    }
+
     if (status === "pending-review" || status === "paused") {
       return { ...skip, reason: status === "pending-review" ? "pending-review — waiting for review" : "paused — waiting for explicit resume" };
     }
