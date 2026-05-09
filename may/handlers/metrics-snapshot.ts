@@ -98,6 +98,11 @@ const ALL_METRICS: MetricDef[] = [
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
   { id: "message.delivery-failed-count-1h", name: "Message delivery failures (1h)", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
+  // v2 spec coverage
+  { id: "v2.agent-config-bytes-p50", name: "Agent config median size (bytes)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 300, threshold: 500, unit: "bytes", alert_op: ">", priority: "P2" },
+  { id: "v2.manager-loc", name: "manager.ts LOC", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1000, threshold: 1500, unit: "lines", alert_op: ">", priority: "P2" },
+  { id: "v2.runtime-glue-loc", name: "Runtime glue LOC", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1500, threshold: 2000, unit: "lines", alert_op: ">", priority: "P2" },
+  { id: "v2.spec-coverage-rate", name: "v2 spec measurement coverage", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P2" },
 ];
 
 const RETIRED_METRIC_IDS = [
