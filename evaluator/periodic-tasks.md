@@ -352,6 +352,18 @@ Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-sna
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` remain placeholder stubs generated 2026-04-29, so there are still no fresh calibration-disagreement inputs to process this cycle.
 
+**Last run**: 2026-05-09 19:31Z — DB canonical check confirms session-eval pipeline is still live/recent (`MAX(evaluations.createdAt)=1778354998708`; `MAX(sessions.startedAt)=1778355068498`; `MAX(sessions.endedAt)=1778355077493`; lag ≈69.8s vs `startedAt`, ≈78.8s vs `endedAt`; `evals_last24h=661`; `llm_evals_last24h=24`; `sessions_last24h=1523`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table.
+
+Inbox triage check on the currently surfaced aftermath targets found all sampled artifacts already present in `agents/evaluator/workspace/aftermath/` (`s_1778354765274_204.md`, `s_1778347565286_114.md`, `s_1778354704179_198.md`, `s_1778354511867_196.md`, `s_1778352948618_180.md`), so the newest pending `evaluation.*` / `session.*` rows are best treated as already-acted or in-flight backlog noise rather than dropped work.
+
+Ran `monitor-session.cjs --running`: 1 checked, 1 healthy.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event).
+
+Signal-quality note: `events.status` totals remain unusable as a liveness metric (`pending=545927`, `handled=14`, `dismissed=4`, `done=1`); keep using recent timestamps/rows plus artifact existence as the meaningful signal instead.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` are still placeholder stubs generated 2026-04-29, so there are still no fresh calibration-disagreement inputs to process this cycle.
+
 **Last run**: 2026-05-09 18:01Z — DB canonical check confirms session-eval pipeline is still live/recent (`MAX(evaluations.createdAt)=1778349667671`; `MAX(sessions.startedAt)=1778349668489`; `MAX(sessions.endedAt)=1778349673837`; lag ≈0.8s vs `startedAt`, and evaluations are earlier than latest `endedAt` by ≈6.2s; `evals_last24h=663`; `llm_evals_last24h=23`; `sessions_last24h=1543`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table, while legacy `.state/evaluations/` filesystem freshness remains stale (`ls -la .state/evaluations/ | tail -5` still shows only Mar 20/24 `task_tree_*` files) and should continue to be treated as legacy output-path drift rather than canonical liveness.
 
 Inbox triage check for the newly surfaced target `s_1778349365281_138` found no aftermath artifact yet in `agents/evaluator/workspace/aftermath/`, but an active evaluator review session already exists (`s_1778349667677_141` reviewing that exact target), so the pending `session.start` / `evaluation.routed` rows are best treated as in-flight rather than dropped work.
