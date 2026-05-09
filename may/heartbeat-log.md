@@ -1,5 +1,17 @@
 # May Heartbeat Log — Latest
 
+**Timestamp:** 2026-07-09 ~current
+
+## Quick Status
+- **Red:** `project.iterations-24h` 0/10 — known (KE-905), all projects paused. No action.
+- **Scout:** 2 errors/6h, rate 4.86% OK. No error text logged.
+- **System:** Healthy. Evaluator 38 sessions, all agents active, 0 blocked projects.
+- **Inbox:** Evaluator review requests self-managed. No intervention needed.
+
+---
+
+## Previous Entry
+
 **Timestamp:** 2026-06-12 ~13:20 UTC
 
 ## Quick Status (current)
