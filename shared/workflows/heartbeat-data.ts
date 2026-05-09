@@ -61,7 +61,7 @@ const FINISH_HYGIENE_INSTRUCTIONS = [
   "Finish hygiene (do this before every successful finish):",
   "1. Call read() on every file you wrote or edited; shell cat/head/grep does not satisfy the read-back guard.",
   "2. Run `cd /app/agents && git status --short` and classify every dirty path before committing.",
-  "3. Stage only your intentional deliverables with explicit paths; never use broad `git add .` or stage unrelated agent/runtime work.",
+  "3. Stage only your intentional deliverables with explicit paths; never use broad `git add .` or stage unrelated agent/runtime work. If an intentional deliverable is under the ignored canonical `shared/projects/` tree, use `git add -f <that exact path>` and explain why.",
   "4. If a dirty path is unrelated or unsafe to clean, do not commit it just to satisfy the guard. finish(partial/blocked) and name the exact path plus owner/escalation needed.",
   "5. After committing, re-run `cd /app/agents && git status --short`; success requires a clean agents worktree or an explicit blocker.",
   "6. In finish(success), cite the commit id, the clean-status check, and read-back evidence in verification_evidence.",

@@ -477,7 +477,7 @@ function buildWorkerPrompt(
   prompt += `- Produce at least one concrete deliverable this iteration.\n`;
   prompt += `- Put all output files in: ${outputsDir}/\n`;
   prompt += `- Before finish(success), call read() on every file you write() or edit(); tests and grep can supplement read-back but do not replace it.\n`;
-  prompt += `- Before finish(success), run \`cd /app/agents && git status --short\`, classify every dirty path, and stage only intentional deliverables with explicit paths (never broad \`git add .\`).\n`;
+  prompt += `- Before finish(success), run \`cd /app/agents && git status --short\`, classify every dirty path, and stage only intentional deliverables with explicit paths (never broad \`git add .\`). If an intentional deliverable is under the ignored canonical \`shared/projects/\` tree, use \`git add -f <that exact path>\` and explain why.\n`;
   prompt += `- If unrelated or unsafe dirty paths remain, do not commit them just to satisfy the guard; finish(partial/blocked) with the exact path and owner/escalation needed.\n`;
   prompt += `- After committing, re-run \`cd /app/agents && git status --short\`; success requires a clean agents worktree or an explicit blocker, and verification_evidence must cite the clean-status check plus commit id.\n`;
   prompt += `- You CANNOT edit the project file or journal.\n`;
