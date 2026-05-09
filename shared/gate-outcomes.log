@@ -120,3 +120,6 @@
 2026-05-09T06:55:05.336Z agent=may gate=all-passed tool_calls=0 elapsed_sec=14 deliverable_edits=0 status=error action=none
 2026-05-09T06:56:39.406Z agent=scout gate=all-passed tool_calls=0 elapsed_sec=55 deliverable_edits=0 status=error action=none
 2026-05-09T07:05:57.864Z agent=dev gate=all-passed tool_calls=37 elapsed_sec=181 deliverable_edits=0 status=done action=none
+2026-05-09T07:12:35.854Z agent=evaluator gate=all-passed tool_calls=37 elapsed_sec=141 deliverable_edits=0 status=error action=none
+2026-05-09T07:34:10.570Z agent=arc gate=all-passed tool_calls=27 elapsed_sec=217 deliverable_edits=0 status=done action=none
+2026-05-09T07:35:14.907Z agent=dev gate=all-passed tool_calls=30 elapsed_sec=137 deliverable_edits=0 status=done action=none
