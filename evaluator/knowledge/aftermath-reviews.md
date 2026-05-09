@@ -52,6 +52,10 @@
 - Symptom: a heartbeat reads an existing metric-analysis KE, writes a one-line workspace note like "dismissing per KE-...", and finishes without fresh metric checks, follow-through, or any substantive downstream work.
 - Fix: when reviewing alert-handling sessions, separate the diagnosis from the session's own contribution. Credit the reused KE for the diagnosis, but require fresh evidence or a real operational action before treating the session itself as materially successful.
 
+## Pattern: prior KE context is not enough for a complete metric-alert judgment
+- Symptom: a session cites a relevant prior KE and may even reach the right general conclusion, but it never checks the live metric row, recent snapshots, or related events, and it does not record a concrete final operation from the metric-alert manual.
+- Fix: treat prior KEs as context, not closure. For a good metric-triage outcome, require current evidence from `metrics` plus `metric_snapshots` (and related events when relevant), then look for an explicit operation such as downgrade, exception, resolve stale state, or escalation.
+
 ## Pattern: metric-alert triage can deliver value via durable judgment events, not file edits
 - Symptom: a metric-alert session makes no repository changes, so it can look insubstantial if review only checks for file diffs.
 - Fix: verify whether the workflow emitted a durable `metric.alert_judged` event with a concrete final operation plus evidence, and confirm the cited live metric/project state. Credit the session when that event records the owner judgment and advances the closure chain, even if the supporting project artifact was pre-existing.
