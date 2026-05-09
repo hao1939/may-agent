@@ -91,6 +91,10 @@ Post-classifier-patch validation shows the remaining fresh finish/uncommitted si
 
 Heartbeat validation found the pending-review resume condition is now met: since evaluator classifier commit `c052855aa`, finish/uncommitted evaluations include 23 rows, with 18 `good` and 5 still routing `needs_improvement`. The residual cases are `workflow:scout-explore` (`s_1778356268434_217`, `s_1778348168426_122`), `workflow:dev-heartbeat` (`s_1778343965279_64`), `workflow:scout-heartbeat` (`s_1778340111148_0`), and `closed-loop-steward` (`s_1778340047294_1`). Reopened to `active` for iteration 4; next work should sample those transcripts and patch the highest-leverage source-specific closeout path or evaluator override rule.
 
+### 2026-05-09 — Preserve acceptable review verdicts
+
+Heartbeat sampling showed the residual finish/uncommitted `needs_improvement` bucket is partly a classifier artifact: repaired sessions reviewed as `acceptable` were forcibly remapped to `needs_improvement`, even though the review text said the session shipped real output with weaker quality. Patched `evaluator-aftermath` so review overrides preserve `acceptable` as the stored verdict/event value while still lowering quality to `0.65`; true `needs_improvement` reviews remain downgraded. Fresh validation before patch: 24h raw finish/uncommitted signature `208`, with `187 needs_improvement`, `20 good`, and `1 acceptable`; the 1h slice had two residual needs-improvement rows, one reviewed `acceptable` and one true `needs_improvement`.
+
 ## Artifacts
 - outputs/iteration-1-source-attribution-and-prompt-patches.md
 - outputs/iteration-2-post-patch-evaluator-routing.md

@@ -452,6 +452,10 @@ function shouldOverrideWithReview(heuristicVerdict: string, reviewedVerdict: str
   return heuristicVerdict === "good" && ["needs_improvement", "acceptable"].includes(reviewedVerdict);
 }
 
+function reviewOverrideQuality(reviewedVerdict: string): number {
+  return reviewedVerdict === "acceptable" ? 0.65 : 0.55;
+}
+
 export function falseGoodEventPayload(params: {
   sessionId: string;
   agent: string;
@@ -460,7 +464,6 @@ export function falseGoodEventPayload(params: {
   reviewSessionId: string;
   artifactPath: string;
 }): Record<string, unknown> {
-  const newVerdict = params.reviewedVerdict === "acceptable" ? "needs_improvement" : params.reviewedVerdict;
   return {
     source: "evaluator-aftermath",
     owner: "evaluator",
@@ -468,7 +471,7 @@ export function falseGoodEventPayload(params: {
     sessionId: params.sessionId,
     agent: params.agent,
     originalVerdict: params.heuristicVerdict,
-    newVerdict,
+    newVerdict: params.reviewedVerdict,
     heuristicVerdict: params.heuristicVerdict,
     reviewedVerdict: params.reviewedVerdict,
     reviewSessionId: params.reviewSessionId,
@@ -647,7 +650,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   if (shouldOverrideWithReview(heuristic.verdict, reviewedVerdict)) {
     await (ctx as any).runFunction("record-review-override", async () => {
       const db = ctx.getDb() as any;
-      const nextVerdict = reviewedVerdict === "acceptable" ? "needs_improvement" : reviewedVerdict;
       const prior = db.prepare("SELECT overall FROM evaluations WHERE sessionId = ?").get(sessionId) as any;
       let overall: Record<string, unknown> = {};
       try {
@@ -667,14 +669,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
              overall = ?
          WHERE sessionId = ?`,
         [
-          nextVerdict,
-          reviewedVerdict === "acceptable" ? 0.65 : 0.55,
+          reviewedVerdict,
+          reviewOverrideQuality(reviewedVerdict),
           JSON.stringify([...(heuristic.issues ?? []), `review override: ${reviewedVerdict}`]),
           JSON.stringify(overall),
           sessionId,
         ],
       );
-      return `review override ${heuristic.verdict} -> ${nextVerdict}`;
+      return `review override ${heuristic.verdict} -> ${reviewedVerdict}`;
     });
     ctx.emit({
       type: "evaluation.false_good",

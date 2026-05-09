@@ -689,7 +689,7 @@ describe("evaluator aftermath transcript checks", () => {
       sessionId: "s_1",
       agent: "may",
       originalVerdict: "good",
-      newVerdict: "needs_improvement",
+      newVerdict: "acceptable",
       heuristicVerdict: "good",
       reviewedVerdict: "acceptable",
       reviewSessionId: "s_review",
