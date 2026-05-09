@@ -559,3 +559,14 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 **Blocked project:** `finish-blocked-hygiene-reduction` (dev) blocked on metric registration SQL needing safe runtime writer path. Escalating to human.
 
 **System health:** 12 agents active, error rates nominal. No stuck sessions.
+
+## 2026-01-06 Heartbeat
+
+### Red Metrics
+1. **project.iterations-24h=0**: Known per KE-905/KE-902. Structural — projects auto-wait. Downgrade.
+2. **capability.message-conversation-close-rate=0.0105**: Automated messages dominate volume, depressing rate. Downgrade.
+
+### System Health
+- All 5 agents active, low error rates. Scout 3 errs/44 sessions (6.8%) — acceptable.
+- Blocked project `finish-blocked-hygiene-reduction` (dev, P1) — updated 1h ago, not stale.
+- No dark agents, no stuck sessions.
