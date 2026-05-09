@@ -1,13 +1,13 @@
 ---
 id: daily-alert-review
 owner: may
-status: waiting
+status: active
 type: recurring
 priority: P1
 workflow: project
 iteration: 4
-stop_reason: Daily alert review for 2026-05-09 is complete (review, recommendations, and status tracker produced). The project goal is truncated (cuts off at "For each:"), preventing milestone definition. Resume w
-resume_condition: next daily review cycle (2026-05-10) or human provides the complete project goal.
+stop_reason:
+resume_condition:
 ---
 
 # Project: Daily Alert Review

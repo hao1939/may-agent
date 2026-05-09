@@ -1,13 +1,13 @@
 ---
 id: evaluator-low-quality-rate-calibration
 owner: evaluator
-status: blocked
+status: active
 type: milestone
 priority: P1
 workflow: project
 iteration: 6
-stop_reason: The project now depends on an explicit May/owner governance decision on metric intent. Resume when: May (or the named metric owner) responds yes/no on adding `evaluator.substantive-low-quality-rate-24
-resume_condition: May (or the named metric owner) responds yes/no on adding `evaluator.substantive-low-quality-rate-24h` and moving alert thresholding to it, or rejects that path and explicitly chooses heuristic v2 tuning instead.
+stop_reason:
+resume_condition:
 ---
 
 # Evaluator Low-Quality Rate Calibration
