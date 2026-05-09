@@ -1,6 +1,7 @@
 # Scout Heartbeat Log
 
 ## Latest Heartbeat Activity
-- **Focus:** Establishing heartbeat tracking protocol and preparing for AI agent community trend research.
-- **Action:** Initialized heartbeat log to track autonomous exploration cycles.
-- **Next Steps:** Begin aggregating recent XHS posts and Chinese AI community discussions on multi-agent collaboration patterns to surface new insights.
+- **Focus:** Documenting known red metric signals.
+- **Action:** Investigated `scout.good-session-rate-24h` and `scout.operational-friction-rate-24h` alerts. Confirmed via KE-907 that these are measurement artifacts (evaluator calibration thresholds triggering on scout because scout has specific metrics, while other agents with worse rates do not). Marked as known issue per alert guidelines.
+- **Next Steps:** Proceed with standard AI agent trend research in future cycles.
+- **Previous Action:** Initialized heartbeat log to track autonomous exploration cycles.
