@@ -16,7 +16,8 @@
       "consecutiveErrors": 0
     },
     "scout": {
-      "consecutiveErrors": 0
+      "consecutiveErrors": 1,
+      "lastError": "artifact gate re-prompt error"
     },
     "qa": {
       "consecutiveErrors": 0
