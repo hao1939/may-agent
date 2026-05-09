@@ -4,9 +4,8 @@
  * Intercepts `finish(status: "success")` calls and validates TWO things:
  * 1. Write evidence: the session transcript contains write/edit evidence when
  *    deliverables are claimed. (Original guard — 8 FM-3.1/FM-2.2 failures.)
- * 2. Verification evidence: after the last write/edit, the agent ran at least
- *    one verification command (read-back, test, type-check, etc.).
- *    (FM-3.3 guard — 4+ FM-3.3 failures in 48h, 52% higher in Gemini/Opus.)
+ * 2. Post-write verification is handled by verification-depth-guard.ts.
+ *    Keeping it there avoids duplicate or conflicting finish() blocks.
  *
  * Policy: Common Sense 7.1 (Don't lie), 7.2 (Don't fabricate), 2.3 (Verify after acting)
  * Source: exp-056 via Coach → Optimizer → Tech Lead; FM-3.3 analysis via Bob → Optimizer
@@ -22,10 +21,6 @@ const BASH_TOOL_NAME = "bash";
 
 /** Patterns in bash commands that indicate file-writing activity (redirects, copies, etc.). */
 const BASH_WRITE_PATTERNS = /(?:>\s|>>\s|\btee\b|\bcp\b|\bmv\b|\bmkdir\b|\btouch\b)/;
-
-/** Patterns in bash commands that indicate verification activity. */
-const BASH_VERIFY_PATTERNS =
-  /\b(?:vitest|jest|tsc|node\s+-c|npx\s+tsc|npx\s+vitest|grep|diff|wc\b|ls\s+-[la]|test\s+-[fde]|cat\b|head\b|tail\b)/;
 
 /**
  * Extract all tool call names from the session transcript.
@@ -75,78 +70,6 @@ function hasBashWriteEvidence(messages: BeforeToolCallContext["context"]["messag
     }
   }
   return false;
-}
-
-/**
- * Check if the transcript contains verification evidence AFTER the last write/edit.
- *
- * FM-3.3 guard: agents claim success without verifying. This checks temporal ordering —
- * there must be at least one verification action (read-back, test, type-check) that
- * occurs in the message list AFTER the last write/edit tool call.
- *
- * Returns true if verification evidence exists after last write, false otherwise.
- * Returns true (safe) if no write/edit calls exist (nothing to verify).
- */
-function hasVerificationAfterLastWrite(messages: BeforeToolCallContext["context"]["messages"]): boolean {
-  // Walk messages to find indices of tool calls
-  let lastWriteIdx = -1;
-  let hasVerifyAfterWrite = false;
-
-  for (let i = 0; i < messages.length; i++) {
-    const msg = messages[i];
-    if (msg.role !== "assistant" || !Array.isArray(msg.content)) continue;
-
-    for (const block of msg.content) {
-      if (!block || typeof block !== "object" || !("type" in block) || block.type !== "toolCall" || !("name" in block))
-        continue;
-
-      const name = (block as { name: string }).name;
-
-      // Is this a write/edit?
-      if (WRITE_TOOL_NAMES.has(name)) {
-        lastWriteIdx = i;
-        hasVerifyAfterWrite = false; // Reset — need new verification after this write
-        continue;
-      }
-
-      // Is this a bash write? (redirect, tee, cp, etc.)
-      if (name === BASH_TOOL_NAME && "arguments" in block) {
-        const args = (block as { arguments: Record<string, unknown> }).arguments;
-        if (args && typeof args.command === "string") {
-          const cmd = args.command;
-          if (BASH_WRITE_PATTERNS.test(cmd)) {
-            lastWriteIdx = i;
-            hasVerifyAfterWrite = false;
-            continue;
-          }
-        }
-      }
-
-      // Only check for verification if we've seen a write
-      if (lastWriteIdx === -1) continue;
-      // Only count verification AFTER the last write
-      if (i <= lastWriteIdx) continue;
-
-      // Is this a verification action?
-      if (name === "read") {
-        hasVerifyAfterWrite = true;
-        continue;
-      }
-
-      if (name === BASH_TOOL_NAME && "arguments" in block) {
-        const args = (block as { arguments: Record<string, unknown> }).arguments;
-        if (args && typeof args.command === "string" && BASH_VERIFY_PATTERNS.test(args.command)) {
-          hasVerifyAfterWrite = true;
-          continue;
-        }
-      }
-    }
-  }
-
-  // No writes found — nothing to verify, safe to proceed
-  if (lastWriteIdx === -1) return true;
-
-  return hasVerifyAfterWrite;
 }
 
 /**

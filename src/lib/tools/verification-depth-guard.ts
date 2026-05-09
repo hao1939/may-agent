@@ -211,6 +211,22 @@ function isVerificationCall(call: ToolCallRecord): boolean {
   return false;
 }
 
+function normalizePath(path: string): string {
+  return path.replace(/^\.\//, "").replace(/\/+/g, "/");
+}
+
+function isDirectFileWrite(call: ToolCallRecord): boolean {
+  return call.name === "write" || call.name === "edit";
+}
+
+function isReadBackFor(call: ToolCallRecord, writeCall: ToolCallRecord): boolean {
+  if (call.name !== "read" || call.index <= writeCall.index) return false;
+  const readPath = call.args.path;
+  const writePath = writeCall.args.path;
+  if (typeof readPath !== "string" || typeof writePath !== "string") return false;
+  return normalizePath(readPath) === normalizePath(writePath);
+}
+
 /**
  * Get paths referenced by a tool call.
  */
@@ -296,6 +312,28 @@ function detectNoPostWriteVerification(calls: ToolCallRecord[]): DetectionResult
     return { rule: "T2-no-post-write-verification", detected: false, message: "" };
   }
 
+  const unverifiedDirectWrites = writeCalls.filter(c =>
+    isDirectFileWrite(c) && !calls.some(read => isReadBackFor(read, c))
+  );
+
+  if (unverifiedDirectWrites.length > 0) {
+    const writtenPaths = unverifiedDirectWrites.flatMap(getReferencedPaths);
+    const pathList = writtenPaths.length > 0
+      ? writtenPaths.slice(0, 3).join(", ") + (writtenPaths.length > 3 ? "..." : "")
+      : "(unknown paths)";
+
+    return {
+      rule: "T2-no-post-write-verification",
+      detected: true,
+      message:
+        `You used write()/edit() on ${unverifiedDirectWrites.length} file(s) (${pathList}) ` +
+        `without reading each file back afterward.\n` +
+        `Before finish(success), call read() on every file you wrote or edited. ` +
+        `Tests, grep, head, or shell checks are useful additional verification, ` +
+        `but they do not satisfy the read-back requirement for write()/edit().`,
+    };
+  }
+
   const lastWrite = writeCalls.reduce((a, b) => a.index > b.index ? a : b);
 
   const lastWriteIndex = lastWrite.index;
@@ -318,9 +356,9 @@ function detectNoPostWriteVerification(calls: ToolCallRecord[]): DetectionResult
       message:
         `You wrote/edited files (${pathList}) but performed NO verification after your last edit.\n` +
         `Before finishing, verify your work:\n` +
-        `• read() the modified files to confirm changes took effect\n` +
-        `• Run tests if available (bash('node test.js') or bash('bun test'))\n` +
-        `• grep for expected content (bash('grep "expected" file.md'))`,
+        `• For write()/edit(): read() every modified file before finish(success)\n` +
+        `• For shell-written files: read(), grep, or run a targeted check\n` +
+        `• Run tests if available after read-back for behavioral confidence`,
     };
   }
 
