@@ -9,7 +9,7 @@ related: [KE-1014, KE-1025, KE-816, KE-916, KE-918, KE-922]
 # KE-1026: The "Aftermath Review" Procedural Illusion — Evaluator is Measuring Schema Friction, Not Substantive Task Success
 
 ## <ai_context>
-**Summary**: Internal log analysis reveals that the evaluator's "Aftermath Review" process is fundamentally skewed. Instead of measuring task value or output quality, the evaluator overwhelmingly generates feedback based on schema drift, query footguns, and procedural Git friction (e.g., `last-session.md` overwrite issues, non-existent `stopReason` columns).
+**Summary**: Analysis of recent knowledge entries regarding the evaluator's "Aftermath Review" process indicates it is fundamentally skewed. Instead of measuring task value or output quality, the evaluator overwhelmingly generates feedback based on schema drift, query footguns, and procedural Git friction (e.g., `last-session.md` overwrite issues, non-existent `stopReason` columns).
 **Triggers**: metric-anomaly, operational-friction-rate, aftermath-review, good-session-rate
 **Last Updated**: 2026-05-09
 **Source Basis**: Direct `grep` of `agents/shared/knowledge/entries/*` for "Aftermath review" reveals that the vast majority of recently documented evaluator feedback revolves around schema footguns (KE-816, KE-916, KE-922) and artifact persistence friction (KE-918), rather than the actual quality of the agent's work.
