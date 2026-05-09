@@ -46,10 +46,17 @@ function extractToolCalls(messages: any[]): Array<{ name: string; path?: string;
 }
 
 /**
- * Normalize path for comparison (strip leading ./).
+ * Normalize path for comparison.
+ *
+ * Tool calls may use either project-relative paths (`agents/dev/file.md`) or
+ * absolute paths (`/app/agents/dev/file.md`). Treat those as the same file so
+ * a legitimate read-back is not missed because the agent switched path style.
  */
 function normPath(p: string): string {
-  return (p || "").replace(/^\.\//, "").replace(/\/+/g, "/");
+  let normalized = (p || "").replace(/\\/g, "/").replace(/\/+/g, "/");
+  normalized = normalized.replace(/^\.\//, "");
+  normalized = normalized.replace(/^\/app\//, "");
+  return normalized;
 }
 
 /**

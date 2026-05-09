@@ -140,6 +140,51 @@ describe("verify-after-write guard", () => {
     expect(guard.handle(event as any)).toEqual([]);
   });
 
+  it("normalizes /app absolute paths to project-relative paths", () => {
+    const event = {
+      type: "step_done",
+      source: "agent",
+      step: "implement",
+      result: {
+        messages: [
+          {
+            content: [
+              { type: "toolCall", name: "write", arguments: { path: "/app/agents/may/workspace/heartbeat-log.md" } },
+              { type: "toolCall", name: "read", arguments: { path: "agents/may/workspace/heartbeat-log.md" } },
+            ],
+          },
+        ],
+        finishResult: { status: "success" },
+      },
+      completedSteps: [],
+    };
+    expect(guard.handle(event as any)).toEqual([]);
+  });
+
+  it("normalizes /app absolute paths across completed steps", () => {
+    const event = {
+      type: "step_done",
+      source: "agent",
+      step: "finish",
+      result: {
+        messages: [
+          { content: [{ type: "toolCall", name: "read", arguments: { path: "/app/agents/may/workspace/heartbeat-log.md" } }] },
+        ],
+        finishResult: { status: "success" },
+      },
+      completedSteps: [
+        {
+          result: {
+            messages: [
+              { content: [{ type: "toolCall", name: "write", arguments: { path: "agents/may/workspace/heartbeat-log.md" } }] },
+            ],
+          },
+        },
+      ],
+    };
+    expect(guard.handle(event as any)).toEqual([]);
+  });
+
   it("does not block non-success finish", () => {
     const event = {
       type: "step_done",
