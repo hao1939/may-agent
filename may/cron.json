@@ -6,13 +6,13 @@
     "intervalMs": 1800000,
     "message": "[heartbeat] May heartbeat via per-agent workflow.",
     "enabled": true,
-    "description": "May's heartbeat — follow-up, system health, initiative (30min). Per-agent heartbeat workflow. ",
+    "description": "May's heartbeat \u2014 follow-up, system health, initiative (30min). Per-agent heartbeat workflow. ",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "handler": "run-workflow",
     "handlerConfig": {
       "workflow": "may-heartbeat",
       "agent": "may",
-      "task": "[heartbeat] You are running inside the may-heartbeat workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act — dispatch approved work, fix issues, don't wait for permission.",
+      "task": "[heartbeat] You are running inside the may-heartbeat workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act \u2014 dispatch approved work, fix issues, don't wait for permission.",
       "timeoutMs": 1800000
     },
     "on": [
@@ -26,7 +26,7 @@
     "agent": "bob",
     "message": "[heartbeat] Bob heartbeat via per-agent workflow.",
     "enabled": false,
-    "description": "Bob's mission heartbeat — design, todo drain, philosophy audit (60min). Per-agent heartbeat workflow.",
+    "description": "Bob's mission heartbeat \u2014 design, todo drain, philosophy audit (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
     "handler": "run-workflow",
@@ -48,7 +48,7 @@
     "agent": "optimizer",
     "message": "[heartbeat] Optimizer heartbeat via per-agent workflow.",
     "enabled": false,
-    "description": "Optimizer's heartbeat — find highest-impact improvement (60min). Per-agent heartbeat workflow.",
+    "description": "Optimizer's heartbeat \u2014 find highest-impact improvement (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "handler": "run-workflow",
     "handlerConfig": {
@@ -69,7 +69,7 @@
     "agent": "coach",
     "message": "[heartbeat] Coach heartbeat via per-agent workflow.",
     "enabled": false,
-    "description": "Coach heartbeat — triage, coaching, long-term mission work (60min). Per-agent heartbeat workflow.",
+    "description": "Coach heartbeat \u2014 triage, coaching, long-term mission work (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
     "handler": "run-workflow",
@@ -91,7 +91,7 @@
     "agent": "evaluator",
     "message": "[heartbeat] Evaluator heartbeat via per-agent workflow.",
     "enabled": true,
-    "description": "Evaluator heartbeat — calibration, criteria evolution, signal quality, patrol (30min). Per-agent heartbeat workflow.",
+    "description": "Evaluator heartbeat \u2014 calibration, criteria evolution, signal quality, patrol (30min). Per-agent heartbeat workflow.",
     "notifyBrief": true,
     "handler": "run-workflow",
     "handlerConfig": {
@@ -131,7 +131,7 @@
     "agent": "tech-lead",
     "message": "[heartbeat] Tech-lead heartbeat via per-agent workflow.",
     "enabled": false,
-    "description": "Tech-lead's heartbeat — build pending work, intake new designs, code health (60min). Per-agent heartbeat workflow.",
+    "description": "Tech-lead's heartbeat \u2014 build pending work, intake new designs, code health (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
     "handler": "run-workflow",
@@ -215,7 +215,7 @@
     "workflow": "verify-wrap",
     "agent": "coach",
     "intervalMs": 14400000,
-    "message": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently (check workspace/common-sense-status.md for status index — it shows which items are ❌/⚠️ and need attention). To check agent behavior: use `bash` with grep/jq to search session transcripts — do NOT read full session.jsonl files (they are 30-300KB and will waste tokens). Example: `grep -l 'keyword' .state/sessions/history/*/session.jsonl` to find relevant sessions, then `grep 'keyword' <file> | head -20` to extract evidence. Only read small excerpts (<5KB). Did the agent follow the rule? Quote evidence. If NO — add to Growth Cycle queue. If YES — update workspace/common-sense-tracker.md with your findings.",
+    "message": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently (check workspace/common-sense-status.md for status index \u2014 it shows which items are \u274c/\u26a0\ufe0f and need attention). To check agent behavior: use `bash` with grep/jq to search session transcripts \u2014 do NOT read full session.jsonl files (they are 30-300KB and will waste tokens). Example: `grep -l 'keyword' .state/sessions/history/*/session.jsonl` to find relevant sessions, then `grep 'keyword' <file> | head -20` to extract evidence. Only read small excerpts (<5KB). Did the agent follow the rule? Quote evidence. If NO \u2014 add to Growth Cycle queue. If YES \u2014 update workspace/common-sense-tracker.md with your findings.",
     "enabled": false,
     "description": "Verify one common-sense behavioral item against real behavior (4h). Routes through verify-wrap workflow.",
     "preflight": {
@@ -227,7 +227,7 @@
       "timeoutMs": 900000,
       "workflow": "verify-wrap",
       "agent": "coach",
-      "task": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently. Check workspace/common-sense-status.md for status index. Use bash with grep to search session transcripts — do NOT read full session.jsonl files. Quote evidence. If NO — add to Growth Cycle queue. If YES — update workspace/common-sense-tracker.md."
+      "task": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently. Check workspace/common-sense-status.md for status index. Use bash with grep to search session transcripts \u2014 do NOT read full session.jsonl files. Quote evidence. If NO \u2014 add to Growth Cycle queue. If YES \u2014 update workspace/common-sense-tracker.md."
     },
     "offsetMs": 300000
   },
@@ -446,6 +446,86 @@
     "on": [
       "heartbeat.trigger"
     ]
+  },
+  {
+    "name": "scout-explore-arxiv",
+    "agent": "scout",
+    "type": "job",
+    "intervalMs": 3600000,
+    "enabled": true,
+    "description": "Scout routine: explore arXiv for AI agent papers.",
+    "handler": "run-workflow",
+    "handlerConfig": {
+      "workflow": "scout-explore",
+      "agent": "scout",
+      "task": "Explore arXiv for recent papers on multi-agent systems, LLM agents, agent coordination, and autonomous systems. Use the arXiv API to fetch real papers. For each interesting find: create or update a KE entry in agents/shared/knowledge/entries/. Append a summary to agents/scout/workspace/digest/today.md.",
+      "timeoutMs": 600000
+    },
+    "offsetMs": 0
+  },
+  {
+    "name": "scout-explore-hn",
+    "agent": "scout",
+    "type": "job",
+    "intervalMs": 3600000,
+    "enabled": true,
+    "description": "Scout routine: explore Hacker News for agent discussions.",
+    "handler": "run-workflow",
+    "handlerConfig": {
+      "workflow": "scout-explore",
+      "agent": "scout",
+      "task": "Explore Hacker News for recent discussions about AI agents, autonomous coding, LLM orchestration, and multi-agent systems. Use the HN Algolia API. For each interesting find: create or update a KE entry in agents/shared/knowledge/entries/. Append a summary to agents/scout/workspace/digest/today.md.",
+      "timeoutMs": 600000
+    },
+    "offsetMs": 900000
+  },
+  {
+    "name": "scout-explore-xhs",
+    "agent": "scout",
+    "type": "job",
+    "intervalMs": 3600000,
+    "enabled": true,
+    "description": "Scout routine: explore XHS for Chinese AI community trends.",
+    "handler": "run-workflow",
+    "handlerConfig": {
+      "workflow": "scout-explore",
+      "agent": "scout",
+      "task": "Explore \u5c0f\u7ea2\u4e66 (XHS) for AI agent discussions in the Chinese AI community. Use node agents/scout/tools/xhs-browse.mjs to browse. Search for: \u667a\u80fd\u4f53, AI agent, \u591aagent, \u81ea\u4e3bagent. For each interesting find: create or update a KE entry in agents/shared/knowledge/entries/. Append a summary to agents/scout/workspace/digest/today.md.",
+      "timeoutMs": 600000
+    },
+    "offsetMs": 1800000
+  },
+  {
+    "name": "scout-explore-github",
+    "agent": "scout",
+    "type": "job",
+    "intervalMs": 3600000,
+    "enabled": true,
+    "description": "Scout routine: explore GitHub for agent frameworks and tools.",
+    "handler": "run-workflow",
+    "handlerConfig": {
+      "workflow": "scout-explore",
+      "agent": "scout",
+      "task": "Explore GitHub for trending AI agent repositories, new frameworks, and coordination tools. Use the GitHub API. Focus on: multi-agent frameworks, coding agents, agent memory systems, evaluation tools. For each interesting find: create or update a KE entry in agents/shared/knowledge/entries/. Append a summary to agents/scout/workspace/digest/today.md.",
+      "timeoutMs": 600000
+    },
+    "offsetMs": 2700000
+  },
+  {
+    "name": "scout-daily-digest",
+    "agent": "scout",
+    "type": "job",
+    "intervalMs": 86400000,
+    "enabled": true,
+    "description": "Scout daily: compile digest and send via Telegram.",
+    "handler": "run-workflow",
+    "handlerConfig": {
+      "workflow": "scout-daily-digest",
+      "agent": "scout",
+      "task": "Compile today's research digest. Read agents/scout/workspace/digest/today.md, format a concise summary of the day's findings, and call finish() with the digest text. The system will send it via Telegram. Then archive today.md to agents/scout/workspace/digest/YYYY-MM-DD.md and create a fresh today.md.",
+      "timeoutMs": 300000
+    },
+    "offsetMs": 0
   },
   {
     "name": "heartbeat-dev",
