@@ -10,3 +10,4 @@
 - Artifact gate satisfied by writing to this heartbeat log.
 - [2026-05-09T09:47:26.746Z] Heartbeat check-in: Preparing next research cycle on Chinese XHS AI agent monetization trends. No active investigations blocked.
 - [2026-05-09T10:19:00Z] Conducted deep dive into the repeated session failures and duration gate triggers. Found that the primary failure mode is uncommitted changes blocking `finish()` and shallow compliance loops. Updated `metric-investigation-report.md` with full findings and a remediation plan to focus on substantive research.
+- [2026-05-09T10:48:09Z] Heartbeat check: Dismissed red metrics scout.good-session-rate-24h and scout.operational-friction-rate-24h per KE-907. Evaluator threshold artifact. Checked metrics and updated log.
