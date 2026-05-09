@@ -7,12 +7,12 @@ You are about to call `read()` on a file you already read earlier in this sessio
 STOP. Instead of re-reading:
 1. Check if anything modified the file since you last read it (your own `edit()` or `write()` call, or a bash command that could have changed it).
 2. If **nothing changed it** → quote the relevant section from memory. Do NOT re-read.
-3. If **something changed it** (you edited it, ran a script that modifies it, etc.) → re-read is justified. Proceed.
+3. If **something changed it** (you edited it, ran a script that modifies it, etc.) → re-read is mandatory before finish(success). Proceed.
 
 ## Why This Matters
 - Re-reading unchanged files wastes ~33% of tool calls in some agents (measured in EXP-850).
 - Each unnecessary read costs tokens and time without adding information.
-- The diff preview from `edit()` already shows you the change — you don't need a separate `read()` to verify edits in most cases.
+- Tool previews from `write()`/`edit()` help quick inspection, but they do not replace the required read-back before finish(success).
 
 ## Exceptions
 - File is very large (>200 lines) and you only need a specific section you can't recall precisely.
