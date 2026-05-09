@@ -26,13 +26,15 @@ Notes:
 ## Exact code touch list
 
 ### Confirmed current code state
-The substantive metric is already registered and measured in `agents/may/handlers/metrics-snapshot.ts`:
+The substantive metric is already registered and measured in `agents/may/handlers/metrics-snapshot.ts` (re-verified in this iteration):
 - Registry entries: lines reported by grep at **70–71**
   - `evaluator.low-quality-rate-24h`
   - `evaluator.substantive-low-quality-rate-24h`
 - Measurement calls: lines reported by grep at **541** and **563**
   - `record("evaluator.low-quality-rate-24h", ...)`
   - `record("evaluator.substantive-low-quality-rate-24h", ...)`
+
+Implication: the remaining decision is primarily **which metric should drive paging/thresholding**, not whether the substantive metric can be computed.
 
 ### Files that would change if alerting is in-repo
 1. `agents/may/handlers/metrics-snapshot.ts`
