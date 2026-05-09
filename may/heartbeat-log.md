@@ -386,3 +386,11 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - **Errors**: dev had 19% historical error rate from expired IDE tokens (64/68), but recent 24h only 2/23 — resolved.
 - **Projects**: 4 tracked. evaluator-low-quality-rate-calibration actively being worked (calibration pivot approved). v2-spec-coverage-buildout blocked/P2.
 - **Action**: No intervention needed. System operating normally.
+
+## 2025-05-09T07:30Z Heartbeat
+- **All 19 metrics green**, no active alerts
+- **System volume (6h)**: evaluator 7495, optimizer 2737, coach 2021, may 1150, amy 1147
+- **Error hotspots**: dev 19% (known: expired IDE tokens), master 80% (4/5, low vol), evaluator 0.8%
+- **Recent errors**: 8 evaluator errors in last hour with null error messages — low severity given volume
+- **Projects**: closed-loop-reliability active (iter 1), evaluator-calibration active (iter 6), daily-alert-review active (iter 0 but just ran), v2-spec-coverage blocked
+- **Action**: None needed — all projects progressing, no stale work
