@@ -549,3 +549,13 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 ### Status
 - Nothing new actionable since prior steward audit 5 min ago.
 - Logging this beat solely to satisfy artifact gate; no duplicate intervention created.
+
+## 2026-05-09T21:45 UTC — Heartbeat
+
+**Red metrics triage:**
+- `project.iterations-24h=0`: Known issue, documented in KE-905/KE-902. No active projects need iterations. Both shared projects (daily-alert-review, closed-loop-reliability) are paused/waiting by design.
+- `capability.message-conversation-close-rate=0.0158`: Known trailing-window metric, documented as P3. Rate improving (0.0158 vs 0.02 threshold).
+
+**Blocked project:** `finish-blocked-hygiene-reduction` (dev) blocked on metric registration SQL needing safe runtime writer path. Escalating to human.
+
+**System health:** 12 agents active, error rates nominal. No stuck sessions.
