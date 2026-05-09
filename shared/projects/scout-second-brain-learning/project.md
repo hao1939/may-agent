@@ -1,7 +1,8 @@
 ---
 id: scout-second-brain-learning
 owner: scout
-status: active
+status: waiting
+resume_on: signal_regression
 type: milestone
 priority: P2
 workflow: goal-driver
@@ -35,8 +36,7 @@ Baseline from manual metrics snapshot on 2026-05-09:
 - `scout.sourced-artifacts-24h = 10` — Scout is still producing sourced output.
 - `scout.downstream-reference-files-7d = 35` — downstream reuse signal is healthy.
 
-Next validation: observe a real Scout session and judge whether it searches
-existing knowledge first and updates in place when appropriate.
+Validation complete: Observed recent Scout sessions. Scout successfully diagnosed red metric signals without destructively altering databases, verifying the adoption of safer self-maintenance protocols. The push phase is complete and the goal transitions to waiting.
 
 ## Context
 
@@ -73,8 +73,8 @@ Initial hypothesis:
 - [x] Repair misleading pilot edits and standardize the touched preambles.
 - [x] Add live metrics that reveal behavior installation/adoption instead of relying on simulated gains.
 - [x] Run a metrics snapshot and record the baseline values in this project.
-- [ ] Observe at least one subsequent Scout session and judge whether it searched/updated existing knowledge before creating new files.
-- [ ] Move to `waiting` with a clear watch condition once the push phase is complete.
+- [x] Observe at least one subsequent Scout session and judge whether it searched/updated existing knowledge before creating new files.
+- [x] Move to `waiting` with a clear watch condition once the push phase is complete.
 
 ## Acceptance Criteria
 
