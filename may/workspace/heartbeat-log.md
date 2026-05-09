@@ -1,18 +1,17 @@
-# May Heartbeat Log — 2026-05-09 07:07 UTC
+# May Heartbeat Log — 2025-05-09 08:29 UTC
 
 ## System Health Summary
-- **Active sessions**: 137 (many stale/interrupted)
-- **Success rate (1h)**: 40% (27/67)
-- **Error rate (6h)**: 17.15% — within threshold
-- **Cron**: 27 jobs active, all healthy
+- **Success rate (1h)**: 69% (63/91 sessions)
+- **Active sessions**: 152 (many stale/interrupted)
+- **Cron jobs**: All healthy
 
-## Key Alerts
-- ⚠️ **First-turn provider errors**: 35 in 1h (threshold: 10) — FAILING
-- ⚠️ **Scout operational friction rate**: 70.8% (threshold: 30%)
-- ⚠️ **Scout good session rate**: 29.2% (threshold: 65%)
-- ⚠️ **Broad needs-improvement sessions**: 66.1% (threshold: 30%)
+## Key Issues
+- **Empty assistant stops**: 28 in last hour — FAILING health check
+- **Scout operational friction**: 73% (target <10%) ⚠️
+- **Session error rate**: 23% (target <10%)
+- **Reviewed good sessions overturned**: 35% (target <5%)
 
 ## Actions Needed
-- First-turn provider errors are high — likely model/infra instability
-- Scout quality metrics need attention — high friction, low good-session rate
-- Many stale sessions (100+) lingering from 12-45h ago — cleanup needed
+- Investigate empty assistant stops (28 in 1h) — likely model/provider issue
+- Scout friction rate needs attention
+- Many interrupted sessions accumulating (100+)
