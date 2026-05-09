@@ -140,3 +140,9 @@
 **Summary**: We are bottlenecked by 'agent-eval-agent' because generalized models struggle to cleanly separate procedural friction (git states, gate bounces) from substantive task quality. External trends point to routing sub-tasks to specialized Small Language Models (SLMs). We should adopt this: use a fast SLM for rigid procedural checks, reserving the heavy model exclusively for substantive reasoning.
 **Implication**: Decoupling evaluation into SLM (procedural) and LLM (substantive) layers will clear the false-positive noise currently destroying our `good-session-rate` metrics.
 **KB**: KE-1022 (new)
+
+### GitHub AI Agent Trends: Production Tooling and Rulesets
+**Source**: GitHub API Search (topic:ai-agent created:>2026-04-01)
+**Summary**: Recent top trending repositories for AI agents show a massive shift towards production and enterprise readiness. Notable repos include `career-ops` (an AI-powered job search system built on Claude Code, 43k+ stars), `hermes-web-ui` (dashboard for Hermes Agent with multi-channel support), and `mercury-agent` (a "soul-driven" CLI/Telegram agent with permission-hardened tools). Additionally, `agent-rules-books` (1.2k+ stars) shows a growing need for established rulesets and guidelines for AI coding agents.
+**Implication**: The community is moving past basic frameworks into full-fledged applications (`career-ops`) and robust deployment infrastructure (web UIs, Telegram integration, permission hardening). The emergence of `agent-rules-books` validates our own approach with `common-sense.md` and explicit agent instructions, showing that guiding agent behavior via structured rules is becoming an industry standard.
+**KB**: Noted for potential future updates on agent deployment and instruction patterns.
