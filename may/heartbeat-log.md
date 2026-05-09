@@ -299,3 +299,9 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - ⚠️ Scout good rate 30% (target 85%), friction 70%
 - 4 active projects, 2 blocked >6h
 
+
+## 2026-05-09 01:41 UTC
+- Throughput: 58 sessions/hr, 90% success
+- Handlers: 100% success (416/6h), all health checks PASS
+- ⚠️ Scout friction: 71.8%, needs-improvement: 68.1%
+- Status: Nominal
