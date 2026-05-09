@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, rmSync, mkdirSync } from "node:fs";
+import { mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../src/lib/manager.js";
@@ -163,6 +163,80 @@ describe("SubagentManager.resumeStaleSessions()", () => {
 
     const meta = readSessionMeta(persistDir, "session-x");
     expect(meta!.status).toBe("interrupted");
+  });
+
+  it("releases stale heartbeat dispatch dedup leases on restart", () => {
+    writeRegistryState(persistDir, {
+      "session-heartbeat": {
+        agent: "may",
+        task: "You are **may** waking up for your heartbeat.",
+        status: "running",
+        source: "workflow:may-heartbeat",
+        kind: "job",
+        startedAt: Date.now() - 10000,
+      },
+    });
+    setupSession(persistDir, "session-heartbeat");
+    writeFileSync(join(persistDir, "dispatch-dedup.json"), JSON.stringify({
+      records: {
+        "may::heartbeat": {
+          agent: "may",
+          taskPrefix: "heartbeat",
+          attempts: 1,
+          failures: 0,
+          lastAttempt: new Date().toISOString(),
+          lastStatus: "running",
+          blocked: false,
+        },
+      },
+      version: 1,
+    }, null, 2));
+
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const { resumed, interrupted } = manager.resumeStaleSessions();
+
+    expect(resumed).toHaveLength(0);
+    expect(interrupted).toHaveLength(1);
+    const dedup = JSON.parse(readFileSync(join(persistDir, "dispatch-dedup.json"), "utf8"));
+    expect(dedup.records["may::heartbeat"].lastStatus).toBe("interrupted");
+  });
+
+  it("releases orphaned heartbeat dedup leases when heartbeat session is already terminal", () => {
+    writeRegistryState(persistDir, {
+      "session-heartbeat": {
+        agent: "dev",
+        task: "You are **dev** waking up for your heartbeat.",
+        status: "interrupted",
+        source: "workflow:dev-heartbeat",
+        kind: "job",
+        startedAt: Date.now() - 60000,
+        endedAt: Date.now() - 30000,
+        error: "Clean start (fresh)",
+      },
+    });
+    setupSession(persistDir, "session-heartbeat");
+    writeFileSync(join(persistDir, "dispatch-dedup.json"), JSON.stringify({
+      records: {
+        "dev::heartbeat": {
+          agent: "dev",
+          taskPrefix: "heartbeat",
+          attempts: 1,
+          failures: 0,
+          lastAttempt: new Date().toISOString(),
+          lastStatus: "running",
+          blocked: false,
+        },
+      },
+      version: 1,
+    }, null, 2));
+
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const { resumed, interrupted } = manager.resumeStaleSessions();
+
+    expect(resumed).toHaveLength(0);
+    expect(interrupted).toHaveLength(0);
+    const dedup = JSON.parse(readFileSync(join(persistDir, "dispatch-dedup.json"), "utf8"));
+    expect(dedup.records["dev::heartbeat"].lastStatus).toBe("interrupted");
   });
 
   it("resumes registered agents and interrupts unregistered ones", async () => {
