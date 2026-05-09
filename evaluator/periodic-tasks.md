@@ -431,3 +431,13 @@ Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-sna
 Calibration note: newest `evaluation.false_good` event (`s_1778360148620_273`) matches the recently added success-candidate false-good guard in `agents/evaluator/knowledge/criteria.md`: the reviewed session did fresh verification but produced no new durable artifact, so `acceptable` is more accurate than the routed `good`.
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
+
+**Last run**: 2026-05-09 22:01Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778363972232`; `MAX(sessions.startedAt)=1778364068571`; `MAX(sessions.endedAt)=1778364041019`; lag ≈96.3s vs `startedAt`, ≈68.8s vs `endedAt`; `evals_last24h=4237`; `llm_evals_last24h=1905`; `sessions_last24h=17285`). This keeps Process #5 live and Process #15 active, while the absence of dedicated `*llm*` tables remains a schema choice rather than a liveness issue.
+
+Inbox triage on the newest surfaced evaluator targets found `agents/evaluator/workspace/aftermath/s_1778363511946_312.md` and `agents/evaluator/workspace/aftermath/s_1778358348677_247.md` already present, while the substantive artifact for `s_1778358348677_247` currently lives at `agents/evaluator/workspace/deep-evals/s_1778358348677_247.json`; treat the pending `evaluation.*` / `session.*` rows as already-handled backlog noise rather than dropped evaluator work.
+
+Ran `monitor-session.cjs --running`: 1 checked, 1 healthy.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event).
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` are still placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
