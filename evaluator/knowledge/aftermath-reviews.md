@@ -69,6 +69,10 @@
 - Fix: inspect the actual artifact and source evidence before judging. If the agent used live sources and turned the forced write into a concrete, system-relevant analysis, credit the substantive output while separately noting any scoping or verification hiccups (for example writing into another agent's workspace or missing the first read-back).
 - Extra caution: verify that the recovery artifact is in a tracked, committable location before treating it as the session's real output. A workspace write can satisfy the local gate yet fail to ship if the path is gitignored; if the agent catches that quickly and pivots to a tracked file, score the pivot as recovery rather than as a failed outcome.
 
+## Pattern: shell echo can silently corrupt markdown artifacts
+- Symptom: the transcript shows a plausible `echo "...\n..." >> file` append, but the landed artifact contains literal `\n` sequences on one line instead of real markdown line breaks.
+- Fix: inspect the actual file content, not just the write command or the agent's summary. Credit the session only for the information that really landed, and note output-quality loss when shell-based writes produce malformed markdown or weak read-back via `cat` instead of the platform `read()` tool.
+
 ## Pattern: a blocked first finish does not negate a good outcome when recovery is immediate
 - Symptom: a session's first `finish(success)` is rejected for missing read-back verification, which can make the whole run look low-quality if the review stops there.
 - Fix: continue through the transcript. If the agent immediately performs the required read() calls, verifies the edited files, and then finishes cleanly with a real deliverable, score the outcome from the recovered end state and count the initial finish block as minor efficiency waste rather than a failed session.
