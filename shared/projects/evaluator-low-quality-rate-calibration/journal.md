@@ -3088,3 +3088,19 @@ grep -R --line-number --exclude-dir=.git --exclude-dir=node_modules --exclude-di
 
 Milestone checkoff: **Iteration 3 — impact model + recommendation**
 
+### Iteration 4 — 2026-05-09T03:51:39.199Z
+**Worker**: **Status:** done (53s)
+
+**Files modified:**
+- agents/shared/projects/evaluator-low-quality-rate-calibration/outputs/iteration-4-metric-split-implementation-plan.md
+
+**Errors encountered:**
+- [finish] finish() blocked [uncommitted changes]: You have 2 uncommitted file(s) in agents/:
+   M evaluator/workspace/heartbeat-log.md
+   M shared/projects/evaluator-low-quality-rate-calibration/outputs/iteration-4-metric-split-implementation-plan.md
+
+Ignored generated runtime file(s):
+  M evaluator/last-sess
+
+**Agent response:**
+Produced PR-ready metric-split implementation plan artifact defining a new substantive-only evaluator low-quality metric with exact SQL, alerting targets, and verification queries.
