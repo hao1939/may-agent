@@ -1,11 +1,13 @@
 ---
 id: finish-blocked-hygiene-reduction
 owner: dev
-status: active
+status: pending-review
 type: milestone
 priority: P1
 workflow: project
-iteration: 1
+iteration: 3
+stop_reason: Iteration 3 found the post-classifier-patch residual finish/uncommitted case routed good, with no fresh unresolved dirty-exit pattern requiring another prompt or guard patch.
+resume_condition: Resume if post-c052855aa finish/uncommitted evaluations route needs_improvement again, raw unresolved dirty exits remain high after 24h rolloff, or reviewer requests more source-specific hygiene work.
 ---
 
 # Finish-Blocked Hygiene Reduction
@@ -23,9 +25,7 @@ Reduce sessions that reach `finish()` with uncommitted/dirty worktree changes, b
 
 ## Current State
 
-The problem is cross-workflow rather than a single agent habit. Existing heartbeat guidance asks agents to classify dirty state and commit intentional deliverables, but finish-blocked sessions still dominate broad low-quality attribution. Closed projects such as `workflow-reliability` and `handler-reliability` do not currently own this narrower finish hygiene problem.
-
-This project starts from measurement and source attribution, then should patch the highest-volume workflow/prompt/guard paths so agents get exact, actionable cleanup instructions before a successful finish is attempted or before evaluator classifies the session as a generic low-quality output.
+Iteration 3 moved the project to `pending-review`. The post-`c052855aa` validation slice contains one finish/uncommitted evaluation, and it routed `good` with `session.status=done` and `session.outcome=done`; the 24h raw count remains rolloff-noisy at 235, so no further prompt/guard patch is justified until fresh unresolved dirty exits reappear.
 
 ## Plan
 
@@ -83,13 +83,23 @@ Acted on evaluator FYI for arc session `s_1778334807559_0`: after real commits, 
 
 Heartbeat validation found the broad 24h signature still noisy at `236` finish/uncommitted evaluations, with top sources `scout-heartbeat=56`, `closed-loop-steward=39`, `may-heartbeat=33`, `metric-alert-triage=28`, `project=25`, `dev-heartbeat=23`, and `orchestrator=17`. A 1h slice showed only three fresh cases: a dev heartbeat that shipped the finish-guard alias fix but closed partial on ambient dirty state, a dev project iteration whose deep eval judged the prompt patches as real value despite noisy 24h movement, and the arc alias-friction case that the guard patch already addressed. Decision: no new prompt patch this heartbeat; continue to watch the 1h slice after propagation, with special attention to ambient shared worktree dirt versus true uncommitted intentional deliverables.
 
-### 2026-05-09 — Post-classifier-validation heartbeat
+### 2026-05-09 — Iteration 3 closeout validation
 
-Heartbeat validation after evaluator v5/classifier work found the 24h finish/uncommitted signature at `234` evaluations, essentially flat versus the prior `236`, but the 1h source mix changed to `arc-heartbeat=3`, `project=2`, `scout-explore=1`, `may-heartbeat=1`, and `dev-heartbeat=1`. Current system signals are otherwise healthy for dev-owned scope: `session.error-rate-6h=0.027`, `handler.success-rate=0.9979`, and `eval.llm-coverage-lag-h=0.03`. Decision: keep the project active for continued measurement rather than patching prompts again immediately; the next useful action is sampling fresh 1h cases to distinguish ambient shared worktree dirt from true uncommitted intentional deliverables after the classifier self-repair change propagates.
-
+Post-classifier-patch validation shows the remaining fresh finish/uncommitted signal is no longer an evaluator low-quality misclassification driver. The 24h raw signature is still `235` while old rows roll off, but the post-`c052855aa` slice contains exactly one row (`s_1778339078795_14`, `workflow:project`) and it routed `verdict=good` with `session.status=done` and `session.outcome=done`. Moved the project to `pending-review` instead of patching again; resume only if fresh post-patch rows route `needs_improvement` or show unresolved dirty exits.
 
 ## Artifacts
 - outputs/iteration-1-source-attribution-and-prompt-patches.md
+- outputs/iteration-2-post-patch-evaluator-routing.md
 - outputs/iteration-1-orchestrator-goal-driver-addendum.md
 - outputs/iteration-1-evaluator-self-repair-classification.md
 - outputs/iteration-1-live-residual-attribution.md
+
+## Context
+- Iteration 1 completed source attribution and prompt-path patches for heartbeat, closed-loop-steward, metric-alert-triage, project, orchestrator, and goal-driver paths.
+- Current live 24h finish/uncommitted count remains about 234, but the dominant residual bucket is repaired/completed sessions, not unresolved dirty exits.
+- Fresh review query found 226 finish/uncommitted evaluations with `digest_outcome=success`, `session.status=done`, `session.outcome=done`, yet still `verdict=needs_improvement`.
+- Next highest-leverage work is post-patch evaluator-routing validation: split pre/post evaluator self-repair patch and sample post-patch repaired-success sessions still classified `needs_improvement`.
+- Iteration 2 committed evaluator classifier patch `c052855aa` at `2026-05-09T15:11:15Z`; it recognizes `finish blocked -> commit -> finish(success)` as repaired clean exit.
+- Iteration 2 added a regression test in `agents/shared/tests/evaluator-aftermath.test.ts`; worker reported 27 evaluator aftermath tests passing.
+- Fresh post-`c052855aa` DB check found 1 finish/uncommitted evaluation and it routed `good`, with `session.status=done`, `session.outcome=done`, and latest digest `success`.
+- Next validation should focus on fresh post-`c052855aa` raw incidence and durable split metrics for raw finish-blocked attempts versus unresolved dirty exits.
