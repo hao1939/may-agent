@@ -80,7 +80,7 @@ Initial hypothesis:
 - [x] Add live metrics that reveal behavior installation/adoption instead of relying on simulated gains.
 - [x] Run a metrics snapshot and record the baseline values in this project.
 - [x] Observe at least one subsequent Scout session and judge whether it searched/updated existing knowledge before creating new files.
-- [ ] Fix the heartbeat prompt gap that caused Scout to create a ceremonial metric-dismissal project.
+- [x] Fix the heartbeat prompt gap that caused Scout to create a ceremonial metric-dismissal project.
 - [ ] Observe one subsequent Scout heartbeat after the prompt fix.
 - [ ] Move to `waiting` with a clear watch condition once the prompt fix is verified.
 

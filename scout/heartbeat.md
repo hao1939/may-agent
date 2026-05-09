@@ -29,7 +29,7 @@ This format is required in EVERY session — heartbeats, work sessions, project 
 ## Metric Guidance
 - `scout.sourced-artifacts-24h`: progress signal. If low, produce one concise finding from real sources. Do not touch old files just to move the count.
 - `scout.knowledge-practice-loaded`: behavior-install signal. If red, Scout's loaded prompt/heartbeat no longer contains the knowledge-management practice; restore the loaded instructions before producing more artifacts.
-- `scout.knowledge-preamble-coverage`: adoption signal. If low, improve a small number of high-value existing knowledge files; do not bulk-edit the whole directory just to move the metric.
+- `scout.knowledge-preamble-coverage`: adoption signal. If low, improve a small number of high-value existing knowledge files; do not bulk-edit the whole directory just to move the metric. **NEVER create "dismissal" projects for metric alerts.** Fix the underlying issue or leave the metric red if adoption is slow but steady.
 - `scout.good-session-rate-24h`: quality signal. If low, narrow scope and verify before finish.
 - `scout.operational-friction-rate-24h`: blocker signal. If red, fix the workflow issue first: schema-check before DB queries, avoid broad git adds, verify after edits, and leave the worktree clean or explain the blocker.
 - `scout.downstream-reference-files-7d`: impact/creativity proxy. If low, make findings easier for other agents to use: name the affected project/agent, state the actionable implication, and link the source artifact.
