@@ -2970,3 +2970,44 @@ CONTEXT_UPDATE:
 - DB schema shows `evaluations.issues` is `TEXT` (not guaranteed JSON); must probe `json_valid(issues)` before using `json_each` in metrics SQL.
 - `sessions.status` exists and is joinable via `sessions.sessionId = evaluations.sessionId` for substantive failure detection.
 
+### Iteration 5 — 2026-05-09T02:51:44.108Z
+**Worker**: **Status:** done (35s)
+
+**Files modified:**
+- agents/shared/projects/evaluator-low-quality-rate-calibration/outputs/iteration-5-approval-packet.md
+
+**Agent response:**
+Produced an Iteration 5 approval packet requesting alert/threshold pivot to the substantive low-quality metric and sent it to May for governance/ownership decision.
+**Reviewer**: CONTINUE — [PIVOT] - **I believe**: We’ve reached the point where analysis + an approval packet exist, but the outcome metric `evaluator.low-quality-rate-24h` will not move unless we either (1) change metric/alert semantics in code or (2) change the evaluator heuristic that sets `needs_improvement` for hygiene issues. Waiting on governance alone has stalled progress.
+- **I’m uncertain about**: Whether there is any *in-repo* alert metadata that actually drives paging/thresholds (vs external alerting), and whether `evaluator.substantive-low-quality-rate-24h` is already wired to any breach behavior.
+- **I’d change my mind if**: We find a concrete alerting config is external-only and cannot be changed by the worker, *and* there’s no safe heuristic tweak that reduces false NI without hiding substantive issues—then we’d be BLOCKED pending an owner decision.
+
+## 3 alternative approaches (ranked by feasibility)
+
+1) **Heuristic behavior split (most feasible, moves the actual metric without alert changes):** modify heuristic v2 so “hygiene/process” findings do **not** force `verdict=needs_improvement`. Instead: keep `verdict=ok` (or a new neutral verdict if supported) while recording hygiene issues separately. This directly lowers `evaluator.low-quality-rate-24h` because it keys off verdict/quality/efficiency, not off issues text.
+2) **Wire alert thresholds in-repo (if present):** locate where threshold/paging is enforced (maybe in `metrics-snapshot.ts` registry fields, maybe elsewhere) and switch paging to substantive metric; keep broad metric as ops-only. (This may not move the metric itself, only the “breach.”)
+3) **Add a new hygiene metric and adjust dashboards:** create `evaluator.hygiene-issue-rate-24h` and reframe quality views; still requires alert/dash governance and doesn’t reduce the existing metric.
+
+Pick **approach #1**.
+
+## (a) Concrete output
+Produce: `agents/shared/projects/evaluator-low-quality-rate-calibration/outputs/iteration-6-heuristic-v2-hygiene-demotion-plan.md` containing:
+- A **precise rule change** for `agents/evaluator/workflows/evaluator-aftermath.ts` (or wherever heuristic v2 sets verdict):
+  - classify issues into **hygiene** vs **substantive** buckets
+  - only **substantive** issues force `needs_improvement`
+  - hygiene issues become non-verdict-affecting annotations (or affect only a separate “hygiene score/flag”)
+- A **backtest query plan** (SQL) to estimate how many last-24h `needs_improvement` would become `ok` under the new rule (proxy using issue strings if needed).
+- A **risk section**: what could go wrong (masking real failures), and how the substantive metric (`evaluator.substantive-low-quality-rate-24h`) acts as a guardrail.
+- A minimal **test plan** (unit test or gym scenario): one hygiene-only evaluation should not flip verdict; one substantive issue should.
+
+## (b) What’s different
+Previously we focused on **metric split + alert pivot** (governance-dependent, and may not affect the metric). Now we target the **mechanism that drives the metric**: heuristic v2’s “any issue ⇒ needs_improvement (0.55)” behavior. This is an implementation-level change that can reduce `evaluator.low-quality-rate-24h` directly, even if alerting stays the same.
+
+## (c) First step (EXACT first command for the worker)
+`bash -lc "sed -n '1,240p' agents/evaluator/workflows/evaluator-aftermath.ts"`  
+
+CONTEXT_UPDATE:
+- Iterations 3–5 established that `evaluator.low-quality-rate-24h` is verdict/score-based and is inflated by heuristic v2 turning hygiene issues into `needs_improvement`; alert-pivot alone may not move the metric.
+- `evaluator.substantive-low-quality-rate-24h` already exists in `agents/may/handlers/metrics-snapshot.ts`; it can serve as a guardrail metric if heuristic v2 stops penalizing hygiene via verdict.
+- Next strategy: change heuristic v2 to *separate hygiene vs substantive issues* so only substantive issues affect verdict/quality; hygiene becomes a separate tracked signal.
+

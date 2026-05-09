@@ -10,7 +10,8 @@ iteration: 2
 
 # Evaluator Low-Quality Rate Calibration
 
-**Iteration**: 4
+**Iteration**: 5
+**Status**: blocked
 ## Goal
 Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior failures from (b) pipeline/guard false-penalties, and ensure evaluator scoring produces low false-good overturns.
 
@@ -19,8 +20,7 @@ Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior
 - Metric: `evaluator.false-good-rate-sample` current 0.5714 (threshold 0.2, target 0.05) but denominator only 7 reviewed sessions (sample instability).
 
 ## Current State
-Iteration 4. Milestones: 0/0 done.
-Reviewer: [PIVOT] 1. **I believe**: We have enough analysis + an implementation plan, but we are blocked by *process failures* (worker created unintended edits in ignored paths, and misused `message()`), so the
+Blocked: 5 consecutive iterations without milestone progress. Approach needs rethinking.
 ## Plan
 1. **Metric decomposition proposal**: draft a split of low-quality-rate into sub-metrics by issue class (schema errors, finish/uncommitted, terminal interruptions) to avoid conflating agent quality with infra/guard friction.
 2. **Criteria calibration**: review evaluator criteria for (a) terminal interrupted sessions (Clean start) and (b) finish-blocked sessions; decide whether to classify as NI vs excluded/exception.
@@ -96,3 +96,6 @@ Milestone checkoff: Iteration 2 — mechanism + fix options
 - Iteration 4 worker hit process blockers: uncommitted edits to `shared/projects/**` (gitignored) and incorrect `message()` invocation; no implementation landed.
 - DB schema shows `evaluations.issues` is `TEXT` (not guaranteed JSON); must probe `json_valid(issues)` before using `json_each` in metrics SQL.
 - `sessions.status` exists and is joinable via `sessions.sessionId = evaluations.sessionId` for substantive failure detection.
+- Iterations 3–5 established that `evaluator.low-quality-rate-24h` is verdict/score-based and is inflated by heuristic v2 turning hygiene issues into `needs_improvement`; alert-pivot alone may not move the metric.
+- `evaluator.substantive-low-quality-rate-24h` already exists in `agents/may/handlers/metrics-snapshot.ts`; it can serve as a guardrail metric if heuristic v2 stops penalizing hygiene via verdict.
+- Next strategy: change heuristic v2 to *separate hygiene vs substantive issues* so only substantive issues affect verdict/quality; hygiene becomes a separate tracked signal.
