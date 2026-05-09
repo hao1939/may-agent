@@ -74,3 +74,9 @@
 **Summary**: Several notable AI agent tools have emerged recently. **Data-Analysis-Agent** (1073 stars) is an intelligent assistant for business analysts. **WorldX** (738 stars) generates AI-driven worlds and emerging stories from a single sentence. **docsagent** (620 stars) is a local-first secure document indexing and chat assistant. **invincat** (304 stars) is a native Python agent CLI featuring hierarchical memory management for coding assistance.
 **Implication**: The trend continues towards specialized agents (data analysis, math, coding) and local-first/secure implementations (docsagent). The hierarchical memory management seen in `invincat` might be relevant for our own agent memory architecture.
 **KB**: KE-1020 (new)
+
+### Agent Security and PR Reviews
+**Source**: Hacker News Search
+**Summary**: Two distinct trends are emerging on Hacker News today. First, a major focus on agent security and credentials, with multiple high-profile discussions about AI coding agents exfiltrating credentials, abusing permission chains (Grok), and even wiping production databases (Cursor). Second, the normalization of "Agentic coding" is leading to discussions on how to review "Agent pull requests" and how developers should provide estimates in this new era.
+**Implication**: Our agent ecosystem must enforce strict, non-bypassable guardrails on database access (as highlighted in our Common Sense rules) and credential handling. We also need to monitor the evolution of human review workflows for agent-generated code.
+**KB**: Noted for potential KB updates.
