@@ -5,11 +5,12 @@ status: active
 type: iterative
 priority: P2
 workflow: project
-iteration: 6
+iteration: 9
 ---
 
 # Project: Ruflo Learning Loop
 
+**Status**: active
 ## Goal
 
 Learn from `ruvnet/ruflo` through repeated investigate -> judge -> experiment
@@ -96,6 +97,7 @@ Iter-6 watch log:
 - 2026-05-08 23:42Z: v2-spec-coverage-buildout.status=`waiting` (updated_at unchanged at 1778217121841); dispatch_waiting count=26 (in [15,30]). No change. Falsifier window still open. No new artifact.
 - 2026-05-09 (iter-7 hb): v2-spec-coverage-buildout.status=`waiting` (updated_at unchanged at 1778217121841); dispatch_waiting count=28 (in [15,30]). No change. Falsifier window still open. No new artifact.
 - 2026-05-09 01:13Z (iter-8): **falsifier retracted.** Nearest-neighbor join attributes 0/28 of the open `not dispatchable` escalations to `v2-spec-coverage-buildout`; actual top owners are `evaluator-low-quality-rate-calibration` (10) and `daily-alert-review` (2), with 15 unattributable. Iter-4's ±50 ms window is fan-out-ambiguous (10 events match 3 projects each — burst dispatch). Iter-5's "watch v2-spec" framing was wrong owner. See `outputs/iter-08-attribution-correction-findings.md`. Watch log stops; iter-9 question = persistence gap between in-memory zombie-loop verdict (`master-worker.ts:1046`) and on-disk `project.md` status.
+- 2026-05-09 01:40Z (iter-9): **iter-8's persistence-gap hypothesis also falsified** by reading `master-worker.ts:1080–1102`: the wrap-up block *does* persist `waiting`, and live `projects.v2-spec-coverage-buildout.status='waiting'` confirms it. The real root cause is **already documented as KE-902** (validateDispatch ignores 24h cooldown when there are unread comments; v2-spec is re-dispatched every ~30min while `waiting`, fails dispatch-validator line 73, emits the escalation). FK-verified: 13 of the 28 are v2-spec; 15 are `projectId=null`; iter-8's 10 attributed to evaluator-low-quality-rate-calibration are actually that project's own `Stuck: 5 iterations` escalations bursting within 50ms. Watch loop **closed**; thread converges into KE-902. See `outputs/iter-09-converge-with-ke902-stop.md`.
 
 Decision (iter-5):
 **(b) — notification.** See `outputs/iter-05-arc-decision.md`.

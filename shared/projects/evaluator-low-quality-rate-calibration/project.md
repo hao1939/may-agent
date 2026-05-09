@@ -10,7 +10,8 @@ iteration: 2
 
 # Evaluator Low-Quality Rate Calibration
 
-**Iteration**: 1
+**Iteration**: 6
+**Status**: blocked
 ## Goal
 Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior failures from (b) pipeline/guard false-penalties, and ensure evaluator scoring produces low false-good overturns.
 
@@ -19,9 +20,7 @@ Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior
 - Metric: `evaluator.false-good-rate-sample` current 0.5714 (threshold 0.2, target 0.05) but denominator only 7 reviewed sessions (sample instability).
 
 ## Current State
-Iteration 1. Milestones: 0/0 done.
-Reviewer: ### EXP-215 (externalize beliefs)
-1. **I believe**: We’ve identified the *actual consumer/pager path* for `evaluator.low-quality-rate-24h` (metrics-snapshot → `metric.breach` → metric-alert-reactor),
+Blocked: 5 consecutive iterations without milestone progress. Approach needs rethinking.
 ## Plan
 1. **Metric decomposition proposal**: draft a split of low-quality-rate into sub-metrics by issue class (schema errors, finish/uncommitted, terminal interruptions) to avoid conflating agent quality with infra/guard friction.
 2. **Criteria calibration**: review evaluator criteria for (a) terminal interrupted sessions (Clean start) and (b) finish-blocked sessions; decide whether to classify as NI vs excluded/exception.
@@ -83,3 +82,12 @@ Milestone checkoff: Iteration 2 — mechanism + fix options
 - Worker is stuck due to *execution/tooling failures*, not analysis: `functions.message` was called with `content` as an object (must be string), and repeated attempts got tangled with git because `shared/projects/**` is ignored and `project.md` was unintentionally modified; also saw transient `.git/index.lock` errors.
 - The substantive metric (`evaluator.substantive-low-quality-rate-24h`) is already implemented in `agents/may/handlers/metrics-snapshot.ts`; remaining work is **governance + alert repointing**, not metric computation.
 - Iteration 5 approval packet contains the distilled ask + tables and should be the canonical reference when messaging May.
+- Add: “`evaluator.substantive-low-quality-rate-24h` already exists in the **metrics registry** (ALL_METRICS) in `agents/may/handlers/metrics-snapshot.ts`; remaining question is whether it is **measured** later in the file and whether alerting consumes the broad metric vs the substantive metric.”
+- Replace/clarify: “Avoid writing deliverables under `agents/shared/projects/**` for worker iterations because it is gitignored and causes finish()/commit guard failures; use `agents/evaluator/workspace/` + `message()` escalation instead.”
+- Add: “Next step is a workspace-based ‘patch handoff’ artifact + alert-consumer discovery, not additional planning docs.”
+
+Milestone checkoff: Iteration 2 — mechanism + fix options
+- DB `metrics` schema uses `id` (not `metric_id`). Current `evaluator.low-quality-rate-24h` is ~0.6823 in `metrics.current` with threshold 0.3.
+- Iteration 5 failed due to a **finish guard**: claimed deliverable without any file-producing command; process reliability is now a primary blocker.
+- Next unblock requires **verifying whether `evaluator.substantive-low-quality-rate-24h` exists in runtime `metrics`**; if it exists, alert pivot can happen without code changes; if not, code implementation is required.
+- `evaluator.substantive-low-quality-rate-24h` now exists in `metrics` and is low (0.0855) while `evaluator.low-quality-rate-24h` is very high (0.6823); project must now validate that the split corresponds to hygiene-only vs substantive failures using empirical `evaluations/sessions` data, then target the dominant hygiene driver(s) for behavior fixes or safely pivot alerting.
