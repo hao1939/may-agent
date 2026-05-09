@@ -199,7 +199,8 @@ function sessionOwnedTranscriptView(transcript: string): TranscriptView {
         own.push(text);
       } else if (toolName === "bash") {
         own.push(command);
-        if (/\bgit\s+(?:status|add|commit|diff|show)\b/.test(command)) own.push(text);
+        const inspectsSessionTranscript = /\.state\/sessions\/(?:history\/)?[^/\s]+\/session\.jsonl/.test(command);
+        if (!inspectsSessionTranscript && /\bgit\s+(?:status|add|commit|diff|show)\b/.test(command)) own.push(text);
       } else if (toolName === "read" && /\.state\/sessions\/(?:history\/)?[^/\s]+\/session\.jsonl/.test(String(call?.arguments?.path ?? ""))) {
         own.push("SESSION_READ_BLOCKED_OR_ATTEMPTED");
       }

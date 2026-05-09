@@ -81,6 +81,46 @@ describe("evaluator aftermath transcript checks", () => {
     expect(transcriptIssues(transcript)).toEqual([]);
   });
 
+  it("ignores quoted session-transcript errors when bash inspects another session jsonl", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "bash-1",
+            name: "bash",
+            arguments: { command: "nl -ba .state/sessions/history/s_target/session.jsonl | sed -n '1,80p'" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "bash-1",
+        toolName: "bash",
+        content: [
+          {
+            type: "text",
+            text: "10\t{\"role\":\"toolResult\",\"toolName\":\"finish\",\"content\":[{\"type\":\"text\",\"text\":\"finish() blocked [uncommitted changes]\"}],\"isError\":true}\n13\t{\"role\":\"toolResult\",\"toolName\":\"query_db\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"error\\\":\\\"no such column: summary\\\"}\"}],\"isError\":true}",
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "write-1",
+            name: "write",
+            arguments: { path: "agents/dev/workspace/investigations/example.md", content: "review" },
+          },
+        ],
+      }),
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toEqual([]);
+  });
+
   it("ignores successful query_db rows that quote historical schema errors", () => {
     const transcript = [
       JSON.stringify({
