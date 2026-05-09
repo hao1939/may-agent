@@ -2807,3 +2807,71 @@ query_db({
 CONTEXT_UPDATE:
 - `evaluator.substantive-low-quality-rate-24h` now exists in `metrics` and is low (0.0855) while `evaluator.low-quality-rate-24h` is very high (0.6823); project must now validate that the split corresponds to hygiene-only vs substantive failures using empirical `evaluations/sessions` data, then target the dominant hygiene driver(s) for behavior fixes or safely pivot alerting.
 
+### Iteration 2 — 2026-05-09T02:44:22.229Z
+**Worker**: **Status:** done (2m10s)
+
+**Files modified:**
+- agents/shared/projects/evaluator-low-quality-rate-calibration/outputs/iteration-2-mechanism-and-fix-options.md
+
+**Files read (not modified):**
+- agents/evaluator/workflows/evaluator-aftermath.ts
+- agents/may/handlers/session-aftermath-scan.ts
+
+**Errors encountered:**
+- [finish] finish() blocked [uncommitted changes]: You have 1 uncommitted file(s) in agents/:
+   M shared/projects/evaluator-low-quality-rate-calibration/outputs/iteration-2-mechanism-and-fix-options.md
+
+Ignored generated runtime file(s):
+  M evaluator/last-session.md
+
+Commit them with a descriptive message be
+- [bash] The following paths are ignored by one of your .gitignore files:
+shared/projects
+hint: Use -f if you really want to add them.
+hint: Turn this message off by running
+hint: "git config advice.addIgnoredFile false"
+
+
+Command exited with code 1
+
+**Agent response:**
+Wrote the iteration-2 mechanism+fix-options report (rule locations, stratified 20-session audit, and intervention options) and committed it despite shared/projects being gitignored (used git add -f).
+**Reviewer**: CONTINUE — - **I believe**: We now have a concrete causal mechanism: heuristic v2’s step-function (`issues.length>0 => quality=0.55 + needs_improvement`) plus a few brittle transcript/session-field triggers is driving most of the `needs_improvement` volume, and those cases are mostly hygiene/pipeline rather than substantive failures (per the 20-session audit).
+- **I’m uncertain about**: The *correct* intervention target for the goal metric: whether `evaluator.low-quality-rate-24h` is intended to include pipeline/hygiene failures (as “low quality”) or should be split; also I couldn’t verify the live metric value from the DB because the `metrics` table doesn’t appear to store this metric by that name.
+- **I’d change my mind if**: A larger, independently sampled audit shows many hv=2/NI cases are genuinely wrong outputs (not hygiene), or if we can locate the metric source-of-truth (table/query) showing the alert is already computed from a different dataset than the evaluations we inspected.
+
+### Review answers
+1. **Is the goal closer?** Mechanistically yes (we can now change the right levers), but outcome-wise unverified: I couldn’t confirm the current metric value from DB, and no intervention has shipped yet.
+2. **What did we learn?** Exact rule locations + triggers: `agents/evaluator/workflows/evaluator-aftermath.ts` step-function scoring; `transcriptIssues()` matches “finish() blocked [uncommitted changes]” and `no such table/column`; `session-aftermath-scan.ts` uses `DEFAULT_HEURISTIC_VERSION=2` and refreshes only “good” evals (NI is sticky). The manual audit suggests NI is overwhelmingly hygiene/unscorable.
+3. **Is the current milestone the right next step?** Yes, but we should now move from “mechanism” to “intervention + validation”: pick one change path and prove it reduces the metric without increasing false-good.
+4. **Are we closing the loop?** Not yet—mechanism is identified, but we need (a) a scoring/metric split or (b) heuristic tuning + tests so it won’t regress.
+5. **Is it verified?** No. Next iteration must add a verifiable test/gym scenario (or offline backtest) showing fewer false NI *and* no new false-good.
+6. **What’s blocking progress?** Missing metric provenance: we need to locate where `evaluator.low-quality-rate-24h` is computed/stored so we can quantify impact and avoid optimizing the wrong thing.
+
+## Guidance for Iteration 3
+
+### (a) Concrete output
+Produce **two artifacts**:
+
+1) `agents/shared/projects/evaluator-low-quality-rate-calibration/outputs/iteration-3-metric-provenance-and-backtest-plan.md` containing:
+- Where `evaluator.low-quality-rate-24h` is defined (code file / SQL / job) and the exact computation inputs (tables/fields/time window).
+- A backtest plan: “If we implement change X, here is the query to estimate the metric delta on the last 24h of sessions.”
+
+2) (If metric provenance is found in code) a **patch plan** (not necessarily applied yet) that specifies *one* chosen intervention (recommend: introduce `unscorable` bucket + exclude from low-quality-rate, while tracking a separate pipeline-reliability metric), and the tests needed to prevent “false-good overturns”.
+
+### (b) What’s different
+Iteration 2 pinned down **heuristic rules + sample audit**.  
+Iteration 3 must pin down **metric definition + quantitative backtest**, so we can confidently choose between (1) metric/rubric split vs (2) heuristic tuning vs (3) workflow fixes—and verify the chosen change will actually move the alerting metric.
+
+### (c) First step
+Search for the metric’s source-of-truth in code/DB *without guessing names*:
+- In DB: inspect schema of likely tables (`PRAGMA table_info(metrics)`, `PRAGMA table_info(evaluations)`, and any “events/metric_samples/metric_history” tables if present), then query for rows whose `name` or `id` matches `evaluator.low-quality-rate-24h`.
+- In repo: grep for the string `low-quality-rate-24h` and for `evaluator.low-quality-rate` to find the computation/emit site.
+
+### Milestones
+- “Where heuristic v2 is implemented + the specific rules that map to the top issues.” (completed)
+- “A stratified manual audit of ~20 sessions” (completed)
+- Next milestone to target: **metric provenance + backtest** (new, required before code changes).  
+
+CONTEXT_UPDATE: - Heuristic v2 mechanism is a step-function in `agents/evaluator/workflows/evaluator-aftermath.ts`: failed sessions => q=0.2/NI; else any `issues[]` => q=0.55/NI; else q=0.85/good. - Top NI issues are triggered by simple transcript substring/regex matches (`finish() blocked [uncommitted changes]`, `no such column/table`) plus session fields (`status=interrupted`, `session.error='Clean start (fresh)'`). - `agents/may/handlers/session-aftermath-scan.ts` uses `DEFAULT_HEURISTIC_VERSION=2` and refreshes only missing evals or prior **good** evals; **needs_improvement is sticky** across heuristic version bumps. - Manual audit (n=20) suggests the majority of hv=2 NI cases are hygiene/unscorable rather than substantive task-quality failures; next step is to locate the exact computation of `evaluator.low-quality-rate-24h` and backtest proposed rubric/heuristic changes against it.
+
