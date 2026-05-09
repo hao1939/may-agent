@@ -78,6 +78,9 @@ describe("closed-loop-steward handler", () => {
 
     expect(result).toBe("returned");
     expect(runAgent).toHaveBeenCalledWith("may", expect.stringContaining("[cron:closed-loop-steward]"), { source: "closed-loop-steward" });
+    const task = runAgent.mock.calls[0]?.[1];
+    expect(task).toContain("## Routed Triage This Run");
+    expect(task).toContain("handler.failed-count owner=may reason=missing metric.alert_judged event");
   });
 
   it("warns may not to attempt direct DB writes during the audit", async () => {
