@@ -1,7 +1,7 @@
 # Iteration 5 — Approval packet: pivot paging from broad NI-rate to substantive-quality rate
 
 ## One-paragraph ask (approval needed)
-Please approve an **alerting / ownership decision** for evaluator quality monitoring: keep collecting `evaluator.low-quality-rate-24h` as the broad friction signal, but **treat `evaluator.substantive-low-quality-rate-24h` as the primary thresholded / paging quality metric** so alerts represent substantive output-quality failures rather than mixed hygiene/process penalties. Iteration 3’s DB-backed impact model showed the broad rate at **0.6807** (356/523), versus **0.0975** when hygiene-only cases are excluded and **0.0765** for substantive-only failures. In current runtime metrics, the broad metric remains high at **0.6809** while the substantive metric is much lower at **0.1586**. The substantive metric is already registered and measured in `agents/may/handlers/metrics-snapshot.ts`; approval is needed mainly to confirm policy intent and repoint any alerting/attention from the broad metric to the substantive one.
+Please approve an **alerting / ownership decision** for evaluator quality monitoring: keep collecting `evaluator.low-quality-rate-24h` as the broad friction signal, but **treat `evaluator.substantive-low-quality-rate-24h` as the primary thresholded / paging quality metric** so alerts represent substantive output-quality failures rather than mixed hygiene/process penalties. Iteration 3’s DB-backed impact model showed the broad rate at **0.6807** (356/523), versus **0.0975** when hygiene-only cases are excluded and **0.0765** for substantive-only failures. In the current runtime snapshot, the broad metric is still very high at **0.6972** while the substantive metric is materially lower at **0.1626**. The substantive metric is already registered and measured in `agents/may/handlers/metrics-snapshot.ts`; approval is needed mainly to confirm policy intent and ensure any alerting/attention is pointed at the substantive metric rather than the broad one.
 
 ## Table 1 — Observed rates and counterfactuals
 
@@ -10,8 +10,8 @@ Please approve an **alerting / ownership decision** for evaluator quality monito
 | Current broad low-quality rate | Iteration 3 recomputation of `evaluator.low-quality-rate-24h` | 356 / 523 | **0.6807** |
 | Hygiene-excluded counterfactual | Iteration 3 recomputation excluding `finish() blocked`, `uncommitted changes`, `schema/query error in transcript` | 51 / 523 | **0.0975** |
 | Substantive-only counterfactual | Iteration 3 recomputation using `sessions.status IN ('error','interrupted')` or issues containing `tool hallucination`, `verification failure`, `blind overwrite` | 40 / 523 | **0.0765** |
-| Current runtime broad metric | `metrics` table snapshot | n/a | **0.6809** |
-| Current runtime substantive metric | `metrics` table snapshot | n/a | **0.1586** |
+| Current runtime broad metric | `metrics` table snapshot | n/a | **0.6972** |
+| Current runtime substantive metric | `metrics` table snapshot | n/a | **0.1626** |
 
 Notes:
 - The runtime numbers drift slightly from Iteration 3 because the 24h window moved, but the separation remains large.
