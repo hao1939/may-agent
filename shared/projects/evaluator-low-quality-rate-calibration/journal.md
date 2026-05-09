@@ -2875,3 +2875,36 @@ Search for the metric’s source-of-truth in code/DB *without guessing names*:
 
 CONTEXT_UPDATE: - Heuristic v2 mechanism is a step-function in `agents/evaluator/workflows/evaluator-aftermath.ts`: failed sessions => q=0.2/NI; else any `issues[]` => q=0.55/NI; else q=0.85/good. - Top NI issues are triggered by simple transcript substring/regex matches (`finish() blocked [uncommitted changes]`, `no such column/table`) plus session fields (`status=interrupted`, `session.error='Clean start (fresh)'`). - `agents/may/handlers/session-aftermath-scan.ts` uses `DEFAULT_HEURISTIC_VERSION=2` and refreshes only missing evals or prior **good** evals; **needs_improvement is sticky** across heuristic version bumps. - Manual audit (n=20) suggests the majority of hv=2 NI cases are hygiene/unscorable rather than substantive task-quality failures; next step is to locate the exact computation of `evaluator.low-quality-rate-24h` and backtest proposed rubric/heuristic changes against it.
 
+### Iteration 4 — 2026-05-09T02:50:44.916Z
+**Worker**: **Status:** done (1m15s)
+
+**Files modified:**
+- agents/shared/projects/evaluator-low-quality-rate-calibration/outputs/iteration-4-metric-split-implementation-plan.md
+
+**Errors encountered:**
+- [finish] finish() blocked [uncommitted changes]: You have 3 uncommitted file(s) in agents/:
+   M shared/projects/evaluator-low-quality-rate-calibration/journal.md
+   M shared/projects/evaluator-low-quality-rate-calibration/outputs/iteration-4-metric-split-implementation-plan.md
+   M shared/projects/evaluator
+- [bash] The following paths are ignored by one of your .gitignore files:
+shared/projects
+hint: Use -f if you really want to add them.
+hint: Turn this message off by running
+hint: "git config advice.addIgnoredFile false"
+
+
+Command exited with code 1
+- [message] Validation failed for tool "message":
+  - content: must be string
+
+Received arguments:
+{
+  "to": "functions.message",
+  "content": {
+    "to": "may",
+    "intent": "implementation-request",
+    "priority": "P1",
+    "content": "Produced iteration-4 PR-ready metric split plan at agents/shared/project
+
+**Agent response:**
+Created PR-ready implementation plan for splitting evaluator low-quality into broad vs substantive metrics, with exact SQL, alerting recommendations, and verification queries.

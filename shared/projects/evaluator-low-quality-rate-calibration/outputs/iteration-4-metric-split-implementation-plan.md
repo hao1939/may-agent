@@ -1,180 +1,196 @@
-# Iteration 4 — Metric split implementation plan (PR-ready)
+# Iteration 4 — Metric split implementation plan (approach #1)
 
-## Goal
-Keep the existing broad metric (`evaluator.low-quality-rate-24h`) for operational hygiene + quality, but add a new **substantive-only** metric (`evaluator.substantive-low-quality-rate-24h`) and repoint alerting/threshold expectations to the substantive metric.
+## Summary
+The current metric `evaluator.low-quality-rate-24h` is **broad by definition**: it counts any evaluation that is `verdict in ('needs_improvement','low_quality')` OR has `quality < 0.4` OR `efficiency < 0.4`.
 
-This addresses the observed breach mechanism: the current broad metric counts **any** `needs_improvement` (including hygiene/process/runner/transcript problems) and therefore can be high even when *substantive output* quality is stable.
+That makes it a combined signal of **substantive output failures + operational hygiene/pipeline issues** (because heuristic v2 tends to label hygiene issues as `needs_improvement`).
+
+**Plan:** keep the broad metric unchanged for hygiene visibility, and introduce/standardize a second metric that isolates **substantive** evaluator failures, then pivot alerting/thresholding to the substantive metric.
 
 ---
 
-## 1) Exact proposed code changes (`agents/may/handlers/metrics-snapshot.ts`)
+## 1) Exact code changes proposed (`agents/may/handlers/metrics-snapshot.ts`)
 
-### 1.1 Keep existing metric (no behavior change)
-**Keep** `evaluator.low-quality-rate-24h` exactly as-is in both:
-- registry (`ALL_METRICS`) entry
-- measurement SQL
-
-Optionally (non-functional): ensure the registry `name` makes the intent explicit (it already does):
-- `"Broad needs-improvement/low-score evaluated sessions (24h)"`
-
-### 1.2 Add new metric to registry (if not already present)
-Add this `ALL_METRICS` entry adjacent to the current broad metric:
+### 1.1 Keep existing broad metric unchanged
+**No change** to the logic at (currently) ~lines 374–391:
 
 ```ts
-{ id: "evaluator.substantive-low-quality-rate-24h", name: "Substantive evaluator quality failures (24h)", owner: "evaluator", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P2" },
+const total = count(
+  "SELECT COUNT(*) as c FROM evaluations WHERE createdAt > ? AND agent NOT IN ('evaluator', 'judge')",
+  twentyFourH,
+);
+const needsImprovementOrLowScore = count(
+  `SELECT COUNT(*) as c
+   FROM evaluations
+   WHERE createdAt > ?
+     AND agent NOT IN ('evaluator', 'judge')
+     AND (verdict IN ('needs_improvement', 'low_quality') OR quality < 0.4 OR efficiency < 0.4)`,
+  twentyFourH,
+);
+record("evaluator.low-quality-rate-24h", total > 0 ? parseFloat((needsImprovementOrLowScore / total).toFixed(4)) : 0, total);
 ```
 
-Notes:
-- This metric already appears in the file header registry in the current snapshot (so no-op if already merged); confirm measurement logic exists below in the “Built-in Metric Measurements” section.
+**Doc/labeling only (optional but recommended):**
+- keep metric id the same, but ensure its **name** clearly indicates it is “broad (includes hygiene/process penalties)”. It already is:
+  - `"Broad needs-improvement/low-score evaluated sessions (24h)"`
+
+### 1.2 Add / standardize substantive-only metric
+This metric already exists in the registry (`ALL_METRICS`) and measurement section in the file, but the measurement logic currently uses `LIKE` on the serialized issues.
+
+**Change requested by this iteration:** implement the substantive metric using **DB-joinable conditions** (no fragile serialized-string matching), i.e. rely on session terminal status + structured issues markers (or a robust issues table if present).
+
+If the DB does not have a normalized issues table, keep a JSON-based joinable condition (see SQL below) and explicitly treat it as the best available “joinable” approach.
+
+**Registry entry (if missing):**
+```ts
+{ id: "evaluator.substantive-low-quality-rate-24h",
+  name: "Substantive evaluator quality failures (24h)",
+  owner: "evaluator",
+  type: "gauge",
+  target: 0.10,
+  threshold: 0.30,
+  unit: "ratio",
+  alert_op: ">",
+  priority: "P2" },
+```
+
+**Measurement block (replace current block):** see SQL in section 2.
 
 ---
 
-## 2) Exact SQL for the new metric (DB-joinable; no fragile hygiene subset logic)
+## 2) Exact SQL for the new metric (substantive-only)
 
-### 2.1 Metric definition
-**Denominator**: all non-evaluator/non-judge evaluations in the last 24h (same population as the broad metric).
+### Definition
+- **Denominator:** total evaluations in last 24h excluding evaluator/judge (`createdAt > :twentyFourH` and `agent NOT IN ('evaluator','judge')`).
+- **Numerator:** evaluations in last 24h (same base filter) where either:
+  1) `sessions.status IN ('error','interrupted')`, OR
+  2) evaluation has at least one **substantive marker** issue: `tool hallucination`, `verification failure`, `blind overwrite`.
 
-**Numerator**: last-24h non-evaluator/non-judge evaluations where **either**:
-1) the associated session is terminal-failed: `sessions.status IN ('error','interrupted')`, **OR**
-2) the evaluation has any **substantive** issue marker present in `evaluations.issues` (JSON array):
-   - `tool hallucination`
-   - `verification failure`
-   - `blind overwrite`
+### Preferred SQL (JSON-aware, avoids brittle substring checks)
+This assumes `evaluations.issues` is a JSON array of strings (as emitted by the evaluator).
 
-This is intentionally *not* a hygiene filter; it’s a direct positive classifier for “substantive failure signal.”
-
-### 2.2 SQL (two counts + ratio)
-Use these exact queries with the existing helper `count()` pattern in `metrics-snapshot.ts`.
-
-**Denominator** (total non-evaluator/non-judge evals last 24h):
 ```sql
 SELECT COUNT(*) AS c
 FROM evaluations e
-WHERE e.createdAt > (strftime('%s','now') - 24*60*60) * 1000
-  AND e.agent NOT IN ('evaluator', 'judge')
-```
-
-**Numerator** (substantive low-quality last 24h):
-```sql
-SELECT COUNT(*) AS c
-FROM evaluations e
-JOIN sessions s ON s.sessionId = e.sessionId
-WHERE e.createdAt > (strftime('%s','now') - 24*60*60) * 1000
+LEFT JOIN sessions s ON s.sessionId = e.sessionId
+WHERE e.createdAt > ?
   AND e.agent NOT IN ('evaluator', 'judge')
   AND (
-    s.status IN ('error','interrupted')
+    s.status IN ('error', 'interrupted')
+    OR EXISTS (
+      SELECT 1
+      FROM json_each(COALESCE(e.issues, '[]')) je
+      WHERE lower(je.value) IN (
+        'tool hallucination',
+        'verification failure',
+        'blind overwrite'
+      )
+    )
+  );
+```
+
+### Fallback SQL (if `evaluations.issues` is NOT valid JSON)
+If `e.issues` is stored as a string blob (non-JSON), then a joinable approach is not possible without schema change. In that case, use the existing `lower(...) LIKE ...` approach and treat it as interim:
+
+```sql
+SELECT COUNT(*) AS c
+FROM evaluations e
+LEFT JOIN sessions s ON s.sessionId = e.sessionId
+WHERE e.createdAt > ?
+  AND e.agent NOT IN ('evaluator', 'judge')
+  AND (
+    s.status IN ('error', 'interrupted')
     OR lower(COALESCE(e.issues, '')) LIKE '%tool hallucination%'
     OR lower(COALESCE(e.issues, '')) LIKE '%verification failure%'
     OR lower(COALESCE(e.issues, '')) LIKE '%blind overwrite%'
-  )
+  );
 ```
 
-**Rate computation** (TypeScript):
-```ts
-const denom = count(`...denominator query...`);
-const numer = count(`...numerator query...`);
-const rate = denom === 0 ? 0 : numer / denom;
-record("evaluator.substantive-low-quality-rate-24h", rate, denom);
-```
-
-Compatibility notes:
-- The live `sessions` table primary key is `sessionId` (not `id`), so join on `s.sessionId = e.sessionId`.
-- This uses positive substantive marker checks via `LIKE`, matching the current `metrics-snapshot.ts` implementation style and avoiding any “subset-of-hygiene-strings” logic.
-
----
-
-## 3) Alerting recommendation (thresholds/targets)
-
-### 3.1 Keep broad metric, but relax expectations
-- **Metric**: `evaluator.low-quality-rate-24h`
-- **Interpretation**: “hygiene + quality + pipeline interruptions” rate
-- **Recommended threshold/target**:
-  - threshold: **0.30** can remain if the intent is to catch any hygiene regressions; however it is currently noisy.
-  - recommended long-term: treat as **hygiene/operational KPI** with a higher threshold (e.g. 0.40–0.50) or lower priority.
-
-### 3.2 Use substantive metric for paging / primary alert
-- **Metric**: `evaluator.substantive-low-quality-rate-24h`
-- **Interpretation**: substantive failure signals (terminal failure or substantive issue markers)
-- **Recommended thresholds**:
-  - paging threshold: **0.30** (keep current paging semantics here)
-  - target: **0.10** (this is the “healthy” bar)
-
-This matches the impact model: broad ~0.392 vs substantive-only materially lower; the alert should align to the substantive signal to avoid hygiene-driven false pages.
-
----
-
-## 4) Verification plan (post-implementation)
-
-Run these two queries against the runtime DB (or via the existing metrics recomputation harness) to reproduce both rates and confirm they match the values recorded into `metric_snapshots`.
-
-### 4.1 Verify broad low-quality rate (current metric)
-(Use the exact query currently used in `metrics-snapshot.ts` for `evaluator.low-quality-rate-24h`.)
-
-If you need a standalone query that matches the common definition:
+### Denominator SQL
 ```sql
-WITH denom AS (
-  SELECT COUNT(*) AS n
-  FROM evaluations e
-  WHERE e.createdAt > (strftime('%s','now') - 24*60*60) * 1000
-    AND e.agent NOT IN ('evaluator', 'judge')
-),
-num AS (
-  SELECT COUNT(*) AS n
-  FROM evaluations e
-  WHERE e.createdAt > (strftime('%s','now') - 24*60*60) * 1000
-    AND e.agent NOT IN ('evaluator', 'judge')
-    AND (e.verdict IN ('needs_improvement','low_quality') OR e.quality < 0.4 OR e.efficiency < 0.4)
+SELECT COUNT(*) AS c
+FROM evaluations
+WHERE createdAt > ?
+  AND agent NOT IN ('evaluator', 'judge');
+```
+
+---
+
+## 3) Alerting recommendation (threshold/targets)
+
+### Keep broad metric, but de-emphasize it
+- `evaluator.low-quality-rate-24h` (broad: hygiene + substantive)
+  - recommended **threshold**: keep at `0.30` only if it is not paging; otherwise raise threshold substantially or switch it to non-paging severity.
+  - recommended **target**: `0.10` is OK as an aspirational target, but it is not realistic while heuristic v2 treats hygiene as NI.
+
+### Pivot paging/primary alert to substantive metric
+- `evaluator.substantive-low-quality-rate-24h` (substantive)
+  - recommended **threshold**: `0.30` (keep), since >30% substantive failures is urgent.
+  - recommended **target**: `0.10` (or lower once stable); earlier impact modeling suggests it is currently ~0.08–0.12.
+
+**Operational intent:**
+- Broad metric becomes “operational hygiene + quality pressure” (useful for process improvement).
+- Substantive metric becomes “are we actually producing wrong/unsafe outputs?” (page-worthy).
+
+---
+
+## 4) Verification plan (run after implementation)
+
+Run these two queries (same 24h window) and confirm they match the in-app metrics values.
+
+### Query A: reproduce `evaluator.low-quality-rate-24h`
+```sql
+WITH totals AS (
+  SELECT
+    COUNT(*) AS total,
+    SUM(CASE WHEN (verdict IN ('needs_improvement','low_quality') OR quality < 0.4 OR efficiency < 0.4) THEN 1 ELSE 0 END) AS flagged
+  FROM evaluations
+  WHERE createdAt > :twentyFourH
+    AND agent NOT IN ('evaluator','judge')
 )
 SELECT
-  num.n AS numerator,
-  denom.n AS denominator,
-  CASE WHEN denom.n=0 THEN 0 ELSE CAST(num.n AS REAL)/denom.n END AS rate
-FROM num, denom;
+  total,
+  flagged,
+  ROUND(CAST(flagged AS REAL) / NULLIF(total, 0), 4) AS rate
+FROM totals;
 ```
 
-### 4.2 Verify substantive low-quality rate (new metric)
+### Query B: reproduce `evaluator.substantive-low-quality-rate-24h`
+(JSON-based preferred; use fallback if needed)
+
 ```sql
-WITH denom AS (
-  SELECT COUNT(*) AS n
-  FROM evaluations e
-  WHERE e.createdAt > (strftime('%s','now') - 24*60*60) * 1000
-    AND e.agent NOT IN ('evaluator', 'judge')
+WITH totals AS (
+  SELECT COUNT(*) AS total
+  FROM evaluations
+  WHERE createdAt > :twentyFourH
+    AND agent NOT IN ('evaluator','judge')
 ),
-num AS (
-  SELECT COUNT(*) AS n
+substantive AS (
+  SELECT COUNT(*) AS flagged
   FROM evaluations e
-  JOIN sessions s ON s.sessionId = e.sessionId
-  WHERE e.createdAt > (strftime('%s','now') - 24*60*60) * 1000
-    AND e.agent NOT IN ('evaluator', 'judge')
+  LEFT JOIN sessions s ON s.sessionId = e.sessionId
+  WHERE e.createdAt > :twentyFourH
+    AND e.agent NOT IN ('evaluator','judge')
     AND (
-      s.status IN ('error','interrupted')
-      OR lower(COALESCE(e.issues, '')) LIKE '%tool hallucination%'
-      OR lower(COALESCE(e.issues, '')) LIKE '%verification failure%'
-      OR lower(COALESCE(e.issues, '')) LIKE '%blind overwrite%'
+      s.status IN ('error', 'interrupted')
+      OR EXISTS (
+        SELECT 1
+        FROM json_each(COALESCE(e.issues, '[]')) je
+        WHERE lower(je.value) IN (
+          'tool hallucination',
+          'verification failure',
+          'blind overwrite'
+        )
+      )
     )
 )
 SELECT
-  num.n AS numerator,
-  denom.n AS denominator,
-  CASE WHEN denom.n=0 THEN 0 ELSE CAST(num.n AS REAL)/denom.n END AS rate
-FROM num, denom;
+  totals.total,
+  substantive.flagged,
+  ROUND(CAST(substantive.flagged AS REAL) / NULLIF(totals.total, 0), 4) AS rate
+FROM totals, substantive;
 ```
 
-### 4.3 Snapshot cross-check
-Confirm that the computed rates are being written:
-```sql
-SELECT metric_id, value, sample_size, measured_at
-FROM metric_snapshots
-WHERE metric_id IN (
-  'evaluator.low-quality-rate-24h',
-  'evaluator.substantive-low-quality-rate-24h'
-)
-ORDER BY measured_at DESC
-LIMIT 20;
-```
-
----
-
-## 5) Implementation handoff notes
-- The registry entry for `evaluator.substantive-low-quality-rate-24h` already exists near the top of `metrics-snapshot.ts` in the current file view; the remaining work (if not yet implemented) is the measurement block below.
-- The alerting/paging consumer may be in-repo (metric evaluator) or external; if in-repo, search for alert routing keyed by `metric.id` and repoint from `evaluator.low-quality-rate-24h` to `evaluator.substantive-low-quality-rate-24h`.
+**Expected outcome:**
+- Broad rate remains high until hygiene drivers are addressed.
+- Substantive rate is materially lower and should be the main breach/alert signal.
