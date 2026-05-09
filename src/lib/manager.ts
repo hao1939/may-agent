@@ -106,6 +106,71 @@ interface ActiveSession {
   resumeMessages?: AgentMessage[];
 }
 
+type DispatchDedupDb = {
+  records?: Record<string, { agent?: string; lastStatus?: string; taskPrefix?: string }>;
+  version?: number;
+};
+
+function isHeartbeatSession(meta: { source?: string; task?: string }): boolean {
+  const source = meta.source ?? "";
+  const task = meta.task ?? "";
+  return source.includes("heartbeat")
+    || task.includes("waking up for your heartbeat")
+    || /^\[heartbeat\]/i.test(task);
+}
+
+function releaseStaleHeartbeatDispatchLease(persistDir: string, agent: string): boolean {
+  const dedupPath = join(persistDir, "dispatch-dedup.json");
+  if (!existsSync(dedupPath)) return false;
+
+  try {
+    const db = JSON.parse(readFileSync(dedupPath, "utf8")) as DispatchDedupDb;
+    const records = db.records ?? {};
+    const record = records[`${agent}::heartbeat`];
+    if (!record || record.lastStatus !== "running") return false;
+
+    record.lastStatus = "interrupted";
+    writeFileSync(dedupPath, JSON.stringify(db, null, 2));
+    return true;
+  } catch (err) {
+    log("warn", `[manager] Error releasing stale heartbeat dispatch lease for ${agent}: ${err instanceof Error ? err.message : String(err)}`);
+    return false;
+  }
+}
+
+function releaseOrphanedHeartbeatDispatchLeases(
+  persistDir: string,
+  sessions: Record<string, { agent: string; status: string; source?: string; task?: string }>,
+): string[] {
+  const dedupPath = join(persistDir, "dispatch-dedup.json");
+  if (!existsSync(dedupPath)) return [];
+
+  try {
+    const db = JSON.parse(readFileSync(dedupPath, "utf8")) as DispatchDedupDb;
+    const records = db.records ?? {};
+    const activeHeartbeatAgents = new Set(
+      Object.values(sessions)
+        .filter((session) => (session.status === "running" || session.status === "idle") && isHeartbeatSession(session))
+        .map((session) => session.agent),
+    );
+
+    const released: string[] = [];
+    for (const [key, record] of Object.entries(records)) {
+      if (!key.endsWith("::heartbeat") || record.lastStatus !== "running") continue;
+      const agent = record.agent || key.slice(0, -"::heartbeat".length);
+      if (activeHeartbeatAgents.has(agent)) continue;
+      record.lastStatus = "interrupted";
+      released.push(agent);
+    }
+
+    if (released.length > 0) writeFileSync(dedupPath, JSON.stringify(db, null, 2));
+    return released;
+  } catch (err) {
+    log("warn", `[manager] Error releasing orphaned heartbeat dispatch leases: ${err instanceof Error ? err.message : String(err)}`);
+    return [];
+  }
+}
+
 export interface SubagentManagerOptions {
   persistDir: string;
   projectRoot?: string;
@@ -543,6 +608,10 @@ export class SubagentManager {
     const interrupted: SessionInfo[] = [];
 
     for (const [sessionId, persisted] of stale) {
+      if (isHeartbeatSession(persisted) && releaseStaleHeartbeatDispatchLease(this._persistDir, persisted.agent)) {
+        log("info", `[manager] Released stale heartbeat dispatch lease for ${persisted.agent} from ${sessionId}`);
+      }
+
       if (opts?.abort) {
         const error = "Clean start (fresh)";
         this._registry.updateSessionStatus(sessionId, "interrupted", error);
@@ -578,6 +647,10 @@ export class SubagentManager {
     }
 
     this.cleanupStaleWorkflowRuns();
+    const releasedOrphanLeases = releaseOrphanedHeartbeatDispatchLeases(this._persistDir, this._registry.getRegistry().sessions);
+    for (const agent of releasedOrphanLeases) {
+      log("info", `[manager] Released orphaned heartbeat dispatch lease for ${agent}`);
+    }
     return { resumed, interrupted };
   }
 
