@@ -192,6 +192,46 @@ describe("evaluator aftermath transcript checks", () => {
     expect(transcriptIssues(transcript)).toEqual([]);
   });
 
+  it("ignores assistant prose quoting schema errors when no query_db toolResult failed", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "q1",
+            name: "query_db",
+            arguments: { sql: "SELECT sessionId, agent FROM sessions LIMIT 1" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "q1",
+        toolName: "query_db",
+        isError: false,
+        content: [{ type: "text", text: '{"rowCount":1,"rows":[{"sessionId":"s1","agent":"arc"}]}' }],
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "text",
+            text: "This session quoted no such column: summary while analyzing another session's transcript, but made no failing query_db call of its own.",
+          },
+          {
+            type: "toolCall",
+            id: "w1",
+            name: "write",
+            arguments: { path: "agents/shared/knowledge/example.md", content: "review" },
+          },
+        ],
+      }),
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toEqual([]);
+  });
+
   it("ignores successful query_db rows that quote historical schema errors", () => {
     const transcript = [
       JSON.stringify({

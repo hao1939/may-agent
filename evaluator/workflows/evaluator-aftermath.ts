@@ -134,7 +134,28 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function hasUnresolvedSchemaQueryIssue(_transcript: string, ownText: string): boolean {
+function hasUnresolvedSchemaQueryIssue(transcript: string, ownText: string): boolean {
+  const records = parseJsonlTranscript(transcript);
+  if (records) {
+    let lastSchemaError = -1;
+    let lastRecoveringQuery = -1;
+    let queryIndex = 0;
+
+    for (const record of records) {
+      if (record?.role !== "toolResult" || record?.toolName !== "query_db") continue;
+      const text = contentText(record.content);
+      const isSchemaError =
+        record?.isError === true || /"error"\s*:\s*"(?:[^"]*no such (?:column|table)[^"]*)"/i.test(text);
+
+      if (isSchemaError) lastSchemaError = queryIndex;
+      else lastRecoveringQuery = queryIndex;
+      queryIndex += 1;
+    }
+
+    if (lastSchemaError !== -1) return lastSchemaError > lastRecoveringQuery;
+    return false;
+  }
+
   const lastSchemaError = Math.max(ownText.lastIndexOf("no such column:"), ownText.lastIndexOf("no such table:"));
   if (lastSchemaError === -1) return false;
 
