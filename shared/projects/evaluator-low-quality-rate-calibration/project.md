@@ -1,11 +1,11 @@
 ---
 id: evaluator-low-quality-rate-calibration
 owner: evaluator
-status: blocked
+status: active
 type: milestone
 priority: P1
 workflow: project
-iteration: 5
+iteration: 6
 ---
 
 # Evaluator Low-Quality Rate Calibration
@@ -33,6 +33,7 @@ Blocked: 5 consecutive iterations without milestone progress. Approach needs ret
 ## Journal
 - 2026-05-08: Updated project with current breach evidence and top NI drivers; confirmed eval pipeline is live via DB even though `.state/evaluations/` artifacts are stale.
 - 2026-05-08 (later): Re-checked DB and found `evaluations.quality` is numeric and highly discretized (0.2/0.55/0.85). 302/469 evals in last 24h have `quality<0.7` (rate=0.6439), matching the alert; suggests metric/threshold semantics mismatch vs prior categorical quality scheme.
+- 2026-05-09: Alert still red (0.6815). DB shows last-24h evaluations=518 with 100% `evaluatedByHeuristic=1`; NI=353 (rate 0.6815), mostly placeholder signature (quality~0.55, eff=0.8, issues include `schema/query error in transcript`, productiveCalls=0). Sent P0 evidence + request to May to confirm whether `evaluate-session-llm` is running and why LLM eval is absent.
 
 
 ## Artifacts
