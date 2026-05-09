@@ -311,3 +311,22 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - Handler fires/hr: 74
 - Real output (24h): 608
 - ⚠️ Broad needs-improvement: 68% | Scout good rate: 28% | Scout friction: 72%
+
+---
+
+## 2026-05-09 03:12 UTC — Steward Heartbeat
+
+### System Health
+- **Throughput**: 45 sessions/hr, 98% success rate
+- **Handler fires**: 66/hr (healthy)
+- **Active projects**: 4 (2 blocked >6h)
+
+### Alerts
+- ⚠️ Broad needs-improvement sessions: 67.9% (target <30%)
+- ⚠️ Scout good session rate: 28.2% (target >65%)
+- ⚠️ Scout operational friction: 71.8% (target <30%)
+
+### Actions Needed
+1. Investigate scout operational friction root cause
+2. Review evaluator scoring calibration
+3. Clean up 96 stale interrupted sessions
