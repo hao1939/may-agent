@@ -313,3 +313,11 @@ Ran `monitor-session.cjs --running`: 4 checked, 2 healthy, 2 `PRODUCTIVITY_STALL
 Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` are still placeholder stubs generated 2026-04-29, so there are still no fresh calibration-disagreement inputs to process this cycle.
+
+**Last run**: 2026-05-09 15:31Z — DB canonical check confirms session-eval pipeline remains live/recent (`MAX(evaluations.createdAt)=1778340591254`; `MAX(sessions.startedAt)=1778340665880`; `MAX(sessions.endedAt)=1778340672928`; lag ≈74.6s vs `startedAt`, ≈81.7s vs `endedAt`; `evals_last24h=660`; `llm_evals_last24h=22`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table; no evidence of current eval-pipeline staleness.
+
+Inbox sanity check on the currently surfaced evaluator targets found all sampled aftermath artifacts already present in workspace (`s_1778340345830_6`, `s_1778339650440_22`, `s_1778339645115_21`), so the newest pending `session.start`/`session.end` rows are best treated as already-acted or in-flight backlog noise rather than dropped aftermath work.
+
+Ran `monitor-session.cjs --running`: 2 checked, 2 healthy, 0 alerts.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there are still no fresh calibration-disagreement inputs to process this cycle.
