@@ -68,3 +68,7 @@
 ## Pattern: a blocked first finish does not negate a good outcome when recovery is immediate
 - Symptom: a session's first `finish(success)` is rejected for missing read-back verification, which can make the whole run look low-quality if the review stops there.
 - Fix: continue through the transcript. If the agent immediately performs the required read() calls, verifies the edited files, and then finishes cleanly with a real deliverable, score the outcome from the recovered end state and count the initial finish block as minor efficiency waste rather than a failed session.
+
+## Pattern: partial closeout can still be a successful builder outcome when the blocker is unrelated ambient dirt
+- Symptom: a session edits code, adds tests, commits only its intended files, then ends `partial` because post-commit `git status` still shows unrelated runtime/log/project dirt owned elsewhere.
+- Fix: inspect the actual commit and artifact state before downgrading. If the patch is committed, verified, and the agent correctly refused to stage unrelated files, credit the substantive outcome and treat the `partial` as a hygiene/environment blocker rather than proof the work failed.
