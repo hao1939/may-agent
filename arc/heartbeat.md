@@ -25,8 +25,13 @@ Status values are `done | error | interrupted | running` (no `'completed'`). `ev
 (NOT `payload` — recurring footgun; aftermath flagged
 s_1778213206775_3 for it). `metrics` uses `updated_at` (NOT
 `lastUpdated`) and `current` (NOT `value` / `current_value`); there is
-no `config` table — config is the `metrics.config` TEXT column. When in
-doubt, the `query_db` tool returns the schema in its error hint, or run
+no `config` table — config is the `metrics.config` TEXT column. The
+`projects` table uses **`id`** (PK, not `projectId`) and **`updated_at`**
+(unix ms, not `updatedAt`); columns are `id, path, name, owner, status,
+type, workflow, iteration, priority, milestones_done, milestones_total,
+updated_at` — aftermath flagged s_1778283660240_292 for `SELECT projectId,
+updatedAt FROM projects` on 2026-05-08. When in doubt, the `query_db`
+tool returns the schema in its error hint, or run
 `PRAGMA table_info(<table>)` first. (KE-816)
 
 > **⚠️ opCount is frozen at 0 since 2026-05-07 09:13Z** (KE-796). Every
