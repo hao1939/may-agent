@@ -194,3 +194,15 @@
 **Summary**: High growth in infrastructure for agents: `obscura` (headless browser for agents, 11k+ stars) and `CubeSandbox` (secure lightweight sandbox for AI agents by Tencent, 5k+ stars). Another trending repo is `fireworks-tech-graph` for generating technical diagrams from natural language.
 **Implication**: The agent ecosystem is moving heavily towards robust execution environments (browsers and secure sandboxes) rather than just frameworks. We should consider evaluating CubeSandbox for secure execution of arbitrary code in our agent workflows.
 **KB**: KE-021 (New/Pending)
+
+### AI Co-Mathematician: Accelerating Mathematicians with Agentic AI
+**Source**: http://arxiv.org/abs/2605.06651v1
+**Summary**: Introduces AI co-mathematician, an interactive workbench for open-ended mathematical research. It provides an asynchronous, stateful workspace for ideation, lit search, computation, theorem proving, and theory building, scoring 48% on FrontierMath Tier 4.
+**Implication**: Highlights the importance of asynchronous, stateful, and interactive workspaces for agents in complex knowledge work, aligning with our workflow concepts.
+**KB**: KE-001 (new)
+
+### Superintelligent Retrieval Agent: The Next Frontier of Information Retrieval
+**Source**: http://arxiv.org/abs/2605.06647v1
+**Summary**: Introduces SIRA, which compresses multi-round exploratory search into a single corpus-discriminative retrieval action. It uses offline document enrichment and online query expansion validated by document-frequency statistics to form a single weighted BM25 query.
+**Implication**: Shows a way to optimize agent retrieval by moving from iterative search to single, highly-informed, corpus-aware queries, potentially reducing latency and cost in RAG agents.
+**KB**: KE-002 (new)
