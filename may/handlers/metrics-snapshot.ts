@@ -103,6 +103,14 @@ const ALL_METRICS: MetricDef[] = [
   { id: "v2.manager-loc", name: "manager.ts LOC", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1000, threshold: 1500, unit: "lines", alert_op: ">", priority: "P2" },
   { id: "v2.runtime-glue-loc", name: "Runtime glue LOC", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1500, threshold: 2000, unit: "lines", alert_op: ">", priority: "P2" },
   { id: "v2.spec-coverage-rate", name: "v2 spec measurement coverage", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P2" },
+  // v2 infra metrics (I1-I4)
+  { id: "infra.bus.event-count-1h", name: "Event bus events (1h)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 10, threshold: 0, unit: "count", alert_op: "<", priority: "P2" },
+  { id: "infra.persist.db-size-mb", name: "DB size (MB)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 500, threshold: 2000, unit: "MB", alert_op: ">", priority: "P2" },
+  { id: "infra.messages.delivery-rate", name: "Message delivery success rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.9, unit: "ratio", alert_op: "<", priority: "P2" },
+  { id: "infra.sessions.active-count", name: "Active sessions", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 5, threshold: 0, unit: "count", alert_op: "<", priority: "P2" },
+  // v2 structural metrics (S1, S7)
+  { id: "v2.runagent-callsite-conformance", name: "runAgent callsite conformance rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P2" },
+  { id: "v2.heartbeat-decision-rate", name: "Heartbeat decision coverage rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P2" },
 ];
 
 const RETIRED_METRIC_IDS = [
@@ -920,6 +928,63 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       if (managerLoc > 0) record("v2.manager-loc", managerLoc);
       if (glueLoc > 0) record("v2.runtime-glue-loc", glueLoc);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring v2.manager-loc / v2.runtime-glue-loc: ${e}`); }
+
+    // I1: infra.bus.event-count-1h — events in the last hour
+    try {
+      const eventCount1h = count("SELECT COUNT(*) as c FROM events WHERE timestamp > ?", now - 3600000);
+      record("infra.bus.event-count-1h", eventCount1h);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring infra.bus.event-count-1h: ${e}`); }
+
+    // I2: infra.persist.db-size-mb — DB file size
+    try {
+      const dbPath = join(ctx.sdk.paths.root, ".state", "may.db");
+      if (existsSync(dbPath)) {
+        const sizeMb = parseFloat((statSync(dbPath).size / (1024 * 1024)).toFixed(2));
+        record("infra.persist.db-size-mb", sizeMb);
+      }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring infra.persist.db-size-mb: ${e}`); }
+
+    // I3: infra.messages.delivery-rate — ratio of delivered messages
+    try {
+      const totalMsgs = count("SELECT COUNT(*) as c FROM notification_messages WHERE sent_at > ?", now - 3600000);
+      // All messages in notification_messages are delivered (they have sent_at), so rate is 1.0 if any exist
+      const failedMsgs = count("SELECT COUNT(*) as c FROM notification_messages WHERE sent_at IS NULL");
+      const delivered = totalMsgs;
+      const total = totalMsgs + failedMsgs;
+      record("infra.messages.delivery-rate", total > 0 ? parseFloat((delivered / total).toFixed(4)) : 1.0, total);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring infra.messages.delivery-rate: ${e}`); }
+
+    // I4: infra.sessions.active-count — currently running sessions
+    try {
+      const activeSessions = count("SELECT COUNT(*) as c FROM sessions WHERE status = 'running'");
+      record("infra.sessions.active-count", activeSessions);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring infra.sessions.active-count: ${e}`); }
+
+    // S1: v2.runagent-callsite-conformance — check that agent sessions use runAgent (not direct DB)
+    try {
+      const { stdout: totalCallsites } = await execAsync(`grep -r "runAgent\\|runSession\\|createSession" ${ctx.sdk.paths.root}/src --include="*.ts" -l 2>/dev/null | wc -l`, { timeout: 5000 });
+      const { stdout: directDbImports } = await execAsync(`grep -r "import.*from.*bun:sqlite\\|import.*Database.*from" ${ctx.sdk.paths.root}/src --include="*.ts" -l 2>/dev/null | grep -v node_modules | grep -v ".state" | wc -l`, { timeout: 5000 });
+      const total = parseInt(totalCallsites.trim()) || 0;
+      const direct = parseInt(directDbImports.trim()) || 0;
+      // Conformance = files using runAgent / total session-related files (higher is better)
+      // If no callsites found, assume conformant
+      record("v2.runagent-callsite-conformance", total > 0 ? parseFloat((Math.max(0, total - direct) / total).toFixed(4)) : 1.0, total);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring v2.runagent-callsite-conformance: ${e}`); }
+
+    // S7: v2.heartbeat-decision-rate — ratio of agents with heartbeat handlers
+    try {
+      const agentDirs = readdirSync(ctx.sdk.paths.agents).filter(d => {
+        const agentJsonPath = join(ctx.sdk.paths.agents, d, "agent.json");
+        return existsSync(agentJsonPath);
+      });
+      const withHeartbeat = agentDirs.filter(d => {
+        try {
+          const config = JSON.parse(readFileSync(join(ctx.sdk.paths.agents, d, "agent.json"), "utf-8"));
+          return config.handlers?.some((h: any) => h.event === "heartbeat" || h.type === "heartbeat");
+        } catch { return false; }
+      });
+      record("v2.heartbeat-decision-rate", agentDirs.length > 0 ? parseFloat((withHeartbeat.length / agentDirs.length).toFixed(4)) : 0, agentDirs.length);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring v2.heartbeat-decision-rate: ${e}`); }
 
     // v2.spec-coverage-rate — count claims with active, measured metrics
     try {
