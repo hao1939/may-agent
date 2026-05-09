@@ -71,7 +71,7 @@
 ## Pattern: artifact-gated recovery sessions can still produce substantive value
 - Symptom: a session starts from a low-bar prompt like "produce any artifact," which makes the resulting write look like mere compliance at first glance.
 - Fix: inspect the actual artifact and source evidence before judging. If the agent used live sources and turned the forced write into a concrete, system-relevant analysis, credit the substantive output while separately noting any scoping or verification hiccups (for example writing into another agent's workspace or missing the first read-back).
-- Extra caution: verify that the recovery artifact is in a tracked, committable location before treating it as the session's real output. A workspace write can satisfy the local gate yet fail to ship if the path is gitignored; if the agent catches that quickly and pivots to a tracked file, score the pivot as recovery rather than as a failed outcome.
+- Extra caution: verify that the recovery artifact is both **tracked/committable** and **in-lane** before treating it as the session's real output. A workspace write can satisfy the local gate yet fail to ship if the path is gitignored, and a write into another agent's workspace can look readable while still violating ownership/lane rules. If the agent catches that quickly and pivots to a tracked in-lane file, score the pivot as recovery rather than as a failed outcome; if it does not, treat the artifact as structurally invalid even when the content itself is useful.
 
 ## Pattern: shell echo can silently corrupt markdown artifacts
 - Symptom: the transcript shows a plausible `echo "...\n..." >> file` append, but the landed artifact contains literal `\n` sequences on one line instead of real markdown line breaks.
