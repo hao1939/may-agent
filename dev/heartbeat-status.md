@@ -1,6 +1,33 @@
 # Dev Heartbeat Status
 
-Updated: 2026-05-08T05:33:00Z
+Updated: 2026-05-09T10:50:00Z
+
+## 2026-05-09T10:50Z heartbeat update
+
+Judgment: no Approved work-queue item is available, current handler success is healthy, and the newest dev-targeted signals are either already fixed/documented or blocked on runtime/session-runner ownership outside `/app/agents`. This heartbeat therefore performed explicit inbox triage, project liveness checks, and dirty-state classification rather than starting an unapproved Proposed implementation.
+
+Evidence snapshot:
+- Work queue: `## Approved` is empty; all implementation candidates remain under `## Proposed`.
+- Core metrics: `handler.success-rate=1`, `handler.failed-count=0`, `session.error-rate-6h=0.176` below the `0.3` alert threshold, `session.empty-assistant-stop-count-1h=0`, and `eval.llm-coverage-lag-h=0.48` below its 4h threshold.
+- Current unresolved alerts are not dev-owned: `project.blocked-count`, `v2.spec-coverage-rate`, `scout.good-session-rate-24h`, and `scout.operational-friction-rate-24h`.
+- Active metrics snapshot freshness is healthy: no active metric lacked a snapshot in the last hour.
+- Recent handler failures are historical; newest `handler.failed` rows are older metrics-snapshot/import and workflow-runner load failures while current `handler.failed-count=0`.
+- Recent failed/interrupted sessions are dominated by evaluator `status=error,error=NULL` rows and recurring `status=interrupted,error='Clean start (fresh)'` rows; the latter remains documented as a runtime/session-start issue in `dev/workspace/investigations/2026-05-09-clean-start-interrupts-and-opcount.md`.
+- Git state from `/app/agents` at start contained generated runtime files (`*/last-session.md`, shared gate/log files) plus concurrent `v2-spec-coverage-buildout` project updates; this heartbeat stages only the intentional `dev/heartbeat-status.md` update.
+
+Current pending event dispositions:
+- Acted/already fixed: evaluator FYI for may session `s_1778318632617_2` about failed writes being tracked for post-write verification. Prior dev commit `c72d95316` (`dev: ignore failed writes in verify guard`) is the concrete fix; no new patch needed.
+- Acted/documented: false-positive aftermath triage for `s_1778318889307_18` is captured in `dev/workspace/investigations/2026-05-09-evaluator-forbidden-path-false-positive.md`; implementation belongs to the evaluator workflow owner unless Approved.
+- Acted/documented: false-positive/opCount triage for `s_1778317686099_15` and the P1 clean-start interrupt pattern are captured in `dev/workspace/investigations/2026-05-09-clean-start-interrupts-and-opcount.md`; fix requires runtime/session-runner ownership outside the editable agents tree.
+- Acted/already scoped: empty-assistant-stop implementation request is represented by shared project `empty-assistant-stop-runtime-retry`, currently `blocked` until runtime owner access/patch.
+- Acted/already delivered: eval LLM lane restoration project remains `pending-review`; live metric evidence shows non-heuristic evaluation lag healthy at `0.48h`.
+- Dismissed: repeated `session.start` and routine `session.end` lifecycle events are informational and superseded by this heartbeat's fresh checks.
+- Dismissed for direct dev action: active alerts owned by may/scout/project owners have no dev-owned active-alert operation in this prompt.
+
+Next watch items:
+1. If `Clean start (fresh)` interrupts or `opCount=0` false positives recur as an Approved implementation request and runtime source becomes available, create/activate a runtime-owned project or patch the session accounting writer.
+2. If `eval.llm-coverage-lag-h` breaches again or reviewer requests changes, resume `eval-llm-lane-restoration` from `pending-review`.
+3. Continue leaving generated runtime dirt uncommitted unless it is the explicit deliverable.
 
 ## 2026-05-08T05:33Z heartbeat update
 
