@@ -66,3 +66,7 @@ Initial baseline from 2026-05-09 heartbeat: total `233`; top sources `workflow:s
 ### 2026-05-09 — Opened from dev heartbeat
 
 Opened because routine heartbeat evidence showed healthy handlers and no dev-owned alerts, but the prior substantive driver refresh plus fresh DB validation identified a durable cross-workflow reliability problem. The next concrete action is transcript sampling for the top sources, then a narrow workflow/guard prompt patch rather than more evaluator calibration.
+
+### 2026-05-09 — Post-patch heartbeat validation
+
+Validated the first finish-hygiene patch after commit `99c94af88`. The shared heartbeat/project/metric-alert-triage prompts now include explicit read-back, dirty-state classification, narrow staging, and clean-status evidence requirements, but the evaluator's 24h signature still reads `237` sessions (`workflow:scout-heartbeat=56`, `closed-loop-steward=40`, `workflow:may-heartbeat=33`, `workflow:metric-alert-triage=29`, `workflow:project=25`, `workflow:dev-heartbeat=22`). A 1h slice shows 7 fresh routed cases, led by `workflow:scout-heartbeat=3`; next validation should sample fresh scout-heartbeat and closed-loop-steward transcripts after the shared prompt change has had time to propagate, then patch any source-specific closeout path that bypasses the shared hygiene block.
