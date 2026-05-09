@@ -1,52 +1,59 @@
-# Iteration 5 — Approval packet: pivot alerting from broad NI-rate to substantive quality-rate
+# Iteration 5 — Approval packet: pivot alerting from broad NI-rate to substantive-quality rate
 
-## One-paragraph ask (approval request)
-Please approve **keeping** the current broad metric (`evaluator.low-quality-rate-24h`) for dashboarding, but **pivoting alerting/thresholding** away from it and onto `evaluator.substantive-low-quality-rate-24h` (already implemented + currently low). The data show the broad metric is dominated by hygiene/pipeline penalties (e.g., `finish() blocked`, `schema/query error in transcript`), so it breaches persistently even when substantive output quality is acceptable. The change preserves visibility into hygiene via the broad metric (and/or separate hygiene metrics), while making the “quality breach” alert represent substantive failures.
-
----
-
-## Table 1 — Rates in last 24h (from Iteration 3)
-
-| Definition | Numerator | Denominator | Rate | Notes |
-|---|---:|---:|---:|---|
-| **Current (baseline)**: `evaluator.low-quality-rate-24h` | 356 | 523 | **0.6807** | Counts `needs_improvement` / `low_quality` OR `quality<0.4` OR `efficiency<0.4` |
-| **Hygiene-excluded (counterfactual)** | 51 | 523 | **0.0975** | Excludes issues containing hygiene markers: `finish() blocked`, `uncommitted changes`, `schema/query error in transcript` |
-| **Substantive-only (counterfactual)** = substantive metric intent | 40 | 523 | **0.0765** | Terminal failure (`sessions.status in ('error','interrupted')`) OR substantive markers (`tool hallucination`, `verification failure`, `blind overwrite`) |
+## One-paragraph ask (approval needed)
+Please approve an **alerting/policy pivot**: keep collecting `evaluator.low-quality-rate-24h` (broad: includes hygiene/process “needs_improvement” outcomes), but **move paging/thresholding to `evaluator.substantive-low-quality-rate-24h`** (substantive: terminal failures and core correctness/safety markers). This aligns the alert with “real quality collapse” rather than pipeline/hygiene friction, while preserving separate visibility into hygiene regressions.
 
 ---
 
-## Table 2 — Proposed metrics + thresholds (policy)
+## Table 1 — Observed rates (last 24h; DB-backed in Iteration 3)
 
-| Metric id | What it means | Proposed alert threshold | Proposed target | Action owner |
+| Definition | Metric / counterfactual | Numerator / Denominator | Rate |
+|---|---|---:|---:|
+| **Current (baseline)** | `evaluator.low-quality-rate-24h` definition (NI/low_quality OR quality<0.4 OR efficiency<0.4) | 356 / 523 | **0.6807** |
+| **Hygiene-excluded (counterfactual)** | Baseline low-quality **excluding** issues containing hygiene markers (`finish() blocked`, `uncommitted changes`, `schema/query error in transcript`) | 51 / 523 | **0.0975** |
+| **Substantive-only (counterfactual)** | Terminal failure (`sessions.status IN ('error','interrupted')`) OR issues contain (`tool hallucination`,`verification failure`,`blind overwrite`) | 40 / 523 | **0.0765** |
+
+Notes:
+- In the sampled 24h slice, substantive flags were **entirely driven by terminal failures**; the three substantive marker strings were 0 occurrences.
+- This implies the current breach is primarily definition/aggregation: hygiene/unscorable outcomes are being treated as “low quality.”
+
+---
+
+## Table 2 — Proposed metrics + thresholds (policy/alert intent)
+
+| Metric id | What it represents | Recommended target | Recommended paging threshold | Actionability / owner |
 |---|---|---:|---:|---|
-| `evaluator.low-quality-rate-24h` | Broad “friction” (hygiene + substance + pipeline unscorable counted as NI/low) | **No paging** (dashboard only) | Trend down over time | Evaluator/infra owners; used for hygiene discovery |
-| `evaluator.substantive-low-quality-rate-24h` | Substantive quality failures (terminal failures + explicit substantive markers) | **0.30** (replace current paging metric) | **≤ 0.10** | Evaluator quality owner (this aligns with intent of “quality breach”) |
-
-If a separate hygiene page is desired: add/confirm one or more dedicated hygiene metrics (finish-blocked rate, schema/query error rate, runner interrupted/error rate) with their own thresholds and owners.
+| `evaluator.low-quality-rate-24h` | **Broad friction rate**: any NI/low_quality or low quality/efficiency score (includes hygiene/process and unscorable outcomes) | 0.10 (info) | **Not primary paging** (dashboard / secondary alert) | Mixed owners (agent behavior + pipeline) |
+| `evaluator.substantive-low-quality-rate-24h` | **Substantive evaluator quality failures**: terminal failures and core correctness/safety markers | 0.10 | **0.30 (primary paging)** | Primary “quality collapse” signal |
+| (optional follow-up) `evaluator.unscorable-rate-24h` / `evaluator.hygiene-failure-rate-24h` | Explicitly track pipeline/hygiene causes separately (e.g., interrupted, transcript query errors, finish blocked) | 0.05–0.10 | TBD | Pipeline/workflow owners |
 
 ---
 
-## Exact code touch list (if any changes are needed)
+## Exact code touch list (surgical)
 
-**No metric code change is required** to compute the substantive metric: `evaluator.substantive-low-quality-rate-24h` already exists in `agents/may/handlers/metrics-snapshot.ts`.
+No changes are proposed to `agents/shared/projects/**` (gitignored; causes workflow/finish guards).
 
-The remaining change is wherever the **alerting/threshold consumer** is configured to page on `evaluator.low-quality-rate-24h` today.
+If alerting is configured **in-repo**:
+1) **Potentially** update the metric registry/measurement (only if needed):
+   - `agents/may/handlers/metrics-snapshot.ts`
+     - Confirm `evaluator.substantive-low-quality-rate-24h` is **recorded** every snapshot run (it appears to already exist).
+2) Update whatever alert/threshold consumer watches `evaluator.low-quality-rate-24h` to instead watch `evaluator.substantive-low-quality-rate-24h`.
+   - (Discovery needed if not already known; search for `evaluator.low-quality-rate-24h` usage outside metrics snapshot.)
 
-1) **If alerting is in-repo**: update the alert config / threshold routing to page on `evaluator.substantive-low-quality-rate-24h` instead of `evaluator.low-quality-rate-24h`.
-2) **If alerting is external** (Grafana/Datadog/etc.): update the external monitor query + threshold accordingly.
-
-(Iteration 4 includes a PR-ready plan for a code-level metric split if we later decide to adjust definitions, but the key point here is: we can pivot alerting with *zero* metric computation changes.)
+If alerting is configured **externally** (Grafana/Alertmanager/etc.):
+- No code change needed; this packet is requesting the **policy decision and the alert rule change** in that external system.
 
 ---
 
 ## Rollback plan
 
-1) Revert the alert/monitor to page on `evaluator.low-quality-rate-24h` (the old query/monitor id should be kept in the change log).
-2) Keep both metrics recorded (no data model changes required), so rollback is only a monitor/config change.
+Rollback is straightforward and low-risk:
+1) Repoint paging/threshold back to `evaluator.low-quality-rate-24h` (original behavior).
+2) Keep `evaluator.substantive-low-quality-rate-24h` collecting as a dashboard metric for future analysis.
+3) No data migration is required; these are derived metrics computed from `evaluations`/`sessions` each snapshot.
 
 ---
 
 ## References
-
-- Iteration 3 impact model + numbers: `agents/shared/projects/evaluator-low-quality-rate-calibration/outputs/iteration-3-impact-model-and-recommendation.md`
-- Iteration 4 metric-split implementation plan (if we later choose to change definitions in code): `agents/shared/projects/evaluator-low-quality-rate-calibration/outputs/iteration-4-metric-split-implementation-plan.md`
+- Iteration 3 (impact model + numbers): `agents/shared/projects/evaluator-low-quality-rate-calibration/outputs/iteration-3-impact-model-and-recommendation.md`
+- Iteration 4 (metric-split implementation plan + SQL): `agents/shared/projects/evaluator-low-quality-rate-calibration/outputs/iteration-4-metric-split-implementation-plan.md`
