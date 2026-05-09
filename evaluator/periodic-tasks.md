@@ -399,3 +399,13 @@ Ran `monitor-session.cjs --running`: 2 checked, 2 healthy.
 Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
 
 Calibration note: reviewed recent `evaluation.false_good` examples and tightened `agents/evaluator/knowledge/criteria.md` with a new success-candidate false-good guard so commit+write heuristics do not over-credit repackaged, malformed, or merely re-logged output.
+
+**Last run**: 2026-05-09 20:31Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778358688245`; `MAX(sessions.startedAt)=1778358688261`; `MAX(sessions.endedAt)=1778358688052`; lag ≈16ms vs `startedAt`, and evaluations are newer than latest `endedAt` by ≈193ms; `evals_last24h=661`; `llm_evals_last24h=24`; `sessions_started_last24h=1514`; `sessions_ended_last24h=1510`). This keeps Process #5 live and Process #15 active, while `.state/evaluations/` remains a non-canonical legacy path.
+
+Inbox triage check on surfaced pending aftermath targets found completed artifacts already present for `s_1778347565286_114`, `s_1778358304145_241`, and `s_1778358111886_239`; the separately surfaced target `s_1778358342720_245` is a completed May heartbeat session rather than an evaluator aftermath target, so the current pending `session.*` / `evaluation.*` rows were treated as already-handled or backlog noise rather than dropped evaluator work.
+
+Ran `monitor-session.cjs --running`: 4 checked, 4 healthy.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
