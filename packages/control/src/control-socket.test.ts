@@ -1,11 +1,11 @@
 import { Duplex } from "node:stream";
 import { afterEach, describe, expect, it } from "vitest";
-import { sendSocketCommand, type SocketEndpoint } from "../packages/control/src/client.js";
+import { sendSocketCommand, type SocketEndpoint } from "./client.js";
 import {
   createControlSocketCore,
   type ControlEvent,
   type ControlSocket,
-} from "../packages/control/src/server.js";
+} from "./server.js";
 
 let sockets: ControlSocket[] = [];
 
@@ -79,6 +79,7 @@ function nextFrame(stream: Duplex): Promise<Record<string, unknown>> {
 }
 
 function createCore(overrides: Partial<Parameters<typeof createControlSocketCore>[0]> = {}): ControlSocket & {
+  attachClient: ReturnType<typeof createControlSocketCore>["attachClient"];
   endpoint: SocketEndpoint;
   emitted: ControlEvent[];
   getBroadcast: () => ((event: ControlEvent) => void) | undefined;

@@ -13,6 +13,7 @@
     "src"
   ],
   "scripts": {
-    "check": "tsc --noEmit -p tsconfig.json"
+    "check": "tsc --noEmit -p tsconfig.json",
+    "test": "bun test src/*.test.ts"
   }
 }
