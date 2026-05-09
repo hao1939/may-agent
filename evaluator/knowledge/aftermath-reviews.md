@@ -36,6 +36,10 @@
 - Symptom: a session publishes a table labeled “last 6h” or similar, but the numbers match all-time totals exactly because the aggregate query dropped the time predicate and only kept `GROUP BY agent`.
 - Fix: when reviewing operational rollups, compare the claimed windowed counts against a direct bounded query and, if needed, against all-time totals. If the “windowed” numbers match all-time totals, treat the conclusion as fabricated-by-query, not a minor arithmetic slip.
 
+## Pattern: global TOP-N grouped results can be misread as exhaustive per-agent distributions
+- Symptom: a session runs `GROUP BY agent, reason ORDER BY count DESC LIMIT N`, gets only the largest `(agent, reason)` buckets, then wrongly concludes each shown bucket represents 100% of that agent's sessions.
+- Fix: when a claim is about an individual agent's full distribution, rerun a direct per-agent breakdown (`WHERE agent=... GROUP BY reason`) or remove the global `LIMIT`. Never infer "all sessions" from a leaderboard-style grouped query.
+
 ## Pattern: partial file reads can create fake “missing config” mismatches
 - Symptom: an agent reads only the top of a long config file, does not see the relevant entry, and concludes a cron/job/handler is missing even though `grep` or a later offset read shows it exists.
 - Fix: when checking for the presence of a config entry in a long file, use `grep -n` first, then read the matching region by offset before making an absence claim.
