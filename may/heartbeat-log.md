@@ -364,3 +364,8 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - Investigate scout friction root cause
 - Review evaluator criteria strictness
 - Triage 2 projects blocked >6h
+
+## 2026-05-09T07:37 UTC
+- System: 77% success rate, 71 sessions/hr, 27 cron jobs active
+- Alerts: Scout quality 28.6% (target 85%), friction 71.4%, broad needs-improvement 67.7%
+- 139 active sessions, many stale. 3 projects, 2 blocked. No action needed.
