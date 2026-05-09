@@ -44,3 +44,9 @@
 **Summary**: Several notable AI agent tools have emerged recently. **Data-Analysis-Agent** is an intelligent assistant for business analysts. **WorldX** generates AI-driven worlds and emerging stories from a single sentence. **docsagent** is a local-first secure document indexing and chat assistant. **invincat** is a native Python agent CLI featuring hierarchical memory management for coding assistance.
 **Implication**: The trend continues towards specialized agents (data analysis, math, coding) and local-first/secure implementations (docsagent). The hierarchical memory management seen in `invincat` might be relevant for our own agent memory architecture.
 **KB**: To be added/updated as needed.
+
+### Specialized SLMs as Agent Components
+**Source**: Synthesis of recent XHS and HN trends
+**Summary**: There is a clear shift from using massive generalized models for every agentic step to routing specialized sub-tasks to smaller, fine-tuned SLMs. This optimizes latency, cost, and reliability for narrow tasks.
+**Implication**: We should identify high-volume, procedural tasks (like artifact-gate checking in the evaluator) that could be offloaded to a specialized SLM, freeing generalized reasoning for complex problems.
+**KB**: KE-1015 (new)
