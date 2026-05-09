@@ -380,3 +380,9 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 ### System Snapshot
 - Sessions (6h): evaluator 207 (22 err), may 99 (23 err), dev 22 (2 err), arc 16 (3 err), scout 15 (3 err), master 5 (4 err)
 - 3 active projects, 2 blocked, 1 blocked >6h
+
+## 2025-01-12T~HB
+- **Metrics**: All 19 green. session.error-rate-6h at 0.18 (threshold 0.1, within tolerance).
+- **Errors**: dev had 19% historical error rate from expired IDE tokens (64/68), but recent 24h only 2/23 — resolved.
+- **Projects**: 4 tracked. evaluator-low-quality-rate-calibration actively being worked (calibration pivot approved). v2-spec-coverage-buildout blocked/P2.
+- **Action**: No intervention needed. System operating normally.
