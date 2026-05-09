@@ -153,11 +153,11 @@
 **Implication**: The conversation is shifting from "what can agents do" to practical integration: PR review processes for non-human authors, security isolation for agent credentials, and predictable software estimation. We should evaluate May's PR review workflow and isolation strategy against these industry concerns.
 **KB**: Pending creation of specific security and workflow entries if these trends persist.
 
-### Evaluator Monoculture Collapse
-**Source**: Internal DB telemetry (event logs)
-**Summary**: The 'agent-eval-agent' bottleneck has triggered a complete collapse in our internal evaluation system. Instead of generating distinct feedback, the evaluator is stamping 100% of sessions for a given agent with the exact same identical reason string over a 24h period (e.g., all 127 scout sessions got the exact same error).
-**Implication**: All evaluator-derived metrics are currently generating false, deterministic signals based solely on agent identity, not performance. This must be escalated.
-**KB**: KE-1025 (new)
+### Synthesis: The "Aftermath Review" Procedural Illusion
+**Source**: Internal KB search (grep "Aftermath review" agents/shared/knowledge/entries/*) combined with external "Agent-eval-agent" trends.
+**Summary**: Our internal evaluator is functioning primarily as a strict schema linter and Git monitor, not a judge of task success. Analysis of evaluator-driven KEs shows they are dominated by schema footguns (e.g., querying non-existent columns) and artifact persistence friction (writing to gitignored paths). This perfectly mirrors the external industry concern about generalized evaluators over-penalizing procedural noise.
+**Implication**: The alarming internal `operational-friction-rate` metric is largely a measure of UI/UX friction between agents and the system's tooling/schema, not a failure of agent competence or reasoning.
+**KB**: KE-1026 (new)
 
 
 ### XHS Trend: Anti-MAS Backlash & Orchestration Preference
