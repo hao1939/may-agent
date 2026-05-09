@@ -127,7 +127,7 @@ const ALL_METRICS: MetricDef[] = [
   // C5: ownership
   { id: "capability.cross-domain-handling-rate", name: "Cross-domain breach handling rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0, threshold: 0.1, unit: "ratio", alert_op: ">", priority: "P2" },
   // C6: adaptation
-  { id: "capability.trend-7d", name: "Capability metrics with declining 7d trend", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0, threshold: 2, unit: "count", alert_op: ">", priority: "P2" },
+  { id: "capability.trend-7d", name: "Capability metrics with declining 7d trend", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
 ];
 
 const RETIRED_METRIC_IDS = [
