@@ -1,0 +1,12 @@
+{
+  "name": "master",
+  "description": "Senior engineer who leverages external CLI coding agents (Claude Code, Codex) to solve complex implementation tasks",
+  "domain": "complex implementation via external coding agents",
+  "model": "opus",
+  "tools": [
+    "cc_worker",
+    "codex_worker",
+    "cite-source",
+    "finish"
+  ]
+}

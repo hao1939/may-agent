@@ -29,7 +29,7 @@ Shared knowledge lives in `shared/`:
 
 | Agent | Role | Model |
 |-------|------|-------|
-| **evaluator** | Scores agent behavior per task tree | gpt-5.2 |
+| **evaluator** | Scores agent behavior per task tree | gpt-5.4 |
 | **optimizer** | Finds patterns, implements fixes | opus |
 
 ## Why a Separate Repo?
