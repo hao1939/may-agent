@@ -3113,3 +3113,65 @@ Produced PR-ready metric-split implementation plan artifact defining a new subst
 
 **Agent response:**
 Updated the iteration-5 approval packet with current runtime metric values, verified the substantive metric is already registered/measured in metrics-snapshot.ts, and sent May an approval request linking the iteration-3 and iteration-4 evidence.
+**Reviewer**: CONTINUE — - **I believe**: the project has effectively achieved the **separation/paging** half of the goal: `evaluator.substantive-low-quality-rate-24h` is live in `metrics-snapshot.ts`, the runtime DB shows it at **0.1626** vs the broad metric at **0.6972**, and May’s heartbeat log records the pivot approving broad-as-dashboard and substantive-as-primary alert.
+- **I’m uncertain about**: whether the remaining false-good overturn rate is caused by a specific heuristic/override rule in `evaluator-aftermath.ts` that we can safely tighten, or whether the reviews are uncovering genuinely subtle failures that need better reviewer guidance instead.
+- **I’d change my mind if**: a case audit of recent `evaluation.false_good` events shows the overturns are mostly legitimate catches that the heuristic could not reasonably detect, or if there is already a merged test/gym scenario proving false-good recurrence is controlled.
+
+1. **Is the goal closer?**  
+   **Yes, partially.** The raw broad metric did **not** improve numerically (`evaluator.low-quality-rate-24h` is still **0.6972**), so the original headline metric is still red. But the system is closer to the real goal because the split now exists operationally: `evaluator.substantive-low-quality-rate-24h` is live at **0.1626**, and the prior broad alert history is resolved rather than continuing to page on the mixed signal.
+
+2. **What did we learn?**  
+   The approval/escalation path worked better than more planning. We also learned the remaining risk is now **not metric definition** but **scoring correctness**: `evaluator.false-good-rate-sample` is still **0.3438**, and `evaluator-aftermath.ts` emits `evaluation.false_good` whenever a heuristic `good` is later reviewed as `acceptable` or `needs_improvement`.  
+   Milestone checkoff: **Iteration 2 — mechanism + fix options**
+
+3. **Is the current milestone the right next step?**  
+   **No.** The next step should no longer be “find alert wiring / get approval.” That loop is exhausted. The right next milestone is a **false-good root-cause + hardening spec** focused on evaluator scoring behavior.
+
+4. **Are we closing the loop?**  
+   **Not yet.** We reduced false-penalty paging noise, but we have not yet prevented recurrence of false-good overturns. Threshold calibration alone is a symptom fix; the recurrence-prevention step is a scoring/test change in `evaluator-aftermath.ts` plus coverage.
+
+5. **Is it verified?**  
+   **Not enough.** There is a unit test for `falseGoodEventPayload`, but not yet a test/gym proving the scoring/override behavior yields acceptably low false-good overturns. If no such test exists, **writing that test is the next milestone**.
+
+6. **What’s blocking progress?**  
+   The blocker is now specific: there is **no evidence-backed, tested hardening change** for the false-good path. We know where the event is emitted, but we do not yet have a case-based breakdown tying recent overturns to a fixable decision rule.
+
+### (a) Concrete output
+Produce:
+
+`agents/shared/projects/evaluator-low-quality-rate-calibration/outputs/iteration-6-false-good-hardening-spec.md`
+
+It should contain **three sections**:
+
+1. **Recent false-good case table**  
+   For the most recent 5–10 `evaluation.false_good` cases, list:
+   - sessionId
+   - agent
+   - reviewedVerdict
+   - artifactPath
+   - what the heuristic likely missed
+   - whether the miss looks **fixable by evaluator logic** vs **requires reviewer-only judgment**
+
+2. **One recommended hardening change**  
+   Name the exact function/branch in `agents/evaluator/workflows/evaluator-aftermath.ts` that should change, and describe the minimal rule change. Do **not** propose multiple options; pick one.
+
+3. **Verification plan**  
+   Specify the exact tests to add/update in:
+   - `agents/shared/tests/evaluator-aftermath.test.ts`
+   
+   And answer explicitly:
+   - Is a gym scenario needed?
+   - If yes, what scenario should reproduce the bug class?
+
+### (b) What’s different
+Previous iterations were about **metric intent, split, and approval**.  
+This iteration is fundamentally different: it assumes the split/pivot is effectively accepted and moves to the **second half of the goal** — reducing false-good overturns by hardening evaluator scoring and requiring test coverage.
+
+### (c) First step
+`bash -lc "sed -n '360,620p' agents/evaluator/workflows/evaluator-aftermath.ts && printf '\n---\n' && sed -n '296,340p' agents/shared/tests/evaluator-aftermath.test.ts"`
+
+CONTEXT_UPDATE:
+- The metric split is no longer the main unknown: runtime DB shows `evaluator.low-quality-rate-24h=0.6972`, `evaluator.substantive-low-quality-rate-24h=0.1626`, and May’s heartbeat log records approval of broad-as-dashboard vs substantive-as-primary alert.
+- The remaining gap is evaluator scoring quality: `evaluator.false-good-rate-sample` is still elevated (`0.3438`), so the next milestone must target false-good root causes in `agents/evaluator/workflows/evaluator-aftermath.ts`.
+- `evaluation.false_good` is emitted when heuristic verdict `good` is later reviewed as `acceptable` or `needs_improvement`; preventing recurrence now requires a tested hardening change, not more metric-governance work.
+

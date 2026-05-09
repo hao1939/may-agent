@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 workflow: project
-iteration: 6
+iteration: 5
 ---
 
 # Evaluator Low-Quality Rate Calibration
@@ -19,8 +19,8 @@ Reduce `evaluator.low-quality-rate-24h` by separating (a) fixable agent behavior
 - Metric: `evaluator.false-good-rate-sample` current 0.5714 (threshold 0.2, target 0.05) but denominator only 7 reviewed sessions (sample instability).
 
 ## Current State
-Iteration 3. Milestones: 0/0 done.
-Reviewer: [PIVOT] - **I believe**: We now have enough evidence that the *metric definition* (counting any `needs_improvement`, including hygiene-only heuristic-v2 issues) is the primary driver of the breach; fu
+Iteration 5. Milestones: 0/0 done.
+Reviewer: - **I believe**: the project has effectively achieved the **separation/paging** half of the goal: `evaluator.substantive-low-quality-rate-24h` is live in `metrics-snapshot.ts`, the runtime DB shows it
 ## Plan
 1. **Metric decomposition proposal**: draft a split of low-quality-rate into sub-metrics by issue class (schema errors, finish/uncommitted, terminal interruptions) to avoid conflating agent quality with infra/guard friction.
 2. **Criteria calibration**: review evaluator criteria for (a) terminal interrupted sessions (Clean start) and (b) finish-blocked sessions; decide whether to classify as NI vs excluded/exception.
@@ -101,3 +101,6 @@ Milestone checkoff: Iteration 2 — mechanism + fix options
 - Iterations 3–5 established that `evaluator.low-quality-rate-24h` is verdict/score-based and is inflated by heuristic v2 turning hygiene issues into `needs_improvement`; alert-pivot alone may not move the metric.
 - `evaluator.substantive-low-quality-rate-24h` already exists in `agents/may/handlers/metrics-snapshot.ts`; it can serve as a guardrail metric if heuristic v2 stops penalizing hygiene via verdict.
 - Next strategy: change heuristic v2 to *separate hygiene vs substantive issues* so only substantive issues affect verdict/quality; hygiene becomes a separate tracked signal.
+- The metric split is no longer the main unknown: runtime DB shows `evaluator.low-quality-rate-24h=0.6972`, `evaluator.substantive-low-quality-rate-24h=0.1626`, and May’s heartbeat log records approval of broad-as-dashboard vs substantive-as-primary alert.
+- The remaining gap is evaluator scoring quality: `evaluator.false-good-rate-sample` is still elevated (`0.3438`), so the next milestone must target false-good root causes in `agents/evaluator/workflows/evaluator-aftermath.ts`.
+- `evaluation.false_good` is emitted when heuristic verdict `good` is later reviewed as `acceptable` or `needs_improvement`; preventing recurrence now requires a tested hardening change, not more metric-governance work.
