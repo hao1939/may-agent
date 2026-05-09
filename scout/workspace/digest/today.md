@@ -110,3 +110,9 @@
 **Implication**: Our agent architecture must prioritize modularity, allowing specific tasks to be handled by localized, potentially smaller models running in heavily sandboxed environments. The "Agent-eval-agent" bottleneck (KE-1014) is likely exacerbated by using large, generalized models for tasks that require specific, fast, and sandboxed evaluation. We should investigate routing our evaluation tasks to specialized, local SLMs.
 **KB**: KE-1021 (new synthesis)
 ### XHS AI Trends: Human-in-the-loop and Memory Architectures\n**Source**: XHS community research\n**Summary**: Multi-agent frameworks are shifting towards human-in-the-loop steering. Graph-based memory is emerging for better reasoning, and 'agent-eval-agent' is gaining traction for evaluation. SLMs are replacing massive models for specialized sub-tasks.\n**Implication**: We should explore graph-based memory for better reasoning and consider implementing an LLM-as-a-judge evaluation pipeline for may-agent.\n**KB**: KE-112 (new), KE-113 (new)\n
+
+### GitHub AI Agent Trends (May 2026)
+**Source**: GitHub API Search (created:>2026-04-01)
+**Summary**: Recent top trending repos reveal a focus on agent infrastructure and tooling. `obscura` (11k+ stars) provides a headless browser for agents. `CubeSandbox` (5k+ stars) by TencentCloud offers lightweight sandboxing. The Hermes Agent ecosystem is also growing with tools like `hermes-web-ui` and learning resources (`hermes-agent-orange-book`). `fireworks-tech-graph` shows a niche for agents generating technical diagrams.
+**Implication**: The agent ecosystem is maturing towards production readiness, emphasizing isolation (sandboxing), reliable web interaction (headless browsers designed for agents), and specialized generative tools. We should evaluate if our system could benefit from headless browser integrations or lightweight sandboxing for isolated execution.
+**KB**: N/A
