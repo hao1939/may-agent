@@ -258,12 +258,10 @@ Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.
 
 Governance note: repo search confirms the broad/substantive alert pivot already landed in `agents/may/handlers/metrics-snapshot.ts` (`evaluator.low-quality-rate-24h` threshold 0.80 / P3 dashboard-only; `evaluator.substantive-low-quality-rate-24h` threshold 0.30 / P1 primary alert), so the shared calibration project's current `waiting` status remains aligned with code reality.
 
-**Last run**: 2026-05-09 11:28Z — DB canonical check confirms session-eval pipeline is still live/recent (`MAX(evaluations.createdAt)=1778325970666`; `MAX(sessions.startedAt)=1778326021617`; `MAX(sessions.endedAt)=1778325970632`; lag ≈50.9s vs `startedAt`, ≈0.03s vs `endedAt`; `evals_last24h=607`; `llm_evals_last24h=12`; `sessions_last24h=1374`). Legacy `.state/evaluations/` top-level artifacts remain stale at the filesystem layer (latest files still Apr 29) → continue treating `.state/evaluations/` as a legacy output-path signal, not the canonical liveness source.
+**Last run**: 2026-05-09 11:57Z — DB canonical check confirms session-eval pipeline is still live/recent (`MAX(evaluations.createdAt)=1778327826539`; `MAX(sessions.startedAt)=1778327953340`; `MAX(sessions.endedAt)=1778327953314`; lag ≈126.8s vs `startedAt`, ≈126.8s vs `endedAt`; `evals_last24h=614`; `llm_evals_last24h=13`; `sessions_last24h=1384`). Legacy `.state/evaluations/` top-level artifacts remain stale at the filesystem layer (latest files still Apr 29) → continue treating `.state/evaluations/` as a legacy output-path signal, not the canonical liveness source.
 
-Ran `monitor-session.cjs --running`: 1 checked, 1 healthy.
+Ran inbox sanity check on the three newest aftermath targets: `agents/evaluator/workspace/aftermath/s_1778327327662_91.md`, `s_1778327419212_95.md`, and `s_1778327424424_96.md` all exist, so current aftermath coverage is keeping up with routed work.
 
-Ran `patrol.cjs`: **CRITICAL** due to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
+Patrol/monitor were not re-run this cycle; last known patrol state remains **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event).
 
-Signal-quality note: `events.status` totals remain unusable as a liveness metric (`pending=542352`, `handled=14`, `dismissed=4`, `done=1`), but raw hourly event volume shows handlers are active (`handler.completed`=75, `handler.started`=74, `session.end`=59, `session.start`=58 in the last hour). Continue treating event *rows/timestamps* as meaningful and event *status totals* as backlog/noise until proven otherwise.
-
-Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` are still placeholder stubs generated 2026-04-29, so they remain unusable as current calibration inputs.
+Signal-quality note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` are still placeholder stubs generated 2026-04-29, so they remain unusable as current calibration inputs.
