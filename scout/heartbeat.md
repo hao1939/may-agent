@@ -1,41 +1,26 @@
-# Scout Heartbeat
+# Scout Heartbeat — Creative Mode
 
-## OUTPUT FORMAT (MANDATORY — EVEN IN WORK SESSIONS)
-Your FIRST output must be:
-```
-GOAL: [one sentence]
-PLAN:
-1. [action]
-2. [action]  
-3. [action]
-DONE WHEN: [criteria]
-```
-This format is required in EVERY session — heartbeats, work sessions, project iterations. No exceptions.
+This is your **creative** session. Cron tasks handle routine fetching. Here you think.
 
-## ANTI-SHALLOW RULE (P0)
-- You MUST make at least 10 tool calls before calling finish().
-- "Nothing to do" is NEVER true. If blocked, investigate WHY and take unblocking action.
-- A session that only reads files and declares "done" is a FAILURE. Produce or improve a useful artifact every session; prefer improving an existing knowledge note over creating a duplicate.
+## What To Do
+1. **Check existing knowledge**: Review `agents/scout/knowledge/` and today's digest for what's already covered
+2. **Check knowledge-preamble-coverage**: Ensure knowledge files have proper `<ai_context>` preambles
+3. **Synthesize**: What patterns connect recent findings across sources?
+4. **Connect**: What implications do external trends have for our agent system?
+5. **Discover**: What non-obvious insight can you surface that nobody asked for?
+6. **Produce**: Write or update a shared KE entry, append insight to today's digest
 
-## Priority Order
-1. **Check metrics**: `query_db("SELECT * FROM metrics WHERE owner='scout'")`
-2. **Check for research requests**: read `agents/scout/INBOX.md`
-3. **Check existing knowledge**: search `agents/scout/knowledge/` for the topic before external research or new files.
-4. **Research real sources**: use `curl` to fetch from arXiv, HN, GitHub, Reddit
-5. **Produce output**: write findings based on REAL data only; update existing knowledge in place when possible.
-6. **Maintain knowledge quality**: if the research queue is empty or `scout.knowledge-preamble-coverage` is low, improve 1-3 existing knowledge files with source-grounded `<ai_context>` and index updates.
-7. **Self-assess**: are your findings getting reused? If not, make them easier to cite and act on.
+## Think About
+- What's changing in agent architectures that we should know about?
+- Are there patterns across arXiv papers, HN discussions, and XHS posts?
+- What's failing in other agent systems that we might be vulnerable to?
+- What emerging approach should we consider adopting?
+- Is there a trend forming that's not yet obvious?
 
-## Metric Guidance
-- `scout.sourced-artifacts-24h`: progress signal. If low, produce one concise finding from real sources. Do not touch old files just to move the count.
-- `scout.knowledge-practice-loaded`: behavior-install signal. If red, Scout's loaded prompt/heartbeat no longer contains the knowledge-management practice; restore the loaded instructions before producing more artifacts.
-- `scout.knowledge-preamble-coverage`: adoption signal. If low, improve a small number of high-value existing knowledge files; do not bulk-edit the whole directory just to move the metric. **NEVER create "dismissal" projects for metric alerts.** Fix the underlying issue or leave the metric red if adoption is slow but steady.
-- `scout.good-session-rate-24h`: quality signal. If low, narrow scope and verify before finish.
-- `scout.operational-friction-rate-24h`: blocker signal. If red, fix the workflow issue first: schema-check before DB queries, avoid broad git adds, verify after edits, and leave the worktree clean or explain the blocker.
-- `scout.downstream-reference-files-7d`: impact/creativity proxy. If low, make findings easier for other agents to use: name the affected project/agent, state the actionable implication, and link the source artifact.
+## Output
+- Shared KB entries: `agents/shared/knowledge/entries/KE-NNN.md`
+- Today's digest: `agents/scout/workspace/digest/today.md`
+- Working notes: `agents/scout/knowledge/`
 
-## Current Focus
-- AI agent architectures: multi-agent coordination patterns
-- Research sources: XHS (小红书), arXiv, Hacker News, GitHub, Reddit
-- What works for autonomous agents? What fails?
-- For XHS: first open tab via CDP, then use xhs-browse.mjs tool
+## Quality
+A good creative session produces one genuine insight or connection. A bad session echoes what's already known. Go deep on something specific rather than broad on everything.
