@@ -1085,3 +1085,17 @@ Signal dispositions:
 - Prior dev heartbeat closeout events: dismissed as superseded by this current triage.
 - Unresolved evaluator-owned alert #280: delegated/held with evidence because evaluator already judged and escalated it; next validation is the next metrics snapshot and alert recovery.
 - Dirty worktree state: classified as unrelated runtime/other-agent/shared-docs/project work; stage only this dev heartbeat artifact if committing.
+
+## 2026-05-10 Artifact Gate Follow-up - 19:40Z
+
+The artifact gate reopened this heartbeat because a prior turn ended without a file write. I produced this workspace note as the required durable artifact and reclassified repository hygiene before staging anything.
+
+Intentional deliverable for this follow-up:
+- `dev/workspace/heartbeat-log.md` — this artifact-gate follow-up entry only.
+
+Current dirty-state classification from `/app/agents` before staging:
+- Runtime/generated session state: `arc/last-session.md`, `dev/last-session.md`, `evaluator/last-session.md`, `master/last-session.md`, `may/last-session.md`, `scout/last-session.md`.
+- Runtime/gate logs: `shared/duration-gate-triggers.log`, `shared/gate-outcomes.log`.
+- Shared docs/project work owned outside this recovery: multiple `shared/may-agent-docs/**` files, `shared/projects/daily-alert-review/*`, `shared/projects/ruflo-learning-loop/project.md`, `shared/projects/v2-spec-coverage-buildout/journal.md`, and untracked `shared/workflows/closed-loop-steward.ts`.
+
+Disposition: stage and commit only `dev/workspace/heartbeat-log.md`. If unrelated dirty paths remain after the commit, report them as an external worktree-hygiene blocker instead of staging or cleaning other agents' work.
