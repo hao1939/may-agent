@@ -67,23 +67,24 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
   const heuristicVersion = config.heuristicVersion ?? DEFAULT_HEURISTIC_VERSION;
 
   return async () => {
-    const db = ctx.sdk.getDb();
     const now = Date.now();
     const cutoff = now - backfillHours * 60 * 60_000;
     const fallbackCutoff = now - fallbackDelayMs;
 
-    const running = db.prepare(
+    const running = ctx.sdk.query.sql(
       `SELECT COUNT(*) AS c
        FROM workflow_runs
        WHERE workflow = ?
          AND status = 'running'`,
-    ).get(workflow) as { c?: number } | undefined;
+      [workflow],
+      { limit: 1 },
+    ).rows[0] as { c?: number } | undefined;
     if ((running?.c ?? 0) >= maxConcurrent) {
       ctx.sdk.log("info", `[session-aftermath-scan] Skipping: ${running?.c ?? 0} ${workflow} workflow(s) already running.`);
       return;
     }
 
-    const candidates = db.prepare(
+    const candidates = ctx.sdk.query.sql(
       `SELECT s.sessionId, s.agent, s.status
        FROM sessions s
        LEFT JOIN evaluations e ON e.sessionId = s.sessionId
@@ -97,10 +98,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
              e.verdict = 'good'
              AND COALESCE(CAST(json_extract(e.overall, '$.heuristicVersion') AS INTEGER), 0) < ?
            )
-         )
+       )
        ORDER BY COALESCE(s.endedAt, s.startedAt) DESC
        LIMIT ?`,
-    ).all(cutoff, fallbackCutoff, heuristicVersion, limit) as Candidate[];
+      [cutoff, fallbackCutoff, heuristicVersion, limit],
+      { limit },
+    ).rows as Candidate[];
 
     if (candidates.length === 0) {
       ctx.sdk.log("info", "[session-aftermath-scan] No unevaluated sessions older than fallback delay.");

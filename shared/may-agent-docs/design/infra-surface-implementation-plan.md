@@ -1,6 +1,6 @@
 # Infra Surface Implementation Plan
 
-**Status**: Phase 1, Phase 2 first slice, and Phase 3 guard observability implemented.
+**Status**: Phase 1, Phase 2 first slice, Phase 3 guard observability, and Phase 4 first slice implemented.
 
 This plan turns [infra-surface.md](infra-surface.md) into small implementation
 slices. The goal is not a broad rewrite. Each phase should improve the system
@@ -139,16 +139,18 @@ interface ExecutionResult {
 
 Map these operations to the shared view:
 
-- `runAgent`
-- `runWorkflow`
-- `resumeSession`
-- `resumeWorkflow`
+- [x] `runAgent` result mapping
+- [x] `runWorkflow` result mapping
+- [x] persisted session lookup
+- [x] persisted workflow lookup
+- [ ] `resumeSession` diagnostic result mapping
+- [ ] `resumeWorkflow` diagnostic result mapping
 
 Validation:
 
-- Unit tests for session result mapping.
-- Unit tests for workflow result mapping.
-- UI/API can render session/workflow result cards with the same fields.
+- [x] Unit tests for session result mapping.
+- [x] Unit tests for workflow result mapping.
+- [ ] UI/API can render session/workflow result cards with the same fields.
 
 ## Phase 5: Resume Diagnostics And Failover
 
