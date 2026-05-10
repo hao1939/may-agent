@@ -1,23 +1,16 @@
-# May Heartbeat Log
+# Heartbeat Log — 2026-05-10
 
-## 2026-05-10T00:25 UTC — Artifact Gate Recovery
+## Red Metric Triage
 
-**System Health Summary:**
-- 94% success rate (45/48 sessions in last hour)
-- 4 active sessions running
-- All health checks PASS
-- DB size: 1130 MB (within threshold)
+### project.iterations-24h: 0 (target 10)
+**Operation: Downgrade / Known structural**
+Per KE-905 and KE-902, this metric fires because active projects are in waiting/paused/blocked states. The system has 420 completed sessions and 1046 real outputs in 24h. The one blocked project (finish-blocked-hygiene-reduction) is owned by dev and blocked on human/ops action.
 
-**Breached Metrics (4):**
-1. `scout.good-session-rate`: 0.38 (target 0.85) — scout quality needs attention
-2. `scout.operational-friction-rate`: 0.80 (target 0.1) — high friction in scout sessions
-3. `project.active-iterations`: 0 (target 10) — no active project iterations in 24h
-4. `message.conversation-close-rate`: 0.005 (target 0.05)
+### capability.message-conversation-close-rate: 0 (target 0.05)
+**Operation: Downgrade / Not instrumentable**
+The notification_messages table has no status/closed column — no mechanism to track conversation closures exists in the schema.
 
-**Key Observations:**
-- 161 sessions shown as "active" but most are stale/interrupted from days ago — zombie cleanup may be needed
-- Handler fires: 72/hr, completions: 422/6h — system is active
-- Evaluator throughput high: 26 sessions in last hour
-- 3 errors in last hour (scout, arc, evaluator) — all "agent ended without response"
-
-**Action:** No immediate escalation needed. Breached metrics are known and being tracked.
+## System Health
+- Sessions (6h): evaluator 179, may 77, scout 47, dev 25, arc 22
+- Errors: scout 4, evaluator 1, arc 1 — all low rate
+- Blocked project: finish-blocked-hygiene-reduction (dev) — needs human to run metric registration SQL
