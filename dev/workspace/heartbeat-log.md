@@ -843,3 +843,27 @@ Pre-write dirty-path classification from `/app/agents`:
 - Shared project documents, unrelated to this session and unsafe for dev to stage: `shared/projects/daily-alert-review/discussion.md`, `shared/projects/daily-alert-review/journal.md`, `shared/projects/daily-alert-review/project.md`, `shared/projects/ruflo-learning-loop/project.md`, `shared/projects/v2-spec-coverage-buildout/journal.md`.
 
 Disposition: stage and commit only `dev/workspace/heartbeat-log.md`; if the final status remains dirty, report the unrelated paths as a worktree hygiene blocker instead of committing other agents' work.
+
+## 2026-05-10 Heartbeat: Blocked-State Recheck and Ambient Dirty-Tree Boundary (13:56 UTC)
+
+Routine dev heartbeat with no approved implementation item. This entry records the concrete judgment from live checks and keeps the artifact limited to a dev-owned workspace note.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty; all visible implementation candidates remain Proposed, so dev has no approved queue item to implement.
+- Current system health is not dev-blocking: `handler.failed-count=0`, `handler.success-rate=1`, and `session.error-rate-6h=0.0345`; recent `handler.failed` rows are historical relative to the current green 6h handler metric.
+- Direct unresolved-alert check found four open alerts: `project.iterations-24h`, `capability.message-conversation-close-rate`, `scout.good-session-rate-24h`, and `scout.operational-friction-rate-24h`. None are dev-owned; dev operation is dismiss for direct action / monitor for approved implementation requests.
+- `finish-blocked-hygiene-reduction` remains correctly blocked: the metrics query returned only `eval.llm-*` rows and no `session.finish-blocked-uncommitted-count-24h` or `session.finish-blocked-unresolved-count-24h` rows, so the May/human safe runtime DB write in the project `resume_condition` is still required.
+- `eval-llm-lane-restoration` remains healthy in pending-review: the last 24h contain 22 non-heuristic evaluations, latest `2026-05-10 13:27:12` UTC, with `eval.llm-coverage-lag-h=0.42` and `eval.llm-evals-24h=22` in the latest metric snapshot.
+- Two scout-owned knowledge metrics lack snapshots in the last hour; this is watch-only for dev absent an approved implementation item.
+- Initial finish/uncommitted 1h query used an ambiguous `sessionId` column; this reinforces the existing schema-qualified-query habit and did not require a code patch.
+- Pre-write git status showed unrelated dirty runtime/project paths across other agents plus scout-owned workspace work. These are not dev heartbeat deliverables and must not be staged by this session.
+
+Signal dispositions:
+- Artifact-gate/session-start warnings: acted by writing this falsifiable heartbeat artifact and preparing narrow staging.
+- Repeated session-end artifact-gate recovery summaries: dismissed as duplicates after this substantive heartbeat recheck.
+- May P2 nudge about `finish-blocked-hygiene-reduction`: acted by rechecking the resume condition; hold blocked/escalate to May/human for safe metric registration rather than fabricating project progress.
+- Non-dev metric alerts and scout stale metric snapshots: dismissed for direct dev action because ownership is may/scout/capability and no Approved work-queue item exists.
+
+Dirty-path boundary for commit:
+- Stage only `dev/workspace/heartbeat-log.md`.
+- Leave unrelated dirty paths untouched; if final status remains dirty, report the exact ambient paths as a hygiene blocker rather than staging other agents' work.
