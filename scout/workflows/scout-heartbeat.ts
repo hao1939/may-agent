@@ -53,31 +53,8 @@ This session is for **creative, autonomous work** — things nobody asked you to
 - Find non-obvious implications for our agent system
 - Make connections between disparate research areas
 - Identify emerging trends before they're obvious
-- Update existing shared knowledge entries when they already cover the topic, or create new entries only when needed (agents/shared/knowledge/entries/KE-NNN-slug.md)
+- Update or create shared knowledge entries (agents/shared/knowledge/entries/KE-NNN.md)
 - Append any notable insights to agents/scout/workspace/digest/today.md
-
-## Knowledge Entry Discipline
-First decide whether the insight updates existing knowledge or needs a new entry.
-
-If an existing KE already covers the topic:
-- Read the existing file first.
-- Update it with a narrow edit or dated follow-up.
-- Do not replace the file with an unrelated new finding.
-
-If the insight is genuinely new:
-- List existing ids: \`cd /app/agents && ls shared/knowledge/entries | sed -E 's/^KE-([0-9]+).*/\\1/' | grep -E '^[0-9]+$' | sort -n | tail -20\`.
-- Choose \`max(existing numeric id)+1\`.
-- Use a descriptive slug: \`shared/knowledge/entries/KE-NNN-slug.md\`.
-- Never create or overwrite bare numeric files like \`KE-001.md\`, \`KE-030.md\`, or \`KE-1200.md\`.
-
-## Finish Hygiene (required before finish(success))
-Scout sessions frequently modify tracked knowledge/digest files. Do this BEFORE the first finish(success), not only after a guard rejection:
-1. After every write/edit/append, verify the changed file with read() (preferred) or a targeted file check for shell-written content.
-2. Run \`cd /app/agents && git status --short\` and identify only your intentional deliverables.
-3. Stage exact intentional paths only; never use \`git add .\`. If a Scout workspace deliverable is ignored, use \`git add -f -- '<exact path>'\`.
-4. Commit intentional deliverables with a descriptive \`scout: ...\` message.
-5. Re-run \`cd /app/agents && git status --short\`. Do not stage runtime files like \`scout/last-session.md\`, shared gate logs, or unrelated project files.
-6. In finish(success), list deliverables and cite read-back, commit id/output, and status check evidence.
 
 ${metricsBlock}
 
