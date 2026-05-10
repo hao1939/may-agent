@@ -20,7 +20,7 @@ projection, but judgment and repair work should live in workflows.
 | `metrics-snapshot` | Deterministic metric projection | `getDb` + metrics service | yes | Keep direct; it is measurement, not judgment. |
 | `coaching-consumer` | File-based coaching queue projection | filesystem | yes | Keep direct until the coaching queue is replaced by metrics/events. |
 | `project` | Project scanner, state mutator, workflow launcher | direct FS/DB + `runWorkflow` | temporarily | Split later: scanner/projection stays direct; project judgment should become workflow-backed. |
-| `metric-alert-reactor` | Alert owner resolution, dedup, triage dispatch | direct DB + `runWorkflow` | temporarily | Convert preflight reads to `sdk.query`; keep dispatch through `metric-alert-triage`. |
+| `metric-alert-reactor` | Alert owner resolution, dedup, triage dispatch | direct DB + `runWorkflow` + durable trace events | temporarily | Convert preflight reads to `sdk.query`; dispatch already records skip reason or triage workflow run id. |
 | `closed-loop-steward` | Loop audit and retriage | direct DB + `runWorkflow`/`runAgent` | temporarily | Convert context collection to functions/query; avoid raw `runAgent` after steward workflow exists. |
 | `eval-llm-scan` | Deep evaluator candidate selection and artifact validation | direct DB + `runAgent` | temporarily | Convert candidate reads to `sdk.query`; consider a workflow wrapper for context collection and artifact validation. |
 | `session-eval` | Legacy direct evaluator dispatch | direct session helpers + `runAgent` | no | Prefer `session-aftermath-scan`/`evaluator-aftermath`; retire or convert to workflow if still wired. |
@@ -51,6 +51,9 @@ projection, but judgment and repair work should live in workflows.
 
 ## Validation
 
-- Existing helper coverage: `run-workflow` uses `createWorkflowHandler`.
+- Existing helper coverage: `run-workflow` uses `createWorkflowHandler`, which
+  now emits `handler.skipped` and `handler.workflow_dispatched`.
 - Existing query-surface coverage: `session-aftermath-scan` uses `sdk.query`.
+- First alert-reactor traceability slice: `metric-alert-reactor` records
+  `handler.skipped` and `handler.workflow_dispatched` evidence.
 - Full test suite must stay green after each handler migration.

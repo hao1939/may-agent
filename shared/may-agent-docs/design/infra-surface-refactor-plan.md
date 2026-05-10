@@ -144,6 +144,9 @@ Stop criteria:
 
 ## Phase 3: Handler-To-Workflow Boundary
 
+Status: first traceability slice shipped for `metric-alert-reactor` and the
+generic workflow handler.
+
 Goal: handlers are bridges. Judgment and repair live in workflows.
 
 Reference: [handler-surface-audit.md](handler-surface-audit.md).
@@ -169,13 +172,18 @@ Scope:
   compatibility bridge being retired.
 - As handlers migrate, preserve or add shared execution-result mapping and trace
   vocabulary at the touched call sites. Do not leave that as a later retrofit.
+- [x] `sdk.runWorkflow` returns `workflowRunId` as `result.runId`.
+- [x] `createWorkflowHandler` emits `handler.workflow_dispatched` and
+  `handler.skipped` evidence.
+- [x] `metric-alert-reactor` emits durable `handler.skipped` reasons and
+  `handler.workflow_dispatched` with the triage workflow run id/status.
 
 Validation:
 
-- Each migrated handler records skip reason or workflow run id.
+- [x] Each touched handler records skip reason or workflow run id.
 - Loop trace shows: event -> handler -> workflow -> session/evidence.
 - Execution-result view can show the migrated workflow/session status.
-- Existing handler tests stay green.
+- [x] Existing handler tests stay green.
 
 Stop criteria:
 
