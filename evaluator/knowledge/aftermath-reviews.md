@@ -125,6 +125,10 @@
 - Symptom: a review or heuristic tries to verify that agent X shipped work by checking `git log --author=<agent>-agent`, but the landed commit subject/path clearly matches agent X while the author is `may-agent` or another shared identity.
 - Fix: do not use git author alone to decide ownership or whether a deliverable shipped. Verify by touched paths, commit subject prefix, landed diff content, and the session's own read-back/finish evidence. In `/app/agents`, author identity can be dominated by shared commit plumbing, so content beats author for attribution.
 
+## Pattern: a later falsifier can preserve the symptom but overturn the first session's mechanism claim
+- Symptom: a success-candidate session ships a useful KE or proposal with strong empirical evidence for a real symptom, but a near-term follow-up session from the same owner explicitly fires one of the artifact's own falsifiers and shows the stated mechanism was wrong.
+- Fix: review the follow-up artifact before scoring the first session as fully good. Keep credit for the durable empirical finding if it still stands, but downgrade output quality/root-cause quality when the original session overclaimed mechanism and the correction landed shortly after.
+
 ## Pattern: reused shared knowledge IDs can silently overwrite established entries
 - Symptom: a research session creates `shared/knowledge/entries/KE-0xx.md` for a fresh external finding without checking whether that ID already anchors an existing canonical knowledge entry. The landed commit then replaces an established KE with unrelated content while transcript self-report still calls it a "new" KB entry.
 - Fix: before crediting a KB addition, inspect the pre-change file (`git show <commit>^:path`) and search indexes/references for that KE id. If the id was already in active use, treat the session as partial value at best: preserve any rolling digest insight, but downgrade the KB output for destructive overwrite and recommend allocating a new unique KE id.
