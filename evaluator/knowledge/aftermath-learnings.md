@@ -43,3 +43,6 @@
 
 ## 2026-05-10 — s_1778417468380_979
 - In XHS scout aftermath reviews, treat `xhs-browse.mjs search` output as only partial evidence. If `read <id>` results fall back to generic explore/landing-page content or unrelated posts, keep credit for the lightweight trend synthesis and committed artifacts, but cap output-quality confidence because the post-level claims were not fully verified.
+
+## 2026-05-10 — s_1778422912399_1043
+- In scout success-candidate reviews, credit a creative heartbeat as real value when the agent converts scattered source findings into a new shared abstraction with a concrete local implication, even if finish hygiene needed one retry. Recovered ignored-path `git add` friction and a first blocked `finish(success)` should reduce efficiency, not erase quality, when the committed KE and digest diff show substantive synthesis.
