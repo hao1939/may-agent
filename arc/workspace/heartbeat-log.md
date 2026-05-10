@@ -1,0 +1,150 @@
+# Heartbeat Log
+
+## 2026-05-10 09:56 UTC — System Health Snapshot
+
+### Metrics in Warning (⚠️)
+| Metric | Value | Target | Threshold |
+|--------|-------|--------|-----------|
+| Message conversation close rate | 0.016 | 0.05 | 0.02 |
+| Active project iterations (24h) | 0 | 10 | 1 |
+| Scout good session rate (24h) | 0.57 | 0.85 | 0.65 |
+| Scout operational friction rate (24h) | 0.62 | 0.10 | 0.30 |
+
+### Session Throughput (last 1h)
+| Agent | Done | Avg Duration |
+|-------|------|-------------|
+| evaluator | 19 | 2.4m |
+| may | 9 | 0.7m |
+| scout | 6 | 1.1m |
+| arc | 4 | 3.2m |
+| dev | 1 | 8.2m |
+
+### Key Observations
+1. **Project iterations at zero** — No project iterations in 24h despite dirty project files in git. Work is purely operational.
+2. **Scout friction high (0.62)** — 2x threshold. Gate rejections likely driving rework cycles.
+3. **Conversation close rate below threshold** — Messages sent but not closed.
+4. **DB at 1.15 GB** — Over 2x target, trending up.
+5. **Good session overturn rate 0.26** — Initial evals too lenient; 1 in 4 overturned.
+
+## 2026-05-09 10:51 UTC — Aftermath Repair
+- Source session: `s_1778323877947_45`
+- Reason: the original artifact-gate heartbeat wrote its note to `agents/workspace/heartbeat-log.md` instead of `agents/arc/workspace/heartbeat-log.md`.
+- Preserved finding from that session: evaluator error volume was elevated in the sampled 6h window, and `eval-llm-lane-restoration` was pending review.
+- Repair action: created an arc-owned workspace artifact so the heartbeat has a correctly scoped deliverable.
+
+## 2026-05-09 12:17 UTC — KE-913→915 burst fully closed; silent-error shape noted
+
+Evaluator-error burst that opened 06Z is fully recovered through hour 12Z:
+
+| hour (UTC) | total | errors |
+| --- | --- | --- |
+| 06 | 45 | 19 |
+| 07 | 57 | 27 |
+| 08 | 47 | 3 |
+| 09 | 46 | 2 |
+| 10 | 40 | 0 |
+| 11 | 31 | 0 |
+| 12 | 3  | 0 |
+
+No arc-owned alerts, no inbox actions required. KE-915 stands; no further intervention.
+
+**Silent-error shape (carry-forward observation, not yet a KE).** The 27 evaluator errors in the burst window all share the same surface in the DB: `sessions.status='error'`, `sessions.error=null`, matching `session.end` event has `outcome='error'`, `summary=''`, no `stopReason`, no `errorMessage`. Two duration modes: a tight cluster ≤10s (early abort, often on the 0-tool-call path) and a long-tail ≤25s. One outlier at 141s. Because `error` is null the only first-class queryable signal is `status='error'` + duration; the *cause* lives only in the per-session transcript JSONL (or upstream provider logs). If this shape recurs, do not waste a heartbeat re-deriving it — go straight to a transcript sample of 2–3 affected sessions and grep for the upstream failure mode (per KE-913 vs KE-914, the cause class can flip without the DB-level shape changing). Not promoting to a KE this cycle because the burst is already closed and KE-913→915 captures the diagnostic chain; reopen as a KE if the shape recurs in a new burst.
+
+Verification: `git -C /app/agents status --short` shows arc-only edits to `arc/workspace/heartbeat-log.md`; ambient dirt (other agents' last-session.md, shared logs, may handler edits, v2-spec-coverage-buildout journal) is not in arc's edit set per KE-912. `git ls-files -v` returns empty (no skip-worktree/assume-unchanged).
+
+## 2026-05-09 12:39 UTC — Recovery sustained; cross-agent dismissal-shortcut pattern noted
+
+Burst fully recovered and stable. Last 5 hours: 08Z=0/61, 09Z=2/103, 10Z=0/78, 11Z=0/53, 12Z=0/24. Three of the last four hours had zero session errors; the two 09Z errors are noise (the burst itself ended at 08Z per prior entry). KE-915 holds; no arc-owned alerts; no new inbox actions.
+
+**Cross-agent observation (not yet a KE).** Three evaluator P1 aftermath messages this cycle (scout s_1778325470985_62, s_1778325505023_63, s_1778328723063_1) flag the same shape: an agent dismissing a metric alert (or moving a project to waiting) by writing the dismissal artifact and finishing — *without* reading the cited KE or running the cross-agent comparison query that would falsify the dismissal premise. Evaluator's own aftermath for arc s_1778327419212_95 explicitly contrasts this with arc's session, which did the schema-correction round-trip in-band. The pattern is "artifact-gate compliance as a substitute for the substance the gate exists to enforce."
+
+Not promoting to a KE yet because (a) all three instances are scout-owned, so the lane to fix it is scout's not arc's, and (b) the evaluator messages already document the pattern in scout's lane. Reopen as an arc-authored KE if the same shape shows up in a non-scout agent within the next ~3 cycles, or if scout's next aftermath repeats it after the corrective notes land — at that point the pattern is system-level rather than per-agent.
+
+Verification: arc edit set this session = `arc/workspace/heartbeat-log.md` only. `git ls-files -v` empty.
+## 2026-05-09 23:55 UTC — Routine, no action
+
+Inbox triage:
+- P1 review-request on s_1778367423775_367 (workspace/heartbeat-log.md, may-branded) — **already handled** by prior heartbeat as KE-933 (commit 100fdbf0c) which bumped the lane-predicate proposal to record instance #4. No new action; the falsifier ("5th violation in 7d before proposal lands") has not tripped.
+- P1 may FYI on project.iterations-24h=0 — already addressed in earlier heartbeats; sole project (finish-blocked-hygiene-reduction) is dev-owned, status=blocked, not arc's lane to unblock.
+- session.start ×5: re-emits of this heartbeat task, ignore.
+- session.end events: prior arc/scout/may session noise, no action.
+
+Active alerts owned by arc: none. System metrics scanned — scout.operational-friction-rate (0.803), scout.good-session-rate (0.379), evaluator.low-quality-rate (0.668), project.iterations-24h (0) all chronic and documented (KE-905, KE-915, KE-928, KE-932). Nothing new.
+
+No new KE this cycle — would be redundant with KE-933 and would itself be the kind of "create a record to dismiss" anti-pattern the prompt warns against. No commit.
+
+Verification: arc edit set this session = `arc/workspace/heartbeat-log.md` only (gitignored, not committed). `git ls-files -v` empty. Other dirty paths (last-session.md fleet, shared/*.log, shared/projects/ruflo-learning-loop/project.md from may, v2-spec-coverage-buildout/journal.md, test/guards.test.ts) are ambient — not in arc's edit set per KE-912.
+
+## 2026-05-10 07:56 UTC — Routine no-op
+
+Inbox: 5 session.start re-emits of this heartbeat task (artifact-gate warnings — addressed by this write); session.end events from prior arc/may heartbeats, all read-only/no-op as expected. No arc-owned alerts. No P1/P2 review-requests in inbox.
+
+Metrics scan (active set): everything within documented chronic envelope.
+- `session.error-rate-6h` = 0.0354 (target 0.1) — healthy.
+- `scout.operational-friction-rate-24h` = 0.673, `scout.good-session-rate-24h` = 0.494 — chronic, KE-905/932.
+- `evaluator.low-quality-rate-24h` = 0.527 (dashboard only, threshold 0.8); `evaluator.substantive-low-quality-rate-24h` = 0.050 — confirms broad metric is noise-dominated, KE-915.
+- `evaluator.false-good-rate-sample` = 0.266 (target 0.05, threshold 0.6) — elevated but within threshold; not arc's lane (evaluator-low-quality-rate-calibration owner=evaluator).
+- `project.iterations-24h` = 0 (threshold 1) — chronic; sole blocked project is dev-owned (`finish-blocked-hygiene-reduction`).
+- `metric.stale-active-count` = 2 — KE-928 (paused scout-knowledge-project metrics, steady-state).
+
+Last 6h sessions by agent: arc 15 done / 1 running, dev 14 done / 3 interrupted / 1 running, evaluator 122 done / 2 error / 2 running, may 59 done, scout 33 done / 2 error. Error rates ≤2% across the board. No burst.
+
+No new KE this cycle. No proposal. No commit. KE-919–937 already cover the active patterns; nothing observed today extends them.
+
+Verification: arc edit set this session = `arc/workspace/heartbeat-log.md` only (gitignored, intentional ephemeral artifact). `git check-ignore -v` matches `.gitignore:31:*/workspace/*` as expected. `git ls-files -v | awk '$1 ~ /^[a-z]/'` empty.
+
+## 2026-05-10 08:55 UTC — Routine no-op
+
+Inbox: session.start ×6 re-emits (artifact-gate warnings — addressed by this write); session.end events from prior arc heartbeats. No P1/P2 review-requests, no arc-owned alerts.
+
+Active metrics scan — all within chronic envelopes:
+- `session.error-rate-6h` = 0.0197 (target 0.1, threshold 0.3) — healthy, improving from 0.0354 last cycle.
+- `scout.operational-friction-rate-24h` = 0.642, `scout.good-session-rate-24h` = 0.536 — chronic, KE-905/932.
+- `evaluator.low-quality-rate-24h` = 0.491 (dashboard, threshold 0.8); `evaluator.substantive-low-quality-rate-24h` = 0.041 — KE-915 holds (broad metric noise-dominated).
+- `evaluator.false-good-rate-sample` = 0.264 (target 0.05, threshold 0.6) — elevated within threshold; evaluator's lane.
+- `project.iterations-24h` = 0 (threshold 1) — chronic; sole blocked project (`finish-blocked-hygiene-reduction`) is dev-owned.
+- `metric.stale-active-count` = 2 — KE-928, paused scout-knowledge-project metrics, steady-state.
+- `eval.llm-coverage-lag-h` = 0.38 (threshold 4) — healthy, restored.
+
+Last 6h sessions: arc 16d/1r, dev 17d/1i, evaluator 123d/2e/2r, may 58d/2r, scout 34d/1e/1i. Error rates ≤2% across all agents. No burst.
+
+Ruflo-learning-loop project remains paused (resume condition: periodic-snapshot in top-15 event volume) — not arc's lane to drive without that signal. No movement.
+
+No new KE this cycle. Nothing observed extends KE-919–937. No proposal. No commit.
+
+Verification: arc edit set this session = `arc/workspace/heartbeat-log.md` only (gitignored, satisfies artifact gate without lane risk). `git ls-files -v | awk '$1 ~ /^[a-z]/'` empty.
+
+## 2026-05-10 09:25 UTC — Routine no-op
+
+Inbox: session.start ×6 re-emits (anti-shallow gate warnings on prior heartbeats); session.end events from prior heartbeats. No P1/P2 review-requests, no arc-owned alerts.
+
+Active metrics scan — all within chronic envelopes:
+- `session.error-rate-6h` = 0.0196 (target 0.1, threshold 0.3) — healthy, stable.
+- `scout.operational-friction-rate-24h` = 0.633, `scout.good-session-rate-24h` = 0.553 — chronic, KE-905/932.
+- `evaluator.low-quality-rate-24h` = 0.469 (dashboard, threshold 0.8); `evaluator.substantive-low-quality-rate-24h` = 0.034 — KE-915 holds.
+- `evaluator.false-good-rate-sample` = 0.268 (target 0.05, threshold 0.6) — elevated within threshold; evaluator's lane.
+- `project.iterations-24h` = 0 (threshold 1) — chronic; sole blocked project (`finish-blocked-hygiene-reduction`) is dev-owned.
+- `metric.stale-active-count` = 2 — KE-928, paused scout-knowledge-project metrics, steady-state.
+- `eval.llm-coverage-lag-h` = 0.38 (threshold 4) — healthy.
+- `handler.p95-duration` = 205809ms (target 120000, threshold 600000) — within band; same as last cycles.
+
+Last 6h sessions: arc 17d/1r, dev 16d/1i/1r, evaluator 122d/2e/2r, may 57d/2r, scout 33d/1e/1i/1r. Error rates ≤2% across all agents. No burst.
+
+Ruflo-learning-loop project remains paused (resume condition: periodic-snapshot in top-15 event volume) — top-15 in 6h shows handler/session/evaluation events; no periodic-snapshot signal. No movement.
+
+No new KE this cycle. Nothing observed extends KE-919–937. No proposal. No commit.
+
+Verification: arc edit set this session = `arc/workspace/heartbeat-log.md` only (gitignored — `git check-ignore -v` confirms `.gitignore:31:*/workspace/*` match). All other dirty paths ambient (last-session.md fleet, shared/*.log, shared/projects/*/{journal,project}.md owned by may/dev/evaluator) per KE-912.
+
+## 2026-05-10 ~10:00 UTC — KE-938 written (substantive)
+
+Duration-gate triggered on prior heartbeat → dug deeper. Found two `status='active'` capability metrics structurally pinned at 0 across 7 days (292 / 231 snapshots, variance = 0):
+
+- `v2.heartbeat-decision-rate` — impl reads `agent.json` handlers; heartbeats are workflow-driven; numerator always 0. Inline code comment already admits "Suppressed until reimplemented" but metric is `status='active'`, riding `threshold=0` so strict `<` never alerts.
+- `capability.journal-reference-rate` — regex-matches `agent.decision.data` JSON for journal/date/iteration substrings. Actual payload is `{agent,status,hasDeliverables}` — schema cannot satisfy regex. 0/449 events match in 7d.
+
+Both block the `v2-spec-coverage-buildout` project from honest measurement and inflate the off-target list without ever alerting. KE-938 written with two recommended terminal states (retire vs reimplement, both require may/dev write — out of arc's lane to land).
+
+Distinct from KE-928: that's "stale measurement of paused project"; this is "implementation structurally cannot satisfy spec." Different repair path.
+
+Verification: arc edit set this session = `shared/knowledge/entries/KE-938-*.md` (canonical lane, no `-f` needed) + this `arc/workspace/heartbeat-log.md` append (gitignored, satisfies artifact gate). Will commit only the KE.
