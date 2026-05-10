@@ -19,7 +19,7 @@ declare const Bun: {
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import type { Duplex } from "node:stream";
-import { connectSocketEndpoint, findDaemonSocket, sendDaemonEvent } from "../../control/src/client.js";
+import { connectSocketEndpoint, daemonSocketPath, sendDaemonEvent } from "../../control/src/client.js";
 import { openStateDb, type SqliteDb } from "./state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./loop-trace.js";
 
@@ -50,6 +50,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   const PORT = opts.port;
   const PROJECT_ROOT = process.env.PROJECT_ROOT || resolve(STATE_DIR, "..");
   const AGENTS_ROOT = process.env.AGENTS_ROOT || resolve(PROJECT_ROOT, "agents");
+  const DAEMON_INSTANCE = process.env.DAEMON_INSTANCE || process.env.INSTANCE || "default";
+  const DAEMON_AGENT = process.env.DAEMON_AGENT || process.env.AGENT || "may";
 
   function _db(): SqliteDb {
     return openStateDb(join(STATE_DIR, "may.db"));
@@ -127,8 +129,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return { owner, name, projectId: `${owner}/${name}` };
   }
 
-  function findSocketPath(): string | null {
-    return findDaemonSocket(STATE_DIR, { agent: "*" });
+  function conventionSocketPath(): string {
+    return daemonSocketPath(STATE_DIR, {
+      instance: DAEMON_INSTANCE,
+      interfaceAgent: DAEMON_AGENT,
+    });
   }
 
   // ── API handlers ──────────────────────────────────────────────────
@@ -594,7 +599,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return json({
       last24h: { sessions: sess24h, requests: req24h },
       last7d: { totalSessions: totalSess7d, humanRequests: humanReq7d },
-      socketAvailable: !!findSocketPath(),
+      socketAvailable: existsSync(conventionSocketPath()),
+      socketPath: conventionSocketPath(),
     });
   }
 
@@ -1477,13 +1483,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   // Per webui.md "Plane C — Steering verbs": one event per verb, async.
 
   async function sendDaemonFrame(frame: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
-    const socketPath = findSocketPath();
-    if (!socketPath) return { ok: false, error: "agent socket not found" };
+    const socketPath = conventionSocketPath();
     try {
       await sendDaemonEvent(socketPath, frame, { timeoutMs: 2000 });
       return { ok: true };
     } catch (err) {
-      return { ok: false, error: err instanceof Error ? err.message : String(err) };
+      const message = err instanceof Error ? err.message : String(err);
+      return { ok: false, error: `daemon socket delivery failed at ${socketPath}: ${message}` };
     }
   }
 
@@ -1849,9 +1855,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   const wsToUnix = new Map<any, Duplex>();
 
   function proxyWebSocket(ws: any): void {
-    const socketPath = findSocketPath();
-    if (!socketPath) {
-      ws.send(JSON.stringify({ type: "error", message: "Agent socket not found" }));
+    const socketPath = conventionSocketPath();
+    if (!existsSync(socketPath)) {
+      ws.send(JSON.stringify({ type: "error", message: `Daemon socket not found at ${socketPath}` }));
       ws.close();
       return;
     }
@@ -1990,13 +1996,12 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 // ── Standalone mode ───────────────────────────────────────────────────
 
 if (process.argv.includes("--state-dir")) {
-  const args = process.argv.slice(2);
   // When run as compiled binary, argv is [binary, --state-dir, path, ...]
   // When run via bun, argv is [bun, web.ts, --state-dir, path, ...]
   // getArg works for both since it searches the full argv.
   const getArg = (name: string, fallback: string) => {
-    const idx = args.indexOf(name);
-    return idx !== -1 && args[idx + 1] ? args[idx + 1] : fallback;
+    const idx = process.argv.indexOf(name);
+    return idx !== -1 && process.argv[idx + 1] ? process.argv[idx + 1] : fallback;
   };
   const stateDir = resolve(getArg("--state-dir", ".state"));
   const port = parseInt(getArg("--port", "8080"), 10);
