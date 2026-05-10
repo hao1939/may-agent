@@ -113,6 +113,20 @@ export type {
 } from "./query-service.js";
 export { createWorkflowHandler } from "./workflow-handler.js";
 export type { WorkflowHandlerOptions } from "./workflow-handler.js";
+export {
+  getExecutionResult,
+  getExecutionResultFromDb,
+  normalizeExecutionStatus,
+  sessionRowToExecutionResult,
+  taskResultToExecutionResult,
+  workflowRowToExecutionResult,
+  workflowToolResultToExecutionResult,
+} from "./execution-result.js";
+export type {
+  ExecutionKind,
+  ExecutionResult,
+  ExecutionStatus,
+} from "./execution-result.js";
 
 export type { HandlerContext, HandlerModule } from "./handler-context.js";
 // RuntimeCtx is internal — imported directly by workflow-tool.ts and sdk-impl.ts
