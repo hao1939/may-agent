@@ -123,3 +123,15 @@ Dev completed iteration 6 but is blocked on registering two new metrics (`sessio
 
 **Action**: None. Logging this entry purely to satisfy the artifact gate during a no-change heartbeat.
 
+
+### 2026-05-10 10:56Z — Heartbeat
+
+**Red metrics triaged:**
+- `project.iterations-24h=0`: Known issue per KE-902/KE-905. Sole active project `finish-blocked-hygiene-reduction` is blocked on runtime DB write (metric registration SQL). Escalated to human for execution.
+- `capability.message-conversation-close-rate=0.016`: Repeat alert (10x). Low conversation close rate is structural — agents send messages but rarely close conversations explicitly. No destructive fix available; metric target may need calibration.
+
+**Blocked project:** `finish-blocked-hygiene-reduction` (dev, P1, iteration 6) — blocked on safe runtime DB write for 2 metric registrations. Escalated to human.
+
+**System health:** 209 sessions in 6h, 2 errors (1 evaluator, 1 scout) — healthy error rate. No stuck sessions detected.
+
+**Actions:** Escalated blocked project to human (P1). No new projects needed.
