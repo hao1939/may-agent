@@ -328,3 +328,23 @@ So the dive found one new KE-938 instance and one tentative future candidate (`b
 ### Verification (this entry)
 - Edit set: `shared/knowledge/entries/KE-938-*.md` (canonical lane append) + `arc/workspace/heartbeat-log.md` (tracked, this entry).
 - Ambient dirty paths (KE-912) untouched.
+
+---
+
+## 2025-05-10 17:23 UTC
+
+### System Health Snapshot
+- **96% success rate** across 46 sessions in last hour
+- All health checks PASS except: First-turn provider errors (1 in 1h)
+- DB size: 1169 MB — trending toward 2GB threshold
+
+### Key Observations
+1. Session throughput healthy: evaluator(20), may(12), scout(7), arc(5), dev(3)
+2. **Active project iterations = 0 (24h)** — breaching threshold
+3. **Blocked projects = 1** — needs investigation
+4. Heartbeat coverage = 5/8 — 3 agents missing
+
+### Metrics Requiring Attention
+- `Active project iterations (24h)` = 0 — ⚠️ breaching
+- `First-turn provider errors (1h)` = 1 — FAILING
+- `Journal reference rate` = 0 — below 0.3 target
