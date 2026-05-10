@@ -594,3 +594,15 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - All 5 agents active, low error rates. Scout 3 errs/44 sessions (6.8%) — acceptable.
 - Blocked project `finish-blocked-hygiene-reduction` (dev, P1) — updated 1h ago, not stale.
 - No dark agents, no stuck sessions.
+
+## 2026-05-10T08:55 UTC
+
+**System Health**: Mostly green. 161 active sessions, 100% success rate last hour.
+
+**Breached Metrics (4)**:
+- `Message conversation close rate`: 0.0107 (threshold 0.02)
+- `Active project iterations (24h)`: 0 (threshold 1)
+- `Scout good session rate`: 0.54 (threshold 0.65)
+- `Scout operational friction rate`: 0.64 (threshold 0.3)
+
+**Action**: Monitoring only. Scout quality metrics warrant attention.
