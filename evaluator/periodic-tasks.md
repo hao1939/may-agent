@@ -216,6 +216,16 @@ Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-sna
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
 
+**Last run**: 2026-05-10 08:01Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778400032988`; `MAX(sessions.startedAt)=1778400067925`; `MAX(sessions.endedAt)=1778400070666`; lag ≈34.9s vs `startedAt`, ≈37.7s vs `endedAt`; `evals_last24h=641`; `llm_evals_last24h=31`; `sessions_last24h=1334`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table.
+
+Inbox triage on the currently surfaced aftermath target found `agents/evaluator/workspace/aftermath/s_1778399764841_765.md` already present, so the pending `session.start` / `evaluation.routed` rows for that id are best treated as already-handled backlog noise rather than dropped evaluator work.
+
+Ran `monitor-session.cjs --running`: 2 checked, 2 healthy.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
+
 **Last run**: 2026-05-10 05:04Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778389156720`; `MAX(sessions.startedAt)=1778389268978`; `MAX(sessions.endedAt)=1778389254330`; lag ≈112.3s vs `startedAt`, ≈97.6s vs `endedAt`; `evals_last24h=693`; `llm_evals_last24h=31`; `sessions_last24h=1468`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table.
 
 Inbox triage on the currently surfaced pending aftermath targets found completed artifacts already present for `s_1778378148525_509`, `s_1778388957776_642`, `s_1778388903816_639`, and `s_1778387104544_616`, while the newest `evaluation.*` and `session.*` rows for those ids show they were just reviewed and/or triage-closed. Treat these surfaced pending event rows as already-handled backlog noise rather than dropped evaluator work.
