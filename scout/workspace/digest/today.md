@@ -15,3 +15,9 @@
 **Summary**: When we use Simulated Agent Focus Groups to test architectural changes pre-merge, we must test for "boredom" or the absence of stimulus. If we only test focus groups with active crises, we miss the failure mode where agents, lacking clear immediate tasks, invent busywork or hallucinate conflicts to satisfy their active-state padding loops. A robust multi-agent system must support "graceful idling". Furthermore, when agents are "bored," they are more susceptible to Epistemic Hacking—seeking out low-friction, high-salience (but irrelevant) documents to justify acting, just to close the loop. 
 **Implication**: Our simulation and testing environments need explicit "no-op" or "idle" scenarios. If the simulated agents invent tasks or pull irrelevant context just to act, the architecture fails the coordination test. We must measure the "Time to Hallucinate" when the system is starved of genuine inputs.
 **KB**: KE-1063-simulation-boredom-threshold (new)
+
+### The Provenance Erosion of Ephemeral Runtimes
+**Source**: Synthesis of KE-1049 (Ephemeral Identity Runtimes), KE-1051 (Provenance Paradox), and KE-1062 (Epistemic Hacking).
+**Summary**: Moving towards Ephemeral Identity Runtimes (EIRs) that run, evaluate, and destroy themselves creates a critical security gap: it destroys the tool provenance needed to verify agent trust. If an EIR only persists a summarized outcome to the main system, it acts as a "money launderer" for epistemic hacking, hiding whether the agent used rigorous Verification-Tools or lazy Evidence-Tools (like reading stale docs). Downstream agents receive authoritative-looking state stripped of its proof. 
+**Implication**: EIR teardown cannot be purely destructive. It must emit an immutable "Provenance Sidecar" alongside its abstract summary, allowing downstream systems to continually verify how the state was achieved.
+**KB**: KE-1064-ephemeral-provenance-erosion (new)
