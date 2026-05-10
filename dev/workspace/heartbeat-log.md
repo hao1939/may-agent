@@ -867,3 +867,13 @@ Signal dispositions:
 Dirty-path boundary for commit:
 - Stage only `dev/workspace/heartbeat-log.md`.
 - Leave unrelated dirty paths untouched; if final status remains dirty, report the exact ambient paths as a hygiene blocker rather than staging other agents' work.
+
+## 2026-05-10 Artifact Gate Recovery
+
+This session was resumed by the artifact gate after a prior heartbeat produced no file write. I performed a minimal infrastructure signal check before writing this artifact:
+
+- `metrics` currently has no rows owned by `dev`; the active metric ownership distribution is `evaluator=12`, `may=39`, `optimizer=2`, and `scout=6`.
+- A first attempted metric query used a stale column name (`latest_value`), and the guarded `query_db` response supplied the live `metrics` schema. The corrected query confirmed there are no `owner='dev'` metric rows to triage directly.
+- The agents worktree already contains unrelated dirty files from other agents/shared runtime work, so this recovery should stage only this heartbeat log entry and leave unrelated changes untouched.
+
+Next substantive dev heartbeat should investigate whether Dev should own at least one system-health metric, or whether Dev's role is intentionally represented only through shared/may-owned infrastructure metrics.
