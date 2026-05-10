@@ -460,3 +460,25 @@ Repository hygiene observed before this write:
 Disposition:
 - Intentional deliverable for this recovery is limited to `agents/dev/workspace/heartbeat-log.md`.
 - Because unrelated dirty paths remain in `/app/agents`, final status must explicitly report the hygiene blocker rather than pretending the worktree is clean.
+
+## 2026-05-10 Heartbeat: Dev Queue Clear, Dirty Source Risk Left Unbundled
+
+Routine self-maintenance with explicit disposition of current inbox signals, owned project status, and repository hygiene.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty; every visible implementation candidate remains Proposed, so dev has no approved implementation item to pick up this heartbeat.
+- Core runtime metrics are below dev action thresholds: `session.error-rate-6h=0.0324`, `handler.success-rate=1`, and `handler.failed-count=0` at snapshot `1778385126943`.
+- Direct unresolved alerts are owned by may or scout (`project.iterations-24h`, `capability.message-conversation-close-rate`, `scout.good-session-rate-24h`, and `scout.operational-friction-rate-24h`); none are dev-owned. Operation chosen: dismiss for direct dev action unless an Approved queue item delegates implementation to dev.
+- `eval-llm-lane-restoration` remains correctly `pending-review`: latest non-heuristic evaluation advanced to `2026-05-10 03:55:55` UTC, with 32 non-heuristic rows in the last 24h; `eval.llm-coverage-lag-h=0.88` is below the 4h threshold and `eval.llm-evals-24h=31` is above threshold.
+- `finish-blocked-hygiene-reduction` remains correctly `blocked`: the two requested split metric rows are still absent from `metrics`, and this heartbeat has read-only DB access only.
+- Unmeasured active metrics are the two scout knowledge metrics only; no dev-owned snapshot gap was found.
+- Recent `handler.failed` rows are historical relative to current `handler.failed-count=0`; no current handler patch is indicated.
+- `/app/agents` dirty state includes unrelated generated/runtime files (`*/last-session.md`, shared gate logs), externally owned shared project edits, evaluator workspace edits, and a source/test change in `test/guards.test.ts` changing the hallucinated-path guard expectation from `block` to `warn`. This heartbeat did not create those changes, so they were not staged or cleaned.
+
+Signal dispositions:
+- Artifact-gate/session-start warnings: acted by writing this falsifiable heartbeat artifact and staging only this file.
+- Prior dev session-end entries and the P0 evaluator false-positive implementation request: dismissed as already acted by commit `6f373ef78`; no fresh evaluator-lane regression is present.
+- Owned projects: `eval-llm-lane-restoration` dismissed for action until review or lane regression; `finish-blocked-hygiene-reduction` remains escalated/deferred to May/human safe metric-registration write authority.
+- Dirty source/test path `test/guards.test.ts`: escalated as a repository hygiene blocker for the owner of that uncommitted change; dev must not bundle it into a routine heartbeat artifact commit without a scoped implementation task.
+
+Next check: if `test/guards.test.ts` remains dirty in the next dev heartbeat, inspect recent commits/sessions around the hallucinated-path guard and either recover the intended change in a scoped implementation commit or ask May/human to identify the owner.
