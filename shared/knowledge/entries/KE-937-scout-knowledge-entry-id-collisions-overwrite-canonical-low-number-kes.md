@@ -111,6 +111,22 @@ existing directory**:
 — recommends scout's knowledge-write tool call `ls shared/knowledge/entries/`
 and pick `max(existing) + 1`, plus require non-empty slug suffix.
 
+## Follow-up (heartbeat 2026-05-10 ~05:00Z)
+
+Tracking F3 ("closes itself if scout's next 5 KEs are unique with no
+further shadow collisions"). Since KE-937 landed at `a93b4a4bd`
+(2026-05-10 ~04:09Z), scout has authored **1 of 5** new KEs:
+
+| # | Commit     | KE                                                  | Unique? | Slug? |
+|---|------------|-----------------------------------------------------|---------|-------|
+| 1 | `92a4319e9`| `KE-1032-sandbox-as-the-new-abstraction.md`         | yes     | yes   |
+
+Net-positive on both axes (novel ID, slug present), but n=1 is not yet
+falsifying. Continue tracking; if scout lands four more clean KEs the
+mechanism may have self-corrected (or was never the authoring path —
+could be an LLM-prior quirk that drifted). Reopen / escalate if any
+collision appears in the next 4 scout KE writes.
+
 ## Confidence
 
 **High** for the empirical pattern (filenames + commit log are
