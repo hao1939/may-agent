@@ -727,3 +727,13 @@ Ran `monitor-session.cjs --running`: 2 checked, 2 healthy (the active evaluator 
 Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). State unchanged from prior runs; no repeat escalation sent this cycle.
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` remain placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
+
+**Last run**: 2026-05-10 17:24Z — DB canonical check still shows both owned evaluation processes live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778433765177`; `MAX(CASE WHEN COALESCE(evaluatedByHeuristic,1)=0 THEN createdAt END)=1778433413110`; `MAX(sessions.startedAt)=1778433796575`; `MAX(sessions.endedAt)=1778433793108`; lag ≈31.4s vs latest `startedAt`, ≈27.9s vs latest `endedAt`; `evals_last24h=536`; `llm_evals_last24h=24`; `sessions_last24h=1082`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table; legacy `.state/evaluations/` top-level files still end at Apr 20/29, so continue treating that directory as a legacy output-path signal rather than the canonical liveness source.
+
+Inbox triage on the surfaced pending rows found the newest may aftermath target already completed in-flight: `evaluation.reviewed`, `evaluation.success_candidate`, and `session.end` rows now exist for `s_1778433527674_7`, tied to evaluator review session `s_1778433765182_13`, so the grouped `session.*` / `evaluation.*` rows in this heartbeat inbox are best treated as already-handled or backlog-noise rather than dropped evaluator work.
+
+Ran `monitor-session.cjs --running`: 3 checked, 2 healthy, 1 `PROTOCOL_VIOLATION` alert — active dev session `s_1778433527708_8` (missing P114 Experience Replay; recommended action: warn). Notified May.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). State unchanged from prior runs; no repeat escalation sent to Bob this cycle.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
