@@ -1155,3 +1155,16 @@ Disposition:
 - No production code or database state was changed.
 - This entry is the intentional dev workspace artifact for the heartbeat recovery.
 - The unrelated dirty worktree paths should be left for their owners; dev should stage only this heartbeat log if committing this recovery artifact.
+
+## 2026-05-10 Artifact Gate Dirty-State Triage
+
+Artifact-gate recovery heartbeat. The session was explicitly required to produce a durable file write, so this note records the repository hygiene state instead of changing runtime code.
+
+Evidence checked:
+- `cd /app/agents && git status --short` showed broad pre-existing dirty state across `.state/iteration-log.json`, generated `*/last-session.md` files, shared gate logs, shared May docs, shared projects, and an untracked `shared/workflows/closed-loop-steward.ts`.
+- Those paths are not dev-owned deliverables for this artifact-gate recovery; staging them would risk mixing unrelated agent/runtime work into a heartbeat commit.
+- Intentional deliverable for this turn is limited to `dev/workspace/heartbeat-log.md` with this triage entry.
+
+Disposition:
+- Do not clean or commit unrelated dirty paths without owner review.
+- If a clean worktree is required, escalate the listed unrelated dirty paths to their owners; dev can only safely commit this workspace artifact.
