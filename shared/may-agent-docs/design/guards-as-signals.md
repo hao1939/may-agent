@@ -1,6 +1,6 @@
 # Guards As Signals
 
-**Status**: Draft for review.
+**Status**: Guard trigger event emission and first metrics slice implemented.
 
 Guards are detection signals first. Blocking is only one intervention mode.
 
@@ -59,26 +59,27 @@ measures. Agents/evaluator judge and improve the system.
 type GuardTriggeredEvent = {
   type: "guard.triggered";
   guard: string;
-  mode: "observe" | "warn" | "repair" | "block" | "escalate";
-  source: "tool" | "workflow" | "session";
-  agent?: string;
+  demandType: "warn" | "block" | "run_step";
+  action: "warned" | "blocked" | "injected" | "skipped_duplicate" | "skipped_invalid" | "skipped_limit";
+  source: "workflow";
+  owner: string;
   sessionId?: string;
   workflowRunId?: string;
   projectId?: string;
+  parentSessionId?: string;
   step?: string;
   reason: string;
-  risk?: "low" | "medium" | "high";
-  action?: string;
-  blocked?: boolean;
-  traceId?: string;
+  sourceEventType: string;
+  injectedStepLabel?: string;
+  injectedAgent?: string;
 };
 ```
 
 Target invariant: every guard trigger emits `guard.triggered`.
 
-Current gap: add guard-trigger emission and a default guard handler. Until that
-exists, guard-specific warnings/blocks still work, but guard signals are not yet
-uniformly queryable as events/metrics.
+Current gap: tool-level guards and workflow-level guards should converge on the
+same event shape when practical. Workflow guard triggers are already uniformly
+queryable as events and metrics.
 
 ## Ownership
 

@@ -1,6 +1,6 @@
 # Infra Surface Implementation Plan
 
-**Status**: Phase 1, Phase 2 first slice, Phase 3 guard observability, Phase 4 first slice, Phase 5 resume diagnostics, and Phase 7 first slice implemented.
+**Status**: Phase 1, Phase 2 first slice, Phase 3 guard observability, Phase 4 first slice, Phase 5 resume diagnostics, Phase 7 first slice, and Phase 8 first slice implemented. Phase 9 is the next recommended slice.
 
 This plan turns [infra-surface.md](infra-surface.md) into small implementation
 slices. The goal is not a broad rewrite. Each phase should improve the system
@@ -13,6 +13,13 @@ event/timer -> handler -> workflow -> sessions/functions/metrics -> evidence
 ```
 
 Infra provides primitives. Agents build patterns.
+
+Current runtime checkpoint:
+
+- guard triggers are durable `guard.triggered` events with workflow/session trace fields,
+- `guard.blocked-count-15m` is the active guard-block health signal,
+- `project.iterations-24h` is watch-only, not a health target,
+- the running instance can reach zero open metric alerts when metrics are calibrated to actionable work.
 
 ## Principles
 
@@ -233,6 +240,84 @@ Validation:
 - [x] Pick one failure and show owner/fallback/escalation state.
 - [x] Operator can answer "is the loop moving?" from the UI/API without ad hoc SQL.
 
+## Phase 8: Alert Hygiene And Metric Calibration
+
+Status: first slice implemented for guard block health and project iteration volume.
+
+Problem: a metric can become misleading even when the measurement is correct.
+Old windows, impossible floors, or non-actionable thresholds make agents spend
+attention on stale or accepted states.
+
+Target invariant:
+
+```
+active alert -> current actionable owner work
+```
+
+Rules:
+
+- Health metrics should represent recent failure states that still need action.
+- Watch-only metrics should keep `target=0` and `threshold=0` unless zero is
+  itself a failure.
+- Historical metric ids should be retired instead of left active with stale
+  alerts.
+- Calibration changes must preserve measurement history, resolve obsolete
+  alerts, and keep the metric visible when it is still useful as context.
+- Metrics remain signals. The owner still judges using facts, goal, and context.
+
+Implemented first slice:
+
+- [x] `guard.blocked-count-24h` and `guard.blocked-count-1h` retired.
+- [x] `guard.blocked-count-15m` added as the active P1 guard-block health signal.
+- [x] `project.iterations-24h` kept as watch-only so zero active iterations is
+  allowed when no projects are active.
+- [x] Metrics snapshot test covers the short guard-block health signal and
+  watch-only project iteration metric.
+- [x] Runtime check reached zero open metric alerts after recalibration.
+
+Next validation:
+
+- [ ] Web UI labels distinguish health, gauge, and watch-only metrics clearly.
+- [ ] Alert reactor ignores retired metrics even if older breach events remain
+  in the event log.
+- [ ] A future real guard block opens a fresh `guard.blocked-count-15m` alert and
+  closes after the window clears.
+
+## Phase 9: Universal Control Surface Reliability
+
+Status: proposed next slice.
+
+Problem: the socket is intended to be the universal interface for CLI, Web UI,
+Telegram, tests, and manual operations, but host/container endpoint discovery is
+still fragile. Manual triggering currently works reliably inside the container,
+while host-side socket lookup can find a stale or unreachable path.
+
+Target invariant:
+
+```
+thin adapter -> control client -> daemon socket -> event bus
+```
+
+Minimum slice:
+
+- make control client endpoint discovery prove liveness by connecting before
+  returning a socket path,
+- remove or ignore stale socket candidates,
+- provide one small script or command for `emit event` so operators do not need
+  ad hoc `docker exec bun -e ...`,
+- verify `trigger.metrics-snapshot` can be emitted from the normal host command
+  path and from inside the container,
+- keep the protocol async: client sends event, daemon acks, handlers/workflows
+  move the loop.
+
+Validation:
+
+- [ ] Unit test for stale socket candidate fallback.
+- [ ] Integration/smoke test for `trigger.metrics-snapshot` through the normal
+  control client.
+- [ ] Web UI, Telegram, and CLI use the same control client package rather than
+  custom socket logic.
+
 ## Recommended First Slice
 
 Start with:
@@ -246,6 +331,13 @@ Start with:
 
 This gives immediate value and keeps the change set small.
 
+## Recommended Next Slice
+
+Start Phase 9 before adding more agent behavior. The loop is now observable, but
+manual and adapter-triggered events still depend on knowing where the live socket
+is. A reliable control surface will make every later workflow/metric iteration
+faster to test without introducing new agent work.
+
 ## Non-Goals
 
 - Do not remove `getDb()` immediately.
@@ -253,3 +345,5 @@ This gives immediate value and keeps the change set small.
 - Do not build a large socket query API.
 - Do not add many new metrics before guard/handler basics are visible.
 - Do not make workflows a second agent runtime.
+- Do not add adapter-specific event paths when the control client can send the
+  same event to the daemon.

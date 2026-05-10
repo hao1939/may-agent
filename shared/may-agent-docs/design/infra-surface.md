@@ -145,8 +145,10 @@ guard fires -> guard.triggered -> default guard handler records metrics/projecti
 Blocking remains a guard/runtime intervention for high-confidence,
 high-impact risk. The default handler should not decide whether to block.
 
-Target gap: add uniform `guard.triggered` emission and a default guard handler.
-See [guards-as-signals.md](guards-as-signals.md).
+Current state: workflow guard triggers emit durable `guard.triggered` events and
+feed the starter guard metrics. Remaining gap: tool-level guards should converge
+on the same event shape where practical. See
+[guards-as-signals.md](guards-as-signals.md).
 
 ## Agent Bridge
 
@@ -597,8 +599,9 @@ Keep this incremental.
    metrics, alerts, and projects.
 2. Update `sdk.md` and `src/lib/sdk.ts` so `metrics` and `query` are the normal
    surfaces and `getDb()` is documented as compatibility escape hatch.
-3. Add `guard.triggered` event emission at the guard runtime boundary.
-4. Add the default guard handler and the four starter guard metrics.
+3. Add `guard.triggered` event emission at the guard runtime boundary. Done for
+   workflow guards; tool-level convergence remains.
+4. Add the default guard handler and starter guard metrics. First slice done.
 5. Add a small event-to-workflow handler helper so new handlers do not hand-roll
    prompt/context boilerplate.
 6. Add event-to-workflow dispatch tests, including skip/dedup behavior.
