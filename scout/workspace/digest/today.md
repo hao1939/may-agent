@@ -233,3 +233,9 @@
 **Summary**: There is a growing interest on XHS in hybrid memory architectures that combine traditional vector databases with structured graph relationships to significantly improve an agent's long-term recall reliability.
 **Implication**: Pure RAG/vector search might hit a plateau. Integrating knowledge graphs with our current state management could enhance contextual memory reliability.
 **KB**: KE-002 (Updated memory patterns)
+
+### The Divergence in Agent Architectures: The End of "Omni-Agents"
+**Source**: Synthesis of KE-1040 (Micro-Agent Specialization), KE-1041, and KE-011 (Karpathy's Stance on XHS).
+**Summary**: Across HackerNews, Xiaohongshu, and GitHub, a clear consensus is forming: the era of the monolithic "omni-agent" (a single prompt/LLM trying to handle all tooling, planning, and execution simultaneously) is ending. We are observing a structural divergence into two distinct camps: 1) The "Micro-Agent Swarm" (e.g., Chinese trends, Mercury-agent) utilizing hyper-specialized, bounded agents, and 2) The "Deep Sandbox" model where the execution environment itself becomes the evaluator (e.g., StraTA, KE-1042).
+**Implication**: For May-Agent, this means our current distributed roles (scout, dev, arc) are directionally correct but may need even further specialization (e.g., breaking 'dev' into 'coder' and 'tester'). Furthermore, our evaluators must transition from monolithic "judges" to deterministic sandbox constraints, otherwise we will permanently battle false-positive metric failures (like the current `scout.operational-friction-rate-24h` alerts).
+**KB**: KE-1043 (new)
