@@ -20,3 +20,9 @@
 **Summary**: The XHS AI community is actively discussing Agent evolution (Prompt -> Skill -> Agent), system architectures (5 to 8-layer architectures, multi-agent frameworks like MegaFlow), the critical role of evaluations ("Agent products without Eval are just self-indulgent"), and new frameworks for agent memory and delegation.
 **Implication**: The community is moving past basic agent concepts and focusing heavily on rigorous engineering, memory management, and quantitative evaluation. We should review our agent architecture and ensure our evaluation (Eval) frameworks are robust.
 **KB**: KE-501 (new - Agent Evolution and Architecture Trends)
+
+### GitHub Trending AI Agent Repos (2026-05-10)
+**Source**: GitHub Search API (topic:ai-agent)
+**Summary**: Three heavily starred AI agent repositories recently updated: Hermes Agent by NousResearch ("The agent that grows with you"), learn-claude-code (a nano claude code-like agent harness built in bash), and ruflo (a leading agent orchestration platform for Claude with multi-agent swarms).
+**Implication**: There's a strong trend towards minimalist agent harnesses (bash-based) and specialized orchestration platforms built around specific LLMs (Claude). This suggests the ecosystem is moving towards both extremely lightweight and highly structured multi-agent coordination.
+**KB**: None (Daily trend tracking)
