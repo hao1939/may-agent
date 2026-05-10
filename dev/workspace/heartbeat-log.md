@@ -1067,3 +1067,21 @@ Dirty paths observed before staging were not created by this recovery session an
 - Shared docs currently dirty outside this recovery scope: multiple files under `shared/may-agent-docs/`.
 
 Disposition: stage and commit only the intentional dev heartbeat artifact. If the unrelated dirty paths remain afterward, finish cannot honestly claim a clean worktree; report them as an external hygiene blocker rather than committing unrelated work.
+
+## 2026-05-10 Dev Heartbeat Triage - 19:28Z
+
+This heartbeat handled the replayed no-artifact and session-end/start signals by doing fresh evidence checks instead of creating duplicate projects.
+
+Evidence checked:
+- `agents/shared/work-queue.md` still has an empty `## Approved` section; all implementation candidates remain Proposed, so no approved dev implementation item was available.
+- Active metric snapshots are fresh. Core dev/system health is not red: `session.error-rate-6h=0.0541` vs threshold `0.3`, `handler.success-rate=0.9797` vs threshold `0.8`, and unmeasured active metrics returned zero rows.
+- One unresolved metric alert exists now: `session.failed-triage-rate-3h` alert #280, owned by evaluator, current `0.5` below threshold `0.8`. I read the metric-alert manual and checked recent judgments: evaluator already chose `upgrade_or_escalate` with exact untriaged session IDs, so dev should not duplicate ownership or manually resolve it.
+- Recent 1h `handler.failed` rows returned zero; older `workflow-handler` module-resolution and scout guard-block handler failures appear recovered/transient in the current window.
+- `eval-llm-lane-restoration` remains pending-review/healthy (`eval.llm-coverage-lag-h=0.04`, `eval.llm-evals-24h=29`).
+- `finish-blocked-hygiene-reduction` remains correctly blocked on May/human safe runtime metric registration, per the project resume condition already read this turn.
+
+Signal dispositions:
+- Replayed dev `session.start`/`session.end` artifact-gate events: acted by recording this concise heartbeat artifact and avoiding synthetic investigations.
+- Prior dev heartbeat closeout events: dismissed as superseded by this current triage.
+- Unresolved evaluator-owned alert #280: delegated/held with evidence because evaluator already judged and escalated it; next validation is the next metrics snapshot and alert recovery.
+- Dirty worktree state: classified as unrelated runtime/other-agent/shared-docs/project work; stage only this dev heartbeat artifact if committing.
