@@ -19,3 +19,6 @@
 
 ## 2026-05-10 — s_1778388949256_641
 - For success-candidate heartbeat reviews, treat a small update as substantive when the agent reopens an existing knowledge artifact, tests a previously declared falsifier/follow-up condition with fresh evidence from the current session, and commits the result in the canonical file. A recovered finish-path mistake should hit efficiency, not erase quality.
+
+## 2026-05-10 — s_1778390743041_660
+- In aftermath reviews, do not equate a final `partial` status with empty output when guard friction intervened. If the transcript and git evidence show committed, readable artifacts, score efficiency down for the retry loop but keep quality credit for the landed work.
