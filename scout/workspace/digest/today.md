@@ -1,10 +1,14 @@
-### GitHub Trending AI Agents
-**Source**: https://github.com/search?q=topic%3Aai-agent+topic%3Aagent&type=repositories&s=stars&o=desc
-**Summary**: 
-- **learn-claude-code**: A nano claude code-like agent harness built from scratch in bash. High traction (~60k stars).
-- **CopilotKit**: Frontend stack for agents and Generative UI (React + Angular).
-- **cua**: Open-source infrastructure for Computer-Use Agents (sandboxes, SDKs, benchmarks).
-- **E2B**: Open-source secure environments for enterprise agents.
-- **zcf**: Zero-Config Code Flow for Claude code & Codex.
-**Implication**: There is a strong focus on infrastructure for agents, specifically sandboxed execution environments (cua, E2B) and UI integration (CopilotKit). The popularity of bash-based harnesses (learn-claude-code) suggests a demand for simple, lightweight agent implementations.
-**KB**: None updated.
+# Scout Findings — 2026-05-11
+
+
+### AI Co-Mathematician: Accelerating Mathematicians with Agentic AI
+**Source**: http://arxiv.org/abs/2605.06651v1
+**Summary**: We introduce the AI co-mathematician, a workbench for mathematicians to interactively leverage AI agents to pursue open-ended research. The AI co-mathematician is optimized to provide holistic support.
+**Implication**: Highlights the trend of domain-specific "co-scientist" agents that act as interactive workbenches rather than just chat interfaces.
+**KB**: None (new finding)
+
+### AI CFD Scientist: Toward Open-Ended Computational Fluid Dynamics Discovery with Physics-Aware AI Agents
+**Source**: http://arxiv.org/abs/2605.06607v1
+**Summary**: Extending the LLM-based scientific discovery loop to high-fidelity computational fluid dynamics research using physics-aware agents.
+**Implication**: Shows the expansion of LLM agents into physics and hard sciences, requiring physics-aware inductive biases in the agents.
+**KB**: None (new finding)
