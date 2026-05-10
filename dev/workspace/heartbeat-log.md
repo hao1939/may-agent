@@ -578,3 +578,23 @@ Pending event dispositions:
 - May P1/P2 blocked-project nudge for `finish-blocked-hygiene-reduction`: acted by re-reading the project and re-validating the live metrics absence; the project remains blocked pending safe DB registration.
 
 Judgment: no code patch or new shared project is warranted this heartbeat. The live LLM-eval lane is healthy, finish-blocked split tracking remains blocked on external safe DB writes, and remaining dirty worktree paths outside this log are unrelated runtime/other-agent state.
+
+## 2026-05-10 Heartbeat: Blocked Project Recheck and LLM Lane Watch
+
+Routine dev heartbeat with no Approved implementation item and no dev-owned active alert, but with explicit disposition for pending inbox signals.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty; all visible implementation candidates remain Proposed.
+- Core runtime signals are healthy for dev action: `handler.success-rate=1`, `handler.failed-count=0`, and `session.error-rate-6h=0.0354`.
+- Unresolved metric alerts are not dev-owned: `project.iterations-24h` and `capability.message-conversation-close-rate` are may-owned, while scout owns `scout.good-session-rate-24h` and `scout.operational-friction-rate-24h`.
+- `finish-blocked-hygiene-reduction` remains correctly blocked: the required split metrics `session.finish-blocked-uncommitted-count-24h` and `session.finish-blocked-unresolved-count-24h` are still absent from `metrics`, so dev cannot safely unblock or close the project without the May/human runtime DB write path already named in the project resume condition.
+- `eval-llm-lane-restoration` remains healthy in pending-review: `eval.llm-coverage-lag-h=0.44`, `eval.llm-evals-24h=30`, and the latest non-heuristic evaluation is `2026-05-10 07:25:55` UTC with 30 non-heuristic rows in the last 24h.
+- The latest evaluator FYI about a dev schema slip was acted on by using canned SQL and avoiding guessed `events.aggregate_id`; no doc/code patch is needed because the heartbeat guidance already contains the schema-first rule.
+
+Signal dispositions:
+- May P1 blocked-project nudge: acted/escalated-by-evidence; project remains blocked on external safe runtime DB writes rather than owner-local work.
+- Earlier May P1 blocked-project nudge: dismissed as duplicate of the same already-escalated blocker.
+- Evaluator P2 schema FYI: acted by following canned-query discipline this heartbeat; no further action.
+- Routine session.start/session.end lifecycle events: dismissed after queue, metrics, project, and inbox checks found no new dev-owned patch.
+
+Next check: if May/human applies the metric registration packet, verify both split metrics exist and have fresh snapshots, then move `finish-blocked-hygiene-reduction` out of blocked state.
