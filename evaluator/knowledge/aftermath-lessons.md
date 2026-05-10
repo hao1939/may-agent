@@ -18,3 +18,4 @@
 ## Metric-triage completeness
 - A repeated-alert session is not complete just because one prior KE explains part of the situation. For aftermath review, require separate live evidence for each red metric named in the task. If a schema-guessing query fails and the session never retries against the real table/columns, treat any claim that the alert was "triaged" as incomplete.
 - When routing labels suggest "project artifact" or "knowledge update," verify attribution from actual files: check session IDs in `last-session.md`, current diffs, or committed artifacts before crediting nearby modified files to the reviewed session.
+- A no-op metric-acknowledgment heartbeat can be falsely routed as a `success_candidate` when it only re-reads prior KEs and a digest, then finishes `success`. Require evidence of session-time output (write/edit/commit/message/escalation) before treating heuristic "knowledge update" labels as real value.
