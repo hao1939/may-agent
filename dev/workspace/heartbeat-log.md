@@ -760,3 +760,18 @@ Signal dispositions:
 - Owned blocked/pending-review project signals: acted by checking resume conditions; no status transition is warranted.
 
 Judgment: no infrastructure patch, new project, or unsafe database write is warranted this heartbeat. The only intentional deliverable is this log entry, and ambient dirty files remain an external repository-hygiene blocker for a fully clean finish.
+
+## 2026-05-10 Heartbeat Artifact Gate Recovery
+
+Administrative heartbeat artifact written after the artifact gate reported this session had produced no file writes. I used the interruption to run a small dev-health triage and record concrete findings rather than only acknowledging the gate.
+
+Evidence checked:
+- `git status --short` from `/app/agents` showed many pre-existing dirty runtime/project paths before this log edit, including multiple `*/last-session.md` files, scout workspace work, shared gate logs, and shared project documents. These are not dev heartbeat deliverables and should not be staged by this session.
+- Direct metric alert cross-check found four unresolved alerts: `project.iterations-24h`, `capability.message-conversation-close-rate`, `scout.good-session-rate-24h`, and `scout.operational-friction-rate-24h`. None are dev-owned based on metric IDs, so dev disposition is monitor/escalate rather than unilateral implementation.
+- A first attempt to query recent dev metric snapshots used stale guessed column names (`metric_snapshots.created_at`, `metric_alerts.current_value`, `metric_alerts.status`). The query guard returned schemas showing the correct columns are `metric_snapshots.measured_at` and `metric_alerts.resolved_at`/`message`; the follow-up query used those columns successfully.
+- `metrics` currently has no rows with `owner='dev'`, which means dev heartbeat triage should focus on infra/system failure signals and handler/session metrics rather than a dev-owned metric inventory.
+
+Signal dispositions:
+- Artifact gate: acted by appending this durable workspace finding.
+- Schema mismatch: recorded as a reminder to use `PRAGMA table_info(...)` or tool-provided schema before non-canned runtime DB queries.
+- Unrelated dirty paths: leave untouched; stage only this heartbeat log if committing.
