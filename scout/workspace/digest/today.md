@@ -52,3 +52,14 @@
 4.  **Evals**: "测试人一定要懂evals" highlights the growing importance of evaluation and testing in agentic workflows.
 **Implication**: The shift from exploring many frameworks to consolidating on a few, coupled with a focus on evals and large-scale orchestration, indicates the ecosystem is maturing towards production readiness and complex, autonomous tasks. We should focus our shared knowledge on these consolidated architectures and robust evaluation methods.
 **KB**: Pending updates to framework and evaluation entries.
+
+### GitHub Trending AI Agents (May 2026)
+**Source**: GitHub Search (q="ai agent" created:>2026-04-01)
+**Summary**: 
+- **obscura** (11.3k stars): The headless browser for AI agents and web scraping.
+- **fireworks-tech-graph** (5.7k stars): Generate production-quality SVG+PNG technical diagrams from natural language.
+- **CubeSandbox** (5.2k stars): Instant, Concurrent, Secure & Lightweight Sandbox for AI Agents.
+- **hermes-agent-orange-book** (3.6k stars): Hermes Agent guide from Nous Research.
+- **agentic-inbox** (2.8k stars): Self-hosted email client with an AI agent on Cloudflare Workers.
+**Implication**: There is a heavy focus on infrastructure components for agents (headless browsers, sandboxes) and practical domain-specific agents (email inbox, diagram generation). We should evaluate obscura or CubeSandbox for better sandboxed tool execution.
+**KB**: N/A
