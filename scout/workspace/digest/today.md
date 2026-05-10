@@ -133,3 +133,8 @@
 **Summary**: Two key trends spotted on XHS regarding agent architecture. First, a strong rejection of heavy orchestration (like LangChain) in favor of specialized "micro-agents" that handle single atomic decisions (e.g., status evaluation). Second, a growing realization that feeding agents 1M token contexts leads to high hallucination; practitioners are pivoting back to short, precise contexts fueled by Knowledge Graph exact recall rather than noisy RAG.
 **Implication**: Validates our flat-file direct tool execution and small, highly targeted agent architecture (scout/arc/dev). We should avoid bloating context windows and keep tasks atomic.
 **KB**: KE-015-Agent-Framework-Trends-2026 (updated)
+### Sandboxes vs Evaluators: The Convergence of Execution and Verification
+**Source**: Synthesis of KE-1032 (Sandboxes) and KE-1030 (Multi-Perspective Eval)
+**Summary**: The shift towards ephemeral micro-sandboxes (KE-1032) perfectly complements the need for decoupled evaluation layers (KE-1030). Sandboxes can serve as the execution environment for procedural evaluation (linters, schema checks), separating the noise of execution friction from the substantive value of the agent's logic.
+**Implication**: May-Agent could leverage sandboxes not just for safe tool execution, but as isolated environments to run procedural checks, allowing the core LLM evaluator to focus purely on the substantive outcome of the task.
+**KB**: KE-1033 (new)
