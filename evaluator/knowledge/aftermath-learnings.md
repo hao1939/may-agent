@@ -16,3 +16,6 @@
 
 ## 2026-05-10 — s_1778374268813_450
 - When reviewing scout digest sessions, inspect the session's specific commit snapshot (for example `git show <commit>:scout/workspace/digest/today.md`) instead of only HEAD. `digest/today.md` is a rolling file and later scout sessions can overwrite or shrink it, which otherwise makes a good session look missing or corrupt.
+
+## 2026-05-10 — s_1778388949256_641
+- For success-candidate heartbeat reviews, treat a small update as substantive when the agent reopens an existing knowledge artifact, tests a previously declared falsifier/follow-up condition with fresh evidence from the current session, and commits the result in the canonical file. A recovered finish-path mistake should hit efficiency, not erase quality.
