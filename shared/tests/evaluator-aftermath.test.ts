@@ -531,6 +531,64 @@ describe("evaluator aftermath transcript checks", () => {
     expect(transcriptIssues(transcript)).toEqual([]);
   });
 
+  it("ignores runtime last-session.md churn in forbidden-path checks", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "user",
+        content: "Task constraints: Do not edit scout/last-session.md or agents/shared/projects/ruflo-learning-loop/outputs/NEXT.md.",
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "b1",
+            name: "bash",
+            arguments: { command: "git status --short" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "b1",
+        toolName: "bash",
+        content: [{ type: "text", text: " M scout/last-session.md\n" }],
+      }),
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toEqual([]);
+  });
+
+  it("still flags non-runtime forbidden edits when last-session.md is also forbidden", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "user",
+        content: "Task constraints: Do not edit scout/last-session.md or agents/shared/projects/ruflo-learning-loop/outputs/NEXT.md.",
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "b1",
+            name: "bash",
+            arguments: { command: "git status --short" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "b1",
+        toolName: "bash",
+        content: [{ type: "text", text: " M scout/last-session.md\n M agents/shared/projects/ruflo-learning-loop/outputs/NEXT.md\n" }],
+      }),
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toContain(
+      "constraint violation: edited forbidden path(s): agents/shared/projects/ruflo-learning-loop/outputs/NEXT.md",
+    );
+  });
+
   it("flags unavailable workflow-collected signals as reliability issue", () => {
     const verdict = classifyVerdict(
       { status: "done", opCount: 0 },

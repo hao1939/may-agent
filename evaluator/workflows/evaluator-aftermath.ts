@@ -128,9 +128,14 @@ function editedForbiddenPaths(ownText: string, forbiddenPaths: string[]): string
 
 function canonicalizeForbiddenPaths(forbiddenPaths: string[]): string[] {
   return forbiddenPaths.filter((candidate) => {
+    if (isRuntimeLastSessionPath(candidate)) return false;
     if (candidate.includes("/")) return true;
-    return !forbiddenPaths.some((other) => other !== candidate && pathMatchesForbidden(other, candidate));
+    return !forbiddenPaths.some((other) => other !== candidate && !isRuntimeLastSessionPath(other) && pathMatchesForbidden(other, candidate));
   });
+}
+
+function isRuntimeLastSessionPath(candidate: string): boolean {
+  return candidate === "last-session.md" || candidate.endsWith("/last-session.md");
 }
 
 function pathMatchesForbidden(editedPath: string, forbiddenPath: string): boolean {
