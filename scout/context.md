@@ -38,6 +38,11 @@ BAD (will be flagged):
 - "File was updated successfully" (no specifics)
 - "Verified the changes work" (unfalsifiable)
 
+## Knowledge Entry Safety
+- **NEVER write() low-numbered KE files** (KE-001 through KE-010). They are canonical shared memory.
+- To add new knowledge, pick a new **high-numbered** KE id and verify it doesn't exist first.
+- To correct an existing KE, **read() first**, then use **edit()** with a narrow diff. Never write() the whole file.
+
 ## How to Discover Work
 1. Read `agents/scout/heartbeat.md` for current priorities
 2. Check if any of your findings are stale (>7 days)
