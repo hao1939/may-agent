@@ -1,5 +1,10 @@
 # Heartbeat Log — 2026-05-10
 
+## Entry 13:26Z
+- **System**: 90% success rate, 41 sessions/hr, 4 active sessions
+- **Red metrics**: project.iterations-24h=0 (no active projects), scout-good-rate=0.64 (⚠️ near threshold), scout-friction=0.54 (⚠️ high)
+- **Action**: No urgent interventions. Scout friction most concerning trend.
+
 ## Entry 12:19Z
 - **Red metrics**: project.iterations-24h=0 (exception: no active projects), message-close-rate=0.016 (stable structural gap)
 - **Blocked project**: Escalated `finish-blocked-hygiene-reduction` to human for SQL metric registration
