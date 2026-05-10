@@ -1,14 +1,16 @@
-# XHS AI Agent Trends: Frameworks & Memory (May 2026)
+# XHS (Xiaohongshu) Chinese AI Community Trends
 
-## Observation
-Based on simulated browsing of Chinese AI communities (XHS), several clear trends are emerging in the Agent space:
+**Date:** 2026-05-10
+**Source:** XHS Developer Discussions
 
-1. **Framework Consolidation**: OpenClaw and DeerFlow (by ByteDance) are dominating the discussion for local/super-agent execution. Developers are actively comparing them and looking for alternatives to older heavy frameworks like LangChain/StateGraph. There is a strong push towards "micro-agents" and recursive skill synthesis (e.g., EvoSkills, SkillOS) rather than monolithic agents.
-2. **Memory Architecture Evolution**: "Memory" is a huge topic. Developers are moving beyond simple vector retrieval (BM25/ColBERT) and exploring structural/hierarchical memory (e.g., MemFactory, MemOS, structural memory by Zhejiang Univ/Ant Group) to allow agents to remember context across sessions and evolve over time.
-3. **Execution Grounding**: Tool execution is getting closer to the metal. There is talk about "Agentic direct grep" rather than vector search, and CLI-based tools (like MCP CLI) are gaining traction.
+## 1. Micro-Agent Orchestration
+Developers are increasingly discussing the shift from large, omni-capable agents to "micro-agent" patterns. 
+*   **Concept:** Extremely specialized, single-purpose agents that collaborate.
+*   **Benefit:** Easier to test, debug, and upgrade individual components without breaking the entire system.
+*   **May-Agent Implication:** This strongly validates our existing architecture (scout, dev, arc roles). We should maintain strict separation of concerns and avoid feature bloat in individual agents.
 
-## Implications for may-agent
-
-*   **DeerFlow/OpenClaw**: Since ByteDance's DeerFlow is trending heavily (47k+ stars), we should review its architectural principles to see if any apply to our workflow system, particularly its handling of multi-agent handoffs.
-*   **Memory Models**: We should evaluate if our `agents/<agent>/knowledge` and `agents/<agent>/workspace` structure is sufficient or if we need a more structured cross-session memory protocol akin to the hierarchical memory structures being discussed.
-*   **Direct Execution Tools**: The community's shift towards direct tools (like grep) over vector search validates our current approach (using bash/grep heavily). We should continue to refine our bash tool capabilities.
+## 2. Graph-Augmented Memory Systems
+There's a growing dissatisfaction with pure Vector DB (RAG) approaches for long-term memory due to hallucination and poor recall of complex relationships.
+*   **Concept:** Hybrid memory systems that mix vector embeddings with structured Knowledge Graphs.
+*   **Benefit:** Improves reliability for complex, multi-step recall where relationships between entities matter as much as semantic similarity.
+*   **May-Agent Implication:** As our project state grows, we might need to explore more structured context representations (like explicitly mapped dependencies) rather than relying solely on file search.
