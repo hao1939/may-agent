@@ -58,6 +58,22 @@ interface HandoffOptions {
   maxLength?: number;
 }
 
+interface QueryResult<Row extends Record<string, unknown> = Record<string, unknown>> {
+  rows: Row[];
+  rowCount: number;
+  limit: number;
+  truncated: boolean;
+}
+
+interface QueryAPI {
+  sessions(filter?: Record<string, unknown>): QueryResult;
+  events(filter?: Record<string, unknown>): QueryResult;
+  metrics(filter?: Record<string, unknown>): QueryResult;
+  alerts(filter?: Record<string, unknown>): QueryResult;
+  projects(filter?: Record<string, unknown>): QueryResult;
+  sql(sql: string, params?: unknown[], opts?: { limit?: number }): QueryResult;
+}
+
 /** Context provided to workflow execute() functions. */
 interface WorkflowContext {
   /** The original task. */
@@ -77,6 +93,9 @@ interface WorkflowContext {
 
   /** Open the shared SQLite database. */
   getDb(): unknown;
+
+  /** Read bounded runtime facts without opening SQLite directly. */
+  query: QueryAPI;
 
   /** Log a diagnostic message. */
   log(msg: string): void;

@@ -100,6 +100,20 @@ export type {
   SessionKind,
 } from "./persistence.js";
 
+export { createQueryService, createUnavailableQueryService } from "./query-service.js";
+export type {
+  QueryAPI,
+  QueryResult,
+  QueryOptions,
+  SessionQuery,
+  EventQuery,
+  MetricQuery,
+  AlertQuery,
+  ProjectQuery,
+} from "./query-service.js";
+export { createWorkflowHandler } from "./workflow-handler.js";
+export type { WorkflowHandlerOptions } from "./workflow-handler.js";
+
 export type { HandlerContext, HandlerModule } from "./handler-context.js";
 // RuntimeCtx is internal — imported directly by workflow-tool.ts and sdk-impl.ts
 export { retryWithBackoff } from "./retry-with-backoff.js";

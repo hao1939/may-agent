@@ -1,6 +1,7 @@
 import type { TaskResult } from "./types.js";
 import type { HandoffOptions } from "./handoff.js";
 import type { MetricService } from "./metrics.js";
+import type { QueryAPI } from "./query-service.js";
 
 // ── Workflow Events ────────────────────────────────────────────────────
 
@@ -81,6 +82,9 @@ export interface WorkflowContext {
 
   /** Open the shared SQLite database. */
   getDb(): unknown;
+
+  /** Read bounded runtime facts without opening SQLite directly. */
+  query: QueryAPI;
 
   /** Log a diagnostic message. */
   log(msg: string): void;

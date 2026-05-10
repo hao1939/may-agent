@@ -15,6 +15,7 @@ import { getDb } from "./requests.js";
 import { log as globalLog } from "./log.js";
 import { buildRuntimeCtx } from "./runtime-ctx.js";
 import { createMetricService } from "./metrics.js";
+import { createQueryService } from "./query-service.js";
 import { appendFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
@@ -85,6 +86,10 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
     getDb(): SqliteDb {
       return getDb(deps.persistDir);
     },
+
+    query: createQueryService({
+      getDb: () => getDb(deps.persistDir),
+    }),
 
     metrics: createMetricService({
       getDb: () => getDb(deps.persistDir),

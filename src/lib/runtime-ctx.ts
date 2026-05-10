@@ -10,6 +10,7 @@ import type { SqliteDb } from "./db.js";
 import { getDb } from "./requests.js";
 import { log as globalLog } from "./log.js";
 import { createMetricService, type MetricService } from "./metrics.js";
+import { createQueryService, type QueryAPI } from "./query-service.js";
 import { readSessionMeta as _readSessionMeta, readSessionMessages as _readSessionMessages } from "./persistence.js";
 import { classifyError as _classifyError } from "./classify-error.js";
 import { getLastDigest as _getLastDigest, upsertDigest as _upsertDigest, classifyDigest as _classifyDigest } from "./session-digest.js";
@@ -25,6 +26,7 @@ export interface RuntimeCtx {
   emit(event: { type: string; [key: string]: unknown }): void;
   dispatchEvent(eventType: string, data?: Record<string, unknown>): void;
   getDb(): SqliteDb;
+  query: QueryAPI;
   log(msg: string): void;
   notify(msg: string): void;
   metrics: MetricService;
@@ -46,6 +48,9 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
     emit: (event) => opts.bus.emit(event as any),
     dispatchEvent: (eventType, data) => opts.bus.emit({ type: eventType, ...(data || {}) } as any),
     getDb: () => getDb(opts.persistDir),
+    query: createQueryService({
+      getDb: () => getDb(opts.persistDir),
+    }),
     log: (msg) => globalLog("info", `[${opts.agentName}] ${msg}`),
     notify: (msg) => {
       opts.bus.emit({ type: "message.created", from: opts.agentName, to: "human", content: msg } as any);

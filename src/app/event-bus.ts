@@ -125,6 +125,23 @@ export type SystemEvent =
   | { type: "metric.recovered"; metricId: string; metricName: string }
   | { type: "metric.stalled"; owner: string; metricId: string; metricName: string; message: string }
   | {
+      type: "guard.triggered";
+      owner: string;
+      source: "workflow";
+      workflow: string;
+      workflowRunId: string;
+      projectId?: string;
+      parentSessionId?: string;
+      guard: string;
+      demandType: "warn" | "block" | "run_step";
+      action: "warned" | "blocked" | "injected" | "skipped_duplicate" | "skipped_invalid" | "skipped_limit";
+      reason: string;
+      sourceEventType: string;
+      step?: string;
+      injectedStepLabel?: string;
+      injectedAgent?: string;
+    }
+  | {
       type: "workflow";
       agent: string;
       workflow: string;
