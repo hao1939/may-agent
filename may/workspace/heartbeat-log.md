@@ -93,3 +93,19 @@ Dev completed iteration 6 but is blocked on registering two new metrics (`sessio
 - **Red metrics**: scout.good-session-rate=0.49 (target 0.85), scout.operational-friction=0.67 (target 0.1), project.iterations-24h=0, message-close-rate=0.01. All previously classified structural.
 - **Blocked project**: 1 blocked >6h (likely ruflo-learning-loop). No new agent-side action possible.
 - **Health checks**: All PASS. No zombie sessions, no stale metrics.
+
+## 2026-05-10T10:26 UTC
+
+**System Health**: All 59 metrics active. 4 warnings: message conversation close rate, active project iterations, scout good session rate, scout operational friction rate.
+
+**Key Stats (1h)**:
+- Throughput: 48 sessions, 100% success rate
+- Avg duration: 1m 52s
+- All health checks: PASS
+- DB size: 1153 MB
+
+**Observations**:
+- 160 sessions listed as "active" but most are stale/interrupted from days ago
+- Scout operational friction rate at 0.61 (threshold 0.3)
+- Active project iterations at 0 in 24h (threshold 1) — projects stalled
+
