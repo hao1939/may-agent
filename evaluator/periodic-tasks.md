@@ -557,3 +557,15 @@ Ran `monitor-session.cjs --running`: 2 checked, 1 healthy, 1 `PROTOCOL_VIOLATION
 Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). State unchanged from prior runs; no repeat escalation sent this cycle.
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
+
+**Last run**: 2026-05-10 07:02Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778396403354`; `MAX(sessions.startedAt)=1778396468657`; `MAX(sessions.endedAt)=1778396434574`; lag ≈65.3s vs `startedAt`, ≈31.2s vs `endedAt`; `evals_last24h=673`; `llm_evals_last24h=30`; `sessions_last24h=1391`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table.
+
+Event-schema note: `events` still uses `event_type` and `timestamp`; status totals remain backlog/noise (`pending`≈549956, `handled`=14, `done`=1), but raw 1h activity is fresh (`handler.started`=70, `handler.completed`=69, `session.start`=42, `session.end`=41, `evaluation.routed`=24), so event status counts remain non-canonical for liveness.
+
+Inbox triage on the surfaced aftermath targets found completed workspace artifacts already present for `s_1778396154707_724`, `s_1778396104006_721`, and `s_1778395868895_717`. One target remains incomplete: `s_1778395912680_718` has a heuristic evaluation row with `artifactPath` `agents/evaluator/workspace/aftermath/s_1778395912680_718.md`, but that markdown file is missing and the prior evaluator review session (`s_1778395940546_719`) ended in `error`; escalated to May as a dropped/incomplete aftermath item.
+
+Ran `monitor-session.cjs --running`: 3 checked, 1 healthy, 2 `PROTOCOL_VIOLATION` alerts — dev session `s_1778396165391_726` (missing P114 Experience Replay; recommended action: warn) and an active evaluator review session `s_1778396403363_728` with the same P114 signal. Escalated only the external dev anomaly to May; treated the evaluator alert as a self-correction signal.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). State unchanged from prior runs; no repeat escalation sent this cycle.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
