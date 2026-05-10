@@ -810,3 +810,23 @@ Pre-write git status classification from `/app/agents`:
 Disposition:
 - Stage only `dev/workspace/heartbeat-log.md` for this heartbeat artifact.
 - Leave unrelated dirty paths untouched for their owning agents/projects; if the final status remains dirty after committing this file, report that as the hygiene blocker rather than staging unrelated work.
+
+## 2026-05-10 Heartbeat: Blocked Project Nudge and Provider-Auth Signal
+
+Routine dev heartbeat with no approved implementation item; this entry records explicit signal disposition and live checks rather than changing infrastructure code.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty, so dev has no approved queue item to implement.
+- Current system metrics are not dev-blocking: `session.error-rate-6h=0.027`, `handler.success-rate=1`, `handler.failed-count=0`, and `handler.completed-count=418`.
+- Direct unresolved-alert check found four open alerts: `project.iterations-24h`, `capability.message-conversation-close-rate`, `scout.good-session-rate-24h`, and `scout.operational-friction-rate-24h`. None are dev-owned; dev disposition is monitor/dismiss for direct action unless May approves an implementation item.
+- `finish-blocked-hygiene-reduction` remains correctly blocked: the metrics query returned no rows for `session.finish-blocked-uncommitted-count-24h` or `session.finish-blocked-unresolved-count-24h`, so the May/human safe runtime DB write in the project `resume_condition` is still required.
+- `eval-llm-lane-restoration` remains healthy in pending-review: latest non-heuristic evaluation is `2026-05-10 12:55:54` UTC, `eval.llm-coverage-lag-h=0.44`, and `eval.llm-evals-24h=22`.
+- Recent session errors are mostly short `error=NULL` rows; delivered evaluator messages identify the newest scout/may errors as provider-auth failures (`401 ... IDE token expired`) before tool calls, which need runtime credential remediation rather than prompt/code changes.
+- Only two active metrics lacked snapshots in the last hour, both scout knowledge-practice metrics last updated earlier; this is scout-owned watch-only for dev.
+- Pre-write git status from `/app/agents` showed unrelated dirty runtime and shared-project paths across other agents plus this intentional log edit once appended; stage only `dev/workspace/heartbeat-log.md`.
+
+Signal dispositions:
+- May P2 nudge about blocked `finish-blocked-hygiene-reduction`: acted by rechecking the exact resume condition; blocker is still external safe DB metric registration, so hold blocked/escalate to May/human rather than gaming project status.
+- Recent provider-auth aftermath messages for scout/may sessions: acted by recognizing the recurring infrastructure symptom, but no in-repo patch is available because credentials/runtime token refresh is external.
+- Repeated artifact-gate/session lifecycle signals: acted by producing this falsifiable heartbeat artifact and by planning narrow staging only.
+- Non-dev open alerts and scout stale metric snapshots: dismissed for direct dev action due to ownership and lack of Approved work-queue item; monitor for an explicit request.
