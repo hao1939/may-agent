@@ -94,6 +94,10 @@ Heartbeat validation found the pending-review resume condition is now met: since
 
 Heartbeat sampling showed the residual finish/uncommitted `needs_improvement` bucket is partly a classifier artifact: repaired sessions reviewed as `acceptable` were forcibly remapped to `needs_improvement`, even though the review text said the session shipped real output with weaker quality. Patched `evaluator-aftermath` so review overrides preserve `acceptable` as the stored verdict/event value while still lowering quality to `0.65`; true `needs_improvement` reviews remain downgraded. Fresh validation before patch: 24h raw finish/uncommitted signature `208`, with `187 needs_improvement`, `20 good`, and `1 acceptable`; the 1h slice had two residual needs-improvement rows, one reviewed `acceptable` and one true `needs_improvement`.
 
+### 2026-05-10 — Blocked-state heartbeat response
+
+Responded to May's P2 blocked-project nudge during dev heartbeat. The project remains correctly `blocked` rather than `waiting`: the remaining action is not time-based or owner-local work, but a safe runtime DB write by May/human to register `session.finish-blocked-uncommitted-count-24h` and `session.finish-blocked-unresolved-count-24h`. Fresh read-only validation still finds neither metric in `metrics`; no more sampling or prompt patches are indicated until the exact registration packet in `outputs/iteration-6-split-metric-registration.md` is applied and snapshots exist.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
