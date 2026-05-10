@@ -365,6 +365,21 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
           // Track reply for metric
           bus.emit({ type: "telegram.reply", source: "telegram", owner: ctx.agent || "unknown", enriched: true, hasSessionCtx: !!ctx.session_id, originalMsgId: replyToMsgId } as any);
+          if (ctx.session_id) {
+            bus.emit({
+              type: "steer",
+              sessionId: String(ctx.session_id),
+              message: enrichedText,
+              source: "telegram",
+            } as any);
+            await sendMessage(chatIdStr, `Reply sent to session ${ctx.session_id}.`, undefined, {
+              eventType: "telegram.reply",
+              agent: ctx.agent || opts.interfaceAgent,
+              sessionId: String(ctx.session_id),
+              data: JSON.stringify({ replyToMsgId }),
+            });
+            return;
+          }
         } else {
           const quoted = telegramMessageText(replyToMsg);
           if (quoted) {
