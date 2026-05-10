@@ -114,6 +114,8 @@ Scope:
   `project.nudge`.
 - [x] Refactor Telegram project replies so reply enrichment emits
   `project.comment.created` instead of writing `discussion.md` directly.
+- [x] Refactor Telegram session replies with stored `session_id` so they emit
+  `steer` for that session instead of falling through to generic chat input.
 - [x] Refactor Web UI session cancel to emit `session.cancel.requested`.
 - Refactor remaining Telegram reply handling so reply enrichment produces a daemon event,
   then shared command/project handlers perform the action.
@@ -128,8 +130,10 @@ Validation:
 - [x] Reply-to-project path has shared daemon logic that appends a project
   comment and triggers the same
   project resume path as Web UI comments.
-- [ ] Reply-to-session notification reaches the intended session or emits a clear
-  routing failure event.
+- [x] Reply-to-session notification emits a targeted `steer` event; unknown
+  cold sessions surface `session.resume_failed` from the manager.
+- [ ] Human Telegram e2e smoke confirms a real reply reaches the intended
+  session or emits a clear routing failure event.
 - [ ] Telegram, Web UI, and CLI leave comparable event traces for comparable
   actions.
 
