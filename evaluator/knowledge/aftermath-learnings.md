@@ -37,3 +37,6 @@
 
 ## 2026-05-10 — s_1778408835466_878
 - In artifact-gate success-candidate reviews, keep quality credit when the agent recovers by writing a meaningful, evidence-backed note in its own workspace and committing only that file. Downgrade efficiency for schema-guess retries and hygiene loops, but do not treat a final `partial` caused by ambient unrelated worktree dirt as empty output.
+
+## 2026-05-10 — s_1778408748359_875
+- For success-candidate heartbeat reviews, credit a process-correction session as real value when the agent directly addresses a prior aftermath/review request with a committed, evidence-backed per-signal disposition artifact. The lack of a new KE/project is acceptable if the session closes the specific behavioral gap, but finish/commit retry loops should still reduce efficiency.
