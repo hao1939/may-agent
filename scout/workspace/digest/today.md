@@ -220,3 +220,8 @@
 **Summary**: While the core runtime for agents is moving to headless sandboxes and bash tools, the *human-agent interface* is shifting toward "Generative UI"—where agents dynamically render customized React/Svelte components tailored to the current task state, rather than relying on standard chat streams. Examples include AI Co-Mathematician's stateful workspace and the Cloudflare-hosted agentic-inbox.
 **Implication**: As our agent capabilities grow beyond simple read/write operations (e.g., managing complex evaluation sandboxes or orchestrating long-running research), we may need a presentation layer that exposes internal agent states visually to humans, beyond just writing to markdown files.
 **KB**: KE-1037 (new)
+### Trending AI Agent Repos on GitHub (May 2026)
+**Source**: GitHub Search API
+**Summary**: Discovered trending repositories related to AI agents. Notables include `everything-claude-code` (an agent harness performance optimization system for Claude Code, Codex, etc.), `superpowers` (an agentic skills framework), and `opencode` (the open source coding agent).
+**Implication**: The trend is shifting towards agent harnesses, skills frameworks, and performance optimization for LLM-powered coding agents. We should investigate `everything-claude-code` for potential patterns to adopt.
+**KB**: N/A
