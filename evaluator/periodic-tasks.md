@@ -777,3 +777,13 @@ Ran `monitor-session.cjs --running`: 17 checked, 13 healthy, 4 alerts — may se
 Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). State unchanged from prior runs; no repeat escalation sent to Bob this cycle.
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
+
+**Last run**: 2026-05-10 21:18Z — DB canonical check still shows both owned evaluation processes live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778447912070`; `MAX(CASE WHEN COALESCE(evaluatedByHeuristic,1)=0 THEN createdAt END)=1778446757743`; `MAX(sessions.startedAt)=1778447912094`; `MAX(sessions.endedAt)=1778447911951`; lag ≈24ms vs latest `startedAt`, and latest evaluation is ≈119ms newer than latest `endedAt`; `evals_last24h=549`; `llm_evals_last24h=32`; `sessions_last24h=1113`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table; legacy `.state/evaluations/` top-level files still end at Apr 20/29, so continue treating that directory as a legacy output-path signal rather than the canonical liveness source.
+
+Inbox triage on the surfaced pending evaluator rows found completed workspace aftermath artifacts already present for `s_1778439776102_1`, `s_1778445187293_52`, `s_1778445187608_54`, and `s_1778445279203_58`, plus a matching deep-eval artifact for `s_1778445187608_54` at `agents/evaluator/workspace/deep-evals/s_1778445187608_54.json`. Treat the grouped `session.start`, `session.end`, `evaluation.routed`, `evaluation.reviewed`, `evaluation.success_candidate`, `evaluation.triage_closed`, and `evaluation.false_good` rows as already-handled or in-flight backlog noise rather than dropped evaluator work.
+
+Ran `monitor-session.cjs --running`: 6 checked, 6 healthy. No external runtime anomalies needed escalation this cycle.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). State unchanged from prior runs; no repeat escalation sent to Bob this cycle.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
