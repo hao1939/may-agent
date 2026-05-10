@@ -1,6 +1,6 @@
 # Infra Surface Implementation Plan
 
-**Status**: Phase 1, Phase 2 first slice, Phase 3 guard observability, and Phase 4 first slice implemented.
+**Status**: Phase 1, Phase 2 first slice, Phase 3 guard observability, Phase 4 first slice, and Phase 5 first slice implemented.
 
 This plan turns [infra-surface.md](infra-surface.md) into small implementation
 slices. The goal is not a broad rewrite. Each phase should improve the system
@@ -158,19 +158,22 @@ Problem: resume must not blindly replay partial/corrupt state.
 
 Improve resume behavior:
 
-- inspect durable state first,
-- preserve original id/run lineage,
-- resume only when next safe action is clear,
-- return diagnostic reason when unsafe,
-- emit `session.resume_failed` or `workflow.resume_failed`,
+- [x] inspect durable workflow state first,
+- [x] preserve original workflow id for terminal no-op results,
+- [x] resume only when the workflow definition and prior state are available,
+- [x] return diagnostic reason when workflow resume is unsafe,
+- [ ] emit `session.resume_failed`,
+- [x] emit `workflow.resume_failed`,
 - route to owner, fallback to `may`, escalate to human only when needed.
 
 Validation:
 
-- Corrupt workflow state test.
-- Partial workflow state test.
-- Terminal session/workflow no-op resume test.
-- Container restart scenario verifies stale work is visible and recoverable.
+- [ ] Corrupt workflow state test.
+- [x] Missing workflow definition test.
+- [x] Partial workflow state replay test.
+- [x] Terminal workflow no-op resume test.
+- [ ] Terminal session no-op resume test.
+- [ ] Container restart scenario verifies stale work is visible and recoverable.
 
 ## Phase 6: Handler Audit
 
