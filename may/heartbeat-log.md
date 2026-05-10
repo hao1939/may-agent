@@ -618,3 +618,9 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 **Blocked project:** `finish-blocked-hygiene-reduction` (dev-owned, P1) needs human to execute DB INSERT statements. Escalating to human.
 
 **Inbox:** Processed 13 signals — mostly evaluator aftermath reviews and closed-loop-steward audits. No escalations needed.
+
+## 2026-06-06T15:15Z
+- **Red metrics**: `project.iterations-24h=0` — documented in KE-905/KE-902 as known dispatch loop issue. No new action.
+- **Blocked project**: `finish-blocked-hygiene-reduction` (dev) — updated 40min ago, iteration 6. Active.
+- **System health**: 5 agents, 296 sessions/6h, 4 errors. Normal.
+- **Inbox**: Routine aftermath reviews. No escalation needed.
