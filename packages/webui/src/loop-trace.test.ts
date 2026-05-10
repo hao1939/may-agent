@@ -128,6 +128,10 @@ describe("buildLoopTrace", () => {
     });
     expect(trace.workflows[0]).toMatchObject({ runId: "wr_triage", workflow: "metric-alert-triage" });
     expect(trace.sessions[0]).toMatchObject({ sessionId: "s_triage", agent: "may" });
+    expect(trace.executions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "wr_triage", kind: "workflow", status: "done", traceId: "wr_triage" }),
+      expect.objectContaining({ id: "s_triage", kind: "session", status: "done", traceId: "wr_triage", owner: "may" }),
+    ]));
     expect(trace.guardSignals[0]).toMatchObject({ event_type: "guard.triggered" });
     expect(trace.metricSnapshots[0]).toMatchObject({ metric_id: "session.first-turn-error-count-1h", value: 2 });
   });
@@ -145,6 +149,14 @@ describe("buildLoopTrace", () => {
     expect(trace.target).toEqual({ kind: "workflow", id: "wr_missing" });
     expect(trace.failoverEvents).toHaveLength(1);
     expect(trace.failoverEvents[0]).toMatchObject({ event_type: "workflow.resume_failed" });
+    expect(trace.executions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: "wr_missing",
+        kind: "workflow",
+        status: "interrupted",
+        summary: "workflow_definition_missing",
+      }),
+    ]));
     expect(trace.evidence.failoverCount).toBe(1);
   });
 
@@ -165,6 +177,15 @@ describe("buildLoopTrace", () => {
       evidence: { failoverCount: 1 },
     });
     expect(trace.failoverEvents[0]).toMatchObject({ event_type: "session.resume_failed", owner: "missing-agent" });
+    expect(trace.executions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: "s_unreg",
+        kind: "session",
+        status: "error",
+        owner: "missing-agent",
+        summary: "Process restarted (agent not registered)",
+      }),
+    ]));
   });
 
   it("treats a failure event target as failover evidence", () => {

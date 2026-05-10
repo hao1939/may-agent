@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { closeDb, getDb } from "./requests.js";
 import {
   getExecutionResultFromDb,
+  resumeDiagnosticToExecutionResult,
   taskResultToExecutionResult,
   workflowToolResultToExecutionResult,
 } from "./execution-result.js";
@@ -65,6 +66,57 @@ describe("ExecutionResult", () => {
       summary: "missing evidence",
       traceId: "wr1",
       evidence: { workflow: "goal-driver", completedSteps: 0 },
+    });
+  });
+
+  it("maps session resume diagnostics into the same shape", () => {
+    expect(resumeDiagnosticToExecutionResult({
+      kind: "session",
+      id: "s_missing",
+      reason: "Agent missing-agent is not registered",
+      category: "agent_not_registered",
+      recoverable: false,
+      owner: "missing-agent",
+      agent: "missing-agent",
+      projectId: "p1",
+    })).toMatchObject({
+      id: "s_missing",
+      kind: "session",
+      status: "error",
+      summary: "Agent missing-agent is not registered",
+      traceId: "s_missing",
+      projectId: "p1",
+      evidence: {
+        owner: "missing-agent",
+        agent: "missing-agent",
+        category: "agent_not_registered",
+        recoverable: false,
+      },
+    });
+  });
+
+  it("maps workflow resume diagnostics into the same shape", () => {
+    expect(resumeDiagnosticToExecutionResult({
+      kind: "workflow",
+      id: "wr_missing",
+      reason: "Workflow definition missing",
+      category: "workflow_definition_missing",
+      recoverable: true,
+      owner: "may",
+      workflow: "goal-driver",
+      status: "interrupted",
+    })).toMatchObject({
+      id: "wr_missing",
+      kind: "workflow",
+      status: "interrupted",
+      summary: "Workflow definition missing",
+      traceId: "wr_missing",
+      evidence: {
+        owner: "may",
+        workflow: "goal-driver",
+        category: "workflow_definition_missing",
+        recoverable: true,
+      },
     });
   });
 

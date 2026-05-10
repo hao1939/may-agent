@@ -3827,7 +3827,19 @@ function renderLoopTrace(trace) {
   if (trace.handler?.name || trace.handler?.reason) {
     html += `<div style="font-size:12px;color:var(--fg2);margin-bottom:8px">handler: <b style="color:var(--fg)">${esc(trace.handler.name || '—')}</b>${trace.handler.status ? ` · ${esc(trace.handler.status)}` : ''}${trace.handler.reason ? ` · ${esc(trace.handler.reason)}` : ''}</div>`;
   }
-  if (trace.sessions?.length) {
+  if (trace.executions?.length) {
+    html += `<div style="font-size:12px;margin-top:8px"><b>Executions</b></div>`;
+    html += `<div style="display:grid;gap:4px;margin-top:4px">`;
+    for (const ex of trace.executions.slice(0, 10)) {
+      html += `<div style="font-size:12px;color:var(--fg2);display:flex;gap:8px;align-items:center">`;
+      const href = ex.kind === 'session' ? `#/sessions/${esc(ex.id)}` : '';
+      const id = href ? `<a href="${href}" style="color:var(--accent)">${esc(ex.id)}</a>` : `<span style="color:var(--accent)">${esc(ex.id)}</span>`;
+      html += id;
+      html += `<span>${esc(ex.kind || '—')}</span><span>${esc(ex.owner || '—')}</span><span>${esc(ex.status || '—')}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ex.summary || '')}</span>`;
+      html += `</div>`;
+    }
+    html += `</div>`;
+  } else if (trace.sessions?.length) {
     html += `<div style="font-size:12px;margin-top:8px"><b>Sessions</b></div>`;
     html += `<div style="display:grid;gap:4px;margin-top:4px">`;
     for (const s of trace.sessions.slice(0, 8)) {

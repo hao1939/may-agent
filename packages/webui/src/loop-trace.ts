@@ -29,6 +29,7 @@ export interface LoopTrace {
   metricEvents: Row[];
   failoverEvents: Row[];
   metricSnapshots: Row[];
+  executions: LoopTraceExecution[];
   evidence: {
     workflowCount: number;
     sessionCount: number;
@@ -36,6 +37,17 @@ export interface LoopTrace {
     metricEventCount: number;
     failoverCount: number;
   };
+}
+
+export interface LoopTraceExecution {
+  id: string;
+  kind: "session" | "workflow";
+  status: string;
+  summary: string;
+  traceId: string;
+  owner: string | null;
+  projectId: string | null;
+  evidence: Record<string, unknown>;
 }
 
 function parseData(row: Row | null | undefined): Record<string, unknown> {
@@ -97,6 +109,104 @@ function targetKind(target: LoopTraceTarget): LoopTrace["target"] {
   if ("metricId" in target) return { kind: "metric", id: target.metricId };
   if ("workflowRunId" in target) return { kind: "workflow", id: target.workflowRunId };
   return { kind: "session", id: target.sessionId };
+}
+
+function compact(text: unknown, fallback: string): string {
+  const value = typeof text === "string" ? text.trim() : "";
+  if (!value) return fallback;
+  return value.length > 180 ? `${value.slice(0, 177)}...` : value;
+}
+
+function sessionExecution(row: Row): LoopTraceExecution | null {
+  const id = stringValue(row.sessionId);
+  if (!id) return null;
+  const status = stringValue(row.status) ?? "running";
+  const agent = stringValue(row.agent);
+  return {
+    id,
+    kind: "session",
+    status,
+    summary: compact(row.error ?? row.outcome ?? row.task, `${agent ?? "session"} ${status}`),
+    traceId: stringValue(row.workflowRunId) ?? id,
+    owner: agent,
+    projectId: stringValue(row.projectId),
+    evidence: {
+      agent,
+      source: row.source,
+      kind: row.kind,
+      workflowRunId: row.workflowRunId,
+      opCount: row.opCount,
+    },
+  };
+}
+
+function workflowExecution(row: Row): LoopTraceExecution | null {
+  const id = stringValue(row.runId);
+  if (!id) return null;
+  const status = stringValue(row.status) ?? "running";
+  const workflow = stringValue(row.workflow);
+  return {
+    id,
+    kind: "workflow",
+    status,
+    summary: compact(row.result_summary ?? row.result_reason ?? row.task, `${workflow ?? "workflow"} ${status}`),
+    traceId: id,
+    owner: null,
+    projectId: stringValue(row.projectId),
+    evidence: {
+      workflow,
+      depth: row.depth,
+      parentSessionId: row.parentSessionId,
+      parentWorkflowRunId: row.parentWorkflowRunId,
+      resumedFromRunId: row.resumedFromRunId,
+    },
+  };
+}
+
+function failoverExecution(row: Row): LoopTraceExecution | null {
+  const data = parseData(row);
+  const eventType = stringValue(row.event_type);
+  if (!eventType) return null;
+  const sessionId = stringValue(data.sessionId);
+  const workflowRunId = stringValue(data.workflowRunId);
+  const kind = sessionId ? "session" : workflowRunId ? "workflow" : null;
+  const id = sessionId ?? workflowRunId;
+  if (!kind || !id) return null;
+  const owner = stringValue(row.owner ?? data.owner ?? data.agent);
+  const status = data.recoverable === false ? "error" : "interrupted";
+  return {
+    id,
+    kind,
+    status,
+    summary: compact(data.reason ?? data.message ?? data.category ?? eventType, `${kind} resume failed`),
+    traceId: id,
+    owner,
+    projectId: stringValue(data.projectId),
+    evidence: {
+      eventType,
+      category: data.category,
+      recoverable: data.recoverable,
+      agent: data.agent,
+      workflow: data.workflow,
+    },
+  };
+}
+
+function buildExecutions(workflows: Row[], sessions: Row[], failovers: Row[]): LoopTraceExecution[] {
+  const executions: LoopTraceExecution[] = [];
+  for (const row of failovers) {
+    const execution = failoverExecution(row);
+    if (execution) executions.push(execution);
+  }
+  for (const row of workflows) {
+    const execution = workflowExecution(row);
+    if (execution) executions.push(execution);
+  }
+  for (const row of sessions) {
+    const execution = sessionExecution(row);
+    if (execution) executions.push(execution);
+  }
+  return uniqBy(executions as unknown as Row[], "id") as unknown as LoopTraceExecution[];
 }
 
 function resolveSeeds(db: SqliteDb, target: LoopTraceTarget): {
@@ -277,6 +387,7 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
   const metricSnapshots = metricId
     ? safeAll(db, "SELECT * FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 20", metricId)
     : [];
+  const executions = buildExecutions(uniqueWorkflows, uniqueSessions, uniqueFailoverEvents);
 
   return {
     target: targetKind(target),
@@ -292,6 +403,7 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
     metricEvents,
     failoverEvents: uniqueFailoverEvents,
     metricSnapshots,
+    executions,
     evidence: {
       workflowCount: uniqueWorkflows.length,
       sessionCount: uniqueSessions.length,

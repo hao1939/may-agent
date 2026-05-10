@@ -19,6 +19,20 @@ export interface ExecutionResult {
   evidence?: Record<string, unknown>;
 }
 
+export interface ResumeDiagnostic {
+  kind: ExecutionKind;
+  id: string;
+  status?: ExecutionStatus;
+  reason: string;
+  category?: string;
+  recoverable?: boolean;
+  owner?: string;
+  agent?: string;
+  workflow?: string;
+  projectId?: string;
+  parentId?: string;
+}
+
 interface SessionRow {
   sessionId: string;
   agent: string;
@@ -153,6 +167,26 @@ export function workflowToolResultToExecutionResult(result: WorkflowToolResult):
     summary: compact(result.steeringMessage, "workflow interrupted"),
     traceId: result.workflowRunId,
     evidence: { workflow: result.workflow, completedSteps: result.completedSteps.length },
+  };
+}
+
+export function resumeDiagnosticToExecutionResult(diagnostic: ResumeDiagnostic): ExecutionResult {
+  const status = diagnostic.status ?? (diagnostic.recoverable === false ? "error" : "interrupted");
+  return {
+    id: diagnostic.id,
+    kind: diagnostic.kind,
+    status,
+    summary: compact(diagnostic.reason, `${diagnostic.kind} resume ${status}`),
+    traceId: diagnostic.id,
+    parentId: diagnostic.parentId,
+    projectId: optionalString(diagnostic.projectId),
+    evidence: {
+      owner: diagnostic.owner,
+      agent: diagnostic.agent,
+      workflow: diagnostic.workflow,
+      category: diagnostic.category,
+      recoverable: diagnostic.recoverable,
+    },
   };
 }
 

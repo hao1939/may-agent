@@ -118,6 +118,7 @@ export {
   getExecutionResultFromDb,
   normalizeExecutionStatus,
   sessionRowToExecutionResult,
+  resumeDiagnosticToExecutionResult,
   taskResultToExecutionResult,
   workflowRowToExecutionResult,
   workflowToolResultToExecutionResult,
@@ -126,6 +127,7 @@ export type {
   ExecutionKind,
   ExecutionResult,
   ExecutionStatus,
+  ResumeDiagnostic,
 } from "./execution-result.js";
 
 export type { HandlerContext, HandlerModule } from "./handler-context.js";
