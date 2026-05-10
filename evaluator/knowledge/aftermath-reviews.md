@@ -28,6 +28,10 @@
 - Symptom: a session updates a workspace file such as `workspace/digest/today.md`, but by review time the current file contents no longer match the session because a later run replaced the rolling digest.
 - Fix: verify the session's contribution from the landed commit/diff for that session, not only from the current workspace file state. Treat current file drift as expected for rolling artifacts and judge output quality from the committed change plus any read-back captured during the session.
 
+## Pattern: proposal-ledger updates can be real material output
+- Symptom: a success-candidate session edits an existing proposal instead of creating a new KE/file, so the output can look lightweight or purely administrative at first glance.
+- Fix: inspect whether the proposal diff adds new recurrence evidence, narrows the implementation surface, or honors a prior falsifier/noise-reduction rule. If the edit materially sharpens the active proposal with fresh evidence, credit it as real value rather than dismissing it as "only a proposal update."
+
 ## Pattern: shell-appended digest updates can accidentally commit truncation
 - Symptom: a session intends to append one digest entry, but the landed commit shows large deletions in the rolling digest because the agent used shell append/redirection, skipped an immediate read-back of the digest, then force-added the ignored workspace path.
 - Fix: for digest/workspace artifacts, compare the session commit against the parent blob and check whether the change is truly append-only. If the diff shows broad deletions, treat it as a real output-quality problem even when the session also produced a valid new knowledge entry. Encourage agents to read the exact final digest before any `git add -f`.
