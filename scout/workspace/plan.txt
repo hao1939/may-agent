@@ -1,7 +1,0 @@
-GOAL: Research multi-agent coordination patterns on GitHub to identify new trends and output a finding document.
-PLAN:
-1. Search GitHub for recent repositories related to "multi-agent coordination".
-2. Analyze the top repositories for common patterns (e.g., protocol design, contract-first, streaming coordination).
-3. Synthesize findings into a markdown report.
-4. Save the report to agents/scout/workspace/findings_multi_agent_coordination.md.
-DONE WHEN: The report is created and verified.

@@ -1,1 +1,0 @@
-Research on Multi-Agent Coordination\n\n1. MetaGPT: Meta Programming for Multi-Agent Collaborative Framework (https://arxiv.org/abs/2308.00352)\n2. SHOW-1 and Showrunner Agents in Multi-Agent Simulations (https://fablestudio.github.io/showrunner-agents/)\n3. Robin: A multi-agent system for automating scientific discovery (https://arxiv.org/abs/2505.13400)

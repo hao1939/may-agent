@@ -1,1 +1,0 @@
-# AI Agent Architecture Trends - March 2026\n\nRecent discussions on Hacker News indicate a strong focus on operational memory and MCP (Model Context Protocol) as key architectural layers for AI agents.
