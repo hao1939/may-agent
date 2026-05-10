@@ -35,4 +35,10 @@ describe("session metrics queries", () => {
     expect(failedTriageBlock).toContain("COUNT(*) as c");
     expect(failedTriageBlock).toContain("COUNT(DISTINCT s.sessionId) as c");
   });
+
+  it("suppresses session.failed-triage-rate-3h breaches when fewer than 5 failed sessions are in-window", () => {
+    const source = readFileSync(resolve(__dirname, "../../may/handlers/metrics-snapshot.ts"), "utf8");
+
+    expect(source).toContain('record("session.failed-triage-rate-3h", failed >= 5 ? parseFloat((triaged / failed).toFixed(4)) : 1, failed);');
+  });
 });

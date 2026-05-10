@@ -531,7 +531,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
            AND e.verdict = 'needs_improvement'`,
         threeH, sevenMinutesAgo,
       );
-      record("session.failed-triage-rate-3h", failed > 0 ? parseFloat((triaged / failed).toFixed(4)) : 1, failed);
+      // Small failure counts cause this metric to flap around a single recently-ended
+      // session before evaluator aftermath catches up. Keep the signal meaningful by
+      // treating windows with fewer than 5 failed sessions as neutral while still
+      // recording the denominator in sample_size for operator visibility.
+      record("session.failed-triage-rate-3h", failed >= 5 ? parseFloat((triaged / failed).toFixed(4)) : 1, failed);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring session.failed-triage-rate-3h: ${e}`); }
 
     try {
