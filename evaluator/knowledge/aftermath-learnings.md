@@ -25,3 +25,6 @@
 
 ## 2026-05-10 — s_1778405107928_828
 - When a session writes shared knowledge entries with low bare IDs (for example `KE-001.md`, `KE-002.md`), inspect both the commit snapshot and the parent snapshot with `git show <commit>^:<path>` before crediting success. A clean commit and readable file can still hide destructive overwrite of canonical knowledge, so parent-vs-commit comparison is required for shared-KB aftermath reviews.
+
+## 2026-05-10 — s_1778406713013_848
+- For success-candidate scout heartbeat reviews, compare adjacent same-day KEs before over-crediting novelty, but keep quality credit when the new note adds a concrete local lever (for example turning nearby SLM/sandbox observations into a recommendation for finer-grained micro-agent decomposition). Immediate recovery from ignored-path `git add` friction or a first blocked `finish()` should reduce efficiency only, not erase a landed knowledge artifact.
