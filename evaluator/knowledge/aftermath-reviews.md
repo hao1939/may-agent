@@ -137,6 +137,10 @@
 - Symptom: the transcript shows a plausible `echo "...\n..." >> file` append, but the landed artifact contains literal `\n` sequences on one line instead of real markdown line breaks.
 - Fix: inspect the actual file content, not just the write command or the agent's summary. Credit the session only for the information that really landed, and note output-quality loss when shell-based writes produce malformed markdown or weak read-back via `cat` instead of the platform `read()` tool.
 
+## Pattern: rolling digest append tasks can silently become destructive overwrites
+- Symptom: a session says it is appending new findings to a rolling digest, but the transcript uses shell redirection like `cat <<'EOF' > file` or similar overwrite semantics. The read-back shows correct new content, yet the landed diff reveals large deletions because the prior digest body was replaced.
+- Fix: for rolling digests and cumulative workspace artifacts, inspect the landed diff or compare against the pre-change file, not only the post-write read-back. Treat `>` on an existing digest as a destructive-overwrite smell unless the task explicitly called for replacement.
+
 ## Pattern: a blocked first finish does not negate a good outcome when recovery is immediate
 - Symptom: a session's first `finish(success)` is rejected for missing read-back verification, which can make the whole run look low-quality if the review stops there.
 - Fix: continue through the transcript. If the agent immediately performs the required read() calls, verifies the edited files, and then finishes cleanly with a real deliverable, score the outcome from the recovered end state and count the initial finish block as minor efficiency waste rather than a failed session.
