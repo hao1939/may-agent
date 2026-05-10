@@ -21,6 +21,7 @@
 | 6 | 19:03 | 6bbc15578 | yes | none — staging-for-this-KE note |
 | 7 | 19:05 | b3e76093b (may-agent author) | yes | "system health: good, no action" — pure status filler |
 | 8 | (parallel) | 54b844e00 | yes | restart-replay storm follow-up |
+| 9 | 19:10 | (this edit) | yes | **post-filing**: gate fired again 2 min after KE-941 was committed (b5e73eb95). Confirms the loop is independent of whether the KE-941 fix has landed — the gate doesn't yet know about no-op affordance. Recurrence is now 9/~75min. |
 
 **8 cycles in ~70 minutes**, 5 of them gate-driven, **zero with genuinely novel state**. Every gate-driven cycle's "artifact" was a new heartbeat-log entry whose only content was "the gate fired again and I had nothing new to say."
 
