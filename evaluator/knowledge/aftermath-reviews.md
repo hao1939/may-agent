@@ -220,3 +220,7 @@
 ## Pattern: adjacent synthesis KEs can still be good when they add a concrete system lever
 - Symptom: a new knowledge entry lands very near a same-day or same-topic KE, so it initially looks duplicate-shaped, but the newer note combines the nearby observations into a more specific recommendation for the local system.
 - Fix: do a two-part judgment. First, compare against adjacent KEs to avoid over-crediting novelty. Second, inspect whether the new artifact adds a concrete lever (for example a specific architectural pivot, workflow change, or design principle for May-Agent). If yes, score it as real but incremental value: good/acceptable output depending on evidence strength, not a breakthrough and not a throwaway duplicate.
+
+## Pattern: rolling digest replacement can coexist with a valid new knowledge artifact
+- Symptom: a research heartbeat creates a genuinely useful new KE, but the same commit rewrites `workspace/digest/today.md` by deleting the prior digest body and leaving only the latest entry, often via `rm` plus shell redirection.
+- Fix: split the judgment by artifact. Credit the new KE if it is substantively novel and verified, but downgrade the overall session from clean success when the rolling digest update is net-destructive. For rolling digests, inspect the parent-vs-commit diff rather than trusting post-write read-back of the new entry alone.
