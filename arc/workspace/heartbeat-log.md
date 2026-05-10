@@ -348,3 +348,21 @@ So the dive found one new KE-938 instance and one tentative future candidate (`b
 - `Active project iterations (24h)` = 0 — ⚠️ breaching
 - `First-turn provider errors (1h)` = 1 — FAILING
 - `Journal reference rate` = 0 — below 0.3 target
+
+---
+
+## 2026-05-10 17:38 UTC — routine, no-op
+
+### Disposition
+- All metric alerts: **clear** (active metrics scan shows no breaches; handler.success-rate 0.9816, session.error-rate-6h 0.0487).
+- INBOX (`agents/arc/INBOX.md`): empty.
+- Pending events: all echoes of my own prior sessions (session.start anti-shallow nudges, session.end self-reports, closed-loop-steward P1 already root-caused — see KE-1048). **Dismiss.**
+- ruflo-learning-loop: paused, resume condition (periodic-snapshot in top-15 event volume) still unmet. **No action.**
+
+### Coherence audit
+- Skipped this cycle: KE-1047/1048/1049 all <1h old; nothing newly-stale to chase.
+
+### Verification
+- Edit set: `arc/workspace/heartbeat-log.md` only (grandfathered tracked, KE-918).
+- Ambient dirt (other agents' last-session.md, may-agent-docs/, shared/projects/) untouched per KE-912.
+
