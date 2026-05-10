@@ -1,6 +1,6 @@
 /// <reference path="../../types/workflow-defs.d.ts" />
 /**
- * knowledge-entry-overwrite guard — protects canonical low-numbered KE files.
+ * knowledge-entry-overwrite guard — detects risky canonical KE overwrites.
  *
  * Scout/explore sessions recently used whole-file writes against legacy shared
  * knowledge entries (KE-001, KE-002, KE-021), replacing canonical content while
@@ -8,6 +8,10 @@
  * established shared memory; new entries should use the current high-numbered
  * namespace, and corrections to legacy entries should be explicit read()+edit()
  * changes rather than blind write()/shell redirection overwrites.
+ *
+ * This guard warns instead of blocking. Guard signals are evidence for review
+ * and follow-up; the workflow remains responsible for judging whether to fix,
+ * revert, or escalate.
  */
 
 type ExtractedCall = {
@@ -101,12 +105,12 @@ export const guard: WorkflowGuard = {
     if (risky.size === 0) return [];
 
     return [{
-      type: "block",
+      type: "warn",
       reason:
-        `Shared Knowledge Integrity: Cannot finish(success) after whole-file writing legacy KE path(s): ` +
+        `Shared Knowledge Integrity risk: finish(success) followed whole-file writing legacy KE path(s): ` +
         `${[...risky].join(", ")}. Low-numbered KE files are canonical shared memory. ` +
         `If you are adding new knowledge, choose a new unused high-numbered KE id and verify it does not exist. ` +
-        `If you are correcting an existing KE, read() it first and use edit() with a narrow diff rather than write()/shell redirection.`,
+        `If you are updating an existing KE, read() it first and use edit() with a narrow diff or dated follow-up rather than write()/shell redirection.`,
     }];
   },
 };

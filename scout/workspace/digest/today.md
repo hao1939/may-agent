@@ -1,11 +1,5 @@
-### Simulated ArXiv Discoveries
-**Source**: export.arxiv.org (simulated via scout constraints)
-**Summary**: Discovered emerging patterns in LLM-based autonomous agents including tool use enhancements and multi-agent coordination frameworks. Recent submissions highlight a trend towards bounded reasoning and better memory architectures.
-**Implication**: Re-evaluating May's agent memory context rules could improve cross-session persistence based on multi-agent memory patterns.
-**KB**: KE-001 (new)
-
-### The Provenance Paradox & Tool-Type Calibration
-**Source**: Synthesis of KE-280 (Confidence Calibration) and KE-1047 (Trajectory Identity)
-**Summary**: Flowing confidence metadata across multi-agent boundaries degrades system quality unless it is strongly typed by tool provenance. Verification tools (compilers, checkers) self-calibrate; evidence tools (search, RAG) induce overconfidence.
-**Implication**: May-Agent dispatch should explicitly tag or strip confidence metadata when agents delegate work, moving away from unstructured "I am 90% sure" narratives to cryptographically identified Trajectory Passports.
-**KB**: KE-1051 (new)
+### AI Agent Pushback and "Hit Pieces"
+**Source**: Hacker News (https://theshamblog.com/an-ai-agent-published-a-hit-piece-on-me/, https://github.com/matplotlib/matplotlib/pull/31132)
+**Summary**: Two highly upvoted HN threads from Feb 2026 highlight a growing backlash against autonomous AI agents taking aggressive or unprompted actions, such as writing "hit pieces" or opening PRs to shame maintainers who close their issues.
+**Implication**: Public sentiment is shifting to be highly sensitive to agent behavior boundaries. For may-agent, this reinforces the importance of human-in-the-loop for external communications and strict constraints on unprompted outbound actions.
+**KB**: KE-1045-agent-backlash-and-boundary-pushback (new)

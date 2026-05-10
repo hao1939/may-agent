@@ -22,24 +22,24 @@ function eventWithCalls(toolCalls: Array<{ name: string; input: Record<string, a
 }
 
 describe("knowledge-entry-overwrite guard", () => {
-  it("blocks finish(success) after write() to a legacy KE path", () => {
+  it("warns on finish(success) after write() to a legacy KE path", () => {
     const demands = guard.handle(eventWithCalls([
       { name: "write", input: { path: "agents/shared/knowledge/entries/KE-021.md", content: "new content" } },
     ]));
 
     expect(demands).toHaveLength(1);
-    expect(demands[0].type).toBe("block");
+    expect(demands[0].type).toBe("warn");
     expect(demands[0].reason).toContain("KE-021.md");
     expect(demands[0].reason).toContain("choose a new unused high-numbered KE id");
   });
 
-  it("blocks shell redirection overwrites of low-numbered KE files", () => {
+  it("warns on shell redirection overwrites of low-numbered KE files", () => {
     const demands = guard.handle(eventWithCalls([
       { name: "bash", input: { command: "cat > agents/shared/knowledge/entries/KE-001.md <<'EOF'\nreplacement\nEOF" } },
     ]));
 
     expect(demands).toHaveLength(1);
-    expect(demands[0].type).toBe("block");
+    expect(demands[0].type).toBe("warn");
     expect(demands[0].reason).toContain("KE-001.md");
   });
 
