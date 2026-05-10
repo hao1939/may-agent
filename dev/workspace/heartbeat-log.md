@@ -371,3 +371,11 @@ Evidence checked:
 Disposition:
 - No infrastructure code change is indicated from this quick triage.
 - This note is the intentional deliverable for the artifact-gate recovery; existing dirty paths outside `dev/workspace/heartbeat-log.md` were present before the write and should be treated as unrelated owner/runtime work unless separately investigated.
+
+## 2026-05-10 Artifact Gate Recovery
+
+Administrative heartbeat artifact written after the artifact gate reported this session had produced no file writes. I reviewed the existing dirty worktree first and found multiple unrelated runtime/project/test paths already dirty; this entry is intentionally limited to `dev/workspace/heartbeat-log.md` so it can be staged and committed without laundering unrelated changes.
+
+Disposition:
+- No production data or infrastructure code was changed for this recovery step.
+- Follow-up should continue with normal dev heartbeat triage once the unrelated dirty paths are owned or cleaned by their respective agents.
