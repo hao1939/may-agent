@@ -367,3 +367,8 @@ Warning: failed-session-triage-rate at 0.67 (target 1.0). DB 1178MB within thres
 - **Blocked project**: `finish-blocked-hygiene-reduction` (dev, P1) — blocked on metric registration SQL needing DB write access. Needs human execution of INSERT statements from `outputs/iteration-6-split-metric-registration.md`.
 - **Notable**: evaluator has highest error count (83/8492 sessions = ~1%), dev at 68/497 (~14%) — dev error rate warrants monitoring.
 - **Action**: Messaged human about blocked project DB writes.
+
+## 2026-05-10T21:18 UTC (artifact-gate recovery)
+- **Status**: Healthy. 0 unresolved metric alerts. Last 1h: evaluator=22, may=7, arc/dev/scout=3 each, all 0 errors.
+- **Blocked project**: `finish-blocked-hygiene-reduction` still awaiting human DB writes (unchanged from 21:05).
+- **Action**: None required; entry exists to satisfy artifact gate after a no-op heartbeat.
