@@ -1,4 +1,9 @@
-# Heartbeat Log — 2026-05-10T09:26Z
+# Heartbeat Log — 2026-05-10
+
+## Entry 12:19Z
+- **Red metrics**: project.iterations-24h=0 (exception: no active projects), message-close-rate=0.016 (stable structural gap)
+- **Blocked project**: Escalated `finish-blocked-hygiene-reduction` to human for SQL metric registration
+- **System health**: 0 errors across 5 agents in 6h, all agents active
 
 ## Entry 11:00Z
 - **Throughput (last 1h)**: 47 sessions — 43 done, 3 running, 1 interrupted. No
