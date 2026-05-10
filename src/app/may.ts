@@ -619,6 +619,7 @@ const commandRouter = attachCommandRouter({
   manager,
   getChatSession: () => chatSession,
   clearCancelLatch: () => { cancelledOnce = false; },
+  projectRoot: PROJECT_ROOT,
   reload: handleReload,
   restart: gracefulRestart,
   shutdown: gracefulShutdown,

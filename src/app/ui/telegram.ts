@@ -239,11 +239,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
-  async function appendProjectDiscussionComment(projectPath: string, comment: string): Promise<boolean> {
+  async function emitProjectComment(projectPath: string, comment: string): Promise<boolean> {
     const normalized = normalizeProjectPath(projectPath);
     if (!normalized) return false;
 
-    const { existsSync, appendFileSync, writeFileSync } = await import("node:fs");
+    const { existsSync } = await import("node:fs");
     const projectDir = join(projectRoot, normalized);
     const projectFile = join(projectDir, "project.md");
     if (!existsSync(projectFile)) {
@@ -251,19 +251,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       return false;
     }
 
-    const date = new Date().toISOString().slice(0, 10);
-    const discussionFile = join(projectDir, "discussion.md");
-    const entry = `\n### hao — ${date}\n${comment.trim()}\n`;
-    if (existsSync(discussionFile)) appendFileSync(discussionFile, entry, "utf-8");
-    else writeFileSync(discussionFile, `# Discussion\n${entry}`, "utf-8");
-
     bus.emit({
-      type: "project.nudge",
+      type: "project.comment.created",
       source: "telegram",
       projectPath: normalized,
-      comment: true,
+      comment: comment.trim(),
+      author: "hao",
     } as any);
-    bus.emit({ type: "info", message: `[telegram] Project comment appended and nudged: ${normalized}` });
+    bus.emit({ type: "info", message: `[telegram] Project comment event emitted: ${normalized}` });
     return true;
   }
 
@@ -301,12 +296,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         const ctx = db.prepare("SELECT * FROM notification_messages WHERE telegram_msg_id = ?").get(replyToMsgId) as any;
         if (ctx) {
           const projectPath = normalizeProjectPath(ctx.project_id);
-          if (projectPath && await appendProjectDiscussionComment(projectPath, text)) {
-            try {
-              db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-                ["telegram.reply", "telegram", ctx.agent || "unknown", JSON.stringify({ enriched: true, projectPath, delivery: "project-comment", originalMsgId: replyToMsgId }), Date.now()]);
-            } catch {}
-            await sendMessage(chatIdStr, `Comment added to ${projectPath}. Resuming the project now.`, undefined, {
+          if (projectPath && await emitProjectComment(projectPath, text)) {
+            bus.emit({ type: "telegram.reply", source: "telegram", owner: ctx.agent || "unknown", enriched: true, projectPath, delivery: "project-comment", originalMsgId: replyToMsgId } as any);
+            await sendMessage(chatIdStr, `Comment sent to ${projectPath}. Resuming the project now.`, undefined, {
               eventType: "project.comment",
               agent: ctx.agent || opts.interfaceAgent,
               projectId: projectPath,
@@ -372,10 +364,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           bus.emit({ type: "info", message: `[telegram] Enriched reply (ctx: ${ctx.event_type}/${ctx.agent}${ctx.session_id ? "/session" : ""})` });
 
           // Track reply for metric
-          try {
-            db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-              ["telegram.reply", "telegram", ctx.agent || "unknown", JSON.stringify({ enriched: true, hasSessionCtx: !!ctx.session_id, originalMsgId: replyToMsgId }), Date.now()]);
-          } catch {}
+          bus.emit({ type: "telegram.reply", source: "telegram", owner: ctx.agent || "unknown", enriched: true, hasSessionCtx: !!ctx.session_id, originalMsgId: replyToMsgId } as any);
         } else {
           const quoted = telegramMessageText(replyToMsg);
           if (quoted) {
@@ -386,16 +375,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
               `User says: ${text}`,
             ].join("\n");
             bus.emit({ type: "info", message: `[telegram] Enriched reply from Telegram quote (msg ${replyToMsgId})` });
-            try {
-              db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-                ["telegram.reply", "telegram", opts.interfaceAgent, JSON.stringify({ enriched: true, hasDbCtx: false, fallback: "telegram-quote", originalMsgId: replyToMsgId }), Date.now()]);
-            } catch {}
+            bus.emit({ type: "telegram.reply", source: "telegram", owner: opts.interfaceAgent, enriched: true, hasDbCtx: false, fallback: "telegram-quote", originalMsgId: replyToMsgId } as any);
           } else {
             bus.emit({ type: "info", message: `[telegram] Reply context missing for msg ${replyToMsgId}` });
-            try {
-              db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-                ["telegram.reply", "telegram", opts.interfaceAgent, JSON.stringify({ enriched: false, reason: "context-not-found", originalMsgId: replyToMsgId }), Date.now()]);
-            } catch {}
+            bus.emit({ type: "telegram.reply", source: "telegram", owner: opts.interfaceAgent, enriched: false, reason: "context-not-found", originalMsgId: replyToMsgId } as any);
           }
         }
       } catch {}
