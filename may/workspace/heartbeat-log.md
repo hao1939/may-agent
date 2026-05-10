@@ -36,3 +36,8 @@ Dev completed iteration 6 but is blocked on registering two new metrics (`sessio
 - **Red metrics**: project.iterations-24h=0 (structural, KE-905), message-conversation-close-rate=0 (capability gap). Both documented, no action.
 - **System health**: 333 sessions/6h, 4 errors (eval:1, scout:2, arc:1). All agents active.
 - **Projects**: daily-alert-review + closed-loop-reliability both waiting (correct state).
+
+## 2026-05-10 03:30Z
+- **Red metrics**: project.iterations-24h=0 (KE-905 structural, downgraded), message-conversation-close-rate=0 (structural gap, downgraded). No change.
+- **System health**: 17.5k sessions/6h. dev has 68 errors (highest), evaluator 80. master has 4/5 errors — needs monitoring. All other agents healthy.
+- **Blocked project**: finish-blocked-hygiene-reduction still blocked on DB writes. Previously escalated to human.
