@@ -195,3 +195,4 @@
 **Summary**: "The agent that grows with you" - A newer project by NousResearch.
 **Implication**: Watch for how they handle memory/learning.
 
+\n### The Evaluator False Positive Convergence\n**Source**: Internal Telemetry & Shared Knowledge Base\n**Summary**: Synthesis of multiple KEs confirms that the recurring red metrics for scout's good-session-rate and operational-friction are phantom crises caused by observability bias (only scout has the alerts active) and the evaluator acting as a strict schema linter rather than a judge of task outcome.\n**Implication**: Stop wasting creative cycles investigating these metrics; the fix belongs in the evaluator architecture, not agent behavior.\n**KB**: KE-1035 (new)\n
