@@ -499,3 +499,15 @@ Ran `monitor-session.cjs --running`: 2 checked, 2 healthy.
 Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` are still placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
+
+**Last run**: 2026-05-10 03:01Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778381984036`; `MAX(sessions.startedAt)=1778382068194`; `MAX(sessions.endedAt)=1778382027156`; lag ≈84.2s vs `startedAt`, ≈43.1s vs `endedAt`; `evals_last24h=4354`; `llm_evals_last24h=1909`; `sessions_last24h=17523`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table.
+
+Legacy `.state/evaluations/` top-level files remain stale at the filesystem layer (`find .state/evaluations -maxdepth 1 -type f -printf '%TY-%Tm-%Td %TH:%TM %f\n' | sort | tail -5` still ends with Apr 20/29 files), so continue treating that directory as a legacy output-path signal rather than the canonical liveness source.
+
+Inbox triage on the surfaced pending aftermath targets found completed artifacts already present for `s_1778370965242_413`, `s_1778381468963_547`, `s_1778381729467_551`, `s_1778381748816_552`, and `s_1778381765659_556`, so the current pending `session.*` / `evaluation.*` rows are best treated as already-handled backlog noise rather than dropped evaluator work.
+
+Ran `monitor-session.cjs --running`: 1 checked, 1 healthy. The only active session was this heartbeat, so there were no external runtime anomalies to escalate.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). State unchanged from prior runs; no repeat escalation sent this cycle.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs, so there were again no fresh disagreement inputs to process this cycle.
