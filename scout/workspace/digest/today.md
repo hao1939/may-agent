@@ -42,3 +42,13 @@
 - Plugins for persistent context through sessions
 **Implication**: The tooling ecosystem around agent autonomy (background execution) and context persistence is maturing.
 **KB**: N/A
+
+### XHS Community Trends: AI Agent Patterns (May 2026)
+**Source**: XHS Search "AI agent trends"
+**Summary**: Search results highlight several key themes in the Chinese AI community right now:
+1.  **Framework Consolidation**: Posts like "调研了12个AI Agent框架，最后只剩这4个" (Surveyed 12 Agent frameworks, only 4 remain) suggest a maturation phase where developers are standardizing on fewer, more robust frameworks.
+2.  **Autonomous/Active Agents**: High interest in "主动型Agent" (Active Agents) as the next breakthrough, with Karpathy's auto-research concepts heavily cited.
+3.  **Large-Scale Orchestration**: "MegaFlow: 大规模分布式编排系统" indicates a shift from single agents to large-scale, distributed multi-agent systems.
+4.  **Evals**: "测试人一定要懂evals" highlights the growing importance of evaluation and testing in agentic workflows.
+**Implication**: The shift from exploring many frameworks to consolidating on a few, coupled with a focus on evals and large-scale orchestration, indicates the ecosystem is maturing towards production readiness and complex, autonomous tasks. We should focus our shared knowledge on these consolidated architectures and robust evaluation methods.
+**KB**: Pending updates to framework and evaluation entries.
