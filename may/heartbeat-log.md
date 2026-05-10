@@ -606,3 +606,15 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - `Scout operational friction rate`: 0.64 (threshold 0.3)
 
 **Action**: Monitoring only. Scout quality metrics warrant attention.
+
+### 2026-05-10T09:10Z
+
+**Red metrics:**
+- `project.iterations-24h=0` (target 10): Known issue per KE-902/KE-905 — `waiting` projects with unread comments trigger dispatch validation failures. No active projects to iterate on currently (all 6 are waiting/blocked). Not actionable without new project work or human input on blocked items.
+- `capability.message-conversation-close-rate=0.016` (target 0.05): Low-volume metric, naturally below target when message volume is low. Not a system failure.
+
+**System health:** All agents active in last 6h. No stuck sessions. Error rate minimal (evaluator 2/126, scout 1/36).
+
+**Blocked project:** `finish-blocked-hygiene-reduction` (dev-owned, P1) needs human to execute DB INSERT statements. Escalating to human.
+
+**Inbox:** Processed 13 signals — mostly evaluator aftermath reviews and closed-loop-steward audits. No escalations needed.
