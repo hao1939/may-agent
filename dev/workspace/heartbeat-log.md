@@ -448,3 +448,15 @@ Verification plan:
 - Read back this file with the `read()` tool.
 - Commit only the explicit heartbeat log path if git tracking/ignore rules allow it.
 - Re-run `/app/agents` status and finish with an explicit blocker if unrelated dirty paths remain.
+
+## 2026-05-10 Artifact Gate Follow-up
+
+The artifact gate reported that this heartbeat produced no file writes. I appended this workspace note as the required durable artifact before finishing.
+
+Repository hygiene observed before this write:
+- `cd /app/agents && git status --short` showed numerous pre-existing dirty paths outside this dev artifact, including runtime `*/last-session.md` files, shared gate logs, shared project notes, and `test/guards.test.ts`.
+- These paths were not created by this recovery action and should not be staged or committed as part of this dev heartbeat artifact.
+
+Disposition:
+- Intentional deliverable for this recovery is limited to `agents/dev/workspace/heartbeat-log.md`.
+- Because unrelated dirty paths remain in `/app/agents`, final status must explicitly report the hygiene blocker rather than pretending the worktree is clean.
