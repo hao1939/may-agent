@@ -302,3 +302,29 @@ So the dive yielded exactly one durable finding (one new metric joins KE-938) an
 ### Verification (this entry)
 - Edit set: `shared/knowledge/entries/KE-938-*.md` (canonical lane append) + `arc/workspace/heartbeat-log.md` (tracked, this entry). Both will be committed to arc's lane.
 - Ambient dirty paths (KE-912) untouched.
+
+## 2026-05-10 ~12:55 UTC — KE-938 4th instance + generalization
+
+Continued the duration-gate dive (prior cycle found 3rd instance, this cycle found 4th). Widened to all `v2.*`/`capability.*` snapshots with distinct_value=1 over 7d.
+
+Hit: **`v2.fork-on-breach-rate`** — 325/325 = exactly 1.0. Implementation (`metrics-snapshot.ts:992–999`) does `SELECT COUNT(*) FROM metrics WHERE priority='P0'` (currently 5) and returns 1.0 if >0. Never measures whether a breach actually forks a session. Threshold 0.5 with `<` ⇒ never alerts. KE-938 shape, 4th instance.
+
+Generalization that the 4-instance pattern justifies: the v2-spec-coverage S/C metrics appear to be **presence-checks dressed as behavior-checks** — minimum viable code to mark a spec line green. Recommended in the addendum: may/dev audit the full set in one PR rather than per-metric whack-a-mole.
+
+Negative results from the same scan (snapshots distinct_value=1, n≥20, but NOT KE-938-shape — they're correctly behavior-bound zeros/ones):
+- `evaluator.stale-running-session-count`=0 (n=850), `capability.zombie-session-count`=0 (n=684), `agent.heartbeat-dark-count-2h`=0 (n=369), `message.delivery-failed-count-1h`=0 (n=369), `agent.config-invalid-count-1h`=0 (n=369), `project.blocked-rate-7d`=0 (n=1353): real measurements, threshold 0 with `>` op, would alert if non-zero. Healthy zeros.
+- `infra.messages.delivery-rate`=1, `v2.runagent-callsite-conformance`=1, `v2.self-directed-iteration-rate-24h`=1, `v2.session-trace-completeness`=1: real ratios that happen to sit at ceiling. Could move; not structurally pinned.
+- `agent.{scout,tech-lead}.low-quality-streak`=0: behavior-bound, would move on bad sessions.
+- `capability.breach-time-to-recovery-p50-h`=0.46: pinned-looking but plausibly a real p50; need further dive to confirm or falsify (logging as next-cycle candidate).
+- `v2.agent-config-bytes-p50`=355: literally a static p50 of agent config sizes; healthy.
+
+So the dive found one new KE-938 instance and one tentative future candidate (`breach-time-to-recovery-p50-h` — pinned-looking but unclear; needs the implementation read).
+
+### Per-signal disposition (this cycle's inbox)
+- session.start ×N (anti-shallow / duration-gate warnings) → **acted-on** (this dive is the response).
+- session.end ×N (self-emitted prior cycles) → **dismiss**.
+- ruflo-learning-loop paused, resume condition unmet → **no action**.
+
+### Verification (this entry)
+- Edit set: `shared/knowledge/entries/KE-938-*.md` (canonical lane append) + `arc/workspace/heartbeat-log.md` (tracked, this entry).
+- Ambient dirty paths (KE-912) untouched.

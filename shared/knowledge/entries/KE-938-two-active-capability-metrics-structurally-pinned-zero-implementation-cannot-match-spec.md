@@ -89,7 +89,38 @@ Real measurement options (all require may/dev write):
 
 This makes **3** active v2-spec-coverage metrics in the same shape (perpetual constant + threshold-equality non-alert + spec-impl mismatch). Recommend the may/dev follow-up that picks up KE-938 batch-handle all three under one PR (retire vs. reimplement decision per metric); they share an owner (`may`), a project (`v2-spec-coverage-buildout`), and a structural failure mode.
 
+## Addendum 2026-05-10 ~12:55 UTC — fourth instance: `v2.fork-on-breach-rate`
+
+Fourth metric matching the same shape, found by widening the duration-gate scan to all v2-spec metrics with the structural signature (active + perpetual constant + threshold-equality non-alert + impl-spec mismatch):
+
+| metric_id | snapshots/7d | min | max | distinct values | target | threshold | alert_op |
+|---|---|---|---|---|---|---|---|
+| `v2.fork-on-breach-rate` | 325 | 1 | 1 | 1 | 1.0 | 0.5 | `<` |
+
+Implementation (`may/handlers/metrics-snapshot.ts:992–999`):
+```ts
+// S8: v2.fork-on-breach-rate — check that metrics table has priority column and P0 breaches fork
+const p0Metrics = db.prepare("SELECT COUNT(*) as c FROM metrics WHERE priority = 'P0' AND status = 'active'").get();
+const p0Count = p0Metrics?.c || 0;
+// If priority column exists and P0 metrics exist, the structural claim is met
+record("v2.fork-on-breach-rate", p0Count > 0 ? 1.0 : 0, p0Count);
+```
+
+The implementation comment ("if priority column exists and P0 metrics exist, the structural claim is met") is honest about what the code does, but the metric name and spec intent are about **behavior**: when a P0 metric breaches, does a fork session actually get spawned? The code measures "do any P0 rows exist in the metrics table" (currently 5, has been ≥1 every snapshot for the entire 7d window). It will return `1.0` whether or not a single fork ever happens. Threshold `0.5` with `alert_op='<'` means `1.0` never alerts; the metric is structurally inert.
+
+Real measurement would join `metric.breach` events for P0 metrics against `session.start` events with `kind='fork'` (or whatever marker) within some recovery window, and report the ratio. That requires the fork mechanism to emit a queryable signal — verify before reimplementing that any such signal exists.
+
+This makes **4** active v2-spec-coverage metrics in the same shape:
+- `v2.heartbeat-decision-rate` (pinned 0; missing `sessionId` on `agent.decision`)
+- `capability.journal-reference-rate` (pinned 0; missing decision-summary in `agent.decision` data)
+- `v2.process-uptime-h` (pinned 1; measures newest-session age, not daemon uptime)
+- `v2.fork-on-breach-rate` (pinned 1; measures schema presence, not actual fork behavior)
+
+All four share owner `may` and project `v2-spec-coverage-buildout`. The pattern is now systematic enough that the may/dev follow-up should treat the entire S/C-numbered v2-spec metric set as suspect: every one of these was a "minimum viable measurement to mark the spec coverage line green", not a behavioral check. Recommend a one-PR audit: for each `v2.*` and `capability.*` metric in this project, confirm the recorded value is actually a function of agent behavior (not a function of schema/config presence). Retire or reimplement per metric.
+
 ## Falsifiers
 - If `v2.heartbeat-decision-rate` ever records a non-zero value, the implementation has changed and this entry is stale. Verify with `SELECT DISTINCT value FROM metric_snapshots WHERE metric_id='v2.heartbeat-decision-rate'`.
 - If a sample of `agent.decision` events shows `data` containing decision-summary text (not just `{agent,status,hasDeliverables}`), the emit schema has changed and the journal-reference rate may start moving; recheck.
 - If `v2.process-uptime-h` ever records a value ≠ 1 and ≠ 0, the implementation has been corrected; verify with `SELECT COUNT(DISTINCT value) FROM metric_snapshots WHERE metric_id='v2.process-uptime-h'`.
+- If `v2.fork-on-breach-rate` ever records a value strictly between 0 and 1, or if the implementation grows a join against `session.start` / fork events, the impl has been corrected; verify with `SELECT COUNT(DISTINCT value) FROM metric_snapshots WHERE metric_id='v2.fork-on-breach-rate'`.
+- The "all four are presence-checks not behavior-checks" generalization is falsified if a deeper read of `metrics-snapshot.ts` shows any of them does perform a behavioral join I missed. The four implementations are at lines 939–999; a counter-reader should look there first.
