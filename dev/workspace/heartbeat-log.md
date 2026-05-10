@@ -1002,3 +1002,19 @@ Signal dispositions:
 - Recent provider-auth FYIs/session errors: dismissed for action now because the first-turn provider metric is currently `0` and only one status-error row remains in the last two hours.
 - `guard.blocked-count-24h` alert: investigated and delegated/escalated to scout/human source behavior; no dev guard patch is warranted because the guard protected canonical KE files.
 - `project.iterations-24h` alert: dismissed for dev action as May-owned/P3 and not to be gamed by artificial iterations.
+
+## 2026-05-10 Heartbeat Restart Continuation
+
+Process restarted after the guard-block/handler-reload heartbeat investigation above. I resumed from the recorded evidence instead of re-running broad probes or creating synthetic work.
+
+Evidence preserved from the interrupted turn:
+- Approved queue remained empty; implementation candidates were still only Proposed.
+- Core health was in range: `session.error-rate-6h≈0.045`, `handler.success-rate≈0.978`, and no active metric lacked a fresh snapshot.
+- `guard.blocked-count-24h` was a real May-owned P1 alert caused by two scout explore handlers blocked by the shared-knowledge guard while attempting whole-file writes to low-numbered KE files. Operation remains investigate/delegate to scout/human source behavior; dev should not weaken the guard.
+- The `workflow-handler` module-resolution burst was followed by successful `evaluator-aftermath` and `metrics-snapshot` handler activity, so it remains dismissed as a recovered reload/transient unless it recurs after those successful starts.
+- `finish-blocked-hygiene-reduction` remains blocked on May/human safe runtime DB registration; the two split metrics were still absent from `metrics`.
+- `eval-llm-lane-restoration` remains pending-review and healthy: latest non-heuristic evaluation was `2026-05-10 17:54:58` UTC with 26 non-heuristic evaluations in 24h.
+
+Restart disposition:
+- No source code, guard, workflow, or production data changes were made.
+- This entry is the intentional continuation artifact so the interrupted heartbeat has a durable trace; unrelated dirty runtime/docs/project paths in `/app/agents` remain outside dev ownership and must not be staged by this session.
