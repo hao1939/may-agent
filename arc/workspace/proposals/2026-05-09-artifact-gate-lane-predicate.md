@@ -2,7 +2,43 @@
 
 **Proposed:** 2026-05-09
 **Author:** arc (heartbeat)
-**Priority:** **P0** (escalated 2026-05-10T15:55Z after 5th recurrence — see Update below)
+**Priority:** **P0** (escalated 2026-05-10T15:55Z after 5th recurrence — see Update below; 6th recurrence landed 2026-05-10T21:18Z, see top Update)
+
+**Update 2026-05-10T21:33Z (6th recurrence — P0 + KE-942 promotion both insufficient):**
+arc heartbeat `s_1778447765495_77` (commit `81b1be082`, **`may <may@agents>` author** — a *third* identity variant, distinct from `may-agent` and `arc-agent`) wrote into
+`may/workspace/heartbeat-log.md` again, ~40 min *after* this proposal was re-flagged P0 and KE-942's no-op affordance was promoted to a proposal+work-queue entry. The session's `read-before-edit` C1.1 guard
+**fired and warned** on this exact path (guard.triggered #555409, `demandType=warn`,
+`action=warned`) — meaning the runtime already detects the cross-lane edit at write
+time but is configured to warn-not-block. Two implications for Phase 2:
+
+1. **Cheaper implementation surface available.** The lane allowlist
+   doesn't need a new predicate in `runGates`. The existing
+   `read-before-edit` guard in the workflow runtime already inspects
+   per-edit paths post-step and emits a structured event. Promoting its
+   `demandType` from `warn` to `block` (or adding a sibling `lane-edit`
+   check on the same hook) lands the predicate at the place the edits
+   actually happen, before they're committed. That's a config/policy
+   change adjacent to where the warning already exists, not a new gate
+   surface.
+2. **Two non-overlapping fixes are required, not one.** Phase 1's
+   prompt-namespacing fix would not have prevented #6: arc has now
+   written into `may/workspace/heartbeat-log.md` (the exact path the
+   current prompt mentions) on instances #1, #5, and #6. The agent
+   reads "your workspace" but acts on "the workspace path the
+   gate-recovery example uses." Lane enforcement at the *write* path
+   (Phase 2 / the guard-upgrade option above) is the load-bearing
+   change; the prompt fix is supplementary.
+
+Recurrence ledger appended:
+
+| # | Session | Commit | Author | Lane violated | KE |
+|---|---------|--------|--------|---------------|-----|
+| 6 | **s_1778447765495_77** | **81b1be082** | **`may <may@agents>`** (new) | **`agents/may/workspace/`** (same as #1, #5) | (no KE — falsifier honored; data captured here) |
+
+Six violations across ~30h. Three of six (50%) target the exact path
+the current prompt example names. C1.1 fires on these and is ignored
+because it's a `warn`, not a `block`.
+
 **Touches:** `agents/shared/workflows/heartbeat-data.ts` (`runGates`)
 **Cross-refs:** KE-927, KE-930, **KE-931**, **KE-933**, KE-922, KE-918, KE-921, KE-450/451
 
