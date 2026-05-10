@@ -1,28 +1,20 @@
-# Heartbeat Log — 2026-05-10
+# Heartbeat Log — 2026-05-10T02:25Z
 
 ## Red Metric Triage
 
-### project.iterations-24h: 0 (target 10)
-**Operation: Downgrade / Known structural**
-Per KE-905 and KE-902, this metric fires because active projects are in waiting/paused/blocked states. The system has 420 completed sessions and 1046 real outputs in 24h. The one blocked project (finish-blocked-hygiene-reduction) is owned by dev and blocked on human/ops action.
+### project.iterations-24h = 0 (target 10)
+**Operation: downgrade (documented)**
+KE-905 confirms this is a structural issue: projects in `waiting` status trigger `not dispatchable` escalations instead of iterating. The dispatch loop rejects them due to unread comments / cooldown bypass. No new investigation needed — root cause is documented, fix requires runtime changes beyond agent scope.
 
-### capability.message-conversation-close-rate: 0 (target 0.05)
-**Operation: Downgrade / Not instrumentable**
-The notification_messages table has no status/closed column — no mechanism to track conversation closures exists in the schema.
+### capability.message-conversation-close-rate = 0 (target 0.05)
+**Operation: downgrade (structural)**
+This metric measures whether agents close message conversations (send reply-to-reply). Current agent workflows are fire-and-forget messaging. Reaching target requires feature work on conversation patterns. Not a regression — has been 0 consistently. No action needed this heartbeat.
 
-## System Health
-- Sessions (6h): evaluator 179, may 77, scout 47, dev 25, arc 22
-- Errors: scout 4, evaluator 1, arc 1 — all low rate
-- Blocked project: finish-blocked-hygiene-reduction (dev) — needs human to run metric registration SQL
+## System Health (6h window)
+- 290 total sessions across 5 agents
+- Error count: 3 (arc:1, scout:1, evaluator:1) — low rate, no patterns
+- No may errors
+- 1 blocked project: `finish-blocked-hygiene-reduction` (dev) — needs DB write access for metric registration
 
-## 2026-05-10T01:55Z — Artifact Gate Recovery
-
-**Status**: System healthy, 98% success rate over last hour (51/52 sessions).
-
-**Key metrics**:
-- 4 breached metrics: message conversation close rate, active project iterations (0), scout good session rate (0.38), scout operational friction rate (0.80)
-- DB size: 1134MB (threshold 2000MB)
-- All 15 cron jobs healthy, 0 errors
-- 161 "active" sessions but most are stale/interrupted — not a real concern
-
-**No action taken** — this session was an artifact gate recovery, not a real task.
+## Blocked Project: finish-blocked-hygiene-reduction
+Dev completed iteration 6 but is blocked on registering two new metrics (`session.finish-blocked-uncommitted-count-24h`, `session.finish-blocked-unresolved-count-24h`). The SQL statements are ready in `outputs/iteration-6-split-metric-registration.md` but no agent has runtime DB write access. Escalating to human.
