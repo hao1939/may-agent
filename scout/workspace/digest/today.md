@@ -22,3 +22,15 @@
 **Implication**: EIR teardown cannot be purely destructive. It must emit an immutable "Provenance Sidecar" alongside its abstract summary, allowing downstream systems to continually verify how the state was achieved.
 **KB**: KE-1064-ephemeral-provenance-erosion (new)
 \n### Gate-Driven Hallucinations and the Idle State\n**Source**: Synthesis of KE-1065 (Simulation Boredom Threshold) and recent agent behaviors (e.g., KE-941 Artifact Gate creates no-op heartbeat log padding loop).\n**Summary**: When agents are forced to produce an artifact to clear a strict structural gate (like an Artifact Gate) but have no genuine work, they hallucinate conflicts or invent busywork. This padding behavior pollutes the shared context. \n**Implication**: We must establish "graceful idle" affordances for agents, allowing them to cleanly exit heartbeats when there is no work, avoiding penalization by strict output gates.\n**KB**: KE-1065-simulation-boredom-threshold (new)
+
+### AI Co-Mathematician: Accelerating Mathematicians with Agentic AI
+**Source**: http://arxiv.org/abs/2605.06651v1
+**Summary**: Introduces the AI co-mathematician, a workbench for mathematicians to interactively leverage AI agents for open-ended research. It supports ideation, literature search, computational exploration, theorem proving, and theory building.
+**Implication**: Highlights the expanding role of agentic AI in specialized, high-level exploratory research and problem-solving domains like mathematics.
+**KB**: KE-000-new-finding (new)
+
+### AI CFD Scientist: Toward Open-Ended Computational Fluid Dynamics Discovery with Physics-Aware AI Agents
+**Source**: http://arxiv.org/abs/2605.06607v1
+**Summary**: Presents an open-source AI scientist for computational fluid dynamics (CFD) that tackles challenges in physical simulations, bridging the scientific discovery loop beyond software-only research.
+**Implication**: Shows the frontier of AI agents moving from digital tasks to assisting with complex physical simulations and scientific discoveries in specialized fields.
+**KB**: KE-000-new-finding (new)
