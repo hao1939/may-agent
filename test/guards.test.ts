@@ -34,7 +34,7 @@ describe('hallucinated-path guard', () => {
     expect(hallucinatedPathGuard.handle(event)).toEqual([]);
   });
 
-  it('blocks on /home/ paths in bash commands', () => {
+  it('warns on /home/ paths in bash commands', () => {
     const event = makeEvent({
       result: {
         messages: [makeToolCallMsg('bash', { command: 'cat /home/user/file.txt' })],
@@ -43,7 +43,7 @@ describe('hallucinated-path guard', () => {
     });
     const demands = hallucinatedPathGuard.handle(event);
     expect(demands.length).toBe(1);
-    expect(demands[0].type).toBe('block');
+    expect(demands[0].type).toBe('warn');
     expect(demands[0].reason).toContain('C7.1');
   });
 
