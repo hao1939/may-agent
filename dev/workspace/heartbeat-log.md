@@ -1018,3 +1018,19 @@ Evidence preserved from the interrupted turn:
 Restart disposition:
 - No source code, guard, workflow, or production data changes were made.
 - This entry is the intentional continuation artifact so the interrupted heartbeat has a durable trace; unrelated dirty runtime/docs/project paths in `/app/agents` remain outside dev ownership and must not be staged by this session.
+
+## 2026-05-10 Heartbeat Restart Follow-up
+
+The heartbeat process restarted again after the continuation entry above. I revalidated only the changing signals instead of re-running the whole investigation.
+
+Evidence checked:
+- Unresolved metric alerts now contain only `project.iterations-24h` (`owner=may`, `priority=P3`, `current=0`, `threshold=1`); the guard-block alert row has cleared from the unresolved set even though the raw guard counters still show `2` until the window ages out.
+- Core dev health remains in range: `session.error-rate-6h=0.0438`, `handler.success-rate=0.9785`, and `session.first-turn-error-count-1h=0`.
+- `eval-llm-lane-restoration` remains healthy in pending-review: `eval.llm-coverage-lag-h=0.4` and `eval.llm-evals-24h=26`.
+- `finish-blocked-hygiene-reduction` remains correctly blocked because the required split metric rows are still absent from `metrics`; safe runtime DB registration remains external to dev heartbeat authority.
+
+Signal dispositions:
+- Repeated `session.end` / `session.start` heartbeat events: acted by preserving this concise restart follow-up artifact and avoiding duplicate broad probes.
+- May P2 nudge for `finish-blocked-hygiene-reduction`: acted again with a fresh metric-existence check; status remains blocked on May/human safe runtime write, not dev-local work.
+- Prior provider-auth FYI: dismissed for action now because `session.first-turn-error-count-1h=0`.
+- `project.iterations-24h`: dismissed for direct dev action as May-owned/P3; creating synthetic project iterations would game the metric.
