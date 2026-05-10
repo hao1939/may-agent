@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createCommitGuard } from "../src/lib/tools/commit-guard.js";
 import type { BeforeToolCallContext } from "@mariozechner/pi-agent-core";
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
@@ -29,6 +29,31 @@ function makeFinishCtx(finishArgs: Record<string, unknown> = {}): BeforeToolCall
       tools: [],
     },
   };
+}
+
+function makeFinishCtxWithWrites(
+  finishArgs: Record<string, unknown>,
+  paths: string[],
+): BeforeToolCallContext {
+  const ctx = makeFinishCtx(finishArgs);
+  ctx.context.messages = paths.map((path, index) => ({
+    role: "assistant",
+    content: [
+      {
+        type: "toolCall" as const,
+        id: `write_${index}`,
+        name: "write",
+        arguments: { path, content: "test" },
+      },
+    ],
+    api: "anthropic-messages",
+    provider: "anthropic",
+    model: "claude-sonnet-4-20250514",
+    usage: { input: 0, output: 0, cacheRead: 0 },
+    stopReason: "toolCall",
+    timestamp: Date.now(),
+  } as any));
+  return ctx;
 }
 
 /** Build a non-finish tool call context. */
@@ -102,7 +127,7 @@ describe("commit-guard", () => {
     let tmpDir: string;
     let agentsDir: string;
 
-    beforeAll(() => {
+    beforeEach(() => {
       tmpDir = mkdtempSync(join(tmpdir(), "commit-guard-"));
       agentsDir = join(tmpDir, "agents");
       mkdirSync(agentsDir, { recursive: true });
@@ -118,13 +143,13 @@ describe("commit-guard", () => {
       git(agentsDir, ["commit", "-m", "init"]);
     });
 
-    afterAll(() => {
+    afterEach(() => {
       rmSync(tmpDir, { recursive: true, force: true });
     });
 
     it("allows finish when no uncommitted changes exist", async () => {
       const guard = createCommitGuard("bob", tmpDir);
-      const result = await guard(makeFinishCtx({ status: "success", summary: "done" }));
+      const result = await guard(makeFinishCtxWithWrites({ status: "success", summary: "done" }, ["shared/knowledge/entry.md"]));
       expect(result).toBeUndefined();
     });
 
@@ -223,20 +248,20 @@ describe("commit-guard", () => {
 
     it("blocks finish when agent has uncommitted changes in shared/", async () => {
       // Create a new file in shared/
-      const sharedDir = join(agentsDir, "shared", "knowledge");
+      const sharedDir = join(agentsDir, "shared");
       mkdirSync(sharedDir, { recursive: true });
-      writeFileSync(join(sharedDir, "entry.md"), "# Knowledge Entry\nSome content");
+      writeFileSync(join(sharedDir, "protocol.md"), "# Protocol\nSome content");
 
       const guard = createCommitGuard("bob", tmpDir);
-      const result = await guard(makeFinishCtx({ status: "success", summary: "done" }));
+      const result = await guard(makeFinishCtxWithWrites({ status: "success", summary: "done" }, ["shared/protocol.md"]));
 
       expect(result).toBeDefined();
       expect(result!.block).toBe(true);
       expect(result!.reason).toContain("uncommitted");
       expect(result!.reason).toContain("shared/");
-      expect(result!.reason).toContain("entry.md");
-      // git add instruction should include shared/
-      expect(result!.reason).toContain("git add bob/ shared/");
+      expect(result!.reason).toContain("protocol.md");
+      expect(result!.reason).toContain("git add");
+      expect(result!.reason).toContain("shared/protocol.md");
 
       // Clean up
       rmSync(join(agentsDir, "shared"), { recursive: true, force: true });
@@ -257,7 +282,7 @@ describe("commit-guard", () => {
       writeFileSync(join(sharedDir, "protocol.md"), "# Protocol");
 
       const guard = createCommitGuard("may", tmpDir);
-      const result = await guard(makeFinishCtx({ status: "success", summary: "done" }));
+      const result = await guard(makeFinishCtxWithWrites({ status: "success", summary: "done" }, ["shared/protocol.md"]));
 
       expect(result).toBeDefined();
       expect(result!.block).toBe(true);
@@ -265,7 +290,8 @@ describe("commit-guard", () => {
       expect(result!.reason).toContain("Ignored generated runtime file(s):");
       expect(result!.reason).toContain("may/last-session.md");
       expect(result!.reason).toContain("shared/gate-outcomes.log");
-      expect(result!.reason).toContain("git add may/ shared/");
+      expect(result!.reason).toContain("git add");
+      expect(result!.reason).toContain("shared/protocol.md");
 
       git(agentsDir, ["checkout", "--", "may/last-session.md", "shared/gate-outcomes.log"]);
       rmSync(join(agentsDir, "shared", "protocol.md"), { force: true });
@@ -277,7 +303,7 @@ describe("commit-guard", () => {
       writeFileSync(join(labDir, "experiment.md"), "# Experiment");
 
       const guard = createCommitGuard("bob", tmpDir);
-      const result = await guard(makeFinishCtx({ status: "success", summary: "done" }));
+      const result = await guard(makeFinishCtxWithWrites({ status: "success", summary: "done" }, [".lab/experiment.md"]));
 
       expect(result).toBeDefined();
       expect(result!.block).toBe(true);
@@ -293,7 +319,7 @@ describe("commit-guard", () => {
       writeFileSync(join(gymDir, "scenario.md"), "# Scenario");
 
       const guard = createCommitGuard("bob", tmpDir);
-      const result = await guard(makeFinishCtx({ status: "success", summary: "done" }));
+      const result = await guard(makeFinishCtxWithWrites({ status: "success", summary: "done" }, ["gym/scenarios/scenario.md"]));
 
       expect(result).toBeDefined();
       expect(result!.block).toBe(true);
@@ -314,15 +340,18 @@ describe("commit-guard", () => {
       writeFileSync(join(sharedDir, "protocol.md"), "# Protocol");
 
       const guard = createCommitGuard("bob", tmpDir);
-      const result = await guard(makeFinishCtx({ status: "success", summary: "done" }));
+      const result = await guard(makeFinishCtxWithWrites(
+        { status: "success", summary: "done" },
+        ["bob/work.md", "shared/protocol.md"],
+      ));
 
       expect(result).toBeDefined();
       expect(result!.block).toBe(true);
       // Should list files from both directories
       expect(result!.reason).toContain("work.md");
       expect(result!.reason).toContain("protocol.md");
-      // git add should include both paths
-      expect(result!.reason).toContain("git add bob/ shared/");
+      expect(result!.reason).toContain("bob/work.md");
+      expect(result!.reason).toContain("shared/protocol.md");
 
       // Clean up
       rmSync(join(agentsDir, "bob"), { recursive: true, force: true });
@@ -341,7 +370,9 @@ describe("commit-guard", () => {
       expect(result).toBeDefined();
       expect(result!.block).toBe(true);
       expect(result!.reason).toContain("2 uncommitted file(s)");
-      expect(result!.reason).toContain("git add -f bob/");
+      expect(result!.reason).toContain("git add -f");
+      expect(result!.reason).toContain("bob/workspace/file1.md");
+      expect(result!.reason).toContain("bob/workspace/file2.md");
       expect(result!.reason).toContain('git commit -m "bob:');
       expect(result!.reason).toContain("Good messages:");
       expect(result!.reason).toContain("Bad messages:");
@@ -380,8 +411,9 @@ describe("commit-guard", () => {
 
       expect(result).toBeDefined();
       expect(result!.block).toBe(true);
-      expect(result!.reason).toContain("git add -f bob/");
-      expect(result!.reason).not.toMatch(/git add bob\/(?! )/); // no bare `git add bob/` without -f
+      expect(result!.reason).toContain("git add -f");
+      expect(result!.reason).toContain("bob/workspace/note.md");
+      expect(result!.reason).not.toContain("git add --");
 
       rmSync(join(agentsDir, "bob"), { recursive: true, force: true });
     });
@@ -396,7 +428,8 @@ describe("commit-guard", () => {
 
       expect(result).toBeDefined();
       expect(result!.block).toBe(true);
-      expect(result!.reason).toContain("git add bob/");
+      expect(result!.reason).toContain("git add --");
+      expect(result!.reason).toContain("bob/top.md");
       expect(result!.reason).not.toContain("git add -f");
 
       rmSync(bobDir, { recursive: true, force: true });

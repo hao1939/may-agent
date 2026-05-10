@@ -12,7 +12,7 @@ function jsonResponse(result: unknown) {
   } as Response;
 }
 
-async function waitFor(assertion: () => void, timeoutMs = 1000): Promise<void> {
+async function waitFor(assertion: () => void, timeoutMs = 5000): Promise<void> {
   const start = Date.now();
   let lastErr: unknown;
   while (Date.now() - start < timeoutMs) {

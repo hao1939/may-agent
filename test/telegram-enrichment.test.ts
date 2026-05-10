@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import Database from "better-sqlite3";
+import type { SqliteDb } from "../src/lib/db.js";
+import { openDatabase } from "../src/lib/db.js";
 
 // Simulate the enrichment logic (extracted from telegram.ts)
-function enrichReply(db: Database.Database, replyToMsgId: number, userText: string): string {
+function enrichReply(db: SqliteDb, replyToMsgId: number, userText: string): string {
   const ctx = db.prepare("SELECT * FROM notification_messages WHERE telegram_msg_id = ?").get(replyToMsgId) as any;
   if (!ctx) return userText; // no context found, pass through
 
@@ -21,7 +22,7 @@ function enrichReply(db: Database.Database, replyToMsgId: number, userText: stri
   return parts.join("\n");
 }
 
-function storeNotification(db: Database.Database, msgId: number, context: { eventType?: string; agent?: string; sessionId?: string; projectId?: string; data?: string }) {
+function storeNotification(db: SqliteDb, msgId: number, context: { eventType?: string; agent?: string; sessionId?: string; projectId?: string; data?: string }) {
   db.prepare(
     "INSERT OR REPLACE INTO notification_messages (telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
   ).run(
@@ -36,10 +37,10 @@ function storeNotification(db: Database.Database, msgId: number, context: { even
 }
 
 describe("Telegram Context Enrichment", () => {
-  let db: Database.Database;
+  let db: SqliteDb;
 
   beforeEach(() => {
-    db = new Database(":memory:");
+    db = openDatabase(":memory:");
     db.exec(`CREATE TABLE notification_messages (
       telegram_msg_id INTEGER PRIMARY KEY,
       event_type TEXT,
@@ -127,10 +128,10 @@ describe("Telegram Context Enrichment", () => {
 });
 
 describe("Telegram Reply Metric", () => {
-  let db: Database.Database;
+  let db: SqliteDb;
 
   beforeEach(() => {
-    db = new Database(":memory:");
+    db = openDatabase(":memory:");
     db.exec(`CREATE TABLE events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       event_type TEXT NOT NULL,

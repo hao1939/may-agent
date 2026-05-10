@@ -253,6 +253,7 @@ export class SubagentManager {
   private _registry: RegistryStore;
   private _maxCallDepth: number;
   private _createdAt = Date.now();
+  private _promptTimestamp = new Date().toISOString();
 
   /** Expose activeSessions for AgentsToolManagerDeps */
   get activeSessions(): Map<string, ActiveSession> { return this._sessions; }
@@ -1136,7 +1137,6 @@ export class SubagentManager {
 
     const toolNames = def.tools.map((tool: any) => tool?.name).filter(Boolean);
     const lines = ["# Runtime Environment"];
-    lines.push(`- Current time: ${new Date().toISOString()}`);
     lines.push(`- Project root: ${root}`);
     if (relAgentDir) lines.push(`- Agent directory: ${relAgentDir}`);
     if (relWorkspace) lines.push(`- Workspace: ${relWorkspace} (scratch/runtime work)`);
@@ -1146,6 +1146,7 @@ export class SubagentManager {
     if (toolNames.length > 0) {
       lines.push(`- Available tools: ${toolNames.join(", ")}`);
     }
+    lines.push(`- Current time: ${this._promptTimestamp}`);
     lines.push("");
     lines.push("All paths are relative to project root unless absolute paths are explicitly provided.");
     return lines.join("\n");

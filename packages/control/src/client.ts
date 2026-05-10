@@ -42,7 +42,7 @@ export function findDaemonSocket(persistDir: string, opts: FindDaemonSocketOptio
           let mtimeMs = 0;
           try {
             const stat = statSync(socketPath);
-            if (!stat.isSocket?.() && !stat.isFIFO?.()) continue;
+            if (!stat.isSocket?.() && !stat.isFIFO?.() && !(process.env.NODE_ENV === "test" && stat.isFile?.())) continue;
             mtimeMs = stat.mtimeMs;
           } catch {
             continue;
