@@ -39,7 +39,11 @@
 | Doc | What |
 |-----|------|
 | [design/agent-metrics.md](design/agent-metrics.md) | Metrics as system vitals; project metrics with balanced pairs |
+| [design/guards-as-signals.md](design/guards-as-signals.md) | Draft: guards as detection signals with default observability |
 | [design/heartbeat-as-agency.md](design/heartbeat-as-agency.md) | Heartbeats as the moments agents are autonomous |
+| [design/infra-surface.md](design/infra-surface.md) | Draft: infra primitives, agent patterns, SDK/control surfaces |
+| [design/infra-surface-implementation-plan.md](design/infra-surface-implementation-plan.md) | Draft plan: implement the infra surface in incremental slices |
+| [design/infra-surface-refactor-plan.md](design/infra-surface-refactor-plan.md) | Draft plan: finish infra boundary cleanup without broad rewrites |
 | [design/webui.md](design/webui.md) | Web UI as a window into the life of the system |
 | [design/unified-events.md](design/unified-events.md) | Unified event taxonomy |
 | [design/telegram-notifications.md](design/telegram-notifications.md) | Notification routing via Telegram |
