@@ -21,6 +21,7 @@ Do NOT penalize any agent for using tools in this list. `notify` and `agents` ar
 - monitor-session.cjs flags are heuristics - cross-check by reading session JSONL.
 - Missing deps causing suite-wide failures: isolate impacted tests, do not attribute to change under review.
 - In success_candidate aftermath reviews, separate finish-hygiene retries from substantive output quality; if a durable artifact was committed and later read back, judge the artifact itself rather than over-weighting the blocked finish attempts.
+- Routing text like "material output" is only a hint; confirm actual output by checking for write/edit calls, deliverables, commits, or changed artifacts before treating a success_candidate as output-producing.
 
 ## Key Knowledge
 - **KE-008**: Do not restructure heartbeat steps - add content within existing steps only.
