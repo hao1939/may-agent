@@ -23,20 +23,26 @@ export default function factory(_opts: { projectRoot: string; agentRoot: string;
         prompt: { type: "string", description: "The task description. Be specific about files, constraints, verification." },
         timeout: { type: "number", description: "Timeout in seconds. Default: 300." },
         cwd: { type: "string", description: "Working directory. Must be a git repo. Defaults to project root." },
+        continue_session: { type: "boolean", description: "Resume the most recent Codex session (uses `codex exec resume --last`)." },
+        session_id: { type: "string", description: "Resume a specific Codex session by UUID." },
       },
       required: ["prompt"],
       additionalProperties: false,
     },
     async execute(_toolCallId: string, params: any) {
-      const { prompt, timeout, cwd } = params;
+      const { prompt, timeout, cwd, continue_session, session_id } = params;
       const timeoutSec = timeout ?? TIMEOUT_DEFAULT;
       const workDir = cwd ?? _opts.projectRoot;
 
-      const args = [
-        "exec", prompt,
-        "--json",
-        "--dangerously-bypass-approvals-and-sandbox",
-      ];
+      const args: string[] = [];
+      if (session_id) {
+        args.push("exec", "resume", session_id, prompt);
+      } else if (continue_session) {
+        args.push("exec", "resume", "--last", prompt);
+      } else {
+        args.push("exec", prompt);
+      }
+      args.push("--json", "--dangerously-bypass-approvals-and-sandbox");
 
       const env = {
         ...process.env,
@@ -50,6 +56,7 @@ export default function factory(_opts: { projectRoot: string; agentRoot: string;
         const child = spawn("codex", args, spawnOpts);
         const chunks: string[] = [];
         let lastMessage = "";
+        let sessionId = "";
 
         child.stdout?.on("data", (data: Buffer) => {
           const text = data.toString();
@@ -58,6 +65,9 @@ export default function factory(_opts: { projectRoot: string; agentRoot: string;
             if (!line.trim()) continue;
             try {
               const obj = JSON.parse(line);
+              if (obj.type === "thread.started" && obj.thread_id) {
+                sessionId = obj.thread_id;
+              }
               if (obj.type === "item.completed" && obj.item?.text) {
                 lastMessage = obj.item.text;
               }
@@ -70,11 +80,12 @@ export default function factory(_opts: { projectRoot: string; agentRoot: string;
         });
 
         child.on("close", (code) => {
+          const sessionSuffix = sessionId ? `\n\n[codex_session_id: ${sessionId}]` : "";
           if (lastMessage) {
-            resolve(textResult(lastMessage));
+            resolve(textResult(lastMessage + sessionSuffix));
           } else {
             const output = chunks.join("").slice(-8000);
-            resolve(textResult(code === 0 ? output || "(no output)" : `[exit ${code}] ${output}`));
+            resolve(textResult((code === 0 ? output || "(no output)" : `[exit ${code}] ${output}`) + sessionSuffix));
           }
         });
 
