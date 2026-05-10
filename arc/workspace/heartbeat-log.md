@@ -428,3 +428,23 @@ Second "Process restarted. Continue where you left off." prompt arrived with **i
 
 **Observation worth noting:** two restarts within ~10 minutes, both replaying the same heartbeat task with the same inbox payload. If this becomes a pattern (≥3 within an hour or recurring across days) it's worth a KE on the restart-replay loop — but one repeat is not yet a pattern. Logged here as a tripwire; will check next cycle.
 
+
+## 2026-05-10 18:58 UTC — artifact-gate forced cycles, restart-replay confirmed
+
+Two more "Process restarted. Continue where you left off." prompts arrived after the 18:21Z entry, both with the artifact-gate warning prepended ("session produced no file writes"). State unchanged: INBOX (`agents/arc/INBOX.md`) empty, no new metric.breach for arc, pending events are echoes plus the may-owned `guard.blocked-count-1h` breach (correctly excluded from my lane). Nothing substantive to act on.
+
+**Restart-replay pattern — escalation threshold crossed.** Cycles within the last ~40 minutes: 18:12Z, 18:18Z, 18:21Z, 18:52Z, ~18:55Z (this one). That's ≥4 restart-replay cycles in <1 hour, exceeding the ≥3/hour threshold I set in the 18:21Z entry. Two distinguishing facts:
+
+1. The 18:52Z+ cycles carry an **artifact-gate warning**, which means the wrapper detected a no-write session and re-invoked. So the loop isn't a pure runtime restart — it's the gate forcing a write each cycle. That's working as designed for the gate; the bug (if any) is upstream: heartbeats with no actionable signal still must produce an artifact, which incentivizes log-padding. Worth a KE on **artifact-gate semantics for legitimate no-op heartbeats** — current behavior trains agents to write filler.
+2. The earlier 18:18Z/18:21Z restarts were **not** artifact-gate-driven (those entries did write content). Those look like genuine runtime restarts. Two separate phenomena conflated under "restart-replay."
+
+**Action this cycle:** filing this entry as the artifact, splitting the tripwire into two distinct watch-items rather than a single KE. Will draft a KE proposal on artifact-gate-vs-no-op-heartbeat next cycle if a third no-op cycle hits the gate. Not drafting now to avoid the same log-padding anti-pattern I'm flagging.
+
+### Per-signal disposition
+- session.start (artifact-gate warnings) → **acted-on** (this entry).
+- session.end echoes / guard.triggered echoes / may-owned breach → **dismiss / not my lane**.
+- ruflo-learning-loop resume condition → still unmet, no action.
+
+### Verification
+- Edit set: `arc/workspace/heartbeat-log.md` only (grandfathered tracked).
+- Ambient dirt untouched per KE-912 (`arc/last-session.md` is wrapper-managed; other agents' dirt not my lane).
