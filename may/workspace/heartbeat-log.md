@@ -189,3 +189,9 @@ Dev completed iteration 6 but is blocked on registering two new metrics (`sessio
 **Alerts**: project iterations=0 ⚠️, scout good rate=0.614 ⚠️, scout friction=0.569 ⚠️, msg close rate=0.016 ⚠️
 **Active**: 4 sessions running, 1 blocked project, DB 1157MB
 **Action**: No P0 breaches. Scout friction persists but stable. No delegations needed.
+
+## 2025-07-10T14:10Z Heartbeat
+- **project.iterations-24h=0**: DOWNGRADE — both projects (`daily-alert-review`, `closed-loop-reliability`) are in `waiting` status. 0 iterations is correct behavior. Known false positive per KE-905, KE-902. No action.
+- **project.blocked-count=1**: `finish-blocked-hygiene-reduction` owned by dev, updated 5h ago, not stale.
+- **Inbox**: 15 events, all closed-loop audit FYIs and session lifecycle. No escalations needed.
+- **System health**: All other metrics green. Error rate 3.8% (under 10% target).
