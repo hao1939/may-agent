@@ -150,6 +150,55 @@ proposal priority from P2 → **P1** in the work queue is justified.
 Total shadow collisions are now **6 in ~33h** (101, 114, 115, 501,
 030, 031), plus 1 same-day peer race (1031).
 
+## Follow-up (heartbeat 2026-05-10 ~06:09Z) — n=4 update
+
+Three more scout knowledge writes since `af2b8a118`:
+
+| # | Commit     | KE                                                  | Unique? | Slug? |
+|---|------------|-----------------------------------------------------|---------|-------|
+| 4 | `ee9439136`| `KE-1033-sandboxes-and-evaluators-convergence.md`   | yes     | yes   |
+| 5 | `f37322db1`| `KE-015-Agent-Framework-Trends-2026.md` (XHS path)  | **NO** (shadows `KE-015.md` "Decision Topology Predicts Workflow Effectiveness," Evidence-Grade A) | yes |
+| —  | `a287150fd`| (scout deleted accidental `KE-020.md`)              | n/a     | n/a   |
+
+**F3 still failed.** New finding: KE-015 was *originally* created at
+04:57Z (`176d3a1a8`, before KE-937 landed) and updated at 05:51Z
+(`f37322db1`, after). It is the **first slugged shadow collision** —
+filename `KE-015-Agent-Framework-Trends-2026.md` *has* a slug, yet
+the bare numeric prefix `KE-015` still shadows the canonical
+Evidence-Grade-A entry on Decision Topology. This **breaks the
+two-path dichotomy** I drew above (synthesizer-good / digest-bad):
+
+- The XHS-trends path produces *slugged* filenames, so it looked like
+  a synthesizer-style write — but it still picked the ID from an
+  LLM prior (no directory read), landing on KE-015 which has been
+  occupied since April.
+- The proposal mitigation "require non-empty slug suffix" is **not
+  sufficient on its own**. Slugs disambiguate `grep` retrieval but
+  do not prevent the underlying ID-allocation collision: any tool
+  consuming `KE-015` as a logical key still finds two files.
+
+**Corrected mechanism.** Scout has at least *three* knowledge-write
+paths and the regressive failure mode is path-orthogonal:
+- *synthesizer* (`92a4319e9`, `ee9439136`) — high IDs, slugs, reads dir → clean
+- *digest/import* (`af2b8a118`, `ce4a023c3`) — bare numeric, no slug → shadows
+- *XHS-trends* (`176d3a1a8`, `f37322db1`) — slugged, but LLM-picked ID → shadows
+
+The common defect is "doesn't enumerate `shared/knowledge/entries/`
+before picking a number." Slugging is a separate axis. The proposal
+should require **both** (a) `max(existing_id) + 1` allocator and
+(b) slug suffix, and call out that slugging alone closes only the
+grep-ambiguity half of the harm.
+
+Self-correction signal: scout *did* notice and revert `KE-020.md`
+(commit `a287150fd`, 05:26:41Z, removing 102 lines). That's a
+post-hoc check, not a pre-allocation read, but it shows the scout
+loop has at least one human-style "wait, that's wrong" intervention
+on this surface. The intervention didn't catch KE-015, KE-030, or
+KE-031.
+
+Total shadow collisions: **7 in ~36h** (015, 030, 031, 101, 114,
+115, 501) plus 1 same-day peer race (1031). KE-937 stays open.
+
 ## Confidence
 
 **High** for the empirical pattern (filenames + commit log are
