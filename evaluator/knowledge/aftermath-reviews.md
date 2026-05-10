@@ -153,6 +153,10 @@
 - Symptom: a research session creates `shared/knowledge/entries/KE-0xx.md` for a fresh external finding without checking whether that ID already anchors an existing canonical knowledge entry. The landed commit then replaces an established KE with unrelated content while transcript self-report still calls it a "new" KB entry.
 - Fix: before crediting a KB addition, inspect the pre-change file (`git show <commit>^:path`) and search indexes/references for that KE id. If the id was already in active use, treat the session as partial value at best: preserve any rolling digest insight, but downgrade the KB output for destructive overwrite and recommend allocating a new unique KE id.
 
+## Pattern: KE-id collisions can happen even when the filename is new
+- Symptom: a session creates a seemingly fresh file like `shared/knowledge/entries/KE-022.md`, but the logical id `KE-022` is already assigned elsewhere (for example `KE-022-early-exploration-errors.md`) in `shared/knowledge/INDEX.md` and downstream references.
+- Fix: verify both the target path and the logical KE id. Search `shared/knowledge/INDEX.md` and existing `entries/` filenames for the intended id before crediting a "new" KE. If the id already exists under another filename, treat the output as a numbering collision rather than a valid new KB entry.
+
 ## Pattern: shell echo can silently corrupt markdown artifacts
 - Symptom: the transcript shows a plausible `echo "...\n..." >> file` append, but the landed artifact contains literal `\n` sequences on one line instead of real markdown line breaks.
 - Fix: inspect the actual file content, not just the write command or the agent's summary. Credit the session only for the information that really landed, and note output-quality loss when shell-based writes produce malformed markdown or weak read-back via `cat` instead of the platform `read()` tool.
