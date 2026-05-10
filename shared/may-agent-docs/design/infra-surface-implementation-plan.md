@@ -1,9 +1,9 @@
 # Infra Surface Implementation Plan
 
-**Status**: Phase 1, Phase 2 first slice, Phase 3 guard observability, Phase 4
-first slice, Phase 5 resume diagnostics, Phase 7 first slice, and Phase 8 first
-slice implemented. Phase 9 is partially implemented; the next move is the
-convention-path control client slice.
+**Status**: In progress — being folded into
+[infra-surface-refactor-plan.md](infra-surface-refactor-plan.md), which provides
+cleaner phasing. This doc remains as the implementation tracker for work already
+shipped (Phases 1-5, 7-8 first slices; Phase 9 partial).
 
 This plan turns [infra-surface.md](infra-surface.md) into small implementation
 slices. The goal is not a broad rewrite. Each phase should improve the system
@@ -315,12 +315,14 @@ Minimum slice:
 - [x] ack daemon events before async dispatch,
 - [x] Web UI steering sends daemon event frames through the control client,
 - [x] CLI send uses the control client package,
-- [ ] use the convention daemon socket path instead of scanning/ranking
-  candidates,
-- [ ] fail clearly when the convention socket cannot be connected,
-- [ ] retry only as a recovery step, not as discovery,
-- [ ] provide one small script or command for `emit event` so operators do not
+- [x] add the convention daemon socket path helper,
+- [x] fail clearly when the convention socket cannot be connected in operator
+  emit mode,
+- [x] retry only as a recovery step, not as discovery, for operator emit mode,
+- [x] provide one small script or command for `emit event` so operators do not
   need ad hoc `docker exec bun -e ...`,
+- [ ] migrate Web UI and CLI send to the convention path instead of
+  scanning/ranking candidates,
 - [ ] verify `trigger.metrics-snapshot` can be emitted from the normal host
   command path and from inside the container,
 - [ ] keep Telegram as a thin adapter over daemon events when it needs to steer
@@ -330,7 +332,7 @@ Validation:
 
 - [x] Unit tests for protocol ack, status, subscription filter, invalid frame handling.
 - [x] Legacy unit tests cover the old daemon-vs-job ranking helper.
-- [ ] Unit test for convention-path send success and connection failure.
+- [x] Unit test for convention-path send success and connection failure.
 - [ ] Integration/smoke test for `trigger.metrics-snapshot` through the normal
   control client.
 - [ ] Web UI, Telegram, and CLI use the same control client package rather than

@@ -217,6 +217,12 @@ echo '{"type":"fork","agent":"coder","message":"fix the test"}' | socat - UNIX-C
 
 # Status
 echo '{"type":"status"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
+
+# Emit a daemon event through the convention socket path
+may-agent --emit trigger.metrics-snapshot '{}'
+
+# From a source checkout
+bun src/app/may.ts --emit trigger.metrics-snapshot '{}'
 ```
 
 See [runtime.md](../runtime.md) for socket protocol details.

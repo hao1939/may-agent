@@ -36,24 +36,32 @@ and UI validation requires ad hoc commands.
 
 ### Phase 1a: Helper And Operator Command
 
+Status: implemented for the daemon/container operator path.
+
 Scope:
 
-- Add a convention helper:
+- [x] Add a convention helper:
   `daemonSocketPath(persistDir, instance, interfaceAgent)`.
-- Add a tiny operator command for `emit event`.
-- On connection failure, return a clear error and emit/log recovery evidence.
-- Allow one bounded retry after recovery for operator commands.
+- [x] Add a tiny operator command for `emit event`.
+- [x] On connection failure, return a clear error and emit/log recovery evidence.
+- [x] Allow one bounded retry after recovery for operator commands.
 
 Validation:
 
-- Unit test convention path construction.
-- Unit test send success and connection failure.
-- Host smoke: emit `trigger.metrics-snapshot`.
-- Container smoke: emit `trigger.metrics-snapshot`.
+- [x] Unit test convention path construction.
+- [x] Unit test send success and connection failure.
+- [ ] Host smoke: emit `trigger.metrics-snapshot`.
+- [x] Container smoke: emit `trigger.metrics-snapshot`.
+
+Host caveat: in the current containerized runtime, the host-visible Unix socket
+connects outside the sandbox but does not return a daemon response. The
+container-local convention path works. Treat host-to-container socket access as
+an environment/ops follow-up, not a reason to add socket scanning.
 
 Stop criteria:
 
-- An operator can trigger metrics snapshot without ad hoc `docker exec bun -e`.
+- [x] An operator can trigger metrics snapshot without ad hoc
+  `docker exec bun -e`; use `may-agent --emit ...` in the daemon container.
 
 ### Phase 1b: Adapter Caller Migration
 
