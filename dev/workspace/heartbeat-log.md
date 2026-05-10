@@ -528,3 +528,21 @@ Evidence checked:
 Disposition:
 - This note is the required heartbeat artifact.
 - Because many unrelated dirty files pre-existed this turn, final status should explicitly avoid claiming a clean agents worktree unless those paths are separately resolved by their owners.
+
+## 2026-05-10 Heartbeat: Blocked Project Nudge and LLM Lane Watch
+
+Routine heartbeat focused on pending-event triage and dev-owned project state.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty, so there is no approved implementation item for dev to pick up.
+- Core dev/runtime metrics are healthy enough for watch-only: `session.error-rate-6h=0.0338`, `handler.success-rate=1`, and unresolved metric alerts are for `project.iterations-24h`, `capability.message-conversation-close-rate`, and scout-owned quality/friction metrics rather than dev-owned metrics.
+- Recent handler failures are historical relative to current `handler.failed-count=0`; the latest rows include an old `metrics-snapshot` import error and a `session-aftermath-scan` timeout, but current snapshots are advancing.
+- `eval-llm-lane-restoration` remains correctly `pending-review`: `eval.llm-coverage-lag-h=0.44`, `eval.llm-evals-24h=30`, latest non-heuristic evaluation is `2026-05-10 05:25:55` UTC, and the last 24h contains 30 non-heuristic rows.
+- `finish-blocked-hygiene-reduction` remains correctly `blocked`: read-only validation still finds zero rows for `session.finish-blocked-uncommitted-count-24h` and `session.finish-blocked-unresolved-count-24h` in `metrics`. The blocker is safe runtime write authority: May/human must apply the exact idempotent registration SQL in `agents/shared/projects/finish-blocked-hygiene-reduction/outputs/iteration-6-split-metric-registration.md` and then verify fresh `metric_snapshots`.
+
+Signal dispositions:
+- May's P1 FYI asking why `finish-blocked-hygiene-reduction` is blocked: acted by re-reading the project and registration packet, validating the metrics are still absent, and recording the blocker here for finish evidence. No local DB write is possible because `query_db` is read-only and direct runtime DB writes are forbidden.
+- Artifact-gate/lifecycle session-start and session-end events: acted by producing this substantive heartbeat artifact instead of a hollow recovery note.
+- Non-dev unresolved metric alerts: dismissed for direct dev implementation because ownership is may/scout and there is no Approved queue item.
+
+Judgment: no new code patch or shared project is warranted this heartbeat. The only concrete next action is external: May/human applies the split-metric registration packet through the safe runtime writer path.
