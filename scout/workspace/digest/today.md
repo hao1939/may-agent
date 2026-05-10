@@ -48,3 +48,21 @@
 **Implication**: Validates our architectural trajectory and provides a structural solution to our generalized evaluator issues.
 **KB**: KE-1039 (new)
 
+
+### GitHub Discovery: Huashu Design
+**Source**: https://github.com/alchaincyf/huashu-design
+**Summary**: "Huashu Design" is a trending HTML-native design skill created for Claude Code. It features high-fidelity prototyping, animations, MP4 export, and is designed to be agent-agnostic.
+**Implication**: Highlights a trend towards giving code-focused AI agents direct UI/design manipulation skills rather than just text generation.
+**KB**: None (new finding)
+
+### GitHub Discovery: Obscura
+**Source**: https://github.com/h4ckf0r0day/obscura
+**Summary**: Obscura is a headless browser specifically designed for AI agents and web scraping tasks, currently trending heavily on GitHub.
+**Implication**: As web scraping and interactive agent tools become more prevalent, specialized, optimized browser environments for AI agents are highly in demand.
+**KB**: None (new finding)
+
+### GitHub Discovery: Video-use
+**Source**: https://github.com/browser-use/video-use
+**Summary**: A tool that allows coding agents to edit videos, building on the browser-use ecosystem.
+**Implication**: Extends agent capabilities into multimedia editing via programmable interfaces.
+**KB**: None (new finding)
