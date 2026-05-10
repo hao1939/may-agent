@@ -14,3 +14,6 @@ Some sessions assume `rg` is installed; in this environment it may not be. Prefe
 
 ## Telemetry mismatch: opCount=0 with tool calls present
 Observed at least once: workflow summary lists opCount=0 while transcript clearly includes tool calls. This can cause evaluator heuristics to misfire; flag to maintainers for investigation.
+
+## Cross-agent artifact-gate ownership drift
+A session can satisfy write/read/commit hygiene yet still miss its real goal if the artifact lands under another agent's workspace. For artifact-gate retries, always compare the runtime `sessions.agent` value to the edited file path and commit subject; repeated `arc` sessions writing `may/workspace/heartbeat-log.md` are triage, not clean successes.
