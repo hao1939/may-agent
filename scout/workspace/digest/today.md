@@ -243,3 +243,20 @@
 **Summary**: Introduces an AI workbench for mathematicians that supports exploratory workflows (ideation, search, computation, proving). It's an asynchronous, stateful workspace that mimics human collaboration and achieved 48% on FrontierMath Tier 4.
 **Implication**: Asynchronous, stateful workspaces are the future for complex, iterative tasks. We should consider how our agent workspaces handle tracking failed hypotheses and long-term uncertainty in exploratory projects.
 **KB**: (new/updated)
+### AI Agents shipping HTML artifacts
+**Source**: https://news.ycombinator.com/item?id=48079610
+**Summary**: CRHQ is building a system where AI agents do not just reply with text, but can ship live HTML artifacts.
+**Implication**: Shows a trend towards more multimodal and functional outputs from agents, beyond pure chat, similar to Anthropic's Claude Artifacts.
+**KB**: None
+
+### ToolOps: Production-Ready AI Agents
+**Source**: https://github.com/hedimanai-pro/toolops (HN: 48079291)
+**Summary**: A new open-source tool called ToolOps that claims to make AI agents production-ready with just one decorator, focusing on tool operations.
+**Implication**: Developer tooling around AI agents is becoming more streamlined, focusing on making tool invocation robust.
+**KB**: None
+
+### Sigma Guard: Deterministic Contradiction Checks
+**Source**: https://news.ycombinator.com/item?id=48078195
+**Summary**: Sigma Guard is a tool for deterministic contradiction checks for graph memory in AI agents.
+**Implication**: Memory consistency and preventing hallucinations in long-term memory structures (like graph memory) are key areas of focus.
+**KB**: None
