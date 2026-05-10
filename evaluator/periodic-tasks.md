@@ -521,3 +521,15 @@ Ran `monitor-session.cjs --running`: 2 checked, 1 healthy, 1 alert — arc sessi
 P63 Extract Strategies — sampled 3 recent non-evaluator session logs (`s_1778383538209_573`, `s_1778383549102_575`, `s_1778383614861_578`) and appended a new 2026-05-10 section to `agents/evaluator/workspace/proposed-strategies.md`. Lessons proposed: 3 high-level patterns (verification/read-dedup guard collisions, FM-3.1 ghost-deliverable catches on read-only heartbeats, and low-fidelity `source_session` attribution in the extractor).
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs, so there were again no fresh disagreement inputs to process this cycle.
+
+**Last run**: 2026-05-10 04:01Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778385612702`; `MAX(sessions.startedAt)=1778385668691`; `MAX(sessions.endedAt)=1778385675582`; lag ≈56.0s vs `startedAt`, ≈62.9s vs `endedAt`; `evals_last24h=684`; `llm_evals_last24h=31`; `sessions_last24h=1457`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table.
+
+Inbox triage on the surfaced evaluator targets found completed aftermath artifacts already present for `s_1778385563799_602`, `s_1778385068426_591`, `s_1778385304109_595`, and `s_1778378148525_509`, so the newest pending `session.*` / `evaluation.*` rows are best treated as already-handled or in-flight backlog noise rather than dropped evaluator work.
+
+Legacy `.state/evaluations/` top-level files remain stale at the filesystem layer (`find .state/evaluations -maxdepth 1 -type f -printf '%TY-%Tm-%Td %TH:%TM %f\n' | sort | tail -5` still ends with Apr 20/29 files), so continue treating that directory as a legacy output-path signal rather than the canonical liveness source.
+
+Ran `monitor-session.cjs --running`: 2 checked, 1 healthy, 1 `PRODUCTIVITY_STALL` alert — arc session `s_1778385348254_597` (`20 tool calls with 0 file writes. Agent has made 0 read/explore operations without producing any output.`; recommended action: warn). Notified May.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). State unchanged from prior runs; no repeat escalation sent this cycle.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs, so there were again no fresh disagreement inputs to process this cycle.
