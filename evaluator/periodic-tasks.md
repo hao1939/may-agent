@@ -206,6 +206,16 @@ Interpretation: eval pipeline appears stalled since 2026-05-06T16:46Z while sess
 - Secondary signal: job/cron references or any dedicated `*llm*` tables. Absence of `*llm*` tables alone is **not** proof that Process #15 is disabled, because LLM evaluations may be stored in the shared `evaluations` table.
 - If both the primary signal and runtime job evidence are missing: treat as "LLM eval disabled or not implemented" and open a tracked item to either (a) add it back, or (b) remove/rename docs that imply it exists.
 
+**Last run**: 2026-05-10 00:01Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778371174836`; `MAX(sessions.startedAt)=1778371268364`; `MAX(sessions.endedAt)=1778371243747`; lag ≈93.5s vs `startedAt`, ≈68.9s vs `endedAt`; `evals_last24h=670`; `llm_evals_last24h=28`; `sessions_last24h=1476`). This keeps Process #5 live and Process #15 active via the shared `evaluations` table; `.state/evaluations/` top-level files remain stale at the filesystem layer (`find .state/evaluations -maxdepth 1 -type f -printf '%TY-%Tm-%Td %TH:%TM %f\n' | sort | tail -5` still ends with Apr 20/29 files), so continue treating that directory as a legacy output-path signal rather than the canonical liveness source.
+
+Inbox triage on the surfaced pending aftermath targets found completed artifacts already present for `s_1778370972177_414`, `s_1778361948685_295`, `s_1778370712248_407`, and `s_1778370668248_406`, so the current pending `session.*` / `evaluation.*` rows are best treated as already-handled or in-flight backlog noise rather than dropped evaluator work.
+
+Ran `monitor-session.cjs --running`: 3 checked, 1 healthy, 2 alerts — arc session `s_1778370948927_411` (`PRODUCTIVITY_STALL`: `20 tool calls with 0 file writes`) and dev session `s_1778370965242_413` (`PROTOCOL_VIOLATION`: missing P114 Experience Replay). Notified May.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
+
 **Last check**: 2026-05-09 09:14Z — `.state/may.db` still has **no** tables matching `*llm*`, but Process #15 is clearly active in the shared `evaluations` table: `evals_last24h=558`, `llm_evals_last24h=7` (`evaluatedByHeuristic=0`), `MAX(evaluations.createdAt)=1778317938580`, `MAX(sessions.startedAt)=1778317973081` (lag ≈34.5s at check time). Conclusion: LLM eval is enabled, just not via a dedicated `llm_*` table.
 
 **Last run**: 2026-05-09 09:14Z — DB canonical check confirms session-eval pipeline live/recent (`MAX(evaluations.createdAt)=1778317938580`; `MAX(sessions.startedAt)=1778317973081`; lag ≈34.5s). Legacy `.state/evaluations/` artifacts remain stale (`task_tree_*.json` still Mar 24; newest top-level `s_*.json` observed Apr 29) → continue treating as legacy output-path drift, not DB liveness.
