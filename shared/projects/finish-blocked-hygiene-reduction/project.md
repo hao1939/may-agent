@@ -102,6 +102,10 @@ Responded to May's P2 blocked-project nudge during dev heartbeat. The project re
 
 Responded to May's newer P1 nudge asking dev to unblock/close this project and address `project.iterations-24h=0`. Read-only heartbeat validation again found the two required split metrics absent from `metrics`, so dev still cannot safely unblock or close the project without the May/human runtime write named in `resume_condition`; the correct operation is escalate/hold blocked, not create artificial project iterations or hide the blocker. The separate `eval-llm-lane-restoration` project remains healthy in pending-review: `eval.llm-coverage-lag-h=0.02`, `eval.llm-evals-24h=30`, and the latest non-heuristic evaluation is `2026-05-10 07:25:55` UTC.
 
+### 2026-05-10 — Heartbeat blocked-state hold
+
+Handled the repeated blocked-project nudge during heartbeat. Fresh read-only validation still found no metric rows for `session.finish-blocked-uncommitted-count-24h` or `session.finish-blocked-unresolved-count-24h`; `project.iterations-24h` is open but May-owned, and creating synthetic work would game that metric rather than resolve the safe-write blocker. The project remains correctly `blocked` until May/human applies the exact idempotent registration packet from `outputs/iteration-6-split-metric-registration.md` and confirms fresh snapshots.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
