@@ -1,6 +1,6 @@
 # Infra Surface Implementation Plan
 
-**Status**: Phase 1, Phase 2 first slice, Phase 3 guard observability, Phase 4 first slice, Phase 5 first slice, and Phase 7 first slice implemented.
+**Status**: Phase 1, Phase 2 first slice, Phase 3 guard observability, Phase 4 first slice, Phase 5 resume diagnostics, and Phase 7 first slice implemented.
 
 This plan turns [infra-surface.md](infra-surface.md) into small implementation
 slices. The goal is not a broad rewrite. Each phase should improve the system
@@ -117,7 +117,7 @@ Validation:
 
 - [x] Unit tests for emitted `guard.triggered` on `warn`, `run_step`, and `block`.
 - [x] Metric snapshot test for guard counts.
-- [ ] One real guard trigger can be traced from metric/event to session/workflow in the running instance.
+- [x] One real guard trigger can be traced from metric/event to session/workflow in the running instance.
 
 ## Phase 4: Shared Execution Result View
 
@@ -162,7 +162,7 @@ Improve resume behavior:
 - [x] preserve original workflow id for terminal no-op results,
 - [x] resume only when the workflow definition and prior state are available,
 - [x] return diagnostic reason when workflow resume is unsafe,
-- [ ] emit `session.resume_failed`,
+- [x] emit `session.resume_failed`,
 - [x] emit `workflow.resume_failed`,
 - route to owner, fallback to `may`, escalate to human only when needed.
 
@@ -229,8 +229,8 @@ Minimum useful UI/API fields:
 
 Validation:
 
-- [ ] Pick one real event and show its full loop trace.
-- [ ] Pick one failure and show owner/fallback/escalation state.
+- [x] Pick one real event and show its full loop trace.
+- [x] Pick one failure and show owner/fallback/escalation state.
 - [x] Operator can answer "is the loop moving?" from the UI/API without ad hoc SQL.
 
 ## Recommended First Slice
@@ -242,7 +242,7 @@ Start with:
 3. [x] Add event-to-workflow handler helper.
 4. [x] Convert one workflow bridge handler to the helper.
 5. [x] Convert one deterministic handler read path from raw DB to `sdk.query`.
-6. [ ] Verify trace from a real event to workflow to session in the running instance.
+6. [x] Verify trace from a real event to workflow to session in the running instance.
 
 This gives immediate value and keeps the change set small.
 
