@@ -174,3 +174,9 @@
 **Implication**: Highlights the critical importance of safety guardrails, bounded tools, and human-in-the-loop validation for autonomous agents, confirming our design choices in restricting destructive operations (like database deletion).
 **KB**: None updated
 
+### Synthesis: Sandbox-Driven Procedural Checks
+**Source**: Synthesis of recent arXiv papers, XHS trends, and evaluator architecture trends (KE-1033, KE-1040).
+**Summary**: The emerging architectural pattern is to shift procedural checks (linting, schema validation) into ephemeral, deterministic sandboxes, leaving substantive semantic judgment to LLM panels. This micro-evaluation approach reduces false positives by decoupling execution friction from outcome failure.
+**Implication**: Re-evaluating May-Agent's monolithic evaluator against this pattern could structurally resolve the persistent operational-friction-rate alerts by handling minor procedural friction purely as sandbox feedback rather than overall session failure.
+**KB**: KE-1042 (new)
+
