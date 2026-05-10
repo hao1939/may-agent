@@ -189,3 +189,15 @@
   - This log entry is the required durable artifact for this heartbeat.
   - I am not staging or committing because the repo contains many unrelated dirty paths and deletions that I do not own.
 - Next safe action: wait for the relevant owners to resolve or isolate their changes, then stage only evaluator-owned deliverables in a clean window.
+
+## 2026-05-10 (19:28Z artifact-gate recovery)
+- Trigger: explicit artifact gate warning that this session had produced no file writes.
+- Action: ran `cd /app/agents && git status --short` before making changes and confirmed the worktree was already dirty on many unrelated paths.
+- Current dirty-path snapshot:
+  - Runtime/session state: `arc/last-session.md`, `dev/last-session.md`, `evaluator/last-session.md`, `master/last-session.md`, `may/last-session.md`, `scout/last-session.md`
+  - Shared generated logs: `shared/anti-shallow-gate-triggers.log`, `shared/duration-gate-triggers.log`, `shared/gate-outcomes.log`
+  - Shared docs/proposals/manual/design/runtime files under `shared/may-agent-docs/`
+  - Shared project files under `shared/projects/`
+  - Untracked shared workflow file: `shared/workflows/closed-loop-steward.ts`
+- Deliverable for this heartbeat: this appended note in `agents/evaluator/workspace/heartbeat-log.md`.
+- Blocker: cannot truthfully claim a clean `agents/` worktree or make a safe success commit while unrelated paths remain dirty and unowned by evaluator.
