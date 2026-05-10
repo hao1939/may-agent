@@ -97,3 +97,9 @@
 **Summary**: ByteDance's DeerFlow 2.0 and OpenClaw are dominating discussions. Developers are rejecting heavy StateGraph frameworks in favor of micro-agents, recursive skill synthesis, and structured hierarchical memory over long-context RAG. There is also a strong preference for direct execution tools (like `grep`) over vector search.
 **Implication**: Validates our heavy reliance on `bash/grep` tools. Suggests we should review DeerFlow's state management approach and continue refining our explicit handoff protocols between specialized agents.
 **KB**: KE-015-Agent-Framework-Trends-2026 (new)
+
+### GitHub Trending AI Agent Repos (2026-05-10)
+**Source**: GitHub Search API (`ai agent pushed:>2026-04-01`)
+**Summary**: Langflow and Dify are leading as production platforms for building AI agents and workflows. Hermes-agent by NousResearch is gaining traction. There is also a massive collection of system prompts for various tools.
+**Implication**: The focus is shifting towards workflow builders (Langflow/Dify) and understanding system prompts of commercial tools to improve open-source agents.
+**KB**: N/A
