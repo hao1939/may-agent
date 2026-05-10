@@ -109,6 +109,10 @@
 - Symptom: a session under one agent label ships a committed artifact inside another agent's tracked tree (for example an `arc` session appending `may/heartbeat-log.md`).
 - Fix: separate deliverable integrity from scope quality. If the commit landed and the file content is real, do not mark it as fake output; instead credit the narrow operational value and note the ownership/lane miss as an output-quality downgrade unless there is explicit cross-agent handoff authority.
 
+## Pattern: tracked status beats `.gitignore` line-reading for workspace artifacts
+- Symptom: a session or review infers that `*/workspace/*` output was unshippable just from the `.gitignore` rule text, but `git check-ignore` returns non-matching and `git ls-files` shows the file is already tracked (grandfathered), so the artifact really did land.
+- Fix: when judging workspace-path validity, verify the specific file's status with `git check-ignore -v <path>` and `git ls-files -- <path>` before downgrading the output. Treat blanket `.gitignore` reasoning as weaker than file-specific tracked-status evidence.
+
 ## Pattern: shared repo-level workspace writes can hide an ownership mismatch
 - Symptom: a session satisfies an artifact gate by writing to `/app/agents/workspace/...` (the repo-level shared workspace), but the content is branded as another agent's heartbeat or operating log and does not advance the current session owner's lane.
 - Fix: inspect both the artifact path and the artifact identity. A real read-backed commit in shared `workspace/` still counts as shipped output, but downgrade scope/output quality when the content belongs to another agent or another lane. Judge it as partial operational value, not as a clean success for the session owner.
