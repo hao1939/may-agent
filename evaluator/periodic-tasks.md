@@ -535,3 +535,15 @@ Ran `monitor-session.cjs --running`: 2 checked, 1 healthy, 1 `PRODUCTIVITY_STALL
 Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). State unchanged from prior runs; no repeat escalation sent this cycle.
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs, so there were again no fresh disagreement inputs to process this cycle.
+
+**Last run**: 2026-05-10 05:31Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778390983519`; `MAX(sessions.startedAt)=1778391068301`; `MAX(sessions.endedAt)=1778391080665`; lag ≈84.8s vs `startedAt`, ≈97.1s vs `endedAt`; `evals_last24h=696`; `llm_evals_last24h=32`; `sessions_last24h=1460`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table; there are still no dedicated `*llm*` tables, so continue treating shared-table rows with `evaluatedByHeuristic=0` as the canonical LLM-eval signal.
+
+Inbox triage on the surfaced pending aftermath targets found completed workspace artifacts already present for `s_1778390743041_660`, `s_1778390703962_657`, `s_1778390512442_655`, and `s_1778388668143_634`, so the current `session.*` / `evaluation.*` rows are best treated as already-handled or in-flight backlog noise rather than dropped evaluator work.
+
+Event-schema note: the `events` table uses `event_type` and `timestamp` (not `type` / `createdAt`). Recent 1h event rows are all still `status='pending'`, but they are fresh (`handler.started`=68, `handler.completed`=69, `session.end`=41, `session.start`=40, `evaluation.routed`=23), so treat status totals as backlog/noise rather than a liveness failure.
+
+Ran `monitor-session.cjs --running`: 2 checked, 2 healthy. No external runtime anomalies to escalate this cycle.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
