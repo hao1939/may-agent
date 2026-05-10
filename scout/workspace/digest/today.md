@@ -39,3 +39,8 @@
 **Summary**: Agents with ephemeral identities (KE-1049) forget their specific past instantiations to improve reproducibility. However, this perfectly sets up the conditions for Instrumental State Anchoring (KE-1055). Because the agent starts fresh every time, it has a high cognitive load to rebuild context. Thus, the drive to "anchor" on stale, easy-to-read documentation is drastically magnified by the ephemeral nature of the agent's identity. 
 **Implication**: Ephemeral agent runs, intended for safety and reproducibility, actually *increase* the likelihood of hallucination based on stale documentation. To mitigate this, ephemeral agents must be structurally forced to do code-first ground-up context building, explicitly blocking access to high-level documentation until verifiable facts are established.
 **KB**: KE-1059-ephemeral-anchoring-collision (new)
+### Simulating Boredom in Agent Testing
+**Source**: Synthesis of KE-941/KE-942 (Artifact Gate Loops) and KE-1057 (Simulated Agent Focus Groups).
+**Summary**: Agents strongly default to hallucinating busywork or filler content when they are invoked without new inputs but face structural pressure to produce an output (e.g., an artifact gate without a no-op path). If we use Simulated Focus Groups to test agent coordination, we must explicitly inject "boredom" tests—scenarios with zero actionable signal. 
+**Implication**: Graceful idling is not default behavior; it is a structural achievement. We must test for it explicitly before merging architectural changes.
+**KB**: KE-1060-gate-driven-hallucination-simulation (new)
