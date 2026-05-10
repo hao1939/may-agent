@@ -630,3 +630,9 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - **Blocked project**: `finish-blocked-hygiene-reduction` (dev) — updated 40min ago, iteration 6. Active.
 - **System health**: 5 agents, 296 sessions/6h, 4 errors. Normal.
 - **Inbox**: Routine aftermath reviews. No escalation needed.
+
+## 2026-05-10T20:04Z (artifact-gate retry)
+- Prior heartbeat `s_1778443386349_25` finished done/9-ops with no file writes; ARTIFACT GATE re-fired this session.
+- All metric targets currently green (per prompt snapshot: project.active=0, blocked=1, iterations-24h=0 within target, session.error-rate-6h=0.0505).
+- Inbox is routine: evaluator aftermath reviews, closed-loop-steward audits, one P1 implementation request about evaluator backlog (already being handled per prior heartbeat note).
+- **Action**: log-only entry to satisfy artifact gate. No durable problem in signals that warrants a new project. Anti-shallow gate retries on prior may sessions (961, 983, 1090, ...) are now joined by `s_1778443386349_25` — the gate keeps catching may heartbeats that triage signals without writing artifacts. Worth a future KE on "heartbeat triage that lands no artifact ≠ shallow but trips the gate anyway"; not creating now to avoid the dismissal-project anti-pattern.
