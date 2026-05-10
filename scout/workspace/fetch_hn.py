@@ -1,26 +1,21 @@
 import urllib.request
 import json
-import sys
+import time
 
-def fetch_hn():
-    try:
-        req = urllib.request.urlopen("https://hacker-news.firebaseio.com/v0/topstories.json")
-        top_ids = json.loads(req.read())[:30]
-        
-        results = []
-        for item_id in top_ids:
-            item_req = urllib.request.urlopen(f"https://hacker-news.firebaseio.com/v0/item/{item_id}.json")
-            item = json.loads(item_req.read())
-            if item and item.get('title'):
-                title = item['title'].lower()
-                if 'agent' in title or 'ai' in title or 'llm' in title or 'model' in title:
-                    results.append(f"- {item.get('title')} ({item.get('url', 'No URL')})")
-        
-        print("HN AI/Agent Stories:")
-        for r in results:
-            print(r)
-    except Exception as e:
-        print(f"Error: {e}")
-
-if __name__ == "__main__":
-    fetch_hn()
+try:
+    # Get top stories
+    top_url = "https://hacker-news.firebaseio.com/v0/topstories.json"
+    req = urllib.request.urlopen(top_url)
+    top_ids = json.loads(req.read())[:10]
+    
+    print("Top HN Stories related to AI/Agents:")
+    for story_id in top_ids:
+        story_url = f"https://hacker-news.firebaseio.com/v0/item/{story_id}.json"
+        req = urllib.request.urlopen(story_url)
+        story = json.loads(req.read())
+        title = story.get('title', '').lower()
+        if 'ai' in title or 'agent' in title or 'llm' in title or 'gpt' in title:
+            print(f"- {story.get('title')} ({story.get('url', 'no url')})")
+        time.sleep(0.1)
+except Exception as e:
+    print(f"Error: {e}")
