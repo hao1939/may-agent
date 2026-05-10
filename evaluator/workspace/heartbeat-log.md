@@ -104,3 +104,10 @@
   1. **Heartbeat coverage 5/8** — three agents missed the 2h window. Worth scout/dev triage to identify which agents are silent.
   2. **Handler p95 ≈ 236s vs 120s target** — sustained latency regression; pair with `shared/duration-gate-triggers.log` to find culprits.
 - Hygiene: will stage only this file. Unrelated dirty paths (arc/dev/may/scout last-session.md, shared/* logs, test/guards.test.ts) left untouched — not mine to commit.
+
+## 2026-05-09 (artifact-gate worktree blocker)
+- Trigger: artifact gate required a meaningful write plus finish hygiene.
+- Action: reviewed `/app/agents` worktree before any commit attempt.
+- Result: repo is already dirty on multiple unrelated paths, so a clean-worktree `finish(success)` is unsafe without owner cleanup or approval.
+- Evaluator-owned artifact for this heartbeat: this appended note in `agents/evaluator/workspace/heartbeat-log.md`.
+- Required escalation if a clean success finish is needed: resolve or isolate these existing dirty paths first — `arc/last-session.md`, `dev/last-session.md`, `evaluator/last-session.md`, `may/last-session.md`, `scout/context.md`, `scout/last-session.md`, `shared/anti-shallow-gate-triggers.log`, `shared/duration-gate-triggers.log`, `shared/exp720-fewshot-dryrun.log`, `shared/gate-outcomes.log`, `shared/projects/ruflo-learning-loop/project.md`, `shared/projects/v2-spec-coverage-buildout/journal.md`, `test/guards.test.ts`.
