@@ -34,3 +34,6 @@
 
 ## 2026-05-10 — s_1778409019793_881
 - In artifact-gate aftermath reviews, verify that the committed deliverable lives under the same agent namespace as the runtime `sessions.agent` record. A session can have a real commit and readable artifact yet still need triage if it satisfied the gate by writing another agent's workspace file.
+
+## 2026-05-10 — s_1778408835466_878
+- In artifact-gate success-candidate reviews, keep quality credit when the agent recovers by writing a meaningful, evidence-backed note in its own workspace and committing only that file. Downgrade efficiency for schema-guess retries and hygiene loops, but do not treat a final `partial` caused by ambient unrelated worktree dirt as empty output.
