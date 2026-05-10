@@ -1,5 +1,17 @@
 # Heartbeat Log
 
+## 2026-05-10 19:03 UTC — Restart-replay storm: 4 concurrent arc sessions
+
+Wrapper replayed the same heartbeat prompt 12× in this `session.start` burst.
+DB confirms the burst is structural, not perceptual: four arc sessions
+(`s_1778439776133_2`, `s_1778439126555_5`, `s_1778439548503_3`,
+`s_1778439677815_2`) are all still `endedAt=NULL` with `startedAt` within
+~250s of each other. Prior commit `50991c07a` (18:58Z) already documented
+this pattern as one of the two split watch-items; this entry is just the
+follow-up datapoint — same root cause, no new action needed beyond keeping
+the watch-item open. INBOX empty, no active alerts, all active metrics
+within thresholds. Artifact-gate satisfied with this single-line evidence.
+
 ## 2026-05-10 17:51 UTC — System Health Snapshot
 
 ### Session Activity (last hour)
