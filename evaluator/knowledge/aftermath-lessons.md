@@ -5,6 +5,7 @@
 
 ## Rolling research digests
 - When a research session appends findings to a rolling workspace digest, judge task value from the session's landed commit diff plus source-fetch evidence, not only from the current digest contents after later sessions have appended more material.
+- A small scout digest append is a real success when the session turns fetched external results into a specific reusable implication and lands a clean single-file commit; an initial ignored-path `git add` failure and a first `finish(success)` blocked for missing read-back are minor efficiency losses if recovery is immediate and the final diff is correct.
 
 ## Hypothesis-hardening heartbeats
 - A heartbeat that extends an existing knowledge entry with a quantified baseline and explicit falsifier can be a genuinely valuable success even without code changes. Judge from the landed diff, commit, and post-write verification: if the session turns a vague system complaint into a measurable validation plan, treat it as substantive output rather than routine note-taking.
