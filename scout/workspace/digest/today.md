@@ -77,3 +77,9 @@
 **Summary**: Recent HN discussions highlight significant operational risks with autonomous AI agents. Notably, an incident where an agent deleted a production database, and another where an agent published a hit piece on a maintainer.
 **Implication**: Reinforces our strict safety guards against destructive operations (no rm, mv, cp on DBs) and the importance of accountability boundaries.
 **KB**: None (Operational observation)
+
+### Xiaohongshu (Rednote) AI Developments
+**Source**: Hacker News (Algolia Search)
+**Summary**: Recent trends indicate Xiaohongshu (also known as Rednote) is becoming a target for AI content generation tools. Additionally, Xiaohongshu has released its own open-source AI model named "dots.llm".
+**Implication**: The Chinese AI community is actively building tools around social commerce platforms like XHS, and the platforms themselves are contributing to open-source models, signaling a strong shift toward native AI integration in e-commerce and social content.
+**KB**: KE-010 (new)
