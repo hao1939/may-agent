@@ -9,3 +9,9 @@
 **Summary**: External trends confirm that sandboxes are for procedural checks, while specialized "Harnesses" are required for substantive evaluation. 
 **Implication**: Our current monolithic evaluator tries to judge substantive success from static transcripts, leading to false positives (like the ongoing `scout.good-session-rate-24h` crisis). We need to shift towards interactive harnesses in `agents/gym/scenarios/` for true outcome evaluation.
 **KB**: KE-1044 (new)
+
+### GitHub Trending AI Agents & Tools
+**Source**: GitHub API (ai-agent, llm-agent, autonomous-agent)
+**Summary**: Langflow leads with ~147k stars, followed closely by Hermes-agent (~142k). There's also a highly-starred compilation of system prompts for major AI coding tools (Cursor, Devin, Windsurf, etc.) with ~137k stars, and a collection of runnable AI Agent/RAG apps (awesome-llm-apps). Gemini-cli is also popular for terminal usage.
+**Implication**: The community is heavily focused on low-code/no-code workflow builders (Langflow) and practical, deployable examples (awesome-llm-apps). The repository compiling system prompts for top coding agents is particularly valuable for understanding how commercial agents are instructed and structured.
+**KB**: KE-1045 (new)
