@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { attachCommandRouter } from "./command-router.js";
 import { EventBus, type AgentEvent } from "./event-bus.js";
 import type { ChatSession } from "./chat-session.js";
 import type { SubagentManager } from "../lib/index.js";
 
-function createHarness(overrides: Partial<SubagentManager> = {}) {
+function createHarness(overrides: Partial<SubagentManager> = {}, projectRoot = mkdtempSync(join(tmpdir(), "router-"))) {
   const bus = new EventBus();
   const emitted: AgentEvent[] = [];
   bus.subscribe((event) => emitted.push(event));
@@ -26,6 +29,7 @@ function createHarness(overrides: Partial<SubagentManager> = {}) {
     manager,
     getChatSession: () => chatSession,
     clearCancelLatch: () => {},
+    projectRoot,
     reload: () => {},
     restart: () => {},
     shutdown: () => {},
@@ -35,6 +39,7 @@ function createHarness(overrides: Partial<SubagentManager> = {}) {
     bus,
     emitted,
     router,
+    projectRoot,
     setChatSession: (session: ChatSession | undefined) => {
       chatSession = session;
     },
@@ -87,4 +92,34 @@ describe("command router", () => {
     expect(resumed).toEqual([{ sessionId: "s_cold", message: "follow up", source: "telegram" }]);
     h.router.close();
   });
+
+  it("applies project.comment.created and nudges the project", () => {
+    const projectRoot = mkdtempSync(join(tmpdir(), "router-project-"));
+    const projectPath = "agents/shared/projects/demo";
+    const projectDir = join(projectRoot, projectPath);
+    mkdirp(projectDir);
+    writeFileSync(join(projectDir, "project.md"), "**Status**: blocked\n", "utf-8");
+    const h = createHarness({}, projectRoot);
+
+    h.bus.emit({ type: "project.comment.created", projectPath, comment: "please continue", source: "test", author: "hao" });
+
+    expect(readFileSync(join(projectDir, "discussion.md"), "utf-8")).toContain("please continue");
+    expect(readFileSync(join(projectDir, "project.md"), "utf-8")).toContain("**Status**: active");
+    expect(h.emitted).toContainEqual({ type: "project.nudge", source: "test", projectPath, comment: true });
+    h.router.close();
+  });
+
+  it("handles session.cancel.requested", () => {
+    const cancelled: string[] = [];
+    const h = createHarness({ cancel: (sessionId: string) => { cancelled.push(sessionId); } } as Partial<SubagentManager>);
+
+    h.bus.emit({ type: "session.cancel.requested", sessionId: "s_1", source: "web-ui" });
+
+    expect(cancelled).toEqual(["s_1"]);
+    h.router.close();
+  });
 });
+
+function mkdirp(path: string): void {
+  mkdirSync(path, { recursive: true });
+}

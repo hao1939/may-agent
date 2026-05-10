@@ -1,3 +1,5 @@
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import type { ChatSession } from "./chat-session.js";
@@ -8,6 +10,7 @@ export interface CommandRouterOptions {
   manager: SubagentManager;
   getChatSession: () => ChatSession | undefined;
   clearCancelLatch: () => void;
+  projectRoot: string;
   reload: () => void | Promise<void>;
   restart: () => void;
   shutdown: () => void;
@@ -26,6 +29,70 @@ export interface CommandRouter {
  */
 export function attachCommandRouter(options: CommandRouterOptions): CommandRouter {
   const { bus, manager } = options;
+
+  function normalizeProjectPath(value: unknown): string | null {
+    if (typeof value !== "string" || !value.trim()) return null;
+    let path = value.trim()
+      .replace(/^\/app\//, "")
+      .replace(new RegExp(`^${escapeRegExp(options.projectRoot)}/`), "")
+      .replace(/^\.?\//, "")
+      .replace(/\/project\.md$/, "")
+      .replace(/[),.;:]+$/, "")
+      .replace(/\/$/, "");
+    if (!path.startsWith("agents/")) path = `agents/${path}`;
+    if (!/^agents\/(shared\/projects\/|[^/]+\/workspace\/projects\/)[^/\s]+$/.test(path)) return null;
+    return path;
+  }
+
+  function escapeRegExp(text: string): string {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  function appendProjectComment(projectPath: string, comment: string, source?: string, author?: string): boolean {
+    const normalized = normalizeProjectPath(projectPath);
+    const trimmed = comment.trim();
+    if (!normalized || !trimmed) {
+      bus.emit({ type: "info", message: `[project.comment] Invalid project comment event from ${source ?? "unknown"}` });
+      return false;
+    }
+
+    const projectDir = join(options.projectRoot, normalized);
+    const projectFile = join(projectDir, "project.md");
+    if (!existsSync(projectFile)) {
+      bus.emit({ type: "info", message: `[project.comment] Project target not found: ${normalized}` });
+      return false;
+    }
+
+    const date = new Date().toISOString().slice(0, 10);
+    const discussionFile = join(projectDir, "discussion.md");
+    const entry = `\n### ${author?.trim() || "hao"} - ${date}\n${trimmed}\n`;
+    if (existsSync(discussionFile)) appendFileSync(discussionFile, entry, "utf-8");
+    else writeFileSync(discussionFile, `# Discussion\n${entry}`, "utf-8");
+
+    // Legacy project files used bold status fields. YAML projects are resumed
+    // by the project handler after the project.nudge event below.
+    let resumedLegacy = false;
+    let content = readFileSync(projectFile, "utf-8");
+    const statusMatch = content.match(/^\*\*Status\*\*:\s*(.+)$/m);
+    const currentStatus = statusMatch ? statusMatch[1].trim().toLowerCase() : "";
+    if (["blocked", "waiting"].includes(currentStatus)) {
+      content = content.replace(/^\*\*Status\*\*:\s*.+$/m, "**Status**: active");
+      writeFileSync(projectFile, content, "utf-8");
+      resumedLegacy = true;
+    }
+
+    bus.emit({
+      type: "project.nudge",
+      source: source ?? "command-router",
+      projectPath: normalized,
+      comment: true,
+    } as any);
+    bus.emit({
+      type: "info",
+      message: `[project.comment] Appended comment and nudged ${normalized}${resumedLegacy ? " (legacy status resumed)" : ""}`,
+    });
+    return true;
+  }
 
   function handleInput(message: string, source?: string): void {
     options.clearCancelLatch();
@@ -105,8 +172,14 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       case "cancel":
         if (event.sessionId) manager.cancel(event.sessionId);
         break;
+      case "session.cancel.requested":
+        if (event.sessionId) manager.cancel(event.sessionId);
+        break;
       case "cancel_all":
         handleInput("cancel all");
+        break;
+      case "project.comment.created":
+        appendProjectComment(event.projectPath, event.comment, event.source, event.author);
         break;
       case "fork":
         if ("agent" in event && "task" in event) {

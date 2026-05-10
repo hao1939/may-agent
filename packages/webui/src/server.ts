@@ -1379,38 +1379,15 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const projectFile = join(PROJECT_ROOT, path, "project.md");
       if (!existsSync(projectFile)) return json({ error: "Project not found" }, 404);
 
-      const { writeFileSync, appendFileSync } = await import("node:fs");
-      const date = new Date().toISOString().slice(0, 10);
-
-      // Write to discussion.md (new protocol)
-      const discFile = join(PROJECT_ROOT, path, "discussion.md");
-      const entry = `\n### hao \u2014 ${date}\n${comment}\n`;
-      if (existsSync(discFile)) {
-        appendFileSync(discFile, entry, "utf-8");
-      } else {
-        writeFileSync(discFile, `# Discussion\n${entry}`, "utf-8");
-      }
-
-      // Legacy project files used bold status fields. New YAML projects are
-      // resumed by the project handler after the event below.
-      let resumed = false;
-      let content = readFileSync(projectFile, "utf-8");
-      const statusMatch = content.match(/^\*\*Status\*\*:\s*(.+)$/m);
-      const currentStatus = statusMatch ? statusMatch[1].trim().toLowerCase() : "";
-      if (["blocked", "waiting"].includes(currentStatus)) {
-        content = content.replace(/^\*\*Status\*\*:\s*.+$/m, "**Status**: active");
-        writeFileSync(projectFile, content, "utf-8");
-        resumed = true;
-      }
-
       const trigger = await sendDaemonFrame({
-        type: "project.nudge",
+        type: "project.comment.created",
         source: "web-ui",
         projectPath: path,
-        comment: true,
+        comment,
+        author: "hao",
       });
 
-      return json({ ok: true, resumed: resumed || trigger.ok, triggered: trigger.ok, triggerError: trigger.error });
+      return json({ ok: true, triggered: trigger.ok, triggerError: trigger.error });
     } catch (e: any) {
       return json({ error: e.message }, 500);
     }
@@ -1495,9 +1472,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   async function handleSessionCancel(sessionId: string): Promise<Response> {
     if (!sessionId) return json({ error: "sessionId required" }, 400);
-    // The socket protocol uses cancel_all (one-active-task per agent today);
-    // sessionId is recorded in the audit event for traceability.
-    const result = await sendDaemonFrame({ type: "cancel_task", sessionId });
+    const result = await sendDaemonFrame({ type: "session.cancel.requested", sessionId, source: "web-ui" });
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, sessionId });
   }

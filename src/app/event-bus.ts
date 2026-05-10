@@ -29,7 +29,9 @@ export type AgentCommand =
   | { type: "steer"; sessionId?: string; text?: string; message?: string; source?: string }
   | { type: "cancel"; sessionId: string }
   | { type: "cancel_all" }
-  | { type: "resume"; sessionId: string };
+  | { type: "resume"; sessionId: string }
+  | { type: "session.cancel.requested"; sessionId: string; source?: string }
+  | { type: "project.comment.created"; projectPath: string; comment: string; source?: string; author?: string };
 
 /** Management commands (to core / supervisord) */
 export type ManagementCommand = { type: "reload" } | { type: "restart" } | { type: "shutdown" };
