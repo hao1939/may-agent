@@ -80,6 +80,10 @@
 - Symptom: a research heartbeat creates a fresh KE and digest entry, but the new artifact mostly recombines points already captured in a nearby KE (for example an existing SLM-architecture note) plus the rolling digest, with only one added angle such as sandboxing/locality.
 - Fix: before crediting the session as a strong knowledge update, compare the new KE against existing same-day entries and the cited digest context. If the novelty is only an incremental framing change, score it as lightweight synthesis/acceptable output rather than a high-value new knowledge artifact, and note the missed duplicate check.
 
+## Pattern: same paper can be re-added under a new KE id without an actual id collision
+- Symptom: a research session ships a clean new file path like `KE-010-...md`, but the paper/source already exists under another KE id (for example `KE-002-...md`). The transcript claims a new KB addition even though the net result is duplicate knowledge rather than fresh exploration.
+- Fix: when a session claims a new paper finding, search existing `shared/knowledge/entries/` by title or source URL, not just by target KE id. Credit any digest summary that really landed, but downgrade the KB value when the "new" entry duplicates an existing paper under a different id.
+
 ## Pattern: metric-alert dismissal can collapse into artifact-gate compliance
 - Symptom: a heartbeat reads an existing metric-analysis KE, writes a one-line workspace note like "dismissing per KE-...", and finishes without fresh metric checks, follow-through, or any substantive downstream work.
 - Fix: when reviewing alert-handling sessions, separate the diagnosis from the session's own contribution. Credit the reused KE for the diagnosis, but require fresh evidence or a real operational action before treating the session itself as materially successful.
