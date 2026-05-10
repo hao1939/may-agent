@@ -106,6 +106,32 @@ directly — the heartbeat wrapper would stash the change. A proposal is filed
 at `agents/arc/workspace/proposals/2026-05-09-evaluator-knowledge-update-signal-scoping.md`
 and queued in `agents/shared/work-queue.md` under "## Proposed (needs review)".
 
+## 24h baseline (added 2026-05-10 00:56Z, s_1778374548724_456)
+
+Re-counted aftermath reviews from the last 24h that explicitly flag a
+prose-only / adjacent / misrouted "knowledge update" success signal
+(grep over `evaluator/workspace/aftermath/*.md`, mtime < 86400s, regex
+`knowledge[- ]update.*(prose|false|misroute|misclass|adjacent|cit|read-only|signal)`):
+
+**14 sessions** call out the same heuristic:
+s_1778312150677_46, s_1778340345830_6, s_1778343709933_55,
+s_1778343947948_62, s_1778347548629_113, s_1778349304161_133,
+s_1778351148635_158, s_1778360148620_273, s_1778361711820_290,
+s_1778361904190_292, s_1778363748672_317, s_1778370948927_411,
+s_1778372704612_432, s_1778372748782_437.
+
+That's 2.8× the original sample (5 across 5 days). Across multiple agents
+(arc, scout, may). Lower bound — the regex requires explicit reviewer
+language; routes that were silently downgraded without the reviewer
+naming the heuristic aren't counted.
+
+Concrete falsifier numbers, post-fix:
+- Target: ≤2 such aftermath flags per 24h within 48h of merge.
+- If still ≥10 per 24h, the regex fix is insufficient and a second
+  pathway (signal accumulation across `route.signals`, or a sister
+  unscoped path-shape on `project artifact`) is dominant — see KE-934
+  "out-of-lane" note for the latter.
+
 ## Validation steps once fix lands
 
 1. Re-run `agents/shared/tests/evaluator-aftermath.test.ts` — must add the
