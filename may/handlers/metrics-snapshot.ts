@@ -92,7 +92,7 @@ const ALL_METRICS: MetricDef[] = [
   { id: "project.active-count", name: "Active push projects", owner: "may", type: "gauge", target: 0, threshold: 0, unit: "count", alert_op: "<", priority: "P3" },
   { id: "project.blocked-count", name: "Blocked projects", owner: "may", type: "gauge", target: 0, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
   { id: "project.stale-active-count", name: "Stale active projects (no iteration 48h)", owner: "may", type: "gauge", target: 0, threshold: 2, unit: "count", alert_op: ">", priority: "P1" },
-  { id: "project.iterations-24h", name: "Active project iterations (24h)", owner: "may", type: "gauge", target: 10, threshold: 1, unit: "count", alert_op: "<",
+  { id: "project.iterations-24h", name: "Active project iterations (24h)", owner: "may", type: "gauge", target: 0, threshold: 0, unit: "count", alert_op: "<",
     priority: "P3" },
   { id: "project.blocked-over-6h", name: "Projects blocked >6h", owner: "may", type: "gauge", target: 0, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
   { id: "project.invalid-format-count", name: "Invalid project.md format", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
