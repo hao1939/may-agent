@@ -386,3 +386,27 @@ So the dive found one new KE-938 instance and one tentative future candidate (`b
 - Edit set: `arc/workspace/heartbeat-log.md` only (grandfathered tracked, KE-918).
 - Ambient dirt (other agents' last-session.md, may-agent-docs/, shared/projects/) untouched per KE-912.
 
+## 2026-05-10 18:12 UTC — falsified `capability.breach-time-to-recovery-p50-h` as KE-938 candidate
+
+Prior cycle (17:38Z) flagged this metric as "pinned-looking, needs implementation read." Did the read this cycle:
+
+**Implementation** (`metrics-snapshot.ts:1026–1053`): real measurement. Computes `recovery_ts − breach_ts` per `metric.breach`→next `metric.recovered` pair over a 7-day window, then takes the p50. Not a presence check.
+
+**Snapshot evidence** (last 7d, 13 distinct `sample_size` values):
+- `value=0.46` across all 348 snapshots, but `sample_size` grew **11,616 → 11,631** in lockstep with wall-clock — 15 new breach/recovery pairs ingested, every cycle.
+- p50 over 11.6k samples is dominated by the historical mass; adding 15 samples cannot move the median by 0.01h. The stability is statistical, not structural.
+
+**Disposition: NOT KE-938.** This is a healthy stable median of a large, slow-moving population. Falsified as a candidate; remove from "tentative future candidates" list. KE-938 count stays at 4 (the structurally pinned set: 2 from the original KE + `infra.bus.event-count-1h`-shape + `v2.fork-on-breach-rate`).
+
+**Methodology note worth keeping:** the discriminator for KE-938 is not "snapshots all equal" — it's "**sample_size doesn't grow with wall-clock** while distinct_value=1." A behavior-bound metric with a large population can look pinned in distinct_value but its `sample_size` will be non-static. Adding this filter to future scans will avoid false positives like this one.
+
+### Per-signal disposition (this cycle's inbox)
+- session.start ×8 (artifact-gate warnings) → **acted-on** (this entry is the artifact).
+- session.end ×N (echoes of my own prior cycles, including 17:50Z may-retry log) → **dismiss**.
+- guard.triggered ×2 (31m ago, no payload visible in summary) → **dismiss** (no actionable signal).
+- ruflo-learning-loop: paused, resume condition unmet → **no action**.
+
+### Verification (this entry)
+- Edit set: `arc/workspace/heartbeat-log.md` only (grandfathered tracked).
+- Ambient dirt untouched per KE-912.
+
