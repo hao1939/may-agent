@@ -5,7 +5,7 @@ import { join } from "node:path";
 /**
  * verify-parallel — QA identity policy tests
  *
- * The verify-parallel workflow files were removed, but the QA identity file
+ * The verify-parallel workflow files were removed, but the QA AGENTS.md file
  * still has the Parallel Auditor Protocol that guides adversarial review.
  * These tests ensure that protocol remains in place.
  */
@@ -13,7 +13,7 @@ import { join } from "node:path";
 // ── QA Identity Auditor Protocol ─────────────────────────────────────────
 
 function readQaIdentity(): string {
-  return readFileSync(join(process.cwd(), "agents/qa/SOUL.md"), "utf-8");
+  return readFileSync(join(process.cwd(), "agents/qa/AGENTS.md"), "utf-8");
 }
 
 describe("verify-parallel: QA AGENTS.md policy", () => {

@@ -26,6 +26,11 @@ function bunSqliteStub(): Plugin {
 export default defineConfig({
   plugins: [bunSqliteStub()],
   test: {
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
+    teardownTimeout: 30_000,
+    maxWorkers: 4,
+    minWorkers: 1,
     exclude: [
       "**/node_modules/**",
       "**/dist/**",

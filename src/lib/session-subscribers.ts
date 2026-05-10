@@ -7,13 +7,14 @@
  * Replaces inline side effects that were in manager.ts handleCompletion.
  */
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import type { AgentEvent } from "../app/event-bus.js";
 import { log } from "./log.js";
 import { createStartDigest, createEndDigest, upsertDigest, logShadowComparison } from "./session-digest.js";
 import type { SubagentManager } from "./manager.js";
 import { writeLastSession } from "./last-session.js";
+import { getDb } from "./requests.js";
 
 // ── Stuck Detection ─────────────────────────────────────────────────────
 // Detects sessions making no progress (consecutive turns with only errors).
@@ -280,6 +281,96 @@ export function createDigestWriter(persistDir: string): (event: AgentEvent) => v
   };
 }
 
+// ── Context Updater ─────────────────────────────────────────────────────
+// Applies durable `finish().context_updates` to agents/<name>/context.md.
+
+export function createContextUpdater(projectRoot: string): (event: AgentEvent) => void {
+  return (event: AgentEvent) => {
+    if (event.type !== "session.end") return;
+
+    const updates = (event.finishParams as any)?.context_updates;
+    if (!Array.isArray(updates) || updates.length === 0) return;
+
+    const agentDir = join(projectRoot, "agents", event.agent);
+    const contextPath = join(agentDir, "context.md");
+
+    try {
+      mkdirSync(agentDir, { recursive: true });
+      const existing = existsSync(contextPath) ? readFileSync(contextPath, "utf-8") : "";
+      let lines = existing.split(/\r?\n/).filter((line) => line.length > 0);
+
+      for (const update of updates) {
+        if (!update || typeof update.content !== "string") continue;
+        const content = update.content.trim();
+        if (!content) continue;
+
+        if (update.action === "remove") {
+          lines = lines.filter((line) => !line.includes(content));
+        } else if (update.action === "add") {
+          const normalized = content.startsWith("- ") ? content : `- ${content}`;
+          if (!lines.includes(normalized)) lines.push(normalized);
+        }
+      }
+
+      writeFileSync(contextPath, `${lines.join("\n")}${lines.length > 0 ? "\n" : ""}`);
+    } catch (err) {
+      log("warn", `[context-updater] failed for ${event.agent}: ${err}`);
+    }
+  };
+}
+
+// ── File Read Tracker ───────────────────────────────────────────────────
+// Records cross-agent and shared file reads for observability.
+
+function producerFromPath(path: string): string | null {
+  const normalized = path.replace(/^\.\//, "").replace(/\/+/g, "/");
+  const match = normalized.match(/^agents\/([^/]+)\//);
+  return match?.[1] ?? null;
+}
+
+export function createFileReadTracker(persistDir: string): (event: AgentEvent) => void {
+  return (event: AgentEvent) => {
+    if (event.type !== "tool_call" || event.tool !== "read") return;
+
+    const path = (event.args as any)?.path;
+    if (typeof path !== "string" || !path.trim()) return;
+
+    const producerAgent = producerFromPath(path);
+    if (producerAgent === event.agent) return;
+
+    try {
+      const db = getDb(persistDir);
+      db.prepare(
+        "INSERT INTO file_reads (sessionId, agent, filePath, readAt, producerAgent) VALUES (?, ?, ?, ?, ?)",
+      ).run(event.sessionId, event.agent, path, Date.now(), producerAgent);
+    } catch (err) {
+      log("warn", `[file-read-tracker] failed for ${event.agent}: ${err}`);
+    }
+  };
+}
+
+export interface FileReadStat {
+  reader: string;
+  producer: string | null;
+  fileCount: number;
+  readCount: number;
+}
+
+export function getFileReadStats(persistDir: string, days = 7): FileReadStat[] {
+  const since = Date.now() - Math.max(0, days) * 24 * 60 * 60 * 1000;
+  const db = getDb(persistDir);
+  return db.prepare(
+    `SELECT agent as reader,
+            producerAgent as producer,
+            COUNT(DISTINCT filePath) as fileCount,
+            COUNT(*) as readCount
+       FROM file_reads
+      WHERE readAt >= ?
+      GROUP BY agent, producerAgent
+      ORDER BY readCount DESC, reader ASC`,
+  ).all(since) as unknown as FileReadStat[];
+}
+
 // ── Last-Session Writer ─────────────────────────────────────────────────
 // Writes agents/<name>/last-session.md at session end so the next session
 // can read a single file instead of querying DB + scanning files.
@@ -321,4 +412,3 @@ export function createLastSessionWriter(projectRoot: string): (event: AgentEvent
     }
   };
 }
-

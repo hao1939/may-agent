@@ -271,7 +271,7 @@ describe("write tool diff preview", () => {
     // Should show removed and added lines
     expect(text).toMatch(/-.*const y = 2/);
     expect(text).toMatch(/\+.*const y = 99/);
-    expect(text).toContain("Verify the diff above");
+    expect(text).toContain("Inspect the diff above");
   });
 
   it("shows content preview for new files (not diff)", async () => {
@@ -288,7 +288,7 @@ describe("write tool diff preview", () => {
     expect(text).not.toContain("```diff");
     expect(text).toContain("```");
     expect(text).toContain("const hello = 'world'");
-    expect(text).toContain("Verify the content above matches your intent");
+    expect(text).toContain("Inspect the content above");
   });
 
   it("truncates large diffs at 60 lines", async () => {
@@ -309,7 +309,7 @@ describe("write tool diff preview", () => {
     expect(text).toContain("overwrite");
     expect(text).toContain("```diff");
     expect(text).toContain("diff truncated");
-    expect(text).toContain("Diff truncated. Verify the changes above");
+    expect(text).toContain("Diff truncated. Inspect the changes above");
   });
 
   it("shows diff with correct + and - markers for overwrites", async () => {

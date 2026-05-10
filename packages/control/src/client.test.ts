@@ -1,5 +1,4 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -13,7 +12,7 @@ afterEach(() => {
 });
 
 function makeSocketLikeFifo(path: string): void {
-  execFileSync("mkfifo", [path]);
+  writeFileSync(path, "");
 }
 
 describe("findDaemonSocket", () => {
