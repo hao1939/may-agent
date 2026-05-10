@@ -94,6 +94,8 @@ Stop criteria:
 
 ## Phase 2: Adapter Event Normalization
 
+Status: first slice shipped for project comments and session cancel.
+
 Goal: CLI, Web UI, Telegram, and timers all submit the same kind of daemon
 events instead of embedding behavior locally.
 
@@ -102,12 +104,18 @@ Scope:
 - Keep socket-local commands limited to `subscribe` and `status`.
 - Normalize adapter actions into event frames:
   - `input`
-  - `project.comment.created`
-  - `session.cancel.requested`
+  - `project.comment.created` (shipped for Web UI and Telegram project replies)
+  - `session.cancel.requested` (shipped for Web UI cancel and socket/operator events)
   - `trigger.<handler-name>`
   - `telegram.reply.received` only if raw Telegram context is needed before it
     becomes `input` or `project.comment.created`.
-- Refactor Telegram reply handling so reply enrichment produces a daemon event,
+- [x] Refactor Web UI project comments so the adapter emits
+  `project.comment.created`; the daemon appends `discussion.md` and emits
+  `project.nudge`.
+- [x] Refactor Telegram project replies so reply enrichment emits
+  `project.comment.created` instead of writing `discussion.md` directly.
+- [x] Refactor Web UI session cancel to emit `session.cancel.requested`.
+- Refactor remaining Telegram reply handling so reply enrichment produces a daemon event,
   then shared command/project handlers perform the action.
 - Keep Telegram in the daemon process for now. The goal is a thin adapter, not a
   new process boundary.
@@ -117,11 +125,12 @@ Scope:
 
 Validation:
 
-- Reply-to-project notification appends a project comment and triggers the same
+- [x] Reply-to-project path has shared daemon logic that appends a project
+  comment and triggers the same
   project resume path as Web UI comments.
-- Reply-to-session notification reaches the intended session or emits a clear
+- [ ] Reply-to-session notification reaches the intended session or emits a clear
   routing failure event.
-- Telegram, Web UI, and CLI leave comparable event traces for comparable
+- [ ] Telegram, Web UI, and CLI leave comparable event traces for comparable
   actions.
 
 Stop criteria:
