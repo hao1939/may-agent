@@ -28,3 +28,6 @@
 
 ## 2026-05-10 — s_1778406713013_848
 - For success-candidate scout heartbeat reviews, compare adjacent same-day KEs before over-crediting novelty, but keep quality credit when the new note adds a concrete local lever (for example turning nearby SLM/sandbox observations into a recommendation for finer-grained micro-agent decomposition). Immediate recovery from ignored-path `git add` friction or a first blocked `finish()` should reduce efficiency only, not erase a landed knowledge artifact.
+
+## 2026-05-10 — s_1778405207348_835
+- For success-candidate arc heartbeat reviews, treat a duration-gate recovery as genuinely substantive when the agent moves from surface metric scanning to implementation-vs-spec diagnosis, verifies it against live DB/event samples, and commits a reusable knowledge entry. Minor tool friction (for example assuming `rg`) is an efficiency nick, not a quality failure, when the landed artifact materially sharpens future triage.
