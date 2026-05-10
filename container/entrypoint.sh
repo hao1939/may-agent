@@ -2,6 +2,8 @@
 set -e
 
 export INSTANCE="${INSTANCE:-background}"
+export DAEMON_INSTANCE="${DAEMON_INSTANCE:-${INSTANCE}}"
+export DAEMON_AGENT="${DAEMON_AGENT:-may}"
 export DISPLAY=:99
 export STATE_DIR="${STATE_DIR:-/app/.state}"
 

@@ -7,17 +7,17 @@
  *   bun src/app/may.ts --send bob --message "review this" --artifact docs/design/foo.md
  *
  * Delivery:
- *   1. Tracks the request in the SQLite DB (always)
- *   2. Finds a live socket (scans .state/instances/ for may.sock)
- *   3. Sends via socket as "@agent message" so May can delegate/monitor it
- *   4. If no socket found, task is still tracked in DB and will appear in next heartbeat
+ *   1. Uses the convention daemon socket path:
+ *      <persistDir>/instances/<DAEMON_INSTANCE>/<DAEMON_AGENT>.sock
+ *   2. Sends via socket as "@agent message" so May can delegate/monitor it
+ *   3. Fails clearly if the daemon socket cannot accept the message
  *
  * Exits 0 on success, 1 on error.
  */
 
 import { resolve } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
-import { findDaemonSocket, sendAgentMessage } from "../../packages/control/src/client.js";
+import { daemonSocketPath, sendAgentMessage } from "../../packages/control/src/client.js";
 
 
 export interface SendOptions {
@@ -29,7 +29,7 @@ export interface SendOptions {
   source?: string;
 }
 
-export async function cliSend(opts: SendOptions): Promise<void> {
+export async function cliSend(opts: SendOptions): Promise<boolean> {
   const { agent, message, artifact, persistDir, agentsRoot: _agentsRoot, source } = opts;
 
   // Validate artifact exists if provided
@@ -48,27 +48,26 @@ export async function cliSend(opts: SendOptions): Promise<void> {
     fullMessage = `${message}\n\nArtifact: ${artifact}`;
   }
 
-  // Try socket delivery first — chatSession.handleInput will track in DB
-  const socketPath = findDaemonSocket(persistDir);
-  if (socketPath) {
-    try {
-      const result = await sendAgentMessage(socketPath, agent, fullMessage, source ?? "cli");
+  const socketPath = daemonSocketPath(persistDir, {
+    instance: process.env.DAEMON_INSTANCE || process.env.INSTANCE || "default",
+    interfaceAgent: process.env.DAEMON_AGENT || process.env.AGENT || "may",
+  });
 
-      if (result.type === "ok") {
-        console.log(`Sent to ${agent} via socket (${socketPath})`);
-        return;
-      }
-      // Socket returned error — fall through to DB-only tracking
-      console.error(`Socket returned error: ${result.message}. Task tracked in DB, will appear in next heartbeat.`);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`Socket delivery failed: ${msg}. Task tracked in DB, will appear in next heartbeat.`);
+  try {
+    const result = await sendAgentMessage(socketPath, agent, fullMessage, source ?? "cli", { timeoutMs: 5000 });
+    if (result.type === "ok") {
+      console.log(`Sent to ${agent} via daemon socket (${socketPath})`);
+      return true;
     }
-  }
-
-  // No socket or socket failed — message will appear in next heartbeat
-  if (!socketPath) {
-    console.log(`No live socket found. Task will appear in ${agent}'s next heartbeat.`);
+    console.error(`Daemon socket returned ${result.type}: ${result.message ?? "unknown response"} (${socketPath})`);
+    return false;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(
+      `Daemon socket delivery failed at ${socketPath}: ${msg}. ` +
+      "Task was not delivered. Start the daemon or set DAEMON_INSTANCE/DAEMON_AGENT to the running daemon convention path.",
+    );
+    return false;
   }
 }
 

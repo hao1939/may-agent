@@ -150,8 +150,8 @@ if (EMIT_MODE) {
   // Keep this before agent/model startup so operators have a small, reliable
   // control command that does not boot another runtime-shaped process.
   const socketPath = daemonSocketPath(PERSIST_DIR, {
-    instance: INSTANCE_LABEL,
-    interfaceAgent,
+    instance: process.env.DAEMON_INSTANCE || INSTANCE_LABEL,
+    interfaceAgent: process.env.DAEMON_AGENT || interfaceAgent,
   });
   let lastError: unknown;
   for (let attempt = 1; attempt <= 2; attempt++) {
@@ -679,7 +679,8 @@ if (MESSAGE_MODE) {
   if (sendOpts) {
     sendOpts.persistDir = PERSIST_DIR;
     sendOpts.agentsRoot = AGENTS_ROOT;
-    await cliSend(sendOpts);
+    const delivered = await cliSend(sendOpts);
+    process.exit(delivered ? 0 : 1);
   }
   process.exit(0);
 }
