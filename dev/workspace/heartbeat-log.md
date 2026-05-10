@@ -891,3 +891,25 @@ Evidence checked:
 Disposition:
 - No infrastructure patch was warranted from this signal set; this artifact records the gate recovery and the metric health finding.
 - Continue using schema-first checks for runtime tables and avoid treating non-dev-owned unresolved alerts as dev implementation work without an approved request.
+
+## 2026-05-10 Heartbeat Provider Auth Triage
+
+Routine heartbeat with one concrete P1 FYI from evaluator and no approved implementation queue item.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty; implementation candidates remain Proposed.
+- Core runtime signals are healthy for dev-owned action: `handler.failed-count=0`, `handler.success-rate=1`, `session.error-rate-6h=0.0498`, and `session.empty-assistant-stop-count-1h=0`.
+- Direct transcript check for may session `s_1778426714732_1090` found a two-line transcript: the assistant stopped before tool use with provider error `401` / `Github_copilotException - IDE token expired: unauthorized: token expired` for `claude-opus-4.6`.
+- The provider failure is currently isolated in the last hour: `session.first-turn-error-count-1h=1`, a read-only count of `status='error'` sessions in the last hour returned `1`, and later sessions after `s_1778426714732_1090` completed normally, including may heartbeat `s_1778428505092_1116`.
+- Open metric alerts are not dev-owned: `project.iterations-24h` (may) plus two scout quality/friction alerts. Scout knowledge metrics missing fresh snapshots are scout-owned.
+- `eval-llm-lane-restoration` remains healthy in pending-review: `eval.llm-coverage-lag-h=0.38`, `eval.llm-evals-24h=21`, and latest non-heuristic evaluation is `2026-05-10 15:29:32` UTC.
+- `finish-blocked-hygiene-reduction` remains blocked because the split finish-blocked metrics are still absent from `metrics`; dev still lacks a safe runtime DB write path to register them.
+
+Signal dispositions:
+- Evaluator P1 FYI for `s_1778426714732_1090`: acted by confirming the transcript-level provider 401 and classifying it as a transient/external credential issue, not a workflow/handler bug. Escalation remains to May/human/runtime credential owner if the first-turn provider-error metric rises or repeats; no destructive or DB action is safe from this heartbeat.
+- Recent dev artifact-gate/session-start warnings: acted by writing this focused artifact and by retaining narrow commit hygiene.
+- Prior dev session-end artifacts about empty queue / project blocker: dismissed as already acted; current evidence rechecked both owned projects.
+- Non-dev metric alerts: dismissed for direct dev action because owners are may/scout and there is no Approved work-queue item.
+
+Next validation:
+- Watch `session.first-turn-error-count-1h` and fresh `status='error'` rows. If additional `Github_copilotException - IDE token expired` rows appear, escalate the credential refresh/routing problem to May/human with the transcript evidence above.
