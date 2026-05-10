@@ -1,6 +1,12 @@
 # May Heartbeat Log — Latest
 
-**Timestamp:** 2026-07-09 ~current
+**Timestamp:** 2026-07-10 ~current
+
+## Red Metric Triage
+
+**project.iterations-24h=0** — Downgrade. No active projects (active-count=0), so 0 iterations is structurally correct. Known per KE-1048/KE-905.
+
+**guard.blocked-count-24h=2** — Resolve stale. Scout triggered `knowledge-entry-overwrite` guard twice (events 553816, 553754) overwriting canonical KE files. Guard working as intended — blocks are correct. Decays naturally.
 
 ## Quick Status
 - **Red:** `project.iterations-24h` 0/10 — known (KE-905), all projects paused. No action.
