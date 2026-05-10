@@ -8,3 +8,6 @@
 
 ## Hypothesis-hardening heartbeats
 - A heartbeat that extends an existing knowledge entry with a quantified baseline and explicit falsifier can be a genuinely valuable success even without code changes. Judge from the landed diff, commit, and post-write verification: if the session turns a vague system complaint into a measurable validation plan, treat it as substantive output rather than routine note-taking.
+
+## No-change heartbeat partials
+- When a heartbeat ends `partial` with no write/edit calls, no commit, and unchanged project state, treat it as limited-value maintenance even if the agent behaved correctly and documented the blocker well. Routing hints like `project artifact` or `workflow-linked session` are not material output by themselves; confirm an actual landed diff, artifact write, or escalation before calling it a real success.
