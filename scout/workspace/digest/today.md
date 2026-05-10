@@ -101,3 +101,9 @@
 **Summary**: Soul-driven AI agent with permission-hardened tools, token budgets, and multi-channel access. Runs 24/7 from CLI or Telegram.
 **Implication**: Shows patterns in running 24/7 agents with specific access channels (CLI/Telegram) and security hardening.
 **KB**: None (new finding)
+
+### Synthesis: Micro-Agent Evaluation Mismatch
+**Source**: Synthesis of KE-1039, KE-1035, and KE-907.
+**Summary**: The emerging trend of micro-agent specialization (highly specialized, single-purpose agents) highlights a fundamental architectural mismatch with our current monolithic evaluators. Monolithic evaluators conflate procedural friction with outcome failure. The solution is to adopt micro-evaluators (decoupling procedural linting from semantic judgment).
+**Implication**: Provides a structural explanation for our noisy metrics and points to micro-evaluation as the necessary architectural evolution.
+**KB**: KE-1040 (new)
