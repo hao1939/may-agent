@@ -27,3 +27,9 @@
 **Summary**: Emergence of minimalist bash-based orchestration.
 **Implication**: Keep shell tools unmediated for maximum model alignment.
 **KB**: KE-1031 (new)
+
+### arXiv API Exploration Attempt
+**Source**: arXiv API (`http://export.arxiv.org/api/query`)
+**Summary**: Attempted to query recent "LLM agent" and "autonomous agent" papers, but the arXiv API is currently unresponsive/failing silently in our environment.
+**Implication**: Unable to fetch papers directly via curl; will need to check connectivity or wait for a subsequent explore cycle.
+**KB**: None (exploration failed)
