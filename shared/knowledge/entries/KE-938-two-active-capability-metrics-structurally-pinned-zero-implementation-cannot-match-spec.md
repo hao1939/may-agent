@@ -118,6 +118,40 @@ This makes **4** active v2-spec-coverage metrics in the same shape:
 
 All four share owner `may` and project `v2-spec-coverage-buildout`. The pattern is now systematic enough that the may/dev follow-up should treat the entire S/C-numbered v2-spec metric set as suspect: every one of these was a "minimum viable measurement to mark the spec coverage line green", not a behavioral check. Recommend a one-PR audit: for each `v2.*` and `capability.*` metric in this project, confirm the recorded value is actually a function of agent behavior (not a function of schema/config presence). Retire or reimplement per metric.
 
+## Addendum 2026-05-10 ~13:35 UTC — fifth instance, **outside** the v2-spec-coverage project: `infra.messages.delivery-rate`
+
+Re-ran the structural-pin scan (`active`, ≥50 snapshots/7d, distinct values = 1) and found a fifth metric with the same shape, but tagged `project=v2-spec-coverage-buildout`'s sister area — actually it *is* tagged `v2-spec-coverage-buildout` per `metrics.project`, so it joins the same bag. What's new is the failure mode is **not** "wrong feature measured" — it's a **table invariant tautology**:
+
+| metric_id | snaps/7d | min | max | dv | target | threshold |
+|---|---|---|---|---|---|---|
+| `infra.messages.delivery-rate` | 339 | 1.0 | 1.0 | 1 | 1.0 | 0.9 |
+
+Implementation (`may/handlers/metrics-snapshot.ts:923–931`):
+```ts
+const totalMsgs  = count("SELECT COUNT(*) FROM notification_messages WHERE sent_at > ?", now - 3600000);
+// All messages in notification_messages are delivered (they have sent_at), so rate is 1.0 if any exist
+const failedMsgs = count("SELECT COUNT(*) FROM notification_messages WHERE sent_at IS NULL");
+record("infra.messages.delivery-rate", total > 0 ? delivered/total : 1.0, total);
+```
+Direct DB check: `SELECT COUNT(*), SUM(sent_at IS NULL) FROM notification_messages` → `1415, 0`. Every row in the table has `sent_at` set; `null_sent` is 0 across the entire history, so `failedMsgs` is structurally 0 by table invariant — the inline comment even says so out loud. Same self-acknowledged tautology shape as `v2.fork-on-breach-rate` ("the structural claim is met"). The metric measures whether the messages table has any rows in the last hour — it cannot detect a delivery failure because failures aren't represented in the table; they presumably don't get inserted at all (or get deleted on retry success). Real measurement needs either a `delivery_attempts` log or a `failed_count` column on the messages row, neither of which exists.
+
+This bumps the count to **5** active metrics in the same family, and is the first instance outside the four already in the "v2 capability" cluster (it's `infra.*`, not `v2.*` / `capability.*`). The pattern generalization sharpens:
+
+> **A snapshot metric whose SQL filters on a column that is never set to the alerting value (because the writer never inserts that state) is structurally inert.** This is distinct from KE-938's original "wrong feature measured" flavor — here the feature is right, but the schema can't represent the bad state the metric is supposed to count.
+
+Two additional active metrics show the same `dv=1` shape but are likely **behaviorally pinned** rather than **structurally pinned** — different remediation:
+- `v2.self-directed-iteration-rate-24h` = 1.0/1.0/dv=1: only 3 sessions in 7 days have `source='human'` out of thousands; the metric is correctly reporting the world (almost everything is heartbeat/cron). Not broken; just at ceiling. Do *not* batch with KE-938 retire/reimpl.
+- `v2.session-trace-completeness` = 1.0/1.0/dv=1: completed-with-outcome / completed-total = 1115/1115 in 24h. Either every agent religiously sets outcome (good news) or the SQL has a denominator bug; spot-checked, looks legitimate. Behavioral ceiling, not structural.
+- `v2.runagent-callsite-conformance` = 1.0/1.0/dv=1: greps the codebase for direct sqlite imports — also a structural/codebase fact, not behavioral. Likely structurally pinned (no offending file ever existed in the scanned tree); arguably "pass-through" rather than "broken" — the spec is "is the codebase conformant?" and the answer happens to be yes. Border case; flag for the same audit but lower priority.
+
+The `dv=1, snaps>50` query is now the canonical detector for this family. Recommend the may/dev follow-up that picks up KE-938 use exactly this query as the starting work list, and apply this triage tree to each row:
+1. **Tautology** (writer never produces the alerting state) → reimplement against a real signal, or retire.
+2. **Wrong-feature** (impl measures a proxy that can't move with behavior) → reimplement against the real feature, or retire.
+3. **Structural pass-through** (codebase fact, currently happens to be the target value) → keep as a regression guard; relabel intent if the description implies behavioral measurement.
+4. **Behavioral ceiling** (impl is correct, world happens to sit at target) → leave alone; this is the metric working.
+
+The first two categories are **broken** and should be batched into one PR. Categories 3–4 are noise on the `dv=1` list but not bugs.
+
 ## Falsifiers
 - If `v2.heartbeat-decision-rate` ever records a non-zero value, the implementation has changed and this entry is stale. Verify with `SELECT DISTINCT value FROM metric_snapshots WHERE metric_id='v2.heartbeat-decision-rate'`.
 - If a sample of `agent.decision` events shows `data` containing decision-summary text (not just `{agent,status,hasDeliverables}`), the emit schema has changed and the journal-reference rate may start moving; recheck.
