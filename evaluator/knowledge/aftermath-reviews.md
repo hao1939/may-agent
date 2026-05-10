@@ -121,6 +121,10 @@
 - Symptom: the agent edits a valid file, but its own `git commit` fails (for example on an index lock or concurrent git process) and the staged change later appears inside another agent's successful commit with an unrelated subject/author.
 - Fix: inspect the landed diff and current file content first. If the artifact really shipped, keep substance credit, but downgrade hygiene because the session did not secure an isolated commit or clean closeout. Treat this as stronger than minor inefficiency when the session then relies on that unrelated commit in `finish()`.
 
+## Pattern: `git log --author` is not reliable agent attribution in the shared agents repo
+- Symptom: a review or heuristic tries to verify that agent X shipped work by checking `git log --author=<agent>-agent`, but the landed commit subject/path clearly matches agent X while the author is `may-agent` or another shared identity.
+- Fix: do not use git author alone to decide ownership or whether a deliverable shipped. Verify by touched paths, commit subject prefix, landed diff content, and the session's own read-back/finish evidence. In `/app/agents`, author identity can be dominated by shared commit plumbing, so content beats author for attribution.
+
 ## Pattern: reused shared knowledge IDs can silently overwrite established entries
 - Symptom: a research session creates `shared/knowledge/entries/KE-0xx.md` for a fresh external finding without checking whether that ID already anchors an existing canonical knowledge entry. The landed commit then replaces an established KE with unrelated content while transcript self-report still calls it a "new" KB entry.
 - Fix: before crediting a KB addition, inspect the pre-change file (`git show <commit>^:path`) and search indexes/references for that KE id. If the id was already in active use, treat the session as partial value at best: preserve any rolling digest insight, but downgrade the KB output for destructive overwrite and recommend allocating a new unique KE id.
