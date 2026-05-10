@@ -929,3 +929,26 @@ Disposition:
 - This workspace note is the intentional artifact for the artifact-gate recovery.
 - No code, shared project state, or production database state was changed.
 - Pre-existing dirty paths should remain owned by their respective agents/projects and must not be staged with this artifact.
+
+## 2026-05-10 Heartbeat: Recurring Provider-Auth First-Turn Errors
+
+Routine dev heartbeat with no approved implementation item; this entry records the concrete action from the newest runtime failure signal rather than changing infrastructure code.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty; all implementation candidates remain Proposed, so dev has no authorized queue patch to pick up.
+- Core runtime metrics are healthy for handler/session infrastructure: `handler.failed-count=0`, `handler.success-rate=1`, and `session.error-rate-6h=0.0524` at the latest snapshot.
+- The only error session in the last hour is may heartbeat recovery session `s_1778430321157_1142`; its transcript stops before any tool use with provider error `401` / `Github_copilotException - IDE token expired: unauthorized: token expired` for `claude-opus-4.6`.
+- The same provider-auth signature also appears in earlier may session `s_1778426714732_1090` and scout session `s_1778419506759_1001`, covering both `claude-opus-4.6` and `gemini-3.1-pro-preview`; this is now a recurring external GitHub Copilot credential issue, not a workflow prompt or handler code bug.
+- The current first-turn metric reflects the newest isolated recurrence: `session.first-turn-error-count-1h=1`; `session.empty-assistant-stop-count-1h=0` in the full metric snapshot, so the failure mode is explicit provider auth, not silent empty output.
+- `eval-llm-lane-restoration` remains healthy in pending-review: `eval.llm-coverage-lag-h=0.38` and `eval.llm-evals-24h=22`.
+- `finish-blocked-hygiene-reduction` remains correctly blocked because both split metric rows (`session.finish-blocked-uncommitted-count-24h`, `session.finish-blocked-unresolved-count-24h`) are still absent from `metrics`; safe runtime DB registration remains a May/human action.
+- Two scout-owned knowledge metrics lack snapshots in the last hour and three unresolved alerts remain non-dev-owned (`project.iterations-24h`, `scout.good-session-rate-24h`, `scout.operational-friction-rate-24h`).
+
+Signal dispositions:
+- `message.created` FYI for `s_1778426714732_1090`: acted by comparing it with the newest `s_1778430321157_1142` transcript and documenting the recurring provider-auth pattern.
+- New `session.end`/`session.start` artifact-gate reminders: acted by writing this focused artifact and preparing narrow staging.
+- Prior dev heartbeat artifact/session summaries: dismissed as already acted; current checks revalidated both owned projects and did not change their status.
+- Non-dev metric alerts and scout stale snapshots: dismissed for direct dev action because owners are May/Scout and no Approved work-queue item exists.
+
+Escalation trigger:
+- If `session.first-turn-error-count-1h` rises above 1, or if any additional `Github_copilotException - IDE token expired` row appears after `s_1778430321157_1142`, escalate to May/human/runtime credential owner for GitHub Copilot token refresh. Dev should not attempt credential mutation or DB writes from heartbeat.
