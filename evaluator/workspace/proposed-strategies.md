@@ -101,3 +101,42 @@ Validated the extractor fix against three recent history logs:
 - `.state/sessions/history/s_1778386911923_615/session.jsonl`
 
 Each run now emits the real session id in `source_session` (for example `s_1778387165801_622`) instead of the low-fidelity fallback `session`.
+
+---
+
+# Proposed Strategies — 2026-05-10 13:01Z
+
+## Scope
+Ran `extract-strategy.cjs` on 3 recent non-evaluator session logs:
+- `.state/sessions/history/s_1778417748673_985/session.jsonl` (arc)
+- `.state/sessions/history/s_1778417962198_988/session.jsonl` (dev)
+- `.state/sessions/history/s_1778417766211_986/session.jsonl` (dev)
+
+## Output Summary
+- Logs scanned: 3
+- Lessons extracted before fix: 2 total on the arc sample, including 1 false-positive recovery lesson
+- Lessons extracted after fix: 1 legitimate lesson total
+- Sessions with no extracted lessons after fix: 2
+
+## Lessons
+
+### 1. `extract-strategy.cjs` was overcounting successful bash chains as recovery failures
+**Evidence:** On arc session `s_1778417748673_985`, the extractor emitted a bogus recovery lesson with trigger `[main ef03a5a11] arc: KE-938 4th instance ...` even though that line came from a successful `git commit` inside a `bash` tool result that only had `isError=true` because a trailing `grep` returned exit code 1.
+
+**Strategy:**
+- Treat multi-line `bash` tool errors as mixed-status blocks, not as a single opaque failure string.
+- Use the first meaningful line as the recovery trigger and only keep it when it matches a real failure shape (`/bin/bash:`, `fatal:`, `error:`, `ENOENT`, `No such file`, `Command failed`, `timed out`).
+- Ignore trailing success text from mixed command chains so extractor output stays useful for calibration.
+
+## Calibration Notes
+- The new filter preserves the genuine failure from the same arc session (`cd: /app/may: No such file or directory`) while removing the commit-message false positive.
+- Two recent dev sessions (`s_1778417962198_988`, `s_1778417766211_986`) produced zero recovery lessons, which is expected under the current recovery-focused extractor because neither transcript exposed a matching tool-error pattern.
+
+## Recommended Follow-up
+1. If optimization-mode extraction becomes part of the periodic run, keep recovery and optimization outputs separated so low-friction sessions with many harmless tool calls do not look like incident-heavy recoveries.
+2. Consider a small regression fixture for mixed-status bash output (`successful line + Command exited with code 1`) so future extractor edits do not reintroduce this false-positive pattern.
+
+## Verification Snapshot
+- Before the fix, `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778417748673_985/session.jsonl | jq '.lessons'` returned **2** lessons, including the bogus commit-message trigger.
+- After the fix, the same command returns **1** lesson and keeps only `/bin/bash: line 1: cd: /app/may: No such file or directory`.
+- Re-running on `.state/sessions/history/s_1778417962198_988/session.jsonl` and `.state/sessions/history/s_1778417766211_986/session.jsonl` still returns empty lesson arrays.

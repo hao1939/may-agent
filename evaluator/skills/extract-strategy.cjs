@@ -91,23 +91,45 @@ async function extractStrategy({ logPath, type = 'recovery' }) {
   const lessons = [];
   
   if (type === 'recovery' || type === 'strategy') {
-      // Updated Regex logic for new format
-      const errorRegex = /\[TOOL_ERROR\] (.*?): (.*)/g;
+      // Updated Regex logic for new format.
+      // Some bash tool results are marked isError=true only because a chained command
+      // ended with code 1 even though the primary action succeeded (for example
+      // `git commit ... && grep ...`, where grep exits 1 after a successful commit).
+      // Use the first meaningful line as the trigger and only emit a recovery lesson
+      // when that line looks like an actual failure signal.
+      const errorRegex = /\[TOOL_ERROR\] (.*?): ([\s\S]*?)(?=\n\[|$)/g;
       let match;
       while ((match = errorRegex.exec(snippet)) !== null) {
           const toolName = match[1];
-          const errorMsg = match[2];
-          
+          const errorBlock = match[2].trim();
+          const firstMeaningfulLine = errorBlock
+              .split('\n')
+              .map(line => line.trim())
+              .find(Boolean) || errorBlock;
+
+          const looksLikeRealError = (
+              firstMeaningfulLine.startsWith('/bin/bash:') ||
+              firstMeaningfulLine.startsWith('bash:') ||
+              firstMeaningfulLine.startsWith('fatal:') ||
+              firstMeaningfulLine.startsWith('error:') ||
+              firstMeaningfulLine.includes('ENOENT') ||
+              firstMeaningfulLine.includes('No such file') ||
+              firstMeaningfulLine.includes('Command failed') ||
+              firstMeaningfulLine.includes('timed out')
+          );
+
+          if (!looksLikeRealError) continue;
+
           let correction = `Check tool '${toolName}' arguments or state before calling.`;
           
-          if (errorMsg.includes('ENOENT') || errorMsg.includes('No such file')) {
+          if (firstMeaningfulLine.includes('ENOENT') || firstMeaningfulLine.includes('No such file')) {
               correction = `Verify file existence with 'ls' or 'find' before reading/editing.`;
-          } else if (errorMsg.includes('Command failed') || errorMsg.includes('code 1')) {
-              correction = `Check command syntax or dependencies.`;
+          } else if (firstMeaningfulLine.includes('Command failed') || firstMeaningfulLine.includes('timed out')) {
+              correction = `Check command syntax, dependencies, or runtime budget.`;
           }
 
           lessons.push({
-              trigger: errorMsg.trim(),
+              trigger: firstMeaningfulLine,
               correction: correction,
               context: toolName,
               confidence: 0.8,
