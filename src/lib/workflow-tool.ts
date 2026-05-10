@@ -130,6 +130,22 @@ function buildStepSummaries(completedSteps: CompletedStep[]): WorkflowStepSummar
   }));
 }
 
+function durationSummary(startedAt: unknown, endedAt: unknown): string {
+  if (typeof startedAt !== "number" || typeof endedAt !== "number") return "unknown";
+  if (!Number.isFinite(startedAt) || !Number.isFinite(endedAt) || endedAt < startedAt) return "unknown";
+  return `${((endedAt - startedAt) / 1000).toFixed(1)}s`;
+}
+
+function buildStoredStepSummaries(steps: WorkflowStep[]): WorkflowStepSummary[] {
+  return steps.slice(-MAX_DETAILED_STEPS).map((step) => ({
+    agent: step.agent,
+    sessionId: step.sessionId,
+    status: step.status,
+    output: truncate(step.lastAssistantText ?? "(no output)", 2000),
+    duration: durationSummary(step.startedAt, step.endedAt),
+  }));
+}
+
 /**
  * Trim old completed steps to prevent unbounded memory growth.
  * Replaces full TaskResult with a lightweight stub for steps beyond the keep window.
@@ -535,6 +551,64 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       workflowRunId: active?.workflowRunId ?? persisted?.workflowRunId,
       projectId: active?.projectId ?? persisted?.projectId,
     };
+  };
+
+  const emitWorkflowResumeFailed = (data: {
+    workflowRunId?: string;
+    workflow?: string;
+    reason: string;
+    category: string;
+    recoverable?: boolean;
+  }): void => {
+    const event = {
+      type: "workflow.resume_failed",
+      source: "workflow-tool",
+      workflowRunId: data.workflowRunId,
+      workflow: data.workflow,
+      reason: data.reason,
+      category: data.category,
+      recoverable: data.recoverable ?? false,
+      timestamp: Date.now(),
+    } as const;
+    opts.runtimeCtx?.emit(event);
+    onEvent?.(event);
+  };
+
+  const emitWorkflowResumeSkipped = (data: {
+    workflowRunId: string;
+    workflow: string;
+    status: string;
+    reason: string;
+  }): void => {
+    const event = {
+      type: "workflow.resume_skipped",
+      source: "workflow-tool",
+      workflowRunId: data.workflowRunId,
+      workflow: data.workflow,
+      status: data.status,
+      reason: data.reason,
+      timestamp: Date.now(),
+    } as const;
+    opts.runtimeCtx?.emit(event);
+    onEvent?.(event);
+  };
+
+  const workflowResumeError = (data: {
+    workflowRunId?: string;
+    workflow?: string;
+    reason: string;
+    category: string;
+    recoverable?: boolean;
+  }): AgentToolResult<string> => {
+    emitWorkflowResumeFailed(data);
+    return textResult(JSON.stringify({
+      type: "error",
+      workflow: data.workflow,
+      workflowRunId: data.workflowRunId,
+      error: data.reason,
+      reason: data.reason,
+      category: data.category,
+    }, null, 2));
   };
 
   let activeSteeringQueue: string[] | null = null;
@@ -1165,17 +1239,35 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
 
         case "resume": {
           if (!params.workflowRunId) {
-            return textResult(JSON.stringify({ type: "error", error: "action 'resume' requires 'workflowRunId'" }));
+            return workflowResumeError({
+              reason: "action 'resume' requires 'workflowRunId'",
+              category: "invalid_request",
+            });
           }
           if (!persistDir) {
-            return textResult(JSON.stringify({ type: "error", error: "workflow resume requires persistDir" }));
+            return workflowResumeError({
+              workflowRunId: params.workflowRunId,
+              reason: "workflow resume requires persistDir",
+              category: "invalid_request",
+            });
           }
 
           const prevRunRecord = getWorkflowRun(persistDir, params.workflowRunId);
           if (!prevRunRecord) {
-            return textResult(
-              JSON.stringify({ type: "error", error: `Workflow run "${params.workflowRunId}" not found` }),
-            );
+            return workflowResumeError({
+              workflowRunId: params.workflowRunId,
+              reason: `Workflow run "${params.workflowRunId}" not found`,
+              category: "not_found",
+            });
+          }
+
+          if (!prevRunRecord.workflow || !prevRunRecord.task || typeof prevRunRecord.depth !== "number") {
+            return workflowResumeError({
+              workflowRunId: params.workflowRunId,
+              workflow: prevRunRecord.workflow,
+              reason: `Workflow run "${params.workflowRunId}" has incomplete persisted state`,
+              category: "corrupt_state",
+            });
           }
 
           // Reconstruct WorkflowRun with steps from sessions table
@@ -1203,13 +1295,53 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             })),
           };
 
+          if (prevRun.status === "done") {
+            emitWorkflowResumeSkipped({
+              workflowRunId: prevRun.runId,
+              workflow: prevRun.workflow,
+              status: prevRun.status,
+              reason: "workflow already reached terminal status",
+            });
+            const result: WorkflowToolResult = {
+              type: "done",
+              workflow: prevRun.workflow,
+              workflowRunId: prevRun.runId,
+              summary: prevRunRecord.result_summary ?? "workflow already done",
+              steps: buildStoredStepSummaries(prevRun.steps),
+            };
+            return textResult(JSON.stringify(result, null, 2));
+          }
+
+          if (prevRun.status === "escalated") {
+            emitWorkflowResumeSkipped({
+              workflowRunId: prevRun.runId,
+              workflow: prevRun.workflow,
+              status: prevRun.status,
+              reason: "workflow already reached terminal status",
+            });
+            const result: WorkflowToolResult = {
+              type: "escalated",
+              workflow: prevRun.workflow,
+              workflowRunId: prevRun.runId,
+              reason: prevRunRecord.result_reason ?? "workflow already escalated",
+              steps: buildStoredStepSummaries(prevRun.steps),
+            };
+            return textResult(JSON.stringify(result, null, 2));
+          }
+
           const { workflow: resumeWf, error: resumeFindError } = await findWorkflow(
             workflowDir,
             prevRun.workflow,
             sharedWorkflowDir,
           );
           if (!resumeWf) {
-            return textResult(JSON.stringify({ type: "error", workflow: prevRun.workflow, error: resumeFindError }));
+            return workflowResumeError({
+              workflowRunId: prevRun.runId,
+              workflow: prevRun.workflow,
+              reason: resumeFindError ?? `Workflow "${prevRun.workflow}" not found`,
+              category: "workflow_definition_missing",
+              recoverable: true,
+            });
           }
 
           return runOrResume(

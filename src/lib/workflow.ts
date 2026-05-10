@@ -10,7 +10,9 @@ export type WorkflowEvent =
   | { type: "step_start"; step: string; sessionId?: string }
   | { type: "step_done"; step: string; sessionId?: string; result: TaskResult }
   | { type: "workflow_done"; summary: string }
-  | { type: "workflow_escalate"; reason: string };
+  | { type: "workflow_escalate"; reason: string }
+  | { type: "workflow.resume_failed"; source: string; workflowRunId?: string; workflow?: string; reason: string; category: string; recoverable: boolean; timestamp: number }
+  | { type: "workflow.resume_skipped"; source: string; workflowRunId: string; workflow: string; status: string; reason: string; timestamp: number };
 
 // ── Guard Events (workflow-level) ──────────────────────────────────────
 
@@ -265,7 +267,7 @@ export type WorkflowToolResult =
       completedSteps: CompletedStep[];
       steeringMessage: string;
     }
-  | { type: "error"; workflow: string; error: string }
+  | { type: "error"; workflow?: string; workflowRunId?: string; error: string; reason?: string; category?: string }
   | { type: "list"; workflows: Array<{ name: string; description: string }> };
 
 /** Compact summary of a workflow step — included in the tool result so the supervisor
