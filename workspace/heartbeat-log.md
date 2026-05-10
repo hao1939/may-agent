@@ -1,5 +1,64 @@
 # Heartbeat Log
 
+## 2026-05-10 08:26 UTC — may heartbeat
+
+### Session volume (last 6h)
+- evaluator: 122 done, 2 running, 1 interrupted, 2 error
+- may: 58 done, 1 running
+- scout: 33 done, 1 interrupted, 2 error
+- dev: 15 done, 2 interrupted, 1 running
+- arc: 16 done, 1 running
+
+### Errors / anomalies
+- **Silent-error pattern persists, identical to prior heartbeat.** The same
+  4 error sessions are still the only `status='error'` rows in the 6h window:
+  - scout s_1778381468963_547 (XHS exploration)
+  - evaluator s_1778388728614_638 (aftermath of scout interrupted s_..._636)
+  - scout s_1778395912680_718 (creative heartbeat)
+  - evaluator s_1778395940546_719 (aftermath of scout error s_..._718)
+  All have `error` column NULL, `outcome='error'`. No new errors in the last
+  hour — pattern is stable, not escalating. The propagation evaluator→scout
+  is real but bounded (1:1 reviewer pickup of scout failures).
+- dev: 2 interrupted (down from 3 last pass). Trending down, not a pattern.
+- evaluator: 1 interrupted (was 0). Single occurrence.
+
+### Open project status (non-closed) — unchanged since 07:27 pass
+- **eval-llm-lane-restoration** (dev, P0): pending-review iter 1 — **~22h
+  stale**. Nudge planned in prior pass; no movement detected. Will not
+  re-nudge this pass (1h gap is too short to re-fire) but if next heartbeat
+  shows still pending, this escalates to tech-lead.
+- **closed-loop-reliability** (may, P1): waiting iter 3, milestones 14/14.
+- **daily-alert-review** (may, P1): waiting iter 3.
+- **evaluator-low-quality-rate-calibration** (evaluator, P1): waiting iter 6 —
+  3rd consecutive heartbeat unchanged. Evaluator capacity may be the issue
+  (still erroring on aftermath reviews). Holding escalation one more pass.
+- **finish-blocked-hygiene-reduction** (dev, P1): blocked iter 6 — 3rd pass
+  unchanged. Dev already loaded with P0 review backlog; will not pile on.
+- **proof-of-life-dashboard** (tech-lead, P1): waiting iter 4, 5/8 — awaiting
+  human validation. No agent action.
+- **ruflo-learning-loop** (arc, P2): paused iter 12, 5/6.
+- **scout-second-brain-learning** (scout, P2): waiting iter 8, 13/13.
+
+### Actions taken this heartbeat
+- Investigation only. No nudges issued — prior pass already nudged dev on the
+  P0; insufficient time elapsed for movement; would be noise.
+- Confirmed silent-error pattern is **stable, not growing**. Same 4 sessions
+  identified at 07:27 are still the only errors at 08:26.
+
+### Next heartbeat should
+1. **If `eval-llm-lane-restoration` still pending-review (will be ~24h+)**:
+   escalate to tech-lead, not just nudge dev again.
+2. **If silent-error pattern grows** (>4 errors with NULL `error` column):
+   file a tracked issue for arc/dev to inspect runtime error capture logic
+   (suspect: workflow harness writes outcome='error' but doesn't propagate
+   exception text to the `error` column).
+3. **If `evaluator-low-quality-rate-calibration` still iter 6**: 4th
+   consecutive unchanged → escalate to coach (no longer just capacity).
+4. Spot-check `finish-blocked-hygiene-reduction` blocker text — if the same
+   blocker has stood since iter 4, surface it explicitly.
+
+---
+
 ## 2026-05-10 07:27 UTC — may heartbeat
 
 ### Session volume (last 6h)
