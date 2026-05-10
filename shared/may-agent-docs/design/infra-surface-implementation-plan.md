@@ -316,12 +316,16 @@ Minimum slice:
 - [x] Web UI steering sends daemon event frames through the control client,
 - [x] CLI send uses the control client package,
 - [x] add the convention daemon socket path helper,
+- [x] separated adapters use `DAEMON_INSTANCE` / `DAEMON_AGENT` to target the
+  daemon convention path without socket discovery,
+- [x] Web UI runs as a dedicated `may-agent-web` binary instead of a Bun source
+  process with a fake `INSTANCE=web`,
 - [x] fail clearly when the convention socket cannot be connected in operator
   emit mode,
 - [x] retry only as a recovery step, not as discovery, for operator emit mode,
 - [x] provide one small script or command for `emit event` so operators do not
   need ad hoc `docker exec bun -e ...`,
-- [ ] migrate Web UI and CLI send to the convention path instead of
+- [x] migrate Web UI and CLI send to the convention path instead of
   scanning/ranking candidates,
 - [ ] verify `trigger.metrics-snapshot` can be emitted from the normal host
   command path and from inside the container,
@@ -333,10 +337,14 @@ Validation:
 - [x] Unit tests for protocol ack, status, subscription filter, invalid frame handling.
 - [x] Legacy unit tests cover the old daemon-vs-job ranking helper.
 - [x] Unit test for convention-path send success and connection failure.
-- [ ] Integration/smoke test for `trigger.metrics-snapshot` through the normal
-  control client.
-- [ ] Web UI, Telegram, and CLI use the same control client package rather than
+- [x] Container integration/smoke test for `trigger.metrics-snapshot` through
+  the normal control client.
+- [ ] Host-to-container smoke test for `trigger.metrics-snapshot` through the
+  normal control client.
+- [x] Web UI and CLI use the same control client package rather than
   custom socket logic.
+- [ ] Telegram uses the same event-normalized control path for steering instead
+  of daemon internals.
 
 ## Recommended First Slice
 
@@ -361,12 +369,12 @@ Phase 9a should be intentionally small:
 
 1. Add a convention-path helper in `packages/control/src/client.ts`, for example:
    `daemonSocketPath(persistDir, instance, interfaceAgent)`.
-2. Make Web UI, CLI send, and operator commands use that path directly.
-3. On connection failure, return a clear error and trigger/log recovery. Do not
+2. [x] Make Web UI, CLI send, and operator commands use that path directly.
+3. [x] On connection failure, return a clear error and trigger/log recovery. Do not
    scan for another socket.
-4. Keep one bounded retry after recovery when the caller is an operator command.
+4. [x] Keep one bounded retry after recovery when the caller is an operator command.
    UI requests can fail fast with a visible error.
-5. Add a tiny operator command for `emit event`, backed by the same control
+5. [x] Add a tiny operator command for `emit event`, backed by the same control
    client.
 6. Smoke-test `trigger.metrics-snapshot` from the host path and from inside the
    container.

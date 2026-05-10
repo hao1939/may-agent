@@ -34,7 +34,7 @@ bun src/app/may.ts --agent bob --task "check your periodic tasks"
 | `--telegram` | Enable Telegram bot for notifications |
 | `--status` | Print system dashboard and exit (agent quality, process health, trends) |
 | `--status --notify` | Print dashboard and also send it to Telegram |
-| `--send <agent> --message "msg"` | Send a message to an agent and exit |
+| `--send <agent> --message "msg"` | Send a message through the running daemon and exit |
 
 At least one of `--chat`, `--cron`, `--task`, `--oneshot`, `--status`, `--message`, or `--emit` is required.
 
@@ -206,6 +206,12 @@ See [sessions.md](../sessions.md) for details.
 Control a running instance via Unix socket:
 
 ```bash
+# Convention path:
+# .state/instances/<DAEMON_INSTANCE>/<DAEMON_AGENT>.sock
+#
+# Defaults are DAEMON_INSTANCE=$INSTANCE or default, and DAEMON_AGENT=$AGENT or
+# may. Docker/background runtime usually uses DAEMON_INSTANCE=background.
+
 # Watch events
 socat - UNIX-CONNECT:.state/instances/default/may.sock
 
@@ -220,6 +226,12 @@ echo '{"type":"status"}' | socat - UNIX-CONNECT:.state/instances/default/may.soc
 
 # Emit a daemon event through the convention socket path
 may-agent --emit trigger.metrics-snapshot '{}'
+
+# Emit to the background container/runtime instance
+DAEMON_INSTANCE=background may-agent --emit trigger.metrics-snapshot '{}'
+
+# Send a chat-style delegation through the running daemon
+DAEMON_INSTANCE=background may-agent --send scout --message "review your active project"
 
 # From a source checkout
 bun src/app/may.ts --emit trigger.metrics-snapshot '{}'

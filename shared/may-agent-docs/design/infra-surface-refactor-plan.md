@@ -1,6 +1,7 @@
 # Infra Surface Refactor Plan
 
-**Status**: Reviewed plan. Next executable slice is Phase 1a.
+**Status**: In progress. Phase 1a and Phase 1b are shipped for the container
+runtime; host-to-container socket behavior remains an ops follow-up.
 
 This plan pushes [infra-surface.md](infra-surface.md) from accepted direction to
 boring runtime behavior. It is not a rewrite plan. Each slice should remove one
@@ -65,23 +66,30 @@ Stop criteria:
 
 ### Phase 1b: Adapter Caller Migration
 
+Status: implemented and verified in the container runtime.
+
 Scope:
 
-- Make Web UI steering use the convention path directly.
-- Make CLI send use the convention path directly.
-- UI requests fail fast with a visible error when the convention socket cannot
+- [x] Make Web UI steering use the convention path directly.
+- [x] Make CLI send use the convention path directly.
+- [x] UI requests fail fast with a visible error when the convention socket cannot
   connect.
-- Keep legacy socket ranking only as compatibility code until callers are
+- [x] Let separated adapters target the daemon with `DAEMON_INSTANCE` /
+  `DAEMON_AGENT`; Web UI runs as a dedicated `may-agent-web` binary and does
+  not need a fake `INSTANCE=web` identity.
+- [x] Keep legacy socket ranking only as compatibility code until callers are
   migrated; do not use it as the normal path.
+- [x] Remove the misleading CLI claim that failed socket sends are still tracked
+  in the DB.
 
 Validation:
 
-- Web UI steering request returns a transport ack or clear failure.
-- CLI send returns a transport ack or clear failure.
+- [x] Web UI steering request returns a transport ack or clear failure.
+- [x] CLI send returns a transport ack or clear failure.
 
 Stop criteria:
 
-- No caller in Web UI or CLI uses socket scanning/ranking for normal daemon
+- [x] No caller in Web UI or CLI uses socket scanning/ranking for normal daemon
   control.
 
 ## Phase 2: Adapter Event Normalization
