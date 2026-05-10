@@ -403,3 +403,18 @@ Warning: failed-session-triage-rate at 0.67 (target 1.0). DB 1178MB within thres
 - **System**: All agents active in 6h window. Error rates normal. No alerts.
 - **Blocked project**: `finish-blocked-hygiene-reduction` (dev, P1) blocked 6h+ on metric registration. Nudged dev to unblock.
 - **Inbox**: Aftermath triage messages, alert#280 trending toward resolution — no action needed.
+
+---
+
+## 2026-05-10T23:34 UTC
+
+### System Health
+- Active sessions: 4 running | Success rate: 70% | Error rate: 7.6%
+- DB size: 1184 MB | Handler p95: 230s
+
+### FAILING Metrics
+- First-turn provider errors: 6 (threshold 1)
+- Reviewed good sessions overturned: 28% (target 5%)
+- Heartbeat decision coverage: 0%
+
+### Status: Nominal (no urgent action needed)
