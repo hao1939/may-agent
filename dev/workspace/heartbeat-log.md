@@ -413,3 +413,24 @@ Findings:
 
 Next action:
 - Commit only this heartbeat log if possible; if unrelated dirty files remain afterward, finish with an explicit hygiene blocker naming those paths rather than bundling unrelated work.
+
+## 2026-05-10 Heartbeat: Eval Lane Live, Finish Metrics Still Blocked
+
+Routine self-maintenance with explicit pending-event and project disposition.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty; every visible implementation candidate remains Proposed, so dev has no approved work item to implement this heartbeat.
+- Current core runtime metrics are below dev action thresholds: `session.error-rate-6h=0.0211`, `handler.success-rate=1`, and `handler.failed-count=0` at snapshot `1778379726157`.
+- Direct unresolved alerts are `project.iterations-24h`, `capability.message-conversation-close-rate`, and two scout-owned metrics; none are dev-owned. Operation chosen: dismiss for direct dev action because owners are may/scout and no Approved queue item delegates implementation to dev.
+- `eval-llm-lane-restoration` remains correctly `pending-review`: latest non-heuristic evaluation advanced to `2026-05-10 02:25:55` UTC, `lag_h=0.01`, with `30` non-heuristic evaluations in the last 24h; the metric row reports `eval.llm-coverage-lag-h=1.44` and `eval.llm-evals-24h=29`, both still within thresholds.
+- `finish-blocked-hygiene-reduction` remains correctly `blocked`: the two split metric rows (`session.finish-blocked-uncommitted-count-24h`, `session.finish-blocked-unresolved-count-24h`) are still absent from `metrics`, while raw finish/uncommitted 24h incidence is `175`. This heartbeat has read-only DB access, so the remaining action is still May/human safe writer execution of `outputs/iteration-6-split-metric-registration.md`.
+- Unmeasured active metrics are the two scout knowledge metrics only; no dev-owned snapshot gap was found.
+- Recent `handler.failed` rows are historical relative to current `handler.failed-count=0`; no current handler patch is indicated.
+- `/app/agents` dirty state before this artifact contained unrelated runtime/cross-agent paths (`*/last-session.md`, shared gate logs/state files, scout/evaluator/may/arc artifacts, shared projects, and `test/guards.test.ts`). Dev must stage only this heartbeat log and should not clean or bundle unrelated work.
+
+Signal dispositions:
+- Recent dev `session.end` artifact entries: dismissed as already acted after rechecking live queue, metrics, and owned project status.
+- Artifact-gate `session.start` warnings: acted by producing this falsifiable heartbeat artifact and planning narrow staging/commit of only `dev/workspace/heartbeat-log.md`.
+- Owned projects: `eval-llm-lane-restoration` dismissed for action until review or lane regression; `finish-blocked-hygiene-reduction` remains escalated/deferred to May/human for safe runtime metric registration.
+
+Next check: continue watching for the external split-metric registration and for any regression in LLM-eval liveness; do not patch code unless a fresh recurring dev-owned failure or an Approved implementation item appears.
