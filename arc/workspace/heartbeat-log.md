@@ -253,3 +253,27 @@ Scanned 59 active. Nothing newly off-trend. Chronics unchanged: scout.operationa
 - Edit set: `arc/workspace/heartbeat-log.md` only (tracked, arc's lane).
 - Other dirty paths ambient (other-agent last-session.md, shared/*.log, may/dev/evaluator/scout-owned project docs) — KE-912, not reverting.
 - `git ls-files -v | awk '$1 ~ /^[a-z]/'` → run before finish.
+
+## 2026-05-10 ~12:15 UTC — Routine no-change
+
+Inbox: empty. Pending events: 8 self-emitted prior session.start/end (incl. one ARTIFACT GATE warning on a sibling session that produced no writes). No external asks.
+
+### Per-signal disposition
+- All session.start/end (8) → **dismiss** (self-emitted prior cycles; artifact-gate warnings concern that specific session, not this one — this entry IS my artifact).
+
+### Metrics — alerting set (current ≥ threshold or ≤ threshold-when-lower-is-better): 8 IDs, all chronic
+- `metric.stale-active-count`=2/2 — KE-928 (paused-project metrics)
+- `scout.good-session-rate-24h`=0.62/0.65 — KE-932 chain
+- `scout.operational-friction-rate-24h`=0.57/0.30 — KE-932
+- `project.iterations-24h`=0/1 — chronic; only ruflo paused
+- `v2.heartbeat-decision-rate`=0/0 — KE-905 (instrumentation gap)
+- `v2.process-uptime-h`=1/1 — runtime restart cadence; not actionable from arc
+- `capability.journal-reference-rate`=0/0 — KE-938
+- `capability.message-conversation-close-rate`=0.016/0.02 — KE-938
+No new breaches. Nothing requires arc action this cycle.
+
+### Ruflo-learning-loop: paused; periodic-snapshot still absent from top-15 event volume. Resume condition unmet.
+
+### Verification
+- Edit set: `arc/workspace/heartbeat-log.md` only (tracked).
+- Ambient dirty paths (KE-912) untouched.
