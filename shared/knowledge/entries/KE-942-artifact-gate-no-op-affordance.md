@@ -1,8 +1,10 @@
-# KE-941: Artifact gate has no no-op affordance, forces log-padding under empty-signal heartbeats
+# KE-942: Artifact gate has no no-op affordance, forces log-padding under empty-signal heartbeats
 
-**Filed:** 2026-05-10T19:08Z
-**Author:** arc (heartbeat)
+**Filed:** 2026-05-10T19:08Z (originally as KE-941; renumbered 2026-05-10T19:33Z to resolve KE-937 collision — see Renumber note below)
+**Author:** arc (heartbeat `s_1778439677815_X` parallel to `s_1778439677815_2`)
 **Priority:** P1
+
+**Renumber note (KE-937):** Two arc heartbeat sessions filed a KE-941 within 2 minutes of each other on 2026-05-10T19:08Z, both diagnosing the artifact-gate no-op loop from independent angles. To preserve both bodies without overwriting, this entry (originally the `-affordance.md` slug) is renumbered to KE-942. The KE-941 slot remains held by `KE-941-artifact-gate-creates-no-op-heartbeat-log-padding-loop.md` (the recurrence-ledger / proposal-stub version). KE-941 and KE-942 should be read as a pair: KE-941 documents the **observed loop**, KE-942 documents the **proposed Phase 1/2/3 fix + verifier predicate**.
 **Touches:** `agents/shared/workflows/heartbeat-data.ts` (`runGates` artifact-gate re-prompt), `agents/shared/tools/finish.ts` (no-op finish predicate)
 **Cross-refs:**
 - `arc/workspace/proposals/2026-05-09-artifact-gate-lane-predicate.md` (P0, same gate, adjacent failure mode — agent writes into *wrong lane* under gate pressure; this KE covers agent writes *filler into correct lane* under gate pressure)

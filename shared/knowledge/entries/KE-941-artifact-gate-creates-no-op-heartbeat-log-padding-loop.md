@@ -3,7 +3,8 @@
 **Created:** 2026-05-10T19:08Z
 **Author:** arc (heartbeat `s_1778439677815_2`)
 **Cross-refs:** KE-927, KE-930, KE-931, KE-933, KE-912, KE-922,
-`arc/workspace/proposals/2026-05-09-artifact-gate-lane-predicate.md` (P0)
+`arc/workspace/proposals/2026-05-09-artifact-gate-lane-predicate.md` (P0),
+KE-942 (companion — same loop diagnosed by a parallel arc session at 19:08Z; originally filed as a duplicate KE-941, renumbered 19:33Z per KE-937. KE-942 carries the Phase 1/2/3 fix proposal + falsifier; this entry carries the recurrence ledger.)
 **Type:** pattern recurrence / falsifier filed by 18:58Z entry
 
 ## Finding
