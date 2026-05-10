@@ -1,6 +1,6 @@
 # Infra Surface Refactor Plan
 
-**Status**: Draft for review.
+**Status**: Reviewed plan. Next executable slice is Phase 1a.
 
 This plan pushes [infra-surface.md](infra-surface.md) from accepted direction to
 boring runtime behavior. It is not a rewrite plan. Each slice should remove one
@@ -34,18 +34,15 @@ obvious socket path.
 Why first: without a reliable control path, every later metric, alert, workflow,
 and UI validation requires ad hoc commands.
 
+### Phase 1a: Helper And Operator Command
+
 Scope:
 
 - Add a convention helper:
   `daemonSocketPath(persistDir, instance, interfaceAgent)`.
-- Make Web UI steering use the convention path directly.
-- Make CLI send use the convention path directly.
 - Add a tiny operator command for `emit event`.
 - On connection failure, return a clear error and emit/log recovery evidence.
-- Allow one bounded retry after recovery for operator commands; UI requests fail
-  fast with a visible error.
-- Keep legacy socket ranking only as compatibility code until callers are
-  migrated; do not use it as the normal path.
+- Allow one bounded retry after recovery for operator commands.
 
 Validation:
 
@@ -53,13 +50,31 @@ Validation:
 - Unit test send success and connection failure.
 - Host smoke: emit `trigger.metrics-snapshot`.
 - Container smoke: emit `trigger.metrics-snapshot`.
+
+Stop criteria:
+
+- An operator can trigger metrics snapshot without ad hoc `docker exec bun -e`.
+
+### Phase 1b: Adapter Caller Migration
+
+Scope:
+
+- Make Web UI steering use the convention path directly.
+- Make CLI send use the convention path directly.
+- UI requests fail fast with a visible error when the convention socket cannot
+  connect.
+- Keep legacy socket ranking only as compatibility code until callers are
+  migrated; do not use it as the normal path.
+
+Validation:
+
 - Web UI steering request returns a transport ack or clear failure.
+- CLI send returns a transport ack or clear failure.
 
 Stop criteria:
 
 - No caller in Web UI or CLI uses socket scanning/ranking for normal daemon
   control.
-- An operator can trigger metrics snapshot without ad hoc `docker exec bun -e`.
 
 ## Phase 2: Adapter Event Normalization
 
@@ -80,6 +95,9 @@ Scope:
   then shared command/project handlers perform the action.
 - Keep Telegram in the daemon process for now. The goal is a thin adapter, not a
   new process boundary.
+- Keep the existing Telegram reply path available behind a feature flag or
+  fallback until the event-normalized path passes project-reply and
+  session-reply smoke tests.
 
 Validation:
 
@@ -101,6 +119,9 @@ Goal: handlers are bridges. Judgment and repair live in workflows.
 
 Reference: [handler-surface-audit.md](handler-surface-audit.md).
 
+First migration: `metric-alert-reactor`. It is the most self-contained
+judgment/action bridge and its loop trace value is immediately visible.
+
 Scope:
 
 - Keep direct handlers for mechanical work:
@@ -117,11 +138,14 @@ Scope:
 - Prefer `createWorkflowHandler` for new handler bridges.
 - Avoid raw `sdk.runAgent(...)` in handlers unless the handler is itself the
   compatibility bridge being retired.
+- As handlers migrate, preserve or add shared execution-result mapping and trace
+  vocabulary at the touched call sites. Do not leave that as a later retrofit.
 
 Validation:
 
 - Each migrated handler records skip reason or workflow run id.
 - Loop trace shows: event -> handler -> workflow -> session/evidence.
+- Execution-result view can show the migrated workflow/session status.
 - Existing handler tests stay green.
 
 Stop criteria:
@@ -157,24 +181,14 @@ Stop criteria:
 - New judgment/action code does not call `getDb()` directly.
 - `getDb()` remains in mechanical infra code and explicit compatibility paths.
 
-## Phase 5: Explicit Agent Bridge
+## Phase 5: Resume Diagnostics And Recovery Symmetry
 
-Goal: `runAgent`, `runWorkflow`, `resumeSession`, and `resumeWorkflow` share one
-mental model and trace vocabulary.
+Goal: `resumeSession` and `resumeWorkflow` share one diagnostic mental model.
+Execution-result shape and basic trace vocabulary should already be improved as
+handlers are migrated in Phase 3.
 
 Scope:
 
-- Centralize the shape of execution options:
-  - source,
-  - parent session,
-  - workflow run,
-  - project id,
-  - request id,
-  - timeout/recovery hints.
-- Keep `runAgent` and `runWorkflow` semantically parallel:
-  - both create traceable execution,
-  - both return evidence,
-  - both map to a shared execution result view.
 - Make resume APIs diagnostic first:
   - already terminal,
   - resumed,
@@ -182,10 +196,13 @@ Scope:
   - missing state,
   - unsafe replay,
   - blocked by guard.
+- Preserve original session/workflow lineage.
+- Emit recovery/resume failure events with owner/fallback context.
+- Surface whether the next action is resume, requeue, recover mechanically, or
+  escalate.
 
 Validation:
 
-- Execution-result tests cover session and workflow result lookup.
 - Resume failure emits queryable events with reason and owner/fallback.
 - UI/API can show where to inspect the resumed or failed trace.
 
@@ -219,6 +236,9 @@ Stop criteria:
 ## Phase 7: Workflow Library Consolidation
 
 Goal: reduce duplicated orchestration patterns after the boundaries are stable.
+
+Start condition: begin only after Phase 3 stop criteria are met and at least two
+judgment handlers are workflow-backed with runtime loop-trace evidence.
 
 Scope:
 
@@ -264,11 +284,9 @@ make the loop observable and operable.
 - Do not add more health metrics until existing metrics are actionable and owned.
 - Do not consolidate workflow variants before real boundaries are stable.
 
-## Review Questions
+## Remaining Review Questions
 
-- Is Phase 1 small enough to finish and verify in one pass?
 - Does any phase introduce a new concept where an existing event/workflow/query
   surface would do?
-- Which handler migration should be first after the control surface: alert
-  reactor, closed-loop steward, or project nudge?
+- Is Phase 1a small enough to finish and verify in one pass?
 - What runtime proof should be required before marking each phase complete?
