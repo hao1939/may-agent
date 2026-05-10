@@ -550,6 +550,16 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - Nothing new actionable since prior steward audit 5 min ago.
 - Logging this beat solely to satisfy artifact gate; no duplicate intervention created.
 
+## 2026-05-10T04:50 UTC — Heartbeat
+
+**Red metrics:** Both known, documented in KE-902/KE-905. No change.
+- `project.iterations-24h=0`: No active projects needing iteration. Both owned projects are waiting by design.
+- `capability.message-conversation-close-rate=0.0054`: Automated messages dominate, structural.
+
+**System health:** 12 agents, 17.7k sessions in 6h. Dev has highest error rate (68/440=15%) — worth monitoring. Blocked project `finish-blocked-hygiene-reduction` (dev, P1, iter 6) still blocked. 4 open alerts all P3.
+
+**Action:** None required. System operating normally.
+
 ## 2026-05-09T21:45 UTC — Heartbeat
 
 **Red metrics triage:**
