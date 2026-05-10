@@ -24,6 +24,10 @@
 - Symptom: a session updates a workspace file such as `workspace/digest/today.md`, but by review time the current file contents no longer match the session because a later run replaced the rolling digest.
 - Fix: verify the session's contribution from the landed commit/diff for that session, not only from the current workspace file state. Treat current file drift as expected for rolling artifacts and judge output quality from the committed change plus any read-back captured during the session.
 
+## Pattern: shell-appended digest updates can accidentally commit truncation
+- Symptom: a session intends to append one digest entry, but the landed commit shows large deletions in the rolling digest because the agent used shell append/redirection, skipped an immediate read-back of the digest, then force-added the ignored workspace path.
+- Fix: for digest/workspace artifacts, compare the session commit against the parent blob and check whether the change is truly append-only. If the diff shows broad deletions, treat it as a real output-quality problem even when the session also produced a valid new knowledge entry. Encourage agents to read the exact final digest before any `git add -f`.
+
 ## Pattern: analysis artifacts can go stale if they skip live DB verification
 - Symptom: a session produces a useful calibration/report artifact, but it relies only on file reads and repeats outdated status claims (`retired`, old coverage values) that runtime DB queries would have corrected.
 - Fix: when an artifact makes claims about metric status or current values, verify those claims against `metrics` and, if timing matters, `metric_snapshots` before crediting the analysis as fully accurate. Keep the strategic value if rankings/mappings still hold, but note the stale-status root cause.
