@@ -830,3 +830,16 @@ Signal dispositions:
 - Recent provider-auth aftermath messages for scout/may sessions: acted by recognizing the recurring infrastructure symptom, but no in-repo patch is available because credentials/runtime token refresh is external.
 - Repeated artifact-gate/session lifecycle signals: acted by producing this falsifiable heartbeat artifact and by planning narrow staging only.
 - Non-dev open alerts and scout stale metric snapshots: dismissed for direct dev action due to ownership and lack of Approved work-queue item; monitor for an explicit request.
+
+## 2026-05-10 Artifact Gate Recovery Follow-up (2026-05-10 13:30 UTC)
+
+This entry is the required artifact for the current artifact-gate recovery. The session's concrete finding is repository hygiene: the dev-owned heartbeat artifact can be written and committed independently, but the agents worktree already contains unrelated runtime/project churn that dev should not stage.
+
+Pre-write dirty-path classification from `/app/agents`:
+- Intentional deliverable: `dev/workspace/heartbeat-log.md` (this appended recovery/finding note).
+- Generated runtime state, unrelated to this session: `arc/last-session.md`, `dev/last-session.md`, `evaluator/last-session.md`, `may/last-session.md`, `scout/last-session.md`.
+- Scout-owned workspace file, unrelated to this session: `scout/workspace/fetch_hn.py`.
+- Shared runtime/gate logs, unrelated to this session: `shared/anti-shallow-gate-triggers.log`, `shared/circuit-breaker-state.json`, `shared/duration-gate-triggers.log`, `shared/exp720-fewshot-dryrun.log`, `shared/gate-outcomes.log`.
+- Shared project documents, unrelated to this session and unsafe for dev to stage: `shared/projects/daily-alert-review/discussion.md`, `shared/projects/daily-alert-review/journal.md`, `shared/projects/daily-alert-review/project.md`, `shared/projects/ruflo-learning-loop/project.md`, `shared/projects/v2-spec-coverage-buildout/journal.md`.
+
+Disposition: stage and commit only `dev/workspace/heartbeat-log.md`; if the final status remains dirty, report the unrelated paths as a worktree hygiene blocker instead of committing other agents' work.
