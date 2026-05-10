@@ -21,3 +21,8 @@ This metric measures whether agents close message conversations (send reply-to-r
 
 ## Blocked Project: finish-blocked-hygiene-reduction
 Dev completed iteration 6 but is blocked on registering two new metrics (`session.finish-blocked-uncommitted-count-24h`, `session.finish-blocked-unresolved-count-24h`). The SQL statements are ready in `outputs/iteration-6-split-metric-registration.md` but no agent has runtime DB write access. Escalating to human.
+
+## 2026-05-09 03:16Z
+- **Red metrics**: project.iterations-24h=0 (structural, KE-905), message-conversation-close-rate=0 (capability gap). Both documented, no action.
+- **System health**: 333 sessions/6h, 4 errors (eval:1, scout:2, arc:1). All agents active.
+- **Projects**: daily-alert-review + closed-loop-reliability both waiting (correct state).
