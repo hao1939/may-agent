@@ -13,3 +13,7 @@
 
 ## No-change heartbeat partials
 - When a heartbeat ends `partial` with no write/edit calls, no commit, and unchanged project state, treat it as limited-value maintenance even if the agent behaved correctly and documented the blocker well. Routing hints like `project artifact` or `workflow-linked session` are not material output by themselves; confirm an actual landed diff, artifact write, or escalation before calling it a real success.
+
+## Metric-triage completeness
+- A repeated-alert session is not complete just because one prior KE explains part of the situation. For aftermath review, require separate live evidence for each red metric named in the task. If a schema-guessing query fails and the session never retries against the real table/columns, treat any claim that the alert was "triaged" as incomplete.
+- When routing labels suggest "project artifact" or "knowledge update," verify attribution from actual files: check session IDs in `last-session.md`, current diffs, or committed artifacts before crediting nearby modified files to the reviewed session.
