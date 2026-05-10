@@ -287,8 +287,10 @@ Current state:
   agent, even though the legacy filename still includes the interface agent.
 - Web UI steering and CLI send already use the control client package.
 - The server removes stale socket files when it can prove no process owns them.
-- Client discovery ranks instance sockets from `.state/instances`, but still
-  needs an async liveness-checked API that connects before returning a path.
+- Clients should use the convention daemon socket path:
+  `<persistDir>/instances/<instance>/<interfaceAgent>.sock`.
+- If that socket cannot be connected, fail clearly and trigger/log recovery. Do
+  not scan/rank other candidates as a normal path.
 - Telegram is still attached inside the daemon process. Treat that as acceptable
   until the control client is reliable; do not split the process first.
 
@@ -590,7 +592,7 @@ and a few reliability seams:
 - make Agent Bridge explicit,
 - add a safe SDK query facade,
 - keep adapters thin through socket events,
-- make control client endpoint discovery prove liveness,
+- make control clients use the convention daemon socket path and fail clearly,
 - move special behavior into workflows/patterns,
 - treat `getDb()` as an escape hatch over time.
 
@@ -606,7 +608,7 @@ Keep this incremental.
 6. Move any heartbeat/project-specific daemon branches into workflow patterns.
 7. Make new judgment/action handlers event-to-workflow bridges by default.
 8. Add tests for surface behavior: socket event normalization, SDK query bounds, metric owner resolution, and event-to-workflow dispatch.
-9. Finish liveness-checked socket discovery before adding more adapter features.
+9. Finish convention-path socket control before adding more adapter features.
 
 ## Implementation Checklist
 
@@ -623,7 +625,7 @@ Keep this incremental.
 7. Add a shared execution-result view for session/workflow run/resume results.
 8. Audit existing handlers: keep mechanical handlers direct; move
    judgment/action handlers toward workflow dispatch.
-9. Add liveness-checked control client discovery and migrate Web UI/CLI callers.
+9. Add a convention-path control client helper and migrate Web UI/CLI callers.
 10. Add a small operator event-emission command and smoke-test
     `trigger.metrics-snapshot` through it.
 

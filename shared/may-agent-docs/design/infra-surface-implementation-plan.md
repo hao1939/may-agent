@@ -3,7 +3,7 @@
 **Status**: Phase 1, Phase 2 first slice, Phase 3 guard observability, Phase 4
 first slice, Phase 5 resume diagnostics, Phase 7 first slice, and Phase 8 first
 slice implemented. Phase 9 is partially implemented; the next move is the
-liveness-checked control client slice.
+convention-path control client slice.
 
 This plan turns [infra-surface.md](infra-surface.md) into small implementation
 slices. The goal is not a broad rewrite. Each phase should improve the system
@@ -297,8 +297,9 @@ Status: partially implemented.
 
 Problem: the socket is intended to be the universal interface for CLI, Web UI,
 Telegram, tests, and manual operations, but host/container endpoint discovery is
-still fragile. Manual triggering currently works reliably inside the container,
-while host-side socket lookup can find a stale or unreachable path.
+still too clever. Manual triggering works best when the caller knows the daemon
+socket path. Host-side socket lookup can find a stale or wrong candidate, which
+adds failure modes instead of removing them.
 
 Target invariant:
 
@@ -314,9 +315,10 @@ Minimum slice:
 - [x] ack daemon events before async dispatch,
 - [x] Web UI steering sends daemon event frames through the control client,
 - [x] CLI send uses the control client package,
-- [ ] make control client endpoint discovery prove liveness by connecting before
-  returning a socket path,
-- [ ] remove or ignore stale socket candidates,
+- [ ] use the convention daemon socket path instead of scanning/ranking
+  candidates,
+- [ ] fail clearly when the convention socket cannot be connected,
+- [ ] retry only as a recovery step, not as discovery,
 - [ ] provide one small script or command for `emit event` so operators do not
   need ad hoc `docker exec bun -e ...`,
 - [ ] verify `trigger.metrics-snapshot` can be emitted from the normal host
@@ -327,8 +329,8 @@ Minimum slice:
 Validation:
 
 - [x] Unit tests for protocol ack, status, subscription filter, invalid frame handling.
-- [x] Unit tests for daemon-vs-job socket ranking.
-- [ ] Unit test for stale but unreachable socket candidate fallback.
+- [x] Legacy unit tests cover the old daemon-vs-job ranking helper.
+- [ ] Unit test for convention-path send success and connection failure.
 - [ ] Integration/smoke test for `trigger.metrics-snapshot` through the normal
   control client.
 - [ ] Web UI, Telegram, and CLI use the same control client package rather than
@@ -350,20 +352,21 @@ This gives immediate value and keeps the change set small.
 ## Recommended Next Slice
 
 Finish Phase 9a before adding more agent behavior. The loop is observable, but
-manual and adapter-triggered events still depend on finding the live daemon
-socket correctly.
+manual and adapter-triggered events should use one obvious daemon socket path
+instead of heuristic discovery.
 
 Phase 9a should be intentionally small:
 
-1. Add an async liveness-checked discovery API in `packages/control/src/client.ts`
-   that tries ranked socket candidates and returns the first one that accepts a
-   connection.
-2. Keep the existing sync `findDaemonSocket` as a compatibility/ranking helper
-   unless all callers can migrate cleanly in one pass.
-3. Move Web UI and CLI send to the liveness-checked API.
-4. Add a tiny operator command for `emit event`, backed by the same control
+1. Add a convention-path helper in `packages/control/src/client.ts`, for example:
+   `daemonSocketPath(persistDir, instance, interfaceAgent)`.
+2. Make Web UI, CLI send, and operator commands use that path directly.
+3. On connection failure, return a clear error and trigger/log recovery. Do not
+   scan for another socket.
+4. Keep one bounded retry after recovery when the caller is an operator command.
+   UI requests can fail fast with a visible error.
+5. Add a tiny operator command for `emit event`, backed by the same control
    client.
-5. Smoke-test `trigger.metrics-snapshot` from the host path and from inside the
+6. Smoke-test `trigger.metrics-snapshot` from the host path and from inside the
    container.
 
 After Phase 9a, use the control surface to validate later slices quickly:
