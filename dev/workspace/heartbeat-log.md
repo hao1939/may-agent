@@ -794,3 +794,19 @@ Signal dispositions:
 - Recent `session.end` artifact-gate recovery entries: dismissed as duplicates already handled by this artifact and prior committed recovery entries.
 - Earlier routine session-end summaries about empty queue / no code docs: acted by rechecking queue, metrics, alerts, owned projects, and dirty state before this commit.
 - Non-dev active alerts: dismissed for direct dev action because ownership is may/scout/capability and there is no Approved work-queue item; continue monitoring.
+
+
+## 2026-05-10 Artifact Gate Compliance Write (2026-05-10 12:59:55 UTC)
+
+This entry is the required durable artifact for the current artifact-gate interruption. It records repository hygiene rather than changing infrastructure code.
+
+Pre-write git status classification from `/app/agents`:
+- Intentional dev deliverable for this session: `dev/workspace/heartbeat-log.md` (this appended note).
+- Generated agent runtime state, unrelated to this session: `arc/last-session.md`, `dev/last-session.md`, `evaluator/last-session.md`, `may/last-session.md`, `scout/last-session.md`.
+- Scout-owned workspace work, unrelated to this session: `scout/workspace/fetch_hn.py`.
+- Shared runtime/gate logs, unrelated to this session: `shared/anti-shallow-gate-triggers.log`, `shared/circuit-breaker-state.json`, `shared/duration-gate-triggers.log`, `shared/exp720-fewshot-dryrun.log`, `shared/gate-outcomes.log`.
+- Shared project documents, unrelated to this session and not safe for dev to stage: `shared/projects/daily-alert-review/discussion.md`, `shared/projects/daily-alert-review/journal.md`, `shared/projects/daily-alert-review/project.md`, `shared/projects/ruflo-learning-loop/project.md`, `shared/projects/v2-spec-coverage-buildout/journal.md`.
+
+Disposition:
+- Stage only `dev/workspace/heartbeat-log.md` for this heartbeat artifact.
+- Leave unrelated dirty paths untouched for their owning agents/projects; if the final status remains dirty after committing this file, report that as the hygiene blocker rather than staging unrelated work.
