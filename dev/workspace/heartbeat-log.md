@@ -1141,3 +1141,17 @@ Signal dispositions:
 - Older handler failures: dismissed for immediate patching because current-window evidence shows no recurrence and top-level metrics remain inside thresholds; monitor next heartbeat for a fresh cluster.
 - Owned blocked/pending-review projects: held at their current statuses with fresh validation evidence.
 - Dirty worktree state: unrelated runtime, docs, project, and workflow paths remain outside this deliverable; stage only `dev/workspace/heartbeat-log.md`.
+
+## 2026-05-10 Artifact Gate Recovery and Schema Reminder
+
+Administrative heartbeat artifact written after the artifact gate reported the session had produced no file writes.
+
+Evidence checked:
+- `/app/agents` worktree already had substantial unrelated dirty state before this artifact, including generated `*/last-session.md` files, gate logs, shared documentation/project edits, and untracked `shared/workflows/closed-loop-steward.ts`.
+- `agents/shared/work-queue.md` still has an empty Approved section, so there is no approved dev implementation item to pick up during this recovery turn.
+- My first metric queries repeated a known schema footgun by asking for non-existent `metrics.value` and `metric_alerts.current_value`; the tool returned schemas showing the correct columns are `metrics.current` and no current/status fields on `metric_alerts`.
+
+Disposition:
+- No production code or database state was changed.
+- This entry is the intentional dev workspace artifact for the heartbeat recovery.
+- The unrelated dirty worktree paths should be left for their owners; dev should stage only this heartbeat log if committing this recovery artifact.
