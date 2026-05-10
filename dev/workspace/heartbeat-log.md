@@ -775,3 +775,22 @@ Signal dispositions:
 - Artifact gate: acted by appending this durable workspace finding.
 - Schema mismatch: recorded as a reminder to use `PRAGMA table_info(...)` or tool-provided schema before non-canned runtime DB queries.
 - Unrelated dirty paths: leave untouched; stage only this heartbeat log if committing.
+
+## 2026-05-10 Heartbeat: Event Triage and Live Lane Cross-check
+
+Routine dev heartbeat with no approved implementation item, but with explicit disposition for the pending artifact-gate/session lifecycle signals.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty; all visible implementation candidates remain Proposed, so dev has no approved queue item to implement.
+- Core system health is not dev-blocking: `session.error-rate-6h=0.0231`, `handler.success-rate=1`, `handler.failed-count=0`, and recent `handler.failed` rows are historical relative to the current green 6h handler metric.
+- Unresolved metric alerts are `project.iterations-24h` (may), `capability.message-conversation-close-rate` (not dev), and two scout-owned alerts; none are dev-owned. Manual operation: dismiss for direct dev action / monitor for approved implementation request.
+- `finish-blocked-hygiene-reduction` remains correctly blocked: the required split metric rows `session.finish-blocked-uncommitted-count-24h` and `session.finish-blocked-unresolved-count-24h` are still absent from the metrics query result, so dev still lacks a safe read-write path to unblock it.
+- `eval-llm-lane-restoration` remains pending-review and live: direct DB validation found latest non-heuristic evaluation at `2026-05-10 12:55:54` UTC with `lag_h=0.01` and `lifetime_non_heuristic=1916`, even though the last metric snapshot still reported `eval.llm-coverage-lag-h=3.38`; next snapshot should reconcile downward.
+- Finish/uncommitted hygiene raw 24h signature is now led by `workflow:scout-explore=27` and `workflow:scout-heartbeat=15`, with zero rows in the last hour; no new dev patch is indicated while the project is blocked only on metric registration.
+- Git status before this artifact showed many unrelated/ambient dirty paths across other agents and shared runtime/project files; this heartbeat will stage only this dev log and leave unrelated paths untouched.
+
+Signal dispositions:
+- Recent `session.start` artifact-gate warnings: acted by writing this substantive heartbeat artifact with falsifiable live checks.
+- Recent `session.end` artifact-gate recovery entries: dismissed as duplicates already handled by this artifact and prior committed recovery entries.
+- Earlier routine session-end summaries about empty queue / no code docs: acted by rechecking queue, metrics, alerts, owned projects, and dirty state before this commit.
+- Non-dev active alerts: dismissed for direct dev action because ownership is may/scout/capability and there is no Approved work-queue item; continue monitoring.
