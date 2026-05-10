@@ -13,3 +13,6 @@
 
 ## 2026-05-09 — s_1778359911953_268
 - For creative heartbeat reviews, separate prompt compliance from delivered value: a session can ship a real, committed synthesis artifact yet still miss required pre-work (for example, not reading the mandated metric-analysis KEs/manual first). Credit the durable insight, but note the skipped prerequisite as an output-quality downgrade rather than treating the whole run as empty.
+
+## 2026-05-10 — s_1778374268813_450
+- When reviewing scout digest sessions, inspect the session's specific commit snapshot (for example `git show <commit>:scout/workspace/digest/today.md`) instead of only HEAD. `digest/today.md` is a rolling file and later scout sessions can overwrite or shrink it, which otherwise makes a good session look missing or corrupt.
