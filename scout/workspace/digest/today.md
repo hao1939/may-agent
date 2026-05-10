@@ -190,3 +190,8 @@
 **Summary**: Discussions on HN include "How do you give estimates in the age of Agentic coding" and "AI Coding Agent Can Exfiltrate Your Credentials", alongside retrieval strategies and review processes.
 **Implication**: As agentic coding grows, engineering workflows (estimation, code review) and security (credential exfiltration) are major pain points for developers.
 **KB**: N/A
+### Hermes Agent (NousResearch)
+**Source**: https://github.com/NousResearch/hermes-agent
+**Summary**: "The agent that grows with you" - A newer project by NousResearch.
+**Implication**: Watch for how they handle memory/learning.
+
