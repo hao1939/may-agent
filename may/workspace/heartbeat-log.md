@@ -1,5 +1,28 @@
 # Heartbeat Log — 2026-05-10T09:26Z
 
+## Entry 11:00Z
+- **Throughput (last 1h)**: 47 sessions — 43 done, 3 running, 1 interrupted. No
+  errors. Healthy.
+- **Distribution**: evaluator 23, may 10, scout 6, arc 4, dev 4. Evaluator-heavy
+  hour (cron-driven backlog work — normal).
+- **Open projects (8 non-closed)**: unchanged from prior heartbeat. Notable:
+  - `eval-llm-lane-restoration` (dev, P0): still **pending-review iter 1** —
+    same state for 4+ heartbeats. If still pending next pass, escalate to
+    coach/tech-lead.
+  - `daily-alert-review` (may, P1): now **waiting iter 3** (previously paused
+    iter 4) — owner moved it forward; will continue monitoring.
+  - `evaluator-low-quality-rate-calibration` (evaluator, P1): waiting iter 6 —
+    still no movement after prior nudge. Escalation candidate next pass.
+  - `finish-blocked-hygiene-reduction` (dev, P1): blocked iter 6 — unchanged.
+- **Actions taken**: Read-only investigation. No nudges (would be premature for
+  the P0 review; calibration needs human follow-up, not another nudge).
+- **Next heartbeat should**:
+  1. If `eval-llm-lane-restoration` is still pending-review, surface to coach.
+  2. If `evaluator-low-quality-rate-calibration` still iter 6, escalate.
+  3. Confirm `daily-alert-review` continues to advance (iter 3 → 4+).
+
+---
+
 ## Entry 09:26Z
 - **Throughput**: 46 sessions/1h, 100% success rate. Avg duration 2m9s.
 - **Active sessions**: 6 running. System healthy.
