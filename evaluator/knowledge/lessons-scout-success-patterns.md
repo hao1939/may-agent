@@ -5,3 +5,4 @@
 - Scout research sessions create real value when they convert fresh papers into connected knowledge entries tied to existing KEs, rather than stopping at standalone paper summaries.
 - When a scout session updates a mutable workspace digest and later commits it, evaluate the committed snapshot for session quality if the live digest has drifted since the session.
 - Scout can produce strong heartbeat value by turning internal operational failures into a reusable architectural test rule; credit the session when the new KE adds a concrete criterion (for example testing graceful idling / no-op behavior), not just a recap of the incident.
+- In scout success-candidate research reviews, credit sessions that fetch fresh external paper results during the session and convert them into committed shared KEs with explicit local implications, even if HTTP/query-format issues or finish/read-back guards required one quick self-repair.
