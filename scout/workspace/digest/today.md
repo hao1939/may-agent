@@ -23,3 +23,15 @@
 **Summary**: Introduces an evaluation framework to extract and verify inline citations from LLM-generated reports at scale, checking link accessibility, relevance, and factual consistency. Findings show that while frontier models maintain high link validity, factual accuracy drops significantly as retrieval depth increases.
 **Implication**: Highlights the importance of robust source verification in research agents, a critical consideration for maintaining high-quality outputs when summarizing multiple sources.
 **KB**: KE-002 (new)
+
+### Agent Pull Requests Review Strategies
+**Source**: https://github.blog/ai-and-ml/generative-ai/agent-pull-requests-are-everywhere-heres-how-to-review-them/
+**Summary**: GitHub blog post discussing how the rise of AI agents submitting pull requests is changing code review practices. It likely covers strategies for validating agentic code, catching subtle errors, and updating review workflows to handle machine-generated PRs efficiently.
+**Implication**: As our agents generate code or even PRs (in the future or directly into repositories), we need strong guardrails and explicit "evidence first" review practices built into the agents themselves, so human reviewers have context.
+**KB**: None (new finding)
+
+### Benchmarking AI agent retrieval strategies on Kubernetes bug fixes
+**Source**: https://www.cncf.io/blog/2026/05/08/benchmarking-ai-agent-retrieval-strategies-on-kubernetes-bug-fixes/
+**Summary**: CNCF blog analyzing different retrieval strategies for AI agents specifically when applied to fixing bugs in large, complex codebases like Kubernetes.
+**Implication**: Retrieval quality is a bottleneck for agent coding. Our agents could benefit from studying and potentially implementing advanced retrieval patterns (like specialized indexing or graph-based retrieval) if we tackle larger repos.
+**KB**: None (new finding)
