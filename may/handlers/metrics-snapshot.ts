@@ -85,7 +85,7 @@ const ALL_METRICS: MetricDef[] = [
   { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", type: "gauge", target: 15, threshold: 8, unit: "count", alert_op: "<", priority: "P1" },
   { id: "guard.triggered-count-24h", name: "Guard triggers (24h)", owner: "may", type: "gauge", target: 0, threshold: 20, unit: "count", alert_op: ">", priority: "P2" },
   { id: "guard.warned-count-24h", name: "Guard warnings (24h)", owner: "may", type: "gauge", target: 0, threshold: 20, unit: "count", alert_op: ">", priority: "P2" },
-  { id: "guard.blocked-count-24h", name: "Guard blocks (24h)", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
+  { id: "guard.blocked-count-1h", name: "Guard blocks (1h)", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
   { id: "guard.repeat-trigger-count-24h", name: "Repeated guard triggers (24h)", owner: "may", type: "gauge", target: 0, threshold: 5, unit: "count", alert_op: ">", priority: "P2" },
   // Project
@@ -142,6 +142,7 @@ const RETIRED_METRIC_IDS = [
   "capability.process-uptime-h",
   "capability.concurrent-session-max-1h",
   "session.zero-op-error-count-1h",
+  "guard.blocked-count-24h",
 ];
 
 /** Snapshot retention: keep 30 days of history */
@@ -521,7 +522,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       );
       const guardBlocked = count(
         "SELECT COUNT(*) as c FROM events WHERE event_type = 'guard.triggered' AND timestamp > ? AND json_extract(data, '$.demandType') = 'block'",
-        twentyFourH,
+        oneH,
       );
       const guardRepeated = count(
         "SELECT COUNT(*) as c FROM events WHERE event_type = 'guard.triggered' AND timestamp > ? AND json_extract(data, '$.action') = 'skipped_duplicate'",
@@ -529,7 +530,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       );
       record("guard.triggered-count-24h", guardTriggered);
       record("guard.warned-count-24h", guardWarned);
-      record("guard.blocked-count-24h", guardBlocked);
+      record("guard.blocked-count-1h", guardBlocked);
       record("guard.repeat-trigger-count-24h", guardRepeated);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring guard trigger metrics: ${e}`); }
 

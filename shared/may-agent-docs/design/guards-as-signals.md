@@ -96,7 +96,7 @@ Start small:
 
 - `guard.triggered-count-24h`
 - `guard.warned-count-24h`
-- `guard.blocked-count-24h`
+- `guard.blocked-count-1h`
 - `guard.repeat-trigger-count-24h`
 
 Later metrics can be added only when necessary, for example
@@ -116,4 +116,3 @@ Most guard triggers should feed later review:
 This keeps guards aligned with the event/metric model: a guard trigger is a
 signal; agents/evaluator/May judge; metrics track trend; workflows repair the
 process when evidence justifies it.
-
