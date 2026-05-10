@@ -289,3 +289,67 @@ multiple agents, suggesting a shared workflow harness path.
 4. Re-check `finish-blocked-hygiene-reduction` and
    `evaluator-low-quality-rate-calibration` — both still need owner-side action;
    no further nudge unless still static next pass.
+
+---
+
+## 2026-05-10 22:08 UTC — may heartbeat
+
+### Session volume (last 6h, sessions table)
+- evaluator: 147 done, 2 error, 2 interrupted, 2 running
+- may:        60 done, 1 error, 3 interrupted, 1 running
+- scout:     31 done, 3 error, 1 interrupted
+- dev:       21 done, 0 error, 3 interrupted
+- arc:       23 done, 0 error, 1 running
+- master:     2 done, 1 interrupted
+- (bob/coach/optimizer/tech-lead/amy: no sessions in window — these are batch/triggered agents, not anomalous)
+
+Done/error ratio is healthy. No agent is in error-spike. Scout's 3 errors and
+evaluator's 2 errors are within normal background.
+
+### Silent-error spot check
+The 6 error sessions in the window all have `error=NULL`. Pattern is
+consistent with the previous heartbeat finding:
+- 3× opCount=0, sub-2s (eval-llm-scan _101 at 1.0s; may-heartbeat _1142 at
+  0.4s; — both pre-LLM aborts).
+- 3× opCount>0, 10–92s (scout-explore, scout-heartbeat, eval-llm-scan _0 at
+  91s) — genuine fetch/operational failures with the harness still failing
+  to populate the `error` column.
+
+No change in shape vs the 09:57 heartbeat → the silent-error observability
+gap is reproducible and stable. **Recommendation stands**: file a tracked
+request against the workflow harness (owner: dev or tech-lead) to populate
+`sessions.error` on workflow-side aborts. Not filing this heartbeat — will
+escalate next pass if still untouched and if I haven't seen a dev/tech-lead
+session pick it up organically.
+
+### Active-projects state (no churn since 09:57)
+- `eval-llm-lane-restoration` (dev, P0, pending-review): updated_at
+  2026-05-09 10:28 → ~36h static. **Reviewer ping is now overdue.** Will
+  add a nudge next heartbeat if untouched (kept read-only this pass since
+  upstream tooling churn could land any moment).
+- `evaluator-low-quality-rate-calibration` (evaluator, P1, waiting,
+  iteration 6): updated_at 2026-05-09 10:26 — also static ~36h.
+- `daily-alert-review` (may, P1, waiting, iter 3): updated_at 2026-05-10
+  01:01 — touched ~21h ago, still iter 3. Confirms prior heartbeat note
+  that iter went 4→3 was a misread; canonical value is 3.
+- `closed-loop-reliability` (may, P1, waiting): milestones 14/14 done,
+  status still `waiting`. Likely just needs an owner-side close; not
+  urgent.
+- `finish-blocked-hygiene-reduction` (dev, P1, blocked): updated_at
+  2026-05-10 14:59 — touched ~7h ago, so dev *is* poking at it; leave it.
+- `proof-of-life-dashboard` (tech-lead, P1, waiting, 5/8): static ~36h,
+  awaiting human validation per prior heartbeat.
+
+### Actions taken this heartbeat
+- Read-only DB review. No nudges, no project-file edits, no new tracked
+  requests filed.
+
+### Next heartbeat should
+1. **File the silent-error tracked request** (owner: dev or tech-lead)
+   if the opCount=0/sub-2s pattern still appears in the next 6h window.
+   Provide example sessionIds: `s_1778450304512_101`,
+   `s_1778430321157_1142` (this window) plus prior batch from 09:57 entry.
+2. **Nudge `eval-llm-lane-restoration` reviewer** — has now been static
+   ~36h in pending-review. Past the 30h soft threshold I set last pass.
+3. Check whether `closed-loop-reliability` (14/14 milestones, still
+   waiting) just needs an owner close — possibly nudge may (self).
