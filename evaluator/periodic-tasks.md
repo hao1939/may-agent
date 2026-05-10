@@ -569,3 +569,15 @@ Ran `monitor-session.cjs --running`: 3 checked, 1 healthy, 2 `PROTOCOL_VIOLATION
 Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). State unchanged from prior runs; no repeat escalation sent this cycle.
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
+
+**Last run**: 2026-05-10 07:31Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778398209678`; `MAX(sessions.startedAt)=1778398268360`; `MAX(sessions.endedAt)=1778398305173`; lag ≈58.7s vs `startedAt`, and latest `endedAt` is ≈95.5s newer than latest evaluation because a just-finished session has not yet been evaluated; `evals_last24h=659`; `llm_evals_last24h=30`; `sessions_last24h=1374`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table; legacy `.state/evaluations/` top-level files remain stale at the filesystem layer (latest visible files still Apr 20/29), so continue treating that directory as a legacy output-path signal rather than the canonical liveness source.
+
+Event-schema note: `events` still uses `event_type` and `timestamp`; status totals remain backlog/noise, but raw 1h activity is fresh (`handler.started`=71, `handler.completed`=71, `session.start`=38, `session.end`=38, `evaluation.routed`=22), so event status counts remain non-canonical for liveness.
+
+Inbox triage on the surfaced aftermath targets found completed workspace artifacts already present for `s_1778397712349_738`, `s_1778396768624_733`, and `s_1778396149388_723`. The newest target `s_1778397988659_746` does not yet have a workspace aftermath markdown file, but it already has an active evaluator review session (`s_1778398209687_747`) plus fresh `evaluation.routed` / `session.start` rows, so treat it as in-flight rather than a dropped aftermath item.
+
+Ran `monitor-session.cjs --running`: 3 checked, 2 healthy, 1 `PROTOCOL_VIOLATION` alert — dev session `s_1778397965039_745` (missing P114 Experience Replay; recommended action: warn). Escalated the external dev anomaly to May.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
