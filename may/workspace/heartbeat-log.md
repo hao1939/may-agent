@@ -1,3 +1,13 @@
+# Heartbeat Log — 2026-05-10T03:25Z
+
+## Entry 03:25Z
+- **Throughput**: 45 sessions/1h, 93% success rate. System healthy.
+- **New alerts**: Scout good-session-rate 0.37 (target 0.85), scout operational friction 0.79 (target 0.1). Both persistent — scout quality needs structural attention.
+- **DB size**: 1138MB, approaching halfway to 2GB threshold.
+- **No new errors or blockers.** ✓
+
+---
+
 # Heartbeat Log — 2026-05-10T02:56Z
 
 ## Previous Entry (02:25Z)
