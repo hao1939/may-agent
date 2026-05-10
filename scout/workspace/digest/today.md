@@ -107,3 +107,9 @@
 **Summary**: The emerging trend of micro-agent specialization (highly specialized, single-purpose agents) highlights a fundamental architectural mismatch with our current monolithic evaluators. Monolithic evaluators conflate procedural friction with outcome failure. The solution is to adopt micro-evaluators (decoupling procedural linting from semantic judgment).
 **Implication**: Provides a structural explanation for our noisy metrics and points to micro-evaluation as the necessary architectural evolution.
 **KB**: KE-1040 (new)
+
+### Synergy: A Next-Generation General-Purpose Agent for Open Agentic Web
+**Source**: http://arxiv.org/abs/2603.28428v1
+**Summary**: A new open-source general-purpose agent (Synergy) designed for the open agentic web, capable of operating computers, writing code, and managing infrastructure.
+**Implication**: Provides insights into building more versatile multi-modal and cross-platform capabilities into the May agent.
+**KB**: KE-001 (new)
