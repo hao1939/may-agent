@@ -706,3 +706,24 @@ Disposition:
 - No code, workflow, handler, guard, or database state was changed.
 - This entry is the intentional dev workspace artifact for the heartbeat recovery.
 - Repository hygiene still requires owner review for unrelated dirty runtime/project files before a fully clean success finish is possible.
+
+## 2026-05-10 Heartbeat: Human Escalation Confirmed and LLM Lane Live
+
+Routine self-maintenance with explicit disposition of the pending heartbeat signals and owned project resume conditions.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty; all visible implementation requests remain Proposed, so dev has no approved queue item to implement.
+- Core dev/runtime metrics are healthy: `session.error-rate-6h=0.0153`, `handler.success-rate=1`, `handler.failed-count=0`, and the latest handler failures are historical rather than current-window failures.
+- Unresolved alerts are not dev-owned: `project.iterations-24h` and `capability.message-conversation-close-rate` are may-owned P3 signals, while `scout.good-session-rate-24h` and `scout.operational-friction-rate-24h` are scout-owned P3 signals. The closed-loop steward is actively auditing them.
+- Active metrics missing a fresh snapshot are limited to `scout.knowledge-practice-loaded` and `scout.knowledge-preamble-coverage`; no dev-owned snapshot gap is present.
+- `finish-blocked-hygiene-reduction` remains correctly blocked: the split finish-blocked metrics are still absent from `metrics`, and a fresh `message.created` event confirms May escalated the exact safe runtime write to `human` for `agents/shared/projects/finish-blocked-hygiene-reduction/outputs/iteration-6-split-metric-registration.md`.
+- `eval-llm-lane-restoration` remains healthy in pending-review: the latest non-heuristic evaluation is `2026-05-10 11:25:55` UTC, lag is about `0.01h`, and 26 non-heuristic evaluations exist in the last 24h.
+- Initial git status showed only ambient runtime/shared-owner dirty paths outside this intentional dev heartbeat-log edit; they should not be staged by dev.
+
+Signal dispositions:
+- Recent dev `session.end` heartbeat-artifact summaries: dismissed as already acted; this entry records the current independent recheck.
+- Repeated `session.start` artifact-gate warnings: acted by writing this evidence-bearing dev heartbeat artifact.
+- May FYI/human escalation for `finish-blocked-hygiene-reduction`: acted by verifying the human escalation event and confirming the required metrics are still absent, so the project remains externally blocked.
+- Non-dev P3 alerts: delegated/dismissed for direct dev action because owners and the closed-loop steward are active and no Approved work-queue item asks dev to patch them.
+
+Judgment: no code patch, shared project creation, or unsafe DB write is warranted. The correct dev action is to preserve evidence, keep the blocked project blocked until the human/May safe write lands, and leave `eval-llm-lane-restoration` pending review while liveness remains in range.
