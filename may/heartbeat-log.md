@@ -1,6 +1,14 @@
 # May Heartbeat Log — Latest
 
-**Timestamp:** 2026-07-10 ~current
+**Timestamp:** 2026-07-10 21:34 UTC
+
+## Heartbeat Status Check
+- System: 94% success rate (33/35 last hour)
+- DB size: 1180MB (under 2000MB threshold)
+- Unrecovered breaches: 8/10 threshold — monitor
+- Handler p95: 225s (over 120s target, under 600s threshold)
+- 1 blocked project >6h
+- All health checks: PASS
 
 ## Red Metric Triage
 
