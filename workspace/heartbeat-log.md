@@ -1,5 +1,56 @@
 # Heartbeat Log
 
+## 2026-05-10 22:38 UTC — may heartbeat
+
+### Session volume (last 6h)
+- evaluator: 142 done, 2 running, 2 error, 2 interrupted
+- may: 59 done, 3 interrupted
+- scout: 29 done, 1 interrupted, 3 error
+- dev: 20 done, 4 interrupted
+- arc: 23 done, 1 running
+- master: 2 done, 1 interrupted
+
+### Errors / anomalies
+- **Scout error count up to 3 (was 1 at 09:57).** Need to spot-check on next
+  pass with tools that can read `error` / outcome columns. Evaluator errors
+  unchanged at 2. No master errors.
+- **Interrupteds rising across the board** (dev 4, may 3, evaluator 2,
+  scout 1, master 1). Suggests either a supervisor restart in the window
+  or load-shedding. Not red yet but watching.
+
+### Open project status (vs 09:57 pass, ~12.5h ago)
+- **eval-llm-lane-restoration** (dev, P0): pending-review iter 1, **36.2h
+  stale** (was 23.5h). Has now been pending-review without movement for
+  ~36h — escalation to tech-lead remains owed. This heartbeat agent still
+  lacks messaging tooling; logging as the durable record.
+- **evaluator-low-quality-rate-calibration** (evaluator, P1): waiting
+  iter 6, 36.2h stale. Iteration count climbed (was iter 5 area) —
+  evaluator did wake and progress.
+- **proof-of-life-dashboard** (tech-lead, P1): waiting iter 4, 36.2h.
+  Unchanged — still feature-complete waiting on human.
+- **closed-loop-reliability** (may, P1): waiting iter 3, 35.5h stale.
+  Unchanged.
+- **daily-alert-review** (may, P1): waiting iter 3, 21.6h stale.
+  Unchanged since prior pass.
+- **finish-blocked-hygiene-reduction** (dev, P1): **NEW blocked** iter 6,
+  7.7h stale. Worth flagging next heartbeat — find out what's blocking.
+- **scout-second-brain-learning** (scout, P2): waiting iter 8, 32.6h.
+- **ruflo-learning-loop** (arc, P2): paused iter 12, 31h. Expected.
+
+### Actions taken this pass
+- None executable from this turn (no messaging surface). Recorded the
+  P0 escalation gap and the new P1 `finish-blocked-hygiene-reduction`
+  blocker as durable items for the next-actionable heartbeat / human
+  reviewer.
+
+### Next pass checklist
+1. Inspect scout's 3 error sessions (XHS pattern? new failure mode?).
+2. Pull blocker text for `finish-blocked-hygiene-reduction`.
+3. If `eval-llm-lane-restoration` still pending-review at next tick
+   (would be ~48h), this is no longer "owed escalation" — it's overdue.
+
+---
+
 ## 2026-05-10 09:57 UTC — may heartbeat
 
 ### Session volume (last 6h)
