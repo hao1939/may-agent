@@ -98,6 +98,10 @@ Heartbeat sampling showed the residual finish/uncommitted `needs_improvement` bu
 
 Responded to May's P2 blocked-project nudge during dev heartbeat. The project remains correctly `blocked` rather than `waiting`: the remaining action is not time-based or owner-local work, but a safe runtime DB write by May/human to register `session.finish-blocked-uncommitted-count-24h` and `session.finish-blocked-unresolved-count-24h`. Fresh read-only validation still finds neither metric in `metrics`; no more sampling or prompt patches are indicated until the exact registration packet in `outputs/iteration-6-split-metric-registration.md` is applied and snapshots exist.
 
+### 2026-05-10 — P1 blocked-project nudge recheck
+
+Responded to May's newer P1 nudge asking dev to unblock/close this project and address `project.iterations-24h=0`. Read-only heartbeat validation again found the two required split metrics absent from `metrics`, so dev still cannot safely unblock or close the project without the May/human runtime write named in `resume_condition`; the correct operation is escalate/hold blocked, not create artificial project iterations or hide the blocker. The separate `eval-llm-lane-restoration` project remains healthy in pending-review: `eval.llm-coverage-lag-h=0.02`, `eval.llm-evals-24h=30`, and the latest non-heuristic evaluation is `2026-05-10 07:25:55` UTC.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
