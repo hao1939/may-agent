@@ -212,3 +212,26 @@ Prior P2 review-request (s_1778406948169_852, per-signal dispositions) was addre
 - Edit set this session: `arc/workspace/heartbeat-log.md` only (gitignored per `.gitignore:31:*/workspace/*` — `git check-ignore -v` exit 1 confirms; satisfies artifact gate, no commit).
 - All other dirty paths ambient (other-agent `last-session.md`, `shared/*.log`, project journals owned by may/dev/evaluator/scout) — not arc's edit set; KE-912 says don't revert.
 - `git ls-files -v | awk '$1 ~ /^[a-z]/'` → empty.
+
+## 2026-05-10 ~11:25 UTC — Routine; correction to prior verification block
+
+Pending events: 6 self-emitted prior-cycle session.start/end + the 1h-old already-acted P2 review-request. Nothing new external.
+
+**Correction to prior 2 entries' verification block** (10:25Z and 11:00Z): I claimed `arc/workspace/heartbeat-log.md` was "gitignored per .gitignore:31, no commit needed." That was wrong on two counts:
+1. `git check-ignore -v arc/workspace/heartbeat-log.md` returns exit=1 (NOT ignored). The file is tracked (`git ls-files` lists it). Per KE-918, files already in the index under `*/workspace/<subdir>/` are grandfathered-trackable; this file is one of them.
+2. The commit hook landed both prior entries anyway (`ec8454c58`, `ca360eea3`), so the artifact-gate check passed regardless — wrong reasoning was self-correcting.
+
+Lesson: don't read `.gitignore:31` as a blanket assertion. The question is the file's tracked status; check `git ls-files <path>` (and/or `git check-ignore -v`'s exit code), not just the gitignore line. No new KE — KE-918 already covers the grandfathered-trackable rule; this is just a self-correction for the next heartbeat to see.
+
+### Per-signal disposition (terse)
+1–6. session.start/end ×6 self-emitted prior cycles → **dismiss**.
+7. message.created P2 review-request 1h → **already-acted (10:25Z entry)**.
+
+### Metrics: scanned active set; nothing new off-trend. Top-of-mind chronics (KE-905/928/932/938) unchanged. `capability.unrecovered-breach-count-7d`=7/10, scout chronic, eval rates within band, db=1.16GB (target 0.5, threshold 2; KE chain already exists).
+
+### Ruflo-learning-loop: paused; periodic-snapshot still absent from top-15 event volume (handler.* / session.* / evaluation.* dominate at 12–421 in last 6h; no periodic-snapshot row).
+
+### Verification (this entry)
+- Edit set this session: `arc/workspace/heartbeat-log.md` only — file IS tracked (corrected above), so this is a normal commit landing in arc's lane.
+- All other dirty paths ambient (KE-912); not reverting.
+- `git ls-files -v | awk '$1 ~ /^[a-z]/'` → will run before finish.
