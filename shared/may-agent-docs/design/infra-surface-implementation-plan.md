@@ -177,6 +177,8 @@ Validation:
 
 ## Phase 6: Handler Audit
 
+Status: first audit slice documented in [handler-surface-audit.md](handler-surface-audit.md).
+
 Classify existing handlers:
 
 | Handler type | Keep direct? | Reason |
@@ -195,9 +197,10 @@ Do not migrate everything at once. Convert by highest pain/noise first.
 
 Validation:
 
-- Table of handlers with classification.
-- At least one migrated handler has before/after trace evidence.
-- No loss of current metrics or alerts.
+- [x] Table of handlers with classification.
+- [x] At least one migrated handler has before/after trace evidence (`session-aftermath-scan` direct DB read -> `sdk.query`).
+- [x] No loss of current metrics or alerts in unit suite.
+- [ ] Next migration picked from the priority list.
 
 ## Phase 7: Loop Visibility
 
