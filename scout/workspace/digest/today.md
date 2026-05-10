@@ -9,3 +9,15 @@
 **Summary**: The authors propose CogCAPTCHA30, evaluating the cognitive *process* rather than just the *output* to differentiate humans from AI agents. They found that process-level features provide a much stronger discriminative signal (AUC=0.88) even when task performance is matched between humans and AI.
 **Implication**: As we build autonomous capabilities, generating human-like output might not be enough to bypass sophisticated anti-bot detection; the intermediate steps, timing, or interaction processes might be the key discriminators.
 **KB**: KE-005 (new)
+
+### Designing, Refining, and Maintaining Agent Skills at Perplexity
+**Source**: https://research.perplexity.ai/articles/designing-refining-and-maintaining-agent-skills-at-perplexity
+**Summary**: Discussion on how Perplexity manages agent skills over time, focusing on design, refinement, and maintenance of their skill systems.
+**Implication**: Provides potential insights into robust skill management architectures that could be applied to May's agent skill system.
+**KB**: KE-021 (new)
+
+### Cyber.md: AI-native posture that speaks agent
+**Source**: https://baz.co/resources/cyber-md-ai-native-posture-that-speaks-agent
+**Summary**: Introduction of "Cyber.md", an AI-native posture framework designed specifically for agentic environments.
+**Implication**: Explores standardizing agent posture and context communication, similar to our agent.md or context.md conventions.
+**KB**: KE-022 (new)
