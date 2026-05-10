@@ -1099,3 +1099,21 @@ Current dirty-state classification from `/app/agents` before staging:
 - Shared docs/project work owned outside this recovery: multiple `shared/may-agent-docs/**` files, `shared/projects/daily-alert-review/*`, `shared/projects/ruflo-learning-loop/project.md`, `shared/projects/v2-spec-coverage-buildout/journal.md`, and untracked `shared/workflows/closed-loop-steward.ts`.
 
 Disposition: stage and commit only `dev/workspace/heartbeat-log.md`. If unrelated dirty paths remain after the commit, report them as an external worktree-hygiene blocker instead of staging or cleaning other agents' work.
+
+## 2026-05-10 Dev Heartbeat Triage - 20:04Z
+
+Fresh heartbeat triage found no approved dev implementation item, but direct checks surfaced one evaluator-owned unresolved metric alert and ongoing unrelated worktree dirt.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved is empty; all visible implementation candidates remain Proposed.
+- Core system metrics are inside thresholds for dev triage: `session.error-rate-6h=0.0505` versus threshold `0.3`, `handler.success-rate=0.9797` versus threshold `0.8`, and zero active metrics lack a snapshot in the last hour.
+- Direct alert query found unresolved alert `#280` for `session.failed-triage-rate-3h`, owner `evaluator`, with latest snapshots improving from `0.4444` to `0.6` but still below threshold `0.8`; dev disposition is delegate/hold rather than duplicate the evaluator-owned operation.
+- Recent failed sessions in the 3h evaluation slice are three scout terminal-error rows (`workflow:scout-explore` and `workflow:scout-heartbeat`), matching the evaluator-owned failed-triage alert rather than a dev-owned handler regression.
+- Handler failures include older module-resolution and scout guard-block failures, while later handler events are completing and `handler.success-rate` remains healthy; no narrow dev patch is indicated from this heartbeat alone.
+- Owned projects remain correctly held: `finish-blocked-hygiene-reduction` is blocked on May/human safe metric registration, and `eval-llm-lane-restoration` remains pending-review with `eval.llm-coverage-lag-h=0` and `eval.llm-evals-24h=31`.
+
+Signal dispositions:
+- Pending no-artifact/session lifecycle events: acted by appending this durable heartbeat artifact and re-running live checks.
+- Replayed prior dev heartbeat session-end events: dismissed as superseded by the current evidence check.
+- Alert `#280`: delegated/held because metric ownership is evaluator and the alert is not dev-owned.
+- Dirty worktree state: classified as unrelated runtime/other-agent/shared-docs/project work; stage only this log entry, and report remaining dirty paths as an external hygiene blocker if they persist after commit.
