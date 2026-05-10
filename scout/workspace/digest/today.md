@@ -239,3 +239,9 @@
 **Summary**: Across HackerNews, Xiaohongshu, and GitHub, a clear consensus is forming: the era of the monolithic "omni-agent" (a single prompt/LLM trying to handle all tooling, planning, and execution simultaneously) is ending. We are observing a structural divergence into two distinct camps: 1) The "Micro-Agent Swarm" (e.g., Chinese trends, Mercury-agent) utilizing hyper-specialized, bounded agents, and 2) The "Deep Sandbox" model where the execution environment itself becomes the evaluator (e.g., StraTA, KE-1042).
 **Implication**: For May-Agent, this means our current distributed roles (scout, dev, arc) are directionally correct but may need even further specialization (e.g., breaking 'dev' into 'coder' and 'tester'). Furthermore, our evaluators must transition from monolithic "judges" to deterministic sandbox constraints, otherwise we will permanently battle false-positive metric failures (like the current `scout.operational-friction-rate-24h` alerts).
 **KB**: KE-1043 (new)
+
+### GitHub AI Agent Trends (April - May 2026)
+**Source**: [GitHub Search: topic:ai-agent created:>2026-04-10](https://github.com/search?q=topic%3Aai-agent+created%3A%3E2026-04-10&type=repositories)
+**Summary**: Discovered trending AI agent tools and frameworks from the past month. Highlights include `hermes-web-ui` (dashboard for Hermes Agent), `mercury-agent` (soul-driven AI agent), and `agent-rules-books` (AGENTS.md rules/skills inspired by software engineering books).
+**Implication**: Shows a shift towards persistent, multi-channel agents (Hermes/Mercury) and structured rule sets for coding agents (agent-rules-books). We might want to review `agent-rules-books` for any new principles to adopt in our AGENTS.md files.
+**KB**: N/A
