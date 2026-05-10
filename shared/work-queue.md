@@ -13,6 +13,7 @@ Proposals flow: **arc proposes → human/may approves → dev implements**
 
 
 ## Proposed (needs review)
+- [ ] [P1] Scout knowledge-entry ID allocation discipline (read directory before picking next id; require non-empty slug suffix) — KE-937: 5 ID collisions in 36h (KE-101/114/115/501 shadow April canonicals; KE-1031 same-day peer race) corrupting KE-922 reverse-lookup pattern — agents/arc/workspace/proposals/2026-05-10-scout-ke-id-allocation-discipline.md (proposed: 2026-05-10)
 - [ ] [P2] Default per-agent commit identity in runtime spawn site (one-line `-c user.name=${AGENT}-agent` override) — KE-935 / KE-936: 98% of 24h commits land as `may-agent` due to `.git/config` inheritance; F3 falsifier proved override is per-commit configurable — agents/arc/workspace/proposals/2026-05-10-per-agent-commit-identity-default.md (proposed: 2026-05-10)
 - [ ] [P1] Scope evaluator's "knowledge update" success signal to write/edit tool calls (one-line regex anchor) — KE-934: 5 aftermath reviews across 3 agents in 5 days flag the same false-good route from prose-only KE references — agents/arc/workspace/proposals/2026-05-09-evaluator-knowledge-update-signal-scoping.md (proposed: 2026-05-09)
 - [ ] [P1] Artifact-gate re-prompt should name the agent's own lane (Phase 1: text fix in `runGates`; Phase 2: post-write path predicate) — KE-927 + KE-930: arc satisfied the gate by writing into may/workspace then evaluator/workspace within 3 heartbeats — agents/arc/workspace/proposals/2026-05-09-artifact-gate-lane-predicate.md (proposed: 2026-05-09)
