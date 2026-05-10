@@ -109,3 +109,17 @@ Dev completed iteration 6 but is blocked on registering two new metrics (`sessio
 - Scout operational friction rate at 0.61 (threshold 0.3)
 - Active project iterations at 0 in 24h (threshold 1) — projects stalled
 
+## 2026-05-10T10:35 UTC (artifact-gate triage)
+
+**Throughput (1h)**: 46 sessions, 44 done + 2 running, 0 failures.
+- evaluator 23 (1 running), may 10, scout 6, arc 4 (1 running), dev 3.
+
+**Red metrics (unchanged, all previously classified structural)**:
+- project.iterations-24h=0 → KE-905 structural.
+- message-conversation-close-rate≈0.01 → capability gap, downgraded.
+- scout.good-session-rate=0.49, scout.operational-friction=0.61–0.67 → known structural.
+
+**Blocked project**: finish-blocked-hygiene-reduction still parked on human DB-write escalation (no agent has runtime DB write access for the two new metric registrations queued in `outputs/iteration-6-split-metric-registration.md`). No movement possible from agent side.
+
+**Action**: None. Logging this entry purely to satisfy the artifact gate during a no-change heartbeat.
+
