@@ -48,6 +48,10 @@
 - Symptom: a transcript or artifact references `agents/may/...` while the actual tracked file lives at `may/...` within the agents repo, leading reviewers to infer the handler/config is missing.
 - Fix: confirm the active repo root and normalize path prefixes before treating ENOENT as evidence of a missing implementation. Re-check with the repo-relative path actually used by tracked files.
 
+## Pattern: guard read-back checks can be path-string sensitive even when the file is the same
+- Symptom: a session really does read the edited file back, but `finish()` still rejects success until the agent repeats `read()` using the exact absolute/relative path form associated with the prior write/edit call.
+- Fix: when reviewing these sessions, verify the landed artifact and final successful read-back before downgrading the outcome. As operator guidance, after `write()`/`edit()`, prefer re-reading with the exact same path string used in the mutating call (or the canonical absolute path if the first call used one) to avoid avoidable guard churn.
+
 ## Pattern: stewardship sessions can deliver value through routing, not file edits
 - Symptom: a success-candidate closed-loop or triage session has no file diff, but it relays a dropped escalation or routes a blocked issue to the real owner.
 - Fix: judge the operational effect directly from transcript tool results (for example a `message()` result showing delivery queued), then separately verify any referenced artifacts actually exist before crediting the session's relay as substantive.
