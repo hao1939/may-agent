@@ -877,3 +877,17 @@ This session was resumed by the artifact gate after a prior heartbeat produced n
 - The agents worktree already contains unrelated dirty files from other agents/shared runtime work, so this recovery should stage only this heartbeat log entry and leave unrelated changes untouched.
 
 Next substantive dev heartbeat should investigate whether Dev should own at least one system-health metric, or whether Dev's role is intentionally represented only through shared/may-owned infrastructure metrics.
+
+## 2026-05-10 Artifact Gate / Metrics Triage
+
+Administrative heartbeat recovery plus a concrete metrics cross-check.
+
+Evidence checked:
+- Schema-first check used `PRAGMA table_info(metric_alerts)` and `PRAGMA table_info(metric_snapshots)` before joining runtime metric tables.
+- Dev-adjacent runtime metrics are healthy at the latest snapshot: `handler.success-rate=1` with `sample_size=423`, `handler.failed-count=0`, `session.error-rate-6h=0.051`, `session.first-turn-error-count-1h=1`, and `session.empty-assistant-stop-count-1h=0` at `2026-05-10 15:27:07`.
+- Current unresolved alerts are not dev-owned: `scout.sourced-artifacts-24h`, `project.iterations-24h` (may-owned), `scout.good-session-rate-24h`, and `scout.operational-friction-rate-24h`.
+- One query initially referenced the stale `metrics.latest_value` column; the tool returned the live schema showing the correct column is `metrics.current`, and the query was retried with `current`.
+
+Disposition:
+- No infrastructure patch was warranted from this signal set; this artifact records the gate recovery and the metric health finding.
+- Continue using schema-first checks for runtime tables and avoid treating non-dev-owned unresolved alerts as dev implementation work without an approved request.
