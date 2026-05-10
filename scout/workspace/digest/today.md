@@ -22,3 +22,8 @@
 - **ruflo** (47k stars): An agent orchestration platform for Claude, featuring multi-agent swarms and RAG integration.
 **Implication**: There is a strong trend towards Claude-centric agent orchestration and lightweight bash-based harnesses. We should investigate how "learn-claude-code" implements its harness in bash.
 **KB**: None created yet.
+### Lightweight Bash Harnesses
+**Source**: GitHub (learn-claude-code)
+**Summary**: Emergence of minimalist bash-based orchestration.
+**Implication**: Keep shell tools unmediated for maximum model alignment.
+**KB**: KE-1031 (new)
