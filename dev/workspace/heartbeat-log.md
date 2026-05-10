@@ -967,3 +967,19 @@ Evidence checked:
 Disposition:
 - No code or production data changed.
 - This entry is the intentional heartbeat artifact; the next substantive heartbeat should continue with schema-first checks before non-canned DB queries and investigate only dev-owned failures or approved implementation requests.
+
+## 2026-05-10 Artifact Gate Recovery: Clean First-Turn Window
+
+Administrative heartbeat artifact written after the artifact gate reported that this session had produced no file writes. I used the recovery pass to re-check the recurring provider-auth signal from earlier May/Scout first-turn failures.
+
+Evidence checked:
+- UTC timestamp at write time: `2026-05-10T17:38:02Z`.
+- Initial `/app/agents` git status showed many pre-existing dirty paths outside this artifact, including generated `*/last-session.md`, shared docs, shared project files, and runtime logs. These are not dev deliverables and must not be staged by this session.
+- Current core runtime metrics are below dev escalation thresholds: `session.first-turn-error-count-1h=0`, `session.error-rate-6h=0.0487`, `handler.failed-count=8` with threshold `10`, and `handler.success-rate=0.9816`.
+- A schema-mistake retry was required: ad-hoc queries initially referenced stale `metric_alerts.state` and `sessions.id/started_at` columns. The query tool returned live schemas, and retries used `metric_alerts.alert_type` plus `sessions.sessionId/startedAt`.
+- Corrected checks found no `status='error'` sessions in the last two hours and only one unresolved alert, `project.iterations-24h` owned by May.
+
+Disposition:
+- The earlier GitHub Copilot token-expired first-turn pattern is not currently active in the last two-hour session window; no credential escalation is needed from this heartbeat.
+- The only current unresolved metric alert is May-owned and not a dev implementation signal.
+- This note is the intentional artifact for the artifact-gate recovery; no code, shared project state, or production database state was changed.
