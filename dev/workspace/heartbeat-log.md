@@ -672,3 +672,24 @@ Disposition:
 - Artifact gate: satisfied by this workspace write.
 - Dev-owned patch decision: no code or shared workflow change is warranted from the current signals.
 - Follow-up: keep using schema-first SQL before non-canned runtime DB queries, and wait for May/human safe registration of the split metrics before unblocking the hygiene project.
+
+## 2026-05-10 Heartbeat: Low-signal validation and blocker hold
+
+Routine self-maintenance with explicit disposition of the pending signal batch rather than a new investigation.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty, so dev has no approved implementation item to pick up.
+- Core dev/runtime metrics remain healthy: `session.error-rate-6h=0.0156`, `handler.success-rate=1`, `handler.failed-count=0`, and the latest `handler.failed` events are historical relative to the healthy current 6h window.
+- Open alerts exist for `project.iterations-24h`, `capability.message-conversation-close-rate`, and two scout metrics, but none are dev-owned. The `project.iterations-24h` signal is being handled by May/closed-loop rather than by synthetic dev iterations.
+- `finish-blocked-hygiene-reduction` remains correctly blocked: read-only validation found zero `metrics` rows for `session.finish-blocked-uncommitted-count-24h` and `session.finish-blocked-unresolved-count-24h`.
+- May has already escalated the blocked project's required runtime DB write to human with the exact artifact path `agents/shared/projects/finish-blocked-hygiene-reduction/outputs/iteration-6-split-metric-registration.md`.
+- `eval-llm-lane-restoration` remains healthy in pending-review: latest non-heuristic evaluation is `2026-05-10 10:55:55` UTC with 27 non-heuristic rows in the last 24h, while `eval.llm-coverage-lag-h=1.38` is below its 4h alert threshold.
+- Git status showed only generated runtime files and other agents' project/journal files before this intentional dev heartbeat log entry; those are ambient/shared-owner dirty paths and must not be committed by dev.
+
+Signal dispositions:
+- Recent artifact-gate/session-start warnings: acted by producing this meaningful heartbeat artifact and will commit only this exact dev-owned path.
+- Prior dev `session.end` recovery entries: dismissed as already acted; current checks focus on live queue, metrics, and project resume conditions.
+- May FYI/escalation about `finish-blocked-hygiene-reduction`: acted by revalidating the missing metrics and holding the project blocked pending human/May runtime write authority.
+- Non-dev alerts and scout/may messages: delegated/dismissed for direct dev action because owners are active and no Approved work-queue item asks dev to patch them.
+
+Judgment: no code patch or new shared project is warranted this heartbeat. The correct action is to preserve the blocked-state evidence, avoid gaming project iteration metrics, and keep `eval-llm-lane-restoration` in pending-review while its liveness metrics remain in range.
