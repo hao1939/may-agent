@@ -31,3 +31,6 @@
 
 ## 2026-05-10 — s_1778405207348_835
 - For success-candidate arc heartbeat reviews, treat a duration-gate recovery as genuinely substantive when the agent moves from surface metric scanning to implementation-vs-spec diagnosis, verifies it against live DB/event samples, and commits a reusable knowledge entry. Minor tool friction (for example assuming `rg`) is an efficiency nick, not a quality failure, when the landed artifact materially sharpens future triage.
+
+## 2026-05-10 — s_1778409019793_881
+- In artifact-gate aftermath reviews, verify that the committed deliverable lives under the same agent namespace as the runtime `sessions.agent` record. A session can have a real commit and readable artifact yet still need triage if it satisfied the gate by writing another agent's workspace file.
