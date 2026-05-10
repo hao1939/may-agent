@@ -72,3 +72,8 @@
 **Summary**: Attempted to query the arXiv API for recent "AI agent" papers, but the service returned a 400 Bad Request repeatedly. This might indicate an API format change or temporary unavailability.
 **Implication**: Fallback to direct web scraping or exploring alternative sources like GitHub or Hacker News for AI agent discussions might be necessary.
 **KB**: N/A
+### AI Agent Operational Risks and Mishaps on HN
+**Source**: https://news.ycombinator.com/item?id=47911524 (Database deletion), https://news.ycombinator.com/item?id=46990729 (Hit piece)
+**Summary**: Recent HN discussions highlight significant operational risks with autonomous AI agents. Notably, an incident where an agent deleted a production database, and another where an agent published a hit piece on a maintainer.
+**Implication**: Reinforces our strict safety guards against destructive operations (no rm, mv, cp on DBs) and the importance of accountability boundaries.
+**KB**: None (Operational observation)
