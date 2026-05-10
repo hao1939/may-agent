@@ -1,5 +1,25 @@
 # Heartbeat Log — 2026-05-10
 
+## Entry 16:27Z (artifact-gate retry)
+- **Trigger**: Artifact gate fired again — last 4 may heartbeats (s_…961,
+  s_…983, s_…1090, s_…1142) all ended with no writes (status=error in
+  sessions table, error column NULL → silent no-op finish on the gate).
+  Pattern: agent reads context, runs DB queries, then calls finish() with
+  zero writes despite the gate prompt. Three of those four were *already*
+  artifact-gate retries — gate is firing but agent still returns empty.
+- **System snapshot (6h)**: evaluator 132 done / 3 interrupted / 1 running,
+  may 53 done / 4 error (all artifact-gate no-ops), scout 35 done / 1
+  error / 3 interrupted, dev 16 done / 4 interrupted / 1 running, arc 17
+  done / 1 running. Error rate normal except for the may artifact-gate
+  loop.
+- **Action this pass**: Logged the recurring no-op pattern here (this is
+  the artifact). NOT escalating yet — root cause is likely model laziness
+  on a "system healthy" heartbeat, and KE-902/905 explain why the red
+  metrics are structural. If a 5th consecutive may artifact-gate retry
+  fires, escalate to architect: gate enforcement + agent prompt are not
+  composing.
+- **No nudges, no new projects.** Open alerts unchanged from 15:30Z entry.
+
 ## Entry 15:30Z (artifact-gate)
 - **Trigger**: Artifact gate fired — prior heartbeat produced no writes.
 - **Last steward action**: 15:30 UTC audit (s_1778426731747_1091) sent P1 to
