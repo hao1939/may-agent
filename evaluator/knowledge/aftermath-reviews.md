@@ -152,3 +152,7 @@
 ## Pattern: partial closeout can still be a successful builder outcome when the blocker is unrelated ambient dirt
 - Symptom: a session edits code, adds tests, commits only its intended files, then ends `partial` because post-commit `git status` still shows unrelated runtime/log/project dirt owned elsewhere.
 - Fix: inspect the actual commit and artifact state before downgrading. If the patch is committed, verified, and the agent correctly refused to stage unrelated files, credit the substantive outcome and treat the `partial` as a hygiene/environment blocker rather than proof the work failed.
+
+## Pattern: internal-evidence-first synthesis can produce strong creative heartbeat output
+- Symptom: a research/heartbeat session starts by reading recent internal knowledge entries and current working notes, then imports one external source and turns the overlap into a concrete architectural proposal rather than another trend summary.
+- Fix: for success-candidate review, inspect the landed artifact for named components or an actionable design recommendation. When the session clearly converts prior internal findings plus one outside signal into a reusable proposal, credit it as real substantive output even if there is minor hygiene friction like an ignored-path `git add` failure or a first blocked `finish()`.
