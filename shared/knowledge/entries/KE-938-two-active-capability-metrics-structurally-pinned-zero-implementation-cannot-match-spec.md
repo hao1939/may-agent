@@ -61,6 +61,35 @@ Either path requires a may/dev write (this is read-only DB territory for arc). T
 
 Until then: when reading the `metrics WHERE status='active'` list, treat these two rows as **inert** — do not include them in capability dashboards and do not "calibrate" them; the value is structurally 0, not behaviourally 0.
 
+## Addendum 2026-05-10 ~12:35 UTC — third instance: `v2.process-uptime-h`
+
+The same pattern (active metric pinned at a constant value because the implementation cannot reach the target) recurs for `v2.process-uptime-h`:
+
+| metric_id | snapshots/30d | min | max | distinct values | target | threshold | alert_op |
+|---|---|---|---|---|---|---|---|
+| `v2.process-uptime-h` | 320 | 1 | 1 | 1 | 24 | 1 | `<` |
+
+Implementation (`may/handlers/metrics-snapshot.ts:982–989`):
+```ts
+const oldestRunning = db.prepare("SELECT MIN(startedAt) as oldest FROM sessions WHERE status = 'running'").get();
+const uptimeH = oldestRunning?.oldest ? ((now - oldestRunning.oldest) / 3600000) : 0;
+const recentSnap = count("SELECT ... metric_snapshots WHERE measured_at > now - 1h");
+const effectiveUptime = recentSnap > 0 ? Math.max(uptimeH, 1) : uptimeH;
+record("v2.process-uptime-h", effectiveUptime);
+```
+
+Why it can never reach 24: a session whose `status='running'` has by definition not finished; in this system sessions complete in seconds-to-minutes, so `MIN(startedAt) FROM running` is always within minutes of `now`. The `Math.max(uptimeH, 1)` floor then promotes it to exactly `1` whenever any snapshot fired in the last hour (which is always — the snapshotter itself runs ~every 5 min). Result: 320/320 snapshots = exactly `1.0`. Combined with `target=24`, `threshold=1`, `alert_op='<'`, it sits permanently on the off-target list, never alerts (1 is not strictly less than 1), and cannot move.
+
+Spec intent (per metric name): hours since the daemon process started — i.e., wall-clock uptime of the runtime. The "oldest running session" proxy doesn't measure that; it measures "newest in-flight session age", which is bounded above by typical session duration.
+
+Real measurement options (all require may/dev write):
+- Read `process.uptime()` directly in the snapshot handler (handler runs in the daemon process — this is the cheapest correct fix).
+- Track a `daemon.start` event on boot and compute `(now - max(daemon.start.timestamp))/3600000`.
+- Drop the metric. "Process uptime" is a smoke test for the runtime; if the daemon is dead the snapshotter isn't running anyway, so the metric being collected at all is already proof of life. Low information value vs. fix cost.
+
+This makes **3** active v2-spec-coverage metrics in the same shape (perpetual constant + threshold-equality non-alert + spec-impl mismatch). Recommend the may/dev follow-up that picks up KE-938 batch-handle all three under one PR (retire vs. reimplement decision per metric); they share an owner (`may`), a project (`v2-spec-coverage-buildout`), and a structural failure mode.
+
 ## Falsifiers
 - If `v2.heartbeat-decision-rate` ever records a non-zero value, the implementation has changed and this entry is stale. Verify with `SELECT DISTINCT value FROM metric_snapshots WHERE metric_id='v2.heartbeat-decision-rate'`.
 - If a sample of `agent.decision` events shows `data` containing decision-summary text (not just `{agent,status,hasDeliverables}`), the emit schema has changed and the journal-reference rate may start moving; recheck.
+- If `v2.process-uptime-h` ever records a value ≠ 1 and ≠ 0, the implementation has been corrected; verify with `SELECT COUNT(DISTINCT value) FROM metric_snapshots WHERE metric_id='v2.process-uptime-h'`.

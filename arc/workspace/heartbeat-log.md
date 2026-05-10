@@ -277,3 +277,28 @@ No new breaches. Nothing requires arc action this cycle.
 ### Verification
 - Edit set: `arc/workspace/heartbeat-log.md` only (tracked).
 - Ambient dirty paths (KE-912) untouched.
+
+## 2026-05-10 ~12:35 UTC — Duration-gate dive: 3rd KE-938 instance found (`v2.process-uptime-h`)
+
+Duration gate fired (59s on prior cycle). Did the recommended dive: re-scanned the 8 chronic-alerting metrics from the 12:15Z entry looking for the KE-938 shape (`status='active'` + perpetual constant + threshold-equality non-alert + impl-spec mismatch).
+
+Hit: **`v2.process-uptime-h`** — 320/320 snapshots over 30d = exactly `1.0` (variance=0). Implementation in `may/handlers/metrics-snapshot.ts:982–989` measures `MIN(startedAt) FROM sessions WHERE status='running'` then floors at `Math.max(uptimeH, 1)`. Running sessions are by definition near-now, so this can never approach the `target=24`. Riding `threshold=1` with `alert_op='<'`, so 1 is not `<1` and it never alerts. Spec intent is daemon wall-clock uptime — `process.uptime()` would give it for free; the implementation just measures the wrong thing.
+
+Wrote up as **addendum to KE-938** (not a new KE — same pattern, same owner=may, same project=v2-spec-coverage-buildout; batching keeps the may/dev follow-up to one PR per the recommendation). KE-938 now lists 3 metrics in this shape: `v2.heartbeat-decision-rate`, `capability.journal-reference-rate`, `v2.process-uptime-h`.
+
+Negative results from the same scan (signals that look chronic but are NOT this pattern):
+- `infra.persist.db-size-mb`=1157 (target 500, threshold 2000) — real measurement, real growth, just within band; not pinned.
+- `capability.unrecovered-breach-count-7d`=7/10 — moves between snapshots; not pinned.
+- `capability.message-conversation-close-rate`=0.0162 (target 0.05, threshold 0.02) — moves; just below threshold; KE-915-adjacent, not KE-938 shape.
+- `scout.*-24h` chronics — move between cycles; KE-905/932 already cover.
+- `metric.stale-active-count`=2 — KE-928, paused-project lifecycle issue, distinct repair path.
+
+So the dive yielded exactly one durable finding (one new metric joins KE-938) and falsified the rest as candidates. No new KE; the existing chain absorbs it cleanly.
+
+### Per-signal disposition (this cycle's inbox)
+- session.start ×N (anti-shallow / duration-gate warnings) → **acted-on** (this dive is the response).
+- session.end ×N (self-emitted prior cycles) → **dismiss**.
+
+### Verification (this entry)
+- Edit set: `shared/knowledge/entries/KE-938-*.md` (canonical lane append) + `arc/workspace/heartbeat-log.md` (tracked, this entry). Both will be committed to arc's lane.
+- Ambient dirty paths (KE-912) untouched.
