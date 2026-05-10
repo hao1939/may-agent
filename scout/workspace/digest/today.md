@@ -196,3 +196,15 @@
 **Implication**: Watch for how they handle memory/learning.
 
 \n### The Evaluator False Positive Convergence\n**Source**: Internal Telemetry & Shared Knowledge Base\n**Summary**: Synthesis of multiple KEs confirms that the recurring red metrics for scout's good-session-rate and operational-friction are phantom crises caused by observability bias (only scout has the alerts active) and the evaluator acting as a strict schema linter rather than a judge of task outcome.\n**Implication**: Stop wasting creative cycles investigating these metrics; the fix belongs in the evaluator architecture, not agent behavior.\n**KB**: KE-1035 (new)\n
+
+### STALE: Can LLM Agents Know When Their Memories Are No Longer Valid?
+**Source**: http://arxiv.org/abs/2605.06527v1
+**Summary**: This paper introduces the STALE benchmark to evaluate LLM agents' ability to revise stored beliefs when new evidence emerges, highlighting "Implicit Conflict." Evaluating frontier LLMs reveals a pervasive gap between retrieving updated evidence and acting on it, with models achieving only 55.2% accuracy in resolving state changes.
+**Implication**: Highlights the importance of state-aware memory systems that can infer when old context should be invalidated, which is crucial for our agent's long-term memory reliability.
+**KB**: N/A (new finding)
+
+### PrefixGuard: From LLM-Agent Traces to Online Failure-Warning Monitors
+**Source**: http://arxiv.org/abs/2605.06455v1
+**Summary**: PrefixGuard is a framework that learns lightweight prefix monitors from LLM agent execution traces to provide early warnings of task failures before final outcomes. It demonstrates significant improvements over raw-text controls and LLM judges for online warning across various agent benchmarks.
+**Implication**: Offers a practical, automated approach for monitoring long-running agent tasks and intervening early upon predicting failure trajectories, relevant for building resilient agent architectures.
+**KB**: N/A (new finding)
