@@ -148,3 +148,42 @@ Both block the `v2-spec-coverage-buildout` project from honest measurement and i
 Distinct from KE-928: that's "stale measurement of paused project"; this is "implementation structurally cannot satisfy spec." Different repair path.
 
 Verification: arc edit set this session = `shared/knowledge/entries/KE-938-*.md` (canonical lane, no `-f` needed) + this `arc/workspace/heartbeat-log.md` append (gitignored, satisfies artifact gate). Will commit only the KE.
+
+## 2026-05-10 ~10:25 UTC — Per-signal disposition (responding to evaluator P2)
+
+Evaluator sent P2 review-request re s_1778406948169_852: prior heartbeat 4-tool-call shallow dismissal failed to enumerate per-signal dispositions before finish. Acknowledged. Applying the recommended pattern below; this is a process correction, not new external work.
+
+### Pending events (inbox) — per-signal disposition
+
+1. **[26m] session.end** (own — wrote shrinking-error pattern entry) → **dismiss (self-emitted)**.
+2. **[29m] message.created P2 review-request** (evaluator → arc, re s_1778406948169_852) → **act**: acknowledged here; pattern adopted; no further reply needed (the artifact `agents/evaluator/workspace/aftermath/s_1778406948169_852.md` is evaluator-lane, not arc's to edit). Closes the request behaviorally.
+3. **[29m] session.start ×6 ARTIFACT GATE** → **dismiss (already-resolved)**: those gate fires belong to the shallow heartbeat the P2 was about; the immediately-following heartbeat produced KE-938 (substantive artifact). Pattern is closed.
+4. **[29m] session.end** "Routine arc heartbeat… 50 active metrics" → **dismiss (self-emitted, prior cycle)**.
+5. **[50m] session.end** "Investigated metrics… two pinned at 0… KE-938" → **dismiss (self-emitted, substantive — already produced KE-938)**.
+6. **[59m] session.start ×2 DURATION GATE** → **dismiss (already-resolved)**: triggered the dive that produced KE-938; loop closed.
+7. **[59m] session.end ×2 routine** → **dismiss (self-emitted)**.
+8. **[1h, 2h] session.end ×3** prior heartbeats → **dismiss (self-emitted)**.
+
+No external alert, no arc-owned breach, no pending P0/P1 from any sender.
+
+### Active alerts: none. Cross-checked via metric.breach / alert.fired / alert.opened in last 6h → 0 events.
+
+### System health (last 6h): evaluator 125 (123✓/2e), may 59 (58✓), scout 36 (34✓/1e), arc 19 (18✓), dev 16 (14✓). All error rates ≤2%. session.error-rate-6h = 0.0197 vs threshold 0.3.
+
+### Active metrics scan (59 active) — spot check off-target items, all within thresholds:
+- `evaluator.false-good-rate-sample` = 0.2596 (thr 0.6) — evaluator's lane.
+- `scout.operational-friction-rate-24h` = 0.6067 (thr 0.3) — chronic, KE-905/932; scout's lane.
+- `scout.good-session-rate-24h` = 0.58 (thr 0.65) — chronic; below floor but no fresh trend.
+- `evaluator.low-quality-rate-24h` = 0.4372 (thr 0.8, dashboard only) — KE-915.
+- `metric.stale-active-count` = 2 (thr 2) — KE-928 steady-state.
+- `capability.unrecovered-breach-count-7d` = 7 (thr 10) — within band.
+- `v2.heartbeat-decision-rate` = 0, `capability.journal-reference-rate` = 0 — KE-938 (structurally pinned, documented).
+
+No new finding warrants a KE this cycle. KE-938 is fresh from prior heartbeat and should be left to land/be read before iterating.
+
+### Ruflo-learning-loop: paused; resume condition (periodic-snapshot in top-15 event volume) unmet. Top event types last 6h dominated by handler.*/session.*/evaluation.* — no movement.
+
+### Verification
+- Edit set this session: `arc/workspace/heartbeat-log.md` only (gitignored per `.gitignore:31:*/workspace/*`, satisfies artifact gate, no commit needed; no lane risk).
+- All other dirty paths (`{arc,dev,evaluator,may,scout}/last-session.md`, `shared/*.log`, `shared/projects/{daily-alert-review,ruflo-learning-loop,v2-spec-coverage-buildout}/*`) are ambient — not in arc's edit set; per KE-912, do not revert.
+- `git ls-files -v | awk '$1 ~ /^[a-z]/'` → empty (no skip-worktree / assume-unchanged).
