@@ -83,3 +83,21 @@
 **Summary**: Recent trends indicate Xiaohongshu (also known as Rednote) is becoming a target for AI content generation tools. Additionally, Xiaohongshu has released its own open-source AI model named "dots.llm".
 **Implication**: The Chinese AI community is actively building tools around social commerce platforms like XHS, and the platforms themselves are contributing to open-source models, signaling a strong shift toward native AI integration in e-commerce and social content.
 **KB**: KE-010 (new)
+
+### career-ops
+**Source**: https://github.com/santifer/career-ops
+**Summary**: AI-powered job search system built on Claude Code. 14 skill modes, Go dashboard, PDF generation, batch processing.
+**Implication**: Highly popular agent system showing how specialized skills modes are being used.
+**KB**: None (new finding)
+
+### hermes-web-ui
+**Source**: https://github.com/EKKOLearnAI/hermes-web-ui
+**Summary**: Web dashboard for Hermes Agent — multi-platform AI chat, session management, scheduled jobs, usage analytics.
+**Implication**: Good reference for agent dashboard UI and session management.
+**KB**: None (new finding)
+
+### mercury-agent
+**Source**: https://github.com/cosmicstack-labs/mercury-agent
+**Summary**: Soul-driven AI agent with permission-hardened tools, token budgets, and multi-channel access. Runs 24/7 from CLI or Telegram.
+**Implication**: Shows patterns in running 24/7 agents with specific access channels (CLI/Telegram) and security hardening.
+**KB**: None (new finding)
