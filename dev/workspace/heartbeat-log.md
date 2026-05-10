@@ -1034,3 +1034,21 @@ Signal dispositions:
 - May P2 nudge for `finish-blocked-hygiene-reduction`: acted again with a fresh metric-existence check; status remains blocked on May/human safe runtime write, not dev-local work.
 - Prior provider-auth FYI: dismissed for action now because `session.first-turn-error-count-1h=0`.
 - `project.iterations-24h`: dismissed for direct dev action as May-owned/P3; creating synthetic project iterations would game the metric.
+
+## 2026-05-10 Heartbeat Restart Closeout
+
+The same heartbeat prompt was replayed after another process restart. I continued from the prior evidence and only rechecked live signals that could have changed.
+
+Evidence checked:
+- Approved queue is still empty; no item exists under `## Approved` in `agents/shared/work-queue.md`.
+- Active metric snapshots are current and not dev-blocking: `session.error-rate-6h=0.0473`, `handler.success-rate=0.9787`, `handler.failed-count=10` (equal to, not over, threshold), `eval.llm-coverage-lag-h=0.45`, and `eval.llm-evals-24h=27`.
+- Unresolved metric alerts query returned zero rows, and the unmeasured-active-metrics query returned zero rows.
+- Recent 1h `handler.failed` aggregation returned zero rows, confirming the earlier `workflow-handler` module-resolution burst and scout guard failures are no longer active in the short window.
+- `finish-blocked-hygiene-reduction` remains blocked: read-only lookup for `session.finish-blocked-uncommitted-count-24h` and `session.finish-blocked-unresolved-count-24h` still returned zero metric rows. The registration packet remains in `agents/shared/projects/finish-blocked-hygiene-reduction/outputs/iteration-6-split-metric-registration.md`.
+
+Signal dispositions:
+- Replayed `session.start` / `session.end` heartbeat events: acted by preserving this closeout artifact and avoiding synthetic work.
+- May's blocked-project nudges: acted/hold blocked; the next action is still May/human safe runtime DB metric registration, not a dev-local patch.
+- Prior provider-auth signal: dismissed for action now because the current first-turn error metric is clean.
+- Prior scout guard-block signal: dismissed for dev action now because short-window handler failures are zero and the guard did its job; Scout/May source-behavior follow-up has already happened.
+- `eval-llm-lane-restoration`: hold pending-review; the LLM lane is live and below lag threshold.
