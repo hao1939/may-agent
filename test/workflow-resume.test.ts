@@ -6,7 +6,7 @@ import { createWorkflowTool } from "../src/lib/workflow-tool.js";
 import { SubagentManager } from "../src/lib/manager.js";
 import type { WorkflowToolResult } from "../src/lib/workflow.js";
 import type { WorkflowRun } from "../src/lib/workflow-tool.js";
-import { insertWorkflowRun, getWorkflowRun, getWorkflowStepSessions, listWorkflowRunIds, upsertSession } from "../src/lib/requests.js";
+import { getDb, insertWorkflowRun, getWorkflowRun, getWorkflowStepSessions, listWorkflowRunIds, upsertSession } from "../src/lib/requests.js";
 import type { WorkflowRunRecord } from "../src/lib/requests.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 
@@ -137,6 +137,49 @@ describe("workflow tool: resume", () => {
     if (parsed.type === "error") {
       expect(parsed.error).toContain("not found");
     }
+  });
+
+  it("returns error when workflow run state is corrupt", async () => {
+    insertWorkflowRun(persistDir, {
+      runId: "wr_corrupt",
+      workflow: "corrupt-workflow",
+      task: "some task",
+      parentSessionId: "parent_1",
+      parentWorkflowRunId: null,
+      projectId: null,
+      depth: 1,
+      status: "running",
+      startedAt: Date.now() - 60000,
+      endedAt: null,
+      result_summary: null,
+      result_reason: null,
+      resumedFromRunId: null,
+    });
+    getDb(persistDir).run("UPDATE workflow_runs SET depth = NULL WHERE runId = ?", ["wr_corrupt"]);
+
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const events: Array<Record<string, unknown>> = [];
+    const tool = createWorkflowTool({ manager, workflowDir, persistDir, onEvent: (e) => events.push(e as never) });
+
+    const result = await tool.execute("tc1", {
+      action: "resume",
+      workflowRunId: "wr_corrupt",
+    });
+    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+
+    expect(parsed.type).toBe("error");
+    if (parsed.type === "error") {
+      expect(parsed.workflowRunId).toBe("wr_corrupt");
+      expect(parsed.category).toBe("corrupt_state");
+      expect(parsed.error).toContain("incomplete persisted state");
+    }
+    expect(events).toContainEqual(expect.objectContaining({
+      type: "workflow.resume_failed",
+      workflowRunId: "wr_corrupt",
+      workflow: "corrupt-workflow",
+      category: "corrupt_state",
+      recoverable: false,
+    }));
   });
 
   it("returns error when workflow definition no longer exists", async () => {
