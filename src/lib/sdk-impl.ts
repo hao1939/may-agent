@@ -63,7 +63,7 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         agentName: deps.agentName,
       });
       const agentForWorkflow = opts?.source ?? deps.agentName;
-      const { result } = await runWorkflowDirect({
+      const { result, runId } = await runWorkflowDirect({
         workflowName: name,
         task,
         manager: deps.manager,
@@ -76,7 +76,7 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         sharedGuardsDir: join(deps.agentsRoot, "shared", "guards"),
         projectId: opts?.projectId,
       });
-      return { status: result.type === "done" ? "done" : "escalated", summary: result.type === "done" ? result.summary : result.reason ?? "escalated" };
+      return { status: result.type === "done" ? "done" : "escalated", summary: result.type === "done" ? result.summary : result.reason ?? "escalated", runId };
     },
 
     emit(type: string, data?: Record<string, unknown>): void {

@@ -42,6 +42,11 @@ export function createWorkflowHandler(options: WorkflowHandlerOptions): HandlerM
   return (ctx: HandlerContext, entry: CronEntry) => async (event?: TriggerEvent) => {
     if (options.shouldRun && !(await options.shouldRun(ctx, event, entry))) {
       ctx.sdk.log("info", `[workflow-handler:${entry.name}] skipped`);
+      ctx.sdk.emit("handler.skipped", {
+        handler: entry.name,
+        reason: "shouldRun returned false",
+        eventType: event?.type ?? null,
+      });
       return;
     }
 
@@ -56,6 +61,14 @@ export function createWorkflowHandler(options: WorkflowHandlerOptions): HandlerM
 
     ctx.sdk.log("info", `[workflow-handler:${entry.name}] Dispatching workflow "${workflow}" for ${source ?? ctx.agentName}`);
     const result = await ctx.sdk.runWorkflow(workflow, task, runOpts);
-    ctx.sdk.log("info", `[workflow-handler:${entry.name}] Workflow "${workflow}" -> ${result.status}`);
+    ctx.sdk.log("info", `[workflow-handler:${entry.name}] Workflow "${workflow}" -> ${result.status}${result.runId ? ` (${result.runId})` : ""}`);
+    ctx.sdk.emit("handler.workflow_dispatched", {
+      handler: entry.name,
+      workflow,
+      source: source ?? ctx.agentName,
+      projectId,
+      workflowRunId: result.runId ?? null,
+      status: result.status,
+    });
   };
 }

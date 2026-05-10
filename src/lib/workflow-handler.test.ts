@@ -6,20 +6,24 @@ import { createWorkflowHandler } from "./workflow-handler.js";
 describe("createWorkflowHandler", () => {
   function context() {
     const calls: Array<{ workflow: string; task: string; opts: unknown }> = [];
+    const emitted: Array<{ type: string; data?: Record<string, unknown> }> = [];
     const logs: string[] = [];
     const ctx = {
       agentName: "may",
       sdk: {
         runWorkflow: async (workflow: string, task: string, opts?: unknown) => {
           calls.push({ workflow, task, opts });
-          return { status: "done" as const, summary: "ok" };
+          return { status: "done" as const, summary: "ok", runId: "wr_1" };
+        },
+        emit: (type: string, data?: Record<string, unknown>) => {
+          emitted.push({ type, data });
         },
         log: (_level: "info" | "warn" | "error", msg: string) => {
           logs.push(msg);
         },
       },
     } as unknown as HandlerContext;
-    return { ctx, calls, logs };
+    return { ctx, calls, emitted, logs };
   }
 
   const entry: CronEntry = { name: "bridge", enabled: true, handler: "bridge" };
@@ -32,7 +36,7 @@ describe("createWorkflowHandler", () => {
   };
 
   it("dispatches a workflow with source, project, and trigger context", async () => {
-    const { ctx, calls } = context();
+    const { ctx, calls, emitted } = context();
     const handler = createWorkflowHandler({
       workflow: "goal-driver",
       source: "scout",
@@ -51,10 +55,21 @@ describe("createWorkflowHandler", () => {
     expect(calls[0].task).toContain("review the comment");
     expect(calls[0].task).toContain("## Trigger Event");
     expect(calls[0].task).toContain("project.commented");
+    expect(emitted).toContainEqual({
+      type: "handler.workflow_dispatched",
+      data: {
+        handler: "bridge",
+        workflow: "goal-driver",
+        source: "scout",
+        projectId: "p1",
+        workflowRunId: "wr_1",
+        status: "done",
+      },
+    });
   });
 
   it("skips dispatch when shouldRun returns false", async () => {
-    const { ctx, calls, logs } = context();
+    const { ctx, calls, emitted, logs } = context();
     const handler = createWorkflowHandler({
       workflow: "goal-driver",
       task: "noop",
@@ -65,5 +80,9 @@ describe("createWorkflowHandler", () => {
 
     expect(calls).toHaveLength(0);
     expect(logs.some((line) => line.includes("skipped"))).toBe(true);
+    expect(emitted).toContainEqual({
+      type: "handler.skipped",
+      data: { handler: "bridge", reason: "shouldRun returned false", eventType: "project.commented" },
+    });
   });
 });
