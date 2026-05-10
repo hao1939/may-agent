@@ -913,3 +913,19 @@ Signal dispositions:
 
 Next validation:
 - Watch `session.first-turn-error-count-1h` and fresh `status='error'` rows. If additional `Github_copilotException - IDE token expired` rows appear, escalate the credential refresh/routing problem to May/human with the transcript evidence above.
+
+## 2026-05-10 Artifact Gate Recovery and Signal Check
+
+Administrative heartbeat artifact written after the artifact gate reported that the session had produced no file writes.
+
+Evidence checked:
+- UTC timestamp at write time: `2026-05-10T16:01:11Z`.
+- Git status from `/app/agents` showed pre-existing dirty paths outside this artifact: `dev/last-session.md`, `evaluator/last-session.md`, `shared/projects/daily-alert-review/discussion.md`, `shared/projects/daily-alert-review/journal.md`, `shared/projects/daily-alert-review/project.md`, `shared/projects/ruflo-learning-loop/project.md`, and `shared/projects/v2-spec-coverage-buildout/journal.md`.
+- Active metric snapshot sample showed `handler.failed-count=0`, `handler.success-rate=1`, and `handler.completed-count=424`; current handler health is not dev-blocking.
+- Unresolved alerts are currently owned by May or Scout: `project.iterations-24h` (may), `scout.good-session-rate-24h` (scout), and `scout.operational-friction-rate-24h` (scout). No dev-owned unresolved alert was found in this check.
+- A first metrics query used the stale column name `value`; the runtime schema returned the correct `metrics.current` column. This note records the correction so future ad-hoc metric queries stay schema-first.
+
+Disposition:
+- This workspace note is the intentional artifact for the artifact-gate recovery.
+- No code, shared project state, or production database state was changed.
+- Pre-existing dirty paths should remain owned by their respective agents/projects and must not be staged with this artifact.
