@@ -226,6 +226,16 @@ Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-sna
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
 
+**Last run**: 2026-05-10 08:31Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778401766935`; `MAX(sessions.startedAt)=1778401868073`; `MAX(sessions.endedAt)=1778401805580`; lag ≈101.1s vs `startedAt`, ≈38.6s vs `endedAt`; `evals_last24h=632`; `llm_evals_last24h=30`; `sessions_last24h=1305`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table.
+
+Inbox triage on the currently surfaced aftermath targets found completed aftermath artifacts already present for `s_1778388668143_634`, `s_1778399748902_763`, and `s_1778401507839_782`, with fresh `evaluation.reviewed` / `evaluation.success_candidate` / `evaluation.false_good` / `evaluation.deep_recorded` events for the same ids. Treat the surfaced pending rows as already-handled or in-flight backlog noise rather than dropped evaluator work.
+
+Ran `monitor-session.cjs --running`: 3 checked, 2 healthy, 1 `PROTOCOL_VIOLATION` on an active evaluator review session (`s_1778401572166_787`; evidence: missing P114 Experience Replay; recommended action: warn). Notified May.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). State unchanged from prior runs; no repeat escalation sent this cycle.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
+
 **Last run**: 2026-05-10 05:04Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778389156720`; `MAX(sessions.startedAt)=1778389268978`; `MAX(sessions.endedAt)=1778389254330`; lag ≈112.3s vs `startedAt`, ≈97.6s vs `endedAt`; `evals_last24h=693`; `llm_evals_last24h=31`; `sessions_last24h=1468`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table.
 
 Inbox triage on the currently surfaced pending aftermath targets found completed artifacts already present for `s_1778378148525_509`, `s_1778388957776_642`, `s_1778388903816_639`, and `s_1778387104544_616`, while the newest `evaluation.*` and `session.*` rows for those ids show they were just reviewed and/or triage-closed. Treat these surfaced pending event rows as already-handled backlog noise rather than dropped evaluator work.
