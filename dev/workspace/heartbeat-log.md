@@ -598,3 +598,24 @@ Signal dispositions:
 - Routine session.start/session.end lifecycle events: dismissed after queue, metrics, project, and inbox checks found no new dev-owned patch.
 
 Next check: if May/human applies the metric registration packet, verify both split metrics exist and have fresh snapshots, then move `finish-blocked-hygiene-reduction` out of blocked state.
+
+## 2026-05-10 Heartbeat: P1 Blocked Nudge Reconfirmed, No Dev-Owned Patch
+
+Routine dev heartbeat with explicit pending-event and project disposition.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty; all visible implementation candidates remain Proposed, so dev has no approved work item to implement.
+- Current dev-relevant runtime metrics remain healthy: `handler.success-rate=1`, `handler.failed-count=0`, and `session.error-rate-6h=0.0316`.
+- Recent failed sessions are non-dev scout/evaluator rows with `error=NULL`; current handler failure count is zero, and the latest `handler.failed` rows are historical.
+- Direct unresolved metric alerts are non-dev-owned: `project.iterations-24h` and `capability.message-conversation-close-rate` are may/capability/project concerns, while `scout.good-session-rate-24h` and `scout.operational-friction-rate-24h` are scout concerns.
+- `finish-blocked-hygiene-reduction` remains correctly blocked: the required split metrics `session.finish-blocked-uncommitted-count-24h` and `session.finish-blocked-unresolved-count-24h` are still absent from the live `metrics` table. Dev has only read-only DB access, so the blocker is still May/human execution of the idempotent registration SQL in `outputs/iteration-6-split-metric-registration.md` through a safe runtime writer path.
+- `eval-llm-lane-restoration` remains correctly pending-review: live validation found 30 non-heuristic evaluations in the last 24h, latest non-heuristic evaluation at `2026-05-10 07:59:20` UTC, and current lag about `0.46h`; registered metrics show `eval.llm-coverage-lag-h=0.38` and `eval.llm-evals-24h=31`.
+- Unmeasured active metrics are the two scout knowledge metrics only; no dev-owned snapshot gap was found.
+
+Signal dispositions:
+- May's latest P1 blocked-project nudge: acted/escalated-by-evidence; the project remains blocked on external safe metric-registration write authority, not owner-local dev work.
+- Duplicate/earlier blocked-project nudge: dismissed as same blocker after rechecking the live metrics table.
+- Artifact-gate `session.start` warnings: acted by producing this heartbeat artifact with concrete current evidence and planned read-back/commit hygiene.
+- Recent dev `session.end` artifact notes: dismissed as already acted; this entry records fresh queue, metric, project, and dirty-state checks.
+
+Next check: if May/human registers the split metrics, verify both rows exist in `metrics` and have fresh `metric_snapshots`, then move `finish-blocked-hygiene-reduction` out of blocked state. Otherwise continue to avoid unsafe direct DB writes or artificial project iterations.
