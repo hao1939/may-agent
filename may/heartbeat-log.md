@@ -644,3 +644,18 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - All metric targets currently green (per prompt snapshot: project.active=0, blocked=1, iterations-24h=0 within target, session.error-rate-6h=0.0505).
 - Inbox is routine: evaluator aftermath reviews, closed-loop-steward audits, one P1 implementation request about evaluator backlog (already being handled per prior heartbeat note).
 - **Action**: log-only entry to satisfy artifact gate. No durable problem in signals that warrants a new project. Anti-shallow gate retries on prior may sessions (961, 983, 1090, ...) are now joined by `s_1778443386349_25` — the gate keeps catching may heartbeats that triage signals without writing artifacts. Worth a future KE on "heartbeat triage that lands no artifact ≠ shallow but trips the gate anyway"; not creating now to avoid the dismissal-project anti-pattern.
+
+## 2026-05-10T22:34 UTC
+
+**System Health**: Mostly green. 97% success rate last hour, 33 sessions completed.
+
+**Key Observations**:
+- 6 sessions actually running, 165 total (most stale/interrupted)
+- DB size at 1182 MB - under 2000 threshold
+- 1 blocked project, 0 active push projects
+- All health checks PASS
+
+**Metrics Needing Attention**:
+- `Heartbeat decision coverage rate`: 0 (target 1)
+- `Journal reference rate`: 0 (target 0.3)
+- `Reviewed good sessions overturned`: 0.28 (target 0.05)
