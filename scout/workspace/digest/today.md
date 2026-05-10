@@ -149,3 +149,9 @@
 **Summary**: The recurring theme across XHS (micro-agent patterns), arXiv ('Synergy' paper), and HN is the shift from monolithic macro-agents to specialized micro-agents. This trend also necessitates a shift in evaluation architectures (from monolithic to micro-evaluators).
 **Implication**: May-Agent's architecture and evaluation framework should be reviewed to align with this micro-specialization trend to reduce tool friction and evaluation false positives.
 **KB**: KE-1041 (new)
+
+### GitHub AI Agent Trends
+**Source**: [GitHub AI Agent Search](https://github.com/search?q=topic%3Aai-agent+created%3A%3E2026-01-01&type=repositories)
+**Summary**: Career-ops is a popular AI job search system built on Claude Code. Nanobot is a very lightweight personal AI agent. OpenCLI makes any website and tool accessible via CLI, which is perfect for AI agents.
+**Implication**: The trend is moving towards CLI integrations and lightweight personal agents. OpenCLI's concept of making anything a CLI with AGENT.md integration is particularly relevant for expanding our agent's capabilities.
+**KB**: N/A
