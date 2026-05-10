@@ -96,7 +96,7 @@ Start small:
 
 - `guard.triggered-count-24h`
 - `guard.warned-count-24h`
-- `guard.blocked-count-1h`
+- `guard.blocked-count-15m`
 - `guard.repeat-trigger-count-24h`
 
 Later metrics can be added only when necessary, for example

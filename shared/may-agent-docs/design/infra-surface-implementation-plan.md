@@ -103,7 +103,7 @@ Add default guard handler:
 
 - records `guard.triggered-count-24h`,
 - records `guard.warned-count-24h`,
-- records `guard.blocked-count-1h`,
+- records `guard.blocked-count-15m`,
 - records `guard.repeat-trigger-count-24h`,
 - attaches session/workflow/step trace fields.
 
