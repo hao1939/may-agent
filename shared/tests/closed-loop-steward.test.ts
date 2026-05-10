@@ -8,9 +8,6 @@ function makeDb(openAlerts: unknown[] = []) {
         const table = sql.match(/PRAGMA table_info\(([^)]+)\)/)?.[1] ?? "unknown";
         return { all: vi.fn(() => [{ name: `${table}_id`, type: "TEXT" }]) };
       }
-      if (sql.includes("WHERE agent = 'may'") && sql.includes("status = 'running'")) {
-        return { get: vi.fn(() => null) };
-      }
       if (sql.includes("FROM metric_alerts")) {
         return { all: vi.fn(() => openAlerts) };
       }
@@ -26,10 +23,10 @@ function makeDb(openAlerts: unknown[] = []) {
       if (sql.includes("FROM metric_snapshots")) {
         return { get: vi.fn(() => null) };
       }
-      if (sql.includes("FROM workflow_runs")) {
+      if (sql.includes("FROM workflow_runs") && sql.includes("status = 'running'")) {
         return { get: vi.fn(() => null) };
       }
-      if (sql.includes("FROM sessions") && sql.includes("source = 'closed-loop-steward'")) {
+      if (sql.includes("FROM workflow_runs")) {
         return { all: vi.fn(() => []) };
       }
       return { all: vi.fn(() => []), get: vi.fn(() => null) };
@@ -37,20 +34,24 @@ function makeDb(openAlerts: unknown[] = []) {
   };
 }
 
-function makeCtx(db: ReturnType<typeof makeDb>, runAgent = vi.fn(() => new Promise(() => {}))) {
+function makeCtx(
+  db: ReturnType<typeof makeDb>,
+  runWorkflow = vi.fn(() => Promise.resolve({ status: "done", runId: "wr_1" })),
+) {
   return {
+    agentName: "may",
     sdk: {
       paths: { agents: "/app/agents" },
       getDb: () => db,
-      runAgent,
-      runWorkflow: vi.fn(() => Promise.resolve({ status: "done" })),
+      runWorkflow,
+      emit: vi.fn(),
       log: vi.fn(),
     },
   } as any;
 }
 
 describe("closed-loop-steward handler", () => {
-  it("injects runtime schema and returns immediately after dispatching may instead of awaiting the may session", async () => {
+  it("injects runtime schema and returns immediately after dispatching workflows instead of awaiting the may audit", async () => {
     const db = makeDb([
       {
         id: 123,
@@ -67,8 +68,11 @@ describe("closed-loop-steward handler", () => {
         alertOp: ">",
       },
     ]);
-    const runAgent = vi.fn(() => new Promise(() => {}));
-    const ctx = makeCtx(db, runAgent);
+    const runWorkflow = vi.fn((name: string) => {
+      if (name === "closed-loop-steward") return new Promise(() => {});
+      return Promise.resolve({ status: "done", runId: "wr_triage" });
+    });
+    const ctx = makeCtx(db, runWorkflow);
     const handler = create(ctx, { handlerConfig: {} } as any);
 
     const result = await Promise.race([
@@ -77,8 +81,9 @@ describe("closed-loop-steward handler", () => {
     ]);
 
     expect(result).toBe("returned");
-    expect(runAgent).toHaveBeenCalledWith("may", expect.stringContaining("[cron:closed-loop-steward]"), { source: "closed-loop-steward" });
-    const task = runAgent.mock.calls[0]?.[1];
+    expect(runWorkflow).toHaveBeenCalledWith("metric-alert-triage", expect.any(String), { source: "may" });
+    expect(runWorkflow).toHaveBeenCalledWith("closed-loop-steward", expect.stringContaining("[cron:closed-loop-steward]"), { source: "may" });
+    const task = runWorkflow.mock.calls.find(([name]) => name === "closed-loop-steward")?.[1];
     expect(task).toContain("## Routed Triage This Run");
     expect(task).toContain("handler.failed-count owner=may reason=missing metric.alert_judged event");
   });
@@ -100,13 +105,13 @@ describe("closed-loop-steward handler", () => {
         alertOp: ">",
       },
     ]);
-    const runAgent = vi.fn(() => Promise.resolve({ status: "done" }));
-    const ctx = makeCtx(db, runAgent);
+    const runWorkflow = vi.fn(() => Promise.resolve({ status: "done", runId: "wr_1" }));
+    const ctx = makeCtx(db, runWorkflow);
     const handler = create(ctx, { handlerConfig: {} } as any);
 
     await handler();
 
-    const task = runAgent.mock.calls[0]?.[1];
+    const task = runWorkflow.mock.calls.find(([name]) => name === "closed-loop-steward")?.[1];
     expect(task).toContain("Never attempt direct DB writes from bash/node/sqlite during this audit");
     expect(task).toContain("route/escalate or fix the handler/workflow code instead of improvising DB/event writes");
   });
@@ -128,13 +133,13 @@ describe("closed-loop-steward handler", () => {
         alertOp: "<",
       },
     ]);
-    const runAgent = vi.fn(() => Promise.resolve({ status: "done" }));
-    const ctx = makeCtx(db, runAgent);
+    const runWorkflow = vi.fn(() => Promise.resolve({ status: "done", runId: "wr_1" }));
+    const ctx = makeCtx(db, runWorkflow);
     const handler = create(ctx, { handlerConfig: {} } as any);
 
     await handler();
 
-    const task = runAgent.mock.calls[0]?.[1];
+    const task = runWorkflow.mock.calls.find(([name]) => name === "closed-loop-steward")?.[1];
     expect(task).toContain("do not conclude 'no action' from owner activity alone");
     expect(task).toContain("Recent owner activity is context, not closure evidence");
     expect(task).toContain("Closure evidence is a resolved alert, an in-range latest snapshot");
@@ -142,12 +147,12 @@ describe("closed-loop-steward handler", () => {
 
   it("skips without dispatch when no alerts or delivery failures exist", async () => {
     const db = makeDb([]);
-    const runAgent = vi.fn(() => Promise.resolve({ status: "done" }));
-    const ctx = makeCtx(db, runAgent);
+    const runWorkflow = vi.fn(() => Promise.resolve({ status: "done", runId: "wr_1" }));
+    const ctx = makeCtx(db, runWorkflow);
     const handler = create(ctx, { handlerConfig: {} } as any);
 
     await handler();
 
-    expect(runAgent).not.toHaveBeenCalled();
+    expect(runWorkflow).not.toHaveBeenCalled();
   });
 });

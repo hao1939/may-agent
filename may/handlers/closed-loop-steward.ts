@@ -39,6 +39,13 @@ type SessionRow = {
   endedAt: number | null;
 };
 
+type WorkflowRunRow = {
+  runId: string;
+  status: string;
+  startedAt: number;
+  endedAt: number | null;
+};
+
 type EventRow = {
   id: number;
   source: string | null;
@@ -100,6 +107,13 @@ function summarizeSessions(sessions: SessionRow[], now: number): string {
   if (sessions.length === 0) return "none since alert";
   return sessions
     .map((s) => `${s.sessionId}:${s.status}:${s.source ?? "manual"}:${age(now, s.startedAt)} ago`)
+    .join("; ");
+}
+
+function summarizeWorkflowRuns(runs: WorkflowRunRow[], now: number): string {
+  if (runs.length === 0) return "none";
+  return runs
+    .map((run) => `${run.runId}:${run.status}:${age(now, run.startedAt)} ago`)
     .join("; ");
 }
 
@@ -290,12 +304,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     });
 
     const recentStewardRuns = db.prepare(
-      `SELECT sessionId, status, source, startedAt, endedAt
-       FROM sessions
-       WHERE agent = 'may' AND source = 'closed-loop-steward'
+      `SELECT runId, status, startedAt, endedAt
+       FROM workflow_runs
+       WHERE workflow = 'closed-loop-steward'
        ORDER BY startedAt DESC
        LIMIT 3`,
-    ).all() as SessionRow[];
+    ).all() as WorkflowRunRow[];
 
     const routedTriageCandidates = triageCandidates.slice(0, triageLimit);
     for (const candidate of routedTriageCandidates) {
@@ -376,7 +390,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       failureLines.length ? failureLines.join("\n") : "none",
       "",
       "## Recent Steward Runs",
-      recentStewardRuns.length ? summarizeSessions(recentStewardRuns, now) : "none",
+      summarizeWorkflowRuns(recentStewardRuns, now),
       "",
       "## Routed Triage This Run",
       routedTriageLines.length ? routedTriageLines.join("\n") : "none",
