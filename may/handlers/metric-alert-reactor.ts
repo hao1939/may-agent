@@ -50,6 +50,16 @@ function isBreaching(current: number | null, threshold: number | null, alertOp: 
   return alertOp === ">" || alertOp === "above" ? current > threshold : current < threshold;
 }
 
+function emitSkip(ctx: HandlerContext, metricId: string | null, reason: string, data: Record<string, unknown> = {}): void {
+  ctx.sdk.log("info", `[metric-alert-reactor] ${reason}`);
+  ctx.sdk.emit("handler.skipped", {
+    handler: "metric-alert-reactor",
+    metricId,
+    reason,
+    ...data,
+  });
+}
+
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   const configuredAgents = listConfiguredAgents(ctx.sdk.paths.agents);
 
@@ -71,7 +81,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         ).all() as Array<{ metric_id: string; message: string; metricName: string; explicitOwner?: string | null; projectOwner?: string | null; threshold: number; target: number; current: number; priority: string }>;
 
         if (unresolved.length === 0) {
-          ctx.sdk.log("info", "[metric-alert-reactor] Timer tick: no unresolved alerts.");
+          emitSkip(ctx, null, "Timer tick: no unresolved alerts.");
           return;
         }
         ctx.sdk.log("info", `[metric-alert-reactor] Timer tick: found ${unresolved.length} unresolved alert(s), processing...`);
@@ -94,7 +104,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         await Promise.allSettled(promises);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
-        ctx.sdk.log("info", `[metric-alert-reactor] Timer tick DB error: ${msg}`);
+        emitSkip(ctx, null, `Timer tick DB error: ${msg}`);
       }
       return;
     }
@@ -117,7 +127,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
     };
 
     if (!metricId) {
-      ctx.sdk.log("info", "[metric-alert-reactor] Missing metricId in event data.");
+      emitSkip(ctx, null, "Missing metricId in event data.");
       return;
     }
 
@@ -142,7 +152,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
       priority = metricRow?.priority ?? priority;
       if (metricRow) owner = resolveMetricOwner(metricId, configuredAgents, metricRow.explicitOwner, metricRow.projectOwner);
       if (priority !== "P0" && priority !== "P1" && priority !== "P2") {
-        ctx.sdk.log("info", `[metric-alert-reactor] Deferring ${metricId} (${priority}) to metric context.`);
+        emitSkip(ctx, metricId, `Deferring ${metricId} (${priority}) to metric context.`, { priority });
         return;
       }
 
@@ -154,7 +164,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
         ).get(metricId) as { id: number; created_at: number } | null;
         const alertAge = alertRow ? Date.now() - alertRow.created_at : 0;
         if (alertAge < DIRECT_TRIAGE_AFTER_MS) {
-          ctx.sdk.log("info", `[metric-alert-reactor] ${priority} ${metricId} alert age ${Math.round(alertAge/60000)}m < ${Math.round(DIRECT_TRIAGE_AFTER_MS / 60000)}m, deferring.`);
+          emitSkip(ctx, metricId, `${priority} ${metricId} alert age ${Math.round(alertAge/60000)}m < ${Math.round(DIRECT_TRIAGE_AFTER_MS / 60000)}m, deferring.`, { priority, alertAgeMs: alertAge });
           return;
         }
         const judgedEvent = db.prepare(
@@ -172,7 +182,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
           const judgmentData = parseJsonObject(judgedEvent.data);
           const nextValidationAt = parseValidationTime(judgmentData.nextValidationAt);
           if (nextValidationAt != null && Date.now() < nextValidationAt) {
-            ctx.sdk.log("info", `[metric-alert-reactor] P1 ${metricId} judged (event ${judgedEvent.id}); waiting for requested validation.`);
+            emitSkip(ctx, metricId, `P1 ${metricId} judged (event ${judgedEvent.id}); waiting for requested validation.`, { judgedEventId: judgedEvent.id, nextValidationAt });
             return;
           }
 
@@ -184,18 +194,18 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
              LIMIT 1`
           ).get(metricId) as { value: number | null; measured_at: number } | null;
           if (!latestSnapshot || latestSnapshot.measured_at <= judgedEvent.timestamp) {
-            ctx.sdk.log("info", `[metric-alert-reactor] P1 ${metricId} judged (event ${judgedEvent.id}); awaiting next metrics snapshot.`);
+            emitSkip(ctx, metricId, `P1 ${metricId} judged (event ${judgedEvent.id}); awaiting next metrics snapshot.`, { judgedEventId: judgedEvent.id });
             return;
           }
           if (Date.now() - judgedEvent.timestamp < P1_RETRIAGE_COOLDOWN_MS) {
-            ctx.sdk.log("info", `[metric-alert-reactor] P1 ${metricId} judged (event ${judgedEvent.id}); validation cooldown active.`);
+            emitSkip(ctx, metricId, `P1 ${metricId} judged (event ${judgedEvent.id}); validation cooldown active.`, { judgedEventId: judgedEvent.id });
             return;
           }
 
           const currentValue = numberOrNull(latestSnapshot.value ?? metricRow?.current ?? current);
           const thresholdValue = numberOrNull(metricRow?.threshold ?? threshold);
           if (!isBreaching(currentValue, thresholdValue, metricRow?.alertOp)) {
-            ctx.sdk.log("info", `[metric-alert-reactor] P1 ${metricId} judged and latest snapshot is recovered; waiting for alert lifecycle.`);
+            emitSkip(ctx, metricId, `P1 ${metricId} judged and latest snapshot is recovered; waiting for alert lifecycle.`, { judgedEventId: judgedEvent.id });
             return;
           }
           ctx.sdk.log("info", `[metric-alert-reactor] P1 ${metricId} still breaching after judgment event ${judgedEvent.id}; rerunning triage.`);
@@ -215,7 +225,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
 
       if (recentTriageRun) {
         if (recentTriageRun.status === "running") {
-          ctx.sdk.log("info", `[metric-alert-reactor] Skipping ${metricId} — metric-alert-triage already running (${recentTriageRun.runId})`);
+          emitSkip(ctx, metricId, `Skipping ${metricId} — metric-alert-triage already running (${recentTriageRun.runId})`, { workflowRunId: recentTriageRun.runId });
           return;
         }
         const judgment = db.prepare(
@@ -227,7 +237,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
            LIMIT 1`
         ).get(metricId, recentTriageRun.startedAt) as { id: number } | null;
         if (judgment && !forceRetriageAfterJudgment) {
-          ctx.sdk.log("info", `[metric-alert-reactor] Skipping ${metricId} — recent triage workflow ${recentTriageRun.runId} emitted judgment ${judgment.id}`);
+          emitSkip(ctx, metricId, `Skipping ${metricId} — recent triage workflow ${recentTriageRun.runId} emitted judgment ${judgment.id}`, { workflowRunId: recentTriageRun.runId, judgmentEventId: judgment.id });
           return;
         }
       }
@@ -242,7 +252,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
 
       if (recentSession) {
         if (recentSession.status === "running") {
-          ctx.sdk.log("info", `[metric-alert-reactor] Skipping ${metricId} — ${owner} already has running session ${recentSession.sessionId}`);
+          emitSkip(ctx, metricId, `Skipping ${metricId} — ${owner} already has running session ${recentSession.sessionId}`, { owner, sessionId: recentSession.sessionId });
           return;
         }
         const judgment = db.prepare(
@@ -254,14 +264,14 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
            LIMIT 1`
         ).get(metricId, recentSession.startedAt) as { id: number } | null;
         if (judgment && !forceRetriageAfterJudgment) {
-          ctx.sdk.log("info", `[metric-alert-reactor] Skipping ${metricId} — ${owner} already judged it in recent session ${recentSession.sessionId}`);
+          emitSkip(ctx, metricId, `Skipping ${metricId} — ${owner} already judged it in recent session ${recentSession.sessionId}`, { owner, sessionId: recentSession.sessionId, judgmentEventId: judgment.id });
           return;
         }
         ctx.sdk.log("info", `[metric-alert-reactor] Re-running ${metricId} — recent session ${recentSession.sessionId} ended without judgment`);
       }
     } catch {
       if (priority !== "P0") {
-        ctx.sdk.log("info", `[metric-alert-reactor] Deferring ${metricId} (${priority}) to metric context.`);
+        emitSkip(ctx, metricId, `Deferring ${metricId} (${priority}) to metric context.`, { priority, reasonType: "db_unavailable" });
         return;
       }
       // DB unavailable for dedup — proceed for explicit P0 events.
@@ -293,10 +303,19 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
 
     try {
       const PER_ALERT_TIMEOUT_MS = 240_000; // 4 minutes per alert
-      await Promise.race([
+      const result = await Promise.race([
         ctx.sdk.runWorkflow("metric-alert-triage", task, { source: owner }),
         new Promise<never>((_, rej) => setTimeout(() => rej(new Error(`Per-alert timeout (${PER_ALERT_TIMEOUT_MS / 1000}s) for ${metricId}`)), PER_ALERT_TIMEOUT_MS)),
       ]);
+      ctx.sdk.emit("handler.workflow_dispatched", {
+        handler: "metric-alert-reactor",
+        workflow: "metric-alert-triage",
+        metricId,
+        owner,
+        priority,
+        workflowRunId: result.runId ?? null,
+        status: result.status,
+      });
       ctx.sdk.log("info", `[metric-alert-reactor] Ran metric-alert-triage for ${owner} to handle ${metricId}`);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
