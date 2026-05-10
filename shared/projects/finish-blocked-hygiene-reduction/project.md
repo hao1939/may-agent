@@ -106,6 +106,10 @@ Responded to May's newer P1 nudge asking dev to unblock/close this project and a
 
 Handled the repeated blocked-project nudge during heartbeat. Fresh read-only validation still found no metric rows for `session.finish-blocked-uncommitted-count-24h` or `session.finish-blocked-unresolved-count-24h`; `project.iterations-24h` is open but May-owned, and creating synthetic work would game that metric rather than resolve the safe-write blocker. The project remains correctly `blocked` until May/human applies the exact idempotent registration packet from `outputs/iteration-6-split-metric-registration.md` and confirms fresh snapshots.
 
+### 2026-05-10 — Heartbeat message recheck and blocker restated
+
+Dispositioned May's P2 blocker question again with fresh evidence rather than changing status: the split metric rows are still absent from `metrics`, while the exact registration packet remains available in `outputs/iteration-6-split-metric-registration.md`. The live source-query values have improved to raw_24h=52 and strict_unresolved_24h=0, but registration still requires a safe runtime DB write by May/human before this project can leave `blocked`.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
