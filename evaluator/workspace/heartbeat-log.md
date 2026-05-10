@@ -111,3 +111,43 @@
 - Result: repo is already dirty on multiple unrelated paths, so a clean-worktree `finish(success)` is unsafe without owner cleanup or approval.
 - Evaluator-owned artifact for this heartbeat: this appended note in `agents/evaluator/workspace/heartbeat-log.md`.
 - Required escalation if a clean success finish is needed: resolve or isolate these existing dirty paths first — `arc/last-session.md`, `dev/last-session.md`, `evaluator/last-session.md`, `may/last-session.md`, `scout/context.md`, `scout/last-session.md`, `shared/anti-shallow-gate-triggers.log`, `shared/duration-gate-triggers.log`, `shared/exp720-fewshot-dryrun.log`, `shared/gate-outcomes.log`, `shared/projects/ruflo-learning-loop/project.md`, `shared/projects/v2-spec-coverage-buildout/journal.md`, `test/guards.test.ts`.
+
+## 2026-05-10 (artifact-gate classification)
+- Trigger: artifact gate follow-up required at least one meaningful file write in this heartbeat.
+- Action: ran `git status --short` in `/app/agents` and classified each currently dirty path before attempting any stage/commit operation.
+- Classification:
+  - `arc/last-session.md` — unrelated agent runtime/session state
+  - `dev/last-session.md` — unrelated agent runtime/session state
+  - `evaluator/last-session.md` — evaluator runtime/session state; not a safe deliverable to stage
+  - `may/last-session.md` — unrelated agent runtime/session state
+  - `scout/last-session.md` — unrelated agent runtime/session state
+  - `shared/anti-shallow-gate-triggers.log` — shared generated log
+  - `shared/duration-gate-triggers.log` — shared generated log
+  - `shared/exp720-fewshot-dryrun.log` — shared generated log
+  - `shared/gate-outcomes.log` — shared generated log
+  - `shared/projects/daily-alert-review/discussion.md` — shared project artifact owned elsewhere
+  - `shared/projects/daily-alert-review/journal.md` — shared project artifact owned elsewhere
+  - `shared/projects/daily-alert-review/project.md` — shared project artifact owned elsewhere
+  - `shared/projects/ruflo-learning-loop/project.md` — shared project artifact owned elsewhere
+  - `shared/projects/v2-spec-coverage-buildout/journal.md` — shared project artifact owned elsewhere
+  - `test/guards.test.ts` — code/test change with unclear ownership
+- Deliverable for this heartbeat: this appended classification note in `agents/evaluator/workspace/heartbeat-log.md`.
+- Blocker: cannot satisfy a clean-worktree commit requirement without guidance or cleanup for the unrelated dirty paths above.
+
+## 2026-05-10 (heartbeat calibration snapshot)
+- DB canonical liveness check: `MAX(evaluations.createdAt)=1778380156731`, `MAX(sessions.startedAt)=1778380269017`, `MAX(sessions.endedAt)=1778380256694` → eval lag remains low (≈112.3s vs latest start, ≈100.0s vs latest end), so Process #5 is live.
+- Process #15 remains active in the shared `evaluations` table: `evals_last24h=676`, `llm_evals_last24h=30`; absence of dedicated `*llm*` tables is still a schema choice, not a liveness failure.
+- Legacy artifact path check: `ls -1 .state/evaluations | tail -5` still returns only old `task_tree_*` files, so `.state/evaluations/` remains a stale filesystem signal and should not be used as the primary health check.
+- Inbox triage judgment: sampled newest pending events show fresh `handler.started/completed`, `session.start/end`, and `evaluation.*` rows while the related aftermath artifact `agents/evaluator/workspace/aftermath/s_1778379965833_531.md` already exists. Treat the surfaced pending evaluator events as backlog-noise / already-handled rather than dropped work.
+- Event-status quality check: total pending rows are still extremely high (`pending_count=548446`, evaluator-related subset ≈`99587`), but recent 10-minute volume shows active flow (`handler.started`=16, `handler.completed`=15, `session.start`=11, `session.end`=10). Continue treating `events.status` totals as non-canonical while using timestamps/rows/artifact existence for liveness.
+- Monitor action: `node agents/evaluator/skills/monitor-session.cjs --running` found one active alert — May session `s_1778379979179_532` flagged `PROTOCOL_VIOLATION` with evidence `P114 Violation: Complex task attempted without Experience Replay (grep ERROR_LOG).` I notified May to warn on that session.
+- Calibration inputs remain blocked: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` are still placeholder stubs, so there were no fresh disagreement datasets to process this cycle.
+- Finish hygiene blocker remains unchanged: `/app/agents` is dirty on unrelated runtime/shared paths (`arc/last-session.md`, `dev/last-session.md`, `evaluator/last-session.md`, `may/last-session.md`, `scout/last-session.md`, shared logs/projects, `test/guards.test.ts`), so a clean success commit is unsafe this heartbeat.
+
+## 2026-05-10 (06:31Z heartbeat triage + process check)
+- DB canonical check keeps both owned processes live: `MAX(evaluations.createdAt)=1778394658466`, `MAX(sessions.startedAt)=1778394668465`, `MAX(sessions.endedAt)=1778394658418`, with `evals_last24h=676`, `llm_evals_last24h=30`, and `sessions_last24h=1414`.
+- Pending inbox judgment: the surfaced `session.start` / `evaluation.routed` items for `s_1778394583234_708` were already in-flight during this heartbeat. `sessions` shows the target session ended `done` at `1778394658418`, and `events` now contain `evaluation.reviewed` for that same session with artifact path `agents/evaluator/workspace/aftermath/s_1778394583234_708.md`. Treat those repeated pending rows as already-handled backlog noise, not dropped evaluator work.
+- Event-schema correction: a failed probe confirmed `events` uses `event_type` and `timestamp`, not `type` / `createdAt`. Recent 5-minute grouped rows still show only `status='pending'`, but fresh counts remain high (`handler.completed`=7, `handler.started`=6, `session.end`=7, `session.start`=6), so row freshness remains the useful signal while status totals remain non-canonical backlog noise.
+- Running-session check: `node agents/evaluator/skills/monitor-session.cjs --running` reported 2 healthy sessions and 0 external anomalies to escalate.
+- Calibration inputs are still blocked structurally: `agents/evaluator/workspace/consistency-flags.jsonl`, `human-reviews.jsonl`, and `re-evaluations.jsonl` each read back as 2026-04-29 placeholder stubs pointing to missing archive targets, so there is still no current disagreement dataset to calibrate against.
+- Legacy filesystem signal remains stale: `.state/evaluations/` still surfaces old top-level artifacts, so continue treating DB recency rather than filesystem mtimes as the canonical liveness source.
