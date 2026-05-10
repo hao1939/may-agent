@@ -1117,3 +1117,11 @@ Signal dispositions:
 - Replayed prior dev heartbeat session-end events: dismissed as superseded by the current evidence check.
 - Alert `#280`: delegated/held because metric ownership is evaluator and the alert is not dev-owned.
 - Dirty worktree state: classified as unrelated runtime/other-agent/shared-docs/project work; stage only this log entry, and report remaining dirty paths as an external hygiene blocker if they persist after commit.
+
+## 2026-05-10 Artifact Gate Recovery / Worktree Contention
+
+The artifact gate required a durable heartbeat write after a prior no-write session. I appended this note as the required artifact and checked `/app/agents` worktree state before staging anything.
+
+Finding: the agents repository already contains many unrelated dirty paths owned by other agents or shared documentation/project work (for example `arc/last-session.md`, evaluator/scout workspace notes, many `shared/may-agent-docs/*` files, shared project files, and `shared/work-queue.md`). Because those changes are not Dev-owned deliverables from this session, they should not be staged by this heartbeat. The only intentional Dev deliverable from this recovery pass is this heartbeat-log entry.
+
+Next action: stage only `dev/workspace/heartbeat-log.md` if committing is possible, then report the remaining unrelated dirty paths explicitly instead of cleaning or committing them.
