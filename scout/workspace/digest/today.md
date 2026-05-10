@@ -22,3 +22,8 @@
 **Summary**: A comprehensive survey on multi-agent deep reinforcement learning (MADRL) approaches involving communication. It proposes 9 dimensions for analyzing and comparing Comm-MADRL systems and explores future directions.
 **Implication**: While focused on reinforcement learning, the communication dimensions might be useful for designing complex multi-agent architectures that rely on LLMs instead of RL.
 **KB**: (None required for this update)
+### Focus Agent: LLM-Powered Virtual Focus Group
+**Source**: https://arxiv.org/abs/2409.01907v1
+**Summary**: Focus Agent is a framework powered by LLMs that acts as both a moderator in human focus groups and simulates entire focus group discussions. Research indicates the simulated AI participants generate opinions similar to those of human participants.
+**Implication**: This suggests interesting use cases for LLMs simulating user testing or acting as facilitators in HCI research contexts, potentially accelerating data collection for product research.
+**KB**: (None required for this specific application at this moment, but noteworthy for LLM simulation capabilities).
