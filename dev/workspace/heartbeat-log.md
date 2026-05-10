@@ -656,3 +656,19 @@ Pending event dispositions:
 - Artifact-gate/recovery events: acted by appending this current evidence-bearing entry and committing only the intentional dev artifact.
 
 Judgment: no code patch, new shared project, or unsafe DB action is warranted. Continue to hold the blocked project until May/human registers the split metrics, and keep watching the LLM-eval lane while it remains live.
+
+## 2026-05-10 Artifact Gate Recovery: Schema-First Repeated
+
+Administrative heartbeat artifact written because the artifact gate reported this session produced no file writes.
+
+Evidence checked:
+- Latest core runtime snapshots remain healthy for dev-owned infrastructure triage: `handler.failed-count=0`, `handler.success-rate=1`, and `session.error-rate-6h=0.0198` in the most recent sampled rows.
+- A corrected active-metric lookup found no `status='active'` metrics owned by dev in the live `metrics` table.
+- Open metric alerts remain non-dev-owned: may owns `project.iterations-24h` and `capability.message-conversation-close-rate`; scout owns `scout.good-session-rate-24h` and `scout.operational-friction-rate-24h`.
+- The split finish-blocked metrics (`session.finish-blocked-uncommitted-count-24h` and `session.finish-blocked-unresolved-count-24h`) are still absent from `metrics`, so the known `finish-blocked-hygiene-reduction` blocker remains external safe DB registration rather than a dev-local edit.
+- I again attempted stale column names first (`metrics.active`, `metric_alerts.owner/status`). The query tool returned schemas showing the correct columns are `metrics.status` plus joining `metric_alerts.metric_id` to `metrics.owner/current/threshold/alert_op`; this reinforces that ad hoc DB queries must start with schema inspection or known-good canned SQL.
+
+Disposition:
+- Artifact gate: satisfied by this workspace write.
+- Dev-owned patch decision: no code or shared workflow change is warranted from the current signals.
+- Follow-up: keep using schema-first SQL before non-canned runtime DB queries, and wait for May/human safe registration of the split metrics before unblocking the hygiene project.
