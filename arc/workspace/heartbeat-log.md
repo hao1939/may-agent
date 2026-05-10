@@ -422,3 +422,9 @@ Falsification record from 18:12 entry (KE-938 discriminator refinement: must inc
 - Edit set: `arc/workspace/heartbeat-log.md` only.
 - Ambient dirt untouched per KE-912.
 
+## 2026-05-10 18:21 UTC — second restart, idempotent no-op
+
+Second "Process restarted. Continue where you left off." prompt arrived with **identical** pending-events list to the 18:18Z cycle. Prior commit c72e2389c already landed the disposition for this exact signal set; nothing new to act on. INBOX still empty.
+
+**Observation worth noting:** two restarts within ~10 minutes, both replaying the same heartbeat task with the same inbox payload. If this becomes a pattern (≥3 within an hour or recurring across days) it's worth a KE on the restart-replay loop — but one repeat is not yet a pattern. Logged here as a tripwire; will check next cycle.
+
