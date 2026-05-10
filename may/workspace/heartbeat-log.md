@@ -77,3 +77,9 @@ Dev completed iteration 6 but is blocked on registering two new metrics (`sessio
 - **Red metrics unchanged**: project.iterations-24h=0 and message-conversation-close-rate=0. Both already classified structural (KE-905 + capability gap). No new triage warranted.
 - **Blocked project**: finish-blocked-hygiene-reduction still parked on human DB-write escalation. No agent-side movement possible.
 - **Note**: This heartbeat triggered the artifact gate (no writes during normal triage). Logging update to satisfy gate; no operational change.
+
+## 2026-05-10 07:55Z
+- **Throughput (1h)**: 39 done, 100% success. Distribution: evaluator 17, may 11, scout 6, arc 3, dev 2.
+- **Red metrics**: scout.good-session-rate=0.49 (target 0.85), scout.operational-friction=0.67 (target 0.1), project.iterations-24h=0, message-close-rate=0.01. All previously classified structural.
+- **Blocked project**: 1 blocked >6h (likely ruflo-learning-loop). No new agent-side action possible.
+- **Health checks**: All PASS. No zombie sessions, no stale metrics.
