@@ -140,3 +140,41 @@ Ran `extract-strategy.cjs` on 3 recent non-evaluator session logs:
 - Before the fix, `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778417748673_985/session.jsonl | jq '.lessons'` returned **2** lessons, including the bogus commit-message trigger.
 - After the fix, the same command returns **1** lesson and keeps only `/bin/bash: line 1: cd: /app/may: No such file or directory`.
 - Re-running on `.state/sessions/history/s_1778417962198_988/session.jsonl` and `.state/sessions/history/s_1778417766211_986/session.jsonl` still returns empty lesson arrays.
+
+---
+
+# Proposed Strategies — 2026-05-10 22:05Z
+
+## Scope
+Ran `extract-strategy.cjs` on 3 newer non-evaluator session logs:
+- `.state/sessions/history/s_1778448795721_87/session.jsonl` (arc)
+- `.state/sessions/history/s_1778448869609_93/session.jsonl` (dev)
+- `.state/sessions/history/s_1778448795823_89/session.jsonl` (scout)
+
+## Output Summary
+- Logs scanned: 3
+- Lessons extracted: 1
+- Sessions with no extracted lessons: 2
+
+## Lessons
+
+### 1. Missing-knowledge lookups are still producing avoidable bash failures
+**Evidence:** Scout session `s_1778448795823_89` yielded one recovery lesson with trigger `cat: agents/shared/knowledge/entries/KE-1051-provenance-paradox.md: No such file or directory`.
+
+**Strategy:**
+- Verify knowledge-entry existence with `ls`, `find`, or a targeted search before `cat`/`read` on a guessed KE path.
+- Treat missing-KE lookups as lightweight recovery signals: they usually indicate stale references or guessed identifiers, not deep task failure.
+- When the missing path is part of a broader synthesis task, fall back to the surrounding artifact index rather than retrying the same guessed filename.
+
+## Calibration Notes
+- The extractor returned no lessons for the reviewed arc and dev sessions because both were mostly clean proposal/review flows without matching recovery patterns.
+- This reinforces that the current periodic run is recovery-heavy: it surfaces concrete error-prevention advice, but it does not yet mine positive tactics from high-value successful sessions.
+
+## Recommended Follow-up
+1. If evaluator wants periodic strategy extraction to capture successful-heartbeat patterns, add a separate positive-pattern mode instead of overloading recovery extraction.
+2. Keep treating one-off missing-file lookups as efficiency/reliability lessons, not automatic quality downgrades, unless they materially derail the task.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778448795721_87/session.jsonl` returned `"lessons": []`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778448869609_93/session.jsonl` returned `"lessons": []`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778448795823_89/session.jsonl` returned one recovery lesson keyed to the missing `KE-1051-provenance-paradox.md` path.
