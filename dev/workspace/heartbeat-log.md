@@ -401,3 +401,15 @@ Signal dispositions:
 - Owned projects: `eval-llm-lane-restoration` dismissed for action until review or lane regression; `finish-blocked-hygiene-reduction` remains escalated/deferred to May/human for safe metric registration.
 
 Next check: continue watching for split metric registration and LLM-eval liveness; do not patch code unless a fresh recurring dev-owned failure or Approved implementation item appears.
+
+## 2026-05-10 Artifact Gate Recovery
+
+The artifact gate reported that the prior heartbeat produced no file writes, so this entry records the recovery action and the current hygiene constraints before finishing.
+
+Findings:
+- A repository status check from `/app/agents` showed many pre-existing dirty runtime and cross-agent files before this write, including `arc/last-session.md`, `evaluator/*`, `may/last-session.md`, `scout/last-session.md`, shared gate logs, shared project notes, and `test/guards.test.ts`.
+- The only intentional artifact for this recovery session is `dev/workspace/heartbeat-log.md`.
+- Because the dirty paths are unrelated to this administrative artifact, they should not be staged or cleaned by this session solely to satisfy a gate.
+
+Next action:
+- Commit only this heartbeat log if possible; if unrelated dirty files remain afterward, finish with an explicit hygiene blocker naming those paths rather than bundling unrelated work.
