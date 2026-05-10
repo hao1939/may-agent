@@ -493,3 +493,24 @@ Dirty path classification from `/app/agents` before this intentional edit:
 - Shared runtime/gate logs or project work from other sessions, not owned by this deliverable: `shared/anti-shallow-gate-triggers.log`, `shared/duration-gate-triggers.log`, `shared/exp720-fewshot-dryrun.log`, `shared/gate-outcomes.log`, `shared/projects/daily-alert-review/discussion.md`, `shared/projects/daily-alert-review/journal.md`, `shared/projects/daily-alert-review/project.md`, `shared/projects/ruflo-learning-loop/project.md`, `shared/projects/v2-spec-coverage-buildout/journal.md`, `test/guards.test.ts`.
 
 Disposition: stage and commit only this workspace heartbeat log; leave unrelated dirty paths untouched and report them as the worktree-cleanliness blocker if they remain after commit.
+
+## 2026-05-10 Heartbeat: Queue Clear and Scout Metric Source Gap Noted
+
+Routine dev heartbeat with no approved implementation item and no dev-owned alert.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty; all implementation proposals remain in Proposed.
+- Current core runtime signals are healthy for dev-owned action: `handler.success-rate=1`, `handler.failed-count=0`, and `session.error-rate-6h=0.0318`.
+- Recent failed sessions are non-dev (`scout`, `arc`, `evaluator`) with `error=NULL`; no shared handler/source failure pattern is indicated by the current healthy handler metrics.
+- Direct unresolved alerts are `project.iterations-24h` (may), `capability.message-conversation-close-rate` (may), `scout.good-session-rate-24h` (scout), and `scout.operational-friction-rate-24h` (scout); operation chosen for dev: dismiss for direct action because ownership is may/scout and no Approved item delegates a dev implementation.
+- The unmeasured-active-metrics query returned only `scout.knowledge-practice-loaded` and `scout.knowledge-preamble-coverage`; a follow-up metric query showed both are scout-owned and have no `source_query` or `source_command`, so this is a scout metric-definition gap rather than a dev-owned snapshotter outage.
+- `eval-llm-lane-restoration` remains correctly `pending-review`; the metric snapshot shows `eval.llm-coverage-lag-h=1.38` below the 4h threshold and `eval.llm-evals-24h=31` above threshold.
+- `finish-blocked-hygiene-reduction` remains correctly `blocked`; it still needs May/human to execute the safe runtime metric registration write path described in the project.
+
+Signal dispositions:
+- Artifact-gate `session.start` warnings: acted by writing this heartbeat artifact and staging only `dev/workspace/heartbeat-log.md`.
+- Recent dev `session.end` artifact entries: dismissed as already acted; this entry records a fresh queue/metric/project check rather than duplicating the same recovery note.
+- P0 evaluator false-positive implementation request: dismissed as already completed in commit `6f373ef78`; no fresh evaluator-lane regression was found.
+- Scout unmeasured metrics: dismissed for direct dev action, but noted as a follow-up signal for scout/metric owners if the stale source-less definitions persist.
+
+Next check: if the scout knowledge metrics remain unmeasured with no source on the next dev heartbeat, treat it as a proposed metric-definition cleanup for the metric owner rather than a runtime handler failure.
