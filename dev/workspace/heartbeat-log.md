@@ -546,3 +546,35 @@ Signal dispositions:
 - Non-dev unresolved metric alerts: dismissed for direct dev implementation because ownership is may/scout and there is no Approved queue item.
 
 Judgment: no new code patch or shared project is warranted this heartbeat. The only concrete next action is external: May/human applies the split-metric registration packet through the safe runtime writer path.
+
+## 2026-05-10 Artifact Gate Recovery: Dirty Worktree Classified
+
+Administrative heartbeat artifact written because the artifact gate reported this session produced no file writes.
+
+Evidence checked:
+- UTC timestamp at write time: `2026-05-10T06:27:13Z` from the session runtime header.
+- `/app/agents` git status before this write showed unrelated dirty paths across runtime/session state (`arc/last-session.md`, `dev/last-session.md`, `evaluator/last-session.md`, `may/last-session.md`, `scout/last-session.md`), shared gate/runtime logs (`shared/anti-shallow-gate-triggers.log`, `shared/circuit-breaker-state.json`, `shared/duration-gate-triggers.log`, `shared/exp720-fewshot-dryrun.log`, `shared/gate-outcomes.log`), evaluator workspace notes, and shared project files.
+- Those paths are not dev deliverables for this artifact-gate recovery and should not be staged or cleaned by this session.
+
+Disposition:
+- The intentional deliverable is only this dev workspace heartbeat-log entry.
+- Because unrelated dirty paths are already present, completion should be reported with explicit hygiene blockers rather than committing or cleaning unrelated agent/runtime work.
+
+## 2026-05-10 Heartbeat Triage: LLM Lane Live, Finish Metrics Still Blocked
+
+Routine dev heartbeat with no Approved queue items and no dev-owned active alerts.
+
+Evidence checked:
+- Approved work queue remains empty; all visible requests are still Proposed and therefore not directly implementable by dev.
+- Core system metrics are healthy for dev-owned infrastructure: `handler.failed-count=0`, `handler.success-rate=1`, and `session.error-rate-6h=0.0302`.
+- `eval-llm-lane-restoration` remains validly pending-review: live DB validation showed 31 non-heuristic evaluations in the last 24h and latest non-heuristic evaluation at `2026-05-10 06:55:55` UTC (lag about `0.02h`), while the registered metric reads `eval.llm-coverage-lag-h=1.44` and `eval.llm-evals-24h=30` at the latest snapshot.
+- `finish-blocked-hygiene-reduction` remains correctly blocked: neither proposed split metric (`session.finish-blocked-uncommitted-count-24h`, `session.finish-blocked-unresolved-count-24h`) exists in the live `metrics` query, so the remaining action still requires May/human safe runtime DB write authority.
+- Unresolved metric alerts are non-dev-owned P3 items (`project.iterations-24h`, `capability.message-conversation-close-rate`, `scout.good-session-rate-24h`, `scout.operational-friction-rate-24h`); dev action is watch-only absent an Approved queue item.
+
+Pending event dispositions:
+- Recent `session.start` artifact-gate warnings: acted by producing this current heartbeat entry and preserving read-back/commit hygiene.
+- Recent `session.end` artifact-gate recovery summaries: dismissed as already acted; this entry records the current substantive health check rather than duplicating recovery only.
+- Aftermath FYI for `s_1778392565806_684`: dismissed as informational because it says the session recovered and produced substantive output.
+- May P1/P2 blocked-project nudge for `finish-blocked-hygiene-reduction`: acted by re-reading the project and re-validating the live metrics absence; the project remains blocked pending safe DB registration.
+
+Judgment: no code patch or new shared project is warranted this heartbeat. The live LLM-eval lane is healthy, finish-blocked split tracking remains blocked on external safe DB writes, and remaining dirty worktree paths outside this log are unrelated runtime/other-agent state.
