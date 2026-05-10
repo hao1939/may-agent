@@ -514,3 +514,17 @@ Signal dispositions:
 - Scout unmeasured metrics: dismissed for direct dev action, but noted as a follow-up signal for scout/metric owners if the stale source-less definitions persist.
 
 Next check: if the scout knowledge metrics remain unmeasured with no source on the next dev heartbeat, treat it as a proposed metric-definition cleanup for the metric owner rather than a runtime handler failure.
+
+## 2026-05-10 Artifact Gate Follow-up and Metrics Schema Check
+
+Artifact gate required this heartbeat to produce a durable write. I used the recovery turn to do a small dev-owned health/schema check and record the findings here.
+
+Evidence checked:
+- `/app/agents` worktree was already dirty before this artifact with unrelated runtime/project paths, including `arc/last-session.md`, `dev/last-session.md`, evaluator/may/scout last-session files, shared gate logs, and several shared project files. I will stage only this heartbeat log.
+- Live metric query schema reminders: `metrics` uses `current` rather than `latest_value`; `metric_alerts` has no `owner` column and must be joined to `metrics`; `sessions` uses `startedAt` rather than `started_at`.
+- Current dev-relevant operational metrics look healthy: `handler.failed-count=0`, `handler.success-rate=1`, and `handler.p95-duration=206500ms` is below its alert threshold even though above target.
+- Open metric alerts are currently owned by May or Scout (`project.iterations-24h`, `capability.message-conversation-close-rate`, `scout.good-session-rate-24h`, `scout.operational-friction-rate-24h`), so no direct dev fix was identified in this recovery turn.
+
+Disposition:
+- This note is the required heartbeat artifact.
+- Because many unrelated dirty files pre-existed this turn, final status should explicitly avoid claiming a clean agents worktree unless those paths are separately resolved by their owners.
