@@ -450,9 +450,30 @@ export class Cron {
     return true;
   }
 
-  /** Get the last fire time for a job (epoch ms). */
+  /** Get the last fire time for a job (epoch ms).
+   *  Falls back to workflow_runs DB if no in-memory record (e.g. after restart). */
   private getLastFireTime(entryName: string): number | null {
-    return this.lastFireTimes.get(entryName) ?? null;
+    const mem = this.lastFireTimes.get(entryName);
+    if (mem != null) return mem;
+
+    // Fall back to DB: check workflow_runs for the most recent run of this entry's workflow
+    try {
+      const db = getDb(this.persistDir);
+      // The workflow column matches handlerConfig.workflow or the entry name
+      const entry = this.entries.find(e => e.name === entryName);
+      const workflowName = entry?.handlerConfig?.workflow ?? entryName;
+      const row = db.prepare(
+        "SELECT startedAt FROM workflow_runs WHERE workflow = ? ORDER BY startedAt DESC LIMIT 1"
+      ).get(workflowName) as { startedAt: number } | undefined;
+      if (row?.startedAt) {
+        // Cache it in memory so we don't query DB again
+        this.lastFireTimes.set(entryName, row.startedAt);
+        return row.startedAt;
+      }
+    } catch {
+      // DB unavailable — treat as never ran
+    }
+    return null;
   }
 
   // ── Scheduling with resume ──────────────────────────────────────────
