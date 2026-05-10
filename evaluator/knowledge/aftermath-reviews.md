@@ -117,6 +117,10 @@
 - Symptom: the transcript shows `git add <intended-path>` or even `git add -f <intended-path>`, but the landed commit also contains another staged file from a different lane/agent.
 - Fix: verify the full commit contents with `git show --stat --name-only <commit>`, not just the transcript's add command. Credit the intended artifact if it is real, but downgrade hygiene/output quality when unrelated staged paths were swept into the commit or omitted from `finish()` deliverables.
 
+## Pattern: concurrent repo activity can ship a real artifact under the wrong commit identity
+- Symptom: the agent edits a valid file, but its own `git commit` fails (for example on an index lock or concurrent git process) and the staged change later appears inside another agent's successful commit with an unrelated subject/author.
+- Fix: inspect the landed diff and current file content first. If the artifact really shipped, keep substance credit, but downgrade hygiene because the session did not secure an isolated commit or clean closeout. Treat this as stronger than minor inefficiency when the session then relies on that unrelated commit in `finish()`.
+
 ## Pattern: reused shared knowledge IDs can silently overwrite established entries
 - Symptom: a research session creates `shared/knowledge/entries/KE-0xx.md` for a fresh external finding without checking whether that ID already anchors an existing canonical knowledge entry. The landed commit then replaces an established KE with unrelated content while transcript self-report still calls it a "new" KB entry.
 - Fix: before crediting a KB addition, inspect the pre-change file (`git show <commit>^:path`) and search indexes/references for that KE id. If the id was already in active use, treat the session as partial value at best: preserve any rolling digest insight, but downgrade the KB output for destructive overwrite and recommend allocating a new unique KE id.
