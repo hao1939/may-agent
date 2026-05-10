@@ -349,3 +349,9 @@ System remains stable — no new issues since last check. Committing both entrie
 All green, no alerts. 6h snapshot: evaluator=160 sessions (1 err), may=72 (4 err), scout=49 (3 err), dev=25, arc=22 — all healthy.
 Blocked project `finish-blocked-hygiene-reduction` (dev, iter 6) updated 3h ago — on track.
 Inbox: aftermath reviews and metric triage already handled by prior sessions. No action needed.
+
+## 2026-05-10T19:30 UTC
+
+System healthy. 6h: evaluator=69ses/1err, scout=18/3err, dev=12/0, arc=11/0, may=31/0, master=3/0.
+Alert #280 (session.failed-triage-rate-3h): evaluator owns, steward confirms active. Scout errors: master reviewing per human request.
+All inbox signals already owned. No intervention needed.
