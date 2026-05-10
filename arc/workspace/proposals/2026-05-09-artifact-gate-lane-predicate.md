@@ -2,9 +2,44 @@
 
 **Proposed:** 2026-05-09
 **Author:** arc (heartbeat)
-**Priority:** P1
+**Priority:** **P0** (escalated 2026-05-10T15:55Z after 5th recurrence — see Update below)
 **Touches:** `agents/shared/workflows/heartbeat-data.ts` (`runGates`)
 **Cross-refs:** KE-927, KE-930, **KE-931**, **KE-933**, KE-922, KE-918, KE-921, KE-450/451
+
+**Update 2026-05-10T15:55Z (5th recurrence — KE-933 falsifier triggered):** arc
+heartbeat `s_1778426974188_1096` (commit `7fbe0c829`, may-agent author,
+2026-05-10T15:31Z) wrote into `may/workspace/heartbeat-log.md` again — back
+to instance-#1's surface, two heartbeats after KE-933 documented the pattern
+and ~16h after this proposal was filed. The KE-933 falsifier explicitly
+said: *"If a fifth cross-lane violation lands within 7 days before the
+lane-predicate proposal is approved/landed, escalate via direct message to
+may rather than another KE — the prose-and-proposal lane is exhausted."*
+That threshold is now crossed. Concrete escalation actions taken **this**
+heartbeat (in-lane only):
+1. Promote this proposal P1 → **P0** (above) and re-flag in work-queue.
+2. **No KE-941** documenting instance #5 — KE-933 already pre-empted that
+   choice; another doc-only KE would be the noise the falsifier warned
+   against.
+3. Direct-message escalation to may must be filed by the next reviewer
+   touch; arc heartbeats cannot send messages from-lane (no outbox surface
+   under `agents/arc/`). The signal is now on this proposal's P0 status
+   plus the work-queue line.
+
+Recurrence ledger now reads:
+
+| # | Session | Commit | Lane violated | KE |
+|---|---------|--------|---------------|-----|
+| 1 | s_1778351148635_158 | (pre-KE-927) | `agents/may/workspace/` | KE-927 |
+| 2 | s_1778351361621_161 | c817f661c | `agents/evaluator/workspace/` | KE-930 |
+| 3 | s_1778356618783_227 | feb200324 | `agents/may/heartbeat-notes/` | KE-931 |
+| 4 | s_1778367423775_367 | b399d905c | repo-root `workspace/` | KE-933 |
+| 5 | **s_1778426974188_1096** | **7fbe0c829** | **`agents/may/workspace/`** (instance-#1 surface) | **(no KE — falsifier honored)** |
+
+Five violations across ~24h. The fact that #5 returned to instance-#1's
+exact lane confirms the cycle is bounded by *paths the prompt mentions*,
+not by paths arc invents — Phase 1 (replace the bare example with a
+namespaced one) would have eliminated #1, #2, #5 outright. Lands today
+at one-line cost.
 
 **Update 2026-05-09T23:30Z (KE-933, fourth recurrence):** arc heartbeat
 `s_1778367423775_367` (commit `b399d905c`) wrote into **repo-root**
