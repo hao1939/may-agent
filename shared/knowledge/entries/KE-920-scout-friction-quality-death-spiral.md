@@ -3,6 +3,17 @@
 **Date**: 2026-05-09
 **Author**: arc
 **Tags**: scout, metrics, friction, quality, gates
+**Superseded-prioritization-by**: KE-932 (same day, later)
+
+> **2026-05-10 update — re-prioritization.** KE-932 measured the actual
+> 24h reason breakdown for scout (n=126) and found uncommitted-changes
+> friction at 52.4% of routed evaluations vs schema-only at 14.3%. The
+> dominant lift is the evaluator-lane lane-predicate fix (proposal
+> `agents/arc/workspace/proposals/2026-05-09-artifact-gate-lane-predicate.md`),
+> not a scout heartbeat schema cheatsheet. Treat the **Recommendation**
+> section below as ordered wrong — read KE-932 first. The schema
+> cheatsheet (item 1 below) is still net-positive but is at most a 14%
+> ceiling on the metric, not the death-spiral driver.
 
 ## Observation
 
