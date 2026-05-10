@@ -983,3 +983,22 @@ Disposition:
 - The earlier GitHub Copilot token-expired first-turn pattern is not currently active in the last two-hour session window; no credential escalation is needed from this heartbeat.
 - The only current unresolved metric alert is May-owned and not a dev implementation signal.
 - This note is the intentional artifact for the artifact-gate recovery; no code, shared project state, or production database state was changed.
+
+## 2026-05-10 Heartbeat: Guard Blocks and Handler Reload Watch
+
+Routine heartbeat with a real follow-up signal rather than a synthetic project iteration.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty; all implementation candidates remain Proposed.
+- Current metrics show infrastructure mostly in range: `session.error-rate-6h=0.0469`, `handler.success-rate=0.9796`, and no active metric is missing a snapshot in the last hour.
+- Open alerts are `guard.blocked-count-24h` (`current=2`, owner `may`, priority `P1`) and `project.iterations-24h` (`current=0`, owner `may`, priority `P3`). Dev operation for `guard.blocked-count-24h`: investigate/delegate rather than patch; the latest events are scout `scout-explore-arxiv` attempts blocked by the shared-knowledge guard after whole-file writes to low-numbered KE files. The guard did its job and the source behavior belongs to scout/human follow-up, not a dev guard weakening.
+- Recent handler failures include a burst of `Cannot find module '../../src/lib/workflow-handler.js' from '/app/agents/shared/agent-sdk.ts'`, but later `evaluator-aftermath` handler started/completed successfully and `bun --check shared/agent-sdk.ts shared/lib/workflow-handler.ts` passed. Operation: dismiss as recovered reload/transient unless it recurs after the successful handler starts.
+- `finish-blocked-hygiene-reduction` remains correctly blocked: both split metric rows are still absent from `metrics`, so dev cannot safely unblock it without the May/human runtime DB write named in the project resume condition.
+- `eval-llm-lane-restoration` remains healthy in pending-review: `eval.llm-coverage-lag-h` is below threshold and `eval.llm-evals-24h` is well above target.
+
+Signal dispositions:
+- May P2 blocked-project nudge for `finish-blocked-hygiene-reduction`: acted by re-reading the project and rechecking metric absence; blocker remains external safe-write authority.
+- Artifact-gate/session-start warnings: acted by writing this focused artifact and following narrow staging hygiene.
+- Recent provider-auth FYIs/session errors: dismissed for action now because the first-turn provider metric is currently `0` and only one status-error row remains in the last two hours.
+- `guard.blocked-count-24h` alert: investigated and delegated/escalated to scout/human source behavior; no dev guard patch is warranted because the guard protected canonical KE files.
+- `project.iterations-24h` alert: dismissed for dev action as May-owned/P3 and not to be gamed by artificial iterations.
