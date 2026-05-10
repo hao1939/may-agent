@@ -376,7 +376,7 @@ describe("metrics-snapshot session health metrics", () => {
     const metric = (id: string) => db.prepare("SELECT current, owner, target, threshold, priority FROM metrics WHERE id = ?").get(id) as any;
     expect(metric("agent.heartbeat-dark-count-2h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P0" });
     expect(metric("agent.config-invalid-count-1h")).toMatchObject({ current: 2, owner: "may", target: 0, threshold: 0, priority: "P0" });
-    expect(metric("session.first-turn-error-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
+    expect(metric("session.first-turn-error-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 1, priority: "P1" });
     expect(metric("session.empty-assistant-stop-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
     expect(metric("message.delivery-failed-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
     expect(metric("guard.triggered-count-24h")).toMatchObject({ current: 3, owner: "may", target: 0, threshold: 20, priority: "P2" });

@@ -6,7 +6,7 @@ import { createWorkflowTool } from "../src/lib/workflow-tool.js";
 import { SubagentManager } from "../src/lib/manager.js";
 import type { WorkflowToolResult } from "../src/lib/workflow.js";
 import type { WorkflowRun } from "../src/lib/workflow-tool.js";
-import { insertWorkflowRun, getWorkflowRun, getWorkflowStepSessions, upsertSession } from "../src/lib/requests.js";
+import { insertWorkflowRun, getWorkflowRun, getWorkflowStepSessions, listWorkflowRunIds, upsertSession } from "../src/lib/requests.js";
 import type { WorkflowRunRecord } from "../src/lib/requests.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 
@@ -154,7 +154,8 @@ describe("workflow tool: resume", () => {
     saveWorkflowRunCompat(persistDir, run);
 
     const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
-    const tool = createWorkflowTool({ manager, workflowDir, persistDir });
+    const events: Array<Record<string, unknown>> = [];
+    const tool = createWorkflowTool({ manager, workflowDir, persistDir, onEvent: (e) => events.push(e as never) });
 
     const result = await tool.execute("tc1", {
       action: "resume",
@@ -165,7 +166,67 @@ describe("workflow tool: resume", () => {
     expect(parsed.type).toBe("error");
     if (parsed.type === "error") {
       expect(parsed.error).toContain("not found");
+      expect(parsed.workflowRunId).toBe("wr_stale");
+      expect(parsed.category).toBe("workflow_definition_missing");
     }
+    expect(events).toContainEqual(expect.objectContaining({
+      type: "workflow.resume_failed",
+      workflowRunId: "wr_stale",
+      workflow: "deleted-workflow",
+      category: "workflow_definition_missing",
+    }));
+  });
+
+  it("does not replay a workflow that already reached done", async () => {
+    insertWorkflowRun(persistDir, {
+      runId: "wr_done",
+      workflow: "already-done",
+      task: "finished task",
+      parentSessionId: "parent_1",
+      parentWorkflowRunId: null,
+      projectId: "p1",
+      depth: 1,
+      status: "done",
+      startedAt: Date.now() - 60000,
+      endedAt: Date.now() - 50000,
+      result_summary: "stored result",
+      result_reason: null,
+      resumedFromRunId: null,
+    });
+    upsertSession(persistDir, {
+      sessionId: "s_done_step",
+      agent: "coder",
+      task: "implement finished task",
+      status: "done",
+      startedAt: Date.now() - 59000,
+      endedAt: Date.now() - 55000,
+      workflowRunId: "wr_done",
+      outcome: "stored step output",
+    });
+
+    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const events: Array<Record<string, unknown>> = [];
+    const tool = createWorkflowTool({ manager, workflowDir, persistDir, onEvent: (e) => events.push(e as never) });
+
+    const result = await tool.execute("tc1", {
+      action: "resume",
+      workflowRunId: "wr_done",
+    });
+    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+
+    expect(parsed.type).toBe("done");
+    if (parsed.type === "done") {
+      expect(parsed.workflowRunId).toBe("wr_done");
+      expect(parsed.summary).toBe("stored result");
+      expect(parsed.steps[0]).toMatchObject({ agent: "coder", sessionId: "s_done_step", output: "stored step output" });
+    }
+    expect(listWorkflowRunIds(persistDir)).toEqual(["wr_done"]);
+    expect(events).toContainEqual(expect.objectContaining({
+      type: "workflow.resume_skipped",
+      workflowRunId: "wr_done",
+      workflow: "already-done",
+      status: "done",
+    }));
   });
 
   it("resumes a workflow that crashed after completing 1 of 2 steps", async () => {

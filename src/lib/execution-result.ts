@@ -104,12 +104,12 @@ export function workflowToolResultToExecutionResult(result: WorkflowToolResult):
   if (result.type === "list") return null;
   if (result.type === "error") {
     return {
-      id: result.workflow,
+      id: result.workflowRunId ?? result.workflow ?? "workflow-error",
       kind: "workflow",
       status: "error",
       summary: compact(result.error, "workflow error"),
-      traceId: result.workflow,
-      evidence: { workflow: result.workflow },
+      traceId: result.workflowRunId ?? result.workflow ?? "workflow-error",
+      evidence: { workflow: result.workflow, reason: result.reason, category: result.category },
     };
   }
 
