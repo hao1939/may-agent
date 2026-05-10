@@ -727,3 +727,16 @@ Signal dispositions:
 - Non-dev P3 alerts: delegated/dismissed for direct dev action because owners and the closed-loop steward are active and no Approved work-queue item asks dev to patch them.
 
 Judgment: no code patch, shared project creation, or unsafe DB write is warranted. The correct dev action is to preserve evidence, keep the blocked project blocked until the human/May safe write lands, and leave `eval-llm-lane-restoration` pending review while liveness remains in range.
+
+## 2026-05-10 Artifact Gate Recovery
+
+Administrative heartbeat artifact written in response to the artifact gate requiring a durable file write.
+
+Evidence checked:
+- Initial `/app/agents` git status already contained unrelated dirty runtime/project files owned by other agents or shared workflows; these were not touched or staged.
+- Runtime metric schema reminders were encountered again: `metrics.current` is the live value column, `metric_alerts` stores alert details via `message` rather than denormalized current/threshold columns, and `sessions.startedAt` is camelCase.
+- Corrected health queries found no dev-owned metrics registered, four unresolved non-dev alerts (`may` and `scout` owned), and no dev sessions in the last 24 hours.
+
+Disposition:
+- No infrastructure code change was warranted from this administrative recovery.
+- Intentional deliverable is limited to this heartbeat log entry; unrelated dirty paths should remain unstaged for their owners.
