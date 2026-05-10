@@ -13,3 +13,12 @@
 **Summary**: Monolithic evaluators suffer from procedural strictness; replacing them with multi-perspective panels (Linter, Product Manager, Adversary) separates substantive value from operational hygiene.
 **Implication**: Could solve our chronic 'good-session-rate' false positives by uncoupling trajectory friction from outcome success.
 **KB**: KE-1030 (new)
+
+### GitHub Trending AI Agents: hermes-agent, learn-claude-code, ruflo
+**Source**: GitHub API Search (topic:ai-agent, sorted by stars)
+**Summary**: 
+- **hermes-agent** (141k stars): "The agent that grows with you" by NousResearch.
+- **learn-claude-code** (59k stars): A nano claude code-like agent harness built in bash.
+- **ruflo** (47k stars): An agent orchestration platform for Claude, featuring multi-agent swarms and RAG integration.
+**Implication**: There is a strong trend towards Claude-centric agent orchestration and lightweight bash-based harnesses. We should investigate how "learn-claude-code" implements its harness in bash.
+**KB**: None created yet.
