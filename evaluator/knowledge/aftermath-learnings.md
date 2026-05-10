@@ -22,3 +22,6 @@
 
 ## 2026-05-10 — s_1778390743041_660
 - In aftermath reviews, do not equate a final `partial` status with empty output when guard friction intervened. If the transcript and git evidence show committed, readable artifacts, score efficiency down for the retry loop but keep quality credit for the landed work.
+
+## 2026-05-10 — s_1778405107928_828
+- When a session writes shared knowledge entries with low bare IDs (for example `KE-001.md`, `KE-002.md`), inspect both the commit snapshot and the parent snapshot with `git show <commit>^:<path>` before crediting success. A clean commit and readable file can still hide destructive overwrite of canonical knowledge, so parent-vs-commit comparison is required for shared-KB aftermath reviews.
