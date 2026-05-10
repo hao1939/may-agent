@@ -434,3 +434,17 @@ Signal dispositions:
 - Owned projects: `eval-llm-lane-restoration` dismissed for action until review or lane regression; `finish-blocked-hygiene-reduction` remains escalated/deferred to May/human for safe runtime metric registration.
 
 Next check: continue watching for the external split-metric registration and for any regression in LLM-eval liveness; do not patch code unless a fresh recurring dev-owned failure or an Approved implementation item appears.
+
+## 2026-05-10 Artifact Gate Follow-up: Narrow Artifact Commit
+
+The artifact gate required a meaningful write before finish. This follow-up records the current recovery action separately from the earlier heartbeat investigation so the session has a durable artifact tied to the gate response.
+
+Hygiene classification before staging:
+- Intentional deliverable: `dev/workspace/heartbeat-log.md` only.
+- Unrelated dirty paths observed before this write: generated `*/last-session.md` files, shared gate/runtime logs, shared project notes, evaluator/scout/may/arc artifacts, and `test/guards.test.ts`.
+- Disposition: stage the heartbeat log by explicit path only; do not stage or clean unrelated paths owned by other agents or runtime systems.
+
+Verification plan:
+- Read back this file with the `read()` tool.
+- Commit only the explicit heartbeat log path if git tracking/ignore rules allow it.
+- Re-run `/app/agents` status and finish with an explicit blocker if unrelated dirty paths remain.
