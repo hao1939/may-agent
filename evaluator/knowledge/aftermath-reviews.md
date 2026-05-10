@@ -105,6 +105,10 @@
 - Fix: inspect the actual artifact and source evidence before judging. If the agent used live sources and turned the forced write into a concrete, system-relevant analysis, credit the substantive output while separately noting any scoping or verification hiccups (for example writing into another agent's workspace or missing the first read-back).
 - Extra caution: verify that the recovery artifact is both **tracked/committable** and **in-lane** before treating it as the session's real output. A workspace write can satisfy the local gate yet fail to ship if the path is gitignored, and a write into another agent's workspace can look readable while still violating ownership/lane rules. If the agent catches that quickly and pivots to a tracked in-lane file, score the pivot as recovery rather than as a failed outcome; if it does not, treat the artifact as structurally invalid even when the content itself is useful.
 
+## Pattern: duration-gate warning does not negate a strong outcome when the agent pivots into mechanism-level analysis
+- Symptom: a session begins under a "too short / dig deeper" warning, so the routing context makes the later artifact look like forced compliance.
+- Fix: judge the shipped result, not the warning banner. If the agent uses the prompt to move from surface status notes into live DB checks, code/spec comparison, and a tracked committed artifact with a real repair path, score it as genuine value. Penalize only the recoverable guard friction (for example an initial read-before-edit miss), not the entire session.
+
 ## Pattern: cross-agent tracked artifacts can be real output but still weakly scoped
 - Symptom: a session under one agent label ships a committed artifact inside another agent's tracked tree (for example an `arc` session appending `may/heartbeat-log.md`).
 - Fix: separate deliverable integrity from scope quality. If the commit landed and the file content is real, do not mark it as fake output; instead credit the narrow operational value and note the ownership/lane miss as an output-quality downgrade unless there is explicit cross-agent handoff authority.
