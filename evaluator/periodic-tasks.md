@@ -244,6 +244,18 @@ Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-sna
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
 
+**Last run**: 2026-05-10 12:31Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778416199538`; `MAX(sessions.startedAt)=1778416268593`; `MAX(sessions.endedAt)=1778416229304`; lag ≈69.1s vs `startedAt`, ≈29.8s vs `endedAt`; `evals_last24h=571`; `llm_evals_last24h=23`; `sessions_last24h=1172`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table.
+
+Inbox triage on the surfaced pending aftermath targets found completed workspace artifacts already present for `s_1778405207348_835`, `s_1778415949386_965`, and `s_1778415903698_961`; the remaining target `s_1778415908409_963` already has an active evaluator review session (`s_1778416199545_971`). Treat the surfaced `session.start`, `session.end`, `evaluation.routed`, `evaluation.reviewed`, and `evaluation.success_candidate` rows as already-handled or in-flight backlog noise rather than dropped evaluator work.
+
+Signal-quality spot check: the current heuristic evaluation for scout session `s_1778415908409_963` is directionally plausible (`needs_improvement`; quality `0.55`, efficiency `0.8`) because the transcript shows repeated fallback searches after arXiv failed, a `bash` heredoc overwrite of `agents/scout/workspace/digest/today.md`, and an overstated finish summary claiming arXiv exploration despite the fallback path. A manual evaluator review is already in flight, so no criteria edit was needed this cycle.
+
+Ran `monitor-session.cjs --running`: 3 checked, 2 healthy, 1 `PROTOCOL_VIOLATION` — active arc session `s_1778416008701_967` (`P114 Violation: Complex task attempted without Experience Replay (grep ERROR_LOG).`; recommended action: warn). Notified May.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). State unchanged from prior runs; no repeat escalation sent to Bob this cycle.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
+
 **Last run**: 2026-05-10 12:01Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778414377755`; `MAX(sessions.startedAt)=1778414469596`; `MAX(sessions.endedAt)=1778414462758`; lag ≈91.8s vs `startedAt`, ≈85.0s vs `endedAt`; `evals_last24h=570`; `llm_evals_last24h=24`; `sessions_last24h=1191`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table.
 
 Inbox triage on the surfaced pending aftermath targets found completed workspace artifacts already present for `s_1778414172868_943`, `s_1778413868673_936`, and `s_1778405207348_835`, with a matching deep-eval artifact for `s_1778405207348_835`. Treat the surfaced `session.start`, `session.end`, `evaluation.routed`, `evaluation.reviewed`, and `evaluation.success_candidate` rows for those ids as already-handled or in-flight backlog noise rather than dropped evaluator work.
