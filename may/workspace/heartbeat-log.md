@@ -361,3 +361,9 @@ All inbox signals already owned. No intervention needed.
 System healthy. 98% success rate, 46 sessions/1h. All 17 cron jobs clean.
 Warning: failed-session-triage-rate at 0.67 (target 1.0). DB 1178MB within threshold.
 1 blocked project. No urgent interventions needed.
+
+## 2026-05-10T21:05 UTC
+- **Status**: Healthy. No alerts. All agents active in last 6h.
+- **Blocked project**: `finish-blocked-hygiene-reduction` (dev, P1) — blocked on metric registration SQL needing DB write access. Needs human execution of INSERT statements from `outputs/iteration-6-split-metric-registration.md`.
+- **Notable**: evaluator has highest error count (83/8492 sessions = ~1%), dev at 68/497 (~14%) — dev error rate warrants monitoring.
+- **Action**: Messaged human about blocked project DB writes.
