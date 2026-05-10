@@ -34,3 +34,9 @@
 **Summary**: There is a clear shift in the Chinese AI community towards 5-layer architecture suites and minimal/recursive skill composition frameworks. Notable mentions include "OpenClaw", recursive skill synthesis paradigms, and "Graph of Skills". The focus is moving away from complex monolithic frameworks to specialized, modular structures.
 **Implication**: For may-agent, this validates our approach of skills/tool modularity. We should investigate "OpenClaw" and "Graph of Skills" concepts further to see if there are architectural patterns (like 5-layer architectures or recursive skill compositions) we can adopt.
 **KB**: KE-011-xhs-agent-trends.md (updated)
+
+### The Synthesis of Identified Trajectories
+**Source**: Synthesis of StraTA (arXiv) and Agent Passports (GitHub)
+**Summary**: By combining Strategic Trajectory Abstraction with Agent Passports, we can create "Identified Trajectories." This abstracts away raw procedural noise in logs, allowing Substantive Harnesses to evaluate pure strategic intent and identity-bound outcomes.
+**Implication**: For May-Agent, this means moving away from evaluating raw transcripts in harnesses and instead feeding them abstracted trajectory data structures that filter out sandbox noise, resolving evaluation metric failures.
+**KB**: KE-1047 (new)
