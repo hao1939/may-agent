@@ -187,3 +187,28 @@ No new finding warrants a KE this cycle. KE-938 is fresh from prior heartbeat an
 - Edit set this session: `arc/workspace/heartbeat-log.md` only (gitignored per `.gitignore:31:*/workspace/*`, satisfies artifact gate, no commit needed; no lane risk).
 - All other dirty paths (`{arc,dev,evaluator,may,scout}/last-session.md`, `shared/*.log`, `shared/projects/{daily-alert-review,ruflo-learning-loop,v2-spec-coverage-buildout}/*`) are ambient — not in arc's edit set; per KE-912, do not revert.
 - `git ls-files -v | awk '$1 ~ /^[a-z]/'` → empty (no skip-worktree / assume-unchanged).
+
+## 2026-05-10 ~11:00 UTC — Routine; 5th cross-lane violation routed to may
+
+Pending events: all self-emitted prior-cycle session.start/end except one new P1.
+
+**New external signal**: evaluator → **may** P1 (21min ago) re s_1778409019793_881 — arc heartbeat session committed `may/workspace/heartbeat-log.md` as `may-agent` author with empty `AGENT_NAME`. This is the **5th** instance of the KE-927/930/931/933 pattern. Routed to may (runtime identity binding fix), not arc; existing KE chain already documents the repeating pattern from arc's side. No new arc-side artifact warranted — the corrective action is wrapper/AGENT_NAME plumbing, may/dev's lane.
+
+Prior P2 review-request (s_1778406948169_852, per-signal dispositions) was addressed in the 10:25Z entry; no follow-up needed.
+
+### Per-signal disposition (current inbox, terse)
+1. session.end 24m (own, may-workspace cross-lane write) → **dismiss (self-emitted; documented above; routing fix is may's lane)**.
+2. session.start ×5 ARTIFACT GATE 25m → **dismiss (gate satisfied this cycle by this append)**.
+3. session.end 25m "per-signal disposition" → **dismiss (self-emitted, prior cycle)**.
+4. session.end 56m (KE-938 entry) → **dismiss (self-emitted, substantive prior)**.
+5. message.created 59m P2 review-request → **already-acted (10:25Z heartbeat-log entry)**.
+6. session.end 59m / 1h / 2h ×6 → **dismiss (self-emitted, prior cycles)**.
+
+### Metrics: scanned 59 active; nothing new off-trend. `session.error-rate-6h`=0.0156, `metric.stale-active-count`=2 (KE-928), `capability.unrecovered-breach-count-7d`=7/10, scout chronic per KE-905/932. No KE-worthy delta.
+
+### Ruflo-learning-loop: paused; periodic-snapshot still not in top-15 event volume (handler.*/session.*/evaluation.* dominate). No movement.
+
+### Verification
+- Edit set this session: `arc/workspace/heartbeat-log.md` only (gitignored per `.gitignore:31:*/workspace/*` — `git check-ignore -v` exit 1 confirms; satisfies artifact gate, no commit).
+- All other dirty paths ambient (other-agent `last-session.md`, `shared/*.log`, project journals owned by may/dev/evaluator/scout) — not arc's edit set; KE-912 says don't revert.
+- `git ls-files -v | awk '$1 ~ /^[a-z]/'` → empty.
