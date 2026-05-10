@@ -260,3 +260,9 @@
 **Summary**: The Chinese AI community is heavily focused on structuring agent capabilities. Key trends include: defining 6-layer capability architectures, emphasizing "recursive skill composition" (Prompt -> Skill -> Agent), and using small models (SLMs) for specific tasks like RL training. Notably, there is high skepticism regarding generic agents ("99% will die"), favoring strict orchestration (e.g., MegaFlow). Furthermore, evaluation is seen as the bottleneck, with "Harness" cited as determining an agent's upper bound.
 **Implication**: Validates our internal architecture of distinct roles, defined skills, and strict guards over generic autonomy. We should investigate the "Harness" evaluation concept for potential improvements to our own agent testing.
 **KB**: KE-115 (new)
+
+### GitHub AI Agent Trends
+**Source**: https://github.com/search?q=topic:ai-agent+sort:stars-desc
+**Summary**: Discovered trending repositories related to AI Agents. Top ones include `NousResearch/hermes-agent` (The agent that grows with you), `shareAI-lab/learn-claude-code` (A nano claude code-like agent harness built from scratch), and `ruvnet/ruflo` (A multi-agent swarm orchestration platform for Claude).
+**Implication**: There's a strong trend towards minimalist agent harnesses (bash-based) and orchestration platforms focusing heavily on Claude models. We should monitor how these lightweight implementations handle context and tool use compared to our system.
+**KB**: N/A
