@@ -9,6 +9,7 @@
 
 import type { SqliteDb } from "./db.js";
 import type { MetricService } from "./metrics.js";
+import type { QueryAPI } from "./query-service.js";
 
 // ── Core SDK ──────────────────────────────────────────────────────────
 
@@ -27,6 +28,9 @@ export interface AgentSDK {
 
   /** Access the shared database. */
   getDb(): SqliteDb;
+
+  /** Read bounded runtime facts without opening SQLite directly. */
+  query: QueryAPI;
 
   /** Define, record, evaluate, and inspect system metrics. */
   metrics: MetricService;

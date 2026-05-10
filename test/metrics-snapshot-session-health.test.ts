@@ -99,11 +99,15 @@ describe("metrics-snapshot session health metrics", () => {
     const metric = (id: string) => db.prepare("SELECT current, target, threshold, priority FROM metrics WHERE id = ?").get(id) as any;
 
     expect(metric("session.failed-triage-rate-3h")).toMatchObject({
-      current: 0.5,
+      current: 1,
       target: 1,
       threshold: 0.8,
       priority: "P1",
     });
+    expect(
+      db.prepare("SELECT sample_size FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 1")
+        .get("session.failed-triage-rate-3h"),
+    ).toMatchObject({ sample_size: 2 });
     expect(metric("evaluator.aftermath-coverage-rate-3h")).toMatchObject({
       current: 0.6667,
       target: 0.8,
@@ -350,6 +354,18 @@ describe("metrics-snapshot session health metrics", () => {
       "INSERT INTO events (event_type, owner, data, timestamp) VALUES (?, ?, ?, ?)",
       ["message.delivery_failed", "may", JSON.stringify({ from: "evaluator", to: "functions.message", reason: "invalid target" }), now - 4 * 60_000],
     );
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      ["guard.triggered", "workflow", "may", JSON.stringify({ guard: "verify-after-write", demandType: "warn", action: "warned" }), now - 3 * 60_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      ["guard.triggered", "workflow", "may", JSON.stringify({ guard: "verify-after-write", demandType: "block", action: "blocked" }), now - 2 * 60_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      ["guard.triggered", "workflow", "may", JSON.stringify({ guard: "verify-after-write", demandType: "run_step", action: "skipped_duplicate" }), now - 1 * 60_000],
+    );
 
     const handler = create({
       sdk: sdk(root, db),
@@ -360,9 +376,13 @@ describe("metrics-snapshot session health metrics", () => {
     const metric = (id: string) => db.prepare("SELECT current, owner, target, threshold, priority FROM metrics WHERE id = ?").get(id) as any;
     expect(metric("agent.heartbeat-dark-count-2h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P0" });
     expect(metric("agent.config-invalid-count-1h")).toMatchObject({ current: 2, owner: "may", target: 0, threshold: 0, priority: "P0" });
-    expect(metric("session.first-turn-error-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 10, priority: "P1" });
+    expect(metric("session.first-turn-error-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
     expect(metric("session.empty-assistant-stop-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
     expect(metric("message.delivery-failed-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
+    expect(metric("guard.triggered-count-24h")).toMatchObject({ current: 3, owner: "may", target: 0, threshold: 20, priority: "P2" });
+    expect(metric("guard.warned-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 20, priority: "P2" });
+    expect(metric("guard.blocked-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
+    expect(metric("guard.repeat-trigger-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 5, priority: "P2" });
   });
 
   it("retires noncritical metrics and resolves their open alerts", async () => {

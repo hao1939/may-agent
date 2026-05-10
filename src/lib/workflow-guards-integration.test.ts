@@ -54,11 +54,29 @@ function createMockManager(callAgentImpl?: (name: string, task: string, opts?: a
   };
 }
 
+function createRuntimeCtx(events: unknown[] = []) {
+  return {
+    emit: (event: unknown) => events.push(event),
+    dispatchEvent: () => {},
+    getDb: () => {
+      throw new Error("getDb unavailable in guard integration test");
+    },
+    query: {},
+    log: () => {},
+    notify: () => {},
+    metrics: {},
+    persistDir: "",
+    projectRoot: "",
+    agentsRoot: "",
+  } as any;
+}
+
 // ── Integration Tests ──────────────────────────────────────────────────
 
 describe("Guard integration: warn demand delivery", () => {
   test("warn guard fires on step_done, warning appears in next step task", async () => {
     const { calls, manager } = createMockManager();
+    const emitted: any[] = [];
 
     // Use ONLY the warn guard (not the blocker or inject guards)
     // We create a dedicated guard dir with just the warn guard
@@ -70,6 +88,7 @@ describe("Guard integration: warn demand delivery", () => {
       // Use DISABLED_GUARDS to disable all except the warn guard.
       guardsDir: TEST_GUARDS_DIR,
       agentName: "test-agent",
+      runtimeCtx: createRuntimeCtx(emitted),
     });
 
     // Disable all guards except the warn one
@@ -96,6 +115,17 @@ describe("Guard integration: warn demand delivery", () => {
       expect(stepTwoCall.task).toContain("## Guard Warnings");
       expect(stepTwoCall.task).toContain('Step "step-one" completed — review recommended');
       expect(stepTwoCall.task).toContain("test-warn-on-step-done");
+      expect(emitted).toContainEqual(expect.objectContaining({
+        type: "guard.triggered",
+        owner: "test-agent",
+        source: "workflow",
+        workflow: "test-two-step",
+        guard: "test-warn-on-step-done",
+        demandType: "warn",
+        action: "warned",
+        sourceEventType: "step_done",
+        step: "step-one",
+      }));
     } finally {
       if (origDisabled === undefined) {
         delete process.env.DISABLED_GUARDS;
@@ -158,12 +188,14 @@ describe("Guard integration: run_step demand injection", () => {
 
     try {
       const events: any[] = [];
+      const emitted: any[] = [];
       const tool = createWorkflowTool({
         manager,
         workflowDir: TEST_WORKFLOW_DIR,
         guardsDir: TEST_GUARDS_DIR,
         agentName: "test-agent",
         onEvent: (e) => events.push(e),
+        runtimeCtx: createRuntimeCtx(emitted),
       });
 
       const result = await tool.execute("tc_3", {
@@ -189,6 +221,14 @@ describe("Guard integration: run_step demand injection", () => {
       const stepDones = events.filter(e => e.type === "step_done");
       expect(stepStarts.some(e => e.step === "guard:verify-step-one")).toBe(true);
       expect(stepDones.some(e => e.step === "guard:verify-step-one")).toBe(true);
+      expect(emitted).toContainEqual(expect.objectContaining({
+        type: "guard.triggered",
+        guard: "test-inject-step",
+        demandType: "run_step",
+        action: "injected",
+        injectedStepLabel: "guard:verify-step-one",
+        injectedAgent: "verifier",
+      }));
     } finally {
       if (origDisabled === undefined) {
         delete process.env.DISABLED_GUARDS;
@@ -238,6 +278,7 @@ describe("Guard integration: run_step demand injection", () => {
 describe("Guard integration: block demand", () => {
   test("blocker guard blocks workflow execution", async () => {
     const { manager } = createMockManager();
+    const emitted: any[] = [];
 
     // Enable ONLY the blocker guard
     const origDisabled = process.env.DISABLED_GUARDS;
@@ -249,6 +290,7 @@ describe("Guard integration: block demand", () => {
         workflowDir: TEST_WORKFLOW_DIR,
         guardsDir: TEST_GUARDS_DIR,
         agentName: "test-agent",
+        runtimeCtx: createRuntimeCtx(emitted),
       });
 
       const result = await tool.execute("tc_5", {
@@ -268,6 +310,13 @@ describe("Guard integration: block demand", () => {
       if (parsed.type === "blocked") {
         expect(parsed.reason).toBe("blocked by test guard");
       }
+      expect(emitted).toContainEqual(expect.objectContaining({
+        type: "guard.triggered",
+        guard: "test-blocker",
+        demandType: "block",
+        action: "blocked",
+        sourceEventType: "step_done",
+      }));
     } finally {
       if (origDisabled === undefined) {
         delete process.env.DISABLED_GUARDS;
