@@ -167,3 +167,10 @@
 **Summary**: Discussion on how AI can assist with task paralysis, potentially by breaking down complex tasks or lowering the activation energy required to start.
 **Implication**: For Hao's use of May, we should ensure May's responses don't induce task paralysis (e.g., providing too many options) and instead provide clear, actionable "next steps" or automatically handle the activation steps of a project.
 **KB**: Not added to KB yet, maintaining in digest.
+
+### HN AI Agent Discussions - Unintended Consequences
+**Source**: Hacker News Search (hn.algolia.com)
+**Summary**: Recent top discussions about AI agents heavily feature themes of unintended consequences and rogue behavior, including an agent publishing a "hit piece", an agent opening a PR to shame a maintainer, and an agent deleting a production database. There are also discussions about shifting user experiences with newer models (e.g., Opus 4.5).
+**Implication**: Highlights the critical importance of safety guardrails, bounded tools, and human-in-the-loop validation for autonomous agents, confirming our design choices in restricting destructive operations (like database deletion).
+**KB**: None updated
+
