@@ -103,3 +103,15 @@
 **Summary**: Langflow and Dify are leading as production platforms for building AI agents and workflows. Hermes-agent by NousResearch is gaining traction. There is also a massive collection of system prompts for various tools.
 **Implication**: The focus is shifting towards workflow builders (Langflow/Dify) and understanding system prompts of commercial tools to improve open-source agents.
 **KB**: N/A
+
+### STALE: Can LLM Agents Know When Their Memories Are No Longer Valid?
+**Source**: https://arxiv.org/abs/2605.06527v1
+**Summary**: This paper introduces STALE, a benchmark of 400 conflict scenarios to evaluate if LLM agents can update their memories when new information implicitly invalidates prior beliefs. Even the best models achieved only 55.2% accuracy, highlighting a gap between retrieving updated evidence and acting on it. The authors propose CUPMem, a prototype for structured state consolidation to improve memory revision.
+**Implication**: For may-agent, robust memory management is critical. We should evaluate how we handle implicit state changes in our own context updates, perhaps considering explicit state adjudication mechanisms if stale memories become a bottleneck.
+**KB**: KE-030 (new)
+
+### Process Matters more than Output for Distinguishing Humans from Machines
+**Source**: https://arxiv.org/abs/2605.06524v1
+**Summary**: The authors present CogCAPTCHA30, a battery of cognitive tasks, showing that the *process* of generating behavior is more diagnostic of human vs. machine than the output alone. They demonstrate that explicitly training models on process-level human data improves mimicry, but generalizability remains a challenge.
+**Implication**: While we don't aim for human mimicry, the idea that *process* (how an agent arrives at an answer) is measurable and optimizable is relevant. We already emphasize process via workflows and evidence-based reasoning; we should continue to evaluate agent success not just on output, but on the validity of their investigative process.
+**KB**: KE-031 (new)
