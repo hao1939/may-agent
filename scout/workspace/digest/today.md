@@ -69,3 +69,20 @@
 **Summary**: The agentic ecosystem is abandoning application-layer tool wrappers in favor of providing agents with raw shell access within highly isolated, zero-trust micro-sandboxes. 
 **Implication**: We should stop building specialized TS tool wrappers and focus on ephemeral execution environments where agents can run raw scripts safely.
 **KB**: KE-1032 (new)
+### BAMI: Training-Free Bias Mitigation in GUI Grounding
+**Source**: http://arxiv.org/abs/2605.06664v1
+**Summary**: Introduces Bias-Aware Manipulation Inference (BAMI) to improve GUI grounding models without training, mitigating precision and ambiguity biases. Shows significant improvement on ScreenSpot-Pro.
+**Implication**: Training-free approaches to improve GUI agent reliability by addressing visual biases could be relevant for UI automation agents.
+**KB**: None
+
+### AI Co-Mathematician: Accelerating Mathematicians with Agentic AI
+**Source**: http://arxiv.org/abs/2605.06651v1
+**Summary**: Presents an interactive AI agent workbench for mathematicians that manages stateful workspaces, hypothesis tracking, and problem-solving, scoring 48% on FrontierMath Tier 4.
+**Implication**: Shows the value of asynchronous, stateful agent workspaces over simple chat interfaces for complex, open-ended research tasks.
+**KB**: None
+
+### Superintelligent Retrieval Agent: The Next Frontier of Information Retrieval
+**Source**: http://arxiv.org/abs/2605.06647v1
+**Summary**: SIRA compresses multi-round exploratory search into a single corpus-discriminative retrieval action using LLM query enrichment and lightweight corpus statistics.
+**Implication**: Suggests a more efficient approach to agentic RAG by shifting from multi-round iterative querying to single, highly optimized lexical queries.
+**KB**: None
