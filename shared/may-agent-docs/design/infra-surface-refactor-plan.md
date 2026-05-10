@@ -177,17 +177,19 @@ Scope:
   `handler.skipped` evidence.
 - [x] `metric-alert-reactor` emits durable `handler.skipped` reasons and
   `handler.workflow_dispatched` with the triage workflow run id/status.
+- [x] `project` emits durable `handler.skipped`, `handler.failed`, and
+  `handler.workflow_dispatched` evidence for project nudge/launch paths.
 
 Validation:
 
 - [x] Each touched handler records skip reason or workflow run id.
-- Loop trace shows: event -> handler -> workflow -> session/evidence.
+- [x] Loop trace has workflow run ids from touched handler dispatch evidence.
 - Execution-result view can show the migrated workflow/session status.
 - [x] Existing handler tests stay green.
 
 Stop criteria:
 
-- Alert triage and project nudge paths are workflow-backed and traceable.
+- [x] Alert triage and project nudge paths are workflow-backed and traceable.
 - Closed-loop steward no longer acts like a second agent runtime inside a
   handler.
 

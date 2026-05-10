@@ -19,7 +19,7 @@ projection, but judgment and repair work should live in workflows.
 | `session-aftermath-scan` | Fallback scan for unevaluated sessions | `sdk.query` + `runWorkflow` | no | Keep; it is already a bounded workflow dispatcher. |
 | `metrics-snapshot` | Deterministic metric projection | `getDb` + metrics service | yes | Keep direct; it is measurement, not judgment. |
 | `coaching-consumer` | File-based coaching queue projection | filesystem | yes | Keep direct until the coaching queue is replaced by metrics/events. |
-| `project` | Project scanner, state mutator, workflow launcher | direct FS/DB + `runWorkflow` | temporarily | Split later: scanner/projection stays direct; project judgment should become workflow-backed. |
+| `project` | Project scanner, state mutator, workflow launcher | direct FS/DB + `runWorkflow` + durable trace events | temporarily | Split later: scanner/projection stays direct; project launch path now records skip/failure/workflow dispatch evidence. |
 | `metric-alert-reactor` | Alert owner resolution, dedup, triage dispatch | direct DB + `runWorkflow` + durable trace events | temporarily | Convert preflight reads to `sdk.query`; dispatch already records skip reason or triage workflow run id. |
 | `closed-loop-steward` | Loop audit and retriage | direct DB + `runWorkflow`/`runAgent` | temporarily | Convert context collection to functions/query; avoid raw `runAgent` after steward workflow exists. |
 | `eval-llm-scan` | Deep evaluator candidate selection and artifact validation | direct DB + `runAgent` | temporarily | Convert candidate reads to `sdk.query`; consider a workflow wrapper for context collection and artifact validation. |
@@ -56,4 +56,7 @@ projection, but judgment and repair work should live in workflows.
 - Existing query-surface coverage: `session-aftermath-scan` uses `sdk.query`.
 - First alert-reactor traceability slice: `metric-alert-reactor` records
   `handler.skipped` and `handler.workflow_dispatched` evidence.
+- Project traceability slice: `project` records `handler.skipped`,
+  `handler.failed`, and `handler.workflow_dispatched` evidence for nudge/launch
+  paths.
 - Full test suite must stay green after each handler migration.

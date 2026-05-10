@@ -31,6 +31,21 @@ function matchesProjectTarget(project: ProjectInfo, target: string | null): bool
   return project.relPath === target || project.projectFile.endsWith(`/${target}/project.md`);
 }
 
+function projectIdFor(project: ProjectInfo): string {
+  return `${project.owner}/${project.relPath.split("/").pop()}`;
+}
+
+function emitSkip(ctx: HandlerContext, reason: string, data: Record<string, unknown> = {}): void {
+  ctx.sdk.log("info", `[project] ${reason}`);
+  try {
+    ctx.sdk.emit("handler.skipped", {
+      handler: "project",
+      reason,
+      ...data,
+    });
+  } catch { /* best-effort */ }
+}
+
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   const agentsRoot = resolve(ctx.sdk.paths.root, "agents");
   const stateFile = resolve(ctx.sdk.paths.root, ".state/project-health-state.json");
@@ -41,7 +56,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const healthState = ph.readHealthState(stateFile);
 
     const projects = ph.scanAllProjects(agentsRoot);
-    if (projects.length === 0) return;
+    if (projects.length === 0) {
+      emitSkip(ctx, "No projects found.", { eventType: event?.type ?? "timer.tick" });
+      return;
+    }
 
     const invalidProjects = projects.filter(p => p.formatErrors?.length);
     if (invalidProjects.length > 0) {
@@ -63,7 +81,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         catch { return false; }
       });
       if (!hasChanges) {
-        ctx.sdk.log("info", `[project] Preflight skip: 0 actionable, no file changes since last scan`);
+        emitSkip(ctx, "Preflight skip: 0 actionable, no file changes since last scan", { eventType: event?.type ?? "timer.tick" });
         return;
       }
     }
@@ -86,7 +104,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       ).all() as Array<{ task?: string | null }>;
       for (const project of projects) {
         const projectDir = dirname(project.projectFile);
-        const projectId = `${project.owner}/${project.relPath.split("/").pop()}`;
+        const projectId = projectIdFor(project);
         if (runningRuns.some(run => {
           const task = run.task ?? "";
           return task.includes(`project: ${projectDir}`) || task.includes(`project: ${project.relPath}`);
@@ -127,6 +145,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       if (targetProject && !matchesProjectTarget(project, targetProject)) continue;
       const forceLaunch = event?.type === "trigger.project" || commentNudge;
       actions.push({ project, action: ph.diagnoseProject(project, healthState, breachedMetrics, runningProjects, now, projects, forceLaunch) });
+    }
+    if (targetProject && actions.length === 0) {
+      emitSkip(ctx, `Target project not found: ${targetProject}`, { eventType: event?.type ?? "timer.tick", projectPath: targetProject });
     }
 
     // Log non-trivial actions
@@ -171,7 +192,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       }
 
       // launch-workflow
-      if (launched >= ph.MAX_LAUNCHES_PER_TICK) { ctx.sdk.log("info", `[project] Skip ${project.relPath} — cap reached`); continue; }
+      if (launched >= ph.MAX_LAUNCHES_PER_TICK) {
+        emitSkip(ctx, `Skip ${project.relPath} — cap reached`, {
+          eventType: event?.type ?? "timer.tick",
+          projectId: projectIdFor(project),
+          projectPath: project.relPath,
+        });
+        continue;
+      }
 
       const workflowName = project.workflow || "project";
       const projectDir = dirname(project.projectFile);
@@ -187,10 +215,34 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         writeFileSync(project.projectFile, content, "utf-8");
       }
 
-      const projectId = `${project.owner}/${project.relPath.split("/").pop()}`;
+      const projectId = projectIdFor(project);
       ctx.sdk.runWorkflow(workflowName, task, { source: project.owner, projectId })
-        .then((r) => { ctx.sdk.log("info", `[project] ${project.relPath} → ${r.status}`); })
-        .catch((e: any) => { ctx.sdk.log("info", `[project] ${project.relPath} ERROR: ${e.message?.slice(0, 200)}`); });
+        .then((r) => {
+          ctx.sdk.log("info", `[project] ${project.relPath} → ${r.status}${r.runId ? ` (${r.runId})` : ""}`);
+          ctx.sdk.emit("handler.workflow_dispatched", {
+            handler: "project",
+            workflow: workflowName,
+            source: project.owner,
+            projectId,
+            projectPath: project.relPath,
+            workflowRunId: r.runId ?? null,
+            status: r.status,
+            reason: action.reason,
+          });
+        })
+        .catch((e: any) => {
+          const message = e.message?.slice(0, 200) ?? String(e).slice(0, 200);
+          ctx.sdk.log("info", `[project] ${project.relPath} ERROR: ${message}`);
+          ctx.sdk.emit("handler.failed", {
+            handler: "project",
+            agent: ctx.agentName,
+            projectId,
+            projectPath: project.relPath,
+            workflow: workflowName,
+            error: message,
+            durationMs: 0,
+          });
+        });
 
       pState.lastLaunch = now;
       if (!pState.launchTimestamps) pState.launchTimestamps = [];
