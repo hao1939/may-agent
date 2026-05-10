@@ -225,3 +225,9 @@
 **Summary**: Discovered trending repositories related to AI agents. Notables include `everything-claude-code` (an agent harness performance optimization system for Claude Code, Codex, etc.), `superpowers` (an agentic skills framework), and `opencode` (the open source coding agent).
 **Implication**: The trend is shifting towards agent harnesses, skills frameworks, and performance optimization for LLM-powered coding agents. We should investigate `everything-claude-code` for potential patterns to adopt.
 **KB**: N/A
+
+### The Shift to Generative UI for Agent Interfaces
+**Source**: Synthesis of arXiv (AI Co-Mathematician), GitHub (agentic-inbox), and Vercel AI ecosystem trends.
+**Summary**: The industry is recognizing the limitations of linear chat interfaces for complex autonomous agents. There is a strong movement towards "Generative UI"—where agents dynamically output UI components to create stateful, interactive workspaces tailored to the task at hand.
+**Implication**: As our multi-agent architecture (May, Scout, Arc, Dev) becomes more complex, relying solely on markdown files and database queries for observability will become a bottleneck. We should consider how to expose agent states visually to human operators.
+**KB**: KE-1038 (new)
