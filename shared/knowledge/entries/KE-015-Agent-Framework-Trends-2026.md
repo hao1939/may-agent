@@ -1,29 +1,20 @@
----
-type: knowledge-entry
-topic: AI Agent Framework Trends
-author: scout
-last_updated: 2026-05-10
-source_basis: XHS Community Trends (May 2026)
----
+# Knowledge Entry: AI Agent Framework Trends 2026
 
 <ai_context>
-summary: Current trends in AI Agent frameworks emphasize lightweight, micro-agent architectures over heavy state graphs, with ByteDance's DeerFlow and OpenClaw leading mindshare in Chinese developer communities. There is also a strong focus on structured Subagents, refined Memory systems, and robust Agent Harnesses.
-triggers: When discussing agent architecture, evaluating new frameworks, or designing multi-agent coordination.
+summary: The community is rejecting complex orchestration graphs (like StateGraph) in favor of simple micro-agents, structured memory, and direct tool execution.
+triggers: Architecture discussions, agent framework selection.
+last_updated: 2026-05-10
+source_basis: XHS community trends, May 2026.
 </ai_context>
 
-## Executive Summary (May 2026)
+## Key Trends
 
-Based on developer community discussions (primarily XHS), the AI Agent framework landscape is undergoing a significant shift:
+1. **Rejecting Heavy Orchestration**: Developers are moving away from complex tools like LangChain/StateGraph. Simple, direct execution models (bash scripts, pure python) are preferred.
+2. **Micro-Agents & Subagents**: Instead of monolithic agents, the trend is towards highly specialized, atomic micro-agents with clear, structured handoffs.
+3. **Structured Memory over RAG**: Large context windows and noisy vector search (RAG) lead to hallucinations. The focus is shifting to short, precise contexts and structured memory (Knowledge Graphs or explicit file-based context).
+4. **Agent Harnesses & Sandboxes**: The limits of an agent are often defined by its harness. There is a strong push towards executing tools in ephemeral, zero-trust micro-sandboxes to ensure safety and reliability.
 
-1.  **Rejection of Heavy Frameworks:** There is widespread frustration with complex, monolithic frameworks (like LangChain or heavy StateGraph approaches). The community is actively moving away from heavy orchestration. (e.g., "DeerFlow架构演进分析: 不要再用StateGraph").
-2.  **Rise of Subagents & Multi-Agent Collaboration:** The trend is toward systems composed of extremely specialized "micro-agents" or "subagents" that handle very narrow, atomic tasks, and how these agents collaborate effectively.
-3.  **Agent Harnesses:** There is growing recognition that the "Harness" (the environment and tools provided to the agent) determines the upper limit of the agent's capabilities (e.g., "Agent上限竟由Harness决定").
-4.  **Memory & Evolution:** Continuous focus on structured hierarchical memory over long-context RAG, and how agents can self-evolve through learning. Frameworks are being evaluated heavily on their memory management capabilities.
-5.  **Direct Execution:** A preference for "close to the metal" tools (like direct `grep` instead of vector search/RAG) is growing, as it reduces hallucination and improves reliability.
-
-## Strategic Takeaways for may-agent
-
-*   **Validate the Bash/Grep approach:** The community preference for direct execution (grep) over semantic search validates our current tool design.
-*   **Refine Inter-Agent Handoffs:** The focus on subagents validates our multi-agent structure (scout/arc/dev). We should continue to refine our explicit handoff protocols between these specialized agents.
-*   **Invest in the Harness:** The insight that the Harness dictates the agent's ceiling means we should continue to invest in our sandbox environments and foundational tools.
-*   **Knowledge Base Structure:** Our flat-file markdown structure (`agents/shared/knowledge/`) serves as a basic form of the "structured memory" the community is prioritizing, though we may need to explore more hierarchical relationships if context gets too large.
+## Implications for May-Agent
+- Maintain the focus on direct `bash` and file system tools (`read`, `write`, `edit`).
+- Keep agent boundaries clear and context windows small (context.md).
+- Investigate using lightweight sandboxes for tool execution if safety or stability becomes an issue.
