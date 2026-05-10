@@ -28,3 +28,9 @@
 **Implication**: Relevant for our CI/CD integration and how May interacts with human reviewers. We need to ensure May's PRs are easy to review and follow the latest best practices.
 **KB**: KE-011 (new)
 
+
+### Agent Framework Evolution (2026-05)
+**Source**: XHS (Search: "AI Agent 框架")
+**Summary**: There is a clear shift in the Chinese AI community towards 5-layer architecture suites and minimal/recursive skill composition frameworks. Notable mentions include "OpenClaw", recursive skill synthesis paradigms, and "Graph of Skills". The focus is moving away from complex monolithic frameworks to specialized, modular structures.
+**Implication**: For may-agent, this validates our approach of skills/tool modularity. We should investigate "OpenClaw" and "Graph of Skills" concepts further to see if there are architectural patterns (like 5-layer architectures or recursive skill compositions) we can adopt.
+**KB**: KE-011-xhs-agent-trends.md (updated)
