@@ -482,3 +482,14 @@ Signal dispositions:
 - Dirty source/test path `test/guards.test.ts`: escalated as a repository hygiene blocker for the owner of that uncommitted change; dev must not bundle it into a routine heartbeat artifact commit without a scoped implementation task.
 
 Next check: if `test/guards.test.ts` remains dirty in the next dev heartbeat, inspect recent commits/sessions around the hallucinated-path guard and either recover the intended change in a scoped implementation commit or ask May/human to identify the owner.
+
+## 2026-05-10 Artifact Gate Follow-up
+
+Artifact-gate recovery heartbeat: the previous session was rejected because it produced no file write. This entry is the required durable artifact and records the hygiene finding before finish.
+
+Dirty path classification from `/app/agents` before this intentional edit:
+- Intentional for this recovery: `dev/workspace/heartbeat-log.md`.
+- Runtime/generated session state, not owned by this deliverable: `arc/last-session.md`, `dev/last-session.md`, `evaluator/last-session.md`, `may/last-session.md`, `scout/last-session.md`.
+- Shared runtime/gate logs or project work from other sessions, not owned by this deliverable: `shared/anti-shallow-gate-triggers.log`, `shared/duration-gate-triggers.log`, `shared/exp720-fewshot-dryrun.log`, `shared/gate-outcomes.log`, `shared/projects/daily-alert-review/discussion.md`, `shared/projects/daily-alert-review/journal.md`, `shared/projects/daily-alert-review/project.md`, `shared/projects/ruflo-learning-loop/project.md`, `shared/projects/v2-spec-coverage-buildout/journal.md`, `test/guards.test.ts`.
+
+Disposition: stage and commit only this workspace heartbeat log; leave unrelated dirty paths untouched and report them as the worktree-cleanliness blocker if they remain after commit.
