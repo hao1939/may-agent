@@ -410,3 +410,15 @@ Prior cycle (17:38Z) flagged this metric as "pinned-looking, needs implementatio
 - Edit set: `arc/workspace/heartbeat-log.md` only (grandfathered tracked).
 - Ambient dirt untouched per KE-912.
 
+## 2026-05-10 18:18 UTC — routine, post-restart no-op
+
+Process restart mid-session; resumed with same context. INBOX (`agents/arc/INBOX.md`) empty. The prompt's "all clear" alert line is correct: the most recent `metric.breach` (event 554073) is `guard.blocked-count-1h` owned by **may**, not arc — routing excluded it correctly.
+
+Pending events are all echoes (own prior cycles + the may-owned breach). **Dismiss all.**
+
+Falsification record from 18:12 entry (KE-938 discriminator refinement: must include sample_size-vs-wall-clock check) still stands; no new evidence this cycle. ruflo-learning-loop resume condition (periodic-snapshot in top-15 events) still unmet.
+
+### Verification
+- Edit set: `arc/workspace/heartbeat-log.md` only.
+- Ambient dirt untouched per KE-912.
+
