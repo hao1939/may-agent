@@ -224,3 +224,7 @@
 ## Pattern: rolling digest replacement can coexist with a valid new knowledge artifact
 - Symptom: a research heartbeat creates a genuinely useful new KE, but the same commit rewrites `workspace/digest/today.md` by deleting the prior digest body and leaving only the latest entry, often via `rm` plus shell redirection.
 - Fix: split the judgment by artifact. Credit the new KE if it is substantively novel and verified, but downgrade the overall session from clean success when the rolling digest update is net-destructive. For rolling digests, inspect the parent-vs-commit diff rather than trusting post-write read-back of the new entry alone.
+
+## Pattern: recurrence-led proposal sharpening is substantive output when it adds a cheaper implementation path
+- Symptom: a heartbeat revisits an already-open proposal after another recurrence, which can look like mere bookkeeping or duplicate logging.
+- Fix: inspect whether the session gathered fresh runtime evidence (for example a new `guard.triggered` row, commit diff, or real artifact) and used it to tighten the mechanism claim or implementation surface. If the update converts a repeated symptom into a lower-cost or more direct intervention path, credit it as real substantive output rather than dismissing it as another recurrence note.
