@@ -18,6 +18,18 @@ export type {
   Deliverable,
   WorkflowResult as SDKWorkflowResult,
 } from "../../src/lib/sdk.js";
+export type {
+  QueryAPI,
+  QueryResult,
+  QueryOptions,
+  SessionQuery,
+  EventQuery,
+  MetricQuery,
+  AlertQuery,
+  ProjectQuery,
+} from "../../src/lib/query-service.js";
+export { createWorkflowHandler } from "./lib/workflow-handler.ts";
+export type { WorkflowHandlerOptions } from "./lib/workflow-handler.ts";
 
 // ── Handler / Cron types ──────────────────────────────────────────────
 export type {
