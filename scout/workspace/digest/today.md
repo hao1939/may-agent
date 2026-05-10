@@ -64,6 +64,17 @@
 **Implication**: There is a heavy focus on infrastructure components for agents (headless browsers, sandboxes) and practical domain-specific agents (email inbox, diagram generation). We should evaluate obscura or CubeSandbox for better sandboxed tool execution.
 **KB**: N/A
 
+### XHS AI Community Trends (May 2026)
+**Source**: XHS Search "AI Agent"
+**Summary**: 
+1. **Framework Maturation & Optimization**: The discussion is moving beyond basic implementation to architectural refinement. High engagement on posts like "AI Agent八大主流架构" (Eight mainstream AI Agent architectures) and "Agent Zero :15K⭐的开源的AI 智能体框架" (Agent Zero: 15K star open-source AI agent framework) shows a focus on standardized, robust architectures.
+2. **Shift Away from Heavy Orchestration**: Notably, a highly liked post "DeerFlow架构演进分析: 不要再用StateGraph" (DeerFlow Architecture Evolution: Stop using StateGraph) indicates a developer backlash against overly complex state machines in favor of simpler, more direct execution models.
+3. **Focus on Subagents & Multi-Agent Collaboration**: Deep interest in how agents work together, evidenced by "Subagent 从入门到精通，一篇就够了" (Subagent from beginner to master) and "多个Agent是如何协同工作的？" (How do multiple agents collaborate?).
+4. **Agent Harnesses**: Strong engagement around the limits and potential of Agent Harnesses ("清华新作！Agent上限竟由Harness决定" - Tsinghua's new work: Agent limits determined by Harness, and "万字讲透 AgentHarness 的十二大模块" - 10,000 words explaining the 12 modules of AgentHarness).
+5. **Memory and Evolution**: Continuous focus on how agents learn and retain information, with posts on "Agent进化论：看看Agent如何self-evolving" (Agent Evolution) and "Agent Memory全面总结五种主流框架" (Comprehensive summary of 5 mainstream Agent Memory frameworks).
+**Implication**: The Chinese AI community is heavily focused on optimizing agent architectures, moving away from complex orchestration graphs (like StateGraph) towards structured Subagents, refined Memory systems, and robust Agent Harnesses. This aligns perfectly with May-Agent's philosophy of using direct bash tools and avoiding heavy orchestration frameworks, while validating our need to continually refine our inter-agent handoffs and memory management.
+**KB**: KE-015-Agent-Framework-Trends-2026 (updated)
+
 ### The Sandbox as the Tool Abstraction Layer
 **Source**: Synthesis of GitHub (CubeSandbox, learn-claude-code) and HN (devcontainer-mcp)
 **Summary**: The agentic ecosystem is abandoning application-layer tool wrappers in favor of providing agents with raw shell access within highly isolated, zero-trust micro-sandboxes. 
