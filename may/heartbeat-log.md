@@ -550,6 +550,20 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - Nothing new actionable since prior steward audit 5 min ago.
 - Logging this beat solely to satisfy artifact gate; no duplicate intervention created.
 
+## 2026-05-10T06:30 UTC — Heartbeat
+
+**Red metrics:** Both still known/structural.
+- `project.iterations-24h=0` (alert 273): No active projects iterating; documented in KE-902/KE-905. No change.
+- `capability.message-conversation-close-rate=0.0108` (alert 272): Metric target aspirational; automated messages dominate volume. Documented as P3.
+
+**Other open alerts (unchanged from prior cycles):**
+- 225: `scout.good-session-rate-24h=0.443` (threshold 0.65) — scout territory.
+- 197: `scout.operational-friction-rate-24h=0.7152` (threshold 0.3) — scout territory.
+
+**System health:** No new blockers since 04:50 cycle. `finish-blocked-hygiene-reduction` (dev, P1) still escalated to human; no SQL-writer path yet. No stuck sessions observed.
+
+**Action:** None. Holding pattern; both owned projects waiting by design. Producing this artifact to satisfy heartbeat artifact gate (no substantive change since prior heartbeat 1h40m ago).
+
 ## 2026-05-10T04:50 UTC — Heartbeat
 
 **Red metrics:** Both known, documented in KE-902/KE-905. No change.
