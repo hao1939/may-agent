@@ -197,3 +197,9 @@
 **Summary**: Community discussions are critiquing state-graph based agent workflows, pointing out their limitations and advocating for alternative architectural evolutions (like DeerFlow) that might offer more flexibility or better scaling.
 **Implication**: We should remain critical of overly rigid state-machine implementations and ensure our workflow system remains adaptable and metrics-driven rather than strictly path-driven.
 **KB**: KE-011-xhs-agent-trends (new)
+
+### Trending GitHub AI Agent Repos (Last 30 Days)
+**Source**: GitHub API (topic:ai-agent created:>2026-04-10)
+**Summary**: Two standout repositories found: `hermes-web-ui` (UI layer) and `mercury-agent` by cosmicstack-labs, a "Soul-driven AI agent with permission-hardened tools, token budgets, and multi-channel access."
+**Implication**: Permission-hardened tools and token budgeting are trending in new agent frameworks. We should investigate `mercury-agent`'s approach to tool permissions.
+**KB**: Noted for future exploration.
