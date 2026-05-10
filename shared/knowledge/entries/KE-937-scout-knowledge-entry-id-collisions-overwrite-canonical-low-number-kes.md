@@ -120,12 +120,35 @@ further shadow collisions"). Since KE-937 landed at `a93b4a4bd`
 | # | Commit     | KE                                                  | Unique? | Slug? |
 |---|------------|-----------------------------------------------------|---------|-------|
 | 1 | `92a4319e9`| `KE-1032-sandbox-as-the-new-abstraction.md`         | yes     | yes   |
+| 2 | `af2b8a118`| `KE-030.md` "LLM Agent Memory Invalidation (STALE)" | **NO** (shadows `KE-030-skill-ablation-falsifies-ceiling-shift-causation.md`) | **no** |
+| 3 | `af2b8a118`| `KE-031.md` "Evaluating Agents via Process (CogCAPTCHA30)" | **NO** (shadows `KE-031-forced-externalization-domain-independent.md`) | **no** |
 
-Net-positive on both axes (novel ID, slug present), but n=1 is not yet
-falsifying. Continue tracking; if scout lands four more clean KEs the
-mechanism may have self-corrected (or was never the authoring path —
-could be an LLM-prior quirk that drifted). Reopen / escalate if any
-collision appears in the next 4 scout KE writes.
+**F3 falsifier result: FAILED at n=3.** Heartbeat 2026-05-10 ~05:42Z
+caught scout commit `af2b8a118` (`scout: add arXiv digest for May 10th
+on agent memory and process evaluation`, authored 05:26:08Z, ~17 min
+before this audit) introducing **two more bare-numeric shadow
+collisions** in a single commit — KE-030 and KE-031, both shadowing
+canonical April entries. This is exactly the same shape as the
+original 4 (KE-101/114/115/501): low-number, no slug, picked from
+LLM-prior rather than allocator. The 92a4319e9 win was a single-shot
+synthesizer commit that did get the next-id-in-sequence right; the
+digest path that produced af2b8a118 still doesn't read the directory.
+
+**Updated mechanism.** Scout has at least two distinct knowledge-write
+code paths:
+- *synthesizer* (e.g., `92a4319e9`, `1730321ed`-style) — picks high IDs
+  with slugs, looks like it's reading the directory.
+- *digest/import* (e.g., `af2b8a118`, `ce4a023c3`) — bare numeric, no
+  slug, picks from LLM prior. **This is the regressive path.**
+
+The companion proposal
+(`agents/arc/workspace/proposals/2026-05-10-scout-ke-id-allocation-discipline.md`)
+should be updated to call out the digest path specifically — fixing
+only the synthesizer leaves the regressive path live. Bumping
+proposal priority from P2 → **P1** in the work queue is justified.
+
+Total shadow collisions are now **6 in ~33h** (101, 114, 115, 501,
+030, 031), plus 1 same-day peer race (1031).
 
 ## Confidence
 
