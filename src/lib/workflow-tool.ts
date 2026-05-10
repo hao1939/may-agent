@@ -327,6 +327,7 @@ async function resolveDemands(
         emitGuardSignal?.(demand, "skipped_duplicate", {
           sourceEventType: sourceEvent.type,
           step: "step" in sourceEvent ? sourceEvent.step : undefined,
+          sessionId: "sessionId" in sourceEvent ? sourceEvent.sessionId : undefined,
           injectedStepLabel: label,
         });
         continue;
@@ -343,6 +344,7 @@ async function resolveDemands(
         emitGuardSignal?.(demand, "blocked", {
           sourceEventType: sourceEvent.type,
           step: "step" in sourceEvent ? sourceEvent.step : undefined,
+          sessionId: "sessionId" in sourceEvent ? sourceEvent.sessionId : undefined,
         });
         throw new WorkflowBlocked(demand.reason, completedSteps, runId);
 
@@ -351,6 +353,7 @@ async function resolveDemands(
         emitGuardSignal?.(demand, "warned", {
           sourceEventType: sourceEvent.type,
           step: "step" in sourceEvent ? sourceEvent.step : undefined,
+          sessionId: "sessionId" in sourceEvent ? sourceEvent.sessionId : undefined,
         });
         warnings.push(`${demand.reason} (from: ${demand.guardName})`);
         break;
@@ -361,6 +364,7 @@ async function resolveDemands(
           emitGuardSignal?.(demand, "skipped_invalid", {
             sourceEventType: sourceEvent.type,
             step: "step" in sourceEvent ? sourceEvent.step : undefined,
+            sessionId: "sessionId" in sourceEvent ? sourceEvent.sessionId : undefined,
           });
           break;
         }
@@ -369,6 +373,7 @@ async function resolveDemands(
           emitGuardSignal?.(demand, "skipped_limit", {
             sourceEventType: sourceEvent.type,
             step: "step" in sourceEvent ? sourceEvent.step : undefined,
+            sessionId: "sessionId" in sourceEvent ? sourceEvent.sessionId : undefined,
             injectedStepLabel: demand.step.label ?? `guard:${demand.guardName}`,
             injectedAgent: demand.step.agent,
           });
@@ -380,6 +385,7 @@ async function resolveDemands(
         emitGuardSignal?.(demand, "injected", {
           sourceEventType: sourceEvent.type,
           step: "step" in sourceEvent ? sourceEvent.step : undefined,
+          sessionId: "sessionId" in sourceEvent ? sourceEvent.sessionId : undefined,
           injectedStepLabel: label,
           injectedAgent: demand.step.agent,
         });
@@ -686,6 +692,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         workflowRunId: runId,
         projectId: effectiveProjectId,
         parentSessionId,
+        sessionId: typeof extra.sessionId === "string" ? extra.sessionId : undefined,
         guard: demand.guardName ?? "unknown",
         demandType: demand.type,
         action,
@@ -833,6 +840,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             type: "step_done",
             source: "agent",
             step: agentName,
+            sessionId: sid,
             result: taskResult,
             completedSteps,
             task: agentTask,
@@ -901,6 +909,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             type: "step_done",
             source: "function",
             step: label,
+            sessionId: taskResult.sessionId,
             result: taskResult,
             completedSteps,
             task: label,
@@ -1027,6 +1036,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
                 type: "step_done",
                 source: "agent",
                 step: stepName,
+                sessionId: taskResult.sessionId,
                 result: taskResult,
                 completedSteps,
                 task: message,
