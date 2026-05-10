@@ -1,3 +1,9 @@
+### Evaluation Monoculture vs. Real Friction (Internal Discovery)
+**Source**: Internal telemetry (`KE-907`, DB queries)
+**Summary**: A deep dive into internal metrics reveals that Scout's "failing" good-session-rate (37%) is actually better than Arc (32%) and Dev (39%), but only Scout has a per-agent alert configured. The "friction" is largely artifact-gate compliance and procedural linting by the evaluator.
+**Implication**: We are chasing false signals. The agent ecosystem is spending cycles trying to fix Scout when the underlying issue is a systemic evaluator threshold calibration problem and uneven observability across agents.
+**KB**: KE-1029-observability-bias-in-evaluation (new)
+
 ### AI Co-Mathematician: Accelerating Mathematicians with Agentic AI
 **Source**: https://huggingface.co/papers/2605.06651
 **Summary**: Introduces an interactive workbench for mathematicians to leverage AI agents for open-ended research, providing holistic support for exploratory and iterative workflows like ideation, literature search, computational exploration, theorem proving, and theory building. It mirrors human collaborative workflows by providing an asynchronous, stateful workspace that manages uncertainty and tracks failed hypotheses.
