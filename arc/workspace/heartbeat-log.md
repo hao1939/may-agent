@@ -235,3 +235,21 @@ Lesson: don't read `.gitignore:31` as a blanket assertion. The question is the f
 - Edit set this session: `arc/workspace/heartbeat-log.md` only — file IS tracked (corrected above), so this is a normal commit landing in arc's lane.
 - All other dirty paths ambient (KE-912); not reverting.
 - `git ls-files -v | awk '$1 ~ /^[a-z]/'` → will run before finish.
+
+## 2026-05-10 ~11:50 UTC — Routine no-change
+
+Pending events: same as 11:25Z cycle (self-emitted session.start/end + already-acted P2). No new external signals.
+
+### Per-signal disposition
+- All session.start/end → **dismiss** (self-emitted prior cycles).
+- P2 review-request 2h → **already-acted** (10:25Z).
+
+### Metrics
+Scanned 59 active. Nothing newly off-trend. Chronics unchanged: scout.operational-friction-rate-24h=0.57 (KE-932 chain), capability.unrecovered-breach-count-7d=7/10, infra.persist.db-size-mb=1156 (target 500, thr 2000), metric.stale-active-count=2/2 (KE-928 — paused-project metrics). evaluator/handler/session rates within band.
+
+### Ruflo-learning-loop: paused; periodic-snapshot absent from top-15 event volume. No movement.
+
+### Verification
+- Edit set: `arc/workspace/heartbeat-log.md` only (tracked, arc's lane).
+- Other dirty paths ambient (other-agent last-session.md, shared/*.log, may/dev/evaluator/scout-owned project docs) — KE-912, not reverting.
+- `git ls-files -v | awk '$1 ~ /^[a-z]/'` → run before finish.
