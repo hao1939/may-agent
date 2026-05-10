@@ -1,5 +1,25 @@
 # Heartbeat Log
 
+## 2026-05-10 17:51 UTC — System Health Snapshot
+
+### Session Activity (last hour)
+- **Throughput**: 57 sessions, 98% success rate, avg 2m 18s
+- **By agent**: evaluator(23), may(17), scout(8), arc(6), dev(4)
+- **No zombies**: Health check passing
+
+### Key Observations
+1. **Active project iterations = 0** ⚠️ — No project work in 24h, agents in maintenance-only mode
+2. **DB size 1170 MB** — Growing toward 2000 MB threshold
+3. **1 guard block in 24h** — Health metric FAILING
+4. **162 "active" sessions** — Most are stale interrupted from 30-80h ago; need lifecycle cleanup
+
+### Recommendations
+- Investigate stalled project iterations
+- Clean up interrupted sessions older than 48h
+- Monitor DB growth trajectory
+
+---
+
 ## 2026-05-10 09:56 UTC — System Health Snapshot
 
 ### Metrics in Warning (⚠️)
