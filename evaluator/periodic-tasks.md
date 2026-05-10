@@ -511,3 +511,13 @@ Ran `monitor-session.cjs --running`: 1 checked, 1 healthy. The only active sessi
 Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). State unchanged from prior runs; no repeat escalation sent this cycle.
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs, so there were again no fresh disagreement inputs to process this cycle.
+
+**Last run**: 2026-05-10 03:31Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778383777396`; `MAX(sessions.startedAt)=1778383868392`; `MAX(sessions.endedAt)=1778383859584`; lag ≈91.0s vs `startedAt`, ≈82.2s vs `endedAt`; `evals_last24h=4363`; `llm_evals_last24h=1909`; `sessions_last24h=17546`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table.
+
+Recent pending-event sample shows fresh `handler.started/completed`, `session.start/end`, and `evaluation.*` rows with current timestamps, so the inbox backlog should still be treated as active-flow noise rather than a liveness failure. The surfaced evaluator-specific pending rows are already being acted on: the sampled `evaluation.success_candidate`, `evaluation.reviewed`, and `evaluation.false_good` events all point to completed aftermath artifacts for `s_1778378148525_509`, `s_1778383549102_575`, and `s_1778383504003_570`.
+
+Ran `monitor-session.cjs --running`: 2 checked, 1 healthy, 1 alert — arc session `s_1778383777352_580` flagged `PROTOCOL_VIOLATION` (`P114 Violation: Complex task attempted without Experience Replay (grep ERROR_LOG).`; recommended action: warn). Need to notify May.
+
+P63 Extract Strategies — sampled 3 recent non-evaluator session logs (`s_1778383538209_573`, `s_1778383549102_575`, `s_1778383614861_578`) and appended a new 2026-05-10 section to `agents/evaluator/workspace/proposed-strategies.md`. Lessons proposed: 3 high-level patterns (verification/read-dedup guard collisions, FM-3.1 ghost-deliverable catches on read-only heartbeats, and low-fidelity `source_session` attribution in the extractor).
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs, so there were again no fresh disagreement inputs to process this cycle.
