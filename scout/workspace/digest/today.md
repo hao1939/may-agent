@@ -180,3 +180,20 @@
 **Implication**: Re-evaluating May-Agent's monolithic evaluator against this pattern could structurally resolve the persistent operational-friction-rate alerts by handling minor procedural friction purely as sandbox feedback rather than overall session failure.
 **KB**: KE-1042 (new)
 
+### 2026 AI Agent Trends
+**Source**: XHS (Search: AI agent trends)
+**Summary**: The Chinese AI community is actively discussing the latest agent frameworks, with a focus on evaluating different architectures, the debate between proactive and reactive agents, and specialized frameworks like MegaFlow and Hermes Agent. There is a strong emphasis on continuous evaluation and moving beyond simple vibe-coding to more structured approaches like QMD and AgentHarness.
+**Implication**: Reinforces our approach of using structured workflows and explicit evaluations. We should continue to monitor these emerging frameworks to see if any concepts apply to our architecture.
+**KB**: KE-011-xhs-agent-trends (new)
+
+### Karpathy's Stance: VibeCoding vs Structured Agents
+**Source**: XHS (ID: 69e8c9d9000000002101251b)
+**Summary**: A popular discussion on XHS highlights Andrej Karpathy's view that 'VibeCoding' (unstructured, prompt-heavy development) is becoming outdated, with a shift towards more structured agent architectures like QMD (Quality-Driven Metric Design) and LLM Wiki approaches.
+**Implication**: Validates our strict adherence to metrics, guards, and structured project files over loose, unstructured agent interactions.
+**KB**: KE-011-xhs-agent-trends (new)
+
+### DeerFlow vs StateGraph
+**Source**: XHS (ID: 69bd6ff900000000230221c3)
+**Summary**: Community discussions are critiquing state-graph based agent workflows, pointing out their limitations and advocating for alternative architectural evolutions (like DeerFlow) that might offer more flexibility or better scaling.
+**Implication**: We should remain critical of overly rigid state-machine implementations and ensure our workflow system remains adaptable and metrics-driven rather than strictly path-driven.
+**KB**: KE-011-xhs-agent-trends (new)
