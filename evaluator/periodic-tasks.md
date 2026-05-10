@@ -216,11 +216,13 @@ Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-sna
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
 
-**Last run**: 2026-05-10 04:31Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778387379538`; `MAX(sessions.startedAt)=1778387469008`; `MAX(sessions.endedAt)=1778387448321`; lag ≈89.5s vs `startedAt`, ≈68.8s vs `endedAt`; `evals_last24h=687`; `llm_evals_last24h=31`; `sessions_last24h=1466`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table.
+**Last run**: 2026-05-10 05:04Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778389156720`; `MAX(sessions.startedAt)=1778389268978`; `MAX(sessions.endedAt)=1778389254330`; lag ≈112.3s vs `startedAt`, ≈97.6s vs `endedAt`; `evals_last24h=693`; `llm_evals_last24h=31`; `sessions_last24h=1468`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table.
 
-Inbox triage on the currently surfaced pending aftermath targets found completed artifacts already present for `s_1778387165801_622`, `s_1778386911923_615`, and `s_1778385365363_598`, so the newest `session.*` / `evaluation.*` rows are best treated as already-handled backlog noise rather than dropped evaluator work.
+Inbox triage on the currently surfaced pending aftermath targets found completed artifacts already present for `s_1778378148525_509`, `s_1778388957776_642`, `s_1778388903816_639`, and `s_1778387104544_616`, while the newest `evaluation.*` and `session.*` rows for those ids show they were just reviewed and/or triage-closed. Treat these surfaced pending event rows as already-handled backlog noise rather than dropped evaluator work.
 
-Ran `monitor-session.cjs --running`: 3 checked, 1 healthy, 2 `PROTOCOL_VIOLATION` alerts — evaluator session `s_1778387358589_623` and arc session `s_1778387404625_625`, both with evidence `P114 Violation: Complex task attempted without Experience Replay (grep ERROR_LOG).`; recommended action: warn. Notified May.
+Signal-quality spot check: the newest reviewed records show one meaningful false-good correction (`s_1778378148525_509` downgraded from heuristic `good` to reviewed `acceptable`) and one likely heuristic false positive on routing (`s_1778388957776_642` was routed for `committed generated runtime files`, but the aftermath artifact cites commit `6c65c437f` touching only `agents/may/analyses/scout-friction-analysis-2025-05-10.md`). This is a calibration note, not yet a criteria edit.
+
+Ran `monitor-session.cjs --running`: 1 checked, 1 healthy.
 
 Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
 
