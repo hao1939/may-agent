@@ -156,3 +156,7 @@
 ## Pattern: internal-evidence-first synthesis can produce strong creative heartbeat output
 - Symptom: a research/heartbeat session starts by reading recent internal knowledge entries and current working notes, then imports one external source and turns the overlap into a concrete architectural proposal rather than another trend summary.
 - Fix: for success-candidate review, inspect the landed artifact for named components or an actionable design recommendation. When the session clearly converts prior internal findings plus one outside signal into a reusable proposal, credit it as real substantive output even if there is minor hygiene friction like an ignored-path `git add` failure or a first blocked `finish()`.
+
+## Pattern: adjacent synthesis KEs can still be good when they add a concrete system lever
+- Symptom: a new knowledge entry lands very near a same-day or same-topic KE, so it initially looks duplicate-shaped, but the newer note combines the nearby observations into a more specific recommendation for the local system.
+- Fix: do a two-part judgment. First, compare against adjacent KEs to avoid over-crediting novelty. Second, inspect whether the new artifact adds a concrete lever (for example a specific architectural pivot, workflow change, or design principle for May-Agent). If yes, score it as real but incremental value: good/acceptable output depending on evidence strength, not a breakthrough and not a throwaway duplicate.
