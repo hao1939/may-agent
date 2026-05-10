@@ -64,6 +64,10 @@
 - Symptom: a route classifier marks a session as `success_candidate` with signals like `knowledge update` because the transcript text merely mentions a path under `agents/.../knowledge/`, even though the session only cited or read an existing KE.
 - Fix: inspect the routing heuristic itself and prefer anchors tied to `write`/`edit` tool-call payloads or committed diffs. Path-shape regexes over free-form transcript prose are too broad and create false-good aftermath reviews.
 
+## Pattern: apparent knowledge updates can be net-destructive if they overwrite existing KEs
+- Symptom: a research session lands a real commit and read-back evidence for new `KE-xxx.md` files, but the committed diff shows those paths already existed and the session replaced canonical knowledge entries with unrelated content.
+- Fix: for claimed knowledge updates, inspect the parent-vs-commit diff (or prior blob) for each KE path, not just the final file contents. If the path pre-existed, verify the change is an intentional revision rather than an ID collision/overwrite. Credit any safe side artifact like a digest append separately, but downgrade the session overall and escalate restoration to the owner.
+
 ## Pattern: pre-existing mock research is not fresh exploration
 - Symptom: a session tasked with exploring an external source (for example XHS) only reads local mock scripts or prewritten workspace summaries, then finishes as if fresh research was performed.
 - Fix: inspect the transcript for real external collection or newly written source notes, and check mtimes/diffs on cited artifacts. If the session only consumed pre-existing mock/local material, credit it as lightweight synthesis at most, not as source exploration or a knowledge update.
