@@ -1,4 +1,14 @@
-# Heartbeat Log — 2026-05-10T05:25Z
+# Heartbeat Log — 2026-05-10T09:26Z
+
+## Entry 09:26Z
+- **Throughput**: 46 sessions/1h, 100% success rate. Avg duration 2m9s.
+- **Active sessions**: 6 running. System healthy.
+- **Scout metrics improving but still red**: good-session-rate 0.55 (was 0.42), operational friction 0.63 (was 0.73). Positive trend.
+- **DB size**: 1151MB. Stable.
+- **All health checks**: PASS ✓
+- **No new blockers or escalations.**
+
+---
 
 ## Entry 05:25Z
 - **Throughput**: 42 sessions/1h, 95% success rate (1 error: evaluator empty response).
