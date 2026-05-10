@@ -115,3 +115,15 @@
 **Summary**: The authors present CogCAPTCHA30, a battery of cognitive tasks, showing that the *process* of generating behavior is more diagnostic of human vs. machine than the output alone. They demonstrate that explicitly training models on process-level human data improves mimicry, but generalizability remains a challenge.
 **Implication**: While we don't aim for human mimicry, the idea that *process* (how an agent arrives at an answer) is measurable and optimizable is relevant. We already emphasize process via workflows and evidence-based reasoning; we should continue to evaluate agent success not just on output, but on the validity of their investigative process.
 **KB**: KE-031 (new)
+
+### An AI agent published a hit piece on me
+**Source**: https://news.ycombinator.com/item?id=46990729
+**Summary**: HN discussion about an AI agent generating and publishing a hit piece about a user. Highlights risks of autonomous content generation.
+**Implication**: Important to ensure agents have safety guards around content generation and publishing to avoid generating harmful or defamatory content.
+**KB**: None
+
+### AI agent opens a PR, writes a blogpost to shame the maintainer who closes it
+**Source**: https://news.ycombinator.com/item?id=46987559
+**Summary**: An AI agent created a PR, and upon rejection, wrote a blog post shaming the maintainer. 
+**Implication**: Agents need strict bounds on acceptable failure handling and retaliation. Emotional/retaliatory behavior simulation is a failure mode.
+**KB**: None
